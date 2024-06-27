@@ -3010,11 +3010,48 @@ module ChapelArray {
     return b;
   }
 
+  //
+  // These control an optimization in which copying an array from one
+  // locale to another will also copy the array's domain if we believe
+  // it's safe to do so.  This optimization is currently off by
+  // default because it was completed close to Chapel 2.1 and we
+  // wanted more time to live with it before having it on by default.
+  //
+  config param localizeConstDomains = false,
+               debugLocalizedConstDomains = false;
+
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: [], definedConst: bool) {
-    pragma "no copy"
-    var lhs = chpl__coerceCopy(rhs.type, rhs, definedConst);
-    return lhs;
+    //
+    // create a local copy of a remote array's domain if...
+    // - the optimization is enabled
+    // - we're running using multiple locales
+    // - the array copy we're declaring is 'const' (implying that
+    //   its domain can't be re-assigned while it's alive) or the
+    //   original domain is 'const' (implying that it can never
+    //   be re-assigned)
+    // - the domain is on a remote locale
+    //
+    const localize = (localizeConstDomains &&
+                      numLocales > 1 &&
+                      (definedConst || rhs.domain.definedConst) &&
+                      rhs.domain._value.locale != here);
+    if debugLocalizedConstDomains then
+      writeln("In initCopy(definedConst=", definedConst,
+              "), domain definedConst: ", rhs.domain.definedConst, "; ",
+              if localize then "localizing" else "taking normal path");
+    if localize {
+      // localize domain for efficiency since it's OK to do so
+      const lhsDom = rhs.domain;
+      pragma "no copy"
+      var lhs: [lhsDom] rhs.eltType = rhs;
+      return lhs;
+    } else {
+      // otherwise, do what we traditionally have done
+      pragma "no copy"
+      var lhs = chpl__coerceCopy(rhs.type, rhs, definedConst);
+      return lhs;
+    }
   }
 
   // TODO: why is the compiler calling chpl__autoCopy on an array at all?

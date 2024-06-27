@@ -1862,6 +1862,7 @@ ifvar:
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
                                    /*linkageName*/ nullptr,
+                                   /*destinationExpr*/ nullptr,
                                    /*name*/ $2,
                                    Variable::VAR,
                                    /*isConfig*/ false,
@@ -1877,6 +1878,7 @@ ifvar:
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
                                    /*linkageName*/ nullptr,
+                                   /*destinationExpr*/ nullptr,
                                    /*name*/ $2,
                                    Variable::CONST,
                                    /*isConfig*/ false,
@@ -2023,6 +2025,7 @@ catch_expr_inner:
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
+                         /*destinationExpr*/ nullptr,
                          /*name*/ $1,
                          Variable::VAR,
                          /*isConfig*/ false,
@@ -2036,6 +2039,7 @@ catch_expr_inner:
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
+                         /*destinationExpr*/ nullptr,
                          /*name*/ $1,
                          Variable::VAR,
                          /*isConfig*/ false,
@@ -2793,6 +2797,7 @@ type_alias_decl_stmt_inner:
                                 context->visibility,
                                 context->linkage,
                                 context->consumeVarDeclLinkageName(),
+                                context->consumeVarDestinationExpr(),
                                 /*name*/ $1,
                                 context->varDeclKind,
                                 context->isVarDeclConfig,
@@ -2830,6 +2835,16 @@ var_decl_stmt:
     $$ = context->buildVarOrMultiDeclStmt(@$, $4);
     context->resetDeclState();
   }
+| TON expr
+  {
+    // Use a mid-rule action to preserve the 'on' expr
+    context->noteVarDestinationExpr($2);
+  }
+  var_decl_type var_decl_stmt_inner_ls TSEMI
+  {
+    $$ = context->buildVarOrMultiDeclStmt(@$, $5);
+    context->resetDeclState();
+  }
 | var_decl_type var_decl_stmt_inner_ls TSEMI
   {
     $$ = context->buildVarOrMultiDeclStmt(@$, $2);
@@ -2863,6 +2878,7 @@ var_decl_stmt_inner:
                                      context->visibility,
                                      context->linkage,
                                      context->consumeVarDeclLinkageName(),
+                                     context->consumeVarDestinationExpr(),
                                      /*name*/ $1,
                                      context->varDeclKind,
                                      context->isVarDeclConfig,

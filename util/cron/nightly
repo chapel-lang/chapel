@@ -841,7 +841,7 @@ if ($runtests == 0) {
                 $splice = "$utildir/devel/test/spliceDat";
                 $spliceCommand = "$splice -from_a $today -to_a $today $svnPerfDir/$datName $historicalFile> $tmpDatDir/$datName";
                 $spliceDatMessage = "Attempting to splice historical data $historicalFile with nightly data $svnPerfDir/$datName";
-                mysystem($spliceCommand, $spliceMessage, $ignoreError, 1);
+                mysystem($spliceCommand, $spliceMessage, $ignoreErrors, 1);
                 `cp $svnPerfDir/$datName $tmpNightlyDatDir/$datName`;
             }
 

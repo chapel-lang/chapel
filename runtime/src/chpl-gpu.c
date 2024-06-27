@@ -641,6 +641,13 @@ void chpl_gpu_arg_pass(void* _cfg, void* arg) {
 
 void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size,
                          reduce_wrapper_fn_t wrapper) {
+#ifndef GPU_RUNTIME_CPU
+  if (!chpl_gpu_can_reduce()) {
+    chpl_internal_error("The runtime is built with a software stack that does "
+                        "not support reductions (e.g. ROCm 4.x). `reduce` "
+                        "expressions and intents are not supported");
+  }
+#endif
   kernel_cfg* cfg = (kernel_cfg*)_cfg;
   if (cfg_can_reduce(cfg)) {
     // pass the argument normally

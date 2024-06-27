@@ -14,3 +14,7 @@ const-errors-due-to-intents.chpl:16: error: const actual is passed to 'ref' form
 const-errors-due-to-intents.chpl:9: note: The shadow variable 'i3' is constant due to task intents in this loop
 const-errors-due-to-intents.chpl:17: error: const actual is passed to 'ref' formal 'arg' of useit()
 const-errors-due-to-intents.chpl:9: note: The shadow variable 'i4' is constant due to task intents in this loop
+const-errors-due-to-intents.chpl:23: error: cannot assign to const variable
+const-errors-due-to-intents.chpl:21: note: The shadow variable 'i1' is constant due to task intents in this loop
+const-errors-due-to-intents.chpl:27: error: cannot assign to const variable
+const-errors-due-to-intents.chpl:26: note: The shadow variable 'i2' is constant due to task intents in this loop

@@ -358,6 +358,29 @@ static void preNormalizeHandleStaticVars() {
                                               wrapperVar, initVarTemp));
       wrapperBlock->insertAtTail(new CallExpr(PRIM_DEFAULT_INIT_VAR, wrapperVar, wrapperTypeTemp));
 
+      if (call->numActuals() > 0) {
+        // The actual specifies the sharing kind.
+        auto sharingKind = toSymExpr(call->get(1));
+        bool valid = false;
+        if (sharingKind && sharingKind->symbol()->defPoint) {
+          auto parentSymbol = sharingKind->symbol()->defPoint->parentSymbol;
+          if (parentSymbol && parentSymbol->hasFlag(FLAG_SHARING_KIND_ENUM)) {
+            valid = true;
+          }
+        }
+        if (!valid) {
+          USR_FATAL(call, "invalid argument to @functionStatic attribute");
+        }
+
+        if (sharingKind->symbol()->name == astr("computeOrRetrieve")) {
+          // Do nothing, that's the default behavior.
+        } else if (sharingKind->symbol()->name == astr("computePerLocale")) {
+          wrapperVar->addFlag(FLAG_LOCALE_PRIVATE);
+        } else {
+          USR_FATAL(call, "invalid argument to @functionStatic attribute");
+        }
+      }
+
       anchor->insertBefore(initVarBlock);
       anchor->insertBefore(wrapperBlock);
 

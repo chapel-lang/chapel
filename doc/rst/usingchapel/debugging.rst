@@ -181,9 +181,7 @@ Configuration Constants for Tracking Memory
 Chapel supports a number of configuration constants related to dynamic
 memory allocation for the compiler-generated executable, currently
 designed for use primarily by the development team to track memory
-usage in tests.  Please note that our generated code currently
-contains memory leaks, so you should not be surprised if your program
-requires more memory than it seems it should.
+usage in tests.
 
 For full information on these configuration constants consult
 :chpl:mod:`MemDiagnostics`.

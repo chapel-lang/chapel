@@ -27,7 +27,7 @@ use A only dummy as _;
 // Underscores ARE allowed in tuple declarations...
 var (_, _) = (42, 42);
 // .. tuple assignments
-(x, y) = (42, 42);
+(_, _) = (42, 42);
 // .. function formals (as far as our check is concerned; another check rules these out)
 proc f(_: int) {}
 // .. renames for use targets

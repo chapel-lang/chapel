@@ -444,6 +444,9 @@ module GPU
   @chpldoc.nodoc
   config param gpuDebugReduce = false;
 
+  @chpldoc.nodoc
+  config param gpuAlwaysFallBackToCpuReduce = false;
+
   private inline proc doGpuReduce(param op: string, const ref A: [] ?t) {
     if op != "sum" && op != "min" && op != "max" &&
        op != "minloc" && op != "maxloc" {
@@ -498,10 +501,13 @@ module GPU
         res = doCpuReduceHelp(op, A): res.type;
       }
       else {
-        on here.parent {
-          var HostArr = A;
-          res = doCpuReduceHelp(op, HostArr): res.type;
-        }
+        // I want to do on here.parent but that doesn't work
+        extern proc chpl_task_getRequestedSubloc(): int(32);
+        const curSubloc = chpl_task_getRequestedSubloc();
+        chpl_task_setSubloc(-2);
+        var HostArr = A;
+        res = doCpuReduceHelp(op, HostArr): res.type;
+        chpl_task_setSubloc(curSubloc);
       }
       return res;
     }
@@ -572,7 +578,7 @@ module GPU
 
     use CTypes;
     extern proc chpl_gpu_can_reduce(): bool;
-    if !chpl_gpu_can_reduce() {
+    if gpuAlwaysFallBackToCpuReduce || !chpl_gpu_can_reduce() {
       return doCpuReduce(op, A);
     }
 

@@ -11,11 +11,7 @@ from utils import memoize
 
 @memoize
 def get_chpl_home():
-    chpl_home = overrides.get('CHPL_HOME', '')
-    if not chpl_home:
-        dirname = os.path.dirname
-        chpl_home = dirname(dirname(dirname(os.path.realpath(__file__))))
-    return chpl_home
+    return overrides.get_chpl_home(overrides)
 
 @memoize
 def get_chpl_runtime_incl():

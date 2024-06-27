@@ -4365,8 +4365,10 @@ bool getIrDumpExtensionPoint(llvmStageNum_t s,
       dumpIrPoint = PassManagerBuilder::EP_ModuleOptimizerEarly;
       return true;
     case llvmStageNum::LateLoopOptimizer:
-      USR_FATAL("Cannot use llvm-print-ir-stage late-loop-optimizer "
+      if (llvmPrintIrStageNum != llvmStageNum::EVERY) {
+        USR_FATAL("Cannot use llvm-print-ir-stage late-loop-optimizer "
                       "with the old pass manager\n");
+      }
       return false;
     case llvmStageNum::LoopOptimizerEnd:
       dumpIrPoint = PassManagerBuilder::EP_LoopOptimizerEnd;
@@ -4375,12 +4377,16 @@ bool getIrDumpExtensionPoint(llvmStageNum_t s,
       dumpIrPoint = PassManagerBuilder::EP_ScalarOptimizerLate;
       return true;
     case llvmStageNum::EarlySimplification:
-      USR_FATAL("Cannot use llvm-print-ir-stage early-simplification "
+      if (llvmPrintIrStageNum != llvmStageNum::EVERY) {
+        USR_FATAL("Cannot use llvm-print-ir-stage early-simplification "
                       "with the old pass manager\n");
+      }
       return false;
     case llvmStageNum::OptimizerEarly:
-      USR_FATAL("Cannot use llvm-print-ir-stage optimizer-early "
+      if (llvmPrintIrStageNum != llvmStageNum::EVERY) {
+        USR_FATAL("Cannot use llvm-print-ir-stage optimizer-early "
                       "with the old pass manager\n");
+      }
       return false;
     case llvmStageNum::OptimizerLast:
       dumpIrPoint = PassManagerBuilder::EP_OptimizerLast;

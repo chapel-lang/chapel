@@ -84,8 +84,13 @@ def run_toplevel():
                 for key, value in from_file.items():
                     commands[key].append(value)
 
-    with open(".cls-commands.json", "w") as f:
-        json.dump(commands, f)
+    # Skip if we would overwrite an existing file with empty commands
+    skip_cls = (
+        os.path.exists(".cls-commands.json") and len(commands.keys()) == 0
+    )
+    if not skip_cls:
+        with open(".cls-commands.json", "w") as f:
+            json.dump(commands, f)
 
 
 def run_chpl_shim():

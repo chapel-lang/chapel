@@ -16,10 +16,10 @@ unlink($file);
 # be one of three values.
 #
 # * $exitOnError (aka <exit on error>): exit the script if the command fails
-# * $ignoreError (aka <ignore error>): silently allow the error to fail
+# * $ignoreErrors (aka <ignore errors>): silently allow the error to fail
 # * a path to a file: write the error to that file and continue
 $exitOnError = "<exit on error>";
-$ignoreError = "<ignore error>";
+$ignoreErrors = "<ignore errors>";
 sub mysystem {
     $command = $_[0];
     $errorname = $_[1];
@@ -36,7 +36,7 @@ sub mysystem {
         print "Error $errorname: $status\n";
         if ($onerror eq $exitOnError) {
             exit 1;
-        } elsif ($onerror eq $ignoreError) {
+        } elsif ($onerror eq $ignoreErrors) {
             # Do nothing
         } else {
             open(my $SF, '>>', $onerror) or die "Could not open file '$onerror' $!";

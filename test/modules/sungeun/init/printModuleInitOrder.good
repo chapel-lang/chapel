@@ -51,6 +51,7 @@ Initializing Modules:
     ChapelUtil
     ExportWrappers
     ChapelContext
+    ChapelStaticVars
     AlignedTSupport
     CopyAggregation
      AggregationPrimitives

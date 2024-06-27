@@ -1,18 +1,16 @@
 # This test uses the ConcurrentMap package, which in turn
 # relies on the AtomicObjects package, which currently requires
-# that LLVM be enabled and that `CHPL_TARGET_ARCH=x86_64`.
+# that LLVM be enabled.
 
 # AtomicObjects uses extern blocks
 CHPL_LLVM==none
-# AtomicObjects uses GCC inline assembly, so only test it on gcc/clang
+# Depending on architecture, AtomicObjects either uses GCC inline assembly or
+# builtins, so only test it on gcc/clang
 CHPL_TARGET_COMPILER==cray-prgenv-pgi
 CHPL_TARGET_COMPILER==pgi
 CHPL_TARGET_COMPILER==cray-prgenv-cray
-CHPL_TARGET_COMPILER==pgi
 CHPL_TARGET_COMPILER==intel
 CHPL_TARGET_COMPILER==cray-prgenv-intel
-# AtomicObjects uses x86-64 instructions in the inline assembly
-CHPL_TARGET_ARCH != x86_64
 
 # The concurrentMap leaks memory
 CHPL_NIGHTLY_TEST_CONFIG_NAME==memleaks

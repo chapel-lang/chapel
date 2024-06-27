@@ -196,6 +196,8 @@ ChapelContext
   from print-module-resolution.ChapelStandard.ChapelContext
 ChapelStaticVars
   from print-module-resolution.ChapelStandard.ChapelStaticVars
+ChapelRemoteVars
+  from print-module-resolution.ChapelStandard.ChapelRemoteVars
 stopInitCommDiags
   from print-module-resolution.ChapelStandard.stopInitCommDiags
 ChapelStandard

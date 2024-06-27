@@ -22,6 +22,21 @@ module ChapelStaticVars {
   use OwnedObject;
   use Atomics;
 
+  pragma "sharing kind enum"
+  enum sharingKind {
+    /**
+      Default distribution mode. The value is computed on whichever
+      locale first calls the function; other locales remotely access
+      the value once it's computed.
+     */
+    computeOrRetrieve,
+    /**
+      The variable is computed per-locale; the first call to the function
+      on each locale causes it to compute the static variable.
+     */
+    computePerLocale,
+  }
+
   class _staticWrapperContainer {
     var value;
   }
