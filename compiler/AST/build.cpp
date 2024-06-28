@@ -314,15 +314,10 @@ BlockStmt* buildDeprecated(BlockStmt* block, const char* msg) {
   return block;
 }
 
-static void addModuleToSearchList(VisibilityStmt* newStmt, BaseAST* module) {
-  // This function is no longer needed
-}
-
 
 static BlockStmt* buildUseList(BaseAST* module, const char* newName,
                                BlockStmt* list, bool privateUse) {
   UseStmt* newUse = new UseStmt(module, newName, privateUse);
-  addModuleToSearchList(newUse, module);
   if (list == NULL) {
     return buildChapelStmt(newUse);
   } else {
@@ -429,7 +424,6 @@ BlockStmt* buildUseStmt(Expr* mod, const char * rename,
 
   UseStmt* newUse = new UseStmt(mod, rename, &namesList, except, &renameMap,
                                 privateUse);
-  addModuleToSearchList(newUse, mod);
 
   delete names;
 
@@ -505,7 +499,6 @@ ImportStmt* buildImportStmt(Expr* mod) {
   // Leave the privacy a dummy value until we know what it should be (which
   // happens when we are done determining how many subexpressions there are)
   ImportStmt* newImport = new ImportStmt(mod);
-  addModuleToSearchList(newImport, mod);
 
   return newImport;
 }
@@ -517,7 +510,6 @@ ImportStmt* buildImportStmt(Expr* mod, const char* rename) {
   // Leave the privacy a dummy value until we know what it should be (which
   // happens when we are done determining how many subexpressions there are)
   ImportStmt* newImport = new ImportStmt(mod, rename);
-  addModuleToSearchList(newImport, mod);
 
   return newImport;
 }
@@ -566,7 +558,6 @@ ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
   // Leave the privacy a dummy value until we know what it should be (which
   // happens when we are done determining how many subexpressions there are)
   ImportStmt* newImport = new ImportStmt(mod, &namesList, &renameMap);
-  addModuleToSearchList(newImport, mod);
 
   delete names;
 
