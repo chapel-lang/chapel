@@ -179,11 +179,13 @@ class LintDriver:
 
     def fixit(self, checkfunc):
         def decorator_fixit(func):
+            found = False
             for rule in itertools.chain(self.BasicRules, self.AdvancedRules):
                 if rule.name == checkfunc.__name__:
                     rule.fixit_funcs.append(func)
-                    break
-            else:
+                    found = True
+
+            if not found:
                 raise ValueError("Couldn't find rule {} to attach fixit {} to".format(checkfunc.__name__, func.__name__))
 
             @functools.wraps(func)
