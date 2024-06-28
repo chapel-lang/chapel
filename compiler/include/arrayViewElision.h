@@ -80,7 +80,8 @@ private:
 
   void findCondStmt();
   void findProtoSlices();
-  bool handleOneProtoSlice(CallExpr* call, bool isLhs);
+  bool handleOneProtoSlice(bool isLhs);
+  bool protoSliceTypesMatch() const;
   CallExpr* findOneProtoSliceCall(Expr* e);
   Symbol* getFlagReplacement();
 };

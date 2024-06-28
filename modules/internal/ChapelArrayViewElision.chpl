@@ -59,7 +59,7 @@ module ChapelArrayViewElision {
             return recurse((dummyRange.type,), dim+1);
           }
           else {
-            return recurse(((...curType), dummyRange.type));
+            return recurse(((...curType), dummyRange.type), dim+1);
           }
         }
       }
@@ -81,25 +81,13 @@ module ChapelArrayViewElision {
     return ret;
   }
 
-  proc numCollapsedDims(rcTup) param {
-    proc recurse(param curDim, param curVal) param {
-      if curDim == rcTup.size then
-        return curVal;
-      else if isRange(rcTup[curDim]) then
-        return recurse(curDim+1, curVal);
-      else
-        return recurse(curDim+1, curVal+1);
-    }
-
-    return recurse(0, 0);
-  }
 
   record chpl__protoSlice {
     param rank;
     param isConst;
     var ptrToArr; // I want this to be a `forwarding ref` to the array
     var ranges;
-    param nCollapsed;
+    type slicingExprType;
 
     proc init() {
       // this constructor is called to create dummy protoSlices that will never
@@ -110,50 +98,37 @@ module ChapelArrayViewElision {
       var dummyArr = [1,];
       this.ptrToArr = c_addrOf(dummyArr);
       this.ranges = 1..0;
-      this.nCollapsed = 0;
+      this.slicingExprType = this.ranges.type;
     }
-
-    extern proc printf(s...);
 
     proc init(param isConst, ptrToArr, slicingExprs) {
       this.rank = ptrToArr.deref().rank;
       this.isConst = isConst;
       this.ptrToArr = ptrToArr;
-      if isRange(slicingExprs) {
-        /*compilerWarning("100\n");*/
+      if isDomain(slicingExprs) {
         this.ranges = slicingExprs;
-        this.nCollapsed = 0;
+      }
+      else if isRange(slicingExprs) {
+        if allBounded(slicingExprs) {
+          this.ranges = slicingExprs;
+        }
+        else {
+          this.ranges = tupleOfRangesSlice(ptrToArr.deref().dims(),
+                                           (slicingExprs,))[0];
+          // [0] at the end makes it a range instead of tuple of ranges
+        }
       }
       else if chpl__isTupleOfRanges(slicingExprs) {
-        /*compilerWarning("200\n");*/
         this.ranges = tupleOfRangesSlice(ptrToArr.deref().dims(), slicingExprs);
-        this.nCollapsed = 0;
       }
       else if _validRankChangeArgs(slicingExprs, ptrToArr.deref().idxType) {
-        /*compilerWarning(numCollapsedDims(slicingExprs));*/
-        /*compilerWarning("300\n");*/
         this.ranges = rangify(slicingExprs);
-        this.nCollapsed = numCollapsedDims(slicingExprs);
-      }
-      else if isDomain(slicingExprs) {
-        /*compilerWarning("400\n");*/
-        this.ranges = slicingExprs;
-        this.nCollapsed = 0;
-      }
-      else if allBounded(slicingExprs) {
-        /*compilerWarning("500\n");*/
-        // TODO do we need this branch?
-        this.ranges = slicingExprs;
-        this.nCollapsed = 0;
       }
       else {
-        /*compilerWarning("600\n");*/
-        // TODO do we need this branch?
-        this.ranges = tupleOfRangesSlice(ptrToArr.deref().dims(),
-                                         (slicingExprs,))[0];
-        this.nCollapsed = 0;
-        // [0] at the end makes it a range instead of tuple of ranges
+        this.ranges = 1..0; // needed to keep the compiler happy
+        compilerError("Unexpected slicing expr in chpl__protoSlice.init");
       }
+      this.slicingExprType = slicingExprs.type;
     }
 
     proc init=(other: chpl__protoSlice) {
@@ -161,7 +136,7 @@ module ChapelArrayViewElision {
       this.isConst = other.isConst;
       this.ptrToArr = other.ptrToArr;
       this.ranges = other.ranges;
-      this.nCollapsed = other.nCollapsed;
+      this.slicingExprType = other.slicingExprType;
       init this;
       halt("protoSlice copy initializer should never be called");
     }
@@ -191,10 +166,6 @@ module ChapelArrayViewElision {
         compilerError("Unhandled case in chpl__protoSlice.dims()");
       }
     }
-
-    /*inline proc dims() {*/
-      /*return (ranges,);*/
-    /*}*/
 
     inline proc rank param { return ptrToArr.deref().rank; }
     inline proc eltType type { return ptrToArr.deref().eltType; }
@@ -289,7 +260,6 @@ module ChapelArrayViewElision {
   operator ==(const ref lhs: chpl__protoSlice(?),
               const ref rhs: chpl__protoSlice(?)) {
     return lhs.rank == rhs.rank &&
-           lhs.nCollapsed == rhs.nCollapsed &&
            lhs.ptrToArr == rhs.ptrToArr &&
            lhs.ranges == rhs.ranges;
   }
@@ -394,6 +364,25 @@ module ChapelArrayViewElision {
                                           indexingExprs...) param: bool {
     return chpl__baseTypeSupportAVE(base) &&
            chpl__indexingExprsSupportAVE(base.idxType, (...indexingExprs));
+  }
+
+  proc chpl__ave_typesMatch(a: chpl__protoSlice, b: chpl__protoSlice) param: bool {
+    // we want to check that if there are integrals in the original slicing
+    // expressions, they are at the same rank. In other words, if we are working
+    // with rank-changes, we want to make sure that the collapsed dims on both
+    // sides match
+
+    type aType = a.slicingExprType;
+    type bType = b.slicingExprType;
+    compilerAssert(a.slicingExprType.size == b.slicingExprType.size);
+    for param i in 0..<a.slicingExprType.size {
+      if ( ( isRangeType(aType[i]) && !isRangeType(bType[i])) ||
+           (!isRangeType(aType[i]) &&  isRangeType(bType[i])) ) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private proc allBounded(ranges: range(?)) param {
