@@ -165,10 +165,11 @@ Compilation Trace Options:
 Miscellaneous Options:
       --[no-]detailed-errors          Enable [disable] detailed error messages
       --[no-]devel                    Compile as a developer [user]
-      --explain-call <call>[:<module>][:<line>]
+      --explain-call <function or operator name>[:<module>][:<line>]
                                       Explain resolution of call
       --explain-instantiation <function|type>[:<module>][:<line>]
-                                      Explain instantiation of type
+                                      Explain instantiation of function or
+                                      type
       --[no-]explain-verbose          Enable [disable] tracing of
                                       disambiguation with 'explain' options
       --instantiate-max <max>         Limit number of instantiations

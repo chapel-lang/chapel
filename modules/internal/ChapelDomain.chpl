@@ -1555,7 +1555,10 @@ module ChapelDomain {
 
     proc chpl_checkEltType(type eltType) /*private*/ {
       if eltType == void {
-        compilerError("array element type cannot be void");
+        compilerError("array element type cannot be 'void'");
+      }
+      if eltType == nothing {
+        compilerError("array element type cannot be 'nothing'");
       }
       if isGenericType(eltType) {
         compilerWarning("creating an array with element type " +
@@ -1714,9 +1717,9 @@ module ChapelDomain {
     pragma "no copy return"
     @chpldoc.nodoc
     proc buildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
-      if eltType == void {
-        compilerError("array element type cannot be void");
-      }
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
+
       var x = _value.dsiBuildArrayWith(eltType, data, allocSize);
       pragma "dont disable remote value forwarding"
       proc help() {

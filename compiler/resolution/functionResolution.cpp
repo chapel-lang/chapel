@@ -7696,32 +7696,26 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
       }
 
     } else if (isInitParam == false) {
-      ModuleSymbol* mod          = calleeFn->getModule();
-      char          cn1          = calleeFn->name[0];
-      const char*   calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
-
-      const char* kind = "non-lvalue actual";
-      if (constnessError)
-        kind = "const actual";
+      const char* kind =
+        constnessError ? "const actual" : "non-lvalue actual";
 
       // Should this be the same condition as in insertLineNumber() ?
-      if (developer || mod->modTag == MOD_USER) {
-        USR_FATAL_CONT(actual,
-                       "%s is passed to %s formal '%s' of %s%s",
-                       kind,
-                       formal->intentDescrString(),
-                       formal->name,
-                       calleeFn->name,
-                       calleeParens);
+      bool formalDetails =
+        developer || calleeFn->getModule()->modTag != MOD_INTERNAL;
+      const char* formalName =
+        formalDetails ? astr(" '", formal->name, "'") : "";
 
-      } else {
-        USR_FATAL_CONT(actual,
-                       "%s is passed to a %s formal of %s%s",
+      const char* calleeParens =
+        calleeFn->hasEitherFlag(FLAG_OPERATOR, FLAG_NO_PARENS) ? "" : "()";
+
+      USR_FATAL_CONT(actual, "%s is passed to %s%s formal%s of %s%s%s",
                        kind,
+                       formalDetails ? "" : "a ",
                        formal->intentDescrString(),
+                       formalName,
+                       calleeFn->hasFlag(FLAG_OPERATOR) ? "operator " : "",
                        calleeFn->name,
                        calleeParens);
-      }
     }
 
     if (SymExpr* aSE = toSymExpr(actual)) {
@@ -11408,6 +11402,8 @@ parseExplainFlag(char* flag, int* line, ModuleSymbol** module) {
     char *token, *str1 = NULL, *str2 = NULL;
     token = strstr(flag, ":");
     if (token) {
+      if (*(token+1) == ':')  // allow ":" as the call name
+        token += 1;
       *token = '\0';
       str1 = token+1;
       token = strstr(str1, ":");
