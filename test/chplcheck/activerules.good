@@ -4,6 +4,7 @@ Active rules:
   CamelCaseFunctions           Warn for functions that are not 'camelCase'.
   CamelCaseRecords             Warn for records that are not 'camelCase'.
   ChplPrefixReserved           Warn for user-defined names that start with the 'chpl_' reserved prefix.
+  ComplexLiteralOrder          Warn for complex literals that are not in a consistent order.
   DoKeywordAndBlock            Warn for redundant 'do' keyword before a curly brace '{'.
   EmptyStmts                   Warn for empty statements (i.e., unnecessary semicolons).
   IncorrectIndentation         Warn for inconsistent or missing indentation
