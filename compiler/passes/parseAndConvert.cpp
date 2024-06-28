@@ -78,8 +78,6 @@ static void          countTokensInCmdLineFiles();
 
 static void          addDynoLibFiles();
 
-static void          processInternalModules();
-
 static void checkFilenameNotTooLong(UniqueString path);
 
 static std::vector<UniqueString> gatherStdModulePaths();
@@ -346,7 +344,7 @@ static void setupDynoLibFileGeneration() {
 ************************************** | *************************************/
 
 
-static void processInternalModules() {
+static void reorderInternalModules() {
   // Internal modules should be loaded already by loadAndConvertModules.
   // However, portions of the compiler expect that internal modules
   // are stored in the global modules vector & have DefExprs
@@ -420,7 +418,9 @@ static void processInternalModules() {
   }
 
   INT_ASSERT(allModules.size() == saveSize);
+}
 
+static void gatherWellKnown() {
   // Do the other necessary processing to finish loading internal modules
   gatherIteratorTags();
   gatherWellKnownTypes();
@@ -1107,7 +1107,8 @@ void parseAndConvertUast() {
 
   setupDynoLibFileGeneration();
 
-  processInternalModules();
+  reorderInternalModules();
+  gatherWellKnown();
 
   // add the default uses for all modules
   // TODO: why do we need to do this?
