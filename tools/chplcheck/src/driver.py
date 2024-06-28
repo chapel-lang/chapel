@@ -18,6 +18,7 @@
 #
 
 import functools
+import itertools
 from typing import Any, Callable, Iterator, List, Optional, Tuple
 
 import chapel
@@ -64,17 +65,14 @@ class LintDriver:
         self.config: Config = config
         self.SilencedRules: List[str] = []
         self.BasicRules: List[rule_types.BasicRule] = []
-        self.AdvancedRules: List[Tuple[str, rule_types.AdvancedRule]] = []
+        self.AdvancedRules: List[rule_types.AdvancedRule] = []
 
     def rules_and_descriptions(self):
         # Use a dict in case a rule is registered multiple times.
         to_return = {}
 
-        for rule in self.BasicRules:
+        for rule in itertools.chain(self.BasicRules, self.AdvancedRules):
             to_return[rule.name] = rule.check_func.__doc__
-
-        for rule in self.AdvancedRules:
-            to_return[rule[0]] = rule[1].__doc__
 
         to_return = list(to_return.items())
         to_return.sort()
@@ -197,21 +195,19 @@ class LintDriver:
         self,
         context: chapel.Context,
         root: chapel.AstNode,
-        rule: Tuple[str, rule_types.AdvancedRule],
+        rule: rule_types.AdvancedRule,
     ) -> Iterator[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]]:
-        (name, func) = rule
-
         # If we should ignore the rule no matter the node, no reason to run
         # a traversal and match the pattern.
-        if not self._should_check_rule(name):
+        if not self._should_check_rule(rule.name):
             return
 
-        for result in func(context, root):
+        for result in rule.check_func(context, root):
             if isinstance(result, rule_types.AdvancedRuleResult):
                 node, anchor = result.node, result.anchor
-                fixits = result.fixits(context, name)
+                fixits = result.fixits(context, rule.name)
                 if anchor is not None and not self._should_check_rule(
-                    name, anchor
+                    rule.name, anchor
                 ):
                     continue
             else:
@@ -227,7 +223,7 @@ class LintDriver:
             ):
                 continue
 
-            yield (node, name, fixits)
+            yield (node, rule.name, fixits)
 
     def basic_rule(self, pat, default=True):
         """
@@ -292,7 +288,9 @@ class LintDriver:
         """
 
         def decorator_advanced_rule(func):
-            self.AdvancedRules.append((func.__name__, func))
+            self.AdvancedRules.append(
+                rule_types.AdvancedRule(func.__name__, func)
+            )
             if not default:
                 self.SilencedRules.append(func.__name__)
 

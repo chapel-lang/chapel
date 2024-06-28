@@ -80,11 +80,13 @@ class BasicRuleResult:
 
 
 _BasicRuleResult = typing.Union[bool, BasicRuleResult]
-"""Internal type for basic rule results"""
+"""The type of values that can be returned by basic rule functions"""
+
+
 BasicRuleCheck = typing.Callable[
     [chapel.Context, chapel.AstNode], _BasicRuleResult
 ]
-"""Function type for basic rules; (context, node) -> bool or BasicRuleResult"""
+"""Function type for basic rules; (context, node) -> _BasicRuleResult"""
 
 
 class AdvancedRuleResult:
@@ -124,14 +126,19 @@ _AdvancedRuleResult = typing.Iterator[
     typing.Union[chapel.AstNode, AdvancedRuleResult]
 ]
 """Internal type for advanced rule results"""
-AdvancedRule = typing.Callable[
+
+
+AdvancedRuleCheck = typing.Callable[
     [chapel.Context, chapel.AstNode], _AdvancedRuleResult
 ]
 """Function type for advanced rules"""
 
+
 RuleResult = typing.Union[_BasicRuleResult, _AdvancedRuleResult]
 """Union type for all rule results"""
-Rule = typing.Union[BasicRuleCheck, AdvancedRule]
+
+
+Rule = typing.Union[BasicRuleCheck, AdvancedRuleCheck]
 """Union type for all rules"""
 
 
@@ -148,8 +155,18 @@ Function type for fixits; (context, data) -> None or Fixit or List[Fixit]
 @dataclass
 class BasicRule:
     """
-    Class containing all information for the driver about rules"""
+    Class containing all information for the driver about basic rules
+    """
     name: str
     pattern: typing.Any
     check_func: BasicRuleCheck
+    fixit_funcs: typing.List[FixitHook] = field(default_factory=list)
+
+@dataclass
+class AdvancedRule:
+    """
+    Class containing all information for the driver about advanced
+    """
+    name: str
+    check_func: AdvancedRuleCheck
     fixit_funcs: typing.List[FixitHook] = field(default_factory=list)
