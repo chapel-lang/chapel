@@ -28,6 +28,10 @@ from . import visitor
 QualifiedType = typing.Tuple[str, Optional[ChapelType], Optional[Param]]
 
 
+REAL_NUMBERIC = (RealLiteral, IntLiteral, UintLiteral)
+NUMERIC = REAL_NUMBERIC + (ImagLiteral,)
+
+
 def preorder(node):
     """
     Recursively visit the given AST node, going in pre-order (parent-then-children)
@@ -435,3 +439,62 @@ def get_file_lines(context: Context, node: AstNode) -> typing.List[str]:
     """
     path = node.location().path()
     return context.get_file_text(path).splitlines()
+
+
+def is_basic_literal_like(node: AstNode) -> Optional[Literal]:
+    """
+    Check for "basic" literals: basically, 1, "hello", -42, etc.
+    Returns the "underlying" literal removing surrounding AST (1, "hello", 42).
+    This helps do type comparisons in more complex checks. If the node is
+    not a basic literal, returns None.
+    """
+    if isinstance(node, Literal):
+        return node
+
+    if (
+        isinstance(node, OpCall)
+        and node.op() == "-"
+        and node.num_actuals() == 1
+    ):
+        # Do not recurse; do not consider --42 as a basic literal.
+        act = node.actual(0)
+        if isinstance(act, NUMERIC):
+            return act
+
+    return None
+
+
+def is_complex_literal(
+    node: AstNode
+) -> Optional[typing.Tuple[Literal, Literal]]:
+    if not isinstance(node, OpCall):
+        return None
+
+    # A complex number is far from a literal in the AST; in fact, it
+    # potentially has as many as 4 AST nodes: -1 + 2i has a unary negation,
+    # an addition, and two "pure" literals.
+    op = node.op()
+    if (op == "+" or op == "-") and node.num_actuals() == 2:
+        # The left element can be a 'basic literal-like', like 1 or -42i.
+        # But the right element shouldn't have any operators, otherwise
+        # we'd get somethig that looks like 1 - -42i. So we just
+        # use the right argument directly.
+        left = is_basic_literal_like(node.actual(0))
+        right = node.actual(1)
+
+        real_number = REAL_NUMBERIC
+        imag_number = ImagLiteral
+        if isinstance(left, real_number) and isinstance(right, imag_number):
+            return (left, right)
+        if isinstance(left, imag_number) and isinstance(right, real_number):
+            return (left, right)
+
+
+def is_literal_like(node: AstNode) -> bool:
+    if is_basic_literal_like(node):
+        return True
+
+    if is_complex_literal(node):
+        return True
+
+    return False
