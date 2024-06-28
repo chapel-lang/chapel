@@ -128,47 +128,6 @@ typedef struct DefaultExprFnEntry_s {
 typedef std::map<ArgSymbol*, DefaultExprFnEntry> formalToDefaultExprEntryMap;
 formalToDefaultExprEntryMap formalToDefaultExprEntry;
 
-// support for additional info upon an error
-class CoercionArgInfo;
-static CoercionArgInfo* coercionInfoStack = nullptr;
-class CoercionArgInfo {
-public:
-  CoercionArgInfo* prevInfo;
-  CallExpr* call;
-  ArgSymbol* formal;
-  Expr* actualExpr;
-  Symbol* actualSym;
-  // constructor: push the new instance on the stack
-  CoercionArgInfo(CallExpr* call,  ArgSymbol* formal,
-                  Expr* actualExpr, Symbol* actualSym)
-    : prevInfo(coercionInfoStack), call(call), formal(formal),
-      actualExpr(actualExpr), actualSym(actualSym)
-  {
-    coercionInfoStack = this;
-  }
-  // destructor: pop this instance
-  ~CoercionArgInfo() {
-    coercionInfoStack = this->prevInfo;
-  }
-};
-
-// prints a note when appropriate
-void printCoercionNote(Expr* actualExpr, Symbol* actualSym) {
-  if (coercionInfoStack == nullptr) return;
-  CallExpr* call = coercionInfoStack->call;
-  // we expect consistency
-  // not here: INT_ASSERT(call, actualExpr == coercionInfoStack->actualExpr);
-  INT_ASSERT(call, actualSym  == coercionInfoStack->actualSym);
-
-  if (actualSym->hasFlag(FLAG_TEMP))
-    USR_PRINT(actualExpr, "when coercing an actual");
-  else
-    USR_PRINT(actualExpr, "when coercing actual '%s'", actualSym->name);
-
-  USR_PRINT(coercionInfoStack->formal, "to formal '%s'",
-            coercionInfoStack->formal->name);
-}
-
 //
 // Return true if 'innerFn' is an initializer called within a _new wrapper or
 // a default initializer.
@@ -1753,8 +1712,6 @@ static void addArgCoercion(FnSymbol*  fn,
   }
 
   if (castCall) {
-    CoercionArgInfo currArgInfo(call, formal, actual, prevActual);
-
     // move the result to the temp
     CallExpr* castMove = new CallExpr(PRIM_MOVE, castTemp, castCall);
 
