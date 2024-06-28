@@ -467,6 +467,13 @@ def is_basic_literal_like(node: AstNode) -> Optional[Literal]:
 def is_complex_literal(
     node: AstNode
 ) -> Optional[typing.Tuple[Literal, Literal]]:
+    """
+    Check for complex number literals: 1+2i, -42-3i, etc.
+    Returns a tuple of the "underlying" literals, removing surrounding AST
+    ((1, 2i), (42, 3i), etc.). This helps do type comparisons in more complex
+    checks. If the node is not a complex literal, returns None.
+    """
+
     if not isinstance(node, OpCall):
         return None
 
@@ -491,6 +498,12 @@ def is_complex_literal(
 
 
 def is_literal_like(node: AstNode) -> bool:
+    """
+    Returns true if the node is a literal-like node: either a "true" literal
+    (1, "hello", etc.) or something that isn't a literal in the AST,
+    but is a literal mathematically (-10, 10 + 2i).
+    """
+
     if is_basic_literal_like(node):
         return True
 
