@@ -479,7 +479,6 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
     } else {
       // found ast
       if (ast->isInclude()) {
-        CHPL_ASSERT(false && "include statements should already be handled");
         // parse 'module include' and use the result of parsing instead
         // of the 'module include' itself.
         ast = parsing::getIncludedSubmodule(context, id);
