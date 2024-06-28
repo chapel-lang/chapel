@@ -111,31 +111,13 @@ class LintDriver:
             node.name().startswith(p) for p in self.config.internal_prefixes
         )
 
-    @staticmethod
-    def _is_unstable_module(node: chapel.AstNode):
-        if isinstance(node, chapel.Module):
-            attrs = node.attribute_group()
-            if attrs:
-                if attrs.is_unstable():
-                    return True
-        return False
-
-    @staticmethod
-    def _in_unstable_module(node: chapel.AstNode):
-        n = node
-        while n is not None:
-            if LintDriver._is_unstable_module(n):
-                return True
-            n = n.parent()
-        return False
-
     def _preorder_skip_unstable_modules(self, node):
         if not self.config.skip_unstable:
             yield from chapel.preorder(node)
             return
 
         def recurse(node):
-            if LintDriver._is_unstable_module(node):
+            if chapel.is_unstable_module(node):
                 return
 
             yield node

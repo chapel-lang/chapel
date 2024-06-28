@@ -496,6 +496,8 @@ def is_complex_literal(
         if isinstance(left, imag_number) and isinstance(right, real_number):
             return (left, right)
 
+    return None
+
 
 def is_literal_like(node: AstNode) -> bool:
     """
@@ -510,4 +512,18 @@ def is_literal_like(node: AstNode) -> bool:
     if is_complex_literal(node):
         return True
 
+def is_unstable_module(node: AstNode):
+    if isinstance(node, Module):
+        attrs = node.attribute_group()
+        if attrs:
+            if attrs.is_unstable():
+                return True
+    return False
+
+def in_unstable_module(node: AstNode):
+    n = node
+    while n is not None:
+        if is_unstable_module(n):
+            return True
+        n = n.parent()
     return False
