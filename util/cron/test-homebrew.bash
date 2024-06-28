@@ -42,6 +42,20 @@ log_info "Building tarball with version: ${version}"
 
 mkdir -p $HOME/test
 git clone --reference-if-able "${REPO_CACHE_PATH:-/missing}/homebrew-core.git" git@github.com:Homebrew/homebrew-core.git 2> /dev/null || (cd $HOME/test/homebrew-core; git pull)
+
+# we should do a step where we diff the chapel.rb in homebrew-core with
+# the one in our repository to catch any changes homebrew makes without telling us
+
+diff ${REPO_CACHE_PATH:-/missing}/homebrew-core/Formula/c/chapel.rb ${CHPL_HOME}/util/packaging/homebrew/chapel-release.rb 2> /dev/null
+FORMULA_CHANGED=$?
+if [ $FORMULA_CHANGED -ne 0 ]
+then
+  log_error "homebrew released formula updated and does not match chapel-release.rb! Verify chapel formula in homebrew-core!"
+  exit 1
+  else
+  log_info "homebrew released formula matches chapel-release.rb, good!"
+fi
+
 #cp $HOME/test/homebrew-core/Formula/c/chapel.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 # fix to make the home-brew working. After 1.32 release uncomment the above line
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
