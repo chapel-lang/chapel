@@ -1,4 +1,4 @@
-ArrayViewElision supported (dynamic locality check required) slices.chpl:21
+ArrayViewElision supported slices.chpl:26
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
@@ -6,7 +6,7 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:21
 	rhsIndexingExprs: 
 		range(int(64),both,one)
 
-ArrayViewElision supported (dynamic locality check required) slices.chpl:21
+ArrayViewElision supported slices.chpl:26
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
@@ -14,7 +14,7 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:21
 	rhsIndexingExprs: 
 		range(int(64),both,one)
 
-ArrayViewElision supported (dynamic locality check required) slices.chpl:21
+ArrayViewElision supported slices.chpl:26
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
@@ -22,7 +22,7 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:21
 	rhsIndexingExprs: 
 		range(int(64),both,one)
 
-ArrayViewElision supported (dynamic locality check required) slices.chpl:21
+ArrayViewElision supported slices.chpl:26
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),high,one)
@@ -30,7 +30,7 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:21
 	rhsIndexingExprs: 
 		range(int(64),high,one)
 
-ArrayViewElision supported (dynamic locality check required) slices.chpl:21
+ArrayViewElision supported slices.chpl:26
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),high,one)
@@ -38,7 +38,7 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:21
 	rhsIndexingExprs: 
 		range(int(64),high,one)
 
-ArrayViewElision supported (dynamic locality check required) slices.chpl:21
+ArrayViewElision supported slices.chpl:26
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),high,one)
@@ -46,7 +46,7 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:21
 	rhsIndexingExprs: 
 		range(int(64),high,one)
 
-ArrayViewElision supported (dynamic locality check required) slices.chpl:21
+ArrayViewElision supported slices.chpl:26
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),low,one)
@@ -54,7 +54,7 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:21
 	rhsIndexingExprs: 
 		range(int(64),low,one)
 
-ArrayViewElision supported (dynamic locality check required) slices.chpl:21
+ArrayViewElision supported slices.chpl:26
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),low,one)
@@ -62,7 +62,7 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:21
 	rhsIndexingExprs: 
 		range(int(64),low,one)
 
-ArrayViewElision supported (dynamic locality check required) slices.chpl:21
+ArrayViewElision supported slices.chpl:26
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),low,one)
@@ -70,7 +70,7 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:21
 	rhsIndexingExprs: 
 		range(int(64),low,one)
 
-ArrayViewElision supported (dynamic locality check required) slices.chpl:21
+ArrayViewElision supported slices.chpl:26
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
@@ -78,7 +78,7 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:21
 	rhsIndexingExprs: 
 		range(int(64),both,one)
 
-ArrayViewElision supported (dynamic locality check required) slices.chpl:21
+ArrayViewElision supported slices.chpl:26
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),low,one)
@@ -86,7 +86,7 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:21
 	rhsIndexingExprs: 
 		range(int(64),low,one)
 
-ArrayViewElision supported (dynamic locality check required) slices.chpl:21
+ArrayViewElision supported slices.chpl:26
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),neither,one)
@@ -94,7 +94,7 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:21
 	rhsIndexingExprs: 
 		range(int(64),neither,one)
 
-ArrayViewElision supported (dynamic locality check required) slices.chpl:21
+ArrayViewElision supported slices.chpl:26
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),neither,one)
@@ -102,7 +102,7 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:21
 	rhsIndexingExprs: 
 		range(int(64),neither,one)
 
-ArrayViewElision supported (dynamic locality check required) slices.chpl:21
+ArrayViewElision supported slices.chpl:26
 	lhsBaseType: [domain(1,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),neither,one)
@@ -113,49 +113,41 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:21
 Set first two:
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 1
 2 2 1 1 1
 
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 2
 2 2 1 1 1
 
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 3
 2 2 1 1 1
 
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 4
 2 2 1 1 1
 
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 5
 2 2 1 1 1
 
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 6
 2 2 1 1 1
 
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 7
 2 2 1 1 1
 
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 8
 2 2 1 1 1
 
@@ -163,49 +155,41 @@ Test 8
 Set last two:
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 9
 1 1 1 2 2
 
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 10
 1 1 1 2 2
 
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 11
 1 1 1 2 2
 
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 12
 1 1 1 2 2
 
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 13
 1 1 1 2 2
 
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 14
 1 1 1 2 2
 
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 15
 1 1 1 2 2
 
 <ShortArrayTransfer> Size: 2 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 16
 1 1 1 2 2
 
@@ -213,55 +197,46 @@ Test 16
 Set all:
 <ShortArrayTransfer> Size: 5 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 17
 2 2 2 2 2
 
 <ShortArrayTransfer> Size: 5 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 18
 2 2 2 2 2
 
 <ShortArrayTransfer> Size: 5 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 19
 2 2 2 2 2
 
 <ShortArrayTransfer> Size: 5 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 20
 2 2 2 2 2
 
 <ShortArrayTransfer> Size: 5 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 21
 2 2 2 2 2
 
 <ShortArrayTransfer> Size: 5 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 22
 2 2 2 2 2
 
 <ShortArrayTransfer> Size: 5 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 23
 2 2 2 2 2
 
 <ShortArrayTransfer> Size: 5 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 24
 2 2 2 2 2
 
 <ShortArrayTransfer> Size: 5 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 Test 25
 2 2 2 2 2
 

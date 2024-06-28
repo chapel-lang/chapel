@@ -56,7 +56,10 @@ module ChapelArrayViewElision {
       this.rank = ptrToArr.deref().rank;
       this.isConst = isConst;
       this.ptrToArr = ptrToArr;
-      if allBounded(slicingExprs) {
+      if isDomain(slicingExprs) {
+        this.ranges = slicingExprs;
+      }
+      else if allBounded(slicingExprs) {
         this.ranges = slicingExprs;
       }
       else if chpl__isTupleOfRanges(slicingExprs) {
@@ -79,20 +82,34 @@ module ChapelArrayViewElision {
     }
 
     inline proc domOrRange where rank==1 {
-      return ranges;
+      return ranges; // doesn't matter whether it is a domain or a range
     }
 
     inline proc domOrRange where rank>1 {
-      return {(...ranges)};
-    }
-
-    inline proc dims() where chpl__isTupleOfRanges(this.ranges) {
-      return ranges;
+      if isDomain(ranges) then
+        return ranges;
+      else
+        return {(...ranges)};
     }
 
     inline proc dims() {
-      return (ranges,);
+      if chpl__isTupleOfRanges(this.ranges) {
+        return ranges;
+      }
+      else if isDomain(this.ranges) {
+        return ranges.dims();
+      }
+      else if isRange(this.ranges) {
+        return (ranges,);
+      }
+      else {
+        compilerError("Unhandled case in chpl__protoSlice.dims()");
+      }
     }
+
+    /*inline proc dims() {*/
+      /*return (ranges,);*/
+    /*}*/
 
     inline proc rank param { return ptrToArr.deref().rank; }
     inline proc eltType type { return ptrToArr.deref().eltType; }
@@ -103,11 +120,16 @@ module ChapelArrayViewElision {
     }
 
     inline proc sizeAs(type t) {
-      var size = 1:t;
-      for param r in 0..<rank {
-        size *= ranges[r].sizeAs(t);
+      if isDomain(this.ranges) {
+        return ranges.sizeAs(t);
       }
-      return size;
+      else {
+        var size = 1:t;
+        for param r in 0..<rank {
+          size *= ranges[r].sizeAs(t);
+        }
+        return size;
+      }
     }
     inline proc isRectangular() param { return ptrToArr.deref().isRectangular(); }
 
@@ -186,9 +208,17 @@ module ChapelArrayViewElision {
            lhs.ranges == rhs.ranges;
   }
 
+  proc chpl__createProtoSliceArgCheck(Arr, slicingExprs) param: bool {
+    compilerAssert(isTuple(slicingExprs));
+
+    return chpl__baseTypeSupportAVE(Arr) &&
+           (chpl__isTupleOfRanges(slicingExprs) ||
+            (slicingExprs.size == 1 && isDomain(slicingExprs[0])));
+  }
+
   proc chpl__createProtoSlice(ref Arr, slicingExprs ...)
-      where chpl__baseTypeSupportAVE(Arr) &&
-            chpl__isTupleOfRanges(slicingExprs) {
+      where chpl__createProtoSliceArgCheck(Arr, slicingExprs) {
+
     if slicingExprs.size == 1 then
       return new chpl__protoSlice(isConst=false, c_addrOf(Arr),
                                   slicingExprs[0]);
@@ -197,8 +227,8 @@ module ChapelArrayViewElision {
   }
 
   proc chpl__createConstProtoSlice(const ref Arr, slicingExprs ...)
-      where chpl__baseTypeSupportAVE(Arr) &&
-            chpl__isTupleOfRanges(slicingExprs) {
+      where chpl__createProtoSliceArgCheck(Arr, slicingExprs) {
+
     if slicingExprs.size == 1 {
       return new chpl__protoSlice(isConst=true, c_addrOfConst(Arr),
                                   slicingExprs[0]);
@@ -243,6 +273,17 @@ module ChapelArrayViewElision {
         // unsupported things here
         return false;
       }
+    }
+    return true;
+  }
+
+  proc chpl__indexingExprsSupportAVE(indexingExprs: domain) param: bool {
+    if !(indexingExprs.strides == strideKind.positive ||
+         indexingExprs.strides == strideKind.one) {
+      // negative strided slices are not supported and generate a warning.
+      // Instead of trying to generate the warning, just avoid covering
+      // unsupported things here
+      return false;
     }
     return true;
   }
