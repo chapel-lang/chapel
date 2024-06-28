@@ -150,6 +150,7 @@ FixitHook = typing.Callable[
 Function type for fixits; (context, data) -> None or Fixit or List[Fixit]
 """
 
+
 class Rule(typing.Generic[VarResultType]):
     # can't specify type of driver due to circular import
     def __init__(self, driver, name: str) -> None:
@@ -157,13 +158,17 @@ class Rule(typing.Generic[VarResultType]):
         self.name = name
         self.fixit_funcs: typing.List[FixitHook[VarResultType]] = []
 
-    def _fixup_description_for_fixit(self, fixit: Fixit, fixit_func: FixitHook) -> None:
+    def _fixup_description_for_fixit(
+        self, fixit: Fixit, fixit_func: FixitHook
+    ) -> None:
         if fixit.description is not None:
             return
         if fixit_func.__doc__ is not None:
             fixit.description = fixit_func.__doc__.strip()
 
-    def run_fixit_hooks(self, context: chapel.Context, result: VarResultType) -> typing.List[Fixit]:
+    def run_fixit_hooks(
+        self, context: chapel.Context, result: VarResultType
+    ) -> typing.List[Fixit]:
         fixits_from_hooks = []
         for fixit_func in self.fixit_funcs:
             extra_fixes = fixit_func(context, result)
@@ -178,18 +183,22 @@ class Rule(typing.Generic[VarResultType]):
                 fixits_from_hooks.append(f)
         return fixits_from_hooks
 
+
 class BasicRule(Rule[BasicRuleResult]):
     """
     Class containing all information for the driver about basic rules
     """
 
-
-    def __init__(self, driver, name: str, pattern: typing.Any, check_func: BasicRuleCheck) -> None:
+    def __init__(
+        self, driver, name: str, pattern: typing.Any, check_func: BasicRuleCheck
+    ) -> None:
         super().__init__(driver, name)
         self.pattern = pattern
         self.check_func = check_func
 
-    def check_single(self, context: chapel.Context, node: chapel.AstNode) -> typing.Optional[CheckResult]:
+    def check_single(
+        self, context: chapel.Context, node: chapel.AstNode
+    ) -> typing.Optional[CheckResult]:
         result = self.check_func(context, node)
         check, fixits = None, []
 
@@ -211,7 +220,9 @@ class BasicRule(Rule[BasicRuleResult]):
         fixits = self.run_fixit_hooks(context, result) + fixits
         return (node, self.name, fixits)
 
-    def check(self, context: chapel.Context, root: chapel.AstNode) -> typing.Iterable[CheckResult]:
+    def check(
+        self, context: chapel.Context, root: chapel.AstNode
+    ) -> typing.Iterable[CheckResult]:
         for node, _ in self.driver.each_matching(root, self.pattern):
             if not self.driver.should_check_rule(self.name, node):
                 continue
@@ -220,16 +231,21 @@ class BasicRule(Rule[BasicRuleResult]):
             if checked is not None:
                 yield checked
 
+
 class AdvancedRule(Rule[AdvancedRuleResult]):
     """
     Class containing all information for the driver about advanced
     """
 
-    def __init__(self, driver, name: str,check_func: AdvancedRuleCheck) -> None:
+    def __init__(
+        self, driver, name: str, check_func: AdvancedRuleCheck
+    ) -> None:
         super().__init__(driver, name)
         self.check_func = check_func
 
-    def check(self, context: chapel.Context, root: chapel.AstNode) -> typing.Iterable[CheckResult]:
+    def check(
+        self, context: chapel.Context, root: chapel.AstNode
+    ) -> typing.Iterable[CheckResult]:
         for result in self.check_func(context, root):
             if isinstance(result, AdvancedRuleResult):
                 node, anchor = result.node, result.anchor

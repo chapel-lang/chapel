@@ -145,7 +145,6 @@ class LintDriver:
 
         yield from rule.check(context, root)
 
-
     def basic_rule(self, pat, default=True):
         """
         This method is a decorator factory for adding 'basic' rules to the
@@ -186,7 +185,11 @@ class LintDriver:
                     found = True
 
             if not found:
-                raise ValueError("Couldn't find rule {} to attach fixit {} to".format(checkfunc.__name__, func.__name__))
+                raise ValueError(
+                    "Couldn't find rule {} to attach fixit {} to".format(
+                        checkfunc.__name__, func.__name__
+                    )
+                )
 
             @functools.wraps(func)
             def wrapper_basic_rule(*args, **kwargs):

@@ -301,7 +301,6 @@ def register_rules(driver: LintDriver):
 
         return [Fixit.build(Edit.build(paren_loc, new_text))]
 
-
     @driver.basic_rule(Coforall, default=False)
     def NestedCoforalls(context: Context, node: Coforall):
         """
@@ -327,7 +326,9 @@ def register_rules(driver: LintDriver):
     # that difficult. Blocks get built and rebuilt in the parser, making it
     # hard to tag the resulting block with curky braces locations.
     @driver.fixit(BoolLitInCondStmt)
-    def FixBoolLitInCondStmt_KeepBraces(context: Context, result: BasicRuleResult):
+    def FixBoolLitInCondStmt_KeepBraces(
+        context: Context, result: BasicRuleResult
+    ):
         """
         Remove the unused branch of a conditional statement, keeping the braces.
         """
@@ -567,11 +568,8 @@ def register_rules(driver: LintDriver):
             line_start = (loc.start()[0], 1)
             parent_indent = max(prevloop_loc.start()[1] - 1, 0)
             text = " " * parent_indent + range_to_text(loc, lines)
-            fixit = Fixit.build(
-                Edit(loc.path(), line_start, loc.end(), text)
-            )
+            fixit = Fixit.build(Edit(loc.path(), line_start, loc.end(), text))
         return [fixit] if fixit else []
-
 
     @driver.advanced_rule(default=False)
     def UnusedFormal(context: Context, root: AstNode):

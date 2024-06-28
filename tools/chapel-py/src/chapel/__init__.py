@@ -512,6 +512,7 @@ def is_literal_like(node: AstNode) -> bool:
     if is_complex_literal(node):
         return True
 
+
 def is_unstable_module(node: AstNode):
     if isinstance(node, Module):
         attrs = node.attribute_group()
@@ -519,6 +520,7 @@ def is_unstable_module(node: AstNode):
             if attrs.is_unstable():
                 return True
     return False
+
 
 def in_unstable_module(node: AstNode):
     n = node
