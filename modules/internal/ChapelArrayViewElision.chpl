@@ -23,6 +23,7 @@ module ChapelArrayViewElision {
   use ChapelRange;
   use DefaultRectangular;
   use CTypes;
+  use ChapelArray only _validRankChangeArgs;
 
   // TODO the following can be removed?
   proc isProtoSlice(a) param { return isSubtype(a.type, chpl__protoSlice); }
@@ -35,11 +36,70 @@ module ChapelArrayViewElision {
     return isArrayOrProtoSlice(a) && isArrayOrProtoSlice(b);
   }
 
+  proc rangify(rcTup) {
+    compilerAssert(isTuple(rcTup));
+
+    proc createRangifiedType(type rcTupType) type {
+      proc recurse(type curType, param dim) type {
+        if dim == rcTupType.size {
+          return curType;
+        }
+        else if isRangeType(rcTupType[dim]) {
+          if dim == 0 {
+            return recurse((rcTupType[dim],), dim+1);
+          }
+          else {
+            return recurse(((...curType), rcTupType[dim]), dim+1);
+          }
+        }
+        else {
+          const dummy: rcTupType[dim];
+          const dummyRange = dummy..dummy;
+          if dim == 0 {
+            return recurse((dummyRange.type,), dim+1);
+          }
+          else {
+            return recurse(((...curType), dummyRange.type));
+          }
+        }
+      }
+
+      return recurse(nothing, 0);
+    }
+
+    var ret: createRangifiedType(rcTup.type);
+
+    for param i in 0..<ret.size {
+      if isRange(rcTup[i]) {
+        ret[i] = rcTup[i];
+      }
+      else {
+        ret[i] = rcTup[i]..rcTup[i];
+      }
+    }
+
+    return ret;
+  }
+
+  proc numCollapsedDims(rcTup) param {
+    proc recurse(param curDim, param curVal) param {
+      if curDim == rcTup.size then
+        return curVal;
+      else if isRange(rcTup[curDim]) then
+        return recurse(curDim+1, curVal);
+      else
+        return recurse(curDim+1, curVal+1);
+    }
+
+    return recurse(0, 0);
+  }
+
   record chpl__protoSlice {
     param rank;
     param isConst;
     var ptrToArr; // I want this to be a `forwarding ref` to the array
     var ranges;
+    param nCollapsed;
 
     proc init() {
       // this constructor is called to create dummy protoSlices that will never
@@ -50,24 +110,48 @@ module ChapelArrayViewElision {
       var dummyArr = [1,];
       this.ptrToArr = c_addrOf(dummyArr);
       this.ranges = 1..0;
+      this.nCollapsed = 0;
     }
+
+    extern proc printf(s...);
 
     proc init(param isConst, ptrToArr, slicingExprs) {
       this.rank = ptrToArr.deref().rank;
       this.isConst = isConst;
       this.ptrToArr = ptrToArr;
-      if isDomain(slicingExprs) {
+      if isRange(slicingExprs) {
+        /*compilerWarning("100\n");*/
         this.ranges = slicingExprs;
-      }
-      else if allBounded(slicingExprs) {
-        this.ranges = slicingExprs;
+        this.nCollapsed = 0;
       }
       else if chpl__isTupleOfRanges(slicingExprs) {
+        /*compilerWarning("200\n");*/
         this.ranges = tupleOfRangesSlice(ptrToArr.deref().dims(), slicingExprs);
+        this.nCollapsed = 0;
+      }
+      else if _validRankChangeArgs(slicingExprs, ptrToArr.deref().idxType) {
+        /*compilerWarning(numCollapsedDims(slicingExprs));*/
+        /*compilerWarning("300\n");*/
+        this.ranges = rangify(slicingExprs);
+        this.nCollapsed = numCollapsedDims(slicingExprs);
+      }
+      else if isDomain(slicingExprs) {
+        /*compilerWarning("400\n");*/
+        this.ranges = slicingExprs;
+        this.nCollapsed = 0;
+      }
+      else if allBounded(slicingExprs) {
+        /*compilerWarning("500\n");*/
+        // TODO do we need this branch?
+        this.ranges = slicingExprs;
+        this.nCollapsed = 0;
       }
       else {
+        /*compilerWarning("600\n");*/
+        // TODO do we need this branch?
         this.ranges = tupleOfRangesSlice(ptrToArr.deref().dims(),
                                          (slicingExprs,))[0];
+        this.nCollapsed = 0;
         // [0] at the end makes it a range instead of tuple of ranges
       }
     }
@@ -77,6 +161,7 @@ module ChapelArrayViewElision {
       this.isConst = other.isConst;
       this.ptrToArr = other.ptrToArr;
       this.ranges = other.ranges;
+      this.nCollapsed = other.nCollapsed;
       init this;
       halt("protoSlice copy initializer should never be called");
     }
@@ -204,6 +289,7 @@ module ChapelArrayViewElision {
   operator ==(const ref lhs: chpl__protoSlice(?),
               const ref rhs: chpl__protoSlice(?)) {
     return lhs.rank == rhs.rank &&
+           lhs.nCollapsed == rhs.nCollapsed &&
            lhs.ptrToArr == rhs.ptrToArr &&
            lhs.ranges == rhs.ranges;
   }
@@ -213,7 +299,8 @@ module ChapelArrayViewElision {
 
     return chpl__baseTypeSupportAVE(Arr) &&
            (chpl__isTupleOfRanges(slicingExprs) ||
-            (slicingExprs.size == 1 && isDomain(slicingExprs[0])));
+            (slicingExprs.size == 1 && isDomain(slicingExprs[0])) ||
+            _validRankChangeArgs(slicingExprs, Arr.idxType));
   }
 
   proc chpl__createProtoSlice(ref Arr, slicingExprs ...)
@@ -259,7 +346,7 @@ module ChapelArrayViewElision {
            Reflection.canResolve("c_addrOf", base);
   }
 
-  proc chpl__indexingExprsSupportAVE(indexingExprs...) param: bool {
+  proc chpl__indexingExprsSupportAVE(type idxType, indexingExprs...) param: bool {
     for param tid in 0..<indexingExprs.size {
       if !isRange(indexingExprs[tid]) {
         // should we also check for homogeneous tuples as we don't have support
@@ -277,7 +364,7 @@ module ChapelArrayViewElision {
     return true;
   }
 
-  proc chpl__indexingExprsSupportAVE(indexingExprs: domain) param: bool {
+  proc chpl__indexingExprsSupportAVE(type idxType, indexingExprs: domain) param: bool {
     if !(indexingExprs.strides == strideKind.positive ||
          indexingExprs.strides == strideKind.one) {
       // negative strided slices are not supported and generate a warning.
@@ -285,6 +372,11 @@ module ChapelArrayViewElision {
       // unsupported things here
       return false;
     }
+    return true;
+  }
+
+  proc chpl__indexingExprsSupportAVE(type idxType, indexingExprs...) param: bool 
+      where _validRankChangeArgs(indexingExprs, idxType) {
     return true;
   }
 
@@ -301,7 +393,7 @@ module ChapelArrayViewElision {
   proc chpl__typesSupportArrayViewElision(base,
                                           indexingExprs...) param: bool {
     return chpl__baseTypeSupportAVE(base) &&
-           chpl__indexingExprsSupportAVE((...indexingExprs));
+           chpl__indexingExprsSupportAVE(base.idxType, (...indexingExprs));
   }
 
   private proc allBounded(ranges: range(?)) param {

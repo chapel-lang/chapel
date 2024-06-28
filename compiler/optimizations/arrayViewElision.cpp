@@ -26,20 +26,82 @@
 #include "resolution.h"
 #include "view.h"
 
-static bool exprSuitableForProtoSlice(Expr* e, bool isLhs) {
-  if (CallExpr* call = toCallExpr(e)) {
-    if (SymExpr* callBase = toSymExpr(call->baseExpr)) {
-      if (!isFnSymbol(callBase->symbol()) &&
-          (!isLhs || !callBase->symbol()->isConstant())) {
-        return true;
-      }
+ArrayViewElisionTransformer::ArrayViewElisionTransformer(CallExpr* origCall):
+    origCall_(origCall) {
+
+  origLhs_ = toCallExpr(origCall_->get(1));
+  origRhs_ = toCallExpr(origCall_->get(2));
+
+  // one side is not a call
+  // TODO this should be relaxed for `array=view` or vice versa
+  if (origLhs_ == nullptr || origRhs_ == nullptr) {
+    candidate_ = false;
+    return;
+  }
+
+  // calls have different number of actuals
+  // TODO this should be relaxed for `slice=rank-change` or vice versa
+  if (origLhs_->numActuals() != origRhs_->numActuals()) {
+    candidate_ = false;
+    return;
+  }
+
+  // further analysis per call
+  if ( !(exprSuitableForProtoSlice(origLhs_, /*isLhs*/ true) ||
+         exprSuitableForProtoSlice(origRhs_, /*isLhs*/ false)) ) {
+    candidate_ = false;
+    return;
+  }
+
+  candidate_ = true;
+}
+
+void ArrayViewElisionTransformer::transform() {
+  INT_ASSERT(candidate_);
+
+  SET_LINENO(origCall_);
+
+  CallExpr* lhsPSCall = genCreateProtoSlice(origLhs_);
+  CallExpr* rhsPSCall = genCreateProtoSlice(origRhs_);
+
+  // arrayview elision placeholder
+  VarSymbol* placeholder = new VarSymbol("array_view_elision_flag", dtBool);
+  placeholder->addFlag(FLAG_ARRAY_VIEW_ELISION_FLAG);
+
+  origCall_->insertBefore(new DefExpr(placeholder, gFalse));
+
+  BlockStmt* thenBlock = new BlockStmt();
+  VarSymbol* lhsPS = new VarSymbol("lhs_proto_slice");
+  VarSymbol* rhsPS = new VarSymbol("rhs_proto_slice");
+
+  thenBlock->insertAtTail(new DefExpr(lhsPS, lhsPSCall));
+  thenBlock->insertAtTail(new DefExpr(rhsPS, rhsPSCall));
+  thenBlock->insertAtTail(new CallExpr(PRIM_PROTO_SLICE_ASSIGN, lhsPS,
+                                       rhsPS));
+
+  BlockStmt* elseBlock = new BlockStmt();
+
+  CondStmt* cond = new CondStmt(new SymExpr(placeholder), thenBlock,
+                                elseBlock);
+
+  origCall_->insertBefore(cond);
+  elseBlock->insertAtTail(origCall_->remove());
+}
+
+
+
+bool ArrayViewElisionTransformer::exprSuitableForProtoSlice(CallExpr* call,
+                                                            bool isLhs) {
+  if (SymExpr* callBase = toSymExpr(call->baseExpr)) {
+    if (!isFnSymbol(callBase->symbol()) &&
+        (!isLhs || !callBase->symbol()->isConstant())) {
+      return true;
     }
   }
   return false;
 }
 
-
-static CallExpr* generateCreateProtoSlice(CallExpr* call) {
+CallExpr* ArrayViewElisionTransformer::genCreateProtoSlice(CallExpr* call) {
   INT_ASSERT(call);
 
   SymExpr* base = toSymExpr(call->baseExpr);
@@ -58,10 +120,9 @@ static CallExpr* generateCreateProtoSlice(CallExpr* call) {
   return ret;
 }
 
+
 void arrayViewElision() {
   if (!fArrayViewElision) return;
-
-  std::vector<CallExpr*> candidates;
 
   for_alive_in_Vec (CallExpr, call, gCallExprs) {
     if (FnSymbol* parentFn = toFnSymbol(call->parentSymbol)) {
@@ -70,50 +131,15 @@ void arrayViewElision() {
       }
     }
 
+    if (call->getModule()->modTag == MOD_USER) {
     if (call->isNamed("=")) {
-      if (exprSuitableForProtoSlice(call->get(1), /* isLhs */ true) &&
-          exprSuitableForProtoSlice(call->get(2), /* isLhs */ false)) {
-        //std::cout << call->stringLoc() << std::endl;
-        //nprint_view(call);
-        candidates.push_back(call);
+      ArrayViewElisionTransformer transformer(call);
+
+      if (transformer.candidate()) {
+        transformer.transform();
       }
     }
-  }
-
-
-  for_vector(CallExpr, call, candidates) {
-    SET_LINENO(call);
-
-    CallExpr* lhs = toCallExpr(call->get(1));
-    CallExpr* rhs = toCallExpr(call->get(2));
-
-    CallExpr* lhsPSCall = generateCreateProtoSlice(lhs);
-    CallExpr* rhsPSCall = generateCreateProtoSlice(rhs);
-
-    // arrayview elision placeholder
-    VarSymbol* placeholder = new VarSymbol("array_view_elision_flag", dtBool);
-    placeholder->addFlag(FLAG_ARRAY_VIEW_ELISION_FLAG);
-
-    call->insertBefore(new DefExpr(placeholder, gFalse));
-
-    BlockStmt* thenBlock = new BlockStmt();
-    VarSymbol* lhsPS = new VarSymbol("lhs_proto_slice");
-    VarSymbol* rhsPS = new VarSymbol("rhs_proto_slice");
-
-    thenBlock->insertAtTail(new DefExpr(lhsPS, lhsPSCall));
-    thenBlock->insertAtTail(new DefExpr(rhsPS, rhsPSCall));
-    thenBlock->insertAtTail(new CallExpr(PRIM_PROTO_SLICE_ASSIGN, lhsPS,
-                                         rhsPS));
-
-    BlockStmt* elseBlock = new BlockStmt();
-
-    CondStmt* cond = new CondStmt(new SymExpr(placeholder), thenBlock,
-                                  elseBlock);
-
-    call->insertBefore(cond);
-    elseBlock->insertAtTail(call->remove());
-
-    //list_view(cond);
+    }
   }
 }
 
