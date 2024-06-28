@@ -167,7 +167,7 @@ static WellKnownAggregateType sWellKnownAggregateTypes[] = {
 
 // Similar to WellKnownAggregateType, but this one lists types
 // that are needed early in compilation (e.g. in build.cpp).
-// For these, the lobal type will be initialized with a dummy value
+// For these, the global type will be initialized with a dummy value
 // in initializeWellKnown. Its its contents will be replaced by the
 // actual type when the AST for that type is generated.
 struct WellKnownAggregateTypeNeededEarly
@@ -268,6 +268,8 @@ AggregateType* shouldWireWellKnownType(const char* name) {
   int nEarlyAggregate = sizeof(sWellKnownAggregateTypesNeededEarly) /
                         sizeof(sWellKnownAggregateTypesNeededEarly[0]);
 
+  // Performance TODO: should this use a set/map or binary search
+  // instead of linear traversal?
   for (int i = 0; i < nEarlyAggregate; i++) {
     WellKnownAggregateTypeNeededEarly& wkt =
       sWellKnownAggregateTypesNeededEarly[i];

@@ -56,13 +56,6 @@ void addStandardModulePath(const ArgumentDescription* desc,
 void addDynoGenLib(const ArgumentDescription* desc,
                    const char* newpath);
 
-//void               setupModulePaths();
-
-//void               addFlagModulePath(const char* newpath);
-
-//void               addModuleToParseList(const char* name,
-//                                        VisibilityStmt* newUse);
-
 void noteParsedIncludedModule(ModuleSymbol* mod, const char* path);
 
 #endif
