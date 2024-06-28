@@ -78,7 +78,7 @@ void check_parseAndConvertUast()
   check_afterEveryPass();
 }
 
-void check_checkUast()
+void check_checkGeneratedAst()
 {
   // checkIsIterator() will crash if there were certain USR_FATAL_CONT()
   // e.g. functions/vass/proc-iter/error-yield-in-proc-*
@@ -649,7 +649,7 @@ static void checkIsIterator() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
-      // Violations should have caused USR_FATAL_CONT in checkUast().
+      // Violations should have caused USR_FATAL_CONT in checkGeneratedAst().
       INT_ASSERT(fn && fn->isIterator());
     }
   }
