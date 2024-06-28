@@ -86,8 +86,9 @@ module ChapelArrayViewElision {
     param rank;
     param isConst;
     var ptrToArr; // I want this to be a `forwarding ref` to the array
-    var ranges;
     type slicingExprType;
+    var ranges;
+    param isRankChange = false;
 
     proc init() {
       // this constructor is called to create dummy protoSlices that will never
@@ -97,14 +98,17 @@ module ChapelArrayViewElision {
 
       var dummyArr = [1,];
       this.ptrToArr = c_addrOf(dummyArr);
-      this.ranges = 1..0;
-      this.slicingExprType = this.ranges.type;
+
+      var dummyRange = 1..0;
+      this.slicingExprType = dummyRange.type;
+      this.ranges = dummyRange;
     }
 
     proc init(param isConst, ptrToArr, slicingExprs) {
       this.rank = ptrToArr.deref().rank;
       this.isConst = isConst;
       this.ptrToArr = ptrToArr;
+      this.slicingExprType = slicingExprs.type;
       if isDomain(slicingExprs) {
         this.ranges = slicingExprs;
       }
@@ -123,20 +127,21 @@ module ChapelArrayViewElision {
       }
       else if _validRankChangeArgs(slicingExprs, ptrToArr.deref().idxType) {
         this.ranges = rangify(slicingExprs);
+        this.isRankChange = true;
       }
       else {
         this.ranges = 1..0; // needed to keep the compiler happy
         compilerError("Unexpected slicing expr in chpl__protoSlice.init");
       }
-      this.slicingExprType = slicingExprs.type;
     }
 
     proc init=(other: chpl__protoSlice) {
       this.rank = other.rank;
       this.isConst = other.isConst;
       this.ptrToArr = other.ptrToArr;
-      this.ranges = other.ranges;
       this.slicingExprType = other.slicingExprType;
+      this.ranges = other.ranges;
+      this.isRankChange = other.isRankChange;
       init this;
       halt("protoSlice copy initializer should never be called");
     }
@@ -367,11 +372,14 @@ module ChapelArrayViewElision {
   }
 
   proc chpl__ave_typesMatch(a: chpl__protoSlice, b: chpl__protoSlice) param: bool {
+    if a.isRankChange != b.isRankChange then return false; //or assert?
+
+    if !a.isRankChange then return true; // nothing else to check
+
     // we want to check that if there are integrals in the original slicing
     // expressions, they are at the same rank. In other words, if we are working
     // with rank-changes, we want to make sure that the collapsed dims on both
     // sides match
-
     type aType = a.slicingExprType;
     type bType = b.slicingExprType;
     compilerAssert(a.slicingExprType.size == b.slicingExprType.size);
