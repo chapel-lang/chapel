@@ -201,33 +201,40 @@ def register_rules(driver: LintDriver):
 
         check = node.block_style() != "unnecessary"
         if not check:
-            lines = chapel.get_file_lines(context, node)
-
-            if isinstance(node, Loop):
-                header_loc = node.header_location()
-                if isinstance(node, IndexableLoop) and node.with_clause():
-                    with_ = node.with_clause()
-                    assert with_ is not None
-                    header_loc = header_loc + with_.location()
-            else:
-                header_loc = node.block_header()
-            body_loc = node.curly_braces_location()
-            if header_loc is None or body_loc is None:
-                return check
-
-            header_text = range_to_text(header_loc, lines)
-            body_text = range_to_text(body_loc, lines)
-
-            sep = " "
-            if header_loc.end()[0] != body_loc.start()[0]:
-                indent = " " * (body_loc.start()[1] - 1)
-                sep = "\n" + indent
-
-            new_text = header_text + sep + body_text
-            fixit = Fixit.build(Edit.build(node.location(), new_text))
-            return BasicRuleResult(node, ignorable=True, fixits=[fixit])
-
+            return BasicRuleResult(node, ignorable=True)
         return check
+
+    @driver.fixit(DoKeywordAndBlock)
+    def RemoveUnnecessaryDo(context: Context, result: BasicRuleResult):
+        """
+        Remove the redundant 'do' keyword before a curly brace '{'.
+        """
+        node = result.node
+        lines = chapel.get_file_lines(context, node)
+
+        if isinstance(node, Loop):
+            header_loc = node.header_location()
+            if isinstance(node, IndexableLoop) and node.with_clause():
+                with_ = node.with_clause()
+                assert with_ is not None
+                header_loc = header_loc + with_.location()
+        else:
+            header_loc = node.block_header()
+        body_loc = node.curly_braces_location()
+        if header_loc is None or body_loc is None:
+            return None
+
+        header_text = range_to_text(header_loc, lines)
+        body_text = range_to_text(body_loc, lines)
+
+        sep = " "
+        if header_loc.end()[0] != body_loc.start()[0]:
+            indent = " " * (body_loc.start()[1] - 1)
+            sep = "\n" + indent
+
+        new_text = header_text + sep + body_text
+        fixit = Fixit.build(Edit.build(node.location(), new_text))
+        return fixit
 
     @driver.basic_rule(set((Loop, Conditional)))
     def ControlFlowParentheses(
@@ -297,11 +304,22 @@ def register_rules(driver: LintDriver):
         return True
 
     @driver.basic_rule([Conditional, BoolLiteral, chapel.rest])
-    def BoolLitInCondStmt(context: Context, node: Conditional):
+    def BoolLitInCondStmt(_: Context, node: Conditional):
         """
         Warn for boolean literals like 'true' in a conditional statement.
         """
+        return BasicRuleResult(node)
 
+    # TODO: at some point, we should support a fixit that removes the
+    # conditions and the braces, but the way locations work right now makes
+    # that difficult. Blocks get built and rebuilt in the parser, making it
+    # hard to tag the resulting block with curky braces locations.
+    @driver.fixit(BoolLitInCondStmt)
+    def FixBoolLitInCondStmt_KeepBraces(context: Context, result: BasicRuleResult):
+        """
+        Remove the unused branch of a conditional statement, keeping the braces.
+        """
+        node = result.node
         lines = chapel.get_file_lines(context, node)
 
         cond = node.condition()
@@ -319,9 +337,7 @@ def register_rules(driver: LintDriver):
         # should be set in all branches
         assert text is not None
 
-        return BasicRuleResult(
-            node, fixits=Fixit.build(Edit.build(node.location(), text))
-        )
+        return Fixit.build(Edit.build(node.location(), text))
 
     @driver.basic_rule(NamedDecl)
     def ChplPrefixReserved(context: Context, node: NamedDecl):

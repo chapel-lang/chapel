@@ -17,6 +17,7 @@
 # limitations under the License.
 #
 
+from dataclasses import dataclass, field
 import typing
 
 import chapel
@@ -48,6 +49,7 @@ class BasicRuleResult:
         node: chapel.AstNode,
         ignorable: bool = False,
         fixits: typing.Optional[typing.Union[Fixit, typing.List[Fixit]]] = None,
+        data: typing.Optional[typing.Any] = None,
     ):
         self.node = node
         self.ignorable = ignorable
@@ -57,6 +59,13 @@ class BasicRuleResult:
             self._fixits = [fixits]
         else:
             self._fixits = fixits
+        self.data = data
+
+    def add_fixits(self, *fixits: Fixit):
+        """
+        Add fixits to the result.
+        """
+        self._fixits.extend(fixits)
 
     def fixits(self, context: chapel.Context, name: str) -> typing.List[Fixit]:
         """
@@ -72,8 +81,10 @@ class BasicRuleResult:
 
 _BasicRuleResult = typing.Union[bool, BasicRuleResult]
 """Internal type for basic rule results"""
-BasicRule = typing.Callable[[chapel.Context, chapel.AstNode], _BasicRuleResult]
-"""Function type for basic rules"""
+BasicRuleCheck = typing.Callable[
+    [chapel.Context, chapel.AstNode], _BasicRuleResult
+]
+"""Function type for basic rules; (context, node) -> bool or BasicRuleResult"""
 
 
 class AdvancedRuleResult:
@@ -120,5 +131,25 @@ AdvancedRule = typing.Callable[
 
 RuleResult = typing.Union[_BasicRuleResult, _AdvancedRuleResult]
 """Union type for all rule results"""
-Rule = typing.Union[BasicRule, AdvancedRule]
+Rule = typing.Union[BasicRuleCheck, AdvancedRule]
 """Union type for all rules"""
+
+
+
+FixitHook = typing.Callable[
+    [chapel.Context, RuleResult],
+    typing.Optional[typing.Union[Fixit, typing.List[Fixit]]],
+]
+"""
+Function type for fixits; (context, data) -> None or Fixit or List[Fixit]
+"""
+
+
+@dataclass
+class BasicRule:
+    """
+    Class containing all information for the driver about rules"""
+    name: str
+    pattern: typing.Any
+    check_func: BasicRuleCheck
+    fixit_funcs: typing.List[FixitHook] = field(default_factory=list)
