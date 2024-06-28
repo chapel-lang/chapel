@@ -179,15 +179,12 @@ class LintDriver:
 
     def fixit(self, checkfunc):
         def decorator_fixit(func):
-            if checkfunc.__name__ not in [
-                rule.name for rule in self.BasicRules
-            ]:
-                raise ValueError(
-                    f"Fixit decorator must be used on a basic rule"
-                )
-            for rule in self.BasicRules:
+            for rule in itertools.chain(self.BasicRules, self.AdvancedRules):
                 if rule.name == checkfunc.__name__:
                     rule.fixit_funcs.append(func)
+                    break
+            else:
+                raise ValueError("Couldn't find rule {} to attach fixit {} to".format(checkfunc.__name__, func.__name__))
 
             @functools.wraps(func)
             def wrapper_basic_rule(*args, **kwargs):
