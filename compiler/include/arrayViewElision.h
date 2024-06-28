@@ -25,6 +25,26 @@
 // interface for normalize
 void arrayViewElision();
 
+class ArrayViewElisionTransformer {
+public:
+  ArrayViewElisionTransformer() = delete;
+  ArrayViewElisionTransformer(CallExpr* origCall);
+
+  inline bool candidate() const { return candidate_; }
+
+  void transform();
+
+private:
+  CallExpr* origCall_;
+  CallExpr* origLhs_;
+  CallExpr* origRhs_;
+
+  bool candidate_;
+
+  bool exprSuitableForProtoSlice(CallExpr* e, bool isLhs);
+  CallExpr* genCreateProtoSlice(CallExpr* call);
+};
+
 // interface for prefold
 class ProtoSliceAssignHelper {
 public:
