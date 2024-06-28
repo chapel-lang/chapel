@@ -282,6 +282,7 @@ namespace {
 
   // Creates a store/load pattern with bitcasts to implement complex
   // type conversions (converting a wide pointer type to an integer type, say).
+  // TODO: how to ensure proper alignment?
   Instruction* createStoreLoadCast(Value* fromValue,
                                    Type* toType,
                                    Instruction* insertBefore) {

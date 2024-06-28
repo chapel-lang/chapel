@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/standard/IO.chpl:nnn: error: unresolved call 'LAPACK_C_SELECT1.serialize(writer=fileWriter(false,defaultSerializer), serializer=defaultSerializer)'

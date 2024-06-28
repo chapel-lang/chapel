@@ -31,6 +31,9 @@
 #include "LayeredValueTable.h"
 #include "llvmUtil.h"
 #include "llvm/Support/Alignment.h"
+#if HAVE_LLVM_VER >= 160
+#include "clang/Basic/AddressSpaces.h"
+#endif
 
 // forward declare some llvm and clang things
 namespace llvm {
@@ -77,10 +80,13 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName, bool& isCAr
 
 bool isCTypeUnion(const char* name);
 
-llvm::MaybeAlign getPointerAlign(int addrSpace);
-llvm::MaybeAlign getCTypeAlignment(const clang::TypeDecl* td);
-llvm::MaybeAlign getCTypeAlignment(const clang::QualType &qt);
-llvm::MaybeAlign getAlignment(Type* type);
+#if HAVE_LLVM_VER >= 160
+llvm::MaybeAlign getPointerAlign(clang::LangAS AS = clang::LangAS::Default);
+#else
+llvm::MaybeAlign getPointerAlign(int AS = 0);
+#endif
+int getCTypeAlignment(Type* type);
+int getCTypeAlignment(const clang::QualType &qt);
 
 const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD);
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn);

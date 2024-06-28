@@ -1067,7 +1067,9 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 void initPrimitiveTypes() {
   dtVoid                               = createInternalType("void", "void");
   dtVoid->symbol->addFlag(FLAG_NO_RENAME);
+  dtVoid->symbol->addFlag(FLAG_NO_CODEGEN);
   dtNothing                            = createInternalType ("nothing",  "nothing");
+  dtNothing->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtInt[INT_SIZE_64]                   = createPrimitiveType("int",      "int64_t");
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
