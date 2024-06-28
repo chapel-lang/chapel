@@ -1,5 +1,5 @@
 BootStrap: docker
-From: rockylinux:9.4
+From: rockylinux/rockylinux:9.4
 
 %files
     ../../provision-scripts/* /provision-scripts/
