@@ -51,9 +51,7 @@ cleanall: clean
 clobber: clean
 
 clean-pycache:
-	rm -rf $(CHPL_MAKE_HOME)/tools/chpl-language-server/src/__pycache__
-	rm -rf $(CHPL_MAKE_HOME)/tools/chpl-language-server/test/__pycache__
-	rm -rf $(CHPL_MAKE_HOME)/tools/chpl-language-server/test/util/__pycache__
+	find $(CHPL_MAKE_HOME)/tools/chpl-language-server -type d -name __pycache__ -exec rm -rf {} +
 
 clean-link:
 ifneq ($(wildcard $(link)),)
