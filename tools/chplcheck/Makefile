@@ -49,7 +49,7 @@ cleanall: clean
 clobber: clean
 
 clean-pycache:
-		find $(CHPL_MAKE_HOME)/tools/chplcheck -type d -name __pycache__ -exec rm -rf {} +
+	find $(CHPL_MAKE_HOME)/tools/chplcheck -type d -name __pycache__ -exec rm -rf {} +
 
 $(link): clean
 	@echo "Installing chplcheck symbolic link..."
