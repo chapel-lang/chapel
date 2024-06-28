@@ -129,6 +129,11 @@ bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2);
 std::vector<std::string>
 deduplicateSamePaths(const std::vector<std::string>& paths);
 
+/**
+  Removes any number of leading ./ from 'path'.
+ */
+std::string cleanLocalPath(std::string path);
+
 #if LLVM_VERSION_MAJOR >= 13
 /**
  Non-error result type for hashFile.

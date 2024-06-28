@@ -282,6 +282,17 @@ deduplicateSamePaths(const std::vector<std::string>& paths)
   return ret;
 }
 
+std::string cleanLocalPath(std::string path) {
+  if (path.length() >= 2 && path[0] == '.' && path[1] == '/') {
+    // string starts with ./
+    while (path.find("./") == 0) {
+      path = path.substr(2);
+    }
+  }
+
+  return path;
+}
+
 std::string fileHashToHex(const HashFileResult& hash) {
   return llvm::toHex(hash, /* lower case */ false);
 }

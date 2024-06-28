@@ -37,6 +37,7 @@
 #include "chpl/libraries/LibraryFileWriter.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/util/filesystem.h"
 
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
@@ -76,8 +77,6 @@ static bool          sFirstFile                    = true;
 static void          countTokensInCmdLineFiles();
 
 static void          addDynoLibFiles();
-
-static UniqueString cleanLocalPath(const char* path);
 
 static void          processInternalModules();
 
@@ -245,7 +244,8 @@ static void loadAndConvertModules() {
   const char* inputFileName = nullptr;
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName)) {
-      auto path = cleanLocalPath(inputFileName);
+      auto cleanPath = chpl::cleanLocalPath(inputFileName);
+      auto path = UniqueString::get(gContext, cleanPath);
       commandLinePaths.push_back(path);
       // also check that the file exists
       checkCanLoadCommandLineFile(path.c_str());
@@ -459,19 +459,6 @@ static void checkFilenameNotTooLong(UniqueString path) {
     // throw error with concatenated message
     USR_FATAL(errorMessage, baseName, maxFileName);
   }
-}
-
-static UniqueString cleanLocalPath(const char* path) {
-  if (startsWith(path, "/") || startsWith(path, "./") == false) {
-    return UniqueString::get(gContext, path);
-  }
-
-  std::string str = path;
-  while (str.find("./") == 0) {
-    str = str.substr(2);
-  }
-
-  return UniqueString::get(gContext, str);
 }
 
 static void gatherStdModuleNamesInDir(std::string dir,
@@ -967,7 +954,9 @@ static ModuleSymbol* dynoConvertFile(const char* fileName,
   // Do not parse if we've already done so.
   if (haveAlreadyConverted(fileName)) return nullptr;
 
-  auto path = cleanLocalPath(fileName);
+  // clean the path (remove leading ./)
+  auto cleanPath = chpl::cleanLocalPath(fileName);
+  auto path = UniqueString::get(gContext, cleanPath);
 
   // The 'parseFile' query gets us a builder result that we can inspect to
   // see if there were any parse errors.

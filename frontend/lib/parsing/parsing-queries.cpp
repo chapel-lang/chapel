@@ -106,17 +106,6 @@ static Parser helpMakeParser(Context* context,
   }
 }
 
-static std::string cleanLocalPath(Context* context, std::string path) {
-  if (path[0] == '.' && path[1] == '/') {
-    // string starts with ./
-    while (path.find("./") == 0) {
-      path = path.substr(2);
-    }
-  }
-
-  return path;
-}
-
 static const BuilderResult&
 parseFileToBuilderResultQuery(Context* context, UniqueString path,
                               UniqueString parentSymbolPath) {
@@ -851,7 +840,7 @@ std::string getExistingFileInDirectory(Context* context,
   }
   path += fname;
 
-  path = cleanLocalPath(context, std::move(path));
+  path = cleanLocalPath(std::move(path));
 
   if (hasFileText(context, path) || fileExistsQuery(context, path)) {
     return path;
