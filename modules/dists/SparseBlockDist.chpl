@@ -229,11 +229,11 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
   // output domain
   //
   proc dsiSerialWrite(f) {
-    if (rank == 1) {
+    if rank == 1 {
       f.write("{");
       for locdom in locDoms {
         // on locdom do {
-        if (locdom!.dsiNumIndices) {
+        if locdom!.dsiNumIndices {
             f.write(" ");
             locdom!.dsiSerialWrite(f);
           }
@@ -825,11 +825,11 @@ proc LocSparseBlockArr.this(i) ref {
 // output array
 //
 proc SparseBlockArr.dsiSerialWrite(f) {
-  if (rank == 1) {
+  if rank == 1 {
     f.write("[");
     for locarr in locArr {
       // on locdom do {
-      if (locarr!.locDom.dsiNumIndices) {
+      if locarr!.locDom.dsiNumIndices {
         f.write(" ");
         locarr!.dsiSerialWrite(f);
       }
