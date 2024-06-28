@@ -93,7 +93,7 @@ class LintDriver:
 
         self.SilencedRules = list(set(self.SilencedRules) - set(rules))
 
-    def _should_check_rule(
+    def should_check_rule(
         self, rulename: str, node: Optional[chapel.AstNode] = None
     ):
         if rulename in self.SilencedRules:
@@ -144,52 +144,24 @@ class LintDriver:
 
         yield from recurse(node)
 
+    def each_matching(self, node: chapel.AstNode, pattern: Any):
+        yield from chapel.each_matching(
+            node, pattern, iterator=self._preorder_skip_unstable_modules
+        )
+
     def _check_basic_rule(
         self,
         context: chapel.Context,
         root: chapel.AstNode,
         rule: rule_types.BasicRule,
-    ) -> Iterator[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]]:
+    ) -> Iterator[rule_types.CheckResult]:
 
         # If we should ignore the rule no matter the node, no reason to run
         # a traversal and match the pattern.
-        if not self._should_check_rule(rule.name):
+        if not self.should_check_rule(rule.name):
             return
 
-        for node, _ in chapel.each_matching(
-            root, rule.pattern, iterator=self._preorder_skip_unstable_modules
-        ):
-            if not self._should_check_rule(rule.name, node):
-                continue
-
-            result = rule.check_func(context, node)
-            check, fixits = None, []
-            # unwrap the result from the check function
-            if isinstance(result, rule_types.BasicRuleResult):
-                check = False
-                fixits = result.fixits(context, rule.name)
-            else:
-                check = result
-                result = rule_types.BasicRuleResult(node)
-            # if we are going to warn, check for fixits from fixit hooks (in
-            # addition to the fixits in the rule itself)
-            if not check:
-                fixits_from_hooks = []
-                for fixit_func in rule.fixit_funcs:
-                    extra_fixes = fixit_func(context, result)
-                    if extra_fixes is not None:
-                        if isinstance(extra_fixes, Fixit):
-                            if extra_fixes.description is None:
-                                extra_fixes.description = fixit_func.__doc__.strip()
-                            fixits_from_hooks.append(extra_fixes)
-                        else:
-                            for f in extra_fixes:
-                                if f.description is None:
-                                    f.description = fixit_func.__doc__.strip()
-                                fixits_from_hooks.append(f)
-                # add the fixits from the hooks to the fixits from the rule
-                fixits = fixits_from_hooks + fixits
-                yield (node, rule.name, fixits)
+        yield from rule.check(context, root)
 
     def _check_advanced_rule(
         self,
@@ -199,14 +171,14 @@ class LintDriver:
     ) -> Iterator[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]]:
         # If we should ignore the rule no matter the node, no reason to run
         # a traversal and match the pattern.
-        if not self._should_check_rule(rule.name):
+        if not self.should_check_rule(rule.name):
             return
 
         for result in rule.check_func(context, root):
             if isinstance(result, rule_types.AdvancedRuleResult):
                 node, anchor = result.node, result.anchor
                 fixits = result.fixits(context, rule.name)
-                if anchor is not None and not self._should_check_rule(
+                if anchor is not None and not self.should_check_rule(
                     rule.name, anchor
                 ):
                     continue
@@ -239,7 +211,10 @@ class LintDriver:
         def decorator_basic_rule(func):
             self.BasicRules.append(
                 rule_types.BasicRule(
-                    name=func.__name__, pattern=pat, check_func=func
+                    driver=self,
+                    name=func.__name__,
+                    pattern=pat,
+                    check_func=func,
                 )
             )
             if not default:
@@ -289,7 +264,11 @@ class LintDriver:
 
         def decorator_advanced_rule(func):
             self.AdvancedRules.append(
-                rule_types.AdvancedRule(func.__name__, func)
+                rule_types.AdvancedRule(
+                    driver=self,
+                    name=func.__name__,
+                    check_func=func,
+                )
             )
             if not default:
                 self.SilencedRules.append(func.__name__)

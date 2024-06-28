@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-from dataclasses import dataclass, field
+from dataclasses import field
 import typing
 
 import chapel
@@ -137,36 +137,94 @@ AdvancedRuleCheck = typing.Callable[
 RuleResult = typing.Union[_BasicRuleResult, _AdvancedRuleResult]
 """Union type for all rule results"""
 
-
-Rule = typing.Union[BasicRuleCheck, AdvancedRuleCheck]
-"""Union type for all rules"""
+CheckResult = typing.Tuple[chapel.AstNode, str, typing.List[Fixit]]
 
 
+VarResultType = typing.TypeVar("VarResultType")
 
 FixitHook = typing.Callable[
-    [chapel.Context, RuleResult],
+    [chapel.Context, VarResultType],
     typing.Optional[typing.Union[Fixit, typing.List[Fixit]]],
 ]
 """
 Function type for fixits; (context, data) -> None or Fixit or List[Fixit]
 """
 
+class Rule(typing.Generic[VarResultType]):
+    # can't specify type of driver due to circular import
+    def __init__(self, driver, name: str) -> None:
+        self.driver = driver
+        self.name = name
+        self.fixit_funcs: typing.List[FixitHook[VarResultType]] = []
 
-@dataclass
-class BasicRule:
+    def _fixup_description_for_fixit(self, fixit: Fixit, fixit_func: FixitHook) -> None:
+        if fixit.description is not None:
+            return
+        if fixit_func.__doc__ is not None:
+            fixit.description = fixit_func.__doc__.strip()
+
+    def run_fixit_hooks(self, context: chapel.Context, result: VarResultType) -> typing.List[Fixit]:
+        fixits_from_hooks = []
+        for fixit_func in self.fixit_funcs:
+            extra_fixes = fixit_func(context, result)
+            if extra_fixes is None:
+                continue
+
+            if isinstance(extra_fixes, Fixit):
+                extra_fixes = [extra_fixes]
+
+            for f in extra_fixes:
+                self._fixup_description_for_fixit(f, fixit_func)
+                fixits_from_hooks.append(f)
+        return fixits_from_hooks
+
+class BasicRule(Rule[BasicRuleResult]):
     """
     Class containing all information for the driver about basic rules
     """
-    name: str
-    pattern: typing.Any
-    check_func: BasicRuleCheck
-    fixit_funcs: typing.List[FixitHook] = field(default_factory=list)
 
-@dataclass
-class AdvancedRule:
+
+    def __init__(self, driver, name: str, pattern: typing.Any, check_func: BasicRuleCheck) -> None:
+        super().__init__(driver, name)
+        self.pattern = pattern
+        self.check_func = check_func
+
+    def check_single(self, context: chapel.Context, node: chapel.AstNode) -> typing.Optional[CheckResult]:
+        result = self.check_func(context, node)
+        check, fixits = None, []
+
+        # unwrap the result from the check function, and wrap it back
+        # into a BasicRuleResult so we can feed it to the fixit hooks
+        if isinstance(result, BasicRuleResult):
+            check = False
+            fixits = result.fixits(context, self.name)
+        else:
+            check = result
+            result = BasicRuleResult(node)
+
+        if check:
+            return None
+
+        # if we are going to warn, check for fixits from fixit hooks (in
+        # addition to the fixits in the result itself)
+        # add the fixits from the hooks to the fixits from the rule
+        fixits = self.run_fixit_hooks(context, result) + fixits
+        return (node, self.name, fixits)
+
+    def check(self, context: chapel.Context, root: chapel.AstNode) -> typing.Iterable[CheckResult]:
+        for node, _ in self.driver.each_matching(root, self.pattern):
+            if not self.driver.should_check_rule(self.name, node):
+                continue
+
+            checked = self.check_single(context, node)
+            if checked is not None:
+                yield checked
+
+class AdvancedRule(Rule[AdvancedRuleResult]):
     """
     Class containing all information for the driver about advanced
     """
-    name: str
-    check_func: AdvancedRuleCheck
-    fixit_funcs: typing.List[FixitHook] = field(default_factory=list)
+
+    def __init__(self, driver, name: str,check_func: AdvancedRuleCheck) -> None:
+        super().__init__(driver, name)
+        self.check_func = check_func
