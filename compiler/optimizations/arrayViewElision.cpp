@@ -164,8 +164,9 @@ ProtoSliceAssignHelper::ProtoSliceAssignHelper(CallExpr* call):
   BlockStmt* parentBlock = toBlockStmt(call->parentExpr);
   parentBlock->insertAtHead(staticCheckBlock_);
 
-  supported_ = handleOneProtoSlice(newProtoSliceLhs_, /* isLhs */ true) &&
-               handleOneProtoSlice(newProtoSliceRhs_, /* isLhs */ false);
+  supported_ = handleOneProtoSlice(/* isLhs */ true) &&
+               handleOneProtoSlice(/* isLhs */ false) &&
+               protoSliceTypesMatch();
 
   findCondStmt();
   INT_ASSERT(condStmt_);
@@ -242,7 +243,9 @@ void ProtoSliceAssignHelper::report() {
   std::cout << std::endl;
 }
 
-bool ProtoSliceAssignHelper::handleOneProtoSlice(CallExpr* call, bool isLhs) {
+bool ProtoSliceAssignHelper::handleOneProtoSlice(bool isLhs) {
+  CallExpr* call = isLhs ? newProtoSliceLhs_ : newProtoSliceRhs_;
+
   INT_ASSERT(call->isNamed("chpl__createProtoSlice") ||
              call->isNamed("chpl__createConstProtoSlice"));
 
@@ -287,6 +290,30 @@ bool ProtoSliceAssignHelper::handleOneProtoSlice(CallExpr* call, bool isLhs) {
   // record the base symbol here for further checks
   Symbol*& baseToCapture = isLhs ? lhsBase_ : rhsBase_;
   baseToCapture = toSymExpr(call->get(1))->symbol();
+
+  return ret;
+}
+
+// make sure we don't try to optimize A[3, 1..3] = B[1..3, 3].
+// because the current optimization works by strength-reducing that to use
+// slices : A[3..3, 1..3] = B[1..3, 3..3]. That's not a valid assignment as
+// opposed to what the user wrote.
+bool ProtoSliceAssignHelper::protoSliceTypesMatch() const {
+  CallExpr* typeMatchCheck = new CallExpr("chpl__ave_typesMatch",
+                                          call_->get(1)->copy(),
+                                          call_->get(2)->copy());
+
+  VarSymbol* tmp = newTemp("call_tmp", dtBool);
+  DefExpr* flagDef = new DefExpr(tmp, typeMatchCheck);
+
+  staticCheckBlock_->insertAtTail(flagDef);
+
+  resolveExpr(typeMatchCheck);
+  resolveExpr(flagDef);
+
+  bool ret = (toSymExpr(flagDef->init)->symbol() == gTrue);
+
+  flagDef->remove();
 
   return ret;
 }
