@@ -3,7 +3,8 @@
 # Get the homebrew ubuntu container, set the platform to avoid warnings when on M1
 FROM --platform=linux/amd64 ghcr.io/homebrew/ubuntu22.04:master
 
-# Redundant to brew_install.bash butimporant for anyone working in this container
+# Redundant to brew_install.bash but imporant for anyone working in this container
+# which can be ran without brew_install.bash
 ENV HOMEBREW_NO_AUTO_UPDATE=1
 ENV HOMEBREW_NO_INSTALL_FROM_API=1
 ENV HOMEBREW_DEVELOPER=1
