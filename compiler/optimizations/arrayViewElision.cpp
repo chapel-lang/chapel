@@ -195,7 +195,9 @@ void ProtoSliceAssignHelper::report() {
   }
 
   std::string isSupported = supported() ? "supported" : "not supported";
-  std::string isDynamic = !fLocal ? " (dynamic locality check required)" : "";
+  std::string isDynamic = (supported() && !fLocal) ?
+                            " (dynamic locality check required)" :
+                            "";
   std::cout << "ArrayViewElision " << isSupported <<  isDynamic << " " <<
                call_->stringLoc() << std::endl;
 
