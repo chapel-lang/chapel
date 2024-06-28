@@ -47,7 +47,7 @@ ArrayViewElisionTransformer::ArrayViewElisionTransformer(CallExpr* origCall):
   }
 
   // further analysis per call
-  if ( !(exprSuitableForProtoSlice(origLhs_, /*isLhs*/ true) ||
+  if ( !(exprSuitableForProtoSlice(origLhs_, /*isLhs*/ true) &&
          exprSuitableForProtoSlice(origRhs_, /*isLhs*/ false)) ) {
     candidate_ = false;
     return;
@@ -95,6 +95,8 @@ bool ArrayViewElisionTransformer::exprSuitableForProtoSlice(CallExpr* call,
   if (SymExpr* callBase = toSymExpr(call->baseExpr)) {
     if (!isFnSymbol(callBase->symbol()) &&
         (!isLhs || !callBase->symbol()->isConstant())) {
+      // we avoid touching const lhs, otherwise this optimization causes the
+      // const checking error to point at the internal code rather than users.
       return true;
     }
   }
