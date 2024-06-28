@@ -19,7 +19,7 @@
 
 import functools
 import itertools
-from typing import Any, Callable, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Iterator, List, Optional, Tuple, Union
 
 import chapel
 from fixits import Fixit
@@ -131,11 +131,11 @@ class LintDriver:
             node, pattern, iterator=self._preorder_skip_unstable_modules
         )
 
-    def _check_basic_rule(
+    def _check_rule(
         self,
         context: chapel.Context,
         root: chapel.AstNode,
-        rule: rule_types.BasicRule,
+        rule: Union[rule_types.BasicRule, rule_types.AdvancedRule],
     ) -> Iterator[rule_types.CheckResult]:
 
         # If we should ignore the rule no matter the node, no reason to run
@@ -145,39 +145,6 @@ class LintDriver:
 
         yield from rule.check(context, root)
 
-    def _check_advanced_rule(
-        self,
-        context: chapel.Context,
-        root: chapel.AstNode,
-        rule: rule_types.AdvancedRule,
-    ) -> Iterator[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]]:
-        # If we should ignore the rule no matter the node, no reason to run
-        # a traversal and match the pattern.
-        if not self.should_check_rule(rule.name):
-            return
-
-        for result in rule.check_func(context, root):
-            if isinstance(result, rule_types.AdvancedRuleResult):
-                node, anchor = result.node, result.anchor
-                fixits = result.fixits(context, rule.name)
-                if anchor is not None and not self.should_check_rule(
-                    rule.name, anchor
-                ):
-                    continue
-            else:
-                node = result
-                fixits = None
-
-            # For advanced rules, the traversal of the AST is out of our hands,
-            # so we can't stop it from going into unstable modules. Instead,
-            # once the rule emits a warning, check by traversing the AST
-            # if the warning target should be skipped.
-            if self.config.skip_unstable and LintDriver._in_unstable_module(
-                node
-            ):
-                continue
-
-            yield (node, rule.name, fixits)
 
     def basic_rule(self, pat, default=True):
         """
@@ -276,15 +243,8 @@ class LintDriver:
         """
 
         for ast in asts:
-            for rule in self.BasicRules:
-                for toreport in self._check_basic_rule(context, ast, rule):
-                    if self._has_internal_name(toreport[0]):
-                        continue
-
-                    yield toreport
-
-            for rule in self.AdvancedRules:
-                for toreport in self._check_advanced_rule(context, ast, rule):
+            for rule in itertools.chain(self.BasicRules, self.AdvancedRules):
+                for toreport in self._check_rule(context, ast, rule):
                     if self._has_internal_name(toreport[0]):
                         continue
 

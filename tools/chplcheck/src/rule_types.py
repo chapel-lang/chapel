@@ -228,3 +228,32 @@ class AdvancedRule(Rule[AdvancedRuleResult]):
     def __init__(self, driver, name: str,check_func: AdvancedRuleCheck) -> None:
         super().__init__(driver, name)
         self.check_func = check_func
+
+    def check(self, context: chapel.Context, root: chapel.AstNode) -> typing.Iterable[CheckResult]:
+        for result in self.check_func(context, root):
+            if isinstance(result, AdvancedRuleResult):
+                node, anchor = result.node, result.anchor
+                fixits = result.fixits(context, self.name)
+                if anchor is not None and not self.driver.should_check_rule(
+                    self.name, anchor
+                ):
+                    continue
+            else:
+                node = result
+                fixits = []
+                result = AdvancedRuleResult(node)
+
+            # For advanced rules, the traversal of the AST is out of our hands,
+            # so we can't stop it from going into unstable modules. Instead,
+            # once the rule emits a warning, check by traversing the AST
+            # if the warning target should be skipped.
+            if self.driver.config.skip_unstable and chapel.in_unstable_module(
+                node
+            ):
+                continue
+
+            # if we are going to warn, check for fixits from fixit hooks (in
+            # addition to the fixits in the result itself)
+            # add the fixits from the hooks to the fixits from the rule
+            fixits = self.run_fixit_hooks(context, result) + fixits
+            yield (node, self.name, fixits)
