@@ -736,7 +736,7 @@ static CallExpr* buildThunkPrimFunctions(CallExpr* node) {
   thunkResultTmp->addFlag(FLAG_NO_AUTO_DESTROY);
   auto thunkBlock = new BlockStmt();
   thunkBlock->insertAtTail(new DefExpr(thunkResultTmp));
-  thunkBlock->insertAtTail(new CallExpr(PRIM_MOVE, thunkResultTmp, delayedExpr->remove()));
+  thunkBlock->insertAtTail(new CallExpr(PRIM_INIT_VAR, thunkResultTmp, delayedExpr->remove()));
   thunkBlock->insertAtTail(new CallExpr(PRIM_THUNK_RESULT, thunkResultTmp));
   thunkFn->body->insertAtTail(thunkBlock);
 
