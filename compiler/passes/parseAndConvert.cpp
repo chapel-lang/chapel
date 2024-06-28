@@ -74,9 +74,9 @@ bool                 parsed                        = false;
 
 static bool          sFirstFile                    = true;
 
-static void          countTokensInCmdLineFiles();
+static void countTokensInCmdLineFiles();
 
-static void          addDynoLibFiles();
+static void addDynoLibFiles();
 
 static void checkFilenameNotTooLong(UniqueString path);
 
@@ -355,13 +355,13 @@ static void reorderInternalModules() {
   // go through all of the modules and rearrange a select few
 
   std::vector<std::pair<const char*, ModuleSymbol*>> tofix;
-  tofix.push_back({astr("chpl__Program"), nullptr});
-  tofix.push_back({astr("ChapelStringLiterals"), nullptr});
-  tofix.push_back({astr("ChapelBase"), nullptr});
-  tofix.push_back({astr("ChapelStandard"), nullptr});
-  tofix.push_back({astr("PrintModuleInitOrder"), nullptr});
-  tofix.push_back({astr("ChapelSysCTypes"), nullptr});
-  tofix.push_back({astr("Errors"), nullptr});
+  tofix.emplace_back(astr("chpl__Program"), nullptr);
+  tofix.emplace_back(astr("ChapelStringLiterals"), nullptr);
+  tofix.emplace_back(astr("ChapelBase"), nullptr);
+  tofix.emplace_back(astr("ChapelStandard"), nullptr);
+  tofix.emplace_back(astr("PrintModuleInitOrder"), nullptr);
+  tofix.emplace_back(astr("ChapelSysCTypes"), nullptr);
+  tofix.emplace_back(astr("Errors"), nullptr);
 
   int saveSize = allModules.size();
 
