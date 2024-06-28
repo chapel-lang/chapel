@@ -596,7 +596,6 @@ void setBundledModulePath(Context* context, UniqueString path) {
 
 static void
 addCommandLineFileDirectories(std::vector<std::string>& searchPath,
-                              std::set<std::string>& set,
                               const std::vector<std::string>& inputFilenames) {
   for (auto& fname : inputFilenames) {
     auto idx = fname.find_last_of('/');
@@ -645,7 +644,6 @@ void setupModuleSearchPaths(
   setBundledModulePath(context, UniqueString::get(context, bundled));
 
   std::vector<std::string> searchPath;
-  std::set<std::string> dedupSet;
 
   std::vector<UniqueString> uPrependedInternalModulePaths;
   std::vector<UniqueString> uPrependedStandardModulePaths;
@@ -671,8 +669,6 @@ void setupModuleSearchPaths(
   searchPath.push_back(internal);
 
   // move on to standard modules
-  dedupSet.clear(); // clear it so a path could be both internal & standard
-
   for (auto& path : prependStandardModulePaths) {
     searchPath.push_back(path);
     UniqueString uPath = UniqueString::get(context, path);
@@ -689,10 +685,8 @@ void setupModuleSearchPaths(
   searchPath.push_back(modRoot + "/dists/dims");
 
   // move on to user module paths
-  dedupSet.clear(); // clear it so a path could be both internal/standard & user
-
   // Add directories containing command line files
-  addCommandLineFileDirectories(searchPath, dedupSet, inputFilenames);
+  addCommandLineFileDirectories(searchPath, inputFilenames);
 
   // Add paths from -M flags on the command line
   for (const auto& p : cmdLinePaths) {
@@ -869,52 +863,46 @@ std::string getExistingFileInDirectory(Context* context,
 std::string getExistingFileInModuleSearchPath(Context* context,
                                               std::string fname) {
   std::string check;
-  std::set<UniqueString> checked;
   std::string found;
   UniqueString firstFoundInDir;
 
   for (auto path : moduleSearchPath(context)) {
-    auto p = checked.insert(path);
-    if (p.second) {
-      // insertion occured, so it wasn't the first time considering this path
+    // check if path/fname exists
+    check = getExistingFileInDirectory(context, path.str(), fname);
 
-      // check if path/fname exists
-      check = getExistingFileInDirectory(context, path.str(), fname);
+    if (!check.empty() && !found.empty()) {
+      // issue a warning if we already found a module in a different dir,
+      // but skip the warning if --prepend-internal-module-dir etc
+      // caused the first match & the later match comes from a bundled
+      // path.
 
-      if (!check.empty() && !found.empty()) {
-        // issue a warning if we already found a module in a different dir,
-        // but skip the warning if --prepend-internal-module-dir etc
-        // caused the first match & the later match comes from a bundled
-        // path.
-
-        bool foundInPrependedPath = false;
-        for (auto& prepended : prependedInternalModulePath(context)) {
-          if (firstFoundInDir == prepended) foundInPrependedPath = true;
-        }
-        for (auto& prepended : prependedStandardModulePath(context)) {
-          if (firstFoundInDir == prepended) foundInPrependedPath = true;
-        }
-
-        bool skip = foundInPrependedPath &&
-                    filePathIsInBundledModule(context, path);
-        if (!skip) {
-          auto loc = IdOrLocation::createForCommandLineLocation(context);
-          bool warnU = isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE);
-
-          CHPL_REPORT(context, AmbiguousSourceFile, loc,
-                      replacePrefix(found, context->chplHome(), "$CHPL_HOME"),
-                      replacePrefix(check, context->chplHome(), "$CHPL_HOME"),
-                      warnU);
-        }
-        continue;
-      } else if (!check.empty() && found.empty()) {
-        // note the first place a match was found
-        firstFoundInDir = path;
+      bool foundInPrependedPath = false;
+      for (auto& prepended : prependedInternalModulePath(context)) {
+        if (firstFoundInDir == prepended) foundInPrependedPath = true;
+      }
+      for (auto& prepended : prependedStandardModulePath(context)) {
+        if (firstFoundInDir == prepended) foundInPrependedPath = true;
       }
 
-      if (found.empty() && !check.empty()) {
-        found = check;
+      bool skip = foundInPrependedPath &&
+                  filePathIsInBundledModule(context, path);
+      if (!skip) {
+        auto loc = IdOrLocation::createForCommandLineLocation(context);
+        bool warnU = isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE);
+
+        CHPL_REPORT(context, AmbiguousSourceFile, loc,
+                    replacePrefix(found, context->chplHome(), "$CHPL_HOME"),
+                    replacePrefix(check, context->chplHome(), "$CHPL_HOME"),
+                    warnU);
       }
+      continue;
+    } else if (!check.empty() && found.empty()) {
+      // note the first place a match was found
+      firstFoundInDir = path;
+    }
+
+    if (!check.empty() && found.empty()) {
+      found = check;
     }
   }
 
