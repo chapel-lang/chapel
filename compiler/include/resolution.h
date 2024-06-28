@@ -415,6 +415,19 @@ void startGenerousResolutionForErrors();
 bool inGenerousResolutionForErrors();
 void stopGenerousResolutionForErrors();
 
+// Indicates if there has been an error since declaring a NewErrorRecorder.
+// Implements a stack discipline.
+extern bool newErrorRecord;
+class NewErrorRecorder {
+  bool prevRecord;
+public:
+  NewErrorRecorder(): prevRecord(newErrorRecord) { newErrorRecord = false; }
+  ~NewErrorRecorder() { newErrorRecord = this->prevRecord; }
+};
+
+static inline void recordNewCompilationError() { newErrorRecord = true; }
+static inline bool seenNewCompilationError() { return newErrorRecord; }
+
 // In chpl__initCopy etc we have a definedConst argument. This argument can be
 // at different places in the function signature. In various places, we call the
 // function below to make sure it is where we expect it to be.
