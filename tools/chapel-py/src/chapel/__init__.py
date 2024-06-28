@@ -465,7 +465,7 @@ def is_basic_literal_like(node: AstNode) -> Optional[Literal]:
 
 
 def is_complex_literal(
-    node: AstNode
+    node: AstNode,
 ) -> Optional[typing.Tuple[Literal, Literal]]:
     """
     Check for complex number literals: 1+2i, -42-3i, etc.
