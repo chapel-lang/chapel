@@ -691,7 +691,7 @@ void ErrorAmbiguousMain::write(ErrorWriterBase& wr) const {
       moduleName = modNames[0].c_str();
 
     wr.heading(kind_, type_, loc,
-               "multiple 'proc main's in module '", moduleName, "'");
+               "multiple 'main' procedures in module '", moduleName, "'");
     wr.message("");
     for (auto fn : mainFns) {
       wr.note(locationOnly(fn), "found 'proc main' here");
@@ -699,7 +699,7 @@ void ErrorAmbiguousMain::write(ErrorWriterBase& wr) const {
     }
   } else {
     wr.heading(kind_, type_, loc,
-               "unknown main module due to multiple 'proc main's");
+               "unknown main module due to multiple 'main' procedures");
     wr.note(loc, "please use '--main-module' to disambiguate");
     wr.message("");
     size_t i = 0;

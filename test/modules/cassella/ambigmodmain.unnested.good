@@ -1,4 +1,4 @@
-<command line>: error: unknown main module due to multiple 'proc main's
+<command line>: error: unknown main module due to multiple 'main' procedures
 <command line>: note: please use '--main-module' to disambiguate
 ambigmodmain.unnested.chpl:2: note: found 'proc main' in module 'M'
 ambigmodmain.unnested.chpl:7: note: found 'proc main' in module 'M'
