@@ -6,15 +6,8 @@ class Chapel < Formula
   license "Apache-2.0"
   head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
-  bottle do
-    sha256 arm64_sonoma:   "e75b261ff8378a1a86db49794ca9cc4419d8eadc7e7a4ce9a17430a5757bb778"
-    sha256 arm64_ventura:  "7ff7abdf3c8301727e52d65b15837b8974d7d3be52bcac72601b181bf426e444"
-    sha256 arm64_monterey: "a11ed899b3ccf9d8eac11910226d1f86a39f19a7d07c5e8d3f35d5785089eebc"
-    sha256 sonoma:         "e5edf9340b6bfb94bcf39f930406db9db9b2801dd378da85e489a6bd78a676b2"
-    sha256 ventura:        "ad9c9e354207c9926d25f513c1a3b7b6db0936dc1e27998f5859dd4d9cc7155b"
-    sha256 monterey:       "cbc79ae37aa099e744ff21b5654d7fdb364c012a02eb27a0e5d73e0783c2a999"
-    sha256 x86_64_linux:   "961ad1d420eeeac018098fba19f05ff207edcd279b8c98d5439838d9928f61de"
-  end
+  # Let's try not including the bottle information deliberatley to test if that
+  # avoid accidentally pulling from the brew API
 
   depends_on "cmake"
   depends_on "gmp"
