@@ -6,8 +6,9 @@ class Chapel < Formula
   license "Apache-2.0"
   head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
-  # Let's try not including the bottle information deliberatley to test if that
-  # avoid accidentally pulling from the brew API
+  # Don't include the bottle information in chapel-main.rb deliberatley. The
+  # idea is that we don't want to accidentally use a published bottle in our testing,
+  # which would always report passing.
 
   depends_on "cmake"
   depends_on "gmp"
