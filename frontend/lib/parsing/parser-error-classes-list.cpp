@@ -741,7 +741,7 @@ void ErrorImplicitModuleSameName::write(ErrorWriterBase& wr) const {
              "module '", mod->name(), "' "
              "has the same name as the implicit file module");
   wr.note(locationOnly(mod),
-         "did you mean to include all statements in the module declaration?");
+          "did you mean to include all statements in the module declaration?");
 }
 
 
