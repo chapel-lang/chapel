@@ -1,0 +1,5 @@
+In execute if true, with value: true
+C.init
+{x = 42}
+In execute if true, with value: false
+nil
