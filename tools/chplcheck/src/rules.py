@@ -377,6 +377,24 @@ def register_rules(driver: LintDriver):
             return False
         return True
 
+    @driver.basic_rule(OpCall)
+    def ComplexLiteralOrder(context: Context, node: OpCall):
+        """
+        Warn for complex literals that are not in a consistent order.
+        """
+
+        complex_lit = chapel.is_complex_literal(node)
+        if not complex_lit:
+            return True
+
+        # If the first element is not the imaginary literal, then we have
+        # 10+2i, which is the correct order.
+        if not isinstance(complex_lit[0], ImagLiteral):
+            return True
+
+        # Eventually, auto-fixit will go here. For now, just warn.
+        return False
+
     # Five things have to match between consecutive decls for this to warn:
     # 1. same type
     # 2. same kind
