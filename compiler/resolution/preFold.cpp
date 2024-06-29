@@ -918,7 +918,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_PROTO_SLICE_ASSIGN: {
-    ProtoSliceAssignHelper assignment(call);
+    ArrayViewElisionPrefolder assignment(call);
 
     if (assignment.supported()) {
       retval = assignment.getReplacement();

@@ -145,7 +145,7 @@ void arrayViewElision() {
   }
 }
 
-ProtoSliceAssignHelper::ProtoSliceAssignHelper(CallExpr* call):
+ArrayViewElisionPrefolder::ArrayViewElisionPrefolder(CallExpr* call):
     call_(call),
     newProtoSliceLhs_(nullptr),
     newProtoSliceRhs_(nullptr),
@@ -168,23 +168,23 @@ ProtoSliceAssignHelper::ProtoSliceAssignHelper(CallExpr* call):
 
   supported_ = handleOneProtoSlice(/* isLhs */ true) &&
                handleOneProtoSlice(/* isLhs */ false) &&
-               protoSliceTypesMatch();
+               canAssign();
 
   findCondStmt();
   INT_ASSERT(condStmt_);
 }
 
-ProtoSliceAssignHelper::~ProtoSliceAssignHelper() {
+ArrayViewElisionPrefolder::~ArrayViewElisionPrefolder() {
   staticCheckBlock_->remove();
   tmpCondFlag_->getSingleDef()->getStmtExpr()->remove();
   tmpCondFlag_->defPoint->remove();
 }
 
-CallExpr* ProtoSliceAssignHelper::getReplacement() {
+CallExpr* ArrayViewElisionPrefolder::getReplacement() {
   return new CallExpr("=", call_->get(1)->copy(), call_->get(2)->copy());
 }
 
-Symbol* ProtoSliceAssignHelper::getFlagReplacement() {
+Symbol* ArrayViewElisionPrefolder::getFlagReplacement() {
   if (!supported_) {
     // we can't optimize
     return gFalse;
@@ -211,12 +211,12 @@ Symbol* ProtoSliceAssignHelper::getFlagReplacement() {
   }
 }
 
-void ProtoSliceAssignHelper::updateAndFoldConditional() {
+void ArrayViewElisionPrefolder::updateAndFoldConditional() {
   condStmt_->condExpr->replace(new SymExpr(getFlagReplacement()));
   condStmt_->foldConstantCondition(/*addEndOfStatement*/ false);
 }
 
-void ProtoSliceAssignHelper::report() {
+void ArrayViewElisionPrefolder::report() {
   if (!fReportArrayViewElision) return;
   if (ModuleSymbol* mod = call_->getModule()) {
     // if there's no user module, getModule could return null
@@ -245,7 +245,7 @@ void ProtoSliceAssignHelper::report() {
   std::cout << std::endl;
 }
 
-bool ProtoSliceAssignHelper::handleOneProtoSlice(bool isLhs) {
+bool ArrayViewElisionPrefolder::handleOneProtoSlice(bool isLhs) {
   CallExpr* call = isLhs ? newProtoSliceLhs_ : newProtoSliceRhs_;
 
   INT_ASSERT(call->isNamed("chpl__createProtoSlice") ||
@@ -270,7 +270,7 @@ bool ProtoSliceAssignHelper::handleOneProtoSlice(bool isLhs) {
     }
   }
 
-  CallExpr* typeCheck = new CallExpr("chpl__typesSupportArrayViewElision");
+  CallExpr* typeCheck = new CallExpr("chpl__ave_exprCanBeProtoSlice");
   for_actuals (actual, call) {
     //nprint_view(actual);
     INT_ASSERT(isSymExpr(actual));
@@ -300,17 +300,17 @@ bool ProtoSliceAssignHelper::handleOneProtoSlice(bool isLhs) {
 // because the current optimization works by strength-reducing that to use
 // slices : A[3..3, 1..3] = B[1..3, 3..3]. That's not a valid assignment as
 // opposed to what the user wrote.
-bool ProtoSliceAssignHelper::protoSliceTypesMatch() const {
-  CallExpr* typeMatchCheck = new CallExpr("chpl__ave_typesMatch",
-                                          call_->get(1)->copy(),
-                                          call_->get(2)->copy());
+bool ArrayViewElisionPrefolder::canAssign() const {
+  CallExpr* canAssign = new CallExpr("chpl__ave_protoSlicesSupportAssignment",
+                                     call_->get(1)->copy(),
+                                     call_->get(2)->copy());
 
   VarSymbol* tmp = newTemp("call_tmp", dtBool);
-  DefExpr* flagDef = new DefExpr(tmp, typeMatchCheck);
+  DefExpr* flagDef = new DefExpr(tmp, canAssign);
 
   staticCheckBlock_->insertAtTail(flagDef);
 
-  resolveExpr(typeMatchCheck);
+  resolveExpr(canAssign);
   resolveExpr(flagDef);
 
   bool ret = (toSymExpr(flagDef->init)->symbol() == gTrue);
@@ -322,7 +322,7 @@ bool ProtoSliceAssignHelper::protoSliceTypesMatch() const {
 
 // e must be the lhs or rhs of PRIM_ASSIGN_PROTO_SLICES
 // returns the `chpl__createProtoSlice call
-CallExpr* ProtoSliceAssignHelper::findOneProtoSliceCall(Expr* e) {
+CallExpr* ArrayViewElisionPrefolder::findOneProtoSliceCall(Expr* e) {
   SymExpr* symExpr = toSymExpr(e);
   INT_ASSERT(symExpr);
 
@@ -344,13 +344,13 @@ CallExpr* ProtoSliceAssignHelper::findOneProtoSliceCall(Expr* e) {
   return toCallExpr(move->get(2));
 }
 
-void ProtoSliceAssignHelper::findProtoSlices() {
+void ArrayViewElisionPrefolder::findProtoSlices() {
   //nprint_view(call_);
   newProtoSliceLhs_ = findOneProtoSliceCall(call_->get(1));
   newProtoSliceRhs_ = findOneProtoSliceCall(call_->get(2));
 }
 
-void ProtoSliceAssignHelper::findCondStmt() {
+void ArrayViewElisionPrefolder::findCondStmt() {
   Expr* cur = call_;
   while (cur) {
     if (CondStmt* condStmt = toCondStmt(cur)) {

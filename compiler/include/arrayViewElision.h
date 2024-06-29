@@ -46,11 +46,11 @@ private:
 };
 
 // interface for prefold
-class ProtoSliceAssignHelper {
+class ArrayViewElisionPrefolder {
 public:
-  ProtoSliceAssignHelper() = delete;
-  ProtoSliceAssignHelper(CallExpr* call);
-  ~ProtoSliceAssignHelper();
+  ArrayViewElisionPrefolder() = delete;
+  ArrayViewElisionPrefolder(CallExpr* call);
+  ~ArrayViewElisionPrefolder();
 
   inline CondStmt* condStmt() const { return condStmt_; }
   inline bool supported() const { return supported_; }
@@ -81,7 +81,7 @@ private:
   void findCondStmt();
   void findProtoSlices();
   bool handleOneProtoSlice(bool isLhs);
-  bool protoSliceTypesMatch() const;
+  bool canAssign() const;
   CallExpr* findOneProtoSliceCall(Expr* e);
   Symbol* getFlagReplacement();
 };

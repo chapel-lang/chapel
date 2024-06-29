@@ -40,6 +40,7 @@ module ChapelShortArrayTransfer {
   inline proc chpl__dynamicCheckShortArrayTransfer(a, b) {
     param localCompilation = _local && CHPL_LOCALE_MODEL=="flat";
     const sizeOk = a.sizeAs(uint) < shortArrayTransferThreshold;
+
     if debugShortArrayTransfer {
       chpl_debug_writeln("<ShortArrayTransfer> Size: ", a.sizeAs(uint),
                          " Threshold: ", shortArrayTransferThreshold);
@@ -48,21 +49,22 @@ module ChapelShortArrayTransfer {
       else
         chpl_debug_writeln("<ShortArrayTransfer> size doesn't qualify");
     }
+
     if localCompilation {
       return sizeOk;
     }
     else {
       // No `.locale` to avoid overheads. Note that this is an optimization for
       // fast-running code. Small things matter.
-      // TODO, use chpl__bothLocal
-      const sameLocale = __primitive("_wide_get_locale", a) ==
-                         __primitive("_wide_get_locale", b);
-      if sameLocale then
-        chpl_debug_writeln("<ShortArrayTransfer> locality qualifies");
-      else
-        chpl_debug_writeln("<ShortArrayTransfer> locality does not qualify");
+      const bothLocal = chpl__bothLocal(a, b);
+      if debugShortArrayTransfer {
+        if bothLocal then
+          chpl_debug_writeln("<ShortArrayTransfer> locality qualifies");
+        else
+          chpl_debug_writeln("<ShortArrayTransfer> locality does not qualify");
+      }
 
-      return sizeOk && sameLocale;
+      return sizeOk && bothLocal;
     }
   }
 }

@@ -25,62 +25,77 @@ module ChapelArrayViewElision {
   use CTypes;
   use ChapelArray only _validRankChangeArgs;
 
-  // TODO the following can be removed?
-  proc isProtoSlice(a) param { return isSubtype(a.type, chpl__protoSlice); }
+  //
+  // compiler interface
+  //
 
-  proc isArrayOrProtoSlice(a) param {
-    return isArray(a) || isProtoSlice(a);
+  proc chpl__createProtoSlice(ref Arr, slicingExprs ...)
+      where chpl__createProtoSliceArgCheck(Arr, slicingExprs) {
+
+    if slicingExprs.size == 1 then
+      return new chpl__protoSlice(isConst=false, c_addrOf(Arr),
+                                  slicingExprs[0]);
+    else
+      return new chpl__protoSlice(isConst=false, c_addrOf(Arr), slicingExprs);
   }
 
-  proc areBothArraysOrProtoSlices(a, b) {
-    return isArrayOrProtoSlice(a) && isArrayOrProtoSlice(b);
+  proc chpl__createConstProtoSlice(const ref Arr, slicingExprs ...)
+      where chpl__createProtoSliceArgCheck(Arr, slicingExprs) {
+
+    if slicingExprs.size == 1 {
+      return new chpl__protoSlice(isConst=true, c_addrOfConst(Arr),
+                                  slicingExprs[0]);
+    }
+    else
+      return new chpl__protoSlice(isConst=true, c_addrOfConst(Arr),
+                                  slicingExprs);
   }
 
-  proc rangify(rcTup) {
-    compilerAssert(isTuple(rcTup));
+  // catch-all: nothing here is supported, just pretend creating a proto slice.
+  // The branch where this call is will be dropped during resolution. We just
+  // want to avoid resolution errors before that happens
+  proc chpl__createProtoSlice(x, slicingExprs... ) {
+    return new chpl__protoSlice();
+  }
 
-    proc createRangifiedType(type rcTupType) type {
-      proc recurse(type curType, param dim) type {
-        if dim == rcTupType.size {
-          return curType;
-        }
-        else if isRangeType(rcTupType[dim]) {
-          if dim == 0 {
-            return recurse((rcTupType[dim],), dim+1);
-          }
-          else {
-            return recurse(((...curType), rcTupType[dim]), dim+1);
-          }
-        }
-        else {
-          const dummy: rcTupType[dim];
-          const dummyRange = dummy..dummy;
-          if dim == 0 {
-            return recurse((dummyRange.type,), dim+1);
-          }
-          else {
-            return recurse(((...curType), dummyRange.type), dim+1);
-          }
-        }
+  // catch-all: nothing here is supported, just pretend creating a proto slice.
+  // The branch where this call is will be dropped during resolution. We just
+  // want to avoid resolution errors before that happens
+  proc chpl__createConstProtoSlice(x, slicingExprs... ) {
+    return new chpl__protoSlice();
+  }
+
+  proc chpl__ave_exprCanBeProtoSlice(base, idxExprs...) param: bool {
+    return chpl__ave_baseTypeSupports(base) &&
+           chpl__ave_idxExprsSupport(base.idxType, (...idxExprs));
+  }
+
+  proc chpl__ave_protoSlicesSupportAssignment(a: chpl__protoSlice,
+                                              b: chpl__protoSlice) param: bool {
+    if a.isRankChange != b.isRankChange then return false; //or assert?
+
+    if !a.isRankChange then return true; // nothing else to check
+
+    // we want to check that if there are integrals in the original slicing
+    // expressions, they are at the same rank. In other words, if we are working
+    // with rank-changes, we want to make sure that the collapsed dims on both
+    // sides match
+    type aType = a.slicingExprType;
+    type bType = b.slicingExprType;
+    compilerAssert(a.slicingExprType.size == b.slicingExprType.size);
+    for param i in 0..<a.slicingExprType.size {
+      if ( ( isRangeType(aType[i]) && !isRangeType(bType[i])) ||
+           (!isRangeType(aType[i]) &&  isRangeType(bType[i])) ) {
+        return false;
       }
-
-      return recurse(nothing, 0);
     }
 
-    var ret: createRangifiedType(rcTup.type);
-
-    for param i in 0..<ret.size {
-      if isRange(rcTup[i]) {
-        ret[i] = rcTup[i];
-      }
-      else {
-        ret[i] = rcTup[i]..rcTup[i];
-      }
-    }
-
-    return ret;
+    return true;
   }
 
+  //
+  // proto slice type
+  //
 
   record chpl__protoSlice {
     param rank;
@@ -192,7 +207,10 @@ module ChapelArrayViewElision {
         return size;
       }
     }
-    inline proc isRectangular() param { return ptrToArr.deref().isRectangular(); }
+
+    inline proc isRectangular() param {
+      return ptrToArr.deref().isRectangular();
+    }
 
     iter these() ref where !isConst {
       if rank == 1 then {
@@ -262,6 +280,11 @@ module ChapelArrayViewElision {
     }
   }
 
+  // we need this as otherwise compiler-generated equality operator requires
+  // both sides to have the exact same type. For the most part, we want that for
+  // optimization, however being able to resolve this operator for different
+  // types keeps the compiler happy. IOW, the cases where we need this are
+  // typically cases where the optimization is not supported in the first place.
   operator ==(const ref lhs: chpl__protoSlice(?),
               const ref rhs: chpl__protoSlice(?)) {
     return lhs.rank == rhs.rank &&
@@ -269,67 +292,38 @@ module ChapelArrayViewElision {
            lhs.ranges == rhs.ranges;
   }
 
-  proc chpl__createProtoSliceArgCheck(Arr, slicingExprs) param: bool {
+  proc isProtoSlice(a) param { return isSubtype(a.type, chpl__protoSlice); }
+
+  // 
+  // private interface
+  //
+
+  private proc chpl__createProtoSliceArgCheck(Arr, slicingExprs) param: bool {
     compilerAssert(isTuple(slicingExprs));
 
-    return chpl__baseTypeSupportAVE(Arr) &&
+    return chpl__ave_baseTypeSupports(Arr) &&
            (chpl__isTupleOfRanges(slicingExprs) ||
             (slicingExprs.size == 1 && isDomain(slicingExprs[0])) ||
             _validRankChangeArgs(slicingExprs, Arr.idxType));
   }
 
-  proc chpl__createProtoSlice(ref Arr, slicingExprs ...)
-      where chpl__createProtoSliceArgCheck(Arr, slicingExprs) {
-
-    if slicingExprs.size == 1 then
-      return new chpl__protoSlice(isConst=false, c_addrOf(Arr),
-                                  slicingExprs[0]);
-    else
-      return new chpl__protoSlice(isConst=false, c_addrOf(Arr), slicingExprs);
-  }
-
-  proc chpl__createConstProtoSlice(const ref Arr, slicingExprs ...)
-      where chpl__createProtoSliceArgCheck(Arr, slicingExprs) {
-
-    if slicingExprs.size == 1 {
-      return new chpl__protoSlice(isConst=true, c_addrOfConst(Arr),
-                                  slicingExprs[0]);
-    }
-    else
-      return new chpl__protoSlice(isConst=true, c_addrOfConst(Arr), slicingExprs);
-  }
-
-  // catch-all: nothing here is supported, just pretend creating a proto slice.
-  // The branch where this call is will be dropped during resolution. We just
-  // want to avoid resolution errors before that happens
-  proc chpl__createProtoSlice(x, slicingExprs... ) {
-    return new chpl__protoSlice();
-  }
-
-  // catch-all: nothing here is supported, just pretend creating a proto slice.
-  // The branch where this call is will be dropped during resolution. We just
-  // want to avoid resolution errors before that happens
-  proc chpl__createConstProtoSlice(x, slicingExprs... ) {
-    return new chpl__protoSlice();
-  }
-
-
-  proc chpl__baseTypeSupportAVE(base) param: bool {
+  private proc chpl__ave_baseTypeSupports(base) param: bool {
     import Reflection;
     return isArray(base) && // also could be a view?
            isSubtype(base._instance.type, DefaultRectangularArr) &&
            Reflection.canResolve("c_addrOf", base);
   }
 
-  proc chpl__indexingExprsSupportAVE(type idxType, indexingExprs...) param: bool {
-    for param tid in 0..<indexingExprs.size {
-      if !isRange(indexingExprs[tid]) {
+  private proc chpl__ave_idxExprsSupport(type idxType,
+                                         idxExprs...) param: bool {
+    for param tid in 0..<idxExprs.size {
+      if !isRange(idxExprs[tid]) {
         // should we also check for homogeneous tuples as we don't have support
         // for rank-change just yet?
         return false;
       }
-      else if !(indexingExprs[tid].strides == strideKind.positive ||
-                indexingExprs[tid].strides == strideKind.one) {
+      else if !(idxExprs[tid].strides == strideKind.positive ||
+                idxExprs[tid].strides == strideKind.one) {
         // negative strided slices are not supported and generate a warning.
         // Instead of trying to generate the warning, just avoid covering
         // unsupported things here
@@ -339,9 +333,10 @@ module ChapelArrayViewElision {
     return true;
   }
 
-  proc chpl__indexingExprsSupportAVE(type idxType, indexingExprs: domain) param: bool {
-    if !(indexingExprs.strides == strideKind.positive ||
-         indexingExprs.strides == strideKind.one) {
+  private proc chpl__ave_idxExprsSupport(type idxType,
+                                         idxExprs: domain) param: bool {
+    if !(idxExprs.strides == strideKind.positive ||
+         idxExprs.strides == strideKind.one) {
       // negative strided slices are not supported and generate a warning.
       // Instead of trying to generate the warning, just avoid covering
       // unsupported things here
@@ -350,46 +345,9 @@ module ChapelArrayViewElision {
     return true;
   }
 
-  proc chpl__indexingExprsSupportAVE(type idxType, indexingExprs...) param: bool 
-      where _validRankChangeArgs(indexingExprs, idxType) {
-    return true;
-  }
-
-  inline proc chpl__bothLocal(const ref a, const ref b) {
-    extern proc chpl_equals_localeID(const ref x, const ref y): bool;
-
-    const aLoc = __primitive("_wide_get_locale", a._value);
-    const bLoc = __primitive("_wide_get_locale", b._value);
-
-    return chpl_equals_localeID(aLoc, bLoc) &&
-           chpl_equals_localeID(aLoc, here_id);
-  }
-
-  proc chpl__typesSupportArrayViewElision(base,
-                                          indexingExprs...) param: bool {
-    return chpl__baseTypeSupportAVE(base) &&
-           chpl__indexingExprsSupportAVE(base.idxType, (...indexingExprs));
-  }
-
-  proc chpl__ave_typesMatch(a: chpl__protoSlice, b: chpl__protoSlice) param: bool {
-    if a.isRankChange != b.isRankChange then return false; //or assert?
-
-    if !a.isRankChange then return true; // nothing else to check
-
-    // we want to check that if there are integrals in the original slicing
-    // expressions, they are at the same rank. In other words, if we are working
-    // with rank-changes, we want to make sure that the collapsed dims on both
-    // sides match
-    type aType = a.slicingExprType;
-    type bType = b.slicingExprType;
-    compilerAssert(a.slicingExprType.size == b.slicingExprType.size);
-    for param i in 0..<a.slicingExprType.size {
-      if ( ( isRangeType(aType[i]) && !isRangeType(bType[i])) ||
-           (!isRangeType(aType[i]) &&  isRangeType(bType[i])) ) {
-        return false;
-      }
-    }
-
+  private proc chpl__ave_idxExprsSupport(type idxType,
+                                         idxExprs...) param: bool
+      where _validRankChangeArgs(idxExprs, idxType) {
     return true;
   }
 
@@ -410,7 +368,48 @@ module ChapelArrayViewElision {
     return false;
   }
 
-  inline operator :(ref a: chpl__protoSlice, type b: chpl__protoSlice) {
-    compilerError("Should never cast proto slices");
+  private proc rangify(rcTup) {
+    compilerAssert(isTuple(rcTup));
+
+    proc createRangifiedType(type rcTupType) type {
+      proc recurse(type curType, param dim) type {
+        if dim == rcTupType.size {
+          return curType;
+        }
+        else if isRangeType(rcTupType[dim]) {
+          if dim == 0 {
+            return recurse((rcTupType[dim],), dim+1);
+          }
+          else {
+            return recurse(((...curType), rcTupType[dim]), dim+1);
+          }
+        }
+        else {
+          const dummy: rcTupType[dim];
+          const dummyRange = dummy..dummy;
+          if dim == 0 {
+            return recurse((dummyRange.type,), dim+1);
+          }
+          else {
+            return recurse(((...curType), dummyRange.type), dim+1);
+          }
+        }
+      }
+
+      return recurse(nothing, 0);
+    }
+
+    var ret: createRangifiedType(rcTup.type);
+
+    for param i in 0..<ret.size {
+      if isRange(rcTup[i]) {
+        ret[i] = rcTup[i];
+      }
+      else {
+        ret[i] = rcTup[i]..rcTup[i];
+      }
+    }
+
+    return ret;
   }
 }
