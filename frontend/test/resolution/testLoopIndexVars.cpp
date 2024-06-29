@@ -34,6 +34,12 @@
 
 #include <map>
 
+#define ADVANCE_PRESERVING_SEARCH_PATHS_(ctx__) \
+  do { \
+    ctx__->advanceToNextRevision(false); \
+    setupModuleSearchPaths(ctx__, false, false, {}, {}); \
+  } while (0)
+
 static auto myiter = std::string(R""""(
 iter myiter() {
   yield 1;
@@ -116,9 +122,6 @@ R"""( i in myiter() {
 
 //
 // Testing resolution of loop index variables
-// TODO:
-// - zippered iteration
-// - forall loops
 // - error messages
 //
 
@@ -472,6 +475,282 @@ static void testIndexScope() {
   assert(!guard.realizeErrors());
 }
 
+static void
+unpackIterKindStrToBool(const std::string& str,
+                        bool* needSerial=nullptr,
+                        bool* needStandalone=nullptr,
+                        bool* needLeader=nullptr,
+                        bool* needFollower=nullptr) {
+  bool* p = nullptr;
+  if (str.empty()) {
+    p = needSerial;
+  } else if (str == "standalone") {
+    p = needStandalone;
+  } else if (str == "leader") {
+    p = needLeader;
+  } else if (str == "follower") {
+    p = needFollower;
+  } else {
+    assert(false && "Invalid 'iterKind' string!");
+  }
+  if (p) *p = true;
+}
+
+static void
+assertIterIsCorrect(Context* context, const AssociatedAction& aa,
+                    const std::string& iterKindStr) {
+  bool needSerial = false;
+  bool needStandalone = false;
+  bool needLeader = false;
+  bool needFollower = false;
+  unpackIterKindStrToBool(iterKindStr, &needSerial, &needStandalone,
+                          &needLeader,
+                          &needFollower);
+
+  assert(aa.action() == AssociatedAction::ITERATE);
+  assert(aa.fn());
+
+  auto fn = aa.fn();
+  if (needSerial) {
+    assert(fn->isSerialIterator(context));
+  } else if (needStandalone) {
+    assert(fn->isParallelStandaloneIterator(context));
+  } else if (needLeader) {
+    assert(fn->isParallelLeaderIterator(context));
+  } else if (needFollower) {
+    assert(fn->isParallelFollowerIterator(context));
+  } else {
+    assert(false && "Should not reach here!");
+  }
+}
+
+static void
+assertLoopMatches(Context* context, const std::string& program,
+                  const char* iterKindStr,
+                  int idxLoopAst,
+                  int idxIterAst,
+                  int idxFollowerIterAst=-1) {
+  bool needSerial = false;
+  bool needStandalone = false;
+  bool needLeader = false;
+  bool needFollower = false;
+  unpackIterKindStrToBool(iterKindStr, &needSerial, &needStandalone,
+                          &needLeader,
+                          &needFollower);
+  needFollower = needFollower || needLeader;
+
+  // Unpack needed ASTs and properties about them.
+  const Module* m = parseModule(context, program);
+  auto loop = m->stmt(idxLoopAst)->toIndexableLoop();
+  auto iter = m->stmt(idxIterAst)->toFunction();
+  auto iterFollower = idxFollowerIterAst > 0
+      ? m->stmt(idxFollowerIterAst)->toFunction()
+      : nullptr;
+  assert(loop && iter && loop->iterand() && loop->index());
+  auto iterand = loop->iterand();
+  auto index = loop->index();
+  bool isIterMethod = parsing::idIsMethod(context, iter->id());
+  // bool isBracketLoop = loop->isBracketLoop();
+  // bool isForall = loop->isForall();
+
+
+  // Resolve the module.
+  auto& rr = resolveModule(context, m->id());
+  auto& reIterand = rr.byAst(iterand);
+
+  if (auto zip = iterand->toZip()) {
+    assert(false && "Zip iterands not handled in this test yet!");
+    return;
+  } else {
+    int numExpectedActions = (needLeader || needFollower) ? 2 : 1;
+    assert(reIterand.associatedActions().size() == numExpectedActions);
+
+    auto& aa1 = reIterand.associatedActions()[0];
+    assertIterIsCorrect(context, aa1, iterKindStr);
+
+    if (needFollower) {
+      assert(iterFollower);
+      auto& aa2 = reIterand.associatedActions()[1];
+      assertIterIsCorrect(context, aa2, "follower");
+      bool isFollowerMethod = parsing::idIsMethod(context, iterFollower->id());
+      assert(isFollowerMethod == isIterMethod);
+    }
+
+    auto& reIndex = rr.byAst(index);
+    assert(reIndex.type().type() == IntType::get(context, 0));
+  }
+}
+
+static void testSerialZip(Context* context) {
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
+  auto program = R""""(
+                  record r {}
+                  iter r.these() do yield 0;
+                  var r1 = new r();
+                  for tup in zip(r1, r1) do tup;
+                  )"""";
+
+  const Module* m = parseModule(context, program);
+  auto iter = m->stmt(1)->toFunction();
+  auto var = m->stmt(2)->toVariable();
+  auto loop = m->stmt(3)->toFor();
+  assert(iter && var && loop && loop->iterand() && loop->index());
+  auto index = loop->index();
+  auto zip = loop->iterand()->toZip();
+  assert(zip);
+
+  auto& rr = resolveModule(context, m->id());
+  auto& reZip = rr.byAst(zip);
+
+  assert(reZip.associatedActions().empty());
+
+  assert(zip->numActuals() == 2);
+  for (auto actual : zip->actuals()) {
+    auto& re = rr.byAst(actual);
+    assert(re.toId() == var->id());
+    assert(re.associatedActions().size() == 1);
+    auto& aa = re.associatedActions().back();
+    assert(aa.action() == AssociatedAction::ITERATE);
+    auto fn = aa.fn();
+    assert(fn->untyped()->kind() == Function::ITER);
+  }
+
+  auto t = reZip.type().type()->toTupleType();
+  assert(t && t->numElements() == 2);
+  assert(t->elementType(0).type() == IntType::get(context, 0));
+  assert(t->elementType(1).type() == IntType::get(context, 0));
+
+  auto& reIndex = rr.byAst(index);
+  assert(reIndex.type() == reZip.type());
+  assert(!guard.realizeErrors());
+}
+
+static void testParallelZip(Context* context) {
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
+  auto program = R""""(
+                  record r {}
+                  iter r.these(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
+                  iter r.these(param tag: iterKind, followThis) where tag == iterKind.follower do yield 0;
+                  var r1 = new r();
+                  forall tup in zip(r1, r1) do tup;
+                  )"""";
+
+  const Module* m = parseModule(context, program);
+  auto iterLeader = m->stmt(1)->toFunction();
+  auto iterFollower = m->stmt(2)->toFunction();
+  auto var = m->stmt(3)->toVariable();
+  auto loop = m->stmt(4)->toForall();
+  assert(iterLeader && iterFollower && var && loop &&
+         loop->iterand() &&
+         loop->iterand()->isZip() &&
+         loop->index());
+  auto index = loop->index();
+  auto zip = loop->iterand()->toZip();
+
+  auto& rr = resolveModule(context, m->id());
+  auto& reZip = rr.byAst(zip);
+
+  for (auto& e : guard.errors()) {
+    std::cout << e->message() << std::endl;
+  }
+
+  assert(reZip.associatedActions().empty());
+
+  assert(zip->numActuals() == 2);
+  for (int i = 0; i < zip->numActuals(); i++) {
+    auto actual = zip->actual(i);
+    auto& re = rr.byAst(actual);
+    assert(re.toId() == var->id());
+    bool isLeaderActual = (i == 0);
+
+    // Only the first actual should have a leader iterator attached.
+    if (isLeaderActual) {
+      assert(re.associatedActions().size() == 2);
+      auto& aa = re.associatedActions()[0];
+      assertIterIsCorrect(context, aa, "leader");
+    } else {
+      assert(re.associatedActions().size() == 1);
+    }
+
+    // Check all actuals for the follower iterator.
+    auto& aa = re.associatedActions()[(isLeaderActual ? 1 : 0)];
+    assertIterIsCorrect(context, aa, "follower");
+  }
+
+  auto t = reZip.type().type()->toTupleType();
+  assert(t && t->numElements() == 2);
+  assert(t->elementType(0).type() == IntType::get(context, 0));
+  assert(t->elementType(1).type() == IntType::get(context, 0));
+
+  auto& reIndex = rr.byAst(index);
+  assert(reIndex.type() == reZip.type());
+  assert(!guard.realizeErrors());
+}
+
+static void testForallStandaloneThese(Context* context) {
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
+  auto program = R""""(
+                  record r {}
+                  iter r.these(param tag: iterKind) where tag == iterKind.standalone do yield 0;
+                  var r1 = new r();
+                  forall i in r1 do i;
+                  )"""";
+  assertLoopMatches(context, program, "standalone", 3, 1);
+  assert(!guard.realizeErrors());
+}
+
+static void testForallStandaloneRedirect(Context* context) {
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
+  auto program = R""""(
+                  iter foo(param tag: iterKind) where tag == iterKind.standalone do yield 0;
+                  forall i in foo() do i;
+                  )"""";
+  assertLoopMatches(context, program, "standalone", 1, 0);
+  assert(!guard.realizeErrors());
+}
+
+static void testForallLeaderFollowerThese(Context* context) {
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
+  auto program = R""""(
+                  record r {}
+                  iter r.these(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
+                  iter r.these(param tag: iterKind, followThis) where tag == iterKind.follower do yield 0;
+                  var r1 = new r();
+                  forall i in r1 do i;
+                  )"""";
+
+  assertLoopMatches(context, program, "leader", 4, 1, 2);
+  assert(!guard.realizeErrors());
+}
+
+static void testForallLeaderFollowerRedirect(Context* context) {
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
+  auto program = R""""(
+                  iter foo(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
+                  iter foo(param tag: iterKind, followThis) where tag == iterKind.follower do yield 0;
+                  forall i in foo() do i;
+                  )"""";
+  assertLoopMatches(context, program, "leader", 2, 0, 1);
+  assert(!guard.realizeErrors());
+}
 
 int main() {
   testSimpleLoop("for");
@@ -489,6 +768,16 @@ int main() {
   testParamFor();
   testNestedParamFor();
   testIndexScope();
+
+  // Use a single context instance to avoid re-resolving internal modules.
+  auto ctx = buildStdContext();
+  Context* context = ctx.get();
+  testSerialZip(context);
+  testParallelZip(context);
+  testForallStandaloneThese(context);
+  testForallStandaloneRedirect(context);
+  testForallLeaderFollowerThese(context);
+  testForallLeaderFollowerRedirect(context);
 
   return 0;
 }
