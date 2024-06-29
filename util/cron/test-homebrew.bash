@@ -6,7 +6,7 @@
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
-# !IMPORTANT! Make sure REPO_CACHE_PATH is set to where the homebrew-core repository should go
+# !IMPORTANT! Make sure REPO_PATH is set to where the homebrew-core repository should go
 # before running this script, or it will fail on the step where it diffs the current
 # formula with the copy we store in chapel-release.rb
 
@@ -41,12 +41,11 @@ cd $CHPL_HOME
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
-mkdir -p $HOME/test
-git clone --reference-if-able "${REPO_CACHE_PATH:-/missing}/homebrew-core.git" git@github.com:Homebrew/homebrew-core.git 2> /dev/null || (cd $HOME/test/homebrew-core; git pull)
+git clone git@github.com:Homebrew/homebrew-core ${REPO_PATH}/homebrew-core 2> /dev/null || (cd ${REPO_PATH:-/missing}/homebrew-core; git pull origin master)
 
 # compare the chapel.rb in homebrew-core with the one in our repository (chapel-release.rb)
 # to catch any changes homebrew makes to the formuala without telling us (might happen when they update deps, etc)
-diff ${REPO_CACHE_PATH:-/missing}/Formula/c/chapel.rb ${CHPL_HOME}/util/packaging/homebrew/chapel-release.rb 2> /dev/null
+diff ${REPO_PATH:-/missing}/homebrew-core/Formula/c/chapel.rb ${CHPL_HOME}/util/packaging/homebrew/chapel-release.rb 2> /dev/null
 FORMULA_CHANGED=$?
 if [ $FORMULA_CHANGED -ne 0 ]
 then
@@ -59,8 +58,6 @@ fi
 log_info "Building tarball with version: ${version}"
 ./util/buildRelease/gen_release ${version}
 
-#cp $HOME/test/homebrew-core/Formula/c/chapel.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
-# fix to make the home-brew working. After 1.32 release uncomment the above line
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 cd ${CHPL_HOME}/util/packaging/homebrew
 # Get the tarball from the root tar/ directory and replace the url in chapel.rb with the tarball location
