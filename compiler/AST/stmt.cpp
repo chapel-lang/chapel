@@ -647,7 +647,13 @@ BlockStmt* findEnclosingGpuAttributeBlock(Expr* search) {
     if (auto block = toBlockStmt(search)) {
       if (block->isGpuAttributeBlock()) return block;
     }
-    search = search->parentExpr;
+    if (search->parentExpr) {
+      search = search->parentExpr;
+    } else if (search->parentSymbol) {
+      search = search->parentSymbol->defPoint;
+    } else {
+      break;
+    }
   }
   return nullptr;
 }
