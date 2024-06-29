@@ -292,6 +292,12 @@ module ChapelArrayViewElision {
            lhs.ranges == rhs.ranges;
   }
 
+
+  // we need this because we support assignment between two proto slices
+  inline operator :(ref a: chpl__protoSlice, type b: chpl__protoSlice) {
+    compilerError("Should never cast proto slices");
+  }
+
   proc isProtoSlice(a) param { return isSubtype(a.type, chpl__protoSlice); }
 
   // 
