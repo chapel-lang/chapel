@@ -830,11 +830,11 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
     }
   }
 
+  lowerThunkPrims(base);
+
   lowerIfExprs(base);
 
   lowerLoopExprs(base);
-
-  lowerThunkPrims(base);
 
 
   //
