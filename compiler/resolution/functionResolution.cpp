@@ -11745,7 +11745,7 @@ static void applyGpuAttributesToIterableExprs() {
     int numUsers = primCall->numActuals();
 
     if (numUsers == 0) {
-      USR_FATAL(block, "Found GPU attributes on a variable declaration, but no subexpression to apply them to");
+      USR_FATAL_CONT(block, "Found GPU attributes on a variable declaration, but no subexpression to apply them to");
       USR_PRINT(block, "GPU attributes on variable declarations are applied to loop expressions and promoted function calls in the variable's initializer");
       USR_STOP();
     }
