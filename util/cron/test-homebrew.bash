@@ -41,7 +41,7 @@ cd $CHPL_HOME
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
-git clone "${REPO_PATH:-/missing}/homebrew-core.git" git@github.com:Homebrew/homebrew-core.git 2> /dev/null || (cd ${REPO_PATH:-/missing}/homebrew-core; git pull origin master)
+git clone git@github.com:Homebrew/homebrew-core ${REPO_PATH}/homebrew-core 2> /dev/null || (cd ${REPO_PATH:-/missing}/homebrew-core; git pull origin master)
 
 # compare the chapel.rb in homebrew-core with the one in our repository (chapel-release.rb)
 # to catch any changes homebrew makes to the formuala without telling us (might happen when they update deps, etc)
