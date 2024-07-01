@@ -11,7 +11,7 @@ use Allocators;
 
 config const n = 10;         // the maximum tree depth
 config const globalPoolSize = 2 ** 32;
-config const localPoolSize = 2 ** 20;
+config const localPoolSize = 2 ** 32;
 
 var globalPool = new bumpPtrMemPool(globalPoolSize, locking=false);
 
