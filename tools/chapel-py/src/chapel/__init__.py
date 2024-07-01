@@ -520,9 +520,8 @@ def is_unstable_module(node: AstNode):
     """
     if isinstance(node, Module):
         attrs = node.attribute_group()
-        if attrs:
-            if attrs.is_unstable():
-                return True
+        if attrs and attrs.is_unstable():
+            return True
     return False
 
 
