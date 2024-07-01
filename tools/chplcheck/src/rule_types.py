@@ -21,6 +21,7 @@ from dataclasses import field
 import typing
 
 import chapel
+from abc import ABCMeta, abstractmethod
 from fixits import Fixit, Edit
 
 
@@ -151,7 +152,7 @@ Function type for fixits; (context, data) -> None or Fixit or List[Fixit]
 """
 
 
-class Rule(typing.Generic[VarResultType]):
+class Rule(typing.Generic[VarResultType], metaclass=ABCMeta):
     # can't specify type of driver due to circular import
     def __init__(self, driver, name: str) -> None:
         self.driver = driver
@@ -182,6 +183,12 @@ class Rule(typing.Generic[VarResultType]):
                 self._fixup_description_for_fixit(f, fixit_func)
                 fixits_from_hooks.append(f)
         return fixits_from_hooks
+
+    @abstractmethod
+    def check(
+        self, context: chapel.Context, root: chapel.AstNode
+    ) -> typing.Iterable[CheckResult]:
+        pass
 
 
 class BasicRule(Rule[BasicRuleResult]):
