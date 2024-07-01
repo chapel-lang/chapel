@@ -7,4 +7,4 @@ on here.gpus[0] {
   writeln(DevArr);         // prints "1 1 1 1 1"
 }
 
-writeln(HostArr);  // prints "2 2 2 2 2"
+writeln(HostArr);  // prints "1 1 1 1 1"
