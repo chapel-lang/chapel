@@ -22,7 +22,4 @@ nightly_args="${nightly_args} -no-buildcheck"
 perf_args="-performance -numtrials 1"
 perf_hpe_cray_ex_args="-startdate 06/25/24"
 
-# To use while setting up job for testing
-export CHPL_NIGHTLY_TEST_DIRS="release/examples/benchmarks/hpcc"
-
 $CWD/nightly -cron ${perf_args} ${perf_hpe_cray_ex_args} ${nightly_args}
