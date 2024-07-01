@@ -1,3 +1,4 @@
 init-field-arg-nonnil-shared-from-nonnil-owned.chpl:7: In initializer:
-init-field-arg-nonnil-shared-from-nonnil-owned.chpl:8: warning: assigning owned class to shared class is deprecated.
+init-field-arg-nonnil-shared-from-nonnil-owned.chpl:8: error: invalid copy-initialization
+init-field-arg-nonnil-shared-from-nonnil-owned.chpl:8: error: cannot initialize 'shared MyClass' from a 'owned MyClass'
   init-field-arg-nonnil-shared-from-nonnil-owned.chpl:14: called as MyRecord.init(rhs: owned MyClass)
