@@ -721,9 +721,11 @@ void ErrorAmbiguousMainModule::write(ErrorWriterBase& wr) const {
              "unknown main module due to multiple command line modules");
   wr.note(loc, "add a 'proc main' or use '--main-module'");
   wr.message("");
+  size_t i = 0;
   for (auto mod : modules) {
     wr.note(locationOnly(mod), "'module ", mod->name(), "' could be the main module");
     wr.codeForDef(mod);
+    i++;
   }
 }
 void ErrorUnknownMainModule::write(ErrorWriterBase& wr) const {
