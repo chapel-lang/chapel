@@ -25,7 +25,7 @@ From: quay.io/centos/centos:stream9
 ## to construct the image
 apptainer build --fakeroot image.sif image.def
 
-#To create an image for experimenting with where you can install
+# To create an image for experimenting with where you can install
 # more packages etc, use this:
 #   sudo apptainer build --sandbox image.sif image.def
 #

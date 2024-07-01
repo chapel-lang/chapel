@@ -1,0 +1,13 @@
+BootStrap: docker
+From: rockylinux/rockylinux:9.4
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/dnf-deps.sh
+    # installs LLVM / clang 16
+    /provision-scripts/dnf-llvm.sh
+
+%runscript
+    ../../provision-scripts/run.sh "$@"
