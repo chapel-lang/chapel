@@ -501,7 +501,10 @@ module GPU
         res = doCpuReduceHelp(op, A): res.type;
       }
       else {
-        // I want to do on here.parent but that doesn't work
+        // I want to do on here.parent but that doesn't work. Note that this
+        // caused some issues with `--gpu-specialization`.
+        // test/gpu/native/reduction/basic.skipif is a skipif that's added
+        // because of this hack.
         extern proc chpl_task_getRequestedSubloc(): int(32);
         const curSubloc = chpl_task_getRequestedSubloc();
         chpl_task_setSubloc(-2);
