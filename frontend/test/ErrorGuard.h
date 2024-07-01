@@ -118,6 +118,7 @@ class ErrorGuard {
                          chpl::ErrorWriter::DETAILED,
                          false);
     for (auto& err : this->errors()) err->write(ew);
+    std::cout.flush();
   }
 
   /** The guard destructor will assert that no errors have occurred. */

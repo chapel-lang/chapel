@@ -102,7 +102,10 @@ struct Resolver {
   ReceiverScopesVec savedReceiverScopes;
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
+  std::vector<ID> childFunctionIds;
   owned<OuterVariables> outerVars;
+  const CallerDetails* parentDetails = nullptr;
+  std::map<ID, std::pair<types::QualifiedType, std::vector<ID>>> outerVariables;
 
   // results of the resolution process
 
@@ -129,11 +132,11 @@ struct Resolver {
            const uast::AstNode* symbol,
            ResolutionResultByPostorderID& byPostorder,
            const PoiScope* poiScope)
-    : context(context), symbol(symbol),
+    : context(context),
+      symbol(symbol),
       poiScope(poiScope),
       byPostorder(byPostorder),
       poiInfo(makePoiInfo(poiScope)) {
-
     tagTracker.resize(uast::asttags::AstTag::NUM_AST_TAGS);
     enterScope(symbol);
   }
@@ -155,7 +158,8 @@ struct Resolver {
   // set up Resolver to resolve a potentially generic Function signature
   static Resolver
   createForInitialSignature(Context* context, const uast::Function* fn,
-                            ResolutionResultByPostorderID& byPostorder);
+                            ResolutionResultByPostorderID& byPostorder,
+                            const CallerDetails* parentDetails=nullptr);
 
   // set up Resolver to resolve an instantiation of a Function signature
   static Resolver
@@ -172,7 +176,8 @@ struct Resolver {
                    const uast::Function* fn,
                    const PoiScope* poiScope,
                    const TypedFnSignature* typedFnSignature,
-                   ResolutionResultByPostorderID& byPostorder);
+                   ResolutionResultByPostorderID& byPostorder,
+                   const CallerDetails* parentDetails=nullptr);
 
   static Resolver
   createForInitializer(Context* context,
@@ -184,8 +189,7 @@ struct Resolver {
   // set up Resolver to scope resolve a Function
   static Resolver
   createForScopeResolvingFunction(Context* context, const uast::Function* fn,
-                                  ResolutionResultByPostorderID& byPostorder,
-                                  owned <OuterVariables> outerVars);
+                                  ResolutionResultByPostorderID& byPostorder);
 
   static Resolver createForScopeResolvingField(Context* context,
                                          const uast::AggregateDecl* ad,
@@ -244,6 +248,13 @@ struct Resolver {
   static Resolver paramLoopResolver(Resolver& parent,
                                     const uast::For* loop,
                                     ResolutionResultByPostorderID& bodyResults);
+
+  /** The created details are empty if the resolved symbol is not a function. */
+  CallerDetails makeCallerDetails() const {
+    if (!symbol->isFunction()) return {};
+    auto csi = CallScopeInfo::forNormalCall(scopeStack.back(), poiScope);
+    return { parentDetails, typedSignature, &byPostorder, std::move(csi) };
+  }
 
   /**
     During AST traversal, find the last called expression we entered.
