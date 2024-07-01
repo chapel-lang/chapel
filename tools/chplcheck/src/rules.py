@@ -551,6 +551,9 @@ def register_rules(driver: LintDriver):
 
     @driver.fixit(MisleadingIndentation)
     def FixMisleadingIndentation(context: Context, result: AdvancedRuleResult):
+        """
+        Align second statement to be outside of the loop.
+        """
         assert isinstance(result.anchor, AstNode)
         prevloop_loc = result.anchor.location()
         loc = result.node.location()
