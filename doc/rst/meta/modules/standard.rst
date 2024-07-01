@@ -105,6 +105,7 @@ System/Interoperability
 .. toctree::
    :maxdepth: 1
 
+   Allocators <standard/Allocators>
    CTypes <standard/CTypes>
    OS <standard/OS>
    Subprocess <standard/Subprocess>
