@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-// checkUast.cpp
+// checkGeneratedAst.cpp
 
 // this file contains AST checks that occur after converting
 // from uAST to AST.
@@ -49,7 +49,7 @@ static void checkOperator(FnSymbol* fn);
 static void checkUseStmt(UseStmt* use);
 
 void
-checkUast() {
+checkGeneratedAst() {
   setupForCheckExplicitDeinitCalls();
 
   forv_Vec(CallExpr, call, gCallExprs) {

@@ -24,7 +24,7 @@
 
 // These are the entry points for per-pass checks.
 void check_parseAndConvertUast();
-void check_checkUast();
+void check_checkGeneratedAst();
 void check_readExternC();
 void check_expandExternArrayCalls();
 void check_cleanup();

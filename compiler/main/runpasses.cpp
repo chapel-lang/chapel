@@ -41,7 +41,7 @@ struct PassInfo {
 
 // These entries should be kept in the same order as those in the pass list
 #define LOG_parseAndConvertUast                'p'
-#define LOG_checkUast                          LOG_NEVER
+#define LOG_checkGeneratedAst                  LOG_NEVER
 #define LOG_readExternC                        LOG_NO_SHORT
 #define LOG_cleanup                            LOG_NO_SHORT
 #define LOG_scopeResolve                       's'
@@ -89,8 +89,8 @@ struct PassInfo {
 //
 static PassInfo sPassList[] = {
   // Chapel to AST
-  RUN(parseAndConvertUast),     // parse files and create AST
-  RUN(checkUast),               // checks semantics of parsed AST
+  RUN(parseAndConvertUast),     // parse files and generate AST
+  RUN(checkGeneratedAst),       // checks semantics of generated AST
 
   // Read in runtime and included C header file types/prototypes
   RUN(readExternC),
@@ -162,7 +162,7 @@ static void setupStopAfterPass() {
     if (stopAfterPass[0]) {
       USR_FATAL("cannot provide both parse-only and stop after pass flags");
     }
-    strcpy(stopAfterPass, "checkUast");
+    strcpy(stopAfterPass, "checkGeneratedAst");
   }
 
   // ensure pass to stop after exists

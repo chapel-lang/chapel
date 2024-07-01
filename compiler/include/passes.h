@@ -44,7 +44,7 @@ void bulkCopyRecords();
 void callDestructors();
 void checkNormalized();
 void checkResolved();
-void checkUast();
+void checkGeneratedAst();
 void cleanup();
 void codegen();
 void copyPropagation();
