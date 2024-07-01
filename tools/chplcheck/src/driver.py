@@ -185,6 +185,7 @@ class LintDriver:
         The hook function should return a list of Fixit objects which will be
         suggested to the user.
         """
+
         def decorator_fixit(func):
             found = False
             for rule in itertools.chain(self.BasicRules, self.AdvancedRules):
