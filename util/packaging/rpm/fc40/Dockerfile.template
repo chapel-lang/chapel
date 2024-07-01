@@ -1,4 +1,4 @@
-FROM fedora:40 as build
+FROM fedora:40 AS build
 
 @@{ARGUMENTS}
 
