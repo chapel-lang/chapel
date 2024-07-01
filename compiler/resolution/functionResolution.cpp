@@ -174,6 +174,7 @@ static void resolveSetMember(CallExpr* call);
 static void resolveInitField(CallExpr* call);
 static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
+static void resolveNewWithAllocator(CallExpr* call);
 static void resolveForResolutionPoint(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static void resolveAutoCopyEtc(AggregateType* at);
@@ -2885,6 +2886,10 @@ void resolveCall(CallExpr* call) {
 
     case PRIM_NEW:
       resolveNew(call);
+      break;
+
+    case PRIM_NEW_WITH_ALLOCATOR:
+      resolveNewWithAllocator(call);
       break;
 
     case PRIM_RESOLUTION_POINT:
@@ -9500,7 +9505,9 @@ static void resolveMoveForRhsCallExpr(CallExpr* call, Type* rhsType) {
 
   moveSetConstFlagsAndCheck(call, rhs);
 
-  if (gChplHereAlloc != NULL && rhs->resolvedFunction() == gChplHereAlloc) {
+  if ((gChplHereAlloc != NULL && rhs->resolvedFunction() == gChplHereAlloc) ||
+      (rhs->resolvedFunction() &&
+       0 == strcmp("chpl_here_alloc_with_allocator", rhs->resolvedFunction()->name))) {
     Symbol*  lhsType = call->get(1)->typeInfo()->symbol;
     Symbol*  tmp     = newTemp("cast_tmp", rhs->typeInfo());
 
@@ -9792,7 +9799,8 @@ static void resolveNew(CallExpr* newExpr) {
   } else {
     const char* name = NULL;
 
-    if (Expr* arg = newExpr->get(1)) {
+    int idx = newExpr->isPrimitive(PRIM_NEW) ? 1 : 2;
+    if (Expr* arg = newExpr->get(idx)) {
       if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(arg)) {
         name = urse->unresolved;
 
@@ -9811,6 +9819,12 @@ static void resolveNew(CallExpr* newExpr) {
     }
   }
 }
+
+
+static void resolveNewWithAllocator(CallExpr* newExpr) {
+  resolveNew(newExpr);
+}
+
 
 static void checkManagerType(Type* t) {
   // Verify that the manager matches expectations
@@ -9992,7 +10006,8 @@ static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
   //
   //    primNew(Inner(_mt, this), ...) => primNew(Inner, this, ...)
   //
-  if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
+  int idx = newExpr->isPrimitive(PRIM_NEW) ? 1 : 2;
+  if (CallExpr* partial = toCallExpr(newExpr->get(idx))) {
     SymExpr* typeExpr = toSymExpr(partial->baseExpr);
 
     partial->remove();
@@ -10011,15 +10026,17 @@ static void resolveNewWithInitializer(CallExpr* newExpr, Type* manager) {
 static SymExpr* resolveNewFindTypeExpr(CallExpr* newExpr) {
   SymExpr* retval = NULL;
 
-  if (SymExpr* se = toSymExpr(newExpr->get(1))) {
+  int idx = newExpr->isPrimitive(PRIM_NEW) ? 1 : 2;
+
+  if (SymExpr* se = toSymExpr(newExpr->get(idx))) {
     if (se->symbol() != gModuleToken) {
       retval = se;
 
     } else {
-      retval = toSymExpr(newExpr->get(3));
+      retval = toSymExpr(newExpr->get(idx+2));
     }
 
-  } else if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
+  } else if (CallExpr* partial = toCallExpr(newExpr->get(idx))) {
     if (SymExpr* se = toSymExpr(partial->baseExpr)) {
       retval = partial->partialTag ? se : NULL;
     }

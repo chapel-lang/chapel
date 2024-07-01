@@ -129,6 +129,7 @@ PRIMITIVE_G(CHECK_NIL, "_check_nil")
 PRIMITIVE_R(IF_VAR, "if var")
 
 PRIMITIVE_R(NEW, "new")
+PRIMITIVE_R(NEW_WITH_ALLOCATOR, "new with allocator")
 
 PRIMITIVE_G(GET_REAL, "complex_get_real")
 PRIMITIVE_G(GET_IMAG, "complex_get_imag")

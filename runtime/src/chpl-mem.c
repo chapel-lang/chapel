@@ -31,6 +31,30 @@
 static int heapInitialized = 0;
 
 
+static void* chpl_bumpBasePtr = NULL;
+static void* chpl_bumpPtr = NULL;
+static size_t chpl_bumpSize = 4294967296ULL;
+
+void* chpl_mem_alloc_bump(size_t size, chpl_mem_descInt_t description,
+                     int32_t lineno, int32_t filename) {
+  if (chpl_bumpBasePtr == NULL) {
+    chpl_bumpBasePtr = chpl_mem_alloc(chpl_bumpSize, description, lineno, filename);
+    chpl_bumpPtr = chpl_bumpBasePtr;
+  }
+
+  // TODO: is this required?
+  // make sure chpl_bumpPtr is aligned to 16 bytes
+  chpl_bumpPtr = (void*)(((intptr_t)chpl_bumpPtr + 15) & ~15);
+
+  // if (((intptr_t)chpl_bumpPtr + size) > ((intptr_t)chpl_bumpBasePtr + chpl_bumpSize)) {
+  //   chpl_error("Bump allocator out of memory", lineno, filename);
+  // }
+  void* p = chpl_bumpPtr;
+  chpl_bumpPtr = (void*)((intptr_t)chpl_bumpPtr + size);
+  return p;
+}
+
+
 void chpl_mem_init(void) {
   chpl_mem_layerInit();
   heapInitialized = 1;
