@@ -4,23 +4,5 @@
 ================================================= Memory Leaks ==================================================
 Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
 =================================================================================================================
-testGetRemove.chpl:11            1        416      416      Bucket(string,int(64))           prediffed  
-testGetRemove.chpl:7             1        88       88       Buckets(string,int(64))          prediffed  
-testGetRemove.chpl:7             1        128      128      [domain(1,int(64),one)] AtomicObject(unmanaged Base(string,int(64))?,false,true)prediffed  
-testGetRemove.chpl:7             1        24       24       _token                           prediffed  
-testGetRemove.chpl:7             1        24       24       _token                           prediffed  
-testGetRemove.chpl:7             1        24       24       _token                           prediffed  
-testGetRemove.chpl:7             1        24       24       _token                           prediffed  
-testGetRemove.chpl:7             1        24       24       _token                           prediffed  
-testGetRemove.chpl:7             1        24       24       _token                           prediffed  
-testGetRemove.chpl:16            1        24       24       _token                           prediffed  
-testGetRemove.chpl:16            1        24       24       _token                           prediffed  
-testGetRemove.chpl:16            1        24       24       _token                           prediffed  
-testGetRemove.chpl:16            1        24       24       _token                           prediffed  
-testGetRemove.chpl:16            1        24       24       _token                           prediffed  
-testGetRemove.chpl:16            1        24       24       _token                           prediffed  
-testGetRemove.chpl:7             1024     8        8192     array elements                   prediffed  
-testGetRemove.chpl:7             1        72       72       domain(1,int(64),one)            prediffed  
-testGetRemove.chpl:11            1        8        8        string copy data                 prediffed  
 =================================================================================================================
 

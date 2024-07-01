@@ -3,21 +3,5 @@
 ================================================= Memory Leaks ==================================================
 Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
 =================================================================================================================
-testClear.chpl:4                 1        88       88       Buckets(string,int(64))          prediffed  
-testClear.chpl:4                 1        128      128      [domain(1,int(64),one)] AtomicObject(unmanaged Base(string,int(64))?,false,true)prediffed  
-testClear.chpl:4                 1        24       24       _token                           prediffed  
-testClear.chpl:4                 1        24       24       _token                           prediffed  
-testClear.chpl:4                 1        24       24       _token                           prediffed  
-testClear.chpl:4                 1        24       24       _token                           prediffed  
-testClear.chpl:4                 1        24       24       _token                           prediffed  
-testClear.chpl:4                 1        24       24       _token                           prediffed  
-testClear.chpl:12                1        24       24       _token                           prediffed  
-testClear.chpl:12                1        24       24       _token                           prediffed  
-testClear.chpl:12                1        24       24       _token                           prediffed  
-testClear.chpl:12                1        24       24       _token                           prediffed  
-testClear.chpl:12                1        24       24       _token                           prediffed  
-testClear.chpl:12                1        24       24       _token                           prediffed  
-testClear.chpl:4                 1024     8        8192     array elements                   prediffed  
-testClear.chpl:4                 1        72       72       domain(1,int(64),one)            prediffed  
 =================================================================================================================
 
