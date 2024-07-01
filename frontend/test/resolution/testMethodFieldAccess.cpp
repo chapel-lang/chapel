@@ -708,21 +708,51 @@ static void testExample5() {
 }
 
 static void testExample5a() {
-  testCall("example5a.chpl",
-           R""""(
-              module M {
-                record r { }
-                proc r.test() {
-                  var foo: int;
-                  proc r.foo { }
-                  foo; // is this referring to the int or the parenless method?
-                       // 1.29 refers to the local variable
-                }
-              }
-           )"""",
-           "M.test",
-           "M.test@4",
-           "" /* ambiguity */);
+  const char* program = R""""(
+  module M {
+    record r { }
+    proc r.test() {
+      var foo: int;
+      proc r.foo { }
+      foo; // is this referring to the int or the parenless method?
+           // 1.29 refers to the local variable
+    }
+
+    var myR : r;
+    myR.test();
+  }
+  )"""";
+  const char* methodIdStr = "M.test";
+
+  {
+    testCall("example5a.chpl",
+             program,
+             methodIdStr,
+             "M.test@4",
+             "" /* ambiguity */);
+  }
+
+  // Ensure we get an ambiguity error for this (as opposed to redeclaration)
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    auto path = UniqueString::get(context, "file.chpl");
+    setFileText(context, path, program);
+    std::ignore = parseToplevel(context, path);
+
+    ID methodId = ID::fromString(context, methodIdStr);
+    auto methodAst = parsing::idToAst(context, methodId);
+    assert(methodAst);
+    assert(methodAst->isFunction());
+    std::ignore = resolveConcreteFunction(context, methodId);
+
+    assert(guard.numErrors() == 1);
+    assert(guard.error(0)->message() == "'foo' is ambiguous");
+
+    guard.clearErrors();
+  }
 }
 
 // Like 5a but this.foo instead of foo
