@@ -141,7 +141,8 @@ module ChapelArrayViewElision {
         this.ranges = tupleOfRangesSlice(ptrToArr.deref().dims(), slicingExprs);
       }
       else if _validRankChangeArgs(slicingExprs, ptrToArr.deref().idxType) {
-        this.ranges = rangify(slicingExprs);
+        this.ranges = tupleOfRangesSlice(ptrToArr.deref().dims(),
+                                         rangify(slicingExprs));
         this.isRankChange = true;
       }
       else {
