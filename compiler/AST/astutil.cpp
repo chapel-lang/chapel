@@ -558,6 +558,11 @@ bool isDerefMove(CallExpr* call) {
          call->get(2)->isRefOrWideRef() ==  true;
 }
 
+bool isNewLike(CallExpr* call) {
+  return call->isPrimitive(PRIM_NEW) ||
+         call->isPrimitive(PRIM_NEW_WITH_ALLOCATOR);
+}
+
 
 //
 // Check if a callExpr is a relational operator primitive

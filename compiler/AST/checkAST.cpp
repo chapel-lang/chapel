@@ -123,6 +123,7 @@ void checkPrimitives()
      case PRIM_IS_INSTANTIATION_ALLOW_VALUES:
      case PRIM_IS_PROPER_SUBTYPE:
      case PRIM_NEW:                 // new keyword
+     case PRIM_NEW_WITH_ALLOCATOR:
      case PRIM_ERROR:
      case PRIM_WARNING:
       if (resolved)
