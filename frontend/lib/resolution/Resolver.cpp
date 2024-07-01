@@ -2673,7 +2673,6 @@ std::vector<BorrowedIdsWithName> Resolver::lookupIdentifier(
   }
 
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
-
   LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
@@ -2971,13 +2970,14 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       auto c = resolveGeneratedCall(context, ident, ci, inScopes);
       // Ensure we error out for redeclarations within the method itself,
       // which resolution with an implicit 'this' currently does not catch.
-      // TODO: Also catch redeclarations of formal names.
       std::vector<BorrowedIdsWithName> redeclarations;
       inScope->lookupInScope(ident->name(), redeclarations, IdAndFlags::Flags(),
                              IdAndFlags::FlagSet());
       if (!redeclarations.empty()) {
-        context->error(ident, "parenless proc redeclares the field '%s'",
-                       ident->name().c_str());
+        bool resolvingCalledIdent = nearestCalledExpression() == ident;
+        LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
+        if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
+        issueAmbiguityErrorIfNeeded(ident, inScope, receiverScopes, config);
       } else {
         // Save result if successful
         if (handleResolvedCallWithoutError(result, ident, ci, c) &&
