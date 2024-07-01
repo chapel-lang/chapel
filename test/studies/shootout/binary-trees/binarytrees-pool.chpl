@@ -13,7 +13,7 @@ config const n = 10;         // the maximum tree depth
 config const globalPoolSize = 2 ** 32;
 config const localPoolSize = 2 ** 32;
 
-var globalPool = new bumpPtrMemPool(globalPoolSize, locking=false);
+var globalPool = new bumpPtrMemPool(globalPoolSize, parSafe=false);
 
 proc main() {
   const minDepth = 4,                      // the shallowest tree
@@ -41,7 +41,7 @@ proc main() {
   // their sums, and free them.
   //
   forall depth in dynamic(depths)
-    with (var localPool = new bumpPtrMemPool(localPoolSize, locking=false)) {
+    with (var localPool = new bumpPtrMemPool(localPoolSize, parSafe=false)) {
     const iterations = 2**(maxDepth - depth + minDepth);
     var sum = 0;
 

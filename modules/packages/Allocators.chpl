@@ -50,15 +50,15 @@ module Allocators {
 
 
   record bumpPtrMemPool {
-    param locking: bool = false;
+    param parSafe: bool = false;
     var size: int(64);
     var basePtr: c_ptr(int(8));
     var ptr: c_ptr(int(8));
-    var lock_ = if locking then new _LockWrapper() else none;
+    var lock_ = if parSafe then new _LockWrapper() else none;
 
 
-    proc init(size: int(64), param locking: bool = false) {
-      this.locking = locking;
+    proc init(size: int(64), param parSafe: bool = false) {
+      this.parSafe = parSafe;
       this.size = size;
       if boundsChecking {
         if this.size <= 0 {
@@ -74,18 +74,14 @@ module Allocators {
         CTypes.deallocate(basePtr);
     }
 
-    inline proc _lock() {
-      if locking {
-        lock_.lock();
-      }
-    }
-    inline proc _unlock() {
-      if locking {
-        lock_.unlock();
-      }
-    }
+    @chpldoc.nodoc
+    inline proc _lock()
+      do if parSafe then lock_.lock();
 
-    pragma "allocator"
+    @chpldoc.nodoc
+    inline proc _unlock()
+      do if parSafe then lock_.unlock();
+
     proc ref allocate(n: int): c_ptr(void) {
       _lock();
       if boundsChecking {
@@ -94,8 +90,8 @@ module Allocators {
         }
       }
 
+      // TODO: should this be uncommented? Maybe it should be a separate allocator
       // ptr = alignup(ptr, 16): c_ptr(int(8));
-
       if boundsChecking {
         if (ptr + n):c_intptr > (basePtr + size):c_intptr {
           halt("bumpPtrMemPool.allocate: out of memory");
@@ -109,6 +105,7 @@ module Allocators {
       return p;
     }
     proc ref deallocate(p: c_ptr(void)) {
+      // there is currently no API to call this method
       // no-op
     }
   }

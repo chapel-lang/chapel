@@ -94,10 +94,6 @@ void* chpl_mem_alloc(size_t size, chpl_mem_descInt_t description,
   return chpl_mem_allocMany(1, size, description, lineno, filename);
 }
 
-
-void* chpl_mem_alloc_bump(size_t size, chpl_mem_descInt_t description,
-                     int32_t lineno, int32_t filename);
-
 static inline
 void* chpl_mem_allocManyZero(size_t number, size_t size,
                              chpl_mem_descInt_t description,
