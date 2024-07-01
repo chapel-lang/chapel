@@ -18,6 +18,11 @@
  * limitations under the License.
  */
 
+// This is a helper module to support the Short Array Transfer optimization.
+// For array-to-array assignments where number of elements (or maybe the data
+// size?) are below some threshold, just looping serially is more efficient
+// than both parallel iteration and memcpy.
+
 module ChapelShortArrayTransfer {
   use ChapelBase;
   use ChapelDebugPrint only chpl_debug_writeln;
@@ -29,6 +34,7 @@ module ChapelShortArrayTransfer {
   config param disableShortArrayTransfer = false;
   @chpldoc.nodoc
   config const shortArrayTransferThreshold = 50;
+
 
 
   proc chpl__staticCheckShortArrayTransfer(a, b) param {
