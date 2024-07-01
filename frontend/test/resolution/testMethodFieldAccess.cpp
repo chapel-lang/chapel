@@ -749,7 +749,7 @@ static void testExample5a() {
     std::ignore = resolveConcreteFunction(context, methodId);
 
     assert(guard.numErrors() == 1);
-    assert(guard.error(0)->message() == "'foo' is ambiguous");
+    assert(guard.error(0)->type() == ErrorType::AmbiguousIdentifier);
 
     guard.clearErrors();
   }
