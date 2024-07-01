@@ -2,7 +2,7 @@
 /*
 
 */
-@unstable("The Allocators module is under development and does not have a stable interface yet")
+@unstable(category="experimental", reason="The Allocators module is under development and does not have a stable interface yet")
 module Allocators {
   private use CTypes;
   private use Reflection;
