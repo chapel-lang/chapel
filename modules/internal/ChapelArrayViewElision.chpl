@@ -28,6 +28,9 @@ module ChapelArrayViewElision {
   //
   // compiler interface
   //
+  // Calls to these functions are inserted by the compiler. See
+  // compiler/optimizations/arrayViewElision.cpp for how the compiler makes use
+  // of these functions.
 
   proc chpl__createProtoSlice(ref Arr, slicingExprs ...)
       where chpl__createProtoSliceArgCheck(Arr, slicingExprs) {
@@ -96,6 +99,36 @@ module ChapelArrayViewElision {
   //
   // proto slice type
   //
+  // This is the type we create in lieu of full-blown array views. The key
+  // functionality for this record are:
+  // 
+  // 1. Supporting assignment with `=`
+  // 2. Supporting bulk transfer
+  // 3. Supporting serial and parallel iterations for non-bulk array transfer.
+  //
+  // Gotchas/caveats for the implementation:
+  // 
+  // 1. We don't have `ref` fields yet. So, `ptrToArr` is used, and it stores
+  //    the `c_addrOf` of the array in question. So it points to the _array
+  //    record.
+  // 2. `var ranges` is tricky. We want to avoid creating domains unless given
+  //    by the user. In addition, I also wanted to avoid creating tuples, again,
+  //    unless given by the user. An important context for this optimization is
+  //    that it is for small array transfers, so small overheads like that could
+  //    add up. In order to support that, `var ranges` could have 3 different
+  //    types. It could be
+  //      a. a range,
+  //      b. a tuple of ranges,
+  //      c. a domain (only if that's what the user gives us)
+  //    There's some conditionals to handle that in the code, so heads up.
+  // 3. Rank-change views are represented by slices. Right now, this
+  //    optimization only fires for rank-changes if:
+  //      a. both sides of the assignment are rank changes
+  //      b. both rank-changes have the same number of arguments
+  //    This implies that such rank-changes can be represented by slices where
+  //    the collapsed dimensions could be ranges of size 1. `param isRankChange`
+  //    field tells you whether a particular protoSlice is actually a
+  //    rank-change logically.
 
   record chpl__protoSlice {
     param rank;
@@ -213,6 +246,12 @@ module ChapelArrayViewElision {
       return ptrToArr.deref().isRectangular();
     }
 
+    // NOTE: the iterators below are not fun to look at because of all the
+    // repetition. We want to have `ref` yield intent if the protoSlice was
+    // based on a non-const array and `const` yield intent if it was a const
+    // array. The pragma `reference to const when const this` doesn't work here,
+    // nor we have a good support for yield intent overloading.
+    // https://github.com/chapel-lang/chapel/issues/7000 is related.
     iter these() ref where !isConst {
       if rank == 1 then {
         foreach elem in chpl__serialViewIter1D(ptrToArr.deref()._instance,

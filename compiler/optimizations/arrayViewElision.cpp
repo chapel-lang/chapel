@@ -26,6 +26,77 @@
 #include "resolution.h"
 #include "view.h"
 
+// Array View Elision (AVE) aims to optimize assignments involving array views.
+// Currently, this is limited to:
+//
+//   slice = slice, and
+//   rank-change = rank-change
+//
+// This is mostly out of abundance of caution and could be extended to
+// assignments involving arrays, too
+//
+// The gist of the implementation is based on eliding array views from
+// operations such as the ones above. Note that this implies that the following
+// cannot be covered:
+//
+//   ref slice = A[1..5];
+//   slice = A[6..10];
+//
+// As determining whether `slice` can be dropped is more complicated than I
+// could bite at the moment. So, both sides of the assignments must be
+// array-view generating expressions for this optimization to fire.
+//
+// There are two parts of this optimization:
+//
+// 1. Pre-normalize  (ArrayViewElisionTransformer is the type doing this)
+//
+// Given a statement like
+//
+//   A[x] = B[y];
+//
+// we generate
+//
+//   param array_view_elision: bool;  // will be replaced during resolution
+//   if (array_view_elision) {
+//     var protoSlice1 = chpl__createProtoSlice(A, x);
+//     var protoSlice2 = chpl__createProtoSlice(B, y);
+//     
+//     __primitive(PRIM_PROTO_SLICE_ASSIGN, protoSlice1, protoSlice2);
+//   }
+//   else {
+//     A[x] = B[y];
+//   }
+//   
+// Here the "protoSlice" has type `chpl__protoSlice`. See
+// modules/internal/ChapelArrayViewElision.chpl for the details of that type.
+// The main purpose of that type is to represent the expression that would
+// create an array view. But avoid doing that.
+//
+// 2. During prefold  (ArrayViewElisionPrefolder is the type doing this)
+//
+// Operation revolves around `PRIM_PROTO_SLICE_ASSIGN`. The
+// ArrayViewElisionPrefolder is in charge of finding the other relevant AST (the
+// CondStmt, the protoSlice temps etc) and transforming the conditional.
+//
+// Statically, chpl__ave_exprCanBeProtoSlice is called on both protoSlices to
+// make sure that the module code is OK with creating protoSlices out of those
+// expressions. We also check whether two protoSlices can be assigned to one
+// another. This is done by chpl__ave_protoSlicesSupportAssignment. If `fLocal`,
+// that's sufficient. Calls to that function are inserted, resolved, the result
+// is collected, and finally the calls are removed. At that point, we drop the
+// `array_view_elision` flag completely, and replace it with `true` or `false`,
+// after which the conditional statement is constant-folded.
+//
+// If not `fLocal`, we also call `chpl_bothLocal` an replace the flag with the
+// result of that. Note that this is a dynamic check, meaning that the
+// conditional will not be removed.
+//
+// This optimization is on-by-default. It can be controlled with
+// `--[no-]array-view-elision`. Additionally, there's also
+// `--report-array-view-elision` flag to enable some output during compilation
+// to help with understanding what's optimized and what's not.
+
+
 ArrayViewElisionTransformer::ArrayViewElisionTransformer(CallExpr* origCall):
     origCall_(origCall) {
 
