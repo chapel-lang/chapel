@@ -94,6 +94,7 @@ def filter_libs(bundled_libs, system_libs):
             system_ret.append(arg)
         else:
             # otherwise include the flag in bundled
+            # TODO: this put something like -L/usr/lib into system_ret instead.
             bundled_ret.append(arg)
 
     for arg in system_libs:
