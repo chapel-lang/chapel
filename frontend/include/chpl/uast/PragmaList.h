@@ -445,8 +445,6 @@ PRAGMA(NO_WIDE_CLASS, ypr, "no wide class", ncm)
 
 PRAGMA(NO_GPU_CODEGEN, ypr, "no gpu codegen", ncm)
 
-PRAGMA(USE_BUMP_ALLOCATOR, ypr, "use bump allocator", ncm)
-
 // See ORDER_INDEPENDENT_YIELDING_LOOPS below
 PRAGMA(NOT_ORDER_INDEPENDENT_YIELDING_LOOPS, ypr, "not order independent yielding loops", "yielding loops in iterator itself are not order independent")
 

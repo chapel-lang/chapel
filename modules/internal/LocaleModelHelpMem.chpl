@@ -67,13 +67,13 @@ module LocaleModelHelpMem {
     return chpl_mem_alloc(size.safeCast(c_size_t), md + chpl_memhook_md_num());
   }
 
-  // import Allocators;
+  import Allocators;
   pragma "allocator"
   pragma "llvm return noalias"
   pragma "always propagate line file info"
   proc chpl_here_alloc_with_allocator(size:integral, md:chpl_mem_descInt_t, ref allocator): c_ptr(void) {
-    // if ! Allocators.chpl_isValidAllocator(allocator) then
-    //   halt("chpl_here_alloc_with_allocator: invalid allocator");
+    if ! Allocators.chpl_isValidAllocator(allocator) then
+      halt("chpl_here_alloc_with_allocator: invalid allocator");
     // TODO: what to do with `md`?
     return allocator.allocate(size);
   }
