@@ -100,6 +100,7 @@ const char* CHPL_COMM = NULL;
 const char* CHPL_COMM_SUBSTRATE = NULL;
 const char* CHPL_GASNET_SEGMENT = NULL;
 const char* CHPL_LIBFABRIC = NULL;
+const char* CHPL_COMM_OFI_OOB = NULL;
 const char* CHPL_TASKS = NULL;
 const char* CHPL_LAUNCHER = NULL;
 const char* CHPL_TIMERS = NULL;
@@ -1770,6 +1771,7 @@ static void setChapelEnvs() {
   CHPL_COMM_SUBSTRATE  = envMap["CHPL_COMM_SUBSTRATE"];
   CHPL_GASNET_SEGMENT  = envMap["CHPL_GASNET_SEGMENT"];
   CHPL_LIBFABRIC       = envMap["CHPL_LIBFABRIC"];
+  CHPL_COMM_OFI_OOB    = envMap["CHPL_COMM_OFI_OOB"];
   CHPL_TASKS           = envMap["CHPL_TASKS"];
   CHPL_LAUNCHER        = envMap["CHPL_LAUNCHER"];
   CHPL_TIMERS          = envMap["CHPL_TIMERS"];
