@@ -93,6 +93,8 @@ known_dimensions = [
     ( 'comm',               'CHPL_COMM', ),
     ( 'substrate',          'CHPL_COMM_SUBSTRATE', ),
     ( 'segment',            'CHPL_GASNET_SEGMENT', ),
+    ( 'libfabric',          'CHPL_LIBFABRIC', ),
+    ( 'ofi_oob',            'CHPL_COMM_OFI_OOB', ),
     ( 'tasks',              'CHPL_TASKS', ),
     ( 'launcher',           'CHPL_LAUNCHER', ),
     ( 'timers',             'CHPL_TIMERS', ),

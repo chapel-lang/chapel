@@ -849,11 +849,11 @@ def gather_pe_chpl_pkgconfig_libs():
 
         # on login/compute nodes, lustre requires the devel api to make
         # lustre/lustreapi.h available (it's implicitly available on esl nodes)
-        if 'lustre' in auxfs:
-            exists, returncode, out, err = try_run_command(
-                ['pkg-config', '--exists', 'cray-lustre-api-devel'])
-            if exists and returncode == 0:
-                ret = 'cray-lustre-api-devel:' + ret
+        if "lustre" in auxfs:
+            import third_party_utils
+            pkg = "cray-lustre-api-devel"
+            if third_party_utils.pkgconfig_system_has_package(pkg):
+                ret = pkg + ":" + ret
 
     return ret
 
