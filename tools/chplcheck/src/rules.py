@@ -236,12 +236,6 @@ def register_rules(driver: LintDriver):
         fixit = Fixit.build(Edit.build(node.location(), new_text))
         return fixit
 
-    def _RedundantParenthesesSubject(node: AstNode):
-        if isinstance(node, (DoWhile, While, Conditional)):
-            return node.condition()
-        elif isinstance(node, IndexableLoop):
-            return node.index()
-
     @driver.basic_rule(set((Loop, Conditional)))
     def ControlFlowParentheses(
         context: Context, node: typing.Union[Loop, Conditional]
@@ -250,7 +244,11 @@ def register_rules(driver: LintDriver):
         Warn for unnecessary parentheses in conditional statements and loops.
         """
 
-        subject = _RedundantParenthesesSubject(node)
+        subject = None
+        if isinstance(node, (DoWhile, While, Conditional)):
+            subject = node.condition()
+        elif isinstance(node, IndexableLoop):
+            subject = node.index()
 
         # No supported node to examine for redundant parentheses.
         if subject is None:
@@ -267,12 +265,12 @@ def register_rules(driver: LintDriver):
 
         # Now, we should warn: there's a node in a conditional or
         # if/else, it has parentheses at the top level, but it doesn't need them.
-        return False
+        return BasicRuleResult(node, data=subject)
 
     @driver.fixit(ControlFlowParentheses)
     def RemoveControlFlowParentheses(context: Context, result: BasicRuleResult):
         # Since we're here, these should already be non-None.
-        subject = _RedundantParenthesesSubject(result.node)
+        subject = result.data
         assert subject
         paren_loc = subject.parenth_location()
         assert paren_loc
