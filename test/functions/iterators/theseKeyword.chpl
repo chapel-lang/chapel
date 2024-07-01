@@ -47,7 +47,7 @@ module Mod9 {
     class Foo { }
   }
   // tertiary method iter also allowed
-  import FooDecl.Foo;
+  import this.FooDecl.Foo;
   iter Foo.these() {
     yield 4;
   }

@@ -1,9 +1,0 @@
-bug: incorrect line number reported in a warning
-
-The compiler warns about a missing '(?)' in modules/standard/ChapelIO.chpl
-whereas it should about ./ChapelIO.chpl
-// in serializeDefaultImpl() in both cases
-
-Perhaps serializeDefaultImpl() in modules/standard/ChapelIO.chpl
-should indeed be updated, however in the absense of a custom ChapelIO.chpl
-such warning is currently not generated.

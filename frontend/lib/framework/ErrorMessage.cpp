@@ -37,6 +37,11 @@ Location IdOrLocation::computeLocation(Context* context) const {
   return location_;
 }
 
+IdOrLocation IdOrLocation::createForCommandLineLocation(Context* context) {
+  auto name = UniqueString::get(context, "<command line>");
+  return IdOrLocation(Location(name));
+}
+
 ErrorMessage::ErrorMessage(Kind kind, IdOrLocation idOrLoc, std::string message)
     : IdOrLocation(std::move(idOrLoc)), kind_(kind), message_(std::move(message)) {
 

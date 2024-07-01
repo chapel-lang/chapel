@@ -112,6 +112,11 @@ owned<GeneralError> GeneralError::vbuild(Kind kind, Location loc, const char* fm
   return owned<GeneralError>(new GeneralError(kind, std::move(loc), std::move(message), {}));
 }
 
+owned<GeneralError> GeneralError::vbuild(Kind kind, IdOrLocation loc, const char* fmt, va_list vl) {
+  auto message = vprintToString(fmt, vl);
+  return owned<GeneralError>(new GeneralError(kind, std::move(loc), std::move(message), {}));
+}
+
 owned<GeneralError> GeneralError::get(Kind kind, Location loc, std::string msg) {
   return owned<GeneralError>(new GeneralError(kind, std::move(loc), std::move(msg), {}));
 }

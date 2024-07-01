@@ -478,7 +478,7 @@ class BorrowedIdsWithName {
     IdAndFlags::FlagSet excludeFlagSet;
     auto maybeIds = createWithSingleId(std::move(id), vis,
                                        isField, isMethod, isParenfulFunction,
-                                       filterFlags, excludeFlagSet);
+                                       filterFlags, std::move(excludeFlagSet));
     CHPL_ASSERT((bool) maybeIds);
     return *maybeIds;
   }
@@ -585,9 +585,10 @@ class Scope {
   enum {
     CONTAINS_FUNCTION_DECLS = 1,
     CONTAINS_USE_IMPORT = 2,
-    AUTO_USES_MODULES = 4,
-    METHOD_SCOPE = 8,
-    CONTAINS_EXTERN_BLOCK = 16,
+    CONTAINS_REQUIRE = 4,
+    AUTO_USES_MODULES = 8,
+    METHOD_SCOPE = 16,
+    CONTAINS_EXTERN_BLOCK = 32,
   };
   /// \endcond
 
@@ -610,7 +611,7 @@ class Scope {
 
   /** Construct a Scope for a particular AST node
       and with a particular parent. */
-  Scope(const uast::AstNode* ast, const Scope* parentScope,
+  Scope(Context* context, const uast::AstNode* ast, const Scope* parentScope,
         bool autoUsesModules);
 
   /** Add a builtin type with the provided name. This needs to
@@ -646,6 +647,11 @@ class Scope {
       including the automatic 'use' for the standard library. */
   bool containsUseImport() const {
     return (flags_ & (CONTAINS_USE_IMPORT|AUTO_USES_MODULES)) != 0;
+  }
+
+  /** Returns 'true' if this Scope directly contains 'require' statements */
+  bool containsRequire() const {
+    return (flags_ & CONTAINS_REQUIRE) != 0;
   }
 
   /** Returns 'true' if this Scope directly contains an 'extern' block
@@ -964,7 +970,7 @@ class ResolvedVisibilityScope {
   }
 
   /** Add a module ID for a module named in use/import */
-  void addModulesNamedInUseOrImport(ID id) {
+  void addModuleNamedInUseOrImport(ID id) {
     modulesNamedInUseOrImport_.push_back(std::move(id));
   }
 
@@ -1220,6 +1226,7 @@ struct ResultVisibilityTrace {
     // these cover other cases
     bool automaticModule = false;
     bool toplevelModule = false;
+    bool containingModule = false;
     bool externBlock = false;
     bool rootScope = false;
 
@@ -1236,6 +1243,7 @@ struct ResultVisibilityTrace {
              parentScope == other.parentScope &&
              automaticModule == other.automaticModule &&
              toplevelModule == other.toplevelModule &&
+             containingModule == other.containingModule &&
              externBlock == other.externBlock &&
              rootScope == other.rootScope;
     }

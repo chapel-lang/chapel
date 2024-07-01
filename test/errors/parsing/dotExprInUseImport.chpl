@@ -6,4 +6,5 @@ module N {
   use M except M.a;
 
   writeln("here");
+  proc main() { }
 }

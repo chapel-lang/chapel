@@ -1,3 +1,2 @@
-warning: Ambiguous module source file -- using ./Map.chpl over $CHPL_HOME/modules/standard/Map.chpl
 In my Map
 In foo

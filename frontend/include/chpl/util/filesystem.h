@@ -119,6 +119,20 @@ std::string getExecutablePath(const char* argv0, void* MainExecAddr);
 */
 bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2);
 
+/**
+  Remove duplicate files/directories from a vector of paths.
+  Checks if the files/directories are the same, even if they
+  have different names.
+
+  Returns a de-duplicated vector of paths.
+ */
+std::vector<std::string>
+deduplicateSamePaths(const std::vector<std::string>& paths);
+
+/**
+  Removes any number of leading ./ from 'path'.
+ */
+std::string cleanLocalPath(std::string path);
 
 #if LLVM_VERSION_MAJOR >= 13
 /**

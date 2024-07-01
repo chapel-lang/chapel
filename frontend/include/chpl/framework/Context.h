@@ -52,6 +52,7 @@ namespace chpl {
   class Context;
 
   class ErrorBase;
+  class IdOrLocation;
 
 namespace uast {
   class AstNode;
@@ -829,6 +830,20 @@ class Context {
     __attribute__ ((format (printf, 3, 4)))
   #endif
   ;
+
+  /**
+    Note an error for the currently running query.
+    This is a convenience overload.
+    This version takes in an IdOrLocation and a printf-style format string.
+   */
+  void error(const IdOrLocation& loc, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+
 
   /**
     Note an error for the currently running query.

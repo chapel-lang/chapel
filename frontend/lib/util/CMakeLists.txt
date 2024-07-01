@@ -34,6 +34,7 @@ target_sources(ChplFrontend-obj
                filesystem_help.h
                printf.cpp
                string-escapes.cpp
+               string-utils.cpp
                subprocess.cpp
                terminal.cpp
                version-info.cpp

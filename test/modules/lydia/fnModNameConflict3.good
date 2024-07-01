@@ -1,0 +1,3 @@
+fnModNameConflict3.chpl:1: In module 'OuterModule':
+fnModNameConflict3.chpl:3: error: 'M1' has multiple definitions
+fnModNameConflict3.chpl:7: note: redefined here

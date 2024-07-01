@@ -33,12 +33,10 @@ extern int         chplLineno;
 extern bool        chplParseString;
 extern const char* chplParseStringMsg;
 
-extern ModTag      currentModuleType;
 extern const char* currentModuleName;
 
 extern int         yystartlineno;
 extern const char* yyfilename;
-extern BlockStmt*  yyblock;
 
 extern bool parsingPrivate;
 
@@ -57,13 +55,6 @@ void addStandardModulePath(const ArgumentDescription* desc,
                            const char* newpath);
 void addDynoGenLib(const ArgumentDescription* desc,
                    const char* newpath);
-
-void               setupModulePaths();
-
-void               addFlagModulePath(const char* newpath);
-
-void               addModuleToParseList(const char* name,
-                                        VisibilityStmt* newUse);
 
 void noteParsedIncludedModule(ModuleSymbol* mod, const char* path);
 

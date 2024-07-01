@@ -1,0 +1,6 @@
+# . is implicitly included, check it is OK to duplicate with -M .
+-M .
+# check we can remove duplicate way to find .
+-M ../duplicate-dash-m
+# check we can remove duplicate way to find . through a symlink
+-M link-to-duplicate-dash-m

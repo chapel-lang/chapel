@@ -41,7 +41,9 @@ class IdOrLocation {
 
  public:
   IdOrLocation() = default;
+  // enable implicit conversion from ID
   IdOrLocation(ID id) : id_(std::move(id)) {}
+  // enable implicit conversion from Location
   IdOrLocation(Location location) : location_(std::move(location)) {}
 
   /**
@@ -60,6 +62,8 @@ class IdOrLocation {
     id_.mark(context);
     location_.mark(context);
   }
+
+  static IdOrLocation createForCommandLineLocation(Context* context);
 };
 
 /**

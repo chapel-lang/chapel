@@ -29,6 +29,7 @@ FRONTEND_UTIL_SRCS =      \
   filesystem.cpp \
   printf.cpp \
   string-escapes.cpp \
+  string-utils.cpp \
   subprocess.cpp \
   terminal.cpp \
 
