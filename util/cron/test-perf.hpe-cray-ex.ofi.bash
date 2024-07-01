@@ -19,7 +19,7 @@ export CHPL_RT_COMM_OFI_EXPECTED_PROVIDER="cxi"
 export CHPL_RT_MAX_HEAP_SIZE=16g
 
 nightly_args="${nightly_args} -no-buildcheck"
-perf_args="-numtrials 1"
+perf_args="-performance -numtrials 1"
 perf_hpe_cray_ex_args="-startdate 06/25/24"
 
 # To use while setting up job for testing
