@@ -3312,15 +3312,10 @@ GenRet codegenCallExprWithArgs(const char* fnName,
                                    fnSym, FD, defaultToValues);
   } else {
 #ifdef HAVE_LLVM
-    auto func = getFunctionLLVM(fnName);
-    if (func == nullptr) {
+    fn.val = getFunctionLLVM(fnName);
+    if (fn.val == nullptr) {
       INT_FATAL(fnSym, "unable to find function %s\n", fnName);
     }
-    if (fnName == astr_gen_comm_get || fnName == astr_gen_comm_put) {
-      // these are performance-critical functions that we want to inline
-      func->addFnAttr(llvm::Attribute::AlwaysInline);
-    }
-    fn.val = func;
     return codegenCallExprWithArgs(fn, args, fnName,
                                    fnSym, FD, defaultToValues);
 #endif
@@ -4105,7 +4100,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           if (usingGpuLocaleModel()) {
             fn = "chpl_gen_comm_get_from_subloc";
           } else {
-            fn = astr_gen_comm_get;
+            fn = "chpl_gen_comm_get";
           }
 
           args.push_back(codegenCastToVoidStar(to_ptr));
@@ -4138,7 +4133,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           if (usingGpuLocaleModel()) {
             fn = "chpl_gen_comm_put_to_subloc";
           } else {
-            fn = astr_gen_comm_put;
+            fn = "chpl_gen_comm_put";
           }
 
           args.push_back(codegenCastToVoidStar(codegenValuePtr(from)));
@@ -5727,14 +5722,14 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
         fn = "chpl_gen_comm_get_from_subloc";
       }
       else {
-        fn = astr_gen_comm_get;
+        fn = "chpl_gen_comm_get";
       }
     } else {
       if (useGpuVersion) {
         fn = "chpl_gen_comm_put_to_subloc";
       }
       else {
-        fn = astr_gen_comm_put;
+        fn = "chpl_gen_comm_put";
       }
       isget = false;
     }

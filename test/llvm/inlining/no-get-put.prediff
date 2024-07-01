@@ -14,12 +14,17 @@ call_lines = [l for l in lines if call_pat.search(l)]
 
 output = []
 
-# there should be no calls to chpl_gen_comm_get, or chpl_gen_comm_put, or chpl_memmove
-exclude_list = ['chpl_gen_comm_get', 'chpl_gen_comm_put', 'chpl_memmove']
+# there should be no calls to chpl_gen_comm_get or chpl_gen_comm_put
+exclude_list = ['chpl_gen_comm_get', 'chpl_gen_comm_put']
 for e in exclude_list:
     for l in call_lines:
         if e in l:
             output.append('Error: found call to {} in {}'.format(e, outfilename))
+
+# the only memmove calls should be llvm.memmove
+for l in call_lines:
+    if 'memmove' in l and 'llvm.memmove' not in l:
+        output.append('Error: found call to plain memmove in {}'.format(outfilename))
 
 if len(output) > 0:
     with open(outfilename, 'w') as f:

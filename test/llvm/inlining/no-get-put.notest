@@ -1,2 +1,0 @@
-unimplemented feature: puts are not fully inlined, merge #25281 to fix
-no test to prevent nightly noise

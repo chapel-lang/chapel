@@ -1160,7 +1160,7 @@ void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
                      int32_t commID, int ln, int32_t fn) {
   #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   if (dst_subloc < 0 && src_subloc < 0) {
-    chpl_memmove(dst, src, n);
+    memmove(dst, src, n);
   }
   else {
     bool dst_on_host = chpl_gpu_impl_is_host_ptr(dst);

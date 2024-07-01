@@ -63,7 +63,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        int ln, int32_t fn)
 {
   assert(node == 0);
-  chpl_memmove(raddr, addr, size);
+  memmove(raddr, addr, size);
   return NULL;
 }
 
@@ -72,7 +72,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        int ln, int32_t fn)
 {
   assert(node == 0);
-  chpl_memmove(addr, raddr, size);
+  memmove(addr, raddr, size);
   return NULL;
 }
 
