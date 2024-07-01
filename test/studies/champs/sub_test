@@ -20,7 +20,7 @@ if [ ! -z "$CHAMPS_QUICKSTART" ]; then
   else 
     echo "Creating $CHAMPS_COMMON_DIR"
     pushd $(dirname $CHAMPS_COMMON_DIR)
-    git clone git@github.com:chapelu-champs/champs-nightly.git
+    git clone https://github.com/chapelu-champs/champs-nightly.git
     popd
   fi
 else
