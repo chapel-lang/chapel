@@ -177,6 +177,14 @@ class LintDriver:
         return decorator_basic_rule
 
     def fixit(self, checkfunc):
+        """
+        Declare a fixit hook for a given rule. The hook function receives as
+        parameters the Dyno context object and the AdvancedRuleResult or
+        BasicRuleResult object that represents the rule violation.
+
+        The hook function should return a list of Fixit objects which will be
+        suggested to the user.
+        """
         def decorator_fixit(func):
             found = False
             for rule in itertools.chain(self.BasicRules, self.AdvancedRules):
