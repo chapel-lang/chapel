@@ -13,7 +13,7 @@ config const n = 10;         // the maximum tree depth
 config const globalPoolSize = 2 ** 32;
 config const localPoolSize = 2 ** 20;
 
-var globalPool new bumpPtrMemPool(globalPoolSize, locking=false);
+var globalPool = new bumpPtrMemPool(globalPoolSize, locking=false);
 
 proc main() {
   const minDepth = 4,                      // the shallowest tree
@@ -26,14 +26,14 @@ proc main() {
   // Create the short-lived "stretch" tree, checksum it, and print its stats.
   //
   {
-    const strTree = __primitive("new with allocator", globalPool unmanaged Tree, strDepth, globalPool);
+    const strTree = __primitive("new with allocator", globalPool, unmanaged Tree, strDepth, globalPool);
     writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
   }
 
   //
   // Build the long-lived tree.
   //
-  const llTree = __primitive("new with allocator", globalPool unmanaged Tree, maxDepth, globalPool);
+  const llTree = __primitive("new with allocator", globalPool, unmanaged Tree, maxDepth, globalPool);
 
   //
   // Iterate over the depths in parallel, dynamically assigning them
@@ -46,7 +46,7 @@ proc main() {
     var sum = 0;
 
     for i in 1..iterations {
-      const t = __primitive("new with allocator", localPool unmanaged Tree, depth, localPool);
+      const t = __primitive("new with allocator", localPool, unmanaged Tree, depth, localPool);
       sum += t.sum();
     }
     stats[depth] = (iterations, sum);
@@ -74,11 +74,11 @@ class Tree {
   //
   // A Tree-building initializer
   //
-  proc init(depth, pool) {
+  proc init(depth, ref pool) {
     if depth > 0 {
       const d = depth - 1;
-      left  = __primitive("new with allocator", pool unmanaged Tree, d, pool);
-      right = __primitive("new with allocator", pool unmanaged Tree, d, pool);
+      left  = __primitive("new with allocator", pool, unmanaged Tree, d, pool);
+      right = __primitive("new with allocator", pool, unmanaged Tree, d, pool);
     }
   }
 
