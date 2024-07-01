@@ -17,7 +17,6 @@
 # limitations under the License.
 #
 
-from dataclasses import field
 import typing
 
 import chapel
@@ -101,6 +100,7 @@ class AdvancedRuleResult:
         node: chapel.AstNode,
         anchor: typing.Optional[chapel.AstNode] = None,
         fixits: typing.Optional[typing.Union[Fixit, typing.List[Fixit]]] = None,
+        data: typing.Optional[typing.Any] = None,
     ):
         self.node = node
         self.anchor = anchor
@@ -110,6 +110,7 @@ class AdvancedRuleResult:
             self._fixits = [fixits]
         else:
             self._fixits = fixits
+        self.data = data
 
     def fixits(self, context: chapel.Context, name: str) -> typing.List[Fixit]:
         """
