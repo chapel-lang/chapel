@@ -2673,7 +2673,6 @@ std::vector<BorrowedIdsWithName> Resolver::lookupIdentifier(
   }
 
   bool resolvingCalledIdent = nearestCalledExpression() == ident;
-
   LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
@@ -2975,8 +2974,10 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       inScope->lookupInScope(ident->name(), redeclarations, IdAndFlags::Flags(),
                              IdAndFlags::FlagSet());
       if (!redeclarations.empty()) {
-        context->error(ident, "parenless proc redeclares the field '%s'",
-                       ident->name().c_str());
+        bool resolvingCalledIdent = nearestCalledExpression() == ident;
+        LookupConfig config = IDENTIFIER_LOOKUP_CONFIG;
+        if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
+        issueAmbiguityErrorIfNeeded(ident, inScope, receiverScopes, config);
       } else {
         // Save result if successful
         if (handleResolvedCallWithoutError(result, ident, ci, c) &&
