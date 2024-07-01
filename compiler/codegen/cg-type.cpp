@@ -65,8 +65,15 @@ void PrimitiveType::codegenDef() {
   } else {
 #ifdef HAVE_LLVM
     llvm::Type* llvmType = info->lvt->getType(this->symbol->cname);
-    if (llvmType == nullptr && (this == dtVoid || this == dtNothing)) {
-      llvmType = llvm::Type::getVoidTy(gContext->llvmContext());
+    if (llvmType == nullptr) {
+      if (this == dtVoid || this == dtNothing) {
+        llvmType = llvm::Type::getVoidTy(gContext->llvmContext());
+      } else {
+        USR_FATAL_CONT(this, "could not find C type for %s",
+                       this->symbol->cname);
+        // fake it so we can continue and report more errors, if present
+        llvmType = llvm::Type::getInt8Ty(gContext->llvmContext());
+      }
       // cf. int64_t is added to lvt in addGlobalCDecl()
       info->lvt->addGlobalType(this->symbol->cname, llvmType, false);
     }
