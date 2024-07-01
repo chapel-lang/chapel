@@ -1,5 +1,8 @@
 
+/*
 
+*/
+@unstable("The Allocators module is under development and does not have a stable interface yet")
 module Allocators {
   private use CTypes;
   private use Reflection;
@@ -30,13 +33,34 @@ module Allocators {
     return true;
   }
 
+  @chpldoc.nodoc
+  /* See docs for :proc:`~Allocators.newWithAllocator` */
   inline proc newWithAllocator(ref allocator: ?, type T): T {
     return __primitive("new with allocator", allocator, T);
   }
+
+  /*
+    Allocate a new class with type ``T`` using the given ``allocator``. This is a drop-in replacement for ``new``.
+
+    Example:
+
+    .. code-block:: chapel
+
+       class MyClass { var x: int; }
+       var allocator = new bumpPtrMemPool(1024);
+       // The following two lines are equivalent, but the second one uses the allocator
+       var x = new unmanaged MyClass(1);
+       var x = newWithAllocator(allocator, unmanaged MyClass, 1);
+
+    .. warning::
+       Using a managed class type may causes memory issues with some allocators.
+       It is recommend to use ``unmanaged``.
+  */
   inline proc newWithAllocator(ref allocator: ?, type T, args...): T {
     return __primitive("new with allocator", allocator, T, (...args));
   }
 
+  @chpldoc.nodoc
   class _LockWrapper {
     type lockType = ChapelLocks.chpl_LocalSpinlock;
     var lockVar = new lockType();
@@ -48,14 +72,12 @@ module Allocators {
     }
   }
 
-
   record bumpPtrMemPool {
     param parSafe: bool = false;
     var size: int(64);
     var basePtr: c_ptr(int(8));
     var ptr: c_ptr(int(8));
     var lock_ = if parSafe then new _LockWrapper() else none;
-
 
     proc init(size: int(64), param parSafe: bool = false) {
       this.parSafe = parSafe;
