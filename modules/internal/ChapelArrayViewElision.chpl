@@ -125,6 +125,7 @@ module ChapelArrayViewElision {
   //    optimization only fires for rank-changes if:
   //      a. both sides of the assignment are rank changes
   //      b. both rank-changes have the same number of arguments
+  //      c. argument types match pair-wise (int to int, range to range)
   //    This implies that such rank-changes can be represented by slices where
   //    the collapsed dimensions could be ranges of size 1. `param isRankChange`
   //    field tells you whether a particular protoSlice is actually a
