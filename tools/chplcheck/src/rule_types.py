@@ -203,7 +203,7 @@ class BasicRule(Rule[BasicRuleResult]):
         self.pattern = pattern
         self.check_func = check_func
 
-    def check_single(
+    def _check_single(
         self, context: chapel.Context, node: chapel.AstNode
     ) -> typing.Optional[CheckResult]:
         result = self.check_func(context, node)
@@ -234,7 +234,7 @@ class BasicRule(Rule[BasicRuleResult]):
             if not self.driver.should_check_rule(self.name, node):
                 continue
 
-            checked = self.check_single(context, node)
+            checked = self._check_single(context, node)
             if checked is not None:
                 yield checked
 
