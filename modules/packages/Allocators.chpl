@@ -62,7 +62,7 @@ module Allocators {
       this.size = size;
       if boundsChecking {
         if this.size <= 0 {
-          halt("chpl_memPool: size must be positive");
+          halt("bumpPtrMemPool: size must be positive");
         }
       }
       basePtr = CTypes.allocate(int(8), this.size.safeCast(c_size_t));
@@ -90,7 +90,7 @@ module Allocators {
       _lock();
       if boundsChecking {
         if n <= 0 {
-          halt("chpl_memPool.allocate: n must be positive");
+          halt("bumpPtrMemPool.allocate: n must be positive");
         }
       }
 
@@ -98,7 +98,7 @@ module Allocators {
 
       if boundsChecking {
         if (ptr + n):c_intptr > (basePtr + size):c_intptr {
-          halt("chpl_memPool.allocate: out of memory");
+          halt("bumpPtrMemPool.allocate: out of memory");
         }
       }
 
