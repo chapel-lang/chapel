@@ -1,7 +1,7 @@
 /* The Computer Language Benchmarks Game
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
-   contributed by Casey Battaglino, Ben Harshbarger, and Brad Chamberlain
+   contributed by Casey Battaglino, Ben Harshbarger, Brad Chamberlain, and Jade Abraham
    derived from the GNU C version by Jeremy Zerfas
 */
 
