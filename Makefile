@@ -216,7 +216,7 @@ lint-standard-modules: chplcheck FORCE
 	tools/chplcheck/chplcheck --skip-unstable \
 		--internal-prefix "_" \
 		--internal-prefix "chpl_" \
-		--disable-rule "RedundantParentheses" \
+		--disable-rule "ControlFlowParentheses" \
 		$(MODULES_TO_LINT)
 
 compile-util-python: FORCE

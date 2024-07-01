@@ -230,7 +230,7 @@ def register_rules(driver: LintDriver):
         return check
 
     @driver.basic_rule(set((Loop, Conditional)))
-    def RedundantParentheses(
+    def ControlFlowParentheses(
         context: Context, node: typing.Union[Loop, Conditional]
     ):
         """
