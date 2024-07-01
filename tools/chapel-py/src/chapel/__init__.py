@@ -514,6 +514,10 @@ def is_literal_like(node: AstNode) -> bool:
 
 
 def is_unstable_module(node: AstNode):
+    """
+    Returns true if the given AST node is a module, and if it's explicitly
+    marked unstable.
+    """
     if isinstance(node, Module):
         attrs = node.attribute_group()
         if attrs:
@@ -523,6 +527,9 @@ def is_unstable_module(node: AstNode):
 
 
 def in_unstable_module(node: AstNode):
+    """
+    Returns true if the given AST node is inside a module marked as unstable.
+    """
     n = node
     while n is not None:
         if is_unstable_module(n):
