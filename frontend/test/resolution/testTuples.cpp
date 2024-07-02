@@ -28,7 +28,6 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/TupleDecl.h"
 #include "chpl/uast/Variable.h"
-
 // assumes the last statement is a variable declaration for x.
 // returns the type of that.
 static void test1() {
@@ -997,6 +996,45 @@ static void test23() {
   ensureParamInt(qt, 2);
 }
 
+static void test24() {
+  printf("test24\n");
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    operator=(ref lhs: real, ref rhs: real) {}
+    operator=(ref lhs: int, ref rhs: int) {}
+    proc foo() { return (1.0, 2); }
+    var x: real;
+    (x, _) = foo();
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, program);
+  assert(!guard.realizeErrors());
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isRealType());
+}
+
+static void test25() {
+  printf("test25\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    proc foo() { return (1.0, 2); }
+    var (v, _) = foo();
+    var x = v;
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, program);
+  assert(!guard.realizeErrors());
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isRealType());
+}
+
 int main() {
   test1();
   test2();
@@ -1019,13 +1057,16 @@ int main() {
   test17();
   test18();
   test19();
-
   testTupleGeneric();
+  test21();
+  test22();
 
   test20();
   test21();
   test22();
   test23();
+  test24();
+  test25();
 
   return 0;
 }

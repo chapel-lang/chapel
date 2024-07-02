@@ -45,9 +45,17 @@ QualifiedType
 resolveQualifiedTypeOfX(Context* context, std::string program) {
   auto m = parseModule(context, std::move(program));
   assert(m->numStmts() > 0);
-  const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
+  // Walk backwards and find the first variable named 'x'.
+  const Variable* x = nullptr;
+  for (int i = m->numStmts() - 1; i >= 0; i--) {
+    if (auto v = m->stmt(i)->toVariable()) {
+      if (v->name() == "x") {
+        x = v;
+        break;
+      }
+    }
+  }
   assert(x);
-  assert(x->name() == "x");
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
