@@ -36,16 +36,16 @@ proc main() {
   const llTree = __primitive("new with allocator", globalPool, unmanaged Tree, maxDepth, globalPool);
 
   //
-  // Iterate over the depths in parallel, dynamically assigning them
-  // to tasks.  At each depth, create the required trees, compute
-  // their sums, and free them.
+  // Iterate over the depths. At each depth, create the required trees in
+  // parallel, compute their sums, and free them.
   //
-  forall depth in dynamic(depths)
-    with (var localPool = new bumpPtrMemPool(localPoolSize, parSafe=false)) {
+  for depth in depths {
     const iterations = 2**(maxDepth - depth + minDepth);
     var sum = 0;
 
-    for i in 1..iterations {
+    forall i in 1..iterations
+      with (+ reduce sum,
+            var localPool = new bumpPtrMemPool(localPoolSize, parSafe=false)) {
       const t = __primitive("new with allocator", localPool, unmanaged Tree, depth, localPool);
       sum += t.sum();
     }
