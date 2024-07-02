@@ -192,6 +192,11 @@ sub fullpath($)
 # Implement -E for ssh, if required, as a wrapper (processed below)
     if (($spawner eq 'SSH') && defined $envlist) {
         foreach (split(',', $envlist)) {
+            # Screen both variable names and values for "bad" ones.
+            # See Bug 4723 for the motivation.
+            next if ($ENV{$_} =~ m/\n/); # skip value with newline(s), which we cannot portably quote
+            next unless ($_ =~ m/^[A-Za-z_][A-Za-z0-9_]*$/); # skip invalid variable name
+
             unshift @ARGV, "$_=$ENV{$_}";
         }
         unshift @ARGV, $ENV{'GASNET_ENVCMD'};
