@@ -244,6 +244,13 @@ resolveTypesOfVariablesInit(Context* context,
   return toReturn;
 }
 
+QualifiedType resolveTypeOfVariable(Context* context, std::string program,
+                                    const std::string& variable) {
+  auto m = resolveTypesOfVariables(context, std::move(program), { variable });
+  // If there is no key for 'variable', this constructs an empty value.
+  return m[variable];
+}
+
 void ensureParamInt(const QualifiedType& type, int64_t expectedValue) {
   assert(type.kind() == QualifiedType::PARAM);
   assert(type.type() != nullptr);

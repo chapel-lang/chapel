@@ -868,8 +868,8 @@ static void test21() {
 
 static void test22() {
   printf("test22\n");
-  auto ctx = buildStdContext();
-  auto context = ctx.get();
+  Context ctx;
+  auto context = &ctx;
   ErrorGuard guard(context);
 
   std::string program =
@@ -883,6 +883,75 @@ static void test22() {
   assert(!guard.realizeErrors());
   assert(qt.kind() == QualifiedType::VAR);
   assert(qt.type()->isRealType());
+}
+
+static void test23() {
+  printf("test23\n");
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    record r {}
+    iter foo(): (int, r) { yield (0, new r()); }
+    for (x, y) in foo() do;
+    )"""";
+
+  auto m = resolveTypesOfVariables(context, program, { "x", "y" });
+  assert(!guard.realizeErrors());
+  assert(m["x"].kind() == QualifiedType::INDEX);
+  assert(m["x"].type()->isIntType());
+  assert(m["y"].kind() == QualifiedType::INDEX);
+  assert(m["y"].type()->isRecordType());
+}
+
+static void test24() {
+  printf("test24\n");
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    record r {}
+    iter foo(): (int, r) { yield (0, new r()); }
+    for (x, _) in foo() do;
+    )"""";
+
+  auto qt = resolveTypeOfVariable(context, program, "x");
+  assert(!guard.realizeErrors());
+  assert(qt.kind() == QualifiedType::INDEX);
+  assert(qt.type()->isIntType());
+}
+
+// This is private issue #6382.
+static void test25() {
+  printf("test25\n");
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    iter myIter() {
+      yield (1, 2);
+      yield (3, 4);
+    }
+
+    for (i, j) in myIter() {
+      var z = i;
+    }
+    )"""";
+
+  auto m = resolveTypesOfVariables(context, program, { "i", "j", "z" });
+  assert(!guard.realizeErrors());
+  assert(m["i"].kind() == QualifiedType::INDEX);
+  assert(m["i"].type()->isIntType());
+  assert(m["j"].kind() == QualifiedType::INDEX);
+  assert(m["j"].type()->isIntType());
+  assert(m["z"].kind() == QualifiedType::VAR);
+  assert(m["z"].type()->isIntType());
 }
 
 int main() {
@@ -910,6 +979,9 @@ int main() {
   testTupleGeneric();
   test21();
   test22();
+  test23();
+  test24();
+  test25();
 
   return 0;
 }

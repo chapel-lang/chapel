@@ -4646,6 +4646,9 @@ bool Resolver::enter(const IndexableLoop* loop) {
   if (const Decl* idx = loop->index()) {
     ResolvedExpression& re = byPostorder.byAst(idx);
     re.setType(idxType);
+    if (auto tup = idx->toTupleDecl()) {
+      resolveTupleUnpackDecl(tup, idxType);
+    }
   }
 
   if (auto with = loop->withClause()) {
