@@ -21,7 +21,8 @@
 #include "qthread_innards.h" /* for qlib */
 #include "qt_qthread_mgmt.h"
 
-int qt_nanosleep(const struct timespec *rqtp,
+#if HAVE_SYSCALL && HAVE_DECL_SYS_NANOSLEEP
+static int qt_nanosleep(const struct timespec *rqtp,
                  struct timespec       *rmtp)
 {
     if (qt_blockable()) {
@@ -48,7 +49,6 @@ int qt_nanosleep(const struct timespec *rqtp,
     }
 }
 
-#if HAVE_SYSCALL && HAVE_DECL_SYS_NANOSLEEP
 int nanosleep(const struct timespec *rqtp,
               struct timespec       *rmtp)
 {

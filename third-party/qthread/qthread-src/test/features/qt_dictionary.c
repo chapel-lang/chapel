@@ -9,23 +9,19 @@
 
 #define EXPECTED_ENTRIES 4
 
-int my_key_equals(void *first,
-                  void *second);
-int my_hashcode(void *string);
-
-int my_key_equals(void *first,
-                  void *second)
+static int my_key_equals(void *first,
+                         void *second)
 {
     //iprintf("Comparing %s %s\n", (char *)first, (char *)second);
     return !strcmp(first, second);
 }
 
-int my_hashcode(void *string)
+static int my_hashcode(void *string)
 {
     return qt_hash_bytes(string, strlen((char*)string), GOLDEN_RATIO);
 }
 
-void my_destructor(void *key, void *val)
+static void my_destructor(void *key, void *val)
 {
     iprintf("\tdeleting value key=%p (%s), val=%p (%s)\n", key, key, val, val);
 }

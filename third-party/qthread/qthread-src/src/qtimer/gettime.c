@@ -72,7 +72,7 @@ double qtimer_secs(qtimer_t q)
     return (q->stop.tv_sec + q->stop.tv_nsec * 1e-9) - (q->start.tv_sec + q->start.tv_nsec * 1e-9);
 }
 
-qtimer_t qtimer_create()
+qtimer_t qtimer_create(void)
 {
     qtimer_t ret = qt_calloc(1, sizeof(struct qtimer_s));
 

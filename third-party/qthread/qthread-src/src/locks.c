@@ -12,6 +12,7 @@
 #include "qt_hash.h"
 #include "qt_alloc.h"
 #include "qt_feb.h"
+#include "qt_locks.h"
 
 #include <stdbool.h> 
 #include <assert.h>
@@ -30,14 +31,14 @@ static void qthread_spinlock_destroy_fn(qthread_spinlock_t *l) {
     QTHREAD_TRYLOCK_DESTROY_PTR(&l->lock);
 }  
 
-INTERNAL qthread_spinlock_t * lock_hashmap_get(const aligned_t * key) {
+static qthread_spinlock_t * lock_hashmap_get(const aligned_t * key) {
     if(!qthread_spinlock_buckets)
         return NULL;
 
     return  qt_hash_get(qthread_spinlock_buckets[LOCKBIN(key)], key);
 }
 
-INTERNAL int lock_hashmap_put(const aligned_t * key, qthread_spinlock_t * val) {
+static int lock_hashmap_put(const aligned_t * key, qthread_spinlock_t * val) {
     if(!qthread_spinlock_buckets)
         return QTHREAD_OPFAIL;
     
@@ -47,7 +48,7 @@ INTERNAL int lock_hashmap_put(const aligned_t * key, qthread_spinlock_t * val) {
     return QTHREAD_OPFAIL;
 }
 
-INTERNAL int lock_hashmap_remove(const aligned_t * key) {
+static int lock_hashmap_remove(const aligned_t * key) {
     if(!qthread_spinlock_buckets)
         return QTHREAD_OPFAIL;
     
@@ -57,16 +58,16 @@ INTERNAL int lock_hashmap_remove(const aligned_t * key) {
     return QTHREAD_OPFAIL;
 }
 
-INTERNAL bool is_spin_lock_hashed(const aligned_t * a) {
+static bool is_spin_lock_hashed(const aligned_t * a) {
     return (NULL != lock_hashmap_get(a));
 }
 
-INTERNAL int spinlocks_initialize() {
+INTERNAL int spinlocks_initialize(void) {
     qthread_spinlock_buckets = NULL;
     return QTHREAD_SUCCESS;
 }
 
-INTERNAL int spinlocks_finalize() {
+INTERNAL int spinlocks_finalize(void) {
     if(qthread_spinlock_buckets){
         for (unsigned i = 0; i < QTHREAD_LOCKING_STRIPES; i++) {
             assert(qthread_spinlock_buckets[i]);
@@ -81,7 +82,7 @@ INTERNAL int spinlocks_finalize() {
 
 /* locks over addresses using internal hashmaps */
 
-INTERNAL int spinlock_init_hashed(const aligned_t * a, const bool is_recursive) {
+static int spinlock_init_hashed(const aligned_t * a, const bool is_recursive) {
     uint_fast8_t need_sync = 1;
 
     if(!qthread_spinlock_buckets){
@@ -105,11 +106,11 @@ INTERNAL int spinlock_init_hashed(const aligned_t * a, const bool is_recursive) 
     return QTHREAD_OPFAIL;
 }
 
-INTERNAL int spinlock_destroy_hashed(const aligned_t * a) {
+static int spinlock_destroy_hashed(const aligned_t * a) {
     return lock_hashmap_remove(a);
 }
 
-INTERNAL int spinlock_lock_hashed(const aligned_t * a) {
+static int spinlock_lock_hashed(const aligned_t * a) {
     qthread_spinlock_t * l = lock_hashmap_get(a);
     if (l != NULL) {
         if (l->state.s >= SPINLOCK_IS_RECURSIVE) {
@@ -130,7 +131,7 @@ INTERNAL int spinlock_lock_hashed(const aligned_t * a) {
     return QTHREAD_OPFAIL;
 }
 
-INTERNAL int spinlock_trylock_hashed(const aligned_t * a) {
+static int spinlock_trylock_hashed(const aligned_t * a) {
     qthread_spinlock_t * l = lock_hashmap_get(a);
     if (l != NULL) {
         if (l->state.s >= SPINLOCK_IS_RECURSIVE) {
@@ -155,7 +156,7 @@ INTERNAL int spinlock_trylock_hashed(const aligned_t * a) {
     return QTHREAD_OPFAIL;
 }
 
-INTERNAL int spinlock_unlock_hashed(const aligned_t * a) {
+static int spinlock_unlock_hashed(const aligned_t * a) {
     qthread_spinlock_t * l = lock_hashmap_get(a);
     if (l != NULL) {
         if (l->state.s >= SPINLOCK_IS_RECURSIVE) {
@@ -180,7 +181,7 @@ INTERNAL int spinlock_unlock_hashed(const aligned_t * a) {
 
 /* locks over lock types externally allocated */
 
-INTERNAL int spinlock_init(qthread_spinlock_t * a, const bool is_recursive) {
+static int spinlock_init(qthread_spinlock_t * a, const bool is_recursive) {
    if (is_recursive) {
         const qthread_spinlock_t init_mutex = QTHREAD_RECURSIVE_MUTEX_INITIALIZER;
         memcpy(a, &init_mutex, sizeof(qthread_spinlock_t));
@@ -191,11 +192,11 @@ INTERNAL int spinlock_init(qthread_spinlock_t * a, const bool is_recursive) {
     return QTHREAD_SUCCESS;
 }
 
-INTERNAL int spinlock_destroy(qthread_spinlock_t * a) {
+static int spinlock_destroy(qthread_spinlock_t * a) {
     return QTHREAD_SUCCESS;
 }
 
-INTERNAL int spinlock_lock(qthread_spinlock_t * a) {
+static int spinlock_lock(qthread_spinlock_t * a) {
     qthread_spinlock_t * l = a;
     if (l != NULL) {
         if (l->state.s >= SPINLOCK_IS_RECURSIVE) {
@@ -216,7 +217,7 @@ INTERNAL int spinlock_lock(qthread_spinlock_t * a) {
     return QTHREAD_OPFAIL;
 }
 
-INTERNAL int spinlock_trylock(qthread_spinlock_t * a) {
+static int spinlock_trylock(qthread_spinlock_t * a) {
     qthread_spinlock_t * l = a;
     if (l != NULL) {
         if (l->state.s >= SPINLOCK_IS_RECURSIVE) {
@@ -241,7 +242,7 @@ INTERNAL int spinlock_trylock(qthread_spinlock_t * a) {
     return QTHREAD_OPFAIL;
 }
 
-INTERNAL int spinlock_unlock(qthread_spinlock_t * a) {
+static int spinlock_unlock(qthread_spinlock_t * a) {
     qthread_spinlock_t * l = a;
     if (l != NULL) {
         if (l->state.s >= SPINLOCK_IS_RECURSIVE) {

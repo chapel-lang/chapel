@@ -36,6 +36,7 @@ noinst_HEADERS = \
 	qt_int_log.h \
 	qt_io.h \
 	qt_feb.h \
+        qt_locks.h \
 	qt_syncvar.h \
 	qt_macros.h \
 	qt_mpool.h \

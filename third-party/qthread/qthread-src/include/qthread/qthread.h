@@ -3,6 +3,16 @@
 
 #include <errno.h>                     /* for ENOMEM */
 
+#if defined(__cplusplus) && __cplusplus < 202302L
+#include <atomic>
+#define QT_Atomic(T) std::atomic<T>
+using std::atomic_load_explicit;
+using std::memory_order_relaxed;
+#else
+#include <stdatomic.h>
+#define QT_Atomic(T) _Atomic(T)
+#endif
+
 #include <limits.h>                    /* for UINT_MAX (C89) */
 #include "qthread-int.h"               /* for uint32_t and uint64_t */
 #include "common.h"                    /* important configuration options */
@@ -65,7 +75,7 @@
  *          EXT = rc
  *          EXT_NUMBER = 1
  */
-#define QTHREAD_VERSION "1.19"
+#define QTHREAD_VERSION "1.20"
 
 /* * QTHREAD_NUMVERSION = [MAJ] * 10000000 + [MIN] * 100000 + [REV] * 1000
  *                      + [EXT] * 100 + [EXT_NUMBER]
@@ -80,7 +90,7 @@
  * digit for EXT, and 2 digits for EXT_NUMBER.  For example, 1.17.1rc1 is
  * converted to the numeric version 011701201.
  */
-#define QTHREAD_NUMVERSION 011900000
+#define QTHREAD_NUMVERSION 012000000
 
 #define QTHREADS_GET_VERSION(MAJOR, MINOR, REVISION, TYPE, PATCH) \
     (((MAJOR) * 10000000) + ((MINOR) * 100000) + ((REVISION) * 1000) + ((TYPE) * 100) + (PATCH))
@@ -520,8 +530,8 @@ int qthread_syncvar_writeEF_const(syncvar_t *restrict dest,
  * 1 - data is copied from src to destination
  * 2 - the destination's FEB state gets set to full
  */
-int qthread_writeF(aligned_t *restrict       dest,
-                   const aligned_t *restrict src);
+int qthread_writeF(aligned_t       *dest,
+                   const aligned_t *src);
 int qthread_writeF_const(aligned_t *dest,
                          aligned_t  src);
 int qthread_syncvar_writeF(syncvar_t *restrict      dest,
@@ -674,7 +684,7 @@ static QINLINE float qthread_fincr(float *operand,
     } oldval, newval, res;
 
     do {
-        oldval.f = *(volatile float *)operand;
+        oldval.f = atomic_load_explicit((QT_Atomic(float) *)operand, memory_order_relaxed);
         newval.f = oldval.f + incr;
         res.i    = __sync_val_compare_and_swap((uint32_t *)operand, oldval.i, newval.i);
     } while (res.i != oldval.i);       /* if res!=old, the calc is out of date */
@@ -830,7 +840,7 @@ static QINLINE double qthread_dincr(double *operand,
     } oldval, newval, res;
 
     do {
-        oldval.d = *(volatile double *)operand;
+        oldval.d = atomic_load_explicit((QT_Atomic(double) *)operand, memory_order_relaxed);
         newval.d = oldval.d + incr;
         res.i    = __sync_val_compare_and_swap((uint64_t *)operand, oldval.i, newval.i);
     } while (res.i != oldval.i);       /* if res!=old, the calc is out of date */

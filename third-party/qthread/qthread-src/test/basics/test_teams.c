@@ -70,7 +70,7 @@ static aligned_t hello_new_team_new_team(void *arg_) {
 int main(int   argc,
          char *argv[])
 {
-    int count = 0;
+    int count = 2;
 
     aligned_t max = 0;
     aligned_t tmp = 0;

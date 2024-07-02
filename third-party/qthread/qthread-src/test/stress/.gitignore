@@ -1,5 +1,6 @@
 feb_prodcons_contended
 feb_stream
+lock_acq_rel
 precond_fib
 precond_spawn_simple
 subteams_uts
