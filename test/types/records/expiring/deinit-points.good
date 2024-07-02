@@ -114,11 +114,9 @@ deinit
 t21a
 in makeR
 end outer
-deinit
 t21b
 in makeR
 end outer
-deinit
 t21c
 in makeR
 end outer
