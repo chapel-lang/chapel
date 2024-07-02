@@ -547,8 +547,9 @@ static void setReturnAndReturnSymbolType(FnSymbol* fn, Type* retType) {
   fn->retTag = RET_VALUE;
 }
 
-static FnSymbol* buildThunkInvokeMethod(FnSymbol* fn, Type* thunkResultType, AggregateType* newRecord) {
-
+static FnSymbol* buildThunkInvokeMethod(FnSymbol* fn,
+                                        Type* thunkResultType,
+                                        AggregateType* newRecord) {
   FnSymbol* invokeFn = new FnSymbol("invoke");
   newRecord->thunkInvoke = invokeFn;
 

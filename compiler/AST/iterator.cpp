@@ -1828,9 +1828,9 @@ static void insertReturn(FnSymbol* fn, Symbol* toReturn) {
 }
 
 static void initializeRecordFieldWithArgLocals(FnSymbol* fn,
-                                                Symbol* rec,
-                                                Vec<Symbol*>& locals,
-                                                SymbolMap& local2field) {
+                                               Symbol* rec,
+                                               Vec<Symbol*>& locals,
+                                               SymbolMap& local2field) {
   // For each live argument
   forv_Vec(Symbol, local, locals) {
     if (!toArgSymbol(local))
@@ -2164,11 +2164,11 @@ static AggregateType* getThunkBuilderReturnType(FnSymbol* fn) {
     }
   }
 
-  CHPL_ASSERT(returnType);
+  INT_ASSERT(returnType);
   auto recordType = toAggregateType(returnType);
-  CHPL_ASSERT(recordType);
-  CHPL_ASSERT(recordType->aggregateTag == AGGREGATE_RECORD);
-  CHPL_ASSERT(recordType->symbol->hasFlag(FLAG_THUNK_RECORD));
+  INT_ASSERT(recordType);
+  INT_ASSERT(recordType->aggregateTag == AGGREGATE_RECORD);
+  INT_ASSERT(recordType->symbol->hasFlag(FLAG_THUNK_RECORD));
 
   return recordType;
 }
@@ -2196,7 +2196,7 @@ static void replaceLocalsWithThunkFields(FnSymbol* fn,
 
   for (BaseAST* ast : chpl::expandingIterator(asts)) {
     auto se = toSymExpr(ast);
-    if (!se || !se->parentSymbol) continue;
+    if (!se || se->parentSymbol == nullptr) continue;
 
     replaceLocalUseOrDefWithFieldRef(se, tr, asts, local2field, defSet, useSet);
   }
@@ -2227,7 +2227,7 @@ static void rebuildThunkBuilder(FnSymbol* fn,
   for_alist(expr, fn->body->body)
     expr->remove();
 
-  Symbol* thunk = newTemp("_ir", thunkRecord);
+  Symbol* thunk = newTemp("_tr", thunkRecord);
   fn->insertAtTail(new DefExpr(thunk));
 
   // Avoids a valgrind warning about uninitialized memory when performing
@@ -2260,7 +2260,7 @@ void lowerThunk(FnSymbol* fn) {
   auto invokeFn = thunkRecord->thunkInvoke;
 
   // We'll be creating fields for all variables needed to invoke the thunk.
-  // Store such variables into locales, and their corresponding fields by
+  // Store such variables into locals, and their corresponding fields by
   // using local2field.
   SymbolMap local2field;
   Vec<Symbol*> locals;
