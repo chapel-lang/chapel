@@ -185,11 +185,36 @@ static chpl_bool envInjectAMO;          // env: inject AMO messages
 static chpl_bool envInjectAM;           // env: inject AM messages
 static chpl_bool envUseDedicatedAmhCores;  // env: use dedicated AM cores
 static const char* envExpectedProvider; // env: provider we should select
+static ssize_t   envNbamCopyThreshold;  // env: NBAM copy threshold
+static int       envNbamMaxBuffers;     // env. max # NBAMs per thread
 
 static int numTxCtxs;
 static int numRxCtxs;
 
-struct perTxCtxInfo_t {
+// used to implement callbacks when tranmits complete
+typedef struct txnTrkCallback_t {
+  void (*func)(struct txnTrkCallback_t *callback);
+  struct perTxCtxInfo_t    *tcip;
+} txnTrkCallback_t;
+
+// Callback to free a NBAM buffer
+typedef struct nbamCallback_t {
+  txnTrkCallback_t  hdr;
+  void              *ptr;
+} nbamCallback_t;
+
+typedef struct nbamState_t {
+  int       numBuffers;         // # of copy buffers if > 0
+  int       bufSize;            // size of each buffer
+  void      **buffers;          // the copy buffers
+  chpl_bool *full;              // full[i] == true if buffer i is in-use (full)
+  int       index;              // current buffer to use
+  void      *allocatedBuffers;  // tracks buffers when using malloc and counters
+  int       inuse;              // # of buffers in-use
+  nbamCallback_t *callbacks;    // callback info for freeing buffers
+} nbamState_t;
+
+typedef struct perTxCtxInfo_t {
   atomic_bool allocated;        // true: in use; false: available
   chpl_bool bound;              // true: bound to an owner (usually a thread)
   struct fid_av* av;            // address vector
@@ -199,15 +224,16 @@ struct perTxCtxInfo_t {
   struct fid_cntr* txCntr;      // completion counter
   struct fid* txCmplFid;        // CQ or counter fid
                                 // fn: check for tx completions
-  void (*checkTxCmplsFn)(struct perTxCtxInfo_t*);
+  void (*checkTxCmplsFn)(struct perTxCtxInfo_t*, bool block);
                                 // fn: ensure progress
-  void (*ensureProgressFn)(struct perTxCtxInfo_t*);
+  void (*ensureProgressFn)(struct perTxCtxInfo_t*, bool block);
   uint64_t numTxnsOut;          // number of transactions in flight now
                                 // (and for which we expect CQ events)
   uint64_t numTxnsSent;         // number of transactions ever initiated
   void* putVisBitmap;           // nodes needing forced RMA store visibility
   void* amoVisBitmap;           // nodes needing forced AMO store visibility
-};
+  nbamState_t nbam;
+} perTxCtxInfo_t;
 
 static int tciTabLen;
 static struct perTxCtxInfo_t* tciTab;
@@ -330,6 +356,7 @@ static chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t, void*, size_t);
 static void ofi_put_lowLevel(const void*, void*, c_nodeid_t,
                              uint64_t, uint64_t, size_t, void*,
                              uint64_t, struct perTxCtxInfo_t*);
+static void ofi_wait_for_transmits_complete(void);
 static void do_remote_put_buff(void*, c_nodeid_t, void*, size_t);
 static chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t, void*, size_t);
 static void ofi_get_lowLevel(void*, void*, c_nodeid_t,
@@ -338,10 +365,10 @@ static void ofi_get_lowLevel(void*, void*, c_nodeid_t,
 static void do_remote_get_buff(void*, c_nodeid_t, void*, size_t);
 static void do_remote_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                   enum fi_op, enum fi_datatype);
-static void amEnsureProgress(struct perTxCtxInfo_t*);
+static void amEnsureProgress(struct perTxCtxInfo_t*, bool block);
 static void amCheckRxTxCmpls(chpl_bool*, chpl_bool*, struct perTxCtxInfo_t*);
-static void checkTxCmplsCQ(struct perTxCtxInfo_t*);
-static void checkTxCmplsCntr(struct perTxCtxInfo_t*);
+static void checkTxCmplsCQ(struct perTxCtxInfo_t*, bool block);
+static void checkTxCmplsCntr(struct perTxCtxInfo_t*, bool block);
 static size_t readCQ(struct fid_cq*, void*, size_t);
 static void reportCQError(struct fid_cq*);
 static void waitForTxnComplete(struct perTxCtxInfo_t*, void* ctx);
@@ -465,7 +492,7 @@ static chpl_bool amDoLivenessChecks = false;
       do {                                                              \
         OFI_CHK_2(expr, _ret, -FI_EAGAIN);                              \
         if (_ret == -FI_EAGAIN) {                                       \
-          (*tcip->ensureProgressFn)(tcip);                              \
+          (*tcip->ensureProgressFn)(tcip, false);                       \
         }                                                               \
       } while (_ret == -FI_EAGAIN                                       \
                && !atomic_load_bool(&amHandlersExit));                  \
@@ -473,7 +500,7 @@ static chpl_bool amDoLivenessChecks = false;
       do {                                                              \
         OFI_CHK_2(expr, _ret, -FI_EAGAIN);                              \
         if (_ret == -FI_EAGAIN) {                                       \
-          (*tcip->ensureProgressFn)(tcip);                              \
+          (*tcip->ensureProgressFn)(tcip, false);                       \
         }                                                               \
       } while (_ret == -FI_EAGAIN);                                     \
     }                                                                   \
@@ -640,12 +667,15 @@ static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
 //
 
 typedef enum {
-  txnTrkId,    // no tracking as such, context "ptr" is just an id value
-  txnTrkDone,  // *ptr is atomic bool 'done' flag
+  txnTrkId,       // no tracking as such, context "ptr" is just an id value
+  txnTrkDone,     // *ptr is atomic bool 'done' flag
+  txnTrkCallback, // *ptr is txnTrkCallback_t
   txnTrkTypeCount
 } txnTrkType_t;
 
-#define TXNTRK_TYPE_BITS 1
+
+
+#define TXNTRK_TYPE_BITS 2
 #define TXNTRK_ADDR_BITS (64 - TXNTRK_TYPE_BITS)
 #define TXNTRK_TYPE_MASK ((1UL << TXNTRK_TYPE_BITS) - 1UL)
 #define TXNTRK_ADDR_MASK (~(TXNTRK_TYPE_MASK << TXNTRK_ADDR_BITS))
@@ -671,6 +701,11 @@ void* txnTrkEncodeId(intptr_t id) {
 static inline
 void* txnTrkEncodeDone(void* pDone) {
   return txnTrkEncode(txnTrkDone, pDone);
+}
+
+static inline
+void* txnTrkEncodeCallback(txnTrkCallback_t *ptr) {
+  return txnTrkEncode(txnTrkCallback, (void *) ptr);
 }
 
 static inline
@@ -962,7 +997,6 @@ void task_local_buff_end(enum BuffType t) {
 #undef END
 }
 
-
 ////////////////////////////////////////
 //
 // Interface: initialization
@@ -1033,6 +1067,10 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   envUseDedicatedAmhCores = chpl_env_rt_get_bool(
                                   "COMM_OFI_DEDICATED_AMH_CORES", false);
   envExpectedProvider = chpl_env_rt_get("COMM_OFI_EXPECTED_PROVIDER", NULL);
+
+  envNbamCopyThreshold = chpl_env_rt_get_size("COMM_OFI_NBAM_THRESHOLD", 1024);
+  envNbamMaxBuffers = chpl_env_rt_get_int("COMM_OFI_NBAM_MAX_BUFFERS", 128);
+
   //
   // The user can specify the provider by setting either the Chapel
   // CHPL_RT_COMM_OFI_PROVIDER environment variable or the libfabric
@@ -3181,7 +3219,7 @@ void init_ofiConnections(void) {
       if (!tcip->bound) {
         CHK_TRUE(tciAllocTabEntry(tcip));
         while (tcip->txCntr == NULL && tcip->numTxnsOut >= txCQLen) {
-          (*tcip->checkTxCmplsFn)(tcip);
+          (*tcip->checkTxCmplsFn)(tcip, true);
         }
         amRequestNop(node, true /*blocking*/, tcip);
         tciFree(tcip);
@@ -3943,7 +3981,7 @@ void mcmReleaseAllNodes(struct bitmap_t* b1, struct bitmap_t* b2,
     } else {
       BITMAP_FOREACH_SET(b2, node) {
         if (skipNode < 0 || node != skipNode) {
-          (*tcip->checkTxCmplsFn)(tcip);
+          (*tcip->checkTxCmplsFn)(tcip, false);
           mcmReleaseOneNode(node, tcip, dbgOrderStr);
           bitmapClear(b2, node);
         }
@@ -3953,7 +3991,7 @@ void mcmReleaseAllNodes(struct bitmap_t* b1, struct bitmap_t* b2,
     if (b2 == NULL) {
       BITMAP_FOREACH_SET(b1, node) {
         if (skipNode < 0 || node != skipNode) {
-          (*tcip->checkTxCmplsFn)(tcip);
+          (*tcip->checkTxCmplsFn)(tcip, false);
           mcmReleaseOneNode(node, tcip, dbgOrderStr);
           bitmapClear(b1, node);
         }
@@ -3961,7 +3999,7 @@ void mcmReleaseAllNodes(struct bitmap_t* b1, struct bitmap_t* b2,
     } else {
       BITMAP_FOREACH_SET_OR(b1, b2, node) {
         if (skipNode < 0 || node != skipNode) {
-          (*tcip->checkTxCmplsFn)(tcip);
+          (*tcip->checkTxCmplsFn)(tcip, false);
           mcmReleaseOneNode(node, tcip, dbgOrderStr);
           bitmapClear(b1, node);
           bitmapClear(b2, node);
@@ -4529,6 +4567,29 @@ void amReqFn_selector(c_nodeid_t node,
   }
 }
 
+/*
+ * nbamFreeBuffers
+ *
+ * Frees all NBAM buffers. This is called when completion counters are
+ * used and the number of outstanding tranmits drops to zero. If the
+ * buffers were malloc'ed then free all buffers in the allocatedBuffers
+ * linked list, otherwise mark them all as free by clearing the full
+ * array.
+ */
+
+static void
+nbamFreeBuffers(perTxCtxInfo_t *tcip) {
+  nbamState_t *nbam = &tcip->nbam;
+  if (nbam->inuse > 0) {
+    void *next;
+    for (void *ptr = tcip->nbam.allocatedBuffers; ptr != NULL; ptr = next) {
+      next = *((void **) ptr);
+      CHPL_FREE(ptr);
+    }
+    tcip->nbam.allocatedBuffers = NULL;
+    nbam->inuse = 0;
+  }
+}
 
 static ssize_t wrap_fi_send(c_nodeid_t node,
                             amRequest_t* req, size_t reqSize, void* mrDesc,
@@ -4542,6 +4603,24 @@ static ssize_t wrap_fi_sendmsg(c_nodeid_t node,
                                void* ctx, uint64_t flags,
                                struct perTxCtxInfo_t* tcip);
 
+
+/*
+ * nbamFreeBuffer
+ *
+ * Frees an NBAM buffer. This is called when completion queues are used.
+ * the completion event contains information about the buffer to be
+ * freed. If the buffers were malloc'ed then the event contains a
+ * pointer the buffer to be freed, otherwise it contains a pointer to
+ * the entry in the full array to be marked as false.
+ */
+
+static void
+nbamFreeBuffer(struct txnTrkCallback_t *hdr) {
+  nbamCallback_t *cb = (nbamCallback_t *) hdr;
+
+  CHPL_FREE(cb->ptr);
+  hdr->tcip->nbam.inuse--;
+}
 
 //
 // Implements amRequestCommon() when MCM mode is message ordering with fences.
@@ -4588,45 +4667,75 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
     break;
   }
 
-  if (havePutsOut || haveAmosOut) {
-    //
-    // Special case: Do a fenced send if we need it for ordering with
-    // respect to some prior operation(s).  If we can inject, do so and
-    // just collect the completion later.  Otherwise, wait for it here.
-    //
-    if (!blocking
-        && reqSize <= ofi_info->tx_attr->inject_size
-        && envInjectAM) {
-      void* ctx = txnTrkEncodeId(__LINE__);
-      uint64_t flags = FI_FENCE | FI_DELIVERY_COMPLETE | FI_INJECT;
-      (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
-    } else {
-      atomic_bool txnDone;
-      void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
-      uint64_t flags = FI_FENCE | FI_DELIVERY_COMPLETE;
-      (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
-      waitForTxnComplete(tcip, ctx);
-      txCtxCleanup(ctx);
-    }
+  uint64_t flags = 0;
+  void *ctx = NULL;
+  atomic_bool txnDone;
+  bool waitComplete = true;
 
-    if (havePutsOut) {
-      bitmapClear(tcip->putVisBitmap, node);
+  if (havePutsOut || haveAmosOut) {
+    // Do a fenced send if we need it for ordering with respect to some
+    // prior operation(s).
+    flags |= FI_FENCE;
+  }
+
+  DBG_PRINTF(DBG_AM, "reqSize %zd inject_size %ld\n", reqSize, ofi_info->tx_attr->inject_size);
+  if (!blocking && (reqSize <= ofi_info->tx_attr->inject_size) && envInjectAM) {
+    // Inject if we can and should.
+    flags |= FI_INJECT | FI_DELIVERY_COMPLETE;
+    ctx = txnTrkEncodeId(__LINE__);
+    waitComplete = false;
+  } else if (!blocking && (reqSize <= tcip->nbam.bufSize) &&
+            (tcip->nbam.numBuffers > 0)) {
+    nbamState_t *nbam = &tcip->nbam;
+    while (nbam->inuse == nbam->numBuffers) {
+      (*tcip->checkTxCmplsFn)(tcip, true);
     }
-    if (haveAmosOut) {
-      bitmapClear(tcip->amoVisBitmap, node);
+    void *buffer;
+    if (tcip->txCntr == NULL) {
+      // set up CQ callback to free buffer
+      nbamCallback_t *cb;
+      CHPL_CALLOC_SZ(buffer, 1, reqSize + sizeof(*cb));
+      cb = (nbamCallback_t *) buffer;
+      cb->hdr.func = nbamFreeBuffer;
+      cb->ptr = buffer;
+      ctx = txnTrkEncodeCallback(&cb->hdr);
+      buffer = (void *) ((char *) buffer +  sizeof(*cb));
+    } else {
+      // add buffer to linked-list of buffers to be freed
+      CHPL_CALLOC_SZ(buffer, 1, reqSize + sizeof(void *));
+      *((void **) buffer) = nbam->allocatedBuffers;
+      nbam->allocatedBuffers = buffer;
+      buffer = (void *) ((char *) buffer +  sizeof(void *));
     }
+    memcpy(buffer, req, reqSize);
+    req = (amRequest_t *) buffer;
+    nbam->inuse++;
+    waitComplete = false;
+  }
+  if (waitComplete) {
+    // do it the old-fashioned way and wait for transmit-complete
+    ctx = txCtxInit(tcip, __LINE__, &txnDone);
+  }
+
+  // Note: could call wrap_fi_sendmsg in both cases. This would eliminate
+  // the conditional but may have higher overhead.
+  if (flags) {
+    (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
   } else {
-    //
-    // General case.
-    //
-    atomic_bool txnDone;
-    void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
     (void) wrap_fi_send(node, req, reqSize, mrDesc, ctx, tcip);
+  }
+
+  if (waitComplete) {
     waitForTxnComplete(tcip, ctx);
     txCtxCleanup(ctx);
   }
+  if (havePutsOut) {
+    bitmapClear(tcip->putVisBitmap, node);
+  }
+  if (haveAmosOut) {
+    bitmapClear(tcip->amoVisBitmap, node);
+  }
 }
-
 
 //
 // Implements amRequestCommon() when MCM mode is message ordering.
@@ -5476,6 +5585,9 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
   return 0;
 }
 
+void chpl_comm_wait_for_transmits_complete(void) {
+  ofi_wait_for_transmits_complete();
+}
 
 void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                    size_t size, int32_t commID, int ln, int32_t fn) {
@@ -5770,6 +5882,12 @@ struct perTxCtxInfo_t* tciAllocCommon(chpl_bool bindToAmHandler) {
     if ((ofi_info->caps & FI_ATOMIC) != 0) {
       _ttcip->amoVisBitmap = bitmapAlloc(chpl_numNodes);
     }
+    nbamState_t *nbam = &_ttcip->nbam;
+    nbam->numBuffers = envNbamMaxBuffers;
+    nbam->bufSize = envNbamCopyThreshold;
+    nbam->index = 0;
+    nbam->allocatedBuffers = NULL;
+    nbam->inuse = 0;
   }
   DBG_PRINTF(DBG_TCIPS, "alloc%s tciTab[%td]",
              _ttcip->bound ? " bound" : "", _ttcip - tciTab);
@@ -5860,10 +5978,10 @@ void waitForCQSpace(struct perTxCtxInfo_t* tcip, size_t len) {
   // Make sure we have at least the given number of free CQ entries.
   //
   if (tcip->txCQ != NULL && txCQLen - tcip->numTxnsOut < len) {
-    (*tcip->checkTxCmplsFn)(tcip);
+    (*tcip->checkTxCmplsFn)(tcip, false);
     while (txCQLen - tcip->numTxnsOut < len) {
       sched_yield();
-      (*tcip->checkTxCmplsFn)(tcip);
+      (*tcip->checkTxCmplsFn)(tcip, true);
     }
   }
 }
@@ -5876,6 +5994,25 @@ typedef chpl_comm_nb_handle_t (rmaPutFn_t)(void* myAddr, void* mrDesc,
                                            struct perTxCtxInfo_t* tcip);
 
 static rmaPutFn_t rmaPutFn_selector;
+
+/*
+ * Waits for all outstanding transmits to complete, thereby ensuring
+ * that we progress the endpoint until the transmits complete.
+ */
+inline
+void ofi_wait_for_transmits_complete(void) {
+  struct perTxCtxInfo_t* tcip;
+  if (chpl_numNodes > 1) {
+    // This only makes sense if the endpoint is bound to the thread.
+    // TODO: figure out what to do in non-bound cases. Seems like
+    // tciFree should ensure progress until all outstanding transmits
+    // have completed.
+    CHK_TRUE((tcip = tciAlloc()) != NULL);
+    while (tcip->numTxnsOut > 0) {
+      (*tcip->ensureProgressFn)(tcip, false);
+    }
+  }
+}
 
 static inline
 chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
@@ -6630,7 +6767,7 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
       OFI_RIDE_OUT_EAGAIN(tcip,
                           fi_readmsg(tcip->txCtx, &msg, 0));
       while (tcip->numTxnsOut > 0) {
-        (*tcip->ensureProgressFn)(tcip);
+        (*tcip->ensureProgressFn)(tcip, true);
       }
     }
   }
@@ -7133,8 +7270,8 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd_v, void* local_mr,
 
 
 static
-void amEnsureProgress(struct perTxCtxInfo_t* tcip) {
-  (*tcip->checkTxCmplsFn)(tcip);
+void amEnsureProgress(struct perTxCtxInfo_t* tcip, bool block) {
+  (*tcip->checkTxCmplsFn)(tcip, block);
 
   //
   // We only have responsibility for inbound operations if we're doing
@@ -7170,7 +7307,7 @@ void amCheckRxTxCmpls(chpl_bool* pHadRxEvent, chpl_bool* pHadTxEvent,
           *pHadRxEvent = true;
         }
       } else if (contexts[i] == &tcip->checkTxCmplsFn) {
-        (*tcip->checkTxCmplsFn)(tcip);
+        (*tcip->checkTxCmplsFn)(tcip, true);
         if (pHadTxEvent != NULL) {
           *pHadTxEvent = true;
         }
@@ -7190,15 +7327,10 @@ void amCheckRxTxCmpls(chpl_bool* pHadRxEvent, chpl_bool* pHadTxEvent,
     // even if we had events, because we can't actually tell.
 
     sched_yield();
-    int rc = fi_cq_read(ofi_rxCQ, NULL, 0);
-    if (rc == 0) {
-      if (pHadRxEvent != NULL) {
-        *pHadRxEvent = true;
-      }
-    } else if (rc != -FI_EAGAIN) {
-      INTERNAL_ERROR_V("fi_cq_read failed: %s", fi_strerror(rc));
+    if (pHadRxEvent != NULL) {
+      *pHadRxEvent = true;
     }
-    (*tcip->checkTxCmplsFn)(tcip);
+    (*tcip->checkTxCmplsFn)(tcip, true);
     if (pHadTxEvent != NULL) {
       *pHadTxEvent = true;
     }
@@ -7207,7 +7339,7 @@ void amCheckRxTxCmpls(chpl_bool* pHadRxEvent, chpl_bool* pHadTxEvent,
 
 
 static
-void checkTxCmplsCQ(struct perTxCtxInfo_t* tcip) {
+void checkTxCmplsCQ(struct perTxCtxInfo_t* tcip, bool block /* notused */) {
   struct fi_cq_msg_entry cqes[txCQLen];
   const size_t cqesSize = sizeof(cqes) / sizeof(cqes[0]);
   const size_t numEvents = readCQ(tcip->txCQ, cqes, cqesSize);
@@ -7218,20 +7350,32 @@ void checkTxCmplsCQ(struct perTxCtxInfo_t* tcip) {
     const txnTrkCtx_t trk = txnTrkDecode(cqe->op_context);
     DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64 ", ctx %d:%p",
                cqe->flags, trk.typ, trk.ptr);
-    if (trk.typ == txnTrkDone) {
-      atomic_store_explicit_bool((atomic_bool*) trk.ptr, true,
+    switch(trk.typ) {
+      case txnTrkDone:
+        atomic_store_explicit_bool((atomic_bool*) trk.ptr, true,
                                  memory_order_release);
-    } else if (trk.typ != txnTrkId) {
-      INTERNAL_ERROR_V("unexpected trk.typ %d", trk.typ);
+        break;
+      case txnTrkCallback: {
+        txnTrkCallback_t *cb = trk.ptr;
+        cb->tcip = tcip;
+        (*(cb->func))(cb);
+        break;
+      }
+      case txnTrkId:
+        // do nothing
+        break;
+      default:
+        INTERNAL_ERROR_V("unexpected trk.typ %d", trk.typ);
     }
   }
 }
 
-
 static
-void checkTxCmplsCntr(struct perTxCtxInfo_t* tcip) {
+void checkTxCmplsCntr(struct perTxCtxInfo_t* tcip, bool block) {
   if (tcip->numTxnsOut > 0) {
-    OFI_CHK(fi_cntr_wait(tcip->txCntr, tcip->numTxnsSent, -1));
+    if (block) {
+      OFI_CHK(fi_cntr_wait(tcip->txCntr, tcip->numTxnsSent, -1));
+    }
     uint64_t count = fi_cntr_read(tcip->txCntr);
     if (count > tcip->numTxnsSent) {
       INTERNAL_ERROR_V("fi_cntr_read() %" PRIu64 ", but numTxnsSent %" PRIu64,
@@ -7243,10 +7387,13 @@ void checkTxCmplsCntr(struct perTxCtxInfo_t* tcip) {
       if (count > 0) {
         INTERNAL_ERROR_V("error count %" PRIu64, count);
       }
+    } else {
+      if (tcip->nbam.inuse > 0) {
+        nbamFreeBuffers(tcip);
+      }
     }
   }
 }
-
 
 static inline
 size_t readCQ(struct fid_cq* cq, void* buf, size_t count) {
@@ -7296,20 +7443,20 @@ void reportCQError(struct fid_cq* cq) {
 
 static inline
 void waitForTxnComplete(struct perTxCtxInfo_t* tcip, void* ctx) {
-  (*tcip->ensureProgressFn)(tcip);
+  (*tcip->ensureProgressFn)(tcip, true);
   const txnTrkCtx_t trk = txnTrkDecode(ctx);
   if (trk.typ == txnTrkDone) {
-    // wait for the individual transmission to complete
+    // wait for the individual transmit to complete
     while (!atomic_load_explicit_bool((atomic_bool*) trk.ptr,
                                       memory_order_acquire)) {
       sched_yield();
-      (*tcip->ensureProgressFn)(tcip);
+      (*tcip->ensureProgressFn)(tcip, true);
     }
   } else {
-    // wait for all outstanding transmissions to complete
+    // wait for all outstanding transmits to complete
     while (tcip->numTxnsOut > 0) {
       sched_yield();
-      (*tcip->ensureProgressFn)(tcip);
+      (*tcip->ensureProgressFn)(tcip, true);
     }
   }
 }

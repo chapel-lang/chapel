@@ -548,6 +548,11 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                int ln, int32_t fn);
 
 //
+// returns when any pending transmits have completed
+
+void chpl_comm_wait_for_transmits_complete(void);
+
+//
 // Hook to ensure remote memory consistency after unordered operations.
 //
 #ifndef CHPL_COMM_IMPL_UNORDERED_TASK_FENCE
