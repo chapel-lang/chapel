@@ -31,10 +31,14 @@ static void testCleanLocalPath() {
   assert(cleanLocalPath("./foo.chpl") == "foo.chpl");
   assert(cleanLocalPath("/foo.chpl") == "/foo.chpl");
   assert(cleanLocalPath("../foo.chpl") == "../foo.chpl");
+  assert(cleanLocalPath(".") == ".");
+  assert(cleanLocalPath("/") == "/");
+  assert(cleanLocalPath("") == "");
 }
 
 static void testPathInDirPath() {
   assert(filePathInDirPath("foo.chpl", ".") == true);
+  assert(filePathInDirPath("foo.chpl", "") == false); // documented
   assert(filePathInDirPath("./foo.chpl", ".") == true);
   assert(filePathInDirPath("./foo.chpl", "./") == true);
   assert(filePathInDirPath("foo.chpl", "/") == false);
@@ -62,6 +66,15 @@ static void testIsSameFile() {
   assert(isSameFile("foo", "./././foo") == true);
   assert(isSameFile("foo", "bar") == false);
   assert(isSameFile("../bar/../baz", "../baz") == true);
+  assert(isSameFile("testPathUtils", "") == false);
+  assert(isSameFile("foo", "") == false);
+  assert(isSameFile("", ".") == false);
+  assert(isSameFile(".", "") == false);
+  assert(isSameFile("", "") == true);
+  assert(isSameFile("/bin", "") == false);
+  assert(isSameFile("/usr/bin", "/usr/bin") == true);
+  assert(isSameFile("/usr/bin", "") == false);
+  assert(isSameFile("/usr/bin", "") == false);
 }
 
 static void checkDeduplicate(std::vector<std::string> input,

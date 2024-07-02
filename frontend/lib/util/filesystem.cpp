@@ -254,18 +254,21 @@ std::string getExecutablePath(const char* argv0, void* MainExecAddr) {
   return getMainExecutable(argv0, MainExecAddr);
 }
 
-static llvm::SmallVector<char> normalizePath(const llvm::Twine& path) {
+static llvm::SmallVector<char> normalizePath(llvm::StringRef path) {
+  // return an empty string instead of cwd for an empty input path
+  if (path.empty())
+    return llvm::SmallVector<char>();
+
   std::error_code err;
-  llvm::SmallVector<char> abspath;
-  path.toVector(abspath);
+  llvm::SmallVector<char> abspath(path.begin(), path.end());
   err = llvm::sys::fs::make_absolute(abspath);
   if (err) {
     // ignore error making it absolute & just use path
-    path.toVector(abspath);
+    abspath = llvm::SmallVector<char>(path.begin(), path.end());
   }
 
   // collapse .. etc (ignoring errors)
-  llvm::SmallVector<char> realpath = abspath;
+  llvm::SmallVector<char> realpath;
   err = llvm::sys::fs::real_path(abspath, realpath);
   if (err) {
     // ignore error making it real & try it a different way
@@ -277,17 +280,26 @@ static llvm::SmallVector<char> normalizePath(const llvm::Twine& path) {
   return realpath;
 }
 
-bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2) {
-  // first, consider the filesystem
-  if (llvm::sys::fs::equivalent(path1, path2)) {
+bool isSameFile(llvm::StringRef path1, llvm::StringRef path2) {
+  // first, handle "" as documented for this function
+  if (path1.empty() && path2.empty())
     return true;
+  if (path1.empty() || path2.empty())
+    return false;
+
+  // next, consider the filesystem
+  std::error_code err;
+  bool result = false;
+  err = llvm::sys::fs::equivalent(path1, path2, result);
+  if (!err) {
+    return result;
   }
 
-  // if that failed, it could be files that don't exist, or
-  // actually different paths.
-
-  // normalize the paths and compare them.
-  return normalizePath(path1) == normalizePath(path2);
+  // if there was an error, it could be that the paths don't exist
+  // on the file system. Normalize the paths and compare them.
+  auto n1 = normalizePath(path1);
+  auto n2 = normalizePath(path2);
+  return n1 == n2;
 }
 
 std::vector<std::string>
@@ -300,7 +312,7 @@ deduplicateSamePaths(const std::vector<std::string>& paths)
   for (const auto& path : paths) {
     // normalize the path
     llvm::SmallVector<char> norm = normalizePath(path);
-    std::string normPath = std::string(norm.data(), norm.size_in_bytes());
+    std::string normPath = std::string(norm.data(), norm.size());
 
     auto pair1 = pathsSet.insert(normPath);
     if (pair1.second) {

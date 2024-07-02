@@ -118,8 +118,10 @@ std::string getExecutablePath(const char* argv0, void* MainExecAddr);
 /**
   Compare two paths to see if they point to the same filesystem object.
   Utilizes llvm::sys::fs:equivalent to do the comparison.
+
+  Returns false if either path is "" and both paths are not "".
 */
-bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2);
+bool isSameFile(llvm::StringRef path1, llvm::StringRef path2);
 
 /**
   Remove duplicate files/directories from a vector of paths.
