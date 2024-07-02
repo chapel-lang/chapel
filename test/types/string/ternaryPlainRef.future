@@ -1,0 +1,4 @@
+bug: const ref strings in ternary expressions sometimes leak memory
+#25417
+
+When this future is resolved, please remove the .execopts file
