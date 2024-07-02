@@ -66,6 +66,13 @@ def filter_libs_skip_arg(arg):
         # and since Chapel programs always build with pthreads anyway
         return True
 
+    if arg == '-L/usr/lib':
+        # Ignore this flag since on some systems /usr/lib is 32-bit
+        # and /usr/lib64 is 64-bit, so we would normally want /usr/lib64.
+        # This is a workaround for building qthreads with CHPL_HWLOC=system
+        # on Gentoo systems.
+        return True
+
     return False
 
 # Given bundled_libs and system_libs lists, filters some
@@ -87,6 +94,7 @@ def filter_libs(bundled_libs, system_libs):
             system_ret.append(arg)
         else:
             # otherwise include the flag in bundled
+            # TODO: this put something like -L/usr/lib into system_ret instead.
             bundled_ret.append(arg)
 
     for arg in system_libs:
