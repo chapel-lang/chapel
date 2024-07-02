@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-// TODO: move this file to the util tests
 #include "chpl/framework/Context.h"
 #include "chpl/util/filesystem.h"
 
