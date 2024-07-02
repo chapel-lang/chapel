@@ -20,8 +20,8 @@ class C {
 }
 
 {
-  var caputredR = new R(43);
-  var myThunk = __primitive("create thunk", caputredR);
+  var capturedR = new R(43);
+  var myThunk = __primitive("create thunk", capturedR);
   writeln(__primitive("force thunk", myThunk));
 }
 

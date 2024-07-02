@@ -11,7 +11,7 @@ proc doSomething(r: R) {
   return 42 + r.x;
 }
 
-proc doSomething(c: C) { // Yes, generic.
+proc doSomething(c: C) { // Yes, generic -- unspecified ownership for c.
   writeln("doing something else!");
   return 42 + c.x;
 }
