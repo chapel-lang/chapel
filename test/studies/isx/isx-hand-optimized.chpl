@@ -293,6 +293,8 @@ proc countLocalBucketSizes(myKeys, ref bucketSizes) {
 
 
 proc exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys) {
+  use Communication only put;
+  use CTypes only c_addrOf;
   for locid in 0..#numTasks {
     //
     // perturb the destination locale by our ID to avoid bottlenecks
@@ -310,7 +312,10 @@ proc exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys) {
 
     var Ridx = myBucketedKeys._instance.getDataIndex(srcOffset);
     var Rdata = _ddata_shift(keyType, myBucketedKeys._instance.theData, Ridx);
-    __primitive("chpl_comm_array_put", Rdata[0], Ldata.locale.id, Ldata[0], transferSize);
+    __primitive("chpl_comm_put", Rdata[0], Ldata.locale.id, Ldata[0], transferSize * numBytes(keyType));
+    // We run into issues about locality w.r.t.c pointers which can be avoided by changing
+    // the interface of the communcations module
+    // put(c_addrOf(Ldata[0]), c_addrOf(Rdata[0]), Ldata.locale.id, transferSize);
   }
 
 }

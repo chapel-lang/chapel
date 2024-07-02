@@ -607,7 +607,7 @@ module DistributedBagDeprecated {
               if bufferOffset + block!.size > bufferSz {
                 halt("DistributedBagDeprecated Internal Error: Snapshot attempt with bufferSz(", bufferSz, ") with offset bufferOffset(", bufferOffset + block!.size, ")");
               }
-              __primitive("chpl_comm_array_put", block!.elems[0], here.id, buffer[bufferOffset], block!.size);
+              __primitive("chpl_comm_put", block!.elems[0], here.id, buffer[bufferOffset], block!.size * numBytes(eltType));
               bufferOffset += block!.size;
               block = block!.next;
             }
@@ -799,12 +799,12 @@ module DistributedBagDeprecated {
         if len > need {
           srcOffset = len - need;
           headBlock!.size = srcOffset;
-          __primitive("chpl_comm_array_put", headBlock!.elems[srcOffset], locId, destPtr[destOffset], need);
+          __primitive("chpl_comm_put", headBlock!.elems[srcOffset], locId, destPtr[destOffset], need * numBytes(eltType));
           destOffset = destOffset + need;
         } else {
           srcOffset = 0;
           headBlock!.size = 0;
-          __primitive("chpl_comm_array_put", headBlock!.elems[srcOffset], locId, destPtr[destOffset], len);
+          __primitive("chpl_comm_put", headBlock!.elems[srcOffset], locId, destPtr[destOffset], len * numBytes(eltType));
           destOffset = destOffset + len;
         }
 
@@ -842,7 +842,7 @@ module DistributedBagDeprecated {
         var nLeft = n - offset;
         var nSpace = block!.cap - block!.size;
         var nFill = min(nLeft, nSpace);
-        __primitive("chpl_comm_array_get", block!.elems[block!.size], locId, ptr[offset], nFill);
+        __primitive("chpl_comm_get", block!.elems[block!.size], locId, ptr[offset], nFill * numBytes(eltType));
         block!.size = block!.size + nFill;
         offset = offset + nFill;
       }
