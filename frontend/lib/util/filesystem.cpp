@@ -24,9 +24,12 @@
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/Location.h"
 
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Path.h"
 #include "llvm/Support/Process.h"
 
 // LLVM 13 introduced SHA256. Use that if it is available.
@@ -251,31 +254,85 @@ std::string getExecutablePath(const char* argv0, void* MainExecAddr) {
   return getMainExecutable(argv0, MainExecAddr);
 }
 
-bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2) {
-  return llvm::sys::fs::equivalent(path1, path2);
+static llvm::SmallVector<char> normalizePath(llvm::StringRef path) {
+  // return an empty string instead of cwd for an empty input path
+  if (path.empty())
+    return llvm::SmallVector<char>();
+
+  std::error_code err;
+  llvm::SmallVector<char> abspath(path.begin(), path.end());
+  err = llvm::sys::fs::make_absolute(abspath);
+  if (err) {
+    // ignore error making it absolute & just use path
+    abspath = llvm::SmallVector<char>(path.begin(), path.end());
+  }
+
+  // collapse .. etc (ignoring errors)
+  llvm::SmallVector<char> realpath;
+  err = llvm::sys::fs::real_path(abspath, realpath);
+  if (err) {
+    // ignore error making it real & try it a different way
+    realpath = abspath;
+    auto style = llvm::sys::path::Style::posix;
+    llvm::sys::path::remove_dots(realpath, /* remove_dot_dot */ true, style);
+  }
+
+  return realpath;
+}
+
+bool isSameFile(llvm::StringRef path1, llvm::StringRef path2) {
+  // first, handle "" as documented for this function
+  if (path1.empty() && path2.empty())
+    return true;
+  if (path1.empty() || path2.empty())
+    return false;
+
+  // next, consider the filesystem
+  std::error_code err;
+  bool result = false;
+  err = llvm::sys::fs::equivalent(path1, path2, result);
+  if (!err) {
+    return result;
+  }
+
+  // if there was an error, it could be that the paths don't exist
+  // on the file system. Normalize the paths and compare them.
+  auto n1 = normalizePath(path1);
+  auto n2 = normalizePath(path2);
+  return n1 == n2;
 }
 
 std::vector<std::string>
 deduplicateSamePaths(const std::vector<std::string>& paths)
 {
   std::vector<std::string> ret;
-  std::set<llvm::sys::fs::UniqueID> set;
+  std::set<llvm::sys::fs::UniqueID> idsSet;
+  std::set<std::string> pathsSet;
 
   for (const auto& path : paths) {
-    // gather the unique ID
-    llvm::sys::fs::file_status status;
-    std::error_code err = llvm::sys::fs::status(path, status);
-    if (err) {
-      // Assume it is not a duplicate and proceed.
-      // Expect such an error if the path does not exist.
-      ret.push_back(path);
-    }
+    // normalize the path
+    llvm::SmallVector<char> norm = normalizePath(path);
+    std::string normPath = std::string(norm.data(), norm.size());
 
-    // but filter out multiple names for the same directory
-    auto pair = set.insert(status.getUniqueID());
-    if (pair.second) {
-      // it was inserted in the set, so append it to the vector
-      ret.push_back(path);
+    auto pair1 = pathsSet.insert(normPath);
+    if (pair1.second) {
+      // it was inserted into the normalized paths set, so proceed
+
+      // gather the filesystem ID
+      llvm::sys::fs::file_status status;
+      std::error_code err = llvm::sys::fs::status(path, status);
+      if (err) {
+        // Proceed based on the normalized path alone, without
+        // consulting the filesystem.
+        // Expect to reach this case if the path does not exist.
+        ret.push_back(path);
+      } else {
+        // otherwise, add it only if the filesystem ID is unique
+        auto pair2 = idsSet.insert(status.getUniqueID());
+        if (pair2.second) {
+          ret.push_back(path);
+        }
+      }
     }
   }
 
@@ -283,6 +340,8 @@ deduplicateSamePaths(const std::vector<std::string>& paths)
 }
 
 std::string cleanLocalPath(std::string path) {
+  // TODO: this could/should use remove_leading_dotslash
+  // or remove_dots from the LLVM Support Library's Path.h
   if (path.length() >= 2 && path[0] == '.' && path[1] == '/') {
     // string starts with ./
     while (path.find("./") == 0) {
@@ -291,6 +350,49 @@ std::string cleanLocalPath(std::string path) {
   }
 
   return path;
+}
+
+static bool filePathInDirPath(const char* filePathPtr, size_t filePathLen,
+                              const char* dirPathPtr, size_t dirPathLen) {
+  if (dirPathLen == 0)
+    return false; // documented behavior; use "." for the current dir.
+
+  // create SmallVectors for the relevant paths so we can use LLVM Path stuff
+  auto path = llvm::SmallVector<char>(filePathPtr, filePathPtr+filePathLen);
+  auto dirPath = llvm::SmallVector<char>(dirPathPtr, dirPathPtr+dirPathLen);
+
+  // set 'path' to filePath without the filename (i.e. the directory)
+  auto style = llvm::sys::path::Style::posix;
+  remove_filename(path, style);
+  remove_dots(path, /* remove_dot_dot */ false, style);
+  // remove_dots on foo.chpl returns "" but we want to match "." in that case
+  if (path.size() == 0)
+    path.push_back('.');
+
+  // also normalize dirPath
+  remove_dots(dirPath, /* remove_dot_dot */ false, style);
+  if (dirPath.size() == 0)
+    dirPath.push_back('.');
+
+  // add / to the end of path and dirPath if they are not present already
+  if (path.back() != '/')
+    path.push_back('/');
+  if (dirPath.back() != '/')
+    dirPath.push_back('/');
+
+  // now, check that 'dirPath' is a prefix or equal to 'path'
+  return dirPath.size() <= path.size() &&
+         0 == memcmp(path.data(), dirPath.data(), dirPath.size());
+}
+
+bool filePathInDirPath(llvm::StringRef filePath, llvm::StringRef dirPath) {
+  return filePathInDirPath(filePath.data(), filePath.size(),
+                           dirPath.data(), dirPath.size());
+}
+
+bool filePathInDirPath(UniqueString filePath, UniqueString dirPath) {
+  return filePathInDirPath(filePath.c_str(), filePath.length(),
+                           dirPath.c_str(), dirPath.length());
 }
 
 std::string fileHashToHex(const HashFileResult& hash) {

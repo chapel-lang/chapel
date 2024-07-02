@@ -20,6 +20,8 @@
 #ifndef CHPL_UTIL_FILESYSTEM_H
 #define CHPL_UTIL_FILESYSTEM_H
 
+#include "chpl/framework/UniqueString.h"
+
 #include "llvm/Config/llvm-config.h"
 
 #include "llvm/Support/ErrorOr.h"
@@ -116,8 +118,10 @@ std::string getExecutablePath(const char* argv0, void* MainExecAddr);
 /**
   Compare two paths to see if they point to the same filesystem object.
   Utilizes llvm::sys::fs:equivalent to do the comparison.
+
+  Returns false if either path is "" and both paths are not "".
 */
-bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2);
+bool isSameFile(llvm::StringRef path1, llvm::StringRef path2);
 
 /**
   Remove duplicate files/directories from a vector of paths.
@@ -133,6 +137,17 @@ deduplicateSamePaths(const std::vector<std::string>& paths);
   Removes any number of leading ./ from 'path'.
  */
 std::string cleanLocalPath(std::string path);
+
+/**
+  Returns 'true' if 'filepath' refers to a file contained in 'dir'.
+  If dirPath is "", returns false. Use "." for the current dir.
+ */
+bool filePathInDirPath(llvm::StringRef filePath, llvm::StringRef dirPath);
+/**
+  Returns 'true' if 'filepath' refers to a file contained in 'dir'
+  If dirPath is "", returns false. Use "." for the current dir.
+ */
+bool filePathInDirPath(UniqueString filePath, UniqueString dirPath);
 
 #if LLVM_VERSION_MAJOR >= 13
 /**

@@ -741,25 +741,25 @@ filePathIsInInternalModule(Context* context, UniqueString filePath) {
   // the command line flag --prepend-internal-module-dir
   auto& prependedPaths = prependedInternalModulePath(context);
   for (auto& path : prependedPaths) {
-    if (filePath.startsWith(path)) return true;
+    if (filePathInDirPath(filePath, path)) return true;
   }
 
   UniqueString prefix = internalModulePath(context);
   if (prefix.isEmpty()) return false;
-  return filePath.startsWith(prefix);
+  return filePathInDirPath(filePath, prefix);
 }
 
 bool
 filePathIsInBundledModule(Context* context, UniqueString filePath) {
   UniqueString prefix = bundledModulePath(context);
-  if (!prefix.isEmpty() && filePath.startsWith(prefix))
+  if (!prefix.isEmpty() && filePathInDirPath(filePath, prefix))
     return true;
 
   for (auto& path : prependedInternalModulePath(context))
-    if (filePath.startsWith(path)) return true;
+    if (filePathInDirPath(filePath, path)) return true;
 
   for (auto& path : prependedStandardModulePath(context))
-    if (filePath.startsWith(path)) return true;
+    if (filePathInDirPath(filePath, path)) return true;
 
   return false;
 }
@@ -770,11 +770,11 @@ filePathIsInStandardModule(Context* context, UniqueString filePath) {
   // the command line flag --prepend-standard-module-dir
   auto& prependedPaths = prependedStandardModulePath(context);
   for (auto& path : prependedPaths) {
-    if (filePath.startsWith(path)) return true;
+    if (filePathInDirPath(filePath, path)) return true;
   }
 
   UniqueString bundled = bundledModulePath(context);
-  if (bundled.isEmpty() || !filePath.startsWith(bundled)) {
+  if (bundled.isEmpty() || !filePathInDirPath(filePath, bundled)) {
     // not a bundled module & not in --prepend-standard-module-dir paths
     return false;
   }
@@ -788,7 +788,8 @@ filePathIsInStandardModule(Context* context, UniqueString filePath) {
   // is a standard module
   auto internal = UniqueString::getConcat(context, bundled.c_str(), "internal");
   auto packages = UniqueString::getConcat(context, bundled.c_str(), "packages");
-  if (filePath.startsWith(internal) || filePath.startsWith(packages)) {
+  if (filePathInDirPath(filePath, internal) ||
+      filePathInDirPath(filePath, packages)) {
     return false;
   }
 
@@ -853,7 +854,6 @@ std::string getExistingFileInModuleSearchPath(Context* context,
                                               std::string fname) {
   std::string check;
   std::string found;
-  UniqueString firstFoundInDir;
 
   for (auto path : moduleSearchPath(context)) {
     // check if path/fname exists
@@ -861,20 +861,20 @@ std::string getExistingFileInModuleSearchPath(Context* context,
 
     if (!check.empty() && !found.empty()) {
       // issue a warning if we already found a module in a different dir,
-      // but skip the warning if --prepend-internal-module-dir etc
-      // caused the first match & the later match comes from a bundled
-      // path.
+      // but skip the warning if 'check' and 'found' are both bundled modules
+      // (assuming that ambiguity in these is managed by the search path).
+      // Note that the check for "is it a bundled module" includes
+      // --prepend-internal-module-dir / --prepend-standard-module-dir,
+      // and we want to avoid the warning in that case because
+      // ambiguity is inherent to using these flags to replace an
+      // internal/standard module.
 
-      bool foundInPrependedPath = false;
-      for (auto& prepended : prependedInternalModulePath(context)) {
-        if (firstFoundInDir == prepended) foundInPrependedPath = true;
-      }
-      for (auto& prepended : prependedStandardModulePath(context)) {
-        if (firstFoundInDir == prepended) foundInPrependedPath = true;
-      }
+      bool firstMatchBundled =
+        filePathIsInBundledModule(context, UniqueString::get(context, found));
+      bool curMatchBundled =
+        filePathIsInBundledModule(context, UniqueString::get(context, check));
 
-      bool skip = foundInPrependedPath &&
-                  filePathIsInBundledModule(context, path);
+      bool skip = firstMatchBundled && curMatchBundled;
       if (!skip) {
         auto loc = IdOrLocation::createForCommandLineLocation(context);
         bool warnU = isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE);
@@ -885,12 +885,10 @@ std::string getExistingFileInModuleSearchPath(Context* context,
                     warnU);
       }
       continue;
-    } else if (!check.empty() && found.empty()) {
-      // note the first place a match was found
-      firstFoundInDir = path;
     }
 
     if (!check.empty() && found.empty()) {
+      // note the first match that was found
       found = check;
     }
   }
