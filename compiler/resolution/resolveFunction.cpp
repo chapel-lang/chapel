@@ -535,6 +535,7 @@ static AggregateType* buildThunkRecord(FnSymbol* fn) {
   auto recordSym = new TypeSymbol(recordName, newRecord);
 
   recordSym->addFlag(FLAG_THUNK_RECORD);
+  recordSym->addFlag(FLAG_COMPILER_GENERATED);
   return newRecord;
 }
 
@@ -552,6 +553,7 @@ static FnSymbol* buildThunkInvokeMethod(FnSymbol* fn, Type* thunkResultType, Agg
   newRecord->thunkInvoke = invokeFn;
 
   invokeFn->addFlag(FLAG_THUNK_INVOKE);
+  invokeFn->addFlag(FLAG_COMPILER_GENERATED);
   invokeFn->addFlag(FLAG_INLINE);
   invokeFn->setMethod(true);
 
