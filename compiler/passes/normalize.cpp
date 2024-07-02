@@ -2264,7 +2264,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
 static void fixPrimNew(CallExpr* primNewToFix);
 
 static bool isCallToConstructor(CallExpr* call) {
-  return call->isPrimitive(PRIM_NEW);
+  return isNewLike(call);
 }
 
 static void normalizeCallToConstructor(CallExpr* call) {
@@ -2748,7 +2748,7 @@ static bool shouldInsertCallTemps(CallExpr* call) {
       call->isPrimitive(PRIM_TUPLE_EXPAND)               ||
       call->isPrimitive(PRIM_IF_VAR)                     ||
       (parentCall && parentCall->isPrimitive(PRIM_MOVE)) ||
-      (parentCall && parentCall->isPrimitive(PRIM_NEW)) )
+      (parentCall && isNewLike(parentCall)) )
     return false;
 
   // Don't normalize lifetime constraint clauses

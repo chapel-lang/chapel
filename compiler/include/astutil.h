@@ -131,6 +131,8 @@ bool isMoveOrAssign(CallExpr* call);
 
 bool isDerefMove(CallExpr* call);
 
+bool isNewLike(CallExpr* call);
+
 //
 // Checks if a callExpr is a relational operator (<, <=, >, >=, ==, !=)
 //

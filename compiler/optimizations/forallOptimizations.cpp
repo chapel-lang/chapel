@@ -1010,7 +1010,7 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
 
     // Prevent making changes to `new C[i]`
     if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
-      if (parentCall->isPrimitive(PRIM_NEW)) { return NULL; }
+      if (isNewLike(parentCall)) { return NULL; }
     }
 
     // don't analyze further if the call base is a yielded symbol

@@ -673,6 +673,20 @@ CallExpr* callChplHereAlloc(Type* type, VarSymbol* md) {
   // to put in the cast to the proper type
   return allocExpr;
 }
+CallExpr* callChplHereAllocWithAllocator(Type* type, Expr* allocator, VarSymbol* md) {
+  INT_ASSERT(resolved == false);
+
+  // Since the type is not necessarily known, resolution will fix up
+  // this sizeof() call to take the resolved type of s as an argument
+  CallExpr*  sizeExpr  = new CallExpr(PRIM_SIZEOF_BUNDLE,
+                                      new SymExpr(type->symbol));
+  VarSymbol* mdExpr    = (md != NULL) ? md : newMemDesc(type);
+  CallExpr*  allocExpr = new CallExpr("chpl_here_alloc_with_allocator", sizeExpr, mdExpr, allocator);
+
+  // Again, as we don't know the type yet, we leave it to resolution
+  // to put in the cast to the proper type
+  return allocExpr;
+}
 
 // This insert normalized call expressions for allocation of enough
 // space to hold a variable of the given type.
