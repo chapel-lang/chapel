@@ -3984,7 +3984,7 @@ struct Converter {
       auto wrapperCall = new CallExpr("chpl__buildRemoteWrapper");
       wrapperCall->insertAtTail(destinationExpr);
       if (typeExpr) wrapperCall->insertAtTail(typeExpr);
-      if (initExpr) wrapperCall->insertAtTail(initExpr);
+      if (initExpr) wrapperCall->insertAtTail(new CallExpr(PRIM_CREATE_THUNK, initExpr));
       auto wrapperDef = new DefExpr(wrapper, wrapperCall);
 
       auto wrapperGet = new CallExpr(".", new SymExpr(wrapper), new_CStringSymbol("get"));
@@ -4374,6 +4374,7 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::AnyIntegralType:              return dtIntegral;
     case typetags::AnyIteratorClassType:         return dtIteratorClass;
     case typetags::AnyIteratorRecordType:        return dtIteratorRecord;
+    case typetags::AnyThunkRecordType:           return dtThunkRecord;
     case typetags::AnyNumericType:               return dtNumeric;
     case typetags::AnyOwnedType:                 return dtOwned;
     case typetags::AnyPodType:                   return dtAnyPOD;

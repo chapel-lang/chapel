@@ -23,6 +23,7 @@
  *** This pass and function normalizes parsed and scope-resolved AST.
  ***/
 
+#include "baseAST.h"
 #include "passes.h"
 
 #include "astutil.h"
@@ -738,6 +739,88 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
   }
 }
 
+
+class LowerThunkPrimsVisitor final : public AstVisitorTraverse
+{
+  public:
+    LowerThunkPrimsVisitor()          = default;
+   ~LowerThunkPrimsVisitor() override = default;
+
+    bool enterCallExpr(CallExpr* node) override;
+};
+
+static void collectThunkOuterVars(Expr* expr, std::set<Symbol*>& outerVars) {
+  std::vector<SymExpr*> uses;
+  collectSymExprs(expr, uses);
+  for (auto use : uses) {
+    Symbol* sym = use->symbol();
+    if (considerForOuter(sym))
+      outerVars.insert(sym);
+  }
+}
+
+static CallExpr* buildThunkPrimFunctions(CallExpr* node) {
+  CHPL_ASSERT(node->numActuals() == 1);
+  auto delayedExpr = node->get(1);
+
+  std::set<Symbol*> outerVars;
+  collectThunkOuterVars(delayedExpr, outerVars);
+
+  static int thunkUid = 0;
+  thunkUid++;
+  auto thunkUidStr = istr(thunkUid);
+  auto thunkName = astr("chpl__thunk", thunkUidStr);
+  auto thunkFn = new FnSymbol(thunkName);
+  thunkFn->addFlag(FLAG_COMPILER_GENERATED);
+  thunkFn->addFlag(FLAG_THUNK_BUILDER);
+  if (outerVars.size() > 0) thunkFn->setGeneric(true);
+  node->getStmtExpr()->insertBefore(new DefExpr(thunkFn));
+
+  auto thunkResultTmp = newTemp("thunkResult");
+  thunkResultTmp->addFlag(FLAG_NO_AUTO_DESTROY);
+  auto thunkBlock = new BlockStmt();
+  thunkBlock->insertAtTail(new DefExpr(thunkResultTmp));
+  thunkBlock->insertAtTail(new CallExpr(PRIM_INIT_VAR, thunkResultTmp, delayedExpr->remove()));
+  thunkBlock->insertAtTail(new CallExpr(PRIM_THUNK_RESULT, thunkResultTmp));
+  thunkFn->body->insertAtTail(thunkBlock);
+
+  SymbolMap map;
+  auto thunkCall = new CallExpr(thunkFn);
+  for (auto outerVar : outerVars) {
+    auto outerVarArg = newOuterVarArg(outerVar);
+    map.put(outerVar, outerVarArg);
+    thunkFn->insertFormalAtTail(outerVarArg);
+    thunkCall->insertAtTail(new SymExpr(outerVar));
+  }
+  update_symbols(thunkFn, &map);
+
+  scopeResolveAndNormalizeGeneratedLoweringFn(thunkFn);
+
+  return thunkCall;
+}
+
+//
+// To match lowering LoopExprs (see LoopExpr.cpp, lowerLoopExpr), lower
+// outer-most calls to thunk primitive first, in order to simplify scope-resolution
+// of newly-created functions.
+//
+bool LowerThunkPrimsVisitor::enterCallExpr(CallExpr* node) {
+  if (!node->isPrimitive(PRIM_CREATE_THUNK)) return true;
+
+  SET_LINENO(node);
+  CallExpr* replacement = buildThunkPrimFunctions(node);
+  node->replace(replacement);
+  normalize(replacement);
+
+  return false;
+}
+
+static void lowerThunkPrims(BaseAST* ast) {
+  INT_ASSERT(ast->inTree()); // otherwise nothing to do
+  LowerThunkPrimsVisitor vis;
+  ast->accept(&vis);
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -823,6 +906,8 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
       }
     }
   }
+
+  lowerThunkPrims(base);
 
   lowerIfExprs(base);
 
@@ -1879,6 +1964,7 @@ static void normalizeReturns(FnSymbol* fn) {
   size_t                 numVoidReturns = 0;
   CallExpr*              theRet         = NULL;
   bool                   isIterator     = fn->isIterator();
+  bool                   isThunkBuilder = fn->hasFlag(FLAG_THUNK_BUILDER);
 
   collectMyCallExprs(fn, calls, fn);
 
@@ -1915,7 +2001,7 @@ static void normalizeReturns(FnSymbol* fn) {
   }
 
   // Add a void return if needed.
-  if (isIterator == false && rets.size() == 0 &&
+  if (isIterator == false && isThunkBuilder == false && rets.size() == 0 &&
       (fn->retExprType == NULL || retExprIsVoid)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     return;

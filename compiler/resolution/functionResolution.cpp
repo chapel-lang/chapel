@@ -919,6 +919,11 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  if (formalType                                     == dtThunkRecord &&
+      actualType->symbol->hasFlag(FLAG_THUNK_RECORD) == true) {
+    return true;
+  }
+
   if (formalType == dtAnyRecord && isUserRecord(actualType)) {
     return true;
   }
@@ -11713,7 +11718,7 @@ static void applyGpuAttributesToIterableExprs() {
     int numUsers = primCall->numActuals();
 
     if (numUsers == 0) {
-      USR_FATAL(block, "Found GPU attributes on a variable declaration, but no subexpression to apply them to");
+      USR_FATAL_CONT(block, "Found GPU attributes on a variable declaration, but no subexpression to apply them to");
       USR_PRINT(block, "GPU attributes on variable declarations are applied to loop expressions and promoted function calls in the variable's initializer");
       USR_STOP();
     }
@@ -12594,8 +12599,9 @@ static void resolveAutoCopyEtc(AggregateType* at) {
   if (at->hasDestructor() == false) {
     if (at->symbol->hasFlag(FLAG_REF)             == false &&
         isTupleContainingOnlyReferences(at)       == false &&
-        // autoDestroy for iterator record filled in callDestructors
-        at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
+        // autoDestroy for iterator record, thunk record filled in callDestructors
+        at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false &&
+        at->symbol->hasFlag(FLAG_THUNK_RECORD)    == false) {
 
       // Resolve a call to deinit
       VarSymbol* tmp   = newTemp(at);

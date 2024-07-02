@@ -541,13 +541,15 @@ static void
 checkReturnPaths(FnSymbol* fn) {
   // Check to see if the function returns a value.
   if (fn->isIterator() ||
+      fn->hasFlag(FLAG_THUNK_BUILDER) ||
       !strcmp(fn->name, "=") || // TODO: Remove this to enforce new signature.
       !strcmp(fn->name, "chpl__buildArrayRuntimeType") ||
       fn->retType == dtVoid ||
       fn->retTag == RET_TYPE ||
       fn->hasFlag(FLAG_EXTERN) ||
       fn->hasFlag(FLAG_INIT_TUPLE) ||
-      fn->hasFlag(FLAG_AUTO_II))
+      fn->hasFlag(FLAG_AUTO_II) ||
+      fn->hasFlag(FLAG_THUNK_INVOKE))
     return; // No.
 
   // Check to see if the returned value is initialized.
