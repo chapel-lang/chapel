@@ -346,10 +346,8 @@ static bool filePathInDirPath(const char* filePathPtr, size_t filePathLen,
     return false; // documented behavior; use "." for the current dir.
 
   // create SmallVectors for the relevant paths so we can use LLVM Path stuff
-  auto path =
-    llvm::SmallVector<char>(llvm::ArrayRef(filePathPtr, filePathLen));
-  auto dirPath =
-    llvm::SmallVector<char>(llvm::ArrayRef(dirPathPtr, dirPathLen));
+  auto path = llvm::SmallVector<char>(filePathPtr, filePathPtr+filePathLen);
+  auto dirPath = llvm::SmallVector<char>(dirPathPtr, dirPathPtr+dirPathLen);
 
   // set 'path' to filePath without the filename (i.e. the directory)
   auto style = llvm::sys::path::Style::posix;
