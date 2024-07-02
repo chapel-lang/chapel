@@ -1,0 +1,1 @@
+--correctness=true -suseLoop=false --checkGranularity=1 --arrSize=1000 --totalSeconds=-1

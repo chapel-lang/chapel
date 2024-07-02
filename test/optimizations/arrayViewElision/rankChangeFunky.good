@@ -1,0 +1,13 @@
+ArrayViewElision not supported rankChangeFunky.chpl:4
+	lhsBaseType: [domain(3,int(64),one)] int(64)
+	lhsIndexingExprs: 
+		int(64)
+		int(64)
+		range(int(64),both,one)
+	rhsBaseType: [domain(3,int(64),one)] int(64)
+	rhsIndexingExprs: 
+		range(int(64),both,one)
+		int(64)
+		range(int(64),both,one)
+
+rankChangeFunky.chpl:4: error: rank mismatch in array assignment

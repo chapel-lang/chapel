@@ -20,6 +20,7 @@
 
 #include "preFold.h"
 
+#include "arrayViewElision.h"
 #include "astutil.h"
 #include "buildDefaultFunctions.h"
 #include "fcf-support.h"
@@ -913,6 +914,24 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     retval = new CallExpr(PRIM_NOOP);
     call->replace(retval);
+    break;
+  }
+
+  case PRIM_PROTO_SLICE_ASSIGN: {
+    ArrayViewElisionPrefolder assignment(call);
+
+    if (assignment.supported()) {
+      retval = assignment.getReplacement();
+      call->replace(retval);
+    }
+    else {
+      retval = new CallExpr(PRIM_NOOP);
+      assignment.condStmt()->insertBefore(retval);
+    }
+
+    assignment.report();
+    assignment.updateAndFoldConditional();
+
     break;
   }
 
