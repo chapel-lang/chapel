@@ -5,8 +5,6 @@
    derived from the GNU C version by Jeremy Zerfas
 */
 
-
-use DynamicIters;
 use Allocators;
 
 config const n = 10;         // the maximum tree depth
