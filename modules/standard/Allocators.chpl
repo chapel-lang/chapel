@@ -100,6 +100,11 @@ module Allocators {
     var ptr: c_ptr(int(8));
     var lock_ = if parSafe then new _LockWrapper() else none;
 
+    @chpldoc.nodoc
+    proc init(param parSafe: bool = false) {
+      this.parSafe = parSafe;
+    }
+
     proc init(size: int(64), param parSafe: bool = false) {
       this.parSafe = parSafe;
       this.size = size;
