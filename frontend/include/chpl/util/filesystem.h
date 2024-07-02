@@ -20,6 +20,8 @@
 #ifndef CHPL_UTIL_FILESYSTEM_H
 #define CHPL_UTIL_FILESYSTEM_H
 
+#include "chpl/framework/UniqueString.h"
+
 #include "llvm/Config/llvm-config.h"
 
 #include "llvm/Support/ErrorOr.h"
@@ -133,6 +135,17 @@ deduplicateSamePaths(const std::vector<std::string>& paths);
   Removes any number of leading ./ from 'path'.
  */
 std::string cleanLocalPath(std::string path);
+
+/**
+  Returns 'true' if 'filepath' refers to a file contained in 'dir'.
+  If dirPath is "", returns false. Use "." for the current dir.
+ */
+bool filePathInDirPath(llvm::StringRef filePath, llvm::StringRef dirPath);
+/**
+  Returns 'true' if 'filepath' refers to a file contained in 'dir'
+  If dirPath is "", returns false. Use "." for the current dir.
+ */
+bool filePathInDirPath(UniqueString filePath, UniqueString dirPath);
 
 #if LLVM_VERSION_MAJOR >= 13
 /**
