@@ -741,25 +741,25 @@ filePathIsInInternalModule(Context* context, UniqueString filePath) {
   // the command line flag --prepend-internal-module-dir
   auto& prependedPaths = prependedInternalModulePath(context);
   for (auto& path : prependedPaths) {
-    if (filePath.startsWith(path)) return true;
+    if (filePathInDirPath(filePath, path)) return true;
   }
 
   UniqueString prefix = internalModulePath(context);
   if (prefix.isEmpty()) return false;
-  return filePath.startsWith(prefix);
+  return filePathInDirPath(filePath, prefix);
 }
 
 bool
 filePathIsInBundledModule(Context* context, UniqueString filePath) {
   UniqueString prefix = bundledModulePath(context);
-  if (!prefix.isEmpty() && filePath.startsWith(prefix))
+  if (!prefix.isEmpty() && filePathInDirPath(filePath, prefix))
     return true;
 
   for (auto& path : prependedInternalModulePath(context))
-    if (filePath.startsWith(path)) return true;
+    if (filePathInDirPath(filePath, path)) return true;
 
   for (auto& path : prependedStandardModulePath(context))
-    if (filePath.startsWith(path)) return true;
+    if (filePathInDirPath(filePath, path)) return true;
 
   return false;
 }
@@ -770,11 +770,11 @@ filePathIsInStandardModule(Context* context, UniqueString filePath) {
   // the command line flag --prepend-standard-module-dir
   auto& prependedPaths = prependedStandardModulePath(context);
   for (auto& path : prependedPaths) {
-    if (filePath.startsWith(path)) return true;
+    if (filePathInDirPath(filePath, path)) return true;
   }
 
   UniqueString bundled = bundledModulePath(context);
-  if (bundled.isEmpty() || !filePath.startsWith(bundled)) {
+  if (bundled.isEmpty() || !filePathInDirPath(filePath, bundled)) {
     // not a bundled module & not in --prepend-standard-module-dir paths
     return false;
   }
@@ -788,7 +788,8 @@ filePathIsInStandardModule(Context* context, UniqueString filePath) {
   // is a standard module
   auto internal = UniqueString::getConcat(context, bundled.c_str(), "internal");
   auto packages = UniqueString::getConcat(context, bundled.c_str(), "packages");
-  if (filePath.startsWith(internal) || filePath.startsWith(packages)) {
+  if (filePathInDirPath(filePath, internal) ||
+      filePathInDirPath(filePath, packages)) {
     return false;
   }
 

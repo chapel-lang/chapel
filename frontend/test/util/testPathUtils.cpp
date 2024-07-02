@@ -46,6 +46,10 @@ static void testPathInDirPath() {
   assert(filePathInDirPath("../foo.chpl", "../") == true);
   assert(filePathInDirPath("/dir/foo.chpl", "/dir") == true);
   assert(filePathInDirPath("/dir/foo.chpl", "/dir/") == true);
+  assert(filePathInDirPath("/a/b/c/d.chpl", "/a") == true);
+  assert(filePathInDirPath("/a/b/c/d.chpl", "/a/") == true);
+  assert(filePathInDirPath("/a/b/c/d.chpl", "/a/b/c/") == true);
+  assert(filePathInDirPath("/aa/foo.chpl", "/a") == false);
 }
 
 static void testIsSameFile() {

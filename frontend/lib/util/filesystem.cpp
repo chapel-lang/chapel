@@ -342,6 +342,9 @@ std::string cleanLocalPath(std::string path) {
 
 static bool filePathInDirPath(const char* filePathPtr, size_t filePathLen,
                               const char* dirPathPtr, size_t dirPathLen) {
+  if (dirPathLen == 0)
+    return false; // documented behavior; use "." for the current dir.
+
   // create SmallVectors for the relevant paths so we can use LLVM Path stuff
   auto path =
     llvm::SmallVector<char>(llvm::ArrayRef(filePathPtr, filePathLen));
@@ -352,19 +355,24 @@ static bool filePathInDirPath(const char* filePathPtr, size_t filePathLen,
   auto style = llvm::sys::path::Style::posix;
   remove_filename(path, style);
   remove_dots(path, /* remove_dot_dot */ false, style);
+  // remove_dots on foo.chpl returns "" but we want to match "." in that case
+  if (path.size() == 0)
+    path.push_back('.');
 
   // also normalize dirPath
   remove_dots(dirPath, /* remove_dot_dot */ false, style);
+  if (dirPath.size() == 0)
+    dirPath.push_back('.');
 
-  // dir . should only match if we got "" from remove_filename
-  if (dirPath.size() == 1 && dirPath[0] == '.')
-    return path.size() == 0; // empty
+  // add / to the end of path and dirPath if they are not present already
+  if (path.back() != '/')
+    path.push_back('/');
+  if (dirPath.back() != '/')
+    dirPath.push_back('/');
 
-  // dir / should match anything starting with /
-  if (dirPath.size() == 1 && dirPath[0] == '.')
-    return path.size() > 0 && path[0] == '/';
-
-  return path == dirPath;
+  // now, check that 'dirPath' is a prefix or equal to 'path'
+  return dirPath.size() <= path.size() &&
+         0 == memcmp(path.data(), dirPath.data(), dirPath.size());
 }
 
 bool filePathInDirPath(llvm::StringRef filePath, llvm::StringRef dirPath) {
