@@ -1899,13 +1899,17 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
   const Scope* scope = scopeStack.back();
   auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
 
-  // Finally, try to resolve = between the elements
+  // Finally, try to resolve 'operator=' between the elements
   int i = 0;
   for (auto actual : lhsTuple->actuals()) {
     QualifiedType lhsEltType = lhsT->elementType(i);
     QualifiedType rhsEltType = rhsT->elementType(i);
+    auto ident = actual->toIdentifier();
     if (auto innerTuple = actual->toTuple()) {
       resolveTupleUnpackAssign(r, astForErr, innerTuple, lhsEltType, rhsEltType);
+    } else if (ident && ident->name() == USTR("_")) {
+      // Do not perform an assignment in the case of a '_' variable.
+      continue;
     } else {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(lhsEltType, UniqueString()));
@@ -2996,6 +3000,14 @@ void Resolver::resolveIdentifier(const Identifier* ident,
   const Decl* inDecl = declStack.back();
   if (inDecl->isVarLikeDecl() && ident->name() == USTR("?")) {
     result.setType(QualifiedType(QualifiedType::TYPE, AnyType::get(context)));
+    return;
+  }
+
+  // Throwaway '_', must be handled elsewhere and has no type on its own.
+  // Use the '?' type as a placeholder since 'unknown' causes resolution
+  // of the tuple type to give up.
+  if (ident->name() == USTR("_")) {
+    result.setType(QualifiedType(QualifiedType::VAR, AnyType::get(context)));
     return;
   }
 
