@@ -208,6 +208,9 @@ public:
   // Attached only to iterator class/records
   IteratorInfo*               iteratorInfo;
 
+  // Attached only to thunk records
+  FnSymbol*                   thunkInvoke;
+
   // What to delegate to with 'forwarding'
   AList                       forwardingTo;
 

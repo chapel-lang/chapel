@@ -1127,7 +1127,8 @@ bool FnSymbol::isSecondaryMethod() const {
 
 bool FnSymbol::isCompilerGenerated() const {
   return (hasFlag(FLAG_COMPILER_GENERATED) ||
-          hasFlag(FLAG_AUTO_II));
+          hasFlag(FLAG_AUTO_II) ||
+          hasFlag(FLAG_THUNK_INVOKE));
 }
 
 bool FnSymbol::isInitializer() const {

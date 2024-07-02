@@ -1237,6 +1237,9 @@ void initPrimitiveTypes() {
   dtIteratorClass = createInternalType("_iteratorClass", "_iteratorClass");
   dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
 
+  dtThunkRecord = createInternalType("_thunkRecord", "_thunkRecord");
+  dtThunkRecord->symbol->addFlag(FLAG_GENERIC);
+
   dtBorrowed = createInternalType("borrowed", "borrowed");
   dtBorrowed->symbol->addFlag(FLAG_GENERIC);
 
@@ -1610,6 +1613,7 @@ bool isBuiltinGenericType(Type* t) {
          t == dtAnyEnumerated ||
          t == dtNumeric || t == dtIntegral ||
          t == dtIteratorRecord || t == dtIteratorClass ||
+         t == dtThunkRecord ||
          t == dtAnyPOD ||
          t == dtOwned || t == dtShared ||
          t == dtAnyRecord || t == dtTuple ||

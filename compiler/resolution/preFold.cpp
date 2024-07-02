@@ -2028,6 +2028,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_STATIC_TYPEOF:
   case PRIM_STATIC_FIELD_TYPE:
+  case PRIM_THUNK_RESULT_TYPE:
   case PRIM_SCALAR_PROMOTION_TYPE: {
 
     // Replace the type query call with a SymExpr of the type symbol
@@ -2256,6 +2257,18 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       retval = new CallExpr(PRIM_NOOP);
       call->replace(retval);
     }
+    break;
+  }
+
+  case PRIM_FORCE_THUNK: {
+    auto sizeSym = toSymExpr(call->get(1));
+    auto sizeType = sizeSym->symbol()->typeInfo()->getValType();
+    auto aggrT = toAggregateType(sizeType);
+
+    // call the invoke method of the thunk stored in aggrT->thunkInvoke
+    retval = new CallExpr(aggrT->thunkInvoke, gMethodToken, sizeSym->remove());
+    call->replace(retval);
+    break;
   }
 
   default:
