@@ -33,7 +33,7 @@ module ChapelShortArrayTransfer {
   @chpldoc.nodoc
   config param disableShortArrayTransfer = false;
   @chpldoc.nodoc
-  config const shortArrayTransferThreshold = 50;
+  config param shortArrayTransferThreshold = 50;
 
 
 
