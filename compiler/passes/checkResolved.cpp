@@ -540,6 +540,13 @@ checkBadLocalReturn(FnSymbol* fn, Symbol* retVar) {
 static void
 checkReturnPaths(FnSymbol* fn) {
   // Check to see if the function returns a value.
+  //
+  // FLAG_THUNK_BUILDER is analogous to isIterator (both produce a record
+  // that contains outer variables and other information), so they are
+  // next to each other in the if statement. Similarly, FLAG_THUNK_INVOKE
+  // is analogous to FLAG_AUTO_II (both mark compiler-generated methods
+  // on the thunk record / iterator record that are filled in late in
+  // compilation)
   if (fn->isIterator() ||
       fn->hasFlag(FLAG_THUNK_BUILDER) ||
       !strcmp(fn->name, "=") || // TODO: Remove this to enforce new signature.
