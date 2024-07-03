@@ -1,5 +1,4 @@
-config param useDomain = true;
-config param rank = 1;
+config param useDomain = true, rank = 1;
 
 proc multuplify(param rank, x) {
   var ret: rank*x.type;
@@ -11,27 +10,34 @@ proc multuplify(param rank, x) {
 
 var arrRanges = multuplify(rank, 1..5);
 
-var A: [(...arrRanges)] int = 1;
-var B: [(...arrRanges)] int = 2;
+param aVal = 1, bVal = 2;
+
+var A: [(...arrRanges)] int = aVal;
+var B: [(...arrRanges)] int = bVal;
 
 var counter = 1;
 proc test(dstRange, srcRange) {
   const dstSlice = multuplify(rank, dstRange);
   const srcSlice = multuplify(rank, dstRange);
 
-  if useDomain {
+  if useDomain then
     A[{(...dstSlice)}] = B[{(...srcSlice)}];
-  }
-  else {
+  else
     A[(...dstSlice)] = B[(...srcSlice)];
-  }
+
+  const checkDom = A.domain[(...dstSlice)];
 
   writeln("Test ", counter);
+  for idx in A.domain {
+    const checkVal = if checkDom.contains(idx) then bVal else aVal;
+    assert(A[idx] == checkVal);
+  }
+
   writeln(A);
   writeln();
   counter += 1;
 
-  A = 1; // reset
+  A = aVal; // reset
 }
 
 writeln("Set first two:");
