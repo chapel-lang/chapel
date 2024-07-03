@@ -351,7 +351,6 @@ static const char* mcmModeNames[] = { "undefined",
 // transmit-complete. However, in general we don't know whether a given
 // operation is the last. For this reason we can't use the fi_inject*
 // functions.
-// TODO: remove calls to fi_inject* from the code
 //
 
 
