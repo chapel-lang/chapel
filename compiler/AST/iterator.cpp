@@ -401,13 +401,7 @@ static inline CallExpr* parentYieldExpr(SymExpr* se) {
 }
 
 
-//
-// Now that we have localized yield symbols, the return symbol
-// and the PRIM_RETURN CallExpr are not needed and would cause trouble.
-// Returns the type yielded by the iterator. (fn->retType is not it.)
-//
-static void
-removeRetSymbolAndUses(FnSymbol* fn) {
+void removeRetSymbolAndUses(FnSymbol* fn) {
   // follows getReturnSymbol()
   CallExpr* ret = toCallExpr(fn->body->body.last());
   INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
@@ -857,12 +851,12 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
 // E.g. 'yield localvar' is converted to ic.value = ic.FNN_localvar.
 //
 
-static void replaceLocalUseOrDefWithFieldRef(SymExpr* se,
-                                             Symbol* classOrRecord,
-                                             std::vector<BaseAST*>& asts,
-                                             SymbolMap& local2field,
-                                             Vec<SymExpr*>& defSet,
-                                             Vec<SymExpr*>& useSet) {
+void replaceLocalUseOrDefWithFieldRef(SymExpr* se,
+                                      Symbol* classOrRecord,
+                                      std::vector<BaseAST*>& asts,
+                                      SymbolMap& local2field,
+                                      Vec<SymExpr*>& defSet,
+                                      Vec<SymExpr*>& useSet) {
   if (useSet.set_in(se) || defSet.set_in(se)) {
     // SymExpr is among those we are interested in: def or use of a live local.
 
@@ -1813,7 +1807,7 @@ addAllLocalVariables(Vec<Symbol*>& syms, std::vector<BaseAST*>& asts) {
   }
 }
 
-static void insertReturn(FnSymbol* fn, Symbol* toReturn) {
+void insertReturn(FnSymbol* fn, Symbol* toReturn) {
   if (fn->hasFlag(FLAG_FN_RETARG)) {
     ArgSymbol* retArg = NULL;
     for_formals(formal, fn) {
@@ -1827,10 +1821,10 @@ static void insertReturn(FnSymbol* fn, Symbol* toReturn) {
   }
 }
 
-static void initializeRecordFieldWithArgLocals(FnSymbol* fn,
-                                               Symbol* rec,
-                                               Vec<Symbol*>& locals,
-                                               SymbolMap& local2field) {
+void initializeRecordFieldWithArgLocals(FnSymbol* fn,
+                                        Symbol* rec,
+                                        Vec<Symbol*>& locals,
+                                        SymbolMap& local2field) {
   // For each live argument
   forv_Vec(Symbol, local, locals) {
     if (!toArgSymbol(local))
@@ -2006,10 +2000,8 @@ removeLocals(Vec<Symbol*>& locals, std::vector<BaseAST*>& asts, Vec<Symbol*>& yl
 }
 
 
-// Creates (and returns) an iterator class field.
-// 'type' is used if local==NULL.
-static inline Symbol* createICField(int& i, Symbol* local, Type* type,
-                                    bool isValueField, FnSymbol* fn) {
+Symbol* createICField(int& i, Symbol* local, Type* type,
+                             bool isValueField, FnSymbol* fn) {
   // The field name is "value" for the return value of the iterator,
   // or F<int>_<local->name> otherwise.
   const char* fieldName = isValueField
@@ -2152,134 +2144,6 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
     valField = createAndInsertICField(i, NULL, yieldedType, true, fn);
   }
   *valFieldRef = valField;
-}
-
-static AggregateType* getThunkBuilderReturnType(FnSymbol* fn) {
-  Type* returnType = nullptr;
-  if (!fn->hasFlag(FLAG_FN_RETARG)) {
-    returnType = fn->retType->getValType();
-  } else {
-    for_formals(formal, fn) {
-      if (formal->hasFlag(FLAG_RETARG)) returnType = formal->type->getValType();
-    }
-  }
-
-  INT_ASSERT(returnType);
-  auto recordType = toAggregateType(returnType);
-  INT_ASSERT(recordType);
-  INT_ASSERT(recordType->aggregateTag == AGGREGATE_RECORD);
-  INT_ASSERT(recordType->symbol->hasFlag(FLAG_THUNK_RECORD));
-
-  return recordType;
-}
-
-static void addLocalsToThunkRecord(FnSymbol* fn,
-                                   Vec<Symbol*>& locals,
-                                   SymbolMap& local2field,
-                                   AggregateType* thunkRecord) {
-  int counter = 0;
-  for (auto local : locals) {
-    Symbol* field = createICField(counter, local, NULL, /* isValueField */ false, fn);
-    local2field.put(local, field);
-    thunkRecord->fields.insertAtTail(new DefExpr(field));
-  }
-}
-
-static void replaceLocalsWithThunkFields(FnSymbol* fn,
-                                         Symbol* tr,
-                                         std::vector<BaseAST*>& asts,
-                                         Vec<Symbol*>& locals,
-                                         SymbolMap& local2field) {
-  Vec<SymExpr*> defSet;
-  Vec<SymExpr*> useSet;
-  buildDefUseSets(locals, fn, defSet, useSet);
-
-  for (BaseAST* ast : chpl::expandingIterator(asts)) {
-    auto se = toSymExpr(ast);
-    if (!se || se->parentSymbol == nullptr) continue;
-
-    replaceLocalUseOrDefWithFieldRef(se, tr, asts, local2field, defSet, useSet);
-  }
-}
-
-static void populateThunkInvokeFn(FnSymbol* fn, FnSymbol* invokeFn) {
-  auto thunkBody = fn->body->body.last();
-  invokeFn->body->replace(thunkBody->remove());
-
-  // Find the thunk result, transform it into a return at the end of the function.
-  for_alist_backward(expr, invokeFn->body->body) {
-    if (auto call = toCallExpr(expr)) {
-      if (call->isPrimitive(PRIM_THUNK_RESULT)) {
-        auto toReturn = call->get(1);
-        call->remove();
-        insertReturn(invokeFn, toSymExpr(toReturn)->symbol());
-        break;
-      }
-    }
-  }
-}
-
-static void rebuildThunkBuilder(FnSymbol* fn,
-                                Vec<Symbol*>& locals,
-                                SymbolMap& local2field,
-                                AggregateType* thunkRecord) {
-  fn->retSymbol = NULL;
-  for_alist(expr, fn->body->body)
-    expr->remove();
-
-  Symbol* thunk = newTemp("_tr", thunkRecord);
-  fn->insertAtTail(new DefExpr(thunk));
-
-  // Avoids a valgrind warning about uninitialized memory when performing
-  // indirect modification checks on const and default intent arguments
-  if (fWarnUnstable && !fNoConstArgChecks) {
-    fn->insertAtTail(new CallExpr(PRIM_ZERO_VARIABLE, new SymExpr(thunk)));
-  }
-
-  initializeRecordFieldWithArgLocals(fn, thunk, locals, local2field);
-
-  // Return the filled-in iterator record.
-  insertReturn(fn, thunk);
-
-  fn->addFlag(FLAG_INLINE);
-}
-
-void lowerThunk(FnSymbol* fn) {
-  SET_LINENO(fn);
-
-  std::vector<BaseAST*> asts;
-  collect_asts_postorder(fn, asts);
-
-  // Match the behavior of lowerIterator, though I'm not sure that this
-  // is necessary.
-  removeRetSymbolAndUses(fn);
-
-  // The builder function produces a thunk record, so get its return type
-  // to get a handle on the record.
-  auto thunkRecord = getThunkBuilderReturnType(fn);
-  auto invokeFn = thunkRecord->thunkInvoke;
-
-  // We'll be creating fields for all variables needed to invoke the thunk.
-  // Store such variables into locals, and their corresponding fields by
-  // using local2field.
-  SymbolMap local2field;
-  Vec<Symbol*> locals;
-
-  // All function formals need to be packaged in with the thunk record.
-  for_formals(formal, fn) {
-    if (formal->hasFlag(FLAG_RETARG)) continue;
-    locals.push_back(formal);
-  }
-
-  addLocalsToThunkRecord(fn, locals, local2field, thunkRecord);
-
-  auto tr = invokeFn->getFormal(1);
-
-  replaceLocalsWithThunkFields(fn, tr, asts, locals, local2field);
-
-  populateThunkInvokeFn(fn, invokeFn);
-
-  rebuildThunkBuilder(fn, locals, local2field, thunkRecord);
 }
 
 
