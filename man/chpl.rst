@@ -467,6 +467,12 @@ OPTIONS
     Enable [disable] optimization of the last statement in forall statements to
     use aggregated communication. This optimization is disabled by default.
 
+.. _man-array-view-elision:
+
+**\--[no-]array-view-elision**
+
+    Enable [disable] an optimization eliding array views in some statements.
+
 *Run-time Semantic Check Options*
 
 .. _man-checks:
