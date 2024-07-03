@@ -1659,6 +1659,4 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
   }
 }
 
-void chpl_comm_ensure_progress(void) {
-  am_poll_try();
-}
+void chpl_comm_ensure_progress(void) { }
