@@ -263,6 +263,7 @@ void      makeRefType(Type* type);
 // FnSymbol changes
 void      insertFormalTemps(FnSymbol* fn);
 void      ensureInMethodList(FnSymbol* fn);
+void      setReturnAndReturnSymbolType(FnSymbol* fn, Type* retType);
 
 
 bool      hasAutoCopyForType(Type* type);

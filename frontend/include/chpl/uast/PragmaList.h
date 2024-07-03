@@ -589,6 +589,10 @@ PRAGMA(TASK_COMPLETE_IMPL_FN, ypr, "task complete impl fn", ncm)
 PRAGMA(TASK_JOIN_IMPL_FN, ypr, "task join impl fn", ncm)
 PRAGMA(TEMP, npr, "temp", "compiler-inserted temporary")
 
+PRAGMA(THUNK_BUILDER, npr, "thunk builder", ncm)
+PRAGMA(THUNK_INVOKE, npr, "thunk invoke", ncm)
+PRAGMA(THUNK_RECORD, npr, "thunk record", ncm)
+
 PRAGMA(TUPLE, ypr, "tuple", ncm)
 PRAGMA(TUPLE_CAST_FN, ypr, "tuple cast fn", ncm)
 PRAGMA(TUPLE_WITH_REF, npr, "tuple contains ref", ncm)

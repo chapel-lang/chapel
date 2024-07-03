@@ -962,10 +962,10 @@ checkRetTypeMatchesRetVarType() {
     // The return value type is the type of the index the iterator returns.
     if (fn->isIterator()) continue;
 
-    // auto ii functions break this rule, but only during the time that
+    // auto ii and thunk invoke functions break this rule, but only during the time that
     // they are prototypes.  After the body is filled in, they should obey it.
     // But, for some of them, the body is never filled in.
-    if (fn->hasFlag(FLAG_AUTO_II)) continue;
+    if (fn->hasFlag(FLAG_AUTO_II) || fn->hasFlag(FLAG_THUNK_INVOKE)) continue;
 
     // No body, so no return symbol.
     if (fn->hasFlag(FLAG_NO_FN_BODY)) continue;

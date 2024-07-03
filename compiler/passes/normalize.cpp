@@ -23,6 +23,7 @@
  *** This pass and function normalizes parsed and scope-resolved AST.
  ***/
 
+#include "baseAST.h"
 #include "passes.h"
 
 #include "astutil.h"
@@ -40,6 +41,7 @@
 #include "splitInit.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include "thunks.h"
 #include "TransformLogicalShortCircuit.h"
 #include "typeSpecifier.h"
 #include "wellknown.h"
@@ -738,6 +740,7 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
   }
 }
 
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -827,6 +830,8 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   lowerIfExprs(base);
 
   lowerLoopExprs(base);
+
+  lowerThunkPrims(base);
 
 
   //
@@ -1879,6 +1884,7 @@ static void normalizeReturns(FnSymbol* fn) {
   size_t                 numVoidReturns = 0;
   CallExpr*              theRet         = NULL;
   bool                   isIterator     = fn->isIterator();
+  bool                   isThunkBuilder = fn->hasFlag(FLAG_THUNK_BUILDER);
 
   collectMyCallExprs(fn, calls, fn);
 
@@ -1915,7 +1921,7 @@ static void normalizeReturns(FnSymbol* fn) {
   }
 
   // Add a void return if needed.
-  if (isIterator == false && rets.size() == 0 &&
+  if (isIterator == false && isThunkBuilder == false && rets.size() == 0 &&
       (fn->retExprType == NULL || retExprIsVoid)) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     return;
