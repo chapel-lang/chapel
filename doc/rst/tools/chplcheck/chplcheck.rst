@@ -142,31 +142,6 @@ linting warnings via ``chplcheck``. See the
 :ref:`Editor Support page <readme-editor-support>` for details on a specific
 editor.
 
-Neovim
-~~~~~~
-
-The built-in LSP API can be used to configure ``chplcheck`` as follows:
-
-.. code-block:: lua
-
-   local lspconfig = require 'lspconfig'
-   local configs = require 'lspconfig.configs'
-   local util = require 'lspconfig.util'
-
-   configs.chplcheck = {
-     default_config = {
-       cmd = {"chplcheck", "--lsp"},
-       filetypes = {'chpl'},
-       autostart = true,
-       single_file_support = true,
-       root_dir = util.find_git_ancestor,
-       settings = {},
-     },
-   }
-
-   lspconfig.chplcheck.setup{}
-   vim.cmd("autocmd BufRead,BufNewFile *.chpl set filetype=chpl")
-
 VSCode
 ~~~~~~
 
