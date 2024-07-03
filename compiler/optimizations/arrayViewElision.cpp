@@ -24,7 +24,6 @@
 #include "global-ast-vecs.h"
 #include "passes.h"
 #include "resolution.h"
-#include "view.h"
 
 // Array View Elision (AVE) aims to optimize assignments involving array views.
 // Currently, this is limited to:
@@ -343,7 +342,6 @@ bool ArrayViewElisionPrefolder::handleOneProtoSlice(bool isLhs) {
 
   CallExpr* typeCheck = new CallExpr("chpl__ave_exprCanBeProtoSlice");
   for_actuals (actual, call) {
-    //nprint_view(actual);
     INT_ASSERT(isSymExpr(actual));
     typeCheck->insertAtTail(actual->copy());
   }
@@ -401,16 +399,12 @@ CallExpr* ArrayViewElisionPrefolder::findOneProtoSliceCall(Expr* e) {
   CallExpr* tmpMove = toCallExpr(sym->getSingleDef()->getStmtExpr());
   INT_ASSERT(tmpMove && tmpMove->isPrimitive(PRIM_MOVE));
 
-  //nprint_view(lhsTmpMove);
-
   SymExpr* tmpSymExpr = toSymExpr(tmpMove->get(2));
   INT_ASSERT(tmpSymExpr);
 
   Symbol* tmpSym = tmpSymExpr->symbol();
   CallExpr* move = toCallExpr(tmpSym->getSingleDef()->getStmtExpr());
   INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-
-  //nprint_view(lhsMove);
 
   return toCallExpr(move->get(2));
 }

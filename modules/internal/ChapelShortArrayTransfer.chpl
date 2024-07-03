@@ -38,8 +38,8 @@ module ChapelShortArrayTransfer {
 
 
   proc chpl__staticCheckShortArrayTransfer(a, b) param {
-    // this is the case I'm focusing on in the initial PR. This can definitely
-    // be loosened up... by a lot.
+    // Engin: this is the case I'm focusing on in the initial PR. This can
+    // definitely be loosened up... by a lot.
     return !disableShortArrayTransfer && isProtoSlice(a) && isProtoSlice(b);
   }
 
