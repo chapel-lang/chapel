@@ -34,4 +34,4 @@ Chapel modifications to GASNet
 The modifications that we have made to the official GASNet release are
 as follows:
 
-* None
+* Cherry-picked 76c8a6a39 - Address bug 4723 in which ssh-spawner chokes tcsh
