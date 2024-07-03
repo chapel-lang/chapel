@@ -309,6 +309,52 @@ static const char* mcmModeNames[] = { "undefined",
                                       "message-order-fence",
                                       "message-order",
                                       "delivery-complete", };
+//
+// A note on injection.
+//
+// libfabric provides an "injection" feature in which there are no lingering
+// dependencies on the operation's arguments once the operation returns. Without
+// injection there may be lingering dependencies until the operation is
+// transmit-complete. For example, doing a PUT of a memory location creates a
+// dependency on that memory location until the PUT is successfully transmitted
+// to the recipient. Changing the memory contents in the interim can lead to
+// undefined results.
+//
+// Lingering dependencies can complicate the operation's caller -- consider a
+// loop that updates a variable and then PUTs it to a remote
+// memory address. The loop must wait for the PUT to be transmit-complete
+// before modifying the variable, precluding pipelining the PUTs. For this
+// reason libfabric allows the PUT to be injected via the FI_INJECT flag. See
+// the libfabric man pages for more details, but if this flag is provided
+// then the caller may reuse the arguments as soon as the operation returns.
+// In the case of the loop example the variable can be updated as soon as the
+// PUT returns. Injection isn't free, however, and may cause the operation to
+// either make a copy of its arguments or to block the operation until it is
+// transmit-complete. The exact implementation is provider-specific. As a
+// result, it only makes sense to use FI_INJECT for non-blocking constructs.
+// For example, in the case of a fetching atomic the calling task will block
+// until the atomic completes because the task needs the result of the fetch
+// to continue. There is likely no advantage to injecting the fetching atomic
+// and quite possibly higher overhead for doing so.
+//
+// Confusingly, libfabric also provides fi_inject* functions that in addition
+// to providing the FI_INJECT semantics described above also suppresses any
+// completion events. Such operations are "fire and forget" -- they have no
+// lingering dependencies and will complete without any indication that they
+// did so. However, we use FI_PROGRESS_MANUAL meaning the runtime must
+// progress the libfabric endpoints. Normally, we would use the completion
+// event to know when we can stop progressing an endpoint, but with the
+// fi_inject* routines we don't know when we can stop because we don't know
+// when the operations are transmit-complete. This might be ok with a
+// sequence of ordered operations in which all but the last are injected
+// because we can progress the endpoint until the last operation is
+// transmit-complete. However, in general we don't know whether a given
+// operation is the last. For this reason we can't use the fi_inject*
+// functions.
+// TODO: remove calls to fi_inject* from the code
+//
+
+
 
 //
 // Provider-specific support.
