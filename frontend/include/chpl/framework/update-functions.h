@@ -28,6 +28,7 @@
 #include <cstring>
 #include <functional>
 #include <map>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -66,6 +67,12 @@ static inline bool defaultUpdateBasic(T& keep, T& addin) {
 template<typename K, typename V>
 static inline bool
 defaultUpdateMap(std::map<K, V>& keep, std::map<K, V>& addin) {
+  return defaultUpdate(keep, addin);
+}
+
+template<typename T>
+static inline bool
+defaultUpdateSet(std::set<T>& keep, std::set<T>& addin) {
   return defaultUpdate(keep, addin);
 }
 
@@ -186,6 +193,12 @@ template<typename T> struct update<chpl::optional<T>> {
 template<typename K, typename V> struct update<std::map<K, V>> {
   bool operator()(std::map<K, V>& keep, std::map<K, V>& addin) const {
     return defaultUpdateMap(keep, addin);
+  }
+};
+
+template<typename T> struct update<std::set<T>> {
+  bool operator()(std::set<T>& keep, std::set<T>& addin) const {
+    return defaultUpdateSet(keep, addin);
   }
 };
 

@@ -254,21 +254,24 @@ std::string getExecutablePath(const char* argv0, void* MainExecAddr) {
   return getMainExecutable(argv0, MainExecAddr);
 }
 
-static llvm::SmallVector<char> normalizePath(llvm::StringRef path) {
+// TODO: remove the size once LLVM 11 is no longer supported
+using SmallVectorChar = llvm::SmallVector<char, 64>;
+
+static SmallVectorChar normalizePath(llvm::StringRef path) {
   // return an empty string instead of cwd for an empty input path
   if (path.empty())
-    return llvm::SmallVector<char>();
+    return SmallVectorChar();
 
   std::error_code err;
-  llvm::SmallVector<char> abspath(path.begin(), path.end());
+  SmallVectorChar abspath(path.begin(), path.end());
   err = llvm::sys::fs::make_absolute(abspath);
   if (err) {
     // ignore error making it absolute & just use path
-    abspath = llvm::SmallVector<char>(path.begin(), path.end());
+    abspath = SmallVectorChar(path.begin(), path.end());
   }
 
   // collapse .. etc (ignoring errors)
-  llvm::SmallVector<char> realpath;
+  SmallVectorChar realpath;
   err = llvm::sys::fs::real_path(abspath, realpath);
   if (err) {
     // ignore error making it real & try it a different way
@@ -311,7 +314,7 @@ deduplicateSamePaths(const std::vector<std::string>& paths)
 
   for (const auto& path : paths) {
     // normalize the path
-    llvm::SmallVector<char> norm = normalizePath(path);
+    SmallVectorChar norm = normalizePath(path);
     std::string normPath = std::string(norm.data(), norm.size());
 
     auto pair1 = pathsSet.insert(normPath);
@@ -342,11 +345,9 @@ deduplicateSamePaths(const std::vector<std::string>& paths)
 std::string cleanLocalPath(std::string path) {
   // TODO: this could/should use remove_leading_dotslash
   // or remove_dots from the LLVM Support Library's Path.h
-  if (path.length() >= 2 && path[0] == '.' && path[1] == '/') {
+  while (path.length() >= 2 && path[0] == '.' && path[1] == '/') {
     // string starts with ./
-    while (path.find("./") == 0) {
-      path = path.substr(2);
-    }
+    path = path.substr(2);
   }
 
   return path;
@@ -358,19 +359,19 @@ static bool filePathInDirPath(const char* filePathPtr, size_t filePathLen,
     return false; // documented behavior; use "." for the current dir.
 
   // create SmallVectors for the relevant paths so we can use LLVM Path stuff
-  auto path = llvm::SmallVector<char>(filePathPtr, filePathPtr+filePathLen);
-  auto dirPath = llvm::SmallVector<char>(dirPathPtr, dirPathPtr+dirPathLen);
+  auto path = SmallVectorChar(filePathPtr, filePathPtr+filePathLen);
+  auto dirPath = SmallVectorChar(dirPathPtr, dirPathPtr+dirPathLen);
 
   // set 'path' to filePath without the filename (i.e. the directory)
   auto style = llvm::sys::path::Style::posix;
-  remove_filename(path, style);
-  remove_dots(path, /* remove_dot_dot */ false, style);
+  llvm::sys::path::remove_filename(path, style);
+  llvm::sys::path::remove_dots(path, /* remove_dot_dot */ false, style);
   // remove_dots on foo.chpl returns "" but we want to match "." in that case
   if (path.size() == 0)
     path.push_back('.');
 
   // also normalize dirPath
-  remove_dots(dirPath, /* remove_dot_dot */ false, style);
+  llvm::sys::path::remove_dots(dirPath, /* remove_dot_dot */ false, style);
   if (dirPath.size() == 0)
     dirPath.push_back('.');
 
