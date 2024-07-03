@@ -59,13 +59,13 @@
 //   if (array_view_elision) {
 //     var protoSlice1 = chpl__createProtoSlice(A, x);
 //     var protoSlice2 = chpl__createProtoSlice(B, y);
-//     
+//
 //     __primitive(PRIM_PROTO_SLICE_ASSIGN, protoSlice1, protoSlice2);
 //   }
 //   else {
 //     A[x] = B[y];
 //   }
-//   
+//
 // Here the "protoSlice" has type `chpl__protoSlice`. See
 // modules/internal/ChapelArrayViewElision.chpl for the details of that type.
 // The main purpose of that type is to represent the expression that would

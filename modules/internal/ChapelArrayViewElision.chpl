@@ -101,13 +101,13 @@ module ChapelArrayViewElision {
   //
   // This is the type we create in lieu of full-blown array views. The key
   // functionality for this record are:
-  // 
+  //
   // 1. Supporting assignment with `=`
   // 2. Supporting bulk transfer
   // 3. Supporting serial and parallel iterations for non-bulk array transfer.
   //
   // Gotchas/caveats for the implementation:
-  // 
+  //
   // 1. We don't have `ref` fields yet. So, `ptrToArr` is used, and it stores
   //    the `c_addrOf` of the array in question. So it points to the _array
   //    record.
@@ -141,7 +141,7 @@ module ChapelArrayViewElision {
 
     proc init() {
       // this constructor is called to create dummy protoSlices that will never
-      // be used and removed from the AST. 
+      // be used and removed from the AST.
       this.rank = 1;
       this.isConst = true;
 
@@ -262,7 +262,7 @@ module ChapelArrayViewElision {
       }
       else {
 
-        /* 
+        /*
           Storing `inst` here and iterating over `inst` doesn't seem to work.
           Check the arrays primer for how that causes issues. Potentially an
           iterator inlining issue, or memory cleanup going sideways.
@@ -285,7 +285,7 @@ module ChapelArrayViewElision {
       }
       else {
 
-        /* 
+        /*
           Storing `inst` here and iterating over `inst` doesn't seem to work.
           Check the arrays primer for how that causes issues. Potentially an
           iterator inlining issue, or memory cleanup going sideways.
@@ -341,7 +341,7 @@ module ChapelArrayViewElision {
 
   proc isProtoSlice(a) param { return isSubtype(a.type, chpl__protoSlice); }
 
-  // 
+  //
   // private interface
   //
 
