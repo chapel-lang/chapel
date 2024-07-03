@@ -857,7 +857,7 @@ static const std::set<std::string>& filesInDirQuery(Context* context,
 
 static std::string cleanDirPath(std::string dirPath)
 {
-  // Remove any trialing '/' characters before proceeding
+  // Remove any trailing '/' characters before proceeding
   while (!dirPath.empty() && dirPath.back() == '/') {
     dirPath.pop_back();
   }
