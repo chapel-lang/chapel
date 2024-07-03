@@ -1,4 +1,4 @@
-ArrayViewElision supported (dynamic locality check required) rankChanges.chpl:11
+ArrayViewElision supported rankChanges.chpl:11
 	lhsBaseType: [domain(2,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		int(64)
@@ -8,7 +8,7 @@ ArrayViewElision supported (dynamic locality check required) rankChanges.chpl:11
 		int(64)
 		range(int(64),both,one)
 
-ArrayViewElision supported (dynamic locality check required) rankChanges.chpl:12
+ArrayViewElision supported rankChanges.chpl:12
 	lhsBaseType: [domain(2,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),both,one)
@@ -18,7 +18,7 @@ ArrayViewElision supported (dynamic locality check required) rankChanges.chpl:12
 		range(int(64),both,one)
 		int(64)
 
-ArrayViewElision supported (dynamic locality check required) rankChanges.chpl:15
+ArrayViewElision supported rankChanges.chpl:15
 	lhsBaseType: [domain(2,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		int(64)
@@ -28,7 +28,7 @@ ArrayViewElision supported (dynamic locality check required) rankChanges.chpl:15
 		int(64)
 		range(int(64),neither,one)
 
-ArrayViewElision supported (dynamic locality check required) rankChanges.chpl:16
+ArrayViewElision supported rankChanges.chpl:16
 	lhsBaseType: [domain(2,int(64),one)] int(64)
 	lhsIndexingExprs: 
 		range(int(64),neither,one)
@@ -60,7 +60,6 @@ ArrayViewElision not supported rankChanges.chpl:20
 
 <ShortArrayTransfer> Size: 3 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 1 1 1 1 1
 1 1 1 1 1
 2 2 2 1 1
@@ -69,7 +68,6 @@ ArrayViewElision not supported rankChanges.chpl:20
 
 <ShortArrayTransfer> Size: 3 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 1 1 2 1 1
 1 1 2 1 1
 1 1 2 1 1
@@ -78,7 +76,6 @@ ArrayViewElision not supported rankChanges.chpl:20
 
 <ShortArrayTransfer> Size: 5 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 1 1 1 1 1
 1 1 1 1 1
 2 2 2 2 2
@@ -87,7 +84,6 @@ ArrayViewElision not supported rankChanges.chpl:20
 
 <ShortArrayTransfer> Size: 5 Threshold: 50
 <ShortArrayTransfer> size qualifies
-<ShortArrayTransfer> locality qualifies
 1 1 2 1 1
 1 1 2 1 1
 1 1 2 1 1
