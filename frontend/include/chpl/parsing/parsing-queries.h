@@ -408,18 +408,12 @@ bool checkFileExists(Context* context,
                      bool requireFileCaseMatches);
 
 /**
- This helper function checks within a particular directory
- if a file with a particular name exists. It is useful
- when consulting the module search path.
-
- This function uses case-sensitive matching against a directory listing.
-
- If the file is found, returns the full path to that file.
+ This helper function checks if a file exists at a particular path.
+ If it does, it returns a normalized form of the path to that file.
  If not, it returns the empty string.
  */
-std::string getExistingFileInDirectory(Context* context,
-                                       const std::string& dirPath,
-                                       const std::string& fname);
+std::string getExistingFileAtPath(Context* context, std::string path);
+
 /**
  This helper function checks the module search path for
  an existing file named fname.

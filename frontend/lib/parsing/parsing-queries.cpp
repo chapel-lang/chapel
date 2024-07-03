@@ -911,13 +911,27 @@ bool checkFileExists(Context* context,
     // is the requested file present?
     return files.count(filename) > 0;
   } else {
-    return fileExistsQuery(context, path);
+    return fileExistsQuery(context, std::move(path));
   }
 }
 
-std::string getExistingFileInDirectory(Context* context,
-                                       const std::string& dirPath,
-                                       const std::string& fname) {
+std::string getExistingFileAtPath(Context* context, std::string path) {
+  if (path.empty()) {
+    return "";
+  }
+
+  path = cleanLocalPath(std::move(path));
+
+  if (checkFileExists(context, path, /*requireFileCaseMatches*/ false)) {
+    return path;
+  } else {
+    return "";
+  }
+}
+
+static std::string getExistingFileInDirectory(Context* context,
+                                              const std::string& dirPath,
+                                              const std::string& fname) {
   if (fname.empty()) {
     return "";
   }
