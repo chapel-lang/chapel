@@ -72,7 +72,7 @@ c_sublocid_t chpl_rt_sublocFromLocaleID(chpl_localeID_t loc) {
 }
 
 static inline
-bool chpl_equals_localeID(chpl_localeID_t* loc1, (chpl_localeID_t* loc2) {
+int chpl_equals_localeID(chpl_localeID_t* loc1, chpl_localeID_t* loc2) {
   return loc1->node == loc2->node &&
          loc1->subloc == loc2->subloc;
 }
