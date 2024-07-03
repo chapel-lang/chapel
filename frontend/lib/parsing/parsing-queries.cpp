@@ -931,6 +931,8 @@ std::string getExistingFileInDirectory(Context* context,
   }
   path += fname;
 
+  path = cleanLocalPath(std::move(path));
+
   // check for file text already set (supporting tests, reuse)
   if (hasFileText(context, path)) {
     return path;
