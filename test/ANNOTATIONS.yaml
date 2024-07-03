@@ -2464,7 +2464,7 @@ arkouda: &arkouda-base
   06/14/24:
     - Reverts DataFrame Indexing Changes (Bears-R-Us/arkouda#3323)
   6/25/24:
-    - Closes 3334, 3351: Simplify server side string code and added fixed length (Bears-R-Us/arkouda#3335)
+    - Closes 3334, 3351 Simplify server side string code and added fixed length (Bears-R-Us/arkouda#3335)
   6/27/24:
     - Remove number of files multiplication for IO benchmark (Bears-R-Us/arkouda#3368)
 
