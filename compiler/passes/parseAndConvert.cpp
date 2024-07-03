@@ -215,7 +215,8 @@ static void checkCanLoadBundledModules() {
 
 static void checkCanLoadCommandLineFile(const char* path) {
   std::string p = path;
-  if (!chpl::parsing::checkFileExists(gContext, p)) {
+  bool requireFileCaseMatches = false;
+  if (!chpl::parsing::checkFileExists(gContext, p, requireFileCaseMatches)) {
     USR_FATAL("opening '%s': No such file or directory", path);
   }
 }

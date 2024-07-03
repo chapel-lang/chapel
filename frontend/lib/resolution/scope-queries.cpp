@@ -2757,7 +2757,7 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
               f = parsing::getExistingFileInModuleSearchPath(context, v.str());
             } else {
               // just check the current directory
-              f = parsing::getExistingFileInDirectory(context, ".", v.str());
+              f = parsing::getExistingFileAtPath(context, v.str());
             }
 
             if (!f.empty()) {

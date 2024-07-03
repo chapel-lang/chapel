@@ -140,11 +140,15 @@ std::string cleanLocalPath(std::string path);
 
 /**
   Returns 'true' if 'filepath' refers to a file contained in 'dir'.
+  This is an operation on the paths & does not check if the file exists.
+
   If dirPath is "", returns false. Use "." for the current dir.
  */
 bool filePathInDirPath(llvm::StringRef filePath, llvm::StringRef dirPath);
 /**
   Returns 'true' if 'filepath' refers to a file contained in 'dir'
+  This is an operation on the paths & does not check if the file exists.
+
   If dirPath is "", returns false. Use "." for the current dir.
  */
 bool filePathInDirPath(UniqueString filePath, UniqueString dirPath);

@@ -42,6 +42,9 @@
 
 #include "../util/filesystem_help.h"
 
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Path.h"
+
 #include <cstdio>
 #include <regex>
 #include <set>
@@ -814,28 +817,129 @@ bool idIsInStandardModule(Context* context, ID id) {
   return found && filePathIsInStandardModule(context, filePath);
 }
 
+static const std::set<std::string>& filesInDirQuery(Context* context,
+                                                    std::string dirPath) {
+  QUERY_BEGIN_INPUT(filesInDirQuery, context, dirPath);
+
+  std::set<std::string> result;
+
+  std::error_code EC;
+  llvm::sys::fs::directory_iterator I(dirPath, EC);
+  llvm::sys::fs::directory_iterator E;
+
+  while (true) {
+    if (I == E || EC) {
+      break;
+    }
+
+    llvm::StringRef fileName = llvm::sys::path::filename(I->path());
+    // filter out directories and various status errors
+    if (I->type() != llvm::sys::fs::file_type::status_error &&
+        I->type() != llvm::sys::fs::file_type::file_not_found &&
+        I->type() != llvm::sys::fs::file_type::directory_file) {
+      // it's a regular file, symlink, fifo, etc
+      result.insert(fileName.str());
+    }
+
+    I.increment(EC);
+  }
+
+  if (EC) {
+    if (EC != std::errc::no_such_file_or_directory) {
+      context->error(IdOrLocation::createForCommandLineLocation(context),
+                     "%s in directory traversal of '%s'",
+                     EC.message().c_str(), dirPath.c_str());
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+static std::string cleanDirPath(std::string dirPath)
+{
+  // Remove any trailing '/' characters before proceeding
+  while (!dirPath.empty() && dirPath.back() == '/') {
+    dirPath.pop_back();
+  }
+  // Remove any ./ at the start
+  dirPath = cleanLocalPath(std::move(dirPath));
+
+  return dirPath;
+}
+
+static const std::set<std::string>&
+filesInDirWithCleanedPath(Context* context, std::string dirPath) {
+  return filesInDirQuery(context, std::move(dirPath));
+}
+
+static
+const std::set<std::string>& filesInDir(Context* context, std::string dirPath) {
+  dirPath = cleanDirPath(std::move(dirPath));
+  return filesInDirWithCleanedPath(context, std::move(dirPath));
+}
+
 static const bool& fileExistsQuery(Context* context, std::string path) {
   QUERY_BEGIN_INPUT(fileExistsQuery, context, path);
   bool result = fileExists(path.c_str());
   return QUERY_END(result);
 }
 
-bool checkFileExists(Context* context, std::string path) {
-  return fileExistsQuery(context, path);
+// TODO: remove the size once LLVM 11 is no longer supported
+using SmallVectorChar = llvm::SmallVector<char, 64>;
+
+bool checkFileExists(Context* context,
+                     std::string path,
+                     bool requireFileCaseMatches) {
+  if (requireFileCaseMatches) {
+    // use a directory-listing strategy to check the name in order
+    // to have more consistent behavior on case-insensitive filesystems.
+    //
+    // Chapel is case sensitive, so if you do 'use Bla', and there
+    // is a 'bla.chpl' with an implicit module, that should not satisfy it.
+
+    // compute the parent directory name
+    auto pathv = SmallVectorChar(path.begin(), path.end());
+    auto style = llvm::sys::path::Style::posix;
+    llvm::sys::path::remove_filename(pathv, style);
+    std::string dirPath = std::string(pathv.data(), pathv.size());
+    // compute the file name
+    llvm::StringRef filenameRef = llvm::sys::path::filename(path, style);
+    std::string filename = filenameRef.str();
+    // list in the parent directory
+    const std::set<std::string>& files =
+      filesInDir(context, std::move(dirPath));
+    // is the requested file present?
+    return files.count(filename) > 0;
+  } else {
+    return fileExistsQuery(context, std::move(path));
+  }
 }
 
-std::string getExistingFileInDirectory(Context* context,
-                                       std::string path,
-                                       std::string fname) {
+std::string getExistingFileAtPath(Context* context, std::string path) {
+  if (path.empty()) {
+    return "";
+  }
+
+  path = cleanLocalPath(std::move(path));
+
+  if (checkFileExists(context, path, /*requireFileCaseMatches*/ false)) {
+    return path;
+  } else {
+    return "";
+  }
+}
+
+static std::string getExistingFileInDirectory(Context* context,
+                                              const std::string& dirPath,
+                                              const std::string& fname) {
   if (fname.empty()) {
     return "";
   }
 
-  // Remove any '/' characters before adding one so we don't double.
-  while (!path.empty() && path.back() == '/') {
-    path.pop_back();
-  }
+  std::string dirPathClean = cleanDirPath(dirPath);
 
+  // compute myDirPath/fname
+  std::string path = dirPathClean;
   if (!path.empty()) {
     path += "/";
   }
@@ -843,7 +947,15 @@ std::string getExistingFileInDirectory(Context* context,
 
   path = cleanLocalPath(std::move(path));
 
-  if (hasFileText(context, path) || fileExistsQuery(context, path)) {
+  // check for file text already set (supporting tests, reuse)
+  if (hasFileText(context, path)) {
+    return path;
+  }
+
+  // check if the directory listing includes the file
+  const std::set<std::string>& files =
+    filesInDirWithCleanedPath(context, dirPathClean);
+  if (files.count(fname) > 0) {
     return path;
   }
 
@@ -851,7 +963,7 @@ std::string getExistingFileInDirectory(Context* context,
 }
 
 std::string getExistingFileInModuleSearchPath(Context* context,
-                                              std::string fname) {
+                                              const std::string& fname) {
   std::string check;
   std::string found;
 
