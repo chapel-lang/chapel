@@ -133,6 +133,7 @@ exclude_patterns = ['Makefile',
                     'builtins/String.rst',
                     'modules/standard/AutoMath.rst',
                     'modules/standard/ChapelIO.rst',
+                    'usingchapel/editors/*.rst',
                    ]
 
 # The reST default role (used for this markup: `text`) to use for all
