@@ -36,6 +36,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "thunks.h"
 #include "view.h"
 #include "wellknown.h"
 

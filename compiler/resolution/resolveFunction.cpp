@@ -46,6 +46,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "TemporaryConversionThunk.h"
+#include "thunks.h"
 #include "TryStmt.h"
 #include "view.h"
 #include "WhileStmt.h"
@@ -516,79 +517,12 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
   }
 }
 
-static Type* findThunkResultType(FnSymbol* fn) {
-  std::vector<CallExpr*> callExprs;
-  collectCallExprs(fn->body, callExprs);
-  Type* thunkResultType = nullptr;
-  for (auto call : callExprs) {
-    if (call->isPrimitive(PRIM_THUNK_RESULT)) {
-      thunkResultType = call->typeInfo();
-      break;
-    }
-  }
-  return thunkResultType;
-}
-
-static AggregateType* buildThunkRecord(FnSymbol* fn) {
-  auto newRecord = new AggregateType(AGGREGATE_RECORD);
-  auto recordName = astr("_tr_", fn->name);
-  auto recordSym = new TypeSymbol(recordName, newRecord);
-
-  recordSym->addFlag(FLAG_THUNK_RECORD);
-  recordSym->addFlag(FLAG_COMPILER_GENERATED);
-  return newRecord;
-}
-
-static void setReturnAndReturnSymbolType(FnSymbol* fn, Type* retType) {
+void setReturnAndReturnSymbolType(FnSymbol* fn, Type* retType) {
   fn->retType = retType;
   Symbol* retSym = fn->getReturnSymbol();
   INT_ASSERT(retSym);
   retSym->type = retType;
   fn->retTag = RET_VALUE;
-}
-
-static FnSymbol* buildThunkInvokeMethod(FnSymbol* fn,
-                                        Type* thunkResultType,
-                                        AggregateType* newRecord) {
-  FnSymbol* invokeFn = new FnSymbol("invoke");
-  newRecord->thunkInvoke = invokeFn;
-
-  invokeFn->addFlag(FLAG_THUNK_INVOKE);
-  invokeFn->addFlag(FLAG_COMPILER_GENERATED);
-  invokeFn->addFlag(FLAG_INLINE);
-  invokeFn->setMethod(true);
-
-  invokeFn->_this   = new ArgSymbol(INTENT_REF, "this", newRecord);
-  invokeFn->_this->addFlag(FLAG_ARG_THIS);
-
-  invokeFn->retType = thunkResultType;
-
-  invokeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  invokeFn->insertFormalAtTail(invokeFn->_this);
-  return invokeFn;
-}
-
-static void protoThunkRecord(FnSymbol* fn) {
-  auto thunkResultType = findThunkResultType(fn);
-  INT_ASSERT(thunkResultType);
-
-  // Create a record that contains the thunk state (currently: captured variables),
-  // which has a method to perform the computation.
-  auto newRecord = buildThunkRecord(fn);
-  auto invokeFn = buildThunkInvokeMethod(fn, thunkResultType, newRecord);
-
-  // Adjust the function's return type and the type of the return symbol
-  setReturnAndReturnSymbolType(fn, newRecord);
-
-  fn->defPoint->insertBefore(new DefExpr(newRecord->symbol));
-  fn->defPoint->insertBefore(new DefExpr(invokeFn));
-
-  makeRefType(newRecord);
-  normalize(invokeFn);
-
-  // Pretend that this function is already resolved.
-  // Its body will be filled in during the lowerIterators pass.
-  invokeFn->addFlag(FLAG_RESOLVED);
 }
 
 /************************************* | **************************************
