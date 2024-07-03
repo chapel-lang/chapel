@@ -142,12 +142,6 @@ linting warnings via ``chplcheck``. See the
 :ref:`Editor Support page <readme-editor-support>` for details on a specific
 editor.
 
-VSCode
-~~~~~~
-
-Install the ``chapel`` extension from the `Visual Studio Code marketplace
-<https://marketplace.visualstudio.com/items?itemName=chpl-hpe.chapel-vscode>`_.
-
 Writing New Rules
 -----------------
 

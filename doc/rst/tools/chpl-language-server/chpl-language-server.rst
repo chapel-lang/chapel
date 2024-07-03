@@ -28,13 +28,6 @@ frontend and the Python bindings for Dyno if needed, and place
 :ref:`Editor Support page <readme-editor-support>` for details on a specific
 editor.
 
-
-VSCode
-^^^^^^
-
-Install the ``chapel`` extension from the `Visual Studio Code marketplace
-<https://marketplace.visualstudio.com/items?itemName=chpl-hpe.chapel-vscode>`_.
-
 Supported Features
 ------------------
 

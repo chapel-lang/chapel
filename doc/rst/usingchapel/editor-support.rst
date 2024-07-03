@@ -6,16 +6,16 @@ Editor Support For Chapel
 
 This document describes how to set up your editor to work with Chapel.
 If your preferred editor is not listed, consider opening an `issue
-<https://github.com/chapel-lang/chapel/issues/new>`_ or `pull request
-<https://github.com/chapel-lang/chapel/pull/new>`_ to add it.
+<https://github.com/chapel-lang/chapel/issues/new>`_ requesting it or
+`pull request <https://github.com/chapel-lang/chapel/pull/new>`_ to add it.
 
-* `Emacs <#emacs>`_
+* :ref:`emacs`
 
-* `Neovim <#neovim>`_
+* :ref:`neovim`
 
-* `Vim <#vim>`_
+* :ref:`vim`
 
-* `VSCode <#vscode>`_
+* :ref:`vscode`
 
 ------------
 
