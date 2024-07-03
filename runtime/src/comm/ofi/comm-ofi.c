@@ -6033,19 +6033,18 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
       && size <= ofi_info->tx_attr->inject_size
       && !blocking && envInjectRMA) {
     //
-    // Special case: write injection has the least latency.  We can use that
-    // if this PUT is non-blocking, its size doesn't exceed the injection
-    // size limit, and we have a bound tx context so we can delay forcing the
+    // Special case: write injection has the least latency.  We can use it if
+    // this PUT is non-blocking, its size doesn't exceed the injection size
+    // limit, and we have a bound tx context so we can delay forcing the
     // memory visibility until later.
     //
     flags = FI_INJECT;
   }
   if (tcip->bound && bitmapTest(tcip->amoVisBitmap, node)) {
     //
-    // Special case: If our last operation was an AMO (which can only
-    // be true with a bound tx context) then we need to do a fenced
-    // PUT to force the AMO to complete before this PUT.  We may still
-    // be able to inject the PUT, though.
+    // Special case: If our last operation was an AMO (which can only be true
+    // with a bound tx context) then we need to do a fenced PUT to force the
+    // AMO to complete before this PUT.
     //
     flags |= FI_FENCE | FI_DELIVERY_COMPLETE;
   }
