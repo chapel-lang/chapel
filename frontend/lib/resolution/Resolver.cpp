@@ -4553,7 +4553,7 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
     eltTypes.push_back(qt);
   }
 
-  CHPL_ASSERT(eltTypes.size() == zip->numActuals());
+  CHPL_ASSERT(((int) eltTypes.size()) == zip->numActuals());
 
   auto kind = QualifiedType::CONST_VAR;
   for (auto& et : eltTypes) {
