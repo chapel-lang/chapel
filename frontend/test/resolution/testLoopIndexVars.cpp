@@ -34,7 +34,7 @@
 
 #include <map>
 
-#define ADVANCE_PRESERVING_SEARCH_PATHS_(ctx__) \
+#define ADVANCE_PRESERVING_STANDARD_MODULES_(ctx__) \
   do { \
     ctx__->advanceToNextRevision(false); \
     setupModuleSearchPaths(ctx__, false, false, {}, {}); \
@@ -124,6 +124,8 @@ R"""( i in myiter() {
 // Testing resolution of loop index variables
 // - error messages
 //
+
+
 
 static void testAmbiguous() {
   printf("testAmbiguous\n");
@@ -475,6 +477,61 @@ static void testIndexScope() {
   assert(!guard.realizeErrors());
 }
 
+static void testIterSigDetection(Context* context) {
+  printf("%s\n", __FUNCTION__);
+  ErrorGuard guard(context);
+
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
+  std::string program =
+    R""""(
+
+    iter i1() { yield 0.0; }
+    iter i1(param tag: iterKind) where tag == iterKind.standalone { yield 0; }
+    iter i2(param tag: iterKind) where tag == iterKind.leader { yield (0,0); }
+    iter i2(param tag: iterKind, followThis) where tag == iterKind.follower { yield ""; }
+    iter i2() { yield false; }
+
+    for a in i1() do;
+    forall b in i1() do;
+    for c in i2() do;
+    forall d in i2() do;
+
+    )"""";
+
+    auto mod = parseModule(context, program);
+    auto& rr = resolveModule(context, mod->id());
+    assert(!guard.realizeErrors());
+
+    auto aLoop = parentAst(context, findVariable(mod, "a"))->toIndexableLoop();
+    auto aSig1 = rr.byAst(aLoop->iterand()).mostSpecific().only().fn();
+    assert(aSig1->isSerialIterator(context));
+
+    auto bLoop = parentAst(context, findVariable(mod, "b"))->toIndexableLoop();
+    auto bSig1 = rr.byAst(bLoop->iterand()).associatedActions()[0].fn();
+    assert(bSig1->isParallelStandaloneIterator(context));
+
+    auto cLoop = parentAst(context, findVariable(mod, "c"))->toIndexableLoop();
+    auto cSig1 = rr.byAst(cLoop->iterand()).mostSpecific().only().fn();
+    assert(cSig1->isSerialIterator(context));
+
+    auto dLoop = parentAst(context, findVariable(mod, "d"))->toIndexableLoop();
+    auto dSig1 = rr.byAst(dLoop->iterand()).associatedActions()[0].fn();
+    assert(dSig1->isParallelLeaderIterator(context));
+    auto dSig2 = rr.byAst(dLoop->iterand()).associatedActions()[1].fn();
+    assert(dSig2->isParallelFollowerIterator(context));
+
+    auto m = resolveTypesOfVariables(context, program, { "a", "b", "c", "d" });
+    assert(!guard.realizeErrors());
+    assert(m["a"].kind() == QualifiedType::CONST_VAR);
+    assert(m["a"].type()->isRealType());
+    assert(m["b"].kind() == QualifiedType::CONST_VAR);
+    assert(m["b"].type()->isIntType());
+    assert(m["c"].kind() == QualifiedType::CONST_VAR);
+    assert(m["c"].type()->isBoolType());
+    assert(m["d"].kind() == QualifiedType::CONST_VAR);
+    assert(m["d"].type()->isStringType());
+}
+
 static void
 unpackIterKindStrToBool(const std::string& str,
                         bool* needSerial=nullptr,
@@ -585,7 +642,7 @@ static void testSerialZip(Context* context) {
   printf("%s\n", __FUNCTION__);
   ErrorGuard guard(context);
 
-  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto program = R""""(
                   record r {}
                   iter r.these() do yield 0;
@@ -632,7 +689,7 @@ static void testParallelZip(Context* context) {
   printf("%s\n", __FUNCTION__);
   ErrorGuard guard(context);
 
-  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto program = R""""(
                   record r {}
                   iter r.these(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
@@ -697,7 +754,7 @@ static void testForallStandaloneThese(Context* context) {
   printf("%s\n", __FUNCTION__);
   ErrorGuard guard(context);
 
-  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto program = R""""(
                   record r {}
                   iter r.these(param tag: iterKind) where tag == iterKind.standalone do yield 0;
@@ -712,7 +769,7 @@ static void testForallStandaloneRedirect(Context* context) {
   printf("%s\n", __FUNCTION__);
   ErrorGuard guard(context);
 
-  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto program = R""""(
                   iter foo(param tag: iterKind) where tag == iterKind.standalone do yield 0;
                   forall i in foo() do i;
@@ -725,7 +782,7 @@ static void testForallLeaderFollowerThese(Context* context) {
   printf("%s\n", __FUNCTION__);
   ErrorGuard guard(context);
 
-  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto program = R""""(
                   record r {}
                   iter r.these(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
@@ -742,7 +799,7 @@ static void testForallLeaderFollowerRedirect(Context* context) {
   printf("%s\n", __FUNCTION__);
   ErrorGuard guard(context);
 
-  ADVANCE_PRESERVING_SEARCH_PATHS_(context);
+  ADVANCE_PRESERVING_STANDARD_MODULES_(context);
   auto program = R""""(
                   iter foo(param tag: iterKind) where tag == iterKind.leader do yield (0, 0);
                   iter foo(param tag: iterKind, followThis) where tag == iterKind.follower do yield 0;
@@ -772,6 +829,7 @@ int main() {
   // Use a single context instance to avoid re-resolving internal modules.
   auto ctx = buildStdContext();
   Context* context = ctx.get();
+  testIterSigDetection(context);
   testSerialZip(context);
   testParallelZip(context);
   testForallStandaloneThese(context);

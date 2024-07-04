@@ -955,8 +955,10 @@ class TypedFnSignature {
                       const TypedFnSignature* parentFn,
                       Bitmap formalsInstantiated);
 
-  bool
-  isIterWithIterKind(Context* context, UniqueString iterKindStr) const;
+  /** If this is an iterator, set 'found' to a string representing its
+      'iterKind', or "" if it is a serial iterator. Returns 'true' only
+      if this is an iterator and a valid 'iterKind' formal was found. */
+  bool fetchIterKindStr(Context* context, UniqueString& outIterKindStr) const;
 
  public:
   /** Get the unique TypedFnSignature containing these components */
@@ -1113,24 +1115,26 @@ class TypedFnSignature {
 
   /** Returns 'true' if this signature is for a standalone parallel iterator. */
   bool isParallelStandaloneIterator(Context* context) const {
-    return isIterWithIterKind(context, USTR("standalone"));
+    UniqueString str;
+    return fetchIterKindStr(context, str) && str == USTR("standalone");
   }
 
   /** Returns 'true' if this signature is for a parallel leader iterator. */
   bool isParallelLeaderIterator(Context* context) const {
-    return isIterWithIterKind(context, USTR("leader"));
+    UniqueString str;
+    return fetchIterKindStr(context, str) && str == USTR("leader");
   }
 
   /** Returns 'true' if this signature is for a parallel follower iterator. */
   bool isParallelFollowerIterator(Context* context) const {
-    return isIterWithIterKind(context, USTR("follower"));
+    UniqueString str;
+    return fetchIterKindStr(context, str) && str == USTR("follower");
   }
 
   /** Returns 'true' if this signature is for a serial iterator. */
   bool isSerialIterator(Context* context) const {
-    return isIterator() && !isParallelStandaloneIterator(context) &&
-                           !isParallelLeaderIterator(context) &&
-                           !isParallelFollowerIterator(context);
+    UniqueString str;
+    return fetchIterKindStr(context, str) && str.isEmpty();
   }
 
   /// \cond DO_NOT_DOCUMENT

@@ -91,14 +91,11 @@ namespace {
 
     // This will be set to the yield type of the first iterator to succeed.
     QualifiedType idxType;
-
-    // This is set to true if the iterand is of kind 'TYPE'.
-    bool isIterandType = false;
   };
 }
 
-static QualifiedType
-getIterKindConstantOrUnknown(Resolver& rv, UniqueString constant);
+static const QualifiedType&
+getIterKindConstantOrUnknownQuery(Context* context, UniqueString constant);
 
 // Helper to resolve a specified iterator signature and its yield type.
 static QualifiedType
@@ -3784,63 +3781,6 @@ void Resolver::handleCallExpr(const uast::Call* call) {
   }
 }
 
-// TODO: Handle 'always allow ref' for iterators.
-bool Resolver::enter(const Zip* zip) {
-  auto p = parsing::parentAst(context, zip);
-  const bool requiresParallel = p && p->isForall();
-  const bool prefersParallel = requiresParallel || (p && p->isBracketLoop());
-
-  // Only possibilities, by the grammar.
-  CHPL_ASSERT(p && p->isIndexableLoop());
-
-  std::vector<QualifiedType> eltTypes;
-  bool resolveFollower = prefersParallel;
-  bool resolveSerial = !requiresParallel;
-  QualifiedType leaderYieldType;
-
-  for (int i = 0; i < zip->numActuals(); i++) {
-    const bool isFirstActual = (0 == i);
-    auto actual = zip->actual(i);
-
-    // Not possible, by the grammar.
-    CHPL_ASSERT(!actual->isZip());
-
-    // Set the mask for the iterator resolver. If the 'LEADER_FOLLOWER' bit
-    // is set then the 'FOLLOWER' bit will be ignored along with the type
-    // passed in for 'leaderYieldType'. It is possible for the mask to be
-    // 'NONE' if a leader signature was resolved but the return type is bad.
-    int m = IterDetails::NONE;
-    if (resolveSerial) m |= IterDetails::SERIAL;
-    if (resolveFollower) {
-      if (isFirstActual) m |= IterDetails::LEADER_FOLLOWER; 
-      m |= IterDetails::FOLLOWER;
-    }
-
-    auto dt = resolveIterDetails(*this, actual, actual, leaderYieldType, m);
-
-    eltTypes.push_back(dt.idxType);
-
-    if (isFirstActual) {
-      if (dt.leader.sig != nullptr) {
-        leaderYieldType = dt.leaderYieldType;
-        resolveFollower = dt.succeededAt == IterDetails::LEADER_FOLLOWER;
-        resolveSerial = false;
-      } else {
-        resolveFollower = false;
-      }
-    }
-  }
-
-  // NOTE: This TupleType builder preserves references for index types!
-  auto idxType = TupleType::getQualifiedTuple(context, std::move(eltTypes));
-  auto& reZip = byPostorder.byAst(zip);
-  reZip.setType(QualifiedType(QualifiedType::VAR, idxType));
-
-  return false;
-}
-
-void Resolver::exit(const Zip* zip) {}
-
 void Resolver::exit(const Call* call) {
   handleCallExpr(call);
 
@@ -4230,16 +4170,78 @@ void Resolver::exit(const New* node) {
   }
 }
 
-static QualifiedType
-getIterKindConstantOrUnknown(Resolver& rv, UniqueString constant) {
+static const QualifiedType&
+getIterKindConstantOrUnknownQuery(Context* context, UniqueString constant) {
+  QUERY_BEGIN(getIterKindConstantOrUnknownQuery, context, constant);
+
+  QualifiedType ret = { QualifiedType::UNKNOWN, UnknownType::get(context) };
+
   if (!constant.isEmpty()) {
-    auto ik = EnumType::getIterKindType(rv.context);
-    if (auto m = EnumType::getParamConstantsMapOrNull(rv.context, ik)) {
+    auto ik = EnumType::getIterKindType(context);
+    if (auto m = EnumType::getParamConstantsMapOrNull(context, ik)) {
       auto it = m->find(constant);
-      if (it != m->end()) return it->second;
+      if (it != m->end()) ret = it->second;
     }
   }
-  return QualifiedType(QualifiedType::VAR, UnknownType::get(rv.context));
+
+  return QUERY_END(ret);
+}
+
+// This helper resolves by priority order as described in 'IterDetails'.
+static IterDetails
+resolveIterDetailsInPriorityOrder(Resolver& rv,
+                                  bool& outWasIterSigResolved,
+                                  const AstNode* astForErr,
+                                  const AstNode* iterand,
+                                  const QualifiedType& leaderYieldType,
+                                  int mask) {
+  IterDetails ret;
+  bool computedLeaderYieldType = false;
+  if (mask & IterDetails::STANDALONE) {
+    ret.idxType = resolveIterTypeWithTag(rv, ret.standalone, astForErr,
+                                         iterand, USTR("standalone"), {});
+    outWasIterSigResolved = (ret.standalone.sig != nullptr);
+    if (!ret.idxType.isUnknownOrErroneous()) {
+      ret.succeededAt = IterDetails::STANDALONE;
+      return ret;
+    }
+  }
+
+  if (mask & IterDetails::LEADER_FOLLOWER) {
+    ret.leaderYieldType = resolveIterTypeWithTag(rv, ret.leader, astForErr,
+                                                 iterand, USTR("leader"),
+                                                 {});
+    computedLeaderYieldType = true;
+  } else if (mask & IterDetails::FOLLOWER) {
+    ret.leaderYieldType = leaderYieldType;
+  }
+
+  if (mask & IterDetails::LEADER_FOLLOWER ||
+      mask & IterDetails::FOLLOWER) {
+    if (!ret.leaderYieldType.isUnknownOrErroneous()) {
+      ret.idxType = resolveIterTypeWithTag(rv, ret.follower, astForErr,
+                                           iterand, USTR("follower"),
+                                           ret.leaderYieldType);
+      outWasIterSigResolved = (ret.follower.sig != nullptr);
+      if (!ret.idxType.isUnknownOrErroneous()) {
+        ret.succeededAt = computedLeaderYieldType
+            ? IterDetails::LEADER_FOLLOWER
+            : IterDetails::FOLLOWER;
+        return ret;
+      }
+    }
+  }
+
+  if (mask & IterDetails::SERIAL) {
+    ret.idxType = resolveIterTypeWithTag(rv, ret.serial, astForErr,
+                                         iterand, {}, {});
+    outWasIterSigResolved = (ret.serial.sig != nullptr);
+    if (!ret.idxType.isUnknownOrErroneous()) {
+      ret.succeededAt = IterDetails::SERIAL;
+    }
+  }
+
+  return ret;
 }
 
 static IterDetails resolveIterDetails(Resolver& rv,
@@ -4250,6 +4252,7 @@ static IterDetails resolveIterDetails(Resolver& rv,
   Context* context = rv.context;
 
   if (mask == IterDetails::NONE || rv.scopeResolveOnly) {
+    // Resolve the iterand as much as possible even if there is nothing to do.
     iterand->traverse(rv);
     return {};
   }
@@ -4262,58 +4265,12 @@ static IterDetails resolveIterDetails(Resolver& rv,
     return nullptr;
   });
 
-  bool computedLeaderYieldType = false;
-  bool wasIterSigResolved = false;
-
   // Resolve iterators, stopping immediately when we get a valid yield type.
-  auto ret = [&]() -> IterDetails {
-    IterDetails ret;
-    if (mask & IterDetails::STANDALONE) {
-      ret.idxType = resolveIterTypeWithTag(rv, ret.standalone, astForErr,
-                                           iterand, USTR("standalone"), {});
-      wasIterSigResolved = (ret.standalone.sig != nullptr);
-      if (!ret.idxType.isUnknownOrErroneous()) {
-        ret.succeededAt = IterDetails::STANDALONE;
-        return ret;
-      }
-    }
-
-    if (mask & IterDetails::LEADER_FOLLOWER) {
-      ret.leaderYieldType = resolveIterTypeWithTag(rv, ret.leader, astForErr,
-                                                   iterand, USTR("leader"),
-                                                   {});
-      computedLeaderYieldType = true;
-    } else if (mask & IterDetails::FOLLOWER) {
-      ret.leaderYieldType = leaderYieldType;
-    }
-
-    if (mask & IterDetails::LEADER_FOLLOWER ||
-        mask & IterDetails::FOLLOWER) {
-      if (!ret.leaderYieldType.isUnknownOrErroneous()) {
-        ret.idxType = resolveIterTypeWithTag(rv, ret.follower, astForErr,
-                                             iterand, USTR("follower"),
-                                             ret.leaderYieldType);
-        wasIterSigResolved = (ret.follower.sig != nullptr);
-        if (!ret.idxType.isUnknownOrErroneous()) {
-          ret.succeededAt = computedLeaderYieldType
-              ? IterDetails::LEADER_FOLLOWER
-              : IterDetails::FOLLOWER;
-          return ret;
-        }
-      }
-    }
-
-    if (mask & IterDetails::SERIAL) {
-      ret.idxType = resolveIterTypeWithTag(rv, ret.serial, astForErr,
-                                           iterand, {}, {});
-      wasIterSigResolved = (ret.serial.sig != nullptr);
-      if (!ret.idxType.isUnknownOrErroneous()) {
-        ret.succeededAt = IterDetails::SERIAL;
-      }
-    }
-
-    return ret;
-  }();
+  bool wasIterSigResolved = false;
+  auto ret = resolveIterDetailsInPriorityOrder(rv, wasIterSigResolved,
+                                               astForErr, iterand,
+                                               leaderYieldType,
+                                               mask);
 
   // Only issue a "not iterable" error if the iterand has a type. If it was
   // not typed then earlier resolution of the iterand will have spit out an
@@ -4353,10 +4310,10 @@ resolveIterTypeWithTag(Resolver& rv,
   QualifiedType unknown(QualifiedType::UNKNOWN, UnknownType::get(context));
   QualifiedType error(QualifiedType::UNKNOWN, ErroneousType::get(context));
 
-  auto iterKindFormal = getIterKindConstantOrUnknown(rv, iterKindStr);
-  bool needStandalone = iterKindStr == "standalone";
-  bool needLeader = iterKindStr == "leader";
-  bool needFollower = iterKindStr == "follower";
+  auto iterKindFormal = getIterKindConstantOrUnknownQuery(context, iterKindStr);
+  bool needStandalone = iterKindStr == USTR("standalone");
+  bool needLeader = iterKindStr == USTR("leader");
+  bool needFollower = iterKindStr == USTR("follower");
   bool needSerial = iterKindStr.isEmpty();
 
   // Exit early if we need a parallel iterator and don't have the enum.
@@ -4547,6 +4504,75 @@ backpatchArrayTypeSpecifier(Resolver& rv, const IndexableLoop* loop) {
   }
 }
 
+static QualifiedType
+resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
+  Context* context = rv.context;
+  bool loopRequiresParallel = loop->isForall();
+  bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
+
+  // We build up tuple element types by resolving all the zip actuals.
+  std::vector<QualifiedType> eltTypes;
+
+  // We determine the follower policy by resolving the leader actual.
+  auto followerPolicy = IterDetails::NONE;
+  QualifiedType leaderYieldType;
+
+  // Get the leader actual.
+  if (auto leader = (zip->numActuals() ? zip->actual(0) : nullptr)) {
+
+    // Set the policy mask for the leader based on the loop properties.
+    int m = IterDetails::NONE;
+    if (loopPrefersParallel) m |= IterDetails::LEADER_FOLLOWER;
+    if (!loopRequiresParallel) m |= IterDetails::SERIAL;
+    CHPL_ASSERT(m != IterDetails::NONE);
+
+    // Resolve the leader iterator.
+    auto dt = resolveIterDetails(rv, leader, leader, {}, m);
+
+    // Configure what followers should do using the iterator details.
+    if (dt.succeededAt == IterDetails::LEADER_FOLLOWER) {
+      followerPolicy = IterDetails::FOLLOWER;
+      leaderYieldType = dt.leaderYieldType;
+      eltTypes.push_back(dt.idxType);
+    } else if (dt.succeededAt == IterDetails::SERIAL) {
+      followerPolicy = IterDetails::SERIAL;
+      eltTypes.push_back(dt.idxType);
+    } else {
+      return { QualifiedType::UNKNOWN, ErroneousType::get(context) };
+    }
+  }
+
+  CHPL_ASSERT(followerPolicy != IterDetails::NONE);
+
+  // Resolve the follower iterator or serial iterator for all followers.
+  for (int i = 1; i < zip->numActuals(); i++) {
+    auto actual = zip->actual(i);
+    auto dt = resolveIterDetails(rv, actual, actual, leaderYieldType,
+                                 followerPolicy);
+    auto& qt = dt.idxType;
+    eltTypes.push_back(qt);
+  }
+
+  CHPL_ASSERT(eltTypes.size() == zip->numActuals());
+
+  auto kind = QualifiedType::CONST_VAR;
+  for (auto& et : eltTypes) {
+    if (!et.isUnknownOrErroneous() && !et.isConst()) {
+      kind = QualifiedType::VAR;
+      break;
+    }
+  }
+
+  // This 'TupleType' builder preserves references for index types.
+  auto type = TupleType::getQualifiedTuple(context, std::move(eltTypes));
+  QualifiedType ret = { kind, type };
+
+  auto& reZip = rv.byPostorder.byAst(zip);
+  reZip.setType(ret);
+
+  return ret;
+}
+
 bool Resolver::enter(const IndexableLoop* loop) {
   auto forLoop = loop->toFor();
   bool isParamForLoop = forLoop != nullptr && forLoop->isParam();
@@ -4563,23 +4589,20 @@ bool Resolver::enter(const IndexableLoop* loop) {
   auto iterand = loop->iterand();
   QualifiedType idxType;
 
-  // The 'zip' visitor will consult the parent loop in order to resolve.
   if (iterand->isZip()) {
-    iterand->traverse(*this);
-    idxType = byPostorder.byAst(iterand).type();
+    idxType = resolveZipExpression(*this, loop, iterand->toZip());
 
-  // Otherwise - configure a loop-specific policy and resolve the iterator.
   } else {
-    int m = IterDetails::NONE;
-    if (!loop->isForall()) m |= IterDetails::SERIAL;
-    if (loop->isBracketLoop() || loop->isForall()) {
-      m |= IterDetails::STANDALONE | IterDetails::LEADER_FOLLOWER;
-    }
+    bool loopRequiresParallel = loop->isForall();
+    bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
 
+    int m = IterDetails::NONE;
+    if (loopPrefersParallel) m |= IterDetails::LEADER_FOLLOWER |
+                                  IterDetails::STANDALONE;
+    if (!loopRequiresParallel) m |= IterDetails::SERIAL;
     CHPL_ASSERT(m != IterDetails::NONE);
 
     auto dt = resolveIterDetails(*this, loop, iterand, {}, m);
-
     idxType = dt.idxType;
   }
 
@@ -4596,9 +4619,8 @@ bool Resolver::enter(const IndexableLoop* loop) {
 
   loop->body()->traverse(*this);
 
-  // TODO: What would it take to make backpatching of array types happen
-  // _before_ / without resolving an iterator? Currently we rely on iterator
-  // resolution to resolve the iterand for us.
+  // TODO: Resolve the loop body first when it looks like an array type,
+  // and if the body is a type, then skip resolving iterators to save time.
   backpatchArrayTypeSpecifier(*this, loop);
 
   return false;

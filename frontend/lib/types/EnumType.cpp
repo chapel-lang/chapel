@@ -79,11 +79,9 @@ getParamConstantsMapQuery(Context* context, const EnumType* et) {
   if (auto e = ast->toEnum()) {
     for (auto elem : e->enumElements()) {
       auto param = EnumParam::get(context, elem->id());
-      QualifiedType qt(QualifiedType::PARAM, et, param);
       auto k = UniqueString::get(context, elem->name().str());
-      auto it = ret.find(k);
-      if (it != ret.end()) continue;
-      ret.emplace_hint(it, std::move(k), std::move(qt));
+      QualifiedType v(QualifiedType::PARAM, et, param);
+      ret.insert({std::move(k), std::move(v)});
     }
   }
 

@@ -72,7 +72,9 @@ class EnumType final : public Type {
       in 'et' to each constant represented as a param value.
       If there are multiple enum constants with the same name (which
       means the AST is semantically incorrect), then only the first
-      constant is added to the map. */
+      constant is added to the map. Returns 'nullptr' if 'et' is
+      'nullptr' or has an empty ID, or if it does not have any AST
+      representing it. */
   static const std::map<UniqueString, QualifiedType>*
   getParamConstantsMapOrNull(Context* context, const EnumType* et);
 
