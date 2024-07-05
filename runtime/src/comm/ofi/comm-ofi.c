@@ -4587,9 +4587,6 @@ static ssize_t wrap_fi_send(c_nodeid_t node,
                             amRequest_t* req, size_t reqSize, void* mrDesc,
                             void* ctx,
                             struct perTxCtxInfo_t* tcip);
-static ssize_t wrap_fi_inject(c_nodeid_t node,
-                              amRequest_t* req, size_t reqSize,
-                              struct perTxCtxInfo_t* tcip);
 static ssize_t wrap_fi_sendmsg(c_nodeid_t node,
                                amRequest_t* req, size_t reqSize, void* mrDesc,
                                void* ctx, uint64_t flags,
@@ -4688,6 +4685,11 @@ static
 void amReqFn_msgOrd(c_nodeid_t node,
                     amRequest_t* req, size_t reqSize, void* mrDesc,
                     chpl_bool blocking, struct perTxCtxInfo_t* tcip) {
+
+  uint64_t    flags = 0;
+  atomic_bool txnDone;
+  void        *ctx;
+
   //
   // For on-stmts and AMOs that might modify their target variable, MCM
   // conformance requires us first to ensure that all previous AMOs and
@@ -4726,14 +4728,13 @@ void amReqFn_msgOrd(c_nodeid_t node,
     // were a blocking AM, but there's no point because we're going to
     // wait for it to get done on the target anyway.)
     //
-    (void) wrap_fi_inject(node, req, reqSize, tcip);
-  } else {
-    //
-    // General case.
-    //
-    atomic_bool txnDone;
-    void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
-    (void) wrap_fi_send(node, req, reqSize, mrDesc, ctx, tcip);
+    flags = FI_INJECT;
+  }
+  ctx = blocking ? txCtxInit(tcip, __LINE__, &txnDone) :
+                   txnTrkEncodeId(__LINE__);
+
+  (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
+  if (blocking) {
     waitForTxnComplete(tcip, ctx);
     txCtxCleanup(ctx);
   }
@@ -4747,6 +4748,11 @@ static
 void amReqFn_dlvrCmplt(c_nodeid_t node,
                        amRequest_t* req, size_t reqSize, void* mrDesc,
                        chpl_bool blocking, struct perTxCtxInfo_t* tcip) {
+
+  uint64_t    flags = 0;
+  atomic_bool txnDone;
+  void        *ctx;
+
   if (!blocking
       && (reqSize <= ofi_info->tx_attr->inject_size)
       && (ofi_info->tx_attr->msg_order & FI_ORDER_SAS)
@@ -4761,15 +4767,14 @@ void amReqFn_dlvrCmplt(c_nodeid_t node,
     point because we're going to wait for it to get done on the target
     anyway.)
     */
+    flags = FI_INJECT;
+  }
 
-    (void) wrap_fi_inject(node, req, reqSize, tcip);
-  } else {
-    //
-    // General case.
-    //
-    atomic_bool txnDone;
-    void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
-    (void) wrap_fi_send(node, req, reqSize, mrDesc, ctx, tcip);
+  ctx = blocking ? txCtxInit(tcip, __LINE__, &txnDone) :
+                   txnTrkEncodeId(__LINE__);
+
+  (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
+  if (blocking) {
     waitForTxnComplete(tcip, ctx);
     txCtxCleanup(ctx);
   }
@@ -4790,24 +4795,6 @@ ssize_t wrap_fi_send(c_nodeid_t node,
                       fi_send(tcip->txCtx, req, reqSize, mrDesc,
                               rxAddr(tcip, node), ctx));
   tcip->numTxnsOut++;
-  tcip->numTxnsSent++;
-  return FI_SUCCESS;
-}
-
-
-static inline
-ssize_t wrap_fi_inject(c_nodeid_t node,
-                       amRequest_t* req, size_t reqSize,
-                       struct perTxCtxInfo_t* tcip) {
-  if (DBG_TEST_MASK(DBG_AM | DBG_AM_SEND)
-      || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
-    DBG_DO_PRINTF("tx AM send inject to %d: %s",
-                  (int) node, am_reqStr(node, req, reqSize));
-  }
-  // TODO: How quickly/often does local resource throttling happen?
-  OFI_RIDE_OUT_EAGAIN(tcip,
-                      fi_inject(tcip->txCtx, req, reqSize,
-                                rxAddr(tcip, node)));
   tcip->numTxnsSent++;
   return FI_SUCCESS;
 }
@@ -6958,6 +6945,7 @@ chpl_comm_nb_handle_t amoFn_msgOrd(struct amoBundle_t *ab,
 
   chpl_bool famo = (ab->iovRes.addr != NULL);
   uint64_t flags = 0;
+  atomic_bool txnDone;
 
   if (tcip->bound
       && ab->iovRes.addr == NULL
@@ -6970,11 +6958,10 @@ chpl_comm_nb_handle_t amoFn_msgOrd(struct amoBundle_t *ab,
   // If we need a result wait for it; otherwise, we can collect the completion
   // later and message ordering will ensure MCM conformance.
   //
-  atomic_bool txnDone;
-  if (famo) {
-    ab->m.context = txCtxInit(tcip, __LINE__, &txnDone);
-  }
-  (void) wrap_fi_atomicmsg(ab, 0, tcip);
+  ab->m.context = famo ? txCtxInit(tcip, __LINE__, &txnDone):
+                         txnTrkEncodeId(__LINE__);
+
+  (void) wrap_fi_atomicmsg(ab, flags, tcip);
 
   if (famo) {
     //
