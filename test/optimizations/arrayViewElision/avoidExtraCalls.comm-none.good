@@ -27,14 +27,14 @@ ArrayViewElision supported avoidExtraCalls.chpl:39
 Test 1
 foo called
 foo called
-<ShortArrayTransfer> Size: 3 Threshold: 50
+<ShortArrayTransfer> Size: 3 Threshold: 60
 <ShortArrayTransfer> size qualifies
 1 1 1 0 0 0 0 0 0 0
 
 Test 2
 foo called
 foo called
-<ShortArrayTransfer> Size: 3 Threshold: 50
+<ShortArrayTransfer> Size: 3 Threshold: 60
 <ShortArrayTransfer> size qualifies
 1 1 1 0 0 0 0 0 0 0
 
@@ -43,7 +43,7 @@ foo called
 foo called
 foo called
 foo called
-<ShortArrayTransfer> Size: 9 Threshold: 50
+<ShortArrayTransfer> Size: 9 Threshold: 60
 <ShortArrayTransfer> size qualifies
 1 1 1 0 0 0 0 0 0 0
 1 1 1 0 0 0 0 0 0 0

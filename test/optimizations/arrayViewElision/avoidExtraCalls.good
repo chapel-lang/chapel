@@ -27,7 +27,7 @@ ArrayViewElision supported (dynamic locality check required) avoidExtraCalls.chp
 Test 1
 foo called
 foo called
-<ShortArrayTransfer> Size: 3 Threshold: 50
+<ShortArrayTransfer> Size: 3 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 1 1 1 0 0 0 0 0 0 0
@@ -35,7 +35,7 @@ foo called
 Test 2
 foo called
 foo called
-<ShortArrayTransfer> Size: 3 Threshold: 50
+<ShortArrayTransfer> Size: 3 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 1 1 1 0 0 0 0 0 0 0
@@ -45,7 +45,7 @@ foo called
 foo called
 foo called
 foo called
-<ShortArrayTransfer> Size: 9 Threshold: 50
+<ShortArrayTransfer> Size: 9 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 1 1 1 0 0 0 0 0 0 0

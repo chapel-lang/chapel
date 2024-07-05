@@ -139,7 +139,7 @@ ArrayViewElision supported slices.chpl:26
 		range(int(64),neither,one)
 
 Set first two:
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 1
 2 2 1 1 1
@@ -148,7 +148,7 @@ Test 1
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 2
 2 2 1 1 1
@@ -157,7 +157,7 @@ Test 2
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 3
 2 2 1 1 1
@@ -166,7 +166,7 @@ Test 3
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 4
 2 2 1 1 1
@@ -175,7 +175,7 @@ Test 4
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 5
 2 2 1 1 1
@@ -184,7 +184,7 @@ Test 5
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 6
 2 2 1 1 1
@@ -193,7 +193,7 @@ Test 6
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 7
 2 2 1 1 1
@@ -202,7 +202,7 @@ Test 7
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 8
 2 2 1 1 1
@@ -213,7 +213,7 @@ Test 8
 
 -----------------
 Set last two:
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 9
 1 1 1 1 1
@@ -222,7 +222,7 @@ Test 9
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 10
 1 1 1 1 1
@@ -231,7 +231,7 @@ Test 10
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 11
 1 1 1 1 1
@@ -240,7 +240,7 @@ Test 11
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 12
 1 1 1 1 1
@@ -249,7 +249,7 @@ Test 12
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 13
 1 1 1 1 1
@@ -258,7 +258,7 @@ Test 13
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 14
 1 1 1 1 1
@@ -267,7 +267,7 @@ Test 14
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 15
 1 1 1 1 1
@@ -276,7 +276,7 @@ Test 15
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 16
 1 1 1 1 1
@@ -287,7 +287,7 @@ Test 16
 
 -----------------
 Set all:
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 17
 2 2 2 2 2
@@ -296,7 +296,7 @@ Test 17
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 18
 2 2 2 2 2
@@ -305,7 +305,7 @@ Test 18
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 19
 2 2 2 2 2
@@ -314,7 +314,7 @@ Test 19
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 20
 2 2 2 2 2
@@ -323,7 +323,7 @@ Test 20
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 21
 2 2 2 2 2
@@ -332,7 +332,7 @@ Test 21
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 22
 2 2 2 2 2
@@ -341,7 +341,7 @@ Test 22
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 23
 2 2 2 2 2
@@ -350,7 +350,7 @@ Test 23
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 24
 2 2 2 2 2
@@ -359,7 +359,7 @@ Test 24
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 Test 25
 2 2 2 2 2

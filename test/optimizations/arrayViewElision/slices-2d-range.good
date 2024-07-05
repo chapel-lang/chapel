@@ -139,7 +139,7 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:26
 		range(int(64),neither,one)
 
 Set first two:
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 1
@@ -149,7 +149,7 @@ Test 1
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 2
@@ -159,7 +159,7 @@ Test 2
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 3
@@ -169,7 +169,7 @@ Test 3
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 4
@@ -179,7 +179,7 @@ Test 4
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 5
@@ -189,7 +189,7 @@ Test 5
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 6
@@ -199,7 +199,7 @@ Test 6
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 7
@@ -209,7 +209,7 @@ Test 7
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 8
@@ -221,7 +221,7 @@ Test 8
 
 -----------------
 Set last two:
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 9
@@ -231,7 +231,7 @@ Test 9
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 10
@@ -241,7 +241,7 @@ Test 10
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 11
@@ -251,7 +251,7 @@ Test 11
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 12
@@ -261,7 +261,7 @@ Test 12
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 13
@@ -271,7 +271,7 @@ Test 13
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 14
@@ -281,7 +281,7 @@ Test 14
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 15
@@ -291,7 +291,7 @@ Test 15
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 16
@@ -303,7 +303,7 @@ Test 16
 
 -----------------
 Set all:
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 17
@@ -313,7 +313,7 @@ Test 17
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 18
@@ -323,7 +323,7 @@ Test 18
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 19
@@ -333,7 +333,7 @@ Test 19
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 20
@@ -343,7 +343,7 @@ Test 20
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 21
@@ -353,7 +353,7 @@ Test 21
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 22
@@ -363,7 +363,7 @@ Test 22
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 23
@@ -373,7 +373,7 @@ Test 23
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 24
@@ -383,7 +383,7 @@ Test 24
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 25

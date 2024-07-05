@@ -15,7 +15,7 @@ ArrayViewElision supported (dynamic locality check required) slices.chpl:24
 		domain(2,int(64),one)
 
 Set first two:
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 1
@@ -25,7 +25,7 @@ Test 1
 1 1 1 1 1
 1 1 1 1 1
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 2
@@ -37,7 +37,7 @@ Test 2
 
 -----------------
 Set last two:
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 3
@@ -47,7 +47,7 @@ Test 3
 1 1 1 2 2
 1 1 1 2 2
 
-<ShortArrayTransfer> Size: 4 Threshold: 50
+<ShortArrayTransfer> Size: 4 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 4
@@ -59,7 +59,7 @@ Test 4
 
 -----------------
 Set all:
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 5
@@ -69,7 +69,7 @@ Test 5
 2 2 2 2 2
 2 2 2 2 2
 
-<ShortArrayTransfer> Size: 25 Threshold: 50
+<ShortArrayTransfer> Size: 25 Threshold: 60
 <ShortArrayTransfer> size qualifies
 <ShortArrayTransfer> locality qualifies
 Test 6
