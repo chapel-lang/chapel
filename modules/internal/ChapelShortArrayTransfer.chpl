@@ -25,7 +25,6 @@
 
 module ChapelShortArrayTransfer {
   use ChapelBase;
-  use ChapelDebugPrint only chpl_debug_writeln;
   use ChplConfig only CHPL_LOCALE_MODEL;
 
   @chpldoc.nodoc
@@ -36,7 +35,6 @@ module ChapelShortArrayTransfer {
   config param shortArrayTransferThreshold = 60; // number of elements
 
 
-
   proc chpl__staticCheckShortArrayTransfer(a, b) param {
     // Engin: this is the case I'm focusing on in the initial PR. This can
     // definitely be loosened up... by a lot.
@@ -44,33 +42,44 @@ module ChapelShortArrayTransfer {
   }
 
   inline proc chpl__dynamicCheckShortArrayTransfer(a, b) {
+    param msgHeader = "<ShortArrayTransfer> ";
     param localCompilation = _local && CHPL_LOCALE_MODEL=="flat";
     const sizeOk = a.sizeAs(uint) < shortArrayTransferThreshold;
 
-    if debugShortArrayTransfer {
-      chpl_debug_writeln("<ShortArrayTransfer> Size: ", a.sizeAs(uint),
-                         " Threshold: ", shortArrayTransferThreshold);
-      if sizeOk then
-        chpl_debug_writeln("<ShortArrayTransfer> size qualifies");
-      else
-        chpl_debug_writeln("<ShortArrayTransfer> size doesn't qualify");
-    }
+    debug("Size: ", a.sizeAs(uint), " Threshold: ",
+          shortArrayTransferThreshold);
+    if sizeOk then
+      debug("size qualifies");
+    else
+      debug("size doesn't qualify");
 
     if localCompilation {
       return sizeOk;
     }
     else {
+      extern proc chpl_task_getRequestedSubloc(): int(32);
       // No `.locale` to avoid overheads. Note that this is an optimization for
       // fast-running code. Small things matter.
       const bothLocal = chpl__bothLocal(a, b);
-      if debugShortArrayTransfer {
-        if bothLocal then
-          chpl_debug_writeln("<ShortArrayTransfer> locality qualifies");
-        else
-          chpl_debug_writeln("<ShortArrayTransfer> locality does not qualify");
-      }
+      const notGpu = CHPL_LOCALE_MODEL=="flat" ||
+                     chpl_task_getRequestedSubloc() < 0;
 
-      return sizeOk && bothLocal;
+      if bothLocal then
+        if notGpu then
+          debug("locality qualifies");
+        else
+          debug("GPU arrays shouldn't be SAT'ed");
+      else
+        debug("locality does not qualify");
+
+      return sizeOk && bothLocal && notGpu;
+    }
+  }
+
+  private proc debug(s...) {
+    use ChapelDebugPrint only chpl_debug_writeln;
+    if debugShortArrayTransfer {
+      chpl_debug_writeln("<ShortArrayTransfer> ", (...s));
     }
   }
 }
