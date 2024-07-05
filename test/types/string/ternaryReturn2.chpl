@@ -1,8 +1,8 @@
-// This test is to lock in that a bug was resolved involving returning strings
+// This test is to lock in behavior around a bug involving returning strings
 // from nested ternary returns
 
 // This is not the version that failed, it was added to ensure that the cases
-// that worked before were not broken by the solution
+// that worked before are not broken by the solution
 proc positive(z : string) {
   param EMPTY = '';
   const temp = if z == '+' then z else EMPTY;

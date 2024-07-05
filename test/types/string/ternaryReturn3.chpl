@@ -1,4 +1,4 @@
-// This test is to lock in that a bug was resolved involving returning strings
+// This test is to lock in behavior around a bug involving returning strings
 // from nested ternary returns
 
 // This is not the version that failed, it was added to ensure that the cases
