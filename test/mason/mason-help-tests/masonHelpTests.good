@@ -1,6 +1,7 @@
 $ mason new -h
 Usage:
     mason new [options] <project name>
+    mason new                    Starts an interactive session
 
 Options:
     -h, --help                   Display this message
