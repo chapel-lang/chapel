@@ -436,10 +436,7 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
           bool outIntentFormalReturn = forErrorReturn == false &&
                                        var->hasFlag(FLAG_FORMAL_TEMP_OUT);
           // No deinit for out formal returns - deinited at call site
-          // Similarly, no deinit for if expression results.  This avoids a bug,
-          // see https://github.com/chapel-lang/chapel/issues/25032
-          if (outIntentFormalReturn == false &&
-              var->hasFlag(FLAG_IF_EXPR_RESULT) == false)
+          if (outIntentFormalReturn == false)
             deinitialize(insertBeforeStmt, NULL, var);
         }
       }
