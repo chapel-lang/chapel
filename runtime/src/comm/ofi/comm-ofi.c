@@ -5772,7 +5772,7 @@ void chpl_comm_getput_unordered_task_fence(void) {
 /*
  * Routine for ensuring the current thread's send endpoint is progressed. This
  * should be called when waiting outside the communication layer and there
- * may be outstanding non-blocking operations that are not yet transmitted. 
+ * may be outstanding non-blocking operations that are not yet transmitted.
  */
 void chpl_comm_ensure_progress(void) {
   struct perTxCtxInfo_t* tcip;
@@ -6274,7 +6274,7 @@ void ofi_put_lowLevel(const void* addr, void* mrDesc, c_nodeid_t node,
                       void* ctx, uint64_t flags,
                       struct perTxCtxInfo_t* tcip) {
 
-  // Can't inject a buffer that is too large 
+  // Can't inject a buffer that is too large
   if ((flags & FI_INJECT) && (size > ofi_info->tx_attr->inject_size)) {
     flags &= ~FI_INJECT;
   }

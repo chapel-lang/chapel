@@ -227,7 +227,7 @@ module Atomics {
       return chpl__networkAtomicType(valType);
     }
   }
-  
+
   extern proc chpl_comm_ensure_progress(): void;
 
   pragma "atomic type"
