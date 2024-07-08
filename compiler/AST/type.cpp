@@ -2298,6 +2298,30 @@ const Immediate& getDefaultImmediate(Type* t) {
   return *defaultVar->immediate;
 }
 
+llvm::SmallVector<std::string, 2> explainGeneric(Type* t) {
+  if (auto clsType = toDecoratedClassType(t)) {
+    if (isDecoratorUnknownManagement(clsType->getDecorator())) {
+      return {"'" + std::string(t->name()) + "' has generic lifetime management"};
+    }
+  }
+  if (auto at = toAggregateType(t)) {
+    if (at->isGeneric()) {
+    llvm::SmallVector<std::string, 2> reasons;
+      for (auto i = 1; i <= at->numFields(); i++) {
+        auto fieldType = at->getField(i)->type;
+        if (fieldType->symbol && fieldType->symbol->hasFlag(FLAG_GENERIC)) {
+          auto moreReasons = explainGeneric(fieldType);
+          reasons.append(moreReasons.begin(), moreReasons.end());
+        }
+      }
+      if (!reasons.empty()) {
+        return reasons;
+      }
+    }
+  }
+  return {};
+}
+
 // Returns 'true' for types that are the type of numeric literals.
 // e.g. 1 is an 'int', so this function returns 'true' for 'int'.
 // e.g. 0.0 is a 'real', so this function returns 'true' for 'real'.

@@ -697,6 +697,9 @@ GenRet codegenImmediate(Immediate* i);
 
 const Immediate& getDefaultImmediate(Type* t);
 
+// Returns strings explaining why a type is generic
+llvm::SmallVector<std::string, 2> explainGeneric(Type* t);
+
 
 #define CLASS_ID_TYPE dtInt[INT_SIZE_32]
 #define UNION_ID_TYPE dtInt[INT_SIZE_64]

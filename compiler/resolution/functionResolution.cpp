@@ -10646,6 +10646,21 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
                      fn->name);
     }
 
+    for(auto i = 0; i < ft->numFormals(); i++) {
+      auto formal = ft->formal(i);
+      if (formal->isGeneric()) {
+        std::string reason;
+        auto reasons = explainGeneric(formal->type);
+        if (reasons.empty()) {
+          USR_PRINT(use, "the formal '%s' is generic", formal->name);
+        } else {
+          for (auto& r : reasons) {
+            USR_PRINT(use, "the formal '%s' is generic because %s", formal->name, r.c_str());
+          }
+        }
+      }
+    }
+
     // Return a "sink" to handle any "illegal access" errors later.
     return swapInErrorSinkForCapture(ft->kind(), use);
   }
