@@ -24,7 +24,6 @@ const major = spackVersion.major:string;
 const minor = spackVersion.minor:string;
 const spackBranch = 'releases/v' + '.'.join(major, minor);
 const spackDefaultPath = MASON_HOME + "/spack";
-const latestSpackRelease = "v0.22";
 
 use ArgumentParser;
 use FileSystem;
@@ -185,7 +184,7 @@ proc setupSpack() throws {
   const destCLI = MASON_HOME + "/spack/";
   const spackLatestBranch = ' --branch v' + spackVersion.str() + ' ';
   const destPackages = MASON_HOME + "/spack-registry";
-  const spackMasterBranch = ' --branch releases/' + latestSpackRelease + ' ';
+  const spackMasterBranch = ' --branch releases/latest ';
   const statusCLI = cloneSpackRepository(spackLatestBranch, destCLI);
   const statusPackages = cloneSpackRepository(spackMasterBranch, destPackages);
   generateYAML();
