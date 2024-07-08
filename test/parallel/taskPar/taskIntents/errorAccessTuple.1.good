@@ -1,0 +1,6 @@
+errorAccessTuple.chpl:13: error: cannot assign to const variable
+errorAccessTuple.chpl:11: note: The shadow variable 'r' is constant due to task intents in this begin statement
+errorAccessTuple.chpl:14: error: cannot assign to const variable
+errorAccessTuple.chpl:11: note: The shadow variable 'r' is constant due to task intents in this begin statement
+errorAccessTuple.chpl:15: error: cannot assign to const variable
+errorAccessTuple.chpl:11: note: The shadow variable 'a' is constant due to task intents in this begin statement
