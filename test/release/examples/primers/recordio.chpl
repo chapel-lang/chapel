@@ -1,12 +1,12 @@
 /* This example demonstrates how to use formatted I/O to
-   write and read a record stored as a tab-separated
+   write and read a record stored as tab-separated
    fields, with one record per line.
  */
 
 /* MyRecord contains fields of various types in order to demonstrate
    functionality.
  */
-use IO;
+use IO;  // enable access to the features in this primer
 
 record MyRecord : writeSerializable, readDeserializable {
   var i: int;
@@ -14,6 +14,7 @@ record MyRecord : writeSerializable, readDeserializable {
   var s: string;
 }
 
+// configs to control the output location and whether debugging is enabled
 config const fileName = "test.txt";
 config const debug = true;
 
@@ -29,8 +30,8 @@ var A = [ new MyRecord(1,3.0,"testone"),
 // We'll read back into B and check that they match...
 var B: [0..#3] MyRecord;
 
+// Create a writer that we'll use to write the data.
 {
-  // Create a writer that we'll use to write the data.
   var writer = f.writer(locking=false);
 
   // Now let's write the records in a particular format:
@@ -38,9 +39,9 @@ var B: [0..#3] MyRecord;
   // each field separated by a tab
   for a in A {
     // Depending on the situation, you might do:
-    // writer.writeln(a.i, "\t", a.r, "\t", a.s);
-    // that is equivalent to this (%t means any type):
-    // writer.writef("%t\t%t\t%t\n", a.i, a.r, a.s);
+    // ``writer.writeln(a.i, "\t", a.r, "\t", a.s);``
+    // that is equivalent to this (%? means any type):
+    // ``writer.writef("%?\t%?\t%?\n", a.i, a.r, a.s);``
     // but if you wanted to control precision/width and to
     // handle strings with tabs, you might use:
     writer.writef("%2i\t%2.2r\t%s\n", a.i, a.r, a.s);
@@ -53,7 +54,7 @@ var B: [0..#3] MyRecord;
   writer.close();
 }
 
-// Now read the data. Way 1: use formatted I/O
+// Now read the data - Way 1: use formatted I/O
 {
   var reader = f.reader(locking=false);
 
@@ -80,7 +81,7 @@ var B: [0..#3] MyRecord;
   reader.close();
 }
 
-// Now read the data. Way 2: provide serialize/deserialze methods.
+// Now read the data - Way 2: provide serialize/deserialize methods.
 // Note that this didn't work with Chapel 1.31 or earlier.
 
 /* notes on serialize/deserialize (see :ref:`serialize-deserialize`):
