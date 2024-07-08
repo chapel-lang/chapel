@@ -1,1 +1,2 @@
-CHPL_COMM != none
+# encounters memory issues, skip everywhere except valgrind
+CHPL_TEST_VGRND_EXE != on
