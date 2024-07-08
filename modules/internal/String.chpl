@@ -120,9 +120,9 @@ module String {
 }
 
   // Helper routines in support of being able to use ranges of indices
-  proc chpl_build_bounded_range(low: byteIndex, high: byteIndex) do
+  proc chpl_build_bounded_sequence(low: byteIndex, high: byteIndex) do
     return new range(byteIndex, low=low, high=high);
-  proc chpl_build_bounded_range(low: codepointIndex, high: codepointIndex) do
+  proc chpl_build_bounded_sequence(low: codepointIndex, high: codepointIndex) do
     return new range(codepointIndex, low=low, high=high);
 
   proc chpl_build_low_bounded_range(low: byteIndex) do

@@ -1,1 +1,1 @@
-enumToInt.chpl:2: error: Ranges defined using bounds of type '2*e..2*int(64)' are not currently supported
+enumToInt.chpl:2: error: Domains defined using tuple bounds must use tuples of coercible types. Cannot coerce between 'e' and 'int(64)'

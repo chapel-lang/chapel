@@ -399,42 +399,88 @@ module ChapelRange {
     return oldRule;
   }
   private proc isValidRangeIdxType(type t) param {
-    return isIntegralType(t) || isEnumType(t) || isBoolType(t);
+    return isIntegralType(t) || isEnumType(t) || isBoolType(t) || isTupleType(t);
   }
 
   // Range builders for fully bounded ranges
-  proc chpl_build_bounded_range(param low: integral, param high: integral) {
+  proc chpl_build_bounded_sequence(param low: integral, param high: integral) {
     type idxType = computeParamRangeIndexType(low, high);
     return new range(idxType, low=low, high=high);
   }
 
-  proc chpl_build_bounded_range(low: int(8), high: int(8)) do
+  proc chpl_build_bounded_sequence(low: int(8), high: int(8)) do
     return new range(int(8), low = low, high = high);
-  proc chpl_build_bounded_range(low: int(16), high: int(16)) do
+  proc chpl_build_bounded_sequence(low: int(16), high: int(16)) do
     return new range(int(16), low = low, high = high);
-  proc chpl_build_bounded_range(low: int(32), high: int(32)) do
+  proc chpl_build_bounded_sequence(low: int(32), high: int(32)) do
     return new range(int(32), low = low, high = high);
-  proc chpl_build_bounded_range(low: int(64), high: int(64)) do
+  proc chpl_build_bounded_sequence(low: int(64), high: int(64)) do
     return new range(int(64), low = low, high = high);
 
-  proc chpl_build_bounded_range(low: uint(8), high: uint(8)) do
+  proc chpl_build_bounded_sequence(low: uint(8), high: uint(8)) do
     return new range(uint(8), low = low, high = high);
-  proc chpl_build_bounded_range(low: uint(16), high: uint(16)) do
+  proc chpl_build_bounded_sequence(low: uint(16), high: uint(16)) do
     return new range(uint(16), low = low, high = high);
-  proc chpl_build_bounded_range(low: uint(32), high: uint(32)) do
+  proc chpl_build_bounded_sequence(low: uint(32), high: uint(32)) do
     return new range(uint(32), low = low, high = high);
-  proc chpl_build_bounded_range(low: uint(64), high: uint(64)) do
+  proc chpl_build_bounded_sequence(low: uint(64), high: uint(64)) do
     return new range(uint(64), low = low, high = high);
 
-  proc chpl_build_bounded_range(low: enum, high: enum) {
+  proc chpl_build_bounded_sequence(low: enum, high: enum) {
     if (low.type != high.type) then
       compilerError("ranges of enums must use a single enum type");
     return new range(low.type, low=low, high=high);
   }
-  proc chpl_build_bounded_range(low: bool, high: bool) do
+  proc chpl_build_bounded_sequence(low: bool, high: bool) do
     return new range(bool, low=low, high=high);
 
-  proc chpl_build_bounded_range(low, high)
+  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2) 
+    where isTuple(low) != isTuple(high) {
+    compilerError("Domains defined using tuple bounds must use tuples, but got '" + low.type:string + "' and '" + high.type:string + "'");
+  }
+  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2) 
+    where isTuple(low) && isTuple(high) &&
+          !(isHomogeneousTuple(low) && isHomogeneousTuple(high)) {
+    compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" + low.type:string + "' and '" + high.type:string + "'");
+  }
+
+  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2) 
+    where isTuple(low) && isTuple(high) &&
+          isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
+          low.size != high.size {
+    compilerError("Domains defined using tuple bounds must use tuples of the same length, but got '" + low.type:string + "' and '" + high.type:string + "'");
+  }
+  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2) 
+    where isTuple(low) && isTuple(high) &&
+          isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
+          low.size == high.size &&
+          !(isCoercible(low(0).type, high(0).type) ||
+            isCoercible(high(0).type, low(0).type)) {
+    compilerError("Domains defined using tuple bounds must use tuples of coercible types. Cannot coerce between '" + low(0).type:string + "' and '" + high(0).type:string + "'");
+  }
+
+  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2) 
+    where isTuple(low) && isTuple(high) &&
+          isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
+          low.size == high.size && 
+            (isCoercible(low(0).type, high(0).type) ||
+             isCoercible(high(0).type, low(0).type)) 
+  {
+    param size = low.size;
+    type eltType;
+    if (low(0).type == high(0).type) {
+      eltType = low(0).type;
+    } else {
+      eltType = (low(0) + high(0)).type;
+    }
+    var ranges:  size*range(eltType);
+    for i in 0..<size do
+        ranges[i] = low[i]..high[i];
+    var d: domain(size, eltType) = ranges;
+    return d;
+  }
+
+  proc chpl_build_bounded_sequence(low, high)
   where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(high.type)) {
     if (low.type == high.type) then
       compilerError("Ranges defined using bounds of type '" + low.type:string + "' are not currently supported");
@@ -3003,7 +3049,7 @@ private proc isBCPindex(type t) param do
   // case for when low and high aren't compatible types and can't be coerced
   iter chpl_direct_range_iter(low, high)
   where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(high.type)) {
-    chpl_build_bounded_range(low, high);  // use general error if possible
+    chpl_build_bounded_sequence(low, high);  // use general error if possible
     // otherwise, generate a more specific one (though I don't think it's
     // possible to get here)
     compilerError("Ranges defined using bounds of type '" + low.type:string + ".." + high.type:string + "' are not currently supported");
@@ -3191,7 +3237,7 @@ private proc isBCPindex(type t) param do
   // case for when low and high aren't compatible types and can't be coerced
   iter chpl_direct_strided_range_iter(low, high, stride)
   where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(high.type)) {
-    chpl_build_bounded_range(low, high, stride);  // use general error if possible
+    chpl_build_bounded_sequence(low, high, stride);  // use general error if possible
     // otherwise, generate a more specific one (though I don't think it's
     // possible to get here)
     if (low.type == high.type) then

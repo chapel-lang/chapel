@@ -1,1 +1,1 @@
-mismatchTuples.chpl:1: error: Ranges defined using bounds of type '2*int(64)..3*int(64)' are not currently supported
+mismatchTuples.chpl:1: error: Domains defined using tuple bounds must use tuples of the same length, but got '2*int(64)' and '3*int(64)'

@@ -3424,7 +3424,7 @@ void Resolver::exit(const Range* range) {
     "chpl_build_unbounded_range",
     "chpl_build_high_bounded_range",
     "chpl_build_low_bounded_range",
-    "chpl_build_bounded_range"
+    "chpl_build_bounded_sequence"
   };
   const char* function = functions[boundType];
 

@@ -1,1 +1,1 @@
-tupleScalar.chpl:1: error: Ranges defined using bounds of type 'int(64)..1*int(64)' are not currently supported
+tupleScalar.chpl:1: error: Domains defined using tuple bounds must use tuples, but got 'int(64)' and '1*int(64)'
