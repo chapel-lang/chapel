@@ -7755,6 +7755,17 @@ static Symbol* maybeGetBaseSymHelper(SymExpr* def) {
             }
             return baseSym;
           }
+        } else if (maybeMethodCall->isPrimitive(PRIM_GET_MEMBER)) {
+          // handle tuples
+          if (auto baseExpr = toSymExpr(maybeMethodCall->get(1))) {
+            auto baseSym = baseExpr->symbol();
+            if (baseSym->hasFlag(FLAG_TEMP)) {
+              if(auto sym = maybeGetBaseSym(baseSym)) {
+                return sym;
+              }
+            }
+            return baseSym;
+          }
         }
       }
     }
