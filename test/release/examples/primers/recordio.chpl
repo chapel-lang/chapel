@@ -84,9 +84,12 @@ var B: [0..#3] MyRecord;
 // Note that this didn't work with Chapel 1.31 or earlier.
 
 /* notes on serialize/deserialize (see :ref:`serialize-deserialize`):
+
    - reader is a fileReader, writer is a fileWriter
+
    - the compiler will generate serialize/deserialize for you if you don't
      provide one
+
  */
 proc ref MyRecord.deserialize(reader, ref deserializer) throws {
   i = reader.read(int);
