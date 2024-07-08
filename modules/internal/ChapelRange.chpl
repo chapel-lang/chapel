@@ -480,7 +480,7 @@ module ChapelRange {
       eltType = (low(0) + high(0)).type;
     }
     var ranges:  size*range(eltType);
-    for i in 0..<size do
+    for param i in 0..<size do
         ranges[i] = low[i]..high[i];
     var d: domain(size, eltType) = ranges;
     return d;
