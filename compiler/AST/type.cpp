@@ -2304,6 +2304,9 @@ llvm::SmallVector<std::string, 2> explainGeneric(Type* t) {
       return {"'" + std::string(t->name()) + "' has generic lifetime management"};
     }
   }
+  if (t->symbol->hasFlag(FLAG_ARRAY)) {
+    return {"'" + std::string(t->name()) + "' is an array, which is considered generic due to runtime type information"};
+  }
   if (auto at = toAggregateType(t)) {
     if (at->isGeneric()) {
     llvm::SmallVector<std::string, 2> reasons;
