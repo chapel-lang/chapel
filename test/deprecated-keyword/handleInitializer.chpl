@@ -1,14 +1,14 @@
 record Foo {
   var v1 = 3;
 
-  deprecated "this initializer is deprecated, use init(x: int) instead"
+  @deprecated(notes="this initializer is deprecated, use init(x: int) instead")
   proc init() {
     this.init(7);
   }
 
   proc init(x: int) {
     v1 = x;
-    this.complete();
+    init this;
   }
 }
 

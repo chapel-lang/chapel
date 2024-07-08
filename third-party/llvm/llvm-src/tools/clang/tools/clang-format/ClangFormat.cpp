@@ -12,6 +12,7 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include "../../lib/Format/MatchFilePath.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/DiagnosticOptions.h"
 #include "clang/Basic/FileManager.h"
@@ -70,16 +71,29 @@ static cl::opt<std::string>
                   cl::desc("The name of the predefined style used as a\n"
                            "fallback in case clang-format is invoked with\n"
                            "-style=file, but can not find the .clang-format\n"
-                           "file to use.\n"
+                           "file to use. Defaults to 'LLVM'.\n"
                            "Use -fallback-style=none to skip formatting."),
                   cl::init(clang::format::DefaultFallbackStyle),
                   cl::cat(ClangFormatCategory));
 
 static cl::opt<std::string> AssumeFileName(
     "assume-filename",
-    cl::desc("Override filename used to determine the language.\n"
-             "When reading from stdin, clang-format assumes this\n"
-             "filename to determine the language."),
+    cl::desc("Set filename used to determine the language and to find\n"
+             ".clang-format file.\n"
+             "Only used when reading from stdin.\n"
+             "If this is not passed, the .clang-format file is searched\n"
+             "relative to the current working directory when reading stdin.\n"
+             "Unrecognized filenames are treated as C++.\n"
+             "supported:\n"
+             "  CSharp: .cs\n"
+             "  Java: .java\n"
+             "  JavaScript: .mjs .js .ts\n"
+             "  Json: .json\n"
+             "  Objective-C: .m .mm\n"
+             "  Proto: .proto .protodevel\n"
+             "  TableGen: .td\n"
+             "  TextProto: .textpb .pb.txt .textproto .asciipb\n"
+             "  Verilog: .sv .svh .v .vh"),
     cl::init("<stdin>"), cl::cat(ClangFormatCategory));
 
 static cl::opt<bool> Inplace("i",
@@ -100,22 +114,22 @@ static cl::opt<unsigned>
                     "clang-format from an editor integration"),
            cl::init(0), cl::cat(ClangFormatCategory));
 
-static cl::opt<bool> SortIncludes(
-    "sort-includes",
-    cl::desc("If set, overrides the include sorting behavior determined by the "
-             "SortIncludes style flag"),
-    cl::cat(ClangFormatCategory));
+static cl::opt<bool>
+    SortIncludes("sort-includes",
+                 cl::desc("If set, overrides the include sorting behavior\n"
+                          "determined by the SortIncludes style flag"),
+                 cl::cat(ClangFormatCategory));
 
 static cl::opt<std::string> QualifierAlignment(
     "qualifier-alignment",
-    cl::desc(
-        "If set, overrides the qualifier alignment style determined by the "
-        "QualifierAlignment style flag"),
+    cl::desc("If set, overrides the qualifier alignment style\n"
+             "determined by the QualifierAlignment style flag"),
     cl::init(""), cl::cat(ClangFormatCategory));
 
-static cl::opt<std::string>
-    Files("files", cl::desc("Provide a list of files to run clang-format"),
-          cl::init(""), cl::cat(ClangFormatCategory));
+static cl::opt<std::string> Files(
+    "files",
+    cl::desc("A file containing a list of files to process, one per line."),
+    cl::value_desc("filename"), cl::init(""), cl::cat(ClangFormatCategory));
 
 static cl::opt<bool>
     Verbose("verbose", cl::desc("If set, shows the list of processed files"),
@@ -148,8 +162,9 @@ static cl::opt<bool>
 
 static cl::opt<unsigned> ErrorLimit(
     "ferror-limit",
-    cl::desc("Set the maximum number of clang-format errors to emit before "
-             "stopping (0 = no limit). Used only with --dry-run or -n"),
+    cl::desc("Set the maximum number of clang-format errors to emit\n"
+             "before stopping (0 = no limit).\n"
+             "Used only with --dry-run or -n"),
     cl::init(0), cl::cat(ClangFormatCategory));
 
 static cl::opt<bool>
@@ -186,7 +201,8 @@ static cl::opt<bool>
                           "whether or not to print diagnostics in color"),
                  cl::init(false), cl::cat(ClangFormatCategory), cl::Hidden);
 
-static cl::list<std::string> FileNames(cl::Positional, cl::desc("[<file> ...]"),
+static cl::list<std::string> FileNames(cl::Positional,
+                                       cl::desc("[@<file>] [<file> ...]"),
                                        cl::cat(ClangFormatCategory));
 
 namespace clang {
@@ -233,8 +249,12 @@ static bool fillRanges(MemoryBuffer *Code,
         errs() << "error: invalid <start line>:<end line> pair\n";
         return true;
       }
+      if (FromLine < 1) {
+        errs() << "error: start line should be at least 1\n";
+        return true;
+      }
       if (FromLine > ToLine) {
-        errs() << "error: start line should be less than end line\n";
+        errs() << "error: start line should not exceed end line\n";
         return true;
       }
       SourceLocation Start = Sources.translateLineCol(ID, FromLine, 1);
@@ -311,8 +331,7 @@ static void outputReplacementXML(StringRef Text) {
 
 static void outputReplacementsXML(const Replacements &Replaces) {
   for (const auto &R : Replaces) {
-    outs() << "<replacement "
-           << "offset='" << R.getOffset() << "' "
+    outs() << "<replacement " << "offset='" << R.getOffset() << "' "
            << "length='" << R.getLength() << "'>";
     outputReplacementXML(R.getReplacementText());
     outs() << "</replacement>\n";
@@ -358,9 +377,10 @@ static void outputXML(const Replacements &Replaces,
   if (!Status.FormatComplete)
     outs() << " line='" << Status.Line << "'";
   outs() << ">\n";
-  if (Cursor.getNumOccurrences() != 0)
+  if (Cursor.getNumOccurrences() != 0) {
     outs() << "<cursor>" << FormatChanges.getShiftedCodePosition(CursorPosition)
            << "</cursor>\n";
+  }
 
   outputReplacementsXML(Replaces);
   outs() << "</replacements>\n";
@@ -380,7 +400,8 @@ class ClangFormatDiagConsumer : public DiagnosticConsumer {
 
 // Returns true on error.
 static bool format(StringRef FileName) {
-  if (!OutputXML && Inplace && FileName == "-") {
+  const bool IsSTDIN = FileName == "-";
+  if (!OutputXML && Inplace && IsSTDIN) {
     errs() << "error: cannot use -i when reading from stdin.\n";
     return false;
   }
@@ -404,7 +425,7 @@ static bool format(StringRef FileName) {
   if (InvalidBOM) {
     errs() << "error: encoding with unsupported byte order mark \""
            << InvalidBOM << "\" detected";
-    if (FileName != "-")
+    if (!IsSTDIN)
       errs() << " in file '" << FileName << "'";
     errs() << ".\n";
     return true;
@@ -413,7 +434,7 @@ static bool format(StringRef FileName) {
   std::vector<tooling::Range> Ranges;
   if (fillRanges(Code.get(), Ranges))
     return true;
-  StringRef AssumedFileName = (FileName == "-") ? AssumeFileName : FileName;
+  StringRef AssumedFileName = IsSTDIN ? AssumeFileName : FileName;
   if (AssumedFileName.empty()) {
     llvm::errs() << "error: empty filenames are not allowed\n";
     return true;
@@ -436,11 +457,11 @@ static bool format(StringRef FileName) {
           .Case("left", FormatStyle::QAS_Left)
           .Default(FormatStyle->QualifierAlignment);
 
-  if (FormatStyle->QualifierAlignment == FormatStyle::QAS_Left)
+  if (FormatStyle->QualifierAlignment == FormatStyle::QAS_Left) {
     FormatStyle->QualifierOrder = {"const", "volatile", "type"};
-  else if (FormatStyle->QualifierAlignment == FormatStyle::QAS_Right)
+  } else if (FormatStyle->QualifierAlignment == FormatStyle::QAS_Right) {
     FormatStyle->QualifierOrder = {"type", "const", "volatile"};
-  else if (QualifierAlignmentOrder.contains("type")) {
+  } else if (QualifierAlignmentOrder.contains("type")) {
     FormatStyle->QualifierAlignment = FormatStyle::QAS_Custom;
     SmallVector<StringRef> Qualifiers;
     QualifierAlignmentOrder.split(Qualifiers, " ", /*MaxSplit=*/-1,
@@ -463,9 +484,8 @@ static bool format(StringRef FileName) {
   if (FormatStyle->isJson() && !FormatStyle->DisableFormat) {
     auto Err = Replaces.add(tooling::Replacement(
         tooling::Replacement(AssumedFileName, 0, 0, "x = ")));
-    if (Err) {
+    if (Err)
       llvm::errs() << "Bad Json variable insertion\n";
-    }
   }
 
   auto ChangedCode = tooling::applyAllReplacements(Code->getBuffer(), Replaces);
@@ -480,11 +500,10 @@ static bool format(StringRef FileName) {
       reformat(*FormatStyle, *ChangedCode, Ranges, AssumedFileName, &Status);
   Replaces = Replaces.merge(FormatChanges);
   if (OutputXML || DryRun) {
-    if (DryRun) {
+    if (DryRun)
       return emitReplacementWarnings(Replaces, AssumedFileName, Code);
-    } else {
+    else
       outputXML(Replaces, FormatChanges, Status, Cursor, CursorPosition);
-    }
   } else {
     IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> InMemoryFileSystem(
         new llvm::vfs::InMemoryFileSystem);
@@ -528,27 +547,25 @@ static void PrintVersion(raw_ostream &OS) {
 
 // Dump the configuration.
 static int dumpConfig() {
-  StringRef FileName;
   std::unique_ptr<llvm::MemoryBuffer> Code;
-  if (FileNames.empty()) {
-    // We can't read the code to detect the language if there's no
-    // file name, so leave Code empty here.
-    FileName = AssumeFileName;
-  } else {
-    // Read in the code in case the filename alone isn't enough to
-    // detect the language.
+  // We can't read the code to detect the language if there's no file name.
+  if (!FileNames.empty()) {
+    // Read in the code in case the filename alone isn't enough to detect the
+    // language.
     ErrorOr<std::unique_ptr<MemoryBuffer>> CodeOrErr =
         MemoryBuffer::getFileOrSTDIN(FileNames[0]);
     if (std::error_code EC = CodeOrErr.getError()) {
       llvm::errs() << EC.message() << "\n";
       return 1;
     }
-    FileName = (FileNames[0] == "-") ? AssumeFileName : FileNames[0];
     Code = std::move(CodeOrErr.get());
   }
   llvm::Expected<clang::format::FormatStyle> FormatStyle =
-      clang::format::getStyle(Style, FileName, FallbackStyle,
-                              Code ? Code->getBuffer() : "");
+      clang::format::getStyle(Style,
+                              FileNames.empty() || FileNames[0] == "-"
+                                  ? AssumeFileName
+                                  : FileNames[0],
+                              FallbackStyle, Code ? Code->getBuffer() : "");
   if (!FormatStyle) {
     llvm::errs() << llvm::toString(FormatStyle.takeError()) << "\n";
     return 1;
@@ -556,6 +573,94 @@ static int dumpConfig() {
   std::string Config = clang::format::configurationAsText(*FormatStyle);
   outs() << Config << "\n";
   return 0;
+}
+
+using String = SmallString<128>;
+static String IgnoreDir;             // Directory of .clang-format-ignore file.
+static String PrevDir;               // Directory of previous `FilePath`.
+static SmallVector<String> Patterns; // Patterns in .clang-format-ignore file.
+
+// Check whether `FilePath` is ignored according to the nearest
+// .clang-format-ignore file based on the rules below:
+// - A blank line is skipped.
+// - Leading and trailing spaces of a line are trimmed.
+// - A line starting with a hash (`#`) is a comment.
+// - A non-comment line is a single pattern.
+// - The slash (`/`) is used as the directory separator.
+// - A pattern is relative to the directory of the .clang-format-ignore file (or
+//   the root directory if the pattern starts with a slash).
+// - A pattern is negated if it starts with a bang (`!`).
+static bool isIgnored(StringRef FilePath) {
+  using namespace llvm::sys::fs;
+  if (!is_regular_file(FilePath))
+    return false;
+
+  String Path;
+  String AbsPath{FilePath};
+
+  using namespace llvm::sys::path;
+  make_absolute(AbsPath);
+  remove_dots(AbsPath, /*remove_dot_dot=*/true);
+
+  if (StringRef Dir{parent_path(AbsPath)}; PrevDir != Dir) {
+    PrevDir = Dir;
+
+    for (;;) {
+      Path = Dir;
+      append(Path, ".clang-format-ignore");
+      if (is_regular_file(Path))
+        break;
+      Dir = parent_path(Dir);
+      if (Dir.empty())
+        return false;
+    }
+
+    IgnoreDir = convert_to_slash(Dir);
+
+    std::ifstream IgnoreFile{Path.c_str()};
+    if (!IgnoreFile.good())
+      return false;
+
+    Patterns.clear();
+
+    for (std::string Line; std::getline(IgnoreFile, Line);) {
+      if (const auto Pattern{StringRef{Line}.trim()};
+          // Skip empty and comment lines.
+          !Pattern.empty() && Pattern[0] != '#') {
+        Patterns.push_back(Pattern);
+      }
+    }
+  }
+
+  if (IgnoreDir.empty())
+    return false;
+
+  const auto Pathname{convert_to_slash(AbsPath)};
+  for (const auto &Pat : Patterns) {
+    const bool IsNegated = Pat[0] == '!';
+    StringRef Pattern{Pat};
+    if (IsNegated)
+      Pattern = Pattern.drop_front();
+
+    if (Pattern.empty())
+      continue;
+
+    Pattern = Pattern.ltrim();
+
+    // `Pattern` is relative to `IgnoreDir` unless it starts with a slash.
+    // This doesn't support patterns containing drive names (e.g. `C:`).
+    if (Pattern[0] != '/') {
+      Path = IgnoreDir;
+      append(Path, Style::posix, Pattern);
+      remove_dots(Path, /*remove_dot_dot=*/true, Style::posix);
+      Pattern = Path;
+    }
+
+    if (clang::format::matchFilePath(Pattern, Pathname) == !IsNegated)
+      return true;
+  }
+
+  return false;
 }
 
 int main(int argc, const char **argv) {
@@ -579,9 +684,8 @@ int main(int argc, const char **argv) {
     return 0;
   }
 
-  if (DumpConfig) {
+  if (DumpConfig)
     return dumpConfig();
-  }
 
   if (!Files.empty()) {
     std::ifstream ExternalFileOfFiles{std::string(Files)};
@@ -594,12 +698,10 @@ int main(int argc, const char **argv) {
     errs() << "Clang-formating " << LineNo << " files\n";
   }
 
-  bool Error = false;
-  if (FileNames.empty()) {
-    Error = clang::format::format("-");
-    return Error ? 1 : 0;
-  }
-  if (FileNames.size() != 1 &&
+  if (FileNames.empty())
+    return clang::format::format("-");
+
+  if (FileNames.size() > 1 &&
       (!Offsets.empty() || !Lengths.empty() || !LineRanges.empty())) {
     errs() << "error: -offset, -length and -lines can only be used for "
               "single file.\n";
@@ -607,10 +709,14 @@ int main(int argc, const char **argv) {
   }
 
   unsigned FileNo = 1;
+  bool Error = false;
   for (const auto &FileName : FileNames) {
-    if (Verbose)
+    if (isIgnored(FileName))
+      continue;
+    if (Verbose) {
       errs() << "Formatting [" << FileNo++ << "/" << FileNames.size() << "] "
              << FileName << "\n";
+    }
     Error |= clang::format::format(FileName);
   }
   return Error ? 1 : 0;

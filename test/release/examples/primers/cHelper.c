@@ -3,7 +3,7 @@
 int x = 14;
 uint32_t y = 3;
 
-int baz() {
+int baz(void) {
   return x;
 }
 

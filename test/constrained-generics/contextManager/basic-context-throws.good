@@ -1,0 +1,5 @@
+entering context, resource = 0
+inside the manage statement
+exiting context, resource = 42
+caught an error, will rethrow: Error: I'm an error lol. lmao even
+caught error: Error: I'm an error lol. lmao even

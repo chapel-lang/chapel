@@ -20,7 +20,7 @@ for i in foo(10) do
 //
 // AFTER
 //
-proc goo(n: int)
+proc goo(n: int) do
   return new unmanaged bar(n);
 
 class bar {
@@ -65,9 +65,9 @@ label L2
   }
 
 
-  proc getHeadCursor() return getNextCursor(1);
-  proc isValidCursor(c: int) return c != 0;
-  proc getValue(c: int) return result;
+  proc getHeadCursor() do return getNextCursor(1);
+  proc isValidCursor(c: int) do return c != 0;
+  proc getValue(c: int) do return result;
 }
 
 var ic = goo(10);

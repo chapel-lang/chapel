@@ -2,5 +2,6 @@ class Foo {
   type t;
 }
 
-var foo = new borrowed Foo(t=int);
+var ownFoo = new owned Foo(t=int);
+var foo = ownFoo.borrow();
 writeln(foo.type: string);

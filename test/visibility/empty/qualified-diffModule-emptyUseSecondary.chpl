@@ -10,7 +10,7 @@ module M3 {
   use M2 only;
 
   proc main() {
-    var x = new borrowed M.Foo();
-    x.secondary(); // Shouldn't be accessible because we didn't include M2
+    var x = new M.Foo();
+    x.borrow().secondary(); // Shouldn't be accessible: we didn't include M2
   }
 }

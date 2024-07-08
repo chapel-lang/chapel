@@ -20,6 +20,7 @@
 #include "clang/Format/Format.h"
 #include "llvm/Support/Regex.h"
 #include <map>
+#include <optional>
 #include <tuple>
 
 namespace clang {
@@ -41,9 +42,9 @@ struct RawStringFormatStyleManager {
 
   RawStringFormatStyleManager(const FormatStyle &CodeStyle);
 
-  llvm::Optional<FormatStyle> getDelimiterStyle(StringRef Delimiter) const;
+  std::optional<FormatStyle> getDelimiterStyle(StringRef Delimiter) const;
 
-  llvm::Optional<FormatStyle>
+  std::optional<FormatStyle>
   getEnclosingFunctionStyle(StringRef EnclosingFunction) const;
 };
 
@@ -120,8 +121,8 @@ private:
 
   /// If \p Current is a raw string that is configured to be reformatted,
   /// return the style to be used.
-  llvm::Optional<FormatStyle> getRawStringStyle(const FormatToken &Current,
-                                                const LineState &State);
+  std::optional<FormatStyle> getRawStringStyle(const FormatToken &Current,
+                                               const LineState &State);
 
   /// If the current token sticks out over the end of the line, break
   /// it if possible.
@@ -419,9 +420,6 @@ struct LineState {
   /// The token that needs to be next formatted.
   FormatToken *NextToken;
 
-  /// \c true if this line contains a continued for-loop section.
-  bool LineContainsContinuedForLoopSection;
-
   /// \c true if \p NextToken should not continue this line.
   bool NoContinuation;
 
@@ -435,9 +433,12 @@ struct LineState {
   /// literal sequence, 0 otherwise.
   unsigned StartOfStringLiteral;
 
+  /// Disallow line breaks for this line.
+  bool NoLineBreak;
+
   /// A stack keeping track of properties applying to parenthesis
   /// levels.
-  std::vector<ParenState> Stack;
+  SmallVector<ParenState> Stack;
 
   /// Ignore the stack of \c ParenStates for state comparison.
   ///
@@ -468,9 +469,6 @@ struct LineState {
       return NextToken < Other.NextToken;
     if (Column != Other.Column)
       return Column < Other.Column;
-    if (LineContainsContinuedForLoopSection !=
-        Other.LineContainsContinuedForLoopSection)
-      return LineContainsContinuedForLoopSection;
     if (NoContinuation != Other.NoContinuation)
       return NoContinuation;
     if (StartOfLineLevel != Other.StartOfLineLevel)

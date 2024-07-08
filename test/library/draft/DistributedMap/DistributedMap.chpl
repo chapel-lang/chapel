@@ -18,18 +18,18 @@ can be accessed concurrently. Alternatively for intra-locale parallelism
 we can use, for example, ConcurrentMap from the ConcurrentMap package module.
 */
 pragma "always RVF"
-record distributedMap {
+record distributedMap : writeSerializable, readDeserializable {
   type keyType;
   type valType;
   // privatization id
-  pragma "no doc"
+  @chpldoc.nodoc
   const pid = -1;
   // privatized class
   forwarding _value;
-  inline proc _value return chpl_getPrivatizedCopy(
+  inline proc _value do return chpl_getPrivatizedCopy(
                        unmanaged DistributedMapImpl(keyType, valType), pid);
 
-  proc init(impl: DistributedMapImpl) {
+  proc init(impl: DistributedMapImpl(?)) {
     this.keyType = impl.keyType;
     this.valType = impl.valType;
     this.pid     = impl.pid;
@@ -39,18 +39,18 @@ record distributedMap {
     this.init(impl);
   }
 
-  proc readThis(ch) throws {
+  proc ref deserialize(reader, ref deserializer) throws {
     compilerError("Reading a distributedMap is not supported");
   }
 
-  proc writeThis(ch) throws {
-    _value.write(ch);
+  proc serialize(writer, ref serializer) throws {
+    _value.write(writer);
   }
 } // record distributedMap
 
 // This is the implementation class. It is privatized.
 // All fields should contain local values.
-pragma "no doc"
+@chpldoc.nodoc
 class DistributedMapImpl {
   type keyType;
   type valType;
@@ -64,11 +64,11 @@ class DistributedMapImpl {
   proc init(type keyType, type valType) {
     this.keyType = keyType;
     this.valType = valType;
-    complete();
+    init this;
     this.pid = _newPrivatizedClass(this);
   }
   // create a privatized instance
-  proc init(original: DistributedMapImpl, targetLocales, numLocalMaps, pid) {
+  proc init(original: DistributedMapImpl(?), targetLocales, numLocalMaps, pid) {
     this.keyType = original.keyType;
     this.valType = original.valType;
     this.targetLocales = targetLocales;
@@ -77,11 +77,11 @@ class DistributedMapImpl {
   }
 
   // privatization helpers
-  proc dsiGetPrivatizeData()
+  proc dsiGetPrivatizeData() do
     return (targetLocales, numLocalMaps, pid);
-  proc dsiPrivatize(pdata)
+  proc dsiPrivatize(pdata) do
     return new unmanaged DistributedMapImpl(this, pdata(0), pdata(1), pdata(2));
-  inline proc getPrivatizedThis()  // todo: manually forward pid?
+  inline proc getPrivatizedThis() do  // todo: manually forward pid?
     return chpl_getPrivatizedCopy(this.type, pid);
   proc getPrivatizedThisOn(loc: locale) {
     var result: (this.type: class?);
@@ -115,13 +115,6 @@ class DistributedMapImpl {
     return result;
   }
 
-  iter items() {
-    for loc in targetLocales do
-      for map in getPrivatizedThisOn(loc).localMaps do
-        for item in map.items() do
-          yield item;
-  }
-
   // returns a task-private aggregator
   proc createAggregator(updater) {
     return new Aggregator(getPrivatizedThis(), updater);
@@ -136,7 +129,7 @@ class DistributedMapImpl {
   // assumes that everything is local
   proc applyAggregatedUpdates(buffer, updater) {
     if debugDistributedMap then
-      writef("applyAggregatedUpdates  %t  %t updates\n", here, buffer.size);
+      writef("applyAggregatedUpdates  %?  %? updates\n", here, buffer.size);
     coforall mapIdx in 0..#numLocalMaps {
       const numLocales = this.numLocales;
       localMaps[mapIdx].bulkUpdate(buffer, updater,
@@ -189,11 +182,11 @@ record _mapIdxSingletonFilter { //private
 }
 
 record _mapIdxTrivalFilter { //private
-  proc skip(key) return false;
+  proc skip(key) do return false;
 }
 
 // produced by distributedMap.updateManager()
-record distributedMapManager {
+record distributedMapManager : contextManager {
   var   client;
   const locIdx;
   const mapIdx;
@@ -207,7 +200,7 @@ record distributedMapManager {
     this.key    = k;
   }
 
-  proc enterThis() ref {
+  proc ref enterContext() ref {
     // todo: optimize remote accesses here
     client = client.getPrivatizedThisOn(client.targetLocales[locIdx]);
     ref map = client.localMaps[mapIdx];
@@ -215,18 +208,18 @@ record distributedMapManager {
     return map.thisInternal(key);
   }
 
-  proc leaveThis(in err: owned Error?) throws {
+  proc exitContext(in err: owned Error?) throws {
     on client {
       client.localMaps[mapIdx]._leave();
     }
     if err then throw err;
-  } 
+  }
 }
 
 // factor out single-element access code from 'proc ref this'
 proc ref map.thisInternal(k: keyType) ref { //private
   compilerAssert(isDefaultInitializable(valType));
-  
+
   var (_, slot) = table.findAvailableSlot(k);
   if !table.isSlotFull(slot) {
     var val: valType;
@@ -238,7 +231,7 @@ proc ref map.thisInternal(k: keyType) ref { //private
 
 // an addition to map's interface
 // primarily for use by an aggregator
-proc map.bulkUpdate(keysToUpdate, updater, filter) {
+proc ref map.bulkUpdate(keysToUpdate, updater, filter) {
   _enter(); defer _leave();
 
   for k in keysToUpdate {

@@ -11,8 +11,8 @@ class D : C {
   }
 }
 
-var myD = new borrowed D(real, 2, "hi");
-var myD2 = new borrowed D(real, 2);
+var myD = new owned D(real, 2, "hi");
+var myD2 = new owned D(real, 2);
 
 writeln("myD2.x = ", myD2.x);
 

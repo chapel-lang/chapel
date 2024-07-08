@@ -62,7 +62,8 @@
     (PLATFORM_ARCH_SPARC && PLATFORM_COMPILER_CLANG /* TODO: not using GCC ASM due to Bug 3805 */) || \
     PLATFORM_ARCH_AARCH64 || \
     PLATFORM_ARCH_S390 || \
-    PLATFORM_ARCH_TILE
+    PLATFORM_ARCH_TILE || \
+    PLATFORM_ARCH_RISCV
   /* TODO: can (should?) do TILE and AARCH64 natively */
   /* TODO: probe for an XLC version with non-broken gcc inline asm support? */
   #define GASNETI_USE_COMPILER_ATOMICOPS 1

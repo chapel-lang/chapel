@@ -8,7 +8,7 @@ proc main() {
 
   var grid: [grid_space] bool;
 
-  forall (i, j) in grid.domain do
+  forall (i, j) in grid.domain with (ref grid) do
     grid(i, j) = in_mandelbrot_set((j:real/half_width)*2.0,
                                    (i:real/half_height)*1.0);
 

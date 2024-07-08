@@ -1,0 +1,28 @@
+─── warning in use-shadows-formal1.chpl:15 [PotentiallySurprisingShadowing] ───
+  Potentially surprising shadowing for 'a'
+       |
+    15 |     writeln(a);
+       |             ⎺
+       |
+  It refers to a symbol found through the 'use' of 'M1' here:
+       |
+    14 |     use M1;
+       |         ⎺⎺
+       |
+  And then through the 'use' of 'M0' here:
+      |
+    6 |   public use M0 only b as a;
+      |              ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  Leading to 'b' defined here:
+      |
+    2 |   var b: int;
+      |       ⎺⎺⎺⎺⎺⎺⎺
+      |
+  But, there is a shadowed symbol 'a' defined here:
+       |
+    13 |   proc foo(a: real) {
+       |            ⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+0

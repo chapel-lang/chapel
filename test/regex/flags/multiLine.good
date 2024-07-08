@@ -1,0 +1,6 @@
+checking multiline mode, default
+matched '<not found>'
+checking multiline mode, multiLine=false
+matched '<not found>'
+checking multiline mode, multiLine=true
+matched 'a'

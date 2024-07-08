@@ -18,7 +18,8 @@ class Foo {
   }
 }
 
-var foo = new borrowed Foo(uint);
+var ownFoo = new owned Foo(uint);
+var foo = ownFoo.borrow();
 var foo2: borrowed Foo(string)?;
 var foo3: borrowed Foo(int)?;
 writeln(foo3.type :class == foo.type);

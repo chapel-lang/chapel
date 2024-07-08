@@ -66,28 +66,28 @@ struct ips_proto_am {
 };
 
 psm2_error_t
-ips_am_get_parameters(psm2_ep_t ep, struct psm2_am_parameters *parameters);
+psm3_ips_am_get_parameters(psm2_ep_t ep, struct psm2_am_parameters *parameters);
 
 psm2_error_t
-ips_am_short_reply(psm2_am_token_t tok,
+psm3_ips_am_short_reply(psm2_am_token_t tok,
 		   psm2_handler_t handler, psm2_amarg_t *args, int nargs,
 		   void *src, size_t len, int flags,
 		   psm2_am_completion_fn_t completion_fn, void *completion_ctxt);
 
 psm2_error_t
-ips_am_short_request(psm2_epaddr_t epaddr,
+psm3_ips_am_short_request(psm2_epaddr_t epaddr,
 		     psm2_handler_t handler, psm2_amarg_t *args, int nargs,
 		     void *src, size_t len, int flags,
 		     psm2_am_completion_fn_t completion_fn,
 		     void *completion_ctxt);
 
 psm2_error_t
-MOCKABLE(ips_proto_am_init)(struct ips_proto *proto,
+MOCKABLE(psm3_ips_proto_am_init)(struct ips_proto *proto,
              int num_send_slots,
              uint32_t imm_size,
              struct ips_proto_am *proto_am);
-MOCK_DCL_EPILOGUE(ips_proto_am_init);
+MOCK_DCL_EPILOGUE(psm3_ips_proto_am_init);
 
-psm2_error_t ips_proto_am_fini(struct ips_proto_am *proto_am);
+psm2_error_t psm3_ips_proto_am_fini(struct ips_proto_am *proto_am);
 
 #endif /* _IPS_PROTO_AM_H */

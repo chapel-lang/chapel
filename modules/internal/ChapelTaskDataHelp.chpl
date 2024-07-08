@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,7 @@ module ChapelTaskDataHelp {
 
   private use ChapelStandard;
   private use CTypes;
+  private use OS.POSIX;
 
   extern type chpl_task_infoChapel_t;
   pragma "fn synchronization free"
@@ -36,7 +37,7 @@ module ChapelTaskDataHelp {
   // a new task.
   proc chpl_task_data_setup(args: chpl_task_bundle_p,
                             infoChapel:c_ptr(chpl_task_infoChapel_t)) {
-    c_memcpy(chpl_task_getInfoChapelInBundle(args), infoChapel,
+    memcpy(chpl_task_getInfoChapelInBundle(args), infoChapel,
              c_sizeof(chpl_task_infoChapel_t));
   }
 
@@ -50,7 +51,7 @@ module ChapelTaskDataHelp {
   pragma "task complete impl fn"
   proc chpl_save_task_error_owned(e: _EndCountBase, in err: owned Error?) {
     if err != nil {
-      e.errors.append(err.release()!);
+      e.errors.append(owned.release(err)!);
     }
   }
 }

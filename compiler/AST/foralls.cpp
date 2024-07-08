@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -80,11 +80,12 @@ static ShadowVarSymbol* buildShadowVariable(ShadowVarPrefix prefix,
       // This keyword is for a TPV.
       // Whereas the user provided neither a type nor an init.
       USR_FATAL_CONT(ovar, "a task private variable '%s'"
-                     "requires a type and/or initializing expression", name);
+                     " requires a type and/or initializing expression", name);
       break;
   }
 
   ShadowVarSymbol* result = new ShadowVarSymbol(intent, name, NULL);
+  result->svExplicit = true;
   new DefExpr(result); // set result->defPoint
   return result;
 }
@@ -147,6 +148,7 @@ static ShadowVarSymbol* buildTaskPrivateVariable(ShadowVarPrefix prefix,
 
   // We will call autoDestroy from deinitBlock() explicitly.
   result->addFlag(FLAG_NO_AUTO_DESTROY);
+  result->svExplicit = true;
 
   new DefExpr(result, init, type); // set result->defPoint
 
@@ -175,9 +177,6 @@ ShadowVarSymbol* ShadowVarSymbol::buildForPrefix(ShadowVarPrefix prefix,
   else
     INT_FATAL("case not handled");
 
-  if (nameString == astrThis)
-    USR_FATAL_CONT(nameExp, "cannot currently apply a forall or task intent to 'this'");
-
   if (type == NULL && init == NULL)
     // non-TPV forall intent
     return buildShadowVariable(prefix, nameString, nameExp);
@@ -198,6 +197,7 @@ ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
     INT_FATAL("case not handled");
 
   ShadowVarSymbol* result = new ShadowVarSymbol(TFI_REDUCE, name, NULL, riExpr);
+  result->svExplicit = true;
   new DefExpr(result); // set result->defPoint
   return result;
 }
@@ -376,6 +376,7 @@ buildFollowLoop(VarSymbol* iter,
                                        /*isLoweredForall*/ false,
                                        forallExpr);
   followBody->orderIndependentSet(true);
+  followBody->exemptFromImplicitIntents();
 
   // not needed:
   //destructureIndices(followBody, indices, new SymExpr(followIdx), false);
@@ -1599,6 +1600,10 @@ static ForallStmt* doReplaceWithForall(ForLoop* src)
   return dest;
 }
 
+bool shouldReplaceForLoopWithForall(ForLoop *forLoop) {
+  return invokesParallelIterator(forLoop);
+}
+
 //
 // Replace a parallel ForLoop over a parallel iterator with a ForallStmt.
 // Otherwise we may get data races, ex. on shadow variable(s) 'sum' here:
@@ -1608,9 +1613,10 @@ static ForallStmt* doReplaceWithForall(ForLoop* src)
 //   }
 //
 Expr* replaceForWithForallIfNeeded(ForLoop* forLoop) {
-  if (!invokesParallelIterator(forLoop))
+  if (!shouldReplaceForLoopWithForall(forLoop)) {
     // Not a parallel for-loop. Leave it unchanged.
     return forLoop;
+  }
 
   // Yes, it is a parallel for-loop. Replace it.
   ForallStmt* fs = doReplaceWithForall(forLoop);

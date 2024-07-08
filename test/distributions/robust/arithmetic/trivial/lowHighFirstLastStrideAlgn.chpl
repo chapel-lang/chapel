@@ -14,20 +14,6 @@ writeln(Dom3D.high);
 writeln(Dom4D.high);
 writeln(Dom2D32.high);
 
-writeln("--- alignedLow ---");
-writeln(Dom1D.alignedLow);
-writeln(Dom2D.alignedLow);
-writeln(Dom3D.alignedLow);
-writeln(Dom4D.alignedLow);
-writeln(Dom2D32.alignedLow);
-
-writeln("--- alignedHigh ---");
-writeln(Dom1D.alignedHigh);
-writeln(Dom2D.alignedHigh);
-writeln(Dom3D.alignedHigh);
-writeln(Dom4D.alignedHigh);
-writeln(Dom2D32.alignedHigh);
-
 writeln("--- first ---");
 writeln(Dom1D.first);
 writeln(Dom2D.first);

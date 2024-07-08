@@ -1,0 +1,1 @@
+c_ptrToSparse.chpl:8: error: Only single-locale rectangular arrays support c_ptrToConst() at present

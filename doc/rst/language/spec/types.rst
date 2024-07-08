@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: types
 .. _Chapter-Types:
 
 =====
@@ -9,8 +11,7 @@ Types
 Chapel is a statically typed language with a rich set of types. These
 include a set of predefined primitive types, enumerated types,
 structured types (classes, records, unions, tuples), data parallel types
-(ranges, domains, arrays), and synchronization types (sync, single,
-atomic).
+(ranges, domains, arrays), and synchronization types (sync, atomic).
 
 The syntax of a type is as follows:
 
@@ -28,6 +29,7 @@ The syntax of a type is as follows:
      if-expression
      unary-expression
      binary-expression
+     expression
 
 Many expressions are syntactically allowed as a type; however not all
 expressions produce a type. For example, a call to a function is
@@ -54,6 +56,8 @@ These statements are defined in Sections :ref:`Enumerated_Types`,
 :ref:`Union_Declarations`, and :ref:`Type_Aliases`,
 respectively.
 
+.. index::
+   single: types; primitive
 .. _Primitive_Types:
 
 Primitive Types
@@ -64,7 +68,7 @@ The concrete primitive types are: ``void``, ``nothing``, ``bool``,
 ``bytes``. They are defined in this section.
 
 In addition, there are several generic primitive types that are
-described in :ref:`Built_in_Generic_types`.
+described in :ref:`Built_in_Generic_Types`.
 
 The primitive types are summarized by the following syntax:
 
@@ -73,7 +77,7 @@ The primitive types are summarized by the following syntax:
    primitive-type:
      'void'
      'nothing'
-     'bool' primitive-type-parameter-part[OPT]
+     'bool'
      'int' primitive-type-parameter-part[OPT]
      'uint' primitive-type-parameter-part[OPT]
      'real' primitive-type-parameter-part[OPT]
@@ -105,15 +109,43 @@ See :ref:`Compile-Time_Constants`
    primitive types depending on a platform’s native support for those
    types.
 
+.. index::
+   single: void
+   single: types; void
 .. _The_Void_Type:
 
 The Void Type
 ~~~~~~~~~~~~~
 
-The ``void`` type is used to represent the lack of a value, for example
-when a function has no arguments and/or no return type. It is an error
-to assign the result of a function that returns ``void`` to a variable.
+The ``void`` type is used to represent the lack of a value. It is
+primarily used to indicate that a function does not return anything.
 
+   *Example (returnVoid.chpl)*.
+
+   For example, the below declares ``f`` to return ``void``:
+
+   .. code-block:: chapel
+
+      proc f() : void { }
+
+   The compiler can infer the return type of ``void`` as well. See
+   See :ref:`Return_Types` for more information.
+
+   .. BLOCK-test-chapelpost
+
+      f();
+      writeln("done");
+
+   .. BLOCK-test-chapeloutput
+
+      done
+
+It is an error to assign the result of a function that returns ``void``
+to a variable.
+
+.. index::
+   single: nothing
+   single: types; nothing
 .. _The_Nothing_type:
 
 The Nothing Type
@@ -133,22 +165,83 @@ representation at run-time.
    The ``nothing`` type can be used to conditionally remove a variable
    or field from the code based on a ``param`` conditional expression.
 
+   *Example (noneNothing.chpl)*.
+
+   The ``nothing`` type and ``none`` values typically come up in a
+   generic programming context (see also :ref:`Chapter-Generics`). For
+   example, the following program defines a generic function ``g`` that
+   can determine if it was called with an integer or with ``none``:
+
+   .. code-block:: chapel
+
+      proc g(arg) {
+        if arg.type != nothing {
+          writeln(arg);
+        }
+      }
+      g(1);    // outputs 1
+      g(none); // does not create output
+
+   .. BLOCK-test-chapeloutput
+
+       1
+
+.. index::
+   single: bool
+   single: types; bool
 .. _The_Bool_Type:
 
 The Bool Type
 ~~~~~~~~~~~~~
 
 Chapel defines a logical data type designated by the symbol ``bool``
-with the two predefined values ``true`` and ``false``. This default
-boolean type is stored using an implementation-defined number of bits. A
-particular number of bits can be specified using a parameter value
-following the ``bool`` keyword, such as ``bool(8)`` to request an 8-bit
-boolean value. Legal sizes are 8, 16, 32, and 64 bits.
+with the two predefined values ``true`` and ``false``. Values of this
+boolean type are stored using an implementation-defined number of
+bits.
 
 Some statements require expressions of ``bool`` type and Chapel supports
 a special conversion of values to ``bool`` type when used in this
 context (:ref:`Implicit_Statement_Bool_Conversions`).
 
+Variables of type ``bool`` have a default value of ``false`` if they are
+not initialized to something else (see also :ref:`Chapter-Variables`).
+
+   *Example (bools.chpl)*.
+
+   This program demonstrates creating a variable with type ``bool`` and
+   setting it to ``true``, and then setting another variable to the
+   logical negation of it:
+
+   .. code-block:: chapel
+
+      var x: bool = true;
+      var y = !x;
+      var z: bool;
+
+   All three variables have type ``bool``.  Note that the types of ``x``
+   and ``y`` are optional; the program indicates the type of ``x`` but
+   the compiler infers the type of ``y``.  See :ref:`Chapter-Variables`
+   for more details. The last variable is initialized to the default
+   value of ``bool``, which is ``false`` (see :ref:`Default_Values_For_Types`).
+
+   .. BLOCK-test-chapelpost
+
+      writeln(x);
+      writeln(y);
+      writeln(z);
+
+   .. BLOCK-test-chapeloutput
+
+      true
+      false
+      false
+
+
+.. index::
+   single: uint
+   single: int
+   single: types; uint
+   single: types; int
 .. _Signed_and_Unsigned_Integral_Types:
 
 Signed and Unsigned Integral Types
@@ -158,6 +251,9 @@ The integral types can be parameterized by the number of bits used to
 represent them. Valid bit-sizes are 8, 16, 32, and 64. The default
 signed integral type, ``int``, is a synonym for ``int(64)``; and the
 default unsigned integral type, ``uint``, is a synonym for ``uint(64)``.
+
+Variables of integral type have a default value of ``0`` if they are
+not initialized to something else (see also :ref:`Chapter-Variables`).
 
 The integral types and their ranges are given in the following table:
 
@@ -177,30 +273,145 @@ uint(64), uint 0                    18446744073709551615
 Integer literals such as `3` have type ``int``. However, such literals
 can implicitly convert to other numeric types that can losslessly store
 the value. See :ref:`Implicit_Compile_Time_Constant_Conversions`.
+Integer literals can be written in hexadecimal, octal, or binary. See
+:ref:`Literals`.
+
+Signed integral types of can implicitly convert to signed integral types
+of larger width. Additionally, signed integral types can implicitly
+convert to unsigned integral types of the same or larger width. Unsigned
+integral types can implicitly convert to both signed and unsigned
+integral type of larger width. See :ref:`Implicit_NumBool_Conversions`
+for details.
 
 It is possible for overflow to occur with binary operators on integers.
 For signed integers, overflow leads to undefined behavior. For unsigned
-integers, overflow leads to wrapping according to two's complement
-arithmetic.
+integers, overflow leads to wrapping since any bits not representable
+will be discarded.
+
+   *Example (integers.chpl)*.
+
+   Here, ``x`` is inferred to have type ``int``:
+
+   .. code-block:: chapel
+
+      var x = 1;
+
+   and ``y`` is initialized by converting ``2`` to a ``uint(8)``:
+
+   .. code-block:: chapel
+
+      var y:uint(8) = 2;
+
+   Then, ``z`` is set to an expression that would evaluate to ``257``,
+   but that is not representable as a ``uint(8)``, so it results in the
+   wrapped value ``1``.
+
+   .. code-block:: chapel
+
+      var z = 255 + y;
+
+   .. BLOCK-test-chapelpost
+
+      writeln("x = ", x, " : ", x.type:string);
+      writeln("y = ", y, " : ", y.type:string);
+      writeln("z = ", z, " : ", z.type:string);
+
+   .. BLOCK-test-chapeloutput
+
+      x = 1 : int(64)
+      y = 2 : uint(8)
+      z = 1 : uint(8)
 
 
+
+.. index::
+   single: real
+   single: types; real
+   single: types; floating point
 .. _Real_Types:
 
 Real Types
 ~~~~~~~~~~
 
-Like the integral types, the real types can be parameterized by the
-number of bits used to represent them. The default real type, ``real``,
-is 64 bits. The real types that are supported are machine-dependent, but
-usually include ``real(32)`` (single precision) and ``real(64)`` (double
-precision) following the IEEE 754 standard.
+Unlike integral types, ``real`` types are floating point types that can
+store fractional values. Like the integral types, the real types can be
+parameterized by the number of bits used to represent them. The default
+real type, ``real``, is 64 bits. The real types that are supported are
+machine-dependent, but usually include ``real(32)`` (single precision)
+and ``real(64)`` (double precision) following the IEEE 754 standard.
 
+Variables of ``real`` type have a default value of ``0.0`` if they are
+not initialized to something else (see also :ref:`Chapter-Variables`).
+
+All integral types can implicitly convert to all ``real`` types, and
+``real(32)`` can implicitly convert to ``real(64)``. See
+:ref:`Implicit_NumBool_Conversions` for details.
+
+``real`` literals such as `5.2` have type ``real``. However, such literals
+can implicitly convert to other numeric types that can losslessly store
+the value. See :ref:`Implicit_Compile_Time_Constant_Conversions`.
+``real`` literals can be written in decimal or hexadecimal and with or
+without an exponent (see :ref:`Literals` for details):
+
+ * in decimal without an exponent, e.g. ``5.2``
+ * in decimal with an exponent, e.g. ``6.02e23``
+ * in hexadecimal without an exponent, e.g. ``0x2.fe``
+ * in hexadecimal with a decimal exponent, e.g. ``0x2.fep23``
+
+   *Example (harmonic.chpl)*.
+
+   For example, this program computes the first ``n`` terms of the
+   harmonic series.
+
+   First, it defines a ``config const`` to allow setting the value of
+   ``n`` on the command line (see :ref:`Variable_Declarations`):
+
+   .. code-block:: chapel
+
+      config const n = 100;
+
+   Next, it declares a ``real`` variable. Since this variable isn't
+   initialized, it will be initialized to 0.0:
+
+   .. code-block:: chapel
+
+      var sum:real;
+
+   Then, it loops over the first `n` elements and adds them to the
+   sum (see also :ref:`The_For_Loop`):
+
+   .. code-block:: chapel
+
+      for i in 1..n {
+        sum += 1.0/i;
+      }
+
+   Note that it uses `1.0/i` in order to do a floating point division. If
+   it used `1/i`, it would do integer division (rounding towards zero),
+   which evaluates to ``0`` for ``i > 1``.
+
+   Finally, it prints out the sum:
+
+   .. code-block:: chapel
+
+      writeln(sum);
+
+   .. BLOCK-test-chapeloutput
+
+      5.18738
+
+
+.. index::
+   single: imaginary
+   single: types; imaginary
+   single: types; imag
 .. _Imaginary_Types:
 
 Imaginary Types
 ~~~~~~~~~~~~~~~
 
-The imaginary types can be parameterized by the number of bits used to
+Imaginary types are floating-point types, and similarly to ``real``
+types, they can be parameterized by the number of bits used to
 represent them. The default imaginary type, ``imag``, is 64 bits. The
 imaginary types that are supported are machine-dependent, but usually
 include ``imag(32)`` and ``imag(64)``.
@@ -211,40 +422,87 @@ include ``imag(32)`` and ``imag(64)``.
    under-optimized code stemming from always converting real values to
    complex values with a zero imaginary part.
 
+Imaginary literals can be created by appending ``i`` to a numeric
+literal; for example, ``0.6i``. Such literals have type ``imag``.
+However, such literals can implicitly convert to other numeric types that
+can losslessly store the value. See
+:ref:`Implicit_Compile_Time_Constant_Conversions`.  As with ``real``
+literals, imaginary literals can be written in decimal or hexadecimal and
+with or without an exponent (see :ref:`Literals` for details):
+
+Variables of ``imag`` type have a default value of ``0.0i`` if they are
+not initialized to something else (see also :ref:`Chapter-Variables`).
+
+It is possible to convert between a ``real`` value and an ``imag`` value
+using an explicit cast (see :ref:`Explicit_Conversions`). Similarly, an
+``imag`` value can be cast to a ``real`` value. Such casts preserve the
+floating-point value while changing whether or not it is imaginary.
+
+   *Example (imaginary.chpl)*.
+
+   For example, this program creates imaginary numbers in two different
+   ways. First, ``a`` is an ``imag`` variable initialized to a literal:
+
+   .. code-block:: chapel
+
+      var a = 0.6i;
+
+   Now, suppose we have a ``real`` value ``s``:
+
+   .. code-block:: chapel
+
+      var s = 10.25;
+
+   We can initialize an ``imag`` variable with the same numeric value,
+   but as an imaginary value, with a cast:
+
+   .. code-block:: chapel
+
+      var b = s:imag;
+      assert(b == 10.25i);
+
+   .. BLOCK-test-chapelpost
+
+      writeln("a = ", a, " : ", a.type:string);
+      writeln("b = ", b, " : ", b.type:string);
+
+   .. BLOCK-test-chapeloutput
+
+      a = 0.6i : imag(64)
+      b = 10.25i : imag(64)
+
+
+.. index::
+   single: complex
+   single: types; complex
 .. _Complex_Types:
 
 Complex Types
 ~~~~~~~~~~~~~
 
-Like the integral and real types, the complex types can be parameterized
-by the number of bits used to represent them. A complex number is
-composed of two real numbers so the number of bits used to represent a
-complex is twice the number of bits used to represent the real numbers.
-The default complex type, ``complex``, is 128 bits; it consists of two
-64-bit real numbers. The complex types that are supported are
-machine-dependent, but usually include ``complex(64)`` and
-``complex(128)``.
+The ``complex`` type represents a complex number. A ``complex`` value has
+floating-point values for the real and imaginary components.
+
+As with the integral and real types, the type ``complex`` can be
+parameterized by the number of bits used to represent the complex number.
+Since the complex number consists of two components, the number of bits
+used to represent it is twice the number of bits used to represent each
+component.
+
+In particular:
+
+ * ``complex(64)`` contains two ``real(32)`` fields
+ * ``complex(128)`` contains two ``real(64)`` fields
 
 The real and imaginary components can be accessed via the methods ``re``
-and ``im``. The type of these components is a ``real``. The standard :mod:`Math`
-module provides some functions on complex types. See the :mod:`Math`
-module documentation.
+and ``im``. Note that ``im`` returns a ``real`` of appropriate width,
+rather than an ``imag``.
 
    *Example*.
 
    Given a complex number ``c`` with the value ``3.14+2.72i``, the
    expressions ``c.re`` and ``c.im`` refer to ``3.14`` and ``2.72``
    respectively.
-
-complex is defined as if it were a record with two fields.
-Note that both of these fields are of type *real*.
-Specifically the imaginary component is not of type *imag*.
-This is important when using the getter/setter for the
-field *im*.
-
-.. method:: proc complex.bits: param int
-
-   Returns the number of bits used to represent this complex number.
 
 .. method:: proc complex.re ref
 
@@ -265,6 +523,13 @@ field *im*.
    When used as an lvalue, this is a setter that assigns the
    imaginary component.
 
+The standard :mod:`Math` module provides more functions on complex types.
+See the :mod:`Math` module documentation.
+
+
+.. index::
+   single: string
+   single: types; string
 .. _The_String_Type:
 
 The String Type
@@ -272,8 +537,11 @@ The String Type
 
 Strings are a primitive type designated by the symbol ``string``
 comprised of Unicode characters in UTF-8 encoding. Their length is
-unbounded.
+unbounded. Strings are defined in :ref:`Chapter-Strings`.
 
+.. index::
+   single: bytes
+   single: types; bytes
 .. _The_Bytes_Type:
 
 The Bytes Type
@@ -281,8 +549,17 @@ The Bytes Type
 
 Bytes is a primitive type designated by the symbol ``bytes`` comprised
 of arbitrary bytes. Bytes are immutable in-place and their length is
-unbounded.
+unbounded. Bytes are defined in :ref:`Chapter-Bytes`.
 
+.. index::
+   single: enumerated types
+   single: types; enumerated
+   single: enumerated types; abstract
+   single: enumerated types; concrete
+   single: enumerated types; semi-concrete
+   single: enumerated types; iterating
+   single: enumerated types; size
+   single: predefined functions; size (enum)
 .. _Enumerated_Types:
 
 Enumerated Types
@@ -402,6 +679,8 @@ available:
 
    Returns the last constant in the enumerated type.
 
+.. index::
+   single: types; structured
 .. _Structured_Types:
 
 Structured Types
@@ -482,6 +761,8 @@ A tuple is a light-weight record that consists of one or more anonymous
 fields. If all the fields are of the same type, the tuple is
 homogeneous. Tuples are defined in :ref:`Chapter-Tuples`.
 
+.. index::
+   single: types; data parallel
 .. _Data_Parallel_Types:
 
 Data Parallel Types
@@ -523,6 +804,8 @@ that correspond to the indices in its domain. A domain’s indices can be
 of any type. Domains, arrays, and their index types are defined in
 :ref:`Chapter-Domains` and :ref:`Chapter-Arrays`.
 
+.. index::
+   single: types; synchronization
 .. _Synchronization_Types:
 
 Synchronization Types
@@ -536,13 +819,14 @@ The synchronization types are summarized by the following syntax:
 
    synchronization-type:
      sync-type
-     single-type
      atomic-type
 
-Sync and single types are discussed in
+The sync type is discussed in
 :ref:`Synchronization_Variables`. The atomic type is discussed
 in :ref:`Atomic_Variables`.
 
+.. index::
+   single: types; aliases
 .. _Type_Aliases:
 
 Type Aliases

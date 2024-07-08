@@ -51,16 +51,4 @@
 
 */
 
-#define PSMI_HAL_INST_CNT @PSM_HAL_CNT@
-
-#if PSMI_HAL_INST_CNT == 1
-
-#define PSMI_HAL_INLINE inline
-#define PSMI_HAL_CAT_INL_SYM(KERNEL) hfp_@PSM_HAL_INST@_##KERNEL
-#include "psm2_hal_inline_t.h"
-
-#else
-#define PSMI_HAL_INLINE /* nothing */
-
-#endif
-
+#define PSMI_HAL_INST_CNT @PSM3_HAL_CNT@

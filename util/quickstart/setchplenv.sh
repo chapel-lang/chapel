@@ -63,6 +63,12 @@ export CHPL_MEM
 echo "                           ...cstdlib"
 echo " "
 
+echo "Setting CHPL_HOST_MEM to..."
+CHPL_HOST_MEM=cstdlib
+export CHPL_HOST_MEM
+echo "                           ...cstdlib"
+echo " "
+
 echo "Setting CHPL_GMP to..."
 CHPL_GMP=none
 export CHPL_GMP

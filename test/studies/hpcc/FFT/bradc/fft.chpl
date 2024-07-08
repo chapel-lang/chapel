@@ -8,6 +8,7 @@
 use BitOps;
 use Random;
 use Time;
+use Math;
 
 
 // problem size configs
@@ -51,29 +52,29 @@ proc main() {
     fillRandom(z);
 
   // conjugate input, storing result to work array
-  Z = conjg(z);
+  Z = conj(z);
 
 
   // TIMED SECTION
-  var startTime = getCurrentTime();
+  var startTime = timeSinceEpoch().totalSeconds();
 
   bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 
-  var execTime = getCurrentTime() - startTime;
+  var execTime = timeSinceEpoch().totalSeconds() - startTime;
 
   verifyResults(z, Z, execTime, Twiddles);
 }
 
 
-proc computeTwiddles(W) {
+proc computeTwiddles(ref W) {
   const n = W.size;
   const delta = 2.0 * atan(1.0) / n;
 
   W(0) = 1.0;
   W(n/2) = let x = cos(delta * n/2)
             in (x, x):complex;
-  forall i in 1..#n/2 {
+  forall i in 1..#n/2 with (ref W) {
     const x = cos(delta*i);
     const y = sin(delta*i);
     W(i)     = (x, y):complex;
@@ -82,7 +83,7 @@ proc computeTwiddles(W) {
 }
 
 
-proc bitReverseShuffle(W: [?WD]) {
+proc bitReverseShuffle(ref W: [?WD]) {
   const n = WD.size;
   const reverse = log2(n);
   var Perm: [WD] index(WD) = [i in WD] bitReverse(i, numBits = reverse);
@@ -101,7 +102,7 @@ proc bitReverse(val: ?valType, numBits = 64) {
 
 
 
-proc dfft(Z, W) {
+proc dfft(ref Z, W) {
   cft1st(Z, W);
 
   var span = radix;
@@ -122,7 +123,7 @@ proc dfft(Z, W) {
       butterfly(1.0, 1.0, 1.0, Z[j..j+3*span by span]);
     }
   } else {
-    forall j in 0..#span {
+    forall j in 0..#span with (ref Z) {
       var a = Z(j);
       var b = Z(j+span);
       Z(j) = a + b;
@@ -132,11 +133,11 @@ proc dfft(Z, W) {
 }
 
 
-proc verifyResults(z, Z, execTime, Twiddles) {
+proc verifyResults(ref z, ref Z, execTime, Twiddles) {
   const N = Z.size;
 
   // BLC: This line wants /(complex,real) to be implemented directly:
-  Z = conjg(Z) / N;
+  Z = conj(Z) / N;
 
   bitReverseShuffle(Z);
   dfft(Z, Twiddles);
@@ -158,7 +159,7 @@ proc verifyResults(z, Z, execTime, Twiddles) {
 }
 
 
-proc cft1st(A, W) {
+proc cft1st(ref A, W) {
   const n = A.domain.dim(0).size;
   var x0 = A(0) + A(1);
   var x1 = A(0) - A(1);

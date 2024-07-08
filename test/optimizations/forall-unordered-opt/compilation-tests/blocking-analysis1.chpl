@@ -1,6 +1,5 @@
 config const N = 100;
 var globalSync: sync int;
-var globalSingle: single int;
 var globalAtomicBool: atomic bool;
 var globalAtomicInt: atomic int;
 var globalInt: int;
@@ -44,7 +43,7 @@ proc blocking_loop_bool_waitfor() {
 }
 blocking_loop_bool_waitfor();
 
-// sync and single
+// sync
 proc blocking_sync_write() {
   globalSync.writeEF(1);
 }
@@ -55,17 +54,6 @@ proc blocking_sync_read() {
   return x;
 }
 blocking_sync_read();
-
-proc blocking_single_write() {
-  globalSingle.writeEF(1);
-}
-blocking_single_write();
-
-proc blocking_single_read() {
-  var x = globalSingle.readFF();
-  return x;
-}
-blocking_single_read();
 
 // tests of conditionals
 proc blocking_in_if() {

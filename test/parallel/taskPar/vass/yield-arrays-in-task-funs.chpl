@@ -25,7 +25,7 @@ iter rtValIter(param tag: iterKind) : [P]int where tag == iterKind.leader {
 
 iter rtRefIter(param tag: iterKind) ref : [P]int where tag == iterKind.leader {
   global[1] = 111;
-  cobegin {
+  cobegin with (ref global) {
     yield global;
     yield global;
   }
@@ -50,7 +50,7 @@ iter ntValIter(param tag: iterKind) where tag == iterKind.leader {
 
 iter ntRefIter(param tag: iterKind) ref where tag == iterKind.leader {
   global[1] = 111;
-  cobegin {
+  cobegin with (ref global) {
     yield global;
     yield global;
   }

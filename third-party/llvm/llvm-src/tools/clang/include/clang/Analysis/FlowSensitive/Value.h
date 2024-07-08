@@ -15,6 +15,7 @@
 #define LLVM_CLANG_ANALYSIS_FLOWSENSITIVE_VALUE_H
 
 #include "clang/AST/Decl.h"
+#include "clang/Analysis/FlowSensitive/Formula.h"
 #include "clang/Analysis/FlowSensitive/StorageLocation.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/StringMap.h"
@@ -26,26 +27,135 @@ namespace clang {
 namespace dataflow {
 
 /// Base class for all values computed by abstract interpretation.
+///
+/// Don't use `Value` instances by value. All `Value` instances are allocated
+/// and owned by `DataflowAnalysisContext`.
 class Value {
 public:
-  enum class Kind { Bool, Integer, Reference, Pointer, Struct };
+  enum class Kind {
+    Integer,
+    Pointer,
+    Record,
+
+    // TODO: Top values should not be need to be type-specific.
+    TopBool,
+    AtomicBool,
+    FormulaBool,
+  };
 
   explicit Value(Kind ValKind) : ValKind(ValKind) {}
+
+  // Non-copyable because addresses of values are used as their identities
+  // throughout framework and user code. The framework is responsible for
+  // construction and destruction of values.
+  Value(const Value &) = delete;
+  Value &operator=(const Value &) = delete;
 
   virtual ~Value() = default;
 
   Kind getKind() const { return ValKind; }
 
+  /// Returns the value of the synthetic property with the given `Name` or null
+  /// if the property isn't assigned a value.
+  Value *getProperty(llvm::StringRef Name) const {
+    return Properties.lookup(Name);
+  }
+
+  /// Assigns `Val` as the value of the synthetic property with the given
+  /// `Name`.
+  ///
+  /// Properties may not be set on `RecordValue`s; use synthetic fields instead
+  /// (for details, see documentation for `RecordStorageLocation`).
+  void setProperty(llvm::StringRef Name, Value &Val) {
+    assert(getKind() != Kind::Record);
+    Properties.insert_or_assign(Name, &Val);
+  }
+
+  llvm::iterator_range<llvm::StringMap<Value *>::const_iterator>
+  properties() const {
+    return {Properties.begin(), Properties.end()};
+  }
+
 private:
   Kind ValKind;
+  llvm::StringMap<Value *> Properties;
 };
+
+/// An equivalence relation for values. It obeys reflexivity, symmetry and
+/// transitivity. It does *not* include comparison of `Properties`.
+///
+/// Computes equivalence for these subclasses:
+/// * PointerValue -- pointee locations are equal. Does not compute deep
+///   equality of `Value` at said location.
+/// * TopBoolValue -- both are `TopBoolValue`s.
+///
+/// Otherwise, falls back to pointer equality.
+bool areEquivalentValues(const Value &Val1, const Value &Val2);
 
 /// Models a boolean.
 class BoolValue : public Value {
-public:
-  explicit BoolValue() : Value(Kind::Bool) {}
+  const Formula *F;
 
-  static bool classof(const Value *Val) { return Val->getKind() == Kind::Bool; }
+public:
+  explicit BoolValue(Kind ValueKind, const Formula &F)
+      : Value(ValueKind), F(&F) {}
+
+  static bool classof(const Value *Val) {
+    return Val->getKind() == Kind::TopBool ||
+           Val->getKind() == Kind::AtomicBool ||
+           Val->getKind() == Kind::FormulaBool;
+  }
+
+  const Formula &formula() const { return *F; }
+};
+
+/// A TopBoolValue represents a boolean that is explicitly unconstrained.
+///
+/// This is equivalent to an AtomicBoolValue that does not appear anywhere
+/// else in a system of formula.
+/// Knowing the value is unconstrained is useful when e.g. reasoning about
+/// convergence.
+class TopBoolValue final : public BoolValue {
+public:
+  TopBoolValue(const Formula &F) : BoolValue(Kind::TopBool, F) {
+    assert(F.kind() == Formula::AtomRef);
+  }
+
+  static bool classof(const Value *Val) {
+    return Val->getKind() == Kind::TopBool;
+  }
+
+  Atom getAtom() const { return formula().getAtom(); }
+};
+
+/// Models an atomic boolean.
+///
+/// FIXME: Merge this class into FormulaBoolValue.
+///        When we want to specify atom identity, use Atom.
+class AtomicBoolValue final : public BoolValue {
+public:
+  explicit AtomicBoolValue(const Formula &F) : BoolValue(Kind::AtomicBool, F) {
+    assert(F.kind() == Formula::AtomRef);
+  }
+
+  static bool classof(const Value *Val) {
+    return Val->getKind() == Kind::AtomicBool;
+  }
+
+  Atom getAtom() const { return formula().getAtom(); }
+};
+
+/// Models a compound boolean formula.
+class FormulaBoolValue final : public BoolValue {
+public:
+  explicit FormulaBoolValue(const Formula &F)
+      : BoolValue(Kind::FormulaBool, F) {
+    assert(F.kind() != Formula::AtomRef && "For now, use AtomicBoolValue");
+  }
+
+  static bool classof(const Value *Val) {
+    return Val->getKind() == Kind::FormulaBool;
+  }
 };
 
 /// Models an integer.
@@ -58,15 +168,14 @@ public:
   }
 };
 
-/// Base class for values that refer to storage locations.
-class IndirectionValue : public Value {
+/// Models a symbolic pointer. Specifically, any value of type `T*`.
+class PointerValue final : public Value {
 public:
-  /// Constructs a value that refers to `PointeeLoc`.
-  explicit IndirectionValue(Kind ValueKind, StorageLocation &PointeeLoc)
-      : Value(ValueKind), PointeeLoc(PointeeLoc) {}
+  explicit PointerValue(StorageLocation &PointeeLoc)
+      : Value(Kind::Pointer), PointeeLoc(PointeeLoc) {}
 
   static bool classof(const Value *Val) {
-    return Val->getKind() == Kind::Reference || Val->getKind() == Kind::Pointer;
+    return Val->getKind() == Kind::Pointer;
   }
 
   StorageLocation &getPointeeLoc() const { return PointeeLoc; }
@@ -75,68 +184,46 @@ private:
   StorageLocation &PointeeLoc;
 };
 
-/// Models a dereferenced pointer. For example, a reference in C++ or an lvalue
-/// in C.
-class ReferenceValue final : public IndirectionValue {
-public:
-  explicit ReferenceValue(StorageLocation &PointeeLoc)
-      : IndirectionValue(Kind::Reference, PointeeLoc) {}
-
-  static bool classof(const Value *Val) {
-    return Val->getKind() == Kind::Reference;
-  }
-};
-
-/// Models a symbolic pointer. Specifically, any value of type `T*`.
-class PointerValue final : public IndirectionValue {
-public:
-  explicit PointerValue(StorageLocation &PointeeLoc)
-      : IndirectionValue(Kind::Pointer, PointeeLoc) {}
-
-  static bool classof(const Value *Val) {
-    return Val->getKind() == Kind::Pointer;
-  }
-};
-
 /// Models a value of `struct` or `class` type.
-class StructValue final : public Value {
+/// In C++, prvalues of class type serve only a limited purpose: They can only
+/// be used to initialize a result object. It is not possible to access member
+/// variables or call member functions on a prvalue of class type.
+/// Correspondingly, `RecordValue` also serves only a limited purpose: It
+/// conveys a prvalue of class type from the place where the object is
+/// constructed to the result object that it initializes.
+///
+/// When creating a prvalue of class type, we already need a storage location
+/// for `this`, even though prvalues are otherwise not associated with storage
+/// locations. `RecordValue` is therefore essentially a wrapper for a storage
+/// location, which is then used to set the storage location for the result
+/// object when we process the AST node for that result object.
+///
+/// For example:
+///    MyStruct S = MyStruct(3);
+///
+/// In this example, `MyStruct(3) is a prvalue, which is modeled as a
+/// `RecordValue` that wraps a `RecordStorageLocation`. This
+/// `RecordStorageLocation` is then used as the storage location for `S`.
+///
+/// Over time, we may eliminate `RecordValue` entirely. See also the discussion
+/// here: https://reviews.llvm.org/D155204#inline-1503204
+class RecordValue final : public Value {
 public:
-  StructValue() : StructValue(llvm::DenseMap<const ValueDecl *, Value *>()) {}
-
-  explicit StructValue(llvm::DenseMap<const ValueDecl *, Value *> Children)
-      : Value(Kind::Struct), Children(std::move(Children)) {}
+  explicit RecordValue(RecordStorageLocation &Loc)
+      : Value(Kind::Record), Loc(Loc) {}
 
   static bool classof(const Value *Val) {
-    return Val->getKind() == Kind::Struct;
+    return Val->getKind() == Kind::Record;
   }
 
-  /// Returns the child value that is assigned for `D`.
-  Value &getChild(const ValueDecl &D) const {
-    auto It = Children.find(&D);
-    assert(It != Children.end());
-    return *It->second;
-  }
-
-  /// Assigns `Val` as the child value for `D`.
-  void setChild(const ValueDecl &D, Value &Val) { Children[&D] = &Val; }
-
-  /// Returns the value of the synthetic property with the given `Name` or null
-  /// if the property isn't assigned a value.
-  Value *getProperty(llvm::StringRef Name) const {
-    auto It = Properties.find(Name);
-    return It == Properties.end() ? nullptr : It->second;
-  }
-
-  /// Assigns `Val` as the value of the synthetic property with the given
-  /// `Name`.
-  void setProperty(llvm::StringRef Name, Value &Val) {
-    Properties.insert_or_assign(Name, &Val);
-  }
+  /// Returns the storage location that this `RecordValue` is associated with.
+  RecordStorageLocation &getLoc() const { return Loc; }
 
 private:
-  llvm::DenseMap<const ValueDecl *, Value *> Children;
-  llvm::StringMap<Value *> Properties;
+  RecordStorageLocation &Loc;
 };
+
+raw_ostream &operator<<(raw_ostream &OS, const Value &Val);
 
 } // namespace dataflow
 } // namespace clang

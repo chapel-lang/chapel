@@ -1,0 +1,2 @@
+--detailed-errors # multipleExternalRenaming-detailed.good
+--no-detailed-errors # multipleExternalRenaming-brief.good

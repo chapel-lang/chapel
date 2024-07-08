@@ -17,6 +17,7 @@
 
 #include "clang/AST/GlobalDecl.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Frontend/Offloading/Utility.h"
 #include "llvm/IR/GlobalValue.h"
 
 namespace llvm {

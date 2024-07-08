@@ -71,6 +71,9 @@ extern void gasneti_decode_args(int *argc, char ***argv);
 /* extract exit coordination timeout from environment vars (with defaults) */
 extern double gasneti_get_exittimeout(double dflt_max, double dflt_min, double dflt_factor, double lower_bound);
 
+// Used in some conduits to coordinate user-provided exit code across layers
+extern gasneti_atomic_t gasneti_exit_code;
+
 /* Safe memory allocation/deallocation 
    Beware - in debug mode, gasneti_malloc/gasneti_calloc/gasneti_free are NOT
    compatible with malloc/calloc/free
@@ -90,6 +93,10 @@ extern double gasneti_get_exittimeout(double dflt_max, double dflt_min, double d
 GASNETI_FORMAT_PRINTF(gasneti_sappendf,2,3,
 extern char *gasneti_sappendf(char *s, const char *fmt, ...));
 
+// Version of str[n]casecmp() available even w/o POSIX.1-2001
+extern int gasneti_strcasecmp(const char *s1, const char *s2);
+extern int gasneti_strncasecmp(const char *s1, const char *s2, size_t n);
+
 #if GASNET_DEBUGMALLOC
   extern void *_gasneti_malloc(size_t nbytes, const char *curloc) GASNETI_MALLOC;
   extern void *_gasneti_malloc_allowfail(size_t nbytes, const char *curloc) GASNETI_MALLOC;
@@ -106,7 +113,7 @@ extern char *gasneti_sappendf(char *s, const char *fmt, ...));
     GASNETI_STAT_EVENT_VAL(I, GASNET_MALLOC, nbytes);
     ret = malloc(nbytes);
     if_pf (ret == NULL && nbytes > 0) 
-      gasneti_fatalerror("gasneti_malloc(%d) failed", (int)nbytes);
+      gasneti_fatalerror("gasneti_malloc(%" PRIuSZ ") failed", nbytes);
     return ret;
   }
   GASNETI_INLINE(_gasneti_malloc_allowfail) GASNETI_MALLOC
@@ -115,7 +122,7 @@ extern char *gasneti_sappendf(char *s, const char *fmt, ...));
     GASNETI_STAT_EVENT_VAL(I, GASNET_MALLOC, nbytes);
     ret = malloc(nbytes);
     if_pf (ret == NULL && nbytes > 0) { /* allow a NULL return for out-of-memory */
-      GASNETI_TRACE_PRINTF(I,("Warning: returning NULL for a failed gasneti_malloc(%i)",(int)nbytes));
+      GASNETI_TRACE_PRINTF(I,("Warning: returning NULL for a failed gasneti_malloc(%" PRIuSZ ")",nbytes));
     }
     return ret;
   }
@@ -125,7 +132,7 @@ extern char *gasneti_sappendf(char *s, const char *fmt, ...));
     GASNETI_STAT_EVENT_VAL(I, GASNET_MALLOC, (N*S));
     ret = calloc(N,S);
     if_pf (ret == NULL && N*S > 0) 
-      gasneti_fatalerror("gasneti_calloc(%d,%d) failed", (int)N, (int)S);
+      gasneti_fatalerror("gasneti_calloc(%" PRIuSZ ",%" PRIuSZ ") failed", N, S);
     return ret;
   }
   GASNETI_INLINE(_gasneti_realloc)
@@ -134,7 +141,7 @@ extern char *gasneti_sappendf(char *s, const char *fmt, ...));
     GASNETI_STAT_EVENT_VAL(I, GASNET_MALLOC, nbytes);
     ret = realloc(ptr, nbytes);
     if_pf (ret == NULL && nbytes > 0) 
-      gasneti_fatalerror("gasneti_realloc(%d) failed", (int)nbytes);
+      gasneti_fatalerror("gasneti_realloc(%" PRIuSZ ") failed", nbytes);
     return ret;
   }
   GASNETI_INLINE(_gasneti_free)
@@ -183,6 +190,17 @@ GASNETI_MALLOCP(_gasneti_calloc)
 #endif
 #define gasneti_free_error    ERROR__GASNet_conduit_code_must_use_gasneti_free
 #define free(p)               gasneti_free_error
+
+#ifdef strcasecmp
+#undef strcasecmp
+#endif
+#define gasneti_strcasecmp_error     ERROR__GASNet_conduit_code_must_use_gasneti_strcasecmp
+#define strcasecmp(s1,s2)            gasneti_strcasecmp_error
+#ifdef strncasecmp
+#undef strncasecmp
+#endif
+#define gasneti_strncasecmp_error    ERROR__GASNet_conduit_code_must_use_gasneti_strncasecmp
+#define strncasecmp(s1,s2,n)         gasneti_strncasecmp_error
 
 #include <assert.h>
 #undef assert
@@ -276,7 +294,7 @@ GASNETI_MALLOCP(_gasneti_strndup)
 
 extern void gasneti_freezeForDebugger(void);
 
-#if PLATFORM_OS_LINUX || PLATFORM_OS_WSL
+#if PLATFORM_OS_LINUX
   // dynamic check for Linux flavor, to detect binary porting
   // return non-zero iff this Linux system is actually Microsoft Windows Subsystem for Linux
   extern int gasneti_platform_isWSL(void);
@@ -432,6 +450,8 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
                                   const char *force_spawner,
                                   gex_Rank_t *nodes_p, gex_Rank_t *mynode_p);
 
+extern int gasneti_spawn_verbose;
+
 /* ------------------------------------------------------------------------------------ */
 /* memory segment registration and management */
 
@@ -439,7 +459,7 @@ GASNETI_COLD
 extern void gasneti_defaultSignalHandler(int sig);
 
 /* gasneti_max_segsize() is the user-selected limit for the max mmap size, as gleaned from several sources */
-uintptr_t gasneti_max_segsize();
+uintptr_t gasneti_max_segsize(void);
 #if defined(HAVE_MMAP) || GASNET_PSHM
   #define GASNETI_MMAP_OR_PSHM 1
   extern gasnet_seginfo_t gasneti_mmap_segment_search(uintptr_t maxsz);
@@ -449,6 +469,7 @@ uintptr_t gasneti_max_segsize();
   extern void gasneti_munmap(void *segbase, uintptr_t segsize);
  #endif
  #if defined(GASNETI_USE_HUGETLBFS)
+  extern size_t gasneti_hugepagesize(void);
   extern void *gasneti_huge_mmap(void *addr, uintptr_t size);
   extern void gasneti_huge_munmap(void *addr, uintptr_t size);
  #endif
@@ -586,6 +607,19 @@ extern int gasnetc_segment_create_hook(gex_Segment_t e_segment);
 // The hook may assume that a prior gasnetc_segment_create_hook() (if any)
 // has returned GASNET_OK.
 extern void gasnetc_segment_destroy_hook(gasneti_Segment_t i_segment);
+#endif
+
+#if GASNETC_EP_BINDSEGMENT_HOOK
+// Called by gex_EP_BindSegment() after argument checking, but before any
+// conduit-independent segment binding steps.
+// Use of this hook may include per-EP memory registration.
+//
+// Arguments provided to gex_EP_BindSegment() are also provided to this
+// hook, but with their internal types.
+extern int gasnetc_ep_bindsegment_hook(
+                gasneti_EP_t        i_ep,
+                gasneti_Segment_t   i_segment,
+                gex_Flags_t         flags);
 #endif
 
 #if GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK
@@ -867,7 +901,18 @@ extern int gasneti_VerboseErrors;
  } while (0)
 
 /* ------------------------------------------------------------------------------------ */
+/* Trivial handling of defered-start progress threads */
+
+extern int gasneti_query_progress_threads(
+            gex_Client_t                     e_client,
+            unsigned int                    *count_p,
+            const gex_ProgressThreadInfo_t **info_p,
+            gex_Flags_t                      flags);
+
+/* ------------------------------------------------------------------------------------ */
 /* nodemap data and functions */
+
+extern const char *gasneti_format_host_detect(void);
 
 extern uint64_t gasneti_hosthash(void);
 extern uint32_t gasneti_gethostid(void);
@@ -931,8 +976,32 @@ size_t gasneti_blockingRotatedExchangeV(gex_TM_t tm, GASNETI_BUG4227_CONST void 
 // An AM-based host-scoped barrier
 extern void gasneti_host_barrier(void);
 extern void gasnetc_hbarr_reqh(gex_Token_t token, gex_AM_Arg_t arg0);
+
+// An AM-based host-scoped sum of uint64_t
+extern uint64_t gasneti_host_sumu64(uint64_t);
+extern void gasnetc_hsumu64_reqh(gex_Token_t token, gex_AM_Arg_t arg0, gex_AM_Arg_t arg1);
+
+// AM-based bootstrap (job-scoped) collectives
+extern void gasneti_bootstrapBarrier_am(void);
+extern void gasnetc_am_barrier_reqh(gex_Token_t token, gex_AM_Arg_t arg0);
+extern void gasneti_bootstrapExchange_am(void *src, size_t len, void *dest);
+extern void gasnetc_am_exchange_reqh(gex_Token_t token, void *buf, size_t nbytes,
+                                     uint32_t arg0, uint32_t arg1);
+
 #define GASNETC_COMMON_HANDLERS() \
-    gasneti_handler_tableentry_no_bits(gasnetc_hbarr_reqh,1,REQUEST,SHORT,0)
+    gasneti_handler_tableentry_no_bits(gasnetc_am_exchange_reqh,2,REQUEST,MEDIUM,0), \
+    gasneti_handler_tableentry_no_bits(gasnetc_am_barrier_reqh,1,REQUEST,SHORT,0), \
+    gasneti_handler_tableentry_no_bits(gasnetc_hbarr_reqh,1,REQUEST,SHORT,0), \
+    gasneti_handler_tableentry_no_bits(gasnetc_hsumu64_reqh,2,REQUEST,SHORT,0)
+#define _hidx_gasnetc_hbarr_reqh              (GASNETE_HANDLER_BASE-1)
+#define _hidx_gasnetc_hsumu64_reqh            (GASNETE_HANDLER_BASE-2)
+#define _hidx_gasnetc_am_barrier_reqh         (GASNETE_HANDLER_BASE-3)
+#define _hidx_gasnetc_am_exchange_reqh        (GASNETE_HANDLER_BASE-4)
+
+extern gex_Rank_t gasneti_get_dissem_peers(const gex_Rank_t **out_p);
+#if GASNET_PSHM
+extern gex_Rank_t gasneti_get_dissem_peers_pshm(const gex_Rank_t **out_p);
+#endif
 
 /* ------------------------------------------------------------------------------------ */
 // Helpers for debug checks
@@ -1018,6 +1087,7 @@ typedef struct _gasneti_threaddata_t {
   // For use by conduit-independent logic desiring fire-and-forget implict ops.
   // This includes, at least, the RDMADISSEM barrier.
   gasneti_aop_t *nbi_ff_aop;
+  unsigned int nbi_ff_depth;
 
   //
   // Conduit-specific data
@@ -1031,23 +1101,48 @@ typedef struct _gasneti_threaddata_t {
 /* ------------------------------------------------------------------------------------ */
 // A "NBI fire-and-forget" facility using aops is provided for convenience of
 // conduit-independent logic with no need to test or wait for completions.
+// As long as this aop remains the current iop, nesting of gasneti_begin_nbi_ff() is
+// supported.  One can use gasneti_nbi_ff_ok() to determine if a subsequent call
+// to gasneti_begin_nbi_ff() is permitted.
 
 GASNETI_INLINE(gasneti_begin_nbi_ff)
 void gasneti_begin_nbi_ff(GASNETI_THREAD_FARG_ALONE)
 {
-  gasneti_aop_t *aop = GASNETI_MYTHREAD->nbi_ff_aop;
+  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+  if (mythread->nbi_ff_depth++) { // already active
+    gasneti_assert(mythread->current_iop == (gasnete_iop_t*)mythread->nbi_ff_aop);
+    return;
+  }
+  gasneti_aop_t *aop = mythread->nbi_ff_aop;
   if_pf (aop == NULL) {
     aop = gasneti_aop_create(GASNETI_THREAD_PASS_ALONE);
-    GASNETI_MYTHREAD->nbi_ff_aop = aop;
+    mythread->nbi_ff_aop = aop;
   }
   gasneti_aop_push(aop GASNETI_THREAD_PASS);
 }
 GASNETI_INLINE(gasneti_end_nbi_ff)
 void gasneti_end_nbi_ff(GASNETI_THREAD_FARG_ALONE)
 {
+  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+  gasneti_assert(mythread->nbi_ff_depth > 0);
+  if (--mythread->nbi_ff_depth) { // still active
+    gasneti_assert(mythread->current_iop == (gasnete_iop_t*)mythread->nbi_ff_aop);
+    return;
+  }
   gasneti_aop_t *aop = gasneti_aop_pop(GASNETI_THREAD_PASS_ALONE);
-  gasneti_assert(aop == GASNETI_MYTHREAD->nbi_ff_aop);
+  gasneti_assert(aop == mythread->nbi_ff_aop);
 }
+// Non-zero if the nbi_ff aop is either
+// + not on iop stack (thus safe to push)
+// + or is at the top of the iop stack (thus safe to increment its depth)
+GASNETI_INLINE(gasneti_nbi_ff_ok)
+int gasneti_nbi_ff_ok(GASNETI_THREAD_FARG_ALONE)
+{
+  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+  return !mythread->nbi_ff_depth ||
+         (mythread->current_iop == (gasnete_iop_t*)mythread->nbi_ff_aop);
+}
+
 
 // Sets the nbi_ff_aop of all threads to NULL and returns (via reference
 // arguments) an array of events and its length.  This array, contains all of

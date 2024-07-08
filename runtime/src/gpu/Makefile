@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -30,7 +30,7 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
 TARGETS =
 
-SUBDIRS = $(CHPL_MAKE_GPU_RUNTIME)
+SUBDIRS = $(CHPL_MAKE_GPU)
 
 FORCE:
 

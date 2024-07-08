@@ -31,7 +31,7 @@ var beta: int = 2123;
 /* Initializes a 2D structure */
 proc initialize_2D(distribution, m_dim: int) {
     var matrix: [distribution] real = 0.0;
-    forall (i,j) in distribution {
+    forall (i,j) in distribution with (ref matrix) {
         matrix[i,j] = ((i - 1) * (j - 1)) / (1.0 * m_dim);
     }
     return matrix;
@@ -55,7 +55,7 @@ proc print_2D(A: [], m_dim: int, n_dim: int) {
 /* The process which runs the benchmark */
 proc kernel_syr2k(dist_2D, m_dim: int, n_dim: int) {
   var still_correct = true;
-  var t:Timer;
+  var t:stopwatch;
   
   if messages {
     resetCommDiagnostics();
@@ -64,7 +64,7 @@ proc kernel_syr2k(dist_2D, m_dim: int, n_dim: int) {
   
     /******* Start the timer: this is where we do work *******/
   if timeit {
-    t = new Timer();
+    t = new stopwatch();
     t.start();
   }
   
@@ -74,12 +74,12 @@ proc kernel_syr2k(dist_2D, m_dim: int, n_dim: int) {
     
     C *= beta;
     
-    forall i in 1..m_dim {
-        forall j in 1..n_dim {
+    forall i in 1..m_dim with (ref C) {
+        forall j in 1..n_dim with (ref C) {
             var temp: real = C[i,j];
             var tempArray1: [1..n_dim] real;
             var tempArray2: [1..n_dim] real;
-            forall (a,b,c,d,e) in zip(A[i,..], B[j,..], B[i,..], A[j,..], 1..) {
+            forall (a,b,c,d,e) in zip(A[i,..], B[j,..], B[i,..], A[j,..], 1..) with (ref tempArray1, ref tempArray2) {
                 tempArray1[e] = alpha * a * b; 
                 tempArray2[e] = alpha * c * d;
             }
@@ -112,12 +112,12 @@ proc kernel_syr2k(dist_2D, m_dim: int, n_dim: int) {
     
       CTest *= beta;
     
-      forall i in 1..m_dim {
-          forall j in 1..n_dim {
+      forall i in 1..m_dim with (ref CTest) {
+          forall j in 1..n_dim with (ref CTest) {
               var tempTest: real = CTest[i,j];
               var tempArray1Test: [1..n_dim] real;
               var tempArray2Test: [1..n_dim] real;
-              forall (a,b,c,d,e) in zip(ATest[i,..], BTest[j,..], BTest[i,..], ATest[j,..], 1..) {
+              forall (a,b,c,d,e) in zip(ATest[i,..], BTest[j,..], BTest[i,..], ATest[j,..], 1..) with (ref tempArray1Test, ref tempArray2Test) {
                   tempArray1Test[e] = alpha * a * b; 
                   tempArray2Test[e] = alpha * c * d;
               }
@@ -156,10 +156,10 @@ proc main() {
         var dist_2D = dom_2D dmapped CyclicZipOpt(startIdx=dom_2D.low);
         kernel_syr2k(dist_2D, M, N); */
     } else if dist == "C" {
-        var dist_2D = dom_2D dmapped Cyclic(startIdx=dom_2D.low);
+        var dist_2D = dom_2D dmapped new cyclicDist(startIdx=dom_2D.low);
         kernel_syr2k(dist_2D, M, N); 
     } else if dist == "B" {
-        var dist_2D = dom_2D dmapped Block(boundingBox=dom_2D);
+        var dist_2D = dom_2D dmapped new blockDist(boundingBox=dom_2D);
         kernel_syr2k(dist_2D, M, N);  
     } 
 }

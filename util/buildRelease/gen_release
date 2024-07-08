@@ -76,8 +76,13 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
         $git_branch = $ENV{'CHPL_GEN_RELEASE_BRANCH'};
     }
 
+    $repo_cache_path = "/missing";
+    if (exists($ENV{'REPO_CACHE_PATH'})) {
+        $repo_cache_path = $ENV{'REPO_CACHE_PATH'};
+    }
+
     print "[gen_release] Cloning the sources (repo: $git_url branch: $git_branch)...\n";
-    SystemOrDie("git clone --branch $git_branch $git_url $rootdir");
+    SystemOrDie("git clone --reference-if-able \"$repo_cache_path/chapel.git\" --branch $git_branch $git_url $rootdir");
 
     if (exists($ENV{'CHPL_GEN_RELEASE_COMMIT'})) {
         $commit = $ENV{'CHPL_GEN_RELEASE_COMMIT'};
@@ -88,18 +93,18 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     print "[gen_release] Confirm final Git source version used.\n";
     SystemOrDie("cd $rootdir && git --no-pager status && git --no-pager log -1");
 
-    if ($version eq "" or $version eq "developer") {
-      print "[gen_release] Create BUILD_VERSION file.\n";
-      SystemOrDie("cd $rootdir/compiler && make main/BUILD_VERSION");
-    }
 
+
+    # write the git-sha while we have the .git directory
+    SystemOrDie("cd $rootdir && util/config/write-git-sha frontend/lib/util --build-version --chpl-home=$rootdir");
+    # use git archive to copy all the files under source control into the archive directory.
     print "[gen_release] Creating build workspace with git archive...\n";
     SystemOrDie("cd $rootdir && git archive --format=tar HEAD | (cd $archive_dir && tar -xf -)");
-
-    if ($version eq "" or $version eq "developer") {
-      print "[gen_release] Copying BUILD_VERSION file.\n";
-      SystemOrDie("cp $rootdir/compiler/main/BUILD_VERSION $archive_dir/compiler/main/BUILD_VERSION");
-    }
+    # explicitly copy the BUILD_VERSION file and git-version.cpp files
+    print "[gen_release] Copying BUILD_VERSION file.\n";
+    SystemOrDie("cp $rootdir/compiler/main/BUILD_VERSION $archive_dir/compiler/main/BUILD_VERSION");
+    print "[gen_release] Copying git-version.cpp\n";
+    SystemOrDie("cp $rootdir/frontend/lib/util/git-version.cpp $archive_dir/frontend/lib/util/git-version.cpp");
 
     if (defined($ENV{"CHPL_HOME"})) {
         $resultdir = $ENV{"CHPL_HOME"};
@@ -118,6 +123,8 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
        "LICENSE",
        "LICENSE.chapel",
        "Makefile",
+       "CMakeLists.txt",
+       "Dockerfile",
        "README.rst",
        "README.files",
        "compiler/codegen/reservedSymbolNames",
@@ -134,12 +141,14 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
        "util/setchplenv.sh",
        "util/start_test",
        "util/chpltags",
+       "frontend/include/chpl/config/config.h.cmake"
 );
 
 
 # C/C++ sources
 @code_dirs = (
-    "compiler"
+    "compiler",
+    "frontend"
 );
 
 # include these dirs and their entire contents
@@ -160,9 +169,15 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     "util/config",
     "util/quickstart",
     "util/test",
+    "tools/chpldoc",
     "tools/chplvis",
     "tools/c2chapel",
-    "tools/mason"
+    "tools/mason",
+    "tools/protoc-gen-chpl",
+    "tools/unstableWarningAnonymizer/",
+    "tools/chapel-py",
+    "tools/chplcheck",
+    "tools/chpl-language-server"
 );
 
 
@@ -220,6 +235,9 @@ print "[gen_release] Removing runtime directories that are not ready for release
 SystemOrDie("cd runtime/src/launch && rm -r dummy");
 SystemOrDie("cd runtime/src/launch && rm -r mpirun");
 
+print "[gen_release] Removing frontend test directory which is not intended for release...\n";
+SystemOrDie("cd frontend && rm -r test");
+
 print "[gen_release] Removing third-party directories that are not intended for release...\n";
 SystemOrDie("cd third-party && rm *.devel*");
 SystemOrDie("cd third-party/chpl-venv && rm *.devel*");
@@ -248,7 +266,7 @@ foreach $dir (@code_dirs) {
         chomp $fullpath;
         $file = $fullpath;
         $file =~ s/(\S+\/)+//g;
-        if ($file =~ /(\.(h|cpp|c|ypp|lex)$)|Makefile|README|BUILD_VERSION/) {
+        if ($file =~ /(\.(h|cpp|c|ypp|lex)$)|Makefile|README|BUILD_VERSION|CMakeLists\.txt/) {
             # print "$fullpath\n";
             push @tarfiles, "$reldir/$fullpath";
         }

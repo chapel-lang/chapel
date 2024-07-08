@@ -1,0 +1,70 @@
+Comparing versions:
+2.1.0
+2.1.0 (aaa)
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+2.1.0 (aaa)
+2.1.0
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+2.0.0 (aaa)
+2.1.0 (aaa)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+2.1.0 (aaa)
+2.0.0 (aaa)
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+2.0.0 (aaa)
+2.1.0 (bbb)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+2.1.0 (bbb)
+2.0.0 (aaa)
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+can't compare versions that only differ by commit IDs
+can't compare versions that only differ by commit IDs
+can't compare versions that only differ by commit IDs
+can't compare versions that only differ by commit IDs

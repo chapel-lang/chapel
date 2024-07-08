@@ -2,9 +2,10 @@ class Generic {
   var x;
 }
 
-var inst = new borrowed Generic(10);
-writeln(inst.type < Generic);
-writeln(inst.type > Generic);
+var ownInst = new owned Generic(10);
+var inst = ownInst.borrow();
+writeln(isProperSubtype(inst.type, Generic));
+writeln(isProperSubtype(Generic, inst.type));
 
-writeln(inst.type < borrowed Generic);
-writeln(inst.type > borrowed Generic);
+writeln(isProperSubtype(inst.type, borrowed Generic));
+writeln(isProperSubtype(borrowed Generic, inst.type));

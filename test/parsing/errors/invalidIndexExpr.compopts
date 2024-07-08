@@ -1,0 +1,2 @@
+--detailed-errors # invalidIndexExpr-detailed.good
+--no-detailed-errors # invalidIndexExpr-brief.good

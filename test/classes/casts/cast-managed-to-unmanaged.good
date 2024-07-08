@@ -1,0 +1,12 @@
+In cast to int, x.type is owned MyClass
+1
+In cast to unmanaged, x.type is owned MyClass
+1
+In cast to unmanaged, x.type is owned MyClass
+1
+In cast to int, x.type is shared MyClass
+2
+In cast to unmanaged, x.type is shared MyClass
+2
+In cast to unmanaged, x.type is shared MyClass
+2

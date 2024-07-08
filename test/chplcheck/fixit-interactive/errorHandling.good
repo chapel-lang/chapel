@@ -1,0 +1,3 @@
+module errorHandling {
+  for 1..10 {}
+}

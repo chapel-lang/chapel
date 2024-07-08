@@ -1,13 +1,13 @@
-has-arg-list.chpl:19: error: type in 'new' expression is missing its argument list
-has-arg-list.chpl:20: error: type in 'new' expression is missing its argument list
-has-arg-list.chpl:27: error: type in 'new' expression is missing its argument list
-has-arg-list.chpl:27: error: type in 'new' expression is missing its argument list
-has-arg-list.chpl:35: error: type in 'new' expression is missing its argument list
-has-arg-list.chpl:36: error: type in 'new' expression is missing its argument list
-has-arg-list.chpl:37: error: type in 'new' expression is missing its argument list
-has-arg-list.chpl:38: error: type in 'new' expression is missing its argument list
-has-arg-list.chpl:41: error: type in 'new' expression is missing its argument list
-has-arg-list.chpl:42: error: type in 'new' expression is missing its argument list
-has-arg-list.chpl:43: error: type in 'new' expression is missing its argument list
-has-arg-list.chpl:44: error: type in 'new' expression is missing its argument list
-has-arg-list.chpl:47: error: type in 'new' expression is missing its argument list
+has-arg-list.chpl:19: syntax error: 'new' expression is missing its argument list
+has-arg-list.chpl:20: syntax error: 'new' expression is missing its argument list
+has-arg-list.chpl:27: syntax error: 'new' expression is missing its argument list
+has-arg-list.chpl:27: syntax error: 'new' expression is missing its argument list
+has-arg-list.chpl:35: syntax error: 'new' expression is missing its argument list
+has-arg-list.chpl:36: syntax error: 'new' expression is missing its argument list
+has-arg-list.chpl:37: syntax error: 'new' expression is missing its argument list
+has-arg-list.chpl:38: syntax error: 'new' expression is missing its argument list
+has-arg-list.chpl:41: syntax error: 'new' expression is missing its argument list
+has-arg-list.chpl:42: syntax error: 'new' expression is missing its argument list
+has-arg-list.chpl:43: syntax error: 'new' expression is missing its argument list
+has-arg-list.chpl:44: syntax error: 'new' expression is missing its argument list
+has-arg-list.chpl:47: syntax error: 'new' expression is missing its argument list

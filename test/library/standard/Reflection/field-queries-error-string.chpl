@@ -1,6 +1,6 @@
-// Check that numFields() responds gracefully to an invalid argument type.
+// Check that getNumFields() responds gracefully to an invalid argument type.
 // See also: test/param/ferguson/field*
 
 use Reflection;
 
-param nf = numFields(string);
+param nf = getNumFields(string);

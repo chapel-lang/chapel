@@ -1,8 +1,8 @@
 use typesTest;
 use IO;
 
-var file = open("out", iomode.cw);
-var writingChannel = file.writer();
+var file = open("out", ioMode.cw);
+var writingChannel = file.writer(locking=false);
 
 var messageObj = new typesTest.Types();
 messageObj.ui64 = 9223372036854;

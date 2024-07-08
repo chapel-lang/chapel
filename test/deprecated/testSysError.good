@@ -1,1 +1,0 @@
-testSysError.chpl:1: warning: The 'SysError' module is deprecated. Please use 'OS' instead

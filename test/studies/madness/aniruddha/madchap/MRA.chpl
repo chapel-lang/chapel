@@ -91,7 +91,7 @@ class Function {
         if debug then writeln("  initializing tridiagonal derivative operator");
         dcDom = {0..k-1, 0..k-1};
 
-        this.complete();
+        init this;
 
         for i in quad_phiDom.dim(0) {
             const p = phi(quad_x[i], k);

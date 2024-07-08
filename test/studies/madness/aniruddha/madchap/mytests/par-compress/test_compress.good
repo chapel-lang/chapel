@@ -1,4 +1,4 @@
-warning: Ambiguous module source file -- using ./MRA.chpl over ../../MRA.chpl
+<command line>: warning: ambiguous module source file -- using MRA.chpl over ../../MRA.chpl
 Mad Chapel -- Concurrent Compression Test
 
 ** Testing function 1

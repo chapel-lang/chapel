@@ -3,13 +3,16 @@ record GenericRecord {
 }
 
 class GenericClass {
-  var f:GenericRecord;
+  var f:GenericRecord(?);
 }
 
 proc test() {
-  var x = new borrowed GenericClass(new GenericRecord(1));
-  var y:borrowed GenericClass = new borrowed GenericClass(new GenericRecord(1));
-  var z:borrowed GenericClass(GenericRecord(int)) = new borrowed GenericClass(new GenericRecord(1));
+  var ownX = new owned GenericClass(new GenericRecord(1));
+  var x = ownX.borrow();
+  var ownY = new owned GenericClass(new GenericRecord(1));
+  var y:borrowed GenericClass(?) = ownY.borrow();
+  var ownZ = new owned GenericClass(new GenericRecord(1));
+  var z:borrowed GenericClass(GenericRecord(int)) = ownZ.borrow();
 
   writeln(x.type:string, " ", x);
   writeln(y.type:string, " ", y);

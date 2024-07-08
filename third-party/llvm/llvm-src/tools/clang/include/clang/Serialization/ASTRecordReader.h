@@ -18,6 +18,7 @@
 #include "clang/AST/AbstractBasicReader.h"
 #include "clang/Lex/Token.h"
 #include "clang/Serialization/ASTReader.h"
+#include "clang/Serialization/SourceLocationEncoding.h"
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/APSInt.h"
@@ -30,6 +31,7 @@ class OMPChildren;
 class ASTRecordReader
     : public serialization::DataStreamBasicReader<ASTRecordReader> {
   using ModuleFile = serialization::ModuleFile;
+  using LocSeq = SourceLocationSequence;
 
   ASTReader *Reader;
   ModuleFile *F;
@@ -72,7 +74,7 @@ public:
   uint64_t readInt() { return Record[Idx++]; }
 
   ArrayRef<uint64_t> readIntArray(unsigned Len) {
-    auto Array = llvm::makeArrayRef(Record).slice(Idx, Len);
+    auto Array = llvm::ArrayRef(Record).slice(Idx, Len);
     Idx += Len;
     return Array;
   }
@@ -153,15 +155,19 @@ public:
   /// Reads a TemplateArgumentLoc, advancing Idx.
   TemplateArgumentLoc readTemplateArgumentLoc();
 
+  void readTemplateArgumentListInfo(TemplateArgumentListInfo &Result);
+
   const ASTTemplateArgumentListInfo*
   readASTTemplateArgumentListInfo();
+
+  // Reads a concept reference from the given record.
+  ConceptReference *readConceptReference();
 
   /// Reads a declarator info from the given record, advancing Idx.
   TypeSourceInfo *readTypeSourceInfo();
 
   /// Reads the location information for a type.
-  void readTypeLoc(TypeLoc TL);
-
+  void readTypeLoc(TypeLoc TL, LocSeq *Seq = nullptr);
 
   /// Map a local type ID within a given AST file to a global type ID.
   serialization::TypeID getGlobalTypeID(unsigned LocalID) const {
@@ -271,13 +277,13 @@ public:
   void readOMPChildren(OMPChildren *Data);
 
   /// Read a source location, advancing Idx.
-  SourceLocation readSourceLocation() {
-    return Reader->ReadSourceLocation(*F, Record, Idx);
+  SourceLocation readSourceLocation(LocSeq *Seq = nullptr) {
+    return Reader->ReadSourceLocation(*F, Record, Idx, Seq);
   }
 
   /// Read a source range, advancing Idx.
-  SourceRange readSourceRange() {
-    return Reader->ReadSourceRange(*F, Record, Idx);
+  SourceRange readSourceRange(LocSeq *Seq = nullptr) {
+    return Reader->ReadSourceRange(*F, Record, Idx, Seq);
   }
 
   /// Read an arbitrary constant value, advancing Idx.
@@ -326,6 +332,11 @@ public:
   /// Reads attributes from the current stream position, advancing Idx.
   void readAttributes(AttrVec &Attrs);
 
+  /// Read an BTFTypeTagAttr object.
+  BTFTypeTagAttr *readBTFTypeTagAttr() {
+    return cast<BTFTypeTagAttr>(readAttr());
+  }
+
   /// Reads a token out of a record, advancing Idx.
   Token readToken() {
     return Reader->ReadToken(*F, Record, Idx);
@@ -358,10 +369,6 @@ private:
   llvm::BitstreamCursor &Cursor;
   uint64_t Offset;
 };
-
-inline void PCHValidator::Error(const char *Msg) {
-  Reader.Error(Msg);
-}
 
 } // namespace clang
 

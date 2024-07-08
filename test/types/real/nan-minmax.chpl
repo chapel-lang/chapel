@@ -1,10 +1,10 @@
 
 // avoid compile-time optimizations
 config const dummy1 = true, dummy2 = true, dummy3 = true, dummy4 = true;
-const nan = if dummy1 then NAN else 0.0;
+const nan = if dummy1 then AutoMath.nan else 0.0;
 const num = if dummy2 then 1.0 else 1.2;
-const plusinf = if dummy3 then INFINITY else 1.3;
-const minusinf = if dummy4 then -INFINITY else 1.4;
+const plusinf = if dummy3 then inf else 1.3;
+const minusinf = if dummy4 then -inf else 1.4;
 
 config const n = 8;
 var ARR: [1..n] real = num;
@@ -42,15 +42,15 @@ testNans();
 // also add +- infinity
 ARR[1+1] = plusinf;
 ARR[n-1] = minusinf;
-assert(min reduce ARR == -INFINITY);
-assert(max reduce ARR ==  INFINITY);
-assert(minloc reduce zip(ARR, ARR.domain) == (-INFINITY, n-1));
-assert(maxloc reduce zip(ARR, ARR.domain) == ( INFINITY, 1+1));
+assert(min reduce ARR == -inf);
+assert(max reduce ARR ==  inf);
+assert(minloc reduce zip(ARR, ARR.domain) == (-inf, n-1));
+assert(maxloc reduce zip(ARR, ARR.domain) == ( inf, 1+1));
 testNans();
 
 writeln("done");
 
-// min/max reductions on ARR with 1 or 2 NANs added to it
+// min/max reductions on ARR with 1 or 2 nans added to it
 proc testNans() {
   for i1 in 1..n do
     for i2 in 1..n do
@@ -59,14 +59,14 @@ proc testNans() {
 proc testNan(in AA, idx1, idx2) {
   AA[idx1] = nan;
   AA[idx2] = nan;
-  assert(isnan(min reduce AA));
-  assert(isnan(max reduce AA));
+  assert(isNan(min reduce AA));
+  assert(isNan(max reduce AA));
 
   const minn = minloc reduce zip(AA, AA.domain);
-  assert(isnan(minn(0)));
+  assert(isNan(minn(0)));
   assert(minn(1) == min(idx1,idx2));
 
   const maxn = maxloc reduce zip(AA, AA.domain);
-  assert(isnan(maxn(0)));
+  assert(isNan(maxn(0)));
   assert(maxn(1) == min(idx1,idx2));
 }

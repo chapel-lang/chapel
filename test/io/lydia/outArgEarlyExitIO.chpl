@@ -9,10 +9,10 @@ proc normalReturn(doWhat: bool): bool {
 
   // This code won't get executed in the calls made by
   // this test.
-  var f1 = open("filename.txt", iomode.r);
-  var f2 = open("file2.txt", iomode.cw);
-  var c1 = f1.reader();
-  var c2 = f2.writer();
+  var f1 = open("filename.txt", ioMode.r);
+  var f2 = open("file2.txt", ioMode.cw);
+  var c1 = f1.reader(locking=false);
+  var c2 = f2.writer(locking=false);
   var line: string;
   while (c1.readLine(line)) {
     c2.write(line);
@@ -33,10 +33,10 @@ proc outReturn(out res: bool, doWhat: bool) {
 
   // This code won't get executed in the calls made by
   // this test.
-  var f1 = open("filename.txt", iomode.r);
-  var f2 = open("file2.txt", iomode.cw);
-  var c1 = f1.reader();
-  var c2 = f2.writer();
+  var f1 = open("filename.txt", ioMode.r);
+  var f2 = open("file2.txt", ioMode.cw);
+  var c1 = f1.reader(locking=false);
+  var c2 = f2.writer(locking=false);
   var line: string;
   while (c1.readLine(line)) {
     c2.write(line);

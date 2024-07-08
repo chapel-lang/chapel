@@ -1,0 +1,1 @@
+duplicateTargetLocales.chpl:9: error: halt reached - BlockDist does not allow duplicate targetLocales

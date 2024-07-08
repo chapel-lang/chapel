@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -97,11 +97,11 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
       range = toCallExpr(call->get(1)->copy());
       count = toExpr(call->get(2)->copy());
     }
-    // or assume the call is the range (checked below) and set unit stride
+    // or assume the call is the range (checked below) and leave stride null
     else
     {
       range = call;
-      stride = new SymExpr(new_IntSymbol(1));
+      // stride remains NULL
     }
 
     //
@@ -109,34 +109,57 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
     // range has these() iterators
     //
 
-    // replace fully bounded (and possibly strided range) with a direct range
-    // iter. e.g. replace:
-    //
-    //   `low..high by stride`
-    //
-    // with:
-    //
-    // `chpl_direct_range_iter(low, high, stride)`
-    if (!count && range && range->isNamed("chpl_build_bounded_sequence"))
-    {
-      // replace the range construction with a direct range iterator
-      Expr* low = range->get(1)->copy();
-      Expr* high = range->get(2)->copy();
-      iteratorExpr->replace(new CallExpr("chpl_direct_range_iter", low, high, stride));
+    if (!range) {
+      return;
     }
 
-    // replace a counted, low bounded range with unit stride with an equivalent
-    // direct range iter. e.g. replace:
-    //
-    //   `low..#count` (which is equivalent to `low..low+count-1`)
-    //
-    // with:
-    //
-    //   `chpl_direct_range_iter(low, low+count-1, 1)`
-    else if (count && range && range->isNamed("chpl_build_low_bounded_range"))
-    {
+    bool fullyBounded = range->isNamed("chpl_build_bounded_range");
+    bool lowBounded = range->isNamed("chpl_build_low_bounded_range");
+
+    if (!fullyBounded && !lowBounded) {
+      return;
+    }
+
+    if (!stride && !count && fullyBounded) {
+      // replace fully bounded and non-strided range with a direct range
+      // iter. e.g. replace:
+      //
+      //   `low..high`
+      //
+      // with:
+      //
+      // `chpl_direct_range_iter(low, high)`
       Expr* low = range->get(1)->copy();
-      iteratorExpr->replace(new CallExpr("chpl_direct_counted_range_iter", low, count));
+      Expr* high = range->get(2)->copy();
+      iteratorExpr->replace(new CallExpr("chpl_direct_range_iter", low, high));
+
+    } else if (stride && !count && fullyBounded) {
+      // replace fully bounded and strided range with a direct range
+      // iter. e.g. replace:
+      //
+      //   `low..high by stride`
+      //
+      // with:
+      //
+      // `chpl_direct_strided_range_iter(low, high, stride)`
+      Expr* low = range->get(1)->copy();
+      Expr* high = range->get(2)->copy();
+      iteratorExpr->replace(new CallExpr("chpl_direct_strided_range_iter",
+                                         low, high, stride));
+
+    } else if (!stride && count && lowBounded) {
+      // replace counted, low bounded range with unit stride with an equivalent
+      // direct range iter. e.g. replace:
+      //
+      //   `low..#count`
+      //
+      // with:
+      //
+      //   `chpl_direct_counted_range_iter(low, count)`
+      Expr* low = range->get(1)->copy();
+      iteratorExpr->replace(new CallExpr("chpl_direct_counted_range_iter",
+                            low, count));
+
     }
   }
 }
@@ -149,7 +172,9 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
 
 BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
                           Expr*      iteratorExpr,
+                          CallExpr*  intents,
                           BlockStmt* body,
+                          LLVMMetadataList attrs,
                           bool       coforall,
                           bool       zippered,
                           bool       isLoweredForall,
@@ -169,8 +194,16 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
 
   iterator->addFlag(FLAG_EXPR_TEMP);
 
+  loop->setAdditionalLLVMMetadata(attrs);
+
   if (isForeach) {
     loop->orderIndependentSet(true);
+  }
+
+  // We want to apply implicit intents only to user
+  // written foreach loops
+  if (!isForeach || isLoweredForall || isForExpr) {
+    loop->exemptFromImplicitIntents();
   }
 
   // Unzippered loop, treat all objects (including tuples) the same
@@ -246,7 +279,7 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
 
       // try to optimize anonymous range iteration
       if (CallExpr* call = toCallExpr(iteratorExpr))
-        if (call->isNamed("_build_tuple"))
+        if (call->isNamedAstr(astrBuildTuple))
           for_actuals(actual, call)
             tryToReplaceWithDirectRangeIterator(actual);
     }
@@ -271,6 +304,12 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
   loop->mContinueLabel = continueLabel;
   loop->mBreakLabel    = breakLabel;
 
+  // Transfer the DefExprs of the intent variables (ShadowVarSymbols).
+  if (intents) {
+    while (Expr* src = intents->argList.head)
+      loop->shadowVariables().insertAtTail(src->remove());
+  }
+
   loop->insertAtTail(new DefExpr(continueLabel));
 
   retval->insertAtTail(new DefExpr(index));
@@ -291,9 +330,13 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
                                  Expr*      iteratorExpr,
                                  BlockStmt* body,
                                  bool       zippered,
-                                 bool       isForExpr)
+                                 bool       isForExpr,
+                                 LLVMMetadataList attrs)
 {
-  return doBuildForLoop(indices, iteratorExpr, body,
+  return doBuildForLoop(indices, iteratorExpr,
+                        /* intents */ nullptr,
+                        body,
+                        attrs,
                         /* coforall */ false,
                         zippered,
                         /* isLoweredForall */ false,
@@ -303,12 +346,15 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
 
 BlockStmt* ForLoop::buildForeachLoop(Expr*      indices,
                                      Expr*      iteratorExpr,
+                                     CallExpr*  intents,
                                      BlockStmt* body,
                                      bool       zippered,
-                                     bool       isForExpr)
+                                     bool       isForExpr,
+                                     LLVMMetadataList attrs)
 
 {
-  return doBuildForLoop(indices, iteratorExpr, body,
+  return doBuildForLoop(indices, iteratorExpr, intents, body,
+                        attrs,
                         /* coforall */ false,
                         zippered,
                         /* isLoweredForall */ false,
@@ -319,9 +365,13 @@ BlockStmt* ForLoop::buildForeachLoop(Expr*      indices,
 BlockStmt* ForLoop::buildCoforallLoop(Expr*      indices,
                                       Expr*      iteratorExpr,
                                       BlockStmt* body,
-                                      bool       zippered)
+                                      bool       zippered,
+                                      LLVMMetadataList attrs)
 {
-  return doBuildForLoop(indices, iteratorExpr, body,
+  return doBuildForLoop(indices, iteratorExpr,
+                        /* intents */ nullptr,
+                        body,
+                        attrs,
                         /* coforall */ true,
                         zippered,
                         /* isLoweredForall */ false,
@@ -334,9 +384,13 @@ BlockStmt* ForLoop::buildLoweredForallLoop(Expr*      indices,
                                            Expr*      iteratorExpr,
                                            BlockStmt* body,
                                            bool       zippered,
-                                           bool       isForExpr)
+                                           bool       isForExpr,
+                                           LLVMMetadataList attrs)
 {
-  return doBuildForLoop(indices, iteratorExpr, body,
+  return doBuildForLoop(indices, iteratorExpr,
+                        /* intents */ nullptr,
+                        body,
+                        attrs,
                         /* coforall */ false,
                         zippered,
                         /* isLoweredForall */ true,
@@ -358,6 +412,7 @@ ForLoop::ForLoop() : LoopStmt(0)
   mZippered = false;
   mLoweredForall = false;
   mIsForExpr = false;
+  fShadowVars.parent = this;
 }
 
 ForLoop::ForLoop(VarSymbol* index,
@@ -372,11 +427,15 @@ ForLoop::ForLoop(VarSymbol* index,
   mZippered = zippered;
   mLoweredForall = isLoweredForall;
   mIsForExpr = isForExpr;
+  fShadowVars.parent = this;
 }
 
 ForLoop* ForLoop::copyInner(SymbolMap* map)
 {
   ForLoop*   retval         = new ForLoop();
+
+  for_alist(expr, fShadowVars)
+    retval->fShadowVars.insertAtTail(COPY_INT(expr));
 
   retval->astloc            = astloc;
   retval->blockTag          = blockTag;
@@ -384,6 +443,8 @@ ForLoop* ForLoop::copyInner(SymbolMap* map)
   retval->mBreakLabel       = mBreakLabel;
   retval->mContinueLabel    = mContinueLabel;
   retval->mOrderIndependent = mOrderIndependent;
+  retval->mExemptFromImplicitIntents = mExemptFromImplicitIntents;
+  retval->mLLVMMetadataList = mLLVMMetadataList;
 
   retval->mIndex            = mIndex->copy(map, true),
   retval->mIterator         = mIterator->copy(map, true);
@@ -392,6 +453,8 @@ ForLoop* ForLoop::copyInner(SymbolMap* map)
   // MPF 2020-01-21: It seems it should also copy mLoweredForall,
   // but doing so causes problems in lowerIterators.
   retval->mIsForExpr        = mIsForExpr;
+
+  retval->userLabel         = userLabel;
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));
@@ -601,4 +664,8 @@ Expr* ForLoop::getNextExpr(Expr* expr)
     retval = body.head->getFirstExpr();
 
   return retval;
+}
+
+bool ForLoop::isInductionVar(Symbol* sym) {
+  return sym == mIndex->symbol();
 }

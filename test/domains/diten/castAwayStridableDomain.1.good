@@ -1,0 +1,2 @@
+error: IllegalArgumentError: bad cast from stride 1 to strideKind.negOne
+castAwayStridableDomain.chpl:15: error: halt reached - bad cast from stride 1 to strideKind.negOne

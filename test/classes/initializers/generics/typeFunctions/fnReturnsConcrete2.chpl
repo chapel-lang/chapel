@@ -3,13 +3,13 @@ class C {
   var x: t;
   proc init(type t) {
     this.t = t;
-    this.complete();
+    init this;
     writeln("In C.init()");
   }
 }
 
 proc getType(type t) type {
-  return borrowed C(t);
+  return owned C(t);
 }
 
 var myC: getType(int)?;

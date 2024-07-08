@@ -63,12 +63,12 @@ config const printParams = true,
 // across the locales.
 //
 const
-  TableDist = new dmap(new Block(boundingBox={0..m-1},
+  TableDist = new blockDist(boundingBox={0..m-1},
                                  dataParTasksPerLocale=tasksPerLocale,
-                                 dataParIgnoreRunningTasks=true)),
-  UpdateDist = new dmap(new Block(boundingBox={0..N_U-1},
+                                 dataParIgnoreRunningTasks=true),
+  UpdateDist = new blockDist(boundingBox={0..N_U-1},
                                   dataParTasksPerLocale=tasksPerLocale,
-                                  dataParIgnoreRunningTasks=true));
+                                  dataParIgnoreRunningTasks=true);
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
@@ -100,15 +100,15 @@ proc main() {
   //
   // In parallel, initialize the table such that each position
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
-  // i in TableSpace"
+  // i in TableSpace".  "with (ref T)" is required since we are modifying "T".
   //
-  [i in TableSpace] T(i) = i;
+  [i in TableSpace with (ref T)] T(i) = i;
   for loc in Locales {
     on loc {
       myBuckets = new unmanaged Buckets();
     }
   }
-  const startTime = getCurrentTime();              // capture the start time
+  const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
   //
   // The main computation: Iterate over the set of updates and the
@@ -119,8 +119,8 @@ proc main() {
   // locale with the most pending updates, and do all of the updates
   // pending for that locale.
   //
-  forall (_, r) in zip(Updates, RAStream()) {
-    var loc = T.domain.dist.idxToLocale(r&indexMask);
+  forall (_, r) in zip(Updates, RAStream()) with (ref T) {
+    var loc = T.domain.distribution.idxToLocale(r&indexMask);
     if loc == here {
       T(r&indexMask) ^= r;
     } else {
@@ -150,7 +150,7 @@ proc main() {
   }
 */
 
-  const execTime = getCurrentTime() - startTime;   // capture the elapsed time
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;   // capture the elapsed time
 
   const validAnswer = verifyResults();             // verify the updates
   printResults(validAnswer, execTime);             // print the results
@@ -181,8 +181,8 @@ proc verifyResults() {
   //
   // Reverse the updates by recomputing them
   //
-  forall (_, r) in zip(Updates, RAStream()) do
-    on T.domain.dist.idxToLocale(r & indexMask) do
+  forall (_, r) in zip(Updates, RAStream()) with (ref T) do
+    on T.domain.distribution.idxToLocale(r & indexMask) do
       T(r & indexMask) ^= r;
 
   //

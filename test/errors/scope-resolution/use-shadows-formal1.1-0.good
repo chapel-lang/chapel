@@ -1,0 +1,7 @@
+use-shadows-formal1.chpl:13: In function 'foo':
+use-shadows-formal1.chpl:15: warning: potentially surprising shadowing for 'a'
+use-shadows-formal1.chpl:14: note: it refers to a symbol found through the 'use' of 'M1' here
+use-shadows-formal1.chpl:6: note: and then through the 'use' of 'M0' here
+use-shadows-formal1.chpl:2: note: leading to 'b' defined here
+use-shadows-formal1.chpl:13: note: but, there is a shadowed symbol 'a' defined here
+0

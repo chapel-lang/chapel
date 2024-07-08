@@ -1,26 +1,25 @@
 .. _readme-cray:
 
-============================
-Using Chapel on Cray Systems
-============================
+================================
+Using Chapel on HPE Cray Systems
+================================
 
-The following information is assembled to help Chapel users get up and running
-on HPE Cray\ |reg| systems including the Cray XC\ |trade| and
-HPE Cray EX series systems.
+The following information is assembled to help Chapel users get up and
+running on HPE Cray systems including the HPE Cray EX and Cray XC
+series systems.
 
 .. contents::
 
 
--------------------------------------------------------------
-Getting Started with Chapel on Cray XC or HPE Cray EX Systems
--------------------------------------------------------------
+--------------------------------------------------------
+Getting Started with Chapel on HPE Cray EX or XC Systems
+--------------------------------------------------------
 
-Chapel is available as a module for Cray XC and HPE Cray EX systems.
-When it is installed on your system, you do not need to build Chapel
-from the source release (though you can).  With either the traditional
-Tcl-based module system or the newer Lua-based Lmod module system, to
-use Chapel with the default settings and confirm it is correctly
-installed, do the following:
+Chapel is available as a module for HPE Cray EX and XC systems.  When
+it is installed on your system, you do not need to build Chapel from
+the source release (though you can).  Using the module systems on such
+platforms, you can use Chapel with the default settings and confirm it
+is correctly installed, as follows:
 
 1) Ensure this required module is loaded.  Normally it will be loaded
    for you, but under some circumstances you may need to load or
@@ -28,7 +27,7 @@ installed, do the following:
 
    .. code-block:: sh
 
-      PrgEnv-cray or PrgEnv-gnu
+      PrgEnv-gnu or PrgEnv-cray
 
 
 2) Load the Chapel module::
@@ -46,67 +45,79 @@ installed, do the following:
      ./hello6-taskpar-dist -nl 4
 
 
-This should be all that is necessary to use Chapel on a Cray XC or HPE
-Cray EX system.  If the installation setup by your system administrator
+This should be all that is necessary to use Chapel on an HPE Cray EX or XC
+system.  If the installation setup by your system administrator
 deviates from the default settings, or you are interested in other
-configuration options, see `Using Chapel on a Cray System`_ below.  If
+configuration options, see `Using Chapel on an HPE Cray System`_ below.  If
 instead you wish to build Chapel from source, continue on to `Building
-Chapel for a Cray System from Source`_ just below.
+Chapel for an HPE Cray System from Source`_ just below.
 
-Note that the Chapel module for HPE Cray EX systems does not yet have
-the gasnet communication layer built into it.  For multilocale execution
+Note that the Chapel module for HPE Cray EX systems does not currently have
+the GASNet communication layer built into it.  For multilocale execution
 on EX systems please use the ofi communication layer instead.
 
 For information on obtaining and installing the Chapel module please
 contact your system administrator.
 
 
-----------------------------------------------
-Getting Started with Chapel on Cray CS Systems
-----------------------------------------------
+-------------------------------------------------------------
+Getting Started with Chapel on HPE Apollo and Cray CS Systems
+-------------------------------------------------------------
 
-On Cray CS systems, Chapel is not currently available as a module due
-to the wide diversity of software packages that Cray CS customers may
-choose to install on their system.  For this reason, Chapel must be
-built from source on Cray CS systems using the
-`Building Chapel for a Cray System from Source`_ instructions just below.
+On HPE Apollo and Cray CS systems, Chapel is not currently available
+as a module due to the wide diversity of configurations that these
+systems support.  For this reason, Chapel must be built from source on
+these systems using the `Building Chapel for an HPE Cray System from
+Source`_ instructions just below.
 
 
----------------------------------------------
-Building Chapel for a Cray System from Source
----------------------------------------------
+--------------------------------------------------
+Building Chapel for an HPE Cray System from Source
+--------------------------------------------------
 
-1) If using an XC or EX system, continue to step 2. If using a CS series
-   system, set ``CHPL_HOST_PLATFORM`` to ``cray-cs``.
+1) Set ``CHPL_HOST_PLATFORM`` to the string representing your system
+   type.
 
    For example:
 
     .. code-block:: sh
 
-      export CHPL_HOST_PLATFORM=cray-cs
+      export CHPL_HOST_PLATFORM=hpe-cray-ex
 
-   These are the supported systems and strings.  Note that these values
-   are used by default when building on the given systems.  They can
-   also be set manually.
+   The following table lists the supported systems and strings.  Note
+   that on HPE Cray EX and XC systems, these values should typically
+   be inferred automatically and not need to be set manually.  That said,
+   there is also no downside to setting them manually.  As with most
+   `CHPL_*` environment variables, the current set and inferred values
+   can be determined by running ``$CHPL_HOME/util/printchplenv``.
 
-       =========  ==================
-       System     CHPL_HOST_PLATFORM
-       =========  ==================
-       CS series  cray-cs
-       XC series  cray-xc
-       EX series  hpe-cray-ex
-       =========  ==================
+       =============  ==================
+       System         CHPL_HOST_PLATFORM
+       =============  ==================
+       EX series      hpe-cray-ex
+       Apollo series  hpe-apollo   
+       XC series      cray-xc
+       CS series      cray-cs
+       =============  ==================
 
 
 2) Optionally, set the ``CHPL_LAUNCHER`` environment variable to indicate
    how Chapel should launch jobs on your system:
 
       ========================================  =========================
-      On a Cray CS system, to...                set CHPL_LAUNCHER to...
+      On an HPE Cray EX system, ...             set CHPL_LAUNCHER to...
+      ========================================  =========================
+      ...queue jobs using SLURM (sbatch)        slurm-srun
+      ...run jobs interactively using PALS      pals
+      ========================================  =========================
+
+      ========================================  =========================
+      On a HPE Apollo or Cray CS system, to...  set CHPL_LAUNCHER to...
       ========================================  =========================
       ...run jobs interactively on your system  gasnetrun_ibv
       ...queue jobs using SLURM (sbatch)        slurm-gasnetrun_ibv
       ...queue jobs using LSF (bsub)            lsf-gasnetrun_ibv
+      ...queue jobs using PBS (qsub)            pbs-gasnetrun_ibv
       ========================================  =========================
 
       ========================================  =========================
@@ -117,23 +128,20 @@ Building Chapel for a Cray System from Source
       ...queue jobs using SLURM (sbatch)        slurm-srun
       ========================================  =========================
 
-      ========================================  =========================
-      On an HPE Cray EX system, ...             set CHPL_LAUNCHER to...
-      ========================================  =========================
-      ...in all cases                           slurm-srun
-      ========================================  =========================
+   On HPE Cray EX systems, ``CHPL_LAUNCHER`` defaults to ``slurm-srun``
+   if ``srun`` is in your path and ``none`` otherwise.
 
-   You can also set CHPL_LAUNCHER to ``none`` if you prefer to manually
-   manage all queuing and job launch commands yourself.
-
-   On Cray CS systems, ``CHPL_LAUNCHER`` defaults to ``gasnetrun_ibv``.
+   On HPE Apollo and Cray CS systems, ``CHPL_LAUNCHER`` defaults to
+   ``gasnetrun_ibv``.
 
    On Cray XC systems, ``CHPL_LAUNCHER`` defaults to ``aprun`` if
    ``aprun`` is in your path, ``slurm-srun`` if ``srun`` is in your path
    and ``none`` otherwise.
 
-   On HPE Cray EX systems, ``CHPL_LAUNCHER`` defaults to ``slurm-srun``
-   if ``srun`` is in your path and ``none`` otherwise.
+   You can also set CHPL_LAUNCHER to ``none`` if you prefer to manually
+   manage all queuing and job launch commands yourself, though the
+   advantage of using a launcher is to make sure that Chapel maps
+   processes and threads to the appropriate target hardware units.
 
    For more information on Chapel's launcher capabilities and options,
    refer to :ref:`readme-launcher`.
@@ -142,20 +150,22 @@ Building Chapel for a Cray System from Source
 3) Select the target compiler that Chapel should use when compiling
    code for the compute node:
 
-   On a Cray CS series system, set the ``CHPL_TARGET_COMPILER`` environment
-   variable to indicate which compiler to use (and make sure that the compiler
-   is in your path).
+   On an HPE Apollo or Cray CS series system, set the
+   ``CHPL_TARGET_COMPILER`` environment variable to indicate which
+   compiler to use (and make sure that the compiler is in your path).
 
       ===========================  ==============================
       To request...                set CHPL_TARGET_COMPILER to...
       ===========================  ==============================
-      ...the GNU compiler (gcc)    gnu    (default)
+      ...the LLVM/clang backend    llvm (default)
+      ...the GNU compiler (gcc)    gnu
+      ...the Clang compiler        clang
       ...the Intel compiler (icc)  intel
       ===========================  ==============================
 
-   On a Cray XC or HPE Cray EX system, ensure that you have one of the
-   following Programming Environment modules loaded to specify your
-   target compiler::
+   On an HPE Cray EX or Cray XC system, when using the C back-end,
+   ensure that you have one of the following Programming Environment
+   modules loaded to specify your target compiler::
 
        PrgEnv-allinea (ARM only)
        PrgEnv-cray
@@ -177,9 +187,9 @@ Building Chapel for a Cray System from Source
    between any of these configurations without rebuilding.
 
 
------------------------------
-Using Chapel on a Cray System
------------------------------
+----------------------------------
+Using Chapel on an HPE Cray System
+----------------------------------
 
 1) If you are working from a Chapel module:
 
@@ -217,10 +227,10 @@ Using Chapel on a Cray System
       is not large enough.  Increase the number of KVS entries by
       setting env variable PMI_MAX_KVS_ENTRIES to a higher value.
 
-   Having the Cray PMI modules loaded when the program is compiled will
-   prevent this problem.  We expect that eventually these modules will
-   be loaded by default on EX systems, but so far this has not been the
-   case.
+   Having the Cray PMI modules loaded when the program is compiled
+   will prevent this problem.  We expect that eventually these modules
+   will be loaded by default on EX systems, but so far this has not
+   consistently been the case.
 
 
 3) Compile your Chapel program.  For example:
@@ -280,10 +290,10 @@ Using Chapel on a Cray System
    Requests the program to be executed using two locales.
 
 
-6) If your Cray system has compute nodes with varying numbers of
+6) If your HPE Cray system has compute nodes with varying numbers of
    cores, you can request nodes with at least a certain number of
    cores using the variable ``CHPL_LAUNCHER_CORES_PER_LOCALE``.  For
-   example, on a Cray system in which some compute nodes have 24 or
+   example, on a system in which some compute nodes have 24 or
    more cores per compute node, you could request nodes with at least
    24 cores using:
 
@@ -309,10 +319,10 @@ Using Chapel on a Cray System
    between Chapel launchers and workload managers.
 
 
-7) If your Cray system has compute nodes with varying numbers of CPUs
+7) If your HPE Cray system has compute nodes with varying numbers of CPUs
    per compute unit, you can request nodes with a certain number of
    CPUs per compute unit using the variable ``CHPL_LAUNCHER_CPUS_PER_CU``.
-   For example, on a Cray XC series system with some nodes having at
+   For example, on a Cray XC system with some nodes having at
    least 2 CPUs per compute unit, to request running on those nodes
    you would use:
 
@@ -348,19 +358,6 @@ will make it impossible to launch onto the compute nodes.  In other
 cases, the launch will succeed, but any files read or written by the
 Chapel program will be opened relative to the compute node's file
 system rather than the login node's.
-
-
--------------------------------------
-Special Notes for HPE Cray EX Systems
--------------------------------------
-
-The gasnet communication layer has not yet been built or tested on EX
-systems, although we expect to add support in the future.
-
-The new PALS launcher for EX systems is supported by Chapel 1.24.0, but
-it has to be selected manually, by setting ``CHPL_LAUNCHER=pals``.  The
-default launcher selection does not pick it by default.  We expect to
-add that support in the future.
 
 
 ----------------------------------------------------
@@ -666,7 +663,7 @@ Known Constraints and Bugs
 * Redirecting stdin when executing a Chapel program under PBS/qsub
   may not work due to limitations of qsub.
 
-* For XC and EX systems, there is a known issue with the Cray MPI
+* For EX and XC systems, there is a known issue with the Cray MPI
   release that causes some programs to assert and then hang during
   exit.  A workaround is to set the environment variable,
   ``MPICH_GNI_DYNAMIC_CONN`` to ``disabled``.  Setting this environment

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -49,11 +49,10 @@ module ArrayViewReindex {
         return downDistInst;
     }
 
-    override proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
+    override proc dsiNewRectangularDom(param rank, type idxType, param strides, inds) {
       var newdom = new unmanaged ArrayViewReindexDom(rank=rank,
                                            idxType=idxType,
-                                           //                                           stridable=true,
-                                           stridable=stridable,
+                                           strides=strides,
                                            downdomPid=downdomPid,
                                            downdomInst=downdomInst,
                                            distPid=this.pid,
@@ -72,7 +71,7 @@ module ArrayViewReindex {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    override proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param do
       return downDistInst.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -104,14 +103,14 @@ module ArrayViewReindex {
   // for rectangular domains so this is a subclass of
   // BaseRectangularDom.
   //
- class ArrayViewReindexDom: BaseRectangularDom {
+ class ArrayViewReindexDom: BaseRectangularDom(?) {
     // the new reindexed index set that we represent upwards
-    var updomInst: unmanaged DefaultRectangularDom(rank, idxType, stridable)?;
+    var updomInst: unmanaged DefaultRectangularDom(rank, idxType, strides)?;
     forwarding updom except these, chpl__serialize, chpl__deserialize;
 
     // the old original index set that we're equivalent to
     var downdomPid;
-    var downdomInst; //: downdomtype(rank, idxType, stridable);
+    var downdomInst; //: downdomtype(rank, idxType, strides);
 
     const distPid;  // a reference back to our ArrayViewReindexDist
     const distInst;
@@ -133,10 +132,9 @@ module ArrayViewReindex {
     // TODO: If we put this expression into the variable declaration
     // above, we get a memory leak.  File a future against this?
     //
-    proc downdomtype(param rank: int, type idxType, param stridable: bool) type {
-      var ranges : rank*range(idxType, BoundedRangeType.bounded, stridable);
-      var a = dist.downDist.dsiNewRectangularDom(rank=rank, idxType=idxType,
-                                              stridable=stridable, ranges);
+    proc downdomtype(param rank: int, type idxType, param strides: bool) type {
+      var ranges : rank*range(idxType, boundKind.both, strides);
+      var a = dist.downDist.dsiNewRectangularDom(rank,idxType,strides,ranges);
       return a.type;
     }
 
@@ -169,7 +167,7 @@ module ArrayViewReindex {
 
       // TODO: BHARSH 2019-05-13:
       // I would rather do something like this:
-      //   new _domain(_getDistribution(dist.downDist), rank, idxType, dist.downdomInst.stridable);
+      //   new _domain(_getDistribution(dist.downDist), rank, idxType, dist.downdomInst.strides);
       //
       // But that results in memory leaks. The difference is that by using a
       // proper '_distribution' the resulting domain class is linked to that
@@ -180,11 +178,10 @@ module ArrayViewReindex {
       // In short, before we can use the desired pattern, we need to replace
       // the uses of '_delete_dom' with something like the contents of
       // _domain._do_destroy().
-      var ranges : rank*range(idxType, BoundedRangeType.bounded, dist.downdomInst.stridable);
-      var downdomclass = dist.downDist.dsiNewRectangularDom(rank=rank,
-                                                           idxType=idxType,
-                                                           stridable=dist.downdomInst.stridable,
-                                                           ranges);
+      var ranges : rank*range(idxType, boundKind.both,
+                              dist.downdomInst.strides);
+      var downdomclass = dist.downDist.dsiNewRectangularDom(rank, idxType,
+                                         dist.downdomInst.strides, ranges);
       pragma "no auto destroy"
       var downdomLoc = new _domain(downdomclass);
       downdomLoc = chpl_reindexConvertDom(inds, updom, dist.downdomInst);
@@ -272,7 +269,7 @@ module ArrayViewReindex {
       return downdom.dsiTargetLocales();
     }
 
-    proc dsiHasSingleLocalSubdomain() param
+    proc dsiHasSingleLocalSubdomain() param do
       return downdom.dsiHasSingleLocalSubdomain();
 
     proc dsiLocalSubdomain(loc: locale) {
@@ -304,21 +301,21 @@ module ArrayViewReindex {
     // These would be forwarded to 'updom' automatically,
     // except the "last resort" overloads BaseDom take precedence
     // over forwarding. So, define these explicitly.
-    proc parSafe param return updom.parSafe;
-    override proc dsiLow return updom.dsiLow;
-    override proc dsiHigh return updom.dsiHigh;
-    override proc dsiStride return updom.dsiStride;
-    override proc dsiAlignment return updom.dsiAlignment;
-    override proc dsiFirst return updom.dsiFirst;
-    override proc dsiLast return updom.dsiLast;
-    override proc dsiAlignedLow return updom.dsiAlignedLow;
-    override proc dsiAlignedHigh return updom.dsiAlignedHigh;
-    override proc dsiIndexOrder(i) return updom.dsiIndexOrder(i);
-    override proc dsiMakeIndexBuffer(size) return updom.dsiMakeIndexBuffer(size);
+    proc parSafe param do return updom.parSafe;
+    override proc dsiLow do return updom.dsiLow;
+    override proc dsiHigh do return updom.dsiHigh;
+    override proc dsiStride do return updom.dsiStride;
+    override proc dsiAlignment do return updom.dsiAlignment;
+    override proc dsiFirst do return updom.dsiFirst;
+    override proc dsiLast do return updom.dsiLast;
+    override proc dsiAlignedLow do return updom.dsiAlignedLow;
+    override proc dsiAlignedHigh do return updom.dsiAlignedHigh;
+    override proc dsiIndexOrder(i) do return updom.dsiIndexOrder(i);
+    override proc dsiCreateIndexBuffer(size) do return updom.dsiCreateIndexBuffer(size);
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    override proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param do
       return downdomInst.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -328,7 +325,7 @@ module ArrayViewReindex {
     proc dsiPrivatize(privatizeData) {
       return new unmanaged ArrayViewReindexDom(rank = this.rank,
                                      idxType = this.idxType,
-                                     stridable = this.stridable,
+                                     strides = this.strides,
                                      updomInst = privatizeData(0),
                                      downdomPid = privatizeData(1),
                                      downdomInst = privatizeData(2),
@@ -376,7 +373,7 @@ module ArrayViewReindex {
   // class implementations, it supports the standard dsi interface.
   //
   pragma "aliasing array"
-  class ArrayViewReindexArr: AbsBaseArr {
+  class ArrayViewReindexArr: AbsBaseArr(?) {
     // the representation of the slicing domain
     //
     // TODO: Can we privatize upon creation of the array-view slice and cache
@@ -406,7 +403,7 @@ module ArrayViewReindex {
       this._ArrInstance    = _ArrInstance;
       this.indexCache      = buildIndexCacheHelper(_ArrInstance, dom);
       this.ownsArrInstance = ownsArrInstance;
-      this.complete();
+      init this;
       __primitive("set aliasing array on type", this.type, !ownsArrInstance);
     }
 
@@ -430,15 +427,15 @@ module ArrayViewReindex {
 
     // these could be fields, but indirecting works just as well and
     // makes the class less generic.
-    proc idxType type return dom.idxType;
-    proc rank param return dom.rank;
+    proc idxType type do return dom.idxType;
+    proc rank param do return dom.rank;
 
     // The following seems like it ought to work, but it causes an
     // error in the compiler for non-devel mode...  presumably due to
     // a direct query of eltType in the compiler(?).  As a TODO we
     // might want to hunt this down in the future...
     //
-    //  proc eltType type return arr.eltType;
+    //  proc eltType type do return arr.eltType;
 
 
     //
@@ -562,14 +559,14 @@ module ArrayViewReindex {
       }
     }
 
-    inline proc dsiLocalAccess(i) ref
+    inline proc dsiLocalAccess(i) ref do
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
     inline proc dsiLocalAccess(i)
-      where shouldReturnRvalueByValue(eltType)
+      where shouldReturnRvalueByValue(eltType) do
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
-    inline proc dsiLocalAccess(i) const ref
+    inline proc dsiLocalAccess(i) const ref do
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
     inline proc dsiBoundsCheck(i) {
@@ -580,7 +577,7 @@ module ArrayViewReindex {
     // locality-oriented queries
     //
 
-    proc dsiHasSingleLocalSubdomain() param
+    proc dsiHasSingleLocalSubdomain() param do
       return privDom.dsiHasSingleLocalSubdomain();
 
     proc dsiLocalSubdomain(loc: locale) {
@@ -593,7 +590,7 @@ module ArrayViewReindex {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    override proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param do
       return _ArrInstance.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -696,7 +693,7 @@ module ArrayViewReindex {
       }
     }
 
-    override proc doiCanBulkTransferRankChange() param
+    override proc doiCanBulkTransferRankChange() param do
       return arr.doiCanBulkTransferRankChange();
 
     proc doiBulkTransferFromKnown(destDom, srcClass, srcDom) : bool {
@@ -771,7 +768,8 @@ module ArrayViewReindex {
       compilerError("Called chpl_reindexConvertDomMaybeSlice with incorrect rank. Got " + dims.size:string + ", expecting " + updom.rank:string);
     }
 
-    var ranges : downdom.rank * range(downdom.idxType, stridable=downdom.stridable || dims(0).stridable);
+    param newStrides = chpl_strideUnion(downdom, dims(0));
+    var ranges : downdom.rank * range(downdom.idxType, strides=newStrides);
     var actualLow, actualHigh: downdom.rank*downdom.idxType;
     for param d in 0..dims.size-1 {
       if (dims(d).sizeAs(int) == 0) {
@@ -783,8 +781,8 @@ module ArrayViewReindex {
       }
     }
     for param d in 0..updom.rank-1 {
-      if (downdom.dsiDim(d).stridable || dims(d).stridable) {
-        const relStride = max(1, (dims(d).stride / updom.dsiDim(d).stride) * downdom.dsiDim(d).stride);
+      if ! newStrides.isOne() {  // todo: optimize when newStrides.isNegOne()
+        const relStride = max(1, (dims(d).stride / updom.dsiDim(d).stride) * downdom.dsiDim(d).stride): uint; // relStride is always positive
         // Slicing the ranges preserves the stride
         ranges(d) = downdom.dsiDim(d)[actualLow(d)..actualHigh(d) by relStride];
       } else {

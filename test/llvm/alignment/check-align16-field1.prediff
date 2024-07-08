@@ -8,4 +8,5 @@ cat $TMPFILE | grep R_chpl | grep alloca | \
                grep -ve 'R_chpl[*]' | \
                sed 's/%.* = /%r = /' |
                sort -u > $OUTFILE
+grep ^arg $TMPFILE >> $OUTFILE
 rm $TMPFILE

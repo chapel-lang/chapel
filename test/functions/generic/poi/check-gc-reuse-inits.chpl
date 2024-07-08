@@ -19,10 +19,10 @@ module Lib {
   proc MyRecord.init(param p) { workIN(); rp = 0; }
   proc MyRecord.init=(other)  { workIE(); rp = 0; }
   proc MyRecord.deinit()      { workDI(); }
-  operator =(ref lhs:MyRecord, rhs:MyRecord) { workAS(); }
-  operator <(lhs:MyRecord, rhs:MyRecord) { workLT(); return true; }
-  operator :(rhs:MyRecord, type t:int)      { workCF(); return 1; }
-  operator :(rhs: int,     type t:MyRecord) { workCT(); return new MyRecord(0); }
+  operator =(ref lhs:MyRecord(?), rhs:MyRecord(?)) { workAS(); }
+  operator <(lhs:MyRecord(?), rhs:MyRecord(?)) { workLT(); return true; }
+  operator :(rhs:MyRecord(?), type t:int)      { workCF(); return 1; }
+  operator :(rhs: int,     type t:MyRecord(?)) { workCT(); return new MyRecord(0); }
 }
 
 module User {
@@ -43,7 +43,7 @@ module User {
     r1 = r2;                  // =
     var lt = r1 < r2;         // <
     var castF = r1: int;      // _cast from
-    var castT = 1: MyRecord;  // _cast to
+    var castT = 1: MyRecord(?);  // _cast to
   }
   proc u2() {
     {
@@ -54,7 +54,7 @@ module User {
       r1 = r2;                  // =
       var lt = r1 < r2;         // <
       var castF = r1: int;      // _cast from
-      var castT = 1: MyRecord;  // _cast to
+      var castT = 1: MyRecord(?);  // _cast to
     }
   }
   proc u3() {
@@ -73,7 +73,7 @@ module User {
     r1 = r2;                  // =
     var lt = r1 < r2;         // <
     var castF = r1: int;      // _cast from
-    var castT = 1: MyRecord;  // _cast to
+    var castT = 1: MyRecord(?);  // _cast to
   }
 
   proc main {
@@ -120,7 +120,7 @@ module More1 {
     r1 = r2;                  // =
     var lt = r1 < r2;         // <
     var castF = r1: int;      // _cast from
-    var castT = 1: MyRecord;  // _cast to
+    var castT = 1: MyRecord(?);  // _cast to
   }
   proc m1gen(param p) {
     note("More1.m1gen", 1);
@@ -130,7 +130,7 @@ module More1 {
     r1 = r2;                  // =
     var lt = r1 < r2;         // <
     var castF = r1: int;      // _cast from
-    var castT = 1: MyRecord;  // _cast to
+    var castT = 1: MyRecord(?);  // _cast to
   }
 }
 
@@ -149,7 +149,7 @@ module More2 {
     r1 = r2;                  // =
     var lt = r1 < r2;         // <
     var castF = r1: int;      // _cast from
-    var castT = 1: MyRecord;  // _cast to
+    var castT = 1: MyRecord(?);  // _cast to
   }
 }
 
@@ -175,7 +175,7 @@ module Combo1 {
     r1 = r2;                  // =
     var lt = r1 < r2;         // <
     var castF = r1: int;      // _cast from
-    var castT = 1: MyRecord;  // _cast to
+    var castT = 1: MyRecord(?);  // _cast to
   }
 }
 
@@ -190,7 +190,7 @@ module Combo2 {
     r1 = r2;                  // =
     var lt = r1 < r2;         // <
     var castF = r1: int;      // _cast from
-    var castT = 1: MyRecord;  // _cast to
+    var castT = 1: MyRecord(?);  // _cast to
   }
   proc combo2b() {
     use Combo1;

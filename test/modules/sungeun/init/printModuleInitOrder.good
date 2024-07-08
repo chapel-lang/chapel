@@ -1,8 +1,12 @@
 Initializing Modules:
    ChapelStandard
     OwnedObject
-    Atomics
-     MemConsistency
+    SharedObject
+     Errors
+      ChapelLocks
+       Atomics
+        MemConsistency
+        currentTask
     ChapelThreads
     ChapelTuple
      DSIUtil
@@ -18,21 +22,21 @@ Initializing Modules:
         ChapelArray
          ChapelPrivatization
          ChapelDomain
-          Initialization
-           Memory
-          IO
-           POSIX
-            OS
-           FormattedIO
-            Regex
+          FormattedIO
+           IO
+            ChapelIO
+            Types
+           Regex
+            RegexIoSupport
          Sort
           List
-           ChapelLocks
           MSBRadixSort
            RadixSortHelp
            ShellSort
+            ShallowCopy
+          TwoArrayRadixSort
+           TwoArrayPartitioning
           QuickSort
-           ShallowCopy
            InsertionSort
         ChapelDistribution
          ChapelHashtable
@@ -42,14 +46,12 @@ Initializing Modules:
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray
-    ChapelIO
-    LocaleTree
     ChapelTaskTable
-     Errors
     MemTracking
     ChapelUtil
     ExportWrappers
-    Types
+    ChapelContext
+    ChapelStaticVars
     AlignedTSupport
     CopyAggregation
      AggregationPrimitives

@@ -1,4 +1,4 @@
-privateTypeAlias.doc.chpl:2: error: Can't apply private to types yet
-privateTypeAlias.doc.chpl:5: error: Can't apply private to types yet
-privateTypeAlias.doc.chpl:8: error: Can't apply private to types yet
+error in privateTypeAlias.doc.chpl:2: can't apply private to types yet
+error in privateTypeAlias.doc.chpl:5: can't apply private to types yet
+error in privateTypeAlias.doc.chpl:8: can't apply private to types yet
 cat: docs/source/modules/privateTypeAlias.doc.rst: No such file or directory

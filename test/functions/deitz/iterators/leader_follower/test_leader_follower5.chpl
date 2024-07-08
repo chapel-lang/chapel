@@ -21,7 +21,8 @@ class C {
   }
 }
 
-var c = new borrowed C(12);
+var cObj = new owned C(12);
+var c = cObj.borrow();
 
 writeln(c);
 

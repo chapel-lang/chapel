@@ -1,0 +1,13 @@
+diff --git a/main.chpl b/main.chpl
+index fa51127..c7895cc 100644
+--- a/main.chpl
++++ b/main.chpl
+@@ -62,7 +62,7 @@ config const computers: int = 1;
+ 
+ config const mode: string = "nestedml";
+ config const mlsearch: string = "mlocale";
+-config const num_gpus: c_int = 1;
++config const num_gpus: c_int = here.gpus.size:c_int;
+ 
+ config const CPUP: real = 0.0; //CPU percent
+ config const language: string = "chpl"; //implementation of the GPU queens search

@@ -1,0 +1,2 @@
+Hey, if you're modifying the output of this test, maybe it's time to remove this special case from the script?
+2 instances of "warning: symbol names beginning with 'chpl_'  are unstable"

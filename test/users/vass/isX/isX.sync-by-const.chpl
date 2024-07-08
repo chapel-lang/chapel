@@ -1,7 +1,7 @@
 
-proc isInt1(          e) param return isIntValue(e);
-proc isInt2(const ref e) param return isIntValue(e);
-proc isInt3(const     e) param return isIntValue(e);
+proc isInt1(          e) param do return isIntValue(e);
+proc isInt2(const ref e) param do return isIntValue(e);
+proc isInt3(const     e) param do return isIntValue(e);
 
 var myInt: int;
 compilerWarning(isInt1(myInt):string);

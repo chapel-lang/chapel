@@ -11,7 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "AsmWriterInst.h"
-#include "CodeGenTarget.h"
+#include "CodeGenInstruction.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/TableGen/Error.h"
 #include "llvm/TableGen/Record.h"

@@ -20,10 +20,11 @@ class C {
       yield i+x;
   }
 
-  proc chpl__promotionType() type return int;
+  proc chpl__promotionType() type do return int;
 }
 
-var myC = new borrowed C();
+var ownMyC = new owned C();
+var myC = ownMyC.borrow();
 
 for c in myC do
   writeln(c);

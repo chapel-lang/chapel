@@ -12,7 +12,7 @@ for i in 1..n {
   B[i] = 0;
 }
 
-var t = new Timer();
+var t = new stopwatch();
 
 t.start();
 

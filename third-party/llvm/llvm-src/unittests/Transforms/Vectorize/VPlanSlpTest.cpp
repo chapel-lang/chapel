@@ -269,7 +269,7 @@ TEST_F(VPlanSlpTest, testSlpReuse_1) {
 TEST_F(VPlanSlpTest, testSlpReuse_2) {
   const char *ModuleString =
       "%struct.Test = type { i32, i32 }\n"
-      "define i32 @add_x2(%struct.Test* nocapture readonly %A, %struct.Test* "
+      "define void @add_x2(%struct.Test* nocapture readonly %A, %struct.Test* "
       "nocapture readonly %B, %struct.Test* nocapture %C)  {\n"
       "entry:\n"
       "  br label %for.body\n"
@@ -290,11 +290,12 @@ TEST_F(VPlanSlpTest, testSlpReuse_2) {
       "  %C1 = getelementptr inbounds %struct.Test, %struct.Test* %C, i64 "
       "%indvars.iv, i32 1\n"
       "  store i32 %add1, i32* %C1, align 4\n"
+      "  %use = add i32 %vA1, 1\n"
       "  %indvars.iv.next = add nuw nsw i64 %indvars.iv, 1\n"
       "  %exitcond = icmp eq i64 %indvars.iv.next, 1024\n"
       "  br i1 %exitcond, label %for.cond.cleanup, label %for.body\n"
       "for.cond.cleanup:                                 ; preds = %for.body\n"
-      "  ret i32 %vA1\n"
+      "  ret void\n"
       "}\n";
 
   Module &M = parseModule(ModuleString);
@@ -685,7 +686,7 @@ TEST_F(VPlanSlpTest, testInstrsInDifferentBBs) {
       "  br label %for.body\n"
       "for.body:                                         ; preds = %for.body, "
       "%entry\n"
-      "  %indvars.iv = phi i64 [ 0, %entry ], [ %indvars.iv.next, %for.body ]\n"
+      "  %indvars.iv = phi i64 [ 0, %entry ], [ %indvars.iv.next, %bb2 ]\n"
       "  %A0 = getelementptr inbounds %struct.Test, %struct.Test* %A, i64 "
       "%indvars.iv, i32 0\n"
       "  %vA0 = load i32, i32* %A0, align 4\n"
@@ -748,7 +749,7 @@ TEST_F(VPlanSlpTest, testInstrsInDifferentBBs2) {
       "  br label %for.body\n"
       "for.body:                                         ; preds = %for.body, "
       "%entry\n"
-      "  %indvars.iv = phi i64 [ 0, %entry ], [ %indvars.iv.next, %for.body ]\n"
+      "  %indvars.iv = phi i64 [ 0, %entry ], [ %indvars.iv.next, %bb2 ]\n"
       "  %A0 = getelementptr inbounds %struct.Test, %struct.Test* %A, i64 "
       "%indvars.iv, i32 0\n"
       "  %vA0 = load i32, i32* %A0, align 4\n"

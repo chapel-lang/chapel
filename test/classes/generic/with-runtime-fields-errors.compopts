@@ -5,6 +5,4 @@
 -s opt=5     # with-runtime-fields-errors.done.good
 -s opt=6     # with-runtime-fields-errors.error.shared.good
 -s opt=7     # with-runtime-fields-errors.done.good
--s opt=8     # with-runtime-fields-errors.error.borrowed.good
--s opt=9     # with-runtime-fields-errors.done.good
--s opt=10    # with-runtime-fields-errors.error.unmanaged.good
+-s opt=8    # with-runtime-fields-errors.error.unmanaged.good

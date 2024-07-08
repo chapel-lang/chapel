@@ -56,11 +56,11 @@
 #include "psm_user.h"
 #include "psm_mq_internal.h"
 
-typedef void (*memcpy_fn_t) (void *dst, const void *src, size_t n);
+typedef void *(*memcpy_fn_t) (void *dst, const void *src, size_t n);
 static int psmi_test_memcpy(memcpy_fn_t, const char *name);
 static int psmi_test_epid_table(int numelems);
 
-int psmi_diags(void);
+int psm3_diags(void);
 
 #define diags_assert(x)	do {					\
 	    if (!(x))  {					\
@@ -77,12 +77,12 @@ int psmi_diags(void);
 	do { _HFI_INFO("%s: FAILED %s\n", __func__, str); return 1; }	\
 	    while (0)
 
-int psmi_diags(void)
+int psm3_diags(void)
 {
 	int ret = 0;
 	ret |= psmi_test_epid_table(2048);
-	ret |= psmi_test_memcpy((memcpy_fn_t) psmi_memcpyo, "psmi_memcpyo");
-	/* ret |= psmi_test_memcpy((memcpy_fn_t) psmi_mq_mtucpy, "psmi_mq_mtucpy"); */
+	ret |= psmi_test_memcpy((memcpy_fn_t) psm3_memcpyo, "psm3_memcpyo");
+	/* ret |= psmi_test_memcpy((memcpy_fn_t) psm3_mq_mtucpy, "psm3_mq_mtucpy"); */
 
 	if (ret)
 		DIAGS_RETURN_FAIL("");
@@ -100,7 +100,7 @@ static int psmi_test_epid_table(int numelems)
 	psm2_epaddr_t *ep_array, epaddr, ep_alloc;
 	psm2_epid_t *epid_array, epid_tmp;
 	psm2_ep_t ep = (psm2_ep_t) (uintptr_t) 0xabcdef00;
-	struct psmi_epid_table *tab;
+	struct psm3_epid_table *tab;
 	int i, j;
 	struct drand48_data drand48_data;
 
@@ -119,18 +119,19 @@ static int psmi_test_epid_table(int numelems)
 
 	srand48_r(12345678, &drand48_data);
 
-	psmi_epid_init();
-	tab = &psmi_epid_table;
+	psm3_epid_init();
+	tab = &psm3_epid_table;
 	ctl.ep = ep;
 
 	for (i = 0; i < numelems; i++) {
-		epid_array[i] = i;
+		// this is a simulated entry with an invalid epid just for tests
+		epid_array[i] = psm3_epid_pack_diag(i);
 		ep_alloc[i].ptlctl = &ctl;
 		ep_alloc[i].epid = epid_array[i];
 		ep_array[i] = &ep_alloc[i];
 	}
 	for (i = 0; i < numelems; i++) {
-		psmi_epid_add(ep, epid_array[i], ep_array[i]);
+		psm3_epid_add(ep, epid_array[i], ep_array[i]);
 	}
 
 	/* Randomize epid_array */
@@ -144,9 +145,9 @@ static int psmi_test_epid_table(int numelems)
 	}
 	/* Lookup. */
 	for (i = 0; i < numelems; i++) {
-		epaddr = psmi_epid_lookup(ep, epid_array[i]);
+		epaddr = psm3_epid_lookup(ep, epid_array[i]);
 		diags_assert(epaddr != NULL);
-		diags_assert(epaddr->epid == epid_array[i]);
+		diags_assert(!psm3_epid_cmp_internal(epaddr->epid, epid_array[i]));
 		diags_assert(epaddr->ptlctl->ep == ep);
 	}
 
@@ -161,24 +162,24 @@ static int psmi_test_epid_table(int numelems)
 	}
 	/* Delete half */
 	for (i = 0; i < numelems / 2; i++) {
-		epaddr = psmi_epid_remove(ep, epid_array[i]);
+		epaddr = psm3_epid_remove(ep, epid_array[i]);
 		diags_assert(epaddr != NULL);
-		diags_assert(epaddr->epid == epid_array[i]);
+		diags_assert(!psm3_epid_cmp_internal(epaddr->epid, epid_array[i]));
 		diags_assert(epaddr->ptlctl->ep == ep);
 	}
 	/* Lookup other half -- expect non-NULL, then delete */
 	for (i = numelems / 2; i < numelems; i++) {
-		epaddr = psmi_epid_lookup(ep, epid_array[i]);
+		epaddr = psm3_epid_lookup(ep, epid_array[i]);
 		diags_assert(epaddr != NULL);
-		diags_assert(epaddr->epid == epid_array[i]);
+		diags_assert(!psm3_epid_cmp_internal(epaddr->epid, epid_array[i]));
 		diags_assert(epaddr->ptlctl->ep == ep);
-		epaddr = psmi_epid_remove(ep, epid_array[i]);
-		epaddr = psmi_epid_lookup(ep, epid_array[i]);
+		epaddr = psm3_epid_remove(ep, epid_array[i]);
+		epaddr = psm3_epid_lookup(ep, epid_array[i]);
 		diags_assert(epaddr == NULL);
 	}
 	/* Lookup whole thing, expect done */
 	for (i = 0; i < numelems; i++) {
-		epaddr = psmi_epid_lookup(ep, epid_array[i]);
+		epaddr = psm3_epid_lookup(ep, epid_array[i]);
 		diags_assert(epaddr == NULL);
 	}
 	for (i = 0; i < tab->tabsize; i++) {
@@ -192,7 +193,7 @@ static int psmi_test_epid_table(int numelems)
 		     tab->tabsize_used);
 
 	/* Only free on success */
-	psmi_epid_fini();
+	psm3_epid_fini();
 	psmi_free(epid_array);
 	psmi_free(ep_array);
 	psmi_free(ep_alloc);
@@ -200,7 +201,7 @@ static int psmi_test_epid_table(int numelems)
 
 fail:
 	/* Klocwork scan report memory leak. */
-	psmi_epid_fini();
+	psm3_epid_fini();
 	if (epid_array)
 		psmi_free(epid_array);
 	if (ep_array)
@@ -290,7 +291,7 @@ void *memcpy_check_one(memcpy_fn_t fn, void *dst, void *src, size_t n)
 	for (i = 0; i < n; i++) {
 		long int rand_result;
 		lrand48_r(&drand48_data, &rand_result);
-		((uint8_t *) src)[i] = (((int)(rand_result & INT_MAX)) >> 16) & 0xff;
+		((uint8_t *) src)[i] = (((int)(rand_result % INT_MAX)) >> 16) & 0xff;
 	}
 
 	fn(dst, src, n);

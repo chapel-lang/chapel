@@ -19,7 +19,10 @@ writeln("int");
 r.foo(1:int);
 writeln("real(32)");
 r.foo(2:real(32));
-writeln("uint");
-r.foo(3:uint);
+writeln("param uint");
+r.foo(3:uint); // this one can coerce to int, so Wrapper.foo can run
+writeln("var uint");
+var uint4:uint = 4;
+r.foo(uint4); // cannot coerce to int
 writeln("complex");
-r.foo(4:complex);
+r.foo(5:complex);

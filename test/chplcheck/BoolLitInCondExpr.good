@@ -1,0 +1,4 @@
+BoolLitInCondExpr.chpl:2: node violates rule BoolLitInCondStmt
+BoolLitInCondExpr.chpl:4: node violates rule BoolLitInCondStmt
+BoolLitInCondExpr.chpl:4: node violates rule ConsecutiveDecls
+[Success matching fixit for BoolLitInCondExpr]

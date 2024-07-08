@@ -1,7 +1,0 @@
-feature request: Arithmetic between uint(32) and uint(64) should be valid.
-
-This is an opinion, but it seems like a bug to not be able to combine an unsigned integer
-of one size with one of a larger size.
-
-Current coercion rules turn the uint(32) into an int(64), and then 
-(according to current language typing rules) the result type is ambiguous.

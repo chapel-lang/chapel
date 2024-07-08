@@ -21,7 +21,6 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/iterator_range.h"
@@ -32,6 +31,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -39,7 +39,8 @@
 
 namespace llvm {
 class Error;
-}
+class raw_ostream;
+} // namespace llvm
 
 namespace clang {
 
@@ -313,18 +314,23 @@ private:
     // "Global" configuration state that can actually vary between modules.
 
     // Ignore all warnings: -w
+    LLVM_PREFERRED_TYPE(bool)
     unsigned IgnoreAllWarnings : 1;
 
     // Enable all warnings.
+    LLVM_PREFERRED_TYPE(bool)
     unsigned EnableAllWarnings : 1;
 
     // Treat warnings like errors.
+    LLVM_PREFERRED_TYPE(bool)
     unsigned WarningsAsErrors : 1;
 
     // Treat errors like fatal errors.
+    LLVM_PREFERRED_TYPE(bool)
     unsigned ErrorsAsFatal : 1;
 
     // Suppress warnings in system headers.
+    LLVM_PREFERRED_TYPE(bool)
     unsigned SuppressSystemWarnings : 1;
 
     // Map extensions to warnings or errors?
@@ -544,6 +550,7 @@ public:
   DiagnosticsEngine &operator=(const DiagnosticsEngine &) = delete;
   ~DiagnosticsEngine();
 
+  friend void DiagnosticsTestHelper(DiagnosticsEngine &);
   LLVM_DUMP_METHOD void dump() const;
   LLVM_DUMP_METHOD void dump(StringRef DiagName) const;
 
@@ -890,9 +897,9 @@ public:
     LastDiagLevel = Other.LastDiagLevel;
   }
 
-  /// Reset the state of the diagnostic object to its initial
-  /// configuration.
-  void Reset();
+  /// Reset the state of the diagnostic object to its initial configuration.
+  /// \param[in] soft - if true, doesn't reset the diagnostic mappings and state
+  void Reset(bool soft = false);
 
   //===--------------------------------------------------------------------===//
   // DiagnosticsEngine classification and reporting interfaces.
@@ -1344,8 +1351,8 @@ public:
   // It is necessary to limit this to rvalue reference to avoid calling this
   // function with a bitfield lvalue argument since non-const reference to
   // bitfield is not allowed.
-  template <typename T, typename = typename std::enable_if<
-                            !std::is_lvalue_reference<T>::value>::type>
+  template <typename T,
+            typename = std::enable_if_t<!std::is_lvalue_reference<T>::value>>
   const DiagnosticBuilder &operator<<(T &&V) const {
     assert(isActive() && "Clients must not add to cleared diagnostic!");
     const StreamingDiagnostic &DB = *this;
@@ -1403,7 +1410,13 @@ inline const StreamingDiagnostic &operator<<(const StreamingDiagnostic &DB,
 }
 
 inline const StreamingDiagnostic &operator<<(const StreamingDiagnostic &DB,
-                                             int64_t I) {
+                                             long I) {
+  DB.AddTaggedVal(I, DiagnosticsEngine::ak_sint);
+  return DB;
+}
+
+inline const StreamingDiagnostic &operator<<(const StreamingDiagnostic &DB,
+                                             long long I) {
   DB.AddTaggedVal(I, DiagnosticsEngine::ak_sint);
   return DB;
 }
@@ -1425,7 +1438,13 @@ inline const StreamingDiagnostic &operator<<(const StreamingDiagnostic &DB,
 }
 
 inline const StreamingDiagnostic &operator<<(const StreamingDiagnostic &DB,
-                                             uint64_t I) {
+                                             unsigned long I) {
+  DB.AddTaggedVal(I, DiagnosticsEngine::ak_uint);
+  return DB;
+}
+
+inline const StreamingDiagnostic &operator<<(const StreamingDiagnostic &DB,
+                                             unsigned long long I) {
   DB.AddTaggedVal(I, DiagnosticsEngine::ak_uint);
   return DB;
 }
@@ -1454,6 +1473,12 @@ inline std::enable_if_t<
 operator<<(const StreamingDiagnostic &DB, T *DC) {
   DB.AddTaggedVal(reinterpret_cast<intptr_t>(DC),
                   DiagnosticsEngine::ak_declcontext);
+  return DB;
+}
+
+inline const StreamingDiagnostic &operator<<(const StreamingDiagnostic &DB,
+                                             SourceLocation L) {
+  DB.AddSourceRange(CharSourceRange::getTokenRange(L));
   return DB;
 }
 
@@ -1491,7 +1516,7 @@ inline const StreamingDiagnostic &operator<<(const StreamingDiagnostic &DB,
 
 inline const StreamingDiagnostic &
 operator<<(const StreamingDiagnostic &DB,
-           const llvm::Optional<SourceRange> &Opt) {
+           const std::optional<SourceRange> &Opt) {
   if (Opt)
     DB << *Opt;
   return DB;
@@ -1499,15 +1524,14 @@ operator<<(const StreamingDiagnostic &DB,
 
 inline const StreamingDiagnostic &
 operator<<(const StreamingDiagnostic &DB,
-           const llvm::Optional<CharSourceRange> &Opt) {
+           const std::optional<CharSourceRange> &Opt) {
   if (Opt)
     DB << *Opt;
   return DB;
 }
 
 inline const StreamingDiagnostic &
-operator<<(const StreamingDiagnostic &DB,
-           const llvm::Optional<FixItHint> &Opt) {
+operator<<(const StreamingDiagnostic &DB, const std::optional<FixItHint> &Opt) {
   if (Opt)
     DB << *Opt;
   return DB;
@@ -1546,7 +1570,7 @@ inline DiagnosticBuilder DiagnosticsEngine::Report(unsigned DiagID) {
 /// currently in-flight diagnostic.
 class Diagnostic {
   const DiagnosticsEngine *DiagObj;
-  StringRef StoredDiagMessage;
+  std::optional<StringRef> StoredDiagMessage;
 
 public:
   explicit Diagnostic(const DiagnosticsEngine *DO) : DiagObj(DO) {}
@@ -1702,9 +1726,7 @@ public:
   range_iterator range_end() const { return Ranges.end(); }
   unsigned range_size() const { return Ranges.size(); }
 
-  ArrayRef<CharSourceRange> getRanges() const {
-    return llvm::makeArrayRef(Ranges);
-  }
+  ArrayRef<CharSourceRange> getRanges() const { return llvm::ArrayRef(Ranges); }
 
   using fixit_iterator = std::vector<FixItHint>::const_iterator;
 
@@ -1712,10 +1734,11 @@ public:
   fixit_iterator fixit_end() const { return FixIts.end(); }
   unsigned fixit_size() const { return FixIts.size(); }
 
-  ArrayRef<FixItHint> getFixIts() const {
-    return llvm::makeArrayRef(FixIts);
-  }
+  ArrayRef<FixItHint> getFixIts() const { return llvm::ArrayRef(FixIts); }
 };
+
+// Simple debug printing of StoredDiagnostic.
+llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, const StoredDiagnostic &);
 
 /// Abstract interface, implemented by clients of the front-end, which
 /// formats and prints fully processed diagnostics.
@@ -1804,12 +1827,17 @@ public:
 struct TemplateDiffTypes {
   intptr_t FromType;
   intptr_t ToType;
+  LLVM_PREFERRED_TYPE(bool)
   unsigned PrintTree : 1;
+  LLVM_PREFERRED_TYPE(bool)
   unsigned PrintFromType : 1;
+  LLVM_PREFERRED_TYPE(bool)
   unsigned ElideType : 1;
+  LLVM_PREFERRED_TYPE(bool)
   unsigned ShowColors : 1;
 
   // The printer sets this variable to true if the template diff was used.
+  LLVM_PREFERRED_TYPE(bool)
   unsigned TemplateDiffUsed : 1;
 };
 
@@ -1822,7 +1850,7 @@ const char ToggleHighlight = 127;
 void ProcessWarningOptions(DiagnosticsEngine &Diags,
                            const DiagnosticOptions &Opts,
                            bool ReportDiags = true);
-
+void EscapeStringForDiagnostic(StringRef Str, SmallVectorImpl<char> &OutStr);
 } // namespace clang
 
 #endif // LLVM_CLANG_BASIC_DIAGNOSTIC_H

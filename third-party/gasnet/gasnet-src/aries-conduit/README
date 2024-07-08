@@ -3,6 +3,20 @@ README file for aries-conduit
 Paul H. Hargrove <PHHargrove@lbl.gov>
 Larry Stewart <stewart@serissa.com> 
 
+=====================================================================
+=====================================================================
+
+The aries-conduit is now DEPRECATED.
+No further development of aries-conduit is anticipated.
+It will be removed in a future release.
+
+The GASNet developers have neither the access nor the funding to keep
+this conduit working in the near future.  If you are interested in
+contributing maintenance for this conduit, please contact
+gasnet-staff@lbl.gov ASAP
+
+=====================================================================
+=====================================================================
 
 User Information:
 -----------------
@@ -84,7 +98,7 @@ Optional compile-time settings:
 
 in aries-conduit/gasnet_aries.h:
 
-GASNETC_USE_SPINLOCK	- 0 user gasneti_mutex_t (default)
+GASNETC_USE_SPINLOCK	- 0 use gasneti_mutex_t (default)
 			  1 use gasneti_spinlock_t
 
 The _DEFAULT values for all of the GASNET_GNI_ environment variables.
@@ -207,9 +221,10 @@ GASNET_NETWORKDEPTH_SPACE - volume of Eager AM Request queue
 GASNET_LONG_DEPTH - depth of per-peer Long tracking
   This determines the maximum number of AM Long Requests payload transfers
   that can be outstanding between a given pair of peers before flow-control.
-  This is in addition to any flow-control required due to the "NETWORKDEPTH"
-  variables, above.
-  The default value is no limit, the minimum is 1, and the maximum is 64.
+  This limit is applied in addition to any flow-control required due to the
+  "NETWORKDEPTH" variables, above.
+  The default value is no additional constraint.
+  The minimum value is 1 and the maximum is 64.
 
 GASNET_GNI_PACKEDLONG_CUTOVER
   This determines the maximum Long AM size using a "Packed Long" protocol.
@@ -398,6 +413,19 @@ GASNET_PHYSMEM_MAX
   The default is "0.8" (80% of estimated physical memory).
   This variable is not required to be single-valued.
 
+GASNET_PHYSMEM_PROBE
+  This gives a boolean: "1" to enable (default) or "0" to disable the validation
+  (potentially slow) of the GASNET_PHYSMEM_MAX value.
+  By default the environment variable GASNET_PHYSMEM_MAX is untrusted and its
+  setting is validated at startup (reducing the value if appropriate).  The time
+  required for this step can scale with the amount of memory and the number of
+  processes per host.
+  Disabling this probe can save time at startup, but at the risk that the
+  true limit on pinnable memory is lower than given by GASNET_PHYSMEM_MAX (or
+  by its default value).  If that occurs, then it is possible that aries-conduit
+  will exceed the limits later in execution, leading to crashes.
+  The default is enabled.
+
 GASNET_USE_UDREG
   AVAILABLE UNLESS CONFIGURED WITH --disable-aries-udreg.
   This gives a boolean: "0" to disable or "1" to enable the use of the
@@ -457,7 +485,7 @@ The following table indicates the pairs of atomic operation and data type that
 are eligible for offloaded to the Aries NIC.  The offloaded atomics will be
 used when the arguments to gex_AD_Create() express only supported pairs (unless
 suppressed by use of GEX_FLAG_AD_FAVOR_MY_RANK or GEX_FLAG_AD_FAVOR_MY_NBRHD
-flags, or in a single-process run).
+flags, or in a run spanning a single shared memory nbrhd.)
 
           I32   U32   I64   U64   FLT   DBL
           ---   ---   ---   ---   ---   ---
@@ -499,6 +527,14 @@ Known problems:
   The most up-to-date information on this bug is maintained at:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3480
   It is currently unknown if this problem is specific to Cray systems.
+
+* Bug 4454
+  The probe for maximum pinnable memory depends on the job size, even though
+  there is no actual need for information from other hosts.  This may motivate
+  setting GASNET_PHYSMEM_PROBE=0 to reduce startup time, even when doing so
+  might be unsafe.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4454
 
 * See the GASNet Bugzilla server for details on other known bugs:
   https://gasnet-bugs.lbl.gov/

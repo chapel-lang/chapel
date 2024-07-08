@@ -1,0 +1,4 @@
+IllegalArgumentError: readThrough(string) called with empty separator
+123456xABCDEF
+IllegalArgumentError: readThrough(bytes) called with empty separator
+123456xABCDEF

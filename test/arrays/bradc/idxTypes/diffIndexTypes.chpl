@@ -2,8 +2,8 @@ proc testit(type t) {
   writeln("Testing ", t:string, "...");
   var a: [0:t..4:t] real = (1.1, 2.2, 3.3, 4.4, 5.5);
   var b: [0:t..4:t by 2] real = (1.1, 3.3, 5.5);
-  var c: [0:t..4:t by -1] real = (1.1, 2.2, 3.3, 4.4, 5.5);
-  var d: [0:t..4:t by -2] real = (1.1, 3.3, 5.5);
+  var c: [0:t..4:t by -1] real = (1.1, 2.2, 3.3, 4.4, 5.5);  // neg-stride
+  var d: [0:t..4:t by -2] real = (1.1, 3.3, 5.5);            // neg-stride
 
   writeln("(Represented in domain using ", a.domain.idxType:string, ")");
   writeln("a is: ", a);

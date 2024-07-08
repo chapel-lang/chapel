@@ -1,5 +1,5 @@
 use Regex;
-var re = Regex.compile("a+b+");
+var re = new regex("a+b+");
 writeln(re.fullMatch("a").matched);
 writeln(re.fullMatch("b").matched);
 writeln(re.fullMatch("abc").matched);

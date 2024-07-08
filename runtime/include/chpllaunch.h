@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -63,15 +63,18 @@ char* chpl_get_enviro_keys(char sep);
 void chpl_compute_real_binary_name(const char* argv0);
 const char* chpl_get_real_binary_wrapper(void);
 const char* chpl_get_real_binary_name(void);
-int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales);
+int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales,
+                     int32_t *c_execNumLocalesPerNode);
 int chpl_launcher_main(int argc, char* argv[]);
 
 void chpl_launcher_get_job_name(char* baseName, char* jobName, int jobLen);
 
+void chpl_launcher_no_colocales_error(const char *name);
 //
 // Defined in launch_<CHPL_LAUNCHER>.c
 //
-int chpl_launch(int argc, char* argv[], int32_t numLocales);
+int chpl_launch(int argc, char* argv[], int32_t numLocales,
+                int32_t numLocalesPerNode);
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, int32_t filename);
 const argDescTuple_t* chpl_launch_get_help(void);

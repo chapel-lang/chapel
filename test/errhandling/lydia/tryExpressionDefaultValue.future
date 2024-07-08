@@ -1,0 +1,2 @@
+error message: try expressions that call functions with default values generate extra errors for the user for things outside of their control
+#21491

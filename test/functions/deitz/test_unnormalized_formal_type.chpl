@@ -1,5 +1,5 @@
-proc foo() return (1, 2.0);
+proc foo() do return (1, 2.0);
 
-proc bar(x = foo()(1)) return x;
+proc bar(x = foo()(1)) do return x;
 
 writeln(bar());

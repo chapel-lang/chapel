@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: interoperability
 .. _Chapter-Interoperability:
 
 ================
@@ -18,7 +20,7 @@ overview of procedure importing and exporting is provided
 in :ref:`Interop_Overview`. Details on sharing types, variables
 and procedures are supplied in :ref:`Shared_Language_Elements`.
 
-   .. note:: 
+   .. note::
 
       *Future:*
 
@@ -37,6 +39,8 @@ and procedures are supplied in :ref:`Shared_Language_Elements`.
 The remainder of this chapter documents Chapel support of
 interoperability through the existing C-language backend.
 
+.. index::
+   single: interoperability; overview
 .. _Interop_Overview:
 
 Interoperability Overview
@@ -46,6 +50,8 @@ The following two subsections provide an overview of calling
 externally-defined (C) routines in Chapel, and setting up Chapel
 routines so they can be called from external (C) code.
 
+.. index::
+   single: interoperability; calling external functions
 .. _Calling_External_Functions:
 
 Calling External Functions
@@ -58,12 +64,12 @@ function signature during function resolution. The user must also supply
 a definition for the referenced function by naming a C source file, an
 object file or an object library on the ``chpl`` command line.
 
-An external procedure declaration has the following syntax: 
+An external procedure declaration has the following syntax:
 
 .. code-block:: syntax
 
    external-procedure-declaration-statement:
-     'extern' external-name[OPT] 'proc' identifier argument-list return-intent[OPT] return-type[OPT]
+     'extern' external-name[OPT] 'proc' identifier argument-list return-intent[OPT] return-type[OPT] ;
 
 Chapel code will call the external function using the parameter types
 supplied in the ``extern`` declaration. Therefore, in general, the type
@@ -86,11 +92,11 @@ For example, the code below declares a function callable in Chapel as
 
 .. code-block:: chapel
 
-     extern "atoi" proc c_atoi(arg:c_string):c_int;
+     extern "atoi" proc c_atoi(arg:c_ptrConst(c_char)):c_int;
 
 At present, external iterators are not supported.
 
-   .. note::   
+   .. note::
 
       *Future:*
 
@@ -104,8 +110,8 @@ At present, external iterators are not supported.
 
 ..
 
-   .. note::  
-     
+   .. note::
+
       *Future:*
 
       Dynamic dispatch (polymorphism) is also unsupported in this version.
@@ -124,6 +130,8 @@ static libraries (archives), dynamic libraries or both are supported.
 See the ``chpl`` man page for more information on how these file types
 are handled.
 
+.. index::
+   single: interoperability; calling Chapel functions
 .. _Calling_Chapel_Functions:
 
 Calling Chapel Functions
@@ -136,7 +144,7 @@ the ``export`` linkage specifier to the function definition. The
 resolved, even if it is not called within the Chapel program or library
 being compiled.
 
-An exported procedure declaration has the following syntax: 
+An exported procedure declaration has the following syntax:
 
 .. code-block:: syntax
 
@@ -183,6 +191,8 @@ example, the code below declares a function callable in C as
       function was to be instantiated with the given ``param`` values and
       argument types.
 
+.. index::
+   single: interoperability; sharing
 .. _Shared_Language_Elements:
 
 Shared Language Elements
@@ -191,6 +201,12 @@ Shared Language Elements
 This section provides details on how to share Chapel types, variables
 and procedures with external code. It is written assuming that the
 intermediate language is C.
+
+.. index::
+   single: interoperability; standard C types
+   single: interoperability; external C types
+   single: interoperability; C structs
+   single: interoperability; opaque types
 
 Shared Types
 ~~~~~~~~~~~~
@@ -227,7 +243,7 @@ Referring to External C Types
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 An externally-defined type can be referenced using a external type
-declaration with the following syntax. 
+declaration with the following syntax.
 
 .. code-block:: syntax
 
@@ -246,13 +262,13 @@ refer to them within Chapel code.
 
 Fixed-size C array types can be described within Chapel using the
 ``c_array`` type defined by the standard ``CTypes`` module.
-For example, the C typedef 
+For example, the C typedef
 
 .. code-block:: chapel
 
    typedef double vec[3];
 
-can be described in Chapel using 
+can be described in Chapel using
 
 .. code-block:: chapel
 
@@ -264,7 +280,7 @@ Referring to External C Structs and Unions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 External C struct and union types can be referred to within Chapel by prefixing a
-Chapel ``record`` definition with the ``extern`` keyword. 
+Chapel ``record`` definition with the ``extern`` keyword.
 
 .. code-block:: syntax
 
@@ -272,7 +288,7 @@ Chapel ``record`` definition with the ``extern`` keyword.
      'extern' external-name[OPT] simple-record-declaration-statement
 
 For example, consider an external C structure defined in ``foo.h``
-called ``fltdbl``. 
+called ``fltdbl``.
 
 .. code-block:: chapel
 
@@ -386,7 +402,7 @@ for operations other than argument passing and assignment.
 
 For example, Chapel could be used to call an external C function that
 returns a pointer to a structure (that can’t or won’t be described as a
-pointer to an external record) as follows: 
+pointer to an external record) as follows:
 
 .. code-block:: chapel
 
@@ -396,7 +412,7 @@ pointer to an external record) as follows:
 
 However, because the type of ``structPtr`` is opaque, it can be used
 only in assignments and the arguments of functions expecting the same
-underlying type. 
+underlying type.
 
 .. code-block:: chapel
 
@@ -409,6 +425,8 @@ Like a ``void*`` in C, Chapel’s ``opaque`` carries no information
 regarding the underlying type. It therefore subverts type safety, and
 should be used with caution.
 
+.. index::
+   single: interoperability; shared data
 .. _Shared_Data:
 
 Shared Data
@@ -418,14 +436,14 @@ This subsection discusses how to access external variables and
 constants.
 
 A C variable or constant can be referred to within Chapel by prefixing
-its declaration with the extern keyword. For example: 
+its declaration with the extern keyword. For example:
 
 .. code-block:: chapel
 
        extern var bar: foo;
 
 would tell the Chapel compiler about an external C variable named
-``bar`` of type ``foo``. Similarly, 
+``bar`` of type ``foo``. Similarly,
 
 .. code-block:: chapel
 
@@ -442,6 +460,9 @@ constants.
    the Chapel compiler does not necessarily parse C code, external
    params are not supported.
 
+.. index::
+   single: interoperability; shared procedures
+   single: interoperability; calling external functions
 .. _Shared_Procedures:
 
 Shared Procedures
@@ -451,6 +472,8 @@ This subsection provides additional detail and examples for calling
 external procedures from Chapel and for exporting Chapel functions for
 external use.
 
+.. index::
+   single: interoperability; calling C procedures
 .. _Calling_External_C_Functions:
 
 Calling External C Functions
@@ -460,7 +483,7 @@ To call an external C function, a prototype of the routine must appear
 in the Chapel code. This is accomplished by providing the Chapel
 signature of the function preceded by the ``extern`` keyword. For
 example, for a C function foo() that takes no arguments and returns
-nothing, the prototype would be: 
+nothing, the prototype would be:
 
 .. code-block:: chapel
 
@@ -482,7 +505,7 @@ type specifiers.
 
 The types of function arguments may be omitted from the external
 procedure declaration, in which case they are inferred based on the
-Chapel callsite. For example, the Chapel code 
+Chapel callsite. For example, the Chapel code
 
 .. code-block:: chapel
 
@@ -497,7 +520,7 @@ omitted type arguments can also be used call external C macros.
 External function arguments can be declared using the
 ``default-expression`` syntax. In this case, the default argument will
 be supplied by the Chapel compiler if the corresponding actual argument
-is omitted at the callsite. For example: 
+is omitted at the callsite. For example:
 
 .. code-block:: chapel
 
@@ -509,11 +532,11 @@ and 1.2.
 
 C varargs functions can be declared using Chapel’s
 ``variable-argument-expression`` syntax (``...``). For example, the C
-``printf`` function can be declared in Chapel as 
+``printf`` function can be declared in Chapel as
 
 .. code-block:: chapel
 
-          extern proc printf(fmt: c_string, vals...?numvals): int;
+          extern proc printf(fmt: c_ptrConst(c_char), vals...?numvals): int;
 
 External C functions or macros that accept type arguments can also be
 prototyped in Chapel by declaring the argument as a type. For example:
@@ -526,6 +549,8 @@ prototyped in Chapel by declaring the argument as a type. For example:
 Calling such a routine with a Chapel type will cause the type identifier
 (e.g., ’int’) to be passed to the routine. [3]_
 
+.. index::
+   single: interoperability; calling Chapel procedures
 .. _Calling_Chapel_Procedures_Externally:
 
 Calling Chapel Procedures Externally
@@ -541,7 +566,7 @@ no arguments and returning a 64-bit integer can be declared as:
    export proc foo(): int { ... }
 
 If the optional ``external-name`` is supplied, that is the name used in
-linking with external code. For example, if we declare 
+linking with external code. For example, if we declare
 
 .. code-block:: chapel
 
@@ -555,6 +580,8 @@ name is also used externally.
 When a procedure is exported, all of the types and functions on which it
 depends are also exported. Iterators cannot be explicitly exported.
 
+.. index::
+   single: interoperability; argument passing
 .. _Interop_Argument_Passing:
 
 Argument Passing
@@ -566,21 +593,22 @@ correspondence between Chapel intents and C argument type declarations.
 These correspondences pertain to both imported and exported function
 signatures.
 
-======= =======
-Chapel  C
-======= =======
-T       const T
-in T    T
-ref T   T\*
-param  
-type    char\*
-======= =======
+=========== =========
+Chapel      C
+=========== =========
+T           const T
+in T        T
+ref T       T\*
+const ref T const T\*
+param
+type        char\*
+=========== =========
 
 Currently, ``param`` arguments are not allowed in an extern function
 declaration, and ``type`` args are passed as a string containing the
 name of the actual type being passed. Note that the level of indirection
 is changed when passing arguments to a C function using
-the ``ref`` intent. The C code implementing that function must
+the ``ref`` or ``const ref`` intent. The C code implementing that function must
 dereference the argument to extract its value.
 
 .. _Interop_Variable_Initialization:

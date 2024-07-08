@@ -10,13 +10,13 @@ proc main() {
   var nEdges: int;  // represents first line in file -- the number of entries
   var nNodes: int;
 
-  var fin = open(input_file, iomode.r).reader();
-  var fout = open("RtsGraph_out.txt", iomode.cw).writer();
-  var fin2 = open(gen_file, iomode.r).reader();
-  var fin3 = open(load_file, iomode.r).reader();
+  var fin = open(input_file, ioMode.r).reader(locking=false);
+  var fout = open("RtsGraph_out.txt", ioMode.cw).writer(locking=false);
+  var fin2 = open(gen_file, ioMode.r).reader(locking=false);
+  var fin3 = open(load_file, ioMode.r).reader(locking=false);
 
   var init_tm: real;
-  const init_t0 = getCurrentTime();
+  const init_t0 = timeSinceEpoch().totalSeconds();
 
   fin.readln(nEdges);
 
@@ -74,7 +74,7 @@ proc main() {
   }
   fin3.close();
 
-  init_tm = getCurrentTime() - init_t0;
+  init_tm = timeSinceEpoch().totalSeconds() - init_t0;
 //  writeln("Initialization time: ", init_tm);
 
   displayGraph(Nodes, nNodes);
@@ -85,14 +85,14 @@ proc main() {
   writeln("Dijkstra Algorithm: Source to All");
 
   var dijkstra_tm: real;
-  const dijkstra_t0 = getCurrentTime();
+  const dijkstra_t0 = timeSinceEpoch().totalSeconds();
 
   var D4 = {0..(nNodes-1)};
   forall i in D4 {
     dijkstra(i, nEdges, nNodes, Edges, Nodes);   // All-pairs
   }
 
-  dijkstra_tm = getCurrentTime() - dijkstra_t0;
+  dijkstra_tm = timeSinceEpoch().totalSeconds() - dijkstra_t0;
 //  writeln("Compute time: ", dijkstra_tm);
 
   for i in D1 {
@@ -116,12 +116,12 @@ proc main() {
 
       // Divide hyperlink score to component edges proportional
       // to (edge distance / total distance)
-      var vbHL: real = Edges[i]!.vb$.readXX() / sum;
-      Edges[i]!.vb$.writeXF(Edges[i]!.distance * vbHL);
+      var vbHL: real = Edges[i]!.vb.readXX() / sum;
+      Edges[i]!.vb.writeXF(Edges[i]!.distance * vbHL);
 
       for j in (i+1)..(nEdges-1) {
         if (Edges[j]!.dupl == 1) then break;
-        Edges[j]!.vb$.writeXF(Edges[j]!.distance * vbHL);
+        Edges[j]!.vb.writeXF(Edges[j]!.distance * vbHL);
       }
     }
   }
@@ -129,7 +129,7 @@ proc main() {
   writeln("#     From     To     Betweenness");
 
   for i in D1 do writeln(Edges[i]!.id, "     ", Edges[i]!.n1+1, "     ",
-                         Edges[i]!.n2+1, "     ", Edges[i]!.vb$.readXX());
+                         Edges[i]!.n2+1, "     ", Edges[i]!.vb.readXX());
 
   for n in Nodes do delete n;
   for e in Edges do delete e;

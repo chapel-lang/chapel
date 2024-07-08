@@ -105,33 +105,20 @@ mpz_preinv_invert (mpz_t inv, const mpz_t d, int numb_bits)
   mpz_clear (t);
 }
 
-/* Calculate r satisfying r*d == 1 mod 2^n. */
+/* Calculate r satisfying r*a == 1 mod 2^n. */
 void
 mpz_invert_2exp (mpz_t r, const mpz_t a, unsigned long n)
 {
-  unsigned long  i;
-  mpz_t  inv, prod;
+  mpz_t  mod;
 
   assert (mpz_odd_p (a));
 
-  mpz_init_set_ui (inv, 1L);
-  mpz_init (prod);
+  mpz_init (mod);
+  mpz_setbit (mod, n);
 
-  for (i = 1; i < n; i++)
-    {
-      mpz_mul (prod, inv, a);
-      if (mpz_tstbit (prod, i) != 0)
-	mpz_setbit (inv, i);
-    }
+  mpz_invert (r, a, mod);
 
-  mpz_mul (prod, inv, a);
-  mpz_tdiv_r_2exp (prod, prod, n);
-  assert (mpz_cmp_ui (prod, 1L) == 0);
-
-  mpz_set (r, inv);
-
-  mpz_clear (inv);
-  mpz_clear (prod);
+  mpz_clear (mod);
 }
 
 /* Calculate inv satisfying r*a == 1 mod 2^n. */

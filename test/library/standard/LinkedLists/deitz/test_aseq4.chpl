@@ -1,4 +1,4 @@
-proc ii(i: int) return i;
+proc ii(i: int) do return i;
 
 var as1 = 1..10;
 var bs = as1 by -2;

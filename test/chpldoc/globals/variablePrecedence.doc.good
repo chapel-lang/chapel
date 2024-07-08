@@ -17,6 +17,18 @@ or
 
    import variablePrecedence;
 
+.. data:: var a: int
+
+.. data:: var b: a.type
+
+.. data:: var c: b.type
+
+.. data:: var d: c.type
+
+.. data:: var e: d.type
+
+.. data:: var f: e.type
+
 .. data:: var pp = a + b + c
 
 .. data:: var Pp = a + b + c
@@ -111,11 +123,13 @@ or
 
 .. data:: var lL = a << (b << c)
 
-.. data:: var ee = a == b == c
-
-.. data:: var Ee = a == b == c
+.. data:: var Ee = (a == b) == c
 
 .. data:: var eE = a == (b == c)
+
+.. data:: var Gg = (a > b) > c
+
+.. data:: var gG = a > (b > c)
 
 .. data:: var xx = a**b**c
 

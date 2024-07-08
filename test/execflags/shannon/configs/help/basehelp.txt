@@ -7,19 +7,5 @@ CONFIG VAR FLAGS:
 CONFIG VARS:
 ============
 Built-in config vars:
-            printModuleInitOrder: bool
-           dataParTasksPerLocale: int(64)
-       dataParIgnoreRunningTasks: bool
-           dataParMinGranularity: int(64)
-                        memTrack: bool
-                        memStats: bool
-                  memLeaksByType: bool
-                        memLeaks: bool
-                          memMax: uint(64)
-                    memThreshold: uint(64)
-                          memLog: string
-                     memLeaksLog: string
-                  memLeaksByDesc: string
  defaultHashTableResizeThreshold: real(64) 
                       numLocales: int(64)
-

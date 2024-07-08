@@ -58,7 +58,7 @@ public:
   /// given JITDylib.
   ///
   /// The ORC runtime requires access to a number of symbols in
-  /// libc++. It is up to the caller to ensure that the requried
+  /// libc++. It is up to the caller to ensure that the required
   /// symbols can be referenced by code added to PlatformJD. The
   /// standard way to achieve this is to first attach dynamic library
   /// search generators for either the given process, or for the
@@ -94,8 +94,14 @@ public:
   /// setting up all aliases (including the required ones).
   static Expected<std::unique_ptr<ELFNixPlatform>>
   Create(ExecutionSession &ES, ObjectLinkingLayer &ObjLinkingLayer,
+         JITDylib &PlatformJD, std::unique_ptr<DefinitionGenerator> OrcRuntime,
+         std::optional<SymbolAliasMap> RuntimeAliases = std::nullopt);
+
+  /// Construct using a path to the ORC runtime.
+  static Expected<std::unique_ptr<ELFNixPlatform>>
+  Create(ExecutionSession &ES, ObjectLinkingLayer &ObjLinkingLayer,
          JITDylib &PlatformJD, const char *OrcRuntimePath,
-         Optional<SymbolAliasMap> RuntimeAliases = None);
+         std::optional<SymbolAliasMap> RuntimeAliases = std::nullopt);
 
   ExecutionSession &getExecutionSession() const { return ES; }
   ObjectLinkingLayer &getObjectLinkingLayer() const { return ObjLinkingLayer; }
@@ -109,7 +115,8 @@ public:
   /// Returns an AliasMap containing the default aliases for the ELFNixPlatform.
   /// This can be modified by clients when constructing the platform to add
   /// or remove aliases.
-  static SymbolAliasMap standardPlatformAliases(ExecutionSession &ES);
+  static Expected<SymbolAliasMap> standardPlatformAliases(ExecutionSession &ES,
+                                                          JITDylib &PlatformJD);
 
   /// Returns the array of required CXX aliases.
   static ArrayRef<std::pair<const char *, const char *>> requiredCXXAliases();
@@ -117,9 +124,6 @@ public:
   /// Returns the array of standard runtime utility aliases for ELF.
   static ArrayRef<std::pair<const char *, const char *>>
   standardRuntimeUtilityAliases();
-
-  /// Returns true if the given section name is an initializer section.
-  static bool isInitializerSection(StringRef SecName);
 
 private:
   // The ELFNixPlatformPlugin scans/modifies LinkGraphs to support ELF
@@ -142,11 +146,11 @@ private:
       return Error::success();
     }
 
-    Error notifyRemovingResources(ResourceKey K) override {
+    Error notifyRemovingResources(JITDylib &JD, ResourceKey K) override {
       return Error::success();
     }
 
-    void notifyTransferringResources(ResourceKey DstKey,
+    void notifyTransferringResources(JITDylib &JD, ResourceKey DstKey,
                                      ResourceKey SrcKey) override {}
 
   private:

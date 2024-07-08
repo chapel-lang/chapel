@@ -11,11 +11,10 @@ proc main {
   writef("%064bi\n", result);
 }
 
-inline proc ln return 2**here.id;
+inline proc ln do return 2**here.id;
 
-iter AAA() {
+iter AAA(): int {
   halt("do not invoke me");
-  yield 1;
 }
 
 iter AAA(param tag) where tag == iterKind.standalone {

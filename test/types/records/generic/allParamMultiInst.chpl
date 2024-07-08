@@ -1,13 +1,13 @@
-record R {
+record R : writeSerializable {
   param x: int;
   param y: int;
 
-  proc writeThis(c) {
-    c.write(x,".",y);
+  proc serialize(writer, ref serializer) {
+    writer.write(x,".",y);
   }
 }
 
-record S {
+record S : writeSerializable {
   var r: R(?);
   param z: int;
 
@@ -16,9 +16,9 @@ record S {
     this.z = z;
   }
 
-  proc writeThis(c) {
-    c.write(r);
-    c.write(".",z);
+  proc serialize(writer, ref serializer) {
+    writer.write(r);
+    writer.write(".",z);
   }
 }
 

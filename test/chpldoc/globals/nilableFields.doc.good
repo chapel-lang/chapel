@@ -1,0 +1,25 @@
+.. default-domain:: chpl
+
+.. module:: nilableFields.doc
+
+nilableFields.doc
+=================
+**Usage**
+
+.. code-block:: chapel
+
+   use nilableFields.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import nilableFields.doc;
+
+.. record:: r
+
+   .. attribute:: var atomicVar: if hasABASupport then _ddata(_ABAInternal(objType?)) else atomic uint(64)
+
+   .. attribute:: var _impl: unmanaged DistributedBagImpl(eltType)?
+

@@ -1,0 +1,12 @@
+This directory is for our nightly performance testing of ChOp + GPU support.
+
+Note that the executable .skipif file runs before we start doing any testing
+and will download the "latest and greatest" version of ChOp before proceeding.
+
+Also note that the .skipif file will silently skip the test if: CHPL_TEST_PERF
+is unset or if the machine isn't able to access GitLab.
+
+To run this test locally, execute the following commands:
+
+    export CHPL_TEST_PERF=true
+    start_test -perflabel gpu- .

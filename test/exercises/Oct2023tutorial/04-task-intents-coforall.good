@@ -1,0 +1,9 @@
+
+'ref' intent
+  sum = ???? due to a possible race
+
+'reduce' intent
+  sum = 55.0, can trust this result due to 'reduce' intent
+
+'ref' intent with an atomic
+  sum = 55.0, can trust this result due to use of 'atomic' type

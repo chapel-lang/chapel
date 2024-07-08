@@ -8,14 +8,14 @@ param W=0, X=1, Y=2, Z=3;
 var line: string;
 var vals: [0..3] int;
 
-var infile = open(programInput, iomode.r).reader();
+var infile = open(programInput, ioMode.r).reader(locking=false);
 var code: list(string);
 var numruns = 0;
 
 
 while infile.readLine(line) {
   line = line.strip();
-  code.append(line);
+  code.pushBack(line);
 }
 
 if input=="" {

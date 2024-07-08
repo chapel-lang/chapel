@@ -1,0 +1,1 @@
+--report_times=false --report_checksum=true --inputSize=200 --window_size=20 --dx=1

@@ -1,2 +1,3 @@
 WarnUnstable.chpl:9: warning: manage statements are not stable and may change
 0
+<command-line arg>:1: warning: The variable 'memLeaks' is unstable and its interface is subject to change in the future

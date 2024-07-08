@@ -11,9 +11,546 @@ papers that predated the changes.
 Note that the compiler flag ``--warn-unstable`` is available and can be
 useful when migrating programs to the current version of the language.
 The purpose of this flag is to identify portions of a program that use a
-language feature which has changed meaning.  It also flags features that
-are considered unstable and may change in the future.
+language or library feature has recently changed meaning or which is
+expected to change meaning in the future.
 
+version 2.0, March 2024
+------------------------
+
+.. _readme-evolution.default-task-intent-arrays:
+
+Default task intents for arrays
+*******************************
+
+In 2.0, the default task intent for an array is now determined by the outer
+variable. If the outer array is ``const`` then the default intent is ``const``,
+otherwise the default intent is ``ref``. Therefore, if an array is modifiable
+outside a parallel block, it is modifiable inside the parallel block. It is no
+longer necessary to use an explicit intent like ``with (ref myArray)`` to
+modify ``myArray`` in a parallel block. This change applies to ``forall``,
+``coforall``, ``begin``, and ``cobegin``.
+
+Consider the following code which illustrates this.
+
+.. code-block:: chapel
+
+   proc myFunction(ref A: []) {
+     begin {
+       A = 17;
+     }
+   }
+
+The default task intent for ``A`` is ``ref``, since the argument formal ``A``
+is mutable. This simplifies parallel code, making it simpler and cleaner to
+write.
+
+Prior to 2.0, the above ``begin`` would have resulted in a deprecation
+warning. In 2.0, this is valid code again.
+
+.. _readme-evolution.assoc-dom-par-safe:
+
+Associative Domains default to ``parSafe=false``
+************************************************
+Associative domains have been stabilized and prioritize performance by
+default; however, some diligence is is required for correct use..
+
+Associative domains in Chapel have a ``parSafe`` setting that
+determines their behavior when operated on by concurrent tasks.
+
+``parSafe`` stands for "parallel safety". Setting
+``parSafe=true`` allows multiple tasks to modify
+an associative domain's index set concurrently without race conditions.
+It is important to note that ``parSafe=true`` does not protect the
+user against all race conditions. For example, iterating over an associative
+domain while another task modifies it represents a race condition and the
+behavior is undefined.
+See the `documentation <https://chapel-lang.org/docs/1.33/language/spec/domains.html?highlight=parsafe#parallel-safety-with-respect-to-domains-and-arrays>`_
+for  more information.
+
+The default of ``parSafe=true`` added overhead to operations and made
+programs slower by default, even when such safety guarantees were not needed.
+This is because it uses locking on the underlying data structure each time the
+domain is modified. This overhead is unnecessary, for example, when the domain
+is operated upon by a single task.
+
+Motivated by this we have changed their default from
+``parSafe=true`` to ``parSafe=false``.
+With this change associative domains have been stabilized, except for domains
+requesting ``parSafe=true``, which remain unstable.
+
+Here's a breakdown of the changes and how they might impact
+your programs:
+
+1. New default for associative domains:
+    * Previously, associative domains were "parSafe" by default. This has
+      changed to ``parSafe=false``. For example:
+
+      .. code-block:: chapel
+
+          var dom: domain(int);
+
+      used to imply that ``dom`` was set to ``parSafe=true`` but now it defaults
+      to ``parSafe=false``.
+    * This means that the checks to guarantee parallel safety are no longer
+      inserted by default, thus improving performance.
+      Therefore, it is now the user's responsibility to ensure parallel safety
+      as needed.
+    * A warning will be generated for domains without an explicit ``parSafe``
+      setting, to draw user attention to code that may need to be updated,
+      unless compiled with ``-s noParSafeWarning``.
+
+      .. code-block:: chapel
+
+          var d1: domain(int);                 // warns
+          var d2: domain(int, parSafe=false);  // does not warn
+
+      where the compilation output of the above program would look as follows:
+
+      .. code-block:: console
+
+          $ chpl foo.chpl
+          foo.chpl:1: warning: The default parSafe mode for associative domains and arrays (like 'd1') is changing from 'true' to 'false'.
+          foo.chpl:1: note: To suppress this warning you can make your domain const, use an explicit parSafe argument (ex: domain(int, parSafe=false)), or compile with '-snoParSafeWarning'.
+          foo.chpl:1: note: To use the old default of parSafe=true, compile with '-sassocParSafeDefault=true'.
+
+    * Since ``const`` domains are never modified, they are exempt from these
+      warnings as changing their default to ``parSafe=false`` does not have the
+      potential to impact correctness.
+
+      .. code-block:: chapel
+
+          const dom: domain(int);  // does not warn
+
+    * In order to ease the transition, users can temporarily revert to the old
+      behavior by compiling with ``-s assocParSafeDefault=true``.
+
+      .. code-block:: console
+
+          $ chpl defaultAssociativeDomain.chpl -s assocParSafeDefault=true
+
+      If a program used associative domains and relied on ``parSafe=true``,
+      it might be useful to try compiling with ``-s assocParSafeDefault=true`` and
+      then add an explicit ``parSafe`` argument for each associative domain
+      individually, to ensure no races are introduced into the
+      program by forgoing the parallel safety guarantees.
+
+2. ``parSafe=true`` domains are unstable:
+    * Domains using ``parSafe=true`` are still considered unstable and continue
+      to trigger unstable warnings when declared. For example:
+
+      .. code-block:: chapel
+
+          var dom: domain(int, parSafe=true);  // generates unstable warning
+
+      generates the following compilation output:
+
+      .. code-block:: console
+
+          $ chpl bar.chpl --warn-unstable
+          bar.chpl:1: warning: parSafe=true is unstable for associative domains
+
+3. Associative domain literals:
+    * Associative domain literals also generate warnings by default. Use
+      explicit type declarations like ``domain(int, parSafe=false)`` to avoid
+      them.
+
+      .. code-block:: chapel
+
+          var d1 = {"Mon", "Tue", "Wed"};                                // warns
+          var d2: domain(string, parSafe=false) = {"Mon", "Tue", "Wed"}; // does not warn
+
+      where the compilation output of the above program would look as follows:
+
+      .. code-block::  console
+
+          $ chpl baz.chpl
+          baz.chpl:1: warning: The default parSafe mode for associative domains and arrays (like 'd1') is changing from 'true' to 'false'.
+          baz.chpl:1: note: To suppress this warning you can make your domain const, use an explicit parSafe argument (ex: domain(int, parSafe=false)), or compile with '-snoParSafeWarning'.
+          baz.chpl:1: note: To use the old default of parSafe=true, compile with '-sassocParSafeDefault=true'.
+
+version 1.32, September 2023
+----------------------------
+
+.. _readme-evolution.c_string-deprecation:
+
+``c_string`` deprecation
+************************
+
+Version 1.32 deprecates the ``c_string`` type in user interfaces. Please
+replace occurrences of ``c_string`` with ``c_ptrConst(c_char)``. Note that you
+need to ``use`` or ``import`` the ``CTypes`` module to have access to
+``c_ptrConst`` and ``c_char`` types.
+
+Here are some cases where directly replacing ``c_string`` with
+``c_ptrConst(c_char)`` may not work and what to do instead:
+
+==================================  ============================================
+if your code is...                  update it to...
+==================================  ============================================
+casting ``c_string`` to ``string``  use a ``string.create*Buffer()`` method
+casting ``c_string`` to ``bytes``   use a ``bytes.create*Buffer()`` method
+casting ``c_string`` to other type  create a string and cast it to other type
+casting ``string`` to ``c_string``  replace cast with ``.c_str()``
+casting ``bytes`` to ``c_string``   replace cast with ``.c_str()``
+casting other type to ``c_string``  create a string and call ``.c_str()`` on it
+using ``param c_string``            use ``param string``
+==================================  ============================================
+
+Additionally, several ``c_string`` methods are deprecated without replacement:
+
+- ``.writeThis()``
+- ``.serialize()``
+- ``.readThis()``
+- ``.indexOf()``
+- ``.substring()``
+- ``.size`` *
+
+An equivalent for ``.size`` is the unstable procedure ``strLen(x)`` in the
+``CTypes`` module.
+
+.. _readme-evolution.ref-if-modified-deprecation:
+
+The default intent for arrays and records
+*****************************************
+
+In version 1.32, arrays and records now always have a default intent of
+``const``. This means that if arrays and records are modified inside of a
+function, a ``coforall``, a ``begin``, or ``cobegin``,  they must use a ``ref``
+intent. This also means that record methods which modify their implicit
+``this`` argument must also use a ``ref`` intent. Previously, the compiler would treat
+these types as either ``const ref`` intent or ``ref`` intent, depending on if
+they were modified. This change was motivated by improving the consistency
+across types and making potential problems more apparent.
+
+Since there is a lot of user code relying on modifying an outer array, the
+corresponding change for ``forall`` is still under discussion. As a result, it
+will not warn by default, but modifying an outer array from a ``forall`` might
+not be allowed in the future in some or all cases.
+
+Consider the following code segment, which contains a ``coforall`` statement
+which modifies local variables. Prior to version 1.32, this code compiled and
+worked without warning.
+
+.. code-block:: chapel
+
+   var myInt: int;
+   const myDomain = {1..10};
+   var myArray: [myDomain] int;
+
+   coforall i in 2..9 with (ref myInt) {
+     myInt += i;
+     myArray[i] = myArray[i-1] + 1;
+   }
+
+Note that to modify ``myInt``, an explicit ``ref`` intent must be used whereas
+``myArray`` can be modified freely. The changes to the default intent for
+arrays is an attempt to remove this inconsistency and make the treatment of
+types in Chapel more uniform. This code also modifies both ``myInt`` and
+``myArray`` in a way that can produce race conditions. With ``myInt``, it is
+very apparent that there is something different than a simple serial iteration
+occurring and this can signal to users to more careful inspect their code for
+potential bugs. However ``myArray`` can be used without that same restriction,
+which can be a source of subtle bugs. In 1.32, the loop is written as:
+
+.. code-block:: chapel
+
+   var myInt: int;
+   const myDomain = {1..10};
+   var myArray: [myDomain] int;
+
+   coforall i in 2..9 with (ref myInt, ref myArray) {
+     myInt += i;
+     myArray[i] = myArray[i-1] + 1;
+   }
+
+This removes the inconsistency and calls greater attention to potential race
+conditions.
+
+This change also applies to procedures. Consider the following procedure:
+
+.. code-block:: chapel
+
+   proc computeAndPrint(ref myInt: int, myArray: []) {
+     ...
+   }
+
+It is clear that ``myInt`` may be modified and a user of this function can save
+this value beforehand if they need the value later. But without knowing what is
+contained in this function, it is impossible to tell if ``myArray`` is going to
+be modified. Making the default intent for arrays ``const`` removes this
+ambiguity.
+
+This consistency is extended to records as well. Consider the following record
+definition:
+
+.. code-block:: chapel
+
+   record myRecord {
+     var x: int;
+     proc doSomething() {
+       ...
+     }
+   }
+
+Without knowing what the body of ``doSomething`` does, it is not clear
+whether ``x`` may be modified. In version 1.32, if ``x`` is modified the
+method must be marked as a modifying record using a this-intent.
+
+.. code-block:: chapel
+
+   record myRecord {
+     var x: int;
+     proc ref doSomething() {
+       ...
+     }
+   }
+
+Now it is clear that the method may modify ``x``.
+
+version 1.31, June 2023
+-----------------------
+
+Version 1.31 renames and adjusts two of range's parameters,
+formerly ``range.boundedType`` and ``range.stridable``,
+as well as the former domain parameter ``domain.stridable``.
+For details please see `Range Types` in the online documentation for `Version 1.30 <https://chapel-lang.org/docs/1.30/language/spec/ranges.html#range-types>`_ and `Version 1.31 <https://chapel-lang.org/docs/1.31/language/spec/ranges.html#range-types>`_.
+
+Range boundedType / bounds parameter
+************************************
+
+Prior to Version 1.31, the boundedness of a range ``r`` was determined
+by ``r.boundedType``. As of 1.31, it is determined by ``r.bounds``.
+At the same time, the type of this field changed from:
+
+.. code-block:: chapel
+
+    enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
+
+to:
+
+.. code-block:: chapel
+
+    enum boundKind { both, low, high, neither };
+
+This change helps make Chapel code shorter, improving its readability.
+
+When updating your code, simply update the names accordingly. For example,
+from:
+
+.. code-block:: chapel
+
+    if myRange.boundedType == BoundedRangeType.boundedLow then ....;
+
+to:
+
+.. code-block:: chapel
+
+    if myRange.bounds == boundKind.low then ....;
+
+Range and domain stridability / strides parameter
+*************************************************
+
+Prior to Version 1.31, ranges and domains had the parameter ``stridable``,
+which was a boolean that indicated whether the given range or domain
+allowed non-unit strides.
+As of 1.31, this parameter is replaced with ``strides`` whose type is:
+
+.. code-block:: chapel
+
+    enum strideKind { one, negOne, positive, negative, any };
+
+This change creates additional opportunities for optimization,
+for example in the cases where the range's stride is known at compile time
+to be positive or to be -1.
+This also avoids a terminology problem where ``stridable=false`` implied,
+incorrectly, that a range could not be strided. The ``strides`` values
+are now self-explanatory instead of the non-specific values
+``true`` and ``false``.
+
+When updating your code, update the field name and replace boolean
+values with enum values. For example:
+
+=============================== =============================================
+change from...                  to...
+=============================== =============================================
+``myRange.stridable``           ``myRange.strides``
+``if myRange.stridable then``   ``if myRange.strides != strideKind.one then``
+``range(stridable=false)``      ``range(strides=strideKind.one)``
+``range(stridable=true)``       ``range(strides=strideKind.any)``
+another potential replacement:  ``range(strides=strideKind.positive)``
+=============================== =============================================
+
+When getting an error like "assigning to a range with boundKind.positive
+from a range with boundKind.any", insert a cast to the desired range type.
+Analogous updates are needed in code operating on domains.
+
+version 1.28, September 2022
+----------------------------
+
+Version 1.28 included some significant changes to the overload resolution
+rules. In addition, it enabled implicit conversion from ``int(t)`` to
+``uint(t)``.  This section discusses some example programs that behave
+differently due to these changes.
+
+See also:
+
+ * The `1.27 overload resolution rules <https://chapel-lang.org/docs/1.27/language/spec/procedures.html#function-resolution>`_
+ * The `1.28 overload resolution rules <https://chapel-lang.org/docs/1.28/language/spec/procedures.html#function-resolution>`_
+
+Behavior Differences for Mixes of Signed and Unsigned
+*****************************************************
+
+Prior to 1.28, numeric operations applied to a mix of signed and unsigned types
+could have surprising results by moving the computation from a particular bit
+width to another—or by moving it from an integral computation to a floating
+point one.
+
+For example:
+
+.. code-block:: chapel
+
+    var myInt:int = 1;
+    var myUint:uint = 2;
+    var myIntPlusUint = myInt + myUint; // what is the type of `myIntPlusUint`?
+
+Before 1.28, this program would result in compilation error, due to an
+error overload of ``operator +`` in the standard library.
+
+Version 1.28 adds the ability for an ``int`` to implicitly convert to
+``uint`` and removes the error overload. As a result, the ``uint``
+version of ``operator +`` is chosen, which results in ``myIntPlusUint``
+having type ``uint``.
+
+This behavior can also extend to user-defined functions. Consider a function
+``plus`` defined for ``int``, ``uint``, and ``real``:
+
+.. code-block:: chapel
+
+    proc plus(a: int, b: int)   { return a + b; }
+    proc plus(a: uint, b: uint) { return a + b; }
+    proc plus(a: real, b: real) { return a + b; }
+
+    var myInt:int = 1;
+    var myUint:uint = 2;
+    var myIntPlusUint = plus(myInt, myUint);
+
+In 1.27 the call to ``plus`` would resolve to the ``real`` version because
+``int`` could not implicitly convert to ``uint``, but both ``int`` and ``uint``
+could implicitly convert to ``real(64)``. As a result, ``myIntPlusUint`` had
+the type ``real``. This change from integral types to floating point types
+could be very surprising.
+
+In 1.28 the call to ``plus`` resolves to the ``uint`` version, and
+``myIntPlusUint`` has type ``uint``.
+
+This behavior also applies to ``int`` and ``uint`` types with smaller widths:
+
+.. code-block:: chapel
+
+    var myInt32:int(32) = 1;
+    var myUint32:uint(32) = 2;
+    var myInt32PlusUint32 = myInt32 + myUint32;
+
+In 1.27, the ``int(64)`` ``+`` operator is chosen (because both ``int(32)`` and
+``uint(32)`` can implicitly convert to ``int(64)``), which results in
+``myInt32PlusUint32`` having type ``int(64)``. This could be surprising when
+explicitly working with 32-bit numbers.
+
+In contrast, in 1.28, due to the ability for ``int(32)`` to implicitly
+convert to ``uint(32)``, the ``uint(32)`` version of the ``+`` operator
+is chosen and ``myInt32PlusUint32`` has type ``uint(32)``.
+
+Param Expression Behavior
+*************************
+
+Some expressions consisting of mixed-type literal or ``param`` values now
+have different behavior. For example:
+
+.. code-block:: chapel
+
+    var x = 1:int(8) + 2; // what is the type of `x` ?
+
+Note in this example that the literal ``2`` is a ``param`` with type
+``int(64)`` and that ``1:int(8)`` is a ``param`` with type ``int(8)``.
+
+In 1.27, this program would output ``int(8)``, because the overload
+resolution rules would favor the ``+`` overload using the type of the
+non-default-sized ``param``. The result is that in 1.27, ``x`` had type
+``int(8)``.
+
+In 1.28, the rules are simpler and a closer match to the corresponding
+case with regular variables (``myInt8 + myInt64``). There is no longer
+any special behavior for non-default-sized ``param``. As a result, the
+value ``x`` now has type ``int(64)``.
+
+For similar reasons, the type of ``nI`` in the following code is now
+``int(64)`` where previously it was ``int(32)``:
+
+.. code-block:: chapel
+
+    const nI = ((-2):int(32))**53;
+
+A similar change can also appear with range literals that use mixed type
+``param`` lower and upper bounds. The following range construction also
+makes use of the new implicit conversion from ``int(t)`` to ``uint(t))``:
+
+.. code-block:: chapel
+
+    var r8 = 1:int(8)..100:uint(8);
+    writeln(r8.type:string);
+
+In 1.27, this would generate a range with index type ``int(16)``. In
+1.28, it produces a range with index type ``uint(8)``.
+
+Speaking of range literal construction, a range like ``1:int(8)..10``
+still produces an ``int(8)`` range in 1.28. However, as we have
+discussed, something like ``1:int(8) + 10`` would result in an
+``int(64)``. For now, the range implementation has been adjusted to
+preserve the old behavior specifically for the ``..`` operator. However,
+this may change in a future release.
+
+Change for some mixed int/uint overloads
+****************************************
+
+This example shows a change in behavior for two overloads where one is
+``int`` and the other is ``uint``:
+
+.. code-block:: chapel
+
+    proc dbm(a:int(8))   { writeln("dbm int8"); }
+    proc dbm(a:uint(64)) { writeln("dbm uint64"); }
+
+    dbm(42:int(64));
+
+Previous to 1.28, this program would call the ``int(8)`` version of the
+function. It can do that because the compiler knows that the ``param``
+value ``42`` will fit into an ``int(8)``. Such a conversion is called a
+``param`` narrowing conversion. However, in 1.28, this function now calls
+the ``uint(64)`` version of the function. The main reason for this is
+that the 1.28 rules prefer to not do ``param`` narrowing conversion when
+another candidate does not need it. In this case, ``int`` to ``uint`` is
+not a ``param`` narrowing conversion so that is preferred.
+
+Change for function visibility / shadowing
+******************************************
+
+The new overload resolution rules in 1.28 consider function visibility or
+shadowing before considering how well the arguments match. Consider this
+example:
+
+.. code-block:: chapel
+
+    proc f(arg: int) { writeln("f int"); }
+
+    proc main() {
+      proc f(arg) { writeln("f generic"); }
+
+      f(1); // which `f` does this call?
+    }
+
+Inside of ``proc main``, the call to ``f`` now resolves to the generic
+inner function. In contrast, in version 1.27, the outer
+``proc f(arg: int)`` would be called.
 
 version 1.22, April 2020
 ------------------------
@@ -174,7 +711,7 @@ experiences:
   If you have a pattern that you're trying to write in an
   index-neutral style, but can't, don't hesitate to `ask for tips
   <https://chapel-lang.org/community.html>`_.
-        
+
 
 * Some common pitfalls to check for in your code include:
 

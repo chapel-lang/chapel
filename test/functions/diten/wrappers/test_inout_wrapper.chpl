@@ -10,7 +10,8 @@ class C {
 }
 
 proc main {
-  var c = new borrowed C();
+  var ownC = new owned C();
+  var c = ownC.borrow();
   c.callUpit();
   writeln(c.n);
   c.callUpit();

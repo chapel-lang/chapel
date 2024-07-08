@@ -10,10 +10,10 @@ proc testType(type t, param val) {
 
   param x: t = val;
   var y: t = x;
-  var a: c_void_ptr = x: c_void_ptr;
-  var b: c_void_ptr = val: t : c_void_ptr;
-  var c: c_void_ptr = x: c_intptr : c_void_ptr;
-  var d: c_void_ptr = x: c_uintptr : c_void_ptr;
+  var a: c_ptr(void) = x: c_ptr(void);
+  var b: c_ptr(void) = val: t : c_ptr(void);
+  var c: c_ptr(void) = x: c_intptr : c_ptr(void);
+  var d: c_ptr(void) = x: c_uintptr : c_ptr(void);
 
 
   assert(a == b);
@@ -29,7 +29,7 @@ proc testType(type t, param val) {
       writef("0x%xu\n", back);
     assert(back == y);
   }
-  if isUintType(t)  && (c_sizeof(t) == c_sizeof(c_void_ptr) || val == 1)  {
+  if isUintType(t)  && (c_sizeof(t) == c_sizeof(c_ptr(void)) || val == 1)  {
     var back = a: c_uintptr : t;
     if debug then
       writef("0x%xu\n", back);

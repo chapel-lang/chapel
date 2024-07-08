@@ -10,7 +10,7 @@
 {
   use List;
   var l: list(bytes);
-  l.append(b"OK");
+  l.pushBack(b"OK");
   var a = l.toArray();
   writeln(a);
 }

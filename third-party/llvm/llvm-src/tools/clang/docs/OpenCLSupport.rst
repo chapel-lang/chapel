@@ -25,9 +25,19 @@ Clang also supports :ref:`the C++ for OpenCL kernel language <cxx_for_opencl_imp
 There are also other :ref:`new and experimental features <opencl_experimenal>`
 available.
 
-For general issues and bugs with OpenCL in clang refer to `the GitHub issue
-list
-<https://github.com/llvm/llvm-project/issues?q=is%3Aopen+is%3Aissue+label%3Aopencl>`__.
+Details about usage of clang for OpenCL can be found in :doc:`UsersManual`.
+
+Missing features or with limited support
+========================================
+
+- For general issues and bugs with OpenCL in clang refer to `the GitHub issue
+  list
+  <https://github.com/llvm/llvm-project/issues?q=is%3Aopen+is%3Aissue+label%3Aopencl>`__.
+
+- Command-line flag :option:`-cl-ext` (used to override extensions/
+  features supported by a target) is missing support of some functionality i.e. that is
+  implemented fully through libraries (see :ref:`library-based features and
+  extensions <opencl_ext_libs>`).
 
 Internals Manual
 ================
@@ -68,31 +78,6 @@ All the options in this section are frontend-only and therefore if used
 with regular clang driver they require frontend forwarding, e.g. ``-cc1``
 or ``-Xclang``.
 
-.. _opencl_cl_ext:
-
-.. option:: -cl-ext
-
-Disables support of OpenCL extensions. All OpenCL targets provide a list
-of extensions that they support. Clang allows to amend this using the ``-cl-ext``
-flag with a comma-separated list of extensions prefixed with ``'+'`` or ``'-'``.
-The syntax: ``-cl-ext=<(['-'|'+']<extension>[,])+>``,  where extensions
-can be either one of `the OpenCL published extensions
-<https://www.khronos.org/registry/OpenCL>`_
-or any vendor extension. Alternatively, ``'all'`` can be used to enable
-or disable all known extensions.
-
-Example disabling double support for the 64-bit SPIR target:
-
-   .. code-block:: console
-
-     $ clang -cc1 -triple spir64-unknown-unknown -cl-ext=-cl_khr_fp64 test.cl
-
-Enabling all extensions except double support in R600 AMD GPU can be done using:
-
-   .. code-block:: console
-
-     $ clang -cc1 -triple r600-unknown-unknown -cl-ext=-all,+cl_khr_fp16 test.cl
-
 .. _opencl_finclude_default_header:
 
 .. option:: -finclude-default-header
@@ -128,7 +113,7 @@ To enable modules for OpenCL:
 
    .. code-block:: console
 
-     $ clang -target spir-unknown-unknown -c -emit-llvm -Xclang -finclude-default-header -fmodules -fimplicit-module-maps -fmodules-cache-path=<path to the generated module> test.cl
+     $ clang --target=spir-unknown-unknown -c -emit-llvm -Xclang -finclude-default-header -fmodules -fimplicit-module-maps -fmodules-cache-path=<path to the generated module> test.cl
 
 Another way to circumvent long parsing latency for the OpenCL builtin
 declarations is to use mechanism enabled by :ref:`-fdeclare-opencl-builtins
@@ -238,17 +223,21 @@ indicating the presence of the extension should be added to clang.
 
 The default flow for adding a new extension into the frontend is to
 modify `OpenCLExtensions.def
-<https://github.com/llvm/llvm-project/blob/main/clang/include/clang/Basic/OpenCLExtensions.def>`_
+<https://github.com/llvm/llvm-project/blob/main/clang/include/clang/Basic/OpenCLExtensions.def>`__,
+containing the list of all extensions and optional features supported by
+the frontend.
 
 This will add the macro automatically and also add a field in the target
 options ``clang::TargetOptions::OpenCLFeaturesMap`` to control the exposure
 of the new extension during the compilation.
 
-Note that by default targets like `SPIR` or `X86` expose all the OpenCL
+Note that by default targets like `SPIR-V`, `SPIR` or `X86` expose all the OpenCL
 extensions. For all other targets the configuration has to be made explicitly.
 
 Note that the target extension support performed by clang can be overridden
-with :ref:`-cl-ext <opencl_cl_ext>` command-line flags.
+with :option:`-cl-ext` command-line flags.
+
+.. _opencl_ext_libs:
 
 **Library functionality**
 
@@ -264,7 +253,9 @@ for more details refer to
 :ref:`the section on the OpenCL Header <opencl_header>`. The macros indicating
 the presence of such extensions can be added in the standard header files
 conditioned on target specific predefined macros or/and language version
-predefined macros.
+predefined macros (see `feature/extension preprocessor macros defined in
+opencl-c-base.h
+<https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/opencl-c-base.h>`__).
 
 **Pragmas**
 
@@ -342,7 +333,7 @@ Missing features or with limited support
 - IR generation for non-trivial global destructors is incomplete (See:
   `PR48047 <https://llvm.org/PR48047>`_).
 
-- Support of `destrutors with non-default address spaces
+- Support of `destructors with non-default address spaces
   <https://www.khronos.org/opencl/assets/CXX_for_OpenCL.html#_construction_initialization_and_destruction>`_
   is incomplete (See: `D109609 <https://reviews.llvm.org/D109609>`_).
 
@@ -354,15 +345,16 @@ OpenCL C 3.0 Usage
 OpenCL C 3.0 language standard makes most OpenCL C 2.0 features optional. Optional
 functionality in OpenCL C 3.0 is indicated with the presence of feature-test macros
 (list of feature-test macros is `here <https://www.khronos.org/registry/OpenCL/specs/3.0-unified/html/OpenCL_C.html#features>`__).
-Command-line flag :ref:`-cl-ext <opencl_cl_ext>` can be used to override features supported by a target.
+Command-line flag :option:`-cl-ext` can be used to override features supported by a target.
 
 For cases when there is an associated extension for a specific feature (fp64 and 3d image writes)
 user should specify both (extension and feature) in command-line flag:
 
    .. code-block:: console
 
-     $ clang -cc1 -cl-std=CL3.0 -cl-ext=+cl_khr_fp64,+__opencl_c_fp64 ...
-     $ clang -cc1 -cl-std=CL3.0 -cl-ext=-cl_khr_fp64,-__opencl_c_fp64 ...
+     $ clang -cl-std=CL3.0 -cl-ext=+cl_khr_fp64,+__opencl_c_fp64 ...
+     $ clang -cl-std=CL3.0 -cl-ext=-cl_khr_fp64,-__opencl_c_fp64 ...
+
 
 
 OpenCL C 3.0 Implementation Status
@@ -406,7 +398,7 @@ implementation status.
 +------------------------------+-------------------------+-----------------------------------------+----------------------+--------------------------------------------------------------------------------------------------------------------------------+
 | New functionality            | Subgroup functions                                                | :good:`done`         | https://reviews.llvm.org/D105858, https://reviews.llvm.org/D118999                                                             |
 +------------------------------+-------------------------+-----------------------------------------+----------------------+--------------------------------------------------------------------------------------------------------------------------------+
-| New functionality            | Atomic mem scopes: subgroup, all devices including functions      | :good:`done`         |  https://reviews.llvm.org/D103241                                                                                              |
+| New functionality            | Atomic mem scopes: subgroup, all devices including functions      | :good:`done`         | https://reviews.llvm.org/D103241                                                                                               |
 +------------------------------+-------------------------+-----------------------------------------+----------------------+--------------------------------------------------------------------------------------------------------------------------------+
 
 .. _opencl_experimenal:
@@ -416,8 +408,8 @@ Experimental features
 
 Clang provides the following new WIP features for the developers to experiment
 and provide early feedback or contribute with further improvements.
-Feel free to contact us on `cfe-dev
-<https://lists.llvm.org/mailman/listinfo/cfe-dev>`_ or file `a GitHub issue
+Feel free to contact us on `the Discourse forums (Clang Frontend category)
+<https://discourse.llvm.org/c/clang/6>`_ or file `a GitHub issue
 <https://github.com/llvm/llvm-project/issues/new>`_.
 
 .. _opencl_experimental_cxxlibs:

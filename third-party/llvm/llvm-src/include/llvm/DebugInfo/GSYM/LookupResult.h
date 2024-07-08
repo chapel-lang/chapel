@@ -9,8 +9,8 @@
 #ifndef LLVM_DEBUGINFO_GSYM_LOOKUPRESULT_H
 #define LLVM_DEBUGINFO_GSYM_LOOKUPRESULT_H
 
+#include "llvm/ADT/AddressRanges.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/DebugInfo/GSYM/Range.h"
 #include <inttypes.h>
 #include <vector>
 
@@ -51,6 +51,16 @@ struct LookupResult {
   SourceLocations Locations;
   std::string getSourceFile(uint32_t Index) const;
 };
+
+inline bool operator==(const LookupResult &LHS, const LookupResult &RHS) {
+  if (LHS.LookupAddr != RHS.LookupAddr)
+    return false;
+  if (LHS.FuncRange != RHS.FuncRange)
+    return false;
+  if (LHS.FuncName != RHS.FuncName)
+    return false;
+  return LHS.Locations == RHS.Locations;
+}
 
 raw_ostream &operator<<(raw_ostream &OS, const LookupResult &R);
 

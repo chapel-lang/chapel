@@ -132,6 +132,11 @@ def run_tests(tests):
     else:
         os.environ["CHPL_TEST_SINGLES"] = "1"
 
+    if args.respect_notests:
+        os.environ["CHPL_TEST_NOTESTS"] = "0"
+    else:
+        os.environ["CHPL_TEST_NOTESTS"] = "1"
+
     for test in files:
         test_file(test)
 
@@ -271,7 +276,7 @@ def test_directory(test, test_type):
                 skip_file_name = os.path.normpath(skip_file_name)
                 if os.path.isfile(skip_file_name):
                     try:
-                        prune_if = run_command([test_env, skip_file_name]).strip()
+                        prune_if = process_skipif_output(run_command([test_env, skip_file_name]).strip())
                         # check output and skip if true
                         if prune_if == "1" or prune_if == "True":
                             logger.write("[Skipping directory and children bas"
@@ -287,7 +292,7 @@ def test_directory(test, test_type):
                 skip_test = False
                 if os.path.isfile("SKIPIF"):
                     try:
-                        skip_test = run_command([test_env, "SKIPIF"]).strip()
+                        skip_test = process_skipif_output(run_command([test_env, "SKIPIF"]).strip())
                         # check output and skip if true
                         if skip_test == "1" or skip_test == "True":
                             logger.write("[Skipping directory based on SKIPIF "
@@ -313,13 +318,22 @@ def test_directory(test, test_type):
                                    ".test.cpp", ".ml-test.cpp")) :
                         are_tests = True
                         break
+                    # this directory may generate test files
+                    if f == "PRETEST":
+                        are_tests = True
+                        break
                 else:
                     if f.endswith("." + perf_keys):
                         are_tests = True
                         break
 
+            # don't run local 'sub_test's on --performance or --gen-graphs runs
+            run_local_sub_test = False
+            if test_type == "run":
+                run_local_sub_test = os.access(os.path.join(dir, "sub_test"), os.X_OK)
+
             # check a lot of stuff before continuing
-            if are_tests or os.access(os.path.join(dir, "sub_test"), os.X_OK):
+            if are_tests or run_local_sub_test:
                 # cd to dir for clean and run, saving current location
                 with cd(dir):
                     # clean dir
@@ -1255,7 +1269,6 @@ def check_for_duplicates():
             else:
                 graph_set[filename] = g
 
-
 # END STUFF
 
 # Execute 'cmd' and return its exit code.
@@ -1481,7 +1494,12 @@ def parser_setup():
             help=help_all("<prefix> to remove from tests in jUnit report"))
     # respect skipifs
     parser.add_argument("-respect-skipifs", "--respect-skipifs",
-            action="store_true", dest="respect_skipifs")
+            action="store_true", dest="respect_skipifs",
+            help="respect '.skipif' files even when testing individual files")
+    # respect notests
+    parser.add_argument("-respect-notests", "--respect-notests",
+            action="store_true", dest="respect_notests",
+            help="respect '.notest' files even when testing individual files")
     # extra help
     parser.add_argument("-help", action="help", help=argparse.SUPPRESS)
     parser.add_argument("--help-all", action="help",
@@ -1587,6 +1605,15 @@ def run_command(cmd, stderr=None):
     if sys.version_info[0] >= 3 and not isinstance(output, str):
         output = str(output, 'utf-8')
 
+    return output
+
+def process_skipif_output(output):
+    lines = output.splitlines()
+    if len(lines) == 0:
+      return output
+    elif len(lines) > 1:
+      print("\n".join(lines[:-1]))
+    output = lines[-1]
     return output
 
 def run_git_command(command):

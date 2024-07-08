@@ -22,7 +22,7 @@
 pragma "error mode fatal"
 module vertexColoring {
 
-  use Random, IO;
+    use Random, IO, Math;
     use VisualDebug;
 
     config const inputFile = "input/inputvertexColoring_64_-rn.txt";
@@ -79,8 +79,8 @@ module vertexColoring {
     */
     proc main() {
 
-        var inFile = open(inputFile, iomode.r);
-        var reader = inFile.reader();
+        var inFile = open(inputFile, ioMode.r);
+        var reader = inFile.reader(locking=false);
 
         nodes = reader.read(int);
         D = {0..(nodes-1)};
@@ -174,7 +174,7 @@ module vertexColoring {
 
     /* Reduces the number of colors used in the graph to six. */
     proc sixColor(){
-        forall (i, nodeQ) in zip(D, nodeSet) {
+        forall (i, nodeQ) in zip(D, nodeSet) with (ref nval) {
             const node = nodeQ!;
             forall j in 1..node.children.size {
                 sendColor(node.children[j], node.color);
@@ -183,7 +183,7 @@ module vertexColoring {
             if(loadValue != 0) then nval[i] = loadweight(nval[i]+i);
         }
 
-        forall (i, nodeQ) in zip(D, nodeSet) {
+        forall (i, nodeQ) in zip(D, nodeSet) with (ref again, ref nval) {
             const node = nodeQ!;
             if(i!=root){
                 again[i]=false;
@@ -213,14 +213,14 @@ module vertexColoring {
    proc six2three() {
        for k in 1..3 {
             var x = 6-k;
-            var randStream = new owned RandomStream(real, 3);
-            var ncolor : int = randStream.getNext(): int;
+            var randStream = new randomStream(real, 3);
+            var ncolor : int = randStream.next(): int;
             ncolor = ncolor%3;
             shiftDown();
             if(nodeSet[root]!.color == ncolor) then ncolor = (ncolor+1)%3;
             nodeSet[root]!.color = ncolor;
             
-            forall (i, nodeQ) in zip(D, nodeSet) {
+            forall (i, nodeQ) in zip(D, nodeSet) with (ref nval) {
                 const node = nodeQ!;
                 var cparent=0,cchild=0;
                 if(node.color == x) {
@@ -248,7 +248,7 @@ module vertexColoring {
 
    /* Shifts the color of parent down to its children. */
    proc shiftDown() {
-        forall (i, nodeQ) in zip(D, nodeSet) {
+        forall (i, nodeQ) in zip(D, nodeSet) with (ref nval) {
             const node = nodeQ!;
             for j in 1..node.children.size {
                     sendColor(node.children[j], node.color);
@@ -256,7 +256,7 @@ module vertexColoring {
             }
         }
 
-        forall (i, nodeQ) in zip(D, nodeSet) {
+        forall (i, nodeQ) in zip(D, nodeSet) with (ref nval) {
             const node = nodeQ!;
             if(i != root) then node.color = node.receivedColor;
             if(loadValue!=0) then nval[i] = loadweight(nval[i]+i);
@@ -281,8 +281,8 @@ module vertexColoring {
     }
 
     proc printOutput() {
-        var outfile = open(outputFile, iomode.cw);
-        var writer = outfile.writer();
+        var outfile = open(outputFile, ioMode.cw);
+        var writer = outfile.writer(locking=false);
         for (q, node) in zip(D, nodeSet!) {
             writer.writeln("Node ", q, ": \t Color ", node.color);
             writeln("Node ", q, ": \t Color ", node.color);

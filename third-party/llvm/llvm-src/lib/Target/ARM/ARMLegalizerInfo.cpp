@@ -14,7 +14,8 @@
 #include "ARMCallLowering.h"
 #include "ARMSubtarget.h"
 #include "llvm/CodeGen/GlobalISel/LegalizerHelper.h"
-#include "llvm/CodeGen/LowLevelType.h"
+#include "llvm/CodeGen/GlobalISel/MachineIRBuilder.h"
+#include "llvm/CodeGen/LowLevelTypeUtils.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/TargetOpcodes.h"
 #include "llvm/CodeGen/ValueTypes.h"
@@ -361,8 +362,8 @@ ARMLegalizerInfo::getFCmpLibcalls(CmpInst::Predicate Predicate,
   llvm_unreachable("Unsupported size for FCmp predicate");
 }
 
-bool ARMLegalizerInfo::legalizeCustom(LegalizerHelper &Helper,
-                                      MachineInstr &MI) const {
+bool ARMLegalizerInfo::legalizeCustom(LegalizerHelper &Helper, MachineInstr &MI,
+                                      LostDebugLocObserver &LocObserver) const {
   using namespace TargetOpcode;
 
   MachineIRBuilder &MIRBuilder = Helper.MIRBuilder;
@@ -391,7 +392,8 @@ bool ARMLegalizerInfo::legalizeCustom(LegalizerHelper &Helper,
                           OriginalResult};
     auto Status = createLibcall(MIRBuilder, Libcall, {RetRegs, RetTy, 0},
                                 {{MI.getOperand(1).getReg(), ArgTy, 0},
-                                 {MI.getOperand(2).getReg(), ArgTy, 0}});
+                                 {MI.getOperand(2).getReg(), ArgTy, 0}},
+                                LocObserver, &MI);
     if (Status != LegalizerHelper::Legalized)
       return false;
     break;
@@ -427,7 +429,8 @@ bool ARMLegalizerInfo::legalizeCustom(LegalizerHelper &Helper,
       auto Status = createLibcall(MIRBuilder, Libcall.LibcallID,
                                   {LibcallResult, RetTy, 0},
                                   {{MI.getOperand(2).getReg(), ArgTy, 0},
-                                   {MI.getOperand(3).getReg(), ArgTy, 0}});
+                                   {MI.getOperand(3).getReg(), ArgTy, 0}},
+                                  LocObserver, &MI);
 
       if (Status != LegalizerHelper::Legalized)
         return false;

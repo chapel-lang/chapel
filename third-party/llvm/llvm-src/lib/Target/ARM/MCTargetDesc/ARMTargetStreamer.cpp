@@ -18,7 +18,6 @@
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/Support/ARMBuildAttributes.h"
-#include "llvm/Support/TargetParser.h"
 
 using namespace llvm;
 
@@ -112,17 +111,30 @@ void ARMTargetStreamer::emitIntTextAttribute(unsigned Attribute,
 void ARMTargetStreamer::emitArch(ARM::ArchKind Arch) {}
 void ARMTargetStreamer::emitArchExtension(uint64_t ArchExt) {}
 void ARMTargetStreamer::emitObjectArch(ARM::ArchKind Arch) {}
-void ARMTargetStreamer::emitFPU(unsigned FPU) {}
+void ARMTargetStreamer::emitFPU(ARM::FPUKind FPU) {}
 void ARMTargetStreamer::finishAttributeSection() {}
-void
-ARMTargetStreamer::AnnotateTLSDescriptorSequence(const MCSymbolRefExpr *SRE) {}
+void ARMTargetStreamer::annotateTLSDescriptorSequence(
+    const MCSymbolRefExpr *SRE) {}
 void ARMTargetStreamer::emitThumbSet(MCSymbol *Symbol, const MCExpr *Value) {}
+
+void ARMTargetStreamer::emitARMWinCFIAllocStack(unsigned Size, bool Wide) {}
+void ARMTargetStreamer::emitARMWinCFISaveRegMask(unsigned Mask, bool Wide) {}
+void ARMTargetStreamer::emitARMWinCFISaveSP(unsigned Reg) {}
+void ARMTargetStreamer::emitARMWinCFISaveFRegs(unsigned First, unsigned Last) {}
+void ARMTargetStreamer::emitARMWinCFISaveLR(unsigned Offset) {}
+void ARMTargetStreamer::emitARMWinCFINop(bool Wide) {}
+void ARMTargetStreamer::emitARMWinCFIPrologEnd(bool Fragment) {}
+void ARMTargetStreamer::emitARMWinCFIEpilogStart(unsigned Condition) {}
+void ARMTargetStreamer::emitARMWinCFIEpilogEnd() {}
+void ARMTargetStreamer::emitARMWinCFICustom(unsigned Opcode) {}
 
 static ARMBuildAttrs::CPUArch getArchForCPU(const MCSubtargetInfo &STI) {
   if (STI.getCPU() == "xscale")
     return ARMBuildAttrs::v5TEJ;
 
-  if (STI.hasFeature(ARM::HasV8Ops)) {
+  if (STI.hasFeature(ARM::HasV9_0aOps))
+    return ARMBuildAttrs::v9_A;
+  else if (STI.hasFeature(ARM::HasV8Ops)) {
     if (STI.hasFeature(ARM::FeatureRClass))
       return ARMBuildAttrs::v8_R;
     return ARMBuildAttrs::v8_A;
@@ -165,7 +177,7 @@ void ARMTargetStreamer::emitTargetAttributes(const MCSubtargetInfo &STI) {
   switchVendor("aeabi");
 
   const StringRef CPUString = STI.getCPU();
-  if (!CPUString.empty() && !CPUString.startswith("generic")) {
+  if (!CPUString.empty() && !CPUString.starts_with("generic")) {
     // FIXME: remove krait check when GNU tools support krait cpu
     if (STI.hasFeature(ARM::ProcKrait)) {
       emitTextAttribute(ARMBuildAttrs::CPU_name, "cortex-a9");
@@ -226,14 +238,18 @@ void ARMTargetStreamer::emitTargetAttributes(const MCSubtargetInfo &STI) {
                         ? ARMBuildAttrs::AllowNeonARMv8_1a
                         : ARMBuildAttrs::AllowNeonARMv8);
   } else {
-    if (STI.hasFeature(ARM::FeatureFPARMv8_D16_SP))
+    if (STI.hasFeature(ARM::FeatureFPARMv8_D16_SP)) {
       // FPv5 and FP-ARMv8 have the same instructions, so are modeled as one
       // FPU, but there are two different names for it depending on the CPU.
-      emitFPU(STI.hasFeature(ARM::FeatureD32)
-                  ? ARM::FK_FP_ARMV8
-                  : (STI.hasFeature(ARM::FeatureFP64) ? ARM::FK_FPV5_D16
-                                                      : ARM::FK_FPV5_SP_D16));
-    else if (STI.hasFeature(ARM::FeatureVFP4_D16_SP))
+      if (STI.hasFeature(ARM::FeatureD32))
+        emitFPU(ARM::FK_FP_ARMV8);
+      else {
+        emitFPU(STI.hasFeature(ARM::FeatureFP64) ? ARM::FK_FPV5_D16
+                                                 : ARM::FK_FPV5_SP_D16);
+        if (STI.hasFeature(ARM::HasMVEFloatOps))
+          emitArchExtension(ARM::AEK_SIMD | ARM::AEK_DSP | ARM::AEK_FP);
+      }
+    } else if (STI.hasFeature(ARM::FeatureVFP4_D16_SP))
       emitFPU(STI.hasFeature(ARM::FeatureD32)
                   ? ARM::FK_VFPV4
                   : (STI.hasFeature(ARM::FeatureFP64) ? ARM::FK_VFPV4_D16
@@ -304,4 +320,14 @@ void ARMTargetStreamer::emitTargetAttributes(const MCSubtargetInfo &STI) {
     emitAttribute(ARMBuildAttrs::PAC_extension, ARMBuildAttrs::AllowPAC);
     emitAttribute(ARMBuildAttrs::BTI_extension, ARMBuildAttrs::AllowBTI);
   }
+}
+
+MCTargetStreamer *
+llvm::createARMObjectTargetStreamer(MCStreamer &S, const MCSubtargetInfo &STI) {
+  const Triple &TT = STI.getTargetTriple();
+  if (TT.isOSBinFormatELF())
+    return createARMObjectTargetELFStreamer(S);
+  if (TT.isOSBinFormatCOFF())
+    return createARMObjectTargetWinCOFFStreamer(S);
+  return new ARMTargetStreamer(S);
 }

@@ -1,16 +1,16 @@
-use Barriers;
+use Collectives;
 
 config const tasksPerLoc = 4;
 var taskCounts: [0..#numLocales, 0..#tasksPerLoc] (int, int);
 
 proc main() {
-  coforall loc in Locales do on loc {
-    var barrier = new Barrier(tasksPerLoc);
-    coforall tid in 0..#tasksPerLoc {
-      barrier.barrier();
+  coforall loc in Locales with (ref taskCounts) do on loc {
+    var bar = new barrier(tasksPerLoc);
+    coforall tid in 0..#tasksPerLoc with (ref taskCounts) {
+      bar.barrier();
       const taskID = (loc.id * tasksPerLoc) + tid;
       const rt = here.runningTaskCounter.read();
-      barrier.barrier();
+      bar.barrier();
       taskCounts[loc.id, tid] = (taskID, rt);
     }
   }

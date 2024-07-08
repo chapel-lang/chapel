@@ -1,0 +1,24 @@
+iterating over 0..#u8
+0:int(64)
+1:int(64)
+iterating over zero..#u8
+0:int(64)
+1:int(64)
+iterating over 0..#u16
+0:int(64)
+1:int(64)
+iterating over zero..#u16
+0:int(64)
+1:int(64)
+iterating over 0..#u32
+0:int(64)
+1:int(64)
+iterating over zero..#u32
+0:int(64)
+1:int(64)
+iterating over 0..#u64
+0:int(64)
+1:int(64)
+iterating over zero..#u64
+0:int(64)
+1:int(64)

@@ -69,7 +69,7 @@ class Buckets {
     }
   }
 
-  proc getUpdates(buf:[]) {
+  proc getUpdates(ref buf:[]) {
     var loc, nu: int;
     local {
       (loc, nu) = heap.extractMax();

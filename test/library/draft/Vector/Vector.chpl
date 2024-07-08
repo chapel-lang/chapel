@@ -29,7 +29,7 @@ module Vector {
   private use Sort;
   private use List only list;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   private const _initialCapacity = 8;
   //
   // We can change the lock type later. Use a spinlock for now, even if it
@@ -37,23 +37,23 @@ module Vector {
   // contention (IE, lots of tasks trying to insert into the middle of this
   // vector, or any operation that is O(n)).
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
   //
   // Use a wrapper class to let vector methods have a const ref receiver even
   // when `parSafe` is `true` and the vector lock is used.
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
@@ -61,11 +61,11 @@ module Vector {
 
   proc _checkType(type t) {
     if (!isDefaultInitializable(t)) {
-      compilerError("Vector does not support an eltType that can't be default initialized, ", 
+      compilerError("Vector does not support an eltType that can't be default initialized, ",
                     "here: ", t:string);
     }
   }
-  record vector {
+  record vector : writeSerializable, readDeserializable {
     /* The type of the elements contained in this vector. */
     type eltType;
     /* If `true`, this vector will perform parallel safe operations. */
@@ -75,23 +75,23 @@ module Vector {
     /*
       The number of valid elements in this vector.
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     var _size = 0;
 
     /*
       The capacity of this vector, which represents how much space is allocated.
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     var _capacity = 0;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _domain = {0..#_initialCapacity};
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _data: [_domain] eltType;
 
-    pragma "no doc"
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    @chpldoc.nodoc
+    var _lock = if parSafe then new _LockWrapper() else none;
 
     /*
       Initializes an empty list.
@@ -105,7 +105,7 @@ module Vector {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
     }
 
     /*
@@ -126,7 +126,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -149,7 +149,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -167,7 +167,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
-      this.complete();
+      init this;
 
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
@@ -192,7 +192,7 @@ module Vector {
 
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -218,14 +218,14 @@ module Vector {
       this.eltType = t;
       this.parSafe = parSafe;
 
-      if !isBoundedRange(other) {
+      if other.bounds != boundKind.both {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot init " + e + " from unbounded " + f;
         compilerError(msg);
       }
 
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -244,7 +244,7 @@ module Vector {
 
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
-      this.complete();
+      init this;
 
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
@@ -263,7 +263,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
-      this.complete();
+      init this;
 
       _requestCapacity(d.size);
       _commonInitFromIterable(other);
@@ -286,46 +286,46 @@ module Vector {
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
 
-      if !isBoundedRange(other) {
+      if other.bounds != boundKind.both {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot init " + e + " from unbounded " + f;
         compilerError(msg);
       }
 
-      this.complete();
+      init this;
 
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
-        _lock$.lock();
+        _lock.lock();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
-        _lock$.unlock();
+        _lock.unlock();
     }
 
-    pragma "no doc"
-    proc _commonInitFromIterable(iterable) {
+    @chpldoc.nodoc
+    proc ref _commonInitFromIterable(iterable) {
       for x in iterable do {
         _append(x);
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc ref _append(x: eltType) lifetime x > this {
       _requestCapacity(_size+1);
       _data[_size] = x;
       _size += 1;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc ref _append(ref x: eltType) where isOwnedClass(x)
     lifetime x > this {
       _requestCapacity(_size+1);
@@ -375,7 +375,7 @@ module Vector {
       _leave();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc ref append(ref x: eltType) where isOwnedClass(x)
     lifetime x > this {
       _enter();
@@ -458,14 +458,14 @@ module Vector {
         _leave();
         boundsCheckHalt("Called \"vector.last\" on an empty vector.");
       }
-     
+
       ref result = _data[_size-1];
       _leave();
 
-      return result;  
+      return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc const _withinBounds(idx: int): bool {
       return (idx >= 0 && idx < _size);
     }
@@ -480,7 +480,7 @@ module Vector {
       index is out of bounds, this method does nothing and returns `false`.
 
       .. warning::
-      
+
         Inserting an element into this vector may invalidate existing references
         to the elements contained in this vector.
 
@@ -517,7 +517,7 @@ module Vector {
     // `shift` positions to the right in memory, possibly resizing. May
     // expand memory if necessary.
     //
-    pragma "no doc"
+    @chpldoc.nodoc
     proc ref _expand(idx: int, shift: int=1) {
 
       if shift <= 0 then
@@ -533,7 +533,7 @@ module Vector {
       return;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc ref _insertGenericKnownSize(idx: int, items, size: int): bool {
       var result = false;
 
@@ -565,7 +565,7 @@ module Vector {
     /*
       Insert an array of elements `arr` into this vector at index `idx`,
       shifting all elements at and following the index `arr.size` positions
-      to the right. 
+      to the right.
 
       If the insertion is successful, this method returns `true`. If the given
       index is out of bounds, this method does nothing and returns `false`.
@@ -620,9 +620,9 @@ module Vector {
       :rtype: `bool`
     */
     proc ref insert(idx: int, lst: list(eltType)): bool lifetime this < lst {
-      
+
       var result = false;
-      
+
       // Prevent deadlock if we are trying to insert this into itself.
       // Who want to do that?
       const size = lst.size;
@@ -659,9 +659,9 @@ module Vector {
       :rtype: `bool`
     */
     proc ref insert(idx: int, vec: vector(eltType)): bool lifetime this < vec {
-      
+
       var result = false;
-      
+
       // Prevent deadlock if we are trying to insert this into itself.
       const size = vec.size;
 
@@ -741,7 +741,7 @@ module Vector {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc ref _popAtIndex(idx: int, unlockBeforeHalt=true): eltType {
 
       if boundsChecking && _size <= 0 {
@@ -836,7 +836,7 @@ module Vector {
 
       .. warning::
 
-        Calling this method on an empty vector or with values of `start` or 
+        Calling this method on an empty vector or with values of `start` or
         `end` that are out of bounds will cause the currently running program
         to halt. If the `--fast` flag is used, no safety checks will be
         performed.
@@ -936,14 +936,14 @@ module Vector {
         if _size > 1 {
           Sort.sort(_data[0..#_size], comparator);
         }
-        
+
         _leave();
       }
       return;
     }
 
-    pragma "no doc"
-    proc _requestCapacity(newCap: int) {
+    @chpldoc.nodoc
+    proc ref _requestCapacity(newCap: int) {
       if (_capacity >= newCap) then return;
       if (_capacity == 0) {
         _capacity = _initialCapacity;
@@ -955,8 +955,8 @@ module Vector {
       _domain = {0..#_capacity};
     }
 
-    pragma "no doc"
-    proc _maybeDecreaseCapacity() {
+    @chpldoc.nodoc
+    proc ref _maybeDecreaseCapacity() {
 
       const threshold = _capacity/2;
 
@@ -966,7 +966,7 @@ module Vector {
       if _size > threshold then
         return;
 
-      _capacity /= 2; 
+      _capacity /= 2;
       _domain = {0..#_capacity};
     }
 
@@ -979,7 +979,7 @@ module Vector {
       _leave();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc ref _appendGeneric(collection) {
       var startSize: int;
       var endSize: int;
@@ -1045,7 +1045,7 @@ module Vector {
       :type other: `range(eltType)`
     */
     proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
-      if !isBoundedRange(other) {
+      if other.bounds != boundKind.both {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot extend " + e + " with unbounded " + f;
@@ -1067,14 +1067,14 @@ module Vector {
 
       :yields: A reference to one of the elements contained in this vector.
     */
-    iter these() ref {
+    iter ref these() ref {
       for i in 0..#_size {
         yield _data[i];
       }
     }
 
-    pragma "no doc"
-    iter these(param tag: iterKind) ref where tag == iterKind.standalone {
+    @chpldoc.nodoc
+    iter ref these(param tag: iterKind) ref where tag == iterKind.standalone {
       const osz = _size;
       const minChunkSize = 64;
       const hasOneChunk = osz <= minChunkSize;
@@ -1082,14 +1082,14 @@ module Vector {
       const chunkSize = floor(osz / numTasks):int;
       const trailing = osz - chunkSize * numTasks;
 
-      coforall tid in 0..#numTasks {
+      coforall tid in 0..#numTasks with (ref this) {
         var chunk = _computeChunk(tid, chunkSize, trailing);
         for i in chunk(0) do
           yield this[i];
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _computeChunk(tid, chunkSize, trailing) {
       var lo, hi = 0;
 
@@ -1104,8 +1104,8 @@ module Vector {
       return (lo..hi,);
     }
 
-    pragma "no doc"
-    iter these(param tag) ref where tag == iterKind.leader {
+    @chpldoc.nodoc
+    iter ref these(param tag) ref where tag == iterKind.leader {
       const osz = _size;
       const minChunkSize = 32;
       const hasOneChunk = osz <= minChunkSize;
@@ -1120,8 +1120,8 @@ module Vector {
       }
     }
 
-    pragma "no doc"
-    iter these(param tag, followThis) ref where tag == iterKind.follower {
+    @chpldoc.nodoc
+    iter ref these(param tag, followThis) ref where tag == iterKind.follower {
       for i in followThis(0) do
         yield this[i];
     }
@@ -1157,19 +1157,16 @@ module Vector {
       return _data[i];
     }
 
-    pragma "no doc"
-    proc readThis(ch: channel) throws {
+    @chpldoc.nodoc
+    proc deserialize(reader, ref deserializer) throws {
       compilerError("Reading a Vector is not supported");
     }
 
-    /*
-      Write the contents of this vector to a channel.
-
-      :arg ch: A channel to write to.
-    */
-    proc writeThis(ch: channel) throws {
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      var ch = writer;
       _enter();
-      
+
       ch.write("[");
 
       for i in 0..(_size - 2) do
@@ -1242,7 +1239,7 @@ module Vector {
       `lhs`.
 
     :arg lhs: The vector to assign to.
-    :arg rhs: The vector to assign from. 
+    :arg rhs: The vector to assign from.
   */
   operator vector.=(ref lhs: vector(?t, ?), rhs: vector(t, ?)) {
     lhs.clear();
@@ -1285,18 +1282,18 @@ module Vector {
     return !(a == b);
   }
 
-  pragma "no doc"
-  operator :(rhs:list, type t: vector) {
+  @chpldoc.nodoc
+  operator :(rhs:list(?), type t: vector(?)) {
     var tmp: t = rhs;
     return rhs;
   }
-  pragma "no doc"
-  operator :(rhs:[], type t: vector) {
+  @chpldoc.nodoc
+  operator :(rhs:[], type t: vector(?)) {
     var tmp: t = rhs;
     return rhs;
   }
-  pragma "no doc"
-  operator :(rhs:range(?), type t: vector) {
+  @chpldoc.nodoc
+  operator :(rhs:range(?), type t: vector(?)) {
     var tmp: t = rhs;
     return rhs;
   }

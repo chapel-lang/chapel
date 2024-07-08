@@ -1,0 +1,6 @@
+superKeyword.chpl:3: error: attempt to redefine reserved word 'super'
+superKeyword.chpl:4: error: attempt to redefine reserved word 'super'
+superKeyword.chpl:5: error: attempt to redefine reserved word 'super'
+superKeyword.chpl:6: error: attempt to redefine reserved word 'super'
+superKeyword.chpl:7: In function 'foo':
+superKeyword.chpl:7: error: attempt to redefine reserved word 'super'

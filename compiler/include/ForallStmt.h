@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,7 @@
 #define _FORALL_STMT_H_
 
 #include "stmt.h"
+#include "LoopWithShadowVarsInterface.h"
 
 enum ForallAutoLocalAccessCloneType {
   NOT_CLONE,
@@ -66,27 +67,29 @@ class ForallOptimizationInfo {
 };
 
 ///////////////////////////////////
-    // forall loop statement //
+// forall loop statement         //
 ///////////////////////////////////
 
-class ForallStmt final : public Stmt
+class ForallStmt final : public Stmt, public LoopWithShadowVarsInterface
 {
 public:
+  Expr* asExpr() override { return this; }
+
   bool       zippered()       const; // 'zip' keyword used and >1 index var
   AList&     inductionVariables();   // DefExprs, one per iterated expr
   const AList& constInductionVariables() const; // const counterpart
   AList&     iteratedExpressions();  // Exprs, one per iterated expr
   const AList& constIteratedExpressions() const;  // const counterpart
-  AList&     shadowVariables();      // DefExprs of ShadowVarSymbols
-  BlockStmt* loopBody()       const; // the body of the forall loop
+  AList&     shadowVariables() override;      // DefExprs of ShadowVarSymbols
+  BlockStmt* loopBody()       const override; // the body of the forall loop
   std::vector<BlockStmt*> loopBodies() const; // body or bodies of followers
   LabelSymbol* continueLabel();      // create it if not already
   CallExpr* zipCall() const;
 
   // when originating from a ForLoop or a reduce expression
   bool createdFromForLoop()     const;  // is converted from a for-loop
-  bool needToHandleOuterVars()  const;  // yes, convert to shadow vars
-  bool needsInitialAccumulate() const;  // for a reduce intent
+  bool needToHandleOuterVars()  const override;  // yes, convert to shadow vars
+  bool needsInitialAccumulate() const override;  // for a reduce intent
   bool fromReduce()             const;  // for a Chapel reduce expression
   bool overTupleExpand()        const;  // contains (...tuple) iterable(s)
   bool allowSerialIterator()    const;  // ok to loop over a serial iterator?
@@ -137,6 +140,11 @@ public:
   ForallOptimizationInfo optInfo;
 
   void insertZipSym(Symbol *sym);
+
+  bool isInductionVar(Symbol* sym) override;
+
+  bool isForallStmt() final override { return true; }
+  ForallStmt *forallStmt() final override { return this; }
 
 private:
   AList          fIterVars;    // DefExprs of the induction vars

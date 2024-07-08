@@ -1,4 +1,4 @@
-use IO;
+use IO, Math;
 
 config param testErrors = 0;
 

@@ -1,4 +1,4 @@
-use Memory.Diagnostics, Time, CTypes;
+use MemDiagnostics, Time, CTypes;
 
 config const oversubscription = 4;
 const desiredTasks = oversubscription * here.maxTaskPar;
@@ -23,7 +23,7 @@ const n = arrSize / numBytes(elemType);
 
 
 config const showPerf = false;
-var timer: Timer;
+var timer: stopwatch;
 
 timer.start();
 coforall loc in Locales do on loc {
@@ -42,8 +42,8 @@ if showPerf {
 // chpl_comm_regMemHeapInfo if using a fixed heap, otherwise physical memory
 proc availMem() {
   use CTypes;
-  extern proc chpl_comm_regMemHeapInfo(ref start: c_void_ptr, ref size: c_size_t): void;
-  var unused: c_void_ptr;
+  extern proc chpl_comm_regMemHeapInfo(ref start: c_ptr(void), ref size: c_size_t): void;
+  var unused: c_ptr(void);
   var heap_size: c_size_t;
   chpl_comm_regMemHeapInfo(unused, heap_size);
   if heap_size != 0 then

@@ -1,0 +1,42 @@
+--- proc test0() { ... } ---
+8
+proc bar(n: int): int { ... }
+3.1415
+proc bar(n: int): int { ... }
+Hello!
+proc bar(n: int): int { ... }
+--- proc test1() { ... } ---
+c_fn_ptr
+--- proc test2a() { ... } ---
+2
+4
+8
+--- proc test2b() { ... } ---
+2
+4
+8
+--- proc test3() { ... } ---
+proc(): int
+int(64)
+int(64)
+proc(): int
+--- proc test4() { ... } ---
+Error: P1
+Error: P2
+--- proc test5() { ... } ---
+proc foo() { ... }
+proc foo() { ... }
+proc(): int { ... }
+--- proc test6() { ... } ---
+--- proc test7() { ... } ---
+--- proc test8() { ... } ---
+--- proc test9() { ... } ---
+8
+--- proc test10() { ... } ---
+6
+--- proc test11() { ... } ---
+int
+--- proc test12() { ... } ---
+8
+--- proc test13() { ... } ---
+8

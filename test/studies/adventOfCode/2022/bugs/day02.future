@@ -1,0 +1,6 @@
+bug: enums with duplicate integer values cannot be read
+
+I believe that this is another result of
+https://github.com/chapel-lang/chapel/issues/18937 that would likely
+be fixed by https://github.com/chapel-lang/chapel/pull/18708 which I
+rue never having completed...

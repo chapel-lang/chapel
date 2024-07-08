@@ -1,0 +1,1 @@
+const-violation.chpl:3: error: cannot yield by 'ref', 'y' is 'const'

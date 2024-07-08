@@ -1,7 +1,5 @@
-warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
 Array: 151 152 153 154 155 
 Array: 151 152 153 154 155 
 Array: 151 152 153 154 155 
 Array: -29 -28 -27 -26 -25 
 Array: 2 3 4 5 6 
-(kernel_launch = 5)

@@ -105,6 +105,7 @@ class AbstractJob(object):
         self.num_locales = reservation_args.numLocales
         self.walltime = reservation_args.walltime
         self.hostlist = reservation_args.hostlist
+        self.queue = reservation_args.queue
 
         logging.debug('Created instance of: {0}'.format(self))
 
@@ -112,7 +113,7 @@ class AbstractJob(object):
         """Return string representation of this instance."""
         cls_name = str(type(self))
         attrs = ', '.join(map(lambda x: '{0}={1}'.format(x, getattr(self, x, None)),
-                              ['test_command', 'num_locales', 'walltime', 'hostlist']))
+                              ['test_command', 'num_locales', 'walltime', 'hostlist', 'queue']))
         return '{0}({1})'.format(cls_name, attrs)
 
     def full_test_command(self, output_file, error_file):
@@ -213,15 +214,6 @@ class AbstractJob(object):
         """
         return ''
 
-    @property
-    def knl(self):
-        """Returns True when testing KNL (Xeon Phi).
-
-        :rtype: bool
-        :returns: True when testing KNL
-        """
-        return chpl_cpu.get('target').cpu == 'mic-knl'
-
     def _qsub_command_base(self, output_file, error_file):
         """Returns base qsub command, without any resource listing.
 
@@ -262,6 +254,9 @@ class AbstractJob(object):
         """
         submit_command = self._qsub_command_base(output_file, error_file)
 
+        if self.queue is not None:
+            submit_command.append('-q')
+            submit_command.append('{0}'.format(self.queue))
         if self.num_locales >= 0:
             submit_command.append('-l')
             submit_command.append('{0}={1}{2}'.format(
@@ -357,8 +352,8 @@ class AbstractJob(object):
                     sleep_time = 1
                     exec_start_time = time.time()
                 time.sleep(sleep_time)
-                if sleep_time < 60:
-                    sleep_time *= 1.5
+                if sleep_time < 30:
+                    sleep_time *= 1.1
                 status = job_status(job_id, output_file)
 
             exec_time = time.time() - exec_start_time
@@ -395,9 +390,12 @@ class AbstractJob(object):
             with open(error_file, 'rb') as fp:
                 error = fp.read()
 
+            logging.debug('Reading more file.')
             try:
-                with open('{0}.more'.format(error_file), 'rb') as fp:
-                    error += fp.read()
+                with open('{0}.more'.format(error_file), 'r') as fp:
+                    for l in fp:
+                        if "PBS:" in l:
+                            error += py3_compat.str_to_bytes(l)
             except:
                 pass
 
@@ -551,6 +549,7 @@ class AbstractJob(object):
         """
         args, unparsed_args = cls._parse_args()
         cls._setup_logging(args.verbose, args.info)
+        cls._validate_args(args, unparsed_args)
 
         logging.info('Num locales is: {0}'.format(args.numLocales))
         logging.info('Walltime is set to: {0}'.format(args.walltime))
@@ -622,6 +621,16 @@ class AbstractJob(object):
         raise ValueError('Did not recognize walltime: {0}'.format(walltime_str))
 
     @classmethod
+    def _validate_args(cls, args, unparsed_args):
+        for arg in unparsed_args:
+            if re.search(r'^-nl[0-9]+$', arg):
+                # TODO parse this quietly, or turn it into an error?
+                logging.warning('Argument format {} is not supported. '
+                                'Please put a space between "-nl" and number of '
+                                'locales, if that\'s the purpose.'.format(arg))
+
+
+    @classmethod
     def _get_test_command(cls, args, unparsed_args):
         """Returns test command by folding numLocales args into unparsed command line
         args.
@@ -671,12 +680,19 @@ class AbstractJob(object):
                             help=('Optional hostlist specification for reserving '
                                   'specific nodes. Can also be set with env var '
                                   'CHPL_LAUNCHCMD_HOSTLIST'))
+        parser.add_argument('--CHPL_LAUNCHCMD_QUEUE', dest='queue',
+                            help=('Optional queue specification for reserving '
+                                  'specific queues. Can also be set with env var '
+                                  'CHPL_LAUNCHCMD_QUEUES'))
+
 
         args, unparsed_args = parser.parse_known_args()
 
-        # Allow hostlist to be set in environment variable CHPL_LAUNCHCMD_HOSTLIST.
+        # Allow hostlist/queue to be set in environment variables.
         if args.hostlist is None:
             args.hostlist = os.environ.get('CHPL_LAUNCHCMD_HOSTLIST') or None
+        if args.queue is None:
+            args.queue = os.environ.get('CHPL_LAUNCHCMD_QUEUE') or None
 
         # It is bad form to use a two character argument with only a single
         # dash. Unfortunately, we support it. And unfortunately, python argparse
@@ -915,10 +931,13 @@ class PbsProJob(AbstractJob):
         elif num_locales > 0:
             select_stmt = select_pattern.format(num_locales)
 
-            # Do not set ncpus for knl.
-            if self.num_cpus_resource is not None and not self.knl:
+            if self.num_cpus_resource is not None:
                 select_stmt += ':{0}={1}'.format(
                     self.num_cpus_resource, self.num_cpus)
+
+        if self.queue is not None:
+            submit_command.append('-q')
+            submit_command.append('{0}'.format(self.queue))
 
         if select_stmt is not None:
             select_stmt += self.select_suffix

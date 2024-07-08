@@ -3,7 +3,7 @@ use Path;
 use FileSystem;
 
 var unmodified = "onFileInDir.chpl";
-var f = open(unmodified, iomode.r);
+var f = open(unmodified, ioMode.r);
 // I know I exist (update name if changed)
 var result = realPath(f);
 var expected = here.cwd() + pathSep + unmodified;

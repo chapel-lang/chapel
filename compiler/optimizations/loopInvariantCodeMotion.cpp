@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -117,11 +117,20 @@ public:
       delete bitExits;
     }
 
+    LoopStmt* getLoopAST() const {
+      return loopAST;
+    }
+
     // This function exists to place an expr in the "preheader" of the loop
     void insertBefore(Expr* expr) {
       if (loopAST) {
         loopAST->insertBefore(expr->remove());
       }
+    }
+
+    bool isGpuBound() const {
+      auto cLoop = toCForLoop(loopAST);
+      return cLoop && isLoopGpuBound(cLoop);
     }
 
     //Set the header, insert the header into the loop blocks, and build up the
@@ -677,7 +686,7 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
   return false;
 }
 
-static bool computeAliases(FnSymbol* fn, std::map<Symbol*, std::set<Symbol*> >& aliases) {
+static bool computeAliases(FnSymbol* fn, std::map<Symbol*, std::set<Symbol*> >& aliases, bool isGpuBound) {
   //Since the current alias analysis is pretty conservative, you can run into
   //the case where you have so many aliases that you run of space in memory to
   //hold all of the aliases (since we keep track of all pairs) , which leads to
@@ -695,18 +704,22 @@ static bool computeAliases(FnSymbol* fn, std::map<Symbol*, std::set<Symbol*> >& 
 
   //Compute the aliases for the function's parameters. Any args passed by ref
   //can potentially alias each other.
+  //
+  // When compiling for GPU, relax this restriction.
   // TODO: pull out this alias analysis
   // TODO: use results of computeNoAliasSets
-  for_alist(formal1, fn->formals) {
-    for_alist(formal2, fn->formals) {
-      if(formal1 == formal2)
-        continue;
-      if(ArgSymbol* arg1 = toArgSymbol(toDefExpr(formal1)->sym)) {
-        if(ArgSymbol* arg2 = toArgSymbol(toDefExpr(formal2)->sym)) {
-          // TODO: should this handle const ref?
-          if(arg1->intent == INTENT_REF && arg2->intent == INTENT_REF) {
-            aliases[arg1].insert(arg2);
-            aliases[arg2].insert(arg1);
+  if (!isGpuBound) {
+    for_alist(formal1, fn->formals) {
+      for_alist(formal2, fn->formals) {
+        if(formal1 == formal2)
+          continue;
+        if(ArgSymbol* arg1 = toArgSymbol(toDefExpr(formal1)->sym)) {
+          if(ArgSymbol* arg2 = toArgSymbol(toDefExpr(formal2)->sym)) {
+            // TODO: should this handle const ref?
+            if(arg1->intent == INTENT_REF && arg2->intent == INTENT_REF) {
+              aliases[arg1].insert(arg2);
+              aliases[arg2].insert(arg1);
+            }
           }
         }
       }
@@ -910,49 +923,59 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
       }
     }
 
+    bool isGpuBound = loop->isGpuBound();
     bool mightHaveBeenDeffedElseWhere = false;
     // assume that anything passed in by ref has been changed elsewhere
     // Note that not all things that are passed by ref will have the ref intent
     // flag, and may just be ref variables. This is a known bug, see comments
     // in addVarsToFormals(): flattenFunctions.cpp.
-    if (isArgSymbol(symExpr->symbol()) &&
-        symExpr->getValType()->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false) {
-      if(ArgSymbol* argSymbol = toArgSymbol(symExpr->symbol())) {
-        if(argSymbol->isRef()) {
-          mightHaveBeenDeffedElseWhere = true;
-        }
-      }
-      for_set(Symbol, aliasSym, aliases[symExpr->symbol()]) {
-        if(ArgSymbol* argSymbol = toArgSymbol(aliasSym)) {
+    //
+    // For GPU-bound loops, relax this restriction and say that changing things
+    // passed to a kernel by reference from underneath the kernel is undefined
+    // behavior.
+    auto isArray = symExpr->typeInfo() &&
+                   (symExpr->typeInfo()->symbol->hasFlag(FLAG_ARRAY) ||
+                    isArrayClass(symExpr->typeInfo()));
+    if (!isGpuBound || !isArray) {
+      if (isArgSymbol(symExpr->symbol()) &&
+          symExpr->getValType()->symbol->hasFlag(FLAG_ITERATOR_CLASS) == false) {
+        if(ArgSymbol* argSymbol = toArgSymbol(symExpr->symbol())) {
           if(argSymbol->isRef()) {
             mightHaveBeenDeffedElseWhere = true;
           }
         }
+        for_set(Symbol, aliasSym, aliases[symExpr->symbol()]) {
+          if(ArgSymbol* argSymbol = toArgSymbol(aliasSym)) {
+            if(argSymbol->isRef()) {
+              mightHaveBeenDeffedElseWhere = true;
+            }
+          }
+        }
       }
-    }
-    // Find where the variable is defined.
-    Symbol* defScope = symExpr->symbol()->defPoint->parentSymbol;
-    // if the variable is a module level (global) variable
-    if (isModuleSymbol(defScope)) {
-      // if there are any function calls inside the loop, assume that one of
-      // the functions may have changed the value of the global. Note that we
-      // don't have to worry about a different task updating the global since
-      // that would have to be protected with a sync or be atomic in which case
-      // no hoisting will occur in the function at all. Any defs to the global
-      // inside of this loop will be detected just like any other variable
-      // definitions.
-      // TODO this could be improved to check which functions modify the global
-      // and see if any of those functions are being called in this loop.
-      if (callsInLoop.size() != 0) {
-        mightHaveBeenDeffedElseWhere = true;
+      // Find where the variable is defined.
+      Symbol* defScope = symExpr->symbol()->defPoint->parentSymbol;
+      // if the variable is a module level (global) variable
+      if (isModuleSymbol(defScope)) {
+        // if there are any function calls inside the loop, assume that one of
+        // the functions may have changed the value of the global. Note that we
+        // don't have to worry about a different task updating the global since
+        // that would have to be protected with a sync or be atomic in which case
+        // no hoisting will occur in the function at all. Any defs to the global
+        // inside of this loop will be detected just like any other variable
+        // definitions.
+        // TODO this could be improved to check which functions modify the global
+        // and see if any of those functions are being called in this loop.
+        if (callsInLoop.size() != 0) {
+          mightHaveBeenDeffedElseWhere = true;
+        }
       }
-    }
-    if (symExpr->symbol()->isRef()) {
-        mightHaveBeenDeffedElseWhere = true;
-    }
-    for_set(Symbol, aliasSym, aliases[symExpr->symbol()]) {
-      if (aliasSym->isRef()) {
-        mightHaveBeenDeffedElseWhere = true;
+      if (symExpr->symbol()->isRef()) {
+          mightHaveBeenDeffedElseWhere = true;
+      }
+      for_set(Symbol, aliasSym, aliases[symExpr->symbol()]) {
+        if (aliasSym->isRef()) {
+          mightHaveBeenDeffedElseWhere = true;
+        }
       }
     }
     //if there were no defs of the symbol, it is invariant
@@ -1068,6 +1091,18 @@ static bool defDominatesAllUses(Loop* loop, SymExpr* def, std::vector<BitVec*>& 
  *
  */
 static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>& dominators, std::map<SymExpr*, int>& localMap) {
+  // Strictly speaking, the below early return is equally valid off-GPU.
+  // However, just for the time being, only apply it to GPUs to minimize
+  // the possible negative impact.
+  if (loop->isGpuBound()) {
+    if (def->symbol()->defPoint != nullptr &&
+        LoopStmt::findEnclosingLoop(def->symbol()->defPoint) == loop->getLoopAST()) {
+      // If the symbol-to-hoist is defined inside a loop, no reason to worry about
+      // loop exits, since it can't be referenced outside.
+      return true;
+    }
+  }
+
   int defBlock = localMap[def];
 
   BitVec* bitExits = loop->getBitExits();
@@ -1177,7 +1212,8 @@ static void licmFn(FnSymbol* fn) {
 
   std::vector<BasicBlock*> basicBlocks = *fn->basicBlocks;
 
-  BasicBlock* entryBlock = basicBlocks[0];
+  BasicBlock* entryBlock = basicBlocks.size() ? basicBlocks[0] : nullptr;
+  if (!entryBlock) return;
 
   unsigned nBlocks = basicBlocks.size();
 
@@ -1223,7 +1259,7 @@ static void licmFn(FnSymbol* fn) {
     std::vector<SymExpr*> loopInvariants;
     std::set<Symbol*> defsInLoop;
     std::map<Symbol*, std::set<Symbol*> > aliases;
-    bool tooManyAliases = computeAliases(fn, aliases);
+    bool tooManyAliases = computeAliases(fn, aliases, curLoop->isGpuBound());
     if (tooManyAliases) {
       return;
     }
@@ -1262,14 +1298,7 @@ static void licmFn(FnSymbol* fn) {
   }
 }
 
-void loopInvariantCodeMotion(void) {
-
-  // compute array element alias sets
-  computeNoAliasSets();
-
-  // optimize certain statements in foralls to unordered
-  optimizeForallUnorderedOps();
-
+static void loopInvariantCodeMotionImpl(void) {
   if(fNoLoopInvariantCodeMotion) {
     return;
   }
@@ -1325,5 +1354,29 @@ void loopInvariantCodeMotion(void) {
   fclose(timingFile);
   fclose(maxTimeFile);
 #endif
+}
 
+void loopInvariantCodeMotion(void) {
+  // optimize certain statements in foralls to unordered
+  optimizeForallUnorderedOps();
+
+  earlyGpuTransforms();
+
+  loopInvariantCodeMotionImpl();
+
+  // We run gpuTransforms after LICM since we can benefit from invariant
+  // computations being removed from GUP kernels (that prior to this point are
+  // normal foreach loops).  Currently, we have gpuTransforms called here
+  // rather than in its own pass in order to avoid disruption/overhead of
+  // adding a new pass (though we may wish to change this at some point in the
+  // future).
+  lateGpuTransforms();
+
+  // Compute array element alias sets.
+  //
+  // Any manipulations on the AST that removes a symbol within a function may
+  // invalidate the 'no alias set' primitives (that this transforms adds to the
+  // top of functions). GpuTransforms is one such transform that does AST
+  // manipulations, so we run computeNoAliasSets after GPUTransforms.
+  computeNoAliasSets();
 }

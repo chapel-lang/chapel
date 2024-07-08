@@ -8,7 +8,6 @@
 
 #include "llvm/Support/InstructionCost.h"
 #include "gtest/gtest.h"
-#include <limits>
 
 using namespace llvm;
 
@@ -72,7 +71,7 @@ TEST_F(CostTest, Operators) {
 
   // Test value extraction
   EXPECT_EQ(*(VThree.getValue()), 3);
-  EXPECT_EQ(IThreeA.getValue(), None);
+  EXPECT_EQ(IThreeA.getValue(), std::nullopt);
 
   EXPECT_EQ(std::min(VThree, VNegTwo), -2);
   EXPECT_EQ(std::max(VThree, VSix), 6);

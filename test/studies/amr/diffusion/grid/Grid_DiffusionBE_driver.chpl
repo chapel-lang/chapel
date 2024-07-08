@@ -11,9 +11,9 @@ use GridVariable_DiffusionBE;
 use GridSolution_DiffusionBE;
 use GridBC_DiffusionBE;
 
+use Math;
 
-
-proc main {
+private proc main {
 
   //==== Output times ====
   var output_times = setOutputTimes("time.txt");

@@ -1,4 +1,4 @@
-proc f(param x: string) param : string
+proc f(param x: string) param : string do
   return x;
 
 proc main() {

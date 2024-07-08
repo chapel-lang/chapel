@@ -1,0 +1,27 @@
+warn-small-integral-real.chpl:3: In function 'test1fn':
+warn-small-integral-real.chpl:7: warning: implicit conversion from 8- and 16- bit integral types to 'real(32)' is unstable
+warn-small-integral-real.chpl:7: note: add a cast :real(32) to avoid this warning
+warn-small-integral-real.chpl:7: warning: implicit conversion from 8- and 16- bit integral types to 'real(32)' is unstable
+warn-small-integral-real.chpl:7: note: add a cast :real(32) to avoid this warning
+warn-small-integral-real.chpl:7: warning: implicit conversion from 8- and 16- bit integral types to 'real(32)' is unstable
+warn-small-integral-real.chpl:7: note: add a cast :real(32) to avoid this warning
+warn-small-integral-real.chpl:16: In function 'test2':
+warn-small-integral-real.chpl:18: warning: implicit conversion from 8- and 16- bit integral types to 'real(32)' is unstable
+warn-small-integral-real.chpl:18: note: add a cast :real(32) to avoid this warning
+warn-small-integral-real.chpl:23: In function 'test3':
+warn-small-integral-real.chpl:26: warning: implicit conversion from 8- and 16- bit integral types to 'real(32)' is unstable
+warn-small-integral-real.chpl:26: note: add a cast :real(32) to avoid this warning
+warn-small-integral-real.chpl:31: In function 'test4':
+warn-small-integral-real.chpl:33: warning: implicit conversion from 8- and 16- bit integral types to 'real(32)' is unstable
+warn-small-integral-real.chpl:33: note: add a cast :real(32) to avoid this warning
+warn-small-integral-real.chpl:40: In function 'test5':
+warn-small-integral-real.chpl:41: warning: implicit conversion from 8- and 16- bit integral types to 'real(32)' is unstable
+warn-small-integral-real.chpl:41: note: add a cast :real(32) to avoid this warning
+warn-small-integral-real.chpl:47: In function 'test6':
+warn-small-integral-real.chpl:48: warning: implicit conversion from 8- and 16- bit integral types to 'real(32)' is unstable
+warn-small-integral-real.chpl:48: note: add a cast :real(32) to avoid this warning
+test1fn() = 1.8596 : real(32)
+sin(myInt16) = 0.841471 : real(32)
+z = 1.9093 : real(64)
+sqrt(2:uint(16)) = 1.41421 : real(32)
+test6 1.0 : real(32)

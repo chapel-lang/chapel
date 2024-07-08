@@ -3,9 +3,6 @@ class C {
     for i in 1..10 do
       yield i;
   }
-
-  proc these(leader) {
-  }
 }
 
 var myC = new unmanaged C();

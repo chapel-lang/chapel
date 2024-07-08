@@ -5,7 +5,7 @@ import("//llvm/utils/gn/build/toolchain/compiler.gni")
 import("//llvm/utils/gn/build/toolchain/target_flags.gni")
 
 declare_args() {
-  # Whether to build everything with coverage information.
+  # Whether to build everything with test coverage information.
   # After building with this, run tests and then run
   #    llvm/utils/prepare-code-coverage-artifact.py \
   #        --compilation-dir=out/gn \
@@ -13,6 +13,20 @@ declare_args() {
   #        out/gn/bin/llvm-undname ...
   # to generate a HTML report for the binaries passed in the last line.
   llvm_build_instrumented_coverage = false
+
+  # Whether to build everything with instrumentation for PGO
+  # After building with this:
+  # 1. Remove old profile data with `rm *.profraw`
+  # 2. Run the built instrumented binaries.
+  #    This will produce *.profraw files in the current working directory.
+  # 3. Run `llvm-profdata merge *.profraw -o llvm.profdata` to merge them.
+  # 4. Then build again, with this set to false, and with
+  #    `llvm_pgo_use = "//llvm.profdata"` set to use the created profile.
+  llvm_pgo_instrument = false
+
+  # If non-empty, path to merged profiling data used for optimization
+  # See documentation for llvm_pgo_instrument for how to create profile data.
+  llvm_pgo_use = ""
 
   # If set, puts relative paths in debug info.
   # Makes the build output independent of the build directory, but makes
@@ -28,6 +42,12 @@ declare_args() {
 
 assert(!llvm_build_instrumented_coverage || is_clang,
        "llvm_build_instrumented_coverage requires clang as host compiler")
+assert(!llvm_pgo_instrument || is_clang,
+       "llvm_pgo_instrument requires clang as host compiler")
+assert(llvm_pgo_use == "" || is_clang,
+       "llvm_pgo_use requires clang as host compiler")
+assert(!llvm_pgo_instrument || llvm_pgo_use == "",
+       "set at most one of llvm_pgo_instrument and llvm_pgo_use")
 
 config("compiler_defaults") {
   defines = []
@@ -52,14 +72,14 @@ config("compiler_defaults") {
     ldflags += [ "-miphoneos-version-min=8.0" ]
   }
   if (current_os == "mac") {
-    asmflags += [ "-mmacosx-version-min=10.10" ]
-    cflags += [ "-mmacosx-version-min=10.10" ]
-    ldflags += [ "-mmacosx-version-min=10.10" ]
+    asmflags += [ "-mmacos-version-min=10.10" ]
+    cflags += [ "-mmacos-version-min=10.10" ]
+    ldflags += [ "-mmacos-version-min=10.10" ]
   }
 
   assert(symbol_level == 0 || symbol_level == 1 || symbol_level == 2,
          "Unexpected symbol_level")
-  if (host_os != "win") {
+  if (current_os != "win") {
     if (symbol_level == 2) {
       cflags += [ "-g" ]
 
@@ -69,7 +89,7 @@ config("compiler_defaults") {
       # people doing symbol_level=2 want to run a debugger (since
       # symbol_level=2 isn't the default). So this seems like the right
       # tradeoff.
-      if (host_os != "mac" && use_lld) {
+      if (current_os != "mac" && use_lld) {
         cflags += [ "-ggnu-pubnames" ]  # PR34820
         ldflags += [ "-Wl,--gdb-index" ]
 
@@ -117,7 +137,7 @@ config("compiler_defaults") {
       ldflags += [ "-Wl,--color-diagnostics" ]
     }
     cflags_cc += [
-      "-std=c++14",
+      "-std=c++17",
       "-fvisibility-inlines-hidden",
     ]
   } else {
@@ -161,6 +181,13 @@ config("compiler_defaults") {
       "UNICODE",
     ]
     cflags += [ "/EHs-c-" ]
+    cflags_cc += [ "/std:c++17" ]
+
+    # cl.exe doesn't set __cplusplus correctly by default.
+    # clang-cl gets it right by default, so don't needlessly add the flag there.
+    if (!is_clang) {
+      cflags_cc += [ "/Zc:__cplusplus" ]
+    }
 
     # The MSVC default value (1 MB) is not enough for parsing recursive C++
     # templates in Clang.
@@ -168,7 +195,7 @@ config("compiler_defaults") {
   }
 
   # Warning setup.
-  if (host_os == "win" && !is_clang) {
+  if (current_os == "win" && !is_clang) {
     cflags += [
       # Suppress ''modifier' : used more than once' (__forceinline and inline).
       "-wd4141",
@@ -192,7 +219,7 @@ config("compiler_defaults") {
       "-wd4805",
     ]
   } else {
-    if (host_os == "win") {
+    if (current_os == "win") {
       cflags += [ "/W4" ]
     } else {
       cflags += [
@@ -247,7 +274,7 @@ config("compiler_defaults") {
   }
 
   # On Windows, the linker is not invoked through the compiler driver.
-  if (use_lld && host_os != "win") {
+  if (use_lld && current_os != "win") {
     ldflags += [ "-fuse-ld=lld" ]
   }
 
@@ -267,9 +294,26 @@ config("compiler_defaults") {
       "-fprofile-instr-generate=" +
           rebase_path("$root_build_dir/profiles/%4m.profraw"),
     ]
-    if (host_os != "win") {
+    if (current_os != "win") {
       ldflags += [ "-fprofile-instr-generate" ]
     }
+  }
+  if (llvm_pgo_instrument) {
+    cflags += [ "-fprofile-generate" ]
+    if (current_os != "win") {
+      ldflags += [ "-fprofile-generate" ]
+    }
+  }
+  if (llvm_pgo_use != "") {
+    cflags += [
+      "-fprofile-use=" + rebase_path(llvm_pgo_use, root_build_dir),
+
+      # There are always quite a few diags like
+      #     warning: foo.cpp: Function control flow change detected
+      #              (hash mismatch) [-Wbackend-plugin]
+      # in a PGO build. Since they're not unexpected, silence them.
+      "-Wno-backend-plugin",
+    ]
   }
 
   # Deterministic build setup, see
@@ -283,7 +327,7 @@ config("compiler_defaults") {
       "-Werror=date-time",
     ]
     if (current_os == "win") {
-      cflags += [ "-fmsc-version=1916" ]
+      cflags += [ "-fmsc-version=1926" ]
       if (use_lld) {
         cflags += [ "/Brepro" ]
         ldflags += [ "/Brepro" ]
@@ -297,6 +341,12 @@ config("compiler_defaults") {
     if (current_os == "win") {
       assert(is_clang, "sysroot only works with clang-cl as host compiler")
       cflags += [ "/winsysroot" + rebase_path(sysroot, root_build_dir) ]
+      if (use_lld) {
+        ldflags += [ "/winsysroot:" + rebase_path(sysroot, root_build_dir) ]
+
+        # FIXME: Remove once PR54409 is fixed.
+        ldflags += [ "/machine:x64" ]
+      }
     } else if (current_os != "ios" && current_os != "mac" &&
                current_os != "android") {
       cflags += [ "--sysroot=" + rebase_path(sysroot, root_build_dir) ]
@@ -328,8 +378,9 @@ config("compiler_defaults") {
       "goma needs a sysroot: run `llvm/utils/sysroot.py make-fake --out-dir=sysroot` and add `sysroot = \"//sysroot\"` to your args.gn")
 
   if (use_ubsan) {
-    assert(is_clang && current_os == "linux",
-           "ubsan only supported on Linux/Clang")
+    assert(is_clang && (current_os == "ios" || current_os == "linux" ||
+                            current_os == "mac"),
+           "ubsan only supported on iOS/Clang, Linux/Clang, or macOS/Clang")
     cflags += [
       "-fsanitize=undefined",
       "-fno-sanitize-recover=all",
@@ -340,7 +391,7 @@ config("compiler_defaults") {
   if (use_asan) {
     assert(is_clang && (current_os == "ios" || current_os == "linux" ||
                             current_os == "mac"),
-           "asan only supported on iOS/Clang, Linux/Clang, and macOS/Clang")
+           "asan only supported on iOS/Clang, Linux/Clang, or macOS/Clang")
     cflags += [ "-fsanitize=address" ]
     ldflags += [ "-fsanitize=address" ]
   }
@@ -359,7 +410,7 @@ config("compiler_defaults") {
 
     cflags += [ "-flto=thin" ]
 
-    if (host_os == "win") {
+    if (current_os == "win") {
       ldflags += [
         "/opt:lldlto=" + lto_opt_level,
         "/opt:lldltojobs=" + max_jobs_per_lto_link,
@@ -378,7 +429,7 @@ config("compiler_defaults") {
 
 config("no_exceptions") {
   cflags_cc = []
-  if (host_os != "win") {
+  if (current_os != "win") {
     cflags_cc += [ "-fno-exceptions" ]
   }
   cflags_objcc = cflags_cc
@@ -428,12 +479,19 @@ config("lld_code") {
 }
 
 config("clang_code") {
-  if (host_os != "win") {
+  if (current_os != "win") {
     cflags = [ "-fno-strict-aliasing" ]
   }
   include_dirs = [
     "//clang/include",
     "$root_gen_dir/clang/include",
+  ]
+}
+
+config("bolt_code") {
+  include_dirs = [
+    "//bolt/include",
+    "$root_gen_dir/bolt/include",
   ]
 }
 
@@ -466,7 +524,7 @@ config("crt_code") {
 }
 
 config("lldb_code") {
-  if (host_os != "win") {
+  if (current_os != "win") {
     cflags = [ "-fno-strict-aliasing" ]
   }
   include_dirs = [

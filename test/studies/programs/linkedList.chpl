@@ -15,7 +15,7 @@ config const listSize = 10;  // Used when populating the list
 //
 // A generic linked list class
 //
-class List {
+class List : writeSerializable {
   type eltType;
   var head: unmanaged Node(eltType)?;
 
@@ -140,14 +140,14 @@ class List {
   // Define the style of the output when a list is passed to the write or
   // writeln functions. The values will be written separated by spaces.
   // The argument 'w' is a writeable channel.
-  proc writeThis(w) throws {
+  override proc serialize(writer, ref serializer) throws {
     var first = true;
     for i in this do
       if first {
-        w.write(i);
+        writer.write(i);
         first = false;
       } else {
-        w.write(" ", i);
+        writer.write(" ", i);
       }
   }
 }
@@ -156,16 +156,16 @@ proc main() {
   use Random;
 
   var lst = new owned List(int);
-  var rnd = if useClockSeed 
-              then new owned NPBRandomStream(real)
-              else new owned NPBRandomStream(real, seed = randomSeed);
+  var rnd = if useClockSeed
+              then new randomStream(real)
+              else new randomStream(real, seed = randomSeed);
   const maxValue = 100;
 
   //
   // Add some integers between 1-100
   //
   for i in 1..listSize do
-    lst.insert(1 + (maxValue * rnd.getNext()):int);
+    lst.insert(1 + (maxValue * rnd.next()):int);
   //
   // writeln uses the writeThis method to display the list
   //

@@ -1,4 +1,0 @@
-getchunk.chpl:4: In function 'main':
-getchunk.chpl:7: warning: file.getchunk is deprecated
-lo = 0
-hi = 20

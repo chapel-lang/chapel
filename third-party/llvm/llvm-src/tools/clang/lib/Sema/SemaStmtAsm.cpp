@@ -22,8 +22,10 @@
 #include "clang/Sema/ScopeInfo.h"
 #include "clang/Sema/SemaInternal.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringSet.h"
 #include "llvm/MC/MCParser/MCAsmParser.h"
+#include <optional>
 using namespace clang;
 using namespace sema;
 
@@ -254,7 +256,7 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
   SmallVector<TargetInfo::ConstraintInfo, 4> OutputConstraintInfos;
 
   // The parser verifies that there is a string literal here.
-  assert(AsmString->isAscii());
+  assert(AsmString->isOrdinary());
 
   FunctionDecl *FD = dyn_cast<FunctionDecl>(getCurLexicalContext());
   llvm::StringMap<bool> FeatureMap;
@@ -262,14 +264,15 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
 
   for (unsigned i = 0; i != NumOutputs; i++) {
     StringLiteral *Literal = Constraints[i];
-    assert(Literal->isAscii());
+    assert(Literal->isOrdinary());
 
     StringRef OutputName;
     if (Names[i])
       OutputName = Names[i]->getName();
 
     TargetInfo::ConstraintInfo Info(Literal->getString(), OutputName);
-    if (!Context.getTargetInfo().validateOutputConstraint(Info)) {
+    if (!Context.getTargetInfo().validateOutputConstraint(Info) &&
+        !(LangOpts.HIPStdPar && LangOpts.CUDAIsDevice)) {
       targetDiag(Literal->getBeginLoc(),
                  diag::err_asm_invalid_output_constraint)
           << Info.getConstraintStr();
@@ -330,7 +333,7 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
       if (RequireCompleteType(OutputExpr->getBeginLoc(), Exprs[i]->getType(),
                               diag::err_dereference_incomplete_type))
         return StmtError();
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
     default:
       return StmtError(Diag(OutputExpr->getBeginLoc(),
                             diag::err_asm_invalid_lvalue_in_output)
@@ -353,7 +356,7 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
 
   for (unsigned i = NumOutputs, e = NumOutputs + NumInputs; i != e; i++) {
     StringLiteral *Literal = Constraints[i];
-    assert(Literal->isAscii());
+    assert(Literal->isOrdinary());
 
     StringRef InputName;
     if (Names[i])
@@ -376,6 +379,11 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
     Exprs[i] = ER.get();
 
     Expr *InputExpr = Exprs[i];
+
+    if (InputExpr->getType()->isMemberPointerType())
+      return StmtError(Diag(InputExpr->getBeginLoc(),
+                            diag::err_asm_pmf_through_constraint_not_permitted)
+                       << InputExpr->getSourceRange());
 
     // Referring to parameters is not allowed in naked functions.
     if (CheckNakedParmReference(InputExpr, *this))
@@ -454,12 +462,12 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
              << Info.getConstraintStr();
   }
 
-  Optional<SourceLocation> UnwindClobberLoc;
+  std::optional<SourceLocation> UnwindClobberLoc;
 
   // Check that the clobbers are valid.
   for (unsigned i = 0; i != NumClobbers; i++) {
     StringLiteral *Literal = Clobbers[i];
-    assert(Literal->isAscii());
+    assert(Literal->isOrdinary());
 
     StringRef Clobber = Literal->getString();
 
@@ -667,8 +675,17 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
     // output was a register, just extend the shorter one to the size of the
     // larger one.
     if (!SmallerValueMentioned && InputDomain != AD_Other &&
-        OutputConstraintInfos[TiedTo].allowsRegister())
+        OutputConstraintInfos[TiedTo].allowsRegister()) {
+      // FIXME: GCC supports the OutSize to be 128 at maximum. Currently codegen
+      // crash when the size larger than the register size. So we limit it here.
+      if (OutTy->isStructureType() &&
+          Context.getIntTypeForBitwidth(OutSize, /*Signed*/ false).isNull()) {
+        targetDiag(OutputExpr->getExprLoc(), diag::err_store_value_to_reg);
+        return NS;
+      }
+
       continue;
+    }
 
     // Either both of the operands were mentioned or the smaller one was
     // mentioned.  One more special case that we'll allow: if the tied input is
@@ -707,10 +724,7 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
       NamedOperandList.emplace_back(
           std::make_pair(Names[i]->getName(), Exprs[i]));
   // Sort NamedOperandList.
-  std::stable_sort(NamedOperandList.begin(), NamedOperandList.end(),
-              [](const NamedOperand &LHS, const NamedOperand &RHS) {
-                return LHS.first < RHS.first;
-              });
+  llvm::stable_sort(NamedOperandList, llvm::less_first());
   // Find adjacent duplicate operand.
   SmallVector<NamedOperand, 4>::iterator Found =
       std::adjacent_find(begin(NamedOperandList), end(NamedOperandList),
@@ -727,6 +741,9 @@ StmtResult Sema::ActOnGCCAsmStmt(SourceLocation AsmLoc, bool IsSimple,
   }
   if (NS->isAsmGoto())
     setFunctionHasBranchIntoScope();
+
+  CleanupVarDeclMarking();
+  DiscardCleanupsInEvaluationContext();
   return NS;
 }
 
@@ -923,13 +940,24 @@ StmtResult Sema::ActOnMSAsmStmt(SourceLocation AsmLoc, SourceLocation LBraceLoc,
   bool IsSimple = (NumOutputs != 0 || NumInputs != 0);
   setFunctionHasBranchProtectedScope();
 
+  bool InvalidOperand = false;
   for (uint64_t I = 0; I < NumOutputs + NumInputs; ++I) {
-    if (Exprs[I]->getType()->isBitIntType())
-      return StmtError(
-          Diag(Exprs[I]->getBeginLoc(), diag::err_asm_invalid_type)
-          << Exprs[I]->getType() << (I < NumOutputs)
-          << Exprs[I]->getSourceRange());
+    Expr *E = Exprs[I];
+    if (E->getType()->isBitIntType()) {
+      InvalidOperand = true;
+      Diag(E->getBeginLoc(), diag::err_asm_invalid_type)
+          << E->getType() << (I < NumOutputs)
+          << E->getSourceRange();
+    } else if (E->refersToBitField()) {
+      InvalidOperand = true;
+      FieldDecl *BitField = E->getSourceBitField();
+      Diag(E->getBeginLoc(), diag::err_ms_asm_bitfield_unsupported)
+          << E->getSourceRange();
+      Diag(BitField->getLocation(), diag::note_bitfield_decl);
+    }
   }
+  if (InvalidOperand)
+    return StmtError();
 
   MSAsmStmt *NS =
     new (Context) MSAsmStmt(Context, AsmLoc, LBraceLoc, IsSimple,

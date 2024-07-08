@@ -75,9 +75,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "CodeGenInstruction.h"
 #include "CodeGenTarget.h"
-#include "llvm/Support/Format.h"
 #include "llvm/TableGen/Error.h"
+#include "llvm/TableGen/Record.h"
 using namespace llvm;
 typedef std::map<std::string, std::vector<Record*> > InstrRelMapTy;
 

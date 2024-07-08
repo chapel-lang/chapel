@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -102,6 +102,13 @@ const char* astlocT::stringLoc() const {
   return astr(this->filename(), ":", linenoBuf);
 }
 
+const char* astlocT::stringLineno() const {
+  char linenoBuf[16];
+
+  snprintf(linenoBuf, sizeof(linenoBuf), "%d", this->lineno());
+  return astr(linenoBuf);
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Definitions for astlocMarker                                                *
@@ -123,7 +130,7 @@ astlocMarker::astlocMarker(int lineno, const char* filename)
   currentAstLoc = astlocT(lineno, astr(filename));
 }
 
-// constructor, for compiler/dyno Locations
+// constructor, for dyno Locations
 astlocMarker::astlocMarker(chpl::Location location)
   : previousAstLoc(currentAstLoc)
 {

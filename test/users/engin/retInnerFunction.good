@@ -1,1 +1,0 @@
-retInnerFunction.chpl:3: error: Inner functions that uses outer-local variables cannot be returned.

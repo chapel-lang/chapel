@@ -4,4 +4,4 @@ class A {
   param p;
 }
 
-var x = new borrowed A();
+var x = new A();

@@ -3,7 +3,7 @@ use IO;
 proc readit(ref x) {
   writeln(x);
 
-  readf("%t\n", x);
+  readf("%?\n", x);
   writeln(x);
   readf("%s\n", x);
   writeln(x);
@@ -30,4 +30,3 @@ readit(f);
 enum G { F1, F2 = 5};
 var g = G.F2;
 readit(g);
-

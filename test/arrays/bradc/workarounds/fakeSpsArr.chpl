@@ -3,7 +3,7 @@ record sps33 {
 
   var data:[-1..1, 0..1] real;
 
-  proc this(i, j) ref {
+  proc ref this(i, j) ref {
     if (i == j) {
       return irv;
     } else if (i==-1) {

@@ -1,4 +1,4 @@
-deprecated "This function is deprecated, use blah(x: uint) instead"
+@deprecated(notes="This function is deprecated, use blah(x: uint) instead")
 proc blah(x: int) {
   if (x >= 0) {
     blah(x: uint);

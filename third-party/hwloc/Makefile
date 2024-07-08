@@ -16,6 +16,7 @@ endif
 
 CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-shared \
+                          --disable-readme \
                           --disable-cairo \
                           --disable-libxml2 \
                           --disable-libudev \
@@ -23,7 +24,14 @@ CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-nvml \
                           --disable-opencl \
                           --disable-gl \
-                          --disable-pci
+                          --disable-rsmi
+
+# PCI support is needed for NIC selection, which currently is only supported
+# with the ofi comm layer
+
+ifneq ($(CHPL_MAKE_COMM), ofi)
+	CHPL_HWLOC_CFG_OPTIONS += --disable-pci
+endif
 
 ifdef CHPL_HWLOC_PREFIX
    CHPL_HWLOC_CFG_OPTIONS += --with-hwloc-symbol-prefix=$(CHPL_HWLOC_PREFIX)
@@ -64,15 +72,6 @@ hwloc-config: FORCE
 	sleep 1
 	cd $(HWLOC_SUBDIR) && touch configure
 	cd $(HWLOC_SUBDIR) && find . -name "*.in" | xargs touch
-#
-# For reasons not yet understood, our use of a separate build dir breaks
-# the doxygen doc rebuild step.  Ensuring that $(HWLOC_SUBDIR)/README is
-# newer than $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag prevents make from
-# trying to do that step.
-#
-	-touch -m -r  $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag -d '+1 sec' $(HWLOC_SUBDIR)/README 2>/dev/null || \
-		touch -m -r $(HWLOC_SUBDIR)/doc/doxygen-doc/hwloc.tag -A '01' $(HWLOC_SUBDIR)/README 2>/dev/null || \
-		touch $(HWLOC_SUBDIR)/README
 #
 # Then configure
 #

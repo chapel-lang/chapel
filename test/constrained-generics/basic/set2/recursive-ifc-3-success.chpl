@@ -26,9 +26,9 @@ implements Ifc1(int(8));
 implements Ifc2(int(16));
 implements Ifc3(int(32));
 
-proc (int(8) ).AT1 type return int(16);
-proc (int(32)).AT2 type return int(32);
-proc (int(64)).AT3 type return int(8);
+proc (int(8) ).AT1 type do return int(16);
+proc (int(32)).AT2 type do return int(32);
+proc (int(64)).AT3 type do return int(8);
 
 proc reqFun1(arg1: int(8) ): int(16) {
   writeln("reqFun1 ", arg1);

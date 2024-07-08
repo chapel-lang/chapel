@@ -1,6 +1,6 @@
 use BlockDist;
 
-var A = newBlockArr({1..10}, real);
+var A = blockDist.createArray({1..10}, real);
 A = 1.0;
 var B = + scan A;
 
@@ -9,6 +9,6 @@ proc foo() {
   return 42;
 }
 
-var o: object = new object();
-writeln("o is: " + o:string);
+var o: RootClass = new RootClass();
+writeln("o is: ", o);
 writeln("B is: ", B);

@@ -119,10 +119,9 @@ static void outputCallingConvention(OutputBuffer &OB, CallingConv CC) {
 
 std::string Node::toString(OutputFlags Flags) const {
   OutputBuffer OB;
-  initializeOutputBuffer(nullptr, nullptr, OB, 1024);
   this->output(OB, Flags);
-  OB << '\0';
-  std::string Owned(OB.getBuffer());
+  std::string_view SV = OB;
+  std::string Owned(SV.begin(), SV.end());
   std::free(OB.getBuffer());
   return Owned;
 }
@@ -159,7 +158,7 @@ void NodeArrayNode::output(OutputBuffer &OB, OutputFlags Flags) const {
 }
 
 void NodeArrayNode::output(OutputBuffer &OB, OutputFlags Flags,
-                           StringView Separator) const {
+                           std::string_view Separator) const {
   if (Count == 0)
     return;
   if (Nodes[0])

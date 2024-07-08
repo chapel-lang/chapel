@@ -219,12 +219,12 @@ void Sema::checkContainerDecl(const BlockCommandComment *Comment) {
 
 /// Turn a string into the corresponding PassDirection or -1 if it's not
 /// valid.
-static int getParamPassDirection(StringRef Arg) {
-  return llvm::StringSwitch<int>(Arg)
-      .Case("[in]", ParamCommandComment::In)
-      .Case("[out]", ParamCommandComment::Out)
-      .Cases("[in,out]", "[out,in]", ParamCommandComment::InOut)
-      .Default(-1);
+static ParamCommandPassDirection getParamPassDirection(StringRef Arg) {
+  return llvm::StringSwitch<ParamCommandPassDirection>(Arg)
+      .Case("[in]", ParamCommandPassDirection::In)
+      .Case("[out]", ParamCommandPassDirection::Out)
+      .Cases("[in,out]", "[out,in]", ParamCommandPassDirection::InOut)
+      .Default(static_cast<ParamCommandPassDirection>(-1));
 }
 
 void Sema::actOnParamCommandDirectionArg(ParamCommandComment *Command,
@@ -232,25 +232,25 @@ void Sema::actOnParamCommandDirectionArg(ParamCommandComment *Command,
                                          SourceLocation ArgLocEnd,
                                          StringRef Arg) {
   std::string ArgLower = Arg.lower();
-  int Direction = getParamPassDirection(ArgLower);
+  ParamCommandPassDirection Direction = getParamPassDirection(ArgLower);
 
-  if (Direction == -1) {
+  if (Direction == static_cast<ParamCommandPassDirection>(-1)) {
     // Try again with whitespace removed.
     llvm::erase_if(ArgLower, clang::isWhitespace);
     Direction = getParamPassDirection(ArgLower);
 
     SourceRange ArgRange(ArgLocBegin, ArgLocEnd);
-    if (Direction != -1) {
-      const char *FixedName = ParamCommandComment::getDirectionAsString(
-          (ParamCommandComment::PassDirection)Direction);
+    if (Direction != static_cast<ParamCommandPassDirection>(-1)) {
+      const char *FixedName =
+          ParamCommandComment::getDirectionAsString(Direction);
       Diag(ArgLocBegin, diag::warn_doc_param_spaces_in_direction)
           << ArgRange << FixItHint::CreateReplacement(ArgRange, FixedName);
     } else {
       Diag(ArgLocBegin, diag::warn_doc_param_invalid_direction) << ArgRange;
-      Direction = ParamCommandComment::In; // Sane fall back.
+      Direction = ParamCommandPassDirection::In; // Sane fall back.
     }
   }
-  Command->setDirection((ParamCommandComment::PassDirection)Direction,
+  Command->setDirection(Direction,
                         /*Explicit=*/true);
 }
 
@@ -263,13 +263,12 @@ void Sema::actOnParamCommandParamNameArg(ParamCommandComment *Command,
 
   if (!Command->isDirectionExplicit()) {
     // User didn't provide a direction argument.
-    Command->setDirection(ParamCommandComment::In, /* Explicit = */ false);
+    Command->setDirection(ParamCommandPassDirection::In,
+                          /* Explicit = */ false);
   }
-  typedef BlockCommandComment::Argument Argument;
-  Argument *A = new (Allocator) Argument(SourceRange(ArgLocBegin,
-                                                     ArgLocEnd),
-                                         Arg);
-  Command->setArgs(llvm::makeArrayRef(A, 1));
+  auto *A = new (Allocator)
+      Comment::Argument{SourceRange(ArgLocBegin, ArgLocEnd), Arg};
+  Command->setArgs(llvm::ArrayRef(A, 1));
 }
 
 void Sema::actOnParamCommandFinish(ParamCommandComment *Command,
@@ -303,11 +302,9 @@ void Sema::actOnTParamCommandParamNameArg(TParamCommandComment *Command,
   // Parser will not feed us more arguments than needed.
   assert(Command->getNumArgs() == 0);
 
-  typedef BlockCommandComment::Argument Argument;
-  Argument *A = new (Allocator) Argument(SourceRange(ArgLocBegin,
-                                                     ArgLocEnd),
-                                         Arg);
-  Command->setArgs(llvm::makeArrayRef(A, 1));
+  auto *A = new (Allocator)
+      Comment::Argument{SourceRange(ArgLocBegin, ArgLocEnd), Arg};
+  Command->setArgs(llvm::ArrayRef(A, 1));
 
   if (!isTemplateOrSpecialization()) {
     // We already warned that this \\tparam is not attached to a template decl.
@@ -318,7 +315,7 @@ void Sema::actOnTParamCommandParamNameArg(TParamCommandComment *Command,
       ThisDeclInfo->TemplateParameters;
   SmallVector<unsigned, 2> Position;
   if (resolveTParamReference(Arg, TemplateParameters, &Position)) {
-    Command->setPosition(copyArray(llvm::makeArrayRef(Position)));
+    Command->setPosition(copyArray(llvm::ArrayRef(Position)));
     TParamCommandComment *&PrevCommand = TemplateParameterDocs[Arg];
     if (PrevCommand) {
       SourceRange ArgRange(ArgLocBegin, ArgLocEnd);
@@ -361,37 +358,15 @@ void Sema::actOnTParamCommandFinish(TParamCommandComment *Command,
   checkBlockCommandEmptyParagraph(Command);
 }
 
-InlineCommandComment *Sema::actOnInlineCommand(SourceLocation CommandLocBegin,
-                                               SourceLocation CommandLocEnd,
-                                               unsigned CommandID) {
-  ArrayRef<InlineCommandComment::Argument> Args;
-  StringRef CommandName = Traits.getCommandInfo(CommandID)->Name;
-  return new (Allocator) InlineCommandComment(
-                                  CommandLocBegin,
-                                  CommandLocEnd,
-                                  CommandID,
-                                  getInlineCommandRenderKind(CommandName),
-                                  Args);
-}
-
-InlineCommandComment *Sema::actOnInlineCommand(SourceLocation CommandLocBegin,
-                                               SourceLocation CommandLocEnd,
-                                               unsigned CommandID,
-                                               SourceLocation ArgLocBegin,
-                                               SourceLocation ArgLocEnd,
-                                               StringRef Arg) {
-  typedef InlineCommandComment::Argument Argument;
-  Argument *A = new (Allocator) Argument(SourceRange(ArgLocBegin,
-                                                     ArgLocEnd),
-                                         Arg);
+InlineCommandComment *
+Sema::actOnInlineCommand(SourceLocation CommandLocBegin,
+                         SourceLocation CommandLocEnd, unsigned CommandID,
+                         ArrayRef<Comment::Argument> Args) {
   StringRef CommandName = Traits.getCommandInfo(CommandID)->Name;
 
-  return new (Allocator) InlineCommandComment(
-                                  CommandLocBegin,
-                                  CommandLocEnd,
-                                  CommandID,
-                                  getInlineCommandRenderKind(CommandName),
-                                  llvm::makeArrayRef(A, 1));
+  return new (Allocator)
+      InlineCommandComment(CommandLocBegin, CommandLocEnd, CommandID,
+                           getInlineCommandRenderKind(CommandName), Args);
 }
 
 InlineContentComment *Sema::actOnUnknownCommand(SourceLocation LocBegin,
@@ -406,9 +381,7 @@ InlineContentComment *Sema::actOnUnknownCommand(SourceLocation LocBegin,
                                                 unsigned CommandID) {
   ArrayRef<InlineCommandComment::Argument> Args;
   return new (Allocator) InlineCommandComment(
-                                  LocBegin, LocEnd, CommandID,
-                                  InlineCommandComment::RenderNormal,
-                                  Args);
+      LocBegin, LocEnd, CommandID, InlineCommandRenderKind::Normal, Args);
 }
 
 TextComment *Sema::actOnText(SourceLocation LocBegin,
@@ -690,12 +663,12 @@ void Sema::checkDeprecatedCommand(const BlockCommandComment *Command) {
       return;
 
     const LangOptions &LO = FD->getLangOpts();
-    const bool DoubleSquareBracket = LO.CPlusPlus14 || LO.C2x;
+    const bool DoubleSquareBracket = LO.CPlusPlus14 || LO.C23;
     StringRef AttributeSpelling =
         DoubleSquareBracket ? "[[deprecated]]" : "__attribute__((deprecated))";
     if (PP) {
       // Try to find a replacement macro:
-      // - In C2x/C++14 we prefer [[deprecated]].
+      // - In C23/C++14 we prefer [[deprecated]].
       // - If not found or an older C/C++ look for __attribute__((deprecated)).
       StringRef MacroName;
       if (DoubleSquareBracket) {
@@ -1134,16 +1107,15 @@ StringRef Sema::correctTypoInTParamReference(
   return StringRef();
 }
 
-InlineCommandComment::RenderKind
-Sema::getInlineCommandRenderKind(StringRef Name) const {
+InlineCommandRenderKind Sema::getInlineCommandRenderKind(StringRef Name) const {
   assert(Traits.getCommandInfo(Name)->IsInlineCommand);
 
-  return llvm::StringSwitch<InlineCommandComment::RenderKind>(Name)
-      .Case("b", InlineCommandComment::RenderBold)
-      .Cases("c", "p", InlineCommandComment::RenderMonospaced)
-      .Cases("a", "e", "em", InlineCommandComment::RenderEmphasized)
-      .Case("anchor", InlineCommandComment::RenderAnchor)
-      .Default(InlineCommandComment::RenderNormal);
+  return llvm::StringSwitch<InlineCommandRenderKind>(Name)
+      .Case("b", InlineCommandRenderKind::Bold)
+      .Cases("c", "p", InlineCommandRenderKind::Monospaced)
+      .Cases("a", "e", "em", InlineCommandRenderKind::Emphasized)
+      .Case("anchor", InlineCommandRenderKind::Anchor)
+      .Default(InlineCommandRenderKind::Normal);
 }
 
 } // end namespace comments

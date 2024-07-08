@@ -65,7 +65,7 @@ PROLOGUE(func)
 
 	CLRCY
 
-	lsr	x18, n, #2
+	lsr	x17, n, #2
 	tbz	n, #0, L(bx0)
 
 L(bx1):	ldr	x13, [vp]
@@ -75,7 +75,7 @@ L(bx1):	ldr	x13, [vp]
 	str	x9, [rp]
 	tbnz	n, #1, L(b11)
 
-L(b01):	cbz	x18, L(rt)
+L(b01):	cbz	x17, L(rt)
 	ldp	x12, x13, [vp,#8]
 	ldp	x10, x11, [up,#8]
 	sub	up, up, #8
@@ -86,7 +86,7 @@ L(b01):	cbz	x18, L(rt)
 L(b11):	ldp	x12, x13, [vp,#8]!
 	ldp	x10, x11, [up,#8]!
 	sub	rp, rp, #8
-	cbz	x18, L(end)
+	cbz	x17, L(end)
 	b	L(top)
 
 L(bx0):	ldp	x12, x13, [vp]
@@ -99,7 +99,7 @@ L(b00):	sub	up, up, #16
 	b	L(mid)
 
 L(b10):	sub	rp, rp, #16
-	cbz	x18, L(end)
+	cbz	x17, L(end)
 
 	ALIGN(16)
 L(top):	bic	x6, x12, cnd
@@ -116,8 +116,8 @@ L(mid):	bic	x6, x12, cnd
 	ADDSUBC	x9, x11, x7
 	ldp	x10, x11, [up,#32]!
 	stp	x8, x9, [rp,#32]!
-	sub	x18, x18, #1
-	cbnz	x18, L(top)
+	sub	x17, x17, #1
+	cbnz	x17, L(top)
 
 L(end):	bic	x6, x12, cnd
 	bic	x7, x13, cnd

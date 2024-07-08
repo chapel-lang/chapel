@@ -1,0 +1,1 @@
+bug: compiler crashes upon an odd tuple assignment

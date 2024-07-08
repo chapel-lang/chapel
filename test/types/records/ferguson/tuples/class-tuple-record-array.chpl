@@ -1,7 +1,7 @@
 use myrecord;
 
 record OtherRecord {
-  var arr:[1..1] R = [new R(1)];
+  var arr:[1..1] R = [new R(1), ];
 }
 
 class MyClass {

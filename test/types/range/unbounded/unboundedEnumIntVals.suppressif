@@ -1,2 +1,0 @@
-COMPOPTS <= --baseline
-COMPOPTS <= --no-inline-iterators

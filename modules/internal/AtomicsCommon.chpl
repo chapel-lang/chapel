@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,6 +28,13 @@ module AtomicsCommon {
     // network and processor atomic versions of atomic_refcnt if
     // necessary.
     var _cnt:chpl__processorAtomicType(int);
+
+    proc init() {}
+    proc init=(other: atomic_refcnt) {
+      init this;
+      this._cnt.init_helper(other._cnt.read());
+    }
+
     // Reference counting implemented according to
 // http://www.chaoticmind.net/~hcb/projects/boost.atomic/doc/atomic/usage_examples.html#boost_atomic.usage_examples.example_reference_counters
 // http://stackoverflow.com/questions/10268737/c11-atomics-and-intrusive-shared-pointer-reference-count

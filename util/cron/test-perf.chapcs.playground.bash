@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test perf of disabling memory hooks at compile time
-GITHUB_USER=ronawho
-GITHUB_BRANCH=disable-mem-hooks
-SHORT_NAME=disable-mem-hooks
-START_DATE=06/02/22
+source /data/cf/chapel/setup_system_llvm.bash 15
+GITHUB_USER=jabraham17
+GITHUB_BRANCH=rv-playground
+SHORT_NAME=llvm-rv
+START_DATE=06/27/24
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
@@ -37,4 +37,4 @@ git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
-$CWD/nightly -cron ${perf_args} ${nightly_args} -compopts -senablePostfixBangChecks
+$CWD/nightly -cron ${perf_args} ${nightly_args}

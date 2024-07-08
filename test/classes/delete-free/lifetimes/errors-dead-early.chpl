@@ -41,14 +41,14 @@ record MyRecord {
 
 proc test5() {
   var x: MyRecord;
-  x.c = new borrowed MyClass(1);
+  x.c = (new owned MyClass(1)).borrow();
   writeln(x);
 }
 test5();
 
 proc test6() {
   var a:borrowed MyClass? = nil;
-  a = new borrowed MyClass();
+  a = (new owned MyClass()).borrow();
   writeln(a);
 }
 test6();

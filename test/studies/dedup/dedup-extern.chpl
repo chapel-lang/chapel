@@ -23,10 +23,10 @@ proc main(args:[] string)
 
   for arg in args[1..] {
     if isFile(arg) then
-      paths.append(arg);
+      paths.pushBack(arg);
     else if isDir(arg) then
-      for path in findfiles(arg, recursive=true) do
-        paths.append(path);
+      for path in findFiles(arg, recursive=true) do
+        paths.pushBack(path);
   }
 
   // Create an array of hashes and file ids
@@ -35,11 +35,11 @@ proc main(args:[] string)
 
   // Compute the SHA1 sums using the extern calls
   var pathsArray = paths.toArray();
-  forall (id,path) in zip(pathsArray.domain, pathsArray) {
+  forall (id,path) in zip(pathsArray.domain, pathsArray) with (ref hashAndFileId) {
     var mdArray:[0..19] uint(8);
     var data:string;
-    var f = open(path, iomode.r);
-    f.reader(kind=iokind.native).readstring(data);
+    var f = open(path, ioMode.r);
+    f.reader(deserializer=new binaryDeserializer(), locking=false).readAll(data);
     SHA1(data.c_str():c_ptr(uint(8)), data.numBytes:uint, c_ptrTo(mdArray));
     var hash:Hash;
     for i in 0..19 do

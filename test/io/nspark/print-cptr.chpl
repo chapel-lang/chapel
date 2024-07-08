@@ -1,23 +1,23 @@
 use CTypes;
 record Foo {
-  var mem = c_nil:c_ptr(uint(64));
+  var mem = nil:c_ptr(uint(64));
 }
 
 record Bar {
-  var mem:c_void_ptr = c_nil;
+  var mem:c_ptr(void) = nil;
 }
 
-writeln("c_nil = ", c_nil:c_void_ptr);
+writeln("nil = ", nil:c_ptr(void));
 
 var foo: Foo;
 writeln("foo = ", foo);
-foo = new Foo(mem=c_malloc(uint(64), 256));
+foo = new Foo(mem=allocate(uint(64), 256));
 writeln("foo = ", foo);
 
 var bar: Bar;
 writeln("bar = ", bar);
-bar = new Bar(mem=c_malloc(uint(64), 256):c_void_ptr);
+bar = new Bar(mem=allocate(uint(64), 256):c_ptr(void));
 writeln("bar = ", bar);
 
-c_free(foo.mem);
-c_free(bar.mem);
+deallocate(foo.mem);
+deallocate(bar.mem);

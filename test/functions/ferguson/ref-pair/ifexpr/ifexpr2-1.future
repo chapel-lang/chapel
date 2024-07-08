@@ -1,0 +1,1 @@
+bug: compiler uses wrong version of getter() with explicit ref

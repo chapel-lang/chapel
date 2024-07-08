@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,7 +32,10 @@ namespace llvm {
 }
 
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/IR/PassManager.h"
 #include "llvm/IR/ValueHandle.h"
+#include "llvm/Pass.h"
+
 #include <vector>
 
 /* The LLVM Global to Wide transformation allows the Chapel code generator
@@ -176,9 +179,63 @@ struct GlobalToWideInfo {
       hasPreservingFn(false), preservingFn(NULL) { }
 };
 
-llvm::ModulePass *createGlobalToWide(GlobalToWideInfo* info,
-                                     std::string setLayout);
+// helper
+struct GlobalToWide final {
+  GlobalToWideInfo * info = nullptr;
+  std::string layoutAfterwards = "";
 
+  bool debugPassOne = false;
+  bool debugPassTwo = false;
+
+  /* info->globalSpace is the address space storing global pointers that
+   *   need to be converted to wide pointers
+   * layout is the target layout we should set the module to
+   *   (could remove p record for address space 'space')
+   */
+  GlobalToWide(GlobalToWideInfo* info, std::string layout)
+    :  info(info), layoutAfterwards(layout) { }
+
+  // Constructor for running within opt, for testing and
+  // bugpoint.
+  GlobalToWide() { }
+
+  // returns true if the module was changed
+  bool run(llvm::Module& M);
+};
+
+// old pass
+struct LegacyGlobalToWidePass final : public llvm::ModulePass {
+  static char ID; // Pass identification, replacement for typeid
+  GlobalToWide pass;
+
+  LegacyGlobalToWidePass(GlobalToWideInfo* info, std::string layout)
+    : llvm::ModulePass(ID), pass(info, layout) { }
+
+  LegacyGlobalToWidePass() : llvm::ModulePass(ID) { }
+
+  bool runOnModule(llvm::Module &M) override;
+
+  // TODO: getAnalysisUsage
+};
+
+llvm::ModulePass *createLegacyGlobalToWidePass(GlobalToWideInfo* info,
+                                               std::string setLayout);
+
+// new pass
+struct GlobalToWidePass final : public llvm::PassInfoMixin<GlobalToWidePass> {
+  GlobalToWide pass;
+
+  GlobalToWidePass(GlobalToWideInfo* info, std::string layout)
+    : pass(info, layout) { }
+
+  GlobalToWidePass() { }
+
+  llvm::PreservedAnalyses run(llvm::Module &F,
+                              llvm::ModuleAnalysisManager &AM);
+};
+
+
+// helper functions
 llvm::Type* convertTypeGlobalToWide(llvm::Module *module, GlobalToWideInfo* info, llvm::Type* t);
 
 bool containsGlobalPointers(GlobalToWideInfo* info, llvm::Type* t);

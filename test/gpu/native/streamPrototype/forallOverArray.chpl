@@ -1,9 +1,11 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
+
+
 
 config const start = 1;
 config const end = 10;
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 on here.gpus[0] {
   var a: [start..end] int;
   var value = 20;
@@ -14,5 +16,5 @@ on here.gpus[0] {
   foreach elem in a { elem += 10;          } writeln(a);
   foreach elem in a { elem += value;       } writeln(a);
 }
-stopGPUDiagnostics();
-writeln(getGPUDiagnostics());
+stopGpuDiagnostics();
+assertGpuDiags(kernel_launch_um=4, kernel_launch_aod=5);

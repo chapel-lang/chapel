@@ -21,10 +21,10 @@ var list2: list(testRecord);
 for i in 1..testIters {
   array1[i] = i;
   array2[i].dummy = i;
-  list1.append(i);
+  list1.pushBack(i);
   var tr = new testRecord();
   tr.dummy = i;
-  list2.append(tr);
+  list2.pushBack(tr);
 }
 
 var set1 = new set(int, array1);
@@ -43,4 +43,3 @@ checkContains(set3, list1);
 checkContains(set4, list2);
 checkContains(set1, set3);
 checkContains(set2, set4);
-

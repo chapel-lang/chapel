@@ -37,6 +37,7 @@ see https://www.gnu.org/licenses/.  */
 
 #include "gmp-impl.h"
 
+
 #if 0				/* unused, so leave out for now */
 static mp_size_t
 mpn_dcpi1_bdiv_q_n_itch (mp_size_t n)

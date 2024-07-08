@@ -1,0 +1,4 @@
+Tests co-locale functionality as specified by the the -nl argument, Note that
+the functionality of hello.chpl doesn't matter, it is invoked with --dry-run
+so that it doesn't actually run. The tests look for the proper launcher
+arguments in the output.

@@ -4,6 +4,7 @@ import sys
 import optparse
 
 import chpl_bin_subdir, chpl_compiler, chpl_mem, chpl_platform, overrides, third_party_utils
+import homebrew_utils
 from utils import error, memoize, run_command, warning
 
 
@@ -47,14 +48,12 @@ def get(flag='target'):
     if flag == 'host':
         if linux and mem_val == 'jemalloc' and jemalloc_val == 'system':
             error("CHPL_HOST_JEMALLOC=system is not supported on Linux for host builds")
-
-        if darwin and mem_val == 'jemalloc' and jemalloc_val == 'bundled':
+        elif darwin and mem_val == 'jemalloc' and jemalloc_val == 'bundled':
             error("CHPL_HOST_JEMALLOC=bundled is not supported on Mac for host builds")
 
     if mem_val == 'jemalloc' and jemalloc_val == 'none':
         error("CHPL_JEMALLOC must not be 'none' when CHPL_MEM is jemalloc")
-
-    if mem_val != 'jemalloc' and jemalloc_val != 'none':
+    elif mem_val != 'jemalloc' and jemalloc_val != 'none':
         error("CHPL_JEMALLOC must be 'none' when CHPL_MEM is not jemalloc")
 
     return jemalloc_val
@@ -94,6 +93,15 @@ def get_compile_args(flag):
         ucp_val = get_uniq_cfg_path(flag)
         return third_party_utils.get_bundled_compile_args('jemalloc',
                                                           ucp=ucp_val)
+    elif jemalloc_val == 'system':
+        # try pkg-config
+        args = third_party_utils.pkgconfig_get_system_compile_args('jemalloc')
+        if args != (None, None):
+            return args
+        else:
+            envname = "CHPL_TARGET_JEMALLOC" if flag == "target" else "CHPL_HOST_JEMALLOC"
+            third_party_utils.could_not_find_pkgconfig_pkg("jemalloc", envname)
+
     return ([ ], [ ])
 
 # flag is host or target
@@ -118,8 +126,19 @@ def get_link_args(flag):
         return (libs, morelibs)
 
     if jemalloc_val == 'system':
-        return ([ ], ['-ljemalloc'])
-
+        # try pkg-config
+        args = third_party_utils.pkgconfig_get_system_link_args('jemalloc')
+        if args != (None, None):
+            pclibs = args[1]
+            libs = []
+            for pcl in pclibs:
+                libs.append(pcl)
+                if pcl.startswith('-L'):
+                    libs.append(pcl.replace('-L', '-Wl,-rpath,', 1))
+            return (args[0], libs)
+        else:
+            envname = "CHPL_TARGET_JEMALLOC" if flag == "target" else "CHPL_HOST_JEMALLOC"
+            third_party_utils.could_not_find_pkgconfig_pkg("jemalloc", envname)
     return ([ ], [ ])
 
 def _main():

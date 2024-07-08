@@ -33,7 +33,7 @@ public:
   explicit BinaryStreamWriter(WritableBinaryStreamRef Ref);
   explicit BinaryStreamWriter(WritableBinaryStream &Stream);
   explicit BinaryStreamWriter(MutableArrayRef<uint8_t> Data,
-                              llvm::support::endianness Endian);
+                              llvm::endianness Endian);
 
   BinaryStreamWriter(const BinaryStreamWriter &Other) = default;
 
@@ -56,11 +56,10 @@ public:
   /// \returns a success error code if the data was successfully written,
   /// otherwise returns an appropriate error code.
   template <typename T> Error writeInteger(T Value) {
-    static_assert(std::is_integral<T>::value,
+    static_assert(std::is_integral_v<T>,
                   "Cannot call writeInteger with non-integral value!");
     uint8_t Buffer[sizeof(T)];
-    llvm::support::endian::write<T, llvm::support::unaligned>(
-        Buffer, Value, Stream.getEndian());
+    llvm::support::endian::write<T>(Buffer, Value, Stream.getEndian());
     return writeBytes(Buffer);
   }
 

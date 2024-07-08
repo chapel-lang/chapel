@@ -18,21 +18,22 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
+#include "llvm/CodeGen/MachineInstrBuilder.h"
+#include "llvm/CodeGen/MachineValueType.h"
 #include "llvm/CodeGen/TargetLowering.h"
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/CallingConv.h"
 #include "llvm/IR/DebugLoc.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/InstrTypes.h"
-#include "llvm/IR/IntrinsicInst.h"
-#include "llvm/Support/MachineValueType.h"
-#include <algorithm>
 #include <cstdint>
 #include <utility>
 
 namespace llvm {
 
 class AllocaInst;
+class Instruction;
+class IntrinsicInst;
 class BasicBlock;
 class CallInst;
 class Constant;
@@ -204,7 +205,7 @@ protected:
   MachineRegisterInfo &MRI;
   MachineFrameInfo &MFI;
   MachineConstantPool &MCP;
-  DebugLoc DbgLoc;
+  MIMetadata MIMD;
   const TargetMachine &TM;
   const DataLayout &DL;
   const TargetInstrInfo &TII;
@@ -246,7 +247,7 @@ public:
   void finishBasicBlock();
 
   /// Return current debug location information.
-  DebugLoc getCurDebugLoc() const { return DbgLoc; }
+  DebugLoc getCurDebugLoc() const { return MIMD.getDL(); }
 
   /// Do "fast" instruction selection for function arguments and append
   /// the machine instructions to the current block. Returns true when
@@ -317,6 +318,10 @@ public:
 
   /// Reset InsertPt to the given old insert position.
   void leaveLocalValueArea(SavePoint Old);
+
+  /// Target-independent lowering of non-instruction debug info associated with
+  /// this instruction.
+  void handleDbgInfo(const Instruction *II);
 
 protected:
   explicit FastISel(FunctionLoweringInfo &FuncInfo,
@@ -516,6 +521,16 @@ protected:
     // TODO: Implement PGSO.
     return MF->getFunction().hasOptSize();
   }
+
+  /// Target-independent lowering of debug information. Returns false if the
+  /// debug information couldn't be lowered and was instead discarded.
+  virtual bool lowerDbgValue(const Value *V, DIExpression *Expr,
+                             DILocalVariable *Var, const DebugLoc &DL);
+
+  /// Target-independent lowering of debug information. Returns false if the
+  /// debug information couldn't be lowered and was instead discarded.
+  virtual bool lowerDbgDeclare(const Value *V, DIExpression *Expr,
+                               DILocalVariable *Var, const DebugLoc &DL);
 
 private:
   /// Handle PHI nodes in successor blocks.

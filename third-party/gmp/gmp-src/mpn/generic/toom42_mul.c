@@ -206,24 +206,24 @@ mpn_toom42_mul (mp_ptr pp,
   TOOM42_MUL_N_REC (v1, as1, bs1, n, scratch_out);
   if (as1[n] == 1)
     {
-      cy = bs1[n] + mpn_add_n (v1 + n, v1 + n, bs1, n);
+      cy = mpn_add_n (v1 + n, v1 + n, bs1, n);
     }
   else if (as1[n] == 2)
     {
-#if HAVE_NATIVE_mpn_addlsh1_n
-      cy = 2 * bs1[n] + mpn_addlsh1_n (v1 + n, v1 + n, bs1, n);
+#if HAVE_NATIVE_mpn_addlsh1_n_ip1
+      cy = mpn_addlsh1_n_ip1 (v1 + n, bs1, n);
 #else
-      cy = 2 * bs1[n] + mpn_addmul_1 (v1 + n, bs1, n, CNST_LIMB(2));
+      cy = mpn_addmul_1 (v1 + n, bs1, n, CNST_LIMB(2));
 #endif
     }
   else if (as1[n] == 3)
     {
-      cy = 3 * bs1[n] + mpn_addmul_1 (v1 + n, bs1, n, CNST_LIMB(3));
+      cy = mpn_addmul_1 (v1 + n, bs1, n, CNST_LIMB(3));
     }
   else
     cy = 0;
   if (bs1[n] != 0)
-    cy += mpn_add_n (v1 + n, v1 + n, as1, n);
+    cy += as1[n] + mpn_add_n (v1 + n, v1 + n, as1, n);
   v1[2 * n] = cy;
 
   TOOM42_MUL_N_REC (v0, ap, bp, n, scratch_out);	/* v0, 2n limbs */

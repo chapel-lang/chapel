@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,8 @@
 #include "chpl-atomics.h" // for memory_order
 
 #include "chpl-cache.h" // for chpl_cache_release, chpl_cache_acquire
+
+#include "chpl-gpu.h" // for chpl_gpu_task_fence
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,6 +70,9 @@ void chpl_rmem_consist_release(int ln, int32_t fn)
 #ifdef HAS_CHPL_CACHE_FNS
   chpl_cache_release(ln, fn);
 #endif
+#ifdef HAS_GPU_LOCALE
+  chpl_gpu_task_fence();
+#endif
 }
 
 static inline
@@ -75,6 +80,9 @@ void chpl_rmem_consist_acquire(int ln, int32_t fn)
 {
 #ifdef HAS_CHPL_CACHE_FNS
   chpl_cache_acquire(ln, fn);
+#endif
+#ifdef HAS_GPU_LOCALE
+  chpl_gpu_task_fence();
 #endif
 }
 

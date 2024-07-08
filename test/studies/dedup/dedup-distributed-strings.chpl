@@ -16,24 +16,24 @@ proc main(args:[] string)
 
   // Gather the paths we want to hash to find duplicates.
   // Start out with a 0-length array
-  // We'll append to it with push_back
+  // We'll append to it with pushBack
   // This is only possible for arrays that do not share a domain.
   var paths: list(string);
 
   for arg in args[1..] {
     if isFile(arg) then
-      paths.append(arg);
+      paths.pushBack(arg);
     else if isDir(arg) then
-      // use FileSystem.findfiles to easily enumerate files.
+      // use FileSystem.findFiles to easily enumerate files.
       // A parallel version is available.
-      for path in findfiles(arg, recursive=true) do
-        paths.append(path);
+      for path in findFiles(arg, recursive=true) do
+        paths.pushBack(path);
   }
 
   // Create a distributed array of paths so that we can distribute the
   // work of hashing files to different Locales
   var n:int = paths.size;
-  var BlockN = {1..n} dmapped Block({1..n});
+  var BlockN = {1..n} dmapped new blockDist({1..n});
   var distributedPaths:[BlockN] string;
   distributedPaths = paths.toArray();
  
@@ -48,7 +48,7 @@ proc main(args:[] string)
     startVdebug(vis);
 
   // Using the Spawn module, compute the SHA1 sums using an external program
-  forall (id,path) in zip(distributedPaths.domain, distributedPaths) {
+  forall (id,path) in zip(distributedPaths.domain, distributedPaths) with (ref hashAndFile) {
     if verbose then
       writeln("Running sha1sum ", path);
     // The spawn call creates a subprocess. By specifying
@@ -105,4 +105,3 @@ proc main(args:[] string)
     writeln();
   }
 }
-

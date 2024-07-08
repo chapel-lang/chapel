@@ -4,7 +4,8 @@ module test {
   class Child : Parent { var c: int; }
 
   proc main() {
-    var cb:borrowed Child = (new owned Child(1, 2)).borrow();
+    var ownCb = new owned Child(1, 2);
+    var cb:borrowed Child = ownCb.borrow();
     var cbq = cb:borrowed Child?;
     var cu = cb:unmanaged Child;
     var cuq = cb:unmanaged Child?;
@@ -416,9 +417,9 @@ module test {
         writeln("cuq:unmanaged Child?");
         var x = cuq:unmanaged Child?;
         writeln(x.type:string, " ", x);
-        var y = cbq:unmanaged class?;
+        var y = cuq:unmanaged class?;
         writeln(y.type:string, " ", y);
-        var z = cbq:unmanaged;
+        var z = cuq:unmanaged;
         writeln(z.type:string, " ", z);
       }
       // nbq

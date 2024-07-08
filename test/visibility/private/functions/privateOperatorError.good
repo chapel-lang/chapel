@@ -4,6 +4,6 @@ $CHPL_HOME/modules/internal/String.chpl:nnnn: note: this candidate did not match
 privateOperatorError.chpl:22: note: because actual argument #1 with type 'Foo'
 $CHPL_HOME/modules/internal/String.chpl:nnnn: note: is passed to formal 'x: c_ptr(uint(8))'
 privateOperatorError.chpl:22: note: other candidates are:
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: uint(64), b: int(64))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: int(64), b: uint(64))
-note: and 95 other candidates, use --print-all-candidates to see them
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: int(8), b: int(8))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: int(16), b: int(16))
+note: and nnnn other candidates, use --print-all-candidates to see them

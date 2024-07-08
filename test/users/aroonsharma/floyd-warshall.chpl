@@ -58,7 +58,7 @@ proc print_matrix(A: [], n_dim: int) {
 /* The process which runs the benchmark */
 proc kernel_fw(dist_square, n_dim: int) {
   var still_correct = true;
-    var t:Timer;
+    var t:stopwatch;
   
   if messages {
     resetCommDiagnostics();
@@ -67,7 +67,7 @@ proc kernel_fw(dist_square, n_dim: int) {
   
     /******* Start the timer: this is where we do work *******/
   if timeit {
-    t = new Timer();
+    t = new stopwatch();
     t.start();
   }
   
@@ -149,10 +149,10 @@ proc main() {
         var user_dist_square = dom_square dmapped CyclicZipOpt(startIdx=dom_square.low);
         kernel_fw(user_dist_square, N);   */
     } else if dist == "C" {
-        var user_dist_square = dom_square dmapped Cyclic(startIdx=dom_square.low);
+        var user_dist_square = dom_square dmapped new cyclicDist(startIdx=dom_square.low);
         kernel_fw(user_dist_square, N); 
     } else if dist == "B" {
-        var user_dist_square = dom_square dmapped Block(boundingBox=dom_square);
+        var user_dist_square = dom_square dmapped new blockDist(boundingBox=dom_square);
         kernel_fw(user_dist_square, N);  
     } 
 }

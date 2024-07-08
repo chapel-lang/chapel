@@ -47,7 +47,7 @@ define(`n',  `x3')
 ASM_START()
 PROLOGUE(mpn_sqr_diag_addlsh1)
 	ldr	x15, [up],#8
-	lsr	x18, n, #1
+	lsr	x14, n, #1
 	tbz	n, #0, L(bx0)
 
 L(bx1):	adds	x7, xzr, xzr
@@ -62,8 +62,8 @@ L(bx0):	adds	x5, xzr, xzr
 	ldr	x17, [up],#16
 	ldp	x6, x7, [tp],#32
 	umulh	x11, x15, x15
-	sub	x18, x18, #1
-	cbz	x18, L(end)
+	sub	x14, x14, #1
+	cbz	x14, L(end)
 
 	ALIGN(16)
 L(top):	extr	x9, x6, x5, #63
@@ -84,8 +84,8 @@ L(mid):	extr	x9, x4, x7, #63
 	extr	x8, x5, x4, #63
 	stp	x12, x13, [rp],#16
 	adcs	x12, x8, x10
-	sub	x18, x18, #1
-	cbnz	x18, L(top)
+	sub	x14, x14, #1
+	cbnz	x14, L(top)
 
 L(end):	extr	x9, x6, x5, #63
 	mul	x10, x17, x17

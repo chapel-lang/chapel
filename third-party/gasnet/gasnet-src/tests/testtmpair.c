@@ -195,6 +195,8 @@ int main(int argc, char **argv)
     ep_caps &= GEX_EP_CAPABILITY_RMA;
   #elif GASNET_CONDUIT_UCX
     ep_caps &= GEX_EP_CAPABILITY_RMA;
+  #elif GASNET_CONDUIT_OFI
+    ep_caps &= GEX_EP_CAPABILITY_RMA;
   #elif GASNET_MAXEPS > 1
     MSG0("Update required in testtmpair.c for conduit-specific capabilities.");
   #endif
@@ -205,7 +207,7 @@ int main(int argc, char **argv)
 
     for (gex_EP_Index_t idx = 1; idx < num_eps; ++idx) {
       GASNET_Safe(gex_Segment_Create(segs+idx, myclient, NULL, TEST_SEGSZ_EXPR, GEX_MK_HOST, 0));
-      gex_EP_BindSegment(eps[idx], segs[idx], 0);
+      GASNET_Safe(gex_EP_BindSegment(eps[idx], segs[idx], 0));
     }
     gex_EP_PublishBoundSegment(myteam, eps+1, num_eps-1, 0);
   }

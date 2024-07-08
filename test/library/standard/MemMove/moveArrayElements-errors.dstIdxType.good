@@ -1,0 +1,2 @@
+moveArrayElements-errors.chpl:nnnn: In function 'main':
+moveArrayElements-errors.chpl:nnnn: error: 'dst' and 'dstRegion' for 'moveArrayElements' must have the same index type: 'int(64)' vs. 'uint(64)'

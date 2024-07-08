@@ -151,17 +151,16 @@ class GenerateModuleInterfaceAction : public GenerateModuleAction {
 private:
   bool BeginSourceFileAction(CompilerInstance &CI) override;
 
+  std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
+                                                 StringRef InFile) override;
+
   std::unique_ptr<raw_pwrite_stream>
   CreateOutputFile(CompilerInstance &CI, StringRef InFile) override;
 };
 
-class GenerateHeaderModuleAction : public GenerateModuleAction {
-  /// The synthesized module input buffer for the current compilation.
-  std::unique_ptr<llvm::MemoryBuffer> Buffer;
-  std::vector<std::string> ModuleHeaders;
+class GenerateHeaderUnitAction : public GenerateModuleAction {
 
 private:
-  bool PrepareToExecuteAction(CompilerInstance &CI) override;
   bool BeginSourceFileAction(CompilerInstance &CI) override;
 
   std::unique_ptr<raw_pwrite_stream>
@@ -181,6 +180,9 @@ public:
 /// Dump information about the given module file, to be used for
 /// basic debugging and discovery.
 class DumpModuleInfoAction : public ASTFrontendAction {
+  // Allow other tools (ex lldb) to direct output for their use.
+  std::shared_ptr<llvm::raw_ostream> OutputStream;
+
 protected:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                  StringRef InFile) override;
@@ -188,6 +190,9 @@ protected:
   void ExecuteAction() override;
 
 public:
+  DumpModuleInfoAction() = default;
+  explicit DumpModuleInfoAction(std::shared_ptr<llvm::raw_ostream> Out)
+      : OutputStream(Out) {}
   bool hasPCHSupport() const override { return false; }
   bool hasASTFileSupport() const override { return true; }
   bool hasIRSupport() const override { return false; }
@@ -269,12 +274,6 @@ protected:
   }
 
   bool usesPreprocessorOnly() const override { return true; }
-};
-
-class ExtractAPIAction : public ASTFrontendAction {
-protected:
-  std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
-                                                 StringRef InFile) override;
 };
 
 //===----------------------------------------------------------------------===//

@@ -111,15 +111,29 @@ gex_Event_t gasnete_get_nb(
                     size_t nbytes,
                     gex_Flags_t flags GASNETI_THREAD_FARG)
 {
+  if (nbytes > gasnetc_max_rma_size) {
+    // Use get_nbi within an access region when too large for a single xfer.
+    gasnete_begin_nbi_accessregion(0, 1 GASNETI_THREAD_PASS);
+      gasneti_assert_zeroret( gasnete_get_nbi(tm, dest, rank, src, nbytes,
+                                              flags GASNETI_THREAD_PASS) );
+    return gasnete_end_nbi_accessregion(0 GASNETI_THREAD_PASS);
+  }
+
   gasnete_eop_t *op = gasnete_eop_new(GASNETI_MYTHREAD);
   op->ofi.type = OFI_TYPE_EGET;
-  gasnetc_rdma_get(dest, gasneti_e_tm_rank_to_jobrank(tm,rank), src, nbytes, &op->ofi GASNETI_THREAD_PASS);
+  if (gasnetc_rdma_get(dest, tm, rank, src, nbytes,
+                       &op->ofi, flags GASNETI_THREAD_PASS)) {
+    gasneti_assert(flags & GEX_FLAG_IMMEDIATE);
+    GASNETE_EOP_MARKDONE(op);
+    gasnete_eop_free(op GASNETI_THREAD_PASS);
+    return GEX_EVENT_NO_OP;
+  }
   return (gex_Event_t)op;
 }
 
 // TODO-EX: Improved LC support.
 //  + NOW will sometimes need to block for RC
-//  + Currently explict handle is mapped to NOW
+//  + explicit handle might use FI_INJECT for synchronous LC of small nbytes
 extern
 gex_Event_t gasnete_put_nb(
                     gex_TM_t tm,
@@ -128,7 +142,18 @@ gex_Event_t gasnete_put_nb(
                     size_t nbytes, gex_Event_t *lc_opt,
                     gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  const gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm,rank);
+  if (nbytes > gasnetc_max_rma_size) {
+    // Use put_nbi within an access region when too large for a single xfer.
+    const int alc = gasneti_leaf_is_pointer(lc_opt);
+    gasnete_begin_nbi_accessregion(0, 1 GASNETI_THREAD_PASS);
+      gasneti_assert_zeroret( gasnete_put_nbi(tm, rank, dest, src, nbytes,
+                                              alc ? GEX_EVENT_GROUP : lc_opt, flags
+                                              GASNETI_THREAD_PASS) );
+    gex_Event_t ev = gasnete_end_nbi_accessregion(0 GASNETI_THREAD_PASS);
+    if (alc) *lc_opt = gex_Event_QueryLeaf(ev, GEX_EC_LC);
+    return ev;
+  }
+
   gasnete_eop_t *op = gasnete_eop_new(GASNETI_MYTHREAD);
   op->ofi.type = OFI_TYPE_EPUT;
 
@@ -138,19 +163,32 @@ gex_Event_t gasnete_put_nb(
   }
 #endif
 
-  if (lc_opt == GEX_EVENT_DEFER) {
-    gasnetc_rdma_put(jobrank, dest, src, nbytes, &op->ofi GASNETI_THREAD_PASS);
-  } else {
-    gasneti_leaf_finish(lc_opt); // synchronous LC
-
+  if (lc_opt == GEX_EVENT_NOW) {
     // Try to submit for synchronous LC.
     // If we can't, then we must block for RC.
-    gex_Event_t ev = gasnetc_rdma_put_non_bulk(jobrank, dest, src, nbytes, &op->ofi GASNETI_THREAD_PASS);
+    gex_Event_t ev = gasnetc_rdma_put_non_bulk(tm, rank, dest, src, nbytes, &op->ofi, flags GASNETI_THREAD_PASS);
     if (ev) {
       GASNETE_EOP_MARKDONE(op);
       gasnete_eop_free(op GASNETI_THREAD_PASS);
+      if (ev == GEX_EVENT_NO_OP) return ev;
       op = NULL; // aka GASNET_EVENT_INVALID
       gasnete_wait(ev GASNETI_THREAD_PASS);
+    }
+  } else {
+    int alc = (lc_opt != GEX_EVENT_DEFER);
+    if (alc) {
+      gasneti_assert(gasneti_leaf_is_pointer(lc_opt));
+      // TODO: should attempt inject-based synchronous LC, unless GEX_FLAG_LC_COPY_NO
+      GASNETE_EOP_LC_START(op);
+      *lc_opt = gasneti_op_event(op, gasnete_eop_event_alc);
+    }
+    if (gasnetc_rdma_put(tm, rank, dest, src, nbytes,
+                         &op->ofi, alc, flags GASNETI_THREAD_PASS)) {
+      gasneti_assert(flags & GEX_FLAG_IMMEDIATE);
+      if (alc) GASNETE_EOP_LC_FINISH(op);
+      GASNETE_EOP_MARKDONE(op);
+      gasnete_eop_free(op GASNETI_THREAD_PASS);
+      return GEX_EVENT_NO_OP;
     }
   }
 
@@ -183,15 +221,20 @@ int gasnete_get_nbi(
 {
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
   gasnete_iop_t *op = mythread->current_iop;
+  gasneti_assert(op->get_ofi.type == OFI_TYPE_IGET);
   op->initiated_get_cnt++;
-  op->get_ofi.type = OFI_TYPE_IGET;
-  gasnetc_rdma_get(dest, gasneti_e_tm_rank_to_jobrank(tm,rank), src, nbytes, &op->get_ofi GASNETI_THREAD_PASS);
+  if (gasnetc_rdma_get(dest, tm, rank, src, nbytes,
+                       &op->get_ofi, flags GASNETI_THREAD_PASS)) {
+    gasneti_assert(flags & GEX_FLAG_IMMEDIATE);
+    GASNETE_IOP_CNT_FINISH(op, get, 1, GASNETI_ATOMIC_NONE); // NONE only because no xfer
+    return 1;
+  }
   return GASNET_OK;
 }
 
 // TODO-EX: Improved LC support.
 //  + NOW will sometimes need to block for RC
-//  + GROUP is mapped to NOW
+//  + GROUP might use FI_INJECT for synchronous LC of small nbytes
 extern
 int gasnete_put_nbi(
                     gex_TM_t tm,
@@ -200,11 +243,10 @@ int gasnete_put_nbi(
                     size_t nbytes, gex_Event_t *lc_opt,
                     gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  const gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm,rank);
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
   gasnete_iop_t *op = mythread->current_iop;
+  gasneti_assert(op->put_ofi.type == OFI_TYPE_IPUT);
   op->initiated_put_cnt++;
-  op->put_ofi.type = OFI_TYPE_IPUT;
 
 #if GASNET_DEBUG
   if (gasneti_leaf_is_pointer(lc_opt)) {
@@ -212,15 +254,28 @@ int gasnete_put_nbi(
   }
 #endif
 
-  if (lc_opt == GEX_EVENT_DEFER) {
-    gasnetc_rdma_put(jobrank, dest, src, nbytes, &op->put_ofi GASNETI_THREAD_PASS);
-  } else {
+  if (lc_opt == GEX_EVENT_NOW) {
     // Try to submit for synchronous LC.
     // If we can't, then we must block for RC.
-    gex_Event_t ev = gasnetc_rdma_put_non_bulk(jobrank, dest, src, nbytes, &op->put_ofi GASNETI_THREAD_PASS);
+    gex_Event_t ev = gasnetc_rdma_put_non_bulk(tm, rank, dest, src, nbytes, &op->put_ofi, flags GASNETI_THREAD_PASS);
     if (ev) {
       GASNETE_IOP_CNT_FINISH(op, put, 1, GASNETI_ATOMIC_NONE);
+      if (ev == GEX_EVENT_NO_OP) return 1;
       gasnete_wait(ev GASNETI_THREAD_PASS);
+    }
+  } else {
+    int alc = (lc_opt != GEX_EVENT_DEFER);
+    if (alc) {
+      gasneti_assert(lc_opt == GEX_EVENT_GROUP);
+      // TODO: should attempt inject-based synchronous LC, unless GEX_FLAG_LC_COPY_NO
+      GASNETE_IOP_LC_START(op);
+    }
+    if (gasnetc_rdma_put(tm, rank, dest, src, nbytes,
+                         &op->put_ofi, alc, flags GASNETI_THREAD_PASS)) {
+      gasneti_assert(flags & GEX_FLAG_IMMEDIATE);
+      if (alc) GASNETE_IOP_LC_FINISH(op);
+      GASNETE_IOP_CNT_FINISH(op, put, 1, GASNETI_ATOMIC_NONE);
+      return 1;
     }
   }
 
@@ -234,10 +289,6 @@ int gasnete_put_nbi(
   Barriers:
   =========
 */
-
-// Must override the default barrier selection until we've resolved
-//   Bug 4427 - ofi-conduit failures with RDMADISSEM barrier
-#define GASNETE_BARRIER_DEFAULT "AMDISSEM"
 
 /* use reference implementation of barrier */
 #define GASNETI_GASNET_EXTENDED_REFBARRIER_C 1

@@ -1,6 +1,6 @@
 use BlockDist;
 
-var D = newBlockDom({1..10});
+var D = blockDist.createDomain({1..10});
 
 var A: [D] int;
 var B: [D] int;

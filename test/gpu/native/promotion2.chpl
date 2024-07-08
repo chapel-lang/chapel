@@ -1,34 +1,28 @@
+use GpuDiagnostics;
+
 config const n = 10;
 
 config const alpha = 10;
 
+startGpuDiagnostics();
 on here.gpus[0] {
   var A: [1..n] int;
   var B: [1..n] int;
   var C: [1..n] int;
 
   // Each of the following should cause a kernel launch
-  A = 1;                            writeArr(A);
-  B = 2;                            writeArr(B);
-  C = 3;                            writeArr(C);
-  A = B + alpha * C;                writeArr(A);
-  A = A + A + A + B + B + C;        writeArr(A);
-  A = B * C + A;                    writeArr(A);
-  A = foo(A);                       writeArr(A);
+  A = 1;                            writeln(A);
+  B = 2;                            writeln(B);
+  C = 3;                            writeln(C);
+  A = B + alpha * C;                writeln(A);
+  A = A + A + A + B + B + C;        writeln(A);
+  A = B * C + A;                    writeln(A);
+  A = foo(A);                       writeln(A);
 
 }
+stopGpuDiagnostics();
+assert(getGpuDiagnostics()[0].kernel_launch == 7);
 
 proc foo(a: int) {
   return a+1;
-}
-
-proc writeArr(A) {
-  // normally we can just do writeln(A), but we don't have a good way of having
-  // verbose GPU execution. So, if we do that the output is just too messy with
-  // verbose. If we had verbosity for only launches, things would have been much
-  // easier.
-  write("Array: ");
-  for a in A do
-    write(a, " ");
-  writeln();
 }

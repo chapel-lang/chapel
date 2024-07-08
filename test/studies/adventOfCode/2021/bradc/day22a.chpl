@@ -80,7 +80,7 @@ for i in allRegions.domain by -1 {
   if debug then
     writeln("newRegions = ", newRegions);
   for r in newRegions do
-    disjointRegions.append(r);
+    disjointRegions.pushBack(r);
 }
 if debug {
   for r in disjointRegions {

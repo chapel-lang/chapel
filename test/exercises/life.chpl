@@ -15,8 +15,7 @@ config const printGenerations: bool = true, // print grid at each iteration
              k:                int = 10;    // maximum number of generations
 
 // seed the random stream with something reproducible?
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+config const useRandomSeed = true;
 
 // global constants and variables
 const BigD = {0..n+1, 0..n+1}, // domain of grid with border cells
@@ -25,10 +24,12 @@ var Grid:     [BigD] bool, // grid of life
     NextGrid: [D]    bool; // grid for next iteration
 
 // initialize grid
-var rs = createRandomStream(seed, eltType=real(64), algorithm=RNG.NPB);
+var rs = if useRandomSeed
+  then new randomStream(eltType=real(64))
+  else new randomStream(314159, eltType=real(64));
 
 for i in D do
-  Grid(i) = if rs.getNext() <= p:real / 100 then true else false;
+  Grid(i) = if rs.next() <= p:real / 100 then true else false;
 
 writeln("Initial Grid");
           printGrid();
@@ -38,7 +39,7 @@ writeln("Initial Grid");
 // reached, max k generations.
 //
 for i in 1..k {
-  forall (i,j) in D {
+  forall (i,j) in D with (ref NextGrid) {
     const neighbors =
       Grid(i-1,j-1) + Grid(i-1,j) + Grid(i-1,j+1) +
       Grid(i  ,j-1) +               Grid(i  ,j+1) +

@@ -54,8 +54,8 @@ if example == 0 || example == 1 {
 proc writeSquareArray(n, X, filename) {
 
   // Create and open an output file with the specified filename in write mode.
-  var outfile = open(filename, iomode.cw);
-  var writer = outfile.writer();
+  var outfile = open(filename, ioMode.cw);
+  var writer = outfile.writer(locking=false);
 
   // Write the problem size in each dimension to the file.
   writer.writeln(n, " ", n);
@@ -71,9 +71,13 @@ proc writeSquareArray(n, X, filename) {
 // This procedure reads a new array out of a file and returns it.
 proc readArray(filename) {
 
-   // Open an input file with the specified filename in read mode.
-  var infile = open(filename, iomode.r);
-  var reader = infile.reader();
+  // Open an input file with the specified filename in read mode.
+  var infile = open(filename, ioMode.r);
+
+  // Create a fileReader by calling reader on the file object.
+  // Here we use 'locking=false' because the reader is only
+  // used by a single task.
+  var reader = infile.reader(locking=false);
 
   // Read the number of rows and columns in the array in from the file.
   var m = reader.read(int),
@@ -117,7 +121,7 @@ if example == 0 || example == 2 {
 
 // First, open up a test file. Chapel's I/O interface allows
 // us to open regular files, temporary files, memory, or file descriptors;
-  var f = open(testfile, iomode.cwr);
+  var f = open(testfile, ioMode.cwr);
 
 // Since the typical 'file position' design leads to race conditions
 // all over, the Chapel I/O design separates a file from a channel.
@@ -128,7 +132,7 @@ if example == 0 || example == 2 {
 
   {
     // Get a binary writing channel for the start of the file.
-    var w = f.writer(kind=ionative);
+    var w = f.writer(serializer=new binarySerializer(), locking=false);
 
     for i in 0..#num {
       var tmp:uint(64) = i:uint(64);
@@ -144,7 +148,8 @@ if example == 0 || example == 2 {
 // Now that we have written our data file, we will read it backwards.
 // Note: This could be a forall loop to do I/O in parallel!
   for i in 0..#num by -1 {
-    var r = f.reader(kind=ionative, start=8*i, end=8*i+8);
+    var start = 8*i;
+    var r = f.reader(deserializer=new binaryDeserializer(), region=start..#8, locking=false);
     var tmp:uint(64);
     r.read(tmp);
     assert(tmp == i:uint(64));
@@ -164,8 +169,8 @@ if example == 0 || example == 2 {
 
 /* .. code-block:: sh
 
-      time ./fielIOv2 --example=2
-      time ./fielIOv2 --example=3
+      $ time ./fileIO --example=2
+      $ time ./fileIO --example=3
 */
 
 if example == 0 || example == 3 {
@@ -173,11 +178,11 @@ if example == 0 || example == 3 {
 
 // First, open up a file and write to it.
   {
-    var f = open(testfile, iomode.cwr);
+    var f = open(testfile, ioMode.cwr);
 
     // When we create the writer, supplying locking=false will do unlocked I/O.
     // That's fine as long as the channel is not shared between tasks.
-    var w = f.writer(kind=ionative, locking=false);
+    var w = f.writer(serializer=new binarySerializer(), locking=false);
 
     for i in 0..#num {
       var tmp:uint(64) = i:uint(64);
@@ -192,16 +197,16 @@ if example == 0 || example == 3 {
 // 'random access' and 'keep data cached/assume data is cached',
 // we can optimize better (using ``mmap``, if you like details).
   {
-    var f = open(testfile, iomode.r,
+    var f = open(testfile, ioMode.r,
                 hints=ioHintSet.random | ioHintSet.prefetch);
 
     // This is a forall loop to do I/O in parallel!
     forall i in 0..#num by -1 {
-
+      var start = 8*i;
       // When we create the reader, supplying locking=false will do unlocked I/O.
       // That's fine as long as the channel is not shared between tasks;
       // here it's just used as a local variable, so we are O.K.
-      var r = f.reader(kind=ionative, locking=false, start=8*i, end=8*i+8);
+      var r = f.reader(deserializer=new binaryDeserializer(), locking=false, region=start..#8);
       var tmp:uint(64);
       r.read(tmp);
       assert(tmp == i:uint(64));
@@ -226,38 +231,29 @@ Reading and printing UTF-8 lines
 if example == 0 || example == 4 {
   writeln("Running Example 4");
 
-  var f = open(testfile, iomode.cwr);
-  var w = f.writer();
+  // Use the convenience procedure 'openWriter' to open a fileWriter from
+  // a file's name, rather than calling 'open' and 'writer' separately.
+  var w = openWriter(testfile);
 
   w.writeln("Hello");
   w.writeln("This");
   w.writeln(" is ");
   w.writeln(" a test ");
 
-// We only write the UTF-8 characters if unicode is supported,
-// and that depends on the current unix locale environment
-// (e.g. setting the environment variable ``LC_ALL=C`` will disable unicode support).
-// Note that since UTF-8 strings are C strings, this should work even in a C locale.
-// We don't do it all the time for testing sanity reasons.
-  if unicodeSupported() then w.writeln(" of UTF-8 Euro Sign: €");
+  w.writeln(" of UTF-8 Euro Sign: €");
 
   // flush buffers, close the channel.
   w.close();
 
-  var r = f.reader();
+  // Use the reading version of 'openWriter' to open a fileReader from
+  // a file's name, rather than calling 'open' and 'reader' separately.
+  var r = openReader(testfile);
   var line:string;
   while( r.readLine(line) ) {
     write("Read line: ", line);
   }
   r.close();
 
-  // Or, if we just want all the lines in the file, we can use file.lines,
-  // and we don't even have to make a reader:
-  for line in f.lines() {
-    write("Read line: ", line);
-  }
-
-  f.close();
   remove(testfile);
 }
 
@@ -290,7 +286,7 @@ if example == 0 || example == 5 {
 
   try! {
     // What happens if we try to open a non-existent file?
-    var f = open(testfile, iomode.r);
+    var f = open(testfile, ioMode.r);
 
     assert(false); // never reached
   } catch e: SystemError {
@@ -319,12 +315,12 @@ if example == 0 || example == 6 {
     writeln("This should be a chunk: {", "\n a", "\n b", "\n}");
   }
 
-  record MyThing {
-    proc writeThis(w) throws {
-      w.writeln("This should be a chunk: {");
-      w.writeln(" a");
-      w.writeln(" b");
-      w.writeln("}");
+  record MyThing : writeSerializable {
+    proc serialize(writer, ref serializer) throws {
+      writer.writeln("This should be a chunk: {");
+      writer.writeln(" a");
+      writer.writeln(" b");
+      writer.writeln("}");
     }
   }
 
@@ -345,30 +341,28 @@ Binary I/O with bits at a time
 if example == 0 || example == 7 {
   writeln("Running Example 7");
 
-  var f = open(testfile, iomode.cwr);
-
   {
-    var w = f.writer(kind=ionative);
+    var w = openWriter(testfile, serializer=new binarySerializer());
 
     // Write 011 0110 011110000
-    w.writebits(0b011, 3);
-    w.writebits(0b0110, 4);
-    w.writebits(0b011110000, 9);
+    w.writeBits(0b011, 3);
+    w.writeBits(0b0110, 4);
+    w.writeBits(0b011110000, 9);
     w.close();
   }
 
   // Try reading it back the way we wrote it.
   {
-    var r = f.reader(kind=ionative);
+    var r = openReader(testfile, deserializer=new binaryDeserializer());
     var tmp:uint(64);
 
-    r.readbits(tmp, 3);
+    r.readBits(tmp, 3);
     assert(tmp == 0b011);
 
-    r.readbits(tmp, 4);
+    r.readBits(tmp, 4);
     assert(tmp == 0b0110);
 
-    r.readbits(tmp, 9);
+    r.readBits(tmp, 9);
     assert(tmp == 0b011110000);
 
     r.close();
@@ -377,7 +371,7 @@ if example == 0 || example == 7 {
   // Try reading it back all as one big chunk.
   // Read 01101100 11110000
   {
-    var r = f.reader(kind=ionative);
+    var r = openReader(testfile, deserializer=new binaryDeserializer());
     var tmp:uint(8);
 
     r.read(tmp);
@@ -389,5 +383,4 @@ if example == 0 || example == 7 {
     r.close();
   }
 
-  f.close();
 }

@@ -1,0 +1,2 @@
+bug: Internal error with a record containing a class containing a map of string to said record
+#21193

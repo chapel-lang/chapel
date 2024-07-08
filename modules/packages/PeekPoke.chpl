@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,7 +34,7 @@
      use BlockDist, PeekPoke;
 
      const space = {1..1000};
-     const D = space dmapped Block(space);
+     const D = space dmapped new blockDist(space);
      var A: [D] atomic int;
 
      forall i in D do
@@ -50,43 +50,43 @@ module PeekPoke {
   inline proc const AtomicBool.peek(): bool {
     return this.read(order=memoryOrder.relaxed);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc const RAtomicBool.peek(): bool {
     return _v:bool;
   }
 
   /*
-     Non-atomically writes `value`.
+     Non-atomically writes `val`.
   */
-  inline proc AtomicBool.poke(value:bool): void {
-    this.write(value, order=memoryOrder.relaxed);
+  inline proc ref AtomicBool.poke(val:bool): void {
+    this.write(val, order=memoryOrder.relaxed);
   }
-  pragma "no doc"
-  inline proc RAtomicBool.poke(value:bool): void {
-    _v = value:int(64);
+  @chpldoc.nodoc
+  inline proc ref RAtomicBool.poke(val:bool): void {
+    _v = val:int(64);
   }
 
 
   /*
      Non-atomically reads the stored value.
   */
-  inline proc const AtomicT.peek(): T {
+  inline proc const AtomicT.peek(): valType {
     return this.read(order=memoryOrder.relaxed);
   }
-  pragma "no doc"
-  inline proc const RAtomicT.peek(): T {
+  @chpldoc.nodoc
+  inline proc const RAtomicT.peek(): valType {
     return _v;
   }
 
 
   /*
-     Non-atomically writes `value`.
+     Non-atomically writes `val`.
   */
-  inline proc AtomicT.poke(value:T): void {
-    this.write(value, order=memoryOrder.relaxed);
+  inline proc ref AtomicT.poke(val:valType): void {
+    this.write(val, order=memoryOrder.relaxed);
   }
-  pragma "no doc"
-  inline proc RAtomicT.poke(value:T): void {
-    _v = value;
+  @chpldoc.nodoc
+  inline proc ref RAtomicT.poke(val:valType): void {
+    _v = val;
   }
 }

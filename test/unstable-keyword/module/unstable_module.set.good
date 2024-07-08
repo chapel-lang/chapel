@@ -1,0 +1,2 @@
+unstable_module.chpl:2: warning: the amodule is unstable
+unstable_module.chpl:4: error: string

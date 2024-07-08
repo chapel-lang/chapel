@@ -4,7 +4,7 @@
  *
  * The test matrix is read in from prolate5.dat by default, but a
  * different input file can be specified on the command line using
- * --inputfile=<filename>.  
+ * --inputfile=<filename>.
  *
  */
 // Enables file operations
@@ -16,9 +16,9 @@ use IO;
 config const inputfile = "prolate5.dat";
 
 // QR: Computes QR.  The arguments are as follows:
-//   A: the m x n input array to be factored.  
+//   A: the m x n input array to be factored.
 //
-proc QR(A: [?D]) where (D.rank == 2) {
+proc QR(ref A: [?D]) where (D.rank == 2) {
 
   const m = D.dim(0).size,
         n = D.dim(1).size,
@@ -57,7 +57,7 @@ proc QR(A: [?D]) where (D.rank == 2) {
         A(i,i) = beta;
         tau(i) = (beta-alpha)/beta;
         X /= (alpha-beta);
-      }   
+      }
     }
     if (tau(i) != zero) {
       alpha = A(i,i);
@@ -125,7 +125,7 @@ proc norm(X: [?D]) {
 proc main() {
 
   // Open the input file, read in the array size, ensure it's square
-  var infile = open(inputfile, iomode.r).reader();
+  var infile = open(inputfile, ioMode.r).reader(locking=false);
   const m = infile.read(int),
         n = infile.read(int);
 

@@ -1,8 +1,8 @@
 module Main {
-  use ChapelStandard.M1;
-  use ChapelStandard.M2;
-  use ChapelStandard.M3;
-  use ChapelStandard.M4;
+  import M1;
+  import M2;
+  import M3;
+  import M4;
 
   writeln();
   writeln('M.1: Module Main');

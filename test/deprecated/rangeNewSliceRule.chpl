@@ -1,0 +1,2 @@
+
+compilerError(newSliceRule: string);

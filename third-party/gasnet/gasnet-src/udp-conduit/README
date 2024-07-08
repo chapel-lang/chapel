@@ -223,6 +223,14 @@ Recognized environment variables:
   Set to -1 to specify unlimited, which amounts to NETWORKDEPTH*jobsize.
   Defaults to a reasonable value based on job size and GASNET_NETWORKDEPTH.
 
+* GASNET_SOCKETBUFFER_INITIAL, GASNET_SOCKETBUFFER_MAX
+  Set the initial and maximum socket buffer sizes (i.e. SO_SNDBUF/SO_RCVBUF) in
+  bytes to request for worker sockets. These are the *kernel-side* buffers used
+  to hold in-flight datagrams. INITIAL defaults to the lesser of MAX and
+  RECVDEPTH * <max-packet-size>.  Note that actual/achieved socket buffer sizes
+  are also subject to kernel-imposed defaults and limits (e.g. on Linux
+  determined by `/proc/sys/net/core/{r,w}mem_{default,max}`).
+
 * GASNET_REQUESTTIMEOUT_MAX - max timeout in microseconds before a request
   is considered undeliverable (a fatal error). Defaults to 30000000 (30 seconds).
   Can be set to 0 for infinite timeout, which can be useful when freezing 
@@ -276,10 +284,13 @@ Recognized environment variables:
   the default, even if configured using '--with-host-detect=...' to specify
   a different one.  However, an explicit value of GASNET_HOST_DETECT in the
   environment is always honored.
-  If the list of servers (such as from SSH_SERVERS or CSPAWN_SERVERS) may
-  contain multiple entries which resolve to distinct IP address for the same
-  host, one should set GASNET_HOST_DETECT="gethostid". Otherwise, the default
-  of "conduit" would mistakenly identify such entries as distinct hosts, and
+  This default generally works well for the common case where all worker nodes
+  have a single IP interface on the worker subnet (see `GASNET_WORKERIP` above).
+  However if the worker nodes include a system with multiple distinct active IP
+  addresses on the worker subnet, then it's recommended to set GASNET_HOST_DETECT
+  to "hostid" or "hostname" (whichever is guaranteed to return a value that
+  uniquely identifies each actual worker). Otherwise, the default of "conduit"
+  could mistakenly identify such multi-IP worker nodes as distinct hosts, and
   thus ineligible for shared-memory communication.  
 
 * GASNET_USE_GETHOSTID

@@ -13,13 +13,13 @@ proc declareAndTestAtomicBool() {
   }
 }
 
-proc declareAndTestAtomicT(type basetype) {
-  var a, a2: atomic basetype;
-  var i: basetype;
+proc declareAndTestAtomicT(type valType) {
+  var a, a2: atomic valType;
+  var i: valType;
   var b: bool;
   on Locales[onLocale] {
-    testAtomicT(a, i, b, basetype);
-    testOrderAtomicT(a2, i, b, basetype, memoryOrder.seqCst);
+    testAtomicT(a, i, b);
+    testOrderAtomicT(a2, i, b, memoryOrder.seqCst);
   }
 }
 
@@ -48,7 +48,7 @@ var IInt: [1..3] int;
 var BInt: [1..3] bool;
 on Locales[onLocale] {
   write("Promotion -- ");
-  testAtomicT(AInt, IInt, BInt, int);
-  testOrderAtomicT(AInt2, IInt, BInt, int, memoryOrder.seqCst);
+  testAtomicT(AInt, IInt, BInt);
+  testOrderAtomicT(AInt2, IInt, BInt, memoryOrder.seqCst);
 }
 

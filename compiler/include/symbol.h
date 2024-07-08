@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,7 @@
 #include "chpl/framework/ID.h"
 #include "chpl/resolution/resolution-types.h"
 #include "flags.h"
+#include "intents.h"
 #include "library.h"
 #include "type.h"
 
@@ -41,6 +42,7 @@ namespace llvm
 {
   class MDNode;
   class Function;
+  class FunctionType;
 }
 #endif
 
@@ -53,77 +55,7 @@ class Stmt;
 class SymExpr;
 struct InterfaceReps;
 
-const int INTENT_FLAG_IN          = 0x01;
-const int INTENT_FLAG_OUT         = 0x02;
-const int INTENT_FLAG_CONST       = 0x04;
-const int INTENT_FLAG_REF         = 0x08;
-const int INTENT_FLAG_PARAM       = 0x10;
-const int INTENT_FLAG_TYPE        = 0x20;
-const int INTENT_FLAG_BLANK       = 0x40;
-const int INTENT_FLAG_MAYBE_CONST = 0x80;
-
-// If this enum is modified, ArgSymbol::intentDescrString()
-// and intentDescrString(IntentTag) should also be updated to match
-enum IntentTag {
-  INTENT_IN              = INTENT_FLAG_IN,
-  INTENT_OUT             = INTENT_FLAG_OUT,
-  INTENT_INOUT           = INTENT_FLAG_IN          | INTENT_FLAG_OUT,
-  INTENT_CONST           = INTENT_FLAG_CONST,
-  INTENT_CONST_IN        = INTENT_FLAG_CONST       | INTENT_FLAG_IN,
-  INTENT_REF             = INTENT_FLAG_REF,
-  INTENT_CONST_REF       = INTENT_FLAG_CONST       | INTENT_FLAG_REF,
-  INTENT_REF_MAYBE_CONST = INTENT_FLAG_MAYBE_CONST | INTENT_FLAG_REF,
-  INTENT_PARAM           = INTENT_FLAG_PARAM,
-  INTENT_TYPE            = INTENT_FLAG_TYPE,
-  INTENT_BLANK           = INTENT_FLAG_BLANK
-};
-
 typedef std::bitset<NUM_FLAGS> FlagSet;
-
-/*
-enum ForallIntentTag : task- or forall-intent tags
-
-TFI_IN_PARENT
-  The compiler adds this shadow var during resolution for each TFI_IN
-  and TFI_CONST_IN. A TFI_IN_PARENT represents the task function's formal
-  that the corresponding TFI_IN or TFI_CONST_IN is to be initialized from.
-
-TFI_REDUCE
-  This shadow var replaces the uses of the outer variable in the loop body
-  in case of a 'reduce' intent. This is done in parsing and scopeResolve.
-  It is analogous to the TFI_IN shadow var for an 'in' intent.
-  A TFI_REDUCE var represents the current task's accumulation state.
-
-TFI_REDUCE_*
-  The compiler adds one each of these shadow vars during resolution
-  for each TFI_REDUCE. They represent:
-
-  TFI_REDUCE_OP        - the current task's reduction OP
-  TFI_REDUCE_PARENT_AS - the parent task's Accumulation State
-  TFI_REDUCE_PARENT_OP - the parent task's reduction OP
-
-  The *PARENT* vars, like TFI_IN_PARENT, are the task function's formals.
-
-The remaining tags should be self-explanatory.
-*/
-enum ForallIntentTag {
-  // user-specified intents
-  TFI_DEFAULT,  // aka TFI_BLANK
-  TFI_CONST,                       // ShadowVarSymbol nicknames:
-  TFI_IN,                          //   SI
-  TFI_CONST_IN,                    //   "
-  TFI_REF,                         //   SR
-  TFI_CONST_REF,                   //   "
-  TFI_REDUCE,                      //   AS    (for Accumulation State)
-  TFI_TASK_PRIVATE,                //   TPV
-  // compiler-added helpers; note isCompilerAdded()
-  TFI_IN_PARENT,                   //   INP
-  TFI_REDUCE_OP,                   //   RP    (for Reduce oP)
-  TFI_REDUCE_PARENT_AS,            //   PAS
-  TFI_REDUCE_PARENT_OP,            //   PRP
-};
-
-const char* forallIntentTagDescription(ForallIntentTag tfiTag);
 
 // for task intents and forall intents
 ArgSymbol* tiMarkForForallIntent(ShadowVarSymbol* svar);
@@ -157,6 +89,7 @@ public:
   GenRet         codegen()   override;
   bool           inTree()    override;
   QualifiedType  qualType()  override;
+  Type*          typeInfo()  override { return type; }
   void           verify()    override;
 
   // Note: copy may add copied Symbols to the supplied map
@@ -188,7 +121,6 @@ public:
 
   bool               isKnownToBeGeneric();
   virtual bool       isVisible(BaseAST* scope)                 const;
-  bool               noDocGen()                                const;
 
   // Future: consider merging qual, type into a single
   // field of type QualifiedType
@@ -200,6 +132,7 @@ public:
   // const ref. It can depend on the variable for ref to arrays.
   Qualifier*         fieldQualifiers;
 
+  // these two must be astrs
   const char*        name;
   const char*        cname;    // Name of symbol for C code
 
@@ -236,11 +169,15 @@ public:
   Expr*              getInitialization()                       const;
 
   std::string deprecationMsg;
-
   const char* getDeprecationMsg() const;
-  const char* getSanitizedDeprecationMsg() const;
+  void maybeGenerateDeprecationWarning(Expr* context);
 
-  void generateDeprecationWarning(Expr* context);
+
+  std::string unstableMsg;
+  const char* getUnstableMsg() const;
+  void maybeGenerateUnstableWarning(Expr* context);
+
+  const char* getSanitizedMsg(std::string msg) const;
 
 protected:
                      Symbol(AstTag      astTag,
@@ -336,8 +273,6 @@ public:
   bool   isParameter()                                 const override;
   bool   isType()                                               const;
 
-  const char* doc;
-
   GenRet codegenVarSymbol(bool lhsInSetReference=false);
   GenRet codegen()                                           override;
   void   codegenDefC(bool global = false, bool isHeader = false);
@@ -345,12 +280,9 @@ public:
   // global vars are different ...
   void   codegenGlobalDef(bool isHeader);
 
-  void printDocs(std::ostream *file, unsigned int tabs);
-
   void makeField();
 
 private:
-  std::string docsDirective();
   bool isField;
 
 protected:
@@ -499,8 +431,8 @@ public:
   BlockStmt* svInitBlock;      // always present
   BlockStmt* svDeinitBlock;    //  "
 
-  // Once pruning is no longer needed, this should be removed.
-  bool pruneit;
+  // This svar is for a task intent or TPV that is explicit in user code.
+  bool svExplicit;
 };
 
 /******************************** | *********************************
@@ -508,13 +440,44 @@ public:
 *                                                                   *
 ********************************* | ********************************/
 
+// TypeSymbol::llvmAlignment et al. obey this convention in LLVM codegen
+enum AlignmentStatus {
+  ALIGNMENT_UNINIT = 0,   // used only for assertions
+  ALIGNMENT_DEFER  = 1    // defer to LLVM to calculate
+  // >1 ==> the ABI alignment
+};
+
+// These map from Chapel function types to LLVM function types. They
+// live here rather than in 'llvmUtil.h' because of a name conflict
+// between 'Type' and 'llvm::Type'.
+#ifdef HAVE_LLVM
+bool llvmMapUnderlyingFunctionType(FunctionType* k, llvm::FunctionType* v);
+llvm::FunctionType* llvmGetUnderlyingFunctionType(FunctionType* t);
+#endif
+
 class TypeSymbol final : public Symbol {
  public:
   // We need to know whether or not the definition
   // for this type has already been codegen'd
   // and cache it if it has.
 #ifdef HAVE_LLVM
-  llvm::Type* llvmType;
+  // These type and alignment are set or finalized upon Type::codegenDef().
+  // For a class type, they store the info about the corresponding struct.
+  llvm::Type* llvmImplType;
+  int         llvmAlignment;  // see AlignmentStatus
+
+  bool hasLLVMType() const;
+
+  // The following pairs return the same result except for class types, where
+  //  - the "Structure" versions return the info about its struct,
+  //  - the non-structure versions return the info about the pointer.
+  llvm::Type* getLLVMStructureType();
+  llvm::Type* getLLVMType();
+  int getLLVMStructureAlignment();  // these two may return ALIGNMENT_DEFER
+  int getLLVMAlignment();
+
+  int getABIAlignment(llvm::Type* llvmType);  // always >= 1, never "defer"
+
   llvm::MDNode* llvmTbaaTypeDescriptor;       // scalar type descriptor
   llvm::MDNode* llvmTbaaAccessTag;            // scalar access tag
   llvm::MDNode* llvmConstTbaaAccessTag;       // scalar const access tag
@@ -527,7 +490,8 @@ class TypeSymbol final : public Symbol {
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
-  void* llvmType;
+  void* llvmImplType;
+  int   llvmAlignment;
   void* llvmTbaaTypeDescriptor;
   void* llvmTbaaAccessTag;
   void* llvmConstTbaaAccessTag;
@@ -600,7 +564,6 @@ public:
   void  accept(AstVisitor* visitor)                      override;
 
   void  replaceChild(BaseAST* oldAst, BaseAST* newAst)   override;
-  void  printDocs(std::ostream* file, unsigned int tabs);
 
   int   numFormals()   const { return ifcFormals.length; }
   int   numAssocCons() const { return associatedConstraints.size(); }
@@ -625,7 +588,19 @@ public:
   //  - to itself, if there is a default implementation
   //  - to gDummyWitness, otherwise
   SymbolMap  requiredFns;
+
+  // Set to true if this interface has an "eny intent" function; such interfaces
+  // cannot be used in CG functions, because the resulting intent of the call to
+  // the witness cannot be known.
+  bool hasAnyIntentFn = false;
 };
+
+extern InterfaceSymbol* gHashable;
+extern InterfaceSymbol* gContextManager;
+extern InterfaceSymbol* gWriteSerializable;
+extern InterfaceSymbol* gReadDeserializable;
+extern InterfaceSymbol* gInitDeserializable;
+extern InterfaceSymbol* gSerializable;
 
 /************************************* | **************************************
 *                                                                             *
@@ -765,6 +740,16 @@ inline bool ShadowVarSymbol::isCompilerAdded() const {
   }
 }
 
+#ifdef HAVE_LLVM
+inline bool TypeSymbol::hasLLVMType() const { return llvmImplType != nullptr; }
+inline llvm::Type* Type::getLLVMType() { return symbol->getLLVMType();  }
+inline int Type::getLLVMAlignment()    { return symbol->getLLVMAlignment();}
+
+static inline
+bool isDeferredAlignment(int align) { return align <= ALIGNMENT_DEFER; }
+int  llvmAlignmentOrDefer(int alignment, llvm::Type* type);
+#endif
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -787,8 +772,8 @@ VarSymbol *new_StringOrBytesSymbol(const char *s, AggregateType *at);
 // Creates a new C string literal with the given value.
 VarSymbol *new_CStringSymbol(const char *s);
 
-// Creates a new boolean literal with the given value and bit-width.
-VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS);
+// Creates a new boolean literal with the given value
+VarSymbol *new_BoolSymbol(bool b);
 
 // Creates a new (signed) integer literal with the given value and bit-width.
 VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_64);
@@ -804,6 +789,13 @@ VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_64);
 // function that has the same value.
 VarSymbol *new_RealSymbol(const char *n,
                           IF1_float_type size=FLOAT_SIZE_64);
+
+// Creates a new real literal with the given value, where the
+// bit-width will be taken as 32 for the 'float' case and 64 for the
+// 'double' case.  The resulting symbol will have a cname equal to a
+// normalized version of 'val'.
+VarSymbol* new_RealSymbol(float val);
+VarSymbol* new_RealSymbol(double val);
 
 // Creates a new imaginary literal with the given value and bit-width.
 // n should be a string argument containing a Chapel decimal or hexadecimal
@@ -854,14 +846,19 @@ extern const char* astrSlt;     // <
 extern const char* astrSlte;    // <=
 extern const char* astrSswap;   // <=>
 extern const char* astrScolon;  // :
+extern const char* astrScomma;  // ,
+extern const char* astrSstar;   // *
+extern const char* astrSstarstar;   // **
 extern const char* astr_defaultOf;
 extern const char* astrInit;
 extern const char* astrInitEquals;
 extern const char* astrNew;
 extern const char* astrDeinit;
 extern const char* astrPostinit;
+extern const char* astrBuildTuple;
 extern const char* astrTag;
 extern const char* astrThis;
+extern const char* astrThese;
 extern const char* astrSuper;
 extern const char* astr_chpl_cname;
 extern const char* astr_chpl_forward_tgt;
@@ -929,21 +926,14 @@ extern Symbol *gDummyRef;
 extern Symbol *gFixupRequiredToken;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
-extern VarSymbol *gBoundsChecking;
-extern VarSymbol *gCastChecking;
-extern VarSymbol *gNilChecking;
-extern VarSymbol *gOverloadSetsChecks;
-extern VarSymbol *gDivZeroChecking;
-extern VarSymbol *gCacheRemote;
-extern VarSymbol *gPrivatization;
-extern VarSymbol *gLocal;
-extern VarSymbol *gWarnUnstable;
 extern VarSymbol *gIteratorBreakToken;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
 extern VarSymbol *gInfinity;
 extern VarSymbol *gNan;
 extern VarSymbol *gUninstantiated;
+
+extern llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
@@ -957,14 +947,19 @@ typedef enum {
        NONE,
        BASIC,
        FULL,
+       ASM,
        EVERY, // after every optimization if possible
        // These options allow instrumenting the pass pipeline
        // and match ExtensionPointTy in PassManagerBuilder
        EarlyAsPossible,
        ModuleOptimizerEarly,
+       LateLoopOptimizer,
        LoopOptimizerEnd,
        ScalarOptimizerLate,
+       EarlySimplification,
+       OptimizerEarly,
        OptimizerLast,
+       CGSCCOptimizerLate,
        VectorizerStart,
        EnabledOnOptLevel0,
        Peephole,
@@ -980,17 +975,18 @@ extern llvmStageNum_t llvmPrintIrStageNum;
 const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum);
 llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName);
 
-void addNameToPrintLlvmIr(const char* name);
-void addCNameToPrintLlvmIr(const char* name);
+void addNameToPrintLlvmIrRequestedNames(const char* name);
 
-bool shouldLlvmPrintIrName(const char* name);
 bool shouldLlvmPrintIrCName(const char* name);
-bool shouldLlvmPrintIrFn(FnSymbol* fn);
+
+std::vector<std::string> gatherPrintLlvmIrCNames();
 
 #ifdef HAVE_LLVM
 void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage);
 #endif
 
+// Restore list of cnames to print, from tmp file on disk into memory.
+void restorePrintIrCNames();
 void preparePrintLlvmIrForCodegen();
 void completePrintLlvmIrStage(llvmStageNum_t numStage);
 

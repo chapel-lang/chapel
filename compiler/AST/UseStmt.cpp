@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -64,10 +64,11 @@ UseStmt::UseStmt(BaseAST*                            source,
   VisibilityStmt(E_UseStmt) {
 
   this->isPrivate = isPrivate;
-  src    = NULL;
   this->modRename = astr(modRename);
   except = exclude;
   canReexport = true;
+  named = *args;
+  renamed = *renames;
 
   if (Symbol* b = toSymbol(source)) {
     src = new SymExpr(b);
@@ -77,24 +78,7 @@ UseStmt::UseStmt(BaseAST*                            source,
 
   } else {
     INT_FATAL(this, "Bad mod in UseStmt constructor");
-  }
-
-  if (args->size() > 0) {
-    // Symbols to search when going through this module's scope from an outside
-    // scope
-    for_vector(const char, str, *args) {
-      named.push_back(str);
-    }
-  }
-
-  if (renames->size() > 0) {
-    // The new names of symbols in the module being used, to avoid conflicts
-    // for instance.
-    for (std::map<const char*, const char*>::iterator it = renames->begin();
-         it != renames->end();
-         ++it) {
-      renamed[it->first] = it->second;
-    }
+    src = nullptr; // dummy
   }
 
   gUseStmts.add(this);
@@ -217,10 +201,10 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
         USR_FATAL(this, "'use' of non-module/enum symbol");
       }
 
-      if (symAndName.first->hasFlag(FLAG_DEPRECATED)) {
-        symAndName.first->generateDeprecationWarning(this);
+      if (!fDynoScopeResolve) {
+        symAndName.first->maybeGenerateDeprecationWarning(this);
+        symAndName.first->maybeGenerateUnstableWarning(this);
       }
-
     }
 
   } else {
@@ -307,7 +291,10 @@ bool UseStmt::isValid(Expr* expr) const {
 
 void UseStmt::validateList() {
   if (isPlainUse() == false) {
-    noRepeats();
+    // Dyno already issues these warnings and errors.
+    if (!fDynoScopeResolve) {
+      noRepeats();
+    }
 
     validateNamed();
     validateRenamed();
@@ -377,8 +364,10 @@ void UseStmt::validateNamed() {
                            (except == true) ? "except" : "only",
                            name);
           }
-          if (sym->hasFlag(FLAG_DEPRECATED)) {
-            sym->generateDeprecationWarning(this);
+
+          if (!fDynoScopeResolve) {
+            sym->maybeGenerateDeprecationWarning(this);
+            sym->maybeGenerateUnstableWarning(this);
           }
         }
       }

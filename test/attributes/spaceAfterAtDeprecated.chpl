@@ -1,0 +1,1 @@
+@ deprecated proc foo() { }

@@ -1,5 +1,5 @@
 #include "foo.h"
 
-int bar() {
+int bar(void) {
   return 2;
 }

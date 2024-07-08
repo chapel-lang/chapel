@@ -17,7 +17,6 @@
 
 #include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/CodeGen/CommandFlags.h"
-#include "llvm/Config/llvm-config.h"
 #include "llvm/IR/DiagnosticPrinter.h"
 #include "llvm/LTO/LTO.h"
 #include "llvm/Passes/PassPlugin.h"
@@ -37,9 +36,10 @@ using namespace lto;
 static codegen::RegisterCodeGenFlags CGF;
 
 static cl::opt<char>
-    OptLevel("O", cl::desc("Optimization level. [-O0, -O1, -O2, or -O3] "
-                           "(default = '-O2')"),
-             cl::Prefix, cl::ZeroOrMore, cl::init('2'));
+    OptLevel("O",
+             cl::desc("Optimization level. [-O0, -O1, -O2, or -O3] "
+                      "(default = '-O2')"),
+             cl::Prefix, cl::init('2'));
 
 static cl::opt<char> CGOptLevel(
     "cg-opt-level",
@@ -66,11 +66,36 @@ static cl::opt<std::string> AAPipeline("aa-pipeline",
 
 static cl::opt<bool> SaveTemps("save-temps", cl::desc("Save temporary files"));
 
+static cl::list<std::string> SelectSaveTemps(
+    "select-save-temps",
+    cl::value_desc("One, or multiple of: "
+                   "resolution,preopt,promote,internalize,import,opt,precodegen"
+                   ",combinedindex"),
+    cl::desc("Save selected temporary files. Cannot be specified together with "
+             "-save-temps"),
+    cl::CommaSeparated);
+
+constexpr const char *SaveTempsValues[] = {
+    "resolution", "preopt", "promote",    "internalize",
+    "import",     "opt",    "precodegen", "combinedindex"};
+
 static cl::opt<bool>
-    ThinLTODistributedIndexes("thinlto-distributed-indexes", cl::init(false),
+    ThinLTODistributedIndexes("thinlto-distributed-indexes",
                               cl::desc("Write out individual index and "
                                        "import files for the "
                                        "distributed backend case"));
+
+static cl::opt<bool>
+    ThinLTOEmitIndexes("thinlto-emit-indexes",
+                       cl::desc("Write out individual index files via "
+                                "InProcessThinLTO"));
+
+static cl::opt<bool>
+    ThinLTOEmitImports("thinlto-emit-imports",
+                       cl::desc("Write out individual imports files via "
+                                "InProcessThinLTO. Has no effect unless "
+                                "specified with -thinlto-emit-indexes or "
+                                "-thinlto-distributed-indexes"));
 
 // Default to using all available threads in the system, but using only one
 // thread per core (no SMT).
@@ -89,8 +114,7 @@ static cl::list<std::string> SymbolResolutions(
              "     runtime and is known to be in this linkage unit\n"
              " x - externally visible: the definition of this symbol is\n"
              "     visible outside of the LTO unit\n"
-             "A resolution for each symbol must be specified."),
-    cl::ZeroOrMore);
+             "A resolution for each symbol must be specified"));
 
 static cl::opt<std::string> OverrideTriple(
     "override-triple",
@@ -106,7 +130,7 @@ static cl::opt<bool> RemarksWithHotness(
     cl::desc("With PGO, include profile count in optimization remarks"),
     cl::Hidden);
 
-cl::opt<Optional<uint64_t>, false, remarks::HotnessThresholdParser>
+cl::opt<std::optional<uint64_t>, false, remarks::HotnessThresholdParser>
     RemarksHotnessThreshold(
         "pass-remarks-hotness-threshold",
         cl::desc("Minimum profile count required for an "
@@ -141,15 +165,10 @@ static cl::opt<std::string>
 static cl::opt<bool>
     RunCSIRInstr("lto-cspgo-gen",
                  cl::desc("Run PGO context sensitive IR instrumentation"),
-                 cl::init(false), cl::Hidden);
+                 cl::Hidden);
 
 static cl::opt<bool>
-    UseNewPM("use-new-pm",
-             cl::desc("Run LTO passes using the new pass manager"),
-             cl::init(LLVM_ENABLE_NEW_PASS_MANAGER), cl::Hidden);
-
-static cl::opt<bool>
-    DebugPassManager("debug-pass-manager", cl::init(false), cl::Hidden,
+    DebugPassManager("debug-pass-manager", cl::Hidden,
                      cl::desc("Print pass management debugging information"));
 
 static cl::opt<std::string>
@@ -159,10 +178,14 @@ static cl::list<std::string>
     PassPlugins("load-pass-plugin",
                 cl::desc("Load passes from plugin library"));
 
+static cl::opt<std::string> UnifiedLTOMode("unified-lto", cl::Optional,
+                                           cl::desc("Set LTO mode"),
+                                           cl::value_desc("mode"));
+
 static cl::opt<bool> EnableFreestanding(
     "lto-freestanding",
     cl::desc("Enable Freestanding (disable builtins / TLI) during LTO"),
-    cl::init(false), cl::Hidden);
+    cl::Hidden);
 
 static void check(Error E, std::string Msg) {
   if (!E)
@@ -242,14 +265,27 @@ static int run(int argc, char **argv) {
   Conf.Options = codegen::InitTargetOptionsFromCodeGenFlags(Triple());
   Conf.MAttrs = codegen::getMAttrs();
   if (auto RM = codegen::getExplicitRelocModel())
-    Conf.RelocModel = RM.getValue();
+    Conf.RelocModel = *RM;
   Conf.CodeModel = codegen::getExplicitCodeModel();
 
   Conf.DebugPassManager = DebugPassManager;
 
-  if (SaveTemps)
-    check(Conf.addSaveTemps(OutputFilename + "."),
+  if (SaveTemps && !SelectSaveTemps.empty()) {
+    llvm::errs() << "-save-temps cannot be specified with -select-save-temps\n";
+    return 1;
+  }
+  if (SaveTemps || !SelectSaveTemps.empty()) {
+    DenseSet<StringRef> SaveTempsArgs;
+    for (auto &S : SelectSaveTemps)
+      if (is_contained(SaveTempsValues, S))
+        SaveTempsArgs.insert(S);
+      else {
+        llvm::errs() << ("invalid -select-save-temps argument: " + S) << '\n';
+        return 1;
+      }
+    check(Conf.addSaveTemps(OutputFilename + ".", false, SaveTempsArgs),
           "Config::addSaveTemps failed");
+  }
 
   // Optimization remarks.
   Conf.RemarksFilename = RemarksFilename;
@@ -267,30 +303,18 @@ static int run(int argc, char **argv) {
   Conf.AAPipeline = AAPipeline;
 
   Conf.OptLevel = OptLevel - '0';
-  Conf.UseNewPM = UseNewPM;
   Conf.Freestanding = EnableFreestanding;
   for (auto &PluginFN : PassPlugins)
     Conf.PassPlugins.push_back(PluginFN);
-  switch (CGOptLevel) {
-  case '0':
-    Conf.CGOptLevel = CodeGenOpt::None;
-    break;
-  case '1':
-    Conf.CGOptLevel = CodeGenOpt::Less;
-    break;
-  case '2':
-    Conf.CGOptLevel = CodeGenOpt::Default;
-    break;
-  case '3':
-    Conf.CGOptLevel = CodeGenOpt::Aggressive;
-    break;
-  default:
+  if (auto Level = CodeGenOpt::parseLevel(CGOptLevel)) {
+    Conf.CGOptLevel = *Level;
+  } else {
     llvm::errs() << "invalid cg optimization level: " << CGOptLevel << '\n';
     return 1;
   }
 
   if (auto FT = codegen::getExplicitFileType())
-    Conf.CGFileType = FT.getValue();
+    Conf.CGFileType = *FT;
 
   Conf.OverrideTriple = OverrideTriple;
   Conf.DefaultTriple = DefaultTriple;
@@ -300,14 +324,17 @@ static int run(int argc, char **argv) {
 
   ThinBackend Backend;
   if (ThinLTODistributedIndexes)
-    Backend = createWriteIndexesThinBackend(/* OldPrefix */ "",
-                                            /* NewPrefix */ "",
-                                            /* ShouldEmitImportsFiles */ true,
-                                            /* LinkedObjectsFile */ nullptr,
-                                            /* OnWrite */ {});
+    Backend = createWriteIndexesThinBackend(/*OldPrefix=*/"",
+                                            /*NewPrefix=*/"",
+                                            /*NativeObjectPrefix=*/"",
+                                            ThinLTOEmitImports,
+                                            /*LinkedObjectsFile=*/nullptr,
+                                            /*OnWrite=*/{});
   else
     Backend = createInProcessThinBackend(
-        llvm::heavyweight_hardware_concurrency(Threads));
+        llvm::heavyweight_hardware_concurrency(Threads),
+        /* OnWrite */ {}, ThinLTOEmitIndexes, ThinLTOEmitImports);
+
   // Track whether we hit an error; in particular, in the multi-threaded case,
   // we can't exit() early because the rest of the threads wouldn't have had a
   // change to be join-ed, and that would result in a "terminate called without
@@ -325,7 +352,20 @@ static int run(int argc, char **argv) {
       HasErrors = true;
   };
 
-  LTO Lto(std::move(Conf), std::move(Backend));
+  LTO::LTOKind LTOMode = LTO::LTOK_Default;
+
+  if (UnifiedLTOMode == "full") {
+    LTOMode = LTO::LTOK_UnifiedRegular;
+  } else if (UnifiedLTOMode == "thin") {
+    LTOMode = LTO::LTOK_UnifiedThin;
+  } else if (UnifiedLTOMode == "default") {
+    LTOMode = LTO::LTOK_Default;
+  } else if (!UnifiedLTOMode.empty()) {
+    llvm::errs() << "invalid LTO mode\n";
+    return 1;
+  }
+
+  LTO Lto(std::move(Conf), std::move(Backend), 1, LTOMode);
 
   for (std::string F : InputFilenames) {
     std::unique_ptr<MemoryBuffer> MB = check(MemoryBuffer::getFile(F), F);
@@ -372,7 +412,9 @@ static int run(int argc, char **argv) {
   if (HasErrors)
     return 1;
 
-  auto AddStream = [&](size_t Task) -> std::unique_ptr<CachedFileStream> {
+  auto AddStream =
+      [&](size_t Task,
+          const Twine &ModuleName) -> std::unique_ptr<CachedFileStream> {
     std::string Path = OutputFilename + "." + utostr(Task);
 
     std::error_code EC;
@@ -381,8 +423,9 @@ static int run(int argc, char **argv) {
     return std::make_unique<CachedFileStream>(std::move(S), Path);
   };
 
-  auto AddBuffer = [&](size_t Task, std::unique_ptr<MemoryBuffer> MB) {
-    *AddStream(Task)->OS << MB->getBuffer();
+  auto AddBuffer = [&](size_t Task, const Twine &ModuleName,
+                       std::unique_ptr<MemoryBuffer> MB) {
+    *AddStream(Task, ModuleName)->OS << MB->getBuffer();
   };
 
   FileCache Cache;

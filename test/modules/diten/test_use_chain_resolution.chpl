@@ -21,7 +21,7 @@ module M5 {
 module M6 {
   var aaa = 6;
   proc main() {
-    public use M3, M5;
+    use M3, M5;
     writeln(aaa);
   }
 }

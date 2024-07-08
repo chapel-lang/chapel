@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,7 +34,7 @@
 ************************************* | ************************************/
 
 // A WhileDo loop may have a C_FOR_LOOP prim as the termination condition
-BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body)
+BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body, LLVMMetadataList attrs)
 {
   BlockStmt* retval = buildChapelStmt();
 
@@ -55,6 +55,7 @@ BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body)
 
     loop->mContinueLabel = continueLabel;
     loop->mBreakLabel    = breakLabel;
+    loop->mLLVMMetadataList = attrs;
 
     loop->loopHeaderSet(initBlock, testBlock, incrBlock);
 
@@ -74,6 +75,11 @@ BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body)
 CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop)
 {
   SymbolMap map;
+  return buildWithBodyFrom(forLoop, map);
+}
+
+CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop, SymbolMap &map)
+{
   CForLoop* retval = new CForLoop();
 
   retval->astloc            = forLoop->astloc;
@@ -81,6 +87,7 @@ CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop)
   retval->mBreakLabel       = forLoop->breakLabelGet();
   retval->mContinueLabel    = forLoop->continueLabelGet();
   retval->mOrderIndependent = forLoop->isOrderIndependent();
+  retval->mLLVMMetadataList = forLoop->getAdditionalLLVMMetadata();
 
   for_alist(expr, forLoop->body)
     retval->insertAtTail(expr->copy(&map, true));
@@ -132,6 +139,7 @@ CForLoop* CForLoop::copyInner(SymbolMap* map)
   retval->mBreakLabel       = mBreakLabel;
   retval->mContinueLabel    = mContinueLabel;
   retval->mOrderIndependent = mOrderIndependent;
+  retval->mLLVMMetadataList = mLLVMMetadataList;
 
   if (initBlockGet() != 0 && testBlockGet() != 0 && incrBlockGet() != 0)
     retval->loopHeaderSet(initBlockGet()->copy(map, true),

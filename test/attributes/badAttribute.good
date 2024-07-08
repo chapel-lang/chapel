@@ -1,0 +1,2 @@
+badAttribute.chpl:2: In function 'foo':
+badAttribute.chpl:1: error: Unknown top-level attribute 'notanattribute'

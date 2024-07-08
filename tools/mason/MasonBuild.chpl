@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -74,25 +74,25 @@ proc masonBuild(args: [] string, checkProj=true) throws {
 
   if example {
     // compopts become example names. Build never runs examples
-    for val in exampleOpts.values() do compopts.append(val);
-    compopts.append("--no-run");
-    if skipUpdate then compopts.append('--no-update');
-                  else compopts.append('--update');
-    if show then compopts.append("--show");
-    if release then compopts.append("--release");
-    if force then compopts.append("--force");
+    for val in exampleOpts.values() do compopts.pushBack(val);
+    compopts.pushBack("--no-run");
+    if skipUpdate then compopts.pushBack('--no-update');
+                  else compopts.pushBack('--update');
+    if show then compopts.pushBack("--show");
+    if release then compopts.pushBack("--release");
+    if force then compopts.pushBack("--force");
     // add expected arguments for masonExample
     compopts.insert(0,["example", "--example"]);
     masonExample(compopts.toArray(), checkProj=checkProj);
   }
   else {
     if passArgs.hasValue() {
-      for val in passArgs.values() do compopts.append(val);
+      for val in passArgs.values() do compopts.pushBack(val);
     }
     const configNames = updateLock(skipUpdate);
     const tomlName = configNames[0];
     const lockName = configNames[1];
-    buildProgram(release, show, force, compopts, tomlName, lockName);
+    buildProgram(release, show, force, skipUpdate, compopts, tomlName, lockName);
   }
 }
 
@@ -106,14 +106,15 @@ private proc checkChplVersion(lockFile : borrowed Toml) throws {
 }
 
 
-proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: list(string),
-                  tomlName="Mason.toml", lockName="Mason.lock") throws {
+proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
+                  ref cmdLineCompopts: list(string), tomlName="Mason.toml",
+                  lockName="Mason.lock") throws {
 
   try! {
 
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, tomlName);
-    const toParse = open(projectHome + "/" + lockName, iomode.r);
+    const toParse = open(projectHome + "/" + lockName, ioMode.r);
     var lockFile = parseToml(toParse);
     const projectName = lockFile["root"]!["name"]!.s;
 
@@ -147,7 +148,7 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
         // support parallel iteration, which the `getSrcCode` method _must_
         // have for good performance.
         //
-        getSrcCode(sourceList, show);
+        getSrcCode(sourceList, skipUpdate, show);
 
         getGitCode(gitList, show);
 
@@ -240,7 +241,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: list((string, string, string));
   var gitList: list((string, string, string, string));
-  for (name, package) in lockFile.A.items() {
+  for (name, package) in zip(lockFile.A.keys(), lockFile.A.values()) {
     if package!.tag == fieldtag.fieldToml {
       if name == "root" || name == "system" || name == "external" then continue;
       else {
@@ -258,10 +259,10 @@ proc genSourceList(lockFile: borrowed Toml) {
           } else {
             branch = "HEAD";
           }
-          gitList.append((url, name, branch, revision));
+          gitList.pushBack((url, name, branch, revision));
         } else if toml.pathExists("source") {
           var source = toml["source"]!.s;
-          sourceList.append((source, name, version));
+          sourceList.pushBack((source, name, version));
         }
       }
     }
@@ -272,7 +273,7 @@ proc genSourceList(lockFile: borrowed Toml) {
 
 /* Clones the git repository of each dependency into
    the src code dependency pool */
-proc getSrcCode(sourceListArg: list(3*string), show) {
+proc getSrcCode(sourceListArg: list(3*string), skipUpdate, show) throws {
 
   //
   // TODO: Temporarily use `toArray` here because `list` does not yet
@@ -288,6 +289,8 @@ proc getSrcCode(sourceListArg: list(3*string), show) {
       const nameVers = name + "-" + version;
       const destination = baseDir + nameVers;
       if !depExists(nameVers) {
+        if skipUpdate then
+          throw new owned MasonError("Dependency cannot be installed when MASON_OFFLINE is set.");
         writeln("Downloading dependency: " + nameVers);
         var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
         var checkout = "git checkout -q v" + version;
@@ -346,18 +349,18 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
   // Checks for compilation options are present in Mason.toml
   if lock.pathExists('root.compopts') {
     const cmpFlags = lock["root"]!["compopts"]!.s;
-    compopts.append(cmpFlags);
+    compopts.pushBack(cmpFlags);
   }
 
   if lock.pathExists('external') {
     const exDeps = lock['external']!;
-    for (name, depInfo) in exDeps.A.items() {
+    for (name, depInfo) in zip(exDeps.A.keys(), exDeps.A.values()) {
       for (k,v) in allFields(depInfo!) {
         var val = v!;
         select k {
-            when "libs" do compopts.append("-L" + val.s);
-            when "include" do compopts.append("-I" + val.s);
-            when "other" do compopts.append("-I" + val.s);
+            when "libs" do compopts.pushBack("-L" + val.s);
+            when "include" do compopts.pushBack("-I" + val.s);
+            when "other" do compopts.pushBack("-I" + val.s);
             otherwise continue;
           }
       }
@@ -365,10 +368,10 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
   }
   if lock.pathExists('system') {
     const pkgDeps = lock['system']!;
-    for (name, dep) in pkgDeps.A.items() {
+    for (name, dep) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
       var depInfo = dep!;
-      compopts.append(depInfo["libs"]!.s);
-      compopts.append("-I" + depInfo["include"]!.s);
+      compopts.pushBack(depInfo["libs"]!.s);
+      compopts.pushBack("-I" + depInfo["include"]!.s);
     }
   }
   return compopts;

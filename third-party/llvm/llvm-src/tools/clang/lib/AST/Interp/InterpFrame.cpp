@@ -7,44 +7,89 @@
 //===----------------------------------------------------------------------===//
 
 #include "InterpFrame.h"
+#include "Boolean.h"
+#include "Floating.h"
 #include "Function.h"
-#include "Interp.h"
 #include "InterpStack.h"
+#include "InterpState.h"
+#include "Pointer.h"
 #include "PrimType.h"
 #include "Program.h"
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclCXX.h"
 
 using namespace clang;
 using namespace clang::interp;
 
-InterpFrame::InterpFrame(InterpState &S, Function *Func, InterpFrame *Caller,
-                         CodePtr RetPC, Pointer &&This)
-    : Caller(Caller), S(S), Func(Func), This(std::move(This)), RetPC(RetPC),
-      ArgSize(Func ? Func->getArgSize() : 0),
+InterpFrame::InterpFrame(InterpState &S, const Function *Func,
+                         InterpFrame *Caller, CodePtr RetPC)
+    : Caller(Caller), S(S), Depth(Caller ? Caller->Depth + 1 : 0), Func(Func),
+      RetPC(RetPC), ArgSize(Func ? Func->getArgSize() : 0),
       Args(static_cast<char *>(S.Stk.top())), FrameOffset(S.Stk.size()) {
+  if (!Func)
+    return;
+
+  unsigned FrameSize = Func->getFrameSize();
+  if (FrameSize == 0)
+    return;
+
+  Locals = std::make_unique<char[]>(FrameSize);
+  for (auto &Scope : Func->scopes()) {
+    for (auto &Local : Scope.locals()) {
+      Block *B = new (localBlock(Local.Offset)) Block(Local.Desc);
+      B->invokeCtor();
+      InlineDescriptor *ID = localInlineDesc(Local.Offset);
+      ID->Desc = Local.Desc;
+      ID->IsActive = true;
+      ID->Offset = sizeof(InlineDescriptor);
+      ID->IsBase = false;
+      ID->IsFieldMutable = false;
+      ID->IsConst = false;
+      ID->IsInitialized = false;
+    }
+  }
+}
+
+InterpFrame::InterpFrame(InterpState &S, const Function *Func, CodePtr RetPC)
+    : InterpFrame(S, Func, S.Current, RetPC) {
+  // As per our calling convention, the this pointer is
+  // part of the ArgSize.
+  // If the function has RVO, the RVO pointer is first.
+  // If the fuction has a This pointer, that one is next.
+  // Then follow the actual arguments (but those are handled
+  // in getParamPointer()).
+  if (Func->hasRVO())
+    RVOPtr = stackRef<Pointer>(0);
+
+  if (Func->hasThisPointer()) {
+    if (Func->hasRVO())
+      This = stackRef<Pointer>(sizeof(Pointer));
+    else
+      This = stackRef<Pointer>(0);
+  }
+}
+
+InterpFrame::~InterpFrame() {
+  for (auto &Param : Params)
+    S.deallocate(reinterpret_cast<Block *>(Param.second.get()));
+
+  // When destroying the InterpFrame, call the Dtor for all block
+  // that haven't been destroyed via a destroy() op yet.
+  // This happens when the execution is interruped midway-through.
   if (Func) {
-    if (unsigned FrameSize = Func->getFrameSize()) {
-      Locals = std::make_unique<char[]>(FrameSize);
-      for (auto &Scope : Func->scopes()) {
-        for (auto &Local : Scope.locals()) {
-          Block *B = new (localBlock(Local.Offset)) Block(Local.Desc);
-          B->invokeCtor();
-        }
+    for (auto &Scope : Func->scopes()) {
+      for (auto &Local : Scope.locals()) {
+        Block *B = localBlock(Local.Offset);
+        if (B->isInitialized())
+          B->invokeDtor();
       }
     }
   }
 }
 
-InterpFrame::~InterpFrame() {
-  if (Func && Func->isConstructor() && This.isBaseClass())
-    This.initialize();
-  for (auto &Param : Params)
-    S.deallocate(reinterpret_cast<Block *>(Param.second.get()));
-}
-
 void InterpFrame::destroy(unsigned Idx) {
   for (auto &Local : Func->getScope(Idx).locals()) {
-    S.deallocate(reinterpret_cast<Block *>(localBlock(Local.Offset)));
+    S.deallocate(localBlock(Local.Offset));
   }
 }
 
@@ -66,20 +111,19 @@ void print(llvm::raw_ostream &OS, const Pointer &P, ASTContext &Ctx,
     return;
   }
 
-  auto printDesc = [&OS, &Ctx](Descriptor *Desc) {
-    if (auto *D = Desc->asDecl()) {
+  auto printDesc = [&OS, &Ctx](const Descriptor *Desc) {
+    if (const auto *D = Desc->asDecl()) {
       // Subfields or named values.
-      if (auto *VD = dyn_cast<ValueDecl>(D)) {
+      if (const auto *VD = dyn_cast<ValueDecl>(D)) {
         OS << *VD;
         return;
       }
       // Base classes.
-      if (isa<RecordDecl>(D)) {
+      if (isa<RecordDecl>(D))
         return;
-      }
     }
     // Temporary expression.
-    if (auto *E = Desc->asExpr()) {
+    if (const auto *E = Desc->asExpr()) {
       E->printPretty(OS, nullptr, Ctx.getPrintingPolicy());
       return;
     }
@@ -94,39 +138,42 @@ void print(llvm::raw_ostream &OS, const Pointer &P, ASTContext &Ctx,
     F = F.isArrayElement() ? F.getArray().expand() : F.getBase();
   }
 
+  // Drop the first pointer since we print it unconditionally anyway.
+  if (!Levels.empty())
+    Levels.erase(Levels.begin());
+
   printDesc(P.getDeclDesc());
-  for (auto It = Levels.rbegin(); It != Levels.rend(); ++It) {
-    if (It->inArray()) {
-      OS << "[" << It->expand().getIndex() << "]";
+  for (const auto &It : Levels) {
+    if (It.inArray()) {
+      OS << "[" << It.expand().getIndex() << "]";
       continue;
     }
-    if (auto Index = It->getIndex()) {
+    if (auto Index = It.getIndex()) {
       OS << " + " << Index;
       continue;
     }
     OS << ".";
-    printDesc(It->getFieldDesc());
+    printDesc(It.getFieldDesc());
   }
 }
 
-void InterpFrame::describe(llvm::raw_ostream &OS) {
+void InterpFrame::describe(llvm::raw_ostream &OS) const {
   const FunctionDecl *F = getCallee();
-  auto *M = dyn_cast<CXXMethodDecl>(F);
-  if (M && M->isInstance() && !isa<CXXConstructorDecl>(F)) {
+  if (const auto *M = dyn_cast<CXXMethodDecl>(F);
+      M && M->isInstance() && !isa<CXXConstructorDecl>(F)) {
     print(OS, This, S.getCtx(), S.getCtx().getRecordType(M->getParent()));
     OS << "->";
   }
   OS << *F << "(";
-  unsigned Off = Func->hasRVO() ? primSize(PT_Ptr) : 0;
+  unsigned Off = 0;
+
+  Off += Func->hasRVO() ? primSize(PT_Ptr) : 0;
+  Off += Func->hasThisPointer() ? primSize(PT_Ptr) : 0;
+
   for (unsigned I = 0, N = F->getNumParams(); I < N; ++I) {
     QualType Ty = F->getParamDecl(I)->getType();
 
-    PrimType PrimTy;
-    if (llvm::Optional<PrimType> T = S.Ctx.classify(Ty)) {
-      PrimTy = *T;
-    } else {
-      PrimTy = PT_Ptr;
-    }
+    PrimType PrimTy = S.Ctx.classify(Ty).value_or(PT_Ptr);
 
     TYPE_SWITCH(PrimTy, print(OS, stackRef<T>(Off), S.getCtx(), Ty));
     Off += align(primSize(PrimTy));
@@ -142,20 +189,19 @@ Frame *InterpFrame::getCaller() const {
   return S.getSplitFrame();
 }
 
-SourceLocation InterpFrame::getCallLocation() const {
+SourceRange InterpFrame::getCallRange() const {
   if (!Caller->Func)
-    return S.getLocation(nullptr, {});
-  return S.getLocation(Caller->Func, RetPC - sizeof(uintptr_t));
+    return S.getRange(nullptr, {});
+  return S.getRange(Caller->Func, RetPC - sizeof(uintptr_t));
 }
 
 const FunctionDecl *InterpFrame::getCallee() const {
   return Func->getDecl();
 }
 
-Pointer InterpFrame::getLocalPointer(unsigned Offset) {
+Pointer InterpFrame::getLocalPointer(unsigned Offset) const {
   assert(Offset < Func->getFrameSize() && "Invalid local offset.");
-  return Pointer(
-      reinterpret_cast<Block *>(Locals.get() + Offset - sizeof(Block)));
+  return Pointer(localBlock(Offset), sizeof(InlineDescriptor));
 }
 
 Pointer InterpFrame::getParamPointer(unsigned Off) {
@@ -180,6 +226,11 @@ Pointer InterpFrame::getParamPointer(unsigned Off) {
 }
 
 SourceInfo InterpFrame::getSource(CodePtr PC) const {
+  // Implicitly created functions don't have any code we could point at,
+  // so return the call site.
+  if (Func && (!Func->hasBody() || Func->getDecl()->isImplicit()) && Caller)
+    return Caller->getSource(RetPC);
+
   return S.getSource(Func, PC);
 }
 
@@ -191,3 +242,9 @@ SourceLocation InterpFrame::getLocation(CodePtr PC) const {
   return S.getLocation(Func, PC);
 }
 
+SourceRange InterpFrame::getRange(CodePtr PC) const {
+  if (Func && (!Func->hasBody() || Func->getDecl()->isImplicit()) && Caller)
+    return Caller->getRange(RetPC);
+
+  return S.getRange(Func, PC);
+}

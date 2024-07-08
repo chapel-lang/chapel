@@ -7,11 +7,12 @@ class D : C {
   var y : real;
 }
 
-var d = new borrowed D(p=2);
+var ownD = new owned D(p=2);
+var d = ownD.borrow();
 
 writeln(d);
 
-proc foo(d : borrowed D) {
+proc foo(d : borrowed D(?)) {
   for param i in 1..d.p do
     writeln(i);
 }

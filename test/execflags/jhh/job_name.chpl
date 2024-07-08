@@ -1,10 +1,10 @@
 use CTypes;
-extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
+extern proc sys_getenv(name:c_ptrConst(c_char), ref string_out:c_ptrConst(c_char)):c_int;
 
-var value_str:c_string;
+var value_str:c_ptrConst(c_char);
 var value:string;
 if sys_getenv(c"CHPL_LAUNCHER_JOB_PREFIX", value_str)==1 {
-    value = createStringWithNewBuffer(value_str);
+    value = string.createCopyingBuffer(value_str);
 } else {
     value = "NONE";
 }
@@ -12,7 +12,7 @@ if sys_getenv(c"CHPL_LAUNCHER_JOB_PREFIX", value_str)==1 {
 writeln("CHPL_LAUNCHER_JOB_PREFIX: ", value);
 
 if sys_getenv(c"CHPL_LAUNCHER_JOB_NAME", value_str)==1 {
-    value = createStringWithNewBuffer(value_str);
+    value = string.createCopyingBuffer(value_str);
 } else {
     value = "NONE";
 }

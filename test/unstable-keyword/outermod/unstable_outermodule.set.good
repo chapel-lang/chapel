@@ -1,0 +1,6 @@
+unstable_outermodule.chpl:11: In function 'main':
+unstable_outermodule.chpl:13: warning: Outer is unstable
+unstable_outermodule.chpl:20: warning: Outer is unstable
+unstable_outermodule.chpl:22: warning: Outer is unstable
+0
+false

@@ -1,0 +1,6 @@
+$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:nnnn: In function '_getIterator':
+$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:nnnn: warning: 'map.these' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
+  mapIterators.chpl:6: called as _getIterator(x: map(int(64),int(64),false))
+mapIterators.chpl:9: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
+0
+0->1

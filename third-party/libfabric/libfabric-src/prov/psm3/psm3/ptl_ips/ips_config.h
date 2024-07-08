@@ -72,10 +72,12 @@
 #define IPS_PROTO_ERRCHK_MS_MAX_DEFAULT	640	/* in millisecs */
 #define IPS_PROTO_ERRCHK_FACTOR_DEFAULT 2
 #define PSM_TID_TIMEOUT_DEFAULT "160:640:2"	/* update from above params */
+#ifdef PSM_FI
+#define PSM_TID_TIMEOUT_DEFAULT_US "160000:640000:2" /* update from above params */
+#endif
 
 #ifdef PSM_FI
-
-/* Fault injection, becomes parameters to psmi_faultinj_getspec so
+/* Fault injection, becomes parameters to psm3_faultinj_getspec so
  * a comma-delimited list of
  *   "spec_name", num, denom
  * Where num/denom means fault num out of every denom.
@@ -88,7 +90,14 @@
  * a specific seed to the random number generator.
  */
 #define IPS_FAULTINJ_RECVLOST	5000	/* 1 every X pkts dropped at recv */
+#define IPS_FAULTINJ_SENDFULL	5000	/* 1 every X pkts no resource at send */
+#define IPS_FAULTINJ_SENDFULLCTRL 5000	/* 1 every X pkts no resource at send ctrl */
+#define IPS_FAULTINJ_SENDFULLCB	5000	/* 1 every X pkts no resource at send ctrl callback */
 #define IPS_FAULTINJ_SENDLOST	5000	/* 1 every X pkts dropped at send */
+#define IPS_FAULTINJ_SENDPART	10	/* 1 every X pkts partial send */
+#define IPS_FAULTINJ_RECVPART	10	/* 1 every X pkts partial recv */
+#define IPS_FAULTINJ_CONNUNKN	500000	/* 1 every X pkts send with unknown connection */
+#ifdef PSM_HAVE_REG_MR
 #define IPS_FAULTINJ_RQ_LKEY	5000	/* 0 every X RQ WQE bad lkey */
 #define IPS_FAULTINJ_SQ_LKEY	5000	/* 0 every X SQ WQE bad lkey */
 #define IPS_FAULTINJ_RC_RDMA_LKEY 5000	/* 0 every X RC SQ RDMA bad lkey */
@@ -98,12 +107,16 @@
 #define IPS_FAULTINJ_REG_MR	100	/* 1 every X reg_mr ENOMEM */
 #define IPS_FAULTINJ_NONPRI_REG_MR 50	/* 1 every X non-pri reg_mr ENOMEM */
 #define IPS_FAULTINJ_PRI_REG_MR	1000	/* 1 every X pri reg_mr ENOMEM */
-#ifdef PSM_CUDA
+#ifdef UMR_CACHE
+#define IPS_FAULTINJ_UFFD_REG	1000	/* 1 every X uffd_alloc_region ENOMEM */
+#define IPS_FAULTINJ_UFFD_REGISTER 1000	/* 1 every X uffd REGISTER ENOMEM */
+#endif
+#endif /* PSM_HAVE_REG_MR */
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 #define IPS_FAULTINJ_GDRMMAP	100	/* 1 every X GPU pin and mmap ENOMEM */
 #define IPS_FAULTINJ_GPU_REG_MR	100	/* 1 every X GPU reg_mr */
 #endif
-
-#endif /* #ifdef PSM_FI */
+#endif /* PSM_FI */
 
 
 
@@ -118,6 +131,8 @@
 
 /* ips_proto_recv.c */
 #define PSM_STRAY_WARN_INTERVAL_DEFAULT_SECS	30
+
+#define PSM_CONN_CREDITS 100
 
 /*
  * Easy switch to (say) _HFI_INFO if debugging in the expected protocol is

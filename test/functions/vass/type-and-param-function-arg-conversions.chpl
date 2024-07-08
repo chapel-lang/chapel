@@ -9,9 +9,9 @@
 // While some type functions may not need such actuals, currently
 // the requirement is uniform for all type functions.
 
-proc paramFun(i: int)     param  return 11111;
-proc typeFunNoUse(i: int) type  return int;
-proc typeFunUse(i:int)    type  return [1..i] int;
+proc paramFun(i: int)     param do  return 11111;
+proc typeFunNoUse(i: int) type do  return int;
+proc typeFunUse(i:int)    type do  return [1..i] int;
 
 var sv1, sv2, sv3: sync int;
 

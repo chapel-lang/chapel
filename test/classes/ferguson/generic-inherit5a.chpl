@@ -10,7 +10,7 @@ class Parent {
 
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   type tt;
   var y:tt;
   override proc overridden_method() {

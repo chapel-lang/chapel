@@ -25,7 +25,7 @@ class C {
 
 
 test(false, new R(10)); // false
-test(false, new borrowed C(10)); // false
+test(false, (new owned C(10)).borrow()); // false
 
 test(false, new R(10), 1); // false
 test(false, 1, new R(10), 1); // false

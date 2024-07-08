@@ -1,8 +1,9 @@
 // Test for #20053
 
-use GPUDiagnostics;
+use GpuDiagnostics;
 
-startGPUDiagnostics();
+
+startGpuDiagnostics();
 
 var Days : domain(int) = {0, 10, 20};
 on here.gpus[0] {
@@ -16,6 +17,5 @@ on here.gpus[0] {
   writeln(A);
 }
 
-stopGPUDiagnostics();
-writeln("GPU diagnostics:");
-writeln(getGPUDiagnostics());
+stopGpuDiagnostics();
+assertGpuDiags(kernel_launch_um=0, kernel_launch_aod=1); // we are currently skipping with aod

@@ -1,0 +1,4 @@
+firstLastParenful.chpl:7: warning: `list.first()` is deprecated; please use the parenless version `list.first` instead
+firstLastParenful.chpl:8: warning: `list.last()` is deprecated; please use the parenless version `list.last` instead
+1
+3

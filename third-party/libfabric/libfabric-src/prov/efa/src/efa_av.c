@@ -1,36 +1,7 @@
-/*
- * Copyright (c) 2016, Cisco Systems, Inc. All rights reserved.
- * Copyright (c) 2013-2015 Intel Corporation, Inc.  All rights reserved.
- * Copyright (c) 2017-2020 Amazon.com, Inc. or its affiliates. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+/* SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only */
+/* SPDX-FileCopyrightText: Copyright (c) 2016, Cisco Systems, Inc. All rights reserved. */
+/* SPDX-FileCopyrightText: Copyright (c) 2013-2015 Intel Corporation, Inc.  All rights reserved. */
+/* SPDX-FileCopyrightText: Copyright Amazon.com, Inc. or its affiliates. All rights reserved. */
 
 #include <malloc.h>
 #include <stdio.h>
@@ -39,133 +10,34 @@
 #include <ofi_enosys.h>
 
 #include "efa.h"
-#include "rxr.h"
+#include "efa_av.h"
+#include "rdm/efa_rdm_pke_utils.h"
 
 /*
  * Local/remote peer detection by comparing peer GID with stored local GIDs
  */
 static bool efa_is_local_peer(struct efa_av *av, const void *addr)
 {
-	struct efa_ep_addr *cur_efa_addr = local_efa_addr;
+	int i;
+	uint8_t *raw_gid = ((struct efa_ep_addr *)addr)->raw;
 
 #if ENABLE_DEBUG
-	char peer_gid[INET6_ADDRSTRLEN] = { 0 };
+	char raw_gid_str[INET6_ADDRSTRLEN] = { 0 };
 
-	if (!inet_ntop(AF_INET6, ((struct efa_ep_addr *)addr)->raw, peer_gid, INET6_ADDRSTRLEN)) {
+	if (!inet_ntop(AF_INET6, raw_gid, raw_gid_str, INET6_ADDRSTRLEN)) {
 		EFA_WARN(FI_LOG_AV, "Failed to get current EFA's GID, errno: %d\n", errno);
 		return 0;
 	}
-	EFA_INFO(FI_LOG_AV, "The peer's GID is %s.\n", peer_gid);
+	EFA_INFO(FI_LOG_AV, "The peer's GID is %s.\n", raw_gid_str);
 #endif
-	while (cur_efa_addr) {
-		if (!memcmp(((struct efa_ep_addr *)addr)->raw, cur_efa_addr->raw, 16)) {
+	for (i = 0; i < g_device_cnt; ++i) {
+		if (!memcmp(raw_gid, g_device_list[i].ibv_gid.raw, EFA_GID_LEN)) {
 			EFA_INFO(FI_LOG_AV, "The peer is local.\n");
 			return 1;
 		}
-		cur_efa_addr = cur_efa_addr->next;
 	}
 
 	return 0;
-}
-
-static bool efa_is_same_addr(struct efa_ep_addr *lhs, struct efa_ep_addr *rhs)
-{
-	return !memcmp(lhs->raw, rhs->raw, sizeof(lhs->raw)) &&
-	       lhs->qpn == rhs->qpn && lhs->qkey == rhs->qkey;
-}
-
-/**
- * @brief initialize a rdm peer
- *
- * @param[in,out]	peer	rdm peer
- * @param[in]		ep	rdm endpoint
- * @param[in]		conn	efa conn object
- */
-static inline
-void efa_rdm_peer_init(struct rdm_peer *peer, struct rxr_ep *ep, struct efa_conn *conn)
-{
-	memset(peer, 0, sizeof(struct rdm_peer));
-
-	peer->efa_fiaddr = conn->fi_addr;
-	peer->is_self = efa_is_same_addr((struct efa_ep_addr *)ep->core_addr,
-					 conn->ep_addr);
-
-	ofi_recvwin_buf_alloc(&peer->robuf, rxr_env.recvwin_size);
-	peer->rx_credits = rxr_env.rx_window_size;
-	peer->tx_credits = rxr_env.tx_max_credits;
-	dlist_init(&peer->outstanding_tx_pkts);
-	dlist_init(&peer->rx_unexp_list);
-	dlist_init(&peer->rx_unexp_tagged_list);
-	dlist_init(&peer->tx_entry_list);
-	dlist_init(&peer->rx_entry_list);
-}
-
-/**
- * @brief clear resources accociated with a peer
- *
- * release reorder buffer, tx_entry list and rx_entry list of a peer
- *
- * @param[in,out]	peer 	rdm peer
- */
-void efa_rdm_peer_clear(struct rxr_ep *ep, struct rdm_peer *peer)
-{
-	struct dlist_entry *tmp;
-	struct rxr_tx_entry *tx_entry;
-	struct rxr_rx_entry *rx_entry;
-	struct rxr_pkt_entry *pkt_entry;
-	/*
-	 * TODO: Add support for wait/signal until all pending messages have
-	 * been sent/received so we do not attempt to complete a data transfer
-	 * or internal transfer after the EP is shutdown.
-	 */
-	if ((peer->flags & RXR_PEER_REQ_SENT) &&
-	    !(peer->flags & RXR_PEER_HANDSHAKE_RECEIVED))
-		FI_WARN_ONCE(&rxr_prov, FI_LOG_EP_CTRL, "Closing EP with unacked CONNREQs in flight\n");
-
-	if (peer->robuf.pending)
-		ofi_recvwin_free(&peer->robuf);
-
-	if (!ep) {
-		/* ep is NULL means the endpoint has been closed.
-		 * In this case there is no need to proceed because
-		 * all the tx_entry, rx_entry, pkt_entry has been released.
-		 */
-		return;
-	}
-
-	/* we cannot release outstanding TX packets because device
-	 * will report completion of these packets later. Setting
-	 * the address to FI_ADDR_NOTAVAIL, so rxr_ep_get_peer()
-	 * will return NULL for the address, so the completion will
-	 * be ignored.
-	 */
-	dlist_foreach_container(&peer->outstanding_tx_pkts,
-				struct rxr_pkt_entry,
-				pkt_entry, entry) {
-		pkt_entry->addr = FI_ADDR_NOTAVAIL;
-	}
-
-	dlist_foreach_container_safe(&peer->tx_entry_list,
-				     struct rxr_tx_entry,
-				     tx_entry, peer_entry, tmp) {
-		rxr_release_tx_entry(ep, tx_entry);
-	}
-
-	dlist_foreach_container_safe(&peer->rx_entry_list,
-				     struct rxr_rx_entry,
-				     rx_entry, peer_entry, tmp) {
-		rxr_release_rx_entry(ep, rx_entry);
-	}
-
-	if (peer->flags & RXR_PEER_HANDSHAKE_QUEUED)
-		dlist_remove(&peer->handshake_queued_entry);
-
-	if (peer->flags & RXR_PEER_IN_BACKOFF)
-		dlist_remove(&peer->rnr_backoff_entry);
-
-#ifdef ENABLE_EFA_POISONING
-	rxr_poison_mem_region((uint32_t *)peer, sizeof(struct rdm_peer));
-#endif
 }
 
 /**
@@ -197,44 +69,85 @@ struct efa_conn *efa_av_addr_to_conn(struct efa_av *av, fi_addr_t fi_addr)
 	return efa_av_entry->conn.ep_addr ? &efa_av_entry->conn : NULL;
 }
 
-fi_addr_t efa_ahn_qpn_to_addr(struct efa_av *av, uint16_t ahn, uint16_t qpn)
-{
-	struct efa_reverse_av *reverse_av;
-	struct efa_ah_qpn key;
-
-	memset(&key, 0, sizeof(key));
-	key.ahn = ahn;
-	key.qpn = qpn;
-	HASH_FIND(hh, av->reverse_av, &key, sizeof(key), reverse_av);
-
-	return OFI_LIKELY(!!reverse_av) ? reverse_av->conn->fi_addr : FI_ADDR_NOTAVAIL;
-}
-
 /**
- * @brief find rdm_peer by address handle number (ahn) and QP number (qpn)
+ * @brief find fi_addr for dgram endpoint
  *
  * @param[in]	av	address vector
  * @param[in]	ahn	address handle number
  * @param[in]	qpn	QP number
- * @return	On success, return pointer to rdm_peer
- * 		If no such peer exist, return NULL
+ * @return	On success, return fi_addr to the peer who send the packet
+ * 		If no such peer exist, return FI_ADDR_NOTAVAIL
  */
-struct rdm_peer *efa_ahn_qpn_to_peer(struct efa_av *av, uint16_t ahn, uint16_t qpn)
+fi_addr_t efa_av_reverse_lookup_dgram(struct efa_av *av, uint16_t ahn, uint16_t qpn)
 {
-	struct efa_reverse_av *reverse_av;
-	struct efa_ah_qpn key;
+	struct efa_cur_reverse_av *cur_entry;
+	struct efa_cur_reverse_av_key cur_key;
 
-	memset(&key, 0, sizeof(key));
-	key.ahn = ahn;
-	key.qpn = qpn;
-	HASH_FIND(hh, av->reverse_av, &key, sizeof(key), reverse_av);
+	memset(&cur_key, 0, sizeof(cur_key));
+	cur_key.ahn = ahn;
+	cur_key.qpn = qpn;
+	HASH_FIND(hh, av->cur_reverse_av, &cur_key, sizeof(cur_key), cur_entry);
 
-	return OFI_LIKELY(!!reverse_av) ? &reverse_av->conn->rdm_peer : NULL;
+	return (OFI_LIKELY(!!cur_entry)) ? cur_entry->conn->fi_addr : FI_ADDR_NOTAVAIL;
+}
+
+/**
+ * @brief find fi_addr for rdm endpoint
+ *
+ * @param[in]	av	address vector
+ * @param[in]	ahn	address handle number
+ * @param[in]	qpn	QP number
+ * @param[in]   pkt_entry	NULL or rdm packet entry, used to extract connid
+ * @return	On success, return fi_addr to the peer who send the packet
+ * 		If no such peer exist, return FI_ADDR_NOTAVAIL
+ */
+fi_addr_t efa_av_reverse_lookup_rdm(struct efa_av *av, uint16_t ahn, uint16_t qpn, struct efa_rdm_pke *pkt_entry)
+{
+	struct efa_cur_reverse_av *cur_entry;
+	struct efa_prv_reverse_av *prv_entry;
+	struct efa_cur_reverse_av_key cur_key;
+	struct efa_prv_reverse_av_key prv_key;
+	uint32_t *connid;
+
+	cur_key.ahn = ahn;
+	cur_key.qpn = qpn;
+
+	HASH_FIND(hh, av->cur_reverse_av, &cur_key, sizeof(cur_key), cur_entry);
+
+	if (OFI_UNLIKELY(!cur_entry))
+		return FI_ADDR_NOTAVAIL;
+
+	if (!pkt_entry) {
+		/* There is no packet entry to extract connid from when we get an
+		   IBV_WC_RECV_RDMA_WITH_IMM completion from rdma-core. */
+		return cur_entry->conn->fi_addr;
+	}
+
+	connid = efa_rdm_pke_connid_ptr(pkt_entry);
+	if (!connid) {
+		EFA_WARN_ONCE(FI_LOG_EP_CTRL,
+			     "An incoming packet does NOT have connection ID in its header.\n"
+			     "This means the peer is using an older version of libfabric.\n"
+			     "The communication can continue but it is encouraged to use\n"
+			     "a newer version of libfabric\n");
+		return cur_entry->conn->fi_addr;
+	}
+
+	if (OFI_LIKELY(*connid == cur_entry->conn->ep_addr->qkey))
+		return cur_entry->conn->fi_addr;
+
+	/* the packet is from a previous peer, look for its address from the prv_reverse_av */
+	prv_key.ahn = ahn;
+	prv_key.qpn = qpn;
+	prv_key.connid = *connid;
+	HASH_FIND(hh, av->prv_reverse_av, &prv_key, sizeof(prv_key), prv_entry);
+
+	return OFI_LIKELY(!!prv_entry) ? prv_entry->conn->fi_addr : FI_ADDR_NOTAVAIL;
 }
 
 static inline int efa_av_is_valid_address(struct efa_ep_addr *addr)
 {
-	struct efa_ep_addr all_zeros = {};
+	struct efa_ep_addr all_zeros = { 0 };
 
 	return memcmp(addr->raw, all_zeros.raw, sizeof(addr->raw));
 }
@@ -266,7 +179,7 @@ struct efa_ah *efa_ah_alloc(struct efa_av *av, const uint8_t *gid)
 	efa_ah = malloc(sizeof(struct efa_ah));
 	if (!efa_ah) {
 		errno = FI_ENOMEM;
-		EFA_WARN(FI_LOG_AV, "cannot allocate memory for efa_ah");
+		EFA_WARN(FI_LOG_AV, "cannot allocate memory for efa_ah\n");
 		return NULL;
 	}
 
@@ -340,43 +253,66 @@ void efa_conn_release(struct efa_av *av, struct efa_conn *conn);
  *
  * @param[in]	av	address vector
  * @param[in]	conn	efa_conn object
+ * @param[in]	insert_shm_av	whether insert address to shm av
  * @return	On success return 0, otherwise return a negative error code
  */
 static
-int efa_conn_rdm_init(struct efa_av *av, struct efa_conn *conn)
+int efa_conn_rdm_init(struct efa_av *av, struct efa_conn *conn, bool insert_shm_av)
 {
 	int err, ret;
 	char smr_name[EFA_SHM_NAME_MAX];
-	struct rxr_ep *rxr_ep;
-	struct rdm_peer *peer;
+	size_t smr_name_len;
+	struct efa_rdm_ep *efa_rdm_ep;
+	struct efa_rdm_peer *peer;
 
 	assert(av->ep_type == FI_EP_RDM);
 	assert(conn->ep_addr);
 
 	/* currently multiple EP bind to same av is not supported */
 	assert(!dlist_empty(&av->util_av.ep_list));
-	rxr_ep = container_of(av->util_av.ep_list.next, struct rxr_ep, util_ep.av_entry);
+	efa_rdm_ep = container_of(av->util_av.ep_list.next, struct efa_rdm_ep, base_ep.util_ep.av_entry);
 
 	peer = &conn->rdm_peer;
-	efa_rdm_peer_init(peer, rxr_ep, conn);
+	efa_rdm_peer_construct(peer, efa_rdm_ep, conn);
 
-	/* If peer is local, insert the address into shm provider's av */
-	if (rxr_ep->use_shm && efa_is_local_peer(av, conn->ep_addr)) {
-		if (av->shm_used >= rxr_env.shm_av_size) {
+	/*
+	 * The efa_conn_rdm_init() call can be made in two situations:
+	 * 1. application calls fi_av_insert API
+	 * 2. efa progress engine get a message from unknown peer through efa device,
+	 *    which means peer is not local or shm is disabled for transmission.
+	 * For situation 1, the shm av insertion should happen when the peer is local (insert_shm_av=1)
+	 * For situation 2, the shm av insertion shouldn't happen anyway (insert_shm_av=0).
+	 */
+	if (efa_is_local_peer(av, conn->ep_addr) && av->shm_rdm_av && insert_shm_av) {
+		if (av->shm_used >= efa_env.shm_av_size) {
 			EFA_WARN(FI_LOG_AV,
 				 "Max number of shm AV entry (%d) has been reached.\n",
-				 rxr_env.shm_av_size);
+				 efa_env.shm_av_size);
 			return -FI_ENOMEM;
 		}
 
-		err = rxr_raw_addr_to_smr_name(conn->ep_addr, smr_name);
+		smr_name_len = EFA_SHM_NAME_MAX;
+		err = efa_shm_ep_name_construct(smr_name, &smr_name_len, conn->ep_addr);
 		if (err != FI_SUCCESS) {
 			EFA_WARN(FI_LOG_AV,
-				 "rxr_ep_efa_addr_to_str() failed! err=%d\n", err);
+				 "efa_rdm_ep_efa_addr_to_str() failed! err=%d\n", err);
 			return err;
 		}
 
-		ret = fi_av_insert(av->shm_rdm_av, smr_name, 1, &peer->shm_fiaddr, 0, NULL);
+		/*
+		 * The shm provider supports FI_AV_USER_ID flag. This flag
+		 * associates a user-assigned identifier with each av entry that is
+		 * returned with any completion entry in place of the AV's address.
+		 * In the fi_av_insert call below, the &peer->shm_fiaddr is both an input
+		 * and an output. peer->shm_fiaddr is passed in the function with value as
+		 * conn->fi_addr, which is the address of peer in efa provider's av. shm
+		 * records this value as user id in its internal hashmap for the use of cq
+		 * write, and then overwrite peer->shm_fiaddr as the actual fi_addr in shm's
+		 * av. The efa provider should still use peer->shm_fiaddr for transmissions
+		 * through shm ep.
+		 */
+		peer->shm_fiaddr = conn->fi_addr;
+		ret = fi_av_insert(av->shm_rdm_av, smr_name, 1, &peer->shm_fiaddr, FI_AV_USER_ID, NULL);
 		if (OFI_UNLIKELY(ret != 1)) {
 			EFA_WARN(FI_LOG_AV,
 				 "Failed to insert address to shm provider's av: %s\n",
@@ -388,9 +324,8 @@ int efa_conn_rdm_init(struct efa_av *av, struct efa_conn *conn)
 			"Successfully inserted %s to shm provider's av. efa_fiaddr: %ld shm_fiaddr = %ld\n",
 			smr_name, conn->fi_addr, peer->shm_fiaddr);
 
-		assert(peer->shm_fiaddr < rxr_env.shm_av_size);
+		assert(peer->shm_fiaddr < efa_env.shm_av_size);
 		av->shm_used++;
-		av->shm_rdm_addr_map[peer->shm_fiaddr] = conn->fi_addr;
 		peer->is_local = 1;
 	}
 
@@ -409,20 +344,19 @@ static
 void efa_conn_rdm_deinit(struct efa_av *av, struct efa_conn *conn)
 {
 	int err;
-	struct rdm_peer *peer;
-	struct rxr_ep *ep;
+	struct efa_rdm_peer *peer;
+	struct efa_rdm_ep *ep;
 
 	assert(av->ep_type == FI_EP_RDM);
 
 	peer = &conn->rdm_peer;
-	if (peer->is_local) {
+	if (peer->is_local && av->shm_rdm_av) {
 		err = fi_av_remove(av->shm_rdm_av, &peer->shm_fiaddr, 1, 0);
 		if (err) {
 			EFA_WARN(FI_LOG_AV, "remove address from shm av failed! err=%d\n", err);
 		} else {
 			av->shm_used--;
-			assert(peer->shm_fiaddr < rxr_env.shm_av_size);
-			av->shm_rdm_addr_map[peer->shm_fiaddr] = FI_ADDR_UNSPEC;
+			assert(peer->shm_fiaddr < efa_env.shm_av_size);
 		}
 	}
 
@@ -430,8 +364,65 @@ void efa_conn_rdm_deinit(struct efa_av *av, struct efa_conn *conn)
 	 * We need peer->shm_fiaddr to remove shm address from shm av table,
 	 * so efa_rdm_peer_clear must be after removing shm av table.
 	 */
-	ep = dlist_empty(&av->util_av.ep_list) ? NULL : container_of(av->util_av.ep_list.next, struct rxr_ep, util_ep.av_entry);
-	efa_rdm_peer_clear(ep, peer);
+	ep = dlist_empty(&av->util_av.ep_list) ? NULL : container_of(av->util_av.ep_list.next, struct efa_rdm_ep, base_ep.util_ep.av_entry);
+	efa_rdm_peer_destruct(peer, ep);
+}
+
+/*
+ * @brief update reverse_av when inserting an new address to AV
+ *
+ * @param[in,out]	av		efa AV
+ * @param[in]		raw_addr	raw address
+ * @param[in]		conn		efa_conn object
+ * @return		On success, return 0.
+ * 			Otherwise, return a negative libfabric error code
+ */
+static
+int efa_av_update_reverse_av(struct efa_av *av, struct efa_ep_addr *raw_addr,
+				    struct efa_conn *conn)
+{
+	struct efa_cur_reverse_av *cur_entry;
+	struct efa_prv_reverse_av *prv_entry;
+	struct efa_cur_reverse_av_key cur_key;
+
+	memset(&cur_key, 0, sizeof(cur_key));
+	cur_key.ahn = conn->ah->ahn;
+	cur_key.qpn = raw_addr->qpn;
+	cur_entry = NULL;
+
+	HASH_FIND(hh, av->cur_reverse_av, &cur_key, sizeof(cur_key), cur_entry);
+	if (!cur_entry) {
+		cur_entry = malloc(sizeof(*cur_entry));
+		if (!cur_entry) {
+			EFA_WARN(FI_LOG_AV, "Cannot allocate memory for cur_reverse_av entry\n");
+			return -FI_ENOMEM;
+		}
+
+		cur_entry->key.ahn = cur_key.ahn;
+		cur_entry->key.qpn = cur_key.qpn;
+		cur_entry->conn = conn;
+		HASH_ADD(hh, av->cur_reverse_av, key, sizeof(cur_key), cur_entry);
+		return 0;
+	}
+
+	/* We used a static connid for all dgram endpoints, therefore cur_entry should always be NULL,
+	 * and only RDM endpoint can reach here. hence the following assertion
+	 */
+	assert(av->ep_type == FI_EP_RDM);
+	prv_entry = malloc(sizeof(*prv_entry));
+	if (!prv_entry) {
+		EFA_WARN(FI_LOG_AV, "Cannot allocate memory for prv_reverse_av entry\n");
+		return -FI_ENOMEM;
+	}
+
+	prv_entry->key.ahn = cur_key.ahn;
+	prv_entry->key.qpn = cur_key.qpn;
+	prv_entry->key.connid = cur_entry->conn->ep_addr->qkey;
+	prv_entry->conn = cur_entry->conn;
+	HASH_ADD(hh, av->prv_reverse_av, key, sizeof(prv_entry->key), prv_entry);
+
+	cur_entry->conn = conn;
+	return 0;
 }
 
 /**
@@ -442,26 +433,25 @@ void efa_conn_rdm_deinit(struct efa_av *av, struct efa_conn *conn)
  * @param[in]	raw_addr	raw efa address
  * @param[in]	flags		flags application passed to fi_av_insert
  * @param[in]	context		context application passed to fi_av_insert
+ * @param[in]	insert_shm_av	whether insert address to shm av
  * @return	on success, return a pointer to an efa_conn object
  *		otherwise, return NULL. errno will be set to a positive error code.
  */
 static
 struct efa_conn *efa_conn_alloc(struct efa_av *av, struct efa_ep_addr *raw_addr,
-				uint64_t flags, void *context)
+				uint64_t flags, void *context, bool insert_shm_av)
 {
-	struct efa_reverse_av *reverse_av_entry = NULL;
 	struct util_av_entry *util_av_entry = NULL;
 	struct efa_av_entry *efa_av_entry = NULL;
-	struct efa_conn *conn, *prev_conn;
+	struct efa_conn *conn;
 	fi_addr_t util_av_fi_addr;
-	struct efa_ah_qpn key;
 	int err;
 
 	if (flags & FI_SYNC_ERR)
 		memset(context, 0, sizeof(int));
 
 	if (!efa_av_is_valid_address(raw_addr)) {
-		EFA_WARN(FI_LOG_AV, "Failed to insert bad addr");
+		EFA_WARN(FI_LOG_AV, "Failed to insert bad addr\n");
 		errno = FI_EINVAL;
 		return NULL;
 	}
@@ -490,48 +480,19 @@ struct efa_conn *efa_conn_alloc(struct efa_av *av, struct efa_ep_addr *raw_addr,
 		goto err_release;
 
 	if (av->ep_type == FI_EP_RDM) {
-		err = efa_conn_rdm_init(av, conn);
+		err = efa_conn_rdm_init(av, conn, insert_shm_av);
 		if (err) {
 			errno = -err;
 			goto err_release;
 		}
 	}
 
-	memset(&key, 0, sizeof(key));
-	key.ahn = conn->ah->ahn;
-	key.qpn = raw_addr->qpn;
-	reverse_av_entry = NULL;
-	HASH_FIND(hh, av->reverse_av, &key, sizeof(key), reverse_av_entry);
-	if (reverse_av_entry) {
-		/*
-		 * If we found an existing entry in reverse_av, the peer must
-		 * have the same GID and qpn, but different qkey, which means
-		 * the old peer has been destroyed. so we have to release the
-		 * corresponding efa_conn object
-		 */
-		prev_conn = reverse_av_entry->conn;
-		assert(prev_conn);
-		assert(memcmp(prev_conn->ep_addr->raw, conn->ep_addr->raw, EFA_GID_LEN)==0);
-		assert(prev_conn->ep_addr->qpn == conn->ep_addr->qpn);
-		assert(prev_conn->ep_addr->qkey != conn->ep_addr->qkey);
-		EFA_WARN(FI_LOG_AV, "QP reuse detected! Previous qkey: %d Current qkey: %d\n",
-			 prev_conn->ep_addr->qkey, conn->ep_addr->qkey);
-		conn->rdm_peer.prev_qkey = prev_conn->ep_addr->qkey;
-		efa_conn_release(av, prev_conn);
-	}
-
-	reverse_av_entry = malloc(sizeof(*reverse_av_entry));
-	if (!reverse_av_entry) {
-		errno = FI_ENOMEM;
-		efa_conn_rdm_deinit(av, conn);
+	err = efa_av_update_reverse_av(av, raw_addr, conn);
+	if (err) {
+		if (av->ep_type == FI_EP_RDM)
+			efa_conn_rdm_deinit(av, conn);
 		goto err_release;
 	}
-
-	memcpy(&reverse_av_entry->key, &key, sizeof(key));
-	reverse_av_entry->conn = conn;
-	HASH_ADD(hh, av->reverse_av, key,
-		 sizeof(reverse_av_entry->key),
-		 reverse_av_entry);
 
 	av->used++;
 	return conn;
@@ -559,22 +520,35 @@ err_release:
 static
 void efa_conn_release(struct efa_av *av, struct efa_conn *conn)
 {
-	struct efa_reverse_av *reverse_av_entry;
+	struct efa_cur_reverse_av *cur_reverse_av_entry;
+	struct efa_prv_reverse_av *prv_reverse_av_entry;
 	struct util_av_entry *util_av_entry;
 	struct efa_av_entry *efa_av_entry;
-	struct efa_ah_qpn key;
+	struct efa_cur_reverse_av_key cur_key;
+	struct efa_prv_reverse_av_key prv_key;
 	char gidstr[INET6_ADDRSTRLEN];
+	int err;
+
+	memset(&cur_key, 0, sizeof(cur_key));
+	cur_key.ahn = conn->ah->ahn;
+	cur_key.qpn = conn->ep_addr->qpn;
+	HASH_FIND(hh, av->cur_reverse_av, &cur_key, sizeof(cur_key), cur_reverse_av_entry);
+	if (cur_reverse_av_entry) {
+		HASH_DEL(av->cur_reverse_av, cur_reverse_av_entry);
+		free(cur_reverse_av_entry);
+	} else {
+		memset(&prv_key, 0, sizeof(prv_key));
+		prv_key.ahn = conn->ah->ahn;
+		prv_key.qpn = conn->ep_addr->qpn;
+		prv_key.connid = conn->ep_addr->qkey;
+		HASH_FIND(hh, av->prv_reverse_av, &prv_key, sizeof(prv_key), prv_reverse_av_entry);
+		assert(prv_reverse_av_entry);
+		HASH_DEL(av->prv_reverse_av, prv_reverse_av_entry);
+		free(prv_reverse_av_entry);
+	}
 
 	if (av->ep_type == FI_EP_RDM)
 		efa_conn_rdm_deinit(av, conn);
-
-	memset(&key, 0, sizeof(key));
-	key.ahn = conn->ah->ahn;
-	key.qpn = conn->ep_addr->qpn;
-	HASH_FIND(hh, av->reverse_av, &key, sizeof(key), reverse_av_entry);
-	assert(reverse_av_entry);
-	HASH_DEL(av->reverse_av, reverse_av_entry);
-	free(reverse_av_entry);
 
 	efa_ah_release(av, conn->ah);
 
@@ -582,7 +556,10 @@ void efa_conn_release(struct efa_av *av, struct efa_conn *conn)
 	assert(util_av_entry);
 	efa_av_entry = (struct efa_av_entry *)util_av_entry->data;
 
-	ofi_av_remove_addr(&av->util_av, conn->util_av_fi_addr);
+	err = ofi_av_remove_addr(&av->util_av, conn->util_av_fi_addr);
+	if (err) {
+		EFA_WARN(FI_LOG_AV, "ofi_av_remove_addr failed! err=%d\n", err);
+	}
 
 	inet_ntop(AF_INET6, conn->ep_addr->raw, gidstr, INET6_ADDRSTRLEN);
 	EFA_INFO(FI_LOG_AV, "efa_conn released! conn[%p] GID[%s] QP[%u]\n",
@@ -599,23 +576,28 @@ void efa_conn_release(struct efa_av *av, struct efa_conn *conn)
  *
  * @param[in]	av	address vector
  * @param[in]	addr	raw address, in the format of gid:qpn:qkey
- * @param[out]	fi_addr pointer the output fi address. This addres is used by fi_send
+ * @param[out]	fi_addr pointer to the output fi address. This address is used by fi_send
  * @param[in]	flags	flags user passed to fi_av_insert.
  * @param[in]	context	context user passed to fi_av_insert
+ * @param[in]	insert_shm_av	whether insert address to shm av
  * @return	0 on success, a negative error code on failure
  */
 int efa_av_insert_one(struct efa_av *av, struct efa_ep_addr *addr,
-		      fi_addr_t *fi_addr, uint64_t flags, void *context)
+		      fi_addr_t *fi_addr, uint64_t flags, void *context,
+		      bool insert_shm_av)
 {
 	struct efa_conn *conn;
 	char raw_gid_str[INET6_ADDRSTRLEN];
 	fi_addr_t efa_fiaddr;
 	int ret = 0;
 
-	fastlock_acquire(&av->util_av.lock);
+	if (av->ep_type == FI_EP_DGRAM)
+		addr->qkey = EFA_DGRAM_CONNID;
+
+	ofi_mutex_lock(&av->util_av.lock);
 	memset(raw_gid_str, 0, sizeof(raw_gid_str));
 	if (!inet_ntop(AF_INET6, addr->raw, raw_gid_str, INET6_ADDRSTRLEN)) {
-		EFA_WARN(FI_LOG_AV, "cannot convert address to string. errno: %d", errno);
+		EFA_WARN(FI_LOG_AV, "cannot convert address to string. errno: %d\n", errno);
 		ret = -FI_EINVAL;
 		*fi_addr = FI_ADDR_NOTAVAIL;
 		goto out;
@@ -636,7 +618,7 @@ int efa_av_insert_one(struct efa_av *av, struct efa_ep_addr *addr,
 		goto out;
 	}
 
-	conn = efa_conn_alloc(av, addr, flags, context);
+	conn = efa_conn_alloc(av, addr, flags, context, insert_shm_av);
 	if (!conn) {
 		*fi_addr = FI_ADDR_NOTAVAIL;
 		ret = -FI_EADDRNOTAVAIL;
@@ -648,7 +630,7 @@ int efa_av_insert_one(struct efa_av *av, struct efa_ep_addr *addr,
 		 raw_gid_str, addr->qpn, addr->qkey, *fi_addr);
 	ret = 0;
 out:
-	fastlock_release(&av->util_av.lock);
+	ofi_mutex_unlock(&av->util_av.lock);
 	return ret;
 }
 
@@ -678,7 +660,7 @@ int efa_av_insert(struct fid_av *av_fid, const void *addr,
 	for (i = 0; i < count; i++) {
 		addr_i = (struct efa_ep_addr *) ((uint8_t *)addr + i * EFA_EP_ADDR_LEN);
 
-		ret = efa_av_insert_one(av, addr_i, &fi_addr_res, flags, context);
+		ret = efa_av_insert_one(av, addr_i, &fi_addr_res, flags, context, true);
 		if (ret) {
 			EFA_WARN(FI_LOG_AV, "insert raw_addr to av failed! ret=%d\n",
 				 ret);
@@ -768,7 +750,7 @@ static int efa_av_remove(struct fid_av *av_fid, fi_addr_t *fi_addr,
 	if (av->type != FI_AV_MAP && av->type != FI_AV_TABLE)
 		return -FI_EINVAL;
 
-	fastlock_acquire(&av->util_av.lock);
+	ofi_mutex_lock(&av->util_av.lock);
 	for (i = 0; i < count; i++) {
 		conn = efa_av_addr_to_conn(av, fi_addr[i]);
 		if (!conn) {
@@ -788,7 +770,7 @@ static int efa_av_remove(struct fid_av *av_fid, fi_addr_t *fi_addr,
 		}
 	}
 
-	fastlock_release(&av->util_av.lock);
+	ofi_mutex_unlock(&av->util_av.lock);
 	return err;
 }
 
@@ -810,42 +792,43 @@ static struct fi_ops_av efa_av_ops = {
 
 static void efa_av_close_reverse_av(struct efa_av *av)
 {
-	struct efa_reverse_av *reverse_av_entry, *tmp;
+	struct efa_cur_reverse_av *cur_entry, *curtmp;
+	struct efa_prv_reverse_av *prv_entry, *prvtmp;
 
-	fastlock_acquire(&av->util_av.lock);
+	ofi_mutex_lock(&av->util_av.lock);
 
-	HASH_ITER(hh, av->reverse_av, reverse_av_entry, tmp) {
-		efa_conn_release(av, reverse_av_entry->conn);
+	HASH_ITER(hh, av->cur_reverse_av, cur_entry, curtmp) {
+		efa_conn_release(av, cur_entry->conn);
 	}
 
-	fastlock_release(&av->util_av.lock);
+	HASH_ITER(hh, av->prv_reverse_av, prv_entry, prvtmp) {
+		efa_conn_release(av, prv_entry->conn);
+	}
+
+	ofi_mutex_unlock(&av->util_av.lock);
 }
 
 static int efa_av_close(struct fid *fid)
 {
 	struct efa_av *av;
-	int ret = 0;
 	int err = 0;
 
 	av = container_of(fid, struct efa_av, util_av.av_fid.fid);
 
 	efa_av_close_reverse_av(av);
 
-	ret = ofi_av_close(&av->util_av);
-	if (ret) {
-		err = ret;
+	err = ofi_av_close(&av->util_av);
+	if (OFI_UNLIKELY(err)) {
 		EFA_WARN(FI_LOG_AV, "Failed to close av: %s\n",
-			fi_strerror(ret));
+			fi_strerror(err));
 	}
 
 	if (av->ep_type == FI_EP_RDM) {
-		if (rxr_env.enable_shm_transfer && av->shm_rdm_av &&
-		    &av->shm_rdm_av->fid) {
-			ret = fi_close(&av->shm_rdm_av->fid);
-			if (ret) {
-				err = ret;
+		if (av->shm_rdm_av) {
+			err = fi_close(&av->shm_rdm_av->fid);
+			if (OFI_UNLIKELY(err)) {
 				EFA_WARN(FI_LOG_AV, "Failed to close shm av: %s\n",
-					fi_strerror(ret));
+					fi_strerror(err));
 			}
 		}
 	}
@@ -900,8 +883,8 @@ int efa_av_open(struct fid_domain *domain_fid, struct fi_av_attr *attr,
 {
 	struct efa_domain *efa_domain;
 	struct efa_av *av;
-	struct fi_av_attr av_attr;
-	int i, ret, retv;
+	struct fi_av_attr av_attr = { 0 };
+	int ret, retv;
 
 	if (!attr)
 		return -FI_EINVAL;
@@ -914,7 +897,7 @@ int efa_av_open(struct fid_domain *domain_fid, struct fi_av_attr *attr,
 		return -FI_ENOSYS;
 
 	/*
-	 * TODO: remove me once RxR supports resizing members tied to the AV
+	 * TODO: remove me once EFA RDM endpoint supports resizing members tied to the AV
 	 * size.
 	 */
 	if (!attr->count)
@@ -928,38 +911,35 @@ int efa_av_open(struct fid_domain *domain_fid, struct fi_av_attr *attr,
 
 	attr->type = FI_AV_TABLE;
 
-	efa_domain = efa_domain_from_fid(domain_fid);
+	efa_domain = container_of(domain_fid, struct efa_domain, util_domain.domain_fid);
 
 	ret = efa_av_init_util_av(efa_domain, attr, &av->util_av, context);
 	if (ret)
 		goto err;
 
-	if (efa_domain_get_type(domain_fid) == EFA_DOMAIN_RDM) {
+	if (EFA_EP_TYPE_IS_RDM(efa_domain->info)) {
 		av->ep_type = FI_EP_RDM;
 
 		av_attr = *attr;
-		if (rxr_env.enable_shm_transfer) {
+		if (efa_domain->fabric && efa_domain->fabric->shm_fabric) {
 			/*
 			 * shm av supports maximum 256 entries
 			 * Reset the count to 128 to reduce memory footprint and satisfy
 			 * the need of the instances with more CPUs.
 			 */
-			if (rxr_env.shm_av_size > EFA_SHM_MAX_AV_COUNT) {
+			if (efa_env.shm_av_size > EFA_SHM_MAX_AV_COUNT) {
 				ret = -FI_ENOSYS;
 				EFA_WARN(FI_LOG_AV, "The requested av size is beyond"
 					 " shm supported maximum av size: %s\n",
 					 fi_strerror(-ret));
 				goto err_close_util_av;
 			}
-			av_attr.count = rxr_env.shm_av_size;
+			av_attr.count = efa_env.shm_av_size;
 			assert(av_attr.type == FI_AV_TABLE);
 			ret = fi_av_open(efa_domain->shm_domain, &av_attr,
 					&av->shm_rdm_av, context);
 			if (ret)
 				goto err_close_util_av;
-
-			for (i = 0; i < EFA_SHM_MAX_AV_COUNT; ++i)
-				av->shm_rdm_addr_map[i] = FI_ADDR_UNSPEC;
 		}
 	} else {
 		av->ep_type = FI_EP_DGRAM;
@@ -990,3 +970,4 @@ err:
 	free(av);
 	return ret;
 }
+

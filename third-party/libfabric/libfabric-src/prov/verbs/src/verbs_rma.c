@@ -33,7 +33,7 @@
 
 #include "config.h"
 
-#include "fi_verbs.h"
+#include "verbs_ofi.h"
 
 
 #define VERBS_COMP_READ_FLAGS(ep, flags, context)		\
@@ -91,6 +91,9 @@ vrb_msg_ep_rma_writemsg(struct fid_ep *ep_fid, const struct fi_msg_rma *msg,
 		.wr.rdma.remote_addr = msg->rma_iov->addr,
 		.wr.rdma.rkey = (uint32_t)msg->rma_iov->key,
 	};
+
+	assert(ofi_total_iov_len(msg->msg_iov, msg->iov_count) ==
+	       ofi_total_rma_iov_len(msg->rma_iov, msg->rma_iov_count));
 
 	if (flags & FI_REMOTE_CQ_DATA) {
 		wr.opcode = IBV_WR_RDMA_WRITE_WITH_IMM;
@@ -152,6 +155,9 @@ vrb_msg_ep_rma_readmsg(struct fid_ep *ep_fid, const struct fi_msg_rma *msg,
 		.wr.rdma.rkey = (uint32_t)msg->rma_iov->key,
 		.num_sge = msg->iov_count,
 	};
+
+	assert(ofi_total_iov_len(msg->msg_iov, msg->iov_count) ==
+	       ofi_total_rma_iov_len(msg->rma_iov, msg->rma_iov_count));
 
 	vrb_iov_dupa(wr.sg_list, msg->msg_iov, msg->desc, msg->iov_count);
 	return vrb_post_send(ep, &wr, 0);

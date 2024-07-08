@@ -14,17 +14,22 @@ from utils import memoize, run_command, warning
 # It is intended to map from PrgEnv target cpus (e.g. craype-sandybridge)
 # when these names differ from the LLVM ones.
 cpu_llvm_synonyms = {
-  'knc':             'none',
-  'mic-knl':         'knl',
-  'x86-skylake':     'skylake-avx512',
-  'x86-cascadelake': 'cascadelake',
-  'x86-rome':        'znver2',
-  'x86-milan':       'znver3',
   'arm-thunderx':    'thunderx',
   'arm-thunderx2':   'thunderx2t99',
+  'knc':             'none',
+  'mic-knl':         'knl',
+  'x86-cascadelake': 'cascadelake',
+  'x86-icelake':     'icelake-server',
+  'x86-milan':       'znver3',
+  'x86-milan-x':     'znver3',
+  'x86-rome':        'znver2',
+  'x86-skylake':     'skylake-avx512',
+  'x86-spr':         'sapphirerapids',
+  'x86-spr-hbm':     'sapphirerapids',
+  'x86-trento':      'znver3',
 }
 
-# This gets the generic machine type, e.g. x86_64, i686, aarch64.
+# This gets the generic machine type, e.g. x86_64, i686, aarch64, arm64.
 # Since uname returns the host machine type, we currently assume that
 # cross-compilation is limited to different subarchitectures of the
 # generic machine type.  For example, we can cross compile from
@@ -35,7 +40,7 @@ def get_native_machine():
 
 @memoize
 def is_known_arm(cpu):
-    if cpu.startswith("arm-") or ('aarch64' in cpu) or ('thunderx' in cpu):
+    if cpu.startswith("arm") or ('aarch64' in cpu) or ('thunderx' in cpu):
         return True
     else:
         return False
@@ -188,6 +193,17 @@ def get(flag, map_to_compiler=False, get_lcd=False):
 
     return cpu_tuple(argname or 'none', cpu or 'unknown')
 
+@memoize
+def get_llvm_target_cpu():
+    cpu_tuple = collections.namedtuple('cpu_tuple', ['flag', 'cpu'])
+
+    x = get('target')
+    cpu = x.cpu
+    argname = x.flag
+    # support additional cpu synonyms for llvm
+    if cpu in cpu_llvm_synonyms:
+        cpu = cpu_llvm_synonyms[cpu]
+    return cpu_tuple(argname or 'none', cpu or 'unknown')
 
 # Returns the default machine.  The flag argument is 'host' or 'target'.
 #

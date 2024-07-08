@@ -9,13 +9,14 @@ class GrandParent {
   type idxType;
 }
 
-class Parent : GrandParent {
+class Parent : GrandParent(?) {
   var x : int;
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   var indices : index(rank, idxType);
 }
 
-var c = new borrowed Child(1, int);
+var ownC = new owned Child(1, int);
+var c = ownC.borrow();
 writeln("c = ", c);

@@ -5,7 +5,7 @@ var DInner: subdomain(D) = {2..n-1};
 
 var A: [DInner] int;
 
-forall i in DInner {
+forall i in DInner with (ref A) {
   A(i) = i;
 }
 

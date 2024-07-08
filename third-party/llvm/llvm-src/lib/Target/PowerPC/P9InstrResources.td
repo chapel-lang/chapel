@@ -156,6 +156,7 @@ def : InstRW<[P9_ALU_2C, IP_EXEC_1C, DISP_1C],
     MCRF,
     MCRXRX,
     XSNABSDP,
+    XSNABSDPs,
     XSXEXPDP,
     XSABSDP,
     XSNEGDP,
@@ -194,6 +195,7 @@ def : InstRW<[P9_ALU_2C, IP_EXEC_1C, DISP_3SLOTS_1C],
     XSIEXPDP,
     FMR,
     CREQV,
+    CRNOT,
     CRXOR,
     TRECLAIM,
     TSR,
@@ -763,6 +765,7 @@ def : InstRW<[P9_LS_4C, IP_AGEN_1C, DISP_3SLOTS_1C],
       (instrs
     LFIWZX,
     LFDX,
+    (instregex "LFDXTLS?(_)?$"),
     LFD
 )>;
 
@@ -807,23 +810,15 @@ def : InstRW<[P9_StoreAndALUOp_3C, IP_EXEC_1C, IP_EXEC_1C, IP_AGEN_1C,
     (instregex "ST(B|H|W|D)CX$")
 )>;
 
-// Cracked Load Instruction.
-// Two consecutive load operations for a total of 8 cycles.
-def : InstRW<[P9_LoadAndLoadOp_8C, IP_AGEN_1C, IP_AGEN_1C,
-              DISP_1C, DISP_1C],
-      (instrs
-    LDMX
-)>;
-
 // Cracked Load instruction.
 // Requires consecutive Load and ALU pieces totaling 6 cycles. The Load and ALU
 // operations cannot be done at the same time and so their latencies are added.
 def : InstRW<[P9_LoadAndALUOp_6C, IP_EXEC_1C, IP_AGEN_1C,
               DISP_1C, DISP_1C],
       (instrs
-    (instregex "LHA(X)?(8)?$"),
+    (instregex "LHA(X)?(TLS)?(8)?(_32)?(_)?$"),
     (instregex "CP_PASTE(8)?_rec$"),
-    (instregex "LWA(X)?(_32)?$"),
+    (instregex "LWA(X)?(TLS)?(_32)?(_)?$"),
     TCHECK
 )>;
 
@@ -856,6 +851,7 @@ def : InstRW<[P9_LoadAndALU2Op_7C, IP_AGEN_1C, IP_EXEC_1C,
               DISP_3SLOTS_1C, DISP_3SLOTS_1C],
       (instrs
     LFSX,
+    (instregex "LFSXTLS?(_)?$"),
     LFS
 )>;
 
@@ -897,7 +893,7 @@ def : InstRW<[P9_LoadAndPMOp_8C, IP_AGEN_1C, IP_EXECE_1C, IP_EXECO_1C,
 // all three dispatches for the superslice.
 def : InstRW<[P9_LS_1C, IP_EXEC_1C, IP_AGEN_1C, DISP_3SLOTS_1C],
       (instrs
-    (instregex "STF(S|D|IWX|SX|DX)$"),
+    (instregex "STF(S|D|IWX|SX|DX|SXTLS|DXTLS|SXTLS_|DXTLS_)$"),
     (instregex "STXS(D|DX|SPX|IWX|IBX|IHX|SP)(v)?$"),
     (instregex "STW(8)?$"),
     (instregex "(D|X)FSTORE(f32|f64)$"),
@@ -940,6 +936,7 @@ def : InstRW<[P9_DIV_12C, IP_EXECE_1C, IP_EXECO_1C, DISP_EVEN_1C],
     (instregex "M(T|F)TB(8)?$"),
     (instregex "MF(SPR|CTR|LR)(8)?$"),
     (instregex "M(T|F)MSR(D)?$"),
+    (instregex "M(T|F)(U)?DSCR$"),
     (instregex "MTSPR(8)?$")
 )>;
 
@@ -1435,5 +1432,8 @@ def : InstRW<[],
   DCCCI,
   ICCCI,
   ADDEX,
-  ADDEX8
+  ADDEX8,
+  CDTBCD, CDTBCD8,
+  CBCDTD, CBCDTD8,
+  ADDG6S, ADDG6S8
 )> { let Unsupported = 1; }

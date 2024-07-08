@@ -1,4 +1,4 @@
-//===- ReduceInstructionsMIR.h  - Specialized Delta Pass ------------------===//
+//===- ReduceInstructionsMIR.h  - Specialized Delta Pass --------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -14,9 +14,9 @@
 #ifndef LLVM_TOOLS_LLVM_REDUCE_DELTAS_REDUCEINSTRUCTIONS_MIR_H
 #define LLVM_TOOLS_LLVM_REDUCE_DELTAS_REDUCEINSTRUCTIONS_MIR_H
 
-#include "Delta.h"
-
 namespace llvm {
+class TestRunner;
+
 void reduceInstructionsMIRDeltaPass(TestRunner &Test);
 } // namespace llvm
 

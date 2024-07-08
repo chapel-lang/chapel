@@ -30,7 +30,7 @@ proc doSort(param st: SortType, trials: int) {
   var I: [D] real;
   var RefI: domain(I.eltType);
   var HistI: [RefI] int;
-  var t: Timer;
+  var t: stopwatch;
   for i in iters {
     resetArr(I);
     for i in D do RefI += I[i];
@@ -44,35 +44,35 @@ proc doSort(param st: SortType, trials: int) {
     else writeln(st, " Sort: SUCCESS");
     RefI.clear();
     if printTiming then
-      writeln(st, " Sort: ", t.elapsed(TimeUnits.milliseconds), " ms");
+      writeln(st, " Sort: ", t.elapsed()*1_000, " ms");
     t.clear();
   }
 }
 
 // complete support for first-class function would be nice here
-proc _doSort(param st, I) where st==SortType.BUBBLE {
+proc _doSort(param st, ref I) where st==SortType.BUBBLE {
   BubbleSort.bubbleSort(I);
 }
-proc _doSort(param st, I) where st==SortType.INSERTION {
+proc _doSort(param st, ref I) where st==SortType.INSERTION {
   InsertionSort.insertionSort(I);
 }
-proc _doSort(param st, I) where st==SortType.MERGE {
+proc _doSort(param st, ref I) where st==SortType.MERGE {
   MergeSort.mergeSort(I);
 }
 
-proc _doSort(param st, I) where st==SortType.SELECTION {
+proc _doSort(param st, ref I) where st==SortType.SELECTION {
   SelectionSort.selectionSort(I);
 }
 
-proc _doSort(param st, I) where st==SortType.QUICK {
+proc _doSort(param st, ref I) where st==SortType.QUICK {
   QuickSort.quickSort(I);
 }
 
-proc _doSort(param st, I) where st==SortType.HEAP {
+proc _doSort(param st, ref I) where st==SortType.HEAP {
   HeapSort.heapSort(I);
 }
 
-proc resetArr(A: [?D]) {
+proc resetArr(ref A: [?D]) {
   fillRandom(A, seed);
 }
 

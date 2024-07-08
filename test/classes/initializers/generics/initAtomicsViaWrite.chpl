@@ -8,5 +8,5 @@ class C {
   }
 }
 
-var myC = new borrowed C();
+var myC = new C();
 writeln(myC);

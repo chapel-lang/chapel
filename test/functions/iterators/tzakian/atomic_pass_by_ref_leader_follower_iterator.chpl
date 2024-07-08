@@ -4,6 +4,7 @@ iter test(n:int = 10) {
   for i in 1..n do yield i;
 }
 
+pragma "do not unref for yields"
 iter test(param tag:iterKind, n:int = 10) 
   where tag == iterKind.leader {
 

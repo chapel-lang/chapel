@@ -4,6 +4,12 @@
    This primer shows off some of Chapel's support for sparse domains
    and arrays.
 
+  .. warning::
+
+    Sparse domains and arrays are currently unstable.
+    Their functionality is likely to change in the future.
+
+
 */
 
 
@@ -125,7 +131,7 @@ writeln();
 // Or by assigning the array elements corresponding to the corners
 // and using our dense printing procedure:
 //
-proc computeVal(row, col) return row + col/10.0;
+proc computeVal(row, col) do return row + col/10.0;
 
 spsArr(1,1) = computeVal(1,1);
 spsArr(1,n) = computeVal(1,n);

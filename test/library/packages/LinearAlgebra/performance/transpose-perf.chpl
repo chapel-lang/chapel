@@ -25,9 +25,9 @@ proc main() {
   var D = {0..#m, 0..#m*2};
   var A = Matrix(D, eltType=eltType);
 
-  [(i, j) in D] A[i,j] = i - j;
+  [(i, j) in D with (ref A)] A[i,j] = i - j;
 
-  var t: Timer;
+  var t: stopwatch;
 
   if !correctness {
     writeln('==========================');

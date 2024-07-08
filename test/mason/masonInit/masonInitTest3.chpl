@@ -1,17 +1,13 @@
-use FileSystem;
 use MasonInit;
-use MasonUtils;
-use MasonNew;
+use CTypes;
+
+proc removePath() {
+  extern proc setenv(name: c_ptrConst(c_char), envval: c_ptrConst(c_char), overwrite: c_int): c_int;
+  setenv("PATH", "", 1);
+}
 
 proc main(){
-  const newArgs = ['new','testSrc'];
-  masonNew(newArgs);
-  rmTree('testSrc/.git');
-  const initArgs = ['init','testSrc'];
-  masonInit(initArgs);
-  //check if src and src/testSrc.chpl was created
-  if isDir("./testSrc/.git") {
-    writeln(".git has been successfully created");
-  }
-  rmTree("testSrc");
+  removePath(); // clobber path so error occurs
+  const args = ['init'];
+  masonInit(args);
 }

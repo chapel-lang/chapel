@@ -20,37 +20,75 @@
 #include "llvm/CodeGen/CallingConvLower.h"
 #include "llvm/CodeGen/GlobalISel/CallLowering.h"
 #include "llvm/CodeGen/GlobalISel/MachineIRBuilder.h"
+#include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/TargetCallingConv.h"
 
 using namespace llvm;
 
+namespace {
+
+struct M68kFormalArgHandler : public M68kIncomingValueHandler {
+  M68kFormalArgHandler(MachineIRBuilder &MIRBuilder, MachineRegisterInfo &MRI)
+      : M68kIncomingValueHandler(MIRBuilder, MRI) {}
+};
+
+struct CallReturnHandler : public M68kIncomingValueHandler {
+  CallReturnHandler(MachineIRBuilder &MIRBuilder, MachineRegisterInfo &MRI,
+                    MachineInstrBuilder &MIB)
+      : M68kIncomingValueHandler(MIRBuilder, MRI), MIB(MIB) {}
+
+private:
+  void assignValueToReg(Register ValVReg, Register PhysReg,
+                        const CCValAssign &VA) override;
+
+  MachineInstrBuilder &MIB;
+};
+
+} // end anonymous namespace
+
 M68kCallLowering::M68kCallLowering(const M68kTargetLowering &TLI)
     : CallLowering(&TLI) {}
 
-struct OutgoingArgHandler : public CallLowering::OutgoingValueHandler {
-  OutgoingArgHandler(MachineIRBuilder &MIRBuilder, MachineRegisterInfo &MRI,
-                     MachineInstrBuilder MIB)
-      : OutgoingValueHandler(MIRBuilder, MRI), MIB(MIB) {}
+struct M68kOutgoingArgHandler : public CallLowering::OutgoingValueHandler {
+  M68kOutgoingArgHandler(MachineIRBuilder &MIRBuilder, MachineRegisterInfo &MRI,
+                         MachineInstrBuilder MIB)
+      : OutgoingValueHandler(MIRBuilder, MRI), MIB(MIB),
+        DL(MIRBuilder.getMF().getDataLayout()),
+        STI(MIRBuilder.getMF().getSubtarget<M68kSubtarget>()) {}
 
   void assignValueToReg(Register ValVReg, Register PhysReg,
-                        CCValAssign VA) override {
+                        const CCValAssign &VA) override {
     MIB.addUse(PhysReg, RegState::Implicit);
     Register ExtReg = extendRegister(ValVReg, VA);
     MIRBuilder.buildCopy(PhysReg, ExtReg);
   }
 
   void assignValueToAddress(Register ValVReg, Register Addr, LLT MemTy,
-                            MachinePointerInfo &MPO, CCValAssign &VA) override {
-    llvm_unreachable("unimplemented");
+                            const MachinePointerInfo &MPO,
+                            const CCValAssign &VA) override {
+    MachineFunction &MF = MIRBuilder.getMF();
+    Register ExtReg = extendRegister(ValVReg, VA);
+
+    auto *MMO = MF.getMachineMemOperand(MPO, MachineMemOperand::MOStore, MemTy,
+                                        inferAlignFromPtrInfo(MF, MPO));
+    MIRBuilder.buildStore(ExtReg, Addr, *MMO);
   }
 
   Register getStackAddress(uint64_t Size, int64_t Offset,
                            MachinePointerInfo &MPO,
                            ISD::ArgFlagsTy Flags) override {
-    llvm_unreachable("unimplemented");
+    LLT p0 = LLT::pointer(0, DL.getPointerSizeInBits(0));
+    LLT SType = LLT::scalar(DL.getPointerSizeInBits(0));
+    Register StackReg = STI.getRegisterInfo()->getStackRegister();
+    auto SPReg = MIRBuilder.buildCopy(p0, StackReg).getReg(0);
+    auto OffsetReg = MIRBuilder.buildConstant(SType, Offset);
+    auto AddrReg = MIRBuilder.buildPtrAdd(p0, SPReg, OffsetReg);
+    MPO = MachinePointerInfo::getStack(MIRBuilder.getMF(), Offset);
+    return AddrReg.getReg(0);
   }
-
   MachineInstrBuilder MIB;
+  const DataLayout &DL;
+  const M68kSubtarget &STI;
 };
 bool M68kCallLowering::lowerReturn(MachineIRBuilder &MIRBuilder,
                                    const Value *Val, ArrayRef<Register> VRegs,
@@ -72,7 +110,7 @@ bool M68kCallLowering::lowerReturn(MachineIRBuilder &MIRBuilder,
     setArgFlags(OrigArg, AttributeList::ReturnIndex, DL, F);
     splitToValueTypes(OrigArg, SplitArgs, DL, F.getCallingConv());
     OutgoingValueAssigner ArgAssigner(AssignFn);
-    OutgoingArgHandler ArgHandler(MIRBuilder, MRI, MIB);
+    M68kOutgoingArgHandler ArgHandler(MIRBuilder, MRI, MIB);
     Success = determineAndHandleAssignments(ArgHandler, ArgAssigner, SplitArgs,
                                             MIRBuilder, F.getCallingConv(),
                                             F.isVarArg());
@@ -102,7 +140,7 @@ bool M68kCallLowering::lowerFormalArguments(MachineIRBuilder &MIRBuilder,
   CCAssignFn *AssignFn =
       TLI.getCCAssignFn(F.getCallingConv(), false, F.isVarArg());
   IncomingValueAssigner ArgAssigner(AssignFn);
-  FormalArgHandler ArgHandler(MIRBuilder, MRI);
+  M68kFormalArgHandler ArgHandler(MIRBuilder, MRI);
   return determineAndHandleAssignments(ArgHandler, ArgAssigner, SplitArgs,
                                        MIRBuilder, F.getCallingConv(),
                                        F.isVarArg());
@@ -110,17 +148,15 @@ bool M68kCallLowering::lowerFormalArguments(MachineIRBuilder &MIRBuilder,
 
 void M68kIncomingValueHandler::assignValueToReg(Register ValVReg,
                                                 Register PhysReg,
-                                                CCValAssign VA) {
+                                                const CCValAssign &VA) {
   MIRBuilder.getMRI()->addLiveIn(PhysReg);
   MIRBuilder.getMBB().addLiveIn(PhysReg);
   IncomingValueHandler::assignValueToReg(ValVReg, PhysReg, VA);
 }
 
-void M68kIncomingValueHandler::assignValueToAddress(Register ValVReg,
-                                                    Register Addr,
-                                                    LLT MemTy,
-                                                    MachinePointerInfo &MPO,
-                                                    CCValAssign &VA) {
+void M68kIncomingValueHandler::assignValueToAddress(
+    Register ValVReg, Register Addr, LLT MemTy, const MachinePointerInfo &MPO,
+    const CCValAssign &VA) {
   MachineFunction &MF = MIRBuilder.getMF();
   auto *MMO = MF.getMachineMemOperand(MPO, MachineMemOperand::MOLoad, MemTy,
                                       inferAlignFromPtrInfo(MF, MPO));
@@ -144,9 +180,73 @@ Register M68kIncomingValueHandler::getStackAddress(uint64_t Size,
   return AddrReg.getReg(0);
 }
 
+void CallReturnHandler::assignValueToReg(Register ValVReg, Register PhysReg,
+                                         const CCValAssign &VA) {
+  MIB.addDef(PhysReg, RegState::Implicit);
+  MIRBuilder.buildCopy(ValVReg, PhysReg);
+}
+
 bool M68kCallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
                                  CallLoweringInfo &Info) const {
-  return false;
+  MachineFunction &MF = MIRBuilder.getMF();
+  Function &F = MF.getFunction();
+  MachineRegisterInfo &MRI = MF.getRegInfo();
+  auto &DL = F.getParent()->getDataLayout();
+  const M68kTargetLowering &TLI = *getTLI<M68kTargetLowering>();
+  const M68kSubtarget &STI = MF.getSubtarget<M68kSubtarget>();
+  const TargetInstrInfo &TII = *STI.getInstrInfo();
+  const M68kRegisterInfo *TRI = STI.getRegisterInfo();
+
+  SmallVector<ArgInfo, 8> OutArgs;
+  for (auto &OrigArg : Info.OrigArgs)
+    splitToValueTypes(OrigArg, OutArgs, DL, Info.CallConv);
+
+  SmallVector<ArgInfo, 8> InArgs;
+  if (!Info.OrigRet.Ty->isVoidTy())
+    splitToValueTypes(Info.OrigRet, InArgs, DL, Info.CallConv);
+
+  unsigned AdjStackDown = TII.getCallFrameSetupOpcode();
+  auto CallSeqStart = MIRBuilder.buildInstr(AdjStackDown);
+
+  unsigned Opc = TLI.getTargetMachine().isPositionIndependent() ? M68k::CALLq
+                 : Info.Callee.isReg()                          ? M68k::CALLj
+                                                                : M68k::CALLb;
+
+  auto MIB = MIRBuilder.buildInstrNoInsert(Opc)
+                 .add(Info.Callee)
+                 .addRegMask(TRI->getCallPreservedMask(MF, Info.CallConv));
+
+  CCAssignFn *AssignFn = TLI.getCCAssignFn(Info.CallConv, false, Info.IsVarArg);
+  OutgoingValueAssigner Assigner(AssignFn);
+  M68kOutgoingArgHandler Handler(MIRBuilder, MRI, MIB);
+  if (!determineAndHandleAssignments(Handler, Assigner, OutArgs, MIRBuilder,
+                                     Info.CallConv, Info.IsVarArg))
+    return false;
+
+  if (Info.Callee.isReg())
+    constrainOperandRegClass(MF, *TRI, MRI, *STI.getInstrInfo(),
+                             *STI.getRegBankInfo(), *MIB, MIB->getDesc(),
+                             Info.Callee, 0);
+
+  MIRBuilder.insertInstr(MIB);
+
+  if (!Info.OrigRet.Ty->isVoidTy()) {
+    CCAssignFn *RetAssignFn =
+        TLI.getCCAssignFn(Info.CallConv, true, Info.IsVarArg);
+
+    OutgoingValueAssigner Assigner(RetAssignFn, RetAssignFn);
+    CallReturnHandler Handler(MIRBuilder, MRI, MIB);
+    if (!determineAndHandleAssignments(Handler, Assigner, InArgs, MIRBuilder,
+                                       Info.CallConv, Info.IsVarArg))
+      return false;
+  }
+
+  CallSeqStart.addImm(Assigner.StackSize).addImm(0);
+
+  unsigned AdjStackUp = TII.getCallFrameDestroyOpcode();
+  MIRBuilder.buildInstr(AdjStackUp).addImm(Assigner.StackSize).addImm(0);
+
+  return true;
 }
 
 bool M68kCallLowering::enableBigEndian() const { return true; }

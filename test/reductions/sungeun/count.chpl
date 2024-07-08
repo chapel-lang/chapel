@@ -5,7 +5,7 @@ class countVal: ReduceScanOp {
 
   proc init(type eltType, val) {
     this.eltType = eltType;
-    this.complete();
+    init this;
     count.write(0);
   }
 
@@ -17,7 +17,7 @@ class countVal: ReduceScanOp {
     count.add(xx.count.read());
   }
 
-  proc generate() return count;
+  proc generate() do return count;
 }
 
 const D = {5..9};

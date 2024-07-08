@@ -3,7 +3,7 @@ use util;
 
 config const debug = false;
 
-proc test(dom : domain) {
+proc test(dom : domain(?)) {
 
   if debug then writeln("Testing domain ", dom);
 
@@ -13,7 +13,7 @@ proc test(dom : domain) {
 
   const max = dom.expand(fluff*dom.stride);
 
-  var Space = dom dmapped Stencil(dom, fluff=fluff, periodic=true);
+  var Space = dom dmapped new stencilDist(dom, fluff=fluff, periodic=true);
   var abstr : rank*int;
   for i in 0..#rank do abstr(i) = abs(dom.dim(i).stride);
 
@@ -36,7 +36,7 @@ proc test(dom : domain) {
     assert(Data._value.dom.fluff == Half._value.dom.fluff);
 
     // Fill our array with dummy values
-    forall idx in Space {
+    forall idx in Space with (ref Data) {
       var temp = if isTuple(idx) then idx else (idx,);
       var m = 1;
       for i in temp do m *= i;
@@ -65,17 +65,17 @@ proc test(dom : domain) {
   }
 
   {
-    // Test the 'noFluffView' feature of StencilDist, which gives us an
-    // array that behaves like a BlockDist
+    // Test the 'noFluffView' feature of stencilDist, which gives us an
+    // array that behaves like a blockDist
     var Data : [Space] int;
     ref Actual = Data.noFluffView();
     assert(Actual._value.dom.whole == Actual._value.dom.wholeFluff);
 
-    Data[Space.alignedLow] = 42;
+    Data[Space.low] = 42;
     // Ensure that we didn't somehow create a new array with noFluffView
-    assert(Actual[Space.alignedLow] == Data[Space.alignedLow]);
+    assert(Actual[Space.low] == Data[Space.low]);
 
-    forall idx in Space {
+    forall idx in Space with (ref Data) {
       var temp = if isTuple(idx) then idx else (idx,);
       var m = 1;
       for i in temp do m *= i;

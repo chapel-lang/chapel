@@ -3,4 +3,4 @@
 // building in configurations we expect it to.
 
 use Regex;
-var myRegex = compile("a+");
+var myRegex = new regex("a+");

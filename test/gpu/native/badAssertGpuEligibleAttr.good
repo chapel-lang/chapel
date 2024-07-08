@@ -1,0 +1,5 @@
+badAssertGpuEligibleAttr.chpl:1: error: loop marked with @assertOnGpu, but 'for' loops don't support GPU execution
+badAssertGpuEligibleAttr.chpl:2: error: loop marked with @assertOnGpu, but 'while' loops don't support GPU execution
+badAssertGpuEligibleAttr.chpl:3: error: loop marked with @assertOnGpu, but 'do-while' loops don't support GPU execution
+badAssertGpuEligibleAttr.chpl:4: error: loop marked with @assertOnGpu, but 'coforall' loops don't support GPU execution
+badAssertGpuEligibleAttr.chpl:6: error: functions do not currently support the @assertOnGpu attribute

@@ -60,7 +60,7 @@ ASM_START()
 PROLOGUE(mpn_rshift)
 	mov	rp, rp_arg
 	sub	tnc, xzr, cnt
-	lsr	x18, n, #2
+	lsr	x17, n, #2
 	tbz	n, #0, L(bx0)
 
 L(bx1):	ldr	x5, [up]
@@ -68,7 +68,7 @@ L(bx1):	ldr	x5, [up]
 
 L(b01):	NSHIFT	x0, x5, tnc
 	PSHIFT	x2, x5, cnt
-	cbnz	x18, L(gt1)
+	cbnz	x17, L(gt1)
 	str	x2, [rp]
 	ret
 L(gt1):	ldp	x4, x5, [up,#8]
@@ -89,7 +89,7 @@ L(b10):	NSHIFT	x0, x4, tnc
 	PSHIFT	x13, x4, cnt
 	NSHIFT	x10, x5, tnc
 	PSHIFT	x2, x5, cnt
-	cbnz	x18, L(gt2)
+	cbnz	x17, L(gt2)
 	orr	x10, x10, x13
 	stp	x10, x2, [rp]
 	ret
@@ -121,11 +121,11 @@ L(lo2):	NSHIFT	x10, x5, tnc
 	orr	x11, x12, x2
 	stp	x11, x10, [rp,#32]!
 	PSHIFT	x2, x5, cnt
-L(lo0):	sub	x18, x18, #1
+L(lo0):	sub	x17, x17, #1
 L(lo3):	NSHIFT	x10, x7, tnc
 	NSHIFT	x12, x6, tnc
 	PSHIFT	x13, x6, cnt
-	cbnz	x18, L(top)
+	cbnz	x17, L(top)
 
 L(end):	orr	x10, x10, x13
 	orr	x11, x12, x2

@@ -1,1 +1,1 @@
-assign-nonnil-shared-from-oknil-nil.chpl:8: error: Cannot assign to shared MyClass from nil
+assign-nonnil-shared-from-oknil-nil.chpl:10: error: done

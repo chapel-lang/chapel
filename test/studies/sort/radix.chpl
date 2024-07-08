@@ -6,7 +6,7 @@ use Time, Random;
 // radix and nbits toggles how many keys are generated and processed per pass.
 
 // assert indices for Values starts at 0
-proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
+proc radix_sort(Values, ref Permute, radix:int(64), nbits:int(64)): void {
 
     var nelem:int(64) = Values.size;
     var nbuckets:int(64) = 1 << radix;   // Number of keys in counting sort
@@ -17,27 +17,27 @@ proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
     var Permute_old: [D1] int(64) = Permute; // Old permutation array
 
     var sortTime: real;                           // overall timing
-    const sortStartTime = getCurrentTime();       // capture the start time
+    const sortStartTime = timeSinceEpoch().totalSeconds();       // capture the start time
 
     var npasses:int(64) = (nbits / radix);
     if ( (npasses * radix) < nbits ) then npasses = npasses + 1;
 
     for pass in (0..(npasses-1)) {
       var Index: [D1] int(64);           // Index
-      var Offsets: [D2] atomic int(64);    // Starting offset of 
+      var Offsets: [D2] atomic int(64);    // Starting offset of
                                          // histogrammed values
       var Offsets_old: [D2] int(64);     // Old offsets
       var Histogram: [D2] atomic int(64);  // Histogram for counting sort
       var All_counts: [D1] int(64);      // Storage for counting sort tallies
 
       var phaseTime: real;                        // timing of pass
-      const phaseStartTime = getCurrentTime();    // capture the pass start
+      const phaseStartTime = timeSinceEpoch().totalSeconds();    // capture the pass start
 
       // Mask of bits sorted on this pass
       var mask:int(64) = (nbuckets - 1) << (pass * radix);
 
       Histogram.write(0);
-      forall i in D1 {
+      forall i in D1 with (ref Histogram) {
         var r:int(64) = ((mask & Values[Permute_old[i]]) >> (pass * radix));
         Histogram[r].add(1);
       }
@@ -49,7 +49,7 @@ proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
       }
       Offsets_old = Offsets.read();
 
-      forall i in D1 {
+      forall i in D1 with (ref Index, ref Offsets, ref Permute) {
         var r:int(64) = ((mask & Values[Permute_old[i]]) >> (pass * radix));
         var loc = Offsets[r].fetchAdd(1);
         Permute[loc] = Permute_old[i];
@@ -62,13 +62,13 @@ proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
         for i in base..(nelem-1) do
           Count[i].write(All_counts[i]);
 
-        forall i in (0..(Histogram[b].read()-1)) {
+        forall i in (0..(Histogram[b].read()-1)) with (ref Count, ref Permute_old) {
           Count[(i+base)].write(0);
           Permute_old[(i+base)] = Permute[(i+base)];
         }
 
         for i in (1..(Histogram[b].read()-1)) {
-          forall j in (0..(i-1)) {
+          forall j in (0..(i-1)) with (ref Count) {
             if (Index[(i+base)] < Index[(j+base)]) {
               Count[(j+base)].add(1);
             } else {
@@ -77,7 +77,7 @@ proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
           }
         }
 
-        forall i in (0..(Histogram[b].read()-1)) {
+        forall i in (0..(Histogram[b].read()-1)) with (ref Permute) {
           Permute[(Count[(i+base)].read()+base)] = Permute_old[(i+base)];
         }
       }
@@ -86,14 +86,14 @@ proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
       Permute_old = Permute;
       Permute = Tmp;
 
-      phaseTime = getCurrentTime() - phaseStartTime; // store the elapsed pass
+      phaseTime = timeSinceEpoch().totalSeconds() - phaseStartTime; // store the elapsed pass
 //      writeln("Completed pass ", pass, " in ", phaseTime, " sec    mask=", mask);
 
     }
 
     Permute = Permute_old;
 
-    sortTime = getCurrentTime() - sortStartTime;  // store the elapsed time
+    sortTime = timeSinceEpoch().totalSeconds() - sortStartTime;  // store the elapsed time
 //    writeln(npasses, " passes in ", sortTime, " secs");
 
     return;
@@ -111,29 +111,29 @@ var Permute_G: [D] int(64);
 
 var rngTime: real;
 writeln("Generating random numbers...");
-const rngStartTime = getCurrentTime();
-fillRandom(F, 65535, algorithm=RNG.NPB);
+const rngStartTime = timeSinceEpoch().totalSeconds();
+fillRandom(F, 65535);
 F_prime = (F * 9223372036854775808):int(64);
-rngTime = getCurrentTime() - rngStartTime;
+rngTime = timeSinceEpoch().totalSeconds() - rngStartTime;
 //writeln("Finished generating numbers in ", rngTime, " sec");
 
-forall i in D {
+forall i in D with (ref G, ref Permute_F, ref Permute_G) {
   Permute_F[i] = i;
   Permute_G[i] = i;
   G[i] = i % 10;
 }
 
 var mwTime: real;
-const mwStartTime = getCurrentTime();
+const mwStartTime = timeSinceEpoch().totalSeconds();
 
 radix_sort(F_prime, Permute_F, 16, 64);
 radix_sort(G, Permute_G, 5, 5);
 
-mwTime = getCurrentTime() - mwStartTime;
+mwTime = timeSinceEpoch().totalSeconds() - mwStartTime;
 //writeln("----- Total Time = ", mwTime, " sec -----------------------------------------");
 
 var selfcheckTime: real;
-const selfcheckStartTime = getCurrentTime();
+const selfcheckStartTime = timeSinceEpoch().totalSeconds();
 var nerr_f: int(64) = 0;
 var nerr_g: int(64) = 0;
 
@@ -144,6 +144,6 @@ for i in (1..(npoints-1)) {
   if (G[Permute_G[i]] < G[Permute_G[(i-1)]]) then nerr_g = nerr_g + 1;
 }
 
-selfcheckTime = getCurrentTime() - selfcheckStartTime;
+selfcheckTime = timeSinceEpoch().totalSeconds() - selfcheckStartTime;
 writeln("Number of errors: f=", nerr_f, "  g=", nerr_g);
 //writeln("Checked in ", selfcheckTime, " sec");

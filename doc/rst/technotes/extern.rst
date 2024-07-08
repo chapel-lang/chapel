@@ -100,8 +100,8 @@ The Chapel names for C types are:
   c_ushort
   ssize_t
   size_t
-  c_void_ptr
   c_ptr(T)
+  c_ptrConst(T)
   c_array(T,n)
   c_string
 
@@ -114,28 +114,28 @@ Chapel types to always be usable):
   c_float  // (a real(32) in Chapel)
   c_double // (a real(64) in Chapel)
 
-c_void_ptr, c_string, c_ptr(T), and c_array(T,n) are
+c_string, c_ptr(T), c_ptrConst(T), and c_array(T,n) are
 described in the next section.
 
 
 Pointer and String Types
 ------------------------
 
-Chapel supports four C pointer types: c_void_ptr, c_ptr(T), c_string, and
-c_fn_ptr. In addition, it supports c_array(T,n).
+Chapel supports the following C pointer types: c_ptr(T),
+c_ptrConst(T), c_string, and c_fn_ptr. In addition, it supports c_array(T,n).
 
 These types are the same as C types:
 
 .. code-block:: text
 
-  c_void_ptr is void*
   c_ptr(T) is T*
-  c_string is const char*
+  c_ptrConst(T) is const T*
+  c_string is const char* (c_string is deprecated in favor of c_ptrConst(c_char))
   c_fn_ptr represents a C function pointer (with unspecified arg and return types)
   c_array(T,n) is T[n]
 
 Note that in some cases, a ref argument intent may be used in place of
-c_void_ptr or c_ptr(T).
+c_ptr(T), and const ref intent in place of c_ptrConst(T).
 
 These pointer types may only point to local memory. The intent is
 that they will be used to interoperate with C libraries that run within a
@@ -147,14 +147,6 @@ longer valid, or to memory that has been freed. The Chapel language makes no
 effort to extend a variable's lifetime if it is converted in some manner to a C
 pointer.
 
-c_void_ptr
-~~~~~~~~~~
-
-The c_void_ptr type is provided as an opaque C pointer. Since the type is
-unknown, there is no way to dereference this pointer. In addition, it is not
-possible to construct a c_void_ptr directly in Chapel. Normally, a C function
-will return the void pointer, which will be passed to other C functions.
-
 c_ptr(T)
 ~~~~~~~~
 
@@ -164,6 +156,19 @@ communication will be generated when it is dereferenced.  Of course, the
 pointed-to type T should be one that is supported in C interoperability if the
 c_ptr(T) is used for C interoperability. The c_ptr(T) type supports
 indexing to get a reference to the i'th element (starting from 0).
+
+The c_ptr(void) type represents the C ``void*`` type. There is no way to
+dereference such a pointer in Chapel code without first casting it to one with
+a different underlying type.
+
+c_ptrConst(T)
+~~~~~~~~~~~~~
+
+The c_ptrConst(T) type is equivalent to c_ptr(T), except it disallows changing
+the pointed-to value. Like C, this does not change anything about the pointee's
+inherent mutability; it is simply not possible to mutate anything via a const
+pointer. It is also possible to use a c_ptr(T) where a c_ptrConst(T) is called
+for, but not vice-versa without explicitly casting away the constness.
 
 c_array(T,n)
 ~~~~~~~~~~~~
@@ -201,25 +206,36 @@ prototype, but they must be used differently in Chapel:
   byRef(x); // ref argument intent allows the variable to be passed directly
   byPtr(c_ptrTo(x)); // c_ptr argument must be constructed explicitly
 
+Analogously, const ref may be used instead of c_ptrConst(T).
+
 
 c_string
 ~~~~~~~~
 
+.. warning::
+
+  ``c_string`` is deprecated in favor of ``c_ptrConst(c_char)``. See
+  :ref:`c_string deprecation <readme-evolution.c_string-deprecation>` for more
+  information.
+
 The c_string type maps to a constant C string (that is, const char*)
 that is intended for use locally. A c_string can be obtained from a
-Chapel string using the method :proc:`~String.string.c_str`. A Chapel string can be
-constructed from a C string using the cast operator. Note however that
-because c_string is a local-only type, the .c_str() method can only be
-called on Chapel strings that are stored on the same locale; calling
-.c_str() on a non-local string will result in a runtime error.
+Chapel string using the method :proc:`~CTypes.string.c_str` and casting the
+result to c_string. A Chapel string can be constructed from a C string using
+:proc:`~String.string.createCopyingBuffer` or one of the other similarly named
+string creation methods. Note however, that because c_string is a local-only
+type, the .c_str() method can only be called on Chapel strings that are stored
+on the same locale; calling .c_str() on a non-local string will result in a
+runtime error.
 
-.. note::
-
-  ``c_string`` is expected to be deprecated in a future release in favor
-  of instead using ``c_ptr`` types such as ``c_ptr(int(8))``.
 
 c_fn_ptr
 ~~~~~~~~
+
+.. warning::
+
+  ``c_fn_ptr`` is unstable and expected to be replaced with more feature-rich
+  functionality in the future.
 
 The c_fn_ptr type is useful for representing arguments to external
 functions that accept function pointers.  At present, there is no way
@@ -398,10 +414,12 @@ corresponds to an ``in`` intent argument in a Chapel ``extern proc``.
 An argument such as ``int* ptrArg`` can be represented either with
 ``c_ptr(int)`` or with the ``ref`` intent in Chapel (and see
 :ref:`readme-extern-standard-c-types-ref-intents` for a discussion of why
-you would use one or the other).
+you would use one or the other). Correspondingly, ``const int* ptrArg`` can be
+represented with ``c_ptrConst(int)`` or the ``const ref`` intent.
 
-Note that, for numeric and pointer types, the default intent in Chapel is
-already ``const in`` (see the spec section :ref:`Abstract_Intents`).
+For the formal arguments of extern functions of numeric and pointer
+types, the default and ``const`` intents mean ``const in``
+(:ref:`The_Const_In_Intent`).
 
 As of 1.23, there are several limitations on what types can be passed to
 or returned from ``extern`` or ``export`` functions and what intents can
@@ -472,7 +490,7 @@ function:
 
 .. code-block:: chapel
 
-       extern proc printf(fmt: c_string, vals...?numvals): int;
+       extern proc printf(fmt: c_ptrConst(c_char), vals...?numvals): int;
 
 Note that it can also be prototyped more trivially/less accurately
 as follows:
@@ -522,7 +540,11 @@ The Chapel compiler will then rewrite any calls to `foo` like this:
 
 .. code-block:: chapel
 
-      foo(x, 10); // -> foo(c_ptrTo(x), 10);
+      foo(x, 10); // -> foo(c_ptrToConst(x), 10);
+
+The Chapel compiler will also respect intents for the formal.
+The default intent will result in a call to ``c_ptrToConst``
+while an intent like ``ref`` will result in a call to ``c_ptrTo``.
 
 Note that this same technique won't work for distributed rectangular arrays,
 nor for associative, sparse, or opaque arrays because their data isn't
@@ -677,8 +699,8 @@ for the type is ``struct stat``:
     var st_size: off_t;
   }
 
-  proc getFileSize(path:c_string) : int {
-    extern proc stat(x: c_string, ref buf:chpl_stat_type): c_int;
+  proc getFileSize(path:c_ptrConst(c_char)) : int {
+    extern proc stat(x: c_ptrConst(c_char), ref buf:chpl_stat_type): c_int;
     var buf: chpl_stat_type;
 
     if (chpl_stat_function(path, buf) == 0) {
@@ -700,7 +722,8 @@ You can refer to other external pointer-based C types that cannot be
 described in Chapel using the "opaque" keyword.  As the name implies,
 these types are opaque as far as Chapel is concerned and cannot be
 used for operations other than argument passing and assignment
-(to/from other similarly opaque types).
+(to/from other similarly opaque types). This includes ``==`` comparison to
+``nil`` for opaque C pointer types; for that one can use a ``c_ptr(opaque)``.
 
 For example, Chapel could be used to call an external C function that
 returns a pointer to a structure (that we can't or won't describe as
@@ -780,7 +803,7 @@ block will be usable.
 This feature strives to support C global variables, functions, structures,
 typedefs, enums, and some #defines. Structures always generate a Chapel record,
 and pointers to a structure are represented with c_ptr(struct type). Also,
-pointer arguments to functions are always represented with c_ptr or c_string
+pointer arguments to functions are always represented with c_ptr or c_ptrConst
 instead of the ref intent.
 
 Note that functions or variables declared within an extern block should either
@@ -842,8 +865,8 @@ Pointer Types
 
 See the section `Pointer and String Types`_ above for background on
 how the Chapel programs can work with C pointer types. Any pointer type used in
-an extern block will be made visible to the Chapel program as c_ptr(T) or
-c_string (for const char* types).
+an extern block will be made visible to the Chapel program as c_ptr(T),
+c_ptrConst(T).
 
 For example:
 
@@ -853,6 +876,10 @@ For example:
    static void setItToOne(int* x) { *x = 1; }
    // will translate automatically into
    //  extern proc setItToOne(x:c_ptr(c_int));
+
+   static int getItPlusOne(const int* x) { return *x + 1; }
+   // will translate automatically into
+   //  extern proc getItPlusOne(x:c_ptrConst(c_int));
 
    // The Chapel compiler can't know if X is used as an array,
    // if the argument will come from a Chapel variable, and in more general
@@ -869,12 +896,15 @@ For example:
  var x:c_int;
  setItToOne(c_ptrTo(x));
 
+ var y:c_int = 5;
+ writeln(getItPlusOne(c_ptrToConst(y))); // could also just use c_ptrTo(y)
+
  var space:c_ptr(c_int);
  setSpace(c_ptrTo(space));
 
- var str:c_string;
+ var str:c_ptrConst(c_char);
  setString(c_ptrTo(str));
- writeln(toString(str));
+ writeln(string.createBorrowingBuffer(str));
 
 As you can see in this example, using the extern block might result in
 more calls to c_ptrTo() when using the generated extern declarations,
@@ -967,6 +997,13 @@ function; for example:
  var i:c_int;
  var i_ptr = c_ptrTo(i); // now i_ptr has type c_ptr(c_int) == int* in C
 
+Similarly, a c_ptrConst can be constructed using c_ptrToConst():
+
+.. code-block:: chapel
+
+ var i:c_int; // i could also be 'const'
+ var i_ptrConst = c_ptrToConst(i); // now i_ptrConst has type c_ptrConst(c_int) == const int* in C
+
 Since a C pointer might refer to a single variable or an array, the c_ptr type
 supports 0-based array indexing and dereferencing. In addition, it is possible
 to allocate and free space for one or more elements and return the result as a
@@ -974,7 +1011,7 @@ c_ptr. See the following example:
 
 .. code-block:: chapel
 
-  var cArray = c_calloc(c_int, 10);
+  var cArray = allocate(c_int, 10, clear=true);
   for i in 0..#10 {
    cArray[i] = i:c_int;
   }
@@ -983,18 +1020,63 @@ c_ptr. See the following example:
   for i in 0..#10 {
    writeln(cArray[i]);
   }
-  c_free(cArray);
+  deallocate(cArray);
 
-Variables of type c_ptr can be compared against or set to nil.
+Variables of type ``c_ptr``/``c_ptrConst`` can be compared against or set to
+``nil``.
 
+The ``c_ptrTo()`` function and its const equivalent provide special behavior on
+some types to make them more amenable to common use cases. This includes
+pointers to ``string`` or ``bytes`` types, for which it returns a pointer to the
+underlying buffer as opposed to the Chapel variable descriptor, and pointers
+to class types as described below. To get a "naive" pointer to a Chapel
+variable without any special behavior, one can use
+``c_addrOf``/``c_addrOfConst``; this is the Chapel equivalent to the ``&``
+operator in C.
+
+There is also special behavior for ``c_ptrTo`` on class types. In Chapel, a
+class variable is actually some information on the stack containing a pointer to
+the "real" instance on the heap. Calling ``c_ptrTo()`` on a class type will give
+a ``c_ptr(void)`` to the instance on the heap. Memory-managed heap instances
+will still be deallocated according to Chapel memory-management rules regardless
+of any pointer created to them this way. In the case of an ``unmanaged``
+instance, it is possible to safely go back the other direction:
+
+.. code-block:: chapel
+
+  class Foo {
+    var x: int;
+    proc getX() const {
+      return x;
+    }
+  }
+
+  proc main() {
+    // create an unmanaged Foo
+    var c = new unmanaged Foo(42);
+    writeln((c, c_addrOf(c), c_ptrTo(c)));
+    writeln(c.getX());
+
+    // get pointer to instance
+    var p: c_ptr(void) = c_ptrTo(c);
+    writeln(p);
+
+    // create another unmanaged Foo pointing to the same instance
+    var c2: unmanaged Foo = (p: unmanaged Foo?)!;
+    writeln((c2, c_addrOf(c2), c_ptrTo(c2)));
+    writeln(c2.getX());
+
+    // there's just one heap instance, so only free once
+    delete c;
+  }
 
 Working with strings
 --------------------
 
-If you need to call a C function and provide a Chapel string, you may need to
-convert the Chapel string to a C string first.  Chapel string literals will
-automatically convert to C strings.  A Chapel string variable can be converted
-using the :proc:`~String.string.c_str` method.
+If you need to call a C function and provide a Chapel string, you will need to
+convert the Chapel string to a c_ptrConst(c_char) first.  Chapel string literals
+will automatically convert to c_ptrConst(c_char). A Chapel string variable can
+be converted using the :proc:`~CTypes.string.c_str` method.
 
 myprint.h:
 
@@ -1014,9 +1096,9 @@ myprint.chpl:
 
 .. code-block:: chapel
 
-  extern proc myprint(str:c_string);
+  extern proc myprint(str:c_ptrConst(c_char));
 
-  // string literal is automatically converted to a c_string
+  // string literal is automatically converted to a c_ptrConst(c_char)
   myprint("hello");
 
   // a string variable must be converted with .c_str()
@@ -1031,55 +1113,54 @@ Any required C header files, source code files, object files, or
 library files must be provided to the Chapel compiler by one of
 two mechanisms.
 
- 1) They can be listed at compile-time on the Chapel command line For
-    example, if an external function foo() was defined in foo.h and foo.c,
+ 1) They can be listed at compile-time on the Chapel command line.  For
+    example, if an external function ``foo()`` was defined in ``foo.h`` and ``foo.c``,
     it could be added to the compilation using any of these commands:
 
     .. code-block:: sh
 
        chpl foo.h foo.c myProgram.chpl
-       chpl foo.h foo.o myProgram.chpl #if foo.c had already been compiled)
-       chpl foo.h -lfoo myProgram.chpl #if foo.c had been archived in libfoo.a)
-
-    Note that you can use -I and -L arguments for the Chapel compiler
-    to specify include or library paths as with a C compiler.
+       chpl foo.h foo.o myProgram.chpl  # if foo.c had already been compiled
+       chpl foo.h -lfoo myProgram.chpl  # if foo.c had been archived in libfoo.a or libfoo.so
 
  2) Alternatively, the required C resources can be listed within the
-    Chapel file using the `require` statement. For example:
+    Chapel file using the ``require`` statement. For example:
 
     .. code-block:: chapel
 
        require "foo.h", "foo.c";
 
-    This has an effect similar to adding foo.h and foo.c to the Chapel
-    compiler's command line. Filenames are interpreted as expressing a
-    path relative to the directory in which the source file lives.
-    You can also use the compiler's -I and -L flags to indicate search
-    directories for headers or library files.
+    This is equivalent to adding ``foo.h`` and ``foo.c`` to
+    the Chapel compiler's command line, as in the first
+    approach. Filenames are interpreted as expressing a path relative
+    to the directory in which the source file lives.
 
-    Similarly, the version below uses the require statement to indicate
-    that this module depends on libfoo.a (and has a similar effect as if
-    ``-lfoo`` were added to the command line).
+    Similarly, the version below uses the ``require`` statement to
+    indicate that this module depends on ``libfoo.[a|so]``, and has a
+    similar effect as if ``-lfoo`` had been given on the command line.
 
     .. code-block:: chapel
 
        require "foo.h", "-lfoo";
 
-    Require statements accept general ``param`` string expressions
-    beyond the string literals shown in these examples.  Only
-    ``require`` statements in code that the compiler considers
-    executable will be processed.  Thus, a ``require`` statement
-    guarded by a ``param`` conditional that the compiler folds out, or
-    in a module that does not appear in the program's ``use``
-    statements will not be added to the program's requirements.  For
-    example, the following code either requires ``foo.h`` or whatever
-    requirement is specified by *defaultHeader* (``bar.h`` by default)
-    depending on the value of *requireFoo*:
+    Note that ``require`` statements can specify external file
+    dependencies, but not other general command-line flags.
+       
+    The ``require`` statement accepts general ``param`` string
+    expressions in addition to the string literals shown in these
+    examples.  Only ``require`` statements in code that the compiler
+    considers executable will be processed.  Thus, a ``require``
+    statement guarded by a ``param`` conditional that the compiler
+    folds out, or in a module that does not appear in the program's
+    ``use`` statements will not be added to the program's
+    requirements.  For example, the following code either requires
+    ``foo.h`` or whatever requirement is specified by ``defaultHeader``
+    (``bar.h`` by default) depending on the value of ``requireFoo``:
 
     .. code-block:: chapel
 
-       config param requireFoo=true,
-                    defaultHeader="bar.h";
+       config param requireFoo = true,
+                    defaultHeader = "bar.h";
 
        if requireFoo then
          require "foo.h";
@@ -1087,19 +1168,28 @@ two mechanisms.
          require defaultHeader;
 
 
-Either approach has the following results:
+Any headers or libraries specified using either of the above
+mechanisms must be locatable by the back-end compiler via its search paths.
+If additional directories are required, ``-I`` and ``-L`` flags can be
+added to the ``chpl`` compiler's command-line invocation, as with a
+C/C++ compiler.
+
+
+Either of the two approaches above will result in the following:
 
  * During Chapel's C code generation stage, any header files listed on the
-   compiler's command line or in a require statement will be #include'd by
+   compiler's command line or in a ``require`` statement will be ``#include``'d by
    the generated code in order to ensure that the appropriate prototypes
    are found before making any references to the external symbols.
  * During Chapel's C compilation stage, any C files on the command line or
-   in a require statement will be compiled using the same flags as the
-   Chapel-generated C files (use --print-commands to see these compile
+   in a ``require`` statement will be compiled using the same flags as the
+   Chapel-generated C files (use ``--print-commands`` to see these compile
    commands).
- * During Chapel's link step, any .o and .a files listed on the compiler's
-   command-line or in require statements will be included in the final
+ * During Chapel's link step, any ``.o`` and ``.a``/``.so`` files listed on the compiler's
+   command-line or in ``require`` statements will be linked into the final
    executable.
+ * Any paths specified using the ``-I`` and ``-L`` flags will be passed along
+   to the back-end compiler.
 
 
 Future Directions

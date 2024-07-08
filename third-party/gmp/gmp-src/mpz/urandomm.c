@@ -37,7 +37,7 @@ see https://www.gnu.org/licenses/.  */
 #define MAX_URANDOMM_ITER  80
 
 void
-mpz_urandomm (mpz_ptr rop, gmp_randstate_t rstate, mpz_srcptr n)
+mpz_urandomm (mpz_ptr rop, gmp_randstate_ptr rstate, mpz_srcptr n)
 {
   mp_ptr rp, np;
   mp_size_t nbits, size;

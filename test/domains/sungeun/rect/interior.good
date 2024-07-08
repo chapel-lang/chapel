@@ -1,26 +1,53 @@
+case 1 int(8):
+D: {-5..10}
+D.interior(-5) = {-5..-1}
+D.interior(-4) = {-5..-2}
+D.interior(-3) = {-5..-3}
+D.interior(-2) = {-5..-4}
+D.interior(-1) = {-5..-5}
+D.interior(0) = {-5..10}
+D.interior(1) = {10..10}
+D.interior(2) = {9..10}
+D.interior(3) = {8..10}
+D.interior(4) = {7..10}
+D.interior(5) = {6..10}
+case 2 int(8):
 int(8):
-D: {-5..10}
-{-5..-1}
-{-5..-2}
-{-5..-3}
-{-5..-4}
-{-5..-5}
-{-5..10}
-{10..10}
-{9..10}
-{8..10}
-{7..10}
-{6..10}
-uint(8):
-D: {-5..10}
-{-5..-1}
-{-5..-2}
-{-5..-3}
-{-5..-4}
-{-5..-5}
-{-5..10}
-{10..10}
-{9..10}
-{8..10}
-{7..10}
-{6..10}
+D: {5..20}
+D.interior(-5) = {5..9}
+D.interior(-4) = {5..8}
+D.interior(-3) = {5..7}
+D.interior(-2) = {5..6}
+D.interior(-1) = {5..5}
+D.interior(0) = {5..20}
+D.interior(1) = {20..20}
+D.interior(2) = {19..20}
+D.interior(3) = {18..20}
+D.interior(4) = {17..20}
+D.interior(5) = {16..20}
+case 3 uint(8):
+r: 5..20
+r.interior(-5) = 5..9
+r.interior(-4) = 5..8
+r.interior(-3) = 5..7
+r.interior(-2) = 5..6
+r.interior(-1) = 5..5
+r.interior(0) = 5..20
+r.interior(1) = 20..20
+r.interior(2) = 19..20
+r.interior(3) = 18..20
+r.interior(4) = 17..20
+r.interior(5) = 16..20
+case 4 uint(8):
+D: {5..20}
+D.interior(-5) = {5..9}
+D.interior(-4) = {5..8}
+D.interior(-3) = {5..7}
+D.interior(-2) = {5..6}
+D.interior(-1) = {5..5}
+D.interior(0) = {5..20}
+D.interior(1) = {20..20}
+D.interior(2) = {19..20}
+D.interior(3) = {18..20}
+D.interior(4) = {17..20}
+D.interior(5) = {16..20}

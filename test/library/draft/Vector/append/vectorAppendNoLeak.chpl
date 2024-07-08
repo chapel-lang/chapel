@@ -18,7 +18,7 @@ for i in 0..#n do
 record Wrappedvector {
   var Vector: vector(int);
 
-  proc append(node) {
+  proc ref append(node) {
     this.Vector.append(node);
   }
 }

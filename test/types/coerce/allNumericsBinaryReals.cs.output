@@ -1,0 +1,170 @@
+First actual sbyte
+
+ Second actual sbyte       f(float,float)
+ Second actual short       f(float,float)
+ Second actual int         f(float,float)
+ Second actual long        f(float,float)
+
+ Second actual byte        f(float,float)
+ Second actual ushort      f(float,float)
+ Second actual uint        f(float,float)
+ Second actual ulong       f(float,float)
+
+ Second actual float       f(float,float)
+ Second actual double      f(double,double)
+
+
+
+First actual short
+
+ Second actual sbyte       f(float,float)
+ Second actual short       f(float,float)
+ Second actual int         f(float,float)
+ Second actual long        f(float,float)
+
+ Second actual byte        f(float,float)
+ Second actual ushort      f(float,float)
+ Second actual uint        f(float,float)
+ Second actual ulong       f(float,float)
+
+ Second actual float       f(float,float)
+ Second actual double      f(double,double)
+
+
+
+First actual int
+
+ Second actual sbyte       f(float,float)
+ Second actual short       f(float,float)
+ Second actual int         f(float,float)
+ Second actual long        f(float,float)
+
+ Second actual byte        f(float,float)
+ Second actual ushort      f(float,float)
+ Second actual uint        f(float,float)
+ Second actual ulong       f(float,float)
+
+ Second actual float       f(float,float)
+ Second actual double      f(double,double)
+
+
+
+First actual long
+
+ Second actual sbyte       f(float,float)
+ Second actual short       f(float,float)
+ Second actual int         f(float,float)
+ Second actual long        f(float,float)
+
+ Second actual byte        f(float,float)
+ Second actual ushort      f(float,float)
+ Second actual uint        f(float,float)
+ Second actual ulong       f(float,float)
+
+ Second actual float       f(float,float)
+ Second actual double      f(double,double)
+
+
+
+First actual byte
+
+ Second actual sbyte       f(float,float)
+ Second actual short       f(float,float)
+ Second actual int         f(float,float)
+ Second actual long        f(float,float)
+
+ Second actual byte        f(float,float)
+ Second actual ushort      f(float,float)
+ Second actual uint        f(float,float)
+ Second actual ulong       f(float,float)
+
+ Second actual float       f(float,float)
+ Second actual double      f(double,double)
+
+
+
+First actual ushort
+
+ Second actual sbyte       f(float,float)
+ Second actual short       f(float,float)
+ Second actual int         f(float,float)
+ Second actual long        f(float,float)
+
+ Second actual byte        f(float,float)
+ Second actual ushort      f(float,float)
+ Second actual uint        f(float,float)
+ Second actual ulong       f(float,float)
+
+ Second actual float       f(float,float)
+ Second actual double      f(double,double)
+
+
+
+First actual uint
+
+ Second actual sbyte       f(float,float)
+ Second actual short       f(float,float)
+ Second actual int         f(float,float)
+ Second actual long        f(float,float)
+
+ Second actual byte        f(float,float)
+ Second actual ushort      f(float,float)
+ Second actual uint        f(float,float)
+ Second actual ulong       f(float,float)
+
+ Second actual float       f(float,float)
+ Second actual double      f(double,double)
+
+
+
+First actual ulong
+
+ Second actual sbyte       f(float,float)
+ Second actual short       f(float,float)
+ Second actual int         f(float,float)
+ Second actual long        f(float,float)
+
+ Second actual byte        f(float,float)
+ Second actual ushort      f(float,float)
+ Second actual uint        f(float,float)
+ Second actual ulong       f(float,float)
+
+ Second actual float       f(float,float)
+ Second actual double      f(double,double)
+
+
+
+First actual float
+
+ Second actual sbyte       f(float,float)
+ Second actual short       f(float,float)
+ Second actual int         f(float,float)
+ Second actual long        f(float,float)
+
+ Second actual byte        f(float,float)
+ Second actual ushort      f(float,float)
+ Second actual uint        f(float,float)
+ Second actual ulong       f(float,float)
+
+ Second actual float       f(float,float)
+ Second actual double      f(double,double)
+
+
+
+First actual double
+
+ Second actual sbyte       f(double,double)
+ Second actual short       f(double,double)
+ Second actual int         f(double,double)
+ Second actual long        f(double,double)
+
+ Second actual byte        f(double,double)
+ Second actual ushort      f(double,double)
+ Second actual uint        f(double,double)
+ Second actual ulong       f(double,double)
+
+ Second actual float       f(double,double)
+ Second actual double      f(double,double)
+
+
+

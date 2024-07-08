@@ -4,7 +4,8 @@
 # also get system launcher messages about the non-0 exit status, so
 # prune all that.
 
-grep 'memory region' < $2 \
+cp $2 $2.original && grep 'memory region' < $2 \
   | uniq \
   | sed 's/max is [0-9]*/max is N/' > $2.prediff.tmp \
-  && mv $2.prediff.tmp $2
+  && mv $2.prediff.tmp $2 \
+  && echo original output is preserved in $2.original

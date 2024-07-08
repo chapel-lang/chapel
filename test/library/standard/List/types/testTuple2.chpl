@@ -7,7 +7,7 @@ proc test() {
 
   for i in 1..8 {
     var item = (new shared C(i), new shared C(-i));
-    lst.append(item);
+    lst.pushBack(item);
   }
 
   writeln(lst.size:string);
@@ -15,11 +15,10 @@ proc test() {
   for item in lst do writeln(item);
 
   while !lst.isEmpty() {
-    var item = lst.pop();
+    var item = lst.popBack();
     writeln(item);
   }
 
   return;
 }
 test();
-

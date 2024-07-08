@@ -34,14 +34,6 @@ unmanaged C
  cast to C? -> {x = 1} : shared C?
 {x = 1} : shared C
  cast to C -> {x = 1} : shared C
-{x = 1} : borrowed C
- cast to C? -> {x = 1} : borrowed C?
-{x = 1} : borrowed C?
- cast to C -> {x = 1} : borrowed C
-{x = 1} : borrowed C?
- cast to C? -> {x = 1} : borrowed C?
-{x = 1} : borrowed C
- cast to C -> {x = 1} : borrowed C
 {x = 1} : unmanaged C
  cast to C? -> {x = 1} : unmanaged C?
 {x = 1} : unmanaged C?

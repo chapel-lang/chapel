@@ -4,18 +4,18 @@ use CommDiagnostics;
 use Random;
 
 pragma "insert line file info"
-extern proc chpl_cache_invalidate(node:c_int, raddr:c_void_ptr,
+extern proc chpl_cache_invalidate(node:c_int, raddr:c_ptr(void),
                                   size: c_size_t);
 
 config const verbose = false;
 param testSize = 4096;
 param lineSize = 64; // should match cache line size in bytes
 
-var buf = c_aligned_alloc(uint(8), testSize, testSize);
+var buf = allocate(uint(8), testSize, alignment=testSize);
 // store buf as a _ddata so we can GET from it (otherwise always narrow)
 const A = buf:_ddata(uint(8));
 
-var rng = new RandomStream(int);
+var rng = new randomStream(int);
 
 var expectSum = 0;
 for i in 0..#testSize {
@@ -61,7 +61,7 @@ proc doRead(start:int, size:int) {
 proc test_invalidate_mode(const start:int, const size:int, const mode:int,
                           const challengeOffset:int, const challengeSize:int) {
 
-  const eltPtr:c_void_ptr = c_ptrTo(A[start]):c_void_ptr;
+  const eltPtr:c_ptr(void) = c_ptrTo(A[start]):c_ptr(void);
   // this is a workaround for this error:
   //   references to remote data cannot be passed to external routines like
   //   'c_pointer_return'
@@ -142,7 +142,7 @@ proc test_invalidate(const start:int, const size:int) {
   test_invalidate_mode(start, size, 0, -1, -1);
 
   // check reading 1 random byte within start..#size
-  var challengeOffset = rng.getNext(start, start+size-1);
+  var challengeOffset = rng.next(start, start+size-1);
   test_invalidate_mode(start, size, 1, challengeOffset, 1);
   // check reading the entire region start..#size
   test_invalidate_mode(start, size, 1, start, size);
@@ -182,4 +182,4 @@ for start in 0..#testSize by 23 {
   test_invalidate(start, 250);
 }
 
-c_free(buf);
+deallocate(buf);

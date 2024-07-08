@@ -1,2 +1,2 @@
-declareUnion.chpl:1: warning: Unions are currently unstable and are expected to change in ways that will break their current uses.
+declareUnion.chpl:1: warning: unions are currently unstable and are expected to change in ways that will break their current uses
 Hello

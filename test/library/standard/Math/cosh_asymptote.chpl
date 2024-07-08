@@ -1,3 +1,5 @@
+use Math;
+
 var a: real = 100000000;
 
 writeln("a = ", a);

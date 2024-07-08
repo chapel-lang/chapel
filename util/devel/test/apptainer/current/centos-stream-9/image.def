@@ -1,0 +1,13 @@
+BootStrap: docker
+From: quay.io/centos/centos:stream9
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/dnf-deps.sh
+    # installing llvm-devel installs LLVM 17
+    /provision-scripts/dnf-llvm-16.sh
+
+%runscript
+    ../../provision-scripts/run.sh "$@"

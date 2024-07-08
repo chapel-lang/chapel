@@ -4,36 +4,37 @@ var childName = "Child";
 
 class Parent {
   // ref + const ref
-  proc name const ref return parentName;
-  proc name2 ref return parentName;
+  proc name const ref do return parentName;
+  proc name2 ref do return parentName;
 
   // const ref + value
-  proc name3 const ref return parentName;
-  proc name4 return parentName;
+  proc name3 const ref do return parentName;
+  proc name4 do return parentName;
 
   // ref + value
-  proc name5 return parentName;
-  proc name6 ref return parentName;
+  proc name5 do return parentName;
+  proc name6 ref do return parentName;
 }
 
 
 class Child : Parent {
   // ref + const ref
-  override proc name ref return childName;
-  override proc name2 const ref return childName;
+  override proc name ref do return childName;
+  override proc name2 const ref do return childName;
 
   // const ref + value
-  override proc name3 return childName;
-  override proc name4 const ref return childName;
+  override proc name3 do return childName;
+  override proc name4 const ref do return childName;
 
   // ref + value
-  override proc name5 ref return childName;
-  override proc name6 return childName;
+  override proc name5 ref do return childName;
+  override proc name6 do return childName;
 }
 
 
 writeln("Calling child name functions");
-var c = new borrowed Child();
+var ownC = new owned Child();
+var c = ownC.borrow();
 writeln(c.name);
 writeln(c.name2);
 writeln(c.name3);

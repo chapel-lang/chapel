@@ -34,12 +34,12 @@ proc main() {
       consCounts: [1..numConsumers] int;
 
   // spawn two tasks using a 'cobegin'
-  cobegin {
+  cobegin with (ref prodCounts, ref consCounts) {
     // Task 1: run a single producer and store the number of things
     // it produces in 'prodCounts[1]'.  When it's done, write a
     // sentinel value per consumer.
     {
-      coforall pid in 1..numProducers do
+      coforall pid in 1..numProducers with (ref prodCounts) do
         prodCounts[pid] = producer(buffer, pid);
       // We know all producers are done due to the coforall
       for i in 1..numConsumers do
@@ -48,7 +48,7 @@ proc main() {
 
     // Task 2: create a consumer and store the number of things it
     // consumers in 'consCounts[1]'.
-    coforall cid in 1..numConsumers do
+    coforall cid in 1..numConsumers with (ref consCounts) do
       consCounts[cid] = consumer(buffer, cid);
   }
 
@@ -119,20 +119,26 @@ class BoundedBuffer {
   const capacity: int,                     // the capacity of the buffer
         sentinel: eltType = -1.0;          // the sentinel value
 
-  var buff$: [0..#capacity] sync eltType,  // the sync values, empty by default
+  var buff: [0..#capacity] sync eltType,  // the sync values, empty by default
       head, tail: atomic int;             // the cursor positions, 0 by default
 
-  var rng = new owned RandomStream(real);
+  var rng = new randomStream(real, false);
+
+  proc init(type eltType = real, capacity: int, sentinel: eltType = -1.0) {
+    this.eltType = eltType;
+    this.capacity = capacity;
+    this.sentinel = sentinel;
+  }
 
   //
   // Place an item at the head position of the buffer, assuming
-  // it's available (empty).  If not, the write to 'buff$[head]' will
+  // it's available (empty).  If not, the write to 'buff[head]' will
   // block until it is.  Then advance the 'head' position.
   //
   proc produce(item: eltType) {
-    if noisy then sleep(rng.getNext() / prodNoiseScale);
+    if noisy then sleep(rng.next() / prodNoiseScale);
 
-    buff$[advance(head)].writeEF(item);
+    buff[advance(head)].writeEF(item);
   }
 
   //
@@ -145,16 +151,16 @@ class BoundedBuffer {
 
   //
   // Consume() an item from the tail position of the buffer, assuming
-  // it's available (full).  If not, the read from 'buff$[tail]' will
+  // it's available (full).  If not, the read from 'buff[tail]' will
   // block until it is.  Then advance the 'tail' position.  Return a
   // tuple containing (1) the data value read and (2) 'true' if there
   // is more data to be read (the sentinel value has not been found),
   // 'false' otherwise.
   //
   proc consume(): (eltType, bool) {
-    if noisy then sleep(rng.getNext() / consNoiseScale);
+    if noisy then sleep(rng.next() / consNoiseScale);
 
-    const val = buff$[advance(tail)].readFE();
+    const val = buff[advance(tail)].readFE();
     return (val, val != sentinel);
   }
 
@@ -162,11 +168,10 @@ class BoundedBuffer {
   // a simple helper function for advancing the head or tail position.
   //
   inline proc advance(ref pos: atomic int) {
-    var prevPos: int;
+    var prevPos = pos.read();
     do {
-      prevPos = pos.read();
       const nextPos = (prevPos + 1) % capacity;
-    } while (!pos.compareAndSwap(prevPos, nextPos));
+    } while (!pos.compareExchangeWeak(prevPos, nextPos));
 
     return prevPos;
   }

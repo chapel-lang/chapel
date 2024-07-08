@@ -59,14 +59,14 @@ help-source:
 
 docs: FORCE
 	@COMP_DOCS_ERROR=0 ; \
-	(cd ../compiler/dyno && $(MAKE) -f Makefile.help dyno-docs) || \
+	(cd ../compiler && $(MAKE) frontend-docs) || \
 	 COMP_DOCS_ERROR=1 ; \
 	$(MAKE) html-release && \
 	if [ $$COMP_DOCS_ERROR -ne 0 -o ! -d $(COMPILER_INTERNALS_DOXYGEN) ] ; \
 	  then \
 	  echo ; \
-	  echo " This docs build does not include compiler library API docs" ; \
-	  echo " Try 'make clobber-dyno && make dyno-docs'" ; \
+	  echo " This docs build does not include frontend library API docs" ; \
+	  echo " Try 'make frontend-docs'" ; \
 	fi
 
 
@@ -130,7 +130,7 @@ compiler-internals: FORCE
 	@echo "Updating compiler-internals"
 	rm -rf "$(COMPILER_INTERNALS)"
 	@if [ -d $(COMPILER_INTERNALS_DOXYGEN) ]; then \
-	  ln -s ../meta/compiler-internals-doxygen "$(COMPILER_INTERNALS)" ; \
+	  ln -s ../../../frontend/doc "$(COMPILER_INTERNALS)" ; \
 	else \
 	  ln -s ../meta/compiler-internals-no-doxygen "$(COMPILER_INTERNALS)" ; \
 	fi
@@ -148,11 +148,11 @@ prunedocs: FORCE
 	fi
 
 
-clean: clean-source clean-build clean-build-dir clean-doxygen FORCE
+clean: clean-source clean-build clean-build-dir clean-doxygen clean-pycache FORCE
 
-cleanall: clean-source clean-build clean-build-dir clean-doxygen FORCE
+cleanall: clean-source clean-build clean-build-dir clean-doxygen clean-pycache FORCE
 
-clobber: clean-source clean-build clean-build-dir clean-doxygen FORCE
+clobber: clean-source clean-build clean-build-dir clean-doxygen clean-pycache FORCE
 
 clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax clean-compiler-internals FORCE
 
@@ -177,12 +177,12 @@ clean-module-docs: FORCE
 
 clean-primers: FORCE
 	@echo
-	@echo "Removing primers generated into $(CHPL_DOC_HELLO_DIR)"
+	@echo "Removing primers generated into $(SOURCEDIR)/primers/"
 	rm -rf $(SOURCEDIR)/primers/
 
 clean-examples: FORCE
 	@echo
-	@echo "Removing hellos generated into $(CHPL_DOC_HELLO_DIR)"
+	@echo "Removing hellos generated into $(SOURCEDIR)/examples/"
 	rm -rf $(SOURCEDIR)/examples/
 
 clean-symlinks: FORCE
@@ -191,7 +191,11 @@ clean-symlinks: FORCE
 	find $(SOURCEDIR) -type l -delete
 
 clean-doxygen: FORCE
-	cd ../compiler/dyno && $(MAKE) -f Makefile.help clean-dyno-docs
+	rm -rf $(CHPL_MAKE_HOME)/build/doc/doxygen
+
+clean-pycache: FORCE
+	rm -rf util/__pycache__
+	rm -rf $(SOURCEDIR)/__pycache__
 
 FORCE:
 

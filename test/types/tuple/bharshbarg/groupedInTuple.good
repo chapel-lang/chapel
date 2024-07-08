@@ -1,1 +1,1 @@
-groupedInTuple.chpl:2: error: variable-length argument may not be grouped in a tuple
+groupedInTuple.chpl:2: syntax error: variable-length argument may not be grouped in a tuple

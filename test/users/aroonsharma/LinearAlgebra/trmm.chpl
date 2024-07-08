@@ -48,7 +48,7 @@ proc within_epsilon(a: real, b: real, eps=1e-6) {
 /* The process which runs the benchmark */
 proc kernel_trmm(dist, dim: int) {
   var still_correct = true;
-    var t:Timer;
+    var t:stopwatch;
   
   if messages {
     resetCommDiagnostics();
@@ -57,7 +57,7 @@ proc kernel_trmm(dist, dim: int) {
   
     /******* Start the timer: this is where we do work *******/
   if timeit {
-    t = new Timer();
+    t = new stopwatch();
     t.start();
   }
   
@@ -129,10 +129,10 @@ proc main() {
         var user_dist = dom dmapped CyclicZipOpt(startIdx=dom.low);
         kernel_trmm(user_dist, Dim);   */
     } else if dist == "C" {
-        var user_dist = dom dmapped Cyclic(startIdx=dom.low);
+        var user_dist = dom dmapped new cyclicDist(startIdx=dom.low);
         kernel_trmm(user_dist, Dim); 
     } else if dist == "B" {
-        var user_dist = dom dmapped Block(boundingBox=dom);
+        var user_dist = dom dmapped new blockDist(boundingBox=dom);
         kernel_trmm(user_dist, Dim);  
     }
 }

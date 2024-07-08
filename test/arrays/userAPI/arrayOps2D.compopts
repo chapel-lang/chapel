@@ -1,3 +1,2 @@
-               # arrayOps2D.good
--stestError=12 # arrayOps2D-IRV.good
-
+                 # arrayOps2D.good
+-stestError=12   # arrayOps2D-IRV.good

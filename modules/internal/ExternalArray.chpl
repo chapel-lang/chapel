@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,50 +29,73 @@ module ExternalArray {
 
   extern record chpl_opaque_array {
     var _pid: int;
-    var _instance: c_void_ptr;
+    var _instance: c_ptr(void);
     var _unowned: bool;
   }
 
   pragma "export wrapper"
   extern record chpl_external_array {
-    var elts: c_void_ptr;
+    var elts: c_ptr(void);
     var num_elts: uint;
 
-    var freer: c_void_ptr;
+    var freer: c_ptr(void);
   }
 
   extern proc
   chpl_make_external_array(elt_size: uint, num_elts: uint): chpl_external_array;
 
-  extern proc chpl_make_external_array_ptr(elts: c_void_ptr,
+  extern proc chpl_make_external_array_ptr(elts: c_ptr(void),
                                            num_elts: uint): chpl_external_array;
 
   extern proc
-  chpl_make_external_array_ptr_free(elts: c_void_ptr,
+  chpl_make_external_array_ptr_free(elts: c_ptr(void),
                                     num_elts: uint): chpl_external_array;
 
   extern proc chpl_free_external_array(in x: chpl_external_array);
-  extern proc chpl_call_free_func(func: c_void_ptr, elts: c_void_ptr);
+  extern proc chpl_call_free_func(func: c_ptr(void), elts: c_ptr(void));
 
   // Creates an instance of our new array type
   pragma "no copy return"
   proc makeArrayFromPtr(value: c_ptr, num_elts: uint) {
-    var data = chpl_make_external_array_ptr(value : c_void_ptr, num_elts);
+    var data = chpl_make_external_array_ptr(value : c_ptr(void), num_elts);
     return makeArrayFromExternArray(data, value.eltType);
+  }
+
+  pragma "no copy return"
+  proc makeArrayFromPtr(value: c_ptr, dom: domain) {
+    var data = chpl_make_external_array_ptr(value : c_ptr(void), dom.size);
+    return makeArrayFromExternArray(data, value.eltType, dom);
   }
 
   pragma "no copy return"
   proc makeArrayFromExternArray(value: chpl_external_array, type eltType) {
     var dom = defaultDist.dsiNewRectangularDom(rank=1,
                                                idxType=int,
-                                               stridable=false,
+                                               strides=strideKind.one,
                                                inds=(0..#value.num_elts,));
     dom._free_when_no_arrs = true;
     var arr = new unmanaged DefaultRectangularArr(eltType=eltType,
                                                   rank=1,
                                                   idxType=dom.idxType,
-                                                  stridable=dom.stridable,
+                                                  strides=dom.strides,
                                                   dom=dom,
+                                                  data=value.elts: _ddata(eltType),
+                                                  externFreeFunc=value.freer,
+                                                  externArr=true,
+                                                  _borrowed=true);
+    dom.add_arr(arr, locking = false);
+    return _newArray(arr);
+  }
+
+  pragma "no copy return"
+  proc makeArrayFromExternArray(value: chpl_external_array, type eltType, dom: domain) where dom.isRectangular() {
+    if dom.size != value.num_elts then
+      halt("tried to create array with domain of size ", dom.size, " with external array of ", value.num_elts, " elements");
+    var arr = new unmanaged DefaultRectangularArr(eltType=eltType,
+                                                  rank=dom.rank,
+                                                  idxType=dom.idxType,
+                                                  strides=dom.strides,
+                                                  dom=dom._value,
                                                   data=value.elts: _ddata(eltType),
                                                   externFreeFunc=value.freer,
                                                   externArr=true,
@@ -130,7 +153,7 @@ module ExternalArray {
       compilerError("cannot return an array with indices that are not " +
                     "integrals");
     }
-    if (arr.domain.stridable) {
+    if (! arr.domain.hasUnitStride()) {
       compilerError("cannot return a strided array");
     }
     if (arr.domain.rank != 1) {
@@ -161,12 +184,12 @@ module ExternalArray {
   // can make the same function call and get the appropriate type depending on
   // the argument.  Unsupported array types are turned into opaque
   // representations
-  proc convertToExternalArray(arr: []): chpl_opaque_array
+  proc convertToExternalArray(ref arr: []): chpl_opaque_array
     where (getExternalArrayType(arr) == chpl_opaque_array) {
 
     var ret: chpl_opaque_array;
     ret._pid = arr._pid;
-    ret._instance = arr._value: c_void_ptr;
+    ret._instance = c_ptrToConst(arr._value);
     ret._unowned = arr._unowned;
     if (!arr._unowned) {
       arr._unowned = true;
@@ -180,7 +203,7 @@ module ExternalArray {
   private proc isExternArrEltType(type t) param {
     if (isPrimitive(t)) {
       return true;
-    } else if (t == c_string) {
+    } else if (t == c_ptrConst(c_char)) {
       return true;
     } else if (__primitive("is extern type", t)) {
       return true;

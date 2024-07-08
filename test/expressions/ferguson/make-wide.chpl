@@ -54,7 +54,7 @@ test2();
 
 // test from issue 18511
 record WidePtr {
-  var ptr: c_void_ptr;
+  var ptr: c_ptr(void);
   var loc: chpl_localeID_t;
 }
 
@@ -67,14 +67,14 @@ proc create(ref widePtr: WidePtr, bar: int) {
   widePtr.ptr = __primitive("_wide_get_addr", foo);
   widePtr.loc = __primitive("_wide_get_locale", foo);
   if debug {
-    writeln("create foo is ", foo:c_void_ptr, " and ptr is ", widePtr.ptr);
+    writeln("create foo is ", c_ptrTo(foo), " and ptr is ", widePtr.ptr);
   }
 }
 
 proc toFoo(ref widePtr: WidePtr) {
   var ret = __primitive("_wide_make", unmanaged Foo, widePtr.loc, widePtr.ptr);
   if debug {
-    writeln("toFoo returning ", ret:c_void_ptr);
+    writeln("toFoo returning ", c_ptrTo(ret));
   }
   return ret;
 }
@@ -83,7 +83,7 @@ proc toFooWorkaround(ref widePtr: WidePtr) {
   var ptr = widePtr.ptr;
   var ret = __primitive("_wide_make", unmanaged Foo, loc, ptr);
   if debug {
-    writeln("toFoo returning ", ret:c_void_ptr);
+    writeln("toFoo returning ", c_ptrTo(ret));
   }
   return ret;
 }
@@ -91,7 +91,7 @@ proc toFooWorkaround(ref widePtr: WidePtr) {
 proc destroy(ref widePtr: WidePtr) {
   var foo = toFoo(widePtr);
   if debug {
-    writeln("destroy ptr is ", widePtr.ptr, " and foo is ", foo:c_void_ptr);
+    writeln("destroy ptr is ", widePtr.ptr, " and foo is ", c_ptrTo(foo));
   }
   delete foo;
 }

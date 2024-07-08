@@ -8,21 +8,22 @@
 
 #include "llvm/MC/MCSectionXCOFF.h"
 #include "llvm/MC/MCAsmInfo.h"
-#include "llvm/MC/MCExpr.h"
-#include "llvm/Support/Debug.h"
 #include "llvm/Support/Format.h"
 #include "llvm/Support/raw_ostream.h"
+namespace llvm {
+class MCExpr;
+class Triple;
+} // namespace llvm
 
 using namespace llvm;
 
 MCSectionXCOFF::~MCSectionXCOFF() = default;
 
 void MCSectionXCOFF::printCsectDirective(raw_ostream &OS) const {
-  OS << "\t.csect " << QualName->getName() << "," << Log2_32(getAlignment())
-     << '\n';
+  OS << "\t.csect " << QualName->getName() << "," << Log2(getAlign()) << '\n';
 }
 
-void MCSectionXCOFF::PrintSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
+void MCSectionXCOFF::printSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
                                           raw_ostream &OS,
                                           const MCExpr *Subsection) const {
   if (getKind().isText()) {
@@ -37,6 +38,16 @@ void MCSectionXCOFF::PrintSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
     if (getMappingClass() != XCOFF::XMC_RO &&
         getMappingClass() != XCOFF::XMC_TD)
       report_fatal_error("Unhandled storage-mapping class for .rodata csect.");
+    printCsectDirective(OS);
+    return;
+  }
+
+  if (getKind().isReadOnlyWithRel()) {
+    if (getMappingClass() != XCOFF::XMC_RW &&
+        getMappingClass() != XCOFF::XMC_RO &&
+        getMappingClass() != XCOFF::XMC_TD)
+      report_fatal_error(
+          "Unexepected storage-mapping class for ReadOnlyWithRel kind");
     printCsectDirective(OS);
     return;
   }
@@ -71,8 +82,7 @@ void MCSectionXCOFF::PrintSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
   }
 
   if (isCsect() && getMappingClass() == XCOFF::XMC_TD) {
-    assert((getKind().isBSSExtern() || getKind().isBSSLocal() ||
-            getKind().isReadOnlyWithRel()) &&
+    assert((getKind().isBSSExtern() || getKind().isBSSLocal()) &&
            "Unexepected section kind for toc-data");
     printCsectDirective(OS);
     return;
@@ -108,8 +118,8 @@ void MCSectionXCOFF::PrintSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
 
   // XCOFF debug sections.
   if (getKind().isMetadata() && isDwarfSect()) {
-    OS << "\n\t.dwsect "
-       << format("0x%" PRIx32, getDwarfSubtypeFlags().getValue()) << '\n';
+    OS << "\n\t.dwsect " << format("0x%" PRIx32, *getDwarfSubtypeFlags())
+       << '\n';
     OS << MAI.getPrivateLabelPrefix() << getName() << ':' << '\n';
     return;
   }
@@ -117,7 +127,7 @@ void MCSectionXCOFF::PrintSwitchToSection(const MCAsmInfo &MAI, const Triple &T,
   report_fatal_error("Printing for this SectionKind is unimplemented.");
 }
 
-bool MCSectionXCOFF::UseCodeAlign() const { return getKind().isText(); }
+bool MCSectionXCOFF::useCodeAlign() const { return getKind().isText(); }
 
 bool MCSectionXCOFF::isVirtualSection() const {
   // DWARF sections are always not virtual.

@@ -95,39 +95,3 @@ proc testValInitSyncReadFE() {
   writeln(y);
 }
 testValInitSyncReadFE();
-
-proc testDefaultInitSingle() {
-  writeln("testDefaultInitSingle");
-  var x: single R;
-}
-testDefaultInitSingle();
-
-proc testDefaultInitSingleWriteEF() {
-  writeln("testDefaultInitSingleWriteEF");
-  var x: single R;
-  x.writeEF(new R(1));
-}
-testDefaultInitSingleWriteEF();
-
-proc testDefaultInitSingleWriteEFReadFF() {
-  writeln("testDefaultInitSingleWriteEFReadFF");
-  var x: single R;
-  x.writeEF(new R(1));
-  var y = x.readFF();
-  writeln(y);
-}
-testDefaultInitSingleWriteEFReadFF();
-
-proc testValInitSingle() {
-  writeln("testValInitSingle");
-  var x: single R = new R(1);
-}
-testValInitSingle();
-
-proc testValInitSingleReadFF() {
-  writeln("testValInitSingleReadFF");
-  var x: single R = new R(1);
-  var y = x.readFF();
-  writeln(y);
-}
-testValInitSingleReadFF();

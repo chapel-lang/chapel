@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -56,6 +56,9 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
                                                  std::vector<CondStmt*>& IBBs);
 void computeHasToplevelYields(BaseAST* ast, bool& result);
 
+// Given a detupled tuple 'sym', collect all its components.
+std::set<Symbol*> findAllDetupledComponents(Symbol* sym);
+
 // collect children asts in _an_ order. Today this is preorder
 // but callsites should transition to using collect_asts_{pre,post,un}order
 void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts);
@@ -70,7 +73,11 @@ void collect_stmts(BaseAST* ast, std::vector<Expr*>& stmts);
 void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs);
 void collectDefExprs(BaseAST* ast, llvm::SmallVectorImpl<DefExpr*>& defExprs);
 void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts);
+void collectCForLoopStmtsPreorder(BaseAST* ast, std::vector<CForLoop*>& cforloopStmts);
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs);
+void collectCallExprsExceptInGpuBlock(BaseAST* ast, std::vector<CallExpr*>& callExprs);
+void collectBlockStmts(BaseAST* ast, std::vector<BlockStmt*>& blockStmts);
+void collectForLoops(BaseAST* ast, std::vector<ForLoop*>& forLoops);
 void collectMyCallExprs(BaseAST* ast,
                         std::vector<CallExpr*>& callExprs,
                         FnSymbol* fn);
@@ -213,8 +220,14 @@ void insert_help(BaseAST* ast, Expr* parentExpr, Symbol* parentSymbol);
 ArgSymbol* actual_to_formal( Expr *a);
 Expr* formal_to_actual(CallExpr* call, Symbol* formal);
 
+bool isExternType(Type* t);
+bool isExportableType(Type* t);
+
 bool isTypeExpr(Expr* expr);
 bool givesType(Symbol* sym);
+
+// Only useful if called before type constructors are folded away.
+bool isTypeConstructorWithRuntimeTypeActual(CallExpr* call);
 
 Symbol* getSvecSymbol(CallExpr* call);
 void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols);
@@ -222,5 +235,12 @@ void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols);
 void cleanupAfterTypeRemoval();
 
 void convertToQualifiedRefs();
+
+bool shouldWarnUnstableFor(BaseAST* ast);
+
+bool symExprIsUsedAsRef(
+  SymExpr* use,
+  bool constRef,
+  std::function<bool(SymExpr*, CallExpr*)> checkForMove);
 
 #endif

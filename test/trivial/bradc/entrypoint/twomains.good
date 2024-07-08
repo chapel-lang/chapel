@@ -1,3 +1,3 @@
-error: Ambiguous main() function:
-twomains.chpl:4: note: in module twomains
-twomains.chpl:11: note: in module twomains
+<command line>: error: multiple 'main' procedures in module 'twomains'
+twomains.chpl:4: note: found 'proc main' here
+twomains.chpl:11: note: found 'proc main' here

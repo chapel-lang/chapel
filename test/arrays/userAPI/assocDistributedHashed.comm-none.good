@@ -2,47 +2,49 @@
 ----------------
 eltType is: real(64)
 idxType is: string
+fullIdxType is: string
 rank is: 1
 
 size is: 13
 shape is: (13,)
 
 X is:
-[eight => 8.0, five => 5.0, four => 4.0, half => 0.5, nine => 9.0, one => 1.0, pointone => 0.1, seven => 7.0, six => 6.0, ten => 10.0, three => 3.0, two => 2.0, zero => 0.0]
+["eight" => 8.000000e+00, "five" => 5.000000e+00, "four" => 4.000000e+00, "half" => 5.000000e-01, "nine" => 9.000000e+00, "one" => 1.000000e+00, "pointone" => 1.000000e-01, "seven" => 7.000000e+00, "six" => 6.000000e+00, "ten" => 1.000000e+01, "three" => 3.000000e+00, "two" => 2.000000e+00, "zero" => 0.000000e+00]
 
 X is:
-[eight => 8.1, five => 5.1, four => 4.1, half => 0.6, nine => 9.1, one => 1.1, pointone => 0.2, seven => 7.1, six => 6.1, ten => 10.1, three => 3.1, two => 2.1, zero => 0.1]
+["eight" => 8.100000e+00, "five" => 5.100000e+00, "four" => 4.100000e+00, "half" => 6.000000e-01, "nine" => 9.100000e+00, "one" => 1.100000e+00, "pointone" => 2.000000e-01, "seven" => 7.100000e+00, "six" => 6.100000e+00, "ten" => 1.010000e+01, "three" => 3.100000e+00, "two" => 2.100000e+00, "zero" => 1.000000e-01]
 
 X is:
-[eight => 8.1, five => 5.1, four => 4.1, half => 0.6, nine => 9.1, one => 1.1, pointone => 0.2, seven => 7.1, six => 6.1, ten => 10.1, three => 3.1, two => 2.1, zero => 0.1]
+["eight" => 8.100000e+00, "five" => 5.100000e+00, "four" => 4.100000e+00, "half" => 6.000000e-01, "nine" => 9.100000e+00, "one" => 1.100000e+00, "pointone" => 2.000000e-01, "seven" => 7.100000e+00, "six" => 6.100000e+00, "ten" => 1.010000e+01, "three" => 3.100000e+00, "two" => 2.100000e+00, "zero" => 1.000000e-01]
 
 low element is: 0.1
 
 X is:
-[eight => 8.2, five => 5.2, four => 4.2, half => 0.7, nine => 9.2, one => 1.2, pointone => 0.3, seven => 7.2, six => 6.2, ten => 10.2, three => 3.2, two => 2.2, zero => 0.2]
+["eight" => 8.200000e+00, "five" => 5.200000e+00, "four" => 4.200000e+00, "half" => 7.000000e-01, "nine" => 9.200000e+00, "one" => 1.200000e+00, "pointone" => 3.000000e-01, "seven" => 7.200000e+00, "six" => 6.200000e+00, "ten" => 1.020000e+01, "three" => 3.200000e+00, "two" => 2.200000e+00, "zero" => 2.000000e-01]
 
 X is:
-[eight => 8.2, five => 5.2, four => 4.2, half => 0.7, nine => 9.2, one => 1.2, pointone => 0.3, seven => 7.2, six => 6.2, ten => 10.2, three => 3.2, two => 2.2, zero => 0.2]
+["eight" => 8.200000e+00, "five" => 5.200000e+00, "four" => 4.200000e+00, "half" => 7.000000e-01, "nine" => 9.200000e+00, "one" => 1.200000e+00, "pointone" => 3.000000e-01, "seven" => 7.200000e+00, "six" => 6.200000e+00, "ten" => 1.020000e+01, "three" => 3.200000e+00, "two" => 2.200000e+00, "zero" => 2.000000e-01]
 
 low element is: 0.2
 
 X is:
-[eight => 8.3, five => 5.3, four => 4.3, half => 0.8, nine => 9.3, one => 1.3, pointone => 0.4, seven => 7.3, six => 6.3, ten => 10.3, three => 3.3, two => 2.3, zero => 0.3]
+["eight" => 8.300000e+00, "five" => 5.300000e+00, "four" => 4.300000e+00, "half" => 8.000000e-01, "nine" => 9.300000e+00, "one" => 1.300000e+00, "pointone" => 4.000000e-01, "seven" => 7.300000e+00, "six" => 6.300000e+00, "ten" => 1.030000e+01, "three" => 3.300000e+00, "two" => 2.300000e+00, "zero" => 3.000000e-01]
 
 X is:
-[eight => 8.4, five => 5.4, four => 4.4, half => 0.9, nine => 9.4, one => 1.4, pointone => 0.5, seven => 7.4, six => 6.4, ten => 10.4, three => 3.4, two => 2.4, zero => 0.4]
+["eight" => 8.400000e+00, "five" => 5.400000e+00, "four" => 4.400000e+00, "half" => 9.000000e-01, "nine" => 9.400000e+00, "one" => 1.400000e+00, "pointone" => 5.000000e-01, "seven" => 7.400000e+00, "six" => 6.400000e+00, "ten" => 1.040000e+01, "three" => 3.400000e+00, "two" => 2.400000e+00, "zero" => 4.000000e-01]
 
 X is:
-[eight => 8.5, five => 5.5, four => 4.5, half => 1.0, nine => 9.5, one => 1.5, pointone => 0.6, seven => 7.5, six => 6.5, ten => 10.5, three => 3.5, two => 2.5, zero => 0.5]
+["eight" => 8.500000e+00, "five" => 5.500000e+00, "four" => 4.500000e+00, "half" => 1.000000e+00, "nine" => 9.500000e+00, "one" => 1.500000e+00, "pointone" => 6.000000e-01, "seven" => 7.500000e+00, "six" => 6.500000e+00, "ten" => 1.050000e+01, "three" => 3.500000e+00, "two" => 2.500000e+00, "zero" => 5.000000e-01]
 
 X is:
-[eight => 8.6, five => 5.6, four => 4.6, half => 1.1, nine => 9.6, one => 1.6, pointone => 0.7, seven => 7.6, six => 6.6, ten => 10.6, three => 3.6, two => 2.6, zero => 0.6]
+["eight" => 8.600000e+00, "five" => 5.600000e+00, "four" => 4.600000e+00, "half" => 1.100000e+00, "nine" => 9.600000e+00, "one" => 1.600000e+00, "pointone" => 7.000000e-01, "seven" => 7.600000e+00, "six" => 6.600000e+00, "ten" => 1.060000e+01, "three" => 3.600000e+00, "two" => 2.600000e+00, "zero" => 6.000000e-01]
 
 target locales: [LOCALE0]
 local subdomains:
 {eight, five, four, half, nine, one, pointone, seven, six, ten, three, two, zero}
 
 is empty: false
+find 10.6: true, ten
 equals same: true
 equals diff: false
 

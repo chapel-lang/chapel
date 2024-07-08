@@ -1,0 +1,14 @@
+promoted.chpl:31: warning: modifying the result of a promoted index expression is a potential race condition
+promoted.chpl:37: warning: modifying the result of a promoted index expression is a potential race condition
+promoted.chpl:42: warning: modifying the result of a promoted index expression is a potential race condition
+promoted.chpl:47: warning: modifying the result of a promoted index expression is a potential race condition
+promoted.chpl:48: warning: modifying the result of a promoted index expression is a potential race condition
+0
+0
+0
+0
+0
+0
+0
+0
+3 3 3 3

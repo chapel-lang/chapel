@@ -31,7 +31,7 @@ class kmeans: ReduceScanOp {
   proc identity {  return 333333; }
   proc accumulateOntoState(ref state, datum) {}
   proc accumulate(value) {}
-  proc combine(other: borrowed kmeans) {}
+  proc combine(other: borrowed kmeans(?)) {}
   proc generate() { return (GLOBAL,);  }
   proc clone() {   return new unmanaged kmeans(eltType=eltType);  }
 }

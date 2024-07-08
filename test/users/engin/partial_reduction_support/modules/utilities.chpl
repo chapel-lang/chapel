@@ -83,9 +83,9 @@ proc faceSliceMask(dom, param exceptDim) {
   compilerAssert(numUbRangesPre + numUbRangesPost == dom.rank-1);
 
   const ubRangesPre = createTuple(if numUbRangesPre > 0 then numUbRangesPre
-      else 1, range(boundedType=BoundedRangeType.boundedNone), ..);
+      else 1, range(bounds=boundKind.neither), ..);
   const ubRangesPost = createTuple(if numUbRangesPost > 0 then numUbRangesPost
-      else 1, range(boundedType=BoundedRangeType.boundedNone), ..);
+      else 1, range(bounds=boundKind.neither), ..);
 
   if numUbRangesPre > 0 && numUbRangesPost > 0 {
     return ((...ubRangesPre),0,(...ubRangesPost));

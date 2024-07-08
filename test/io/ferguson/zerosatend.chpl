@@ -8,9 +8,9 @@ var n = sz / 8;
 
 // create the file.
 {
-  var tmp = open(testfile, iomode.cwr);
+  var tmp = open(testfile, ioMode.cwr);
 
-  var och = tmp.writer(kind=iobig);
+  var och = tmp.writer(serializer=new binarySerializer(endianness.big), locking=false);
   for i in 0..#n {
     var x:uint(64) = i:uint(64);
     och.write(x);
@@ -22,9 +22,9 @@ var n = sz / 8;
 
 // read the file, check that we get exactly n back.
 {
-  var tmp = open(testfile, iomode.r);
+  var tmp = open(testfile, ioMode.r);
 
-  var ich = tmp.reader(kind=iobig);
+  var ich = tmp.reader(deserializer=new binaryDeserializer(endianness.big), locking=false);
   for i in 0..#n {
     var x:uint(64);
     var got = ich.read(x);
@@ -47,4 +47,3 @@ var n = sz / 8;
 }
 
 FileSystem.remove(testfile);
-

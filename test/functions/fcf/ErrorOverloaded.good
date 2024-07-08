@@ -1,0 +1,4 @@
+ErrorOverloaded.chpl:6: error: cannot capture routine with name 'foo' because it is overloaded
+ErrorOverloaded.chpl:2: note: declared here
+ErrorOverloaded.chpl:3: note: declared here
+ErrorOverloaded.chpl:4: note: declared here

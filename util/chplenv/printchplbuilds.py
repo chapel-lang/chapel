@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Parses a build path and outputs the values of the environment variables
-# that correspond to that path. 
+# that correspond to that path.
 
 import os
 import utils
@@ -20,7 +20,7 @@ from collections import defaultdict
 # determines the current environment variable being parsed for those that
 # do not have a prefix. The state is State.PREFIX for those that do. This
 # state is exited when a component is encountered that doesn't have a
-# prefix. 
+# prefix.
 
 @unique
 class State(Enum):
@@ -31,9 +31,11 @@ class State(Enum):
     HWLOC =             4
     RE2 =               5
     LIBFABRIC =         6
-    TARGET_ARCH =       7
-    COMM_SUBSTRATE =    8
-    GASNET_SEGMENT =    9
+    OFI_OOB =           7
+    TARGET_ARCH =       8
+    COMM_SUBSTRATE =    9
+    GASNET_SEGMENT =    10
+    GASNET_VERSION =    11
 
 # Maps component prefix to corresponding environment variable.
 
@@ -41,6 +43,8 @@ prefixes = {
     'arch':         'CHPL_TARGET_CPU', # obsolete
     'cpu':          'CHPL_TARGET_CPU',
     'loc':          'CHPL_LOCALE_MODEL',
+    'gpu':          'CHPL_GPU',
+    'gpu_mem':      'CHPL_GPU_MEM_STRATEGY',
     'comm':         'CHPL_COMM',
     'tasks':        'CHPL_TASKS',
     'launch':       'CHPL_LAUNCHER',
@@ -66,10 +70,12 @@ varNames = {
     State.HWLOC:            'CHPL_HWLOC',
     State.RE2:              'CHPL_RE2',
     State.LIBFABRIC:        'CHPL_LIBFABRIC',
+    State.OFI_OOB:          'CHPL_COMM_OFI_OOB',
     State.PREFIX:           None,
     State.TARGET_ARCH:      'CHPL_TARGET_ARCH',
     State.COMM_SUBSTRATE:   'CHPL_COMM_SUBSTRATE',
-    State.GASNET_SEGMENT:   'CHPL_GASNET_SEGMENT'
+    State.GASNET_SEGMENT:   'CHPL_GASNET_SEGMENT',
+    State.GASNET_VERSION:   'CHPL_GASNET_VERSION'
 }
 
 # State transitions. This isn't a true state machine because some of the transitions are
@@ -80,12 +86,33 @@ nextStates = {
     State.TARGET_COMPILER:  State.TARGET_ARCH,
     State.TARGET_ARCH:      State.PREFIX,
     State.PREFIX:           State.PREFIX,
-    State.LIBFABRIC:        State.PREFIX,
+    State.LIBFABRIC:        State.OFI_OOB,
+    State.OFI_OOB:          State.PREFIX,
     State.HWLOC:            State.RE2,
     State.RE2:              State.PREFIX,
     State.COMM_SUBSTRATE:   State.GASNET_SEGMENT,
-    State.GASNET_SEGMENT:   State.PREFIX
+    State.GASNET_SEGMENT:   State.GASNET_VERSION,
+    State.GASNET_VERSION:   State.PREFIX
 }
+
+# Some of the CHPL_*_DEBUG variables add a "-debug" suffix to the component
+# name depending on whether or not they are set. "+" denotes that the debug
+# variable was set, and  "-" that was not. Returns the value of the original
+# variable with the "-debug" suffix removed.
+
+def ProcessDebug(fields, config):
+    global used
+    var = prefixes[fields[0]]
+    value = '-'.join(fields[1:])
+    if var in ("CHPL_COMM", "CHPL_HWLOC", "CHPL_TASKS"):
+        debug = var + "_DEBUG"
+        if fields[-1] == 'debug':
+            config[debug] = "+"
+            value = '-'.join(fields[1:-1]) # drop the suffix
+        else:
+            config[debug] = "-"
+        used.add(debug)
+    return value
 
 # Parse the given path and return a configuration based on the components of the path.
 # The configuration is a dictionary where the key is the environment variable name and the
@@ -106,24 +133,16 @@ def Parse(path):
         nextState = nextStates[state]
         j = i + 1
         if state == State.PREFIX and '-' in component:
-            fields = component.split('-', 1)
-            (prefix, value) = fields[0:2]
-            var = prefixes[prefix]
-            config[var] = value
-            used.add(var)
+            fields = component.split('-')
+            var = prefixes[fields[0]]
+            value = ProcessDebug(fields, config)
             if var == 'CHPL_COMM':
-
-                if value != "none":
-                    # The value of CHPL_COMM_DEBUG is determined by a suffix of the component name.
-                    # It's a bit odd in that the build is based on whether or not it is set, 
-                    # not its value. "+" denotes that is it set, "-" that it is not set.
-
-                    config['CHPL_COMM_DEBUG'] = "+" if fields[-1] == 'debug' else "-"
-                    used.add('CHPL_COMM_DEBUG')
                 if value == 'ofi':
                     nextState = State.LIBFABRIC
                 elif value == 'gasnet':
                     nextState = State.COMM_SUBSTRATE
+            config[var] = value
+            used.add(var)
         else:
             # Component doesn't have a prefix. If we were expecting a prefix then go to the
             # next state and reprocess the current component. Components without prefixes
@@ -149,7 +168,7 @@ def GetConfig(all=False):
     excludes = ['CHPL_HOME']
     filters = ['no-tidy'] if all else ['tidy']
     filters.append('only-path')
-    lines = printchplenv.printchplenv(['runtime'], print_filters=filters, 
+    lines = printchplenv.printchplenv(['runtime'], print_filters=filters,
                                       print_format='simple').split('\n')
     for line in lines:
         if len(line) == 0:
@@ -158,13 +177,19 @@ def GetConfig(all=False):
         if var in excludes:
             continue
         config[var] = value
+        # CHPL_*_DEBUG variables aren't returned by printchplenv
         if var == 'CHPL_COMM' and value != "none":
-            # CHPL_COMM_DEBUG isn't returned by printchplenv
             value = '+' if os.getenv('CHPL_COMM_DEBUG') else '-'
             config['CHPL_COMM_DEBUG'] = value
+        elif var == 'CHPL_HWLOC' and value == "bundled":
+            value = '+' if os.getenv('CHPL_HWLOC_DEBUG') else '-'
+            config['CHPL_HWLOC_DEBUG'] = value
+        elif var == 'CHPL_TASKS':
+            value = '+' if os.getenv('CHPL_TASKS_DEBUG') else '-'
+            config['CHPL_TASKS_DEBUG'] = value
     return config
 
-# Returns a list of variables that differ between two configurations 
+# Returns a list of variables that differ between two configurations
 
 def FindDiffVars(usedvars, a, b):
     result = []
@@ -231,7 +256,7 @@ def main(argv):
     description = "Displays the available Chapel runtime builds. Values that differ from" \
     " the current configuration have a '*' suffix. '+' denotes a variable that is set but" \
     " whose value doesn't matter, '-' denotes a variable that is not set. 'NA' denotes a" \
-    " variable that is not applicable to the build." 
+    " variable that is not applicable to the build."
 
     # Note: add_mutually_exclusive_group doesn't currently support a title which would make
     # the help output easier to read. Also help doesn't appear in the same order as below.

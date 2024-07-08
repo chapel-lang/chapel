@@ -357,7 +357,6 @@ namespace {
 
     bool getCell(const RegisterSubReg &R, const CellMap &Inputs, LatticeCell &RC);
     bool constToInt(const Constant *C, APInt &Val) const;
-    bool constToFloat(const Constant *C, APFloat &Val) const;
     const ConstantInt *intToConst(const APInt &Val) const;
 
     // Compares.
@@ -868,8 +867,8 @@ void MachineConstPropagator::removeCFGEdge(MachineBasicBlock *From,
     int N = PN.getNumOperands() - 2;
     while (N > 0) {
       if (PN.getOperand(N + 1).getMBB() == From) {
-        PN.RemoveOperand(N + 1);
-        PN.RemoveOperand(N);
+        PN.removeOperand(N + 1);
+        PN.removeOperand(N);
       }
       N -= 2;
     }
@@ -1217,8 +1216,8 @@ bool MachineConstEvaluator::evaluateCMPii(uint32_t Cmp, const APInt &A1,
   unsigned W2 = A2.getBitWidth();
   unsigned MaxW = (W1 >= W2) ? W1 : W2;
   if (Cmp & Comparison::U) {
-    const APInt Zx1 = A1.zextOrSelf(MaxW);
-    const APInt Zx2 = A2.zextOrSelf(MaxW);
+    APInt Zx1 = A1.zext(MaxW);
+    APInt Zx2 = A2.zext(MaxW);
     if (Cmp & Comparison::L)
       Result = Zx1.ult(Zx2);
     else if (Cmp & Comparison::G)
@@ -1227,8 +1226,8 @@ bool MachineConstEvaluator::evaluateCMPii(uint32_t Cmp, const APInt &A1,
   }
 
   // Signed comparison.
-  const APInt Sx1 = A1.sextOrSelf(MaxW);
-  const APInt Sx2 = A2.sextOrSelf(MaxW);
+  APInt Sx1 = A1.sext(MaxW);
+  APInt Sx2 = A2.sext(MaxW);
   if (Cmp & Comparison::L)
     Result = Sx1.slt(Sx2);
   else if (Cmp & Comparison::G)
@@ -1687,9 +1686,9 @@ bool MachineConstEvaluator::evaluateCLBi(const APInt &A1, bool Zeros,
     return false;
   unsigned Count = 0;
   if (Zeros && (Count == 0))
-    Count = A1.countLeadingZeros();
+    Count = A1.countl_zero();
   if (Ones && (Count == 0))
-    Count = A1.countLeadingOnes();
+    Count = A1.countl_one();
   Result = APInt(BW, static_cast<uint64_t>(Count), false);
   return true;
 }
@@ -1722,9 +1721,9 @@ bool MachineConstEvaluator::evaluateCTBi(const APInt &A1, bool Zeros,
     return false;
   unsigned Count = 0;
   if (Zeros && (Count == 0))
-    Count = A1.countTrailingZeros();
+    Count = A1.countr_zero();
   if (Ones && (Count == 0))
-    Count = A1.countTrailingOnes();
+    Count = A1.countr_one();
   Result = APInt(BW, static_cast<uint64_t>(Count), false);
   return true;
 }
@@ -1813,7 +1812,7 @@ bool MachineConstEvaluator::evaluateSplati(const APInt &A1, unsigned Bits,
       unsigned Count, APInt &Result) {
   assert(Count > 0);
   unsigned BW = A1.getBitWidth(), SW = Count*Bits;
-  APInt LoBits = (Bits < BW) ? A1.trunc(Bits) : A1.zextOrSelf(Bits);
+  APInt LoBits = (Bits < BW) ? A1.trunc(Bits) : A1.zext(Bits);
   if (Count > 1)
     LoBits = LoBits.zext(SW);
 
@@ -2269,7 +2268,7 @@ bool HexagonConstEvaluator::evaluate(const MachineInstr &BrI,
     case Hexagon::J2_jumpfnew:
     case Hexagon::J2_jumpfnewpt:
       Negated = true;
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
     case Hexagon::J2_jumpt:
     case Hexagon::J2_jumptnew:
     case Hexagon::J2_jumptnewpt:
@@ -2510,7 +2509,7 @@ APInt HexagonConstEvaluator::getCmpImm(unsigned Opc, unsigned OpX,
 void HexagonConstEvaluator::replaceWithNop(MachineInstr &MI) {
   MI.setDesc(HII.get(Hexagon::A2_nop));
   while (MI.getNumOperands() > 0)
-    MI.RemoveOperand(0);
+    MI.removeOperand(0);
 }
 
 bool HexagonConstEvaluator::evaluateHexRSEQ32(RegisterSubReg RL, RegisterSubReg RH,
@@ -2538,9 +2537,9 @@ bool HexagonConstEvaluator::evaluateHexRSEQ32(RegisterSubReg RL, RegisterSubReg 
   }
 
   for (unsigned i = 0; i < HiVs.size(); ++i) {
-    APInt HV = HiVs[i].zextOrSelf(64) << 32;
+    APInt HV = HiVs[i].zext(64) << 32;
     for (unsigned j = 0; j < LoVs.size(); ++j) {
-      APInt LV = LoVs[j].zextOrSelf(64);
+      APInt LV = LoVs[j].zext(64);
       const Constant *C = intToConst(HV | LV);
       Result.add(C);
       if (Result.isBottom())
@@ -2861,8 +2860,7 @@ bool HexagonConstEvaluator::rewriteHexConstDefs(MachineInstr &MI,
   // For each defined register, if it is a constant, create an instruction
   //   NewR = const
   // and replace all uses of the defined register with NewR.
-  for (unsigned i = 0, n = DefRegs.size(); i < n; ++i) {
-    unsigned R = DefRegs[i];
+  for (unsigned R : DefRegs) {
     const LatticeCell &L = Inputs.get(R);
     if (L.isBottom())
       continue;
@@ -3165,7 +3163,7 @@ bool HexagonConstEvaluator::rewriteHexBranch(MachineInstr &BrI,
                   .addMBB(TargetB);
       BrI.setDesc(JD);
       while (BrI.getNumOperands() > 0)
-        BrI.RemoveOperand(0);
+        BrI.removeOperand(0);
       // This ensures that all implicit operands (e.g. implicit-def %r31, etc)
       // are present in the rewritten branch.
       for (auto &Op : NI->operands())

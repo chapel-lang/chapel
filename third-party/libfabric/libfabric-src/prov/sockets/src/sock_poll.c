@@ -154,13 +154,13 @@ static int sock_poll_poll(struct fid_poll *pollset, void **context, int count)
 
 		case FI_CLASS_EQ:
 			eq = container_of(list_item->fid, struct sock_eq, eq);
-			fastlock_acquire(&eq->lock);
+			ofi_mutex_lock(&eq->lock);
 			if (!dlistfd_empty(&eq->list) ||
 				!dlistfd_empty(&eq->err_list)) {
 				*context++ = eq->eq.fid.context;
 				ret_count++;
 			}
-			fastlock_release(&eq->lock);
+			ofi_mutex_unlock(&eq->lock);
 			break;
 
 		default:

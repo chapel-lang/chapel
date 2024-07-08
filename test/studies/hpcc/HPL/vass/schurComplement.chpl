@@ -1,7 +1,7 @@
 use DimensionalDist2D;
 use ReplicatedDim;
 use BlockCycDim;
-use Memory.Diagnostics, Time, Random;
+use MemDiagnostics, Time, Random, Math;
 
 
 /////////// configuration ///////////
@@ -55,14 +55,14 @@ const
   bdim2 = new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2),
   rdim2 = new ReplicatedDim(tl2);
 
-const dimdist = new dmap(new unmanaged DimensionalDist2D(tla, bdim1, bdim2, "dim"));
+const dimdist = new dimensionalDist2D(tla, bdim1, bdim2, "dim");
 
 // the distributed domain for Ab
 const AbD: domain(2, indexType) dmapped dimdist = MatVectSpace;
 
 // temporaries
 var Rest: domain(2, indexType) dmapped dimdist; //AbD.dist;
-var RestByBlkSize: domain(2, indexType, true) dmapped dimdist; //AbD.dist;
+var RestByBlkSize: domain(2, indexType, strideKind.any) dmapped dimdist; //AbD.dist;
 
 // Ab: the matrix A and vector b
 var Ab: [if do_dgemms then AbD else 1..1] elemType; // small if !do_dgemms
@@ -70,9 +70,9 @@ var Ab: [if do_dgemms then AbD else 1..1] elemType; // small if !do_dgemms
 // the domains for replication
 const
   replAD = {1..n, 1..blkSize} dmapped
-    DimensionalDist2D(tla, bdim1, rdim2, "distBR"),
+    new dimensionalDist2D(tla, bdim1, rdim2, "distBR"),
   replBD = {1..blkSize, 1..n+1} dmapped
-    DimensionalDist2D(tla, rdim1, bdim2, "distRB");
+    new dimensionalDist2D(tla, rdim1, bdim2, "distRB");
 
 // the arrays for replication
 var replA: [replAD] elemType,
@@ -81,8 +81,6 @@ var replA: [replAD] elemType,
 
 /////////// for the reference implementation ///////////
 
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 31415;
 config const verify = false;
 // can be too much memory
 //var Abref: [MatVectSpace] elemType;
@@ -91,11 +89,11 @@ var refsuccess = true;
 
 /////////// run it ///////////
 
-const startTime = getCurrentTime();
+const startTime = timeSinceEpoch().totalSeconds();
 
 schurComplement(blk);
 
-const execTime = getCurrentTime() - startTime;  // store the elapsed time
+const execTime = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
 write("DONE");
 if reproducible then writeln(); else writeln("  time = ", execTime);
 
@@ -189,7 +187,7 @@ proc dgdriver(row, col) {
 
 }
 
-proc dgemm(LreplA, LreplB, LAb) {
+proc dgemm(LreplA, LreplB, ref LAb) {
   if dgemm_asserts {
     // This is because these dimensions have the same user indices
     // and are handled by the same distribution 1-d descriptors.
@@ -243,8 +241,8 @@ proc replicateB(abIx) {
               replB._value.localAdescs[fromLocId1,lid2].myStorageArr;
 }
 
-proc targetLocalesIndexForAbIndex(param dim, abIx)
-  return (divceilpos(abIx, blkSize) - 1) % (if dim == 1 then tl1 else tl2);
+proc targetLocalesIndexForAbIndex(param dim, abIx) do
+  return (divCeilPos(abIx, blkSize) - 1) % (if dim == 1 then tl1 else tl2);
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -323,7 +321,7 @@ proc computeNfromNRest(nRest) {
 }
 proc computeNfromNRestRaw(nRestRaw, param needMultiple = false) {
   const multiple = blkSize * (if tl2 == tl1 || tl2 == 2*tl1 then tl2 else tl1*tl2);
-  const nRest = divceil(nRestRaw, multiple) * multiple;
+  const nRest = divCeil(nRestRaw, multiple) * multiple;
   const nResult = computeNfromNRest(nRest);
 
 //writeln("nRestRaw ", nRestRaw, "  multiple ", multiple, "  nRest ", nRest);

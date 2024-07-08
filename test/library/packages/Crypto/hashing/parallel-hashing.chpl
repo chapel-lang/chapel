@@ -12,7 +12,7 @@ proc main() {
   var buf = new owned CryptoBuffer(s);
 
   var digests:[1..n] owned CryptoBuffer?;
-  forall i in 1..n {
+  forall i in 1..n with (ref digests) {
     digests[i] = SHA2.getDigest(buf);
   }
 

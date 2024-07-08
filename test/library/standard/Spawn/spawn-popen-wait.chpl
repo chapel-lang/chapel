@@ -17,7 +17,7 @@ config const showtime = false;
    goes out to lunch for 5 seconds.
  */
 
-var timer:Timer;
+var timer:stopwatch;
 
 var sub = spawn(["bash", "waiting.bash"], stdout=pipeStyle.pipe);
 
@@ -52,8 +52,8 @@ while sub.stdout.readLine(line) {
       writeln("writing to ", signalFile);
     }
     signaled = true;
-    var f = open(signalFile, iomode.cw);
-    var ch = f.writer();
+    var f = open(signalFile, ioMode.cw);
+    var ch = f.writer(locking=false);
     ch.writeln();
     ch.close();
     f.close();

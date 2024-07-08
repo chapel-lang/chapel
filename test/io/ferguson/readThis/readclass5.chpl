@@ -1,39 +1,50 @@
 use IO;
 
-class mything {
+class mything : serializable {
   var x:int;
   var y:int;
-
-  proc readThis(r) throws {
-    readWriteHelper(r);
+  proc init(x: int = 0, y: int = 0) {
+    this.x = x;
+    this.y = y;
+  }
+  proc init(reader, ref deserializer) {
+    this.x = reader.read(int);
+    reader.readLiteral(" ");
+    this.y = reader.read(int);
+    reader.readNewline();
   }
 
-  proc writeThis(w) throws {
-    readWriteHelper(w);
+  override proc deserialize(reader, ref deserializer) throws {
+    x = reader.read(int);
+    reader.readLiteral(" ");
+    y = reader.read(int);
+    reader.readNewline();
   }
 
-  proc readWriteHelper(rw) throws {
-    if rw.writing then rw.write(x); else x = rw.read(int);
-    rw.readWriteLiteral(" ");
-    if rw.writing then rw.write(y); else y = rw.read(int);
-    rw.readWriteNewline();
+  override proc serialize(writer, ref serializer) throws {
+    writer.write(x);
+    writer.writeLiteral(" ");
+    writer.write(y);
+    writer.writeNewline();
   }
 }
 
 {
-  var a = new borrowed mything(1);
+  var ownA = new owned mything(1);
+  var a = ownA.borrow();
 
   writeln("Writing ", a);
 
-  var f = openmem();
-  var w = f.writer();
+  var f = openMemFile();
+  var w = f.writer(locking=false);
 
   w.write(a);
   w.close();
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
 
-  var b = new borrowed mything(2);
+  var ownB = new owned mything(2);
+  var b = ownB.borrow();
   r.read(b);
 
   r.close();
@@ -42,4 +53,3 @@ class mything {
 
   assert(a.x == b.x);
 }
-

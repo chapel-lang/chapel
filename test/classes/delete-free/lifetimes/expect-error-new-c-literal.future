@@ -1,0 +1,2 @@
+bug: missing compilation error for use-after free with owned in array literal 
+#22607

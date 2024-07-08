@@ -2,7 +2,7 @@
 // Use standard modules for vector and matrix Norms, Random numbers
 // and Timing routines
 //
-use LinearAlgebra, Random, Time;
+use LinearAlgebra, Random, Time, Math;
 
 //
 // Use the user module for computing HPCC problem sizes
@@ -12,7 +12,7 @@ use HPCCProblemSize;
 //
 // Use the distributions we need for this computation
 //
-use DimensionalDist2D, ReplicatedDim, BlockCycDim;
+use DimensionalDist2D, ReplicatedDim, BlockCycDim, DSIUtil;
 use ReplicatedDist;
 
 //
@@ -106,10 +106,10 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
   // Replicate 'targetLocales' to reduce comm.
   // 'targetLocales' itself could be replicated instead,
   // but this way the changes are smaller.
-  const targetIdsRepl = targetIds dmapped new dmap(distReplicated);
+  const targetIdsRepl = targetIds dmapped distReplicated;
   var targetLocalesRepl: [targetIdsRepl] locale;
   coforall (l, id) in zip(Locales, LocaleSpace) do on l {
-    targetLocalesRepl._value.localArrs[id].arrLocalRep = targetLocales;
+    targetLocalesRepl._value.localArrs[id]!.arrLocalRep = targetLocales;
   }
   vmsg("replicated targetLocales");
 
@@ -126,9 +126,9 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
     rdim2 = new ReplicatedDim(tl2);
 
   const
-    dist1b2b = new unmanaged DimensionalDist2D(targetLocales, bdim1, bdim2, "dist1b2b"),
-    dist1b2r = new unmanaged DimensionalDist2D(targetLocales, bdim1, rdim2, "dist1b2r"),
-    dist1r2b = new unmanaged DimensionalDist2D(targetLocales, rdim1, bdim2, "dist1r2b");
+    dist1b2b = new dimensionalDist2D(targetLocales, bdim1, bdim2, "dist1b2b"),
+    dist1b2r = new dimensionalDist2D(targetLocales, bdim1, rdim2, "dist1b2r"),
+    dist1r2b = new dimensionalDist2D(targetLocales, rdim1, bdim2, "dist1r2b");
 
   //
   // MatVectSpace is a 2D domain of type indexType that represents the
@@ -140,7 +140,7 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
   //
   // We use 'AbD' instead of 'MatVectSpace' throughout.
   //
-  const AbD = {1..n, 1..n+1} dmapped new dmap(dist1b2b);
+  const AbD = {1..n, 1..n+1} dmapped dist1b2b;
 
   var Ab : [AbD] elemType,           // the matrix A and vector b
       piv: [1..n] indexType;         // a vector of pivot values
@@ -150,18 +150,18 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
   //
   // Create the 1-d replicated arrays for schurComplement().
   //
-  const replAD = {1..n, 1..blkSize}   dmapped new dmap(dist1b2r),
-        replBD = {1..blkSize, 1..n+1} dmapped new dmap(dist1r2b);
+  const replAD = {1..n, 1..blkSize}   dmapped dist1b2r,
+        replBD = {1..blkSize, 1..n+1} dmapped dist1r2b;
 
   var replA: [replAD] elemType,
       replB: [replBD] elemType;
 
   vmsg("allocated replA,B");
 
-  const replKD = {0..0, 1..n+1} dmapped new dmap(dist1r2b);
+  const replKD = {0..0, 1..n+1} dmapped dist1r2b;
   var   replK: [replKD] elemType;
 
-  const replUD = {0..#blkSize, 0..#blkSize} dmapped new dmap(distReplicated);
+  const replUD = {0..#blkSize, 0..#blkSize} dmapped distReplicated;
         // can't use targetLocales because of "consistency" req. - that's OK
   var   replU: [replUD] elemType;
 
@@ -174,7 +174,7 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
     if elemType == real(64) then chpl__processorAtomicType(real)
     else compilerError("need to define cpuAtomicElemType");
   type cpuAtomicCountType = chpl__processorAtomicType(int);
-  const replPD = {0..#blkSize} dmapped new dmap(distReplicated);
+  const replPD = {0..#blkSize} dmapped distReplicated;
 
   // the working 'x' vector - we reuse replK
   //
@@ -200,19 +200,19 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
   }
 
   // (Only needed on diagonal nodes, for simplicity create everywhere.)
-  const bsOthersPartSumsD = {0..#tl2} dmapped new dmap(distReplicated);
+  const bsOthersPartSumsD = {0..#tl2} dmapped distReplicated;
   var bsOthersPartSums: [bsOthersPartSumsD] bsSetofPartSums;
 
   initAB();
 
-  const startTime = getCurrentTime();     // capture the start time
+  const startTime = timeSinceEpoch().totalSeconds();     // capture the start time
 
  if !onlyBsub then
   LUFactorize(n, piv);                 // compute the LU factorization
 
   ref x = backwardSub(n);  // perform the back substitution
 
-  const execTime = getCurrentTime() - startTime;  // store the elapsed time
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
   printTime(execTime);
   quit(doExit = false);
 
@@ -334,13 +334,13 @@ proc schurComplement(blk, AD, BD, Rest) {
 
 
   forall (ab, ra) in zip(AbSlice1, replA) do
-    local
+    local do
       ra = ab;
   replicateA(blk);
   vmsgmore("  replA");
 
   forall (ab, rb) in zip(AbSlice2, replB) do
-    local
+    local do
       rb = ab;
   replicateB(blk);
   vmsgmore("  replB");
@@ -377,13 +377,13 @@ proc schurComplement(blk, AD, BD, Rest) {
 
 proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
   // might be more elegant to replace the explicit arg tuple with 'slice'
-  proc toScalar(slice)
+  proc toScalar(slice) do
     return if isIntegralType(slice.type) then slice else slice.low;
-  proc toRange(slice)
+  proc toRange(slice) do
     return if isIntegralType(slice.type) then slice..slice else slice;
-  proc origScalar(param dim) param
+  proc origScalar(param dim) param do
     return isIntegralType(if dim==1 then sliceDim1.type else sliceDim2.type);
-  proc toOrig(param dim, arg)
+  proc toOrig(param dim, arg) do
     return if origScalar(dim) then toScalar(arg) else toRange(arg);
 
   const dom = this.dom;
@@ -471,7 +471,7 @@ proc panelSolve(
 */
     // replicate
     on cornerLocale {
-      local
+      local do
         for j in panel.dim(1)[k+1..] do
           replK[0,j] = Ab[k,j];
       vmsgmore("  seeding replication");
@@ -480,7 +480,7 @@ proc panelSolve(
     }
     // compute
     forall (i,j) in panel[k+1.., k+1..] do
-      local
+      local do
         Ab[i,j] -= Ab[i,k] * replK[0,j];
 
     vmsgmore("panelSolve ", k);
@@ -505,7 +505,7 @@ proc updateBlockRow(
   const tlDims = tl.dims();
   on cornerLocale {
     const tlDimsLocal = tlDims; // where is value forwarding???
-    local
+    local do
       // we do not need the last row of tl, but pruning it off seems expensive
       forall (i,j) in {(...tlDimsLocal)} do
         replU[i-blk, j-blk] = Ab[i,j];
@@ -526,7 +526,7 @@ proc updateBlockRow(
           if v1 != v2 then halt("replU mismatch ", v1, " vs ", v2,
                                 "  at ", (i,k,j));
         }
-        local
+        local do
           Ab[i, j] -= replU[i-blk, k-blk] * Ab[k,j];
       }
 
@@ -703,7 +703,7 @@ proc bsComputeRow(diaFrom, diaTo, locId1, locId2, diaLocId2) {
   } else {
     // off the diagonal
 
-    ref myPartSums = bsLocalPartSums._value.localArrs[here.id].arrLocalRep;
+    ref myPartSums = bsLocalPartSums._value.localArrs[here.id]!.arrLocalRep;
     ensureDR(myPartSums._value, "bsR myPartSums");
 
     if checkBsub {
@@ -757,7 +757,7 @@ proc bsComputeMyXs(diaFrom, diaTo, locId1, locId2, zeroOutX) {
       // TODO: bulkify, unless it is already
       locB = Ab._value.dsiLocalSlice1((diaSlice, n+1));
     }
-    local
+    local do
       bsComputeMyXsWithB(diaFrom, diaTo, locAB, locX, locB);
   }
 }
@@ -774,7 +774,7 @@ proc bsComputeMyXsWithB(diaFrom, diaTo, locAB, locX, locB) {
 
 proc bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, locId2) {
   // Apart from asserts and writeln(), everything here should be local.
-  ref partSums = bsOthersPartSums._value.localArrs[here.id].arrLocalRep;
+  ref partSums = bsOthersPartSums._value.localArrs[here.id]!.arrLocalRep;
   ref locX     = replX._value.dsiLocalSlice1((0, diaFrom..diaTo));
   ensureDR(partSums._value, "bsI partSums");
   ensureDR(locX._value, "bsI locX");
@@ -809,12 +809,12 @@ proc bsIncorporateOthersPartSums(diaFrom, diaTo, locId1, locId2) {
     }
   } // proc ihelper
 
-  local
+  local do
     while toIncorporate > 0 {
       seenOther = false;
       // since incorporation in ihelper
       for l2 in 0..#tl2 do ihelper(partSums[l2], l2);
-      if !seenOther then chpl_task_yield();
+      if !seenOther then currentTask.yieldExecution();
     }
   // We must have seen *something* the last time around.
   if checkBsub then assert(seenOther, "bsI-2");
@@ -959,8 +959,8 @@ iter initABalt(param tag: iterKind, followThis): real
 
   //writeln("follower ", followThis, "  on ", here.id);
   // we know that followThis.low will be >= 0
-  const f1 = followThis(1).low + 1,
-        f2 = followThis(2).low + 1;
+  const f1 = followThis(0).low + 1,
+        f2 = followThis(1).low + 1;
   var cur = iaStart + 0.77 / f1 + 0.83 / f2;
   const step = iaStep / f1 / f2;
 
@@ -973,8 +973,8 @@ iter initABalt(param tag: iterKind, followThis): real
   }
 
   if boundsChecking {
-    for f1 in followThis(1) do
-      for f2 in followThis(2) do
+    for f1 in followThis(0) do
+      for f2 in followThis(1) do
         yield advance();
   } else {
     // we don't care how many times to do this
@@ -1095,20 +1095,20 @@ proc replicateU(abIx) {
                 here.id, "  expecting ", fromLocale.id, " ",
                 (fromLocId1, fromLocId2));
     }
-    ref myLocalArr = replU._value.localArrs[here.id].arrLocalRep;
+    ref myLocalArr = replU._value.localArrs[here.id]!.arrLocalRep;
     coforall targloc in targetLocales[fromLocId1, ..] do
       if targloc != here then
-        replU._value.localArrs[targloc.id].arrLocalRep = myLocalArr;
+        replU._value.localArrs[targloc.id]!.arrLocalRep = myLocalArr;
 }
 
-proc targetLocalesIndexForAbIndex(param dim, abIx)
+proc targetLocalesIndexForAbIndex(param dim, abIx) do
   return (divceilpos(abIx, blkSize) - 1) % (if dim == 1 then tl1 else tl2);
 
-proc targetLocaleForAbIndex(i,j)
+proc targetLocaleForAbIndex(i,j) do
   return targetLocales[targetLocalesIndexForAbIndex(1, i),
                        targetLocalesIndexForAbIndex(2, j)];
 
-proc targetLocaleReplForAbIndex(i,j)
+proc targetLocaleReplForAbIndex(i,j) do
   return targetLocalesRepl[targetLocalesIndexForAbIndex(1, i),
                            targetLocalesIndexForAbIndex(2, j)];
 
@@ -1163,8 +1163,8 @@ proc gaxpyMinus(A: [],
 
 // This confirms that our intentions, for efficiency, are fulfilled.
 proc ensureDR(value, param msg) {
-  proc etest(type t) param where t : DefaultRectangularArr return true;
-  proc etest(type t) param return false;
+  proc etest(type t) param where t : DefaultRectangularArr do return true;
+  proc etest(type t) param do return false;
   compilerAssert(etest(value.type), "ensureDR ", msg, 2);
 }
 

@@ -26,18 +26,20 @@ add_llvm_target(VECodeGen
   VERegisterInfo.cpp
   VESubtarget.cpp
   VETargetMachine.cpp
+  VVPISelLowering.cpp
 
   LINK_COMPONENTS
   Analysis
   AsmPrinter
   CodeGen
+  CodeGenTypes
   Core
   MC
   SelectionDAG
-  VEDesc
-  VEInfo
   Support
   Target
+  VEDesc
+  VEInfo
 
   ADD_TO_COMPONENT
   VE

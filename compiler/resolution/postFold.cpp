@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,12 +25,13 @@
 #include "build.h"
 #include "DecoratedClassType.h"
 #include "expr.h"
+#include "passes.h"
 #include "preFold.h"
 #include "resolution.h"
 #include "stringutil.h"
 #include "symbol.h"
 
-#include "../dyno/lib/immediates/prim_data.h"
+#include "../../frontend/lib/immediates/prim_data.h"
 
 static Expr* postFoldNormal(CallExpr* call);
 
@@ -111,10 +112,43 @@ Expr* postFold(Expr* expr) {
 
     } else if (call->isPrimitive() == true) {
       retval = postFoldPrimop(call);
+
+    // If the type construction call contains a runtime type, we need
+    // to hold onto that for later. Otherwise, fold the call away.
     } else if (SymExpr* se = toSymExpr(call->baseExpr)) {
       if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-        retval = se->copy();
-        call->replace(retval);
+        bool doFoldAway = true;
+
+        if (auto fn = toFnSymbol(se->parentSymbol))
+          if (fn->name != astrNew)
+            if (isTypeConstructorWithRuntimeTypeActual(call))
+              doFoldAway = false;
+
+        if (doFoldAway) {
+          retval = se->copy();
+          // if call is RHS of a PRIM_MOVE setting a temporary,
+          // record existence of ? argument by setting FLAG_MARKED_GENERIC.
+          if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+            if (parentCall->isPrimitive(PRIM_MOVE)) {
+              if (SymExpr* lhsSe = toSymExpr(parentCall->get(1))) {
+                bool hasQuestionArg = false;
+                for_actuals(actual, call) {
+                  if (SymExpr* act = toSymExpr(actual)) {
+                    if (act->symbol() == gUninstantiated) {
+                      hasQuestionArg = true;
+                    }
+                  }
+                }
+                // TODO: Is this still necessary? The normalizer probably
+                // covers this case now.
+                if (hasQuestionArg && lhsSe->symbol()->hasFlag(FLAG_TEMP)) {
+                  lhsSe->symbol()->addFlag(FLAG_MARKED_GENERIC);
+                }
+              }
+            }
+          }
+          call->replace(retval);
+        }
       }
     }
 
@@ -139,6 +173,17 @@ static Expr* postFoldNormal(CallExpr* call) {
     VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
 
     if (ret != NULL && ret->immediate != NULL) {
+
+      // warn for certain numeric implicit conversions before we forget
+      // everything about the call
+      for_formals_actuals(formal, actual, call) {
+        if (SymExpr* actualSe = toSymExpr(actual)) {
+          warnForSomeNumericConversions(call,
+                                        formal->typeInfo(), actual->typeInfo(),
+                                        actualSe->symbol());
+        }
+      }
+
       retval = new SymExpr(ret);
 
       call->replace(retval);
@@ -174,7 +219,8 @@ static Expr* postFoldNormal(CallExpr* call) {
       // Put the call back in the AST for better errors unless we're trying
       // to ignore multiple error messages (in which case we hope for a
       // successful compilation).
-      if (fatalErrorsEncountered() && !inGenerousResolutionForErrors() && !fIgnoreNilabilityErrors) {
+      if (fatalErrorsEncountered() && !inGenerousResolutionForErrors() &&
+          !fIgnoreNilabilityErrors) {
         retval->getStmtExpr()->insertBefore(call);
       }
     }
@@ -203,6 +249,11 @@ static Expr* postFoldNormal(CallExpr* call) {
     retval = new SymExpr(new_StringSymbol(call->fname()));
     call->replace(retval);
   } else if (fn->hasFlag(FLAG_GET_FUNCTION_NAME)) {
+    if (fWarnUnstable && call->getFunction()->hasFlag(FLAG_ANONYMOUS_FN)) {
+      USR_WARN(call, "using 'getRoutineName' inside first-class procedures is "
+                     "currently unstable");
+    }
+
     retval = new SymExpr(new_StringSymbol(call->getFunction()->name));
     call->replace(retval);
   } else if (fn->hasFlag(FLAG_GET_MODULE_NAME)) {
@@ -566,6 +617,18 @@ static Expr* postFoldPrimop(CallExpr* call) {
   } else if (call->isPrimitive(PRIM_UNARY_LNOT) == true) {
     FOLD_CALL1(P_prim_lnot);
 
+  } else if (call->isPrimitive(PRIM_ABS) == true) {
+    FOLD_CALL1(P_prim_abs);
+
+  } else if (call->isPrimitive(PRIM_SQRT) == true) {
+    FOLD_CALL1(P_prim_sqrt);
+
+  } else if (call->isPrimitive(PRIM_GET_REAL) == true) {
+    FOLD_CALL1(P_prim_get_real);
+
+  } else if (call->isPrimitive(PRIM_GET_IMAG) == true) {
+    FOLD_CALL1(P_prim_get_imag);
+
   } else if (call->isPrimitive(PRIM_ADD) == true) {
     FOLD_CALL2(P_prim_add);
 
@@ -622,7 +685,16 @@ static Expr* postFoldPrimop(CallExpr* call) {
     const char* str = NULL;
 
     if (get_string(arg, &str)) {
-      processStringInRequireStmt(str, false, call->astloc.filename());
+      // call is at the module scope if inside the module init
+      // and directly inside the module (ie no intervening blocks)
+      bool insideModuleInit =
+        call->parentSymbol && call->parentSymbol->hasFlag(FLAG_MODULE_INIT);
+      FnSymbol* moduleInit =
+        insideModuleInit ? toFnSymbol(call->parentSymbol) : nullptr;
+      BlockStmt* parentBlock = toBlockStmt(call->parentExpr);
+      bool atModuleScope = parentBlock && moduleInit && moduleInit->body == parentBlock;
+
+      processStringInRequireStmt(arg, atModuleScope, str, false, call->astloc.filename());
 
     } else {
       USR_FATAL(call, "'require' statements require string arguments");
@@ -632,6 +704,42 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
     call->replace(retval);
 
+  } else if (call->isPrimitive(PRIM_REAL64_AS_UINT64)) {
+    Expr* realArg = call->get(1);
+    Immediate* realVal = getSymbolImmediate(toSymExpr(realArg)->symbol());
+    double f = realVal->v_float64;
+    uint64_t ui;
+    INT_ASSERT(sizeof(f) == sizeof(ui));
+    memcpy(&ui, &f, sizeof(f));
+    retval = new SymExpr(new_UIntSymbol(ui, INT_SIZE_64));
+    call->replace(retval);
+  } else if (call->isPrimitive(PRIM_REAL32_AS_UINT32)) {
+    Expr* realArg = call->get(1);
+    Immediate* realVal = getSymbolImmediate(toSymExpr(realArg)->symbol());
+    float f = realVal->v_float32;
+    uint32_t ui;
+    INT_ASSERT(sizeof(f) == sizeof(ui));
+    memcpy(&ui, &f, sizeof(f));
+    retval = new SymExpr(new_UIntSymbol(ui, INT_SIZE_32));
+    call->replace(retval);
+  } else if (call->isPrimitive(PRIM_UINT64_AS_REAL64)) {
+    Expr* uintArg = call->get(1);
+    Immediate* uintVal = getSymbolImmediate(toSymExpr(uintArg)->symbol());
+    uint64_t ui = uintVal->v_uint64;;
+    double f;
+    INT_ASSERT(sizeof(f) == sizeof(ui));
+    memcpy(&f, &ui, sizeof(f));
+    retval = new SymExpr(new_RealSymbol(f));
+    call->replace(retval);
+  } else if (call->isPrimitive(PRIM_UINT32_AS_REAL32)) {
+    Expr* uintArg = call->get(1);
+    Immediate* uintVal = getSymbolImmediate(toSymExpr(uintArg)->symbol());
+    uint32_t ui = uintVal->v_uint32;
+    float f;
+    INT_ASSERT(sizeof(f) == sizeof(ui));
+    memcpy(&f, &ui, sizeof(f));
+    retval = new SymExpr(new_RealSymbol(f));
+    call->replace(retval);
   }
 
   return retval;
@@ -751,7 +859,8 @@ static bool postFoldMoveUpdateForParam(CallExpr* call, Symbol* lhsSym) {
           rhsSym == gUninstantiated) {
         paramMap.put(lhsSym, rhsSym);
 
-        lhsSym->defPoint->remove();
+        // Do not remove the definition point or the param is pruned.
+        // lhsSym->defPoint->remove();
 
         call->convertToNoop();
 
@@ -830,6 +939,22 @@ static void updateFlagTypeVariable(CallExpr* call, Symbol* lhsSym) {
 
     } else if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) == true) {
       isTypeVar = isTypeExpr(rhs);
+
+    // Check for type construction calls that have not been replaced by a
+    // SymExpr pointing to the appropriate TypeSymbol. If found, then it
+    // is because the type construction call contains one or more runtime
+    // types in it. In this case, propagate FLAG_TYPE_VARIABLE to the LHS.
+    // We need to preserve the type construction call so that the actuals
+    // can be used later.
+    } else if (auto se = toSymExpr(rhs->baseExpr)) {
+      if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+        if (isTypeConstructorWithRuntimeTypeActual(rhs)) {
+          isTypeVar = true;
+        } else {
+          INT_FATAL("Unexpected type constructor after prefold in '%s'",
+                    __FUNCTION__);
+        }
+      }
     }
 
   } else {

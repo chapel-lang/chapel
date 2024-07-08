@@ -1,0 +1,4 @@
+#!/bin/sh
+
+sort $2 > $2.sorted
+grep -v "warning:" $2.sorted >$2 # --fast generates different warning

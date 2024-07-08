@@ -35,7 +35,7 @@ var xmax = max reduce [d in Dots] d[X],
 writeln("initial sheet size is ", (ymax, xmax));
 const D = {0..ymax, 0..xmax};
 var Sheet: [D] bool;
-forall (y,x) in Dots do
+forall (y,x) in Dots with (ref Sheet) do
   Sheet[y,x] = true;
 //printSheet(Sheet);
 
@@ -113,10 +113,10 @@ proc foldSheet(Sheet: [?Dold], step=0) {
       return false;
   }
   if horizontal then
-    forall (y,x) in Dnew do
+    forall (y,x) in Dnew with (ref FoldedSheet) do
       FoldedSheet[y,x] = Sheet[y,x] || safeAccess(newy + (newy-y),x);
   else
-    forall (y,x) in Dnew do
+    forall (y,x) in Dnew with (ref FoldedSheet) do
       FoldedSheet[y,x] = Sheet[y,x] || safeAccess(y,newx + (newx-x));
   printSheet(FoldedSheet);
   writeln(+ reduce FoldedSheet);

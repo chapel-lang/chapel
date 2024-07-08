@@ -16,17 +16,17 @@ for i in 1..steps {
   var Flashed: [D] bool;
   do {
     var flashed = false;
-    forall ij in D with (ref flashed) do
+    forall ij in D with (ref flashed, ref Energy, ref Flashed) do
       if (Energy[ij].read() > 9 && Flashed[ij] == false) {
         Flashed[ij] = true;
         flashes.add(1);
         flashed = true;
-        forall off in {-1..1, -1..1} do
+        forall off in {-1..1, -1..1} with (ref Energy) do
           if off != (0,0) then
             Energy[ij+off].add(1);
       }
   } while flashed;
-  forall ij in D do
+  forall ij in D with (ref Energy) do
     if Flashed[ij] then
       Energy[ij].write(0);
   writeln("After step ", i, ":\n", Energy[D]);

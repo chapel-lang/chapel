@@ -1,0 +1,44 @@
+errors-type-mismatch-2.chpl:12: In function 'test':
+errors-type-mismatch-2.chpl:15: error: Initializing a reference with another type
+errors-type-mismatch-2.chpl:15: note: Reference has type real(64)
+errors-type-mismatch-2.chpl:15: note: Initializing with type int(64)
+errors-type-mismatch-2.chpl:18: error: Initializing a reference with another type
+errors-type-mismatch-2.chpl:18: note: Reference has type int(64)
+errors-type-mismatch-2.chpl:18: note: Initializing with type string
+errors-type-mismatch-2.chpl:21: error: Initializing a reference with another type
+errors-type-mismatch-2.chpl:20: note: Reference has type real(64)
+errors-type-mismatch-2.chpl:21: note: Initializing with type int(64)
+errors-type-mismatch-2.chpl:25: error: Initializing a reference with another type
+errors-type-mismatch-2.chpl:25: note: Reference has type int(64)
+errors-type-mismatch-2.chpl:25: note: Initializing with type bool
+errors-type-mismatch-2.chpl:28: error: Initializing a reference with another type
+errors-type-mismatch-2.chpl:27: note: Reference has type real(64)
+errors-type-mismatch-2.chpl:28: note: Initializing with type int(64)
+errors-type-mismatch-2.chpl:32: warning: r4 has type RR(int(64),string)
+errors-type-mismatch-2.chpl:36: warning: r5 has type RR(int(64),string)
+errors-type-mismatch-2.chpl:38: error: initializing a reference using an expression whose type 'RR(int(64),string)' is not an instantiation of the declared type 'RR(real(64))'
+errors-type-mismatch-2.chpl:41: error: Initializing a reference with another type
+errors-type-mismatch-2.chpl:40: note: Reference has type RR(bool,string)
+errors-type-mismatch-2.chpl:41: note: Initializing with type RR(int(64),string)
+errors-type-mismatch-2.chpl:44: warning: q4 has type domain(1,int(64),one)
+errors-type-mismatch-2.chpl:47: error: Initializing a reference with another type
+errors-type-mismatch-2.chpl:46: note: Reference has type domain(1,int(8),one)
+errors-type-mismatch-2.chpl:47: note: Initializing with type domain(1,int(64),one)
+errors-type-mismatch-2.chpl:50: error: the type declaration of the reference q6 is not a type
+errors-type-mismatch-2.chpl:50: warning: there is no checking that the domain of the initialization expression matches the domain of the declared type of the reference 'q6'
+errors-type-mismatch-2.chpl:53: warning: there is no checking that the domain of the initialization expression matches the domain of the declared type of the reference 'q7'
+errors-type-mismatch-2.chpl:53: error: Initializing a reference with another type
+errors-type-mismatch-2.chpl:53: note: Reference has type [domain(1,int(64),one)] int(64)
+errors-type-mismatch-2.chpl:53: note: Initializing with type [domain(1,int(64),one)] locale
+errors-type-mismatch-2.chpl:55: error: Initializing a reference with another type
+errors-type-mismatch-2.chpl:55: note: Reference has type real(64)
+errors-type-mismatch-2.chpl:55: note: Initializing with type int(64)
+errors-type-mismatch-2.chpl:57: error: Initializing a reference with another type
+errors-type-mismatch-2.chpl:56: note: Reference has type real(64)
+errors-type-mismatch-2.chpl:57: note: Initializing with type int(64)
+errors-type-mismatch-2.chpl:59: error: Initializing a reference with another type
+errors-type-mismatch-2.chpl:59: note: Reference has type real(64)
+errors-type-mismatch-2.chpl:59: note: Initializing with type int(64)
+errors-type-mismatch-2.chpl:61: error: Initializing a reference with another type
+errors-type-mismatch-2.chpl:60: note: Reference has type real(64)
+errors-type-mismatch-2.chpl:61: note: Initializing with type int(64)

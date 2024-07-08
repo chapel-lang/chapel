@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2004-2005 The Trustees of Indiana University.
  *                         All rights reserved.
- * Copyright (c) 2004-2005 The Regents of the University of California.
+ * Copyright (c) 2004-2024 The Regents of the University of California.
  *                         All rights reserved.
  * $COPYRIGHT$
  *
@@ -56,10 +56,10 @@ typedef struct { PLPA_NAME(bitmask_t) bitmask[PLPA_BITMASK_NUM_ELEMENTS]; } PLPA
 /***************************************************************************/
 
 /* Internal macro for identifying the byte in a bitmask array */
-#define PLPA_CPU_BYTE(num) (num / PLPA_BITMASK_T_NUM_BITS)
+#define PLPA_CPU_BYTE(num) ((num) / PLPA_BITMASK_T_NUM_BITS)
 
 /* Internal macro for identifying the bit in a bitmask array */
-#define PLPA_CPU_BIT(num) (num % PLPA_BITMASK_T_NUM_BITS)
+#define PLPA_CPU_BIT(num) ((num) % PLPA_BITMASK_T_NUM_BITS)
 
 /***************************************************************************/
 
@@ -68,16 +68,22 @@ typedef struct { PLPA_NAME(bitmask_t) bitmask[PLPA_BITMASK_NUM_ELEMENTS]; } PLPA
     memset(cpuset, 0, sizeof(PLPA_NAME(cpu_set_t)))
 
 /* Public macro to set a bit in a PLPA cpu set */
-#define PLPA_CPU_SET(num, cpuset) \
-    (cpuset)->bitmask[PLPA_CPU_BYTE(num)] |= (1 << PLPA_CPU_BIT(num))
+#define PLPA_CPU_SET(num, cpuset) do { \
+    unsigned int PLPA_NAME(tmp_num) = num; \
+    (cpuset)->bitmask[PLPA_CPU_BYTE(PLPA_NAME(tmp_num))] |= (1UL << PLPA_CPU_BIT(PLPA_NAME(tmp_num))); \
+} while (0)
 
 /* Public macro to clear a bit in a PLPA cpu set */
 #define PLPA_CPU_CLR(num, cpuset) \
-    (cpuset)->bitmask[PLPA_CPU_BYTE(num)] &= ~(1 << PLPA_CPU_BIT(num))
+    unsigned int PLPA_NAME(tmp_num) = num; \
+    (cpuset)->bitmask[PLPA_CPU_BYTE(PLPA_NAME(tmp_num))] &= ~(1UL << PLPA_CPU_BIT(PLPA_NAME(tmp_num))); \
+} while (0)
 
-/* Public macro to test if a bit is set in a PLPA cpu set */
-#define PLPA_CPU_ISSET(num, cpuset) \
-    (0 != ((cpuset)->bitmask[PLPA_CPU_BYTE(num)] & (1 << PLPA_CPU_BIT(num))))
+/* Public interace to test if a bit is set in a PLPA cpu set */
+static int PLPA_NAME(cpu_isset)(unsigned int num, const PLPA_NAME(cpu_set_t) *cpuset) {
+    return (0 != ((cpuset)->bitmask[PLPA_CPU_BYTE(num)] & (1UL << PLPA_CPU_BIT(num))));
+}
+#define PLPA_CPU_ISSET(num, cpuset) PLPA_NAME(cpu_isset)(num,cpuset)
 
 /***************************************************************************/
 

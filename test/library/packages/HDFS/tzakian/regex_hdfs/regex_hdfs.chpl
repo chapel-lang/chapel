@@ -3,7 +3,7 @@ use HDFS;
 var hdfs = hdfs_chapel_connect("default", 0);
 writeln("Words words words");
 {
-  var f = hdfs.hdfs_chapel_open("/tmp/tmp.txt", iomode.cw);
+  var f = hdfs.hdfs_chapel_open("/tmp/tmp.txt", ioMode.cw);
   var w = f.writer();
   w.write("Words words words");
   w.close();
@@ -11,7 +11,7 @@ writeln("Words words words");
 }
 
 writeln("+match: One word no captures");
-var f = hdfs.hdfs_chapel_open("/tmp/tmp.txt", iomode.r);
+var f = hdfs.hdfs_chapel_open("/tmp/tmp.txt", ioMode.r);
 {
   var r = f.reader();
   var re = compile("\\w+");

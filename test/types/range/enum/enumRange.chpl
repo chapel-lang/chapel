@@ -18,13 +18,11 @@ proc testRange(r) {
   writeln("last = ", r.last);
   writeln("low = ", r.low);
   writeln("high = ", r.high);
-  writeln("alignedLow = ", r.alignedLow);
-  writeln("alignedHigh = ", r.alignedHigh);
   writeln("isEmpty = ", r.isEmpty());
   writeln("hasFirst = ", r.hasFirst());
   writeln("hasLast = ", r.hasLast());
-  writeln("isNaturallyAligned = ", r.isNaturallyAligned());
-  writeln("isAmbiguous = ", r.isAmbiguous());
+  writeln("isNaturallyAligned = ", r.chpl_isNaturallyAligned());
+  writeln("isAmbiguous = ", ! r.isAligned());
   writeln("contains(blue) = ", r.contains(color.blue));
   writeln("contains(red) = ", r.contains(color.red));
   writeln("indexOrder(color.yellow) = ", r.indexOrder(color.yellow));

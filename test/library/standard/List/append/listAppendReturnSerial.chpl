@@ -9,6 +9,6 @@ var lst = new list(listType, listLock);
 
 for i in 1..stop do {
   var x = i:listType;
-  var ind = lst.append(x);
+  var ind = lst.pushBack(x);
   writeln(ind);
 }

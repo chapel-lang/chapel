@@ -24,10 +24,10 @@ if dist=='NONE' {
   //totalcomm2=volume;
   dobench(mydist, mydom);  
 } */else if dist=='C' {
-  const mydist = mydom dmapped Cyclic(startIdx=mydom.low);
+  const mydist = mydom dmapped new cyclicDist(startIdx=mydom.low);
   dobench(mydist, mydom);  
 } else if dist=='B' {
-  const mydist = mydom dmapped Block(boundingBox=mydom);
+  const mydist = mydom dmapped new blockDist(boundingBox=mydom);
   dobench(mydist, mydom);
 } 
 
@@ -38,7 +38,7 @@ proc within_epsilon(a: real, b: real, eps=1e-6) {
 proc dobench(mydist, mydom) {
   var still_correct = true;
 
-  var timer:Timer;
+  var timer:stopwatch;
 
   if messages {
     resetCommDiagnostics();
@@ -46,7 +46,7 @@ proc dobench(mydist, mydom) {
   }
 
   if timeit {
-    timer = new Timer();
+    timer = new stopwatch();
     timer.start();
   }
 

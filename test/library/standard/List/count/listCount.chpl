@@ -15,14 +15,14 @@ var lst1 : list(listType, listLock);
 writeln(lst1.count(testNum));
 
 for 1..testIters do {
-  lst1.append(testNum);
+  lst1.pushBack(testNum);
   const count = lst1.count(testNum);
   writeln(count);
 }
 
 var lst2 = lst1;
 
-lst2.append(lst1);
+lst2.pushBack(lst1);
 
 writeln(lst2.count(testNum));
 

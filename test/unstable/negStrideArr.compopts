@@ -1,0 +1,3 @@
+--main-module negStrideArr         # negStrideArr.warnOn.good
+-snoNegativeStrideWarnings=false   # negStrideArr.warnOn.good
+-snoNegativeStrideWarnings         # negStrideArr.warnOff.good

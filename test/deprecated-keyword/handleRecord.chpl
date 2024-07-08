@@ -1,4 +1,4 @@
-deprecated "Record C is deprecated, please use D"
+@deprecated(notes="Record C is deprecated, please use D")
 record C {
   var x: int;
 

@@ -1,0 +1,20 @@
+BootStrap: docker
+From: nixos/nix:2.16.1
+
+# This tests the latest version of Nix and packages
+# We could lock it down to a NixOS release above and
+# use a lock file below if we want to control when
+# the dependencies are updated.
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    echo "updating /etc/nix/nix.conf"
+    echo 'experimental-features = nix-command flakes' >> /etc/nix/nix.conf
+
+    mkdir /chpl-nix-deps
+    cd /chpl-nix-deps
+    cp /provision-scripts/chpl-nix-deps.nix flake.nix
+
+    nix print-dev-env --accept-flake-config < /dev/null > activate.sh

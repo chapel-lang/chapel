@@ -1,8 +1,8 @@
 /******************************************************************************
-* This is a benchmark written to emulate the behavior of a typical 
+* This is a benchmark written to emulate the behavior of a typical
 * computational fluid dynamics benchmark.
 * There are several versions of this benchmark - the original written with
-* the use of CHOMBO, other versions are written in pure c. This version is 
+* the use of CHOMBO, other versions are written in pure c. This version is
 * written in Chapel in order to explore the use of Chapel iterators and
 * performance.
 *******************************************************************************/
@@ -30,10 +30,10 @@ module CFD_mini {
  var yFluxDomain: domain(3) = {0..nCell-1,0..nCell,0..nCell-1};
  var zFluxDomain: domain(3) = {0..nCell,0..nCell-1,0..nCell-1};
  var FluxDomain: domain(3) = {0..nCell,0..nCell,0..nCell};
- var loopTime: Timer;
+ var loopTime: stopwatch;
 
 
- proc main() { 
+ proc main() {
 
    writeln("nCell=",nCell," nBox=",nBox);
 
@@ -54,13 +54,13 @@ module CFD_mini {
       }
     }
   }
-  
+
 /*******************************************************************************
  * Process Boxes:
  *  Processing the boxes means that we will be reading the data from
- *  old_boxes and writing them to new_boxes 
+ *  old_boxes and writing them to new_boxes
  *  The following are the equations for this calculation
- * 
+ *
  *  There are 5 components: p, e, u, v, w (density, energy, velocity (3D))
  *  Each of these components is represented as a 3D array (initialized
  *  above).
@@ -70,7 +70,7 @@ module CFD_mini {
  * v_{t+1}=factor2*g(v_t)*g(u_t)+factor2*g'(v_t)*g'(v_t)+factor2*g"(v_t)*g"(w_t)
  * w_{t+1}=factor2*g(w_t)*g(u_t)+factor2*g'(w_t)*g'(v_t)+factor2*g"(w_t)*g"(w_t)
  *
- *  
+ *
  *  g(data) is a stencil operation that looks like the following:
  *  g(data[z][y][x]) = factor1*
  *        (data[z][y][x-2]+7*(data[z][y][x-1]+data[z][y][x])+data[z][y][x+1])
@@ -79,22 +79,22 @@ module CFD_mini {
  *        (data[z][y-2][x]+7*(data[z][y-1][x]+data[z][y][x])+data[z][y+1][x])
  *  g"(data[z][y][x]) = factor1*
  *        (data[z-2][y][x]+7*(data[z-1][y][x]+data[z][y][x])+data[z+1][y][x])
- *        
- *  
+ *
+ *
  *  Step 1 is to calculate all of the g() values
- *  Step 2 multiplies the values together for the first column in the 
+ *  Step 2 multiplies the values together for the first column in the
  *         equations above
  *  Step 3 Return to Step 1 for g' and then for g"
  ****************************************************************************/
    loopTime.start();
-   forall b in boxRange {
+   forall b in boxRange with (ref new_data, ref old_data) {
      var FluxCache: [compRange][FluxDomain] real;
 
      computeDirection(2, FluxCache, old_data[b], new_data[b], xFluxDomain, 2);
      computeDirection(1, FluxCache, old_data[b], new_data[b], yFluxDomain, 3);
      computeDirection(0, FluxCache, old_data[b], new_data[b], zFluxDomain, 4);
 
-     proc computeDirection(dim, FluxCache, old_data, new_data, FluxDomain, dim2) {
+     proc computeDirection(dim, ref FluxCache, ref old_data, ref new_data, FluxDomain, dim2) {
        computeFlux(FluxCache, old_data, FluxDomain, dim, dim2);
        accumulate(dim, FluxCache, new_data);
      }
@@ -109,27 +109,27 @@ module CFD_mini {
         writeln();
       }
       write(new_data[0][0][z,y,x],",");
-    }  
+    }
     writeln();
   }else{
     writeln("LoopTime: ",loopTime.elapsed());
   }
-    
+
 
  }
 
- proc computeFlux(FluxCache, old_data_b, FluxDomain, dim, dim2) {
+ proc computeFlux(ref FluxCache, ref old_data_b, FluxDomain, dim, dim2) {
    var offn2, offn1, offp1 = (0,0,0);
    offn2(dim) = -2;
    offn1(dim) = -1;
    offp1(dim) =  1;
 
    inline proc stencil(old_data, zyx) {
-     return factor1 *  (old_data[zyx+offn2] + 
-                        7*(old_data[zyx+offn1] + old_data[zyx]) + 
+     return factor1 *  (old_data[zyx+offn2] +
+                        7*(old_data[zyx+offn1] + old_data[zyx]) +
                         old_data[zyx+offp1]);
    }
-     
+
    ref FluxCache_dim2 = FluxCache[dim2];
    ref old_data_b_dim2 = old_data_b[dim2];
    for zyx in FluxDomain {
@@ -147,10 +147,10 @@ module CFD_mini {
    FluxCache_dim2 *= factor2*FluxCache_dim2;
  }
 
- proc accumulate(dir, FluxCache, new_data_b) {
+ proc accumulate(dir, ref FluxCache, ref new_data_b) {
    var off = (0,0,0);
    off(dir) = 1;
-   
+
    for c in compRange{
      ref FluxCache_c = FluxCache[c];
      ref new_data_b_c = new_data_b[c];
@@ -159,4 +159,4 @@ module CFD_mini {
      }
    }
  }
-} 
+}

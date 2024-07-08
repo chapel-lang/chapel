@@ -1,3 +1,3 @@
-in B.writeThis loc=1
-in A.writeThis loc=1
+in B.serialize loc=1
+in A.serialize loc=1
 1

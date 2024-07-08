@@ -29,35 +29,50 @@ module CSV {
      for reading or writing CSV files.
    */
   record CSVIO {
-    var ch: channel;
+    var ch;
     var sep: string;
     var hasHeader: bool;
+    param writing: bool;
 
     /* Initialize a CSVIO record.
-       :arg ch: The channel to read from or write to.
+       :arg ch: The fileWriter to write to.
        :arg sep: (optional) The delimiter to separate fields
        :arg hasHeader: (optional) If true, treat the first line of data
                        as a header and skip it
      */
-    proc init(ch: channel, sep: string=",", hasHeader: bool=false) {
+    proc init(ch: fileWriter(?), sep: string=",", hasHeader: bool=false) {
       this.ch = ch;
       this.sep = sep;
       this.hasHeader = hasHeader;
+      this.writing = true;
     }
+    /* Initialize a CSVIO record.
+       :arg ch: The fileReader to read from.
+       :arg sep: (optional) The delimiter to separate fields
+       :arg hasHeader: (optional) If true, treat the first line of data
+                       as a header and skip it
+     */
+    proc init(ch: fileReader(?), sep: string=",", hasHeader: bool=false) {
+      this.ch = ch;
+      this.sep = sep;
+      this.hasHeader = hasHeader;
+      this.writing = false;
+    }
+
     /* Read a CSV file with lines matching the types of the fields in a record
      */
     iter read(type t) throws where isRecord(t) && t != string {
       use Reflection;
       var r: t;
       var skipHeader = hasHeader;
-      if ch.writing then compilerError("reading from a writing channel");
+      if writing then compilerError("reading from a writing channel");
 
       for l in ch.lines() {
         const line = l.strip(leading=false);
         if line.size == 0 then
           continue;
         const vals = line.split(sep);
-        for param i in 0..numFields(t)-1 {
+        for param i in 0..getNumFields(t)-1 {
           getFieldRef(r, i) = vals[i]: getField(r, i).type;
         }
         if skipHeader {
@@ -68,7 +83,7 @@ module CSV {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc isSpecialCaseType(type t) param {
       return t == string || isRecord(t) || isTuple(t);
     }
@@ -77,7 +92,7 @@ module CSV {
        the arguments to the function
      */
     iter read(type t...) throws where t.size > 1 || !isSpecialCaseType(t(0)) {
-      if ch.writing then compilerError("reading from a writing channel");
+      if writing then compilerError("reading from a writing channel");
 
       var r: t;
       var skipHeader = hasHeader;
@@ -109,7 +124,7 @@ module CSV {
     /* Read a CSV file with arbitrarily many rows and columns. Returns the
        data as strings in a 2D array. */
     proc read(type t: string) throws {
-      if ch.writing then compilerError("reading from a writing channel");
+      if writing then compilerError("reading from a writing channel");
       var r: t;
       var skipHeader = hasHeader;
 
@@ -141,11 +156,11 @@ module CSV {
      */
     proc write(r: ?t) throws where isRecord(t) {
       use Reflection;
-      if !ch.writing then compilerError("writing to a reading channel");
+      if !writing then compilerError("writing to a reading channel");
 
-      for param i in 0..<numFields(t) {
+      for param i in 0..<getNumFields(t) {
         ch.write(getField(r, i));
-        if i != numFields(t)-1 then
+        if i != getNumFields(t)-1 then
           ch.write(sep);
       }
       ch.writeln();
@@ -155,7 +170,7 @@ module CSV {
        resulting in a single row being added to the channel.
      */
     proc write(tup: ?t) throws where isTuple(t) {
-      if !ch.writing then compilerError("writing to a reading channel");
+      if !writing then compilerError("writing to a reading channel");
 
       for param i in 0..tup.size-1 {
         ch.write(tup(i));

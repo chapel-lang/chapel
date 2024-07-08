@@ -428,7 +428,7 @@ iter CSArr.dsiPartialThese(param onlyDim, otherIdx,
 // Block Distribution support
 //
 proc LocBlockArr.clone() {
-  return new unmanaged LocBlockArr(eltType,rank,idxType,stridable,locDom,
+  return new unmanaged LocBlockArr(eltType,rank,idxType,strides,locDom,
       locRAD, myElems, locRADLock);
 }
 
@@ -488,7 +488,7 @@ proc BlockDom.dsiPartialDomain(param exceptDim) {
 
   var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
-  var ret = space dmapped Block(space, targetLocales =
+  var ret = space dmapped new blockDist(space, targetLocales =
       dist.targetLocales[(...faceSliceMask(this, exceptDim))]);
 
   return ret;
@@ -542,7 +542,7 @@ proc CyclicDom.dsiPartialDomain(param exceptDim) {
   var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
   var ret = space dmapped
-    Cyclic(startIdx=this.dist.startIdx.withoutIdx(exceptDim),
+    new cyclicDist(startIdx=this.dist.startIdx.withoutIdx(exceptDim),
         targetLocales=dist.targetLocs[(...faceSliceMask(this,
             exceptDim))]);
 
@@ -636,7 +636,7 @@ proc BlockCyclicDom.dsiPartialDomain(param exceptDim) {
   var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
   var ret = space dmapped
-    BlockCyclic(startIdx=this.dist.lowIdx.withoutIdx(exceptDim),
+    new blockCycDist(startIdx=this.dist.lowIdx.withoutIdx(exceptDim),
         blocksize=this.dist.blocksize.withoutIdx(exceptDim),
         targetLocales=
             dist.targetLocales[(...faceSliceMask(this, exceptDim))]);
@@ -685,7 +685,7 @@ iter LocBlockCyclicDom.dsiPartialThese(param onlyDim, otherIdx,
 }
 
 proc LocBlockCyclicArr.clone() {
-  return new unmanaged LocBlockCyclicArr(eltType,rank,idxType,stridable,
+  return new unmanaged LocBlockCyclicArr(eltType,rank,idxType,strides,
       allocDom,indexDom);
 }
 
@@ -738,7 +738,7 @@ proc SparseBlockDom.dsiPartialDomain(param exceptDim) {
 
   var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
-  var ret = space dmapped Block(space, targetLocales =
+  var ret = space dmapped new blockDist(space, targetLocales =
       dist.targetLocales[(...faceSliceMask(this, exceptDim))]);
 
   return ret;

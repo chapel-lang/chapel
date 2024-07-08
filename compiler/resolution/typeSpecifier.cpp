@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -42,39 +42,7 @@ Type* typeForTypeSpecifier(Expr* expr, bool fatalOK) {
               if (var->immediate) {
                 if (NUM_KIND_INT  == var->immediate->const_kind ||
                     NUM_KIND_UINT == var->immediate->const_kind) {
-                  if (type == dtBools[BOOL_SIZE_SYS]->symbol) {
-                    int size = typeSize(var);
-
-                    switch (size) {
-                    case BOOL_SYS_WIDTH:
-                      retval = dtBools[BOOL_SIZE_SYS];
-                      break;
-
-                    case 8:
-                      retval = dtBools[BOOL_SIZE_8];
-                      break;
-
-                    case 16:
-                      retval = dtBools[BOOL_SIZE_16];
-                      break;
-
-                    case 32:
-                      retval = dtBools[BOOL_SIZE_32];
-                      break;
-
-                    case 64:
-                      retval = dtBools[BOOL_SIZE_64];
-                      break;
-
-                    default:
-                      if (fatalOK == true) {
-                        USR_FATAL_CONT(call, "illegal size %d for bool", size);
-                      }
-                      break;
-                    }
-
-
-                  } else if (type == dtInt[INT_SIZE_DEFAULT]->symbol) {
+                  if (type == dtInt[INT_SIZE_DEFAULT]->symbol) {
                     int size = typeSize(var);
 
                     switch (size) {

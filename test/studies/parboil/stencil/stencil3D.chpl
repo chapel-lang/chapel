@@ -19,7 +19,7 @@ proc main(args: [] string) {
   const c0 = 1.0:real(32) / 6.0:real(32);
   const c1 = 1.0:real(32) / 6.0:real(32) / 6.0:real(32);
 
-  var IOTimer, computeTimer, totalTimer: Timer;
+  var IOTimer, computeTimer, totalTimer: stopwatch;
 
   if nx < 1 || ny < 1 || nz < 1 then
     halt("bad problem size");
@@ -71,9 +71,9 @@ proc main(args: [] string) {
   if printTimers >= 1 then writeln("Total: ", totalTimer.elapsed());
 }
 
-proc readData(infileName:string, A: [] real(32), nx: int,ny: int, nz: int) {
-  var f = open(infileName, iomode.r);
-  var r = f.reader(kind=ionative);
+proc readData(infileName:string, ref A: [] real(32), nx: int,ny: int, nz: int) {
+  var f = open(infileName, ioMode.r);
+  var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
   r.read(A);
   r.close();
   f.close();
@@ -81,8 +81,8 @@ proc readData(infileName:string, A: [] real(32), nx: int,ny: int, nz: int) {
 
 proc outputData(outfileName: string, ANext: [] real(32),
                 nx: int, ny: int, nz: int) {
-  var f = open(outfileName, iomode.cw);
-  var w = f.writer(kind=ionative);
+  var f = open(outfileName, ioMode.cw);
+  var w = f.writer(serializer=new binarySerializer(), locking=false);
   var size = (nx*ny*nz):int(32);
   w.write(size);
   w.write(ANext);
@@ -90,14 +90,13 @@ proc outputData(outfileName: string, ANext: [] real(32),
   f.close();
 }
 
-proc stencil(c0: real(32), c1: real(32), A: [] real(32), ANext: [] real(32),
+proc stencil(c0: real(32), c1: real(32), A: [] real(32), ref ANext: [] real(32),
              nx: int, ny: int, nz: int) {
   // aak! the nz and nx indices are swapped here!
   // This is also walking the leftmost dimension fastest!
-  forall (i,j,k) in A.domain[1..nx-2, 1..ny-2, 1..nz-2] {
+  forall (i,j,k) in A.domain[1..nx-2, 1..ny-2, 1..nz-2] with (ref ANext) {
     ANext[k,j,i] = (A[k+1, j, i] + A[k-1, j, i] +
                     A[k, j+1, i] + A[k, j-1, i] +
                     A[k, j, i+1] + A[k, j, i-1])*c1 - A[k, j, i]*c0;
   }
 }
-

@@ -1,0 +1,23 @@
+─── error in redefinition-variables.chpl:1 [Redefinition] ───
+  'x' has multiple definitions.
+  It was first defined here:
+      |
+    1 | var x =
+      |     ⎺⎺⎺⎺
+      |
+  Redefined here:
+      |
+    3 | var x = 2;
+      |     ⎺⎺⎺⎺⎺
+      |
+  Redefined here:
+      |
+    4 | var y = 1, x = 3;
+      |            ⎺⎺⎺⎺⎺
+      |
+  Redefined here:
+      |
+    6 |     x = 3;
+      |     ⎺⎺⎺⎺⎺
+      |
+

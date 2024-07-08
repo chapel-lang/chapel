@@ -16,7 +16,6 @@
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
-#include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/Module.h"
 
 using namespace llvm;
@@ -62,7 +61,7 @@ static void findLoadCallsAtConstantOffset(
     } else if (auto GEP = dyn_cast<GetElementPtrInst>(User)) {
       // Take into account the GEP offset.
       if (VPtr == GEP->getPointerOperand() && GEP->hasAllConstantIndices()) {
-        SmallVector<Value *, 8> Indices(GEP->op_begin() + 1, GEP->op_end());
+        SmallVector<Value *, 8> Indices(drop_begin(GEP->operands()));
         int64_t GEPOffset = M->getDataLayout().getIndexedOffsetInType(
             GEP->getSourceElementType(), Indices);
         findLoadCallsAtConstantOffset(M, DevirtCalls, User, Offset + GEPOffset,
@@ -76,7 +75,9 @@ void llvm::findDevirtualizableCallsForTypeTest(
     SmallVectorImpl<DevirtCallSite> &DevirtCalls,
     SmallVectorImpl<CallInst *> &Assumes, const CallInst *CI,
     DominatorTree &DT) {
-  assert(CI->getCalledFunction()->getIntrinsicID() == Intrinsic::type_test);
+  assert(CI->getCalledFunction()->getIntrinsicID() == Intrinsic::type_test ||
+         CI->getCalledFunction()->getIntrinsicID() ==
+             Intrinsic::public_type_test);
 
   const Module *M = CI->getParent()->getParent()->getParent();
 
@@ -98,7 +99,9 @@ void llvm::findDevirtualizableCallsForTypeCheckedLoad(
     SmallVectorImpl<Instruction *> &Preds, bool &HasNonCallUses,
     const CallInst *CI, DominatorTree &DT) {
   assert(CI->getCalledFunction()->getIntrinsicID() ==
-         Intrinsic::type_checked_load);
+             Intrinsic::type_checked_load ||
+         CI->getCalledFunction()->getIntrinsicID() ==
+             Intrinsic::type_checked_load_relative);
 
   auto *Offset = dyn_cast<ConstantInt>(CI->getArgOperand(1));
   if (!Offset) {
@@ -160,7 +163,7 @@ Constant *llvm::getPointerAtOffset(Constant *I, uint64_t Offset, Module &M,
 
   // (Swift-specific) relative-pointer support starts here.
   if (auto *CI = dyn_cast<ConstantInt>(I)) {
-    if (Offset == 0 && CI->getZExtValue() == 0) {
+    if (Offset == 0 && CI->isZero()) {
       return I;
     }
   }

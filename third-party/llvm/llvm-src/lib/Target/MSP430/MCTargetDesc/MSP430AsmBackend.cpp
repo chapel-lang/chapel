@@ -34,8 +34,8 @@ class MSP430AsmBackend : public MCAsmBackend {
 
 public:
   MSP430AsmBackend(const MCSubtargetInfo &STI, uint8_t OSABI)
-      : MCAsmBackend(support::little), OSABI(OSABI) {}
-  ~MSP430AsmBackend() override {}
+      : MCAsmBackend(llvm::endianness::little), OSABI(OSABI) {}
+  ~MSP430AsmBackend() override = default;
 
   void applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
                   const MCValue &Target, MutableArrayRef<char> Data,
@@ -81,9 +81,9 @@ public:
       {"fixup_8",             0,  8, 0},
       {"fixup_sym_diff",      0, 32, 0},
     };
-    static_assert((array_lengthof(Infos)) == MSP430::NumTargetFixupKinds,
+    static_assert((std::size(Infos)) == MSP430::NumTargetFixupKinds,
                   "Not all fixup kinds added to Infos array");
-  
+
     if (Kind < FirstTargetFixupKind)
       return MCAsmBackend::getFixupKindInfo(Kind);
   

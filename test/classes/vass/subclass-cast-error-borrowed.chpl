@@ -1,7 +1,7 @@
 class C{};
 class D:C{};
-
-var c = new borrowed C();
+var ownC = new owned C();
+var c = ownC.borrow();
 var d = c:borrowed D?;
 
 writeln(c);

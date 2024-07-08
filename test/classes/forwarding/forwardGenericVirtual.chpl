@@ -27,9 +27,9 @@ class Rect : Base {
   }
 }
 
-var one = new borrowed Rect(1);
-var three = new borrowed Rect(3);
-var v = new borrowed View(three);
+var oneObj = new Rect(1);      var one = oneObj.borrow();
+var threeObj = new Rect(3);    var three = threeObj.borrow();
+var viewObj = new View(three); var v = viewObj.borrow();
 
 one.action(one);
 v.action(three);

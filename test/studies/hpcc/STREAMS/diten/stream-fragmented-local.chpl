@@ -12,10 +12,9 @@ config const m = computeProblemSize(elemType, numVectors),
              alpha = 3.0;
 
 config const numTrials = 10,
-             epsilon = 0.0;
+             epsilon = 1e-15;
 
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+config const useRandomSeed = true;
 
 config const printParams = true,
              printArrays = false,
@@ -30,7 +29,7 @@ proc main() {
   var   allExecTime: [LocaleSpace] [1..numTrials] real;
   var   allValidAnswer: [LocaleSpace] bool;
   
-  coforall loc in Locales {
+  coforall loc in Locales with (ref allExecTime, ref allValidAnswer) {
     on loc {
       const MyProblemSpace: domain(1, indexType) 
                           = BlockPartition(ProblemSpace, here.id, numLocales);
@@ -40,9 +39,9 @@ proc main() {
       initVectors(B, C, ProblemSpace);
 
       for trial in 1..numTrials {
-        const startTime = getCurrentTime();
+        const startTime = timeSinceEpoch().totalSeconds();
         local do A = B + alpha * C;
-        allExecTime(here.id)(trial) = getCurrentTime() - startTime;
+        allExecTime(here.id)(trial) = timeSinceEpoch().totalSeconds() - startTime;
       }
 
       allValidAnswer(here.id) = verifyResults(A, B, C);
@@ -66,13 +65,15 @@ proc printConfiguration() {
 }
 
 
-proc initVectors(B, C, ProblemSpace) {
-  var randlist = new NPBRandomStream(eltType=real, seed=seed);
+proc initVectors(ref B, ref C, ProblemSpace) {
+  var randlist = if useRandomSeed
+    then new randomStream(eltType=real)
+    else new randomStream(eltType=real, seed=314159265);
 
-  randlist.skipToNth(B.domain.low-1);
-  randlist.fillRandom(B);
-  randlist.skipToNth(ProblemSpace.size + C.domain.low-1);
-  randlist.fillRandom(C);
+  randlist.skipTo(B.domain.low-1);
+  randlist.fill(B);
+  randlist.skipTo(ProblemSpace.size + C.domain.low-1);
+  randlist.fill(C);
 
   if (printArrays) {
     writelnFragArray("B is: ", B, "\n");

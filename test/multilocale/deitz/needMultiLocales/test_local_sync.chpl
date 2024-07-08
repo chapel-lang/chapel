@@ -1,4 +1,5 @@
-extern proc printf(fmt: c_string, x...);
+use CTypes;
+extern proc printf(fmt: c_ptrConst(c_char), x...);
 
 proc main {
   var s: sync int;

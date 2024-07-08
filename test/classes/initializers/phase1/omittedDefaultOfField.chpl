@@ -7,5 +7,6 @@ class Foo {
   }
 }
 
-var r: borrowed Foo = new borrowed Foo(3);
+var ownR = new owned Foo(3);
+var r: borrowed Foo = ownR.borrow();
 writeln(r);

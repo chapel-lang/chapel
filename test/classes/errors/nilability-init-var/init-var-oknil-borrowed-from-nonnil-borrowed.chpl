@@ -4,7 +4,8 @@ class MyClass {
   var x: int;
 }
 
-var rhs = new borrowed MyClass();
+var ownRhs = new owned MyClass();
+var rhs = ownRhs.borrow();
 
 var lhs: borrowed MyClass? = rhs;
 

@@ -32,16 +32,29 @@ bool Operator::hasPoisonGeneratingFlags() const {
   case Instruction::AShr:
   case Instruction::LShr:
     return cast<PossiblyExactOperator>(this)->isExact();
+  case Instruction::Or:
+    return cast<PossiblyDisjointInst>(this)->isDisjoint();
   case Instruction::GetElementPtr: {
     auto *GEP = cast<GEPOperator>(this);
     // Note: inrange exists on constexpr only
-    return GEP->isInBounds() || GEP->getInRangeIndex() != None;
+    return GEP->isInBounds() || GEP->getInRangeIndex() != std::nullopt;
   }
+  case Instruction::ZExt:
+    if (auto *NNI = dyn_cast<PossiblyNonNegInst>(this))
+      return NNI->hasNonNeg();
+    return false;
   default:
     if (const auto *FP = dyn_cast<FPMathOperator>(this))
       return FP->hasNoNaNs() || FP->hasNoInfs();
     return false;
   }
+}
+
+bool Operator::hasPoisonGeneratingFlagsOrMetadata() const {
+  if (hasPoisonGeneratingFlags())
+    return true;
+  auto *I = dyn_cast<Instruction>(this);
+  return I && I->hasPoisonGeneratingMetadata();
 }
 
 Type *GEPOperator::getSourceElementType() const {
@@ -63,7 +76,7 @@ Align GEPOperator::getMaxPreservedAlignment(const DataLayout &DL) const {
   Align Result = Align(llvm::Value::MaximumAlignment);
   for (gep_type_iterator GTI = gep_type_begin(this), GTE = gep_type_end(this);
        GTI != GTE; ++GTI) {
-    int64_t Offset = 1;
+    uint64_t Offset;
     ConstantInt *OpC = dyn_cast<ConstantInt>(GTI.getOperand());
 
     if (StructType *STy = GTI.getStructTypeOrNull()) {
@@ -71,12 +84,10 @@ Align GEPOperator::getMaxPreservedAlignment(const DataLayout &DL) const {
       Offset = SL->getElementOffset(OpC->getZExtValue());
     } else {
       assert(GTI.isSequential() && "should be sequencial");
-      /// If the index isn't know we take 1 because it is the index that will
+      /// If the index isn't known, we take 1 because it is the index that will
       /// give the worse alignment of the offset.
-      int64_t ElemCount = 1;
-      if (OpC)
-        ElemCount = OpC->getZExtValue();
-      Offset = DL.getTypeAllocSize(GTI.getIndexedType()) * ElemCount;
+      const uint64_t ElemCount = OpC ? OpC->getZExtValue() : 1;
+      Offset = GTI.getSequentialElementStride(DL) * ElemCount;
     }
     Result = Align(MinAlign(Offset, Result.value()));
   }
@@ -122,9 +133,7 @@ bool GEPOperator::accumulateConstantOffset(
   auto end = generic_gep_type_iterator<decltype(Index.end())>::end(Index.end());
   for (auto GTI = begin, GTE = end; GTI != GTE; ++GTI) {
     // Scalable vectors are multiplied by a runtime constant.
-    bool ScalableType = false;
-    if (isa<ScalableVectorType>(GTI.getIndexedType()))
-      ScalableType = true;
+    bool ScalableType = GTI.getIndexedType()->isScalableTy();
 
     Value *V = GTI.getOperand();
     StructType *STy = GTI.getStructTypeOrNull();
@@ -148,7 +157,7 @@ bool GEPOperator::accumulateConstantOffset(
         continue;
       }
       if (!AccumulateOffset(ConstOffset->getValue(),
-                            DL.getTypeAllocSize(GTI.getIndexedType())))
+                            GTI.getSequentialElementStride(DL)))
         return false;
       continue;
     }
@@ -161,8 +170,7 @@ bool GEPOperator::accumulateConstantOffset(
     if (!ExternalAnalysis(*V, AnalysisIndex))
       return false;
     UsedExternalAnalysis = true;
-    if (!AccumulateOffset(AnalysisIndex,
-                          DL.getTypeAllocSize(GTI.getIndexedType())))
+    if (!AccumulateOffset(AnalysisIndex, GTI.getSequentialElementStride(DL)))
       return false;
   }
   return true;
@@ -184,7 +192,7 @@ bool GEPOperator::collectOffset(
   for (gep_type_iterator GTI = gep_type_begin(this), GTE = gep_type_end(this);
        GTI != GTE; ++GTI) {
     // Scalable vectors are multiplied by a runtime constant.
-    bool ScalableType = isa<ScalableVectorType>(GTI.getIndexedType());
+    bool ScalableType = GTI.getIndexedType()->isScalableTy();
 
     Value *V = GTI.getOperand();
     StructType *STy = GTI.getStructTypeOrNull();
@@ -209,19 +217,18 @@ bool GEPOperator::collectOffset(
         continue;
       }
       CollectConstantOffset(ConstOffset->getValue(),
-                            DL.getTypeAllocSize(GTI.getIndexedType()));
+                            GTI.getSequentialElementStride(DL));
       continue;
     }
 
     if (STy || ScalableType)
       return false;
-    APInt IndexedSize =
-        APInt(BitWidth, DL.getTypeAllocSize(GTI.getIndexedType()));
+    APInt IndexedSize = APInt(BitWidth, GTI.getSequentialElementStride(DL));
     // Insert an initial offset of 0 for V iff none exists already, then
     // increment the offset by IndexedSize.
     if (!IndexedSize.isZero()) {
-      VariableOffsets.insert({V, APInt(BitWidth, 0)});
-      VariableOffsets[V] += IndexedSize;
+      auto *It = VariableOffsets.insert({V, APInt(BitWidth, 0)}).first;
+      It->second += IndexedSize;
     }
   }
   return true;

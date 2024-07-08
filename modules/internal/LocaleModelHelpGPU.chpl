@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,7 +25,7 @@ module LocaleModelHelpGPU {
   public use LocaleModelHelpRuntime;
   use CTypes;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config param debugGPULocale = false;
 
   //////////////////////////////////////////

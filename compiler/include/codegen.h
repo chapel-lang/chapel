@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,8 +46,19 @@ namespace clang {
   }
 }
 
+// and some chpl frontend things
+namespace chpl {
+  namespace libraries {
+    class LibraryFile;
+  }
+}
+
+#include "llvm/Analysis/LoopAnalysisManager.h"
+#include "llvm/Analysis/CGSCCPassManager.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/MDBuilder.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Target/TargetMachine.h"
 
 struct ClangInfo;
@@ -71,11 +82,34 @@ struct LoopData
 #endif
 };
 
+/* Holds names of files used by LLVM codegen. */
+struct LLVMGenFilenames {
+  std::string moduleFilename;
+  std::string preOptFilename;
+  std::string opt1Filename;
+  std::string opt2Filename;
+  std::string artifactFilename;
+  std::string gpuObjectFilenamePrefix;
+  std::string outFilenamePrefix;
+  std::string fatbinFilename;
+};
+
 /* GenInfo is meant to be a global variable which stores
  * the code generator state - e.g. FILE* to print C to
  * or LLVM module in which to generate.
  */
 struct GenInfo {
+
+  /* Stores information about precompiled llvm Modules */
+  struct PrecompiledModule {
+#ifdef HAVE_LLVM
+    const chpl::libraries::LibraryFile* lf = nullptr;
+    std::unique_ptr<llvm::Module> mod;
+    // the names of the globals needed from this module
+    std::vector<UniqueString> neededGlobalNames;
+#endif
+  };
+
   // If we're generating C, this is the FILE* to print to
   // TODO: Rename cfile to just 'file' since it's also used when
   //       generating Fortran and Python interfaces.
@@ -111,11 +145,11 @@ struct GenInfo {
   llvm::MDBuilder *mdBuilder;
   llvm::TargetMachine* targetMachine;
 
+  LLVMGenFilenames llvmGenFilenames;
+
   std::vector<LoopData> loopStack;
   std::vector<std::pair<llvm::AllocaInst*, llvm::Type*> > currentStackVariables;
   const clang::CodeGen::CGFunctionInfo* currentFunctionABI;
-
-  llvm::LLVMContext llvmContext;
 
   // tbaa information
   llvm::MDNode* tbaaRootNode;
@@ -136,9 +170,26 @@ struct GenInfo {
   GlobalToWideInfo globalToWideInfo;
 
   // Optimizations to apply immediately after code-generating a fn
-  llvm::legacy::FunctionPassManager* FPM_postgen;
+  // (this one is only set for LLVM_USE_OLD_PASSES)
+  llvm::legacy::FunctionPassManager* FPM_postgen = nullptr;
 
-  ClangInfo* clangInfo;
+  // Managers to optimize immediately after code-generating a fn
+  // (these ones are used ifndef LLVM_USE_OLD_PASSES)
+  llvm::LoopAnalysisManager* LAM = nullptr;
+  llvm::FunctionAnalysisManager* FAM = nullptr;
+  llvm::CGSCCAnalysisManager* CGAM = nullptr;
+  llvm::ModuleAnalysisManager* MAM = nullptr;
+  llvm::FunctionPassManager* FunctionSimplificationPM = nullptr;
+  llvm::PassInstrumentationCallbacks* PIC = nullptr;
+  llvm::StandardInstrumentations* SI = nullptr;
+
+  // pointer to clang support info
+  ClangInfo* clangInfo = nullptr;
+
+  // When using a separately compiled .dyno file,
+  // keep track of the LLVM IR modules that have been used
+  // for the separately compiled information.
+  std::map<UniqueString, PrecompiledModule> precompiledMods;
 #endif
 
   GenInfo();
@@ -153,6 +204,9 @@ extern bool     gCodegenGPU;
 // Map from filename to an integer that will represent an unique ID for each
 // generated GET/PUT
 extern std::map<std::string, int> commIDMap;
+
+// Freshly initialize gGenInfo, expecting it does not already exist.
+void initializeGenInfo(void);
 
 #ifdef HAVE_LLVM
 void setupClang(GenInfo* info, std::string rtmain);
@@ -176,9 +230,13 @@ GenRet codegenCallExpr(const char* fnName);
 GenRet codegenCallExpr(const char* fnName, GenRet a1);
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
 Type* getNamedTypeDuringCodegen(const char* name);
+void setupDefaultFilenames(void);
 void gatherTypesForCodegen(void);
+GenRet codegenTypeByName(const char* type_name);
 
 void registerPrimitiveCodegens();
+
+void linkInDynoFiles();
 
 void closeCodegenFiles();
 

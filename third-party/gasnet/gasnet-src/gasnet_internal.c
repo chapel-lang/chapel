@@ -87,7 +87,7 @@ int gasneti_init_done = 0; /*  true after init */
 int gasneti_attach_done = 0; /*  true after attach */
 extern void gasneti_checkinit(void) {
   if (!gasneti_init_done)
-    gasneti_fatalerror("Illegal call to GASNet before gasnet_init() initialization");
+    gasneti_fatalerror("Illegal call to GASNet before library initialization. Please use gex_Client_Init() to initialize GASNet.");
 }
 extern void gasneti_checkattach(void) {
    gasneti_checkinit();
@@ -120,11 +120,15 @@ int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC64_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_CUDA_UVA_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_HIP_CONFIG) = 1;
+int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_ZE_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL)) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES)) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN)) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CORE_,GASNET_CORE_NAME)) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(EXTENDED_,GASNET_EXTENDED_NAME)) = 1;
+#if GASNET_CONDUIT_OFI
+  int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(OFI_PROVIDER_,GASNETC_OFI_PROVIDER_IDENT)) = 1;
+#endif
 
 /* global definitions of GASNet-wide internal variables
    not subject to override */
@@ -350,9 +354,10 @@ extern void gasneti_check_config_postattach(void) {
           GASNETI_TRACE_PRINTF(I,("Setting mallopt M_TRIM_THRESHOLD=-1 and M_MMAP_MAX=0"));
           gasneti_malloc_munmap_disabled = 1;
         #else
-          GASNETI_TRACE_PRINTF(I,("WARNING: GASNET_DISABLE_MUNMAP set on an unsupported platform"));
           if (gasneti_verboseenv()) 
-            fprintf(stderr, "WARNING: GASNET_DISABLE_MUNMAP set on an unsupported platform\n");
+            gasneti_console0_message("WARNING","GASNET_DISABLE_MUNMAP set on an unsupported platform");
+          else
+            GASNETI_TRACE_PRINTF(I,("WARNING: GASNET_DISABLE_MUNMAP set on an unsupported platform"));
         #endif
       }
       #if GASNET_NDEBUG
@@ -520,6 +525,8 @@ gex_Segment_t gasneti_export_segment(gasneti_Segment_t _real_segment) {
   return GASNETI_EXPORT_POINTER(gex_Segment_t, _real_segment);
 }
 #endif
+
+const gasnet_seginfo_t gasneti_null_segment = {0};
 
 // TODO-EX: probably need to add to a per-client container of some sort
 gasneti_Segment_t gasneti_alloc_segment(
@@ -1345,15 +1352,19 @@ extern const char *gasneti_decode_envval(const char *val) {
 #ifndef GASNETI_ENV_OUTPUT_NODE
 #define GASNETI_ENV_OUTPUT_NODE()  (gasneti_mynode == 0)
 #endif
+extern int gasneti_verboseenv_parse(const char *);
 extern int _gasneti_verboseenv_fn(void) {
   static int verboseenv = -1;
   if (verboseenv == -1) {
     if (gasneti_init_done && gasneti_mynode != (gex_Rank_t)-1) {
+      if (!GASNETI_ENV_OUTPUT_NODE()) verboseenv = 0; // wrong process
+      else {
       #if GASNET_DEBUG_VERBOSE
-        verboseenv = GASNETI_ENV_OUTPUT_NODE();
+        verboseenv = 1; // hard-wired to enabled
       #else
-        verboseenv = !!gasneti_getenv("GASNET_VERBOSEENV") && GASNETI_ENV_OUTPUT_NODE();
+        verboseenv = gasneti_verboseenv_parse(gasneti_getenv("GASNET_VERBOSEENV"));
       #endif
+      }
       gasneti_sync_writes();
     }
   } else gasneti_sync_reads();
@@ -1474,6 +1485,9 @@ extern double gasneti_get_exittimeout(double dflt_max, double dflt_min, double d
   return result;
 }
 
+// Used in some conduits to coordinate user-provided exit code across layers
+gasneti_atomic_t gasneti_exit_code = gasneti_atomic_init(0);
+
 /* ------------------------------------------------------------------------------------ */
 /* Bits for conduits which want/need to override pthread_create() */
 
@@ -1495,6 +1509,139 @@ extern double gasneti_get_exittimeout(double dflt_max, double dflt_min, double d
 #endif
 
 /* ------------------------------------------------------------------------------------ */
+#ifdef GASNETC_CHECK_PORTABLE_CONDUIT_HOOK
+  // If a conduit is *conditionally* considered a "portable conduit", then this
+  // hook can be implemented to allow the conduit to indicate if those
+  // conditions are met.  This function should return non-zero when the conduit
+  // is "portable" and zero when "native".
+  // Runs via gasnete_check_config(), called by gasnete_init().
+  extern int gasnetc_check_portable_conduit(void);
+#else
+  #define gasnetc_check_portable_conduit() 0
+#endif
+
+typedef struct { 
+    const char *filename;
+    mode_t filemode;
+    const char *desc;
+    int hwid;
+} gasneti_device_probe_t;
+
+#define GASNETI_IBV_DEVICES \
+        { "/dev/infiniband/uverbs0",     S_IFCHR, "InfiniBand IBV", 2 },  /* OFED 1.0 */ \
+        { "/dev/infiniband/ofs/uverbs0", S_IFCHR, "InfiniBand IBV", 2 }   /* Solaris */
+#define GASNETI_CXI_DEVICES \
+        { "/dev/cxi0",                   S_IFCHR, "HPE Slingshot-11 (OFI)", 3 }, \
+        { "/sys/class/cxi",              S_IFDIR, "HPE Slingshot-11 (OFI)", 3 } 
+#define GASNETI_GNI_DEVICES \
+        { "/dev/kgni0",                  S_IFCHR, "Cray Aries/Gemini", 6 }, \
+        { "/proc/kgnilnd",               S_IFDIR, "Cray Aries/Gemini", 6 }
+
+// Boolean probe for device nodes (file or directory)
+static int gasneti_device_probe(gasneti_device_probe_t *dev_to_probe) {
+  struct stat stat_buf;
+  return !stat(dev_to_probe->filename,&stat_buf) && 
+         (!dev_to_probe->filemode || (dev_to_probe->filemode & stat_buf.st_mode));
+}
+
+// bug 3609: some verbs-compatible networks need special handling
+// While that bug is about ibv-conduit, something simlar holds for OFI verbs provider
+#define GASNETI_HCA_OMNI_PATH  1
+#define GASNETI_HCA_TRUESCALE  2
+static int gasneti_probeInfiniBandHCAs(void) {
+  static int probeInfiniBandHCAs = 0;
+#if PLATFORM_OS_LINUX
+  static int is_init = 0;
+  if (!is_init) {
+    const char *filename[] = {
+      "/sys/class/infiniband/hfi1_0/board_id", // Intel Omni-Path
+      "/sys/class/infiniband/qib0/board_id",   // QLogic/Intel TrueScale
+    };
+    for (int i=0; i < sizeof(filename)/sizeof(filename[0]); i++) {
+      FILE *fp = fopen(filename[i],"r");
+      if (fp) {
+        char buffer[128];
+        size_t r = fread(&buffer, 1, sizeof(buffer), fp);
+        if (r) { 
+          buffer[r-1] = 0;
+          // eg: "Intel Omni-Path HFI Adapter 100 Series, 1 Port, PCIe x16"
+          if (strstr(buffer, "Omni-Path")) probeInfiniBandHCAs |= GASNETI_HCA_OMNI_PATH;
+          // eg: "InfiniPath_QLE7340"
+          if (strstr(buffer, "InfiniPath")) probeInfiniBandHCAs |= GASNETI_HCA_TRUESCALE;
+        }
+        fclose(fp);
+      }
+    }
+    is_init = 1;
+  }
+#endif
+  return probeInfiniBandHCAs;
+}
+
+// bug 3609: some verbs-compatible networks need special handling
+static int gasneti_lowQualityVerbs(void) {
+  int mask = (GASNETI_HCA_OMNI_PATH | GASNETI_HCA_TRUESCALE);
+  return gasneti_probeInfiniBandHCAs() & mask;
+}
+
+// Search for hardware with a corresponding "native" OFI provider
+//
+// TODO: Mellanox drivers are available for at least FreeBSD and macOS, and
+// libfabric support's both of those as well.  So, the Linux-specific probe
+// for GASNETI_IBV_DEVICES should be expanded if we have interest in the
+// verbs provider on those platforms.
+static int gasneti_nativeOfiProvider(void) {
+  static int nativeOfiProvider = 0;
+#if PLATFORM_OS_LINUX
+  static int is_init = 0;
+  if (!is_init) {
+    gasneti_device_probe_t dev_list[] = {
+      GASNETI_IBV_DEVICES, // verbs or psm2 providers
+      GASNETI_CXI_DEVICES  // cxi provider
+    };
+    if (gasneti_probeInfiniBandHCAs() & GASNETI_HCA_TRUESCALE) {
+      // Assume no good if TrueScale HCA is found (we assume single fabric)
+    } else {
+      for (int i = 0; i < sizeof(dev_list)/sizeof(dev_list[0]); ++i) {
+        if (gasneti_device_probe(dev_list + i)) {
+          nativeOfiProvider = 1;
+          break;
+        }
+      }
+    }
+    is_init = 1;
+  }
+#endif
+  return nativeOfiProvider;
+}
+
+// Search for hardware where we will recommend ucx-conduit as native.
+// Currently we only document support for Mellanox ConnectX-5 and newer.
+// However, we currently accept anything not on ibv-consuit's ban list.
+// TODO: more accurate device probe?
+// TODO: more platforms than just Linux?
+static int gasneti_nativeUcxSupport(void) {
+  static int nativeUcxSupport = 0;
+#if PLATFORM_OS_LINUX
+  static int is_init = 0;
+  if (!is_init) {
+    gasneti_device_probe_t dev_list[] = { GASNETI_IBV_DEVICES };
+    if (gasneti_lowQualityVerbs()) {
+      // Assume no good if any ban-listed HCA is found (we assume single fabric)
+    } else {
+      for (int i = 0; i < sizeof(dev_list)/sizeof(dev_list[0]); ++i) {
+        if (gasneti_device_probe(dev_list + i)) {
+          nativeUcxSupport = 1;
+          break;
+        }
+      }
+    }
+    is_init = 1;
+  }
+#endif
+  return nativeUcxSupport;
+}
+
 static void gasneti_check_portable_conduit(void) { /* check for portable conduit abuse */
   char mycore[80], myext[80];
   char const *mn = GASNET_CORE_NAME_STR;
@@ -1504,25 +1651,12 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
   mn = GASNET_EXTENDED_NAME_STR;
   m = myext; while (*mn) { *m = tolower(*mn); m++; mn++; }
   *m = '\0';
-  int haveOmniPath = 0; // bug 3609: this oddball needs special handling
-  #if PLATFORM_OS_LINUX
-    const char *filename = "/sys/class/infiniband/hfi1_0/board_id";
-    FILE *fp = fopen(filename,"r");
-    if (fp) {
-      char buffer[128];
-      size_t r = fread(&buffer, 1, sizeof(buffer), fp);
-      if (r) { // eg: "Intel Omni-Path HFI Adapter 100 Series, 1 Port, PCIe x16"
-        buffer[r-1] = 0;
-        if (strstr(buffer, "Omni-Path")) haveOmniPath = 1;
-      }
-      fclose(fp);
-    }
-  #endif
   
   if ( /* is a portable network conduit */
-         (!strcmp("mpi",mycore) && !strcmp("reference",myext))
+      gasnetc_check_portable_conduit()
+      || (!strcmp("mpi",mycore) && !strcmp("reference",myext))
       || (!strcmp("udp",mycore) && !strcmp("reference",myext))
-      || (!strcmp("ofi",mycore) && !strcmp("ofi",myext) && !haveOmniPath)
+      || (!strcmp("ucx",mycore) && !gasneti_nativeUcxSupport())
       ) {
     const char *p = GASNETI_CONDUITS;
     char natives[255];
@@ -1543,66 +1677,55 @@ static void gasneti_check_portable_conduit(void) { /* check for portable conduit
         if (!strcmp(name,"smp")) continue;
         if (!strcmp(name,"mpi")) continue;
         if (!strcmp(name,"udp")) continue;
-        if (!strcmp(name,"ofi") && !haveOmniPath) continue;
-        if (!strcmp(name,"ibv") && haveOmniPath) continue; // never recommend ibv over OPA
+        if (!strcmp(name,"ucx") && !gasneti_nativeUcxSupport()) continue;
+        if (!strcmp(name,"ofi") && !gasneti_nativeOfiProvider()) continue;
+        if (!strcmp(name,"ibv") && gasneti_lowQualityVerbs()) continue; // never recommend ibv on these networks
         if (strlen(natives)) strcat(natives,", ");
         strcat(natives,name);
       }
       #undef GASNETI_CONDUITS_DELIM
     }
     if (natives[0]) {
-      sprintf(reason, "WARNING: Support was detected for native GASNet conduits: %s",natives);
+      sprintf(reason, "    WARNING: Support was detected for native GASNet conduits: %s",natives);
     } else { /* look for hardware devices supported by native conduits */
-      struct { 
-        const char *filename;
-        mode_t filemode;
-        const char *desc;
-        int hwid;
-      } known_devs[] = {
-        { "/dev/infiniband/uverbs0",     S_IFCHR, "InfiniBand IBV", 2 },  /* OFED 1.0 */
-        { "/dev/infiniband/ofs/uverbs0", S_IFCHR, "InfiniBand IBV", 2 },  /* Solaris */
+      gasneti_device_probe_t known_devs[] = {
+        GASNETI_IBV_DEVICES,
+        GASNETI_CXI_DEVICES,
         #if !GASNET_SEGMENT_EVERYTHING
-          { "/dev/kgni0",            S_IFCHR, "Cray Gemini", 6 },
-          { "/proc/kgnilnd",         S_IFDIR, "Cray Gemini", 6 },
+          GASNETI_GNI_DEVICES,
         #endif
         { "/list_terminator", S_IFDIR, "", 9999 }
       };
-      int i, lim = sizeof(known_devs)/sizeof(known_devs[0]);
-      for (i = 0; i < lim; i++) {
-        struct stat stat_buf;
-        if (!stat(known_devs[i].filename,&stat_buf) && 
-            (!known_devs[i].filemode || (known_devs[i].filemode & stat_buf.st_mode))) {
+      int lim = sizeof(known_devs)/sizeof(known_devs[0]);
+      for (int i = 0; i < lim; i++) {
+        if (gasneti_device_probe(known_devs + i)) {
             int hwid = known_devs[i].hwid;
-            if (hwid == 2 && haveOmniPath) continue; // never recommend ibv over OPA
+            if (hwid == 2 && gasneti_lowQualityVerbs()) continue; // never recommend ibv on these networks
             if (strlen(natives)) strcat(natives,", ");
             strcat(natives,known_devs[i].desc);
             while (i < lim && hwid == known_devs[i].hwid) i++; /* don't report a network twice */
         }
       }
-      #if PLATFORM_OS_CNL
-        if (strlen(natives)) strcat(natives,", ");
-        strcat(natives,"Cray Gemini (XE and XK) or Aries (XC)");
-      #endif
       if (natives[0]) {
-        sprintf(reason, "WARNING: This system appears to contain recognized network hardware: %s\n"
-                        "WARNING: which is supported by a GASNet native conduit, although\n"
-                        "WARNING: it was not detected at configure time (missing drivers?)",
+        sprintf(reason, "    WARNING: This system appears to contain recognized network hardware: %s\n"
+                        "    WARNING: which is supported by a GASNet native conduit, although\n"
+                        "    WARNING: it was not detected at configure time (missing drivers?)",
                         natives);
       }
     }
-    if (reason[0] && !gasneti_getenv_yesno_withdefault("GASNET_QUIET",0) && gasneti_mynode == 0) {
-      fprintf(stderr,"WARNING: Using GASNet's %s-conduit, which exists for portability convenience.\n"
+    if (reason[0] && !gasneti_getenv_yesno_withdefault("GASNET_QUIET",0)) {
+      gasneti_console0_message("WARNING",
+                     "Using GASNet's %s-conduit, which exists for portability convenience.\n"
                      "%s\n"
-                     "WARNING: You should *really* use the high-performance native GASNet conduit\n"
-                     "WARNING: if communication performance is at all important in this program run.\n",
+                     "    WARNING: You should *really* use the high-performance native GASNet conduit\n"
+                     "    WARNING: if communication performance is at all important in this program run.",
               mycore, reason);
-      fflush(stderr);
     }
   }
 }
 
 static void gasneti_check_architecture(void) { // check for bad build configurations
-  #if PLATFORM_OS_CNL && PLATFORM_ARCH_X86_64 // bug 3743, verify correct processor tuning
+  #if PLATFORM_OS_SUBFAMILY_CNL && PLATFORM_ARCH_X86_64 // bug 3743, verify correct processor tuning
   { FILE *fp = fopen("/proc/cpuinfo","r");
     char model[255];
     if (!fp) gasneti_fatalerror("Failure in fopen('/proc/cpuinfo','r')=%s",strerror(errno));
@@ -1614,19 +1737,48 @@ static void gasneti_check_architecture(void) { // check for bad build configurat
     int isKNL = !!strstr(model, "Phi");
     #ifdef __CRAY_MIC_KNL  // module craype-mic-knl that tunes for AVX512
       const char *warning = isKNL ? 0 :
-      "WARNING: This executable was optimized for MIC KNL (module craype-mic-knl) but run on another processor!\n";
+      "This executable was optimized for MIC KNL (module craype-mic-knl) but run on another processor!";
     #else // some other x86 tuning mode
       const char *warning = isKNL ? 
-      "WARNING: This executable is running on a MIC KNL architecture, but was not optimized for MIC KNL.\n"
-      "WARNING: This often has a MAJOR impact on performance. Please re-build with module craype-mic-knl!\n"
+      "This executable is running on a MIC KNL architecture, but was not optimized for MIC KNL.\n"
+      "    WARNING: This often has a MAJOR impact on performance. Please re-build with module craype-mic-knl!"
       : 0;
     #endif
-    if (warning && gasneti_mynode == 0) {
-      fputs(warning, stderr);
-      fflush(stderr);
-    }
+    if (warning) gasneti_console0_message("WARNING", "%s", warning);
   }
   #endif
+}
+
+/* ------------------------------------------------------------------------------------ */
+/* Trivial handling of defered-start progress threads
+ */
+
+int gasneti_query_progress_threads(
+            gex_Client_t                     e_client,
+            unsigned int                    *count_p,
+            const gex_ProgressThreadInfo_t **info_p,
+            gex_Flags_t                      flags)
+{
+  // TODO: this enforcement will become incorrect for the multi-client case
+  static int have_run = 0;
+  if (have_run) {
+    gasneti_fatalerror("A client may make at most one call to gex_System_QueryProgressFunctions().");
+  } else {
+    have_run = 1;
+  }
+
+  if (! e_client) GASNETI_RETURN_ERRR(BAD_ARG, "client must be non-NULL");
+  gasneti_Client_t i_client = gasneti_import_client(e_client);
+  if (! count_p)  GASNETI_RETURN_ERRR(BAD_ARG, "count_p must be non-NULL");
+  if (! info_p)   GASNETI_RETURN_ERRR(BAD_ARG, "info_p must be non-NULL");
+  if (flags)      GASNETI_RETURN_ERRR(BAD_ARG, "flags argument must be zero");
+  if (!(gex_Client_QueryFlags(e_client) & GEX_FLAG_DEFER_THREADS))
+                  GASNETI_RETURN_ERRR(RESOURCE, "GEX_FLAG_DEFER_THREADS was not passed to gex_Client_Init");
+
+  *count_p = 0;
+  *info_p = NULL;
+
+  return GASNET_OK;
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -1777,9 +1929,20 @@ extern uint32_t gasneti_gethostid(void) {
     static uint32_t myid = 0;
 
     if_pf (!myid) {
-    #if PLATFORM_OS_CYGWIN
-      /* gethostid() is known to be unreliable - we'll hash the hostname */
-    #elif HAVE_GETHOSTID
+    #if PLATFORM_OS_CYGWIN || !HAVE_GETHOSTID
+      // gethostid() is known to be either unreliable or unavailable
+      // always hash the hostname
+    #else
+      // gethostid() is available
+      // hash the hostname only if gethostid() looks unreliable after multiple retries.
+      // This allows us to tolerate transient misbehavior such as was reported in
+      // Bug 4483 - gethostid() on Perlmutter rarely returns 0, breaking PSHM detection
+      #ifndef GASNETI_GETHOSTID_RETRIES
+        #define GASNETI_GETHOSTID_RETRIES 24 // try to keep worst case delay under 0.1s
+      #endif
+      int retries = GASNETI_GETHOSTID_RETRIES;
+      uint64_t delay_ns = 1;
+    retry:
       myid = (uint32_t)gethostid();
     #endif
 
@@ -1797,6 +1960,19 @@ extern uint32_t gasneti_gethostid(void) {
           || (myid == 0x0000017f)
           || (myid == 0x0001007f)
           || (myid == 0x0100007f)) {
+      #if HAVE_GETHOSTID && !PLATFORM_OS_CYGWIN
+        if (retries-- > 0) {
+          GASNETI_TRACE_PRINTF(I,("Retrying after invalid return 0x%08x from gethostid()", (unsigned int)myid));
+          gasneti_nsleep(delay_ns);
+          delay_ns *= 2;
+          goto retry;
+        }
+        gasneti_console_message("WARNING", "Invalid return 0x%08x from gethostid().  "
+                                "Please see documentation on GASNET_HOST_DETECT in README and "
+                                "consider setting its value to 'hostname' or reconfiguring using "
+                                "'--with-host-detect=hostname' to make that the default value.",
+                                (unsigned int)myid);
+      #endif
         uint64_t csum = gasneti_hosthash();
         myid = GASNETI_HIWORD(csum) ^ GASNETI_LOWORD(csum);
       }
@@ -1804,6 +1980,47 @@ extern uint32_t gasneti_gethostid(void) {
 
     return myid;
 }
+
+static enum {
+    gasneti_hostid_alg_invalid = 0,
+    gasneti_hostid_alg_conduit,
+    gasneti_hostid_alg_gethostid,
+    gasneti_hostid_alg_hostname,
+    gasneti_hostid_alg_trivial
+} gasneti_hostid_alg;
+
+static  union {
+    uint64_t hostname;
+    uint32_t hostid;
+} gasneti_my_hostid;
+
+// gasneti_format_host_detect()
+//
+// Returns the hostid, or equivalent, as a printable string (possibly empty).
+// This is for use in error, warning and trace messages (uses gasneti_dynsprintf)
+const char *gasneti_format_host_detect(void) {
+  switch (gasneti_hostid_alg) {
+    case gasneti_hostid_alg_conduit:
+      return "[opaque conduit-specific value]";
+      break;
+
+    case gasneti_hostid_alg_gethostid:
+      return gasneti_dynsprintf("0x%08x", gasneti_my_hostid.hostid);
+      break;
+
+    case gasneti_hostid_alg_hostname:
+      return gasneti_dynsprintf("'%s' (hashed to 0x%"PRIx64")",
+                                gasneti_gethostname(), gasneti_my_hostid.hostname);
+      break;
+
+    case gasneti_hostid_alg_trivial:
+      return gasneti_dynsprintf("%d", gasneti_mynode);
+      break;
+
+    default: gasneti_unreachable_error(("Unknown host detect algorithm %i", (int)gasneti_hostid_alg));
+  }
+}
+
 
 /* gasneti_nodemapParse()
  *
@@ -1852,9 +2069,8 @@ extern void gasneti_nodemapParse(void) {
 #if GASNET_PSHM
   limit = gasneti_getenv_int_withdefault("GASNET_SUPERNODE_MAXSIZE", 0, 0);
  #if GASNET_CONDUIT_SMP
-  if (limit && !gasneti_mynode) {
-    fprintf(stderr, "WARNING: ignoring GASNET_SUPERNODE_MAXSIZE for smp-conduit with PSHM.\n");
-    fflush(stderr);
+  if (limit) {
+    gasneti_console0_message("WARNING","ignoring GASNET_SUPERNODE_MAXSIZE for smp-conduit with PSHM.");
   }
   limit = gasneti_nodes;
  #else
@@ -1919,14 +2135,47 @@ extern void gasneti_nodemapParse(void) {
 
   gasneti_free(s);
 
-  #if GASNET_DEBUG_VERBOSE
-  if (!gasneti_mynode) {
-    for (i = 0; i < gasneti_nodes; ++i) {
-      fprintf(stderr, "gasneti_nodemap[%i] = %i\n", (int)i, (int)gasneti_nodemap[i]);
+#if GASNET_PSHM
+  GASNETI_TRACE_PRINTF(I,("nodemap: process %d of %d in its nbrhd, %d of %d on host %s",
+                          gasneti_mysupernode.node_rank, gasneti_mysupernode.node_count,
+                          gasneti_myhost.node_rank, gasneti_myhost.node_count,
+                          gasneti_gethostname()));
+  gex_Rank_t nonh_rank, nonh_count;  // "Nbrhd ON Host" coordinates
+  nonh_rank = nonh_count = 0;
+  for (i = 0; i < gasneti_myhost.node_count; ++i) {
+    j = gasneti_myhost.nodes[i];  // iterating over procs on my host
+    if (gasneti_nodemap[j] == j) { // first proc in its nbrhd
+      nonh_count += 1;
+      nonh_rank += (j <= gasneti_mynode); // too high by 1, corrected after loop
     }
   }
+  --nonh_rank;
+  GASNETI_TRACE_PRINTF(I,("nodemap: nbrhd %d of %d in the job, %d of %d on host %s",
+                          gasneti_mysupernode.grp_rank, gasneti_mysupernode.grp_count,
+                          nonh_rank, nonh_count, gasneti_gethostname()));
+#else
+  GASNETI_TRACE_PRINTF(I,("nodemap: process %d of %d on host %s",
+                          gasneti_myhost.node_rank, gasneti_myhost.node_count,
+                          gasneti_gethostname()));
+#endif
+  GASNETI_TRACE_PRINTF(I,("nodemap: host %d of %d",
+                          gasneti_myhost.grp_rank, gasneti_myhost.grp_count));
+
+  #if GASNET_DEBUG_VERBOSE
+    for (i = 0; i < gasneti_nodes; ++i) {
+      gasneti_console0_message("INFO","gasneti_nodemap[%i] = %i\n", (int)i, (int)gasneti_nodemap[i]);
+    }
   #endif
   
+#if GASNET_NDEBUG && !GASNET_PSHM && !GASNET_SEGMENT_EVERYTHING
+  if (!gasneti_mynode && (gasneti_nodes != gasneti_myhost.grp_count)) {
+    // at least one host holds more than one process
+    gasneti_console_message("WARNING",
+        "Running with multiple processes per host without shared-memory communication support (PSHM).  "
+        "This can significantly reduce performance.  "
+        "Please re-configure GASNet using `--enable-pshm` to enable fast intra-host comms.");
+  }
+#endif
 }
 
 // gasneti_nodemapInit(exchangefn, ids, sz, stride)
@@ -1977,13 +2226,6 @@ extern void gasneti_nodemapParse(void) {
 extern void gasneti_nodemapInit(gasneti_bootstrapExchangefn_t exchangefn,
                                 const void *ids, size_t sz, size_t stride) {
   gasneti_nodemap = gasneti_malloc(gasneti_nodes * sizeof(gex_Rank_t));
-  enum {
-    gasneti_hostid_alg_invalid = 0,
-    gasneti_hostid_alg_conduit,
-    gasneti_hostid_alg_gethostid,
-    gasneti_hostid_alg_hostname,
-    gasneti_hostid_alg_trivial
-  } gasneti_hostid_alg;
 
   // First parse GASNET_HOST_DETECT
   // Default is complicated:
@@ -2001,30 +2243,24 @@ extern void gasneti_nodemapInit(gasneti_bootstrapExchangefn_t exchangefn,
   #endif
   const char *dflt = ids ? "conduit" : GASNETI_HOST_DETECT_DEFAULT;
   const char *envval = gasneti_getenv_withdefault("GASNET_HOST_DETECT", dflt);
-  char *lowerval = gasneti_strdup(envval);
-  for (char *p = lowerval; *p; ++p) *p = tolower(*p);
-  if (! strcmp(lowerval, "conduit")) {
+  if (! gasneti_strcasecmp(envval, "conduit")) {
     gasneti_hostid_alg = gasneti_hostid_alg_conduit;
-  } else if (! strcmp(lowerval, "gethostid")) {
+  } else if (! gasneti_strcasecmp(envval, "gethostid")) {
     gasneti_hostid_alg = gasneti_hostid_alg_gethostid;
-  } else if (! strcmp(lowerval, "hostname")) {
+  } else if (! gasneti_strcasecmp(envval, "hostname")) {
     gasneti_hostid_alg = gasneti_hostid_alg_hostname;
-  } else if (! strcmp(lowerval, "trivial")) {
+  } else if (! gasneti_strcasecmp(envval, "trivial")) {
     // NOTE: this option is intentionally undocumented
     gasneti_hostid_alg = gasneti_hostid_alg_trivial;
   } else {
     gasneti_fatalerror("GASNET_HOST_DETECT='%s' is not recognized", envval);
   }
-  gasneti_free(lowerval);
 
   void *tmp = NULL;
-  union {
-    uint64_t hostname;
-    uint32_t hostid;
-  } local_id;
 
   switch (gasneti_hostid_alg) {
     case gasneti_hostid_alg_conduit:
+      // TODO: save something suitable for gasneti_format_host_detect()
       // If we lack conduit-specific ID(s), then "conduit" is invalid:
       if (!ids) goto out_bad_alg;
       // (ids && !exchangefn) means a *full* vector of conduit-specific IDs:
@@ -2033,15 +2269,15 @@ extern void gasneti_nodemapInit(gasneti_bootstrapExchangefn_t exchangefn,
       break;
 
     case gasneti_hostid_alg_gethostid:
-      local_id.hostid = gasneti_gethostid();
-      sz = sizeof(local_id.hostid);
-      ids = &local_id;
+      gasneti_my_hostid.hostid = gasneti_gethostid();
+      sz = sizeof(gasneti_my_hostid.hostid);
+      ids = &gasneti_my_hostid;
       break;
 
     case gasneti_hostid_alg_hostname:
-      local_id.hostname = gasneti_hosthash();
-      sz = sizeof(local_id.hostname);
-      ids = &local_id;
+      gasneti_my_hostid.hostname = gasneti_hosthash();
+      sz = sizeof(gasneti_my_hostid.hostname);
+      ids = &gasneti_my_hostid;
       break;
 
     case gasneti_hostid_alg_trivial:
@@ -2067,6 +2303,7 @@ no_exchange:
 
 no_helper:
   // Perform "common" work w.r.t the nodemap
+  GASNETI_TRACE_PRINTF(I,("GASNET_HOST_DETECT=%s yields %s", envval, gasneti_format_host_detect()));
   gasneti_nodemapParse();
   return;
 
@@ -2142,62 +2379,94 @@ ssize_t gasneti_getline(char **buf_p, size_t *n_p, FILE *fp) {
   extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_pmi(int *argc, char ***argv, gex_Rank_t *nodes, gex_Rank_t *mynode);
 #endif
 
+int gasneti_spawn_verbose = 0;
+
 extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_p,
                                   const char *force_spawner,
                                   gex_Rank_t *nodes_p, gex_Rank_t *mynode_p) {
   gasneti_spawnerfn_t const *res = NULL;
-  const char *not_set = "(not set)";
-  const char *spawner;
-  char *tmp = NULL;
+  const char *spawner_envvar = "GASNET_" GASNET_CORE_NAME_STR "_SPAWNER";
+  const char *spawner = NULL;
+  int enabled = 0;  // non-zero if an enabled spawner is selected explicitly
+  int disabled = 0; // non-zero if a known spawner is selected explicitly but is not enabled
+  int spawner_not_set = 0;
+  int match;
   if (force_spawner) spawner = force_spawner;
   else { 
-    // Purposely hide this variable from verbose output, since it's only for use as an internal hand-off
-    // from gasnetrun scripts. End users should set GASNET_<conduit>_SPAWNER
-    spawner = gasneti_getenv("GASNET_SPAWN_CONTROL");
-    if (!spawner) spawner = not_set;
+    // Purposely hide this variable from verbose output, since it's only for
+    // use as an internal hand-off from out-dated gasnetrun scripts.
+    // End users should set GASNET_<conduit>_SPAWNER.
+    const char *dflt = gasneti_getenv("GASNET_SPAWN_CONTROL");
+    if (!dflt) {
+    #ifdef GASNETC_DEFAULT_SPAWNER
+      dflt = GASNETC_DEFAULT_SPAWNER;
+      spawner_not_set = !gasneti_getenv(spawner_envvar); // Not traced
+    #else
+      gasneti_unreachable_error(("Call to gasneti_spawnerInit() without any default spawner defined"));
+    #endif
+    }
+    // GASNET_<CONDUIT>_SPAWNER=FOO may be set explicitly by a user, or
+    // implicitly by gasnetrun.  If it was not set by either of those means,
+    // then the default will normally be the configure-time default.  However,
+    // if the legacy GASNET_SPAWN_CONTROL envvar is set, it takes precedence
+    // over the configure-time value.
+    spawner = gasneti_getenv_withdefault(spawner_envvar, dflt);
   }
+  gasneti_assert(spawner != NULL);
 
-  if (spawner != not_set) { // upper-case
-    tmp = gasneti_strdup(spawner);
-    for (char *p = tmp; *p; p++) *p = toupper(*p);
-    spawner = tmp;
-  }
-
+  match = !gasneti_strcasecmp(spawner, "MPI");
 #if HAVE_MPI_SPAWNER
-  /* bug 3406: Try MPI-based spawn first, EVEN if the var is not set.
-   * This is a requirement for spawning using bare mpirun
-   */
-  if (!res && (spawner == not_set || !strcmp(spawner, "MPI"))) {
+  // For bug 3406:
+  // Try mpi-spawner first if GASNET_<CONDUIT>_SPAWNER is unset.
+  // This is a requirement for spawning using bare mpirun.
+  if (!res && (spawner_not_set || match)) {
     res = gasneti_bootstrapInit_mpi(argc_p, argv_p, nodes_p, mynode_p);
   }
+  enabled += match;
+#else
+  disabled += match;
 #endif
 
+  match = !gasneti_strcasecmp(spawner, "SSH");
 #if HAVE_SSH_SPAWNER
-  /* GASNET_SPAWN_CONTROL=ssh is set by gasnetrun for the ssh spawn master,
-   * and by the ssh command line for other processes (ie all normal uses).
-   * We no longer claim to support ssh-based launch without gasnetrun.
-   * TODO: should we remove the "spawner == not_set" case?
-   */
-  if (!res && (spawner == not_set || !strcmp(spawner, "SSH"))) {
+  // We do not attempt ssh-spawner in the absence of a (possibly default)
+  // setting of GASNET_<CONDUIT>_SPAWNER.  Such could never be expected to
+  // work, since a portion of the support logic is in the gasnetrun script.
+  if (!res && match && !spawner_not_set) {
     res = gasneti_bootstrapInit_ssh(argc_p, argv_p, nodes_p, mynode_p);
   }
+  enabled += match;
+#else
+  disabled += match;
 #endif
 
+  match = !gasneti_strcasecmp(spawner, "PMI");
 #if HAVE_PMI_SPAWNER
-  /* GASNET_SPAWN_CONTROL=pmi is set by gasnetrun for the pmi spawn case.
-   * We no longer claim to support direct launch with srun, yod, etc.
-   * TODO: should we remove the "spawner == not_set" case?
-   */
-  if (!res && (spawner == not_set || !strcmp(spawner, "PMI"))) {
+  // We unofficially support "bare" (no gasnetrun script) PMI-based spawning
+  // if GASNET_<CONDUIT>_SPAWNER is unset (assuming gasneti_bootstrapInit_mpi()
+  // doesn't run first and fail fatally).
+  if (!res && (spawner_not_set || match)) {
     res = gasneti_bootstrapInit_pmi(argc_p, argv_p, nodes_p, mynode_p);
   }
+  enabled += match;
+#else
+  disabled += match;
 #endif
 
   if (!res) {
-    gasneti_fatalerror("Requested spawner \"%s\" is unknown or not supported in this build", spawner);
+    if (enabled) {
+      gasneti_fatalerror("Requested spawner \"%s\" failed to initialize", spawner);
+    } else if (disabled) {
+      gasneti_fatalerror("Requested spawner \"%s\" is known, but not enabled in this build", spawner);
+    } else if (! spawner_not_set) {
+      gasneti_fatalerror("Requested spawner \"%s\" is unknown", spawner);
+    } else {
+      // TODO: enumerate the supported spawners
+      gasneti_fatalerror("No supported spawner was able to initialize the job");
+    }
   }
 
-  gasneti_free(tmp);
+  gasneti_spawn_verbose = gasneti_getenv_yesno_withdefault("GASNET_SPAWN_VERBOSE",0);
 
   return res;
 }
@@ -2390,17 +2659,11 @@ void gasneti_segtbl_del(gasneti_Segment_t seg) {
           gasneti_memalloc_extracheck = gasneti_getenv_yesno_withdefault("GASNET_MALLOC_EXTRACHECK", 0);
           if (gasneti_memalloc_scanfreed && !gasneti_memalloc_clobber) {
             gasneti_memalloc_clobber = 1;
-            if (gasneti_mynode == 0) { 
-              fprintf(stderr, "WARNING: GASNET_MALLOC_SCANFREED requires GASNET_MALLOC_CLOBBER: enabling it.\n");
-              fflush(stderr);
-            }
+            gasneti_console0_message("WARNING", "GASNET_MALLOC_SCANFREED requires GASNET_MALLOC_CLOBBER: enabling it.");
           }
           if (gasneti_memalloc_scanfreed && !gasneti_memalloc_leakall) {
             gasneti_memalloc_leakall = 1;
-            if (gasneti_mynode == 0) { 
-              fprintf(stderr, "WARNING: GASNET_MALLOC_SCANFREED requires GASNET_MALLOC_LEAKALL: enabling it.\n");
-              fflush(stderr);
-            }
+            gasneti_console0_message("WARNING", "GASNET_MALLOC_SCANFREED requires GASNET_MALLOC_LEAKALL: enabling it.");
           }
         }
       gasneti_mutex_unlock(&gasneti_memalloc_lock);
@@ -2866,6 +3129,40 @@ char *gasneti_sappendf(char *s, const char *fmt, ...) {
   va_end(args);
 
   return s;
+}
+
+// case-insensitive string comparison
+// same semantics as the POSIX-1.2001 equivalent except for NULL arguments,
+// which these functions treat as indistinguishable from a pointer to '\0'
+int gasneti_strcasecmp(const char *s1, const char *s2) {
+  static char zero = '\0';
+  if (!s1) s1 = &zero;
+  if (!s2) s2 = &zero;
+  size_t i = 0;
+  while (s1[i] && s2[i]) {
+    char a = tolower(s1[i]);
+    char b = tolower(s2[i]);
+    if (a != b) return ((a < b) ? -1 : 1);
+    ++i;
+  }
+  if (!s1[i] && !s2[i]) return 0; // ended together (identical)
+  else return (s2[i] ? -1 : 1); // shorter string is the lesser
+}
+
+int gasneti_strncasecmp(const char *s1, const char *s2, size_t n) {
+  static char zero = '\0';
+  if (!s1) s1 = &zero;
+  if (!s2) s2 = &zero;
+  size_t i = 0;
+  while ((i < n) && s1[i] && s2[i]) {
+    char a = tolower(s1[i]);
+    char b = tolower(s2[i]);
+    if (a != b) return ((a < b) ? -1 : 1);
+    ++i;
+  }
+  if (i == n) return 0; // first n chars were identical
+  if (!s1[i] && !s2[i]) return 0; // ended together (identical)
+  else return (s2[i] ? -1 : 1); // shorter string is the lesser
 }
 
 #if GASNET_DEBUGMALLOC

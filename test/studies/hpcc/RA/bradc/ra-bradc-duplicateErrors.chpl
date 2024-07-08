@@ -9,11 +9,11 @@ const tableSize = 1 << logTableSize;
 
 config const errorTolerance = 0.01;
 
-const tableDom = [0..tableSize-1];
+const tableDom = {0..tableSize-1};
 var Table: [tableDom] uint(64);
 
 const numUpdates = 4*tableSize;
-const updateDom = [0..numUpdates-1];
+const updateDom = {0..numUpdates-1};
 
 //var NUPDATE: int;
 

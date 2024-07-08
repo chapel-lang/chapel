@@ -1,0 +1,7 @@
+blockDistArgs.chpl:13: warning: DefaultDist is unstable and may change in the future
+blockDistArgs.chpl:8: warning: passing arguments other than 'boundingBox' and 'targetLocales' to 'blockDist' is currently unstable
+blockDistArgs.chpl:9: warning: passing arguments other than 'boundingBox' and 'targetLocales' to 'blockDist' is currently unstable
+blockDistArgs.chpl:10: warning: passing arguments other than 'boundingBox' and 'targetLocales' to 'blockDist' is currently unstable
+blockDistArgs.chpl:11: warning: passing arguments other than 'boundingBox' and 'targetLocales' to 'blockDist' is currently unstable
+blockDistArgs.chpl:12: warning: passing arguments other than 'boundingBox' and 'targetLocales' to 'blockDist' is currently unstable
+blockDistArgs.chpl:13: warning: passing arguments other than 'boundingBox' and 'targetLocales' to 'blockDist' is currently unstable

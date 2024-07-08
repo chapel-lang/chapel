@@ -3,7 +3,7 @@ module FileHashing {
   /* SHA256Hash is a record storing a SHA256 hash value.
      It supports comparison and writeln.
    */
-  record SHA256Hash {
+  record SHA256Hash : hashable, writeSerializable {
     /* The actual hash value */
     var hashVal: 8*uint(32);
 
@@ -11,10 +11,10 @@ module FileHashing {
        in a good format.
        */
 
-    proc writeThis(f) throws {
+    proc serialize(writer, ref serializer) throws {
       for component in hashVal {
         var s = try! "%08xu".format(component);
-        f.write(s);
+        writer.write(s);
       }
     }
 
@@ -82,16 +82,16 @@ module FileHashing {
 
   /*
      Returns the SHA256Hash for the file stored at `path`.
-     May throw an error if the file could not be openned, for example.
+     May throw an error if the file could not be opened, for example.
    */
   proc computeFileHash(path: string): SHA256Hash throws {
     use IO;
     use SHA256Implementation;
 
-    var f = open(path, iomode.r);
+    var f = open(path, ioMode.r);
     var len = f.size;
-    var r = f.reader(kind=iokind.big, locking=false,
-                     start=0, end=len);
+    var r = f.reader(deserializer=new binaryDeserializer(endianness.big), locking=false,
+                     region=0..#len);
 
 
     var msg:16*uint(32); // aka 64 bytes

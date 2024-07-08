@@ -3,6 +3,7 @@
 import os
 import subprocess
 import sys
+import unittest
 
 try:
     # Module `distutils` is deprecated in Python 3.10 and will be removed in Python 3.12
@@ -19,17 +20,19 @@ def warning(msg):
         sys.stderr.write(msg)
         sys.stderr.write('\n')
 
+ignore_errors = False
 
 def error(msg, exception=Exception):
     """Exception raising wrapper that differentiates developer-mode output"""
     developer = os.environ.get('CHPL_DEVELOPER')
-    if developer and developer != "0":
+    if developer and developer != "0" and not ignore_errors:
         raise exception(msg)
     else:
         sys.stderr.write('\nError: ')
         sys.stderr.write(msg)
         sys.stderr.write('\n')
-        sys.exit(1)
+        if not ignore_errors:
+            sys.exit(1)
 
 
 def memoize(func):
@@ -76,10 +79,12 @@ def run_command(command, stdout=True, stderr=False, cmd_input=None):
                                                                cmd_input)
     if not exists:
         error("command not found: {0}".format(command[0]), OSError)
-    if returncode != 0:
-        error("command failed: {0}\noutput was:\n{1}".format(command,
-                                                             my_stderr),
-              CommandError)
+    elif returncode != 0:
+        error(
+            "command failed: {0}\noutput was:\n{1}".format(command, my_stderr),
+            CommandError,
+        )
+
     if stdout and stderr:
         return my_stdout, my_stderr
     elif stdout:
@@ -107,3 +112,78 @@ def run_live_command(command):
 
     if returncode != 0:
         error("command failed: {0}".format(command), CommandError)
+
+
+def _split_ver_str(ver_str):
+    """Split a version string into an array of integers"""
+
+    # Semantic versioning strings can have prelease information
+    # after a hypen and/or build metadata after a plus. For
+    # the purpose of our versioning checks we strip these
+    ver_str = ver_str.rsplit('-',1)[0]
+    ver_str = ver_str.rsplit('+',1)[0]
+
+    return [int(x) for x in ver_str.split('.')]
+
+
+def is_ver_in_range(versionStr, minimumStr, maximumStr):
+    """Assume that version, minimum, and maximum are version strings consisting
+    of integers separated by periods. Ensure that version is within the
+    bounds: [minimumStr, maximumStr); non upper-bound is non inclusive."""
+
+    version = _split_ver_str(versionStr)
+    minimum = _split_ver_str(minimumStr)
+    maximum = _split_ver_str(maximumStr)
+
+    # Pad version, minimum, and maximum with zeros so they're the same length
+    max_len = max(len(version), len(minimum), len(maximum))
+    version = version + [0] * (max_len - len(version))
+    minimum = minimum + [0] * (max_len - len(minimum))
+    maximum = maximum + [0] * (max_len - len(maximum))
+
+    for i in range(max_len):
+        if version[i] < minimum[i]:
+            return False
+        elif version[i] > minimum[i]:
+            break
+
+    for i in range(max_len):
+        if version[i] < maximum[i]:
+            return True
+        elif version[i] > maximum[i]:
+            return False
+
+    return False
+
+
+class _UtilsTests(unittest.TestCase):
+    def test_is_ver_in_range(self):
+        # Various tests for versions in range: [2, 4)
+        for min_ver in ["2", "2.0", "2.0.0"]:
+          for max_ver in ["4", "4.0", "4.0.0"]:
+            # Versions too low
+            for ver in ["0", "0.0", "1", "1.0", "1.0-alpha"]:
+                self.assertFalse(is_ver_in_range(ver, min_ver, max_ver))
+
+            # Versions in bound
+            for ver in ["2", "2.0", "2.5", "3", "3-alpha", "3.1", "3.1.1", "3.9", "3.9.9.9.9"]:
+              self.assertTrue(is_ver_in_range(ver, min_ver, max_ver))
+
+            # Versions too high
+            for ver in ["4", "4.0", "4.1", "4.0.1", "5", "5-alpha"]:
+              self.assertFalse(is_ver_in_range(ver, min_ver, max_ver))
+
+        # Various tests for versions in range: [2.5, 4.5)
+        for min_ver in ["2.5", "2.5.0"]:
+          for max_ver in ["4.5", "4.5.0"]:
+            # Versions too low
+            for ver in ["2", "2.4", "2.4.0", "2.4.0.0", "2.4.9.9.9.9"]:
+              self.assertFalse(is_ver_in_range(ver, min_ver, max_ver))
+
+            # Versions in bound
+            for ver in ["2.5", "2.5.0", "2.6", "4.4", "4.4.0", "4.4.9"]:
+              self.assertTrue(is_ver_in_range(ver, min_ver, max_ver))
+
+            # Versions too high
+            for ver in ["4.5", "4.5.0", "4.5.9", "4.6", "5", "5.0"]:
+              self.assertFalse(is_ver_in_range(ver, min_ver, max_ver))

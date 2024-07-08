@@ -1,0 +1,9 @@
+fields-of-this-4-expl-errors.chpl:12: In method 'asdf':
+fields-of-this-4-expl-errors.chpl:21: error: cannot assign to const variable
+fields-of-this-4-expl-errors.chpl:20: note: The shadow variable 'this' is constant due to task intents in this loop
+fields-of-this-4-expl-errors.chpl:23: error: cannot assign to const variable
+fields-of-this-4-expl-errors.chpl:20: note: The shadow variable 'this' is constant due to task intents in this loop
+fields-of-this-4-expl-errors.chpl:31: error: illegal lvalue in assignment
+fields-of-this-4-expl-errors.chpl:43: error: cannot assign to const variable
+fields-of-this-4-expl-errors.chpl:45: error: cannot assign to const variable
+fields-of-this-4-expl-errors.chpl:53: error: illegal lvalue in assignment

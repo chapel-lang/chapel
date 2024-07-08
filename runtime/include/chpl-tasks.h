@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,6 +33,15 @@
 extern "C" {
 #endif
 
+#ifdef HAS_GPU_LOCALE
+// Engin: normally, I wanted to stick this into chpl-gpu.h. However, circular
+// dependency between headers was a bit difficult to break. chpl-gpu.h needs
+// chpl_task_getRequestedSubloc from here (well, actually chpl-tasks-impl-fns)
+typedef struct {
+  void** streams;
+} chpl_gpu_taskPrvData_t;
+#endif
+
 //
 // This holds per-runtime-task information the tasking layer maintains
 // on behalf of other runtime layers.  Its components are intended to
@@ -43,6 +52,9 @@ extern "C" {
 //
 typedef struct {
   chpl_comm_taskPrvData_t comm_data;
+#ifdef HAS_GPU_LOCALE
+  chpl_gpu_taskPrvData_t gpu_data;
+#endif
 } chpl_task_infoRuntime_t;
 
 //
@@ -159,11 +171,13 @@ void chpl_task_exit(void);        // called by the main task
 // This task should be quite dedicated (e.g., get its own system
 // thread) in order to be responsive and not be held up by other
 // user-level tasks. returns 0 on success, nonzero on failure.
+// If cpu is >= 0 then the task is bound to the specified CPU if
+// the platform supports CPU binding.
 //
 // The caller of this function is responsible for ensuring that
 // *arg remains available to the task as long as it is needed.
 //
-int chpl_task_createCommTask(chpl_fn_p fn, void* arg);
+int chpl_task_createCommTask(chpl_fn_p fn, void* arg, int cpu);
 
 //
 // Have the tasking layer call the 'chpl_main' function pointer

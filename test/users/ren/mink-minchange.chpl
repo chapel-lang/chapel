@@ -4,7 +4,7 @@ class mink : ReduceScanOp {
   const k : int = 10;
   var v: [1..k] eltType = max(eltType);
   
-  proc identity return [1..k] max(eltType);
+  proc identity do return [1..k] max(eltType);
   
   proc accumulate(x: eltType)
   {
@@ -45,11 +45,11 @@ class mink : ReduceScanOp {
     return v;
   }
   
-  proc clone() return new unmanaged mink(eltType=eltType);
+  proc clone() do return new unmanaged mink(eltType=eltType);
 }
    
 var A: [1..10] int;
-forall i in 1..10 do
+forall i in 1..10 with (ref A) do
        A(i) = i;
 var minimums: [1..10] int;
 minimums = mink reduce A;

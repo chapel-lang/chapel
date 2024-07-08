@@ -1,13 +1,13 @@
 class C {
-  proc bbox(x: int) {
+  proc bbox(x: int): range(strides=strideKind.negOne) {
     halt("bbox() not implemented for this class");
-    return 0..-1 by 1;
+    // return 0..-1 by -1; // this line would be ignored
   }
 }
 
 class E : C {
   param rank: int;
-  var ranges : rank*range(int, BoundedRangeType.bounded, true);
+  var ranges : rank*range(int, boundKind.both, strideKind.negOne);
 
   proc postinit() {
     for i in 1..rank do
@@ -19,7 +19,8 @@ class E : C {
   }
 }
 
-var e:borrowed C = new borrowed E(4);
+var ownE = new owned E(4);
+var e:borrowed C = ownE.borrow();
 
 writeln(e.bbox(1));
 writeln(e.bbox(2));

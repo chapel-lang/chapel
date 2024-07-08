@@ -43,7 +43,7 @@ proc processTemplate(templ: [?templInds], stepsLeft) {
     writeln("Step ", stepsLeft);
     var next: [0..<(templ.size*2-1)] string;
     writeln(templInds);
-    forall i in templInds {
+    forall i in templInds with (ref next) {
       const first = templ[i];
       next[i*2] = first;
       if i != templInds.high {
@@ -51,7 +51,7 @@ proc processTemplate(templ: [?templInds], stepsLeft) {
         var substr = first + second;
         if debug then
           writeln("Trying to look up ", substr);
-        next[i*2+1] = prodMap.getValue(substr);
+        next[i*2+1] = prodMap[substr];
       }
     }
     processTemplate(next, stepsLeft-1);

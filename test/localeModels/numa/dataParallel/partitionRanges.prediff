@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-sort -o $1.exec.out.tmp $1.exec.out.tmp 

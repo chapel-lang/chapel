@@ -1,6 +1,6 @@
 class C {
   var x: int;
-  proc foo(y: int = 2) return x + y;
+  proc foo(y: int = 2) do return x + y;
 }
 
 var c = new unmanaged C();

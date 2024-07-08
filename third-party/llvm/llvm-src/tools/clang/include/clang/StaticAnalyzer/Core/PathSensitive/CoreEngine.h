@@ -25,6 +25,7 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState_Fwd.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/WorkList.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/iterator_range.h"
 #include "llvm/Support/Casting.h"
 #include <cassert>
 #include <memory>
@@ -78,6 +79,7 @@ private:
   ///  worklist algorithm.  It is up to the implementation of WList to decide
   ///  the order that nodes are processed.
   std::unique_ptr<WorkList> WList;
+  std::unique_ptr<WorkList> CTUWList;
 
   /// BCounterFactory - A factory object for created BlockCounter objects.
   ///   These are used to record for key nodes in the ExplodedGraph the
@@ -100,6 +102,8 @@ private:
   /// something interesting is happening. This field is the allocator for such
   /// tags.
   DataTag::Factory DataTags;
+
+  void setBlockCounter(BlockCounter C);
 
   void generateNode(const ProgramPoint &Loc,
                     ProgramStateRef State,
@@ -170,22 +174,13 @@ public:
   }
 
   WorkList *getWorkList() const { return WList.get(); }
+  WorkList *getCTUWorkList() const { return CTUWList.get(); }
 
-  BlocksExhausted::const_iterator blocks_exhausted_begin() const {
-    return blocksExhausted.begin();
+  auto exhausted_blocks() const {
+    return llvm::iterator_range(blocksExhausted);
   }
 
-  BlocksExhausted::const_iterator blocks_exhausted_end() const {
-    return blocksExhausted.end();
-  }
-
-  BlocksAborted::const_iterator blocks_aborted_begin() const {
-    return blocksAborted.begin();
-  }
-
-  BlocksAborted::const_iterator blocks_aborted_end() const {
-    return blocksAborted.end();
-  }
+  auto aborted_blocks() const { return llvm::iterator_range(blocksAborted); }
 
   /// Enqueue the given set of nodes onto the work list.
   void enqueue(ExplodedNodeSet &Set);
@@ -210,8 +205,14 @@ struct NodeBuilderContext {
   const CFGBlock *Block;
   const LocationContext *LC;
 
+  NodeBuilderContext(const CoreEngine &E, const CFGBlock *B,
+                     const LocationContext *L)
+      : Eng(E), Block(B), LC(L) {
+    assert(B);
+  }
+
   NodeBuilderContext(const CoreEngine &E, const CFGBlock *B, ExplodedNode *N)
-      : Eng(E), Block(B), LC(N->getLocationContext()) { assert(B); }
+      : NodeBuilderContext(E, B, N->getLocationContext()) {}
 
   /// Return the CFGBlock associated with this builder.
   const CFGBlock *getBlock() const { return Block; }
@@ -290,7 +291,9 @@ public:
   ExplodedNode *generateNode(const ProgramPoint &PP,
                              ProgramStateRef State,
                              ExplodedNode *Pred) {
-    return generateNodeImpl(PP, State, Pred, false);
+    return generateNodeImpl(
+        PP, State, Pred,
+        /*MarkAsSink=*/State->isPosteriorlyOverconstrained());
   }
 
   /// Generates a sink in the ExplodedGraph.
@@ -495,6 +498,11 @@ public:
     iterator(CFGBlock::const_succ_iterator i) : I(i) {}
 
   public:
+    // This isn't really a conventional iterator.
+    // We just implement the deref as a no-op for now to make range-based for
+    // loops work.
+    const iterator &operator*() const { return *this; }
+
     iterator &operator++() { ++I; return *this; }
     bool operator!=(const iterator &X) const { return I != X.I; }
 

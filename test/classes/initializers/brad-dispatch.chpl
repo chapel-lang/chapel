@@ -7,7 +7,7 @@ class C {
    proc init(a:int,b:int) {
      x = a;
      y = b;
-     this.complete();
+     init this;
      writeln(this); // Only doable in Phase 2
    }
 }

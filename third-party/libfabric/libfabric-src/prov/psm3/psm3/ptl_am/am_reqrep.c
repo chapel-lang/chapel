@@ -59,7 +59,7 @@
 #include "psm_am_internal.h"
 
 psm2_error_t
-psmi_amsh_am_short_request(psm2_epaddr_t epaddr,
+psm3_amsh_am_short_request(psm2_epaddr_t epaddr,
 			   psm2_handler_t handler, psm2_amarg_t *args, int nargs,
 			   void *src, size_t len, int flags,
 			   psm2_am_completion_fn_t completion_fn,
@@ -80,9 +80,9 @@ psmi_amsh_am_short_request(psm2_epaddr_t epaddr,
 	psmi_assert(epaddr->ptlctl->ptl != NULL);
 
 	req_args[0].u32w0 = (uint32_t) handler;
-	psmi_mq_mtucpy((void *)&req_args[1], (const void *)args,
+	psm3_mq_mtucpy((void *)&req_args[1], (const void *)args,
 		       (nargs * sizeof(psm2_amarg_t)));
-	psmi_amsh_short_request(epaddr->ptlctl->ptl, epaddr, am_handler_hidx,
+	psm3_amsh_short_request(epaddr->ptlctl->ptl, epaddr, am_handler_hidx,
 				req_args, nargs + 1, src, len, 0);
 
 	if (completion_fn)
@@ -92,7 +92,7 @@ psmi_amsh_am_short_request(psm2_epaddr_t epaddr,
 }
 
 psm2_error_t
-psmi_amsh_am_short_reply(psm2_am_token_t tok,
+psm3_amsh_am_short_reply(psm2_am_token_t tok,
 			 psm2_handler_t handler, psm2_amarg_t *args, int nargs,
 			 void *src, size_t len, int flags,
 			 psm2_am_completion_fn_t completion_fn,
@@ -105,10 +105,10 @@ psmi_amsh_am_short_reply(psm2_am_token_t tok,
 	 */
 	psmi_assert(nargs <= (NSHORT_ARGS + NBULK_ARGS - 1));
 	rep_args[0].u32w0 = (uint32_t) handler;
-	psmi_mq_mtucpy((void *)&rep_args[1], (const void *)args,
+	psm3_mq_mtucpy((void *)&rep_args[1], (const void *)args,
 		       (nargs * sizeof(psm2_amarg_t)));
 
-	psmi_amsh_short_reply((amsh_am_token_t *) tok, am_handler_hidx,
+	psm3_amsh_short_reply((amsh_am_token_t *) tok, am_handler_hidx,
 			      rep_args, nargs + 1, src, len, 0);
 
 	if (completion_fn)

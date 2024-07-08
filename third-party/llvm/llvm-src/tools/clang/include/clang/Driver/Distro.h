@@ -9,8 +9,8 @@
 #ifndef LLVM_CLANG_DRIVER_DISTRO_H
 #define LLVM_CLANG_DRIVER_DISTRO_H
 
-#include "llvm/ADT/Triple.h"
 #include "llvm/Support/VirtualFileSystem.h"
+#include "llvm/TargetParser/Triple.h"
 
 namespace clang {
 namespace driver {
@@ -38,6 +38,7 @@ public:
     DebianBuster,
     DebianBullseye,
     DebianBookworm,
+    DebianTrixie,
     Exherbo,
     RHEL5,
     RHEL6,
@@ -74,6 +75,10 @@ public:
     UbuntuHirsute,
     UbuntuImpish,
     UbuntuJammy,
+    UbuntuKinetic,
+    UbuntuLunar,
+    UbuntuMantic,
+    UbuntuNoble,
     UnknownDistro
   };
 
@@ -121,11 +126,11 @@ public:
   bool IsOpenSUSE() const { return DistroVal == OpenSUSE; }
 
   bool IsDebian() const {
-    return DistroVal >= DebianLenny && DistroVal <= DebianBookworm;
+    return DistroVal >= DebianLenny && DistroVal <= DebianTrixie;
   }
 
   bool IsUbuntu() const {
-    return DistroVal >= UbuntuHardy && DistroVal <= UbuntuJammy;
+    return DistroVal >= UbuntuHardy && DistroVal <= UbuntuNoble;
   }
 
   bool IsAlpineLinux() const { return DistroVal == AlpineLinux; }

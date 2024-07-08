@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -66,7 +66,7 @@ module Collection {
     proc init(type eltType) {
       this.eltType = eltType;
 
-      complete();
+      init this;
     }
 
     /*

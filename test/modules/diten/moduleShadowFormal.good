@@ -1,2 +1,6 @@
-moduleShadowFormal.chpl:9: warning: Module level symbol is hiding function argument 'a'
+moduleShadowFormal.chpl:9: In function 'foo':
+moduleShadowFormal.chpl:11: warning: potentially surprising shadowing for 'a'
+moduleShadowFormal.chpl:10: note: it refers to a symbol found through the 'use' of 'M1' here
+moduleShadowFormal.chpl:2: note: leading to 'a' defined here
+moduleShadowFormal.chpl:9: note: but, there is a shadowed symbol 'a' defined here
 0

@@ -66,7 +66,7 @@ module Itertools {
 
   // Standalone parallel iterator
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter repeat (param tag: iterKind, arg, times = 0)
       where tag == iterKind.standalone {
     try! {
@@ -80,7 +80,7 @@ module Itertools {
 
   // Parallel iterator - Leader
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter repeat (param tag: iterKind, arg, times = 0)
       where tag == iterKind.leader {
     try! {
@@ -102,7 +102,7 @@ module Itertools {
 
   // Parallel iterator - Follower
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter repeat (param tag: iterKind, arg, times = 0, followThis)
       where tag == iterKind.follower && followThis.size == 1 {
     const workingIters = followThis(0);
@@ -153,7 +153,7 @@ module Itertools {
 
   // Parallel iterator - Leader
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter cycle(param tag: iterKind, arg, times = 0)
       where tag == iterKind.leader {
 
@@ -177,7 +177,7 @@ module Itertools {
 
   // Parallel iterator - Follower
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter cycle(param tag: iterKind, arg, times = 0, followThis)
       where tag == iterKind.follower && followThis.size == 1 {
 

@@ -52,7 +52,7 @@ extern "C" {
 /*
 static struct fi_ops X = {
 	.size = sizeof(struct fi_ops),
-	.close = X,
+	.close = fi_no_close,
 	.bind = fi_no_bind,
 	.control = fi_no_control,
 	.ops_open = fi_no_ops_open,
@@ -60,6 +60,7 @@ static struct fi_ops X = {
 	.ops_set = fi_no_ops_set,
 };
  */
+int fi_no_close(struct fid *fid);
 int fi_no_bind(struct fid *fid, struct fid *bfid, uint64_t flags);
 int fi_no_control(struct fid *fid, int command, void *arg);
 int fi_no_ops_open(struct fid *fid, const char *name,
@@ -76,10 +77,13 @@ static struct fi_ops_fabric X = {
 	.eq_open = fi_no_eq_open,
 	.wait_open = fi_no_wait_open,
 	.trywait = fi_no_trywait,
+	.domain2 = fi_no_domain2,
 };
 */
 int fi_no_domain(struct fid_fabric *fabric, struct fi_info *info,
 		struct fid_domain **dom, void *context);
+int fi_no_domain2(struct fid_fabric *fabric, struct fi_info *info,
+		struct fid_domain **dom, uint64_t flags, void *context);
 int fi_no_passive_ep(struct fid_fabric *fabric, struct fi_info *info,
 		struct fid_pep **pep, void *context);
 int fi_no_eq_open(struct fid_fabric *fabric, struct fi_eq_attr *attr,
@@ -197,6 +201,7 @@ static struct fi_ops_domain X = {
 	.srx_ctx = fi_no_srx_context,
 	.query_atomic = fi_no_query_atomic,
 	.query_collective = fi_no_query_collective,
+	.endpoint2 = fi_no_endpoint2,
 };
 */
 int fi_no_av_open(struct fid_domain *domain, struct fi_av_attr *attr,
@@ -205,6 +210,8 @@ int fi_no_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
 		struct fid_cq **cq, void *context);
 int fi_no_endpoint(struct fid_domain *domain, struct fi_info *info,
 		struct fid_ep **ep, void *context);
+int fi_no_endpoint2(struct fid_domain *domain, struct fi_info *info,
+		struct fid_ep **ep, uint64_t flags, void *context);
 int fi_no_scalable_ep(struct fid_domain *domain, struct fi_info *info,
 		struct fid_ep **sep, void *context);
 int fi_no_cntr_open(struct fid_domain *domain, struct fi_cntr_attr *attr,
@@ -316,17 +323,23 @@ static struct fi_ops_poll X = {
 /*
 static struct fi_ops_eq X = {
 	.size = sizeof(struct fi_ops_eq),
-	.read = X,
-	.readerr = X,
+	.read = fi_no_eq_read,
+	.readerr = fi_no_eq_readerr,
 	.write = fi_no_eq_write,
 	.sread = fi_no_eq_sread,
-	.strerror = X,
+	.strerror = fi_no_eq_strerror,
 };
 */
+ssize_t fi_no_eq_read(struct fid_eq *eq, uint32_t *event, void *buf,
+		size_t len, uint64_t flags);
+ssize_t fi_no_eq_readerr(struct fid_eq *eq, struct fi_eq_err_entry *buf,
+		uint64_t flags);
 ssize_t fi_no_eq_write(struct fid_eq *eq, uint32_t event,
 		const void *buf, size_t len, uint64_t flags);
 ssize_t fi_no_eq_sread(struct fid_eq *eq, uint32_t *event,
 		void *buf, size_t len, int timeout, uint64_t flags);
+const char *fi_no_eq_strerror(struct fid_eq *eq, int prov_errno,
+		const void *err_data, char *buf, size_t len);
 
 /*
 static struct fi_ops_cq X = {
@@ -366,6 +379,9 @@ static struct fi_ops_cntr X = {
 int fi_no_cntr_add(struct fid_cntr *cntr, uint64_t value);
 int fi_no_cntr_set(struct fid_cntr *cntr, uint64_t value);
 int fi_no_cntr_wait(struct fid_cntr *cntr, uint64_t threshold, int timeout);
+uint64_t fi_no_cntr_readerr(struct fid_cntr *cntr);
+int fi_no_cntr_adderr(struct fid_cntr *cntr, uint64_t value);
+int fi_no_cntr_seterr(struct fid_cntr *cntr, uint64_t value);
 
 /*
 static struct fi_ops_rma X = {
@@ -447,8 +463,8 @@ static struct fi_ops_av X = {
 	.insertsvc = fi_no_av_insertsvc,
 	.insertsym = fi_no_av_insertsym,
 	.remove = fi_no_av_remove,
-	.lookup = X,
-	.straddr = X,
+	.lookup = fi_no_av_lookup,
+	.straddr = fi_no_av_straddr,
 };
 */
 int fi_no_av_insert(struct fid_av *av, const void *addr, size_t count,
@@ -461,6 +477,29 @@ int fi_no_av_insertsym(struct fid_av *av, const char *node, size_t nodecnt,
 			uint64_t flags, void *context);
 int fi_no_av_remove(struct fid_av *av, fi_addr_t *fi_addr, size_t count,
 			uint64_t flags);
+int fi_no_av_lookup(struct fid_av *av, fi_addr_t fi_addr, void *addr,
+		    size_t *addrlen);
+const char *fi_no_av_straddr(struct fid_av *av, const void *addr, char *buf,
+			     size_t *len);
+
+/*
+static struct fi_ops_av_set X = {
+	.size = sizeof(struct fi_ops_av),
+	.set_union = fi_no_av_set_union,
+	.intersect = fi_no_av_set_intersect,
+	.diff = fi_no_av_set_diff,
+	.insert = fi_no_av_set_insert,
+	.remove = fi_no_av_set_remove,
+	.straddr = X,
+};
+*/
+
+int fi_no_av_set_union(struct fid_av_set *dst, const struct fid_av_set *src);
+int fi_no_av_set_intersect(struct fid_av_set *dst, const struct fid_av_set *src);
+int fi_no_av_set_diff(struct fid_av_set *dst, const struct fid_av_set *src);
+int fi_no_av_set_insert(struct fid_av_set *set, fi_addr_t addr);
+int fi_no_av_set_remove(struct fid_av_set *set, fi_addr_t addr);
+int fi_no_av_set_addr(struct fid_av_set *set, fi_addr_t *coll_addr);
 
 /*
 static struct fi_ops_collective X = {
@@ -478,6 +517,8 @@ static struct fi_ops_collective X = {
 };
 */
 ssize_t fi_coll_no_barrier(struct fid_ep *ep, fi_addr_t coll_addr, void *context);
+ssize_t fi_coll_no_barrier2(struct fid_ep *ep, fi_addr_t coll_addr, uint64_t flags,
+			    void *context);
 ssize_t fi_coll_no_broadcast(struct fid_ep *ep, void *buf, size_t count, void *desc,
 			     fi_addr_t coll_addr, fi_addr_t root_addr,
 			     enum fi_datatype datatype, uint64_t flags, void *context);

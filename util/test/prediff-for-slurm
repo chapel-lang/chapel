@@ -11,6 +11,8 @@ msgs = (
 """,
 """srun: error: .+: task [0-9]+: (Killed|Terminated)
 """,
+"""srun: error: .+: tasks [0-9]+-[0-9]+: (Killed|Terminated)
+""",
 """srun: .*(Force Terminated|Terminating) (job step |StepId=)[0-9.]+
 """,
 """srun: Job step aborted: Waiting up to [0-9]+ seconds for job step .*

@@ -10,7 +10,7 @@ var done: sync bool;
 for i in 1..N/2 do
   a[i] = i;
 
-begin {
+begin with (ref a) {
   sleep( 2);
   for j in (N/2+1)..N do
     a[j] = N+j-(N/2);

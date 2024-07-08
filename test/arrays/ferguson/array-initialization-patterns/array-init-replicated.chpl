@@ -44,7 +44,7 @@ operator R.=(ref lhs:R, rhs:R) {
 
 
 proc makeInitialArray() {
-  var D = {1..1} dmapped Replicated();
+  var D = {1..1} dmapped new replicatedDist();
   var ret: [D] int;
   return ret;
 }

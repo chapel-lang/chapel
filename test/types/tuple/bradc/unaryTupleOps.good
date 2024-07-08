@@ -12,5 +12,3 @@
 (int(8),int(16),int(32))
 (false, true, false)
 3*bool
-(false, true, false)
-(bool(8),bool(16),bool(32))

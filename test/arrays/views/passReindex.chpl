@@ -1,7 +1,7 @@
 const D = {1..2, 1..2};
 var A: [D] real;
 
-forall (i,j) in D do
+forall (i,j) in D with (ref A) do
   A[i,j] = i + j/10.0;
 
 printArray(A.reindex(0..1, 0..1));

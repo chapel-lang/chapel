@@ -6,11 +6,11 @@ use LinearAlgebra;
 
 config const is2D2Norm = false;
 
-var rng = createRandomStream(314159265, eltType=real(64), algorithm=RNG.NPB);
+var rng = new randomStream(seed=314159265, eltType=real(64));
 
-rng.fillRandom(R1D);
-rng.fillRandom(R2D);
-rng.fillRandom(R2D32);
+rng.fill(R1D);
+rng.fill(R2D);
+rng.fill(R2D32);
 
 var saved: [1..3][normType.norm1..normType.normFrob] int;
 
@@ -96,7 +96,7 @@ doNorm(aR2D32, 3);
 
 
 writeln("Vector norm reindexed arrays");
-proc foo(D: domain, A: [D], loc) {
+proc foo(D: domain(?), A: [D], loc) {
   doNorm(A, loc);
 }
 const TD1D: domain(1) = Space1.translate(-o5);
@@ -117,8 +117,8 @@ const rcDom1D: domain(1) dmapped Dist1D = Dom2D.dim(0);
 const rcDom2D: domain(2) dmapped Dist2D = {Dom3D.dim(0), Dom3D.dim(1)};
 var rcR1D: [rcDom1D] real;
 var rcR2D: [rcDom2D] real;
-rng.fillRandom(rcR1D);
-rng.fillRandom(rcR2D);
+rng.fill(rcR1D);
+rng.fill(rcR2D);
 rcT1D = rcR1D;
 rcT2D = rcR2D;
 writeln("\trcR1D:");

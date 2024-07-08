@@ -1,7 +1,7 @@
-proc testSubdomain(d: domain, ref sd: subdomain(d)) {
+proc testSubdomain(d: domain(?), ref sd: subdomain(d)) {
   sd = d;
 }
-proc testSparseSubdomain(d: domain, ref sd: sparse subdomain(d)) {
+proc testSparseSubdomain(d: domain(?), ref sd: sparse subdomain(d)) {
   sd = d;
 }
 

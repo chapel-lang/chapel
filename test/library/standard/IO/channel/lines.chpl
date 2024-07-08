@@ -1,9 +1,8 @@
 use IO;
 
-config param locking=true,
-             ioKind=iokind.dynamic;
+config param locking=true;
 
-var c = openreader('lines.good', kind=ioKind, locking=locking);
+var c = openReader('lines.good', locking=locking);
 
 for line in c.lines() {
   write(line);

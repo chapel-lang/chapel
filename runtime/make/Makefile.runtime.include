@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -42,6 +42,14 @@ ifneq ($(CHPL_COMM_DEBUG),)
 RUNTIME_DEFS += -DCHPL_COMM_DEBUG
 endif
 
+ifneq ($(CHPL_HWLOC_DEBUG),)
+RUNTIME_DEFS += -DCHPL_HWLOC_DEBUG
+endif
+
+ifneq ($(CHPL_TASKS_DEBUG),)
+RUNTIME_DEFS += -DCHPL_TASKS_DEBUG
+endif
+
 ifeq ($(OPTIMIZE),1)
 RUNTIME_DEFS += -DCHPL_OPTIMIZE -DNDEBUG
 endif
@@ -51,7 +59,7 @@ RUNTIME_INCLS += \
         -I. \
         -I$(RUNTIME_INCLUDE_ROOT)/localeModels/$(CHPL_MAKE_LOCALE_MODEL) \
         -I$(RUNTIME_INCLUDE_ROOT)/localeModels \
-        -I$(RUNTIME_INCLUDE_ROOT)/gpu/$(CHPL_MAKE_GPU_RUNTIME) \
+        -I$(RUNTIME_INCLUDE_ROOT)/gpu/$(CHPL_MAKE_GPU) \
         -I$(RUNTIME_INCLUDE_ROOT)/gpu \
         -I$(RUNTIME_INCLUDE_ROOT)/comm/$(CHPL_MAKE_COMM) \
         -I$(RUNTIME_INCLUDE_ROOT)/comm \
@@ -120,6 +128,9 @@ endif
 # If compiling for GPU locale add CUDA runtime headers to include path
 ifeq ($(CHPL_MAKE_LOCALE_MODEL),gpu)
 RUNTIME_INCLS += -I$(CHPL_MAKE_CUDA_PATH)/include
+  ifeq ($(CHPL_MAKE_GPU),cpu)
+    RUNTIME_DEFS += -DGPU_RUNTIME_CPU
+  endif
 RUNTIME_DEFS += -DHAS_GPU_LOCALE
 endif
 

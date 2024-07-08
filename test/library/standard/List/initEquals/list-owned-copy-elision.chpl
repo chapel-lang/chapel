@@ -7,7 +7,7 @@ class C {
 proc test() {
   var lst:list(owned C);
 
-  lst.append(new C(1));
+  lst.pushBack(new C(1));
 
   var lst2 = lst; // this should be allowed and be from copy elision
   writeln(lst2);

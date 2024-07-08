@@ -10,6 +10,6 @@ class ParaSuper {
 }
 
 proc main() {
-  var c: borrowed ParaSuper = new borrowed ParaSuper(2);
+  var c = new ParaSuper(2);
   writeln(c);
 }

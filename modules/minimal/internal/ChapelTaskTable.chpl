@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,13 +22,12 @@
 //
 
 module ChapelTaskTable {
-
   proc chpldev_taskTable_init() {
   }
 
   export proc chpldev_taskTable_add(taskID   : chpl_taskID_t,
                                     lineno   : uint(32),
-                                    filename : c_string,
+                                    filename : chpl__c_void_ptr,
                                     tl_info  : uint(64))
   {
   }

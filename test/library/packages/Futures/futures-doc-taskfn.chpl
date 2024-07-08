@@ -10,7 +10,7 @@ record Bar {
   proc this(x: real) {
     return x / 2;
   }
-  proc retType type return real;
+  proc retType type do return real;
 }
 const bar: Bar;
 

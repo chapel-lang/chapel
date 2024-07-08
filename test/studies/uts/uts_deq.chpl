@@ -164,16 +164,14 @@ class TreeNode {
 
 
 /* Compute atomically:  this = max(this, other) */
-proc AtomicT.max(other: int) {
+proc ref AtomicT.max(other: int) {
   var curMax = this.read();
-  while curMax < other && !this.compareAndSwap(curMax, other) do
-    curMax = this.read();
+  while curMax < other && !this.compareExchangeWeak(curMax, other) { }
 }
 
 proc RAtomicT.max(other: int) {
   var curMax = this.read();
-  while curMax < other && !this.compareAndSwap(curMax, other) do
-    curMax = this.read();
+  while curMax < other && !this.compareExchangeWeak(curMax, other) { }
 }
 
 
@@ -267,7 +265,7 @@ proc create_tree(ref q: DeQueue(unmanaged TreeNode)) {
 
 
 proc main() {
-  var t_create: Timer;
+  var t_create: stopwatch;
   var queue: DeQueue(unmanaged TreeNode);
  
   // Create the root and push it into a queue

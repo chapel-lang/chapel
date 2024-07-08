@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,6 +37,7 @@
   ``top`` will return the minimal element.
 
 */
+@unstable("The 'Heap' module is unstable")
 module Heap {
   import ChapelLocks;
   private use HaltWrappers;
@@ -54,41 +55,41 @@ module Heap {
   // contention (IE, lots of tasks trying to call toArray on the heap
   // or any operation that is O(n)).
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
   //
   // Use a wrapper class to let heap methods have a const ref receiver even
   // when `parSafe` is `true` and the heap lock is used.
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _checkType(type eltType) {
     //NOTE: This is borrowed from List.chpl
     if isGenericType(eltType) {
       compilerWarning("creating a heap with element type " +
                       eltType:string);
-      if isClassType(eltType) && !isGenericType(borrowed eltType) {
-        compilerWarning("which now means class type with generic management");
+      if isClassType(eltType) && !isGenericType(eltType:borrowed) {
+        compilerWarning("which is a class type with generic management");
       }
       compilerError("heap element type cannot currently be generic");
       // In the future we might support it if the list is not default-inited
     }
   }
 
-  record heap {
+  record heap : writeSerializable {
 
     /* The type of the elements contained in this heap. */
     type eltType;
@@ -102,25 +103,25 @@ module Heap {
     */
     var comparator: record;
 
-    pragma "no doc"
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    @chpldoc.nodoc
+    var _lock = if parSafe then new _LockWrapper() else none;
 
     /*
       Use a list to store elements.
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     var _data: list(eltType);
 
     /*
       Build the heap from elements that have been stored, from bottom to top
       in O(N)
     */
-    pragma "no doc"
-    proc _commonInitFromIterable(iterable)
+    @chpldoc.nodoc
+    proc ref _commonInitFromIterable(iterable)
     lifetime this < iterable {
       _data = new list(eltType);
       for x in iterable do
-        _data.append(x);
+        _data.pushBack(x);
       for i in 0 .. _data.size-1 by -1 {
         _heapify_down(i);
       }
@@ -131,10 +132,10 @@ module Heap {
 
       :arg eltType: The type of the elements
 
-      :arg comparator: The comparator to use
-
       :arg parSafe: If `true`, this heap will use parallel safe operations.
       :type parSafe: `param bool`
+
+      :arg comparator: The comparator to use
     */
     proc init(type eltType, param parSafe = false, comparator: record = defaultComparator) {
       _checkType(eltType);
@@ -158,23 +159,23 @@ module Heap {
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
       this.comparator = other.comparator;
-      this.complete();
+      init this;
       _commonInitFromIterable(other._data);
     }
 
     /*
       Locks operations
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
-        _lock$.lock();
+        _lock.lock();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
-        _lock$.unlock();
+        _lock.unlock();
     }
 
     /*
@@ -228,7 +229,7 @@ module Heap {
     /*
       Wrapper of comparing elements
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _greater(x: eltType, y: eltType) {
       return chpl_compare(x, y, comparator) > 0;
     }
@@ -236,8 +237,8 @@ module Heap {
     /*
       Helper procedures to maintain the heap
     */
-    pragma "no doc"
-    proc _heapify_up(in pos: int) {
+    @chpldoc.nodoc
+    proc ref _heapify_up(in pos: int) {
       while (pos) {
         var parent = pos / 2;
         if (_greater(_data[pos],_data[parent])) {
@@ -248,8 +249,8 @@ module Heap {
       }
     }
 
-    pragma "no doc"
-    proc _heapify_down(in pos: int) {
+    @chpldoc.nodoc
+    proc ref _heapify_down(in pos: int) {
       while (pos < _data.size) {
         // find the child node with greater value
         var greaterChild = pos*2;
@@ -270,10 +271,10 @@ module Heap {
       }
     }
 
-    pragma "no doc"
-    proc _push(in element: eltType)
+    @chpldoc.nodoc
+    proc ref _push(in element: eltType)
     lifetime this < element {
-      _data.append(element);
+      _data.pushBack(element);
       _heapify_up(_data.size-1);
     }
     /*
@@ -282,7 +283,7 @@ module Heap {
       :arg element: The element to push
       :type element: `eltType`
     */
-    proc push(in element: eltType)
+    proc ref push(in element: eltType)
     lifetime this < element {
       _enter();
       _push(element);
@@ -297,7 +298,7 @@ module Heap {
     */
     proc push(const ref x: list(eltType)) {
       _enter();
-      for e in x do
+      for x do
         _push(x);
       _leave();
     }
@@ -321,7 +322,7 @@ module Heap {
       :return: the top element
       :rtype: eltType
     */
-    proc pop(): eltType {
+    proc ref pop(): eltType {
       _enter();
       if (boundsChecking && isEmpty()) {
         boundsCheckHalt("Called \"heap.pop\" on an empty heap.");
@@ -330,7 +331,7 @@ module Heap {
       if _data.size != 1 then
         _data(0) <=> _data(_data.size-1);
 
-      var ret = _data.pop();
+      var ret = _data.popBack();
       _heapify_down(0);
       _leave();
       return ret;
@@ -374,13 +375,11 @@ module Heap {
     }
 
     /*
-      Write the contents of this heap to a channel in arbitrary order.
-
-      :arg ch: A channel to write to.
+      Write the contents of this heap to a ``fileWriter`` in arbitrary order.
     */
-    proc writeThis(ch: channel) throws {
+    proc serialize(writer, ref serializer) throws {
       _enter();
-      ch.write(this._data);
+      writer.write(this._data);
       _leave();
     }
   }
@@ -402,6 +401,9 @@ module Heap {
     :arg x: The list to initialize the heap from.
     :type x: `list(?t)`
 
+    :arg parSafe: If `true`, this heap will use parallel safe operations.
+    :type parSafe: `param bool`
+
     :arg comparator: The comparator to use
 
     :rtype: heap(t, comparator)
@@ -417,6 +419,9 @@ module Heap {
 
     :arg x: The array to initialize the heap from.
     :type x: `[?d] ?t`
+
+    :arg parSafe: If `true`, this heap will use parallel safe operations.
+    :type parSafe: `param bool`
 
     :arg comparator: The comparator to use
 

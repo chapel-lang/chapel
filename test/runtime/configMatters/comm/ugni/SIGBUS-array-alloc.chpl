@@ -7,8 +7,8 @@ use OS.POSIX;
 // a 256g compute node.
 //
 var evHNR = getenv(c'HUGETLB_NO_RESERVE');
-if evHNR == c_nil
-  || (evHNR != c_nil && (evHNR:c_string:string).toLower() != 'yes') then
+if evHNR == nil
+  || (evHNR != nil && (evHNR:c_string:string).toLower() != 'yes') then
   writeln('Without HUGETLB_NO_RESERVE=yes, test may not work as expected.');
 
 config const arraySize = 256 * 2**30;

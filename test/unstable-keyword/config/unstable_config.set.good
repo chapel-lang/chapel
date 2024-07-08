@@ -1,0 +1,3 @@
+unstable_config.chpl:4: In function 'main':
+unstable_config.chpl:5: warning: use y
+false

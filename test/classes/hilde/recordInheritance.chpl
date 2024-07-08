@@ -1,6 +1,6 @@
 record R {
   var x : int = 1;
-  proc xsq return x*x;
+  proc xsq do return x*x;
 }
 
 record S : R {

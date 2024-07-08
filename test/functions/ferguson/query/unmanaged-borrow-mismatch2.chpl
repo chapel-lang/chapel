@@ -7,10 +7,10 @@ record Wrapper {
   var f;
 }
 
-proc g(x: Wrapper(unmanaged GenericClass)) {
+proc g(x: Wrapper(unmanaged GenericClass(?))) {
   writeln(x, " : ", x.type:string);
 }
-
-var c = new Wrapper(new borrowed GenericClass(int, 3));
+var obj = new owned GenericClass(int, 3);
+var c = new Wrapper(obj.borrow());
 
 g(c); // error - type mismatch

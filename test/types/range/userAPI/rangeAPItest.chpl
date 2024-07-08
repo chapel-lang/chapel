@@ -5,16 +5,16 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   writeln("------------");
   writeln(r);
   writeln("idxType          = ", r.idxType:string);
-  writeln("stridable        = ", r.stridable);
-  writeln("boundedType      = ", r.boundedType);
+  writeln("strides          = ", r.strides);
+  writeln("bounds           = ", r.bounds);
+
+
   writeln("isRangeType()    = ", isRangeType(r.type));
-  writeln("isBoundedRange() = ", isBoundedRange(r));
-  writeln("isBounded()      = ", r.isBounded());
   writeln("hasLowBound()    = ", r.hasLowBound());
   writeln("hasHighBound()   = ", r.hasHighBound());
   writeln("stride           = ", r.stride);
   writeln("alignment        = ", r.alignment);
-  writeln("aligned          = ", r.aligned);
+  writeln("aligned          = ", r.isAligned());
   writeln("first            = ", if r.hasFirst() then r.first:string else "undefined");
   writeln("last             = ", if r.hasLast() then r.last:string else "undefined");
   writeln("lowBound         = ", if r.hasLowBound() then r.lowBound else "undefined");
@@ -22,24 +22,20 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   writeln("low              = ", if r.hasLowBound() then r.low else "undefined");
   writeln("high             = ", if r.hasHighBound() then r.high else "undefined");
   writeln("isEmpty()        = ", r.isEmpty());
-  if (isBoundedRange(r)) {
+  if (r.bounds == boundKind.both) {
     writeln("size             = ", r.size);
     writeln("sizeAs(uint)     = ", r.sizeAs(uint));
   }
   writeln("hasFirst()       = ", r.hasFirst());
   writeln("hasLast()        = ", r.hasLast());
-  writeln("isNat.Algned()   = ", r.isNaturallyAligned());
-  writeln("isAmbiguous      = ", r.isAmbiguous());
+  writeln("isNat.Algned()   = ", r.chpl_isNaturallyAligned());
+  writeln("isAmbiguous      = ", ! r.isAligned());
   writeln("contains(", idx, ") = ", r.contains(idx));
   writeln("contains(", subr, ") = ", r.contains(subr));
-
-
-  writeln("boundsCheck(", idx, ") = ", r.boundsCheck(idx));
-  writeln("boundsCheck(", subr, ") = ", r.boundsCheck(subr));
   writeln("indexOrder(", idx, ") = ", r.indexOrder(idx));
   if (r.hasFirst()) then
     writeln("orderToIndex(", offset, ")  = ", r.orderToIndex(offset));
-  if (isBoundedRange(r)) {
+  if (r.bounds == boundKind.both) {
     if !chpl__singleValIdxType(r.idxType) {
       writeln("expand(2)        = ", r.expand(2));
 
@@ -50,7 +46,7 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
     writeln("translate(2)     = ", r.translate(2));
     writeln("translate(-2)    = ", r.translate(-2));
   }
-  if (isBoundedRange(r)) {
+  if (r.bounds == boundKind.both) {
     if !chpl__singleValIdxType(r.idxType) {
       writeln("exterior(2)      = ", r.exterior(2));
       writeln("exterior(-2)     = ", r.exterior(-2));
@@ -60,7 +56,7 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   }
           
   writeln("serial iteration = ");
-  if (isBoundedRange(r)) {
+  if (r.bounds == boundKind.both) {
     for i in r do
       write(i, " ");
   } else {

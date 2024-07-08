@@ -1,0 +1,6 @@
+#!/usr/bin/env python3
+
+import os
+
+# skip for --no-local or CHPL_COMM != none
+print(('--no-local' in os.getenv('COMPOPTS')) or (os.getenv('CHPL_COMM') != 'none'))

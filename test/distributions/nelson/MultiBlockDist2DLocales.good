@@ -26,22 +26,4 @@ Block following shape as 6-element 2D array of locales:
 3 3 3 4 4 4 5 5
 3 3 3 4 4 4 5 5
 3 3 3 4 4 4 5 5
-Emulate cyclic distribution by repeating locales in 1D array:
-0 1 2 3 4 5 6 0
-1 2 3 4 5 6 0 1
-2 3 4 5 6 0 1 2
-3 4 5 6 0 1 2 3
-4 5 6 0 1 2 3 4
-5 6 0 1 2 3 4 5
-6 0 1 2 3 4 5 6
-0 1 2 3 4 5 6 0
-A more complex 2D locale assignment:
-0 1 2 3 4 5 6 0
-3 4 5 6 0 1 2 3
-6 0 0 0 0 0 5 6
-2 3 0 0 0 0 1 2
-5 6 0 0 0 0 4 5
-1 2 0 0 0 0 0 1
-4 5 6 0 1 2 3 4
-0 1 2 3 4 5 6 0
 done.

@@ -18,9 +18,8 @@ def get():
         cygwin = platform_val.startswith('cygwin')
         bsd = (platform_val.startswith('netbsd') or
                platform_val.startswith('freebsd'))
-        mac_arm = platform_val.startswith('darwin') and arch_val == 'arm64'
 
-        if cygwin or bsd or mac_arm:
+        if cygwin or bsd:
             tasks_val = 'fifo'
         else:
             tasks_val = 'qthreads'

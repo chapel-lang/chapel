@@ -1,0 +1,12 @@
+Dorothy
+---
+- price: 1.47
+  part_no: A4786
+  quantity: 4
+  descrip: Water Bucket (Filled)
+- size: 8
+  price: 133.7
+  part_no: E1628
+  quantity: 1
+  descrip: High Heeled "Ruby" Slippers
+...

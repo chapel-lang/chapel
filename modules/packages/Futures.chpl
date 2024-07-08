@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -58,10 +58,10 @@ Task Arguments
 --------------
 
 The task argument in a call to :proc:`async()` or :proc:`Future.andThen()`
-may be a :ref:`first-class function <readme-firstClassFns>`, a
-:ref:`lambda function <readme-lambdaFns>`, or a specially-constructed
-class or record.  Such a record must have both a `proc this()` method for the
-desired computation and a `proc retType type` method that returns the return
+may be a :ref:`first-class function <readme-firstClassProcedures>`, or a
+specially-constructed class or record.
+Such a record must have both a `proc this()` method for the desired
+computation and a `proc retType type` method that returns the return
 type of the `this()` method.  (The requirement for the `retType` method is
 a currently limitation that is intended to be resolved in the future.)
 For example:
@@ -106,7 +106,7 @@ module Futures {
   private use Reflection;
   private use ExplicitRefCount;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class FutureClass: RefCountBase {
 
     type retType;
@@ -117,7 +117,7 @@ module Futures {
 
     proc init(type retType) {
       this.retType = retType;
-      this.complete();
+      init this;
       refcnt.write(0);
       state.clear();
     }
@@ -139,18 +139,27 @@ module Futures {
      */
     type retType;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var classRef: unmanaged FutureClass(retType)? = nil;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(type retType) {
       this.retType = retType;
-      this.complete();
+      init this;
+      // sets this=classRef = the new one and bumps the ref count
+      // from 0 to 1
       acquire(new unmanaged FutureClass(retType));
     }
 
-    pragma "no doc"
-    proc deinit() {
+    proc init=(x: Future) {
+      this.retType = x.retType;
+      init this;
+      // set this.classRef = x.classRef and bumps the reference count
+      this.acquire(x.classRef);
+    }
+
+    @chpldoc.nodoc
+    proc ref deinit() {
       release();
     }
 
@@ -165,7 +174,7 @@ module Futures {
       return classRef!.value;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc set(value: retType) {
       if !isValid() then halt("set() called on invalid future");
       classRef!.value = value;
@@ -213,25 +222,34 @@ module Futures {
         compilerError("cannot determine return type of andThen() task function");
       var f: Future(taskFn.retType);
       f.classRef!.valid = true;
-      begin with (in taskFn) f.set(taskFn(this.get()));
+
+      // it isn't necessary to copy 'f' because the Future.deinit
+      // will wait for the task if needed
+      //
+      // it is necessary to copy 'this' in to the task
+      // to ensure that the class exists as long as the task runs
+      // (by incrementing and decrementing reference counts).
+      begin with (in taskFn, in this) {
+        f.set(taskFn(this.get()));
+      }
       return f;
     }
 
-    pragma "no doc"
-    proc acquire(newRef: unmanaged FutureClass) {
+    @chpldoc.nodoc
+    proc ref acquire(newRef: unmanaged FutureClass?) {
       if isValid() then halt("acquire(newRef) called on valid future!");
       classRef = newRef;
-      newRef.incRefCount();
+      if classRef then classRef!.incRefCount();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc acquire() {
       if classRef == nil then halt("acquire() called on nil future");
       classRef!.incRefCount();
     }
 
-    pragma "no doc"
-    proc release() {
+    @chpldoc.nodoc
+    proc ref release() {
       if classRef == nil then halt("release() called on nil future");
       var rc = classRef!.decRefCount();
       if rc == 1 {
@@ -247,21 +265,7 @@ module Futures {
 
   } // record Future
 
-  pragma "no doc"
-  pragma "init copy fn"
-  proc chpl__initCopy(x: Future, definedConst: bool) {
-    x.acquire();
-    return x;
-  }
-
-  pragma "no doc"
-  pragma "auto copy fn"
-  proc chpl__autoCopy(x: Future, definedConst: bool) {
-    x.acquire();
-    return x;
-  }
-
-  pragma "no doc"
+  @chpldoc.nodoc
   operator Future.=(ref lhs: Future, rhs: Future) {
     if lhs.classRef == rhs.classRef then return;
     if lhs.classRef != nil then
@@ -283,6 +287,8 @@ module Futures {
       compilerError("cannot determine return type of andThen() task function");
     var f: Future(taskFn.retType);
     f.classRef!.valid = true;
+    // it is not necessary to copy f / bump reference counts
+    // because Future.deinit will wait for the task before deleting
     begin with (in taskFn) f.set(taskFn());
     return f;
   }
@@ -291,8 +297,8 @@ module Futures {
     Asynchronously execute a function (taking arguments) and return a
     :record:`Future` that will eventually hold the result of the function call.
 
-    :arg taskFn: A function taking arguments with types matching `args...`
-    :arg args...: Arguments to `taskFn`
+    :arg taskFn: A function taking arguments with types matching `args`
+    :arg args: Arguments to `taskFn`
     :returns: A future of the return type of `taskFn`
    */
   proc async(in taskFn, args...) {
@@ -302,16 +308,20 @@ module Futures {
       compilerError("cannot determine return type of async() task function");
     var f: Future(taskFn.retType);
     f.classRef!.valid = true;
-    begin with (in taskFn) f.set(taskFn((...args)));
+    // it is not necessary to copy f / bump reference counts
+    // because Future.deinit will wait for the task before deleting
+    begin with (in taskFn) {
+      f.set(taskFn((...args)));
+    }
     return f;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc getRetTypes(arg) type {
     return (arg.retType,);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc getRetTypes(arg, args...) type {
     return (arg.retType, (...getRetTypes((...args))));
   }
@@ -320,7 +330,7 @@ module Futures {
     Bundle a set of futures and return a :record:`Future` that will hold a
     tuple of the results of its arguments (themselves futures).
 
-    :arg futures...: A variable-length argument list of futures
+    :arg futures: A variable-length argument list of futures
     :returns: A future with a return type that is a tuple of the return type of
        the arguments
    */
@@ -328,10 +338,11 @@ module Futures {
     type retTypes = getRetTypes((...futures));
     var f: Future(retTypes);
     f.classRef!.valid = true;
-    begin {
+    begin with (in futures) {
       var result: retTypes;
-      for param i in 0..N-1 do
+      for param i in 0..<N {
         result[i] = futures[i].get();
+      }
       f.set(result);
     }
     return f;

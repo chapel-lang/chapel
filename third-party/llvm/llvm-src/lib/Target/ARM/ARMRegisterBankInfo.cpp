@@ -13,9 +13,9 @@
 #include "ARMRegisterBankInfo.h"
 #include "ARMInstrInfo.h" // For the register classes
 #include "ARMSubtarget.h"
-#include "llvm/CodeGen/GlobalISel/RegisterBank.h"
-#include "llvm/CodeGen/GlobalISel/RegisterBankInfo.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/CodeGen/RegisterBank.h"
+#include "llvm/CodeGen/RegisterBankInfo.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 
 #define GET_TARGET_REGBANK_IMPL
@@ -35,7 +35,7 @@ enum PartialMappingIdx {
   PMI_Min = PMI_GPR,
 };
 
-RegisterBankInfo::PartialMapping PartMappings[]{
+const RegisterBankInfo::PartialMapping PartMappings[]{
     // GPR Partial Mapping
     {0, 32, GPRRegBank},
     // SPR Partial Mapping
@@ -72,7 +72,7 @@ enum ValueMappingIdx {
   DPR3OpsIdx = 7,
 };
 
-RegisterBankInfo::ValueMapping ValueMappings[] = {
+const RegisterBankInfo::ValueMapping ValueMappings[] = {
     // invalid
     {nullptr, 0},
     // 3 ops in GPRs
@@ -89,8 +89,9 @@ RegisterBankInfo::ValueMapping ValueMappings[] = {
     {&PartMappings[PMI_DPR - PMI_Min], 1}};
 
 #ifndef NDEBUG
-static bool checkValueMapping(const RegisterBankInfo::ValueMapping &VM,
-                              RegisterBankInfo::PartialMapping *BreakDown) {
+static bool
+checkValueMapping(const RegisterBankInfo::ValueMapping &VM,
+                  const RegisterBankInfo::PartialMapping *BreakDown) {
   return VM.NumBreakDowns == 1 && VM.BreakDown == BreakDown;
 }
 
@@ -129,8 +130,7 @@ static void checkValueMappings() {
 } // end namespace arm
 } // end namespace llvm
 
-ARMRegisterBankInfo::ARMRegisterBankInfo(const TargetRegisterInfo &TRI)
-    : ARMGenRegisterBankInfo() {
+ARMRegisterBankInfo::ARMRegisterBankInfo(const TargetRegisterInfo &TRI) {
   // We have only one set of register banks, whatever the subtarget
   // is. Therefore, the initialization of the RegBanks table should be
   // done only once. Indeed the table of all register banks
@@ -163,7 +163,8 @@ ARMRegisterBankInfo::ARMRegisterBankInfo(const TargetRegisterInfo &TRI)
            "Subclass not added?");
     assert(RBGPR.covers(*TRI.getRegClass(ARM::tGPROdd_and_tcGPRRegClassID)) &&
            "Subclass not added?");
-    assert(RBGPR.getSize() == 32 && "GPRs should hold up to 32-bit");
+    assert(getMaximumSize(RBGPR.getID()) == 32 &&
+           "GPRs should hold up to 32-bit");
 
 #ifndef NDEBUG
     ARM::checkPartialMappings();

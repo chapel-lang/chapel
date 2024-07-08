@@ -1,13 +1,13 @@
-proc assign(A, n: int(32)) {
-  forall i in 0..#n {
+proc assign(ref A, n: int(32)) {
+  forall i in 0..#n with (ref A) {
     for j in 0..#n {
       A(i, j) = (i+j):int(32);
     }
   }
 }
 
-proc assign2(A, n: int(32)) {
-  forall i in 0..#n {
+proc assign2(ref A, n: int(32)) {
+  forall i in 0..#n with (ref A) {
     for j in 0..#n {
       A[i][j] = (i+j):int(32);
     }
@@ -45,7 +45,7 @@ proc main {
   use Time;
   var A: [0..#arrsize, 0..#arrsize] int(32);
   var B: [0..#arrsize][0..#arrsize] int(32);
-  var t, t2: Timer;
+  var t, t2: stopwatch;
   var worked1, worked2 = true;
   assign(A, arrsize);
   assign2(B, arrsize);
@@ -74,9 +74,9 @@ proc main {
 
   if compareTimes {
     writeln("chpl accessed [", arrsize, " ", arrsize, "] elements ", ntrials,
-            " times in ", t.elapsed(TimeUnits.milliseconds)/1000, " seconds");
+            " times in ", t.elapsed(), " seconds");
     writeln("chpl accessed [", arrsize, "][", arrsize, "] elements ", ntrials,
-            " times in ", t2.elapsed(TimeUnits.milliseconds)/1000, " seconds");
+            " times in ", t2.elapsed(), " seconds");
     c_trial();
   }
 }

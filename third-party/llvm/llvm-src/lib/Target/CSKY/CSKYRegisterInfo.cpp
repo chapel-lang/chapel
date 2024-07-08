@@ -13,6 +13,7 @@
 #include "CSKYRegisterInfo.h"
 #include "CSKY.h"
 #include "CSKYSubtarget.h"
+#include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/RegisterScavenging.h"
 #include "llvm/MC/MCContext.h"
@@ -29,6 +30,10 @@ const uint32_t *
 CSKYRegisterInfo::getCallPreservedMask(const MachineFunction &MF,
                                        CallingConv::ID Id) const {
   const CSKYSubtarget &STI = MF.getSubtarget<CSKYSubtarget>();
+  if (STI.hasFPUv2DoubleFloat() || STI.hasFPUv3DoubleFloat())
+    return CSR_GPR_FPR64_RegMask;
+  if (STI.hasFPUv2SingleFloat() || STI.hasFPUv3SingleFloat())
+    return CSR_GPR_FPR32_RegMask;
   return CSR_I32_RegMask;
 }
 
@@ -82,9 +87,21 @@ const MCPhysReg *
 CSKYRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
   const CSKYSubtarget &STI = MF->getSubtarget<CSKYSubtarget>();
   if (MF->getFunction().hasFnAttribute("interrupt")) {
+    if (STI.hasFPUv3DoubleFloat())
+      return CSR_GPR_FPR64v3_ISR_SaveList;
+    if (STI.hasFPUv3SingleFloat())
+      return CSR_GPR_FPR32v3_ISR_SaveList;
+    if (STI.hasFPUv2DoubleFloat())
+      return CSR_GPR_FPR64_ISR_SaveList;
+    if (STI.hasFPUv2SingleFloat())
+      return CSR_GPR_FPR32_ISR_SaveList;
     return CSR_GPR_ISR_SaveList;
   }
 
+  if (STI.hasFPUv2DoubleFloat() || STI.hasFPUv3DoubleFloat())
+    return CSR_GPR_FPR64_SaveList;
+  if (STI.hasFPUv2SingleFloat() || STI.hasFPUv3SingleFloat())
+    return CSR_GPR_FPR32_SaveList;
   return CSR_I32_SaveList;
 }
 
@@ -162,7 +179,7 @@ static bool IsLegalOffset(const CSKYInstrInfo *TII, MachineInstr *MI,
   return false;
 }
 
-void CSKYRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
+bool CSKYRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                            int SPAdj, unsigned FIOperandNum,
                                            RegScavenger *RS) const {
   assert(SPAdj == 0 && "Unexpected non-zero SPAdj value");
@@ -248,7 +265,6 @@ void CSKYRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     assert(isInt<32>(Offset) && "Int32 expected");
     // The offset won't fit in an immediate, so use a scratch register instead
     // Modify Offset and FrameReg appropriately
-    assert(Offset >= 0);
     Register ScratchReg = TII->movImm(MBB, NewII, DL, Offset);
     BuildMI(MBB, NewII, DL,
             TII->get(STI.hasE2() ? CSKY::ADDU32 : CSKY::ADDU16XZ), ScratchReg)
@@ -265,10 +281,11 @@ void CSKYRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     MI->setDesc(TII->get(TargetOpcode::COPY));
     MI->getOperand(FIOperandNum)
         .ChangeToRegister(FrameReg, false, false, FrameRegIsKill);
-    MI->RemoveOperand(FIOperandNum + 1);
+    MI->removeOperand(FIOperandNum + 1);
   } else {
     MI->getOperand(FIOperandNum)
         .ChangeToRegister(FrameReg, false, false, FrameRegIsKill);
     MI->getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
   }
+  return false;
 }

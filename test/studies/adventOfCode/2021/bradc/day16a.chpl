@@ -13,7 +13,7 @@ var binary: [0..<bitsPerHex*line.size] uint(8);
 
 // TODO: should be able to iterate in parallel over bytes directly
 // see futures/day16-bytesParIter.chpl
-forall i in 0..<line.size {
+forall i in 0..<line.size with (ref binary) {
   const ch = line[i];
   const val = charToInt(ch);;
   for param j in 0..<bitsPerHex do
@@ -62,7 +62,7 @@ proc processCommand(command: []): int {
       const start = cursor;
       var args: list(int);
       while cursor-start < totBitLength do
-        args.append(processCommand(command[cursor..]));
+        args.pushBack(processCommand(command[cursor..]));
       return processOp(packetTypeID, args);
     } else {
       var numSubPackets = binArrToVal(command[cursor+1..#11]);

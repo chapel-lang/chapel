@@ -15,9 +15,9 @@ module Hello {
     }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc greet(name) {
-    return "Hello " + name; 
+    return "Hello " + name;
 }
 
 // call with one argument int(64)

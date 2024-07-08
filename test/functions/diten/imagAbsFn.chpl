@@ -1,7 +1,7 @@
 var x: real = 2.0;
 
 // create a number big enough that squaring it will be infinity
-while !isinf(x*x) do
+while !isInf(x*x) do
   x *= x;
 extern proc fabs(x: real(64)): real(64);
 var im: imag = _r2i(x);
@@ -13,7 +13,7 @@ writeln(" abs(im:complex): ", abs(im:complex));
 
 var x32: real(32) = 2.0:real(32);
 
-while !isinf(x32*x32) do
+while !isInf(x32*x32) do
   x32 *= x32;
 
 extern proc fabsf(x: real(32)): real(32);

@@ -46,7 +46,7 @@ public:
     CK_NumCheckKinds
   };
 
-  DefaultBool ChecksEnabled[CK_NumCheckKinds];
+  bool ChecksEnabled[CK_NumCheckKinds] = {false};
   CheckerNameRef CheckNames[CK_NumCheckKinds];
 
   void checkPreStmt(const VAArgExpr *VAA, CheckerContext &C) const;
@@ -100,27 +100,26 @@ private:
 };
 
 const SmallVector<ValistChecker::VAListAccepter, 15>
-    ValistChecker::VAListAccepters = {
-        {{"vfprintf", 3}, 2},
-        {{"vfscanf", 3}, 2},
-        {{"vprintf", 2}, 1},
-        {{"vscanf", 2}, 1},
-        {{"vsnprintf", 4}, 3},
-        {{"vsprintf", 3}, 2},
-        {{"vsscanf", 3}, 2},
-        {{"vfwprintf", 3}, 2},
-        {{"vfwscanf", 3}, 2},
-        {{"vwprintf", 2}, 1},
-        {{"vwscanf", 2}, 1},
-        {{"vswprintf", 4}, 3},
-        // vswprintf is the wide version of vsnprintf,
-        // vsprintf has no wide version
-        {{"vswscanf", 3}, 2}};
+    ValistChecker::VAListAccepters = {{{{"vfprintf"}, 3}, 2},
+                                      {{{"vfscanf"}, 3}, 2},
+                                      {{{"vprintf"}, 2}, 1},
+                                      {{{"vscanf"}, 2}, 1},
+                                      {{{"vsnprintf"}, 4}, 3},
+                                      {{{"vsprintf"}, 3}, 2},
+                                      {{{"vsscanf"}, 3}, 2},
+                                      {{{"vfwprintf"}, 3}, 2},
+                                      {{{"vfwscanf"}, 3}, 2},
+                                      {{{"vwprintf"}, 2}, 1},
+                                      {{{"vwscanf"}, 2}, 1},
+                                      {{{"vswprintf"}, 4}, 3},
+                                      // vswprintf is the wide version of
+                                      // vsnprintf, vsprintf has no wide version
+                                      {{{"vswscanf"}, 3}, 2}};
 
-const CallDescription
-    ValistChecker::VaStart("__builtin_va_start", /*Args=*/2, /*Params=*/1),
-    ValistChecker::VaCopy("__builtin_va_copy", 2),
-    ValistChecker::VaEnd("__builtin_va_end", 1);
+const CallDescription ValistChecker::VaStart({"__builtin_va_start"}, /*Args=*/2,
+                                             /*Params=*/1),
+    ValistChecker::VaCopy({"__builtin_va_copy"}, 2),
+    ValistChecker::VaEnd({"__builtin_va_end"}, 1);
 } // end anonymous namespace
 
 void ValistChecker::checkPreCall(const CallEvent &Call,
@@ -178,7 +177,7 @@ const MemRegion *ValistChecker::getVAListAsRegion(SVal SV, const Expr *E,
     if (isa<ParmVarDecl>(DeclReg->getDecl()))
       Reg = C.getState()->getSVal(SV.castAs<Loc>()).getAsRegion();
   }
-  IsSymbolic = Reg && Reg->getAs<SymbolicRegion>();
+  IsSymbolic = Reg && Reg->getBaseRegion()->getAs<SymbolicRegion>();
   // Some VarRegion based VA lists reach here as ElementRegions.
   const auto *EReg = dyn_cast_or_null<ElementRegion>(Reg);
   return (EReg && VaListModelledAsArray) ? EReg->getSuperRegion() : Reg;

@@ -53,7 +53,7 @@ module elemental_cholesky_symmetric_strided {
   // via its native task parallelism constructs.  The lack of a standard way
   // to replicate data and computation across tasks requires this emulation of
   // the SPMD style.  We expect that later versions will fit the native Chapel
-  // execution model more closely.  Barriers are implemented in the Barriers
+  // execution model more closely.  Barriers are implemented in the Collectives
   // standard module for synchronization beyond the specific functionality of
   // coforall and sync statements.
   // =========================================================================
@@ -67,7 +67,7 @@ module elemental_cholesky_symmetric_strided {
   // the implementation of such local declarations.
   // =========================================================================
 
-  use CyclicDist, Barriers;
+  use CyclicDist, Collectives;
 
   use elemental_schur_complement,
       locality_info_strided, 
@@ -94,7 +94,7 @@ module elemental_cholesky_symmetric_strided {
     // processor grid from A's distribution
     // --------------------------------------------
 
-    const A_locale_grid = A.domain.dist.targetLocales();
+    const A_locale_grid = A.domain.distribution.targetLocales();
     const A_grid_domain = A_locale_grid.domain,
           n_processors  = A_grid_domain.size;
 
@@ -103,7 +103,7 @@ module elemental_cholesky_symmetric_strided {
     assert ( A (A.domain.lowBound).locale.id == 0 );
 	     
     // initialize a tasking barrier
-    var bar = new Barrier(n_processors);
+    var bar = new barrier(n_processors);
 
     // ------------------------------------------------
     // SPMD -- launch a separate task on each processor
@@ -246,7 +246,7 @@ module elemental_cholesky_symmetric_strided {
 	      // necessary when that replication is available.  It is 
 	      // unnecessary in the current code.
 
-	      //	      const L12_Idx : domain (2, stridable = true) 
+	      //	      const L12_Idx : domain (2, strides = strideKind.any) 
 	      //		                         = [my_Ax2_cols, A11_cols];
 	      const L12_Idx              = {my_Ax2_cols, A11_cols};
 	      const L12 : [L12_Idx] real = A [L12_Idx];

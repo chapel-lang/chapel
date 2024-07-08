@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -221,7 +221,8 @@ static bool shouldSerialize(ArgSymbol* arg) {
   bool retval = false;
   Type* argType = arg->getValType();
 
-  if (!argType->isSerializable()) {
+  if (!argType->isSerializable() ||
+      arg->hasFlag(FLAG_TYPE_VARIABLE)) {
     retval = false;
   } else if (isRecordWrappedType(argType)) {
     // OK to serialize if the record-wrapped type's underlying class is not

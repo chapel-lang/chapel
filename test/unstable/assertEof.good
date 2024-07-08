@@ -1,0 +1,6 @@
+assertEof.chpl:20: warning: 'assertEOF' is unstable and may be removed or modified in a future release
+assertEof.chpl:30: warning: 'assertEOF' is unstable and may be removed or modified in a future release
+Past First Check
+uncaught IoError: Input/output error (assert failed - Not at EOF with path "asserteof.test.nums" offset 3)
+  assertEof.chpl:30: thrown here
+  assertEof.chpl:30: uncaught here

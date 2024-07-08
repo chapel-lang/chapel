@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,34 +18,37 @@
  * limitations under the License.
  */
 
+@unstable("LayoutCS is unstable and may change in the future")
+prototype module LayoutCS {
+
 import RangeChunk;
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Debug flag */
 config param debugCS = false;
 
-pragma "no doc"
+@chpldoc.nodoc
 config param csLayoutSupportsAutoLocalAccess = true;
 
 /* Default sparse dimension index sorting mode for LayoutCS.
 Sparse dimension indices will default to sorted order if true, inserted order if false */
 config param LayoutCSDefaultToSorted = true;
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Comparator used for sorting by columns */
 record _ColumnComparator {
   proc key(idx: _tuple) { return (idx(1), idx(0));}
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 const _columnComparator: _ColumnComparator;
 
 
 //
 // Necessary since `t == CS` does not support classes with param fields
 //
-pragma "no doc"
-proc isCSType(type t) param return isSubtype(_to_borrowed(t), CS);
+@chpldoc.nodoc
+proc isCSType(type t) param do return isSubtype(_to_borrowed(t), CS);
 
 /*
 This CS layout provides a Compressed Sparse Row (CSR) and Compressed Sparse
@@ -59,8 +62,14 @@ defaults to ``true`` if omitted. For example:
 
     use LayoutCS;
     var D = {0..#n, 0..#m};  // a default-distributed domain
-    var CSR_Domain: sparse subdomain(D) dmapped CS(compressRows=true); // Default argument
-    var CSC_Domain : sparse subdomain(D) dmapped CS(compressRows=false);
+    var CSR_Domain: sparse subdomain(D) dmapped new dmap(new CS(compressRows=true)); // Default argument
+    var CSC_Domain : sparse subdomain(D) dmapped new dmap(new CS(compressRows=false));
+
+
+.. note::
+
+    In an upcoming release, it will be possible to declare CS domains without
+    using the unstable ``new dmap`` syntax.
 
 To declare a CSR or CSC array, use a CSR or CSC domain, respectively.
 For example:
@@ -83,8 +92,14 @@ class CS: BaseDist {
   param compressRows: bool = true;
   param sortedIndices: bool = LayoutCSDefaultToSorted;
 
+  proc init(param compressRows: bool = true,
+            param sortedIndices: bool = LayoutCSDefaultToSorted) {
+    this.compressRows = compressRows;
+    this.sortedIndices = sortedIndices;
+  }
+
   override proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
-    return new unmanaged CSDom(rank, idxType, this.compressRows, this.sortedIndices, dom.stridable, _to_unmanaged(this), dom);
+    return new unmanaged CSDom(rank, idxType, this.compressRows, this.sortedIndices, dom.strides, _to_unmanaged(this), dom);
   }
 
   proc dsiClone() {
@@ -105,14 +120,14 @@ class CS: BaseDist {
 } // CS
 
 
-class CSDom: BaseSparseDomImpl {
+class CSDom: BaseSparseDomImpl(?) {
   param compressRows;
   param sortedIndices;
-  param stridable;
+  param strides;
   var dist: unmanaged CS(compressRows,sortedIndices);
 
-  var rowRange: range(idxType, stridable=stridable);
-  var colRange: range(idxType, stridable=stridable);
+  var rowRange: range(idxType, strides=strides);
+  var colRange: range(idxType, strides=strides);
 
   /* (row|col) startIdxDom */
   var startIdxDom: domain(1, idxType);
@@ -127,7 +142,7 @@ class CSDom: BaseSparseDomImpl {
   var idx: [nnzDom] idxType;      // would like index(parentDom.dim(0))
 
   /* Initializer */
-  proc init(param rank, type idxType, param compressRows, param sortedIndices, param stridable, dist: unmanaged CS(compressRows,sortedIndices), parentDom: domain) {
+  proc init(param rank, type idxType, param compressRows, param sortedIndices, param strides, dist: unmanaged CS(compressRows,sortedIndices), parentDom: domain) {
     if (rank != 2 || parentDom.rank != 2) then
       compilerError("Only 2D sparse domains are supported by the CS distribution");
     if parentDom.idxType != idxType then
@@ -137,7 +152,7 @@ class CSDom: BaseSparseDomImpl {
 
     this.compressRows = compressRows;
     this.sortedIndices = sortedIndices;
-    this.stridable = stridable;
+    this.strides      = strides;
 
     this.dist = dist;
     rowRange = parentDom.dim(0);
@@ -147,7 +162,7 @@ class CSDom: BaseSparseDomImpl {
                   then {rowRange.lowBound..rowRange.highBound+1}
                   else {colRange.lowBound..colRange.highBound+1};
 
-    this.complete();
+    init this;
 
     nnzDom = {0..#_nnz};
     dsiClear();
@@ -156,7 +171,7 @@ class CSDom: BaseSparseDomImpl {
   override proc getNNZ(): int {
     return _nnz;
   }
-  override proc dsiMyDist() return dist;
+  override proc dsiMyDist() do return dist;
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
     if _to_borrowed(rhs._instance.type) == this.type &&
@@ -172,12 +187,13 @@ class CSDom: BaseSparseDomImpl {
 
       this.startIdx = rhs.startIdx;
       this.idx = rhs.idx;
-    } else if _to_borrowed(rhs._instance.type) < DefaultSparseDom {
+    } else if isProperSubtype(_to_borrowed(rhs._instance.type), DefaultSparseDom) {
       // Optimized COO -> CSR/CSC
 
       // Note: only COO->CSR can take advantage of COO having sorted indices
-      this.dsiBulkAdd(rhs._instance._indices[rhs.nnzDom.lowBound..#rhs._nnz],
-                      dataSorted=this.compressRows, isUnique=true);
+      this.dsiBulkAdd(
+          rhs._instance._indices[rhs.nnzDom.lowBound..#rhs._nnz],
+          dataSorted=this.compressRows, isUnique=true);
     } else {
       // Unoptimized generic case
       chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
@@ -340,7 +356,6 @@ class CSDom: BaseSparseDomImpl {
       }
     }
     halt("Something went wrong in dsiFirst");
-    return (0, 0);
   }
 
   override proc dsiLast {
@@ -407,7 +422,7 @@ class CSDom: BaseSparseDomImpl {
     return 1;
   }
 
-  override proc bulkAdd_help(inds: [?indsDom] rank*idxType,
+  override proc bulkAdd_help(ref inds: [?indsDom] rank*idxType,
       dataSorted=false, isUnique=false, addOn=nilLocale) {
     import Sort;
 
@@ -646,7 +661,22 @@ class CSDom: BaseSparseDomImpl {
 } // CSDom
 
 
-class CSArr: BaseSparseArrImpl {
+proc CSDom.rows() {
+  return this.rowRange;
+}
+
+proc CSDom.cols() {
+  return this.colRange;
+}
+
+@chpldoc.nodoc
+iter CSDom.uidsInRowCol(rc) {
+  for uid in startIdx[rc]..<startIdx[rc+1] do
+    yield uid;
+}
+
+
+class CSArr: BaseSparseArrImpl(?) {
 
   proc init(type eltType,
             param rank : int,
@@ -667,7 +697,8 @@ class CSArr: BaseSparseArrImpl {
     if found then
       return data(loc);
     else
-      halt("attempting to assign a 'zero' value in a sparse array: ", ind);
+      halt("attempting to assign a 'zero' value in a sparse array at index ",
+           if rank == 1 then ind(0) else ind);
   }
   // value version for POD types
   proc dsiAccess(ind: rank*idxType)
@@ -745,4 +776,53 @@ class CSArr: BaseSparseArrImpl {
       }
     }
   }
+
+  proc doiBulkTransferToKnown(srcDom, destClass: this.type, destDom) {
+    if srcDom == destDom {
+      destClass.data = this.data;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  proc doiBulkTransferFromKnown(destDom, srcClass: this.type, srcDom): bool {
+    if srcDom == destDom {
+      this.data = srcClass.data;
+      return true;
+    } else {
+      return false;
+    }
+  }
 } // CSArr
+
+proc CSArr.rows() {
+  return this.dom.rows();
+}
+
+proc CSArr.cols() {
+  return this.dom.cols();
+}
+
+@chpldoc.nodoc
+iter CSArr.indsAndVals(rc) {
+  ref dom = this.dom;
+  for uid in dom.uidsInRowCol(rc) do
+    yield (dom.idx[uid], this.data[uid]);
+}
+
+iter CSArr.colsAndVals(r) {
+  if this.dom.compressRows == false then
+    compilerError("Can't (efficiently) iterate over rows using a CSC layout");
+  for colVal in indsAndVals(r) do
+    yield colVal;
+}
+
+iter CSArr.rowsAndVals(c) {
+  if this.dom.compressRows == true then
+    compilerError("Can't (efficiently) iterate over columns using a CSR layout");
+  for rowVal in indsAndVals(c) do
+    yield rowVal;
+}
+
+} // LayoutCS

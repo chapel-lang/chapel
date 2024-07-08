@@ -7,5 +7,5 @@ class myiter1 {
   }
 }
 
-var mi1 = new borrowed myiter1();
+var mi1Obj = new myiter1(); var mi1 = mi1Obj.borrow();
 for i in mi1 do writeln(i);

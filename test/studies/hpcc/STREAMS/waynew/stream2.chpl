@@ -57,7 +57,7 @@ proc main() {
 
   A = 2.0 * A;
 
-  var clock: Timer;
+  var clock: stopwatch;
   var time: [tests.COPY..tests.TRIAD, 1..numIters] real;
   clock.start();
   for i in 1..numIters {

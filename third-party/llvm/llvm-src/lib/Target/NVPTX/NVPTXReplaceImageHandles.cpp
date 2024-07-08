@@ -64,8 +64,12 @@ bool NVPTXReplaceImageHandles::runOnMachineFunction(MachineFunction &MF) {
   // This is needed in debug mode when code cleanup passes are not executed,
   // but we need the handle access to be eliminated because they are not
   // valid instructions when image handles are disabled.
-  for (MachineInstr *MI : InstrsToRemove)
-    MI->eraseFromParent();
+  for (MachineInstr *MI : InstrsToRemove) {
+    unsigned DefReg = MI->getOperand(0).getReg();
+    // Only these that are not used can be removed.
+    if (MF.getRegInfo().use_nodbg_empty(DefReg))
+      MI->eraseFromParent();
+  }
   return Changed;
 }
 
@@ -1315,6 +1319,18 @@ static unsigned texRegisterToIndexOpcode(unsigned RegOC) {
     return NVPTX::TEX_UNIFIED_CUBE_ARRAY_U32_F32_I;
   case NVPTX::TEX_UNIFIED_CUBE_ARRAY_U32_F32_LEVEL_R:
     return NVPTX::TEX_UNIFIED_CUBE_ARRAY_U32_F32_LEVEL_I;
+  case NVPTX::TEX_UNIFIED_CUBE_F32_F32_GRAD_R:
+    return NVPTX::TEX_UNIFIED_CUBE_F32_F32_GRAD_I;
+  case NVPTX::TEX_UNIFIED_CUBE_S32_F32_GRAD_R:
+    return NVPTX::TEX_UNIFIED_CUBE_S32_F32_GRAD_I;
+  case NVPTX::TEX_UNIFIED_CUBE_U32_F32_GRAD_R:
+    return NVPTX::TEX_UNIFIED_CUBE_U32_F32_GRAD_I;
+  case NVPTX::TEX_UNIFIED_CUBE_ARRAY_F32_F32_GRAD_R:
+    return NVPTX::TEX_UNIFIED_CUBE_ARRAY_F32_F32_GRAD_I;
+  case NVPTX::TEX_UNIFIED_CUBE_ARRAY_S32_F32_GRAD_R:
+    return NVPTX::TEX_UNIFIED_CUBE_ARRAY_S32_F32_GRAD_I;
+  case NVPTX::TEX_UNIFIED_CUBE_ARRAY_U32_F32_GRAD_R:
+    return NVPTX::TEX_UNIFIED_CUBE_ARRAY_U32_F32_GRAD_I;
   case NVPTX::TLD4_UNIFIED_R_2D_F32_F32_R:
     return NVPTX::TLD4_UNIFIED_R_2D_F32_F32_I;
   case NVPTX::TLD4_UNIFIED_G_2D_F32_F32_R:
@@ -1808,7 +1824,7 @@ findIndexForHandle(MachineOperand &Op, MachineFunction &MF, unsigned &Idx) {
     StringRef Sym = TexHandleDef.getOperand(6).getSymbolName();
     std::string ParamBaseName = std::string(MF.getName());
     ParamBaseName += "_param_";
-    assert(Sym.startswith(ParamBaseName) && "Invalid symbol reference");
+    assert(Sym.starts_with(ParamBaseName) && "Invalid symbol reference");
     unsigned Param = atoi(Sym.data()+ParamBaseName.size());
     std::string NewSym;
     raw_string_ostream NewSymStr(NewSym);

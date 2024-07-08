@@ -1,7 +1,7 @@
 class ReplaceVarConcrete {
   var newName: int;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName ref: int {
     return this.newName;
   }
@@ -10,8 +10,8 @@ class ReplaceVarConcrete {
 record ReplaceVarConcrete2 {
   var newName: int;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
-  proc oldName ref: int {
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
+  proc ref oldName ref: int {
     return this.newName;
   }
 }
@@ -19,7 +19,7 @@ record ReplaceVarConcrete2 {
 class ReplaceType {
   type newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName type {
     return this.newName;
   }
@@ -28,7 +28,7 @@ class ReplaceType {
 record ReplaceType2 {
   type newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName type {
     return this.newName;
   }
@@ -37,7 +37,7 @@ record ReplaceType2 {
 class ReplaceParam {
   param newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName param {
     return this.newName;
   }
@@ -46,7 +46,7 @@ class ReplaceParam {
 record ReplaceParam2 {
   param newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName param {
     return this.newName;
   }
@@ -55,7 +55,7 @@ record ReplaceParam2 {
 class ReplaceConstConcrete {
   const newName: int;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName: int {
     return this.newName;
   }
@@ -64,7 +64,7 @@ class ReplaceConstConcrete {
 record ReplaceConstConcrete2 {
   const newName: int;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName: int {
     return this.newName;
   }
@@ -73,7 +73,7 @@ record ReplaceConstConcrete2 {
 class ReplaceVarGeneric {
   var newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName ref {
     return this.newName;
   }
@@ -82,8 +82,8 @@ class ReplaceVarGeneric {
 record ReplaceVarGeneric2 {
   var newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
-  proc oldName ref{
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
+  proc ref oldName ref{
     return this.newName;
   }
 }
@@ -91,7 +91,7 @@ record ReplaceVarGeneric2 {
 class ReplaceConstGeneric {
   const newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName {
     return this.newName;
   }
@@ -100,7 +100,7 @@ class ReplaceConstGeneric {
 record ReplaceConstGeneric2 {
   const newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName {
     return this.newName;
   }
@@ -139,7 +139,7 @@ proc main() {
   writeln(r3.oldName); // Should warn, but show the same value
 
   // Check various declarations of a class with the new field present
-  var c4: ReplaceType = new ReplaceType(uint);
+  var c4: ReplaceType(?) = new ReplaceType(uint);
   var c5: ReplaceType(int) = new ReplaceType(int);
   // Check direct references
   writeln(c4.newName: string);
@@ -148,7 +148,7 @@ proc main() {
   writeln(c5.oldName: string); // Should warn, but show the same value
 
   // Check various declarations of a record with the new field present
-  var r4: ReplaceType2 = new ReplaceType2(uint);
+  var r4: ReplaceType2(?) = new ReplaceType2(uint);
   var r5 = new ReplaceType2(int);
   var r6: ReplaceType2(bool);
   // Check direct references
@@ -160,7 +160,7 @@ proc main() {
   writeln(r6.oldName: string); // Should warn, but show the same value
 
   // Check various declarations of a class with the new field present
-  var c7: ReplaceParam = new ReplaceParam(4);
+  var c7: ReplaceParam(?) = new ReplaceParam(4);
   var c8: ReplaceParam(2) = new ReplaceParam(2);
   // Check direct references
   writeln(c7.newName);
@@ -169,7 +169,7 @@ proc main() {
   writeln(c8.oldName); // Should warn, but show the same value
 
   // Check various declarations of a record with the new field present
-  var r7: ReplaceParam2 = new ReplaceParam2(4);
+  var r7: ReplaceParam2(?) = new ReplaceParam2(4);
   var r8 = new ReplaceParam2(2);
   var r9: ReplaceParam2(1);
   // Check direct references
@@ -202,7 +202,7 @@ proc main() {
   writeln(r12.oldName); // Should warn, but show the same value
 
   // Check various declarations of a class with the new field present
-  var c13: ReplaceVarGeneric = new ReplaceVarGeneric(10);
+  var c13: ReplaceVarGeneric(?) = new ReplaceVarGeneric(10);
   var c14 = new ReplaceVarGeneric(0);
   // Check direct references
   writeln(c13.newName);
@@ -217,9 +217,9 @@ proc main() {
   writeln(c14.oldName); // Should warn, but show the same value
 
   // Check various declarations of a record with the new field present
-  var r13: ReplaceVarGeneric2 = new ReplaceVarGeneric2(10);
+  var r13: ReplaceVarGeneric2(?) = new ReplaceVarGeneric2(10);
   var r14 = new ReplaceVarGeneric2(0);
-  var r15: ReplaceVarGeneric2(int);
+  var r15: ReplaceVarGeneric2(int) = new ReplaceVarGeneric2(0);
   // Check direct references
   writeln(r13.newName);
   writeln(r13.oldName); // Should warn, but show the same value
@@ -233,7 +233,7 @@ proc main() {
   writeln(r15.oldName); // Should warn, but show the same value
 
   // Check various declarations of a class with the new field present
-  var c16: ReplaceConstGeneric = new ReplaceConstGeneric(3);
+  var c16: ReplaceConstGeneric(?) = new ReplaceConstGeneric(3);
   var c17 = new ReplaceConstGeneric(17);
   // Check direct references
   writeln(c16.newName);
@@ -242,9 +242,9 @@ proc main() {
   writeln(c17.oldName); // Should warn, but show the same value
 
   // Check various declarations of a record with the new field present
-  var r16: ReplaceConstGeneric2 = new ReplaceConstGeneric2(3);
+  var r16: ReplaceConstGeneric2(?) = new ReplaceConstGeneric2(3);
   var r17 = new ReplaceConstGeneric2(17);
-  var r18: ReplaceConstGeneric2(int);
+  var r18: ReplaceConstGeneric2(int) = new ReplaceConstGeneric2(0);
   // Check direct references
   writeln(r16.newName);
   writeln(r16.oldName); // Should warn, but show the same value

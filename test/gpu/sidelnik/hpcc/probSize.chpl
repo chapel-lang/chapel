@@ -6,7 +6,7 @@ module HPCCProblemSize {
   //
   // Use the standard modules for reasoning about Memory and Types
   //
-  use Memory, Types;
+  use MemDiagnostics, Types;
 
   //
   // The main routine for computing the problem size

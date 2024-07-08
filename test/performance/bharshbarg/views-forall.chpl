@@ -2,7 +2,7 @@
 // Measures both array iteration and array access time
 //
 
-use Memory.Diagnostics, Time, Types;
+use MemDiagnostics, Time, Types;
 
 config const memFraction = 1000;
 config const printPerf = false;
@@ -20,7 +20,7 @@ var multiDim : [1..1, space] elemType;
 
 proc testIter(A: [], id : string) {
   var x : elemType = 2;
-  var time : Timer;
+  var time : stopwatch;
   time.start();
   forall i in A with (ref x) do
     x *= i;
@@ -30,7 +30,7 @@ proc testIter(A: [], id : string) {
 
 proc testIndex(A: [], id : string) {
   var x : elemType = 2;
-  var time : Timer;
+  var time : stopwatch;
   const dom = A.domain;
   time.start();
   forall i in dom with (ref x) do

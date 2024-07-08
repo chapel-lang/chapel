@@ -11,7 +11,7 @@ use common;
   C = 7;
 
   // domain information is not directly available for B and C
-  forall (i, loopIdx) in zip(D, 1..) {
+  forall (i, loopIdx) in zip(D, 1..) with (ref A) {
     A[i] = B[i] + C[i] * loopIdx;
   }
   writeln(A);
@@ -28,7 +28,7 @@ use common;
   C = 7;
 
   // domain information is not directly available for B and C
-  forall (i, loopIdx) in zip(A.domain, 1..) {
+  forall (i, loopIdx) in zip(A.domain, 1..) with (ref A) {
     A[i] = B[i] + C[i] * loopIdx;
   }
   writeln(A);
@@ -45,7 +45,7 @@ use common;
   C = 7;
 
   // domain information is not directly available for B and C
-  forall (i, loopIdx) in zip(B.domain, 1..) {
+  forall (i, loopIdx) in zip(B.domain, 1..) with (ref A) {
     A[i] = B[i] + C[i] * loopIdx;
   }
   writeln(A);
@@ -62,7 +62,7 @@ use common;
   C = 7;
 
   // domain information is not directly available for B and C
-  forall (i, loopIdx) in zip(C.domain, 1..) {
+  forall (i, loopIdx) in zip(C.domain, 1..) with (ref A) {
     A[i] = B[i] + C[i] * loopIdx;
   }
   writeln(A);

@@ -19,12 +19,17 @@ class C: B {
   }
 }
 
-var a = new borrowed A();
-var b = new borrowed B();
-var c = new borrowed C();
+var ownA = new owned A();
+var a = ownA.borrow();
+var ownB = new owned B();
+var b = ownB.borrow();
+var ownC = new owned C();
+var c = ownC.borrow();
 
-var c2: borrowed A = new borrowed C();
-var c3: borrowed B = new borrowed C();
+var ownC2 = new owned C();
+var c2: borrowed A = ownC2.borrow();
+var ownC3 = new owned C();
+var c3: borrowed B = ownC3.borrow();
 
 a.foo();
 b.foo();

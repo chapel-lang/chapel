@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Inria.  All rights reserved.
+ * Copyright © 2018-2020 Inria.  All rights reserved.
  *
  * See COPYING in top-level directory.
  */
@@ -12,7 +12,6 @@
 /* global discovery */
 HWLOC_DECLSPEC extern const struct hwloc_component hwloc_xml_component;
 HWLOC_DECLSPEC extern const struct hwloc_component hwloc_synthetic_component;
-HWLOC_DECLSPEC extern const struct hwloc_component hwloc_custom_component;
 
 /* CPU discovery */
 HWLOC_DECLSPEC extern const struct hwloc_component hwloc_aix_component;
@@ -23,7 +22,6 @@ HWLOC_DECLSPEC extern const struct hwloc_component hwloc_hpux_component;
 HWLOC_DECLSPEC extern const struct hwloc_component hwloc_linux_component;
 HWLOC_DECLSPEC extern const struct hwloc_component hwloc_netbsd_component;
 HWLOC_DECLSPEC extern const struct hwloc_component hwloc_noos_component;
-HWLOC_DECLSPEC extern const struct hwloc_component hwloc_osf_component;
 HWLOC_DECLSPEC extern const struct hwloc_component hwloc_solaris_component;
 HWLOC_DECLSPEC extern const struct hwloc_component hwloc_windows_component;
 HWLOC_DECLSPEC extern const struct hwloc_component hwloc_x86_component;
@@ -31,8 +29,9 @@ HWLOC_DECLSPEC extern const struct hwloc_component hwloc_x86_component;
 /* I/O discovery */
 HWLOC_DECLSPEC extern const struct hwloc_component hwloc_cuda_component;
 HWLOC_DECLSPEC extern const struct hwloc_component hwloc_gl_component;
-HWLOC_DECLSPEC extern const struct hwloc_component hwloc_linuxpci_component;
 HWLOC_DECLSPEC extern const struct hwloc_component hwloc_nvml_component;
+HWLOC_DECLSPEC extern const struct hwloc_component hwloc_rsmi_component;
+HWLOC_DECLSPEC extern const struct hwloc_component hwloc_levelzero_component;
 HWLOC_DECLSPEC extern const struct hwloc_component hwloc_opencl_component;
 HWLOC_DECLSPEC extern const struct hwloc_component hwloc_pci_component;
 

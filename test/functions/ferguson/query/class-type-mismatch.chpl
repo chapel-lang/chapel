@@ -16,6 +16,7 @@ proc g(x: Wrapper(GenericClass(?))) {
   writeln(x, " : ", x.type:string);
 }
 
-var c = new Wrapper(new borrowed OtherGenericClass(int, 3));
+var obj = new owned OtherGenericClass(int, 3);
+var c = new Wrapper(obj.borrow());
 
 g(c); // error - type mismatch

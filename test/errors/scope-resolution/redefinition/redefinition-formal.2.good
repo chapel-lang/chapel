@@ -1,0 +1,13 @@
+─── error in redefinition-formal.chpl:2 [Redefinition] ───
+  'x' has multiple definitions.
+  It was first defined here:
+      |
+    2 |   proc f(x: int, x)
+      |          ⎺⎺⎺⎺⎺⎺⎺
+      |
+  Redefined here:
+      |
+    2 |   proc f(x: int, x)
+      |                  ⎺⎺
+      |
+

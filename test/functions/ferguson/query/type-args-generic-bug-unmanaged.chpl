@@ -9,12 +9,12 @@ class G {
   proc init(type t) { this.t = t; }
 }
 
-proc foo(type t : unmanaged G) {
+proc foo(type t : unmanaged G(?)) {
   writeln("G");
 }
 
-proc foo(type t : unmanaged object) {
-  writeln("object");
+proc foo(type t : unmanaged RootClass) {
+  writeln("RootClass");
 }
 
 foo(unmanaged C); // prints "G" !?

@@ -1,6 +1,6 @@
 // NAS FT - Initial port to Chapel based on ZPL
 
-use BitOps, Time;
+use BitOps, Time, Math;
 
 config const
   verbose         = true,
@@ -101,16 +101,16 @@ writeln(" NAS Parallel Benchmarks 2.4  -- FT Benchmark");
 writef(" Size       : %15i\n", nx*ny*nz);
 writef(" Iterations : %15i\n", niter);
 
-proc compute_initial_conditions(X1) {
+proc compute_initial_conditions(ref X1) {
   for (i,j,k) in DXYZ { // serial to ensure proper repeatable results
     X1(i,j,k).re = randlc(((i*ny+j)*nz+k)*2);
     X1(i,j,k).im = randlc(((i*ny+j)*nz+k)*2+1);
   }
 }
 
-proc compute_index_map(Twiddle) {
+proc compute_index_map(ref Twiddle) {
   const ap = -4.0 * alpha * pi * pi;
-  forall (i,j,k) in DXYZ do
+  forall (i,j,k) in DXYZ with (ref Twiddle) do
     Twiddle(i,j,k) = exp(ap*(((i+nx/2) % nx - nx/2)**2 +
                              ((j+ny/2) % ny - ny/2)**2 +
                              ((k+nz/2) % nz - nz/2)**2));
@@ -122,7 +122,7 @@ var u : [0..nz-1] complex;
 
 proc fft_init() {
   var t : real, ti : real;
-  var m = popcount((nz-1):uint);
+  var m = popCount((nz-1):uint);
   var ku = 2;
   var ln = 1;
   u(0) = m+0i;
@@ -136,11 +136,11 @@ proc fft_init() {
   }
 }
 
-proc fftz2(dir, l, m, n, ny, ny1 : int, u, x, y) {
+proc fftz2(dir, l, m, n, ny, ny1 : int, u, x, ref y) {
   var lk = 1<<(l-1), li = 1<<(m-l), lj = 2*lk;
   for i in 0..li-1 {
     var i11 = i * lk, i12 = i11 + n/2, i21 = i * lj, i22 = i21 + lk;
-    var u1 = if dir == 1 then u(li+i) else conjg(u(li+i));
+    var u1 = if dir == 1 then u(li+i) else conj(u(li+i));
     for k in 0..lk-1 {
       for j in 0..ny-1 {
         var x11 = x(i11+k, j);
@@ -152,48 +152,48 @@ proc fftz2(dir, l, m, n, ny, ny1 : int, u, x, y) {
   }
 }
 
-proc cfftz(dir, m, n, ny, ny1 : int, x, y) {
+proc cfftz(dir, m, n, ny, ny1 : int, ref x, ref y) {
   for l in 1..m by 2 {
     fftz2(dir, l, m, n, ny, ny1, u, x, y);
     if l != m then
       fftz2(dir, l+1, m, n, ny, ny1, u, y, x);
     else
-      forall ij in {0..n-1, 0..ny-1} do
+      forall ij in {0..n-1, 0..ny-1} with (ref x) do
         x(ij) = y(ij);
   }
 }
 
-proc cffts1(dir, n, X1, X2, ny, ny1, x, y) {
+proc cffts1(dir, n, X1, ref X2, ny, ny1, ref x, ref y) {
   for j in DXYZ.dim(1) {
     for kk in DXYZ.dim(2) by ny {
-      [(i1,_,i3) in {0..n-1,j..j,kk..kk+ny-1}] x(i1,i3-kk) = X1(i1,j,i3);
-      cfftz(dir, popcount((n-1):uint), n, ny, ny1, x, y);
-      [(i1,_,i3) in {0..n-1,j..j,kk..kk+ny-1}] X2(i1,j,i3) = x(i1,i3-kk);
+      [(i1,_,i3) in {0..n-1,j..j,kk..kk+ny-1} with (ref x)] x(i1,i3-kk) = X1(i1,j,i3);
+      cfftz(dir, popCount((n-1):uint), n, ny, ny1, x, y);
+      [(i1,_,i3) in {0..n-1,j..j,kk..kk+ny-1} with (ref X2)] X2(i1,j,i3) = x(i1,i3-kk);
     }
   }
 }
 
-proc cffts2(dir, n, X1, X2, ny, ny1, x, y) {
+proc cffts2(dir, n, X1, ref X2, ny, ny1, ref x, ref y) {
   for i in DXYZ.dim(0) {
     for kk in DXYZ.dim(2) by ny {
-      [(_,i2,i3) in {i..i,0..n-1,kk..kk+ny-1}] x(i2,i3-kk) = X1(i,i2,i3);
-      cfftz(dir, popcount((n-1):uint), n, ny, ny1, x, y);
-      [(_,i2,i3) in {i..i,0..n-1,kk..kk+ny-1}] X2(i,i2,i3) = x(i2,i3-kk);
+      [(_,i2,i3) in {i..i,0..n-1,kk..kk+ny-1} with (ref x)] x(i2,i3-kk) = X1(i,i2,i3);
+      cfftz(dir, popCount((n-1):uint), n, ny, ny1, x, y);
+      [(_,i2,i3) in {i..i,0..n-1,kk..kk+ny-1} with (ref X2)] X2(i,i2,i3) = x(i2,i3-kk);
     }
   }
 }
 
-proc cffts3(dir, n, X1, X2, ny, ny1, x, y) {
+proc cffts3(dir, n, X1, ref X2, ny, ny1, ref x, ref y) {
   for i in DXYZ.dim(0) {
     for jj in DXYZ.dim(1) by ny {
-      [(_,i2,i3) in {i..i,jj..jj+ny-1,0..n-1}] x(i3,i2-jj) = X1(i,i2,i3);
-      cfftz(dir, popcount((n-1):uint), n, ny, ny1, x, y);
-      [(_,i2,i3) in {i..i,jj..jj+ny-1,0..n-1}] X2(i,i2,i3) = x(i3,i2-jj);
+      [(_,i2,i3) in {i..i,jj..jj+ny-1,0..n-1} with (ref x)] x(i3,i2-jj) = X1(i,i2,i3);
+      cfftz(dir, popCount((n-1):uint), n, ny, ny1, x, y);
+      [(_,i2,i3) in {i..i,jj..jj+ny-1,0..n-1} with (ref X2)] X2(i,i2,i3) = x(i3,i2-jj);
     }
   }
 }
 
-proc fft(dir : int, X1, X2) {
+proc fft(dir : int, ref X1, ref X2) {
   var x : [0..nz-1, 0..fftblockpad-1] complex;
   var y : [0..nz-1, 0..fftblockpad-1] complex;
   if dir == 1 {
@@ -207,8 +207,8 @@ proc fft(dir : int, X1, X2) {
   }
 }
 
-proc evolve(X1, X2, Twiddle) {
-  forall ijk in DXYZ {
+proc evolve(ref X1, ref X2, Twiddle) {
+  forall ijk in DXYZ with (ref X1, ref X2) {
     X1(ijk) *= (Twiddle(ijk) + 0i);
     X2(ijk) = X1(ijk);
   }
@@ -370,7 +370,7 @@ fft(1, U1, U0);
 //
 // Restart benchmark
 //
-var totalTime: Timer;
+var totalTime: stopwatch;
 totalTime.start();
 
 compute_index_map(Twiddle);

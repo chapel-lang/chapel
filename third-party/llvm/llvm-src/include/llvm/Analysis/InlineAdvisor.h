@@ -9,23 +9,24 @@
 #ifndef LLVM_ANALYSIS_INLINEADVISOR_H
 #define LLVM_ANALYSIS_INLINEADVISOR_H
 
+#include "llvm/Analysis/CGSCCPassManager.h"
 #include "llvm/Analysis/InlineCost.h"
 #include "llvm/Analysis/LazyCallGraph.h"
-#include "llvm/Analysis/Utils/ImportedFunctionsInliningStatistics.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/IR/PassManager.h"
 #include <memory>
-#include <unordered_set>
 
 namespace llvm {
 class BasicBlock;
 class CallBase;
 class Function;
 class Module;
+class OptimizationRemark;
+class ImportedFunctionsInliningStatistics;
 class OptimizationRemarkEmitter;
 struct ReplayInlinerSettings;
 
-/// There are 3 scenarios we can use the InlineAdvisor:
+/// There are 4 scenarios we can use the InlineAdvisor:
 /// - Default - use manual heuristics.
 ///
 /// - Release mode, the expected mode for production, day to day deployments.
@@ -35,10 +36,33 @@ struct ReplayInlinerSettings;
 ///
 /// - Development mode, for training new models.
 /// In this mode, we trade off runtime performance for flexibility. This mode
-/// requires the full C Tensorflow API library, and evaluates models
-/// dynamically. This mode also permits generating training logs, for offline
-/// training.
+/// requires the TFLite library, and evaluates models dynamically. This mode
+/// also permits generating training logs, for offline training.
+///
+/// - Dynamically load an advisor via a plugin (PluginInlineAdvisorAnalysis)
 enum class InliningAdvisorMode : int { Default, Release, Development };
+
+// Each entry represents an inline driver.
+enum class InlinePass : int {
+  AlwaysInliner,
+  CGSCCInliner,
+  EarlyInliner,
+  ModuleInliner,
+  MLInliner,
+  ReplayCGSCCInliner,
+  ReplaySampleProfileInliner,
+  SampleProfileInliner,
+};
+
+/// Provides context on when an inline advisor is constructed in the pipeline
+/// (e.g., link phase, inline driver).
+struct InlineContext {
+  ThinOrFullLTOPhase LTOPhase;
+
+  InlinePass Pass;
+};
+
+std::string AnnotateInlinePassName(InlineContext IC);
 
 class InlineAdvisor;
 /// Capture state between an inlining decision having had been made, and
@@ -120,9 +144,9 @@ private:
 class DefaultInlineAdvice : public InlineAdvice {
 public:
   DefaultInlineAdvice(InlineAdvisor *Advisor, CallBase &CB,
-                      Optional<InlineCost> OIC, OptimizationRemarkEmitter &ORE,
-                      bool EmitRemarks = true)
-      : InlineAdvice(Advisor, CB, ORE, OIC.hasValue()), OriginalCB(&CB),
+                      std::optional<InlineCost> OIC,
+                      OptimizationRemarkEmitter &ORE, bool EmitRemarks = true)
+      : InlineAdvice(Advisor, CB, ORE, OIC.has_value()), OriginalCB(&CB),
         OIC(OIC), EmitRemarks(EmitRemarks) {}
 
 private:
@@ -132,7 +156,7 @@ private:
 
 private:
   CallBase *const OriginalCB;
-  Optional<InlineCost> OIC;
+  std::optional<InlineCost> OIC;
   bool EmitRemarks;
 };
 
@@ -158,7 +182,7 @@ public:
   /// This must be called when the Inliner pass is entered, to allow the
   /// InlineAdvisor update internal state, as result of function passes run
   /// between Inliner pass runs (for the same module).
-  virtual void onPassEntry() {}
+  virtual void onPassEntry(LazyCallGraph::SCC *SCC = nullptr) {}
 
   /// This must be called when the Inliner pass is exited, as function passes
   /// may be run subsequently. This allows an implementation of InlineAdvisor
@@ -170,14 +194,22 @@ public:
     OS << "Unimplemented InlineAdvisor print\n";
   }
 
+  /// NOTE pass name is annotated only when inline advisor constructor provides InlineContext.
+  const char *getAnnotatedInlinePassName() const {
+    return AnnotatedInlinePassName.c_str();
+  }
+
 protected:
-  InlineAdvisor(Module &M, FunctionAnalysisManager &FAM);
+  InlineAdvisor(Module &M, FunctionAnalysisManager &FAM,
+                std::optional<InlineContext> IC = std::nullopt);
   virtual std::unique_ptr<InlineAdvice> getAdviceImpl(CallBase &CB) = 0;
   virtual std::unique_ptr<InlineAdvice> getMandatoryAdvice(CallBase &CB,
                                                            bool Advice);
 
   Module &M;
   FunctionAnalysisManager &FAM;
+  const std::optional<InlineContext> IC;
+  const std::string AnnotatedInlinePassName;
   std::unique_ptr<ImportedFunctionsInliningStatistics> ImportedFunctionsStats;
 
   enum class MandatoryInliningKind { NotMandatory, Always, Never };
@@ -198,13 +230,86 @@ private:
 class DefaultInlineAdvisor : public InlineAdvisor {
 public:
   DefaultInlineAdvisor(Module &M, FunctionAnalysisManager &FAM,
-                       InlineParams Params)
-      : InlineAdvisor(M, FAM), Params(Params) {}
+                       InlineParams Params, InlineContext IC)
+      : InlineAdvisor(M, FAM, IC), Params(Params) {}
 
 private:
   std::unique_ptr<InlineAdvice> getAdviceImpl(CallBase &CB) override;
 
   InlineParams Params;
+};
+
+/// Used for dynamically registering InlineAdvisors as plugins
+///
+/// An advisor plugin adds a new advisor at runtime by registering an instance
+/// of PluginInlineAdvisorAnalysis in the current ModuleAnalysisManager.
+/// For example, the following code dynamically registers a
+/// DefaultInlineAdvisor:
+///
+/// namespace {
+///
+/// InlineAdvisor *defaultAdvisorFactory(Module &M, FunctionAnalysisManager
+/// &FAM,
+///                                      InlineParams Params, InlineContext IC)
+///                                      {
+///   return new DefaultInlineAdvisor(M, FAM, Params, IC);
+/// }
+///
+/// struct DefaultDynamicAdvisor : PassInfoMixin<DefaultDynamicAdvisor> {
+///   PreservedAnalyses run(Module &, ModuleAnalysisManager &MAM) {
+///     PluginInlineAdvisorAnalysis PA(defaultAdvisorFactory);
+///     MAM.registerPass([&] { return PA; });
+///     return PreservedAnalyses::all();
+///   }
+/// };
+///
+/// } // namespace
+///
+/// extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+/// llvmGetPassPluginInfo() {
+///   return {LLVM_PLUGIN_API_VERSION, "DynamicDefaultAdvisor",
+///   LLVM_VERSION_STRING,
+///           [](PassBuilder &PB) {
+///             PB.registerPipelineStartEPCallback(
+///                 [](ModulePassManager &MPM, OptimizationLevel Level) {
+///                   MPM.addPass(DefaultDynamicAdvisor());
+///                 });
+///           }};
+/// }
+///
+/// A plugin must implement an AdvisorFactory and register it with a
+/// PluginInlineAdvisorAnlysis to the provided ModuleanAlysisManager.
+///
+/// If such a plugin has been registered
+/// InlineAdvisorAnalysis::Result::tryCreate will return the dynamically loaded
+/// advisor.
+///
+class PluginInlineAdvisorAnalysis
+    : public AnalysisInfoMixin<PluginInlineAdvisorAnalysis> {
+public:
+  static AnalysisKey Key;
+  static bool HasBeenRegistered;
+
+  typedef InlineAdvisor *(*AdvisorFactory)(Module &M,
+                                           FunctionAnalysisManager &FAM,
+                                           InlineParams Params,
+                                           InlineContext IC);
+
+  PluginInlineAdvisorAnalysis(AdvisorFactory Factory) : Factory(Factory) {
+    HasBeenRegistered = true;
+    assert(Factory != nullptr &&
+           "The plugin advisor factory should not be a null pointer.");
+  }
+
+  struct Result {
+    AdvisorFactory Factory;
+  };
+
+  Result run(Module &M, ModuleAnalysisManager &MAM) { return {Factory}; }
+  Result getResult() { return {Factory}; }
+
+private:
+  AdvisorFactory Factory;
 };
 
 /// The InlineAdvisorAnalysis is a module pass because the InlineAdvisor
@@ -223,7 +328,8 @@ public:
       return !PAC.preservedWhenStateless();
     }
     bool tryCreate(InlineParams Params, InliningAdvisorMode Mode,
-                   const ReplayInlinerSettings &ReplaySettings);
+                   const ReplayInlinerSettings &ReplaySettings,
+                   InlineContext IC);
     InlineAdvisor *getAdvisor() const { return Advisor.get(); }
 
   private:
@@ -235,7 +341,7 @@ public:
   Result run(Module &M, ModuleAnalysisManager &MAM) { return Result(M, MAM); }
 };
 
-/// Printer pass for the FunctionPropertiesAnalysis results.
+/// Printer pass for the InlineAdvisorAnalysis results.
 class InlineAdvisorAnalysisPrinterPass
     : public PassInfoMixin<InlineAdvisorAnalysisPrinterPass> {
   raw_ostream &OS;
@@ -244,10 +350,15 @@ public:
   explicit InlineAdvisorAnalysisPrinterPass(raw_ostream &OS) : OS(OS) {}
 
   PreservedAnalyses run(Module &M, ModuleAnalysisManager &MAM);
+
+  PreservedAnalyses run(LazyCallGraph::SCC &InitialC, CGSCCAnalysisManager &AM,
+                        LazyCallGraph &CG, CGSCCUpdateResult &UR);
+  static bool isRequired() { return true; }
 };
 
 std::unique_ptr<InlineAdvisor>
-getReleaseModeAdvisor(Module &M, ModuleAnalysisManager &MAM);
+getReleaseModeAdvisor(Module &M, ModuleAnalysisManager &MAM,
+                      std::function<bool(CallBase &)> GetDefaultAdvice);
 
 std::unique_ptr<InlineAdvisor>
 getDevelopmentModeAdvisor(Module &M, ModuleAnalysisManager &MAM,
@@ -258,9 +369,9 @@ getDevelopmentModeAdvisor(Module &M, ModuleAnalysisManager &MAM,
 
 /// Return the cost only if the inliner should attempt to inline at the given
 /// CallSite. If we return the cost, we will emit an optimisation remark later
-/// using that cost, so we won't do so from this function. Return None if
-/// inlining should not be attempted.
-Optional<InlineCost>
+/// using that cost, so we won't do so from this function. Return std::nullopt
+/// if inlining should not be attempted.
+std::optional<InlineCost>
 shouldInline(CallBase &CB, function_ref<InlineCost(CallBase &CB)> GetInlineCost,
              OptimizationRemarkEmitter &ORE, bool EnableDeferral = true);
 

@@ -35,10 +35,10 @@ const init2arr: ArrType2 = 33033;
 proc test() {
 // declare all the variables
 var b0: bool;
-var b8: bool(8);
-var b16: bool(16);
-var b32: bool(32);
-var b64: bool(64);
+
+
+
+
 var u8: uint(8);
 var u16: uint(16);
 var u32: uint(32);
@@ -69,10 +69,10 @@ var arr2: ArrType2;
 begin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -101,10 +101,10 @@ arr2 = init2arr;
 cobegin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -133,10 +133,10 @@ arr2 = init2arr;
 coforall jjjjj in 1..3 {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;

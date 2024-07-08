@@ -1,41 +1,33 @@
-domain(1,int(64),false)
+domain(1,int(64),one)
 1
 3
 1
-1
-1
-3
+0
 1
 3
 
-domain(1,int(64),false)
+domain(1,int(64),one)
 1
 3
 1
-1
-1
-3
+0
 1
 3
 
-DefaultSparseDom(1,int(64),domain(1,int(64),false))
+DefaultSparseDom(1,int(64),domain(1,int(64),one))
 1
 3
 1
-1
+0
 1
 2
-1
-3
 
-SparseBlockDom(1,int(64),BlockDom(1,int(64),false,unmanaged DefaultDist),unmanaged DefaultDist,false)
+SparseBlockDom(1,int(64),BlockDom(1,int(64),one,unmanaged DefaultDist),unmanaged DefaultDist,one)
 1
 3
 1
-1
+0
 1
 2
-1
-3
 
 done

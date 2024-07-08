@@ -1,0 +1,2 @@
+moveArrayElements-errors.chpl:nnnn: In function 'main':
+moveArrayElements-errors.chpl:nnnn: error: Region arguments to 'moveArrayElements' must be ranges or rectangular domains

@@ -1,1 +1,1 @@
-rangecastbounds.chpl:24: error: cannot cast range from boundedLow to bounded
+rangecastbounds.chpl:24: error: cannot cast range from boundKind.low to boundKind.both

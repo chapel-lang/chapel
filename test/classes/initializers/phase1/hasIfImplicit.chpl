@@ -15,10 +15,12 @@ class IfInit {
 }
 
 proc main() {
-  var c1 : borrowed IfInit = new borrowed IfInit(3);
+  var ownC1 = new owned IfInit(3);
+  var c1 : borrowed IfInit = ownC1.borrow();
 
   writeln(c1);
 
-  var c2 = new borrowed IfInit(7);
+  var ownC2 = new owned IfInit(7);
+  var c2 = ownC2.borrow();
   writeln(c2);
 }

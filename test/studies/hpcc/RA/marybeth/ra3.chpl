@@ -2,6 +2,8 @@
  *
  *  This is the Chapel version of the MTA version + inner vector loop
  */  
+use Math;
+
 // param used below still gives errors
 param POLY:uint(64) = 7;
 
@@ -36,7 +38,7 @@ var GUPs:real;
 proc main() {
 
   use Time;
-  var t:Timer;
+  var t:stopwatch;
 
   if doIO then writeRAdata();
 
@@ -61,12 +63,12 @@ proc main() {
 
 proc randomAccessUpdate() {
  
-  [i in TableDomain] Table(i) = i;
+  [i in TableDomain with (ref Table)] Table(i) = i;
   var lock: sync bool = true;
 
-  forall j in StreamDomain {
+  forall j in StreamDomain with (ref Table) {
     var ranvec: [LittleStepDomain] uint(64);
-    [k in LittleStepDomain] ranvec(k) = randomStart(bigStep*j+(bigStep/littleStep)*k);
+    [k in LittleStepDomain with (ref ranvec)] ranvec(k) = randomStart(bigStep*j+(bigStep/littleStep)*k);
     for i in BigStepDomain by littleStep{
       for k in LittleStepDomain{
         ranvec(k) = (ranvec(k) << 1) ^ (if (ranvec(k):int(64) < 0) then POLY else 0);

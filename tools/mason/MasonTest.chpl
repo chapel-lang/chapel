@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -97,24 +97,24 @@ proc masonTest(args: [] string, checkProj=true) throws {
       try! {
         // try to get option values meant for compilation
         if flagInArgs && !arg.startsWith('-') {
-          compopts.append(arg);
+          compopts.pushBack(arg);
           flagInArgs=false;
         }
         // assume this is an individual test file
         else if isFile(arg) && arg.endsWith(".chpl") {
-          files.append(arg);
+          files.pushBack(arg);
         }
         // assume this is a test directory
         else if isDir(arg) {
-          dirs.append(arg);
+          dirs.pushBack(arg);
         }
         // assume a flag for compiler
         else if arg.startsWith('-') {
-          compopts.append(arg);
+          compopts.pushBack(arg);
           flagInArgs=true;
         }
         else {
-          searchSubStrings.append(arg);
+          searchSubStrings.pushBack(arg);
         }
       }
     }
@@ -136,11 +136,11 @@ proc masonTest(args: [] string, checkProj=true) throws {
         subTestPath = cwd;
       }
 
-      var tests = findfiles(startdir=subTestPath, recursive=true, hidden=false);
+      var tests = findFiles(startdir=subTestPath, recursive=true, hidden=false);
       for test in tests{
         if test.endsWith(".chpl"){
           if(inProjectDir){
-            testNames.append(getTestPath(test));
+            testNames.pushBack(getTestPath(test));
           }
           else{
             var testLoc = "";
@@ -149,7 +149,7 @@ proc masonTest(args: [] string, checkProj=true) throws {
               testLoc = if !testLoc.isEmpty() then joinPath(split[1], testLoc) else split[1];
               test = split[0];
             }
-            testNames.append(testLoc);
+            testNames.pushBack(testLoc);
           }
         }
       }
@@ -162,23 +162,23 @@ proc masonTest(args: [] string, checkProj=true) throws {
           if testName.find(subString) != -1 {
             isSubString = true;
             if(inProjectDir){
-              files.append("".join('test/', testName));
+              files.pushBack("".join('test/', testName));
             }
             else{
-              files.append(testName);
+              files.pushBack(testName);
             }
           }
         }
 
         if !isSubString {
-          compopts.append(subString);
+          compopts.pushBack(subString);
         }
       }
     }
 
     updateLock(skipUpdate);
-    compopts.append("".join("--comm=",comm));
-    runTests(show, run, parallel, compopts);
+    compopts.pushBack("".join("--comm=",comm));
+    runTests(show, run, parallel, skipUpdate, compopts);
   }
   catch e: MasonError {
     try! {
@@ -186,10 +186,10 @@ proc masonTest(args: [] string, checkProj=true) throws {
         var testNames: list(string);
 
         if isDir('.'){
-          var tests = findfiles(startdir='.', recursive=subdir);
+          var tests = findFiles(startdir='.', recursive=subdir);
           for test in tests {
             if test.endsWith(".chpl") {
-              testNames.append(test);
+              testNames.pushBack(test);
             }
           }
         }
@@ -197,7 +197,7 @@ proc masonTest(args: [] string, checkProj=true) throws {
         for subString in searchSubStrings {
           for testName in testNames {
             if testName.find(subString) != -1 {
-              files.append(testName);
+              files.pushBack(testName);
             }
           }
         }
@@ -207,7 +207,8 @@ proc masonTest(args: [] string, checkProj=true) throws {
   }
 }
 
-private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts: list(string)) throws {
+private proc runTests(show: bool, run: bool, parallel: bool,
+                      skipUpdate: bool, ref cmdLineCompopts: list(string)) throws {
 
   try! {
 
@@ -215,13 +216,13 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     const projectHome = getProjectHome(cwd);
 
     // parse lockfile
-    const toParse = open(projectHome + "/Mason.lock", iomode.r);
+    const toParse = open(projectHome + "/Mason.lock", ioMode.r);
     const lockFile = parseToml(toParse);
 
     // Get project source code and dependencies
     const (sourceList, gitList) = genSourceList(lockFile);
 
-    getSrcCode(sourceList, show);
+    getSrcCode(sourceList, skipUpdate, show);
     getGitCode(gitList, show);
 
     const project = lockFile["root"]!["name"]!.s;
@@ -247,9 +248,9 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     else {
       try! {
         for dir in dirs {
-          for file in findfiles(startdir = dir, recursive = subdir) {
+          for file in findFiles(startdir = dir, recursive = subdir) {
             if file.endsWith(".chpl") {
-              files.append(file);
+              files.pushBack(file);
             }
           }
         }
@@ -262,7 +263,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     if numTests > 0 {
 
       var result =  new TestResult();
-      var timeElapsed = new Timer();
+      var timeElapsed = new stopwatch();
       timeElapsed.start();
       for test in testNames {
         var testPath: string;
@@ -295,7 +296,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
           result.addError(testName, test,  errMsg);
         }
         else {
-          testsCompiled.append(test);
+          testsCompiled.pushBack(test);
           if show || !run then writeln("Compiled '", test, "' successfully");
           if parallel {
             runTestBinary(projectHome, outputLoc, testName, result, show);
@@ -386,14 +387,14 @@ private proc getTests(lock: borrowed Toml, projectHome: string) {
     var strippedTests = tests.split(',').strip('[]');
     for test in strippedTests {
       const t = test.strip().strip('"');
-      testNames.append(t);
+      testNames.pushBack(t);
     }
   }
   else if isDir(testPath) {
-    var tests = findfiles(startdir=testPath, recursive=true, hidden=false);
+    var tests = findFiles(startdir=testPath, recursive=true, hidden=false);
     for test in tests {
       if test.endsWith(".chpl") {
-        testNames.append(getTestPath(test));
+        testNames.pushBack(getTestPath(test));
       }
     }
   }
@@ -450,7 +451,7 @@ proc getRuntimeComm() throws {
 }
 
 proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
-  var comm_c: c_string;
+  var comm_c: c_ptrConst(c_char);
   try! {
     var checkChpl = spawn(["which","chpl"],stdout = pipeStyle.pipe);
     checkChpl.wait();
@@ -458,11 +459,11 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
     if checkChpl.stdout.readLine(line) {
 
       if files.size == 0 && dirs.size == 0 {
-        dirs.append(".");
+        dirs.pushBack(".");
       }
 
       var result =  new TestResult();
-      var timeElapsed = new Timer();
+      var timeElapsed = new stopwatch();
       timeElapsed.start();
       for tests in files {
         try {
@@ -494,7 +495,7 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
 
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /*Docs: Todo*/
 proc testFile(file, ref result, show: bool) throws {
   var fileName = basename(file);
@@ -550,17 +551,17 @@ proc testFile(file, ref result, show: bool) throws {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /*Docs: Todo*/
 proc testDirectory(dir, ref result, show: bool) throws {
-  for file in findfiles(startdir = dir, recursive = subdir) {
+  for file in findFiles(startdir = dir, recursive = subdir) {
     if file.endsWith(".chpl") {
       testFile(file, result, show);
     }
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /*Docs: Todo*/
 proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales,
               ref testsPassed, ref testNames, ref localesCountMap,
@@ -590,11 +591,11 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   // (albeit wasteful) thing we can do here is just cast the lists to
   // array here.
   //
-  if testNames.size != 0 then testNamesStr = testNames.toArray(): string;
-  if failedTestNames.size != 0 then failedTestNamesStr = failedTestNames.toArray(): string;
-  if erroredTestNames.size != 0 then erroredTestNamesStr = erroredTestNames.toArray(): string;
-  if testsPassed.size != 0 then passedTestStr = testsPassed.toArray(): string;
-  if skippedTestNames.size != 0 then skippedTestNamesStr = skippedTestNames.toArray(): string;
+  if testNames.size != 0 then testNamesStr =                try! "%?".format(testNames.toArray());
+  if failedTestNames.size != 0 then failedTestNamesStr =    try! "%?".format(failedTestNames.toArray());
+  if erroredTestNames.size != 0 then erroredTestNamesStr =  try! "%?".format(erroredTestNames.toArray());
+  if testsPassed.size != 0 then passedTestStr =             try! "%?".format(testsPassed.toArray());
+  if skippedTestNames.size != 0 then skippedTestNamesStr =  try! "%?".format(skippedTestNames.toArray());
   var exec = spawn([executable, "-nl", reqNumLocales: string, "--testNames",
             testNamesStr,"--failedTestNames", failedTestNamesStr, "--errorTestNames",
             erroredTestNamesStr, "--ranTests", passedTestStr, "--skippedTestNames",
@@ -604,7 +605,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   while exec.stdout.readLine(line) {
     if line.strip() == separator1 then sep1Found = true;
     else if line.strip() == separator2 && sep1Found {
-      var testName = try! currentRunningTests.pop();
+      var testName = try! currentRunningTests.popBack();
       if testNames.count(testName) != 0 then
         try! testNames.remove(testName);
       addTestResult(result, localesCountMap, testNames, flavour, fileName,
@@ -623,9 +624,9 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
       if line.strip().endsWith("()") {
         var testName = line.strip();
         if currentRunningTests.count(testName) == 0 {
-          currentRunningTests.append(testName);
+          currentRunningTests.pushBack(testName);
           if testNames.count(testName) == 0 then
-            testNames.append(testName);
+            testNames.pushBack(testName);
         }
         testExecMsg = "";
       }
@@ -636,11 +637,11 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
     var testErrMsg = line;
     while exec.stderr.readLine(line) do testErrMsg += line;
     if !currentRunningTests.isEmpty() {
-      var testNameIndex = try! currentRunningTests.pop();
+      var testNameIndex = try! currentRunningTests.popBack();
       var testName = testNameIndex;
       if testNames.count(testName) != 0 then
         try! testNames.remove(testName);
-      erroredTestNames.append(testName);
+      erroredTestNames.pushBack(testName);
       if show then writeln("Ran ",testName," ERROR");
       result.addError(testName, fileName, testErrMsg);
       haltOccured =  true;
@@ -648,12 +649,13 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   }
   exec.wait();//wait till the subprocess is complete
   exitCode = exec.exitCode;
-  if haltOccured then
+  if haltOccured {
     exitCode = runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
               testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
+  }
   if testNames.size != 0 {
     var maxCount = -1;
-    for key in localesCountMap {
+    for key in localesCountMap.keys() {
       if maxCount < localesCountMap[key] {
         reqLocales = key;
         maxCount = localesCountMap[key];
@@ -666,7 +668,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   return exitCode;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /*Docs: Todo*/
 proc addTestResult(ref result, ref localesCountMap, ref testNames,
                   flavour, fileName, testName, errMsg, ref failedTestNames,
@@ -677,22 +679,22 @@ proc addTestResult(ref result, ref localesCountMap, ref testNames,
     when "OK" {
       if show then writeln("Ran ",testName," ",flavour);
       result.addSuccess(testName, fileName);
-      testsPassed.append(testName);
+      testsPassed.pushBack(testName);
     }
     when "ERROR" {
       if show then writeln("Ran ",testName," ",flavour);
       result.addError(testName, fileName, errMsg);
-      erroredTestNames.append(testName);
+      erroredTestNames.pushBack(testName);
     }
     when "FAIL" {
       if show then writeln("Ran ",testName," ",flavour);
       result.addFailure(testName, fileName, errMsg);
-      failedTestNames.append(testName);
+      failedTestNames.pushBack(testName);
     }
     when "SKIPPED" {
       if show then writeln("Ran ",testName," ",flavour);
       result.addSkip(testName, fileName, errMsg);
-      skippedTestNames.append(testName);
+      skippedTestNames.pushBack(testName);
     }
     when "IncorrectNumLocales" {
       if comm != "none" {
@@ -703,17 +705,17 @@ proc addTestResult(ref result, ref localesCountMap, ref testNames,
             localesCountMap[a: int] += 1;
           else
             localesCountMap[a: int] = 1;
-        testNames.append(testName);
+        testNames.pushBack(testName);
       }
       else {
         var locErrMsg = "Not a MultiLocale Environment. $CHPL_COMM = " + comm + "\n";
         locErrMsg += errMsg;
         result.addSkip(testName, fileName, locErrMsg);
-        skippedTestNames.append(testName);
+        skippedTestNames.pushBack(testName);
       }
     }
     when "Dependence" {
-      testNames.append(testName);
+      testNames.pushBack(testName);
     }
   }
 }

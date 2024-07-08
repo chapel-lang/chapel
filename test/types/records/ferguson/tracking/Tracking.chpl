@@ -5,14 +5,14 @@ private use Map;
 proc mapXor(a: map(?keyType, ?valueType, ?),
             b: map(keyType, valueType, ?)) {
   var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
-  
+
   try! {
     for k in a.keys() do
-      if !b.contains(k) then newMap.add(k, a.getValue(k));
+      if !b.contains(k) then newMap.add(k, a[k]);
   }
   try! {
-    for k in b do
-      if !a.contains(k) then newMap.add(k, b.getValue(k));
+    for k in b.keys() do
+      if !a.contains(k) then newMap.add(k, b[k]);
   }
   return newMap;
 }
@@ -20,14 +20,14 @@ proc mapXor(a: map(?keyType, ?valueType, ?),
 proc mapSubtract(a: map(?keyType, ?valueType, ?),
                  b: map(keyType, valueType, ?)) {
   var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
-  
+
   try! {
     for ak in a.keys() {
       if !b.contains(ak) then
-        newMap.add(ak, a.getValue(ak));
+        newMap.add(ak, a[ak]);
     }
   }
-  
+
   return newMap;
 }
 
@@ -38,34 +38,34 @@ proc mapAnd(a: map(?keyType, ?valueType, ?),
   try! {
     for k in a.keys() do
       if b.contains(k) then
-        newMap.add(k, a.getValue(k));
+        newMap.add(k, a[k]);
   }
 
   return newMap;
 }
 
-var ops: list((int, unmanaged object?, int, int, int));
-var opsLock$: sync bool = true;
+var ops: list((int, unmanaged RootClass?, int, int, int));
+var opsLock: sync bool = true;
 
 var counter: atomic int;
 
 require "gdb.h";
 config const breakOnAllocateId = -1;
 
-proc trackAllocation(c: object, id:int, x:int) {
-  opsLock$.readFE();
-  ops.append( (1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
+proc trackAllocation(c: RootClass, id:int, x:int) {
+  opsLock.readFE();
+  ops.pushBack( (1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
   if id == breakOnAllocateId {
     extern proc gdbShouldBreakHere();
     gdbShouldBreakHere();
   }
-  opsLock$.writeEF(true);
+  opsLock.writeEF(true);
 }
 
-proc trackFree(c: object, id:int, x:int) {
-  opsLock$.readFE();
-  ops.append( (-1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
-  opsLock$.writeEF(true);
+proc trackFree(c: RootClass, id:int, x:int) {
+  opsLock.readFE();
+  ops.pushBack( (-1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
+  opsLock.writeEF(true);
 }
 
 proc checkAllocations() {
@@ -93,7 +93,7 @@ proc checkAllocations() {
 
   proc printthem(arr)
   {
-    for id in sorted(arr.valuesToArray()) {
+    for id in sorted(arr.keysToArray()) {
       write("(id=", id, " x=", to_x[id], ") ");
     }
   }
@@ -120,7 +120,7 @@ proc checkAllocations() {
   }
 
   // check order of each id. Each id should be freed after being allocated.
-  for id in allocated {
+  for id in allocated.keys() {
     // same as ids in freed_byid by this point.
     if allocated[id] < freed[id] {
       // OK
@@ -131,4 +131,3 @@ proc checkAllocations() {
   }
   return true;
 }
-

@@ -9,7 +9,7 @@ var lst: list(listType, listLock);
 writeln(lst.isEmpty());
 
 for i in 1..5 do
-  lst.append(i:listType);
+  lst.pushBack(i:listType);
 
 writeln(lst.isEmpty());
 

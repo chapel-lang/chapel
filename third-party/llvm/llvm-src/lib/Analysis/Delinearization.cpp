@@ -24,11 +24,7 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/PassManager.h"
-#include "llvm/IR/Type.h"
-#include "llvm/InitializePasses.h"
-#include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -135,7 +131,7 @@ struct SCEVCollectAddRecMultiplies {
     if (auto *Mul = dyn_cast<SCEVMulExpr>(S)) {
       bool HasAddRec = false;
       SmallVector<const SCEV *, 0> Operands;
-      for (auto Op : Mul->operands()) {
+      for (const auto *Op : Mul->operands()) {
         const SCEVUnknown *Unknown = dyn_cast<SCEVUnknown>(Op);
         if (Unknown && !isa<CallInst>(Unknown->getValue())) {
           Operands.push_back(Op);
@@ -523,25 +519,45 @@ bool llvm::getIndexExpressionsFromGEP(ScalarEvolution &SE,
   return !Subscripts.empty();
 }
 
-namespace {
+bool llvm::tryDelinearizeFixedSizeImpl(
+    ScalarEvolution *SE, Instruction *Inst, const SCEV *AccessFn,
+    SmallVectorImpl<const SCEV *> &Subscripts, SmallVectorImpl<int> &Sizes) {
+  Value *SrcPtr = getLoadStorePointerOperand(Inst);
 
-class Delinearization : public FunctionPass {
-  Delinearization(const Delinearization &); // do not implement
-protected:
-  Function *F;
-  LoopInfo *LI;
-  ScalarEvolution *SE;
+  // Check the simple case where the array dimensions are fixed size.
+  auto *SrcGEP = dyn_cast<GetElementPtrInst>(SrcPtr);
+  if (!SrcGEP)
+    return false;
 
-public:
-  static char ID; // Pass identification, replacement for typeid
+  getIndexExpressionsFromGEP(*SE, SrcGEP, Subscripts, Sizes);
 
-  Delinearization() : FunctionPass(ID) {
-    initializeDelinearizationPass(*PassRegistry::getPassRegistry());
+  // Check that the two size arrays are non-empty and equal in length and
+  // value.
+  // TODO: it would be better to let the caller to clear Subscripts, similar
+  // to how we handle Sizes.
+  if (Sizes.empty() || Subscripts.size() <= 1) {
+    Subscripts.clear();
+    return false;
   }
-  bool runOnFunction(Function &F) override;
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-  void print(raw_ostream &O, const Module *M = nullptr) const override;
-};
+
+  // Check that for identical base pointers we do not miss index offsets
+  // that have been added before this GEP is applied.
+  Value *SrcBasePtr = SrcGEP->getOperand(0)->stripPointerCasts();
+  const SCEVUnknown *SrcBase =
+      dyn_cast<SCEVUnknown>(SE->getPointerBase(AccessFn));
+  if (!SrcBase || SrcBasePtr != SrcBase->getValue()) {
+    Subscripts.clear();
+    return false;
+  }
+
+  assert(Subscripts.size() == Sizes.size() + 1 &&
+         "Expected equal number of entries in the list of size and "
+         "subscript.");
+
+  return true;
+}
+
+namespace {
 
 void printDelinearization(raw_ostream &O, Function *F, LoopInfo *LI,
                           ScalarEvolution *SE) {
@@ -594,32 +610,6 @@ void printDelinearization(raw_ostream &O, Function *F, LoopInfo *LI,
 }
 
 } // end anonymous namespace
-
-void Delinearization::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.setPreservesAll();
-  AU.addRequired<LoopInfoWrapperPass>();
-  AU.addRequired<ScalarEvolutionWrapperPass>();
-}
-
-bool Delinearization::runOnFunction(Function &F) {
-  this->F = &F;
-  SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
-  LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
-  return false;
-}
-
-void Delinearization::print(raw_ostream &O, const Module *) const {
-  printDelinearization(O, F, LI, SE);
-}
-
-char Delinearization::ID = 0;
-static const char delinearization_name[] = "Delinearization";
-INITIALIZE_PASS_BEGIN(Delinearization, DL_NAME, delinearization_name, true,
-                      true)
-INITIALIZE_PASS_DEPENDENCY(LoopInfoWrapperPass)
-INITIALIZE_PASS_END(Delinearization, DL_NAME, delinearization_name, true, true)
-
-FunctionPass *llvm::createDelinearizationPass() { return new Delinearization; }
 
 DelinearizationPrinterPass::DelinearizationPrinterPass(raw_ostream &OS)
     : OS(OS) {}

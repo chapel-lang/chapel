@@ -30,7 +30,7 @@ if length < 0 then
 // Domains
 const space = {0.. # length};
 const vectorDom = space dmapped if useBlockDist then
-                            new dmap(new Block(boundingBox=space)) else
+                            new blockDist(boundingBox=space) else
                             defaultDist;
 
 var A: [vectorDom] real,
@@ -50,7 +50,7 @@ A = 0.0;
 B = 2.0;
 C = 2.0;
 
-var timer = new Timer();
+var timer = new stopwatch();
 
 //
 // Main loop

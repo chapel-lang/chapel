@@ -4,7 +4,7 @@ class C {
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
-    var D: domain(1, int(32)) = {1..10:int(32)};
+    var D: domain(1, int(32)) = ( 1..10 ): range(int(32));
     yield D;
   }
 
@@ -30,8 +30,10 @@ class D {
   }
 }
 
-var myC = new borrowed C();
-var myD = new borrowed D();
+var ownMyC = new owned C();
+var myC = ownMyC.borrow();
+var ownMyD = new owned D();
+var myD = ownMyD.borrow();
 
 forall (i,j) in zip(myC, myC) do
   writeln("(i,j) = ", (i,j));

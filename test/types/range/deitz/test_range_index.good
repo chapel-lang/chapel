@@ -1,3 +1,4 @@
+test_range_index.chpl:8: warning: slicing a range(int(64),low,positive) with a range(int(64),low,positive) might produce an empty range and result in a halt
 (1..10 by 3)(5..8) = 5..8 by 3 align 1
 (1..10 by 3)(4..7) = 4..7 by 3
 (1..10 by 3)(6..20) = 6..10 by 3 align 1

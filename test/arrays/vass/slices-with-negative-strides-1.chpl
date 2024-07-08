@@ -16,10 +16,10 @@ writeln();
 // testing lower-level code
 const ths = 1..4, oth = 1..4 by -1;
 
-writeln(ths.boundsCheck(ths));
-writeln(ths.boundsCheck(oth));
-writeln(oth.boundsCheck(ths));
-writeln(oth.boundsCheck(oth));
+writeln(ths.contains(ths));
+writeln(ths.contains(oth));
+writeln(oth.contains(ths));
+writeln(oth.contains(oth));
 writeln();
 
 const bt = ths, bo = oth;

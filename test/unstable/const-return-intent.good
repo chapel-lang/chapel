@@ -1,0 +1,7 @@
+const-return-intent.chpl:10: warning: 'const' return intent is unstable and may work differently in the future, please use 'out' intent instead
+const-return-intent.chpl:14: warning: 'const' return intent is unstable and may work differently in the future, please use 'out' intent instead
+0 0
+0 0 0 0
+0
+0 0
+0 0 0

@@ -1,0 +1,58 @@
+module MethodsAfterFields {
+  record emptyRecord {   }
+
+  @chplcheck.ignore("MethodsAfterFields")
+  record methodField {
+    proc method1() {
+      return 12;
+    }
+    var field1: int;
+  }
+
+  @chplcheck.ignore("MethodsAfterFields")
+  record fieldMethodField {
+    var field1: int;
+    proc method1() {
+      return field1;
+    }
+    var field2: int;
+  }
+
+  record fieldFieldMethod {
+    var field1: int;
+    const field2: real;
+
+    proc method1() {
+      return field1;
+    }
+  }
+
+  class EmptyClass {   
+  }
+
+  @chplcheck.ignore("MethodsAfterFields")
+  class MethodField {
+    proc method1() {
+      return 12;
+    }
+    var field1: int;
+  }
+
+  @chplcheck.ignore("MethodsAfterFields")
+  class FieldMethodField {
+    var field1: int;
+    proc method1() {
+      return field1;
+    }
+    var field2: int;
+  }
+
+  class FieldFieldMethod {
+    var field1: int;
+    const field2: real;
+
+    proc method1() {
+        return field1;
+    }
+  }
+}

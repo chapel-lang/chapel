@@ -1,0 +1,7 @@
+-st=complex(64)                         # testSyncTypes-ok
+-st=complex(128)                        # testSyncTypes-ok
+-st=range                               # testSyncTypes-ok
+-st=R                                   # testSyncTypes-ok
+-st='[0..127] int'                      # testSyncTypes-arr
+-st='[1..5] sync int'                   # testSyncTypes-arr2
+-st='sync int'                          # testSyncTypes-sync

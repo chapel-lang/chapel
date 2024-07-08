@@ -182,6 +182,28 @@ let isCodeGenOnly = 1, isCall = 1, hasSideEffects = 1,
     Defs = [PC, R31, R6, R7, P0] in
 def PS_call_stk : T_Call<"">;
 
+// This pseudo instruction is used to replace int_hexagon_instrprof_custom intrinsic
+// with a call to custom handler passed as the first argument to the intrinsic.
+
+// Pleae Note:
+// 1) The call to the custom handler is being treated as a special one as the
+//    callee is responsible for saving and restoring all the registers it needs
+//    to modify. This includes caller saved registers as well as r0-r5 argument
+//    registers. This is done to reduce the impact of instrumentation on the
+//    code being instrumented/profiled.
+// 2) R14, R15 and R28 are reserved for PLT handling and therefore are
+//    part of the def list.
+// 3) R0 is used to pass the unique id associated with an instrumentation site
+//    to the handler.
+// 4) All the other registers (R29, R30, R31, PC) get modified by the call
+//    instruction.
+
+// TODO: It may be a good idea to add a separate pseudo instruction for
+// static relocation which doesn't need to reserve r14, r15 and r28.
+
+let hasSideEffects = 1, isCall = 1, Defs = [R0, R14, R15, R28, R29, R30, R31, PC] in
+def PS_call_instrprof_custom :  Pseudo<(outs), (ins s32_0Imm:$dst, u32_0Imm:$Ii), "">;
+
 // Call, no return.
 let isCall = 1, hasSideEffects = 1, cofMax1 = 1, isCodeGenOnly = 1 in
 def PS_callr_nr: InstHexagon<(outs), (ins IntRegs:$Rs),
@@ -404,6 +426,22 @@ let isCall = 1, Uses = [R29, R31], isAsmParserOnly = 1 in {
   let Defs = [R14, R15, R28, P0], isExtended = 1, opExtendable = 0 in
   def SAVE_REGISTERS_CALL_V4STK_EXT_PIC : T_Call<"">, PredRel;
 }
+
+let Predicates = [UseHVX], isPseudo = 1, isCodeGenOnly = 1,
+                 hasSideEffects = 0, hasPostISelHook = 1 in
+class Vsplatr_template : InstHexagon<(outs HvxVR:$Vd), (ins IntRegs:$Rs),
+                         "", [], "", V6_lvsplatw.Itinerary, V6_lvsplatw.Type>;
+def PS_vsplatrb: Vsplatr_template;
+def PS_vsplatrh: Vsplatr_template;
+def PS_vsplatrw: Vsplatr_template;
+
+let Predicates = [UseHVX], isPseudo = 1, isCodeGenOnly = 1,
+                 hasSideEffects = 0, hasPostISelHook = 1 in
+class Vsplati_template : InstHexagon<(outs HvxVR:$Vd), (ins s32_0Imm:$Val),
+                         "", [], "", V6_lvsplatw.Itinerary, V6_lvsplatw.Type>;
+def PS_vsplatib: Vsplati_template;
+def PS_vsplatih: Vsplati_template;
+def PS_vsplatiw: Vsplati_template;
 
 // Vector store pseudos
 let Predicates = [HasV60,UseHVX], isPseudo = 1, isCodeGenOnly = 1,

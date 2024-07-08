@@ -5,7 +5,7 @@ iter foo() {
   yield 4;
 }
 
-proc goo(y)
+proc goo(y) do
   return y;
 
 proc bar(y) {

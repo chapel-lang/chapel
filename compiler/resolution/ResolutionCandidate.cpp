@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,6 +51,12 @@ std::map<Type*,std::map<Type*,bool> > actualFormalCoercible;
 ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
   fn = function;
   isInterimInstantiation = false;
+  anyPromotes = false;
+  nImplicitConversionsComputed = false;
+  anyNegParamToUnsigned = false;
+  nImplicitConversions = 0;
+  nParamNarrowingImplicitConversions = 0;
+  visibilityDistance = -1;
   failingArgument = NULL;
   reason = RESOLUTION_CANDIDATE_MATCH;
 }
@@ -943,6 +949,9 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
         reason = RESOLUTION_CANDIDATE_OTHER;
         return false;
       }
+
+      if (promotes)
+        anyPromotes = true;
     }
   }
 

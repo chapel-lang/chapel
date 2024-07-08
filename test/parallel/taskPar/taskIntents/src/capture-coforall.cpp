@@ -7,7 +7,7 @@
 #endif
 
 #include "var-decls.cpp"
-var s$: sync int;
+var s: sync int;
 
 writeln("before coforall");
 #include "var-writes.cpp"
@@ -24,11 +24,11 @@ coforall jjjjj in 1..2 {
     updateVars();
     writeln("coforall - after updateVars");
 #include "var-writes.cpp"
-    s$ = 1;
+    s = 1;
   }
   else
   {
-    s$;
+    s;
     writeln("coforall - jjjjj=2");
 #include "var-writes.cpp"
   }

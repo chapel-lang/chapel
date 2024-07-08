@@ -54,20 +54,10 @@ enum {
 	FI_WRITE_FD
 };
 
-enum ofi_signal_state {
-	OFI_SIGNAL_UNSET,
-	OFI_SIGNAL_WRITE_PREPARE,
-	OFI_SIGNAL_SET,
-	OFI_SIGNAL_READ_PREPARE,
-};
-
 struct fd_signal {
-	ofi_atomic32_t	state;
-	int		fd[2];
-
-#if ENABLE_DEBUG
-	ofi_atomic32_t debug_cnt;
-#endif
+	ofi_mutex_t lock;
+	int fd[2];
+	int byte_avail;
 };
 
 static inline int fd_signal_init(struct fd_signal *signal)
@@ -78,18 +68,23 @@ static inline int fd_signal_init(struct fd_signal *signal)
 	if (ret < 0)
 		return -ofi_sockerr();
 
+	signal->byte_avail = 0;
+	ret = ofi_mutex_init(&signal->lock);
+	if (ret)
+		goto err1;
+
+	/* The read fd is accessed directly by fd_signal users to add
+	 * it to epoll fd's and wait sets.
+	 */
 	ret = fi_fd_nonblock(signal->fd[FI_READ_FD]);
 	if (ret)
-		goto err;
+		goto err2;
 
-	ofi_atomic_initialize32(&signal->state, OFI_SIGNAL_UNSET);
-
-#if ENABLE_DEBUG
-	ofi_atomic_initialize32(&signal->debug_cnt, 0);
-#endif
 	return 0;
 
-err:
+err2:
+	ofi_mutex_destroy(&signal->lock);
+err1:
 	ofi_close_socket(signal->fd[0]);
 	ofi_close_socket(signal->fd[1]);
 	return ret;
@@ -99,78 +94,22 @@ static inline void fd_signal_free(struct fd_signal *signal)
 {
 	ofi_close_socket(signal->fd[0]);
 	ofi_close_socket(signal->fd[1]);
+	ofi_mutex_destroy(&signal->lock);
 }
 
 static inline void fd_signal_set(struct fd_signal *signal)
 {
 	char c = 0;
-	bool cas; /* cas result */
-	int write_rc;
+	int ret;
 
-	cas = ofi_atomic_cas_bool_strong32(&signal->state,
-					   OFI_SIGNAL_UNSET,
-					   OFI_SIGNAL_WRITE_PREPARE);
-	if (cas) {
-		write_rc = ofi_write_socket(signal->fd[FI_WRITE_FD], &c,
-					    sizeof c);
-		if (write_rc == sizeof c) {
-#if ENABLE_DEBUG
-			assert(ofi_atomic_inc32(&signal->debug_cnt) == 1);
-#endif
-			ofi_atomic_set32(&signal->state, OFI_SIGNAL_SET);
-		} else {
-			/* XXX: Setting the signal failed, a polling thread
-			 * will not be woken up now and the system might
-			 * get stuck.
-			 * Also, typically this will be totally
-			 * untested code path, as it basically will never
-			 * come up.
-			 */
-			ofi_atomic_set32(&signal->state, OFI_SIGNAL_UNSET);
-		}
+	ofi_mutex_lock(&signal->lock);
+	if (!signal->byte_avail) {
+		ret = ofi_write_socket(signal->fd[FI_WRITE_FD], &c, sizeof c);
+		assert(ret == sizeof c);
+		if (ret == sizeof c)
+			signal->byte_avail++;
 	}
-}
-
-static inline void fd_signal_reset(struct fd_signal *signal)
-{
-	char c;
-	bool cas; /* cas result */
-	enum ofi_signal_state state;
-	int read_rc;
-
-	do {
-		cas = ofi_atomic_cas_bool_weak32(&signal->state,
-						 OFI_SIGNAL_SET,
-						 OFI_SIGNAL_READ_PREPARE);
-		if (cas) {
-			read_rc = ofi_read_socket(signal->fd[FI_READ_FD], &c,
-						  sizeof c);
-			if (read_rc == sizeof c) {
-#if ENABLE_DEBUG
-				assert(ofi_atomic_dec32(&signal->debug_cnt) == 0);
-#endif
-				ofi_atomic_set32(&signal->state,
-						 OFI_SIGNAL_UNSET);
-				break;
-			} else {
-				ofi_atomic_set32(&signal->state, OFI_SIGNAL_SET);
-
-				/* Avoid spinning forever in this highly
-				 * unlikely code path.
-				 */
-				break;
-			}
-		}
-
-		state = ofi_atomic_get32(&signal->state);
-
-		/* note that this loop also needs to include
-		 * OFI_SIGNAL_WRITE_PREPARE, as the writing thread sets
-		 * the signal to the socket in _WRITE_PREPARE state. The reading
-		 * thread might then race with the writing thread and then
-		 * end up here before the state was switched to OFI_SIGNAL_SET.
-		 */
-	} while (state == OFI_SIGNAL_WRITE_PREPARE || state == OFI_SIGNAL_SET);
+	ofi_mutex_unlock(&signal->lock);
 }
 
 static inline int fd_signal_poll(struct fd_signal *signal, int timeout)
@@ -182,6 +121,39 @@ static inline int fd_signal_poll(struct fd_signal *signal, int timeout)
 		return ret;
 
 	return (ret == 0) ? -FI_ETIMEDOUT : 0;
+}
+
+/* There's a race where we can write data to the fd and increment byte_avail,
+ * but the kernel won't have the data available for reading from the fd yet.
+ * If the data isn't ready for reading, but has already been written, we'll
+ * wait for it to show up.  A timeout is given just so that we don't end up
+ * blocking forever in case something goes terribly astray.
+ */
+static inline void fd_signal_reset(struct fd_signal *signal)
+{
+	char c;
+	int ret;
+
+	ofi_mutex_lock(&signal->lock);
+	while (signal->byte_avail) {
+		ret = ofi_read_socket(signal->fd[FI_READ_FD], &c, sizeof c);
+		if (ret == sizeof c) {
+			signal->byte_avail--;
+			continue;
+		}
+		if (!OFI_SOCK_TRY_SND_RCV_AGAIN(ofi_sockerr())) {
+			assert(0);
+			break;
+		}
+
+		/* Give the kernel up to 10 seconds to get the data there. */
+		ret = fd_signal_poll(signal, 10000);
+		if (ret) {
+			assert(0);
+			break;
+		}
+	}
+	ofi_mutex_unlock(&signal->lock);
 }
 
 static inline int fd_signal_get(struct fd_signal *signal)

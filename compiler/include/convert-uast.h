@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,14 +28,14 @@
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Module.h"
 
-// TODO: once chpldoc is implemented as a separate tool on uAST,
-// remove the comment and builderResult arguments here.
+// when converting, only convert modules in this set
+// TODO: switch to converting a module-at-a-time (including submodules)
+extern std::set<chpl::ID> gConvertFilterModuleIds;
+
 ModuleSymbol*
 convertToplevelModule(chpl::Context* context,
                       const chpl::uast::Module* mod,
-                      ModTag modTag,
-                      const chpl::uast::Comment* comment,
-                      const chpl::uast::BuilderResult& builderResult);
+                      ModTag modTag);
 
 // apply fixups to fix SymExprs to refer to Symbols that
 // might have been created in a different order.

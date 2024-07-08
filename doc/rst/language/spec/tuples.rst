@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: tuples
 .. _Chapter-Tuples:
 
 ======
@@ -13,6 +15,10 @@ addition to making it easy to return multiple values from a function,
 tuples help to support multidimensional indices, to group arguments to
 functions, and to specify mathematical concepts.
 
+.. index::
+   pair: tuples; types
+   single: tuples; homogeneous
+   single: types; * (tuples)
 .. _Tuple_Types:
 
 Tuple Types
@@ -73,8 +79,6 @@ an integral parameter (a compile-time constant integer) and a type.
 
       writeln((x1,x2,x3));
 
-   
-
    .. BLOCK-test-chapeloutput
 
       ((, 0.0), (0, 0, 0), (0, 0, 0))
@@ -95,6 +99,8 @@ operator since every 1-tuple is trivially a homogeneous tuple.
    integers. The type ``3*3*int``, on the other hand, specifies a
    9-tuple of integers.
 
+.. index::
+   pair: tuples;values
 .. _Tuple_Values:
 
 Tuple Values
@@ -147,8 +153,6 @@ An underscore can be used to omit components when splitting a tuple
 
       writeln((x1,x2,x3));
 
-   
-
    .. BLOCK-test-chapeloutput
 
       ((hello, 3.14), (1, 2, 3), (4, 5, 6))
@@ -166,13 +170,10 @@ To specify a 1-tuple, use the form with the trailing comma ``(1,)``.
       var x: 1*int = (7,);
 
    creates a 1-tuple of integers storing the value 7.
-   
 
    .. BLOCK-test-chapelpost
 
-      writeln(x); 
-
-   
+      writeln(x);
 
    .. BLOCK-test-chapeloutput
 
@@ -186,6 +187,8 @@ When a tuple is passed as an argument to a function, it is passed as if
 it is a record type containing fields of the same type and in the same
 order as in the tuple.
 
+.. index::
+   pair: tuples; indexing
 .. _Tuple_Indexing:
 
 Tuple Indexing
@@ -207,7 +210,6 @@ compile-time constant) as if the tuple were an array. Indexing is
         writeln(myTuple(i));
 
    uses a param loop to output the components of a tuple.
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -245,6 +247,8 @@ necessarily compile-time constants.
    Non-homogeneous tuples can only be accessed by compile-time constants
    since the type of an expression must be statically known.
 
+.. index::
+   pair: tuples; iteration
 .. _Iteration_over_Tuples:
 
 Iteration over Tuples
@@ -309,6 +313,8 @@ equivalent to:
 Similarly, a `coforall` loop is equivalent to the `cobegin` statement
 whose body is the series of compound statements from the serial case.
 
+.. index::
+   pair: assignment; tuples
 .. _Tuple_Assignment:
 
 Tuple Assignment
@@ -319,6 +325,8 @@ of the assignment operator are each assigned the components of the tuple
 on the right-hand side of the assignment. These assignments occur in
 component order (component zero followed by component one, etc.).
 
+.. index::
+   single: tuples; destructuring
 .. _Tuple_Destructuring:
 
 Tuple Destructuring
@@ -342,6 +350,9 @@ Tuples can be split into their components in the following ways:
    expressions where a tuple expression is expanded in place using the
    tuple expansion expression.
 
+.. index::
+   single: tuples; assignments grouped as
+   single: tuples; omitting components
 .. _Assignments_in_a_Tuple:
 
 Splitting a Tuple with Assignment
@@ -372,8 +383,6 @@ is evaluated in component order.
 
       writeln((a, b, c));
 
-   
-
    .. BLOCK-test-chapeloutput
 
       (1, 2, 3)
@@ -397,7 +406,6 @@ is evaluated in component order.
    is created with array aliases (like a function call), the assignment
    to the second component uses the values just overwritten in the
    assignment to the first component. Line 4 outputs ``3 4 3 4``.
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -415,7 +423,7 @@ evaluated, but the omitted values will not be assigned to anything.
 
    .. code-block:: chapel
 
-      proc f()
+      proc f() do
         return (1, 2);
 
       var x: int;
@@ -425,18 +433,18 @@ evaluated, but the omitted values will not be assigned to anything.
    variable ``x``, calls the function, assigns the first component in
    the returned tuple to ``x``, and ignores the other component in the
    returned tuple. The value of ``x`` becomes ``1``.
-   
 
    .. BLOCK-test-chapelpost
 
       writeln(x);
 
-   
-
    .. BLOCK-test-chapeloutput
 
       1
 
+.. index::
+   single: tuples; variable declarations grouped as
+   single: tuples; omitting components
 .. _Variable_Declarations_in_a_Tuple:
 
 Splitting a Tuple in a Declaration
@@ -467,8 +475,6 @@ in :ref:`Variable_Declarations`.
 
       writeln((a, b, c));
 
-   
-
    .. BLOCK-test-chapeloutput
 
       (1, 2, 3)
@@ -491,8 +497,6 @@ parentheses.
 
       writeln(a);
 
-   
-
    .. BLOCK-test-chapeloutput
 
       1
@@ -508,7 +512,7 @@ defined for the omitted components.
 
    .. code-block:: chapel
 
-      proc f()
+      proc f() do
         return (1, 2);
 
       var (x,_) = f();
@@ -517,18 +521,18 @@ defined for the omitted components.
    declares and initializes variable ``x`` to the first component in the
    returned tuple, and ignores the other component in the returned
    tuple. The value of ``x`` is initialized to ``1``.
-   
 
    .. BLOCK-test-chapelpost
 
       writeln(x);
 
-   
-
    .. BLOCK-test-chapeloutput
 
       1
 
+.. index::
+   single: tuples; indices grouped as
+   single: tuples; omitting components
 .. _Indices_in_a_Tuple:
 
 Splitting a Tuple into Multiple Indices of a Loop
@@ -563,8 +567,8 @@ tuple must equal the size of the tuple returned by the iterator.
       4
 
 When a tuple is split across an index tuple, indices in the index tuple
-(left-hand side) may be omitted. In this case, no indices are defined
-for the omitted components.
+(left-hand side) may be omitted using underscores. In this case,
+no indices are defined for the omitted components.
 
 However even when indices are omitted, the iterator is evaluated as if
 an index were defined. Execution proceeds as if the omitted indices are
@@ -572,6 +576,9 @@ present but invisible. This means that the loop body controlled by the
 iterator may be executed multiple times with the same set of (visible)
 indices.
 
+.. index::
+   single: tuples; formal arguments grouped as
+   single: tuples; omitting components
 .. _Formal_Argument_Declarations_in_a_Tuple:
 
 Splitting a Tuple into Multiple Formal Arguments in a Function Call
@@ -636,14 +643,11 @@ them.
       }
 
    except without the definition of the argument name ``t``.
-   
 
    .. BLOCK-test-chapelpost
 
       f((1, (2, 3)));
       g((1, (2, 3)));
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -662,7 +666,6 @@ destructured by enclosing a single formal argument in parentheses.
       proc f((x)) { }
 
    accepts a 1-tuple actual with any component type.
-   
 
    .. BLOCK-test-chapelpost
 
@@ -675,6 +678,9 @@ that are grouped using the tuple notation may be omitted. In this case,
 no names are associated with the omitted components. The call is
 evaluated as if an argument were defined.
 
+.. index::
+   single: ... (tuple expansion)
+   single: tuples; expanding in place
 .. _Tuple_Expansion:
 
 Splitting a Tuple via Tuple Expansion
@@ -712,8 +718,6 @@ where a comma-separated list of components is valid.
 
       writeln(x3);
 
-   
-
    .. BLOCK-test-chapeloutput
 
       (1, 2.0, three, four)
@@ -732,19 +736,15 @@ where a comma-separated list of components is valid.
         return t(0);
       }
       proc rest(t) where isTuple(t) {
-        proc helper(first, rest...)
+        proc helper(first, rest...) do
           return rest;
         return helper((...t));
       }
-
-   
 
    .. BLOCK-test-chapelpost
 
       writeln(first((1, 2, 3)));
       writeln(rest((1, 2, 3)));
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -756,42 +756,53 @@ where a comma-separated list of components is valid.
 Value Tuples and Referential Tuples
 -----------------------------------
 
-Throughout the next few sections, the terms referential tuple and value
-tuple are used frequently to describe two different ways that tuples can
-capture elements.
+The terms referential tuple and value tuple describe two different ways
+that tuples capture their components.
 
-Tuple expressions or tuple arguments with default argument intent are two
-examples of referential tuples. They store elements by reference where it
-makes sense to do so. Referential tuples may be viewed as analogous to a
-group of function arguments that each have default argument intent.
+A *value tuple* stores all its components by value and may store components
+copy-initialized from another tuple. A value tuple is analogous to
+a group of formal arguments that each have the ``in`` intent.
+Value tuples include:
 
-Tuple variables or tuple arguments with ``in`` intent are two examples of
-value tuples. They store all elements by value and may store elements copy
-initialized from another tuple. Value tuples may be viewed as analogous to
-a group of function arguments that each have the ``in`` intent.
+- tuple variables
+- formal arguments with ``in`` intent that have a tuple type
+- tuples returned from functions with the default return intent
 
-In short, some or all of the elements of a referential tuple may be
+A *referential tuple* stores its components by value or by reference,
+as determined by the default argument intent of the component's type:
+if it is ``const ref`` or ``ref``, the component is a reference,
+otherwise the component is stored by value, as though it had the ``in``
+intent. A referential tuple is analogous to a group of formal arguments
+that each have the default argument intent.
+Referential tuples include:
+
+- tuple expressions
+- formal arguments with the default or ``const`` argument intent
+  that have a tuple type
+
+..
+
+   *Rationale*
+
+   Tuple expressions and other forms of referential tuple are designed to act
+   like a light-weight bundle of arguments. They behave similarly to the
+   individual arguments of a function call.
+
+   It would be prohibitively expensive for some argument types (such as
+   arrays) to be copied by default when passed as an argument to a
+   function call.
+
+   The same logic applies to tuple expressions. When the default argument
+   intent of a value's type is some form of ``ref``, a tuple expression will
+   capture the value by reference in order to avoid a potentially
+   expensive copy operation.
+
+In short, some or all of the components of a referential tuple may be
 references, while a value tuple will never contain a reference.
 
-.. _Tuple_Expression_Behavior:
-
-Tuple Expression Behavior
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Tuple expressions are a form of referential tuple. Like most other
-referential tuples, tuple expressions capture each element based on the
-default argument intent of the element's type.
-
-More specifically:
-
--  If the default argument intent of the element's type is a variation of
-   ``ref``, then the tuple expression will refer to the element instead of
-   capturing it by value.
--  Otherwise, the tuple expression will capture the element by value.
-
-Consider the following example:
-
    *Example (tuple-expression-behavior.chpl)*.
+
+   In the following example:
 
    .. code-block:: chapel
 
@@ -821,34 +832,12 @@ Consider the following example:
 
       (1, 0, (x = 3))
 
-The tuple expression ``(a, i, r)`` will capture the array ``a`` and the
-record ``r`` by ``ref``, but will create a copy of the integer ``i``.
-
-   *Rationale*
-
-   Tuple expressions and other forms of referential tuple are designed to act
-   like a light-weight bundle of arguments. They behave similarly to the
-   individual arguments of a function call.
-
-   It would be prohibitively expensive for some argument types (such as
-   arrays) to be copied by default when passed as an argument to a
-   function call.
-
-   The same logic applies to tuple expressions. When the default argument
-   intent of a value's type is some form of ``ref``, a tuple expression will
-   capture the value by reference in order to avoid a potentially
-   expensive copy operation.
-
-Tuple Variable Behavior
-~~~~~~~~~~~~~~~~~~~~~~~
-
-Tuple variables are a form of value tuple. Like other value tuples, tuple
-variables will copy elements in a manner similar to passing the element
-to an ``in`` intent argument.
-
-For example, in this code:
+   The tuple expression ``(a, i, r)`` will capture the array ``a`` and the
+   record ``r`` by reference, but will create a copy of the integer ``i``.
 
    *Example (tuple-variable-behavior.chpl)*.
+
+   In the following example:
 
    .. code-block:: chapel
 
@@ -872,47 +861,54 @@ For example, in this code:
 
       (0, 0, (x = 0))
 
-Initialization of the tuple variable ``tup`` will make a copy of the
-array ``a``, the record ``r``, and the integer ``i``. Because ``tup`` stores
-a copy of these three variables, changes made to them are not visible
-in ``tup`` when it is written to standard output.
+   Initialization of the tuple variable ``tup`` will copy-initialize
+   its components from the array ``a``, the record ``r``, and
+   the integer ``i``, see :ref:`Copy_and_Move_Initialization`.
+   Because ``tup`` stores a copy of these three variables, changes made
+   to them are not visible in ``tup`` when it is written to standard output.
 
 .. _Tuple_Argument_Intents:
 
 Tuple Argument Intents
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
-A tuple argument to a function may be either a referential tuple or a value
+A formal argument of a tuple type may be either a referential tuple or a value
 tuple depending on its argument intent.
 
-If the tuple argument has the default argument intent, then it is a 
-referential tuple and some of its elements may be captured by ``ref``
-depending on their default argument intent.
+- If the tuple argument has the default argument intent, then it is a 
+  referential tuple and some of its components may be captured by ``ref``
+  depending on their default argument intent.
+  If a value tuple (such as a tuple variable) is passed to it, the value tuple
+  will be implicitly converted into a referential tuple. The resulting
+  referential tuple may refer to components from the original value tuple.
 
-A tuple argument declared with ``const`` intent will work similarly to one
-with a default intent, except that all the elements of the tuple are
-considered to be ``const`` and cannot be modified.
+..
 
-If the tuple argument has the ``in`` or ``const in`` intent, then it is a
-value tuple. All of its elements are captured by value as though each
-element is passed to an ``in`` intent argument.
+- A tuple argument declared with ``const`` intent works similarly to one
+  with a default intent, except that all the components of the tuple are
+  considered to be ``const`` and cannot be modified.
 
-.. _Tuple_Argument_Behavior:
+..
 
-Tuple Argument Behavior
-~~~~~~~~~~~~~~~~~~~~~~~
+- If the tuple argument has the ``in`` or ``const in`` intent, then
+  it is a value tuple. Each of its components is copy-initialized
+  from the corresponding component of the actual argument as if it is
+  passed to an ``in`` intent formal argument. When the actual argument is
+  a referential tuple and the component is a reference,
+  the source of copy initialization is the variable being referenced.
+  All components of a ``const in`` argument are considered to be ``const``
+  and cannot be modified.
 
-If a function argument is a tuple with the default argument intent and a
-value tuple (such as a tuple variable) is passed to it, the value tuple
-will be implicitly converted into a referential tuple. The resulting
-referential tuple may refer to elements from the original value tuple.
+..
 
-A conversion from referential tuple to value tuple also occurs when a
-referential tuple (such as a tuple expression) is passed to a tuple argument
-that has the ``in`` intent. The referential tuple will be converted to
-a value tuple by copy initializing each element.
+- If the tuple argument has the ``ref`` or ``const ref`` intent, then it is
+  a reference to a tuple from the call site.
+  The actual argument must be a value tuple (such as a tuple variable).
+  The formal argument will be a single reference to to that value tuple.
+  All components of a ``const ref`` argument are considered to be ``const``
+  and cannot be modified.
 
-Consider the following example:
+..
 
    *Example (tuple-argument-behavior.chpl)*.
 
@@ -964,11 +960,6 @@ Consider the following example:
       (0, (x = 6))
       (0, (x = 6))
 
-Tuple arguments with the ``ref`` intent are references to value tuples.
-Actual arguments are restricted to value tuples (a tuple variable or a
-returned tuple). Since the argument itself is passed by ``ref``, the
-entire tuple will refer to a tuple from the call site.
-
    *Example (tuple-argument-ref-intent.chpl)*.
 
    .. code-block:: chapel
@@ -999,16 +990,16 @@ entire tuple will refer to a tuple from the call site.
 .. _Tuple_Return_Behavior:
 
 Tuple Return Behavior
-~~~~~~~~~~~~~~~~~~~~~
+---------------------
 
-When a tuple is returned from a function with ``ref`` or ``const ref`` return
-intent, it must refer to some form of value tuple that exists outside of
-the current scope. Otherwise there is a compilation error.
+Procedures with the default and ``out`` return intent always return
+a value tuple. If an expression returned by such a procedure is
+a referential tuple, it will be implicitly converted to a value tuple.
+
+When a tuple is returned from a procedure with ``ref`` or ``const ref`` 
+return intent, it must be a value tuple that exists outside of
+the procedure's scope. Otherwise there is a compilation error.
   
-Functions that return by value always return a value tuple. If an expression
-returned by such a function is a referential tuple, it will be implicitly
-converted to a value tuple.
-
    *Example (tuple-return-behavior.chpl)*.
 
    .. code-block:: chapel
@@ -1052,11 +1043,43 @@ converted to a value tuple.
 
       (0, 0, (x = 0))
 
+.. _Tuple_Yield_Behavior:
+
+Tuple Yield Behavior
+--------------------
+
+Iterators with the ``out`` yield intent always yield
+a value tuple. If an expression yielded by such an iterator is
+a referential tuple, it will be implicitly converted to a value tuple.
+
+A tuple yielded from an iterator with ``ref`` or ``const ref``
+yield intent must be a value tuple.
+
+   *Rationale*
+
+   Tuple yield behavior matches tuple return behavior, except
+   yielding a local tuple is allowed. This is because the iterator
+   will generally continue executing after the yield statement completes.
+
+..
+
+   *Open issue*.
+
+   We also need to provide a mechanism to yield referential tuples.
+
+An iterator with the default or ``const`` yield intent may yield
+using the semantics of either the ``out`` or ``const ref`` yield intent,
+in an implementation-defined manner.
+
+.. index::
+   single: tuples; operators
 .. _Tuple_Operators:
 
 Tuple Operators
 ---------------
 
+.. index::
+   single: operators; unary tuple operators
 .. _Tuple_Unary_Operators:
 
 Unary Operators
@@ -1068,7 +1091,26 @@ the results as a new tuple.
 
 The size of the result tuple is the same as the size of the argument
 tuple. The type of each result component is the result type of the
-operator when applied to the corresponding argument component.
+operator when applied to the corresponding argument component. For example:
+
+   *Example (unary-ops.chpl)*.
+
+   The following code:
+
+   .. code-block:: chapel
+
+      var x = -(-1, 5, -3.14, 99.9);
+
+   creates a 3-tuple, ``x``, with the value ``(1, -5, 3.14, -99.9)`` which has
+   the same type as the tuple-literal on the right side of the expression.
+
+   .. BLOCK-test-chapelpost
+
+      writeln(x);
+
+   .. BLOCK-test-chapeloutput
+
+      (1, -5, 3.14, -99.9)
 
 The type of every element of the operand tuple must have a well-defined
 operator matching the unary operator being applied. That is, if the
@@ -1076,6 +1118,19 @@ element type is a user-defined type, it must supply an overloaded
 definition for the unary operator being used. Otherwise, a compile-time
 error will be issued.
 
+.. index::
+   single: operators; binary tuple operators
+   single: + (on tuples)
+   single: - (on tuples)
+   single: * (on tuples)
+   single: / (on tuples)
+   single: % (on tuples)
+   single: ** (on tuples)
+   single: & (on tuples)
+   single: | (on tuples)
+   single: ^ (on tuples)
+   single: << (on tuples)
+   single: >> (on tuples)
 .. _Tuple_Binary_Operators:
 
 Binary Operators
@@ -1099,25 +1154,32 @@ result.
 
    *Example (binary-ops.chpl)*.
 
-   The code 
+   The code:
 
    .. code-block:: chapel
 
       var x = (1, 1, "1") + (2, 2.0, "2");
 
    creates a 3-tuple of an int, a real and a string with the value
-   ``(3, 3.0, "12")``. 
+   ``(3, 3.0, "12")``.
 
    .. BLOCK-test-chapelpost
 
       writeln(x);
 
-   
 
    .. BLOCK-test-chapeloutput
 
       (3, 3.0, 12)
 
+.. index::
+   single: operators; relational operators on tuples
+   single: > (on tuples)
+   single: >= (on tuples)
+   single: < (on tuples)
+   single: <= (on tuples)
+   single: == (on tuples)
+   single: != (on tuples)
 .. _Tuple_Relational_Operators:
 
 Relational Operators
@@ -1141,7 +1203,7 @@ in the two operand tuples. Otherwise, a compile-time error will result.
 
    *Example (relational-ops.chpl)*.
 
-   The code 
+   The code:
 
    .. code-block:: chapel
 
@@ -1150,22 +1212,33 @@ in the two operand tuples. Otherwise, a compile-time error will result.
    creates a variable initialized to ``true``. After comparing the first
    components and determining they are equal, the next components are
    compared to determine that the first tuple is greater than the second
-   tuple. 
+   tuple.
 
    .. BLOCK-test-chapelpost
 
       writeln(x);
 
-   
 
    .. BLOCK-test-chapeloutput
 
       true
 
+.. index::
+   pair: tuples; predefined functions
+   single: tuples; isTuple
+   single: predefined functions; isTuple
+   single: tuples; isTupleType
+   single: predefined functions; isTupleType
+   single: tuples; max
+   single: predefined functions; max
+   single: tuples; min
+   single: predefined functions; min
+   single: tuples; size
+   single: predefined functions; size
 .. _Predefined_Functions_and_Methods_on_Tuples:
 
-Predefined Functions and Methods on Tuples
-------------------------------------------
+Predefined Routines on Tuples
+-----------------------------
 
 .. function:: proc tuple.size param
 
@@ -1184,7 +1257,7 @@ Predefined Functions and Methods on Tuples
 
 
 
-.. function:: proc isTuple(t: tuple) param
+.. function:: proc isTuple(type t) param
 
    Returns true if ``t`` is a tuple; otherwise false.
 
@@ -1196,14 +1269,4 @@ Predefined Functions and Methods on Tuples
 
 
 
-.. function:: proc max(type t) where isTupleType(t)
-
-   Returns a tuple of type ``t`` with each component set to the maximum
-   value that can be stored in its position.
-
-
-
-.. function:: proc min(type t) where isTupleType(t)
-
-   Returns a tuple of type ``t`` with each component set to the minimum
-   value that can be stored in its position.
+.. include:: /builtins/ChapelTuple.rst

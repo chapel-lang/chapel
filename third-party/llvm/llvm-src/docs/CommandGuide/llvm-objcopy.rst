@@ -127,7 +127,7 @@ multiple file formats.
 
 .. option:: --set-section-alignment <section>=<align>
 
- Set the alignment of section ``<section>`` to `<align>``. Can be specified
+ Set the alignment of section ``<section>`` to ``<align>``. Can be specified
  multiple times to update multiple sections.
 
 .. option:: --set-section-flags <section>=<flag>[,<flag>,...]
@@ -137,8 +137,9 @@ multiple file formats.
  sections.
 
  Supported flag names are `alloc`, `load`, `noload`, `readonly`, `exclude`,
- `debug`, `code`, `data`, `rom`, `share`, `contents`, `merge` and `strings`. Not
- all flags are meaningful for all object file formats.
+ `debug`, `code`, `data`, `rom`, `share`, `contents`, `merge`, `strings`, and
+ `large`. Not all flags are meaningful for all object file formats or target
+ architectures.
 
  For ELF objects, the flags have the following effects:
 
@@ -152,6 +153,8 @@ multiple file formats.
  - `strings` = add the `SHF_STRINGS` flag.
  - `contents` = if the section has `SHT_NOBITS` type, mark it as a `SHT_PROGBITS`
    section.
+ - `large` = add the `SHF_X86_64_LARGE` on x86_64; rejected if the target
+   architecture is not x86_64.
 
  For COFF objects, the flags have the following effects:
 
@@ -216,6 +219,12 @@ multiple file formats.
 
  Remove from the output all local or undefined symbols that are not required by
  relocations. Also remove all debug sections.
+
+.. option:: --update-section <name>=<file>
+
+ Replace the contents of the section ``<name>`` with contents from the file
+ ``<file>``. If the section ``<name>`` is part of a segment, the new contents
+ cannot be larger than the existing section.
 
 .. option:: --version, -V
 
@@ -290,11 +299,10 @@ them.
  Add ``<incr>`` to the program's start address. Can be specified multiple
  times, in which case the values will be applied cumulatively.
 
-.. option:: --compress-debug-sections [<style>]
+.. option:: --compress-debug-sections [<format>]
 
- Compress DWARF debug sections in the output, using the specified style.
- Supported styles are `zlib-gnu` and `zlib`. Defaults to `zlib` if no style is
- specified.
+ Compress DWARF debug sections in the output, using the specified format.
+ Supported formats are ``zlib`` and ``zstd``. Use ``zlib`` if ``<format>`` is omitted.
 
 .. option:: --decompress-debug-sections
 
@@ -315,6 +323,11 @@ them.
 .. option:: --extract-partition <name>
 
  Extract the named partition from the output.
+
+.. option:: --gap-fill <value>
+
+ For binary outputs, fill the gaps between sections with ``<value>`` instead
+ of zero. The value must be an unsigned 8-bit integer.
 
 .. option:: --globalize-symbol <symbol>
 
@@ -403,6 +416,11 @@ them.
  be the same as the value specified for :option:`--input-target` or the input
  file's format if that option is also unspecified.
 
+.. option:: --pad-to <address>
+
+ For binary outputs, pad the output to the load address ``<address>`` using a value
+ of zero or the value specified by :option:`--gap-fill`.
+
 .. option:: --prefix-alloc-sections <prefix>
 
  Add ``<prefix>`` to the front of the names of all allocatable sections in the
@@ -421,6 +439,11 @@ them.
  Rename sections called ``<old>`` to ``<new>`` in the output, and apply any
  specified ``<flag>`` values. See :option:`--set-section-flags` for a list of
  supported flags. Can be specified multiple times to rename multiple sections.
+
+.. option:: --set-section-type <section>=<type>
+
+ Set the type of section ``<section>`` to the integer ``<type>``. Can be
+ specified multiple times to update multiple sections.
 
 .. option:: --set-start-addr <addr>
 
@@ -515,6 +538,10 @@ options. For GNU :program:`objcopy` compatibility, the values are all bfdnames.
 - `elf64-tradlittlemips`
 - `elf32-sparc`
 - `elf32-sparcel`
+- `elf32-hexagon`
+- `elf32-loongarch`
+- `elf64-loongarch`
+- `elf64-s390`
 
 Additionally, all targets except `binary` and `ihex` can have `-freebsd` as a
 suffix.

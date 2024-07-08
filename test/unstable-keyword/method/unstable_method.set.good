@@ -1,0 +1,3 @@
+unstable_method.chpl:14: In function 'main':
+unstable_method.chpl:16: warning: this method is unstable, use stablemethod
+In TestUnstableMethod.stablemethod()

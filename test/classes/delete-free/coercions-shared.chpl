@@ -12,7 +12,8 @@ proc test1() {
 }
 
 proc test2() {
-  var instance:borrowed MyClass = new shared MyClass(1);
+  var myShared = new shared MyClass(1);
+  var instance:borrowed MyClass = myShared;
 }
 
 proc acceptMyClass(c:borrowed MyClass) {

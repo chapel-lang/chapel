@@ -7,17 +7,26 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/MC/MCPseudoProbe.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/IR/PseudoProbe.h"
 #include "llvm/MC/MCAsmInfo.h"
+#include "llvm/MC/MCAssembler.h"
 #include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCExpr.h"
+#include "llvm/MC/MCFragment.h"
 #include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/MC/MCObjectStreamer.h"
-#include "llvm/MC/MCStreamer.h"
+#include "llvm/MC/MCSymbol.h"
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/LEB128.h"
+#include "llvm/Support/MD5.h"
 #include "llvm/Support/raw_ostream.h"
+#include <algorithm>
+#include <cassert>
 #include <limits>
 #include <memory>
 #include <sstream>
+#include <vector>
 
 #define DEBUG_TYPE "mcpseudoprobe"
 
@@ -41,20 +50,29 @@ static const MCExpr *buildSymbolDiff(MCObjectStreamer *MCOS, const MCSymbol *A,
 
 void MCPseudoProbe::emit(MCObjectStreamer *MCOS,
                          const MCPseudoProbe *LastProbe) const {
+  bool IsSentinel = isSentinelProbe(getAttributes());
+  assert((LastProbe || IsSentinel) &&
+         "Last probe should not be null for non-sentinel probes");
+
   // Emit Index
   MCOS->emitULEB128IntValue(Index);
   // Emit Type and the flag:
   // Type (bit 0 to 3), with bit 4 to 6 for attributes.
   // Flag (bit 7, 0 - code address, 1 - address delta). This indicates whether
   // the following field is a symbolic code address or an address delta.
+  // Emit FS discriminator
   assert(Type <= 0xF && "Probe type too big to encode, exceeding 15");
-  assert(Attributes <= 0x7 &&
+  auto NewAttributes = Attributes;
+  if (Discriminator)
+    NewAttributes |= (uint32_t)PseudoProbeAttributes::HasDiscriminator;
+  assert(NewAttributes <= 0x7 &&
          "Probe attributes too big to encode, exceeding 7");
-  uint8_t PackedType = Type | (Attributes << 4);
-  uint8_t Flag = LastProbe ? ((int8_t)MCPseudoProbeFlag::AddressDelta << 7) : 0;
+  uint8_t PackedType = Type | (NewAttributes << 4);
+  uint8_t Flag =
+      !IsSentinel ? ((int8_t)MCPseudoProbeFlag::AddressDelta << 7) : 0;
   MCOS->emitInt8(Flag | PackedType);
 
-  if (LastProbe) {
+  if (!IsSentinel) {
     // Emit the delta between the address label and LastProbe.
     const MCExpr *AddrDelta =
         buildSymbolDiff(MCOS, Label, LastProbe->getLabel());
@@ -65,10 +83,12 @@ void MCPseudoProbe::emit(MCObjectStreamer *MCOS,
       MCOS->insert(new MCPseudoProbeAddrFragment(AddrDelta));
     }
   } else {
-    // Emit label as a symbolic code address.
-    MCOS->emitSymbolValue(
-        Label, MCOS->getContext().getAsmInfo()->getCodePointerSize());
+    // Emit the GUID of the split function that the sentinel probe represents.
+    MCOS->emitInt64(Guid);
   }
+
+  if (Discriminator)
+    MCOS->emitULEB128IntValue(Discriminator);
 
   LLVM_DEBUG({
     dbgs().indent(MCPseudoProbeTable::DdgPrintIndent);
@@ -79,7 +99,7 @@ void MCPseudoProbe::emit(MCObjectStreamer *MCOS,
 void MCPseudoProbeInlineTree::addPseudoProbe(
     const MCPseudoProbe &Probe, const MCPseudoProbeInlineStack &InlineStack) {
   // The function should not be called on the root.
-  assert(isRoot() && "Should not be called on root");
+  assert(isRoot() && "Should only be called on root");
 
   // When it comes here, the input look like:
   //    Probe: GUID of C, ...
@@ -126,43 +146,57 @@ void MCPseudoProbeInlineTree::emit(MCObjectStreamer *MCOS,
     dbgs() << "Group [\n";
     MCPseudoProbeTable::DdgPrintIndent += 2;
   });
+  assert(!isRoot() && "Root should be handled seperately");
+
   // Emit probes grouped by GUID.
-  if (Guid != 0) {
-    LLVM_DEBUG({
-      dbgs().indent(MCPseudoProbeTable::DdgPrintIndent);
-      dbgs() << "GUID: " << Guid << "\n";
-    });
-    // Emit Guid
-    MCOS->emitInt64(Guid);
-    // Emit number of probes in this node
-    MCOS->emitULEB128IntValue(Probes.size());
-    // Emit number of direct inlinees
-    MCOS->emitULEB128IntValue(Children.size());
-    // Emit probes in this group
-    for (const auto &Probe : Probes) {
-      Probe.emit(MCOS, LastProbe);
-      LastProbe = &Probe;
-    }
-  } else {
-    assert(Probes.empty() && "Root should not have probes");
+  LLVM_DEBUG({
+    dbgs().indent(MCPseudoProbeTable::DdgPrintIndent);
+    dbgs() << "GUID: " << Guid << "\n";
+  });
+  // Emit Guid
+  MCOS->emitInt64(Guid);
+  // Emit number of probes in this node, including a sentinel probe for
+  // top-level functions if needed.
+  bool NeedSentinel = false;
+  if (Parent->isRoot()) {
+    assert(isSentinelProbe(LastProbe->getAttributes()) &&
+           "Starting probe of a top-level function should be a sentinel probe");
+    // The main body of a split function doesn't need a sentinel probe.
+    if (LastProbe->getGuid() != Guid)
+      NeedSentinel = true;
   }
 
-  // Emit sorted descendant
-  // InlineSite is unique for each pair,
-  // so there will be no ordering of Inlinee based on MCPseudoProbeInlineTree*
-  std::map<InlineSite, MCPseudoProbeInlineTree *> Inlinees;
-  for (auto &Child : Children)
-    Inlinees[Child.first] = Child.second.get();
+  MCOS->emitULEB128IntValue(Probes.size() + NeedSentinel);
+  // Emit number of direct inlinees
+  MCOS->emitULEB128IntValue(Children.size());
+  // Emit sentinel probe for top-level functions
+  if (NeedSentinel)
+    LastProbe->emit(MCOS, nullptr);
+
+  // Emit probes in this group
+  for (const auto &Probe : Probes) {
+    Probe.emit(MCOS, LastProbe);
+    LastProbe = &Probe;
+  }
+
+  // Emit sorted descendant. InlineSite is unique for each pair, so there will
+  // be no ordering of Inlinee based on MCPseudoProbeInlineTree*
+  using InlineeType = std::pair<InlineSite, MCPseudoProbeInlineTree *>;
+  auto Comparer = [](const InlineeType &A, const InlineeType &B) {
+    return A.first < B.first;
+  };
+  std::vector<InlineeType> Inlinees;
+  for (const auto &Child : Children)
+    Inlinees.emplace_back(Child.first, Child.second.get());
+  std::sort(Inlinees.begin(), Inlinees.end(), Comparer);
 
   for (const auto &Inlinee : Inlinees) {
-    if (Guid) {
-      // Emit probe index
-      MCOS->emitULEB128IntValue(std::get<1>(Inlinee.first));
-      LLVM_DEBUG({
-        dbgs().indent(MCPseudoProbeTable::DdgPrintIndent);
-        dbgs() << "InlineSite: " << std::get<1>(Inlinee.first) << "\n";
-      });
-    }
+    // Emit probe index
+    MCOS->emitULEB128IntValue(std::get<1>(Inlinee.first));
+    LLVM_DEBUG({
+      dbgs().indent(MCPseudoProbeTable::DdgPrintIndent);
+      dbgs() << "InlineSite: " << std::get<1>(Inlinee.first) << "\n";
+    });
     // Emit the group
     Inlinee.second->emit(MCOS, LastProbe);
   }
@@ -174,17 +208,46 @@ void MCPseudoProbeInlineTree::emit(MCObjectStreamer *MCOS,
   });
 }
 
-void MCPseudoProbeSection::emit(MCObjectStreamer *MCOS) {
+void MCPseudoProbeSections::emit(MCObjectStreamer *MCOS) {
   MCContext &Ctx = MCOS->getContext();
-
-  for (auto &ProbeSec : MCProbeDivisions) {
-    const MCPseudoProbe *LastProbe = nullptr;
-    if (auto *S =
-            Ctx.getObjectFileInfo()->getPseudoProbeSection(ProbeSec.first)) {
+  SmallVector<std::pair<MCSymbol *, MCPseudoProbeInlineTree *>> Vec;
+  Vec.reserve(MCProbeDivisions.size());
+  for (auto &ProbeSec : MCProbeDivisions)
+    Vec.emplace_back(ProbeSec.first, &ProbeSec.second);
+  for (auto I : llvm::enumerate(MCOS->getAssembler()))
+    I.value().setOrdinal(I.index());
+  llvm::sort(Vec, [](auto A, auto B) {
+    return A.first->getSection().getOrdinal() <
+           B.first->getSection().getOrdinal();
+  });
+  for (auto [FuncSym, RootPtr] : Vec) {
+    const auto &Root = *RootPtr;
+    if (auto *S = Ctx.getObjectFileInfo()->getPseudoProbeSection(
+            FuncSym->getSection())) {
       // Switch to the .pseudoprobe section or a comdat group.
-      MCOS->SwitchSection(S);
+      MCOS->switchSection(S);
       // Emit probes grouped by GUID.
-      ProbeSec.second.emit(MCOS, LastProbe);
+      // Emit sorted descendant. InlineSite is unique for each pair, so there
+      // will be no ordering of Inlinee based on MCPseudoProbeInlineTree*
+      using InlineeType = std::pair<InlineSite, MCPseudoProbeInlineTree *>;
+      auto Comparer = [](const InlineeType &A, const InlineeType &B) {
+        return A.first < B.first;
+      };
+      std::vector<InlineeType> Inlinees;
+      for (const auto &Child : Root.getChildren())
+        Inlinees.emplace_back(Child.first, Child.second.get());
+      std::sort(Inlinees.begin(), Inlinees.end(), Comparer);
+
+      for (const auto &Inlinee : Inlinees) {
+        // Emit the group guarded by a sentinel probe.
+        MCPseudoProbe SentinelProbe(
+            const_cast<MCSymbol *>(FuncSym), MD5Hash(FuncSym->getName()),
+            (uint32_t)PseudoProbeReservedId::Invalid,
+            (uint32_t)PseudoProbeType::Block,
+            (uint32_t)PseudoProbeAttributes::Sentinel, 0);
+        const MCPseudoProbe *Probe = &SentinelProbe;
+        Inlinee.second->emit(MCOS, Probe);
+      }
     }
   }
 }
@@ -229,8 +292,7 @@ void MCDecodedPseudoProbe::getInlineContext(
   // It will add the string of each node's inline site during iteration.
   // Note that it won't include the probe's belonging function(leaf location)
   while (Cur->hasInlineSite()) {
-    StringRef FuncName =
-        getProbeFNameForGUID(GUID2FuncMAP, std::get<0>(Cur->ISite));
+    StringRef FuncName = getProbeFNameForGUID(GUID2FuncMAP, Cur->Parent->Guid);
     ContextStack.emplace_back(
         MCPseduoProbeFrameLocation(FuncName, std::get<1>(Cur->ISite)));
     Cur = static_cast<MCDecodedPseudoProbeInlineTree *>(Cur->Parent);
@@ -266,6 +328,8 @@ void MCDecodedPseudoProbe::print(raw_ostream &OS,
     OS << Guid << " ";
   }
   OS << "Index: " << Index << "  ";
+  if (Discriminator)
+    OS << "Discriminator: " << Discriminator << "  ";
   OS << "Type: " << PseudoProbeTypeStr[static_cast<uint8_t>(Type)] << "  ";
   std::string InlineContextStr = getInlineContextStr(GUID2FuncMAP);
   if (InlineContextStr.size()) {
@@ -279,7 +343,7 @@ template <typename T> ErrorOr<T> MCPseudoProbeDecoder::readUnencodedNumber() {
   if (Data + sizeof(T) > End) {
     return std::error_code();
   }
-  T Val = endian::readNext<T, little, unaligned>(Data);
+  T Val = endian::readNext<T, llvm::endianness::little, unaligned>(Data);
   return ErrorOr<T>(Val);
 }
 
@@ -357,130 +421,132 @@ bool MCPseudoProbeDecoder::buildGUID2FuncDescMap(const uint8_t *Start,
   return true;
 }
 
-bool MCPseudoProbeDecoder::buildAddress2ProbeMap(const uint8_t *Start,
-                                                 std::size_t Size) {
+bool MCPseudoProbeDecoder::buildAddress2ProbeMap(
+    MCDecodedPseudoProbeInlineTree *Cur, uint64_t &LastAddr,
+    const Uint64Set &GuidFilter, const Uint64Map &FuncStartAddrs) {
   // The pseudo_probe section encodes an inline forest and each tree has a
-  // format like:
-  //  FUNCTION BODY (one for each uninlined function present in the text
-  //  section)
-  //     GUID (uint64)
-  //         GUID of the function
-  //     NPROBES (ULEB128)
-  //         Number of probes originating from this function.
-  //     NUM_INLINED_FUNCTIONS (ULEB128)
-  //         Number of callees inlined into this function, aka number of
-  //         first-level inlinees
-  //     PROBE RECORDS
-  //         A list of NPROBES entries. Each entry contains:
-  //           INDEX (ULEB128)
-  //           TYPE (uint4)
-  //             0 - block probe, 1 - indirect call, 2 - direct call
-  //           ATTRIBUTE (uint3)
-  //             1 - tail call, 2 - dangling
-  //           ADDRESS_TYPE (uint1)
-  //             0 - code address, 1 - address delta
-  //           CODE_ADDRESS (uint64 or ULEB128)
-  //             code address or address delta, depending on Flag
-  //     INLINED FUNCTION RECORDS
-  //         A list of NUM_INLINED_FUNCTIONS entries describing each of the
-  //         inlined callees.  Each record contains:
-  //           INLINE SITE
-  //             Index of the callsite probe (ULEB128)
-  //           FUNCTION BODY
-  //             A FUNCTION BODY entry describing the inlined function.
+  // format defined in MCPseudoProbe.h
 
-  Data = Start;
-  End = Data + Size;
-
-  MCDecodedPseudoProbeInlineTree *Root = &DummyInlineRoot;
-  MCDecodedPseudoProbeInlineTree *Cur = &DummyInlineRoot;
-  uint64_t LastAddr = 0;
   uint32_t Index = 0;
-  // A DFS-based decoding
-  while (Data < End) {
-    if (Root == Cur) {
-      // Use a sequential id for top level inliner.
-      Index = Root->getChildren().size();
-    } else {
-      // Read inline site for inlinees
-      auto ErrorOrIndex = readUnsignedNumber<uint32_t>();
-      if (!ErrorOrIndex)
-        return false;
-      Index = std::move(*ErrorOrIndex);
-    }
-    // Switch/add to a new tree node(inlinee)
-    Cur = Cur->getOrAddNode(std::make_tuple(Cur->Guid, Index));
-    // Read guid
-    auto ErrorOrCurGuid = readUnencodedNumber<uint64_t>();
-    if (!ErrorOrCurGuid)
+  bool IsTopLevelFunc = Cur == &DummyInlineRoot;
+  if (IsTopLevelFunc) {
+    // Use a sequential id for top level inliner.
+    Index = Cur->getChildren().size();
+  } else {
+    // Read inline site for inlinees
+    auto ErrorOrIndex = readUnsignedNumber<uint32_t>();
+    if (!ErrorOrIndex)
       return false;
-    Cur->Guid = std::move(*ErrorOrCurGuid);
-    // Read number of probes in the current node.
-    auto ErrorOrNodeCount = readUnsignedNumber<uint32_t>();
-    if (!ErrorOrNodeCount)
-      return false;
-    uint32_t NodeCount = std::move(*ErrorOrNodeCount);
-    // Read number of direct inlinees
-    auto ErrorOrCurChildrenToProcess = readUnsignedNumber<uint32_t>();
-    if (!ErrorOrCurChildrenToProcess)
-      return false;
-    Cur->ChildrenToProcess = std::move(*ErrorOrCurChildrenToProcess);
-    // Read all probes in this node
-    for (std::size_t I = 0; I < NodeCount; I++) {
-      // Read index
-      auto ErrorOrIndex = readUnsignedNumber<uint32_t>();
-      if (!ErrorOrIndex)
-        return false;
-      uint32_t Index = std::move(*ErrorOrIndex);
-      // Read type | flag.
-      auto ErrorOrValue = readUnencodedNumber<uint8_t>();
-      if (!ErrorOrValue)
-        return false;
-      uint8_t Value = std::move(*ErrorOrValue);
-      uint8_t Kind = Value & 0xf;
-      uint8_t Attr = (Value & 0x70) >> 4;
-      // Read address
-      uint64_t Addr = 0;
-      if (Value & 0x80) {
-        auto ErrorOrOffset = readSignedNumber<int64_t>();
-        if (!ErrorOrOffset)
-          return false;
-        int64_t Offset = std::move(*ErrorOrOffset);
-        Addr = LastAddr + Offset;
-      } else {
-        auto ErrorOrAddr = readUnencodedNumber<int64_t>();
-        if (!ErrorOrAddr)
-          return false;
-        Addr = std::move(*ErrorOrAddr);
-      }
-      // Populate Address2ProbesMap
-      auto &Probes = Address2ProbesMap[Addr];
-      Probes.emplace_back(Addr, Cur->Guid, Index, PseudoProbeType(Kind), Attr,
-                          Cur);
-      Cur->addProbes(&Probes.back());
-      LastAddr = Addr;
-    }
+    Index = std::move(*ErrorOrIndex);
+  }
 
-    // Look for the parent for the next node by subtracting the current
-    // node count from tree counts along the parent chain. The first node
-    // in the chain that has a non-zero tree count is the target.
-    while (Cur != Root) {
-      if (Cur->ChildrenToProcess == 0) {
-        Cur = static_cast<MCDecodedPseudoProbeInlineTree *>(Cur->Parent);
-        if (Cur != Root) {
-          assert(Cur->ChildrenToProcess > 0 &&
-                 "Should have some unprocessed nodes");
-          Cur->ChildrenToProcess -= 1;
-        }
-      } else {
-        break;
-      }
+  // Read guid
+  auto ErrorOrCurGuid = readUnencodedNumber<uint64_t>();
+  if (!ErrorOrCurGuid)
+    return false;
+  uint64_t Guid = std::move(*ErrorOrCurGuid);
+
+  // Decide if top-level node should be disgarded.
+  if (IsTopLevelFunc && !GuidFilter.empty() && !GuidFilter.count(Guid))
+    Cur = nullptr;
+
+  // If the incoming node is null, all its children nodes should be disgarded.
+  if (Cur) {
+    // Switch/add to a new tree node(inlinee)
+    Cur = Cur->getOrAddNode(std::make_tuple(Guid, Index));
+    Cur->Guid = Guid;
+    if (IsTopLevelFunc && !EncodingIsAddrBased) {
+      if (auto V = FuncStartAddrs.lookup(Guid))
+        LastAddr = V;
     }
   }
 
+  // Read number of probes in the current node.
+  auto ErrorOrNodeCount = readUnsignedNumber<uint32_t>();
+  if (!ErrorOrNodeCount)
+    return false;
+  uint32_t NodeCount = std::move(*ErrorOrNodeCount);
+  // Read number of direct inlinees
+  auto ErrorOrCurChildrenToProcess = readUnsignedNumber<uint32_t>();
+  if (!ErrorOrCurChildrenToProcess)
+    return false;
+  // Read all probes in this node
+  for (std::size_t I = 0; I < NodeCount; I++) {
+    // Read index
+    auto ErrorOrIndex = readUnsignedNumber<uint32_t>();
+    if (!ErrorOrIndex)
+      return false;
+    uint32_t Index = std::move(*ErrorOrIndex);
+    // Read type | flag.
+    auto ErrorOrValue = readUnencodedNumber<uint8_t>();
+    if (!ErrorOrValue)
+      return false;
+    uint8_t Value = std::move(*ErrorOrValue);
+    uint8_t Kind = Value & 0xf;
+    uint8_t Attr = (Value & 0x70) >> 4;
+    // Read address
+    uint64_t Addr = 0;
+    if (Value & 0x80) {
+      auto ErrorOrOffset = readSignedNumber<int64_t>();
+      if (!ErrorOrOffset)
+        return false;
+      int64_t Offset = std::move(*ErrorOrOffset);
+      Addr = LastAddr + Offset;
+    } else {
+      auto ErrorOrAddr = readUnencodedNumber<int64_t>();
+      if (!ErrorOrAddr)
+        return false;
+      Addr = std::move(*ErrorOrAddr);
+      if (isSentinelProbe(Attr)) {
+        // For sentinel probe, the addr field actually stores the GUID of the
+        // split function. Convert it to the real address.
+        if (auto V = FuncStartAddrs.lookup(Addr))
+          Addr = V;
+      } else {
+        // For now we assume all probe encoding should be either based on
+        // leading probe address or function start address.
+        // The scheme is for downwards compatibility.
+        // TODO: retire this scheme once compatibility is no longer an issue.
+        EncodingIsAddrBased = true;
+      }
+    }
+
+    uint32_t Discriminator = 0;
+    if (hasDiscriminator(Attr)) {
+      auto ErrorOrDiscriminator = readUnsignedNumber<uint32_t>();
+      if (!ErrorOrDiscriminator)
+        return false;
+      Discriminator = std::move(*ErrorOrDiscriminator);
+    }
+
+    if (Cur && !isSentinelProbe(Attr)) {
+      // Populate Address2ProbesMap
+      auto &Probes = Address2ProbesMap[Addr];
+      Probes.emplace_back(Addr, Cur->Guid, Index, PseudoProbeType(Kind), Attr,
+                          Discriminator, Cur);
+      Cur->addProbes(&Probes.back());
+    }
+    LastAddr = Addr;
+  }
+
+  uint32_t ChildrenToProcess = std::move(*ErrorOrCurChildrenToProcess);
+  for (uint32_t I = 0; I < ChildrenToProcess; I++) {
+    buildAddress2ProbeMap(Cur, LastAddr, GuidFilter, FuncStartAddrs);
+  }
+
+  return true;
+}
+
+bool MCPseudoProbeDecoder::buildAddress2ProbeMap(
+    const uint8_t *Start, std::size_t Size, const Uint64Set &GuidFilter,
+    const Uint64Map &FuncStartAddrs) {
+  Data = Start;
+  End = Data + Size;
+  uint64_t LastAddr = 0;
+  while (Data < End)
+    buildAddress2ProbeMap(&DummyInlineRoot, LastAddr, GuidFilter,
+                          FuncStartAddrs);
   assert(Data == End && "Have unprocessed data in pseudo_probe section");
-  assert(Cur == Root &&
-         " Cur should point to root when the forest is fully built up");
   return true;
 }
 
@@ -506,10 +572,9 @@ void MCPseudoProbeDecoder::printProbeForAddress(raw_ostream &OS,
 }
 
 void MCPseudoProbeDecoder::printProbesForAllAddresses(raw_ostream &OS) {
-  std::vector<uint64_t> Addresses;
-  for (auto Entry : Address2ProbesMap)
-    Addresses.push_back(Entry.first);
-  std::sort(Addresses.begin(), Addresses.end());
+  auto Entries = make_first_range(Address2ProbesMap);
+  SmallVector<uint64_t, 0> Addresses(Entries.begin(), Entries.end());
+  llvm::sort(Addresses);
   for (auto K : Addresses) {
     OS << "Address:\t";
     OS << K;
@@ -528,10 +593,20 @@ MCPseudoProbeDecoder::getCallProbeForAddr(uint64_t Address) const {
   const MCDecodedPseudoProbe *CallProbe = nullptr;
   for (const auto &Probe : Probes) {
     if (Probe.isCall()) {
-      assert(!CallProbe &&
-             "There should be only one call probe corresponding to address "
-             "which is a callsite.");
+      // Disabling the assert and returning first call probe seen so far.
+      // Subsequent call probes, if any, are ignored. Due to the the way
+      // .pseudo_probe section is decoded, probes of the same-named independent
+      // static functions are merged thus multiple call probes may be seen for a
+      // callsite. This should only happen to compiler-generated statics, with
+      // -funique-internal-linkage-names where user statics get unique names.
+      //
+      // TODO: re-enable or narrow down the assert to static functions only.
+      //
+      // assert(!CallProbe &&
+      //        "There should be only one call probe corresponding to address "
+      //        "which is a callsite.");
       CallProbe = &Probe;
+      break;
     }
   }
   return CallProbe;
@@ -563,5 +638,5 @@ const MCPseudoProbeFuncDesc *MCPseudoProbeDecoder::getInlinerDescForProbe(
   MCDecodedPseudoProbeInlineTree *InlinerNode = Probe->getInlineTreeNode();
   if (!InlinerNode->hasInlineSite())
     return nullptr;
-  return getFuncDescForGUID(std::get<0>(InlinerNode->ISite));
+  return getFuncDescForGUID(InlinerNode->Parent->Guid);
 }

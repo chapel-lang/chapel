@@ -44,7 +44,7 @@ static int psmx3_fabric_close(fid_t fid)
 
 	psmx3_fabric_release(fabric);
 
-	FI_INFO(&psmx3_prov, FI_LOG_CORE, "refcnt=%d\n",
+	PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "refcnt=%d\n",
 		ofi_atomic_get32(&fabric->util_fabric.ref));
 
 	if (ofi_fabric_close(&fabric->util_fabric))
@@ -53,7 +53,7 @@ static int psmx3_fabric_close(fid_t fid)
 	if (psmx3_env.name_server)
 		ofi_ns_stop_server(&fabric->name_server);
 
-	fastlock_destroy(&fabric->domain_lock);
+	ofi_spin_destroy(&fabric->domain_lock);
 	assert(fabric == psmx3_active_fabric);
 	psmx3_active_fabric = NULL;
 	free(fabric);
@@ -77,7 +77,7 @@ static struct fi_ops_fabric psmx3_fabric_ops = {
 };
 
 static struct fi_fabric_attr psmx3_fabric_attr = {
-	.name = PSMX3_FABRIC_NAME,
+	.name = NULL,
 };
 
 int psmx3_fabric(struct fi_fabric_attr *attr,
@@ -86,10 +86,7 @@ int psmx3_fabric(struct fi_fabric_attr *attr,
 	struct psmx3_fid_fabric *fabric_priv;
 	int ret;
 
-	FI_INFO(&psmx3_prov, FI_LOG_CORE, "\n");
-
-	if (strcmp(attr->name, PSMX3_FABRIC_NAME))
-		return -FI_ENODATA;
+	PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "\n");
 
 	if (psmx3_active_fabric) {
 		psmx3_fabric_acquire(psmx3_active_fabric);
@@ -101,7 +98,7 @@ int psmx3_fabric(struct fi_fabric_attr *attr,
 	if (!fabric_priv)
 		return -FI_ENOMEM;
 
-	fastlock_init(&fabric_priv->domain_lock);
+	ofi_spin_init(&fabric_priv->domain_lock);
 	dlist_init(&fabric_priv->domain_list);
 
 	psmx3_get_uuid(fabric_priv->uuid);
@@ -120,7 +117,7 @@ int psmx3_fabric(struct fi_fabric_attr *attr,
 	ret = ofi_fabric_init(&psmx3_prov, &psmx3_fabric_attr, attr,
 			     &fabric_priv->util_fabric, context);
 	if (ret) {
-		FI_INFO(&psmx3_prov, FI_LOG_CORE, "ofi_fabric_init returns %d\n", ret);
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "ofi_fabric_init returns %d\n", ret);
 		if (psmx3_env.name_server)
 			ofi_ns_stop_server(&fabric_priv->name_server);
 		free(fabric_priv);
@@ -132,7 +129,6 @@ int psmx3_fabric(struct fi_fabric_attr *attr,
 	fabric_priv->util_fabric.fabric_fid.ops = &psmx3_fabric_ops;
 
 	psmx3_atomic_global_init();
-	psmx3_query_mpi();
 
 	/* take the reference to count for multiple fabric open calls */
 	psmx3_fabric_acquire(fabric_priv);

@@ -51,7 +51,7 @@ struct usdf_wait {
 
 	ofi_atomic32_t		wait_refcnt;
 
-	fastlock_t		lock;
+	ofi_mutex_t		lock;
 	struct dlist_entry	list;
 };
 

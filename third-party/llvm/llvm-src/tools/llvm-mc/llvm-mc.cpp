@@ -31,13 +31,13 @@
 #include "llvm/Support/Compression.h"
 #include "llvm/Support/FileUtilities.h"
 #include "llvm/Support/FormattedStream.h"
-#include "llvm/Support/Host.h"
 #include "llvm/Support/InitLLVM.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Support/WithColor.h"
+#include "llvm/TargetParser/Host.h"
 
 using namespace llvm;
 
@@ -76,10 +76,8 @@ static cl::opt<DebugCompressionType> CompressDebugSections(
     cl::init(DebugCompressionType::None),
     cl::desc("Choose DWARF debug sections compression:"),
     cl::values(clEnumValN(DebugCompressionType::None, "none", "No compression"),
-               clEnumValN(DebugCompressionType::Z, "zlib",
-                          "Use zlib compression"),
-               clEnumValN(DebugCompressionType::GNU, "zlib-gnu",
-                          "Use zlib-gnu compression (deprecated)")),
+               clEnumValN(DebugCompressionType::Zlib, "zlib", "Use zlib"),
+               clEnumValN(DebugCompressionType::Zstd, "zstd", "Use zstd")),
     cl::cat(MCCategory));
 
 static cl::opt<bool>
@@ -218,6 +216,7 @@ enum ActionType {
   AC_Assemble,
   AC_Disassemble,
   AC_MDisassemble,
+  AC_CDisassemble,
 };
 
 static cl::opt<ActionType> Action(
@@ -228,7 +227,9 @@ static cl::opt<ActionType> Action(
                clEnumValN(AC_Disassemble, "disassemble",
                           "Disassemble strings of hex bytes"),
                clEnumValN(AC_MDisassemble, "mdis",
-                          "Marked up disassembly of strings of hex bytes")),
+                          "Marked up disassembly of strings of hex bytes"),
+               clEnumValN(AC_CDisassemble, "cdis",
+                          "Colored disassembly of strings of hex bytes")),
     cl::cat(MCCategory));
 
 static const Target *GetTarget(const char *ProgName) {
@@ -401,15 +402,15 @@ int main(int argc, char **argv) {
   assert(MAI && "Unable to create target asm info!");
 
   MAI->setRelaxELFRelocations(RelaxELFRel);
-
   if (CompressDebugSections != DebugCompressionType::None) {
-    if (!zlib::isAvailable()) {
+    if (const char *Reason = compression::getReasonIfUnsupported(
+            compression::formatFor(CompressDebugSections))) {
       WithColor::error(errs(), ProgName)
-          << "build tools with zlib to enable -compress-debug-sections";
+          << "--compress-debug-sections: " << Reason;
       return 1;
     }
-    MAI->setCompressDebugSections(CompressDebugSections);
   }
+  MAI->setCompressDebugSections(CompressDebugSections);
   MAI->setPreserveAsmComments(PreserveComments);
 
   // Package up features to be passed to target/subtarget
@@ -541,7 +542,7 @@ int main(int argc, char **argv) {
     // Set up the AsmStreamer.
     std::unique_ptr<MCCodeEmitter> CE;
     if (ShowEncoding)
-      CE.reset(TheTarget->createMCCodeEmitter(*MCII, *MRI, Ctx));
+      CE.reset(TheTarget->createMCCodeEmitter(*MCII, Ctx));
 
     std::unique_ptr<MCAsmBackend> MAB(
         TheTarget->createMCAsmBackend(*STI, *MRI, MCOptions));
@@ -561,7 +562,7 @@ int main(int argc, char **argv) {
       OS = BOS.get();
     }
 
-    MCCodeEmitter *CE = TheTarget->createMCCodeEmitter(*MCII, *MRI, Ctx);
+    MCCodeEmitter *CE = TheTarget->createMCCodeEmitter(*MCII, Ctx);
     MCAsmBackend *MAB = TheTarget->createMCAsmBackend(*STI, *MRI, MCOptions);
     Str.reset(TheTarget->createMCObjectStreamer(
         TheTriple, Ctx, std::unique_ptr<MCAsmBackend>(MAB),
@@ -588,8 +589,11 @@ int main(int argc, char **argv) {
                         *MCII, MCOptions);
     break;
   case AC_MDisassemble:
-    assert(IP && "Expected assembly output");
     IP->setUseMarkup(true);
+    disassemble = true;
+    break;
+  case AC_CDisassemble:
+    IP->setUseColor(true);
     disassemble = true;
     break;
   case AC_Disassemble:
@@ -598,7 +602,7 @@ int main(int argc, char **argv) {
   }
   if (disassemble)
     Res = Disassembler::disassemble(*TheTarget, TripleName, *STI, *Str, *Buffer,
-                                    SrcMgr, Ctx, Out->os(), MCOptions);
+                                    SrcMgr, Ctx, MCOptions);
 
   // Keep output if no errors.
   if (Res == 0) {

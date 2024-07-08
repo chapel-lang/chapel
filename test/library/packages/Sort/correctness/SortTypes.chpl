@@ -1,7 +1,7 @@
 config const size = 100000;
 config const verbose = false;
 
-use Sort;
+use Sort, Math;
 
 record UselessKeyComparator {
   proc key(x) {
@@ -40,13 +40,13 @@ proc isTupleOfString(type t) param {
   return false;
 }
 
-proc isFloatOrTupleOfFloat(type t) param {
+proc isRealOrTupleOfReal(type t) param {
   if isHomogeneousTupleType(t) {
     var tmp:t;
-    return isFloatOrTupleOfFloat(tmp(0).type);
+    return isRealOrTupleOfReal(tmp(0).type);
   }
   
-  return isFloatType(t);
+  return isRealType(t);
 }
 
 proc checkSorts(arr, comparator) {
@@ -58,22 +58,44 @@ proc checkSorts(arr, comparator) {
   var a = arr;
   sort(a, comparator);
   assert(isSorted(a, comparator));
+  // check the various algorithms that can be used by the default sort
   if !isTupleOfString(arr[1].type) {
+    // OK to check radix sorts
+
     // check msbRadixSort
     if verbose then
-      writeln("radix sort");
+      writeln("msbRadixSort");
     var b = arr;
     MSBRadixSort.msbRadixSort(b, comparator);
     assert(isSorted(b, comparator));
     assert(a.equals(b));
+
+    // check twoArrayRadixSort
+    if verbose then
+      writeln("twoArrayRadixSort");
+    var c = arr;
+    TwoArrayRadixSort.twoArrayRadixSort(c, comparator);
+    assert(isSorted(b, comparator));
+    assert(a.equals(b));
   }
-  // check quickSort
+
+  // check quickSort since it is a fallback
   if verbose then
-    writeln("quick sort");
-  var c = arr;
-  QuickSort.quickSort(c, comparator=comparator);
-  assert(isSorted(c, comparator));
-  assert(a.equals(c));
+    writeln("quickSort");
+  var d = arr;
+  QuickSort.quickSort(d, comparator=comparator);
+  assert(isSorted(d, comparator));
+  assert(a.equals(d));
+
+  // check two-array sample sort since in the future
+  // 'proc sort' should use it in some cases
+  // TODO: get this working
+  //if verbose then
+  //  writeln("twoArraySampleSort");
+  //var e = arr;
+  //TwoArraySampleSort.twoArraySampleSort(e, comparator=comparator);
+  //assert(isSorted(e, comparator));
+  //assert(a.equals(e));
 }
 
 proc checkSorts(arr) {
@@ -81,7 +103,7 @@ proc checkSorts(arr) {
   checkSorts(arr, new ReverseComparator());
   checkSorts(arr, new UselessKeyComparator());
   checkSorts(arr, new ReverseComparator(new UselessKeyComparator()));
-  if !isFloatOrTupleOfFloat(arr[1].type) && !isTupleOfString(arr[1].type) {
+  if !isRealOrTupleOfReal(arr[1].type) && !isTupleOfString(arr[1].type) {
     checkSorts(arr, new UselessKeyPartComparator());
     checkSorts(arr, new ReverseComparator(new UselessKeyPartComparator()));
   }

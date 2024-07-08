@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,64 +26,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
-
-// Used to collect the times as the program runs
-class Phase
-{
-public:
-                           Phase(const char*            name,
-                                 int                    passId,
-                                 PhaseTracker::SubPhase subPhase,
-                                 unsigned long          startTime);
-                          ~Phase();
-
-  bool                     IsStartOfPass()                            const;
-
-  void                     ReportPass (unsigned long now)   const;
-  static void              ReportTotal(unsigned long totalTime);
-
-  static void              ReportTime(const char* name, double secs);
-  static void              ReportText(const char* text);
-
-  char*                    mName;       // Only set for kPrimary
-  int                      mPassId;
-  PhaseTracker::SubPhase   mSubPhase;
-  unsigned long            mStartTime;  // Elapsed time from main() usecs
-
-private:
-  Phase();
-};
-
-// Group the phases in to passes and report on passes
-class Pass
-{
-public:
-                 Pass();
-                ~Pass();
-
-  static void    Header(FILE* fp);
-  static void    Footer(FILE*         fp,
-                        unsigned long mainTime,
-                        unsigned long checkTime,
-                        unsigned long cleanTime,
-                        unsigned long totalTime);
-
-  bool           CompareByTime(Pass const& ref)      const;
-
-  void           Reset();
-  unsigned long  TotalTime()                         const;
-
-  void           Print(FILE*         fp,
-                       unsigned long accumTime,
-                       unsigned long totalTime)      const;
-
-  char*          mName;
-  int            mPassId;
-  int            mIndex;
-  unsigned long  mPrimary;          // usecs()
-  unsigned long  mVerify;           // usecs()
-  unsigned long  mCleanAst;         // usecs()
-};
 
 struct SortByTime
 {
@@ -151,6 +93,11 @@ void PhaseTracker::Stop()
   mTimer.stop();
 }
 
+void PhaseTracker::Resume()
+{
+  mTimer.start();
+}
+
 void PhaseTracker::ReportPass() const
 {
   int index = mPhases.size() - 1;
@@ -161,9 +108,91 @@ void PhaseTracker::ReportPass() const
   mPhases[index]->ReportPass(mTimer.elapsedUsecs());
 }
 
-void PhaseTracker::ReportTotal() const
-{
-  Phase::ReportTotal(mTimer.elapsedUsecs());
+static const char* passGroups[][2] = {
+  {"total time (front end)", "parallel"},
+  {"total time (middle end)", "denormalize"},
+  {"total time (back end)", "driverCleanup"},
+};
+
+void PhaseTracker::ReportPassGroupTotals(
+    std::vector<unsigned long>* groupTimes) const {
+  // Capture total time up to this point
+  const unsigned long totalTime = mTimer.elapsedUsecs();
+
+  // Were we provided previously-saved values to report out?
+  const bool useSaved = groupTimes && !groupTimes->empty();
+  // Should we save values to the provided list?
+  const bool saveToList = groupTimes && groupTimes->empty();
+
+  static const size_t numMetapasses =
+      sizeof(passGroups) / sizeof(passGroups[0]);
+  unsigned long lastStart = 0;
+  unsigned long passTime;
+  for (size_t i = 0; i < numMetapasses; i++) {
+    if (!useSaved) {
+      // No times provided, so calculate them.
+
+      const char* groupLastPhase = passGroups[i][1];
+      auto currentPass = mPhases.begin();
+      currentPass = std::find_if(currentPass, mPhases.end(), [&](auto pass) {
+        if (pass->mName == nullptr) return false;
+        return strcmp(pass->mName, groupLastPhase) == 0;
+      });
+
+      // No such pass, we might've exited early, or begun late from driver mode.
+      if (currentPass == mPhases.end()) {
+        if (fDriverMakeBinaryPhase) {
+          // We began after the current pass group, check the next.
+          continue;
+        } else {
+          // Compilation exited early, no further reporting.
+          break;
+        }
+      }
+
+      auto nextPass = currentPass + 1;
+
+      if (nextPass != mPhases.end()) {
+        passTime = (*nextPass)->mStartTime - lastStart;
+        lastStart = (*nextPass)->mStartTime;
+      } else {
+        passTime = totalTime - lastStart;
+        lastStart = totalTime;
+      }
+    } else {
+      // Just used saved time value
+
+      // If there is no value for this pass group, it did not occur due to early
+      // exit, so skip it. We can exit the loop since there can't be any groups
+      // following either.
+      if (groupTimes->size() <= i) break;
+
+      passTime = (*groupTimes)[i];
+    }
+
+    // Save or report out result
+    if (saveToList) {
+      groupTimes->emplace_back(passTime);
+    } else {
+      // No out-parameter to save into, report time normally
+      // (whether it was calculated or retrieved from list).
+
+      const char* groupName = passGroups[i][0];
+      Phase::ReportPassGroup(groupName, passTime);
+    }
+  }
+}
+
+void PhaseTracker::ReportOverallTotal(long long overheadTime) const {
+  // Measure time so far
+  unsigned long totalTime = mTimer.elapsedUsecs();
+  // Add overhead if used
+  if (overheadTime >= 0) {
+    totalTime += overheadTime;
+  }
+
+  Phase::ReportTime("total time", totalTime / 1e6);
+  Phase::ReportText("\n\n\n\n");
 }
 
 void PhaseTracker::ReportRollup() const
@@ -174,10 +203,16 @@ void PhaseTracker::ReportRollup() const
   PassesCollect(passes);
   PassesReport(passes, totalTime);
 
-  Phase::ReportText("\n\n\n");
+  // Repeat the information but sorted by time, for monolithic mode or driver
+  // compilation phase.
+  // Skipped for driver overhead time or makeBinary phase as they contain
+  // very little information and the sort isn't that informative.
+  if (fDriverDoMonolithic || fDriverCompilationPhase) {
+    Phase::ReportText("\n\n\n");
 
-  PassesSortByTime(passes);
-  PassesReport(passes, totalTime);
+    PassesSortByTime(passes);
+    PassesReport(passes, totalTime);
+  }
 }
 
 void PhaseTracker::PassesCollect(std::vector<Pass>& passes) const
@@ -313,7 +348,7 @@ void Phase::ReportPass(unsigned long now) const
   {
     char text[32];
 
-    sprintf(text, "  [%9d]", lastNodeIDUsed());
+    snprintf(text, sizeof(text), "  [%9d]", lastNodeIDUsed());
 
     ReportText(text);
   }
@@ -325,6 +360,12 @@ void Phase::ReportTotal(unsigned long totalTime)
 {
   ReportTime("total time", totalTime / 1e6);
   ReportText("\n\n\n\n");
+}
+
+void Phase::ReportPassGroup(const char* label, unsigned long totalTime)
+{
+  ReportTime(label, totalTime / 1e6);
+  ReportText("\n");
 }
 
 void Phase::ReportTime(const char* name, double secs)

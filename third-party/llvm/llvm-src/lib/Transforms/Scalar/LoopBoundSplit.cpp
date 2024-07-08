@@ -8,20 +8,15 @@
 
 #include "llvm/Transforms/Scalar/LoopBoundSplit.h"
 #include "llvm/ADT/Sequence.h"
-#include "llvm/Analysis/LoopAccessAnalysis.h"
 #include "llvm/Analysis/LoopAnalysisManager.h"
 #include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Analysis/LoopIterator.h"
-#include "llvm/Analysis/LoopPass.h"
-#include "llvm/Analysis/MemorySSA.h"
-#include "llvm/Analysis/MemorySSAUpdater.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/IR/PatternMatch.h"
+#include "llvm/Transforms/Scalar/LoopPassManager.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Transforms/Utils/LoopSimplify.h"
-#include "llvm/Transforms/Utils/LoopUtils.h"
 #include "llvm/Transforms/Utils/ScalarEvolutionExpander.h"
 
 #define DEBUG_TYPE "loop-bound-split"
@@ -33,26 +28,23 @@ using namespace PatternMatch;
 namespace {
 struct ConditionInfo {
   /// Branch instruction with this condition
-  BranchInst *BI;
+  BranchInst *BI = nullptr;
   /// ICmp instruction with this condition
-  ICmpInst *ICmp;
+  ICmpInst *ICmp = nullptr;
   /// Preciate info
-  ICmpInst::Predicate Pred;
+  ICmpInst::Predicate Pred = ICmpInst::BAD_ICMP_PREDICATE;
   /// AddRec llvm value
-  Value *AddRecValue;
+  Value *AddRecValue = nullptr;
   /// Non PHI AddRec llvm value
   Value *NonPHIAddRecValue;
   /// Bound llvm value
-  Value *BoundValue;
+  Value *BoundValue = nullptr;
   /// AddRec SCEV
-  const SCEVAddRecExpr *AddRecSCEV;
+  const SCEVAddRecExpr *AddRecSCEV = nullptr;
   /// Bound SCEV
-  const SCEV *BoundSCEV;
+  const SCEV *BoundSCEV = nullptr;
 
-  ConditionInfo()
-      : BI(nullptr), ICmp(nullptr), Pred(ICmpInst::BAD_ICMP_PREDICATE),
-        AddRecValue(nullptr), BoundValue(nullptr), AddRecSCEV(nullptr),
-        BoundSCEV(nullptr) {}
+  ConditionInfo() = default;
 };
 } // namespace
 
@@ -438,7 +430,7 @@ static bool splitLoopBound(Loop &L, DominatorTree &DT, LoopInfo &LI,
     ExitingCond.BI->setSuccessor(1, PostLoopPreHeader);
 
   // Update phi node in exit block of post-loop.
-  Builder.SetInsertPoint(&PostLoopPreHeader->front());
+  Builder.SetInsertPoint(PostLoopPreHeader, PostLoopPreHeader->begin());
   for (PHINode &PN : PostLoop->getExitBlock()->phis()) {
     for (auto i : seq<int>(0, PN.getNumOperands())) {
       // Check incoming block is pre-loop's exiting block.

@@ -256,9 +256,9 @@ CHPL_TARGET_PLATFORM <= cygwin
 #   --- a/test/modules/standard/Spawn/cat-stdout-stderr.chpl
 #   +++ b/test/modules/standard/Spawn/cat-stdout-stderr.chpl
 #   @@ -1,10 +1,17 @@
-#   +var stdoutF = open("log-stdout", iomode.cwr);
+#   +var stdoutF = open("log-stdout", ioMode.cwr);
 #   +var stdoutLog = stdoutF.writer();
-#   +var stderrF = open("log-stderr", iomode.cwr);
+#   +var stderrF = open("log-stderr", ioMode.cwr);
 #   +var stderrLog = stderrF.writer();
 #   +
 #    var line:string;

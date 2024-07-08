@@ -27,17 +27,21 @@ endif
 ifneq ($(CHPL_MAKE_HWLOC),none)
   # Have Qthreads get its hwloc topology from the Chapel runtime,
   # unless directed not to.
+  TOPOLOGY=binders
   ifeq (, $(call isTrue, $(CHPL_QTHREAD_DONT_GET_TOPO_FROM_RT)))
-    TOPOLOGY = hwloc_via_chapel
     CFLAGS_NEEDS_RT_INCLUDES = y
-  else
-    TOPOLOGY = hwloc
+    CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-get-topology-function="chpl_topo_getHwlocTopology()"
   endif
   ifeq ($(CHPL_MAKE_HWLOC),bundled)
     CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(HWLOC_INSTALL_DIR)
     ifdef CHPL_HWLOC_PREFIX
-      CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-symbol-prefix="$(CHPL_HWLOC_PREFIX)hwloc_"
+      CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-symbol-prefix=$(CHPL_HWLOC_PREFIX)hwloc_
     endif
+    # don't bother checking if we can link against hwloc
+    CHPL_QTHREAD_CFG_OPTIONS += --disable-hwloc-configure-checks
+  else ifeq ($(CHPL_MAKE_HWLOC),system)
+    CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_hwloc.py --prefix)
+    CHPL_QTHREAD_CFG_OPTIONS += --disable-hwloc-configure-checks
   endif
 endif
 
@@ -49,6 +53,12 @@ ifneq (, $(TOPOLOGY))
 CHPL_QTHREAD_CFG_OPTIONS += --with-topology=$(TOPOLOGY)
 endif
 
+# Used to create qthread-chapel.h
+ifeq ($(TOPOLOGY),binders)
+  USE_TOPOLOGY_BINDERS=1
+else
+  USE_TOPOLOGY_BINDERS=0
+endif
 
 # Have qthreads use Chapel's allocator, unless directed not to
 ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
@@ -66,6 +76,9 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   # seems to cause Chapel programs built with the result to hang during
   # exit when shutting down Qthreads.
   #
+	# We also need to provide paths to system hwloc and jemalloc if they are
+  # enabled, since it might not be in default compiler search paths.
+	#
   # Note that we call compileline with CHPL_MAKE_COMM=none. Under
   # CHPL_MAKE_COMM=gasnet, compileline will fail if gasnet is not built,
   # so in order to avoid ordering/dependencies just ignore the comm
@@ -76,6 +89,13 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   # Throw COMPILELINE_STDERR_REDIRECT= if compileline failure is reported
   # and you want to see the stderr from that.
   #
+ 	ifeq ($(CHPL_MAKE_HWLOC),system)
+		SYSTEM_INCS_DEFS := $(SYSTEM_INCS_DEFS)\|hwloc
+  endif
+	ifeq ($(CHPL_MAKE_TARGET_JEMALLOC),system)
+	SYSTEM_INCS_DEFS := $(SYSTEM_INCS_DEFS)\|jemalloc
+  endif
+
   COMPILELINE_STDERR_REDIRECT=2> /dev/null
   COMM_NONE_CHPLENV_CACHE := $(shell echo "$(CHPL_MAKE_CHPLENV_CACHE)" | sed 's/|CHPL_MAKE_COMM=[^|]*|/|CHPL_MAKE_COMM=none|/')
   INCS_DEFS := \
@@ -88,7 +108,7 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
     INCS_DEFS_PROCESSED := \
       $(shell echo $(INCS_DEFS) \
               | tr ' ' '\n' \
-              | grep '^-DCHPL\|/runtime//*include\|/third-party/.*/install' \
+              | grep '^-DCHPL\|/runtime//*include\|/third-party/.*/install$(SYSTEM_INCS_DEFS)' \
               | grep -v '/third-party/qthread/install' \
               | tr '\n' ' ' \
               | sed 's/ $$//')
@@ -144,12 +164,7 @@ endif
 # immediately fail)
 ifneq (,$(CHPL_QTHREAD_SANITIZER_SUPPORT))
   CHPL_QTHREAD_CFG_OPTIONS += --disable-fastcontext
-endif
-
-# No fastcontext on m1, fallback to ucontext (with _XOPEN_SOURCE to allow it)
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
   ifeq ($(CHPL_MAKE_TARGET_ARCH),arm64)
-    CHPL_QTHREAD_CFG_OPTIONS += --disable-fastcontext
     CFLAGS += -D_XOPEN_SOURCE
   endif
 endif
@@ -235,6 +250,9 @@ qthread-chapel-h: FORCE
 	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 	echo "#define CHPL_QTHREAD_HAVE_GUARD_PAGES" \
 	     $(HAVE_GUARD_PAGES) \
+	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
+	echo "#define CHPL_QTHREAD_TOPOLOGY_BINDERS" \
+	     $(USE_TOPOLOGY_BINDERS) \
 	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 
 qthread: qthread-config qthread-build qthread-chapel-h

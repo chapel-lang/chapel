@@ -4,7 +4,8 @@ class C {
   }
 }
 
-var c = new borrowed C();
+var ownC = new owned C();
+var c = ownC.borrow();
 
 c.foo(2);
 (c.foo)(3);

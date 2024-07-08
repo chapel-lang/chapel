@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,29 +46,29 @@ module Channel {
   use List;
   use Random;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class Waiter {
     // Class used to maintain the properties of suspended tasks.
 
     type valueType;
     var val : c_ptr(valueType);
-    var processPtr : c_ptr(single bool);
+    var processPtr : c_ptr(sync bool);
     var isSelect : bool;
 
     // These variables are specific to the waiters for select statement
@@ -78,19 +78,19 @@ module Channel {
     var prev : unmanaged Waiter(valueType)?;
     var next : unmanaged Waiter(valueType)?;
 
-    proc init(ref value, ref process$ : single bool) {
+    proc init(ref value, ref process : sync bool) {
       valueType = value.type;
-      val = c_ptrTo(value);
-      processPtr = c_ptrTo(process$);
+      val = c_addrOf(value);
+      processPtr = c_addrOf(process);
       isSelect = false;
     }
 
-    proc init(ref value : c_ptr, ref process$ : single bool, ref selectDone : atomic int, caseId : int) {
+    proc init(ref value : c_ptr, ref process : sync bool, ref selectDone : atomic int, caseId : int) {
       valueType = value.eltType;
       val = value;
-      processPtr = c_ptrTo(process$);
+      processPtr = c_addrOf(process);
       isSelect = true;
-      isSelectDone = c_ptrTo(selectDone);
+      isSelectDone = c_addrOf(selectDone);
       selectId = caseId;
     }
 
@@ -111,7 +111,7 @@ module Channel {
   Implementation of doubly-ended queue to keep track of suspended receiving
   and sending tasks.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class WaiterQueue {
     type eltType;
     var front : unmanaged Waiter(eltType)?;
@@ -180,8 +180,7 @@ module Channel {
     /*
      Initialize a channel
 
-     :arg elt: The element type used for sending and receiving
-     :type elt: `type`
+     :arg eltType: The element type used for sending and receiving
 
      :arg size: Specify the maximum capacity for the channel ``bufferSize``.
      :type size: `int`
@@ -215,7 +214,7 @@ module Channel {
       return recv(val, true);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc recv(out val : eltType, blocking : bool) : bool {
       return this.channelObj.recv(val, blocking);
     }
@@ -235,7 +234,7 @@ module Channel {
       send(val, true);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc send(in val : eltType, blocking : bool) : bool throws {
       return this.channelObj.send(val, blocking);
     }
@@ -263,7 +262,7 @@ module Channel {
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class chan {
 
     /* The type of elements that can be sent to the channel. */
@@ -276,9 +275,9 @@ module Channel {
     var recvIdx = 0;
     var count = 0;
     var closed = false;
-    var sendWaiters : WaiterQueue;
-    var recvWaiters : WaiterQueue;
-    var lock$ = new _LockWrapper();
+    var sendWaiters : owned WaiterQueue(eltType);
+    var recvWaiters : owned WaiterQueue(eltType);
+    var lockVar = new _LockWrapper();
 
     proc init(type elt, size = 0) {
       eltType = elt;
@@ -288,11 +287,11 @@ module Channel {
     }
 
     proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
 
     proc recv(out val : eltType, blocking : bool) : bool {
@@ -313,8 +312,8 @@ module Channel {
 
       if count == 0 && sendWaiters.isEmpty() {
         if !blocking then return false;
-        var process$ : single bool;
-        var processing = new unmanaged Waiter(val, process$);
+        var process : sync bool;
+        var processing = new unmanaged Waiter(val, process);
         recvWaiters.enqueue(processing);
         unlock();
         var status = processing.suspend();
@@ -366,8 +365,8 @@ module Channel {
 
       if count == bufferSize && recvWaiters.isEmpty() {
         if !blocking then return false;
-        var process$ : single bool;
-        var processing = new unmanaged Waiter(val, process$);
+        var process : sync bool;
+        var processing = new unmanaged Waiter(val, process);
 
         sendWaiters.enqueue(processing);
         unlock();
@@ -434,7 +433,7 @@ module Channel {
   }
 
   /* Error class for Channel */
-  pragma "no doc"
+  @chpldoc.nodoc
   class ChannelError : Error {
     var msg:string;
 
@@ -448,22 +447,22 @@ module Channel {
   }
 
   /* Base class used for aggregating different select-cases */
-  pragma "no doc"
+  @chpldoc.nodoc
   class SelectBaseClass {
     proc lockChannel() { }
     proc unlockChannel() { }
     proc getId() : int { return 0; }
     proc sendRecv() : bool { return true; }
     proc getAddr() : c_uintptr { return 0 : c_uintptr; }
-    proc enqueueWaiter(ref process$ : single bool, ref isDone : atomic int) { }
+    proc enqueueWaiter(ref process : sync bool, ref isDone : atomic int) { }
     proc dequeueWaiter() { }
   }
 
   /* Enum to specify the operation in a select-case */
-  pragma "no doc"
+  @chpldoc.nodoc
   enum selectOperation { recv, send }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class SelectCase : SelectBaseClass {
     type eltType;
     var val : c_ptr(eltType);
@@ -474,7 +473,7 @@ module Channel {
 
     proc init(ref value, ref selectChannel : channel(?), op : selectOperation, caseId : int) {
       this.eltType = value.type;
-      this.val = c_ptrTo(value);
+      this.val = c_addrOf(value);
       this.selectChannel = selectChannel;
       this.operation = op;
       this.id = caseId;
@@ -502,11 +501,11 @@ module Channel {
 
     /* Retrieve the address of the involved channel */
     override proc getAddr() : c_uintptr {
-      return ((selectChannel.channelObj : c_void_ptr) : c_uintptr);
+      return (c_ptrTo(selectChannel.channelObj) : c_uintptr);
     }
 
-    override proc enqueueWaiter(ref process$ : single bool, ref isDone : atomic int) {
-      waiter = new unmanaged Waiter(val, process$, isDone, id);
+    override proc enqueueWaiter(ref process : sync bool, ref isDone : atomic int) {
+      waiter = new unmanaged Waiter(val, process, isDone, id);
       if operation == selectOperation.recv {
         selectChannel.channelObj.recvWaiters.enqueue(waiter!);
       }
@@ -527,7 +526,7 @@ module Channel {
   /* Comparator used for sorting the channels according to their memory
   addresses.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   record Comparator {
     proc compare(case1, case2) {
       return (case1.getAddr() - case2.getAddr()) : int;
@@ -535,20 +534,20 @@ module Channel {
   }
 
   /* Acquire the lock of all involved channels */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc lockSelect(lockOrder : list(shared SelectBaseClass)) {
     for channelWrapper in lockOrder do channelWrapper.lockChannel();
   }
 
   /* Release the lock all involved channels */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc unlockSelect(lockOrder : list(shared SelectBaseClass)) {
     for idx in lockOrder.indices by -1 do lockOrder[idx].unlockChannel();
   }
 
   /* Entry point for select statements */
-  pragma "no doc"
-  proc selectProcess(cases : [] shared SelectBaseClass, default : bool = false) : int{
+  @chpldoc.nodoc
+  proc selectProcess(ref cases : [] shared SelectBaseClass, default : bool = false) : int{
     var numCases = cases.domain.size;
 
     var addrCmp : Comparator;
@@ -563,7 +562,7 @@ module Channel {
     var lockOrder = new list(shared SelectBaseClass);
     for idx in cases.domain {
       if idx == 0 || cases[idx].getAddr() != cases[idx - 1].getAddr() {
-        lockOrder.append(cases[idx]);
+        lockOrder.pushBack(cases[idx]);
       }
     }
     var done = -1;
@@ -590,14 +589,14 @@ module Channel {
     channel's waiting queue and wait for other task to awaken us.
     */
     var isDone : atomic int = -1;
-    var process$ : single bool;
+    var process : sync bool;
 
     for case in cases {
-      case.enqueueWaiter(process$, isDone);
+      case.enqueueWaiter(process, isDone);
     }
 
     unlockSelect(lockOrder);
-    process$.readFF();
+    process.readFF();
 
     lockSelect(lockOrder);
 

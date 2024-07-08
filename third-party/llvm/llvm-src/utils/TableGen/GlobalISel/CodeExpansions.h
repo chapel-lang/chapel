@@ -24,9 +24,13 @@ protected:
 
 public:
   void declare(StringRef Name, StringRef Expansion) {
-    bool Inserted = Expansions.try_emplace(Name, Expansion).second;
-    assert(Inserted && "Declared variable twice");
-    (void)Inserted;
+    // Duplicates are not inserted. The expansion refers to different
+    // MachineOperands using the same virtual register.
+    Expansions.try_emplace(Name, Expansion);
+  }
+
+  void redeclare(StringRef Name, StringRef Expansion) {
+    Expansions[Name] = Expansion;
   }
 
   std::string lookup(StringRef Variable) const {

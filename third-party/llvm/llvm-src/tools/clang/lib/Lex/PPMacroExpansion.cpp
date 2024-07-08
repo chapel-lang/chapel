@@ -11,6 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "clang/Basic/AttributeCommonInfo.h"
 #include "clang/Basic/Attributes.h"
 #include "clang/Basic/Builtins.h"
 #include "clang/Basic/FileManager.h"
@@ -36,8 +37,6 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/FoldingSet.h"
-#include "llvm/ADT/None.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SmallVector.h"
@@ -53,6 +52,7 @@
 #include <cstddef>
 #include <cstring>
 #include <ctime>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -87,7 +87,7 @@ void Preprocessor::appendMacroDirective(IdentifierInfo *II, MacroDirective *MD){
 
   // Set up the identifier as having associated macro history.
   II->setHasMacroDefinition(true);
-  if (!MD->isDefined() && LeafModuleMacros.find(II) == LeafModuleMacros.end())
+  if (!MD->isDefined() && !LeafModuleMacros.contains(II))
     II->setHasMacroDefinition(false);
   if (II->isFromAST())
     II->setChangedSinceDeserialization();
@@ -125,7 +125,7 @@ void Preprocessor::setLoadedMacroDirective(IdentifierInfo *II,
 
   // Setup the identifier as having associated macro history.
   II->setHasMacroDefinition(true);
-  if (!MD->isDefined() && LeafModuleMacros.find(II) == LeafModuleMacros.end())
+  if (!MD->isDefined() && !LeafModuleMacros.contains(II))
     II->setHasMacroDefinition(false);
 }
 
@@ -284,7 +284,8 @@ void Preprocessor::dumpMacroInfo(const IdentifierInfo *II) {
 
   // Dump module macros.
   llvm::DenseSet<ModuleMacro*> Active;
-  for (auto *MM : State ? State->getActiveModuleMacros(*this, II) : None)
+  for (auto *MM :
+       State ? State->getActiveModuleMacros(*this, II) : std::nullopt)
     Active.insert(MM);
   llvm::DenseSet<ModuleMacro*> Visited;
   llvm::SmallVector<ModuleMacro *, 16> Worklist(Leaf.begin(), Leaf.end());
@@ -342,6 +343,7 @@ void Preprocessor::RegisterBuiltinMacros() {
   Ident__TIME__ = RegisterBuiltinMacro(*this, "__TIME__");
   Ident__COUNTER__ = RegisterBuiltinMacro(*this, "__COUNTER__");
   Ident_Pragma  = RegisterBuiltinMacro(*this, "_Pragma");
+  Ident__FLT_EVAL_METHOD__ = RegisterBuiltinMacro(*this, "__FLT_EVAL_METHOD__");
 
   // C++ Standing Document Extensions.
   if (getLangOpts().CPlusPlus)
@@ -369,6 +371,8 @@ void Preprocessor::RegisterBuiltinMacros() {
   Ident__has_feature      = RegisterBuiltinMacro(*this, "__has_feature");
   Ident__has_extension    = RegisterBuiltinMacro(*this, "__has_extension");
   Ident__has_builtin      = RegisterBuiltinMacro(*this, "__has_builtin");
+  Ident__has_constexpr_builtin =
+      RegisterBuiltinMacro(*this, "__has_constexpr_builtin");
   Ident__has_attribute    = RegisterBuiltinMacro(*this, "__has_attribute");
   if (!getLangOpts().CPlusPlus)
     Ident__has_c_attribute = RegisterBuiltinMacro(*this, "__has_c_attribute");
@@ -385,6 +389,10 @@ void Preprocessor::RegisterBuiltinMacros() {
   Ident__is_target_os     = RegisterBuiltinMacro(*this, "__is_target_os");
   Ident__is_target_environment =
       RegisterBuiltinMacro(*this, "__is_target_environment");
+  Ident__is_target_variant_os =
+      RegisterBuiltinMacro(*this, "__is_target_variant_os");
+  Ident__is_target_variant_environment =
+      RegisterBuiltinMacro(*this, "__is_target_variant_environment");
 
   // Modules.
   Ident__building_module  = RegisterBuiltinMacro(*this, "__building_module");
@@ -1079,8 +1087,15 @@ void Preprocessor::removeCachedMacroExpandedTokensOfLastLexer() {
 /// the identifier tokens inserted.
 static void ComputeDATE_TIME(SourceLocation &DATELoc, SourceLocation &TIMELoc,
                              Preprocessor &PP) {
-  time_t TT = time(nullptr);
-  struct tm *TM = localtime(&TT);
+  time_t TT;
+  std::tm *TM;
+  if (PP.getPreprocessorOpts().SourceDateEpoch) {
+    TT = *PP.getPreprocessorOpts().SourceDateEpoch;
+    TM = std::gmtime(&TT);
+  } else {
+    TT = std::time(nullptr);
+    TM = std::localtime(&TT);
+  }
 
   static const char * const Months[] = {
     "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"
@@ -1089,8 +1104,11 @@ static void ComputeDATE_TIME(SourceLocation &DATELoc, SourceLocation &TIMELoc,
   {
     SmallString<32> TmpBuffer;
     llvm::raw_svector_ostream TmpStream(TmpBuffer);
-    TmpStream << llvm::format("\"%s %2d %4d\"", Months[TM->tm_mon],
-                              TM->tm_mday, TM->tm_year + 1900);
+    if (TM)
+      TmpStream << llvm::format("\"%s %2d %4d\"", Months[TM->tm_mon],
+                                TM->tm_mday, TM->tm_year + 1900);
+    else
+      TmpStream << "??? ?? ????";
     Token TmpTok;
     TmpTok.startToken();
     PP.CreateString(TmpStream.str(), TmpTok);
@@ -1100,8 +1118,11 @@ static void ComputeDATE_TIME(SourceLocation &DATELoc, SourceLocation &TIMELoc,
   {
     SmallString<32> TmpBuffer;
     llvm::raw_svector_ostream TmpStream(TmpBuffer);
-    TmpStream << llvm::format("\"%02d:%02d:%02d\"",
-                              TM->tm_hour, TM->tm_min, TM->tm_sec);
+    if (TM)
+      TmpStream << llvm::format("\"%02d:%02d:%02d\"", TM->tm_hour, TM->tm_min,
+                                TM->tm_sec);
+    else
+      TmpStream << "??:??:??";
     Token TmpTok;
     TmpTok.startToken();
     PP.CreateString(TmpStream.str(), TmpTok);
@@ -1115,7 +1136,8 @@ static bool HasFeature(const Preprocessor &PP, StringRef Feature) {
   const LangOptions &LangOpts = PP.getLangOpts();
 
   // Normalize the feature name, __foo__ becomes foo.
-  if (Feature.startswith("__") && Feature.endswith("__") && Feature.size() >= 4)
+  if (Feature.starts_with("__") && Feature.ends_with("__") &&
+      Feature.size() >= 4)
     Feature = Feature.substr(2, Feature.size() - 4);
 
 #define FEATURE(Name, Predicate) .Case(#Name, Predicate)
@@ -1141,7 +1163,7 @@ static bool HasExtension(const Preprocessor &PP, StringRef Extension) {
   const LangOptions &LangOpts = PP.getLangOpts();
 
   // Normalize the extension name, __foo__ becomes foo.
-  if (Extension.startswith("__") && Extension.endswith("__") &&
+  if (Extension.starts_with("__") && Extension.ends_with("__") &&
       Extension.size() >= 4)
     Extension = Extension.substr(2, Extension.size() - 4);
 
@@ -1157,9 +1179,9 @@ static bool HasExtension(const Preprocessor &PP, StringRef Extension) {
 /// EvaluateHasIncludeCommon - Process a '__has_include("path")'
 /// or '__has_include_next("path")' expression.
 /// Returns true if successful.
-static bool EvaluateHasIncludeCommon(Token &Tok,
-                                     IdentifierInfo *II, Preprocessor &PP,
-                                     const DirectoryLookup *LookupFrom,
+static bool EvaluateHasIncludeCommon(Token &Tok, IdentifierInfo *II,
+                                     Preprocessor &PP,
+                                     ConstSearchDirIterator LookupFrom,
                                      const FileEntry *LookupFromFile) {
   // Save the location of the current token.  If a '(' is later found, use
   // that location.  If not, use the end of this location instead.
@@ -1227,62 +1249,37 @@ static bool EvaluateHasIncludeCommon(Token &Tok,
   if (Filename.empty())
     return false;
 
+  // Passing this to LookupFile forces header search to check whether the found
+  // file belongs to a module. Skipping that check could incorrectly mark
+  // modular header as textual, causing issues down the line.
+  ModuleMap::KnownHeader KH;
+
   // Search include directories.
-  Optional<FileEntryRef> File =
+  OptionalFileEntryRef File =
       PP.LookupFile(FilenameLoc, Filename, isAngled, LookupFrom, LookupFromFile,
-                    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+                    nullptr, nullptr, nullptr, &KH, nullptr, nullptr);
 
   if (PPCallbacks *Callbacks = PP.getPPCallbacks()) {
     SrcMgr::CharacteristicKind FileType = SrcMgr::C_User;
     if (File)
-      FileType =
-          PP.getHeaderSearchInfo().getFileDirFlavor(&File->getFileEntry());
+      FileType = PP.getHeaderSearchInfo().getFileDirFlavor(*File);
     Callbacks->HasInclude(FilenameLoc, Filename, isAngled, File, FileType);
   }
 
   // Get the result value.  A result of true means the file exists.
-  return File.hasValue();
+  return File.has_value();
 }
 
-/// EvaluateHasInclude - Process a '__has_include("path")' expression.
-/// Returns true if successful.
-static bool EvaluateHasInclude(Token &Tok, IdentifierInfo *II,
-                               Preprocessor &PP) {
-  return EvaluateHasIncludeCommon(Tok, II, PP, nullptr, nullptr);
+bool Preprocessor::EvaluateHasInclude(Token &Tok, IdentifierInfo *II) {
+  return EvaluateHasIncludeCommon(Tok, II, *this, nullptr, nullptr);
 }
 
-/// EvaluateHasIncludeNext - Process '__has_include_next("path")' expression.
-/// Returns true if successful.
-static bool EvaluateHasIncludeNext(Token &Tok,
-                                   IdentifierInfo *II, Preprocessor &PP) {
-  // __has_include_next is like __has_include, except that we start
-  // searching after the current found directory.  If we can't do this,
-  // issue a diagnostic.
-  // FIXME: Factor out duplication with
-  // Preprocessor::HandleIncludeNextDirective.
-  const DirectoryLookup *Lookup = PP.GetCurDirLookup();
-  const FileEntry *LookupFromFile = nullptr;
-  if (PP.isInPrimaryFile() && PP.getLangOpts().IsHeaderFile) {
-    // If the main file is a header, then it's either for PCH/AST generation,
-    // or libclang opened it. Either way, handle it as a normal include below
-    // and do not complain about __has_include_next.
-  } else if (PP.isInPrimaryFile()) {
-    Lookup = nullptr;
-    PP.Diag(Tok, diag::pp_include_next_in_primary);
-  } else if (PP.getCurrentLexerSubmodule()) {
-    // Start looking up in the directory *after* the one in which the current
-    // file would be found, if any.
-    assert(PP.getCurrentLexer() && "#include_next directive in macro?");
-    LookupFromFile = PP.getCurrentLexer()->getFileEntry();
-    Lookup = nullptr;
-  } else if (!Lookup) {
-    PP.Diag(Tok, diag::pp_include_next_absolute_path);
-  } else {
-    // Start looking up in the next directory.
-    ++Lookup;
-  }
+bool Preprocessor::EvaluateHasIncludeNext(Token &Tok, IdentifierInfo *II) {
+  ConstSearchDirIterator Lookup = nullptr;
+  const FileEntry *LookupFromFile;
+  std::tie(Lookup, LookupFromFile) = getIncludeNextStart(Tok);
 
-  return EvaluateHasIncludeCommon(Tok, II, PP, Lookup, LookupFromFile);
+  return EvaluateHasIncludeCommon(Tok, II, *this, Lookup, LookupFromFile);
 }
 
 /// Process single-argument builtin feature-like macros that return
@@ -1309,7 +1306,7 @@ static void EvaluateFeatureLikeBuiltinMacro(llvm::raw_svector_ostream& OS,
 
   unsigned ParenDepth = 1;
   SourceLocation LParenLoc = Tok.getLocation();
-  llvm::Optional<int> Result;
+  std::optional<int> Result;
 
   Token ResultTok;
   bool SuppressDiagnostic = false;
@@ -1338,7 +1335,7 @@ already_lexed:
 
       case tok::l_paren:
         ++ParenDepth;
-        if (Result.hasValue())
+        if (Result)
           break;
         if (!SuppressDiagnostic) {
           PP.Diag(Tok.getLocation(), diag::err_pp_nested_paren) << II;
@@ -1352,11 +1349,11 @@ already_lexed:
 
         // The last ')' has been reached; return the value if one found or
         // a diagnostic and a dummy value.
-        if (Result.hasValue()) {
-          OS << Result.getValue();
+        if (Result) {
+          OS << *Result;
           // For strict conformance to __has_cpp_attribute rules, use 'L'
           // suffix for dated literals.
-          if (Result.getValue() > 1)
+          if (*Result > 1)
             OS << 'L';
         } else {
           OS << 0;
@@ -1368,7 +1365,7 @@ already_lexed:
 
       default: {
         // Parse the macro argument, if one not found so far.
-        if (Result.hasValue())
+        if (Result)
           break;
 
         bool HasLexedNextToken = false;
@@ -1455,7 +1452,45 @@ static bool isTargetEnvironment(const TargetInfo &TI,
                                 const IdentifierInfo *II) {
   std::string EnvName = (llvm::Twine("---") + II->getName().lower()).str();
   llvm::Triple Env(EnvName);
+  // The unknown environment is matched only if
+  // '__is_target_environment(unknown)' is used.
+  if (Env.getEnvironment() == llvm::Triple::UnknownEnvironment &&
+      EnvName != "---unknown")
+    return false;
   return TI.getTriple().getEnvironment() == Env.getEnvironment();
+}
+
+/// Implements the __is_target_variant_os builtin macro.
+static bool isTargetVariantOS(const TargetInfo &TI, const IdentifierInfo *II) {
+  if (TI.getTriple().isOSDarwin()) {
+    const llvm::Triple *VariantTriple = TI.getDarwinTargetVariantTriple();
+    if (!VariantTriple)
+      return false;
+
+    std::string OSName =
+        (llvm::Twine("unknown-unknown-") + II->getName().lower()).str();
+    llvm::Triple OS(OSName);
+    if (OS.getOS() == llvm::Triple::Darwin) {
+      // Darwin matches macos, ios, etc.
+      return VariantTriple->isOSDarwin();
+    }
+    return VariantTriple->getOS() == OS.getOS();
+  }
+  return false;
+}
+
+/// Implements the __is_target_variant_environment builtin macro.
+static bool isTargetVariantEnvironment(const TargetInfo &TI,
+                                const IdentifierInfo *II) {
+  if (TI.getTriple().isOSDarwin()) {
+    const llvm::Triple *VariantTriple = TI.getDarwinTargetVariantTriple();
+    if (!VariantTriple)
+      return false;
+    std::string EnvName = (llvm::Twine("---") + II->getName().lower()).str();
+    llvm::Triple Env(EnvName);
+    return VariantTriple->getEnvironment() == Env.getEnvironment();
+  }
+  return false;
 }
 
 /// ExpandBuiltinMacro - If an identifier token is read that is to be expanded
@@ -1529,17 +1564,11 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
       // __FILE_NAME__ is a Clang-specific extension that expands to the
       // the last part of __FILE__.
       if (II == Ident__FILE_NAME__) {
-        // Try to get the last path component, failing that return the original
-        // presumed location.
-        StringRef PLFileName = llvm::sys::path::filename(PLoc.getFilename());
-        if (PLFileName != "")
-          FN += PLFileName;
-        else
-          FN += PLoc.getFilename();
+        processPathToFileName(FN, PLoc, getLangOpts(), getTargetInfo());
       } else {
         FN += PLoc.getFilename();
+        processPathForFileMacro(FN, getLangOpts(), getTargetInfo());
       }
-      getLangOpts().remapPathPrefix(FN);
       Lexer::Stringify(FN);
       OS << '"' << FN << '"';
     }
@@ -1583,26 +1612,39 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
     Diag(Tok.getLocation(), diag::warn_pp_date_time);
     // MSVC, ICC, GCC, VisualAge C++ extension.  The generated string should be
     // of the form "Ddd Mmm dd hh::mm::ss yyyy", which is returned by asctime.
-
-    // Get the file that we are lexing out of.  If we're currently lexing from
-    // a macro, dig into the include stack.
-    const FileEntry *CurFile = nullptr;
-    PreprocessorLexer *TheLexer = getCurrentFileLexer();
-
-    if (TheLexer)
-      CurFile = SourceMgr.getFileEntryForID(TheLexer->getFileID());
-
     const char *Result;
-    if (CurFile) {
-      time_t TT = CurFile->getModificationTime();
-      struct tm *TM = localtime(&TT);
+    if (getPreprocessorOpts().SourceDateEpoch) {
+      time_t TT = *getPreprocessorOpts().SourceDateEpoch;
+      std::tm *TM = std::gmtime(&TT);
       Result = asctime(TM);
     } else {
-      Result = "??? ??? ?? ??:??:?? ????\n";
+      // Get the file that we are lexing out of.  If we're currently lexing from
+      // a macro, dig into the include stack.
+      const FileEntry *CurFile = nullptr;
+      if (PreprocessorLexer *TheLexer = getCurrentFileLexer())
+        CurFile = SourceMgr.getFileEntryForID(TheLexer->getFileID());
+      if (CurFile) {
+        time_t TT = CurFile->getModificationTime();
+        struct tm *TM = localtime(&TT);
+        Result = asctime(TM);
+      } else {
+        Result = "??? ??? ?? ??:??:?? ????\n";
+      }
     }
     // Surround the string with " and strip the trailing newline.
     OS << '"' << StringRef(Result).drop_back() << '"';
     Tok.setKind(tok::string_literal);
+  } else if (II == Ident__FLT_EVAL_METHOD__) {
+    // __FLT_EVAL_METHOD__ is set to the default value.
+    OS << getTUFPEvalMethod();
+    // __FLT_EVAL_METHOD__ expands to a simple numeric value.
+    Tok.setKind(tok::numeric_constant);
+    if (getLastFPEvalPragmaLocation().isValid()) {
+      // The program is ill-formed. The value of __FLT_EVAL_METHOD__ is altered
+      // by the pragma.
+      Diag(Tok, diag::err_illegal_use_of_flt_eval_macro);
+      Diag(getLastFPEvalPragmaLocation(), diag::note_pragma_entered_here);
+    }
   } else if (II == Ident__COUNTER__) {
     // __COUNTER__ expands to a simple numeric value.
     OS << CounterValue++;
@@ -1636,7 +1678,9 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
             // usual allocation and deallocation functions. Required by libc++
             return 201802;
           default:
-            return true;
+            return Builtin::evaluateRequiredTargetFeatures(
+                getBuiltinInfo().getRequiredFeatures(II->getBuiltinID()),
+                getTargetInfo().getTargetOpts().FeatureMap);
           }
           return true;
         } else if (II->getTokenID() != tok::identifier ||
@@ -1648,15 +1692,17 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
           // as being "builtin functions", even if the syntax isn't a valid
           // function call (for example, because the builtin takes a type
           // argument).
-          if (II->getName().startswith("__builtin_") ||
-              II->getName().startswith("__is_") ||
-              II->getName().startswith("__has_"))
+          if (II->getName().starts_with("__builtin_") ||
+              II->getName().starts_with("__is_") ||
+              II->getName().starts_with("__has_"))
             return true;
           return llvm::StringSwitch<bool>(II->getName())
               .Case("__array_rank", true)
               .Case("__array_extent", true)
               .Case("__reference_binds_to_temporary", true)
-              .Case("__underlying_type", true)
+              .Case("__reference_constructs_from_temporary", true)
+#define TRANSFORM_TYPE_TRAIT_DEF(_, Trait) .Case("__" #Trait, true)
+#include "clang/Basic/TransformTypeTraits.def"
               .Default(false);
         } else {
           return llvm::StringSwitch<bool>(II->getName())
@@ -1670,9 +1716,23 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
               .Case("__is_target_vendor", true)
               .Case("__is_target_os", true)
               .Case("__is_target_environment", true)
+              .Case("__is_target_variant_os", true)
+              .Case("__is_target_variant_environment", true)
               .Default(false);
         }
       });
+  } else if (II == Ident__has_constexpr_builtin) {
+    EvaluateFeatureLikeBuiltinMacro(
+        OS, Tok, II, *this, false,
+        [this](Token &Tok, bool &HasLexedNextToken) -> int {
+          IdentifierInfo *II = ExpectFeatureIdentifierInfo(
+              Tok, *this, diag::err_feature_check_malformed);
+          if (!II)
+            return false;
+          unsigned BuiltinOp = II->getBuiltinID();
+          return BuiltinOp != 0 &&
+                 this->getBuiltinInfo().isConstantEvaluated(BuiltinOp);
+        });
   } else if (II == Ident__is_identifier) {
     EvaluateFeatureLikeBuiltinMacro(OS, Tok, II, *this, false,
       [](Token &Tok, bool &HasLexedNextToken) -> int {
@@ -1683,8 +1743,9 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
       [this](Token &Tok, bool &HasLexedNextToken) -> int {
         IdentifierInfo *II = ExpectFeatureIdentifierInfo(Tok, *this,
                                            diag::err_feature_check_malformed);
-        return II ? hasAttribute(AttrSyntax::GNU, nullptr, II,
-                                 getTargetInfo(), getLangOpts()) : 0;
+        return II ? hasAttribute(AttributeCommonInfo::Syntax::AS_GNU, nullptr,
+                                 II, getTargetInfo(), getLangOpts())
+                  : 0;
       });
   } else if (II == Ident__has_declspec) {
     EvaluateFeatureLikeBuiltinMacro(OS, Tok, II, *this, true,
@@ -1694,8 +1755,8 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
         if (II) {
           const LangOptions &LangOpts = getLangOpts();
           return LangOpts.DeclSpecKeyword &&
-                 hasAttribute(AttrSyntax::Declspec, nullptr, II,
-                              getTargetInfo(), LangOpts);
+                 hasAttribute(AttributeCommonInfo::Syntax::AS_Declspec, nullptr,
+                              II, getTargetInfo(), LangOpts);
         }
 
         return false;
@@ -1724,7 +1785,9 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
                                              diag::err_feature_check_malformed);
           }
 
-          AttrSyntax Syntax = IsCXX ? AttrSyntax::CXX : AttrSyntax::C;
+          AttributeCommonInfo::Syntax Syntax =
+              IsCXX ? AttributeCommonInfo::Syntax::AS_CXX11
+                    : AttributeCommonInfo::Syntax::AS_C23;
           return II ? hasAttribute(Syntax, ScopeII, II, getTargetInfo(),
                                    getLangOpts())
                     : 0;
@@ -1736,9 +1799,9 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
     // double-quotes ("").
     bool Value;
     if (II == Ident__has_include)
-      Value = EvaluateHasInclude(Tok, II, *this);
+      Value = EvaluateHasInclude(Tok, II);
     else
-      Value = EvaluateHasIncludeNext(Tok, II, *this);
+      Value = EvaluateHasIncludeNext(Tok, II);
 
     if (Tok.isNot(tok::r_paren))
       return;
@@ -1812,7 +1875,8 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
     if (!Tok.isAnnotation() && Tok.getIdentifierInfo())
       Tok.setKind(tok::identifier);
     else if (Tok.is(tok::string_literal) && !Tok.hasUDSuffix()) {
-      StringLiteralParser Literal(Tok, *this);
+      StringLiteralParser Literal(Tok, *this,
+                                  StringLiteralEvalMethod::Unevaluated);
       if (Literal.hadError)
         return;
 
@@ -1867,6 +1931,22 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
               Tok, *this, diag::err_feature_check_malformed);
           return II && isTargetEnvironment(getTargetInfo(), II);
         });
+  } else if (II == Ident__is_target_variant_os) {
+    EvaluateFeatureLikeBuiltinMacro(
+        OS, Tok, II, *this, false,
+        [this](Token &Tok, bool &HasLexedNextToken) -> int {
+          IdentifierInfo *II = ExpectFeatureIdentifierInfo(
+              Tok, *this, diag::err_feature_check_malformed);
+          return II && isTargetVariantOS(getTargetInfo(), II);
+        });
+  } else if (II == Ident__is_target_variant_environment) {
+    EvaluateFeatureLikeBuiltinMacro(
+        OS, Tok, II, *this, false,
+        [this](Token &Tok, bool &HasLexedNextToken) -> int {
+          IdentifierInfo *II = ExpectFeatureIdentifierInfo(
+              Tok, *this, diag::err_feature_check_malformed);
+          return II && isTargetVariantEnvironment(getTargetInfo(), II);
+        });
   } else {
     llvm_unreachable("Unknown identifier!");
   }
@@ -1881,4 +1961,30 @@ void Preprocessor::markMacroAsUsed(MacroInfo *MI) {
   if (MI->isWarnIfUnused() && !MI->isUsed())
     WarnUnusedMacroLocs.erase(MI->getDefinitionLoc());
   MI->setIsUsed(true);
+}
+
+void Preprocessor::processPathForFileMacro(SmallVectorImpl<char> &Path,
+                                           const LangOptions &LangOpts,
+                                           const TargetInfo &TI) {
+  LangOpts.remapPathPrefix(Path);
+  if (LangOpts.UseTargetPathSeparator) {
+    if (TI.getTriple().isOSWindows())
+      llvm::sys::path::remove_dots(Path, false,
+                                   llvm::sys::path::Style::windows_backslash);
+    else
+      llvm::sys::path::remove_dots(Path, false, llvm::sys::path::Style::posix);
+  }
+}
+
+void Preprocessor::processPathToFileName(SmallVectorImpl<char> &FileName,
+                                         const PresumedLoc &PLoc,
+                                         const LangOptions &LangOpts,
+                                         const TargetInfo &TI) {
+  // Try to get the last path component, failing that return the original
+  // presumed location.
+  StringRef PLFileName = llvm::sys::path::filename(PLoc.getFilename());
+  if (PLFileName.empty())
+    PLFileName = PLoc.getFilename();
+  FileName.append(PLFileName.begin(), PLFileName.end());
+  processPathForFileMacro(FileName, LangOpts, TI);
 }

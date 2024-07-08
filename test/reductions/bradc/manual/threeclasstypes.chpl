@@ -22,7 +22,7 @@ var D: domain(1) = {1..n};
 
 var A: [D] int;
 
-forall i in D {
+forall i in D with (ref A) {
   A(i) = i;
 }
 

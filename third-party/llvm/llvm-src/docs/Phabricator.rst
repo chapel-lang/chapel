@@ -4,8 +4,15 @@
 Code Reviews with Phabricator
 =============================
 
+.. warning::
+
+  Phabricator is deprecated and will be switched to read-only mode in October
+  2023, for new code contributions use :ref:`GitHub Pull Requests <github-reviews>`.
+
+
 .. contents::
   :local:
+
 
 If you prefer to use a web user interface for code reviews, you can now submit
 your patches for Clang and LLVM at `LLVM's Phabricator`_ instance.
@@ -99,9 +106,9 @@ To upload a new patch:
 
 * Click *Differential*.
 * Click *+ Create Diff*.
-* Paste the text diff or browse to the patch file. Click *Create Diff*.
-* Leave this first Repository field blank. (We'll fill in the Repository
-  later, when sending the review.)
+* Paste the text diff or browse to the patch file. Leave this first Repository
+  field blank. (We'll fill in the Repository later, when sending the review.)
+  Click *Create Diff*.
 * Leave the drop down on *Create a new Revision...* and click *Continue*.
 * Enter a descriptive title and summary.  The title and summary are usually
   in the form of a :ref:`commit message <commit messages>`.

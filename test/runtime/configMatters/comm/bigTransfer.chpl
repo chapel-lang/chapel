@@ -1,4 +1,4 @@
-use Memory.Diagnostics, Time, CTypes;
+use MemDiagnostics, Time, CTypes;
 
 type elemType = int;
 
@@ -42,18 +42,18 @@ config const verifyStride = (2**12) / numBytes(elemType);
 config const showPerf = false;
 
 var A: [1..n] elemType;
-[i in A.domain] A(i) = i:A.eltType;
+[i in A.domain with (ref A)] A(i) = i:A.eltType;
 
 on Locales[numLocales - 1] {
   var B: [1..n] elemType;
-  [i in B.domain] B(i) = (n + 1 - i):B.eltType;
+  [i in B.domain with (ref B)] B(i) = (n + 1 - i):B.eltType;
 
-  const startTime = getCurrentTime();
+  const startTime = timeSinceEpoch().totalSeconds();
   if doGET then
     B = A;
   else
     A = B;
-  const elapsedTime = getCurrentTime() - startTime;
+  const elapsedTime = timeSinceEpoch().totalSeconds() - startTime;
 
   if verify {
     const arraysMatch = && reduce [i in 1..n by verifyStride] B(i) == A(i);

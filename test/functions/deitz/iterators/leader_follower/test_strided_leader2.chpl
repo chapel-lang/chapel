@@ -19,7 +19,7 @@ config var n: int = 8;
 
 var A: [1..n] int;
 
-forall i in foo(n) do
+forall i in foo(n) with (ref A) do
   A(i) = i;
 
 writeln(A);
@@ -29,9 +29,9 @@ use Random;
 {
   var B: [1..n] real;
 
-  var rs = createRandomStream(real, seed=315, algorithm=RNG.NPB);
+  var rs = new randomStream(real, seed=315);
 
-  forall (i, r) in zip({1..n}, rs.iterate({1..n})) do
+  forall (i, r) in zip({1..n}, rs.next({1..n})) with (ref B) do
     B(i) = r;
 
   writeln(B);
@@ -40,9 +40,9 @@ use Random;
 {
   var B: [1..n] real;
 
-  var rs = createRandomStream(real, seed=315, algorithm=RNG.NPB);
+  var rs = new randomStream(real, seed=315);
 
-  forall (f, r) in zip(foo(n), rs.iterate({1..n})) do
+  forall (f, r) in zip(foo(n), rs.next({1..n})) with (ref B) do
     B(f) = r;
 
   writeln(B);

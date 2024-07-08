@@ -11,7 +11,7 @@ var lst1 = new list(listType, listLock);
 writeln(lst1.size);
 
 for i in 1..testIters do {
-  lst1.append(i);
+  lst1.pushBack(i);
 }
 
 var lst2 = lst1;

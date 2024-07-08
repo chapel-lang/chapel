@@ -24,7 +24,7 @@
    keyword, then the file itself is treated as a module with the same name as
    the file (minus the .chpl suffix).  The compiler can be directed to include
    modules in distinct files by naming them on the command line or by relying
-   on the ``-M`` flag (see the :ref:`man page <man-chpl>` for exact details).
+   on the ``-M`` flag (see the :ref:`man page <man-module-dir>` for exact details).
    Here, we declare a module `ModToUse`:
 */
 module ModToUse {
@@ -285,9 +285,7 @@ module MainModule {
        error. */
     {
       import ModToUse.bar;
-      var bar = 4.0;
-
-      // writeln(bar); // multiple definition error
+      // var bar = 4.0; multiple definition error
     }
 
     /* If a symbol cannot be resolved directly within the local scope, then
@@ -650,11 +648,12 @@ module MainModule {
       writeln(Inner1.foobar); // Will output 14
       writeln(Inner2.canSeeHidden); // Will output true
     }
-
-    use OuterNested2;
   } // end of main() function
 } // end of MainModule module
 
+/* We'll use the module OuterNested to demonstrate some
+   more details of nested modules.
+ */
 module OuterNested {
   var foo = 12;
   var bar: int = 2;
@@ -695,10 +694,8 @@ module OuterNested {
     private var innerOnly = -17;
     var canSeeHidden = !hiddenFoo;
   }
-} // end of OuterNested module
 
-module OuterNested2 {
-  module Inner1 {
+  module Inner3 {
     var x: int = 11;
   }
 
@@ -706,8 +703,8 @@ module OuterNested2 {
      to them.
    */
   {
-    writeln("Executing OuterNested2's module-level code");
-    use OuterNested2.Inner1;
+    writeln("Executing OuterNested's module-level code");
+    use OuterNested.Inner3;
 
     writeln(x);
   }
@@ -716,7 +713,7 @@ module OuterNested2 {
      since it is in scope.
   */
   {
-    use Inner1;
+    use Inner3;
 
     writeln(x);
   }
@@ -725,38 +722,38 @@ module OuterNested2 {
      the name itself.
   */
   {
-    import OuterNested2.Inner1;
-    //import Inner1; // Will not work
+    import OuterNested.Inner3;
+    //import Inner3; // Will not work
 
-    writeln(Inner1.x);
+    writeln(Inner3.x);
   }
 
   /* However, both ``use`` and ``import`` statements can utilize ``this`` as a
      prefix, to avoid having to provide the full path.
   */
   {
-    import this.Inner1;
+    import this.Inner3;
 
-    writeln(Inner1.x);
+    writeln(Inner3.x);
   }
 
-  module Inner2 {
+  module Inner4 {
     /* Child modules can also utilize ``super`` as a prefix, allowing access to
        other symbols defined on their parent module.
     */
-    import super.Inner1;
+    import super.Inner3;
 
-    writeln(Inner1.x);
+    writeln(Inner3.x);
   }
 
   // These lines are to ensure everything gets tested regularly
-  writeln("End of OuterNested2's module-level code");
+  writeln("End of OuterNested's module-level code");
   {
     use UsesTheUser;
   }
   writeln("End of reverse file-order output");
   writeln();
-} // end of OuterNested2 module
+} // end of OuterNested module
 
 
 /* Public vs. Private Uses and Imports
@@ -802,8 +799,10 @@ module UsesTheUser {
 }
 
 /* By contrast, a ``public use`` will permit symbols used by one module to
-   be seen by those that use it.  For example, consider the following
-   variation of the previous example:
+   be seen by those that use it.  However, it does not provide the name
+   of the module ``public use``'d (but note that it is possible to opt in to
+   that with ``public import`` or with renaming the module with ``as``).
+   For example, consider the following variation of the previous example:
 */
 module UserModule2 {
   public use ModuleThatIsUsed;
@@ -838,7 +837,7 @@ module UsesTheUser2 {
 module UsesTheUser3 {
   proc func3() {
     use UserModule2;
-    UserModule2.ModuleThatIsUsed.publiclyAvailableProc();
+    UserModule2.publiclyAvailableProc();
     // The above is available due to the ``public use`` of ``ModuleThatIsUsed``
     // in ``UserModule2``.
   }

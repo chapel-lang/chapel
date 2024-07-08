@@ -7,7 +7,7 @@ proc main(args: [] string) {
   use Time;
   var inputFilename: string;
   var outputFilename: string;
-  var inputTime, outputTime, computeTime, totalTime: Timer;
+  var inputTime, outputTime, computeTime, totalTime: stopwatch;
   if args.size == 4 {
     inputFilename = args[1];
     outputFilename = args[2];
@@ -21,8 +21,8 @@ proc main(args: [] string) {
   var imgWidth, imgHeight, histoWidth, histoHeight: uint(32);
   totalTime.start();
   inputTime.start();
-  var f = open(inputFilename, iomode.r);
-  var r = f.reader(kind=ionative);
+  var f = open(inputFilename, ioMode.r);
+  var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
 
   r.read(imgWidth);
   r.read(imgHeight);
@@ -102,7 +102,7 @@ proc dumpHisto(histo: [] uint(8), height: uint(32), width: uint(32), outFilename
       if value == 0 then
         (pixMap[pos].R, pixMap[pos].G, pixMap[pos].B) = (0:uint(8),0:uint(8),0:uint(8));
       else
-        pixMap[pos] = HSVtoRGB(0.0, 1.0, cbrt(1+63.0*value/max(uint(8)))/4);
+        pixMap[pos] = HSVtoRGB(0.0, 1.0, cbrt(1+63.0*value:real/max(uint(8)))/4);
     }
   }
   createBMP(pixMap, height, width, outFilename);
@@ -162,8 +162,8 @@ proc createBMP(bitmap:[] RGB, height: uint(32), width: uint(32), filename: strin
   image.dibHeader.ncolors = 0;
   image.dibHeader.nimpcolors = 0;
 
-  var f = open(filename, iomode.cw);
-  var w = f.writer(kind=ionative);
+  var f = open(filename, ioMode.cw);
+  var w = f.writer(serializer=new binarySerializer(), locking=false);
 
   w.write(image.magic(0));
   w.write(image.magic(1));

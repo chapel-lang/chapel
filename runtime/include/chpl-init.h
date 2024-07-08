@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,7 +37,6 @@ void deallocate_string_literals_buf(void);
 #endif // ifndef LAUNCHER
 
 void chpl_rt_init(int argc, char* argv[]);
-void chpl_rt_finalize(int return_value);
 
 void chpl_executable_init(void);
 void chpl_execute_module_deinit(c_fn_ptr deinitFun);
@@ -46,6 +45,7 @@ void chpl_library_init(int argc, char* argv[]);
 void chpl_library_finalize(void);
 
 void chpl_std_module_init(void);
+void chpl_std_module_finalize(void);
 
 #ifdef __cplusplus
 }

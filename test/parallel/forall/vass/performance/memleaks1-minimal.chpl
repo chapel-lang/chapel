@@ -1,4 +1,4 @@
-use Memory.Diagnostics;
+use MemDiagnostics;
 const RELOC = Locales[0];
 
 proc useMe(arg: int) { }

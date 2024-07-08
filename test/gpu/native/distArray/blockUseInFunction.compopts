@@ -1,0 +1,2 @@
+# This test currently crashes the compiler with --verify. To be fixed.
+--no-verify

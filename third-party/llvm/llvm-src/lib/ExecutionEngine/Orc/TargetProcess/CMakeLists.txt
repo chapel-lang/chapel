@@ -1,5 +1,11 @@
+if( CMAKE_HOST_UNIX AND HAVE_LIBRT )
+  set(rt_lib rt)
+endif()
+
 add_llvm_component_library(LLVMOrcTargetProcess
+  ExecutorSharedMemoryMapperService.cpp
   JITLoaderGDB.cpp
+  JITLoaderPerf.cpp
   OrcRTBootstrap.cpp
   RegisterEHFrames.cpp
   SimpleExecutorDylibManager.cpp
@@ -12,8 +18,10 @@ add_llvm_component_library(LLVMOrcTargetProcess
 
   LINK_LIBS
   ${LLVM_PTHREAD_LIB}
+  ${rt_lib}
 
   LINK_COMPONENTS
   OrcShared
   Support
+  TargetParser
   )

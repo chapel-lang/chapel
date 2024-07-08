@@ -116,9 +116,9 @@ qthread/
   License: Qthreads is released under the New BSD License, which can
            be found in qthread/qthread-src/COPYING
 
-  Website: https://github.com/Qthreads/qthreads
+  Website: https://github.com/sandialabs/qthreads
     and
-           http://www.cs.sandia.gov/qthreads/
+           https://www.sandia.gov/qthreads/
 
   See also: qthread/README and qthread/qthread-src/README.md
 

@@ -1,7 +1,7 @@
 pragma "safe"
 module refescapes {
 
-proc ref_identity(ref x:int) ref return x;
+proc ref_identity(ref x:int) ref do return x;
 
 proc bad() ref {
   var x:int;
@@ -14,7 +14,7 @@ proc badder(inout x:int) ref {
 
 record R {
   var x:int;
-  proc get() ref { return x; }
+  proc ref get() ref { return x; }
 }
 
 proc baddest() ref {

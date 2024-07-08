@@ -38,7 +38,7 @@
 int smr_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
 		struct fid_cq **cq_fid, void *context)
 {
-	struct util_cq *util_cq;
+	struct util_cq *cq;
 	int ret;
 
 	switch (attr->wait_obj) {
@@ -53,19 +53,16 @@ int smr_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
 		return -FI_ENOSYS;
 	}
 
-	util_cq = calloc(1, sizeof(*util_cq));
-	if (!util_cq)
+	cq = calloc(1, sizeof(*cq));
+	if (!cq)
 		return -FI_ENOMEM;
 
-	ret = ofi_cq_init(&smr_prov, domain, attr, util_cq,
-			  &ofi_cq_progress, context);
+	ret = ofi_cq_init(&smr_prov, domain, attr, cq, &ofi_cq_progress,
+			  context);
 	if (ret)
-		goto free;
+		return ret;
 
-	(*cq_fid) = &util_cq->cq_fid;
-	return 0;
+	(*cq_fid) = &cq->cq_fid;
 
-free:
-	free(util_cq);
-	return ret;
+	return FI_SUCCESS;
 }

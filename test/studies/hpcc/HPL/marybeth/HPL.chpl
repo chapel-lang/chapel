@@ -9,7 +9,7 @@ config var writeAccuracyInfo = false;
 
 proc main() {
   var TEST = new HPLparams(inFileName=inputfile);
-  var outfile = open(TEST.outFileName, iomode.cw).writer();
+  var outfile = open(TEST.outFileName, ioMode.cw).writer(locking=false);
 
 //for p in TEST.P {
 //  for q in TEST.Q {
@@ -29,12 +29,12 @@ proc main() {
        var resid: 3*real;
        var norms: 5*real;
 
-       var testTimer = new Timer();
+       var testTimer = new stopwatch();
        var timeData: 2*real; 
 
 //     A is initialized to be a (n x n+1) matrix, since
 //     the right hand side is stored with the matrix.
-       init(A);
+       initialize(A);
 
 //     Clear and start the timers.
        testTimer.clear();
@@ -56,7 +56,7 @@ proc main() {
        if writeTimingInfo then timingResults(outfile, n, timeData);
 
 //     Reinitialize A and perform accuracy tests.
-       init(A);
+       initialize(A);
        testSolution(A, x, TEST.epsil, resid, norms);
 
 //     Write error information.

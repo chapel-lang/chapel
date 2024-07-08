@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+
+import sys
+
+testOutput = sys.argv[2]
+args = sys.argv[5]
+
+# dont run the prediff for correctness
+if "--correctness=true" not in args:
+    sys.exit(0)
+
+lines = []
+with open(testOutput, 'r') as f:
+    lines = [l.strip("\n") for l in f.readlines()]
+
+# The output is a list of function names and the dot product from each
+# collect the dot products and make sure they are the same
+dotProducts = {}
+for line in lines:
+    parts = line.split(":")
+    dotProducts[parts[0].strip()] = float(parts[1].strip())
+
+output = []
+
+# check that all the dot products are the same
+values = list(dotProducts.values())
+value = values[0]
+error = False
+for i in range(1, len(values)):
+    if (abs(values[i]) - abs(value)) > 0.1:
+        error = True
+        break
+
+if error:
+    output.append("Dot products are not the same for all functions")
+    output.append("Output of test:")
+    output.extend(lines)
+else:
+    output.append("Dot products are the same for all functions")
+
+with open(testOutput, 'w') as f:
+    f.write("\n".join(output))
+    f.write("\n")

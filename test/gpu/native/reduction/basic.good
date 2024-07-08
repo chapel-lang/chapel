@@ -1,0 +1,77 @@
+Testing type bool
+sum: true
+min: false
+max: true
+minloc: (false, 0)
+maxloc: (true, 1)
+
+Testing type int(8)
+sum: 86
+min: 0
+max: 99
+minloc: (0, 0)
+maxloc: (99, 99)
+
+Testing type int(16)
+sum: 4950
+min: 0
+max: 99
+minloc: (0, 0)
+maxloc: (99, 99)
+
+Testing type int(32)
+sum: 4950
+min: 0
+max: 99
+minloc: (0, 0)
+maxloc: (99, 99)
+
+Testing type int(64)
+sum: 4950
+min: 0
+max: 99
+minloc: (0, 0)
+maxloc: (99, 99)
+
+Testing type uint(8)
+sum: 86
+min: 0
+max: 99
+minloc: (0, 0)
+maxloc: (99, 99)
+
+Testing type uint(16)
+sum: 4950
+min: 0
+max: 99
+minloc: (0, 0)
+maxloc: (99, 99)
+
+Testing type uint(32)
+sum: 4950
+min: 0
+max: 99
+minloc: (0, 0)
+maxloc: (99, 99)
+
+Testing type uint(64)
+sum: 4950
+min: 0
+max: 99
+minloc: (0, 0)
+maxloc: (99, 99)
+
+Testing type real(32)
+sum: 4950.0
+min: 0.0
+max: 99.0
+minloc: (0.0, 0)
+maxloc: (99.0, 99)
+
+Testing type real(64)
+sum: 4950.0
+min: 0.0
+max: 99.0
+minloc: (0.0, 0)
+maxloc: (99.0, 99)
+

@@ -40,6 +40,10 @@
 /*
  * struct fi_ops
  */
+int fi_no_close(struct fid *fid)
+{
+	return -FI_ENOSYS;
+}
 int fi_no_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 {
 	return -FI_ENOSYS;
@@ -70,6 +74,14 @@ int fi_no_domain(struct fid_fabric *fabric, struct fi_info *info,
 		struct fid_domain **dom, void *context)
 {
 	return -FI_ENOSYS;
+}
+int fi_no_domain2(struct fid_fabric *fabric, struct fi_info *info,
+		struct fid_domain **dom, uint64_t flags, void *context)
+{
+	if (flags)
+		return -FI_ENOSYS;
+
+	return fi_domain(fabric, info, dom, context);
 }
 int fi_no_passive_ep(struct fid_fabric *fabric, struct fi_info *info,
 		struct fid_pep **pep, void *context)
@@ -249,6 +261,14 @@ int fi_no_endpoint(struct fid_domain *domain, struct fi_info *info,
 {
 	return -FI_ENOSYS;
 }
+int fi_no_endpoint2(struct fid_domain *domain, struct fi_info *info,
+		struct fid_ep **ep, uint64_t flags, void *context)
+{
+	if (flags)
+		return -FI_ENOSYS;
+
+	return fi_endpoint(domain, info, ep, context);
+}
 int fi_no_scalable_ep(struct fid_domain *domain, struct fi_info *info,
 		struct fid_ep **sep, void *context)
 {
@@ -405,6 +425,16 @@ ssize_t fi_no_msg_injectdata(struct fid_ep *ep, const void *buf, size_t len,
 /*
  * struct fi_ops_eq
  */
+ssize_t fi_no_eq_read(struct fid_eq *eq, uint32_t *event, void *buf,
+		      size_t len, uint64_t flags)
+{
+	return -FI_ENOSYS;
+}
+ssize_t fi_no_eq_readerr(struct fid_eq *eq, struct fi_eq_err_entry *buf,
+			 uint64_t flags)
+{
+	return -FI_ENOSYS;
+}
 ssize_t fi_no_eq_write(struct fid_eq *eq, uint32_t event,
 		const void *buf, size_t len, uint64_t flags)
 {
@@ -414,6 +444,11 @@ ssize_t fi_no_eq_sread(struct fid_eq *eq, uint32_t *event,
 		void *buf, size_t len, int timeout, uint64_t flags)
 {
 	return -FI_ENOSYS;
+}
+const char *fi_no_eq_strerror(struct fid_eq *eq, int prov_errno,
+			      const void *err_data, char *buf, size_t len)
+{
+	return "unknown";
 }
 
 /*
@@ -451,7 +486,7 @@ int fi_no_cq_signal(struct fid_cq *cq)
 const char * fi_no_cq_strerror(struct fid_cq *cq, int prov_errno,
 		const void *err_data, char *buf, size_t len)
 {
-	return NULL;
+	return "unknown";
 }
 
 /*
@@ -466,6 +501,18 @@ int fi_no_cntr_set(struct fid_cntr *cntr, uint64_t value)
 	return -FI_ENOSYS;
 }
 int fi_no_cntr_wait(struct fid_cntr *cntr, uint64_t threshold, int timeout)
+{
+	return -FI_ENOSYS;
+}
+uint64_t fi_no_cntr_readerr(struct fid_cntr *cntr)
+{
+	return 0;
+}
+int fi_no_cntr_adderr(struct fid_cntr *cntr, uint64_t value)
+{
+	return -FI_ENOSYS;
+}
+int fi_no_cntr_seterr(struct fid_cntr *cntr, uint64_t value)
 {
 	return -FI_ENOSYS;
 }
@@ -602,10 +649,54 @@ int fi_no_av_remove(struct fid_av *av, fi_addr_t *fi_addr, size_t count,
 {
 	return -FI_ENOSYS;
 }
-
-ssize_t fi_coll_no_barrier(struct fid_ep *ep, fi_addr_t coll_addr, void *context)
+int fi_no_av_lookup(struct fid_av *av, fi_addr_t fi_addr, void *addr,
+		    size_t *addrlen)
 {
 	return -FI_ENOSYS;
+}
+const char *fi_no_av_straddr(struct fid_av *av, const void *addr, char *buf,
+			     size_t *len)
+{
+	return "unknown";
+}
+
+int fi_no_av_set_union(struct fid_av_set *dst, const struct fid_av_set *src)
+{
+	return -FI_ENOSYS;
+}
+int fi_no_av_set_intersect(struct fid_av_set *dst, const struct fid_av_set *src)
+{
+	return -FI_ENOSYS;
+}
+int fi_no_av_set_diff(struct fid_av_set *dst, const struct fid_av_set *src)
+{
+	return -FI_ENOSYS;
+}
+int fi_no_av_set_insert(struct fid_av_set *set, fi_addr_t addr)
+{
+	return -FI_ENOSYS;
+}
+int fi_no_av_set_remove(struct fid_av_set *set, fi_addr_t addr)
+{
+	return -FI_ENOSYS;
+}
+int fi_no_av_set_addr(struct fid_av_set *set, fi_addr_t *coll_addr)
+{
+	return -FI_ENOSYS;
+}
+
+ssize_t fi_coll_no_barrier(struct fid_ep *ep, fi_addr_t coll_addr,
+			   void *context)
+{
+	return -FI_ENOSYS;
+}
+ssize_t fi_coll_no_barrier2(struct fid_ep *ep, fi_addr_t coll_addr,
+			   uint64_t flags, void *context)
+{
+	if (flags)
+		return -FI_ENOSYS;
+
+	return fi_barrier(ep, coll_addr, context);
 }
 ssize_t fi_coll_no_broadcast(struct fid_ep *ep, void *buf, size_t count, void *desc,
 			     fi_addr_t coll_addr, fi_addr_t root_addr,

@@ -16,7 +16,7 @@
 namespace llvm {
 namespace mca {
 
-CustomBehaviour::~CustomBehaviour() {}
+CustomBehaviour::~CustomBehaviour() = default;
 
 unsigned CustomBehaviour::checkCustomHazard(ArrayRef<InstRef> IssuedInst,
                                             const InstRef &IR) {
@@ -40,6 +40,22 @@ std::vector<std::unique_ptr<View>>
 CustomBehaviour::getEndViews(llvm::MCInstPrinter &IP,
                              llvm::ArrayRef<llvm::MCInst> Insts) {
   return std::vector<std::unique_ptr<View>>();
+}
+
+UniqueInstrument InstrumentManager::createInstrument(llvm::StringRef Desc,
+                                                     llvm::StringRef Data) {
+  return std::make_unique<Instrument>(Desc, Data);
+}
+
+SmallVector<UniqueInstrument>
+InstrumentManager::createInstruments(const MCInst &Inst) {
+  return SmallVector<UniqueInstrument>();
+}
+
+unsigned InstrumentManager::getSchedClassID(
+    const MCInstrInfo &MCII, const MCInst &MCI,
+    const llvm::SmallVector<Instrument *> &IVec) const {
+  return MCII.get(MCI.getOpcode()).getSchedClass();
 }
 
 } // namespace mca

@@ -1,7 +1,7 @@
 //
-// Use standard modules for Block distributions and Timing routines
+// Use standard modules for Block distributions, Timing routines, and log2
 //
-use BlockDist, Time;
+use BlockDist, Time, Math;
 
 //
 // Use the user modules for computing HPCC problem sizes and for
@@ -97,8 +97,8 @@ config const useOn = (CHPL_COMM != "ugni") && (CHPL_COMM != "none");
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = new dmap(new Block(boundingBox={0..m-1})),
-      UpdateDist = new dmap(new Block(boundingBox={0..N_U-1}));
+const TableDist = new blockDist(boundingBox={0..m-1}),
+      UpdateDist = new blockDist(boundingBox={0..N_U-1});
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
@@ -128,10 +128,10 @@ proc main() {
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
   // i in TableSpace"
   //
-  [i in TableSpace] T[i] = i;
+  [i in TableSpace with (ref T)] T[i] = i;
 
   startVdebug("RAvis");
-  const startTime = getCurrentTime();              // capture the start time
+  const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
   //
   // The main computation: Iterate over the set of updates and the
@@ -146,7 +146,7 @@ proc main() {
   // index and as the update value.
   //
   if (useOn) then
-    forall (_, r) in zip(Updates, RAStream()) do
+    forall (_, r) in zip(Updates, RAStream()) with (ref T) do
       on TableDist.idxToLocale[r & indexMask] do {
         const myR = r;
         local {
@@ -154,10 +154,10 @@ proc main() {
         }
       }
   else
-    forall (_, r) in zip(Updates, RAStream()) do
+    forall (_, r) in zip(Updates, RAStream()) with (ref T) do
       T[r & indexMask] ^= r;
 
-  const execTime = getCurrentTime() - startTime;   // capture the elapsed time
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;   // capture the elapsed time
   stopVdebug();
 
   const validAnswer = verifyResults(T);            // verify the updates
@@ -178,7 +178,7 @@ proc printConfiguration() {
 //
 // Verify that the computation is correct
 //
-proc verifyResults(T) {
+proc verifyResults(ref T) {
   if (!verify) then return true;
   //
   // We protect against errors in verification by using locks to
@@ -212,7 +212,7 @@ proc verifyResults(T) {
   // it safely in the "local" statement.
   //
   if (useOn) then
-    forall (_, r) in zip(Updates, RAStream()) do
+    forall (_, r) in zip(Updates, RAStream()) with (ref T, ref locks) do
       on TableDist.idxToLocale[r & indexMask] do {
         const myR = r;
         locks[myR & lockIndexMask].lock();
@@ -222,7 +222,7 @@ proc verifyResults(T) {
         locks[myR & lockIndexMask].unlock();
       }
   else
-    forall (_, r) in zip(Updates, RAStream()) do {
+    forall (_, r) in zip(Updates, RAStream()) with (ref T, ref locks) do {
       locks[r & lockIndexMask].lock();
       T[r & indexMask] ^= r;
       locks[r & lockIndexMask].unlock();
@@ -253,10 +253,14 @@ proc verifyResults(T) {
 //
 record vlock {
   var l: atomic bool;
-  proc lock() {
-    on this do while l.testAndSet() != false do chpl_task_yield();
+  proc init() {}
+  proc init=(other: vlock) {
+    this.l = other.l.read();
   }
-  proc unlock() {
+  proc ref lock() {
+    on this do while l.testAndSet() != false do currentTask.yieldExecution();
+  }
+  proc ref unlock() {
     l.write(false);
   }
 }

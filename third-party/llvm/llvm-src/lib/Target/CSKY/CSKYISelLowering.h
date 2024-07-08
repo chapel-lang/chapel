@@ -88,6 +88,12 @@ private:
     return (Kind != ScalarCondVectorVal);
   }
 
+  ConstraintType getConstraintType(StringRef Constraint) const override;
+
+  std::pair<unsigned, const TargetRegisterClass *>
+  getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
+                               StringRef Constraint, MVT VT) const override;
+
   MachineBasicBlock *
   EmitInstrWithCustomInserter(MachineInstr &MI,
                               MachineBasicBlock *BB) const override;
@@ -104,6 +110,9 @@ private:
   SDValue getTargetNode(BlockAddressSDNode *N, SDLoc DL, EVT Ty,
                         SelectionDAG &DAG, unsigned Flags) const;
 
+  SDValue getTargetNode(ConstantPoolSDNode *N, SDLoc DL, EVT Ty,
+                        SelectionDAG &DAG, unsigned Flags) const;
+
   SDValue getTargetConstantPoolValue(GlobalAddressSDNode *N, EVT Ty,
                                      SelectionDAG &DAG, unsigned Flags) const;
 
@@ -114,6 +123,9 @@ private:
                                      SelectionDAG &DAG, unsigned Flags) const;
 
   SDValue getTargetConstantPoolValue(BlockAddressSDNode *N, EVT Ty,
+                                     SelectionDAG &DAG, unsigned Flags) const;
+
+  SDValue getTargetConstantPoolValue(ConstantPoolSDNode *N, EVT Ty,
                                      SelectionDAG &DAG, unsigned Flags) const;
 
   template <class NodeTy, bool IsCall = false>
@@ -149,6 +161,7 @@ private:
   SDValue LowerExternalSymbol(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerGlobalTLSAddress(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerBlockAddress(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerConstantPool(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerJumpTable(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerVASTART(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerFRAMEADDR(SDValue Op, SelectionDAG &DAG) const;
@@ -160,6 +173,11 @@ private:
 
   CCAssignFn *CCAssignFnForCall(CallingConv::ID CC, bool IsVarArg) const;
   CCAssignFn *CCAssignFnForReturn(CallingConv::ID CC, bool IsVarArg) const;
+
+  bool decomposeMulByConstant(LLVMContext &Context, EVT VT,
+                              SDValue C) const override;
+  bool isCheapToSpeculateCttz(Type *Ty) const override;
+  bool isCheapToSpeculateCtlz(Type *Ty) const override;
 };
 
 } // namespace llvm

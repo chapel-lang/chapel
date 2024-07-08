@@ -41,14 +41,14 @@ writeln(ic("hi", "there"));
 
 /////////////////////////////////
 
-proc take(arg: bool): bool(8) {
+proc take(arg: bool): bool {
   writeln("take bool ", arg);
   return arg;
 }
 
-implements StdOps(bool(8));
-implements IFC(bool(8));
-writeln(ic(false: bool(8), true: bool(8)));
+implements StdOps(bool);
+implements IFC(bool);
+writeln(ic(false, true));
 
 /////////////////////////////////
 

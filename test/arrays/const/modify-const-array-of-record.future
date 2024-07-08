@@ -1,0 +1,2 @@
+bug: should not be able to modify an element of a const array
+#23215

@@ -1,6 +1,6 @@
 class Base {
   proc init() {
-    complete();
+    init this;
   }
 }
 
@@ -12,11 +12,11 @@ class Child1 {
     t1 = _t1;
     p1 = _p1;
 
-    complete();
+    init this;
   }
 }
 
-class Child2 : Child1 {
+class Child2 : Child1(?) {
   type  t2;
 
   proc init(type _t1, param _p1, type _t2) {
@@ -24,7 +24,7 @@ class Child2 : Child1 {
 
     t2 = _t2;
 
-    complete();
+    init this;
   }
 }
 
@@ -51,7 +51,8 @@ proc testLevel1() {
   writeln('Are the types the same? ', c11.type == c12.type);
   writeln();
 
-  var tmp = new borrowed Child1(int, 10);
+  var ownTmp = new owned Child1(int, 10);
+  var tmp = ownTmp.borrow();
   c11 = tmp;
 
   writeln(c11);
@@ -69,7 +70,8 @@ proc testLevel2() {
   writeln('Are the types the same? ', c21.type == c22.type);
   writeln();
 
-  var tmp = new borrowed Child2(real, 20, int);
+  var ownTmp = new owned Child2(real, 20, int);
+  var tmp = ownTmp.borrow();
   c21 = tmp;
 
   writeln(c21);

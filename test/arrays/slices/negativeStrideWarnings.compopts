@@ -1,0 +1,4 @@
+# As these options become obsolete, their .good files can be simply discarded.
+
+-snoNegativeStrideWarnings=true   # negativeStrideWarnings.newR.warn-.good
+-snoNegativeStrideWarnings=false  # negativeStrideWarnings.newR.warn+.good

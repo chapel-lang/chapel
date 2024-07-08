@@ -1,1 +1,1 @@
-./compilerErrorMod.chpl:2: error: Error in compilerErrorMod
+compilerErrorMod.chpl:2: error: Error in compilerErrorMod

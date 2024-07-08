@@ -45,8 +45,8 @@ proc cgFun(cgArg: ?Q, arg1: Q.AT1, arg2: Q.AT2, arg3: cgArg.AT3)
 
 record RR {
   type AT1;
-  proc AT2 type return AT1;
-  proc AT3 type return bool;
+  proc AT2 type do return AT1;
+  proc AT3 type do return bool;
   var xx: AT1;
 
   proc reqMeth1(formal1: AT1) {
@@ -60,7 +60,7 @@ proc RR.reqMeth23(formal2: int, formal3: AT3) {
           formal2, ", ", formal3, ": ", formal3.type:string, ")");
 }
 
-proc reqFunS(formal: RR) {
+proc reqFunS(formal: RR(?)) {
   writeln("reqFunS(", formal, ": ", formal.type:string, ")");
 }
 proc reqFun123(formal1: int, formal2, formal3: bool) {

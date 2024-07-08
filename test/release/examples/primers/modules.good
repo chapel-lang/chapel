@@ -1,3 +1,8 @@
+modules.chpl:126: In function 'main':
+modules.chpl:306: warning: potentially surprising shadowing for 'bar'
+modules.chpl:305: note: it refers to a symbol found through the 'use' of 'ModToUse' here
+modules.chpl:37: note: leading to 'bar' defined here
+modules.chpl:302: note: but, there is a shadowed symbol 'bar' defined here
 Start of reverse file-order output
 This function is accessible!
 This function is accessible!
@@ -10,12 +15,12 @@ This function is accessible!
 End of UsesTheUser2's module-level code
 Start of UsesTheUser's module-level code
 End of UsesTheUser's module-level code
-Executing OuterNested2's module-level code
+Executing OuterNested's module-level code
 11
 11
 11
 11
-End of OuterNested2's module-level code
+End of OuterNested's module-level code
 End of reverse file-order output
 
 Access from outside a module

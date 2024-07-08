@@ -5,8 +5,8 @@ use IO;
 // arguments will throw an EOF error.
 
 proc main() {
-  var f = openmem();
-  var r = f.reader();
+  var f = openMemFile();
+  var r = f.reader(locking=false);
 
   try {
     var x = r.read(int);

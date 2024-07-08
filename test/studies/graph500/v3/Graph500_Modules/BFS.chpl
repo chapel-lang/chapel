@@ -8,8 +8,8 @@ use Graph500_defs;
 proc BFS ( root : vertex_id, ParentTree, G )
 {
 
-  type Vertex_List = domain ( vertex_id );
-  var visited$ : [vertex_domain] sync int = -1;
+  type Vertex_List = domain (vertex_id, parSafe=true);
+  var visited : [vertex_domain] sync int = -1;
 
   var Active_Level = new Level_Set (Vertex_List);
   var Next_Level = new Level_Set (Vertex_List);
@@ -20,7 +20,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
   Active_Level.Members.add ( Root_vertex );
   Next_Level.Members.clear ();
 
-  visited$ (root).writeFF(1);
+  visited (root).writeFF(1);
   Active_Level.previous = nil;
   Next_Level.previous = Active_Level;
 
@@ -31,17 +31,17 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
       forall v in G.Neighbors (u) do {
 
-        if ( visited$ (v).readXX() < 0 ) 
+        if ( visited (v).readXX() < 0 )
         {
-          if (visited$ (v).readFE() < 0 )
+          if (visited (v).readFE() < 0 )
           {
-              visited$ (v).writeEF (1);
+              visited (v).writeEF (1);
               Next_Level.Members.add (v);
               ParentTree (v) = u;
           }
           else
           {
-              visited$ (v).writeEF(1);
+              visited (v).writeEF(1);
           }
         }
       }
@@ -63,6 +63,3 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
 
 }
-
-
-

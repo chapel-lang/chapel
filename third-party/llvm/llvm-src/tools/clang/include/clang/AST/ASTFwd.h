@@ -33,6 +33,8 @@ class OMPClause;
 class Attr;
 #define ATTR(A) class A##Attr;
 #include "clang/Basic/AttrList.inc"
+class ObjCProtocolLoc;
+class ConceptReference;
 
 } // end namespace clang
 

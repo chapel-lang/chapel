@@ -1,69 +1,13 @@
-// The purpose of this test is to use the explicit "gpu threadIdx", "gpu blockIdx"
-// "gpu blockDim" and "gpu gridDim" primitives.
+// The purpose of this test is to use and test the explicit "gpu threadIdx",
+// "gpu blockIdx" "gpu blockDim" and "gpu gridDim" primitives.
 
-extern {
-  #include <cuda.h>
-  #include <stdio.h>
-  #include <stdlib.h>
-  #include <stdint.h>
-  #include <assert.h>
+use CTypes;
 
-  #define VALS_PER_THREAD 13
-
-  static void checkCudaErrors(CUresult err) {
-    assert(err == CUDA_SUCCESS);
-  }
-
-  static CUdeviceptr getDeviceBufferPointer(
-    int64_t gdimX, int64_t gdimY, int64_t gdimZ,
-    int64_t bdimX, int64_t bdimY, int64_t bdimZ)
-  {
-    int64_t N = gdimX * gdimY * gdimZ * bdimX * bdimY * bdimZ * VALS_PER_THREAD;
-
-    double X[N];
-    CUdeviceptr devBufferX;
-
-    checkCudaErrors(cuMemAlloc(&devBufferX, sizeof(double)*N));
-
-    for(int i = 0; i < N; i++) {
-      X[i] = 999;
-    }
-    
-    checkCudaErrors(cuMemcpyHtoD(devBufferX, &X, sizeof(double)*N));
-
-    return devBufferX;
-  }
-
-  static void **getKernelParams(CUdeviceptr *devBufferX){
-    static void* kernelParams[1];
-    kernelParams[0] = devBufferX;
-    return kernelParams;
-  }
-
-  static void getAndPrintDataFromDevice(CUdeviceptr devBufferX, 
-    int64_t gdimX, int64_t gdimY, int64_t gdimZ,
-    int64_t bdimX, int64_t bdimY, int64_t bdimZ)
-  {
-    int64_t N = gdimX * gdimY * gdimZ * bdimX * bdimY * bdimZ * VALS_PER_THREAD;
-
-    double X[N];
-    cuMemcpyDtoH(&X, devBufferX, sizeof(double)*N);
-
-    printf("     |--- thread idx --|--- block idx ---|--- block size --|--- grid size --|\n");
-    printf("  idx tid_x tid_y tid_z bid_x bid_y bid_z bdm_x bdm_y bdm_z gdm_x gdm_y gdm_z\n");
-
-    for(int i = 0; i < N/VALS_PER_THREAD; i++) {
-      for(int j = 0; j < VALS_PER_THREAD; j++) {
-        printf("%5.0f ", X[i*VALS_PER_THREAD + j]);
-      }
-      printf("\n");
-    }
-  }
-}
+param VALS_PER_THREAD=13;
 
 pragma "codegen for GPU"
 pragma "always resolve function"
-export proc add_nums(dst_ptr: c_ptr(real(64))){
+export proc add_nums(dst_ptr: c_ptr(real(32))){
   var tid_x = __primitive("gpu threadIdx x");
   var tid_y = __primitive("gpu threadIdx y");
   var tid_z = __primitive("gpu threadIdx z");
@@ -77,9 +21,8 @@ export proc add_nums(dst_ptr: c_ptr(real(64))){
   var gridDim_y  = __primitive("gpu gridDim y");
   var gridDim_z  = __primitive("gpu gridDim z");
 
-  const VALS_TO_REPORT = 13;
-
-  var idx = VALS_TO_REPORT *
+  param VALS_TO_REPORT = 13;
+  const idx = VALS_TO_REPORT *
     ((tid_z + blockDim_z * bid_z)  * (gridDim_x * blockDim_x * gridDim_y * blockDim_y) +
      (tid_y + blockDim_y * bid_y)  * (gridDim_x * blockDim_x) +
      (tid_x + blockDim_x * bid_x));
@@ -104,11 +47,35 @@ proc runExample(gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ) {
   writeln(" Grid size: ", gdimX, " x ", gdimY, " x ", gdimZ);
   writeln("Block size: ", bdimX, " x ", bdimY, " x ", bdimZ);
 
-  var deviceBuffer = getDeviceBufferPointer(gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ);
-  __primitive("gpu kernel launch", c"add_nums",
-              gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ,
-              deviceBuffer);
-  getAndPrintDataFromDevice(deviceBuffer, gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ);
+  const N = gdimX * gdimY * gdimZ * bdimX * bdimY * bdimZ * VALS_PER_THREAD;
+
+  var X : [0..<N] real(32);
+
+  var cfg = __primitive("gpu init kernel cfg 3d",
+                        /*fn*/ "add_nums":chpl_c_string,
+                        /*grd_dims*/ gdimX, gdimY, gdimZ,
+                        /*blk_dims*/ bdimX, bdimY, bdimZ,
+                        /*args*/1,
+                        /*pids*/0,
+                        /*reductions*/0);
+
+
+  // 1 is an enum value that says: "pass the address of this to the
+  //   kernel_params, while not offloading anything". I am not entirely sure why
+  //   we need to do that for C pointers
+  __primitive("gpu arg", cfg, c_ptrTo(X), 1);
+
+  __primitive("gpu kernel launch", cfg);
+
+  writef("     |--- thread idx --|--- block idx ---|--- block size --|--- grid size --|\n");
+  writef("  idx tid_x tid_y tid_z bid_x bid_y bid_z bdm_x bdm_y bdm_z gdm_x gdm_y gdm_z\n");
+
+  for i in 0..<N/VALS_PER_THREAD {
+    for j in 0..< VALS_PER_THREAD {
+      writef("%5.0dr ", X[i*VALS_PER_THREAD + j]);
+    }
+    writef("\n");
+  }
 
   writeln();
 }
@@ -130,4 +97,3 @@ proc main() {
     runExample(2,3,4, 2,3,4);
   }
 }
-

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,7 +51,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
   param rank=ranges.size;
   type EC = uint; // type for element counts
   var numElems = 1:EC;
-  for param i in 0..rank-1 do {
+  for param i in 0..rank-1 {
     numElems *= ranges(i).sizeAs(EC);
   }
 
@@ -65,7 +65,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
   var maxDim = -1;
   var maxElems = min(EC);
   // break/continue don't work with param loops (known future)
-  for /* param */ i in 0..rank-1 do {
+  for /* param */ i in 0..rank-1 {
     const curElems = ranges(i).sizeAs(EC);
     if curElems >= numChunks:EC {
       parDim = i;
@@ -161,7 +161,7 @@ proc _computeChunkStartEnd(nElems, nChunks, myCnk): 2*nElems.type {
 //
 // helper function for blocking index ranges
 //
-proc intCeilXDivByY(x, y) return 1 + (x - 1)/y;
+proc intCeilXDivByY(x, y) do return 1 + (x - 1)/y;
 
 proc _computeBlock(numelems, numblocks, blocknum, wayhi,
                   waylo=0:wayhi.type, lo=0:wayhi.type) {
@@ -215,7 +215,7 @@ proc _factor(param rank: int, value) {
 // type, and shape of 'dom' but for which the indices in each
 // dimension start at zero and have unit stride.
 //
-proc computeZeroBasedDomain(dom: domain)
+proc computeZeroBasedDomain(dom: domain) do
   return {(...computeZeroBasedRanges(dom.dims()))};
 
 proc computeZeroBasedRanges(ranges: _tuple) {
@@ -231,6 +231,20 @@ proc computeZeroBasedRanges(ranges: _tuple) {
   else
     return (0:idxType..#ranges(0).sizeAs(idxType),);
 }
+
+// densiResult() calculates the result type of densify() and unDensify()
+private proc densiResult(arg: domain, whole: domain) type
+  do return domain(whole.rank, whole.idxType,
+                   chpl_strideProduct(arg.dim(0), whole.dim(0)));
+
+// returns the type of one dimension
+private proc densiResult(arg: _tuple, whole: _tuple) type
+  do return range(whole(0).idxType, arg(0).bounds,
+       chpl_strideProduct(chpl_strideUnion(arg), chpl_strideUnion(whole)));
+
+private proc densiResult(arg: range(?), whole: range(?)) type
+  do return range(whole.idxType, arg.bounds,
+                  chpl_strideProduct(arg, whole));
 
 //
 // densify(): returns a DSI densification of a
@@ -251,10 +265,9 @@ proc computeZeroBasedRanges(ranges: _tuple) {
 // or with assert() (if false).
 //
 
-// would like 'whole: domain(?IT,?r,?)'
-proc densify(sub: domain, whole: domain, userErrors = true) : domain(whole.rank, whole.idxType, true)
+proc densify(sub: domain, whole: domain, userErrors = true
+             ) : densiResult(sub, whole)
 {
-
   type argtypes = (sub, whole).type;
   _densiCheck(sub.rank == whole.rank, argtypes);
   _densiIdxCheck(sub.idxType, whole.idxType,  argtypes);
@@ -274,7 +287,7 @@ proc densify(subs, wholes, userErrors = true)
 
   param rank = wholes.size;
   type IT = wholes(0).idxType;
-  var result: rank * range(IT, BoundedRangeType.bounded, true);
+  var result: rank * densiResult(subs, wholes);
 
   for param d in 0..rank-1 {
     _densiCheck(isRange(subs(d)), argtypes);
@@ -288,7 +301,8 @@ proc densify(subs, wholes, userErrors = true)
   return result;
 }
 
-proc densify(s: range(?,boundedType=?B), w: range(?IT,?,stridable=true), userErrors=true) : range(IT,B,true)
+proc densify(s: range(?,bounds=?B), w: range(?IT,?), userErrors=true
+             ) : densiResult(s, w)
 {
   _densiEnsureBounded(s);
   _densiIdxCheck(s.idxType, IT, (s,w).type);
@@ -299,7 +313,7 @@ proc densify(s: range(?,boundedType=?B), w: range(?IT,?,stridable=true), userErr
   }
 
   if s.sizeAs(int) == 0 {
-    return 1:IT .. 0:IT;
+    return new (densiResult(s, w))();
 
   } else {
     ensure(w.sizeAs(uint) > 0, "densify(s=", s, ", w=", w, "): w is empty while s is not");
@@ -310,7 +324,7 @@ proc densify(s: range(?,boundedType=?B), w: range(?IT,?,stridable=true), userErr
     if s.sizeAs(int) == 1 {
       // The "several indices" case should produce the same answer. We still
       // include this special (albeit infrequent) case because it's so short.
-      return low .. low;
+      return densiResult(s,w).createWithSingleElement(low);
 
     } else {
       // several indices
@@ -324,12 +338,14 @@ proc densify(s: range(?,boundedType=?B), w: range(?IT,?,stridable=true), userErr
       if stride < 0 then low <=> high;
 
       assert(low <= high, "densify(s=", s, ", w=", w, "): got low (", low, ") larger than high (", high, ")");
-      return low .. high by stride;
+      return ( low .. high by stride ) :densiResult(s,w);
     }
   }
 }
 
-proc densify(sArg: range(?,boundedType=?B,stridable=?S), w: range(?IT,?,stridable=false), userErrors=true) : range(IT,B,S)
+// w.strides==one
+// in this case densiResult(sArg,w) == range(IT,B,S)
+proc densify(sArg: range(?,bounds=?B,strides=?S), w: range(?IT,?,strides=strideKind.one), userErrors=true) : range(IT,B,S)
 {
   _densiEnsureBounded(sArg);
   _densiIdxCheck(sArg.idxType, IT, (sArg,w).type);
@@ -340,22 +356,23 @@ proc densify(sArg: range(?,boundedType=?B,stridable=?S), w: range(?IT,?,stridabl
     else                               assert(cond);
   }
 
-  // todo: account for the case s.isAmbiguous()
+  // todo: account for the case ! s.isAligned()
   ensure(s.isEmpty() ||
          // If idxType is unsigned, caller must ensure that s.lowBound is big enough
          // so it can be subtracted from.
-         w.lowBound <= if isIntType(IT) then s.alignedLow else s.lowBound);
-  ensure(s.isEmpty() || !w.hasHighBound() || s.alignedHigh <= w.highBound);
+         w.lowBound <= if isIntType(IT) then s.low else s.lowBound);
+  ensure(s.isEmpty() || !w.hasHighBound() || s.high <= w.highBound);
 
   // gotta have a special case, e.g.: s=1..0 w=5..6 IT=uint
   if isUintType(IT) && s.isEmpty() then
-    return 1:IT..0:IT;
+    return new range(IT,B,S);
 
   return (s - w.lowBound): range(IT,B,S);
 }
 
-proc _densiEnsureBounded(arg) {
-  if !isBoundedRange(arg) then compilerError("densify() currently requires that sub-ranges be bounded", 2);
+proc _densiEnsureBounded(arg: range(?)) {
+  if arg.bounds != boundKind.both then
+    compilerError("densify() currently requires that sub-ranges be bounded", 2);
 }
 
 // not sure what kind of relationship we want to enforce
@@ -375,7 +392,8 @@ proc _densiCheck(param cond, type argtypes, param errlevel = 2) {
 // at compile time that they won't be.
 //
 
-proc unDensify(dense: domain, whole: domain, userErrors = true) : domain(whole.rank, whole.idxType, true)
+proc unDensify(dense: domain, whole: domain, userErrors = true
+               ) : densiResult(dense, whole)
 {
   type argtypes = (dense, whole).type;
   _undensCheck(dense.rank == whole.rank, argtypes);
@@ -394,7 +412,7 @@ proc unDensify(denses, wholes, userErrors = true)
 
   param rank = wholes.size;
   type IT = wholes(0).idxType;
-  var result: rank * range(IT, BoundedRangeType.bounded, true);
+  var result: rank * densiResult(denses, wholes);
 
   for param d in 0..rank-1 {
     _undensCheck(isRange(denses(d)), argtypes);
@@ -407,15 +425,16 @@ proc unDensify(denses, wholes, userErrors = true)
   return result;
 }
 
-proc unDensify(dense: range(?dIT,boundedType=?B), whole: range(?IT,?,stridable=true)) : range(IT,B,true)
+proc unDensify(dense: range(?dIT,bounds=?B), whole: range(?IT,?)
+               ) : densiResult(dense, whole)
 {
   _undensEnsureBounded(dense);
-  if whole.boundedType == BoundedRangeType.boundedNone then
+  if whole.bounds == boundKind.neither then
     compilerError("unDensify(): the 'whole' argument must have at least one bound");
 
   // ensure we can call dense.first below
   if dense.sizeAs(int) == 0 then
-    return 1:IT .. 0:IT;
+    return new (densiResult(dense, whole))();
 
   if ! whole.hasFirst() then
     halt("unDensify() is invoked with the 'whole' range that has no first index");
@@ -429,10 +448,11 @@ proc unDensify(dense: range(?dIT,boundedType=?B), whole: range(?IT,?,stridable=t
   if stride < 0 then low <=> high;
 
   assert(low <= high, "unDensify(dense=", dense, ", whole=", whole, "): got low (", low, ") larger than high (", high, ")");
-  return low .. high by stride;
+  return ( low .. high by stride ) :densiResult(dense, whole);
 }
 
-proc unDensify(dense: range(?,boundedType=?B,stridable=?S), whole: range(?IT,?,stridable=false)) : range(IT,B,S)
+// whole.strides==one
+proc unDensify(dense: range(?,bounds=?B,strides=?S), whole: range(?IT,?,strides=strideKind.one)) : range(IT,B,S)
 {
   if !whole.hasLowBound() then
     compilerError("unDensify(): the 'whole' argument, when not stridable, must have a low bound");
@@ -440,12 +460,55 @@ proc unDensify(dense: range(?,boundedType=?B,stridable=?S), whole: range(?IT,?,s
   return (dense + whole.lowBound): range(IT,B,S);
 }
 
-proc _undensEnsureBounded(arg) {
-  if !isBoundedRange(arg) then compilerError("unDensify() currently requires that the densified ranges be bounded", 2);
+proc _undensEnsureBounded(arg: range(?)) {
+  if arg.bounds != boundKind.both then
+    compilerError("unDensify() currently requires that the densified ranges be bounded", 2);
 }
 
 proc _undensCheck(param cond, type argtypes, param errlevel = 2) {
   if !cond then compilerError("unDensify() is defined only on matching domains, ranges, and quasi-homogeneous tuples of ranges, but is invoked on ", argtypes:string, errlevel);
+}
+
+
+//
+// allStridesArePositive avoids run-time checks as much as possible
+// args can be: array, domain, or their DSI classes; must be rectangular
+//
+// todo: when we switch from range.stridable to an enum,
+// return param false when 1+ args have compile-time negative stride(s)
+//
+
+proc chpl_allStridesArePositive(arg1, arg2, arg3, arg4) param
+  where asapP1(arg1) && asapP1(arg2) && asapP1(arg3) && asapP1(arg4)
+  do return true;
+
+proc chpl_allStridesArePositive(arg1, arg2, arg3, arg4)
+  do return asap1(arg1) && asap1(arg2) && asap1(arg3) && asap1(arg4);
+
+// helpers
+
+// asap1 = All Strides Are Positive - 1 arg
+// returns a param when possible
+private proc asap1(arg) param where asapP1(arg) {
+  return true;
+}
+private proc asap1(arg) {
+  if isSubtype(arg.type, _domain) then return asapTuple(arg.dims());
+  if isSubtype(arg.type, _array)  then return asapTuple(arg.dims());
+  if isSubtype(arg.type, BaseDom) then return asapTuple(arg.dsiDims());
+  if isSubtype(arg.type, BaseArr) then return asapTuple(arg.dom.dsiDims());
+  compilerError("asap1: unsupported argument type ", arg.type:string);
+}
+
+// asapP1 = All Strides Are Positive - Param - 1 arg
+// returns true if all strides are known to be positive at compile time
+private proc asapP1(arg) param {
+  return arg.strides.isPositive();
+}
+
+private proc asapTuple(dims: _tuple) {
+  for d in dims do if d.hasNegativeStride() then return false;
+  return true;
 }
 
 
@@ -490,11 +553,11 @@ proc setupTargetLocRanges(param rank, specifiedLocArr) {
   return ranges;
 }
 
-proc createWholeDomainForInds(param rank, type idxType, param stridable, inds) {
+proc createWholeDomainForInds(param rank, type idxType, param strides, inds) {
   if isDomain(inds) {
     return inds;
   } else {
-    var result: domain(rank, idxType, stridable);
+    var result: domain(rank, idxType, strides);
     result.setIndices(inds);
     return result;
   }
@@ -568,9 +631,9 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcDom : domain, targetDom : dom
   // If the given slice is stridable but its context is not, then the result
   // will need to be stridable as well. For example:
   // {1..20 by 4} in {1..20} to {101..120} = {101..120 by 4}
-  param needsStridable = targetDom.stridable || srcSlice.stridable;
+  param strides = chpl_strideUnion(targetDom, srcSlice);
   var rngs = targetDom.dims() :
-             (targetDom.rank*range(targetDom.idxType,stridable=needsStridable));
+             (targetDom.rank*range(targetDom.idxType,strides=strides));
 
   for i in 0..inferredRank-1 {
     const SD    = SrcActives(i);
@@ -618,4 +681,96 @@ proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
     result(i) = ar.orderToIndex(br.indexOrder(b(i)));
   }
   return result;
+}
+
+record chpl_PrivatizedDistHelper : writeSerializable {
+//  type instanceType;
+  var _pid:int;  // only used when privatized
+  pragma "owned"
+  var _instance;
+  var _unowned:bool; // 'true' for the result of 'getDistribution',
+                     // in which case, the record destructor should
+                     // not attempt to delete the _instance.
+
+  inline proc _value {
+    if _isPrivatized(_instance) {
+      return chpl_getPrivatizedCopy(_instance.type, _pid);
+    } else {
+      return _instance;
+    }
+  }
+
+  forwarding _value except targetLocales;
+
+  inline proc _do_destroy() {
+    if ! _unowned && ! _instance.singleton() {
+      on _instance {
+        // Count the number of domains that refer to this distribution.
+        // and mark the distribution to be freed when that number reaches 0.
+        // If the number is 0, .remove() returns the distribution
+        // that should be freed.
+        var distToFree = _instance.remove();
+        if distToFree != nil {
+          _delete_dist(distToFree!, _isPrivatized(_instance));
+        }
+      }
+    }
+  }
+
+  proc deinit() {
+    _do_destroy();
+  }
+
+  proc newRectangularDom(param rank: int, type idxType,
+                         param strides: strideKind,
+                         ranges: rank*range(idxType, boundKind.both, strides),
+                         definedConst: bool = false) {
+    var x = _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
+
+    x.definedConst = definedConst;
+
+    if x.linksDistribution() {
+      _value.add_dom(x);
+    }
+    return x;
+  }
+
+  proc newRectangularDom(param rank: int, type idxType,
+                         param strides: strideKind,
+                         definedConst: bool = false) {
+    var ranges: rank*range(idxType, boundKind.both, strides);
+    return newRectangularDom(rank, idxType, strides, ranges, definedConst);
+  }
+
+  proc newAssociativeDom(type idxType, param parSafe: bool=true) {
+    var x = _value.dsiNewAssociativeDom(idxType, parSafe);
+    if x.linksDistribution() {
+      _value.add_dom(x);
+    }
+    return x;
+  }
+
+  proc newSparseDom(param rank: int, type idxType, dom: domain) {
+    var x = _value.dsiNewSparseDom(rank, idxType, dom);
+    if x.linksDistribution() {
+      _value.add_dom(x);
+    }
+    return x;
+  }
+
+  proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
+
+  @chpldoc.nodoc
+  proc serialize(writer, ref serializer) throws {
+    writer.write(_value);
+  }
+
+  proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
+  /*
+    Return an array of locales over which this distribution was declared.
+  */
+  proc targetLocales() const ref {
+    return _value.dsiTargetLocales();
+  }
 }

@@ -1,0 +1,12 @@
+BadFormatError: bad format: no match (in readThrough(regex(bytes)) with path "maxSizeBytesInput.txt" offset 0)
+123456||||||ABCDEFG
+
+BadFormatError: bad format: no match (in readThrough(regex(bytes)) with path "maxSizeBytesInput.txt" offset 0)
+123456||||||ABCDEFG
+
+123456||
+123456|||
+123456||||||
+123456
+123456
+123456

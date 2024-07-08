@@ -1,0 +1,1 @@
+error in dotTypeOnType.chpl:4: can't apply '.type' to a type ('int(64)')

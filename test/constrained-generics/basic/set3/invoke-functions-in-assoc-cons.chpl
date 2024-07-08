@@ -26,6 +26,6 @@ int implements i1;
 proc p1(arg1: int) { writeln("p1.int ", arg1); }
 
 real implements i3;
-proc real.a3 type return int;
+proc real.a3 type do return int;
 
 icFun(23.32, 45);

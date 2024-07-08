@@ -1,1 +1,8 @@
-CHPL_HOST_PLATFORM==darwin
+#!/usr/bin/env python3
+
+import shutil
+import os
+
+missing_gdb = shutil.which("gdb") is None
+no_driver = '--no-compiler-driver' in os.getenv('COMPOPTS');
+print(missing_gdb or no_driver)

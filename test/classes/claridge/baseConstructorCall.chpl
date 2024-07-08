@@ -21,6 +21,7 @@ class DerivedClass: BaseClass {
   }
 }
 
-var D = new borrowed DerivedClass(1,2);
+var ownD = new owned DerivedClass(1,2);
+var D = ownD.borrow();
 
 writeln(D);

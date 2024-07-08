@@ -23,7 +23,7 @@ proc main() {
   var results: [1..maxDepth, 1..2] int;
   const longLivedTree : owned Tree = bottomUpTree(maxDepth);
 
-  forall depth in dynamic(minDepth..maxDepth by 2, 1) {
+  forall depth in dynamic(minDepth..maxDepth by 2, 1) with (ref results) {
     const iterations: int = 1 << (maxDepth - depth + minDepth);
     var check: int = 0;
 			

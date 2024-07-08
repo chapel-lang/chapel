@@ -1,12 +1,10 @@
 use IO;
 
-class mything {
+class mything : writeSerializable {
   var x:int;
   var y:int;
-  proc writeThis(w: Writer) throws {
-    w & x;
-    w & new ioLiteral(" ");
-    w & y;
+  override proc serialize(writer, ref serializer) throws {
+    writer.writeln(x, " ", y);
   }
   // no readThis. Expect a compile-time error
 }
@@ -16,7 +14,7 @@ class mything {
 
   writeln("Writing ", a);
 
-  var f = openmem();
+  var f = openMemFile();
   var w = f.writer();
 
   w.write(a);
@@ -33,4 +31,3 @@ class mything {
 
   assert(a.x == b.x);
 }
-

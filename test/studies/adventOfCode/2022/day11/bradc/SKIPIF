@@ -1,0 +1,3 @@
+# 32-bit platforms don't use native qthread 'sync' variables and are
+# painfully slow for this benchmark's full problem size, so skip them.
+CHPL_TARGET_PLATFORM <= 32

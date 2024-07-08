@@ -8,6 +8,6 @@ record R {
 proc f(type t, type u = t.tt) {
   writeln("t=", t:string, " u=", u:string);
 }
-f(R);
+f(R(?));
 
 // see also test/classes/bradc/paramInClass/weirdParamInit4

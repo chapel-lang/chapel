@@ -16,6 +16,8 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 @ Section: Known Problems @
 @ Section: Core API @
 @ Section: Extended API @
+@ Section: Progress Threads Support @
+@ Section: GEX_FLAG_IMMEDIATE Support @
 @ Section: Graceful exits @
 @ Section: References @
 
@@ -39,19 +41,19 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   necessary support (primarily use of "rdmacm" for connection setup) are
   encouraged to contact gasnet-devel@lbl.gov.
 
-  While ibv-conduit may work on Intel Omni-Path (OPA) HCAs, we instead
-  recommend use of ofi-conduit on such systems.
-
   Nearly all InfiniBand cards (known as Host Channel Adapters, or HCAs)
   have support for Open Fabrics Verbs, available from www.openfabrics.org
   or from the HCA or OS vendor.  We have tested numerous InfiniBand HCAs
-  from Mellanox, InfiniPath HCAs from Pathscale/QLogic, and TrueScale HCAs
-  from Intel.
+  from NVIDIA (formerly Mellanox).
+  HCAs from other vendors have not been tested or have failed validation.
 
-  In addition to the Open Fabrics Verbs, vendor-specific APIs also exist
-  and some have GASNet conduits:
-   + ofi-conduit for the PSM (version 1) API on Intel TrueScale HCAs
-   + ofi-conduit for the PSM2 API on Intel Omni-Path HCAs
+  While ibv-conduit may work on Omni-Path (OPA) HCAs from Intel or Cornelis
+  Networks, we currently recommend use of ofi-conduit with the psm2 provider
+  on such systems.
+
+  While ibv-conduit may work on InfiniPath HCAs from PathScale/QLogic and
+  True Scale HCAs from Intel, we instead recommend use of mpi-conduit on such
+  systems.
 
   The performance of ibv-conduit relative to others on the same hardware
   will depend on your applications' communications patterns, the number of
@@ -109,10 +111,23 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   can disable this thread by configuring GASNet with the flag
   '--disable-ibv-rcv-thread'.  It is recommended that one NOT
   use this option, but instead disable the thread at runtime
-  (see Runtime Configuration section).  If the extra thread will
-  never be needed, disabling it at build time will yield a small
-  reduction in latencies by allowing some locking operations to
-  compile away.
+  (see Runtime Configuration section).
+  See also documentation on 'GASNET_RCV_THREAD*' environment variables.
+
+
+  Ibv-conduit can provide optional asynchronous processing of RMA
+  operation completions on initiators by spawning an extra thread that remains
+  blocked pending completion of outstanding RMA ops.  One can disable this
+  thread by configuring GASNet with the flag '--disable-ibv-snd-thread'.  It is
+  recommended that one NOT use this option, but instead disable the thread at
+  runtime (see Runtime Configuration section).
+  See also documentation on 'GASNET_SND_THREAD*' environment variables.
+
+  In a SEQ build of ibv-conduit, enabling either or both the receive or send
+  progress thread introduces some overheads for thread serialization.  If
+  neither of the extra thread will be needed, one may disable *both* at build
+  time to yield a small reduction in latencies by allowing these thread
+  serialization operations to compile away in a SEQ build.
 
   By default, each ibv-conduit process in a GASNet job will open at most
   one Host Channel Adapter (HCA).  To allow a process to utilize more
@@ -149,7 +164,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   time using '--disable-ibv-conn-thread'.
 
   By default, ibv-conduit uses 64KB buffers for AM Mediums, to yield
-  gasnetc_AM_LUB{Request,Reply}Medium() values tens of bytes smaller due
+  gex_AM_LUB{Request,Reply}Medium() values tens of bytes smaller due
   to message headers.  This default can be overridden by passing
   '--with-ibv-max-medium=N' for 'N' equal to any power-of-two from 1024 to
   262144, inclusive.
@@ -237,13 +252,6 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   of environment variables.
   See GASNet's top-level README for documentation.
 
-  + GASNET_BARRIER
-    In addition to the barrier algorithms in the top-level README, there
-    is an implementation specific to IBV:
-    IBDISSEM - like RDMADISSEM, but implemented using lower-level
-               operations for lower latency.
-    Currently IBDISSEM is the default on IBV.
-
   Spawner settings:
   ----------------
   + GASNET_IBV_SPAWNER
@@ -262,7 +270,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   wish to set environment variables to identify the correct HCAs and Ports.
   Or, you may wish to use non-default values for configuring connections.
   These parameters are permitted to take different values on each process.
-  However, please see bug 4314 if process-specifc values are needed.
+  However, please see bug 4314 if process-specific values are needed.
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4314
 
   See "Build-time Configuration", above, for information on enabling
@@ -322,27 +330,13 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   + GASNET_IBV_PORTS_*
     The environment variable 'GASNET_IBV_PORTS', described immediately above,
     provides only a single setting and unless one uses some external means to
-    give per-process settings this cannot provide per-process control.  This
+    give per-process settings, this cannot provide per-process control.  This
     can make it difficult to get the best performance from multi-rail systems
     with multiple processes per node and architectural locality properties that
     affect PCI/adapter access efficiency.
-    However, if 'hwloc' is detected at configure time, then it is possible to
-    give ibv-conduit values for 'GASNET_IBV_PORTS' which will vary per-process
-    based on cpu-binding and machine topology information as follows.
-    1. The variable 'GASNET_IBV_PORTS_TYPE' names an object type using hwloc's
-       terminology, with the default being "Socket" (aka "Package").
-       If the value is "None" (case-insensitive) then the logic below is
-       disabled and the value of 'GASNET_IBV_PORTS' is used by all processes.
-    2. GASNet queries the set of objects of the given type which intersect the
-       process's cpuset, to construct a variable name 'GASNET_IBV_PORTS_[suff]'
-       where '[suff]' is an underscore-delimited ordered list of logical
-       object ids.  For example, with the default object type, a process bound
-       only to cores in the first socket would have a variable name of
-       'GASNET_IBV_PORTS_0'.  Meanwhile, if the cpuset spans sockets 0 and 1
-       (such as for an unbound process on a 2-socket system) then the variable
-       'GASNET_IBV_PORTS_0_1' is used.
-    3. If the environment variable determined in step 2 is set, then it is
-       used.  Otherwise the un-suffixed 'GASNET_IBV_PORTS' is used.
+    See "topology-aware environment variable families" in GASNet's top-level
+    README for a description of how 'GASNET_IBV_PORTS_TYPE' can be used to
+    establish process-specific values for 'GASNET_IBV_PORTS'.
     As a concrete example, on OLCF's Summit there are four HCAs in software,
     which represent connections from two I/O buses (one per socket) to two
     distinct InfiniBand rails.  Use of the further I/O bus introduces a latency
@@ -379,7 +373,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   + GASNET_IBV_PORTS_VERBOSE
     This integer setting controls the detail of any warnings printed when there
     are non-fatal issues related to the selection of HCAs and ports to be used.
-    A value of 0 supresses the warnings entirely.
+    A value of 0 suppresses the warnings entirely.
     A value of 1 (the default) or higher will warn if one or more HCAs are
     excluded from consideration other than due to failure to match
     GASNET_IBV_PORTS (or the numerically suffixed variants).  In particular, a
@@ -392,7 +386,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 
   + GASNET_IBV_LIST_PORTS
     The value is a boolean: "0" to disable or "1" to enable the reporting of
-    all detectable HCAs and and the status of their ports.
+    all detectable HCAs and the status of their ports.
     See 'GASNET_IBV_LIST_PORTS_NODES' for how to limit which nodes report.
     The default is "0" (no report).
 
@@ -586,7 +580,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 
   + GASNET_RCV_THREAD
     This gives a boolean: "0" to disable, or "1" to enable, the use of an
-    extra thread per-HCA port to block waiting for an Active Message Request
+    extra thread per-HCA to block waiting for an Active Message Request
     or Reply to arrive.  This allows ibv-conduit to remain attentive
     to incoming AM traffic even while the application is not making any
     calls to GASNet.  The down side is that when this thread wakes it
@@ -597,8 +591,11 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     thread can REDUCE running time by relieving the application thread
     of the burden of servicing incoming AM Requests and Replies.
     Note that if '--disable-ibv-rcv-thread' was specified at build time
-    then the extra thread is unavailable and this environment variable
-    is ignored.
+    then the extra thread is unavailable and any use of this environment
+    variable to enable the thread will result in a warning, which can
+    be suppressed by an end-user by setting GASNET_QUIET=1, or can be
+    programmatically avoided in client code by conditioning a setenv()
+    call on "#if GASNET_RCV_THREAD".
     Currently the default is disabled (0), but this is subject to change.
     NOTE: In releases prior to GASNet 1.18.2 the AM receive thread was
     unavailable for ibv-conduit, but that is no longer the case.
@@ -609,10 +606,23 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     This may be used to limit interference between the AM receive thread
     and the main application thread(s), while providing some network
     attentiveness when the application is not making GASNet calls.
-    A non-zero value gives the maximum rate in wake-ups per second.
+    A non-zero value gives the desired maximum rate in wake-ups per second.
+    However, see "Bug 4691" in the Known Problems section for information
+    on when this limit may not be well enforced.
     The default value is 0, which means no limit is imposed.
     NOTE: A future release may implement GASNET_RCV_THREAD_LOAD to
     impose a limit on the *fraction* of time the thread spends awake.
+
+  + GASNET_RCV_THREAD_IDLE
+    If GASNET_RCV_THREAD is enabled, then this setting can be used to
+    ensure that the AM receive thread will not sleep until some minimum
+    time interval (in nanoseconds) has passed without processing any
+    new events from the receive completion queue.
+    If the value is zero (the default), then the thread will sleep as soon
+    as a poll of the completion queue fails to return a new event.  If this
+    setting has a positive value, then the thread will continue attempting
+    to poll the completion queue until at least the specified interval (in
+    nanoseconds) has passed with no event arrivals on the completion queue.
 
   + GASNET_RCV_THREAD_POLL_MODE
     If GASNET_RCV_THREAD is enabled, then this setting determines if/how the
@@ -643,6 +653,37 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     time via `--disable-ibv-serialize-poll-cq`, then this setting is ignored
     and the behavior is equivalent to "unserialized".
 
+  + GASNET_SND_THREAD
+    This gives a boolean: "0" to disable, or "1" to enable, the use of an extra
+    thread per-HCA to block waiting for send completion events.  This
+    allows ibv-conduit to progress RMA and some AM send operations even when no
+    application threads are actively making calls into the GASNet library.  The
+    down side is that when this thread wakes it must contend for CPU resources
+    and for locks.  Therefore, for an application that is calling GASNet
+    sufficiently often, use of this thread may INCREASE running time.  However,
+    on an SMP where an otherwise idle processor is available the use of this
+    thread can REDUCE running time by relieving the application threads of the
+    burden of servicing completion events.
+    Note that if '--disable-ibv-snd-thread' was specified at build time
+    then the extra thread is unavailable and any use of this environment
+    variable to enable the thread will result in a warning, which can
+    be suppressed by an end-user by setting GASNET_QUIET=1, or can be
+    programmatically avoided in client code by conditioning a setenv()
+    call on "#if GASNET_SND_THREAD".
+    Currently the default is disabled (0), but this is subject to change.
+
+  + GASNET_SND_THREAD_RATE
+    Analogous to GASNET_RCV_THREAD_RATE, but for the thread enabled by
+    `GASNET_SND_THREAD`.
+
+  + GASNET_SND_THREAD_IDLE
+    Analogous to GASNET_RCV_THREAD_IDLE, but for the thread enabled by
+    `GASNET_SND_THREAD`.
+
+  + GASNET_SND_THREAD_POLL_MODE
+    Analogous to GASNET_RCV_THREAD_POLL_MODE, but for the thread enabled by
+    `GASNET_SND_THREAD`.
+
   Pinnable memory probe configuration:
   -----------------------------------
   In normal operation of ibv-conduit it is necessary to know how much memory
@@ -658,6 +699,13 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   limit on the virtual memory size of a process and/or may terminate the
   process with the largest size when memory is exhausted.  Use of the
   following parameters allows one to bound, or to eliminate, this probe.
+
+  + GASNET_MAXIMIZE_MEMLOCK
+    This gives a boolean: "1" to enable or "0" to disable an attempt to raise
+    the process's "RLIMIT_MEMLOCK" value to the maximum permitted value.
+    This may be necessary to ensure sufficient memory can be pinned for RMA.
+    If this attempt fails, it will do so without any warning or error.
+    The default is "1".
 
   + GASNET_PHYSMEM_MAX
     If set, this parameter is used to determine the maximum amount of memory
@@ -829,7 +877,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   + GASNET_ODP_VERBOSE
     This integer setting controls the detail of the warning printed when ODP
     support is enabled but is not present on one or more HCAs in the job.
-    A value of 0 supresses the warning entirely.
+    A value of 0 suppresses the warning entirely.
     A value of 1 will report a count of processes lacking support.
     Values of 2 or higher give increasing levels of detail concerning the
     missing support.
@@ -1138,16 +1186,16 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 
 @ Section: On-Demand Paging (ODP) Support @
 
-   Recent Mellanox HCAs (ConnectX-4 and newer) support a feature known as
-   On-Demand Paging (ODP).  Where this support is available, ibv-conduit
+   Recent NVIDIA/Mellanox HCAs (ConnectX-4 and newer) support a feature known
+   as On-Demand Paging (ODP).  Where this support is available, ibv-conduit
    can use it to reduce resource pressure on physical memory.  By default,
    ibv-conduit will attempt to warn at runtime if this support does not
    appear to be available despite having either the required software or
-   hardware.  If you are using Mellanox Connect4-X HCAs or newer and
+   hardware.  If you are using NVIDIA/Mellanox Connect4-X HCAs or newer and
    ibv-conduit warns about missing ODP support, we recommend that you
-   install the latest "Mellenox OFED" (aka MLNX_OFED) distribution,
-   available for download from Mellanox.  Mellanox provides documentation
-   on installing the software and upgrading the HCA firmware (if needed).
+   install the latest "MLNX_OFED" distribution, available for download from
+   NVIDIA.  NVIDIA provides documentation on installing the software and
+   upgrading the HCA firmware (if needed).
 
    At configure time, ibv-conduit does not know the hardware, firmware, or
    driver versions on the compute nodes and cannot, in general, assume the
@@ -1374,7 +1422,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   regarding the recommended work-around(s).
 
 + Bug 3816
-  When using Mellanox On-Demand Paging (ODP), it is possible that abnormal exits
+  When using On-Demand Paging (ODP), it is possible that abnormal exits
   (SIGKILL or _exit(), in particular) may lead to leaking memory at the system
   level, requiring a reboot to reclaim the lost memory.  In extreme cases, the
   cumulative effect of many leaks could eventually lead to the Linux
@@ -1389,11 +1437,16 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   regarding the recommended work-around(s).
 
 + Bug 3838
-  When using Mellanox On-Demand Paging (ODP), it has been observed that certain
+  When using On-Demand Paging (ODP), it has been observed that certain
   patterns of many small RMA operations (as seen in GASNet's testvis) may lead
-  to communications "locking up" such that RMA operations issued do not complete
-  and eventually new RMA operations cannot be initiated.
-  If you use ODP and experience hangs from an application with many fine-grained
+  either to crashes or to communications "locking up" such that RMA operations
+  issued do not complete and eventually new RMA operations cannot be initiated.
+  Crashes typically produce a message containing the text
+      snd status=2(local QP operation error)
+  and
+      aborting on reap of failed send
+  though other messages may be possible.
+  If you use ODP and experience crashes or hangs from an application with many
   RMA operations, then you should retry with ODP disabled (see On-Demand Paging
   (ODP) Support section).
   The most up-to-date information on this bug is maintained at:
@@ -1420,12 +1473,53 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   Those bug reports provide more details, and will provide the most current
   information regarding any recommended work-around(s).
 
++ Bugs 4105
+  On systems with InfiniBand headers provided by recent versions of the
+  rdma-core-devel package, the use of `__builtin_constant_p()` may result
+  in a failure to link ibv-conduit applications.  This is believe to only
+  impact older PGI compilers, with none released in 2020 or later known to
+  have this problem.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4105
+
 + Bug 4314
   While this file documents several environment variables as permitting
   different values on different processes, it is not always possible to
   achieve such a scenario.
   The most up-to-date information on this issue is maintained at:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4314
+
++ Bug 4658
+  One may experience RMA failures when ODP is enabled and the application
+  executable is located on a GPFS filesystem.  In some cases the problem
+  manifests as an application hang, and in others as failure with a message
+  like the following, where "local protection error" and "ZEROCP" are consistent
+  portions of the details:
+
+  *** ERROR (proc 1): snd status=4(local protection error) vendor_err=0x36 qp_num=0x63ec hca=mlx5_0 op=GET_ZEROCP dest=(proc:0, qpi:0)
+  *** FATAL ERROR (proc 1): in gasnetc_snd_reap() at [redcted]/ibv-conduit/gasnet_core_sndrcv.c:1029: aborting on reap of failed send
+  *** NOTICE (proc 1): Before reporting bugs, run with GASNET_BACKTRACE=1 in the environment to generate a backtrace.
+
+  In a debug build, the first line will include additional operation
+  metadata such as in the following:
+
+  *** ERROR (proc 1): snd status=4(local protection error) vendor_err=0x36 qp_num=0x63ec hca=mlx5_0 op=GET_ZEROCP dest=(proc:0, qpi:0) flags=0 loc_addr=0x00000000 00ac1f98 rem_addr=0x00007fd9 17e353c0 length=4
+
+  While the example outputs above are for a Get operation, Puts are also
+  impacted.
+  Currently, workarounds include
+  1. Disabling ODP via `GASNET_USE_ODP=0` in the environment at runtime, or
+     by passing `--disable-ibv-odp` to `configure`
+  2. Relocating the executable to a non-GPFS directory
+  The most up-to-date information on this issue is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4658
+
++ Bug 4691
+  Currently, the logic for GASNET_RCV_THREAD_RATE and GASNET_SND_THREAD_RATE
+  may fail to limit the wake-ups per second under certain conditions, including
+  under heavy load when application thread(s) are also actively polling.
+  The most up-to-date information on this issue is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4691
 
 + See the GASNet Bugzilla server for details on other known bugs:
   https://gasnet-bugs.lbl.gov/
@@ -1590,6 +1684,70 @@ Notes for myself for extended API:
   followed by a PUT, for small enough sizes.  This is not currently
   implemented.
   
+@ Section: Progress Threads Support
+
+As documented with the `GASNET_RCV_THREAD*` and `GASNET_SND_THREAD*` family of
+environment variables, ibv-conduit provides receive and send progress threads,
+with each process optionally having one of each for each HCAs used.
+
+Ibv-conduit supports use of `gex_Client_Init()` flag `GEX_FLAG_DEFER_THREADS` to
+defer starting these threads.  See `docs/GASNet-EX.txt` for documentation on
+`gex_System_QueryProgressThreads()` for information on how the client should
+start the progress threads when using this flag.
+
+This support includes two implementation-defined behaviors:
+
++ It is permitted for the process to exit (normally or abnormally) prior to the
+  client starting all deferred progress threads.  This relaxes the "undefined
+  behavior" in the conduit-independent documentation.
+
++ The names in the `gex_device_list` field of the structure describing each
+  progress thread take the same form as environment variables such as
+  `GASNET_IBV_PORTS`, except that they will not include any optional port number
+  component.  Examples include "mlx5_0" and "mlx6_2".  These are notably the
+  same identifiers used by hwloc to name "OpenFabrics" devices.
+
+@ Section: GEX_FLAG_IMMEDIATE Support
+
+The following summarizes the current state of support for GEX_FLAG_IMMEDIATE.
+Last reviewed against 2022.3.0
+
+                    |   SEGMENT   |  SEGMENT   |  SEGMENT   |
+         OPERATION  |    FAST     |   LARGE    | EVERYTHING |
+        ------------+-------------+------------+------------+
+        FPAM Short  |      Y      |     Y      |     Y      |
+        FPAM Medium |      Y      |     Y      |     Y      |
+        FPAM Long   |   Note 1    |   Note 1   |   Note 1   |
+                    |             |            |            |
+        NPAM Medium |      Y      |     Y      |     Y      |
+        NPAM Long   |   Note 2    |     N      |     N      |
+                    |             |            |            |
+        RMA Put     |      N      |     N      |     N      |
+        RMA Get     |      N      |     N      |     N      |
+        ------------+-------------+------------+------------+
+
+        Y = GEX_FLAG_IMMEDIATE is fully implemented
+        N = GEX_FLAG_IMMEDIATE is ignored
+        FPAM = Fixed-payload AM
+        NPAM = Negotiated-payload AM
+
+For the notes which follow, define a "packed Long" as an AM Long having a
+payload size of GASNET_PACKEDLONG_LIMIT or less.
+
+Note 1: FPAM Long
+  + For a packed Long the IMMEDIATE flag is fully implemented.
+    For the LARGE and EVERYTHING segment modes, this notably includes all Reply
+    calls because in those cases the payload is always packed.
+  + Otherwise, the IMMEDIATE flag is ignored.
+
+Note 2: NPAM Long / FAST
+  + For a packed Long the IMMEDIATE flag is fully implemented.
+    This notably includes all calls with a GASNet-allocated buffer because in
+    this case the payload is always packed.
+  + Otherwise, the IMMEDIATE flag is *partially* implemented.  The logic in
+    Prepare is sensitive to AM flow-control credits and buffer allocation for
+    the AM header, but ignores the possibility of a stall in injection of the
+    payload transfer at Commit time.
 
 @ Section: Graceful exits @
 

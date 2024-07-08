@@ -26,7 +26,7 @@ implements IFC(R1(int)); // ok
 
 record R2 {
   var xx;
-  proc AT type      // AT is implemented with a type method
+  proc AT type do      // AT is implemented with a type method
     return xx.type;
   proc reqFun(arg: AT) {
     writeln("R2(", xx, ").reqFun(", arg, ": ", AT:string, ")");

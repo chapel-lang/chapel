@@ -45,7 +45,7 @@ proc stride(N) {
 
 /* Collect timings for sort functions */
 proc gatherTimings(const ref A) {
-  var t = new Timer();
+  var t = new stopwatch();
   print('Time taken to sort ', 2**M, ' bytes (', A.size, ' ', T:string, 's)');
   if sorts.find('q') != -1
   {

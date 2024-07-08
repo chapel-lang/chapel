@@ -1,5 +1,3 @@
-extern proc chpl_task_yield();
-
 /*  - The Chameneos game is as follows:
       A population of n chameneos gathers at a common meeting place, where
       m meetings will take place (n and m may be distinct).  At any time, only
@@ -32,7 +30,7 @@ class MeetingPlace {
   /* constructor for MeetingPlace, sets the
      number of meetings to take place */
   proc init() {
-    this.complete();
+    init this;
     state.write(numMeetings << MEET_COUNT_SHIFT);
   }
 
@@ -81,6 +79,16 @@ class Chameneos {
   var meetings : int;
   var meetingsWithSelf : int;
   var meetingCompleted : atomic bool;
+
+  proc init(id: int = 0,
+            color: Color = Color.blue,
+            meetings: int = 0,
+            meetingsWithSelf: int = 0) {
+    this.id = id;
+    this.color = color;
+    this.meetings = meetings;
+    this.meetingsWithSelf = meetingsWithSelf;
+  }
 
   /* start tells a Chameneos to go to a given MeetingPlace, where it may meet
      with another Chameneos.  If it does, it will get the other's color and
@@ -131,7 +139,7 @@ class Chameneos {
     peer.meetings += 1;
     peer.meetingsWithSelf += is_same;
     peer.meetingCompleted.write(true, memoryOrder.release);
-    
+
     color = newColor;
     meetings += 1;
     meetingsWithSelf += is_same;
@@ -148,7 +156,7 @@ class Chameneos {
       }
       if !completed {
         // not ready, yield the task
-        chpl_task_yield();
+        currentTask.yieldExecution();
       } else {
         // done
         break;

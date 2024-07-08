@@ -6,7 +6,7 @@ class R {
 }
 
 
-assert(numFields(R) == 2);
+assert(getNumFields(R) == 2);
 assert(getFieldName(R, 0) == "x");
 
 assert(getFieldIndex(R, "x") == 0);
@@ -40,7 +40,8 @@ assert(hasField(R, "z") == false);
 
 
 {
-  var r = new borrowed R(10,20);
+  var ownR = new owned R(10,20);
+  var r = ownR.borrow();
 
   assert(getField(r, 0) == 10);
   assert(getField(r, 1) == 20);

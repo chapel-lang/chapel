@@ -130,7 +130,7 @@ class CyclicZipOpt: BaseDist {
 
 
 proc CyclicZipOpt.getChunk(inds, locid) {
-  var sliceBy: rank*range(idxType=idxType, stridable=true);
+  var sliceBy: rank*range(idxType=idxType, strides=strideKind.any);
   var locidtup: rank*idxType;
   // NOTE: Not bothering to check to see if these can fit into idxType
   if rank == 1 then
@@ -317,7 +317,7 @@ class LocCyclicZipOpt {
     else
       for param i in 1..rank do locidx(i) = locid(i):idxType;
 
-    var inds: rank*range(idxType, stridable=true);
+    var inds: rank*range(idxType, strides=strideKind.any);
 
     type strType = chpl__signedType(idxType);
     // NOTE: Not checking for overflow here when casting to strType
@@ -439,7 +439,7 @@ iter CyclicZipOptDom.these(param tag: iterKind) where tag == iterKind.leader {
                                                   minSize,
                                                   locDom.myBlock.dims());
 
-    var result: rank*range(idxType=idxType, stridable=true);
+    var result: rank*range(idxType=idxType, strides=strideKind.any);
     // Use the internal function for untranslate to avoid having to do
     // extra work to negate the offset
     var zeroedLocalPart = whole((...locDom.myBlock.getIndices())).chpl__unTranslate(wholeLow);
@@ -464,7 +464,7 @@ iter CyclicZipOptDom.these(param tag: iterKind) where tag == iterKind.leader {
     } else {
 
       coforall taskid in 0..#numTasks {
-        var splitRanges: rank*range(idxType=idxType, stridable=true) = result;
+        var splitRanges: rank*range(idxType=idxType, strides=strideKind.any) = result;
         const low = result(parDim).first, high = result(parDim).high;
         const (lo,hi) = _computeBlock(high - low + 1, numTasks, taskid,
                                       high, low, low);
@@ -484,7 +484,7 @@ iter CyclicZipOptDom.these(param tag: iterKind) where tag == iterKind.leader {
 }
 
 iter CyclicZipOptDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
-  var t: rank*range(idxType, stridable=true);
+  var t: rank*range(idxType, strides=strideKind.any);
   if debugCyclicZipOptDist then
     writeln(here.id, ": follower whole is: ", whole,
                      " follower is: ", followThis);
@@ -521,7 +521,7 @@ proc CyclicZipOptDom.dsiReprivatize(other, reprivatizeData) {
 proc CyclicZipOptDom.dsiBuildRectangularDom(param rank, type idxType,
                                     param stridable: bool,
                                     ranges: rank*range(idxType,
-                                                       BoundedRangeType.bounded,
+                                                       boundKind.both,
                                                        stridable)) {
   if idxType != dist.idxType then
     compilerError("CyclicZipOpt domain index type does not match distribution's");
@@ -593,7 +593,7 @@ proc CyclicZipOptArr.dsiRankChange(d, param newRank: int, param stridable: bool,
     on d.dist.targetLocs(ind) {
       const locDom = d.getLocDom(ind);
       var collapsedDims: rank*idxType;
-      var locSlice: _cyclic_matchArgsShape(range(idxType=idxType, stridable=true), idxType, args);
+      var locSlice: _cyclic_matchArgsShape(range(idxType=idxType, strides=strideKind.any), idxType, args);
       var locArrInd: rank*int;
       var j = 1;
       for param i in 1..args.size {
@@ -831,7 +831,7 @@ iter CyclicZipOptArr.these(param tag: iterKind, followThis, param fast: bool = f
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Cyclic array");
 
-  var t: rank*range(idxType=idxType, stridable=true);
+  var t: rank*range(idxType=idxType, strides=strideKind.any);
   for param i in 1..rank {
     // NOTE: unsigned idxType with negative stride will not work
     const wholestride = dom.whole.dim(i).stride:chpl__signedType(idxType);
@@ -922,7 +922,7 @@ iter CyclicZipOptArr.these(param tag: iterKind, followThis, param fast: bool = f
   __primitive("chpl_comm_get_strd",
     __primitive("array_get", dest, buf._value.getDataIndex(1)),
     __primitive("array_get",dststr,dstStride._value.getDataIndex(1)), 
-    rid,
+    rid, c_sublocid_any,
     __primitive("array_get", src, arrSection.myElems._value.getDataIndex(myFollowThis.low)),
     __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
     __primitive("array_get",cnt, count._value.getDataIndex(1)),
@@ -940,7 +940,7 @@ iter CyclicZipOptArr.these(param tag: iterKind, followThis, param fast: bool = f
     __primitive("chpl_comm_put_strd",
       __primitive("array_get", src, arrSection.myElems._value.getDataIndex(myFollowThis.low)),
       __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)), 
-      rid,
+      rid, c_sublocid_any,
       __primitive("array_get", dest, buf._value.getDataIndex(1)),
       __primitive("array_get",dststr,dstStride._value.getDataIndex(1)),
       __primitive("array_get",cnt, count._value.getDataIndex(1)),
@@ -1022,7 +1022,7 @@ class LocCyclicZipOptArr {
   // not have an on statement around the while loop below (to avoid
   // the repeated on's from calling testAndSet()).
   inline proc lockLocRAD() {
-    while locRADLock.testAndSet() do chpl_task_yield();
+    while locRADLock.testAndSet() do currentTask.yieldExecution();
   }
 
   inline proc unlockLocRAD() {
@@ -1086,7 +1086,7 @@ proc CyclicZipOptArr.doiBulkTransferTo(Barg)
           const end=bulkCommConvertCoordinate(regionA.last, B, A);
           const sb=chpl__tuplify(A.dom.locDoms(i).myBlock.stride);
           
-          var r1,r2: rank * range(idxType = el,stridable = true);
+          var r1,r2: rank * range(idxType = el,strides = strideKind.any);
           r2=regionA.dims();
            //In the case that the number of elements in dimension t for r1 and r2
            //were different, we need to calculate the correct stride in r1
@@ -1125,7 +1125,7 @@ proc CyclicZipOptArr.doiBulkTransferFrom(Barg)
         const end=bulkCommConvertCoordinate(regionA.last, A, B);
         const sb=chpl__tuplify(B.dom.locDoms(i).myBlock.stride);
       
-        var r1,r2: rank * range(idxType = el,stridable = true);
+        var r1,r2: rank * range(idxType = el,strides = strideKind.any);
         r2=regionA.dims();
         //In the case that the number of elements in dimension t for r1 and r2
         //were different, we need to calculate the correct stride in r1
@@ -1165,7 +1165,7 @@ proc CyclicZipOptArr.doiBulkTransferToDR(Barg)
         
         //r2 is the domain to refer the elements of A in locale j
         //r1 is the domain to refer the correspondig elements of B
-        var r1,r2: rank * range(idxType = el,stridable = true);
+        var r1,r2: rank * range(idxType = el,strides = strideKind.any);
         r2=inters.dims();
         //In the case that the number of elements in dimension t for r1 and r2
         //were different, we need to calculate the correct stride in r1
@@ -1210,7 +1210,7 @@ proc CyclicZipOptArr.doiBulkTransferFromDR(Barg)
         const end=bulkCommConvertCoordinate(inters.last, A, B);
         const sb = chpl__tuplify(B.dom.dsiStride); //return a tuple
         
-        var r1,r2: rank * range(idxType = el,stridable = true);
+        var r1,r2: rank * range(idxType = el,strides = strideKind.any);
         r2=inters.dims();
         //In the case that the number of elements in dimension t for r1 and r2
         //were different, we need to calculate the correct stride in r1

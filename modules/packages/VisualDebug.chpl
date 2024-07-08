@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,6 +31,7 @@
 module VisualDebug
 {
 
+  private use CTypes;
   use String;
 
   /*
@@ -53,7 +54,7 @@ module VisualDebug
   // Data Generation for the Visual Debug tool  (offline)
   //
 
-  private extern proc chpl_vdebug_start (rootname: c_string, time:real);
+  private extern proc chpl_vdebug_start (rootname: c_ptrConst(c_char), time:real);
 
   private extern proc chpl_vdebug_stop ();
 
@@ -63,7 +64,7 @@ module VisualDebug
 
   private extern proc chpl_vdebug_mark ();
 
-  private extern proc chpl_vdebug_tagname (tagname: c_string, tagno: int);
+  private extern proc chpl_vdebug_tagname (tagname: c_ptrConst(c_char), tagno: int);
 
   private var tagno: atomic int;
 
@@ -75,8 +76,8 @@ module VisualDebug
    This code is O(log n), n the number of Locales.
 */
 
-pragma "no doc"
-  enum vis_op {v_start, v_stop, v_tag, v_pause};
+@chpldoc.nodoc
+  enum vis_op {v_start, v_stop, v_tag, v_pause}
 
 private iter hc_id2com ( id: int, off: int ) {
    var offset = off;

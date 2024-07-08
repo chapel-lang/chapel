@@ -1,0 +1,10 @@
+ioendianUse.chpl:3: warning: ioendian is deprecated; please use endianness instead
+ioendianUse.chpl:5: warning: ioendian is deprecated; please use endianness instead
+ioendianUse.chpl:6: warning: ioendian is deprecated; please use endianness instead
+ioendianUse.chpl:7: warning: ioendian is deprecated; please use endianness instead
+ioendianUse.chpl:10: warning: ioendian is deprecated; please use endianness instead
+ioendianUse.chpl:11: warning: ioendian is deprecated; please use endianness instead
+ioendianUse.chpl:13: warning: ioendian is deprecated; please use endianness instead
+ioendianUse.chpl:14: warning: ioendian is deprecated; please use endianness instead
+little
+little

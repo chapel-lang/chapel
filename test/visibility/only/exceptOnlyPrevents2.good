@@ -1,1 +1,2 @@
-exceptOnlyPrevents2.chpl:16: error: Bad identifier in 'except' clause, no known 'd' defined in 'Outer'
+exceptOnlyPrevents2.chpl:15: In module 'M':
+exceptOnlyPrevents2.chpl:16: error: cannot use 'except' clause with symbol 'd' as it is not defined in 'Outer'

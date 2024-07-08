@@ -4,8 +4,8 @@ class foo {
     writeln(x);
   }
 }
-
-var f = new borrowed foo(2);
+var fObj = new foo(2);
+var f = fObj.borrow();
 
 f.print();
 

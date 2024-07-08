@@ -1,0 +1,3 @@
+(x = 10): generic_record(int(64))
+(): wrapper_record(generic_record(int(64)))
+(field = ()): R(wrapper_record(generic_record(int(64))))

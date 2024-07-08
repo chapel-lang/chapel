@@ -1,5 +1,11 @@
 // This test replaces an automatically-included standard library file with
-// a user one because AutoMath.chpl exists as a sibling to this file.
+// a user one because ChapelIO.chpl exists as a sibling to this file.
+
+// Anna 2023-05-22: Replacing the use of AutoMath with ChapelIO, as changes in
+// module init order have broken this test for AutoMath. It will break again if
+// the "real" ChapelIO moves early enough in module init order that we encounter
+// it before our substitute.
+// Original comment below:
 
 // While this test uses AutoMath, as of this writing, there are 4 automatic
 // standard libraries: AutoMath, Errors, ChapelIO, and Types.
@@ -20,7 +26,7 @@
 // combined with the limited number of modules to which this can apply, make
 // it potentially not worthwhile to support this pattern.
 
-use AutoMath;
+use ChapelIO;
 
-testmath();
+testchapelio();
 writeln("In my foo2");

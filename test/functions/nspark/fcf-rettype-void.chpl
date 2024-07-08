@@ -1,4 +1,4 @@
 {
-  var F = lambda () { writeln(42); };
+  var F = proc() { writeln(42); };
   writeln(F.retType:string);
 }

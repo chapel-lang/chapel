@@ -6,7 +6,7 @@ proc main() {
   const cwd = here.cwd();
   
   // parse lockfile
-  const toParse = open(cwd + "/gitTest.lock", iomode.r);
+  const toParse = open(cwd + "/gitTest.lock", ioMode.r);
   const lockFile = parseToml(toParse);
 
   // get list of git dependencies from lock file

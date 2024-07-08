@@ -1,4 +1,6 @@
 extern {
+  #include <stdlib.h>
+
   static int64_t* mymalloc(void) {
     int64_t *ret = (int64_t*) malloc(1024);
     ret[0] = 5;

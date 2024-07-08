@@ -16,10 +16,10 @@ default:
 .. toctree::
    :maxdepth: 1
 
-   AutoMath <standard/AutoMath>
    Errors <standard/Errors>
-   IO Support <standard/ChapelIO>
    Types <standard/Types>
+   A subset of the IO symbols <standard/IO>
+   A subset of the Math symbols <standard/Math>
 
 
 Data Structures
@@ -41,8 +41,9 @@ Diagnostics
    :maxdepth: 1
 
    CommDiagnostics <standard/CommDiagnostics>
-   GPUDiagnostics <standard/GPUDiagnostics>
-   Memory <standard/Memory>
+   Debugger <standard/Debugger>
+   GpuDiagnostics <standard/GpuDiagnostics>
+   MemDiagnostics <standard/MemDiagnostics>
 
 
 Files/IO
@@ -52,6 +53,7 @@ Files/IO
 
    FileSystem <standard/FileSystem>
    IO <standard/IO>
+   JSON <standard/JSON>
    Path <standard/Path>
 
 
@@ -63,6 +65,7 @@ Language Support
 
    Reflection <standard/Reflection>
    Types <standard/Types>
+   MemMove <standard/MemMove>
 
 
 Math/Numerical
@@ -71,7 +74,6 @@ Math/Numerical
 .. toctree::
    :maxdepth: 1
 
-   AutoMath <standard/AutoMath>
    BigInteger <standard/BigInteger>
    BitOps <standard/BitOps>
    GMP <standard/GMP>
@@ -85,10 +87,10 @@ Parallelism/Distributed Computing
 .. toctree::
    :maxdepth: 1
 
-   Barriers <standard/Barriers>
+   Collectives <standard/Collectives>
    Communication <standard/Communication>
    DynamicIters <standard/DynamicIters>
-   VectorizingIterator <standard/VectorizingIterator>
+   GPU <standard/GPU>
 
 System/Interoperability
 -----------------------
@@ -98,11 +100,7 @@ System/Interoperability
 
    CTypes <standard/CTypes>
    OS <standard/OS>
-   Spawn <standard/Spawn>
    Subprocess <standard/Subprocess>
-   Sys <standard/Sys>
-   SysBasic <standard/SysBasic>
-   SysError <standard/SysError>
 
 Utilities
 ---------
@@ -111,8 +109,8 @@ Utilities
    :maxdepth: 1
 
    ChplConfig <standard/ChplConfig>
-   DateTime <standard/DateTime>
    Help <standard/Help>
    Regex <standard/Regex>
    Time <standard/Time>
    Version <standard/Version>
+   WeakPointer <standard/WeakPointer>

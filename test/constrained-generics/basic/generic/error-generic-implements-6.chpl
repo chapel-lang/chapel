@@ -19,7 +19,7 @@ record MyRec2 {
   param PP;
 }
 
-proc reqFun(cgFormal1: MyRec1, cgFormal2: MyRec2): void {
+proc reqFun(cgFormal1: MyRec1(?), cgFormal2: MyRec2(?)): void {
   writeln("in reqFun(MyRec1,MyRec2)");
 }
 

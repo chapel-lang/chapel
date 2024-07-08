@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -166,6 +166,7 @@ qioerr qio_mkerror_errno(void);
 #define QIO_ENOMEM (qio_int_to_err(ENOMEM))
 #define QIO_ESHORT (qio_int_to_err(ESHORT))
 #define QIO_EEOF (qio_int_to_err(EEOF))
+#define QIO_EILSEQ (qio_int_to_err(EILSEQ))
 
 
 // This could be done optionally only under Chapel.

@@ -29,8 +29,8 @@ module SSCA2_driver
 
   class Generated_Subgraph {
     type vertex;
-    var nodes : domain (vertex);
-    var edges : domain (2*vertex);
+    var nodes : domain (vertex, parSafe=true);
+    var edges : domain (2*vertex, parSafe=true);
   }
 
        
@@ -43,13 +43,13 @@ module SSCA2_driver
       use SSCA2_compilation_config_params, 
 	  SSCA2_execution_config_consts,
 	  SSCA2_kernels, 
-          Random;
+          NPBRandom;
 
       type vertex = index (G.vertices),
            edge   = 2*vertex;
 
       if RUN_KERNEL2 || RUN_KERNEL3 {
-        var Heavy_Edge_List : domain (edge);
+        var Heavy_Edge_List : domain (edge, parSafe=true);
 
         // --------
         // Kernel 2:

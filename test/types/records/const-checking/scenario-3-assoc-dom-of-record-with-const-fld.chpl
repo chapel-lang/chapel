@@ -35,12 +35,12 @@ writeln(coeffs1);
 
 // Meanwhile initialize from a literal.
 
-var coeffs2 = [ new Node(2) => new Coeff(22) ];
+var coeffs2 = [ new Node(2) => new Coeff(22), ];
 //compilerWarning("coeffs2.type = ", coeffs2.type:string);
 writeln(coeffs2[new Node(2)]);
 writeln(coeffs2);
 
-var coeffs3: [nodes] Coeff = [ new Node(1) => new Coeff(33) ];
+var coeffs3: [nodes] Coeff = [ new Node(1) => new Coeff(33), ];
 writeln(coeffs3[new Node(1)]);
 writeln(coeffs3);
 
@@ -52,10 +52,10 @@ const coeffc1: [nodes] Coeff;
 writeln(coeffc1[node]);
 writeln(coeffc1);
 
-const coeffc2 = [ new Node(4) => new Coeff(44) ];
+const coeffc2 = [ new Node(4) => new Coeff(44), ];
 writeln(coeffc2[new Node(4)]);
 writeln(coeffc2);
 
-const coeffc3: [nodes] Coeff = [ new Node(1) => new Coeff(55) ];
+const coeffc3: [nodes] Coeff = [ new Node(1) => new Coeff(55), ];
 writeln(coeffc3[new Node(1)]);
 writeln(coeffc3);

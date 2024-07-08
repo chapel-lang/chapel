@@ -13,7 +13,7 @@ config const printElapsed = true,
 
 proc main() {
   // 0. Housekeeping
-  var timer: Timer;
+  var timer: stopwatch;
   timer.start();
 
   // 1. Calibration
@@ -138,7 +138,7 @@ proc transpose(ref outputMatrix: [?D] real, ref inputMatrix: [?E] real)
            "Dimensions of outputMatrix are not transpose of inputMatrix.");
   }
 
-  forall (row, col) in D {
+  forall (row, col) in D with (ref outputMatrix) {
     outputMatrix[row, col] = inputMatrix[col, row];
   }
 }
@@ -162,7 +162,7 @@ proc matMultiply(ref C: [?DC] real, ref A: [?DA] real, ref B: [?DB] real)
   // There is a more Chapelerific way to implement 2D matrix dot product, but
   // it suffers from poor performance. See tests in
   // $CHPL_HOME/test/performance/thomasvnadoren/ for more details.
-  forall (row, col) in DC {
+  forall (row, col) in DC with (ref C) {
     C[row, col] = 0.0;
     for z in DA.dim(1) do
       C[row, col] += A[row, z] * B[z, col];

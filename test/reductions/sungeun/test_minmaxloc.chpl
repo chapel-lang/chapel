@@ -19,7 +19,7 @@ class lastmaxloc: ReduceScanOp {
   type eltType;
   var state: LastLocState(eltType);
 
-  proc identity  return new LastLocState(eltType, startMin=true);
+  proc identity do  return new LastLocState(eltType, startMin=true);
 
   proc accumulate(otherSt) { accumulateOntoState(this.state, otherSt.value); }
 
@@ -41,16 +41,16 @@ class lastmaxloc: ReduceScanOp {
       accumulate(otherOp.state);
   }
 
-  proc generate()  return state.value;
+  proc generate() do  return state.value;
 
-  proc clone()     return new unmanaged lastmaxloc(eltType = eltType);
+  proc clone() do     return new unmanaged lastmaxloc(eltType = eltType);
 }
 
 class lastminloc: ReduceScanOp {
   type eltType;
   var state: LastLocState(eltType);
 
-  proc identity  return new LastLocState(eltType, startMin=false);
+  proc identity do  return new LastLocState(eltType, startMin=false);
 
   proc accumulate(otherSt) { accumulateOntoState(this.state, otherSt.value); }
 
@@ -72,9 +72,9 @@ class lastminloc: ReduceScanOp {
       accumulate(otherOp.state);
   }
 
-  proc generate()  return state.value;
+  proc generate() do  return state.value;
 
-  proc clone()     return new unmanaged lastminloc(eltType = eltType);
+  proc clone() do     return new unmanaged lastminloc(eltType = eltType);
 }
 
 config const seed = 889;
@@ -85,7 +85,7 @@ config const debug = false;
 var R: [1..n] real;
 var A: [1..n] int;
 
-fillRandom(R, seed, algorithm=RNG.NPB);
+fillRandom(R, seed);
 
 proc getSigDigit(r: real) {
   var rn = r*10;
@@ -109,4 +109,3 @@ ml = maxloc reduce zip(A, {1..n});
 writeln(ml);
 ml = lastmaxloc reduce zip(A, {1..n});
 writeln(ml);
-

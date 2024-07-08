@@ -1,8 +1,8 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 config param useForall = false;
 
-proc yepGPU(A) {
+proc yepGPU(ref A) {
   if useForall then
     forall a in A do a += 1;
   else
@@ -16,7 +16,7 @@ proc yepGPU(A) {
 // Another way to put it is that, this pragma only applies to order-independent
 // loops within this function's body.
 pragma "no gpu codegen"
-proc nopeGPU(A) {
+proc nopeGPU(ref A) {
   if useForall then
     forall a in A do a += 1;
   else
@@ -26,16 +26,16 @@ proc nopeGPU(A) {
 on here.gpus[0] {
   var A: [1..10] int;
 
-  startGPUDiagnostics();
+  startGpuDiagnostics();
   yepGPU(A);
-  stopGPUDiagnostics();
-  assert(getGPUDiagnostics()[0].kernel_launch == 1);
+  stopGpuDiagnostics();
+  assert(getGpuDiagnostics()[0].kernel_launch == 1);
   writeln(A);
 
-  resetGPUDiagnostics();
-  startGPUDiagnostics();
+  resetGpuDiagnostics();
+  startGpuDiagnostics();
   nopeGPU(A);
-  stopGPUDiagnostics();
-  assert(getGPUDiagnostics()[0].kernel_launch == 0);
+  stopGpuDiagnostics();
+  assert(getGpuDiagnostics()[0].kernel_launch == 0);
   writeln(A);
 }

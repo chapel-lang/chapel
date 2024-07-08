@@ -13,6 +13,7 @@
 #ifndef LLVM_LIB_TARGET_AARCH64_MCTARGETDESC_AARCH64MCTARGETDESC_H
 #define LLVM_LIB_TARGET_AARCH64_MCTARGETDESC_AARCH64MCTARGETDESC_H
 
+#include "llvm/MC/MCInstrDesc.h"
 #include "llvm/Support/DataTypes.h"
 
 #include <memory>
@@ -22,6 +23,7 @@ class formatted_raw_ostream;
 class MCAsmBackend;
 class MCCodeEmitter;
 class MCContext;
+class MCInst;
 class MCInstrInfo;
 class MCInstPrinter;
 class MCRegisterInfo;
@@ -31,9 +33,9 @@ class MCSubtargetInfo;
 class MCTargetOptions;
 class MCTargetStreamer;
 class Target;
+class Triple;
 
 MCCodeEmitter *createAArch64MCCodeEmitter(const MCInstrInfo &MCII,
-                                          const MCRegisterInfo &MRI,
                                           MCContext &Ctx);
 MCAsmBackend *createAArch64leAsmBackend(const Target &T,
                                         const MCSubtargetInfo &STI,
@@ -51,7 +53,8 @@ std::unique_ptr<MCObjectTargetWriter>
 createAArch64MachObjectWriter(uint32_t CPUType, uint32_t CPUSubtype,
                               bool IsILP32);
 
-std::unique_ptr<MCObjectTargetWriter> createAArch64WinCOFFObjectWriter();
+std::unique_ptr<MCObjectTargetWriter>
+createAArch64WinCOFFObjectWriter(const Triple &TheTriple);
 
 MCTargetStreamer *createAArch64AsmTargetStreamer(MCStreamer &S,
                                                  formatted_raw_ostream &OS,
@@ -60,7 +63,16 @@ MCTargetStreamer *createAArch64AsmTargetStreamer(MCStreamer &S,
 
 namespace AArch64_MC {
 void initLLVMToCVRegMapping(MCRegisterInfo *MRI);
+bool isHForm(const MCInst &MI, const MCInstrInfo *MCII);
+bool isQForm(const MCInst &MI, const MCInstrInfo *MCII);
+bool isFpOrNEON(const MCInst &MI, const MCInstrInfo *MCII);
 }
+
+namespace AArch64 {
+enum OperandType {
+  OPERAND_IMPLICIT_IMM_0 = MCOI::OPERAND_FIRST_TARGET,
+};
+} // namespace AArch64
 
 } // End llvm namespace
 

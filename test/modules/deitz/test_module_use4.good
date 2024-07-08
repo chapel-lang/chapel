@@ -1,1 +1,7 @@
-test_module_use4.chpl:12: error: 'use' of non-module/enum symbol M1
+test_module_use4.chpl:10: In module 'M3':
+test_module_use4.chpl:12: warning: potentially surprising shadowing for 'M1'
+test_module_use4.chpl:11: note: it refers to a symbol found through the 'use' of 'M2' here
+test_module_use4.chpl:7: note: and then through the 'use' of 'M1' here
+test_module_use4.chpl:2: note: leading to 'M1' defined here
+test_module_use4.chpl:1: note: but, there is a shadowed symbol 'M1' defined here
+test_module_use4.chpl:12: error: cannot 'use' symbol 'M1', which is not a module or enum

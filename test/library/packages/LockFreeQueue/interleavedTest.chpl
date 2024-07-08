@@ -1,7 +1,7 @@
 use LockFreeQueue;
 
-const InitialQueueSize = 1024 * 1024;
-const OperationsPerThread = 1024 * 1024;
+const InitialQueueSize = 1024;
+const OperationsPerThread = 1024;
 
 proc main() {
   var lfq = new unmanaged LockFreeQueue(int);

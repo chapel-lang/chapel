@@ -1,12 +1,16 @@
 .. default-domain:: chpl
 
+.. index::
+   single: error handling
+   seealso: error handling; errors
+   single: errors
 .. _Chapter-Error_Handling:
 
 ==============
 Error Handling
 ==============
 
-The Chapel language supports ``throw``, ``try``, ``try``!, ``catch``,
+The Chapel language supports ``throw``, ``try``, ``try!``, ``catch``,
 and ``throws`` which are described below. Chapel supports several error
 handling modes, including a mode suitable for prototype development and
 a less-permissive mode intended for production code.
@@ -15,9 +19,13 @@ a less-permissive mode intended for production code.
 
    Additional information about the current implementation of
    error handling and the *strict* error handling mode, which is not
-   defined here, is available in the 
+   defined here, is available in the
    :ref:`errorHandling technical note <readme-errorHandling>`
 
+.. index::
+   single: errors; throwing
+   single: throw
+   single: throws
 .. _Throwing_Errors:
 
 Throwing Errors
@@ -28,12 +36,15 @@ statement. For a function to throw an error, its signature must include
 a ``throws`` declaration. The declaration is put after the return type
 and before any ``where`` clauses.
 
+The statements following a throw statement in the same block
+are ignored by the compiler because they cannot be executed.
+
 Only ``owned`` instances of a type inheriting from ``Error`` can be
 thrown.
 
    *Example (throwing.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -50,6 +61,10 @@ thrown.
         return 1;
       }
 
+.. index::
+   single: errors; handling
+   pair: statements; try
+   pair: statements; try!
 .. _Handling_Errors:
 
 Handling Errors
@@ -57,23 +72,26 @@ Handling Errors
 
 There are three ways to handle an error:
 
--  Halt with ``try``!.
+-  Halt with ``try!``.
 
 -  Handle the error with ``catch`` blocks.
 
 -  Propagate the error out of the current function with ``throws``.
 
+.. index::
+   single: try!
+   single: errors; try!
 .. _Halting_on_error_with_try_bang:
 
 Halting on error with try!
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If an error is thrown by a call within the lexical scope of a ``try``!
-block or a ``try``! expression prefix, the program halts.
+If an error is thrown by a call within the lexical scope of a ``try!``
+block or a ``try!`` expression prefix, the program halts.
 
    *Example (try-bang.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -90,12 +108,17 @@ block or a ``try``! expression prefix, the program halts.
         }
       }
 
+.. index::
+   single: catch
+   single: errors; catch
+   single: errors; try
+   pair: catch; statements
 .. _Handling_an_error_with_catch:
 
 Handling an error with catch
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When an error is raised by a call in a ``try`` or ``try``! block, the
+When an error is raised by a call in a ``try`` or ``try!`` block, the
 rest of the block is abandoned and control flow is passed to its
 ``catch`` clause(s), if any.
 
@@ -104,7 +127,7 @@ rest of the block is abandoned and control flow is passed to its
 Catch clauses
 ^^^^^^^^^^^^^
 
-A ``try`` or ``try``! block can have one or more ``catch`` clauses.
+A ``try`` or ``try!`` block can have one or more ``catch`` clauses.
 
 A ``catch`` clause can specify the variable that refers to the caught
 error within the ``catch`` block. If the variable is given a type, for
@@ -127,7 +150,7 @@ statement after the ``try``-``catch`` blocks.
 
    *Example (catching-errors.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -155,12 +178,12 @@ statement after the ``try``-``catch`` blocks.
 try! with catch
 ^^^^^^^^^^^^^^^
 
-If an error is thrown within a ``try``! block and none of its ``catch``
+If an error is thrown within a ``try!`` block and none of its ``catch``
 clauses, if any, match that error, the program halts.
 
    *Example (catching-errors-halt.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -187,7 +210,7 @@ enclosing ``try`` block, when present.
 
    *Example (nested-try.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -206,7 +229,7 @@ enclosing ``try`` block, when present.
         }
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -215,6 +238,11 @@ enclosing ``try`` block, when present.
         // never reached
         return 1;
       }
+
+.. index::
+   single: throws
+   single: errors; throws
+   single: errors; propagating
 
 .. _Propagating_an_error_with_throws:
 
@@ -234,7 +262,7 @@ error raised in a ``try`` block.
 
    *Example (catching-errors-propagate.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -250,6 +278,8 @@ error raised in a ``try`` block.
         // errors other than FileNotFoundError propagate
       }
 
+.. index::
+   single: try; without catch
 .. _catch_less_try:
 
 catch-less try
@@ -261,7 +291,7 @@ calls to clarify control flow.
 
    *Example (propagates-error.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -282,18 +312,21 @@ calls to clarify control flow.
         return try canThrow(0);
       }
 
+.. index::
+   pair: try; expressions
+   pair: try!; expressions
 .. _try_expressions:
 
 try expressions
 ^^^^^^^^^^^^^^^
 
-``try`` and ``try``! are available as expressions to clarify control
+``try`` and ``try!`` are available as expressions to clarify control
 flow at expression granularity. The expression form may not be used with
 ``catch`` clauses.
 
    *Example (expression-try.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -304,6 +337,8 @@ flow at expression granularity. The expression form may not be used with
         return try canThrow(0);
       }
 
+.. index::
+   single: catch; complete handling
 .. _Complete_handling:
 
 Complete handling
@@ -318,7 +353,7 @@ ways:
 
       *Example (warns-on-error.chpl)*.
 
-      
+
 
       .. code-block:: chapel
 
@@ -330,12 +365,12 @@ ways:
            }
          }
 
--  ``try``! instead of ``try``. This will halt the program if no
+-  ``try!`` instead of ``try``. This will halt the program if no
    matching ``catch`` clause is found, instead of propagating.
 
       *Example (halts-on-error.chpl)*.
 
-      
+
 
       .. code-block:: chapel
 
@@ -348,6 +383,8 @@ ways:
            }
          }
 
+.. index::
+   pair: statements; defer
 .. _Errors_defer:
 
 Defer statement
@@ -359,7 +396,7 @@ scope is exited, regardless of how it is exited.
 
    *Example (defer.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -384,10 +421,12 @@ handling context would be unclear.
 
 Errors also cannot be thrown by ``deinit()`` for similar reasons.
 
+.. index::
+   single: errors; and methods
 .. _Errors_Methods:
 
-Methods
--------
+Errors and Methods
+------------------
 
 Errors can be thrown by methods, just as with any other function. An
 overriding method must throw if the overridden method throws, or not
@@ -395,7 +434,7 @@ throw if the overridden method does not throw.
 
    *Example (throwing-methods.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -412,17 +451,19 @@ throw if the overridden method does not throw.
         }
       }
 
+.. index::
+   single: errors; and multilocale
 .. _Errors_Multilocale:
 
-Multilocale
------------
+Errors and Multilocale
+----------------------
 
 Errors can be thrown within ``on`` statements. In that event, the error
 will be propagated out of the ``on`` statement.
 
    *Example (handle-from-on.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -436,11 +477,16 @@ will be propagated out of the ``on`` statement.
         }
       }
 
+.. index::
+   single: errors; and parallelism
 .. _Errors_Parallelism:
 
-Parallelism
------------
+Errors and Parallelism
+----------------------
 
+.. index::
+   single: TaskErrors
+   single: errors; TaskErrors
 .. _TaskErrors:
 
 TaskErrors
@@ -455,10 +501,12 @@ Nested ``coforall`` statements do not produce nested ``TaskErrors``.
 Instead, the nested errors are flattened into the ``TaskErrors`` error
 thrown by the outer loop.
 
+.. index::
+   single: errors; and begin
 .. _Errors_begin:
 
-begin
-~~~~~
+Errors and begin
+~~~~~~~~~~~~~~~~
 
 Errors can be thrown within a ``begin`` statement. In that event, the
 error will be propagated to the ``sync`` statement that waits for that
@@ -466,7 +514,7 @@ task.
 
    *Example (handle-from-begin.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -481,10 +529,12 @@ task.
         }
       }
 
+.. index::
+   single: errors; and cobegin
 .. _Errors_coforall_and_cobegin:
 
-coforall and cobegin
-~~~~~~~~~~~~~~~~~~~~
+Errors and coforall and cobegin
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Errors can be thrown from ``coforall`` and ``cobegin`` statements and
 handled as ``TaskErrors``. The nested ``coforall`` loops will emit a
@@ -492,7 +542,7 @@ flattened ``TaskErrors`` error.
 
    *Example (handle-from-coforall.chpl)*.
 
-   
+
    .. BLOCK-test-chapelpre
 
      class DemoError : Error { }
@@ -541,10 +591,12 @@ flattened ``TaskErrors`` error.
         }
       }
 
+.. index::
+   single: errors; and forall
 .. _Errors_forall:
 
-forall
-~~~~~~
+Errors and forall
+~~~~~~~~~~~~~~~~~
 
 Errors can be thrown from ``forall`` loops, too. Although the ``forall``
 may execute serially within a single task, it will always throw a
@@ -572,6 +624,9 @@ may execute serially within a single task, it will always throw a
         }
       }
 
+.. index::
+   single: errors; Error subclasses
+   single: Error
 .. _Creating_New_Error_Types:
 
 Creating New Error Types
@@ -588,7 +643,7 @@ the module documentation for :mod:`OS`.
 
    *Example (defining-errors.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -598,6 +653,8 @@ the module documentation for :mod:`OS`.
 
       class DemoSysError : SystemError { }
 
+.. index::
+   single: errors; error handling modes
 .. _Error_Handling_Modes:
 
 Error Handling Modes
@@ -614,6 +671,9 @@ Certain error handling details depend on the *error handling mode*:
 Code that is legal in the production mode is always legal in the
 prototype mode.
 
+.. index::
+   single: errors; prototype mode
+   single: prototype
 .. _Errors_Prototype_Mode:
 
 Prototype Mode
@@ -630,7 +690,7 @@ in the prototype mode:
 
    *Example (fatal-mode.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -646,7 +706,7 @@ in the prototype mode:
         alwaysThrows();
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -662,7 +722,7 @@ prototype mode applies here, too.
 
    *Example (PrototypeModule.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -688,6 +748,8 @@ prototype mode applies here, too.
         }
       }
 
+.. index::
+   single: errors; production mode
 .. _Production_Mode_for_Explicit_Modules:
 
 Production Mode
@@ -699,7 +761,7 @@ error will be propagated out, as with the prototype mode.
 
    *Example (ProductionModule.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 

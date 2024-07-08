@@ -11,7 +11,7 @@ class Parent {
   }
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   proc init(type t) {
     super.init(t);
   }
@@ -37,14 +37,14 @@ class A {
   }
 }
 
-class B : A {
+class B : A(?) {
   var x : int;
   proc deinit() {
     writeln("B.deinit");
   }
 }
 
-class C : B {
+class C : B(?) {
   proc init(param rank : int, type idxType) {
     super.init(rank, idxType);
   }

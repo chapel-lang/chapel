@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,7 +40,7 @@ syserr chpl_qio_filelength(void* file, int64_t* length) {
   QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no plugin");
 }
 
-syserr chpl_qio_getpath(void* file, const char** str, int64_t* len) {
+syserr chpl_qio_getpath(void* file, uint8_t** str, int64_t* len) {
   QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no plugin");
 }
 

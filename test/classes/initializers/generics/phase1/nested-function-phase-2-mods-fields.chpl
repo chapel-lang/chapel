@@ -7,7 +7,7 @@ class Foo {
   proc init(param val) {
     field = val;
     nested();
-    this.complete();
+    init this;
 
     // Where the function definition was placed shouldn't impact its viability,
     // but where it is called should.  This function modifies a field, doesn't
@@ -20,6 +20,6 @@ class Foo {
 }
 
 proc main() {
-  var f = new borrowed Foo(13);
-  writeln(f.type: string);
+  var f = new Foo(13);
+  writeln(f.borrow().type: string);
 }

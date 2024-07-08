@@ -69,6 +69,15 @@ The address of a basic block.
 
   %0:_(p0) = G_BLOCK_ADDR blockaddress(@test_blockaddress, %ir-block.block)
 
+G_CONSTANT_POOL
+^^^^^^^^^^^^^^^
+
+The address of an object in the constant pool.
+
+.. code-block:: none
+
+  %0:_(p0) = G_CONSTANT_POOL %const.0
+
 Integer Extension and Truncation
 --------------------------------
 
@@ -405,8 +414,8 @@ normal input. Also produce a carry output in addition to the normal result.
 G_UMULH, G_SMULH
 ^^^^^^^^^^^^^^^^
 
-Multiply two numbers at twice the incoming bit width (signed) and return
-the high half of the result.
+Multiply two numbers at twice the incoming bit width (unsigned or signed) and
+return the high half of the result.
 
 .. code-block:: none
 
@@ -479,6 +488,15 @@ G_FCANONICALIZE
 ^^^^^^^^^^^^^^^
 
 See :ref:`i_intr_llvm_canonicalize`.
+
+G_IS_FPCLASS
+^^^^^^^^^^^^
+
+Tests if the first operand, which must be floating-point scalar or vector, has
+floating-point class specified by the second operand. Returns non-zero (true)
+or zero (false). It's target specific whether a true value is 1, ~0U, or some
+other non-zero value. If the first operand is a vector, the returned value is a
+vector of the same length.
 
 G_FMINNUM
 ^^^^^^^^^
@@ -637,10 +655,10 @@ G_VECREDUCE_FADD, G_VECREDUCE_FMUL
 
 These reductions are relaxed variants which may reduce the elements in any order.
 
-G_VECREDUCE_FMAX, G_VECREDUCE_FMIN
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+G_VECREDUCE_FMAX, G_VECREDUCE_FMIN, G_VECREDUCE_FMAXIMUM, G_VECREDUCE_FMINIMUM
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-FMIN/FMAX nodes can have flags, for NaN/NoNaN variants.
+FMIN/FMAX/FMINIMUM/FMAXIMUM nodes can have flags, for NaN/NoNaN variants.
 
 
 Integer/bitwise reductions
@@ -673,6 +691,10 @@ high bits are undefined, sign-extended, or zero-extended respectively.
 Only G_LOAD is valid if the result is a vector type. If the result is larger
 than the memory size, the high elements are undefined (i.e. this is not a
 per-element, vector anyextload)
+
+Unlike in SelectionDAG, atomic loads are expressed with the same
+opcodes as regular loads. G_LOAD, G_SEXTLOAD and G_ZEXTLOAD may all
+have atomic memory operands.
 
 G_INDEXED_LOAD
 ^^^^^^^^^^^^^^
@@ -717,7 +739,10 @@ G_ATOMIC_CMPXCHG
 Generic atomic cmpxchg. Expects a MachineMemOperand in addition to explicit
 operands.
 
-G_ATOMICRMW_XCHG, G_ATOMICRMW_ADD, G_ATOMICRMW_SUB, G_ATOMICRMW_AND, G_ATOMICRMW_NAND, G_ATOMICRMW_OR, G_ATOMICRMW_XOR, G_ATOMICRMW_MAX, G_ATOMICRMW_MIN, G_ATOMICRMW_UMAX, G_ATOMICRMW_UMIN, G_ATOMICRMW_FADD, G_ATOMICRMW_FSUB
+G_ATOMICRMW_XCHG, G_ATOMICRMW_ADD, G_ATOMICRMW_SUB, G_ATOMICRMW_AND,
+G_ATOMICRMW_NAND, G_ATOMICRMW_OR, G_ATOMICRMW_XOR, G_ATOMICRMW_MAX,
+G_ATOMICRMW_MIN, G_ATOMICRMW_UMAX, G_ATOMICRMW_UMIN, G_ATOMICRMW_FADD,
+G_ATOMICRMW_FSUB, G_ATOMICRMW_FMAX, G_ATOMICRMW_FMIN
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Generic atomicrmw. Expects a MachineMemOperand in addition to explicit
@@ -726,9 +751,10 @@ operands.
 G_FENCE
 ^^^^^^^
 
-.. caution::
+Generic fence. The first operand is the memory ordering. The second operand is
+the syncscope.
 
-  I couldn't find any documentation on this at the time of writing.
+See the LLVM LangRef entry on the '``fence'`` instruction for more details.
 
 G_MEMCPY
 ^^^^^^^^
@@ -822,14 +848,34 @@ codegen with GlobalISel.
 
 The above example generates a pointer to the source jump table index.
 
+G_INVOKE_REGION_START
+^^^^^^^^^^^^^^^^^^^^^
 
-G_INTRINSIC, G_INTRINSIC_W_SIDE_EFFECTS
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A marker instruction that acts as a pseudo-terminator for regions of code that may
+throw exceptions. Being a terminator, it prevents code from being inserted after
+it during passes like legalization. This is needed because calls to exception
+throw routines do not return, so no code that must be on an executable path must
+be placed after throwing.
 
-Call an intrinsic
+G_INTRINSIC, G_INTRINSIC_CONVERGENT
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The _W_SIDE_EFFECTS version is considered to have unknown side-effects and
-as such cannot be reordered across other side-effecting instructions.
+Call an intrinsic that has no side-effects.
+
+The _CONVERGENT variant corresponds to an LLVM IR intrinsic marked `convergent`.
+
+.. note::
+
+  Unlike SelectionDAG, there is no _VOID variant. Both of these are permitted
+  to have zero, one, or multiple results.
+
+G_INTRINSIC_W_SIDE_EFFECTS, G_INTRINSIC_CONVERGENT_W_SIDE_EFFECTS
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Call an intrinsic that is considered to have unknown side-effects and as such
+cannot be reordered across other side-effecting instructions.
+
+The _CONVERGENT variant corresponds to an LLVM IR intrinsic marked `convergent`.
 
 .. note::
 
@@ -901,3 +947,14 @@ It should always be safe to
 
 - Look through the source register
 - Replace the destination register with the source register
+
+
+Miscellaneous
+-------------
+
+G_CONSTANT_FOLD_BARRIER
+^^^^^^^^^^^^^^^^^^^^^^^
+
+This operation is used as an opaque barrier to prevent constant folding. Combines
+and other transformations should not look through this. These have no other
+semantics and can be safely eliminated if a target chooses.

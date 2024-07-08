@@ -1,0 +1,2 @@
+error in nonIterable.chpl:2: cannot iterate over a value of type 'int(64)'
+error in nonIterable.chpl:3: cannot iterate over a value of type 'int(64)'

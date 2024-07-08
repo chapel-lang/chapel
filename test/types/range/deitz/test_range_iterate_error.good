@@ -1,1 +1,1 @@
-test_range_iterate_error.chpl:1: error: halt reached - iteration over range that has no first index
+test_range_iterate_error.chpl:1: error: iteration over a range with no first index

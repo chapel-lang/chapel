@@ -7,7 +7,7 @@ class Foo {
   }
 }
 
-class Bar : Foo {
+class Bar : Foo(?) {
   var x: int;
 
   proc init(xVal) {
@@ -17,6 +17,7 @@ class Bar : Foo {
   }
 }
 
-var bar = new borrowed Bar(4);
-writeln(bar.type: string);
-writeln(bar);
+var bar = new Bar(4);
+var b = bar.borrow();
+writeln(b.type: string);
+writeln(b);

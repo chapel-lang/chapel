@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -703,9 +703,9 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
       if (var->type == dtBool)
       {
         if (var->immediate->v_bool == 0)
-          sprintf(imm, "false");
+          snprintf(imm, bufSize, "false");
         else
-          sprintf(imm, "true");
+          snprintf(imm, bufSize, "true");
       }
 
       else if (var->immediate->const_kind == CONST_KIND_STRING)
@@ -1481,7 +1481,7 @@ void AstToText::appendExpr(IfExpr* expr, bool printingType)
 void AstToText::appendExpr(LoopExpr* expr, bool printingType)
 {
   std::string start,end;
-  if (expr->forall)
+  if (expr->type == FORALL_EXPR)
   {
     if (expr->maybeArrayType)
     {

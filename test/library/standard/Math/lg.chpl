@@ -1,3 +1,5 @@
+use Math;
+
 config var ns = 32;
 config var nu = 64:uint;
 

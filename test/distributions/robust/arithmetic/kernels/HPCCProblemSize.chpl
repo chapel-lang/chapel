@@ -4,9 +4,9 @@
 //
 module HPCCProblemSize {
   //
-  // Use the standard modules for reasoning about Memory and Types
+  // Use the standard modules for reasoning about Memory and Types, and for log2
   //
-  use Memory.Diagnostics, Types;
+  use MemDiagnostics, Types, Math;
 
   //
   // The main routine for computing the problem size

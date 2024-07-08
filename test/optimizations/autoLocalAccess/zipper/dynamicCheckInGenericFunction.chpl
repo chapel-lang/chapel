@@ -10,10 +10,10 @@ class MyClass {
   }
 }
 
-proc foo(A: arr.type, B) {
+proc foo(ref A: arr.type, B) {
   // A is a static candidate that should be statically confirmed,
   // B is a dynamic candidate that should be statically reverted
-  forall (i, loopIdx) in zip(A.domain, 1..) {
+  forall (i, loopIdx) in zip(A.domain, 1..) with (ref A) {
     A[i] = B[i]*loopIdx;
   }
 }

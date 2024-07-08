@@ -14,26 +14,26 @@ module SSCA2_kernels
 //  |  Filtering in Kernel 4 is turned on or off by a compilation time param.  |
 //  +==========================================================================+
 
-{ 
-  use SSCA2_compilation_config_params, Time, Barriers, DSIUtil;
+{
+  use SSCA2_compilation_config_params, Time, Collectives, DSIUtil;
 
-  var stopwatch : Timer;
+  var sw : stopwatch;
 
   // ========================================================
   //                           KERNEL 2:
   // ========================================================
-  // Find the edges with the largest edges.  Return a list of 
+  // Find the edges with the largest edges.  Return a list of
   // edges, all of which have the largest weight.
   // ========================================================
-  
-  proc largest_edges ( G, ref heavy_edge_list :domain )
-    
+
+  proc largest_edges ( G, ref heavy_edge_list :domain(?) )
+
     // edge_weights can be either an array over an associative
     // domain or over a sparse domain.  the output  heavy_edge_list
     // can either kind of domain or something else purpose-built
     // for this task.
     {
-      if PRINT_TIMING_STATISTICS then stopwatch.start ();
+      if PRINT_TIMING_STATISTICS then sw.start ();
 
       // ---------------------------------------------------------
       // find heaviest edge weight in a single pass over all edges
@@ -49,7 +49,7 @@ module SSCA2_kernels
       const heaviest_edge_weight = max reduce [s in G.vertices] maxweight(s);
 
       // ---------------------------------------------
-      // in a second pass over all edges, extract list 
+      // in a second pass over all edges, extract list
       // of all edges  matching the heaviest weight
       // ---------------------------------------------
 
@@ -57,24 +57,24 @@ module SSCA2_kernels
         forall (t, w) in G.NeighborPairs (s) with (ref heavy_edge_list) do
 
 	  if w == heaviest_edge_weight then {
-	    heavy_edge_list.add ( (s,t) ); 
+	    heavy_edge_list.add ( (s,t) );
 	  };
 
       if PRINT_TIMING_STATISTICS then {
-	stopwatch.stop ();
-	writeln ( "Elapsed time for Kernel 2: ", stopwatch.elapsed (), 
+	sw.stop ();
+	writeln ( "Elapsed time for Kernel 2: ", sw.elapsed (),
 		  " seconds");
-	stopwatch.clear ();
+	sw.clear ();
       }
 
       // ------------------------------------------------
-      // should be able to write a user-defined "maxlocs" 
+      // should be able to write a user-defined "maxlocs"
       // reduction more efficiently than this scheme
       // ------------------------------------------------
 
       if DEBUG_KERNEL2 then {
 	writeln ();
-	writeln ( "Heaviest weight      : ", heaviest_edge_weight); 
+	writeln ( "Heaviest weight      : ", heaviest_edge_weight);
 	writeln ( "Number of heavy edges:", heavy_edge_list.size );
 	writeln ();
 	writeln ( "Edges with largest weight and other neighbors:" );
@@ -84,8 +84,8 @@ module SSCA2_kernels
 	    writeln ("      ", v, " ", w);}
       }
     };
-	      
-  
+
+
   // ===================================================================
   //                              KERNEL 3:
   // ===================================================================
@@ -93,12 +93,12 @@ module SSCA2_kernels
   // defined by directed paths of length no greater than max_path_length
   // in which the first edge traversed is the root edge
   // ===================================================================
-  
-  proc rooted_heavy_subgraphs ( G, 
-                                Heavy_Edge_List     : domain,
+
+  proc rooted_heavy_subgraphs ( G,
+                                Heavy_Edge_List     : domain(?),
                                 Heavy_Edge_Subgraph : [],
                                 in max_path_length  : int )
-    
+
     // -------------------------------------------------------------------------
     // there is a classic space versus time tradeoff.  if the subgraphs expanded
     // by breadth first search are small, it would make sense to use a hash
@@ -107,18 +107,18 @@ module SSCA2_kernels
     // appropriate.  We expect small diameters for power law graphs, so we
     // expect large subgraphs.
     // -------------------------------------------------------------------------
-  
+
     {
-      if PRINT_TIMING_STATISTICS then stopwatch.start ();
+      if PRINT_TIMING_STATISTICS then sw.start ();
 
       const vertex_domain = G.vertices;
-      
+
       forall ( x, y ) in Heavy_Edge_List do {
 	var Active_Level, Next_Level : domain ( index (vertex_domain) );
 	var min_distance             : [vertex_domain] atomic int;
         forall m in min_distance do m.write(-1);
-	  
-	if DEBUG_KERNEL3 then 
+
+	if DEBUG_KERNEL3 then
 	  writeln ( " Building heavy edge subgraph from pair:", (x,y) );
 	Active_Level.add ( y );
 	Next_Level.clear ();
@@ -129,9 +129,9 @@ module SSCA2_kernels
 	Heavy_Edge_Subgraph ( (x, y) )!.edges.add ( (x, y) );
 	Heavy_Edge_Subgraph ( (x, y) )!.nodes.add ( x );
 	Heavy_Edge_Subgraph ( (x, y) )!.nodes.add ( y );
-  
+
 	for path_length in 1 .. max_path_length do {
-	    
+
 	  forall v in Active_Level with(ref Next_Level) do {
 
 	    forall w in G.Neighbors (v) with(ref Next_Level) do {
@@ -147,7 +147,7 @@ module SSCA2_kernels
 	      }
 	    }
 	  }
-  
+
 	  if path_length < max_path_length then {
 	    Active_Level = Next_Level;
 	    Next_Level.clear ();
@@ -156,10 +156,10 @@ module SSCA2_kernels
       }
 
       if PRINT_TIMING_STATISTICS then {
-	stopwatch.stop ();
-	writeln ( "Elapsed time for Kernel 3: ", stopwatch.elapsed (), 
+	sw.stop ();
+	writeln ( "Elapsed time for Kernel 3: ", sw.elapsed (),
 		  " seconds");
-	stopwatch.clear ();
+	sw.clear ();
       }
     } // end of rooted_heavy_subgraphs
 
@@ -171,20 +171,20 @@ module SSCA2_kernels
   config const defaultNumTPVs = 16;
   config var numTPVs = min(defaultNumTPVs, numLocales);
   // Would be nice to use PrivateDist, but aliasing is not supported (yet)
-  const PrivateSpace = LocaleSpace dmapped Block(boundingBox=LocaleSpace);
+  const PrivateSpace = LocaleSpace dmapped new blockDist(boundingBox=LocaleSpace);
 
   // ==================================================================
   //                              KERNEL 4
   // ==================================================================
   // Calculate Betweenness Centrality for simple unweighted directed or
-  // undirected graphs, using Madduri, et.al.'s modification of 
+  // undirected graphs, using Madduri, et.al.'s modification of
   // Brandes's 2001 algorithm
   // ==================================================================
 
-  proc approximate_betweenness_centrality ( G, starting_vertices, 
+  proc approximate_betweenness_centrality ( G, starting_vertices,
                                             Between_Cent : [] real,
                                             out Sum_Min_Dist : real )
-  
+
     // -----------------------------------------------------------------------
     // The betweenness centrality metric for a given node  v  is defined
     // as the double sum over s not equal to v and  t not equal to
@@ -193,14 +193,14 @@ module SSCA2_kernels
     //
     // Brandes's algorithm decomposes the computation of this metric into,
     // first, separate sums for each vertex s, which can be computed
-    // independently in parallel, and 
-    // two, a recursive, tree-based, calculation of the path counts for 
-    // any particular s.  
+    // independently in parallel, and
+    // two, a recursive, tree-based, calculation of the path counts for
+    // any particular s.
     // The complexity of this algorithm is O ( |V||E| ) time for an unweighted
     // graph.  The algorithm requires O ( |V| ) temporary space for each
     // process that executes instances of the outermost loop.
     // -----------------------------------------------------------------------
-    {       
+    {
       const vertex_domain = G.vertices;
 
       // Considering using a dense 1-d array instead.  This would
@@ -208,8 +208,8 @@ module SSCA2_kernels
       // probably be more efficient.
       type Sparse_Vertex_List = domain(index(vertex_domain));
 
-      var Between_Cent$ : [vertex_domain] sync real = 0.0;
-      var Sum_Min_Dist$ : sync real = 0.0;
+      var Between_Cent : [vertex_domain] sync real = 0.0;
+      var Sum_Min_Dist : sync real = 0.0;
 
       //
       // Throughout kernel 4, we use distributed arrays that are
@@ -238,7 +238,7 @@ module SSCA2_kernels
       // variables approximately evenly across the 1d locales array.
           Locales[_computeChunkStartEnd(numLocales, numTPVs, t+1)[1]-1];
 
-      const TPVLocaleSpace = TPVSpace dmapped Block(boundingBox=TPVSpace,
+      const TPVLocaleSpace = TPVSpace dmapped new blockDist(boundingBox=TPVSpace,
                                                     targetLocales=TPVLocales);
 
       // There will be numTPVs copies of the temps, thus throttling the
@@ -266,13 +266,13 @@ module SSCA2_kernels
       }
       var TPVM: unmanaged TPVManager(TPV.type) = new unmanaged TPVManager(TPV);
 
-      // ------------------------------------------------------ 
+      // ------------------------------------------------------
       // Each iteration of the outer loop of Brandes's algorithm
       // computes the contribution (the "dependency" metric) for
       // one particular vertex  (s)  independently.
       // ------------------------------------------------------
-  
-      if PRINT_TIMING_STATISTICS then stopwatch.start ();
+
+      if PRINT_TIMING_STATISTICS then sw.start ();
 
       forall s in starting_vertices do on vertex_domain.dist.idxToLocale(s) {
 
@@ -287,14 +287,14 @@ module SSCA2_kernels
         pragma "dont disable remote value forwarding"
           inline proc f1(BCaux, v) {
 	  if useAtomicReal then
-            BCaux[v].path_count$.write(0.0);
+            BCaux[v].path_count.write(0.0);
 	  else
-            BCaux[v].path_count$.writeXF(0.0);
+            BCaux[v].path_count.writeXF(0.0);
         }
         forall v in vertex_domain do {
           BCaux[v].depend = 0.0;
           BCaux[v].min_distance.write(-1);
-          // BCaux[v].path_count$.writeXF(0.0);
+          // BCaux[v].path_count.writeXF(0.0);
           f1(BCaux, v);
           BCaux[v].children_list.child_count.write(0);
         }
@@ -303,10 +303,10 @@ module SSCA2_kernels
 	// The structure of the algorithm depends on a breadth-first
 	// traversal. Each vertex will be marked by the length of
 	// the shortest path (min_distance) from s to it. The array
-	// path_count$ will hold a count of the number of shortest
+	// path_count will hold a count of the number of shortest
 	// paths from s to this node.  The number of paths in moderate
 	// sized tori exceeds 2**64.
-  
+
         //
         // Used to check termination of the forward pass
         //
@@ -326,12 +326,12 @@ module SSCA2_kernels
         pragma "dont disable remote value forwarding"
           inline proc f2(BCaux, s) {
 	  if useAtomicReal then
-            BCaux[s].path_count$.write(1.0);
+            BCaux[s].path_count.write(1.0);
 	  else
-            BCaux[s].path_count$.writeXF(1.0);
+            BCaux[s].path_count.writeXF(1.0);
         }
 
-        var barrier = new Barrier(numLocales);
+        var barrier = new barrier(numLocales);
 
         coforall loc in Locales with (ref remaining, ref barrier) do on loc {
           var ALhere = Active_Level[here.id]!;
@@ -342,19 +342,19 @@ module SSCA2_kernels
             // traversal from s
             ALhere.Members.add(s);
             BCaux[s].min_distance.write(0);
-            // BCaux[s].path_count$.writeXF(1);
+            // BCaux[s].path_count.writeXF(1);
             f2(BCaux, s);
           }
           barrier.barrier();
 
           var current_distance : int = 0;
-  
+
           while remaining do {
 	    // ------------------------------------------------
 	    // expand the neighbor sets for all vertices at the
 	    // current distance from the starting vertex  s
 	    // ------------------------------------------------
-      
+
 	    current_distance += 1;
 
             // The Chapel compiler is still a bit conservative when it
@@ -366,10 +366,10 @@ module SSCA2_kernels
             pragma "dont disable remote value forwarding"
               inline proc f3(BCaux, v, u) {
 	      if useAtomicReal then
-                BCaux[v].path_count$.add(BCaux[u].path_count$.read());
+                BCaux[v].path_count.add(BCaux[u].path_count.read());
               else
-                BCaux[v].path_count$.writeEF(BCaux[v].path_count$.readFE() +
-                                             BCaux[u].path_count$.readFF());
+                BCaux[v].path_count.writeEF(BCaux[v].path_count.readFE() +
+                                             BCaux[u].path_count.readFF());
             }
 
             forall u in ALhere.Members do {
@@ -378,7 +378,7 @@ module SSCA2_kernels
                   // --------------------------------------------
                   // add any unmarked neighbors to the next level
                   // --------------------------------------------
-  
+
                   if  BCaux[v].min_distance.compareAndSwap(-1, current_distance_c) {
                     var aloc = if useOnClause then here.id else vertex_domain.dist.idxToLocale(v).id;
                     Active_Level[aloc]!.next!.Members.add (v);
@@ -394,9 +394,9 @@ module SSCA2_kernels
                   // time this code is reached, whether  v  lies in
                   // the previous, the current or the next level.
                   // ------------------------------------------------
-  
+
                   if BCaux[v].min_distance.read() == current_distance_c {
-                    // BCaux[v].path_count$ += BCaux[u].path_count$.readFF();
+                    // BCaux[v].path_count += BCaux[u].path_count.readFF();
                     f3(BCaux, v, u);
                     BCaux[u].children_list.add_child (v);
                   }
@@ -436,52 +436,52 @@ module SSCA2_kernels
 
           if here.id==0 {
             if VALIDATE_BC then
-              Sum_Min_Dist$.writeEF(Sum_Min_Dist$.readFE() + Lcl_Sum_Min_Dist);
+              Sum_Min_Dist.writeEF(Sum_Min_Dist.readFE() + Lcl_Sum_Min_Dist);
           }
 
           // -------------------------------------------------------------
-          // compute the dependencies recursively, traversing the vertices 
-          // of the graph in non-increasing order of distance (reverse 
+          // compute the dependencies recursively, traversing the vertices
+          // of the graph in non-increasing order of distance (reverse
           // ordering from the initial traversal)
           // -------------------------------------------------------------
 
           const graph_diameter = current_distance - 1;
 
           if here.id==0 {
-            if DEBUG_KERNEL4 then 
-              writeln ( " graph diameter from starting node ", s, 
+            if DEBUG_KERNEL4 then
+              writeln ( " graph diameter from starting node ", s,
                         "  is ", graph_diameter );
           }
 
           pragma "dont disable remote value forwarding"
-            inline proc f4(BCaux, Between_Cent$, u) {
+            inline proc f4(BCaux, Between_Cent, u) {
 	    if useAtomicReal then
             BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
-              ( BCaux[u].path_count$.read() / 
-                BCaux[v].path_count$.read() )      *
+              ( BCaux[u].path_count.read() /
+                BCaux[v].path_count.read() )      *
               ( 1.0 + BCaux[v].depend );
 	    else
             BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
-              ( BCaux[u].path_count$.readFF() / 
-                BCaux[v].path_count$.readFF() )      *
+              ( BCaux[u].path_count.readFF() /
+                BCaux[v].path_count.readFF() )      *
               ( 1.0 + BCaux[v].depend );
-              Between_Cent$ (u).writeEF(Between_Cent$ (u).readFE() + BCaux[u].depend);
+              Between_Cent (u).writeEF(Between_Cent (u).readFE() + BCaux[u].depend);
           }
 
           // back up to last level
           var curr_Level =  Active_Level[here.id]!.previous!;
-  
+
           for current_distance in 2 .. graph_diameter by -1 {
             curr_Level = curr_Level.previous!;
 
             for u in curr_Level.Members do on vertex_domain.dist.idxToLocale(u) {
-                f4(BCaux, Between_Cent$, u);
+                f4(BCaux, Between_Cent, u);
                 /*
               BCaux[u].depend = + reduce [v in BCaux[u].children_list.Row_Children[1..BCaux[u].children_list.child_count.read()]]
-                ( BCaux[u].path_count$.readFF() / 
-                  BCaux[v].path_count$.readFF() )      *
+                ( BCaux[u].path_count.readFF() /
+                  BCaux[v].path_count.readFF() )      *
                 ( 1.0 + BCaux[v].depend );
-              Between_Cent$ (u) += BCaux[u].depend;
+              Between_Cent (u) += BCaux[u].depend;
                 */
             }
 
@@ -494,9 +494,9 @@ module SSCA2_kernels
       }; // closure of outer embarrassingly parallel forall
 
       if PRINT_TIMING_STATISTICS then {
-	stopwatch.stop ();
-	var K4_time = stopwatch.elapsed ();
-	stopwatch.clear ();
+	sw.stop ();
+	var K4_time = sw.elapsed ();
+	sw.clear ();
 	writeln ( "Elapsed time for Kernel 4: ", K4_time, " seconds");
 
 	const n_edges          = G.num_edges;
@@ -515,9 +515,9 @@ module SSCA2_kernels
       }
 
       if VALIDATE_BC then
-	      Sum_Min_Dist = Sum_Min_Dist$.readFE();
-      
-      Between_Cent = Between_Cent$.readFE();
+	      Sum_Min_Dist = Sum_Min_Dist.readFE();
+
+      Between_Cent = Between_Cent.readFE();
 
       if DELETE_KERNEL4_DS {
         coforall t in TPVSpace do on t {
@@ -587,7 +587,7 @@ module SSCA2_kernels
   record taskPrivateArrayData {
     type vertex;
     var min_distance  : atomic int;
-    var path_count$   : if useAtomicReal then atomic real else sync real;
+    var path_count   : if useAtomicReal then atomic real else sync real;
     var depend        : real;
     var children_list : child_struct(vertex);
   }
@@ -608,7 +608,7 @@ module SSCA2_kernels
     proc gettid() {
       const tid = this.currTPV.fetchAdd(1)%numTPVs;
       on this.TPV[tid] do
-        while this.TPV[tid]!.used.testAndSet() do chpl_task_yield();
+        while this.TPV[tid]!.used.testAndSet() do currentTask.yieldExecution();
       return tid;
     }
     proc getTPV(tid) {

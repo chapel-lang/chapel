@@ -1,6 +1,18 @@
 record R {
-  var a, b, c: single bool;
+  var a, b, c: sync bool;
   var s: string;
+  proc init() {}
+  proc init=(other: R) {
+    this.s = other.s;
+    init this;
+
+    if other.a.isFull
+      then this.a.writeEF(other.a.readFF());
+    if other.b.isFull
+      then this.b.writeEF(other.b.readFF());
+    if other.c.isFull
+      then this.c.writeEF(other.c.readFF());
+  }
 }
 
 proc main() {

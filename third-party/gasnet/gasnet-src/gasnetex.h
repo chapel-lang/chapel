@@ -65,8 +65,10 @@
 #ifdef GASNET_DEBUG
   #undef GASNET_DEBUG
   #define GASNET_DEBUG 1
+  #define GASNETI_DEBUG_P 1
   #define GASNETI_DEBUG_CONFIG debug
 #else
+  #define GASNETI_DEBUG_P 0
   #define GASNETI_DEBUG_CONFIG nodebug
 #endif
 
@@ -180,10 +182,24 @@ GASNETI_BEGIN_NOWARN
 #include <gasnet_ratomic_fwd.h>
 
 /* GASNET_PSHM = GASNet conduit is using PSHM */
-#if defined(GASNET_PSHM) && (GASNET_PSHM != 1)
-  #error bad defn of GASNET_PSHM
-#elif !defined(GASNET_PSHM)
-  #define GASNET_PSHM 0
+#ifdef GASNET_PSHM
+  #undef GASNET_PSHM
+  #define GASNET_PSHM 1
+  #define GASNETI_PSHM_P 1
+#else
+  #define GASNETI_PSHM_P 0
+#endif
+
+// GASNET_RCV_THREAD = conduit is built with support for a "receive progress thread"
+#ifdef GASNET_RCV_THREAD
+  #undef GASNET_RCV_THREAD
+  #define GASNET_RCV_THREAD 1
+#endif
+
+// GASNET_SND_THREAD = conduit is built with support for a "send progress thread"
+#ifdef GASNET_SND_THREAD
+  #undef GASNET_SND_THREAD
+  #define GASNET_SND_THREAD 1
 #endif
 
 /* GASNETI_CONDUIT_THREADS = GASNet conduit has one or more private threads
@@ -654,7 +670,7 @@ extern int gex_EP_RegisterHandlers(
             gex_AM_Entry_t *_table,
             size_t         _numentries);
 
-extern void gex_EP_BindSegment(
+extern int gex_EP_BindSegment(
             gex_EP_t       _ep,
             gex_Segment_t  _segment,
             gex_Flags_t    _flags);
@@ -857,6 +873,30 @@ typedef struct gasneti_srcdesc_s *gex_AM_SrcDesc_t;
 
 
 /* ------------------------------------------------------------------------------------ */
+/* progress threads */
+
+// default trivial implementation
+#ifndef gex_System_QueryProgressThreads
+  #define gex_System_QueryProgressThreads gasneti_query_progress_threads
+#endif
+
+typedef struct {
+  const char *     gex_device_list;
+  unsigned int     gex_thread_roles;
+  void *           (*gex_progress_fn) (void *);
+  void *           gex_progress_arg;
+} gex_ProgressThreadInfo_t;
+
+#define GEX_THREAD_ROLE_RCV             (1U << 0)
+#define GEX_THREAD_ROLE_SND             (1U << 1)
+
+extern int gex_System_QueryProgressThreads(
+            gex_Client_t                     _client,
+            unsigned int                    *_count_p,
+            const gex_ProgressThreadInfo_t **_info_p,
+            gex_Flags_t                      _flags);
+
+/* ------------------------------------------------------------------------------------ */
 /* conditional and internal flags (others in gasnet_fwd.h) */
 
 #define GEX_FLAG_PEER_NEVER_NBRHD       (1U << 14)
@@ -874,6 +914,12 @@ typedef struct gasneti_srcdesc_s *gex_AM_SrcDesc_t;
 
 #define GASNETI_FLAG_INIT_LEGACY           (1U << 31)
 
+#if GASNET_DEBUG
+  #define GASNETI_FLAG_G2EX_DEBUG             (1U << 30)
+#else
+  #define GASNETI_FLAG_G2EX_DEBUG             0
+#endif
+
 /* ------------------------------------------------------------------------------------ */
 // GASNETC_MAX_{ARGS,MEDIUM,LONG}_NBRHD
 // These are compile-time constants used by the "neighborhood" AM support,
@@ -890,16 +936,17 @@ typedef struct gasneti_srcdesc_s *gex_AM_SrcDesc_t;
   #define GASNETC_MAX_ARGS_NBRHD   (gex_AM_MaxArgs())
 #endif
 #ifndef GASNETC_MAX_MEDIUM_NBRHD
-  // Assumes gex_AM_LUB{Request,Reply}Medium() expand to compile-time constants
-  // AND that the LUB is the *greatest* upper-bound.  If either property is not
-  // true for a given conduit, then it must define GASNETC_MAX_MEDIUM_NBRHD to
-  // an appropriate compile-time constant bound in its gasnet_core_fwd.h.
+  // This default assumes gex_AM_LUB{Request,Reply}Medium() expand to their
+  // *greatest* upper-bound.  If that is not true for a given conduit, then it
+  // must define GASNETC_MAX_MEDIUM_NBRHD in its gasnet_core_fwd.h to an
+  // expression which evaluates to the correct value no later than execution
+  // of gasneti_pshm_init().
   // The value may be a conservative upper-bound if the real value cannot be
-  // known until run time (at the cost of wasted memory).
+  // known that early (at the cost of wasted memory).
   #define GASNETC_MAX_MEDIUM_NBRHD MAX(gex_AM_LUBRequestMedium(),gex_AM_LUBReplyMedium())
 #endif
 #ifndef GASNETC_MAX_LONG_NBRHD
-  // Same assumptions and usage as GASNETC_MAX_MEDIUM_NBRHD, above, but for Long.
+  // Same assumption and usage as GASNETC_MAX_MEDIUM_NBRHD, above, but for Long.
   #define GASNETC_MAX_LONG_NBRHD MAX(gex_AM_LUBRequestLong(),gex_AM_LUBReplyLong())
 #endif
 
@@ -1027,11 +1074,15 @@ extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC64_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_CUDA_UVA_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_HIP_CONFIG);
+extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_ZE_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CORE_,GASNET_CORE_NAME));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(EXTENDED_,GASNET_EXTENDED_NAME));
+#if GASNET_CONDUIT_OFI
+  extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(OFI_PROVIDER_,GASNETC_OFI_PROVIDER_IDENT));
+#endif
 
 static int *gasneti_linkconfig_idiotcheck(void);
 #if !PLATFORM_COMPILER_TINY /* avoid a tinyc bug */
@@ -1063,11 +1114,15 @@ static int *gasneti_linkconfig_idiotcheck(void) {
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_CUDA_UVA_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_HIP_CONFIG)
+        + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_ZE_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CORE_,GASNET_CORE_NAME))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(EXTENDED_,GASNET_EXTENDED_NAME))
+  #if GASNET_CONDUIT_OFI
+        + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(OFI_PROVIDER_,GASNETC_OFI_PROVIDER_IDENT))
+  #endif
         ;
   #if GASNETI_IDIOTCHECK_RECURSIVE_REFERENCE
   if (_gasneti_linkconfig_idiotcheck == &gasneti_linkconfig_idiotcheck)

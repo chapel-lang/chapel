@@ -1,0 +1,38 @@
+1 init
+11110000
+11444
+2 init= from 1
+((id = 2), 440)
+2 deinit
+22220000
+11444
+3 init= from 1
+4 init= from 3
+(id = 4)
+4 deinit
+3 deinit
+33330000
+11555
+5 init= from 1
+((id = 5), 550)
+5 deinit
+44440000
+11555
+6 init= from 1
+(id = 6)
+6 deinit
+55550000
+11666
+11777
+7 init= from 1
+((id = 7), 770)
+7 deinit
+66660000
+11666
+11777
+8 init= from 1
+(id = 8)
+8 deinit
+77770000
+(id = 1)
+1 deinit

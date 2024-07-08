@@ -92,7 +92,7 @@ Here is an example that defines and uses a user-defined reduction.
     var value: eltType;
 
     /* identity w.r.t. the reduction operation */
-    proc identity         return 0: eltType;
+    proc identity      do return 0: eltType;
 
     /* accumulate a single element onto the accumulator */
     proc accumulate(elm)  { value = value + elm; }
@@ -110,14 +110,14 @@ Here is an example that defines and uses a user-defined reduction.
     // with a lock on 'this'.
     // 'other' will not be accessed concurrently.
     /* combine the accumulations in 'this' and 'other' */
-    proc combine(other: borrowed PlusReduceOp)   { value = value + other.value; }
+    proc combine(other: borrowed PlusReduceOp(?))   { value = value + other.value; }
 
     /* Convert the accumulation into the value of the reduction
        that is reported to the user. This is trivial in our case. */
-    proc generate()       return value;
+    proc generate()    do return value;
 
     /* produce a new instance of this class */
-    proc clone()          return new unmanaged PlusReduceOp(eltType=eltType);
+    proc clone()       do return new unmanaged PlusReduceOp(eltType=eltType);
   }
 
 
@@ -131,13 +131,13 @@ Here is an example that defines and uses a user-defined reduction.
 
   // To have different input/accumulator/result types of the reduction,
   // specify the input type explicitly, e.g. PlusReduceOp(int) below:
-  var A = [false, false, true, false, true];
-  var sum: real;
-  forall elm in A with (PlusReduceOp(int) reduce sum) {
-    sum reduce= elm;   // bools are implicitly coerced to 'int' input type
-    writeln(sum);      // accumulation state: int
+  var B = [false, false, true, false, true];
+  var rsum: real;
+  forall elm in B with (PlusReduceOp(int) reduce rsum) {
+    rsum reduce= elm;   // bools are implicitly coerced to 'int' input type
+    writeln(rsum);      // accumulation state: int
   }
-  writeln(sum);        // result: real
+  writeln(rsum);       // result: real
 
 
 -----------

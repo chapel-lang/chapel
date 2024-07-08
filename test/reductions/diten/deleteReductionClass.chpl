@@ -1,14 +1,14 @@
-var count$: sync int = 0;
+var count: sync int = 0;
 class LastOp: ReduceScanOp {
   type eltType;
   var last: eltType;
 
   proc init(type eltType) {
     this.eltType = eltType;
-    count$.writeEF(count$.readFE() + 1);
+    count.writeEF(count.readFE() + 1);
   }
   proc deinit() {
-    count$.writeEF(count$.readFE() -  1);
+    count.writeEF(count.readFE() -  1);
   }
   proc identity {
     return last;
@@ -35,7 +35,7 @@ proc main {
   var x: int;
   x = LastOp reduce A;
 
-  if count$.readFE() == 0 then
+  if count.readFE() == 0 then
     writeln("Deleted every reduction class.");
   else
     halt("didn't delete every reduction class");

@@ -19,19 +19,15 @@
 
 #include "ScheduleDAGSDNodes.h"
 #include "llvm/ADT/Statistic.h"
-#include "llvm/CodeGen/LatencyPriorityQueue.h"
 #include "llvm/CodeGen/ResourcePriorityQueue.h"
 #include "llvm/CodeGen/ScheduleHazardRecognizer.h"
 #include "llvm/CodeGen/SchedulerRegistry.h"
 #include "llvm/CodeGen/SelectionDAGISel.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
-#include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
-#include "llvm/IR/DataLayout.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
-#include <climits>
 using namespace llvm;
 
 #define DEBUG_TYPE "pre-RA-sched"
@@ -269,7 +265,7 @@ void ScheduleDAGVLIW::listScheduleTopDown() {
 //===----------------------------------------------------------------------===//
 
 /// createVLIWDAGScheduler - This creates a top-down list scheduler.
-ScheduleDAGSDNodes *
-llvm::createVLIWDAGScheduler(SelectionDAGISel *IS, CodeGenOpt::Level) {
+ScheduleDAGSDNodes *llvm::createVLIWDAGScheduler(SelectionDAGISel *IS,
+                                                 CodeGenOptLevel) {
   return new ScheduleDAGVLIW(*IS->MF, IS->AA, new ResourcePriorityQueue(IS));
 }

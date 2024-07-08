@@ -17,8 +17,8 @@
 
 #include "clang/StaticAnalyzer/Core/PathSensitive/CallEvent.h"
 #include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/Support/Compiler.h"
+#include <optional>
 #include <vector>
 
 namespace clang {
@@ -42,9 +42,9 @@ enum CallDescriptionFlags : unsigned {
 /// arguments and the name of the function.
 class CallDescription {
   friend class CallEvent;
-  using MaybeCount = Optional<unsigned>;
+  using MaybeCount = std::optional<unsigned>;
 
-  mutable Optional<const IdentifierInfo *> II;
+  mutable std::optional<const IdentifierInfo *> II;
   // The list of the qualified names used to identify the specified CallEvent,
   // e.g. "{a, b}" represent the qualified names, like "a::b".
   std::vector<std::string> QualifiedName;
@@ -63,15 +63,14 @@ public:
   /// @param RequiredArgs The number of arguments that is expected to match a
   /// call. Omit this parameter to match every occurrence of call with a given
   /// name regardless the number of arguments.
-  CallDescription(CallDescriptionFlags Flags,
-                  ArrayRef<const char *> QualifiedName,
-                  MaybeCount RequiredArgs = None,
-                  MaybeCount RequiredParams = None);
+  CallDescription(CallDescriptionFlags Flags, ArrayRef<StringRef> QualifiedName,
+                  MaybeCount RequiredArgs = std::nullopt,
+                  MaybeCount RequiredParams = std::nullopt);
 
   /// Construct a CallDescription with default flags.
-  CallDescription(ArrayRef<const char *> QualifiedName,
-                  MaybeCount RequiredArgs = None,
-                  MaybeCount RequiredParams = None);
+  CallDescription(ArrayRef<StringRef> QualifiedName,
+                  MaybeCount RequiredArgs = std::nullopt,
+                  MaybeCount RequiredParams = std::nullopt);
 
   CallDescription(std::nullptr_t) = delete;
 
@@ -108,13 +107,56 @@ public:
     return CD1.matches(Call);
   }
 
-  /// \copydoc clang::ento::matchesAny(const CallEvent &, const CallDescription &)
+  /// \copydoc clang::ento::CallDescription::matchesAny(const CallEvent &, const CallDescription &)
   template <typename... Ts>
   friend bool matchesAny(const CallEvent &Call, const CallDescription &CD1,
                          const Ts &...CDs) {
     return CD1.matches(Call) || matchesAny(Call, CDs...);
   }
   /// @}
+
+  /// @name Matching CallDescriptions against a CallExpr
+  /// @{
+
+  /// Returns true if the CallExpr is a call to a function that matches the
+  /// CallDescription.
+  ///
+  /// When available, always prefer matching with a CallEvent! This function
+  /// exists only when that is not available, for example, when _only_
+  /// syntactic check is done on a piece of code.
+  ///
+  /// Also, StdLibraryFunctionsChecker::Signature is likely a better candicade
+  /// for syntactic only matching if you are writing a new checker. This is
+  /// handy if a CallDescriptionMap is already there.
+  ///
+  /// The function is imprecise because CallEvent may know path sensitive
+  /// information, such as the precise argument count (see comments for
+  /// CallEvent::getNumArgs), the called function if it was called through a
+  /// function pointer, and other information not available syntactically.
+  bool matchesAsWritten(const CallExpr &CE) const;
+
+  /// Returns true whether the CallExpr matches on any of the CallDescriptions
+  /// supplied.
+  ///
+  /// \note This function is not intended to be used to match Obj-C method
+  /// calls.
+  friend bool matchesAnyAsWritten(const CallExpr &CE,
+                                  const CallDescription &CD1) {
+    return CD1.matchesAsWritten(CE);
+  }
+
+  /// \copydoc clang::ento::CallDescription::matchesAnyAsWritten(const CallExpr &, const CallDescription &)
+  template <typename... Ts>
+  friend bool matchesAnyAsWritten(const CallExpr &CE,
+                                  const CallDescription &CD1,
+                                  const Ts &...CDs) {
+    return CD1.matchesAsWritten(CE) || matchesAnyAsWritten(CE, CDs...);
+  }
+  /// @}
+
+private:
+  bool matchesImpl(const FunctionDecl *Callee, size_t ArgCount,
+                   size_t ParamCount) const;
 };
 
 /// An immutable map from CallDescriptions to arbitrary data. Provides a unified
@@ -147,11 +189,33 @@ public:
   CallDescriptionMap(CallDescriptionMap &&) = default;
   CallDescriptionMap &operator=(CallDescriptionMap &&) = default;
 
-  LLVM_NODISCARD const T *lookup(const CallEvent &Call) const {
+  [[nodiscard]] const T *lookup(const CallEvent &Call) const {
     // Slow path: linear lookup.
     // TODO: Implement some sort of fast path.
     for (const std::pair<CallDescription, T> &I : LinearMap)
       if (I.first.matches(Call))
+        return &I.second;
+
+    return nullptr;
+  }
+
+  /// When available, always prefer lookup with a CallEvent! This function
+  /// exists only when that is not available, for example, when _only_
+  /// syntactic check is done on a piece of code.
+  ///
+  /// Also, StdLibraryFunctionsChecker::Signature is likely a better candicade
+  /// for syntactic only matching if you are writing a new checker. This is
+  /// handy if a CallDescriptionMap is already there.
+  ///
+  /// The function is imprecise because CallEvent may know path sensitive
+  /// information, such as the precise argument count (see comments for
+  /// CallEvent::getNumArgs), the called function if it was called through a
+  /// function pointer, and other information not available syntactically.
+  [[nodiscard]] const T *lookupAsWritten(const CallExpr &Call) const {
+    // Slow path: linear lookup.
+    // TODO: Implement some sort of fast path.
+    for (const std::pair<CallDescription, T> &I : LinearMap)
+      if (I.first.matchesAsWritten(Call))
         return &I.second;
 
     return nullptr;
@@ -170,7 +234,21 @@ public:
   CallDescriptionSet(const CallDescriptionSet &) = delete;
   CallDescriptionSet &operator=(const CallDescription &) = delete;
 
-  LLVM_NODISCARD bool contains(const CallEvent &Call) const;
+  [[nodiscard]] bool contains(const CallEvent &Call) const;
+
+  /// When available, always prefer lookup with a CallEvent! This function
+  /// exists only when that is not available, for example, when _only_
+  /// syntactic check is done on a piece of code.
+  ///
+  /// Also, StdLibraryFunctionsChecker::Signature is likely a better candicade
+  /// for syntactic only matching if you are writing a new checker. This is
+  /// handy if a CallDescriptionMap is already there.
+  ///
+  /// The function is imprecise because CallEvent may know path sensitive
+  /// information, such as the precise argument count (see comments for
+  /// CallEvent::getNumArgs), the called function if it was called through a
+  /// function pointer, and other information not available syntactically.
+  [[nodiscard]] bool containsAsWritten(const CallExpr &CE) const;
 };
 
 } // namespace ento

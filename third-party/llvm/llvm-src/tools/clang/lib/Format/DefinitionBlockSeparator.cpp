@@ -45,17 +45,19 @@ void DefinitionBlockSeparator::separateBlocks(
   auto LikelyDefinition = [&](const AnnotatedLine *Line,
                               bool ExcludeEnum = false) {
     if ((Line->MightBeFunctionDecl && Line->mightBeFunctionDefinition()) ||
-        Line->startsWithNamespace())
+        Line->startsWithNamespace()) {
       return true;
+    }
     int BracketLevel = 0;
     for (const FormatToken *CurrentToken = Line->First; CurrentToken;
          CurrentToken = CurrentToken->Next) {
       if (BracketLevel == 0) {
-        if ((CurrentToken->isOneOf(tok::kw_class, tok::kw_struct,
-                                   tok::kw_union) ||
-             (Style.isJavaScript() &&
-              CurrentToken->is(ExtraKeywords.kw_function))))
+        if (CurrentToken->isOneOf(tok::kw_class, tok::kw_struct,
+                                  tok::kw_union) ||
+            (Style.isJavaScript() &&
+             CurrentToken->is(ExtraKeywords.kw_function))) {
           return true;
+        }
         if (!ExcludeEnum && CurrentToken->is(tok::kw_enum))
           return true;
       }
@@ -67,11 +69,11 @@ void DefinitionBlockSeparator::separateBlocks(
       (Style.SeparateDefinitionBlocks == FormatStyle::SDS_Always ? 1 : 0) + 1;
   WhitespaceManager Whitespaces(
       Env.getSourceManager(), Style,
-      Style.DeriveLineEnding
+      Style.LineEnding > FormatStyle::LE_CRLF
           ? WhitespaceManager::inputUsesCRLF(
                 Env.getSourceManager().getBufferData(Env.getFileID()),
-                Style.UseCRLF)
-          : Style.UseCRLF);
+                Style.LineEnding == FormatStyle::LE_DeriveCRLF)
+          : Style.LineEnding == FormatStyle::LE_CRLF);
   for (unsigned I = 0; I < Lines.size(); ++I) {
     const auto &CurrentLine = Lines[I];
     if (CurrentLine->InPPDirective)
@@ -92,8 +94,9 @@ void DefinitionBlockSeparator::separateBlocks(
         return;
       if (IsAccessSpecifierToken(TargetToken) ||
           (OpeningLineIndex > 0 &&
-           IsAccessSpecifierToken(Lines[OpeningLineIndex - 1]->First)))
+           IsAccessSpecifierToken(Lines[OpeningLineIndex - 1]->First))) {
         return;
+      }
       if (!TargetLine->Affected)
         return;
       Whitespaces.replaceWhitespace(*TargetToken, NewlineToInsert,
@@ -140,8 +143,10 @@ void DefinitionBlockSeparator::separateBlocks(
       if (LikelyDefinition(OperateLine))
         return false;
 
-      if (OperateLine->First->is(tok::comment))
+      if (const auto *Tok = OperateLine->First;
+          Tok->is(tok::comment) && !isClangFormatOn(Tok->TokenText)) {
         return true;
+      }
 
       // A single line identifier that is not in the last line.
       if (OperateLine->First->is(tok::identifier) &&
@@ -156,11 +161,12 @@ void DefinitionBlockSeparator::separateBlocks(
         if (NextLine->MightBeFunctionDecl &&
             NextLine->mightBeFunctionDefinition() &&
             NextLine->First->NewlinesBefore == 1 &&
-            OperateLine->First->is(TT_FunctionLikeOrFreestandingMacro))
+            OperateLine->First->is(TT_FunctionLikeOrFreestandingMacro)) {
           return true;
+        }
       }
 
-      if ((Style.isCSharp() && OperateLine->First->is(TT_AttributeSquare)))
+      if (Style.isCSharp() && OperateLine->First->is(TT_AttributeSquare))
         return true;
       return false;
     };
@@ -181,12 +187,11 @@ void DefinitionBlockSeparator::separateBlocks(
         InsertReplacement(OpeningLineIndex != 0);
       TargetLine = CurrentLine;
       TargetToken = TargetLine->First;
-      while (TargetToken && !TargetToken->is(tok::r_brace))
+      while (TargetToken && TargetToken->isNot(tok::r_brace))
         TargetToken = TargetToken->Next;
-      if (!TargetToken) {
-        while (I < Lines.size() && !Lines[I]->First->is(tok::r_brace))
+      if (!TargetToken)
+        while (I < Lines.size() && Lines[I]->First->isNot(tok::r_brace))
           ++I;
-      }
     } else if (CurrentLine->First->closesScope()) {
       if (OpeningLineIndex > Lines.size())
         continue;
@@ -195,8 +200,9 @@ void DefinitionBlockSeparator::separateBlocks(
       // misrecognition.
       if (OpeningLineIndex > 0 &&
           Lines[OpeningLineIndex]->First->is(tok::l_brace) &&
-          Lines[OpeningLineIndex - 1]->Last->isNot(tok::l_brace))
+          Lines[OpeningLineIndex - 1]->Last->isNot(tok::l_brace)) {
         --OpeningLineIndex;
+      }
       OpeningLine = Lines[OpeningLineIndex];
       // Closing a function definition.
       if (LikelyDefinition(OpeningLine)) {
@@ -210,8 +216,9 @@ void DefinitionBlockSeparator::separateBlocks(
           // Avoid duplicated replacement.
           if (TargetToken->isNot(tok::l_brace))
             InsertReplacement(NewlineCount);
-        } else if (IsNeverStyle)
+        } else if (IsNeverStyle) {
           InsertReplacement(OpeningLineIndex != 0);
+        }
       }
     }
 
@@ -227,8 +234,9 @@ void DefinitionBlockSeparator::separateBlocks(
       if (!TargetToken->closesScope() && !IsPPConditional(OpeningLineIndex)) {
         // Check whether current line may precede a definition line.
         while (OpeningLineIndex + 1 < Lines.size() &&
-               MayPrecedeDefinition(/*Direction=*/0))
+               MayPrecedeDefinition(/*Direction=*/0)) {
           ++OpeningLineIndex;
+        }
         TargetLine = Lines[OpeningLineIndex];
         if (!LikelyDefinition(TargetLine)) {
           OpeningLineIndex = I + 1;
@@ -236,16 +244,18 @@ void DefinitionBlockSeparator::separateBlocks(
           TargetToken = TargetLine->First;
           InsertReplacement(NewlineCount);
         }
-      } else if (IsNeverStyle)
+      } else if (IsNeverStyle) {
         InsertReplacement(/*NewlineToInsert=*/1);
+      }
     }
   }
-  for (const auto &R : Whitespaces.generateReplacements())
+  for (const auto &R : Whitespaces.generateReplacements()) {
     // The add method returns an Error instance which simulates program exit
     // code through overloading boolean operator, thus false here indicates
     // success.
     if (Result.add(R))
       return;
+  }
 }
 } // namespace format
 } // namespace clang

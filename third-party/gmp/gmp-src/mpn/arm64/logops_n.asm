@@ -78,7 +78,7 @@ MULFUNC_PROLOGUE(mpn_and_n mpn_andn_n mpn_nand_n mpn_ior_n mpn_iorn_n mpn_nior_n
 
 ASM_START()
 PROLOGUE(func)
-	lsr	x18, n, #2
+	lsr	x17, n, #2
 	tbz	n, #0, L(bx0)
 
 L(bx1):	ldr	x7, [up]
@@ -88,7 +88,7 @@ L(bx1):	ldr	x7, [up]
 	str	x15, [rp],#8
 	tbnz	n, #1, L(b11)
 
-L(b01):	cbz	x18, L(ret)
+L(b01):	cbz	x17, L(ret)
 	ldp	x4, x5, [up,#8]
 	ldp	x8, x9, [vp,#8]
 	sub	up, up, #8
@@ -99,7 +99,7 @@ L(b11):	ldp	x6, x7, [up,#8]
 	ldp	x10, x11, [vp,#8]
 	add	up, up, #8
 	add	vp, vp, #8
-	cbz	x18, L(end)
+	cbz	x17, L(end)
 	b	L(top)
 
 L(bx0):	tbnz	n, #1, L(b10)
@@ -110,7 +110,7 @@ L(b00):	ldp	x4, x5, [up],#-16
 
 L(b10):	ldp	x6, x7, [up]
 	ldp	x10, x11, [vp]
-	cbz	x18, L(end)
+	cbz	x17, L(end)
 
 	ALIGN(16)
 L(top):	ldp	x4, x5, [up,#16]
@@ -127,8 +127,8 @@ L(mid):	ldp	x6, x7, [up,#32]!
 	POSTOP(	x12)
 	POSTOP(	x13)
 	stp	x12, x13, [rp],#16
-	sub	x18, x18, #1
-	cbnz	x18, L(top)
+	sub	x17, x17, #1
+	cbnz	x17, L(top)
 
 L(end):	LOGOP(	x12, x6, x10)
 	LOGOP(	x13, x7, x11)

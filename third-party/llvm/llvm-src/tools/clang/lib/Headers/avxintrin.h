@@ -39,9 +39,23 @@ typedef float __m256_u __attribute__ ((__vector_size__ (32), __aligned__(1)));
 typedef double __m256d_u __attribute__((__vector_size__(32), __aligned__(1)));
 typedef long long __m256i_u __attribute__((__vector_size__(32), __aligned__(1)));
 
+#ifdef __SSE2__
+/* Both _Float16 and __bf16 require SSE2 being enabled. */
+typedef _Float16 __v16hf __attribute__((__vector_size__(32), __aligned__(32)));
+typedef _Float16 __m256h __attribute__((__vector_size__(32), __aligned__(32)));
+typedef _Float16 __m256h_u __attribute__((__vector_size__(32), __aligned__(1)));
+
+typedef __bf16 __v16bf __attribute__((__vector_size__(32), __aligned__(32)));
+typedef __bf16 __m256bh __attribute__((__vector_size__(32), __aligned__(32)));
+#endif
+
 /* Define the default attributes for the functions in this file. */
-#define __DEFAULT_FN_ATTRS __attribute__((__always_inline__, __nodebug__, __target__("avx"), __min_vector_width__(256)))
-#define __DEFAULT_FN_ATTRS128 __attribute__((__always_inline__, __nodebug__, __target__("avx"), __min_vector_width__(128)))
+#define __DEFAULT_FN_ATTRS                                                     \
+  __attribute__((__always_inline__, __nodebug__, __target__("avx,no-evex512"), \
+                 __min_vector_width__(256)))
+#define __DEFAULT_FN_ATTRS128                                                  \
+  __attribute__((__always_inline__, __nodebug__, __target__("avx,no-evex512"), \
+                 __min_vector_width__(128)))
 
 /* Arithmetic */
 /// Adds two 256-bit vectors of [4 x double].
@@ -1504,7 +1518,10 @@ _mm256_blendv_ps(__m256 __a, __m256 __b, __m256 __c)
 ///    00: Bits [31:0] and [159:128] are copied from the selected operand. \n
 ///    01: Bits [63:32] and [191:160] are copied from the selected operand. \n
 ///    10: Bits [95:64] and [223:192] are copied from the selected operand. \n
-///    11: Bits [127:96] and [255:224] are copied from the selected operand.
+///    11: Bits [127:96] and [255:224] are copied from the selected operand. \n
+///    Note: To generate a mask, you can use the \c _MM_SHUFFLE macro.
+///    <c>_MM_SHUFFLE(b6, b4, b2, b0)</c> can create an 8-bit mask of the form
+///    <c>[b6, b4, b2, b0]</c>.
 /// \returns A 256-bit vector of [8 x float] containing the shuffled values.
 #define _mm256_shuffle_ps(a, b, mask) \
   ((__m256)__builtin_ia32_shufps256((__v8sf)(__m256)(a), \
@@ -1953,12 +1970,16 @@ _mm256_blendv_ps(__m256 __a, __m256 __b, __m256 __c)
 ///
 /// \headerfile <x86intrin.h>
 ///
+/// \code
+/// int _mm256_extract_epi32(__m256i X, const int N);
+/// \endcode
+///
 /// This intrinsic corresponds to the <c> VEXTRACTF128+COMPOSITE </c>
 ///   instruction.
 ///
-/// \param __a
+/// \param X
 ///    A 256-bit vector of [8 x i32].
-/// \param __imm
+/// \param N
 ///    An immediate integer operand with bits [2:0] determining which vector
 ///    element is extracted and returned.
 /// \returns A 32-bit integer containing the extracted 32 bits of extended
@@ -1971,12 +1992,16 @@ _mm256_blendv_ps(__m256 __a, __m256 __b, __m256 __c)
 ///
 /// \headerfile <x86intrin.h>
 ///
+/// \code
+/// int _mm256_extract_epi16(__m256i X, const int N);
+/// \endcode
+///
 /// This intrinsic corresponds to the <c> VEXTRACTF128+COMPOSITE </c>
 ///   instruction.
 ///
-/// \param __a
+/// \param X
 ///    A 256-bit integer vector of [16 x i16].
-/// \param __imm
+/// \param N
 ///    An immediate integer operand with bits [3:0] determining which vector
 ///    element is extracted and returned.
 /// \returns A 32-bit integer containing the extracted 16 bits of zero extended
@@ -1990,12 +2015,16 @@ _mm256_blendv_ps(__m256 __a, __m256 __b, __m256 __c)
 ///
 /// \headerfile <x86intrin.h>
 ///
+/// \code
+/// int _mm256_extract_epi8(__m256i X, const int N);
+/// \endcode
+///
 /// This intrinsic corresponds to the <c> VEXTRACTF128+COMPOSITE </c>
 ///   instruction.
 ///
-/// \param __a
+/// \param X
 ///    A 256-bit integer vector of [32 x i8].
-/// \param __imm
+/// \param N
 ///    An immediate integer operand with bits [4:0] determining which vector
 ///    element is extracted and returned.
 /// \returns A 32-bit integer containing the extracted 8 bits of zero extended
@@ -2010,12 +2039,16 @@ _mm256_blendv_ps(__m256 __a, __m256 __b, __m256 __c)
 ///
 /// \headerfile <x86intrin.h>
 ///
+/// \code
+/// long long _mm256_extract_epi64(__m256i X, const int N);
+/// \endcode
+///
 /// This intrinsic corresponds to the <c> VEXTRACTF128+COMPOSITE </c>
 ///   instruction.
 ///
-/// \param __a
+/// \param X
 ///    A 256-bit integer vector of [4 x i64].
-/// \param __imm
+/// \param N
 ///    An immediate integer operand with bits [1:0] determining which vector
 ///    element is extracted and returned.
 /// \returns A 64-bit integer containing the extracted 64 bits of extended
@@ -2030,18 +2063,22 @@ _mm256_blendv_ps(__m256 __a, __m256 __b, __m256 __c)
 ///
 /// \headerfile <x86intrin.h>
 ///
+/// \code
+/// __m256i _mm256_insert_epi32(__m256i X, int I, const int N);
+/// \endcode
+///
 /// This intrinsic corresponds to the <c> VINSERTF128+COMPOSITE </c>
 ///   instruction.
 ///
-/// \param __a
+/// \param X
 ///    A vector of [8 x i32] to be used by the insert operation.
-/// \param __b
+/// \param I
 ///    An integer value. The replacement value for the insert operation.
-/// \param __imm
+/// \param N
 ///    An immediate integer specifying the index of the vector element to be
 ///    replaced.
-/// \returns A copy of vector \a __a, after replacing its element indexed by
-///    \a __imm with \a __b.
+/// \returns A copy of vector \a X, after replacing its element indexed by
+///    \a N with \a I.
 #define _mm256_insert_epi32(X, I, N) \
   ((__m256i)__builtin_ia32_vec_set_v8si((__v8si)(__m256i)(X), \
                                         (int)(I), (int)(N)))
@@ -2053,18 +2090,22 @@ _mm256_blendv_ps(__m256 __a, __m256 __b, __m256 __c)
 ///
 /// \headerfile <x86intrin.h>
 ///
+/// \code
+/// __m256i _mm256_insert_epi16(__m256i X, int I, const int N);
+/// \endcode
+///
 /// This intrinsic corresponds to the <c> VINSERTF128+COMPOSITE </c>
 ///   instruction.
 ///
-/// \param __a
+/// \param X
 ///    A vector of [16 x i16] to be used by the insert operation.
-/// \param __b
+/// \param I
 ///    An i16 integer value. The replacement value for the insert operation.
-/// \param __imm
+/// \param N
 ///    An immediate integer specifying the index of the vector element to be
 ///    replaced.
-/// \returns A copy of vector \a __a, after replacing its element indexed by
-///    \a __imm with \a __b.
+/// \returns A copy of vector \a X, after replacing its element indexed by
+///    \a N with \a I.
 #define _mm256_insert_epi16(X, I, N) \
   ((__m256i)__builtin_ia32_vec_set_v16hi((__v16hi)(__m256i)(X), \
                                          (int)(I), (int)(N)))
@@ -2075,18 +2116,22 @@ _mm256_blendv_ps(__m256 __a, __m256 __b, __m256 __c)
 ///
 /// \headerfile <x86intrin.h>
 ///
+/// \code
+/// __m256i _mm256_insert_epi8(__m256i X, int I, const int N);
+/// \endcode
+///
 /// This intrinsic corresponds to the <c> VINSERTF128+COMPOSITE </c>
 ///   instruction.
 ///
-/// \param __a
+/// \param X
 ///    A vector of [32 x i8] to be used by the insert operation.
-/// \param __b
+/// \param I
 ///    An i8 integer value. The replacement value for the insert operation.
-/// \param __imm
+/// \param N
 ///    An immediate integer specifying the index of the vector element to be
 ///    replaced.
-/// \returns A copy of vector \a __a, after replacing its element indexed by
-///    \a __imm with \a __b.
+/// \returns A copy of vector \a X, after replacing its element indexed by
+///    \a N with \a I.
 #define _mm256_insert_epi8(X, I, N) \
   ((__m256i)__builtin_ia32_vec_set_v32qi((__v32qi)(__m256i)(X), \
                                          (int)(I), (int)(N)))
@@ -2098,18 +2143,22 @@ _mm256_blendv_ps(__m256 __a, __m256 __b, __m256 __c)
 ///
 /// \headerfile <x86intrin.h>
 ///
+/// \code
+/// __m256i _mm256_insert_epi64(__m256i X, int I, const int N);
+/// \endcode
+///
 /// This intrinsic corresponds to the <c> VINSERTF128+COMPOSITE </c>
 ///   instruction.
 ///
-/// \param __a
+/// \param X
 ///    A vector of [4 x i64] to be used by the insert operation.
-/// \param __b
+/// \param I
 ///    A 64-bit integer value. The replacement value for the insert operation.
-/// \param __imm
+/// \param N
 ///    An immediate integer specifying the index of the vector element to be
 ///    replaced.
-/// \returns A copy of vector \a __a, after replacing its element indexed by
-///     \a __imm with \a __b.
+/// \returns A copy of vector \a X, after replacing its element indexed by
+///     \a N with \a I.
 #define _mm256_insert_epi64(X, I, N) \
   ((__m256i)__builtin_ia32_vec_set_v4di((__v4di)(__m256i)(X), \
                                         (long long)(I), (int)(N)))
@@ -2972,8 +3021,11 @@ _mm256_zeroupper(void)
 static __inline __m128 __DEFAULT_FN_ATTRS128
 _mm_broadcast_ss(float const *__a)
 {
-  float __f = *__a;
-  return __extension__ (__m128)(__v4sf){ __f, __f, __f, __f };
+  struct __mm_broadcast_ss_struct {
+    float __f;
+  } __attribute__((__packed__, __may_alias__));
+  float __f = ((const struct __mm_broadcast_ss_struct*)__a)->__f;
+  return __extension__ (__m128){ __f, __f, __f, __f };
 }
 
 /// Loads a scalar double-precision floating point value from the
@@ -2991,7 +3043,10 @@ _mm_broadcast_ss(float const *__a)
 static __inline __m256d __DEFAULT_FN_ATTRS
 _mm256_broadcast_sd(double const *__a)
 {
-  double __d = *__a;
+  struct __mm256_broadcast_sd_struct {
+    double __d;
+  } __attribute__((__packed__, __may_alias__));
+  double __d = ((const struct __mm256_broadcast_sd_struct*)__a)->__d;
   return __extension__ (__m256d)(__v4df){ __d, __d, __d, __d };
 }
 
@@ -3010,7 +3065,10 @@ _mm256_broadcast_sd(double const *__a)
 static __inline __m256 __DEFAULT_FN_ATTRS
 _mm256_broadcast_ss(float const *__a)
 {
-  float __f = *__a;
+  struct __mm256_broadcast_ss_struct {
+    float __f;
+  } __attribute__((__packed__, __may_alias__));
+  float __f = ((const struct __mm256_broadcast_ss_struct*)__a)->__f;
   return __extension__ (__m256)(__v8sf){ __f, __f, __f, __f, __f, __f, __f, __f };
 }
 
@@ -3177,7 +3235,7 @@ _mm256_loadu_si256(__m256i_u const *__p)
 ///    A pointer to a 256-bit integer vector containing integer values.
 /// \returns A 256-bit integer vector containing the moved values.
 static __inline __m256i __DEFAULT_FN_ATTRS
-_mm256_lddqu_si256(__m256i const *__p)
+_mm256_lddqu_si256(__m256i_u const *__p)
 {
   return (__m256i)__builtin_ia32_lddqu256((char const *)__p);
 }
@@ -3509,7 +3567,7 @@ _mm_maskstore_ps(float *__p, __m128i __m, __m128 __a)
 /// \param __b
 ///    A 256-bit integer vector containing the values to be moved.
 static __inline void __DEFAULT_FN_ATTRS
-_mm256_stream_si256(__m256i *__a, __m256i __b)
+_mm256_stream_si256(void *__a, __m256i __b)
 {
   typedef __v4di __v4di_aligned __attribute__((aligned(32)));
   __builtin_nontemporal_store((__v4di_aligned)__b, (__v4di_aligned*)__a);
@@ -3529,7 +3587,7 @@ _mm256_stream_si256(__m256i *__a, __m256i __b)
 /// \param __b
 ///    A 256-bit vector of [4 x double] containing the values to be moved.
 static __inline void __DEFAULT_FN_ATTRS
-_mm256_stream_pd(double *__a, __m256d __b)
+_mm256_stream_pd(void *__a, __m256d __b)
 {
   typedef __v4df __v4df_aligned __attribute__((aligned(32)));
   __builtin_nontemporal_store((__v4df_aligned)__b, (__v4df_aligned*)__a);
@@ -3550,7 +3608,7 @@ _mm256_stream_pd(double *__a, __m256d __b)
 /// \param __a
 ///    A 256-bit vector of [8 x float] containing the values to be moved.
 static __inline void __DEFAULT_FN_ATTRS
-_mm256_stream_ps(float *__p, __m256 __a)
+_mm256_stream_ps(void *__p, __m256 __a)
 {
   typedef __v8sf __v8sf_aligned __attribute__((aligned(32)));
   __builtin_nontemporal_store((__v8sf_aligned)__a, (__v8sf_aligned*)__p);
@@ -4253,7 +4311,7 @@ _mm256_set1_epi64x(long long __q)
 static __inline __m256d __DEFAULT_FN_ATTRS
 _mm256_setzero_pd(void)
 {
-  return __extension__ (__m256d){ 0, 0, 0, 0 };
+  return __extension__ (__m256d){ 0.0, 0.0, 0.0, 0.0 };
 }
 
 /// Constructs a 256-bit floating-point vector of [8 x float] with all
@@ -4267,7 +4325,7 @@ _mm256_setzero_pd(void)
 static __inline __m256 __DEFAULT_FN_ATTRS
 _mm256_setzero_ps(void)
 {
-  return __extension__ (__m256){ 0, 0, 0, 0, 0, 0, 0, 0 };
+  return __extension__ (__m256){ 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 }
 
 /// Constructs a 256-bit integer vector initialized to zero.
@@ -4454,7 +4512,8 @@ _mm256_castsi256_si128(__m256i __a)
 static __inline __m256d __DEFAULT_FN_ATTRS
 _mm256_castpd128_pd256(__m128d __a)
 {
-  return __builtin_shufflevector((__v2df)__a, (__v2df)__a, 0, 1, -1, -1);
+  return __builtin_shufflevector(
+      (__v2df)__a, (__v2df)__builtin_nondeterministic_value(__a), 0, 1, 2, 3);
 }
 
 /// Constructs a 256-bit floating-point vector of [8 x float] from a
@@ -4475,7 +4534,9 @@ _mm256_castpd128_pd256(__m128d __a)
 static __inline __m256 __DEFAULT_FN_ATTRS
 _mm256_castps128_ps256(__m128 __a)
 {
-  return __builtin_shufflevector((__v4sf)__a, (__v4sf)__a, 0, 1, 2, 3, -1, -1, -1, -1);
+  return __builtin_shufflevector((__v4sf)__a,
+                                 (__v4sf)__builtin_nondeterministic_value(__a),
+                                 0, 1, 2, 3, 4, 5, 6, 7);
 }
 
 /// Constructs a 256-bit integer vector from a 128-bit integer vector.
@@ -4494,7 +4555,8 @@ _mm256_castps128_ps256(__m128 __a)
 static __inline __m256i __DEFAULT_FN_ATTRS
 _mm256_castsi128_si256(__m128i __a)
 {
-  return __builtin_shufflevector((__v2di)__a, (__v2di)__a, 0, 1, -1, -1);
+  return __builtin_shufflevector(
+      (__v2di)__a, (__v2di)__builtin_nondeterministic_value(__a), 0, 1, 2, 3);
 }
 
 /// Constructs a 256-bit floating-point vector of [4 x double] from a

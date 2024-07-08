@@ -3,7 +3,8 @@ class C {
   var x: t;
 }
 
-var c = new borrowed C([1..3] int);
+var cOwn = new owned C([1..3] int);
+var c = cOwn.borrow();
 
 c.x[2] = 4;
 writeln(c);

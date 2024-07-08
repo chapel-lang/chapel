@@ -1,0 +1,3 @@
+ # unstable_outermodule.unset.good
+--no-warn-unstable # unstable_outermodule.unset.good
+--warn-unstable # unstable_outermodule.set.good

@@ -6,8 +6,8 @@ use IO;
 proc main() {
 
   
-  const toml = open("Mason.toml", iomode.cw);
-  var s      = toml.writer();
+  const toml = open("Mason.toml", ioMode.cw);
+  var s      = toml.writer(locking=false);
 
   s.writeln();
   s.writeln("[brick]");
@@ -19,8 +19,8 @@ proc main() {
 
   toml.close();
 
-  const lock = open("Mason.lock", iomode.cw);
-  var w      = lock.writer();
+  const lock = open("Mason.lock", ioMode.cw);
+  var w      = lock.writer(locking=false);
 
   w.writeln();
   w.writeln("[root]");
@@ -33,6 +33,6 @@ proc main() {
   lock.close();
 
   var compopts: list(string);
-  compopts.append("");
-  buildProgram(false, false, false, compopts, "Mason.toml", "Mason.lock");
+  compopts.pushBack("");
+  buildProgram(false, false, false, false, compopts, "Mason.toml", "Mason.lock");
 }

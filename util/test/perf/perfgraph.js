@@ -135,12 +135,43 @@ var branchInfo = [
                     "releaseDate": "2022-03-31",
                     "branchDate" : "2022-03-22",
                     "revision" : -1},
-                  { "release": "1.27.0", 
+                  { "release": "1.27.0",
                     "releaseDate": "2022-06-30",
                     "branchDate" : "2022-06-24",
-                    "revision" : -1}
+                    "revision" : -1},
+                  { "release": "1.28.0",
+                    "releaseDate": "2022-09-15",
+                    "branchDate" : "2022-09-09",
+                    "revision" : -1},
+                  { "release": "1.29.0",
+                    "releaseDate": "2022-12-15",
+                    "branchDate" : "2022-12-09",
+                    "revision" : -1},
+                  { "release": "1.30.0",
+                    "releaseDate": "2023-03-23",
+                    "branchDate" : "2023-03-17",
+                    "revision" : -1},
+                  { "release": "1.31.0",
+                    "releaseDate": "2023-06-22",
+                    "branchDate" : "2023-06-16",
+                    "revision" : -1},
+                  { "release": "1.32.0",
+                    "releaseDate": "2023-09-28",
+                    "branchDate" : "2023-09-22",
+                    "revision" : -1},
+                  { "release": "1.33.0",
+                    "releaseDate": "2023-12-14",
+                    "branchDate" : "2023-12-08",
+                    "revision": -1},
+                  { "release": "2.0.0",
+                    "releaseDate": "2024-03-21",
+                    "branchDate" : "2024-03-15",
+                    "revision": -1},
+                  { "release": "2.1.0",
+                    "releaseDate": "2024-06-27",
+                    "branchDate" : "2024-06-24",
+                    "revision": -1},
                   ];
-
 
 var indexMap = {};
 
@@ -533,6 +564,12 @@ function computeGitHubLinks(text) {
   var re = /\(#([0-9]+)\)/gi;
   text = text.replace(re, function(m, num) {
     var url = "https://github.com/chapel-lang/chapel/pull/" + num;
+    return "<a target='_blank' href='" + url + "'>" + m + "</a>";
+  });
+
+  var private_re = /\(Cray\/chapel-private#([0-9]+)\)/gi;
+  text = text.replace(private_re, function(m, num) {
+    var url = "https://github.com/Cray/chapel-private/issues/" + num;
     return "<a target='_blank' href='" + url + "'>" + m + "</a>";
   });
 

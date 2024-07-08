@@ -1,6 +1,6 @@
 // this test tests two things with identical behaviors w.r.t decodePolicy
 // (1) bytes.decode
-// (2) createStringWithNewBuffer
+// (2) string.createCopyingBuffer
 // the good file is identical
 
 config const testBytesDecode = false;
@@ -11,7 +11,7 @@ proc createHelp(b: bytes, param errors=decodePolicy.strict) throws {
     return b.decode(errors);
   }
   else {
-    return createStringWithNewBuffer(b.buff, b.buffLen, b.buffLen+1, errors);
+    return string.createCopyingBuffer(b.buff, b.buffLen, b.buffLen+1, errors);
   }
 }
 

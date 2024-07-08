@@ -3,15 +3,15 @@ use LayoutCS;
 use List;
 
 var space = {1..10, 1..10};
-var parentDomCSR = space dmapped Block(space, sparseLayoutType=CS(compressRows=true));
+var parentDomCSR = space dmapped new blockDist(space, sparseLayoutType=CS(compressRows=true));
 var spsDomCSR: sparse subdomain(parentDomCSR);
-var parentDomCSC = space dmapped Block(space, sparseLayoutType=CS(compressRows=false));
+var parentDomCSC = space dmapped new blockDist(space, sparseLayoutType=CS(compressRows=false));
 var spsDomCSC: sparse subdomain(parentDomCSC);
 
 var indices: list(2*int);
 
 for i in {1..10 by 3, 1..10 by 3} do
-  indices.append(i);
+  indices.pushBack(i);
 
 const arr = indices.toArray();
 

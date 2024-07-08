@@ -9,12 +9,16 @@
 #ifndef LLVM_TRANSFORMS_SCALAR_SIMPLELOOPUNSWITCH_H
 #define LLVM_TRANSFORMS_SCALAR_SIMPLELOOPUNSWITCH_H
 
+#include "llvm/ADT/STLFunctionalExtras.h"
 #include "llvm/Analysis/LoopAnalysisManager.h"
-#include "llvm/Analysis/LoopInfo.h"
 #include "llvm/IR/PassManager.h"
-#include "llvm/Transforms/Scalar/LoopPassManager.h"
 
 namespace llvm {
+
+class LPMUpdater;
+class Loop;
+class StringRef;
+class raw_ostream;
 
 /// This pass transforms loops that contain branches or switches on loop-
 /// invariant conditions to have multiple loops. For example, it turns the left
@@ -73,11 +77,6 @@ public:
   void printPipeline(raw_ostream &OS,
                      function_ref<StringRef(StringRef)> MapClassName2PassName);
 };
-
-/// Create the legacy pass object for the simple loop unswitcher.
-///
-/// See the documentaion for `SimpleLoopUnswitchPass` for details.
-Pass *createSimpleLoopUnswitchLegacyPass(bool NonTrivial = false);
 
 } // end namespace llvm
 

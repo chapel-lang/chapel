@@ -125,7 +125,7 @@ writeln();
 // Or by assigning the array elements corresponding to the corners
 // and using our dense printing function:
 //
-proc computeVal(row, col) return row + col/10.0;
+proc computeVal(row, col) do return row + col/10.0;
 
 spsArr(1,1) = computeVal(1,1);
 spsArr(1,n) = computeVal(1,n);
@@ -179,7 +179,7 @@ spsArr.IRV = 0.0;   // reset the IRV
 for i in 1..n do
   spsDom += (i,i);
 
-[(i,j) in spsDom] spsArr(i,j) = computeVal(i,j);
+[(i,j) in spsDom with (ref spsArr)] spsArr(i,j) = computeVal(i,j);
 
 writeln("Printing spsArr after resetting and adding the diagonal:");
 writeSpsArr();
@@ -193,7 +193,7 @@ writeSpsArr();
 spsDom.clear();
 spsDom = ((1,1), (n/2, n/2), (n,n));
 
-[(i,j) in spsDom] spsArr(i,j) = computeVal(i,j);
+[(i,j) in spsDom with (ref spsArr)] spsArr(i,j) = computeVal(i,j);
 
 writeln("Printing spsArr after resetting and assigning a tuple of indices:");
 writeSpsArr();
@@ -211,7 +211,7 @@ iter antiDiag(n) {
 
 spsDom = antiDiag(n);
 
-[(i,j) in spsDom] spsArr(i,j) = computeVal(i,j);
+[(i,j) in spsDom with (ref spsArr)] spsArr(i,j) = computeVal(i,j);
 
 writeln("Printing spsArr after resetting and assigning the antiDiag iterator:");
 writeSpsArr();

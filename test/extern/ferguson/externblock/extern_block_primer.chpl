@@ -20,10 +20,12 @@ config const n = 100000;
 // for the Chapel code below to use.
 extern {
 
+  #include <stdint.h>
+
   // make puts available for the example below
   #include <stdio.h>
 
-  // make gethostname available for example below 
+  // make gethostname available for example below
   #include <unistd.h>
 
    // this function can be inlined into the Chapel code that uses
@@ -43,7 +45,7 @@ var A = [i in 1..n] i;
 
 var sum_chapel: int;
 var sum_c: int;
-var t: Timer;
+var t: stopwatch;
 
 // compare timings between serial C and Chapel array sums:
 t.start();
@@ -67,40 +69,22 @@ var hostname_ptr: c_ptr(c_char);
 var hostname_len = 100;
 var result:c_int;
 
-hostname_ptr = c_calloc(c_char, hostname_len);
+hostname_ptr = allocate(c_char, hostname_len, clear=true);
 
 result = gethostname(hostname_ptr:c_ptr(c_char), hostname_len:c_size_t);
 if !quiet {
   if result == 0 {
     writeln("gethostname returned:");
     // write out the hostname too
-    puts(hostname_ptr:c_string);
+    puts(hostname_ptr:c_ptrConst(c_char));
     writeln("\n");
   } else {
     writeln("gethostname returned an error");
   }
 }
 
-// Demonstrate c_calloc and c_free
-c_free(hostname_ptr);
-
-
-
-
-// The following two routines are currently required in this module
-// but should be in the standard modules.
-
-// allow casts from c_ptr(c_char) to c_string
-pragma "no doc"
-inline operator :(x, type t) where isSubtype(t,c_string) && isSubtype(x.type,c_ptr(c_char)) {
-    return __primitive("cast", t, x);
-}
-
-// allow casts from c_string to c_ptr(c_char)
-pragma "no doc"
-inline operator :(x, type t) where isSubtype(t,c_ptr(c_char)) && isSubtype(x.type,c_string) {
-    return __primitive("cast", t, x);
-}
+// Demonstrate allocate and deallocate
+deallocate(hostname_ptr);
 
 
 

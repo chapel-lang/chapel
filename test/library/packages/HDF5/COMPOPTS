@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+INSTALL_DIR=`h5cc -showconfig | sed -n -e 's/ *Installation point: \(.*\)/\1/p'`
+INC_FLAGS="-I$INSTALL_DIR/include"
+LIB_FLAGS="-L$INSTALL_DIR/lib -lhdf5"
+
+
+echo $INC_FLAGS $LIB_FLAGS

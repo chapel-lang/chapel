@@ -40,7 +40,7 @@ config const parGC = true;      // do Graph Generation in parallel?
 // Set to false for parallel computation (=> faster but not reproducible).
 config param SERIAL_GRAPH_GEN = REPRODUCIBLE_PROBLEMS;
 
-var stopwatch : Timer;
+var sw : stopwatch;
 
 record directed_vertex_pair {
   var start = 1: int;
@@ -52,7 +52,7 @@ record directed_vertex_pair {
 // Quadrant selection algorithm
 // ============================
 
-inline proc directed_vertex_pair.assign_quadrant
+inline proc ref directed_vertex_pair.assign_quadrant
   (u: real, a: real, b: real, c: real, d: real, bit: int)
   {
     // ---------------------------------------------------------------------
@@ -112,17 +112,17 @@ proc Gen_RMAT_graph ( a : real,
                      MAX_EDGE_WEIGHT :int,
                      G )
 
-{ use Random, IO;
+{ use NPBRandom, IO;
     use analyze_RMAT_graph_associative_array;
 
-    if PRINT_TIMING_STATISTICS then stopwatch.start ();
+    if PRINT_TIMING_STATISTICS then sw.start ();
 
     const vertex_range = 1..N_VERTICES,
           edge_range   = 1..n_raw_edges;
 
     const edge_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
-        {edge_range} dmapped Block ( {edge_range} )
+        {edge_range} dmapped new blockDist ( {edge_range} )
       else
         {edge_range} ;
 
@@ -167,7 +167,7 @@ proc Gen_RMAT_graph ( a : real,
 
     var rndPos = 1;
     const seed = if REPRODUCIBLE_PROBLEMS then 0556707007
-                                          else SeedGenerator.oddCurrentTime;
+                                          else (timeSinceEpoch().totalSeconds()*1_000_000+1):int;
 
     const delta = n_raw_edges + 1; // 1 corresponds to 'skip' in "old" code
     rndPos += 1;                   // start with a skip
@@ -215,35 +215,35 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
     rndPos += n_raw_edges;
 
     if parEG {
-      var permutation$ : [vertex_domain] sync int = vertex_range;
+      var permutationSync : [vertex_domain] sync int = vertex_range;
 
       serial(SERIAL_GRAPH_GEN) {
         forall (v, rnd) in zip(vertex_domain,
-          NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos-1))
+          NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos-1)) with (ref permutationSync)
         {
           const u = floor (1 + rnd * N_VERTICES) : int;
           if u != v {
-            // All this does is permutation$(u) <=> permutation$(v).
+            // All this does is permutationSync(u) <=> permutationSync(v).
             // Implementation notes:
             // * Lock the smaller index first, to ensure progress.
             // * Access each of the two sync vars on its locale.
             // * Factors out the 'on's that are implicit in
             //   the accesses to the sync variables into explicit 'on's.
-            // * Factors out indexing into permutation$ using
+            // * Factors out indexing into permutationSync using
             //   by-reference argument passing.
 
             const (ix1, ix2) = if v <= u then (v, u) else (u, v);
-            swapTwo(permutation$(ix1), permutation$(ix2));
+            swapTwo(permutationSync(ix1), permutationSync(ix2));
 
-            proc swapTwo(p1$: sync int, p2$: sync int): void {
-              on p1$ {
-                const label1 = p1$.readFE();
+            proc swapTwo(p1: sync int, p2: sync int): void {
+              on p1 {
+                const label1 = p1.readFE();
                 var label2: int;
-                on p2$ {
-                  label2 = p2$.readFE();
-                  p2$.writeEF(label1);
+                on p2 {
+                  label2 = p2.readFE();
+                  p2.writeEF(label1);
                 }
-                p1$.writeEF(label2);
+                p1.writeEF(label2);
               }
             }  // proc swapTwo
           }
@@ -251,8 +251,8 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
       }
       rndPos += N_VERTICES;
 
-      forall (pm, pm$) in zip(permutation, permutation$) {
-        pm = pm$.readXX();
+      forall (pm, pmSync) in zip(permutation, permutationSync) {
+        pm = pmSync.readXX();
       }
 
     } else {  // !parEG
@@ -344,18 +344,18 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
     }
 
     if PRINT_TIMING_STATISTICS then {
-      stopwatch.stop ();
-      writeln ( "Elapsed time for Edge Generation: ", stopwatch.elapsed (),
+      sw.stop ();
+      writeln ( "Elapsed time for Edge Generation: ", sw.elapsed (),
                 " seconds");
-      stopwatch.clear ();
+      sw.clear ();
     }
 
     if DEBUG_WEIGHT_GENERATOR then {
       writeln ();
      if rmatEdgeGenFile != "" {
       writeln("writing edges to ", rmatEdgeGenFile);
-      const fl = open(rmatEdgeGenFile, iomode.cw);
-      const ch = fl.writer();
+      const fl = open(rmatEdgeGenFile, ioMode.cw);
+      const ch = fl.writer(locking=false);
       for (ed, w) in zip(Edges, Edge_Weight) do
         ch.writeln (ed.start, " ", ed.end, " ", w);
       ch.close();
@@ -373,7 +373,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
     if edgeChecks {
       // Check that 'permutation' was a permutation.
       var permuteCounts : [vertex_domain] atomic int;
-      forall p in permutation do
+      forall p in permutation with (ref permuteCounts) do
         permuteCounts[p].add(1);
       forall (pc, ix) in zip(permuteCounts, vertex_domain) do
         if !(pc.read() == 1) then halt(
@@ -414,36 +414,36 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
     // wins) or also use += instead of = (to sum duplicates' weights).
     // ----------------------------------------------------------
 
-    var firstAvailNeighbor$: [vertex_domain] sync int = initialFirstAvail;
+    var firstAvailNeighbor: [vertex_domain] sync int = initialFirstAvail;
 
     writeln("Starting Graph Generation ",
             if parGC then "in parallel" else "serially");
-    if PRINT_TIMING_STATISTICS then stopwatch.start ();
+    if PRINT_TIMING_STATISTICS then sw.start ();
 
     var collisions = 0, self_edges = 0;
 
   if parGC {
 
-    var self_edges$: atomic int;
+    var atomic_self_edges: atomic int;
     serial(SERIAL_GRAPH_GEN) {
-      forall (e, w) in zip(Edges, Edge_Weight) do {
+      forall (e, w) in zip(Edges, Edge_Weight) with (ref firstAvailNeighbor) do {
         const u = e.start;
         const v = e.end;
 
         if ( v == u ) then {
           // self-edge, ignore
-          self_edges$.add(1);
+          atomic_self_edges.add(1);
         } else {
           // Both the vertex and firstAvail must be passed by reference.
           // TODO: possibly compute how many neighbors the vertex has, first.
           // Then allocate that big of a neighbor list right away.
           // That way there will be no need for a sync, just an atomic.
-          G.Row[u].addEdgeOnVertex(u, v, w, firstAvailNeighbor$[u]);
+          G.Row[u].addEdgeOnVertex(u, v, w, firstAvailNeighbor[u]);
         }
       }
     }
 
-    self_edges = self_edges$.read();
+    self_edges = atomic_self_edges.read();
 
   } else {  // !parGC
 
@@ -458,20 +458,20 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
         const w = Edge_Weight(e);
         // Both the vertex and firstAvail must be passed by reference.
         // TODO: skip locking in this serial version.
-        G.Row[u].addEdgeOnVertex(u, v, w, firstAvailNeighbor$[u]);
+        G.Row[u].addEdgeOnVertex(u, v, w, firstAvailNeighbor[u]);
       }
     }
 
   } // if parGC
 
-    forall (vx, firstAvail$) in zip(G.Row, firstAvailNeighbor$) do
-      vx.tidyNeighbors(firstAvail$);
+    forall (vx, firstAvail) in zip(G.Row, firstAvailNeighbor) do
+      vx.tidyNeighbors(firstAvail);
 
     if PRINT_TIMING_STATISTICS then {
-      stopwatch.stop ();
-      writeln ( "Elapsed time for Kernel 1: ", stopwatch.elapsed (),
+      sw.stop ();
+      writeln ( "Elapsed time for Kernel 1: ", sw.elapsed (),
                 " seconds");
-      stopwatch.clear ();
+      sw.clear ();
     }
 
     G.num_edges = + reduce [v in G.vertices] G.n_Neighbors (v);
@@ -485,8 +485,8 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
      writeln ();
      if rmatGraphConFile != "" {
       writeln("writing neighbor lists to ", rmatGraphConFile);
-      const fl = open(rmatGraphConFile, iomode.cw);
-      const ch = fl.writer();
+      const fl = open(rmatGraphConFile, ioMode.cw);
+      const ch = fl.writer(locking=false);
       for (u, vx) in zip(G.vertices, G.Row) do
         for (v, w) in vx.neighborList do
           ch.writeln(u, " ", v, " ", w);

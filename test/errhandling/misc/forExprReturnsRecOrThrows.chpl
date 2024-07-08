@@ -16,7 +16,7 @@ module M {
     var x: int;
 
     proc init() { initCounter.add(1); }
-    proc init=(other: r) { initCounter.add(1); this.complete(); this.x = other.x;}
+    proc init=(other: r) { initCounter.add(1); init this; this.x = other.x;}
     proc init(i: int) { initCounter.add(1); this.x = i; }
 
     proc deinit() { initCounter.sub(1); }

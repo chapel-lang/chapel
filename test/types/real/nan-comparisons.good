@@ -1,4 +1,4 @@
-isnan(nan) true
+isNan(nan) true
 nan >= 0.0 false
 nan <= 0.0 false
 nan > 0.0 false
@@ -23,7 +23,7 @@ nan > nan false
 nan < nan false
 nan == nan false
 nan != nan true
-isinf(inf) true
+isInf(inf) true
 inf >= 0.0 true
 inf <= 0.0 false
 inf > 0.0 true
@@ -42,7 +42,7 @@ inf > neginf true
 inf < neginf false
 inf == neginf false
 inf != neginf true
-isinf(neginf) true
+isInf(neginf) true
 neginf >= 0.0 false
 neginf <= 0.0 true
 neginf > 0.0 false

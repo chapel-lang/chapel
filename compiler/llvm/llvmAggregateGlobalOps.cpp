@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,11 +43,13 @@
 // code generator might have started with loads and stores.
 
 // This code was based upon the LLVM optimization MemCpyOptimizer.cpp
-
+// TODO: MemCpyOptimizer has evolved quite a bit since then,
+// so look at making a new version of this pass.
 #include "llvmAggregateGlobalOps.h"
 
 #ifdef HAVE_LLVM
 
+#include "llvmTracker.h"
 #include "llvmUtil.h"
 
 #include "llvm/Pass.h"
@@ -57,25 +59,22 @@
 #include "llvm/ADT/Statistic.h"
 
 #include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/GetElementPtrTypeIterator.h"
 #include "llvm/IR/InstIterator.h"
-
-#if HAVE_LLVM_VER < 90
-#include "llvm/IR/CallSite.h"
-#endif
-
 #include "llvm/IR/Verifier.h"
 
-#include "llvm/Analysis/AliasAnalysis.h"
-#include "llvm/Analysis/MemoryDependenceAnalysis.h"
+#include "llvm/Analysis/CallGraph.h"
+#include "llvm/Analysis/LazyCallGraph.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
-
-#include "llvm/IR/GetElementPtrTypeIterator.h"
 
 #include <cstdio>
 #include <list>
 #include <string>
 #include <unordered_map>
+#include <memory>
+
+#include "chpl/util/memory.h"
 
 using namespace llvm;
 
@@ -203,94 +202,19 @@ Instruction* postponeDependentInstructions(
 // The next several fns are stolen almost totally unmodified from MemCpyOptimizer.
 // modified code areas say CUSTOM.
 
-#if HAVE_LLVM_VER < 100
 
-static int64_t GetOffsetFromIndex(const GEPOperator *GEP,
-                                  unsigned Idx,
-                                  bool &VariableIdxFound,
-                                  const DataLayout &DL){
-  // Skip over the first indices.
-  gep_type_iterator GTI = gep_type_begin(GEP);
-  for (unsigned i = 1; i != Idx; ++i, ++GTI)
-    /*skip along*/;
-
-  // Compute the offset implied by the rest of the indices.
-  int64_t Offset = 0;
-  for (unsigned i = Idx, e = GEP->getNumOperands(); i != e; ++i, ++GTI) {
-    ConstantInt *OpC = dyn_cast<ConstantInt>(GEP->getOperand(i));
-    if (!OpC)
-      return VariableIdxFound = true;
-    if (OpC->isZero()) continue;  // No offset.
-
-    // Handle struct indices, which add their field offset to the pointer.
-    if (StructType *STy = GTI.getStructTypeOrNull())
-    {
-      Offset += DL.getStructLayout(STy)->getElementOffset(OpC->getZExtValue());
-      continue;
-    }
-
-    // Otherwise, we have a sequential type like an array or vector.  Multiply
-    // the index by the ElementSize.
-    uint64_t Size = DL.getTypeAllocSize(GTI.getIndexedType());
-    Offset += Size*OpC->getSExtValue();
-  }
-
-  return Offset;
-}
-/// IsPointerOffset - Return true if Ptr1 is provably equal to Ptr2 plus a
-/// constant offset, and return that constant offset.  For example, Ptr1 might
-/// be &A[42], and Ptr2 might be &A[40].  In this case offset would be -8.
-static bool IsPointerOffset(Value *Ptr1, Value *Ptr2, int64_t &Offset,
-                            const DataLayout &DL) {
-  Ptr1 = Ptr1->stripPointerCasts();
-  Ptr2 = Ptr2->stripPointerCasts();
-
-  // Handle the trivial case first.
-  if (Ptr1 == Ptr2) {
-    Offset = 0;
-    return true;
-  }
-
-  GEPOperator *GEP1 = dyn_cast<GEPOperator>(Ptr1);
-  GEPOperator *GEP2 = dyn_cast<GEPOperator>(Ptr2);
-
-  bool VariableIdxFound = false;
-
-  // If one pointer is a GEP and the other isn't, then see if the GEP is a
-  // constant offset from the base, as in "P" and "gep P, 1".
-  if (GEP1 && !GEP2 && GEP1->getOperand(0)->stripPointerCasts() == Ptr2) {
-    Offset = -GetOffsetFromIndex(GEP1, 1, VariableIdxFound, DL);
-    return !VariableIdxFound;
-  }
-
-  if (GEP2 && !GEP1 && GEP2->getOperand(0)->stripPointerCasts() == Ptr1) {
-    Offset = GetOffsetFromIndex(GEP2, 1, VariableIdxFound, DL);
-    return !VariableIdxFound;
-  }
-
-  // Right now we handle the case when Ptr1/Ptr2 are both GEPs with an identical
-  // base.  After that base, they may have some number of common (and
-  // potentially variable) indices.  After that they handle some constant
-  // offset, which determines their offset from each other.  At this point, we
-  // handle no other case.
-  if (!GEP1 || !GEP2 || GEP1->getOperand(0) != GEP2->getOperand(0))
-    return false;
-
-  // Skip any common indices and track the GEP types.
-  unsigned Idx = 1;
-  for (; Idx != GEP1->getNumOperands() && Idx != GEP2->getNumOperands(); ++Idx)
-    if (GEP1->getOperand(Idx) != GEP2->getOperand(Idx))
-      break;
-
-  int64_t Offset1 = GetOffsetFromIndex(GEP1, Idx, VariableIdxFound, DL);
-  int64_t Offset2 = GetOffsetFromIndex(GEP2, Idx, VariableIdxFound, DL);
-  if (VariableIdxFound) return false;
-
-  Offset = Offset2-Offset1;
-  return true;
-}
-
+static chpl::optional<int64_t> getPointerOffset(Value *Ptr1,
+                                               Value *Ptr2,
+                                               const DataLayout &DL) {
+  chpl::optional<int64_t> optOffset;
+#if HAVE_LLVM_VER >= 170
+  optOffset = Ptr2->getPointerOffsetFrom(Ptr1, DL);
+#else
+  optOffset = isPointerOffset(Ptr1, Ptr2, DL);
 #endif
+  return optOffset;
+}
+
 
 struct MemOpRange { // from MemsetRange in MemCpyOptimizer
   // Start/End - A semi range that describes the span that this range covers.
@@ -343,16 +267,27 @@ struct MemOpRanges { // from MemsetRanges in MemCpyOptimizer
                        // element in a structure.
 
     addRange(OffsetFromFirst, StoreSize, Slack,
-             SI->getPointerOperand(), SI->getAlignment(), SI);
+             SI->getPointerOperand(),
+#if HAVE_LLVM_VER >= 150
+             SI->getAlign().value(),
+#else
+             SI->getAlignment(),
+#endif
+             SI);
   }
   // CUSTOM because MemsetRanges doesn't work with LoadInsts.
   void addLoad(int64_t OffsetFromFirst, LoadInst *LI) {
-    Type* ptrType = LI->getOperand(0)->getType();
-    int64_t LoadSize = DL.getTypeStoreSize(ptrType->getPointerElementType());
+    int64_t LoadSize = DL.getTypeStoreSize(LI->getType());
     int64_t Slack =  GET_EXTRA; // Pretend loads use more space...
 
     addRange(OffsetFromFirst, LoadSize, Slack,
-             LI->getPointerOperand(), LI->getAlignment(), LI);
+             LI->getPointerOperand(),
+#if HAVE_LLVM_VER >= 150
+             LI->getAlign().value(),
+#else
+             LI->getAlignment(),
+#endif
+             LI);
   }
   // CUSTOM adds Slack
   void addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Ptr,
@@ -435,49 +370,53 @@ void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Pt
 
 // END stolen from MemCpyOptimizer.
 
-  struct AggregateGlobalOpsOpt final : public FunctionPass {
-    const DataLayout *DL;
-    unsigned globalSpace;
-
-  public:
-    static char ID; // Pass identification, replacement for typeid
-    AggregateGlobalOpsOpt() : FunctionPass(ID) {
-      DL = 0;
-      errs() << "Warning: aggregate-global-opts using default configuration\n";
-      globalSpace = 100;
-    }
-    AggregateGlobalOpsOpt(unsigned _globalSpace) : FunctionPass(ID) {
-      DL = 0;
-      globalSpace = _globalSpace;
-    }
-
-
-    bool runOnFunction(Function &F) override;
-
-  private:
-    void getAnalysisUsage(AnalysisUsage &AU) const override {
-      // TODO -- update these better
-      AU.setPreservesCFG();
-      /*AU.addRequired<DominatorTree>();
-      AU.addRequired<MemoryDependenceAnalysis>();
-      AU.addRequired<AliasAnalysis>();
-      AU.addRequired<TargetLibraryInfo>();*/
-      //AU.addPreserved<AliasAnalysis>();
-      //AU.addPreserved<MemoryDependenceAnalysis>();
-    }
-
-    Instruction *tryAggregating(Instruction *I, Value *StartPtr, bool DebugThis);
-  };
-
-  char AggregateGlobalOpsOpt::ID = 0;
-  static RegisterPass<AggregateGlobalOpsOpt> X("aggregate-global-ops", "Aggregate Global Pointer Operations", false /* only looks at CFG */, false /* Analysis pass */ );
-
 } // end anon namespace.
 
+AggregateGlobalOpsOpt::AggregateGlobalOpsOpt() {
+  errs() << "Warning: aggregate-global-opts using default configuration\n";
+}
+
+AggregateGlobalOpsOpt::AggregateGlobalOpsOpt(unsigned _globalSpace)
+  : globalSpace(_globalSpace) {
+}
+
+bool LegacyAggregateGlobalOpsOptPass::runOnFunction(Function &F) {
+  return pass.run(F);
+}
+
+void
+LegacyAggregateGlobalOpsOptPass::getAnalysisUsage(AnalysisUsage &AU) const {
+  // TODO -- update these better
+  AU.setPreservesCFG();
+  /*AU.addRequired<DominatorTree>();
+  AU.addRequired<MemoryDependenceAnalysis>();
+  AU.addRequired<AliasAnalysis>();
+  AU.addRequired<TargetLibraryInfo>();*/
+  //AU.addPreserved<AliasAnalysis>();
+  //AU.addPreserved<MemoryDependenceAnalysis>();
+}
+
+char LegacyAggregateGlobalOpsOptPass::ID = 0;
+static RegisterPass<LegacyAggregateGlobalOpsOptPass> X("aggregate-global-ops", "Aggregate Global Pointer Operations", false /* only looks at CFG */, false /* Analysis pass */ );
+
 // createAggregateGlobalOpsOptPass - The public interface to this file...
-FunctionPass *createAggregateGlobalOpsOptPass(unsigned globalSpace)
+FunctionPass* createLegacyAggregateGlobalOpsOptPass(unsigned globalSpace)
 {
-  return new AggregateGlobalOpsOpt(globalSpace);
+  return new LegacyAggregateGlobalOpsOptPass(globalSpace);
+}
+
+PreservedAnalyses AggregateGlobalOpsOptPass::run(Function &F,
+                                                 FunctionAnalysisManager &AM) {
+  bool changed = pass.run(F);
+  if (!changed) {
+    return PreservedAnalyses::all();
+  }
+
+  PreservedAnalyses preserved;
+  preserved.preserve<CallGraphAnalysis>();
+  //preserved.preserve<LazyCallGraphAnalysis>();
+  // TODO: I'm sure there is more that could be marked as preserved
+  return preserved;
 }
 
 /// tryAggregating - When scanning forward over instructions, we look for
@@ -535,17 +474,12 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       if (!NextStore->isSimple()) break;
 
       // Check to see if this store is to a constant offset from the start ptr.
-#if HAVE_LLVM_VER >= 100
-      Optional<int64_t> optOffset =
-        isPointerOffset(StartPtr, NextStore->getPointerOperand(), *DL);
+
+      chpl::optional<int64_t> optOffset =
+        getPointerOffset(StartPtr, NextStore->getPointerOperand(), *DL);
       if (!optOffset)
         break;
       int64_t Offset = *optOffset;
-#else
-      int64_t Offset;
-      if (!IsPointerOffset(StartPtr, NextStore->getPointerOperand(), Offset, *DL))
-        break;
-#endif
 
       Ranges.addStore(Offset, NextStore);
       bbPos[NextStore] = pos;
@@ -554,17 +488,11 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       if (!NextLoad->isSimple()) break;
 
       // Check to see if this load is to a constant offset from the start ptr.
-#if HAVE_LLVM_VER >= 100
-      Optional<int64_t> optOffset =
-        isPointerOffset(StartPtr, NextLoad->getPointerOperand(), *DL);
+      chpl::optional<int64_t> optOffset =
+        getPointerOffset(StartPtr, NextLoad->getPointerOperand(), *DL);
       if (!optOffset)
         break;
       int64_t Offset = *optOffset;
-#else
-      int64_t Offset;
-      if (!IsPointerOffset(StartPtr, NextLoad->getPointerOperand(), Offset, *DL))
-        break;
-#endif
 
       Ranges.addLoad(Offset, NextLoad);
       bbPos[NextLoad] = pos;
@@ -671,14 +599,21 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     // Determine alignment
     unsigned Alignment = Range.Alignment;
     if (Alignment == 0) {
-#if HAVE_LLVM_VER >= 130
-      Type *EltType =
-        cast<PointerType>(StartPtr->getType())->getPointerElementType();
+      Type* eltType = nullptr;
+      if (LoadInst* ld = dyn_cast<LoadInst>(First)) {
+        eltType = ld->getType();
+      } else if (StoreInst* st = dyn_cast<StoreInst>(First)) {
+        eltType = st->getValueOperand()->getType();
+      }
+      if (eltType) {
+#if HAVE_LLVM_VER >= 160
+        Alignment = DL->getABITypeAlign(eltType).value();
 #else
-      Type *EltType =
-        cast<PointerType>(StartPtr->getType())->getElementType();
+        Alignment = DL->getABITypeAlignment(eltType);
 #endif
-      Alignment = DL->getABITypeAlignment(EltType);
+      } else {
+        assert(false && "expected eltType when computing natural alignment");
+      }
     }
 
     Instruction *alloc = NULL;
@@ -696,17 +631,12 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
         int64_t offset = 0;
 
-#if HAVE_LLVM_VER >= 100
-        Optional<int64_t> optOffset =
-          isPointerOffset(StartPtr, oldStore->getPointerOperand(), *DL);
+        chpl::optional<int64_t> optOffset =
+          getPointerOffset(StartPtr, oldStore->getPointerOperand(), *DL);
         assert(!!optOffset);
         offset = *optOffset;
         assert(offset >= 0);
-#else
-        bool ok = IsPointerOffset(StartPtr, oldStore->getPointerOperand(),
-                                  offset, *DL);
-        assert(ok && offset >= 0); // we used this before, didn't we?
-#endif
+
         assert(!(oldStore->isVolatile() || oldStore->isAtomic()));
 
         Constant* offsetC = ConstantInt::get(sizeTy, offset, true);
@@ -714,24 +644,24 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         Value* i8Dst = irBuilder.CreateInBoundsGEP(int8Ty,
                                                    alloc,
                                                    offsets);
+        trackLLVMValue(i8Dst);
 
-        Type* origDstTy = oldStore->getPointerOperand()->getType();
-        Type* DstTy = origDstTy->getPointerElementType()->getPointerTo(0);
-        Value* Dst = irBuilder.CreatePointerCast(i8Dst, DstTy);
+        Type* StoreType = oldStore->getValueOperand()->getType();
+        Type* PtrType = StoreType->getPointerTo(0);
+        Value* Dst = irBuilder.CreatePointerCast(i8Dst, PtrType);
+        trackLLVMValue(Dst);
 
         StoreInst* newStore =
           irBuilder.CreateStore(oldStore->getValueOperand(), Dst);
-#if HAVE_LLVM_VER >= 100
+        trackLLVMValue(newStore);
         newStore->setAlignment(oldStore->getAlign());
-#else
-        newStore->setAlignment(oldStore->getAlignment());
-#endif
         newStore->takeName(oldStore);
       }
     }
 
     // cast the pointer that was load/stored to i8 if necessary.
     Value *globalPtr = irBuilder.CreatePointerCast(StartPtr, globalInt8PtrTy);
+    trackLLVMValue(globalPtr);
 
     // Get a Constant* for the length.
     Constant* len = ConstantInt::get(sizeTy, Range.End-Range.Start, false);
@@ -749,13 +679,8 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
     Function *func = Intrinsic::getDeclaration(M, Intrinsic::memcpy, types);
 
-#if HAVE_LLVM_VER >= 70
     // LLVM 7 and later: memcpy has no alignment argument
     Value* args[4]; // dst src len isvolatile
-#else
-    // LLVM 6 and earlier: memcpy had alignment argument
-    Value* args[5]; // dst src len alignment isvolatile
-#endif
 
     if( isStore ) {
       // it's a store (ie put)
@@ -768,21 +693,13 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     }
     args[2] = len;
 
-#if HAVE_LLVM_VER >= 70
     // LLVM 7 and later: memcpy has no alignment argument
 
     // isvolatile
     args[3] = ConstantInt::get(Type::getInt1Ty(Context), 0, false);
-#else
-    // LLVM 6 and earlier: memcpy had alignment argument
-
-    // alignment
-    args[3] = ConstantInt::get(Type::getInt32Ty(Context), 0, false);
-    // isvolatile
-    args[4] = ConstantInt::get(Type::getInt1Ty(Context), 0, false);
-#endif
 
     Instruction* aMemCpy = irBuilder.CreateCall(func, args);
+    trackLLVMValue(aMemCpy);
 
     if (!Range.TheStores.empty())
       aMemCpy->setDebugLoc(Range.TheStores[0]->getDebugLoc());
@@ -796,17 +713,13 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
            SE = Range.TheStores.end(); SI != SE; ++SI) {
         LoadInst* oldLoad = cast<LoadInst>(*SI);
         int64_t offset = 0;
-#if HAVE_LLVM_VER >= 100
-        Optional<int64_t> optOffset =
-          isPointerOffset(StartPtr, oldLoad->getPointerOperand(), *DL);
+
+        chpl::optional<int64_t> optOffset =
+          getPointerOffset(StartPtr, oldLoad->getPointerOperand(), *DL);
         assert(!!optOffset);
         offset = *optOffset;
         assert(offset >= 0);
-#else
-        bool ok = IsPointerOffset(StartPtr, oldLoad->getPointerOperand(),
-                                  offset, *DL);
-        assert(ok && offset >= 0); // we used this before, didn't we?
-#endif
+
         assert(!(oldLoad->isVolatile() || oldLoad->isAtomic()));
 
         Constant* offsetC = ConstantInt::get(sizeTy, offset, true);
@@ -814,20 +727,18 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         Value* i8Src = irBuilder.CreateInBoundsGEP(int8Ty,
                                                    alloc,
                                                    offsets);
-        Type* origSrcTy = oldLoad->getPointerOperand()->getType();
-        Type* SrcTy = origSrcTy->getPointerElementType()->getPointerTo(0);
-        Value* Src = irBuilder.CreatePointerCast(i8Src, SrcTy);
+        trackLLVMValue(i8Src);
 
-#if HAVE_LLVM_VER >= 130
-        LoadInst* newLoad = irBuilder.CreateLoad(Src->getType()->getPointerElementType(), Src);
-#else
-        LoadInst* newLoad = irBuilder.CreateLoad(Src);
-#endif
-#if HAVE_LLVM_VER >= 100
+        Type* LoadType = oldLoad->getType();
+        Type* PtrType = LoadType->getPointerTo(0);
+
+        Value* Src = irBuilder.CreatePointerCast(i8Src, PtrType);
+        trackLLVMValue(Src);
+
+        LoadInst* newLoad = irBuilder.CreateLoad(LoadType, Src);
+        trackLLVMValue(newLoad);
+
         newLoad->setAlignment(oldLoad->getAlign());
-#else
-        newLoad->setAlignment(oldLoad->getAlignment());
-#endif
         oldLoad->replaceAllUsesWith(newLoad);
         newLoad->takeName(oldLoad);
         lastAddedInsn = newLoad;
@@ -845,10 +756,10 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   return lastAddedInsn;
 }
 
-// AggregateGlobalOpsOpt::runOnFunction - This is the main transformation
-// entry point for a function.
+// AggregateGlobalOpsOpt::run - This is the main transformation
+// entry point for a function. Returns true if it changed the function.
 //
-bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
+bool AggregateGlobalOpsOpt::run(Function &F) {
   bool ChangedFn = false;
   bool DebugThis = DEBUG;
 
@@ -914,6 +825,5 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
   //MD = 0;
   return ChangedFn;
 }
-
 
 #endif

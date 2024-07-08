@@ -1,4 +1,4 @@
-deprecated "don't use x, use y" const x: int = 3;
+@deprecated(notes="don't use x, use y") const x: int = 3;
 const y: int = 3;
 
 proc main() {

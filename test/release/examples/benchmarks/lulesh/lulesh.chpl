@@ -11,7 +11,7 @@
 
   Notes on the Initial Implementation
   -----------------------------------
-   
+
   This implementation was designed to mirror the overall structure of
   the C++ Lulesh but use Chapel constructs where they can help make
   the code more readable, easier to maintain, or more
@@ -65,7 +65,7 @@ use luleshInit;   // initialization code for data set
    printWarnings : prints performance-oriented warnings to prevent
                    surprises.
 */
-   
+
 config param useBlockDist = (CHPL_COMM != "none"),
              use3DRepresentation = false,
              useSparseMaterials = true,
@@ -136,23 +136,23 @@ const ElemSpace = if use3DRepresentation
 
 /* Declare the (potentially distributed) problem domains */
 
-const Elems = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
+const Elems = if useBlockDist then ElemSpace dmapped new blockDist(ElemSpace)
                               else ElemSpace,
-      Nodes = if useBlockDist then NodeSpace dmapped Block(NodeSpace)
+      Nodes = if useBlockDist then NodeSpace dmapped new blockDist(NodeSpace)
                               else NodeSpace;
 
 
 /* The coordinates */
 
 var x, y, z: [Nodes] real;
-                              
+
 
 /* The number of nodes per element.  In a rank-independent version,
    this could be written 2**rank */
 
 param nodesPerElem = 8;
 
-                                 
+
 // We could name this, but chose not to since it doesn't add that much clarity
 //
 // const elemNeighbors = 1..nodesPerElem;
@@ -188,7 +188,7 @@ const u_cut = 1.0e-7,           /* velocity tolerance */
       v_cut = 1.0e-10,          /* relative volume tolerance */
       qlc_monoq = 0.5,          /* linear term coef for q */
       qqc_monoq = 2.0/3.0,      /* quadratic term coef for q */
-      qqc = 2.0, 
+      qqc = 2.0,
       qqc2 = 64.0 * qqc**2,
       eosvmax = 1.0e+9,
       eosvmin = 1.0e-9,
@@ -201,7 +201,7 @@ const u_cut = 1.0e-7,           /* velocity tolerance */
       deltatimemultub = 1.2,
       dtmax = 1.0e-2;           /* maximum allowable time increment */
 
-                              
+
 config const stoptime = 1.0e-2,      /* end time for simulation */
              maxcycles = max(int),   /* max number of cycles to simulate */
              dtfixed = -1.0e-7;      /* fixed time increment */
@@ -285,9 +285,9 @@ proc main() {
   initLulesh();
 
   var st: real;
-  if doTiming then st = getCurrentTime();
+  if doTiming then st = timeSinceEpoch().totalSeconds();
   while (time < stoptime && cycle < maxcycles) {
-    const iterTime = if showProgress then getCurrentTime() else 0.0;
+    const iterTime = if showProgress then timeSinceEpoch().totalSeconds() else 0.0;
 
     TimeIncrement();
 
@@ -300,14 +300,14 @@ proc main() {
     }
     if showProgress then
       writef("time = %er, dt=%er, %s", time, deltatime,
-             if doTiming then ", elapsed = " + (getCurrentTime()-iterTime):string +"\n"
+             if doTiming then ", elapsed = " + (timeSinceEpoch().totalSeconds()-iterTime):string +"\n"
                          else "\n");
   }
   if (cycle == maxcycles) {
     writeln("Stopped early due to reaching maxnumsteps");
   }
   if doTiming {
-    const et = getCurrentTime();
+    const et = timeSinceEpoch().totalSeconds();
     writeln("Total Time: ", et-st);
     writeln("Time/Cycle: ", (et-st)/cycle);
   }
@@ -317,8 +317,8 @@ proc main() {
 
   if printCoords {
     var writer = if coordsStdout then stdout
-                                 else open("coords.out", iomode.cw).writer();
-    var fmtstr = if debug then "%1.9re %1.9er %1.9er\n" 
+                                 else open("coords.out", ioMode.cw).writer(locking=true);
+    var fmtstr = if debug then "%1.9re %1.9er %1.9er\n"
                           else "%1.4er %1.4er %1.4er\n";
     for i in Nodes do
       writer.writef(fmtstr, x[i], y[i], z[i]);
@@ -432,7 +432,7 @@ proc initBoundaryConditions() {
   // TODO: This is an example of an array that, in a distributed
   // memory code, would typically be completely local and only storing
   // the local nodes owned by the locale -- noting that some nodes
-  // are logically owned by multiple locales and therefore would 
+  // are logically owned by multiple locales and therefore would
   // redundantly be stored in both locales' surfaceNode arrays -- it's
   // essentially local scratchspace that does not need to be communicated
   // or kept coherent across locales.
@@ -555,7 +555,7 @@ proc CalcElemVolume(x, y, z) {
   return volume / 12.0;
 }
 
-proc InitStressTermsForElems(p, q, sigxx, sigyy, sigzz: [?D] real) {
+proc InitStressTermsForElems(p, q, ref sigxx, ref sigyy, ref sigzz: [?D] real) {
   forall i in D {
     sigxx[i] = -p[i] - q[i];
     sigyy[i] = -p[i] - q[i];
@@ -564,10 +564,10 @@ proc InitStressTermsForElems(p, q, sigxx, sigyy, sigzz: [?D] real) {
 }
 
 
-proc CalcElemShapeFunctionDerivatives(x: 8*real, y: 8*real, z: 8*real, 
+proc CalcElemShapeFunctionDerivatives(x: 8*real, y: 8*real, z: 8*real,
                                       ref b_x: 8*real,
                                       ref b_y: 8*real,
-                                      ref b_z: 8*real, 
+                                      ref b_z: 8*real,
                                       ref volume: real) {
 
   const fjxxi = .125 * ((x[6]-x[0]) + (x[5]-x[3]) - (x[7]-x[1]) - (x[4]-x[2])),
@@ -631,7 +631,7 @@ proc CalcElemShapeFunctionDerivatives(x: 8*real, y: 8*real, z: 8*real,
 }
 
 
-proc CalcElemNodeNormals(ref pfx: 8*real, ref pfy: 8*real, ref pfz: 8*real, 
+proc CalcElemNodeNormals(ref pfx: 8*real, ref pfy: 8*real, ref pfz: 8*real,
                          x: 8*real, y: 8*real, z: 8*real) {
 
   proc ElemFaceNormal(param n1, param n2, param n3, param n4) {
@@ -663,10 +663,10 @@ proc CalcElemNodeNormals(ref pfx: 8*real, ref pfy: 8*real, ref pfz: 8*real,
 }
 
 
-proc SumElemStressesToNodeForces(b_x: 8*real, b_y: 8*real, b_z: 8*real, 
+proc SumElemStressesToNodeForces(b_x: 8*real, b_y: 8*real, b_z: 8*real,
                                  stress_xx:real,
                                  stress_yy:real,
-                                 stress_zz: real, 
+                                 stress_zz: real,
                                  ref fx: 8*real,
                                  ref fy: 8*real,
                                  ref fz: 8*real) {
@@ -680,9 +680,9 @@ proc SumElemStressesToNodeForces(b_x: 8*real, b_y: 8*real, b_z: 8*real,
 proc CalcElemVolumeDerivative(x: 8*real, y: 8*real, z: 8*real) {
 
   proc VoluDer(param n0, param n1, param n2, param n3, param n4, param n5) {
-    const ox =   (y[n1] + y[n2]) * (z[n0] + z[n1]) 
+    const ox =   (y[n1] + y[n2]) * (z[n0] + z[n1])
                - (y[n0] + y[n1]) * (z[n1] + z[n2])
-               + (y[n0] + y[n4]) * (z[n3] + z[n4]) 
+               + (y[n0] + y[n4]) * (z[n3] + z[n4])
                - (y[n3] + y[n4]) * (z[n0] + z[n4])
                - (y[n2] + y[n5]) * (z[n3] + z[n5])
                + (y[n3] + y[n5]) * (z[n2] + z[n5]),
@@ -827,14 +827,14 @@ proc CalcElemVelocityGradient(xvel, yvel, zvel, pfx,  pfy, pfz,
 }
 
 
-proc CalcPressureForElems(p_new: [?D] real, bvc, pbvc, 
+proc CalcPressureForElems(ref p_new: [?D] real, ref bvc, ref pbvc,
                           e_old, compression, vnewc,
                           pmin: real, p_cut: real, eosvmax: real) {
 
   //
   // TODO: Uncomment local once sparse domain is distributed
   //
-  forall i in D /* do local */ {
+  forall i in D /*do local */ {
     const c1s = 2.0 / 3.0;
     bvc[i] = c1s * (compression[i] + 1.0);
     pbvc[i] = c1s;
@@ -1005,7 +1005,7 @@ proc CalcVolumeForceForElems() {
 }
 
 
-proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
+proc IntegrateStressForElems(sigxx, sigyy, sigzz, ref determ) {
   forall k in Elems {
     var b_x, b_y, b_z: 8*real;
     var x_local, y_local, z_local: 8*real;
@@ -1015,12 +1015,12 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
 
     local {
       /* Volume calculation involves extra work for numerical consistency. */
-      CalcElemShapeFunctionDerivatives(x_local, y_local, z_local, 
+      CalcElemShapeFunctionDerivatives(x_local, y_local, z_local,
                                        b_x, b_y, b_z, determ[k]);
-    
+
       CalcElemNodeNormals(b_x, b_y, b_z, x_local, y_local, z_local);
 
-      SumElemStressesToNodeForces(b_x, b_y, b_z, sigxx[k], sigyy[k], sigzz[k], 
+      SumElemStressesToNodeForces(b_x, b_y, b_z, sigxx[k], sigyy[k], sigzz[k],
                                   fx_local, fy_local, fz_local);
     }
 
@@ -1033,7 +1033,7 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, determ) {
 }
 
 
-proc CalcHourglassControlForElems(determ) {
+proc CalcHourglassControlForElems(ref determ) {
   var dvdx, dvdy, dvdz, x8n, y8n, z8n: [Elems] 8*real;
 
   forall eli in Elems {
@@ -1066,7 +1066,7 @@ proc CalcHourglassControlForElems(determ) {
 }
 
 
-const gammaCoef: 4*(8*real) = // WAS: [1..4, 1..8] real = 
+const gammaCoef: 4*(8*real) = // WAS: [1..4, 1..8] real =
                 (( 1.0,  1.0, -1.0, -1.0, -1.0, -1.0,  1.0,  1.0),
                  ( 1.0, -1.0, -1.0,  1.0, -1.0,  1.0,  1.0, -1.0),
                  ( 1.0, -1.0,  1.0, -1.0,  1.0, -1.0,  1.0, -1.0),
@@ -1098,7 +1098,7 @@ proc CalcFBHourglassForceForElems(determ, x8n, y8n, z8n, dvdx, dvdy, dvdz) {
         }
 
         for j in 0..7 {
-          hourgam[j][i] = gammaCoef[i][j] - volinv * 
+          hourgam[j][i] = gammaCoef[i][j] - volinv *
             (dvdx[eli][j] * hourmodx +
              dvdy[eli][j] * hourmody +
              dvdz[eli][j] * hourmodz);
@@ -1141,7 +1141,7 @@ proc ApplyAccelerationBoundaryConditionsForNodes() {
   // xdd[XSym] = 0.0;
   // ydd[YSym] = 0.0;
   // zdd[ZSym] = 0.0;
-  
+
   forall x in XSym do xdd[x] = 0.0;
   forall y in YSym do ydd[y] = 0.0;
   forall z in ZSym do zdd[z] = 0.0;
@@ -1194,7 +1194,7 @@ proc CalcLagrangeElements() {
 }
 
 
-proc CalcKinematicsForElems(dxx, dyy, dzz, const dt: real) {
+proc CalcKinematicsForElems(ref dxx, ref dyy, ref dzz, const dt: real) {
   // loop over all elements
   forall k in Elems {
     var b_x, b_y, b_z: 8*real,
@@ -1253,7 +1253,7 @@ proc CalcQForElems() {
   // MONOTONIC Q option
 
   /* Calculate velocity gradients */
-  CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta, 
+  CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
                                   delx_xi, delx_eta, delx_zeta);
 
   /* Transfer velocity gradients in the first order elements */
@@ -1310,8 +1310,8 @@ proc UpdateVolumesForElems() {
 }
 
 
-proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta, 
-                                     delx_xi, delx_eta, delx_zeta) {
+proc CalcMonotonicQGradientsForElems(ref delv_xi, ref delv_eta, ref delv_zeta,
+                                     ref delx_xi, ref delx_eta, ref delx_zeta) {
   forall eli in Elems {
     const ptiny = 1.0e-36;
     var xl, yl, zl: 8*real;
@@ -1327,11 +1327,11 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
       const dxj = -0.25*((xl[0]+xl[1]+xl[5]+xl[4])-(xl[3]+xl[2]+xl[6]+xl[7])),
             dyj = -0.25*((yl[0]+yl[1]+yl[5]+yl[4])-(yl[3]+yl[2]+yl[6]+yl[7])),
             dzj = -0.25*((zl[0]+zl[1]+zl[5]+zl[4])-(zl[3]+zl[2]+zl[6]+zl[7])),
-      
+
             dxi =  0.25*((xl[1]+xl[2]+xl[6]+xl[5])-(xl[0]+xl[3]+xl[7]+xl[4])),
             dyi =  0.25*((yl[1]+yl[2]+yl[6]+yl[5])-(yl[0]+yl[3]+yl[7]+yl[4])),
             dzi =  0.25*((zl[1]+zl[2]+zl[6]+zl[5])-(zl[0]+zl[3]+zl[7]+zl[4])),
-        
+
             dxk =  0.25*((xl[4]+xl[5]+xl[6]+xl[7])-(xl[0]+xl[1]+xl[2]+xl[3])),
             dyk =  0.25*((yl[4]+yl[5]+yl[6]+yl[7])-(yl[0]+yl[1]+yl[2]+yl[3])),
             dzk =  0.25*((zl[4]+zl[5]+zl[6]+zl[7])-(zl[0]+zl[1]+zl[2]+zl[3]));
@@ -1394,7 +1394,7 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
 }
 
 
-proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta, 
+proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
                             delx_xi, delx_eta, delx_zeta) {
   //got rid of call through to "CalcMonotonicQRegionForElems"
 
@@ -1435,13 +1435,13 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
 
     select bcMask & ETA_M {
       when 0          do delvm = delv_eta[letam[i]];
-      when ETA_M_SYMM do delvm = delv_eta[i];      
-      when ETA_M_FREE do delvm = 0.0;      
+      when ETA_M_SYMM do delvm = delv_eta[i];
+      when ETA_M_FREE do delvm = 0.0;
     }
     select bcMask & ETA_P {
       when 0          do delvp = delv_eta[letap[i]];
-      when ETA_P_SYMM do delvp = delv_eta[i];      
-      when ETA_P_FREE do delvp = 0.0;      
+      when ETA_P_SYMM do delvp = delv_eta[i];
+      when ETA_P_FREE do delvp = 0.0;
     }
 
     delvm = delvm * norm;
@@ -1462,13 +1462,13 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
 
     select bcMask & ZETA_M {
       when 0           do delvm = delv_zeta[lzetam[i]];
-      when ZETA_M_SYMM do delvm = delv_zeta[i];       
-      when ZETA_M_FREE do delvm = 0.0;        
+      when ZETA_M_SYMM do delvm = delv_zeta[i];
+      when ZETA_M_FREE do delvm = 0.0;
     }
     select bcMask & ZETA_P {
       when 0           do delvp = delv_zeta[lzetap[i]];
-      when ZETA_P_SYMM do delvp = delv_zeta[i];       
-      when ZETA_P_FREE do delvp = 0.0;        
+      when ZETA_P_SYMM do delvp = delv_zeta[i];
+      when ZETA_P_FREE do delvp = 0.0;
     }
 
     delvm = delvm * norm;
@@ -1520,7 +1520,7 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
 proc EvalEOSForElems(vnewc) {
   const rho0 = refdens;
 
-  var e_old, delvc, p_old, q_old, compression, compHalfStep, 
+  var e_old, delvc, p_old, q_old, compression, compHalfStep,
     qq_old, ql_old, work, p_new, e_new, q_new, bvc, pbvc: [Elems] real;
 
   /* compress data, minimal set */
@@ -1559,8 +1559,8 @@ proc EvalEOSForElems(vnewc) {
     }
   }
 
-  CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc, 
-                     p_old, e_old, q_old, compression, compHalfStep, 
+  CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
+                     p_old, e_old, q_old, compression, compHalfStep,
                      vnewc, work, delvc, qq_old, ql_old);
 
   forall i in MatElems {
@@ -1573,19 +1573,19 @@ proc EvalEOSForElems(vnewc) {
 }
 
 
-proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
-                        p_old, e_old, q_old, compression, compHalfStep, 
+proc CalcEnergyForElems(ref p_new, ref e_new, ref q_new, ref bvc, ref pbvc,
+                        p_old, e_old, q_old, compression, compHalfStep,
                         vnewc, work, delvc, qq_old, ql_old) {
   // TODO: might need to move these consts into foralls or global
-  // Otherwise, they live on Locale0 and everyone else has to do 
+  // Otherwise, they live on Locale0 and everyone else has to do
   // remote reads.  OR: Check if they're remote value forwarded.
-  const rho0 = refdens; 
+  const rho0 = refdens;
   const sixth = 1.0 / 6.0;
 
   var pHalfStep: [MatElems] real;
 
   forall i in Elems {
-    e_new[i] = e_old[i] - 0.5 * delvc[i] * (p_old[i] + q_old[i]) 
+    e_new[i] = e_old[i] - 0.5 * delvc[i] * (p_old[i] + q_old[i])
                         + 0.5 * work[i];
     if e_new[i] < emin then e_new[i] = emin;
   }
@@ -1629,8 +1629,8 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
       q_tilde = ssc * ql_old[i] + qq_old[i];
     }
 
-    e_new[i] -= (7.0*(p_old[i] + q_old[i]) 
-                 - 8.0*(pHalfStep[i] + q_new[i]) 
+    e_new[i] -= (7.0*(p_old[i] + q_old[i])
+                 - 8.0*(pHalfStep[i] + q_new[i])
                  + (p_new[i] + q_tilde)) * delvc[i] * sixth;
     if abs(e_new[i]) < e_cut then e_new[i] = 0.0;
     if e_new[i] < emin then e_new[i] = emin;
@@ -1672,7 +1672,7 @@ iter elemToNodes(elem) {
   for i in 0..<nodesPerElem do
     yield elemToNode[elem][i];
 }
-                                 
+
 iter elemToNodesTuple(e) {
   for i in 0..<nodesPerElem do
     yield (elemToNode[e][i], i);
@@ -1682,8 +1682,8 @@ iter elemToNodesTuple(e) {
 proc deprint(title:string, x:[?D] real, y:[D] real, z:[D] real) {
   writeln(title);
   for i in D do
-    writef("%3i: %3.4er %3.4er %3.4er\n", 
-           if use3DRepresentation then idx3DTo1D(i, D.dim(0).size) else i, 
+    writef("%3i: %3.4er %3.4er %3.4er\n",
+           if use3DRepresentation then idx3DTo1D(i, D.dim(0).size) else i,
            x[i], y[i], z[i]);
 }
 
@@ -1691,7 +1691,7 @@ proc deprint(title:string, x:[?D] real, y:[D] real, z:[D] real) {
 proc deprintatomic(title:string, x:[?D] atomic real, y:[] atomic real, z:[] atomic real) {
   writeln(title);
   for i in D do
-    writef("%3i: %3.4er %3.4er %3.4er\n", 
-           if use3DRepresentation then idx3DTo1D(i, D.dim(0).size) else i, 
+    writef("%3i: %3.4er %3.4er %3.4er\n",
+           if use3DRepresentation then idx3DTo1D(i, D.dim(0).size) else i,
            x[i].read(), y[i].read(), z[i].read());
 }

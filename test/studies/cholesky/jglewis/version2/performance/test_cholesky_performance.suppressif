@@ -1,4 +1,5 @@
-# cygwin leaks condition variables (see JIRA issue 74)
+# cygwin leaks condition variables (see
+# https://github.com/Cray/chapel-private/issues/4556)
 
 CHPL_TARGET_PLATFORM==cygwin32
 CHPL_TARGET_PLATFORM==cygwin64

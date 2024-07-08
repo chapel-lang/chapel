@@ -35,19 +35,12 @@
 
 #include "ofi_iov.h"
 
-#include "fi_verbs.h"
+#include "verbs_ofi.h"
 #include <malloc.h>
 
 
-
-static void vrb_set_threshold(struct fid_ep *ep_fid, size_t threshold)
-{
-	struct vrb_ep *ep = container_of(ep_fid, struct vrb_ep, util_ep.ep_fid);
-	ep->threshold = threshold;
-}
-
 static void vrb_set_credit_handler(struct fid_domain *domain_fid,
-		ssize_t (*credit_handler)(struct fid_ep *ep, size_t credits))
+		ssize_t (*credit_handler)(struct fid_ep *ep, uint64_t credits))
 {
 	struct vrb_domain *domain;
 
@@ -56,24 +49,60 @@ static void vrb_set_credit_handler(struct fid_domain *domain_fid,
 	domain->send_credits = credit_handler;
 }
 
-static int vrb_enable_ep_flow_ctrl(struct fid_ep *ep_fid)
+static bool vrb_flow_ctrl_available(struct fid_ep *ep_fid)
 {
 	struct vrb_ep *ep = container_of(ep_fid, struct vrb_ep, util_ep.ep_fid);
+
 	// only enable if we are not using SRQ
-	if (!ep->srq_ep && ep->ibv_qp && ep->ibv_qp->qp_type == IBV_QPT_RC) {
-		ep->peer_rq_credits = 1;
-		return FI_SUCCESS;
+	return (!ep->srx && ep->ibv_qp && ep->ibv_qp->qp_type == IBV_QPT_RC);
+}
+
+static int vrb_enable_ep_flow_ctrl(struct fid_ep *ep_fid, uint64_t threshold)
+{
+	struct vrb_ep *ep;
+	uint64_t credits_to_give;
+
+	if (!vrb_flow_ctrl_available(ep_fid))
+		return -FI_ENOSYS;
+
+	ep = container_of(ep_fid, struct vrb_ep, util_ep.ep_fid);
+	ofi_genlock_lock(&vrb_ep2_progress(ep)->ep_lock);
+	ep->threshold = threshold;
+
+	/*
+	 * Both sides assume 1 credit to start with. Previously received credits
+	 * from peer should also be added in.
+	 */
+	ep->peer_rq_credits = 1 + ep->saved_peer_rq_credits;
+	ep->saved_peer_rq_credits = 0;
+
+	/*
+	 * Preposted recvs may happen before flow control is enabled.
+	 * Send credit update if needed.
+	 */
+	if (ep->rq_credits_avail >= ep->threshold) {
+		credits_to_give = ep->rq_credits_avail;
+		ep->rq_credits_avail = 0;
+	} else {
+		credits_to_give = 0;
 	}
 
-	return -FI_ENOSYS;
+	if (credits_to_give &&
+	    vrb_ep2_domain(ep)->send_credits(&ep->util_ep.ep_fid,
+					     credits_to_give)) {
+		ep->rq_credits_avail += credits_to_give;
+	}
+	ofi_genlock_unlock(&vrb_ep2_progress(ep)->ep_lock);
+
+	return FI_SUCCESS;
 }
 
 struct ofi_ops_flow_ctrl vrb_ops_flow_ctrl = {
 	.size = sizeof(struct ofi_ops_flow_ctrl),
-	.set_threshold = vrb_set_threshold,
 	.add_credits = vrb_add_credits,
 	.enable = vrb_enable_ep_flow_ctrl,
 	.set_send_handler = vrb_set_credit_handler,
+	.available = vrb_flow_ctrl_available,
 };
 
 static int
@@ -157,6 +186,8 @@ static int vrb_domain_close(fid_t fid)
 		container_of(fid, struct vrb_domain,
 			     util_domain.domain_fid.fid);
 
+	vrb_close_progress(&domain->progress);
+
 	switch (domain->ep_type) {
 	case FI_EP_DGRAM:
 		fab = container_of(&domain->util_domain.fabric->fabric_fid,
@@ -224,7 +255,7 @@ static int vrb_open_device_by_name(struct vrb_domain *domain, const char *name)
 				      strlen(name) - strlen(verbs_dgram_domain.suffix));
 			break;
 		default:
-			VERBS_WARN(FI_LOG_DOMAIN,
+			VRB_WARN(FI_LOG_DOMAIN,
 				   "Unsupported EP type - %d\n", domain->ep_type);
 			/* Never should go here */
 			assert(0);
@@ -305,7 +336,8 @@ vrb_domain(struct fid_fabric *fabric, struct fi_info *info,
 	if (!_domain)
 		return -FI_ENOMEM;
 
-	ret = ofi_domain_init(fabric, info, &_domain->util_domain, context);
+	ret = ofi_domain_init(fabric, info, &_domain->util_domain, context,
+			      OFI_LOCK_MUTEX);
 	if (ret)
 		goto err1;
 
@@ -338,13 +370,13 @@ vrb_domain(struct fid_fabric *fabric, struct fi_info *info,
 	ret = ofi_mr_cache_init(&_domain->util_domain, memory_monitors,
 				&_domain->cache);
 	if (ret) {
-		VERBS_INFO(FI_LOG_MR,
+		VRB_INFO(FI_LOG_MR,
 			   "MR cache init failed: %s. MR caching disabled.\n",
 			   fi_strerror(-ret));
 	} else {
 		for (iface = 0; iface < OFI_HMEM_MAX; iface++) {
 			if (_domain->cache.monitors[iface])
-				VERBS_INFO(FI_LOG_MR,
+				VRB_INFO(FI_LOG_MR,
 					   "MR cache enabled for %s memory\n",
 					   fi_tostr(&iface, FI_TYPE_HMEM_IFACE));
 		}
@@ -378,25 +410,27 @@ vrb_domain(struct fid_fabric *fabric, struct fi_info *info,
 		_domain->util_domain.domain_fid.ops = &vrb_msg_domain_ops;
 		break;
 	default:
-		VERBS_INFO(FI_LOG_DOMAIN, "Ivalid EP type is provided, "
+		VRB_INFO(FI_LOG_DOMAIN, "Ivalid EP type is provided, "
 			   "EP type :%d\n", _domain->ep_type);
 		ret = -FI_EINVAL;
 		goto err4;
 	}
+
+	ret = vrb_init_progress(&_domain->progress, _domain->info);
+	if (ret)
+		goto err4;
 
 	*domain = &_domain->util_domain.domain_fid;
 	return FI_SUCCESS;
 err4:
 	ofi_mr_cache_cleanup(&_domain->cache);
 	if (ibv_dealloc_pd(_domain->pd))
-		VERBS_INFO_ERRNO(FI_LOG_DOMAIN,
-				 "ibv_dealloc_pd", errno);
+		VRB_WARN_ERRNO(FI_LOG_DOMAIN, "ibv_dealloc_pd");
 err3:
 	fi_freeinfo(_domain->info);
 err2:
 	if (ofi_domain_close(&_domain->util_domain))
-		VERBS_INFO(FI_LOG_DOMAIN,
-			   "ofi_domain_close fails");
+		VRB_WARN(FI_LOG_DOMAIN, "ofi_domain_close fails");
 err1:
 	free(_domain);
 	return ret;

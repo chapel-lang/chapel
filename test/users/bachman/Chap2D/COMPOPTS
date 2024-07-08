@@ -1,0 +1,1 @@
+-I$FFTW_DIR/include -L$FFTW_DIR/lib -lfftw3 -I$NETCDF_DIR/include -L$NETCDF_DIR/lib -lnetcdf

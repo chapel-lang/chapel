@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,18 +23,54 @@
 
 module ChapelBase {
 
-  pragma "no doc"
+  // We deprecate in the module code so that we don't have to modify dyno
+  // to teach it about the 'c_string' type. We perform the deprecation in
+  // ChapelBase so that you don't have to 'import CTypes' to see the type
+  // 'c_string' (which could break a lot of programs). This is OK because
+  // after the deprecation period we can just remove 'c_string' entirely.
+  pragma "last resort"
+  @deprecated(notes="the type 'c_string' is deprecated; please 'use CTypes' and replace 'c_string' with 'c_ptrConst(c_char)'")
+  type c_string = chpl_c_string;
+
+  // c_fn_ptr stuff
+
+  // although it can just be a compiler-inserted primitive,
+  // we declare it so we can mark it unstable
+  @chpldoc.nodoc
+  @unstable("'c_fn_ptr' is unstable, and may be replaced by first-class procedure functionality")
+  type c_fn_ptr = chpl_c_fn_ptr;
+
+  @chpldoc.nodoc
+  @unstable
+  inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
+    __primitive("=", a, b);
+  }
+  pragma "do not resolve unless called"
+  @chpldoc.nodoc
+  @unstable
+  proc c_fn_ptr.this() {
+    compilerError("Can't call a C function pointer within Chapel");
+  }
+  pragma "do not resolve unless called"
+  @chpldoc.nodoc
+  @unstable
+  proc c_fn_ptr.this(args...) {
+    compilerError("Can't call a C function pointer within Chapel");
+  }
+
   pragma "locale private"
+  @chpldoc.nodoc
   var rootLocaleInitialized: bool = false;
 
   public use ChapelStandard;
   use CTypes;
+  use ChplConfig;
 
   config param enablePostfixBangChecks = false;
 
   // These two are called by compiler-generated code.
-  extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
-  extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;
+  extern proc chpl_config_has_value(name:c_ptrConst(c_char), module_name:c_ptrConst(c_char)): bool;
+  extern proc chpl_config_get_value(name:c_ptrConst(c_char), module_name:c_ptrConst(c_char)): c_ptrConst(c_char);
 
   // the default low bound to use for arrays, tuples, etc.
   config param defaultLowBound = 0;
@@ -44,27 +80,70 @@ module ChapelBase {
 
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                                             // the iterator to yield zero times.
-  proc _throwOpError(param op: string) {
-      compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
-  }
+
+  // Used to test "--warn-unstable-internal", ignore.
+  @chpldoc.nodoc
+  @unstable
+  var chpl_unstableInternalSymbolForTesting: int;
+  chpl_unstableInternalSymbolForTesting;
+
+
+  // We have the following two config params here instead of in
+  // ChapelDomain so to make it easy for us to access these in the
+  // compiler, since we already always have a reference to baseModule
+  // in the production compiler.
+
+  /* Compile with ``-sassocParSafeDefault=true`` to use ``parSafe=true``
+     by default for associative domains and arrays.
+     Compiling with an explicit ``-sassocParSafeDefault[=false]`` will
+     turn off the par safe warning, just like ``-snoParSafeWarning``*/
+  @chpldoc.nodoc
+  config param assocParSafeDefault = false;
+
+  /* Compile with ``-snoParSafeWarning`` to suppress the warning
+     about a missing explicit ``parSafe`` parameter and
+     about the default parSafe mode for associative domains
+     and arrays changing from ``true`` to ``false``. */
+  @chpldoc.nodoc
+  config param noParSafeWarning = false;
 
   pragma "object class"
   pragma "global type symbol"
   pragma "no object"
   class _object { }
 
+  @deprecated(notes="the 'object' abstract root class has been deprecated; please use 'RootClass' instead")
+  class object { }
 
   enum iterKind {leader, follower, standalone};
+
+  // This flag toggles on the new pointer-based implementation.
+  // It is unstable and experimental.
+  config param fcfsUsePointerImplementation = false;
 
   //
   // assignment on primitive types
   //
-  inline operator =(ref a: bool(?), b: bool) { __primitive("=", a, b); }
-  inline operator =(ref a: int(?w), b: int(w)) { __primitive("=", a, b); }
-  inline operator =(ref a: uint(?w), b: uint(w)) { __primitive("=", a, b); }
-  inline operator =(ref a: real(?w), b: real(w)) { __primitive("=", a, b); }
-  inline operator =(ref a: imag(?w), b: imag(w)) { __primitive("=", a, b); }
-  inline operator =(ref a: complex(?w), b: complex(w)) { __primitive("=", a, b); }
+  inline operator =(ref a: bool, b: bool) { __primitive("=", a, b); }
+
+  inline operator =(ref a: int(8), b: int(8)) do __primitive("=", a, b);
+  inline operator =(ref a: int(16), b: int(16)) do __primitive("=", a, b);
+  inline operator =(ref a: int(32), b: int(32)) do __primitive("=", a, b);
+  inline operator =(ref a: int(64), b: int(64)) do __primitive("=", a, b);
+
+  inline operator =(ref a: uint(8), b: uint(8)) do __primitive("=", a, b);
+  inline operator =(ref a: uint(16), b: uint(16)) do __primitive("=", a, b);
+  inline operator =(ref a: uint(32), b: uint(32)) do __primitive("=", a, b);
+  inline operator =(ref a: uint(64), b: uint(64)) do __primitive("=", a, b);
+
+  inline operator =(ref a: real(32), b: real(32)) do __primitive("=", a, b);
+  inline operator =(ref a: real(64), b: real(64)) do __primitive("=", a, b);
+
+  inline operator =(ref a: imag(32), b: imag(32)) do __primitive("=", a, b);
+  inline operator =(ref a: imag(64), b: imag(64)) do __primitive("=", a, b);
+
+  inline operator =(ref a: complex(64), b: complex(64)) do __primitive("=", a, b);
+  inline operator =(ref a: complex(128), b: complex(128)) do __primitive("=", a, b);
   inline operator =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
   inline operator =(ref a:enum, b:enum) where (a.type == b.type) {__primitive("=", a, b); }
 
@@ -72,13 +151,13 @@ module ChapelBase {
   // a.type in a formal's type is computed before instantiation vs.
   // a.type in the where clause is computed after instantiation.
   pragma "last resort"
-  inline operator =(ref a: borrowed class,   b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  inline operator =(ref a: borrowed class,   b: a.type) where isSubtype(b.type, a.type) { __primitive("=", a, b); }
   pragma "last resort"
-  inline operator =(ref a: borrowed class?,  b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  inline operator =(ref a: borrowed class?,  b: a.type) where isSubtype(b.type, a.type) { __primitive("=", a, b); }
   pragma "last resort"
-  inline operator =(ref a: unmanaged class,  b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  inline operator =(ref a: unmanaged class,  b: a.type) where isSubtype(b.type, a.type) { __primitive("=", a, b); }
   pragma "last resort"
-  inline operator =(ref a: unmanaged class?, b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  inline operator =(ref a: unmanaged class?, b: a.type) where isSubtype(b.type, a.type) { __primitive("=", a, b); }
 
   inline operator =(ref a: nothing, b: ?t) where t != nothing {
     compilerError("a nothing variable cannot be assigned");
@@ -94,14 +173,30 @@ module ChapelBase {
   //
   // equality comparison on primitive types
   //
-  inline operator ==(a: _nilType, b: _nilType) param return true;
-  inline operator ==(a: bool, b: bool) return __primitive("==", a, b);
-  inline operator ==(a: int(?w), b: int(w)) return __primitive("==", a, b);
-  inline operator ==(a: uint(?w), b: uint(w)) return __primitive("==", a, b);
-  inline operator ==(a: real(?w), b: real(w)) return __primitive("==", a, b);
-  inline operator ==(a: imag(?w), b: imag(w)) return __primitive("==", a, b);
-  inline operator ==(a: complex(?w), b: complex(w)) return a.re == b.re && a.im == b.im;
-  inline operator ==(a: borrowed object?, b: borrowed object?) return __primitive("ptr_eq", a, b);
+  inline operator ==(a: _nilType, b: _nilType) param do return true;
+  inline operator ==(a: bool, b: bool) do return __primitive("==", a, b);
+
+  inline operator ==(a: int(8), b: int(8)) do return __primitive("==", a, b);
+  inline operator ==(a: int(16), b: int(16)) do return __primitive("==", a, b);
+  inline operator ==(a: int(32), b: int(32)) do return __primitive("==", a, b);
+  inline operator ==(a: int(64), b: int(64)) do return __primitive("==", a, b);
+
+  inline operator ==(a: uint(8), b: uint(8)) do return __primitive("==", a, b);
+  inline operator ==(a: uint(16), b: uint(16)) do return __primitive("==", a, b);
+  inline operator ==(a: uint(32), b: uint(32)) do return __primitive("==", a, b);
+  inline operator ==(a: uint(64), b: uint(64)) do return __primitive("==", a, b);
+
+  inline operator ==(a: real(32), b: real(32)) do return __primitive("==", a, b);
+  inline operator ==(a: real(64), b: real(64)) do return __primitive("==", a, b);
+
+  inline operator ==(a: imag(32), b: imag(32)) do return __primitive("==", a, b);
+  inline operator ==(a: imag(64), b: imag(64)) do return __primitive("==", a, b);
+
+  inline operator ==(a: complex(64), b: complex(64)) do return a.re == b.re && a.im == b.im;
+  inline operator ==(a: complex(128), b: complex(128)) do return a.re == b.re && a.im == b.im;
+  inline operator ==(a: borrowed RootClass?, b: borrowed RootClass?) do return __primitive("ptr_eq", a, b);
+  inline operator ==(a: borrowed RootClass?, b: _nilType) do return __primitive("==", a, nil);
+  inline operator ==(a: _nilType, b: borrowed RootClass?) do return __primitive("==", b, nil);
   inline operator ==(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("==", a, b);
   }
@@ -111,14 +206,30 @@ module ChapelBase {
     return false;
   }
 
-  inline operator !=(a: _nilType, b: _nilType) param return false;
-  inline operator !=(a: bool, b: bool) return __primitive("!=", a, b);
-  inline operator !=(a: int(?w), b: int(w)) return __primitive("!=", a, b);
-  inline operator !=(a: uint(?w), b: uint(w)) return __primitive("!=", a, b);
-  inline operator !=(a: real(?w), b: real(w)) return __primitive("!=", a, b);
-  inline operator !=(a: imag(?w), b: imag(w)) return __primitive("!=", a, b);
-  inline operator !=(a: complex(?w), b: complex(w)) return a.re != b.re || a.im != b.im;
-  inline operator !=(a: borrowed object?, b: borrowed object?) return __primitive("ptr_neq", a, b);
+  inline operator !=(a: _nilType, b: _nilType) param do return false;
+  inline operator !=(a: bool, b: bool) do return __primitive("!=", a, b);
+
+  inline operator !=(a: int(8), b: int(8)) do return __primitive("!=", a, b);
+  inline operator !=(a: int(16), b: int(16)) do return __primitive("!=", a, b);
+  inline operator !=(a: int(32), b: int(32)) do return __primitive("!=", a, b);
+  inline operator !=(a: int(64), b: int(64)) do return __primitive("!=", a, b);
+
+  inline operator !=(a: uint(8), b: uint(8)) do return __primitive("!=", a, b);
+  inline operator !=(a: uint(16), b: uint(16)) do return __primitive("!=", a, b);
+  inline operator !=(a: uint(32), b: uint(32)) do return __primitive("!=", a, b);
+  inline operator !=(a: uint(64), b: uint(64)) do return __primitive("!=", a, b);
+
+  inline operator !=(a: real(32), b: real(32)) do return __primitive("!=", a, b);
+  inline operator !=(a: real(64), b: real(64)) do return __primitive("!=", a, b);
+
+  inline operator !=(a: imag(32), b: imag(32)) do return __primitive("!=", a, b);
+  inline operator !=(a: imag(64), b: imag(64)) do return __primitive("!=", a, b);
+
+  inline operator !=(a: complex(64), b: complex(64)) do return a.re != b.re || a.im != b.im;
+  inline operator !=(a: complex(128), b: complex(128)) do return a.re != b.re || a.im != b.im;
+  inline operator !=(a: borrowed RootClass?, b: borrowed RootClass?) do return __primitive("ptr_neq", a, b);
+  inline operator !=(a: borrowed RootClass?, b: _nilType) do return __primitive("!=", a, nil);
+  inline operator !=(a: _nilType, b: borrowed RootClass?) do return __primitive("!=", b, nil);
   inline operator !=(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("!=", a, b);
   }
@@ -128,11 +239,19 @@ module ChapelBase {
     return true;
   }
 
-  inline operator ==(param a: bool, param b: bool) param return __primitive("==", a, b);
-  inline operator ==(param a: int(?w), param b: int(w)) param return __primitive("==", a, b);
-  inline operator ==(param a: uint(?w), param b: uint(w)) param return __primitive("==", a, b);
+  inline operator ==(param a: bool, param b: bool) param do return __primitive("==", a, b);
+
+  inline operator ==(param a: int(8), param b: int(8)) param do return __primitive("==", a, b);
+  inline operator ==(param a: int(16), param b: int(16)) param do return __primitive("==", a, b);
+  inline operator ==(param a: int(32), param b: int(32)) param do return __primitive("==", a, b);
+  inline operator ==(param a: int(64), param b: int(64)) param do return __primitive("==", a, b);
+
+  inline operator ==(param a: uint(8), param b: uint(8)) param do return __primitive("==", a, b);
+  inline operator ==(param a: uint(16), param b: uint(16)) param do return __primitive("==", a, b);
+  inline operator ==(param a: uint(32), param b: uint(32)) param do return __primitive("==", a, b);
+  inline operator ==(param a: uint(64), param b: uint(64)) param do return __primitive("==", a, b);
   //
-  inline operator ==(param a: enum, param b: enum) param where (a.type == b.type) return __primitive("==", a, b);
+  inline operator ==(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("==", a, b);
   //
   // NOTE: For param enums, Only '==' is implemented in the compiler
   // as a primitive. It assumes that the two param enums are of the
@@ -140,28 +259,55 @@ module ChapelBase {
   // param enum routines are defined as module code to avoid having to
   // teach the compiler how to implement all enum comparisons.
 
-  inline operator ==(param a: real(?w), param b: real(w)) param return __primitive("==", a, b);
-  inline operator ==(param a: imag(?w), param b: imag(w)) param return __primitive("==", a, b);
-  inline operator ==(param a: complex(?w), param b: complex(w)) param return __primitive("==", a, b);
-  inline operator ==(a: nothing, b: nothing) param return true;
+  inline operator ==(param a: real(32), param b: real(32)) param do return __primitive("==", a, b);
+  inline operator ==(param a: real(64), param b: real(64)) param do return __primitive("==", a, b);
 
-  inline operator !=(param a: bool, param b: bool) param return __primitive("!=", a, b);
-  inline operator !=(param a: int(?w), param b: int(w)) param return __primitive("!=", a, b);
-  inline operator !=(param a: uint(?w), param b: uint(w)) param return __primitive("!=", a, b);
+  inline operator ==(param a: imag(32), param b: imag(32)) param do return __primitive("==", a, b);
+  inline operator ==(param a: imag(64), param b: imag(64)) param do return __primitive("==", a, b);
 
-  inline operator !=(param a: enum, param b: enum) param where (a.type == b.type) return __primitive("!=", chpl__enumToOrder(a), chpl__enumToOrder(b));
+  inline operator ==(param a: complex(64), param b: complex(64)) param do return __primitive("==", a, b);
+  inline operator ==(param a: complex(128), param b: complex(128)) param do return __primitive("==", a, b);
+  inline operator ==(a: nothing, b: nothing) param do return true;
 
-  inline operator !=(param a: real(?w), param b: real(w)) param return __primitive("!=", a, b);
-  inline operator !=(param a: imag(?w), param b: imag(w)) param return __primitive("!=", a, b);
-  inline operator !=(param a: complex(?w), param b: complex(w)) param return __primitive("!=", a, b);
-  inline operator !=(a: nothing, b: nothing) param return false;
+  inline operator !=(param a: bool, param b: bool) param do return __primitive("!=", a, b);
+
+  inline operator !=(param a: int(8), param b: int(8)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: int(16), param b: int(16)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: int(32), param b: int(32)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: int(64), param b: int(64)) param do return __primitive("!=", a, b);
+
+  inline operator !=(param a: uint(8), param b: uint(8)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: uint(16), param b: uint(16)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: uint(32), param b: uint(32)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: uint(64), param b: uint(64)) param do return __primitive("!=", a, b);
+
+  inline operator !=(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("!=", chpl__enumToOrder(a), chpl__enumToOrder(b));
+
+  inline operator !=(param a: real(32), param b: real(32)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: real(64), param b: real(64)) param do return __primitive("!=", a, b);
+
+  inline operator !=(param a: imag(32), param b: imag(32)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: imag(64), param b: imag(64)) param do return __primitive("!=", a, b);
+
+  inline operator !=(param a: complex(64), param b: complex(64)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: complex(128), param b: complex(128)) param do return __primitive("!=", a, b);
+  inline operator !=(a: nothing, b: nothing) param do return false;
 
   //
   // ordered comparison on primitive types
   //
-  inline operator <=(a: int(?w), b: int(w)) return __primitive("<=", a, b);
-  inline operator <=(a: uint(?w), b: uint(w)) return __primitive("<=", a, b);
-  inline operator <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
+  inline operator <=(a: int(8), b: int(8)) do return __primitive("<=", a, b);
+  inline operator <=(a: int(16), b: int(16)) do return __primitive("<=", a, b);
+  inline operator <=(a: int(32), b: int(32)) do return __primitive("<=", a, b);
+  inline operator <=(a: int(64), b: int(64)) do return __primitive("<=", a, b);
+
+  inline operator <=(a: uint(8), b: uint(8)) do return __primitive("<=", a, b);
+  inline operator <=(a: uint(16), b: uint(16)) do return __primitive("<=", a, b);
+  inline operator <=(a: uint(32), b: uint(32)) do return __primitive("<=", a, b);
+  inline operator <=(a: uint(64), b: uint(64)) do return __primitive("<=", a, b);
+
+  inline operator <=(a: real(32), b: real(32)) do return __primitive("<=", a, b);
+  inline operator <=(a: real(64), b: real(64)) do return __primitive("<=", a, b);
   operator <=(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -171,9 +317,18 @@ module ChapelBase {
     return false;
   }
 
-  inline operator >=(a: int(?w), b: int(w)) return __primitive(">=", a, b);
-  inline operator >=(a: uint(?w), b: uint(w)) return __primitive(">=", a, b);
-  inline operator >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
+  inline operator >=(a: int(8), b: int(8)) do return __primitive(">=", a, b);
+  inline operator >=(a: int(16), b: int(16)) do return __primitive(">=", a, b);
+  inline operator >=(a: int(32), b: int(32)) do return __primitive(">=", a, b);
+  inline operator >=(a: int(64), b: int(64)) do return __primitive(">=", a, b);
+
+  inline operator >=(a: uint(8), b: uint(8)) do return __primitive(">=", a, b);
+  inline operator >=(a: uint(16), b: uint(16)) do return __primitive(">=", a, b);
+  inline operator >=(a: uint(32), b: uint(32)) do return __primitive(">=", a, b);
+  inline operator >=(a: uint(64), b: uint(64)) do return __primitive(">=", a, b);
+
+  inline operator >=(a: real(32), b: real(32)) do return __primitive(">=", a, b);
+  inline operator >=(a: real(64), b: real(64)) do return __primitive(">=", a, b);
   operator >=(a: enum, b: enum) where (a.type == b.type) {
     return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -183,9 +338,18 @@ module ChapelBase {
     return false;
   }
 
-  inline operator <(a: int(?w), b: int(w)) return __primitive("<", a, b);
-  inline operator <(a: uint(?w), b: uint(w)) return __primitive("<", a, b);
-  inline operator <(a: real(?w), b: real(w)) return __primitive("<", a, b);
+  inline operator <(a: int(8), b: int(8)) do return __primitive("<", a, b);
+  inline operator <(a: int(16), b: int(16)) do return __primitive("<", a, b);
+  inline operator <(a: int(32), b: int(32)) do return __primitive("<", a, b);
+  inline operator <(a: int(64), b: int(64)) do return __primitive("<", a, b);
+
+  inline operator <(a: uint(8), b: uint(8)) do return __primitive("<", a, b);
+  inline operator <(a: uint(16), b: uint(16)) do return __primitive("<", a, b);
+  inline operator <(a: uint(32), b: uint(32)) do return __primitive("<", a, b);
+  inline operator <(a: uint(64), b: uint(64)) do return __primitive("<", a, b);
+
+  inline operator <(a: real(32), b: real(32)) do return __primitive("<", a, b);
+  inline operator <(a: real(64), b: real(64)) do return __primitive("<", a, b);
   operator <(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -195,9 +359,18 @@ module ChapelBase {
     return false;
   }
 
-  inline operator >(a: int(?w), b: int(w)) return __primitive(">", a, b);
-  inline operator >(a: uint(?w), b: uint(w)) return __primitive(">", a, b);
-  inline operator >(a: real(?w), b: real(w)) return __primitive(">", a, b);
+  inline operator >(a: int(8), b: int(8)) do return __primitive(">", a, b);
+  inline operator >(a: int(16), b: int(16)) do return __primitive(">", a, b);
+  inline operator >(a: int(32), b: int(32)) do return __primitive(">", a, b);
+  inline operator >(a: int(64), b: int(64)) do return __primitive(">", a, b);
+
+  inline operator >(a: uint(8), b: uint(8)) do return __primitive(">", a, b);
+  inline operator >(a: uint(16), b: uint(16)) do return __primitive(">", a, b);
+  inline operator >(a: uint(32), b: uint(32)) do return __primitive(">", a, b);
+  inline operator >(a: uint(64), b: uint(64)) do return __primitive(">", a, b);
+
+  inline operator >(a: real(32), b: real(32)) do return __primitive(">", a, b);
+  inline operator >(a: real(64), b: real(64)) do return __primitive(">", a, b);
   operator >(a: enum, b: enum) where (a.type == b.type) {
     return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -207,215 +380,518 @@ module ChapelBase {
     return false;
   }
 
-  inline operator <=(param a: int(?w), param b: int(w)) param return __primitive("<=", a, b);
-  inline operator <=(param a: uint(?w), param b: uint(w)) param return __primitive("<=", a, b);
-  inline operator <=(param a: enum, param b: enum) param where (a.type == b.type) return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
-  inline operator <=(param a: real(?w), param b: real(w)) param return __primitive("<=", a, b);
+  inline operator <=(param a: int(8), param b: int(8)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: int(16), param b: int(16)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: int(32), param b: int(32)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: int(64), param b: int(64)) param do return __primitive("<=", a, b);
 
-  inline operator >=(param a: int(?w), param b: int(w)) param return __primitive(">=", a, b);
-  inline operator >=(param a: uint(?w), param b: uint(w)) param return __primitive(">=", a, b);
-  inline operator >=(param a: enum, param b: enum) param where (a.type == b.type) return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
-  inline operator >=(param a: real(?w), param b: real(w)) param return __primitive(">=", a, b);
+  inline operator <=(param a: uint(8), param b: uint(8)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: uint(16), param b: uint(16)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: uint(32), param b: uint(32)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: uint(64), param b: uint(64)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
-  inline operator <(param a: int(?w), param b: int(w)) param return __primitive("<", a, b);
-  inline operator <(param a: uint(?w), param b: uint(w)) param return __primitive("<", a, b);
-  inline operator <(param a: enum, param b: enum) param where (a.type == b.type) return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
-  inline operator <(param a: real(?w), param b: real(w)) param return __primitive("<", a, b);
+  inline operator <=(param a: real(32), param b: real(32)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: real(64), param b: real(64)) param do return __primitive("<=", a, b);
 
-  inline operator >(param a: int(?w), param b: int(w)) param return __primitive(">", a, b);
-  inline operator >(param a: uint(?w), param b: uint(w)) param return __primitive(">", a, b);
-  inline operator >(param a: enum, param b: enum) param where (a.type == b.type) return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
-  inline operator >(param a: real(?w), param b: real(w)) param return __primitive(">", a, b);
+  inline operator >=(param a: int(8), param b: int(8)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: int(16), param b: int(16)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: int(32), param b: int(32)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: int(64), param b: int(64)) param do return __primitive(">=", a, b);
+
+  inline operator >=(param a: uint(8), param b: uint(8)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: uint(16), param b: uint(16)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: uint(32), param b: uint(32)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: uint(64), param b: uint(64)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
+
+  inline operator >=(param a: real(32), param b: real(32)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: real(64), param b: real(64)) param do return __primitive(">=", a, b);
+
+  inline operator <(param a: int(8), param b: int(8)) param do return __primitive("<", a, b);
+  inline operator <(param a: int(16), param b: int(16)) param do return __primitive("<", a, b);
+  inline operator <(param a: int(32), param b: int(32)) param do return __primitive("<", a, b);
+  inline operator <(param a: int(64), param b: int(64)) param do return __primitive("<", a, b);
+
+  inline operator <(param a: uint(8), param b: uint(8)) param do return __primitive("<", a, b);
+  inline operator <(param a: uint(16), param b: uint(16)) param do return __primitive("<", a, b);
+  inline operator <(param a: uint(32), param b: uint(32)) param do return __primitive("<", a, b);
+  inline operator <(param a: uint(64), param b: uint(64)) param do return __primitive("<", a, b);
+  inline operator <(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
+
+  inline operator <(param a: real(32), param b: real(32)) param do return __primitive("<", a, b);
+  inline operator <(param a: real(64), param b: real(64)) param do return __primitive("<", a, b);
+
+  inline operator >(param a: int(8), param b: int(8)) param do return __primitive(">", a, b);
+  inline operator >(param a: int(16), param b: int(16)) param do return __primitive(">", a, b);
+  inline operator >(param a: int(32), param b: int(32)) param do return __primitive(">", a, b);
+  inline operator >(param a: int(64), param b: int(64)) param do return __primitive(">", a, b);
+
+  inline operator >(param a: uint(8), param b: uint(8)) param do return __primitive(">", a, b);
+  inline operator >(param a: uint(16), param b: uint(16)) param do return __primitive(">", a, b);
+  inline operator >(param a: uint(32), param b: uint(32)) param do return __primitive(">", a, b);
+  inline operator >(param a: uint(64), param b: uint(64)) param do return __primitive(">", a, b);
+  inline operator >(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
+
+  inline operator >(param a: real(32), param b: real(32)) param do return __primitive(">", a, b);
+  inline operator >(param a: real(64), param b: real(64)) param do return __primitive(">", a, b);
 
   //
   // unary + and - on primitive types
   //
-  inline operator +(a: int(?w)) return a;
-  inline operator +(a: uint(?w)) return a;
-  inline operator +(a: real(?w)) return a;
-  inline operator +(a: imag(?w)) return a;
-  inline operator +(a: complex(?w)) return a;
+  inline operator +(a: int(?w)) do return a;
+  inline operator +(a: uint(?w)) do return a;
+  inline operator +(a: real(?w)) do return a;
+  inline operator +(a: imag(?w)) do return a;
+  inline operator +(a: complex(?w)) do return a;
 
-  inline operator -(a: int(?w)) return __primitive("u-", a);
-  inline operator -(a: uint(64)) { compilerError("illegal use of '-' on operand of type ", a.type:string); }
-  inline operator -(a: real(?w)) return __primitive("u-", a);
-  inline operator -(a: imag(?w)) return __primitive("u-", a);
-  inline operator -(a: complex(?w)) return __primitive("u-", a);
+  inline operator -(a: int(?w)) do return __primitive("u-", a);
+  inline operator -(a: uint(?w)) { compilerError("illegal use of '-' on operand of type ", a.type:string); }
 
-  inline operator +(param a: int(?w)) param return a;
-  inline operator +(param a: uint(?w)) param return a;
-  inline operator +(param a: real(?w)) param return a;
-  inline operator +(param a: imag(?w)) param return a;
-  inline operator +(param a: complex(?w)) param return a;
+  inline operator -(a: real(?w)) do return __primitive("u-", a);
+  inline operator -(a: imag(?w)) do return __primitive("u-", a);
+  inline operator -(a: complex(?w)) do return __primitive("u-", a);
 
-  inline operator -(param a: int(?w)) param return __primitive("u-", a);
+  inline operator +(param a: int(?w)) param do return a;
+  inline operator +(param a: uint(?w)) param do return a;
+  inline operator +(param a: real(?w)) param do return a;
+  inline operator +(param a: imag(?w)) param do return a;
+  inline operator +(param a: complex(?w)) param do return a;
+
+  inline operator -(param a: int(?w)) param do return __primitive("u-", a);
   inline operator -(param a: uint(?w)) param {
-    if (a:int(w) < 0) then
-      compilerError("illegal use of '-' on operand of type ", a.type:string);
-    else
-      return -(a:int(w));
+    compilerError("illegal use of '-' on operand of type ", a.type:string);
   }
 
-  inline operator -(param a: real(?w)) param return __primitive("u-", a);
-  inline operator -(param a: imag(?w)) param return __primitive("u-", a);
-  inline operator -(param a: complex(?w)) param return __primitive("u-", a);
+  inline operator -(param a: real(?w)) param do return __primitive("u-", a);
+  inline operator -(param a: imag(?w)) param do return __primitive("u-", a);
+  inline operator -(param a: complex(?w)) param do return __primitive("u-", a);
 
   //
   // binary + and - on primitive types for runtime values
   //
-  inline operator +(a: int(?w), b: int(w)) return __primitive("+", a, b);
-  inline operator +(a: uint(?w), b: uint(w)) return __primitive("+", a, b);
-  inline operator +(a: real(?w), b: real(w)) return __primitive("+", a, b);
-  inline operator +(a: imag(?w), b: imag(w)) return __primitive("+", a, b);
-  inline operator +(a: complex(?w), b: complex(w)) return __primitive("+", a, b);
+  inline operator +(a: int(8), b: int(8)) do return __primitive("+", a, b);
+  inline operator +(a: int(16), b: int(16)) do return __primitive("+", a, b);
+  inline operator +(a: int(32), b: int(32)) do return __primitive("+", a, b);
+  inline operator +(a: int(64), b: int(64)) do return __primitive("+", a, b);
 
-  inline operator +(a: real(?w), b: imag(w)) return (a, _i2r(b)):complex(w*2);
-  inline operator +(a: imag(?w), b: real(w)) return (b, _i2r(a)):complex(w*2);
-  inline operator +(a: real(?w), b: complex(w*2)) return (a+b.re, b.im):complex(w*2);
-  inline operator +(a: complex(?w), b: real(w/2)) return (a.re+b, a.im):complex(w);
-  inline operator +(a: imag(?w), b: complex(w*2)) return (b.re, _i2r(a)+b.im):complex(w*2);
-  inline operator +(a: complex(?w), b: imag(w/2)) return (a.re, a.im+_i2r(b)):complex(w);
+  inline operator +(a: uint(8), b: uint(8)) do return __primitive("+", a, b);
+  inline operator +(a: uint(16), b: uint(16)) do return __primitive("+", a, b);
+  inline operator +(a: uint(32), b: uint(32)) do return __primitive("+", a, b);
+  inline operator +(a: uint(64), b: uint(64)) do return __primitive("+", a, b);
 
-  inline operator -(a: int(?w), b: int(w)) return __primitive("-", a, b);
-  inline operator -(a: uint(?w), b: uint(w)) return __primitive("-", a, b);
-  inline operator -(a: real(?w), b: real(w)) return __primitive("-", a, b);
-  inline operator -(a: imag(?w), b: imag(w)) return __primitive("-", a, b);
-  inline operator -(a: complex(?w), b: complex(w)) return __primitive("-", a, b);
+  inline operator +(a: real(32), b: real(32)) do return __primitive("+", a, b);
+  inline operator +(a: real(64), b: real(64)) do return __primitive("+", a, b);
 
-  inline operator -(a: real(?w), b: imag(w)) return (a, -_i2r(b)):complex(w*2);
-  inline operator -(a: imag(?w), b: real(w)) return (-b, _i2r(a)):complex(w*2);
-  inline operator -(a: real(?w), b: complex(w*2)) return (a-b.re, -b.im):complex(w*2);
-  inline operator -(a: complex(?w), b: real(w/2)) return (a.re-b, a.im):complex(w);
-  inline operator -(a: imag(?w), b: complex(w*2)) return (-b.re, _i2r(a)-b.im):complex(w*2);
-  inline operator -(a: complex(?w), b: imag(w/2)) return (a.re, a.im-_i2r(b)):complex(w);
+  inline operator +(a: imag(32), b: imag(32)) do return __primitive("+", a, b);
+  inline operator +(a: imag(64), b: imag(64)) do return __primitive("+", a, b);
+
+  inline operator +(a: complex(64), b: complex(64)) do return __primitive("+", a, b);
+  inline operator +(a: complex(128), b: complex(128)) do return __primitive("+", a, b);
+
+
+  inline operator +(a: real(32), b: imag(32)) do return (a, _i2r(b)) : complex(64);
+  inline operator +(a: real(64), b: imag(64)) do return (a, _i2r(b)) : complex(128);
+
+  inline operator +(a: imag(32), b: real(32)) do return (b, _i2r(a)) : complex(64);
+  inline operator +(a: imag(64), b: real(64)) do return (b, _i2r(a)) : complex(128);
+
+  inline operator +(a: real(32), b: complex(64)) do return (a+b.re, b.im) : complex(64);
+  inline operator +(a: real(64), b: complex(128)) do return (a+b.re, b.im) : complex(128);
+
+  inline operator +(a: complex(64), b: real(32)) do return (a.re+b, a.im) : complex(64);
+  inline operator +(a: complex(128), b: real(64)) do return (a.re+b, a.im) : complex(128);
+
+  inline operator +(a: imag(32), b: complex(64)) do return (b.re, _i2r(a)+b.im) : complex(64);
+  inline operator +(a: imag(64), b: complex(128)) do return (b.re, _i2r(a)+b.im) : complex(128);
+
+  inline operator +(a: complex(64), b: imag(32)) do return (a.re, a.im+_i2r(b)) : complex(64);
+  inline operator +(a: complex(128), b: imag(64)) do return (a.re, a.im+_i2r(b)) : complex(128);
+
+
+  inline operator -(a: int(8), b: int(8)) do return __primitive("-", a, b);
+  inline operator -(a: int(16), b: int(16)) do return __primitive("-", a, b);
+  inline operator -(a: int(32), b: int(32)) do return __primitive("-", a, b);
+  inline operator -(a: int(64), b: int(64)) do return __primitive("-", a, b);
+
+  inline operator -(a: uint(8), b: uint(8)) do return __primitive("-", a, b);
+  inline operator -(a: uint(16), b: uint(16)) do return __primitive("-", a, b);
+  inline operator -(a: uint(32), b: uint(32)) do return __primitive("-", a, b);
+  inline operator -(a: uint(64), b: uint(64)) do return __primitive("-", a, b);
+
+  inline operator -(a: real(32), b: real(32)) do return __primitive("-", a, b);
+  inline operator -(a: real(64), b: real(64)) do return __primitive("-", a, b);
+
+  inline operator -(a: imag(32), b: imag(32)) do return __primitive("-", a, b);
+  inline operator -(a: imag(64), b: imag(64)) do return __primitive("-", a, b);
+
+  inline operator -(a: complex(64), b: complex(64)) do return __primitive("-", a, b);
+  inline operator -(a: complex(128), b: complex(128)) do return __primitive("-", a, b);
+
+  inline operator -(a: real(32), b: imag(32)) do return (a, -_i2r(b)) : complex(64);
+  inline operator -(a: real(64), b: imag(64)) do return (a, -_i2r(b)) : complex(128);
+
+  inline operator -(a: imag(32), b: real(32)) do return (-b, _i2r(a)) : complex(64);
+  inline operator -(a: imag(64), b: real(64)) do return (-b, _i2r(a)) : complex(128);
+
+  inline operator -(a: real(32), b: complex(64)) do return (a-b.re, -b.im) : complex(64);
+  inline operator -(a: real(64), b: complex(128)) do return (a-b.re, -b.im) : complex(128);
+
+  inline operator -(a: complex(64), b: real(32)) do return (a.re-b, a.im) : complex(64);
+  inline operator -(a: complex(128), b: real(64)) do return (a.re-b, a.im) : complex(128);
+
+  inline operator -(a: imag(32), b: complex(64)) do return (-b.re, _i2r(a)-b.im) : complex(64);
+  inline operator -(a: imag(64), b: complex(128)) do return (-b.re, _i2r(a)-b.im) : complex(128);
+
+  inline operator -(a: complex(64), b: imag(32)) do return (a.re, a.im-_i2r(b)) : complex(64);
+  inline operator -(a: complex(128), b: imag(64)) do return (a.re, a.im-_i2r(b)) : complex(128);
 
   //
   // binary + and - on param values
   //
-  inline operator +(param a: int(?w), param b: int(w)) param return __primitive("+", a, b);
-  inline operator +(param a: uint(?w), param b: uint(w)) param return __primitive("+", a, b);
-  inline operator +(param a: real(?w), param b: real(w)) param return __primitive("+", a, b);
-  inline operator +(param a: imag(?w), param b: imag(w)) param return __primitive("+", a, b);
-  inline operator +(param a: complex(?w), param b: complex(w)) param return __primitive("+", a, b);
-  /*inline operator +(param a: real(?w), param b: imag(w)) param return __primitive("+", a, b);
-  inline operator +(param a: imag(?w), param b: real(w)) param return __primitive("+", a, b);
-  inline operator +(param a: real(?w), param b: complex(w*2)) param return
+  inline operator +(param a: int(8), param b: int(8)) param do return __primitive("+", a, b);
+  inline operator +(param a: int(16), param b: int(16)) param do return __primitive("+", a, b);
+  inline operator +(param a: int(32), param b: int(32)) param do return __primitive("+", a, b);
+  inline operator +(param a: int(64), param b: int(64)) param do return __primitive("+", a, b);
+
+  inline operator +(param a: uint(8), param b: uint(8)) param do return __primitive("+", a, b);
+  inline operator +(param a: uint(16), param b: uint(16)) param do return __primitive("+", a, b);
+  inline operator +(param a: uint(32), param b: uint(32)) param do return __primitive("+", a, b);
+  inline operator +(param a: uint(64), param b: uint(64)) param do return __primitive("+", a, b);
+
+  inline operator +(param a: real(32), param b: real(32)) param do return __primitive("+", a, b);
+  inline operator +(param a: real(64), param b: real(64)) param do return __primitive("+", a, b);
+
+  inline operator +(param a: imag(32), param b: imag(32)) param do return __primitive("+", a, b);
+  inline operator +(param a: imag(64), param b: imag(64)) param do return __primitive("+", a, b);
+
+  inline operator +(param a: complex(64), param b: complex(64)) param do return __primitive("+", a, b);
+  inline operator +(param a: complex(128), param b: complex(128)) param do return __primitive("+", a, b);
+
+  inline operator +(param a: real(32), param b: imag(32)) param do return __primitive("+", a, b);
+  inline operator +(param a: real(64), param b: imag(64)) param do return __primitive("+", a, b);
+
+  inline operator +(param a: imag(32), param b: real(32)) param do return __primitive("+", a, b);
+  inline operator +(param a: imag(64), param b: real(64)) param do return __primitive("+", a, b);
+  /*inline operator +(param a: real(?w), param b: complex(w*2)) param do return
   __primitive("+", a, b);*/
 
-  inline operator -(param a: int(?w), param b: int(w)) param return __primitive("-", a, b);
-  inline operator -(param a: uint(?w), param b: uint(w)) param return __primitive("-", a, b);
-  inline operator -(param a: real(?w), param b: real(w)) param return __primitive("-", a, b);
-  inline operator -(param a: imag(?w), param b: imag(w)) param return __primitive("-", a, b);
-  inline operator -(param a: complex(?w), param b: complex(w)) param return __primitive("-", a, b);
-  /*inline operator -(param a: real(?w), param b: imag(w)) param return __primitive("-", a, b);
-  inline operator -(param a: imag(?w), param b: real(w)) param return __primitive("-", a, b);
-  inline operator -(param a: real(?w), param b: complex(w*2)) param return
+  inline operator -(param a: int(8), param b: int(8)) param do return __primitive("-", a, b);
+  inline operator -(param a: int(16), param b: int(16)) param do return __primitive("-", a, b);
+  inline operator -(param a: int(32), param b: int(32)) param do return __primitive("-", a, b);
+  inline operator -(param a: int(64), param b: int(64)) param do return __primitive("-", a, b);
+
+  inline operator -(param a: uint(8), param b: uint(8)) param do return __primitive("-", a, b);
+  inline operator -(param a: uint(16), param b: uint(16)) param do return __primitive("-", a, b);
+  inline operator -(param a: uint(32), param b: uint(32)) param do return __primitive("-", a, b);
+  inline operator -(param a: uint(64), param b: uint(64)) param do return __primitive("-", a, b);
+
+  inline operator -(param a: real(32), param b: real(32)) param do return __primitive("-", a, b);
+  inline operator -(param a: real(64), param b: real(64)) param do return __primitive("-", a, b);
+
+  inline operator -(param a: imag(32), param b: imag(32)) param do return __primitive("-", a, b);
+  inline operator -(param a: imag(64), param b: imag(64)) param do return __primitive("-", a, b);
+
+  inline operator -(param a: complex(64), param b: complex(64)) param do return __primitive("-", a, b);
+  inline operator -(param a: complex(128), param b: complex(128)) param do return __primitive("-", a, b);
+
+  inline operator -(param a: real(32), param b: imag(32)) param do return __primitive("-", a, b);
+  inline operator -(param a: real(64), param b: imag(64)) param do return __primitive("-", a, b);
+
+  inline operator -(param a: imag(32), param b: real(32)) param do return __primitive("-", a, b);
+  inline operator -(param a: imag(64), param b: real(64)) param do return __primitive("-", a, b);
+  /*inline operator -(param a: real(?w), param b: complex(w*2)) param do return
   __primitive("-", a, b);*/
 
   //
   // * and / on primitive types
   //
-  inline operator *(a: int(?w), b: int(w)) return __primitive("*", a, b);
-  inline operator *(a: uint(?w), b: uint(w)) return __primitive("*", a, b);
-  inline operator *(a: real(?w), b: real(w)) return __primitive("*", a, b);
-  inline operator *(a: imag(?w), b: imag(w)) return _i2r(__primitive("*", -a, b));
-  inline operator *(a: complex(?w), b: complex(w)) return __primitive("*", a, b);
+  inline operator *(a: int(8), b: int(8)) do return __primitive("*", a, b);
+  inline operator *(a: int(16), b: int(16)) do return __primitive("*", a, b);
+  inline operator *(a: int(32), b: int(32)) do return __primitive("*", a, b);
+  inline operator *(a: int(64), b: int(64)) do return __primitive("*", a, b);
 
-  inline operator *(a: real(?w), b: imag(w)) return _r2i(a*_i2r(b));
-  inline operator *(a: imag(?w), b: real(w)) return _r2i(_i2r(a)*b);
-  inline operator *(a: real(?w), b: complex(w*2)) return (a*b.re, a*b.im):complex(w*2);
-  inline operator *(a: complex(?w), b: real(w/2)) return (a.re*b, a.im*b):complex(w);
-  inline operator *(a: imag(?w), b: complex(w*2)) return (-_i2r(a)*b.im, _i2r(a)*b.re):complex(w*2);
-  inline operator *(a: complex(?w), b: imag(w/2)) return (-a.im*_i2r(b), a.re*_i2r(b)):complex(w);
+  inline operator *(a: uint(8), b: uint(8)) do return __primitive("*", a, b);
+  inline operator *(a: uint(16), b: uint(16)) do return __primitive("*", a, b);
+  inline operator *(a: uint(32), b: uint(32)) do return __primitive("*", a, b);
+  inline operator *(a: uint(64), b: uint(64)) do return __primitive("*", a, b);
 
-  inline operator /(a: int(?w), b: int(w)) {
+  inline operator *(a: real(32), b: real(32)) do return __primitive("*", a, b);
+  inline operator *(a: real(64), b: real(64)) do return __primitive("*", a, b);
+
+  inline operator *(a: imag(32), b: imag(32)) do return _i2r(__primitive("*", -a, b));
+  inline operator *(a: imag(64), b: imag(64)) do return _i2r(__primitive("*", -a, b));
+
+  inline operator *(a: complex(64), b: complex(64)) do return __primitive("*", a, b);
+  inline operator *(a: complex(128), b: complex(128)) do return __primitive("*", a, b);
+
+  inline operator *(a: real(32), b: imag(32)) do return _r2i(a*_i2r(b));
+  inline operator *(a: real(64), b: imag(64)) do return _r2i(a*_i2r(b));
+
+  inline operator *(a: imag(32), b: real(32)) do return _r2i(_i2r(a)*b);
+  inline operator *(a: imag(64), b: real(64)) do return _r2i(_i2r(a)*b);
+
+  inline operator *(a: real(32), b: complex(64)) do return (a*b.re, a*b.im) : complex(64);
+  inline operator *(a: real(64), b: complex(128)) do return (a*b.re, a*b.im) : complex(128);
+
+  inline operator *(a: complex(64), b: real(32)) do return (a.re*b, a.im*b) : complex(64);
+  inline operator *(a: complex(128), b: real(64)) do return (a.re*b, a.im*b) : complex(128);
+
+  inline operator *(a: imag(32), b: complex(64)) do return (-_i2r(a)*b.im, _i2r(a)*b.re) : complex(64);
+  inline operator *(a: imag(64), b: complex(128)) do return (-_i2r(a)*b.im, _i2r(a)*b.re) : complex(128);
+
+  inline operator *(a: complex(64), b: imag(32)) do return (-a.im*_i2r(b), a.re*_i2r(b)) : complex(64);
+  inline operator *(a: complex(128), b: imag(64)) do return (-a.im*_i2r(b), a.re*_i2r(b)) : complex(128);
+
+  inline operator /(a: int(8), b: int(8)) {
     if (chpl_checkDivByZero) then
       if b == 0 then
         halt("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
-  inline operator /(a: uint(?w), b: uint(w)) {
+  inline operator /(a: int(16), b: int(16)) {
     if (chpl_checkDivByZero) then
       if b == 0 then
         halt("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
-  inline operator /(a: real(?w), b: real(w)) return __primitive("/", a, b);
-  inline operator /(a: imag(?w), b: imag(w)) return _i2r(__primitive("/", a, b));
-  inline operator /(a: complex(?w), b: complex(w)) return __primitive("/", a, b);
+  inline operator /(a: int(32), b: int(32)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+  inline operator /(a: int(64), b: int(64)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
 
-  inline operator /(a: real(?w), b: imag(w)) return _r2i(-a/_i2r(b));
-  inline operator /(a: imag(?w), b: real(w)) return _r2i(_i2r(a)/b);
-  inline operator /(a: real(?w), b: complex(w*2)) {
+  inline operator /(a: uint(8), b: uint(8)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+  inline operator /(a: uint(16), b: uint(16)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+  inline operator /(a: uint(32), b: uint(32)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+  inline operator /(a: uint(64), b: uint(64)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+
+  inline operator /(a: real(32), b: real(32)) do return __primitive("/", a, b);
+  inline operator /(a: real(64), b: real(64)) do return __primitive("/", a, b);
+
+  inline operator /(a: imag(32), b: imag(32)) do return _i2r(__primitive("/", a, b));
+  inline operator /(a: imag(64), b: imag(64)) do return _i2r(__primitive("/", a, b));
+
+  inline operator /(a: complex(64), b: complex(64)) do return __primitive("/", a, b);
+  inline operator /(a: complex(128), b: complex(128)) do return __primitive("/", a, b);
+
+  inline operator /(a: real(32), b: imag(32)) do return _r2i(-a/_i2r(b));
+  inline operator /(a: real(64), b: imag(64)) do return _r2i(-a/_i2r(b));
+
+  inline operator /(a: imag(32), b: real(32)) do return _r2i(_i2r(a)/b);
+  inline operator /(a: imag(64), b: real(64)) do return _r2i(_i2r(a)/b);
+
+  inline operator /(a: real(32), b: complex(64)) {
     const d = abs(b);
-    return ((a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(w*2);
+    return ((a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(64);
   }
-  inline operator /(a: complex(?w), b: real(w/2))
-    return (a.re/b, a.im/b):complex(w);
-  inline operator /(a: imag(?w), b: complex(w*2)) {
+  inline operator /(a: real(64), b: complex(128)) {
     const d = abs(b);
-    return ((_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(w*2);
-  }
-  inline operator /(a: complex(?w), b: imag(w/2))
-    return (a.im/_i2r(b), -a.re/_i2r(b)):complex(w);
-
-  inline operator *(param a: int(?w), param b: int(w)) param return __primitive("*", a, b);
-  inline operator *(param a: uint(?w), param b: uint(w)) param return __primitive("*", a, b);
-  inline operator *(param a: real(?w), param b: real(w)) param return __primitive("*", a, b);
-  inline operator *(param a: imag(?w), param b: imag(w)) param {
-    return __primitive("*", -a, b):real(w);
-  }
-  inline operator *(param a: real(?w), param b: imag(w)) param {
-    return __primitive("*", a, b:real(w)):imag(w);
-  }
-  inline operator *(param a: imag(?w), param b: real(w)) param {
-    return __primitive("*", a:real(w), b):imag(w);
+    return ((a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(128);
   }
 
-  inline operator /(param a: int(?w), param b: int(w)) param {
+  inline operator /(a: complex(64), b: real(32)) do return (a.re/b, a.im/b) : complex(64);
+  inline operator /(a: complex(128), b: real(64)) do return (a.re/b, a.im/b) : complex(128);
+
+  inline operator /(a: imag(32), b: complex(64)) {
+    const d = abs(b);
+    return ((_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(64);
+  }
+  inline operator /(a: imag(64), b: complex(128)) {
+    const d = abs(b);
+    return ((_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(128);
+  }
+
+  inline operator /(a: complex(64), b: imag(32)) do return (a.im/_i2r(b), -a.re/_i2r(b)) : complex(64);
+  inline operator /(a: complex(128), b: imag(64)) do return (a.im/_i2r(b), -a.re/_i2r(b)) : complex(128);
+
+  inline operator *(param a: int(8), param b: int(8)) param do return __primitive("*", a, b);
+  inline operator *(param a: int(16), param b: int(16)) param do return __primitive("*", a, b);
+  inline operator *(param a: int(32), param b: int(32)) param do return __primitive("*", a, b);
+  inline operator *(param a: int(64), param b: int(64)) param do return __primitive("*", a, b);
+
+  inline operator *(param a: uint(8), param b: uint(8)) param do return __primitive("*", a, b);
+  inline operator *(param a: uint(16), param b: uint(16)) param do return __primitive("*", a, b);
+  inline operator *(param a: uint(32), param b: uint(32)) param do return __primitive("*", a, b);
+  inline operator *(param a: uint(64), param b: uint(64)) param do return __primitive("*", a, b);
+
+  inline operator *(param a: real(32), param b: real(32)) param do return __primitive("*", a, b);
+  inline operator *(param a: real(64), param b: real(64)) param do return __primitive("*", a, b);
+
+  inline operator *(param a: imag(32), param b: imag(32)) param do return __primitive("*", -a, b) : real(32);
+  inline operator *(param a: imag(64), param b: imag(64)) param do return __primitive("*", -a, b) : real(64);
+
+  inline operator *(param a: real(32), param b: imag(32)) param do return __primitive("*", a, b : real(32)) : imag(32);
+  inline operator *(param a: real(64), param b: imag(64)) param do return __primitive("*", a, b : real(64)) : imag(64);
+
+  inline operator *(param a: imag(32), param b: real(32)) param do return __primitive("*", a : real(32), b) : imag(32);
+  inline operator *(param a: imag(64), param b: real(64)) param do return __primitive("*", a : real(64), b) : imag(64);
+
+  inline operator /(param a: int(8), param b: int(8)) param {
     if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
-  inline operator /(param a: uint(?w), param b: uint(w)) param {
+  inline operator /(param a: int(16), param b: int(16)) param {
     if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
-  inline operator /(param a: real(?w), param b: real(w)) param {
+  inline operator /(param a: int(32), param b: int(32)) param {
+    if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
-  inline operator /(param a: imag(?w), param b: imag(w)) param {
-    return __primitive("/", a, b):real(w);
+  inline operator /(param a: int(64), param b: int(64)) param {
+    if b == 0 then compilerError("Attempt to divide by zero");
+    return __primitive("/", a, b);
   }
-  inline operator /(param a: real(?w), param b: imag(w)) param {
-    return __primitive("/", -a, b:real(w)):imag(w);
+
+  inline operator /(param a: uint(8), param b: uint(8)) param {
+    if b == 0 then compilerError("Attempt to divide by zero");
+    return __primitive("/", a, b);
   }
-  inline operator /(param a: imag(?w), param b: real(w)) param {
-    return __primitive("/", a:real(w), b):imag(w);
+  inline operator /(param a: uint(16), param b: uint(16)) param {
+    if b == 0 then compilerError("Attempt to divide by zero");
+    return __primitive("/", a, b);
   }
+  inline operator /(param a: uint(32), param b: uint(32)) param {
+    if b == 0 then compilerError("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+  inline operator /(param a: uint(64), param b: uint(64)) param {
+    if b == 0 then compilerError("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+
+  inline operator /(param a: real(32), param b: real(32)) param do return __primitive("/", a, b);
+  inline operator /(param a: real(64), param b: real(64)) param do return __primitive("/", a, b);
+
+  inline operator /(param a: imag(32), param b: imag(32)) param do return __primitive("/", a, b) : real(32);
+  inline operator /(param a: imag(64), param b: imag(64)) param do return __primitive("/", a, b) : real(64);
+
+  inline operator /(param a: real(32), param b: imag(32)) param do return __primitive("/", -a, b : real(32)) : imag(32);
+  inline operator /(param a: real(64), param b: imag(64)) param do return __primitive("/", -a, b : real(64)) : imag(64);
+
+  inline operator /(param a: imag(32), param b: real(32)) param do return __primitive("/", a : real(32), b) : imag(32);
+  inline operator /(param a: imag(64), param b: real(64)) param do return __primitive("/", a : real(64), b) : imag(64);
 
 
   //
   // % on primitive types
   //
-  inline operator %(a: int(?w), b: int(w)) {
+
+  inline operator %(a: int(8), b: int(8)) {
     if (chpl_checkDivByZero) then
       if b == 0 then
         halt("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
-  inline operator %(a: uint(?w), b: uint(w)) {
+  inline operator %(a: int(16), b: int(16)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(a: int(32), b: int(32)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(a: int(64), b: int(64)) {
     if (chpl_checkDivByZero) then
       if b == 0 then
         halt("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
 
-  inline operator %(param a: int(?w), param b: int(w)) param {
+  inline operator %(a: uint(8), b: uint(8)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(a: uint(16), b: uint(16)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(a: uint(32), b: uint(32)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(a: uint(64), b: uint(64)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+
+  inline operator %(param a: int(8), param b: int(8)) param {
     if b == 0 then
       compilerError("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
-  inline operator %(param a: uint(?w), param b: uint(w)) param {
+  inline operator %(param a: int(16), param b: int(16)) param {
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(param a: int(32), param b: int(32)) param {
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(param a: int(64), param b: int(64)) param {
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+
+  inline operator %(param a: uint(8), param b: uint(8)) param {
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(param a: uint(16), param b: uint(16)) param {
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(param a: uint(32), param b: uint(32)) param {
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(param a: uint(64), param b: uint(64)) param {
     if b == 0 then
       compilerError("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
@@ -445,29 +921,55 @@ module ChapelBase {
     return y;
   }
 
-  inline operator **(a: int(?w), b: int(w)) return _intExpHelp(a, b);
-  inline operator **(a: uint(?w), b: uint(w)) return _intExpHelp(a, b);
-  inline operator **(a: real(?w), b: real(w)) return __primitive("**", a, b);
-  inline operator **(a: complex(?w), b: complex(w)) {
-    if a.type == complex(128) {
-      pragma "fn synchronization free"
-      extern proc cpow(x: complex(128), y: complex(128)): complex(128);
-      return cpow(a, b);
-    } else {
-      pragma "fn synchronization free"
-      extern proc cpowf(x: complex(64), y: complex(64)): complex(64);
-      return cpowf(a, b);
-    }
+  inline operator **(a: int(8), b: int(8)) do return _intExpHelp(a, b);
+  inline operator **(a: int(16), b: int(16)) do return _intExpHelp(a, b);
+  inline operator **(a: int(32), b: int(32)) do return _intExpHelp(a, b);
+  inline operator **(a: int(64), b: int(64)) do return _intExpHelp(a, b);
+
+  inline operator **(a: uint(8), b: uint(8)) do return _intExpHelp(a, b);
+  inline operator **(a: uint(16), b: uint(16)) do return _intExpHelp(a, b);
+  inline operator **(a: uint(32), b: uint(32)) do return _intExpHelp(a, b);
+  inline operator **(a: uint(64), b: uint(64)) do return _intExpHelp(a, b);
+
+  inline operator **(a: real(32), b: real(32)) do return __primitive("**", a, b);
+  inline operator **(a: real(64), b: real(64)) do return __primitive("**", a, b);
+
+  inline operator **(a: complex(64), b: complex(64)) {
+    pragma "fn synchronization free"
+    extern proc cpowf(x: complex(64), y: complex(64)): complex(64);
+    return cpowf(a, b);
+  }
+  inline operator **(a: complex(128), b: complex(128)) {
+    pragma "fn synchronization free"
+    extern proc cpow(x: complex(128), y: complex(128)): complex(128);
+    return cpow(a, b);
   }
 
-  operator **(param a: int(?w), param b: int(w)) param {
+  operator **(param a: int(8), param b: int(8)) param {
     if a == 0 && b < 0 then
       compilerError("0 cannot be raised to a negative power");
     return __primitive("**", a, b);
   }
-  operator **(param a: uint(?w), param b: uint(w)) param {
+  operator **(param a: int(16), param b: int(16)) param {
+    if a == 0 && b < 0 then
+      compilerError("0 cannot be raised to a negative power");
     return __primitive("**", a, b);
   }
+  operator **(param a: int(32), param b: int(32)) param {
+    if a == 0 && b < 0 then
+      compilerError("0 cannot be raised to a negative power");
+    return __primitive("**", a, b);
+  }
+  operator **(param a: int(64), param b: int(64)) param {
+    if a == 0 && b < 0 then
+      compilerError("0 cannot be raised to a negative power");
+    return __primitive("**", a, b);
+  }
+
+  operator **(param a: uint(8), param b: uint(8)) param do return __primitive("**", a, b);
+  operator **(param a: uint(16), param b: uint(16)) param do return __primitive("**", a, b);
+  operator **(param a: uint(32), param b: uint(32)) param do return __primitive("**", a, b);
+  operator **(param a: uint(64), param b: uint(64)) param do return __primitive("**", a, b);
 
   inline proc _expHelp(a, param b: integral) {
     if b == 0 {
@@ -514,78 +1016,174 @@ module ChapelBase {
     return a << exp;
   }
 
-  proc _canOptimizeExp(param b: integral) param return b >= 0 && b <= 8 && b != 7;
+  proc _canOptimizeExp(param b: integral) param do return b >= 0 && b <= 8 && b != 7;
 
   // complement and compare is an efficient way to test for a power of 2
-  proc _basePowerTwo(param a: integral) param return (a > 0 && ((a & (~a + 1)) == a));
+  proc _basePowerTwo(param a: integral) param do return (a > 0 && ((a & (~a + 1)) == a));
 
-  inline operator **(a: int(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
-  inline operator **(a: uint(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
-  inline operator **(a: real(?w), param b: integral) where _canOptimizeExp(b) return _expHelp(a, b);
-  inline operator **(param a: integral, b: int) where _basePowerTwo(a) return _expBaseHelp(a, b);
+  inline operator **(a: int(?w), param b: integral) where _canOptimizeExp(b) do return _expHelp(a, b);
+  inline operator **(a: uint(?w), param b: integral) where _canOptimizeExp(b) do return _expHelp(a, b);
+  inline operator **(a: real(?w), param b: integral) where _canOptimizeExp(b) do return _expHelp(a, b);
+  inline operator **(param a: integral, b: int) where _basePowerTwo(a) do return _expBaseHelp(a, b);
 
   //
   // logical operations on primitive types
   //
-  inline operator !(a: bool) return __primitive("u!", a);
-  inline operator !(a: int(?w)) return (a == 0);
-  inline operator !(a: uint(?w)) return (a == 0);
+  inline operator !(a: bool) do return __primitive("u!", a);
+  inline operator !(a: int(?w)) do return (a == 0);
+  inline operator !(a: uint(?w)) do return (a == 0);
 
-  inline proc isTrue(a: bool) return a;
-  inline proc isTrue(param a: bool) param return a;
+  inline proc isTrue(a: bool) do return a;
+  inline proc isTrue(param a: bool) param do return a;
 
   proc isTrue(a: integral) { compilerError("short-circuiting logical operators not supported on integers"); }
 
-  inline operator !(param a: bool) param return __primitive("u!", a);
-  inline operator !(param a: int(?w)) param return (a == 0);
-  inline operator !(param a: uint(?w)) param return (a == 0);
+  inline operator !(param a: bool) param do return __primitive("u!", a);
+  inline operator !(param a: int(?w)) param do return (a == 0);
+  inline operator !(param a: uint(?w)) param do return (a == 0);
 
   //
   // bitwise operations on primitive types
   //
-  inline operator ~(a: int(?w)) return __primitive("u~", a);
-  inline operator ~(a: uint(?w)) return __primitive("u~", a);
+  inline operator ~(a: int(?w)) do return __primitive("u~", a);
+  inline operator ~(a: uint(?w)) do return __primitive("u~", a);
   inline operator ~(a: bool) { compilerError("~ is not supported on operands of boolean type"); }
 
-  inline operator &(a: bool, b: bool) return __primitive("&", a, b);
-  inline operator &(a: int(?w), b: int(w)) return __primitive("&", a, b);
-  inline operator &(a: uint(?w), b: uint(w)) return __primitive("&", a, b);
-  inline operator &(a: uint(?w), b: int(w)) return __primitive("&", a, b:uint(w));
-  inline operator &(a: int(?w), b: uint(w)) return __primitive("&", a:uint(w), b);
+  inline operator &(a: bool, b: bool) do return __primitive("&", a, b);
 
-  inline operator |(a: bool, b: bool) return __primitive("|", a, b);
-  inline operator |(a: int(?w), b: int(w)) return __primitive("|", a, b);
-  inline operator |(a: uint(?w), b: uint(w)) return __primitive("|", a, b);
-  inline operator |(a: uint(?w), b: int(w)) return __primitive("|", a, b:uint(w));
-  inline operator |(a: int(?w), b: uint(w)) return __primitive("|", a:uint(w), b);
+  inline operator &(a: int(8), b: int(8)) do return __primitive("&", a, b);
+  inline operator &(a: int(16), b: int(16)) do return __primitive("&", a, b);
+  inline operator &(a: int(32), b: int(32)) do return __primitive("&", a, b);
+  inline operator &(a: int(64), b: int(64)) do return __primitive("&", a, b);
 
-  inline operator ^(a: bool, b: bool) return __primitive("^", a, b);
-  inline operator ^(a: int(?w), b: int(w)) return __primitive("^", a, b);
-  inline operator ^(a: uint(?w), b: uint(w)) return __primitive("^", a, b);
-  inline operator ^(a: uint(?w), b: int(w)) return __primitive("^", a, b:uint(w));
-  inline operator ^(a: int(?w), b: uint(w)) return __primitive("^", a:uint(w), b);
+  inline operator &(a: uint(8), b: uint(8)) do return __primitive("&", a, b);
+  inline operator &(a: uint(16), b: uint(16)) do return __primitive("&", a, b);
+  inline operator &(a: uint(32), b: uint(32)) do return __primitive("&", a, b);
+  inline operator &(a: uint(64), b: uint(64)) do return __primitive("&", a, b);
+
+  inline operator &(a: uint(8), b: int(8)) do return __primitive("&", a, b : uint(8));
+  inline operator &(a: uint(16), b: int(16)) do return __primitive("&", a, b : uint(16));
+  inline operator &(a: uint(32), b: int(32)) do return __primitive("&", a, b : uint(32));
+  inline operator &(a: uint(64), b: int(64)) do return __primitive("&", a, b : uint(64));
+
+  inline operator &(a: int(8), b: uint(8)) do return __primitive("&", a : uint(8), b);
+  inline operator &(a: int(16), b: uint(16)) do return __primitive("&", a : uint(16), b);
+  inline operator &(a: int(32), b: uint(32)) do return __primitive("&", a : uint(32), b);
+  inline operator &(a: int(64), b: uint(64)) do return __primitive("&", a : uint(64), b);
+
+  inline operator |(a: bool, b: bool) do return __primitive("|", a, b);
+
+  inline operator |(a: int(8), b: int(8)) do return __primitive("|", a, b);
+  inline operator |(a: int(16), b: int(16)) do return __primitive("|", a, b);
+  inline operator |(a: int(32), b: int(32)) do return __primitive("|", a, b);
+  inline operator |(a: int(64), b: int(64)) do return __primitive("|", a, b);
+
+  inline operator |(a: uint(8), b: uint(8)) do return __primitive("|", a, b);
+  inline operator |(a: uint(16), b: uint(16)) do return __primitive("|", a, b);
+  inline operator |(a: uint(32), b: uint(32)) do return __primitive("|", a, b);
+  inline operator |(a: uint(64), b: uint(64)) do return __primitive("|", a, b);
+
+  inline operator |(a: uint(8), b: int(8)) do return __primitive("|", a, b : uint(8));
+  inline operator |(a: uint(16), b: int(16)) do return __primitive("|", a, b : uint(16));
+  inline operator |(a: uint(32), b: int(32)) do return __primitive("|", a, b : uint(32));
+  inline operator |(a: uint(64), b: int(64)) do return __primitive("|", a, b : uint(64));
+
+  inline operator |(a: int(8), b: uint(8)) do return __primitive("|", a : uint(8), b);
+  inline operator |(a: int(16), b: uint(16)) do return __primitive("|", a : uint(16), b);
+  inline operator |(a: int(32), b: uint(32)) do return __primitive("|", a : uint(32), b);
+  inline operator |(a: int(64), b: uint(64)) do return __primitive("|", a : uint(64), b);
+
+  inline operator ^(a: bool, b: bool) do return __primitive("^", a, b);
+
+  inline operator ^(a: int(8), b: int(8)) do return __primitive("^", a, b);
+  inline operator ^(a: int(16), b: int(16)) do return __primitive("^", a, b);
+  inline operator ^(a: int(32), b: int(32)) do return __primitive("^", a, b);
+  inline operator ^(a: int(64), b: int(64)) do return __primitive("^", a, b);
+
+  inline operator ^(a: uint(8), b: uint(8)) do return __primitive("^", a, b);
+  inline operator ^(a: uint(16), b: uint(16)) do return __primitive("^", a, b);
+  inline operator ^(a: uint(32), b: uint(32)) do return __primitive("^", a, b);
+  inline operator ^(a: uint(64), b: uint(64)) do return __primitive("^", a, b);
+
+  inline operator ^(a: uint(8), b: int(8)) do return __primitive("^", a, b : uint(8));
+  inline operator ^(a: uint(16), b: int(16)) do return __primitive("^", a, b : uint(16));
+  inline operator ^(a: uint(32), b: int(32)) do return __primitive("^", a, b : uint(32));
+  inline operator ^(a: uint(64), b: int(64)) do return __primitive("^", a, b : uint(64));
+
+  inline operator ^(a: int(8), b: uint(8)) do return __primitive("^", a : uint(8), b);
+  inline operator ^(a: int(16), b: uint(16)) do return __primitive("^", a : uint(16), b);
+  inline operator ^(a: int(32), b: uint(32)) do return __primitive("^", a : uint(32), b);
+  inline operator ^(a: int(64), b: uint(64)) do return __primitive("^", a : uint(64), b);
 
   inline operator ~(param a: bool) { compilerError("~ is not supported on operands of boolean type"); }
-  inline operator ~(param a: int(?w)) param return __primitive("u~", a);
-  inline operator ~(param a: uint(?w)) param return __primitive("u~", a);
+  inline operator ~(param a: int(?w)) param do return __primitive("u~", a);
+  inline operator ~(param a: uint(?w)) param do return __primitive("u~", a);
 
-  inline operator &(param a: bool, param b: bool) param return __primitive("&", a, b);
-  inline operator &(param a: int(?w), param b: int(w)) param return __primitive("&", a, b);
-  inline operator &(param a: uint(?w), param b: uint(w)) param return __primitive("&", a, b);
-  inline operator &(param a: uint(?w), param b: int(w)) param return __primitive("&", a, b:uint(w));
-  inline operator &(param a: int(?w), param b: uint(w)) param return __primitive("&", a:uint(w), b);
+  inline operator &(param a: bool, param b: bool) param do return __primitive("&", a, b);
 
-  inline operator |(param a: bool, param b: bool) param return __primitive("|", a, b);
-  inline operator |(param a: int(?w), param b: int(w)) param return __primitive("|", a, b);
-  inline operator |(param a: uint(?w), param b: uint(w)) param return __primitive("|", a, b);
-  inline operator |(param a: uint(?w), param b: int(w)) param return __primitive("|", a, b:uint(w));
-  inline operator |(param a: int(?w), param b: uint(w)) param return __primitive("|", a:uint(w), b);
+  inline operator &(param a: int(8), param b: int(8)) param do return __primitive("&", a, b);
+  inline operator &(param a: int(16), param b: int(16)) param do return __primitive("&", a, b);
+  inline operator &(param a: int(32), param b: int(32)) param do return __primitive("&", a, b);
+  inline operator &(param a: int(64), param b: int(64)) param do return __primitive("&", a, b);
 
-  inline operator ^(param a: bool, param b: bool) param return __primitive("^", a, b);
-  inline operator ^(param a: int(?w), param b: int(w)) param return __primitive("^", a, b);
-  inline operator ^(param a: uint(?w), param b: uint(w)) param return __primitive("^", a, b);
-  inline operator ^(param a: uint(?w), param b: int(w)) param return __primitive("^", a, b:uint(w));
-  inline operator ^(param a: int(?w), param b: uint(w)) param return __primitive("^", a:uint(w), b);
+  inline operator &(param a: uint(8), param b: uint(8)) param do return __primitive("&", a, b);
+  inline operator &(param a: uint(16), param b: uint(16)) param do return __primitive("&", a, b);
+  inline operator &(param a: uint(32), param b: uint(32)) param do return __primitive("&", a, b);
+  inline operator &(param a: uint(64), param b: uint(64)) param do return __primitive("&", a, b);
+
+  inline operator &(param a: uint(8), param b: int(8)) param do return __primitive("&", a, b : uint(8));
+  inline operator &(param a: uint(16), param b: int(16)) param do return __primitive("&", a, b : uint(16));
+  inline operator &(param a: uint(32), param b: int(32)) param do return __primitive("&", a, b : uint(32));
+  inline operator &(param a: uint(64), param b: int(64)) param do return __primitive("&", a, b : uint(64));
+
+  inline operator &(param a: int(8), param b: uint(8)) param do return __primitive("&", a : uint(8), b);
+  inline operator &(param a: int(16), param b: uint(16)) param do return __primitive("&", a : uint(16), b);
+  inline operator &(param a: int(32), param b: uint(32)) param do return __primitive("&", a : uint(32), b);
+  inline operator &(param a: int(64), param b: uint(64)) param do return __primitive("&", a : uint(64), b);
+
+  inline operator |(param a: bool, param b: bool) param do return __primitive("|", a, b);
+
+  inline operator |(param a: int(8), param b: int(8)) param do return __primitive("|", a, b);
+  inline operator |(param a: int(16), param b: int(16)) param do return __primitive("|", a, b);
+  inline operator |(param a: int(32), param b: int(32)) param do return __primitive("|", a, b);
+  inline operator |(param a: int(64), param b: int(64)) param do return __primitive("|", a, b);
+
+  inline operator |(param a: uint(8), param b: uint(8)) param do return __primitive("|", a, b);
+  inline operator |(param a: uint(16), param b: uint(16)) param do return __primitive("|", a, b);
+  inline operator |(param a: uint(32), param b: uint(32)) param do return __primitive("|", a, b);
+  inline operator |(param a: uint(64), param b: uint(64)) param do return __primitive("|", a, b);
+
+  inline operator |(param a: uint(8), param b: int(8)) param do return __primitive("|", a, b : uint(8));
+  inline operator |(param a: uint(16), param b: int(16)) param do return __primitive("|", a, b : uint(16));
+  inline operator |(param a: uint(32), param b: int(32)) param do return __primitive("|", a, b : uint(32));
+  inline operator |(param a: uint(64), param b: int(64)) param do return __primitive("|", a, b : uint(64));
+
+  inline operator |(param a: int(8), param b: uint(8)) param do return __primitive("|", a : uint(8), b);
+  inline operator |(param a: int(16), param b: uint(16)) param do return __primitive("|", a : uint(16), b);
+  inline operator |(param a: int(32), param b: uint(32)) param do return __primitive("|", a : uint(32), b);
+  inline operator |(param a: int(64), param b: uint(64)) param do return __primitive("|", a : uint(64), b);
+
+  inline operator ^(param a: bool, param b: bool) param do return __primitive("^", a, b);
+
+  inline operator ^(param a: int(8), param b: int(8)) param do return __primitive("^", a, b);
+  inline operator ^(param a: int(16), param b: int(16)) param do return __primitive("^", a, b);
+  inline operator ^(param a: int(32), param b: int(32)) param do return __primitive("^", a, b);
+  inline operator ^(param a: int(64), param b: int(64)) param do return __primitive("^", a, b);
+
+  inline operator ^(param a: uint(8), param b: uint(8)) param do return __primitive("^", a, b);
+  inline operator ^(param a: uint(16), param b: uint(16)) param do return __primitive("^", a, b);
+  inline operator ^(param a: uint(32), param b: uint(32)) param do return __primitive("^", a, b);
+  inline operator ^(param a: uint(64), param b: uint(64)) param do return __primitive("^", a, b);
+
+  inline operator ^(param a: uint(8), param b: int(8)) param do return __primitive("^", a, b : uint(8));
+  inline operator ^(param a: uint(16), param b: int(16)) param do return __primitive("^", a, b : uint(16));
+  inline operator ^(param a: uint(32), param b: int(32)) param do return __primitive("^", a, b : uint(32));
+  inline operator ^(param a: uint(64), param b: int(64)) param do return __primitive("^", a, b : uint(64));
+
+  inline operator ^(param a: int(8), param b: uint(8)) param do return __primitive("^", a : uint(8), b);
+  inline operator ^(param a: int(16), param b: uint(16)) param do return __primitive("^", a : uint(16), b);
+  inline operator ^(param a: int(32), param b: uint(32)) param do return __primitive("^", a : uint(32), b);
+  inline operator ^(param a: int(64), param b: uint(64)) param do return __primitive("^", a : uint(64), b);
 
   //
   // left and right shift on primitive types
@@ -735,45 +1333,62 @@ module ChapelBase {
   //   incorrectness; it is used to give better error messages for
   //   promotion of && and ||
   //
+  // These are written with two generic functions
+  // to avoid problems with preference between implicitly
+  // converting and using a generic fall-back.
 
-  inline proc _cond_test(x: borrowed object?) return x != nil;
-  inline proc _cond_test(x: bool) return x;
-  inline proc _cond_test(x: int) return x != 0;
-  inline proc _cond_test(x: uint) return x != 0;
-  inline proc _cond_test(x: sync(?t)) where isBoolType(t) || isIntegralType(t) {
-    compilerWarning("direct reads of sync variables are deprecated; please apply a 'read??' method");
-    return _cond_test(x.readFE());
+  inline proc _cond_test(param x: ?t) param : bool {
+    if isCoercible(t, bool) {
+      return x;
+    } else if (isCoercible(t, int) || isCoercible(t, uint)) {
+      return x != 0:x.type;
+    } else {
+      compilerError("invalid type ", t:string, " used in if or while condition");
+    }
   }
 
-  inline proc _cond_test(param x: bool) param return x;
-  inline proc _cond_test(param x: integral) param return x != 0:x.type;
-  inline proc _cond_test(x: c_ptr) return x != c_nil;
-
-  inline proc _cond_test(x) {
-    if !( x.type <= _iteratorRecord ) {
+  inline proc _cond_test(x: ?t): bool {
+    if isSubtype(t, sync(?)) {
+      compilerWarning("direct reads of sync variables are deprecated; please apply a 'read??' method");
+      return _cond_test(x.readFE());
+    } else if isSubtype(t, single(?)) {
+      compilerWarning("direct reads of single variables are deprecated; please use 'readFF'");
+      return _cond_test(x.readFF());
+    } else if isCoercible(t, borrowed RootClass?) {
+      return x != nil;
+    } else if isCoercible(t, bool) {
+      return x;
+    } else if isCoercible(t, int) || isCoercible(t, uint) {
+      return x != 0;
+    } else if isSubtype(t, c_ptr) {
+      return x != nil;
+    } else {
       use Reflection;
       if canResolveMethod(x, "chpl_cond_test_method") {
         return x.chpl_cond_test_method();
       } else {
-        compilerError("type '", x.type:string, "' used in if or while condition");
+        if isSubtype(t, _iteratorRecord) {
+          compilerError("iterator or promoted expression iterator used in if or while condition");
+        } else {
+          compilerError("type '", x.type:string, "' used in if or while condition");
+        }
       }
-    } else {
-      compilerError("iterator or promoted expression ", x.type:string, " used in if or while condition");
     }
   }
 
-  proc _cond_invalid(x: borrowed object?) param return false;
-  proc _cond_invalid(x: bool) param return false;
-  proc _cond_invalid(x: int) param return false;
-  proc _cond_invalid(x: uint) param return false;
-  proc _cond_invalid(x) param return true;
+  proc _cond_invalid(x: borrowed RootClass?) param do return false;
+  proc _cond_invalid(x: bool) param do return false;
+  proc _cond_invalid(x: int) param do return false;
+  proc _cond_invalid(x: uint) param do return false;
+  pragma "last resort"
+  proc _cond_invalid(x) param do return true;
 
   //
   // isNonnegative(i) == (i>=0), but is a param value if i is unsigned.
   //
-  inline proc isNonnegative(i: int(?)) return i >= 0;
-  inline proc isNonnegative(i: uint(?)) param return true;
-  inline proc isNonnegative(param i) param return i >= 0;
+  inline proc isNonnegative(i: int(?)) do return i >= 0;
+  inline proc isNonnegative(i: uint(?)) param do return true;
+  inline proc isNonnegative(param i) param do return i >= 0;
 
 
   //
@@ -782,43 +1397,56 @@ module ChapelBase {
   inline proc ref chpl_anycomplex.re ref {
     return __primitive("complex_get_real", this);
   }
+  proc param chpl_anycomplex.re param {
+    return __primitive("complex_get_real", this);
+  }
   inline proc chpl_anycomplex.re {
     if this.type == complex(128) {
       pragma "fn synchronization free"
-      extern proc creal(x:complex(128)): real(64);
-      return creal(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_creal(x:complex(128)): real(64);
+      return chpl_creal(this);
     } else {
       pragma "fn synchronization free"
-      extern proc crealf(x:complex(64)): real(32);
-      return crealf(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_crealf(x:complex(64)): real(32);
+      return chpl_crealf(this);
     }
   }
   inline proc ref chpl_anycomplex.im ref {
     return __primitive("complex_get_imag", this);
   }
+  proc param chpl_anycomplex.im param {
+    return __primitive("complex_get_imag", this);
+  }
   inline proc chpl_anycomplex.im {
     if this.type == complex(128) {
       pragma "fn synchronization free"
-      extern proc cimag(x:complex(128)): real(64);
-      return cimag(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_cimag(x:complex(128)): real(64);
+      return chpl_cimag(this);
     } else {
       pragma "fn synchronization free"
-      extern proc cimagf(x:complex(64)): real(32);
-      return cimagf(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_cimagf(x:complex(64)): real(32);
+      return chpl_cimagf(this);
     }
   }
 
   //
   // helper functions
   //
-  inline proc _i2r(a: imag(?w)) return __primitive("cast", real(w), a);
-  inline proc _r2i(a: real(?w)) return __primitive("cast", imag(w), a);
+  inline proc _i2r(a: imag(?w)) do return __primitive("cast", real(w), a);
+  inline proc _r2i(a: real(?w)) do return __primitive("cast", imag(w), a);
 
   //
   // More primitive funs
   //
-  enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit};
+  enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit, gpuInit};
   config param chpl_defaultArrayInitMethod = ArrayInit.heuristicInit;
+  config param chpl_defaultGpuArrayInitMethod =
+    if CHPL_GPU_MEM_STRATEGY == "array_on_device" then
+      ArrayInit.gpuInit else chpl_defaultArrayInitMethod;
 
   config param chpl_arrayInitMethodRuntimeSelectable = false;
   private var chpl_arrayInitMethod = chpl_defaultArrayInitMethod;
@@ -841,6 +1469,15 @@ module ChapelBase {
     }
   }
 
+  proc chpl_shouldDoGpuInit(): bool {
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_task_getRequestedSubloc(): int(32);
+    return
+      CHPL_LOCALE_MODEL=="gpu" &&
+      chpl_defaultGpuArrayInitMethod == ArrayInit.gpuInit &&
+      chpl_task_getRequestedSubloc() >= 0;
+  }
+
   // s is the number of elements, t is the element type
   proc init_elts_method(s, type t) {
     var initMethod = chpl_getArrayInitMethod();
@@ -849,6 +1486,8 @@ module ChapelBase {
       // Skip init for empty arrays. Needed for uints so that `s-1` in init_elts
       // code doesn't overflow.
       initMethod = ArrayInit.noInit;
+    } else if chpl_shouldDoGpuInit() {
+        initMethod = ArrayInit.gpuInit;
     } else if  !rootLocaleInitialized {
       // The parallel range iter uses 'here`/rootLocale, so fallback to serial
       // initialization if the root locale hasn't been setup. Only used early
@@ -898,6 +1537,17 @@ module ChapelBase {
           __primitive("array_set_first", x, i, y);
         }
       }
+      when ArrayInit.gpuInit {
+        // This branch should only occur when we're on a GPU sublocale and the
+        // following `foreach` loop will become a kernel
+        foreach i in lo..s-1 {
+          //assertOnGpu(); TODO: this assertion fails for a hello world style
+          // program investigate why (I don't think it's erroring out in user
+          // code but rather something from one of our standard modules).
+          pragma "no auto destroy" pragma "unsafe" var y: t;
+          __primitive("array_set_first", x, i, y);
+        }
+      }
       when ArrayInit.parallelInit {
         forall i in lo..s-1 {
           pragma "no auto destroy" pragma "unsafe" var y: t;
@@ -905,7 +1555,7 @@ module ChapelBase {
         }
       }
       otherwise {
-        halt("ArrayInit.heuristicInit should have been made concrete");
+        halt("ArrayInit.", initMethod, " should have been made concrete");
       }
     }
   }
@@ -914,15 +1564,13 @@ module ChapelBase {
   // chpl_mem_descInt_t is really a well known compiler type since the compiler
   // emits calls for the chpl_mem_descs table. Maybe the compiler should just
   // create the type and export it to the runtime?
-  pragma "no doc"
   extern type chpl_mem_descInt_t = int(16);
 
-  pragma "no doc"
   enum chpl_ddataResizePolicy { normalInit, skipInit, skipInitButClearMem }
 
   // dynamic data block class
   // (note that c_ptr(type) is similar, but local only,
-  //  and defined in SysBasic.chpl)
+  //  and defined in CTypes.chpl)
   pragma "data class"
   pragma "no object"
   pragma "no default functions"
@@ -934,8 +1582,8 @@ module ChapelBase {
     }
   }
 
-  proc chpl_isDdata(type t:_ddata) param return true;
-  proc chpl_isDdata(type t) param return false;
+  proc chpl_isDdata(type t:_ddata) param do return true;
+  proc chpl_isDdata(type t) param do return false;
 
   inline operator =(ref a: _ddata(?t), b: _ddata(t)) {
     __primitive("=", a, b);
@@ -975,25 +1623,59 @@ module ChapelBase {
 
   pragma "llvm return noalias"
   proc _ddata_allocate_noinit(type eltType, size: integral,
-                                     out callPostAlloc: bool,
-                                     subloc = c_sublocid_none) {
+                              out callPostAlloc: bool,
+                              subloc = c_sublocid_none,
+                              haltOnOom:bool = true) {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_alloc(nmemb: c_size_t, eltSize: c_size_t,
                                      subloc: chpl_sublocID_t,
-                                     ref callPostAlloc: bool): c_void_ptr;
+                                     ref callPostAlloc: bool,
+                                     haltOnOom: bool): c_ptr(void);
     var ret: _ddata(eltType);
     ret = chpl_mem_array_alloc(size:c_size_t, _ddata_sizeof_element(ret),
-                               subloc, callPostAlloc):ret.type;
+                               subloc, callPostAlloc, haltOnOom):ret.type;
+    return ret;
+  }
+
+  inline proc _try_ddata_allocate(type eltType, size: integral,
+                                  subloc = c_sublocid_none) throws {
+    var callPostAlloc: bool;
+    var ret: _ddata(eltType);
+
+    ret = _ddata_allocate_noinit(eltType, size, callPostAlloc, subloc, false);
+
+    if ret == nil then
+      throw new ArrayOomError();
+
+    init_elts(ret, size, eltType);
+
+    if callPostAlloc {
+      _ddata_allocate_postalloc(ret, size);
+    }
+
+    return ret;
+  }
+
+  pragma "llvm return noalias"
+  proc _ddata_allocate_noinit_gpu_shared(type eltType, size: integral,
+                                         out callPostAlloc: bool,
+                                         subloc = c_sublocid_none) {
+    if CHPL_LOCALE_MODEL != "gpu" then
+      compilerError("_ddata_allocate_noinit_gpu_shared can't be called in this config");
+
+    var ret: _ddata(eltType);
+    // TODO why fixed size?
+    ret = __primitive("cast", ret.type, __primitive("gpu allocShared", 4096*8));
     return ret;
   }
 
   inline proc _ddata_allocate_postalloc(data:_ddata, size: integral) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: c_size_t,
+    extern proc chpl_mem_array_postAlloc(data: c_ptr(void), nmemb: c_size_t,
                                          eltSize: c_size_t);
-    chpl_mem_array_postAlloc(data:c_void_ptr, size:c_size_t,
+    chpl_mem_array_postAlloc(data:c_ptr(void), size:c_size_t,
                              _ddata_sizeof_element(data));
   }
 
@@ -1019,10 +1701,10 @@ module ChapelBase {
                                          newSize: integral) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_array_supports_realloc(ptr: c_void_ptr,
+    extern proc chpl_mem_array_supports_realloc(ptr: c_ptr(void),
                                                 oldNmemb: c_size_t, newNmemb:
                                                 c_size_t, eltSize: c_size_t): bool;
-      return chpl_mem_array_supports_realloc(oldDdata: c_void_ptr,
+      return chpl_mem_array_supports_realloc(oldDdata: c_ptr(void),
                                              oldSize.safeCast(c_size_t),
                                              newSize.safeCast(c_size_t),
                                              _ddata_sizeof_element(oldDdata));
@@ -1033,13 +1715,14 @@ module ChapelBase {
                           lo: integral,
                           hi: integral,
                           fill: int(8)=0) {
+    import OS.POSIX.memset;
     if hi > lo {
       const elemWidthInBytes: uint  = _ddata_sizeof_element(ddata);
       const numElems = (hi - lo).safeCast(uint);
       if safeMul(numElems, elemWidthInBytes) {
         const numBytes = numElems * elemWidthInBytes;
         const shiftedPtr = _ddata_shift(eltType, ddata, lo);
-        c_memset(shiftedPtr:c_void_ptr, fill, numBytes);
+        memset(shiftedPtr:c_ptr(void), fill, numBytes.safeCast(c_size_t));
       } else {
         halt('internal error: Unsigned integer overflow during ' +
              'memset of dynamic block');
@@ -1055,18 +1738,18 @@ module ChapelBase {
                                 policy = chpl_ddataResizePolicy.normalInit) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_array_realloc(ptr: c_void_ptr,
+    extern proc chpl_mem_array_realloc(ptr: c_ptr(void),
                                        oldNmemb: c_size_t, newNmemb: c_size_t,
                                        eltSize: c_size_t,
                                        subloc: chpl_sublocID_t,
-                                       ref callPostAlloc: bool): c_void_ptr;
+                                       ref callPostAlloc: bool): c_ptr(void);
     var callPostAlloc: bool;
 
     // destroy any elements that are going away
     param needsDestroy = __primitive("needs auto destroy",
                                      __primitive("deref", oldDdata[0]));
     if needsDestroy && (oldSize > newSize) {
-      if _deinitElementsIsParallel(eltType) {
+      if _deinitElementsIsParallel(eltType, oldSize) {
         forall i in newSize..oldSize-1 do
           chpl__autoDestroy(oldDdata[i]);
       } else {
@@ -1075,7 +1758,7 @@ module ChapelBase {
       }
     }
 
-    var newDdata = chpl_mem_array_realloc(oldDdata: c_void_ptr,
+    var newDdata = chpl_mem_array_realloc(oldDdata: c_ptr(void),
                                           oldSize.safeCast(c_size_t),
                                           newSize.safeCast(c_size_t),
                                           _ddata_sizeof_element(oldDdata),
@@ -1100,13 +1783,13 @@ module ChapelBase {
     if (callPostAlloc) {
       pragma "fn synchronization free"
       pragma "insert line file info"
-      extern proc chpl_mem_array_postRealloc(oldData: c_void_ptr,
+      extern proc chpl_mem_array_postRealloc(oldData: c_ptr(void),
                                              oldNmemb: c_size_t,
-                                             newData: c_void_ptr,
+                                             newData: c_ptr(void),
                                              newNmemb: c_size_t,
                                              eltSize: c_size_t);
-      chpl_mem_array_postRealloc(oldDdata:c_void_ptr, oldSize.safeCast(c_size_t),
-                                 newDdata:c_void_ptr, newSize.safeCast(c_size_t),
+      chpl_mem_array_postRealloc(oldDdata:c_ptr(void), oldSize.safeCast(c_size_t),
+                                 newDdata:c_ptr(void), newSize.safeCast(c_size_t),
                                  _ddata_sizeof_element(oldDdata));
     }
     return newDdata;
@@ -1118,10 +1801,10 @@ module ChapelBase {
 
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_array_free(data: c_void_ptr,
+    extern proc chpl_mem_array_free(data: c_ptr(void),
                                     nmemb: c_size_t, eltSize: c_size_t,
                                     subloc: chpl_sublocID_t);
-    chpl_mem_array_free(data:c_void_ptr, size:c_size_t,
+    chpl_mem_array_free(data:c_ptr(void), size:c_size_t,
                         _ddata_sizeof_element(data),
                         subloc);
   }
@@ -1148,7 +1831,7 @@ module ChapelBase {
   }
 
 
-  inline proc _cond_test(x: _ddata) return x != nil;
+  inline proc _cond_test(x: _ddata) do return x != nil;
 
 
   //
@@ -1161,6 +1844,12 @@ module ChapelBase {
     var _val;
   }
 
+  module currentTask {
+    inline proc yieldExecution() {
+      extern proc chpl_task_yield();
+      chpl_task_yield();
+    }
+  }
   //
   // data structures for naive implementation of end used for
   // sync statements and for joining coforall and cobegin tasks
@@ -1193,6 +1882,27 @@ module ChapelBase {
     return ChplConfig.CHPL_NETWORK_ATOMICS != "none";
   }
 
+  config param commDiagsTrackEndCounts = false;
+
+  pragma "no default functions"
+  record endCountDiagsManager : contextManager {
+    var taskInfo: c_ptr(chpl_task_infoChapel_t);
+    var prevDiagsDisabledVal: bool;
+
+    inline proc ref enterContext() {
+      if !commDiagsTrackEndCounts {
+        taskInfo = chpl_task_getInfoChapel();
+        prevDiagsDisabledVal = chpl_task_data_setCommDiagsTemporarilyDisabled(taskInfo, true);
+      }
+    }
+
+    inline proc exitContext(in unused: owned Error?) {
+      if !commDiagsTrackEndCounts {
+        chpl_task_data_setCommDiagsTemporarilyDisabled(taskInfo, prevDiagsDisabledVal);
+      }
+    }
+  }
+
   // Parent class for _EndCount instances so that it's easy
   // to add non-generic fields here.
   // And to get 'errors' field from any generic instantiation.
@@ -1211,6 +1921,21 @@ module ChapelBase {
     proc init(type iType, type taskType) {
       this.iType = iType;
       this.taskType = taskType;
+    }
+
+    inline proc add(value: int, param order: memoryOrder) {
+      manage new endCountDiagsManager() do
+        this.i.add(value, order);
+    }
+
+    inline proc sub(value: int, param order: memoryOrder) {
+      manage new endCountDiagsManager() do
+        this.i.sub(value, order);
+    }
+
+    inline proc waitFor(value: int, param order: memoryOrder) {
+      manage new endCountDiagsManager() do
+        this.i.waitFor(value, order);
     }
   }
 
@@ -1255,7 +1980,7 @@ module ChapelBase {
   pragma "task spawn impl fn"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true) {
     if isAtomic(e.taskCnt) {
-      e.i.add(1, memoryOrder.release);
+      e.add(1, memoryOrder.release);
       e.taskCnt.add(1, memoryOrder.release);
     } else {
       // note that this on statement does not have the usual
@@ -1263,7 +1988,7 @@ module ChapelBase {
       // above. So we do an acquire fence before it.
       chpl_rmem_consist_fence(memoryOrder.release);
       on e {
-        e.i.add(1, memoryOrder.release);
+        e.add(1, memoryOrder.release);
         e.taskCnt += 1;
       }
     }
@@ -1279,7 +2004,7 @@ module ChapelBase {
   pragma "no remote memory fence"
   pragma "task spawn impl fn"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
-    e.i.add(numTasks:int, memoryOrder.release);
+    e.add(numTasks:int, memoryOrder.release);
 
     if countRunningTasks {
       if numTasks > 1 {
@@ -1313,9 +2038,15 @@ module ChapelBase {
   pragma "down end count fn"
   proc _downEndCount(e: _EndCount, err: unmanaged Error?) {
     chpl_save_task_error(e, err);
+    if CHPL_LOCALE_MODEL == "gpu" {
+      pragma "task complete impl fn"
+      extern proc chpl_gpu_task_end(): void;
+
+      chpl_gpu_task_end();
+    }
     chpl_comm_task_end();
     // inform anybody waiting that we're done
-    e.i.sub(1, memoryOrder.release);
+    e.sub(1, memoryOrder.release);
   }
 
   // This function is called once by the initiating task.  As above, no
@@ -1331,7 +2062,7 @@ module ChapelBase {
     here.runningTaskCntSub(1);
 
     // Wait for all tasks to finish
-    e.i.waitFor(0, memoryOrder.acquire);
+    e.waitFor(0, memoryOrder.acquire);
 
     if countRunningTasks {
       const taskDec = if isAtomic(e.taskCnt) then e.taskCnt.read() else e.taskCnt;
@@ -1353,7 +2084,7 @@ module ChapelBase {
   pragma "unchecked throws"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) throws {
     // Wait for all tasks to finish
-    e.i.waitFor(0, memoryOrder.acquire);
+    e.waitFor(0, memoryOrder.acquire);
 
     if countRunningTasks {
       if numTasks > 1 {
@@ -1394,33 +2125,82 @@ module ChapelBase {
       throw new owned TaskErrors(e.errors);
   }
 
-  proc _do_command_line_cast(type t, x:c_string) throws {
-    if isSyncType(t) then
-      compilerError("config variables of sync type are not supported");
-    if isSingleType(t) then
-      compilerError("config variables of single type are not supported");
-    if isAtomicType(t) then
-      compilerError("config variables of atomic type are not supported");
-
-    var str: string;
-    try! {
-      str = createStringWithNewBuffer(x);
-    }
-    if t == string {
-      return str;
+  // Routines for re-interpreting reals as uints and vice-versa, at
+  // the bit level
+  //
+  @unstable("This routine may change names / signatures")
+  proc param (real(64)).transmute(type t) param : t {
+    if t != uint {
+      compilerError("Cannot (currently) transmute from " + this.type:string +
+                    " to " + t:string);
     } else {
-      // we need to do an iteration over a range variable before casting a
-      // string to a type. Otherwise, we can't resolve chpl_debug_writeln in
-      // `range.these`
-      { var dummyRange = 1..0; for i in dummyRange {} }
-      return str:t;
+      param ui: uint(64) = __primitive("real64 as uint64", this);
+      return ui;
     }
   }
-  // param s is used for error reporting
-  pragma "command line setting"
-  proc _command_line_cast(param s: c_string, type t, x:c_string) {
-    try! {
-      return _do_command_line_cast(t, x);
+
+  @unstable("This routine may change names / signatures")
+  proc param (real(32)).transmute(type t) param : t {
+    if t != uint(32) {
+      compilerError("Cannot (currently) transmute from " + this.type:string +
+                    " to " + t:string);
+    } else {
+      param ui: uint(32) = __primitive("real32 as uint32", this);
+      return ui;
+    }
+  }
+
+  @unstable("This routine may change names / signatures")
+  inline proc (real(?w)).transmute(type t): t {
+    use CTypes;
+    import OS.POSIX.memcpy;
+
+    if t != uint(w) {
+      compilerError("Cannot (currently) transmute from " + this.type:string +
+                    " to " + t:string);
+    } else {
+      var src = this,
+          dst: uint(w);
+      memcpy(c_ptrTo(dst), c_ptrTo(src), numBytes(t).safeCast(c_size_t));
+      return dst;
+    }
+  }
+
+  @unstable("This routine may change names / signatures")
+  proc param (uint(64)).transmute(type t) param : t {
+    if t != real(64) {
+      compilerError("Cannot (currently) transmute from " + this.type:string +
+                    " to " + t:string);
+    } else {
+      param r: real(64) = __primitive("uint64 as real64", this);
+      return r;
+    }
+  }
+
+  @unstable("This routine may change names / signatures")
+  inline proc param (uint(32)).transmute(type t) param : t {
+    if t != real(32) {
+      compilerError("Cannot (currently) transmute from " + this.type:string +
+                    " to " + t:string);
+    } else {
+      param r: real(32) = __primitive("uint32 as real32", this);
+      return r;
+    }
+  }
+
+  @unstable("This routine may change names / signatures")
+  inline proc (uint(?w)).transmute(type t): t {
+    use CTypes;
+    import OS.POSIX.memcpy;
+
+    if t != real(w) {
+      compilerError("Cannot (currently) transmute from " + this.type:string +
+                    " to " + t:string);
+    } else {
+      var src = this,
+          dst: real(w);
+      memcpy(c_ptrTo(dst), c_ptrTo(src), numBytes(t).safeCast(c_size_t));
+      return dst;
     }
   }
 
@@ -1430,45 +2210,41 @@ module ChapelBase {
   // are handled within the Chapel code directly (using overloads further
   // down in the file) to save complexity in the compiler.
   //
-  inline proc chpl_typeSupportsPrimitiveCast(type t) param
+  inline proc chpl_typeSupportsPrimitiveCast(type t) param do
     return isBoolType(t) ||
            isIntegralType(t) ||
            isRealType(t);
 
-  inline operator :(x:chpl_anybool, type t:chpl_anybool)
+  inline operator :(x:bool, type t:integral) do
     return __primitive("cast", t, x);
-  inline operator :(x:chpl_anybool, type t:integral)
-    return __primitive("cast", t, x);
-  inline operator :(x:chpl_anybool, type t:chpl_anyreal)
+  inline operator :(x:bool, type t:chpl_anyreal) do
     return __primitive("cast", t, x);
 
-  inline operator :(x:integral, type t:chpl_anybool)
+  inline operator :(x:integral, type t:bool) do
     return __primitive("cast", t, x);
-  inline operator :(x:integral, type t:integral)
+  inline operator :(x:integral, type t:integral) do
     return __primitive("cast", t, x);
-  inline operator :(x:integral, type t:chpl_anyreal)
-    return __primitive("cast", t, x);
-
-  inline operator :(x:chpl_anyreal, type t:chpl_anybool)
-    return __primitive("cast", t, x);
-  inline operator :(x:chpl_anyreal, type t:integral)
-    return __primitive("cast", t, x);
-  inline operator :(x:chpl_anyreal, type t:chpl_anyreal)
+  inline operator :(x:integral, type t:chpl_anyreal) do
     return __primitive("cast", t, x);
 
-  inline operator :(x:enum, type t:chpl_anybool) throws {
-    if chpl_warnUnstable {
-      compilerWarning("enum-to-bool casts are likely to be deprecated in the future");
-    }    return x: int: bool;
+  inline operator :(x:chpl_anyreal, type t:bool) do
+    return __primitive("cast", t, x);
+  inline operator :(x:chpl_anyreal, type t:integral) do
+    return __primitive("cast", t, x);
+  inline operator :(x:chpl_anyreal, type t:chpl_anyreal) do
+    return __primitive("cast", t, x);
+
+  @unstable("enum-to-bool casts are likely to be deprecated in the future")
+  inline operator :(x: enum, type t:bool) throws {
+    return x: int: bool;
   }
   // operator :(x: enum, type t:integral)
   // is generated for each enum in buildDefaultFunctions
-  inline operator :(x: enum, type t:enum) where x.type == t
+  inline operator :(x: enum, type t:enum) where x.type == t do
     return x;
+
+  @unstable("enum-to-float casts are likely to be deprecated in the future")
   inline operator :(x: enum, type t:chpl_anyreal) throws {
-    if chpl_warnUnstable {
-      compilerWarning("enum-to-float casts are likely to be deprecated in the future");
-    }
     return x: int: real;
   }
 
@@ -1481,12 +2257,46 @@ module ChapelBase {
     compilerError("cannot cast nil to " + t:string);
   }
 
+  proc chpl_castUnmanagedError(param typeStr: string) param do
+    compilerError("cannot cast to a '" + typeStr +
+                  "' with an implicit borrow; try adding an explicit '.borrow()'");
+
+
+  pragma "last resort"
+  operator :(x:owned class, type t:unmanaged class)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:owned class?, type t:unmanaged class)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:owned class, type t:unmanaged class?)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:owned class?, type t:unmanaged class?)
+    do chpl_castUnmanagedError(t:string);
+
+  pragma "last resort"
+  operator :(x:shared class, type t:unmanaged class)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:shared class?, type t:unmanaged class)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:shared class, type t:unmanaged class?)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:shared class?, type t:unmanaged class?)
+    do chpl_castUnmanagedError(t:string);
+
   // casting to unmanaged?, no class downcast
+  pragma "last resort"
   inline operator :(x:borrowed class?, type t:unmanaged class?)
     where isSubtype(_to_unmanaged(x.type),t)
   {
     return __primitive("cast", t, x);
   }
+
+  pragma "last resort"
   inline operator :(x:borrowed class, type t:unmanaged class?)
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
@@ -1494,6 +2304,7 @@ module ChapelBase {
   }
 
   // casting to unmanaged, no class downcast
+  pragma "last resort"
   inline operator :(x:borrowed class, type t:unmanaged class)
     where isSubtype(_to_unmanaged(x.type),t)
   {
@@ -1522,6 +2333,7 @@ module ChapelBase {
   }
 
   // casting away nilability, no class downcast
+  pragma "last resort"
   inline operator :(x:borrowed class?, type t:unmanaged class)  throws
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
@@ -1559,6 +2371,7 @@ module ChapelBase {
 
 
   // this version handles downcast to non-nil unmanaged
+  pragma "last resort"
   inline operator :(x:borrowed class?, type t:unmanaged class) throws
     where isProperSubtype(t,_to_nonnil(_to_unmanaged(x.type)))
   {
@@ -1574,6 +2387,7 @@ module ChapelBase {
   }
 
   // this version handles downcast to nilable unmanaged
+  pragma "last resort"
   inline operator :(x:borrowed class?, type t:unmanaged class?)
     where isProperSubtype(t,_to_unmanaged(x.type))
   {
@@ -1585,6 +2399,7 @@ module ChapelBase {
   }
 
   // this version handles downcast to nilable unmanaged
+  pragma "last resort"
   inline operator :(x:borrowed class, type t:unmanaged class?)
     where isProperSubtype(_to_nonnil(_to_borrowed(t)),x.type)
   {
@@ -1600,43 +2415,45 @@ module ChapelBase {
   //
   // casts to complex
   //
-  inline operator :(x: bool, type t:chpl_anycomplex)
+  inline operator :(x: bool, type t:chpl_anycomplex) do
     return (x, 0):t;
 
-  inline operator :(x: integral, type t:chpl_anycomplex)
+  inline operator :(x: integral, type t:chpl_anycomplex) do
     return (x, 0):t;
 
-  inline operator :(x: chpl_anyreal, type t:chpl_anycomplex)
+  inline operator :(x: chpl_anyreal, type t:chpl_anycomplex) do
     return (x, 0):t;
 
-  inline operator :(x: chpl_anyimag, type t:chpl_anycomplex)
+  inline operator :(x: chpl_anyimag, type t:chpl_anycomplex) do
     return (0, _i2r(x)):t;
 
-  inline operator :(x: chpl_anycomplex, type t:chpl_anycomplex)
+  inline operator :(x: chpl_anycomplex, type t:chpl_anycomplex) do
     return (x.re, x.im):t;
 
-  inline operator :(x: enum, type t:chpl_anycomplex) throws
+  @unstable("enum-to-float casts are likely to be deprecated in the future")
+  inline operator :(x: enum, type t:chpl_anycomplex) throws do
     return (x:real, 0):t;
 
   //
   // casts to imag
   //
-  inline operator :(x: bool, type t:chpl_anyimag)
+  inline operator :(x: bool, type t:chpl_anyimag) do
     return if x then 1i:t else 0i:t;
 
-  inline operator :(x: integral, type t:chpl_anyimag)
+  inline operator :(x: integral, type t:chpl_anyimag) do
     return __primitive("cast", t, x);
 
-  inline operator :(x: chpl_anyreal, type t:chpl_anyimag)
+  inline operator :(x: chpl_anyreal, type t:chpl_anyimag) do
     return __primitive("cast", t, x);
 
-  inline operator :(x: chpl_anyimag, type t:chpl_anyimag)
+  inline operator :(x: chpl_anyimag, type t:chpl_anyimag) do
     return __primitive("cast", t, x);
 
-  inline operator :(x: chpl_anycomplex, type t:chpl_anyimag)
+  inline operator :(x: chpl_anycomplex, type t:chpl_anyimag) do
     return __primitive("cast", t, x.im);
 
-  inline operator :(x: enum, type t:chpl_anyimag)  throws
+  @unstable("enum-to-float casts are likely to be deprecated in the future")
+  inline operator :(x: enum, type t:chpl_anyimag)  throws do
     return x:real:imag;
 
   //
@@ -1656,12 +2473,12 @@ module ChapelBase {
   //
   // casts from imag
   //
-  inline operator :(x: chpl_anyimag, type t:chpl_anyreal)
+  inline operator :(x: chpl_anyimag, type t:chpl_anyreal) do
     return __primitive("cast", t, x);
-  inline operator :(x: chpl_anyimag, type t:integral)
+  inline operator :(x: chpl_anyimag, type t:integral) do
     return __primitive("cast", t, x);
 
-  inline operator :(x: chpl_anyimag, type t:chpl_anybool)
+  inline operator :(x: chpl_anyimag, type t:bool) do
     return if x != 0i then true else false;
 
   pragma "init copy fn"
@@ -1718,9 +2535,8 @@ module ChapelBase {
   }
 
   pragma "compiler generated"
-  pragma "last resort"
   pragma "auto destroy fn"
-  inline proc chpl__autoDestroy(x: object) { }
+  inline proc chpl__autoDestroy(x: borrowed RootClass) { }
 
   pragma "compiler generated"
   pragma "last resort"
@@ -1730,7 +2546,7 @@ module ChapelBase {
   pragma "compiler generated"
   pragma "last resort"
   pragma "auto destroy fn"
-  inline proc chpl__autoDestroy(x: ?t) {
+  inline proc chpl__autoDestroy(x) {
     __primitive("call destructor", x);
   }
   pragma "auto destroy fn"
@@ -1762,16 +2578,16 @@ module ChapelBase {
 
   /*
   inline proc chpl__tounmanaged(ref arg:Owned) {
-    return arg.release();
+    return owned.release(arg);
   }
-  inline proc chpl__tounmanaged(arg) where arg:object {
+  inline proc chpl__tounmanaged(arg) where arg:RootClass {
     return arg;
   }*/
 
 
   // implements 'delete' statement
   pragma "no borrow convert"
-  proc chpl__delete(arg) {
+  proc chpl__delete(const arg) {
 
     if chpl_isDdata(arg.type) then
       compilerError("cannot delete data class");
@@ -1798,119 +2614,217 @@ module ChapelBase {
     }
   }
 
-  proc chpl__delete(arr: []) {
+  proc chpl__delete(const arr: []) {
     forall a in arr do
       chpl__delete(a);
   }
 
   // delete two or more things
-  proc chpl__delete(arg, args...) {
+  proc chpl__delete(arg, const args...) {
     chpl__delete(arg);
     for param i in 0..args.size-1 do
       chpl__delete(args(i));
   }
 
-  // c_void_ptr operations
-  inline operator =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }
-  inline operator ==(a: c_void_ptr, b: c_void_ptr) {
-    return __primitive("ptr_eq", a, b);
-  }
-  inline operator !=(a: c_void_ptr, b: c_void_ptr) {
-    return __primitive("ptr_neq", a, b);
-  }
-
   // Type functions for representing function types
+
+  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
   inline proc func() type { return __primitive("create fn type", void); }
+
+  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
   inline proc func(type rettype) type { return __primitive("create fn type", rettype); }
+
+  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
   inline proc func(type t...?n, type rettype) type { return __primitive("create fn type", (...t), rettype); }
 
-  proc isIterator(ic: _iteratorClass) param return true;
-  proc isIterator(ir: _iteratorRecord) param return true;
-  proc isIterator(not_an_iterator) param return false;
+  proc isIterator(ic: _iteratorClass) param do return true;
+  proc isIterator(ir: _iteratorRecord) param do return true;
+  proc isIterator(not_an_iterator) param do return false;
 
 
   /* op= operators
    */
-  inline operator +=(ref lhs:int(?w), rhs:int(w)) {
-    __primitive("+=", lhs, rhs);
-  }
-  inline operator +=(ref lhs:uint(?w), rhs:uint(w)) {
-    __primitive("+=", lhs, rhs);
-  }
-  inline operator +=(ref lhs:real(?w), rhs:real(w)) {
-    __primitive("+=", lhs, rhs);
-  }
-  inline operator +=(ref lhs:imag(?w), rhs:imag(w)) {
-    __primitive("+=", lhs, rhs);
-  }
-  inline operator +=(ref lhs, rhs) {
+  inline operator +=(ref lhs: int(8), rhs: int(8)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: int(16), rhs: int(16)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: int(32), rhs: int(32)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: int(64), rhs: int(64)) do __primitive("+=", lhs, rhs);
+
+  inline operator +=(ref lhs: uint(8), rhs: uint(8)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: uint(16), rhs: uint(16)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: uint(32), rhs: uint(32)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: uint(64), rhs: uint(64)) do __primitive("+=", lhs, rhs);
+
+  inline operator +=(ref lhs: real(32), rhs: real(32)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: real(64), rhs: real(64)) do __primitive("+=", lhs, rhs);
+
+  inline operator +=(ref lhs: imag(32), rhs: imag(32)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: imag(64), rhs: imag(64)) do __primitive("+=", lhs, rhs);
+
+  inline operator +=(ref lhs: complex(64), rhs: complex(64)) do lhs = (lhs+rhs);
+  inline operator +=(ref lhs: complex(128), rhs: complex(128)) do lhs = (lhs+rhs);
+  // This function shouldn't be 'last resort'
+  // because if it is, that would interfere with things like
+  //  A += A or A += [i in A.domain] A[i]
+  // due to the existing array += eltType overloads & those being promoted.
+  // So, use a where clause so that the overloads above are used if
+  // they are available.
+  inline operator +=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs + rhs;
   }
 
-  inline operator -=(ref lhs:int(?w), rhs:int(w)) {
-    __primitive("-=", lhs, rhs);
-  }
-  inline operator -=(ref lhs:uint(?w), rhs:uint(w)) {
-    __primitive("-=", lhs, rhs);
-  }
-  inline operator -=(ref lhs:real(?w), rhs:real(w)) {
-    __primitive("-=", lhs, rhs);
-  }
-  inline operator -=(ref lhs:imag(?w), rhs:imag(w)) {
-    __primitive("-=", lhs, rhs);
-  }
-  inline operator -=(ref lhs, rhs) {
+  inline operator -=(ref lhs: int(8), rhs: int(8)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: int(16), rhs: int(16)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: int(32), rhs: int(32)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: int(64), rhs: int(64)) do __primitive("-=", lhs, rhs);
+
+  inline operator -=(ref lhs: uint(8), rhs: uint(8)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: uint(16), rhs: uint(16)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: uint(32), rhs: uint(32)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: uint(64), rhs: uint(64)) do __primitive("-=", lhs, rhs);
+
+  inline operator -=(ref lhs: real(32), rhs: real(32)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: real(64), rhs: real(64)) do __primitive("-=", lhs, rhs);
+
+  inline operator -=(ref lhs: imag(32), rhs: imag(32)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: imag(64), rhs: imag(64)) do __primitive("-=", lhs, rhs);
+  // this one is just here so we can use !isNumericType(t) below
+  inline operator -=(ref lhs: complex(64), rhs: complex(64)) do lhs = (lhs-rhs);
+  inline operator -=(ref lhs: complex(128), rhs: complex(128)) do lhs = (lhs-rhs);
+  inline operator -=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs - rhs;
   }
 
-  inline operator *=(ref lhs:int(?w), rhs:int(w)) {
-    __primitive("*=", lhs, rhs);
+  inline operator *=(ref lhs: int(8), rhs: int(8)) do __primitive("*=", lhs, rhs);
+  inline operator *=(ref lhs: int(16), rhs: int(16)) do __primitive("*=", lhs, rhs);
+  inline operator *=(ref lhs: int(32), rhs: int(32)) do __primitive("*=", lhs, rhs);
+  inline operator *=(ref lhs: int(64), rhs: int(64)) do __primitive("*=", lhs, rhs);
+
+  inline operator *=(ref lhs: uint(8), rhs: uint(8)) do __primitive("*=", lhs, rhs);
+  inline operator *=(ref lhs: uint(16), rhs: uint(16)) do __primitive("*=", lhs, rhs);
+  inline operator *=(ref lhs: uint(32), rhs: uint(32)) do __primitive("*=", lhs, rhs);
+  inline operator *=(ref lhs: uint(64), rhs: uint(64)) do __primitive("*=", lhs, rhs);
+
+  inline operator *=(ref lhs: real(32), rhs: real(32)) do __primitive("*=", lhs, rhs);
+  inline operator *=(ref lhs: real(64), rhs: real(64)) do __primitive("*=", lhs, rhs);
+  private proc isIntegralOrRealType(type t) param {
+    return isIntegralType(t) || isRealType(t);
   }
-  inline operator *=(ref lhs:uint(?w), rhs:uint(w)) {
-    __primitive("*=", lhs, rhs);
-  }
-  inline operator *=(ref lhs:real(?w), rhs:real(w)) {
-    __primitive("*=", lhs, rhs);
-  }
-  inline operator *=(ref lhs, rhs) {
+  inline operator *=(ref lhs, rhs)
+  where !(isIntegralOrRealType(lhs.type) && isIntegralOrRealType(rhs.type)) {
     lhs = lhs * rhs;
   }
 
-  inline operator /=(ref lhs:int(?w), rhs:int(w)) {
+  inline operator /=(ref lhs:int(8), rhs:int(8)) {
     if (chpl_checkDivByZero) then
       if rhs == 0 then
         halt("Attempt to divide by zero");
     __primitive("/=", lhs, rhs);
   }
-  inline operator /=(ref lhs:uint(?w), rhs:uint(w)) {
+  inline operator /=(ref lhs:int(16), rhs:int(16)) {
     if (chpl_checkDivByZero) then
       if rhs == 0 then
         halt("Attempt to divide by zero");
     __primitive("/=", lhs, rhs);
   }
-  inline operator /=(ref lhs:real(?w), rhs:real(w)) {
+  inline operator /=(ref lhs:int(32), rhs:int(32)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
     __primitive("/=", lhs, rhs);
   }
-  inline operator /=(ref lhs, rhs) {
+  inline operator /=(ref lhs:int(64), rhs:int(64)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
+    __primitive("/=", lhs, rhs);
+  }
+
+  inline operator /=(ref lhs:uint(8), rhs:uint(8)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
+    __primitive("/=", lhs, rhs);
+  }
+  inline operator /=(ref lhs:uint(16), rhs:uint(16)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
+    __primitive("/=", lhs, rhs);
+  }
+  inline operator /=(ref lhs:uint(32), rhs:uint(32)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
+    __primitive("/=", lhs, rhs);
+  }
+  inline operator /=(ref lhs:uint(64), rhs:uint(64)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
+    __primitive("/=", lhs, rhs);
+  }
+
+  inline operator /=(ref lhs: real(32), rhs: real(32)) do __primitive("/=", lhs, rhs);
+  inline operator /=(ref lhs: real(64), rhs: real(64)) do __primitive("/=", lhs, rhs);
+  inline operator /=(ref lhs, rhs)
+  where !(isIntegralOrRealType(lhs.type) && isIntegralOrRealType(rhs.type)) {
     lhs = lhs / rhs;
   }
 
-  inline operator %=(ref lhs:int(?w), rhs:int(w)) {
+  inline operator %=(ref lhs:int(8), rhs:int(8)) {
     if (chpl_checkDivByZero) then
       if rhs == 0 then
         halt("Attempt to compute a modulus by zero");
     __primitive("%=", lhs, rhs);
   }
-  inline operator %=(ref lhs:uint(?w), rhs:uint(w)) {
+  inline operator %=(ref lhs:int(16), rhs:int(16)) {
     if (chpl_checkDivByZero) then
       if rhs == 0 then
         halt("Attempt to compute a modulus by zero");
     __primitive("%=", lhs, rhs);
   }
-  inline operator %=(ref lhs:real(?w), rhs:real(w)) {
+  inline operator %=(ref lhs:int(32), rhs:int(32)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
     __primitive("%=", lhs, rhs);
   }
-  inline operator %=(ref lhs, rhs) {
+  inline operator %=(ref lhs:int(64), rhs:int(64)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
+    __primitive("%=", lhs, rhs);
+  }
+
+  inline operator %=(ref lhs:uint(8), rhs:uint(8)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
+    __primitive("%=", lhs, rhs);
+  }
+  inline operator %=(ref lhs:uint(16), rhs:uint(16)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
+    __primitive("%=", lhs, rhs);
+  }
+  inline operator %=(ref lhs:uint(32), rhs:uint(32)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
+    __primitive("%=", lhs, rhs);
+  }
+  inline operator %=(ref lhs:uint(64), rhs:uint(64)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
+    __primitive("%=", lhs, rhs);
+  }
+
+  inline operator %=(ref lhs, rhs)
+  where !(isIntegralOrRealType(lhs.type) && isIntegralOrRealType(rhs.type)) {
     lhs = lhs % rhs;
   }
 
@@ -1921,34 +2835,46 @@ module ChapelBase {
     lhs = lhs ** rhs;
   }
 
-  inline operator &=(ref lhs:int(?w), rhs:int(w)) {
-    __primitive("&=", lhs, rhs);
-  }
-  inline operator &=(ref lhs:uint(?w), rhs:uint(w)) {
-    __primitive("&=", lhs, rhs);
-  }
-  inline operator &=(ref lhs, rhs) {
+  inline operator &=(ref lhs: int(8), rhs: int(8)) do __primitive("&=", lhs, rhs);
+  inline operator &=(ref lhs: int(16), rhs: int(16)) do __primitive("&=", lhs, rhs);
+  inline operator &=(ref lhs: int(32), rhs: int(32)) do __primitive("&=", lhs, rhs);
+  inline operator &=(ref lhs: int(64), rhs: int(64)) do __primitive("&=", lhs, rhs);
+
+  inline operator &=(ref lhs: uint(8), rhs: uint(8)) do __primitive("&=", lhs, rhs);
+  inline operator &=(ref lhs: uint(16), rhs: uint(16)) do __primitive("&=", lhs, rhs);
+  inline operator &=(ref lhs: uint(32), rhs: uint(32)) do __primitive("&=", lhs, rhs);
+  inline operator &=(ref lhs: uint(64), rhs: uint(64)) do __primitive("&=", lhs, rhs);
+  inline operator &=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs & rhs;
   }
 
 
-  inline operator |=(ref lhs:int(?w), rhs:int(w)) {
-    __primitive("|=", lhs, rhs);
-  }
-  inline operator |=(ref lhs:uint(?w), rhs:uint(w)) {
-    __primitive("|=", lhs, rhs);
-  }
-  inline operator |=(ref lhs, rhs) {
+  inline operator |=(ref lhs: int(8), rhs: int(8)) do __primitive("|=", lhs, rhs);
+  inline operator |=(ref lhs: int(16), rhs: int(16)) do __primitive("|=", lhs, rhs);
+  inline operator |=(ref lhs: int(32), rhs: int(32)) do __primitive("|=", lhs, rhs);
+  inline operator |=(ref lhs: int(64), rhs: int(64)) do __primitive("|=", lhs, rhs);
+
+  inline operator |=(ref lhs: uint(8), rhs: uint(8)) do __primitive("|=", lhs, rhs);
+  inline operator |=(ref lhs: uint(16), rhs: uint(16)) do __primitive("|=", lhs, rhs);
+  inline operator |=(ref lhs: uint(32), rhs: uint(32)) do __primitive("|=", lhs, rhs);
+  inline operator |=(ref lhs: uint(64), rhs: uint(64)) do __primitive("|=", lhs, rhs);
+  inline operator |=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs | rhs;
   }
 
-  inline operator ^=(ref lhs:int(?w), rhs:int(w)) {
-    __primitive("^=", lhs, rhs);
-  }
-  inline operator ^=(ref lhs:uint(?w), rhs:uint(w)) {
-    __primitive("^=", lhs, rhs);
-  }
-  inline operator ^=(ref lhs, rhs) {
+  inline operator ^=(ref lhs: int(8), rhs: int(8)) do __primitive("^=", lhs, rhs);
+  inline operator ^=(ref lhs: int(16), rhs: int(16)) do __primitive("^=", lhs, rhs);
+  inline operator ^=(ref lhs: int(32), rhs: int(32)) do __primitive("^=", lhs, rhs);
+  inline operator ^=(ref lhs: int(64), rhs: int(64)) do __primitive("^=", lhs, rhs);
+
+  inline operator ^=(ref lhs: uint(8), rhs: uint(8)) do __primitive("^=", lhs, rhs);
+  inline operator ^=(ref lhs: uint(16), rhs: uint(16)) do __primitive("^=", lhs, rhs);
+  inline operator ^=(ref lhs: uint(32), rhs: uint(32)) do __primitive("^=", lhs, rhs);
+  inline operator ^=(ref lhs: uint(64), rhs: uint(64)) do __primitive("^=", lhs, rhs);
+  inline operator ^=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs ^ rhs;
   }
 
@@ -1958,7 +2884,8 @@ module ChapelBase {
   inline operator >>=(ref lhs:uint(?w), rhs:integral) {
     __primitive(">>=", lhs, rhs);
   }
-  inline operator >>=(ref lhs, rhs) {
+  inline operator >>=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs >> rhs;
   }
 
@@ -1968,11 +2895,14 @@ module ChapelBase {
   inline operator <<=(ref lhs:uint(?w), rhs:integral) {
     __primitive("<<=", lhs, rhs);
   }
-  inline operator <<=(ref lhs, rhs) {
+  inline operator <<=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs << rhs;
   }
 
+  // TODO: can we remove last resort on this?
   /* swap operator */
+  pragma "last resort"
   pragma "ignore transfer errors"
   inline operator <=>(ref lhs, ref rhs) {
     // It's tempting to make `tmp` a `const`, but it causes problems
@@ -1996,16 +2926,8 @@ module ChapelBase {
   // file and re-run it).
 
   //
-  // non-param/non-param -- these are designed to throw an error
-  // stating that these combinations are not supported; it's an
-  // open topic of discussion whether we should support them and
-  // have the return type default to int or uint; and/or whether
-  // this error case should be made a lower-priority fallback,
-  // permitting the user to define their own overloads (or 'use'
-  // a module which does).
+  // non-param/non-param
   //
-  inline operator +(a: uint(64), b: int(64)) { _throwOpError("+"); }
-  inline operator +(a: int(64), b: uint(64)) { _throwOpError("+"); }
 
   //
   // non-param/param and param/non-param cases -- these cases
@@ -2031,8 +2953,6 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator -(a: uint(64), b: int(64)) { _throwOpError("-"); }
-  inline operator -(a: int(64), b: uint(64)) { _throwOpError("-"); }
 
   // non-param/param and param/non-param
   inline operator -(a: uint(64), param b: uint(64)) {
@@ -2050,8 +2970,6 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator *(a: uint(64), b: int(64)) { _throwOpError("*"); }
-  inline operator *(a: int(64), b: uint(64)) { _throwOpError("*"); }
 
   // non-param/param and param/non-param
   inline operator *(a: uint(64), param b: uint(64)) {
@@ -2069,8 +2987,6 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator /(a: uint(64), b: int(64)) { _throwOpError("/"); }
-  inline operator /(a: int(64), b: uint(64)) { _throwOpError("/"); }
 
   // non-param/param and param/non-param
   // The int version is only defined so we can catch the divide by zero error
@@ -2098,8 +3014,6 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator **(a: uint(64), b: int(64)) { _throwOpError("**"); }
-  inline operator **(a: int(64), b: uint(64)) { _throwOpError("**"); }
 
   // non-param/param and param/non-param
   inline operator **(a: uint(64), param b: uint(64)) {
@@ -2117,8 +3031,6 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator %(a: uint(64), b: int(64)) { _throwOpError("%"); }
-  inline operator %(a: int(64), b: uint(64)) { _throwOpError("%"); }
 
   // non-param/param and param/non-param
   inline operator %(a: uint(64), param b: uint(64)) {
@@ -2145,19 +3057,23 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator ==(a: uint(64), b: int(64)) {
-    //
-    // If b's negative, these obviously aren't equal; if it's not
-    // negative, it can be cast to an int
-    //
-    return !(b < 0) && (a == b:uint(64));
-  }
+
+  //
+  // If b's negative, these obviously aren't equal; if it's not
+  // negative, it can be cast to a uint
+  //
+  inline operator ==(a: uint(8), b: int(8)) do return !(b < 0) && (a == b:uint(8));
+  inline operator ==(a: uint(16), b: int(16)) do return !(b < 0) && (a == b:uint(16));
+  inline operator ==(a: uint(32), b: int(32)) do return !(b < 0) && (a == b:uint(32));
+  inline operator ==(a: uint(64), b: int(64)) do return !(b < 0) && (a == b:uint(64));
+
   //
   // the dual of the above
   //
-  inline operator ==(a: int(64), b: uint(64)) {
-    return !(a < 0) && (a:uint(64) == b);
-  }
+  inline operator ==(a: int(8), b: uint(8)) do return !(a < 0) && a : uint(8) == b;
+  inline operator ==(a: int(16), b: uint(16)) do return !(a < 0) && a : uint(16) == b;
+  inline operator ==(a: int(32), b: uint(32)) do return !(a < 0) && a : uint(32) == b;
+  inline operator ==(a: int(64), b: uint(64)) do return !(a < 0) && a : uint(64) == b;
 
   // non-param/param and param/non-param
   // not necessary since the == versions above
@@ -2166,12 +3082,15 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator !=(a: uint(64), b: int(64)) {
-    return (b < 0) || (a != b:uint(64));
-  }
-  inline operator !=(a: int(64), b: uint(64)) {
-    return (a < 0) || (a:uint(64) != b);
-  }
+  inline operator !=(a: uint(8), b: int(8)) do return b < 0 || a != b : uint(8);
+  inline operator !=(a: uint(16), b: int(16)) do return b < 0 || a != b : uint(16);
+  inline operator !=(a: uint(32), b: int(32)) do return b < 0 || a != b : uint(32);
+  inline operator !=(a: uint(64), b: int(64)) do return b < 0 || a != b : uint(64);
+
+  inline operator !=(a: int(8), b: uint(8)) do return a < 0 || a : uint(8) != b;
+  inline operator !=(a: int(16), b: uint(16)) do return a < 0 || a : uint(16) != b;
+  inline operator !=(a: int(32), b: uint(32)) do return a < 0 || a : uint(32) != b;
+  inline operator !=(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) != b;
 
   // non-param/param and param/non-param
   // not necessary since the == versions above
@@ -2179,95 +3098,211 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator >(a: uint(64), b: int(64)) {
-    return (b < 0) || (a > b: uint(64));
-  }
-  inline operator >(a: int(64), b: uint(64)) {
-    return !(a < 0) && (a: uint(64) > b);
-  }
+  inline operator >(a: uint(8), b: int(8)) do return b < 0 || a > b : uint(8);
+  inline operator >(a: uint(16), b: int(16)) do return b < 0 || a > b : uint(16);
+  inline operator >(a: uint(32), b: int(32)) do return b < 0 || a > b : uint(32);
+  inline operator >(a: uint(64), b: int(64)) do return b < 0 || a > b : uint(64);
+
+  inline operator >(a: int(8), b: uint(8)) do return !(a < 0) && a : uint(8) > b;
+  inline operator >(a: int(16), b: uint(16)) do return !(a < 0) && a : uint(16) > b;
+  inline operator >(a: int(32), b: uint(32)) do return !(a < 0) && a : uint(32) > b;
+  inline operator >(a: int(64), b: uint(64)) do return !(a < 0) && a : uint(64) > b;
 
   // non-param/param and param/non-param
   // non-param/param version not necessary since > above works fine for that
-  inline operator >(param a: uint(64), b: uint(64)) param where a == 0 {
-    return false;
+  inline operator >(param a: uint(8), b: uint(8)) {
+    if __primitive("==", a, 0) {
+      return false;
+    } else {
+      return __primitive(">", a, b);
+    }
+  }
+  inline operator >(param a: uint(16), b: uint(16)) {
+    if __primitive("==", a, 0) {
+      return false;
+    } else {
+      return __primitive(">", a, b);
+    }
+  }
+  inline operator >(param a: uint(32), b: uint(32)) {
+    if __primitive("==", a, 0) {
+      return false;
+    } else {
+      return __primitive(">", a, b);
+
+    }
   }
   inline operator >(param a: uint(64), b: uint(64)) {
-    return __primitive(">", a, b);
+    if __primitive("==", a, 0) {
+      return false;
+    } else {
+      return __primitive(">", a, b);
+    }
   }
-  inline operator >(param a: int(64), b: int(64)) {
-    return __primitive(">", a, b);
-  }
+
+  inline operator >(param a: int(8), b: int(8)) do return __primitive(">", a, b);
+  inline operator >(param a: int(16), b: int(16)) do return __primitive(">", a, b);
+  inline operator >(param a: int(32), b: int(32)) do return __primitive(">", a, b);
+  inline operator >(param a: int(64), b: int(64)) do return __primitive(">", a, b);
 
 
   // non-param/non-param
-  inline operator <(a: uint(64), b: int(64)) {
-    return !(b < 0) && (a < b:uint(64));
-  }
-  inline operator <(a: int(64), b: uint(64)) {
-    return (a < 0) || (a:uint(64) < b);
-  }
+  inline operator <(a: uint(8), b: int(8)) do return !(b < 0) && a < b : uint(8);
+  inline operator <(a: uint(16), b: int(16)) do return !(b < 0) && a < b : uint(16);
+  inline operator <(a: uint(32), b: int(32)) do return !(b < 0) && a < b : uint(32);
+  inline operator <(a: uint(64), b: int(64)) do return !(b < 0) && a < b : uint(64);
+
+  inline operator <(a: int(8), b: uint(8)) do return a < 0 || a : uint(8) < b;
+  inline operator <(a: int(16), b: uint(16)) do return a < 0 || a : uint(16) < b;
+  inline operator <(a: int(32), b: uint(32)) do return a < 0 || a : uint(32) < b;
+  inline operator <(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) < b;
 
   // non-param/param and param/non-param
   // param/non-param version not necessary since < above works fine for that
-  inline operator <(a: uint(64), param b: uint(64)) param where b == 0 {
-    return false;
+  inline operator <(a: uint(8), param b: uint(8)) {
+    if __primitive("==", b, 0) {
+      return false;
+    } else {
+      return __primitive("<", a, b);
+    }
+  }
+  inline operator <(a: uint(16), param b: uint(16)) {
+    if __primitive("==", b, 0) {
+      return false;
+    } else {
+      return __primitive("<", a, b);
+    }
+  }
+  inline operator <(a: uint(32), param b: uint(32)) {
+    if __primitive("==", b, 0) {
+      return false;
+    } else {
+      return __primitive("<", a, b);
+    }
   }
   inline operator <(a: uint(64), param b: uint(64)) {
-    return __primitive("<", a, b);
+    if __primitive("==", b, 0) {
+      return false;
+    } else {
+      return __primitive("<", a, b);
+    }
   }
-  inline operator <(a: int(64), param b: int(64)) {
-    return __primitive("<", a, b);
-  }
+
+  inline operator <(a: int(8), param b: int(8)) do return __primitive("<", a, b);
+  inline operator <(a: int(16), param b: int(16)) do return __primitive("<", a, b);
+  inline operator <(a: int(32), param b: int(32)) do return __primitive("<", a, b);
+  inline operator <(a: int(64), param b: int(64)) do return __primitive("<", a, b);
 
 
 
   // non-param/non-param
-  inline operator >=(a: uint(64), b: int(64)) {
-    return (b < 0) || (a >= b: uint(64));
-  }
-  inline operator >=(a: int(64), b: uint(64)) {
-    return !(a < 0) && (a: uint(64) >= b);
-  }
+  inline operator >=(a: uint(8), b: int(8)) do return b < 0 || a >= b : uint(8);
+  inline operator >=(a: uint(16), b: int(16)) do return b < 0 || a >= b : uint(16);
+  inline operator >=(a: uint(32), b: int(32)) do return b < 0 || a >= b : uint(32);
+  inline operator >=(a: uint(64), b: int(64)) do return b < 0 || a >= b : uint(64);
+
+  inline operator >=(a: int(8), b: uint(8)) do return !(a < 0) && a : uint(8) >= b;
+  inline operator >=(a: int(16), b: uint(16)) do return !(a < 0) && a : uint(16) >= b;
+  inline operator >=(a: int(32), b: uint(32)) do return !(a < 0) && a : uint(32) >= b;
+  inline operator >=(a: int(64), b: uint(64)) do return !(a < 0) && a : uint(64) >= b;
 
   // non-param/param and param/non-param
-  inline operator >=(a: uint(64), param b: uint(64)) param where b == 0 {
-    return true;
+  inline operator >=(a: uint(8), param b: uint(8)) {
+    if __primitive("==", b, 0) {
+      return true;
+    } else {
+      return __primitive(">=", a, b);
+    }
+  }
+  inline operator >=(a: uint(16), param b: uint(16)) {
+    if __primitive("==", b, 0) {
+      return true;
+    } else {
+      return __primitive(">=", a, b);
+    }
+  }
+  inline operator >=(a: uint(32), param b: uint(32)) {
+    if __primitive("==", b, 0) {
+      return true;
+    } else {
+      return __primitive(">=", a, b);
+    }
   }
   inline operator >=(a: uint(64), param b: uint(64)) {
-    return __primitive(">=", a, b);
+    if __primitive("==", b, 0) {
+      return true;
+
+    } else {
+      return __primitive(">=", a, b);
+    }
   }
-  inline operator >=(a: int(64), param b: int(64)) {
-    return __primitive(">=", a, b);
-  }
+
+  inline operator >=(a: int(8), param b: int(8)) do return __primitive(">=", a, b);
+  inline operator >=(a: int(16), param b: int(16)) do return __primitive(">=", a, b);
+  inline operator >=(a: int(32), param b: int(32)) do return __primitive(">=", a, b);
+  inline operator >=(a: int(64), param b: int(64)) do return __primitive(">=", a, b);
 
 
   // non-param/non-param
-  inline operator <=(a: uint(64), b: int(64)) {
-    return !(b < 0) && (a <= b: uint(64));
-  }
-  inline operator <=(a: int(64), b: uint(64)) {
-    return (a < 0) || (a:uint(64) <= b);
-  }
+  inline operator <=(a: uint(8), b: int(8)) do return !(b < 0) && a <= b : uint(8);
+  inline operator <=(a: uint(16), b: int(16)) do return !(b < 0) && a <= b : uint(16);
+  inline operator <=(a: uint(32), b: int(32)) do return !(b < 0) && a <= b : uint(32);
+  inline operator <=(a: uint(64), b: int(64)) do return !(b < 0) && a <= b : uint(64);
+
+  inline operator <=(a: int(8), b: uint(8)) do return a < 0 || a : uint(8) <= b;
+  inline operator <=(a: int(16), b: uint(16)) do return a < 0 || a : uint(16) <= b;
+  inline operator <=(a: int(32), b: uint(32)) do return a < 0 || a : uint(32) <= b;
+  inline operator <=(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) <= b;
 
   // non-param/param and param/non-param
-  inline operator <=(param a: uint(64), b: uint(64)) param where a == 0 {
-    return true;
+  inline operator <=(param a: uint(8), b: uint(8)) {
+    if __primitive("==", a, 0) {
+      return true;
+    } else {
+      return __primitive("<=", a, b);
+    }
+  }
+  inline operator <=(param a: uint(16), b: uint(16)) {
+    if __primitive("==", a, 0) {
+      return true;
+    } else {
+      return __primitive("<=", a, b);
+    }
+  }
+  inline operator <=(param a: uint(32), b: uint(32)) {
+    if __primitive("==", a, 0) {
+      return true;
+    } else {
+      return __primitive("<=", a, b);
+    }
   }
   inline operator <=(param a: uint(64), b: uint(64)) {
-    return __primitive("<=", a, b);
+    if __primitive("==", a, 0) {
+      return true;
+    } else {
+      return __primitive("<=", a, b);
+    }
   }
-  inline operator <=(param a: int(64), b: int(64)) {
-    return __primitive("<=", a, b);
-  }
+
+  inline operator <=(param a: int(8), b: int(8)) do return __primitive("<=", a, b);
+  inline operator <=(param a: int(16), b: int(16)) do return __primitive("<=", a, b);
+  inline operator <=(param a: int(32), b: int(32)) do return __primitive("<=", a, b);
+  inline operator <=(param a: int(64), b: int(64)) do return __primitive("<=", a, b);
 
 
-  proc isGenericType(type t) param return __primitive("is generic type", t);
-  proc isNilableClassType(type t) param return __primitive("is nilable class type", t);
-  proc isNonNilableClassType(type t) param return __primitive("is non nilable class type", t);
+  pragma "suppress generic actual warning"
+  proc isGenericType(type t) param do return __primitive("is generic type", t);
+  pragma "suppress generic actual warning"
+  proc isNilableClassType(type t) param do return __primitive("is nilable class type", t);
+  pragma "suppress generic actual warning"
+  proc isNonNilableClassType(type t) param do return __primitive("is non nilable class type", t);
 
-  proc isBorrowedOrUnmanagedClassType(type t:unmanaged) param return true;
-  proc isBorrowedOrUnmanagedClassType(type t:borrowed) param return true;
-  proc isBorrowedOrUnmanagedClassType(type t) param return false;
+  pragma "suppress generic actual warning"
+  proc isBorrowedOrUnmanagedClassType(type t:unmanaged) param do return true;
+  pragma "suppress generic actual warning"
+  proc isBorrowedOrUnmanagedClassType(type t:borrowed) param do return true;
+  pragma "suppress generic actual warning"
+  proc isBorrowedOrUnmanagedClassType(type t) param do return false;
 
   // These style element #s are used in the default Writer and Reader.
   // and in e.g. implementations of those in Tuple.
@@ -2293,15 +3328,15 @@ module ChapelBase {
   extern const QIO_TUPLE_FORMAT_JSON:int;
 
   // Support for module deinit functions.
-  class chpl_ModuleDeinit {
-    const moduleName: c_string;          // for debugging; non-null, not owned
-    const deinitFun:  c_fn_ptr;          // module deinit function
+  class chpl_ModuleDeinit : writeSerializable {
+    const moduleName: c_ptrConst(c_char); // for debugging; non-null, not owned
+    const deinitFun:  chpl_c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
-    proc writeThis(ch) throws {
+    override proc serialize(writer, ref serializer) throws {
       try {
-      ch.writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
+        writer.writef("chpl_ModuleDeinit(%s)",string.createCopyingBuffer(moduleName));
       }
-      catch e: DecodeError { // let IOError propagate
+      catch e: DecodeError { // let IoError propagate
         halt("Module name is not valid string!");
       }
     }
@@ -2343,6 +3378,7 @@ module ChapelBase {
   // this could in principle be just _unmanaged (similar to type
   // constructor for a record) but that is more challenging because
   // _unmanaged is a built-in non-record type.
+  pragma "suppress generic actual warning"
   proc _to_unmanaged(type t) type {
     type rt = __primitive("to unmanaged class", t);
     return rt;
@@ -2352,6 +3388,7 @@ module ChapelBase {
     return ret;
   }
   // type constructor for converting to a borrow
+  pragma "suppress generic actual warning"
   proc _to_borrowed(type t) type {
     type rt = __primitive("to borrowed class", t);
     return rt;
@@ -2361,6 +3398,7 @@ module ChapelBase {
     return ret;
   }
   // changing nilability
+  pragma "suppress generic actual warning"
   proc _to_nonnil(type t) type {
     type rt = __primitive("to non nilable class", t);
     return rt;
@@ -2369,6 +3407,7 @@ module ChapelBase {
     var ret = __primitive("to non nilable class", arg);
     return ret;
   }
+  pragma "suppress generic actual warning"
   proc _to_nilable(type t) type {
     type rt = __primitive("to nilable class", t);
     return rt;
@@ -2415,7 +3454,7 @@ module ChapelBase {
     if zippered && isTuple(iterable) then
       return chpl_boundedCoforallSize(iterable[0], zippered=false);
     else if isRange(iterable) || isDomain(iterable) || isArray(iterable) then
-      return iterable.sizeAs(iterable.intIdxType);
+      return iterable.size;
     else
       compilerError("Called chpl_boundedCoforallSize on an unsupported type");
   }
@@ -2445,19 +3484,5 @@ module ChapelBase {
 
   inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
     return a > b;
-  }
-
-  // c_fn_ptr stuff
-  pragma "no doc"
-  inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
-    __primitive("=", a, b);
-  }
-  pragma "no doc"
-  proc c_fn_ptr.this() {
-    compilerError("Can't call a C function pointer within Chapel");
-  }
-  pragma "no doc"
-  proc c_fn_ptr.this(args...) {
-    compilerError("Can't call a C function pointer within Chapel");
   }
 }

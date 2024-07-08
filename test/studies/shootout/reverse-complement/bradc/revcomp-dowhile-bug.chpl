@@ -11,10 +11,8 @@ const table = createTable();    // create the table of code complements
 
 proc main(args: [] string) {
   use IO;
-  const stdinBin = openfd(0).reader(iokind.native, locking=false,
-                                hints = ioHintSet.direct(QIO_CH_ALWAYS_UNBUFFERED)),
-        stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                hints = ioHintSet.direct(QIO_CH_ALWAYS_UNBUFFERED));
+  const stdinBin = (new file(0)).reader(deserializer=new binaryDeserializer(), locking=false),
+        stdoutBin = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
 
   var bufLen = 8 * 1024,
       bufDom = {0..<bufLen},
@@ -51,7 +49,7 @@ proc main(args: [] string) {
       to = from - 1;
     } while (to >= 0);
 
-    stdoutBin.write(buf[..end]);
+    stdoutBin.writeBinary(buf[..end]);
   }
 }
 

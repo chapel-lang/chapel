@@ -1,0 +1,3 @@
+--llvm-print-ir foo,bar --llvm-print-ir-stage asm     # print-asm.1.good
+--llvm-print-ir foo,bar,baz --llvm-print-ir-stage asm # print-asm.2.good
+--llvm-print-ir baz --llvm-print-ir-stage asm         # print-asm.3.good

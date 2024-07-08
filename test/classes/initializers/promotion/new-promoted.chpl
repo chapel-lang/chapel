@@ -44,9 +44,10 @@ proc testClasses() {
     var A = new unmanaged CC(X);
     writeln(A.type:string);
     writeln(A);
-    var B = new borrowed  CC(X);
+    /* leads to memory errors
+    var B = (new owned  CC(X)).borrow();
     writeln(B.type:string);
-    writeln(B);
+    writeln(B);*/
     var C = new owned     CC(X);
     writeln(C.type:string);
     writeln(C);
@@ -67,9 +68,10 @@ proc testClasses() {
     var A = new unmanaged GC(X);
     writeln(A.type:string);
     writeln(A);
-    var B = new borrowed  GC(X);
+    /* leads to memory errors
+    var B = (new owned  GC(X)).borrow();
     writeln(B.type:string);
-    writeln(B);
+    writeln(B);*/
     var C = new owned     GC(X);
     writeln(C.type:string);
     writeln(C);
@@ -197,7 +199,7 @@ record GR {
     this.x = x * mod;
     writeln("GR.init: ", x);
   }
-  proc init=(other: GR) {
+  proc init=(other: GR(?)) {
     this.t = other.t;
     this.x = other.x;
     writeln("GR.init=: ", x);
@@ -208,7 +210,7 @@ record GR {
       writeln("GR.postinit: ", x);
   }
 }
-operator GR.=(ref lhs:GR, rhs:GR) {
+operator GR.=(ref lhs:GR(?), rhs:GR(?)) {
   writeln("GR ", lhs.x, " = ", rhs.x);
   lhs.x = rhs.x;
 }

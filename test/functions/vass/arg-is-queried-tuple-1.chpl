@@ -1,7 +1,7 @@
-proc test(ranges: ?rank * range(?IT, BoundedRangeType.bounded, ?SB))
-        : rank * range(IT, BoundedRangeType.bounded, false)
+proc test(ranges: ?rank * range(?IT, boundKind.both, ?SB))
+        : rank * range(IT, boundKind.both)
 {
-  var result: rank * range(IT, BoundedRangeType.bounded, false);
+  var result: rank * range(IT, boundKind.both);
   return result;
 }
 

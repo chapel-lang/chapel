@@ -1,14 +1,16 @@
-class myclass {
+class myclass : writeSerializable {
   var x: int;
   var y: real;
 }
 
-override proc myclass.writeThis(f) throws {
-  f.write(x, " ", y);
+override proc myclass.serialize(writer, ref serializer) throws {
+  writer.write(x, " ", y);
 }
 
-var a: borrowed myclass = new borrowed myclass();
-var b: borrowed myclass = new borrowed myclass();
+var ownA = new owned myclass();
+var a: borrowed myclass = ownA.borrow();
+var ownB = new owned myclass();
+var b: borrowed myclass = ownB.borrow();
 
 writeln("a is: ", a, ", b is: ", b);
 

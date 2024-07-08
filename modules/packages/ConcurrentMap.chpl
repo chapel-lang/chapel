@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,13 +27,9 @@
 
       - It relies on Chapel ``extern`` code blocks and so requires that
         the Chapel compiler is built with LLVM enabled.
-      - Currently only ``CHPL_TARGET_ARCH=x86_64`` is supported as it uses
-        the x86-64 instruction: CMPXCHG16B_.
-      - The implementation relies on ``GCC`` style inline assembly, and so
-        is restricted to a ``CHPL_TARGET_COMPILER`` value of ``gnu``,
-        ``clang``, or ``llvm``.
-
-    .. _CMPXCHG16B: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+      - The implementation relies on using either ``GCC`` style inline assembly
+        (for x86-64) or a GCC/clang builtin, and so is restricted to a
+        ``CHPL_TARGET_COMPILER`` value of ``gnu``, ``clang``, or ``llvm``.
 
   This module was
   inspired by the Interlocked Hash Table [#]_. It allows large critical
@@ -54,13 +50,13 @@ module ConcurrentMap {
   private use Random;
   private use IO;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param BUCKET_UNLOCKED = 0;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param BUCKET_LOCKED = 1;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param BUCKET_DESTROYED = 2;
 
   /*
@@ -79,29 +75,25 @@ module ConcurrentMap {
   */
   config param MULTIPLIER_NUM_BUCKETS : real = 2;
 
-  // Note: Once this becomes distributed, we have to make it per-locale
-  pragma "no doc"
-  var seedRNG = new owned RandomStream(uint(64), parSafe=true);
-
-  pragma "no doc"
+  @chpldoc.nodoc
   const E_AVAIL = 1;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   const E_LOCK = 2;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   const P_INNER = 3;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   const P_TERM = 4;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   const P_LOCK = 5;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   const GARBAGE = 6;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class DeferredNode {
     type eltType;
     var val : eltType;
@@ -132,7 +124,7 @@ module ConcurrentMap {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class StackNode {
     type eltType;
     var val : eltType;
@@ -148,7 +140,7 @@ module ConcurrentMap {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class Stack {
     type eltType;
     var top : unmanaged StackNode(eltType)?;
@@ -184,7 +176,7 @@ module ConcurrentMap {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   // Can be either a singular 'Bucket' or a plural 'Buckets'
   class Base {
     type keyType;
@@ -204,7 +196,7 @@ module ConcurrentMap {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   // Stores keys and values in the hash table. The lock is used to
   // determine both the 'lock'/'unlock' state of the bucket, and if
   // the bucket is going to be destroyed, meaning that the task should
@@ -213,7 +205,7 @@ module ConcurrentMap {
   // tasks _must_ be in the current epoch to even get this far, so
   // this Bucket, even if the lock value is BUCKET_DESTROYED, should
   // not be destroyed until no it is safe to do so.
-  class Bucket : Base {
+  class Bucket : Base(?), hashable {
     var count : uint;
     var keys : BUCKET_NUM_ELEMS * keyType;
     var values : BUCKET_NUM_ELEMS * valType;
@@ -234,8 +226,8 @@ module ConcurrentMap {
     }
   }
 
-  pragma "no doc"
-  class Buckets : Base {
+  @chpldoc.nodoc
+  class Buckets : Base(?), hashable {
     var seed : uint(64);
     var size : int;
     var bucketsDom = {0..-1};
@@ -245,14 +237,14 @@ module ConcurrentMap {
     proc init(type keyType, type valType) {
       super.init(keyType, valType);
       this.lock.write(P_INNER);
-      this.seed = seedRNG.getNext();
+      this.seed = (new randomStream(int)).next();
       this.size = DEFAULT_NUM_BUCKETS;
       this.bucketsDom = {0..#DEFAULT_NUM_BUCKETS};
     }
 
     proc init(parent : unmanaged Buckets(?keyType, ?valType)) {
       super.init(keyType, valType);
-      this.seed = seedRNG.getNext();
+      this.seed = (new randomStream(int)).next();
       this.lock.write(P_INNER);
       this.parent = parent;
       this.size = round(parent.buckets.size * MULTIPLIER_NUM_BUCKETS):int;
@@ -276,23 +268,23 @@ module ConcurrentMap {
     // proc size return buckets.size;
   }
 
-  class ConcurrentMap : Base {
-    pragma "no doc"
+  class ConcurrentMap : Base(?), serializable {
+    @chpldoc.nodoc
     var root : unmanaged Buckets(keyType, valType);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _manager = new owned LocalEpochManager();
 
-    pragma "no doc"
-    var iterRNG = new owned RandomStream(uint(64), parSafe=true);
+    @chpldoc.nodoc
+    var iterRNG = new randomStream(uint(64));
 
-    pragma "no doc"
+    @chpldoc.nodoc
     type stackType = (unmanaged Buckets(keyType, valType)?, int, int);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     type deferredType = (unmanaged Buckets(keyType, valType)?, int);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     type PEListType = (unmanaged Bucket(keyType, valType)?, unmanaged Buckets(keyType, valType)?, int);
 
     proc init(type keyType, type valType) {
@@ -308,7 +300,7 @@ module ConcurrentMap {
       return _manager.register();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc getEList(key : keyType, isInsertion : bool, tok : owned TokenWrapper) : unmanaged Bucket(keyType, valType)? throws {
       var found : unmanaged Bucket(keyType, valType)?;
       var curr = root;
@@ -378,14 +370,14 @@ module ConcurrentMap {
           }
         }
 
-        if shouldYield then chpl_task_yield(); // If lock could not be acquired
+        if shouldYield then currentTask.yieldExecution(); // If lock could not be acquired
         shouldYield = true;
       }
       return nil;
     }
 
     // helper function to facilitate deletion of EList
-    pragma "no doc"
+    @chpldoc.nodoc
     proc getPEList(key : keyType, isInsertion : bool, tok : owned TokenWrapper) : PEListType throws {
       var found : unmanaged Bucket(keyType, valType)?;
       var retNil : PEListType;
@@ -457,7 +449,7 @@ module ConcurrentMap {
           }
         }
 
-        if shouldYield then chpl_task_yield(); // If lock could not be acquired
+        if shouldYield then currentTask.yieldExecution(); // If lock could not be acquired
         shouldYield = true;
       }
       return retNil;
@@ -484,7 +476,7 @@ module ConcurrentMap {
       var deferred : unmanaged DeferredNode(deferredType)?;
       var restore = true;
       var curr : unmanaged Buckets(keyType, valType)? = root;
-      var start = ((iterRNG.getNext())%(curr!.buckets.size):uint):int;
+      var start = ((iterRNG.next())%(curr!.buckets.size):uint):int;
       var startIndex = 0;
 
       while (true) {
@@ -501,7 +493,7 @@ module ConcurrentMap {
               var stackElem = (curr, start, i);
               recursionStack.push(stackElem);
               curr = bucketBase : unmanaged Buckets(keyType, valType)?;
-              start = ((iterRNG.getNext())%(curr!.buckets.size):uint):int;
+              start = ((iterRNG.next())%(curr!.buckets.size):uint):int;
               startIndex = 0;
               restore = false;
               break;
@@ -535,7 +527,7 @@ module ConcurrentMap {
               if (bucketBase!.lock.read() == P_INNER) {
                 delete head;
                 curr = bucketBase : unmanaged Buckets(keyType, valType)?;
-                start = ((iterRNG.getNext())%(curr!.size):uint):int;
+                start = ((iterRNG.next())%(curr!.size):uint):int;
                 startIndex = 0;
                 continueFlag = true;
                 break;
@@ -549,7 +541,7 @@ module ConcurrentMap {
             }
 
             if (continueFlag == false && deferred != nil) {
-              chpl_task_yield();
+              currentTask.yieldExecution();
             } else if (deferred == nil) then break;
           }
         }
@@ -575,7 +567,7 @@ module ConcurrentMap {
       :yields: A copy of one of the keys contained in this map.
     */
     iter keys() : keyType {
-      for (key, val) in this {
+      for (key, _) in this {
         yield key;
       }
     }
@@ -586,7 +578,7 @@ module ConcurrentMap {
       :yields: A copy of one of the values contained in this map.
     */
     iter values() : valType {
-      for (key, val) in this {
+      for (_, val) in this {
         yield val;
       }
     }
@@ -604,7 +596,7 @@ module ConcurrentMap {
       var _workListTok : owned TokenWrapper = workList.getToken();
       var deferredList = new LockFreeQueue(deferredType);
       var _deferredListTok : owned TokenWrapper = deferredList.getToken();
-      var _startIdx = ((iterRNG.getNext())%(root.buckets.size):uint):int;
+      var _startIdx = ((iterRNG.next())%(root.buckets.size):uint):int;
       var started : chpl__processorAtomicType(int);
       var finished : chpl__processorAtomicType(int);
 
@@ -627,7 +619,7 @@ module ConcurrentMap {
         }
       }
 
-      coforall tid in 1..here.maxTaskPar {
+      coforall 1..here.maxTaskPar {
         var workListTok : owned TokenWrapper = workList.getToken();
         var deferredListTok : owned TokenWrapper = deferredList.getToken();
         while (true) {
@@ -656,7 +648,7 @@ module ConcurrentMap {
             }
           } else finished.add(1);
 
-          var startIdx = ((iterRNG.getNext())%(_node!.buckets.size):uint):int;
+          var startIdx = ((iterRNG.next())%(_node!.buckets.size):uint):int;
           for i in 0..(_node!.buckets.size-1) {
             var idx = (startIdx + i)%_node!.buckets.size;
             var bucketBase = _node!.buckets[idx].read();
@@ -699,7 +691,7 @@ module ConcurrentMap {
       :yields: A copy of one of the keys contained in this map.
     */
     iter keys(param tag:iterKind) where tag == iterKind.standalone {
-      forall (key, val) in this {
+      forall (key, _) in this {
         yield key;
       }
     }
@@ -710,7 +702,7 @@ module ConcurrentMap {
       :yields: A copy of one of the values contained in this map.
     */
     iter values(param tag:iterKind) where tag == iterKind.standalone {
-      forall (key, val) in this {
+      forall (_, val) in this {
         yield val;
       }
     }
@@ -809,6 +801,36 @@ module ConcurrentMap {
       return (found, res);
     }
 
+    /* Atomically update an entry in the map in place
+
+      `updater` should define a `this` method that takes a single argument of
+      the element type by `ref` intent.
+
+      If the key isn't already present, applies the updater to a default-initialized
+      instance of the element type.
+    */
+    proc update(key: keyType, updater, tok : owned TokenWrapper = getToken()) throws {
+      tok.pin();
+      var elist = getEList(key, true, tok),
+          found = false;
+      for i in 0..#elist!.count {
+        if (elist!.keys[i] == key) {
+          updater(elist!.values[i]);
+          found = true;
+          break;
+        }
+      }
+      if !found {
+        var v: valType;
+        updater(v);
+        elist!.count += 1;
+        elist!.keys[elist!.count-1] = key;
+        elist!.values[elist!.count-1] = v;
+      }
+      elist!.lock.write(E_AVAIL);
+      tok.unpin();
+    }
+
     /*
       Returns `true` if the given key is a member of this map, and `false`
       otherwise.
@@ -827,7 +849,7 @@ module ConcurrentMap {
        set it to `v`. If the map already contains a value at position
        `k`, update it to the value `v`.
      */
-    proc addOrSet(key: keyType, val: valType, tok : owned TokenWrapper = getToken()) throws {
+    proc addOrReplace(key: keyType, val: valType, tok : owned TokenWrapper = getToken()) throws {
       tok.pin();
       var elist = getEList(key, true, tok);
       for i in 0..#elist!.count {
@@ -853,7 +875,7 @@ module ConcurrentMap {
     */
     proc extend(m : ConcurrentMap(keyType, valType)) throws {
       forall (key, value) in m with (var tok = getToken()) {
-        addOrSet(key, value, tok);
+        addOrReplace(key, value, tok);
       }
     }
 
@@ -924,7 +946,7 @@ module ConcurrentMap {
       return res;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc clearHelper(curr : unmanaged Buckets(keyType, valType)?, tok : owned TokenWrapper) throws {
       var shouldYield = false;
       var idx = 0;
@@ -944,7 +966,7 @@ module ConcurrentMap {
             clearHelper(r, tok);
             increment = true;
           } else {
-            if shouldYield then chpl_task_yield(); // If lock could not be acquired
+            if shouldYield then currentTask.yieldExecution(); // If lock could not be acquired
             shouldYield = true;
           }
         } else {
@@ -1005,7 +1027,7 @@ module ConcurrentMap {
     */
     proc keysToArray(): [] keyType throws {
       var stack = new Stack(keyType);
-      for (key, val) in this {
+      for (key, _) in this {
         stack.push(key);
       }
 
@@ -1028,7 +1050,7 @@ module ConcurrentMap {
     */
     proc valuesToArray(): [] valType throws {
       var stack = new Stack(valType);
-      for (key, val) in this {
+      for (_, val) in this {
         stack.push(val);
       }
 
@@ -1042,32 +1064,25 @@ module ConcurrentMap {
       return A;
     }
 
-    pragma "no doc"
-    proc readThis(f) throws {
+    proc ref deserialize(reader: fileReader(?), ref deserializer) throws {
       compilerWarning("Reading a ConcurrentMap is not supported");
     }
 
-    /*
-      Writes the contents of this map to a channel. The format looks like:
+    @chpldoc.nodoc
+    proc init(type keyType, type valType, reader: fileReader, ref deserializer) {
+      this.init(keyType, valType);
+      compilerWarning("Deserializing a ConcurrentMap is not yet supported");
+    }
 
-        .. code-block:: chapel
+    override proc serialize(writer: fileWriter(?), ref serializer) throws {
+      const asArray = this.toArray();
 
-           {k1: v1, k2: v2, .... , kn: vn}
-
-      :arg ch: A channel to write to.
-    */
-    proc writeThis(f) throws {
-      ch.write("{");
-      var first = true;
-      for (key, val) in this {
-        if first {
-          ch.write(key, ": ", val);
-          first = false;
-        } else {
-          ch.write(", ", key, ": ", val);
-        }
+      var ser = serializer.startMap(writer, asArray.size);
+      for (key, val) in asArray {
+        ser.writeKey(key);
+        ser.writeValue(val);
       }
-      ch.write("}");
+      ser.endMap();
     }
   }
 

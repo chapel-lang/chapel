@@ -34,7 +34,7 @@ type AtomMatrix = nExtent*real;
 const GridDom  = {0..#span_x, 0..#span_y, 0..#span_z};
 
 proc main() {
-	var t: Timer;
+	var t: stopwatch;
 
 	writeln("[[ LSMS ]]");
 	writeln("Problem size = [", span_x, ", ", span_y, ", ", span_z, "]");
@@ -118,7 +118,7 @@ proc checkExpected(itr: int, atoms: [GridDom] AtomMatrix) {
 		for param e in 0..nExtent-1 {
 			if abs(atoms[i][e] - expectedValues[i]) > tolerance then pass = false;
 		}
-                if debug { writef("itr %4n @ %t: %12.9r ~=~ %12.9r\n",
+                if debug { writef("itr %4n @ %?: %12.9r ~=~ %12.9r\n",
                                   itr, i, atoms[i][1], expectedValues[i]); }
 		if !pass {
 			writeln("Computed values do not match expected values: itr = ", itr, 
@@ -135,4 +135,3 @@ proc circularDistance(a, b, size: int) {
 		return min(a-b, b-a+size);
 	}
 }
-

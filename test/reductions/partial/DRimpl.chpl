@@ -6,7 +6,7 @@ use utilities;
 proc plusPR(DIMS,ARR) throws {
   const OP = new unmanaged SumReduceScanOp(eltType=ARR.eltType);
   defer { delete OP; }
-  return ARR.domain.dist.dsiPartialReduce(OP, DIMS, ARR);
+  return ARR.domain.distribution.dsiPartialReduce(OP, DIMS, ARR);
 }
 
 proc DefaultDist.dsiPartialReduce(const perElemOp, const resDimSpec,

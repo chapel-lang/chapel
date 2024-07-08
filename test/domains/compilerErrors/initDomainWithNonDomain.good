@@ -1,0 +1,1 @@
+initDomainWithNonDomain.chpl:4: error: Domains cannot be initialized using expressions of non-domain type

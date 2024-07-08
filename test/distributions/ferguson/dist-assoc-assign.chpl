@@ -1,6 +1,6 @@
 use HashedDist;
 
-var D: domain(real) dmapped Hashed(idxType=real);
+var D: domain(real) dmapped new hashedDist(idxType=real);
 D += 1.3;
 
 var localD: domain(real);

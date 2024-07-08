@@ -573,7 +573,7 @@ void gasneti_format_magic(char *buf, uint64_t magic) {
     if (gasneti_autoflush) fflush(fp);      \
   } while (0)
 
-  static void gasneti_tracestats_forceflush() {
+  static void gasneti_tracestats_forceflush(void) {
     if (gasneti_statsfile) fflush(gasneti_statsfile);
     if (gasneti_tracefile) fflush(gasneti_tracefile);
   }
@@ -786,6 +786,7 @@ extern void gasneti_trace_updatemask(const char *newmask, char *maskstr, char *t
   const char *desc; 
   const char *p;
   char *newmaskstr = maskstr;
+  int complement = newmask && (newmask[0] == '^');
   
   if (types == gasneti_tracetypes) { 
     typesall = gasneti_tracetypes_all; 
@@ -810,7 +811,7 @@ extern void gasneti_trace_updatemask(const char *newmask, char *maskstr, char *t
 
     for (p = GASNETI_ALLTYPES; *p; p++) { 
       gasneti_assert(!types[(int)*p] || typesall[(int)*p]);
-      types[(int)*p] = !!strchr(newmask, *p);
+      types[(int)*p] = !!strchr(newmask, *p) ^ complement;
       typesall[(int)*p] |= types[(int)*p];
       if (types[(int)*p]) *(newmaskstr++) = *p;
     }
@@ -972,8 +973,8 @@ extern void gasneti_trace_init(int *pargc, char ***pargv) {
 
   #if GASNET_NDEBUG
   { const char *NDEBUG_warning = "tracing/statistical collection may adversely affect application performance.";
-    gasneti_tracestats_printf("WARNING: %s", NDEBUG_warning);
-    if (!gasneti_mynode) gasneti_console_message("WARNING", NDEBUG_warning);
+    gasneti_stats_printf("WARNING: %s", NDEBUG_warning);
+    gasneti_console0_message("WARNING", "%s", NDEBUG_warning);
   }
   #endif
 
@@ -991,9 +992,9 @@ extern void gasneti_trace_init(int *pargc, char ***pargv) {
   #if GASNET_NDEBUG
   { const char *NDEBUG_warning = "debugging malloc may adversely affect application performance.";
    #if GASNETI_STATS_OR_TRACE
-    gasneti_tracestats_printf("WARNING: %s", NDEBUG_warning);
+    gasneti_stats_printf("WARNING: %s", NDEBUG_warning);
    #endif
-   if (!gasneti_mynode) gasneti_console_message("WARNING", NDEBUG_warning);
+   gasneti_console0_message("WARNING", "%s", NDEBUG_warning);
   }
   #endif
   gasneti_mallocreport_filename = gasneti_getenv_withdefault("GASNET_MALLOCFILE","");

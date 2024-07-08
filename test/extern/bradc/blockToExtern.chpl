@@ -1,6 +1,6 @@
 use BlockDist;
 
-var B = newBlockArr({1..10}, real);
+var B = blockDist.createArray({1..10}, real);
 
 extern proc cprintarr(X: [] real);
 

@@ -10,5 +10,5 @@ extern proc otherFunction(ref arr : c_int) : void;
 
 extern proc otherFunction(arr : c_ptr(c_int)) : void;
 
-extern proc dashEyeFunction(foo : c_int, bar : c_string) : void;
+extern proc dashEyeFunction(foo : c_int, bar : c_ptr(c_char)) : void;
 

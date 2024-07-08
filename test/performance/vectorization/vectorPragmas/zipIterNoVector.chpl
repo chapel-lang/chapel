@@ -38,7 +38,7 @@ module zipIterNoVector {
     use iters;
     // The zippered loop should NOT have the vector pragma since one of the
     // zipped iters could not be inlined
-    forall (i, j) in zip (myiter(n, ntasks), nonInlinableIter(n, ntasks)) {
+    forall (i, j) in zip (myiter(n, ntasks), nonInlinableIter(n, ntasks)) with (ref A) {
       A[i] = i;
       A[j] += j;
     }

@@ -1,0 +1,2 @@
+--arrSize=10_000 --gpuDiags=true --bitsAtATime=16 --atomicSort=true
+--arrSize=10_000 --gpuDiags=true --bitsAtATime=8

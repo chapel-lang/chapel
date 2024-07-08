@@ -1,3 +1,0 @@
-sys-fd.chpl:1: warning: The 'Sys' module has been deprecated; please find replacement symbols in the 'OS' and  'Socket' modules
-sys-fd.chpl:5: warning: 'Sys.fd_set' is deprecated; please use 'OS.POSIX.fd_set' instead
-sys-fd.chpl:7: warning: 'Sys.sys_fd_clr' is deprecated; please use 'OS.POSIX.FD_CLR' instead

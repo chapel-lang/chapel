@@ -1,7 +1,7 @@
 class MyClass { }
 
 proc testShared() {
-  var mine = (new shared MyClass()).borrow();
-  var x = shared.create(mine);
+  var obj = new shared MyClass(); var mine = obj.borrow();
+  var x = shared.adopt(mine);
 }
 testShared();

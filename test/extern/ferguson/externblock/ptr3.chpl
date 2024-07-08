@@ -1,4 +1,6 @@
 extern {
+  #include <stdio.h>
+
   void printit(int *numptr);
   void printit(int *numptr)
   {

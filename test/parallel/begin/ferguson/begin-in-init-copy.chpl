@@ -70,7 +70,7 @@ proc test() {
     // Now, run it with a begin per iteration
     sync {
       for i in 0..#n {
-        begin with (in r) {
+        begin with (in r, ref hits) {
           hits[min(n,r.ptr.x)].add(1);
         }
         r.increment();

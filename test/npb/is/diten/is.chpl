@@ -1,5 +1,6 @@
-use Random;
+use NPBRandom;
 use Time;
+use Math;
 
 enum classVals {S, W, A, B, C};
 
@@ -47,7 +48,7 @@ var bucketPtrs: [0..numBuckets-1] int;
 var passedVerifications = 0;
 
 proc main() {
-  var time = new Timer();
+  var time = new stopwatch();
   var randomStream = new owned NPBRandomStream(real, seed);
   var tempreals: [1..4] real;
   var max = maxKey / 4;
@@ -83,9 +84,9 @@ proc main() {
   writeln(" Size            = ", totalKeys);
   writeln(" Iterations      = ", maxIterations);
   if printTime {
-    writeln(" Time in seconds = ", time.elapsed(TimeUnits.seconds));
+    writeln(" Time in seconds = ", time.elapsed());
     writeln(" Mop/s total     = ",
-            (maxIterations*totalKeys)/time.elapsed(TimeUnits.seconds)/1000000);
+            (maxIterations*totalKeys)/time.elapsed()/1000000);
   }
   if (passedVerifications == (maxIterations+1) * 5 + 1) then
     writeln(" Verification    = SUCCESSFUL");
@@ -131,7 +132,8 @@ proc rank(iteration: int) {
 
   if useBuckets {
     bucketSize.write(0);
-    bucketSize(keyArray >> shift).add(1);
+    // bucketSize(keyArray >> shift).add(1);
+    forall k in keyArray with (ref bucketSize) do bucketSize(k >> shift).add(1);
 
     bucketPtrs(0) = 0;
     for i in 1..numBuckets-1 do
@@ -142,11 +144,13 @@ proc rank(iteration: int) {
       bucketPtrs(key >> shift) += 1;
     }
     keyBuff1 = 0;
-    keyBuff1(keyBuff2) += 1;
+    // keyBuff1(keyBuff2) += 1;
+    forall k in keyBuff2 with (+ reduce keyBuff1) do keyBuff1(k) += 1;
     keyBuff1 = + scan keyBuff1;
   } else {
     keyBuff1 = 0;
-    keyBuff1(keyArray) += 1;
+    // keyBuff1(keyArray) += 1;
+    forall k in keyArray with (+ reduce keyBuff1) do keyBuff1(k) += 1;
     keyBuff1 = + scan keyBuff1;
   }
   partialVerification(iteration);
@@ -264,4 +268,3 @@ proc fullVerify() {
   else
     passedVerifications += 1;
 }
-

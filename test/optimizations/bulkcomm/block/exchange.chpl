@@ -1,6 +1,6 @@
 
 use BlockDist;
-use Barriers;
+use Collectives;
 use CommDiagnostics;
 use Time;
 
@@ -17,14 +17,14 @@ config const report = false;
 config const time = false;
 
 proc main() {
-  var tmr : Timer;
+  var tmr : stopwatch;
 
   const Space = {0..#(numLocales*numLocales*n)};
-  const D     = Space dmapped Block(Space);
+  const D     = Space dmapped new blockDist(Space);
 
   var A : [D] int;
 
-  var b = new Barrier(numLocales);
+  var b = new barrier(numLocales);
 
   if !time then resetCommDiagnostics();
   else tmr.start();

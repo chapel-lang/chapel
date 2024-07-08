@@ -1,0 +1,2 @@
+-stestnum=3 -sretType='[0..2] atomic int'
+-stestnum=3 -sretType='[0..2] [0..2] atomic int'

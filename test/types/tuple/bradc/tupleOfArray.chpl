@@ -33,7 +33,7 @@ writeln("t1(0) is: ", t1(0));
 writeln("t2(0) is: ", t2(0));
 writeln();
 
-proc foo(x,y) {
+proc foo(ref x,y) {
   x(0) = y;
 }
 

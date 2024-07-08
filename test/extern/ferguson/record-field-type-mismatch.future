@@ -1,0 +1,2 @@
+bug: consistently error for incorrectly typed extern declarations
+#24015

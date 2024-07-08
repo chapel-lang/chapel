@@ -1,0 +1,2 @@
+$CHPL_HOME/modules/internal/ChapelStandard.chpl:53: warning: The GPU locale interface is unstable and expected to change in the forthcoming releases
+$CHPL_HOME/modules/internal/ChapelLocale.chpl:29: warning: The GPU locale interface is unstable and expected to change in the forthcoming releases

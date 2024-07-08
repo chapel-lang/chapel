@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,7 +27,9 @@
 
 #include <cstdio>
 #include <map>
+#include <set>
 #include <string>
+#include <unordered_set>
 
 class Timer;
 
@@ -52,6 +54,7 @@ extern bool fIgnoreNilabilityErrors;
 extern bool fOverloadSetsChecks;
 extern bool fNoStackChecks;
 extern bool fNoCastChecks;
+extern bool fNoConstArgChecks;
 extern bool fNoDivZeroChecks;
 extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
@@ -92,7 +95,7 @@ extern bool fReportOptimizeForallUnordered;
 extern bool report_inlining;
 
 // Chapel Envs
-bool useDefaultEnv(std::string key);
+bool useDefaultEnv(std::string key, bool isCrayPrgEnv);
 
 extern std::map<std::string, const char*> envMap;
 
@@ -108,7 +111,7 @@ extern const char* CHPL_TARGET_PLATFORM;
 extern const char* CHPL_TARGET_ARCH;
 extern const char* CHPL_TARGET_CPU;
 extern const char* CHPL_RUNTIME_CPU;
-extern const char* CHPL_TARGET_BACKEND_CPU;
+extern const char* CHPL_LLVM_TARGET_CPU;
 extern const char* CHPL_TARGET_CPU_FLAG;
 extern const char* CHPL_TARGET_COMPILER;
 extern const char* CHPL_TARGET_COMPILER_PRGENV;
@@ -117,6 +120,7 @@ extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
 extern const char* CHPL_GASNET_SEGMENT;
 extern const char* CHPL_LIBFABRIC;
+extern const char* CHPL_COMM_OFI_OOB;
 extern const char* CHPL_TASKS;
 extern const char* CHPL_LAUNCHER;
 extern const char* CHPL_TIMERS;
@@ -145,6 +149,8 @@ extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
 
 extern const char* CHPL_CUDA_LIBDEVICE_PATH;
+extern const char* CHPL_GPU;
+extern const char* CHPL_GPU_ARCH;
 
 extern bool  printPasses;
 extern FILE* printPassesFile;
@@ -158,6 +164,13 @@ extern char fExplainInstantiation[256];
 /// resolution.
 extern bool fExplainVerbose;
 extern bool fParseOnly;
+// begin compiler driver control flags
+extern bool fDriverDoMonolithic;
+extern bool fDriverCompilationPhase;
+extern bool fDriverMakeBinaryPhase;
+extern char driverTmpDir[FILENAME_MAX];
+// end compiler driver control flags
+extern bool fExitLeaks;
 extern bool fPrintAllCandidates;
 extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;
@@ -182,6 +195,8 @@ extern bool fNoEarlyDeinit;
 extern bool fNoCopyElision;
 extern bool fCompileTimeNilChecking;
 extern bool fInferImplementsStmts;
+extern bool fIteratorContexts;
+extern bool fReturnByRef;
 extern bool fOverrideChecking;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
@@ -226,8 +241,20 @@ extern bool ignore_errors;
 extern bool ignore_user_errors;
 extern bool ignore_errors_for_pass;
 extern int  squelch_header_errors;
+
+extern bool fWarnIntUint;
+extern bool fWarnSmallIntegralFloat;
+extern bool fWarnIntegralFloat;
+extern bool fWarnFloatFloat;
+extern bool fWarnIntegralIntegral;
+extern bool fWarnImplicitNumericConversions;
+extern bool fWarnParamImplicitNumericConversions;
+
 extern bool fWarnConstLoops;
 extern bool fWarnUnstable;
+extern bool fWarnUnstableStandard;
+extern bool fWarnUnstableInternal;
+extern bool fWarnPotentialRaces;
 
 extern bool fReportAliases;
 extern bool fReportBlocking;
@@ -237,6 +264,8 @@ extern bool fReportVectorizedLoops;
 extern bool fReportOptimizedOn;
 extern bool fReportPromotion;
 extern bool fReportScalarReplace;
+extern bool fReportGpu;
+extern bool fReportContextAdj;
 extern bool fReportDeadBlocks;
 extern bool fReportDeadModules;
 extern bool fReportGpuTransformTime;
@@ -255,11 +284,17 @@ extern int breakOnID;
 extern int breakOnRemoveID;
 
 extern int fGPUBlockSize;
-extern char fCUDAArch[16];
+const int gpuArchNameLen = 256;
+extern char fGpuArch[gpuArchNameLen+1];
+extern bool fGpuPtxasEnforceOpt;
+extern bool fGpuSpecialization;
+extern const char* gGpuSdkPath;
+extern std::set<std::string> gpuArches;
 
 extern char stopAfterPass[128];
 
 // code generation strings
+extern const char* compileCommandFilename;
 extern const char* compileCommand;
 extern char compileVersion[64];
 
@@ -278,13 +313,31 @@ extern bool fIncrementalCompilation;
 
 // LLVM flags (-mllvm)
 extern std::string llvmFlags;
+extern std::string llvmRemarksFilters;
+extern std::vector<std::string> llvmRemarksFunctionsToShow;
+extern bool fLlvmPrintPasses;
 
 extern bool fPrintAdditionalErrors;
 
 extern bool fDynoCompilerLibrary;
+extern bool fDynoScopeResolve;
+extern bool fDynoScopeProduction;
+extern bool fDynoScopeBundled;
 extern bool fDynoDebugTrace;
+extern bool fDynoDebugPrintParsedFiles;
+extern bool fDynoVerifySerialization;
+extern bool fDynoGenLib;
+extern bool fDynoGenStdLib;
+extern bool fDynoLibGenOrUse;
 
 extern size_t fDynoBreakOnHash;
+
+extern bool fResolveConcreteFns;
+extern bool fIdBasedMunging;
+
+extern bool fNoIOGenSerialization;
+extern bool fNoIOSerializeWriteThis;
+extern bool fNoIODeserializeReadThis;
 
 namespace chpl {
   class Context;
@@ -293,5 +346,16 @@ namespace chpl {
 extern chpl::Context* gContext;
 
 extern std::vector<std::pair<std::string, std::string>> gDynoParams;
+
+extern std::vector<std::string> gDynoPrependInternalModulePaths;
+extern std::vector<std::string> gDynoPrependStandardModulePaths;
+
+extern std::string gDynoGenLibOutput;
+extern std::vector<UniqueString> gDynoGenLibSourcePaths;
+extern std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
+
+extern std::string gMainModuleName;
+
+extern bool fForeachIntents;
 
 #endif

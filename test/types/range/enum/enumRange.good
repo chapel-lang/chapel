@@ -1,6 +1,6 @@
 ---
 red..violet
-range(color,bounded,false)
+range(color,both,one)
 
 red
 orange
@@ -15,8 +15,6 @@ first = red
 last = violet
 low = red
 high = violet
-alignedLow = red
-alignedHigh = violet
 isEmpty = false
 hasFirst = true
 hasLast = true
@@ -40,7 +38,7 @@ violet
 
 ---
 yellow..indigo
-range(color,bounded,false)
+range(color,both,one)
 
 yellow
 green
@@ -52,8 +50,6 @@ first = yellow
 last = indigo
 low = yellow
 high = indigo
-alignedLow = yellow
-alignedHigh = indigo
 isEmpty = false
 hasFirst = true
 hasLast = true
@@ -79,7 +75,7 @@ indigo
 
 ---
 green..green
-range(color,bounded,false)
+range(color,both,one)
 
 green
 
@@ -88,8 +84,6 @@ first = green
 last = green
 low = green
 high = green
-alignedLow = green
-alignedHigh = green
 isEmpty = false
 hasFirst = true
 hasLast = true
@@ -105,7 +99,7 @@ green
 
 ---
 blue..green
-range(color,bounded,false)
+range(color,both,one)
 
 
 size = 0
@@ -113,8 +107,6 @@ first = blue
 last = green
 low = blue
 high = green
-alignedLow = blue
-alignedHigh = green
 isEmpty = true
 hasFirst = false
 hasLast = false

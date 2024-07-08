@@ -13,8 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "WebAssemblyMCAsmInfo.h"
-#include "Utils/WebAssemblyUtilities.h"
-#include "llvm/ADT/Triple.h"
+#include "WebAssemblyMCTargetDesc.h"
+#include "llvm/TargetParser/Triple.h"
 
 using namespace llvm;
 
@@ -52,6 +52,4 @@ WebAssemblyMCAsmInfo::WebAssemblyMCAsmInfo(const Triple &T,
   // we make sure this info is set correctly.
   if (WebAssembly::WasmEnableEH || WebAssembly::WasmEnableSjLj)
     ExceptionsType = ExceptionHandling::Wasm;
-
-  // TODO: UseIntegratedAssembler?
 }

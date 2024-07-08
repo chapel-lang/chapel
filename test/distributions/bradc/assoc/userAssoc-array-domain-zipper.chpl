@@ -11,7 +11,7 @@ record MyMapper {
 }
 
 var myMapper = new MyMapper();
-var newDist = new dmap(new unmanaged Hashed(idxType=real, mapper=myMapper));
+var newDist = new hashedDist(idxType=real, mapper=myMapper);
 
 var D: domain(real) dmapped newDist;
 

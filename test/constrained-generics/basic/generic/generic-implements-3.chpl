@@ -19,7 +19,7 @@ record MyRec {
 }
 
 private
-proc reqFun(reqArg: MyRec): void {
+proc reqFun(reqArg: MyRec(?)): void {
   writeln("  reqFun.MyRec");
   writeln("    reqArg  = ", reqArg, " : ", reqArg.type:string);
 }
@@ -42,21 +42,21 @@ record NotherRec {
 //-----------
 
 private
-proc reqFun(reqArg1: MyRec, reqArg2: MyRec): void {
+proc reqFun(reqArg1: MyRec(?), reqArg2: MyRec(?)): void {
   writeln("  reqFun.MyRec.MyRec");
   writeln("    reqArg1 = ", reqArg1, " : ", reqArg1.type:string);
   writeln("    reqArg2 = ", reqArg2, " : ", reqArg2.type:string);
 }
 
 private
-proc reqFun(reqArg1: MyRec, reqArg2: NotherRec): void {
+proc reqFun(reqArg1: MyRec(?), reqArg2: NotherRec(?)): void {
   writeln("  reqFun.MyRec.NotherRec");
   writeln("    reqArg1 = ", reqArg1, " : ", reqArg1.type:string);
   writeln("    reqArg2 = ", reqArg2, " : ", reqArg2.type:string);
 }
 
 private
-proc reqFun(reqArg1: NotherRec, reqArg2: MyRec): void {
+proc reqFun(reqArg1: NotherRec(?), reqArg2: MyRec(?)): void {
   writeln("  reqFun.NotherRec.MyRec");
   writeln("    reqArg1 = ", reqArg1, " : ", reqArg1.type:string);
   writeln("    reqArg2 = ", reqArg2, " : ", reqArg2.type:string);

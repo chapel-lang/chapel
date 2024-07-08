@@ -4,7 +4,7 @@ class Parent {
   proc init(_f1 : real) {
     f1 = _f1;
 
-    complete();
+    init this;
   }
 }
 
@@ -16,12 +16,13 @@ class Child : Parent {
 
     f2 = f1 - 3.2;
 
-    complete();
+    init this;
   }
 }
 
 proc main() {
-  var c: borrowed Child = new borrowed Child(1.25);
+  var ownC = new owned Child(1.25);
+  var c: borrowed Child = ownC.borrow();
 
   writeln(c);
 }

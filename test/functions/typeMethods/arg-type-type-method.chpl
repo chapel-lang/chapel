@@ -1,27 +1,27 @@
 
 record RRcon { }
-proc type RRcon.typemeth type return string;
+proc type RRcon.typemeth type do return string;
 
 proc test1(a: RRcon.typemeth) {
   compilerWarning("test1 RRcon.typemeth");
 }
 
 record RRgen { type tt; }
-proc type RRgen.typemeth type return string;
+proc type RRgen.typemeth type do return string;
 
 proc test2(a: RRgen.typemeth) {
   compilerWarning("test2 RRgen.typemeth");
 }
 
 class CCcon { }
-proc type CCcon.typemeth type return real;
+proc type CCcon.typemeth type do return real;
 
 proc test1(a: CCcon.typemeth) {
   compilerWarning("test1 CCcon.typemeth");
 }
 
 class CCgen { type qq; }
-proc type CCgen.typemeth type return real;
+proc type CCgen.typemeth type do return real;
 
 proc test2(a: CCgen.typemeth) {
   compilerWarning("test2 CCgen.typemeth");

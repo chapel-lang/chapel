@@ -13,5 +13,5 @@ class C {
   }
 }
 
-var c = new borrowed C();
+var cObj = new C(); var c = cObj.borrow();
 c.foo();

@@ -1,11 +1,11 @@
 config const n = 7;
 config const off = n/2;
 
-var init = 0;
+var initial = 0;
 
 proc initMe() {
-  init += off;
-  return init;
+  initial += off;
+  return initial;
 }
 
 iter i0() {
@@ -44,7 +44,7 @@ iter i4() {
     yield x;
     x -= i;
   }
-  init = 4;
+  initial = 4;
 }
 
 iter i5() {
@@ -53,7 +53,7 @@ iter i5() {
     x += i;
     yield x;
   }
-  init = 5;
+  initial = 5;
 }
 
 iter i6() {
@@ -61,12 +61,12 @@ iter i6() {
   for i in 1..n {
     yield x+i;
   }
-  init = 6;
+  initial = 6;
 }
 
 iter i7() {
   for i in 1..n {
     yield i;
   }
-  init = 7;
+  initial = 7;
 }

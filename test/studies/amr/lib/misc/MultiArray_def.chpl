@@ -2,7 +2,7 @@ public use MultiDomain_def;
 
 
 
-proc main {
+private proc main {
   
   var mD = new unmanaged MultiDomain(2,false);
   mD.add( {1..12, 1..12} );
@@ -49,11 +49,11 @@ class MultiArray
 {
   
   param rank: int;
-  param stridable: bool;
+  param strides: strideKind;
   type  eltType;
   
-  var array_wrappers: unmanaged List( unmanaged ArrayWrapper(rank, stridable, eltType) ) =
-                  new unmanaged List( unmanaged ArrayWrapper(rank, stridable, eltType) );
+  var array_wrappers: unmanaged List( unmanaged ArrayWrapper(rank, strides, eltType) ) =
+                  new unmanaged List( unmanaged ArrayWrapper(rank, strides, eltType) );
 
 
 
@@ -66,9 +66,9 @@ class MultiArray
   class ArrayWrapper
   {
     param rank: int;
-    param stridable: bool;
+    param strides: strideKind;
     type  eltType;
-    var Domain: domain(rank, stridable=stridable);
+    var Domain: domain(rank, strides=strides);
     var array: [Domain] eltType;
   }
 
@@ -99,15 +99,15 @@ class MultiArray
   // domains in a MultiDomain.
   //----------------------------------------------------------
 
-  // proc allocate ( mD: MultiDomain(rank,stridable) ) 
+  // proc allocate ( mD: MultiDomain(rank,strides) ) 
   // {
   //   for D in mD do
   //     array_wrappers.add( new ArrayWrapper(D) ); 
   // }
   
-  proc allocate ( mD: unmanaged MultiDomain(rank,stridable) )
+  proc allocate ( mD: unmanaged MultiDomain(rank,strides) )
   {
-    for D in mD do array_wrappers.add( new unmanaged ArrayWrapper(rank, stridable, eltType, D) );
+    for D in mD do array_wrappers.add( new unmanaged ArrayWrapper(rank, strides, eltType, D) );
   }
   // /|'''''''''''''''''''''''''/|
   //< |    method: allocate    < |
@@ -138,10 +138,10 @@ class MultiArray
 // 
 // class ArrayWrapper {
 //   param rank: int;
-//   param stridable: bool;
+//   param strides: strideKind;
 //   type  eltType;
 //   
-//   var Domain: domain(rank=rank, stridable=stridable);
+//   var Domain: domain(rank=rank, strides=strides);
 //   var array: [Domain] eltType;
 //   
 //   

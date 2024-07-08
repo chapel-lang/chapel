@@ -9,7 +9,7 @@ record R {
 proc gimmeanr(): R throws {
   var ret: R;
   throw new owned Error();
-  return ret;
+  return ret; // note that this line is ignored
 }
 
 proc testa() throws {

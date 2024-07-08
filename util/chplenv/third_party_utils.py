@@ -4,7 +4,8 @@ import re
 import chpl_cpu, chpl_arch, chpl_compiler
 import chpl_lib_pic, chpl_locale_model, chpl_platform
 from chpl_home_utils import get_chpl_home, get_chpl_third_party, using_chapel_module
-from utils import error, memoize, run_command, warning
+from utils import error, memoize, run_command, warning, try_run_command
+import homebrew_utils
 
 #
 # This is the default unique configuration path which
@@ -98,6 +99,11 @@ def filter_libs(bundled_libs, system_libs):
 
     return (bundled_ret, system_ret)
 
+@memoize
+def pkgconfig_system_has_package(pkg):
+    exists, returncode, _, _ = try_run_command(['pkg-config', '--exists', pkg])
+    return exists and not returncode
+
 #
 # Return compiler arguments required to use a system library known to
 # pkg-config. The pkg argument should be the name of a system-installed
@@ -107,8 +113,8 @@ def filter_libs(bundled_libs, system_libs):
 #  (compiler_bundled_args, compiler_system_args)
 @memoize
 def pkgconfig_get_system_compile_args(pkg):
-    # check that pkg-config knows about the package in question
-    run_command(['pkg-config', '--exists', pkg])
+    if not pkgconfig_system_has_package(pkg):
+        return (None, None)
     # run pkg-config to get the cflags
     cflags_line = run_command(['pkg-config', '--cflags'] + [pkg]);
     cflags = cflags_line.split()
@@ -133,7 +139,7 @@ def pkgconfig_get_system_compile_args(pkg):
 # Returns a 2-tuple of lists
 #  (compiler_bundled_args, compiler_system_args)
 def pkgconfig_get_bundled_compile_args(pkg, ucp='', pcfile=''):
-    d = read_bundled_pkg_config_file(pkg, ucp, pcfile)
+    (d, pcpath) = read_bundled_pkg_config_file(pkg, ucp, pcfile)
 
     # Return empty tuple if no .pc file was found (e.g. pkg not built yet)
     if d == None:
@@ -167,8 +173,8 @@ def pkgconfig_default_static():
 #  (link_bundled_args, link_system_args)
 @memoize
 def pkgconfig_get_system_link_args(pkg, static=pkgconfig_default_static()):
-    # check that pkg-config knows about the package in question
-    run_command(['pkg-config', '--exists', pkg])
+    if not pkgconfig_system_has_package(pkg):
+        return (None, None)
     # run pkg-config to get the link flags
     static_arg = [ ]
     if static:
@@ -216,7 +222,7 @@ def pkgconfig_get_bundled_link_args(pkg, ucp='', pcfile='',
     install_path = get_bundled_install_path(pkg, ucp)
     lib_dir = os.path.join(install_path, 'lib')
 
-    d = read_bundled_pkg_config_file(pkg, ucp, pcfile)
+    (d, pcpath) = read_bundled_pkg_config_file(pkg, ucp, pcfile)
 
     # Return empty tuple if no .pc file was found (e.g. pkg not built yet)
     if d == None:
@@ -246,16 +252,13 @@ def pkgconfig_get_bundled_link_args(pkg, ucp='', pcfile='',
     # assuming libs_private stores system libs, like -lpthread
     return filter_libs(libs, libs_private)
 
-# Get the version number for a system-wide installed package.
-# Presumably we update the bundled packages to compatible versions,
-# so this routine doesn't handle ucp and other bundled version concerns.
 @memoize
-def pkgconfig_get_system_version(pkg):
-  # check that pkg-config knows about the package in question
-  run_command(['pkg-config', '--exists', pkg])
-  # run pkg-config to get the version
-  version = run_command(['pkg-config', '--modversion', pkg])
-  return version.strip()
+def has_pkgconfig():
+    (exists, code, _stdout, _stderr) = try_run_command(['pkg-config',
+                                                       '--version'])
+    if exists and code == 0:
+        return True
+    return False
 
 #
 # This returns the default link args for the given third-party package
@@ -397,8 +400,9 @@ def read_pkg_config_file(pcpath, find_third_party, replace_third_party):
 #   third-party/<pkg>/install/<ucp>/lib/pkgconfig/<pcfile>
 #   where pcfile defaults to pkg.pc
 #
-# If the .pc file could not be read, returns None
-# Otherwise, returns the dictionary of values read from the .pc file
+# Returns a tuple. The first member is None if the .pc file could not be read,
+# otherwise it's a dictionary of values read from the .pc file. The second
+# member is the name of the pc file, if it could be determined.
 def read_bundled_pkg_config_file(pkg, ucp='', pcfile=''):
     # compute the default ucp
     if ucp == '':
@@ -411,16 +415,25 @@ def read_bundled_pkg_config_file(pkg, ucp='', pcfile=''):
 
     # give up early if the 3rd party package hasn't been built
     if not os.path.exists(install_path):
-        return None
+        return (None, None)
 
     pcpath = os.path.join(install_path, 'lib', 'pkgconfig', pcfile)
 
     # if we get this far, we should have a .pc file. check that it exists.
     if not os.access(pcpath, os.R_OK):
         error("Could not find '{0}'".format(pcpath), ValueError)
-        return None
+        return (None, pcpath)
 
     find_path = os.path.join('third-party', pkg, 'install', ucp)
     replace_path = install_path
 
-    return read_pkg_config_file(pcpath, find_path, replace_path)
+    return (read_pkg_config_file(pcpath, find_path, replace_path), pcpath)
+
+
+def could_not_find_pkgconfig_pkg(pkg, envname):
+    if homebrew_utils.homebrew_exists() and homebrew_utils.homebrew_pkg_exists(pkg):
+        # tell user to install pkg-config as well
+        error("{0} is installed via homebrew, but pkg-config is not installed. Please install pkg-config with `brew install pkg-config`.".format(pkg))
+    else:
+        install_str = " with `brew install {0}`".format(pkg) if homebrew_utils.homebrew_exists() else ""
+        error("Could not find a suitable {0} installation. Please install {0}{1} or set {2}=bundled.".format(pkg, install_str, envname))

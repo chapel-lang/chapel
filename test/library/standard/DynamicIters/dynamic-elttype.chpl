@@ -7,16 +7,16 @@ proc checkRangeType(type t) {
     A[i].add(1);
   }
   writeln(A);
-  forall i in dynamic(r, chunkSize=5) {
+  forall i in dynamic(r, chunkSize=5) with (ref A) {
     A[i].add(1);
   }
   writeln(A);
-  forall (i,j) in zip(dynamic(r, chunkSize=5), r) {
+  forall (i,j) in zip(dynamic(r, chunkSize=5), r) with (ref A) {
     assert(i == j);
     A[i].add(1);
   }
   writeln(A);
-  forall (i,j) in zip(r, dynamic(r, chunkSize=5)) {
+  forall (i,j) in zip(r, dynamic(r, chunkSize=5)) with (ref A) {
     assert(i == j);
     A[i].add(1);
   }

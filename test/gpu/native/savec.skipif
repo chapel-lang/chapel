@@ -1,0 +1,4 @@
+# The purpose of this test is to ensure that we dump an assembly file for our
+# generated GPU kernels but we don't/can't do that when using cpu-as-device
+# mode.
+CHPL_GPU==cpu

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,7 @@
 #define _PASSES_H_
 
 #include "FnSymbol.h"
+#include "LoopExpr.h"
 #include "symbol.h"
 #include "PassManager.h"
 #include "pass-manager-passes.h"
@@ -42,8 +43,8 @@ void buildDefaultFunctions();
 void bulkCopyRecords();
 void callDestructors();
 void checkNormalized();
-void checkParsed();
 void checkResolved();
+void checkGeneratedAst();
 void cleanup();
 void codegen();
 void copyPropagation();
@@ -86,7 +87,6 @@ void verify();
 void checkInvariants(char log_tag);
 void checkPrimitives();                 // constrains primitive use
 void checkPostResolution();
-void checkNoUnresolveds();
 // These checks can be applied after any pass.
 void checkForDuplicateUses();
 void checkArgsAndLocals();
@@ -106,6 +106,9 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
 void initForTaskIntents();
 void removeTiMarks();
 bool isTiMark(Symbol* sym);
+
+// callDestructors.cpp
+void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor);
 
 // deadCodeElimination.cpp
 void deadBlockElimination();
@@ -135,9 +138,10 @@ void  handleCallsToOtherCGfuns(FnSymbol* origFn, InterfaceInfo* ifcInfo,
 
 // iterator.cpp
 CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
-                                 bool fromForExpr);
+                                 LoopExprType type);
 void setIteratorRecordShape(CallExpr* call);
 bool checkIteratorFromForExpr(Expr* ref, Symbol* shape);
+bool checkIteratorFromForeachExpr(Expr* ref, Symbol* shape);
 
 // LoopExpr.cpp
 bool isOuterVarLoop(Symbol* sym, Expr* enclosingExpr);
@@ -155,6 +159,7 @@ void normalize(Expr* expr);
 void checkUseBeforeDefs(FnSymbol* fn);
 void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement);
 Expr* partOfNonNormalizableExpr(Expr* expr);
+void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr);
 
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);

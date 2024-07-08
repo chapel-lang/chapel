@@ -1,0 +1,4 @@
+#!/bin/sh
+
+sort mapOutput.txt > mapOutput.txt.sorted
+cat mapOutput.txt.sorted >> $2

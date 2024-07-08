@@ -12,5 +12,6 @@ class Foo {
   }
 }
 
-var a: borrowed Foo = new borrowed Foo(7);
+var ownA = new owned Foo(7);
+var a: borrowed Foo = ownA.borrow();
 writeln(a);

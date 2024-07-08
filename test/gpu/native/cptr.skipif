@@ -1,0 +1,4 @@
+# this test dereferences a C pointer that points to GPU global memory. You can
+# do that with unified memory but can't with array_on_device as the data is
+# "remote". See https://github.com/chapel-lang/chapel/issues/22755
+CHPL_GPU_MEM_STRATEGY==array_on_device

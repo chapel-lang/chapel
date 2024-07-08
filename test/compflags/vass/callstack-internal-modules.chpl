@@ -1,8 +1,10 @@
 // https://github.com/chapel-lang/chapel/issues/17406
 
 // The goal of this code is to trigger a compilation error
-// in an internal module. Currently it uses + on (int,uint)
-// and relies on operator + to invoke _throwOpError() in this case.
+// in an internal module that is nested in another call.
+// Currently it calls chpl__atomicType(string) which will
+// call chpl__processorAtomicType(string) which calls
+// compilerError.
 //
 // If this trick stops working, we could do something else, ex.
 // use the --prepend-internal-module-dir compiler flag to either:
@@ -23,5 +25,5 @@ proc bar() {
 }
 
 proc foo() {
-  writeln(x+y);
+  chpl__atomicType(string);
 }

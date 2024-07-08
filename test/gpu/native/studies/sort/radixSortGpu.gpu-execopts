@@ -1,0 +1,2 @@
+--arrSize=1_000_000 --perftest=true --bitsAtATime=16  --atomicSort=true # atomicSort
+--arrSize=1_000_000 --perftest=true --bitsAtATime=8 # parallelSort

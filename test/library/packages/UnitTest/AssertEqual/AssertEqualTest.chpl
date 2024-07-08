@@ -22,6 +22,7 @@ proc main() {
   equalHighArrayDiffType();
   unequalOffsetArray();
   unequal1DArray();
+  unequalIntegers();
   unequalComplex();
   unequalPrimitive();
   unequalRanges();
@@ -105,6 +106,10 @@ proc unequal1DArray() {
   var x0: [0..2] int = [1,4,2];
   var y0: [0..2] int  = [1,7,6];
   testAssert(x0, y0, "Unequal 0-based Arrays");
+}
+
+proc unequalIntegers() {
+  testAssert(1,2,"Unequal Integers");
 }
 
 proc unequalComplex() {

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# only keep the 'warning' lines and the 'start/stop' lines
+cat $2 | grep 'warning\|start/stop' > $2.prediff.tmp
+mv $2.prediff.tmp $2

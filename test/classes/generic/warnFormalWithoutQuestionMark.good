@@ -1,0 +1,10 @@
+warnFormalWithoutQuestionMark.chpl:14: In function 'baz':
+warnFormalWithoutQuestionMark.chpl:14: warning: need '(?)' on the type 'G' of the formal 'xxxyz' because this type is generic
+warnFormalWithoutQuestionMark.chpl:18: In function 'baz':
+warnFormalWithoutQuestionMark.chpl:18: warning: need '(?)' on the type 'G' of the formal 'x' because this type is generic
+warnFormalWithoutQuestionMark.chpl:9: In function 'foo':
+warnFormalWithoutQuestionMark.chpl:9: warning: need '(?)' on the type 'G' of the formal 'x' because this type is generic
+warnFormalWithoutQuestionMark.chpl:16: In function 'baz':
+warnFormalWithoutQuestionMark.chpl:16: warning: need '(?)' on the type 'G' of the formal 'x' because this type is generic
+warnFormalWithoutQuestionMark.chpl:20: In function 'baz':
+warnFormalWithoutQuestionMark.chpl:20: warning: need '(?)' on the type 'G' of the formal 'x' because this type is generic

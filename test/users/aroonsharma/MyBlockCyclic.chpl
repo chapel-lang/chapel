@@ -211,8 +211,8 @@ proc MyBlockCyclic.getStarts(inds, locid) {
   //
   // TODO: Does using David's detupling trick work here?
   //
-  var D: domain(rank, idxType, stridable=true);
-  var R: rank*range(idxType, stridable=true);
+  var D: domain(rank, idxType, strides=strideKind.any);
+  var R: rank*range(idxType, strides=strideKind.any);
   for i in 1..rank {
     var lo, hi: idxType;
     const domlo = inds.dim(i).low, 
@@ -290,7 +290,7 @@ class LocMyBlockCyclic {
   // to use lclIdxType here is wrong since we're talking about
   // the section of the global index space owned by the locale.
   //
-  const myStarts: rank*range(idxType, BoundedRangeType.boundedLow, stridable=true);
+  const myStarts: rank*range(idxType, boundKind.low, strides=strideKind.any);
 
   //
   // Constructor computes what chunk of index(1) is owned by the
@@ -375,7 +375,7 @@ iter MyBlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
     coforall core in 0..tasks-1 do
     for i in core..blocksize-1 by tasks {
       var ind=locDom.myStarts.low+i;
-      var retstride: rank*range(idxType, stridable=true);
+      var retstride: rank*range(idxType, strides=strideKind.any);
 //       writeln("whole.low=", whole.low, " whole.dim=", whole.dim(1)); //.size
 //       writeln("pattern size=", locDoms.size);
       //retstride(1) = locDom.myStarts.low+i .. locDom.myStarts.high+i by locDom.myStarts.stride;
@@ -464,7 +464,7 @@ proc MyBlockCyclicDom.dsiStride return whole.stride;
 // INTERFACE NOTES: Could we make setIndices() for a rectangular
 // domain take a domain rather than something else?
 //
-proc MyBlockCyclicDom.dsiSetIndices(x: domain) {
+proc MyBlockCyclicDom.dsiSetIndices(x: domain(?)) {
   if x.rank != rank then
     compilerError("rank mismatch in domain assignment");
   if x._value.idxType != idxType then
@@ -541,7 +541,7 @@ override proc MyBlockCyclicDom.dsiIndexOrder(i) {
 proc MyBlockCyclicDom.dsiBuildRectangularDom(param rank: int, type idxType,
                                          param stridable: bool,
                                          ranges: rank*range(idxType,
-                                                            BoundedRangeType.bounded,
+                                                            boundKind.both,
                                                             stridable)) {
   if idxType != dist.idxType then
     compilerError("MyBlockCyclic domain index type does not match distribution's");
@@ -575,7 +575,7 @@ class LocMyBlockCyclicDom {
   // require a glbIdxType offset in order to get from the global
   // indices back to the local index type.
   //
-  var myStarts: domain(rank, idxType, stridable=true);
+  var myStarts: domain(rank, idxType, strides=strideKind.any);
   var myFlatInds: domain(1) = {0..#computeFlatInds()};
 }
 
@@ -732,7 +732,7 @@ iter MyBlockCyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
 
 //asdf
 iter MyBlockCyclicArr.these(param tag: iterKind, followThis) var where tag == iterKind.follower {
-  var myFollowThis: rank*range(idxType=idxType, stridable=true);
+  var myFollowThis: rank*range(idxType=idxType, strides=strideKind.any);
   var lowIdx: rank*idxType;
 
   for param i in 1..rank {
@@ -802,7 +802,7 @@ iter MyBlockCyclicArr.these(param tag: iterKind, followThis) var where tag == it
     __primitive("chpl_comm_get_strd",
       __primitive("array_get", dest, buf._value.getDataIndex(1)),
       __primitive("array_get",dststr,dstStride._value.getDataIndex(1)), 
-      rid,
+      rid, c_sublocid_any,
       __primitive("array_get", src, myLocArr.myElems._value.getDataIndex(myLocArr.mdInd2FlatInd(myFollowThisDom.low))),
       __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)),
       __primitive("array_get",cnt, count._value.getDataIndex(1)),
@@ -821,7 +821,7 @@ iter MyBlockCyclicArr.these(param tag: iterKind, followThis) var where tag == it
       __primitive("chpl_comm_put_strd",
         __primitive("array_get", src, myLocArr.myElems._value.getDataIndex(myLocArr.mdInd2FlatInd(myFollowThisDom.low))),
         __primitive("array_get",srcstr,srcStride._value.getDataIndex(1)), 
-        rid,
+        rid, c_sublocid_any
         __primitive("array_get", dest, buf._value.getDataIndex(1)),
         __primitive("array_get",dststr,dstStride._value.getDataIndex(1)),
         __primitive("array_get",cnt, count._value.getDataIndex(1)),

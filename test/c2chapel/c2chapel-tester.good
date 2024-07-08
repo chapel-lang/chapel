@@ -6,6 +6,7 @@ anonymousStruct: OK
 arrayDecl: OK
 chapelKeywords: OK
 chapelVarargs: OK
+constPointer: OK
 cstrvoid: OK
 dashEye: OK
 enum: OK
@@ -17,6 +18,7 @@ intDefines: OK
 invalidC: OK
 miscTypedef: OK
 miscTypedefUnion: OK
+nestedArrays: OK
 nestedStruct: OK
 nestedUnion: OK
 opaqueStruct: OK
@@ -28,6 +30,7 @@ anonymousStruct: OK
 arrayDecl: OK
 chapelKeywords: OK
 chapelVarargs: OK
+constPointer: OK
 cstrvoid: OK
 dashEye: OK
 enum: OK
@@ -40,6 +43,7 @@ intDefines: OK
 invalidC: OK
 miscTypedef: OK
 miscTypedefUnion: OK
+nestedArrays: OK
 nestedStruct: OK
 nestedUnion: OK
 opaqueStruct: OK

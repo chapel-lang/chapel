@@ -1,0 +1,15 @@
+
+'ref' intent
+  sum = ???? due to a possible race
+
+'reduce' intent
+  sum = 5050.0, can trust this result due to 'reduce' intent
+
+'ref' intent
+  bucketCount = ???? due to a possible race
+
+'in' intent
+  bucketCount = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0, not being copied out of tasks so all zeros
+
+'reduce' intent
+  bucketCount = 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0, should have a valid count of all 

@@ -1,0 +1,7 @@
+*.so
+c-blosc
+ReindexStore
+Test1D
+Test2D
+Test3D
+LocalIOStore_*

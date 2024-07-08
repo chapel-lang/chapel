@@ -63,10 +63,10 @@
 #include "llvm/Transforms/Scalar/SpeculativeExecution.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/Analysis/GlobalsModRef.h"
+#include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
-#include "llvm/IR/Module.h"
 #include "llvm/IR/Operator.h"
 #include "llvm/InitializePasses.h"
 #include "llvm/Support/CommandLine.h"
@@ -152,7 +152,7 @@ bool SpeculativeExecutionLegacyPass::runOnFunction(Function &F) {
 namespace llvm {
 
 bool SpeculativeExecutionPass::runImpl(Function &F, TargetTransformInfo *TTI) {
-  if (OnlyIfDivergentTarget && !TTI->hasBranchDivergence()) {
+  if (OnlyIfDivergentTarget && !TTI->hasBranchDivergence(&F)) {
     LLVM_DEBUG(dbgs() << "Not running SpeculativeExecution because "
                          "TTI->hasBranchDivergence() is false.\n");
     return false;
@@ -252,7 +252,7 @@ static InstructionCost ComputeSpeculationCost(const Instruction *I,
     case Instruction::ShuffleVector:
     case Instruction::ExtractValue:
     case Instruction::InsertValue:
-      return TTI.getUserCost(I, TargetTransformInfo::TCK_SizeAndLatency);
+      return TTI.getInstructionCost(I, TargetTransformInfo::TCK_SizeAndLatency);
 
     default:
       return InstructionCost::getInvalid(); // Disallow anything not explicitly
@@ -275,7 +275,7 @@ bool SpeculativeExecutionPass::considerHoistingFromTo(
       });
     }
 
-    // Usially debug label instrinsic corresponds to label in LLVM IR. In these
+    // Usially debug label intrinsic corresponds to label in LLVM IR. In these
     // cases we should not move it here.
     // TODO: Possible special processing needed to detect it is related to a
     // hoisted instruction.
@@ -301,7 +301,7 @@ bool SpeculativeExecutionPass::considerHoistingFromTo(
       if (TotalSpeculationCost > SpecExecMaxSpeculationCost)
         return false;  // too much to hoist
     } else {
-      // Debug info instrinsics should not be counted for threshold.
+      // Debug info intrinsics should not be counted for threshold.
       if (!isa<DbgInfoIntrinsic>(I))
         NotHoistedInstCount++;
       if (NotHoistedInstCount > SpecExecMaxNotHoisted)
@@ -316,7 +316,7 @@ bool SpeculativeExecutionPass::considerHoistingFromTo(
     auto Current = I;
     ++I;
     if (!NotHoisted.count(&*Current)) {
-      Current->moveBefore(ToBlock.getTerminator());
+      Current->moveBeforePreserving(ToBlock.getTerminator());
     }
   }
   return true;
@@ -345,5 +345,15 @@ PreservedAnalyses SpeculativeExecutionPass::run(Function &F,
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();
   return PA;
+}
+
+void SpeculativeExecutionPass::printPipeline(
+    raw_ostream &OS, function_ref<StringRef(StringRef)> MapClassName2PassName) {
+  static_cast<PassInfoMixin<SpeculativeExecutionPass> *>(this)->printPipeline(
+      OS, MapClassName2PassName);
+  OS << '<';
+  if (OnlyIfDivergentTarget)
+    OS << "only-if-divergent-target";
+  OS << '>';
 }
 }  // namespace llvm

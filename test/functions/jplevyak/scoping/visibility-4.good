@@ -1,1 +1,1 @@
-2
+visibility-4.chpl:4: error: inheritance is not currently supported for records

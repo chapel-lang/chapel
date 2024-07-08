@@ -41,7 +41,7 @@ var remainders: [0..extend, 1..4] I1;
 
 proc main
 {
-  var t: Timer;
+  var t: stopwatch;
   if perfTest then t.start();
 
   start_digit(start);
@@ -54,7 +54,7 @@ proc main
   if perfTest then
   {
     t.stop();
-    writeln("Elapsed time = ", t.elapsed(TimeUnits.seconds));
+    writeln("Elapsed time = ", t.elapsed());
   }
 
   write_out();
@@ -74,7 +74,7 @@ proc start_digit(s: I1)
   // f is the fraction index.
   // c is the coefficient index
   for c in 1..4 do
-    forall f in 0..s-1 do
+    forall f in 0..s-1 with (ref remainders) do
       remainders[f,c] = mod_exp(16, s-1-f, 8 * f + offset[c]);
 }
 

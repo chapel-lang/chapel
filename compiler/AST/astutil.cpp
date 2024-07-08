@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,6 +23,7 @@
 #include "baseAST.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "ForallStmt.h"
@@ -38,6 +39,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "type.h"
 #include "virtualDispatch.h"
@@ -46,6 +48,7 @@
 
 #include "global-ast-vecs.h"
 
+#include <set>
 #include <vector>
 
 static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types);
@@ -100,10 +103,40 @@ void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts) {
     forallStmts.push_back(forall);
 }
 
+void collectCForLoopStmtsPreorder(BaseAST* ast, std::vector<CForLoop*>& cforloopStmts) {
+  if (CForLoop* cforloop = toCForLoop(ast))
+    cforloopStmts.push_back(cforloop);
+  AST_CHILDREN_CALL(ast, collectCForLoopStmtsPreorder, cforloopStmts);
+}
+
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
   AST_CHILDREN_CALL(ast, collectCallExprs, callExprs);
   if (CallExpr* callExpr = toCallExpr(ast))
     callExprs.push_back(callExpr);
+}
+
+void collectCallExprsExceptInGpuBlock(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
+  if (auto blk = toBlockStmt(ast)) {
+    if (blk->isGpuPrimitivesBlock()) {
+      return;
+    }
+  }
+
+  AST_CHILDREN_CALL(ast, collectCallExprsExceptInGpuBlock, callExprs);
+  if (CallExpr* callExpr = toCallExpr(ast))
+    callExprs.push_back(callExpr);
+}
+
+void collectBlockStmts(BaseAST* ast, std::vector<BlockStmt*>& blockStmts) {
+  AST_CHILDREN_CALL(ast, collectBlockStmts, blockStmts);
+  if (BlockStmt* blockStmt = toBlockStmt(ast))
+    blockStmts.push_back(blockStmt);
+}
+
+void collectForLoops(BaseAST* ast, std::vector<ForLoop*>& forLoops) {
+  AST_CHILDREN_CALL(ast, collectForLoops, forLoops);
+  if (ForLoop* forLoop = toForLoop(ast))
+    forLoops.push_back(forLoop);
 }
 
 void collectMyCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs,
@@ -141,6 +174,40 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
     if (SymExpr* labelSE = toSymExpr(gt->label))
       if (labelSE->symbol()->inTree())
         GOTOs.push_back(gt);
+}
+
+std::set<Symbol*> findAllDetupledComponents(Symbol* sym) {
+  std::set<Symbol*> ret;
+
+  if (!sym->typeInfo()->symbol->hasFlag(FLAG_TUPLE) ||
+      !sym->hasFlag(FLAG_TEMP)) {
+    return ret;
+  }
+
+  for_SymbolSymExprs(se1, sym) {
+    auto c1 = toCallExpr(se1->parentExpr);
+    if (c1 && c1->baseExpr == se1) {
+      auto c2 = toCallExpr(c1->parentExpr);
+      if (c2 && c2->isPrimitive(PRIM_MOVE)) {
+        auto seTemp = toSymExpr(c2->get(1));
+        if (seTemp && seTemp->symbol()->hasFlag(FLAG_TEMP)) {
+          for_SymbolSymExprs(se2, seTemp->symbol()) {
+            auto c3 = toCallExpr(se2->parentExpr);
+            if (c3 && c3->isPrimitive(PRIM_INIT_VAR) &&
+                c3 != c2 &&
+                c3->get(2) == se2) {
+              auto seFound = toSymExpr(c3->get(1));
+              INT_ASSERT(seFound);
+              auto sym = seFound->symbol();
+              INT_ASSERT(ret.find(sym) == ret.end());
+              ret.insert(sym);
+            }
+          }
+        }
+      }
+    }
+  }
+  return ret;
 }
 
 //
@@ -515,12 +582,12 @@ bool isRelationalOperator(CallExpr* call) {
 // TODO this should be fixed to include PRIM_SET_MEMBER
 // See notes in iterator.cpp and/or loopInvariantCodeMotion.cpp
 // TODO this should also be fixed to include the PRIM_SET_SVEC_MEMBER
+// which gets inserted from the returnStartTuplesByRefArgs pass
 //  an attempt to do so is in the commented-out sections below
 //  but would require also fixing a bug in copy-propagation
 //  with e.g. functions/deitz/nested/test_nested_var_iterator2.chpl
-// TODO this should handle PRIM_VIRTUAL_METHOD_CALL and PRIM_FTABLE_CALL
+// TODO handle PRIM_FTABLE_CALL
 //
-// which gets inserted from the returnStartTuplesByRefArgs pass
 // return & 1 is true if se is a def
 // return & 2 is true if se is a use
 //
@@ -532,7 +599,7 @@ int isDefAndOrUse(SymExpr* se) {
   const int USE = 2;
   const int DEF_USE = 3;
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
-    bool isFirstActual = (call->get(1) == se);
+    bool isFirstActual = (call->numActuals() && call->get(1) == se);
 
     // TODO: PRIM_SET_MEMBER, PRIM_SET_SVEC_MEMBER
 
@@ -567,6 +634,17 @@ int isDefAndOrUse(SymExpr* se) {
       // se   =   se <op> ?
       // ^-def    ^-use
       return DEF_USE;
+    } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+      // actual_to_formal() breaks if passed the cid argument
+      if (se == call->get(2))
+        return USE;
+      // same as for resolvedFunction()
+      ArgSymbol* arg = actual_to_formal(se);
+      if (arg->intent == INTENT_REF ||
+          arg->intent == INTENT_INOUT)
+        return DEF_USE;
+      else if (arg->intent == INTENT_OUT)
+        return DEF;
     } else if (FnSymbol* fn = call->resolvedFunction()) {
       ArgSymbol* arg = actual_to_formal(se);
 
@@ -795,8 +873,7 @@ static bool isNumericTypeSymExpr(Expr* expr) {
     Type* t = sym->type;
     // if it's the actual type symbol for that type
     if (t->symbol == sym && sym->hasFlag(FLAG_TYPE_VARIABLE))
-      return is_bool_type(t) ||
-             is_int_type(t) ||
+      return is_int_type(t) ||
              is_uint_type(t) ||
              is_real_type(t) ||
              is_imag_type(t) ||
@@ -804,6 +881,47 @@ static bool isNumericTypeSymExpr(Expr* expr) {
   }
 
   return false;
+}
+
+bool isExternType(Type* t) {
+  // narrow references are OK but not wide references
+  if (t->isWideRef())
+    return false;
+
+  ClassTypeDecoratorEnum d = ClassTypeDecorator::UNMANAGED_NONNIL;
+  // unmanaged or borrowed classes are OK
+  if (isClassLikeOrManaged(t) || isClassLikeOrPtr(t))
+    d = removeNilableFromDecorator(classTypeDecorator(t));
+
+  TypeSymbol* ts = t->symbol;
+
+  EnumType* et = toEnumType(t);
+
+  return t->isRef() ||
+         d == ClassTypeDecorator::BORROWED ||
+         d == ClassTypeDecorator::UNMANAGED ||
+         (et && et->isConcrete()) ||
+         (ts->hasFlag(FLAG_TUPLE) && ts->hasFlag(FLAG_STAR_TUPLE)) ||
+         ts->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) ||
+         ts->hasFlag(FLAG_DATA_CLASS) ||
+         ts->hasFlag(FLAG_C_PTR_CLASS) ||
+         ts->hasFlag(FLAG_C_ARRAY) ||
+         ts->hasFlag(FLAG_EXTERN) ||
+         ts->hasFlag(FLAG_EXPORT); // these don't exist yet
+}
+
+bool isExportableType(Type* t) {
+
+  // TODO: Exporting will need a different representation of FCF types.
+  if (t->symbol->hasFlag(FLAG_FUNCTION_CLASS)) return false;
+  if (t == dtString || t == dtBytes) {
+    // string/bytes are OK in export functions
+    // because they are converted to wrapper
+    // functions
+    return true;
+  }
+
+  return isExternType(t);
 }
 
 bool isTypeExpr(Expr* expr) {
@@ -848,6 +966,9 @@ bool isTypeExpr(Expr* expr) {
       getPrimGetRuntimeTypeFieldReturnType(call, isType);
       retval = isType;
 
+    } else if (call->isPrimitive(PRIM_COERCE)) {
+      retval = isTypeExpr(call->get(1));
+
     } else if (call->numActuals() == 1 &&
                call->baseExpr &&
                isNumericTypeSymExpr(call->baseExpr)) {
@@ -856,10 +977,28 @@ bool isTypeExpr(Expr* expr) {
 
     } else if (FnSymbol* fn = call->resolvedFunction()) {
       retval = fn->retTag == RET_TYPE;
+
+    // TODO: Is it safe to just check if the base expression is a type?
+    } else if (isTypeConstructorWithRuntimeTypeActual(call)) {
+      retval = true;
     }
   }
 
   return retval;
+}
+
+bool isTypeConstructorWithRuntimeTypeActual(CallExpr* call) {
+  if (!call || call->isPrimitive()) return false;
+
+  auto se = toSymExpr(call->baseExpr);
+  if (!se || !se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) return false;
+
+  for_actuals(actual, call)
+    if (auto se = toSymExpr(actual))
+      if (auto sym = se->symbol()->type->symbol)
+        if (sym->hasFlag(FLAG_HAS_RUNTIME_TYPE)) return true;
+
+  return false;
 }
 
 static void pruneVisit(TypeSymbol*       ts,
@@ -902,6 +1041,9 @@ static void
 pruneVisitFn(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   if (fns.set_in(fn)) return;
   fns.set_add(fn);
+
+  if (fn->retType) types.set_add(fn->retType->symbol);
+
   llvm::SmallVector<SymExpr*, 16> symExprs;
   collectSymExprs(fn, symExprs);
   for(SymExpr* se : symExprs) {
@@ -916,6 +1058,49 @@ pruneVisitFn(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   }
 }
 
+
+static ModuleSymbol* getToplevelModule(FnSymbol* fn) {
+  if (fn->defPoint == nullptr) {
+    return nullptr;
+  }
+
+  // find the top-level module
+  ModuleSymbol* topLevelModule = nullptr;
+  for (ModuleSymbol* cur = fn->defPoint->getModule();
+       cur && cur->defPoint;
+       cur = cur->defPoint->getModule()) {
+    if (isModuleSymbol(cur) && cur != theProgram && cur != rootModule) {
+      topLevelModule = cur;
+    }
+  }
+
+  return topLevelModule;
+}
+
+static bool separatelyCompilingModule(ModuleSymbol* topLevelModule) {
+  return gDynoGenLibModuleNameAstrs.count(topLevelModule->name) > 0;
+}
+
+static bool keepFnForSeparateCompilation(FnSymbol* fn) {
+  if (!fDynoGenLib) {
+    return false;
+  }
+
+  ModuleSymbol* mod = getToplevelModule(fn);
+  if (mod && separatelyCompilingModule(mod)) {
+    // Workaround: don't keep 'iteratorIndex' functions in
+    // ChapelIteratorSupport because these can call 'getValue' functions
+    // that contain partial and invalid AST.
+    if (0 == strcmp(mod->name, "ChapelIteratorSupport") &&
+        0 == strcmp(fn->name, "iteratorIndex")) {
+      return false;
+    }
+
+    // generally, keep functions in modules being separately compiled
+    return true;
+  }
+  return false;
+}
 
 // Visit and mark functions (and types) which are reachable from
 // externally visible symbols.
@@ -944,10 +1129,17 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
       for (int j = 0; j < virtualMethodTable.v[i].value->n; j++)
         pruneVisit(virtualMethodTable.v[i].value->v[j], fns, types);
 
-  // Mark exported symbols and module init/deinit functions as visible.
-  forv_Vec(FnSymbol, fn, gFnSymbols)
-    if (fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_ALWAYS_RESOLVE))
+  // Mark things to consider always visible:
+  //  * exported symbols
+  //  * always-resolve functions
+  //  * functions in modules being separately compiled
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_EXPORT) ||
+        fn->hasFlag(FLAG_ALWAYS_RESOLVE) ||
+        keepFnForSeparateCompilation(fn)) {
       pruneVisit(fn, fns, types);
+    }
+  }
 
   // Mark well-known functions as visible
   std::vector<FnSymbol*> wellKnownFns = getWellKnownFunctions();
@@ -1054,19 +1246,43 @@ static void pruneUnusedRefs(Vec<TypeSymbol*>& types)
   }
 }
 
+static bool shouldRemoveSymBeforeCodeGeneration(Symbol* sym) {
+  if (!sym || !sym->inTree() || !sym->type) return false;
 
-void cleanupAfterTypeRemoval()
-{
+  // Do not remove symbols with at least one use.
+  if (sym->firstSymExpr()) return false;
+
+  // Do not remove formals or functions.
+  if (isArgSymbol(sym) || isFnSymbol(sym)) return false;
+
+  // Do not remove fields.
+  if (isTypeSymbol(sym->defPoint->parentSymbol)) return false;
+
+  if (sym->type == dtUninstantiated &&
+      sym != dtUninstantiated->symbol) {
+    return true;
+  }
+  return false;
+}
+
+void cleanupAfterTypeRemoval() {
   //
   // change symbols with dead types to void (important for baseline)
   //
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (def->inTree()                             &&
-        def->sym->type                   != NULL  &&
-        isAggregateType(def->sym->type)  ==  true &&
-        isTypeSymbol(def->sym)           == false &&
-        def->sym->type->symbol->inTree() == false)
-      def->sym->type = dtNothing;
+    auto sym = def->sym;
+    if (!def->inTree() || !sym || !sym->type) continue;
+
+    if (!sym->type->symbol->inTree() && isAggregateType(sym->type) &&
+        !isTypeSymbol(sym)) {
+      sym->type = dtNothing;
+    }
+
+    // Some types must never reach code generation, as they have no runtime
+    // representation. E.g., 'uninstantiated' is one of these types.
+    // Temporaries can be introduced with this type when resolving methods
+    // over any partially-instantiated type.
+    if (shouldRemoveSymBeforeCodeGeneration(sym)) def->remove();
   }
 
   // Clear out any uses of removed types in Type::substitutionsPostResolve
@@ -1115,6 +1331,11 @@ static void removeVoidMoves()
   }
 }
 
+static void removeStatementLevelUsesOfNone() {
+  for_SymbolSymExprs(se, gNone) {
+    if (se == se->getStmtExpr()) se->remove();
+  }
+}
 
 // Determine sets of used functions and types, and then delete
 // functions which are not visible and classes which are not used.
@@ -1136,6 +1357,8 @@ prune() {
   pruneUnusedTypes(types);
 
   removeVoidMoves();
+
+  removeStatementLevelUsesOfNone();
 }
 
 
@@ -1244,4 +1467,75 @@ void convertToQualifiedRefs() {
     }
   }
 #undef fixRefSymbols
+}
+
+bool shouldWarnUnstableFor(BaseAST* ast) {
+  if (auto mod = ast->getModule()) {
+    if (mod->modTag == MOD_INTERNAL) return fWarnUnstableInternal;
+    else if (mod->modTag == MOD_STANDARD) return fWarnUnstableStandard;
+  }
+  return fWarnUnstable;
+}
+
+// this is `symExprIsUsedAsConstRef` when `constRef=true`
+bool symExprIsUsedAsRef(
+  SymExpr* use,
+  bool constRef,
+  std::function<bool(SymExpr*, CallExpr*)> checkForMove) {
+   if (CallExpr* call = toCallExpr(use->parentExpr)) {
+    if (FnSymbol* calledFn = call->resolvedFunction()) {
+      ArgSymbol* formal = actual_to_formal(use);
+
+      if(constRef) {
+        // generally, use const-ref-return if passing to const ref formal
+        if (formal->intent == INTENT_CONST_REF) {
+          // but make an exception for initCopy calls
+          if (calledFn->hasFlag(FLAG_INIT_COPY_FN))
+            return false;
+
+          // TODO: tuples of types with blank intent
+          // being 'in' should perhaps use the value version.
+          return true;
+        }
+      } else {
+        if (formal->intent == INTENT_REF ||
+          formal->intent == INTENT_OUT ||
+          formal->intent == INTENT_INOUT) {
+          return true;
+        }
+      }
+
+    } else if (call->isPrimitive(PRIM_RETURN) ||
+               call->isPrimitive(PRIM_YIELD)) {
+      FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+
+      auto retTag = constRef ? RET_CONST_REF : RET_REF;
+
+      // use const-ref-return if returning by const ref intent
+      if (inFn->retTag == retTag)
+        return true;
+
+    } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+               call->isPrimitive(PRIM_WIDE_GET_NODE)) {
+      // If we are extracting a field from the wide pointer,
+      // we need to keep it as a pointer.
+
+      // use const-ref-return if querying locale
+      return true;
+
+    } else {
+      // Check for the case that sym is moved to a compiler-introduced
+      // variable, possibly with PRIM_MOVE tmp, PRIM_ADDR_OF sym
+      if (call->isPrimitive(PRIM_ADDR_OF) ||
+          call->isPrimitive(PRIM_SET_REFERENCE) ||
+          call->isPrimitive(PRIM_GET_MEMBER) ||
+          call->isPrimitive(PRIM_GET_SVEC_MEMBER))
+        call = toCallExpr(call->parentExpr);
+
+      if (call->isPrimitive(PRIM_MOVE) && checkForMove(use, call)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }

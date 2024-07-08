@@ -13,7 +13,7 @@ proc main()
   const limit : real = 4.0;
   const maxIter : int = 50;
 
-  forall y in sizeRange do
+  forall y in sizeRange with (ref byteArr) do
     {
       for bytex in byteRange {
         var byte_acc : uint(8) = 0;
@@ -48,11 +48,10 @@ proc main()
       }
     }
 
-  var f = openfd(1);
-  var w = f.writer(kind=iokind.native, locking=false);
+  var f = new file(1);
+  var w = f.writer(locking=false);
   w.writef("P4\n%i %i\n", size, size);
 
   
-  w.write(byteArr);
+  w.writeBinary(byteArr);
 }
-

@@ -15,9 +15,9 @@
 
 //
 // We want to use block-distributed arrays (BlockDist), barrier
-// synchronization (Barriers), and timers (Time).
+// synchronization (Collectives), timers (Time), and log2 (Math).
 //
-use BlockDist, Barriers, Time;
+use BlockDist, Collectives, Time, Math;
 
 //
 // The type of key to use when sorting.
@@ -139,7 +139,7 @@ if printConfig then
 
 
 const LocTaskSpace = {0..#numTasks};
-const DistTaskSpace = LocTaskSpace dmapped Block(LocTaskSpace);
+const DistTaskSpace = LocTaskSpace dmapped new blockDist(LocTaskSpace);
 
 var allBucketKeys: [DistTaskSpace] [0..#recvBuffSize] keyType;
 var recvOffset: [DistTaskSpace] atomic int;
@@ -147,7 +147,7 @@ var totalTime, inputTime, bucketCountTime, bucketOffsetTime, bucketizeTime,
     exchangeKeysTime, countKeysTime: [DistTaskSpace] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
-var barrier = new Barrier(numTasks);
+var bar = new barrier(numTasks);
 
 // should result in one loop iteration per task
 proc main() {
@@ -177,8 +177,8 @@ proc main() {
 
 proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   const subtime = time && useSubTimers;
-  var totalTimer: Timer;
-  var subTimer: Timer;
+  var totalTimer: stopwatch;
+  var subTimer: stopwatch;
 
   if time {
     totalTimer.start();
@@ -218,7 +218,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   }
   
   exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys);
-  barrier.barrier();
+  bar.barrier();
 
   if subtime {
     exchangeKeysTime.localAccess[taskID][trial] = subTimer.elapsed();
@@ -241,7 +241,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   // reset the receive offsets for the next iteration
   //
   recvOffset[taskID].write(0);
-  barrier.barrier();
+  bar.barrier();
 }
 
 
@@ -335,7 +335,7 @@ proc verifyResults(taskID, myBucketSize, myLocalKeyCounts) {
   //
   //
   verifyKeyCount.add(myBucketSize);
-  barrier.barrier();
+  bar.barrier();
   if verifyKeyCount.read() != totalKeys then
     halt("total key count mismatch: ", verifyKeyCount.read(), " != ", totalKeys);
 

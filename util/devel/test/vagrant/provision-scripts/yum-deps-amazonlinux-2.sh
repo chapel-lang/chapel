@@ -1,8 +1,22 @@
 #!/bin/sh
 
-yum -y install git gcc gcc-c++ m4 perl python tcsh bash gcc gcc-c++ perl python python-devel python-setuptools bash make gawk cmake3 python3
+alias unsudo="sudo -u bin"
+alias hide=eval
 
-# install LLVM dependencies - this installs LLVM 11 for amazonlinux-2
-yum -y install llvm-devel clang clang-devel
+yum -y install git gcc gcc-c++ m4 perl python tcsh bash gcc gcc-c++ perl python python-devel python-setuptools bash make gawk python3 which
 
-update-alternatives  --install /usr/bin/cmake cmake /usr/bin/cmake3 1
+yum -y install wget tar openssl-devel
+
+hide yum -y install sudo
+
+
+hide MYTMP=`unsudo mktemp -d`
+hide cd $MYTMP
+unsudo wget https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1.tar.gz
+unsudo tar xvzf cmake-3.25.1.tar.gz
+cd cmake-3.25.1
+unsudo ./bootstrap
+unsudo make
+make install
+
+update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1

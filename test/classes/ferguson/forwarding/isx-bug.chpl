@@ -15,9 +15,9 @@
 
 //
 // We want to use block-distributed arrays (BlockDist), barrier
-// synchronization (Barriers), and timers (Time).
+// synchronization (Barriers), timers (Time), and log2 (Math).
 //
-use BlockDist, AllLocalesBarriers, Time;
+use BlockDist, AllLocalesBarriers, Time, Math;
 
 //
 // The type of key to use when sorting.
@@ -135,7 +135,7 @@ config const numBurnInRuns = 1,
 // Horrible hack to help https://github.com/chapel-lang/chapel/issues/9414
 record TimerArr {
   var A: [1..numTrials] real;
-  proc this(i) ref { return A[i]; }
+  proc ref this(i) ref { return A[i]; }
   // Forwarding these causes some kind of problem
   //iter these() ref { for a in A do yield a; }
   forwarding A only these;
@@ -147,7 +147,7 @@ if printConfig then
 
 
 const LocTaskSpace = {0..#numTasks};
-const DistTaskSpace = LocTaskSpace dmapped Block(LocTaskSpace);
+const DistTaskSpace = LocTaskSpace dmapped new blockDist(LocTaskSpace);
 
 var allBucketKeys: [DistTaskSpace] [0..#recvBuffSize] keyType;
 var recvOffset: [DistTaskSpace] atomic int;
@@ -186,8 +186,8 @@ proc main() {
 
 proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   const subtime = time && useSubTimers;
-  var totalTimer: Timer;
-  var subTimer: Timer;
+  var totalTimer: stopwatch;
+  var subTimer: stopwatch;
 
   if time {
     totalTimer.start();
@@ -269,7 +269,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
 }
 
 
-proc bucketizeLocalKeys(taskID, myKeys, sendOffsets, myBucketedKeys) {
+proc bucketizeLocalKeys(taskID, myKeys, sendOffsets, ref myBucketedKeys) {
   var bucketOffsets: [0..#numTasks] int;
 
   bucketOffsets = sendOffsets;
@@ -286,7 +286,7 @@ proc bucketizeLocalKeys(taskID, myKeys, sendOffsets, myBucketedKeys) {
 }
 
 
-proc countLocalBucketSizes(myKeys, bucketSizes) {
+proc countLocalBucketSizes(myKeys, ref bucketSizes) {
   for key in myKeys {
     const bucketIndex = key / bucketWidth;
     bucketSizes[bucketIndex] += 1;
@@ -318,7 +318,7 @@ proc exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys) {
 }
 
 
-proc countLocalKeys(taskID, myBucketSize, myLocalKeyCounts) {
+proc countLocalKeys(taskID, myBucketSize, ref myLocalKeyCounts) {
   const myMinKeyVal = taskID * bucketWidth;
 
   ref myBucket = allBucketKeys[taskID];
@@ -364,7 +364,7 @@ proc verifyResults(taskID, myBucketSize, myLocalKeyCounts) {
 }
 
 
-proc makeInput(taskID, myKeys) {
+proc makeInput(taskID, ref myKeys) {
   use Random.PCGRandom;
   use Random.PCGRandomLib;
 

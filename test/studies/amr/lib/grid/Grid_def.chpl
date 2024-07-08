@@ -40,11 +40,11 @@ class Grid {
 
   const dx: dimension*real;
           
-  var cells:          domain(dimension, stridable=true);
-  var extended_cells: domain(dimension, stridable=true);
+  var cells:          domain(dimension, strides=strideKind.any);
+  var extended_cells: domain(dimension, strides=strideKind.any);
   
   // const ghost_domains: MultiDomain(dimension, stridable=true);
-  var ghost_domains: unmanaged List( domain(dimension, stridable=true) );
+  var ghost_domains: unmanaged List( domain(dimension, strides=strideKind.any) );
 
 
 
@@ -75,7 +75,7 @@ class Grid {
       i_high(d) = i_low(d) + 2*n_cells(d);
 
     //==== Physical cells ====
-    var ranges: dimension*range(stridable = true);
+    var ranges: dimension*range(strides = strideKind.any);
     for d in dimensions
     {
       ranges(d) = (i_low(d)+1 .. by 2) #n_cells(d);
@@ -99,8 +99,8 @@ class Grid {
     // the grid and stored in a linked list.
     //-------------------------------------------------------------
 
-    ghost_domains = new unmanaged List( domain(dimension,stridable=true) );
-    this.complete();
+    ghost_domains = new unmanaged List( domain(dimension,strides=strideKind.any) );
+    init this;
 
     //==== Sanity check ====
     sanityChecks();
@@ -108,7 +108,7 @@ class Grid {
     var inner_location: dimension*loc1d;
     for d in dimensions do inner_location(d) = loc1d.inner;
 
-    var ghost_domain: domain(dimension, stridable=true);
+    var ghost_domain: domain(dimension, strides=strideKind.any);
     for loc in (loc1d.below .. loc1d.above by 2)**dimension {
       if loc != inner_location {
         for d in dimensions {
@@ -196,7 +196,7 @@ class Grid {
     return loc;
   }
 
-  proc relativeLocation(D: domain(dimension, stridable=true)){
+  proc relativeLocation(D: domain(dimension, strides=strideKind.any)){
     var loc_low  = relativeLocation(D.low);
     var loc_high = relativeLocation(D.high);
 
@@ -285,7 +285,7 @@ proc Grid.xValue (point_index: dimension*int) {
 
 proc readGrid(file_name: string) {
 
-  var input_file = open(file_name, iomode.r).reader();
+  var input_file = open(file_name, ioMode.r).reader();
 
   var dim_in: int;
   input_file.readln(dim_in);
@@ -327,7 +327,7 @@ proc readGrid(file_name: string) {
 
 proc setOutputTimes (file_name: string) {
 
-  var input_file = open(file_name, iomode.r).reader();
+  var input_file = open(file_name, ioMode.r).reader();
 
   var initial_time, final_time: real;
   var n_output: int;
@@ -361,7 +361,7 @@ proc setOutputTimes (file_name: string) {
 
 
 
-// proc main {
+// private proc main {
 // 
 //   var x_low = (0.0,1.0);
 //   var x_high = (2.0,3.0);

@@ -1,0 +1,5 @@
+warnUnstableStd.chpl:1: In module 'M':
+warnUnstableStd.chpl:6: warning: testPathUnstableProc is unstable
+In my personal copy of Path
+inside M
+In personal Path - unstable proc

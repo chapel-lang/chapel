@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -58,8 +58,8 @@ module ChapelStandard {
   public use ChapelArray;
   public use ChapelDistribution;
   public use ChapelAutoLocalAccess;
+  public use ChapelIOSerialize;
   public use ChapelIO as ChapelIO;
-  public use LocaleTree;
   public use ChapelHashing;
   public use DefaultAssociative;
   public use DefaultSparse;
@@ -72,6 +72,10 @@ module ChapelStandard {
   public use ChapelSerializedBroadcast;
   public use ExportWrappers;
   public use ChapelAutoAggregation;
+  public use ChapelGpuSupport;
+  public use ChapelContext;
+  public use ChapelStaticVars;
+  public use ChapelRemoteVars;
 
   // Standard modules.
   public use Types as Types;

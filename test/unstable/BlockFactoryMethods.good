@@ -1,0 +1,88 @@
+BlockFactoryMethods.chpl:9: warning: 'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release
+BlockFactoryMethods.chpl:10: warning: 'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release
+BlockFactoryMethods.chpl:11: warning: 'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release
+BlockFactoryMethods.chpl:12: warning: 'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release
+BlockFactoryMethods.chpl:13: warning: 'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release
+BlockFactoryMethods.chpl:14: warning: 'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release
+BlockFactoryMethods.chpl:15: warning: 'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release
+BlockFactoryMethods.chpl:16: warning: 'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release
+
+Block value:
+-1 -1 -1 0 0 0
+-1 -1 -1 0 0 0
+-1 -1 -1 0 0 0
+1 1 1 2 2 2
+1 1 1 2 2 2
+1 1 1 2 2 2
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
+Block value:
+-1 -1 -1 0 0 0
+-1 -1 -1 0 0 0
+-1 -1 -1 0 0 0
+1 1 1 2 2 2
+1 1 1 2 2 2
+1 1 1 2 2 2
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
+Block iter:
+2 3 4 6 7 8
+3 4 5 7 8 9
+4 5 6 8 9 10
+7 8 9 11 12 13
+8 9 10 12 13 14
+9 10 11 13 14 15
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
+Block iter:
+2 3 4 6 7 8
+3 4 5 7 8 9
+4 5 6 8 9 10
+7 8 9 11 12 13
+8 9 10 12 13 14
+9 10 11 13 14 15
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
+Block array:
+5 5 5 6 6 6
+5 5 5 6 6 6
+5 5 5 6 6 6
+7 7 7 8 8 8
+7 7 7 8 8 8
+7 7 7 8 8 8
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
+Block array:
+6 6 6 7 7 7
+6 6 6 7 7 7
+6 6 6 7 7 7
+8 8 8 9 9 9
+8 8 8 9 9 9
+8 8 8 9 9 9
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
+Block array:
+5 5 5 6 6 6
+5 5 5 6 6 6
+5 5 5 6 6 6
+7 7 7 8 8 8
+7 7 7 8 8 8
+7 7 7 8 8 8
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)
+
+Block array:
+6 6 6 7 7 7
+6 6 6 7 7 7
+6 6 6 7 7 7
+8 8 8 9 9 9
+8 8 8 9 9 9
+8 8 8 9 9 9
+{1..6, 1..6}
+[BlockDom(2,int(64),one,unmanaged DefaultDist)] int(64)

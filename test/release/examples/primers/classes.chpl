@@ -113,20 +113,16 @@ var share: shared C = new shared C(1, 10);
 // several ``shared C`` variables can refer to the same instance and
 // will be reclaimed when the last one goes out of scope.
 
-var tmp: borrowed C = new borrowed C(1, 10);
-// The instance referred to by ``tmp`` will be deleted when it is no longer in
-// scope. The ownership can't be transferred to another variable.
-
 // It is possible to ``borrow`` from another class pointer.
 // One way to do that is by calling the ``borrow()`` method directly:
 
 var b1 = own.borrow();
-// now b1 and own refer to the same instance
+// now ``b1`` and ``own`` refer to the same instance
 // it is illegal to:
 //
-//  * use the borrow after whatever it is borrowed from goes out of scope
+//  * use the ``borrow`` after whatever it is borrowed from goes out of scope
 //
-//  * use the borrow after the instance is deleted (for example if own is assigned to)
+//  * use the ``borrow`` after the instance is deleted (for example if ``own`` is assigned to)
 //
 
 // A class type without a decorator, such as ``C``, has generic management.

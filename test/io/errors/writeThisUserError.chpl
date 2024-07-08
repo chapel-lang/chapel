@@ -1,17 +1,17 @@
 //
 // Create a record with a `writeThis` that always throws a user error and
 // use that to verify correct behavior for `writeln` (it should fail with
-// a general IOError).
+// a general IoError).
 //
 use IO;
 
-record foo {
+record foo : writeSerializable {
   var x: int = 0;
 
-  proc writeThis(ch: channel) throws {
+  proc serialize(writer:fileWriter(?), ref serializer) throws {
     throw new
       IllegalArgumentError('User error thrown from writeThis!');
-    ch.write(x);
+    writer.write(x);
   }
 }
 

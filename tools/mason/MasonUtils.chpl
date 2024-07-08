@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,6 +21,7 @@
 
 
 /* A helper file of utilities for Mason */
+private use CTypes;
 public use FileSystem;
 private use List;
 private use Map;
@@ -32,11 +33,11 @@ use Regex;
 
 
 /* Gets environment variables for spawn commands */
-extern proc getenv(name : c_string) : c_string;
 proc getEnv(name: string): string {
-  var cname: c_string = name.c_str();
+  extern proc getenv(name : c_ptrConst(c_char)) : c_ptrConst(c_char);
+  var cname = name.c_str();
   var value = getenv(cname);
-  return createStringWithNewBuffer(value);
+  return string.createCopyingBuffer(value);
 }
 
 
@@ -70,7 +71,7 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
 
   const actualTest = joinPath(projectHome,'test');
   if isDir(actualTest) {
-    for dir in walkdirs(actualTest) {
+    for dir in walkDirs(actualTest) {
       const internalDir = target+dir.replace(projectHome,"");
       if !isDir(internalDir) {
         mkdir(internalDir);
@@ -101,17 +102,27 @@ proc runCommand(cmd, quiet=false) : string throws {
   try {
 
     var splitCmd = cmd.split();
-    var process = spawn(splitCmd, stdout=pipeStyle.pipe);
+    var process = spawn(splitCmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
-    for line in process.stdout.lines() {
+    var line:string;
+    while process.stdout.readLine(line) {
       ret += line;
       if !quiet {
         write(line);
       }
     }
+    if !quiet {
+      while process.stderr.readLine(line) do write(line);
+    }
     process.wait();
-  }
-  catch {
+    if process.exitCode != 0 {
+      throw new owned MasonError("Command failed: '" + cmd + "'");
+    }
+  } catch e: FileNotFoundError {
+    throw new owned MasonError("Command not found: '" + cmd + "'");
+  } catch e: MasonError {
+    throw e;
+  } catch {
     throw new owned MasonError("Internal mason error");
   }
   return ret;
@@ -346,8 +357,8 @@ proc getChapelVersionInfo(): VersionInfo {
       }
 
       const semverPattern = "(\\d+\\.\\d+\\.\\d+)";
-      var master  = compile(semverPattern + " pre-release (\\([a-z0-9]+\\))");
-      var release = compile(semverPattern);
+      var master  = new regex(semverPattern + " pre-release (\\([a-z0-9]+\\))");
+      var release = new regex(semverPattern);
 
       var semver, sha : string;
       var isMaster: bool;
@@ -384,9 +395,8 @@ proc gitC(newDir, command, quiet=false) throws {
   var ret : string;
   const oldDir = here.cwd();
   here.chdir(newDir);
+  defer here.chdir(oldDir);
   ret = runCommand(command, quiet);
-
-  here.chdir(oldDir);
 
   return ret;
 }
@@ -422,7 +432,7 @@ extern "struct timespec" record chpl_timespec {
 proc getLastModified(filename: string) : int {
   use CTypes;
 
-  extern proc sys_stat(filename: c_string, ref chpl_stat): c_int;
+  extern proc sys_stat(filename: c_ptrConst(c_char), ref chpl_stat): c_int;
 
   var file_buf: chpl_stat;
   var file_path = filename.c_str();
@@ -439,7 +449,7 @@ proc projectModified(projectHome, projectName, binLocation) : bool {
 
   if isFile(binaryPath) {
     const binModTime = getLastModified(binaryPath);
-    for file in listdir(joinPath(projectHome, "src")) {
+    for file in listDir(joinPath(projectHome, "src")) {
       var srcPath = joinPath(projectHome, "src", file);
       if getLastModified(srcPath) > binModTime {
         return true;
@@ -515,7 +525,7 @@ proc getMasonDependencies(sourceList: list(3*string),
 proc depExists(dependency: string, repo='/src/') {
   var repos = MASON_HOME + repo;
   var exists = false;
-  for dir in listdir(repos) {
+  for dir in listDir(repos) {
     if dir == dependency then
       exists = true;
   }
@@ -526,7 +536,7 @@ proc depExists(dependency: string, repo='/src/') {
 proc getProjectType(): string throws {
   const cwd = here.cwd();
   const projectHome = getProjectHome(cwd);
-  const toParse = open(projectHome + "/Mason.toml", iomode.r);
+  const toParse = open(projectHome + "/Mason.toml", ioMode.r);
   const tomlFile = parseToml(toParse);
   if !tomlFile.pathExists("brick.type") then
     throw new owned MasonError('Type not found in TOML file; please add a type="application" key');
@@ -538,7 +548,7 @@ proc getProjectType(): string throws {
    not found, throw an error. TODO: Currently does not check
    on the version. */
 proc getDepToml(depName: string, depVersion: string) throws {
-  const pattern = compile(depName, ignoreCase=true);
+  const pattern = new regex(depName, ignoreCase=true);
 
   var packages: list(string);
   var versions: list(string);
@@ -547,16 +557,16 @@ proc getDepToml(depName: string, depVersion: string) throws {
   for registry in MASON_CACHED_REGISTRY {
     const searchDir = registry + "/Bricks/";
 
-    for dir in listdir(searchDir, files=false, dirs=true) {
+    for dir in listDir(searchDir, files=false, dirs=true) {
       const name = dir.replace("/", "");
       if pattern.search(name) {
         const ver = findLatest(searchDir + dir);
         const versionZero = new VersionInfo(0, 0, 0);
         if ver != versionZero {
-          results.append(name + " (" + ver.str() + ")");
-          packages.append(name);
-          versions.append(ver.str());
-          registries.append(registry);
+          results.pushBack(name + " (" + ver.str() + ")");
+          packages.pushBack(name);
+          versions.pushBack(ver.str());
+          registries.pushBack(registry);
         }
       }
     }
@@ -564,7 +574,7 @@ proc getDepToml(depName: string, depVersion: string) throws {
 
   if results.size > 0 {
     const brickPath = '/'.join(registries[0], 'Bricks', packages[0], versions[0]) + '.toml';
-    const openFile = openreader(brickPath);
+    const openFile = openReader(brickPath, locking=false);
     const toml = parseToml(openFile);
 
     return toml;
@@ -582,7 +592,7 @@ proc findLatest(packageDir: string): VersionInfo {
   var ret = new VersionInfo(0, 0, 0);
   const suffix = ".toml";
   const packageName = basename(packageDir);
-  for manifest in listdir(packageDir, files=true, dirs=false) {
+  for manifest in listDir(packageDir, files=true, dirs=false) {
     // Check that it is a valid TOML file
     if !manifest.endsWith(suffix) {
       var warningStr = "File without '.toml' extension encountered - skipping ";
@@ -594,7 +604,7 @@ proc findLatest(packageDir: string): VersionInfo {
     // Skip packages that are out of version bounds
     const chplVersion = getChapelVersionInfo();
 
-    const manifestReader = openreader(packageDir + '/' + manifest);
+    const manifestReader = openReader(packageDir + '/' + manifest, locking=false);
     const manifestToml = parseToml(manifestReader);
     const brick = manifestToml['brick'];
     var (low, high) = parseChplVersion(brick);
@@ -673,9 +683,9 @@ proc checkChplVersion(chplVersion, low, high) throws {
       var ret : VersionInfo;
 
       // Finds 'x.x' or 'x.x.x' where x is a positive number
-      const pattern = "^(\\d+\\.\\d+(\\.\\d+)?)$";
+      const pattern = new regex("^(\\d+\\.\\d+(\\.\\d+)?)$");
       var semver : string;
-      if compile(pattern).match(ver, semver).matched == false {
+      if pattern.match(ver, semver).matched == false {
         throw new owned MasonError("Invalid Chapel version format: " + ver + formatMessage);
       }
       const nums = for s in semver.split(".") do s:int;
@@ -718,16 +728,54 @@ proc splitNameVersion(ref package: string, original: bool) {
 
 /* Print a TOML file. Expects full path. */
 proc showToml(tomlFile : string) {
-  const openFile = openreader(tomlFile);
+  const openFile = openReader(tomlFile, locking=false);
   const toml = parseToml(openFile);
   writeln(toml);
   openFile.close();
 }
 
+/*
+  Takes projectName, vcs (version control), show as inputs and
+  initializes a library project at a directory of given projectName
+  A library project consists of .gitignore file, Mason.toml file, and
+  directories such as .git, src, example, test
+*/
+proc InitProject(dirName, packageName, vcs, show,
+                 version: string, chplVersion: string, license: string,
+                 packageType: string) throws {
+  if packageType == "light" {
+    const path = if dirName == "" then here.cwd() else dirName;
+    const lightName = if packageName == "" then basename(here.cwd()) else packageName;
+    mkdir(dirName);
+    makeBasicToml(dirName=lightName, path=path, version, chplVersion, license, packageType);
+  } else {
+    if vcs {
+      gitInit(dirName, show);
+      addGitIgnore(dirName);
+    }
+    else {
+      mkdir(dirName);
+    }
+    // Confirm git init before creating files
+    if isDir(dirName) {
+      makeBasicToml(dirName=packageName, path=dirName, version, chplVersion, license, packageType);
+      makeSrcDir(dirName);
+      makeModule(dirName, fileName=packageName, packageType);
+    }
+    else {
+      throw new owned MasonError("Failed to create project");
+    }
+  }
+  if packageName != "" then
+    writeln("Created new " + packageType + " project: " + packageName);
+  else
+    writeln("Created new " + packageType + " project: " + basename(here.cwd()));
+}
+
 /* Iterator to collect fields from a toml
    TODO custom fields returned */
 iter allFields(tomlTbl: Toml) {
-  for (k,v) in tomlTbl.A.items() {
+  for (k,v) in zip(tomlTbl.A.keys(), tomlTbl.A.values()) {
     if v!.tag == fieldtag.fieldToml then
       continue;
     else yield(k,v);

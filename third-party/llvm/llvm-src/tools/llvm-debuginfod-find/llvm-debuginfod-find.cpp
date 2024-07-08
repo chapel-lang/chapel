@@ -15,6 +15,8 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include "llvm/ADT/StringExtras.h"
+#include "llvm/Debuginfod/BuildIDFetcher.h"
 #include "llvm/Debuginfod/Debuginfod.h"
 #include "llvm/Debuginfod/HTTPClient.h"
 #include "llvm/Support/CommandLine.h"
@@ -53,6 +55,11 @@ static cl::opt<bool>
                           "path to the cached artifact on disk."),
                  cl::cat(DebuginfodFindCategory));
 
+static cl::list<std::string> DebugFileDirectory(
+    "debug-file-directory",
+    cl::desc("Path to directory where to look for debug files."),
+    cl::cat(DebuginfodFindCategory));
+
 [[noreturn]] static void helpExit() {
   errs() << "Must specify exactly one of --executable, "
             "--source=/path/to/file, or --debuginfo.";
@@ -60,6 +67,8 @@ static cl::opt<bool>
 }
 
 ExitOnError ExitOnErr;
+
+static std::string fetchDebugInfo(object::BuildIDRef BuildID);
 
 int main(int argc, char **argv) {
   InitLLVM X(argc, argv);
@@ -84,7 +93,7 @@ int main(int argc, char **argv) {
     errs() << "Build ID " << InputBuildID << " is not a hex string.\n";
     exit(1);
   }
-  BuildID ID(IDString.begin(), IDString.end());
+  object::BuildID ID(IDString.begin(), IDString.end());
 
   std::string Path;
   if (FetchSource != "")
@@ -92,7 +101,7 @@ int main(int argc, char **argv) {
   else if (FetchExecutable)
     Path = ExitOnErr(getCachedOrDownloadExecutable(ID));
   else if (FetchDebuginfo)
-    Path = ExitOnErr(getCachedOrDownloadDebuginfo(ID));
+    Path = fetchDebugInfo(ID);
   else
     llvm_unreachable("We have already checked that exactly one of the above "
                      "conditions is true.");
@@ -106,4 +115,14 @@ int main(int argc, char **argv) {
   } else
     // Print the path to the cached artifact file.
     outs() << Path << "\n";
+}
+
+// Find a debug file in local build ID directories and via debuginfod.
+std::string fetchDebugInfo(object::BuildIDRef BuildID) {
+  if (std::optional<std::string> Path =
+          DebuginfodFetcher(DebugFileDirectory).fetch(BuildID))
+    return *Path;
+  errs() << "Build ID " << llvm::toHex(BuildID, /*Lowercase=*/true)
+         << " could not be found.\n";
+  exit(1);
 }

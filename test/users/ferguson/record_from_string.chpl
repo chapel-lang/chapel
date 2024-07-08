@@ -1,10 +1,12 @@
+import IO.FormattedIO.format;
+
 record Point {
   var x: int;
   var y: int;
 }
 
 var p = new Point(1,3);
-var s = p:string;
+var s = "%?".format(p);
 
 writeln(s);
 

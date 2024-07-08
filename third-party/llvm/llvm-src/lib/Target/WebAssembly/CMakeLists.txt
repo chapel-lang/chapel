@@ -35,7 +35,6 @@ add_llvm_target(WebAssemblyCodeGen
   WebAssemblyInstrInfo.cpp
   WebAssemblyLowerBrUnless.cpp
   WebAssemblyLowerEmscriptenEHSjLj.cpp
-  WebAssemblyLowerGlobalDtors.cpp
   WebAssemblyLowerRefTypesIntPtrConv.cpp
   WebAssemblyMachineFunctionInfo.cpp
   WebAssemblyMCInstLower.cpp
@@ -44,7 +43,6 @@ add_llvm_target(WebAssemblyCodeGen
   WebAssemblyOptimizeLiveIntervals.cpp
   WebAssemblyOptimizeReturned.cpp
   WebAssemblyPeephole.cpp
-  WebAssemblyPrepareForLiveIntervals.cpp
   WebAssemblyRegisterInfo.cpp
   WebAssemblyRegColoring.cpp
   WebAssemblyRegNumbering.cpp
@@ -59,6 +57,7 @@ add_llvm_target(WebAssemblyCodeGen
   WebAssemblyTargetMachine.cpp
   WebAssemblyTargetObjectFile.cpp
   WebAssemblyTargetTransformInfo.cpp
+  WebAssemblyUtilities.cpp
 
   DEPENDS
   intrinsics_gen
@@ -68,12 +67,14 @@ add_llvm_target(WebAssemblyCodeGen
   AsmPrinter
   BinaryFormat
   CodeGen
+  CodeGenTypes
   Core
   MC
   Scalar
   SelectionDAG
   Support
   Target
+  TargetParser
   TransformUtils
   WebAssemblyDesc
   WebAssemblyInfo
@@ -81,7 +82,7 @@ add_llvm_target(WebAssemblyCodeGen
 
   ADD_TO_COMPONENT
   WebAssembly
-)
+  )
 
 add_subdirectory(AsmParser)
 add_subdirectory(Disassembler)

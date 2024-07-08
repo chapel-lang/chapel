@@ -11,6 +11,7 @@ proc foo(c: borrowed C(tt=?tt, t=?t)) {
   writeln((y, yy));
 }
 
-var c = new borrowed C(int, real);
+var ownC = new owned C(int, real);
+var c = ownC.borrow();
 writeln(c);
 foo(c);

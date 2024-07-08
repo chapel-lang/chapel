@@ -8,11 +8,12 @@ class C {
 
   // This works around overriding the default initializer
   proc init(w: bool) {
-    this.complete();
+    init this;
     writeln("In user defined initializer: x=", x, " y=", y);
   }
 }
 
-var c: borrowed C = new borrowed C(true);
+var ownC = new owned C(true);
+var c: borrowed C = ownC.borrow();
 
 writeln("Got back: x=", c.x, " y=", c.y);

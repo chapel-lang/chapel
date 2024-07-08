@@ -29,8 +29,10 @@ class D {
   }
 }
 
-var myC = new borrowed C();
-var myD = new borrowed D();
+var ownMyC = new owned C();
+var myC = ownMyC.borrow();
+var ownMyD = new owned D();
+var myD = ownMyD.borrow();
 
 forall (i,j) in zip(myC, myD) {
   writeln("(i,j) = ", (i,j));

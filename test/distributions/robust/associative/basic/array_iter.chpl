@@ -35,13 +35,13 @@ if doString {
   if debug then writeln(ArithStringRef);
 }
 
-forall ai in DomIntType do
+forall ai in DomIntType with (ref AInt) do
   AInt(ai) = ai;
 if debug then writeln(AInt);
-forall au in DomUintType do
+forall au in DomUintType with (ref AUint) do
   AUint(au) = au;
 if debug then writeln(AUint);
-forall ar in DomRealType do
+forall ar in DomRealType with (ref AReal) do
   AReal(ar) = ar;
 if debug then writeln(AReal);
 if doString {
@@ -61,7 +61,7 @@ if doString {
   testParallel(AString, D, ArithString, ArithStringRef);
 }
 
-proc testSerial(AAssoc, D, Arr, ArrRef) {
+proc testSerial(AAssoc, D, ref Arr, ArrRef) {
   type idxType = AAssoc.idxType;
   for aa in AAssoc {
     if idxType != string {
@@ -87,9 +87,9 @@ proc testSerial(AAssoc, D, Arr, ArrRef) {
 }
 
 // could probably use serial true on testSerial
-proc testParallel(AAssoc, D, Arr, ArrRef) {
+proc testParallel(AAssoc, D, ref Arr, ArrRef) {
   type idxType = AAssoc.idxType;
-  forall aa in AAssoc {
+  forall aa in AAssoc with (ref Arr) {
     if idxType != string {
       var ai = aa;
       Arr(((ai-offset:idxType)/2):int) = ai;

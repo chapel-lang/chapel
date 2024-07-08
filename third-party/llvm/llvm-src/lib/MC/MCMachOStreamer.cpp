@@ -10,7 +10,6 @@
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/MC/MCAsmBackend.h"
 #include "llvm/MC/MCAssembler.h"
 #include "llvm/MC/MCCodeEmitter.h"
@@ -19,23 +18,28 @@
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCFixup.h"
 #include "llvm/MC/MCFragment.h"
-#include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCLinkerOptimizationHint.h"
 #include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/MC/MCObjectStreamer.h"
 #include "llvm/MC/MCObjectWriter.h"
 #include "llvm/MC/MCSection.h"
 #include "llvm/MC/MCSectionMachO.h"
-#include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/MC/MCSymbolMachO.h"
 #include "llvm/MC/MCValue.h"
+#include "llvm/MC/SectionKind.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/raw_ostream.h"
 #include <cassert>
 #include <vector>
+
+namespace llvm {
+class MCInst;
+class MCStreamer;
+class MCSubtargetInfo;
+class Triple;
+} // namespace llvm
 
 using namespace llvm;
 
@@ -99,15 +103,15 @@ public:
   bool emitSymbolAttribute(MCSymbol *Symbol, MCSymbolAttr Attribute) override;
   void emitSymbolDesc(MCSymbol *Symbol, unsigned DescValue) override;
   void emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
-                        unsigned ByteAlignment) override;
+                        Align ByteAlignment) override;
 
   void emitLocalCommonSymbol(MCSymbol *Symbol, uint64_t Size,
-                             unsigned ByteAlignment) override;
+                             Align ByteAlignment) override;
   void emitZerofill(MCSection *Section, MCSymbol *Symbol = nullptr,
-                    uint64_t Size = 0, unsigned ByteAlignment = 0,
+                    uint64_t Size = 0, Align ByteAlignment = Align(1),
                     SMLoc Loc = SMLoc()) override;
   void emitTBSSSymbol(MCSection *Section, MCSymbol *Symbol, uint64_t Size,
-                      unsigned ByteAlignment = 0) override;
+                      Align ByteAlignment = Align(1)) override;
 
   void emitIdent(StringRef IdentString) override {
     llvm_unreachable("macho doesn't support this directive");
@@ -126,6 +130,7 @@ public:
 
   void finalizeCGProfileEntry(const MCSymbolRefExpr *&SRE);
   void finalizeCGProfile();
+  void createAddrSigSection();
 };
 
 } // end anonymous namespace.
@@ -167,9 +172,7 @@ void MCMachOStreamer::changeSection(MCSection *Section,
   if (SegName == "__DWARF")
     CreatedADWARFSection = true;
   else if (Created && DWARFMustBeAtTheEnd && !canGoAfterDWARF(MSec))
-    assert((!CreatedADWARFSection ||
-            Section == getContext().getObjectFileInfo()->getStackMapSection())
-           && "Creating regular section after DWARF");
+    assert(!CreatedADWARFSection && "Creating regular section after DWARF");
 
   // Output a linker-local symbol so we don't need section-relative local
   // relocations. The linker hates us when we do that.
@@ -353,6 +356,9 @@ bool MCMachOStreamer::emitSymbolAttribute(MCSymbol *Sym,
   case MCSA_Weak:
   case MCSA_Local:
   case MCSA_LGlobal:
+  case MCSA_Exported:
+  case MCSA_Memtag:
+  case MCSA_WeakAntiDep:
     return false;
 
   case MCSA_Global:
@@ -425,7 +431,7 @@ void MCMachOStreamer::emitSymbolDesc(MCSymbol *Symbol, unsigned DescValue) {
 }
 
 void MCMachOStreamer::emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
-                                       unsigned ByteAlignment) {
+                                       Align ByteAlignment) {
   // FIXME: Darwin 'as' does appear to allow redef of a .comm by itself.
   assert(Symbol->isUndefined() && "Cannot define a symbol twice!");
 
@@ -435,14 +441,14 @@ void MCMachOStreamer::emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
 }
 
 void MCMachOStreamer::emitLocalCommonSymbol(MCSymbol *Symbol, uint64_t Size,
-                                            unsigned ByteAlignment) {
+                                            Align ByteAlignment) {
   // '.lcomm' is equivalent to '.zerofill'.
   return emitZerofill(getContext().getObjectFileInfo()->getDataBSSSection(),
                       Symbol, Size, ByteAlignment);
 }
 
 void MCMachOStreamer::emitZerofill(MCSection *Section, MCSymbol *Symbol,
-                                   uint64_t Size, unsigned ByteAlignment,
+                                   uint64_t Size, Align ByteAlignment,
                                    SMLoc Loc) {
   // On darwin all virtual sections have zerofill type. Disallow the usage of
   // .zerofill in non-virtual functions. If something similar is needed, use
@@ -455,8 +461,8 @@ void MCMachOStreamer::emitZerofill(MCSection *Section, MCSymbol *Symbol,
             // section.
   }
 
-  PushSection();
-  SwitchSection(Section);
+  pushSection();
+  switchSection(Section);
 
   // The symbol may not be present, which only creates the section.
   if (Symbol) {
@@ -464,13 +470,13 @@ void MCMachOStreamer::emitZerofill(MCSection *Section, MCSymbol *Symbol,
     emitLabel(Symbol);
     emitZeros(Size);
   }
-  PopSection();
+  popSection();
 }
 
 // This should always be called with the thread local bss section.  Like the
 // .zerofill directive this doesn't actually switch sections on us.
 void MCMachOStreamer::emitTBSSSymbol(MCSection *Section, MCSymbol *Symbol,
-                                     uint64_t Size, unsigned ByteAlignment) {
+                                     uint64_t Size, Align ByteAlignment) {
   emitZerofill(Section, Symbol, Size, ByteAlignment);
 }
 
@@ -480,8 +486,7 @@ void MCMachOStreamer::emitInstToData(const MCInst &Inst,
 
   SmallVector<MCFixup, 4> Fixups;
   SmallString<256> Code;
-  raw_svector_ostream VecOS(Code);
-  getAssembler().getEmitter().encodeInstruction(Inst, VecOS, Fixups, STI);
+  getAssembler().getEmitter().encodeInstruction(Inst, Code, Fixups, STI);
 
   // Add the fixups and data.
   for (MCFixup &Fixup : Fixups) {
@@ -524,14 +529,13 @@ void MCMachOStreamer::finishImpl() {
 
   finalizeCGProfile();
 
+  createAddrSigSection();
   this->MCObjectStreamer::finishImpl();
 }
 
 void MCMachOStreamer::finalizeCGProfileEntry(const MCSymbolRefExpr *&SRE) {
   const MCSymbol *S = &SRE->getSymbol();
-  bool Created;
-  getAssembler().registerSymbol(*S, &Created);
-  if (Created)
+  if (getAssembler().registerSymbol(*S))
     S->setExternal(true);
 }
 
@@ -573,4 +577,29 @@ MCStreamer *llvm::createMachOStreamer(MCContext &Context,
   if (RelaxAll)
     S->getAssembler().setRelaxAll(true);
   return S;
+}
+
+// The AddrSig section uses a series of relocations to refer to the symbols that
+// should be considered address-significant. The only interesting content of
+// these relocations is their symbol; the type, length etc will be ignored by
+// the linker. The reason we are not referring to the symbol indices directly is
+// that those indices will be invalidated by tools that update the symbol table.
+// Symbol relocations OTOH will have their indices updated by e.g. llvm-strip.
+void MCMachOStreamer::createAddrSigSection() {
+  MCAssembler &Asm = getAssembler();
+  MCObjectWriter &writer = Asm.getWriter();
+  if (!writer.getEmitAddrsigSection())
+    return;
+  // Create the AddrSig section and first data fragment here as its layout needs
+  // to be computed immediately after in order for it to be exported correctly.
+  MCSection *AddrSigSection =
+      Asm.getContext().getObjectFileInfo()->getAddrSigSection();
+  Asm.registerSection(*AddrSigSection);
+  auto *Frag = new MCDataFragment(AddrSigSection);
+  // We will generate a series of pointer-sized symbol relocations at offset
+  // 0x0. Set the section size to be large enough to contain a single pointer
+  // (instead of emitting a zero-sized section) so these relocations are
+  // technically valid, even though we don't expect these relocations to
+  // actually be applied by the linker.
+  Frag->getContents().resize(8);
 }

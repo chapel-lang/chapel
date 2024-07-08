@@ -13,16 +13,17 @@
 //===----------------------------------------------------------------------===//
 
 #include "clang/StaticAnalyzer/Core/PathSensitive/CallDescription.h"
+#include "clang/AST/Decl.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CallEvent.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerContext.h"
 #include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/Optional.h"
 #include <iterator>
+#include <optional>
 
 using namespace llvm;
 using namespace clang;
 
-using MaybeCount = Optional<unsigned>;
+using MaybeCount = std::optional<unsigned>;
 
 // A constructor helper.
 static MaybeCount readRequiredParams(MaybeCount RequiredArgs,
@@ -31,11 +32,11 @@ static MaybeCount readRequiredParams(MaybeCount RequiredArgs,
     return RequiredParams;
   if (RequiredArgs)
     return RequiredArgs;
-  return None;
+  return std::nullopt;
 }
 
 ento::CallDescription::CallDescription(CallDescriptionFlags Flags,
-                                       ArrayRef<const char *> QualifiedName,
+                                       ArrayRef<StringRef> QualifiedName,
                                        MaybeCount RequiredArgs /*= None*/,
                                        MaybeCount RequiredParams /*= None*/)
     : RequiredArgs(RequiredArgs),
@@ -43,11 +44,12 @@ ento::CallDescription::CallDescription(CallDescriptionFlags Flags,
       Flags(Flags) {
   assert(!QualifiedName.empty());
   this->QualifiedName.reserve(QualifiedName.size());
-  llvm::copy(QualifiedName, std::back_inserter(this->QualifiedName));
+  llvm::transform(QualifiedName, std::back_inserter(this->QualifiedName),
+                  [](StringRef From) { return From.str(); });
 }
 
 /// Construct a CallDescription with default flags.
-ento::CallDescription::CallDescription(ArrayRef<const char *> QualifiedName,
+ento::CallDescription::CallDescription(ArrayRef<StringRef> QualifiedName,
                                        MaybeCount RequiredArgs /*= None*/,
                                        MaybeCount RequiredParams /*= None*/)
     : CallDescription(CDF_None, QualifiedName, RequiredArgs, RequiredParams) {}
@@ -61,22 +63,39 @@ bool ento::CallDescription::matches(const CallEvent &Call) const {
   if (!FD)
     return false;
 
+  return matchesImpl(FD, Call.getNumArgs(), Call.parameters().size());
+}
+
+bool ento::CallDescription::matchesAsWritten(const CallExpr &CE) const {
+  const auto *FD = dyn_cast_or_null<FunctionDecl>(CE.getCalleeDecl());
+  if (!FD)
+    return false;
+
+  return matchesImpl(FD, CE.getNumArgs(), FD->param_size());
+}
+
+bool ento::CallDescription::matchesImpl(const FunctionDecl *Callee,
+                                        size_t ArgCount,
+                                        size_t ParamCount) const {
+  const auto *FD = Callee;
+  if (!FD)
+    return false;
+
   if (Flags & CDF_MaybeBuiltin) {
     return CheckerContext::isCLibraryFunction(FD, getFunctionName()) &&
-           (!RequiredArgs || *RequiredArgs <= Call.getNumArgs()) &&
-           (!RequiredParams || *RequiredParams <= Call.parameters().size());
+           (!RequiredArgs || *RequiredArgs <= ArgCount) &&
+           (!RequiredParams || *RequiredParams <= ParamCount);
   }
 
-  if (!II.hasValue()) {
-    II = &Call.getState()->getStateManager().getContext().Idents.get(
-        getFunctionName());
+  if (!II) {
+    II = &FD->getASTContext().Idents.get(getFunctionName());
   }
 
   const auto MatchNameOnly = [](const CallDescription &CD,
                                 const NamedDecl *ND) -> bool {
     DeclarationName Name = ND->getDeclName();
     if (const auto *II = Name.getAsIdentifierInfo())
-      return II == CD.II.getValue(); // Fast case.
+      return II == *CD.II; // Fast case.
 
     // Fallback to the slow stringification and comparison for:
     // C++ overloaded operators, constructors, destructors, etc.
@@ -86,11 +105,11 @@ bool ento::CallDescription::matches(const CallEvent &Call) const {
   };
 
   const auto ExactMatchArgAndParamCounts =
-      [](const CallEvent &Call, const CallDescription &CD) -> bool {
-    const bool ArgsMatch =
-        !CD.RequiredArgs || *CD.RequiredArgs == Call.getNumArgs();
+      [](size_t ArgCount, size_t ParamCount,
+         const CallDescription &CD) -> bool {
+    const bool ArgsMatch = !CD.RequiredArgs || *CD.RequiredArgs == ArgCount;
     const bool ParamsMatch =
-        !CD.RequiredParams || *CD.RequiredParams == Call.parameters().size();
+        !CD.RequiredParams || *CD.RequiredParams == ParamCount;
     return ArgsMatch && ParamsMatch;
   };
 
@@ -122,7 +141,7 @@ bool ento::CallDescription::matches(const CallEvent &Call) const {
   };
 
   // Let's start matching...
-  if (!ExactMatchArgAndParamCounts(Call, *this))
+  if (!ExactMatchArgAndParamCounts(ArgCount, ParamCount, *this))
     return false;
 
   if (!MatchNameOnly(*this, FD))
@@ -143,4 +162,8 @@ ento::CallDescriptionSet::CallDescriptionSet(
 
 bool ento::CallDescriptionSet::contains(const CallEvent &Call) const {
   return static_cast<bool>(Impl.lookup(Call));
+}
+
+bool ento::CallDescriptionSet::containsAsWritten(const CallExpr &CE) const {
+  return static_cast<bool>(Impl.lookupAsWritten(CE));
 }

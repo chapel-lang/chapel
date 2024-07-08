@@ -1,0 +1,3 @@
+user-exitContext-warning.chpl:1: warning: the type 'R' defines methods that previously had special meaning. These will soon require 'R' to implement the 'contextManager' interface to continue to be treated specially.
+user-exitContext-warning.chpl:4: note: formerly-special function 'exitContext' defined here
+(x = 0)

@@ -100,13 +100,16 @@ proc main() {
   var grr = new GenericRecord(real);
   promote(grr);
 
-  var cc = new borrowed ConcreteClass(10);
+  var ownCc = new owned ConcreteClass(10);
+  var cc = ownCc.borrow();
   promote(cc);
 
-  var gcTwo = new borrowed GenericClass(int, 2);
+  var ownGcTwo = new owned GenericClass(int, 2);
+  var gcTwo = ownGcTwo.borrow();
   promote(gcTwo);
 
-  var gcOne = new borrowed GenericClass(int, 1);
+  var ownGcOne = new owned GenericClass(int, 1);
+  var gcOne = ownGcOne.borrow();
   promote(gcOne);
 }
 

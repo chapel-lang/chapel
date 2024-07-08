@@ -1,0 +1,2 @@
+taskErrorsFirst.chpl:11: warning: `TaskErrors.first` is unstable; expect this method to change in the future.
+Error: error!

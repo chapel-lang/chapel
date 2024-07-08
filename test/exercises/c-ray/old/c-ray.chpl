@@ -23,10 +23,11 @@
  * ----------------------------------------------------------------------------
  */
 
-use Image;    // use helper module related to writing out images
-use IO;       // allows access to stderr, stdin, iomode
+use CRayImage;    // use helper module related to writing out images
+use IO;       // allows access to stderr, stdin, ioMode
 use List;
 use ChplConfig;
+import Math.pi;
 
 //
 // Configuration constants
@@ -39,7 +40,7 @@ config const size = "800x600",            // size of output image
              imgType = extToFmt(image),   // the image file format
              usage = false,               // print usage message?
 
-             fieldOfView = quarter_pi,    // field of view in radians
+             fieldOfView = pi/4,          // field of view in radians
              maxRayDepth = 5,             // raytrace recursion limit
              rayMagnitude = 1000.0,       // trace rays of this magnitude
              errorMargin = 1e-6,          // margin to avoid surface acne
@@ -135,23 +136,23 @@ use BlockDist, CyclicDist;
 proc main() {
   const pixinds = {0..#yres, 0..#xres},
         pixdom = if !multilocale then pixinds
-              else (if blockdist then pixinds dmapped Block(pixinds)
-                                 else pixinds dmapped Cyclic((0,0)));
+              else (if blockdist then pixinds dmapped new blockDist(pixinds)
+                                 else pixinds dmapped new cyclicDist((0,0)));
   var pixels: [pixdom] pixelType;
 
   loadScene();
   initRands();
 
   use Time;      // Bring in timers to measure the rendering time
-  var t: Timer;
+  var t: stopwatch;
   t.start();
 
   // render a frame of xsz x ysz pixels into the provided framebuffer
   if loopStyle == 0 {
-    forall (y, x) in pixels.domain do
+    forall (y, x) in pixels.domain with (ref pixels) do
       pixels[y, x] = computePixel(y, x);
   } else if loopStyle == 1 {
-    forall (y, x) in pixdom do
+    forall (y, x) in pixdom with (ref pixels) do
       pixels[y, x] = computePixel(y, x);
   } else if loopStyle == 2 {
     pixels = computePixel(pixdom);
@@ -411,16 +412,16 @@ proc loadScene() {
   // be problematic in any way.
   //
   if scene == "built-in" {
-    objects.append(new owned sphere((-1.5, -0.3, -1), 0.7,
+    objects.pushBack(new owned sphere((-1.5, -0.3, -1), 0.7,
                                  new material((1.0, 0.2, 0.05), 50.0, 0.3)));
-    objects.append(new owned sphere((1.5, -0.4, 0), 0.6,
+    objects.pushBack(new owned sphere((1.5, -0.4, 0), 0.6,
                                  new material((0.1, 0.85, 1.0), 50.0, 0.4)));
-    objects.append(new owned sphere((0, -1000, 2), 999,
+    objects.pushBack(new owned sphere((0, -1000, 2), 999,
                                  new material((0.1, 0.2, 0.6), 80.0, 0.8)));
-    objects.append(new owned sphere((0, 0, 2), 1,
+    objects.pushBack(new owned sphere((0, 0, 2), 1,
                                  new material((1.0, 0.5, 0.1), 60.0, 0.7)));
-    lights.append((-50, 100, -50));
-    lights.append((40, 40, 150));
+    lights.pushBack((-50, 100, -50));
+    lights.pushBack((40, 40, 150));
     cam = new camera((0, 6, -17), (0, -1, 0), 45);
     return;
   }
@@ -431,7 +432,7 @@ proc loadScene() {
 
   // the input file channel
   const infile = if scene == "stdin" then stdin
-                                     else open(scene, iomode.r).reader();
+                                     else open(scene, ioMode.r).reader(locking=true);
 
   // a map (associative array) from the supported input file argument
   // types to the number of columns of input they expect
@@ -463,7 +464,7 @@ proc loadScene() {
 
     // if this is a light, store it as such
     if inType == 'l' {
-      lights.append(pos);
+      lights.pushBack(pos);
       continue;
     }
 
@@ -484,7 +485,7 @@ proc loadScene() {
           refl = columns[9]: real;
 
     // this must be a sphere, so store it
-    objects.append(new owned sphere(pos, rad, new material(col, spow, refl)));
+    objects.pushBack(new owned sphere(pos, rad, new material(col, spow, refl)));
 
     // helper routine for printing errors in the input file
     proc inputError(msg) {
@@ -519,15 +520,16 @@ proc initRands() {
   } else {
     use Random;
 
-    var rng = new owned RandomStream(seed=(if seed then seed
-                                                   else SeedGenerator.currentTime),
-                                     eltType=real);
+    var rng = if seed
+      then new randomStream(real, seed)
+      else new randomStream(real);
+
     for u in urand do
-      u(X) = rng.getNext() - 0.5;
+      u(X) = rng.next() - 0.5;
     for u in urand do
-      u(Y) = rng.getNext() - 0.5;
+      u(Y) = rng.next() - 0.5;
     for r in irand do
-      r = (nran * rng.getNext()): int;
+      r = (nran * rng.next()): int;
   }
 }
 

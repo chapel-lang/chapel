@@ -15,6 +15,7 @@ CHPL_LLVM=None
 CHPL_HOST_BIN_SUBDIR=None
 CHPL_LLVM_UNIQ_CFG_PATH=None
 CHPL_LLVM_CONFIG=None
+CHPL_HOST_PLATFORM=None
 
 for line in chplenv.splitlines():
   line_str = str(line, encoding='utf-8', errors='surrogateescape')
@@ -29,11 +30,14 @@ for line in chplenv.splitlines():
     CHPL_LLVM=val
   if key == 'CHPL_LLVM_CONFIG':
     CHPL_LLVM_CONFIG=val
+  if key == 'CHPL_HOST_PLATFORM':
+    CHPL_HOST_PLATFORM=val
 
 build_options = '--baseline -g'
 source_path = os.getcwd() #same as target path
 source = source_path + os.sep + 'llvmDebug_test.chpl'
 target = source_path + os.sep + 'llvmDebug_test'
+
 # Build Chapel Test Program
 Command_build = chpl_home + '/bin/' + CHPL_HOST_BIN_SUBDIR + '/chpl ' + build_options + ' ' + source + ' -o ' + target
 if os.system(Command_build) == 0:
@@ -49,8 +53,15 @@ llvm_bin = str(llvm_bin_bytes, encoding='utf-8', errors='surrogateescape')
 llvm_bin = llvm_bin.strip()
 llvm_dwarfdump = llvm_bin + '/llvm-dwarfdump'
 
+dwarfDumpTarget = target
+
+# On OSX we should have built a '.dSYM' archive.
+if CHPL_HOST_PLATFORM == 'darwin':
+  dwarfDumpTarget += '.dSYM' + '/Contents/Resources/DWARF/'
+  dwarfDumpTarget += 'llvmDebug_test.tmp'
+
 # Check Debug Info Existence
-Command_check = llvm_dwarfdump + debug_option + target
+Command_check = llvm_dwarfdump + debug_option + dwarfDumpTarget
 
 output_bytes = subprocess.check_output(Command_check, shell=True)
 output = str(output_bytes, encoding='utf-8', errors='surrogateescape')

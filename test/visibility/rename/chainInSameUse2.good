@@ -1,4 +1,5 @@
-chainInSameUse2.chpl:10: warning: identifier 'bleep' is repeated
-note: Did you mean to rename 'a' to 'bloop'?
+chainInSameUse2.chpl:9: In module 'M':
+chainInSameUse2.chpl:10: warning: 'bleep' is repeated
+chainInSameUse2.chpl:10: note: did you mean to rename 'a' to 'bloop'?
 false
 -12

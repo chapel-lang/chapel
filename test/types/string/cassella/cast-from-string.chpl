@@ -35,7 +35,7 @@ var comp64A  = [ "12345.67 + 12345.67i",
 		"   55555.55   + 55555.55i  "];
 
 proc test_type(type t, input_arr, type acc_type) {
-  var timer: Timer;
+  var timer: stopwatch;
   var acc: acc_type;
 
   timer.start();

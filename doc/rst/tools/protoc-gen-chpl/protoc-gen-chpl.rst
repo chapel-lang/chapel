@@ -166,7 +166,7 @@ can be parsed elsewhere. You can serialize your message object using the
 
 .. code-block:: chpl
   
-  var file = open("out", iomode.cw);
+  var file = open("out", ioMode.cw);
   var writingChannel = file.writer();
 
   messageObj.serialize(writingChannel);
@@ -179,7 +179,7 @@ function. So to parse the file we have just created we can use:
   use addressbook;
   use IO;
   
-  var file = open("out", iomode.r);
+  var file = open("out", ioMode.r);
   var readingChannel = file.reader();
   
   var messageObj = new Person();

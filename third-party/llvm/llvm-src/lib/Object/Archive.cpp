@@ -11,7 +11,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Object/Archive.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
@@ -19,6 +18,7 @@
 #include "llvm/Object/Error.h"
 #include "llvm/Support/Chrono.h"
 #include "llvm/Support/Endian.h"
+#include "llvm/Support/EndianStream.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/ErrorOr.h"
 #include "llvm/Support/FileSystem.h"
@@ -26,11 +26,11 @@
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/TargetParser/Host.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 #include <memory>
 #include <string>
 #include <system_error>
@@ -136,8 +136,18 @@ BigArchiveMemberHeader::BigArchiveMemberHeader(const Archive *Parent,
     return;
   ErrorAsOutParameter ErrAsOutParam(Err);
 
-  if (Size < getSizeOf())
-    *Err = createMemberHeaderParseError(this, RawHeaderPtr, Size);
+  if (RawHeaderPtr + getSizeOf() >= Parent->getData().end()) {
+    if (Err)
+      *Err = malformedError("malformed AIX big archive: remaining buffer is "
+                            "unable to contain next archive member");
+    return;
+  }
+
+  if (Size < getSizeOf()) {
+    Error SubErr = createMemberHeaderParseError(this, RawHeaderPtr, Size);
+    if (Err)
+      *Err = std::move(SubErr);
+  }
 }
 
 // This gets the raw name from the ArMemHdr->Name field and checks that it is
@@ -217,7 +227,7 @@ Expected<StringRef> BigArchiveMemberHeader::getRawName() const {
   StringRef NameTerminator = "`\n";
   StringRef NameStringWithNameTerminator =
       StringRef(ArMemHdr->Name, NameLenWithPadding + NameTerminator.size());
-  if (!NameStringWithNameTerminator.endswith(NameTerminator)) {
+  if (!NameStringWithNameTerminator.ends_with(NameTerminator)) {
     uint64_t Offset =
         reinterpret_cast<const char *>(ArMemHdr->Name + NameLenWithPadding) -
         Parent->getData().data();
@@ -256,6 +266,14 @@ Expected<StringRef> ArchiveMemberHeader::getName(uint64_t Size) const {
     if (Name.size() == 1) // Linker member.
       return Name;
     if (Name.size() == 2 && Name[1] == '/') // String table.
+      return Name;
+    // System libraries from the Windows SDK for Windows 11 contain this symbol.
+    // It looks like a CFG guard: we just skip it for now.
+    if (Name.equals("/<XFGHASHMAP>/"))
+      return Name;
+    // Some libraries (e.g., arm64rt.lib) from the Windows WDK
+    // (version 10.0.22000.0) contain this undocumented special member.
+    if (Name.equals("/<ECSYMBOLS>/"))
       return Name;
     // It's a long name.
     // Get the string table offset.
@@ -297,7 +315,7 @@ Expected<StringRef> ArchiveMemberHeader::getName(uint64_t Size) const {
     return Parent->getStringTable().begin() + StringOffset;
   }
 
-  if (Name.startswith("#1/")) {
+  if (Name.starts_with("#1/")) {
     uint64_t NameLength;
     if (Name.substr(3).rtrim(' ').getAsInteger(10, NameLength)) {
       std::string Buf;
@@ -451,6 +469,7 @@ Archive::Child::Child(const Archive *Parent, const char *Start, Error *Err)
     : Parent(Parent) {
   if (!Start) {
     Header = nullptr;
+    StartOfFile = -1;
     return;
   }
 
@@ -505,7 +524,7 @@ Archive::Child::Child(const Archive *Parent, const char *Start, Error *Err)
     // The actual start of the file is after the name and any necessary
     // even-alignment padding.
     StartOfFile += ((Name.size() + 1) >> 1) << 1;
-  } else if (Name.startswith("#1/")) {
+  } else if (Name.starts_with("#1/")) {
     uint64_t NameSize;
     StringRef RawNameSize = Name.substr(3).rtrim(' ');
     if (RawNameSize.getAsInteger(10, NameSize)) {
@@ -548,7 +567,7 @@ Expected<std::string> Archive::Child::getFullName() const {
   SmallString<128> FullName = sys::path::parent_path(
       Parent->getMemoryBufferRef().getBufferIdentifier());
   sys::path::append(FullName, Name);
-  return std::string(FullName.str());
+  return std::string(FullName);
 }
 
 Expected<StringRef> Archive::Child::getBuffer() const {
@@ -652,7 +671,7 @@ Expected<std::unique_ptr<Archive>> Archive::create(MemoryBufferRef Source) {
   std::unique_ptr<Archive> Ret;
   StringRef Buffer = Source.getBuffer();
 
-  if (Buffer.startswith(BigArchiveMagic))
+  if (Buffer.starts_with(BigArchiveMagic))
     Ret = std::make_unique<BigArchive>(Source, Err);
   else
     Ret = std::make_unique<Archive>(Source, Err);
@@ -692,11 +711,11 @@ Archive::Archive(MemoryBufferRef Source, Error &Err)
   ErrorAsOutParameter ErrAsOutParam(&Err);
   StringRef Buffer = Data.getBuffer();
   // Check for sufficient magic.
-  if (Buffer.startswith(ThinArchiveMagic)) {
+  if (Buffer.starts_with(ThinArchiveMagic)) {
     IsThin = true;
-  } else if (Buffer.startswith(ArchiveMagic)) {
+  } else if (Buffer.starts_with(ArchiveMagic)) {
     IsThin = false;
-  } else if (Buffer.startswith(BigArchiveMagic)) {
+  } else if (Buffer.starts_with(BigArchiveMagic)) {
     Format = K_AIXBIG;
     IsThin = false;
     return;
@@ -781,7 +800,7 @@ Archive::Archive(MemoryBufferRef Source, Error &Err)
     return;
   }
 
-  if (Name.startswith("#1/")) {
+  if (Name.starts_with("#1/")) {
     Format = K_BSD;
     // We know this is BSD, so getName will work since there is no string table.
     Expected<StringRef> NameOrErr = C->getName();
@@ -916,10 +935,46 @@ Archive::Archive(MemoryBufferRef Source, Error &Err)
     StringTable = BufOrErr.get();
     if (Increment())
       return;
+
+    if (I == E) {
+      setFirstRegular(*C);
+      Err = Error::success();
+      return;
+    }
+
+    NameOrErr = C->getRawName();
+    if (!NameOrErr) {
+      Err = NameOrErr.takeError();
+      return;
+    }
+    Name = NameOrErr.get();
+  }
+
+  if (Name == "/<ECSYMBOLS>/") {
+    // ARM64EC-aware libraries contain an additional special member with
+    // an EC symbol map after the string table. Its format is similar to a
+    // regular symbol map, except it doesn't contain member offsets. Its indexes
+    // refer to member offsets from the regular symbol table instead.
+    Expected<StringRef> BufOrErr = C->getBuffer();
+    if (!BufOrErr) {
+      Err = BufOrErr.takeError();
+      return;
+    }
+    ECSymbolTable = BufOrErr.get();
+    if (Increment())
+      return;
   }
 
   setFirstRegular(*C);
   Err = Error::success();
+}
+
+object::Archive::Kind Archive::getDefaultKindForHost() {
+  Triple HostTriple(sys::getProcessTriple());
+  return HostTriple.isOSDarwin()
+             ? object::Archive::K_DARWIN
+             : (HostTriple.isOSAIX() ? object::Archive::K_AIXBIG
+                                     : object::Archive::K_GNU);
 }
 
 Archive::child_iterator Archive::child_begin(Error &Err,
@@ -942,21 +997,32 @@ Archive::child_iterator Archive::child_end() const {
   return child_iterator::end(Child(nullptr, nullptr, nullptr));
 }
 
+bool Archive::Symbol::isECSymbol() const {
+  // Symbols use SymbolCount..SymbolCount+getNumberOfECSymbols() for EC symbol
+  // indexes.
+  uint32_t SymbolCount = Parent->getNumberOfSymbols();
+  return SymbolCount <= SymbolIndex &&
+         SymbolIndex < SymbolCount + Parent->getNumberOfECSymbols();
+}
+
 StringRef Archive::Symbol::getName() const {
+  if (isECSymbol())
+    return Parent->ECSymbolTable.begin() + StringIndex;
   return Parent->getSymbolTable().begin() + StringIndex;
 }
 
 Expected<Archive::Child> Archive::Symbol::getMember() const {
   const char *Buf = Parent->getSymbolTable().begin();
   const char *Offsets = Buf;
-  if (Parent->kind() == K_GNU64 || Parent->kind() == K_DARWIN64)
+  if (Parent->kind() == K_GNU64 || Parent->kind() == K_DARWIN64 ||
+      Parent->kind() == K_AIXBIG)
     Offsets += sizeof(uint64_t);
   else
     Offsets += sizeof(uint32_t);
   uint64_t Offset = 0;
   if (Parent->kind() == K_GNU) {
     Offset = read32be(Offsets + SymbolIndex * 4);
-  } else if (Parent->kind() == K_GNU64) {
+  } else if (Parent->kind() == K_GNU64 || Parent->kind() == K_AIXBIG) {
     Offset = read64be(Offsets + SymbolIndex * 8);
   } else if (Parent->kind() == K_BSD) {
     // The SymbolIndex is an index into the ranlib structs that start at
@@ -980,15 +1046,24 @@ Expected<Archive::Child> Archive::Symbol::getMember() const {
     Buf += MemberCount * 4 + 4;
 
     uint32_t SymbolCount = read32le(Buf);
-    if (SymbolIndex >= SymbolCount)
+    uint16_t OffsetIndex;
+    if (SymbolIndex < SymbolCount) {
+      // Skip SymbolCount to get to the indices table.
+      const char *Indices = Buf + 4;
+
+      // Get the index of the offset in the file member offset table for this
+      // symbol.
+      OffsetIndex = read16le(Indices + SymbolIndex * 2);
+    } else if (isECSymbol()) {
+      // Skip SymbolCount to get to the indices table.
+      const char *Indices = Parent->ECSymbolTable.begin() + 4;
+
+      // Get the index of the offset in the file member offset table for this
+      // symbol.
+      OffsetIndex = read16le(Indices + (SymbolIndex - SymbolCount) * 2);
+    } else {
       return errorCodeToError(object_error::parse_failed);
-
-    // Skip SymbolCount to get to the indices table.
-    const char *Indices = Buf + 4;
-
-    // Get the index of the offset in the file member offset table for this
-    // symbol.
-    uint16_t OffsetIndex = read16le(Indices + SymbolIndex * 2);
+    }
     // Subtract 1 since OffsetIndex is 1 based.
     --OffsetIndex;
 
@@ -1037,6 +1112,9 @@ Archive::Symbol Archive::Symbol::getNext() const {
       t.StringIndex -= CurRanStrx;
       t.StringIndex += NextRanStrx;
     }
+  } else if (t.isECSymbol()) {
+    // Go to one past next null.
+    t.StringIndex = Parent->ECSymbolTable.find('\0', t.StringIndex) + 1;
   } else {
     // Go to one past next null.
     t.StringIndex = Parent->getSymbolTable().find('\0', t.StringIndex) + 1;
@@ -1089,6 +1167,8 @@ Archive::symbol_iterator Archive::symbol_begin() const {
     // Skip the byte count of the string table.
     buf += sizeof(uint64_t);
     buf += ran_strx;
+  } else if (kind() == K_AIXBIG) {
+    buf = getStringTable().begin();
   } else {
     uint32_t member_count = 0;
     uint32_t symbol_count = 0;
@@ -1105,13 +1185,58 @@ Archive::symbol_iterator Archive::symbol_end() const {
   return symbol_iterator(Symbol(this, getNumberOfSymbols(), 0));
 }
 
+Expected<iterator_range<Archive::symbol_iterator>> Archive::ec_symbols() const {
+  uint32_t Count = 0;
+
+  // Validate EC symbol table.
+  if (!ECSymbolTable.empty()) {
+    if (ECSymbolTable.size() < sizeof(uint32_t))
+      return malformedError("invalid EC symbols size (" +
+                            Twine(ECSymbolTable.size()) + ")");
+    if (SymbolTable.size() < sizeof(uint32_t))
+      return malformedError("invalid symbols size (" +
+                            Twine(ECSymbolTable.size()) + ")");
+
+    Count = read32le(ECSymbolTable.begin());
+    size_t StringIndex = sizeof(uint32_t) + Count * sizeof(uint16_t);
+    if (ECSymbolTable.size() < StringIndex)
+      return malformedError("invalid EC symbols size. Size was " +
+                            Twine(ECSymbolTable.size()) + ", but expected " +
+                            Twine(StringIndex));
+
+    uint32_t MemberCount = read32le(SymbolTable.begin());
+    const char *Indexes = ECSymbolTable.begin() + sizeof(uint32_t);
+
+    for (uint32_t i = 0; i < Count; ++i) {
+      uint16_t Index = read16le(Indexes + i * sizeof(uint16_t));
+      if (!Index)
+        return malformedError("invalid EC symbol index 0");
+      if (Index > MemberCount)
+        return malformedError("invalid EC symbol index " + Twine(Index) +
+                              " is larger than member count " +
+                              Twine(MemberCount));
+
+      StringIndex = ECSymbolTable.find('\0', StringIndex);
+      if (StringIndex == StringRef::npos)
+        return malformedError("malformed EC symbol names: not null-terminated");
+      ++StringIndex;
+    }
+  }
+
+  uint32_t SymbolCount = getNumberOfSymbols();
+  return make_range(
+      symbol_iterator(Symbol(this, SymbolCount,
+                             sizeof(uint32_t) + Count * sizeof(uint16_t))),
+      symbol_iterator(Symbol(this, SymbolCount + Count, 0)));
+}
+
 uint32_t Archive::getNumberOfSymbols() const {
   if (!hasSymbolTable())
     return 0;
   const char *buf = getSymbolTable().begin();
   if (kind() == K_GNU)
     return read32be(buf);
-  if (kind() == K_GNU64)
+  if (kind() == K_GNU64 || kind() == K_AIXBIG)
     return read64be(buf);
   if (kind() == K_BSD)
     return read32le(buf) / 8;
@@ -1123,7 +1248,13 @@ uint32_t Archive::getNumberOfSymbols() const {
   return read32le(buf);
 }
 
-Expected<Optional<Archive::Child>> Archive::findSym(StringRef name) const {
+uint32_t Archive::getNumberOfECSymbols() const {
+  if (ECSymbolTable.size() < sizeof(uint32_t))
+    return 0;
+  return read32le(ECSymbolTable.begin());
+}
+
+Expected<std::optional<Archive::Child>> Archive::findSym(StringRef name) const {
   Archive::symbol_iterator bs = symbol_begin();
   Archive::symbol_iterator es = symbol_end();
 
@@ -1136,7 +1267,7 @@ Expected<Optional<Archive::Child>> Archive::findSym(StringRef name) const {
         return MemberOrErr.takeError();
     }
   }
-  return Optional<Child>();
+  return std::nullopt;
 }
 
 // Returns true if archive file contains no member file.
@@ -1146,11 +1277,78 @@ bool Archive::isEmpty() const {
 
 bool Archive::hasSymbolTable() const { return !SymbolTable.empty(); }
 
+static Error getGlobalSymtabLocAndSize(const MemoryBufferRef &Data,
+                                       uint64_t GlobalSymtabOffset,
+                                       const char *&GlobalSymtabLoc,
+                                       uint64_t &Size, const char *BitMessage) {
+  uint64_t BufferSize = Data.getBufferSize();
+  uint64_t GlobalSymtabContentOffset =
+      GlobalSymtabOffset + sizeof(BigArMemHdrType);
+  if (GlobalSymtabContentOffset > BufferSize)
+    return malformedError(
+        Twine(BitMessage) + " global symbol table header at offset 0x" +
+        Twine::utohexstr(GlobalSymtabOffset) + " and size 0x" +
+        Twine::utohexstr(sizeof(BigArMemHdrType)) +
+        " goes past the end of file");
+
+  GlobalSymtabLoc = Data.getBufferStart() + GlobalSymtabOffset;
+  const BigArMemHdrType *GlobalSymHdr =
+      reinterpret_cast<const BigArMemHdrType *>(GlobalSymtabLoc);
+  StringRef RawOffset = getFieldRawString(GlobalSymHdr->Size);
+  if (RawOffset.getAsInteger(10, Size))
+    return malformedError(Twine(BitMessage) + " global symbol table size \"" +
+                          RawOffset + "\" is not a number");
+
+  if (GlobalSymtabContentOffset + Size > BufferSize)
+    return malformedError(
+        Twine(BitMessage) + " global symbol table content at offset 0x" +
+        Twine::utohexstr(GlobalSymtabContentOffset) + " and size 0x" +
+        Twine::utohexstr(Size) + " goes past the end of file");
+
+  return Error::success();
+}
+
+struct GlobalSymtabInfo {
+  uint64_t SymNum;
+  StringRef SymbolTable;
+  StringRef SymbolOffsetTable;
+  StringRef StringTable;
+};
+
+static void
+appendGlobalSymbolTableInfo(SmallVector<GlobalSymtabInfo> &SymtabInfos,
+                            const char *GlobalSymtabLoc, uint64_t Size) {
+  // In a big archive, a global symbol table contains the following information:
+  // - The number of symbols.
+  // - The array of offsets into the archive file. The length is eight
+  //   times the number of symbols.
+  // - The name-string table. The size is:
+  //   Size-(8*(the number of symbols + 1)).
+
+  StringRef SymbolTable =
+      StringRef(GlobalSymtabLoc + sizeof(BigArMemHdrType), Size);
+  uint64_t SymNum = read64be(GlobalSymtabLoc + sizeof(BigArMemHdrType));
+  StringRef SymbolOffsetTable = StringRef(SymbolTable.data() + 8, 8 * SymNum);
+  unsigned SymOffsetsSize = 8 * (SymNum + 1);
+  uint64_t SymbolTableStringSize = Size - SymOffsetsSize;
+  StringRef StringTable =
+      StringRef(SymbolTable.data() + SymOffsetsSize, SymbolTableStringSize);
+  SymtabInfos.push_back({SymNum, SymbolTable, SymbolOffsetTable, StringTable});
+}
+
 BigArchive::BigArchive(MemoryBufferRef Source, Error &Err)
     : Archive(Source, Err) {
   ErrorAsOutParameter ErrAsOutParam(&Err);
   StringRef Buffer = Data.getBuffer();
   ArFixLenHdr = reinterpret_cast<const FixLenHdr *>(Buffer.data());
+  uint64_t BufferSize = Data.getBufferSize();
+
+  if (BufferSize < sizeof(FixLenHdr)) {
+    Err = malformedError("malformed AIX big archive: incomplete fixed length "
+                         "header, the archive is only" +
+                         Twine(BufferSize) + " byte(s)");
+    return;
+  }
 
   StringRef RawOffset = getFieldRawString(ArFixLenHdr->FirstChildOffset);
   if (RawOffset.getAsInteger(10, FirstChildOffset))
@@ -1163,6 +1361,79 @@ BigArchive::BigArchive(MemoryBufferRef Source, Error &Err)
     // TODO: Out-of-line.
     Err = malformedError("malformed AIX big archive: last member offset \"" +
                          RawOffset + "\" is not a number");
+
+  uint64_t GlobSymtab32Offset = 0;
+  RawOffset = getFieldRawString(ArFixLenHdr->GlobSymOffset);
+  if (RawOffset.getAsInteger(10, GlobSymtab32Offset)) {
+    Err = malformedError("global symbol table "
+                         "offset of 32-bit members \"" +
+                         RawOffset + "\" is not a number");
+    return;
+  }
+
+  uint64_t GlobSymtab64Offset = 0;
+  RawOffset = getFieldRawString(ArFixLenHdr->GlobSym64Offset);
+  if (RawOffset.getAsInteger(10, GlobSymtab64Offset)) {
+    Err = malformedError("global symbol table "
+                         "offset of 64-bit members\"" +
+                         RawOffset + "\" is not a number");
+    return;
+  }
+
+  const char *GlobSymtab32Loc = nullptr;
+  const char *GlobSymtab64Loc = nullptr;
+  uint64_t GlobSymtab32Size = 0;
+  uint64_t GlobSymtab64Size = 0;
+  const MemoryBufferRef &MemBuffRef = getMemoryBufferRef();
+
+  if (GlobSymtab32Offset) {
+    Err =
+        getGlobalSymtabLocAndSize(MemBuffRef, GlobSymtab32Offset,
+                                  GlobSymtab32Loc, GlobSymtab32Size, "32-bit");
+    if (Err)
+      return;
+
+    Has32BitGlobalSymtab = true;
+  }
+
+  if (GlobSymtab64Offset) {
+    Err =
+        getGlobalSymtabLocAndSize(MemBuffRef, GlobSymtab64Offset,
+                                  GlobSymtab64Loc, GlobSymtab64Size, "64-bit");
+    if (Err)
+      return;
+
+    Has64BitGlobalSymtab = true;
+  }
+
+  SmallVector<GlobalSymtabInfo> SymtabInfos;
+
+  if (GlobSymtab32Offset)
+    appendGlobalSymbolTableInfo(SymtabInfos, GlobSymtab32Loc, GlobSymtab32Size);
+  if (GlobSymtab64Offset)
+    appendGlobalSymbolTableInfo(SymtabInfos, GlobSymtab64Loc, GlobSymtab64Size);
+
+  if (SymtabInfos.size() == 1) {
+    SymbolTable = SymtabInfos[0].SymbolTable;
+    StringTable = SymtabInfos[0].StringTable;
+  } else if (SymtabInfos.size() == 2) {
+    // In order to let the Archive::Symbol::getNext() work for both 32-bit and
+    // 64-bit global symbol tables, we need to merge them into a single table.
+    raw_string_ostream Out(MergedGlobalSymtabBuf);
+    uint64_t SymNum = SymtabInfos[0].SymNum + SymtabInfos[1].SymNum;
+    write(Out, SymNum, llvm::endianness::big);
+    // Merge symbol offset.
+    Out << SymtabInfos[0].SymbolOffsetTable;
+    Out << SymtabInfos[1].SymbolOffsetTable;
+    // Merge string table.
+    Out << SymtabInfos[0].StringTable;
+    Out << SymtabInfos[1].StringTable;
+    SymbolTable = MergedGlobalSymtabBuf;
+    // The size of the symbol offset to the member file is 8 bytes.
+    StringTable = StringRef(SymbolTable.begin() + (SymNum + 1) * 8,
+                            SymtabInfos[0].StringTable.size() +
+                                SymtabInfos[1].StringTable.size());
+  }
 
   child_iterator I = child_begin(Err, false);
   if (Err)

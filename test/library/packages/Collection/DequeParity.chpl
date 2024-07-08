@@ -1,4 +1,4 @@
-use Barriers;
+use Collectives;
 use DistributedDeque;
 
 // For the parity test, we separate even and odd numbers on each side of the Deque.
@@ -20,12 +20,12 @@ if isBounded {
 }
 
 var deque = new DistDeque(int, cap=cap);
-var barrier = new Barrier(numLocales * here.maxTaskPar);
+var bar = new barrier(numLocales * here.maxTaskPar);
 
 // Concurrent add... Ensure they all start around same time...
 coforall loc in Locales do on loc {
   coforall tid in 0..#here.maxTaskPar {
-    barrier.barrier();
+    bar.barrier();
     for i in 1 .. nElemsPerTask {
       // Even...
       if i % 2 == 0 {

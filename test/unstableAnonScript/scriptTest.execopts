@@ -1,0 +1,13 @@
+--testType=help         # help.good
+--testType=defaultFlags # defaultFlags.good
+--testType=IOFlags1     # defaultFlags.good
+--testType=IOFlags2     # IOFlags2.good
+--testType=csv          # csv.good
+--testType=numFiles     # numFiles.good
+--testType=sort         # sort.good
+--testType=top5        # top5.good
+--testType=sortNumFiles # sortNumFiles.good
+--testType=sortTop5    # sortTop5.good
+--testType=all1         # all1.good
+--testType=all2         # all2.good
+--testType=all3 --unstableConf         # all3.good

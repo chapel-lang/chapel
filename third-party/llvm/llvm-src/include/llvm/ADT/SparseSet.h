@@ -122,8 +122,7 @@ template<typename ValueT,
          typename KeyFunctorT = identity<unsigned>,
          typename SparseT = uint8_t>
 class SparseSet {
-  static_assert(std::numeric_limits<SparseT>::is_integer &&
-                !std::numeric_limits<SparseT>::is_signed,
+  static_assert(std::is_unsigned_v<SparseT>,
                 "SparseT must be an unsigned integer type");
 
   using KeyT = typename KeyFunctorT::argument_type;
@@ -204,6 +203,7 @@ public:
   ///
   iterator findIndex(unsigned Idx) {
     assert(Idx < Universe && "Key out of range");
+    assert(Sparse != nullptr && "Invalid sparse type");
     const unsigned Stride = std::numeric_limits<SparseT>::max() + 1u;
     for (unsigned i = Sparse[Idx], e = size(); i < e; i += Stride) {
       const unsigned FoundIdx = ValIndexOf(Dense[i]);
@@ -233,7 +233,7 @@ public:
   /// Check if the set contains the given \c Key.
   ///
   /// @param Key A valid key to find.
-  bool contains(const KeyT &Key) const { return find(Key) == end() ? 0 : 1; }
+  bool contains(const KeyT &Key) const { return find(Key) != end(); }
 
   /// count - Returns 1 if this set contains an element identified by Key,
   /// 0 otherwise.

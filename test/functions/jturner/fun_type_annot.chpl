@@ -1,10 +1,11 @@
 use Functions;
 
-var f:func(int, int) = lambda(i:int) { return i+1; };
+var f: proc(i: int): int = proc(i: int) { return i+1; };
 
 writeln(f(10));
 
-var g = lambda(j:int) { return j+2; };
+// TODO: Formal name discarding.
+var g = proc(i:int) { return i+2; };
 f = g;
 
 writeln(f(10));

@@ -13,6 +13,10 @@
 #  undef calloc
 #  undef free
 #  undef strdup
+#  undef strndup
+#  undef strcasecmp
+#  undef strncasecmp
+#  undef realloc
 #endif
 
 #if HAVE_PMI_CRAY_H
@@ -389,7 +393,8 @@ extern gasneti_spawnerfn_t const * gasneti_bootstrapInit_pmi(
     (void)strncpy(proc.nspace, myproc.nspace, PMIX_MAX_NSLEN+1);
     proc.rank = PMIX_RANK_WILDCARD;
 
-    if (PMIX_SUCCESS != PMIx_Get(&proc, PMIX_JOB_SIZE,
+    pmix_key_t tmp = PMIX_JOB_SIZE; // this tmp silences a warning on gcc 12.2
+    if (PMIX_SUCCESS != PMIx_Get(&proc, tmp,
                                  NULL, 0, &val)) {
         gasneti_fatalerror("PMIx Get Job Size failed");
     }
@@ -748,11 +753,12 @@ static void bootstrapSNodeBroadcast(void *src, size_t len, void *dest, int rootn
         gasneti_assert_always(PMI_SUCCESS == rc);
         if (our_count != their_count) {
             gasneti_fatalerror("GASNet and PMI do not agree on the number of processes on "
-                               "this host, seeing %d and %d, respectively.  "
+                               "this host (%s), seeing %d and %d, respectively.  "
+                               "To make its count, GASNet has used %s as a unique host identifier.  "
                                "Please see documentation on GASNET_HOST_DETECT in README and "
                                "consider setting its value to 'hostname' or reconfiguring using "
                                "'--with-host-detect=hostname' to make that the default value.",
-                               our_count, their_count);
+                               gasneti_gethostname(), our_count, their_count, gasneti_format_host_detect());
         }
     }
 #endif

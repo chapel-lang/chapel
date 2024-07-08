@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -68,6 +68,7 @@ classifyPrimitive(CallExpr *call) {
       case PRIM_GET_USER_FILE:
       case PRIM_BLOCK_LOCAL:
       case PRIM_GPU_SET_BLOCKSIZE:
+      case PRIM_TASK_PRIVATE_SVAR_CAPTURE:
         return FAST_AND_LOCAL;
 
       // Loops can have arbitrary trip counts, don't consider fast
@@ -110,6 +111,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_MULT:
   case PRIM_DIV:
   case PRIM_MOD:
+  case PRIM_FMA:
   case PRIM_LSH:
   case PRIM_RSH:
   case PRIM_EQUAL:
@@ -124,6 +126,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_POW:
   case PRIM_MIN:
   case PRIM_MAX:
+  case PRIM_SQRT:
+  case PRIM_ABS:
 
   case PRIM_GET_MEMBER:
   case PRIM_GET_SVEC_MEMBER:
@@ -149,6 +153,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_FINISH_RMEM_FENCE:
 
   case PRIM_CAST_TO_VOID_STAR:
+  case PRIM_CAST_TO_TYPE:
   case PRIM_SIZEOF_BUNDLE:
   case PRIM_SIZEOF_DDATA_ELEMENT:
 
@@ -300,6 +305,13 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GPU_SYNC_THREADS:
   case PRIM_ASSERT_ON_GPU:
   case PRIM_GET_REQUESTED_SUBLOC:
+  case PRIM_GPU_INIT_KERNEL_CFG:
+  case PRIM_GPU_INIT_KERNEL_CFG_3D:
+  case PRIM_GPU_DEINIT_KERNEL_CFG:
+  case PRIM_GPU_ARG:
+  case PRIM_GPU_PID_OFFLOAD:
+  case PRIM_GPU_BLOCK_REDUCE:
+  case PRIM_GPU_REDUCE_WRAPPER:
     return FAST_AND_LOCAL;
 
     // Temporarily unclassified (legacy) cases.
@@ -316,8 +328,14 @@ classifyPrimitive(CallExpr *call) {
     return NOT_FAST_NOT_LOCAL;
 
   case PRIM_GPU_KERNEL_LAUNCH:
-  case PRIM_GPU_KERNEL_LAUNCH_FLAT:
    return LOCAL_NOT_FAST;
+
+  case PRIM_BREAKPOINT:
+    return FAST_AND_LOCAL;
+
+  case PRIM_CONST_ARG_HASH:
+  case PRIM_CHECK_CONST_ARG_HASH:
+    return FAST_AND_LOCAL;
 
   // no default, so that it is usually a C compilation
   // error when a primitive is added but not included here.

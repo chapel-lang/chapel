@@ -8,4 +8,5 @@ class C2: C1 {
   proc deinit () {writeln("Inside ~C2");}
 }
 
-var c2: borrowed C2 = new borrowed C2();
+var ownC2 = new owned C2();
+var c2: borrowed C2 = ownC2.borrow();

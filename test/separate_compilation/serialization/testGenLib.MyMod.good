@@ -1,0 +1,5 @@
+Parsed file: $CHPL_HOME/modules/internal/ChapelStandard.chpl
+Parsed file: OtherMod.chpl
+Parsed file: testGenLib.chpl
+MYPREFIX: doMyM-doMyM-doMyM
+MYPREFIX: OtherMod OtherMod OtherMod

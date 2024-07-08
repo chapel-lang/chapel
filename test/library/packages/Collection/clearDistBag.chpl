@@ -1,4 +1,4 @@
-use DistributedBag;
+use DistributedBagDeprecated;
 
 var s = new DistBag(int,Locales);
 

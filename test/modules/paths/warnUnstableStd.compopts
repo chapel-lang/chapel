@@ -1,0 +1,2 @@
+--prepend-standard-module-dir=std  # noWarnUnstableStd.good
+--prepend-standard-module-dir=std --warn-unstable  # warnUnstableStd.good

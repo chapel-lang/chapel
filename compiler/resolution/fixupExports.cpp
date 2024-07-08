@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -248,7 +248,7 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
   // to put these conditions in tables.
   //
   if (t == dtBytes || t == dtString || t == dtStringC
-                   || t == dtExternalArray) {
+                   || t == dtExternalArray || isCPtrConstChar(t)) {
     IntentTag tag = as->originalIntent;
 
     bool multiloc = fMultiLocaleInterop || strcmp(CHPL_COMM, "none");

@@ -1,26 +1,26 @@
 use CTypes;
 var b = b"this is a bytes";
 var s = "this is a string";
-var cs: c_string = "this is a c_string";
+var cs: c_ptrConst(c_char) = "this is a c_string";
 
 writeln(b);
 writeln(s);
-writeln(createStringWithNewBuffer(cs));
+writeln(string.createCopyingBuffer(cs));
 writeln();
 
 // TEST INITIALIZERS
 writeln("Initializer tests");
-var b_from_s = createBytesWithNewBuffer(s:bytes);
-var b_from_cs = createBytesWithNewBuffer(cs);
+var b_from_s = s:bytes;
+var b_from_cs = bytes.createCopyingBuffer(cs);
 
-var c_char_arr = c_malloc(uint(8), 4);
+var c_char_arr = allocate(uint(8), 4);
 c_char_arr[0] = 65; //A
 c_char_arr[1] = 66; //B
 c_char_arr[2] = 67; //C
 c_char_arr[3] = 0;
 
 //length and size are in bytes
-var b_from_c_ptr = createBytesWithNewBuffer(c_char_arr, length=3, size=4);
+var b_from_c_ptr = bytes.createCopyingBuffer(c_char_arr, length=3, size=4);
 
 writeln("bytes object from string: ", b_from_s);
 writeln("bytes object from c_string: ", b_from_cs);
@@ -170,15 +170,15 @@ writeln();
 
 // TEST SPLIT/JOIN etc
 writeln("Test split no split");
-for (num,byte) in zip(1.., b.split(maxsplit = 0)) do
+for (byte,num) in zip(b.split(maxsplit = 0), 1..) do
   writeln("Split ", num, ": ", byte);
 
 writeln("Test split no args");
-for (num,byte) in zip(1.., b.split()) do
+for (byte,num) in zip(b.split(), 1..) do
   writeln("Split ", num, ": ", byte);
 
 writeln("Test split with args");
-for (num,byte) in zip(1.., b.split(b"is")) do
+for (byte,num) in zip(b.split(b"is"), 1..) do
   writeln("Split ", num, ": ", byte);
 
 writeln("Test join -- bytes varargs");
@@ -225,4 +225,4 @@ writeln(b"word\rword"); // should print "word"
 writeln("End of writeln tests");
 writeln();
 
-c_free(c_char_arr);
+deallocate(c_char_arr);

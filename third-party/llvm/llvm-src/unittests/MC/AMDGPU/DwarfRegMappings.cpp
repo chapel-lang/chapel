@@ -12,6 +12,7 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
 #include "gtest/gtest.h"
+#include <mutex>
 #include <thread>
 
 using namespace llvm;
@@ -36,8 +37,9 @@ createTargetMachine(std::string TStr, StringRef CPU, StringRef FS) {
     return nullptr;
 
   TargetOptions Options;
-  return std::unique_ptr<LLVMTargetMachine>(static_cast<LLVMTargetMachine *>(
-      T->createTargetMachine(TStr, CPU, FS, Options, None, None)));
+  return std::unique_ptr<LLVMTargetMachine>(
+      static_cast<LLVMTargetMachine *>(T->createTargetMachine(
+          TStr, CPU, FS, Options, std::nullopt, std::nullopt)));
 }
 
 TEST(AMDGPUDwarfRegMappingTests, TestWave64DwarfRegMapping) {

@@ -23,8 +23,8 @@ size:		49
 lowBound:	(7, 17)
 highBound:	(26, 46)
 stride:		(1, 1)
-alignment:	(1, 5)
+alignment:	(0, 0)
 first:		true
 last:		true
-alignedLow:	(7, 17)
-alignedHigh:	(26, 46)
+low:	(7, 17)
+high:	(26, 46)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,7 +26,7 @@ BLAS (Basic Linear Algebra Subprograms) are the de facto standard routines for
 low-level matrix, vector, and scalar operations. While `netlib
 <https://www.netlib.org/blas/#_documentation>`_ provides the official
 reference version of BLAS, this documentation refers to the
-`MKL BLAS <https://software.intel.com/en-us/mkl-developer-reference-fortran>`_
+`MKL BLAS <https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines.html>`_
 documentation, due to interface similarities.
 
 This module is intended to work with non-distributed dense rectangular
@@ -72,7 +72,7 @@ BLAS Implementations:
 
   * **OpenBLAS**
 
-    * Compilation will generate warnings about incompatible pointer types,
+    * Compilation may generate warnings about incompatible pointer types,
       which may be ignored.
       These warnings are due to the header files of OpenBLAS differing from the
       reference C_BLAS prototypes for complex arguments by using ``float*`` and
@@ -110,64 +110,59 @@ dimensions of the matrices from the arrays that are passed in, even when one is
 passing in a sub-array such that the array elements are not contiguously stored
 in memory.
 
-.. warning::
-
-  The ``CHPL_LOCALE_MODEL=numa`` configuration is currently not supported by
-  this module.
-
 .. MKL Documentation References
 
-.. _GEMM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-gemm
-.. _HEMM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-hemm
-.. _HERK:   https://software.intel.com/en-us/mkl-developer-reference-fortran-herk
-.. _HER2K:  https://software.intel.com/en-us/mkl-developer-reference-fortran-her2k
-.. _SYMM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-symm
-.. _SYRK:   https://software.intel.com/en-us/mkl-developer-reference-fortran-syrk
-.. _SYR2K:  https://software.intel.com/en-us/mkl-developer-reference-fortran-syr2k
-.. _TRMM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-trmm
-.. _TRSM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-trsm
-.. _GBMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-gbmv
-.. _GEMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-gemv
-.. _GER:    https://software.intel.com/en-us/mkl-developer-reference-fortran-ger
-.. _GERC:   https://software.intel.com/en-us/mkl-developer-reference-fortran-gerc
-.. _GERU:   https://software.intel.com/en-us/mkl-developer-reference-fortran-geru
-.. _HBMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-hbmv
-.. _HEMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-hemv
-.. _HER:    https://software.intel.com/en-us/mkl-developer-reference-fortran-her
-.. _HER2:   https://software.intel.com/en-us/mkl-developer-reference-fortran-her2
-.. _HPMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-hpmv
-.. _HPR:    https://software.intel.com/en-us/mkl-developer-reference-fortran-hpr
-.. _HPR2:   https://software.intel.com/en-us/mkl-developer-reference-fortran-hpr2
-.. _SBMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-sbmv
-.. _SPMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-spmv
-.. _SPR:    https://software.intel.com/en-us/mkl-developer-reference-fortran-spr
-.. _SPR2:   https://software.intel.com/en-us/mkl-developer-reference-fortran-spr2
-.. _SYMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-symv
-.. _SYR:    https://software.intel.com/en-us/mkl-developer-reference-fortran-syr
-.. _SYR2:   https://software.intel.com/en-us/mkl-developer-reference-fortran-syr2
-.. _TBMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-tbmv
-.. _TBSV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-tbsv
-.. _TPMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-tpmv
-.. _TPSV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-tpsv
-.. _TRMV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-trmv
-.. _TRSV:   https://software.intel.com/en-us/mkl-developer-reference-fortran-trsv
-.. _ASUM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-asum
-.. _AXPY:   https://software.intel.com/en-us/mkl-developer-reference-fortran-axpy
-.. _COPY:   https://software.intel.com/en-us/mkl-developer-reference-fortran-copy
-.. _DOT:    https://software.intel.com/en-us/mkl-developer-reference-fortran-dot
-.. _SDOT:   https://software.intel.com/en-us/mkl-developer-reference-fortran-sdot
-.. _DOTC:   https://software.intel.com/en-us/mkl-developer-reference-fortran-dotc
-.. _DOTU:   https://software.intel.com/en-us/mkl-developer-reference-fortran-dotu
-.. _NRM2:   https://software.intel.com/en-us/mkl-developer-reference-fortran-nrm2
-.. _ROT:    https://software.intel.com/en-us/mkl-developer-reference-fortran-rot
-.. _ROTG:   https://software.intel.com/en-us/mkl-developer-reference-fortran-rotg
-.. _ROTM:   https://software.intel.com/en-us/mkl-developer-reference-fortran-rotm
-.. _ROTMG:  https://software.intel.com/en-us/mkl-developer-reference-fortran-rotmg
-.. _SCAL:   https://software.intel.com/en-us/mkl-developer-reference-fortran-scal
-.. _SWAP:   https://software.intel.com/en-us/mkl-developer-reference-fortran-swap
-.. _AMAX:   https://software.intel.com/en-us/mkl-developer-reference-fortran-i-amax
-.. _AMIN:   https://software.intel.com/en-us/mkl-developer-reference-fortran-amin
-.. _CABS1:  https://software.intel.com/en-us/mkl-developer-reference-fortran-cabs1
+.. _ASUM:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/asum.html
+.. _AXPY:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/axpy.html
+.. _COPY:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/copy.html
+.. _DOT:    https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/dot.html
+.. _SDOT:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/sdot.html
+.. _DOTC:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/dotc.html
+.. _DOTU:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/dotu.html
+.. _NRM2:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/nrm2.html
+.. _ROT:    https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/rot.html
+.. _ROTG:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/rotg.html
+.. _ROTM:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/rotm.html
+.. _ROTMG:  https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/rotmg.html
+.. _SCAL:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/scal.html
+.. _SWAP:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/swap.html
+.. _AMAX:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/i-amax.html
+.. _AMIN:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/i-amin.html
+.. _CABS1:  https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/cabs1.html
+.. _GBMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/gbmv.html
+.. _GEMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/gemv.html
+.. _GER:    https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/ger.html
+.. _GERC:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/gerc.html
+.. _GERU:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/geru.html
+.. _HBMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/hbmv.html
+.. _HEMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/hemv.html
+.. _HER:    https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/her.html
+.. _HER2:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/her2.html
+.. _HPMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/hpmv.html
+.. _HPR:    https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/hpr.html
+.. _HPR2:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/hpr2.html
+.. _SBMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/sbmv.html
+.. _SPMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/spmv.html
+.. _SPR:    https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/spr.html
+.. _SPR2:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/spr2.html
+.. _SYMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/symv.html
+.. _SYR:    https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/syr.html
+.. _SYR2:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/syr2.html
+.. _TBMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/tbmv.html
+.. _TBSV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/tbsv.html
+.. _TPMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/tpmv.html
+.. _TPSV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/tpsv.html
+.. _TRMV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/trmv.html
+.. _TRSV:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-2-routines/trsv.html
+.. _GEMM:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/gemm.html
+.. _HEMM:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/hemm.html
+.. _HERK:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/herk.html
+.. _HER2K:  https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/her2k.html
+.. _SYMM:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/symm.html
+.. _SYRK:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/syrk.html
+.. _SYR2K:  https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/syr2k.html
+.. _TRMM:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/trmm.html
+.. _TRSM:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-3-routines/trsm.html
 
 .. BLAS Module TODO:
   - Support banded/packed matrix routines
@@ -176,7 +171,7 @@ in memory.
 module BLAS {
 
   /* Available BLAS implementations for ``blasImpl`` */
-  enum BlasImpl {blas, mkl, off};
+  enum BlasImpl {blas, mkl, off}
   use BlasImpl;
 
   /* Specifies which header filename to include, based on the BLAS
@@ -202,7 +197,7 @@ module BLAS {
    */
   config param blasHeader = '';
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param header = if blasHeader == '' then
                    if blasImpl == BlasImpl.off then ''
                    else if blasImpl == BlasImpl.mkl then 'mkl_cblas.h'
@@ -219,19 +214,19 @@ module BLAS {
   }
 
   /* Define row or column order */
-  enum Order {Row=101: c_int, Col};
+  enum Order {Row=101: c_int, Col}
 
   /* Operation of matrix : none, transpose, or adjoint */
-  enum Op {N=111 : c_int, T, H}; // NoTranspose, Transpose, Adjoint
+  enum Op {N=111 : c_int, T, H} // NoTranspose, Transpose, Adjoint
 
   /* Storage for symmetric matrices */
-  enum Uplo {Upper=121 : c_int, Lower};
+  enum Uplo {Upper=121 : c_int, Lower}
 
   /* Assume a unit or non-unit diagonal */
-  enum Diag {NonUnit=131 : c_int, Unit};
+  enum Diag {NonUnit=131 : c_int, Unit}
 
   /* Operate on the left or right side */
-  enum Side {Left=141 : c_int, Right};
+  enum Side {Left=141 : c_int, Right}
 
   /* Level 3 BLAS */
 
@@ -241,7 +236,7 @@ module BLAS {
       C := alpha * op(A) * op(B) + beta * C
 
   */
-  proc gemm(A : [?Adom], B : [?Bdom], C : [?Cdom],
+  proc gemm(A : [?Adom], B : [?Bdom], ref C : [?Cdom],
     alpha, beta,
     opA : Op = Op.N, opB : Op = Op.N,
     order : Order = Order.Row)
@@ -279,14 +274,14 @@ module BLAS {
         var alpha1 = alpha : complex(64),
             beta1 = beta : complex(64);
         C_BLAS.cblas_cgemm(order, opA, opB, m, n, k,
-          alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
+          c_ptrToConst(alpha1), A, _ldA, B, _ldB, c_ptrToConst(beta1), C,_ldC);
       }
       when complex(128) {
         // zgemm
         var alpha1 = alpha : complex(128),
             beta1 = beta : complex(128);
         C_BLAS.cblas_zgemm(order, opA, opB, m, n, k,
-          alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
+          c_ptrToConst(alpha1), A, _ldA, B, _ldB, c_ptrToConst(beta1), C,_ldC);
       }
       otherwise {
         compilerError("Unknown type in gemm: ", eltType:string);
@@ -306,7 +301,7 @@ module BLAS {
 
     where ``A`` is a symmetric matrix.
   */
-  proc symm(A : [?Adom], B : [?Bdom], C : [?Cdom],
+  proc symm(A : [?Adom], B : [?Bdom], ref C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  side : Side = Side.Left,
     order : Order = Order.Row)
@@ -341,14 +336,14 @@ module BLAS {
         var alpha1 = alpha : complex(64),
             beta1 = beta : complex(64);
         C_BLAS.cblas_csymm(order, side, uplo, m, n,
-          alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
+          c_ptrToConst(alpha1), A, _ldA, B, _ldB, c_ptrToConst(beta1), C,_ldC);
       }
       when complex(128) {
         // zsymm
         var alpha1 = alpha : complex(128),
             beta1 = beta : complex(128);
         C_BLAS.cblas_zsymm(order, side, uplo, m, n,
-          alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
+          c_ptrToConst(alpha1), A, _ldA, B, _ldB, c_ptrToConst(beta1), C,_ldC);
       }
       otherwise {
         compilerError("Unknown type in symm: ", eltType:string);
@@ -368,7 +363,7 @@ module BLAS {
 
     where ``A`` is an hermitian matrix.
   */
-  proc hemm(A : [?Adom], B : [?Bdom], C : [?Cdom],
+  proc hemm(A : [?Adom], B : [?Bdom], ref C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  side : Side = Side.Left,
     order : Order = Order.Row)
@@ -393,14 +388,14 @@ module BLAS {
         var alpha1 = alpha : complex(64),
             beta1 = beta : complex(64);
         C_BLAS.cblas_chemm(order, side, uplo, m, n,
-          alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
+          c_ptrToConst(alpha1), A, _ldA, B, _ldB, c_ptrToConst(beta1), C,_ldC);
       }
       when complex(128) {
         // zsymm
         var alpha1 = alpha : complex(128),
             beta1 = beta : complex(128);
         C_BLAS.cblas_zhemm(order, side, uplo, m, n,
-          alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
+          c_ptrToConst(alpha1), A, _ldA, B, _ldB, c_ptrToConst(beta1), C,_ldC);
       }
       otherwise {
         compilerError("Unknown type in hemm: ", eltType:string);
@@ -421,7 +416,7 @@ module BLAS {
 
     where ``C`` is a symmetric matrix, and ``A**T`` is the transpose of ``A``.
   */
-  proc syrk(A : [?Adom],  C : [?Cdom],
+  proc syrk(A : [?Adom],  ref C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
     order : Order = Order.Row)
@@ -457,14 +452,14 @@ module BLAS {
         var alpha1 = alpha : complex(64),
             beta1 = beta : complex(64);
         C_BLAS.cblas_csyrk(order, uplo, trans, n, k,
-          alpha1, A, _ldA, beta1, C,_ldC);
+          c_ptrToConst(alpha1), A, _ldA, c_ptrToConst(beta1), C,_ldC);
       }
       when complex(128) {
         // zsymm
         var alpha1 = alpha : complex(128),
             beta1 = beta : complex(128);
         C_BLAS.cblas_zsyrk(order, uplo, trans, n, k,
-          alpha1, A, _ldA, beta1, C,_ldC);
+          c_ptrToConst(alpha1), A, _ldA, c_ptrToConst(beta1), C,_ldC);
       }
       otherwise {
         compilerError("Unknown type in syrk: ", eltType:string);
@@ -485,7 +480,7 @@ module BLAS {
     where ``C`` is an hermitian matrix, and ``A**H`` is the conjugate transpose
     of ``A``.
   */
-  proc herk(A : [?Adom],  C : [?Cdom],
+  proc herk(A : [?Adom],  ref C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
     order : Order = Order.Row)
@@ -540,7 +535,7 @@ module BLAS {
     where ``C`` is a symmetric matrix, and ``A**T`` and ``B**T`` are the
     transpose of ``A`` and ``B`` , respectively.
   */
-  proc syr2k(A : [?Adom],  B : [?Bdom], C : [?Cdom],
+  proc syr2k(A : [?Adom],  B : [?Bdom], ref C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
     order : Order = Order.Row)
@@ -577,14 +572,14 @@ module BLAS {
         var alpha1 = alpha : complex(64),
             beta1 = beta : complex(64);
         C_BLAS.cblas_csyr2k(order, uplo, trans, n, k,
-          alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
+          c_ptrToConst(alpha1), A, _ldA, B, _ldB, c_ptrToConst(beta1), C,_ldC);
       }
       when complex(128) {
         // zsymm
         var alpha1 = alpha : complex(128),
             beta1 = beta : complex(128);
         C_BLAS.cblas_zsyr2k(order, uplo, trans, n, k,
-          alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
+          c_ptrToConst(alpha1), A, _ldA, B, _ldB, c_ptrToConst(beta1), C,_ldC);
       }
       otherwise {
         compilerError("Unknown type in syr2k: ", eltType:string);
@@ -605,7 +600,7 @@ module BLAS {
     where ``C`` is an hermitian matrix, ``B**H`` is the conjugate transpose of
     ``B`` , ``conjg(alpha)`` is the complex conjugate of ``alpha``.
   */
-  proc her2k(A : [?Adom],  B : [?Bdom], C : [?Cdom],
+  proc her2k(A : [?Adom],  B : [?Bdom], ref C : [?Cdom],
     alpha, beta,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
     order : Order = Order.Row)
@@ -631,13 +626,13 @@ module BLAS {
         var alpha1 = alpha : complex(64),
             beta1 = beta : real(32);
         C_BLAS.cblas_cher2k(order, uplo, trans, n, k,
-          alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
+          c_ptrToConst(alpha1), A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       when complex(128) {
         var alpha1 = alpha : complex(128),
             beta1 = beta : real(64);
         C_BLAS.cblas_zher2k(order, uplo, trans, n, k,
-          alpha1, A, _ldA, B, _ldB, beta1, C,_ldC);
+          c_ptrToConst(alpha1), A, _ldA, B, _ldB, beta1, C,_ldC);
       }
       otherwise {
         compilerError("Unknown type in her2k: ", eltType:string);
@@ -659,7 +654,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `B` is a non-square array.
   */
-  proc trmm(A : [?Adom] ?eltType,  B : [?Bdom] eltType,
+  proc trmm(A : [?Adom] ?eltType,  ref B : [?Bdom] eltType,
     alpha,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
     side : Side = Side.Left, diag : Diag = Diag.NonUnit,
@@ -674,7 +669,7 @@ module BLAS {
         n = Bdom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("B", "Non-square array of dimensions %ix%i passed to trmm".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'B': Non-square array of dimensions %ix%i passed to trmm".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -692,12 +687,12 @@ module BLAS {
       when complex(64) {
         var alpha1 = alpha : complex(64);
         C_BLAS.cblas_ctrmm(order, side, uplo, trans, diag,
-          m, n, alpha1, A, _ldA, B, _ldB);
+          m, n, c_ptrToConst(alpha1), A, _ldA, B, _ldB);
       }
       when complex(128) {
         var alpha1 = alpha : complex(128);
         C_BLAS.cblas_ztrmm(order, side, uplo, trans, diag,
-          m, n, alpha1, A, _ldA, B, _ldB);
+          m, n, c_ptrToConst(alpha1), A, _ldA, B, _ldB);
       }
       otherwise {
         compilerError("Unknown type in trmm: ", eltType:string);
@@ -719,7 +714,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `B` is a non-square array.
   */
-  proc trsm(A : [?Adom],  B : [?Bdom],
+  proc trsm(A : [?Adom],  ref B : [?Bdom],
     alpha,
     uplo : Uplo = Uplo.Upper,  trans : Op = Op.N,
     side : Side = Side.Left, diag : Diag = Diag.NonUnit,
@@ -735,7 +730,7 @@ module BLAS {
         n = Bdom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("B", "Non-square array of dimensions %ix%i passed to trsm".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'B': Non-square array of dimensions %ix%i passed to trsm".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -753,12 +748,12 @@ module BLAS {
       when complex(64) {
         var alpha1 = alpha : complex(64);
         C_BLAS.cblas_ctrsm(order, side, uplo, trans, diag,
-          m, n, alpha1, A, _ldA, B, _ldB);
+          m, n, c_ptrToConst(alpha1), A, _ldA, B, _ldB);
       }
       when complex(128) {
         var alpha1 = alpha : complex(128);
         C_BLAS.cblas_ztrsm(order, side, uplo, trans, diag,
-          m, n, alpha1, A, _ldA, B, _ldB);
+          m, n, c_ptrToConst(alpha1), A, _ldA, B, _ldB);
       }
       otherwise {
         compilerError("Unknown type in trsm: ", eltType:string);
@@ -770,7 +765,7 @@ module BLAS {
 
   /* Level 2 BLAS */
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `GBMV`_ routines::
 
@@ -782,8 +777,8 @@ module BLAS {
     TODO -- Get banded array routines working
    */
   proc gbmv(A : [?Adom] ?eltType,
-            X : [?Xdom] eltType, Y : [?Ydom] eltType,
-            ref alpha: eltType, ref beta: eltType,
+            X : [?Xdom] eltType, ref Y : [?Ydom] eltType,
+            alpha: eltType, beta: eltType,
             kl : int = 0, ku : int = 0,
             trans : Op =  Op.N,
             order : Order = Order.Row, incx : c_int = 1, incy : c_int = 1)
@@ -810,12 +805,12 @@ module BLAS {
             A, _ldA, X, incx, beta, Y, incy);
       }
       when complex(64) {
-        C_BLAS.cblas_cgbmv(order, trans, m, n, _kl, _ku, alpha,
-            A, _ldA, X, incx, beta, Y, incy);
+        C_BLAS.cblas_cgbmv(order, trans, m, n, _kl, _ku, c_ptrToConst(alpha),
+            A, _ldA, X, incx, c_ptrToConst(beta), Y, incy);
       }
       when complex(128) {
-        C_BLAS.cblas_zgbmv(order, trans, m, n, _kl, _ku, alpha,
-            A, _ldA, X, incx, beta, Y, incy);
+        C_BLAS.cblas_zgbmv(order, trans, m, n, _kl, _ku, c_ptrToConst(alpha),
+            A, _ldA, X, incx, c_ptrToConst(beta), Y, incy);
       }
       otherwise {
         compilerError("Unknown type in gbmv: ", eltType:string);
@@ -830,7 +825,7 @@ module BLAS {
 
     where ``A`` is an ``m``x``n`` matrix.
   */
-  proc gemv(A : [?Adom] ?eltType, x : [?xdom] eltType, y : [?ydom] eltType,
+  proc gemv(A : [?Adom] ?eltType, x : [?xdom] eltType, ref y : [?ydom] eltType,
             alpha, beta,
             opA : Op = Op.N,
             order : Order = Order.Row,
@@ -857,14 +852,14 @@ module BLAS {
       when complex(64) {
         var alpha1 = alpha: complex(64),
             beta1 = beta: complex(64);
-        C_BLAS.cblas_cgemv(order, opA, m, n, alpha1, A,
-          _ldA, x, incx, beta1, y, incy);
+        C_BLAS.cblas_cgemv(order, opA, m, n, c_ptrToConst(alpha1), A,
+          _ldA, x, incx, c_ptrToConst(beta1), y, incy);
       }
       when complex(128) {
         var alpha1 = alpha: complex(128),
             beta1 = beta: complex(128);
-        C_BLAS.cblas_zgemv(order, opA, m, n, alpha1, A,
-          _ldA, x, incx, beta1, y, incy);
+        C_BLAS.cblas_zgemv(order, opA, m, n, c_ptrToConst(alpha1), A,
+          _ldA, x, incx, c_ptrToConst(beta1), y, incy);
       }
       otherwise {
         compilerError("Unknown type in gemv: ", eltType:string);
@@ -878,7 +873,7 @@ module BLAS {
       A := alpha*x*y'+ A
 
   */
-  proc ger(A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType, alpha,
+  proc ger(ref A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType, alpha,
            order : Order = Order.Row, incx : c_int = 1, incy : c_int = 1)
            where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
   {
@@ -902,7 +897,6 @@ module BLAS {
         compilerError("Unknown type in ger: ", eltType:string);
       }
     }
-
   }
 
   /*
@@ -911,8 +905,8 @@ module BLAS {
       A := alpha*x*conjg(y') + A
 
   */
-  proc gerc(A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType,
-            ref alpha: eltType,
+  proc gerc(ref A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType,
+            alpha: eltType,
             order : Order = Order.Row, incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
   {
@@ -925,10 +919,10 @@ module BLAS {
 
     select eltType {
       when complex(64) {
-        C_BLAS.cblas_cgerc(order, m, n, alpha, X, incx, Y, incy, A, _ldA);
+        C_BLAS.cblas_cgerc(order, m, n, c_ptrToConst(alpha), X, incx, Y, incy, A, _ldA);
       }
       when complex(128) {
-        C_BLAS.cblas_zgerc(order, m, n, alpha, X, incx, Y, incy, A, _ldA);
+        C_BLAS.cblas_zgerc(order, m, n, c_ptrToConst(alpha), X, incx, Y, incy, A, _ldA);
       }
       otherwise {
         compilerError("Unknown type in gerc: ", eltType:string);
@@ -943,8 +937,8 @@ module BLAS {
       A := alpha*x*y' + A
 
   */
-  proc geru(A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType,
-            ref alpha: eltType,
+  proc geru(ref A: [?Adom] ?eltType, X: [?Xdom] eltType, Y: [?Ydom] eltType,
+            alpha: eltType,
             order : Order = Order.Row, incx : c_int = 1, incy : c_int = 1)
             where (Adom.rank == 2) && (Xdom.rank == 1) && (Ydom.rank == 1)
   {
@@ -957,10 +951,10 @@ module BLAS {
 
     select eltType {
       when complex(64) {
-        C_BLAS.cblas_cgeru(order, m, n, alpha, X, incx, Y, incy, A, _ldA);
+        C_BLAS.cblas_cgeru(order, m, n, c_ptrToConst(alpha), X, incx, Y, incy, A, _ldA);
       }
       when complex(128) {
-        C_BLAS.cblas_zgeru(order, m, n, alpha, X, incx, Y, incy, A, _ldA);
+        C_BLAS.cblas_zgeru(order, m, n, c_ptrToConst(alpha), X, incx, Y, incy, A, _ldA);
       }
       otherwise {
         compilerError("Unknown type in geru: ", eltType:string);
@@ -970,7 +964,7 @@ module BLAS {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `HBMV`_ routines::
 
@@ -978,8 +972,8 @@ module BLAS {
 
     TODO -- Get banded array routines working
   */
-  proc hbmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
-            ref alpha: eltType, ref beta: eltType,
+  proc hbmv(A: [?Adom] ?eltType, X: [?vDom] eltType, ref Y: [vDom] eltType,
+            alpha: eltType, beta: eltType,
             k: int = 0,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper, incx : c_int = 1, incy : c_int = 1)
@@ -996,10 +990,10 @@ module BLAS {
 
     select eltType {
       when complex(64) {
-        C_BLAS.cblas_chbmv(order, uplo, n, _k, alpha, A, _ldA, X, incx, beta, Y, incy);
+        C_BLAS.cblas_chbmv(order, uplo, n, _k, c_ptrToConst(alpha), A, _ldA, X, incx, c_ptrToConst(beta), Y, incy);
       }
       when complex(128) {
-        C_BLAS.cblas_zhbmv(order, uplo, n, _k, alpha, A, _ldA, X, incx, beta, Y, incy);
+        C_BLAS.cblas_zhbmv(order, uplo, n, _k, c_ptrToConst(alpha), A, _ldA, X, incx, c_ptrToConst(beta), Y, incy);
       }
       otherwise {
         compilerError("Unknown type in hbmv: ", eltType:string);
@@ -1014,8 +1008,8 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc hemv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
-            ref alpha: eltType, ref beta: eltType,
+  proc hemv(A: [?Adom] ?eltType, X: [?vDom] eltType, ref Y: [vDom] eltType,
+            alpha: eltType, beta: eltType,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper, incx : c_int = 1, incy : c_int = 1)
             throws where (Adom.rank == 2) && (vDom.rank == 1)
@@ -1025,17 +1019,17 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to hemv".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to hemv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
 
     select eltType {
       when complex(64) {
-        C_BLAS.cblas_chemv(order, uplo, m, alpha, A, _ldA, X, incx, beta, Y, incy);
+        C_BLAS.cblas_chemv(order, uplo, m, c_ptrToConst(alpha), A, _ldA, X, incx, c_ptrToConst(beta), Y, incy);
       }
       when complex(128) {
-        C_BLAS.cblas_zhemv(order, uplo, m, alpha, A, _ldA, X, incx, beta, Y, incy);
+        C_BLAS.cblas_zhemv(order, uplo, m, c_ptrToConst(alpha), A, _ldA, X, incx, c_ptrToConst(beta), Y, incy);
       }
       otherwise {
         compilerError("Unknown type in hemv: ", eltType:string);
@@ -1050,7 +1044,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc her(A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
+  proc her(ref A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper, incx : c_int = 1)
             throws where (Adom.rank == 2) && (vDom.rank == 1)
@@ -1060,7 +1054,7 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to her".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to her".format(m, n));
 
     // TODO -- Assert alpha is real
 
@@ -1086,8 +1080,8 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc her2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
-            ref alpha: eltType,
+  proc her2(ref A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+            alpha: eltType,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper, incx : c_int = 1, incy : c_int = 1)
             throws where (Adom.rank == 2) && (vDom.rank == 1)
@@ -1097,7 +1091,7 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to her2".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to her2".format(m, n));
 
 
     // Set strides if necessary
@@ -1105,10 +1099,10 @@ module BLAS {
 
     select eltType {
       when complex(64) {
-        C_BLAS.cblas_cher2 (order, uplo, n, alpha, X, incx, Y, incy, A, _ldA);
+        C_BLAS.cblas_cher2 (order, uplo, n, c_ptrToConst(alpha), X, incx, Y, incy, A, _ldA);
       }
       when complex(128) {
-        C_BLAS.cblas_zher2 (order, uplo, n, alpha, X, incx, Y, incy, A, _ldA);
+        C_BLAS.cblas_zher2 (order, uplo, n, c_ptrToConst(alpha), X, incx, Y, incy, A, _ldA);
       }
       otherwise {
         compilerError("Unknown type in her2: ", eltType:string);
@@ -1117,7 +1111,7 @@ module BLAS {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `HPMV`_ routines::
 
@@ -1126,8 +1120,8 @@ module BLAS {
     TODO -- Get packed array routines working
 
   */
-  proc hpmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
-            ref alpha: eltType, ref beta: eltType,
+  proc hpmv(A: [?Adom] ?eltType, X: [?vDom] eltType, ref Y: [vDom] eltType,
+            alpha: eltType, beta: eltType,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
             incx : c_int = 1, incy : c_int = 1)
@@ -1139,10 +1133,10 @@ module BLAS {
 
     select eltType {
       when complex(64) {
-        C_BLAS.cblas_chpmv(order, uplo, n, alpha, A, X, incx, beta, Y, incy);
+        C_BLAS.cblas_chpmv(order, uplo, n, c_ptrToConst(alpha), A, X, incx, c_ptrToConst(beta), Y, incy);
       }
       when complex(128) {
-        C_BLAS.cblas_zhpmv(order, uplo, n, alpha, A, X, incx, beta, Y, incy);
+        C_BLAS.cblas_zhpmv(order, uplo, n, c_ptrToConst(alpha), A, X, incx, c_ptrToConst(beta), Y, incy);
       }
       otherwise {
         compilerError("Unknown type in hpmv: ", eltType:string);
@@ -1151,7 +1145,7 @@ module BLAS {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `HPR`_ routines::
 
@@ -1160,7 +1154,7 @@ module BLAS {
     TODO -- Get packed array routines working
 
   */
-  proc hpr(A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
+  proc hpr(ref A: [?Adom] ?eltType, X: [?vDom] eltType, alpha,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
             incx : c_int = 1)
@@ -1186,7 +1180,7 @@ module BLAS {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `HPR2`_ routines::
 
@@ -1195,8 +1189,8 @@ module BLAS {
     TODO -- Get packed array routines working
 
   */
-  proc hpr2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
-            ref alpha: eltType,
+  proc hpr2(ref A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+            alpha: eltType,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
             incx : c_int = 1, incy : c_int = 1)
@@ -1208,10 +1202,10 @@ module BLAS {
 
     select eltType {
       when complex(64) {
-        C_BLAS.cblas_chpr2(order, uplo, n, alpha, X, incx, Y, incy, A);
+        C_BLAS.cblas_chpr2(order, uplo, n, c_ptrToConst(alpha), X, incx, Y, incy, A);
       }
       when complex(128) {
-        C_BLAS.cblas_zhpr2(order, uplo, n, alpha, X, incx, Y, incy, A);
+        C_BLAS.cblas_zhpr2(order, uplo, n, c_ptrToConst(alpha), X, incx, Y, incy, A);
       }
       otherwise {
         compilerError("Unknown type in hpr2: ", eltType:string);
@@ -1220,7 +1214,7 @@ module BLAS {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `SBMV`_ routines::
 
@@ -1229,7 +1223,7 @@ module BLAS {
     TODO -- Get banded array routines working
 
   */
-  proc sbmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc sbmv(A: [?Adom] ?eltType, X: [?vDom] eltType, ref Y: [vDom] eltType,
             alpha, beta,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1259,7 +1253,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for `SPMV`_ routines::
 
@@ -1268,7 +1262,7 @@ module BLAS {
     TODO -- Get packed array routines working
 
   */
-  proc spmv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc spmv(A: [?Adom] ?eltType, X: [?vDom] eltType, ref Y: [vDom] eltType,
             alpha, beta,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1292,7 +1286,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for `SPR`_ routines::
 
@@ -1300,7 +1294,7 @@ module BLAS {
 
     TODO -- Get packed array routines working
   */
-  proc spr(A: [?Adom] ?eltType, X: [?vDom] eltType,
+  proc spr(ref A: [?Adom] ?eltType, X: [?vDom] eltType,
            alpha,
            order : Order = Order.Row,
            uplo : Uplo = Uplo.Upper,
@@ -1325,7 +1319,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for `SPR2`_ routines::
 
@@ -1333,7 +1327,7 @@ module BLAS {
 
     TODO -- Get packed array routines working
   */
-  proc spr2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc spr2(ref A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             alpha,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1364,7 +1358,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc symv(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc symv(A: [?Adom] ?eltType, X: [?vDom] eltType, ref Y: [vDom] eltType,
             alpha, beta,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1376,7 +1370,7 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to symv".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to symv".format(m, n));
 
     var _ldA = getLeadingDim(A, order);
 
@@ -1400,7 +1394,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc syr(A: [?Adom] ?eltType, X: [?vDom] eltType,
+  proc syr(ref A: [?Adom] ?eltType, X: [?vDom] eltType,
            alpha,
            order : Order = Order.Row,
            uplo : Uplo = Uplo.Upper,
@@ -1413,7 +1407,7 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to syr".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to syr".format(m, n));
 
     var _ldA = getLeadingDim(A, order);
 
@@ -1437,7 +1431,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc syr2(A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
+  proc syr2(ref A: [?Adom] ?eltType, X: [?vDom] eltType, Y: [vDom] eltType,
             alpha,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1450,7 +1444,7 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to syr2".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to syr2".format(m, n));
 
     var _ldA = getLeadingDim(A, order);
 
@@ -1467,7 +1461,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `TBMV`_ routines::
 
@@ -1478,7 +1472,7 @@ module BLAS {
     TODO -- Get banded array routines working
 
   */
-  proc tbmv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+  proc tbmv(A: [?Adom] ?eltType, ref X: [?vDom] eltType,
             k: c_int,
             trans : Op = Op.N,
             order : Order = Order.Row,
@@ -1514,7 +1508,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
    Wrapper for the `TBSV`_ routines::
 
@@ -1525,7 +1519,7 @@ module BLAS {
    TODO -- Get banded array routines working
 
   */
-  proc tbsv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+  proc tbsv(A: [?Adom] ?eltType, ref X: [?vDom] eltType,
             trans : Op = Op.N,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1565,7 +1559,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
    Wrapper for `TPMV`_ routines::
 
@@ -1576,7 +1570,7 @@ module BLAS {
    TODO -- Get banded array routines working
 
   */
-  proc tpmv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+  proc tpmv(A: [?Adom] ?eltType, ref X: [?vDom] eltType,
             trans : Op = Op.N,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1609,7 +1603,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for `TPSV`_ routines::
 
@@ -1617,7 +1611,7 @@ module BLAS {
 
     TODO -- Get packed array routines working
   */
-  proc tpsv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+  proc tpsv(A: [?Adom] ?eltType, ref X: [?vDom] eltType,
             trans : Op = Op.N,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1658,7 +1652,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc trmv(A: [?Adom] ?eltType, X: [?vDom] eltType,
+  proc trmv(A: [?Adom] ?eltType, ref X: [?vDom] eltType,
             trans : Op = Op.N,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1673,7 +1667,7 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to trmv".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to trmv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1704,7 +1698,7 @@ module BLAS {
 
     :throws IllegalArgumentError: When `A` is a non-square array.
   */
-  proc trsv(A: [?Adom] ?eltType, B: [?vDom] eltType,
+  proc trsv(A: [?Adom] ?eltType, ref B: [?vDom] eltType,
             trans : Op = Op.N,
             order : Order = Order.Row,
             uplo : Uplo = Uplo.Upper,
@@ -1719,7 +1713,7 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to trsv".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to trsv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1779,11 +1773,11 @@ module BLAS {
   proc rotg(ref a : ?eltType, ref b : eltType, ref c : eltType, ref s : eltType) {
     require header;
     select eltType {
-      when real(32) do{
-        cblas_srotg (a, b, c, s);
+      when real(32) {
+        cblas_srotg (c_ptrTo(a), c_ptrTo(b), c_ptrTo(c), c_ptrTo(s));
       }
-      when real(64) do{
-        cblas_drotg (a, b, c, s);
+      when real(64) {
+        cblas_drotg (c_ptrTo(a), c_ptrTo(b), c_ptrTo(c), c_ptrTo(s));
       }
       otherwise {
           compilerError("Unknown type in rotg: ", eltType:string);
@@ -1835,18 +1829,18 @@ module BLAS {
       :throws IllegalArgumentError: When `P` does not consist of exactly five
         elements.
   */
-  proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, P: []eltType) throws {
+  proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, ref P: []eltType) throws {
     require header;
 
     if P.size != 5 then
-      throw new owned IllegalArgumentError("P", "must consist of 5 elements, passed to rotmg");
+      throw new owned IllegalArgumentError("illegal argument 'P': must consist of 5 elements, passed to rotmg");
 
     select eltType {
-      when real(32) do{
-        cblas_srotmg(d1,d2,b1,b2,P);
+      when real(32) {
+        cblas_srotmg(c_ptrTo(d1),c_ptrTo(d2),c_ptrTo(b1),b2,P);
       }
-      when real(64) do{
-        cblas_drotmg(d1,d2,b1,b2,P);
+      when real(64) {
+        cblas_drotmg(c_ptrTo(d1),c_ptrTo(d2),c_ptrTo(b1),b2,P);
       }
       otherwise {
           compilerError("Unknown type in rotmg: ", eltType:string);
@@ -1878,7 +1872,7 @@ module BLAS {
 
 
   */
-  proc rot(X: [?D] ?eltType, Y: [D] eltType, c: eltType, s: eltType,  incY: c_int = 1, incX: c_int = 1)
+  proc rot(ref X: [?D] ?eltType, ref Y: [D] eltType, c: eltType, s: eltType,  incY: c_int = 1, incX: c_int = 1)
     where D.rank == 1
   {
     require header;
@@ -1886,10 +1880,10 @@ module BLAS {
     const N = D.size: c_int;
 
     select eltType {
-      when real(32) do{
+      when real(32) {
         cblas_srot(N, X, incX, Y, incY, c, s);
       }
-      when real(64) do{
+      when real(64) {
         cblas_drot(N, X, incX, Y, incY, c, s);
       }
       otherwise {
@@ -1939,21 +1933,21 @@ module BLAS {
       :throws IllegalArgumentError: When `P` does not consist of exactly five
         elements.
   */
-  proc rotm(X: [?D]?eltType,  Y: [D]eltType,  P: []eltType, incY: c_int = 1, incX: c_int = 1) throws
+  proc rotm(ref X: [?D]?eltType,  ref Y: [D]eltType,  ref P: []eltType, incY: c_int = 1, incX: c_int = 1) throws
     where D.rank == 1
   {
     require header;
 
     if P.size != 5 then
-      throw new owned IllegalArgumentError("P", "must consist of 5 elements, passed to rotm");
+      throw new owned IllegalArgumentError("illegal argument 'P': must consist of 5 elements, passed to rotm");
 
     const N = D.size: c_int;
 
     select eltType {
-      when real(32) do{
+      when real(32) {
         cblas_srotm(N, X, incX, Y, incY,  P);
       }
-      when real(64) do{
+      when real(64) {
         cblas_drotm(N, X, incX, Y, incY, P);
       }
       otherwise {
@@ -1981,7 +1975,7 @@ module BLAS {
       - ``Y``: Contains input ``X`` elements
 
   */
-  proc swap(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
+  proc swap(ref X: [?D]?eltType, ref Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
     where D.rank == 1
   {
     require header;
@@ -1989,16 +1983,16 @@ module BLAS {
     const N = D.size: c_int;
 
     select eltType {
-      when real(32) do{
+      when real(32) {
         cblas_sswap (N, X, incX, Y, incY);
       }
-      when real(64) do{
+      when real(64) {
         cblas_dswap (N, X, incX, Y, incY);
       }
-      when complex(64) do{
+      when complex(64) {
         cblas_cswap (N, X, incX, Y, incY);
       }
-      when complex(128) do{
+      when complex(128) {
         cblas_zswap (N, X, incX, Y, incY);
       }
       otherwise {
@@ -2024,7 +2018,7 @@ module BLAS {
       - ``X``: Vector updated by the equation: ``X[i] = alpha*X[i]``
 
   */
-  proc scal(X: [?D]?eltType, ref alpha:eltType, incX: c_int = 1)
+  proc scal(ref X: [?D]?eltType, alpha:eltType, incX: c_int = 1)
     where D.rank == 1
   {
     require header;
@@ -2032,17 +2026,17 @@ module BLAS {
     const N = D.size: c_int;
 
     select eltType {
-      when real(32) do{
+      when real(32) {
         cblas_sscal (N, alpha, X, incX);
       }
-      when real(64) do{
+      when real(64) {
         cblas_dscal (N, alpha, X, incX);
       }
-      when complex(64) do{
-        cblas_cscal (N, alpha, X, incX);
+      when complex(64) {
+        cblas_cscal (N, c_ptrToConst(alpha), X, incX);
       }
-      when complex(128) do{
-        cblas_zscal (N, alpha, X, incX);
+      when complex(128) {
+        cblas_zscal (N, c_ptrToConst(alpha), X, incX);
       }
       otherwise {
           compilerError("Unknown type in scal: ", eltType:string);
@@ -2069,7 +2063,7 @@ module BLAS {
       ``Y``: Contains the values copied from ``X`` vector
 
    */
-  proc copy(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
+  proc copy(X: [?D]?eltType, ref Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
     where D.rank == 1
   {
     require header;
@@ -2077,16 +2071,16 @@ module BLAS {
     const N = D.size: c_int;
 
     select eltType {
-      when real(32) do{
+      when real(32) {
         cblas_scopy (N, X, incX, Y, incY);
       }
-      when real(64) do{
+      when real(64) {
         cblas_dcopy (N, X, incX, Y, incY);
       }
-      when complex(64) do{
+      when complex(64) {
         cblas_ccopy (N, X, incX, Y, incY);
       }
-      when complex(128) do{
+      when complex(128) {
         cblas_zcopy (N, X, incX, Y, incY);
       }
       otherwise {
@@ -2116,24 +2110,24 @@ module BLAS {
 
   */
 
-  proc axpy(X: [?D]?eltType, Y: [D]eltType, ref alpha:eltType, incY: c_int = 1, incX: c_int = 1)
+  proc axpy(X: [?D]?eltType, ref Y: [D]eltType, alpha:eltType, incY: c_int = 1, incX: c_int = 1)
     where D.rank == 1
   {
     require header;
 
     const N = D.size: c_int;
     select eltType {
-      when real(32) do{
+      when real(32) {
         cblas_saxpy (N, alpha, X, incX, Y, incY);
       }
-      when real(64) do{
+      when real(64) {
         cblas_daxpy (N, alpha, X, incX, Y, incY);
       }
-      when complex(64) do{
-        cblas_caxpy (N, alpha, X, incX, Y, incY);
+      when complex(64) {
+        cblas_caxpy (N, c_ptrToConst(alpha), X, incX, Y, incY);
       }
-      when complex(128) do{
-        cblas_zaxpy (N, alpha, X, incX, Y, incY);
+      when complex(128) {
+        cblas_zaxpy (N, c_ptrToConst(alpha), X, incX, Y, incY);
       }
       otherwise {
           compilerError("Unknown type in axpy: ", eltType:string);
@@ -2144,16 +2138,14 @@ module BLAS {
   /*
       Wrapper for `DOT`_ routines
 
-      Returns  the dot product of two vectors::
+      Returns the dot product of two vectors::
 
          X*Y
 
-      **Input:**
-
-      - ``X``: Input vector
-      - ``Y``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
-      - ``incY``: Defines the increment for the vector ``Y``
+      :arg X: Input vector
+      :arg Y: Input vector
+      :arg incX: Defines the increment for the vector ``X``
+      :arg incY: Defines the increment for the vector ``Y``
 
       :returns: Scalar value of dot product
   */
@@ -2165,10 +2157,10 @@ module BLAS {
     const N = xD.size: c_int;
 
     select eltType {
-      when real(32) do{
+      when real(32) {
         return cblas_sdot (N, X, incX, Y, incY);
       }
-      when real(64) do{
+      when real(64) {
        return cblas_ddot (N,X, incX, Y, incY);
       }
       otherwise {
@@ -2179,22 +2171,18 @@ module BLAS {
   }
 
   /*
-      Wrapper for  `DOTU`_ routines (``DOTU_SUB``)
+      Wrapper for `DOTU`_ routines (``DOTU_SUB``)
 
       Obtains the dot product of two complex vectors::
 
          X*Y
 
-      **Input:**
+      :arg X: Input vector
+      :arg Y: Input vector
+      :arg incX: Defines the increment for the vector ``X``
+      :arg incY: Defines the increment for the vector ``Y``
 
-      - ``X``: Input vector
-      - ``Y``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
-      - ``incY``: Defines the increment for the vector ``Y``
-
-    :returns: The complex dot product
-
-
+      :returns: The complex dot product
   */
   proc dotu(X: [?D]?eltType,  Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
     where D.rank == 1
@@ -2206,11 +2194,11 @@ module BLAS {
     var res: eltType;
 
     select eltType {
-      when complex(64) do{
-        cblas_cdotu_sub (N, X, incX, Y, incY, res);
+      when complex(64) {
+        cblas_cdotu_sub (N, X, incX, Y, incY, c_ptrTo(res));
       }
-      when complex(128) do{
-        cblas_zdotu_sub (N, X, incX, Y, incY, res);
+      when complex(128) {
+        cblas_zdotu_sub (N, X, incX, Y, incY, c_ptrTo(res));
       }
       otherwise {
           compilerError("Unknown type in dotu_sub: ", eltType:string);
@@ -2229,16 +2217,12 @@ module BLAS {
 
          conj(X)*Y
 
-      **Input:**
-
-      - ``X``: Conjugated input vector
-      - ``Y``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
-      - ``incY``: Defines the increment for the vector ``Y``
+      :arg X: Conjugated input vector
+      :arg Y: Input vector
+      :arg incX: Defines the increment for the vector ``X``
+      :arg incY: Defines the increment for the vector ``Y``
 
       :returns: The complex dot product
-
-
   */
   proc dotc(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
    where D.rank == 1 {
@@ -2249,11 +2233,11 @@ module BLAS {
     var res: eltType;
 
     select eltType {
-      when complex(64) do{
-        cblas_cdotc_sub (N, X, incX, Y, incY, res);
+      when complex(64) {
+        cblas_cdotc_sub (N, X, incX, Y, incY, c_ptrTo(res));
       }
-      when complex(128) do{
-        cblas_zdotc_sub (N, X, incX, Y, incY, res);
+      when complex(128) {
+        cblas_zdotc_sub (N, X, incX, Y, incY, c_ptrTo(res));
       }
       otherwise {
           compilerError("Unknown type in dotc_sub: ", eltType:string);
@@ -2270,18 +2254,14 @@ module BLAS {
 
          X*Y
 
-      **Input:**
-
-      - ``X``: Input vector
-      - ``Y``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
-      - ``incY``: Defines the increment for the vector ``Y``
+      :arg X: Input vector
+      :arg Y: Input vector
+      :arg incX: Defines the increment for the vector ``X``
+      :arg incY: Defines the increment for the vector ``Y``
 
       :returns: Scalar value of dot product
-
-
   */
-  proc dsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): real(64)
+  proc dsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1, incX: c_int = 1): real(64)
    where D.rank == 1 {
     require header;
 
@@ -2298,18 +2278,14 @@ module BLAS {
 
          X*Y
 
-      **Input:**
-
-      - ``X``: Input vector
-      - ``Y``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
-      - ``incY``: Defines the increment for the vector ``Y``
+      :arg X: Input vector
+      :arg Y: Input vector
+      :arg incX: Defines the increment for the vector ``X``
+      :arg incY: Defines the increment for the vector ``Y``
 
       :returns: Scalar value of dot product
-
-
   */
-  proc sdsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): real(32)
+  proc sdsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1, incX: c_int = 1): real(32)
    where D.rank == 1 {
     require header;
 
@@ -2322,14 +2298,12 @@ module BLAS {
   /*
       Wrapper for `NRM2`_ routines
 
-      Returns the  Euclidean norm of vector ``X``::
+      Returns the Euclidean norm of vector ``X``::
 
         ||X||
 
-      **Input:**
-
-      - ``X``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
+      :arg X: Input vector
+      :arg incX: Defines the increment for the vector ``X``
 
       :returns: The 2-norm of ``X`` vector
 
@@ -2342,16 +2316,16 @@ module BLAS {
     const N = D.size: c_int;
 
     select eltType {
-     when real(32) do{
+     when real(32) {
         return cblas_snrm2 (N,  X, incX);
       }
-      when real(64) do{
+      when real(64) {
         return cblas_dnrm2 (N, X, incX);
       }
-      when complex(64) do{
+      when complex(64) {
         return cblas_scnrm2 (N, X, incX);
       }
-      when complex(128) do{
+      when complex(128) {
         return cblas_dznrm2 (N, X, incX);
       }
       otherwise {
@@ -2367,10 +2341,8 @@ module BLAS {
 
         |Re X[1]| + |Im X[1]| + |Re  X[2]| + |Im  X[2]|+ ... + |Re  X[N]| + |Im X[N]|.
 
-      **Input:**
-
-      - ``X``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
+      :arg X: Input vector
+      :arg incX: Defines the increment for the vector ``X``
 
       :returns: The 1-norm of ``X`` vector
 
@@ -2383,16 +2355,16 @@ module BLAS {
     const N = D.size: c_int;
 
     select eltType {
-     when real(32) do{
+     when real(32) {
         return cblas_sasum(N, X, incX);
       }
-     when real(64) do{
+     when real(64) {
         return cblas_dasum(N, X, incX);
       }
-     when complex(64) do{
+     when complex(64) {
         return cblas_scasum(N, X, incX);
       }
-      when complex(128) do{
+      when complex(128) {
         return cblas_dzasum(N, X, incX);
       }
       otherwise {
@@ -2406,10 +2378,8 @@ module BLAS {
 
       Returns the index of element in the vector with maximum absolute value.
 
-      **Input:**
-
-      - ``X``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
+      :arg X: Input vector
+      :arg incX: Defines the increment for the vector ``X``
 
       :returns: The index of maximum absolute value
 
@@ -2424,16 +2394,16 @@ module BLAS {
     const r = D.dim(0);
 
     select eltType {
-     when real(32) do{
+     when real(32) {
         return r.orderToIndex(cblas_isamax(N, X, incX));
       }
-     when real(64) do{
+     when real(64) {
         return r.orderToIndex(cblas_idamax(N, X, incX));
       }
-     when complex(64) do{
+     when complex(64) {
         return r.orderToIndex(cblas_icamax(N, X, incX));
       }
-      when complex(128) do{
+      when complex(128) {
         return r.orderToIndex(cblas_izamax(N, X, incX));
       }
       otherwise {
@@ -2446,7 +2416,7 @@ module BLAS {
   // Helper functions
   //
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc getLeadingDim(A: [?Adom], order : Order) : c_int {
     require header;
     if order==Order.Row then
@@ -2455,7 +2425,7 @@ module BLAS {
       return Adom.dim(0).size : c_int;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc getLeadingDim(Arr: [], order : Order) : c_int
     where chpl__isArrayView(Arr)
   { require header;
@@ -2520,10 +2490,10 @@ module BLAS {
     extern proc cblas_dsdot (N: c_int, X: []c_float, incX: c_int, Y: []c_float, incY: c_int): c_double;
     extern proc cblas_sdot (N: c_int, X: []c_float, incX: c_int, Y: []c_float, incY: c_int): c_float;
     extern proc cblas_ddot (N: c_int, X: []c_double, incX: c_int, Y: []c_double, incY: c_int): c_double;
-    extern proc cblas_cdotu_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, ref dotu);
-    extern proc cblas_cdotc_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, ref dotc);
-    extern proc cblas_zdotu_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, ref dotu);
-    extern proc cblas_zdotc_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, ref dotc);
+    extern proc cblas_cdotu_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, dotu: c_ptr(void));
+    extern proc cblas_cdotc_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, dotc: c_ptr(void));
+    extern proc cblas_zdotu_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, dotu: c_ptr(void));
+    extern proc cblas_zdotc_sub (N: c_int, X: [], incX: c_int, Y: [], incY: c_int, dotc: c_ptr(void));
     extern proc cblas_snrm2 (N: c_int, X: []c_float, incX: c_int): c_float;
     extern proc cblas_sasum (N: c_int, X: []c_float, incX: c_int): c_float;
     extern proc cblas_dnrm2 (N: c_int, X: []c_double, incX: c_int): c_double;
@@ -2536,128 +2506,128 @@ module BLAS {
     extern proc cblas_idamax (N: c_int, X: []c_double, incX: c_int): CBLAS_INDEX;
     extern proc cblas_icamax (N: c_int, X: [], incX: c_int): CBLAS_INDEX;
     extern proc cblas_izamax (N: c_int, X: [], incX: c_int): CBLAS_INDEX;
-    extern proc cblas_sswap (N: c_int, X: []c_float, incX: c_int, Y: []c_float, incY: c_int);
-    extern proc cblas_scopy (N: c_int, X: []c_float, incX: c_int, Y: []c_float, incY: c_int);
-    extern proc cblas_saxpy (N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int);
-    extern proc cblas_dswap (N: c_int, X: []c_double, incX: c_int, Y: []c_double, incY: c_int);
-    extern proc cblas_dcopy (N: c_int, X: []c_double, incX: c_int, Y: []c_double, incY: c_int);
-    extern proc cblas_daxpy (N: c_int, alpha: c_double, X: []c_double, incX: c_int, Y: []c_double, incY: c_int);
-    extern proc cblas_cswap (N: c_int, X: [], incX: c_int, Y: [], incY: c_int);
-    extern proc cblas_ccopy (N: c_int, X: [], incX: c_int, Y: [], incY: c_int);
-    extern proc cblas_caxpy (N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int);
-    extern proc cblas_zswap (N: c_int, X: [], incX: c_int, Y: [], incY: c_int);
-    extern proc cblas_zcopy (N: c_int, X: [], incX: c_int, Y: [], incY: c_int);
-    extern proc cblas_zaxpy (N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int);
-    extern proc cblas_srotg (ref a: c_float, ref b: c_float, ref c: c_float, ref s: c_float);
-    extern proc cblas_srotmg (ref d1: c_float, ref d2: c_float, ref b1: c_float, b2: c_float, P: []c_float);
-    extern proc cblas_srot (N: c_int, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, c: c_float, s: c_float);
-    extern proc cblas_srotm (N: c_int, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, P: []c_float);
-    extern proc cblas_drotg (ref a: c_double, ref b: c_double, ref c: c_double, ref s: c_double);
-    extern proc cblas_drotmg (ref d1: c_double, ref d2: c_double, ref b1: c_double, b2: c_double, P: []c_double);
-    extern proc cblas_drot (N: c_int, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, c: c_double, s: c_double);
-    extern proc cblas_drotm (N: c_int, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, P: []c_double);
-    extern proc cblas_sscal (N: c_int, alpha: c_float, X: []c_float, incX: c_int);
-    extern proc cblas_dscal (N: c_int, alpha: c_double, X: []c_double, incX: c_int);
-    extern proc cblas_cscal (N: c_int, ref alpha, X: [], incX: c_int);
-    extern proc cblas_zscal (N: c_int, ref alpha, X: [], incX: c_int);
-    extern proc cblas_csscal (N: c_int, alpha: c_float, X: [], incX: c_int);
-    extern proc cblas_zdscal (N: c_int, alpha: c_double, X: [], incX: c_int);
-    extern proc cblas_sgemv (order, TransA, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, Y: []c_float, incY: c_int);
-    extern proc cblas_sgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, Y: []c_float, incY: c_int);
-    extern proc cblas_strmv (order, Uplo, TransA, Diag, N: c_int, A: []c_float, lda: c_int, X: []c_float, incX: c_int);
-    extern proc cblas_stbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_float, lda: c_int, X: []c_float, incX: c_int);
-    extern proc cblas_stpmv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_float, X: []c_float, incX: c_int);
-    extern proc cblas_strsv (order, Uplo, TransA, Diag, N: c_int, A: []c_float, lda: c_int, X: []c_float, incX: c_int);
-    extern proc cblas_stbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_float, lda: c_int, X: []c_float, incX: c_int);
-    extern proc cblas_stpsv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_float, X: []c_float, incX: c_int);
-    extern proc cblas_dgemv (order, TransA, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, Y: []c_double, incY: c_int);
-    extern proc cblas_dgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, Y: []c_double, incY: c_int);
-    extern proc cblas_dtrmv (order, Uplo, TransA, Diag, N: c_int, A: []c_double, lda: c_int, X: []c_double, incX: c_int);
-    extern proc cblas_dtbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_double, lda: c_int, X: []c_double, incX: c_int);
-    extern proc cblas_dtpmv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_double, X: []c_double, incX: c_int);
-    extern proc cblas_dtrsv (order, Uplo, TransA, Diag, N: c_int, A: []c_double, lda: c_int, X: []c_double, incX: c_int);
-    extern proc cblas_dtbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_double, lda: c_int, X: []c_double, incX: c_int);
-    extern proc cblas_dtpsv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_double, X: []c_double, incX: c_int);
-    extern proc cblas_cgemv (order, TransA, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_cgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_ctrmv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ctbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ctpmv (order, Uplo, TransA, Diag, N: c_int, Ap: [], X: [], incX: c_int);
-    extern proc cblas_ctrsv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ctbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ctpsv (order, Uplo, TransA, Diag, N: c_int, Ap: [], X: [], incX: c_int);
-    extern proc cblas_zgemv (order, TransA, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_zgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_ztrmv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ztbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ztpmv (order, Uplo, TransA, Diag, N: c_int, Ap: [], X: [], incX: c_int);
-    extern proc cblas_ztrsv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ztbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, X: [], incX: c_int);
-    extern proc cblas_ztpsv (order, Uplo, TransA, Diag, N: c_int, Ap: [], X: [], incX: c_int);
-    extern proc cblas_ssymv (order, Uplo, N: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, Y: []c_float, incY: c_int);
-    extern proc cblas_ssbmv (order, Uplo, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, Y: []c_float, incY: c_int);
-    extern proc cblas_sspmv (order, Uplo, N: c_int, alpha: c_float, Ap: []c_float, X: []c_float, incX: c_int, beta: c_float, Y: []c_float, incY: c_int);
-    extern proc cblas_sger (order, M: c_int, N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, A: []c_float, lda: c_int);
-    extern proc cblas_ssyr (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, A: []c_float, lda: c_int);
-    extern proc cblas_sspr (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, Ap: []c_float);
-    extern proc cblas_ssyr2 (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, A: []c_float, lda: c_int);
-    extern proc cblas_sspr2 (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, A: []c_float);
-    extern proc cblas_dsymv (order, Uplo, N: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, Y: []c_double, incY: c_int);
-    extern proc cblas_dsbmv (order, Uplo, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, Y: []c_double, incY: c_int);
-    extern proc cblas_dspmv (order, Uplo, N: c_int, alpha: c_double, Ap: []c_double, X: []c_double, incX: c_int, beta: c_double, Y: []c_double, incY: c_int);
-    extern proc cblas_dger (order, M: c_int, N: c_int, alpha: c_double, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, A: []c_double, lda: c_int);
-    extern proc cblas_dsyr (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, A: []c_double, lda: c_int);
-    extern proc cblas_dspr (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, Ap: []c_double);
-    extern proc cblas_dsyr2 (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, A: []c_double, lda: c_int);
-    extern proc cblas_dspr2 (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, A: []c_double);
-    extern proc cblas_chemv (order, Uplo, N: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_chbmv (order, Uplo, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_chpmv (order, Uplo, N: c_int, ref alpha, Ap: [], X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_cgeru (order, M: c_int, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, A: [], lda: c_int);
-    extern proc cblas_cgerc (order, M: c_int, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, A: [], lda: c_int);
-    extern proc cblas_cher (order, Uplo, N: c_int, alpha: c_float, X: [], incX: c_int, A: [], lda: c_int);
-    extern proc cblas_chpr (order, Uplo, N: c_int, alpha: c_float, X: [], incX: c_int, A: []);
-    extern proc cblas_cher2 (order, Uplo, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, A: [], lda: c_int);
-    extern proc cblas_chpr2 (order, Uplo, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, Ap: []);
-    extern proc cblas_zhemv (order, Uplo, N: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_zhbmv (order, Uplo, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_zhpmv (order, Uplo, N: c_int, ref alpha, Ap: [], X: [], incX: c_int, ref beta, Y: [], incY: c_int);
-    extern proc cblas_zgeru (order, M: c_int, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, A: [], lda: c_int);
-    extern proc cblas_zgerc (order, M: c_int, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, A: [], lda: c_int);
-    extern proc cblas_zher (order, Uplo, N: c_int, alpha: c_double, X: [], incX: c_int, A: [], lda: c_int);
-    extern proc cblas_zhpr (order, Uplo, N: c_int, alpha: c_double, X: [], incX: c_int, A: []);
-    extern proc cblas_zher2 (order, Uplo, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, A: [], lda: c_int);
-    extern proc cblas_zhpr2 (order, Uplo, N: c_int, ref alpha, X: [], incX: c_int, Y: [], incY: c_int, Ap: []);
-    extern proc cblas_sgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int, beta: c_float, C: []c_float, ldc: c_int);
-    extern proc cblas_ssymm (Order, Side, Uplo, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int, beta: c_float, C: []c_float, ldc: c_int);
-    extern proc cblas_ssyrk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, beta: c_float, C: []c_float, ldc: c_int);
-    extern proc cblas_ssyr2k (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int, beta: c_float, C: []c_float, ldc: c_int);
-    extern proc cblas_strmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int);
-    extern proc cblas_strsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int);
-    extern proc cblas_dgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int, beta: c_double, C: []c_double, ldc: c_int);
-    extern proc cblas_dsymm (Order, Side, Uplo, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int, beta: c_double, C: []c_double, ldc: c_int);
-    extern proc cblas_dsyrk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, beta: c_double, C: []c_double, ldc: c_int);
-    extern proc cblas_dsyr2k (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int, beta: c_double, C: []c_double, ldc: c_int);
-    extern proc cblas_dtrmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int);
-    extern proc cblas_dtrsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int);
-    extern proc cblas_cgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_csymm (Order, Side, Uplo, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_csyrk (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_csyr2k (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_ctrmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int);
-    extern proc cblas_ctrsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int);
-    extern proc cblas_zgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_zsymm (Order, Side, Uplo, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_zsyrk (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_zsyr2k (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_ztrmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int);
-    extern proc cblas_ztrsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int);
-    extern proc cblas_chemm (Order, Side, Uplo, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_cherk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_float, A: [], lda: c_int, beta: c_float, C: [], ldc: c_int);
-    extern proc cblas_cher2k (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, beta: c_float, C: [], ldc: c_int);
-    extern proc cblas_zhemm (Order, Side, Uplo, M: c_int, N: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, ref beta, C: [], ldc: c_int);
-    extern proc cblas_zherk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_double, A: [], lda: c_int, beta: c_double, C: [], ldc: c_int);
-    extern proc cblas_zher2k (Order, Uplo, Trans, N: c_int, K: c_int, ref alpha, A: [], lda: c_int, B: [], ldb: c_int, beta: c_double, C: [], ldc: c_int);
+    extern proc cblas_sswap (N: c_int, ref X: []c_float, incX: c_int, ref Y: []c_float, incY: c_int);
+    extern proc cblas_scopy (N: c_int, X: []c_float, incX: c_int, ref Y: []c_float, incY: c_int);
+    extern proc cblas_saxpy (N: c_int, alpha: c_float, X: []c_float, incX: c_int, ref Y: []c_float, incY: c_int);
+    extern proc cblas_dswap (N: c_int, ref X: []c_double, incX: c_int, ref Y: []c_double, incY: c_int);
+    extern proc cblas_dcopy (N: c_int, X: []c_double, incX: c_int, ref Y: []c_double, incY: c_int);
+    extern proc cblas_daxpy (N: c_int, alpha: c_double, X: []c_double, incX: c_int, ref Y: []c_double, incY: c_int);
+    extern proc cblas_cswap (N: c_int, ref X: [], incX: c_int, ref Y: [], incY: c_int);
+    extern proc cblas_ccopy (N: c_int, X: [], incX: c_int, ref Y: [], incY: c_int);
+    extern proc cblas_caxpy (N: c_int, alpha: c_ptr(void), X: [], incX: c_int, ref Y: [], incY: c_int);
+    extern proc cblas_zswap (N: c_int, ref X: [], incX: c_int, ref Y: [], incY: c_int);
+    extern proc cblas_zcopy (N: c_int, X: [], incX: c_int, ref Y: [], incY: c_int);
+    extern proc cblas_zaxpy (N: c_int, alpha: c_ptr(void), X: [], incX: c_int, ref Y: [], incY: c_int);
+    extern proc cblas_srotg (a: c_ptr(c_float), b: c_ptr(c_float), c: c_ptr(c_float), s: c_ptr(c_float));
+    extern proc cblas_srotmg (d1: c_ptr(c_float), d2: c_ptr(c_float), b1: c_ptr(c_float), b2: c_float, ref P: []c_float);
+    extern proc cblas_srot (N: c_int, ref X : []c_float, incX: c_int, ref Y : []c_float, incY: c_int, c: c_float, s: c_float);
+    extern proc cblas_srotm (N: c_int, ref X : []c_float, incX: c_int, ref Y : []c_float, incY: c_int, ref P : []c_float);
+    extern proc cblas_drotg (a: c_ptr(c_double), b: c_ptr(c_double), c: c_ptr(c_double), s: c_ptr(c_double));
+    extern proc cblas_drotmg (d1: c_ptr(c_double), d2: c_ptr(c_double), b1: c_ptr(c_double), b2: c_double, ref P : []c_double);
+    extern proc cblas_drot (N: c_int, ref X : []c_double, incX: c_int, ref Y : []c_double, incY: c_int, c: c_double, s: c_double);
+    extern proc cblas_drotm (N: c_int, ref X : []c_double, incX: c_int, ref Y : []c_double, incY: c_int, ref P : []c_double);
+    extern proc cblas_sscal (N: c_int, alpha: c_float, ref X : []c_float, incX: c_int);
+    extern proc cblas_dscal (N: c_int, alpha: c_double, ref X : []c_double, incX: c_int);
+    extern proc cblas_cscal (N: c_int, alpha: c_ptr(void), ref X : [], incX: c_int);
+    extern proc cblas_zscal (N: c_int, alpha: c_ptr(void), ref X : [], incX: c_int);
+    extern proc cblas_csscal (N: c_int, alpha: c_float, ref X : [], incX: c_int);
+    extern proc cblas_zdscal (N: c_int, alpha: c_double, ref X : [], incX: c_int);
+    extern proc cblas_sgemv (order, TransA, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, ref Y : []c_float, incY: c_int);
+    extern proc cblas_sgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, ref Y : []c_float, incY: c_int);
+    extern proc cblas_strmv (order, Uplo, TransA, Diag, N: c_int, A: []c_float, lda: c_int, ref X: []c_float, incX: c_int);
+    extern proc cblas_stbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_float, lda: c_int, ref X: []c_float, incX: c_int);
+    extern proc cblas_stpmv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_float, ref X: []c_float, incX: c_int);
+    extern proc cblas_strsv (order, Uplo, TransA, Diag, N: c_int, A: []c_float, lda: c_int, ref X: []c_float, incX: c_int);
+    extern proc cblas_stbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_float, lda: c_int, ref X: []c_float, incX: c_int);
+    extern proc cblas_stpsv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_float, ref X: []c_float, incX: c_int);
+    extern proc cblas_dgemv (order, TransA, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, ref Y : []c_double, incY: c_int);
+    extern proc cblas_dgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, ref Y : []c_double, incY: c_int);
+    extern proc cblas_dtrmv (order, Uplo, TransA, Diag, N: c_int, A: []c_double, lda: c_int, ref X: []c_double, incX: c_int);
+    extern proc cblas_dtbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_double, lda: c_int, ref X: []c_double, incX: c_int);
+    extern proc cblas_dtpmv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_double, ref X: []c_double, incX: c_int);
+    extern proc cblas_dtrsv (order, Uplo, TransA, Diag, N: c_int, A: []c_double, lda: c_int, ref X: []c_double, incX: c_int);
+    extern proc cblas_dtbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: []c_double, lda: c_int, ref X: []c_double, incX: c_int);
+    extern proc cblas_dtpsv (order, Uplo, TransA, Diag, N: c_int, Ap: []c_double, ref X: []c_double, incX: c_int);
+    extern proc cblas_cgemv (order, TransA, M: c_int, N: c_int, alpha: c_ptr(void), A: [], lda: c_int, X: [], incX: c_int, beta: c_ptr(void), ref Y : [], incY: c_int);
+    extern proc cblas_cgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, alpha: c_ptr(void), A: [], lda: c_int, X: [], incX: c_int, beta: c_ptr(void), ref Y : [], incY: c_int);
+    extern proc cblas_ctrmv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ctbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ctpmv (order, Uplo, TransA, Diag, N: c_int, Ap: [], ref X: [], incX: c_int);
+    extern proc cblas_ctrsv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ctbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ctpsv (order, Uplo, TransA, Diag, N: c_int, Ap: [], ref X: [], incX: c_int);
+    extern proc cblas_zgemv (order, TransA, M: c_int, N: c_int, alpha: c_ptr(void), A: [], lda: c_int, X: [], incX: c_int, beta: c_ptr(void), ref Y : [], incY: c_int);
+    extern proc cblas_zgbmv (order, TransA, M: c_int, N: c_int, KL: c_int, KU: c_int, alpha: c_ptr(void), A: [], lda: c_int, X: [], incX: c_int, beta: c_ptr(void), ref Y : [], incY: c_int);
+    extern proc cblas_ztrmv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ztbmv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ztpmv (order, Uplo, TransA, Diag, N: c_int, Ap: [], ref X: [], incX: c_int);
+    extern proc cblas_ztrsv (order, Uplo, TransA, Diag, N: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ztbsv (order, Uplo, TransA, Diag, N: c_int, K: c_int, A: [], lda: c_int, ref X: [], incX: c_int);
+    extern proc cblas_ztpsv (order, Uplo, TransA, Diag, N: c_int, Ap: [], ref X: [], incX: c_int);
+    extern proc cblas_ssymv (order, Uplo, N: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, ref Y : []c_float, incY: c_int);
+    extern proc cblas_ssbmv (order, Uplo, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, X: []c_float, incX: c_int, beta: c_float, ref Y : []c_float, incY: c_int);
+    extern proc cblas_sspmv (order, Uplo, N: c_int, alpha: c_float, Ap: []c_float, X: []c_float, incX: c_int, beta: c_float, ref Y : []c_float, incY: c_int);
+    extern proc cblas_sger (order, M: c_int, N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, ref A: []c_float, lda: c_int);
+    extern proc cblas_ssyr (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, ref A: []c_float, lda: c_int);
+    extern proc cblas_sspr (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, ref Ap: []c_float);
+    extern proc cblas_ssyr2 (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, ref A: []c_float, lda: c_int);
+    extern proc cblas_sspr2 (order, Uplo, N: c_int, alpha: c_float, X: []c_float, incX: c_int, Y: []c_float, incY: c_int, ref A: []c_float);
+    extern proc cblas_dsymv (order, Uplo, N: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, ref Y: []c_double, incY: c_int);
+    extern proc cblas_dsbmv (order, Uplo, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, X: []c_double, incX: c_int, beta: c_double, ref Y: []c_double, incY: c_int);
+    extern proc cblas_dspmv (order, Uplo, N: c_int, alpha: c_double, Ap: []c_double, X: []c_double, incX: c_int, beta: c_double, ref Y: []c_double, incY: c_int);
+    extern proc cblas_dger (order, M: c_int, N: c_int, alpha: c_double, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, ref A: []c_double, lda: c_int);
+    extern proc cblas_dsyr (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, ref A: []c_double, lda: c_int);
+    extern proc cblas_dspr (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, ref Ap: []c_double);
+    extern proc cblas_dsyr2 (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, ref A: []c_double, lda: c_int);
+    extern proc cblas_dspr2 (order, Uplo, N: c_int, alpha: c_double, X: []c_double, incX: c_int, Y: []c_double, incY: c_int, ref A: []c_double);
+    extern proc cblas_chemv (order, Uplo, N: c_int, alpha: c_ptr(void), A: [], lda: c_int, X: [], incX: c_int, beta: c_ptr(void), ref Y: [], incY: c_int);
+    extern proc cblas_chbmv (order, Uplo, N: c_int, K: c_int, alpha: c_ptr(void), A: [], lda: c_int, X: [], incX: c_int, beta: c_ptr(void), ref Y: [], incY: c_int);
+    extern proc cblas_chpmv (order, Uplo, N: c_int, alpha: c_ptr(void), Ap: [], X: [], incX: c_int, beta: c_ptr(void), ref Y: [], incY: c_int);
+    extern proc cblas_cgeru (order, M: c_int, N: c_int, alpha: c_ptr(void), X: [], incX: c_int, Y: [], incY: c_int, ref A: [], lda: c_int);
+    extern proc cblas_cgerc (order, M: c_int, N: c_int, alpha: c_ptr(void), X: [], incX: c_int, Y: [], incY: c_int, ref A: [], lda: c_int);
+    extern proc cblas_cher (order, Uplo, N: c_int, alpha: c_float, X: [], incX: c_int, ref A: [], lda: c_int);
+    extern proc cblas_chpr (order, Uplo, N: c_int, alpha: c_float, X: [], incX: c_int, ref A: []);
+    extern proc cblas_cher2 (order, Uplo, N: c_int, alpha: c_ptr(void), X: [], incX: c_int, Y: [], incY: c_int, ref A: [], lda: c_int);
+    extern proc cblas_chpr2 (order, Uplo, N: c_int, alpha: c_ptr(void), X: [], incX: c_int, Y: [], incY: c_int, ref Ap: []);
+    extern proc cblas_zhemv (order, Uplo, N: c_int, alpha: c_ptr(void), A: [], lda: c_int, X: [], incX: c_int, beta: c_ptr(void), ref Y: [], incY: c_int);
+    extern proc cblas_zhbmv (order, Uplo, N: c_int, K: c_int, alpha: c_ptr(void), A: [], lda: c_int, X: [], incX: c_int, beta: c_ptr(void), ref Y: [], incY: c_int);
+    extern proc cblas_zhpmv (order, Uplo, N: c_int, alpha: c_ptr(void), Ap: [], X: [], incX: c_int, beta: c_ptr(void), ref Y: [], incY: c_int);
+    extern proc cblas_zgeru (order, M: c_int, N: c_int, alpha: c_ptr(void), X: [], incX: c_int, Y: [], incY: c_int, ref A: [], lda: c_int);
+    extern proc cblas_zgerc (order, M: c_int, N: c_int, alpha: c_ptr(void), X: [], incX: c_int, Y: [], incY: c_int, ref A: [], lda: c_int);
+    extern proc cblas_zher (order, Uplo, N: c_int, alpha: c_double, X: [], incX: c_int, ref A: [], lda: c_int);
+    extern proc cblas_zhpr (order, Uplo, N: c_int, alpha: c_double, X: [], incX: c_int, ref A: []);
+    extern proc cblas_zher2 (order, Uplo, N: c_int, alpha: c_ptr(void), X: [], incX: c_int, Y: [], incY: c_int, ref A: [], lda: c_int);
+    extern proc cblas_zhpr2 (order, Uplo, N: c_int, alpha: c_ptr(void), X: [], incX: c_int, Y: [], incY: c_int, ref Ap: []);
+    extern proc cblas_sgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int, beta: c_float, ref C: []c_float, ldc: c_int);
+    extern proc cblas_ssymm (Order, Side, Uplo, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int, beta: c_float, ref C: []c_float, ldc: c_int);
+    extern proc cblas_ssyrk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, beta: c_float, ref C: []c_float, ldc: c_int);
+    extern proc cblas_ssyr2k (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_float, A: []c_float, lda: c_int, B: []c_float, ldb: c_int, beta: c_float, ref C: []c_float, ldc: c_int);
+    extern proc cblas_strmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, ref B: []c_float, ldb: c_int);
+    extern proc cblas_strsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_float, A: []c_float, lda: c_int, ref B: []c_float, ldb: c_int);
+    extern proc cblas_dgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int, beta: c_double, ref C: []c_double, ldc: c_int);
+    extern proc cblas_dsymm (Order, Side, Uplo, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int, beta: c_double, ref C: []c_double, ldc: c_int);
+    extern proc cblas_dsyrk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, beta: c_double, ref C: []c_double, ldc: c_int);
+    extern proc cblas_dsyr2k (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_double, A: []c_double, lda: c_int, B: []c_double, ldb: c_int, beta: c_double, ref C: []c_double, ldc: c_int);
+    extern proc cblas_dtrmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, ref B: []c_double, ldb: c_int);
+    extern proc cblas_dtrsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_double, A: []c_double, lda: c_int, ref B: []c_double, ldb: c_int);
+    extern proc cblas_cgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, alpha: c_ptr(void), A: [], lda: c_int, B: [], ldb: c_int, beta: c_ptr(void), ref C: [], ldc: c_int);
+    extern proc cblas_csymm (Order, Side, Uplo, M: c_int, N: c_int, alpha: c_ptr(void), A: [], lda: c_int, B: [], ldb: c_int, beta: c_ptr(void), ref C: [], ldc: c_int);
+    extern proc cblas_csyrk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_ptr(void), A: [], lda: c_int, beta: c_ptr(void), ref C: [], ldc: c_int);
+    extern proc cblas_csyr2k (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_ptr(void), A: [], lda: c_int, B: [], ldb: c_int, beta: c_ptr(void), ref C: [], ldc: c_int);
+    extern proc cblas_ctrmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_ptr(void), A: [], lda: c_int, ref B: [], ldb: c_int);
+    extern proc cblas_ctrsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_ptr(void), A: [], lda: c_int, ref B: [], ldb: c_int);
+    extern proc cblas_zgemm (Order, TransA, TransB, M: c_int, N: c_int, K: c_int, alpha: c_ptr(void), A: [], lda: c_int, B: [], ldb: c_int, beta: c_ptr(void), ref C: [], ldc: c_int);
+    extern proc cblas_zsymm (Order, Side, Uplo, M: c_int, N: c_int, alpha: c_ptr(void), A: [], lda: c_int, B: [], ldb: c_int, beta: c_ptr(void), ref C: [], ldc: c_int);
+    extern proc cblas_zsyrk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_ptr(void), A: [], lda: c_int, beta: c_ptr(void), ref C: [], ldc: c_int);
+    extern proc cblas_zsyr2k (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_ptr(void), A: [], lda: c_int, B: [], ldb: c_int, beta: c_ptr(void), ref C: [], ldc: c_int);
+    extern proc cblas_ztrmm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_ptr(void), A: [], lda: c_int, ref B: [], ldb: c_int);
+    extern proc cblas_ztrsm (Order, Side, Uplo, TransA, Diag, M: c_int, N: c_int, alpha: c_ptr(void), A: [], lda: c_int, ref B: [], ldb: c_int);
+    extern proc cblas_chemm (Order, Side, Uplo, M: c_int, N: c_int, alpha: c_ptr(void), A: [], lda: c_int, B: [], ldb: c_int, beta: c_ptr(void), ref C: [], ldc: c_int);
+    extern proc cblas_cherk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_float, A: [], lda: c_int, beta: c_float, ref C: [], ldc: c_int);
+    extern proc cblas_cher2k (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_ptr(void), A: [], lda: c_int, B: [], ldb: c_int, beta: c_float, ref C: [], ldc: c_int);
+    extern proc cblas_zhemm (Order, Side, Uplo, M: c_int, N: c_int, alpha: c_ptr(void), A: [], lda: c_int, B: [], ldb: c_int, beta: c_ptr(void), ref C: [], ldc: c_int);
+    extern proc cblas_zherk (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_double, A: [], lda: c_int, beta: c_double, ref C: [], ldc: c_int);
+    extern proc cblas_zher2k (Order, Uplo, Trans, N: c_int, K: c_int, alpha: c_ptr(void), A: [], lda: c_int, B: [], ldb: c_int, beta: c_double, ref C: [], ldc: c_int);
 
   }
 
@@ -2665,7 +2635,7 @@ module BLAS {
      Runs some assertions for constants defined in the underlying BLAS
      implementation to confirm compatibility.
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc checkBLAS()
   {
     require header;

@@ -2,7 +2,7 @@
 LLVM for Chapel release
 =======================
 
-This copy of LLVM 14.0.0 is being released with Chapel for
+This copy of LLVM 18.1.6 is being released with Chapel for
 convenience and was obtained from
 
 https://www.llvm.org/
@@ -52,6 +52,24 @@ option(LLVM_INCLUDE_TESTS "Generate build targets for the LLVM unit tests." OFF)
   llvm-src/CMakeLists.txt looks like the following:
 option(LLVM_INCLUDE_BENCHMARKS "Generate benchmark targets. If OFF, benchmarks can't be built." OFF)
 
+* Patched `lib/Support/APFloat.cpp` to workaround https://github.com/llvm/llvm-project/issues/81013
+```
+--- a/third-party/llvm/llvm-src/lib/Support/APFloat.cpp
++++ b/third-party/llvm/llvm-src/lib/Support/APFloat.cpp
+@@ -112,9 +112,9 @@ struct fltSemantics {
+   /* Number of bits actually used in the semantics. */
+   unsigned int sizeInBits;
+ 
+-  fltNonfiniteBehavior nonFiniteBehavior = fltNonfiniteBehavior::IEEE754;
++  fltNonfiniteBehavior nonFiniteBehavior = fltNonfiniteBehavior(int(fltNonfiniteBehavior::IEEE754));
+ 
+-  fltNanEncoding nanEncoding = fltNanEncoding::IEEE;
++  fltNanEncoding nanEncoding = fltNanEncoding(int(fltNanEncoding::IEEE));
+   // Returns true if any number described by this semantics can be precisely
+   // represented by the specified semantics. Does not take into account
+   // the value of fltNonfiniteBehavior.
+```
+
 Upgrading LLVM versions
 =======================
 
@@ -59,22 +77,33 @@ The directory $CHPL_HOME/third-party/llvm/llvm-src/ contains the
 un-tarballed LLVM package contents.  Version updates should be done as
 follows, assuming CWD is $CHPL_HOME/third-party/llvm/:
 
-1.  git rm -r llvm-src cmake
-2.  un-tarball the new LLVM version into the directory it specifies,
-    for example llvm-14.0.0.src
-3.  un-tarball the new Clang version into the directory it specifies,
-    for example clang-14.0.0.src
-4.  mv clang-14.0.0.src llvm-14.0.0.src/tools/clang
-5.  mv llvm-14.0.0.src llvm-src
-6.  rm -r llvm-src/test llvm-src/tools/clang/test
-7.  git add --force llvm-src cmake
+1.  download the new release and signature and verify them with e.g.
+    gpg --verify llvm-18.1.6.src.tar.xz.sig
+2.  git rm -r llvm-src cmake
+3.  un-tarball the new LLVM version into the directory it specifies,
+    for example llvm-18.1.6.src
+4.  un-tarball the new Clang version into the directory it specifies,
+    for example clang-18.1.6.src
+5.  un-tarball the cmake support tarball into the directory it specifies,
+    for example cmake-18.1.6.src
+6.  mv clang-18.1.6.src llvm-18.1.6.src/tools/clang
+7.  mv llvm-18.1.6.src llvm-src
+8.  mv cmake-18.1.6.src cmake
+9.  rm -r llvm-src/test llvm-src/tools/clang/test
+10. git add --force llvm-src cmake
     ('--force' is needed to ensure git adds all files in the subdirectory)
-8.  update the util/chplenv/chpl_llvm.py preferred_versions function
-    to record that the new version is available.
-9.  update $CHPL_HOME/doc/rst/usingchapel/prereqs.rst for the new LLVM version
-10. update this README file
-11. commit
+11. commit these changes
 12. edit llvm-src/CMakeLists.txt to set LLVM_INCLUDE_TESTS to OFF,
     set LLVM_INCLUDE_BENCHMARKS to OFF, and check above for any
-    additional patches to apply 
-13. PR, merge, etc.
+    additional patches to apply
+13. commit the CMakeLists.txt changes
+14. update the util/chplenv/chpl_llvm.py llvm_versions function
+    to record that the new version is available.
+15. update $CHPL_HOME/doc/rst/usingchapel/prereqs.rst for the new LLVM version
+16. update this README file
+17. commit the docs and chplenv changes
+18. PR, test, merge, etc.
+
+Updating LLVM versions may also have impacts on GPU support.  See the test
+$CHPL_HOME/test/gpu/native/llvmMoved.chpl for a description of these
+impacts.

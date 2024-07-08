@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,18 +24,24 @@ module MemTracking
 {
   private use ChapelStandard, CTypes;
 
-  config const
-    memTrack: bool = false,
-    memStats: bool = false,
-    memLeaksByType: bool = false,
-    memLeaks: bool = false,
-    memMax: uint = 0,
-    memThreshold: uint = 0,
-    memLog: string;
+  @unstable("The variable 'memTrack' is unstable and its interface is subject to change in the future")
+  config const memTrack: bool = false;
+  @unstable("The variable 'memStats' is unstable and its interface is subject to change in the future")
+  config const memStats: bool = false;
+  @unstable("The variable 'memLeaksByType' is unstable and its interface is subject to change in the future")
+  config const memLeaksByType: bool = false;
+  @unstable("The variable 'memLeaks' is unstable and its interface is subject to change in the future")
+  config const memLeaks: bool = false;
+  @unstable("The variable 'memMax' is unstable and its interface is subject to change in the future")
+  config const memMax: uint = 0;
+  @unstable("The variable 'memThreshold' is unstable and its interface is subject to change in the future")
+  config const memThreshold: uint = 0;
+  @unstable("The variable 'memLog' is unstable and its interface is subject to change in the future")
+  config const memLog: string;
 
   pragma "no auto destroy"
-  config const
-    memLeaksLog: string;
+  @unstable("The variable 'memLeaksLog' is unstable and its interface is subject to change in the future")
+  config const memLeaksLog: string;
 
   /* Causes the contents of the memory tracking array to be printed at the end
      of the program.
@@ -51,8 +57,8 @@ module MemTracking
      data leaks to be printed.
   */
   pragma "no auto destroy"
-  config const
-    memLeaksByDesc: string;
+  @unstable("The variable 'memLeaksByDesc' is unstable and its interface is subject to change in the future")
+  config const memLeaksByDesc: string;
 
   // Safely cast to c_size_t instances of memMax and memThreshold.
   const cMemMax = memMax.safeCast(c_size_t),
@@ -64,9 +70,9 @@ module MemTracking
   // memory tracking.
   //
   // This function is a little tricky as it is called from every
-  // locale from the runtime.  Recall that c_string is considered a
+  // locale from the runtime.  Recall that c_ptrConst is a
   // local-only data type, so we must use some tricks to copy the
-  // c_string from locale 0 to the remote locales.  We use the globals
+  // c_ptrConst from locale 0 to the remote locales.  We use the globals
   // s_memLog and s_memLeaksLog to create global Chapel strings to
   // make them available to all locales.
   //
@@ -74,12 +80,12 @@ module MemTracking
   proc chpl_memTracking_returnConfigVals(ref ret_memTrack: bool,
                                          ref ret_memStats: bool,
                                          ref ret_memLeaksByType: bool,
-                                         ref ret_memLeaksByDesc: c_string,
+                                         ref ret_memLeaksByDesc: c_ptrConst(c_char),
                                          ref ret_memLeaks: bool,
                                          ref ret_memMax: c_size_t,
                                          ref ret_memThreshold: c_size_t,
-                                         ref ret_memLog: c_string,
-                                         ref ret_memLeaksLog: c_string) {
+                                         ref ret_memLog: c_ptrConst(c_char),
+                                         ref ret_memLeaksLog: c_ptrConst(c_char)) {
     ret_memTrack = memTrack;
     ret_memStats = memStats;
     ret_memLeaksByType = memLeaksByType;

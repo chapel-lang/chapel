@@ -7,19 +7,20 @@ var lstGlobal: list(borrowed C);
 proc test1() {
   var lst: list(borrowed C);
   {
-    var x = new borrowed C(128);
+    var ownX = new owned C(128);
+    var x = ownX.borrow();
     // Should emit a lifetime checker error.
-    lst.append(x);
+    lst.pushBack(x);
   }
   return;
 }
 test1();
 
 proc test2() {
-  var x = new borrowed C(256);
+  var ownX = new owned C(256);
+  var x = ownX.borrow();
   // Should emit a lifetime checker error.
-  lstGlobal.append(x);
+  lstGlobal.pushBack(x);
   return;
 }
 test2();
-

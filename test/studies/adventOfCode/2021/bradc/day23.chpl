@@ -48,9 +48,9 @@ record path {
   }
 
   proc init(xs:int...) {
-    this.complete();
+    init this;
     for x in xs do
-      steps.append(x);
+      steps.pushBack(x);
   }
 }
 
@@ -145,7 +145,7 @@ record state {
   var cost: int;
 
   proc init() {
-    this.complete();
+    init this;
     for r in Rooms do
       for s in Spaces do
         monsterloc[room[r][s]] = r*slotsPerRoom + s + 1;
@@ -273,7 +273,7 @@ record state {
     return inOKspot;
   }
 
-  iter monsterCanMove(m: int) {
+  iter ref monsterCanMove(m: int) {
     const currentLoc = monsterloc[m];
 //    writeln("Seeing if monster ", m, " can move from ", currentLoc);
     if currentLoc > 0 {
@@ -313,14 +313,14 @@ record state {
     }
   }
 
-  proc addMonsterToLoc(loc, monster) {
+  proc ref addMonsterToLoc(loc, monster) {
     if loc < 0 then
       hallway[-loc] = monster;
     else
       room[(loc-1)/slotsPerRoom][(loc-1)%slotsPerRoom] = monster;
   }
 
-  proc removeMonsterFromLoc(loc) {
+  proc ref removeMonsterFromLoc(loc) {
     addMonsterToLoc(loc, 0);
   }
 
@@ -341,7 +341,7 @@ record state {
     return cost + (+ reduce for i in hallway.domain do optimisticPath(i));
   }
 
-  proc simulate(in depth = 0) {
+  proc ref simulate(in depth = 0) {
     if success() {
       writeln("*** Found a winning combination with score: ", cost);
       if cost < bestScore then
@@ -373,11 +373,11 @@ record state {
           const id = newBoard.uniqueID();
           var alreadyDidThis = false;
           if searchedConfigs.contains(id) {
-            const prevCost = searchedConfigs.getValue(id);
+            const prevCost = searchedConfigs[id];
             if prevCost < newBoard.cost {
               alreadyDidThis = true;
             } else {
-              searchedConfigs.set(id, newBoard.cost);
+              searchedConfigs.replace(id, newBoard.cost);
             }
           } else {
             searchedConfigs.add(id, newBoard.cost);

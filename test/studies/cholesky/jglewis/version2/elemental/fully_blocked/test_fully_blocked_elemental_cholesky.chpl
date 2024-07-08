@@ -17,11 +17,11 @@ module test_fully_blocked_elemental_cholesky {
 
   proc main {
 
-    var Rand = new borrowed RandomStream ( real, seed = 314159) ;
+    var Rand = new RandomStream ( real, seed = 314159);
 
     const MatIdx = { index_base .. #n, index_base .. #n };
 
-    const mat_dom : domain (2) dmapped Cyclic ( startIdx = MatIdx.low )
+    const mat_dom : domain (2) dmapped new cyclicDist ( startIdx = MatIdx.low )
       = MatIdx;
 
     const distribution_type = "cyclic";
@@ -79,7 +79,7 @@ module test_fully_blocked_elemental_cholesky {
     writeln ("elemental cholesky factorization symmetric index range code\n "
 	     +	"on symmetric index range");
 
-    var clock : Timer;
+    var clock : stopwatch;
           
     clock.clear ();
     clock.start ();

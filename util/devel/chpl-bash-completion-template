@@ -24,7 +24,7 @@ _chpl ()
       local devel_opts="\
 OPTS_DEVEL"
 
-      # non-developer options
+      # user options
       local nodevel_opts="\
 OPTS_NODEVEL"
 

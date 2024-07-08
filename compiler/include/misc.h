@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,13 +28,7 @@
 
 #include "astlocs.h"
 #include "chpl/util/break.h"
-
-#ifdef HAVE_LLVM
-#define exit(x) clean_exit(x)
-#else
-// This interferes with uses of exit() in LLVM header files.
-#define exit(x) dont_use_exit_use_clean_exit_instead
-#endif
+#include "chpl/framework/ErrorBase.h"
 
 #if defined(__GNUC__) && __GNUC__ >= 3
 #define chpl_noreturn __attribute__((__noreturn__))
@@ -86,10 +80,35 @@
 
 class BaseAST;
 
+enum class GpuCodegenType {
+  GPU_CG_NVIDIA_CUDA,
+  GPU_CG_AMD_HIP,
+  GPU_CG_CPU,
+};
+
+// this enum controls the behavior of argument passing to the generated GPU
+// kernels. See the inline comments for what each bit means.
+enum GpuArgKind {
+  ADDROF = 1<<0, // if this bit is set, we pass the address of the argument
+                 // otherwise, we pass it directly
+  OFFLOAD = 1<<1, // if this bit is set, we call a different runtime function
+                  // that also takes a size (that we generate with sizeof). That
+                  // runtime function offloads given number of bytes to the GPU
+                  // memory, and passes the new GPU pointer instead of what we
+                  // pass. Note that we can either pass the variable directly
+                  // (say, if it was already an address, or add an address-of
+                  // using the previous bit)
+                  // otherwise, the variable is passed directly
+  REDUCE = 1<<2,  // this is a reduction temp
+};
+
+
 bool        forceWidePtrsForLocal();
 bool        requireWideReferences();
 bool        requireOutlinedOn();
-bool        localeUsesGPU();
+bool        usingGpuLocaleModel();
+bool        isFullGpuCodegen();
+GpuCodegenType getGpuCodegenType();
 
 const char* cleanFilename(const BaseAST* ast);
 const char* cleanFilename(const char*    name);
@@ -104,6 +123,7 @@ const char* cleanFilename(const char*    name);
 //  5 = USR_PRINT
 //
 void        setupError(const char* subdir, const char* filename, int lineno, int tag);
+void        setupDynoError(chpl::ErrorBase::Kind errKind);
 
 void        handleError(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
 void        handleError(const BaseAST* ast, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));

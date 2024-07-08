@@ -1,0 +1,2 @@
+method-ref-arg-default-literal.chpl:1: In module 'method-ref-arg-default-literal':
+method-ref-arg-default-literal.chpl:2: error: const actual is passed to 'ref' formal 'x' of foo()

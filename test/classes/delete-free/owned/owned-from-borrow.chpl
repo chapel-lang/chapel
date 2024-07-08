@@ -1,7 +1,7 @@
 class MyClass { }
 
 proc testOwned() {
-  var mine = (new owned MyClass()).borrow();
-  var x = owned.create(mine);
+  var obj = new MyClass(); var mine = obj.borrow();
+  var x = owned.adopt(mine);
 }
 testOwned();

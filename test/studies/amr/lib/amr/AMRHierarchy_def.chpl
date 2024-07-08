@@ -83,7 +83,7 @@ class AMRHierarchy {
     this.max_n_levels      = max_n_levels;
     this.flagger           = flagger;
     this.target_efficiency = target_efficiency;
-    this.complete();
+    init this;
 
 
     //---- Create the base level ----
@@ -368,9 +368,9 @@ proc AMRHierarchy.buildRefinedLevel ( i_refining: int )
 
     for cell in cells do
       if flags(cell) {
-        var ranges: dimension*range(stridable=true);
+        var ranges: dimension*range(strides=strideKind.any);
         for d in dimensions do ranges(d) = cell(d)-2 .. cell(d)+2 by 2;
-        var neighborhood: domain(dimension,stridable=true) = ranges;
+        var neighborhood: domain(dimension,strides=strideKind.any) = ranges;
         for nbr in cells(neighborhood) do
           buffered_flags(nbr) = true;
       }
@@ -413,12 +413,12 @@ proc AMRHierarchy.buildRefinedLevel ( i_refining: int )
   
   //===> Ensure proper nesting ===>
 
-  var domains_to_refine = new unmanaged List( domain(dimension,stridable=true) );  
+  var domains_to_refine = new unmanaged List( domain(dimension,strides=strideKind.any) );  
   
   
   //---- Form exterior of coarse level ----
   
-  var coarse_exterior = new unmanaged MultiDomain(dimension,stridable=true);
+  var coarse_exterior = new unmanaged MultiDomain(dimension,strideKind.any);
   coarse_exterior.add( coarse_level.possible_cells );
   
   for grid in coarse_level.grids do
@@ -431,7 +431,7 @@ proc AMRHierarchy.buildRefinedLevel ( i_refining: int )
     
     //---- Remove any portion of D within 1 cell of coarse_exterior ----
     
-    var properly_nested_domains = new unmanaged MultiDomain(dimension,stridable=true);
+    var properly_nested_domains = new unmanaged MultiDomain(dimension,strideKind.any);
     properly_nested_domains.add(D);
 
     for exterior_D in coarse_exterior do 
@@ -564,7 +564,7 @@ class PhysicalBoundary
 {
 
   var grids:        domain(unmanaged Grid);
-  var multidomains: [grids] unmanaged MultiDomain(dimension,stridable=true)?;
+  var multidomains: [grids] unmanaged MultiDomain(dimension,strides=strideKind.any)?;
 
 
 
@@ -577,7 +577,7 @@ class PhysicalBoundary
     this.complete();
     for grid in level.grids {
 
-      var boundary_multidomain = new unmanaged MultiDomain(dimension,stridable=true);
+      var boundary_multidomain = new unmanaged MultiDomain(dimension,strideKind.any);
 
       for D in grid.ghost_domains do boundary_multidomain.add( D );
 
@@ -642,8 +642,8 @@ class PhysicalBoundary
 //----------------------------------------------------------
 
 class Flagger {
-  proc setFlags( level_solution: unmanaged LevelSolution, 
-                 flags: [level_solution.level.possible_cells] bool ) {}
+  proc setFlags( level_solution: unmanaged LevelSolution,
+                 ref flags: [level_solution.level.possible_cells] bool ) {}
 }
 // /|""""""""""""""""""""""/|
 //< |    Flagger class    < |
@@ -667,7 +667,7 @@ proc AMRHierarchy.init (
   inputIC:    func(dimension*real,real))
 {
 
-  const parameter_file = open(file_name, iomode.r).reader();
+  const parameter_file = open(file_name, ioMode.r).reader();
 
   //==== Safety check the dimension ====
   var dim_input: int;
@@ -795,7 +795,7 @@ proc LevelVariable.initialFill (
 
     //---- Initialize structure of unfilled cell blocks ----
     
-    var unfilled_region = new unmanaged MultiDomain(dimension, true);
+    var unfilled_region = new unmanaged MultiDomain(dimension, strideKind.any);
     unfilled_region.add( grid.cells );
 
 
@@ -932,14 +932,14 @@ proc AMRHierarchy.clawOutput(frame_number: int)
   var n_grids: int = 0;
   for level in levels do n_grids += level!.grids.size;
 
-  const time_file = open(time_file_name, iomode.cw).writer();
+  const time_file = open(time_file_name, ioMode.cw).writer();
   writeTimeFile(time, 1, n_grids, 1, time_file);
   time_file.close();
 
 
   //---- Solution file ----
   
-  const solution_file = open(solution_file_name, iomode.cw).writer();
+  const solution_file = open(solution_file_name, ioMode.cw).writer();
   this.writeData(solution_file);
   solution_file.close();
 
@@ -951,7 +951,7 @@ proc AMRHierarchy.clawOutput(frame_number: int)
 // Proceeds down the indexed_levels, calling the LevelVariable.write
 // method on each corresponding LevelVariable.
 //----------------------------------------------------------------
-proc AMRHierarchy.writeData(outfile: channel){
+proc AMRHierarchy.writeData(outfile: fileWriter){
 
   var base_grid_number = 1;
 
@@ -974,7 +974,7 @@ proc AMRHierarchy.writeData(outfile: channel){
 
 
 
-proc main {
+private proc main {
   
   //===> Flagger definition ===>
   class GradientFlagger: Flagger {
@@ -983,7 +983,7 @@ proc main {
     
     proc setFlags(
       level_solution: unmanaged LevelSolution, 
-      flags:          [level_solution.level.possible_cells] bool)
+      ref flags:          [level_solution.level.possible_cells] bool)
     {
       const current_data = level_solution.current_data;
       current_data.extrapolateGhostData();

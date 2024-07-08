@@ -8,7 +8,7 @@
 
 #include "llvm/Support/BinaryStreamWriter.h"
 
-#include "llvm/Support/BinaryStreamError.h"
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/BinaryStreamReader.h"
 #include "llvm/Support/BinaryStreamRef.h"
 #include "llvm/Support/LEB128.h"
@@ -22,7 +22,7 @@ BinaryStreamWriter::BinaryStreamWriter(WritableBinaryStream &Stream)
     : Stream(Stream) {}
 
 BinaryStreamWriter::BinaryStreamWriter(MutableArrayRef<uint8_t> Data,
-                                       llvm::support::endianness Endian)
+                                       llvm::endianness Endian)
     : Stream(Data, Endian) {}
 
 Error BinaryStreamWriter::writeBytes(ArrayRef<uint8_t> Buffer) {
@@ -94,10 +94,11 @@ BinaryStreamWriter::split(uint64_t Off) const {
 
 Error BinaryStreamWriter::padToAlignment(uint32_t Align) {
   uint64_t NewOffset = alignTo(Offset, Align);
-  if (NewOffset > getLength())
-    return make_error<BinaryStreamError>(stream_error_code::stream_too_short);
+  const uint64_t ZerosSize = 64;
+  static constexpr char Zeros[ZerosSize] = {};
   while (Offset < NewOffset)
-    if (auto EC = writeInteger('\0'))
-      return EC;
+    if (auto E = writeArray(
+            ArrayRef<char>(Zeros, std::min(ZerosSize, NewOffset - Offset))))
+      return E;
   return Error::success();
 }

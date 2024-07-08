@@ -1,0 +1,1 @@
+bug: __primitive("resolves") produces an incorrect value

@@ -18,7 +18,7 @@ use CTypes;
 
 // Helper function we use in this test to invalidate pages that were read ahead
 // into the remote cache
-extern proc chpl_cache_invalidate(node:c_int, raddr:c_void_ptr,
+extern proc chpl_cache_invalidate(node:c_int, raddr:c_ptr(void),
                                   size: c_size_t);
 
 // Constants for the tests

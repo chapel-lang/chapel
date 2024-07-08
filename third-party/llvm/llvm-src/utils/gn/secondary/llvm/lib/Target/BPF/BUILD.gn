@@ -56,6 +56,7 @@ static_library("LLVMBPFCodeGen") {
     "//llvm/lib/MC",
     "//llvm/lib/Support",
     "//llvm/lib/Target",
+    "//llvm/lib/TargetParser",
   ]
   include_dirs = [ "." ]
   sources = [
@@ -73,11 +74,16 @@ static_library("LLVMBPFCodeGen") {
     "BPFMIPeephole.cpp",
     "BPFMISimplifyPatchable.cpp",
     "BPFPreserveDIType.cpp",
+    "BPFPreserveStaticOffset.cpp",
     "BPFRegisterInfo.cpp",
     "BPFSelectionDAGInfo.cpp",
     "BPFSubtarget.cpp",
     "BPFTargetMachine.cpp",
     "BTFDebug.cpp",
+    "GISel/BPFCallLowering.cpp",
+    "GISel/BPFInstructionSelector.cpp",
+    "GISel/BPFLegalizerInfo.cpp",
+    "GISel/BPFRegisterBankInfo.cpp",
   ]
 }
 

@@ -83,16 +83,16 @@ TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIGeneral) {
   EXPECT_TRUE(TT.hasParmsOnStack());
 
   ASSERT_TRUE(TT.getParmsType());
-  EXPECT_EQ(TT.getParmsType().getValue(), "i, f, d");
+  EXPECT_EQ(*TT.getParmsType(), "i, f, d");
 
   ASSERT_TRUE(TT.getTraceBackTableOffset());
-  EXPECT_EQ(TT.getTraceBackTableOffset().getValue(), 64u);
+  EXPECT_EQ(*TT.getTraceBackTableOffset(), 64u);
 
   EXPECT_FALSE(TT.getHandlerMask());
 
   ASSERT_TRUE(TT.getFunctionName());
-  EXPECT_EQ(TT.getFunctionName().getValue(), "add_all");
-  EXPECT_EQ(TT.getFunctionName().getValue().size(), 7u);
+  EXPECT_EQ(*TT.getFunctionName(), "add_all");
+  EXPECT_EQ(TT.getFunctionName()->size(), 7u);
 
   EXPECT_FALSE(TT.getAllocaRegister());
   EXPECT_EQ(Size, 25u);
@@ -116,7 +116,7 @@ TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIParmsType) {
   EXPECT_EQ(TT.getNumberOfFPParms(), 3);
 
   ASSERT_TRUE(TT.getParmsType());
-  EXPECT_EQ(TT.getParmsType().getValue(), "i, i, f, f, d");
+  EXPECT_EQ(*TT.getParmsType(), "i, i, f, f, d");
 
   V[8] = 0xAC;
   Size = sizeof(V);
@@ -124,7 +124,7 @@ TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIParmsType) {
   ASSERT_THAT_EXPECTED(TTOrErr1, Succeeded());
   XCOFFTracebackTable TT1 = *TTOrErr1;
   ASSERT_TRUE(TT1.getParmsType());
-  EXPECT_EQ(TT1.getParmsType().getValue(), "f, f, d, i, i");
+  EXPECT_EQ(*TT1.getParmsType(), "f, f, d, i, i");
 
   V[8] = 0xD4;
   Size = sizeof(V);
@@ -132,7 +132,7 @@ TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIParmsType) {
   ASSERT_THAT_EXPECTED(TTOrErr2, Succeeded());
   XCOFFTracebackTable TT2 = *TTOrErr2;
   ASSERT_TRUE(TT2.getParmsType());
-  EXPECT_EQ(TT2.getParmsType().getValue(), "d, i, f, f, i");
+  EXPECT_EQ(*TT2.getParmsType(), "d, i, f, f, i");
 
   V[6] = 0x01;
   Size = sizeof(V);
@@ -140,7 +140,7 @@ TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIParmsType) {
   ASSERT_THAT_EXPECTED(TTOrErr3, Succeeded());
   XCOFFTracebackTable TT3 = *TTOrErr3;
   ASSERT_TRUE(TT3.getParmsType());
-  EXPECT_EQ(TT3.getParmsType().getValue(), "d, i, f, f");
+  EXPECT_EQ(*TT3.getParmsType(), "d, i, f, f");
 
   V[6] = 0x04;
   V[7] = 0x1E;
@@ -153,15 +153,16 @@ TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIParmsType) {
   ASSERT_THAT_EXPECTED(TTOrErr4, Succeeded());
   XCOFFTracebackTable TT4 = *TTOrErr4;
   ASSERT_TRUE(TT4.getParmsType());
-  EXPECT_EQ(TT4.getParmsType().getValue(),
+  EXPECT_EQ(*TT4.getParmsType(),
             "f, f, d, i, i, f, f, f, f, f, f, f, f, f, f, f, f, ...");
 }
 
 const uint8_t TBTableData[] = {
-    0x00, 0x00, 0x2A, 0x60, 0x80, 0xc0, 0x03, 0x05, 0x48, 0xc4, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x02, 0x05, 0x05, 0x00, 0x00,
-    0x06, 0x06, 0x00, 0x00, 0x00, 0x07, 0x61, 0x64, 0x64, 0x5f, 0x61, 0x6c,
-    0x6c, 0x1f, 0x02, 0x05, 0xf0, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00};
+    0x00, 0x00, 0x2A, 0x60, 0x80, 0xc0, 0x03, 0x05, 0x48, 0xc4,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x02,
+    0x05, 0x05, 0x00, 0x00, 0x06, 0x06, 0x00, 0x00, 0x00, 0x07,
+    0x61, 0x64, 0x64, 0x5f, 0x61, 0x6c, 0x6c, 0x1f, 0x02, 0x05,
+    0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00};
 
 TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIControlledStorageInfoDisp) {
   uint64_t Size = sizeof(TBTableData);
@@ -171,16 +172,16 @@ TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIControlledStorageInfoDisp) {
   XCOFFTracebackTable TT = *TTOrErr;
   EXPECT_TRUE(TT.hasControlledStorage());
   ASSERT_TRUE(TT.getNumOfCtlAnchors());
-  EXPECT_EQ(TT.getNumOfCtlAnchors().getValue(), 2u);
+  EXPECT_EQ(*TT.getNumOfCtlAnchors(), 2u);
 
   ASSERT_TRUE(TT.getControlledStorageInfoDisp());
 
-  SmallVector<uint32_t, 8> Disp = TT.getControlledStorageInfoDisp().getValue();
+  SmallVector<uint32_t, 8> Disp = *TT.getControlledStorageInfoDisp();
 
   ASSERT_EQ(Disp.size(), 2UL);
   EXPECT_EQ(Disp[0], 0x05050000u);
   EXPECT_EQ(Disp[1], 0x06060000u);
-  EXPECT_EQ(Size, 45u);
+  EXPECT_EQ(Size, 47u);
 }
 
 TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIAllocaRegister) {
@@ -190,7 +191,7 @@ TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIAllocaRegister) {
   ASSERT_THAT_EXPECTED(TTOrErr, Succeeded());
   XCOFFTracebackTable TT = *TTOrErr;
   ASSERT_TRUE(TT.getAllocaRegister());
-  EXPECT_EQ(TT.getAllocaRegister().getValue(), 31u);
+  EXPECT_EQ(*TT.getAllocaRegister(), 31u);
 }
 
 TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIHasVectorInfo) {
@@ -207,10 +208,10 @@ TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIHasVectorInfo) {
   EXPECT_TRUE(TT.hasExtensionTable());
 
   ASSERT_TRUE(TT.getParmsType());
-  EXPECT_EQ(TT.getParmsType().getValue(), "v, i, f, i, d, i, v");
+  EXPECT_EQ(*TT.getParmsType(), "v, i, f, i, d, i, v");
 
   ASSERT_TRUE(TT.getVectorExt());
-  TBVectorExt VecExt = TT.getVectorExt().getValue();
+  TBVectorExt VecExt = *TT.getVectorExt();
 
   EXPECT_EQ(VecExt.getNumberOfVRSaved(), 0);
   EXPECT_TRUE(VecExt.isVRSavedOnStack());
@@ -222,18 +223,18 @@ TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIHasVectorInfo) {
   EXPECT_EQ(VecExt.getVectorParmsInfo(), "vf, vf");
 
   ASSERT_TRUE(TT.getExtensionTable());
-  EXPECT_EQ(TT.getExtensionTable().getValue(),
-            ExtendedTBTableFlag::TB_SSP_CANARY);
+  EXPECT_EQ(*TT.getExtensionTable(), ExtendedTBTableFlag::TB_SSP_CANARY);
 
-  EXPECT_EQ(Size, 45u);
+  EXPECT_EQ(Size, 47u);
 }
 
 TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIHasVectorInfo1) {
   const uint8_t TBTableData[] = {
-      0x00, 0x00, 0x2A, 0x40, 0x80, 0xc0, 0x03, 0x05, 0x48, 0xc5, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x02, 0x05, 0x05, 0x00, 0x00,
-      0x06, 0x06, 0x00, 0x00, 0x00, 0x07, 0x61, 0x64, 0x64, 0x5f, 0x61, 0x6c,
-      0x6c, 0x11, 0x07, 0x90, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00};
+      0x00, 0x00, 0x2A, 0x40, 0x80, 0xc0, 0x03, 0x05, 0x48, 0xc5,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x02,
+      0x05, 0x05, 0x00, 0x00, 0x06, 0x06, 0x00, 0x00, 0x00, 0x07,
+      0x61, 0x64, 0x64, 0x5f, 0x61, 0x6c, 0x6c, 0x11, 0x07, 0x90,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00};
   uint64_t Size = sizeof(TBTableData);
   Expected<XCOFFTracebackTable> TTOrErr =
       XCOFFTracebackTable::create(TBTableData, Size);
@@ -241,10 +242,10 @@ TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIHasVectorInfo1) {
   XCOFFTracebackTable TT = *TTOrErr;
 
   ASSERT_TRUE(TT.getParmsType());
-  EXPECT_EQ(TT.getParmsType().getValue(), "v, i, f, i, d, i, v, v");
+  EXPECT_EQ(*TT.getParmsType(), "v, i, f, i, d, i, v, v");
 
   ASSERT_TRUE(TT.getVectorExt());
-  TBVectorExt VecExt = TT.getVectorExt().getValue();
+  TBVectorExt VecExt = *TT.getVectorExt();
 
   EXPECT_EQ(VecExt.getNumberOfVRSaved(), 4);
   EXPECT_FALSE(VecExt.isVRSavedOnStack());
@@ -256,10 +257,9 @@ TEST(XCOFFObjectFileTest, XCOFFTracebackTableAPIHasVectorInfo1) {
   EXPECT_EQ(VecExt.getVectorParmsInfo(), "vi, vs, vc");
 
   ASSERT_TRUE(TT.getExtensionTable());
-  EXPECT_EQ(TT.getExtensionTable().getValue(),
-            ExtendedTBTableFlag::TB_SSP_CANARY);
+  EXPECT_EQ(*TT.getExtensionTable(), ExtendedTBTableFlag::TB_SSP_CANARY);
 
-  EXPECT_EQ(Size, 44u);
+  EXPECT_EQ(Size, 46u);
 }
 
 TEST(XCOFFObjectFileTest, XCOFFTracebackTableTruncatedAtMandatory) {
@@ -388,15 +388,15 @@ TEST(XCOFFObjectFileTest, XCOFFTracebackTableTruncatedAtVectorInfoParmsInfo) {
 }
 
 TEST(XCOFFObjectFileTest, XCOFFTracebackTableTruncatedAtExtLongTBTable) {
-  uint64_t Size = 44;
+  uint64_t Size = 46;
   Expected<XCOFFTracebackTable> TTOrErr =
       XCOFFTracebackTable::create(TBTableData, Size);
 
   EXPECT_THAT_ERROR(
       TTOrErr.takeError(),
       FailedWithMessage(
-          "unexpected end of data at offset 0x2c while reading [0x2c, 0x2d)"));
-  EXPECT_EQ(Size, 44u);
+          "unexpected end of data at offset 0x2e while reading [0x2e, 0x2f)"));
+  EXPECT_EQ(Size, 46u);
 }
 
 TEST(XCOFFObjectFileTest, XCOFFGetCsectAuxRef32) {
@@ -530,11 +530,12 @@ TEST(XCOFFObjectFileTest, XCOFFTracebackTableErrorAtParameterType) {
 
 TEST(XCOFFObjectFileTest, XCOFFTracebackTableErrorAtParameterTypeWithVecInfo) {
   const uint8_t TBTableData[] = {
-      0x00, 0x00, 0x2A, 0x40, 0x80, 0xc0, 0x03, 0x05, 0x48, 0xc0, 0x00, 0x10,
-      0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x02, 0x05, 0x05, 0x00, 0x00,
-      0x06, 0x06, 0x00, 0x00, 0x00, 0x07, 0x61, 0x64, 0x64, 0x5f, 0x61, 0x6c,
-      0x6c, 0x11, 0x07, 0x90, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00};
-  uint64_t Size = 44;
+      0x00, 0x00, 0x2A, 0x40, 0x80, 0xc0, 0x03, 0x05, 0x48, 0xc0,
+      0x00, 0x10, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x02,
+      0x05, 0x05, 0x00, 0x00, 0x06, 0x06, 0x00, 0x00, 0x00, 0x07,
+      0x61, 0x64, 0x64, 0x5f, 0x61, 0x6c, 0x6c, 0x11, 0x07, 0x90,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00};
+  uint64_t Size = 46;
   Expected<XCOFFTracebackTable> TTOrErr =
       XCOFFTracebackTable::create(TBTableData, Size);
 
@@ -546,11 +547,12 @@ TEST(XCOFFObjectFileTest, XCOFFTracebackTableErrorAtParameterTypeWithVecInfo) {
 
 TEST(XCOFFObjectFileTest, XCOFFTracebackTableErrorAtVecParameterType) {
   const uint8_t TBTableData[] = {
-      0x00, 0x00, 0x2A, 0x40, 0x80, 0xc0, 0x03, 0x05, 0x48, 0xc0, 0x00, 0x00,
-      0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x02, 0x05, 0x05, 0x00, 0x00,
-      0x06, 0x06, 0x00, 0x00, 0x00, 0x07, 0x61, 0x64, 0x64, 0x5f, 0x61, 0x6c,
-      0x6c, 0x11, 0x07, 0x90, 0x00, 0x00, 0x20, 0x20, 0x00, 0x00, 0x00};
-  uint64_t Size = 44;
+      0x00, 0x00, 0x2A, 0x40, 0x80, 0xc0, 0x03, 0x05, 0x48, 0xc0,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x02,
+      0x05, 0x05, 0x00, 0x00, 0x06, 0x06, 0x00, 0x00, 0x00, 0x07,
+      0x61, 0x64, 0x64, 0x5f, 0x61, 0x6c, 0x6c, 0x11, 0x07, 0x90,
+      0x00, 0x00, 0x20, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00};
+  uint64_t Size = 46;
   Expected<XCOFFTracebackTable> TTOrErr =
       XCOFFTracebackTable::create(TBTableData, Size);
 

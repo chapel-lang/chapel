@@ -1,0 +1,2 @@
+RuntimeTypeEscapes.chpl:7: In function 'test':
+RuntimeTypeEscapes.chpl:10: error: cannot default initialize 'obj' because field 'T' of type 'domain(1,int(64),one)' does not have enough information to be default initialized

@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: illegal argument 'region': file region's lowest accepted bound is 0
+  filereaderBadRegion.chpl:5: thrown here
+  filereaderBadRegion.chpl:5: uncaught here

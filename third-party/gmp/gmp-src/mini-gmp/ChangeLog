@@ -1,3 +1,69 @@
+2023-07-20  Niels Möller  <nisse@lysator.liu.se>
+
+	* mini-gmp.c (gmp_umullo_limb): New macro, to avoid unintended
+	promotion to signed int, in case mp_limb_t is a size smaller than
+	int. In particular, mp_limb_t configured to be a 16-bit unsigned
+	short, with 32-bit int, leads to undefined signed overflow.
+	Problem reported by Vincent Lefevre.
+	(gmp_udiv_qrnnd_preinv, gmp_udiv_qr_3by2): Use new macro.
+
+2022-09-08 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* tests/t-powm.c: Test some corner cases (e.g. 1^0 mod 1).
+
+2022-09-05  Niels Möller  <nisse@lysator.liu.se>
+
+	* mini-gmp.c (mpz_powm): Fix case of x^0 (mod 1), should be 0.
+	Reported by Guido Vranken.
+
+2022-05-29 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mini-mpq.c (mpq_helper_2exp): New helper (internal) function.
+
+2022-04-18  Niels Möller  <nisse@lysator.liu.se>
+
+	* mini-gmp.c (gmp_assert_nocarry): Avoid warning about unused
+	variable in NDEBUG builds. Reported by Paul Egggert.
+
+2022-04-17 Marco Bodrato <bodrato@mail.dm.unipi.it>
+	* mini-mpq.c (mpq_helper_canonicalize): Remove tmp parameter.
+
+2022-03-19 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mini-gmp.c (mpz_swap): Use MPN_PTR_SWAP, tx Paul Eggert.
+
+2021-10-01 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mini-gmp.c: Add asserts (removed at compile time) on limb size.
+	* mini-mpq.c: Add #defines needed if mini-gmp.h is not included.
+
+2021-08-02 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mini-gmp.c (mpz_rootrem): Better initial guess.
+	(gmp_stronglucas): Shortcut, mpn_common_scan instead of mpz_scan0.
+
+2021-05-13 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* tests/t-reuse.c: Use numberof() to reduce the risk of typos.
+
+2021-04-16 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mini-gmp.c (gmp_millerrabin): Don't check unlikely 0 or 1.
+	* mini-gmp.h: Update FILE tests from gmp-h.
+
+2021-01-02 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mini-gmp.c (mpz_export): Correct error message (tx: Guillermo Monguia)
+
+2020-11-28 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mini-gmp.c (mpz_gcd): Support limbs larger than unsigned long.
+	* tests/t-invert.c: Likewise.
+
+2020-05-21  Torbjörn Granlund  <tg@gmplib.org>
+
+	* tests/t-double.c: Provide default M_PI definition.
+
 2020-11-10 Marco Bodrato <bodrato@mail.dm.unipi.it>
 
 	* tests/run-tests: Update WINEPATH, instead of overwriting it.
@@ -7,6 +73,10 @@
 	* mini-mpq.c (mpq_canonical_sign): Use the correct type for size.
 
 2020-10-18 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mini-gmp.c: Use mpn_scan1 instead of mpz_scan1.
+	(mpn_set_str_bits): Reduce branches and writes.
+	(mpz_gcdext): Delay mpz_setbit (t0, ...).
 
 	* mini-mpq.c (mpq_out_str): Return 0 when base is out of range.
 	* mini-gmp.c (mpz_out_str): Likewise. (spotted by Paul Eggert)
@@ -22,17 +92,42 @@
 
 	* tests/t-mpq_double.c (mpq_get_d_exact_p): Cleanup.
 
+	* mini-gmp.c (mpz_get_str): Explicit cast from void* to char*.
+
 	* mini-gmp.h: Update FILE tests from gmp-h (tx Vincent Lefèvre).
 
-2020-05-21  Torbjörn Granlund  <tg@gmplib.org>
+2020-05-27  Minux Ma  <minux.ma@gmail.com>
 
-	* tests/t-mpq_muldiv_2exp.c (testmain): Cast printf args to right type.
+	Pass correct old_size to custom free and reallocate functions.
+	* mini-gmp.c (gmp_alloc): Renamed macro from...
+	(gmp_xalloc): .. old name.
+	(gmp_realloc): New macro, with old_size argument.
+	(gmp_free): Take size argument, and pass on.
+	(gmp_realloc_limbs): Add old_size argument, and rename from
+	(gmp_xrealloc_limbs): ... old name..
+	(gmp_free_limbs): New function, with size argument. Lots of
+	updates, only non-trivial ones listed below.
+	(mpn_div_qr_1_preinv): Use gmp_free_limbs, simplify dealloc logic.
+	(mpz_get_str): Realloc result area when needed, to match final
+	digit count.
+	* mini-mpq.c (mpq_get_str, mpq_out_str, mpq_set_str): Pass correct
+	size to gmp_free_func.
+	* tests/testutils.c (tu_realloc, tu_free): Check that old_size
+	matches size in block header.
+	(testfree): Add size argument. Update all callers.
 
-	* tests/t-double.c: Provide default M_PI definition.
+2020-04-20  Niels Möller  <nisse@lysator.liu.se>
 
-2020-05-19  Torbjörn Granlund  <tg@gmplib.org>
+	* mini-gmp.c (mpz_fits_slong_p): Simplify, by using mpz_cmp_si.
+	(mpz_fits_sint_p, mpz_fits_uint_p, mpz_fits_sshort_p)
+	(mpz_fits_ushort_p): New functions.
+	* mini-gmp.h: Declare new functions.
+	* tests/t-signed.c (try_fits_utype_p, try_fits_sint_p)
+	(try_fits_sshort_p): New tests.
 
-	* tests/hex-random.h (enum hex_random_op): Remove final ",".
+2020-02-02 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mini-gmp/mini-gmp.c (gmp_jacobi_coprime): Exit condition on a.
 
 2019-12-04 Marco Bodrato <bodrato@mail.dm.unipi.it>
 

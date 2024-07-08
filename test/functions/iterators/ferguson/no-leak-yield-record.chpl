@@ -2,7 +2,7 @@ class C { var x : int; }
 
 record R {
   var c : unmanaged C?;
-  proc length return c!.x;
+  proc length do return c!.x;
   proc deinit() {
     writeln("destroying ", c);
     delete c;

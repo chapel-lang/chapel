@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,6 +37,12 @@ static void chpl_exit_common(int status, int all) {
   if (status != 0) {
     gdbShouldBreakHere();
   }
+  chpl_finalize(status, all);
+  exit(status);
+}
+
+
+void chpl_finalize(int status, int all) {
   chpl_comm_pre_task_exit(all);
   if (all) {
     chpl_task_exit();
@@ -47,7 +53,6 @@ static void chpl_exit_common(int status, int all) {
     chpl_mem_exit();
     chpl_topo_exit();
   }
-  exit(status);
 }
 
 

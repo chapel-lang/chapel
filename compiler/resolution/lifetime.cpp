@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -203,6 +203,12 @@ namespace {
   typedef std::map<Symbol*, DeinitOrderNode> DeinitOrderMap;
   typedef std::map<Stmt*, DeinitOrderNode> DeinitOrderBlockMap;
 
+  enum struct LifetimeComparisonResult {
+    UNKNOWN, // means it could be either/both (possible in a conditional)
+    SHORTER,
+    LONGER,
+  };
+
   struct LifetimeState {
     // this mapping allows the pass to ignore certain compiler temps
     SymbolToDetempGroupMap detemp;
@@ -257,7 +263,8 @@ namespace {
     bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym);
 
     DeinitOrderNode* deinitOrderNodeFor(Symbol* sym);
-    bool helpIsLifetimeShorter(DeinitOrderNode* aNode, DeinitOrderNode* bNode);
+    LifetimeComparisonResult helpIsLifetimeShorter(DeinitOrderNode* aNode,
+                                                   DeinitOrderNode* bNode);
     bool isLifetimeShorter(Lifetime a, Lifetime b);
     Lifetime minimumLifetime(Lifetime a, Lifetime b);
     LifetimePair minimumLifetimePair(LifetimePair a, LifetimePair b);
@@ -649,7 +656,7 @@ static constraint_t mergeConstraints(constraint_t a, constraint_t b, bool& inval
 static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
 {
   if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isNamed(",")) {
+    if (call->isNamedAstr(astrScomma)) {
       constraint_t v1, v2, res;
       bool invalid = false;
       res = CONSTRAINT_UNKNOWN;
@@ -687,15 +694,15 @@ static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
         if (a == rhs && b == lhs)
           invert = true;
 
-        if (call->isNamed("=="))
+        if (call->isNamedAstr(astrSeq))
           return CONSTRAINT_EQUAL;
-        else if (call->isNamed("<"))
+        else if (call->isNamedAstr(astrSlt))
           return invert?CONSTRAINT_GREATER:CONSTRAINT_LESS;
-        else if (call->isNamed("<=") || call->isNamed("="))
+        else if (call->isNamedAstr(astrSlte) || call->isNamedAstr(astrSassign))
           return invert?CONSTRAINT_GREATER_EQ:CONSTRAINT_LESS_EQ;
-        else if (call->isNamed(">"))
+        else if (call->isNamedAstr(astrSgt))
           return invert?CONSTRAINT_LESS:CONSTRAINT_GREATER;
-        else if (call->isNamed(">="))
+        else if (call->isNamedAstr(astrSgte))
           return invert?CONSTRAINT_LESS_EQ:CONSTRAINT_GREATER_EQ;
         else
           INT_FATAL("Unhandled case");
@@ -723,7 +730,7 @@ static constraint_t orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b
 static Symbol* returnLifetimeFromClause(Expr* expr) {
 
   if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isNamed(",")) {
+    if (call->isNamedAstr(astrScomma)) {
       Symbol* v1 = NULL;
       Symbol* v2 = NULL;
       v1 = returnLifetimeFromClause(call->get(1));
@@ -769,7 +776,7 @@ static bool isOuterVariable(FnSymbol* fn, Symbol* var) {
 
 static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg, Expr* clausePart) {
   if (CallExpr* call = toCallExpr(clausePart)) {
-    if (call->isNamed(",")) {
+    if (call->isNamedAstr(astrScomma)) {
       bool partOne = isOuterLifetimeFromClause(lifetimes, arg, call->get(1));
       bool partTwo = isOuterLifetimeFromClause(lifetimes, arg, call->get(2));
       if (partOne || partTwo)
@@ -795,16 +802,16 @@ static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg, 
 
       // arg > outerVariable
       if (lhs == arg && rhsOuter &&
-          (call->isNamed("==") ||
-           call->isNamed(">") ||
-           call->isNamed(">=")))
+          (call->isNamedAstr(astrSeq) ||
+           call->isNamedAstr(astrSgt) ||
+           call->isNamedAstr(astrSgte)))
         return true;
 
       // outerVariable > arg
       if (rhs == arg && lhsOuter &&
-          (call->isNamed("==") ||
-           call->isNamed("<") ||
-           call->isNamed("<=") || call->isNamed("=")))
+          (call->isNamedAstr(astrSeq) ||
+           call->isNamedAstr(astrSlt) ||
+           call->isNamedAstr(astrSlte) || call->isNamedAstr(astrSassign)))
         return true;
     }
   }
@@ -824,7 +831,7 @@ static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg)
 static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
 {
   if (CallExpr* call = toCallExpr(expr)) {
-    if (call->isNamed(",")) {
+    if (call->isNamedAstr(astrScomma)) {
       printOrderConstraintFromClause(call->get(1), a, b);
       printOrderConstraintFromClause(call->get(2), a, b);
     } else {
@@ -2428,10 +2435,10 @@ void InferLifetimesVisitor::inferLifetimesForConstraint(CallExpr* forCall) {
 
 void InferLifetimesVisitor::inferLifetimesForConstraint(CallExpr* forCall, Expr* constraintExpr) {
   if (CallExpr* constraint = toCallExpr(constraintExpr)) {
-    if (constraint->isNamed(",")) {
+    if (constraint->isNamedAstr(astrScomma)) {
       inferLifetimesForConstraint(forCall, constraint->get(1));
       inferLifetimesForConstraint(forCall, constraint->get(2));
-    } else if (constraint->isNamed("=")) {
+    } else if (constraint->isNamedAstr(astrSassign)) {
       Expr* a = constraint->get(1);
       Expr* b = constraint->get(2);
       ArgSymbol* constraintLhs = NULL;
@@ -3375,9 +3382,14 @@ bool LifetimeState::isLifetimeShorter(Lifetime a, Lifetime b) {
       bCur = bCur->nestedOrder;
     }
 
-    if (anyElse)
-      if (helpIsLifetimeShorter(aNode, bNode))
+    if (anyElse) {
+      auto r = helpIsLifetimeShorter(aNode, bNode);
+      if (r == LifetimeComparisonResult::SHORTER)
         return true;
+      else if (r == LifetimeComparisonResult::LONGER)
+        return false;
+      // otherwise, fall through to the tie-breaker below
+    }
 
     // Otherwise, the order was similar. Check for FLAG_DEAD_LAST_MENTION
     // differences.
@@ -3398,23 +3410,45 @@ bool LifetimeState::isLifetimeShorter(Lifetime a, Lifetime b) {
   return false;
 }
 
-bool LifetimeState::helpIsLifetimeShorter(DeinitOrderNode* aNode,
-                                          DeinitOrderNode* bNode) {
+static LifetimeComparisonResult
+combineLifetimeComparisonResult(LifetimeComparisonResult a,
+                                LifetimeComparisonResult b) {
+  // If they are the same, go with that
+  if (a == b)
+    return a;
+  // If one is unknown, use the other one
+  if (a == LifetimeComparisonResult::UNKNOWN)
+    return b;
+  if (b == LifetimeComparisonResult::UNKNOWN)
+    return a;
+
+  // they are not the same, and neither is UNKNOWN. That means
+  // it is SHORTER and LONGER. Return UNKNOWN in that case.
+  return LifetimeComparisonResult::UNKNOWN;
+}
+
+LifetimeComparisonResult
+LifetimeState::helpIsLifetimeShorter(DeinitOrderNode* aNode,
+                                     DeinitOrderNode* bNode) {
   DeinitOrderNode* aCur = aNode;
   DeinitOrderNode* bCur = bNode;
 
   if (aCur->order < bCur->order)
-    return true;
+    return LifetimeComparisonResult::SHORTER;
   if (aCur->order > bCur->order)
-    return false;
+    return LifetimeComparisonResult::LONGER;
 
-  bool shorter = false;
-  if (aCur->nestedOrder && bCur->nestedOrder)
-    shorter |= helpIsLifetimeShorter(aCur->nestedOrder, bCur->nestedOrder);
-  if (aCur->elseOrder && bCur->elseOrder)
-    shorter |= helpIsLifetimeShorter(aCur->elseOrder, bCur->elseOrder);
+  auto result = LifetimeComparisonResult::UNKNOWN;
+  if (aCur->nestedOrder && bCur->nestedOrder) {
+    auto g = helpIsLifetimeShorter(aCur->nestedOrder, bCur->nestedOrder);
+    result = combineLifetimeComparisonResult(result, g);
+  }
+  if (aCur->elseOrder && bCur->elseOrder) {
+    auto g = helpIsLifetimeShorter(aCur->elseOrder, bCur->elseOrder);
+    result = combineLifetimeComparisonResult(result, g);
+  }
 
-  return shorter;
+  return result;
 }
 
 DeinitOrderNode* LifetimeState::deinitOrderNodeFor(Symbol* sym) {

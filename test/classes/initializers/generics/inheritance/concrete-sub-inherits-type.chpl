@@ -11,7 +11,7 @@ class Parent {
   }
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   var y: t;
 
   proc init(yVal, xVal) where yVal.type == xVal.type {
@@ -21,7 +21,8 @@ class Child : Parent {
 }
 
 proc main() {
-  var child = new borrowed Child(10, 11);
+  var ownChild = new owned Child(10, 11);
+  var child = ownChild.borrow();
   writeln(child.type:string);
   writeln(child);
 }

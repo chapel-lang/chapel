@@ -41,9 +41,17 @@ static int gasnete_coll_pf_bcast_TreePutScratch(gasnete_coll_op_t *op GASNETI_TH
       }
       data->state = 1; GASNETI_FALLTHROUGH
 
-      case 1: /*thread barrier*/
+      case 1:
+      // thread barrier
       if (!gasnete_coll_generic_all_threads(data)) {
         break;
+      }
+      // Allocation of p2p structure
+      {
+        size_t nstates = 1;
+        size_t ncounters = (op->flags & GASNET_COLL_IN_ALLSYNC) ? 1 :0; // used for "upsync"
+        data->p2p = gasnete_coll_p2p_get_final(op->team, op->sequence, nstates, ncounters, 0);
+        data->options |= GASNETE_COLL_GENERIC_OPT_P2P;
       }
       data->state = 2; GASNETI_FALLTHROUGH
 
@@ -106,7 +114,7 @@ gasnete_coll_bcast_TreePutScratch(gasnet_team_handle_t team,
  /*never allocated an insync barrier since it is folded in with the collective*/
   int options =
   GASNETE_COLL_GENERIC_OPT_OUTSYNC_IF (flags & GASNET_COLL_OUT_ALLSYNC) |
-  GASNETE_COLL_GENERIC_OPT_P2P | GASNETE_COLL_USE_SCRATCH;
+  GASNETE_COLL_USE_SCRATCH;
   
   gasneti_assert(nbytes <= gex_AM_LUBRequestLong());
 
@@ -1291,6 +1299,7 @@ static int gasnete_coll_pf_gall_Dissem(gasnete_coll_op_t *op GASNETI_THREAD_FARG
   if(data->state == (dissem->dissemination_phases)*2+1) {
     uint32_t phase = (data->state-2)/2;
     if(data->p2p->state[phase] !=1) return 0; /*wait for the last transfer to finish*/
+    gasneti_sync_reads();
     
     /*rotate the data around*/
     GASNETI_MEMCPY_SAFE_IDENTICAL((int8_t*)args->dst+args->nbytes*op->team->myrank, 

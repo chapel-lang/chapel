@@ -1,8 +1,8 @@
 module Main {
-  deprecated "x is deprecated, use y instead" var x: int = 17;
+  @deprecated(notes="x is deprecated, use y instead") var x: int = 17;
   var y: int = 16;
 
-  deprecated module Deep {
+  @deprecated module Deep {
     // To check that we squash deprecation warnings for deep uses
     module Deeper {
       proc foo() {

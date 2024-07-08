@@ -12,20 +12,26 @@ class E : D {
   override proc foo(x = 30) { writeln("E.foo:", x); }
 }  
 
-var d = new borrowed D();
+var ownD = new owned D();
+var d = ownD.borrow();
 d.foo();
 
-var c: borrowed C = new borrowed D();
+var ownC = new owned D();
+var c: borrowed C = ownC.borrow();
 c.foo();
 
-var c2: borrowed C = new borrowed C();
+var ownC2 = new owned C();
+var c2: borrowed C = ownC2.borrow();
 c2.foo();
 
-var e = new borrowed E();
+var ownE = new owned E();
+var e = ownE.borrow();
 e.foo();
 
-var e2: borrowed D = new borrowed E();
+var ownE2 = new owned E();
+var e2: borrowed D = ownE2.borrow();
 e2.foo();
 
-var e3: borrowed C = new borrowed E();
+var ownE3 = new owned E();
+var e3: borrowed C = ownE3.borrow();
 e3.foo();

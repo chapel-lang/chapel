@@ -8,7 +8,7 @@ config const inputfile = "blockChol-Mat.dat";
 config const upper = true;
 
 proc main() {
-  var Adat = open(inputfile, iomode.r).reader();
+  var Adat = open(inputfile, ioMode.r).reader(locking=false);
 
   const n = readSize(Adat);
   var blk = readBlk(Adat);
@@ -51,7 +51,7 @@ proc readBlk(Adat) {
   return blk;
 } 
 
-proc initA(A,Adat){
+proc initA(ref A,Adat){
   for ij in A.domain {
     Adat.read(A(ij));
   }

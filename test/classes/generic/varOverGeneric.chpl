@@ -3,5 +3,6 @@ class C {
   var x: t;
 }
 
-var myC: borrowed C = new borrowed C(int, 1);
+var ownC = new owned C(int, 1);
+var myC: borrowed C(?) = ownC.borrow();
 writeln(myC);

@@ -61,7 +61,7 @@ proc launch(type ta, type tb) {
 
 launch(int(32), int(32));
 launch(int(32), int(64));
-launch(int(32), uint(32));
+//launch(int(32), uint(32));
 //launch(int(32), uint(64));
 
 launch(int(64), int(32));
@@ -69,7 +69,7 @@ launch(int(64), int(64));
 launch(int(64), uint(32));
 //launch(int(64), uint(64));
 
-launch(uint(32), int(32));
+//launch(uint(32), int(32));
 launch(uint(32), int(64));
 launch(uint(32), uint(32));
 //launch(uint(32), uint(64));

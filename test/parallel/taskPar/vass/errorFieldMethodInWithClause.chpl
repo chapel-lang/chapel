@@ -5,7 +5,7 @@ const ITER = 1..3;
 
 class myClass {
   var myField = 5;
-  proc myProcc return 6;
+  proc myProcc do return 6;
 }
 
 proc ourProc { return 7; }

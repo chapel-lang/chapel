@@ -7,6 +7,8 @@ import re
 
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party, get_chpl_home
+import chpl_gpu
+import homebrew_utils
 from utils import which, memoize, error, run_command, try_run_command, warning
 from collections import defaultdict
 
@@ -15,7 +17,7 @@ def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    return ('14','13','12','11',)
+    return ('18','17','16','15','14','13','12','11',)
 
 @memoize
 def get_uniq_cfg_path_for(llvm_val, llvm_support_val):
@@ -74,6 +76,45 @@ def compatible_platform_for_llvm():
 def llvm_versions_string():
     return ', '.join(llvm_versions())
 
+
+# returns the full output of llvm-config --version for the passed llvm-config
+# path or command name. Returns None if something went wrong.
+@memoize
+def get_llvm_config_version(llvm_config):
+    got_version = None
+
+    if llvm_config != 'none' and llvm_config != None:
+        exists, returncode, got_out, got_err = try_run_command([llvm_config,
+                                                                '--version'])
+        if exists and returncode == 0:
+            got_version = got_out
+
+        if got_version != None and chpl_gpu.get() == 'amd':
+            # strip the "git" suffix. This is a TODO. We want to be able to
+            # detect LLVM "nightly" versions because ROCm seems to ship with
+            # those. A sign for that is the `git` suffix at the end of the
+            # version string. As of today 15.0.0git works for us as, I believe,
+            # it is pretty close to 15.0.0 proper.
+            got_version = got_version.strip()
+            if got_version[-3:] == 'git':
+                got_version = got_version[:-3]
+    return got_version
+
+# Returns the full output of clang --version for the passed clang command.
+# Returns None if something went wrong.
+@memoize
+def get_clang_version(clang_command, short=False):
+    got_version = None
+
+    if clang_command != 'none' and clang_command != None:
+        version = '--version' if not short else '-dumpversion'
+        exists, returncode, got_out, _ = try_run_command([clang_command, version])
+
+        if exists and returncode == 0:
+            got_version = got_out
+
+    return got_version
+
 # llvm_config is the llvm-config command we want to check out.
 # returns (version_number, config_error_message)
 @memoize
@@ -84,12 +125,11 @@ def check_llvm_config(llvm_config):
     got_version = 0
     version_ok = False
 
-    exists, returncode, my_stdout, my_stderr = try_run_command([llvm_config,
-                                                                '--version'])
     s = ''
-    if exists and returncode == 0:
-        version_string = my_stdout.strip()
-        got_version = version_string.split('.')[0]
+
+    version_string = get_llvm_config_version(llvm_config)
+    if version_string != None:
+        got_version = version_string.strip().split('.')[0]
         version_ok = got_version in llvm_versions()
     else:
         s = "could not run llvm-config at {0}".format(llvm_config)
@@ -117,6 +157,12 @@ def check_llvm_packages(llvm_config):
     usr_include_clang_ok = False
 
     include_dir = run_command([llvm_config, '--includedir']).strip()
+    if include_dir.startswith("/nix/store"):
+        # Dependencies are managed by Nix, and llvm, clang, etc. are all
+        # different packages. Hence, we cannot rely on clang/Basic/Version.h
+        # residing in the include_dir returned by llvm-config.
+        return (True, '')
+
     if os.path.isdir(include_dir):
         llvm_header = os.path.join(include_dir,
                                    'llvm', 'Config', 'llvm-config.h')
@@ -172,6 +218,29 @@ def check_llvm_packages(llvm_config):
         s = "Could not find the clang library {0}".format(clang_cpp_lib)
         s += "\nPerhaps you need to install the libclang-cpp-dev package"
 
+    host_platform = chpl_platform.get('host')
+    if host_platform == "darwin":
+        # on Mac OS X with Homebrew, require LLVM 14 or newer
+        # because these LLVM versions fix a problem with
+        # mixing libc++ versions
+        llvm_version, ignored_err = check_llvm_config(llvm_config)
+        llvm_version = llvm_version.strip()
+        bad_vers = ('11', '12', '13')
+        if llvm_version in bad_vers:
+            # compute the set subtraction:
+            #    llvm_versions() - bad_vers
+            # for use in the error message
+            ok_vers = [ ]
+            vers = llvm_versions()
+            for v in vers:
+                if not v in bad_vers:
+                    ok_vers.append(v)
+
+            s = ("LLVM version {0} is not supported on Mac OS X. "
+                 "Please use one of these versions: {1}"
+                 .format(llvm_version, ', '.join(ok_vers)))
+
+
     return (s == '', s)
 
 
@@ -181,7 +250,12 @@ def find_system_llvm_config():
     if llvm_config != 'none':
         return llvm_config
 
-    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    llvm_config = chpl_gpu.get_llvm_override()
+    if llvm_config != 'none':
+        return llvm_config
+
+
+    homebrew_prefix = homebrew_utils.get_homebrew_prefix()
 
     paths = [ ]
     for vers in llvm_versions():
@@ -189,6 +263,8 @@ def find_system_llvm_config():
         paths.append("llvm-config-" + vers)
         # this format used by freebsd
         paths.append("llvm-config" + vers)
+        # this format is used by Alpine Linux
+        paths.append("llvm" + vers + "-config")
         if homebrew_prefix:
             # look for homebrew install of LLVM
             paths.append(homebrew_prefix +
@@ -302,20 +378,54 @@ def validate_llvm_config():
                   .format(llvm_config, config_error))
 
     if llvm_val == 'system':
-      bindir = get_system_llvm_config_bindir()
-      if not (bindir and os.path.isdir(bindir)):
-          error("llvm-config command {0} provides missing bin dir {1}"
-                .format(llvm_config, bindir))
-      clang_c = get_llvm_clang('c')[0]
-      clang_cxx = get_llvm_clang('c++')[0]
-      if not os.path.exists(clang_c):
-          error("Missing clang command at {0}".format(clang_c))
-      if not os.path.exists(clang_cxx):
-          error("Missing clang++ command at {0}".format(clang_cxx))
+        bindir = get_system_llvm_config_bindir()
+        if not bindir.startswith("/nix/store"):
+            if not (bindir and os.path.isdir(bindir)):
+                error("llvm-config command {0} provides missing bin dir {1}"
+                      .format(llvm_config, bindir))
 
-      (noPackageErrors, package_err) = check_llvm_packages(llvm_config)
-      if not noPackageErrors:
-        error(package_err)
+        (noPackageErrors, package_err) = check_llvm_packages(llvm_config)
+        if not noPackageErrors:
+            error(package_err)
+
+        clang_c = get_llvm_clang('c')[0]
+        clang_cxx = get_llvm_clang('c++')[0]
+        if clang_c == '':
+            error("Could not find clang with the same version as "
+                  "CHPL_LLVM_CONFIG={}. Please try setting CHPL_TARGET_CC.".format(llvm_config))
+        if clang_cxx == '':
+            error("Could not find clang++ with the same version as "
+                  "CHPL_LLVM_CONFIG={}. Please try setting CHPL_TARGET_CXX.".format(llvm_config))
+
+        def print_clang_version_error(clang, name="clang"):
+            clang_version = get_clang_version(clang, short=True)
+            llvm_version = str(get_llvm_config_version(llvm_config)).strip()
+            if clang_version is None:
+                error(
+                    "Could not determine version of {} at '{}'".format(
+                        name, clang
+                    )
+                )
+            elif llvm_version not in clang_version:
+                error(
+                    "Version of {} at '{}' does not".format(name, clang) +
+                    " match version of LLVM at '{}'\n".format(llvm_config) +
+                    "LLVM version: {}\n".format(llvm_version) +
+                    "{} version: {}".format(name, clang_version)
+                )
+            else:
+                error(
+                    "Missing or wrong version for {} at '{}'".format(
+                        name, clang
+                    )
+                    + " (using LLVM at {})".format(llvm_config)
+                )
+
+        if not is_system_clang_version_ok(clang_c):
+            print_clang_version_error(clang_c)
+        if not is_system_clang_version_ok(clang_cxx):
+            print_clang_version_error(clang_cxx, name="clang++")
+
 
 @memoize
 def get_system_llvm_config_bindir():
@@ -340,35 +450,120 @@ def get_llvm_clang_command_name(lang):
     else:
         return 'clang'
 
+# checks that the clang version matches the llvm-config version.
+# Returns True if it's compatible and False if not.
+@memoize
+def is_system_clang_version_ok(clang_command):
+    llvm_config = find_system_llvm_config()
+    llvm_version_string = get_llvm_config_version(llvm_config)
+    llvm_version = llvm_version_string.strip()
+    clang_version_out = get_clang_version(clang_command)
+    return clang_version_out != None and llvm_version in clang_version_out
+
+# Given a lang argument of 'c' or 'c++'/'cxx', returns the value to use for
+# CHPL_LLVM_CLANG_C / CHPL_LLVM_CLANG_CXX when considering overrides for these
+# variables as well as for CHPL_TARGET_CC / CHPL_TARGET_CXX.
+# Returns a list where the 1st value is the command and additional values
+# are arguments to use.
+# Returns None if no override was present.
+@memoize
+def get_overriden_llvm_clang(lang):
+    lang_upper = lang.upper()
+    if lang_upper == 'C++':
+        lang_upper = 'CXX'
+
+    # Compute it based on setting CHPL_LLVM_CLANG_C/CXX
+    # or, if CHPL_TARGET_COMPILER=llvm, CHPL_TARGET_CC/CXX.
+    # These use split in order to separate the command out from
+    # any arguments passed to it.
+    tgt_llvm = overrides.get('CHPL_TARGET_COMPILER', 'llvm') == 'llvm'
+    res = None
+    if lang_upper == 'C':
+        llvm_clang_c = overrides.get('CHPL_LLVM_CLANG_C')
+        if llvm_clang_c:
+            res = llvm_clang_c.split()
+        elif tgt_llvm:
+            target_cc = overrides.get('CHPL_TARGET_CC')
+            if target_cc:
+                res = target_cc.split()
+    elif lang_upper == 'CXX':
+        llvm_clang_cxx = overrides.get('CHPL_LLVM_CLANG_CXX')
+        if llvm_clang_cxx:
+            res = llvm_clang_cxx.split()
+        elif tgt_llvm:
+            target_cc = overrides.get('CHPL_TARGET_CXX')
+            if target_cc:
+                res = target_cc.split()
+    else:
+        error('unknown lang value {}'.format(lang))
+
+    if res is not None:
+        # validate that the command is clang by checking a preprocessor macro
+        macro = "__clang_major__"
+        exists, returncode, out, _ = try_run_command([res[0], "-E", "-x", "c", "-"], macro)
+        if exists and returncode == 0 and out:
+            # check that the preprocess output does not contains the macro
+            if macro in out:
+                error("'{}' is not clang and cannot be used with LLVM".format(res[0]))
+        else:
+            warning("unable to execute '{}' to validate it".format(res[0]))
+
+    return res
+
+# given a lang argument of 'c' or 'c++'/'cxx', return the system clang command
+# to use. Checks that the clang version matches the version of llvm-config in
+# use. Returns '' if no acceptable system clang was found.
 @memoize
 def get_system_llvm_clang(lang):
+    provided = get_overriden_llvm_clang(lang)
+    if provided:
+        return provided[0]
+
+    # Otherwise, look for an acceptable clang in the
+    # llvm-config --bindir and in PATH.
+    llvm_config = find_system_llvm_config()
+    llvm_version_string = get_llvm_config_version(llvm_config)
+
+    if llvm_version_string == None:
+        return ''
+
+    llvm_version = llvm_version_string.strip()
+
+    # We expect the executable to be called either clang or clang-<version>
+    llvm_major = llvm_version.split(".")[0]
     clang_name = get_llvm_clang_command_name(lang)
+    clang_suffixes = ["", "-" + llvm_major]
+
+    # We expect to find clang either in `llvm-config --bindir` or on PATH
     bindir = get_system_llvm_config_bindir()
-    clang = ''
-    if bindir:
-        clang = os.path.join(bindir, clang_name)
+    clang_prefixes = []
+    if bindir is not None:
+        clang_prefixes.append(bindir)
+    clang_prefixes.append(None)
 
-        if not os.path.exists(clang):
-            # also try /usr/bin/clang since some OSes use that
-            # for the clang package
-            usr_bin = "/usr/bin"
-            clang2 = os.path.join(usr_bin, clang_name);
-            if os.path.exists(clang2):
-                llvm_config = find_system_llvm_config()
-                # check that clang --version matches llvm-config --version
-                clangv = run_command([clang2, '--version']).strip()
-                llvmv = run_command([llvm_config, '--version']).strip()
-
-                if llvmv in clangv:
-                    clang = clang2
-
-    return clang
+    for prefix in clang_prefixes:
+        for suffix in clang_suffixes:
+            clang_path = clang_name + suffix
+            if prefix is not None:
+                clang_path = os.path.join(prefix, clang_path)
+            # Use the full path to clang. For some reason, this is important
+            # on Alpine Linux for clang to find its own standard lib headers.
+            if '/' not in clang_path:
+                clang_path = which(clang_path)
+            if is_system_clang_version_ok(clang_path):
+                return clang_path
+    return ''
 
 # lang should be C or CXX
 # returns [] list with the first element the clang command,
 # then necessary arguments
 @memoize
 def get_llvm_clang(lang):
+
+    # if it was provided by a user setting, just use that
+    provided = get_overriden_llvm_clang(lang)
+    if provided:
+        return provided
 
     clang = None
     llvm_val = get()
@@ -390,7 +585,6 @@ def get_llvm_clang(lang):
 def has_compatible_installed_llvm():
     llvm_config = find_system_llvm_config()
 
-
     if llvm_config:
         (ok, errMsg) = check_llvm_packages(llvm_config)
 
@@ -398,8 +592,8 @@ def has_compatible_installed_llvm():
             clang_c_command = get_system_llvm_clang('c')
             clang_cxx_command = get_system_llvm_clang('c++')
 
-            if (os.path.exists(clang_c_command) and
-                os.path.exists(clang_cxx_command)):
+            if (is_system_clang_version_ok(clang_c_command) and
+                is_system_clang_version_ok(clang_cxx_command)):
                 return True
 
     # otherwise, something went wrong, so return False
@@ -524,7 +718,7 @@ def get_sysroot_resource_dir_args():
     args = [ ]
     target_platform = chpl_platform.get('target')
     llvm_val = get()
-    if (target_platform == "darwin" and llvm_val == "bundled"):
+    if target_platform == "darwin" and llvm_val == "bundled":
         # Add -isysroot and -resourcedir based upon what 'clang' uses
         cfile = os.path.join(get_chpl_home(),
                              "runtime", "include", "sys_basic.h")
@@ -588,32 +782,6 @@ def get_system_llvm_built_sdkroot():
                             return path
     return None
 
-# Returns True if the workaround for issue #19217 should be applied
-# and False otherwise.
-# That workaround adds the Mac OS X system libc++ before the linker
-# search paths so that the system libc++ is used rather than a
-# libc++ that came with the system install of LLVM (e.g. from Homebrew).
-# Whether or not to try the workaround can be controlled by the variable
-#  CHPL_HOST_USE_SYSTEM_LIBCXX
-@memoize
-def use_system_libcxx_workaround():
-    host_platform = chpl_platform.get('host')
-    if host_platform == "darwin":
-        # If the variable for this is set to something other that '0' or 'no'
-        # then do the workaround.
-        # This variable exists to support building the Homebrew formula
-        # from source because during that build, `brew` is not available.
-        override_var = overrides.get('CHPL_HOST_USE_SYSTEM_LIBCXX', '')
-        if override_var != '':
-            return (override_var != "0" and override_var != "no")
-
-        # otherwise, do the workaround if we detect homebrew
-        homebrew_prefix = chpl_platform.get_homebrew_prefix()
-
-        if homebrew_prefix:
-            return True
-
-    return False
 
 # On some systems, we need to give clang some arguments for it to
 # find the correct system headers.
@@ -681,11 +849,11 @@ def gather_pe_chpl_pkgconfig_libs():
 
         # on login/compute nodes, lustre requires the devel api to make
         # lustre/lustreapi.h available (it's implicitly available on esl nodes)
-        if 'lustre' in auxfs:
-            exists, returncode, out, err = try_run_command(
-                ['pkg-config', '--exists', 'cray-lustre-api-devel'])
-            if exists and returncode == 0:
-                ret = 'cray-lustre-api-devel:' + ret
+        if "lustre" in auxfs:
+            import third_party_utils
+            pkg = "cray-lustre-api-devel"
+            if third_party_utils.pkgconfig_system_has_package(pkg):
+                ret = pkg + ":" + ret
 
     return ret
 
@@ -730,6 +898,8 @@ def filter_llvm_config_flags(flags):
 
     platform_val = chpl_platform.get('host')
     cygwin = platform_val.startswith('cygwin')
+    darwin = platform_val.startswith('darwin')
+    gnu = chpl_compiler.get('host') == 'gnu'
 
     for flag in flags:
         if (flag == '-DNDEBUG' or
@@ -738,7 +908,9 @@ def filter_llvm_config_flags(flags):
             flag.startswith('-O') or
             flag == '-pedantic' or
             flag == '-Wno-class-memaccess' or
-            (cygwin and flag == '-std=c++14')):
+            (darwin and gnu and flag.startswith('-stdlib=')) or
+            (cygwin and flag == '-std=c++17') or
+            flag == '-std=c++14'):
             continue # filter out these flags
 
         if flag.startswith('-W'):
@@ -762,6 +934,21 @@ def filter_llvm_link_flags(flags):
         # TODO: can we remove this workaround?
         if flag == '-llibxml2.tbd':
             continue
+
+        # LLVM 15 detects libzstd on some systems but doesn't include
+        # the -L path from pkg-config (this can happen in a Spack configuration)
+        # So, if we have '-lzstd', use pkg-config to get the link flags.
+        if flag == '-lzstd':
+          import third_party_utils
+          if third_party_utils.has_pkgconfig():
+              link_bundled_args, link_system_args = (
+                  third_party_utils.pkgconfig_get_system_link_args('libzstd'))
+              if link_system_args:
+                  # found something with pkg-config, so use that instead
+                  ret.extend(link_system_args)
+                  continue
+        # otherwise, append -lzstd as usual
+
         ret.append(flag)
 
     return ret
@@ -782,15 +969,6 @@ def get_host_compile_args():
         return (bundled, system)
 
     if llvm_support_val == 'system':
-        # On Mac OS X with Homebrew, apply a workaround for issue #19217.
-        # This avoids finding headers in the libc++ installed by llvm@12 e.g.
-        if use_system_libcxx_workaround():
-            sdkroot = get_system_llvm_built_sdkroot()
-            if sdkroot:
-                system.append("-isysroot")
-                system.append(sdkroot)
-                system.append("-I" + os.path.join(sdkroot, "usr", "include"))
-
         # Ubuntu 16.04 needed -fno-rtti for LLVM 3.7
         # tested on that system after installing
         #   llvm-3.7-dev llvm-3.7 clang-3.7 libclang-3.7-dev libedit-dev
@@ -816,10 +994,12 @@ def get_host_compile_args():
 
     return (bundled, system)
 
-# returns (bundled, system) args for 'make'
-# to link 'chpl' with LLVM
+# returns (bundled, system, static_or_dynamic)
+#  * bundled and system are lists of args for 'make' to link 'chpl' with LLVM
+#  * static_or_dynamic is "static" for static linking or "dynamic"
+#    for dynamic linking or None for unknown
 @memoize
-def get_host_link_args():
+def compute_host_link_settings():
     bundled = [ ]
     system = [ ]
 
@@ -827,6 +1007,15 @@ def get_host_link_args():
     llvm_val = get()
     llvm_support_val = get_llvm_support()
     llvm_config = get_llvm_config()
+
+    # If llvm_config is not discoverable (e.g. we're configured to use a system
+    # LLVM and LLVM is not installed or we have an incompatible version
+    # installed) return a dummy value. If necessary, elsewhere in printchplenv
+    # (validate_llvm_config) we will recognize this and present an error to the
+    # user.
+    if llvm_config == "" or llvm_config is None:
+        return ('', '', None)
+
     clang_static_libs = ['-lclangFrontend',
                          '-lclangSerialization',
                          '-lclangDriver',
@@ -839,6 +1028,7 @@ def get_host_link_args():
                          '-lclangAST',
                          '-lclangLex',
                          '-lclangBasic']
+
     llvm_components = ['bitreader',
                        'bitwriter',
                        'ipo',
@@ -851,9 +1041,25 @@ def get_host_link_args():
                        'coroutines',
                        'lto']
 
+    if llvm_val == 'system' or llvm_val == 'bundled':
+        llvm_version = get_llvm_version()
+        # Starting with clang 15, clang needs additional libraries
+        if llvm_version not in ('11', '12', '13', '14'):
+            clang_static_libs.append('-lclangSupport')
+            llvm_components.append('windowsdriver')
+        # Starting with clang 16, clang needs additional libraries
+        if llvm_version not in ('11', '12', '13', '14', '15'):
+            llvm_components.append('frontendhlsl')
+        # Starting with clang 18, clang needs additional libraries
+        if llvm_version not in ('11', '12', '13', '14', '15', '16', '17'):
+            llvm_components.append('frontenddriver')
+            # clangAPINotes must go immediately after clangSema
+            idx = clang_static_libs.index('-lclangSema') + 1
+            clang_static_libs.insert(idx, '-lclangAPINotes')
+
     # quit early if the llvm value is unset
     if llvm_val == 'unset':
-        return (bundled, system)
+        return (bundled, system, None)
 
     # only use LLVMSupport for CHPL_LLVM=none
     if llvm_val == 'none':
@@ -861,24 +1067,16 @@ def get_host_link_args():
         llvm_components = ['support']
 
     if llvm_support_val == 'system':
-        # On Mac OS X with Homebrew, apply a workaround for issue #19217.
-        # This avoids linking with the libc++ installed by llvm@12 e.g.
-        if use_system_libcxx_workaround():
-            sdkroot = get_system_llvm_built_sdkroot()
-            if sdkroot:
-                # Note: -isysroot only affects includes
-                # and -Wl,-syslibroot seems to have no effect
-                system.append("-L" + os.path.join(sdkroot, "usr", "lib"))
-
-        # Decide whether to try to link statically or dynamically.
-        # Future work: consider using 'llvm-config --shared-mode'
-        # to make this choice.
+        # For LLVM version 11 and older, there was a problem where
+        # 'llvm-config' did not work properly on Mac OS X, so work around
+        # that by using static linking.
+        llvm_version = get_llvm_version()
         host_platform = chpl_platform.get('host')
-        if host_platform == 'darwin':
+        if host_platform == 'darwin' and llvm_version == '11':
             llvm_dynamic = False
 
+        # Also, change to static, if llvm-config indicates static linking
         shared_mode = run_command([llvm_config, '--shared-mode'])
-
         if shared_mode.strip() == 'static':
             llvm_dynamic = False
 
@@ -900,7 +1098,6 @@ def get_host_link_args():
                               llvm_components)
         if ldflags:
             system.extend(filter_llvm_link_flags(ldflags.split()))
-
 
     elif llvm_support_val == 'bundled':
         # Link statically for now for the bundled configuration
@@ -931,15 +1128,33 @@ def get_host_link_args():
 
             bundled.extend(ldflags.split())
 
-            system_libs = run_command([llvm_config,
-                                      '--system-libs'] +
-                                      llvm_components)
+            ldflags = run_command([llvm_config,
+                                   '--system-libs'] +
+                                   llvm_components)
 
-            system.extend(system_libs.split())
+            if ldflags:
+                system.extend(filter_llvm_link_flags(ldflags.split()))
 
         else:
             warning("included llvm not built yet")
 
+    static_dynamic = "static"
+    if llvm_dynamic:
+        static_dynamic = "dynamic"
+
+    return (bundled, system, static_dynamic)
+
+# returns whether LLVM and clang will be linked dynamically, statically,
+# or it is unknown, by returning "dynamic" or "static" or None.
+@memoize
+def get_static_dynamic():
+    bundled, system, static_dynamic = compute_host_link_settings()
+    return static_dynamic
+
+# returns (bundled, system) args for 'make' to link 'chpl' with LLVM
+@memoize
+def get_host_link_args():
+    bundled, system, static_dynamic = compute_host_link_settings()
     return (bundled, system)
 
 # Return the isysroot argument provided by get_clang_basic_args, if any
@@ -1005,7 +1220,7 @@ def _main():
     elif options.action == 'sdkroot':
         sys.stdout.write("{0}\n".format(get_clang_args_sdkroot()))
     elif options.action == 'quickstart':
-        if has_compatible_installed_llvm():
+        if has_compatible_installed_llvm() and compatible_platform_for_llvm():
             sys.stdout.write("system\n")
         else:
             sys.stdout.write("none\n")

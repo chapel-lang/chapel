@@ -79,7 +79,7 @@ proc tryQueenInNextRow(board: unmanaged Board): void {
 // - remove a queen
 //   (queens must be removed in the LIFO order).
 //
-class Board {
+class Board : writeSerializable {
 
   // size of the board
   const boardSize: int;
@@ -142,26 +142,26 @@ proc Board.nextPlacementIsLegal(col: int): bool {
 //
 config var show1line: bool = true;
 
-override proc Board.writeThis(f) throws {
+override proc Board.serialize(writer, ref serializer) throws {
   if boardSize <= 0 {
-    f.write("the board is empty");
+    writer.write("the board is empty");
     return;
   }
   var notFilledMsg = "";
   if lastfilled < boardSize then notFilledMsg =
     " row(s) "+ (lastfilled + 1):string + " to " + boardSize:string + " are not filled";
   if show1line {
-    f.write(
+    writer.write(
             [row in 1..lastfilled] (row, queencol(row)),
             notFilledMsg);
   } else {
-    for {1..boardSize} do f.write("-"); f.writeln();
+    for {1..boardSize} do writer.write("-"); writer.writeln();
     for row in 1..lastfilled {
       for col in 1..boardSize do
-        f.write(if queencol(row) == col then "*" else " ");
-      f.writeln();
+        writer.write(if queencol(row) == col then "*" else " ");
+      writer.writeln();
     }
-    if notFilledMsg != "" then f.writeln(notFilledMsg);
-    for {1..boardSize} do f.write("-");
+    if notFilledMsg != "" then writer.writeln(notFilledMsg);
+    for {1..boardSize} do writer.write("-");
   }
 }

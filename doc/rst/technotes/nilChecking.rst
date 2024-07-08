@@ -32,7 +32,7 @@ Consider this example program:
   obj.method();
 
   var x = new owned MyClass(1);
-  var y = x.release(); // now x stores nil
+  var y = owned.release(x); // now x stores nil
   x.method();
 
 Compiling this program will produce the following compilation errors:

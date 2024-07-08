@@ -1,7 +1,7 @@
 ============================
 README file for GASNet tools
 ============================
-GASNet tools specification version: 1.19
+GASNet tools specification version: 1.20
 Authors: Dan Bonachea <dobonachea@lbl.gov>
          Paul H. Hargrove <PHHargrove@lbl.gov>
 
@@ -150,7 +150,7 @@ system-specific support, where available.
         Obtains the TSC tick rate from information in /proc/cpuinfo
         This is known to be incorrect for certain recent CPU models.
       GASNET_TSC_RATE=[Hz]
-        If given an integer in the range 1 Million to 100 Billon, this will be
+        If given an integer in the range 1 Million to 100 Billion, this will be
         taken as the TSC tick rate in Hz (cycles per second).  To avoid the
         ambiguity between binary (M=2^20) and decimal (M=10^6), no suffixes are
         accepted.
@@ -164,7 +164,10 @@ system-specific support, where available.
 
     * GASNET_TSC_RATE_HARD_TOLERANCE
       This environment variable functions like GASNET_TSC_RATE_TOLERANCE, except
-      that exceeeding this value results in a fatal error.
+      that exceeding this value results in a fatal error.
+
+    * GASNET_TSC_VERBOSE
+      This boolean setting requests console output regarding calibration activity
 
 -----
 Sleep
@@ -172,7 +175,7 @@ Sleep
 
   int gasnett_nsleep(uint64_t ns_delay) - nanosecond resolution sleep
     Sleep for at least the indicated number of nanoseconds.  If interrupted by a
-    signal, may terminate the sleep early returnining non-zero with errno = EINTR.
+    signal, may terminate the sleep early returning non-zero with errno = EINTR.
     If ns_delay is zero, this function returns without sleeping.
 
 ---------------
@@ -204,7 +207,7 @@ the threads of a process.
  
  gasnett_local_mb:
    A "full" local memory barrer.  This is equivalent to both a wmb() and rmb().
-   All oustanding loads and stores must be completed before any subsequent ones
+   All outstanding loads and stores must be completed before any subsequent ones
    may begin.
 
  gasnett_weak_wmb:
@@ -503,7 +506,7 @@ the section on strong atomics below.
   to both the atomic and non-atomic types (assuming, of course, that the
   non-atomic type is one allowed by the previous paragraph.) Note that as a
   general rule, use of union types may be preferable because they avoid
-  running afowl of pointer-aliasing rules in C/C++ that might otherwise
+  running afoul of pointer-aliasing rules in C/C++ that might otherwise
   lead to incorrect behavior at high optimization levels.
 
   It is not safe to concurrently access the same memory location as both
@@ -607,7 +610,7 @@ GASNETT_FORMAT_PRINTF(fnname,fmtarg,firstvararg,declarator)
 GASNETT_FORMAT_PRINTF_FUNCPTR(fnname,fmtarg,firstvararg,declarator)
 
   Annotate function fnname (defined by definition) as a printf-like function, 
-  whose arguments should be checked for type compatilibility with a format string whenever possible.
+  whose arguments should be checked for type compatibility with a format string whenever possible.
   fmtarg is the 1-based index of the argument providing the format character string, 
   firstvararg is the 1-based index of the first ... argument which corresponds to 
   arguments to the format string.
@@ -1456,7 +1459,7 @@ COMPILER.
       Set to the (possibly empty) keyword to use for GASNETT_RESTRICT
       Might be, for instance, "restrict", "__restrict" or "__restrict__".
     GASNETT_USE_RESTRICT_ON_TYPEDEFS
-      Set to "1" to allow use in GASNet's headers of GASNETT_RESTRICT to qualify aguments
+      Set to "1" to allow use in GASNet's headers of GASNETT_RESTRICT to qualify arguments
       declared via typedefs (and thus don't look like pointers until the typedef has been
       expanded).  Setting to "0" will disable such use.
       One may not set GASNETT_USE_RESTRICT_ON_TYPEDEFS without setting GASNETT_USE_RESTRICT.

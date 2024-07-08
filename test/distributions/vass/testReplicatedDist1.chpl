@@ -15,7 +15,7 @@ config type elt = int;
 // ARepl - the replicated array to be tested
 
 const repllocales = Locales;  // in case this changes
-var ReplBlockDist = new dmap(new Replicated());
+var ReplBlockDist = new replicatedDist();
 var DRepl: domain(2) dmapped ReplBlockDist = DsubLoc;
 var ARepl: [DRepl] elt;
 
@@ -27,12 +27,12 @@ proc show() {
     }
   }
 }
-    
+
 
 // set everything to predetermined values
 proc reset() {
   // explicitly go to each locale
-  coforall loc in repllocales do on loc do
+  coforall loc in repllocales with (ref ARepl) do on loc do
     // explicitly index into each element
     for ix in DsubLoc do ARepl[ix] = 100 + here.id;
 }
@@ -104,7 +104,7 @@ on teston {
   // in a forall
   start("forall ix in DsubLoc do ARepl[ix] = A[ix];");
   reset();
-  forall ix in DsubLoc do ARepl[ix] = A[ix];
+  forall ix in DsubLoc with (ref ARepl) do ARepl[ix] = A[ix];
   show();
 
   // --- iterate over Dsub => each locale's replicant is visited
@@ -112,7 +112,7 @@ on teston {
   // in a forall
   start("forall ix in Dsub do ARepl[ix] = A[ix];");
   reset();
-  forall ix in Dsub do ARepl[ix] = A[ix];
+  forall ix in Dsub with (ref ARepl) do ARepl[ix] = A[ix];
   show();
 
   // in a for
@@ -200,8 +200,8 @@ iter testLocs(): locale {
 for tloc in testLocs() {
   // gotta create new dmap() on the same locale as 'domainmap'
   trydist(defaultDist, tloc, "default");
-  trydist(new dmap(new Block(boundingBox=Dbase)), tloc, "block");
-  trydist(new dmap(new Cyclic(startIdx=Dbase.low)), tloc, "cyclic");
+  trydist(new blockDist(boundingBox=Dbase), tloc, "block");
+  trydist(new cyclicDist(startIdx=Dbase.low), tloc, "cyclic");
 }
 
 write("\nDone\n");

@@ -18,7 +18,8 @@ class Child : Parent {
   }
 }
 
-var c:borrowed Parent = new owned Child();
+var myOwnedChild = new owned Child();
+var c:borrowed Parent = myOwnedChild;
 
 for m in c.foo(10) {
   writeln(m);

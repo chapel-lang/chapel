@@ -141,7 +141,7 @@ static Function *createWrapper(Function *F, FunctionType *Ty) {
       if (CastInst::isBitOrNoopPointerCastable(ArgType, ParamType, DL)) {
         Instruction *PtrCast =
             CastInst::CreateBitOrPointerCast(AI, ParamType, "cast");
-        BB->getInstList().push_back(PtrCast);
+        PtrCast->insertInto(BB, BB->end());
         Args.push_back(PtrCast);
       } else if (ArgType->isStructTy() || ParamType->isStructTy()) {
         LLVM_DEBUG(dbgs() << "createWrapper: struct param type in bitcast: "
@@ -181,7 +181,7 @@ static Function *createWrapper(Function *F, FunctionType *Ty) {
                                                     DL)) {
       Instruction *Cast =
           CastInst::CreateBitOrPointerCast(Call, RtnType, "cast");
-      BB->getInstList().push_back(Cast);
+      Cast->insertInto(BB, BB->end());
       ReturnInst::Create(M->getContext(), Cast, BB);
     } else if (RtnType->isStructTy() || ExpectedRtnType->isStructTy()) {
       LLVM_DEBUG(dbgs() << "createWrapper: struct return type in bitcast: "
@@ -247,8 +247,7 @@ bool FixFunctionBitcasts::runOnModule(Module &M) {
     if (F.getName() == "main") {
       Main = &F;
       LLVMContext &C = M.getContext();
-      Type *MainArgTys[] = {Type::getInt32Ty(C),
-                            PointerType::get(Type::getInt8PtrTy(C), 0)};
+      Type *MainArgTys[] = {Type::getInt32Ty(C), PointerType::get(C, 0)};
       FunctionType *MainTy = FunctionType::get(Type::getInt32Ty(C), MainArgTys,
                                                /*isVarArg=*/false);
       if (shouldFixMainFunction(F.getFunctionType(), MainTy)) {
@@ -256,9 +255,7 @@ bool FixFunctionBitcasts::runOnModule(Module &M) {
                           << *F.getFunctionType() << "\n");
         Value *Args[] = {UndefValue::get(MainArgTys[0]),
                          UndefValue::get(MainArgTys[1])};
-        Value *Casted =
-            ConstantExpr::getBitCast(Main, PointerType::get(MainTy, 0));
-        CallMain = CallInst::Create(MainTy, Casted, Args, "call_main");
+        CallMain = CallInst::Create(MainTy, Main, Args, "call_main");
         Uses.push_back(std::make_pair(CallMain, &F));
       }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,6 +36,9 @@
 #include "WhileStmt.h"
 
 #include "global-ast-vecs.h"
+
+static void undoReturnByRef(FnSymbol* fn);
+static void collapseTrivialMoves();
 
 //helper datastructures/types
 typedef std::pair<Expr*, Type*> DefCastPair;
@@ -89,6 +92,8 @@ void denormalize(void) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       // remove unused epilogue labels
       removeUnnecessaryGotos(fn, true);
+      if (!fReturnByRef && fn->hasFlag(FLAG_FN_RETARG))
+        undoReturnByRef(fn);
 
       bool isFirstRound = true;
       do {
@@ -112,6 +117,8 @@ void denormalize(void) {
         isFirstRound = false;
       } while(deferredSyms.size() > 0);
     }
+
+    collapseTrivialMoves();
   }
 }
 
@@ -438,7 +445,7 @@ bool isDenormalizable(Symbol* sym,
 
                   // We want to pass symbols to kernel launches for now. This
                   // simplifies its codegen.
-                  ce->isPrimitive(PRIM_GPU_KERNEL_LAUNCH_FLAT) ||
+                  ce->isPrimitive(PRIM_GPU_KERNEL_LAUNCH) ||
 
                   isBadMove(ce) ||
                   isValPassedByRef(ce, se) ||
@@ -668,4 +675,256 @@ inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
     }
   }
   return false;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// undoReturnByRef()
+//
+// Ultimately we may want to avoid introducing return by ref.
+// For now, simply undo it as a denormalization step.
+
+///////////
+//
+// transformRetTempDef() will modify 'fn' to replace
+//   =(refArg, something)
+//   return(void)
+// with:
+//   return(something)
+
+struct ReturnByRefDef {
+  FnSymbol*  fn;           // the function that returns by ref
+  ArgSymbol* refArg;       // the function's formal used for indirect return
+  bool       skipLnFnArgs; // if true, refArg is fn's 3rd-last formal
+};
+
+static bool isGoodRefArg(FnSymbol* fn, ReturnByRefDef& info,
+                         bool skippedLnFnArgs, Expr* argDef) {
+  ArgSymbol* refArg = toArgSymbol(toDefExpr(argDef)->sym);
+  if (!refArg->hasFlag(FLAG_RETARG))
+    return false; // give up; maybe look harder?
+  INT_ASSERT(!strcmp(refArg->name, "_retArg"));
+  INT_ASSERT(fn->retType = dtVoid);
+
+  info = { fn, refArg, skippedLnFnArgs };
+  return true;
+}
+
+static bool acceptableDef(FnSymbol* fn, ReturnByRefDef& info) {
+  // isGoodRefArg() fills 'info'
+  if (! isGoodRefArg(fn, info, false, fn->formals.tail)             &&
+      ! (fn->numFormals() >= 3 &&
+         isGoodRefArg(fn, info, true, fn->formals.tail->prev->prev)) )
+    return false;
+
+  if (info.refArg->type->symbol->hasFlag(FLAG_STAR_TUPLE))
+    return false; // codegen requires star tuples to be passed by ref
+
+  for_SymbolSymExprs(refSE, info.refArg) {
+    if (CallExpr* call = toCallExpr(refSE->parentExpr)) {
+      if (call->isPrimitive(PRIM_NO_ALIAS_SET))
+        continue; // any of these are ok
+      if (! call->isPrimitive(PRIM_ASSIGN))
+        return false; // need more work to handle, ex., PRIM_SET_MEMBER
+      // transformRetTempDef() will assert that we have only one PRIM_ASSIGN
+    }
+  }
+
+  return true;
+}
+
+static void transformRetTempDef(ReturnByRefDef& info) {
+  SymExpr* refUse = nullptr;
+  for_SymbolSymExprs(refSE, info.refArg) {
+    if (CallExpr* call = toCallExpr(refSE->parentExpr))
+      if (call->isPrimitive(PRIM_NO_ALIAS_SET)) {
+        if (call->numActuals() == 1) call->remove();
+        else refSE->remove();
+        continue;
+      }
+    INT_ASSERT(refUse == nullptr); // expect only a single SE
+    refUse = refSE;
+  }
+
+  CallExpr* assignCall = toCallExpr(refUse->parentExpr);
+  Expr* refValueExpr = assignCall->get(2)->remove();
+  INT_ASSERT(isSymExpr(refValueExpr)); // ensure it can be used in 'return'
+  // Todo: do we need to add FLAG_RVV to refValueExpr->symbol()?
+  // At this point temps with FLAG_RVV may occur anywhere due to inlining.
+  assignCall->remove();
+
+  CallExpr* returnCall = toCallExpr(info.fn->body->body.tail);
+  INT_ASSERT(returnCall->isPrimitive(PRIM_RETURN));
+  INT_ASSERT(toSymExpr(returnCall->get(1))->symbol() == gVoid);
+  returnCall->get(1)->replace(refValueExpr);
+
+  info.refArg->defPoint->remove();
+  info.fn->retType = info.refArg->type;
+  info.fn->removeFlag(FLAG_FN_RETARG);
+}
+
+///////////
+//
+// transformRetTempUse() will replace:
+//   call fn(args, ret_tmp)
+// with:
+//   move(ret_tmp, call fn(args))
+//
+// collapseTrivialMoves() will reduce to the original 'call_temp = fn(...)'
+
+struct ReturnByRefUse {
+  SymExpr* fnSE;    //  'fn'
+  SymExpr* tempSE;  //  'ret_tmp'
+};
+
+// Return true if the desired pattern is present.
+static bool acceptableUse(ReturnByRefDef& defInfo, SymExpr* fnUse,
+                          ReturnByRefUse& useInfo) {
+  CallExpr* call = toCallExpr(fnUse->parentExpr);
+  if (call == nullptr || call->resolvedFunction() != defInfo.fn)
+    return false;
+
+  INT_ASSERT(call == call->getStmtExpr());
+  SymExpr* tempSE = toSymExpr(defInfo.skipLnFnArgs ?
+                      call->argList.tail->prev->prev : call->argList.tail);
+  // the temp is usually called "ret_tmp", however not necessarily
+  INT_ASSERT(tempSE->symbol()->type == defInfo.refArg->type); // fyi
+
+  useInfo = { fnUse, tempSE };
+  return true;
+}
+
+static void transformRetTempUse(ReturnByRefUse& info) {
+  Expr*   fnCall  = info.fnSE->parentExpr;
+  Symbol* retTemp = info.tempSE->symbol();
+  INT_ASSERT(! retTemp->type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF));
+
+  // replace:
+  //   call fn(args, ret_tmp)
+  // with:
+  //   move(ret_tmp, call fn(args))  // if ret_tmp is a ref, make it assign
+  //
+  SET_LINENO(fnCall);
+
+  Expr* anchor = fnCall->prev;
+  BlockStmt* encl = anchor ? nullptr : toBlockStmt(fnCall->parentExpr);
+  Expr* move   = new CallExpr(retTemp->isRef() ? PRIM_ASSIGN : PRIM_MOVE,
+                              info.tempSE->remove(), fnCall->remove());
+  if (anchor) anchor->insertAfter(move);
+  else        encl->insertAtHead(move);
+}
+
+///////////
+// putting it all together
+
+static void undoReturnByRef(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_VIRTUAL)) return;  // skip these for now
+
+  ReturnByRefDef defInfo;
+  if (! acceptableDef(fn, defInfo))
+    return;
+
+  // Make changes only if we can handle all uses of 'fn'.
+  // While checking, store some findings for later use.
+  std::vector<ReturnByRefUse> infos;
+  for_SymbolSymExprs(use, fn) {
+    ReturnByRefUse useInfo;
+    if (acceptableUse(defInfo, use, useInfo))
+      infos.push_back(useInfo);
+    else
+      return;
+  }
+
+  for (ReturnByRefUse& info: infos)
+    transformRetTempUse(info);
+
+  transformRetTempDef(defInfo);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// collapseTrivialMoves() converts:
+//   move(source, expr)  // move1
+//   move(dest, source)  // move2
+// provided:
+//   'move1' and 'move2' are adjacent or have only DefExprs in between
+//   'source' has no other references
+// to:
+//   move(dest, expr)
+
+// In some cases codegen adds an appropriate dereference, widening, etc.
+// for a symbol-to-symbol move and not for a call-to-symbol move.
+// So collapse only moves for which such additions are not needed.
+static bool okSymbol(Symbol* sym) {
+  return sym->qual == QUAL_VAL || sym->qual == QUAL_CONST_VAL;
+}
+
+static bool canCollapseMoveBetween(SymExpr* dest, SymExpr* source) {
+  Symbol *destSym = dest->symbol(), *sourceSym = source->symbol();
+  return
+    destSym->type == sourceSym->type        &&
+    ! sourceSym->hasFlag(FLAG_CONFIG)       &&
+    ! sourceSym->hasFlag(FLAG_EXPORT)       &&
+    ! sourceSym->hasFlag(FLAG_EXTERN)       &&
+    okSymbol(destSym) && okSymbol(sourceSym);
+}
+
+static bool closeEnough(Expr* move1, Expr* move2) {
+  Expr* curr = move1;
+  for (int dist = 0; dist < 5; dist++) {  // heuristically allow <=5 defs
+    curr = curr->next;
+    if (curr == move2) return true;
+    if (!curr || ! isDefExpr(curr)) return false;
+  }
+  return false;
+}
+
+// Returns 'move1', or NULL if the desired pattern is not present.
+// 'sourceSE' is the SymExpr for 'source' in 'move2'.
+static CallExpr* singleMoveTo(CallExpr* move2, SymExpr* sourceSE) {
+  Symbol* source = sourceSE->symbol();
+  SymExpr* otherSE = source->firstSymExpr();
+  // Specialize for exactly two references to 'source'.
+  if (otherSE == sourceSE) {
+    // need source -> sourceSE -> otherSE -> NULL
+    otherSE = otherSE->symbolSymExprsNext;
+    if (otherSE == nullptr || otherSE->symbolSymExprsNext != nullptr)
+      return nullptr; // 1 or >2 references
+  }
+  else {
+    // need source -> otherSE -> sourceSE -> NULL
+    if (otherSE->symbolSymExprsNext != sourceSE ||
+        sourceSE->symbolSymExprsNext != nullptr)
+      return nullptr; // >2 references
+  }
+
+  CallExpr* move1 = toCallExpr(otherSE->parentExpr);
+  if (move1 != nullptr                                    &&
+      otherSE == move1->get(1)                            &&
+      move1->isPrimitive(PRIM_MOVE)                       &&
+      (move2 == move1->next || closeEnough(move1, move2)) )
+    return move1;
+  else
+    return nullptr;
+}
+
+static void collapseTrivialMoves() {
+  // Empirically, running collapseTrivialMoves() the second time
+  // would not result in any additional removals. So, do it just once.
+  //
+  // This work could be done on a per-function basis using collectCallExprs().
+  // Simply traversing 'gCallExprs' avoids the overhead of collectCallExprs().
+  for_alive_in_Vec(CallExpr, move2, gCallExprs) {
+   if (move2->isPrimitive(PRIM_MOVE))
+    if (SymExpr* dest = toSymExpr(move2->get(1)))
+     while (true) {
+      if (SymExpr* source = toSymExpr(move2->get(2)))
+       if (canCollapseMoveBetween(dest, source))
+        if (CallExpr* move1 = singleMoveTo(move2, source)) {
+          move1->remove();
+          source->replace(move1->get(2)->remove());
+          source->symbol()->defPoint->remove();
+          continue; // will check for another move1 to reduce with move2
+        }
+      break; // no further opportunities with move2
+     } // while
+  } // for
 }

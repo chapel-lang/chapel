@@ -1,2 +1,0 @@
-sys-o_.chpl:1: warning: The 'Sys' module has been deprecated; please find replacement symbols in the 'OS' and  'Socket' modules
-sys-o_.chpl:2: warning: 'Sys.O_RDONLY' is deprecated; please use 'OS.POSIX.O_RDONLY' instead

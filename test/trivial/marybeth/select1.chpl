@@ -11,7 +11,7 @@ scale(x, y, alpha);
 
 writeln(x);
 
-proc scale(x, y, alpha: real) {
+proc scale(ref x, y, alpha: real) {
   if (x.size != y.size) {
     writeln("Error:  Input vectors are not the same length.");
     return;

@@ -11,8 +11,9 @@ Major Platforms
 
    macosx
    cray
-   cygwin
+   windows
    aws
+   raspberrypi
 
 
 Networks

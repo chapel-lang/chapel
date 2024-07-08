@@ -4,13 +4,13 @@ use LayoutCS;
 use Map;
 use Time;
 
-var subTimers = new map(string, Timer);
-subTimers['multiply'] = new Timer();
-subTimers['add indices'] = new Timer();
-subTimers['find indices'] = new Timer();
-subTimers[' overlap'] = new Timer();
-subTimers['  push_back'] = new Timer();
-subTimers['setup'] = new Timer();
+var subTimers = new map(string, stopwatch);
+subTimers['multiply'] = new stopwatch();
+subTimers['add indices'] = new stopwatch();
+subTimers['find indices'] = new stopwatch();
+subTimers[' overlap'] = new stopwatch();
+subTimers['  push_back'] = new stopwatch();
+subTimers['setup'] = new stopwatch();
 
 config param subtimers = false;
 
@@ -23,8 +23,8 @@ proc main() {
   const ADom = {1..m, 1..n},
         BDom = {1..n, 1..m};
 
-  var csrDom: sparse subdomain(ADom) dmapped CS(),
-      cscDom: sparse subdomain(BDom) dmapped CS(compressRows=false);
+  var csrDom: sparse subdomain(ADom) dmapped new dmap(new CS()),
+      cscDom: sparse subdomain(BDom) dmapped new dmap(new CS(compressRows=false));
 
   var csrArr: [csrDom] real,
       cscArr: [cscDom] real;
@@ -96,7 +96,7 @@ proc multiply(A, B) {
 proc denseMultiply(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   const CDom = {ADom.dim(0), BDom.dim(1)};
   var C: [CDom] eltType;
-  forall (i, j) in CDom {
+  forall (i, j) in CDom with (ref C) {
     for k in BDom.dim(0) {
       C[i,j] += A[i, k] * B[k, j];
     }
@@ -113,7 +113,7 @@ proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where A.isSparse() && B.i
     compilerError('Only CSR-CSC multiplication is currently supported');
 
   if subtimers then subTimers['setup'].start();
-  var CDom: sparse subdomain({ADom._value.parentDom.dim(0), BDom._value.parentDom.dim(1)}) dmapped CS();
+  var CDom: sparse subdomain({ADom._value.parentDom.dim(0), BDom._value.parentDom.dim(1)}) dmapped new dmap(new CS());
   var C: [CDom] eltType;
 
   ref idxA = A.domain._value.idx,
@@ -152,7 +152,7 @@ proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where A.isSparse() && B.i
       for (i, j) in overlap(aRange, bRange) {
         // Add to index!
         if subtimers then subTimers['  push_back'].start();
-        indices.append((r, c));
+        indices.pushBack((r, c));
         if subtimers then subTimers['  push_back'].stop();
         break;
       }

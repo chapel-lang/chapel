@@ -2,7 +2,22 @@
 # ABI, and when it is updated, it should be updated to the current
 # LLVM_VERSION_MAJOR.
 # Please also see clang/tools/libclang/libclang.map
-set(CLANG_SONAME 13)
+
+# This option defaults to CLANG_FORCE_MATCHING_LIBCLANG_SOVERSION
+# to ON - which means that it by default matches CLANG_VERSION_MAJOR
+#
+# TODO: This should probably not be a option going forward but we
+# we should commit to a way to do it. But due to getting this out
+# in LLVM 15.x we opted for a option.
+set(LIBCLANG_SOVERSION_ARG)
+if(NOT CLANG_FORCE_MATCHING_LIBCLANG_SOVERSION)
+  set(LIBCLANG_SOVERSION_ARG SOVERSION 13)
+endif()
+
+# TODO: harmonize usage of LIBCLANG_SOVERSION / LIBCLANG_LIBARY_VERSION
+#       below; this was added under time-pressure to avoid reverting the
+#       better default from LLVM 14 for LLVM 15.0.0-rc3, hence no time
+#       to clean up previous inconsistencies.
 
 set(SOURCES
   ARCMigrate.cpp
@@ -17,6 +32,7 @@ set(SOURCES
   CIndexer.cpp
   CXComment.cpp
   CXCursor.cpp
+  CXExtractAPI.cpp
   CXIndexDataConsumer.cpp
   CXCompilationDatabase.cpp
   CXLoadedDiagnostic.cpp
@@ -45,6 +61,7 @@ set(LIBS
   clangAST
   clangBasic
   clangDriver
+  clangExtractAPI
   clangFrontend
   clangIndex
   clangLex
@@ -80,7 +97,7 @@ if(MSVC)
   set(LLVM_EXPORTED_SYMBOL_FILE)
 endif()
 
-if (UNIX AND NOT APPLE)
+if (UNIX AND NOT APPLE AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "AIX")
   set(LLVM_EXPORTED_SYMBOL_FILE)
   set(USE_VERSION_SCRIPT ${LLVM_HAVE_LINK_VERSION_SCRIPT})
 endif()
@@ -112,8 +129,9 @@ else()
   set(output_name "clang")
 endif()
 
-# libclang requires headers which need _ALL_SOURCE to build on AIX
 if (UNIX AND ${CMAKE_SYSTEM_NAME} MATCHES "AIX")
+    set(CMAKE_AIX_EXPORT_ALL_SYMBOLS OFF)
+    # libclang requires headers which need _ALL_SOURCE to build on AIX
     remove_definitions("-D_XOPEN_SOURCE=700")
 endif()
 
@@ -132,6 +150,7 @@ add_clang_library(libclang ${ENABLE_SHARED} ${ENABLE_STATIC} INSTALL_WITH_TOOLCH
   ${LLVM_TARGETS_TO_BUILD}
   Core
   Support
+  TargetParser
   )
 
 if(ENABLE_STATIC)
@@ -167,11 +186,22 @@ if(ENABLE_SHARED)
     endif()
   endif()
   if (USE_VERSION_SCRIPT)
-    target_link_options(libclang PRIVATE "-Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/libclang.map")
-    # The Solaris 11.4 linker supports a subset of GNU ld version scripts,
-    # but requires a special option to enable it.
     if (${CMAKE_SYSTEM_NAME} MATCHES "SunOS")
-      target_link_options(libclang PRIVATE "-Wl,-z,gnu-version-script-compat")
+      include(CheckLinkerFlag)
+      # The Solaris 11.4 linker supports a subset of GNU ld version scripts,
+      # but requires a special option to enable it.
+      llvm_check_linker_flag(CXX "-Wl,-z,gnu-version-script-compat"
+                             LINKER_SUPPORTS_Z_GNU_VERSION_SCRIPT_COMPAT)
+      # Older Solaris (and illumos) linker does not support GNU ld version scripts
+      # and does not support GNU version script compat.
+      if (LINKER_SUPPORTS_Z_GNU_VERSION_SCRIPT_COMPAT)
+        target_link_options(libclang PRIVATE "-Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/libclang.map")
+        target_link_options(libclang PRIVATE "-Wl,-z,gnu-version-script-compat")
+      else()
+        target_link_options(libclang PRIVATE "-Wl,-M,${CMAKE_CURRENT_SOURCE_DIR}/libclang.map")
+      endif()
+    else()
+      target_link_options(libclang PRIVATE "-Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/libclang.map")
     endif()
     # Ensure that libclang.so gets rebuilt when the linker script changes.
     set_property(SOURCE ARCMigrate.cpp APPEND PROPERTY
@@ -179,7 +209,7 @@ if(ENABLE_SHARED)
 
     set_target_properties(libclang PROPERTIES
                           VERSION ${LLVM_VERSION_MAJOR}.${LLVM_VERSION_MINOR}.${LLVM_VERSION_PATCH}${LLVM_VERSION_SUFFIX}
-                          SOVERSION ${CLANG_SONAME})
+                          ${LIBCLANG_SOVERSION_ARG})
   endif()
 endif()
 

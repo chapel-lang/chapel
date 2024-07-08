@@ -1,0 +1,6 @@
+perfkeys: Elapsed:
+files: clenshaw.dat
+graphkeys: Elapsed Time
+ylabel: Time (seconds)
+graphtitle: Clenshaw
+

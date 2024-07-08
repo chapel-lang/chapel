@@ -1,0 +1,2 @@
+issue-21710.chpl:1: In module 'my_freader':
+issue-21710.chpl:5: error: fields cannot specify generic array types

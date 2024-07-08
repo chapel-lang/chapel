@@ -1,9 +1,9 @@
 /* This test record keeps a class pointer hanging off of
-   a field an tracks allocation/free operations on that
+   a field and tracks allocation/free operations on that
    class pointer.
  */
 
-use Tracking;
+use Tracking, CTypes;
 
 config const debug = false;
 config param allocateAlways = true;
@@ -24,13 +24,13 @@ proc R.init(x : int = 0, c : unmanaged C? = nil) {
   if debug then writeln("in R.init(", x, ", ", c, ")");
   this.x = x;
   this.c = c;
-  this.complete();
+  init this;
   this.setup(x, true);
 }
 
 proc R.init=(other:R) {
   if debug then writeln("in R.init=(", other, ")");
-  this.complete();
+  init this;
   this.setup(other.x, true);
 }
 
@@ -48,8 +48,8 @@ proc ref R.setup(x:int, allow_zero:bool=false) {
 
   this.x = x;
   this.c = new unmanaged C(x = x, id = 1+c_counter.fetchAdd(1));
-  
-  extern proc printf(fmt:c_string, arg:C?);
+
+  extern proc printf(fmt:c_ptrConst(c_char), arg:C?);
   if debug {
     printf("in setup allocated c=%p ", c);
     writeln(c);
@@ -73,7 +73,7 @@ proc ref R.increment() {
 
 
 proc R.deinit() {
-  extern proc printf(fmt:c_string, arg:C?);
+  extern proc printf(fmt:c_ptrConst(c_char), arg:C?);
   if debug {
     printf("in destructor for c=%p ", c);
     writeln("x=", x, " ", c);
@@ -84,7 +84,7 @@ proc R.deinit() {
 }
 
 proc R.verify() {
-  extern proc printf(fmt:c_string, arg:c_ptr(int), arg2:c_ptr(int));
+  extern proc printf(fmt:c_ptrConst(c_char), arg:c_ptr(int), arg2:c_ptr(int));
 
   // default initialized records have nil ptr, OK
   if c == nil && x == 0 {
@@ -104,8 +104,8 @@ proc R.verify() {
 }
 
 operator R.=(ref lhs: R, rhs: R) {
-  extern proc printf(fmt:c_string, arg:C?);
-  extern proc printf(fmt:c_string, arg:C?, arg2:C?);
+  extern proc printf(fmt:c_ptrConst(c_char), arg:C?);
+  extern proc printf(fmt:c_ptrConst(c_char), arg:C?, arg2:C?);
   if debug {
     printf("in assign lhs = rhs rhs.c is %p ", rhs.c);
     writeln(rhs.c);

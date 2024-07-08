@@ -13,6 +13,6 @@ proc cgFun(arg: MyArray) {
 }
 
 var AR = [1, 2, 5];
-proc f(arg1: real, arg2: string) return AR;
+proc f(arg1: real, arg2: string) do return AR;
 implements MyArray(f(1, 2:string).type);
 cgFun(AR);

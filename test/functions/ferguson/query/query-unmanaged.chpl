@@ -20,43 +20,43 @@ proc h(arg:unmanaged MyClass(unmanaged OtherClass(?t))) {
 proc i(arg:unmanaged) {
   writeln("i ", arg.type:string);
 }
-proc j(arg:unmanaged MyClass) {
+proc j(arg:unmanaged MyClass(?)) {
   writeln("j ", arg.type:string);
 }
-proc k(arg:unmanaged MyClass(unmanaged OtherClass)) {
+proc k(arg:unmanaged MyClass(unmanaged OtherClass(?))) {
   writeln("k ", arg.type:string);
 }
 
-proc ll(arg:unmanaged MyClass) {
+proc ll(arg:unmanaged MyClass(?)) {
   writeln("ll unmanaged MyClass");
 }
-proc ll(arg:borrowed MyClass) {
+proc ll(arg:borrowed MyClass(?)) {
   writeln("ll borrowed MyClass");
 }
 proc ll(arg) {
   writeln("ll generic");
 }
 
-proc m(type t : unmanaged MyClass) {
+proc m(type t : unmanaged MyClass(?)) {
   writeln("m unmanaged MyClass");
 }
-proc m(type t : borrowed MyClass) {
+proc m(type t : borrowed MyClass(?)) {
   writeln("m borrowed MyClass");
 }
-proc m(type t : unmanaged object) {
-  writeln("m unmanaged object");
+proc m(type t : unmanaged RootClass) {
+  writeln("m unmanaged RootClass");
 }
-proc m(type t : borrowed object) {
-  writeln("m borrowed object");
+proc m(type t : borrowed RootClass) {
+  writeln("m borrowed RootClass");
 }
 
-proc n(arg : unmanaged MyClass) {
+proc n(arg : unmanaged MyClass(?)) {
   writeln("n unmanaged MyClass");
 }
-proc n(arg : unmanaged object) {
-  writeln("n unmanaged object");
+proc n(arg : unmanaged RootClass) {
+  writeln("n unmanaged RootClass");
 }
-proc n(arg : borrowed MyClass) {
+proc n(arg : borrowed MyClass(?)) {
   writeln("n borrowed MyClass");
 }
 

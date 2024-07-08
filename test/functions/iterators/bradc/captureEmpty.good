@@ -1,3 +1,1 @@
-In foo
-
-{1..0}
+captureEmpty.chpl:5: error: array element type cannot be 'nothing'

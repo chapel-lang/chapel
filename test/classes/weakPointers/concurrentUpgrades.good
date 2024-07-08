@@ -1,0 +1,6 @@
+concurrentUpgrades.chpl:2: warning: The `weak` type is experimental; expect this API to change in the future
+concurrentUpgrades.chpl:11: In function 'concurrentlyUpgrade':
+concurrentUpgrades.chpl:12: warning: The `weak` type is experimental; expect this API to change in the future.
+  concurrentUpgrades.chpl:39: called as concurrentlyUpgrade(s: shared basicClass)
+true
+true

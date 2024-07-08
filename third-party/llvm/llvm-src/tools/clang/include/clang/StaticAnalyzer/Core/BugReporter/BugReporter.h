@@ -19,6 +19,7 @@
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/StaticAnalyzer/Core/BugReporter/BugReporterVisitors.h"
+#include "clang/StaticAnalyzer/Core/BugReporter/BugSuppression.h"
 #include "clang/StaticAnalyzer/Core/BugReporter/BugType.h"
 #include "clang/StaticAnalyzer/Core/CheckerManager.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ExplodedGraph.h"
@@ -26,10 +27,8 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/SVals.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/SymExpr.h"
 #include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/FoldingSet.h"
 #include "llvm/ADT/ImmutableSet.h"
-#include "llvm/ADT/None.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringMap.h"
@@ -39,6 +38,7 @@
 #include "llvm/ADT/iterator_range.h"
 #include <cassert>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -453,13 +453,13 @@ public:
   bool isInteresting(SVal V) const;
   bool isInteresting(const LocationContext *LC) const;
 
-  Optional<bugreporter::TrackingKind>
+  std::optional<bugreporter::TrackingKind>
   getInterestingnessKind(SymbolRef sym) const;
 
-  Optional<bugreporter::TrackingKind>
+  std::optional<bugreporter::TrackingKind>
   getInterestingnessKind(const MemRegion *R) const;
 
-  Optional<bugreporter::TrackingKind> getInterestingnessKind(SVal V) const;
+  std::optional<bugreporter::TrackingKind> getInterestingnessKind(SVal V) const;
 
   /// Returns whether or not this report should be considered valid.
   ///
@@ -595,6 +595,9 @@ private:
   /// A vector of BugReports for tracking the allocated pointers and cleanup.
   std::vector<BugReportEquivClass *> EQClassesVector;
 
+  /// User-provided in-code suppressions.
+  BugSuppression UserSuppressions;
+
 public:
   BugReporter(BugReporterData &d);
   virtual ~BugReporter();
@@ -608,8 +611,9 @@ public:
 
   /// Iterator over the set of BugReports tracked by the BugReporter.
   using EQClasses_iterator = llvm::FoldingSet<BugReportEquivClass>::iterator;
-  EQClasses_iterator EQClasses_begin() { return EQClasses.begin(); }
-  EQClasses_iterator EQClasses_end() { return EQClasses.end(); }
+  llvm::iterator_range<EQClasses_iterator> equivalenceClasses() {
+    return EQClasses;
+  }
 
   ASTContext &getContext() { return D.getASTContext(); }
 
@@ -629,14 +633,14 @@ public:
   void EmitBasicReport(const Decl *DeclWithIssue, const CheckerBase *Checker,
                        StringRef BugName, StringRef BugCategory,
                        StringRef BugStr, PathDiagnosticLocation Loc,
-                       ArrayRef<SourceRange> Ranges = None,
-                       ArrayRef<FixItHint> Fixits = None);
+                       ArrayRef<SourceRange> Ranges = std::nullopt,
+                       ArrayRef<FixItHint> Fixits = std::nullopt);
 
   void EmitBasicReport(const Decl *DeclWithIssue, CheckerNameRef CheckerName,
                        StringRef BugName, StringRef BugCategory,
                        StringRef BugStr, PathDiagnosticLocation Loc,
-                       ArrayRef<SourceRange> Ranges = None,
-                       ArrayRef<FixItHint> Fixits = None);
+                       ArrayRef<SourceRange> Ranges = std::nullopt,
+                       ArrayRef<FixItHint> Fixits = std::nullopt);
 
 private:
   llvm::StringMap<std::unique_ptr<BugType>> StrBugTypes;
@@ -779,11 +783,11 @@ public:
     return T->getTagKind() == &Kind;
   }
 
-  Optional<std::string> generateMessage(BugReporterContext &BRC,
-                                        PathSensitiveBugReport &R) const {
+  std::optional<std::string> generateMessage(BugReporterContext &BRC,
+                                             PathSensitiveBugReport &R) const {
     std::string Msg = Cb(BRC, R);
     if (Msg.empty())
-      return None;
+      return std::nullopt;
 
     return std::move(Msg);
   }

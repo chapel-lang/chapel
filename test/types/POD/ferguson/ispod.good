@@ -9,9 +9,8 @@ borrowed MyClass : true
 unmanaged MyClass : true
 owned MyClass : false
 shared MyClass : false
-RAtomicT(int(64)) : false
+atomic int(64) : false
 sync int(64) : false
-single int(64) : false
 NotPod1 : false
 NotPod2 : false
 NotPod3 : false

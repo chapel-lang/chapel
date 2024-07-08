@@ -13,7 +13,7 @@ config const filter = "";
    file stored at that path and save the result in that
    array element.
  */
-proc computeHashes(hashAndPath:[] (SHA256Hash, string)) {
+proc computeHashes(ref hashAndPath:[] (SHA256Hash, string)) {
 
   // computeHashes is called by the below code to
   // fill in the hash components of the array hashAndPath.
@@ -76,7 +76,7 @@ proc handleArguments(args: [] string, ref paths: domain(string)) {
         paths += relativeRealPath(arg);
       }
     } else if isDir(arg) {
-      for path in findfiles(arg, recursive=true) {
+      for path in findFiles(arg, recursive=true) {
         if filter == "" || path.endsWith(filter) {
           paths += relativeRealPath(path);
         }

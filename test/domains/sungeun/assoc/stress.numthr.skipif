@@ -1,3 +1,6 @@
 # Valgrind is exhibiting non-fair scheduling even though it uses fifo.
 # Disable
 CHPL_TEST_VGRND_EXE == on
+
+# The small stack size can be exceeded with baseline
+COMPOPTS <= --baseline

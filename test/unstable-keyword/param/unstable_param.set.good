@@ -1,0 +1,4 @@
+unstable_param.chpl:4: In function 'main':
+unstable_param.chpl:5: warning: a is unstable
+true
+false

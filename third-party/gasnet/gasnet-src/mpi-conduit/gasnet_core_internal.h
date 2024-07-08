@@ -65,18 +65,16 @@ const char *gasneti_AMErrorName(int errval) {
    retval = (fncall);                                                  \
    if_pf (retval) {                                                    \
      if (gasneti_VerboseErrors) {                                      \
-       fprintf(stderr, "\nGASNet %s encountered an AM Error: %s(%i)\n" \
-                       "  at %s:%i\n",                                 \
+       gasneti_console_message("ERROR","GASNet %s encountered an AM Error: %s(%i)\n" \
+                       "  at %s:%i",                                   \
          GASNETI_CURRENT_FUNCTION,                                     \
          gasneti_AMErrorName(retval),                                  \
          retval, __FILE__, __LINE__);                                  \
-       fflush(stderr);                                                 \
      }                                                                 \
    }                                                                   \
  } while (0)
 
 /* ------------------------------------------------------------------------------------ */
-#define _hidx_gasnetc_hbarr_reqh              (GASNETC_HANDLER_BASE+0)
 /* add new core API handlers here and to the bottom of gasnet_core.c */
 
 /* ------------------------------------------------------------------------------------ */

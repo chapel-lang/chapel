@@ -2,11 +2,8 @@ Some manual tests for debugging sub_test filters
 
 Usage & expected output:
 
-> start_test sub_test_filters/*.chpl
+> start_test test/testsystem/*.chpl
 
-[Error (possible private issue #398)  for chplenv/sub_test_filters/compiler-error]
-[Error (possible JIRA 287) matching program output for chplenv/sub_test_filters/compiler-warning]
-[Error (possible JIRA 274) matching program output for chplenv/sub_test_filters/runtime-error]
-
-
-
+[Error (private issue #398) for testsystem/compiler-error]
+[Error (private issue #482) matching program output for testsystem/compiler-warning]
+[Error (private issue #634) matching program output for testsystem/runtime-error]

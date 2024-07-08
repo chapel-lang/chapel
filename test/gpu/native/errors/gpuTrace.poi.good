@@ -1,0 +1,5 @@
+gpuTrace.chpl:10: In function 'main':
+gpuTrace.chpl:12: error: Loop is marked with @assertOnGpu but is not eligible for execution on a GPU
+gpuTrace.chpl:6: note: function is marked as not eligible for GPU execution
+gpuTrace.chpl:6: note:   reached via standard library code
+gpuTrace.chpl:14: note:   reached via call to 'doSomethingPOI' in loop body here

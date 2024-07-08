@@ -2,11 +2,9 @@ trivial enum range
 ------------
 red..red
 idxType          = color
-stridable        = false
-boundedType      = bounded
+strides          = one
+bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
@@ -27,8 +25,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(red) = true
 contains(red..red) = true
-boundsCheck(red) = true
-boundsCheck(red..red) = true
 indexOrder(red) = 0
 orderToIndex(0)  = red
 interior(1)      = red..red
@@ -48,11 +44,9 @@ default trivial enum range
 ------------
 red..<red
 idxType          = color
-stridable        = false
-boundedType      = bounded
+strides          = one
+bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
@@ -73,8 +67,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(red) = false
 contains(red..<red) = true
-boundsCheck(red) = false
-boundsCheck(red..<red) = true
 indexOrder(red) = -1
 interior(0)      = red..<red
 interior(0)     = red..<red
@@ -91,11 +83,9 @@ trivial strided enum range
 ------------
 red..red
 idxType          = color
-stridable        = true
-boundedType      = bounded
+strides          = any
+bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
@@ -116,8 +106,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(red) = true
 contains(red..red) = true
-boundsCheck(red) = true
-boundsCheck(red..red) = true
 indexOrder(red) = 0
 orderToIndex(0)  = red
 interior(1)      = red..red
@@ -137,11 +125,9 @@ default trivial strided enum range
 ------------
 red..<red
 idxType          = color
-stridable        = true
-boundedType      = bounded
+strides          = any
+bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
@@ -162,8 +148,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(red) = false
 contains(red..<red) = true
-boundsCheck(red) = false
-boundsCheck(red..<red) = true
 indexOrder(red) = -1
 interior(0)      = red..<red
 interior(0)     = red..<red
@@ -176,7 +160,7 @@ r[subr] == subr[r]= true
 r:string          = red..<red
 Copying...        = red..<red
 
-./rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
-./rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
-./rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
-./rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy

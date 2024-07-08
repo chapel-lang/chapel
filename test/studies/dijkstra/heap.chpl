@@ -1,5 +1,5 @@
 
-module Heap {
+module heap {
 
   use NodesEdges;
 
@@ -49,11 +49,11 @@ module Heap {
       var rightChildId: int = heap.Ids[rightChild];
 
       var distanceLeftChild: real;
-      if (leftChildId == -1) then distanceLeftChild = INFINITY;
+      if (leftChildId == -1) then distanceLeftChild = inf;
       else distanceLeftChild = records[leftChildId].distance;
 
       var distanceRightChild: real;
-      if (rightChildId == -1) then distanceRightChild = INFINITY;
+      if (rightChildId == -1) then distanceRightChild = inf;
       else distanceRightChild = records[rightChildId].distance;
 
       // Swap node with smallest of its two children

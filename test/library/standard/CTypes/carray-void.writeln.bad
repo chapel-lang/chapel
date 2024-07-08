@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/standard/IO.chpl:9546: error: Formal '_e0_args' cannot be declared 'void'. Consider using 'nothing' instead.

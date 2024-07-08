@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import re
+
+testname = sys.argv[1]
+testout = sys.argv[2]
+
+html_file = f"docs/modules/linkToPrev.html"
+if not os.path.exists(html_file):
+    with open(testout, "w") as f:
+        print(f"Could not find '{html_file}'", file=f)
+    exit()
+
+html_output = ""
+with open(html_file, "r") as f:
+    html_output = f.read()
+
+output = []
+
+if not re.search(f'<a class="reference internal" href="#linkToPrev.func1" title="linkToPrev2.func1">', html_output):
+    output.append(f"Could not find link for reference '#linkToPrev.func1'")
+else:
+    output.append(f"Found link for reference '#linkToPrev.func1'")
+
+with open(testout, "w") as f:
+    print("\n".join(output), file=f)

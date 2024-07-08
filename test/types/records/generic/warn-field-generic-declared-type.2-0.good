@@ -1,0 +1,20 @@
+warn-field-generic-declared-type.chpl:12: warning: field is declared with generic memory management
+note: consider adding 'owned', 'shared', or 'borrowed'
+note: if generic memory management is desired, use a 'type' field to store the class type
+note: this warning may be an error in the future
+warn-field-generic-declared-type.chpl:21: warning: field is declared with generic memory management
+note: consider adding 'owned', 'shared', or 'borrowed'
+note: if generic memory management is desired, use a 'type' field to store the class type
+note: this warning may be an error in the future
+warn-field-generic-declared-type.chpl:30: warning: field is declared with generic memory management
+note: consider adding 'owned', 'shared', or 'borrowed'
+note: if generic memory management is desired, use a 'type' field to store the class type
+note: this warning may be an error in the future
+warn-field-generic-declared-type.chpl:56: warning: please use '?' when declaring a field with generic type
+warn-field-generic-declared-type.chpl:56: note: for example with 'GR(?)'
+note: this warning may be an error in the future
+warn-field-generic-declared-type.chpl:96: warning: please use 'domain(?)' for the type of a generic field storing any domain
+note: this warning may be an error in the future
+(myfield = 0)
+(myfield = {}) : A(owned MyClass?)
+(myfield = nil) : B(owned MyClass?)

@@ -2,7 +2,7 @@ use OS.POSIX;
 use IO.FormattedIO;
 
 var buf:struct_stat;
-writeln(stat(c'stat.good', c_ptrTo(buf)) == 0);
+writeln(stat('stat.good', c_ptrTo(buf)) == 0);
 //writeln('st_dev ', buf.st_dev:c_int);
 //writeln('st_ino ', buf.st_ino:c_int);
 writeln('st_mode ', buf.st_mode:c_int);

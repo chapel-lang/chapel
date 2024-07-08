@@ -1,1 +1,5 @@
-Wrapper(GenericRecord(int(64))) (f = (field = (field = 0)))
+generic-field-record-not-inited2.chpl:8: In initializer:
+generic-field-record-not-inited2.chpl:8: error: default initialization with type 'GenericRecord(GenericRecord(int(64)))' is not yet supported
+generic-field-record-not-inited2.chpl:2: note: field 'field' is a generic value
+generic-field-record-not-inited2.chpl:2: note: consider separately declaring a type field for it or using a 'new' call
+  generic-field-record-not-inited2.chpl:16: called as Wrapper.init(type t = GenericRecord(int(64)))

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -193,13 +193,12 @@ static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
 
   CallExpr* call = toCallExpr(se->parentExpr);
 
+  // Skip the "base" symbol.
+  if (call && se == call->baseExpr) return false;
+
   if (FnSymbol* fn = call->resolvedFunction())
   {
-    // Skip the "base" symbol.
-    if (se->symbol() == fn)
-    {
-      return false;
-    }
+    INT_ASSERT(se->symbol() != fn);
 
     ArgSymbol* arg = actual_to_formal(se);
 
@@ -365,9 +364,8 @@ static bool isUse(SymExpr* se)
     if (arg->intent == INTENT_OUT ||
         (arg->intent & INTENT_FLAG_REF))
       return false;
-
   }
-  else
+  else if (call->primitive)
   {
     INT_ASSERT(call->primitive);
     const bool isFirstActual = call->get(1) == se;
@@ -466,6 +464,26 @@ static bool isUse(SymExpr* se)
       return true;
     }
   }
+  else if (auto ft = toFunctionType(call->baseExpr->qualType().type()))
+  {
+
+    // Not a use according to note #2.
+    if (se == call->baseExpr) return false;
+
+    // Mimick the implementation of 'formal_to_actual'.
+    int idx = 0;
+    for_actuals(actual, call) {
+      if (actual == se) break;
+      idx++;
+    }
+
+    INT_ASSERT(0 <= idx && idx < ft->numFormals());
+    auto intent = ft->formal(idx)->intent;
+
+    if (intent == INTENT_OUT || (intent & INTENT_FLAG_REF)) return false;
+  } else {
+    INT_FATAL(se, "unhandled");
+  }
 
   return true;
 }
@@ -478,6 +496,17 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
   for_vector(SymExpr, se, symExprs)
   {
     if (se->isRef()) continue;
+
+    // We want to carry information about `in` intent variables lowered from
+    // iterators on `foreach` loops to gpuTransforms so we wrap a variable
+    // representing the "captured" version of the `in` intent variable in a
+    // special primitive. We don't want copy propagation modifying this
+    // variable.
+    if (CallExpr *call = toCallExpr(se->parentExpr)) {
+      if (call->isPrimitive(PRIM_TASK_PRIVATE_SVAR_CAPTURE)) {
+        continue;
+      }
+    }
 
     // Replace an alias with its definition, using the current set of
     // available pairs.
@@ -950,7 +979,7 @@ size_t globalCopyPropagation(FnSymbol* fn) {
         // Two available pairs at the start of a basic block should not have
         // the same LHS, because one should kill the other.
         // Also, this makes arbitrary the choice of which one survives.
-        INT_ASSERT(available.find(ap.first) == available.end());
+        INT_ASSERT(fn, available.find(ap.first) == available.end());
         available.insert(ap);
         ravailable[ap.second].push_back(ap.first);
       }

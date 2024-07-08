@@ -7,9 +7,9 @@ ll unmanaged MyClass
 ll borrowed MyClass
 ll generic
 m unmanaged MyClass
-m unmanaged object
+m unmanaged RootClass
 m borrowed MyClass
-m borrowed object
+m borrowed RootClass
 n unmanaged MyClass
 n borrowed MyClass
-n unmanaged object
+n unmanaged RootClass

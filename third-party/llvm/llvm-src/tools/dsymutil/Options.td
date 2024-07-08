@@ -38,8 +38,16 @@ def statistics: F<"statistics">,
   Group<grp_general>;
 
 def verify: F<"verify">,
-  HelpText<"Run the DWARF verifier on the linked DWARF debug info.">,
+  HelpText<"Alias for --verify-dwarf=output">,
   Group<grp_general>;
+
+def verify_dwarf: Separate<["--", "-"], "verify-dwarf">,
+  MetaVarName<"<verification mode>">,
+  HelpText<"Run the DWARF verifier on the input and/or output. "
+           "Valid options are 'none, 'input', 'output', 'all' or 'auto' "
+           "which runs the output verifier only if input verification passed.">,
+  Group<grp_general>;
+def: Joined<["--", "-"], "verify-dwarf=">, Alias<verify_dwarf>;
 
 def no_output: F<"no-output">,
   HelpText<"Do the link in memory, but do not emit the result file.">,
@@ -61,10 +69,6 @@ def yaml_input: Flag<["-", "--"], "y">,
   HelpText<"Treat the input file is a YAML debug map rather than a binary.">,
   Group<grp_general>;
 
-def papertrail: F<"papertrail">,
-  HelpText<"Embed warnings in the linked DWARF debug info.">,
-  Group<grp_general>;
-
 def assembly: Flag<["-", "--"], "S">,
   HelpText<"Output textual assembly instead of a binary dSYM companion file.">,
   Group<grp_general>;
@@ -83,6 +87,10 @@ def flat: F<"flat">,
 def: Flag<["-"], "f">,
   Alias<flat>,
   HelpText<"Alias for --flat">,
+  Group<grp_general>;
+
+def fat64: F<"fat64">,
+  HelpText<"Use a 64-bit header when emitting universal binaries.">,
   Group<grp_general>;
 
 def update: F<"update">,
@@ -137,7 +145,7 @@ def: Joined<["--", "-"], "arch=">, Alias<arch>;
 
 def accelerator: Separate<["--", "-"], "accelerator">,
   MetaVarName<"<accelerator type>">,
-  HelpText<"Specify the desired type of accelerator table. Valid options are 'Apple' (.apple_names, .apple_namespaces, .apple_types, .apple_objc), 'Dwarf' (.debug_names), 'Pub' (.debug_pubnames, .debug_pubtypes) and 'Default'">,
+  HelpText<"Specify the desired type of accelerator table. Valid options are 'Apple' (.apple_names, .apple_namespaces, .apple_types, .apple_objc), 'Dwarf' (.debug_names), 'Pub' (.debug_pubnames, .debug_pubtypes), 'Default' and 'None'">,
   Group<grp_general>;
 def: Joined<["--", "-"], "accelerator=">, Alias<accelerator>;
 
@@ -155,8 +163,14 @@ def: Separate<["-"], "j">,
   HelpText<"Alias for --num-threads">,
   Group<grp_general>;
 
+def reproducer: Separate<["--", "-"], "reproducer">,
+  MetaVarName<"<mode>">,
+  HelpText<"Specify the reproducer generation mode. Valid options are 'GenerateOnExit', 'GenerateOnCrash', 'Off'.">,
+  Group<grp_general>;
+def: Joined<["--", "-"], "reproducer=">, Alias<reproducer>;
+
 def gen_reproducer: F<"gen-reproducer">,
-  HelpText<"Generate a reproducer consisting of the input object files.">,
+  HelpText<"Generate a reproducer consisting of the input object files. Alias for --reproducer=GenerateOnExit.">,
   Group<grp_general>;
 
 def use_reproducer: Separate<["--", "-"], "use-reproducer">,
@@ -176,3 +190,25 @@ def remarks_output_format: Separate<["--", "-"], "remarks-output-format">,
   HelpText<"Specify the format to be used when serializing the linked remarks.">,
   Group<grp_general>;
 def: Joined<["--", "-"], "remarks-output-format=">, Alias<remarks_output_format>;
+
+def remarks_drop_without_debug: Flag<["--", "-"], "remarks-drop-without-debug">,
+  HelpText<"Drop remarks without valid debug locations. Without this flags, "
+           "all remarks are kept.">,
+  Group<grp_general>;
+
+def linker: Separate<["--", "-"], "linker">,
+  MetaVarName<"<DWARF linker type>">,
+  HelpText<"Specify the desired type of DWARF linker. Defaults to 'classic'">,
+  Group<grp_general>;
+def: Joined<["--", "-"], "linker=">, Alias<linker>;
+
+def build_variant_suffix: Separate<["--", "-"], "build-variant-suffix">,
+  MetaVarName<"<suffix=buildvariant>">,
+  HelpText<"Specify the build variant suffix used to build the executabe file.">,
+  Group<grp_general>;
+def: Joined<["--", "-"], "build-variant-suffix=">, Alias<build_variant_suffix>;
+
+def dsym_search_path: Separate<["-", "--"], "D">,
+  MetaVarName<"<path>">,
+  HelpText<"Specify a directory that contain dSYM files to search for.">,
+  Group<grp_general>;

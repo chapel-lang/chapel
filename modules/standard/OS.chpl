@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -45,7 +45,6 @@ module OS {
   */
   module POSIX {
     public use CTypes;
-    import SysBasic.fd_t;
 
     //
     // sys/types.h
@@ -55,11 +54,11 @@ module OS {
        also defined, to support usability.
     */
     extern type blkcnt_t;
-    pragma "no doc"
-    inline operator :(x:blkcnt_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:blkcnt_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:blkcnt_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:blkcnt_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -67,11 +66,11 @@ module OS {
        also defined, to support usability.
     */
     extern type blksize_t;
-    pragma "no doc"
-    inline operator :(x:blksize_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:blksize_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:blksize_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:blksize_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -79,11 +78,11 @@ module OS {
        also defined, to support usability.
     */
     extern type dev_t;
-    pragma "no doc"
-    inline operator :(x:dev_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:dev_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:dev_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:dev_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -91,11 +90,11 @@ module OS {
        also defined, to support usability.
     */
     extern type gid_t;
-    pragma "no doc"
-    inline operator :(x:gid_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:gid_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:gid_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:gid_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -103,11 +102,11 @@ module OS {
        also defined, to support usability.
     */
     extern type ino_t;
-    pragma "no doc"
-    inline operator :(x:ino_t, type t:c_uint)
+    @chpldoc.nodoc
+    inline operator :(x:ino_t, type t:c_uint) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_uint, type t:ino_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_uint, type t:ino_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -117,17 +116,17 @@ module OS {
        also defined, to support usability.
     */
     extern type mode_t;
-    pragma "no doc"
-    inline operator &(a: mode_t, b: mode_t)
+    @chpldoc.nodoc
+    inline operator &(a: mode_t, b: mode_t) do
       return (a:c_int & b:c_int):mode_t;
-    pragma "no doc"
-    inline operator |(a: mode_t, b: mode_t)
+    @chpldoc.nodoc
+    inline operator |(a: mode_t, b: mode_t) do
       return (a:c_int | b:c_int):mode_t;
-    pragma "no doc"
-    inline operator :(x:mode_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:mode_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:mode_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:mode_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -135,11 +134,11 @@ module OS {
        also defined, to support usability.
     */
     extern type nlink_t;
-    pragma "no doc"
-    inline operator :(x:nlink_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:nlink_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:nlink_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:nlink_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -147,17 +146,17 @@ module OS {
        ``off_t`` and integral types are also defined, to support usability.
     */
     extern type off_t;
-    pragma "no doc"
-    inline operator :(x:off_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:off_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:off_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:off_t) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:off_t, type t:integral)
+    @chpldoc.nodoc
+    inline operator :(x:off_t, type t:integral) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:integral, type t:off_t)
+    @chpldoc.nodoc
+    inline operator :(x:integral, type t:off_t) do
       return __primitive("cast", t, x);
 
 
@@ -166,11 +165,11 @@ module OS {
        also defined, to support usability.
     */
     extern type suseconds_t;
-    pragma "no doc"
-    inline operator :(x:integral, type t:suseconds_t)
+    @chpldoc.nodoc
+    inline operator :(x:integral, type t:suseconds_t) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:suseconds_t, type t:integral)
+    @chpldoc.nodoc
+    inline operator :(x:suseconds_t, type t:integral) do
       return __primitive("cast", t, x);
 
     /*
@@ -178,11 +177,11 @@ module OS {
        also defined, to support usability.
     */
     extern type time_t;
-    pragma "no doc"
-    inline operator :(x:integral, type t:time_t)
+    @chpldoc.nodoc
+    inline operator :(x:integral, type t:time_t) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:time_t, type t:integral)
+    @chpldoc.nodoc
+    inline operator :(x:time_t, type t:integral) do
       return __primitive("cast", t, x);
 
     /*
@@ -190,19 +189,22 @@ module OS {
        also defined, to support usability.
     */
     extern type uid_t;
-    pragma "no doc"
-    inline operator :(x:uid_t, type t:c_int)
+    @chpldoc.nodoc
+    inline operator :(x:uid_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
-    inline operator :(x:c_int, type t:uid_t)
+    @chpldoc.nodoc
+    inline operator :(x:c_int, type t:uid_t) do
       return __primitive("cast", t, x);
 
     //
     // time.h (pre-decl for struct_timespec, needed in sys/stat.h)
     //
+    /* The structure ``timespec`` from ``time.h``. */
     extern "struct timespec" record struct_timespec {
-      var tv_sec:time_t;  // seconds since Jan. 1, 1970
-      var tv_nsec:c_long; // and nanoseconds
+      /* Seconds since the epoch, Jan. 1, 1970 */
+      var tv_sec:time_t;
+      /* Nanoseconds */
+      var tv_nsec:c_long;
     }
 
     //
@@ -522,6 +524,7 @@ module OS {
      */
     extern const ENOTEMPTY:c_int;
 
+    /* State not recoverable. */
     extern const ENOTRECOVERABLE:c_int;
 
     /* Socket operation on non-socket. */
@@ -561,6 +564,7 @@ module OS {
      */
     extern const EOVERFLOW:c_int;
 
+    /* Owner died. */
     extern const EOWNERDEAD:c_int;
 
     /* Operation not permitted. An attempt was made to perform an operation
@@ -735,30 +739,50 @@ module OS {
     //
     // fcntl.h
     //
+    /* Mask for file access modes. */
     extern const O_ACCMODE:c_int;
+    /* Set append mode. */
     extern const O_APPEND:c_int;
+    /*
+      Sets the ``FD_CLOEXEC`` flag of new descriptor to close it after
+      execution of an ``exec`` function.
+    */
     extern const O_CLOEXEC:c_int;
+    /* Create file if it does not exist. */
     extern const O_CREAT:c_int;
+    /* Fail if file is a non-directory file. */
     extern const O_DIRECTORY:c_int;
+    /* Write according to synchronized I/O data integrity completion. */
     extern const O_DSYNC:c_int;
+    /* Exclusive use flag. */
     extern const O_EXCL:c_int;
+    /* Do not assign controlling terminal. */
     extern const O_NOCTTY:c_int;
+    /* Do not follow symbolic links. */
     extern const O_NOFOLLOW:c_int;
+    /* Non-blocking mode. */
     extern const O_NONBLOCK:c_int;
+    /* Open for reading only. */
     extern const O_RDONLY:c_int;
+    /* Open for reading and writing */
     extern const O_RDWR:c_int;
+    /* Write according to synchronized I/O file integrity completion. */
     extern const O_SYNC:c_int;
+    /* Truncate flag. */
     extern const O_TRUNC:c_int;
+    /* Open for writing only. */
     extern const O_WRONLY:c_int;
     // Note: O_EXEC, O_SEARCH, O_TTY_INIT
     // are documented in POSIX but don't seem to exist on linux
     // Note: O_RSYNC
     // is documented in POSIX but doesn't seem to exist on Mac OS
 
-    extern proc creat(path:c_string, mode:mode_t = 0):c_int;
-    inline proc open(path:c_string, oflag:c_int, mode:mode_t = 0:mode_t)
+    /* Create a new file or rewrite an existing file. */
+    extern proc creat(path:c_ptrConst(c_char), mode:mode_t = 0):c_int;
+    /* Open a file. */
+    inline proc open(path:c_ptrConst(c_char), oflag:c_int, mode:mode_t = 0:mode_t)
                   :c_int {
-      extern proc chpl_os_posix_open(path:c_string, oflag:c_int, mode:mode_t)
+      extern proc chpl_os_posix_open(path:c_ptrConst(c_char), oflag:c_int, mode:mode_t)
                     :c_int;
       return chpl_os_posix_open(path, oflag, mode);
     }
@@ -766,42 +790,56 @@ module OS {
     //
     // stdlib.h
     //
-    extern proc getenv(name:c_string):c_ptr(c_char);
+    /* Get the value of an environment variable. */
+    extern proc getenv(name:c_ptrConst(c_char)):c_ptr(c_char);
 
     //
     // string.h
     //
-    extern proc strerror(errnum:c_int):c_string;
-    extern proc strlen(s:c_string):c_size_t;
+    /* Get the error message string for ``errnum`` */
+    extern proc strerror(errnum:c_int):c_ptrConst(c_char);
+    /* Get the length of the null-terminated string. */
+    extern proc strlen(s:c_ptrConst(c_char)):c_size_t;
 
     //
     // sys/select.h
     //
+    /* Maximum number of file descriptors that :type:`fd_set` can hold. */
     extern const FD_SETSIZE:c_int;
 
-    extern record fd_set {};
+    /* Contains a fixed amount of file descriptors. */
+    extern record fd_set {}
 
+    /* Clears the bit for the file descriptor ``fd`` in ``fdset``. */
     proc FD_CLR(fd:c_int, fdset:c_ptr(fd_set)) {
       extern proc chpl_os_posix_FD_CLR(fd:c_int, fdset:c_ptr(fd_set));
       chpl_os_posix_FD_CLR(fd, fdset);
     }
 
+    /* Checks if the bit for the file descriptor ``fd`` is set in ``fdset``. */
     proc FD_ISSET(fd:c_int, fdset:c_ptr(fd_set)):c_int {
       extern proc chpl_os_posix_FD_ISSET(fd:c_int, fdset:c_ptr(fd_set)):c_int;
       return chpl_os_posix_FD_ISSET(fd, fdset);
     }
 
+    /* Sets the bit for the file descriptor ``fd`` in ``fdset``. */
     proc FD_SET(fd:c_int, fdset:c_ptr(fd_set)) {
       extern proc chpl_os_posix_FD_SET(fd:c_int, fdset:c_ptr(fd_set));
       chpl_os_posix_FD_SET(fd, fdset);
     }
 
+    /* Initializes all file descriptors in ``fdset`` to zero. */
     proc FD_ZERO(fdset:c_ptr(fd_set)) {
       extern proc chpl_os_posix_FD_ZERO(fdset:c_ptr(fd_set));
       chpl_os_posix_FD_ZERO(fdset);
     }
 
     // No way around this -- 'select' is a keyword in Chapel.
+    /*
+      Indicates which of the specified file descriptors is ready for reading
+      or writing, or has an error condition pending. If no file descriptors are
+      ready, the procedure blocks until the ``timeout``.
+    */
     extern 'select' proc select_posix(nfds:c_int,
                                       readfds:c_ptr(fd_set),
                                       writefds:c_ptr(fd_set),
@@ -811,166 +849,400 @@ module OS {
     //
     // sys/stat.h
     //
+    /* Shorthand for (:proc:`S_IRUSR` | :proc:`S_IWUSR` | :proc:`S_IXUSR`). */
     inline proc S_IRWXU:mode_t {
       extern proc chpl_os_posix_S_IRWXU():mode_t;
       return chpl_os_posix_S_IRWXU();
     }
+    /* Read permission bit for the file's owner. */
     inline proc S_IRUSR:mode_t {
       extern proc chpl_os_posix_S_IRUSR():mode_t;
       return chpl_os_posix_S_IRUSR();
     }
+    /* Write permission bit for the file's owner. */
     inline proc S_IWUSR:mode_t {
       extern proc chpl_os_posix_S_IWUSR():mode_t;
       return chpl_os_posix_S_IWUSR();
     }
+    /* Execute permission bit for the file's owner. */
     inline proc S_IXUSR:mode_t {
       extern proc chpl_os_posix_S_IXUSR():mode_t;
       return chpl_os_posix_S_IXUSR();
     }
 
+    /* Shorthand for (:proc:`S_IRGRP` | :proc:`S_IWGRP` | :proc:`S_IXGRP`). */
     inline proc S_IRWXG:mode_t {
       extern proc chpl_os_posix_S_IRWXG():mode_t;
       return chpl_os_posix_S_IRWXG();
     }
+    /* Read permission bit for the file's group. */
     inline proc S_IRGRP:mode_t {
       extern proc chpl_os_posix_S_IRGRP():mode_t;
       return chpl_os_posix_S_IRGRP();
     }
+    /* Write permission bit for the file's group. */
     inline proc S_IWGRP:mode_t {
       extern proc chpl_os_posix_S_IWGRP():mode_t;
       return chpl_os_posix_S_IWGRP();
     }
+    /* Execute permission bit for the file's group. */
     inline proc S_IXGRP:mode_t {
       extern proc chpl_os_posix_S_IXGRP():mode_t;
       return chpl_os_posix_S_IXGRP();
     }
 
+     /* Shorthand for (:proc:`S_IROTH` | :proc:`S_IWOTH` | :proc:`S_IXOTH`). */
     inline proc S_IRWXO:mode_t {
       extern proc chpl_os_posix_S_IRWXO():mode_t;
       return chpl_os_posix_S_IRWXO();
     }
+    /* Read permission bit for others. */
     inline proc S_IROTH:mode_t {
       extern proc chpl_os_posix_S_IROTH():mode_t;
       return chpl_os_posix_S_IROTH();
     }
+    /* Write permission bit for others. */
     inline proc S_IWOTH:mode_t {
       extern proc chpl_os_posix_S_IWOTH():mode_t;
       return chpl_os_posix_S_IWOTH();
     }
+    /* Execute permission bit for others. */
     inline proc S_IXOTH:mode_t {
       extern proc chpl_os_posix_S_IXOTH():mode_t;
       return chpl_os_posix_S_IXOTH();
     }
 
+    /* Set user ID on execute bit. */
     inline proc S_ISUID:mode_t {
       extern proc chpl_os_posix_S_ISUID():mode_t;
       return chpl_os_posix_S_ISUID();
     }
+    /* Set group ID on execute bit. */
     inline proc S_ISGID:mode_t {
       extern proc chpl_os_posix_S_ISGID():mode_t;
       return chpl_os_posix_S_ISGID();
     }
+    /* Sticky bit */
     inline proc S_ISVTX:mode_t {
       extern proc chpl_os_posix_S_ISVTX():mode_t;
       return chpl_os_posix_S_ISVTX();
     }
 
+    /* A Chapel version of the POSIX structure ``stat``, which contains common
+    fields. This should be used with :proc:`stat`.
+    */
     extern 'struct chpl_os_posix_struct_stat' record struct_stat {
-      var st_dev:dev_t;            // Device.
-      var st_ino:ino_t;            // File serial number.
-      var st_mode:mode_t;          // File mode.
-      var st_nlink:nlink_t;        // Link count.
-      var st_uid:uid_t;            // User ID of the file's owner.
-      var st_gid:gid_t;            // Group ID of the file's group.
-      var st_rdev:dev_t;           // Device number, if device.
-      var st_size:off_t;           // Size of file, in bytes.
-      var st_atim:struct_timespec; // Last data access timestamp.
-      var st_mtim:struct_timespec; // Last data modification timestamp.
-      var st_ctim:struct_timespec; // Last file status change timestamp.
-      var st_blksize:blksize_t;    // Optimal block size for I/O.
-      var st_blocks:blkcnt_t;      // Number 512-byte blocks allocated.
+      /* Device. */
+      var st_dev:dev_t;
+      /* File serial number. */
+      var st_ino:ino_t;
+      /* File mode. */
+      var st_mode:mode_t;
+      /* Link count. */
+      var st_nlink:nlink_t;
+      /* User ID of the file's owner. */
+      var st_uid:uid_t;
+      /* Group ID of the file's group. */
+      var st_gid:gid_t;
+      /* Device number, if device. */
+      var st_rdev:dev_t;
+      /* Size of file, in bytes. */
+      var st_size:off_t;
+      /* Last data access timestamp. */
+      var st_atim:struct_timespec;
+      /* Last data modification timestamp. */
+      var st_mtim:struct_timespec;
+      /* Last file status change timestamp. */
+      var st_ctim:struct_timespec;
+      /* Optimal block size for I/O. */
+      var st_blksize:blksize_t;
+      /* Number 512-byte blocks allocated. */
+      var st_blocks:blkcnt_t;
     }
 
-    extern proc chmod(path:c_string, mode:mode_t):c_int;
-    extern 'chpl_os_posix_stat' proc stat(path:c_string,
+    /* Changes the mode of a file. */
+    extern proc chmod(path:c_ptrConst(c_char), mode:mode_t):c_int;
+    /* Get the status of a file, should be used with :record:`struct_stat`. */
+    extern 'chpl_os_posix_stat' proc stat(path:c_ptrConst(c_char),
                                           buf:c_ptr(struct_stat)):c_int;
 
     //
     // sys/time.h
     //
+    /* The structure ``timeval`` from ``sys/time.h``. */
     extern "struct timeval" record struct_timeval {
-      var tv_sec:time_t;       // seconds since Jan. 1, 1970
-      var tv_usec:suseconds_t; // and microseconds
+      /* Seconds since the epoch, Jan. 1, 1970 */
+      var tv_sec:time_t;
+      /* Nanoseconds */
+      var tv_usec:suseconds_t;
     }
 
+    @chpldoc.nodoc
     proc struct_timeval.init() {}
 
+    @chpldoc.nodoc
     proc struct_timeval.init(tv_sec: integral, tv_usec: integral) {
       this.tv_sec = tv_sec:time_t;
       this.tv_usec = tv_usec:suseconds_t;
     }
 
+    @chpldoc.nodoc
     proc struct_timeval.init(tv_sec: time_t, tv_usec: suseconds_t) {
       this.tv_sec = tv_sec;
       this.tv_usec = tv_usec;
     }
 
+    /* The structure ``timezone`` from ``time.h``. */
     extern "struct timezone" record struct_timezone {
-      var tz_minuteswest:c_int; // of Greenwich
-      var tz_dsttime:c_int;     // type of dst correction to apply
-    };
+      /* Minutes west of Greenwich */
+      var tz_minuteswest:c_int;
+      /* Type of DST correction */
+      var tz_dsttime:c_int;
+    }
 
+    /*
+      Get the date and time, based on the timezone in ``tzp``.
+      The result is stored in ``tp``.
+    */
     extern proc gettimeofday(tp:c_ptr(struct_timeval),
                              tzp:c_ptr(struct_timezone)):c_int;
 
     //
     // time.h
     //
+    /* The structure ``tm`` from ``time.h``. */
     extern "struct tm" record struct_tm {
-      var tm_sec:c_int;   // Seconds [0,60] (60 allows for leap seconds)
-      var tm_min:c_int;   // Minutes [0,59]
-      var tm_hour:c_int;  // Hour [0,23]
-      var tm_mday:c_int;  // Day of month [1,31]
-      var tm_mon:c_int;   // Month of year [0,11]
-      var tm_year:c_int;  // Years since 1900
-      var tm_wday:c_int;  // Day of week [0,6] (Sunday =0)
-      var tm_yday:c_int;  // Day of year [0,365]
-      var tm_isdst:c_int; // Daylight Savings flag
-    };
+      /* Seconds [0,60] (60 allows for leap seconds) */
+      var tm_sec:c_int;
+      /* Minutes [0,59] */
+      var tm_min:c_int;
+      /* Hour [0,23] */
+      var tm_hour:c_int;
+      /* Day of month [1,31] */
+      var tm_mday:c_int;
+      /* Month of year [0,11] */
+      var tm_mon:c_int;
+      /* Years since 1900 */
+      var tm_year:c_int;
+      /* Day of week [0,6] (Sunday =0) */
+      var tm_wday:c_int;
+      /* Day of year [0,365] */
+      var tm_yday:c_int;
+      /* Daylight Savings flag */
+      var tm_isdst:c_int;
+    }
 
+    /* Get the date and time as a string. */
     extern proc asctime(timeptr:c_ptr(struct_tm)):c_ptr(c_char);
+    /*
+      Get the date and time as a string, using the given buffer.
+
+      :returns: ``buf``
+    */
     extern proc asctime_r(timeptr:c_ptr(struct_tm), buf:c_ptr(c_char))
                   :c_ptr(c_char);
+    /* Convert the time to a local time. */
     extern proc localtime(timer:c_ptr(time_t)):c_ptr(struct_tm);
+    /*
+      Convert the time to a local time, storing the result in the given struct.
+
+      :returns: ``result``
+    */
     extern proc localtime_r(timer:c_ptr(time_t), result:c_ptr(struct_tm))
                   :c_ptr(struct_tm);
+    /* Get the time. */
     extern proc time(tloc:c_ptr(time_t)):time_t;
 
     //
     // unistd.h
     //
+    /* Close a file descriptor. */
     extern proc close(fildes:c_int):c_int;
+    /* Create a pipe. */
     extern proc pipe(fildes:c_ptr(c_array(c_int, 2))):c_int;
-    extern proc read(fildes:c_int, buf:c_void_ptr, size:c_size_t):c_ssize_t;
-    extern proc write(fildes:c_int, buf:c_void_ptr, size:c_size_t):c_ssize_t;
+    /* Read ``size`` bytes from a file descriptor into ``buf``. */
+    extern proc read(fildes:c_int, buf:c_ptr(void), size:c_size_t):c_ssize_t;
+    /* Write ``size`` bytes to file descriptor from ``buf``. */
+    extern proc write(fildes:c_int, buf:c_ptr(void), size:c_size_t):c_ssize_t;
+
+    /*
+      Copies n potentially overlapping bytes from memory area src to memory
+      area dest.
+
+      This is a simple wrapper over the C ``memmove()`` function.
+
+      :arg dest: the destination memory area to copy to
+      :arg src: the source memory area to copy from
+      :arg n: the number of bytes from src to copy to dest
+    */
+    pragma "fn synchronization free"
+    inline proc memmove(dest:c_ptr(void), const src:c_ptr(void), n: c_size_t) {
+      pragma "fn synchronization free"
+      extern proc memmove(dest: c_ptr(void), const src: c_ptr(void), n: c_size_t);
+      memmove(dest, src, n);
+    }
+
+    /*
+      Copies n non-overlapping bytes from memory area src to memory
+      area dest. Use :proc:`memmove` if memory areas do overlap.
+
+      This is a simple wrapper over the C ``memcpy()`` function.
+
+      :arg dest: the destination memory area to copy to
+      :arg src: the source memory area to copy from
+      :arg n: the number of bytes from src to copy to dest
+    */
+    pragma "fn synchronization free"
+    inline proc memcpy(dest:c_ptr(void), const src:c_ptr(void), n: c_size_t) {
+      pragma "fn synchronization free"
+      extern proc memcpy(dest: c_ptr(void), const src: c_ptr(void), n: c_size_t);
+      memcpy(dest, src, n);
+    }
+
+    /*
+      Compares the first n bytes of memory areas s1 and s2
+
+      This is a simple wrapper over the C ``memcmp()`` function.
+
+      :returns: returns an integer less than, equal to, or greater than zero if
+                the first n bytes of s1 are found, respectively, to be less than,
+                to match, or be greater than the first n bytes of s2.
+    */
+    pragma "fn synchronization free"
+    inline proc memcmp(const s1:c_ptr(void), const s2:c_ptr(void), n: c_size_t): int {
+      pragma "fn synchronization free"
+      extern proc memcmp(const s1: c_ptr(void), const s2: c_ptr(void), n: c_size_t): c_int;
+      return memcmp(s1, s2, n).safeCast(int);
+    }
+
+    /*
+      Fill bytes of memory with a particular byte value.
+
+      This is a simple wrapper over the C ``memset()`` function.
+
+      :arg s: the destination memory area to fill
+      :arg c: the byte value to use
+      :arg n: the number of bytes of s to fill
+
+      :returns: ``s``
+    */
+    pragma "fn synchronization free"
+    inline proc memset(s:c_ptr(void), c:integral, n: c_size_t) {
+      pragma "fn synchronization free"
+      extern proc memset(s: c_ptr(void), c: c_int, n: c_size_t): c_ptr(void);
+      memset(s, c.safeCast(c_int), n);
+      return s;
+    }
 
   } // end POSIX
+
+/* A type storing an error code or an error message.
+   An :type:`errorCode` can be compared using == or != to a
+   :type:`CTypes.c_int` or to another :type:`errorCode`. An :type:`errorCode`
+   can be cast to or from a :type:`CTypes.c_int`. It can be assigned the
+   value of a :type:`CTypes.c_int` or another :type:`errorCode`. In addition,
+   :type:`errorCode` can be checked directly in an if statement like so:
+
+   .. code-block:: chapel
+
+     var err: errorCode;
+     if err then writeln("err contains an error, ie err != 0");
+     else writeln("err does not contain an error; err == 0");
+
+   The default intent for a formal of type :type:`errorCode` is `const in`.
+
+   The default value of the :type:`errorCode` type is undefined.
+*/
+  extern "syserr" type errorCode; // opaque so we can manually override ==,!=,etc
+
+  // error numbers
+
+  private extern proc qio_err_eq(a:errorCode, b:errorCode):c_int;
+  private extern proc qio_err_to_int(a:errorCode):int(32);
+  private extern proc qio_int_to_err(a:int(32)):errorCode;
+  private extern proc qio_err_iserr(a:errorCode):c_int;
+
+  @chpldoc.nodoc
+  inline operator errorCode.==(a: errorCode, b: errorCode) {
+    return (qio_err_eq(a,b) != 0:c_int);
+  }
+  @chpldoc.nodoc
+  inline operator errorCode.==(a: errorCode, b: int(32)) do
+    return (qio_err_to_int(a) == b:int(32));
+  @chpldoc.nodoc
+  inline operator errorCode.==(a: errorCode, b: int(64)) do
+    return (qio_err_to_int(a) == b:int(32));
+  @chpldoc.nodoc
+  inline operator errorCode.==(a: int(32), b: errorCode) do
+    return (a:int(32) == qio_err_to_int(b));
+  @chpldoc.nodoc
+  inline operator errorCode.==(a: int(64), b: errorCode) do
+    return (a:int(32) == qio_err_to_int(b));
+  @chpldoc.nodoc
+  inline operator errorCode.!=(a: errorCode, b: errorCode) do return !(a == b);
+  @chpldoc.nodoc
+  inline operator errorCode.!=(a: errorCode, b: int(32)) do return !(a == b);
+  @chpldoc.nodoc
+  inline operator errorCode.!=(a: errorCode, b: int(64)) do return !(a == b);
+  @chpldoc.nodoc
+  inline operator errorCode.!=(a: int(32), b: errorCode) do return !(a == b);
+  @chpldoc.nodoc
+  inline operator errorCode.!=(a: int(64), b: errorCode) do return !(a == b);
+  @chpldoc.nodoc
+  inline operator errorCode.!(a: errorCode) do return (qio_err_iserr(a) == 0:c_int);
+  inline proc errorCode.chpl_cond_test_method() do return (qio_err_iserr(this) != 0:c_int);
+  @chpldoc.nodoc
+  inline operator :(x: errorCode, type t: int(32)) do return qio_err_to_int(x);
+  @chpldoc.nodoc
+  inline operator :(x: errorCode, type t: int(64)) do return qio_err_to_int(x):int(64);
+  @chpldoc.nodoc
+  inline operator :(x: int(32), type t: errorCode) do return qio_int_to_err(x);
+  @chpldoc.nodoc
+  inline operator :(x: int(64), type t: errorCode) do return qio_int_to_err(x:int(32));
+  @chpldoc.nodoc
+  inline operator errorCode.=(ref ret:errorCode, x:errorCode) { __primitive("=", ret, x); }
+  @chpldoc.nodoc
+  inline operator errorCode.=(ref ret:errorCode, x:int(32))
+  { __primitive("=", ret, qio_int_to_err(x)); }
+  @chpldoc.nodoc
+  inline operator errorCode.=(ref ret:errorCode, x:int(64))
+  { __primitive("=", ret, qio_int_to_err(x:int(32))); }
+  @chpldoc.nodoc
+  inline operator errorCode.=(ref ret:c_int, x:errorCode)
+  { __primitive("=", ret, qio_err_to_int(x):c_int); }
 
 
   private use CTypes;
   private use POSIX;
-  import SysBasic.{EFORMAT,ESHORT,EEOF,ESHUTDOWN,ENOERR,syserr};
+
+  /*
+   Private local copies of IO.{EEOF,ESHORT,EFORMAT}, since if we import IO
+   here it modifies module initialization order and causes issues in
+   ChapelLocale.chpl_localeID_to_locale.
+   */
+  private extern proc chpl_macro_int_EEOF():c_int;
+  private extern proc chpl_macro_int_ESHORT():c_int;
+  private extern proc chpl_macro_int_EFORMAT():c_int;
+  private inline proc EEOF do return chpl_macro_int_EEOF():c_int;
+  private inline proc ESHORT do return chpl_macro_int_ESHORT():c_int;
+  private inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
+
   /*
      :class:`SystemError` is a base class for :class:`Errors.Error` s
-     generated from ``syserr``. It provides factory methods to create different
-     subtypes based on the ``syserr`` that is passed.
-
+     generated from ``errorCode``. It provides factory methods to create
+     different subtypes based on the ``errorCode`` that is passed.
   */
   class SystemError : Error {
-    var err:     syserr;
+    @chpldoc.nodoc
+    var err:     errorCode;
+    @chpldoc.nodoc
     var details: string;
 
-    proc init(err: syserr, details: string = "") {
+    /*
+      Construct a :class:`SystemError` with a specific error code and optional
+      extra details.
+    */
+    proc init(err: errorCode, details: string = "") {
       this.err     = err;
       this.details = details;
     }
@@ -980,11 +1252,11 @@ module OS {
        from the internal ``err`` and the ``details`` string.
     */
     override proc message() {
-      var strerror_err: c_int = ENOERR;
+      var strerror_err: c_int = 0;
       var errstr              = sys_strerror_syserr_str(err, strerror_err);
       var err_msg: string;
       try! {
-        err_msg = createStringWithOwnedBuffer(errstr);
+        err_msg = string.createAdoptingBuffer(errstr);
       }
 
       if !details.isEmpty() then
@@ -992,89 +1264,122 @@ module OS {
 
       return err_msg;
     }
+  }
 
-    /*
-      Return the matching :class:`SystemError` subtype for a given ``syserr``,
-      with an optional string containing extra details.
-
-      :arg err: the syserr to generate from
-      :arg details: extra information to include with the error
-    */
-    pragma "insert line file info"
-    pragma "always propagate line file info"
-    proc type fromSyserr(err: syserr, details: string = "") {
-      if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
-        return new owned BlockingIOError(details, err);
-      } else if err == ECHILD {
-        return new owned ChildProcessError(details, err);
-      } else if err == EPIPE || err == ESHUTDOWN {
-        return new owned BrokenPipeError(details, err);
-      } else if err == ECONNABORTED {
-        return new owned ConnectionAbortedError(details, err);
-      } else if err == ECONNREFUSED {
-        return new owned ConnectionRefusedError(details, err);
-      } else if err == ECONNRESET {
-        return new owned ConnectionResetError(details, err);
-      } else if err == EEXIST {
-        return new owned FileExistsError(details, err);
-      } else if err == ENOENT {
-        return new owned FileNotFoundError(details, err);
-      } else if err == EINTR {
-        return new owned InterruptedError(details, err);
-      } else if err == EISDIR {
-        return new owned IsADirectoryError(details, err);
-      } else if err == ENOTDIR {
-        return new owned NotADirectoryError(details, err);
-      } else if err == EACCES || err == EPERM {
-        return new owned PermissionError(details, err);
-      } else if err == ESRCH {
-        return new owned ProcessLookupError(details, err);
-      } else if err == ETIMEDOUT {
-        return new owned TimeoutError(details, err);
-      } else if err == EEOF {
-        return new owned EOFError(details, err);
-      } else if err == ESHORT {
-        return new owned UnexpectedEOFError(details, err);
-      } else if err == EFORMAT {
-        return new owned BadFormatError(details, err);
-      } else if err == EIO {
-        return new owned IOError(err, details);
-      }
-
-      return new owned SystemError(err, details);
+  /*
+    Gets the corresponding Chapel-specific IO error class for the given
+    ``errorCode``, or simply the matching :class:`SystemError` subtype if this
+    is not a Chapel-specific IO error.
+  */
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  @chpldoc.nodoc
+  proc createSystemOrChplError(err: errorCode, details: string = ""): Error {
+    // extract qioerr pointer error message, if present
+    var strerror_err: c_int = 0;
+    var errstr = sys_strerror_syserr_str(err, strerror_err);
+    var err_msg: string;
+    try! {
+      err_msg = string.createAdoptingBuffer(errstr);
     }
 
-    /*
-      Return the matching :class:`SystemError` subtype for a given error number,
-      with an optional string containing extra details.
-
-      :arg err: the number to generate from
-      :arg details: extra information to include with the error
-    */
-    pragma "insert line file info"
-    pragma "always propagate line file info"
-    proc type fromSyserr(err: int, details: string = "") {
-      return fromSyserr(err:syserr, details);
+    // return appropriate error
+    select err {
+      when EEOF do return new owned EofError(details, err_msg);
+      when ESHORT do return new owned UnexpectedEofError(details, err_msg);
+      when EFORMAT do return new owned BadFormatError(details, err_msg);
+      otherwise do return createSystemError(err, details);
     }
   }
 
   /*
-     :class:`BlockingIOError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.EAGAIN`, :const:`SysBasic.EALREADY`,
-     :const:`SysBasic.EWOULDBLOCK`, and :const:`SysBasic.EINPROGRESS`.
+    Version of createSystemOrChplError accepting an integer error code.
   */
-  class BlockingIOError : SystemError {
-    proc init(details: string = "", err: syserr = EWOULDBLOCK:syserr) {
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  @chpldoc.nodoc
+  proc createSystemOrChplError(err: int, details: string = ""): Error {
+    return createSystemOrChplError(err:errorCode, details);
+  }
+
+  /*
+    Return the matching :class:`SystemError` subtype for a given ``errorCode``,
+    with an optional string containing extra details.
+
+    :arg err: the errorCode to generate from
+    :arg details: extra information to include with the error
+  */
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc createSystemError(err: errorCode, details: string = ""): SystemError {
+    if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
+      return new owned BlockingIoError(details, err);
+    } else if err == ECHILD {
+      return new owned ChildProcessError(details, err);
+    } else if err == EPIPE {
+      return new owned BrokenPipeError(details, err);
+    } else if err == ECONNABORTED {
+      return new owned ConnectionAbortedError(details, err);
+    } else if err == ECONNREFUSED {
+      return new owned ConnectionRefusedError(details, err);
+    } else if err == ECONNRESET {
+      return new owned ConnectionResetError(details, err);
+    } else if err == EEXIST {
+      return new owned FileExistsError(details, err);
+    } else if err == ENOENT {
+      return new owned FileNotFoundError(details, err);
+    } else if err == EINTR {
+      return new owned InterruptedError(details, err);
+    } else if err == EISDIR {
+      return new owned IsADirectoryError(details, err);
+    } else if err == ENOTDIR {
+      return new owned NotADirectoryError(details, err);
+    } else if err == EACCES || err == EPERM {
+      return new owned PermissionError(details, err);
+    } else if err == ESRCH {
+      return new owned ProcessLookupError(details, err);
+    } else if err == ETIMEDOUT {
+      return new owned TimeoutError(details, err);
+    } else if err == EIO {
+      return new owned IoError(err, details);
+    }
+
+    return new owned SystemError(err, details);
+  }
+
+  /*
+    Return the matching :class:`SystemError` subtype for a given error number,
+    with an optional string containing extra details.
+
+    :arg err: the number to generate from
+    :arg details: extra information to include with the error
+  */
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc createSystemError(err: int, details: string = "") {
+    return createSystemError(err:errorCode, details);
+  }
+
+
+  /*
+     :class:`BlockingIoError` is the subclass of :class:`SystemError`
+     corresponding to :const:`~POSIX.EAGAIN`, :const:`~POSIX.EALREADY`,
+     :const:`~POSIX.EWOULDBLOCK`, and :const:`~POSIX.EINPROGRESS`.
+  */
+  class BlockingIoError : SystemError {
+    @chpldoc.nodoc
+    proc init(details: string = "", err: errorCode = EWOULDBLOCK:errorCode) {
       super.init(err, details);
     }
   }
 
   /*
      :class:`ChildProcessError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.ECHILD`.
+     corresponding to :const:`~POSIX.ECHILD`.
   */
   class ChildProcessError : SystemError {
-    proc init(details: string = "", err: syserr = ECHILD:syserr) {
+    @chpldoc.nodoc
+    proc init(details: string = "", err: errorCode = ECHILD:errorCode) {
       super.init(err, details);
     }
   }
@@ -1084,175 +1389,306 @@ module OS {
      serves as the base class for all system errors regarding connections.
   */
   class ConnectionError : SystemError {
-    proc init(err: syserr, details: string = "") {
+    @chpldoc.nodoc
+    proc init(err: errorCode, details: string = "") {
       super.init(err, details);
     }
   }
 
   /*
      :class:`BrokenPipeError` is the subclass of :class:`ConnectionError`
-     corresponding to :const:`SysBasic.EPIPE` and :const:`SysBasic.ESHUTDOWN`.
+     corresponding to :const:`~POSIX.EPIPE`
   */
   class BrokenPipeError : ConnectionError {
-    proc init(details: string = "", err: syserr = EPIPE:syserr) {
+    @chpldoc.nodoc
+    proc init(details: string = "", err: errorCode = EPIPE:errorCode) {
       super.init(err, details);
     }
   }
 
   /*
      :class:`ConnectionAbortedError` is the subclass of :class:`ConnectionError`
-     corresponding to :const:`SysBasic.ECONNABORTED`.
+     corresponding to :const:`~POSIX.ECONNABORTED`.
   */
   class ConnectionAbortedError : ConnectionError {
-    proc init(details: string = "", err: syserr = ECONNABORTED:syserr) {
+    @chpldoc.nodoc
+    proc init(details: string = "", err: errorCode = ECONNABORTED:errorCode) {
       super.init(err, details);
     }
   }
 
   /*
      :class:`ConnectionRefusedError` is the subclass of :class:`ConnectionError`
-     corresponding to :const:`SysBasic.ECONNREFUSED`.
+     corresponding to :const:`~POSIX.ECONNREFUSED`.
   */
   class ConnectionRefusedError : ConnectionError {
-    proc init(details: string = "", err: syserr = ECONNREFUSED:syserr) {
+    @chpldoc.nodoc
+    proc init(details: string = "", err: errorCode = ECONNREFUSED:errorCode) {
       super.init(err, details);
     }
 }
 
   /*
      :class:`ConnectionResetError` is the subclass of :class:`ConnectionError`
-     corresponding to :const:`SysBasic.ECONNRESET`.
+     corresponding to :const:`~POSIX.ECONNRESET`.
   */
   class ConnectionResetError : ConnectionError {
-    proc init(details: string = "", err: syserr = ECONNRESET:syserr) {
+    @chpldoc.nodoc
+    proc init(details: string = "", err: errorCode = ECONNRESET:errorCode) {
       super.init(err, details);
     }
   }
 
   /*
      :class:`FileExistsError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.EEXIST`.
+     corresponding to :const:`~POSIX.EEXIST`.
   */
   class FileExistsError : SystemError {
-    proc init(details: string = "", err: syserr = EEXIST:syserr) {
+    @chpldoc.nodoc
+    proc init(details: string = "", err: errorCode = EEXIST:errorCode) {
       super.init(err, details);
     }
   }
 
   /*
      :class:`FileNotFoundError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.ENOENT`.
+     corresponding to :const:`~POSIX.ENOENT`.
   */
   class FileNotFoundError : SystemError {
-    proc init(details: string = "", err: syserr = ENOENT:syserr) {
+    @chpldoc.nodoc
+    proc init(details: string = "", err: errorCode = ENOENT:errorCode) {
       super.init(err, details);
     }
   }
 
   /*
      :class:`InterruptedError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.EINTR`.
+     corresponding to :const:`~POSIX.EINTR`.
   */
   class InterruptedError : SystemError {
-    proc init(details: string = "", err: syserr = EINTR:syserr) {
+    @chpldoc.nodoc
+    proc init(details: string = "", err: errorCode = EINTR:errorCode) {
       super.init(err, details);
     }
   }
 
   /*
      :class:`IsADirectoryError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.EISDIR`.
+     corresponding to :const:`~POSIX.EISDIR`.
   */
   class IsADirectoryError : SystemError {
-    proc init(details: string = "", err: syserr = EISDIR:syserr) {
+    @chpldoc.nodoc
+    proc init(details: string = "", err: errorCode = EISDIR:errorCode) {
       super.init(err, details);
     }
   }
 
   /*
      :class:`NotADirectoryError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.ENOTDIR`.
+     corresponding to :const:`~POSIX.ENOTDIR`.
   */
   class NotADirectoryError : SystemError {
-    proc init(details: string = "", err: syserr = ENOTDIR:syserr) {
+    @chpldoc.nodoc
+    proc init(details: string = "", err: errorCode = ENOTDIR:errorCode) {
       super.init(err, details);
     }
   }
 
   /*
      :class:`PermissionError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.EACCES` and :const:`SysBasic.EPERM`.
+     corresponding to :const:`~POSIX.EACCES` and :const:`~POSIX.EPERM`.
   */
   class PermissionError : SystemError {
-    proc init(details: string = "", err: syserr = EPERM:syserr) {
+    @chpldoc.nodoc
+    proc init(details: string = "", err: errorCode = EPERM:errorCode) {
       super.init(err, details);
     }
   }
 
   /*
      :class:`ProcessLookupError` is the subclass of :class:`SystemError`
-     corresponding to :const:`SysBasic.ESRCH`.
+     corresponding to :const:`~POSIX.ESRCH`.
   */
   class ProcessLookupError : SystemError {
-    proc init(details: string = "", err: syserr = ESRCH:syserr) {
+    @chpldoc.nodoc
+    proc init(details: string = "", err: errorCode = ESRCH:errorCode) {
       super.init(err, details);
     }
   }
 
   /*
      :class:`TimeoutError` is the subclass of :class:`SystemError` corresponding
-     to :const:`SysBasic.ETIMEDOUT`.
+     to :const:`~POSIX.ETIMEDOUT`.
   */
   class TimeoutError : SystemError {
-    proc init(details: string = "", err: syserr = ETIMEDOUT:syserr) {
+    @chpldoc.nodoc
+    proc init(details: string = "", err: errorCode = ETIMEDOUT:errorCode) {
       super.init(err, details);
     }
   }
 
   /*
-     :class:`IOError` is the subclass of :class:`SystemError` that serves as the
-     base class for all errors regarding inputs and their formatting.
-     They are typically not directly generated by the OS, but they are
-     used and emitted by the IO module.
+     :class:`IoError` is the subclass of :class:`SystemError` corresponding to
+     EIO.
   */
-  class IOError : SystemError {
-    proc init(err: syserr, details: string = "") {
+  class IoError : SystemError {
+    @chpldoc.nodoc
+    proc init(err: errorCode = EIO, details: string = "") {
       super.init(err, details);
     }
   }
 
   /*
-     :class:`EOFError` is the subclass of :class:`IOError` corresponding to
-     :const:`SysBasic.EEOF`.
+     :class:`EofError` is the the Chapel-specific error corresponding to
+     encountering end-of-file.
   */
-  class EOFError : IOError {
-    proc init(details: string = "", err: syserr = EEOF:syserr) {
-      super.init(err, details);
+  class EofError : Error {
+    @chpldoc.nodoc
+    var details: string;
+
+    @chpldoc.nodoc
+    proc init(details: string = "", err_msg: string = "") {
+      this.details = details;
+      this._msg = err_msg;
+    }
+
+    @chpldoc.nodoc
+    override proc message() {
+      var generatedMsg: string;
+
+      if !_msg.isEmpty() {
+        generatedMsg += _msg;
+      } else {
+        // use default error message based on error code
+        var err:errorCode = EEOF;
+        var strerror_err_ignore: c_int = 0;
+        var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
+        var errorcode_msg: string;
+        try! {
+          errorcode_msg = string.createAdoptingBuffer(errstr);
+        }
+        generatedMsg += errorcode_msg;
+      }
+
+      // add details if present
+      if !details.isEmpty() then
+        generatedMsg += " (" + details + ")";
+
+      return generatedMsg;
     }
   }
 
   /*
-     :class:`UnexpectedEOFError` is the subclass of :class:`IOError`
-     corresponding to :const:`SysBasic.ESHORT`.
+     :class:`UnexpectedEofError` is the Chapel-specific error
+     corresponding to encountering end-of-file before the requested amount of
+     input could be read.
+
+     This error can also occur on some writing operations when a
+     :record:`~IO.fileWriter`'s range has been specified, and the write exceeds
+     the valid range.
   */
-  class UnexpectedEOFError : IOError {
-    proc init(details: string = "", err: syserr = ESHORT:syserr) {
-      super.init(err, details);
+  class UnexpectedEofError : Error {
+    @chpldoc.nodoc
+    var details: string;
+
+    @chpldoc.nodoc
+    proc init(details: string = "", err_msg: string = "") {
+      this.details = details;
+      this._msg = err_msg;
+    }
+
+    @chpldoc.nodoc
+    override proc message() {
+      var generatedMsg: string;
+
+      if !_msg.isEmpty() {
+        generatedMsg += _msg;
+      } else {
+        // use default error message based on error code
+        var err:errorCode = ESHORT;
+        var strerror_err_ignore: c_int = 0;
+        var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
+        var errorcode_msg: string;
+        try! {
+          errorcode_msg = string.createAdoptingBuffer(errstr);
+        }
+        generatedMsg += errorcode_msg;
+      }
+
+      // add details if present
+      if !details.isEmpty() then
+        generatedMsg += " (" + details + ")";
+
+      return generatedMsg;
     }
   }
 
   /*
-     :class:`BadFormatError` is the subclass of :class:`IOError` corresponding
-     to :const:`SysBasic.EFORMAT`.
+     :class:`BadFormatError` is the Chapel-specific error corresponding
+     to incorrectly-formatted input.
   */
-  class BadFormatError : IOError {
-    proc init(details: string = "", err: syserr = EFORMAT:syserr) {
-      super.init(err, details);
+  class BadFormatError : Error {
+    @chpldoc.nodoc
+    var details: string;
+
+    @chpldoc.nodoc
+    proc init(details: string = "", err_msg: string = "") {
+      this.details = details;
+      this._msg = err_msg;
+    }
+
+    @chpldoc.nodoc
+    override proc message() {
+      var generatedMsg: string;
+
+      if !_msg.isEmpty() {
+        generatedMsg += _msg;
+      } else {
+        // use default error message based on error code
+        var err:errorCode = EFORMAT;
+        var strerror_err_ignore: c_int = 0;
+        var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
+        var errorcode_msg: string;
+        try! {
+          errorcode_msg = string.createAdoptingBuffer(errstr);
+        }
+        generatedMsg += errorcode_msg;
+      }
+
+      // add details if present
+      if !details.isEmpty() then
+        generatedMsg += " (" + details + ")";
+
+      return generatedMsg;
+    }
+  }
+
+  /*
+    :class:`InsufficientCapacityError` is a subclass of :class:`IoError`
+    indicating that an IO operation required more storage than was provided
+  */
+  class InsufficientCapacityError : IoError {
+    @chpldoc.nodoc
+    proc init(details: string = "") {
+      super.init(ERANGE: errorCode, details);
+    }
+
+    @chpldoc.nodoc
+    override proc message() {
+      return
+        if details.isEmpty() then
+          "Result too large"
+        else
+          details;
     }
   }
 
   // here's what we need from Sys
-  private extern proc sys_strerror_syserr_str(error:syserr, out err_in_strerror:c_int):c_string;
+  private extern proc
+  sys_strerror_syserr_str(error
+                          : errorCode, out err_in_strerror
+                          : c_int)
+      : c_ptrConst(c_char);
 
   /* This function takes in a string and returns it in double-quotes,
      with internal double-quotes escaped with backslash.
@@ -1260,26 +1696,26 @@ module OS {
   private proc quote_string(s:string, len:c_ssize_t) {
     extern const QIO_STRING_FORMAT_CHPL: uint(8);
     extern proc qio_quote_string(s:uint(8), e:uint(8), f:uint(8),
-                                 ptr: c_string, len:c_ssize_t,
-                                 ref ret:c_string, ti: c_void_ptr): syserr;
-    extern proc qio_strdup(s: c_string): c_string;
+                                 ptr:c_ptrConst(c_char), len:c_ssize_t,
+                                 ref ret:c_ptrConst(c_char), ti: c_ptr(void)): errorCode;
+    extern proc qio_strdup(s): c_ptrConst(c_char);
 
-    var ret: c_string;
+    var ret: c_ptrConst(c_char);
     // 34 is ASCII double quote
-    var err: syserr = qio_quote_string(34:uint(8), 34:uint(8),
+    var err: errorCode = qio_quote_string(34:uint(8), 34:uint(8),
                                       QIO_STRING_FORMAT_CHPL,
-                                      s.localize().c_str(), len, ret, c_nil);
+                                      s.localize().c_str(), len, ret, nil);
     // This doesn't handle the case where ret==NULL as did the previous
     // version in QIO, but I'm not sure how that was used.
 
     try! {
-      if err then return createStringWithOwnedBuffer(qio_strdup("<error>"));
-      return createStringWithOwnedBuffer(ret);
+      if err then return string.createAdoptingBuffer(qio_strdup("<error>"));
+      return string.createAdoptingBuffer(ret);
     }
 }
 
-  /* Create and throw a :class:`SystemError` if an error occurred, formatting a
-     useful message based on the provided arguments. Do nothing if the error
+  /* Create and throw an :class:`Errors.Error` if an error occurred, formatting
+     a useful message based on the provided arguments. Do nothing if the error
      argument does not indicate an error occurred.
 
      :arg error: the error code
@@ -1287,42 +1723,43 @@ module OS {
      :arg path: optionally, a path to include in the thrown error
      :arg offset: optionally, an offset to include in the thrown error
 
-     :throws SystemError: A subtype is thrown when the error argument
+     :throws Error: A subtype is thrown when the error argument
                           indicates an error occurred
  */
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
+  @chpldoc.nodoc
+  proc ioerror(error:errorCode, msg:string, path:string, offset:int(64)) throws
   {
     if error {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath +
                          " offset " + offset:string;
-      throw SystemError.fromSyserr(error, details);
+      throw createSystemOrChplError(error, details);
     }
   }
 
-  pragma "no doc" // documented in the offset version
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc ioerror(error:syserr, msg:string, path:string) throws
+  @chpldoc.nodoc // documented in the offset version
+  proc ioerror(error:errorCode, msg:string, path:string) throws
   {
     if error {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath;
-      throw SystemError.fromSyserr(error, details);
+      throw createSystemOrChplError(error, details);
     }
   }
 
-  pragma "no doc" // documented in the offset version
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc ioerror(error:syserr, msg:string) throws
+  @chpldoc.nodoc // documented in the offset version
+  proc ioerror(error:errorCode, msg:string) throws
   {
-    if error then throw SystemError.fromSyserr(error, msg);
+    if error then throw createSystemOrChplError(error, msg);
   }
 
-  /* Create and throw an :class:`IOError` and include a formatted message
+  /* Create and throw an :class:`IoError` and include a formatted message
      based on the provided arguments.
 
      :arg errstr: the error string
@@ -1330,31 +1767,31 @@ module OS {
      :arg path: a path to print out that is related to the error
      :arg offset: an offset to print out that is related to the error
 
-     :throws IOError: always throws an IOError
+     :throws IoError: always throws an IoError
    */
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @chpldoc.nodoc
   proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
   {
     const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
     const details    = errstr + " " + msg + " with path " + quotedpath +
                        " offset " + offset:string;
-    throw SystemError.fromSyserr(EIO:syserr, details);
+    throw createSystemOrChplError(EIO:errorCode, details);
   }
 
-  /* Convert a syserr code to a human-readable string describing the error.
+  /* Convert a errorCode code to a human-readable string describing the error.
 
      :arg error: the error code
      :returns: a string describing the error
    */
-  proc errorToString(error:syserr):string
+  proc errorToString(error:errorCode):string
   {
-    var strerror_err:c_int = ENOERR;
+    var strerror_err:c_int = 0;
     const errstr = sys_strerror_syserr_str(error, strerror_err);
     try! {
-      return createStringWithOwnedBuffer(errstr);
+      return string.createAdoptingBuffer(errstr);
     }
   }
-
 
 }

@@ -56,6 +56,11 @@ file formats.
 
  Display the address-significance table.
 
+.. option:: --decompress, -z
+
+  Dump decompressed section content when used with ``-x`` or ``-p``.
+  If the section(s) are not compressed, they are displayed as is.
+
 .. option:: --expand-relocs
 
  When used with :option:`--relocs`, display each relocation in an expanded
@@ -78,6 +83,12 @@ file formats.
 
  Display the specified section(s) as hexadecimal bytes. ``section`` may be a
  section index or section name.
+
+ .. option:: --memtag
+
+ Display information about memory tagging present in the binary. This includes
+ various memtag-specific dynamic entries, decoded global descriptor sections,
+ and decoded Android-specific ELF notes.
 
 .. option:: --needed-libs
 
@@ -106,6 +117,10 @@ file formats.
  When used with :option:`--sections`, display symbols for each section shown.
  This option has no effect for GNU style output.
 
+.. option:: --sort-symbols=<sort_key[,sort_key]>
+
+ Specify the keys to sort symbols before displaying symtab.
+ Valid values for sort_key are ``name`` and ``type``.
 .. option:: --stackmap
 
  Display contents of the stackmap section.
@@ -203,6 +218,12 @@ The following options are implemented only for the ELF file format.
 .. option:: --hash-table
 
  Display the hash table for dynamic symbols.
+
+.. option:: --memtag
+
+ Display information about memory tagging present in the binary. This includes
+ various dynamic entries, decoded global descriptor sections, and decoded
+ Android-specific ELF notes.
 
 .. option:: --notes, -n
 
@@ -325,6 +346,22 @@ The following options are implemented only for the XCOFF file format.
 .. option:: --auxiliary-header
 
   Display XCOFF Auxiliary header.
+
+.. option:: --exception-section
+
+  Display XCOFF exception section entries.
+
+.. option:: --loader-section-header
+
+  Display XCOFF loader section header.
+
+.. option:: --loader-section-symbols
+
+  Display symbol table of loader section.
+
+.. option:: --loader-section-relocations
+
+  Display relocation entries of loader section.
 
 EXIT STATUS
 -----------

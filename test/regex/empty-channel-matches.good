@@ -1,0 +1,94 @@
+matches on empty channel
+[]  ((matched = true, byteOffset = 0, numBytes = 0),) 0
+[^]  ((matched = true, byteOffset = 0, numBytes = 0),) 0
+[^[^\s]]   0
+[^x]   0
+[^y]   0
+[^z]   0
+[$]  ((matched = true, byteOffset = 0, numBytes = 0),) 0
+[^$]  ((matched = true, byteOffset = 0, numBytes = 0),) 0
+[.*]  ((matched = true, byteOffset = 0, numBytes = 0),) 0
+[.+]   0
+[.]   0
+[x]   0
+[y]   0
+[z]   0
+[y|b]   0
+
+matches on non-empty channel
+[]  ((matched = true, byteOffset = 0, numBytes = 0),) <> 1
+[]  ((matched = true, byteOffset = 1, numBytes = 0),) <> 2
+[]  ((matched = true, byteOffset = 2, numBytes = 0),) <> 3
+[]  ((matched = true, byteOffset = 3, numBytes = 0),) <> 4
+[]  ((matched = true, byteOffset = 4, numBytes = 0),) <> 4
+[]  done 4
+[^]  ((matched = true, byteOffset = 0, numBytes = 0),) <> 1
+[^]  ((matched = true, byteOffset = 1, numBytes = 0),) <> 2
+[^]  ((matched = true, byteOffset = 2, numBytes = 0),) <> 3
+[^]  ((matched = true, byteOffset = 3, numBytes = 0),) <> 4
+[^]  ((matched = true, byteOffset = 4, numBytes = 0),) <> 4
+[^]  done 4
+[^[^\s]]  ((matched = true, byteOffset = 0, numBytes = 1),) <x> 1
+[^[^\s]]  ((matched = true, byteOffset = 1, numBytes = 1),) <y> 2
+[^[^\s]]  ((matched = true, byteOffset = 2, numBytes = 1),) <a> 3
+[^[^\s]]  ((matched = true, byteOffset = 3, numBytes = 1),) <b> 4
+[^[^\s]]  done 4
+[^x]  ((matched = true, byteOffset = 0, numBytes = 1),) <x> 1
+[^x]  done 4
+[^y]  done 4
+[^z]  done 4
+[$]  ((matched = true, byteOffset = 4, numBytes = 0),) <> 4
+[$]  done 4
+[^$]  done 4
+[.*]  ((matched = true, byteOffset = 0, numBytes = 4),) <xyab> 4
+[.*]  ((matched = true, byteOffset = 4, numBytes = 0),) <> 4
+[.*]  done 4
+[.+]  ((matched = true, byteOffset = 0, numBytes = 4),) <xyab> 4
+[.+]  done 4
+[.]  ((matched = true, byteOffset = 0, numBytes = 1),) <x> 1
+[.]  ((matched = true, byteOffset = 1, numBytes = 1),) <y> 2
+[.]  ((matched = true, byteOffset = 2, numBytes = 1),) <a> 3
+[.]  ((matched = true, byteOffset = 3, numBytes = 1),) <b> 4
+[.]  done 4
+[x]  ((matched = true, byteOffset = 0, numBytes = 1),) <x> 1
+[x]  done 4
+[y]  ((matched = true, byteOffset = 1, numBytes = 1),) <y> 2
+[y]  done 4
+[z]  done 4
+[y|b]  ((matched = true, byteOffset = 1, numBytes = 1),) <y> 2
+[y|b]  ((matched = true, byteOffset = 3, numBytes = 1),) <b> 4
+[y|b]  done 4
+
+search
+[]   (matched = true, byteOffset = 0, numBytes = 0) 0
+[^]   (matched = true, byteOffset = 0, numBytes = 0) 0
+[^[^\s]]   (matched = true, byteOffset = 0, numBytes = 1) 0
+[^x]   (matched = true, byteOffset = 0, numBytes = 1) 0
+[^y]   (matched = false, byteOffset = -1, numBytes = 0) 4
+[^z]   (matched = false, byteOffset = -1, numBytes = 0) 4
+[$]   (matched = true, byteOffset = 4, numBytes = 0) 4
+[^$]   (matched = false, byteOffset = -1, numBytes = 0) 4
+[.*]   (matched = true, byteOffset = 0, numBytes = 4) 0
+[.+]   (matched = true, byteOffset = 0, numBytes = 4) 0
+[.]   (matched = true, byteOffset = 0, numBytes = 1) 0
+[x]   (matched = true, byteOffset = 0, numBytes = 1) 0
+[y]   (matched = true, byteOffset = 1, numBytes = 1) 1
+[z]   (matched = false, byteOffset = -1, numBytes = 0) 4
+[y|b]   (matched = true, byteOffset = 1, numBytes = 1) 1
+
+search and extract
+[]   (matched = true, byteOffset = 0, numBytes = 0) <> 0
+[^]   (matched = true, byteOffset = 0, numBytes = 0) <> 0
+[^[^\s]]   (matched = true, byteOffset = 0, numBytes = 1) <x> 0
+[^x]   (matched = true, byteOffset = 0, numBytes = 1) <x> 0
+[^y]   (matched = false, byteOffset = -1, numBytes = 0) <> 4
+[^z]   (matched = false, byteOffset = -1, numBytes = 0) <> 4
+[$]   (matched = true, byteOffset = 4, numBytes = 0) <> 4
+[^$]   (matched = false, byteOffset = -1, numBytes = 0) <> 4
+[.*]   (matched = true, byteOffset = 0, numBytes = 4) <xyab> 0
+[.+]   (matched = true, byteOffset = 0, numBytes = 4) <xyab> 0
+[.]   (matched = true, byteOffset = 0, numBytes = 1) <x> 0
+[x]   (matched = true, byteOffset = 0, numBytes = 1) <x> 0
+[y]   (matched = true, byteOffset = 1, numBytes = 1) <y> 1
+[z]   (matched = false, byteOffset = -1, numBytes = 0) <> 4
+[y|b]   (matched = true, byteOffset = 1, numBytes = 1) <y> 1

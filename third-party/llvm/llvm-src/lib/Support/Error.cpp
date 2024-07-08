@@ -7,9 +7,10 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Support/Error.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/ManagedStatic.h"
 #include <system_error>
 
 using namespace llvm;
@@ -46,7 +47,10 @@ namespace {
 
 }
 
-static ManagedStatic<ErrorErrorCategory> ErrorErrorCat;
+ErrorErrorCategory &getErrorErrorCat() {
+  static ErrorErrorCategory ErrorErrorCat;
+  return ErrorErrorCat;
+}
 
 namespace llvm {
 
@@ -68,22 +72,31 @@ void logAllUnhandledErrors(Error E, raw_ostream &OS, Twine ErrorBanner) {
   });
 }
 
+/// Write all error messages (if any) in E to a string. The newline character
+/// is used to separate error messages.
+std::string toString(Error E) {
+  SmallVector<std::string, 2> Errors;
+  handleAllErrors(std::move(E), [&Errors](const ErrorInfoBase &EI) {
+    Errors.push_back(EI.message());
+  });
+  return join(Errors.begin(), Errors.end(), "\n");
+}
 
 std::error_code ErrorList::convertToErrorCode() const {
   return std::error_code(static_cast<int>(ErrorErrorCode::MultipleErrors),
-                         *ErrorErrorCat);
+                         getErrorErrorCat());
 }
 
 std::error_code inconvertibleErrorCode() {
   return std::error_code(static_cast<int>(ErrorErrorCode::InconvertibleError),
-                         *ErrorErrorCat);
+                         getErrorErrorCat());
 }
 
 std::error_code FileError::convertToErrorCode() const {
   std::error_code NestedEC = Err->convertToErrorCode();
   if (NestedEC == inconvertibleErrorCode())
     return std::error_code(static_cast<int>(ErrorErrorCode::FileError),
-                           *ErrorErrorCat);
+                           getErrorErrorCat());
   return NestedEC;
 }
 
@@ -147,7 +160,7 @@ void report_fatal_error(Error Err, bool GenCrashDiag) {
     raw_string_ostream ErrStream(ErrMsg);
     logAllUnhandledErrors(std::move(Err), ErrStream);
   }
-  report_fatal_error(Twine(ErrMsg));
+  report_fatal_error(Twine(ErrMsg), GenCrashDiag);
 }
 
 } // end namespace llvm

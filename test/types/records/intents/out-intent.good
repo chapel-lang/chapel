@@ -21,8 +21,8 @@ init 3 3
 lhs(2 2) = rhs(3 3)
 deinit 3 3
 lhs(1 1) = rhs(3 3)
-(x = 3, ptr = {xx = 3})
 deinit 3 3
+(x = 3, ptr = {xx = 3})
 deinit 3 3
 test4
 init (default)
@@ -171,6 +171,8 @@ init 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
 test24
+init (default)
+deinit 0 0
 Error: 
 test25
 Error: 

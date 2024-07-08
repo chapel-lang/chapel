@@ -11,7 +11,7 @@ writeln(tLocal.tm_sec:int, ' ',
         tLocal.tm_wday:int, ' ',
         tLocal.tm_yday:int, ' ',
         tLocal.tm_isdst:int);
-writeln(asctime(c_ptrTo(tLocal)):c_string:string);
+writeln(string.createCopyingBuffer(asctime(c_ptrTo(tLocal)):c_ptrConst(c_char)));
 
 var tLocalRef = localtime_r(c_ptrTo(t), c_ptrTo(tLocal));
 writeln(tLocalRef:c_intptr == c_ptrTo(tLocal):c_intptr);
@@ -28,4 +28,4 @@ param bufSize = 26; // can be found in man pages, but is not defined by POSIX!
 var buf:c_array(c_char, bufSize);
 var tAscRef = asctime_r(c_ptrTo(tLocal), buf);
 writeln(tAscRef:c_intptr == buf:c_intptr);
-writeln(tAscRef:c_string:string);
+writeln(string.createBorrowingBuffer(tAscRef:c_ptrConst(c_char)));

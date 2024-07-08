@@ -3,11 +3,13 @@ class Foo {
   var x: t;
 }
 
-var foo = new borrowed Foo(int);
+var ownFoo = new owned Foo(int);
+var foo = ownFoo.borrow();
 
 writeln(foo.type: string);
 writeln(foo);
 
-var foo2 = new borrowed Foo();
+var ownFoo2 = new owned Foo();
+var foo2 = ownFoo2.borrow();
 writeln(foo2.type: string);
 writeln(foo2);

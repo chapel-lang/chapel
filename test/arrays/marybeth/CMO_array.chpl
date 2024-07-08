@@ -5,7 +5,7 @@ class CMODist : BaseDist {
     return dom;
   }
 
-  proc dsiClone() return this;
+  proc dsiClone() do return this;
 }
 
 class CMODom: BaseRectangularDom {
@@ -13,9 +13,9 @@ class CMODom: BaseRectangularDom {
   type idxType;
   param stridable: bool;
   var dist: CMODist;
-  var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
+  var ranges : rank*range(idxType,boundKind.both,stridable);
 
-  proc dsiGetIndices() return ranges;
+  proc dsiGetIndices() do return ranges;
 
   proc dsiSetIndices(x) {
     if ranges.size != x.size then
@@ -25,11 +25,11 @@ class CMODom: BaseRectangularDom {
     ranges = x;
   }
 
-  proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  proc dsiAssignDomain(rhs: domain(?), lhsPrivate:bool) {
     chpl_assignDomainWithGetSetIndices(this, rhs);
   }
 
-  proc dsiMyDist() return dist;
+  proc dsiMyDist() do return dist;
 
   proc dsiDims() {
     return ranges;
@@ -61,7 +61,7 @@ class CMODom: BaseRectangularDom {
     yield followThis;
   }
 
-  proc dsiAccess(dim : int)
+  proc dsiAccess(dim : int) do
     return ranges(dim);
 
   proc dsiMember(ind: idxType) where rank == 1 {
@@ -77,11 +77,11 @@ class CMODom: BaseRectangularDom {
     return true;
   }
 
-  proc dsiDim(d : int)
+  proc dsiDim(d : int) do
     return ranges(d);
 
   proc bbox(d: int) {
-    const r: range(idxType,BoundedRangeType.bounded,false) = ranges(d);
+    const r: range(idxType) = ranges(d);
     return r;
   }
 
@@ -119,12 +119,12 @@ class CMODom: BaseRectangularDom {
     return new CMOArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
   }
  
-  proc buildSubdomain() 
+  proc buildSubdomain() do
     return new CMODom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
 
   proc dsiRankChange(param rank: int, param stridable: bool, args) {
-    proc isRange(r: range(?e,?b,?s)) param return 1;
-    proc isRange(r) param return 0;
+    proc isRange(r: range(?e,?b,?s)) param do return 1;
+    proc isRange(r) param do return 0;
 
     var d = new CMODom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
     var i = 1;
@@ -206,7 +206,7 @@ class CMOArr:BaseArr {
   var data: [D1] eltType;
   var noinit_data: bool = false;
 
-  proc dsiGetBaseDom() return dom;
+  proc dsiGetBaseDom() do return dom;
   
   proc computeFactoredOffs() {
     factoredOffs = 0:idxType;
@@ -287,7 +287,7 @@ class CMOArr:BaseArr {
 
   proc dsiCheckSlice(d) {
     for param i in 0..rank-1 {
-      if d(i).boundedType == BoundedRangeType.bounded then
+      if d(i).bounds == boundKind.both then
         if !dom.dim(i).contains(d(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", d(i));
     }
@@ -310,19 +310,19 @@ class CMOArr:BaseArr {
   }
 
   proc checkRankChange(args) {
-    proc isRange(r: range(?e,?b,?s)) param return 1;
-    proc isRange(r) param return 0;
+    proc isRange(r: range(?e,?b,?s)) param do return 1;
+    proc isRange(r) param do return 0;
 
     for param i in 0..args.size-1 do
       if isRange(args(i)) then
-        if args(i).boundedType == BoundedRangeType.bounded then
+        if args(i).bounds == boundKind.both then
           if !dom.dsiDim(i).contains(args(i)) then
             halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }
 
   proc dsiRankChange(d, param newRank: int, param newStridable: bool, irs) {
-    proc isRange(r: range(?e,?b,?s)) param return 1;
-    proc isRange(r) param return 0;
+    proc isRange(r: range(?e,?b,?s)) param do return 1;
+    proc isRange(r) param do return 0;
     var alias = new CMOArr(eltType=eltType, rank=newRank, idxType=idxType, stridable=newStridable, dom=d, noinit_data=true);
     alias.D1 = {0:idxType..#size:idxType};
     alias.data = data;

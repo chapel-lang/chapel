@@ -17,28 +17,28 @@
 
 #include "llvm/ADT/BitmaskEnum.h"
 #include "llvm/ADT/PointerUnion.h"
+#include "llvm/CodeGen/LowLevelType.h"
 #include "llvm/CodeGen/PseudoSourceValue.h"
 #include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Metadata.h"
 #include "llvm/IR/Value.h" // PointerLikeTypeTraits<Value*>
 #include "llvm/Support/AtomicOrdering.h"
 #include "llvm/Support/DataTypes.h"
-#include "llvm/Support/LowLevelTypeImpl.h"
 
 namespace llvm {
 
-class FoldingSetNodeID;
 class MDNode;
 class raw_ostream;
 class MachineFunction;
 class ModuleSlotTracker;
+class TargetInstrInfo;
 
 /// This class contains a discriminated union of information about pointers in
 /// memory operands, relating them back to LLVM IR or to virtual locations (such
 /// as frame indices) that are exposed during codegen.
 struct MachinePointerInfo {
   /// This is the IR pointer value for the access, or it is null if unknown.
-  /// If this is null, then the access is to a pointer in the default address
-  /// space.
   PointerUnion<const Value *, const PseudoSourceValue *> V;
 
   /// Offset - This is an offset from the base Value*.
@@ -70,19 +70,19 @@ struct MachinePointerInfo {
     uint8_t ID = 0)
     : V(v), Offset(offset), StackID(ID) {
     if (V) {
-      if (const auto *ValPtr = V.dyn_cast<const Value*>())
+      if (const auto *ValPtr = dyn_cast_if_present<const Value *>(V))
         AddrSpace = ValPtr->getType()->getPointerAddressSpace();
       else
-        AddrSpace = V.get<const PseudoSourceValue*>()->getAddressSpace();
+        AddrSpace = cast<const PseudoSourceValue *>(V)->getAddressSpace();
     }
   }
 
   MachinePointerInfo getWithOffset(int64_t O) const {
     if (V.isNull())
       return MachinePointerInfo(AddrSpace, Offset + O);
-    if (V.is<const Value*>())
-      return MachinePointerInfo(V.get<const Value*>(), Offset + O, StackID);
-    return MachinePointerInfo(V.get<const PseudoSourceValue*>(), Offset + O,
+    if (isa<const Value *>(V))
+      return MachinePointerInfo(cast<const Value *>(V), Offset + O, StackID);
+    return MachinePointerInfo(cast<const PseudoSourceValue *>(V), Offset + O,
                               StackID);
   }
 
@@ -208,10 +208,12 @@ public:
   /// other PseudoSourceValue member functions which return objects which stand
   /// for frame/stack pointer relative references and other special references
   /// which are not representable in the high-level IR.
-  const Value *getValue() const { return PtrInfo.V.dyn_cast<const Value*>(); }
+  const Value *getValue() const {
+    return dyn_cast_if_present<const Value *>(PtrInfo.V);
+  }
 
   const PseudoSourceValue *getPseudoValue() const {
-    return PtrInfo.V.dyn_cast<const PseudoSourceValue*>();
+    return dyn_cast_if_present<const PseudoSourceValue *>(PtrInfo.V);
   }
 
   const void *getOpaqueValue() const { return PtrInfo.V.getOpaqueValue(); }
@@ -323,10 +325,6 @@ public:
   void setType(LLT NewTy) {
     MemoryType = NewTy;
   }
-
-  /// Profile - Gather unique data for the object.
-  ///
-  void Profile(FoldingSetNodeID &ID) const;
 
   /// Support for operator<<.
   /// @{

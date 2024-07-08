@@ -15,13 +15,13 @@ config const seed = 31415;
 config const blksHoriz : int = ceil((n+1.0)/blkSize:real):int;
 config const blksVert  : int = ceil(n:real/blkSize:real):int;
 config const verbose: bool = true;
-var timer = new Timer();
+var timer = new stopwatch();
 
 // calculate C = C - A * B.
 proc dgemm(
     A : [?AD] ?t,
     B : [?BD] t,
-    C : [?CD] t)
+    ref C : [?CD] t)
 {
     // Calculate (i,j) using a dot product of a row of A and a column of B.
     for i in AD.dim(0) {
@@ -100,9 +100,9 @@ proc schurComplement(
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 proc panelSolve(
-    A : [] ?t,
+    ref A : [] ?t,
     panel : domain(2),
-    piv : [] int)
+    ref piv : [] int)
 {
     const pnlRows = panel.dim(0);
     const pnlCols = panel.dim(1);
@@ -141,7 +141,7 @@ proc panelSolve(
 
         // update all other values below the pivot
         if k+1 <= pnlRows.high && k+1 <= pnlCols.high {
-            forall (i,j) in panel[k+1.., k+1..] {
+            forall (i,j) in panel[k+1.., k+1..] with (ref A) {
                 A[i,j] -= A[i,k] * A[k,j];
             }
         }
@@ -152,7 +152,7 @@ proc panelSolve(
 // LU decomposition.  Each step of the LU decomposition will solve a block
 // (tl for top-left) portion of a matrix. This function solves the rows to the
 // right of the block.
-proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
+proc updateBlockRow(ref A : [] ?t, tl : domain(2), tr : domain(2))
 {
     const tlRows = tl.dim(0);
     const tlCols = tl.dim(1);
@@ -162,7 +162,7 @@ proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
     assert(tlCols == trRows);
 
     for i in trRows {
-        forall j in trCols {
+        forall j in trCols with (ref A) {
             for k in tlRows.low..i-1 {
                 A[i, j] -= A[i, k] * A[k,j];
             }
@@ -172,7 +172,7 @@ proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
 
 // blocked LU factorization with pivoting for matrix augmented with vector of
 // RHS values.
-proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
+proc LUFactorize(n : int, ref A : [1..n, 1..n+1] real, ref piv : [1..n] int) {
     const AD = A.domain;    // alias A.domain to save typing
 
     // Initialize the pivot vector to represent the initially unpivoted matrix.
@@ -323,4 +323,3 @@ proc main() {
     writeln("computation time: ", timer.elapsed(), " seconds.");
     writeln("performance: ", performance, " Gflops/s.");
 }
-

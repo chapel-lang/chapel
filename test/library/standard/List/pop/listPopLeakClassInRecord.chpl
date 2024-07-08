@@ -32,8 +32,8 @@ operator R.=(ref LHS : R, rhs : R) {
 proc main() {
   var L: list(R);
 
-  for i in 1..testIters do L.append(new R(i));
+  for i in 1..testIters do L.pushBack(new R(i));
 
   // A copy of R(4) is leaked.
-  while !L.isEmpty() do L.pop(0);
+  while !L.isEmpty() do L.getAndRemove(0);
 }

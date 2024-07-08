@@ -3,7 +3,7 @@ var a : [d] real;
 
 writeln(a);
 
-[i in 1..5] {
+[i in 1..5 with (ref a)] {
   a(i) = i * 1.0;
 }
 

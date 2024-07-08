@@ -1,0 +1,4 @@
+sqrtnegparam.chpl:1: error: sqrt of a negative number -- cast to complex if a complex result is desired
+sqrtnegparam.chpl:2: error: sqrt of a negative number -- cast to complex if a complex result is desired
+sqrtnegparam.chpl:3: error: sqrt of a negative number -- cast to complex if a complex result is desired
+sqrtnegparam.chpl:4: error: sqrt of a negative number -- cast to complex if a complex result is desired

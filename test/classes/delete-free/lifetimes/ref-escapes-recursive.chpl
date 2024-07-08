@@ -1,7 +1,7 @@
 pragma "safe"
 module refescapesrecursive {
 
-proc ref_identity(ref x:int) ref return x;
+proc ref_identity(ref x:int) ref do return x;
 
 proc bad1(i:int) ref :int {
   if i==0 {

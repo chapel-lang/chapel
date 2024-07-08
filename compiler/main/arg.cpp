@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -48,19 +48,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *****************************************************************************/
 
 #include "arg.h"
+#include "arg-helpers.h"
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
 
-#include "driver.h"
-#include "files.h"
-#include "misc.h"
-#include "stringutil.h"
-
 #include <cstdio>
-
+#include <cstring>
 #include <inttypes.h>
+
+extern bool developer;
 
 static const char* get_envvar_setting(const ArgumentDescription& desc);
 
@@ -234,7 +232,7 @@ void usage(const ArgumentState* state,
             break;
 
           default:
-            INT_FATAL("Unexpected case in usage()");
+            arg_fatalError("Unexpected case in usage()");
             break;
           }
 
@@ -312,7 +310,7 @@ static void word_wrap_print(const char* text, int startCol, int endCol)
 *                                                                             *
 ************************************** | *************************************/
 
-void init_args(ArgumentState* state, const char* argv0) {
+void init_args(ArgumentState* state, const char* argv0, void* mainAddr) {
   char* name = strdup(argv0);
 
   if (char* firstSlash = strrchr(name, '/')) {
@@ -320,7 +318,7 @@ void init_args(ArgumentState* state, const char* argv0) {
   }
 
   state->program_name = name;
-  state->program_loc  = findProgramPath(argv0);
+  state->program_loc  = arg_programLoc(argv0, mainAddr);
 }
 
 
@@ -328,8 +326,11 @@ void init_args(ArgumentState* state, const char* argv0) {
  * Initialize arg_desc member.
  */
 
-void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc) {
+void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc,
+                   DeprecatedArgument* deprecated_args)
+{
   state->desc = arg_desc;
+  state->deprecated_args = deprecated_args;
 }
 
 /************************************* | **************************************
@@ -355,17 +356,20 @@ Flag types:
   n = --no-... flag, --no version sets to true
 */
 
-static void ProcessEnvironment(const ArgumentState* state);
+static bool ProcessEnvironment(const ArgumentState* state);
 static void ProcessCommandLine(ArgumentState* state, int argc, char* argv[]);
 
-void process_args(ArgumentState* state, int argc, char* argv[])
+bool process_args(ArgumentState* state, int argc, char* argv[])
 {
 #ifdef _BASEAST_H_
   astlocMarker markAstLoc(0, "<command line>");
 #endif
 
-  ProcessEnvironment(state);
+  if(!ProcessEnvironment(state)) {
+    return false;
+  }
   ProcessCommandLine(state, argc, argv);
+  return true;
 }
 
 /************************************* | **************************************
@@ -378,9 +382,25 @@ static void ApplyValue(const ArgumentState*       state,
                        const ArgumentDescription* desc,
                        const char*                value);
 
-static void ProcessEnvironment(const ArgumentState* state)
+
+static bool ProcessEnvironment(const ArgumentState* state)
 {
   ArgumentDescription* desc = state->desc;
+  DeprecatedArgument* deprecated_args = state->deprecated_args;
+  bool hadError = false;
+
+  if(deprecated_args) {
+    for (int i = 0; deprecated_args[i].env; i++) {
+        const char* env = getenv(deprecated_args[i].env);
+        if (env != 0) {
+          arg_warn(deprecated_args[i].msg, "");
+
+          if(deprecated_args[i].replacementEnv) {
+            setenv(deprecated_args[i].replacementEnv, env, 0);
+          }
+        }
+    }
+  }
 
   // The name field is defined by every row except the final guard
   for (int i = 0; desc[i].name != 0; i++)
@@ -414,12 +434,14 @@ static void ProcessEnvironment(const ArgumentState* state)
           break;
 
           default:
-            USR_FATAL_CONT("When the environment variable %s"
-                           " is set and not empty, it must start with one of Y y T t 1"
-                           " (indicates 'yes') or N n F f 0 (indicates '--no')."
-                           " Currently it is set to \"%s\".",
-                           desc[i].env,
-                           env);
+            char msg[0xFF];
+            snprintf(msg, 0xFF,
+              "When the environment variable %s is set and not empty, it must "
+              "start with one of Y y T t 1 (indicates 'yes') or N n F f 0 "
+              "(indicates '--no'). Currently it is set to \"%s\".",
+              desc[i].env, env);
+            arg_fatalErrorCont(msg);
+            hadError = true;
             break;
           }
         }
@@ -428,6 +450,7 @@ static void ProcessEnvironment(const ArgumentState* state)
       }
     }
   }
+  return !hadError;
 }
 
 static void ApplyValue(const ArgumentState*       state,
@@ -465,7 +488,7 @@ static void ApplyValue(const ArgumentState*       state,
         break;
 
       case 'L':
-        *((int64_t*) location) = str2int64(value);
+        *((int64_t*) location) = str2int64(value, false, NULL, -1);
         break;
 
       case 'D':
@@ -486,12 +509,12 @@ static void ApplyValue(const ArgumentState*       state,
       }
       case 'U':
       {
-        *((size_t*) location) = str2uint64(value);
+        *((size_t*) location) = str2uint64(value, false, NULL, -1);
         break;
       }
       case 'X':
       {
-        *((size_t*) location) = hexStr2uint64(value);
+        *((size_t*) location) = hexStr2uint64(value, false, NULL, -1);
         break;
       }
     }
@@ -705,7 +728,9 @@ static void process_arg(const ArgumentState*       state,
             int len = strlen(arg);
             int maxlen = atoi(desc->type + 1);
             if( len > maxlen ) {
-              USR_FATAL("argument for --%s is too long", desc->name);
+              char msg[0xFF];
+              snprintf(msg, 0xFF, "argument for --%s is too long", desc->name);
+              arg_fatalUserError(msg);
             }
             strncpy((char*) desc->location, arg, maxlen);
           }

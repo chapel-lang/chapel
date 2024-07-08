@@ -1,1 +1,1 @@
-invalid_reindex2.chpl:15: error: halt reached - extent in dimension 2 does not match actual
+invalid_reindex2.chpl:15: error: halt reached - extent mismatch in dimension 3: cannot reindex() from 3..10 to 12..20

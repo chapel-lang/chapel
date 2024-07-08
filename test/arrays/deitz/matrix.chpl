@@ -1,15 +1,15 @@
-record Matrix {
+record Matrix : writeSerializable {
   type elt_type;
   var m, n: int;
   var D: domain(2) = {1..m, 1..n};
   var A: [D] elt_type;
 
-  proc ref this(i: int, j: int) ref return A(i,j);
-  proc const ref this(i: int, j: int) const ref return A(i,j);
+  proc ref this(i: int, j: int) ref do return A(i,j);
+  proc const ref this(i: int, j: int) const ref do return A(i,j);
 }
 
-proc Matrix.writeThis(f) throws {
-  f.write(A);
+proc Matrix.serialize(writer, ref serializer) throws {
+  writer.write(A);
 }
 
 proc Matrix.transpose() {
@@ -19,7 +19,7 @@ proc Matrix.transpose() {
   return M;
 }
 
-operator Matrix.+(M1: Matrix, M2: Matrix) {
+operator Matrix.+(M1: Matrix(?), M2: Matrix(?)) {
   if M1.m != M2.m || M1.n != M2.n then
     halt("illegal matrix + operation");
   var M3 = new Matrix((M1(1,1)+M2(1,1)).type, M1.m, M1.n);
@@ -27,7 +27,7 @@ operator Matrix.+(M1: Matrix, M2: Matrix) {
   return M3;
 }
 
-operator Matrix.*(M1: Matrix, M2: Matrix) {
+operator Matrix.*(M1: Matrix(?), M2: Matrix(?)) {
   if M1.n != M2.m then
     halt("illegal matrix * operation");
   var M3 = new Matrix((M1(1,1)*M2(1,1)).type, M1.m, M2.n);

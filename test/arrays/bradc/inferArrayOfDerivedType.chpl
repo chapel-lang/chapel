@@ -9,8 +9,8 @@ class E: C {
   var x: real;
 }
 
-var d = new borrowed D();
-var e = new borrowed E();
+var dd = new D(); var d = dd.borrow();
+var ee = new E(); var e = ee.borrow();
 
 var A = [d, e];
 // WORKAROUND:

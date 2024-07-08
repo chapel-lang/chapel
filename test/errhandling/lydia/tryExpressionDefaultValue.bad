@@ -1,0 +1,5 @@
+tryExpressionDefaultValue.chpl:12: In function 'callThrowingFunc':
+tryExpressionDefaultValue.chpl:7: error: call to throwing function throwingFunc_default_x is in a try but not handled
+tryExpressionDefaultValue.chpl:7: note: throwing function throwingFunc_default_x defined here
+tryExpressionDefaultValue.chpl:13: error: call to throwing function throwingFunc is in a try but not handled
+tryExpressionDefaultValue.chpl:7: note: throwing function throwingFunc defined here

@@ -404,6 +404,17 @@ bool MVETPAndVPTOptimisations::MergeLoopEnd(MachineLoop *ML) {
     LoopPhi->getOperand(3).setReg(DecReg);
   }
 
+  SmallVector<MachineOperand, 4> Cond;              // For analyzeBranch.
+  MachineBasicBlock *TBB = nullptr, *FBB = nullptr; // For analyzeBranch.
+  if (!TII->analyzeBranch(*LoopEnd->getParent(), TBB, FBB, Cond) && !FBB) {
+    // If the LoopEnd falls through, need to insert a t2B to the fall-through
+    // block so that the non-analyzable t2LoopEndDec doesn't fall through.
+    MachineFunction::iterator MBBI = ++LoopEnd->getParent()->getIterator();
+    BuildMI(LoopEnd->getParent(), DebugLoc(), TII->get(ARM::t2B))
+        .addMBB(&*MBBI)
+        .add(predOps(ARMCC::AL));
+  }
+
   // Replace the loop dec and loop end as a single instruction.
   MachineInstrBuilder MI =
       BuildMI(*LoopEnd->getParent(), *LoopEnd, LoopEnd->getDebugLoc(),
@@ -902,7 +913,7 @@ bool MVETPAndVPTOptimisations::ReplaceVCMPsByVPNOTs(MachineBasicBlock &MBB) {
 }
 
 bool MVETPAndVPTOptimisations::ReplaceConstByVPNOTs(MachineBasicBlock &MBB,
-                                               MachineDominatorTree *DT) {
+                                                    MachineDominatorTree *DT) {
   // Scan through the block, looking for instructions that use constants moves
   // into VPR that are the negative of one another. These are expected to be
   // COPY's to VCCRRegClass, from a t2MOVi or t2MOVi16. The last seen constant
@@ -954,6 +965,7 @@ bool MVETPAndVPTOptimisations::ReplaceConstByVPNOTs(MachineBasicBlock &MBB,
           DeadInstructions.insert(MRI->getVRegDef(GPR));
       }
       LLVM_DEBUG(dbgs() << "Reusing predicate: in  " << Instr);
+      VPR = LastVPTReg;
     } else if (LastVPTReg != 0 && LastVPTImm == NotImm) {
       // We have found the not of a previous constant. Create a VPNot of the
       // earlier predicate reg and use it instead of the copy.
@@ -1041,8 +1053,7 @@ bool MVETPAndVPTOptimisations::HintDoLoopStartReg(MachineBasicBlock &MBB) {
 }
 
 bool MVETPAndVPTOptimisations::runOnMachineFunction(MachineFunction &Fn) {
-  const ARMSubtarget &STI =
-      static_cast<const ARMSubtarget &>(Fn.getSubtarget());
+  const ARMSubtarget &STI = Fn.getSubtarget<ARMSubtarget>();
 
   if (!STI.isThumb2() || !STI.hasLOB())
     return false;

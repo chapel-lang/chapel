@@ -1,0 +1,3 @@
+scope-param-offset-non-int-1.chpl:5: In function 'enumScopeTest':
+scope-param-offset-non-int-1.chpl:6: error: enumerator constant 'one' has a non-integer initializer
+  scope-param-offset-non-int-1.chpl:2: called as enumScopeTest(param x = "hi")

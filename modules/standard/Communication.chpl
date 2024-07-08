@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,12 +29,12 @@
     under any circumstance.
 
 */
+@unstable("The Communication module is unstable and may change in the future")
 module Communication {
   private use CTypes;
 
   // This module may be used from internal modules that are resolved before
   // Locale-related modules. So, we can't use `numLocales` or `Locales` here.
-  pragma "no doc"
   private extern const chpl_numNodes: int(32);
 
   /*
@@ -45,7 +45,7 @@ module Communication {
    :arg srcLocID: ID of the source locale
    :arg numBytes: Number of bytes to copy
   */
-  inline proc get(dest: c_void_ptr, src: c_void_ptr, srcLocID: int,
+  inline proc get(dest: c_ptr(void), src: c_ptr(void), srcLocID: int,
                   numBytes: integral) {
     if boundsChecking then {
       if srcLocID < 0 || srcLocID >= chpl_numNodes {
@@ -59,8 +59,11 @@ module Communication {
       }
     }
 
-    __primitive("chpl_comm_get", dest:c_ptr(uint(8)), srcLocID,
-                src:c_ptr(uint(8)), numBytes);
+    // communicate to the primitive using a reference rather than a ptr
+    // the primitive will copy data using these references
+    ref destRef = (dest:c_ptr(uint(8))).deref();
+    const ref srcRef = (src:c_ptr(uint(8))).deref();
+    __primitive("chpl_comm_get", destRef, srcLocID, srcRef, numBytes);
   }
 
   /*
@@ -72,7 +75,7 @@ module Communication {
    :arg destLocID: ID of the destination locale
    :arg numBytes: Number of bytes to copy
   */
-  inline proc put(dest: c_void_ptr, src: c_void_ptr, destLocID: int,
+  inline proc put(dest: c_ptr(void), src: c_ptr(void), destLocID: int,
                   numBytes: integral) {
     if boundsChecking then {
       if destLocID < 0 || destLocID >= chpl_numNodes {
@@ -85,7 +88,11 @@ module Communication {
              ") for Communication.put is negative.");
       }
     }
-    __primitive("chpl_comm_put", src:c_ptr(uint(8)), destLocID,
-                dest:c_ptr(uint(8)), numBytes);
+
+    // communicate to the primitive using a reference rather than a ptr
+    // the primitive will copy data using these references
+    const ref srcRef = (src:c_ptr(uint(8))).deref();
+    ref destRef = (dest:c_ptr(uint(8))).deref();
+    __primitive("chpl_comm_put", srcRef, destLocID, destRef, numBytes);
   }
 }

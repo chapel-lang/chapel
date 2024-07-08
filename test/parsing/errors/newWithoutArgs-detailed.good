@@ -1,0 +1,8 @@
+─── syntax in newWithoutArgs.chpl:5 [NewWithoutArgs] ───
+  'new' expression is missing its argument list.
+  'new' expression used here:
+      |
+    5 | var y = new Foo;
+      |
+  Perhaps you intended to write 'new Foo()' instead?
+

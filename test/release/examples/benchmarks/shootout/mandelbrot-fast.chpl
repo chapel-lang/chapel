@@ -6,7 +6,7 @@
      and the Chapel version by Nelson et al.
 */
 
-use DynamicIters, IO;
+use DynamicIters, IO, Math;
 
 config const n = 200,             // image size in pixels (n x n)
              maxIter = 50,        // max # of iterations per pixel
@@ -18,7 +18,7 @@ type eltType = uint(bitsPerElt);  // element type used to store the image
 
 
 proc main() {
-  const xsize = divceilpos(n, bitsPerElt),  // the compacted x dimension
+  const xsize = divCeilPos(n, bitsPerElt),  // the compacted x dimension
         imgSpace = {0..#n, 0..#xsize};      // the compacted image size
 
   var image : [imgSpace] eltType,           // the compacted image
@@ -59,24 +59,24 @@ proc main() {
     image[y, xelt] = pixval;
   }
 
-  // Get a lock-free writer channel on 'stdout'
-  var w = openfd(1).writer(iokind.native, locking=false);
+  // Get a lock-free, binary fileWriter on 'stdout'
+  var w = (new file(1)).writer(locking=false);
 
   // Write the file header and the image array.
   w.writef("P4\n");
   w.writef("%i %i\n", n, n);
-  w.write(image);
+  w.writeBinary(image);
 }
 
 //
 // Helper functions to add/compare an 8-tuple and a singleton
 //
-inline operator +(cr, ci) {
+inline operator +(cr:8*real, ci:real): 8*real {
   return (cr(0)+ci, cr(1)+ci, cr(2)+ci, cr(3)+ci,
           cr(4)+ci, cr(5)+ci, cr(6)+ci, cr(7)+ci);
 }
 
-inline operator >(x, y) {
+inline operator >(x:8*real, y:real): bool {
   for param i in 0..<bitsPerElt do
     if x(i) <= y then
       return false;

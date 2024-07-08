@@ -7,7 +7,7 @@
      and the C version by Kevin Miller
 */
 
-use DynamicIters, IO;
+use DynamicIters, IO, Math;
 
 config const size = 200; // this is just an artifact of directory PERFEXECOPTS
 config const n = size,            // image size in pixels (n x n)
@@ -19,7 +19,7 @@ type eltType = uint(bitsPerElt);  // element type used to store the image
 
 
 proc main() {
-  const xsize = divceilpos(n, bitsPerElt),  // the compacted x dimension
+  const xsize = divCeilPos(n, bitsPerElt),  // the compacted x dimension
         imgSpace = {0..#n, 0..#xsize};      // the compacted image size
 
   var image : [imgSpace] eltType,           // the compacted image
@@ -27,13 +27,13 @@ proc main() {
 
   // precompute (x, y) values from the complex plane
   const inv = 2.0 / n;
-  forall i in 0..#n {
+  forall i in 0..#n with (ref xval, ref yval) {
     xval[i] = inv*i - 1.5;
     yval[i] = inv*i - 1.0;
   }
 
   // compute the image
-  forall (y, xelt) in dynamic(imgSpace, chunkSize) {
+  forall (y, xelt) in dynamic(imgSpace, chunkSize) with (ref image) {
     const xbase = xelt*bitsPerElt,
           cr = (xval[xbase+0], xval[xbase+1], xval[xbase+2], xval[xbase+3],
                 xval[xbase+4], xval[xbase+5], xval[xbase+6], xval[xbase+7]),
@@ -71,23 +71,23 @@ proc main() {
   }
 
   // Get a lock-free writer channel on 'stdout'
-  var w = openfd(1).writer(iokind.native, locking=false);
+  var w = (new file(1)).writer(locking=false);
 
   // Write the file header and the image array.
   w.writef("P4\n");
   w.writef("%i %i\n", n, n);
-  w.write(image);
+  w.writeBinary(image);
 }
 
 //
 // Helper functions to add/compare an 8-tuple and a singleton
 //
-inline operator +(cr, ci) {
+inline operator +(cr:8*real, ci:real): 8*real {
   return (cr(0)+ci, cr(1)+ci, cr(2)+ci, cr(3)+ci,
           cr(4)+ci, cr(5)+ci, cr(6)+ci, cr(7)+ci);
 }
 
-inline operator >(x, y) {
+inline operator >(x:8*real, y:real): bool {
   for param i in 0..bitsPerElt-1 do
     if x(i) <= y then
       return false;

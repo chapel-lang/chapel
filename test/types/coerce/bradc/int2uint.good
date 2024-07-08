@@ -1,1 +1,1 @@
-int2uint.chpl:6: error: Cannot assign to uint(64) from int(64)
+int2uint.chpl:10: error: Cannot assign to int(64) from uint(64)

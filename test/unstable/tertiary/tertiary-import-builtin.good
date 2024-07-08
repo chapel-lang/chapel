@@ -1,0 +1,3 @@
+tertiary-import-builtin.chpl:6: In module 'M2':
+tertiary-import-builtin.chpl:7: warning: using a type's name ('string' in this case) in an 'import' statement to access its tertiary methods is an unstable feature
+(hello)

@@ -6,7 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// PrintModulePass and PrintFunctionPass implementations.
+// PrintModulePass and PrintFunctionPass implementations for the legacy pass
+// manager.
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,63 +23,48 @@
 
 using namespace llvm;
 
-PrintModulePass::PrintModulePass() : OS(dbgs()) {}
-PrintModulePass::PrintModulePass(raw_ostream &OS, const std::string &Banner,
-                                 bool ShouldPreserveUseListOrder)
-    : OS(OS), Banner(Banner),
-      ShouldPreserveUseListOrder(ShouldPreserveUseListOrder) {}
-
-PreservedAnalyses PrintModulePass::run(Module &M, ModuleAnalysisManager &) {
-  if (llvm::isFunctionInPrintList("*")) {
-    if (!Banner.empty())
-      OS << Banner << "\n";
-    M.print(OS, nullptr, ShouldPreserveUseListOrder);
-  }
-  else {
-    bool BannerPrinted = false;
-    for(const auto &F : M.functions()) {
-      if (llvm::isFunctionInPrintList(F.getName())) {
-        if (!BannerPrinted && !Banner.empty()) {
-          OS << Banner << "\n";
-          BannerPrinted = true;
-        }
-        F.print(OS);
-      }
-    }
-  }
-  return PreservedAnalyses::all();
-}
-
-PrintFunctionPass::PrintFunctionPass() : OS(dbgs()) {}
-PrintFunctionPass::PrintFunctionPass(raw_ostream &OS, const std::string &Banner)
-    : OS(OS), Banner(Banner) {}
-
-PreservedAnalyses PrintFunctionPass::run(Function &F,
-                                         FunctionAnalysisManager &) {
-  if (isFunctionInPrintList(F.getName())) {
-    if (forcePrintModuleIR())
-      OS << Banner << " (function: " << F.getName() << ")\n" << *F.getParent();
-    else
-      OS << Banner << '\n' << static_cast<Value &>(F);
-  }
-  return PreservedAnalyses::all();
-}
-
 namespace {
 
 class PrintModulePassWrapper : public ModulePass {
-  PrintModulePass P;
+  raw_ostream &OS;
+  std::string Banner;
+  bool ShouldPreserveUseListOrder;
 
 public:
   static char ID;
-  PrintModulePassWrapper() : ModulePass(ID) {}
+  PrintModulePassWrapper() : ModulePass(ID), OS(dbgs()) {}
   PrintModulePassWrapper(raw_ostream &OS, const std::string &Banner,
                          bool ShouldPreserveUseListOrder)
-      : ModulePass(ID), P(OS, Banner, ShouldPreserveUseListOrder) {}
+      : ModulePass(ID), OS(OS), Banner(Banner),
+        ShouldPreserveUseListOrder(ShouldPreserveUseListOrder) {}
 
   bool runOnModule(Module &M) override {
-    ModuleAnalysisManager DummyMAM;
-    P.run(M, DummyMAM);
+    // RemoveDIs: there's no textual representation of the DPValue debug-info,
+    // convert to dbg.values before writing out.
+    bool IsNewDbgInfoFormat = M.IsNewDbgInfoFormat;
+    if (IsNewDbgInfoFormat)
+      M.convertFromNewDbgValues();
+
+    if (llvm::isFunctionInPrintList("*")) {
+      if (!Banner.empty())
+        OS << Banner << "\n";
+      M.print(OS, nullptr, ShouldPreserveUseListOrder);
+    } else {
+      bool BannerPrinted = false;
+      for (const auto &F : M.functions()) {
+        if (llvm::isFunctionInPrintList(F.getName())) {
+          if (!BannerPrinted && !Banner.empty()) {
+            OS << Banner << "\n";
+            BannerPrinted = true;
+          }
+          F.print(OS);
+        }
+      }
+    }
+
+    if (IsNewDbgInfoFormat)
+      M.convertToNewDbgValues();
+
     return false;
   }
 
@@ -90,18 +76,34 @@ public:
 };
 
 class PrintFunctionPassWrapper : public FunctionPass {
-  PrintFunctionPass P;
+  raw_ostream &OS;
+  std::string Banner;
 
 public:
   static char ID;
-  PrintFunctionPassWrapper() : FunctionPass(ID) {}
+  PrintFunctionPassWrapper() : FunctionPass(ID), OS(dbgs()) {}
   PrintFunctionPassWrapper(raw_ostream &OS, const std::string &Banner)
-      : FunctionPass(ID), P(OS, Banner) {}
+      : FunctionPass(ID), OS(OS), Banner(Banner) {}
 
   // This pass just prints a banner followed by the function as it's processed.
   bool runOnFunction(Function &F) override {
-    FunctionAnalysisManager DummyFAM;
-    P.run(F, DummyFAM);
+    // RemoveDIs: there's no textual representation of the DPValue debug-info,
+    // convert to dbg.values before writing out.
+    bool IsNewDbgInfoFormat = F.IsNewDbgInfoFormat;
+    if (IsNewDbgInfoFormat)
+      F.convertFromNewDbgValues();
+
+    if (isFunctionInPrintList(F.getName())) {
+      if (forcePrintModuleIR())
+        OS << Banner << " (function: " << F.getName() << ")\n"
+           << *F.getParent();
+      else
+        OS << Banner << '\n' << static_cast<Value &>(F);
+    }
+
+    if (IsNewDbgInfoFormat)
+      F.convertToNewDbgValues();
+
     return false;
   }
 
@@ -112,7 +114,7 @@ public:
   StringRef getPassName() const override { return "Print Function IR"; }
 };
 
-}
+} // namespace
 
 char PrintModulePassWrapper::ID = 0;
 INITIALIZE_PASS(PrintModulePassWrapper, "print-module",
@@ -133,7 +135,7 @@ FunctionPass *llvm::createPrintFunctionPass(llvm::raw_ostream &OS,
 }
 
 bool llvm::isIRPrintingPass(Pass *P) {
-  const char *PID = (const char*)P->getPassID();
+  const char *PID = (const char *)P->getPassID();
 
   return (PID == &PrintModulePassWrapper::ID) ||
          (PID == &PrintFunctionPassWrapper::ID);

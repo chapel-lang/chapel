@@ -38,8 +38,7 @@ config const numTrials = 10,
 // pseudo-random seed (based on the clock) or a fixed seed; and to
 // specify the fixed seed explicitly
 //
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
+config const useRandomSeed = true;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -87,7 +86,7 @@ proc main() {
   var execTime: [1..numTrials] real;                 // an array of timings
 
   for trial in 1..numTrials {                        // loop over the trials
-    const startTime = getCurrentTime();              // capture the start time
+    const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
     //
     // The main loop: Iterate over the vectors A, B, and C in a
@@ -100,7 +99,7 @@ proc main() {
     	    A(i) = B(i) + alpha * C(i);
 //	A = B + alpha * C;
 
-    execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
+    execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
   }
 
   _A = A;
@@ -124,7 +123,9 @@ proc printConfiguration() {
 // optionally print them to the console
 //
 proc initVectors(B, C) {
-  var randlist = new RandomStream(seed);
+  var randlist = if useRandomSeed
+    then new randomStream(t)
+    else new randomStream(t, 314159265);
 
   randlist.fillRandom(B);
   randlist.fillRandom(C);

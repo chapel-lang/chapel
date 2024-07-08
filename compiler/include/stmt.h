@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -151,6 +151,12 @@ public:
   virtual bool        isCoforallLoop()                             const;
   virtual bool        isCForLoop()                                 const;
 
+  bool isGpuAttributeBlock();
+  bool isGpuPrimitivesBlock();
+  bool isGpuMetadata();
+  BlockStmt* getPrimitivesBlock();
+  void noteUseOfGpuAttributeBlock(FnSymbol* user);
+
   virtual void        checkConstLoops();
   virtual bool        deadBlockCleanup();
   void                appendChapelStmt(BlockStmt* stmt);
@@ -179,7 +185,10 @@ public:
   bool                useListRemove(ModuleSymbol* mod);
   void                useListClear();
 
+  void                modRefsEnsure();
+  void                modRefsReplace(CallExpr* replacementRefs);
   void                modRefsAdd(ModuleSymbol* mod);
+  void                modRefsAdd(TemporaryConversionSymbol* mod);
   bool                modRefsRemove(ModuleSymbol* mod);
   void                modRefsClear();
 
@@ -194,10 +203,13 @@ public:
   CallExpr*           byrefVars;     // task intents - task constructs only
 
 private:
+  CallExpr*           getMarkerPrimIfExists(PrimitiveTag markerType);
   bool                canFlattenChapelStmt(const BlockStmt* stmt)  const;
 
   CallExpr*           blockInfo;
 };
+
+BlockStmt* findEnclosingGpuAttributeBlock(Expr* startFrom);
 
 /************************************* | **************************************
 *                                                                             *

@@ -12,9 +12,6 @@
 namespace llvm {
 
 DwarfStringPoolEntryRef NonRelocatableStringpool::getEntry(StringRef S) {
-  if (S.empty() && !Strings.empty())
-    return EmptyString;
-
   if (Translator)
     S = Translator(S);
   auto I = Strings.insert({S, DwarfStringPoolEntry()});
@@ -25,7 +22,7 @@ DwarfStringPoolEntryRef NonRelocatableStringpool::getEntry(StringRef S) {
     Entry.Symbol = nullptr;
     CurrentEndOffset += S.size() + 1;
   }
-  return DwarfStringPoolEntryRef(*I.first, true);
+  return DwarfStringPoolEntryRef(*I.first);
 }
 
 StringRef NonRelocatableStringpool::internString(StringRef S) {
@@ -44,7 +41,7 @@ NonRelocatableStringpool::getEntriesForEmission() const {
   Result.reserve(Strings.size());
   for (const auto &E : Strings)
     if (E.getValue().isIndexed())
-      Result.emplace_back(E, true);
+      Result.emplace_back(E);
   llvm::sort(Result, [](const DwarfStringPoolEntryRef A,
                         const DwarfStringPoolEntryRef B) {
     return A.getIndex() < B.getIndex();

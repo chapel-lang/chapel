@@ -2,9 +2,10 @@
 
 public use Random;
 public use Time;
+import NPBRandom;
 
 // random seed for arrays
-config const randSeed = SeedGenerator.oddCurrentTime;
+config const randSeed = NPBRandom.oddTimeSeed();
 
 // Control output.
 config const printC = true,
@@ -14,8 +15,8 @@ config const printC = true,
 // matrices.
 config const scalingFactor = 1;
 
-var randStream = createRandomStream(eltType=real, seed=randSeed, algorithm=RNG.NPB),
-  timer: Timer;
+var randStream = new randomStream(eltType=real, seed=randSeed),
+    timer: stopwatch;
 
 const inner = 1..5 * scalingFactor,
   outerRows = 1..10 * scalingFactor,
@@ -34,7 +35,7 @@ myFillRandom(B);
 proc myFillRandom(ref A: [] int) {
   // Use serial loop so A filling is reproducible when seed is same.
   for a in A {
-    a = (randStream.getNext() * A.size): int;
+    a = (randStream.next() * A.size): int;
   }
 }
 

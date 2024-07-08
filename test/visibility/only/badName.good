@@ -1,1 +1,2 @@
-badName.chpl:13: error: Bad identifier in 'only' clause, no known 'd' defined in 'Foo'
+badName.chpl:12: In module 'M':
+badName.chpl:13: error: cannot use 'only' clause with symbol 'd' as it is not defined in 'Foo'

@@ -1,0 +1,1 @@
+implicitModule.chpl:4: warning: an implicit module named 'implicitModule' is being introduced to contain file-scope code

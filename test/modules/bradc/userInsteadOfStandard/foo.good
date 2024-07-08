@@ -1,1 +1,2 @@
+<command line>: warning: ambiguous module source file -- using $CHPL_HOME/modules/standard/ChapelIO.chpl over ChapelIO.chpl
 In foo!

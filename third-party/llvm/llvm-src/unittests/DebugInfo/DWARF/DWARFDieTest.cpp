@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/BinaryFormat/Dwarf.h"
+#include "llvm/DebugInfo/DWARF/DWARFCompileUnit.h"
 #include "llvm/DebugInfo/DWARF/DWARFContext.h"
 #include "llvm/ObjectYAML/DWARFEmitter.h"
 #include "llvm/Testing/Support/Error.h"
@@ -14,7 +15,6 @@
 
 using namespace llvm;
 using namespace llvm::dwarf;
-using object::SectionedAddress;
 
 namespace {
 
@@ -79,9 +79,9 @@ TEST(DWARFDie, getLocations) {
                        HasValue(testing::ElementsAre(DWARFLocationExpression{
                            DWARFAddressRange{1, 3}, {}})));
 
-  EXPECT_THAT_EXPECTED(
-      Die.getLocations(DW_AT_data_member_location),
-      HasValue(testing::ElementsAre(DWARFLocationExpression{None, {0x47}})));
+  EXPECT_THAT_EXPECTED(Die.getLocations(DW_AT_data_member_location),
+                       HasValue(testing::ElementsAre(
+                           DWARFLocationExpression{std::nullopt, {0x47}})));
 
   EXPECT_THAT_EXPECTED(
       Die.getLocations(DW_AT_vtable_elem_location),

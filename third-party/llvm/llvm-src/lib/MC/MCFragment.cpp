@@ -264,7 +264,7 @@ MCFragment::MCFragment(FragmentType Kind, bool HasInstructions,
 }
 
 void MCFragment::destroy() {
-  // First check if we are the sentinal.
+  // First check if we are the sentinel.
   if (Kind == FragmentType(~0)) {
     delete this;
     return;
@@ -376,7 +376,7 @@ LLVM_DUMP_METHOD void MCFragment::dump() const {
     if (AF->hasEmitNops())
       OS << " (emit nops)";
     OS << "\n       ";
-    OS << " Alignment:" << AF->getAlignment()
+    OS << " Alignment:" << AF->getAlignment().value()
        << " Value:" << AF->getValue() << " ValueSize:" << AF->getValueSize()
        << " MaxBytesToEmit:" << AF->getMaxBytesToEmit() << ">";
     break;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,14 +38,19 @@ module ChapelLocks {
     // a --warn-unstable error)
     proc init() {
     }
-
-    inline proc lock() {
-      on this do
-        while l.read() || l.testAndSet(memoryOrder.acquire) do
-          chpl_task_yield();
+    proc init=(other: chpl_LocalSpinlock) {
+      init this;
+      this.l.init_helper(other.l.read());
     }
 
-    inline proc unlock() {
+    inline proc ref lock() {
+      use ChapelBase.currentTask;
+      on this do
+        while l.read() || l.testAndSet(memoryOrder.acquire) do
+          yieldExecution();
+    }
+
+    inline proc ref unlock() {
       l.clear(memoryOrder.release);
     }
   }

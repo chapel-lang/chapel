@@ -140,8 +140,7 @@ int main(int argc, char **argv) {
   // Step 2: Call the function to do the work
   cfd_mini(numCell, numBox, kernel); 
 
-
-  return 1;
+  return 0;
 }
 
 #undef GET_VAL_PTR

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,7 +26,6 @@
 #include "CatchStmt.h"
 #include "config.h"
 #include "DeferStmt.h"
-#include "docsDriver.h"
 #include "driver.h"
 #include "files.h"
 #include "ForallStmt.h"
@@ -47,84 +46,6 @@
 #include <utility>
 
 static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt);
-
-void checkControlFlow(Expr* expr, const char* context) {
-  Vec<const char*> labelSet; // all labels in expr argument
-  Vec<BaseAST*> loopSet;     // all asts in a loop in expr argument
-  Vec<BaseAST*> innerFnSet;  // all asts in a function in expr argument
-  std::vector<BaseAST*> asts;
-  collect_asts(expr, asts);
-
-  //
-  // compute labelSet and loopSet
-  //
-  for_vector(BaseAST, ast, asts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (LabelSymbol* ls = toLabelSymbol(def->sym))
-        labelSet.set_add(ls->name);
-      else if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        if (!innerFnSet.set_in(fn)) {
-          std::vector<BaseAST*> innerAsts;
-          collect_asts(fn, innerAsts);
-          for_vector(BaseAST, ast, innerAsts) {
-            innerFnSet.set_add(ast);
-          }
-        }
-      }
-    } else if (BlockStmt* block = toBlockStmt(ast)) {
-      if (block->isLoopStmt() && !loopSet.set_in(block)) {
-        if (block->userLabel != NULL) {
-          labelSet.set_add(block->userLabel);
-        }
-        std::vector<BaseAST*> loopAsts;
-        collect_asts(block, loopAsts);
-        for_vector(BaseAST, ast, loopAsts) {
-          loopSet.set_add(ast);
-        }
-      }
-    }
-  }
-
-  //
-  // check for illegal control flow
-  //
-  for_vector(BaseAST, ast1, asts) {
-    if (CallExpr* call = toCallExpr(ast1)) {
-      if (innerFnSet.set_in(call))
-        continue; // yield or return is in nested function/iterator
-      if (call->isPrimitive(PRIM_RETURN)) {
-        USR_FATAL_CONT(call, "return is not allowed in %s", context);
-      } else if (call->isPrimitive(PRIM_YIELD)) {
-        if (!strcmp(context, "begin statement"))
-          USR_FATAL_CONT(call, "yield is not allowed in %s", context);
-      }
-    } else if (GotoStmt* gs = toGotoStmt(ast1)) {
-      if (labelSet.set_in(gs->getName()))
-        continue; // break or continue target is in scope
-      if (toSymExpr(gs->label) && toSymExpr(gs->label)->symbol() == gNil && loopSet.set_in(gs))
-        continue; // break or continue loop is in scope
-      if (!strcmp(context, "on statement")) {
-        USR_PRINT(gs, "the following error is a current limitation");
-      }
-      if (gs->gotoTag == GOTO_BREAK) {
-        USR_FATAL_CONT(gs, "break is not allowed in %s", context);
-      } else if (gs->gotoTag == GOTO_CONTINUE) {
-        // see also resolveGotoLabels() -> handleForallGoto()
-        if (!strcmp(context, "forall statement")) {
-          if (!strcmp(gs->getName(), "nil"))
-            ; // plain 'continue' is OK in a forall
-          else
-            USR_FATAL_CONT(gs, "continue to a named loop outside of a forall is not allowed from inside the forall");
-        } else {
-          USR_FATAL_CONT(gs, "continue is not allowed in %s", context);
-        }
-      } else {
-        USR_FATAL_CONT(gs, "illegal 'goto' usage; goto is deprecated anyway");
-      }
-    }
-  }
-}
-
 
 static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
   forv_Vec(const char, str, *pragmas) {
@@ -393,20 +314,10 @@ BlockStmt* buildDeprecated(BlockStmt* block, const char* msg) {
   return block;
 }
 
-static void addModuleToSearchList(VisibilityStmt* newStmt, BaseAST* module) {
-  UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
-  if (modNameExpr) {
-    addModuleToParseList(modNameExpr->unresolved, newStmt);
-  } else if (CallExpr* callExpr = toCallExpr(module)) {
-    addModuleToSearchList(newStmt, callExpr->argList.first());
-  }
-}
-
 
 static BlockStmt* buildUseList(BaseAST* module, const char* newName,
                                BlockStmt* list, bool privateUse) {
   UseStmt* newUse = new UseStmt(module, newName, privateUse);
-  addModuleToSearchList(newUse, module);
   if (list == NULL) {
     return buildChapelStmt(newUse);
   } else {
@@ -424,7 +335,11 @@ static BlockStmt* buildUseList(BaseAST* module, const char* newName,
 // (i.e., function resolution time) then we add the string to our list
 // of library information or to our list of source files.
 //
-bool processStringInRequireStmt(const char* str, bool parseTime,
+// returns 'true' if the string was handled.
+bool processStringInRequireStmt(Expr* expr,
+                                bool atModuleScope,
+                                const char* str,
+                                bool parseTime,
                                 const char* modFilename) {
   if (strncmp(str, "-l", 2) == 0) {
     if (!parseTime) {
@@ -434,7 +349,11 @@ bool processStringInRequireStmt(const char* str, bool parseTime,
   } else {
     if (isChplSource(str)) {
       if (parseTime) {
-        addSourceFile(str, NULL);
+        if (!atModuleScope) {
+          USR_WARN(expr, "using 'require' on a Chapel source file not at module scope is deprecated");
+        }
+        // no need to add the source file since that is handled
+        // within resolveVisibilityStmtsQuery.
         return true;
       } else {
         USR_FATAL("'require' cannot handle non-literal '.chpl' files");
@@ -505,7 +424,6 @@ BlockStmt* buildUseStmt(Expr* mod, const char * rename,
 
   UseStmt* newUse = new UseStmt(mod, rename, &namesList, except, &renameMap,
                                 privateUse);
-  addModuleToSearchList(newUse, mod);
 
   delete names;
 
@@ -581,7 +499,6 @@ ImportStmt* buildImportStmt(Expr* mod) {
   // Leave the privacy a dummy value until we know what it should be (which
   // happens when we are done determining how many subexpressions there are)
   ImportStmt* newImport = new ImportStmt(mod);
-  addModuleToSearchList(newImport, mod);
 
   return newImport;
 }
@@ -593,7 +510,6 @@ ImportStmt* buildImportStmt(Expr* mod, const char* rename) {
   // Leave the privacy a dummy value until we know what it should be (which
   // happens when we are done determining how many subexpressions there are)
   ImportStmt* newImport = new ImportStmt(mod, rename);
-  addModuleToSearchList(newImport, mod);
 
   return newImport;
 }
@@ -642,7 +558,6 @@ ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
   // Leave the privacy a dummy value until we know what it should be (which
   // happens when we are done determining how many subexpressions there are)
   ImportStmt* newImport = new ImportStmt(mod, &namesList, &renameMap);
-  addModuleToSearchList(newImport, mod);
 
   delete names;
 
@@ -652,7 +567,7 @@ ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
 //
 // Build a 'require' statement
 //
-BlockStmt* buildRequireStmt(CallExpr* args) {
+BlockStmt* buildRequireStmt(CallExpr* args, bool atModuleScope) {
   BlockStmt* list = NULL;
 
   //
@@ -665,7 +580,7 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
     // if this is a string literal, process it if we should
     //
     if (const char* str = toImmediateString(useArg)) {
-      if (processStringInRequireStmt(str, true, yyfilename)) {
+      if (processStringInRequireStmt(useArg, atModuleScope, str, true, yyfilename)) {
         continue;
       }
     }
@@ -806,20 +721,17 @@ buildExternBlockStmt(const char* c_code) {
   BlockStmt* ret = buildChapelStmt(useBlock);
 
   // Check that the compiler supports extern blocks
-  // but skip these checks for chpldoc.
-  if (fDocs == false) {
 #ifdef HAVE_LLVM
-    // Chapel was built with LLVM
-    // Just bring up an error if extern blocks are disabled
-    if (fAllowExternC == false)
-      USR_FATAL(ret, "extern block syntax is turned off. Use "
-                     "--extern-c flag to turn on.");
+  // Chapel was built with LLVM
+  // Just bring up an error if extern blocks are disabled
+  if (fAllowExternC == false)
+    USR_FATAL(ret, "extern block syntax is turned off. Use "
+                   "--extern-c flag to turn on.");
 #else
-    // If Chapel wasn't built with LLVM, we can't handle extern blocks
-    USR_FATAL(ret, "Chapel must be built with llvm in order to "
-                    "use the extern block syntax");
+  // If Chapel wasn't built with LLVM, we can't handle extern blocks
+  USR_FATAL(ret, "Chapel must be built with llvm in order to "
+                  "use the extern block syntax");
 #endif
-  }
 
   return ret;
 }
@@ -829,8 +741,7 @@ ModuleSymbol* buildModule(const char* name,
                           BlockStmt*  block,
                           const char* filename,
                           bool        priv,
-                          bool        prototype,
-                          const char* docs) {
+                          bool        prototype) {
   ModuleSymbol* mod = new ModuleSymbol(name, modTag, block);
 
   if (priv == true) {
@@ -842,47 +753,8 @@ ModuleSymbol* buildModule(const char* name,
   }
 
   mod->filename = astr(filename);
-  mod->doc      = docs;
 
   return mod;
-}
-
-BlockStmt* buildIncludeModule(const char* name,
-                              bool priv,
-                              bool prototype,
-                              const char* docs) {
-  astlocT loc(chplLineno, yyfilename);
-  ModuleSymbol* mod = parseIncludedSubmodule(name);
-  INT_ASSERT(mod != NULL);
-
-  // check visibility specifiers
-  //
-  //  include public/default   +  declaration public/default -> OK, public
-  //  include public/default   +  declaration private        -> error
-  //  include private          +  declaration public/default -> OK, private
-  //  include private          +  declaration private        -> OK, private
-  //
-  if (priv && !mod->hasFlag(FLAG_PRIVATE)) {
-    // make the module private (override public)
-    mod->addFlag(FLAG_PRIVATE);
-  } else if (mod->hasFlag(FLAG_PRIVATE) && !priv) {
-    USR_FATAL_CONT(loc,
-          "cannot make a private module public through an include statement");
-    USR_PRINT(mod, "module declared private here");
-  }
-
-  if (prototype) {
-    USR_FATAL_CONT(loc, "cannot apply prototype to module in include statement");
-    USR_PRINT(mod, "put prototype keyword at module declaration here");
-  }
-
-  // docs comment is ignored (the one in the module declaration is used)
-
-  if (fWarnUnstable && mod->modTag == MOD_USER) {
-    USR_WARN(loc, "module include statements are not yet stable and may change");
-  }
-
-  return buildChapelStmt(new DefExpr(mod));
 }
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
@@ -935,7 +807,7 @@ BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body) {
 void
 checkIndices(BaseAST* indices) {
   if (CallExpr* call = toCallExpr(indices)) {
-    if (!call->isNamed("_build_tuple") || call->numActuals() == 0)
+    if (!call->isNamedAstr(astrBuildTuple) || call->numActuals() == 0)
       USR_FATAL(indices, "invalid index expression");
     for_actuals(actual, call)
       checkIndices(actual);
@@ -975,7 +847,7 @@ static Expr* destructureIndicesAfter(Expr* insertAfter,
                                      Expr* init,
                                      bool coforall) {
   if (CallExpr* call = toCallExpr(indices)) {
-    if (call->isNamed("_build_tuple")) {
+    if (call->isNamedAstr(astrBuildTuple)) {
       int i = 0;
 
       // Add checks that the index has tuple type of the right shape.
@@ -1029,13 +901,19 @@ static Expr* destructureIndicesAfter(Expr* insertAfter,
 Expr*
 buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   if (zippered) zipToTuple(iteratorExpr);
-  return new LoopExpr(indices, iteratorExpr, cond, expr, /*forall=*/ false, zippered, maybeArrayType);
+  return new LoopExpr(indices, iteratorExpr, cond, expr, FOR_EXPR, zippered, maybeArrayType);
 }
 
+
+Expr*
+buildForeachLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
+  if (zippered) zipToTuple(iteratorExpr);
+  return new LoopExpr(indices, iteratorExpr, cond, expr, FOREACH_EXPR, zippered, maybeArrayType);
+}
 Expr*
 buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   if (zippered) zipToTuple(iteratorExpr);
-  return new LoopExpr(indices, iteratorExpr, cond, expr, /*forall=*/ true, zippered, maybeArrayType);
+  return new LoopExpr(indices, iteratorExpr, cond, expr, FORALL_EXPR, zippered, maybeArrayType);
 }
 
 //
@@ -1259,7 +1137,6 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  bool zippered)
 {
   removeWrappingBlock(body); // may update 'body'
-  checkControlFlow(body, "coforall statement");
 
   // insert temporary index when elided by user
   if (!indices) {
@@ -1593,7 +1470,7 @@ static const char* cnameExprToString(Expr* cnameExpr) {
   return NULL;
 }
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
+BlockStmt* buildVarDecls(BlockStmt* stmts,
                          std::set<Flag>* flags, Expr* cnameExpr) {
   bool firstvar = true;
   const char* cname = NULL;
@@ -1633,7 +1510,6 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
           }
         }
 
-        var->doc = docs;
         firstvar = false;
         continue;
       }
@@ -1656,10 +1532,8 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
   }
 
   // Add a PRIM_END_OF_STATEMENT.
-  if (fDocs == false) {
-    CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
-    stmts->insertAtTail(end);
-  }
+  CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+  stmts->insertAtTail(end);
 
   // this was allocated in buildVarDeclFlags()
   if (flags)
@@ -1691,41 +1565,29 @@ AggregateType* installInternalType(AggregateType* ct, AggregateType* dt) {
   return dt;
 }
 
-DefExpr* buildClassDefExpr(const char*  name,
-                           const char*  cname,
-                           AggregateTag tag,
-                           Expr*        inherit,
-                           BlockStmt*   decls,
-                           Flag         externFlag,
-                           const char*  docs) {
+DefExpr* buildClassDefExpr(const char*               name,
+                           const char*               cname,
+                           AggregateTag              tag,
+                           const std::vector<Expr*>& inherits,
+                           BlockStmt*                decls,
+                           Flag                      externFlag,
+                           ModTag                    modTag) {
   bool isExtern = externFlag == FLAG_EXTERN;
-  AggregateType* ct = NULL;
-  TypeSymbol* ts = NULL;
+  AggregateType* ct = nullptr;
+  TypeSymbol* ts = nullptr;
 
   ct = new AggregateType(tag);
 
-  // Hook the string type in the modules
-  // to avoid duplication with dtString created in initPrimitiveTypes().
-  // gatherWellKnownTypes runs too late to help.
-  if (strcmp("_string", name) == 0) {
-    ct = installInternalType(ct, dtString);
-    ts = ct->symbol;
-  } else if (strcmp("_bytes", name) == 0) {
-    ct = installInternalType(ct, dtBytes);
-    ts = ct->symbol;
-  } else if (strcmp("_locale", name) == 0) {
-    ct = installInternalType(ct, dtLocale);
-    ts = ct->symbol;
-  } else if (strcmp("_object", name) == 0) {
-    ct = installInternalType(ct, dtObject);
-    ts = ct->symbol;
-  } else if (strcmp("_owned", name) == 0) {
-    ct = installInternalType(ct, dtOwned);
-    ts = ct->symbol;
-  } else if (strcmp("_shared", name) == 0) {
-    ct = installInternalType(ct, dtShared);
-    ts = ct->symbol;
-  } else {
+  // For certain internal types (e.g. dtString / _string), hook
+  // up the global variable type to the type we are now creating
+  if (modTag == MOD_INTERNAL || modTag == MOD_STANDARD) {
+    if (AggregateType* dt = shouldWireWellKnownType(name)) {
+      ct = installInternalType(ct, dt);
+      ts = ct->symbol;
+    }
+  }
+
+  if (ts == nullptr) {
     ts = new TypeSymbol(name, ct);
   }
 
@@ -1745,9 +1607,10 @@ DefExpr* buildClassDefExpr(const char*  name,
     ts->addFlag(FLAG_NO_OBJECT);
     ct->defaultValue=NULL;
 
-    if (inherit != NULL)
-      USR_FATAL_CONT(inherit,
+    if (!inherits.empty()) {
+      USR_FATAL_CONT(inherits.front(),
                      "External types do not currently support inheritance");
+    }
   }
 
   for_alist(stmt, decls->body){
@@ -1758,12 +1621,9 @@ DefExpr* buildClassDefExpr(const char*  name,
 
   ct->addDeclarations(decls);
 
-  if (inherit != NULL) {
+  for (auto inherit : inherits) {
     ct->inherits.insertAtTail(inherit);
   }
-
-  ct->doc = docs;
-
   return def;
 }
 
@@ -1847,32 +1707,6 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
   }
 }
 
-FnSymbol* buildLambda(FnSymbol *fn) {
-  static unsigned int nextId = 0;
-  char buffer[100];
-
-  /*
-   * The snprintf function is used to prevent a buffer overflow from occurring.
-   * Technically, an overflow can only occur if Chapel is compiled on a machine
-   * where an unsigned integer can represent numbers larger than 10^86, but it
-   * is better to guard against this behavior then leaving someone wondering
-   * why we didn't.
-   */
-  if (snprintf(buffer, 100, "chpl_lambda_%i", nextId++) >= 100) {
-    INT_FATAL("Too many lambdas.");
-  }
-
-  if (!fn) {
-    fn = new FnSymbol(astr(buffer));
-  } else {
-    fn->name = astr(buffer);
-    fn->cname = fn->name;
-  }
-
-  fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
-  return fn;
-}
-
 void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
                                    FnSymbol* fn) {
   const char* cname = "";
@@ -1896,17 +1730,13 @@ void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
     fn->addFlag(FLAG_LOCAL_ARGS);
     fn->addFlag(FLAG_EXPORT);
   }
-  if (fn->isIterator())
-  {
-    USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
-  }
 
   // Handle non-trivial param names that need to be resolved,
   // but don't do this under chpldoc
   if (cname[0] != '\0') {
     // The user explicitly named this function (controls mangling).
     fn->cname = cname;
-  } else if (paramCNameExpr && cname[0] == '\0' && fDocs == false) {
+  } else if (paramCNameExpr && cname[0] == '\0') {
     // cname should be set based upon param
     DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
                                       astr_chpl_cname,
@@ -1934,9 +1764,7 @@ setupFunctionDecl(FnSymbol*   fn,
                   bool        optThrowsError,
                   Expr*       optWhere,
                   Expr*       optLifetimeConstraints,
-                  BlockStmt*  optFnBody,
-                  const char* docs)
-{
+                  BlockStmt*  optFnBody) {
   fn->retTag = optRetTag;
 
   if (optRetType)
@@ -1967,14 +1795,17 @@ setupFunctionDecl(FnSymbol*   fn,
       for_alist(expr, optFnBody->body) {
         fn->body->insertAtTail(expr->remove());
       }
+
+      // Preserve the module references (which are not part of the body)
+      if (optFnBody->modRefs) {
+        fn->body->modRefsReplace(optFnBody->modRefs->copy());
+      }
     } else {
       fn->insertAtTail(optFnBody);
     }
   } else {
     fn->addFlag(FLAG_NO_FN_BODY);
   }
-
-  fn->doc = docs;
 }
 
 BlockStmt*
@@ -1984,11 +1815,9 @@ buildFunctionDecl(FnSymbol*   fn,
                   bool        optThrowsError,
                   Expr*       optWhere,
                   Expr*       optLifetimeConstraints,
-                  BlockStmt*  optFnBody,
-                  const char* docs)
-{
+                  BlockStmt*  optFnBody) {
   setupFunctionDecl(fn, optRetTag, optRetType, optThrowsError,
-                    optWhere, optLifetimeConstraints, optFnBody, docs);
+                    optWhere, optLifetimeConstraints, optFnBody);
   return buildChapelStmt(new DefExpr(fn));
 }
 
@@ -2000,41 +1829,19 @@ void applyPrivateToBlock(BlockStmt* block) {
   }
 }
 
-static
-DefExpr* buildForwardingExprFnDef(Expr* expr) {
-  // Put expr into a method and return the DefExpr for that method.
-  // This way, we can work with the rest of the compiler that
-  // assumes that 'this' is an ArgSymbol.
-  static int delegate_counter = 0;
-  const char* name = astr("chpl_forwarding_expr", istr(++delegate_counter));
-  if (UnresolvedSymExpr* usex = toUnresolvedSymExpr(expr))
-    name = astr(name, "_", usex->unresolved);
-  FnSymbol* fn = new FnSymbol(name);
-
-  fn->addFlag(FLAG_INLINE);
-  fn->addFlag(FLAG_MAYBE_REF);
-  fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-
-  fn->body->insertAtTail(new CallExpr(PRIM_RETURN, expr));
-
-  DefExpr* def = new DefExpr(fn);
-
-  return def;
-}
-
-
 // handle syntax like
 //    var instance:someType;
 //    forwarding instance;
-BlockStmt* buildForwardingStmt(Expr* expr) {
-  return buildChapelStmt(new ForwardingStmt(buildForwardingExprFnDef(expr)));
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef) {
+  return new ForwardingStmt(fnDef);
 }
 
 // handle syntax like
 //    var instance:someType;
 //    forwarding instance only foo;
-BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names, bool except) {
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
+                                    std::vector<PotentialRename*>* names,
+                                    bool except) {
   std::set<const char*> namesSet;
   std::map<const char*, const char*> renameMap;
 
@@ -2064,45 +1871,15 @@ BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names,
         }
         break;
     }
-
   }
 
-  DefExpr* fnDef = buildForwardingExprFnDef(expr);
   ForwardingStmt* ret = new ForwardingStmt(fnDef,
-                                       &namesSet,
-                                       except,
-                                       &renameMap);
-  return buildChapelStmt(ret);
+                                           &namesSet,
+                                           except,
+                                           &renameMap);
+  return ret;
 }
 
-
-// handle syntax like
-//    forwarding var instance:someType;
-// by translating it into
-//    var instance:someType;
-//    forwarding instance;
-BlockStmt* buildForwardingDeclStmt(BlockStmt* stmts) {
-  for_alist(stmt, stmts->body) {
-    if (DefExpr* defExpr = toDefExpr(stmt)) {
-      if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        // Append a ForwardingStmt
-        BlockStmt* toAppend = buildForwardingStmt(new UnresolvedSymExpr(var->name));
-
-        // Remove the END_OF_STATEMENT marker, not used for fields
-        Expr* last = stmts->body.last();
-        if (last && isEndOfStatementMarker(stmts->body.last()))
-          last->remove();
-
-        for_alist(tmp, toAppend->body) {
-          stmts->insertAtTail(tmp->remove());
-        }
-      } else {
-        INT_FATAL("case not handled in buildForwardingDeclStmt");
-      }
-    }
-  }
-  return stmts;
-}
 
 FnSymbol*
 buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
@@ -2127,7 +1904,7 @@ buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
 
 // builds a local statement with a conditional, where the `then` block
 // is local and `else` block is not
-BlockStmt* buildLocalStmt(Expr* condExpr, Expr *stmt) {
+BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr *stmt) {
   return buildIfStmt(new CallExpr("_cond_test", condExpr),
       buildLocalStmt(stmt->copy()), stmt);
 }
@@ -2139,7 +1916,7 @@ BlockStmt* buildLocalStmt(Expr* condExpr, Expr *stmt) {
     // Insertion point for next manager or user block.
   } catch chpl_tmp_err {
     errorCaught = true;
-    manager.leaveThis(chpl_tmp_err);
+    manager.exitContext(chpl_tmp_err);
   }
 
 */
@@ -2156,8 +1933,8 @@ static TryStmt* buildTryCatchForManagerBlock(VarSymbol* managerHandle,
   auto errorCaughtToTrue = new CallExpr(PRIM_MOVE, seErrorCaught, seTrue);
   catchBlock->insertAtTail(errorCaughtToTrue);
 
-  // BUILD: manager.leaveThis(chpl_tmp_err);
-  auto leave = new CallExpr("leaveThis",
+  // BUILD: manager.exitContext(chpl_tmp_err);
+  auto leave = new CallExpr("exitContext",
                             gMethodToken,
                             new SymExpr(managerHandle),
                             new UnresolvedSymExpr(errName));
@@ -2180,17 +1957,18 @@ static TryStmt* buildTryCatchForManagerBlock(VarSymbol* managerHandle,
 
   {
     TEMP ref manager = PRIM_ADDR_OF(myManager());
-    USER [var/ref/const] myResource = manager.enterThis();
+    chpl__verifyTypeContext(manager);
+    USER [var/ref/const] myResource = manager.enterContext();
     TEMP errorCaught = false;
 
     try {
       // Insertion point for next manager or user block.
     } catch chpl_temp_err {
       errorCaught = true;
-      manager.leaveThis(chpl_tmp_err);
+      manager.exitContext(chpl_tmp_err);
     }
 
-    if !errorCaught then manager.leaveThis(nil);
+    if !errorCaught then manager.exitContext(nil);
   }
 
 */
@@ -2209,11 +1987,14 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   auto moveIntoHandle = new CallExpr(PRIM_MOVE, managerHandle, addrOfExpr);
   ret->insertAtTail(moveIntoHandle);
 
-  // Build call to 'enterThis()', but don't insert into the tree yet.
-  auto seManager = new SymExpr(managerHandle);
-  auto enterThis = new CallExpr("enterThis", gMethodToken, seManager);
+  auto verifyCall = new CallExpr("chpl__verifyTypeContext", new SymExpr(managerHandle));
+  ret->insertAtTail(verifyCall);
 
-  // BUILD: [var/ref/const ref] myResource = manager.enterThis();
+  // Build call to 'enterContext', but don't insert into the tree yet.
+  auto seManager = new SymExpr(managerHandle);
+  auto enterContext = new CallExpr("enterContext", gMethodToken, seManager);
+
+  // BUILD: [var/ref/const ref] myResource = manager.enterContext();
   if (resourceName != nullptr) {
     const bool isResourceStorageKindInferred = (flags == nullptr);
     auto resource = new VarSymbol(resourceName);
@@ -2226,12 +2007,12 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
       flags = nullptr;
     }
 
-    ret->insertAtTail(new DefExpr(resource, enterThis));
+    ret->insertAtTail(new DefExpr(resource, enterContext));
 
   } else {
 
-    // Otherwise, just make the call to 'enterThis()'.
-    ret->insertAtTail(enterThis);
+    // Otherwise, just make the call to 'enterContext()'.
+    ret->insertAtTail(enterContext);
   }
 
   // BUILD: TEMP var errorCaught = false;
@@ -2242,9 +2023,9 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   auto tryCatch = buildTryCatchForManagerBlock(managerHandle, errorCaught);
   ret->insertAtTail(tryCatch);
 
-  // BUILD: if !errorCaught then manager.leaveThis(nil);
+  // BUILD: if !errorCaught then manager.exitContext(nil);
   auto ifCond = new CallExpr(PRIM_UNARY_LNOT, new SymExpr(errorCaught));
-  auto ifBranch = new CallExpr("leaveThis",
+  auto ifBranch = new CallExpr("exitContext",
                                gMethodToken,
                                new SymExpr(managerHandle),
                                gNil);
@@ -2256,21 +2037,22 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
 
 /*
   Each manager block declares some temporary variables, and then calls the
-  'enterThis()' method on the manager before executing the next block.
+  'enterContext()' method on the manager before executing the next block.
   Managers are nested from left to right, and the final innermost scope is
   the block containing user code.
 
-  Managers call 'leaveThis()' and are deinitialized in the reverse order of
+  Managers call 'exitContext()' and are deinitialized in the reverse order of
   their initialization.
 
   TODO (dlongnecke-cray): In cleanup, recursively lift up the manager out of
   its try block if we detect exception handling is not needed (e.g. we're
   not in a throwing function, and not in a try).
 */
-BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block) {
+BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block, ModTag modTag)
+{
   auto ret = new BlockStmt();
 
-  if (fWarnUnstable) {
+  if (fWarnUnstable && modTag == MOD_USER) {
     USR_WARN(managers, "manage statements are not stable and may change");
   }
 
@@ -2381,8 +2163,6 @@ static Expr* extractLocaleID(Expr* expr) {
 
 BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
-  checkControlFlow(stmt, "on statement");
-
   CallExpr* onExpr = new CallExpr(PRIM_DEREF, extractLocaleID(expr));
 
   BlockStmt* body = toBlockStmt(stmt);
@@ -2435,8 +2215,6 @@ buildOnStmt(Expr* expr, Expr* stmt) {
 
 BlockStmt*
 buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
-  checkControlFlow(stmt, "begin statement");
-
   BlockStmt* body = toBlockStmt(stmt);
 
   //
@@ -2471,7 +2249,6 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
 
 BlockStmt*
 buildSyncStmt(Expr* stmt) {
-  checkControlFlow(stmt, "sync statement");
   BlockStmt* block = new BlockStmt();
   VarSymbol* endCountSave = newTempConst("_endCountSave");
   endCountSave->addFlag(FLAG_END_COUNT);
@@ -2536,8 +2313,6 @@ buildSyncStmt(Expr* stmt) {
 BlockStmt*
 buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
   BlockStmt* outer = block;
-
-  checkControlFlow(block, "cobegin statement");
 
   if (block->blockTag == BLOCK_SCOPELESS) {
     block = toBlockStmt(block->body.only());
@@ -2621,12 +2396,9 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
 
         TypeSymbol* ts = new TypeSymbol(vs->name, pt);
         if (VarSymbol* theVs = toVarSymbol(vs)) {
-          ts->doc = theVs->doc;
-
           // TODO: Loop/copy all flags here instead of two?
           if (theVs->hasFlag(FLAG_PRIVATE)) ts->addFlag(FLAG_PRIVATE);
           if (theVs->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) ts->addFlag(FLAG_C_MEMORY_ORDER_TYPE);
-          if (theVs->hasFlag(FLAG_NO_DOC)) ts->addFlag(FLAG_NO_DOC);
           if (theVs->hasFlag(FLAG_DEPRECATED)) {
             ts->addFlag(FLAG_DEPRECATED);
             ts->deprecationMsg = theVs->deprecationMsg;

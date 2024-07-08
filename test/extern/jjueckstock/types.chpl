@@ -5,19 +5,19 @@ module OuterModule {
   //  type constructor. Whether or not this is correct or
   //  desirable behavior, it is consistent with how Chapel
   //  already handles classes within modules. For example,
-  //  
+  //
   //  module X {
   //    class My_Class {
   //      var foo:int;
   //    }
   //  }
   //
-  //  within the current file would require a 
-  //    use X; 
+  //  within the current file would require a
+  //    use X;
   //  statement in order to create a new instance of X.
 
   module C { extern {
-    #include "types.h" 
+    #include "types.h"
 
     struct my_struct {
       int foo;
@@ -27,13 +27,13 @@ module OuterModule {
     typedef int my_int;
   } }
 
-  use C;
+  use C, CTypes;
 
   //NOTE: either C.my_struct or my_struct will work with the use C; statement.
-  var strct: C.my_struct = new my_struct(42, "bar".c_str());
+  var strct: C.my_struct = new my_struct(42, "bar");
   writeln(strct.foo);
   try {
-    writeln(createStringWithNewBuffer(strct.bar));
+    writeln(string.createCopyingBuffer(strct.bar));
   }
   catch e: DecodeError {
     writeln("Decode error creating string");
@@ -65,6 +65,6 @@ module OuterModule {
   write(q);
   writeln();
 
-  printf("%.1f, %d\n".c_str(), td_strct.d, td_strct2.x);
-  printf("%s, %d\n".c_str(), b.c, b.foo);
+  printf("%.1f, %d\n", td_strct.d, td_strct2.x);
+  printf("%s, %d\n", b.c, b.foo);
 }

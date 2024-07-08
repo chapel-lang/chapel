@@ -1,0 +1,4 @@
+# Test/studies/hpcc/FFT/bradc ignores.
+/dfft
+/*.txt
+/fft

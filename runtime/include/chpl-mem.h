@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -74,6 +74,7 @@ void chpl_mem_exit(void);
 
 int chpl_mem_inited(void);
 
+extern void* chpl_gpu_memmove(void* dest, const void* src, size_t num);
 
 static inline
 void* chpl_mem_allocMany(size_t number, size_t size,
@@ -161,12 +162,6 @@ void* chpl_memcpy(void* dest, const void* src, size_t num)
 {
   assert(dest != src || num == 0);
   return memcpy(dest, src, num);
-}
-
-static inline
-void* chpl_memmove(void* dest, const void* src, size_t num)
-{
-  return memmove(dest, src, num);
 }
 
 // Query the allocator to ask for a good size to allocate that is at least

@@ -47,7 +47,7 @@ proc calculate(data : string, size : int) {
   var freqs = new map(uint, int);
 
   // Create a lock and release it.
-  var lock$ : sync bool = true;
+  var lock : sync bool = true;
 
   const high = data.size - size + 1;
 
@@ -62,10 +62,10 @@ proc calculate(data : string, size : int) {
       privMap[hash(data[i:byteIndex..#size])] += 1;
     }
 
-    lock$.readFE();                         // read to acquire lock
-    for (k,v) in privMap.items() do
+    lock.readFE();                         // read to acquire lock
+    for (k,v) in zip(privMap.keys(), privMap.values()) do
       freqs[k] += v;                        // accumulate into returned array
-    lock$.writeEF(true);                    // write to release lock
+    lock.writeEF(true);                    // write to release lock
   }
 
   return freqs;
@@ -80,7 +80,7 @@ proc write_frequencies(data : string, size : int) {
   // string.
   //
   var sorted : [1..freqs.size] (int, uint);
-  for (s, (e, f)) in zip(sorted, freqs.items()) do
+  for (s, e, f) in zip(sorted, freqs.keys(), freqs.values()) do
     s = (f, e);
 
   // sort will sort starting at the tuple's first element.
@@ -103,7 +103,7 @@ proc main(args: [] string) {
 
   // Read each line until the desired section
   while readln(buf) && !buf.startsWith(">THREE") do {}
-  
+
   // Append all remaining lines (excluding \n)
   while readln(buf) do data += buf;
 

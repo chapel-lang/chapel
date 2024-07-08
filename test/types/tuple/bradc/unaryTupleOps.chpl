@@ -28,12 +28,7 @@ writeln(t6);
 writeln(t6.type:string);
 
 var homBool = (true, false, true);
-var hetBool = (true:bool(8), false:bool(16), true:bool(32));
 
 var t7 = !homBool;
 writeln(t7);
 writeln(t7.type:string);
-
-var t8 = !hetBool;
-writeln(t8);
-writeln(t8.type:string);

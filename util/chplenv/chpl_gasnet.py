@@ -4,6 +4,15 @@ from utils import error, warning, memoize
 import os
 
 @memoize
+def get_version():
+    version = overrides.get('CHPL_GASNET_VERSION')
+    if not version:
+        version = 'ex'
+    if version not in ("1", "ex"):
+        error("CHPL_GASNET_VERSION must be '1' or 'ex'")
+    return version
+
+@memoize
 def get_uniq_cfg_path():
     base_uniq_cfg = third_party_utils.default_uniq_cfg_path()
     if chpl_comm_debug.get() == 'debug':
@@ -93,7 +102,7 @@ def get_link_args():
 # (e.g. it might link with mpicc)
 @memoize
 def get_override_ld():
-    d = third_party_utils.read_bundled_pkg_config_file(
+    (d, _) = third_party_utils.read_bundled_pkg_config_file(
                        'gasnet', get_uniq_cfg_path(), get_gasnet_pc_file())
 
     if d == None:
@@ -103,13 +112,9 @@ def get_override_ld():
         gasnet_ld = d['GASNET_LD']
         gasnet_cc = d['GASNET_CC']
         gasnet_cxx = d['GASNET_CXX']
+        gasnet_ld_requires_mpi = d.get('GASNET_LD_REQUIRES_MPI', False)
 
         ld = None # no ld override
-
-        gasnet_ld_requires_mpi = False
-        ld_name = os.path.basename(gasnet_ld).split()[0]
-        if 'mpi' in ld_name:
-            gasnet_ld_requires_mpi = True
 
         mpi_cxx = overrides.get('MPI_CXX')
         if not mpi_cxx:

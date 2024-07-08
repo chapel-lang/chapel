@@ -6,7 +6,7 @@
  **   reference?  At present, it is copied.
  **/
 
-use Memory.Diagnostics;
+use MemDiagnostics;
 
 param M = 2048;
 

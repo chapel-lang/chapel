@@ -3,7 +3,7 @@ private use CommDiagnostics;
 
 config type myType = int;
 
-proc alloc_array(D: domain) {
+proc alloc_array(D: domain(?)) {
   var A: [D] myType;
 }
 

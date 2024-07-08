@@ -85,7 +85,7 @@ static int util_poll_run(struct fid_poll *poll_fid, void **context, int count)
 
 	pollset = container_of(poll_fid, struct util_poll, poll_fid.fid);
 
-	fastlock_acquire(&pollset->lock);
+	ofi_mutex_lock(&pollset->lock);
 	dlist_foreach(&pollset->fid_list, item) {
 		fid_entry = container_of(item, struct fid_list_entry, entry);
 		switch (fid_entry->fid->fclass) {
@@ -127,7 +127,7 @@ static int util_poll_run(struct fid_poll *poll_fid, void **context, int count)
 		else if (ret < 0 && ret != -FI_EAGAIN)
 			err = (int) ret;
 	}
-	fastlock_release(&pollset->lock);
+	ofi_mutex_unlock(&pollset->lock);
 	return i ? i : err;
 }
 
@@ -142,7 +142,7 @@ static int util_poll_close(struct fid *fid)
 	if (pollset->domain)
 		ofi_atomic_dec32(&pollset->domain->ref);
 
-	fastlock_destroy(&pollset->lock);
+	ofi_mutex_destroy(&pollset->lock);
 
 	free(pollset);
 	return 0;
@@ -191,7 +191,7 @@ int fi_poll_create_(const struct fi_provider *prov, struct fid_domain *domain,
 	pollset->prov = prov;
 	ofi_atomic_initialize32(&pollset->ref, 0);
 	dlist_init(&pollset->fid_list);
-	fastlock_init(&pollset->lock);
+	ofi_mutex_init(&pollset->lock);
 
 	pollset->poll_fid.fid.fclass = FI_CLASS_POLL;
 	pollset->poll_fid.fid.ops = &util_poll_fi_ops;

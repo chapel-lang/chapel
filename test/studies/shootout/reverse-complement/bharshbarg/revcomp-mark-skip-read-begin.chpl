@@ -11,9 +11,9 @@ const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 config const readSize = 16 * 1024;
 
 proc main(args: [] string) {
-  const stdin = openfd(0);
-  var input = stdin.reader(iokind.native, locking=false,
-                           hints=ioHintSet.direct(QIO_HINT_PARALLEL));
+  const stdin = new file(0);
+  var input = stdin.reader(deserializer=new binaryDeserializer(), locking=false,
+                           hints=ioHintSet.mmap(true));
   var len = stdin.size;
   var data : [0..#len] uint(8);
   
@@ -29,14 +29,17 @@ proc main(args: [] string) {
       input.mark();
 
       // Scan forward until we get to the \n (end of description)
-      input.advancePastByte("\n".toByte());
+      input.advanceThrough("\n");
       seqOffset = input.offset();
 
       try {
         // Scan forward until we get to the > (end of sequence)
-        input.advancePastByte(">".toByte());
+        input.advanceThrough(">");
         nextDescOffset = input.offset();
-      } catch e:EOFError {
+      } catch e:EofError {
+        eof = true;
+        nextDescOffset = len;
+      } catch e:UnexpectedEofError {
         eof = true;
         nextDescOffset = len;
       }
@@ -45,27 +48,25 @@ proc main(args: [] string) {
       input.revert();
 
       // Read until nextDescOffset into the data array.
-      input.readBytes(c_ptrTo(data[descOffset]),
+      input.readBinary(c_ptrTo(data[descOffset]),
           (nextDescOffset-descOffset):c_ssize_t);
-      
 
       if !eof {
         // '-3' to skip over '\n>'
-        begin process(data, seqOffset, nextDescOffset-3);
+        begin with (ref data) process(data, seqOffset, nextDescOffset-3);
       } else {
         // '-2' to skip over '\n'
-        begin process(data, seqOffset, len-2);
+        begin with (ref data) process(data, seqOffset, len-2);
         break;
       }
     }
   }
 
-  const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
-                                     hints=ioHintSet.direct(QIO_CH_ALWAYS_UNBUFFERED));
-  stdoutBin.write(data);
+  const stdoutBin = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
+  stdoutBin.writeBinary(data);
 }
 
-proc process(data, in start, in end) {
+proc process(ref data, in start, in end) {
 
   proc advance(ref cursor, dir) {
     do { cursor += dir; } while data[cursor] == "\n".toByte();

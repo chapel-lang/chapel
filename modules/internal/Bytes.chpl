@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,97 +19,19 @@
  */
 
 /*
-
-The following document shows functions and methods used to manipulate and
-process Chapel bytes variables.
-
 .. type:: bytes
 
-The :type:`bytes` type is similar to a string but allows arbitrary
-data to be stored in it. Methods on bytes that interpret the data as
-characters assume that the bytes are ASCII characters.
-
-
-
-Creating :type:`bytes`
---------------------------------
-
-- A :type:`bytes` can be created using the literals similar to strings:
-
-.. code-block:: chapel
-
-   var b = b"my bytes";
-
-- If you need to create :type:`bytes` using a specific buffer (i.e. data
-  in another :type:`bytes`, a `c_string` or a C pointer) you can use the
-  factory functions shown below, such as :proc:`createBytesWithNewBuffer`.
-
-:type:`bytes` and :type:`~String.string`
---------------------------------------------------
-
-As :type:`bytes` can store arbitrary data, any :type:`~String.string` can
-be cast to :type:`bytes`. In that event, the bytes will store UTF-8
-encoded character data. However, a :type:`bytes` can contain non-UTF-8
-bytes and needs to be decoded to be converted to string.
-
-.. code-block:: chapel
-
-  var s = "my string";
-  var b = s:bytes;  // this is legal
-
-  /*
-   The reverse is not. The following is a compiler error:
-
-   var s2 = b:string;
-  */
-
-  var s2 = b.decode(); // you need to decode a bytes to convert it to a string
-
-See the documentation for the :proc:`~bytes.decode` method for details.
-
-Similarly, a :type:`bytes` can be initialized using a string:
-
-.. code-block:: chapel
-
-   var s = "my string";
-   var b: bytes = s;
-
-Casts from :type:`bytes` to a Numeric Type
-----------------------------------------------------
-
-This module supports casts from :type:`bytes` to numeric types. Such
-casts will interpret the :type:`bytes` as ASCII characters and convert it
-to the numeric type and throw an error if the :type:`bytes` does not
-match the expected format of a number. For example:
-
-.. code-block:: chapel
-
-  var b = b"a";
-  var number = b:int;
-
-throws an error when it is executed, but
-
-.. code-block:: chapel
-
-  var b = b"1";
-  var number = b:int;
-
-stores the value ``1`` in ``number``.
-
-To learn more about handling these errors, see the
-:ref:`Error Handling technical note <readme-errorHandling>`.
- */
+Supports the following methods:
+*/
 module Bytes {
   private use ChapelStandard;
   private use ByteBufferHelpers;
   private use BytesStringCommon;
   private use CTypes;
+  private use ChplConfig only compiledForSingleLocale;
 
   public use BytesCasts;
   public use BytesStringCommon only decodePolicy;  // expose decodePolicy
-
-  pragma "no doc"
-  type idxType = int;
 
   //
   // createBytes* functions
@@ -120,51 +42,82 @@ module Bytes {
     another :type:`bytes`. If the buffer is freed before the :type:`bytes`
     returned from this function, accessing it is undefined behavior.
 
-    :arg s: The :type:`bytes` to borrow the buffer from
+    :arg x: The :type:`bytes` to borrow the buffer from
 
     :returns: A new :type:`bytes`
   */
-  inline proc createBytesWithBorrowedBuffer(x: bytes) : bytes {
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
+  inline proc type bytes.createBorrowingBuffer(x: bytes) : bytes {
     var ret: bytes;
     initWithBorrowedBuffer(ret, x);
     return ret;
   }
 
+  @chpldoc.nodoc
+  @deprecated("the type 'c_string' is deprecated; please use the variant of 'bytes.createBorrowingBuffer' that takes a 'c_ptrConst(c_char)' instead")
+  inline proc type bytes.createBorrowingBuffer(x: chpl_c_string,
+                                               length=x.size) : bytes {
+    return bytes.createBorrowingBuffer(x:bufferType,
+                                       length=length,
+                                       size=length+1);
+  }
+
   /*
-    Creates a new :type:`bytes` which borrows the internal buffer of a
-    `c_string`. If the buffer is freed before the :type:`bytes` returned
+    Creates a new :type:`bytes` which borrows the memory allocated for a
+    `c_ptr`. If the buffer is freed before the :type:`bytes` returned
     from this function, accessing it is undefined behavior.
 
-    :arg s: `c_string` to borrow the buffer from
+    :arg x: `c_ptr` to borrow as a buffer
+    :type x: `c_ptr(int(8))` or `c_ptr(uint(8))`
 
-    :arg length: Length of `s`'s buffer, excluding the terminating
-                 null byte.
+    :arg length: Length of `x`, excluding the terminating null byte. Defaults to the number of bytes in x before the terminating null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
   */
-  inline proc createBytesWithBorrowedBuffer(x: c_string,
-                                            length=x.size) : bytes {
-    return createBytesWithBorrowedBuffer(x:c_ptr(uint(8)), length=length,
-                                                           size=length+1);
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
+  inline proc type bytes.createBorrowingBuffer(x: c_ptr(?t),
+                                               length=strLen(x)) : bytes {
+    return bytes.createBorrowingBuffer(x:bufferType, length=length,
+                                       size=length+1);
   }
 
-  pragma "no doc"
-  proc chpl_createBytesWithLiteral(buffer: c_string,
+  /*
+    Creates a new :type:`bytes` which borrows the memory allocated for a
+    :class:`~CTypes.c_ptrConst`. If the buffer is freed before the :type:`bytes` returned
+    from this function, accessing it is undefined behavior.
+
+    :arg x: `c_ptrConst` to borrow as a buffer
+    :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
+
+    :arg length: Length of `x`, excluding the terminating null byte. Defaults to the number of bytes in x before the terminating null byte.
+    :type length: `int`
+
+    :returns: A new :type:`bytes`
+  */
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
+  inline proc type bytes.createBorrowingBuffer(x: c_ptrConst(?t),
+                                               length=strLen(x)) : bytes {
+    return bytes.createBorrowingBuffer(x:bufferType, length=length,
+                                       size=length+1);
+  }
+
+  proc chpl_createBytesWithLiteral(buffer: chpl_c_string,
                                    offset: int,
-                                   x: c_string,
+                                   x: chpl_c_string,
                                    length: int) {
     // copy the string to the combined buffer
-    var buf = buffer:c_void_ptr:c_ptr(uint(8));
+    var buf = buffer:c_ptr(void):c_ptr(uint(8));
     buf = buf + offset;
-    c_memcpy(buf:c_void_ptr, x:c_void_ptr, length);
+    import OS.POSIX.memcpy;
+    memcpy(buf:c_ptr(void), x:c_ptr(void), length.safeCast(c_size_t));
     // add null byte
     buf[length] = 0;
 
     // NOTE: This is a "wellknown" function used by the compiler to create
     // string literals. Inlining this creates some bloat in the AST, slowing the
     // compilation.
-    return createBytesWithBorrowedBuffer(buf: c_string, length);
+    return bytes.createBorrowingBuffer(buf, length);
   }
 
   /*
@@ -172,18 +125,19 @@ module Bytes {
      `c_ptr`. If the buffer is freed before the :type:`bytes` returned
      from this function, accessing it is undefined behavior.
 
-     :arg s: Buffer to borrow
-     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
+     :arg x: Buffer to borrow
+     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-     :arg length: Length of the buffer `s`, excluding the terminating null byte.
+     :arg length: Length of the buffer `x`, excluding the terminating null byte.
 
-     :arg size: Size of memory allocated for `s` in bytes
+     :arg size: Size of memory allocated for `x` in bytes
 
      :returns: A new :type:`bytes`
   */
-  inline proc createBytesWithBorrowedBuffer(x: c_ptr(?t), length: int,
-                                            size: int) : bytes {
-    if t != byteType && t != c_char {
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
+  inline proc type bytes.createBorrowingBuffer(x: c_ptr(?t), length: int,
+                                                  size: int) : bytes {
+    if t != uint(8) && t != int(8) {
       compilerError("Cannot create a bytes with a buffer of ", t:string);
     }
     var ret: bytes;
@@ -191,27 +145,51 @@ module Bytes {
     return ret;
   }
 
-  pragma "no doc"
-  inline proc createBytesWithOwnedBuffer(s: bytes) {
-    // should we allow stealing ownership?
-    compilerError("A bytes cannot be passed to createBytesWithOwnedBuffer");
-  }
-
   /*
-    Creates a new :type:`bytes` which takes ownership of the internal
-    buffer of a `c_string`.The buffer will be freed when the :type:`bytes`
-    is deinitialized.
+    Creates a new :type:`bytes` which takes ownership of the memory
+    allocated for a `c_ptr`. The buffer will be freed when the
+    :type:`bytes` is deinitialized.
 
-    :arg s: The `c_string` to take ownership of the buffer from
+    :arg x: The `c_ptr` to take ownership of
+    :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-    :arg length: Length of `s`'s buffer, excluding the terminating null byte.
+    :arg length: Length of buffer `x`, excluding the terminating null byte. Defaults to the number of bytes in x before the terminating null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
   */
-  inline proc createBytesWithOwnedBuffer(x: c_string, length=x.size) : bytes {
-    return createBytesWithOwnedBuffer(x: bufferType, length=length,
-                                                      size=length+1);
+  inline proc type bytes.createAdoptingBuffer(x: c_ptr(?t),
+                                              length=strLen(x)) : bytes {
+    return bytes.createAdoptingBuffer(x: bufferType, length=length,
+                                      size=length+1);
+  }
+
+  @chpldoc.nodoc
+  @deprecated("the type 'c_string' is deprecated; please use the variant of 'bytes.createAdoptingBuffer' that takes a 'c_ptrConst(c_char)' instead")
+  inline proc type bytes.createAdoptingBuffer(x: chpl_c_string,
+                                              length=x.size) : bytes {
+    return bytes.createAdoptingBuffer(x: bufferType,
+                                      length=length,
+                                      size=length+1);
+  }
+
+    /*
+    Creates a new :type:`bytes` which takes ownership of the memory
+    allocated for a :class:`~CTypes.c_ptrConst`. The buffer will be freed when the
+    :type:`bytes` is deinitialized.
+
+    :arg x: The `c_ptrConst` to take ownership of
+    :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
+
+    :arg length: Length of `x`'s buffer, excluding the terminating null byte. Defaults to the number of bytes in x before the terminating null byte.
+    :type length: `int`
+
+    :returns: A new :type:`bytes`
+  */
+  inline proc type bytes.createAdoptingBuffer(x: c_ptrConst(?t),
+                                              length=strLen(x)) : bytes {
+    return bytes.createAdoptingBuffer(x: bufferType, length=length,
+                                      size=length+1);
   }
 
   /*
@@ -219,18 +197,19 @@ module Bytes {
      allocated for a `c_ptr`. The buffer will be freed when the
      :type:`bytes` is deinitialized.
 
-     :arg s: The buffer to take ownership of
-     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
+     :arg x: The buffer to take ownership of
+     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-     :arg length: Length of the buffer `s`, excluding the terminating null byte.
+     :arg length: Length of the buffer `x`, excluding the terminating null byte.
 
-     :arg size: Size of memory allocated for `s` in bytes
+     :arg size: Size of memory allocated for `x` in bytes
 
      :returns: A new :type:`bytes`
   */
-  inline proc createBytesWithOwnedBuffer(x: c_ptr(?t), length: int,
-                                         size: int) : bytes {
-    if t != byteType && t != c_char {
+  inline proc type bytes.createAdoptingBuffer(x: c_ptr(?t),
+                                              length: int,
+                                              size: int) : bytes {
+    if t != uint(8) && t != int(8) {
       compilerError("Cannot create a bytes with a buffer of ", t:string);
     }
     var ret: bytes;
@@ -239,50 +218,47 @@ module Bytes {
   }
 
   /*
-    Creates a new :type:`bytes` by creating a copy of the buffer of
-    another :type:`bytes`.
+    Creates a new :type:`bytes` by creating a copy of a buffer
 
-    :arg s: The :type:`bytes` to copy the buffer from
+    :arg x: The :class:`~CTypes.c_ptrConst` to copy
+    :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
-    :returns: A new :type:`bytes`
-  */
-  inline proc createBytesWithNewBuffer(x: bytes) : bytes {
-    var ret: bytes;
-    initWithNewBuffer(ret, x);
-    return ret;
-  }
-
-  /*
-    Creates a new :type:`bytes` by creating a copy of the buffer of a
-    `c_string`.
-
-    :arg s: The `c_string` to copy the buffer from
-
-    :arg length: Length of `s`'s buffer, excluding the terminating null byte.
+    :arg length: Length of buffer `x`, excluding the terminating null byte. Defaults to the number of bytes in x before the terminating null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
   */
-  inline proc createBytesWithNewBuffer(x: c_string, length=x.size) : bytes {
-    return createBytesWithNewBuffer(x: bufferType, length=length,
-                                                    size=length+1);
+  inline proc type bytes.createCopyingBuffer(x: c_ptrConst(?t),
+                                             length=strLen(x)) : bytes {
+    return bytes.createCopyingBuffer(x: bufferType, length=length,
+                                     size=length+1);
+  }
+
+  @chpldoc.nodoc
+  @deprecated("the type 'c_string' is deprecated; please use the variant of 'bytes.createCopyingBuffer' that takes a 'c_ptrConst(c_char)' instead")
+  inline proc type bytes.createCopyingBuffer(x: chpl_c_string,
+                                             length=x.size) : bytes {
+    return bytes.createCopyingBuffer(x: bufferType,
+                                        length=length,
+                                        size=length+1);
   }
 
   /*
      Creates a new :type:`bytes` by creating a copy of a buffer.
 
-     :arg s: The buffer to copy
-     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
+     :arg x: The buffer to copy
+     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-     :arg length: Length of buffer `s`, excluding the terminating null byte.
+     :arg length: Length of buffer `x`, excluding the terminating null byte. Defaults to the number of bytes in x before the terminating null byte.
 
-     :arg size: Size of memory allocated for `s` in bytes
+     :arg size: Size of memory allocated for `x` in bytes
 
      :returns: A new :type:`bytes`
   */
-  inline proc createBytesWithNewBuffer(x: c_ptr(?t), length: int,
-                                       size=length+1) : bytes {
-    if t != byteType && t != c_char {
+  inline proc type bytes.createCopyingBuffer(x: c_ptr(?t),
+                                             length=strLen(x),
+                                             size=length+1) : bytes {
+    if t != uint(8) && t != int(8) {
       compilerError("Cannot create a bytes with a buffer of ", t:string);
     }
     var ret: bytes;
@@ -290,8 +266,8 @@ module Bytes {
     return ret;
   }
 
-  pragma "no doc"
-  record _bytes {
+  @chpldoc.nodoc
+  record _bytes : writeSerializable, readDeserializable {
     var buffLen: int = 0; // length of string in bytes
     var buffSize: int = 0; // size of the buffer we own
     var buff: bufferType = nil;
@@ -327,55 +303,52 @@ module Bytes {
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.buffLen <= CHPL_SHORT_STRING_SIZE {
-          return createBytesWithNewBuffer(
+          return bytes.createCopyingBuffer(
                       chpl__getInPlaceBufferData(data.shortData),
                       data.buffLen,
                       data.size);
         } else {
           var localBuff = bufferCopyRemote(data.locale_id, data.buff,
                                            data.buffLen);
-          return createBytesWithOwnedBuffer(localBuff, data.buffLen, data.size);
+          return bytes.createAdoptingBuffer(localBuff, data.buffLen, data.size);
         }
       } else {
-        return createBytesWithBorrowedBuffer(data.buff, data.buffLen,
+        return bytes.createBorrowingBuffer(data.buff, data.buffLen,
                                              data.size);
       }
     }
 
-    proc writeThis(f) throws {
-      compilerError("not implemented: writeThis");
+    proc serialize(writer, ref serializer) throws {
+      compilerError("not implemented: serialize");
     }
-    proc readThis(f) throws {
-      compilerError("not implemented: readThis");
+    proc ref deserialize(reader, ref deserialize) throws {
+      compilerError("not implemented: deserialize");
     }
 
     proc init=(b: bytes) {
-      this.complete();
+      init this;
       initWithNewBuffer(this, b);
     }
 
     proc init=(b: string) {
-      this.complete();
+      init this;
       initWithNewBuffer(this, b.buff, length=b.numBytes, size=b.numBytes+1);
     }
 
+    @deprecated("the type 'c_string' is deprecated; please use one of the 'bytes.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead")
     proc init=(b: c_string) {
-      this.complete();
+      init this;
       var length = b.size;
       initWithNewBuffer(this, b: bufferType, length=length, size=length+1);
     }
 
-    inline proc byteIndices return 0..<size;
+    inline proc byteIndices do return 0..<size;
 
-    inline proc param size param
+    inline proc param size param do
       return __primitive("string_length_bytes", this);
 
-    inline proc param numBytes param
+    inline proc param numBytes param do
       return __primitive("string_length_bytes", this);
-
-    inline proc param c_str() param : c_string {
-      return this:c_string; // folded out in resolution
-    }
 
     inline proc param this(param i: int) param : int {
       if i < 0 || i > this.size-1 then
@@ -432,18 +405,18 @@ module Bytes {
   /*
     :returns: The number of bytes in the :type:`bytes`.
     */
-  inline proc bytes.size : int return buffLen;
+  inline proc bytes.size : int do return buffLen;
 
   /*
     :returns: The indices that can be used to index into the bytes
               (i.e., the range ``0..<this.size``)
   */
-  proc bytes.indices : range return 0..<size;
+  proc bytes.indices : range do return 0..<size;
 
   /*
     :returns: The number of bytes in the :type:`bytes`.
     */
-  inline proc bytes.numBytes : int return buffLen;
+  inline proc bytes.numBytes : int do return buffLen;
 
   /*
      Gets a version of the :type:`bytes` that is on the currently
@@ -452,9 +425,10 @@ module Bytes {
      :returns: A shallow copy if the :type:`bytes` is already on the
                current locale, otherwise a deep copy is performed.
   */
+  @unstable("bytes.localize() is unstable and may change in a future release")
   inline proc bytes.localize() : bytes {
-    if _local || this.locale_id == chpl_nodeID {
-      return createBytesWithBorrowedBuffer(this);
+    if compiledForSingleLocale() || this.locale_id == chpl_nodeID {
+      return bytes.createBorrowingBuffer(this);
     } else {
       const x:bytes = this; // assignment makes it local
       return x;
@@ -463,8 +437,8 @@ module Bytes {
 
 
   /*
-    Gets a `c_string` from a :type:`bytes`. The returned `c_string`
-    shares the buffer with the :type:`bytes`.
+    Gets a `c_ptrConst(c_char)` from a :type:`bytes`. The returned
+    :class:`~CTypes.c_ptrConst` shares the buffer with the :type:`bytes`.
 
     .. warning::
 
@@ -478,16 +452,19 @@ module Bytes {
     .. code-block:: chapel
 
         var myBytes = b"Hello!";
-        on different_locale {
+        on differentLocale {
           printf("%s", myBytes.localize().c_str());
         }
 
-    :returns: A `c_string` that points to the underlying buffer used by this
-        :type:`bytes`. The returned `c_string` is only valid when used
-        on the same locale as the bytes.
+    :returns: A `c_ptrConst(c_char)` that points to the underlying buffer used
+              by this :type:`bytes`. The returned `c_ptrConst(c_char)` is only
+              valid when used on the same locale as the bytes.
    */
-  inline proc bytes.c_str(): c_string {
-    return getCStr(this);
+  pragma "last resort"
+  @deprecated("'bytes.c_str()' has moved to 'CTypes'. Please 'use CTypes' to access ':proc:`~CTypes.bytes.c_str`'")
+  inline proc bytes.c_str(): c_ptrConst(c_char) {
+    use CTypes only c_str;
+    return this.c_str();
   }
 
   /*
@@ -502,7 +479,7 @@ module Bytes {
       then halt("index ", i, " out of bounds for bytes with length ", this.buffLen);
     var (buf, size) = bufferCopy(buf=this.buff, off=i, len=1,
                                  loc=this.locale_id);
-    return createBytesWithOwnedBuffer(buf, length=1, size=size);
+    return bytes.createAdoptingBuffer(buf, length=1, size=size);
   }
 
   /*
@@ -564,6 +541,7 @@ module Bytes {
 
     :yields: uint(8)
   */
+  pragma "chpldoc ignore chpl prefix"
   iter bytes.chpl_bytes(): uint(8) {
     foreach i in this.indices do
       yield this.byte(i);
@@ -622,13 +600,6 @@ module Bytes {
     return startsEndsWith(this, patterns, fromLeft=false);
   }
 
-  pragma "last resort"
-  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
-  inline proc bytes.find(needle: bytes,
-                         region: range(?) = this.indices) : idxType {
-    return this.find(needle, region);
-  }
-
   /*
     Finds the argument in the :type:`bytes`
 
@@ -643,15 +614,8 @@ module Bytes {
               :type:`bytes`.
    */
   inline proc bytes.find(pattern: bytes,
-                         indices: range(?) = this.indices) : idxType {
-    return doSearchNoEnc(this, pattern, indices, count=false): idxType;
-  }
-
-  pragma "last resort"
-  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
-  inline proc bytes.rfind(needle: bytes,
-                          region: range(?) = this.indices) : idxType {
-    return this.rfind(needle, region);
+                         indices: range(?) = this.indices) : int {
+    return doSearchNoEnc(this, pattern, indices, count=false);
   }
 
   /*
@@ -668,16 +632,9 @@ module Bytes {
               :type:`bytes`.
    */
   inline proc bytes.rfind(pattern: bytes,
-                          indices: range(?) = this.indices) : idxType {
+                          indices: range(?) = this.indices) : int {
     return doSearchNoEnc(this, pattern, indices, count=false,
-                         fromLeft=false): idxType;
-  }
-
-  pragma "last resort"
-  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
-  inline proc bytes.count(needle: bytes,
-                          region: range(?) = this.indices) : int {
-    return this.count(needle, region);
+                         fromLeft=false);
   }
 
   /*
@@ -694,14 +651,6 @@ module Bytes {
   inline proc bytes.count(pattern: bytes,
                           indices: range(?) = this.indices) : int {
     return doSearchNoEnc(this, pattern, indices, count=true);
-  }
-
-  pragma "last resort"
-  deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
-  inline proc bytes.replace(needle: bytes,
-                            replacement: bytes,
-                            count: int = -1) : bytes {
-    return this.replace(needle, replacement, count);
   }
 
 
@@ -854,15 +803,9 @@ module Bytes {
                         first line.
 
       :returns: A new :type:`bytes` with indentation removed.
-
-      .. warning::
-
-        ``bytes.dedent`` is not considered stable and is subject to change in
-        future Chapel releases.
   */
+  @unstable("bytes.dedent is subject to change in the future.")
   proc bytes.dedent(columns=0, ignoreFirst=true): bytes {
-    if chpl_warnUnstable then
-      compilerWarning("bytes.dedent is subject to change in the future.");
     return doDedent(this, columns, ignoreFirst);
   }
 
@@ -877,8 +820,9 @@ module Bytes {
                   - `decodePolicy.escape` escapes each illegal byte with
                     private use codepoints
 
-    :throws: `DecodeError` if `decodePolicy.strict` is passed to the `policy`
-              argument and the :type:`bytes` contains non-UTF-8 characters.
+    :throws: Throws a :class:`~Errors.DecodeError` if `decodePolicy.strict` is
+      passed to the `policy` argument and the :type:`bytes` contains non-UTF-8
+      characters.
 
     :returns: A UTF-8 string.
   */
@@ -1105,7 +1049,7 @@ module Bytes {
   proc bytes.toLower() : bytes {
     var result: bytes = this;
     if result.isEmpty() then return result;
-    for (i,b) in zip(0.., result.bytes()) {
+    for (b,i) in zip(result.bytes(), 0..) {
       result.buff[i] = byte_toLower(b); //check is done by byte_toLower
     }
     return result;
@@ -1122,7 +1066,7 @@ module Bytes {
   proc bytes.toUpper() : bytes {
     var result: bytes = this;
     if result.isEmpty() then return result;
-    for (i,b) in zip(0.., result.bytes()) {
+    for (b,i) in zip(result.bytes(), 0..) {
       result.buff[i] = byte_toUpper(b); //check is done by byte_toUpper
     }
     return result;
@@ -1143,7 +1087,7 @@ module Bytes {
 
     param UN = 0, LETTER = 1;
     var last = UN;
-    for (i,b) in zip(0.., result.bytes()) {
+    for (b,i) in zip(result.bytes(), 0..) {
       if byte_isAlpha(b) {
         if last == UN {
           last = LETTER;
@@ -1159,14 +1103,15 @@ module Bytes {
     return result;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x: string, type t: bytes) {
-    return createBytesWithNewBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
+    return bytes.createCopyingBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
+  @deprecated("the type 'c_string' is deprecated; please use one of the 'bytes.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead")
   inline operator :(x: c_string, type t: bytes) {
     var length = x.size;
-    return createBytesWithNewBuffer(x: bufferType, length=length, size=length+1);
+    return bytes.createCopyingBuffer(x: bufferType, length=length, size=length+1);
   }
 
 
@@ -1175,6 +1120,56 @@ module Bytes {
   */
   operator bytes.+=(ref lhs: bytes, const ref rhs: bytes) : void {
     doAppend(lhs, rhs);
+  }
+
+  /*
+     Appends the one or more byte values passed as arguments to
+     the :type:`bytes` `this`.
+   */
+  @unstable("'bytes.appendByteValues' is unstable and may change in the future")
+  proc ref bytes.appendByteValues(x: uint(8) ...) : void {
+    var buf: c_array(uint(8), x.size);
+    for param i in 0..<x.size {
+      buf(i) = x(i);
+    }
+
+    doAppendSomeBytes(this, x.size, buf, nCodepoints=0);
+  }
+
+  /* Convert a nibble into a character in its hexadecimal representation */
+  private proc convertNibble(in nib:uint(8), uppercase: bool): uint(8) {
+    nib = nib & 0xf;
+    if 0 <= nib && nib <= 9 {
+      param zero:uint(8) = b"0"(0); // aka 0x30
+      return zero + nib;
+    } else if 10 <= nib && nib <= 15 {
+      param a:uint(8) = b"a"(0); // aka 0x61
+      param A:uint(8) = b"A"(0); // aka 0x41
+      return (if uppercase then A else a) + nib - 10;
+    }
+
+    return 0;
+  }
+
+  /*
+    Computes a hexadecimal representation for a ``bytes``
+    and returns it as a ``bytes``.
+   */
+  @unstable("'bytes.toHexadecimal' is unstable and may change in the future")
+  proc bytes.toHexadecimal(uppercase: bool = false,
+                           type resultType = bytes) : resultType {
+    var result: resultType;
+    for byte in this {
+      const nib1 = convertNibble((byte>>4)&0xf, uppercase);
+      const nib2 = convertNibble(byte&0xf, uppercase);
+      if resultType == bytes {
+        result.appendByteValues(nib1, nib2);
+      }
+      if resultType == string {
+        result.appendCodepointValues(nib1, nib2);
+      }
+    }
+    return result;
   }
 
   /*
@@ -1189,8 +1184,9 @@ module Bytes {
 
      Halts if `lhs` is a remote bytes.
   */
+  @deprecated("the type 'c_string' is deprecated; please use one of the 'bytes.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead")
   operator bytes.=(ref lhs: bytes, rhs_c: c_string) : void {
-    lhs = createBytesWithNewBuffer(rhs_c);
+    lhs = bytes.createCopyingBuffer(rhs_c:c_ptrConst(c_char));
   }
 
   //
@@ -1204,8 +1200,8 @@ module Bytes {
     return doConcat(s0, s1);
   }
 
-  pragma "no doc"
-  inline operator bytes.+(param s0: bytes, param s1: bytes) param
+  @chpldoc.nodoc
+  inline operator bytes.+(param s0: bytes, param s1: bytes) param do
     return __primitive("string_concat", s0, s1);
 
   /*
@@ -1230,66 +1226,66 @@ module Bytes {
     return doMultiply(s, n);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator *(n: integral, s: bytes) {
     return doMultiply(s, n);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator bytes.==(a: bytes, b: bytes) : bool {
     return doEq(a,b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.!=(a: bytes, b: bytes) : bool {
     return !doEq(a,b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.<(a: bytes, b: bytes) : bool {
     return doLessThan(a, b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.>(a: bytes, b: bytes) : bool {
     return doGreaterThan(a, b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.<=(a: bytes, b: bytes) : bool {
     return doLessThanOrEq(a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.>=(a: bytes, b: bytes) : bool {
     return doGreaterThanOrEq(a, b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.==(param s0: bytes, param s1: bytes) param  {
     return __primitive("string_compare", s0, s1) == 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.!=(param s0: bytes, param s1: bytes) param {
     return __primitive("string_compare", s0, s1) != 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.<=(param a: bytes, param b: bytes) param {
     return (__primitive("string_compare", a, b) <= 0);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.>=(param a: bytes, param b: bytes) param {
     return (__primitive("string_compare", a, b) >= 0);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.<(param a: bytes, param b: bytes) param {
     return (__primitive("string_compare", a, b) < 0);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.>(param a: bytes, param b: bytes) param {
     return (__primitive("string_compare", a, b) > 0);
   }
@@ -1298,12 +1294,13 @@ module Bytes {
   // hashing support
   //
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc bytes.hash(): uint {
     return getHash(this);
   }
+  bytes implements hashable;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator bytes.<=>(ref x: bytes, ref y: bytes) {
     if (x.locale_id != y.locale_id) {
       // TODO: could we just change locale_id?

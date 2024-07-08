@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# Get list of all .o and .s files. Exclude 'savec.tmp_launcher.o' since we want this test
+# to pass regardless of whether a launcher is being used or not.
+find savec_dir -type f -name "*.o" -o -name "*.s" | grep -v -e "savec\.tmp_launcher\.o" -e "chpl__gpu..*\.o" | sort >> $2
+find savec_dir -type f -name "chpl__gpu_*.o" | sort >> $2

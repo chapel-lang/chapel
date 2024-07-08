@@ -9,7 +9,7 @@ proc foo(i): int {
 
 on here.gpus[0] {
   var A: [0..#n] int;
-  forall i in 0..#n {
+  forall i in 0..#n with (ref A) {
     A[i] = foo(i);
   }
 

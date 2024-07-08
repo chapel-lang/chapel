@@ -10,13 +10,13 @@ config const printComm=false;
 config  const n: int=10;
 
 const Space2 = {1..n,1..n};
-const Dom2: domain(2) dmapped Cyclic(startIdx=Space2.low)=Space2;
+const Dom2: domain(2) dmapped new cyclicDist(startIdx=Space2.low)=Space2;
 const Space3 = {1..n,1..n,1..n};
-const Dom3: domain(3) dmapped Cyclic(startIdx=Space3.low)=Space3;
+const Dom3: domain(3) dmapped new cyclicDist(startIdx=Space3.low)=Space3;
 
-var Dist2 = new dmap(new Block({1..n,1..n}));
+var Dist2 = new blockDist({1..n,1..n});
 var Dom2B: domain(2,int) dmapped Dist2 = {1..n,1..n};
-var Dist3 = new dmap(new Block({1..n,1..n,1..n}));
+var Dist3 = new blockDist({1..n,1..n,1..n});
 var Dom3B: domain(3,int) dmapped Dist3 = {1..n,1..n,1..n};
 
 
@@ -29,12 +29,12 @@ proc main(){
 
   var a,b:real;
   var i:int;
-  var D1={1..n by 1,1..n by 1};
-  var D2={1..n by 1,1..n by 1};
-  var D3={1..n by 1,1..n by 1,1..n by 1};
-  var D4={1..n by 1,1..n by 1,1..n by 1};
+  var D1={1..n, 1..n}: domain(2, strides=strideKind.positive);
+  var D2={1..n, 1..n}: domain(2, strides=strideKind.positive);
+  var D3={1..n, 1..n, 1..n}: domain(3, strides=strideKind.positive);
+  var D4={1..n, 1..n, 1..n}: domain(3, strides=strideKind.positive);
   
-  var st,dt=getCurrentTime();
+  var st,dt=timeSinceEpoch().totalSeconds();
   for (a,i) in zip(A2,{1..n*n}) do a=i;
 //2D Examples
 // ==============================================================================
@@ -51,9 +51,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -78,9 +78,9 @@ proc main(){
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -105,9 +105,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 3:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -132,9 +132,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 4:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -159,9 +159,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 5:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -184,9 +184,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 6:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -210,9 +210,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 7:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -238,9 +238,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 8:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -263,9 +263,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -289,9 +289,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A2[D1]=BD[D2];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -317,9 +317,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -344,9 +344,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -371,9 +371,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -398,9 +398,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -425,9 +425,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -453,9 +453,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -480,9 +480,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -508,9 +508,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();
@@ -535,9 +535,9 @@ if printOutput then writeln(" Cyclic Dist <-- Block Dist. Example 9:CY",D1," = B
       startCommDiagnostics();
     }
   }
-  st = getCurrentTime();
+  st = timeSinceEpoch().totalSeconds();
   A3[D3]=BD3[D4];
-  dt = getCurrentTime()-st;
+  dt = timeSinceEpoch().totalSeconds()-st;
   if doDiagnostics {
     if printComm{
       stopCommDiagnostics();

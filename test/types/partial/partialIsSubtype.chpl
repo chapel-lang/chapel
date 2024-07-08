@@ -4,11 +4,11 @@ class QuiteGeneric {
   var x;
 }
 
-type partial1 = QuiteGeneric(int);
+type partial1 = QuiteGeneric(int, ?);
 writeln(partial1: string);
 writeln(isSubtype(partial1, QuiteGeneric)); // true
 
-type partial2 = QuiteGeneric(int, 3);
+type partial2 = QuiteGeneric(int, 3, ?);
 writeln(partial2: string);
 writeln(isSubtype(partial2, QuiteGeneric)); // true
 writeln(isSubtype(partial2, partial1)); // true

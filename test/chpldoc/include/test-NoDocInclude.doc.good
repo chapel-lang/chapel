@@ -1,0 +1,19 @@
+.. default-domain:: chpl
+
+.. module:: NoDocInclude
+
+NoDocInclude
+============
+**Usage**
+
+.. code-block:: chapel
+
+   use NoDocInclude;
+
+
+or
+
+.. code-block:: chapel
+
+   import NoDocInclude;
+

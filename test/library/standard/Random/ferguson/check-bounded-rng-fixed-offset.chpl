@@ -1,34 +1,34 @@
-use Random;
+use Random, Math;
 
 config const n = 10000;
 config const seed = 1;
 
 proc createRandomArraySerial(minimum:int, maximum:int) {
   var A:[0..#n] int;
-  var rng = createRandomStream(eltType=int, seed=seed);
+  var rng = new randomStream(eltType=int, seed=seed);
   for i in 0..#n {
-    A[i] = rng.getNext(minimum, maximum);
+    A[i] = rng.next(minimum, maximum);
   }
   return A;
 }
 
 proc createRandomArrayParallel(nTasks:int, minimum:int, maximum:int) {
-  var nPerTask = divceil(n, nTasks);
+  var nPerTask = divCeil(n, nTasks);
   var A:[0..#n] int;
   // Create #cores tasks
-  coforall taskNum in 0..#nTasks {
+  coforall taskNum in 0..#nTasks with (ref A) {
     var start = nPerTask * taskNum;
     var end = start + nPerTask - 1;
     if end >= n then
       end = n-1;
 
     // Each task computes nPerTask random numbers
-    var rng = createRandomStream(eltType=int, seed=seed);
+    var rng = new randomStream(eltType=int, seed=seed);
     // Each task generates the same random values as in a serial program
     // (skipping ahead / advancing the RNG past values it would have made)
-    rng.skipToNth(start);
+    rng.skipTo(start);
     for i in start..end {
-      A[i] = rng.getNext(min=minimum, max=maximum);
+      A[i] = rng.next(min=minimum, max=maximum);
     }
   }
   return A;

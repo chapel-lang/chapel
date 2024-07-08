@@ -1,3 +1,3 @@
 -1
 1
-int_int16.chpl:3: error: halt reached - casting int(64) with a value less than the minimum of int(16) to int(16)
+int_int16.chpl:3: error: halt reached - bad cast from int(64) with a value less than the minimum of int(16) to int(16)

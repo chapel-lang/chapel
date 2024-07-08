@@ -1,0 +1,4 @@
+user-contextManager-warning-generic-generic-impl.chpl:1: warning: the type 'R' defines methods that previously had special meaning. These will soon require 'R' to implement the 'contextManager' interface to continue to be treated specially.
+user-contextManager-warning-generic-generic-impl.chpl:5: note: formerly-special function 'enterContext' defined here
+user-contextManager-warning-generic-generic-impl.chpl:8: note: formerly-special function 'exitContext' defined here
+(x = 1)

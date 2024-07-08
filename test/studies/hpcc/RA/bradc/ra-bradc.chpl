@@ -1,4 +1,4 @@
-use Time;
+use Time, Math;
 
 type tableElem = uint(64);
 
@@ -26,7 +26,7 @@ proc main() {
   writeln("Main table size = 2**", logTableSize, " = ", tableSize, " words");
   writeln("Number of updates = ", numUpdates);
 
-  var timer: Timer;
+  var timer: stopwatch;
   timer.start();
   randomAccessUpdate();
   timer.stop();
@@ -39,7 +39,7 @@ proc main() {
 // BLC: eliminate Ran array -- replace with per-thread local variable
 proc randomAccessUpdate() {
   // BLC: might prefer the following line to be Table = tableDom;
-  [i in tableDom] Table(i) = i;
+  [i in tableDom with (ref Table)] Table(i) = i;
 
   if debug then writeln("Table is: ", Table);
 

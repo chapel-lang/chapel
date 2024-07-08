@@ -15,7 +15,7 @@ config const preCompiled = false;
 
 proc testRead(channel, pattern: ?t, ref capture, preCompiled:bool) throws {
   if preCompiled {
-    var re = compile(pattern);
+    var re = new regex(pattern);
     channel.readf("%/*/", re, capture);
   }
   else {
@@ -24,9 +24,9 @@ proc testRead(channel, pattern: ?t, ref capture, preCompiled:bool) throws {
 }
 
 {
-  var f = openmem();
+  var f = openMemFile();
 
-  var w = f.writer();
+  var w = f.writer(locking=false);
   w.write("Pattern:Capture\n");
   w.write(b"Patt\xffern:Capture\n");
   w.write(b"Patt\xffern:Cap\xffture\n");
@@ -34,7 +34,7 @@ proc testRead(channel, pattern: ?t, ref capture, preCompiled:bool) throws {
   w.close();
 
   // read from it -- following four reads are how these should be read
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var captureString: string;
   var captureBytes: bytes;
 
@@ -60,9 +60,9 @@ proc testRead(channel, pattern: ?t, ref capture, preCompiled:bool) throws {
 
 
 {
-  var f = openmem();
+  var f = openMemFile();
 
-  var w = f.writer();
+  var w = f.writer(locking=false);
   w.write("Pattern:Capture\n");
   w.write(b"Patt\xffern:Capture\n");
   w.write(b"Patt\xffern:Cap\xffture\n");
@@ -71,7 +71,7 @@ proc testRead(channel, pattern: ?t, ref capture, preCompiled:bool) throws {
 
   // read from it -- following reads are somewhat more interesting and some
   // should fail
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var captureString: string;
   var captureBytes: bytes;
 

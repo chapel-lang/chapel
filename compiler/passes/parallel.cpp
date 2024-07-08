@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -973,6 +973,12 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
         INT_ASSERT(initialization);
         insertBroadcast(initialization, def->sym);
 
+      } else if (def->sym->hasFlag(FLAG_REMOTE_VARIABLE)) {
+        // replicate address of remote variables
+        Expr* initialization = def->sym->getInitialization();
+
+        INT_ASSERT(initialization);
+        insertBroadcast(initialization, def->sym);
       } else {
         // put other global constants and all global variables on the heap
         // ... but not type variables without a runtime type component
@@ -1023,6 +1029,12 @@ makeHeapAllocations() {
       }
     }
 
+    if (var->hasFlag(FLAG_REMOTE_VARIABLE)) {
+      // don't widen remote variables, they're already references
+      // to heap-allocated memory.
+      continue;
+    }
+
     if (isString(var) && var->isImmediate()) {
       // String immediates are privatized; do not widen them
       continue;
@@ -1047,7 +1059,8 @@ makeHeapAllocations() {
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, var, heapType->getField(1))));
           def->replace(new SymExpr(tmp));
-        } else if (call->isResolved()) {
+        } else if (call->isResolved() ||
+                   call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
             ArgSymbol* formal = actual_to_formal(def);
             if (formal->isRef()) {
               VarSymbol* tmp = newTemp(var->type);

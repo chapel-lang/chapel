@@ -22,7 +22,7 @@ module Graph500_defs
 // The data structure used to store the edges is an array of records
 
   const edgelist_domain =
-    {1..N_RAWEDGES} dmapped Block ( {1..N_RAWEDGES} );
+    {1..N_RAWEDGES} dmapped new blockDist ( {1..N_RAWEDGES} );
 
   record directed_vertex_pair {
     var start = 1: int;
@@ -31,7 +31,7 @@ module Graph500_defs
 
 // Here we have overloaded the + operator
   operator directed_vertex_pair.+(l: directed_vertex_pair,
-                                  r: directed_vertex_pair)
+                                  r: directed_vertex_pair) do
       return new directed_vertex_pair (l.start + r.start, l.end + r.end);
 
 // The data structures below are chosen with the intention of later defining
@@ -42,7 +42,7 @@ module Graph500_defs
 
     const vertex_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
-        {1..N_VERTICES} dmapped Block ( {1..N_VERTICES} )
+        {1..N_VERTICES} dmapped new blockDist ( {1..N_VERTICES} )
       else
         {1..N_VERTICES} ;
 
@@ -55,6 +55,18 @@ module Graph500_defs
       var self_edges: atomic int;
       var duplicates: atomic int;
 
+      proc init() {}
+      proc init(nd: domain(1)) {
+        this.nd = nd;
+      }
+      proc init=(other: vertex_struct) {
+        this.nd = other.nd;
+        this.Neighbors = other.Neighbors;
+        this.neighbor_count = other.neighbor_count.read();
+        this.self_edges = other.self_edges.read();
+        this.duplicates = other.duplicates.read();
+      }
+
 /* do not do that - instead filter out duplicates later
       proc is_a_neighbor (new_vertex_ID: vertex_id) {
          // serial loop here... other cores are already working on other vertices
@@ -63,16 +75,16 @@ module Graph500_defs
          }
          return false;
       }
-*/        
-      proc add_self_edge () {
+*/
+      proc ref add_self_edge () {
          self_edges.add(1);
       }
- 
+
       proc add_duplicate () {
          duplicates.add(1);
       }
 
-      proc add_Neighbor (new_vertex_ID: vertex_id) {
+      proc ref add_Neighbor (new_vertex_ID: vertex_id) {
          var ID: vertex_id = new_vertex_ID;
 /* different approach
 //       Check again to make sure another thread did not recently
@@ -83,7 +95,7 @@ module Graph500_defs
          else
          {
            if (neighbor_count >= Neighbors.size) {
-             grow_helper(); 
+             grow_helper();
            }
 */
            const newNeighbor = neighbor_count.fetchAdd(1) + 1;
@@ -92,8 +104,8 @@ module Graph500_defs
          }
 */
       }
-         
-      proc grow_helper() { 
+
+      proc grow_helper() {
           halt("Should not call grow_helper");
           var new_nd = Neighbors.size + 1;
           nd = {1..new_nd};
@@ -119,7 +131,7 @@ module Graph500_defs
 // SSCA2 code uses level sets. The set of vertices at a particular distance
 // from the starting vertex form a level set
 // The class allows the full set of vertices visited to be partitioned into a
-// linked list of level sets 
+// linked list of level sets
 
 class Level_Set {
   type Vertex_List;

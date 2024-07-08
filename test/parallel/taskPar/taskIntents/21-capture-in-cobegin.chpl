@@ -39,10 +39,6 @@ writeln("=== at the module level ===");
 // Can be placed in any scope.
 // declare all the variables
 var b0: bool;
-var b8: bool(8);
-var b16: bool(16);
-var b32: bool(32);
-var b64: bool(64);
 var u8: uint(8);
 var u16: uint(16);
 var u32: uint(32);
@@ -67,14 +63,10 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s$: sync int;
+var s: sync int;
 writeln("before cobegin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -103,10 +95,6 @@ proc updateVars() {
   writeln("updateVars()");
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -133,10 +121,6 @@ arr1 = init1arr;
 arr2 = init2arr;
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -168,10 +152,6 @@ cobegin {
     writeln("cobegin - after updateVars");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -196,17 +176,13 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-    s$.writeEF(1);
+    s.writeEF(1);
   }
   {
-    s$.readFE();
+    s.readFE();
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -236,10 +212,6 @@ writeln("arr2", " ", arr2);
 writeln("after cobegin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -273,10 +245,6 @@ proc test() {
 // Can be placed in any scope.
 // declare all the variables
 var b0: bool;
-var b8: bool(8);
-var b16: bool(16);
-var b32: bool(32);
-var b64: bool(64);
 var u8: uint(8);
 var u16: uint(16);
 var u32: uint(32);
@@ -301,14 +269,10 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s$: sync int;
+var s: sync int;
 writeln("before cobegin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -337,10 +301,6 @@ proc updateVars() {
   writeln("updateVars()");
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -367,10 +327,6 @@ arr1 = init1arr;
 arr2 = init2arr;
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -402,10 +358,6 @@ cobegin {
     writeln("cobegin - after updateVars");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -430,17 +382,13 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-    s$.writeEF(1);
+    s.writeEF(1);
   }
   {
-    s$.readFE();
+    s.readFE();
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -470,10 +418,6 @@ writeln("arr2", " ", arr2);
 writeln("after cobegin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -503,17 +447,13 @@ writeln("done");
 test();
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a begin ===");
-var sbegin$: sync int;
+var sbegin: sync int;
 begin {
 // Verify that values are captured upon a 'cobegin'.
 // This needs #include "support-decls.cpp".
 // Can be placed in any scope.
 // declare all the variables
 var b0: bool;
-var b8: bool(8);
-var b16: bool(16);
-var b32: bool(32);
-var b64: bool(64);
 var u8: uint(8);
 var u16: uint(16);
 var u32: uint(32);
@@ -538,14 +478,10 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s$: sync int;
+var s: sync int;
 writeln("before cobegin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -574,10 +510,6 @@ proc updateVars() {
   writeln("updateVars()");
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -604,10 +536,6 @@ arr1 = init1arr;
 arr2 = init2arr;
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -639,10 +567,6 @@ cobegin {
     writeln("cobegin - after updateVars");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -667,17 +591,13 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-    s$.writeEF(1);
+    s.writeEF(1);
   }
   {
-    s$.readFE();
+    s.readFE();
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -707,10 +627,6 @@ writeln("arr2", " ", arr2);
 writeln("after cobegin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -736,9 +652,9 @@ writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 writeln("done");
-  sbegin$.writeEF(1);
+  sbegin.writeEF(1);
 }
-sbegin$.readFE();
+sbegin.readFE();
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a cobegin ===");
 cobegin {
@@ -749,10 +665,6 @@ cobegin {
 // Can be placed in any scope.
 // declare all the variables
 var b0: bool;
-var b8: bool(8);
-var b16: bool(16);
-var b32: bool(32);
-var b64: bool(64);
 var u8: uint(8);
 var u16: uint(16);
 var u32: uint(32);
@@ -777,14 +689,10 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s$: sync int;
+var s: sync int;
 writeln("before cobegin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -813,10 +721,6 @@ proc updateVars() {
   writeln("updateVars()");
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -843,10 +747,6 @@ arr1 = init1arr;
 arr2 = init2arr;
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -878,10 +778,6 @@ cobegin {
     writeln("cobegin - after updateVars");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -906,17 +802,13 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-    s$.writeEF(1);
+    s.writeEF(1);
   }
   {
-    s$.readFE();
+    s.readFE();
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -946,10 +838,6 @@ writeln("arr2", " ", arr2);
 writeln("after cobegin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -986,10 +874,6 @@ coforall iiiii in 1..3 {
 // Can be placed in any scope.
 // declare all the variables
 var b0: bool;
-var b8: bool(8);
-var b16: bool(16);
-var b32: bool(32);
-var b64: bool(64);
 var u8: uint(8);
 var u16: uint(16);
 var u32: uint(32);
@@ -1014,14 +898,10 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s$: sync int;
+var s: sync int;
 writeln("before cobegin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -1050,10 +930,6 @@ proc updateVars() {
   writeln("updateVars()");
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -1080,10 +956,6 @@ arr1 = init1arr;
 arr2 = init2arr;
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -1115,10 +987,6 @@ cobegin {
     writeln("cobegin - after updateVars");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -1143,17 +1011,13 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-    s$.writeEF(1);
+    s.writeEF(1);
   }
   {
-    s$.readFE();
+    s.readFE();
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -1183,10 +1047,6 @@ writeln("arr2", " ", arr2);
 writeln("after cobegin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);

@@ -1,12 +1,12 @@
-class NilClass { }
-override proc NilClass.writeThis(f) throws { f.write("nil"); }
+class NilClass : writeSerializable { }
+override proc NilClass.serialize(writer, ref serializer) throws { writer.write("nil"); }
 var gNil = new owned NilClass();
 
-proc Nil(): borrowed NilClass
+proc Nil(): borrowed NilClass do
   return gNil.borrow();
 
 proc isNil(x): bool {
-  if x.type <= NilClass then
+  if isSubtype(x.type, NilClass) then
     return true;
   else
     return false;

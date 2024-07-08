@@ -18,6 +18,7 @@
 #include "R600MachineScheduler.h"
 #include "R600TargetTransformInfo.h"
 #include "llvm/Transforms/Scalar.h"
+#include <optional>
 
 using namespace llvm;
 
@@ -50,9 +51,9 @@ static MachineSchedRegistry R600SchedRegistry("r600",
 R600TargetMachine::R600TargetMachine(const Target &T, const Triple &TT,
                                      StringRef CPU, StringRef FS,
                                      TargetOptions Options,
-                                     Optional<Reloc::Model> RM,
-                                     Optional<CodeModel::Model> CM,
-                                     CodeGenOpt::Level OL, bool JIT)
+                                     std::optional<Reloc::Model> RM,
+                                     std::optional<CodeModel::Model> CM,
+                                     CodeGenOptLevel OL, bool JIT)
     : AMDGPUTargetMachine(T, TT, CPU, FS, Options, RM, CM, OL) {
   setRequiresStructuredCFG(true);
 
@@ -83,10 +84,11 @@ R600TargetMachine::getSubtargetImpl(const Function &F) const {
 }
 
 TargetTransformInfo
-R600TargetMachine::getTargetTransformInfo(const Function &F) {
+R600TargetMachine::getTargetTransformInfo(const Function &F) const {
   return TargetTransformInfo(R600TTIImpl(this, F));
 }
 
+namespace {
 class R600PassConfig final : public AMDGPUPassConfig {
 public:
   R600PassConfig(LLVMTargetMachine &TM, PassManagerBase &PM)
@@ -103,6 +105,7 @@ public:
   void addPreSched2() override;
   void addPreEmitPass() override;
 };
+} // namespace
 
 //===----------------------------------------------------------------------===//
 // R600 Pass Setup
@@ -117,7 +120,7 @@ bool R600PassConfig::addPreISel() {
 }
 
 bool R600PassConfig::addInstSelector() {
-  addPass(createR600ISelDag(&getAMDGPUTargetMachine(), getOptLevel()));
+  addPass(createR600ISelDag(getAMDGPUTargetMachine(), getOptLevel()));
   return false;
 }
 
@@ -131,7 +134,7 @@ void R600PassConfig::addPreSched2() {
 }
 
 void R600PassConfig::addPreEmitPass() {
-  addPass(createAMDGPUCFGStructurizerPass());
+  addPass(createR600MachineCFGStructurizerPass());
   addPass(createR600ExpandSpecialInstrsPass());
   addPass(&FinalizeMachineBundlesID);
   addPass(createR600Packetizer());

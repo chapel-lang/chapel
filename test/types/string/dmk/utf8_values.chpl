@@ -1,13 +1,13 @@
 var mystring1 = "hello";
 
-for (i, c) in zip(0.., mystring1.bytes()) {
+for (c, i) in zip(mystring1.bytes(), 0..) {
   const str = codepointToString(c);
   write(c);
   var c2 = mystring1.byte(i);
   if c2 != c then
     write("#", c2);
   write("\t", str);
-  for (j, bval) in zip(0.., str.bytes()) {
+  for (bval, j) in zip(str.bytes(), 0..) {
     write(" ", bval);
     var bval2 = str.byte(j);
     if bval2 != bval then
@@ -18,14 +18,14 @@ for (i, c) in zip(0.., mystring1.bytes()) {
 
 var mystring2 = "événement";
 
-for (i, c) in zip(0.., mystring2.codepoints()) {
+for (c, i) in zip(mystring2.codepoints(), 0..) {
   const str = codepointToString(c);
   write(c);
   var c2 = mystring2.codepoint(i);
   if c2 != c then
     write("#", c2);
   write("\t", str);
-  for (j, bval) in zip(0.., str.bytes()) {
+  for (bval, j) in zip(str.bytes(), 0..) {
     write(" ", bval);
     var bval2 = str.byte(j);
     if bval2 != bval then

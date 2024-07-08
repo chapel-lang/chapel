@@ -6,7 +6,7 @@ config const niters = 10000000;
 config param printTimes = false;
 
 proc main {
-  var t = new Timer();
+  var t = new stopwatch();
 
   {
     var A: [0..#n] int;

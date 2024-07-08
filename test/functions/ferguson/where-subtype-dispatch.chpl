@@ -32,7 +32,7 @@ class GenericParent {
   var y;
 }
 
-class GenericChild : GenericParent {
+class GenericChild : GenericParent(?) {
   var z:int;
 }
 
@@ -45,7 +45,7 @@ proc bar(type t) where (isSubtype(t,integral) && !isSubtype(t,int)) {
 proc bar(type t) where !(isSubtype(t,int) || isSubtype(t,integral) ||
                          isSubtype(t,R) || isSubtype(t,borrowed Parent) ||
                          isSubtype(t,borrowed GenericParent) ||
-                         isSubtype(t,borrowed object)) {
+                         isSubtype(t,borrowed RootClass)) {
   writeln("any type");
 }
 proc bar(type t) where isSubtype(t,R) {
@@ -61,10 +61,10 @@ proc bar(type t) where (isSubtype(t,borrowed GenericParent) &&
 proc bar(type t) where isSubtype(t,borrowed GenericChild(int)) {
   writeln("GenericChild(int)");
 }
-proc bar(type t) where (isSubtype(t,borrowed object) &&
+proc bar(type t) where (isSubtype(t,borrowed RootClass) &&
                         !isSubtype(t,borrowed Parent) &&
                         !isSubtype(t,borrowed GenericParent)) {
-  writeln("object");
+  writeln("RootClass");
 }
 
 writeln("bar");

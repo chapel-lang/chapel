@@ -28,7 +28,7 @@ static_library("Host") {
     "common/HostThread.cpp",
     "common/LZMA.cpp",
     "common/LockFileBase.cpp",
-    "common/MainLoop.cpp",
+    "common/MainLoopBase.cpp",
     "common/MonitoringProcessLauncher.cpp",
     "common/NativeProcessProtocol.cpp",
     "common/NativeRegisterContext.cpp",
@@ -41,11 +41,13 @@ static_library("Host") {
     "common/PseudoTerminal.cpp",
     "common/Socket.cpp",
     "common/SocketAddress.cpp",
+    "common/StreamFile.cpp",
     "common/TCPSocket.cpp",
     "common/Terminal.cpp",
     "common/ThreadLauncher.cpp",
     "common/UDPSocket.cpp",
     "common/XML.cpp",
+    "common/ZipFileResolver.cpp",
   ]
 
   if (lldb_enable_libedit) {
@@ -67,10 +69,10 @@ static_library("Host") {
       "windows/HostProcessWindows.cpp",
       "windows/HostThreadWindows.cpp",
       "windows/LockFileWindows.cpp",
+      "windows/MainLoopWindows.cpp",
       "windows/PipeWindows.cpp",
       "windows/ProcessLauncherWindows.cpp",
       "windows/ProcessRunLock.cpp",
-      "windows/Windows.cpp",
     ]
   } else {
     sources += [
@@ -80,6 +82,7 @@ static_library("Host") {
       "posix/HostProcessPosix.cpp",
       "posix/HostThreadPosix.cpp",
       "posix/LockFilePosix.cpp",
+      "posix/MainLoopPosix.cpp",
       "posix/PipePosix.cpp",
       "posix/ProcessLauncherPosixFork.cpp",
     ]
@@ -143,7 +146,7 @@ static_library("Host") {
   #   list(APPEND EXTRA_LIBS ${CMAKE_DL_LIBS})
   # endif()
   # if (LLDB_ENABLE_LIBEDIT)
-  #   list(APPEND EXTRA_LIBS ${LibEdit_LIBRARIES})
+  #   list(APPEND EXTRA_LIBS LibEdit::LibEdit)
   # endif()
   # if (LLDB_ENABLE_LZMA)
   #   list(APPEND EXTRA_LIBS ${LIBLZMA_LIBRARIES})

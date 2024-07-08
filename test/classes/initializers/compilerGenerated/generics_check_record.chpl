@@ -12,8 +12,9 @@ proc main() {
   writeln(c1.type:string);
   writeln(c1);
 
-  var c2: GenericRecord(int, 2, bool);
-  writeln(c2.type:string);
+  // commented out because this case now results in compilation error
+  //var c2: GenericRecord(int, 2, bool);
+  //writeln(c2.type:string);
 
   var c3: GenericRecord(real, 5, real) = new GenericRecord(real, 5, 2.4, 8);
   writeln(c3.type:string);

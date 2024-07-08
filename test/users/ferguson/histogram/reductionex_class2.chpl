@@ -41,7 +41,7 @@ var tuple = (     0:uint(64),
 
 var array:[1..tuple.size] uint(64) = tuple;
 
-var test   = new borrowed Test(16, 16000:uint(64), 0:uint(64));
+var test   = (new owned Test(16, 16000:uint(64), 0:uint(64))).borrow();
 var counts = test.reduceit(array);
 
 writeln(counts);

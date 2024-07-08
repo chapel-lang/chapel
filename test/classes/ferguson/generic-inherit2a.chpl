@@ -10,7 +10,7 @@ class Parent {
 
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   var y:t;
   override proc overridden_method() {
     writeln(x,y);
@@ -20,6 +20,7 @@ class Child : Parent {
   }
 }
 writeln("Dynamic Child(int)");
-var pc:borrowed Parent(int) = new borrowed Child(int, 1, 2);
+var ownPc = new owned Child(int, 1, 2);
+var pc:borrowed Parent(int) = ownPc.borrow();
 pc.parent_method();
 pc.overridden_method();

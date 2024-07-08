@@ -23,8 +23,8 @@ proc foo(n:int, ref p:borrowed CC, ref q:borrowed C)
 }
 
 proc doit() {
-  var p = new borrowed CC(0.0, 0);
-  var q = new borrowed C(1.0);
+  var pObj = new CC(0.0, 0); var p = pObj.borrow();
+  var qObj = new C(1.0);     var q = qObj.borrow();
   foo(100, p, q);
   writeln("p=", p, " q=", q);
   p.x = 1.0; p.y = 0;

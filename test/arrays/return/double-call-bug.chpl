@@ -28,7 +28,7 @@ proc localEnumerateRepresentatives_v3() : [] uint(64) {
   return enumerateStatesFixedHamming_v3(anotherfun());
 }
 
-proc anotherfun() return 234;
+proc anotherfun() do return 234;
 
 proc specifyDomain_v2(): [0..#10] {
   writeln("inside specifyDomain_v2");

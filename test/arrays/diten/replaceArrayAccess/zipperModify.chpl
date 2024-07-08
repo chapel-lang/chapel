@@ -1,6 +1,6 @@
 var A, B: [1..4] int = 1..4;
 
-proc f(i) return i;
+proc f(i) do return i;
 
 for (a, i) in zip(A, 1..4) {
   A[i] = A[i] * A[i];

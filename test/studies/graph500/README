@@ -31,3 +31,16 @@ to test domain reassignment and the subsequent array resizing.
 * Try to make the behavior deterministic. (Applies at least to v1 and v2.)
 Especially make the edge list deterministic.
 (As of this writing, even min/max (over the edge list) node IDs can vary.)
+
+2024-02 / PR #24404 update: removing v1, relying on v2 instead, because:
+* v1 can perform invalid memory accesses (1),
+* v2 does not have this issue,
+* v2 is an extension of v1, therefore v2 is likely to catch any issue
+  in testing that v1 would catch
+
+The most recent version of v1 prior to removal is at:
+  https://github.com/chapel-lang/chapel/pull/24404/commits/f3350828a3
+
+(1) See Paul C's excellent analysis in these comments:
+  https://github.com/chapel-lang/chapel/pull/24353#issuecomment-1940350479
+  https://github.com/chapel-lang/chapel/pull/24404#issuecomment-1940565575

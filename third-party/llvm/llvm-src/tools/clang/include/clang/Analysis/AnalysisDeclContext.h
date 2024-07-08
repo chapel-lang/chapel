@@ -229,7 +229,9 @@ private:
 protected:
   LocationContext(ContextKind k, AnalysisDeclContext *ctx,
                   const LocationContext *parent, int64_t ID)
-      : Kind(k), Ctx(ctx), Parent(parent), ID(ID) {}
+      : Kind(k), Ctx(ctx), Parent(parent), ID(ID) {
+    assert(ctx);
+  }
 
 public:
   virtual ~LocationContext();
@@ -238,8 +240,10 @@ public:
 
   int64_t getID() const { return ID; }
 
+  LLVM_ATTRIBUTE_RETURNS_NONNULL
   AnalysisDeclContext *getAnalysisDeclContext() const { return Ctx; }
 
+  /// It might return null.
   const LocationContext *getParent() const { return Parent; }
 
   bool isParentOf(const LocationContext *LC) const;
@@ -327,7 +331,7 @@ public:
   unsigned getIndex() const { return Index; }
 
   CFGElement getCallSiteCFGElement() const { return (*Block)[Index]; }
-  
+
   void Profile(llvm::FoldingSetNodeID &ID) override;
 
   static void Profile(llvm::FoldingSetNodeID &ID, AnalysisDeclContext *ADC,

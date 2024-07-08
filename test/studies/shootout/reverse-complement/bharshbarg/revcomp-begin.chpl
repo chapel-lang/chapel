@@ -12,7 +12,7 @@ const newLine     = "\n".toByte();
 const greaterThan = ">".toByte();
 
 proc main(args: [] string) {
-  var inFile = openfd(0);
+  var inFile = new file(0);
   const fileLen = inFile.size;
   var data : [1..fileLen] uint(8);
   var r = inFile.reader(locking=false);
@@ -40,7 +40,7 @@ proc main(args: [] string) {
       if data[idx] == greaterThan {
         if start == 0 then start = idx;
         else {
-          begin process(data, start, idx-2);
+          begin with (ref data) process(data, start, idx-2);
           start = idx;
         }
       }
@@ -53,12 +53,11 @@ proc main(args: [] string) {
   }
 
   // Open a binary writer to stdout
-  var binout = openfd(1).writer(iokind.native, locking=false, 
-                                hints=ioHintSet.direct(QIO_CH_ALWAYS_UNBUFFERED));
-  binout.write(data);
+  var binout = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
+  binout.writeBinary(data);
 }
 
-proc process(data : [], in front : int, in back : int) {
+proc process(ref data : [], in front : int, in back : int) {
 
   // Advance to the next line
   while data[front] != newLine do front += 1;

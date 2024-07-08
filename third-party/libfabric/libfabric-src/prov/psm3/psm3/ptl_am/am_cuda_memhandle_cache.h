@@ -65,15 +65,22 @@ extern "C" {
 
 #define CUDA_MEMHANDLE_CACHE_SIZE 64
 
-psm2_error_t am_cuda_memhandle_cache_init(uint32_t memcache_size);
+struct am_cuda_memhandle_cache;	// opaque since contains rbtree fields
+typedef struct am_cuda_memhandle_cache *am_cuda_memhandle_cache_t;
+
+psm2_error_t am_cuda_memhandle_cache_alloc(am_cuda_memhandle_cache_t *cachep,
+										uint32_t memcache_size,
+										psm2_mq_stats_t *stats);
 
 CUdeviceptr
-am_cuda_memhandle_acquire(uintptr_t sbuf, CUipcMemHandle* handle,
-				uint32_t length, psm2_epid_t epid);
+am_cuda_memhandle_acquire(am_cuda_memhandle_cache_t cache,
+				uintptr_t sbuf, CUipcMemHandle* handle,
+				psm2_epid_t epid);
 void
-am_cuda_memhandle_release(CUdeviceptr cuda_ipc_dev_ptr);
+am_cuda_memhandle_release(am_cuda_memhandle_cache_t cache,
+				CUdeviceptr cuda_ipc_dev_ptr);
 
-void am_cuda_memhandle_cache_map_fini();
+void am_cuda_memhandle_cache_free(am_cuda_memhandle_cache_t cache);
 
 #ifdef __cplusplus
 } /* extern "C" */

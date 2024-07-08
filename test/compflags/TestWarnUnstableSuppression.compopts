@@ -1,0 +1,7 @@
+--warn-unstable                                                     #TestWarnUnstableSuppression.1.good
+--warn-unstable-internal                                            #TestWarnUnstableSuppression.2.good
+--warn-unstable-standard                                            #TestWarnUnstableSuppression.3.good
+--warn-unstable --warn-unstable-internal                            #TestWarnUnstableSuppression.4.good
+--warn-unstable --warn-unstable-standard                            #TestWarnUnstableSuppression.5.good
+--warn-unstable-internal --warn-unstable-standard                   #TestWarnUnstableSuppression.6.good
+--warn-unstable --warn-unstable-internal --warn-unstable-standard   #TestWarnUnstableSuppression.7.good

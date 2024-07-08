@@ -287,7 +287,7 @@ static int psmx3_cntr_close(fid_t fid)
 			fi_close((fid_t)cntr->wait);
 	}
 
-	fastlock_destroy(&cntr->trigger_lock);
+	ofi_spin_destroy(&cntr->trigger_lock);
 	psmx3_domain_release(cntr->domain);
 	free(cntr);
 
@@ -367,12 +367,17 @@ int psmx3_cntr_open(struct fid_domain *domain, struct fi_cntr_attr *attr,
 		break;
 
 	default:
-		FI_INFO(&psmx3_prov, FI_LOG_CQ,
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CQ,
 			"attr->events=%d, supported=%d\n",
 			attr->events, FI_CNTR_EVENTS_COMP);
 		return -FI_EINVAL;
 	}
 
+	if (psmx3_env.yield_mode && attr->wait_obj != FI_WAIT_NONE) {
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CQ,
+			"waitset %d not allowed when FI_PSM3_YIELD_MODE enabled\n", attr->wait_obj);
+		return -FI_EINVAL;
+	}
 	switch (attr->wait_obj) {
 	case FI_WAIT_NONE:
 	case FI_WAIT_UNSPEC:
@@ -380,7 +385,7 @@ int psmx3_cntr_open(struct fid_domain *domain, struct fi_cntr_attr *attr,
 
 	case FI_WAIT_SET:
 		if (!attr->wait_set) {
-			FI_INFO(&psmx3_prov, FI_LOG_CQ,
+			PSMX3_INFO(&psmx3_prov, FI_LOG_CQ,
 				"FI_WAIT_SET is specified but attr->wait_set is NULL\n");
 			return -FI_EINVAL;
 		}
@@ -399,7 +404,7 @@ int psmx3_cntr_open(struct fid_domain *domain, struct fi_cntr_attr *attr,
 		break;
 
 	default:
-		FI_INFO(&psmx3_prov, FI_LOG_CQ,
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CQ,
 			"attr->wait_obj=%d, supported=%d...%d\n",
 			attr->wait_obj, FI_WAIT_NONE, FI_WAIT_MUTEX_COND);
 		return -FI_EINVAL;
@@ -426,7 +431,7 @@ int psmx3_cntr_open(struct fid_domain *domain, struct fi_cntr_attr *attr,
 	ofi_atomic_initialize64(&cntr_priv->error_counter, 0);
 
 	slist_init(&cntr_priv->poll_list);
-	fastlock_init(&cntr_priv->trigger_lock);
+	ofi_spin_init(&cntr_priv->trigger_lock);
 
 	if (wait)
 		fi_poll_add(&cntr_priv->wait->pollset->poll_fid,

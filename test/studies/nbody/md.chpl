@@ -20,7 +20,7 @@ config const
 config const n = 1000;
 const D_dr = {1..n};
 
-const D_distrib = D_dr dmapped Block(D_dr);
+const D_distrib = D_dr dmapped new blockDist(D_dr);
 var A, B: [D_distrib] real;
 
 proc computeOne(b_i, b_j) {
@@ -30,12 +30,12 @@ proc computeOne(b_i, b_j) {
 // a simple version of the algorithm
 proc try1() {
 
-  var tm: Timer;
+  var tm: stopwatch;
   tm.start();
 
   // "forall": parallel, distributed over D_distrib
   // compute all A[i] in parallel
-  forall i in D_distrib {
+  forall i in D_distrib with (ref A) {
 
     // "for": sequential, local; over a privitized copy of D_distrib
     // accumulate into A[i] sequentially
@@ -54,7 +54,7 @@ proc try1() {
 // overlap computation and communication
 proc try2() {
 
-  var tm: Timer;
+  var tm: stopwatch;
   tm.start();
 
   // parallel over locales
@@ -80,7 +80,7 @@ proc try2() {
         const next_loc = (loc_i + loc_j + 1) % numLocales;
         const more_chunks = loc_j < numLocales-1;
 
-        cobegin with (ref next_dom) {
+        cobegin with (ref next_dom, ref next_array) {
 
           // Task 1: prefetch into 'next_array'
           if more_chunks then on Locales[next_loc] {

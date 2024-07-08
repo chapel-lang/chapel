@@ -34,8 +34,8 @@ proc printCommDiagnostics(id, s) {
   writeln(s, "(Locale", id, "): nb executeOns: ", diagnostics.execute_on_nb);
 }
 
-proc nextN() return (here.id+1)%numLocales;
-proc prevN() return (here.id+numLocales-1)%numLocales;
+proc nextN() do return (here.id+1)%numLocales;
+proc prevN() do return (here.id+numLocales-1)%numLocales;
 
 proc getIdx(loc) {
   if rank==1 {
@@ -136,19 +136,19 @@ proc main() {
 
   if doBlock {
     writeln();
-    const bD: domain(rank) dmapped new dmap (new Block(boundingBox=D)) = D;
+    const bD: domain(rank) dmapped new blockDist(boundingBox=D) = D;
     doit(bD, "Block");
   }
 
   if doCyclic {
     writeln();
-    const cD: domain(rank) dmapped new dmap (new Cyclic(startIdx=zeroT)) = D;
+    const cD: domain(rank) dmapped new cyclicDist(startIdx=zeroT) = D;
     doit(cD, "Cyclic");
   }
 
   if doBlockCyclic {
     writeln();
-    const bcD: domain(rank) dmapped new dmap (new BlockCyclic(rank=rank,idxType=int,startIdx=zeroT,blocksize=oneT)) = D;
+    const bcD: domain(rank) dmapped new blockCycDist(rank=rank,idxType=int,startIdx=zeroT,blocksize=oneT) = D;
     doit(bcD, "BlockCyclic");
   }
 

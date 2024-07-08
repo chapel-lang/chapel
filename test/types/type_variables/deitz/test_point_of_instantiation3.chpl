@@ -33,7 +33,8 @@ module M4 {
   }
 
   proc main() {
-    var c: borrowed C = new borrowed D(t=R);
+    var ownC = new owned D(t=R);
+    var c: borrowed C = ownC.borrow();
 
     bar(c);
 

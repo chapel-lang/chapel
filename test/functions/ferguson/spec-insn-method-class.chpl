@@ -2,7 +2,7 @@ class C {
   var x;
 }
 
-class Child : C {
+class Child : C(?) {
   var y:int;
 }
 
@@ -23,24 +23,30 @@ override proc (borrowed Child(int)).foo() {
 }
 
 writeln("static C");
-var a = new borrowed C(1.0);
+var ownA = new owned C(1.0);
+var a = ownA.borrow();
 a.foo();
 
-var b = new borrowed C(2);
+var ownB = new owned C(2);
+var b = ownB.borrow();
 b.foo();
 
 writeln("static Child");
 
-var c = new borrowed Child(x=1.0, y=100);
+var ownC = new owned Child(x=1.0, y=100);
+var c = ownC.borrow();
 c.foo();
 
-var d = new borrowed Child(x=2, y=100);
+var ownD = new owned Child(x=2, y=100);
+var d = ownD.borrow();
 d.foo();
 
 
 writeln("static C dynamic Child");
-var e:borrowed C(real) = new borrowed Child(x=1.0, y=100);
+var ownE = new owned Child(x=1.0, y=100);
+var e:borrowed C(real) = ownE.borrow();
 e.foo();
 
-var f:borrowed C(int) = new borrowed Child(x=2, y=100);
+var ownF = new owned Child(x=2, y=100);
+var f:borrowed C(int) = ownF.borrow();
 f.foo();

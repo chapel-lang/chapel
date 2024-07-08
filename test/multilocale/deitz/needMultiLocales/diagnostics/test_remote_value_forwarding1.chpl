@@ -1,6 +1,6 @@
 use CommDiagnostics;
 
-proc foo(i: int): int
+proc foo(i: int): int do
   return if i > 1 then 1 + foo(i-1) else 1;
 
 proc main() {

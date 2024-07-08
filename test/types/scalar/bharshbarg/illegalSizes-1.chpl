@@ -1,4 +1,3 @@
-var a   : bool(13);
 var b   : complex(32);
 var foo : int; // make sure the error messages continue OK
 var c   : imag(42);

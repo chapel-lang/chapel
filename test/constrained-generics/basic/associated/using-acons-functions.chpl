@@ -53,18 +53,18 @@ icFun(1);
 
 int implements I1;
 proc reqFn1(arg: int) { writeln("reqFn1.int(", arg, ")"); }
-proc get1(arg: int) return arg * 10;
-proc int.AT1 type return get1(this).type;
+proc get1(arg: int) do return arg * 10;
+proc int.AT1 type do return get1(this).type;
 
 int implements I2;
 proc reqFn2(arg: int) { writeln("reqFn2.int(", arg, ")"); }
-proc get2(arg: int) return arg * 20;
-proc int.AT2 type return get2(this).type;
+proc get2(arg: int) do return arg * 20;
+proc int.AT2 type do return get2(this).type;
 
 int implements I3;
 proc reqFn3(arg: int) { writeln("reqFn3.int(", arg, ")"); }
-proc get3(arg: int) return arg * 30;
-proc int.AT3 type return get3(this).type;
+proc get3(arg: int) do return arg * 30;
+proc int.AT3 type do return get3(this).type;
 
 /////////////////////////////////
 
@@ -74,15 +74,15 @@ icFun(2.2);
 
 real implements I1;
 proc reqFn1(arg: real) { writeln("reqFn1.real(", arg, ")"); }
-proc get1(arg: real) return (arg, -arg): complex;
-proc real.AT1 type return get1(this).type;
+proc get1(arg: real) do return (arg, -arg): complex;
+proc real.AT1 type do return get1(this).type;
 
 complex implements I2;
 proc reqFn2(arg: complex) { writeln("reqFn2.complex(", arg, ")"); }
-proc get2(arg: complex) return arg: string;
-proc complex.AT2 type return get2(this).type;
+proc get2(arg: complex) do return arg: string;
+proc complex.AT2 type do return get2(this).type;
 
 string implements I3;
 proc reqFn3(arg: string) { writeln("reqFn3.string(", arg, ")"); }
-proc get3(arg: string) return arg.size;
-proc string.AT3 type return get3(this).type;
+proc get3(arg: string) do return arg.size;
+proc string.AT3 type do return get3(this).type;

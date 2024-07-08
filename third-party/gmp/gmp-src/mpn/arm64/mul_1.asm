@@ -37,6 +37,7 @@ C Cortex-A53	7.5-8
 C Cortex-A57	 7
 C Cortex-A72
 C X-Gene	 4
+C Apple M1	 1
 
 C TODO
 C  * Start first multiply earlier.
@@ -56,7 +57,7 @@ EPILOGUE()
 
 PROLOGUE(mpn_mul_1)
 	adds	x4, xzr, xzr		C clear register and cy flag
-L(com):	lsr	x18, n, #2
+L(com):	lsr	x17, n, #2
 	tbnz	n, #0, L(bx1)
 
 L(bx0):	mov	x11, x4
@@ -65,7 +66,7 @@ L(bx0):	mov	x11, x4
 L(b10):	ldp	x4, x5, [up]
 	mul	x8, x4, v0
 	umulh	x10, x4, v0
-	cbz	x18, L(2)
+	cbz	x17, L(2)
 	ldp	x6, x7, [up,#16]!
 	mul	x9, x5, v0
 	b	L(mid)-8
@@ -80,7 +81,7 @@ L(bx1):	ldr	x7, [up],#8
 	str	x9, [rp],#8
 	tbnz	n, #1, L(b10)
 
-L(b01):	cbz	x18, L(1)
+L(b01):	cbz	x17, L(1)
 
 L(b00):	ldp	x6, x7, [up]
 	mul	x8, x6, v0
@@ -90,8 +91,8 @@ L(b00):	ldp	x6, x7, [up]
 	adcs	x12, x8, x11
 	umulh	x11, x7, v0
 	add	rp, rp, #16
-	sub	x18, x18, #1
-	cbz	x18, L(end)
+	sub	x17, x17, #1
+	cbz	x17, L(end)
 
 	ALIGN(16)
 L(top):	mul	x8, x4, v0
@@ -110,8 +111,8 @@ L(mid):	mul	x8, x6, v0
 	stp	x12, x13, [rp],#32
 	adcs	x12, x8, x11
 	umulh	x11, x7, v0
-	sub	x18, x18, #1
-	cbnz	x18, L(top)
+	sub	x17, x17, #1
+	cbnz	x17, L(top)
 
 L(end):	mul	x8, x4, v0
 	adcs	x13, x9, x10

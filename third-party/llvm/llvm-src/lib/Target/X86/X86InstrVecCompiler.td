@@ -17,6 +17,8 @@
 
 let Predicates = [NoAVX512] in {
   // A vector extract of the first f32/f64 position is a subregister copy
+  def : Pat<(f16 (extractelt (v8f16 VR128:$src), (iPTR 0))),
+            (COPY_TO_REGCLASS (v8f16 VR128:$src), FR16)>;
   def : Pat<(f32 (extractelt (v4f32 VR128:$src), (iPTR 0))),
             (COPY_TO_REGCLASS (v4f32 VR128:$src), FR32)>;
   def : Pat<(f64 (extractelt (v2f64 VR128:$src), (iPTR 0))),
@@ -34,8 +36,8 @@ let Predicates = [HasAVX512] in {
 }
 
 let Predicates = [NoVLX] in {
-  def : Pat<(v8f16 (scalar_to_vector FR16X:$src)),
-            (COPY_TO_REGCLASS FR16X:$src, VR128)>;
+  def : Pat<(v8f16 (scalar_to_vector FR16:$src)),
+            (COPY_TO_REGCLASS FR16:$src, VR128)>;
   // Implicitly promote a 32-bit scalar to a vector.
   def : Pat<(v4f32 (scalar_to_vector FR32:$src)),
             (COPY_TO_REGCLASS FR32:$src, VR128)>;
@@ -66,7 +68,7 @@ multiclass subvector_subreg_lowering<RegisterClass subRC, ValueType subVT,
   def : Pat<(subVT (extract_subvector (VT RC:$src), (iPTR 0))),
             (subVT (EXTRACT_SUBREG RC:$src, subIdx))>;
 
-  def : Pat<(VT (insert_subvector undef, subRC:$src, (iPTR 0))),
+  def : Pat<(VT (insert_subvector undef_or_freeze_undef, subRC:$src, (iPTR 0))),
             (VT (INSERT_SUBREG (IMPLICIT_DEF), subRC:$src, subIdx))>;
 }
 
@@ -81,6 +83,7 @@ defm : subvector_subreg_lowering<VR128, v2f64, VR256, v4f64,  sub_xmm>;
 defm : subvector_subreg_lowering<VR128, v8i16, VR256, v16i16, sub_xmm>;
 defm : subvector_subreg_lowering<VR128, v16i8, VR256, v32i8,  sub_xmm>;
 defm : subvector_subreg_lowering<VR128, v8f16, VR256, v16f16, sub_xmm>;
+defm : subvector_subreg_lowering<VR128, v8bf16, VR256, v16bf16, sub_xmm>;
 
 // A 128-bit subvector extract from the first 512-bit vector position is a
 // subregister copy that needs no instruction. Likewise, a 128-bit subvector
@@ -93,6 +96,7 @@ defm : subvector_subreg_lowering<VR128, v2f64, VR512, v8f64,  sub_xmm>;
 defm : subvector_subreg_lowering<VR128, v8i16, VR512, v32i16, sub_xmm>;
 defm : subvector_subreg_lowering<VR128, v16i8, VR512, v64i8,  sub_xmm>;
 defm : subvector_subreg_lowering<VR128, v8f16, VR512, v32f16, sub_xmm>;
+defm : subvector_subreg_lowering<VR128, v8bf16, VR512, v32bf16, sub_xmm>;
 
 // A 128-bit subvector extract from the first 512-bit vector position is a
 // subregister copy that needs no instruction. Likewise, a 128-bit subvector
@@ -105,6 +109,7 @@ defm : subvector_subreg_lowering<VR256, v4f64,  VR512, v8f64,  sub_ymm>;
 defm : subvector_subreg_lowering<VR256, v16i16, VR512, v32i16, sub_ymm>;
 defm : subvector_subreg_lowering<VR256, v32i8,  VR512, v64i8,  sub_ymm>;
 defm : subvector_subreg_lowering<VR256, v16f16, VR512, v32f16, sub_ymm>;
+defm : subvector_subreg_lowering<VR256, v16bf16, VR512, v32bf16, sub_ymm>;
 
 
 // If we're inserting into an all zeros vector, just use a plain move which
@@ -127,6 +132,9 @@ let Predicates = [HasAVX, NoVLX] in {
   defm : subvec_zero_lowering<"DQA", VR128, v16i16, v8i16, sub_xmm>;
   defm : subvec_zero_lowering<"DQA", VR128, v32i8, v16i8, sub_xmm>;
 }
+
+let Predicates = [HasAVXNECONVERT, NoVLX] in
+  defm : subvec_zero_lowering<"DQA", VR128, v16bf16, v8bf16, sub_xmm>;
 
 let Predicates = [HasVLX] in {
   defm : subvec_zero_lowering<"APDZ128", VR128X, v4f64, v2f64, sub_xmm>;
@@ -171,6 +179,12 @@ let Predicates = [HasFP16, HasVLX] in {
   defm : subvec_zero_lowering<"APSZ128", VR128X, v16f16, v8f16, sub_xmm>;
   defm : subvec_zero_lowering<"APSZ128", VR128X, v32f16, v8f16, sub_xmm>;
   defm : subvec_zero_lowering<"APSZ256", VR256X, v32f16, v16f16, sub_ymm>;
+}
+
+let Predicates = [HasBF16, HasVLX] in {
+  defm : subvec_zero_lowering<"APSZ128", VR128X, v16bf16, v8bf16, sub_xmm>;
+  defm : subvec_zero_lowering<"APSZ128", VR128X, v32bf16, v8bf16, sub_xmm>;
+  defm : subvec_zero_lowering<"APSZ256", VR256X, v32bf16, v16bf16, sub_ymm>;
 }
 
 class maskzeroupper<ValueType vt, RegisterClass RC> :

@@ -177,14 +177,14 @@ int psmx2_init_prov_info(const struct fi_info *hints, struct fi_info **info)
 	if (hints->fabric_attr && hints->fabric_attr->name &&
 	    strcasecmp(hints->fabric_attr->name, fabric_attr->name)) {
 		FI_INFO(&psmx2_prov, FI_LOG_CORE, "Unknown fabric name\n");
-		FI_INFO_NAME(&psmx2_prov, fabric_attr, hints->fabric_attr);
+		OFI_INFO_NAME(&psmx2_prov, fabric_attr, hints->fabric_attr);
 		return -FI_ENODATA;
 	}
 
 	if (hints->domain_attr && hints->domain_attr->name &&
 	    strncasecmp(hints->domain_attr->name, domain_attr->name, strlen(PSMX2_DOMAIN_NAME))) {
 		FI_INFO(&psmx2_prov, FI_LOG_CORE, "Unknown domain name\n");
-		FI_INFO_NAME(&psmx2_prov, domain_attr, hints->domain_attr);
+		OFI_INFO_NAME(&psmx2_prov, domain_attr, hints->domain_attr);
 		return -FI_ENODATA;
 	}
 
@@ -230,7 +230,7 @@ int psmx2_init_prov_info(const struct fi_info *hints, struct fi_info **info)
 
 	if ((hints->caps & PSMX2_CAPS) != hints->caps) {
 		FI_INFO(&psmx2_prov, FI_LOG_CORE, "caps not supported\n");
-		FI_INFO_CHECK(&psmx2_prov, prov_info, hints, caps, FI_TYPE_CAPS);
+		OFI_INFO_CHECK(&psmx2_prov, prov_info, hints, caps, FI_TYPE_CAPS);
 		return -FI_ENODATA;
 	}
 

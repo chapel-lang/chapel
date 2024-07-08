@@ -28,7 +28,7 @@ void testmain (int argc, char **argv);
 
 void testhalves (int count, void (*tested_fun) (int));
 
-void testfree (void *p);
+void testfree (void *p, size_t size);
 
 void
 dump (const char *label, const mpz_t x);

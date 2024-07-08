@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -105,6 +105,7 @@ And all :type:`mpz_t` GMP routines, as well as the following routines:
   * :proc:`mpf_ui_sub()`
 
 */
+@unstable("The 'GMP' module is unstable")
 module GMP {
   use CTypes;
   use OS;
@@ -113,30 +114,35 @@ module GMP {
 
   require "GMPHelper/chplgmp.h";
 
-  proc chpl_gmp_alloc(size:c_size_t) : c_void_ptr {
+  pragma "chpldoc ignore chpl prefix"
+  proc chpl_gmp_alloc(size:c_size_t) : c_ptr(void) {
     pragma "insert line file info"
-    extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
     extern const CHPL_RT_MD_GMP:chpl_mem_descInt_t;
     return chpl_mem_alloc(size, CHPL_RT_MD_GMP);
   }
 
-  proc chpl_gmp_realloc(ptr:c_void_ptr,
-                               old_size:c_size_t, new_size:c_size_t) : c_void_ptr {
+  pragma "chpldoc ignore chpl prefix"
+  proc chpl_gmp_realloc(ptr:c_ptr(void),
+                               old_size:c_size_t, new_size:c_size_t) : c_ptr(void) {
     pragma "insert line file info"
-    extern proc chpl_mem_realloc(ptr:c_void_ptr, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_realloc(ptr:c_ptr(void), size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
     extern const CHPL_RT_MD_GMP:chpl_mem_descInt_t;
     return chpl_mem_realloc(ptr, new_size, CHPL_RT_MD_GMP);
   }
 
-  proc chpl_gmp_free(ptr:c_void_ptr, old_size:c_size_t) {
+  pragma "chpldoc ignore chpl prefix"
+  proc chpl_gmp_free(ptr:c_ptr(void), old_size:c_size_t) {
     pragma "insert line file info"
-      extern proc chpl_mem_free(ptr:c_void_ptr) : void;
+      extern proc chpl_mem_free(ptr:c_ptr(void)) : void;
     chpl_mem_free(ptr);
   }
+
 
   //
   // Initialize GMP to use Chapel's allocator
   //
+  pragma "chpldoc ignore chpl prefix"
   proc chpl_gmp_init() {
     extern proc chpl_gmp_mp_set_memory_functions(alloc:c_fn_ptr,
                                                  realloc:c_fn_ptr,
@@ -202,24 +208,34 @@ module GMP {
   // the actual GMP data.
   //
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type __mpz_struct;
 
   /* The GMP ``mpz_t`` type */
   extern type mpz_t           = 1 * __mpz_struct;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type __mpf_struct;
 
   /*  The GMP ``mpf_t`` type */
   extern type mpf_t           = 1 * __mpf_struct;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type __gmp_randstate_struct;
 
 
   /* The GMP ``gmp_randstate_t`` type */
   extern type gmp_randstate_t = 1 * __gmp_randstate_struct;
+
+  /* GMP doesn't specify what type of integer ``mp_exp_t`` will be,
+     but Chapel needs to know.  In current GMP headers, it is usually
+     a ``c_long``, so we declare it as such here, and use an
+     initialization-time check to catch cases where this is
+     inaccurate. */
+  extern type mp_exp_t = c_long;
+  if c_sizeof(mp_exp_t) != c_sizeof(c_long) {
+    warning("GMP.chpl didn't get definition of 'mp_exp_t' correct");
+  }
 
   //
   // The organization of the following interfaces is aligned with
@@ -260,7 +276,7 @@ module GMP {
 
   extern proc mpz_set_d(ref rop: mpz_t, op: c_double);
 
-  extern proc mpz_set_str(ref rop: mpz_t, str: c_string, base: c_int);
+  extern proc mpz_set_str(ref rop: mpz_t, str: c_ptrConst(c_char), base: c_int);
 
   extern proc mpz_swap(ref rop1: mpz_t, ref rop2: mpz_t);
 
@@ -278,9 +294,8 @@ module GMP {
   extern proc mpz_init_set_d(ref rop: mpz_t, op: c_double);
 
   extern proc mpz_init_set_str(ref rop: mpz_t,
-                               str: c_string,
+                               str: c_ptrConst(c_char),
                                base: c_int) : c_int;
-
 
   //
   // 5.4 Conversion Functions
@@ -295,10 +310,9 @@ module GMP {
   extern proc mpz_get_d_2exp(ref exp: c_long,
                              const ref op: mpz_t) : c_double;
 
-  extern proc mpz_get_str(str: c_string,
+  extern proc mpz_get_str(str: c_ptrConst(c_char),
                           base: c_int,
-                          const ref op: mpz_t) : c_string;
-
+                          const ref op: mpz_t) : c_ptrConst(c_char);
 
   //
   // 5.5 Arithmetic Functions
@@ -871,7 +885,7 @@ module GMP {
                         const ref op: mpz_t);
 
   extern proc mpf_set_str(ref rop: mpz_t,
-                          str: c_string,
+                          str: c_ptrConst(c_char),
                           base: c_int);
 
   extern proc mpf_swap(ref rop1: mpf_t,
@@ -908,6 +922,9 @@ module GMP {
 
   extern proc mpf_get_ui(const ref op: mpf_t) : c_ulong;
 
+  extern proc mpf_get_str(str: c_ptr(c_char), out expptr: mp_exp_t,
+                          base: c_int, n_digits: c_size_t,
+                          const in op: mpf_t): c_ptr(c_char);
 
   //
   // 7.5 Arithmetic Functions
@@ -1012,15 +1029,14 @@ module GMP {
   // 7.7 Input and Output Functions
   //
 
-  extern proc mpf_out_str(stream: _file,
+  extern proc mpf_out_str(stream: c_ptr(c_FILE),
                           base: c_int,
                           n_digits: c_size_t,
                           const ref op: mpf_t);
 
   extern proc mpf_inp_str(ref rop: mpf_t,
-                          stream: _file,
+                          stream: c_ptr(c_FILE),
                           base: c_int);
-
 
   //
   // 7.8 Miscellaneous Functions
@@ -1106,16 +1122,14 @@ module GMP {
   //
   // printf/scanf
   //
-  extern proc gmp_printf(fmt: c_string, arg...);
+  extern proc gmp_printf(fmt: c_ptrConst(c_char), in arg...);
 
-  extern proc gmp_fprintf(fp: _file, fmt: c_string, arg...);
+  extern proc gmp_fprintf(fp: c_ptr(c_FILE), fmt: c_ptrConst(c_char), in arg...);
 
-  extern proc gmp_fprintf(fp: _file, fmt: c_string, arg...);
-
-  extern proc gmp_asprintf(ref ret: c_string, fmt: c_string, arg...);
-
+  extern proc gmp_asprintf(ref ret: c_ptr(c_uchar), fmt: c_ptrConst(c_char), in arg...);
 
   /* Get an MPZ value stored on another locale */
+  pragma "chpldoc ignore chpl prefix"
   proc chpl_gmp_get_mpz(ref ret: mpz_t,
                         src_locale: int,
                         in from: __mpz_struct,
@@ -1153,12 +1167,14 @@ module GMP {
   }
 
   /* Return the number of limbs used in the number */
+  pragma "chpldoc ignore chpl prefix"
   proc chpl_gmp_mpz_nlimbs(const ref from: mpz_t) : uint(64) {
     var x = chpl_gmp_mpz_struct_sign_size(from[0]);
     return (abs(x)):uint(64);
   }
 
   /* Return the i'th limb used in the number (counting from 0) */
+  pragma "chpldoc ignore chpl prefix"
   proc chpl_gmp_mpz_getlimbn(const ref from: mpz_t, n:integral) : uint(64) {
     var i = n.safeCast(mp_size_t);
     // OK to cast result to maximal uint for two reasons:
@@ -1174,7 +1190,7 @@ module GMP {
 
   /* Return the number of limbs allocated in an __mpz_struct */
   private extern proc chpl_gmp_mpz_struct_nalloc(from: __mpz_struct) : mp_size_t;
-  /* Return the the number of limbs used with the sign of the mpz number
+  /* Return the number of limbs used with the sign of the mpz number
      for an __mpz_struct */
   private extern proc chpl_gmp_mpz_struct_sign_size(from: __mpz_struct) : mp_size_t;
   /* Set the sign and number of fields used in an mpz
@@ -1193,24 +1209,25 @@ module GMP {
   chpl_gmp_randstate_same_algorithm(a:gmp_randstate_t, b:gmp_randstate_t):c_int;
 
   /* Get an mpz_t as a string */
-  extern proc chpl_gmp_mpz_get_str(base: c_int, const ref x: mpz_t) : c_string;
+  pragma "chpldoc ignore chpl prefix"
+  extern proc chpl_gmp_mpz_get_str(base: c_int, const ref x: mpz_t) : c_ptrConst(c_char);
 
   class GMPRandom {
     var state: gmp_randstate_t;
 
     proc init() {
-      this.complete();
+      init this;
       gmp_randinit_default(this.state);
     }
 
     // Creates a Mersenne Twister (probably same as init_default)
     proc init(twister: bool) {
-      this.complete();
+      init this;
       gmp_randinit_mt(this.state);
     }
 
     proc init(a: bigint, c: uint, m2exp: uint) {
-      this.complete();
+      init this;
       // Rely on bigint assignment operator to obtain a local copy
       var a_ = a;
 
@@ -1221,11 +1238,11 @@ module GMP {
     }
 
     proc init(size: uint) {
-      this.complete();
+      init this;
       gmp_randinit_lc_2exp_size(this.state, size.safeCast(c_ulong));
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       on this {
         gmp_randclear(this.state);

@@ -9,7 +9,7 @@ proc foo() {
   var x:owned C?;
   var y = new owned C(2);
 
-  x.retain(y.release());
+  x = owned.adopt(owned.release(y));
 }
 
 

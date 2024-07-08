@@ -1,0 +1,1 @@
+CHPL_GPU_MEM_STRATEGY==array_on_device

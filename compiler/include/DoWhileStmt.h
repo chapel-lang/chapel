@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,7 +29,8 @@ class DoWhileStmt final : public WhileStmt
   // Class interface
   //
 public:
-  static BlockStmt*      build(Expr* cond, BlockStmt* body);
+  static BlockStmt*      build(Expr* cond, BlockStmt* body,
+                                LLVMMetadataList attrs = {});
 
 
   //

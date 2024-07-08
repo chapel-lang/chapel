@@ -10,7 +10,7 @@ union U {
 
 proc helper(param name : string) {
   writeln("---------------");
-  var f = openmem();
+  var f = openMemFile();
   var x : U;
 
   __primitive("set_union_id", x, getFieldIndex(U, name) + 1);
@@ -21,20 +21,20 @@ proc helper(param name : string) {
 
   {
     writeln("writing: ", x);
-    var w = f.writer();
+    var w = f.writer(locking=false);
     w.write(x);
   }
 
   {
     var s : string;
-    var r = f.reader();
-    r.readstring(s);
+    var r = f.reader(locking=false);
+    r.readAll(s);
     writeln("file contents: ", s);
   }
 
   {
     var y : U;
-    var r = f.reader();
+    var r = f.reader(locking=false);
     r.read(y);
     writeln("read: ", y);
   }

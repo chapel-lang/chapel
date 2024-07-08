@@ -50,7 +50,9 @@ static bool isCaseSensitivePath(StringRef Path) {
 }
 
 FileCollector::FileCollector(std::string Root, std::string OverlayRoot)
-    : Root(std::move(Root)), OverlayRoot(std::move(OverlayRoot)) {
+    : Root(Root), OverlayRoot(OverlayRoot) {
+  assert(sys::path::is_absolute(Root) && "Root not absolute");
+  assert(sys::path::is_absolute(OverlayRoot) && "OverlayRoot not absolute");
 }
 
 void FileCollector::PathCanonicalizer::updateWithRealPath(
@@ -69,7 +71,7 @@ void FileCollector::PathCanonicalizer::updateWithRealPath(
     // cases? What if there is nothing on disk?
     if (sys::fs::real_path(Directory, RealPath))
       return;
-    CachedDirs[Directory] = std::string(RealPath.str());
+    CachedDirs[Directory] = std::string(RealPath);
   } else {
     RealPath = DirWithSymlink->second;
   }

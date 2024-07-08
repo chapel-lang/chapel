@@ -1,0 +1,49 @@
+//
+// Example of a low level buffer that wraps _ddata. See #16797.
+//
+
+record buffer : writeSerializable {
+  type eltType;
+
+  // TODO: How to make "on this" equivalent to "on this._data"?
+  var _data: _ddata(eltType);
+  var _size: int;
+
+  proc init(type eltType, size: int) {
+    this.eltType = eltType;
+    if boundsChecking && size <= 0 {
+      import HaltWrappers.boundsCheckHalt;
+      boundsCheckHalt('Cannot allocate buffer with size <= 0');
+    } else {
+      var callPostAlloc: bool;
+      this._data = _ddata_allocate_noinit(eltType, size, callPostAlloc);
+      this._size = size;
+      if callPostAlloc then
+        _ddata_allocate_postalloc(_data, size);
+    }
+  }
+
+  proc deinit() {
+    _ddata_free(_data, _size);
+  }
+
+  inline proc size { return _size; }
+
+  proc this(idx: int) ref {
+    import HaltWrappers.boundsCheckHalt;
+    if boundsChecking && (idx < 0 || idx >= _size) then
+      boundsCheckHalt('Index \'' + idx:string + '\' is out of bounds');
+    return _data[idx];
+  }
+
+  // A standard implementation may not want to offer this.
+  iter these() ref {
+    for i in 0..<_size do yield this[i];
+  }
+
+  // A standard implementation probably shouldn't offer this.
+  proc serialize(writer, ref serializer) {
+    for slot in this do writer.write(slot, " ");
+  }
+}
+

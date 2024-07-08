@@ -23,12 +23,12 @@ enum digit {zero=0, one, two, three, four,
 config const verbose = false;
 // if verbose is true, prints out non-det output, otherwise prints det output
 config const peek = false;
-// if peek is true, allows chameneos to peek at spotsLeft$ in
+// if peek is true, allows chameneos to peek at spotsLeftSync in
 // MeetingPlace.meet() then immediately return
 
 class MeetingPlace {
-  var spotsLeft$ : sync int = 0; // no need to initialize to 0?
-  var color2$: sync color;
+  var spotsLeftSync : sync int = 0; // no need to initialize to 0?
+  var color2: sync color;
   var color1 : color;
   var id1 : int;
   var id2 : int;
@@ -36,14 +36,14 @@ class MeetingPlace {
   /* constructor for MeetingPlace, sets the
      number of meetings to take place */
   proc init() {
-    this.complete();
-    spotsLeft$.writeXF(numMeetings*2);
+    init this;
+    spotsLeftSync.writeXF(numMeetings*2);
   }
 
   /* reset must be called after meet,
      to reset numMeetings for a subsequent call of meet */
   proc reset() {
-    spotsLeft$.writeXF(numMeetings*2);
+    spotsLeftSync.writeXF(numMeetings*2);
   }
 
   /* meet, if called on by the chameneos who arrives 1st,
@@ -52,34 +52,34 @@ class MeetingPlace {
      (denies meetings of 3+ chameneos) */
 
   proc meet(chameneos : unmanaged Chameneos) {
-    /* peek at spotsLeft$ */
+    /* peek at spotsLeftSync */
     if (peek) {
-      if (spotsLeft$.readXX() == 0) {
+      if (spotsLeftSync.readXX() == 0) {
         return (true, chameneos.myColor);
       }
     }
 
-    var spotsLeft = spotsLeft$.readFE();
+    var spotsLeft = spotsLeftSync.readFE();
     var otherColor : color;
 
     if (spotsLeft == 0) {
-      spotsLeft$.writeEF(0);
+      spotsLeftSync.writeEF(0);
       return (true, chameneos.myColor);
     }
     if (spotsLeft % 2 == 0) {
       color1 = chameneos.myColor;
       id1 = chameneos.id;
-      spotsLeft$.writeEF(spotsLeft - 1);
-      otherColor = color2$.readFE();
+      spotsLeftSync.writeEF(spotsLeft - 1);
+      otherColor = color2.readFE();
       if (id1 == id2) {
         halt("halt: meetingsWithSelf count is nonzero");
         chameneos.meetingsWithSelf += 1;
       }
-      spotsLeft$.writeEF(spotsLeft - 2);
+      spotsLeftSync.writeEF(spotsLeft - 2);
     } else if (spotsLeft % 2 == 1) {
       otherColor = color1;
       id2 = chameneos.id;
-      color2$.writeEF(chameneos.myColor);
+      color2.writeEF(chameneos.myColor);
     }
     chameneos.meetings += 1;
     //sleep(10);
@@ -212,7 +212,7 @@ proc main() {
   if (numChameneos1 < 2 || numChameneos2 < 2 || numMeetings < 0) {
     writeln("Please specify numChameneos1 and numChameneos2 of at least 2, and numMeetings of at least 0.");
   } else  {
-    var startTimeTotal = getCurrentTime();
+    var startTimeTotal = timeSinceEpoch().totalSeconds();
 
     printColorChanges();
 
@@ -222,15 +222,15 @@ proc main() {
     const population2 = populate(numChameneos2);
 
     if (verbose) {
-      var startTime = getCurrentTime();
+      var startTime = timeSinceEpoch().totalSeconds();
       run(population1, forest);
-      var endTime = getCurrentTime();
+      var endTime = timeSinceEpoch().totalSeconds();
       writeln("time for chameneos1 to meet = ", endTime - startTime);
       printInfo(population1);
 
-      startTime = getCurrentTime();
+      startTime = timeSinceEpoch().totalSeconds();
       run(population2, forest);
-      endTime = getCurrentTime();
+      endTime = timeSinceEpoch().totalSeconds();
       writeln("time for chameneos2 to meet = ", endTime - startTime);
       printInfo(population2);
     } else {
@@ -238,7 +238,7 @@ proc main() {
       runQuiet(population2, forest);
     }
 
-    var endTimeTotal = getCurrentTime();
+    var endTimeTotal = timeSinceEpoch().totalSeconds();
 
     if (verbose) {
       writeln("total execution time = ", endTimeTotal - startTimeTotal);
@@ -250,4 +250,3 @@ proc main() {
     delete forest;
   }
 }
-

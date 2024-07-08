@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,42 +24,37 @@
 class BlockStmt;
 class VisibilityStmt;
 
+#include "chpl/framework/ID.h"
 #include "symbol.h"
+
+extern bool fDetailedErrors;
 
 extern int         chplLineno;
 extern bool        chplParseString;
 extern const char* chplParseStringMsg;
 
-extern ModTag      currentModuleType;
 extern const char* currentModuleName;
 
 extern int         yystartlineno;
 extern const char* yyfilename;
-extern BlockStmt*  yyblock;
 
 extern bool parsingPrivate;
 
 extern bool countTokens;
 extern bool printTokens;
 
-void               parse();
+// Used to communicate to production the last declaration we used to print
+// the "In {function|module|class} 'foo'" header for error messages.
+extern chpl::ID dynoIdForLastContainingDecl;
+
+void               parseAndConvertUast();
 
 void addInternalModulePath(const ArgumentDescription* desc,
                            const char* newpath);
 void addStandardModulePath(const ArgumentDescription* desc,
                            const char* newpath);
-
-void               setupModulePaths();
-
-void               addFlagModulePath(const char* newpath);
-
-void               addModuleToParseList(const char* name,
-                                        VisibilityStmt* newUse);
-
-// The new parser does not rely on yyfilename to set locations, so passing
-// in the submodule path allows for overriding that behavior.
-ModuleSymbol*      parseIncludedSubmodule(const char* name,
-                                          const char* path=yyfilename);
+void addDynoGenLib(const ArgumentDescription* desc,
+                   const char* newpath);
 
 void noteParsedIncludedModule(ModuleSymbol* mod, const char* path);
 

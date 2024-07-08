@@ -4,7 +4,8 @@ class MyClass {
 
 
 proc test1() {
-  var x = new borrowed MyClass(1);
+  var ox = new owned MyClass(1);
+  var x = ox.borrow();
   writeln(x);
 }
 

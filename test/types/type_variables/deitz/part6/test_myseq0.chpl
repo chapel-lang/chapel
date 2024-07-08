@@ -29,7 +29,8 @@ class myseq {
   }
 }
 
-var s : borrowed myseq(int) = new borrowed myseq(int);
+var ownS = new owned myseq(int);
+var s : borrowed myseq(int) = ownS.borrow();
 
 s.append(2);
 

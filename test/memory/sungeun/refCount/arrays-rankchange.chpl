@@ -18,7 +18,7 @@ proc return_rankchange(A: []) {
   return A[.., 3];
 }
 
-use Memory.Diagnostics;
+use MemDiagnostics;
 proc main() {
   var A: [1..9, 1..9] int;
 

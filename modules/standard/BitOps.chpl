@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -50,8 +50,8 @@ module BitOps {
     :returns: the number of 1 bits set in `x` as `x.type`
     :rtype: `x.type`
    */
-  inline proc popcount(x: integral) {
-    return BitOps_internal.popcount(x);
+  inline proc popCount(x: integral) {
+    return BitOps_internal.popCount(x);
   }
 
   /*
@@ -100,10 +100,10 @@ module BitOps {
   // function.  There should be a similar version using xor
   // as the combinator, but I'm not sure where that would
   // go to be perfectly truthful
-  pragma "no doc"
+  @chpldoc.nodoc
   proc bitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
     // return the transpose of x, treating it as an 8x8 bit-matrix.
-    proc bitMatTrans(x: uint(64))
+    proc bitMatTrans(x: uint(64)) do
       return ((x & 0x8040201008040201)       |
               (x & 0x0080402010080402) <<  7 |
               (x & 0x0000804020100804) << 14 |
@@ -130,7 +130,7 @@ module BitOps {
     }
 
     // set every bit in sets of eight to one if the last one is one
-    inline proc byteExpand(u: uint(64))
+    inline proc byteExpand(u: uint(64)) do
       return 0x8080808080808080 ^ (0x8080808080808080 - u);
 
     var result:uint(64) = 0;
@@ -160,26 +160,58 @@ module BitOps {
  */
 private module BitOps_internal {
   private use CTypes;
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_popcount_32(x: c_uint) : uint(32);
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_popcount_64(x: c_ulonglong) : uint(64);
 
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_clz_32(x: c_uint) : uint(32);
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_clz_64(x: c_ulonglong) : uint(64);
 
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_ctz_32(x: c_uint) : uint(32);
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_ctz_64(x: c_ulonglong) : uint(64);
 
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_parity_32(x: c_uint) : uint(32);
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_parity_64(x: c_ulonglong) : uint(64);
 
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotl_8(x: uint(8), n: uint(8)) : uint(8);
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotl_16(x: uint(16), n: uint(16)) : uint(16);
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotl_32(x: uint(32), n: uint(32)) : uint(32);
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotl_64(x: uint(64), n: uint(64)) : uint(64);
 
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotr_8(x: uint(8), n: uint(8)) : uint(8);
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotr_16(x: uint(16), n: uint(16)) : uint(16);
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotr_32(x: uint(32), n: uint(32)) : uint(32);
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotr_64(x: uint(64), n: uint(64)) : uint(64);
 
   inline proc clz(x: uint(?bits)) {
@@ -230,7 +262,7 @@ private module BitOps_internal {
     return BitOps_internal.ctz(x:uint(bits)):int(bits);
   }
 
-  inline proc popcount(x: uint(?bits)) {
+  inline proc popCount(x: uint(?bits)) {
     // the select will be folded out at compile time.
     select bits {
       when 64 do
@@ -247,12 +279,12 @@ private module BitOps_internal {
         // NOTE: this actually cant happen with how the integer types are setup
         //       right now - leaving it here for the future when we support
         //       >64bit types
-        compilerError("popcount is not supported for that bit width.");
+        compilerError("popCount is not supported for that bit width.");
     }
   }
 
-  inline proc popcount(x: int(?bits)) {
-    return BitOps_internal.popcount(x:uint(bits)):int(bits);
+  inline proc popCount(x: int(?bits)) {
+    return BitOps_internal.popCount(x:uint(bits)):int(bits);
   }
 
   inline proc parity(x: uint(?bits)) {

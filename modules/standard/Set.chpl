@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -56,7 +56,7 @@ module Set {
   private use ChapelHashtable;
   private use HaltWrappers;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   private param _sanityChecks = true;
 
   //
@@ -73,27 +73,27 @@ module Set {
   // is suboptimal in cases where long critical sections have high
   // contention.
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
   //
   // Use a wrapper class to let set methods have a const ref receiver even
   // when `parSafe` is `true` and the set lock is used.
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _checkElementType(type t) {
     // In the future we might support it if the set is not default-inited.
     if isGenericType(t) {
@@ -103,13 +103,23 @@ module Set {
   }
 
   // If we have "chpl__serialize", assume we have "chpl__deserialize".
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _isSerializable(type T) param {
     use Reflection;
     pragma "no init"
     var x: T;
     return canResolveMethod(x, "chpl__serialize");
   }
+
+  /* Impacts whether the copy initializer that takes a set will generate a
+     warning when the other set has a different ``parSafe`` setting than the
+     destination.  Compile with ``-swarnForSetParsafeMismatch=false`` to turn
+     off this warning.
+
+     Defaults to ``true``
+  */
+  config param warnForSetParsafeMismatch = true;
+
 
   /*
     A set is a collection of unique elements. Attempting to add a duplicate
@@ -131,14 +141,33 @@ module Set {
     The set type is not parallel safe by default. For situations in which
     such protections are desirable, parallel safety can be enabled by setting
     `parSafe = true` in any set constructor. A set constructed from another
-    set inherits the parallel safety mode of that set by default.
+    set inherits the parallel safety mode of that set by default. Note that
+    the ``parSafe`` mode is currently unstable and will eventually be replaced
+    by a standalone parallel-safe set type.
   */
-  record set {
+  record set : serializable {
 
     /* The type of the elements contained in this set. */
     type eltType;
 
+    // NOTE: the compiler has some special handling for unstable warnings
+    // associated with set's parSafe field:
+    // * AggregateType::generateType -> ensures that specifying 'parSafe' in a type
+    //    expression for 'set' will generate a warning
+    // * functionResolution.createGenericRecordVarDefaultInitCall -> ensures that
+    //    the stable initializer is called when the compiler generates initializer
+    //     calls for variable declarations that don't specify 'parSafe' (or set it to false)
+    //
+    // This results in the following behavior:
+    //  - 'var m: set(int)' doesn't generate an unstable warning
+    //  - 'type t = set(int, false)' generates an unstable warning
+    //  - 'var m: set(int, parSafe=true)' generates two unstable warnings (one
+    //    for the type expression and one for the initializer call)
+    //  - 'var m: set(int, parSafe=false)' generates one unstable warning for
+    //    the type expression
+
     /* If `true`, this set will perform parallel safe operations. */
+    @unstable("'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future")
     param parSafe = false;
 
     /*
@@ -156,24 +185,41 @@ module Set {
     */
     const resizeThreshold = defaultHashTableResizeThreshold;
 
-    pragma "no doc"
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    @chpldoc.nodoc
+    var _lock = if parSafe then new _LockWrapper() else none;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _htb: chpl__hashtable(eltType, nothing);
 
     /*
       Initializes an empty set containing elements of the given type.
 
       :arg eltType: The type of the elements of this set.
-      :arg parSafe: If `true`, this set will use parallel safe operations.
       :arg resizeThreshold: Fractional value that specifies how full this map
                             can be before requesting additional memory.
       :arg initialCapacity: Integer value that specifies starting map size. The
                             map can hold at least this many values before
                             attempting to resize.
     */
-    proc init(type eltType, param parSafe=false,
+    proc init(type eltType,
+              resizeThreshold=defaultHashTableResizeThreshold,
+              initialCapacity=16) {
+      _checkElementType(eltType);
+      this.eltType = eltType;
+      this.parSafe = false;
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
+                                      initialCapacity);
+    }
+
+    @unstable("'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future")
+    proc init(type eltType, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16) {
       _checkElementType(eltType);
@@ -196,15 +242,38 @@ module Set {
       set, it will not be added again. The formal `iterable` must be a type
       with an iterator named "these" defined for it.
 
+      :arg eltType: The type of the elements of this set.
       :arg iterable: A collection of elements to add to this set.
-      :arg parSafe: If `true`, this set will use parallel safe operations.
       :arg resizeThreshold: Fractional value that specifies how full this map
                             can be before requesting additional memory.
       :arg initialCapacity: Integer value that specifies starting map size. The
                             map can hold at least this many values before
                             attempting to resize.
     */
-    proc init(type eltType, iterable, param parSafe=false,
+    proc init(type eltType, iterable,
+              resizeThreshold=defaultHashTableResizeThreshold,
+              initialCapacity=16)
+    where canResolveMethod(iterable, "these") lifetime this < iterable {
+      _checkElementType(eltType);
+
+      this.eltType = eltType;
+      this.parSafe = false;
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
+                                      initialCapacity);
+      init this;
+
+      for elem in iterable do _addElem(elem);
+    }
+
+    @unstable("'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future")
+    proc init(type eltType, iterable, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16)
     where canResolveMethod(iterable, "these") lifetime this < iterable {
@@ -221,7 +290,7 @@ module Set {
       }
       this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
                                       initialCapacity);
-      this.complete();
+      init this;
 
       for elem in iterable do _addElem(elem);
     }
@@ -241,7 +310,14 @@ module Set {
       this.resizeThreshold = other.resizeThreshold;
       this._htb = new chpl__hashtable(eltType, nothing,
                                       resizeThreshold);
-      this.complete();
+
+      if (this.parSafe != other.parSafe && warnForSetParsafeMismatch) {
+        compilerWarning("initializing between two sets with different " +
+                        "parSafe settings\n" + "Note: this warning can be " +
+                        "silenced with '-swarnForSetParsafeMismatch=false'");
+      }
+
+      init this;
 
       // TODO: Relax this to allow if 'isCoercible(t, this.eltType)'?
       if eltType != t {
@@ -260,8 +336,8 @@ module Set {
 
     // Do things the slow/copy way if the element is serializable.
     // See issue: #17477
-    pragma "no doc"
-    proc _addElem(in elem: eltType): bool
+    @chpldoc.nodoc
+    proc ref _addElem(in elem: eltType): bool
     where _isSerializable(eltType) {
         var result = false;
 
@@ -279,9 +355,9 @@ module Set {
 
     // For types that aren't serializable, avoid an extra copy by moving
     // the value across locales.
-    pragma "no doc"
-    proc _addElem(pragma "no auto destroy" in elem: eltType): bool {
-      use Memory.Initialization;
+    @chpldoc.nodoc
+    proc ref _addElem(pragma "no auto destroy" in elem: eltType): bool {
+      use MemMove;
 
       var result = false;
 
@@ -290,7 +366,7 @@ module Set {
         // TODO: The following variation gets lifetime errors in
         // '.../Set/types/testNilableTuple.chpl':
         //
-        // var moved = moveToValue(elem);
+        // var moved = moveFrom(elem);
         // var (isFullSlot, idx) = _htb.findAvailableSlot(moved);
         //
         var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
@@ -298,7 +374,7 @@ module Set {
         if !isFullSlot {
 
           // This line moves the bits over, 'elem' is dead past this point.
-          var moved = moveToValue(elem);
+          var moved = moveFrom(elem);
           _htb.fillSlot(idx, moved, none);
           result = true;
         } else {
@@ -311,19 +387,19 @@ module Set {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
         on this {
-          _lock$.lock();
+          _lock.lock();
         }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
         on this {
-          _lock$.unlock();
+          _lock.unlock();
         }
     }
 
@@ -363,7 +439,7 @@ module Set {
     /*
      As above, but parSafe lock must be held and must be called "on this".
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const _contains(const ref element: eltType): bool {
       var (hasFoundSlot, _) = _htb.findFullSlot(element);
       return hasFoundSlot;
@@ -473,18 +549,19 @@ module Set {
       :yields: A constant reference to an element in this set.
     */
     iter const these() const ref {
-      foreach idx in 0..#_htb.tableSize do
+      foreach idx in 0..#_htb.tableSize {
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
+      }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     iter const these(param tag) const ref where tag == iterKind.standalone {
       var space = 0..#_htb.tableSize;
       foreach idx in space.these(tag) do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     iter const these(param tag) where tag == iterKind.leader {
       var space = 0..#_htb.tableSize;
       for followThis in space.these(tag) {
@@ -492,19 +569,15 @@ module Set {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     iter const these(param tag, followThis) const ref
     where tag == iterKind.follower {
       foreach idx in followThis(0) do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
-    /*
-      Write the contents of this set to a channel.
-
-      :arg ch: A channel to write to.
-    */
-    proc const writeThis(ch: channel) throws {
+    @chpldoc.nodoc
+    proc const _defaultWriteHelper(ch: fileWriter) throws {
       on this {
         _enter(); defer _leave();
 
@@ -522,6 +595,60 @@ module Set {
 
         ch.write("}");
       }
+    }
+
+    /*
+      Write the contents of this set to a fileWriter.
+
+      :arg writer: A fileWriter to write to.
+      :arg serializer: The serializer to use when writing.
+    */
+    proc const serialize(writer:fileWriter(?), ref serializer) throws {
+      if serializer.type == IO.defaultSerializer {
+        _defaultWriteHelper(writer);
+      } else {
+        on this {
+          _enter(); defer _leave();
+          var ser = serializer.startList(writer, this.size);
+          for x in this do ser.writeElement(x);
+          ser.endList();
+        }
+      }
+    }
+
+    @chpldoc.nodoc
+    proc ref deserialize(reader, ref deserializer) throws {
+      on this {
+        _enter(); defer _leave();
+
+        this.clear();
+
+        if deserializer.type == IO.defaultDeserializer {
+          reader.readLiteral("{");
+
+          do {
+            this.add(reader.read(eltType));
+          } while reader.matchLiteral(",");
+
+          reader.readLiteral("}");
+        } else {
+          var des = deserializer.startList(reader);
+          while des.hasMore() do
+            this.add(des.readElement(eltType));
+          des.endList();
+        }
+      }
+    }
+
+    @chpldoc.nodoc
+    proc init(type eltType, param parSafe : bool,
+              reader, ref deserializer) throws {
+      this.eltType = eltType;
+      this.parSafe = parSafe;
+
+      init this;
+
+      this.deserialize(reader, deserializer);
     }
 
     /*
@@ -559,7 +686,7 @@ module Set {
       As above, but the parSafe lock must be held, and must be called
       "on this".
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc const _size {
       return _htb.tableNumFullSlots;
     }
@@ -876,7 +1003,7 @@ module Set {
     return result;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator set.:(x: set(?et1, ?p1), type t: set(?et2, ?p2)) {
     // TODO: Allow coercion between element types? If we do then init=
     // should also be changed accordingly.

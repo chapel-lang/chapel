@@ -1,4 +1,4 @@
-use LowLevelMove;
+use MemMove;
 
 class C { }
 record R {
@@ -51,7 +51,7 @@ proc test1c() {
   var A:[D] R = noinit;
 
   moveInitialize(A["two"], new R(2));
-  explicitDeinit(A["two"]);
+  MemMove.destroy(A["two"]);
 }
 test1c();
 
@@ -85,7 +85,7 @@ proc test2c() {
   var c = new FieldNoinitDefaultInitializer();
 
   moveInitialize(c.A["two"], new R(2));
-  explicitDeinit(c.A["two"]);
+  MemMove.destroy(c.A["two"]);
 }
 test2c();
 
@@ -122,6 +122,6 @@ proc test3c() {
   var c = new FieldNoinitUserInitializer();
 
   moveInitialize(c.A["two"], new R(2));
-  explicitDeinit(c.A["two"]);
+  MemMove.destroy(c.A["two"]);
 }
 test3c();

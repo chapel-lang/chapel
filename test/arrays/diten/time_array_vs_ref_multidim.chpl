@@ -3,7 +3,7 @@ config param maxAdds = 5;
 config const size = 100;
 config const nTrials = 100;
 
-proc arrayAccess(A: [] real, B: [] real, param nAdds) {
+proc arrayAccess(A: [] real, ref B: [] real, param nAdds) {
   const n = A.size;
   for 1..nTrials {
     for i in A.domain {
@@ -14,7 +14,7 @@ proc arrayAccess(A: [] real, B: [] real, param nAdds) {
   }
 }
 
-proc refAccess(A: [] real, B: [] real, param nAdds) {
+proc refAccess(ref A: [] real, ref B: [] real, param nAdds) {
   const n = A.size;
   for 1..nTrials {
     for i in A.domain {
@@ -28,7 +28,7 @@ proc refAccess(A: [] real, B: [] real, param nAdds) {
 
 proc main {
   use Time;
-  var t1, t2: Timer;
+  var t1, t2: stopwatch;
   var Dom = {0..#size, 0..#size};
   var A: [Dom] real;
   var B: [Dom] real;

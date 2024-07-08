@@ -1,5 +1,5 @@
-use AutoMath; //doesn't make a difference -- works either way
-writeln(AutoMath.pi);
+use Math;
+writeln(Math.pi);
 writeln(pi);
 
 use LinearAlgebra;

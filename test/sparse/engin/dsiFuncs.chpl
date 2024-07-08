@@ -6,8 +6,8 @@ const ParentDom = {7..#2*N align 1, 17..#3*N align 5};
 enum layoutTypes {coo, csr, csc};
 config param layoutType = layoutTypes.coo;
 
-var csrDom: sparse subdomain(ParentDom) dmapped CS(compressRows=true);
-var cscDom: sparse subdomain(ParentDom) dmapped CS(compressRows=false);
+var csrDom: sparse subdomain(ParentDom) dmapped new dmap(new CS(compressRows=true));
+var cscDom: sparse subdomain(ParentDom) dmapped new dmap(new CS(compressRows=false));
 var cooDom: sparse subdomain(ParentDom);
 
 var SparseDom = if layoutType == layoutTypes.csr then 
@@ -18,10 +18,10 @@ var SparseDom = if layoutType == layoutTypes.csr then
                   cooDom;
 var SparseMat: [SparseDom] int;
 
-writeln(ParentDom.alignedLow);
+writeln(ParentDom.low);
 
-const rowToAdd = ParentDom.dim(0).alignedLow + ParentDom.stride[0]*2;
-const colToAdd = ParentDom.dim(1).alignedLow + ParentDom.stride[1]*3;
+const rowToAdd = ParentDom.dim(0).low + ParentDom.stride[0]*2;
+const colToAdd = ParentDom.dim(1).low + ParentDom.stride[1]*3;
 var row = [i in ParentDom.dim(1)] (rowToAdd, i);
 var col = [i in ParentDom.dim(0)] (i, colToAdd);
 
@@ -58,5 +58,5 @@ else {
   writeln("last:\t\t", SparseDom.last == expectedLast);
 }
 
-writeln("alignedLow:\t",SparseDom.alignedLow);
-writeln("alignedHigh:\t",SparseDom.alignedHigh);
+writeln("low:\t",SparseDom.low);
+writeln("high:\t",SparseDom.high);

@@ -39,6 +39,7 @@ def BPF_AND  : BPFArithOp<0x5>;
 def BPF_LSH  : BPFArithOp<0x6>;
 def BPF_RSH  : BPFArithOp<0x7>;
 def BPF_NEG  : BPFArithOp<0x8>;
+def BPF_MOD  : BPFArithOp<0x9>;
 def BPF_XOR  : BPFArithOp<0xa>;
 def BPF_MOV  : BPFArithOp<0xb>;
 def BPF_ARSH : BPFArithOp<0xc>;
@@ -62,6 +63,7 @@ def BPF_JA   : BPFJumpOp<0x0>;
 def BPF_JEQ  : BPFJumpOp<0x1>;
 def BPF_JGT  : BPFJumpOp<0x2>;
 def BPF_JGE  : BPFJumpOp<0x3>;
+def BPF_JSET : BPFJumpOp<0x4>;
 def BPF_JNE  : BPFJumpOp<0x5>;
 def BPF_JSGT : BPFJumpOp<0x6>;
 def BPF_JSGE : BPFJumpOp<0x7>;
@@ -89,6 +91,7 @@ def BPF_IMM  : BPFModeModifer<0x0>;
 def BPF_ABS  : BPFModeModifer<0x1>;
 def BPF_IND  : BPFModeModifer<0x2>;
 def BPF_MEM  : BPFModeModifer<0x3>;
+def BPF_MEMSX  : BPFModeModifer<0x4>;
 def BPF_ATOMIC : BPFModeModifer<0x6>;
 
 class BPFAtomicFlag<bits<4> val> {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,7 +43,7 @@ Limitations:
 
 .. code-block:: chapel
 
-   var replArray: [MyDomain dmapped Replicated()] real;
+   var replArray: [MyDomain dmapped new replicatedDist()] real;
 
 .. _ReplicatedVar_basic-usage:
 
@@ -84,7 +84,7 @@ modify the above variable declarations as follows:
 
 .. code-block:: chapel
 
-    var myRepVar: [rcDomainBase dmapped Replicated(myLocales,
+    var myRepVar: [rcDomainBase dmapped new replicatedDist(myLocales,
                      "over which to replicate 'myRepVar'")] MyType;
     var collected: [myLocales.domain] MyType;
 
@@ -106,26 +106,26 @@ private const rcDomainIx   = 1; // todo convert to param
    as shown :ref:`above <ReplicatedVar_subset-of-locales>`. */
 const rcDomainBase = {rcDomainIx..rcDomainIx};
 private const rcLocales    = Locales;
-private const rcDomainMap  = new unmanaged Replicated(rcLocales);
+private const rcDomainMap  = new replicatedDist(rcLocales);
 /* Use this domain to declare a user-level replicated variable,
    as shown :ref:`above <ReplicatedVar_basic-usage>` . */
-const rcDomain     = rcDomainBase dmapped new dmap(rcDomainMap);
-private param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped Replicated(an array of locales)'";
+const rcDomain     = rcDomainBase dmapped rcDomainMap;
+private param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped replicatedDist(an array of locales)'";
 
 private proc _rcTargetLocalesHelper(replicatedVar: [?D])
-  where isSubtype(_to_borrowed(replicatedVar._value.type), ReplicatedArr)
+  where isReplicatedArr(replicatedVar)
 {
   return replicatedVar.targetLocales();
 }
 
-pragma "no doc" // documented with the following entry
-proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
+@chpldoc.nodoc // documented with the following entry
+proc rcReplicate(ref replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
 { compilerError("the domain of first argument to rcReplicate()", _rcErr1); }
 
 /* Assign a value `valToReplicate` to copies of the replicated variable
    `replicatedVar` on all locales. */
-proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
-  where isSubtype(_to_borrowed(replicatedVar._value.type), ReplicatedArr)
+proc rcReplicate(ref replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
+  where isReplicatedArr(replicatedVar)
 {
   assert(replicatedVar.domain == rcDomainBase);
   coforall loc in _rcTargetLocalesHelper(replicatedVar) do
@@ -133,15 +133,15 @@ proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
       replicatedVar[rcDomainIx] = valToReplicate;
 }
 
-pragma "no doc" // documented with the following entry
-proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
-  where ! isSubtype(_to_borrowed(replicatedVar._value.type), ReplicatedArr)
+@chpldoc.nodoc // documented with the following entry
+proc rcCollect(replicatedVar: [?D] ?MYTYPE, ref collected: [?CD] MYTYPE): void
+  where ! isReplicatedArr(replicatedVar)
 { compilerError("the domain of first argument to rcCollect()", _rcErr1); }
 
 /* Copy the value of the replicated variable `replicatedVar` on each locale
    into the element of the array `collected` that corresponds to that locale.*/
-proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
-  where isSubtype(_to_borrowed(replicatedVar._value.type), ReplicatedArr)
+proc rcCollect(replicatedVar: [?D] ?MYTYPE, ref collected: [?CD] MYTYPE): void
+  where isReplicatedArr(replicatedVar)
 {
   var targetLocales = _rcTargetLocalesHelper(replicatedVar);
   assert(replicatedVar.domain == rcDomainBase);
@@ -156,14 +156,14 @@ Access the copy of `replicatedVar` on the current locale.
 
 This is equivalent to ``replicatedVar[1]``.
 */
-proc rcLocal(replicatedVar: [?D] ?MYTYPE) ref: MYTYPE {
+proc rcLocal(ref replicatedVar: [?D] ?MYTYPE) ref: MYTYPE {
   return replicatedVar[rcDomainIx];
 }
 
 /*
 Access the copy of `replicatedVar` on the locale `remoteLoc`.
 */
-proc rcRemote(replicatedVar: [?D] ?MYTYPE, remoteLoc: locale) ref: MYTYPE {
+proc rcRemote(ref replicatedVar: [?D] ?MYTYPE, remoteLoc: locale) ref: MYTYPE {
   var result: MYTYPE;
   on remoteLoc do
     result = replicatedVar[rcDomainIx];
@@ -180,7 +180,7 @@ proc rcRemote(replicatedVar: [?D] ?MYTYPE, remoteLoc: locale) ref: MYTYPE {
 // - stores 'newVal' into its copy on the locale 'newLocale',
 // - collects all its copies into an array 'collected'.
 //
-pragma "no doc" // TODO: move to a primer
+@chpldoc.nodoc // TODO: move to a primer
 proc rcExample(initVal: ?MyType, newVal: MyType, newLocale: locale): void {
   writeln("starting rcExample");
 
@@ -229,14 +229,14 @@ private proc writeReplicands(RV, locs) {
 // This is the same as 'rcExample', except the user can provide
 // specific locales to replicate over. The two differences are marked.
 //
-pragma "no doc" // TODO: move to a primer
+@chpldoc.nodoc // TODO: move to a primer
 proc rcExampleOverLocales(initVal: ?MyType, newVal: MyType, newLocale: locale,
                           localesToReplicateOver: [] locale = Locales): void {
   writeln("starting rcExampleOverLocales over ", localesToReplicateOver);
 
   // declare a replicated variable
   // DIFFERENT from rcExample(): the domain in myRepVar's type
-  var myRepVar: [rcDomainBase dmapped Replicated(localesToReplicateOver,
+  var myRepVar: [rcDomainBase dmapped new replicatedDist(localesToReplicateOver,
    "over which to replicate 'myRepVar' in rcExampleOverLocales()")] MyType;
 
   // initialize all copies to 'initVal'

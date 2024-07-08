@@ -1,0 +1,4 @@
+ResolvesDmap.chpl:20: warning: res0 = true
+ResolvesDmap.chpl:21: warning: res1 = false
+ResolvesDmap.chpl:22: warning: x : int(64)
+ResolvesDmap.chpl:23: error: done

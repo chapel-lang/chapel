@@ -17,10 +17,11 @@ class Child : Parent {
 proc test() {
   var x = new owned Child();
   var y = x.borrow();
-  y.f(1);
-  y.g(1:int(16));
-  y.g(1:int(32));
-  y.h(1);
+  var one: int = 1;
+  y.f(one);
+  y.g(one:int(16));
+  //y.g(one:int(32)); // see override-mix-ambiguity.chpl
+  y.h(one);
   y.h("string");
 }
 test();

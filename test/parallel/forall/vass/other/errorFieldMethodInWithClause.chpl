@@ -8,7 +8,7 @@ proc something {}
 
 class myClass {
   var myField = 5;
-  proc myProcc return 6;
+  proc myProcc do return 6;
 }
 
 proc myClass.test {
@@ -22,7 +22,7 @@ proc myClass.test {
 
 class myRecord {
   var myFild = 5;
-  proc myProc return 6;
+  proc myProc do return 6;
 }
 
 proc myRecord.test {
@@ -35,8 +35,8 @@ proc myRecord.test {
 }
 
 proc main {
-  const mc = new borrowed myClass();
+  const mc = new myClass();
   mc.test;
-  const mr = new borrowed myRecord();
+  const mr = new myRecord();
   mr.test;
 }

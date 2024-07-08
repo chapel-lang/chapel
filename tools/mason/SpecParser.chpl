@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -86,18 +86,20 @@ private proc readSpec(spec: string): list(string) {
         compilerVersion = "(\\%[A-Za-z0-9\\_\\@\\.\\-]+)",
         variantInclude = "(\\+[A-Za-z0-9\\-\\_]+)",
         variantExclude = "(\\~[A-Za-z0-9\\-\\_]+)",
-        dependency = "(\\^[a-zA-Z]*?[0-9]*?)",
+        dependency = "(\\^[a-zA-Z]*[0-9]*)",
         arch = "([A-Za-z0-9\\-\\_]+\\=[A-Za-z0-9\\-\\_]+)",
         emptyArch = "([A-Za-z0-9\\-\\_]+\\=)";
 
   var tokenList: list(string);
-  const pattern = compile("|".join(pkgVersion,
-                                   compilerVersion,
-                                   variantInclude,
-                                   variantExclude,
-                                   dependency,
-                                   emptyArch,
-                                   arch));
+  const pattern = new regex("|".join(pkgVersion,
+                                     compilerVersion,
+                                     variantInclude,
+                                     variantExclude,
+                                     dependency,
+                                     emptyArch,
+                                     arch), posix=true);
+    // note: using posix mode to get longest match behavior
+    // TODO: update this so that posix mode is not necessary
 
 
   if debugSpecParser then writeln(spec);
@@ -107,7 +109,7 @@ private proc readSpec(spec: string): list(string) {
         writeln("Token: " + token);
         writeln();
       }
-      tokenList.append(token);
+      tokenList.pushBack(token);
     }
   }
   return tokenList;
@@ -116,7 +118,7 @@ private proc readSpec(spec: string): list(string) {
 
 private proc parseSpec(ref tokenList: list(string)): 4*string throws {
 
-  const reCompilerVersion = compile("(\\%[A-Za-z0-9\\_\\@\\.\\-]+)");
+  const reCompilerVersion = new regex("(\\%[A-Za-z0-9\\_\\@\\.\\-]+)");
 
   // required fields
   //   - package name
@@ -134,7 +136,7 @@ private proc parseSpec(ref tokenList: list(string)): 4*string throws {
     throw new owned MasonError("Empty spec in Mason.toml");
   }
   while tokenList.size > 0 {
-    var toke = tokenList.pop(0);
+    var toke = tokenList.getAndRemove(0);
 
     // Package should be first token
     if package == '' {
@@ -151,10 +153,8 @@ private proc parseSpec(ref tokenList: list(string)): 4*string throws {
       }
     }
     else {
-      variants.append(toke);
+      variants.pushBack(toke);
     }
   }
   return (package, packageVersion, compiler, " ".join(variants.these()).strip());
 }
-
-

@@ -1,6 +1,7 @@
 use BitOps;
 use Random;
 use Time;
+use Math;
 
 use HPCCProblemSize;
 
@@ -17,8 +18,7 @@ const m = 2**n;
 config const epsilon = 2.0 ** -51.0,
              threshold = 16.0;
 
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+config const useRandomSeed = true;
 
 config const printParams = true,
              printArrays = false,
@@ -36,20 +36,20 @@ proc main() {
 
   initVectors(Twiddles, z);
 
-  const startTime = getCurrentTime();
+  const startTime = timeSinceEpoch().totalSeconds();
 
-  Z = conjg(z);
+  Z = conj(z);
   bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 
-  const execTime = getCurrentTime() - startTime;
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;
 
   const validAnswer = verifyResults(z, Z, Twiddles);
   printResults(validAnswer, execTime);
 }
 
 
-proc dfft(Z, Twiddles) {
+proc dfft(ref Z, Twiddles) {
   cft1st(Z, Twiddles);
 
   var span = radix;
@@ -66,7 +66,7 @@ proc dfft(Z, Twiddles) {
     forall j in 0..#span do
       butterfly(1.0, 1.0, 1.0, Z[j..j+3*span by span]);
   else
-    forall j in 0..#span {
+    forall j in 0..#span with (ref Z) {
       const a = Z(j),
             b = Z(j+span);
       Z(j)      = a + b;
@@ -80,11 +80,13 @@ proc printConfiguration() {
 }
 
 
-proc initVectors(Twiddles, z) {
+proc initVectors(ref Twiddles, ref z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
-  fillRandom(z, seed, algorithm=RNG.NPB);
+   if useRandomSeed
+    then fillRandom(z);
+    else fillRandom(z, 314159265);
 
   if (printArrays) {
     writeln("After initialization, Twiddles is: ", Twiddles, "\n");
@@ -93,14 +95,14 @@ proc initVectors(Twiddles, z) {
 }
 
 
-proc computeTwiddles(Twiddles) {
+proc computeTwiddles(ref Twiddles) {
   const numTwdls = Twiddles.size,
         delta = 2.0 * atan(1.0) / numTwdls;
 
   Twiddles(0) = 1.0;
   Twiddles(numTwdls/2) = let x = cos(delta * numTwdls/2)
                           in (x, x):complex;
-  forall i in 1..numTwdls/2-1 {
+  forall i in 1..numTwdls/2-1 with (ref Twiddles) {
     const x = cos(delta*i),
           y = sin(delta*i);
     Twiddles(i)            = (x, y):complex;
@@ -109,7 +111,7 @@ proc computeTwiddles(Twiddles) {
 }
 
 
-proc bitReverseShuffle(Vect: [?Dom]) {
+proc bitReverseShuffle(ref Vect: [?Dom]) {
   const numBits = log2(Vect.size),
         Perm: [Dom] index(Dom) = [i in Dom] bitReverse(i, revBits = numBits),
         Temp = Vect(Perm);
@@ -125,10 +127,10 @@ proc bitReverse(val: ?valType, revBits = 64) {
 }
 
 
-proc verifyResults(z, Z, Twiddles) {
+proc verifyResults(ref z, ref Z, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Z, "\n");
 
-  Z = conjg(Z) / m;
+  Z = conj(Z) / m;
   bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 
@@ -171,7 +173,7 @@ proc butterfly(wk1, wk2, wk3, inout A:[?D]) {
 }
 
 
-proc cft1st(A, W) {
+proc cft1st(ref A, W) {
   var x0 = A(0) + A(1),
       x1 = A(0) - A(1),
       x2 = A(2) + A(3),
@@ -298,9 +300,9 @@ proc cftmd21(span, A, W) {
 }
 
 
-proc interpIm(a, b)
+proc interpIm(a, b) do
   return (a.re - 2*b.im*a.im, 2*b.im*a.re - a.im):complex;
 
 
-proc interpRe(a, b) 
+proc interpRe(a, b) do
   return (a.re - 2*b.re*a.im, 2*b.re*a.re - a.im):complex;

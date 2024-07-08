@@ -6,12 +6,12 @@ proc makeId() { var result = gid; gid += 1; return result; }
 record r { var _id: int = makeId(); }
 
 proc r.init() {
-  this.complete();
+  init this;
   writeln('init r: ', _id);
 }
 
 proc r.init=(other: r) {
-  this.complete();
+  init this;
   writeln('init r: ', _id, ' from r: ', other._id);
 }
 

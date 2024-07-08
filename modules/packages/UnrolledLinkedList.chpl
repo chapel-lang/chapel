@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,7 +36,7 @@ module UnrolledLinkedList {
   private use IO;
   private use List;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   private param _sanityChecks = false;
 
   //
@@ -48,35 +48,35 @@ module UnrolledLinkedList {
       assert(expr);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
   //
   // Use a wrapper class to let unrolledLinkedList methods have a const ref receiver even
   // when `parSafe` is `true` and the unrolledLinkedList lock is used.
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
   /* Check that element type is supported by unrolledLinkedList */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _checkType(type eltType) {
     if !isDefaultInitializable(eltType) {
       compilerError("unrolledLinkedList element type must be default-initializable");
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _checkNodeCapacity(cap: int) {
     if cap < 2 {
       halt("unrolledLinkedList nodeCapacity can't be less than 2");
@@ -86,7 +86,7 @@ module UnrolledLinkedList {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class _linkedNode {
     type eltType;
     const capacity: int = 32;
@@ -108,9 +108,9 @@ module UnrolledLinkedList {
       data[size] = x;
       size += 1;
     }
-  };
+  }
 
-  record unrolledLinkedList {
+  record unrolledLinkedList : writeSerializable {
 
     /* The type of the elements contained in this unrolledLinkedList. */
     type eltType;
@@ -124,23 +124,23 @@ module UnrolledLinkedList {
     /*
       The number of nodes in the unrolledLinkedList
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     var _size = 0;
 
-    pragma "no doc"
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    @chpldoc.nodoc
+    var _lock = if parSafe then new _LockWrapper() else none;
 
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _head: unmanaged _linkedNode(eltType)? = nil;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _tail: unmanaged _linkedNode(eltType)? = nil;
 
     /*
       Delete all nodes in the list
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _destroy() {
       var cur = _head;
       while cur != nil {
@@ -150,7 +150,7 @@ module UnrolledLinkedList {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       _destroy();
     }
@@ -162,6 +162,9 @@ module UnrolledLinkedList {
 
       :arg parSafe: If `true`, this unrolledLinkedList will use parallel safe operations.
       :type parSafe: `param bool`
+
+      :arg nodeCapacity: The capacity of one linked node of this unrolledLinkedList.
+      :type nodeCapacity: `int`
     */
     proc init(type eltType, param parSafe=false, nodeCapacity: int = 32) {
       _checkType(eltType);
@@ -170,7 +173,7 @@ module UnrolledLinkedList {
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.nodeCapacity = nodeCapacity;
-      this.complete();
+      init this;
     }
 
     /*
@@ -183,6 +186,9 @@ module UnrolledLinkedList {
 
       :arg parSafe: If `true`, this unrolledLinkedList will use parallel safe operations.
       :type parSafe: `param bool`
+
+      :arg nodeCapacity: The capacity of one linked node of this unrolledLinkedList.
+      :type nodeCapacity: `int`
     */
     proc init(other: list(?t), param parSafe=false, nodeCapacity: int = 32) {
       _checkType(t);
@@ -193,7 +199,7 @@ module UnrolledLinkedList {
       this.eltType = t;
       this.parSafe = parSafe;
       this.nodeCapacity = nodeCapacity;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -207,6 +213,9 @@ module UnrolledLinkedList {
 
       :arg parSafe: If `true`, this unrolledLinkedList will use parallel safe operations.
       :type parSafe: `param bool`
+
+      :arg nodeCapacity: The capacity of one linked node of this unrolledLinkedList.
+      :type nodeCapacity: `int`
     */
     proc init(other: [?d] ?t, param parSafe=false, nodeCapacity: int = 32) {
       _checkType(t);
@@ -218,7 +227,7 @@ module UnrolledLinkedList {
       this.eltType = t;
       this.parSafe = parSafe;
       this.nodeCapacity = nodeCapacity;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -238,19 +247,19 @@ module UnrolledLinkedList {
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
       this.nodeCapacity = other.nodeCapacity;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
-    pragma "no doc"
-    proc _commonInitFromIterable(iterable) {
+    @chpldoc.nodoc
+    proc ref _commonInitFromIterable(iterable) {
       for x in iterable do
         append(x);
     }
 
     // A helper function for getting a reference to an unrolledLinkedList element.
     //
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc const ref _getRef(idx: int) ref {
       if _sanityChecks {
         assert(idx >= 0 && idx < _size);
@@ -268,19 +277,19 @@ module UnrolledLinkedList {
       halt("unrolledLinkedList out of range");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
-        _lock$.lock();
+        _lock.lock();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
-        _lock$.unlock();
+        _lock.unlock();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc const _withinBounds(idx: int): bool {
       return (idx >= 0 && idx < _size);
     }
@@ -289,8 +298,8 @@ module UnrolledLinkedList {
      Split a node from the given node p
      by moving half of the content of p into the new one
     */
-    pragma "no doc"
-    proc _split(p: unmanaged _linkedNode(eltType)) {
+    @chpldoc.nodoc
+    proc ref _split(p: unmanaged _linkedNode(eltType)) {
       if _sanityChecks then
         assert(p.size == nodeCapacity);
       var node = new unmanaged _linkedNode(eltType, nodeCapacity);
@@ -298,7 +307,7 @@ module UnrolledLinkedList {
       for i in start..p.size-1 {
         node.append(p.data[i]);
         if isSharedClass(this.eltType) then
-          p.data[i].clear();
+          p.data[i] = nil;
       }
       p.size -= node.size;
       if _sanityChecks then
@@ -318,8 +327,8 @@ module UnrolledLinkedList {
       If it's not possible to merge nodes, then fill the previous node to half
       Return whether it's merged
     */
-    pragma "no doc"
-    proc _merge(p: unmanaged _linkedNode(eltType)): bool {
+    @chpldoc.nodoc
+    proc ref _merge(p: unmanaged _linkedNode(eltType)): bool {
       var result = false;
 
       // Nothing to do
@@ -362,8 +371,8 @@ module UnrolledLinkedList {
     /*
       Make sure there's enough space in _tail for one element
     */
-    pragma "no doc"
-    proc _spareSpaceInTail() {
+    @chpldoc.nodoc
+    proc ref _spareSpaceInTail() {
       if _tail == nil {
         _tail = new unmanaged _linkedNode(eltType, nodeCapacity);
         _head = _tail;
@@ -379,16 +388,16 @@ module UnrolledLinkedList {
       }
     }
 
-    pragma "no doc"
-    proc _append(x: eltType)
+    @chpldoc.nodoc
+    proc ref _append(x: eltType)
     lifetime this < x {
       _size += 1;
       _spareSpaceInTail();
       _tail!.append(x);
     }
 
-    pragma "no doc"
-    proc _append(ref x: eltType) where isOwnedClass(x)
+    @chpldoc.nodoc
+    proc ref _append(ref x: eltType) where isOwnedClass(x)
     lifetime this < x {
       _size += 1;
       _spareSpaceInTail();
@@ -411,15 +420,15 @@ module UnrolledLinkedList {
       _leave();
     }
 
-    pragma "no doc"
-    proc append(ref x: eltType) where isOwnedClass(x)
+    @chpldoc.nodoc
+    proc ref append(ref x: eltType) where isOwnedClass(x)
     lifetime this < x {
       _enter();
       _append(x);
       _leave();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc ref _appendGeneric(collection) {
       var startSize: int;
       var endSize: int;
@@ -514,7 +523,7 @@ module UnrolledLinkedList {
       :rtype: `range`
     */
     proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
-      if !isBoundedRange(other) {
+      if other.bounds != boundKind.both {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot extend " + e + " with unbounded " + f;
@@ -610,27 +619,7 @@ module UnrolledLinkedList {
       return result;
     }
 
-    deprecated "unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append"
-    proc ref extend(other: list(eltType, ?p)) lifetime this < other {
-      append(other);
-    }
-
-    deprecated "unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append"
-    proc ref extend(other: unrolledLinkedList(eltType, ?p)) lifetime this < other {
-      append(other);
-    }
-
-    deprecated "unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append"
-    proc ref extend(other: [?d] eltType) lifetime this < other {
-      append(other);
-    }
-
-    deprecated "unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append"
-    proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
-      append(other);
-    }
-
-    pragma "no doc"
+    @chpldoc.nodoc
     proc ref _insert(idx: int, in x: eltType)
          lifetime this < x {
 
@@ -718,7 +707,7 @@ module UnrolledLinkedList {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc ref _insertGenericKnownSize(idx: int, items, size: int): bool {
       //TODO: Maybe some optimization here. This O(N^2)
       var result = false;
@@ -908,7 +897,7 @@ module UnrolledLinkedList {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc ref _popAtIndex(idx: int): eltType {
       _size -= 1;
 
@@ -1141,7 +1130,7 @@ module UnrolledLinkedList {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const ref this(i: int) const ref {
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid unrolledLinkedList index: " + i:string;
@@ -1169,23 +1158,21 @@ module UnrolledLinkedList {
 
     /*
       Write the contents of this unrolledLinkedList to a channel.
-
-      :arg ch: A channel to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc serialize(writer, ref serializer) throws {
       _enter();
 
-      ch.write("[");
+      writer.write("[");
 
       var first = true;
 
       for x in this {
-        if !first then ch.write(", ");
+        if !first then writer.write(", ");
         else first = false;
-        ch.write(x);
+        writer.write(x);
       }
 
-      ch.write("]");
+      writer.write("]");
 
       _leave();
     }
@@ -1300,4 +1287,3 @@ module UnrolledLinkedList {
   }
 
 } // End module "UnrolledLinkedList".
-

@@ -1,0 +1,3 @@
+(250, 1)
+(251, 2)
+zipMismatch.chpl:12: error: zippered iterations have non-equal lengths

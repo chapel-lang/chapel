@@ -1,0 +1,1 @@
+cantApplyPrivate.chpl:2: error: can't apply private to the fields or methods of a class or record yet

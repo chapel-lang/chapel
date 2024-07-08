@@ -244,24 +244,14 @@
 
 /*------------------------------------------------------------------------------------*/
 
-#if GASNET_TRACE
-  #define GASNETI_TRACE_BARRIER1(tm, flags) do { \
-    /* TODO-EX: _GASNETI_STAT_EVENT for TM barrier */                   \
-    GASNETI_TRACE_PRINTF(B,("Blocking Barrier: TM=" GASNETI_TMFMT " flags=%d",   \
-                            GASNETI_TMSTR(tm), flags));                 \
+#if GASNETI_STATS_OR_TRACE
+  #define GASNETI_TRACE_TM_BARRIER(name, tm, flags) do { \
+    _GASNETI_STAT_EVENT(B,name);                                       \
+    GASNETI_TRACE_PRINTF(B,(#name": TM=" GASNETI_TMFMT " flags=%d",    \
+                            GASNETI_TMSTR(tm), flags));                \
   } while (0)
-  #define GASNETI_TRACE_BARRIER2(tm, flags) do { \
-    /* TODO-EX: _GASNETI_STAT_EVENT for TM barrier */                   \
-    GASNETI_TRACE_PRINTF(B,("Non-blocking Barrier: TM=" GASNETI_TMFMT " flags=%d",   \
-                            GASNETI_TMSTR(tm), flags));                 \
-  } while (0)
-#elif GASNET_STATS
-  // TODO-EX: _GASNETI_STAT_EVENT for TM barrier
-  #define GASNETI_TRACE_BARRIER1(tm, flags) ((void)0)
-  #define GASNETI_TRACE_BARRIER2(tm, flags) ((void)0)
 #else
-  #define GASNETI_TRACE_BARRIER1(tm, flags) ((void)0)
-  #define GASNETI_TRACE_BARRIER2(tm, flags) ((void)0)
+  #define GASNETI_TRACE_TM_BARRIER(name, tm, flags) ((void)0)
 #endif
 
 /*------------------------------------------------------------------------------------*/
@@ -760,6 +750,9 @@ extern FILE *gasneti_open_outputfile(const char *_filename, const char *_desc);
         TIME(B, BARRIER_WAIT, waittime)                   \
         TIME(B, BARRIER, single-phase barrier time)       \
         VAL(B, BARRIER_TRY, success)                      \
+                                                          \
+        CNT(B, COLL_BARRIER, cnt)                         \
+        CNT(B, COLL_BARRIER_NB, cnt)                      \
                                                           \
         TIME(L, HSL_LOCK, waittime)                       \
         TIME(L, HSL_UNLOCK, holdtime)                     \

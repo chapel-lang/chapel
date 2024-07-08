@@ -1,3 +1,0 @@
-CHPL_LLVM==none
-COMPOPTS <= --debug
-COMPOPTS <= -g

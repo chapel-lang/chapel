@@ -19,7 +19,9 @@ GASNETI_BEGIN_NOWARN
 typedef enum {
     GEX_MK_CLASS_HOST,      // "normal" memory (eg GEX_MK_HOST)
     GEX_MK_CLASS_CUDA_UVA,  // CUDA UVA memory
-    GEX_MK_CLASS_HIP        // HIP device memory
+    GEX_MK_CLASS_HIP,       // HIP device memory
+    GEX_MK_CLASS_ZE,        // Level Zero device memory
+    _GEX_MK_CLASS_COUNT
 } gex_MK_Class_t;
 
 // Struct containing a union and an enum to indicate which member has been populated.
@@ -36,6 +38,11 @@ typedef struct {
         struct {
             int                    gex_hipDevice;
         }                    gex_class_hip;
+        struct {
+            void*                  gex_zeDevice;
+            void*                  gex_zeContext;
+            uint32_t               gex_zeMemoryOrdinal;
+        }                    gex_class_ze;
     }                    gex_args;
 } gex_MK_Create_args_t;
 
@@ -93,6 +100,14 @@ GASNETI_END_EXTERNC
   #else
     #define __HIP_PLATFORM_HCC__ // legacy
     #define __HIP_PLATFORM_AMD__
+  #endif
+#endif
+
+// Things for use only in conduit code
+#if GASNETI_BUILDING_CONDUIT
+  #if GASNET_HAVE_MK_CLASS_ZE
+    extern int gasneti_mk_ze_device_ordinal(void *device_handle_arg, int gpu_only);
+    extern const char *gasneti_mk_ze_strerror(unsigned int result);
   #endif
 #endif
 

@@ -98,7 +98,7 @@ iter getDigitsOutputs() {
     var answer: int;
     for digit in outdigits {
       answer *= 10;
-      answer += key.getValue(digit);
+      answer += key[digit];
     }
     yield answer;
   }

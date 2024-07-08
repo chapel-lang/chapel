@@ -1,6 +1,7 @@
 // Modules for timing and random number generator routines
 use Time;
 use Random;
+use Math;
 
 // constants related to memory
 param MB = 1024**2,
@@ -49,7 +50,7 @@ var curGBs: real;
 param seed = 314159265;
 
 proc main() {
-  var clock: Timer;
+  var clock: stopwatch;
 
   initStreamVectors();
 
@@ -71,11 +72,11 @@ proc main() {
 }
 
 proc initStreamVectors() {
-  var randlist = new borrowed NPBRandomStream(eltType=real, seed=seed);
+  var randlist = new randomStream(eltType=real, seed=seed);
 
-  randlist.fillRandom(A);
-  randlist.fillRandom(B);
-  randlist.fillRandom(C);
+  randlist.fill(A);
+  randlist.fill(B);
+  randlist.fill(C);
 
   A = 2.0 * A;
 }
@@ -89,15 +90,13 @@ proc computeStreamResults() {
 
 
 proc checkSTREAMresults() {
-  var randlist = new unmanaged NPBRandomStream(real, seed);
+  var randlist = new randomStream(real, seed);
 
   var Aref, Bref, Cref, error : [VecDomain] elemType;
 
-  randlist.fillRandom(Aref);
-  randlist.fillRandom(Bref);
-  randlist.fillRandom(Cref);
-
-  delete randlist;
+  randlist.fill(Aref);
+  randlist.fill(Bref);
+  randlist.fill(Cref);
 
   for i in VecDomain {
     Aref(i) = 2.0 * Aref(i);
@@ -152,4 +151,3 @@ proc writeStreamResults() {
   avgtime = sumtime/(numIters-1);  // skipped the 1st iteration
   writeln( "Triad    \t", curGBs, "\t", avgtime, "\t", mintime, "\t", maxtime);
 }
-

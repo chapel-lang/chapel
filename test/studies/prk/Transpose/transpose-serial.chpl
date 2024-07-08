@@ -37,7 +37,7 @@ if (!tiled) then tileSize = 1;
 const    Dom = {0.. # order, 0.. # order};
 var tiledDom = {0.. # order by tileSize, 0.. # order by tileSize};
 
-var timer: Timer,
+var timer: stopwatch,
     nBytes = 2.0 * numBytes(real) * order * order,
     A, B : [Dom] real;
 
@@ -54,7 +54,7 @@ if (!correctness) {
 }
 
 // Fill original column matrix
-[(i, j) in Dom] A[i,j] = order*j + i;
+[(i, j) in Dom with (ref A)] A[i,j] = order*j + i;
 
 // Set transpose matrix to known garbage value
 B = -1.0;

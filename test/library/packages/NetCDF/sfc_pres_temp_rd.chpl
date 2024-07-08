@@ -120,7 +120,7 @@ proc main {
         return 2;
       }
 
-  extern proc nc_get_att_text_void_ptr(ncid: c_int, varid: c_int, field: c_string, p: c_void_ptr): c_int;
+  extern proc nc_get_att_text_void_ptr(ncid: c_int, varid: c_int, field: c_ptrConst(c_char), p: c_ptr(void)): c_int;
 
   /* Each of the netCDF variables has a "units" attribute. Let's read
      them and check them. */

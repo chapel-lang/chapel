@@ -13,9 +13,9 @@ config const M = 10000; // number of entries in the table per task
 const numUpdates = N * numTasks;
 const tableSize = M * numTasks;
 
-config param useBlockArr = false;
+config param useBlockArr = true;
 
-var t: Timer;
+var t: stopwatch;
 proc startTimer() {
   t.start();
 }
@@ -27,11 +27,11 @@ proc stopTimer(name) {
 }
 
 proc main() {
-  const D = if useBlockArr then newBlockDom(0..#tableSize)
-                           else newCyclicDom(0..#tableSize);
+  const D = if useBlockArr then blockDist.createDomain(0..#tableSize)
+                           else cyclicDist.createDomain(0..#tableSize);
   var AggA: [D] AggregatedAtomic(int);
 
-  const D2 = newBlockDom(0..#numUpdates);
+  const D2 = blockDist.createDomain(0..#numUpdates);
   var Rindex: [D2] int;
 
   fillRandom(Rindex, 208);

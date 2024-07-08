@@ -1,0 +1,3 @@
+global-var-type-mismatch.chpl:1: error: type conflict for extern variable 'global_myint'
+./myint.h:3: note: the C type is 'myint'
+global-var-type-mismatch.chpl:1: note: the Chapel type is 'real(64)'

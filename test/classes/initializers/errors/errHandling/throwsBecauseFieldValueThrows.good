@@ -1,0 +1,2 @@
+throwsBecauseFieldValueThrows.chpl:4: In initializer:
+throwsBecauseFieldValueThrows.chpl:5: error: cannot call a throwing function outside of a try! before phase 2

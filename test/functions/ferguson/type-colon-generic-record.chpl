@@ -3,7 +3,7 @@ record R {
   var x;
 }
 
-proc foo(type t:R) {
+proc foo(type t:R(?)) {
   writeln("generic ", t:string);
 }
 proc foo(type t:R(real)) {

@@ -13,21 +13,15 @@
 #include "llvm/CodeGen/DIE.h"
 #include "DwarfCompileUnit.h"
 #include "DwarfDebug.h"
-#include "DwarfUnit.h"
-#include "llvm/ADT/Twine.h"
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/Config/llvm-config.h"
-#include "llvm/IR/DataLayout.h"
 #include "llvm/MC/MCAsmInfo.h"
-#include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/Format.h"
-#include "llvm/Support/FormattedStream.h"
 #include "llvm/Support/LEB128.h"
-#include "llvm/Support/MD5.h"
 #include "llvm/Support/raw_ostream.h"
 using namespace llvm;
 
@@ -170,7 +164,7 @@ DIEAbbrev &DIEAbbrevSet::uniqueAbbreviation(DIE &Die) {
 void DIEAbbrevSet::Emit(const AsmPrinter *AP, MCSection *Section) const {
   if (!Abbreviations.empty()) {
     // Start the debug abbrev section.
-    AP->OutStreamer->SwitchSection(Section);
+    AP->OutStreamer->switchSection(Section);
     AP->emitDwarfAbbrevs(Abbreviations);
   }
 }
@@ -179,9 +173,7 @@ void DIEAbbrevSet::Emit(const AsmPrinter *AP, MCSection *Section) const {
 // DIE Implementation
 //===----------------------------------------------------------------------===//
 
-DIE *DIE::getParent() const {
-  return Owner.dyn_cast<DIE*>();
-}
+DIE *DIE::getParent() const { return dyn_cast_if_present<DIE *>(Owner); }
 
 DIEAbbrev DIE::generateAbbrev() const {
   DIEAbbrev Abbrev(Tag, hasChildren());
@@ -204,6 +196,7 @@ const DIE *DIE::getUnitDie() const {
   const DIE *p = this;
   while (p) {
     if (p->getTag() == dwarf::DW_TAG_compile_unit ||
+        p->getTag() == dwarf::DW_TAG_skeleton_unit ||
         p->getTag() == dwarf::DW_TAG_type_unit)
       return p;
     p = p->getParent();
@@ -214,7 +207,7 @@ const DIE *DIE::getUnitDie() const {
 DIEUnit *DIE::getUnit() const {
   const DIE *UnitDie = getUnitDie();
   if (UnitDie)
-    return UnitDie->Owner.dyn_cast<DIEUnit*>();
+    return dyn_cast_if_present<DIEUnit *>(UnitDie->Owner);
   return nullptr;
 }
 
@@ -378,7 +371,7 @@ void DIEInteger::emitValue(const AsmPrinter *Asm, dwarf::Form Form) const {
   case dwarf::DW_FORM_flag_present:
     // Emit something to keep the lines and comments in sync.
     // FIXME: Is there a better way to do this?
-    Asm->OutStreamer->AddBlankLine();
+    Asm->OutStreamer->addBlankLine();
     return;
   case dwarf::DW_FORM_flag:
   case dwarf::DW_FORM_ref1:
@@ -390,6 +383,7 @@ void DIEInteger::emitValue(const AsmPrinter *Asm, dwarf::Form Form) const {
   case dwarf::DW_FORM_strx2:
   case dwarf::DW_FORM_addrx2:
   case dwarf::DW_FORM_strx3:
+  case dwarf::DW_FORM_addrx3:
   case dwarf::DW_FORM_strp:
   case dwarf::DW_FORM_ref4:
   case dwarf::DW_FORM_data4:
@@ -430,7 +424,7 @@ void DIEInteger::emitValue(const AsmPrinter *Asm, dwarf::Form Form) const {
 ///
 unsigned DIEInteger::sizeOf(const dwarf::FormParams &FormParams,
                             dwarf::Form Form) const {
-  if (Optional<uint8_t> FixedSize =
+  if (std::optional<uint8_t> FixedSize =
           dwarf::getFixedFormByteSize(Form, FormParams))
     return *FixedSize;
 
@@ -585,7 +579,7 @@ void DIEString::emitValue(const AsmPrinter *AP, dwarf::Form Form) const {
     DIEInteger(S.getIndex()).emitValue(AP, Form);
     return;
   case dwarf::DW_FORM_strp:
-    if (AP->MAI->doesDwarfUseRelocationsAcrossSections())
+    if (AP->doesDwarfUseRelocationsAcrossSections())
       DIELabel(S.getSymbol()).emitValue(AP, Form);
     else
       DIEInteger(S.getOffset()).emitValue(AP, Form);

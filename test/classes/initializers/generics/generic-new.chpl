@@ -9,8 +9,10 @@ const Space                       = {1..8, 1..8};
 const OneLoc: [0..0, 0..0] locale = Locales[0];
 
 proc main() {
-  const B1 = new borrowed MyBlock(Space, OneLoc);
-  const B2 = new borrowed MyBlock(Space);
+  const ownB1 = new owned MyBlock(Space, OneLoc);
+  const B1 = ownB1.borrow();
+  const ownB2 = new owned MyBlock(Space);
+  const B2 = ownB2.borrow();
 
   writeln('B1 ', B1);
   writeln('B2 ', B2);
@@ -23,7 +25,7 @@ class MyBlock {
   type  idxType          = int;
   type  sparseLayoutType = DefaultDist;
 
-  proc init(boundingBox:   domain,
+  proc init(boundingBox:   domain(?),
             targetLocales: [] locale  = Locales,
 
             param rank                = boundingBox.rank,

@@ -1,0 +1,4 @@
+shadowing-method-nonmethod.chpl:23: In function 'main':
+shadowing-method-nonmethod.chpl:28: error: ambiguous call '+(R, R)'
+shadowing-method-nonmethod.chpl:5: note: candidates are: R.+(a: R, b: R)
+shadowing-method-nonmethod.chpl:14: note:                 +(a: R, b: R)

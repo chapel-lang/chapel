@@ -108,7 +108,7 @@ static int		fh_max_regions = 0;
 static uintptr_t *	fh_temp_buckets = NULL;
 static fh_bucket_t **	fh_temp_bucket_ptrs = NULL;
 
-static void fh_dump_fhparams(FILE *fp);
+static void fh_dump_fhparams(void);
 
 /*
  * The bucket table
@@ -574,10 +574,10 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
     size_t    b_prepinned = 0;
 
     if (fhi_InitFlags & FIREHOSE_INIT_FLAG_LOCAL_ONLY) {
-      fprintf(stderr, "Warning: firehose_page does not yet implement FIREHOSE_INIT_FLAG_LOCAL_ONLY (resource allocation may not be as desired).\n");
+      gasneti_console0_message("WARNING","firehose_page does not yet implement FIREHOSE_INIT_FLAG_LOCAL_ONLY (resource allocation may not be as desired).");
     }
     if (fhi_InitFlags & FIREHOSE_INIT_FLAG_UNPIN_ON_FINI) {
-      fprintf(stderr, "Warning: firehose_page does not yet implement FIREHOSE_INIT_FLAG_UNPIN_ON_FINI (resources may not be released on exit as desired).\n");
+      gasneti_console0_message("WARNING","firehose_page does not yet implement FIREHOSE_INIT_FLAG_UNPIN_ON_FINI (resources may not be released on exit as desired).");
     }
 
         /* Initialize the Bucket table to 128k lists */
@@ -622,8 +622,7 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
 		    m_prepinned, M);
 
     fh_MaxPinnableMemory = max_pinnable_memory;
-    if (fh_verbose)
-	fh_dump_fhparams(stderr);
+    if (fh_verbose) fh_dump_fhparams();
 
     GASNETI_TRACE_PRINTF(C, ("Firehose M=(%d MB,%"PRIuPTR"), MAXVICTIM_M=(%d MB,%"PRIuPTR")", 
 		    FH_PRINTMB(M), M, 
@@ -767,8 +766,8 @@ fh_priv_check_fn(void *val, void *arg)
 
     if_pf (live && !bd->prepinned) {
 	/* XXX: promote to fatalerror? */
-	fprintf(stderr, "WARNING: firehose leak detected on node %d - %d:%p\n",
-		(int)gasneti_mynode, (int)FH_NODE(bd), (void*)FH_BADDR(bd));
+	gasneti_console_message("WARNING","firehose leak detected - %d:%p\n",
+		(int)FH_NODE(bd), (void*)FH_BADDR(bd));
     }
 }
 #endif
@@ -1652,7 +1651,7 @@ fhsmp_PinRemoteNoLog(firehose_request_t *req,
 
 	    /*
 	    if (FH_IS_REMOTE_PENDING(bd))
-		printf("OK, problem is here. . PinNoLog!\n");
+		gasneti_console_message("FH INFO","OK, problem is here. . PinNoLog!\n");
 		*/
 	    fh_priv_acquire_remote(node, bd);
 	}
@@ -2995,23 +2994,14 @@ fh_move_request(gex_Rank_t node,
 	return b_num;
 }
 
-static
-void
-fh_dump_fhparams(FILE *fp)
-{
-    if (gasneti_mynode)
-	return;
+static void fh_dump_fhparams(void) {
 
-    if (fp == NULL)
-	fp = stderr;
-
-    fprintf(fp, "MaxPinnable Memory = %8u MB, %"PRIuPTR" bytes\n", 
+    gasneti_console0_message("FH INFO","MaxPinnable Memory = %8u MB, %"PRIuPTR" bytes", 
 		FH_PRINTMB(fh_MaxPinnableMemory), fh_MaxPinnableMemory);
-    fprintf(fp, "Firehose M         = %8u MB, %"PRIuPTR" bytes\n", 
+    gasneti_console0_message("FH INFO","Firehose M         = %8u MB, %"PRIuPTR" bytes", 
 		FH_PRINTMB(fh_M), fh_M);
-    fprintf(fp, "Firehose MaxVictim = %8u MB, %"PRIuPTR" bytes\n", 
+    gasneti_console0_message("FH INFO","Firehose MaxVictim = %8u MB, %"PRIuPTR" bytes", 
 		FH_PRINTMB(fh_Maxvictim), fh_Maxvictim);
-    fflush(fp);
     return;
 }
 
@@ -3021,16 +3011,16 @@ fh_dump_counters(void)
     int 		i;
 
     /* Local counters */
-    printf("%d> MaxVictimB=%d, Local[Only/Fifo]=[%d/%d]\n",
-	gasneti_mynode, fhc_MaxVictimBuckets, fhc_LocalOnlyBucketsPinned, 
+    gasneti_console_message("FH INFO","MaxVictimB=%d, Local[Only/Fifo]=[%d/%d]",
+	fhc_MaxVictimBuckets, fhc_LocalOnlyBucketsPinned, 
 	fhc_LocalVictimFifoBuckets);
 
     /* Remote counters */
     for (i = 0; i < gasneti_nodes; i++) {
 	if (i == gasneti_mynode)
 	    continue;
-	printf("%d> RemoteBuckets on %2d = [Used=%6d/FIFO=%6d,"
-	    "total=%6d,n_avail=%6d]\n", gasneti_mynode, i, fhc_RemoteBucketsUsed[i], 
+	gasneti_console_message("FH INFO","RemoteBuckets on %2d = [Used=%6d/FIFO=%6d,"
+	    "total=%6d,n_avail=%6d]", i, fhc_RemoteBucketsUsed[i], 
 	    fhc_RemoteVictimFifoBuckets[i], fhc_RemoteBucketsM, FHI_AVAIL(i));
     }
 }

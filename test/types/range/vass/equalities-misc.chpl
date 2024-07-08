@@ -6,8 +6,8 @@ writeln(r1!=r2);
 
 writeln( (0..(1:int)) == (0..(1:uint)) );
 
-writeln( [0..(1:int)] == [0..(1:uint)] );
-writeln( [0..(1:int)] != [0..(1:uint)] );
+writeln( [0..(1:int), ] == [0..(1:uint), ] );
+writeln( [0..(1:int), ] != [0..(1:uint), ] );
 writeln();
 
 // should discern the boundedness

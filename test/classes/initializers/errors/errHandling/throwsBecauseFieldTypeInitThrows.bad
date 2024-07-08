@@ -1,0 +1,2 @@
+throwsBecauseFieldTypeInitThrows.chpl:4: In initializer:
+throwsBecauseFieldTypeInitThrows.chpl:7: error: initializers are not yet allowed to throw errors

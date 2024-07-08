@@ -1,0 +1,3 @@
+use MyMod;
+
+proc main() { }

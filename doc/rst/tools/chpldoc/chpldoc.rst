@@ -11,8 +11,8 @@ chpldoc
 ``chpldoc`` is a tool for generating HTML based documentation from Chapel
 source code and embedded comments. It is similar in spirit to Godoc, Javadoc,
 and Pydoc. ``chpldoc`` is used to produce Chapel's web documentation for the
-:ref:`Standard Library <modules>` and
-:ref:`Built-in-Types and Functions <built-in-types>`.
+:ref:`Standard Library <modules>` and some of the internal types and functions
+documented in the :ref:`Language Spec Pages <chapel-spec>`.
 
 See the online :doc:`man page <man>` for all available flags.
 
@@ -100,6 +100,7 @@ looking output. For example:
    module Buffers {
      ...
 
+.. _chpldoc-arg-return-yield-types:
 
 Argument and return/yield types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -222,11 +223,11 @@ Stifling documentation
 ~~~~~~~~~~~~~~~~~~~~~~
 
 To mark a particular symbol to not be output as part of the documentation,
-preface the symbol with the pragma "no doc". For example:
+preface the symbol with the attribute ``@chpldoc.nodoc``. For example:
 
 .. code-block:: chapel
 
-   pragma "no doc"
+   @chpldoc.nodoc
    proc foo() { ... }
 
 Private symbols are not documented by default.
@@ -504,8 +505,10 @@ a matching identifier is found:
 ``:var:``
 ``:param:``
 ``:type:``
+``:enum:``
+``:enumconstant:``
 
-    Reference a module-level variable, constant, compiler param, or type.
+    Reference a module-level variable, constant, compiler param, type, enum, or enum constant.
 
 ``:class:``
 ``:record:``

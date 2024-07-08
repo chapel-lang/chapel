@@ -14,7 +14,8 @@ class SoManyParams {
 }
 
 proc main() {
-  var c = new borrowed SoManyParams(7);
+  var ownC = new owned SoManyParams(7);
+  var c = ownC.borrow();
   writeln(c.type:string);
   writeln(c);
 }

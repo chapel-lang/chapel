@@ -5,7 +5,7 @@
 //
 
 // import standard modules to generate random number and use timers
-use Random, Time;
+use Random, Time, Math;
 
 // configuration constants
 config const printRandomNumbers: bool = true, // print random numbers to screen
@@ -14,13 +14,12 @@ config const printRandomNumbers: bool = true, // print random numbers to screen
              numBuckets: int = 10;            // number of histogram buckets
 
 // seed the random stream with something reproducible?
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+config const useRandomSeed = true;
 
 // global variables
 var X: [1..numNumbers] real, // array of random numbers
     Y: [1..numBuckets] int,  // histogram
-    timer: Timer;            // computation timer
+    timer: stopwatch;            // computation timer
 
 // output startup message
 writeln("Running Histogram Example");
@@ -29,7 +28,9 @@ writef(" Number of Buckets        = %{########}\n", numBuckets);
 writeln();
 
 // fill array with random numbers (using standard Random module)
-fillRandom(X, seed, algorithm=RNG.NPB);
+if useRandomSeed
+  then fillRandom(X);
+  else fillRandom(X, 314159265);
 
 // output array of random numbers
 if printRandomNumbers then
@@ -50,7 +51,7 @@ writeln("Histogram computed in ", timer.elapsed(), " seconds\n");
 if printHistogram then
   outputHistogram(Y);
 
-proc computeHistogram(X: [] real, Y: [] int) {
+proc computeHistogram(X: [] real, ref Y: [] int) {
   for x in X do
     Y(1 + (x / (1.0 / numBuckets)): int) += 1;
 }
@@ -58,8 +59,8 @@ proc computeHistogram(X: [] real, Y: [] int) {
 // outputHistogram: output histogram array
 proc outputHistogram(Y: [] int) {
   var bucketMax = max reduce Y;
-  var rowSize = divceil(bucketMax,10);
-  var numRows = divceil(bucketMax, rowSize);
+  var rowSize = divCeil(bucketMax,10);
+  var numRows = divCeil(bucketMax, rowSize);
   for i in 1..numRows by -1 {
     write(" ");
     for j in 1..numBuckets do

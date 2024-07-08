@@ -199,7 +199,7 @@ int main(int argc, char **argv) {
     int timeiters = MAX(1,iters / 10);
     gasnett_tick_t ticktimemin = GASNETT_TICK_MIN;
     gasnett_tick_t ticktimemax = GASNETT_TICK_MAX;
-    #if PLATFORM_OS_CYGWIN || PLATFORM_OS_WSL
+    #if PLATFORM_OS_CYGWIN || PLATFORM_OS_SUBFAMILY_WSL
       // bug 2410: avoid false negatives due to cygwin's high gettimeofday() reference timer granularity
       double default_slack = 0.05; // 50 ms for cygwin
     #else

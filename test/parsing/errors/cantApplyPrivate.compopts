@@ -1,0 +1,2 @@
+--detailed-errors # cantApplyPrivate-detailed.good
+--no-detailed-errors # cantApplyPrivate-brief.good

@@ -281,12 +281,14 @@ public:
                            MachineBasicBlock::iterator MI, Register SrcReg,
                            bool IsKill, int FrameIndex,
                            const TargetRegisterClass *RC,
-                           const TargetRegisterInfo *TRI) const override;
+                           const TargetRegisterInfo *TRI,
+                           Register VReg) const override;
 
   void loadRegFromStackSlot(MachineBasicBlock &MBB,
                             MachineBasicBlock::iterator MI, Register DestReg,
                             int FrameIndex, const TargetRegisterClass *RC,
-                            const TargetRegisterInfo *TRI) const override;
+                            const TargetRegisterInfo *TRI,
+                            Register VReg) const override;
 
   bool expandPostRAPseudo(MachineInstr &MI) const override;
 
@@ -322,7 +324,7 @@ public:
   bool ExpandMOVEM(MachineInstrBuilder &MIB, const MCInstrDesc &Desc,
                    bool IsRM) const;
 
-  /// Return a virtual register initialized with the the global base register
+  /// Return a virtual register initialized with the global base register
   /// value. Output instructions required to initialize the register in the
   /// function entry block, if necessary.
   unsigned getGlobalBaseReg(MachineFunction *MF) const;

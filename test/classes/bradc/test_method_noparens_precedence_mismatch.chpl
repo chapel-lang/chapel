@@ -1,10 +1,10 @@
 class C {
   var y: 3*int;
-  proc x return y;
-  proc x(i: real) return 4;
+  proc x do return y;
+  proc x(i: real) do return 4;
 }
 
-var c = new borrowed C();
+var cc = new C(); var c = cc.borrow();
 c.y = (1, 2, 3);
 writeln(c);
 writeln(c.x);

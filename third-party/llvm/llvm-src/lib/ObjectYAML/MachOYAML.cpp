@@ -14,9 +14,10 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/BinaryFormat/MachO.h"
 #include "llvm/Support/Format.h"
-#include "llvm/Support/Host.h"
+#include "llvm/Support/SystemZ/zOSSupport.h"
 #include "llvm/Support/YAMLTraits.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/TargetParser/Host.h"
 #include <cinttypes>
 #include <cstdint>
 #include <cstring>
@@ -26,10 +27,11 @@ namespace llvm {
 MachOYAML::LoadCommand::~LoadCommand() = default;
 
 bool MachOYAML::LinkEditData::isEmpty() const {
-  return 0 ==
-         RebaseOpcodes.size() + BindOpcodes.size() + WeakBindOpcodes.size() +
-             LazyBindOpcodes.size() + ExportTrie.Children.size() +
-             NameList.size() + StringTable.size();
+  return 0 == RebaseOpcodes.size() + BindOpcodes.size() +
+                  WeakBindOpcodes.size() + LazyBindOpcodes.size() +
+                  ExportTrie.Children.size() + NameList.size() +
+                  StringTable.size() + FunctionStarts.size() +
+                  ChainedFixups.size() + DataInCode.size();
 }
 
 namespace yaml {
@@ -165,6 +167,9 @@ void MappingTraits<MachOYAML::LinkEditData>::mapping(
   IO.mapOptional("NameList", LinkEditData.NameList);
   IO.mapOptional("StringTable", LinkEditData.StringTable);
   IO.mapOptional("IndirectSymbols", LinkEditData.IndirectSymbols);
+  IO.mapOptional("FunctionStarts", LinkEditData.FunctionStarts);
+  IO.mapOptional("ChainedFixups", LinkEditData.ChainedFixups);
+  IO.mapOptional("DataInCode", LinkEditData.DataInCode);
 }
 
 void MappingTraits<MachOYAML::RebaseOpcode>::mapping(
@@ -202,6 +207,13 @@ void MappingTraits<MachOYAML::NListEntry>::mapping(
   IO.mapRequired("n_sect", NListEntry.n_sect);
   IO.mapRequired("n_desc", NListEntry.n_desc);
   IO.mapRequired("n_value", NListEntry.n_value);
+}
+
+void MappingTraits<MachOYAML::DataInCodeEntry>::mapping(
+    IO &IO, MachOYAML::DataInCodeEntry &DataInCodeEntry) {
+  IO.mapRequired("Offset", DataInCodeEntry.Offset);
+  IO.mapRequired("Length", DataInCodeEntry.Length);
+  IO.mapRequired("Kind", DataInCodeEntry.Kind);
 }
 
 template <typename StructType>
@@ -610,6 +622,14 @@ void MappingTraits<MachO::build_version_command>::mapping(
   IO.mapRequired("minos", LoadCommand.minos);
   IO.mapRequired("sdk", LoadCommand.sdk);
   IO.mapRequired("ntools", LoadCommand.ntools);
+}
+
+void MappingTraits<MachO::fileset_entry_command>::mapping(
+    IO &IO, MachO::fileset_entry_command &LoadCommand) {
+  IO.mapRequired("vmaddr", LoadCommand.vmaddr);
+  IO.mapRequired("fileoff", LoadCommand.fileoff);
+  IO.mapRequired("id", LoadCommand.entry_id.offset);
+  IO.mapOptional("reserved", LoadCommand.reserved);
 }
 
 } // end namespace yaml

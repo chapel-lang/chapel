@@ -5,12 +5,12 @@
 use List;
 
 var l: list(int);
-l.append(1);
-l.append(2);
+l.pushBack(1);
+l.pushBack(2);
 writeln(l);
 on Locales[numLocales-1] {
-  l.first() = 3;
-  l.last() = 4;
+  l.first = 3;
+  l.last = 4;
   writeln(l);
 }
 writeln(l);

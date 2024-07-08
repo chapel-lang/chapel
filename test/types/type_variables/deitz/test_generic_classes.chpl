@@ -12,8 +12,10 @@ class D {
   var c: borrowed C(a, b);
 }
 
-var c = new borrowed C(5, 4, 1, 2, 3);
-var d = new borrowed D(5, 4, c);
+var ownC = new owned C(5, 4, 1, 2, 3);
+var c = ownC.borrow();
+var ownD = new owned D(5, 4, c);
+var d = ownD.borrow();
 
 writeln("{a = ", c.a, ", b = ", c.b, ", c = ", c.c,
         ", d = ", c.d, ", e = ", c.e, "}");

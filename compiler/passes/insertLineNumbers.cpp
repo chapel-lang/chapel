@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -380,6 +380,12 @@ void InsertLineNumbers::process(FnSymbol *fn) {
 // pack), which is determined by `shouldPreferASTLine`
 //
 void InsertLineNumbers::process(FnSymbol *fn, CallExpr* call) {
+  auto pair = fixedCalls.insert(call);
+  if (!pair.second) {
+    // we already visited this call, so stop
+    return;
+  }
+
   if (shouldPreferASTLine(fn)) {
     insertLineNumber(call, makeASTLine(call));
 

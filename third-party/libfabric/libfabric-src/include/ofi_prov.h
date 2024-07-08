@@ -48,26 +48,35 @@
  * not built: no-op call for ctor
 */
 
-#if (HAVE_GNI) && (HAVE_GNI_DL)
-#  define GNI_INI FI_EXT_INI
-#  define GNI_INIT NULL
-#elif (HAVE_GNI)
-#  define GNI_INI INI_SIG(fi_gni_ini)
-#  define GNI_INIT fi_gni_ini()
-GNI_INI ;
+#if (HAVE_CXI) && (HAVE_CXI_DL)
+#  define CXI_INI FI_EXT_INI
+#  define CXI_INIT NULL
+#elif (HAVE_CXI)
+#  define CXI_INI INI_SIG(fi_cxi_ini)
+#  define CXI_INIT fi_cxi_ini()
+CXI_INI ;
 #else
-#  define GNI_INIT NULL
+#  define CXI_INIT NULL
 #endif
 
-#if (HAVE_VERBS) && (HAVE_VERBS_DL)
-#  define VERBS_INI FI_EXT_INI
+/* If HAVE_EFA is defined on Windows, then the VisualStudio project configures
+ * MSBuild to include the efa related files and exclude the verbs related files.
+ * With the verbs related files excluded from the build, we need only ensure
+ * that VERBS_INIT is NULL so that ofi_register_provider will skip it.
+ */
+#if defined(_WIN32) && (HAVE_EFA)
 #  define VERBS_INIT NULL
-#elif (HAVE_VERBS)
-#  define VERBS_INI INI_SIG(fi_verbs_ini)
-#  define VERBS_INIT fi_verbs_ini()
-VERBS_INI ;
 #else
-#  define VERBS_INIT NULL
+#  if (HAVE_VERBS) && (HAVE_VERBS_DL)
+#    define VERBS_INI FI_EXT_INI
+#    define VERBS_INIT NULL
+#  elif (HAVE_VERBS)
+#    define VERBS_INI INI_SIG(fi_verbs_ini)
+#    define VERBS_INIT fi_verbs_ini()
+VERBS_INI ;
+#  else
+#    define VERBS_INIT NULL
+#  endif
 #endif
 
 #if (HAVE_EFA) && (HAVE_EFA_DL)
@@ -79,17 +88,6 @@ VERBS_INI ;
 EFA_INI ;
 #else
 #  define EFA_INIT NULL
-#endif
-
-#if (HAVE_PSM) && (HAVE_PSM_DL)
-#  define PSM_INI FI_EXT_INI
-#  define PSM_INIT NULL
-#elif (HAVE_PSM)
-#  define PSM_INI INI_SIG(fi_psm_ini)
-#  define PSM_INIT fi_psm_ini()
-PSM_INI ;
-#else
-#  define PSM_INIT NULL
 #endif
 
 #if (HAVE_PSM2) && (HAVE_PSM2_DL)
@@ -180,17 +178,6 @@ RXD_INI ;
 #  define RXD_INIT NULL
 #endif
 
-#if (HAVE_BGQ) && (HAVE_BGQ_DL)
-#  define BGQ_INI FI_EXT_INI
-#  define BGQ_INIT NULL
-#elif (HAVE_BGQ)
-#  define BGQ_INI INI_SIG(fi_bgq_ini)
-#  define BGQ_INIT fi_bgq_ini()
-BGQ_INI ;
-#else
-#  define BGQ_INIT NULL
-#endif
-
 #ifdef _WIN32
 #if (HAVE_NETDIR) && (HAVE_NETDIR_DL)
 #  define NETDIR_INI FI_EXT_INI
@@ -217,6 +204,17 @@ SHM_INI ;
 #  define SHM_INIT NULL
 #endif
 
+#if (HAVE_SM2) && (HAVE_SM2_DL)
+#  define SM2_INI FI_EXT_INI
+#  define SM2_INIT NULL
+#elif (HAVE_SM2)
+#  define SM2_INI INI_SIG(fi_sm2_ini)
+#  define SM2_INIT fi_sm2_ini()
+SM2_INI ;
+#else
+#  define SM2_INIT NULL
+#endif
+
 #if (HAVE_MRAIL) && (HAVE_MRAIL_DL)
 #  define MRAIL_INI FI_EXT_INI
 #  define MRAIL_INIT NULL
@@ -228,18 +226,10 @@ MRAIL_INI ;
 #  define MRAIL_INIT NULL
 #endif
 
-#if (HAVE_RSTREAM) && (HAVE_RSTREAM_DL)
-#  define RSTREAM_INI FI_EXT_INI
-#  define RSTREAM_INIT NULL
-#elif (HAVE_RSTREAM)
-#  define RSTREAM_INI INI_SIG(fi_rstream_ini)
-#  define RSTREAM_INIT fi_rstream_ini()
-RSTREAM_INI ;
-#else
-#  define RSTREAM_INIT NULL
-#endif
-
-#if(HAVE_PERF)
+#if (HAVE_PERF) && (HAVE_PERF_DL)
+#  define HOOK_PERF_INI FI_EXT_INI
+#  define HOOK_PERF_INIT NULL
+#elif (HAVE_PERF)
 #  define HOOK_PERF_INI INI_SIG(fi_hook_perf_ini)
 #  define HOOK_PERF_INIT fi_hook_perf_ini()
 HOOK_PERF_INI ;
@@ -247,7 +237,33 @@ HOOK_PERF_INI ;
 #  define HOOK_PERF_INIT NULL
 #endif
 
-#if(HAVE_HOOK_DEBUG)
+#if (HAVE_TRACE) && (HAVE_TRACE_DL)
+#  define HOOK_TRACE_INI FI_EXT_INI
+#  define HOOK_TRACE_INIT NULL
+#elif (HAVE_TRACE)
+#  define HOOK_TRACE_INI INI_SIG(fi_hook_trace_ini)
+#  define HOOK_TRACE_INIT fi_hook_trace_ini()
+HOOK_TRACE_INI ;
+#else
+#  define HOOK_TRACE_INIT NULL
+#endif
+
+#if (HAVE_PROFILE) && (HAVE_PROFILE_DL)
+#  define HOOK_PROFILE_INI FI_EXT_INI
+#  define HOOK_PROFILE_INIT NULL
+#elif (HAVE_PROFILE)
+#  define HOOK_PROFILE_INI INI_SIG(fi_hook_profile_ini)
+#  define HOOK_PROFILE_INIT fi_hook_profile_ini()
+HOOK_PROFILE_INI ;
+#else
+#  define HOOK_PROFILE_INIT NULL
+#endif
+
+
+#if (HAVE_HOOK_DEBUG) && (HAVE_HOOK_DEBUG_DL)
+#  define HOOK_DEBUG_INI FI_EXT_INI
+#  define HOOK_DEBUG_INIT NULL
+#elif (HAVE_HOOK_DEBUG)
 #  define HOOK_DEBUG_INI INI_SIG(fi_debug_hook_ini)
 #  define HOOK_DEBUG_INIT fi_debug_hook_ini()
 HOOK_DEBUG_INI ;
@@ -255,8 +271,57 @@ HOOK_DEBUG_INI ;
 #  define HOOK_DEBUG_INIT NULL
 #endif
 
+#if (HAVE_HOOK_HMEM) && (HAVE_HOOK_HMEM_DL)
+#  define HOOK_HMEM_INI FI_EXT_INI
+#  define HOOK_HMEM_INIT NULL
+#elif (HAVE_HOOK_HMEM)
+#  define HOOK_HMEM_INI INI_SIG(fi_hook_hmem_ini)
+#  define HOOK_HMEM_INIT fi_hook_hmem_ini()
+HOOK_HMEM_INI ;
+#else
+#  define HOOK_HMEM_INIT NULL
+#endif
+
+#if (HAVE_DMABUF_PEER_MEM) && (HAVE_DMABUF_PEER_MEM_DL)
+#  define HOOK_DMABUF_PEER_MEM_INI FI_EXT_INI
+#  define HOOK_DMABUF_PEER_MEM_INIT NULL
+#elif (HAVE_DMABUF_PEER_MEM)
+#  define HOOK_DMABUF_PEER_MEM_INI INI_SIG(fi_dmabuf_peer_mem_hook_ini)
+#  define HOOK_DMABUF_PEER_MEM_INIT fi_dmabuf_peer_mem_hook_ini()
+HOOK_DMABUF_PEER_MEM_INI ;
+#else
+#  define HOOK_DMABUF_PEER_MEM_INIT NULL
+#endif
+
 #  define HOOK_NOOP_INI INI_SIG(fi_hook_noop_ini)
 #  define HOOK_NOOP_INIT fi_hook_noop_ini()
 HOOK_NOOP_INI ;
+
+#if (HAVE_OPX) && (HAVE_OPX_DL)
+#  define OPX_INI FI_EXT_INI
+#  define OPX_INIT NULL
+#elif (HAVE_OPX)
+#  define OPX_INI INI_SIG(fi_opx_ini)
+#  define OPX_INIT fi_opx_ini()
+OPX_INI ;
+#else
+#  define OPX_INIT NULL
+#endif
+
+#if (HAVE_UCX) && (HAVE_UCX_DL)
+#  define UCX_INI FI_EXT_INI
+#  define UCX_INIT NULL
+#elif (HAVE_UCX)
+#  define UCX_INI INI_SIG(fi_ucx_ini)
+#  define UCX_INIT fi_ucx_ini()
+UCX_INI ;
+#else
+#  define UCX_INIT NULL
+#endif
+
+/* the utility collective provider is always enabled and built-in */
+#define COLL_INI INI_SIG(fi_coll_ini)
+#define COLL_INIT fi_coll_ini()
+COLL_INI ;
 
 #endif /* _OFI_PROV_H_ */

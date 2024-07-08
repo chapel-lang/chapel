@@ -47,14 +47,17 @@ AMX_FORMAT_PRINTF(AMX_Msg,2,0,
 static int AMX_Msg(const char *prefix, const char *msg, va_list argptr)) {
   static char _expandedmsg[255]; // use static storage when possible for robustness in panic-mode
   static char plabel[80];
+  char *expandedmsg;
+  size_t sz;
+  int chk,retval;
 
   if (AMX_ProcessLabel && !*plabel) snprintf(plabel, sizeof(plabel), "(%s)", AMX_ProcessLabel);
-  char *expandedmsg = _expandedmsg;
-  size_t sz = strlen(prefix) + strlen(plabel) + strlen(msg) + 8;
+  expandedmsg = _expandedmsg;
+  sz = strlen(prefix) + strlen(plabel) + strlen(msg) + 8;
   if (sz > sizeof(_expandedmsg)) expandedmsg = (char *)AMX_malloc(sz);
-  int chk = snprintf(expandedmsg, sz, "%s%s: %s\n", prefix, plabel, msg);
+  chk = snprintf(expandedmsg, sz, "%s%s: %s\n", prefix, plabel, msg);
   AMX_assert(chk < (int)sz); // truncation should not occur
-  int retval = vfprintf(stderr, expandedmsg, argptr);
+  retval = vfprintf(stderr, expandedmsg, argptr);
   fflush(stderr);
   if (expandedmsg != _expandedmsg) AMX_free(expandedmsg);
   
@@ -98,15 +101,20 @@ extern void AMX_FatalErr(const char *msg, ...) {
 /* ------------------------------------------------------------------------------------ */
 static void AMX_defaultAMHandler(void *token) {
   int srcnode = -1;
+  handler_t hidx;
+  amx_category_t category;
+  int is_req;
   AMX_GetSourceId(token, &srcnode);
-  AMX_FatalErr(AMX_LIB_STR" received an AM message from node %i for a handler index "
-                     "with no associated AM handler function registered", srcnode);
+  AMX_GetTokenInfo(token,&hidx,&category,&is_req);
+  AMX_FatalErr(AMX_LIB_STR" received an AM %s from node %i for a handler index %i "
+               "with no associated AM handler function registered",
+               (is_req?"Request":"Reply"), srcnode, (int)hidx);
 }
 amx_handler_fn_t amx_unused_handler = (amx_handler_fn_t)&AMX_defaultAMHandler;
 /*------------------------------------------------------------------------------------
  * System initialization/termination
  *------------------------------------------------------------------------------------ */
-extern int AMX_Init() {
+extern int AMX_Init(void) {
   int firstcall = (amx_Initialized == 0);
   if (firstcall) {
     /* check system attributes */
@@ -127,10 +135,11 @@ extern int AMX_Init() {
   return firstcall;
 }
 /* ------------------------------------------------------------------------------------ */
-extern int AMX_Terminate() {
+extern int AMX_Terminate(void) {
+  int lastcall;
   AMX_CHECKINIT();
 
-  int lastcall = (amx_Initialized == 1);
+  lastcall = (amx_Initialized == 1);
   amx_Initialized--;
 
   return lastcall;

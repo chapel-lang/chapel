@@ -25,13 +25,13 @@ record ListStack {
   var top: unmanaged MyNode(itemType)?; // top node on stack linked list
 
   // push method: add an item to the top of the stack
-  proc push(item: itemType) {
+  proc ref push(item: itemType) {
     top = new unmanaged MyNode(itemType, item, top);
   }
 
   // pop method: remove an item from the top of the stack
   // note: it is a runtime error if the stack is empty
-  proc pop() {
+  proc ref pop() {
     if isEmpty then
       halt("attempt to pop an item off an empty stack");
     var oldTop = top;
@@ -42,7 +42,7 @@ record ListStack {
   }
 
   // isEmpty method: true if the stack is empty; otherwise false
-  proc isEmpty return top == nil;
+  proc isEmpty do return top == nil;
 }
 
 
@@ -57,7 +57,7 @@ record ArrayStack {
 
   // push method: add an item to the top of the stack
   // note: the array is doubled if it is full
-  proc push(item: itemType) {
+  proc ref push(item: itemType) {
     var height = data.size;
     if numItems == height then
       dataSpace = {1..height*2};
@@ -67,7 +67,7 @@ record ArrayStack {
 
   // pop method: remove an item from the top of the stack
   // note: it is a runtime error if the stack is empty
-  proc pop() {
+  proc ref pop() {
     if isEmpty then
       halt("attempt to pop an item off an empty stack");
     numItems -= 1;
@@ -75,7 +75,7 @@ record ArrayStack {
   }
 
   // isEmpty method: true if the stack is empty; otherwise false
-  proc isEmpty return numItems == 0;
+  proc isEmpty do return numItems == 0;
 }
 
 

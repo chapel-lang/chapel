@@ -13,6 +13,6 @@ writeln(_ddata_sizeof_element(_ddata(rec_t)));
 
 class cls_t {
   var i: 20*int;
-  proc i(n) return i(n);
+  proc i(n) do return i(n);
 };
 writeln(_ddata_sizeof_element(_ddata(unmanaged cls_t)));

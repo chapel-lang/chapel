@@ -1,0 +1,6 @@
+(250, 1)
+(251, 2)
+(252, 3)
+(253, 4)
+(254, 5)
+zipMismatch.chpl:12: error: halt reached - Loop over unbounded range surpassed representable values

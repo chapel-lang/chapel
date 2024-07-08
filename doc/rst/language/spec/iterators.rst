@@ -1,5 +1,8 @@
 .. default-domain:: chpl
 
+.. index::
+   single: functions; iterators
+   single: iterators
 .. _Chapter-Iterators:
 
 =========
@@ -12,8 +15,10 @@ values (consecutively or in parallel) via its yield statements.
    *Open issue*.
 
    The parallel iterator story is under development. It is expected that
-   the specification will be expanded regarding parallel iterators soon.
+   the specification will be expanded regarding parallel iterators.
 
+.. index::
+   single: iterators;definition
 .. _Iterator_Function_Definitions:
 
 Iterator Definitions
@@ -25,7 +30,7 @@ The syntax to declare an iterator is given by:
 
    iterator-declaration-statement:
      privacy-specifier[OPT] 'iter' iterator-name argument-list[OPT] yield-intent[OPT] yield-type[OPT] where-clause[OPT]
-     iterator-body
+     function-body
 
    iterator-name:
      identifier
@@ -33,16 +38,13 @@ The syntax to declare an iterator is given by:
    yield-intent:
      'const'
      'const ref'
+     'out'
      'ref'
      'param'
      'type'
 
    yield-type:
      : type-expression
-
-   iterator-body:
-     block-statement
-     yield-statement
 
 The syntax of an iterator declaration is similar to a procedure
 declaration, with some key differences:
@@ -68,6 +70,10 @@ declaration, with some key differences:
 
    Iterators that yield types or params are not currently supported.
 
+.. index::
+   single: yield
+   pair: keywords; yield
+   single: iterators;yield
 .. _The_Yield_Statement:
 
 The Yield Statement
@@ -88,12 +94,30 @@ execution continues from the point immediately following the ``yield``
 statement. A yield statement in an iterator that yields references must
 yield an lvalue expression.
 
+The iterator's ``yield-intent`` determines how each value is yielded.
+The rules for yielding are similar to the rules for returning values from
+procedures (described in :ref:`Return_Intent`), with these exceptions:
+
+  1. The default yield intent is ``const``.
+
+  2. The default and the ``const`` yield intents make it up to the
+     implementation to choose between yielding with ``const ref`` or
+     ``out``.
+
+  3. An iterator with the ``ref`` or ``const ref`` yield intent is
+     allowed to yield an lvalue that is local to the iterator's scope.
+
+  4. The rules for yielding a tuple are specified in
+     :ref:`Tuple_Yield_Behavior`.
+
 When a ``return`` is encountered, the iterator finishes without yielding
 another index value. The ``return`` statements appearing in an iterator
 are not permitted to have a return expression. An iterator also
 completes after the last statement in the iterator is executed. An
 iterator need not contain any yield statements.
 
+.. index::
+   single: iterators;calls
 .. _Iterator_Calls:
 
 Iterator Calls
@@ -114,6 +138,9 @@ in the :ref:`Procedures Chapter <Chapter-Procedures>`.
 However, the result of an iterator call depends upon its context, as
 described below.
 
+.. index::
+   single: iterators;in for loops
+   single: iterators;in forall loops
 .. _Iterators_in_For_and_Forall_Loops:
 
 Iterators in For and Forall Loops
@@ -121,8 +148,11 @@ Iterators in For and Forall Loops
 
 When an iterator is accessed via a for or forall loop, the iterator is
 evaluated alongside the loop body in an interleaved manner. For each
-iteration, the iterator yields a value and the body is executed.
+iteration, the iterator yields a value or a reference
+and the loop body is executed.
 
+.. index::
+   single: iterators;and arrays
 .. _Iterators_as_Arrays:
 
 Iterators as Arrays
@@ -144,7 +174,7 @@ with matching shape and element type (see also :ref:`Implicit_Conversions`).
 
 When an iterator is assigned to an existing array, the array and the
 iterator will be iterated over with zippered iteration
-(:ref:`Zipper_Iteration`) and the array elements assigned to the yielded
+(:ref:`Zippered_Iteration`) and the array elements assigned to the yielded
 value.
 
    *Example (as-arrays.chpl)*.
@@ -171,6 +201,8 @@ value.
 
       1 4 9 16 25
 
+.. index::
+   single: iterators;and generics
 .. _Iterators_and_Generics:
 
 Iterators and Generics
@@ -185,6 +217,8 @@ for loops. The arguments to the iterator call expression, if any, are
 evaluated at the call site, i.e. prior to passing the iterator to the
 generic function.
 
+.. index::
+   single: iterators;recursive
 .. _Recursive_Iterators:
 
 Recursive Iterators
@@ -229,13 +263,14 @@ typically made by iterating over it in a loop.
 
    .. BLOCK-test-chapelnoprint
 
-      proc Tree.writeThis(x)
+      Tree implements writeSerializable;
+      override proc Tree.serialize(writer, ref serializer)
       {
         var first = true;
         for node in postorder(this) {
           if first then first = false;
-            else x.write(" ");
-          write(node);
+            else writer.write(" ");
+          writer.write(node);
         }
       }
       writeln("Tree Data");
@@ -253,6 +288,9 @@ typically made by iterating over it in a loop.
       Tree Data
       b d e c a
 
+.. index::
+   single: iterators;promotion
+   single: promotion;iterator
 .. _Iterator_Promotion_of_Scalar_Functions:
 
 Iterator Promotion of Scalar Functions
@@ -301,6 +339,9 @@ scalar function as described in :ref:`Promotion`.
       10
       11
 
+.. index::
+   single: parallel iterators
+   single: iterators;parallel
 .. _Parallel_Iterators:
 
 Parallel Iterators
@@ -320,7 +361,7 @@ the locales on which these tasks execute. For ranges, default domains,
 and default arrays, these values can be controlled via configuration
 constants (:ref:`data_parallel_knobs`).
 
-Domains and arrays defined using distributed domain maps will typically
+Domains and arrays defined using multi-locale distributions will typically
 implement forall loops with multiple tasks on multiple locales. For
 ranges, default domains, and default arrays, all tasks are executed on
 the current locale.

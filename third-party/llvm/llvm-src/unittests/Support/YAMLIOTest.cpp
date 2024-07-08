@@ -23,7 +23,6 @@ using llvm::yaml::Hex32;
 using llvm::yaml::Hex64;
 using llvm::yaml::Hex8;
 using llvm::yaml::Input;
-using llvm::yaml::IO;
 using llvm::yaml::isNumeric;
 using llvm::yaml::MappingNormalization;
 using llvm::yaml::MappingTraits;
@@ -96,11 +95,30 @@ TEST(YAMLIO, TestMapRead) {
     EXPECT_EQ(doc.foo, 3);
     EXPECT_EQ(doc.bar, 5);
   }
+
+  {
+    Input yin("{\"foo\": 3\n, \"bar\": 5}");
+    yin >> doc;
+
+    EXPECT_FALSE(yin.error());
+    EXPECT_EQ(doc.foo, 3);
+    EXPECT_EQ(doc.bar, 5);
+  }
 }
 
 TEST(YAMLIO, TestMalformedMapRead) {
   FooBar doc;
   Input yin("{foo: 3; bar: 5}", nullptr, suppressErrorMessages);
+  yin >> doc;
+  EXPECT_TRUE(!!yin.error());
+}
+
+TEST(YAMLIO, TestMapDuplicatedKeysRead) {
+  auto testDiagnostic = [](const llvm::SMDiagnostic &Error, void *) {
+    EXPECT_EQ(Error.getMessage(), "duplicated mapping key 'foo'");
+  };
+  FooBar doc;
+  Input yin("{foo: 3, bar: 5, foo: 4}", nullptr, testDiagnostic);
   yin >> doc;
   EXPECT_TRUE(!!yin.error());
 }
@@ -235,6 +253,58 @@ TEST(YAMLIO, TestSequenceMapWriteAndRead) {
     EXPECT_EQ(map1.bar, -3);
     EXPECT_EQ(map2.foo, 257);
     EXPECT_EQ(map2.bar, 0);
+  }
+}
+
+//
+// Test reading the entire struct as an enum.
+//
+
+struct FooBarEnum {
+  int Foo;
+  int Bar;
+  bool operator==(const FooBarEnum &R) const {
+    return Foo == R.Foo && Bar == R.Bar;
+  }
+};
+
+namespace llvm {
+namespace yaml {
+template <> struct MappingTraits<FooBarEnum> {
+  static void enumInput(IO &io, FooBarEnum &Val) {
+    io.enumCase(Val, "OnlyFoo", FooBarEnum({1, 0}));
+    io.enumCase(Val, "OnlyBar", FooBarEnum({0, 1}));
+  }
+  static void mapping(IO &io, FooBarEnum &Val) {
+    io.mapOptional("Foo", Val.Foo);
+    io.mapOptional("Bar", Val.Bar);
+  }
+};
+} // namespace yaml
+} // namespace llvm
+
+TEST(YAMLIO, TestMapEnumRead) {
+  FooBarEnum Doc;
+  {
+    Input Yin("OnlyFoo");
+    Yin >> Doc;
+    EXPECT_FALSE(Yin.error());
+    EXPECT_EQ(Doc.Foo, 1);
+    EXPECT_EQ(Doc.Bar, 0);
+  }
+  {
+    Input Yin("OnlyBar");
+    Yin >> Doc;
+    EXPECT_FALSE(Yin.error());
+    EXPECT_EQ(Doc.Foo, 0);
+    EXPECT_EQ(Doc.Bar, 1);
+  }
+  {
+    Input Yin("{Foo: 3, Bar: 5}");
+    Yin >> Doc;
+    EXPECT_FALSE(Yin.error());
+    EXPECT_EQ(Doc.Foo, 3);
+    EXPECT_EQ(Doc.Bar, 5);
   }
 }
 
@@ -480,10 +550,10 @@ TEST(YAMLIO, TestReadWriteBuiltInTypes) {
 
 struct EndianTypes {
   typedef llvm::support::detail::packed_endian_specific_integral<
-      float, llvm::support::little, llvm::support::unaligned>
+      float, llvm::endianness::little, llvm::support::unaligned>
       ulittle_float;
   typedef llvm::support::detail::packed_endian_specific_integral<
-      double, llvm::support::little, llvm::support::unaligned>
+      double, llvm::endianness::little, llvm::support::unaligned>
       ulittle_double;
 
   llvm::support::ulittle64_t u64;
@@ -2322,6 +2392,7 @@ TEST(YAMLIO, TestMalformedMapFailsGracefully) {
 
 struct OptionalTest {
   std::vector<int> Numbers;
+  std::optional<int> MaybeNumber;
 };
 
 struct OptionalTestSeq {
@@ -2335,6 +2406,7 @@ namespace yaml {
   struct MappingTraits<OptionalTest> {
     static void mapping(IO& IO, OptionalTest &OT) {
       IO.mapOptional("Numbers", OT.Numbers);
+      IO.mapOptional("MaybeNumber", OT.MaybeNumber);
     }
   };
 
@@ -2396,6 +2468,7 @@ TEST(YAMLIO, TestEmptyStringSucceedsForMapWithOptionalFields) {
   Input yin("");
   yin >> doc;
   EXPECT_FALSE(yin.error());
+  EXPECT_FALSE(doc.MaybeNumber.has_value());
 }
 
 TEST(YAMLIO, TestEmptyStringSucceedsForSequence) {
@@ -2549,6 +2622,9 @@ template <> struct MappingContextTraits<SimpleMap, MappingContext> {
     io.mapRequired("C", sm.C);
     ++Context.A;
     io.mapRequired("Context", Context.A);
+  }
+  static std::string validate(IO &io, SimpleMap &sm, MappingContext &Context) {
+    return "";
   }
 };
 
@@ -3083,7 +3159,7 @@ TEST(YAMLIO, TestFlowSequenceTokenErrors) {
 
 TEST(YAMLIO, TestDirectiveMappingNoValue) {
   Input yin("%YAML\n{5:");
-  EXPECT_FALSE(yin.setCurrentDocument());
+  yin.setCurrentDocument();
   EXPECT_TRUE(yin.error());
 
   Input yin2("%TAG\n'\x98!< :\n");
@@ -3213,4 +3289,73 @@ TEST(YAMLIO, TestScannerNoNullScanPlainScalarInFlow) {
   Input yin(llvm::StringRef(str.data(), str.size()));
   yin.setCurrentDocument();
   EXPECT_TRUE(yin.error());
+}
+
+struct FixedArray {
+  FixedArray() {
+    // Initialize to int max as a sentinel value.
+    for (auto &v : values)
+      v = std::numeric_limits<int>::max();
+  }
+  int values[4];
+};
+
+namespace llvm {
+namespace yaml {
+  template <>
+  struct MappingTraits<FixedArray> {
+    static void mapping(IO &io, FixedArray& st) {
+      MutableArrayRef<int> array = st.values;
+      io.mapRequired("Values", array);
+    }
+  };
+}
+}
+
+TEST(YAMLIO, FixedSizeArray) {
+  FixedArray faval;
+  Input yin("---\nValues:  [ 1, 2, 3, 4 ]\n...\n");
+  yin >> faval;
+
+  EXPECT_FALSE(yin.error());
+  EXPECT_EQ(faval.values[0], 1);
+  EXPECT_EQ(faval.values[1], 2);
+  EXPECT_EQ(faval.values[2], 3);
+  EXPECT_EQ(faval.values[3], 4);
+
+  std::string serialized;
+  {
+    llvm::raw_string_ostream os(serialized);
+    Output yout(os);
+    yout << faval;
+  }
+  auto expected = "---\n"
+                  "Values:          [ 1, 2, 3, 4 ]\n"
+                  "...\n";
+  ASSERT_EQ(serialized, expected);
+}
+
+TEST(YAMLIO, FixedSizeArrayMismatch) {
+  {
+    FixedArray faval;
+    Input yin("---\nValues:  [ 1, 2, 3 ]\n...\n");
+    yin >> faval;
+
+    // No error for too small, leaves the default initialized value
+    EXPECT_FALSE(yin.error());
+    EXPECT_EQ(faval.values[0], 1);
+    EXPECT_EQ(faval.values[1], 2);
+    EXPECT_EQ(faval.values[2], 3);
+    EXPECT_EQ(faval.values[3], std::numeric_limits<int>::max());
+  }
+
+  {
+    FixedArray faval;
+    Input yin("---\nValues:  [ 1, 2, 3, 4, 5 ]\n...\n");
+    yin >> faval;
+
+    // Error for too many elements.
+    EXPECT_TRUE(!!yin.error());
+  }
+
 }

@@ -1,0 +1,176 @@
+typeMath.chpl:22: warning: the idxType of this range literal 1..10 with the low bound of the type int(8) and the high bound of the type int(64) is currently int(8). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:23: warning: the idxType of this range literal 1..10 with the low bound of the type int(64) and the high bound of the type int(8) is currently int(8). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:28: warning: the idxType of this range literal 1..10 with the low bound of the type uint(8) and the high bound of the type int(64) is currently uint(8). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:29: warning: the idxType of this range literal 1..10 with the low bound of the type int(64) and the high bound of the type uint(8) is currently uint(8). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:36: warning: the idxType of this range literal 1..10 with the low bound of the type int(16) and the high bound of the type int(64) is currently int(16). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:37: warning: the idxType of this range literal 1..10 with the low bound of the type int(64) and the high bound of the type int(16) is currently int(16). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:44: warning: the idxType of this range literal 1..10 with the low bound of the type uint(16) and the high bound of the type int(64) is currently uint(16). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:45: warning: the idxType of this range literal 1..10 with the low bound of the type int(64) and the high bound of the type uint(16) is currently uint(16). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:52: warning: the idxType of this range literal 1..10 with the low bound of the type int(32) and the high bound of the type int(64) is currently int(32). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:53: warning: the idxType of this range literal 1..10 with the low bound of the type int(64) and the high bound of the type int(32) is currently int(32). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:60: warning: the idxType of this range literal 1..10 with the low bound of the type uint(32) and the high bound of the type int(64) is currently uint(32). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:61: warning: the idxType of this range literal 1..10 with the low bound of the type int(64) and the high bound of the type uint(32) is currently uint(32). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:83: warning: the idxType of this range literal 1..100 with the low bound of the type int(64) and the high bound of the type int(8) is currently int(8). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:84: warning: the idxType of this range literal 1..100 with the low bound of the type int(64) and the high bound of the type int(16) is currently int(16). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:85: warning: the idxType of this range literal 1..100 with the low bound of the type int(64) and the high bound of the type int(32) is currently int(32). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:88: warning: the idxType of this range literal 1..100 with the low bound of the type int(64) and the high bound of the type uint(8) is currently uint(8). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:89: warning: the idxType of this range literal 1..100 with the low bound of the type int(64) and the high bound of the type uint(16) is currently uint(16). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:90: warning: the idxType of this range literal 1..100 with the low bound of the type int(64) and the high bound of the type uint(32) is currently uint(32). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:95: warning: the idxType of this range literal 1..100 with the low bound of the type int(8) and the high bound of the type int(64) is currently int(8). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:103: warning: the idxType of this range literal 1..100 with the low bound of the type int(16) and the high bound of the type int(64) is currently int(16). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:114: warning: the idxType of this range literal 1..100 with the low bound of the type int(32) and the high bound of the type int(64) is currently int(32). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:145: warning: the idxType of this range literal 1..100 with the low bound of the type uint(8) and the high bound of the type int(64) is currently uint(8). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:155: warning: the idxType of this range literal 1..100 with the low bound of the type uint(16) and the high bound of the type int(64) is currently uint(16). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+typeMath.chpl:168: warning: the idxType of this range literal 1..100 with the low bound of the type uint(32) and the high bound of the type int(64) is currently uint(32). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+range(int(64),low,one)
+range(int(64),high,one)
+range(int(64),both,one)
+range(int(64),both,one)
+range(int(64),both,one)
+-----
+range(uint(64),low,one)
+range(uint(64),high,one)
+range(uint(64),both,one)
+range(uint(64),both,one)
+range(uint(64),both,one)
+-----
+range(int(8),low,one)
+range(int(8),high,one)
+range(int(8),both,one)
+range(int(8),both,one)
+range(int(8),both,one)
+range(uint(8),low,one)
+range(uint(8),high,one)
+range(uint(8),both,one)
+range(uint(8),both,one)
+range(uint(8),both,one)
+-----
+range(int(16),low,one)
+range(int(16),high,one)
+range(int(16),both,one)
+range(int(16),both,one)
+range(int(16),both,one)
+-----
+range(uint(16),low,one)
+range(uint(16),high,one)
+range(uint(16),both,one)
+range(uint(16),both,one)
+range(uint(16),both,one)
+-----
+range(int(32),low,one)
+range(int(32),high,one)
+range(int(32),both,one)
+range(int(32),both,one)
+range(int(32),both,one)
+-----
+range(uint(32),low,one)
+range(uint(32),high,one)
+range(uint(32),both,one)
+range(uint(32),both,one)
+range(uint(32),both,one)
+-----
+range(int(64),low,one)
+range(int(64),high,one)
+range(int(64),both,one)
+range(int(64),both,one)
+range(int(64),both,one)
+-----
+range(uint(64),low,one)
+range(uint(64),high,one)
+range(uint(64),both,one)
+range(uint(64),both,one)
+range(uint(64),both,one)
+-----
+range(int(64),both,one)
+range(int(8),both,one)
+range(int(16),both,one)
+range(int(32),both,one)
+range(int(64),both,one)
+range(uint(64),both,one)
+range(uint(8),both,one)
+range(uint(16),both,one)
+range(uint(32),both,one)
+range(uint(64),both,one)
+-----
+range(int(8),both,one)
+range(int(8),both,one)
+range(int(16),both,one)
+range(int(32),both,one)
+range(int(8),both,one)
+range(uint(8),both,one)
+range(uint(16),both,one)
+range(uint(32),both,one)
+range(int(16),both,one)
+range(int(16),both,one)
+range(int(16),both,one)
+range(int(32),both,one)
+range(int(16),both,one)
+range(int(16),both,one)
+range(uint(16),both,one)
+range(uint(32),both,one)
+-----
+range(int(32),both,one)
+range(int(32),both,one)
+range(int(32),both,one)
+range(int(32),both,one)
+range(int(32),both,one)
+range(int(32),both,one)
+range(int(32),both,one)
+range(uint(32),both,one)
+range(int(64),both,one)
+range(int(8),both,one)
+range(int(16),both,one)
+range(int(32),both,one)
+range(int(64),both,one)
+range(uint(64),both,one)
+range(uint(8),both,one)
+range(uint(16),both,one)
+range(uint(32),both,one)
+range(uint(64),both,one)
+-----
+range(uint(64),both,one)
+range(uint(64),both,one)
+range(uint(64),both,one)
+range(uint(64),both,one)
+range(uint(64),both,one)
+range(uint(64),both,one)
+range(uint(64),both,one)
+-----
+range(uint(8),both,one)
+range(uint(8),both,one)
+range(int(16),both,one)
+range(int(32),both,one)
+range(uint(8),both,one)
+range(uint(64),both,one)
+range(uint(8),both,one)
+range(uint(16),both,one)
+range(uint(32),both,one)
+range(uint(64),both,one)
+range(uint(16),both,one)
+range(uint(16),both,one)
+range(uint(16),both,one)
+range(int(32),both,one)
+range(uint(16),both,one)
+range(uint(64),both,one)
+range(uint(16),both,one)
+range(uint(16),both,one)
+range(uint(32),both,one)
+range(uint(64),both,one)
+-----
+range(uint(32),both,one)
+range(uint(32),both,one)
+range(uint(32),both,one)
+range(uint(32),both,one)
+range(uint(32),both,one)
+range(uint(64),both,one)
+range(uint(32),both,one)
+range(uint(32),both,one)
+range(uint(32),both,one)
+range(uint(64),both,one)
+range(uint(64),both,one)
+range(uint(64),both,one)
+range(uint(64),both,one)
+range(uint(64),both,one)
+range(uint(64),both,one)
+range(uint(64),both,one)
+range(uint(64),both,one)

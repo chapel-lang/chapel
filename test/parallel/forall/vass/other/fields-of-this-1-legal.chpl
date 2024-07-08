@@ -6,17 +6,17 @@ record QQ {
   var data: [RNG] int;
 }
 
-proc QQ.w1(factor: int) {
+proc ref QQ.w1(factor: int) {
   forall i in RNG {
     data[i] = i * factor;
   }
 }
 
-proc QQ.w2() {
+proc ref QQ.w2() {
   w1(100);
 }
 
-proc QQ.w3() {
+proc ref QQ.w3() {
   forall i in RNG {
     data[i] = i;
   }

@@ -10,6 +10,6 @@ class Foo {
 }
 
 var foo: borrowed Foo(string)?;
-foo = new borrowed Foo("blah");
+foo = (new owned Foo("blah")).borrow();
 writeln(foo.type: string);
 writeln(foo);

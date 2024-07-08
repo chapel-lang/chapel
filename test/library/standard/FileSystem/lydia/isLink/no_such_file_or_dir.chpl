@@ -1,2 +1,2 @@
 use FileSystem;
-writeln(isLink("unknown.txt"));
+writeln(isSymlink("unknown.txt"));

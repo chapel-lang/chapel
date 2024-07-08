@@ -1,3 +1,5 @@
+use Math;
+
 config var logN = 5;
 const N = 1 << logN;
 
@@ -8,7 +10,7 @@ var A: [DW] complex;
 twiddles(A);
 
 
-proc twiddles(W: [?WD] complex) {
+proc twiddles(ref W: [?WD] complex) {
   const n = WD.dim(0).size;
   const delta = atan(1.0) / n;
   const i = 1.0;

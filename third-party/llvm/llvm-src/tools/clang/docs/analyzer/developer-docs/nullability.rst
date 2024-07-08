@@ -4,7 +4,8 @@ Nullability Checks
 
 This document is a high level description of the nullablility checks.
 These checks intended to use the annotations that is described in this
-RFC: http://lists.cs.uiuc.edu/pipermail/cfe-dev/2015-March/041798.html.
+RFC: https://discourse.llvm.org/t/rfc-nullability-qualifiers/35672
+(`Mailman <https://lists.llvm.org/pipermail/cfe-dev/2015-March/041779.html>`_)
 
 Let's consider the following 2 categories:
 
@@ -17,7 +18,7 @@ If a pointer ``p`` has a nullable annotation and no explicit null check or asser
 
 Taking a branch on nullable pointers are the same like taking branch on null unspecified pointers.
 
-Explicit cast from nullable to nonnul:
+Explicit cast from nullable to nonnull:
 
 .. code-block:: cpp
 
@@ -61,7 +62,7 @@ Other Issues to keep in mind/take care of:
     * Even though the method might return a nonnull pointer, when it was sent to a nullable pointer the return type will be nullable.
   	* The result is nullable unless the receiver is known to be non null.
 
-  * Sending a message to a unspecified or nonnull pointer
+  * Sending a message to an unspecified or nonnull pointer
 
     * If the pointer is not assumed to be nil, we should be optimistic and use the nullability implied by the method.
 

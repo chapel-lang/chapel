@@ -19,7 +19,7 @@ record image {
 
 proc main(args:[] string) {
   use Time;
-  var IOTimer, ComputeTimer, WallTimer: Timer;
+  var IOTimer, ComputeTimer, WallTimer: stopwatch;
   WallTimer.start();
   if args.size == 3 {
     filename1 = args[1];
@@ -63,8 +63,8 @@ proc main(args:[] string) {
 
 
 proc loadImage(filename: string) {
-  var f = open(filename, iomode.r);
-  var r = f.reader(kind=ionative);
+  var f = open(filename, ioMode.r);
+  var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
   var width, height: uint(16);
 
   r.read(width);
@@ -99,13 +99,13 @@ proc SAD_TYPE_CT(n) {
   }
 }
 
-proc SAD_TYPE_1_IX(imageSize) return 0;
-proc SAD_TYPE_2_IX(imageSize) return imageSize * MAX_POS_PADDED;
-proc SAD_TYPE_3_IX(imageSize) return imageSize * (3 * MAX_POS_PADDED);
-proc SAD_TYPE_4_IX(imageSize) return imageSize * (5 * MAX_POS_PADDED);
-proc SAD_TYPE_5_IX(imageSize) return imageSize * (9 * MAX_POS_PADDED);
-proc SAD_TYPE_6_IX(imageSize) return imageSize * (17 * MAX_POS_PADDED);
-proc SAD_TYPE_7_IX(imageSize) return imageSize * (25 * MAX_POS_PADDED);
+proc SAD_TYPE_1_IX(imageSize) do return 0;
+proc SAD_TYPE_2_IX(imageSize) do return imageSize * MAX_POS_PADDED;
+proc SAD_TYPE_3_IX(imageSize) do return imageSize * (3 * MAX_POS_PADDED);
+proc SAD_TYPE_4_IX(imageSize) do return imageSize * (5 * MAX_POS_PADDED);
+proc SAD_TYPE_5_IX(imageSize) do return imageSize * (9 * MAX_POS_PADDED);
+proc SAD_TYPE_6_IX(imageSize) do return imageSize * (17 * MAX_POS_PADDED);
+proc SAD_TYPE_7_IX(imageSize) do return imageSize * (25 * MAX_POS_PADDED);
 
 proc SAD_TYPE_IX(n, imageSize) {
   select n {
@@ -153,8 +153,8 @@ proc write_subblocks(w, subblockArray: [] uint(16),
 }
 
 proc writeSads(filename: string, width: int, height: int, sads: [] uint(16)) {
-  var f = open(filename, iomode.cw);
-  var w = f.writer(kind=ionative);
+  var f = open(filename, ioMode.cw);
+  var w = f.writer(serializer=new binarySerializer(), locking=false);
   const mbs = width*height;
   const rowInds = [0, 1, height/2 - 1, height/2, height - 2, height - 1];
   write32u(w, (width*6):uint(32));
@@ -181,7 +181,7 @@ proc sad4CPU(blkSad: [] uint(16), frame: [] uint(16), reference: [] uint(16), wi
   }
 }
 
-proc sad4OneMacroblock(macroblockSad: [] uint(16), frame: [] uint(16), reference: [] uint(16), framey: int, framex: int, mbWidth: int, mbHeight: int) {
+proc sad4OneMacroblock(ref macroblockSad: [] uint(16), frame: [] uint(16), reference: [] uint(16), framey: int, framex: int, mbWidth: int, mbHeight: int) {
   var pos = 0;
   var width = mbWidth * 16;
   var height = mbHeight * 16;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,15 +40,15 @@
 
 #define DEBUG_TYPE "global-to-wide"
 
+#include "llvmTracker.h"
 #include "llvmUtil.h"
 
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
 
 #include "llvm/IR/Attributes.h"
-
-#if HAVE_LLVM_VER < 90
-#include "llvm/IR/CallSite.h"
+#if HAVE_LLVM_VER >= 170
+#include "llvm/IR/AttributeMask.h"
 #endif
 
 #include "llvm/IR/InstIterator.h"
@@ -84,7 +84,7 @@ namespace {
   static const bool debugAllPassTwo = false;
   static const bool extraChecks = true;
   // Set a function name here to get lots of debugging output.
-  static const char* debugThisFn = "";//"deinit6";
+  static const char* debugThisFn = "";
 
   AllocaInst* makeAlloca(llvm::Type* type,
                          const char* name,
@@ -113,10 +113,12 @@ namespace {
       tempVar = new AllocaInst(type,
                                DL.getAllocaAddrSpace(),
                                name, insertBefore);
+      trackLLVMValue(tempVar);
     } else {
       tempVar = new AllocaInst(type,
                                DL.getAllocaAddrSpace(),
                                name, entryBlock);
+      trackLLVMValue(tempVar);
     }
 
     return tempVar;
@@ -143,6 +145,15 @@ namespace {
     Old->eraseFromParent();
   }
 #endif
+
+  bool starts_with(StringRef a, StringRef b)
+  {
+#if HAVE_LLVM_VER >= 180
+    return a.starts_with(b);
+#else
+    return a.startswith(b);
+#endif
+  }
 
   // Like the version in BasicBlockUtils but assumes New is already
   // in the block.
@@ -189,25 +200,28 @@ namespace {
     // Assuming widePtr is a struct wide-pointer, extract the address
     assert(widePtr->getType()->isStructTy());
 
-    return ExtractValueInst::Create(widePtr,
-                                    wideAddrGEP,
-                                    "", insertBefore);
+    Instruction* ret = ExtractValueInst::Create(widePtr,
+                                            wideAddrGEP, "", insertBefore);
+    trackLLVMValue(ret);
+    return ret;
   }
   Instruction* createRlocale(GlobalToWideInfo* info, Value* widePtr, Instruction* insertBefore) {
     // Assuming widePtr is a struct wide-pointer, extract the address
     assert(widePtr->getType()->isStructTy());
 
-    return ExtractValueInst::Create(widePtr,
-                                    wideLocaleGEP,
-                                    "", insertBefore);
+    Instruction* ret = ExtractValueInst::Create(widePtr,
+                                            wideLocaleGEP, "", insertBefore);
+    trackLLVMValue(ret);
+    return ret;
   }
   Instruction* createRnode(GlobalToWideInfo* info, Value* widePtr, Instruction* insertBefore) {
     // Assuming widePtr is a struct wide-pointer, extract the address
     assert(widePtr->getType()->isStructTy());
 
-    return ExtractValueInst::Create(widePtr,
-                                    wideNodeGEP,
-                                    "", insertBefore);
+    Instruction* ret = ExtractValueInst::Create(widePtr,
+                                            wideNodeGEP, "", insertBefore);
+    trackLLVMValue(ret);
+    return ret;
   }
   Instruction* createWideAddr(GlobalToWideInfo* info,
                         Value* localeId, Value* addr,
@@ -217,12 +231,13 @@ namespace {
     Constant* undefWidePtr = UndefValue::get(widePtrType);
 
     Instruction* locSet = InsertValueInst::Create(undefWidePtr, localeId,
-                                                  wideLocaleGEP,
-                                                  "", insertBefore);
+                                              wideLocaleGEP, "", insertBefore);
+    trackLLVMValue(locSet);
 
     Instruction* ptrSet = InsertValueInst::Create(locSet, addr,
-                                                  wideAddrGEP,
-                                                  "", insertBefore);
+                                              wideAddrGEP, "", insertBefore);
+    trackLLVMValue(ptrSet);
+
     return ptrSet;
   }
 
@@ -233,32 +248,41 @@ namespace {
     if( widePtr->getType() == widePtrType ) return widePtr;
 
     Value* loc = ExtractValueInst::Create(widePtr,
-                                          wideLocaleGEP,
-                                          "", insertBefore);
+                                          wideLocaleGEP, "", insertBefore);
+    trackLLVMValue(loc);
 
     Value* ptr = ExtractValueInst::Create(widePtr,
-                                          wideAddrGEP,
-                                          "", insertBefore);
+                                          wideAddrGEP, "", insertBefore);
+    trackLLVMValue(ptr);
 
     Constant* undef = UndefValue::get(widePtrType);
+#if HAVE_LLVM_VER >= 150
+    IRBuilder<> irBuilder(insertBefore);
+    Value* undefLocPtr = irBuilder.CreateExtractValue(undef, wideAddrGEP);
+    trackLLVMValue(undefLocPtr);
+#else
     Constant* undefLocPtr = ConstantExpr::getExtractValue(undef,
                                                           wideAddrGEP);
+#endif
     // get the local address space pointer.
     Value* cast = CastInst::CreatePointerCast(ptr, undefLocPtr->getType(),
                                               "", insertBefore);
+    trackLLVMValue(cast);
 
     Instruction* locSet = InsertValueInst::Create(undef, loc,
-                                                  wideLocaleGEP,
-                                                  "", insertBefore);
+                                              wideLocaleGEP, "", insertBefore);
+    trackLLVMValue(locSet);
 
     Instruction* ptrSet = InsertValueInst::Create(locSet, cast,
-                                                  wideAddrGEP,
-                                                  "", insertBefore);
+                                              wideAddrGEP, "", insertBefore);
+    trackLLVMValue(ptrSet);
+
     return ptrSet;
   }
 
   // Creates a store/load pattern with bitcasts to implement complex
   // type conversions (converting a wide pointer type to an integer type, say).
+  // TODO: how to ensure proper alignment?
   Instruction* createStoreLoadCast(Value* fromValue,
                                    Type* toType,
                                    Instruction* insertBefore) {
@@ -277,59 +301,39 @@ namespace {
     Type* newPtrType = toType->getPointerTo();
 
     Value* allocAsFrom = alloc;
-    if (allocAsFrom->getType() != fromPtrType)
+    if (allocAsFrom->getType() != fromPtrType) {
       allocAsFrom = CastInst::CreatePointerCast(alloc, fromPtrType,
                                                 "", insertBefore);
+      trackLLVMValue(allocAsFrom);
+    }
     Value* allocAsNew = alloc;
-    if (allocAsNew->getType() != newPtrType)
+    if (allocAsNew->getType() != newPtrType) {
       allocAsNew = CastInst::CreatePointerCast(alloc, newPtrType,
                                                "", insertBefore);
+      trackLLVMValue(allocAsNew);
+    }
 
-    new StoreInst(fromValue, allocAsFrom, insertBefore);
+    Instruction* store = new StoreInst(fromValue, allocAsFrom, insertBefore);
+    trackLLVMValue(store);
     Instruction* load = new LoadInst(toType, allocAsNew, "", insertBefore);
+    trackLLVMValue(load);
 
     return load;
   }
 
-  void checkFunctionExistAndHasArgs(Value* f, Type* t, unsigned nArgs)
+  void checkFunctionExistAndHasArgs(Value* f, FunctionType* ft, unsigned nArgs)
   {
     #ifndef NDEBUG
       assert(f);
       if( Function* ff = dyn_cast<Function>(f) ) {
         assert(ff->getParent());
       }
-      FunctionType* ft = NULL;
-      if( PointerType* pt = dyn_cast<PointerType>(t) ) {
-#if HAVE_LLVM_VER >= 130
-        t = pt->getPointerElementType();
-#else
-        t = pt->getElementType();
-#endif
-      }
-      ft = cast<FunctionType>(t);
       assert(ft);
       assert(ft->getNumParams() == nArgs);
     #endif
   }
 
-
-  struct TypeFixer : public ValueMapTypeRemapper {
-  public:
-    /// remapType - The client should implement this method if they want to
-    /// remap types while mapping values.
-    Type *remapType(Type *SrcTy) override = 0;
-
-    // When remapping things with remapped types, these functions
-    // provide an opportunity to do the remapping. They should return
-    // NULL if that specific thing does not need to be remapped. They
-    // do not need to handle remapping e.g. structure or arrays
-    //  if only elements need remapping.
-    virtual Constant* remapConstant(const Constant* C,
-                                    ValueToValueMapTy &VM,
-                                    RemapFlags Flags) = 0;
-  };
-
-  struct GlobalTypeFixer : TypeFixer {
+  struct GlobalTypeFixer : ValueMapTypeRemapper {
     Module & M;
     GlobalToWideInfo * info;
     bool debugPassTwo;
@@ -368,9 +372,8 @@ namespace {
 
       nodeTy = info->nodeIdType;
       voidTy = llvm::Type::getVoidTy(M.getContext());
-      voidPtrTy = llvm::Type::getInt8PtrTy(M.getContext(), 0);
-      glVoidPtrTy = llvm::Type::getInt8PtrTy(M.getContext(),
-                                             info->globalSpace);
+      voidPtrTy = getPointerType(M.getContext(), 0);
+      glVoidPtrTy = getPointerType(M.getContext(), info->globalSpace);
       wideVoidPtrTy = convertTypeGlobalToWide(&M, info, glVoidPtrTy);
       ptrLocTy = info->localeIdType->getPointerTo(0);
       i64Ty = llvm::Type::getInt64Ty(M.getContext());
@@ -409,6 +412,7 @@ namespace {
       Value* local_args[1];
       local_args[0] = globalPtr;
       CallInst* call = CallInst::Create( fn, local_args, "", insertBefore);
+      trackLLVMValue(call);
       return call;
     }
     CallInst* callWideToGlobalFn(Value* widePtr, Type* globalTy, Instruction* insertBefore) {
@@ -416,6 +420,7 @@ namespace {
       Value* local_args[1];
       local_args[0] = widePtr;
       CallInst* call = CallInst::Create( fn, local_args, "", insertBefore);
+      trackLLVMValue(call);
       return call;
     }
 
@@ -436,11 +441,11 @@ namespace {
 
           Function* calledFn = call->getCalledFunction(); // null if indirect
           // handle wide2global, global2wide
-          if ( calledFn && calledFn->getName().startswith(GLOBAL_FN) ) {
+          if ( calledFn && starts_with(calledFn->getName(), GLOBAL_FN) ) {
             // Distinguish among the various special functions by the
             // function signature.
-            if( calledFn->getName().startswith(GLOBAL_FN_WIDE_TO_GLOBAL) ||
-                calledFn->getName().startswith(GLOBAL_FN_GLOBAL_TO_WIDE) )
+            if( starts_with(calledFn->getName(), GLOBAL_FN_WIDE_TO_GLOBAL) ||
+                starts_with(calledFn->getName(), GLOBAL_FN_GLOBAL_TO_WIDE) )
             {
               // GLOBAL_FN_WIDE_TO_GLOBAL wide2global(wide)->*100 --- remove
               // GLOBAL_FN_GLOBAL_TO_WIDE global2wide(*100)->wide --- remove
@@ -486,6 +491,84 @@ namespace {
       }
 
       switch(insn->getOpcode()) {
+        // Workaround: LLVM optimizations on machines with sufficiently large
+        // vector widths can generate vectors of global pointers, which cannot
+        // be directly translated to vectors of wide pointers. The workaround
+        // is to bitcast to and from i128 (the size of a wide pointer), which
+        // can be represented in a vector. This requires the cases for
+        // `InsertElement`, `ExtractElement`, and `ShuffleVector`
+        case Instruction::InsertElement: {
+          // if we are inserting a global addr to a vector of i128
+          // need a cast to i128 first, then convert back to the original vector type
+          auto vecVal = insn->getOperand(0);
+          auto insertVal = insn->getOperand(1);
+          auto insertType = insertVal->getType();
+          auto idx = insn->getOperand(2);
+
+          if (insertType->isPointerTy() && insertType->getPointerAddressSpace() == info->globalSpace) {
+            auto newVecType = convertTypeGlobalToWide(&M, info, vecVal->getType());
+            auto newVecVal = createStoreLoadCast(vecVal, newVecType, insn);
+
+            auto newInsertVal = createStoreLoadCast(insertVal, IntegerType::getInt128Ty(M.getContext()), insn);
+
+            auto newInsn = InsertElementInst::Create(newVecVal, newInsertVal, idx, "", insn);
+            trackLLVMValue(newInsn);
+            auto convertBack = createStoreLoadCast(newInsn, vecVal->getType(), insn);
+
+            myReplaceInstWithInst(insn, convertBack);
+          }
+          break;
+        }
+        case Instruction::ExtractElement: {
+          // if we are extracting a global addr from a vector, need to cast
+
+          auto vecVal = insn->getOperand(0);
+          auto vecElmType = cast<VectorType>(vecVal->getType())->getElementType();
+          auto idx = insn->getOperand(1);
+
+          if (vecElmType->isPointerTy() && vecElmType->getPointerAddressSpace() == info->globalSpace) {
+            auto newVecType = convertTypeGlobalToWide(&M, info, vecVal->getType());
+            auto newVecVal = createStoreLoadCast(vecVal, newVecType, insn);
+
+            auto newInsn = ExtractElementInst::Create(newVecVal, idx, "", insn);
+            trackLLVMValue(newInsn);
+            auto convertBack = createStoreLoadCast(newInsn, vecElmType, insn);
+
+            myReplaceInstWithInst(insn, convertBack);
+          }
+
+          break;
+        }
+        case Instruction::ShuffleVector: {
+          // if we are shuffling a vector of global addr, need to cast
+
+          auto resVecType = insn->getType();
+
+          auto vecVal1 = insn->getOperand(0);
+          auto vecVal2 = insn->getOperand(1);
+          auto mask = insn->getOperand(2);
+
+          auto vecElmType = cast<VectorType>(vecVal1->getType())->getElementType();
+
+          if (vecElmType->isPointerTy() && vecElmType->getPointerAddressSpace() == info->globalSpace) {
+            auto newVec1Type = convertTypeGlobalToWide(&M, info, vecVal1->getType());
+            auto newVecVal1 = createStoreLoadCast(vecVal1, newVec1Type, insn);
+
+            auto newVec2Type = convertTypeGlobalToWide(&M, info, vecVal2->getType());
+            auto newVecVal2 = createStoreLoadCast(vecVal2, newVec2Type, insn);
+
+            Value* newInsn;
+            {
+              IRBuilder<> irBuilder(insn);
+              newInsn = irBuilder.CreateShuffleVector(newVecVal1, newVecVal2, mask);
+              trackLLVMValue(newInsn);
+            }
+            auto convertBack = createStoreLoadCast(newInsn, resVecType, insn);
+
+            myReplaceInstWithInst(insn, convertBack);
+          }
+          break;
+        }
         case Instruction::PHI: {
           PHINode* oldPHI = cast<PHINode>(insn);
 
@@ -507,6 +590,7 @@ namespace {
 
           // create a new phi node with the replacement incoming values.
           PHINode* newPHI = PHINode::Create(wideTy, nIncoming,"",oldPHI);
+          trackLLVMValue(newPHI);
           for(unsigned j = 0; j < nIncoming; j++) {
             newPHI->addIncoming(newIncoming[j],
                                 oldPHI->getIncomingBlock(j));
@@ -616,7 +700,7 @@ namespace {
                                                  inds,
                                                  oldGEP->getName(),
                                                  oldGEP);
-
+            trackLLVMValue(newGEP);
             newGEP->setIsInBounds(oldGEP->isInBounds());
 
             Instruction* outWidePtr = createWideAddr(info, loc, newGEP,
@@ -650,10 +734,13 @@ namespace {
             Value* raddr = createRaddr(info, wAddr, oldLoad);
             Value* castRaddr = new BitCastInst(raddr, voidPtrTy, "", oldLoad);
             Value* size = createSizeof(info, wLoadedTy);
+            trackLLVMValue(castAlloc);
+            trackLLVMValue(castRaddr);
             {
               // Convert size if necessary
               IRBuilder<> irBuilder(oldLoad);
               size = irBuilder.CreateZExtOrTrunc(size, sizeTy);
+              trackLLVMValue(size);
             }
 
             Value* args[5];
@@ -665,24 +752,18 @@ namespace {
                                              oldLoad->getSyncScopeID()
                                              );
 
-#if HAVE_LLVM_VER >= 90
             Value* call = CallInst::Create(getFnType, getFn, args, "", oldLoad);
-#else
-            Value* call = CallInst::Create(getFn, args, "", oldLoad);
-#endif
+            trackLLVMValue(call);
             if (call == nullptr) assert(false && "failure creating call");
 
             // Now load from the alloc'd area.
             Instruction* loadedWide = new LoadInst(wLoadedTy, alloc, "",
                                        oldLoad->isVolatile(),
-#if HAVE_LLVM_VER >= 100
                                        oldLoad->getAlign(),
-#else
-                                       oldLoad->getAlignment(),
-#endif
                                        oldLoad->getOrdering(),
                                        oldLoad->getSyncScopeID(),
                                        oldLoad);
+            trackLLVMValue(loadedWide);
 
             // now convert loadedWide back into a global type,
             // if necessary.
@@ -711,28 +792,28 @@ namespace {
             // first, alloca a temporary to 'put' from
             Value* alloc = makeAlloca(wStoredTy, "", oldStore);
             Value* castAlloc = new BitCastInst(alloc, voidPtrTy, "", oldStore);
+            trackLLVMValue(castAlloc);
 
             // Now store to the alloc'd area
             Instruction* st = new StoreInst(wValueOp, alloc,
                                             oldStore->isVolatile(),
-#if HAVE_LLVM_VER >= 100
                                             oldStore->getAlign(),
-#else
-                                            oldStore->getAlignment(),
-#endif
                                             oldStore->getOrdering(),
                                             oldStore->getSyncScopeID(),
                                             oldStore);
             if (st == nullptr) assert(false && "failure creating store");
+            trackLLVMValue(st);
 
             Value* node = createRnode(info, wAddr, oldStore);
             Value* raddr = createRaddr(info, wAddr, oldStore);
             Value* castRaddr = new BitCastInst(raddr, voidPtrTy, "", oldStore);
             Value* size = createSizeof(info, wStoredTy);
+            trackLLVMValue(castRaddr);
             {
               // Convert size if necessary
               IRBuilder<> irBuilder(oldStore);
               size = irBuilder.CreateZExtOrTrunc(size, sizeTy);
+              trackLLVMValue(size);
             }
 
             // Now put from the alloc'd area
@@ -745,11 +826,8 @@ namespace {
                                              oldStore->getSyncScopeID()
                                              );
 
-#if HAVE_LLVM_VER >= 90
             Instruction* put = CallInst::Create(putFnType, putFn, args, "", oldStore);
-#else
-            Instruction* put = CallInst::Create(putFn, args, "", oldStore);
-#endif
+            trackLLVMValue(put);
             myReplaceInstWithInst(oldStore, put);
           }
           break; }
@@ -786,17 +864,17 @@ namespace {
           CallInst *call = cast<CallInst>(insn);
           Function* calledFn = call->getCalledFunction(); // null if indirect
 
-          if ( calledFn && calledFn->getName().startswith(GLOBAL_FN)) {
+          if ( calledFn && starts_with(calledFn->getName(), GLOBAL_FN)) {
             // Distinguish among the various special functions by name.
-            if( calledFn->getName().startswith(GLOBAL_FN_WIDE_TO_GLOBAL))
+            if( starts_with(calledFn->getName(), GLOBAL_FN_WIDE_TO_GLOBAL))
             {
               // GLOBAL_FN_WIDE_TO_GLOBAL wide2global(wide)->*100 --- remove
               // Do nothing - replace these later.
-            } else if( calledFn->getName().startswith(GLOBAL_FN_GLOBAL_TO_WIDE) )
+            } else if( starts_with(calledFn->getName(), GLOBAL_FN_GLOBAL_TO_WIDE) )
             {
               // GLOBAL_FN_GLOBAL_TO_WIDE global2wide(*100)->wide --- remove
               // Do nothing - replace these later
-            } else if( calledFn->getName().startswith(GLOBAL_FN_GLOBAL_ADDR) )
+            } else if( starts_with(calledFn->getName(), GLOBAL_FN_GLOBAL_ADDR) )
             {
               // GLOBAL_FN_GLOBAL_ADDR .gf.addr(*100)->*   --- extract addr
               // w2g( extract-addr( g2w(addr) ) )
@@ -810,6 +888,7 @@ namespace {
               Instruction* extr = createRaddr(info, wAddr, call);
               if( extr->getType() != calledFn->getReturnType() ) {
                 extr = CastInst::CreatePointerCast(extr, wLocAddrTy, "", call);
+                trackLLVMValue(extr);
               }
               Instruction *glbl = extr;
               // Now convert it back to global if necessary.
@@ -818,7 +897,7 @@ namespace {
               }
               assert(glbl->getType()->isPointerTy());
               myReplaceInstWithInst(call, glbl);
-            } else if( calledFn->getName().startswith(GLOBAL_FN_GLOBAL_LOCID)){
+            } else if( starts_with(calledFn->getName(), GLOBAL_FN_GLOBAL_LOCID)){
               // GLOBAL_FN_GLOBAL_LOCID .gf.loc(*100),locale - extract .locale
               // extract-loc(g2w(addr))
 
@@ -830,7 +909,7 @@ namespace {
 
               assert(!loc->getType()->isPointerTy());
               myReplaceInstWithInst(call, loc);
-            } else if( calledFn->getName().startswith(GLOBAL_FN_GLOBAL_NODEID)){
+            } else if( starts_with(calledFn->getName(), GLOBAL_FN_GLOBAL_NODEID)){
               // GLOBAL_FN_GLOBAL_NODEID .gf.node(*100)->node - extract .node
               // extract-node(g2w(addr))
 
@@ -841,7 +920,7 @@ namespace {
               Instruction* node = createRnode(info, wAddr, call);
               assert(!node->getType()->isPointerTy());
               myReplaceInstWithInst(call, node);
-            } else if( calledFn->getName().startswith(GLOBAL_FN_GLOBAL_MAKE) ){
+            } else if( starts_with(calledFn->getName(), GLOBAL_FN_GLOBAL_MAKE) ){
               // GLOBAL_FN_GLOBAL_MAKE .gf.make(loc,*)->*100 --- make wide
               // w2g( make(g2w(addr), loc) )
 
@@ -877,6 +956,7 @@ namespace {
                 // Convert n if necessary
                 IRBuilder<> irBuilder(call);
                 n = irBuilder.CreateZExtOrTrunc(n, sizeTy);
+                trackLLVMValue(n);
               }
 
               dstSpace = gDst->getType()->getPointerAddressSpace();
@@ -901,11 +981,8 @@ namespace {
                 args[3] = n;
                 args[4] = ctl;
 
-#if HAVE_LLVM_VER >= 90
                 putget = CallInst::Create(putFnType, putFn, args, "", call);
-#else
-                putget = CallInst::Create(putFn, args, "", call);
-#endif
+                trackLLVMValue(putget);
               } else if( srcSpace == info->globalSpace &&
                          dstSpace != info->globalSpace ) {
                 // It's a GET
@@ -916,11 +993,8 @@ namespace {
                 args[3] = n;
                 args[4] = ctl;
 
-#if HAVE_LLVM_VER >= 90
                 putget = CallInst::Create(getFnType, getFn, args, "", call);
-#else
-                putget = CallInst::Create(getFn, args, "", call);
-#endif
+                trackLLVMValue(putget);
               } else {
                 Value* args[5];
                 args[0] = createRnode(info, wDst, call);
@@ -930,11 +1004,8 @@ namespace {
                 args[4] = n;
 
                 assert(getPutFn && "Missing get-put-function for global-to-global memcpy");
-#if HAVE_LLVM_VER >= 90
                 putget = CallInst::Create(getPutFnType, getPutFn, args, "", call);
-#else
-                putget = CallInst::Create(getPutFn, args, "", call);
-#endif
+                trackLLVMValue(putget);
               }
 
               myReplaceInstWithInst(call, putget);
@@ -947,6 +1018,7 @@ namespace {
                 // Convert n if necessary
                 IRBuilder<> irBuilder(call);
                 n = irBuilder.CreateZExtOrTrunc(n, sizeTy);
+                trackLLVMValue(n);
               }
 
               Value* wDst = callGlobalToWideFn(gDst, call);
@@ -959,11 +1031,8 @@ namespace {
               args[2] = c;
               args[3] = n;
               assert(memsetFn && "Missing memset-function for global memset");
-#if HAVE_LLVM_VER >= 90
               mset = CallInst::Create(memsetFnType, memsetFn, args, "", call);
-#else
-              mset = CallInst::Create(memsetFn, args, "", call);
-#endif
+              trackLLVMValue(mset);
               myReplaceInstWithInst(call, mset);
             } else {
               assert(false && "Unknown intrinsic call with global pointer");
@@ -975,13 +1044,20 @@ namespace {
       }
     }
 
+    /// remapType - The client should implement this method if they want to
+    /// remap types while mapping values.
     Type *remapType(Type *SrcTy) override {
       return convertTypeGlobalToWide(&M, info, SrcTy);
     }
 
-    Constant* remapConstant(const Constant* C,
-                          ValueToValueMapTy &VM,
-                          RemapFlags Flags) override {
+    // When remapping things with remapped types, these functions
+    // provide an opportunity to do the remapping. They should return
+    // NULL if that specific thing does not need to be remapped. They
+    // do not need to handle remapping e.g. structure or arrays
+    //  if only elements need remapping.
+    Constant* helpRemapConstant(const Constant* C,
+                                ValueToValueMapTy &VM,
+                                RemapFlags Flags) {
       Type* CT = C->getType();
       if( isa<PointerType>(CT) &&
           CT->getPointerAddressSpace() == info->globalSpace) {
@@ -1008,9 +1084,10 @@ namespace {
           assert(0);
         }
       }
-      // Otherwise, return NULL to indicate we opted out
+
+      // Otherwise, return nullptr to indicate we opted out
       //  of modifying the constant directly.
-      return NULL;
+      return nullptr;
     }
   };
 
@@ -1018,7 +1095,7 @@ namespace {
   Constant* typeMapConstant(Constant* C,
                             ValueToValueMapTy &VM,
                             RemapFlags Flags,
-                            TypeFixer *TypeMapper) {
+                            GlobalTypeFixer *TypeMapper) {
     ValueToValueMapTy::iterator I = VM.find(C);
 
     // If the value already exists in the map, use it.
@@ -1039,9 +1116,45 @@ namespace {
       }
     }
 
+    if (GEPOperator *gepOp = dyn_cast<GEPOperator>(C)) {
+      // TODO: this should be handled by LLVM's ValueMapper.cpp
+
+      auto srcTy = gepOp->getSourceElementType();
+      auto resTy = gepOp->getResultElementType();
+
+      auto newSrcTy = TypeMapper->remapType(srcTy);
+      auto newResTy = TypeMapper->remapType(resTy);
+
+      if (newSrcTy != srcTy || newResTy != resTy) {
+        // gather the indices
+#if HAVE_LLVM_VER >= 130
+        SmallVector<Constant*> idxList;
+        for (const auto& v : gepOp->indices()) {
+          idxList.push_back(cast<Constant>(v));
+        }
+#else
+        SmallVector<Constant*, 8> idxList;
+        for (auto it = gepOp->idx_begin(); it != gepOp->idx_end(); ++it) {
+          idxList.push_back(cast<Constant>(*it));
+        }
+#endif
+        // Create a new GetElementPtrConstantExpr while changing the types
+        auto C1 = ConstantExpr::getGetElementPtr(
+                     newSrcTy,
+                     cast<Constant>(gepOp->getPointerOperand()),
+                     idxList,
+                     gepOp->isInBounds(),
+                     gepOp->getInRangeIndex());
+        // Use MapValue to change the operands
+        Constant* ret = MapValue(C1, VM, Flags, TypeMapper);
+        if( ! ret ) ret = C1;
+        return ret;
+      }
+    }
+
     // Check: are all of the elements the same?
     //        is the type the same?
-    if( ty == C->getType() && !newElement ) {
+    if (ty == C->getType() && !newElement) {
       // Nothing else to do. Just return the constant.
       VM[C] = C;
       return C;
@@ -1050,8 +1163,8 @@ namespace {
     // If the type needs to change, offer it up to fixConstant,
     // which returns NULL if MapValue will handle it (ie it's
     // just the arguments that change).
-    if( ty != C->getType() ) {
-      Constant* newC = TypeMapper->remapConstant(C, VM, Flags);
+    if (ty != C->getType()) {
+      Constant* newC = TypeMapper->helpRemapConstant(C, VM, Flags);
       if( newC ) {
         VM[C] = newC;
         return newC;
@@ -1072,7 +1185,7 @@ namespace {
   Value* typeMapValue(const Value* V,
                       ValueToValueMapTy &VM,
                       RemapFlags Flags,
-                      TypeFixer *TypeMapper) {
+                      GlobalTypeFixer *TypeMapper) {
     ValueToValueMapTy::iterator I = VM.find(V);
 
     // If the value already exists in the map, use it.
@@ -1095,7 +1208,7 @@ namespace {
   void typeRemapInstruction(Instruction *I,
                             ValueToValueMapTy &VM,
                             RemapFlags Flags,
-                            TypeFixer *TypeMapper) {
+                            GlobalTypeFixer *TypeMapper) {
     // Put any operands that need to change into the map.
     unsigned i = 0;
     for (User::op_iterator op = I->op_begin(), E = I->op_end();
@@ -1149,44 +1262,10 @@ namespace {
     //
     RemapInstruction(I, VM, RF_IgnoreMissingLocals, TypeMapper);
   }
+} // anon namespace
 
-
-
-
-  // GlobalToWide - The first implementation, without getAnalysisUsage.
-  struct GlobalToWide final : public ModulePass {
-    static char ID; // Pass identification, replacement for typeid
-
-    GlobalToWideInfo * info;
-    std::string layoutAfterwards;
-
-    bool debugPassOne;
-    bool debugPassTwo;
-
-    /* info->globalSpace is the address space storing global pointers that
-     *   need to be converted to wide pointers
-     * layout is the target layout we should set the module to
-     *   (could remove p record for address space 'space')
-     */
-    GlobalToWide(GlobalToWideInfo* _info, std::string layout)
-      : ModulePass(ID), info(_info), layoutAfterwards(layout),
-        debugPassOne(false),
-        debugPassTwo(false)
-    {
-    }
-
-    // Constructor for running within opt, for testing and
-    // bugpoint.
-    GlobalToWide()
-      : ModulePass(ID), info(NULL), layoutAfterwards(""),
-        debugPassOne(false),
-        debugPassTwo(false)
-    {
-    }
-
-
-
-    bool runOnModule(Module &M) override {
+// GlobalToWide implementation
+bool GlobalToWide::run(Module &M) {
       bool madeInfo = false;
 
       if( debugThisFn[0] || debugAllPassOne || debugAllPassTwo ) {
@@ -1201,7 +1280,7 @@ namespace {
       // that tests can be created and bugpoint can be run.
       if( !info ) {
         Type* voidTy = llvm::Type::getVoidTy(M.getContext());
-        Type* voidPtrTy = llvm::Type::getInt8PtrTy(M.getContext(), 0);
+        Type* voidPtrTy = getPointerType(M.getContext(), 0);
         Type* i64Ty = llvm::Type::getInt64Ty(M.getContext());
         Type* i8Ty = llvm::Type::getInt8Ty(M.getContext());
         const DataLayout& DL = M.getDataLayout();
@@ -1232,30 +1311,18 @@ namespace {
         auto getFn = M.getOrInsertFunction("chpl_gen_comm_get_ctl_sym", voidTy,
                                            voidPtrTy, nodeTy, voidPtrTy,
                                            sizeTy, i64Ty);
-#if HAVE_LLVM_VER < 90
-        Type* getFnTy = getFn->getType();
-        info->getFn = getFn;
-        info->getFnType = NULL;
-#else
         FunctionType* getFnTy = getFn.getFunctionType();
         info->getFn = getFn.getCallee();
         info->getFnType = getFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->getFn, getFnTy, 5);
 
 
         auto putFn = M.getOrInsertFunction("chpl_gen_comm_put_ctl_sym", voidTy,
                                            nodeTy, voidPtrTy, voidPtrTy,
                                            sizeTy, i64Ty);
-#if HAVE_LLVM_VER < 90
-        Type* putFnTy = putFn->getType();
-        info->putFn = putFn;
-        info->putFnType = NULL;
-#else
         FunctionType* putFnTy = putFn.getFunctionType();
         info->putFn = putFn.getCallee();
         info->putFnType = putFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->putFn, putFnTy, 5);
 
 
@@ -1263,32 +1330,18 @@ namespace {
                                               nodeTy, voidPtrTy,
                                               nodeTy, voidPtrTy,
                                               sizeTy);
-
-#if HAVE_LLVM_VER < 90
-        Type* getPutFnTy = getPutFn->getType();
-        info->getPutFn = getPutFn;
-        info->getPutFnType = NULL;
-#else
         FunctionType* getPutFnTy = getPutFn.getFunctionType();
         info->getPutFn = getPutFn.getCallee();
         info->getPutFnType = getPutFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->getPutFn, getPutFnTy, 5);
 
 
         auto memsetFn = M.getOrInsertFunction("chpl_gen_comm_memset_sym", voidTy,
                                               nodeTy, voidPtrTy,
                                               i8Ty, sizeTy);
-
-#if HAVE_LLVM_VER < 90
-        Type* memsetFnTy = memsetFn->getType();
-        info->memsetFn = memsetFn;
-        info->memsetFnType = NULL;
-#else
         FunctionType* memsetFnTy = memsetFn.getFunctionType();
         info->memsetFn = memsetFn.getCallee();
         info->memsetFnType = memsetFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->memsetFn, memsetFnTy, 4);
 
 
@@ -1304,7 +1357,7 @@ namespace {
           // need to do it in order to have bugpoint work with this
           // optimization, since it will basically try different ways
           // of corrupting the input.
-          if( F->getName().startswith(GLOBAL_FN_GLOBAL_ADDR) &&
+          if( starts_with(F->getName(), GLOBAL_FN_GLOBAL_ADDR) &&
               FT->getNumParams() == 1 &&
               FT->getReturnType()->isPointerTy() &&
               FT->getReturnType()->getPointerAddressSpace() == 0 &&
@@ -1314,7 +1367,7 @@ namespace {
             r.addrFn = F;
             //printf("Adding %s\n", F->getName().str().c_str());
             info->specialFunctions.push_back(F);
-          } else if( F->getName().startswith(GLOBAL_FN_GLOBAL_LOCID) &&
+          } else if( starts_with(F->getName(), GLOBAL_FN_GLOBAL_LOCID) &&
                      FT->getNumParams() == 1 &&
                      FT->getReturnType() == info->localeIdType &&
                      containsGlobalPointers(info, FT->getParamType(0)) ) {
@@ -1323,7 +1376,7 @@ namespace {
             r.locFn = F;
             info->specialFunctions.push_back(F);
             //printf("Adding %s\n", F->getName().str().c_str());
-          } else if( F->getName().startswith(GLOBAL_FN_GLOBAL_NODEID) &&
+          } else if( starts_with(F->getName(), GLOBAL_FN_GLOBAL_NODEID) &&
                      FT->getNumParams() == 1 &&
                      FT->getReturnType() == info->nodeIdType &&
                      containsGlobalPointers(info, FT->getParamType(0)) ) {
@@ -1332,7 +1385,7 @@ namespace {
             r.nodeFn = F;
             info->specialFunctions.push_back(F);
             //printf("Adding %s\n", F->getName().str().c_str());
-          } else if( F->getName().startswith(GLOBAL_FN_GLOBAL_MAKE) &&
+          } else if( starts_with(F->getName(), GLOBAL_FN_GLOBAL_MAKE) &&
                      FT->getNumParams() == 2 &&
                      FT->getParamType(0) == info->localeIdType &&
                      FT->getParamType(1)->isPointerTy() &&
@@ -1343,7 +1396,7 @@ namespace {
             r.makeFn = F;
             info->specialFunctions.push_back(F);
             //printf("Adding %s\n", F->getName().str().c_str());
-          } else if( F->getName().startswith(GLOBAL_FN_GLOBAL_TO_WIDE) &&
+          } else if( starts_with(F->getName(), GLOBAL_FN_GLOBAL_TO_WIDE) &&
                      FT->getNumParams() == 1 &&
                      containsGlobalPointers(info, FT->getParamType(0)) ) {
             Type* gType = FT->getParamType(0);
@@ -1351,7 +1404,7 @@ namespace {
             r.globalToWideFn = F;
             info->specialFunctions.push_back(F);
             //printf("Adding %s\n", F->getName().str().c_str());
-          } else if( F->getName().startswith(GLOBAL_FN_WIDE_TO_GLOBAL) &&
+          } else if( starts_with(F->getName(), GLOBAL_FN_WIDE_TO_GLOBAL) &&
                      FT->getNumParams() == 1 &&
                      containsGlobalPointers(info, FT->getReturnType()) ) {
             Type* gType = FT->getReturnType();
@@ -1367,12 +1420,10 @@ namespace {
       assert(info->putFn);
       assert(info->getPutFn);
       assert(info->memsetFn);
-#if HAVE_LLVM_VER >= 90
       assert(info->getFnType);
       assert(info->putFnType);
       assert(info->getPutFnType);
       assert(info->memsetFnType);
-#endif
 
       assert(info->globalSpace > 0);
       assert(info->localeIdType);
@@ -1388,10 +1439,8 @@ namespace {
       // Check that a pointer in the global address space has the correct size.
       {
         const llvm::DataLayout& dl = M.getDataLayout();
-        llvm::Type* testGlobalTy = llvm::Type::getInt8PtrTy(M.getContext(),
-                                                            info->globalSpace);
-        llvm::Type* testWideTy = llvm::Type::getInt8PtrTy(M.getContext(),
-                                                          info->wideSpace);
+        llvm::Type* testGlobalTy = getPointerType(M.getContext(), info->globalSpace);
+        llvm::Type* testWideTy = getPointerType(M.getContext(), info->wideSpace);
 
         bool ok = (dl.getTypeSizeInBits(testGlobalTy) == info->globalPtrBits) &&
                   (dl.getTypeSizeInBits(testWideTy) == info->globalPtrBits);
@@ -1437,7 +1486,7 @@ namespace {
         }
 
         // skip the special functions like wideToGlobal
-        if (F->getName().startswith(GLOBAL_FN)) {
+        if (starts_with(F->getName(), GLOBAL_FN)) {
           continue;
         }
 
@@ -1503,6 +1552,7 @@ namespace {
         }
 
         Function *NF = Function::Create(NFTy, F->getLinkage());
+        trackLLVMValue(NF);
         NF->copyAttributesFrom(F);
 
         if (update_return) {
@@ -1539,28 +1589,16 @@ namespace {
           Use &U = *UI;
           User *Old = U.getUser();
           ++UI;
-#if HAVE_LLVM_VER >= 90
           if (auto *CB = dyn_cast<CallBase>(Old)) {
             assert(CB->getCalledFunction() == F);
             Instruction *Call = CB;
-#else
-          CallSite CS(Old);
-          if (CS.getInstruction()) {
-            assert(CS.getCalledFunction() == F);
-            Instruction *Call = CS.getInstruction();
-#endif
 
             // Loop over the operands, inserting globalToWide function calls in
             // the caller as appropriate.
             unsigned ArgIndex = 1;
 
-#if HAVE_LLVM_VER >= 90
             for(User::op_iterator AE = CB->arg_end(), AI = CB->arg_begin();
                 AI != AE; ++AI, ++ArgIndex) {
-#else
-            for(CallSite::arg_iterator AE = CS.arg_end(), AI = CS.arg_begin();
-                AI != AE; ++AI, ++ArgIndex) {
-#endif
 
               if(!containsGlobalPointers(info, AI->get()->getType())) {
                 // unmodified argument
@@ -1579,22 +1617,14 @@ namespace {
             if (InvokeInst *II = dyn_cast<InvokeInst>(Call)) {
               New = InvokeInst::Create(NF, II->getNormalDest(), II->getUnwindDest(),
                                        Args, "", Call);
-#if HAVE_LLVM_VER >= 90
+              trackLLVMValue(New);
               cast<InvokeInst>(New)->setCallingConv(CB->getCallingConv());
               cast<InvokeInst>(New)->setAttributes(CB->getAttributes());
-#else
-              cast<InvokeInst>(New)->setCallingConv(CS.getCallingConv());
-              cast<InvokeInst>(New)->setAttributes(CS.getAttributes());
-#endif
             } else {
               New = CallInst::Create(NF, Args, "", Call);
-#if HAVE_LLVM_VER >= 90
+              trackLLVMValue(New);
               cast<CallInst>(New)->setCallingConv(CB->getCallingConv());
               cast<CallInst>(New)->setAttributes(CB->getAttributes());
-#else
-              cast<CallInst>(New)->setCallingConv(CS.getCallingConv());
-              cast<CallInst>(New)->setAttributes(CS.getAttributes());
-#endif
               if (cast<CallInst>(Call)->isTailCall())
                 cast<CallInst>(New)->setTailCall();
             }
@@ -1641,8 +1671,11 @@ namespace {
           // fix up functions that have bodies
           // also skip "special" functions like wideToGlobal
           // (since they have no body)
-
+#if HAVE_LLVM_VER >= 160
+          NF->splice(NF->begin(), F);
+#else
           NF->getBasicBlockList().splice(NF->begin(), F->getBasicBlockList());
+#endif
 
           // Loop over the argument list, transferring uses of the old arguments
           // over to the new arguments, also transferring over the names as
@@ -1683,7 +1716,12 @@ namespace {
                 Instruction *New;
                 New = fixer.callGlobalToWideFn(RI->getReturnValue(), RI);
                 New = ReturnInst::Create(M.getContext(), New, RI);
+                trackLLVMValue(New);
+#if HAVE_LLVM_VER >= 160
+                RI->eraseFromParent();
+#else
                 BB->getInstList().erase(RI);
+#endif
               }
             }
           }
@@ -1715,7 +1753,7 @@ namespace {
                 GI != GE; ++GI) {
           GlobalVariable *gv = &*GI;
 
-          Type *old_type = gv->getType()->getPointerElementType();
+          Type *old_type = gv->getValueType();
           Type *new_type = convertTypeGlobalToWide(&M, info, old_type);
           Constant *old_init = NULL;
           Constant *new_init = NULL;
@@ -1733,6 +1771,7 @@ namespace {
           GlobalVariable *new_var = new GlobalVariable(M, new_type,
               gv->isConstant(), gv->getLinkage(), new_init, "", gv,
               gv->getThreadLocalMode(), 0);  //, gv->isExternallyInitialized());
+          trackLLVMValue(new_var);
 
           Constant *cast_ptr = ConstantExpr::getPointerCast(new_var, gv->getType());
           gv->replaceAllUsesWith(cast_ptr);
@@ -1989,21 +2028,38 @@ namespace {
       }
 
       return true;
-    }
-  };
 }
 
-char GlobalToWide::ID = 0;
-static RegisterPass<GlobalToWide> X("global-to-wide", "GlobalToWide Pass");
+// LegacyGlobalToWidePass implementation
+bool LegacyGlobalToWidePass::runOnModule(Module &M) {
+  return pass.run(M);
+}
 
-ModulePass *createGlobalToWide(GlobalToWideInfo* info, std::string setLayout)
+char LegacyGlobalToWidePass::ID = 0;
+static RegisterPass<LegacyGlobalToWidePass> X("global-to-wide", "GlobalToWide Pass");
+
+ModulePass *createLegacyGlobalToWidePass(GlobalToWideInfo* info,
+                                         std::string setLayout)
 {
   assert(info->getFn);
   assert(info->putFn);
   assert(info->getPutFn);
   assert(info->memsetFn);
-  return new GlobalToWide(info, setLayout);
+  return new LegacyGlobalToWidePass(info, setLayout);
 }
+
+// GlobalToWidePass implementation
+llvm::PreservedAnalyses
+GlobalToWidePass::run(llvm::Module &M, llvm::ModuleAnalysisManager &AM) {
+  bool changed = pass.run(M);
+  if (!changed) {
+    return PreservedAnalyses::all();
+  }
+
+  // TODO: figure out which analyses can be preserved
+  return PreservedAnalyses::none();
+}
+
 
 static
 bool containsGlobalPointers(unsigned gSpace, SmallSet<Type*, 10> & set, Type* t)
@@ -2057,7 +2113,20 @@ void populateFunctionsForGlobalType(Module *module, GlobalToWideInfo* info, Type
 
   GlobalPointerInfo & r = info->gTypes[globalPtrTy];
 
-  ptrTy = llvm::PointerType::getUnqual(globalPtrTy->getPointerElementType());
+  if (isOpaquePointer(globalPtrTy)) {
+#if HAVE_LLVM_VER >= 140
+    ptrTy = llvm::PointerType::getUnqual(module->getContext());
+#else
+    assert(false && "Should not be reachable");
+#endif
+  } else {
+#ifdef HAVE_LLVM_TYPED_POINTERS
+    ptrTy = llvm::PointerType::getUnqual(globalPtrTy->getPointerElementType());
+#else
+    assert(false && "Should not be reachable");
+#endif
+  }
+
   locTy = info->localeIdType;
   nodeTy = info->nodeIdType;
 
@@ -2077,6 +2146,7 @@ void populateFunctionsForGlobalType(Module *module, GlobalToWideInfo* info, Type
                            llvm::GlobalValue::ExternalLinkage,
                            GLOBAL_FN_GLOBAL_ADDR,
                            module);
+    trackLLVMValue(r.addrFn);
     r.addrFn->setDoesNotAccessMemory();
     info->specialFunctions.push_back(r.addrFn);
     //printf("Adding %s\n", r.addrFn->getName().str().c_str());
@@ -2090,6 +2160,7 @@ void populateFunctionsForGlobalType(Module *module, GlobalToWideInfo* info, Type
                          llvm::GlobalValue::ExternalLinkage,
                          GLOBAL_FN_GLOBAL_LOCID,
                          module);
+    trackLLVMValue(r.locFn);
     r.locFn->setDoesNotAccessMemory();
     info->specialFunctions.push_back(r.locFn);
     //printf("Adding %s\n", r.locFn->getName().str().c_str());
@@ -2103,6 +2174,7 @@ void populateFunctionsForGlobalType(Module *module, GlobalToWideInfo* info, Type
                          llvm::GlobalValue::ExternalLinkage,
                          GLOBAL_FN_GLOBAL_NODEID,
                          module);
+    trackLLVMValue(r.nodeFn);
     r.nodeFn->setDoesNotAccessMemory();
     info->specialFunctions.push_back(r.nodeFn);
     //printf("Adding %s\n", r.nodeFn->getName().str().c_str());
@@ -2118,6 +2190,7 @@ void populateFunctionsForGlobalType(Module *module, GlobalToWideInfo* info, Type
                            llvm::GlobalValue::ExternalLinkage,
                            GLOBAL_FN_GLOBAL_MAKE,
                            module);
+    trackLLVMValue(r.makeFn);
     r.makeFn->setDoesNotAccessMemory();
     info->specialFunctions.push_back(r.makeFn);
     //printf("Adding %s\n", r.makeFn->getName().str().c_str());
@@ -2165,6 +2238,7 @@ void populateFunctionsForGlobalToWideType(Module *module, GlobalToWideInfo* info
                            llvm::GlobalValue::ExternalLinkage,
                            GLOBAL_FN_GLOBAL_TO_WIDE,
                            module);
+    trackLLVMValue(r.globalToWideFn);
     r.globalToWideFn->setDoesNotAccessMemory();
     info->specialFunctions.push_back(r.globalToWideFn);
     //printf("Adding %s\n", r.globalToWideFn->getName().str().c_str());
@@ -2178,6 +2252,7 @@ void populateFunctionsForGlobalToWideType(Module *module, GlobalToWideInfo* info
                            llvm::GlobalValue::ExternalLinkage,
                            GLOBAL_FN_WIDE_TO_GLOBAL,
                            module);
+    trackLLVMValue(r.wideToGlobalFn);
     r.wideToGlobalFn->setDoesNotAccessMemory();
     info->specialFunctions.push_back(r.wideToGlobalFn);
     //printf("Adding %s\n", r.globalToWideFn->getName().str().c_str());
@@ -2197,6 +2272,7 @@ llvm::Function* getWideToGlobalFn(llvm::Module *module, GlobalToWideInfo* info, 
   return r.wideToGlobalFn;
 }
 
+// Generates an opaque pointer if eltTy is nullptr, and typed pointer otherwise.
 static
 Type* createWidePointerToType(Module* module, GlobalToWideInfo* i, Type* eltTy)
 {
@@ -2204,7 +2280,22 @@ Type* createWidePointerToType(Module* module, GlobalToWideInfo* i, Type* eltTy)
   // Get the wide pointer struct containing {locale, address}
   Type* fields[2];
   fields[0] = i->localeIdType;
-  fields[1] = PointerType::get(eltTy, 0);
+  llvm::PointerType* ptrTy = nullptr;
+  if (eltTy) {
+#ifdef HAVE_LLVM_TYPED_POINTERS
+    ptrTy = llvm::PointerType::getUnqual(eltTy);
+#else
+    assert(false && "Should not be reachable");
+#endif
+  } else {
+#if HAVE_LLVM_VER >= 140
+    ptrTy = llvm::PointerType::getUnqual(context);
+#else
+    assert(false && "Should not be reachable");
+#endif
+  }
+  assert(ptrTy);
+  fields[1] = ptrTy;
 
   return StructType::get(context, fields, false);
 }
@@ -2287,17 +2378,34 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
     return FunctionType::get(wideRetType, wideArgTypes, fnType->isVarArg());
   }
 
-  if(t->isPointerTy()){
-    Type* eltType = t->getPointerElementType();
-    assert(t != t->getPointerElementType()); // detect simple recursion
-    Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
-
-    if( t->getPointerAddressSpace() == info->globalSpace ||
-        t->getPointerAddressSpace() == info->wideSpace ) {
-      // Replace the pointer with a struct containing {locale, address}
-      return createWidePointerToType(module, info, wideEltType);
+  if (t->isPointerTy()) {
+    if (isOpaquePointer(t)) {
+#if HAVE_LLVM_VER >= 140
+      if (t->getPointerAddressSpace() == info->globalSpace ||
+          t->getPointerAddressSpace() == info->wideSpace) {
+          // Replace the pointer with a struct containing {locale, address}
+          return createWidePointerToType(module, info, nullptr);
+      } else {
+          return PointerType::get(context, t->getPointerAddressSpace());
+      }
+#else
+      assert(false && "Should not be reachable");
+#endif
     } else {
-      return PointerType::get(wideEltType, t->getPointerAddressSpace());
+#ifdef HAVE_LLVM_TYPED_POINTERS
+      Type* eltType = t->getPointerElementType();
+      assert(t != t->getPointerElementType());  // detect simple recursion
+      Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
+      if (t->getPointerAddressSpace() == info->globalSpace ||
+          t->getPointerAddressSpace() == info->wideSpace) {
+          // Replace the pointer with a struct containing {locale, address}
+          return createWidePointerToType(module, info, wideEltType);
+      } else {
+          return PointerType::get(wideEltType, t->getPointerAddressSpace());
+      }
+#else
+      assert(false && "Should not be reachable");
+#endif
     }
   }
 
@@ -2315,6 +2423,15 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
     Type *eltType = vecTy->getElementType();
     assert(t != eltType); // detect simple recursion
     Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
+
+    // Workaround: if wideEltType is a wide ptr (ie a struct), it will no longer
+    // fit in the vector we adjust the type to be a i128, and just shove the
+    // bits around
+    if (wideEltType->isStructTy() &&
+        cast<StructType>(wideEltType)->getElementType(0) == info->localeIdType &&
+        cast<StructType>(wideEltType)->getElementType(1)->isPointerTy()) {
+      wideEltType = Type::getInt128Ty(context);
+    }
 
 #if HAVE_LLVM_VER >= 110
     return VectorType::get(wideEltType, vecTy);

@@ -1,0 +1,8 @@
+unstableDivFloorPos.chpl:3: warning: divFloorPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!
+unstableDivFloorPos.chpl:4: warning: divFloorPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!
+unstableDivFloorPos.chpl:5: warning: divFloorPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!
+unstableDivFloorPos.chpl:6: warning: divFloorPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!
+2
+4
+1
+0

@@ -11,10 +11,9 @@ config const m = computeProblemSize(elemType, numVectors),
              alpha = 3.0;
 
 config const numTrials = 10,
-             epsilon = 0.0;
+             epsilon = 1e-15;
 
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+config const useRandomSeed = true;
 
 config const printParams = true,
              printArrays = false,
@@ -23,10 +22,10 @@ config const printParams = true,
 
 proc main() {
   printConfiguration();
-  var t1, t2, t3: Timer;
+  var t1, t2, t3: stopwatch;
 
   t1.start();
-  const BlockDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={1..m}, targetLocales=Locales));
+  const BlockDist = new blockDist(rank=1, idxType=int(64), boundingBox={1..m}, targetLocales=Locales);
 
   const ProblemSpace: domain(1, int(64)) dmapped BlockDist = {1..m};
 
@@ -40,7 +39,7 @@ proc main() {
   var execTime: [1..numTrials] real;
 
   for trial in 1..numTrials {
-    const startTime = getCurrentTime();
+    const startTime = timeSinceEpoch().totalSeconds();
     // TODO: Want:
     // A = B + alpha * C;
     // But this doesn't yet result in parallelism
@@ -49,7 +48,7 @@ proc main() {
       a = b + alpha * c;
     }
 
-    execTime(trial) = getCurrentTime() - startTime;
+    execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;
   }
 
   t3.start();
@@ -70,11 +69,13 @@ proc printConfiguration() {
 }
 
 
-proc initVectors(B, C) {
-  var randlist = new NPBRandomStream(eltType=real, seed=seed);
+proc initVectors(ref B, ref C) {
+  var randlist = if useRandomSeed
+    then new randomStream(eltType=real)
+    else new randomStream(eltType=real, seed=314159265);
 
-  randlist.fillRandom(B);
-  randlist.fillRandom(C);
+  randlist.fill(B);
+  randlist.fill(C);
 
   if (printArrays) {
     writeln("B is: ", B, "\n");

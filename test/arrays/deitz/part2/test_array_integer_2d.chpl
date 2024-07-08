@@ -4,7 +4,7 @@ var D2 : domain(2) = {1..n, 1..n};
 
 var A2 : [D2] int;
 
-forall (i,j) in D2 {
+forall (i,j) in D2 with (ref A2) {
   A2(i,j) = (i-1)*n+j;
 }
 

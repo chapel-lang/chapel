@@ -102,9 +102,9 @@ struct ips_message_header {
 	__be32 bth[3];
 
 	// 32b alignment
-	/* fields below this point are in host byte order */
-	struct hfi_kdeth khdr;
+	struct hfi_kdeth khdr;		/* little endian */
 
+	/* fields below this point are in host byte order */
 	// 32b alignment
 	struct {
 		__u32 flags:6;
@@ -115,6 +115,8 @@ struct ips_message_header {
 	union {
 		struct {
 			struct {
+				// next psn sender expects to recv
+				// acks all packets up to ack_seq_num-1
 				__u32 ack_seq_num:31;
 				__u32 reserved:1;
 			} PACK_SUFFIX;
@@ -144,15 +146,6 @@ struct ips_message_header {
 			ptl_arg_t hdr_data;
 		} PACK_SUFFIX;
 
-		/* for expected tid packet only */
-		struct {
-			__u8	  exp_ustart[3]; /* unaligned start bytes */
-			__u8	  exp_uend[3];   /* unaligned end bytes */
-			__u16	  exp_rdescid_genc; /* tidrecvc gen count */
-			ptl_arg_t exp_sdescid;  /* sender descriptor id */
-			__u32     exp_cksum;	/* optional checksum */
-			__u32     exp_offset;	/* packet offset */
-		} PACK_SUFFIX;
 	};
 } PACK_SUFFIX;
 /* desc_genc is up to 32 bits, but EXPTID header (and RDMA immediate data)

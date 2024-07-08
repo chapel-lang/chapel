@@ -22,7 +22,6 @@ add_llvm_target(AVRCodeGen
   AVRISelDAGToDAG.cpp
   AVRISelLowering.cpp
   AVRMCInstLower.cpp
-  AVRRelaxMemOperations.cpp
   AVRRegisterInfo.cpp
   AVRShiftExpand.cpp
   AVRSubtarget.cpp
@@ -33,19 +32,20 @@ add_llvm_target(AVRCodeGen
   intrinsics_gen
 
   LINK_COMPONENTS
-  AsmPrinter
-  CodeGen
-  Core
-  MC
   AVRDesc
   AVRInfo
+  AsmPrinter
+  CodeGen
+  CodeGenTypes
+  Core
+  MC
   SelectionDAG
   Support
   Target
 
   ADD_TO_COMPONENT
   AVR
-)
+  )
 
 add_subdirectory(AsmParser)
 add_subdirectory(Disassembler)

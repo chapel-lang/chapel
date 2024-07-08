@@ -53,7 +53,7 @@ proc test(d) {
   tl();
 
   hd("creating an array");
-  var a: [d] int;
+  var a: [d] int;           // neg-stride, depending on the input
   tl();
 
   hd("initializing the array with explicit indexing");
@@ -83,7 +83,7 @@ proc testsuite(type T, initphase) {
 
   const df8 = new BlockCyclicDim(lowIdx=100, blockSize=7, numLocales=s1);
   const df9 = new BlockCyclicDim(lowIdx=-10, blockSize=5, numLocales=s2);
-  const dm = new dmap(new unmanaged DimensionalDist2D(mylocs, df8, df9, "dm", idxType=T));
+  const dm = new dimensionalDist2D(mylocs, df8, df9, "dm", idxType=T);
 
   proc tw(a, b, c, d) { test({a:T..b:T, c:T..d:T} dmapped dm); }
   inline
@@ -155,17 +155,17 @@ proc testsuite(type T, initphase) {
     cmb1(sgnOnly, r1a, r2 by  1, m1a, m2 + " by  1");
     cmb1(sgnOnly, r1a, r2 by  2, m1a, m2 + " by  2");
     cmb1(sgnOnly, r1a, r2 by  3, m1a, m2 + " by  3");
-    cmb1(sgnOnly, r1b, r2 by -1, m1b, m2 + " by -1");
-    cmb1(sgnOnly, r1b, r2 by -2, m1b, m2 + " by -2");
-    cmb1(sgnOnly, r1b, r2 by -3, m1b, m2 + " by -3");
+    cmb1(sgnOnly, r1b, r2 by -1, m1b, m2 + " by -1");  // neg-stride
+    cmb1(sgnOnly, r1b, r2 by -2, m1b, m2 + " by -2");  // neg-stride
+    cmb1(sgnOnly, r1b, r2 by -3, m1b, m2 + " by -3");  // neg-stride
 
     cmb1(sgnOnly, r2      , r1a, m2,            m1a);
     cmb1(sgnOnly, r2 by  1, r1a, m2 + " by  1", m1a);
     cmb1(sgnOnly, r2 by  2, r1a, m2 + " by  2", m1a);
     cmb1(sgnOnly, r2 by  3, r1a, m2 + " by  3", m1a);
-    cmb1(sgnOnly, r2 by -1, r1b, m2 + " by -1", m1b);
-    cmb1(sgnOnly, r2 by -2, r1b, m2 + " by -2", m1b);
-    cmb1(sgnOnly, r2 by -3, r1b, m2 + " by -3", m1b);
+    cmb1(sgnOnly, r2 by -1, r1b, m2 + " by -1", m1b);  // neg-stride
+    cmb1(sgnOnly, r2 by -2, r1b, m2 + " by -2", m1b);  // neg-stride
+    cmb1(sgnOnly, r2 by -3, r1b, m2 + " by -3", m1b);  // neg-stride
   }
 
   const n5=-5, n9=-9; // so we can cast them to unsigned

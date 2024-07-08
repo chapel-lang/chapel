@@ -149,7 +149,7 @@ for i in 1..(gridSize+2) {
 
 var sum: real = 0.0;
 
-var timeMeasure:Timer;
+var timeMeasure:stopwatch;
 
 timeMeasure.start();
 for k in 1..(MAXSTEPS) {

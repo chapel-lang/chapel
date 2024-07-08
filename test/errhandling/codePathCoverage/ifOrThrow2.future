@@ -6,3 +6,8 @@ along one branch and not the other, we sometimes get an incorrect
 use-before-def error.  If `return testit2(dom);` is changed to `return
 dom;` things work; as does adding a dummy assignment to the throwing
 branch of the conditional.
+
+Update: given that the return statement is dead, it is no longer
+considered by resolution. So `testit()` looks to the compiler like
+a function without any return statements. This gives it the `void`
+return type. The .bad file is updated to this behavior.

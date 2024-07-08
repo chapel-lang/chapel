@@ -5,7 +5,7 @@
    Acknowledgment: special thanks to Bradley Lucier for his comments
    to the preliminary version of this code.
 
-Copyright 2018-2020 Free Software Foundation, Inc.
+Copyright 2018-2022 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -45,6 +45,7 @@ see https://www.gnu.org/licenses/.  */
 /* Define macros and static functions already defined by mini-gmp.c */
 #define GMP_LIMB_BITS (sizeof(mp_limb_t) * CHAR_BIT)
 #define GMP_LIMB_HIGHBIT ((mp_limb_t) 1 << (GMP_LIMB_BITS - 1))
+#define GMP_LIMB_MAX ((mp_limb_t) ~ (mp_limb_t) 0)
 #define GMP_NEG_CAST(T,x) (-((T)((x) + 1) - 1))
 #define GMP_MIN(a, b) ((a) < (b) ? (a) : (b))
 
@@ -118,15 +119,19 @@ mpq_canonical_sign (mpq_t r)
 }
 
 static void
-mpq_helper_canonicalize (mpq_t r, const mpz_t num, const mpz_t den, mpz_t g)
+mpq_helper_canonicalize (mpq_t r, const mpz_t num, const mpz_t den)
 {
   if (num->_mp_size == 0)
     mpq_set_ui (r, 0, 1);
   else
     {
+      mpz_t g;
+
+      mpz_init (g);
       mpz_gcd (g, num, den);
       mpz_tdiv_q (mpq_numref (r), num, g);
       mpz_tdiv_q (mpq_denref (r), den, g);
+      mpz_clear (g);
       mpq_canonical_sign (r);
     }
 }
@@ -134,11 +139,7 @@ mpq_helper_canonicalize (mpq_t r, const mpz_t num, const mpz_t den, mpz_t g)
 void
 mpq_canonicalize (mpq_t r)
 {
-  mpz_t t;
-
-  mpz_init (t);
-  mpq_helper_canonicalize (r, mpq_numref (r), mpq_denref (r), t);
-  mpz_clear (t);
+  mpq_helper_canonicalize (r, mpq_numref (r), mpq_denref (r));
 }
 
 void
@@ -259,7 +260,7 @@ mpq_cmp_ui (const mpq_t q, unsigned long n, unsigned long d)
   } else {
     int ret;
 
-    mpq_init (t);
+    mpq_nan_init (t);
     mpq_set_ui (t, n, d);
     ret = mpq_cmp (q, t);
     mpq_clear (t);
@@ -377,12 +378,8 @@ mpq_mul (mpq_t r, const mpq_t a, const mpq_t b)
   mpq_nan_init (t);
 
   if (a != b) {
-    mpz_t g;
-
-    mpz_init (g);
-    mpq_helper_canonicalize (t, mpq_numref (a), mpq_denref (b), g);
-    mpq_helper_canonicalize (r, mpq_numref (b), mpq_denref (a), g);
-    mpz_clear (g);
+    mpq_helper_canonicalize (t, mpq_numref (a), mpq_denref (b));
+    mpq_helper_canonicalize (r, mpq_numref (b), mpq_denref (a));
 
     a = r;
     b = t;
@@ -393,22 +390,25 @@ mpq_mul (mpq_t r, const mpq_t a, const mpq_t b)
   mpq_clear (t);
 }
 
+static void
+mpq_helper_2exp (mpz_t rn, mpz_t rd, const mpz_t qn, const mpz_t qd, mp_bitcnt_t e)
+{
+  mp_bitcnt_t z = mpz_scan1 (qd, 0);
+  z = GMP_MIN (z, e);
+  mpz_mul_2exp (rn, qn, e - z);
+  mpz_tdiv_q_2exp (rd, qd, z);
+}
+
 void
 mpq_div_2exp (mpq_t r, const mpq_t q, mp_bitcnt_t e)
 {
-  mp_bitcnt_t z = mpz_scan1 (mpq_numref (q), 0);
-  z = GMP_MIN (z, e);
-  mpz_mul_2exp (mpq_denref (r), mpq_denref (q), e - z);
-  mpz_tdiv_q_2exp (mpq_numref (r), mpq_numref (q), z);
+  mpq_helper_2exp (mpq_denref (r), mpq_numref (r), mpq_denref (q), mpq_numref (q), e);
 }
 
 void
 mpq_mul_2exp (mpq_t r, const mpq_t q, mp_bitcnt_t e)
 {
-  mp_bitcnt_t z = mpz_scan1 (mpq_denref (q), 0);
-  z = GMP_MIN (z, e);
-  mpz_mul_2exp (mpq_numref (r), mpq_numref (q), e - z);
-  mpz_tdiv_q_2exp (mpq_denref (r), mpq_denref (q), z);
+  mpq_helper_2exp (mpq_numref (r), mpq_denref (r), mpq_numref (q), mpq_denref (q), e);
 }
 
 void
@@ -498,9 +498,9 @@ mpq_get_str (char *sp, int base, const mpq_t q)
 
     mp_get_memory_functions (NULL, &gmp_reallocate_func, &gmp_free_func);
     lden = strlen (rden) + 1;
-    res = (char *) gmp_reallocate_func (res, 0, (lden + len) * sizeof (char));
+    res = (char *) gmp_reallocate_func (res, len, (lden + len) * sizeof (char));
     memcpy (res + len, rden, lden);
-    gmp_free_func (rden, 0);
+    gmp_free_func (rden, lden);
   }
 
   res [len - 1] = '/';
@@ -511,17 +511,17 @@ size_t
 mpq_out_str (FILE *stream, int base, const mpq_t x)
 {
   char * str;
-  size_t len;
+  size_t len, n;
   void (*gmp_free_func) (void *, size_t);
 
   str = mpq_get_str (NULL, base, x);
   if (!str)
     return 0;
   len = strlen (str);
-  len = fwrite (str, 1, len, stream);
+  n = fwrite (str, 1, len, stream);
   mp_get_memory_functions (NULL, NULL, &gmp_free_func);
-  gmp_free_func (str, 0);
-  return len;
+  gmp_free_func (str, len + 1);
+  return n;
 }
 
 int
@@ -542,11 +542,11 @@ mpq_set_str (mpq_t r, const char *sp, int base)
 
     mp_get_memory_functions (&gmp_allocate_func, NULL, &gmp_free_func);
     numlen = slash - sp;
-    num = (char *) gmp_allocate_func ((numlen + 1) * sizeof (char));
+    num = (char *) gmp_allocate_func (numlen + 1);
     memcpy (num, sp, numlen);
     num[numlen] = '\0';
     ret = mpz_set_str (mpq_numref(r), num, base);
-    gmp_free_func (num, 0);
+    gmp_free_func (num, numlen + 1);
 
     if (ret != 0)
       return ret;

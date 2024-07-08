@@ -19,6 +19,8 @@
 #define GASNET_CONDUIT_NAME_STR  _STRINGIFY(GASNET_CONDUIT_NAME)
 #define GASNET_CONDUIT_UDP       1
 
+//#define GASNETC_DEFAULT_SPAWNER  ###
+
   /* GASNET_PSHM defined 1 if this conduit supports PSHM. leave undefined otherwise. */
 #if GASNETI_PSHM_ENABLED
   #define GASNET_PSHM 1
@@ -37,17 +39,23 @@
   #endif
 #endif
 
-  /* define to 1 if conduit allows internal GASNet fns to issue put/get for remote
-     addrs out of segment - not true when PSHM is used */
-#if !GASNET_PSHM
-#define GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET 1
-#endif
-
 #define GASNET_MAXNODES AMUDP_MAX_NUMTRANSLATIONS
+
+  // If this conduit is considered a "portable conduit" only *conditionally*,
+  // uncomment to enable calls to gasnetc_check_portable_conduit(void) as
+  // described in gasnet_internal.c.
+//#define GASNETC_CHECK_PORTABLE_CONDUIT_HOOK 1
 
   // uncomment for each MK_CLASS which the conduit supports. leave commented otherwise
 //#define GASNET_HAVE_MK_CLASS_CUDA_UVA GASNETI_MK_CLASS_CUDA_UVA_ENABLED
 //#define GASNET_HAVE_MK_CLASS_HIP GASNETI_MK_CLASS_HIP_ENABLED
+//#define GASNET_HAVE_MK_CLASS_ZE GASNETI_MK_CLASS_ZE_ENABLED
+
+  // define to 1 if your conduit has "private" thread(s) which can run AM handlers
+//#define GASNET_RCV_THREAD 1
+
+  // define to 1 if your conduit has "private" thread(s) which progress sends of RMA and/or AM
+//#define GASNET_SND_THREAD 1
 
   /* uncomment if your conduit has "private" threads which might run conduit
      code and/or the client's AM handlers, even under GASNET_SEQ.
@@ -76,6 +84,15 @@
      default interfaces. (see template-conduit/gasnet_core.c and gasnet_pshm.h)
    */
 /* #define GASNETC_GET_HANDLER 1 */
+
+  /* uncomment each line for which your conduit supports the
+     corresponding token info query.
+  */
+#define GASNET_SUPPORTS_TI_SRCRANK 1
+#define GASNET_SUPPORTS_TI_EP 1
+#define GASNET_SUPPORTS_TI_ENTRY 1
+#define GASNET_SUPPORTS_TI_IS_REQ 1
+#define GASNET_SUPPORTS_TI_IS_LONG 1
 
   /* uncomment for each {Request,Reply} X {Medium,Long} pair for which your
      conduit implements the corresponding gasnetc_AM_{Prepare,Commit}*().
@@ -143,6 +160,7 @@
 //#define GASNETC_SEGMENT_ATTACH_HOOK 1
 //#define GASNETC_SEGMENT_CREATE_HOOK 1
 //#define GASNETC_SEGMENT_DESTROY_HOOK 1
+//#define GASNETC_EP_BINDSEGMENT_HOOK 1
 //#define GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK 1
 
   // Uncomment the following defines if conduit provides the corresponding hook.
@@ -176,5 +194,11 @@ extern void _gasnetc_set_waitmode(int _wait_mode);
 #define GASNETC_DEFAULT_NODEMAP_EXACT 1
 
 /* Configure gasnet_handle.[ch] */
+
+// No validated support for hugetlbfs w/ or w/o PSHM at this time and risk of
+// issues if auto-enabled on an HPE Cray EX system (e.g. bug 4473).
+#if GASNETI_ARCH_CRAYEX
+#undef GASNETI_USE_HUGETLBFS
+#endif
 
 #endif

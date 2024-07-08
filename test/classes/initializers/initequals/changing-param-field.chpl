@@ -4,7 +4,7 @@ record R {
   var x: int;
 }
 
-proc R.init=(rhs: R) {
+proc R.init=(rhs: R(?)) {
   // this one is not allowed to vary between lhs/rhs
   if this.type.fixed != ? {
     if this.type.fixed != rhs.fixed {
@@ -20,14 +20,14 @@ proc R.init=(rhs: R) {
   this.x = rhs.x;
 }
 
-operator R.=(ref lhs:R, const ref rhs:R) {
+operator R.=(ref lhs:R(?), const ref rhs:R(?)) {
   if lhs.fixed != rhs.fixed {
     compilerError("cannot change fixed field in assignment");
   }
   lhs.x = rhs.x;
 }
 
-operator :(rhs: R, type t: R) {
+operator :(rhs: R(?), type t: R(?)) {
   var tmp: t = rhs;
   return tmp;
 }
@@ -49,10 +49,10 @@ proc main() {
   var c = start; // inferred type
   writeln(c.type:string, " ", c);
   
-  var d:R = start; // specified generic type
+  var d:R(?) = start; // specified generic type
   writeln(d.type:string, " ", d);
 
-  var e:R(true) = start; // specified partial type
+  var e:R(true, ?) = start; // specified partial type
   writeln(e.type:string, " ", e);
   
   var f:R(true, true) = start; // specified concrete type

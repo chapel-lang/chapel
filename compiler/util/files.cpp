@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,6 +31,7 @@
 #include "files.h"
 
 #include "chpl/util/filesystem.h"
+#include "chpl/util/subprocess.h"
 
 #include "beautify.h"
 #include "driver.h"
@@ -41,16 +42,19 @@
 #include "mysystem.h"
 #include "stlUtil.h"
 #include "stringutil.h"
-#include "tmpdirname.h"
 
 #include <pwd.h>
 #include <unistd.h>
 
 #include <cstring>
+#include <sstream>
+#include <iostream>
 #include <cstdlib>
 #include <cerrno>
 #include <string>
 #include <map>
+#include <unordered_set>
+#include <utility>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -62,15 +66,18 @@ char fortranModulename[FILENAME_MAX + 1]  = "";
 char pythonModulename[FILENAME_MAX + 1]   = "";
 char saveCDir[FILENAME_MAX + 1]           = "";
 
+const char* additionalFilenamesListFilename = "additionalSourceFiles.tmp";
+
 std::string ccflags;
 std::string ldflags;
+bool ccwarnings = false;
 
 std::vector<const char*>   incDirs;
 std::vector<const char*>   libDirs;
 std::vector<const char*>   libFiles;
-
-// directory for intermediates; tmpdir or saveCDir
-static const char* intDirName        = NULL;
+static const char* incDirsFilename = "incDirs.tmp";
+static const char* libDirsFilename = "libDirs.tmp";
+static const char* libFilesFilename = "libFiles.tmp";
 
 static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
   char* dirString = strdup(pathVar);
@@ -93,47 +100,170 @@ static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
 //
 // Convert a libString of the form "foo:bar:baz" to entries in libDirs
 //
-void addLibPath(const char* libString) {
+void addLibPath(const char* libString, bool fromCmdLine) {
   addPath(libString, &libDirs);
+
+  if (fDriverCompilationPhase && !fromCmdLine) {
+    saveDriverTmp(libDirsFilename, libString);
+  }
 }
 
-void addLibFile(const char* libFile) {
+void addLibFile(const char* libFile, bool fromCmdLine) {
   // use astr() to get a copy of the string that this vector can own
   libFiles.push_back(astr(libFile));
+
+  if (fDriverCompilationPhase && !fromCmdLine) {
+    saveDriverTmp(libFilesFilename, libFile);
+  }
 }
 
-void addIncInfo(const char* incDir) {
+void addIncInfo(const char* incDir, bool fromCmdLine) {
   addPath(incDir, &incDirs);
+
+  if (fDriverCompilationPhase && !fromCmdLine) {
+    saveDriverTmp(incDirsFilename, incDir);
+  }
 }
 
-void ensureDirExists(const char* dirname, const char* explanation) {
+// Ensure the tmp dir is set up for use by the driver (i.e., isn't about to be
+// replaced).
+static void checkDriverTmp() {
+  assert(!fDriverDoMonolithic && "meant for use in driver mode only");
+
+  bool valid = false;
+  if (driverTmpDir[0] == '\0') {
+    // We are in an initial invocation, all good.
+    valid = true;
+  }
+  if (gContext->tmpDir() == std::string(driverTmpDir)) {
+    // In subinvocation and context's tmp dir has been set to driver
+    // specification, all good.
+    valid = true;
+  }
+
+  // Reassure some compilers that this variable is not unused.
+  std::ignore = valid;
+  assert(
+      valid &&
+      "attempted to save info to tmp dir before it is set up for driver use");
+}
+
+void saveDriverTmp(const char* tmpFilePath, const char* stringToSave,
+                   bool appendNewline) {
+  saveDriverTmpMultiple(tmpFilePath, {stringToSave}, !appendNewline);
+}
+
+void saveDriverTmpMultiple(const char* tmpFilePath,
+                           std::vector<const char*> stringsToSave,
+                           bool noNewlines) {
+  checkDriverTmp();
+
+  const char* pathAsAstr = astr(tmpFilePath);
+
+  // Driver tmp files that have been written into so far in this run.
+  // Used to make sure info remaining from previous runs (i.e., due to savec) is
+  // discarded on first write.
+  // Contents expected to be astrs so it's safe to use a set.
+  static std::unordered_set<const char*> seen;
+
+  // Overwrite on first use in driver compilation phase or init process, append
+  // after.
+  const char* fileOpenMode;
+  if (seen.emplace(pathAsAstr).second && !fDriverMakeBinaryPhase) {
+    fileOpenMode = "w";
+  } else {
+    // Already seen
+    fileOpenMode = "a";
+  }
+
+  // Write into tmp file
+  fileinfo* file = openTmpFile(pathAsAstr, fileOpenMode);
+  for (const auto stringToSave : stringsToSave) {
+    fprintf(file->fptr, "%s%s", stringToSave, (noNewlines ? "" : "\n"));
+  }
+  closefile(file);
+}
+
+void restoreDriverTmp(const char* tmpFilePath,
+                      std::function<void(const char*)> restoreSavedString) {
+  assert(!fDriverDoMonolithic && "meant for use in driver mode only");
+
+  // Create file iff it did not already exist, for simpler reading logic in the
+  // rest of the function.
+  fileinfo* tmpFileDummy = openTmpFile(tmpFilePath, "a");
+  closefile(tmpFileDummy);
+
+  fileinfo* tmpFile = openTmpFile(tmpFilePath, "r");
+
+  char strBuf[4096];
+  while (fgets(strBuf, sizeof(strBuf), tmpFile->fptr)) {
+    // Note: Using strlen here (instead of strnlen) is safe because fgets
+    // guarantees null termination.
+    size_t len = strlen(strBuf);
+    // remove trailing newline, which fgets preserves unless buffer is exceeded
+    assert(strBuf[len - 1] == '\n' && "stored line exceeds maximum length");
+    strBuf[--len] = '\0';
+
+    // invoke restoring function
+    restoreSavedString(strBuf);
+  }
+
+  closefile(tmpFile);
+}
+
+void restoreDriverTmpMultiline(
+    const char* tmpFilePath,
+    std::function<void(const char*)> restoreSavedString) {
+  std::ostringstream os;
+
+  // Just call line-by-line restore for simplicity, adding newlines back in.
+  restoreDriverTmp(tmpFilePath,
+                   [&os](const char* line) { os << line << "\n"; });
+
+  std::string restoredString = os.str();
+  restoreSavedString(restoredString.c_str());
+}
+
+void restoreLibraryAndIncludeInfo() {
+  INT_ASSERT(fDriverMakeBinaryPhase &&
+             "should only be restoring library and include info in driver "
+             "makeBinary phase");
+
+  restoreDriverTmp(libDirsFilename, [](const char* filename) {
+    addLibPath(filename, /* fromCmdLine */ false);
+  });
+  restoreDriverTmp(libFilesFilename, [](const char* filename) {
+    addLibFile(filename, /* fromCmdLine */ false);
+  });
+  restoreDriverTmp(incDirsFilename, [](const char* filename) {
+    addIncInfo(filename, /* fromCmdLine */ false);
+  });
+}
+
+void restoreAdditionalSourceFiles() {
+  INT_ASSERT(fDriverMakeBinaryPhase &&
+             "should only be restoring filenames in driver makeBinary phase");
+
+  std::vector<const char*> additionalFilenames;
+  restoreDriverTmp(additionalFilenamesListFilename,
+                   [&additionalFilenames](const char* filename) {
+                     additionalFilenames.push_back(astr(filename));
+                   });
+  addSourceFiles(additionalFilenames.size(), &additionalFilenames[0]);
+}
+
+void ensureDirExists(const char* dirname, const char* explanation,
+                     bool checkWriteable) {
   // forward to chpl::ensureDirExists(), check for errors, and report them
   std::string dirName = std::string(dirname);
   if (auto err = chpl::ensureDirExists(dirName)) {
     USR_FATAL("creating directory %s failed: %s\n", dirname,
                    err.message().c_str());
   }
-}
 
-const char* makeTempDir(const char* dirPrefix) {
- std::string tmpDirPath;
- if (auto err = chpl::makeTempDir(std::string(dirPrefix), tmpDirPath)) {
-  USR_FATAL(NULL, "%s", err.message().c_str());
- }
- return astr(tmpDirPath.c_str());
-}
-
-void ensureTmpDirExists() {
-  if (saveCDir[0] == '\0') {
-    if (tmpdirname == NULL) {
-      tmpdirname = makeTempDir("chpl-");
-      intDirName = tmpdirname;
-    }
-  } else {
-    if (intDirName != saveCDir) {
-      intDirName = saveCDir;
-      ensureDirExists(saveCDir, "ensuring --savec directory exists");
-    }
+  // check writeability if we need it
+  if (checkWriteable && !chpl::isPathWriteable(dirName)) {
+    USR_FATAL("write permission denied for directory %s", dirname);
   }
 }
 
@@ -146,46 +276,10 @@ void deleteDir(const char* dirname) {
   }
 }
 
-
-void deleteTmpDir() {
-  static int inDeleteTmpDir = 0; // break infinite recursion
-
-  if (inDeleteTmpDir) {
-    return;
-  }
-  inDeleteTmpDir = 1;
-
-#ifndef DEBUGTMPDIR
-  if (tmpdirname != NULL) {
-    if (strlen(tmpdirname) < 1 ||
-        strchr(tmpdirname, '*') != NULL ||
-        strcmp(tmpdirname, "//") == 0) {
-      INT_FATAL("tmp directory name looks fishy");
-    }
-    deleteDir(tmpdirname);
-    tmpdirname = NULL;
-  }
-  if (doctmpdirname != NULL) {
-    if (strlen(doctmpdirname) < 1 ||
-        strchr(doctmpdirname, '*') != NULL ||
-        strcmp(doctmpdirname, "//") == 0) {
-      INT_FATAL("doc tmp directory name looks fishy");
-    }
-    deleteDir(doctmpdirname);
-    doctmpdirname = NULL;
-  }
-#endif
-
-  inDeleteTmpDir = 0;
-}
-
-
 const char* genIntermediateFilename(const char* filename) {
   const char* slash = "/";
 
-  ensureTmpDirExists();
-
-  return astr(intDirName, slash, filename);
+  return astr(gContext->tmpDir().c_str(), slash, filename);
 }
 
 const char* getDirectory(const char* filename) {
@@ -346,11 +440,18 @@ bool isChplSource(const char* filename) {
   return retval;
 }
 
+bool isDynoLib(const char* filename) {
+  bool retval = checkSuffix(filename, "dyno");
+  if (retval) foundChplSource = true;
+  return retval;
+}
+
 static bool isRecognizedSource(const char* filename) {
   return (isCSource(filename) ||
           isCHeader(filename) ||
           isObjFile(filename) ||
-          isChplSource(filename));
+          isChplSource(filename) ||
+          isDynoLib(filename));
 }
 
 
@@ -362,6 +463,7 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
   inputFilenames = (const char**)realloc(inputFilenames,
                                          (numInputFiles+1)*sizeof(char*));
 
+  int firstAddedIdx = -1;
   for (int i = 0; i < numNewFilenames; i++) {
     if (!isRecognizedSource(filename[i])) {
       USR_FATAL("file '%s' does not have a recognized suffix", filename[i]);
@@ -375,6 +477,12 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
                     filename[i]);
         closeInputFile(testfile);
       }
+    }
+
+    if (isDynoLib(filename[i])) {
+      // Note that we are using a .dyno file if one is present on the
+      // command line.
+      fDynoLibGenOrUse = true;
     }
 
     //
@@ -392,10 +500,32 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
     if (duplicate) {
       numInputFiles--;
     } else {
+      // add file
+      if (firstAddedIdx < 0) firstAddedIdx = cursor;
       inputFilenames[cursor++] = newFilename;
     }
   }
   inputFilenames[cursor] = NULL;
+
+  // If in driver mode, and filenames were added, also save added filenames for
+  // makeBinary phase.
+  // Note: Need to check both driver mode and phase here. The two could conflict
+  // since files can be added before driver flags are validated.
+  if (!fDriverDoMonolithic && fDriverCompilationPhase && firstAddedIdx >= 0) {
+    saveDriverTmpMultiple(
+        additionalFilenamesListFilename,
+        std::vector<const char*>(inputFilenames + firstAddedIdx,
+                                 inputFilenames + cursor));
+  }
+
+
+  // turn on ID-based munging if any .dyno files are present
+  int i = 0;
+  while (auto fname = nthFilename(i++)) {
+    if (isDynoLib(fname)) {
+      fIdBasedMunging = true;
+    }
+  }
 }
 
 void assertSourceFilesFound() {
@@ -484,21 +614,6 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
   return dbgfilename;
 }
 
-std::string runPrintChplEnv(const std::map<std::string, const char*>& varMap) {
-  // Run printchplenv script, passing currently known CHPL_vars as well
-  std::string command;
-
-  // Pass known variables in varMap into printchplenv by prepending to command
-  for (auto& ii : varMap)
-    command += ii.first + "=" + ii.second + " ";
-
-  command += "CHPLENV_SKIP_HOST=true ";
-  command += "CHPLENV_SUPPRESS_WARNINGS=true ";
-  command += std::string(CHPL_HOME) + "/util/printchplenv --all --internal --no-tidy --simple";
-
-  return runCommand(command);
-}
-
 std::string getChplDepsApp() {
   // Runs `util/chplenv/chpl_home_utils.py --chpldeps` and removes the newline
 
@@ -515,35 +630,18 @@ bool compilingWithPrgEnv() {
   return 0 != strcmp(CHPL_TARGET_COMPILER_PRGENV, "none");
 }
 
-std::string runCommand(std::string& command) {
-  // Run arbitrary command and return result
-  char buffer[256];
-  std::string result = "";
-
-  // Call command
-  FILE* pipe = popen(command.c_str(), "r");
-  if (!pipe) {
-    USR_FATAL("running %s", command.c_str());
+std::string runCommand(const std::string& command) {
+  auto commandOutput = chpl::getCommandOutput(command);
+  if (auto err = commandOutput.getError()) {
+    USR_FATAL("failed to run '%s', error: %s",
+              command.c_str(),
+              err.message().c_str());
   }
-
-  // Read output of command into result via buffer
-  while (!feof(pipe)) {
-    if (fgets(buffer, 256, pipe) != NULL) {
-      result += buffer;
-    }
-  }
-
-  if (pclose(pipe)) {
-    USR_FATAL("'%s' did not run successfully", command.c_str());
-  }
-
-  return result;
+  return commandOutput.get();
 }
 
 const char* getIntermediateDirName() {
-  ensureTmpDirExists();
-
-  return intDirName;
+  return gContext->tmpDir().c_str();
 }
 
 static void genCFiles(FILE* makefile) {
@@ -632,7 +730,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
                       const char** tmpservername,
                       bool skip_compile_link,
                       const std::vector<const char*>& splitFiles) {
-  const char* tmpDirName = intDirName;
+  const char* tmpDirName = gContext->tmpDir().c_str();
   const char* strippedExeFilename = stripdirectories(executableFilename);
   const char* exeExt = getLibraryExtension();
   const char* server = "";
@@ -747,16 +845,15 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   }
 
   // Compiler flags for each deliverable.
+  fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = ");
   if (fLibraryCompile && !fMultiLocaleInterop && dyn) {
-    fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = %s %s %s\n",
-            "$(SHARED_LIB_CFLAGS)",
-            includedirs.c_str(),
-            ccflags.c_str());
-  } else {
-    fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = %s %s\n",
-            includedirs.c_str(),
-            ccflags.c_str());
+    fprintf(makefile.fptr, "$(SHARED_LIB_CFLAGS) ");
   }
+  fprintf(makefile.fptr, "%s %s%s\n",
+          includedirs.c_str(),
+          ccflags.c_str(),
+          // We only need to compute and store dependencies if --savec is used
+          (saveCDir[0] ? " $(DEPEND_CFLAGS)" : ""));
 
   // Linker flags for each deliverable.
   const char* lmode = "";
@@ -798,8 +895,8 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   // List source files needed to compile this deliverable.
   if (fMultiLocaleInterop) {
 
-    const char* client = astr(intDirName, "/", gMultiLocaleLibClientFile);
-    const char* server = astr(intDirName, "/", gMultiLocaleLibServerFile);
+    const char* client = genIntermediateFilename(gMultiLocaleLibClientFile);
+    const char* server = genIntermediateFilename(gMultiLocaleLibServerFile);
 
     // Only one source file for client (for now).
     fprintf(makefile.fptr, "CHPLSRC = \\\n");
@@ -869,6 +966,12 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   }
 
   fprintf(makefile.fptr, "%s\n\n", incpath.c_str());
+
+  // We only need to compute and store dependencies if --savec is used
+  if (saveCDir[0]) {
+    fprintf(makefile.fptr, "DEPENDS = output/*.d\n\n");
+    fprintf(makefile.fptr, "-include $(DEPENDS)\n");
+  }
 
   genCFileBuildRules(makefile.fptr);
   closeCFile(&makefile, false);
@@ -982,6 +1085,15 @@ bool isDirectory(const char* path)
 {
   struct stat stats;
   if (stat(path, &stats) == 0 && (stats.st_mode & S_IFMT) == S_IFDIR)
+    return true;
+
+  return false;
+}
+
+bool pathExists(const char* path)
+{
+  struct stat stats;
+  if (stat(path, &stats) == 0)
     return true;
 
   return false;

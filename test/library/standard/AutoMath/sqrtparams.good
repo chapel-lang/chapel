@@ -1,0 +1,23 @@
+sqrtparams.chpl:2: warning: x = 1:uint(8) sqrt = 1.0:real(32)
+sqrtparams.chpl:3: warning: x = 1:uint(16) sqrt = 1.0:real(32)
+sqrtparams.chpl:4: warning: x = 1:uint(32) sqrt = 1.0:real(32)
+sqrtparams.chpl:5: warning: x = 1:uint(64) sqrt = 1.0:real(64)
+sqrtparams.chpl:9: warning: x = 1:int(8) sqrt = 1.0:real(32)
+sqrtparams.chpl:10: warning: x = 1:int(16) sqrt = 1.0:real(32)
+sqrtparams.chpl:11: warning: x = 1:int(32) sqrt = 1.0:real(32)
+sqrtparams.chpl:12: warning: x = 1:int(64) sqrt = 1.0:real(64)
+sqrtparams.chpl:16: warning: x = 1.0:real(32) sqrt = 1.0:real(32)
+sqrtparams.chpl:17: warning: x = 1.0:real(64) sqrt = 1.0:real(64)
+sqrtparams.chpl:23: warning: x = 2.0i:imag(32) sqrt = 1.0 + 1.0i:complex(64)
+sqrtparams.chpl:24: warning: x = -2.0i:imag(32) sqrt = 1.0 - 1.0i:complex(64)
+sqrtparams.chpl:25: warning: x = 2.0i:imag(64) sqrt = 1.0 + 1.0i:complex(128)
+sqrtparams.chpl:26: warning: x = -2.0i:imag(64) sqrt = 1.0 - 1.0i:complex(128)
+sqrtparams.chpl:29: warning: x = 1.0 + 0.0i:complex(64) sqrt = 1.0 + 0.0i:complex(64)
+sqrtparams.chpl:30: warning: x = 0.0 - 2.0i:complex(64) sqrt = 1.0 - 1.0i:complex(64)
+sqrtparams.chpl:31: warning: x = 0.0 + 2.0i:complex(128) sqrt = 1.0 + 1.0i:complex(128)
+sqrtparams.chpl:32: warning: x = -1.0 + 0.0i:complex(128) sqrt = 0.0 + 1.0i:complex(128)
+uint cases
+int cases
+real cases
+imag cases
+complex cases

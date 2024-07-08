@@ -8,7 +8,9 @@
 
 #include "ReduceOperandsToArgs.h"
 #include "Delta.h"
+#include "Utils.h"
 #include "llvm/ADT/Sequence.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Instructions.h"
@@ -66,10 +68,10 @@ static void replaceFunctionCalls(Function *OldF, Function *NewF) {
   // Call arguments for NewF.
   SmallVector<Value *> Args(NewF->arg_size(), nullptr);
 
-  // Fill up the additional parameters with undef values.
+  // Fill up the additional parameters with default values.
   for (auto ArgIdx : llvm::seq<size_t>(OldF->arg_size(), NewF->arg_size())) {
     Type *NewArgTy = NewF->getArg(ArgIdx)->getType();
-    Args[ArgIdx] = UndefValue::get(NewArgTy);
+    Args[ArgIdx] = getDefaultValue(NewArgTy);
   }
 
   for (CallBase *CI : Callers) {
@@ -158,7 +160,14 @@ static void substituteOperandWithArgument(Function *OldF,
   for (Use *Op : OpsToReplace) {
     Value *NewArg = OldValMap.lookup(Op->get());
     auto *NewUser = cast<Instruction>(VMap.lookup(Op->getUser()));
-    NewUser->setOperand(Op->getOperandNo(), NewArg);
+
+    if (PHINode *NewPhi = dyn_cast<PHINode>(NewUser)) {
+      PHINode *OldPhi = cast<PHINode>(Op->getUser());
+      BasicBlock *OldBB = OldPhi->getIncomingBlock(*Op);
+      NewPhi->setIncomingValueForBlock(cast<BasicBlock>(VMap.lookup(OldBB)),
+                                       NewArg);
+    } else
+      NewUser->setOperand(Op->getOperandNo(), NewArg);
   }
 
   // Replace all OldF uses with NewF.
@@ -166,12 +175,14 @@ static void substituteOperandWithArgument(Function *OldF,
 
   // Rename NewF to OldF's name.
   std::string FName = OldF->getName().str();
-  OldF->replaceAllUsesWith(ConstantExpr::getBitCast(NewF, OldF->getType()));
+  OldF->replaceAllUsesWith(NewF);
   OldF->eraseFromParent();
   NewF->setName(FName);
 }
 
-static void reduceOperandsToArgs(Oracle &O, Module &Program) {
+static void reduceOperandsToArgs(Oracle &O, ReducerWorkItem &WorkItem) {
+  Module &Program = WorkItem.getModule();
+
   SmallVector<Use *> OperandsToReduce;
   for (Function &F : make_early_inc_range(Program.functions())) {
     if (!canReplaceFunction(&F))
@@ -193,6 +204,6 @@ static void reduceOperandsToArgs(Oracle &O, Module &Program) {
 }
 
 void llvm::reduceOperandsToArgsDeltaPass(TestRunner &Test) {
-  outs() << "*** Converting operands to function arguments ...\n";
-  return runDeltaPass(Test, reduceOperandsToArgs);
+  runDeltaPass(Test, reduceOperandsToArgs,
+               "Converting operands to function arguments");
 }

@@ -1,6 +1,9 @@
+use IO;
+use Types;
+
 config param testError = 0, testDisplayRepresentation = false;
 
-proc readArray(X) {
+proc readArray(ref X) {
   X["zero"]  = 0.0;
   X["pointone"]  = 0.1;
   X["half"]  = 0.5;
@@ -16,13 +19,25 @@ proc readArray(X) {
   X["ten"]   = 10.0;
 }
 
-proc testAssocArrayAPI(X: []) {
+proc testAssocArrayAPI(ref X: [], arrayOutput:fileWriter(?)=stdout) {
+  // only write arrays in CHPL format
+  proc writeln(const args ...?n) {
+    for param i in 0..<n {
+      if isArray(args(i)) then
+        try! arrayOutput.write(args(i));
+      else
+        try! stdout.write(args(i));
+    }
+    try! writeln();
+  }
+
   // print header
   writeln("----------------");
 
   // Test generic aspects of arrays
   writeln("eltType is: ", X.eltType: string);
   writeln("idxType is: ", X.idxType: string);
+  writeln("fullIdxType is: ", X.fullIdxType: string);
   writeln("rank is: ", X.rank);
   writeln();
 
@@ -41,7 +56,7 @@ proc testAssocArrayAPI(X: []) {
   writeln();
 
   // Test write accesses via tuples and varargs
-  forall ind in X.domain do
+  forall ind in X.domain with (ref X) do
     X[ind] += 0.1;
   writeln("X is:\n", X);
   writeln();
@@ -61,7 +76,7 @@ proc testAssocArrayAPI(X: []) {
   writeln();
 
   // Test local write accesses via tuples and varargs
-  forall ind in X.domain do
+  forall ind in X.domain with (ref X) do
     X.localAccess[ind] += 0.1;
   writeln("X is:\n", X);
   writeln();
@@ -114,6 +129,8 @@ proc testAssocArrayAPI(X: []) {
   // Test collection interface
   writeln("is empty: ", X.isEmpty());
   var Y = X;
+  var idx: X.idxType;
+  writeln("find 10.6: ", X.find(X["ten"], idx), ", ", idx);
   writeln("equals same: ", X.equals(Y));
   var Z = X + 0.1;
   writeln("equals diff: ", X.equals(Z));

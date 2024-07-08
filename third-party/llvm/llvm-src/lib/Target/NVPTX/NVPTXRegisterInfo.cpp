@@ -29,14 +29,6 @@ namespace llvm {
 std::string getNVPTXRegClassName(TargetRegisterClass const *RC) {
   if (RC == &NVPTX::Float32RegsRegClass)
     return ".f32";
-  if (RC == &NVPTX::Float16RegsRegClass)
-    // Ideally fp16 registers should be .f16, but this syntax is only
-    // supported on sm_53+. On the other hand, .b16 registers are
-    // accepted for all supported fp16 instructions on all GPU
-    // variants, so we can use them instead.
-    return ".b16";
-  if (RC == &NVPTX::Float16x2RegsRegClass)
-    return ".b32";
   if (RC == &NVPTX::Float64RegsRegClass)
     return ".f64";
   if (RC == &NVPTX::Int64RegsRegClass)
@@ -73,10 +65,6 @@ std::string getNVPTXRegClassName(TargetRegisterClass const *RC) {
 std::string getNVPTXRegClassStr(TargetRegisterClass const *RC) {
   if (RC == &NVPTX::Float32RegsRegClass)
     return "%f";
-  if (RC == &NVPTX::Float16RegsRegClass)
-    return "%h";
-  if (RC == &NVPTX::Float16x2RegsRegClass)
-    return "%hh";
   if (RC == &NVPTX::Float64RegsRegClass)
     return "%fd";
   if (RC == &NVPTX::Int64RegsRegClass)
@@ -93,7 +81,8 @@ std::string getNVPTXRegClassStr(TargetRegisterClass const *RC) {
 }
 }
 
-NVPTXRegisterInfo::NVPTXRegisterInfo() : NVPTXGenRegisterInfo(0) {}
+NVPTXRegisterInfo::NVPTXRegisterInfo()
+    : NVPTXGenRegisterInfo(0), StrPool(StrAlloc) {}
 
 #define GET_REGINFO_TARGET_DESC
 #include "NVPTXGenRegisterInfo.inc"
@@ -118,7 +107,7 @@ BitVector NVPTXRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   return Reserved;
 }
 
-void NVPTXRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
+bool NVPTXRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                             int SPAdj, unsigned FIOperandNum,
                                             RegScavenger *RS) const {
   assert(SPAdj == 0 && "Unexpected");
@@ -133,6 +122,7 @@ void NVPTXRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   // Using I0 as the frame pointer
   MI.getOperand(FIOperandNum).ChangeToRegister(getFrameRegister(MF), false);
   MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
+  return false;
 }
 
 Register NVPTXRegisterInfo::getFrameRegister(const MachineFunction &MF) const {

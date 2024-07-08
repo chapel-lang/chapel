@@ -8,13 +8,14 @@
 
 #include "llvm/Analysis/CycleAnalysis.h"
 #include "llvm/ADT/GenericCycleImpl.h"
-#include "llvm/IR/CFG.h"
+#include "llvm/IR/CFG.h" // for successors found by ADL in GenericCycleImpl.h
 #include "llvm/InitializePasses.h"
 
 using namespace llvm;
 
-template class llvm::GenericCycleInfo<SSAContext>;
-template class llvm::GenericCycle<SSAContext>;
+namespace llvm {
+class Module;
+}
 
 CycleInfo CycleAnalysis::run(Function &F, FunctionAnalysisManager &) {
   CycleInfo CI;

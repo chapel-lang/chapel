@@ -1,0 +1,2 @@
+# valgrind duplicates the output of a program when a subprocess has an error and captures it with `pipeStyle.pipe`
+CHPL_TEST_VGRND_EXE==on

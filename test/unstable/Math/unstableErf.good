@@ -1,0 +1,6 @@
+unstableErf.chpl:5: warning: 'erf' is unstable and may be renamed or moved to a different module in the future
+unstableErf.chpl:9: warning: 'erf' is unstable and may be renamed or moved to a different module in the future
+a = -100.0
+erf(a) = -1.0
+b = -0.05
+erf(b) = -0.056372

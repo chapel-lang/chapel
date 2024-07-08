@@ -1,3 +1,3 @@
 proc main() throws {
-  throw new borrowed Error();
+  throw (new owned Error()).borrow();
 }

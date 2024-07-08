@@ -18,11 +18,13 @@ extern proc test_longs(a : c_long, b : c_ulong, c : c_longlong, d : c_ulonglong,
 
 extern proc test_longs(a : c_long, b : c_ulong, c : c_longlong, d : c_ulonglong, e : c_ptr(c_longlong)) : c_long;
 
-extern proc test_chars(a : c_char, b : c_string, c : c_schar, d : c_uchar) : c_char;
+extern proc test_chars(a : c_char, b : c_ptr(c_char), c : c_schar, d : c_uchar) : c_char;
+
+extern proc test_const_chars(a : c_ptrConst(c_char), b : c_ptrConst(c_uchar)) : c_ptrConst(c_char);
 
 extern proc test_shorts(a : c_short, b : c_ushort) : c_short;
 
-extern proc test_ptrs(a : c_intptr, b : c_uintptr, c : c_ptrdiff, d : ssize_t, e : size_t) : void;
+extern proc test_ptrs(a : c_intptr, b : c_uintptr, c : c_ptrdiff, d : c_ssize_t, e : c_size_t) : void;
 
 extern proc signedWidths(a : int(8), b : int(16), c : int(32), d : int(64)) : void;
 
@@ -44,9 +46,9 @@ extern record MirConnection {};
 // Opaque struct?
 extern record MirDisplayConfig {};
 
-extern type MirEGLNativeDisplayType = c_void_ptr;
+extern type MirEGLNativeDisplayType = c_ptr(void);
 
-extern type MirEGLNativeWindowType = c_void_ptr;
+extern type MirEGLNativeWindowType = c_ptr(void);
 
 // Opaque struct?
 extern record MirPersistentId {};

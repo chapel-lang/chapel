@@ -2,4 +2,6 @@ badWrite.chpl:1: error: unresolved call 'write("hi", type int(64))'
 $CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: this candidate did not match: write(const args ...?n)
 badWrite.chpl:1: note: because actual argument #2 is a type
 $CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: note: but is passed to non-type varargs formal 'args'
-note: there are also 4 other candidates, use --print-all-candidates to see them
+badWrite.chpl:1: note: other candidates are:
+$CHPL_HOME/modules/internal/Atomics.chpl:nnnn: note:   ref AtomicBool.write(val: bool, param order: memoryOrder = memoryOrder.seqCst)
+$CHPL_HOME/modules/internal/Atomics.chpl:nnnn: note:   ref AtomicT.write(val: valType, param order: memoryOrder = memoryOrder.seqCst)

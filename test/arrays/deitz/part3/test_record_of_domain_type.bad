@@ -1,3 +1,1 @@
-(x = {1..0})
-Thread
-Conditional jump or move depends on uninitialised value(s)
+test_record_of_domain_type.chpl:3: error: cannot default initialize 'x' because field 't' of type 'domain(1,int(64),one)' does not have enough information to be default initialized

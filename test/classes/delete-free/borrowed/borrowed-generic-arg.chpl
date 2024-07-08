@@ -3,11 +3,14 @@ class GenericClass {
   var v: int;
 }
 
-proc f(x: borrowed GenericClass) {
+proc f(x: borrowed GenericClass(?)) {
   writeln(x);
 }
 
-var a = new borrowed GenericClass(int, 3);
-var b = new borrowed GenericClass(real, 4);
+var oa = new owned GenericClass(int, 3);
+var ob = new owned GenericClass(real, 4);
+
+var a = oa.borrow();
+var b = ob.borrow();
 f(a);
 f(b);

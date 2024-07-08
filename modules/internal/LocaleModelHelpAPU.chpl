@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,7 +26,7 @@ module LocaleModelHelpAPU {
   public use LocaleModelHelpRuntime;
   use CTypes;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config param debugAPULocale = false;
 
   //////////////////////////////////////////
@@ -61,7 +61,7 @@ module LocaleModelHelpAPU {
   //         chpl_executeOn / chpl_executeOnFast
   //
   export
-  proc chpl_doDirectExecuteOn(loc: chpl_localeID_t // target locale
+  proc chpl_doDirectExecuteOn(const ref loc: chpl_localeID_t // target locale
                              ):bool {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
@@ -83,7 +83,7 @@ module LocaleModelHelpAPU {
   //
   pragma "insert line file info"
   export
-  proc chpl_executeOn(loc: chpl_localeID_t, // target locale
+  proc chpl_executeOn(const ref loc: chpl_localeID_t, // target locale
                       fn: int,              // on-body function idx
                       args: chpl_comm_on_bundle_p,     // function args
                       args_size: c_size_t     // args size
@@ -124,7 +124,7 @@ module LocaleModelHelpAPU {
   //
   pragma "insert line file info"
   export
-  proc chpl_executeOnFast(loc: chpl_localeID_t, // target locale
+  proc chpl_executeOnFast(const ref loc: chpl_localeID_t, // target locale
                           fn: int,              // on-body function idx
                           args: chpl_comm_on_bundle_p,     // function args
                           args_size: c_size_t     // args size
@@ -153,7 +153,7 @@ module LocaleModelHelpAPU {
   //
   pragma "insert line file info"
   export
-  proc chpl_executeOnNB(loc: chpl_localeID_t, // target locale
+  proc chpl_executeOnNB(const ref loc: chpl_localeID_t, // target locale
                         fn: int,              // on-body function idx
                         args: chpl_comm_on_bundle_p,     // function args
                         args_size: c_size_t     // args size

@@ -138,12 +138,12 @@ else
 /*
   Testing procedures.
 */
-pragma "no doc"
+@chpldoc.nodoc
 private proc testDynamicWorkload()
 {
-  var timer:Timer;
+  var timer:stopwatch;
 
-  const replicatedDomain:domain(1) dmapped Replicated() = controlDomain;
+  const replicatedDomain:domain(1) dmapped new replicatedDist() = controlDomain;
   var array:[controlDomain]real;
   var replicatedArray:[replicatedDomain]real;
 
@@ -173,12 +173,12 @@ private proc testDynamicWorkload()
   return timerElapsed;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 private proc testGuidedWorkload()
 {
-  var timer:Timer;
+  var timer:stopwatch;
 
-  const replicatedDomain:domain(1) dmapped Replicated() = controlDomain;
+  const replicatedDomain:domain(1) dmapped new replicatedDist() = controlDomain;
   var array:[controlDomain]real;
   var replicatedArray:[replicatedDomain]real;
 
@@ -207,12 +207,12 @@ private proc testGuidedWorkload()
   return timerElapsed;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 private proc testControlWorkload():real
 {
-  var timer:Timer;
+  var timer:stopwatch;
 
-  const D:domain(1) dmapped Block(boundingBox=controlDomain) = controlDomain;
+  const D:domain(1) dmapped new blockDist(boundingBox=controlDomain) = controlDomain;
   var array:[D]real;
 
   fillArray(array);
@@ -235,7 +235,7 @@ private proc testControlWorkload():real
 /*
   Array fills.
 */
-pragma "no doc"
+@chpldoc.nodoc
 private proc fillArray(array)
 { // Call the appropriate array-filling function based on config const ``test``
   select test
@@ -252,14 +252,14 @@ private proc fillArray(array)
   if debug then writeArrayStatistics(array);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 private proc fillConstant(array, constant=1)
 {
   const arrayDomain = array.domain;
   forall i in arrayDomain do array[i] = constant;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 private proc fillLinear(array, slope, yIntercept)
 {
   const arrayDomain = array.domain;
@@ -267,13 +267,13 @@ private proc fillLinear(array, slope, yIntercept)
   normalizeSum(array);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 private proc fillRampDown(array) { fillLinear(array, (-1.0/n:real), 1.0); }
 
-pragma "no doc"
+@chpldoc.nodoc
 private proc fillRampUp(array) { fillLinear(array, (1.0/n:real), 0); }
 
-pragma "no doc"
+@chpldoc.nodoc
 private proc fillCubicOutliers(array)
 {
   const arrayDomain = array.domain;
@@ -319,7 +319,7 @@ private proc fillCubicOutliers(array)
   almost all the work into the first work unit, using the same closed-form
   expression that the iterator uses for dividing work units.
 */
-pragma "no doc"
+@chpldoc.nodoc
 private proc fillKryptonite(array, desiredProcessorCount:int=0)
 {
   const processorCount:int = if desiredProcessorCount == 0
@@ -344,7 +344,7 @@ private proc fillKryptonite(array, desiredProcessorCount:int=0)
   iterator's behavior by making the work per iteration approximately equal
   (work per iteration increases exponentially).
 */
-pragma "no doc"
+@chpldoc.nodoc
 private proc fillStacked(array, desiredProcessorCount:int=0)
 {
   const processorCount:int = if desiredProcessorCount == 0
@@ -364,7 +364,7 @@ private proc fillStacked(array, desiredProcessorCount:int=0)
   normalizeSum(array);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 private proc fillNormallyDistributed(array)
 {
   const arrayDomain = array.domain;
@@ -392,7 +392,7 @@ private proc fillNormallyDistributed(array)
   normalizeSum(array);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 private proc fillUniformlyRandom(array)
 {
   fillRandom(array, globalRandomSeed);

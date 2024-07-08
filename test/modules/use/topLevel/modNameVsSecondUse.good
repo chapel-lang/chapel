@@ -1,1 +1,7 @@
+modNameVsSecondUse.chpl:13: In function 'main':
+modNameVsSecondUse.chpl:16: warning: potentially surprising shadowing for 'M'
+modNameVsSecondUse.chpl:15: note: it refers to a symbol found through the 'use' of 'N' here
+modNameVsSecondUse.chpl:9: note: leading to 'M' defined here
+modNameVsSecondUse.chpl:14: note: but, there is a shadowed symbol found through the 'use' of 'M' here
+modNameVsSecondUse.chpl:1: note: leading to 'M' defined here
 42

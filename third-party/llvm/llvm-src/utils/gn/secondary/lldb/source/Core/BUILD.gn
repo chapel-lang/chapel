@@ -31,6 +31,7 @@ static_library("Core") {
     "//lldb/source/Utility",
     "//llvm/lib/Demangle",
     "//llvm/lib/Support",
+    "//llvm/lib/TargetParser",
 
     #"//lldb/source/Plugins/Language/CPlusPlus", # 3-hop dependency cycle.
     #"//lldb/source/Plugins/Language/ObjC",  # Many-hop dependency cycle.
@@ -49,14 +50,15 @@ static_library("Core") {
     "Communication.cpp",
     "DataFileCache.cpp",
     "Debugger.cpp",
+    "DebuggerEvents.cpp",
     "Declaration.cpp",
     "Disassembler.cpp",
     "DumpDataExtractor.cpp",
+    "DumpRegisterInfo.cpp",
     "DumpRegisterValue.cpp",
     "DynamicLoader.cpp",
     "EmulateInstruction.cpp",
     "FileLineResolver.cpp",
-    "FileSpecList.cpp",
     "FormatEntity.cpp",
     "Highlighter.cpp",
     "IOHandler.cpp",
@@ -74,7 +76,7 @@ static_library("Core") {
     "SourceLocationSpec.cpp",
     "SourceManager.cpp",
     "StreamAsynchronousIO.cpp",
-    "StreamFile.cpp",
+    "ThreadedCommunication.cpp",
     "UserSettingsController.cpp",
     "Value.cpp",
     "ValueObject.cpp",
@@ -90,6 +92,7 @@ static_library("Core") {
     "ValueObjectRegister.cpp",
     "ValueObjectSyntheticFilter.cpp",
     "ValueObjectUpdater.cpp",
+    "ValueObjectVTable.cpp",
     "ValueObjectVariable.cpp",
   ]
 }

@@ -1,6 +1,8 @@
 /*  This is the Chapel version of Random Access HPC benchmark.
  *
  */  
+use Math;
+
 param POLY:uint(64) = 7;
 
 config const verify = true;
@@ -31,7 +33,7 @@ var GUPs:real;
 proc main() {
 
   use Time;
-  var t:Timer;
+  var t:stopwatch;
 
   writeRAdata();
 
@@ -56,7 +58,7 @@ proc main() {
 
 proc RandomAccessUpdate() {
 
-  [i in TableDomain] Table(i) = i;
+  [i in TableDomain with (ref Table)] Table(i) = i;
   
   for j in StreamDomain {
     var ran:uint(64) = RandomStart(BigStep*j);

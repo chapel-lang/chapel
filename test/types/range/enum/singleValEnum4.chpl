@@ -23,7 +23,7 @@ enum color { red };
 
 {
   writeln("implicit strided");
-  var r: range(color, stridable=true);
+  var r: range(color, strides=strideKind.any);
   testit(r);
 
   writeln("overwritten:");

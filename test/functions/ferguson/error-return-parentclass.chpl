@@ -5,8 +5,8 @@ class Parent {
 class Child : Parent {
   var y:int;
 }
-
-var globalParent = new borrowed Parent(1);
+var globalParentObj = new Parent(1);
+var globalParent = globalParentObj.borrow();
 var got = f();
 writeln(got);
 
@@ -14,5 +14,3 @@ writeln(got);
 proc f() : borrowed Child {
   return globalParent;
 }
-
-

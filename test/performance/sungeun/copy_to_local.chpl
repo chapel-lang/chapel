@@ -7,7 +7,7 @@ config param debug = false;
 use CyclicDist;
 use Time;
 
-const Dcyclic: domain(1) dmapped Cyclic(0) = 0..#numLocales;
+const Dcyclic: domain(1) dmapped new cyclicDist(0) = 0..#numLocales;
 const D = {1..n};
 
 var A: [Dcyclic] [D] int(64);
@@ -17,8 +17,8 @@ forall a in A do
 
 if printOutput then writeln(A);
 
-var st = getCurrentTime();
-coforall loc in Locales do on loc {
+var st = timeSinceEpoch().totalSeconds();
+coforall loc in Locales with (ref A) do on loc {
   const l = (here.id+1)%numLocales;
   var myA: [D] int(64);
   ref Aalias = A[l];
@@ -37,6 +37,6 @@ coforall loc in Locales do on loc {
   }
   if printOutput then writeln(loc, ":\n", myA);
  }
-var dt = getCurrentTime()-st;
+var dt = timeSinceEpoch().totalSeconds()-st;
 
 if printTiming then writeln("Copy to local (", numLocales, " locales): ", dt);

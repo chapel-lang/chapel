@@ -21,7 +21,7 @@ class InterpolationObject {
     this.invDx  = 1.0/dx;
     this.nSpace = {-1..n+1};
 
-    this.complete();
+    init this;
 
     values[0..n-1] = buf;
 
@@ -100,7 +100,7 @@ class PotentialEAM : BasePotential {
 }
 
 proc readSetFl() {
-  var chan = open(potDir + "/" + potName, iomode.r);
+  var chan = open(potDir + "/" + potName, ioMode.r);
   var r = chan.reader();
 
   var info = new unmanaged BasePotential();
@@ -146,7 +146,7 @@ proc readSetFl() {
 }
 
 proc readFuncFl() {
-  var chan = open(potDir + "/" + potName, iomode.r);
+  var chan = open(potDir + "/" + potName, ioMode.r);
   var r = chan.reader();
 
   var info = new unmanaged BasePotential();

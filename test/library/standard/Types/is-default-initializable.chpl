@@ -31,7 +31,7 @@ if isDefaultInitializable(GenericContainingNonNilableOwnedAndInit(owned C)) != t
 }
 
 record ContainingNonNilableWithFieldDefault {
-  var c: unmanaged object = new	unmanaged object();
+  var c: unmanaged RootClass = new	unmanaged RootClass();
 }
 if isDefaultInitializable(ContainingNonNilableWithFieldDefault) != true {
   compilerError("error matching ContainingNonNilableWithFieldDefault");
@@ -82,17 +82,17 @@ if isDefaultInitializable((ContainingNonNilableWithFieldDefault, ContainingNonNi
 }
 
 proc testArrays() {
-  var A0:[1..1] owned C? = [new owned C?(1)];
+  var A0:[1..1] owned C? = [new owned C?(1), ];
   if isDefaultInitializable(A0.type) != true {
     compilerError("error matching array of owned C?");
   }
 
-  var A1:[1..1] owned C = [new owned C(1)];
+  var A1:[1..1] owned C = [new owned C(1), ];
   if isDefaultInitializable(A1.type) != false {
     compilerError("error matching array of owned C");
   }
 
-  var A2:[1..1] ContainingNonNilableOwnedAndInit = [new ContainingNonNilableOwnedAndInit()];
+  var A2:[1..1] ContainingNonNilableOwnedAndInit = [new ContainingNonNilableOwnedAndInit(), ];
   if isDefaultInitializable(A2.type) != true {
     compilerError("error matching array of ContainingNonNilableOwnedAndInit");
   }

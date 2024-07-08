@@ -1,0 +1,15 @@
+color 2 = red
+color 3 = orange
+color 4 = yellow
+---
+color 1 = red
+color 2 = orange
+color 3 = yellow
+color 4 = green
+color 5 = blue
+color 6 = indigo
+color 7 = violet
+---
+red orange yellow green blue indigo violet
+---
+red orange yellow green blue indigo violet

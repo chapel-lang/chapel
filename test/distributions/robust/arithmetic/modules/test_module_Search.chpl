@@ -5,16 +5,17 @@ use Random;
 use Sort;
 use Search;
 
-var rng = new owned RandomStream(real, 314159265);
+var rng = new randomStream(real, 314159265);
 
 var found: bool;
 var foundIdx: int;
 var idx = n1/2+1;
 var elem: real;
 
-proc reset(A) {
-  rng.fillRandom(A);
-  sort(A);
+proc reset(ref A) {
+  rng.fill(A);
+  QuickSort.quickSort(A); // use quicksort for now to avoid warning
+                          // about sorting a distributed array
   elem = A[idx];
 }
 
@@ -44,7 +45,7 @@ reset(R1D);
 checkSearch(found, foundIdx, R1D, "binarySearch");
 
 writeln("Search reindexed array");
-proc foo(D: domain, A: [D], useLinear=true) {
+proc foo(D: domain(?), A: [D], useLinear=true) {
   if useLinear then
     return linearSearch(A, elem);
   else

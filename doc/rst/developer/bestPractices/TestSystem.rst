@@ -36,6 +36,7 @@ Outline
 
      - `Controlling How It Runs`_
 
+       - `Running Multiple Times`_
        - `Limiting Time Taken`_
 
      - `With Varying Output`_
@@ -43,7 +44,8 @@ Outline
        - `Test Not Applicable In All Settings`_
        - `Testing Different Behavior in Different Settings`_
 
-     - `Using precomp and prediff files`_
+     - `Using precomp, preexec, and prediff files`_
+     - `Using PRETEST`_
 
    - `A Performance Test`_
 
@@ -66,13 +68,17 @@ Outline
      - `Tracking Current Failure Mode`_
      - `Resolving a Future`_
 
-* `Invoking start_test`_
+ * `Invoking start_test`_
 
-  - `Correctness Testing`_
-  - `Performance Testing`_
-  - `Sample Output`_
+   - `Correctness Testing`_
 
-* `Summary of Testing Files`_
+     - `Parallel Testing`_
+     - `GPU Testing`_
+
+   - `Performance Testing`_
+   - `Sample Output`_
+
+ * `Summary of Testing Files`_
 
 .. _With Outside Arguments: `Outside Arguments or Settings`_
 .. _With Varying Output: `Tests With Varying Output`_
@@ -256,6 +262,22 @@ another test), give an empty file with the suffix ``.notest``.  A directory with
 an empty ``NOTEST`` file will similarly not be run by the testing system (unless
 its contents are explicitly listed in the call to ``start_test``).
 
+Running Multiple Times
+~~~~~~~~~~~~~~~~~~~~~~
+
+By default, each correctness test is run only once. It is possible to
+specify that a test should be run multiple times by providing a ``.numtrials``
+file for that test, or by passing ``-num-trials`` to ``start_test``.  For
+instance, the following file would cause the test to be run 10 times:
+
+``foo.numtrials``
+
+  .. code-block:: text
+
+    10
+
+Note that a ``.numtrials`` file will override any explicit ``-num-trials`` value.
+
 Limiting Time Taken
 ~~~~~~~~~~~~~~~~~~~
 
@@ -272,8 +294,8 @@ test is usually quick but occasionally hangs, a smaller timeout value can help
 speed up the time to run the testing system when the failure mode does occur.
 
 Note that if the value in this file is longer than the global timeout, any
-explicit ``-num-trials`` value or ``.perfnumtrials`` file will be ignored (see
-`A Performance Test`_ for more details on the ``-num-trials`` setting).
+explicit ``-num-trials`` value or ``.numtrials`` file will be ignored and the
+test will run only once.
 
 Tests With Varying Output
 +++++++++++++++++++++++++
@@ -342,16 +364,18 @@ explicitly in the ``.compopts`` or ``.execopts`` file for the test.
 ``start_test`` automatically recognizes ``.good`` files with prefixes for
 ``--no-local``, communication layer, locale model, and ``chpldoc``.  For example:
 
-- ``.comm-none.good``: used with CHPL_COMM=none (the unqualified ``.good`` file
+- ``.comm-none.good``: used with ``CHPL_COMM=none`` (the unqualified ``.good`` file
   will then apply for CHPL_COMM != none)
+- ``.comm-gasnet.good``: used with ``CHPL_COMM=gasnet``
+- ``.comm-ofi.good``: used with ``CHPL_COMM=ofi``
+- ``.comm-ugni.good``: used with ``CHPL_COMM=ugni``
 - ``.no-local.good``: used with ``--no-local`` testing
-- ``.lm-numa.good``: used with CHPL_LOCALE_MODEL=numa
-- ``.na-none.good``: used with CHPL_NETWORK_ATOMICS=none
-- ``.tasks-fifo.good``: used with CHPL_TASKS=fifo
+- ``.na-none.good``: used with ``CHPL_NETWORK_ATOMICS=none``
+- ``.tasks-fifo.good``: used with ``CHPL_TASKS=fifo``
 - ``.doc.good``: used when testing ``chpldoc`` instead of ``chpl``
 
 Note that ``.comm-``, ``.na-``, and ``lm-`` can be combined, in that order.
-For instance ``mytest.comm-none.lm-numa.good``.
+For instance ``mytest.comm-none.tasks-fifo.good``.
 
 Requests can be made for supporting additional formats if a common format
 does not appear to be covered automatically.
@@ -367,6 +391,7 @@ instance:
      --x=true # foo.true.good
      --x=false # foo.false.good
 
+
 will compare test output to ``foo.true.good`` for the first execution and
 ``foo.false.good`` for the second.
 
@@ -374,13 +399,43 @@ Any line that is unlabeled will use the default ``.good`` for that test.
 Undefined behavior will occur when both the ``.compopts`` and ``.execopts``
 files specify a ``.good`` file in this way.
 
-Using precomp and prediff files
-+++++++++++++++++++++++++++++++
+If you want to use use default arguments for the test but specify a different
+``.good`` file, you can add a line in your compopts/execopts file as follows
+(note the space before the #):
 
-When creating a ``.precomp`` or ``.prediff`` file, the file must be an
-executable. You can turn your script into an executable by running:
-``chmod +x foo.precomp``. 
+  .. code-block:: bash
 
+      # foo.execopts
+       # foo.true.good
+
+
+Using precomp, preexec, and prediff files
++++++++++++++++++++++++++++++++++++++++++
+
+When creating a ``.precomp``, ``.preexec``, or ``.prediff`` file, the file
+must be an executable. You can turn your script into an executable by running:
+``chmod +x foo.precomp``. To specify these files for entire directories,
+the files should be named ``PRECOMP``, ``PREEXEC``, and ``PREDIFF``,
+respectively.
+
+If you wish to have a system wide ``.prediff`` file, you can use the
+``CHPL_SYSTEM_PREDIFF`` environment variable that takes a comma-separated
+list of prediffs to run after every test before comparing to the ``.good``
+file.
+
+Using PRETEST
++++++++++++++
+
+``PRETEST`` allows you to run a script once before any test is run in a
+directory. This can be used to set up a test, for example, by generating
+``.good`` files, or create/build other programs that are used by the test.
+The file must be an executable. You can turn your script into an executable by
+running: ``chmod +x PRETEST``.
+
+Note that the ``PRETEST`` script will not be run for any subdirectories and
+must be either duplicated or have a symbolic link to the parent directory.
+You can add a symlink to a file in a parent directory by running:
+``ln -s ../PRETEST PRETEST``
 
 A Performance Test
 ------------------
@@ -514,7 +569,8 @@ done using files, as in correctness testing, where the filenames tend
 to start with ``PERF*`` or ``.perf*``.  For example, ``foo.perfcompopts`` would
 specify compiler options that should be used when compiling the test
 for performance mode while ``foo.perfexecopts`` specifies execution-time
-options for performance testing.
+options for performance testing. The number of trials for performance
+testing can be specified in a ``foo.perfnumtrials`` file.
 
 Comparing Multiple Versions
 +++++++++++++++++++++++++++
@@ -738,7 +794,7 @@ GitHub Issues
 +++++++++++++
 
 Currently, it is mandatory to include a GitHub issue number with any new
-futures. That said, futures the pre-date Chapel's adoption of GitHub issues may
+futures. That said, futures that pre-date Chapel's adoption of GitHub issues may
 have a description instead of an issue number.
 
 When filing a bug report as an issue, it is considered good practice to
@@ -814,6 +870,26 @@ program and execute it with ``valgrind``. The ``--valgrind`` flag does the
 same, plus it also runs the compiler under ``valgrind``, which increases
 testing time compared to ``--valgrindexe``. To learn about best practices
 with ``valgrind``, see ``Valgrind.rst``.
+
+Parallel Testing
+++++++++++++++++
+
+To run correctness tests in parallel, ``paratest.local`` can be invoked directly.
+For example:
+
+  ``(cd $CHPL_HOME/test && $CHPL_HOME/util/test/paratest.local -dirs deprecated -dirs unstable)``
+
+This command will run all tests in ``$CHPL_HOME/test/deprecated`` and
+``$CHPL_HOME/test/deprecated`` using 10 processes. Note that the parallelism is
+at the directory level granularity, so if a directory is flat (containing only
+files) it will still run serially with this command.
+
+GPU Testing
++++++++++++
+
+To run tests with the GPU locale model, the environment variable
+``CHPL_TEST_GPU`` needs to be set. For more information on running tests with
+GPUs, see the :ref:`GPU tech note <readme-gpu>`.
 
 Performance Testing
 -------------------
@@ -915,6 +991,8 @@ foo.precomp         script that is run prior to compilation of the test program
 PRECOMP             directory-wide script that is run prior to compilation
 foo.preexec         script that is run prior to execution of the test program
 PREEXEC             directory-wide script that is run prior to execution
+PRETEST             script that is run once per directory prior to any test being
+                    run
 ..
 -------------------------------------------------------------------------------
 **Testing System Settings**
@@ -924,6 +1002,8 @@ CLEANFILES          directory-wide list of files to remove before test runs
 foo.noexec          empty file. Indicates .chpl file should only be compiled,
                     not executed.  See `Controlling How It Runs`_ for more
                     information.
+NOEXEC              Indicates all .chpl files in this directory should only be
+                    compiled, not executed.
 foo.notest          empty file. Indicates the file should not be run explicitly
                     See `Controlling How It Runs`_ for more information.
 NOTEST              empty file. Indicates the directory should not be run
@@ -937,6 +1017,8 @@ foo.suppressif      line separated list of conditions under which the test is
                     ``.future`` is likely more appropriate for the test.
 foo.timeout         time in seconds after which start_test should stop this test
                     See `Limiting Time Taken`_ for more information
+foo.numtrials       number of execution trials to run
+NUMTRIALS           directory-wide number of execution trials to run
 ..
 -------------------------------------------------------------------------------
 **performance** (replace "perf" with "ml-" and "cc-" as necessary)

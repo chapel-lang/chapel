@@ -1,0 +1,2 @@
+CHPL_GPU_ARCH==gfx908
+CHPL_GPU==cpu

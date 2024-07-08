@@ -1,7 +1,0 @@
-warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
-Test Passed
-Test Passed
-Test Passed
-Test Passed
-Test Passed
-(kernel_launch = 249)

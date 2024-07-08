@@ -15,12 +15,12 @@ test();
 
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a begin ===");
-var sbegin$: sync int;
+var sbegin: sync int;
 begin {
 #include "capture-begin.cpp"
-  sbegin$ = 1;
+  sbegin = 1;
 }
-sbegin$;
+sbegin;
 
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a cobegin ===");

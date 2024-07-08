@@ -15,19 +15,19 @@ proc main() {
   writeln(A[1], " ", A[n]);
 }
 
-proc kernel3forall(A) {
-  forall (i,j) in zip(1..n, 2..) {
+proc kernel3forall(ref A) {
+  forall (i,j) in zip(1..n, 2..) with (ref A) {
     A[i] = j:real;
   }
 }
 
-proc kernel5forall(A, B, C) {
+proc kernel5forall(ref A, B, C) {
   forall (a,b,c) in zip(A, B, C) {
     a = b + c;
   }
 }
 
-proc kernel6(A, C) {
+proc kernel6(ref A, C) {
   var sum = 0.0;
   forall c in C with (+ reduce sum) {
     sum += c;

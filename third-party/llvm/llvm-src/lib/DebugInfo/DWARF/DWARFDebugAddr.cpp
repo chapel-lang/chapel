@@ -9,6 +9,7 @@
 #include "llvm/DebugInfo/DWARF/DWARFDebugAddr.h"
 #include "llvm/BinaryFormat/Dwarf.h"
 #include "llvm/DebugInfo/DWARF/DWARFContext.h"
+#include "llvm/Support/Errc.h"
 
 using namespace llvm;
 
@@ -176,9 +177,8 @@ Expected<uint64_t> DWARFDebugAddrTable::getAddrEntry(uint32_t Index) const {
                            Index, Offset);
 }
 
-Optional<uint64_t> DWARFDebugAddrTable::getFullLength() const {
+std::optional<uint64_t> DWARFDebugAddrTable::getFullLength() const {
   if (Length == 0)
-    return None;
+    return std::nullopt;
   return Length + dwarf::getUnitLengthFieldByteSize(Format);
 }
-

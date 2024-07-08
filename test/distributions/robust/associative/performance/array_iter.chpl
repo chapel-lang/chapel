@@ -1,4 +1,4 @@
-use Memory.Diagnostics, Types, Time, Sort;
+use MemDiagnostics, Types, Time, Sort;
 
 config const printTiming = false;
 config const verify = true;
@@ -28,7 +28,7 @@ for i in D {
 }
 if verify then sort(Aref);
 
-forall i in AD {
+forall i in AD with (ref AA) {
   AA(i) = i;
 }
 
@@ -43,7 +43,7 @@ if verify {
 //
 
 {
-  var timer: Timer;
+  var timer: stopwatch;
   timer.start();
   for aa in AA {
     var ai = aa;
@@ -72,13 +72,13 @@ if verify {
 //
 
 {
-  var paraTimer: Timer;
-  paraTimer.start();
-  forall aa in AA {
+  var parastopwatch: stopwatch;
+  parastopwatch.start();
+  forall aa in AA with (ref A) {
     var ai = aa;
     A((ai+offset)/2) = ai;
   }
-  paraTimer.stop();
+  parastopwatch.stop();
 
   var success = true;
 
@@ -92,5 +92,5 @@ if verify {
     }
   }
   writeln("Parallel array iteration: ", if success then "SUCCESS" else "FAILED");
-  if printTiming then writeln("Parallel: ", paraTimer.elapsed());
+  if printTiming then writeln("Parallel: ", parastopwatch.elapsed());
 }

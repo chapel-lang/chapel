@@ -1,0 +1,1 @@
+04-parallelism-in-chapel.chpl:8: warning: cobegin has no effect if it contains fewer than 2 statements

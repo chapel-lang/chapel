@@ -18,6 +18,7 @@
 #include "clang/Basic/TokenKinds.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/HeaderSearchOptions.h"
+#include "clang/Lex/LiteralSupport.h"
 #include "clang/Lex/MacroArgs.h"
 #include "clang/Lex/MacroInfo.h"
 #include "clang/Lex/ModuleLoader.h"
@@ -25,9 +26,11 @@
 #include "clang/Lex/PreprocessorOptions.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Testing/Annotations/Annotations.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace {
@@ -71,13 +74,7 @@ protected:
     PP = CreatePP(Source, ModLoader);
 
     std::vector<Token> toks;
-    while (1) {
-      Token tok;
-      PP->Lex(tok);
-      if (tok.is(tok::eof))
-        break;
-      toks.push_back(tok);
-    }
+    PP->LexTokensUntilEOF(&toks);
 
     return toks;
   }
@@ -612,7 +609,7 @@ TEST_F(LexerTest, FindNextToken) {
       SourceMgr.getLocForStartOfFile(SourceMgr.getMainFileID());
   while (true) {
     auto T = Lexer::findNextToken(Loc, SourceMgr, LangOpts);
-    ASSERT_TRUE(T.hasValue());
+    ASSERT_TRUE(T);
     if (T->is(tok::eof))
       break;
     GeneratedByNextToken.push_back(getSourceText(*T, *T));
@@ -625,12 +622,7 @@ TEST_F(LexerTest, FindNextToken) {
 TEST_F(LexerTest, CreatedFIDCountForPredefinedBuffer) {
   TrivialModuleLoader ModLoader;
   auto PP = CreatePP("", ModLoader);
-  while (1) {
-    Token tok;
-    PP->Lex(tok);
-    if (tok.is(tok::eof))
-      break;
-  }
+  PP->LexTokensUntilEOF();
   EXPECT_EQ(SourceMgr.getNumCreatedFIDsForFileID(PP->getPredefinesFileID()),
             1U);
 }
@@ -639,6 +631,7 @@ TEST_F(LexerTest, RawAndNormalLexSameForLineComments) {
   const llvm::StringLiteral Source = R"cpp(
   // First line comment.
   //* Second line comment which is ambigious.
+  ; // Have a non-comment token to make sure something is lexed.
   )cpp";
   LangOpts.LineComment = false;
   auto Toks = Lex(Source);
@@ -648,8 +641,9 @@ TEST_F(LexerTest, RawAndNormalLexSameForLineComments) {
           SrcBuffer.data(), SrcBuffer.data(),
           SrcBuffer.data() + SrcBuffer.size());
 
-  auto ToksView = llvm::makeArrayRef(Toks);
+  auto ToksView = llvm::ArrayRef(Toks);
   clang::Token T;
+  EXPECT_FALSE(ToksView.empty());
   while (!L.LexFromRawLexer(T)) {
     ASSERT_TRUE(!ToksView.empty());
     EXPECT_EQ(T.getKind(), ToksView.front().getKind());
@@ -657,4 +651,36 @@ TEST_F(LexerTest, RawAndNormalLexSameForLineComments) {
   }
   EXPECT_TRUE(ToksView.empty());
 }
+
+TEST(LexerPreambleTest, PreambleBounds) {
+  std::vector<std::string> Cases = {
+      R"cc([[
+        #include <foo>
+        ]]int bar;
+      )cc",
+      R"cc([[
+        #include <foo>
+      ]])cc",
+      R"cc([[
+        // leading comment
+        #include <foo>
+        ]]// trailing comment
+        int bar;
+      )cc",
+      R"cc([[
+        module;
+        #include <foo>
+        ]]module bar;
+        int x;
+      )cc",
+  };
+  for (const auto& Case : Cases) {
+    llvm::Annotations A(Case);
+    clang::LangOptions LangOpts;
+    LangOpts.CPlusPlusModules = true;
+    auto Bounds = Lexer::ComputePreamble(A.code(), LangOpts);
+    EXPECT_EQ(Bounds.Size, A.range().End) << Case;
+  }
+}
+
 } // anonymous namespace

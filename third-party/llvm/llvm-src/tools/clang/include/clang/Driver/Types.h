@@ -43,7 +43,7 @@ namespace types {
 
   /// getTypeTempSuffix - Return the suffix to use when creating a
   /// temp file of this type, or null if unspecified.
-  const char *getTypeTempSuffix(ID Id, bool CLMode = false);
+  const char *getTypeTempSuffix(ID Id, bool CLStyle = false);
 
   /// onlyPrecompileType - Should this type only be precompiled.
   bool onlyPrecompileType(ID Id);
@@ -65,6 +65,9 @@ namespace types {
 
   /// isAcceptedByClang - Can clang handle this input type.
   bool isAcceptedByClang(ID Id);
+
+  /// isAcceptedByFlang - Can flang handle this input type.
+  bool isAcceptedByFlang(ID Id);
 
   /// isDerivedFromC - Is the input derived from C.
   ///
@@ -92,8 +95,8 @@ namespace types {
   /// isOpenCL - Is this an "OpenCL" input.
   bool isOpenCL(ID Id);
 
-  /// isFortran - Is this a Fortran input.
-  bool isFortran(ID Id);
+  /// isHLSL - Is this an HLSL input.
+  bool isHLSL(ID Id);
 
   /// isSrcFile - Is this a source file, i.e. something that still has to be
   /// preprocessed. The logic behind this is the same that decides if the first

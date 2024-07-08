@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -513,9 +513,11 @@ static void pruneOuterVars(Symbol* parent, SymbolMap& uses) {
   form_Map(SymbolMapElem, e, uses) {
       Symbol* sym = e->key;
       if (e->value != markPruned) {
-        if (sym->hasFlag(FLAG_ARG_THIS))
-          e->value = markPruned;
-        else if (e->value != tiMarkIn        &&
+        if (sym->hasFlag(FLAG_ARG_THIS)) {
+          // adjustment: allow and honor explicit intents on 'this'
+          if (e->value == markUnspecified)
+            e->value = markPruned;
+        } else if (e->value != tiMarkIn        &&
                  sym->hasFlag(FLAG_CONST)    &&
                  !sym->hasFlag(FLAG_REF_VAR) &&
                  isGlobal(sym))

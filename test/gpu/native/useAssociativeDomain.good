@@ -1,4 +1,1 @@
-warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
 10.0 10.0 10.0
-GPU diagnostics:
-(kernel_launch = 0)

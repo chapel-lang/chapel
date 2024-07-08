@@ -8,6 +8,7 @@
 
 #include "GISelMITest.h"
 #include "llvm/CodeGen/GlobalISel/LoadStoreOpt.h"
+#include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineMemOperand.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Metadata.h"
@@ -20,7 +21,7 @@ namespace {
 TEST_F(AArch64GISelMITest, SimpleAlias) {
   setUp();
   if (!TM)
-    return;
+    GTEST_SKIP();
 
   LLT S64 = LLT::scalar(64);
   LLT P0 = LLT::pointer(0, 64);
@@ -72,7 +73,7 @@ TEST_F(AArch64GISelMITest, SimpleAlias) {
 TEST_F(AArch64GISelMITest, OffsetAliasing) {
   setUp();
   if (!TM)
-    return;
+    GTEST_SKIP();
 
   LLT S64 = LLT::scalar(64);
   LLT P0 = LLT::pointer(0, 64);
@@ -102,7 +103,7 @@ TEST_F(AArch64GISelMITest, OffsetAliasing) {
 TEST_F(AArch64GISelMITest, FrameIndexAliasing) {
   setUp();
   if (!TM)
-    return;
+    GTEST_SKIP();
 
   LLT S64 = LLT::scalar(64);
   LLT P0 = LLT::pointer(0, 64);

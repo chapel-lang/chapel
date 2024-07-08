@@ -1,0 +1,3 @@
+caught correct error [ IllegalArgumentError: illegal argument 'size': cannot exceed length of provided bytes ]
+negates itself when prepended to itself ⬅️ negates itself when prepended to itself
+negates itself

@@ -10,7 +10,7 @@ interface IFC {
 }
 
 int implements IFC;
-proc int.AT type return int;
+proc int.AT type do return int;
 proc reqFun(arg: int) {
   writeln("reqFun ", arg);
 }

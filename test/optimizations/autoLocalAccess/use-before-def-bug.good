@@ -1,0 +1,4 @@
+
+Start analyzing forall (use-before-def-bug.chpl:6)
+| Can't optimize this forall: invalid loop (use-before-def-bug.chpl:6)
+use-before-def-bug.chpl:6: error: 'Dst' undeclared (first use this function)

@@ -4,7 +4,7 @@
   require "parquetHeaders.chpl";
   use parquetHeaders;
   public use CTypes;
-  
+
   // Temporary Error caller for convenience.
   inline proc printGError(msg: string, error: GErrorPtr){
     g_print("%s %s\n".c_str(): c_ptr(gchar), msg.c_str(), error.deref().message);
@@ -16,7 +16,7 @@
   record ArrowArray{
     var val: c_ptr(GArrowArray);
 
-    proc init(arr: [] ?arrayType, validIndices: [] int = [-1], 
+    proc init(arr: [] ?arrayType, validIndices: [] int = [-1],
                 invalidIndices: [] int = [-1]){
       this.val = array(arr, validIndices, invalidIndices);
     }
@@ -37,8 +37,8 @@
     return garrow_boolean_data_type_new();
   }
   //--------------------------- Array building functions --------------------
-  
-  proc array(arr: [] ?arrayType, validIndices: [] int = [-1], 
+
+  proc array(arr: [] ?arrayType, validIndices: [] int = [-1],
               invalidIndices: [] int = [-1]): c_ptr(GArrowArray) {
     // Build full validity array here since each function needs it anyways
     var validityArr: [0..#arr.size] gboolean;
@@ -67,7 +67,7 @@
       when string do return stringArray(arr, validityArr) : c_ptr(GArrowArray);
       when bool do return boolArray(arr, validityArr) : c_ptr(GArrowArray);
       otherwise {
-        writeln("Unsupported type, \nreturning nil"); 
+        writeln("Unsupported type, \nreturning nil");
         var fakeReturn: c_ptr(GArrowArray);
         return fakeReturn;
       }
@@ -126,7 +126,7 @@
       g_object_unref(builder);
       return retval;
     }
-    g_object_unref(builder); 
+    g_object_unref(builder);
 
     return retval;
   }
@@ -154,7 +154,7 @@
       g_object_unref(builder);
       return retval;
     }
-    g_object_unref(builder); 
+    g_object_unref(builder);
 
     return retval;
   }
@@ -184,7 +184,7 @@
       g_object_unref(builder);
       return retval;
     }
-    g_object_unref(builder); 
+    g_object_unref(builder);
 
     return retval;
   }
@@ -200,7 +200,7 @@
 
   }
   proc recordBatch (args ...?n): c_ptr(GArrowRecordBatch) {
-    
+
     // Verifying the Integrity of the arguments
     if(n%2!=0) then
       compilerError("Mismatched arguments");
@@ -218,13 +218,13 @@
     for param i in 1..n by 2{
       // Building the (column)
       var col: c_ptr(GArrowField) = garrow_field_new(
-                              args[i-1].c_str(): c_ptr(gchar), 
+                              args[i-1].c_str(): c_ptr(gchar),
                               garrow_array_get_value_data_type(args[i].val: c_ptr(GArrowArray)));
 
       // Adding the column to the list
       fields = g_list_append(fields, col);
 
-      // Moving on the the next pair of arguments
+      // Moving on to the next pair of arguments
     }
 
     // Gotta build this schema now
@@ -253,7 +253,7 @@
 
   record ArrowTable {
     var tbl: c_ptr(GArrowTable);
-  
+
     proc init(args: ArrowRecordBatch ...?n){
       this.tbl = table( (...args) ); // Unpacking the tuple using ...
     }
@@ -273,7 +273,7 @@
     var rbArray = [rb in recordBatches] rb.rcbatch;
     var retval: c_ptr(GArrowTable) = garrow_table_new_record_batches(
       schema, c_ptrTo(rbArray), recordBatches.size : guint64, c_ptrTo(error));
-    
+
     if(isNull(retval)){
       g_print("Error creating table: %s\n", error.deref().message);
     }
@@ -286,7 +286,7 @@
     var rbArray = [rb in recordBatches] rb.rcbatch;
     var retval: c_ptr(GArrowTable) = garrow_table_new_record_batches(
       schema, c_ptrTo(rbArray), recordBatches.size : guint64, c_ptrTo(error));
-    
+
     if(isNull(retval)){
       printGError("Error creating table:", error);
     }
@@ -301,7 +301,7 @@
     var writer_properties: c_ptr(GParquetWriterProperties) = gparquet_writer_properties_new();
     var writer: c_ptr(GParquetArrowFileWriter) = gparquet_arrow_file_writer_new_path(
                                                   garrow_table_get_schema(table.tbl),
-                                                  path.c_str(): c_ptr(gchar), 
+                                                  path.c_str(): c_ptr(gchar),
                                                   writer_properties,
                                                   c_ptrTo(error));
     if(isNull(writer)){

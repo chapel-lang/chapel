@@ -9,14 +9,14 @@ use Subprocess;
 use CTypes;
 
 proc setEnv(name : string, val : string) {
-  extern proc setenv(name : c_string, val : c_string, overwrite : c_int) : c_int;
+  extern proc setenv(name : c_ptrConst(c_char), val : c_ptrConst(c_char), overwrite : c_int) : c_int;
 
   const ret = setenv(name.c_str(), val.c_str(), 1);
   assert(ret == 0);
 }
 
 proc unsetEnv(name : string) {
-  extern proc unsetenv(name : c_string) : c_int;
+  extern proc unsetenv(name : c_ptrConst(c_char)) : c_int;
   const ret = unsetenv(name.c_str());
   assert(ret == 0);
 }
@@ -26,8 +26,8 @@ proc makeToml(name: string, ver: string) {
     mkdir(name);
   }
 
-  var fi = open(name + "/" + ver + ".toml", iomode.cw);
-  var w  = fi.writer();
+  var fi = open(name + "/" + ver + ".toml", ioMode.cw);
+  var w  = fi.writer(locking=false);
   const info = "\n" +
 "[brick]\n" +
 "name = '" + name + "'\n" +
@@ -86,7 +86,7 @@ proc main() {
   masonEnv(["env"]);
 
   var args1: list(string);
-  for x in ["search"] do args1.append(x);
+  for x in ["search"] do args1.pushBack(x);
   masonSearch(args1);
 
   assert(isDir(altRegistry));

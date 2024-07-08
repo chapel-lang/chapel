@@ -1,0 +1,40 @@
+Testing signed int(8) and unsigned uint(8)
+by_=                  -128:int(8)    ; align_=                  -128:int(8)    ; range=0..100 by -128 align 0
+by_=                  -128:int(8)    ; align_=                   127:int(8)    ; range=0..100 by -128 align 127
+by_=                  -128:int(8)    ; align_=                   255:uint(8)   ; range=0..100 by -128 align 127
+by_=                   127:int(8)    ; align_=                  -128:int(8)    ; range=0..100 by 127 align 126
+by_=                   127:int(8)    ; align_=                   127:int(8)    ; range=0..100 by 127
+by_=                   127:int(8)    ; align_=                   255:uint(8)   ; range=0..100 by 127 align 1
+by_=                   127:uint(8)   ; align_=                  -128:int(8)    ; range=0..100 by 127 align 126
+by_=                   127:uint(8)   ; align_=                   127:int(8)    ; range=0..100 by 127
+by_=                   127:uint(8)   ; align_=                   255:uint(8)   ; range=0..100 by 127 align 1
+Testing signed int(16) and unsigned uint(16)
+by_=                -32768:int(16)   ; align_=                -32768:int(16)   ; range=0..100 by -32768 align 0
+by_=                -32768:int(16)   ; align_=                 32767:int(16)   ; range=0..100 by -32768 align 32767
+by_=                -32768:int(16)   ; align_=                 65535:uint(16)  ; range=0..100 by -32768 align 32767
+by_=                 32767:int(16)   ; align_=                -32768:int(16)   ; range=0..100 by 32767 align 32766
+by_=                 32767:int(16)   ; align_=                 32767:int(16)   ; range=0..100 by 32767
+by_=                 32767:int(16)   ; align_=                 65535:uint(16)  ; range=0..100 by 32767 align 1
+by_=                 32767:uint(16)  ; align_=                -32768:int(16)   ; range=0..100 by 32767 align 32766
+by_=                 32767:uint(16)  ; align_=                 32767:int(16)   ; range=0..100 by 32767
+by_=                 32767:uint(16)  ; align_=                 65535:uint(16)  ; range=0..100 by 32767 align 1
+Testing signed int(32) and unsigned uint(32)
+by_=           -2147483648:int(32)   ; align_=           -2147483648:int(32)   ; range=0..100 by -2147483648 align 0
+by_=           -2147483648:int(32)   ; align_=            2147483647:int(32)   ; range=0..100 by -2147483648 align 2147483647
+by_=           -2147483648:int(32)   ; align_=            4294967295:uint(32)  ; range=0..100 by -2147483648 align 2147483647
+by_=            2147483647:int(32)   ; align_=           -2147483648:int(32)   ; range=0..100 by 2147483647 align 2147483646
+by_=            2147483647:int(32)   ; align_=            2147483647:int(32)   ; range=0..100 by 2147483647
+by_=            2147483647:int(32)   ; align_=            4294967295:uint(32)  ; range=0..100 by 2147483647 align 1
+by_=            2147483647:uint(32)  ; align_=           -2147483648:int(32)   ; range=0..100 by 2147483647 align 2147483646
+by_=            2147483647:uint(32)  ; align_=            2147483647:int(32)   ; range=0..100 by 2147483647
+by_=            2147483647:uint(32)  ; align_=            4294967295:uint(32)  ; range=0..100 by 2147483647 align 1
+Testing signed int(64) and unsigned uint(64)
+by_=  -9223372036854775808:int(64)   ; align_=  -9223372036854775808:int(64)   ; range=0..100 by -9223372036854775808 align 0
+by_=  -9223372036854775808:int(64)   ; align_=   9223372036854775807:int(64)   ; range=0..100 by -9223372036854775808 align 9223372036854775807
+by_=  -9223372036854775808:int(64)   ; align_=  18446744073709551615:uint(64)  ; range=0..100 by -9223372036854775808 align 9223372036854775807
+by_=   9223372036854775807:int(64)   ; align_=  -9223372036854775808:int(64)   ; range=0..100 by 9223372036854775807 align 9223372036854775806
+by_=   9223372036854775807:int(64)   ; align_=   9223372036854775807:int(64)   ; range=0..100 by 9223372036854775807
+by_=   9223372036854775807:int(64)   ; align_=  18446744073709551615:uint(64)  ; range=0..100 by 9223372036854775807 align 1
+by_=   9223372036854775807:uint(64)  ; align_=  -9223372036854775808:int(64)   ; range=0..100 by 9223372036854775807 align 9223372036854775806
+by_=   9223372036854775807:uint(64)  ; align_=   9223372036854775807:int(64)   ; range=0..100 by 9223372036854775807
+by_=   9223372036854775807:uint(64)  ; align_=  18446744073709551615:uint(64)  ; range=0..100 by 9223372036854775807 align 1

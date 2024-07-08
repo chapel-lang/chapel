@@ -44,7 +44,7 @@ proc pbc() {
 proc buildNeighbors() {
   if debug then writeln("starting to build...");
 
-  var neighTimer : Timer;
+  var neighTimer : stopwatch;
   neighTimer.start();
  
   // enforce boundaries

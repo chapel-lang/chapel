@@ -30,7 +30,7 @@ proc main {
   cdfError(nc_create(filename.c_str(), NC_CLOBBER, ncid));
 
   /* Define the dimensions. NetCDF will hand back an ID for each. */
-  cdfError(nc_def_dim(ncid, c"x", NX, x_dimid));
+  cdfError(nc_def_dim(ncid, "x", NX, x_dimid));
   cdfError(nc_def_dim(ncid, "y", NY, y_dimid));
 
   /* The dimids array is used to pass the IDs of the dimensions of
@@ -40,7 +40,7 @@ proc main {
 
   /* Define the variable. The type of the variable in this case is
    * NC_INT (4-byte integer). */
-  cdfError(nc_def_var(ncid, c"data", NC_INT, NDIMS, dimids[0], varid));
+  cdfError(nc_def_var(ncid, "data", NC_INT, NDIMS, dimids[0], varid));
 
   /* End define mode. This tells netCDF we are done defining
    * metadata. */

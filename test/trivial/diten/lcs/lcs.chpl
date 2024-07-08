@@ -1,5 +1,5 @@
 /* Print the length of the longest common substring of two strings taken
-   from input file "filename", then print a common substring of that length.  
+   from input file "filename", then print a common substring of that length.
    In computing the lcs, letters can be removed from either string, but not
    re-arranged.  For example, given strings "ABCBDAB" and "BDCABA", the lcs
    is 4 letters long ("BCBA").  This is written with a dynamic programming
@@ -32,14 +32,14 @@ proc main() {
 proc get_strings(out s1: string, out s2: string) {
   use IO;
 
-  var infile = open(filename, iomode.r).reader();
+  var infile = open(filename, ioMode.r).reader(locking=false);
 
   infile.read(s1);
   infile.read(s2);
   infile.close();
 }
 
-proc lcs_length(s1: string, s2: string, b, c) {
+proc lcs_length(s1: string, s2: string, ref b, ref c) {
   /* Build up two tables, b, and c.  C(i,j) will contain
      the longest common substring length using characters up
      to s1(i), s2(j).  B contains directions to follow back to

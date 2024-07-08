@@ -1,7 +1,7 @@
-// Timers
+// stopwatches
 
 /*
-   This primer demonstrates the use of a Timer from the ``Time`` module.
+   This primer demonstrates the use of a stopwatch from the ``Time`` module.
 */
 
 //
@@ -16,9 +16,9 @@ use Time;
 config const quiet: bool = false;
 
 //
-// A ``Timer`` can be used like a stopwatch to time portions of code.
+// A ``stopwatch`` can be used to time portions of code.
 //
-var t: Timer;
+var t: stopwatch;
 
 //
 // To time a procedure, start the timer before calling the
@@ -30,31 +30,23 @@ sleep(1);
 t.stop();
 
 //
-// To report the time, use the ``elapsed()`` method.  By default, the
-// ``elapsed`` method reports time in seconds.
+// To report the time, use the ``elapsed()`` method. The ``elapsed``
+// method reports time in seconds.
 //
 if !quiet then
   writeln("A. ", t.elapsed(), " seconds");
 
 //
-// The elapsed time can also be checked in units other than
-// seconds. The supported units are: ``microseconds``, ``milliseconds``,
-// ``seconds``, ``minutes``, ``hours``.
-//
-if !quiet then
-  writeln("B. ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
-
-//
-// The ``Timer`` can be started again to accumulate additional time.
+// The ``stopwatch`` can be started again to accumulate additional time.
 //
 t.start();
 sleep(1);
 t.stop();
 if !quiet then
-  writeln("C. ", t.elapsed(TimeUnits.microseconds), " microseconds");
+  writeln("C. ", t.elapsed()*1_000_000, " microseconds");
 
 //
-// To start the ``Timer`` over at zero, call the ``clear`` method.
+// To start the ``stopwatch`` over at zero, call the ``clear`` method.
 //
 t.clear();
 writeln("D. ", t.elapsed(), " seconds");
@@ -68,28 +60,28 @@ config const n = 5;
 var iterationTimes: [1..n] real;
 t.start();
 for i in 1..n {
-  var startTime = t.elapsed(TimeUnits.microseconds);
+  var startTime = t.elapsed();
   //
   // This code will be timed n times.
   //
-  iterationTimes(i) = t.elapsed(TimeUnits.microseconds) - startTime;
+  iterationTimes(i) = t.elapsed() - startTime;
 }
 t.stop();
 
 //
 // Finally, a lighter-weight, but less flexible, way of doing timings
-// is to use the procedure: ``getCurrentTime(unit: TimeUnits): real``
+// is to use the procedure: ``timeSinceEpoch()``
 //
-// It returns the number of units (seconds by default) that have
-// passed since midnight as a floating-point value.  (Note that this
-// makes it not particularly useful for timing things that might run
-// across midnight).  As a simple example, we can use the following
+// It returns a ``timeDelta`` representing the time passed since the Unix
+//  Epoch. The ``timeDelta`` represents the epoch in days, seconds, and
+//  microseconds, but we convert this to a single number with the
+//  ``totalSeconds()`` method. As a simple example, we can use the following
 // idiom to time the number of seconds something will take:
 //
 
-const start = getCurrentTime();
+const start = timeSinceEpoch().totalSeconds();
 sleep(1);
-const elapsed = getCurrentTime() - start;
+const elapsed = timeSinceEpoch().totalSeconds() - start;
 
 if !quiet then
   writeln("E. ", elapsed, " seconds");

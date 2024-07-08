@@ -17,15 +17,15 @@ var iters = 0;
 
 do {
 
-  operator +(x : 2*int, y : 2*int)          // override module functions
+  operator +(x : 2*int, y : 2*int) do          // override module functions
     return (x(0) + y(0), x(1) + y(1));
 
-  [i in D] Temp(i) = (+ reduce A(i + stencil)) / 4.0;
+  [i in D with (ref A,ref Temp)] Temp(i) = (+ reduce A(i + stencil)) / 4.0;
   iters += 1;
   if (max reduce abs(A - Temp)) <= epsilon {
     break;
   }
-  [i in D] A(i) = (+ reduce Temp(i + stencil)) / 4.0;
+  [i in D with (ref A, ref Temp)] A(i) = (+ reduce Temp(i + stencil)) / 4.0;
   iters += 1;
 } while (max reduce abs(A - Temp)) > epsilon;
 

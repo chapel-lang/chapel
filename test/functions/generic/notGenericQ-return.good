@@ -1,0 +1,1 @@
+notGenericQ-return.chpl:3: error: the return type of the routine b is marked generic with (?) but the type 'R' is not generic

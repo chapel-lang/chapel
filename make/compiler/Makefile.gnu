@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -114,22 +114,22 @@ endif
 # query gcc version
 #
 ifndef GNU_GCC_MAJOR_VERSION
-export GNU_GCC_MAJOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
+export GNU_GCC_MAJOR_VERSION := $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
 endif
 ifndef GNU_GCC_MINOR_VERSION
-export GNU_GCC_MINOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
+export GNU_GCC_MINOR_VERSION := $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
 endif
 ifndef GNU_GPP_MAJOR_VERSION
-export GNU_GPP_MAJOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
+export GNU_GPP_MAJOR_VERSION := $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
 endif
 ifndef GNU_GPP_MINOR_VERSION
-export GNU_GPP_MINOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
+export GNU_GPP_MINOR_VERSION := $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
 endif
 ifndef GNU_GPP_SUPPORTS_MISSING_DECLS
-export GNU_GPP_SUPPORTS_MISSING_DECLS = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
+export GNU_GPP_SUPPORTS_MISSING_DECLS := $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
 endif
 ifndef GNU_GCC_SUPPORTS_STRICT_OVERFLOW
-export GNU_GCC_SUPPORTS_STRICT_OVERFLOW = $(shell test $(GNU_GCC_MAJOR_VERSION) -lt 4 || (test $(GNU_GCC_MAJOR_VERSION) -eq 4 && test $(GNU_GCC_MINOR_VERSION) -le 2); echo "$$?")
+export GNU_GCC_SUPPORTS_STRICT_OVERFLOW := $(shell test $(GNU_GCC_MAJOR_VERSION) -lt 4 || (test $(GNU_GCC_MAJOR_VERSION) -eq 4 && test $(GNU_GCC_MINOR_VERSION) -le 2); echo "$$?")
 endif
 
 #
@@ -143,19 +143,12 @@ DEF_CXX_VER := $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -
 C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
 CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 
-# CXX11_STD is the flag to select C++11, or "unknown" for compilers
-# we don't know how to do that with yet.
-# If a compiler uses C++11 or newer by default, CXX11_STD will be blank.
+# CXX11_STD is the flag to select C++11, blank for compilers that
+# don't know how to do that
+# Also, if a compiler uses C++11 or newer by default, CXX11_STD will be blank.
 CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
-CXX14_STD := $(shell test $(DEF_CXX_VER) -lt 201402 && echo -std=gnu++14)
-
-ifeq ($(GNU_GPP_MAJOR_VERSION),4)
-  CXX_STD   := -std=gnu++11
-  CXX11_STD := -std=gnu++11
-endif
 
 COMP_CFLAGS += $(C_STD)
-COMP_CXXFLAGS += $(CXX14_STD)
 RUNTIME_CFLAGS += $(C_STD)
 RUNTIME_CXXFLAGS += $(CXX_STD)
 GEN_CFLAGS += $(C_STD)
@@ -166,7 +159,7 @@ GEN_CFLAGS += $(C_STD)
 # On Ubuntu, gcc complains about multiline comments in some versions
 # of Clang header files.
 #
-WARN_COMMONFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing
+WARN_COMMONFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing -Wno-error=missing-braces
 WARN_CXXFLAGS = $(WARN_COMMONFLAGS) -Wno-comment -Wmissing-braces
 WARN_CFLAGS = $(WARN_COMMONFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
@@ -219,6 +212,19 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow -Wno-array-bounds
 endif
 
 #
+# This is similar to the use of -Wno-stringop-overflow just above, but
+# addressing a complaint that started showing up in gcc 13.1 about our
+# use of memmove() to implement local communications.  Given that we
+# haven't seen problems in practice and run testing with asan, I'm
+# squashing as in the previous case.
+#
+# Also skip this warning for GCC 12 since we saw the issue there in
+# some configurations.
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -ge 12; echo "$$?"),0)
+SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overread
+endif
+
+#
 # Disable ipa-clone for gcc 7.  This optimization seemed to cause
 # a multi-locale lulesh regression that was fixed in gcc 8
 #
@@ -248,8 +254,10 @@ endif
 # The string overflow false positives occur in runtime code unlike gcc 7.
 # Also avoid false positives for array bounds and comments.
 #
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 8; echo "$$?"),0)
-WARN_CXXFLAGS += -Wno-class-memaccess
+# Avoid build aborting due to this warning, it may be coming from LLVM headers
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 8; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-error=class-memaccess
 endif
 
 ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -eq 8; echo "$$?"),0)
@@ -268,12 +276,22 @@ WARN_CXXFLAGS += -Wno-error=init-list-lifetime
 endif
 
 #
+# Avoid errors about -Wmismatched-new-delete when using GCC 11+ because they
+# occur in LLVM headers.  We would like to know when this occurs, so don't turn
+# off the warning; just don't let it abort the build.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 11; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-error=mismatched-new-delete
+endif
+
+#
 # Avoid errors about uninitialized memory because they occur in LLVM headers
 # (should be fixed in LLVM 15 though).
 # We would like to know when this occurs, though, so don't turn off
 # the warning; just don't let it abort the build.
+# Observed in GCC 13 as well as of May 2024.
 #
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 12; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-error=uninitialized
 endif
 
@@ -303,26 +321,46 @@ endif
 # that occur in GCC 12.
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
+RUNTIME_CFLAGS += -Wno-use-after-free
 WARN_CXXFLAGS += -Wno-use-after-free
+SQUASH_WARN_GEN_CFLAGS += -Wno-use-after-free
 endif
 
 #
-# 2016/03/28: Help to protect the Chapel compiler from a partially
-# characterized GCC optimizer regression when the compiler is being
-# compiled with gcc 5.X.
+# Avoid a GCC bug when combining -fsanitize=address -Wmaybe-uninitialized
+# As of May 2023, GCC 12 and 13 both had this bug.
 #
-# 2017-06-14: Regression apparently fixed since gcc 5.X.  Turning
-# off VRP interferes with operation of gcc 7, especially static
-# analysis.  The test below was "-ge 5", now changing it to "-eq 5".
-#
-# Note that 0 means "SUCCESS" rather than "false".
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 5; echo "$$?"),0)
-
-ifeq ($(OPTIMIZE),1)
-COMP_CFLAGS += -fno-tree-vrp
-COMP_CXXFLAGS += -fno-tree-vrp
+ifneq ($(CHPL_MAKE_SANITIZE), none)
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 12; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-maybe-uninitialized
+endif
 endif
 
+#
+# Avoid a spurious warning in gcc 13, about a "possibly dangling reference"
+# when a function returns a reference (even though it's something guaranteed to
+# be allocated on the heap). For more info see
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108165
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 13; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-dangling-reference
+endif
+
+#
+# Don't warn for deprecated declarations with llvm 11 and 12, its a very noisy warning
+#
+ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -eq 11; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-deprecated-declarations
+endif
+ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -eq 12; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-deprecated-declarations
+endif
+
+#
+# Don't error for -Wnonnull in llvm 17+ due to false positives in llvm headers
+#
+ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -ge 17; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-error=nonnull
 endif
 
 

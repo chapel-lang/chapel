@@ -29,7 +29,7 @@ proc elegant(order, iterations): real {
   var Dom = {1..order, 1..order};
   var Array : [Dom] real;
 
-  var t = new Timer();
+  var t = new stopwatch();
 
   t.start();
 
@@ -46,12 +46,12 @@ proc performant(order, iterations): real {
   var Dom = {1..order, 1..order};
   var Array : [Dom] real;
 
-  var t = new Timer();
+  var t = new stopwatch();
 
   t.start();
 
   for 1..iterations {
-    forall (i,j) in Dom {
+    forall (i,j) in Dom with (ref Array) {
       Array[i, j] += 1.0;
     }
   }

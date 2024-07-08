@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: memory consistency model
 .. _Chapter-Memory_Consistency_Model:
 
 ========================
@@ -12,7 +14,7 @@ as adopted by C11, C++11, Java, UPC, and Fortran 2008.
 
 Sequential consistency (SC) means that all Chapel tasks agree on the
 interleaving of memory operations and this interleaving results in an
-order is consistent with the order of operations in the program source
+order that is consistent with the order of operations in the program source
 code. *Conflicting memory operations*, i.e., operations to the same
 variable, or memory location, and one of which is a write, form a data
 race if they are from different Chapel tasks and can be executed
@@ -25,7 +27,7 @@ intents.
 Any Chapel program with a data race is not a valid program, and an
 implementation cannot be relied upon to produce consistent behavior.
 Valid Chapel programs will use synchronization constructs such as
-*sync*, *single*, or *atomic* variables or higher-level constructs based
+*sync* or *atomic* variables or higher-level constructs based
 on these to enforce ordering for conflicting memory operations.
 
 The following design principles were used in developing Chapel’s memory
@@ -60,6 +62,8 @@ See *A Primer on Memory Consistency and Cache Coherence* by Sorin,
 This chapter will proceed in a manner inspired by the :math:`XC` memory
 model described there.
 
+.. index::
+   single: memory consistency model; sequential consistency for data-race-free programs
 .. _SC_for_DRF:
 
 Sequential Consistency for Data-Race-Free Programs
@@ -70,15 +74,14 @@ of two orders: *program order* and *memory order*. The *program order*
 :math:`<_p` is a partial order describing serial or fork-join
 parallelism dependencies between variable reads and writes. The *memory
 order* :math:`<_m` is a total order that describes the semantics of
-synchronizing memory operations (via ``atomic``, ``sync`` or ``single``
-variables) with sequential consistency. Non-SC atomic operations
-(described in :ref:`non_sc_atomics`) do not create this
-total order.
+synchronizing memory operations (via ``atomic`` or ``sync`` variables)
+with sequential consistency. Non-SC atomic operations (described
+in :ref:`non_sc_atomics`) do not create this total order.
 
-Note that ``sync/single`` variables have memory consistency behavior
-equivalent to a sequence of SC operations on ``atomic`` variables. Thus
-for the remainder of the chapter, we will primarily focus on operations
-on ``atomic`` variables.
+Note that ``sync`` variables have memory consistency behavior equivalent
+to a sequence of SC operations on ``atomic`` variables. Thus for the
+remainder of the chapter, we will primarily focus on operations on
+``atomic`` variables.
 
 We will use the following notation:
 
@@ -236,6 +239,8 @@ which preserve sequential program behavior:
 
 -  If :math:`S(a) <_p S'(a)` then :math:`S(a) <_m S'(a)`
 
+.. index::
+   single: memory consistency model; non-sequentially consistent atomic operations
 .. _non_sc_atomics:
 
 Non-Sequentially Consistent Atomic Operations
@@ -281,6 +286,8 @@ as ordinary loads or stores with two exceptions:
    eventually be visible to all other threads. This property is not true
    for normal loads and stores.
 
+.. index::
+   single: memory consistency model; unordered memory operations
 .. _unordered_operations:
 
 Unordered Memory Operations
@@ -396,6 +403,8 @@ move data between two arrays without requiring any ordering:
      unordered_store(B[P[i]], A[i]);
    }
 
+.. index::
+   single: memory consistency model; examples
 .. _MCM_examples:
 
 Examples
@@ -408,15 +417,15 @@ Examples
    (b) signal that fact to a second task, and (c) pass along the number
    of values that are valid for reading.
 
-   The program 
+   The program
 
    .. code-block:: chapel
 
       var A: [1..100] real;
-      var done$: sync int;           // initially empty
+      var done: sync int;           // initially empty
       cobegin {
         { // Reader task
-          const numToRead = done$;   // block until writes are complete
+          const numToRead = done;   // block until writes are complete
           for i in 1..numToRead do
             writeln("A[", i, "] = ", A[i]);
         }
@@ -424,11 +433,11 @@ Examples
           const numToWrite = 14;     // an arbitrary number
           for i in 1..numToWrite do
             A[i] = i/10.0;
-          done$ = numToWrite;        // fence writes to A and signal done
+          done = numToWrite;        // fence writes to A and signal done
         }
       }
 
-   produces the output 
+   produces the output
 
    .. code-block:: printoutput
 
@@ -456,13 +465,13 @@ Examples
    write to that variable. The behavior of the following code is
    undefined:
 
-   
+
 
    .. BLOCK-test-chapelpre
 
       if false { // }
 
-   
+
 
    .. code-block:: chapel
 
@@ -472,7 +481,7 @@ Examples
         x = 1;
       }
 
-   
+
 
    .. BLOCK-test-chapelnoprint
 
@@ -480,14 +489,14 @@ Examples
       }
 
    In contrast, spinning on a synchronization variable has well-defined
-   behavior: 
+   behavior:
 
    .. code-block:: chapel
 
-      var x$: sync int;
+      var x: sync int;
       cobegin {
-        while x$.readXX() != 1 do ;  // spin wait
-        x$.writeXF(1);
+        while x.readXX() != 1 do ;  // spin wait
+        x.writeXF(1);
       }
 
    In this code, the first statement in the cobegin statement executes a
@@ -500,7 +509,7 @@ Examples
    Atomic variables provide an alternative means to spin-wait. For
    example:
 
-   
+
 
    .. code-block:: chapel
 
@@ -521,7 +530,7 @@ Examples
    contrast to the spin wait loop above, waitFor will allow other tasks
    to be scheduled. For example:
 
-   
+
 
    .. code-block:: chapel
 

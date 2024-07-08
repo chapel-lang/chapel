@@ -34,7 +34,7 @@ Quick start
 We use here the command-line, non-interactive CMake interface.
 
 #. `Download <http://www.cmake.org/cmake/resources/software.html>`_ and install
-   CMake. Version 3.13.4 is the minimum required.
+   CMake. Version 3.20.0 is the minimum required.
 
 #. Open a shell. Your development tools must be reachable from this shell
    through the PATH environment variable.
@@ -187,15 +187,34 @@ or execute ``cmake --help-variable VARIABLE_NAME``.  See `Frequently
 Used LLVM-related Variables`_ below for information about commonly
 used variables that control features of LLVM and enabled subprojects.
 
+.. _cmake_build_type:
+
 **CMAKE_BUILD_TYPE**:STRING
-  Sets the build type for ``make``-based generators. Possible values are
-  Release, Debug, RelWithDebInfo and MinSizeRel. If you are using an IDE such as
-  Visual Studio, you should use the IDE settings to set the build type.
-  Be aware that Release and RelWithDebInfo use different optimization levels on
-  most platforms. Be aware that Release and
-  RelWithDebInfo use different optimization levels on most
-  platforms, and that the default value of ``LLVM_ENABLE_ASSERTIONS``
-  is affected.
+  This configures the optimization level for ``make`` or ``ninja`` builds.
+
+  Possible values:
+
+  =========================== ============= ========== ========== ==========================
+  Build Type                  Optimizations Debug Info Assertions Best suited for
+  =========================== ============= ========== ========== ==========================
+  **Release**                 For Speed     No         No         Users of LLVM and Clang
+  **Debug**                   None          Yes        Yes        Developers of LLVM
+  **RelWithDebInfo**          For Speed     Yes        No         Users that also need Debug
+  **MinSizeRel**              For Size      No         No         When disk space matters
+  =========================== ============= ========== ========== ==========================
+
+  * Optimizations make LLVM/Clang run faster, but can be an impediment for
+    step-by-step debugging.
+  * Builds with debug information can use a lot of RAM and disk space and is
+    usually slower to run. You can improve RAM usage by using ``lld``, see
+    the :ref:`LLVM_USE_LINKER <llvm_use_linker>` option.
+  * Assertions are internal checks to help you find bugs. They typically slow
+    down LLVM and Clang when enabled, but can be useful during development.
+    You can manually set :ref:`LLVM_ENABLE_ASSERTIONS <llvm_enable_assertions>`
+    to override the default from `CMAKE_BUILD_TYPE`.
+
+  If you are using an IDE such as Visual Studio or Xcode, you should use
+  the IDE settings to set the build type.
 
 **CMAKE_INSTALL_PREFIX**:PATH
   Path where LLVM will be installed when the "install" target is built.
@@ -241,6 +260,8 @@ description is in `LLVM-related variables`_ below.
   Control which targets are enabled. For example you may only need to enable
   your native target with, for example, ``-DLLVM_TARGETS_TO_BUILD=X86``.
 
+.. _llvm_use_linker:
+
 **LLVM_USE_LINKER**:STRING
   Override the system's default linker. For instance use ``lld`` with
   ``-DLLVM_USE_LINKER=lld``.
@@ -254,7 +275,7 @@ manual, or execute ``cmake --help-variable VARIABLE_NAME``.
 
 **CMAKE_CXX_STANDARD**:STRING
   Sets the C++ standard to conform to when building LLVM.  Possible values are
-  14, 17, 20.  LLVM Requires C++ 14 or higher.  This defaults to 14.
+  17 and 20.  LLVM Requires C++ 17 or higher.  This defaults to 17.
 
 **CMAKE_INSTALL_BINDIR**:PATH
   The path to install executables, relative to the *CMAKE_INSTALL_PREFIX*.
@@ -300,12 +321,32 @@ enabled sub-projects. Nearly all of these variable names begin with
   enabled or not.  A version of LLVM built with ABI breaking checks
   is not ABI compatible with a version built without it.
 
+**LLVM_ADDITIONAL_BUILD_TYPES**:LIST
+  Adding a semicolon separated list of additional build types to this flag
+  allows for them to be specified as values in CMAKE_BUILD_TYPE without
+  encountering a fatal error during the configuration process.
+
+**LLVM_UNREACHABLE_OPTIMIZE**:BOOL
+  This flag controls the behavior of `llvm_unreachable()` in release build
+  (when assertions are disabled in general). When ON (default) then
+  `llvm_unreachable()` is considered "undefined behavior" and optimized as
+  such. When OFF it is instead replaced with a guaranteed "trap".
+
 **LLVM_APPEND_VC_REV**:BOOL
   Embed version control revision info (Git revision id).
   The version info is provided by the ``LLVM_REVISION`` macro in
   ``llvm/include/llvm/Support/VCSRevision.h``. Developers using git who don't
   need revision info can disable this option to avoid re-linking most binaries
   after a branch switch. Defaults to ON.
+
+**LLVM_FORCE_VC_REVISION**:STRING
+  Force a specific Git revision id rather than calling to git to determine it.
+  This is useful in environments where git is not available or non-functional
+  but the VC revision is available through other means.
+
+**LLVM_FORCE_VC_REPOSITORY**:STRING
+  Set the git repository to include in version info rather than calling git to
+  determine it.
 
 **LLVM_BUILD_32_BITS**:BOOL
   Build 32-bit executables and libraries on 64-bit systems. This option is
@@ -348,6 +389,12 @@ enabled sub-projects. Nearly all of these variable names begin with
   will limit code coverage summaries to just the listed directories. If unset,
   coverage reports will include all sources identified by the tooling.
 
+**LLVM_INDIVIDUAL_TEST_COVERAGE**:BOOL
+  Enable individual test case coverage. When set to ON, code coverage data for
+  each test case will be generated and stored in a separate directory under the
+  config.test_exec_root path. This feature allows code coverage analysis of each
+  individual test case. Defaults to OFF.
+
 **LLVM_BUILD_LLVM_DYLIB**:BOOL
   If enabled, the target for building the libLLVM shared library is added.
   This library contains all of LLVM's components in a single shared library.
@@ -385,6 +432,9 @@ enabled sub-projects. Nearly all of these variable names begin with
   'install-xcode-toolchain'. This target will create a directory at
   $CMAKE_INSTALL_PREFIX/Toolchains containing an xctoolchain directory which can
   be used to override the default system tools.
+
+**LLVM_<target>_LINKER_FLAGS**:STRING
+  Defines the set of linker flags that should be applied to a <target>.
 
 **LLVM_DEFAULT_TARGET_TRIPLE**:STRING
   LLVM target to use for code generation when no target is explicitly specified.
@@ -429,12 +479,14 @@ enabled sub-projects. Nearly all of these variable names begin with
   Uses .svg files instead of .png files for graphs in the Doxygen output.
   Defaults to OFF.
 
+.. _llvm_enable_assertions:
+
 **LLVM_ENABLE_ASSERTIONS**:BOOL
   Enables code assertions. Defaults to ON if and only if ``CMAKE_BUILD_TYPE``
   is *Debug*.
 
 **LLVM_ENABLE_BINDINGS**:BOOL
-  If disabled, do not try to build the OCaml and go bindings.
+  If disabled, do not try to build the OCaml bindings.
 
 **LLVM_ENABLE_DIA_SDK**:BOOL
   Enable building with MSVC DIA SDK for PDB debugging support. Available
@@ -460,6 +512,11 @@ enabled sub-projects. Nearly all of these variable names begin with
 **LLVM_ENABLE_EXPENSIVE_CHECKS**:BOOL
   Enable additional time/memory expensive checking. Defaults to OFF.
 
+**LLVM_ENABLE_HTTPLIB**:BOOL
+  Enables the optional cpp-httplib dependency which is used by llvm-debuginfod
+  to serve debug info over HTTP. `cpp-httplib <https://github.com/yhirose/cpp-httplib>`_
+  must be installed, or `httplib_ROOT` must be set. Defaults to OFF.
+
 **LLVM_ENABLE_FFI**:BOOL
   Indicates whether the LLVM Interpreter will be linked with the Foreign Function
   Interface library (libffi) in order to enable calling external functions.
@@ -479,6 +536,11 @@ enabled sub-projects. Nearly all of these variable names begin with
   If the host compiler and linker supports the stdlib flag, -stdlib=libc++ is
   passed to invocations of both so that the project is built using libc++
   instead of stdlibc++. Defaults to OFF.
+
+**LLVM_ENABLE_LLVM_LIBC**: BOOL
+  If the LLVM libc overlay is installed in a location where the host linker
+  can access it, all built executables will be linked against the LLVM libc
+  overlay before linking against the system libc. Defaults to OFF.
 
 **LLVM_ENABLE_LIBPFM**:BOOL
   Enable building with libpfm to support hardware counter measurements in LLVM
@@ -555,9 +617,15 @@ enabled sub-projects. Nearly all of these variable names begin with
   If enabled, the Z3 constraint solver is activated for the Clang static analyzer.
   A recent version of the z3 library needs to be available on the system.
 
-**LLVM_ENABLE_ZLIB**:BOOL
-  Enable building with zlib to support compression/uncompression in LLVM tools.
-  Defaults to ON.
+**LLVM_ENABLE_ZLIB**:STRING
+  Used to decide if LLVM tools should support compression/decompression with
+  zlib. Allowed values are ``OFF``, ``ON`` (default, enable if zlib is found),
+  and ``FORCE_ON`` (error if zlib is not found).
+
+**LLVM_ENABLE_ZSTD**:STRING
+  Used to decide if LLVM tools should support compression/decompression with
+  zstd. Allowed values are ``OFF``, ``ON`` (default, enable if zstd is found),
+  and ``FORCE_ON`` (error if zstd is not found).
 
 **LLVM_EXPERIMENTAL_TARGETS_TO_BUILD**:STRING
   Semicolon-separated list of experimental targets to build and linked into
@@ -641,7 +709,7 @@ enabled sub-projects. Nearly all of these variable names begin with
     $ D:\llvm-project> cmake ... -DLLVM_INTEGRATED_CRT_ALLOC=D:\git\rpmalloc
 
   This flag needs to be used along with the static CRT, ie. if building the
-  Release target, add -DLLVM_USE_CRT_RELEASE=MT.
+  Release target, add -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded.
 
 **LLVM_INSTALL_DOXYGEN_HTML_DIR**:STRING
   The path to install Doxygen-generated HTML documentation to. This path can
@@ -666,6 +734,20 @@ enabled sub-projects. Nearly all of these variable names begin with
   %PATH%, then you can set this variable to the GnuWin32 directory so that
   lit can find tools needed for tests in that directory.
 
+**LLVM_NATIVE_TOOL_DIR**:STRING
+  Full path to a directory containing executables for the build host
+  (containing binaries such as ``llvm-tblgen`` and ``clang-tblgen``). This is
+  intended for cross-compiling: if the user sets this variable and the
+  directory contains executables with the expected names, no separate
+  native versions of those executables will be built.
+
+**LLVM_NO_INSTALL_NAME_DIR_FOR_BUILD_TREE**:BOOL
+  Defaults to ``OFF``. If set to ``ON``, CMake's default logic for library IDs
+  on Darwin in the build tree will be used. Otherwise the install-time library
+  IDs will be used in the build tree as well. Mainly useful when other CMake
+  library ID control variables (e.g., ``CMAKE_INSTALL_NAME_DIR``) are being
+  set to non-standard values.
+
 **LLVM_OPTIMIZED_TABLEGEN**:BOOL
   If enabled and building a debug or asserts build the CMake build system will
   generate a Release build tree to build a fully optimized tablegen for use
@@ -677,6 +759,19 @@ enabled sub-projects. Nearly all of these variable names begin with
 
 **LLVM_PARALLEL_LINK_JOBS**:STRING
   Define the maximum number of concurrent link jobs.
+
+**LLVM_RAM_PER_COMPILE_JOB**:STRING
+  Calculates the amount of Ninja compile jobs according to available resources.
+  Value has to be in MB, overwrites LLVM_PARALLEL_COMPILE_JOBS. Compile jobs 
+  will be between one and amount of logical cores.
+
+**LLVM_RAM_PER_LINK_JOB**:STRING
+  Calculates the amount of Ninja link jobs according to available resources.
+  Value has to be in MB, overwrites LLVM_PARALLEL_LINK_JOBS. Link jobs will 
+  be between one and amount of logical cores. Link jobs will not run 
+  exclusively therefore you should add an offset of one or two compile jobs 
+  to be sure its not terminated in your memory restricted environment. On ELF
+  platforms also consider ``LLVM_USE_SPLIT_DWARF`` in Debug build.
 
 **LLVM_PROFDATA_FILE**:PATH
   Path to a profdata file to pass into clang's -fprofile-instr-use flag. This
@@ -707,6 +802,8 @@ enabled sub-projects. Nearly all of these variable names begin with
   Semicolon-separated list of targets to build, or *all* for building all
   targets. Case-sensitive. Defaults to *all*. Example:
   ``-DLLVM_TARGETS_TO_BUILD="X86;PowerPC"``.
+  The full list, as of March 2023, is:
+  ``AArch64;AMDGPU;ARM;AVR;BPF;Hexagon;Lanai;LoongArch;Mips;MSP430;NVPTX;PowerPC;RISCV;Sparc;SystemZ;VE;WebAssembly;X86;XCore``
 
 **LLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN**:BOOL
   If enabled, the compiler version check will only warn when using a toolchain
@@ -717,11 +814,6 @@ enabled sub-projects. Nearly all of these variable names begin with
   ``LLVM_USE_SANITIZER`` contains ``Undefined``. This can be used to override
   the default set of UBSan flags.
 
-**LLVM_USE_CRT_{target}**:STRING
-  On Windows, tells which version of the C runtime library (CRT) should be used.
-  For example, -DLLVM_USE_CRT_RELEASE=MT would statically link the CRT into the
-  LLVM tools and library.
-
 **LLVM_USE_INTEL_JITEVENTS**:BOOL
   Enable building support for Intel JIT Events API. Defaults to OFF.
 
@@ -731,9 +823,6 @@ enabled sub-projects. Nearly all of these variable names begin with
   linker, otherwise clang will prefix the name with ``ld.`` and apply its usual
   search. For example to link LLVM with the Gold linker, cmake can be invoked
   with ``-DLLVM_USE_LINKER=gold``.
-
-**LLVM_USE_NEWPM**:BOOL
-  If enabled, use the experimental new pass manager.
 
 **LLVM_USE_OPROFILE**:BOOL
   Enable building OProfile JIT support. Defaults to OFF.
@@ -876,7 +965,7 @@ and uses them to build a simple application ``simple-tool``.
 
 .. code-block:: cmake
 
-  cmake_minimum_required(VERSION 3.13.4)
+  cmake_minimum_required(VERSION 3.20.0)
   project(SimpleProject)
 
   find_package(LLVM REQUIRED CONFIG)
@@ -912,9 +1001,11 @@ the ``cmake`` command or by setting it directly in ``ccmake`` or ``cmake-gui``).
 
 This file is available in two different locations.
 
-* ``<INSTALL_PREFIX>/lib/cmake/llvm/LLVMConfig.cmake`` where
-  ``<INSTALL_PREFIX>`` is the install prefix of an installed version of LLVM.
-  On Linux typically this is ``/usr/lib/cmake/llvm/LLVMConfig.cmake``.
+* ``<LLVM_INSTALL_PACKAGE_DIR>/LLVMConfig.cmake`` where
+  ``<LLVM_INSTALL_PACKAGE_DIR>`` is the location where LLVM CMake modules are
+  installed as part of an installed version of LLVM. This is typically
+  ``cmake/llvm/`` within the lib directory. On Linux, this is typically
+  ``/usr/lib/cmake/llvm/LLVMConfig.cmake``.
 
 * ``<LLVM_BUILD_ROOT>/lib/cmake/llvm/LLVMConfig.cmake`` where
   ``<LLVM_BUILD_ROOT>`` is the root of the LLVM build tree. **Note: this is only
@@ -1027,20 +1118,35 @@ And then changing ``<project dir>/<pass name>/CMakeLists.txt`` to
 When you are done developing your pass, you may wish to integrate it
 into the LLVM source tree. You can achieve it in two easy steps:
 
-#. Copying ``<pass name>`` folder into ``<LLVM root>/lib/Transform`` directory.
+#. Copying ``<pass name>`` folder into ``<LLVM root>/lib/Transforms`` directory.
 
 #. Adding ``add_subdirectory(<pass name>)`` line into
-   ``<LLVM root>/lib/Transform/CMakeLists.txt``.
+   ``<LLVM root>/lib/Transforms/CMakeLists.txt``.
 
 Compiler/Platform-specific topics
 =================================
 
 Notes for specific compilers and/or platforms.
 
-Microsoft Visual C++
---------------------
+Windows
+-------
 
 **LLVM_COMPILER_JOBS**:STRING
   Specifies the maximum number of parallel compiler jobs to use per project
   when building with msbuild or Visual Studio. Only supported for the Visual
   Studio 2010 CMake generator. 0 means use all processors. Default is 0.
+
+**CMAKE_MT**:STRING
+  When compiling with clang-cl, recent CMake versions will default to selecting
+  `llvm-mt` as the Manifest Tool instead of Microsoft's `mt.exe`. This will
+  often cause errors like:
+
+  .. code-block:: console
+
+    -- Check for working C compiler: [...]clang-cl.exe - broken
+    [...]
+        MT: command [...] failed (exit code 0x1) with the following output:
+        llvm-mt: error: no libxml2
+        ninja: build stopped: subcommand failed.
+
+  To work around this error, set `CMAKE_MT=mt`.

@@ -1,14 +1,14 @@
 module bar {
   record BadBaz {
-    var x = [1];
+    var x = [1, ];
 
     proc init(y) where y.type != BadBaz {
-      this.complete();
+      init this;
       x[0] = y;
     }
 
     proc init=(other: BadBaz) {
-      this.complete();
+      init this;
       x[0] = other.x[0];
     }
   }

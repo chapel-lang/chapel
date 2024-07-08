@@ -1,0 +1,10 @@
+generic-formal-qs.chpl:19: In function 'e':
+generic-formal-qs.chpl:19: warning: need '(?)' on the type 'C' of the formal 'arg' because this type is generic
+generic-formal-qs.chpl:22: In function 'f':
+generic-formal-qs.chpl:22: warning: need '(?)' on the type 'R' of the formal 'arg' because this type is generic
+generic-formal-qs.chpl:2: In function 'a':
+generic-formal-qs.chpl:2: warning: need '(?)' on the type 'R' of the formal 'arg' because this type is generic
+generic-formal-qs.chpl:26: In function 'g':
+generic-formal-qs.chpl:26: warning: need '(?)' on the type 'domain(?)' of the formal 'arg' because this type is generic
+generic-formal-qs.chpl:10: In function 'c':
+generic-formal-qs.chpl:10: warning: need '(?)' on the type 'R' of the formal 'arg' because this type is generic

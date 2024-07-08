@@ -22,6 +22,7 @@
 namespace llvm {
 
 class M68kTargetLowering;
+class MachineInstrBuilder;
 
 class M68kCallLowering : public CallLowering {
   // TODO: We are only supporting return instruction with no value at this time
@@ -52,21 +53,16 @@ struct M68kIncomingValueHandler : public CallLowering::IncomingValueHandler {
 
 private:
   void assignValueToReg(Register ValVReg, Register PhysReg,
-                        CCValAssign VA) override;
+                        const CCValAssign &VA) override;
 
   void assignValueToAddress(Register ValVReg, Register Addr, LLT MemTy,
-                            MachinePointerInfo &MPO, CCValAssign &VA) override;
+                            const MachinePointerInfo &MPO,
+                            const CCValAssign &VA) override;
 
   Register getStackAddress(uint64_t Size, int64_t Offset,
                            MachinePointerInfo &MPO,
                            ISD::ArgFlagsTy Flags) override;
 };
-
-struct FormalArgHandler : public M68kIncomingValueHandler {
-  FormalArgHandler(MachineIRBuilder &MIRBuilder, MachineRegisterInfo &MRI)
-      : M68kIncomingValueHandler(MIRBuilder, MRI) {}
-};
-
 } // end namespace llvm
 
 #endif // LLVM_LIB_TARGET_M68K_GLSEL_M68KCALLLOWERING_H

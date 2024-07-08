@@ -1,0 +1,6 @@
+# Upon --no-local the tests behave as if under gasnet,
+# however the test system runs diff against .comm-none.good.
+# Skip --no-local to avoid meaningless failures.
+COMPOPTS <= --no-local
+# Skip also upon --baseline, as a precaution.
+COMPOPTS <= --baseline

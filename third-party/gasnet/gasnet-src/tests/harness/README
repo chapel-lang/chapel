@@ -1,0 +1,15 @@
+This directory contains the meta-data files required for running GASNet unit tests,
+among others, within the automated "pagoda test harness".
+For information on the test harness, contact gasnet-staff@lbl.gov
+
+None of the files in this directory or its children are intended for stand-alone testing.
+
+gasnet-tests: harness driver for the GASNet unit tests, and some misc checking targets
+
+libgasnet: harness drivers for testing builds of the GASNet library under a wide range
+of conditions, such as with pedantic compiler options or differing configure options.
+
+amudp/ammpi: harness drivers for the AMUDP/AMMPI unit tests. These assume the corresponding
+GASNet conduit has been configured in.
+
+external-*: harness drivers for "smoke testing" with various GASNet clients

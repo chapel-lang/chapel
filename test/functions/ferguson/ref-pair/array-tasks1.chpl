@@ -87,51 +87,51 @@ proc writeit(ref x) {
   x = 1;
 }
 
-proc writeForA(A) {
+proc writeForA(ref A) {
   for a in A {
     writeit(a);
   }
 }
 
-proc writeForallA(A) {
+proc writeForallA(ref A) {
   forall a in A {
     writeit(a);
   }
 }
 
-proc writeCoforallA(A) {
+proc writeCoforallA(ref A) {
   coforall a in A {
     writeit(a);
   }
 }
 
 
-proc writeCaptureFor(A) {
+proc writeCaptureFor(ref A) {
   for i in 1..10 {
     writeit(A);
   }
 }
 
-proc writeCaptureForall(A) {
-  forall i in 1..10 {
+proc writeCaptureForall(ref A) {
+  forall i in 1..10 with (ref A) {
     writeit(A);
   }
 }
 
-proc writeCaptureCoforall(A) {
+proc writeCaptureCoforall(ref A) {
   coforall i in 1..10 {
     writeit(A);
   }
 }
 
-proc writeCaptureCobegin(A) {
+proc writeCaptureCobegin(ref A) {
   cobegin {
     writeit(A);
     writeit(A);
   }
 }
 
-proc writeCaptureBegin(A) {
+proc writeCaptureBegin(ref A) {
   sync {
     begin {
       writeit(A);
@@ -139,7 +139,7 @@ proc writeCaptureBegin(A) {
   }
 }
 
-proc writePromoted(A) {
+proc writePromoted(ref A) {
   A = 1;
 }
 

@@ -1,6 +1,6 @@
 /* mpz_gcd_ui -- Calculate the greatest common divisor of two integers.
 
-Copyright 1994, 1996, 1999-2004, 2015 Free Software Foundation, Inc.
+Copyright 1994, 1996, 1999-2004, 2015, 2022 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -40,8 +40,16 @@ mpz_gcd_ui (mpz_ptr w, mpz_srcptr u, unsigned long int v)
 #if BITS_PER_ULONG > GMP_NUMB_BITS  /* avoid warnings about shift amount */
   if (v > GMP_NUMB_MAX)
     {
-      mpz_t vz;
-      mp_limb_t vlimbs[2];
+      mpz_t vz, lw;
+      mp_limb_t vlimbs[2], wlimbs[2];
+
+      if (w == NULL)
+	{
+	  PTR(lw) = wlimbs;
+	  ALLOC(lw) = 2;
+	  SIZ(lw) = 0;
+	  w = lw;
+	}
       vlimbs[0] = v & GMP_NUMB_MASK;
       vlimbs[1] = v >> GMP_NUMB_BITS;
       PTR(vz) = vlimbs;

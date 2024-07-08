@@ -1,0 +1,5 @@
+perfkeys: Time:, Time:
+files: atomicSort.dat, parallelSort.dat
+graphkeys: Atomic, Parallel
+ylabel: Time (s)
+graphtitle: Radix Sort - 1M elements

@@ -52,25 +52,25 @@ config const minCount = 2;      // minimum count for a word to show up in output
 //-----------------------------------------------------------------------
 // Read in the input csv files and at the same time do a wordcount per csv file.
 
-var t: Timer;
+var t: stopwatch;
 t.start();
 
 var filenamesList: list(string);
 
-// findfiles() returns an iterator so putting all file names in a list
+// findFiles() returns an iterator so putting all file names in a list
 // to enable creating an array of file names.
-for f in findfiles(inputDir) {
-    filenamesList.append(f);
+for f in findFiles(inputDir) {
+    filenamesList.pushBack(f);
 }
 // Create an array blocked into pieces per locale.
-var filenames = newBlockArr(0..#filenamesList.size, string);
+var filenames = blockDist.createArray(0..#filenamesList.size, string);
 filenames = filenamesList;
 
 // Execute using distributed parallelism across locales if executing
 // using multilocales and within each locale in parallel.
 forall (i, file) in zip(filenames.domain, filenames) {
   // Open up the input file.
-  var f = open(file, iomode.r);
+  var f = open(file, ioMode.r);
   if debug then writeln("\n\n====== filename = ", file);
 
   // Create a reader of the input file
@@ -91,8 +91,8 @@ forall (i, file) in zip(filenames.domain, filenames) {
 
   // filter out any words that do not show up more than once
   var infrequentWords = new list(string);
-  for (word,count) in wordCount.items() {
-    if count<=minCount then infrequentWords.append(word);
+  for (word,count) in zip(wordCount.keys(), wordCount.values()) {
+    if count<=minCount then infrequentWords.pushBack(word);
   }
   for word in infrequentWords {
     wordCount.remove(word);

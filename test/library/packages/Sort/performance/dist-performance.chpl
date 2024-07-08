@@ -1,6 +1,6 @@
 use BlockDist;
 use CommDiagnostics;
-use Memory.Diagnostics;
+use MemDiagnostics;
 use Random;
 use Sort;
 use Time;
@@ -25,7 +25,7 @@ const nElems = if size == arraySize.tiny then nElemsTiny else
                if size == arraySize.large then nElemsLarge else -1;
 
 
-var t: Timer;
+var t: stopwatch;
 inline proc startDiag() {
   if !correctness {
     if commCount {
@@ -68,11 +68,11 @@ inline proc endDiag(name, x) {
 }
 
 proc main() {
-  var A = newBlockArr({1..nElems}, elemType);
+  var A = blockDist.createArray({1..nElems}, elemType);
   fillRandom(A, seed=314159265);
 
   startDiag();
-  TwoArrayRadixSort.twoArrayRadixSort(A);
+  TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort(A);
   endDiag("Sort");
   assert(isSorted(A));
 }

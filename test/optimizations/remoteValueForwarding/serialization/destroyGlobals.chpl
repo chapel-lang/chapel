@@ -30,7 +30,7 @@ record Foo {
 const f = new Foo(new unmanaged Helper((1,2,3)));
 
 proc main() {
-  on Locales.tail() {
+  on Locales.last {
     if f.h.x(1) > 100 then halt();
   }
 }

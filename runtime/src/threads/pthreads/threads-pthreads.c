@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -187,9 +187,11 @@ void chpl_free_pthread_stack(void* stack){
   page_size = 0;
 
   if(chpl_use_guard_page){
-    free_flag = PROT_READ | PROT_WRITE | PROT_EXEC;
+    free_flag = PROT_READ | PROT_WRITE;
     page_size = chpl_getSysPageSize();
-    mprotect((unsigned char*)stack - page_size, page_size, free_flag);
+    if (mprotect((unsigned char*)stack - page_size, page_size, free_flag) != 0) {
+      chpl_internal_error("mprotect failed");
+    }
     chpl_free((unsigned char*)stack - page_size);
   }
   else
@@ -389,7 +391,7 @@ void chpl_thread_init(void(*threadBeginFn)(void*),
 
     if (rlim.rlim_max != RLIM_INFINITY && css > rlim.rlim_max) {
       char warning[128];
-      sprintf(warning, "call stack size capped at %lu\n",
+      snprintf(warning, sizeof(warning), "call stack size capped at %lu\n",
               (unsigned long)rlim.rlim_max);
       chpl_warning(warning, 0, 0);
 

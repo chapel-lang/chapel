@@ -7,13 +7,15 @@
  * See COPYING in top-level directory.
  */
 
-#include <hwloc.h>
+#include "hwloc.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <assert.h>
 
 int main(void)
 {
@@ -44,13 +46,8 @@ int main(void)
   /* retrieve the entire set of NUMA nodes and count them */
   cset = hwloc_topology_get_topology_nodeset(topology);
   nbnodes = hwloc_bitmap_weight(cset);
-  if (nbnodes <= 0) {
-    /* nbnodes may be -1 when there's no NUMA information,
-     * or 0 when the machine is known to be non-NUMA */
-    printf("this machine is not NUMA, nothing to do\n");
-    hwloc_topology_destroy(topology);
-    return EXIT_SUCCESS;
-  }
+  /* there's always at least one NUMA node */
+  assert(nbnodes > 0);
   printf("there are %d nodes in the machine\n", nbnodes);
 
   /* get the process memory binding as a nodeset */
@@ -60,7 +57,7 @@ int main(void)
     hwloc_topology_destroy(topology);
     return EXIT_FAILURE;
   }
-  err = hwloc_get_membind_nodeset(topology, set, &policy, 0);
+  err = hwloc_get_membind(topology, set, &policy, HWLOC_MEMBIND_BYNODESET);
   if (err < 0) {
     fprintf(stderr, "failed to retrieve my memory binding and policy\n");
     hwloc_topology_destroy(topology);
@@ -75,32 +72,36 @@ int main(void)
   hwloc_bitmap_foreach_begin(i, set) {
     obj = hwloc_get_numanode_obj_by_os_index(topology, i);
     printf("  node #%u (OS index %u) with %llu bytes of memory\n",
-	   obj->logical_index, i, (unsigned long long) obj->memory.local_memory);
+	   obj->logical_index, i, (unsigned long long) obj->attr->numanode.local_memory);
   } hwloc_bitmap_foreach_end();
   hwloc_bitmap_free(set);
 
-  /* allocate replicated memory of all nodes */
+  /* check alloc+bind support */
   support = hwloc_topology_get_support(topology);
-  buffer = NULL;
-  if (support->membind->replicate_membind) {
-    printf("replicated memory binding is supported\n");
-    buffer = hwloc_alloc_membind_nodeset(topology, 4096, cset, HWLOC_MEMBIND_REPLICATE, HWLOC_MEMBIND_STRICT);
+  if (support->membind->bind_membind) {
+    printf("BIND memory binding policy is supported\n");
   } else {
-    printf("replicated memory binding is NOT supported\n");
+    printf("BIND memory binding policy is NOT supported\n");
   }
-  if (!buffer) {
-    /* could not allocate replicated memory, manually allocate of each node by iterating over them */
-    printf("manually allocating memory on each node\n");
-    obj = NULL;
-    while ((obj = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_NUMANODE, obj)) != NULL) {
-      buffer = hwloc_alloc_membind_nodeset(topology, 4096, obj->nodeset, HWLOC_MEMBIND_BIND, HWLOC_MEMBIND_STRICT);
-      if (!buffer) {
-	fprintf(stderr, "failed to manually allocate memory on node %u\n", obj->os_index);
-	hwloc_topology_destroy(topology);
-	return EXIT_SUCCESS;
-      }
-      /* now the application must manually manage these different buffers on different nodes */
+  if (support->membind->alloc_membind) {
+    printf("Allocating bound memory is supported\n");
+  } else {
+    printf("Allocating bound memory is NOT supported\n");
+  }
+
+  /* allocate memory of each nodes */
+  printf("allocating memory on each node\n");
+  obj = NULL;
+  buffer = NULL;
+  while ((obj = hwloc_get_next_obj_by_type(topology, HWLOC_OBJ_NUMANODE, obj)) != NULL) {
+    buffer = hwloc_alloc_membind(topology, 4096, obj->nodeset, HWLOC_MEMBIND_BIND,
+                                 HWLOC_MEMBIND_STRICT|HWLOC_MEMBIND_BYNODESET);
+    if (!buffer) {
+      fprintf(stderr, "failed to allocate memory on node %u\n", obj->os_index);
+      hwloc_topology_destroy(topology);
+      return EXIT_SUCCESS;
     }
+    /* now the application must manually manage these different buffers on different nodes */
   }
 
   /* check where buffer is allocated */
@@ -110,7 +111,7 @@ int main(void)
     hwloc_topology_destroy(topology);
     return EXIT_FAILURE;
   }
-  err = hwloc_get_area_membind_nodeset(topology, buffer, 4096, set, &policy, 0);
+  err = hwloc_get_area_membind(topology, buffer, 4096, set, &policy, HWLOC_MEMBIND_BYNODESET);
   if (err < 0) {
     fprintf(stderr, "failed to retrieve the buffer binding and policy\n");
     hwloc_topology_destroy(topology);
@@ -120,10 +121,10 @@ int main(void)
 
   /* check the binding policy, it should be what we requested above,
    * but may be different if the implementation of different policies
-   * is identical for the current operating system.
+   * is identical for the current operating system (e.g. if BIND is the DEFAULT).
    */
-  printf("buffer membind policy is %d while we requested %d or %d\n",
-	 policy, HWLOC_MEMBIND_REPLICATE, HWLOC_MEMBIND_BIND);
+  printf("buffer membind policy is %d while we requested %d\n",
+	 policy, HWLOC_MEMBIND_BIND);
 
   /* print the corresponding NUMA nodes */
   hwloc_bitmap_asprintf(&s, set);
@@ -132,13 +133,14 @@ int main(void)
   hwloc_bitmap_foreach_begin(i, set) {
     obj = hwloc_get_numanode_obj_by_os_index(topology, i);
     printf("  node #%u (OS index %u) with %llu bytes of memory\n",
-	   obj->logical_index, i, (unsigned long long) obj->memory.local_memory);
+	   obj->logical_index, i, (unsigned long long) obj->attr->numanode.local_memory);
   } hwloc_bitmap_foreach_end();
   hwloc_bitmap_free(set);
 
   /* try to migrate the buffer to the first node */
   obj = hwloc_get_obj_by_type(topology, HWLOC_OBJ_NUMANODE, 0);
-  err = hwloc_set_area_membind_nodeset(topology, buffer, 4096, obj->nodeset, HWLOC_MEMBIND_BIND, HWLOC_MEMBIND_MIGRATE);
+  err = hwloc_set_area_membind(topology, buffer, 4096, obj->nodeset, HWLOC_MEMBIND_BIND,
+                               HWLOC_MEMBIND_MIGRATE|HWLOC_MEMBIND_BYNODESET);
   if (err < 0) {
     fprintf(stderr, "failed to migrate buffer\n");
     hwloc_topology_destroy(topology);

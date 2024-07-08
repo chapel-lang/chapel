@@ -4,7 +4,7 @@ record R {
   param p : T;
 }
 
-proc R.init=(other: R) {
+proc R.init=(other: R(?)) {
   this.T = other.T;
   this.p = other.p;
 }
@@ -29,25 +29,25 @@ proc W.init=(other : ?T) where isSubtype(T, W) == false {
 }
 
 proc helper(type T, val) {
-  var x : T = val;
+  var x : T(?) = val;
   writeln("initialized '", T:string, "' from '", val.type:string, "' resulting in '", x.type:string, "'");
 }
 
 proc main() {
   {
-    var r : R(string) = "hi";
+    var r : R(string, ?) = "hi";
     writeln(r.type:string);
     writeln(r.p);
   }
 
   {
-    var a : W = "hello";
+    var a : W(?) = "hello";
     writeln(a);
-    var b : W = 1234;
+    var b : W(?) = 1234;
     writeln(b);
   }
   {
-    helper(W, "hello");
-    helper(W, 1234);
+    helper(W(?), "hello");
+    helper(W(?), 1234);
   }
 }

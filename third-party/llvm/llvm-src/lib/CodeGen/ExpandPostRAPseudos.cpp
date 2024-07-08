@@ -13,8 +13,6 @@
 
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstr.h"
-#include "llvm/CodeGen/MachineInstrBuilder.h"
-#include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"
@@ -30,8 +28,8 @@ using namespace llvm;
 namespace {
 struct ExpandPostRA : public MachineFunctionPass {
 private:
-  const TargetRegisterInfo *TRI;
-  const TargetInstrInfo *TII;
+  const TargetRegisterInfo *TRI = nullptr;
+  const TargetInstrInfo *TII = nullptr;
 
 public:
   static char ID; // Pass identification, replacement for typeid
@@ -49,9 +47,6 @@ public:
 
 private:
   bool LowerSubregToReg(MachineInstr *MI);
-  bool LowerCopy(MachineInstr *MI);
-
-  void TransferImplicitOperands(MachineInstr *MI);
 };
 } // end anonymous namespace
 
@@ -60,25 +55,6 @@ char &llvm::ExpandPostRAPseudosID = ExpandPostRA::ID;
 
 INITIALIZE_PASS(ExpandPostRA, DEBUG_TYPE,
                 "Post-RA pseudo instruction expansion pass", false, false)
-
-/// TransferImplicitOperands - MI is a pseudo-instruction, and the lowered
-/// replacement instructions immediately precede it.  Copy any implicit
-/// operands from MI to the replacement instruction.
-void ExpandPostRA::TransferImplicitOperands(MachineInstr *MI) {
-  MachineBasicBlock::iterator CopyMI = MI;
-  --CopyMI;
-
-  Register DstReg = MI->getOperand(0).getReg();
-  for (const MachineOperand &MO : MI->implicit_operands()) {
-    CopyMI->addOperand(MO);
-
-    // Be conservative about preserving kills when subregister defs are
-    // involved. If there was implicit kill of a super-register overlapping the
-    // copy result, we would kill the subregisters previous copies defined.
-    if (MO.isKill() && TRI->regsOverlap(DstReg, MO.getReg()))
-      CopyMI->getOperand(CopyMI->getNumOperands() - 1).setIsKill(false);
-  }
-}
 
 bool ExpandPostRA::LowerSubregToReg(MachineInstr *MI) {
   MachineBasicBlock *MBB = MI->getParent();
@@ -95,17 +71,17 @@ bool ExpandPostRA::LowerSubregToReg(MachineInstr *MI) {
   assert(SubIdx != 0 && "Invalid index for insert_subreg");
   Register DstSubReg = TRI->getSubReg(DstReg, SubIdx);
 
-  assert(Register::isPhysicalRegister(DstReg) &&
+  assert(DstReg.isPhysical() &&
          "Insert destination must be in a physical register");
-  assert(Register::isPhysicalRegister(InsReg) &&
+  assert(InsReg.isPhysical() &&
          "Inserted value must be in a physical register");
 
   LLVM_DEBUG(dbgs() << "subreg: CONVERTING: " << *MI);
 
   if (MI->allDefsAreDead()) {
     MI->setDesc(TII->get(TargetOpcode::KILL));
-    MI->RemoveOperand(3); // SubIdx
-    MI->RemoveOperand(1); // Imm
+    MI->removeOperand(3); // SubIdx
+    MI->removeOperand(1); // Imm
     LLVM_DEBUG(dbgs() << "subreg: replaced by: " << *MI);
     return true;
   }
@@ -117,8 +93,8 @@ bool ExpandPostRA::LowerSubregToReg(MachineInstr *MI) {
     // We must leave %rax live.
     if (DstReg != InsReg) {
       MI->setDesc(TII->get(TargetOpcode::KILL));
-      MI->RemoveOperand(3);     // SubIdx
-      MI->RemoveOperand(1);     // Imm
+      MI->removeOperand(3);     // SubIdx
+      MI->removeOperand(1);     // Imm
       LLVM_DEBUG(dbgs() << "subreg: replace by: " << *MI);
       return true;
     }
@@ -136,50 +112,6 @@ bool ExpandPostRA::LowerSubregToReg(MachineInstr *MI) {
 
   LLVM_DEBUG(dbgs() << '\n');
   MBB->erase(MI);
-  return true;
-}
-
-bool ExpandPostRA::LowerCopy(MachineInstr *MI) {
-
-  if (MI->allDefsAreDead()) {
-    LLVM_DEBUG(dbgs() << "dead copy: " << *MI);
-    MI->setDesc(TII->get(TargetOpcode::KILL));
-    LLVM_DEBUG(dbgs() << "replaced by: " << *MI);
-    return true;
-  }
-
-  MachineOperand &DstMO = MI->getOperand(0);
-  MachineOperand &SrcMO = MI->getOperand(1);
-
-  bool IdentityCopy = (SrcMO.getReg() == DstMO.getReg());
-  if (IdentityCopy || SrcMO.isUndef()) {
-    LLVM_DEBUG(dbgs() << (IdentityCopy ? "identity copy: " : "undef copy:    ")
-                      << *MI);
-    // No need to insert an identity copy instruction, but replace with a KILL
-    // if liveness is changed.
-    if (SrcMO.isUndef() || MI->getNumOperands() > 2) {
-      // We must make sure the super-register gets killed. Replace the
-      // instruction with KILL.
-      MI->setDesc(TII->get(TargetOpcode::KILL));
-      LLVM_DEBUG(dbgs() << "replaced by:   " << *MI);
-      return true;
-    }
-    // Vanilla identity copy.
-    MI->eraseFromParent();
-    return true;
-  }
-
-  LLVM_DEBUG(dbgs() << "real copy:   " << *MI);
-  TII->copyPhysReg(*MI->getParent(), MI, MI->getDebugLoc(),
-                   DstMO.getReg(), SrcMO.getReg(), SrcMO.isKill());
-
-  if (MI->getNumOperands() > 2)
-    TransferImplicitOperands(MI);
-  LLVM_DEBUG({
-    MachineBasicBlock::iterator dMI = MI;
-    dbgs() << "replaced by: " << *(--dMI);
-  });
-  MI->eraseFromParent();
   return true;
 }
 
@@ -213,7 +145,8 @@ bool ExpandPostRA::runOnMachineFunction(MachineFunction &MF) {
         MadeChange |= LowerSubregToReg(&MI);
         break;
       case TargetOpcode::COPY:
-        MadeChange |= LowerCopy(&MI);
+        TII->lowerCopy(&MI, TRI);
+        MadeChange = true;
         break;
       case TargetOpcode::DBG_VALUE:
         continue;

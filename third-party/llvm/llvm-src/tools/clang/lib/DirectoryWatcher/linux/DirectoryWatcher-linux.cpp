@@ -14,7 +14,6 @@
 #include "llvm/Support/AlignOf.h"
 #include "llvm/Support/Errno.h"
 #include "llvm/Support/Error.h"
-#include "llvm/Support/MathExtras.h"
 #include "llvm/Support/Path.h"
 #include <atomic>
 #include <condition_variable>
@@ -25,6 +24,8 @@
 #include <vector>
 
 #include <fcntl.h>
+#include <limits.h>
+#include <optional>
 #include <sys/epoll.h>
 #include <sys/inotify.h>
 #include <unistd.h>
@@ -72,10 +73,10 @@ struct SemaphorePipe {
   const int FDWrite;
   bool OwnsFDs;
 
-  static llvm::Optional<SemaphorePipe> create() {
+  static std::optional<SemaphorePipe> create() {
     int InotifyPollingStopperFDs[2];
     if (pipe2(InotifyPollingStopperFDs, O_CLOEXEC) == -1)
-      return llvm::None;
+      return std::nullopt;
     return SemaphorePipe(InotifyPollingStopperFDs);
   }
 };

@@ -17,7 +17,8 @@ module OuterModule {
     use super.M only; // require all symbols in M to be fully-qualified
 
     proc main() {
-      var foo = new borrowed M.Foo();
+      var ownFoo = new owned M.Foo();
+      var foo = ownFoo.borrow();
       if (accessPrimary) then
         foo.primaryMethod();
       else

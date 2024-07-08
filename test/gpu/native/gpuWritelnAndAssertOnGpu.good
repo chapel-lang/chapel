@@ -1,8 +1,7 @@
-warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
 Writeln from CPU
 hello from the GPU!
 hello from the GPU again!
 hello from function called by GPU!
 hello again from  function called by GPU!
 Before next loop
-gpuWritelnAndAssertOnGpu.chpl:26: error: assertOnGpu() failed
+gpuWritelnAndAssertOnGpu.chpl:28: error: assertOnGpu() failed

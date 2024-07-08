@@ -4,6 +4,7 @@
  * Copyright (c) 2019-2021 Amazon.com, Inc. or its affiliates.
  *                         All rights reserved.
  * (C) Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright (C) 2024 Cornelis Networks. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -37,6 +38,7 @@
 #include <unistd.h>
 
 #include <ofi_mr.h>
+#include <ofi_mem.h>
 #include <ofi_hmem.h>
 #include <ofi_enosys.h>
 #include <rdma/fi_ext.h>
@@ -55,6 +57,7 @@ static struct ofi_uffd uffd = {
 	.monitor.cleanup = ofi_monitor_cleanup,
 	.monitor.start = ofi_uffd_start,
 	.monitor.stop = ofi_uffd_stop,
+	.monitor.name = "uffd",
 };
 struct ofi_mem_monitor *uffd_monitor = &uffd.monitor;
 
@@ -62,6 +65,9 @@ struct ofi_mem_monitor *default_monitor;
 struct ofi_mem_monitor *default_cuda_monitor;
 struct ofi_mem_monitor *default_rocr_monitor;
 struct ofi_mem_monitor *default_ze_monitor;
+
+struct ofi_mem_monitor **monitor_list;
+size_t monitor_list_size;
 
 static size_t ofi_default_cache_size(void)
 {
@@ -124,6 +130,9 @@ static int ofi_monitors_update(struct ofi_mem_monitor **monitors)
 		assert(monitor->state != FI_MM_STATE_UNSPEC);
 		switch (monitor->state) {
 		case FI_MM_STATE_STARTING:
+			FI_INFO(&core_prov, FI_LOG_MR,
+				"Starting memory monitor: %s\n",
+				monitor->name);
 			ret = monitor->start(monitor);
 			if (ret) {
 				monitor->state = FI_MM_STATE_IDLE;
@@ -136,6 +145,9 @@ static int ofi_monitors_update(struct ofi_mem_monitor **monitors)
 			monitor->state = FI_MM_STATE_RUNNING;
 			break;
 		case FI_MM_STATE_STOPPING:
+			FI_INFO(&core_prov, FI_LOG_MR,
+				"Stopping memory monitor: %s\n",
+				monitor->name);
 			monitor->stop(monitor);
 			monitor->state = FI_MM_STATE_IDLE;
 			break;
@@ -161,17 +173,57 @@ void ofi_monitor_cleanup(struct ofi_mem_monitor *monitor)
 	assert(monitor->state == FI_MM_STATE_IDLE);
 }
 
+static void initialize_monitor_list()
+{
+	/* Save a copy of the monitor list for cleanup time.
+	 * This list can not be static because the pointer
+	 * initialization is spread across mulitple modules.
+	 */
+
+	struct ofi_mem_monitor *monitors[] = {
+		uffd_monitor,
+		memhooks_monitor,
+		cuda_monitor,
+		cuda_ipc_monitor,
+		rocr_monitor,
+		rocr_ipc_monitor,
+		xpmem_monitor,
+		ze_monitor,
+		import_monitor,
+	};
+
+	monitor_list_size = ARRAY_SIZE(monitors);
+	monitor_list = calloc(monitor_list_size, sizeof(*monitor_list));
+
+	for (size_t i = 0; i < monitor_list_size; i++) {
+		monitor_list[i] = monitors[i];
+		assert(monitor_list[i]->name);
+	}
+}
+
+static void cleanup_monitor_list() {
+	free(monitor_list);
+	monitor_list = NULL;
+	monitor_list_size = 0;
+}
+
 /*
  * Initialize all available memory monitors
  */
 void ofi_monitors_init(void)
 {
-	uffd_monitor->init(uffd_monitor);
-	memhooks_monitor->init(memhooks_monitor);
-	cuda_monitor->init(cuda_monitor);
-	rocr_monitor->init(rocr_monitor);
-	ze_monitor->init(ze_monitor);
-	import_monitor->init(import_monitor);
+	pthread_mutex_init(&mm_lock, NULL);
+	pthread_mutex_init(&mm_state_lock, NULL);
+	pthread_rwlock_init(&mm_list_rwlock, NULL);
+
+	initialize_monitor_list();
+
+	for (size_t i = 0; i < monitor_list_size; i++) {
+		FI_INFO(&core_prov, FI_LOG_MR,
+			"Initializing memory monitor %s\n",
+			monitor_list[i]->name);
+		monitor_list[i]->init(monitor_list[i]);
+	}
 
 	fi_param_define(NULL, "mr_cache_max_size", FI_PARAM_SIZE_T,
 			"Defines the total number of bytes for all memory"
@@ -196,13 +248,13 @@ void ofi_monitors_init(void)
 			" memory caching.");
 	fi_param_define(NULL, "mr_cuda_cache_monitor_enabled", FI_PARAM_BOOL,
 			"Enable or disable the CUDA cache memory monitor."
-			"Monitor is enabled by default.");
+			"Enabled by default.");
 	fi_param_define(NULL, "mr_rocr_cache_monitor_enabled", FI_PARAM_BOOL,
 			"Enable or disable the ROCR cache memory monitor. "
-			"Monitor is enabled by default.");
+			"Enabled by default.");
 	fi_param_define(NULL, "mr_ze_cache_monitor_enabled", FI_PARAM_BOOL,
-			"Enable or disable the ZE cache memory monitor. "
-			"Monitor is enabled by default.");
+			"Enable or disable the oneAPI Level Zero cache memory "
+			"monitor.  Enabled by default.");
 
 	fi_param_get_size_t(NULL, "mr_cache_max_size", &cache_params.max_size);
 	fi_param_get_size_t(NULL, "mr_cache_max_count", &cache_params.max_cnt);
@@ -251,6 +303,10 @@ void ofi_monitors_init(void)
 		}
 	}
 
+	FI_INFO(&core_prov, FI_LOG_MR,
+		"Default memory monitor is: %s\n",
+		(default_monitor) ? default_monitor->name : "disabled");
+
 	if (cache_params.cuda_monitor_enabled)
 		default_cuda_monitor = cuda_monitor;
 	else
@@ -269,12 +325,18 @@ void ofi_monitors_init(void)
 
 void ofi_monitors_cleanup(void)
 {
-	uffd_monitor->cleanup(uffd_monitor);
-	memhooks_monitor->cleanup(memhooks_monitor);
-	cuda_monitor->cleanup(cuda_monitor);
-	rocr_monitor->cleanup(rocr_monitor);
-	ze_monitor->cleanup(ze_monitor);
-	import_monitor->cleanup(import_monitor);
+	for (size_t i = 0; i < monitor_list_size; i++) {
+		FI_INFO(&core_prov, FI_LOG_MR,
+			"Cleaning up memory monitor %s\n",
+			monitor_list[i]->name);
+		monitor_list[i]->cleanup(monitor_list[i]);
+	}
+
+	cleanup_monitor_list();
+
+	pthread_rwlock_destroy(&mm_list_rwlock);
+	pthread_mutex_destroy(&mm_state_lock);
+	pthread_mutex_destroy(&mm_lock);
 }
 
 /* Monitors array must be of size OFI_HMEM_MAX. */
@@ -307,7 +369,7 @@ int ofi_monitors_add_cache(struct ofi_mem_monitor **monitors,
 	for (iface = FI_HMEM_SYSTEM; iface < OFI_HMEM_MAX; iface++) {
 		cache->monitors[iface] = NULL;
 		start_list[iface] = NULL;
-		if (!hmem_ops[iface].initialized)
+		if (!ofi_hmem_is_initialized(iface))
 			continue;
 
 		monitor = monitors[iface];
@@ -349,7 +411,7 @@ err:
 
 void ofi_monitors_del_cache(struct ofi_mr_cache *cache)
 {
-	struct ofi_mem_monitor *stop_list[OFI_HMEM_MAX];
+	struct ofi_mem_monitor *update_list[OFI_HMEM_MAX];
 	struct ofi_mem_monitor *monitor;
 	enum fi_hmem_iface iface;
 	int ret;
@@ -366,7 +428,7 @@ void ofi_monitors_del_cache(struct ofi_mr_cache *cache)
 	} while (ret);
 
 	for (iface = 0; iface < OFI_HMEM_MAX; iface++) {
-		stop_list[iface] = NULL;
+		update_list[iface] = NULL;
 		monitor = cache->monitors[iface];
 		if (!monitor)
 			continue;
@@ -375,12 +437,14 @@ void ofi_monitors_del_cache(struct ofi_mr_cache *cache)
 
 		if (dlist_empty(&monitor->list)) {
 			pthread_mutex_lock(&mm_state_lock);
-			stop_list[iface] = monitor;
 			/* See comment above ofi_monitors_update for details */
-			if (monitor->state == FI_MM_STATE_RUNNING)
+			if (monitor->state == FI_MM_STATE_RUNNING) {
 				monitor->state = FI_MM_STATE_STOPPING;
-			else if (monitor->state == FI_MM_STATE_STARTING)
+				update_list[iface] = monitor;
+			} else if (monitor->state == FI_MM_STATE_STARTING) {
 				monitor->state = FI_MM_STATE_RUNNING;
+				update_list[iface] = monitor;
+			}
 			pthread_mutex_unlock(&mm_state_lock);
 		}
 
@@ -390,7 +454,7 @@ void ofi_monitors_del_cache(struct ofi_mr_cache *cache)
 	pthread_rwlock_unlock(&mm_list_rwlock);
 
 
-	ofi_monitors_update(stop_list);
+	ofi_monitors_update(update_list);
 	return;
 }
 
@@ -456,6 +520,28 @@ void ofi_monitor_unsubscribe(struct ofi_mem_monitor *monitor,
 	FI_DBG(&core_prov, FI_LOG_MR,
 	       "unsubscribing addr=%p len=%zu\n", addr, len);
 	monitor->unsubscribe(monitor, addr, len, hmem_info);
+}
+
+int ofi_monitor_start_no_op(struct ofi_mem_monitor *monitor)
+{
+	return FI_SUCCESS;
+}
+
+void ofi_monitor_stop_no_op(struct ofi_mem_monitor *monitor)
+{
+}
+
+int ofi_monitor_subscribe_no_op(struct ofi_mem_monitor *notifier,
+			 const void *addr, size_t len,
+			 union ofi_mr_hmem_info *hmem_info)
+{
+	return FI_SUCCESS;
+}
+
+void ofi_monitor_unsubscribe_no_op(struct ofi_mem_monitor *notifier,
+			    const void *addr, size_t len,
+			    union ofi_mr_hmem_info *hmem_info)
+{
 }
 
 #if HAVE_UFFD_MONITOR
@@ -540,7 +626,7 @@ static int ofi_uffd_register(const void *addr, size_t len, size_t page_size)
 	if (ret < 0) {
 		if (errno != EINVAL) {
 			FI_WARN(&core_prov, FI_LOG_MR,
-				"ioctl/uffd_unreg: %s\n", strerror(errno));
+				"ioctl/uffd_reg: %s\n", strerror(errno));
 		}
 		return -errno;
 	}
@@ -594,8 +680,9 @@ static void ofi_uffd_unsubscribe(struct ofi_mem_monitor *monitor,
 	}
 }
 
-static bool ofi_uffd_valid(struct ofi_mem_monitor *monitor, const void *addr,
-			   size_t len, union ofi_mr_hmem_info *hmem_info)
+static bool ofi_uffd_valid(struct ofi_mem_monitor *monitor,
+			   const struct ofi_mr_info *info,
+			   struct ofi_mr_entry *entry)
 {
 	/* no-op */
 	return true;
@@ -683,8 +770,8 @@ static void ofi_import_monitor_unsubscribe(struct ofi_mem_monitor *notifier,
 					   const void *addr, size_t len,
 					   union ofi_mr_hmem_info *hmem_info);
 static bool ofi_import_monitor_valid(struct ofi_mem_monitor *notifier,
-				     const void *addr, size_t len,
-				     union ofi_mr_hmem_info *hmem_info);
+				     const struct ofi_mr_info *info,
+				     struct ofi_mr_entry *entry);
 
 struct ofi_import_monitor {
 	struct ofi_mem_monitor monitor;
@@ -700,6 +787,7 @@ static struct ofi_import_monitor impmon = {
 	.monitor.subscribe = ofi_import_monitor_subscribe,
 	.monitor.unsubscribe = ofi_import_monitor_unsubscribe,
 	.monitor.valid = ofi_import_monitor_valid,
+	.monitor.name = "import",
 };
 
 struct ofi_mem_monitor *import_monitor = &impmon.monitor;
@@ -742,15 +830,17 @@ static void ofi_import_monitor_unsubscribe(struct ofi_mem_monitor *notifier,
 					   union ofi_mr_hmem_info *hmem_info)
 {
 	assert(impmon.impfid);
-	return impmon.impfid->export_ops->unsubscribe(impmon.impfid, addr, len);
+	impmon.impfid->export_ops->unsubscribe(impmon.impfid, addr, len);
 }
 
 static bool ofi_import_monitor_valid(struct ofi_mem_monitor *notifier,
-				     const void *addr, size_t len,
-				     union ofi_mr_hmem_info *hmem_info)
+				     const struct ofi_mr_info *info,
+				     struct ofi_mr_entry *entry)
 {
 	assert(impmon.impfid);
-	return impmon.impfid->export_ops->valid(impmon.impfid, addr, len);
+	return impmon.impfid->export_ops->valid(impmon.impfid,
+						entry->info.iov.iov_base,
+						entry->info.iov.iov_len);
 }
 
 static void ofi_import_monitor_notify(struct fid_mem_monitor *monitor,
@@ -766,6 +856,9 @@ static void ofi_import_monitor_notify(struct fid_mem_monitor *monitor,
 
 static int ofi_close_import(struct fid *fid)
 {
+	pthread_mutex_lock(&mm_state_lock);
+	impmon.monitor.state = FI_MM_STATE_IDLE;
+	pthread_mutex_unlock(&mm_state_lock);
 	impmon.impfid = NULL;
 	return 0;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -359,8 +359,14 @@ LabelSymbol* ForallStmt::continueLabel() {
     // If this presents hardship, we can switch to always creating
     // fContinueLabel, right when the ForallStmt is created.
     INT_ASSERT(!normalized);
+    // We need the continue label to be in an outer scope w.r.t.
+    // the user-defined loop body, see #21292.
+    BlockStmt* wrapper = new BlockStmt();
+    BlockStmt* userBody = fLoopBody;
+    userBody->replace(wrapper);
+    wrapper->insertAtTail(userBody);
     fContinueLabel = new LabelSymbol("_continueLabel");
-    fLoopBody->insertAtTail(new DefExpr(fContinueLabel));
+    wrapper->insertAtTail(new DefExpr(fContinueLabel));
   }
   return fContinueLabel;
 }
@@ -505,6 +511,7 @@ static void fsDestructureIndex(ForallStmt* fs, AList& fIterVars,
   } else if (isCallExpr(index)) {
     // We need to create an index variable and go from there.
     VarSymbol* idxVar = createAndAddIndexVar(fIterVars, idxNum);
+    idxVar->removeFlag(FLAG_INSERT_AUTO_DESTROY);
     destructureIndices(fs->loopBody(), index, new SymExpr(idxVar), false);
 
   } else if (DefExpr* def = toDefExpr(index)) {
@@ -548,7 +555,7 @@ static void fsDestructureIndices(ForallStmt* fs, Expr* indices) {
   }
 
   if (CallExpr* indicesCall = toCallExpr(indices)) {
-    INT_ASSERT(indicesCall->isNamed("_build_tuple")); // ensured by checkIndices()
+    INT_ASSERT(indicesCall->isNamedAstr(astrBuildTuple)); // ensured by checkIndices()
 
     if (numIterables == 0)
       ; // If overTupleExpand(), we will check this later during resolution.
@@ -621,7 +628,7 @@ ForallStmt* ForallStmt::buildHelper(Expr* indices, Expr* iterator,
 // and just use checkIndices
 static void checkIndicesForall(BaseAST* indices) {
   if (CallExpr* call = toCallExpr(indices)) {
-    if (!call->isNamed("_build_tuple"))
+    if (!call->isNamedAstr(astrBuildTuple))
       USR_FATAL(indices, "invalid index expression");
     for_actuals(actual, call)
       checkIndicesForall(actual);
@@ -634,8 +641,6 @@ static void checkIndicesForall(BaseAST* indices) {
 BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
                              BlockStmt* body, bool zippered, bool serialOK)
 {
-  checkControlFlow(body, "forall statement");
-
   if (!indices)
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
   checkIndicesForall(indices);
@@ -758,4 +763,8 @@ std::vector<BlockStmt*> ForallStmt::loopBodies() const {
     bodies.push_back(fLoopBody);
   }
   return bodies;
+}
+
+bool ForallStmt::isInductionVar(Symbol* sym) {
+  return sym->defPoint->list == &inductionVariables();
 }

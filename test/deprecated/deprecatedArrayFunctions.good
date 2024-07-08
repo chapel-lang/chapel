@@ -1,8 +1,0 @@
-deprecatedArrayFunctions.chpl:2: warning: 'Array.count' is deprecated use a reduction like '+ reduce (A == val)' instead
-deprecatedArrayFunctions.chpl:3: warning: 'Array.sorted' is deprecated, use 'Sort.sorted' instead
-deprecatedArrayFunctions.chpl:4: warning: 'Array.find' is deprecated, use a reduction like 'maxloc reduce zip(A == val, A.domain)' instead
-deprecatedArrayFunctions.chpl:5: warning: 'Array.reverse' is deprecated
-Count of 1's in A = 4
-A sorted is = 1 1 1 1 2 3 4 5
-Finding 3 in A = (true, 3)
-Reversing A: 5 1 4 1 3 1 2 1

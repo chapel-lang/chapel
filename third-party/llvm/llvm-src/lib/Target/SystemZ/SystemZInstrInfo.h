@@ -47,8 +47,7 @@ enum {
   CCMaskFirst            = (1 << 18),
   CCMaskLast             = (1 << 19),
   IsLogical              = (1 << 20),
-  CCIfNoSignedWrap       = (1 << 21),
-  MemMemOp               = (1 << 22)
+  CCIfNoSignedWrap       = (1 << 21)
 };
 
 static inline unsigned getAccessSize(unsigned int Flags) {
@@ -73,6 +72,17 @@ enum {
 
   // @INDNTPOFF
   MO_INDNTPOFF = (2 << 0)
+};
+
+// z/OS XPLink specific: classifies the types of
+// accesses to the ADA (Associated Data Area).
+// These enums contains values that overlap with the above MO_ enums,
+// but that's fine since the above enums are used with ELF,
+// while these values are used with z/OS.
+enum {
+  MO_ADA_DATA_SYMBOL_ADDR = 1,
+  MO_ADA_INDIRECT_FUNC_DESC,
+  MO_ADA_DIRECT_FUNC_DESC,
 };
 
 // Classifies a branch.
@@ -263,15 +273,16 @@ public:
                    const DebugLoc &DL, MCRegister DestReg, MCRegister SrcReg,
                    bool KillSrc) const override;
   void storeRegToStackSlot(MachineBasicBlock &MBB,
-                           MachineBasicBlock::iterator MBBI,
-                           Register SrcReg, bool isKill, int FrameIndex,
+                           MachineBasicBlock::iterator MBBI, Register SrcReg,
+                           bool isKill, int FrameIndex,
                            const TargetRegisterClass *RC,
-                           const TargetRegisterInfo *TRI) const override;
+                           const TargetRegisterInfo *TRI,
+                           Register VReg) const override;
   void loadRegFromStackSlot(MachineBasicBlock &MBB,
-                            MachineBasicBlock::iterator MBBI,
-                            Register DestReg, int FrameIdx,
-                            const TargetRegisterClass *RC,
-                            const TargetRegisterInfo *TRI) const override;
+                            MachineBasicBlock::iterator MBBI, Register DestReg,
+                            int FrameIdx, const TargetRegisterClass *RC,
+                            const TargetRegisterInfo *TRI,
+                            Register VReg) const override;
   MachineInstr *convertToThreeAddress(MachineInstr &MI, LiveVariables *LV,
                                       LiveIntervals *LIS) const override;
   MachineInstr *
@@ -309,8 +320,10 @@ public:
   // and the caller wants to perform that instruction's operation on an
   // address that has displacement Offset.  Return the opcode of a suitable
   // instruction (which might be Opcode itself) or 0 if no such instruction
-  // exists.
-  unsigned getOpcodeForOffset(unsigned Opcode, int64_t Offset) const;
+  // exists.  MI may be passed in order to allow examination of physical
+  // register operands (i.e. if a VR32/64 reg ended up as an FP or Vector reg).
+  unsigned getOpcodeForOffset(unsigned Opcode, int64_t Offset,
+                              const MachineInstr *MI = nullptr) const;
 
   // Return true if Opcode has a mapping in 12 <-> 20 bit displacements.
   bool hasDisplacementPairInsn(unsigned Opcode) const;

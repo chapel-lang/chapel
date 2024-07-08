@@ -26,24 +26,24 @@ record buf {
   const bufSize : int;
   var buf : [0..#bufSize] uint(8);
   var cur, cap, numLeft : int;
-  var chan : channel(writing=false, kind=iokind.native, locking=false);
+  var chan : fileReader(locking=false, binaryDeserializer);
 
   proc init(fi:file, bs:int) {
     this.bufSize = bs;
 
-    this.complete();
+    init this;
 
-    chan = fi.reader(locking=false);
+    chan = fi.reader(locking=false, deserializer=new binaryDeserializer());
     numLeft = fi.size;
   }
 
   // Returns (by ref-ish) a slice of the buffer starting at 'low'
   pragma "no copy return"
-  proc fill() {
+  proc ref fill() {
     if cur >= cap {
       if numLeft > 0 {
         cap = min(bufSize, numLeft);
-        chan.readBytes(c_ptrTo(buf), cap:c_ssize_t);
+        chan.readBinary(c_ptrTo(buf), cap:c_ssize_t);
         numLeft -= cap;
 
         // ensure we return an empty slice if we run out of bytes
@@ -57,22 +57,22 @@ record buf {
     return buf[low..max(0, cap-1)];
   }
 
-  proc consume(n : int) {
+  proc ref consume(n : int) {
     cur = min(cur + n, cap);
   }
 
-  proc _memchr(c : uint(8), arr : []) {
-    extern proc memchr(s:c_void_ptr, c : c_int, n : c_size_t) : c_void_ptr;
+  proc _memchr(c : uint(8), ref arr : []) {
+    extern proc memchr(s:c_ptr(void), c : c_int, n : c_size_t) : c_ptr(void);
     const ptr = c_ptrTo(arr);
     const ret = memchr(ptr, c:c_int, arr.size:c_size_t);
-    if ret != c_nil {
+    if ret != nil {
       const idx = arr.domain.first + ret:c_intptr - ptr:c_intptr;
       return idx;
     }
     return -1;
   }
 
-  proc readUntil(term : uint(8), ref data : list(uint(8))) : int {
+  proc ref readUntil(term : uint(8), ref data : list(uint(8))) : int {
     var read = 0;
     while true {
       var done = false, used = 0;
@@ -80,12 +80,12 @@ record buf {
       if avail.size > 0 {
         const idx = _memchr(term, avail);
         if idx >= 0 {
-          // Character found, bulk-append characters up to and including 'idx'
+          // Character found, bulk-pushBack characters up to and including 'idx'
           // to the 'data' array.
-          data.append(avail[..idx]);
+          data.pushBack(avail[..idx]);
           (done, used) = (true, avail[..idx].size);
         } else {
-          data.append(avail);
+          data.pushBack(avail);
           (done, used) = (false, avail.size);
         }
       } else return 0;
@@ -100,7 +100,7 @@ record buf {
 config const readSize = 16 * 1024;
 
 proc main(args: [] string) {
-  const stdin = openfd(0);
+  const stdin = new file(0);
   var input = new buf(stdin, readSize);
   var data: list(uint(8));
   
@@ -136,13 +136,12 @@ proc main(args: [] string) {
     }
   }
 
-  const stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                     hints=ioHintSet.direct(QIO_CH_ALWAYS_UNBUFFERED));
-  //
+  const stdoutBin = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
+
   // This conversion wastes memory, but correct output requires array stdout
   // specifically at the moment.
   //
-  stdoutBin.write(data.toArray());
+  stdoutBin.writeBinary(data.toArray());
 }
 
 proc process(ref data, in start, in end) {

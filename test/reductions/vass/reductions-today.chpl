@@ -2,7 +2,7 @@
 This test combines two aspects of reductions:
 
 * plus-reduction of booleans - this implicitly coerces booleans to integers
-  this is a simplification of test/trivial/deitz/monte.chpl
+  this is a simplification of test/trivial/deitz/other/monte.chpl
 
 * test2 and test3 are testing simply reductions over ints,
   with promotion or not
@@ -97,7 +97,7 @@ iter randomIntPoints(followThis, param tag)
   }
 }
 
-proc d2(x: numeric) return x**2;
+proc d2(x: numeric) do return x**2;
 
 proc test2 {
   const result = + reduce randomIntPoints();

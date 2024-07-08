@@ -11,8 +11,10 @@ proc f(param i : uint) {
 }
 
 proc main() {
-  var a = new borrowed C(0 : uint); // this works
-  var b = new borrowed C(1);        // this doesn't
+  var ownA = new owned C(0 : uint); // this works
+  var a = ownA.borrow();
+  var ownB = new owned C(1); // this doesn't
+  var b = ownB.borrow();
 
   f(2); // this also works
 }

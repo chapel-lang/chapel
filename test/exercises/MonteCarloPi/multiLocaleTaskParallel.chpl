@@ -22,7 +22,7 @@ var counts: [LocaleSpace] int;
 // locale's unique ID and compute what portion of the random points
 // that locale owns.
 //
-coforall loc in Locales {
+coforall loc in Locales with (ref counts) {
   on loc {
     //
     // locid = the unique ID of this locale (0..numLocales-1)
@@ -32,7 +32,7 @@ coforall loc in Locales {
     // locFirstPt = the first point owned by this locale
     //
     const locid = here.id;  // equivalently, could use loc.id
-    const nPerLoc = n/numLocales, 
+    const nPerLoc = n/numLocales,
           globExtras = n%numLocales;
     const locN = nPerLoc + (locid < globExtras),
           locFirstPt = locid*nPerLoc
@@ -49,17 +49,17 @@ coforall loc in Locales {
     // point, run the Monte Carlo method, store its local result, and
     // delete the RandomStream object.
     //
-    coforall tid in 0..#tasksPerLocale {
-      var rs = new owned NPBRandomStream(real, seed, parSafe=false);
+    coforall tid in 0..#tasksPerLocale with (ref locCounts) {
+      var rs = new randomStream(real, seed);
       const locNPerTask = locN/tasksPerLocale,
             extras = locN%tasksPerLocale;
-      rs.skipToNth(2*(locFirstPt + 
-                      tid*locNPerTask + (if tid < extras then tid else extras))
-                   );
+      rs.skipTo(2*(locFirstPt +
+                  tid*locNPerTask + (if tid < extras then tid else extras))
+                );
 
       var count = 0;
       for i in 1..locNPerTask + (tid < extras) do
-        count += (rs.getNext()**2 + rs.getNext()**2) <= 1.0;
+        count += (rs.next()**2 + rs.next()**2) <= 1.0;
 
       locCounts[tid] = count;
     }

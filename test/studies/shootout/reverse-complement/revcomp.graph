@@ -1,6 +1,6 @@
-perfkeys: real, real, real, real, real, real, real
-files: revcomp.dat, revcomp-begin.dat, revcomp-blc.dat, revcomp-buf.dat, revcomp-line.dat, revcomp-mark-skip-read-begin.dat, revcomp-fast.dat
-graphkeys: release version, revcomp-begin, Brad version, Buffered, BufferedLine, mark-skip-read, fast release
+perfkeys: real, real, real, real, real, real, real, real, real
+files: revcomp.dat, revcomp-begin.dat, revcomp-blc.dat, revcomp-buf.dat, revcomp-line.dat, revcomp-mark-skip-read-begin.dat, revcomp-fast.dat, revcomp-blc-gcc8.dat, revcomp-blc-gcc8-algs.dat
+graphkeys: release version, revcomp-begin, Brad version, Buffered, BufferedLine, mark-skip-read, fast release, gcc8 transliteration, gcc8 translit (memchr)
 graphtitle: Reverse-complement Shootout Benchmark
 ylabel: Time (seconds)
 graphname: revcomp

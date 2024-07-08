@@ -51,19 +51,19 @@ define(M68K_PATTERN,
 [[m68k-*-* | m68[0-9][0-9][0-9]-*-*]])
 
 define(POWERPC64_PATTERN,
-[[powerpc64-*-* | powerpc64le-*-* | powerpc620-*-* | powerpc630-*-* | powerpc970-*-* | power[3-9]-*-*]])
+[[powerpc64-*-* | powerpc64le-*-* | powerpc620-*-* | powerpc630-*-* | powerpc970-*-* | power[3-9]-*-* | power1[0-9]-*-*]])
 
 define(S390_PATTERN,
-[[s390-*-* | z900esa-*-* | z990esa-*-* | z9esa-*-* | z10esa-*-* | z196esa-*-*]])
+[[s390-*-* | z900esa-*-* | z990esa-*-* | z9esa-*-* | z1[0-6]esa-*-* | z196esa-*-*]])
 
 define(S390X_PATTERN,
-[[s390x-*-* | z900-*-* | z990-*-* | z9-*-* | z10-*-* | z196-*-*]])
+[[s390x-*-* | z900-*-* | z990-*-* | z9-*-* | z1[0-6]-*-* | z196-*-*]])
 
 define(X86_PATTERN,
 [[i?86*-*-* | k[5-8]*-*-* | pentium*-*-* | athlon-*-* | viac3*-*-* | geode*-*-* | atom-*-*]])
 
 define(X86_64_PATTERN,
-[[athlon64-*-* | k8-*-* | k10-*-* | bobcat-*-* | jaguar*-*-* | bulldozer*-*-* | piledriver*-*-* | steamroller*-*-* | excavator*-*-* | zen*-*-* | pentium4-*-* | atom-*-* | silvermont-*-* | goldmont-*-* | core2-*-* | corei*-*-* | x86_64-*-* | nano-*-* | nehalem*-*-* | westmere*-*-* | sandybridge*-*-* | ivybridge*-*-* | haswell*-*-* | broadwell*-*-* | skylake*-*-* | kabylake*-*-*]])
+[[athlon64-*-* | k8-*-* | k10-*-* | bobcat-*-* | jaguar*-*-* | bulldozer*-*-* | piledriver*-*-* | steamroller*-*-* | excavator*-*-* | zen*-*-* | pentium4-*-* | atom-*-* | silvermont-*-* | goldmont-*-* | tremont-*-* | core2-*-* | corei*-*-* | x86_64-*-* | nano-*-* | nehalem*-*-* | westmere*-*-* | sandybridge*-*-* | ivybridge*-*-* | haswell*-*-* | broadwell*-*-* | skylake*-*-* | kabylake*-*-* | icelake*-*-* | tigerlake*-*-* | rocketlake*-*-* | alderlake*-*-* | raptorlake*-*-*]])
 
 dnl  GMP_FAT_SUFFIX(DSTVAR, DIRECTORY)
 dnl  ---------------------------------
@@ -3085,26 +3085,26 @@ GMP_DEFINE_RAW(["define(<HAVE_REGISTER>,<$gmp_cv_asm_sparc_register>)"])
 ])
 
 
-dnl  GMP_ASM_SPARC_GOTDATA
+dnl  GMP_ASM_SPARC_GDOP
 dnl  ----------------------
-dnl  Determine whether the assembler accepts gotdata relocations.
+dnl  Determine whether the assembler accepts gdop relocations.
 dnl
 dnl  See also mpn/sparc32/sparc-defs.m4 which uses the result of this test.
 
-AC_DEFUN([GMP_ASM_SPARC_GOTDATA],
+AC_DEFUN([GMP_ASM_SPARC_GDOP],
 [AC_REQUIRE([GMP_ASM_TEXT])
-AC_CACHE_CHECK([if the assembler accepts gotdata relocations],
-               gmp_cv_asm_sparc_gotdata,
+AC_CACHE_CHECK([if the assembler accepts gdop relocations],
+               gmp_cv_asm_sparc_gdop,
 [GMP_TRY_ASSEMBLE(
 [	$gmp_cv_asm_text
 	.text
 	sethi	%gdop_hix22(symbol), %g1
 	or	%g1, %gdop_lox10(symbol), %g1
 ],
-[gmp_cv_asm_sparc_gotdata=yes],
-[gmp_cv_asm_sparc_gotdata=no])])
+[gmp_cv_asm_sparc_gdop=yes],
+[gmp_cv_asm_sparc_gdop=no])])
 
-GMP_DEFINE_RAW(["define(<HAVE_GOTDATA>,<$gmp_cv_asm_sparc_gotdata>)"])
+GMP_DEFINE_RAW(["define(<HAVE_GDOP>,<$gmp_cv_asm_sparc_gdop>)"])
 ])
 
 

@@ -1,5 +1,5 @@
 extern proc chpl_cache_print();
-extern proc printf(fmt: c_string, vals...?numvals): int;
+extern proc printf(fmt: c_ptrConst(c_char), vals...?numvals): int;
 
 use CTypes;
 use BlockDist;
@@ -7,9 +7,9 @@ use BlockDist;
 config var n: int = 8;
 
 
-const D = LocaleSpace dmapped Block(boundingBox=LocaleSpace);
+const D = LocaleSpace dmapped new blockDist(boundingBox=LocaleSpace);
 var P: [D] atomic int;
-//var D: domain(1) dmapped new dmap(new Block(boundingBox={1..n})) = {1..n};
+//var D: domain(1) dmapped new blockDist(boundingBox={1..n}) = {1..n};
 //var A: [D] int;
 
 //startCommDiagnostics();

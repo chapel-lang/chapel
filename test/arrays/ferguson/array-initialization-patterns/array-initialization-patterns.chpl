@@ -143,7 +143,7 @@ A = 0;
 test10();
 
 record RdomainTest {
-  var D: domain;
+  var D: domain(?);
   var A: [D] int;
 }
 
@@ -424,8 +424,10 @@ class C7 {
 
 proc testC7() {
   writeln("testC7");
-  var A : [1..1] borrowed C = [new C(1)];
+  var A : [1..1] owned C = [new C(1), ];
   writeln(A);
+  var B : [1..1] borrowed C = A.borrow();
+  writeln(B);
 }
 testC7();
 writeln("-");

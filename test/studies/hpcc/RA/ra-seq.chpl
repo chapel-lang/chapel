@@ -1,4 +1,4 @@
-use Time;
+use Time, Math;
 
 use HPCCProblemSize, RARandomStream;
 
@@ -49,14 +49,14 @@ proc main() {
 
   const UpdateSpace: domain(1, indexType) = {0:indexType..#N_U};
 
-  const startTime = getCurrentTime();
+  const startTime = timeSinceEpoch().totalSeconds();
 
-  [i in TableSpace] T(i) = i;
+  [i in TableSpace with (ref T)] T(i) = i;
 
-  forall (_,r) in zip(myFakeLeader, RAStream()) do
+  forall (_,r) in zip(myFakeLeader, RAStream()) with (ref T) do
     T(r & indexMask) ^= r;
 
-  const execTime = getCurrentTime() - startTime;
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;
 
   const validAnswer = verifyResults(T, UpdateSpace);
   printResults(validAnswer, execTime);
@@ -71,10 +71,10 @@ proc printConfiguration() {
 }
 
 
-proc verifyResults(T: [?TDom], UpdateSpace) {
+proc verifyResults(ref T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
-  forall (_,r) in zip(myFakeLeader, RAStream()) do
+  forall (_,r) in zip(myFakeLeader, RAStream()) with (ref T) do
     T(r & indexMask) ^= r;
 
   if (printArrays) then writeln("After verification, T is: ", T, "\n");

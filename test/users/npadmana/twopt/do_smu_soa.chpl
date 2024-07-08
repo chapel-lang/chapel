@@ -35,7 +35,7 @@ config const nmubins=5;
 config const nsbins=5;
 
 // Global variables
-var gtime1 : Timer;
+var gtime1 : stopwatch;
 
 proc main() {
   doPairs();
@@ -52,15 +52,15 @@ class Particle3D {
   var _n1, _ndx : [Dpart] int;
 
   proc init(npart1 : int, random : bool = false) {
-    this.complete();
+    init this;
     npart = npart1;
     Darr = {ParticleAttrib, 0.. #npart};
     Dpart = {0.. #npart};
     if random {
-      var rng = new RandomStream(eltType=real);
+      var rng = new randomStream(eltType=real);
       var x, y, z : real;
       for ii in Dpart {
-        x = rng.getNext()*1000.0; y = rng.getNext()*1000.0; z = rng.getNext()*1000.0;
+        x = rng.next()*1000.0; y = rng.next()*1000.0; z = rng.next()*1000.0;
         arr[0,ii] = x; arr[1, ii] = y; arr[2, ii] = z;
         arr[3,ii] = 1.0;
         arr[4,ii] = x**2 + y**2 + z**2;
@@ -98,10 +98,10 @@ class Particle3D {
     }
 
     // Set the random number generator
-    var rng = new RandomStream(eltType=real, seed=41);
+    var rng = new randomStream(eltType=real, seed=41);
     var jj : int;
     for ii in 0..(npart-2) {
-      jj = (rng.getNext()*(npart-ii)):int + ii;
+      jj = (rng.next()*(npart-ii)):int + ii;
       _ndx[jj] <=> _ndx[ii];
     }
 
@@ -114,10 +114,10 @@ class Particle3D {
 
 
 proc countLines(fn : string) : int {
-  var ff = open(fn, iomode.r);
+  var fr = openReader(fn, locking=false);
   var ipart = 0;
-  for iff in ff.lines() do ipart +=1;
-  ff.close();
+  for iff in fr.lines() do ipart +=1;
+  fr.close();
   return ipart;
 }
 
@@ -125,7 +125,7 @@ proc readFile(fn : string) : owned Particle3D  {
   var npart = countLines(fn);
   var pp = new owned Particle3D(npart);
 
-  var ff = openreader(fn);
+  var ff = openReader(fn, locking=false);
   var ipart = 0;
   var x,y,z,w,r2 : real;
   while (ff.read(x,y,z,w)) {
@@ -224,7 +224,7 @@ proc BuildTree(pp : Particle3D, lo : int, hi : int, id : int) : owned KDNode  {
   return me;
 }
 
-proc TreeAccumulate(hh : UniformBins, p1, p2 : Particle3D, node1, node2 :  KDNode) {
+proc TreeAccumulate(hh : UniformBins(?), p1, p2 : Particle3D, node1, node2 :  KDNode) {
   // Compute the distance between node1 and node2
   var rr = sqrt (+ reduce(node1.xcen - node2.xcen)**2);
   var rmin = rr - (node1.rcell+node2.rcell);
@@ -266,7 +266,7 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : Particle3D, node1, node2 :  KDNod
   
 
 // The basic pair counter
-proc smuAccumulate(hh : UniformBins, p1,p2 : Particle3D, d1,d2 : domain(1), scale : real) {
+proc smuAccumulate(hh : UniformBins(?), p1,p2 : Particle3D, d1,d2 : domain(1), scale : real) {
   for ii in d1 { // Loop over first set of particles
    
     var x1,y1,z1,w1,r2 : real;
@@ -292,7 +292,7 @@ proc smuAccumulate(hh : UniformBins, p1,p2 : Particle3D, d1,d2 : domain(1), scal
 }
 
 proc doPairs() {
-  var tt : Timer;
+  var tt : stopwatch;
 
   // Read in the file
   tt.clear(); tt.start();
@@ -344,7 +344,7 @@ proc initialPP(fn) {
   if (!isTest) {
     writef("Time to tree paircount : %r \n", tt.elapsed());
     if !isPerf {
-      var ff = openwriter("%s.tree".format(pairfn));
+      var ff = openWriter("%s.tree".format(pairfn), locking=false);
       writeHist(ff,hh);
       ff.close();
     }
@@ -353,4 +353,3 @@ proc initialPP(fn) {
     writeHist(stdout,hh,"%20.5er ");
   }
 }
-

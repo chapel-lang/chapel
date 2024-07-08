@@ -1,14 +1,14 @@
 use BlockDist;
 
 proc createNiceArray() {
-  var dom = {1..10} dmapped Block({1..10});
+  var dom = {1..10} dmapped new blockDist({1..10});
   var arr: [dom] int;
 
   return arr;
 }
 
 proc createAnnoyingArray() {
-  var dom = {1..10} dmapped Block({1..20});
+  var dom = {1..10} dmapped new blockDist({1..20});
   var arr: [dom] int;
 
   return arr;
@@ -21,8 +21,8 @@ var arr2 = createAnnoyingArray();
 arr1 = 1;
 arr2 = 2;
 
-forall i in arr2.domain {
-  arr1[i] = 
+forall i in arr2.domain with (ref arr1) {
+  arr1[i] =
     arr2[i];
 }
 

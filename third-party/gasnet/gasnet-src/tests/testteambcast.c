@@ -231,6 +231,8 @@ int main(int argc, char **argv)
     }
   }
     
+  gex_TM_Destroy(my_row_tm, NULL, 0);
+  gex_TM_Destroy(my_col_tm, NULL, 0);
   
   BARRIER();
   

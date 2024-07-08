@@ -1,0 +1,36 @@
+─── error in incompatibleRangeBounds.chpl:3 [IncompatibleRangeBounds] ───
+  Bounds of range expression have incompatible types.
+  In the following range expression:
+      |
+    3 | var r1 = 1.."hello";
+      |          ⎺   ⎺⎺⎺⎺⎺⎺
+      |
+  the lower bound is of type 'int(64)', while the upper bound is of type 'string'.
+
+─── error in incompatibleRangeBounds.chpl:4 [IncompatibleRangeBounds] ───
+  Bounds of range expression have incompatible types.
+  In the following range expression:
+      |
+    4 | var r2 = y..x;
+      |          ⎺  ⎺
+      |
+  the lower bound is of type 'string', while the upper bound is of type 'int(64)'.
+
+─── error in incompatibleRangeBounds.chpl:5 [IncompatibleRangeBounds] ───
+  Bounds of range expression have incompatible types.
+  In the following range expression:
+      |
+    5 | var r3 = 1..int;
+      |          ⎺  ⎺⎺⎺
+      |
+  the lower bound is a value of type 'int(64)', while the upper bound is the type 'int(64)'.
+
+─── error in incompatibleRangeBounds.chpl:6 [IncompatibleRangeBounds] ───
+  Bounds of range expression have incompatible types.
+  In the following range expression:
+      |
+    6 | var r4 = int..string;
+      |          ⎺⎺⎺  ⎺⎺⎺⎺⎺⎺
+      |
+  the lower bound is the type 'int(64)', while the upper bound is the type 'string'.
+

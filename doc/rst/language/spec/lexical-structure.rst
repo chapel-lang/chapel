@@ -1,15 +1,21 @@
 .. default-domain:: chpl
 
+.. index::
+   single: lexical structure
 .. _Chapter-Lexical_Structure:
 
 =================
 Lexical Structure
 =================
 
+
 This section describes the lexical components of Chapel programs. The
 purpose of lexical analysis is to separate the raw input stream into a
 sequence of tokens suitable for input to the parser.
 
+.. index::
+   single: comments
+   single: lexical structure;comments
 .. _Comments:
 
 Comments
@@ -30,7 +36,7 @@ not start a comment but rather are part of the bytes or string literal.
    *Example*.
 
    The following program makes use of both forms of comment:
-   
+
 
    .. code-block:: chapel
 
@@ -41,6 +47,9 @@ not start a comment but rather are part of the bytes or string literal.
         writeln("hello, world"); // output greeting with new line
       }
 
+.. index::
+   single: white space
+   single: lexical structure;white space
 .. _White_Space:
 
 White Space
@@ -50,6 +59,9 @@ White-space characters are spaces, tabs, line feeds, form feeds, and
 carriage returns. Along with comments, they delimit tokens, but are
 otherwise ignored.
 
+.. index::
+   single: case sensitivity
+   single: lexical structure;case sensitivity
 .. _Case_Sensitivity:
 
 Case Sensitivity
@@ -62,6 +74,8 @@ Chapel is a case sensitive language.
    The following identifiers are considered distinct: ``chapel``,
    ``Chapel``, and ``CHAPEL``.
 
+.. index::
+   single: lexical structure;tokens
 .. _Tokens:
 
 Tokens
@@ -70,6 +84,9 @@ Tokens
 Tokens include identifiers, keywords, literals, operators, and
 punctuation.
 
+.. index::
+   single: identifiers
+   single: lexical structure;identifiers
 .. _Identifiers:
 
 Identifiers
@@ -79,7 +96,7 @@ An identifier in Chapel is a sequence of characters that starts with a
 lowercase or uppercase letter or an underscore and is optionally
 followed by a sequence of lowercase or uppercase letters, digits,
 underscores, and dollar-signs. Identifiers are designated by the
-following syntax: 
+following syntax:
 
 .. code-block:: syntax
 
@@ -107,20 +124,14 @@ following syntax:
 
 ..
 
-   *Rationale*.
-
-   Why include “$” in the language? The inclusion of the $ character is
-   meant to assist programmers using sync and single variables by
-   supporting a convention (a $ at the end of such variables) in order
-   to help write properly synchronized code. It is felt that marking
-   such variables is useful since using such variables could result in
-   deadlocks.
-
    *Example*.
 
-   The following are legal identifiers: ``Cray1``, ``syncvar$``,
+   The following are legal identifiers: ``Cray1``, ``Cray$``,
    ``legalIdentifier``, and ``legal_identifier``.
 
+.. index::
+   single: keywords
+   single: lexical structure;keywords
 .. _Keywords:
 
 Keywords
@@ -151,6 +162,7 @@ The following identifiers are reserved as keywords:
    const
    continue
    defer
+   deinit
    delete
    dmapped
    do
@@ -170,6 +182,7 @@ The following identifiers are reserved as keywords:
    implements
    in
    index
+   init
    inline
    inout
    int
@@ -193,10 +206,12 @@ The following identifiers are reserved as keywords:
    override
    owned
    param
+   postinit
    private
-   prototype
    proc
+   prototype
    public
+   range
    real
    record
    reduce
@@ -211,8 +226,10 @@ The following identifiers are reserved as keywords:
    sparse
    string
    subdomain
+   super
    sync
    then
+   these
    this
    throw
    throws
@@ -224,6 +241,7 @@ The following identifiers are reserved as keywords:
    unmanaged
    use
    var
+   void
    when
    where
    while
@@ -241,12 +259,15 @@ The following identifiers are keywords reserved for future use:
    pragma
    primitive
 
+.. index::
+   single: lexical structure;literals
+   single: literals;primitive type
 .. _Literals:
 
 Literals
 ~~~~~~~~
 
-Bool literals are designated by the following syntax: 
+Bool literals are designated by the following syntax:
 
 .. code-block:: syntax
 
@@ -254,7 +275,7 @@ Bool literals are designated by the following syntax:
      'true' 'false'
 
 Signed and unsigned integer literals are designated by the following
-syntax: 
+syntax:
 
 .. code-block:: syntax
 
@@ -331,14 +352,14 @@ the remaining literals have type ``uint``.
    *Rationale*.
 
    Underscores can be used to group the digits of numbers for
-   legibility. For example: 
+   legibility. For example:
 
    .. code-block:: chapel
 
       var i = 1_234_567_890;
       var x = 0xFF_FF_12_34;
 
-Real literals are designated by the following syntax: 
+Real literals are designated by the following syntax:
 
 .. code-block:: syntax
 
@@ -491,7 +512,7 @@ characters ``\`` and ``n``. Uninterpreted bytes literals
 may span multiple lines and the literal newline characters will be
 included in the bytes.
 
-A bytes literal can be either interpreted or uninterpreted. 
+A bytes literal can be either interpreted or uninterpreted.
 
 .. code-block:: syntax
 
@@ -499,6 +520,10 @@ A bytes literal can be either interpreted or uninterpreted.
      interpreted-bytes-literal
      uninterpreted-bytes-literal
 
+.. index::
+   single: lexical structure;operator
+   single: operators;lexical structure
+   single: lexical structure;punctuation
 .. _Operators_and_Punctuation:
 
 Operators and Punctuation
@@ -514,7 +539,6 @@ language:
 ``+=`` ``-=`` ``*=`` ``/=`` ``**=`` ``%=`` ``&=`` ``|=`` ``^=``                                     compound assignment
 ``&&=`` ``||=`` ``<<=`` ``>>=`` ``reduce=``                                                         compound assignment, cont.
 ``<=>``                                                                                             swap
-``<~>``                                                                                             I/O
 ``..`` ``..<``                                                                                      range specifier
 ``by``                                                                                              range/domain stride specifier
 ``#``                                                                                               range count operator
@@ -530,6 +554,10 @@ language:
 ``"`` ``'``                                                                                         string delimiters
 =================================================================================================== =============================
 
+.. index::
+   single: lexical structure;braces
+   single: lexical structure;parentheses
+   single: lexical structure;brackets
 .. _Grouping_Tokens:
 
 Grouping Tokens
@@ -544,4 +572,3 @@ The following braces are part of the Chapel language:
 ``[ ]``    array literals, array types, forall expressions, and function calls
 ``{ }``    domain literals, block statements
 ========== ===================================================================
-

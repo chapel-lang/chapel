@@ -50,9 +50,9 @@ static void psmx3_string_to_uuid(const char *s, psm2_uuid_t uuid)
 		&uuid[10], &uuid[11], &uuid[12], &uuid[13], &uuid[14], &uuid[15]);
 
 	if (n != 16) {
-		FI_WARN(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 				"wrong uuid format: %s\n", s);
-		FI_WARN(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 			"correct uuid format is: "
 			"xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n");
 	}
@@ -125,14 +125,14 @@ struct psmx3_ep_name *psmx3_string_to_ep_name(const void *s)
 		return NULL;
 
 	if (ofi_str_toaddr(s, &fmt, &name, &len)) {
-		FI_INFO(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 			"invalid string address: %s.\n",
 			(const char *)s);
 		return NULL;
 	}
 
 	if (fmt != FI_ADDR_PSMX3) {
-		FI_INFO(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 			"invalid string address format: %s.\n",
 			(const char *)s);
 		free(name);
@@ -200,30 +200,3 @@ int psmx3_errno(int err)
 	else
 		return -FI_EOTHER;
 }
-
-/*
- * PSM context sharing requires some information from the MPI process manager.
- * Try to get the needed information from the environment.
- */
-void psmx3_query_mpi(void)
-{
-	char *s;
-	char env[32];
-	int local_size = -1;
-	int local_rank = -1;
-
-	/* Check Open MPI */
-	if ((s = getenv("OMPI_COMM_WORLD_LOCAL_SIZE"))) {
-		local_size = atoi(s);
-		if ((s = getenv("OMPI_COMM_WORLD_LOCAL_RANK")))
-			local_rank = atoi(s);
-		snprintf(env, sizeof(env), "%d", local_size);
-		setenv("MPI_LOCALNRANKS", env, 0);
-		snprintf(env, sizeof(env), "%d", local_rank);
-		setenv("MPI_LOCALRANKID", env, 0);
-		return;
-	}
-
-	/* TODO: check other MPI */
-}
-

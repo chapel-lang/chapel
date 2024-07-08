@@ -45,14 +45,14 @@ const localDom = {0..#order, 0..#order};
 var tiledLocalDom = {0..#order by tileSize, 0..#order by tileSize};
 
 
-const blockDist = new dmap(new Block(localDom));
-const Dist =  if useBlockDist then blockDist
+const myBlockDist = new blockDist(localDom);
+const Dist =  if useBlockDist then myBlockDist
                               else defaultDist;
 
 const Dom = localDom dmapped Dist;
 const tiledDom = tiledLocalDom dmapped Dist;
 
-var timer: Timer,
+var timer: stopwatch,
     nBytes = 2.0 * numBytes(real) * order * order,
     A, B : [Dom] real;
 
@@ -69,7 +69,7 @@ if (!correctness) {
 }
 
 // Fill original column matrix
-[(i, j) in Dom] A[i,j] = order*j + i;
+[(i, j) in Dom with (ref A)] A[i,j] = order*j + i;
 
 // Initialize B for clarity
 B = 0.0;
@@ -82,7 +82,7 @@ for iteration in 0..iterations {
   if (iteration == 1) then timer.start();
 
   if (tiled) {
-    forall (i,j) in tiledDom {
+    forall (i,j) in tiledDom with (ref A, ref B) {
       for it in i .. # min(order - i, tileSize) {
         for jt in j .. # min(order - j, tileSize) {
           B[jt,it] += A[it,jt];
@@ -92,7 +92,7 @@ for iteration in 0..iterations {
     }
   }
   else {
-    forall (i,j) in Dom {
+    forall (i,j) in Dom with (ref A, ref B) {
       B[j,i] += A[i,j];
       A[i,j] += 1.0;
     }

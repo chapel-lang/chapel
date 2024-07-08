@@ -1,1 +1,1 @@
-error-yield-at-top-level.chpl:2: error: yield statement is outside an iterator
+error-yield-at-top-level.chpl:2: error: 'yield' is not allowed outside of an iterator

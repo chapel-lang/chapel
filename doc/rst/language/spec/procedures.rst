@@ -1,5 +1,19 @@
 .. default-domain:: chpl
 
+.. index::
+   single: functions
+   see: routines; functions
+   see: subroutines; functions
+   single: functions; call site
+   single: functions; actual arguments
+   single: functions; procedure
+   single: functions; operators
+   single: functions; methods
+   single: procedures
+   single: operators; procedures
+   single: call site
+   single: formal arguments
+   single: actual arguments
 .. _Chapter-Procedures:
 
 ==========
@@ -12,7 +26,7 @@ this programming-languages sense, rather than in the mathematical sense.
 A function has zero or more *formal arguments*, or simply *formals*.
 Upon a function call each formal is associated with the corresponding
 *actual argument*, or simply *actual*. Actual arguments are provided as
-part of the call expression, or at the the *call site*. Direct and
+part of the call expression, or at the *call site*. Direct and
 indirect recursion is supported.
 
 A function can be a *procedure*, which completes and returns to the call
@@ -52,6 +66,10 @@ Functions are presented as follows:
    and operator overloading :ref:`Function_Overloading`,
    function resolution :ref:`Function_Resolution`
 
+.. index::
+   single: calls
+   see: function calls; calls
+   single: actual arguments
 .. _Function_Calls:
 
 Function Calls
@@ -90,8 +108,7 @@ Functions can be called using either parentheses or brackets.
    tradeoff.
 
 Functions that are defined without parentheses must be called without
-parentheses as defined by scope resolution. Functions without
-parentheses are discussed
+parentheses. Functions without parentheses are discussed
 in :ref:`Functions_without_Parentheses`.
 
 A ``named-expression`` is an expression that may be optionally named. It
@@ -102,6 +119,10 @@ in :ref:`Named_Arguments`.
 Calls to methods are defined in
 Section :ref:`Class_Method_Calls`.
 
+.. index::
+   single: functions; procedure definition
+   single: procedures; definition
+   single: proc
 .. _Function_Definitions:
 
 Procedure Definitions
@@ -124,7 +145,7 @@ Procedures are defined with the following syntax:
    operator-name: one of
      'align' 'by'
      + - * / % ** : ! == != <= >= < > << >> & | ^ ~
-     = += -= *= /= %= **= &= |= ^= <<= >>= <=> <~> #
+     = += -= *= /= %= **= &= |= ^= <<= >>= <=> #
 
    argument-list:
      ( formals[OPT] )
@@ -141,14 +162,12 @@ Procedures are defined with the following syntax:
 
    formal-type:
      : type-expression
-     : ? identifier[OPT]
 
    default-expression:
      = expression
 
    variable-argument-expression:
      ... expression
-     ... ? identifier[OPT]
      ...
 
    formal-intent:
@@ -165,6 +184,7 @@ Procedures are defined with the following syntax:
    return-intent:
      'const'
      'const ref'
+     'out'
      'ref'
      'param'
      'type'
@@ -176,8 +196,8 @@ Procedures are defined with the following syntax:
      'where' expression
 
    function-body:
+     'do' statement
      block-statement
-     return-statement
 
 Functions do not require parentheses if they have no arguments. Such
 functions are described in :ref:`Functions_without_Parentheses`.
@@ -215,6 +235,10 @@ type.
 The ``where-clause`` is optional and is discussed
 in :ref:`Where_Clauses`.
 
+The ``function-body`` defines the function's behavior and is defined
+in :ref:`The_Function_Body`.  Function bodies may contain return
+statements (see :ref:`The_Return_Statement`).
+
 Function and operator overloading is supported in Chapel and is
 discussed in :ref:`Function_Overloading`. Operator overloading
 is supported on the operators listed above (see ``operator-name``).
@@ -240,6 +264,8 @@ See the chapter on interoperability
 (:ref:`Chapter-Interoperability`) for details on exported
 and imported functions.
 
+.. index::
+   single: functions; without parentheses
 .. _Functions_without_Parentheses:
 
 Functions without Parentheses
@@ -277,6 +303,15 @@ be called without parentheses.
    to use parentheses when calling ``foo`` or omit them when calling
    ``bar``.
 
+Note that non-method functions called without parentheses cannot resolve
+to a function defined in a generic function's point of instantiation (see
+:ref:`Function_Visibility_in_Generic_Functions`).
+
+
+.. index::
+   single: formal arguments
+   single: functions; formal arguments
+
 .. _Formal_Arguments:
 
 Formal Arguments
@@ -287,6 +322,13 @@ how the actual argument is passed to the function. If no intent is
 specified, the default intent (:ref:`The_Default_Intent`) is
 applied, resulting in type-dependent behavior.
 
+A formal argument can include a type (e.g. ``arg: int``) and possibly a
+default value (e.g. ``arg = ""``).
+
+.. index::
+   single: named arguments
+   single: functions; named arguments
+   single: formal arguments; naming
 .. _Named_Arguments:
 
 Named Arguments
@@ -323,6 +365,10 @@ arguments with default values. For a function that has many arguments,
 it is sometimes good practice to name the arguments at the call site for
 compiler-checked documentation.
 
+.. index::
+   single: default values
+   single: functions; default argument values
+   single: formal arguments;defaults
 .. _Default_Values:
 
 Default Values
@@ -411,6 +457,10 @@ from the default value expression.
       {0..2}
 
 
+.. index::
+   single: intents
+   pair: arguments; intents
+   single: functions; arguments intents
 .. _Argument_Intents:
 
 Argument Intents
@@ -419,32 +469,70 @@ Argument Intents
 Argument intents specify how an actual argument is passed to a function
 where it is represented by the corresponding formal argument.
 
-Argument intents are categorized as being either *concrete* or
-*abstract*. Concrete intents are those in which the semantics of the
-intent keyword are independent of the argument’s type. Abstract intents
-are those in which the keyword (or lack thereof) expresses a general
-intention that will ultimately be implemented via one of the concrete
-intents. The specific choice of concrete intent depends on the
-argument’s type and may be implementation-defined. Abstract intents are
-provided to support productivity and code reuse.
+The argument intents are:
+ * :ref:`The_In_Intent` ``in``
+ * :ref:`The_Out_Intent` ``out``
+ * :ref:`The_Inout_Intent` ``inout``
+ * :ref:`The_Ref_Intent` ``ref``
+ * :ref:`The_Const_In_Intent` ``const in``
+ * :ref:`The_Const_Ref_Intent` ``const ref``
+ * :ref:`The_Const_Intent` ``const``
+ * :ref:`The_Default_Intent` (when no intent is given explicitly)
 
-.. _Concrete Intents:
+How should programmers choose among these intents?
 
-Concrete Intents
-~~~~~~~~~~~~~~~~
+ * The default intent and the ``const`` intent are designed to take the
+   most natural/least surprising action. The two are the same, except for
+   with synchronization types and tuples.
 
-The concrete intents are ``in``, ``out``, ``inout``, ``ref``,
-``const in``, and ``const ref``.
+ * The ``in`` and ``const in`` intents pass by value and are important
+   for transferring a value in to a function, for example, when storing a
+   value into a data structure. Using these intents for that use case can
+   help to avoid unnecessary copies.
 
+ * The ``ref`` and ``const ref`` intents pass by reference. The ``ref``
+   intent allows modifications of the referred-to value within the
+   function and can be important when the function is intended to mutate
+   its actual argument. While ``const ref`` does not allow the function
+   itself to modify the referred-to value, the formal can be relied upon
+   to track updates to the referred-to value through other variables or
+   references, unlike the ``const`` or default intent.
+
+ * The ``out`` transfers a value out of the function. The ``inout``
+   intent is a combination of ``in`` and ``out``.
+
+.. _Summary_of_Intents:
+
+Summary of Intents
+~~~~~~~~~~~~~~~~~~
+
+The following table summarizes the differences between the intents:
+
+================================ ====== ========= ========= ======== ============ ============= ========= ==========
+\                                ``in`` ``out``   ``inout`` ``ref``  ``const in`` ``const ref`` ``const`` default
+================================ ====== ========= ========= ======== ============ ============= ========= ==========
+initializes formal from actual?  yes    no        yes       no       yes          no            maybe     maybe
+sets actual from formal?         no     yes       yes       no       no           no            no        no
+refers to actual argument?       no     no        no        yes      no           yes           maybe     maybe
+formal can be read?              yes    yes       yes       yes      yes          yes           yes       yes
+formal can be modified?          yes    yes       yes       yes      no           no            no        no or yes
+local changes affect the actual? no     on return on return at once  N/A          N/A           N/A       N/A or yes
+================================ ====== ========= ========= ======== ============ ============= ========= ==========
+
+See the sections on each intent for further details.
+
+.. index::
+   single: in (intent)
+   single: intents; in
 .. _The_In_Intent:
 
 The In Intent
-^^^^^^^^^^^^^
+~~~~~~~~~~~~~
 
 When ``in`` is specified as the intent, the formal argument represents a
-variable that is initialized from the value of the actual argument.
-This initialization will be copy-initialization or move-initialization
-according to :ref:`Copy_and_Move_Initialization`.
+variable that is initialized from the value of the actual argument (see
+:ref:`Copy_and_Move_Initialization`). Note that a copy is not necessarily
+created for an ``in`` intent (see :ref:`Copy_Elision` for details).
 
 For example, for integer arguments, the formal argument will store a copy
 of the actual argument.
@@ -455,10 +543,75 @@ argument to the type of the formal.
 The formal can be modified within the function, but such changes are
 local to the function and not reflected back to the call site.
 
+This example shows a case where the ``in`` intent accepts a record
+but the code does not copy initialize:
+
+  *Example (copy-elision-in.chpl)*
+
+   .. BLOCK-test-chapelpre
+
+      record R {
+        var x: int = 0;
+        proc init() {
+          this.x = 0;
+          writeln("init (default)");
+        }
+        proc init(arg:int) {
+          this.x = arg;
+          writeln("init ", arg, " ", arg);
+        }
+        proc init=(other: R) {
+          this.x = other.x;
+          writeln("init= ", other.x);
+        }
+      }
+      operator R.=(ref lhs:R, rhs:R) {
+        writeln("lhs ", lhs.x, " = rhs ", rhs.x);
+        lhs.x = rhs.x;
+      }
+
+
+   .. code-block:: chapel
+
+      proc makeRecord() {
+        return new R(); // creates a new R record
+      }
+
+      proc acceptWithIn(in arg) { }
+
+      proc elideCopy() {
+        var x = makeRecord();
+        acceptWithIn(x); // copy to 'in arg' is elided
+                         // because 'x' is not used again
+        writeln("block ending");
+      }
+      elideCopy();
+
+      proc noElideCopy() {
+        var x = makeRecord();
+        acceptWithIn(x); // copy to 'in arg' remains because 'x' is used again
+        writeln(x); // 'x' used here
+        writeln("block ending");
+      }
+      noElideCopy();
+
+   .. BLOCK-test-chapeloutput
+
+      init (default)
+      block ending
+      init (default)
+      init= 0
+      (x = 0)
+      block ending
+
+
+.. index::
+   single: out (intent)
+   single: intents; out
 .. _The_Out_Intent:
 
 The Out Intent
-^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 
 The ``out`` intent on a formal argument supports return-like behavior.
 As such, the type of an ``out`` formal is not considered when determining
@@ -493,10 +646,13 @@ function body rather than from the call site.
    call site. However this is not yet implemented, at the time of this
    writing.
 
+.. index::
+   single: inout (intent)
+   single: intents; inout
 .. _The_Inout_Intent:
 
 The Inout Intent
-^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~
 
 When ``inout`` is specified as the intent, the actual argument is
 copy-initialized into the formal argument, the called function body is
@@ -511,10 +667,13 @@ candidate (see :ref:`Function_Resolution`).
 The actual argument must be a valid lvalue. The formal argument can be
 modified within the function.
 
+.. index::
+   single: ref (intent)
+   single: intents; ref
 .. _The_Ref_Intent:
 
 The Ref Intent
-^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 
 When ``ref`` is specified as the intent, the actual argument is passed
 by reference. Any reads of, or modifications to, the formal argument are
@@ -530,143 +689,155 @@ concurrent modifications to the ``ref`` actual argument by other tasks
 may be visible within the function, subject to the memory consistency
 model.
 
+.. index::
+   single: const in (intent)
+   single: intents; const in
 .. _The_Const_In_Intent:
 
 The Const In Intent
-^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~
 
 The ``const in`` intent is identical to the ``in`` intent, except that
 modifications to the formal argument are prohibited within the function.
 
+.. index::
+   single: const ref (intent)
+   single: intents; const ref
 .. _The_Const_Ref_Intent:
 
 The Const Ref Intent
-^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~
 
 The ``const ref`` intent is identical to the ``ref`` intent, except that
-modifications to the formal argument are prohibited within the dynamic
-scope of the function. Note that concurrent tasks may modify the actual
-argument while the function is executing and that these modifications
-may be visible to reads of the formal argument within the function’s
-dynamic scope (subject to the memory consistency model).
+modifications to the formal argument are prohibited within the function.
+The referred-to value can still be modified by other means during the
+execution of the routine. Such modifications are observable
+by the formal argument, subject to the memory consistency model.
 
-.. _Summary_of_Concrete_Intents:
+The following example shows such modification by means other than the
+``const ref`` formal. This program would be invalid if ``c`` used
+``const`` intent instead of ``const ref`` (see :ref:`The_Const_Intent`).
 
-Summary of Concrete Intents
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  *Example (const-ref-aliasing.chpl)*.
 
-The following table summarizes the differences between the concrete
-intents:
+   .. code-block:: chapel
 
-================================ ====== ========= ========= =========== ============ =============
-\                                ``in`` ``out``   ``inout`` ``ref``     ``const in`` ``const ref``
-================================ ====== ========= ========= =========== ============ =============
-initializes formal from actual?  yes    no        yes       no          yes          no
-sets actual from formal?         no     yes       yes       no          no           no
-refers to actual argument?       no     no        no        yes         no           yes
-formal can be read?              yes    yes       yes       yes         yes          yes
-formal can be modified?          yes    yes       yes       yes         no           no
-local changes affect the actual? no     on return on return immediately N/A          N/A
-================================ ====== ========= ========= =========== ============ =============
+      var a: int = 0;
+      proc f(ref b, const ref c) {
+        writeln(c); // outputs 0
+        a = 1;
+        writeln(c); // outputs 1, because 'c' refers to 'a'
+        b = 2;      // modifies 'a' because 'b' refers to 'a'
+        writeln(c); // outputs 2, because 'c' refers to 'a'
+      }
+      f(a, a);
 
-.. _Abstract_Intents:
+   .. BLOCK-test-chapeloutput
 
-Abstract Intents
-~~~~~~~~~~~~~~~~
+      0
+      1
+      2
 
-The abstract intents are ``const`` and the *default intent* (when no
-intent is specified).
-
-.. _Abstract_Intents_Table:
-
-Abstract Intents Table
-^^^^^^^^^^^^^^^^^^^^^^
-
-The following table summarizes what these abstract intents mean for each
-type:
-
-=================== ================ ======================= ====================================================
-\                   meaning of       meaning of             
-type                ``const`` intent default intent          notes
-``bool``            ``const in``     ``const in``           
-``int``             ``const in``     ``const in``           
-``uint``            ``const in``     ``const in``           
-``real``            ``const in``     ``const in``           
-``imag``            ``const in``     ``const in``           
-``complex``         ``const in``     ``const in``           
-``range``           ``const in``     ``const in``           
-``owned class``     ``const ref``    ``const ref``          
-``shared class``    ``const ref``    ``const ref``          
-``borrowed class``  ``const in``     ``const in``           
-``unmanaged class`` ``const in``     ``const in``           
-``atomic``          ``const ref``    ``ref``                
-``single``          ``const ref``    ``ref``                
-``sync``            ``const ref``    ``ref``                
-``string``          ``const ref``    ``const ref``          
-``bytes``           ``const ref``    ``const ref``          
-``record``          ``const ref``    ``const ref``           see :ref:`Default_Intent_for_Arrays_and_Record_this`
-``union``           ``const ref``    ``const ref``          
-``dmap``            ``const ref``    ``const ref``          
-``domain``          ``const ref``    ``const ref``          
-array               ``const ref``    ``ref`` / ``const ref`` see :ref:`Default_Intent_for_Arrays_and_Record_this`
-tuple               per element      per element             see :ref:`Tuple_Argument_Intents`
-=================== ================ ======================= ====================================================
-
+.. index::
+   single: intents; const
 .. _The_Const_Intent:
 
 The Const Intent
-^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~
 
-The ``const`` intent specifies the intention that the function will not
-and cannot modify the formal argument within its dynamic scope. Whether
-the actual argument will be passed by ``const in`` or ``const ref``
-intent depends on its type. In general, small values, such as scalar
-types, will be passed by ``const in``; while larger values, such as
-domains and arrays, will be passed by ``const ref`` intent. The
-:ref:`Abstract_Intents_Table` earlier in this sub-section lists the
-meaning of the const intent for each type.
+The ``const`` intent is broadly similar to the ``const ref`` intent;
+however it allows the implementation more freedom to optimize.  Generally
+speaking, the compiler will implement a ``const`` intent formal by
+choosing between ``const in`` and ``const ref`` in an
+implementation-defined manner. As such, it is appropriate when the actual
+value will not be modified anywhere within the function and additionally
+the actual value will not be modified by other means during the call.
+See the example in :ref:`The_Const_Ref_Intent` for an example of
+modification through other means.
 
+The ``const`` intent indicates that the function will not and cannot
+modify the formal argument within its dynamic scope.
+
+Unlike ``const in`` / ``in``, the ``const`` intent cannot be relied upon
+to transfer the ownership of a value. For record types, passing to a
+``const`` intent will not invoke a user-defined copy initializer.
+
+For synchronization types ``sync`` and ``atomic``, the ``const``
+intent is ``const ref`` and the remainder of this section does not apply.
+
+Otherwise, the ``const`` intent communicates to the compiler that it
+can make several assumptions to aid optimization within the function using
+a ``const`` formal:
+
+ * the value referred to by such a formal argument will not be modified
+   while the function is running
+
+ * if the formal is an array, the domain that the array is declared over
+   will not be modified while the function is running
+
+ * if the formal is an ``owned`` or ``shared``, the actual will not be
+   modified to point to a different object or ``nil`` while the function
+   is running.
+
+In the cases where these assumptions are not appropriate, code should use
+``const ref`` or ``const in`` as appropriate.
+
+  *Implementation Notes*.
+
+  In the current compiler implementation, ``const`` means ``const in``
+  for the following types:
+
+     * for ``bool``, ``int``, ``uint``, ``real``, and ``imag`` with
+       widths less than or equal to 64 bits
+
+     * for ``complex`` with widths less than or equal to  128 bits
+
+     * for ``borrowed`` and ``unmanaged`` class types
+
+     * for values of enumerated type
+
+
+.. index::
+   single: intents; default
 .. _The_Default_Intent:
 
 The Default Intent
-^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~
 
 When no intent is specified for a formal argument, the *default intent*
-is applied. It is designed to take the most natural/least surprising
-action for the argument, based on its type.
-The :ref:`Abstract_Intents_Table` earlier in this sub-section lists the
-meaning of the default intent for each type.
+is applied. The default intent is designed to take the most natural/least
+surprising action for the argument.
 
-Default argument passing for tuples generally matches the default
-argument passing strategy that would be applied if each tuple element
-was passed as a separate argument. See :ref:`Tuple_Argument_Intents`.
+For most types, the default intent is the same as the ``const`` intent.
+See the description of the ``const`` intent in :ref:`The_Const_intent`
+for details including  assumptions that the compiler can make about
+default intent and ``const`` formals when optimizing.
 
-.. _Default_Intent_for_Arrays_and_Record_this:
+However, the default intent for ``atomic`` and ``sync`` is ``ref`` because
+modification is considered part of their nature.
 
-Default Intent for Arrays and Record ’this’
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Additionally, tuples have a special default argument intent. See
+:ref:`Tuple_Argument_Intents` for details.
 
-The default intent for arrays and for a ``this`` argument of record
-type (see :ref:`Method_receiver_and_this`) is ``ref`` or
-``const ref``. It is ``ref`` if the formal argument is modified inside
-the function, otherwise it is ``const ref``. Note that neither of these
-cause an array or record to be copied by default. The choice between
-``ref`` and ``const ref`` is similar to and interacts with return intent
-overloads (see :ref:`Return_Intent_Overloads`).
+.. _Intents_for_owned_and_shared:
 
-.. _Default_Intent_for_owned_and_shared:
+Default and 'const' Intents for ’owned’ and ’shared’
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Default Intent for ’owned’ and ’shared’
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The default intent for ``owned`` and ``shared`` arguments is
-``const ref``. Arguments can use the ``in`` or ``const in`` intents to
-transfer or share ownership if those arguments apply to ``owned`` or
-``shared`` types.
+The default intent for :type:`~OwnedObject.owned` and
+:type:`~SharedObject.shared` arguments is ``const``. To transfer the
+ownership from an :type:`~OwnedObject.owned` actual argument or to share
+the ownership with a :type:`~SharedObject.shared` actual argument, the
+formal argument needs to use the ``in`` or ``const in`` intent. Note that
+passing an actual argument of type :type:`~OwnedObject.owned` to a
+``const in`` formal will change the actual argument's value since it
+transfers ownership out of it.  Such ownership transfer will leave a
+value of nilable class type storing ``nil`` and leave a value of
+non-nilable class type dead (see :ref:`Variable_Lifetimes`).
 
    *Example (owned-any-intent.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -685,6 +856,14 @@ transfer or share ownership if those arguments apply to ``owned`` or
       owned SomeClass
       true
 
+If the default intent or ``const`` intent is used for an
+:type:`~OwnedObject.owned` or :type:`~SharedObject.shared` argument, then the
+actual argument is assumed to remain unchanged during the call and
+ownership transfer or ownership sharing will not occur.
+
+.. index::
+   single: functions; variable number of arguments
+   single: functions; varargs
 .. _Variable_Length_Argument_Lists:
 
 Variable Number of Arguments
@@ -755,7 +934,7 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    .. code-block:: chapel
 
-      proc sum(x: int...3) return x(0) + x(1) + x(2);
+      proc sum(x: int...3) do return x(0) + x(1) + x(2);
 
    
 
@@ -782,7 +961,7 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    .. code-block:: chapel
 
-      proc tuple(x ...) return x;
+      proc tuple(x ...) do return x;
 
    
 
@@ -804,16 +983,48 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
    Therefore the expressions ``tuple(1, 2)`` and ``(1,2)`` are
    equivalent, as are the expressions ``tuple(1)`` and ``(1,)``.
 
+.. index::
+   single: functions; return intent
+   single: return; intent
 .. _Return_Intent:
 
 Return Intents
 --------------
 
-The ``return-intent`` specifies how the value is returned from a
-function, and in what contexts that function is allowed to be used. By
-default, or if the ``return-intent`` is ``const``, the function returns
-a value that cannot be used as an lvalue.
+The ``return-intent`` determines how the value is returned from a
+function and in what contexts that function is allowed to be used.
+The rules for returning tuples are specified in :ref:`Tuple_Return_Behavior`.
 
+.. index::
+   single: intents; default (return intent)
+.. _Default_Return_Intent:
+
+The Default Return Intent
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When no ``return-intent`` is specified explicitly, the function returns
+a value in the same way as the ``out`` return intent,
+see :ref:`Out_Return_Intent`.
+
+.. index::
+   single: intents; out (return intent)
+.. _Out_Return_Intent:
+
+The Out Return Intent
+~~~~~~~~~~~~~~~~~~~~~
+
+A function with the ``out`` return intent returns
+a value that cannot be used as an lvalue. This value is obtained
+by copy-initialization from the returned expression,
+see :ref:`Copy_and_Move_Initialization`.
+
+It is an error to return a ``sync`` or ``atomic`` by ``out`` intent.
+
+.. index::
+   single: functions; ref keyword
+   single: ref (return intent)
+   single: intents; ref (return intent)
+   single: functions; lvalues
 .. _Ref_Return_Intent:
 
 The Ref Return Intent
@@ -824,7 +1035,8 @@ When using a ``ref`` return intent, the function call is an lvalue
 variable for an iterator).
 
 The ``ref`` return intent is specified by following the argument list
-with the ``ref`` keyword. The function must return or yield an lvalue.
+with the ``ref`` keyword. The function must return an lvalue that
+exists outside of the function's scope.
 
    *Example (ref-return-intent.chpl)*.
 
@@ -868,6 +1080,10 @@ with the ``ref`` keyword. The function must return or yield an lvalue.
 
       3
 
+.. index::
+   single: functions; const ref keyword
+   single: const ref (return intent)
+   single: intents; const ref (return intent)
 .. _Const_Ref_Return_Intent:
 
 The Const Ref Return Intent
@@ -877,6 +1093,21 @@ The ``const ref`` return intent is also available. It is a restricted
 form of the ``ref`` return intent. Calls to functions marked with the
 ``const ref`` return intent are not lvalue expressions.
 
+.. index::
+   single: const (return intent)
+   single: intents; const (return intent)
+.. _Const_Return_Intent:
+
+The Const Return Intent
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``const`` return intent makes it up to the implementation to return a
+``const`` reference or to return a value.  Calls to functions marked with
+the ``const`` return intent are not lvalue expressions.
+
+
+.. index::
+   single: functions; return intent overloads
 .. _Return_Intent_Overloads:
 
 Return Intent Overloads
@@ -934,6 +1165,9 @@ context.
 
       ref-return-intent-pair.chpl:8: error: halt reached - cannot assign value to A(1) if A(0) <= 0
 
+.. index::
+   single: functions; param return intent
+   single: parameter function
 .. _Param_Return_Intent:
 
 The Param Return Intent
@@ -954,7 +1188,7 @@ during compilation and substituted for the call expression.
 
    .. code-block:: chapel
 
-      proc sumOfSquares(param a: int, param b: int) param
+      proc sumOfSquares(param a: int, param b: int) param do
         return a**2 + b**2;
 
       var x: sumOfSquares(2, 3)*int;
@@ -982,6 +1216,9 @@ compile-time. This includes loops other than the parameter for
 loop :ref:`Parameter_For_Loops` and conditionals with a
 conditional expressions that is not a parameter.
 
+.. index::
+   single: functions; type return intent
+   single: functions; type functions
 .. _Type_Return_Intent:
 
 The Type Return Intent
@@ -1033,24 +1270,46 @@ with a conditional expression that is not a parameter.
    ``numBits`` is a param procedure defined in the standard Types
    module.
 
+
+.. _The_Function_Body:
+
+Function Bodies
+---------------
+
+The body of a procedure or iterator is made up of one or more
+statements that are executed when a call to the function is made.
+Function bodies can always be specified using a compound or _block_
+statement (:ref:`Blocks`), set off by curly brackets.  When a
+function's body is just a single statement, the `do` keyword can be
+used as a shorthand for defining the body instead, similar to other
+forms of control flow.
+
+
+.. index::
+   single: return
+   single: statements; return
 .. _The_Return_Statement:
 
 The Return Statement
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
-The return statement can only appear in a function. It causes control to
-exit that function, returning it to the point at which that function was
-called.
+The return statement can only appear in a function body. It causes
+control to exit that function, returning it to the point at which that
+function was called.
 
 A procedure can return a value by executing a return statement that
 includes an expression. If it does, that expression’s value becomes the
 value of the invoking call expression.
 
-A return statement in a procedure of a non-\ ``void`` return type
-(:ref:`Return_Types`) must include an expression. A return
-statement in a procedure of a ``void`` return type or in an iterator
-must not include an expression. A return statement of a variable
-procedure must contain an lvalue expression.
+A return statement in a procedure of a ``void`` return type
+(:ref:`Return_Types`) or in an iterator must not include an
+expression.  A return statement in a procedure of a non-\ ``void``
+return type must include an expression.  For procedures with ``ref``
+or ``const ref`` return intent, the expression must have storage
+associated with it that will outlive the procedure itself.
+
+The statements following a return statement in the same block
+are ignored by the compiler because they cannot be executed.
 
 The syntax of the return statement is given by 
 
@@ -1068,7 +1327,7 @@ The syntax of the return statement is given by
 
    .. code-block:: chapel
 
-      proc sum(i1: int, i2: int, i3: int)
+      proc sum(i1: int, i2: int, i3: int) do
         return i1 + i2 + i3;
 
    
@@ -1083,6 +1342,9 @@ The syntax of the return statement is given by
 
       6
 
+.. index::
+   single: return types
+   single: functions; return types
 .. _Return_Types:
 
 Return Types
@@ -1092,6 +1354,9 @@ Every procedure has a return type. The return type is either specified
 explicitly via ``return-type`` in the procedure declaration, or is
 inferred implicitly.
 
+.. index::
+   single: explicit return type
+   single: return types; explicit
 .. _Explicit_Return_Types:
 
 Explicit Return Types
@@ -1105,6 +1370,10 @@ intent (:ref:`Ref_Return_Intent`), the return type must match
 the type returned in all of the return statements exactly, when checked
 after generic instantiation and parameter folding (if applicable).
 
+.. index::
+   single: type inference; of return types
+   single: implicit return type
+   single: return types; implicit
 .. _Implicit_Return_Types:
 
 Implicit Return Types
@@ -1125,6 +1394,9 @@ between every other type and that type, and that type becomes the
 inferred return type. If the above requirements are not satisfied, it is
 an error.
 
+.. index::
+   single: where
+   single: functions; where
 .. _Where_Clauses:
 
 Where Clauses
@@ -1164,6 +1436,9 @@ resolution.
    the call foo(3) resolves to the first definition because the where
    clause on the second function evaluates to false.
 
+.. index::
+   single: functions; nested
+   single: nested function
 .. _Nested_Functions:
 
 Nested Functions
@@ -1179,6 +1454,12 @@ scope in which they are defined.
 Nested functions may refer to variables defined in the function(s) in
 which they are nested.
 
+.. index::
+   single: overloading
+   single: overloading functions
+   single: overloading operators
+   single: functions; overloading
+   single: operators; overloading
 .. _Function_Overloading:
 
 Function and Operator Overloading
@@ -1201,7 +1482,7 @@ binary   ``+`` ``-`` ``*`` ``/`` ``%`` ``**`` ``:``
 binary   ``==`` ``<=`` ``>=`` ``<`` ``>``
 binary   ``<<`` ``>>`` ``&`` ``|`` ``^`` ``#`` ``align`` ``by``
 binary   ``=`` ``+=`` ``-=`` ``*=`` ``/=`` ``%=`` ``**=``
-binary   ``&=`` ``|=`` ``^=`` ``<<=`` ``>>=`` ``<=>`` ``<~>``
+binary   ``&=`` ``|=`` ``^=`` ``<<=`` ``>>=`` ``<=>``
 ======== ===============================
 
 The arity and precedence of the operator must be maintained when it is
@@ -1210,6 +1491,11 @@ resolution.
 
 Assignment overloads are not supported for class types.
 
+.. index::
+   single: functions; resolution
+   single: functions; disambiguation
+   see: overload resolution; function resolution
+   single: function resolution
 .. _Function_Resolution:
 
 Function Resolution
@@ -1238,13 +1524,11 @@ Function resolution is defined as follows.
    found, this is determined to be the target function.
 
 -  From the set of candidate functions, determine the set of most
-   specific functions. In most cases, there is one most specific
-   function, but there can be several if they differ only in return
-   intent. The set of most specific functions is the set of functions
-   that are not *more specific* than each other but that are *more
-   specific* than every other candidate function. The *more specific*
-   relationship is defined in
-    :ref:`Determining_More_Specific_Functions`.
+   specific functions as described in
+    :ref:`Determining_Most_Specific_Functions`. In most cases, if the set
+   of most specific functions contains more than one element, it will
+   result in an ambiguity error. However, there can be several if they
+   differ only in return intent.
 
 -  From the set of most specific functions, the compiler determines a
    best function for each return intent as described in
@@ -1259,18 +1543,22 @@ Notation
 
 This section uses the following notation:
 
- * :math:`X` is a function under consideration
- * The actual argument under consideration is :math:`A` of type
-   :math:`T_A`
- * :math:`M_X` represents the argument mapping from :math:`A` to the
-   formal argument :math:`F_X` from function :math:`X`. :math:`F_X` has
-   type :math:`T_X`. When :math:`X` is a generic function, :math:`F_X`
-   refers to the possibly generic argument and :math:`T_X` refers to
-   the instantiated type.
- * When needed in the exposition, :math:`Y` is another function under
-   consideration, with mapping :math:`M_Y` from :math:`A` to a formal
-   argument :math:`F_Y` of type :math:`T_Y`.
+* :math:`X` is a function under consideration
 
+* An actual argument under consideration is :math:`A_i` of type
+  :math:`T(A_i)`
+
+* The formal argument in function :math:`X` that will receive :math:`A_i`
+  is :math:`X_i` and it has type :math:`T(X_i)`. When :math:`X` is a
+  generic function, :math:`X_i` refers to the possibly generic argument
+  and :math:`T(X_i)` refers to the instantiated type.
+
+* When needed in the exposition, :math:`Y` is another function under
+  consideration, where :math:`A_i` is passed to the formal :math:`Y_i` of
+  type :math:`T(Y_i)`.
+
+.. index::
+   single: functions; visible
 .. _Determining_Visible_Functions:
 
 Determining Visible Functions
@@ -1292,13 +1580,13 @@ function call and one of the following conditions is met:
   and the call qualifies the function name with the module name,
   see also :ref:`Importing_Modules`.
 
-   *Open issue*.
+- :math:`X` is a method and it is visible in the module that defines the
+  receiver type.
 
-   What should be the visibility of methods? Applying the above rules
-   excludes, for example, the methods defined in the same module as the
-   receiver type when that module is neither visible nor reachable
-   through module uses or imports from the scope of the function call.
-
+.. index::
+   single: functions; candidates
+   single: function resolution; valid mapping
+   single: function resolution; legal argument mapping
 .. _Determining_Candidate_Functions:
 
 Determining Candidate Functions
@@ -1336,275 +1624,210 @@ to a function if one exists:
 Legal Argument Mapping
 ^^^^^^^^^^^^^^^^^^^^^^
 
-An actual argument :math:`A` of type :math:`T_A` can be legally mapped to
-a formal argument :math:`F_X` according to the following rules.
+An actual argument :math:`A_i` of type :math:`T(A_i)` can be legally mapped to
+a formal argument :math:`X_i` according to the following rules.
 
-First, if :math:`A` is a ``type`` but :math:`F_X` does not use the
+First, if :math:`A_i` is a ``type`` but :math:`X_i` does not use the
 ``type`` intent, then it is not a legal argument mapping.
 
-Then, if :math:`F_X` is a generic argument:
+Then, if :math:`X_i` is a generic argument:
 
- * if :math:`F_X` uses ``param`` intent, then :math:`A` must also be a
+ * if :math:`X_i` uses ``param`` intent, then :math:`A_i` must also be a
    ``param``
- * if :math:`F_X` uses ``type`` intent, then :math:`A` must also be a
+ * if :math:`X_i` uses ``type`` intent, then :math:`A_i` must also be a
    ``type``
- * there must exist an instantiation :math:`T_X` of the generic declared
-   type of :math:`F_X`, if any, that is compatible with the type
-   :math:`T_A` according to the rules below.
+ * there must exist an instantiation :math:`T(X_i)` of the generic declared
+   type of :math:`X_i`, if any, that is compatible with the type
+   :math:`T(A_i)` according to the rules below.
 
-Next, the type :math:`T_X` - which is either the declared type of the
-formal argument :math:`F_X` if it is concrete or the instantiated type if
-:math:`F_X` is generic - must be compatible with the type :math:`T_A`
-according to the concrete intent of :math:`F_X`:
+Next, the type :math:`T(X_i)` - which is either the declared type of the
+formal argument :math:`X_i` if it is concrete or the instantiated type if
+:math:`X_i` is generic - must be compatible with the type :math:`T(A_i)`
+according to the concrete intent of :math:`X_i`:
 
- * if :math:`F_X` uses ``ref`` intent, then :math:`T_A`
-   must be the same type as :math:`T_X`
- * if :math:`F_X` uses ``const ref`` intent, then :math:`T_A` and
-   :math:`T_X` must be the same type or a subtype of :math:`T_X` (see
-   :ref:`Subtype_Arg_Conversions`)
- * if :math:`F_X` uses ``in`` or ``inout`` intent, then :math:`T_A`
-   must be the same type, a subtype of, or implicitly convertible to
-   :math:`T_X`.
- * if :math:`F_X` uses  the ``out`` intent, it is always a legal
+ * if :math:`X_i` uses ``ref`` intent, then :math:`T(A_i)`
+   must be the same type as :math:`T(X_i)`
+ * if :math:`X_i` uses ``const ref`` intent, then :math:`T(A_i)` and
+   :math:`T(X_i)` must be the same type or a subtype of :math:`T(X_i)`
+   (see :ref:`Subtype_Arg_Conversions`) or a ``param``
+   (see :ref:`Implicit_Compile_Time_Constant_Conversions`)
+ * if :math:`X_i` uses ``in``, ``const in``, ``inout``, ``const``, or
+   default intent, then :math:`T(A_i)` must be the same type, a subtype
+   of, or implicitly convertible to :math:`T(X_i)`.
+ * if :math:`X_i` uses  the ``out`` intent, it is always a legal
    argument mapping regardless of the type of the actual and formal.
-   In the event that setting :math:`T_A` from :math:`F_X` is not
+   In the event that setting :math:`T(A_i)` from :math:`X_i` is not
    possible then a compilation error will be emitted if this function
    is chosen as the best candidate.
- * if :math:`F_X` uses the ``type`` intent, then :math:`T_A`
-   must be the same type or a subtype of :math:`T_X` (see
+ * if :math:`X_i` uses the ``type`` intent, then :math:`T(A_i)`
+   must be the same type or a subtype of :math:`T(X_i)` (see
    :ref:`Subtype_Arg_Conversions`).
 
 Finally, if the above compatibility cannot be established, the mapping is
-checked for promotion. If :math:`T_A` is scalar promotable to :math:`T_X`
+checked for promotion. If :math:`T(A_i)` is scalar promotable to :math:`T(X_i)`
 (see :ref:`Promotion`), then the above rules are checked with the element
-type, index type, or yielded type.  For example, if :math:`T_A` is an
-array of ``int`` and :math:`T_X` is ``int``, then promotion occurs and
-the above rules will be checked with :math:`T_A` == ``int``.
+type, index type, or yielded type.  For example, if :math:`T(A_i)` is an
+array of ``int`` and :math:`T(X_i)` is ``int``, then promotion occurs and
+the above rules will be checked with :math:`T(A_i)` == ``int``.
 
+.. index::
+   single: function resolution; most specific
 .. _Determining_More_Specific_Functions:
+.. _Determining_Most_Specific_Functions:
 
-Determining More Specific Functions
+Determining Most Specific Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Given two candidate functions, :math:`X` and :math:`Y`, the more specific
-function is determined by the first of the following steps that applies:
+Given a set of candidate functions, several steps are applied to
+remove candidates from the set. After the process completes, the
+remaining candidates in the set are the most specific functions.
 
--  If :math:`X` does not require promotion and :math:`Y` does
-   require promotion, then :math:`X` is more specific.
+Before applying these steps, if there both non-operator method candidates
+and non-operator non-method candidates, issue an ambiguity error without
+doing further candidate selection.
 
--  If :math:`Y` does not require promotion and :math:`X` does
-   require promotion, then :math:`Y` is more specific.
+1. If any non-method candidate is more visible (or shadows) another
+   non-method candidate, discard all non-method candidates that are less
+   visible than (or shadowed by) another non-method candidate.
 
--  If at least one of the legal argument mappings to :math:`X` is a
-   *more specific argument mapping* than the corresponding legal
-   argument mapping to :math:`Y` and none of the legal argument
-   mappings to :math:`Y` is a more specific argument mapping than the
-   corresponding legal argument mapping to :math:`X`, then :math:`X`
-   is more specific.
+2. If at least one candidate requires promotion and at least one
+   candidate does not use promotion, discard all candidates that use
+   promotion.
 
--  If at least one of the legal argument mappings to :math:`Y` is a
-   *more specific argument mapping* than the corresponding legal
-   argument mapping to :math:`X` and none of the legal argument
-   mappings to :math:`X` is a more specific argument mapping than the
-   corresponding legal argument mapping to :math:`Y`, then :math:`Y`
-   is more specific.
+3. Discard any function that has a less specific argument mapping than
+   any other function. See :ref:`More_Specific_Argument_Mappings` below
+   for details on the more specific argument mapping relation.
 
--  If neither :math:`X` nor :math:`Y` are methods, and :math:`X` shadows
-   :math:`Y`, then :math:`X` is more specific.
+4. Discard any candidates that have more formals that require implicit
+   conversion than other candidates. For this step, implicit conversions
+   between ``real(w)``, ``imag(w)``, and ``complex(2*w)`` are not
+   considered.
 
--  If neither :math:`X` nor :math:`Y` are methods, and :math:`Y` shadows
-   :math:`X`, then :math:`Y` is more specific.
+5. Discard any candidates that have more formals that require a negative
+   ``param`` value is converted to an unsigned integral type of any width
+   (i.e. a ``uint(?w)``).
 
--  If at least one of the legal argument mappings to :math:`X` is
-   *weak preferred* and none of the legal argument mappings to
-   :math:`Y` are *weak preferred*, then :math:`X` is more specific.
+6. Discard any candidates that have more formals that require ``param``
+   narrowing conversions than another candidate. A ``param`` narrowing
+   conversion is when a ``param`` value is implicitly converted to a type
+   that would not normally be allowed. For example, an ``int`` value
+   cannot normally implicitly convert to an ``int(8)`` value. However,
+   the ``param`` value ``1``, which is an ``int``, can implicitly convert to
+   ``int(8)`` because the value is known to fit. See also
+   :ref:`Implicit_Compile_Time_Constant_Conversions`.
 
--  If at least one of the legal argument mappings to :math:`Y` is
-   *weak preferred* and none of the legal argument mappings to
-   :math:`X` are *weak preferred*, then :math:`Y` is more specific.
 
--  If at least one of the legal argument mappings to :math:`X` is
-   *weaker preferred* and none of the legal argument mappings to
-   :math:`Y` are *weaker preferred*, then :math:`X` is more
-   specific.
+Note that ``where`` clauses are also considered but that happens in a
+later step. See :ref:`Determining_Best_Functions`.
 
--  If at least one of the legal argument mappings to :math:`Y` is
-   *weaker preferred* and none of the legal argument mappings to
-   :math:`X` are *weaker preferred*, then :math:`Y` is more
-   specific.
+.. _More_Specific_Argument_Mappings:
 
--  If at least one of the legal argument mappings to :math:`X` is
-   *weakest preferred* and none of the legal argument mappings to
-   :math:`Y` are *weakest preferred*, then :math:`X` is more
-   specific.
+More Specific Argument Mappings
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  If at least one of the legal argument mappings to :math:`Y` is
-   *weakest preferred* and none of the legal argument mappings to
-   :math:`X` are *weakest preferred*, then :math:`Y` is more
-   specific.
+Given candidate functions :math:`X` and :math:`Y` with formal arguments
+:math:`X_1` :math:`X_2` ... and :math:`Y_1` :math:`Y_2` ... that
+correspond to actual arguments :math:`A_1` :math:`A_2` ..., which
+candidate function is more specific is determined in two steps. First,
+the non-param actual arguments and their corresponding formal arguments
+are considered. Then, any param actual arguments and their corresponding
+formal arguments are considered.
 
--  Otherwise neither function is more specific.
+Within each of those steps, the candidate function :math:`X` has a more
+specific argument mapping if:
 
-The next section discusses the level of preference for an argument
-mapping. As discussed above, :math:`M_X` represents the argument mapping
-from :math:`A` to the formal argument :math:`F_X` from function :math:`X`
-with type :math:`T_X`. When :math:`X` is a generic function, :math:`F_X`
-refers to the argument before instantiation and :math:`T_X` represents
-the type of :math:`F_X` after instantiation. :math:`M_Y`, :math:`F_Y`,
-and :math:`T_Y` are defined in a similar manner to represent the argument
-mapping for :math:`Y`.
+* for each argument :math:`i` considered, the argument mapping from
+  :math:`A_i` to :math:`Y_i` is not better than the argument mapping for
+  the argument :math:`A_i` to :math:`X_i`, and
 
-The level of preference for one of these argument mappings is determined
-by the first of the following steps that applies:
+* for at least one argument :math:`j` considered, the argument mapping
+  from :math:`A_j` to :math:`X_j` is better than the argument mapping
+  from :math:`A_j` to :math:`Y_j`.
 
--  If :math:`F_X` or :math:`F_Y` uses the ``out`` intent, then neither
-   argument mapping is preferred.
+.. _Better_Argument_Mapping:
 
--  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_X` is
-   an instantiated parameter, and :math:`F_Y` is not an instantiated
-   parameter, :math:`M_X` is more specific.
+Better Argument Mapping
+^^^^^^^^^^^^^^^^^^^^^^^
 
--  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_Y` is
-   an instantiated parameter, and :math:`F_X` is not an instantiated
-   parameter, :math:`M_Y` is more specific.
+Given an actual argument :math:`A_i` and the corresponding formal
+arguments :math:`X_i` and :math:`Y_i` (in the functions :math:`X` and
+:math:`Y` being considered), the following rules are applied in order to
+determine whether :math:`X_i` or :math:`Y_i` is a better argument
+mapping:
 
--  If :math:`M_X` does not require scalar promotion and :math:`M_Y`
-   requires scalar promotion, :math:`M_X` is more specific.
+1. If one of the formals requires promotion and the other does not, the
+   formal not requiring promotion is better
 
--  If :math:`M_X` requires scalar promotion and :math:`M_Y` does not
-   require scalar promotion, :math:`M_Y` is more specific.
+2. If both of the formals have the same type after instantiation and one
+   of the formals is less generic than the other formal, the less-generic
+   formal is better
 
--  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_X` is
-   generic, and :math:`F_Y` is not generic, :math:`M_X` is more specific.
+3. If one of the formals is ``param`` and the other is not, the ``param``
+   formal is better
 
--  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_Y` is
-   generic, and :math:`F_X` is not generic, :math:`M_Y` is more specific.
+4. If one of the formals requires a param narrowing conversion and the
+   other is not, the one not requiring such narrowing is better
 
--  If :math:`F_X` is not generic over all types and :math:`F_Y` is generic
-   over all types, :math:`M_X` is more specific.
+5. If the actual and both formals are numeric types and one formals is a
+   preferred numeric conversion target, that formal is better
 
--  If :math:`F_X` is generic over all types and :math:`F_Y` is not generic
-   over all types, :math:`M_Y` is more specific.
+6. If one of the formals matches the actual type exactly and the other
+   does not, the matching formal is better
 
--  If :math:`F_X` and :math:`F_Y` are both generic, and :math:`F_X` is
-   partially concrete but :math:`F_Y` is not, then :math:`M_X` is more
-   specific.
+7. If the actual's scalar type for promotion matches one of the formals
+   but not the other, the matching formal is better
 
--  If :math:`F_X` and :math:`F_Y` are both generic, and :math:`F_Y` is
-   partially concrete but :math:`F_X` is not, then :math:`M_Y` is more
-   specific.
+8. If an implicit conversion is possible from the type of one formal to
+   the other, but not vice versa, then the formal that can be converted
+   from is better. (I.e. if the type of :math:`X_i` can implicitly
+   convert to the type of :math:`Y_i`, then :math:`X_i` is better).
+   Similarly, if the type of one formal can be instantiated to produce
+   the type of another formal, the type of the more-instantiated formal
+   is better.
 
--  If :math:`F_X` is a ``param`` argument but :math:`F_Y` is not, then
-   :math:`M_X` is weak preferred.
+.. _Preferred_Numeric_Conversion_Target:
 
--  If :math:`F_Y` is a ``param`` argument but :math:`F_X` is not, then
-   :math:`M_Y` is weak preferred.
+Preferred Numeric Conversion Target
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  If :math:`A` is not a ``param`` argument with a default size and
-   :math:`F_Y` requires a narrowing conversion but :math:`F_X` does not,
-   then :math:`M_X` is weak preferred.
+To compute if a formal is a preferred numeric conversion target, apply
+the following rules in order:
 
--  If :math:`A` is not a ``param`` argument with a default size and
-   :math:`F_X` requires a narrowing conversion but :math:`F_Y` does not,
-   then :math:`M_Y` is weak preferred.
+1. Classify the actual and formals by numeric kind. If one formal has the
+   same kind as the actual but the other does not, the formal with the
+   same kind is better. Each of the following bullets represents a
+   different numeric kind for this rule:
 
--  If :math:`T_A` and :math:`T_X` are the same type and :math:`T_A`
-   and :math:`T_Y` are not the same type, :math:`M_X` is more
-   specific.
+   * ``bool``
 
--  If :math:`T_A` and :math:`T_X` are not the same type and
-   :math:`T_A` and :math:`T_Y` are the same type, :math:`M_Y` is more
-   specific.
+   * ``int(?w)`` or ``uint(?w)``, that is, a signed or unsigned integral
+     type of any width
 
--  If :math:`A` uses a scalar promotion type equal to :math:`T_X` but
-   different from :math:`T_Y`, then :math:`M_X` will be preferred as
-   follows:
+   * ``real(?w)``
 
-   -  if :math:`A` is a ``param`` argument with a default size, then
-      :math:`M_X` is weakest preferred
+   * ``imag(?w)``
 
-   -  if :math:`A` is a ``param`` argument with non-default size, then
-      :math:`M_X` is weaker preferred
+   * ``complex(?w)``
 
-   -  otherwise, :math:`M_X` is more specific
+   * all other types
 
--  If :math:`A` uses a scalar promotion type equal to :math:`T_Y` but
-   different from :math:`T_X`, then :math:`M_Y` will be preferred as
-   follows:
+2. Classify the actual and formals by numeric width. If one formal has
+   the same numeric width as the actual but the other does not, the
+   formal with the same width is better. Each of the following bullets
+   represents a different numeric width for this rule:
 
-   -  if :math:`A` is a ``param`` argument with a default size, then
-      :math:`M_Y` is weakest preferred
+   * All numeric types that match the default width.  This includes
+     ``bool``, ``int``, ``uint``, ``real``, ``imag``, and ``complex``
+     as well as their more specific names ``int(64)``, ``uint(64)``,
+     ``real(64)``, ``imag(64)``, ``complex(128)``
 
-   -  if :math:`A` is a ``param`` argument with non-default size, then
-      :math:`M_Y` is weaker preferred
+   * All numeric types with 32-bit width: ``int(32)``, ``uint(32)``,
+     ``real(32)``, ``imag(32)``, ``complex(64)``. ``complex(64)`` is in
+     this category because the real element width is 32 bits.
 
-   -  otherwise, :math:`M_Y` is more specific
+   * All numeric types with 16-bit width: ``int(16)``, ``uint(16)``
 
--  If :math:`T_A` or its scalar promotion type prefers conversion to
-   :math:`T_X` over conversion to :math:`T_Y`, then :math:`M_X` is
-   preferred. If :math:`A` is a ``param`` argument with a default size,
-   then :math:`M_X` is weakest preferred. Otherwise, :math:`M_X` is
-   weaker preferred.
-
-   Type conversion preferences are as follows:
-
-   -  Prefer converting a numeric argument to a numeric argument of a
-      different width but the same category over converting to another
-      type. Categories are
-
-      -  bool
-
-      -  enum
-
-      -  int or uint
-
-      -  real
-
-      -  imag
-
-      -  complex
-
-   -  Prefer an enum or bool cast to int over uint
-
-   -  Prefer an enum or bool cast to a default-sized int or uint over
-      another size of int or uint
-
-   -  Prefer an int or uint cast to a real with the same width
-      (if available) or next-largest width (if not) over a
-      larger real
-
-   -  Prefer an int or uint cast to a complex whose components are the
-      same width (if available) or the next largest width (if not)
-      over a larger complex
-
-   -  Prefer real/imag cast to the complex with that component size (ie
-      total width of twice the real/imag) over another size of complex
-
--  If :math:`T_A` or its scalar promotion type prefers conversion to
-   :math:`T_Y` over conversion to :math:`T_X`, then :math:`M_Y` is
-   preferred. If :math:`A` is a ``param`` argument with a default size,
-   then :math:`M_Y` is weakest preferred. Otherwise, :math:`M_Y` is
-   weaker preferred.
-
--  If :math:`T_X` is derived from :math:`T_Y`, then :math:`M_X` is
-   more specific.
-
--  If :math:`T_Y` is derived from :math:`T_X`, then :math:`M_Y` is
-   more specific.
-
--  If there is an implicit conversion from :math:`T_X` to
-   :math:`T_Y`, then :math:`M_X` is more specific.
-
--  If there is an implicit conversion from :math:`T_Y` to
-   :math:`T_X`, then :math:`M_Y` is more specific.
-
--  If :math:`T_X` is any ``int`` type and :math:`T_Y` is any
-   ``uint`` type, :math:`M_X` is more specific.
-
--  If :math:`T_Y` is any ``int`` type and :math:`T_X` is any
-   ``uint`` type, :math:`M_Y` is more specific.
-
--  Otherwise neither mapping is more specific.
+   * All numeric types with 8-bit width: ``int(8)``, ``uint(8)``
 
 .. _Determining_Best_Functions:
 
@@ -1618,6 +1841,8 @@ the following function(s) are selected as best functions:
 
 -  only those functions that have a ``where`` clause, otherwise.
 
+.. index::
+   single: functions; return intent overloads
 .. _Choosing_Return_Intent_Overload:
 
 Choosing Return Intent Overloads Based on Calling Context
@@ -1629,9 +1854,15 @@ The compiler can choose between overloads differing in return intent
 when:
 
 -  there are zero or one best functions for each of ``ref``,
-   ``const ref``, ``const``, or the default (blank) return intent
+   ``const ref``, or the default (blank) return intent
 
 -  at least two of the above return intents have a best function.
+
+.. note::
+
+  It is currently undefined how return intent overloading interacts with
+  the ``const`` return or yield intent.
+
 
 In that case, the compiler is able to choose between ``ref`` return,
 ``const ref`` return, and value return functions based upon the context

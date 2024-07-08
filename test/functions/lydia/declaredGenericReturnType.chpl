@@ -4,7 +4,7 @@ record Rec {
   type t;
 }
 
-proc retsRec(type t): Rec {
+proc retsRec(type t): Rec(?) {
   return new Rec(t);
 }
 
@@ -21,12 +21,9 @@ class Gen {
 
 var GlobClass = new owned Gen(real);
 
-
-/* pending #10172
-
 /// owned, explicit ///
 
-proc retsGenOE(type t): owned Gen {
+proc retsGenOE(type t): owned Gen(?) {
   return new owned Gen(t);
 }
 
@@ -37,7 +34,7 @@ compilerWarning(yOE.type: string);
 
 /// shared, explicit ///
 
-proc retsGenSE(type t): shared Gen {
+proc retsGenSE(type t): shared Gen(?) {
   return new shared Gen(t);
 }
 
@@ -45,22 +42,19 @@ var xSE = retsGenSE(int);
 var ySE = retsGenSE(real);
 compilerWarning(xSE.type: string);
 compilerWarning(ySE.type: string);
-*/
-
 
 /// borrowed, explicit ///
 
-proc retsGenBE(type t): borrowed Gen {
+proc retsGenBE(type t): borrowed Gen(?) {
   return GlobClass; // implicit conversion to borrowed
 }
 
 var xBE = retsGenBE(int);
 compilerWarning(xBE.type: string);
 
-
 /// unmanaged, explicit ///
 
-proc retsGenUE(type t): unmanaged Gen {
+proc retsGenUE(type t): unmanaged Gen(?) {
   return new unmanaged Gen(t);
 }
 

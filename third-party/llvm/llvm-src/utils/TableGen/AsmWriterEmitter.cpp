@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "AsmWriterInst.h"
+#include "CodeGenInstAlias.h"
 #include "CodeGenInstruction.h"
 #include "CodeGenRegisters.h"
 #include "CodeGenTarget.h"
@@ -19,15 +20,14 @@
 #include "Types.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/Debug.h"
-#include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/Format.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/MathExtras.h"
@@ -413,7 +413,7 @@ void AsmWriterEmitter::EmitGetMnemonic(
          << "_t Bits = 0;\n";
   while (BytesNeeded != 0) {
     // Figure out how big this table section needs to be, but no bigger than 4.
-    unsigned TableSize = std::min(1 << Log2_32(BytesNeeded), 4);
+    unsigned TableSize = std::min(llvm::bit_floor(BytesNeeded), 4u);
     BytesNeeded -= TableSize;
     TableSize *= 8; // Convert to bits;
     uint64_t Mask = (1ULL << TableSize) - 1;
@@ -437,6 +437,10 @@ void AsmWriterEmitter::EmitGetMnemonic(
 
   O << "  // Emit the opcode for the instruction.\n";
   O << BitsString;
+
+  // Make sure we don't return an invalid pointer if bits is 0
+  O << "  if (Bits == 0)\n"
+       "    return {nullptr, Bits};\n";
 
   // Return mnemonic string and bits.
   O << "  return {AsmStrs+(Bits & " << (1 << AsmStrBits) - 1
@@ -619,10 +623,11 @@ void AsmWriterEmitter::EmitGetRegisterName(raw_ostream &O) {
   "/// for the specified register.\n"
   "const char *" << Target.getName() << ClassName << "::";
   if (hasAltNames)
-    O << "\ngetRegisterName(unsigned RegNo, unsigned AltIdx) {\n";
+    O << "\ngetRegisterName(MCRegister Reg, unsigned AltIdx) {\n";
   else
-    O << "getRegisterName(unsigned RegNo) {\n";
-  O << "  assert(RegNo && RegNo < " << (Registers.size()+1)
+    O << "getRegisterName(MCRegister Reg) {\n";
+  O << "  unsigned RegNo = Reg.id();\n"
+    << "  assert(RegNo && RegNo < " << (Registers.size() + 1)
     << " && \"Invalid register number!\");\n"
     << "\n";
 
@@ -868,8 +873,6 @@ void AsmWriterEmitter::EmitPrintAliasInstruction(raw_ostream &O) {
 
       IAPrinter IAP(CGA.Result->getAsString(), FlatAliasAsmString, NumMIOps);
 
-      bool CantHandle = false;
-
       unsigned MIOpNum = 0;
       for (unsigned i = 0, e = LastOpNo; i != e; ++i) {
         // Skip over tied operands as they're not part of an alias declaration.
@@ -969,10 +972,9 @@ void AsmWriterEmitter::EmitPrintAliasInstruction(raw_ostream &O) {
           break;
         }
         case CodeGenInstAlias::ResultOperand::K_Reg:
-          // If this is zero_reg, something's playing tricks we're not
-          // equipped to handle.
           if (!CGA.ResultOperands[i].getRegister()) {
-            CantHandle = true;
+            IAP.addCond(std::string(formatv(
+                "AliasPatternCond::K_Reg, {0}::NoRegister", Namespace)));
             break;
           }
 
@@ -984,8 +986,6 @@ void AsmWriterEmitter::EmitPrintAliasInstruction(raw_ostream &O) {
 
         MIOpNum += RO.getMINumOperands();
       }
-
-      if (CantHandle) continue;
 
       std::vector<Record *> ReqFeatures;
       if (PassSubtarget) {
@@ -999,12 +999,26 @@ void AsmWriterEmitter::EmitPrintAliasInstruction(raw_ostream &O) {
 
       for (Record *const R : ReqFeatures) {
         const DagInit *D = R->getValueAsDag("AssemblerCondDag");
-        std::string CombineType = D->getOperator()->getAsString();
+        auto *Op = dyn_cast<DefInit>(D->getOperator());
+        if (!Op)
+          PrintFatalError(R->getLoc(), "Invalid AssemblerCondDag!");
+        StringRef CombineType = Op->getDef()->getName();
         if (CombineType != "any_of" && CombineType != "all_of")
           PrintFatalError(R->getLoc(), "Invalid AssemblerCondDag!");
         if (D->getNumArgs() == 0)
           PrintFatalError(R->getLoc(), "Invalid AssemblerCondDag!");
         bool IsOr = CombineType == "any_of";
+        // Change (any_of FeatureAll, (any_of ...)) to (any_of FeatureAll, ...).
+        if (IsOr && D->getNumArgs() == 2 && isa<DagInit>(D->getArg(1))) {
+          DagInit *RHS = cast<DagInit>(D->getArg(1));
+          SmallVector<Init *> Args{D->getArg(0)};
+          SmallVector<StringInit *> ArgNames{D->getArgName(0)};
+          for (unsigned i = 0, e = RHS->getNumArgs(); i != e; ++i) {
+            Args.push_back(RHS->getArg(i));
+            ArgNames.push_back(RHS->getArgName(i));
+          }
+          D = DagInit::get(D->getOperator(), nullptr, Args, ArgNames);
+        }
 
         for (auto *Arg : D->getArgs()) {
           bool IsNeg = false;
@@ -1172,10 +1186,10 @@ void AsmWriterEmitter::EmitPrintAliasInstruction(raw_ostream &O) {
   O << "#endif\n\n";
 
   O.indent(2) << "AliasMatchingData M {\n";
-  O.indent(2) << "  makeArrayRef(OpToPatterns),\n";
-  O.indent(2) << "  makeArrayRef(Patterns),\n";
-  O.indent(2) << "  makeArrayRef(Conds),\n";
-  O.indent(2) << "  StringRef(AsmStrings, array_lengthof(AsmStrings)),\n";
+  O.indent(2) << "  ArrayRef(OpToPatterns),\n";
+  O.indent(2) << "  ArrayRef(Patterns),\n";
+  O.indent(2) << "  ArrayRef(Conds),\n";
+  O.indent(2) << "  StringRef(AsmStrings, std::size(AsmStrings)),\n";
   if (MCOpPredicates.empty())
     O.indent(2) << "  nullptr,\n";
   else
@@ -1292,17 +1306,12 @@ void AsmWriterEmitter::run(raw_ostream &O) {
   std::vector<std::vector<std::string>> TableDrivenOperandPrinters;
   unsigned BitsLeft = 0;
   unsigned AsmStrBits = 0;
+  emitSourceFileHeader("Assembly Writer Source Fragment", O, Records);
   EmitGetMnemonic(O, TableDrivenOperandPrinters, BitsLeft, AsmStrBits);
   EmitPrintInstruction(O, TableDrivenOperandPrinters, BitsLeft, AsmStrBits);
   EmitGetRegisterName(O);
   EmitPrintAliasInstruction(O);
 }
 
-namespace llvm {
-
-void EmitAsmWriter(RecordKeeper &RK, raw_ostream &OS) {
-  emitSourceFileHeader("Assembly Writer Source Fragment", OS);
-  AsmWriterEmitter(RK).run(OS);
-}
-
-} // end namespace llvm
+static TableGen::Emitter::OptClass<AsmWriterEmitter>
+    X("gen-asm-writer", "Generate assembly writer");

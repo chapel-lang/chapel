@@ -8,12 +8,12 @@ const D = {1..3, 1..3};
 var SD: sparse subdomain(D) = [i in 1..3] (i,i);
 var SA: [SD] real;
 var l: list(int);
-l.append(1);
-l.append(2);
-l.append(3);
+l.pushBack(1);
+l.pushBack(2);
+l.pushBack(3);
 
 
-[(i,j) in SD] SA[i,j] = i + j / 10.0;
+[(i,j) in SD with (ref SA)] SA[i,j] = i + j / 10.0;
 
 var M = ["brad" => 1, "ben" => 2, "bilbo" => 3];
 

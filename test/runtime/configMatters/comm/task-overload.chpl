@@ -9,7 +9,7 @@ config const printTimings = false;
 // 0. We should be able to create an arbitrary number of "concurrent" tasks
 // under qthreads so long as there's no task yields in the user-code.
 var counter: chpl__processorAtomicType(int);
-var t: Timer; t.start();
+var t: stopwatch; t.start();
 on Locales[numLocales-1] {
   coforall 1..numTasksCreating {
     coforall 1..remoteTasksCreatedPerTask do on Locales[0] {

@@ -8,21 +8,21 @@ proc readit(const ref x) {
   writeln(x);
 }
 
-proc writeForA(A) {
+proc writeForA(ref A) {
   for a in A {
     writeit(a);
   }
 }
-proc writeForallA(A) {
+proc writeForallA(ref A) {
   forall a in A {
     writeit(a);
   }
 }
-proc promotedAssign(A, B) {
+proc promotedAssign(ref A, B) {
   A = B;
 }
 
-proc writeCoforallA(A) {
+proc writeCoforallA(ref A) {
   coforall a in A {
     writeit(a);
   }

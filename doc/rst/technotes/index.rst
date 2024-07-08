@@ -17,13 +17,16 @@ Base Language Features
    Associative Set Operations <sets>
    Avoiding Array Element Initialization with noinit <noinit>
    Error Handling Modes and Prototype Modules <errorHandling>
-   First-class Functions in Chapel <firstClassFns>
+   First-class Procedures in Chapel <firstClassProcedures>
    Including Sub-Modules from Separate Files <module_include>
    main() Functions <main>
    Module Search Paths <module_search>
    Operator Methods <operatorMethods>
    The 'manage' Statement <manage>
-
+   Attributes <attributes>
+   Interfaces <interfaces>
+   Function-static Variables <static>
+   Remote Variables <remote>
 
 Initializers and Generic Programming
 ------------------------------------
@@ -35,6 +38,7 @@ Initializers and Generic Programming
    The ‘init=’ Method <initequals>
    Invoking Initializers with a Generic Instantiation <initTypeAlias>
    Partial Instantiations <partialInstantiations>
+   Throwing Initializers <throwingInit>
 
 Parallel Language Features
 --------------------------
@@ -44,7 +48,6 @@ Parallel Language Features
 
    Domain Map Standard Interface <dsi>
    The ‘local’ keyword <local>
-   Locale Models <localeModels>
    Querying a Local Subdomain <subquery>
    Reduce Intents <reduceIntents>
    Runtime Support for Atomics <atomics>
@@ -62,6 +65,14 @@ Interoperability
    Fortran Interoperability <fortranInterop>
    Using the Chapel Allocator from C <allocators>
 
+IO
+-----
+
+.. toctree::
+   :maxdepth: 1
+
+   IO Serializers and Deserializers <ioSerializers>
+
 Compiler Features
 -----------------
 
@@ -71,6 +82,7 @@ Compiler Features
    Checking for Nil Dereferences <nilChecking>
    Checking Overload Sets <overloadSets>
    Checking Variable Lifetimes <lifetimeChecking>
+   Compiler Driver Mode <driver>
    LLVM Support <llvm>
    Variables to Detect Compilation Configuration <globalvars>
 

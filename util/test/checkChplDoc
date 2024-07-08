@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Currently, this is the old checkChplInstall, but will be converted to a 
+# Currently, this is the old checkChplInstall, but will be converted to a
 # Doc test, checkChplDocs.
 #
 #
@@ -134,7 +134,7 @@ cp $TESTS $TMP_TEST_DIR/
     # Run the tests.
     echo "Running the ${test_name} tests found in: $TEST_DIR"
 
-    $CHPL_HOME/util/start_test --no-chpl-home-warn --progress $CHPL_START_TEST_ARGS *.chpl > $test_output_log
+    $CHPL_HOME/util/start_test --compiler $CHPL_BIN --no-chpl-home-warn --progress $CHPL_START_TEST_ARGS *.chpl > $test_output_log
 
     test_status=$?
     log_debug "start_test exit code: ${test_status}"

@@ -1,0 +1,3 @@
+# unstable_type.unset.good
+--no-warn-unstable # unstable_type.unset.good
+--warn-unstable # unstable_type.set.good

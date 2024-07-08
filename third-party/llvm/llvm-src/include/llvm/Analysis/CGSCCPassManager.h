@@ -88,27 +88,21 @@
 #ifndef LLVM_ANALYSIS_CGSCCPASSMANAGER_H
 #define LLVM_ANALYSIS_CGSCCPASSMANAGER_H
 
-#include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/MapVector.h"
-#include "llvm/ADT/PriorityWorklist.h"
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/ADT/SmallPtrSet.h"
-#include "llvm/ADT/SmallVector.h"
 #include "llvm/Analysis/LazyCallGraph.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/InstIterator.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/ValueHandle.h"
-#include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
-#include <algorithm>
 #include <cassert>
 #include <utility>
 
 namespace llvm {
 
+class Function;
+class Value;
+template <typename T, unsigned int N> class SmallPriorityWorklist;
 struct CGSCCUpdateResult;
+
 class Module;
 
 // Allow debug logging in this inline function.
@@ -165,7 +159,7 @@ struct RequireAnalysisPass<AnalysisT, LazyCallGraph::SCC, CGSCCAnalysisManager,
                      function_ref<StringRef(StringRef)> MapClassName2PassName) {
     auto ClassName = AnalysisT::name();
     auto PassName = MapClassName2PassName(ClassName);
-    OS << "require<" << PassName << ">";
+    OS << "require<" << PassName << '>';
   }
 };
 
@@ -278,16 +272,6 @@ struct CGSCCUpdateResult {
   /// the list and removing entries from it.
   SmallPtrSetImpl<LazyCallGraph::SCC *> &InvalidatedSCCs;
 
-  /// If non-null, the updated current \c RefSCC being processed.
-  ///
-  /// This is set when a graph refinement takes place and the "current" point
-  /// in the graph moves "down" or earlier in the post-order walk. This will
-  /// often cause the "current" RefSCC to be a newly created RefSCC object and
-  /// the old one to be added to the above worklist. When that happens, this
-  /// pointer is non-null and can be used to continue processing the "top" of
-  /// the post-order walk.
-  LazyCallGraph::RefSCC *UpdatedRC;
-
   /// If non-null, the updated current \c SCC being processed.
   ///
   /// This is set when a graph refinement takes place and the "current" point
@@ -373,7 +357,7 @@ public:
                      function_ref<StringRef(StringRef)> MapClassName2PassName) {
     OS << "cgscc(";
     Pass->printPipeline(OS, MapClassName2PassName);
-    OS << ")";
+    OS << ')';
   }
 
   static bool isRequired() { return true; }
@@ -503,11 +487,19 @@ public:
   void printPipeline(raw_ostream &OS,
                      function_ref<StringRef(StringRef)> MapClassName2PassName) {
     OS << "function";
-    if (EagerlyInvalidate)
-      OS << "<eager-inv>";
-    OS << "(";
+    if (EagerlyInvalidate || NoRerun) {
+      OS << "<";
+      if (EagerlyInvalidate)
+        OS << "eager-inv";
+      if (EagerlyInvalidate && NoRerun)
+        OS << ";";
+      if (NoRerun)
+        OS << "no-rerun";
+      OS << ">";
+    }
+    OS << '(';
     Pass->printPipeline(OS, MapClassName2PassName);
-    OS << ")";
+    OS << ')';
   }
 
   static bool isRequired() { return true; }
@@ -583,7 +575,7 @@ public:
                      function_ref<StringRef(StringRef)> MapClassName2PassName) {
     OS << "devirt<" << MaxIterations << ">(";
     Pass->printPipeline(OS, MapClassName2PassName);
-    OS << ")";
+    OS << ')';
   }
 
 private:

@@ -2,8 +2,9 @@ use Random;
 use Sort;
 //use BlockDist;
 use Time;
-use Barriers;
+use Collectives;
 use PeekPoke;
+use CTypes, OS.POSIX;
 
 config const seed = SeedGenerator.oddCurrentTime;
 config const skew = false;
@@ -276,11 +277,11 @@ proc shallowCopy(ref A, dst, src, nElts) {
   //A[dst..#nElts] = A[src..#nElts];
 
     var size = (nElts:c_size_t)*c_sizeof(A.eltType);
-    c_memcpy(c_ptrTo(A[dst]), c_ptrTo(A[src]), size);
+    memcpy(c_ptrTo(A[dst]), c_ptrTo(A[src]), size.safeCast(c_size_t));
     /*
   if A._instance.isDefaultRectangular() {
     var size = (nElts:c_size_t)*c_sizeof(A.eltType);
-    c_memcpy(c_ptrTo(A[dst]), c_ptrTo(A[src]), size);
+    memcpy(c_ptrTo(A[dst]), c_ptrTo(A[src]), size.safeCast(c_size_t));
   } else {
     var ok = chpl__bulkTransferArray(/*dst*/ A._instance, {dst..#nElts},
                                      /*src*/ A._instance, {src..#nElts});
@@ -295,11 +296,11 @@ proc shallowCopy(ref DstA, dst, ref SrcA, src, nElts) {
   //DstA[dst..#nElts] = SrcA[src..#nElts];
 
     var size = (nElts:c_size_t)*c_sizeof(DstA.eltType);
-    c_memcpy(c_ptrTo(DstA[dst]), c_ptrTo(SrcA[src]), size);
+    memcpy(c_ptrTo(DstA[dst]), c_ptrTo(SrcA[src]), size.safeCast(c_size_t));
     /*
   if DstA._instance.isDefaultRectangular() && SrcA._instance.isDefaultRectangular() {
     var size = (nElts:c_size_t)*c_sizeof(DstA.eltType);
-    c_memcpy(c_ptrTo(DstA[dst]), c_ptrTo(SrcA[src]), size);
+    memcpy(c_ptrTo(DstA[dst]), c_ptrTo(SrcA[src]), size.safeCast(c_size_t));
   } else {
     var ok = chpl__bulkTransferArray(/*dst*/ DstA._instance, {dst..#nElts},
                                      /*src*/ SrcA._instance, {src..#nElts});
@@ -480,7 +481,7 @@ proc copyifchecks(A:[], start_n:int, end_n:int) {
 
 proc putSampleAtArrayStart(in start_n:int, end_n:int, A:[], in numSamples:int) {
   use Random;
-  var randNums = createRandomStream(0, eltType=int, parSafe=false);
+  var randNums = new randomStream(seed=0, eltType=int);
   while numSamples > 0 {
     numSamples -= 1;
 
@@ -693,7 +694,7 @@ proc parallelInPlacePartition(start_n: int, end_n: int,
   const blocksPerTask = divceil(blocksPerLocale, nTasksPerLocale);
   const nTasks = nLocales*nTasksPerLocale; // aka 't' in the paper
   const DistributedTasks = {0..#nTasks};
-//                             dmapped Block(boundingBox={0..#nTasks},
+//                             dmapped new blockDist(boundingBox={0..#nTasks},
 //                                           targetLocales=A.targetLocales());
 
   if debug {
@@ -718,7 +719,7 @@ proc parallelInPlacePartition(start_n: int, end_n: int,
   // TODO: For Block distribution
   //   - Block per-locale chunk size should be a multiple of blockSize
   //   - Need to find starting index
-  var barrier = new Barrier(nTasks);
+  var barrier = new barrier(nTasks);
 
   // Overflow block
   var overflow:[0..#blockSize] eltType;
@@ -1333,7 +1334,7 @@ proc parallelInPlacePartition(start_n: int, end_n: int,
             // Make sure no other task is currently reading this block
             on bp {
               while (bp.isReading()) {
-                chpl_task_yield();
+                currentTask.yieldExecution();
               }
             }
             // Write the block
@@ -1836,7 +1837,7 @@ proc simpletestcore(input:[], seed:int) {
   var localCopy = input;
   shuffle(localCopy, seed);
 
-  const blockDom = input.domain; //newBlockDom(input.domain);
+  const blockDom = input.domain; //Block.createDomain(input.domain);
   var A: [blockDom] uint = localCopy;
 
   assert(isSorted(input));
@@ -1897,11 +1898,11 @@ simpletest([0xda524a179483bc7:uint,
             0xde0546a7b5c06e9:uint]);
 
 proc randomtest(n:int) {
-  const blockDom = {0..#n}; //newBlockDom({0..#n});
+  const blockDom = {0..#n}; //Block.createDomain({0..#n});
   var A: [blockDom] uint;
 
   if skew {
-    var rng = createRandomStream(seed, eltType=uint);
+    var rng = new randomStream(seed=seed, eltType=uint);
     A = rng.choice([1:uint, 17:uint,
                     100:uint, 0xffff:uint, 0xffffffffffffffff:uint], n);
   } else {
@@ -1911,7 +1912,7 @@ proc randomtest(n:int) {
 
   writeln("Sorting ", n, " elements");
 
-  var timer:Timer;
+  var timer:stopwatch;
   timer.start();
   mysort(0, n-1, A, defaultComparator, 0, max(int));
   timer.stop();

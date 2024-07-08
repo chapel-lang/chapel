@@ -441,7 +441,7 @@ proc check(ref x, ref x0, expect) {
 
   const pass = (x_0 == x0_0 && x_1 == expect && x_2 == x0_2);
 
-  const fmt = if isFloatType(x.type) then '%er' else '%@xu';
+  const fmt = if isRealType(x.type) then '%er' else '%@xu';
   
   if !pass && verbose_failures {
     writef('!(' + fmt + '==' + fmt + ' && '

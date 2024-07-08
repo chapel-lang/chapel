@@ -1,4 +1,4 @@
-use Time, Memory.Diagnostics, BlockDist, ChplConfig;
+use Time, MemDiagnostics, BlockDist, ChplConfig;
 
 // compute a target problem size if one is not specified; assume homogeneity
 config const memFraction = 0;
@@ -12,11 +12,11 @@ config const n = defaultN,
              printArray = true;
 
 var D = if CHPL_COMM=='none' then {1..n}
-                             else {1..n} dmapped Block({1..n});
+                             else {1..n} dmapped new blockDist({1..n});
 
 var A: [D] int = 1;
 
-var t: Timer;
+var t: stopwatch;
 
 // time scan
 t.start();

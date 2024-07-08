@@ -1,6 +1,7 @@
 /* mpf_mul -- Multiply two floats.
 
-Copyright 1993, 1994, 1996, 2001, 2005, 2019 Free Software Foundation, Inc.
+Copyright 1993, 1994, 1996, 2001, 2005, 2019, 2020 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -34,7 +35,7 @@ void
 mpf_mul (mpf_ptr r, mpf_srcptr u, mpf_srcptr v)
 {
   mp_size_t sign_product;
-  mp_size_t prec = r->_mp_prec;
+  mp_size_t prec = PREC (r);
   mp_size_t rsize;
   mp_limb_t cy_limb;
   mp_ptr rp, tp;
@@ -46,12 +47,11 @@ mpf_mul (mpf_ptr r, mpf_srcptr u, mpf_srcptr v)
       mp_srcptr up;
       mp_size_t usize;
 
-      usize = u->_mp_size;
       sign_product = 0;
 
-      usize = ABS (usize);
+      usize = ABSIZ (u);
 
-      up = u->_mp_d;
+      up = PTR (u);
       if (usize > prec)
 	{
 	  up += usize - prec;
@@ -60,8 +60,8 @@ mpf_mul (mpf_ptr r, mpf_srcptr u, mpf_srcptr v)
 
       if (usize == 0)
 	{
-	  r->_mp_size = 0;
-	  r->_mp_exp = 0;		/* ??? */
+	  SIZ (r) = 0;
+	  EXP (r) = 0;		/* ??? */
 	  return;
 	}
       else
@@ -79,15 +79,15 @@ mpf_mul (mpf_ptr r, mpf_srcptr u, mpf_srcptr v)
       mp_srcptr up, vp;
       mp_size_t usize, vsize;
 
-      usize = u->_mp_size;
-      vsize = v->_mp_size;
+      usize = SIZ (u);
+      vsize = SIZ (v);
       sign_product = usize ^ vsize;
 
       usize = ABS (usize);
       vsize = ABS (vsize);
 
-      up = u->_mp_d;
-      vp = v->_mp_d;
+      up = PTR (u);
+      vp = PTR (v);
       if (usize > prec)
 	{
 	  up += usize - prec;
@@ -101,8 +101,8 @@ mpf_mul (mpf_ptr r, mpf_srcptr u, mpf_srcptr v)
 
       if (usize == 0 || vsize == 0)
 	{
-	  r->_mp_size = 0;
-	  r->_mp_exp = 0;
+	  SIZ (r) = 0;
+	  EXP (r) = 0;
 	  return;
 	}
       else
@@ -125,10 +125,10 @@ mpf_mul (mpf_ptr r, mpf_srcptr u, mpf_srcptr v)
       tp += rsize - prec;
       rsize = prec;
     }
-  rp = r->_mp_d;
+  rp = PTR (r);
   MPN_COPY (rp, tp, rsize);
-  r->_mp_exp = u->_mp_exp + v->_mp_exp - adj;
-  r->_mp_size = sign_product >= 0 ? rsize : -rsize;
+  EXP (r) = EXP (u) + EXP (v) - adj;
+  SIZ (r) = sign_product >= 0 ? rsize : -rsize;
 
   TMP_FREE;
 }

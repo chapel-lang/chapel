@@ -1,19 +1,17 @@
-./rangeAPItest.chpl:3: In function 'testRangeAPI':
-./rangeAPItest.chpl:46: warning: invoking 'offset' on an unstrided range has no effect.
-  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),bounded,false), idx: int(64), subr: range(int(64),bounded,false), offset: int(64), count: int(64))
+rangeAPItest.chpl:3: In function 'testRangeAPI':
+rangeAPItest.chpl:42: warning: invoking 'offset' on an unstrided range has no effect.
+  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),both,one), idx: int(64), subr: range(int(64),both,one), offset: int(64), count: int(64))
 basic range
 ------------
 1..10
 idxType          = int(64)
-stridable        = false
-boundedType      = bounded
+strides          = one
+bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
-alignment        = 1
+alignment        = 0
 aligned          = true
 first            = 1
 last             = 10
@@ -30,8 +28,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-boundsCheck(4) = true
-boundsCheck(3..6) = true
 indexOrder(4) = 3
 orderToIndex(3)  = 4
 expand(2)        = -1..12
@@ -57,11 +53,9 @@ strided range
 ------------
 1..20 by 2
 idxType          = int(64)
-stridable        = true
-boundedType      = bounded
+strides          = positive
+bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 2
@@ -82,8 +76,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(7) = true
 contains(5..13 by 2) = true
-boundsCheck(7) = true
-boundsCheck(5..13 by 2) = true
 indexOrder(7) = 3
 orderToIndex(3)  = 7
 expand(2)        = -1..22 by 2
@@ -109,15 +101,13 @@ neg. str. range
 ------------
 1..20 by -2
 idxType          = int(64)
-stridable        = true
-boundedType      = bounded
+strides          = negative
+bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = -2
-alignment        = 20
+alignment        = 0
 aligned          = true
 first            = 20
 last             = 2
@@ -134,8 +124,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(14) = true
 contains(16..8 by -2) = true
-boundsCheck(14) = true
-boundsCheck(16..8 by -2) = true
 indexOrder(14) = 3
 orderToIndex(3)  = 14
 expand(2)        = -1..22 by -2
@@ -152,7 +140,7 @@ r#2               = 17..20 by -2
 r#-2              = 1..4 by -2
 r == subr         = false
 r != subr         = true
-r[subr]           = 16..8 by -2
+r[subr]           = 16..8 by 2
 r[subr] == subr[r]= true
 r:string          = 1..20 by -2
 Copying...        = 1..20 by -2
@@ -161,15 +149,13 @@ unbounded range
 ------------
 1..
 idxType          = int(64)
-stridable        = false
-boundedType      = boundedLow
+strides          = one
+bounds           = low
 isRangeType()    = true
-isBoundedRange() = false
-isBounded()      = false
 hasLowBound()    = true
 hasHighBound()   = false
 stride           = 1
-alignment        = 1
+alignment        = 0
 aligned          = true
 first            = 1
 last             = undefined
@@ -184,8 +170,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-boundsCheck(4) = true
-boundsCheck(3..6) = true
 indexOrder(4) = 3
 orderToIndex(3)  = 4
 translate(2)     = 3..
@@ -208,16 +192,14 @@ upper unbnd range
 ------------
 ..10
 idxType          = int(64)
-stridable        = false
-boundedType      = boundedHigh
+strides          = one
+bounds           = high
 isRangeType()    = true
-isBoundedRange() = false
-isBounded()      = false
 hasLowBound()    = false
 hasHighBound()   = true
 stride           = 1
 alignment        = 0
-aligned          = false
+aligned          = true
 first            = undefined
 last             = 10
 lowBound         = undefined
@@ -227,12 +209,10 @@ high             = 10
 isEmpty()        = false
 hasFirst()       = false
 hasLast()        = true
-isNat.Algned()   = false
+isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-boundsCheck(4) = true
-boundsCheck(3..6) = true
 indexOrder(4) = -1
 translate(2)     = ..12
 translate(-2)    = ..8
@@ -251,15 +231,13 @@ neg upper unbnd range
 ------------
 ..10 by -1
 idxType          = int(64)
-stridable        = true
-boundedType      = boundedHigh
+strides          = negOne
+bounds           = high
 isRangeType()    = true
-isBoundedRange() = false
-isBounded()      = false
 hasLowBound()    = false
 hasHighBound()   = true
 stride           = -1
-alignment        = 10
+alignment        = 0
 aligned          = true
 first            = 10
 last             = undefined
@@ -274,8 +252,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6 by -1) = true
-boundsCheck(4) = true
-boundsCheck(3..6 by -1) = true
 indexOrder(4) = 6
 orderToIndex(3)  = 7
 translate(2)     = ..12 by -1
@@ -289,7 +265,7 @@ serial iteration =
 r#2               = 9..10 by -1
 r == subr         = false
 r != subr         = true
-r[subr]           = 3..6 by -1
+r[subr]           = 3..6
 r[subr] == subr[r]= true
 r:string          = ..10 by -1
 Copying...        = ..10 by -1
@@ -298,16 +274,14 @@ unbounded range
 ------------
 ..
 idxType          = int(64)
-stridable        = false
-boundedType      = boundedNone
+strides          = one
+bounds           = neither
 isRangeType()    = true
-isBoundedRange() = false
-isBounded()      = false
 hasLowBound()    = false
 hasHighBound()   = false
 stride           = 1
 alignment        = 0
-aligned          = false
+aligned          = true
 first            = undefined
 last             = undefined
 lowBound         = undefined
@@ -317,12 +291,10 @@ high             = undefined
 isEmpty()        = false
 hasFirst()       = false
 hasLast()        = false
-isNat.Algned()   = false
+isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-boundsCheck(4) = true
-boundsCheck(3..6) = true
 indexOrder(4) = -1
 translate(2)     = ..
 translate(-2)    = ..

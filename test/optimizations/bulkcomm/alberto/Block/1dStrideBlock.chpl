@@ -1,13 +1,18 @@
 use BlockDist;
 
-config const n=10;
-const S = {1..n};
-const BDist = new dmap(new Block(boundingBox=S));
-const BDom : domain(1) dmapped BDist=S;
+// 2023-06 vass: I changed this test to operate on uints instead of ints
+// so that all domains can have strides=strideKind.positive.
+// This is to increase code coverage for this case, which may enable
+// additional performance optimizations.
 
-//var A : [[1..n] dmapped Block(rank=1,boundingBox=[1..n])] int;
-var A : [BDom] int;
-var B : [BDom] int;
+config const n=10 :uint;
+const S = {1..n};
+const BDist = new blockDist(idxType=uint, boundingBox=S);
+const BDom : domain(1, uint) dmapped BDist=S;
+
+//var A : [[1..n] dmapped new blockDist(rank=1,boundingBox=[1..n])] int;
+var A : [BDom] uint;
+var B : [BDom] uint;
 writeln("A and B defined on ",S);
 for (i) in A.domain {
        A(i)=i;
@@ -164,11 +169,11 @@ if (Dom2.size == Dom1.size)
 }
 
 const R = {n/2+1..3*n/2};
-const BRDist = new dmap(new Block(boundingBox=R));
-const BRDom : domain(1) dmapped BRDist=R;
+const BRDist = new blockDist(boundingBox=R);
+const BRDom : domain(1, uint) dmapped BRDist=R;
 
-var C : [BRDom] int;
-var D : [BRDom] int;
+var C : [BRDom] uint;
+var D : [BRDom] uint;
 writeln(" C and D defined on ",R);
 
 for (i) in C.domain {
@@ -214,10 +219,10 @@ if (Dom4.size == Dom3.size)
 }
 
 const T = {n/2+1..5*n/2};
-const BTDist = new dmap(new Block(boundingBox=T));
-const BTDom : domain(1) dmapped BTDist=T;
+const BTDist = new blockDist(boundingBox=T);
+const BTDom : domain(1, uint) dmapped BTDist=T;
 
-var E : [BTDom] int;
+var E : [BTDom] uint;
 writeln("E defined on ",T);
 
 

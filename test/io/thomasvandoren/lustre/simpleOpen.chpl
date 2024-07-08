@@ -4,7 +4,7 @@
 
 use IO;
 
-var fp = open("SKIPIF", iomode.r),
+var fp = open("SKIPIF", ioMode.r),
   fileType = fp.fstype();
 
 if fileType == FTYPE_LUSTRE {

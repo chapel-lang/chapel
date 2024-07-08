@@ -13,7 +13,7 @@ var temp: real;
 var ind, itemp: int;
 
 initA(A);
-[i in Vec] piv(i) = i;
+[i in Vec with (ref piv)] piv(i) = i;
 
 writeln("Unfactored Matrix:");
 writeln(A);
@@ -55,7 +55,7 @@ writeln("Pivot Vector:");
 writeln(piv);
 
 
-proc initA(A){
+proc initA(ref A){
 
 A(1,1) = 3.0;
 A(1,2) = 17.0;

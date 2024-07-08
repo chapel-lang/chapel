@@ -192,7 +192,7 @@ public:
   void apply(PBQPRAGraph &G) override {
     LiveIntervals &LIS = G.getMetadata().LIS;
 
-    // A minimum spill costs, so that register constraints can can be set
+    // A minimum spill costs, so that register constraints can be set
     // without normalization in the [0.0:MinSpillCost( interval.
     const PBQP::PBQPNum MinSpillCost = 10.0;
 
@@ -634,8 +634,8 @@ void RegAllocPBQP::initializeGraph(PBQPRAGraph &G, VirtRegMap &VRM,
 
       // vregLI overlaps fixed regunit interference.
       bool Interference = false;
-      for (MCRegUnitIterator Units(PReg, &TRI); Units.isValid(); ++Units) {
-        if (VRegLI.overlaps(LIS.getRegUnit(*Units))) {
+      for (MCRegUnit Unit : TRI.regunits(PReg)) {
+        if (VRegLI.overlaps(LIS.getRegUnit(Unit))) {
           Interference = true;
           break;
         }
@@ -783,7 +783,7 @@ void RegAllocPBQP::finalizeAlloc(MachineFunction &MF,
 void RegAllocPBQP::postOptimization(Spiller &VRegSpiller, LiveIntervals &LIS) {
   VRegSpiller.postOptimization();
   /// Remove dead defs because of rematerialization.
-  for (auto DeadInst : DeadRemats) {
+  for (auto *DeadInst : DeadRemats) {
     LIS.RemoveMachineInstrFromMaps(*DeadInst);
     DeadInst->eraseFromParent();
   }
@@ -847,6 +847,7 @@ bool RegAllocPBQP::runOnMachineFunction(MachineFunction &MF) {
 
     while (!PBQPAllocComplete) {
       LLVM_DEBUG(dbgs() << "  PBQP Regalloc round " << Round << ":\n");
+      (void) Round;
 
       PBQPRAGraph G(PBQPRAGraph::GraphMetadata(MF, LIS, MBFI));
       initializeGraph(G, VRM, *VRegSpiller);

@@ -4,7 +4,7 @@ record mmap {
   type keyType;
   type valType;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var table = new chpl__hashtable(keyType, valType);
 
   proc method() {

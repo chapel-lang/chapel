@@ -2,7 +2,7 @@ module testmodule {
 
   // Work-around for const-ref version only in Reflection
   // causing 'coercion passed to const ref' errors
-  proc canResolve(param fname : string, in arg) param : bool
+  proc canResolve(param fname : string, in arg) param : bool do
     return __primitive("call resolves", fname, arg);
 
 
@@ -39,7 +39,7 @@ module testmodule {
     writeln(arg.type:string, " ", arg);
   }
 
- 
+
   // accepts non-nilable borrowed any-class
   proc acceptsBorrowedNonNilable( arg: borrowed class ) {
     writeln(arg.type:string, " ", arg);
@@ -83,12 +83,13 @@ module testmodule {
   }
 
   proc main() {
-
     var myOwnedNilable:owned MyClass? = new owned MyClass();
     var mySharedNonNilable:shared MyClass = new shared MyClass();
     var mySharedNilable:shared MyClass? = new shared MyClass();
-    var myBorrowedNonNilable:borrowed MyClass = (new owned MyClass()).borrow();
-    var myBorrowedNilable:borrowed MyClass? = (new owned MyClass()).borrow();
+    var myBorrowedNonNilableOwn = new owned MyClass();
+    var myBorrowedNonNilable:borrowed MyClass = myBorrowedNonNilableOwn.borrow();
+    var myBorrowedNilableOwn = new owned MyClass();
+    var myBorrowedNilable:borrowed MyClass? = myBorrowedNilableOwn.borrow();
     var myUnmanagedNonNilable:unmanaged MyClass = myBorrowedNonNilable:unmanaged;
     var myUnmanagedNilable:unmanaged MyClass? = myBorrowedNilable:unmanaged;
     var myInt = 1;
@@ -114,7 +115,7 @@ module testmodule {
       assert(!canResolve(fnName, myUnmanagedNilable));
       assert(!canResolve(fnName, myInt));
     }
-    
+
     {
       param fnName = "acceptsOwnedNilable";
       writeln(fnName);

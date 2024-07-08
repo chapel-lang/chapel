@@ -9,8 +9,8 @@ var A : [BigR] real;
 var Temp : [R] real;
 
 proc main() {
-  [ij in BigR]  A(ij) = 0.0;
-  [j in 1..n] A(n+1,j) = 1.0;
+  [ij in BigR with (ref A)]  A(ij) = 0.0;
+  [j in 1..n with (ref A)] A(n+1,j) = 1.0;
 
   if (verbose) {
     writeln("Initial configuration:");
@@ -20,7 +20,7 @@ proc main() {
   var iteration = 0, delta = 1.0;
 
   while (delta > epsilon) {
-    [(i,j) in R] Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
+    [(i,j) in R with (ref Temp)] Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
     delta = 0.0;
     for (i,j) in R {
       delta = max(delta, Temp(i,j)-A(i,j));

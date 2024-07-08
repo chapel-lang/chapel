@@ -8,7 +8,8 @@ class DataBlock {
   }
 }
 
-var x : borrowed DataBlock(int) = new borrowed DataBlock(int);
+var ownX = new owned DataBlock(int);
+var x : borrowed DataBlock(int) = ownX.borrow();
 
 x.x1 = 1;
 x.x2 = 2;
@@ -18,7 +19,8 @@ writeln(x(1));
 writeln(x(2));
 writeln(x(3));
 
-var y : borrowed DataBlock(string) = new borrowed DataBlock(string);
+var ownY = new owned DataBlock(string);
+var y : borrowed DataBlock(string) = ownY.borrow();
 
 y.x1 = "hello";
 y.x2 = "world";

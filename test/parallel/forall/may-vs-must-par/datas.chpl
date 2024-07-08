@@ -28,7 +28,7 @@ class class1ser {
     for idx in RNGd do
       yield idx;
   }
-  proc chpl__promotionType() type return int;
+  proc chpl__promotionType() type do return int;
 }
 
 class class2ser {
@@ -37,7 +37,7 @@ class class2ser {
     for idx in RNGd do
       yield -idx;
   }
-  proc chpl__promotionType() type return int;
+  proc chpl__promotionType() type do return int;
 }
 
 /////////// serial+standalone ///////////
@@ -53,7 +53,7 @@ class class1SA {
     for idx in RNGd.these(tag) do
       yield idx;
   }
-  proc chpl__promotionType() type return int;
+  proc chpl__promotionType() type do return int;
 }
 
 class class2SA {
@@ -67,7 +67,7 @@ class class2SA {
     for idx in RNGd.these(tag) do
       yield -idx;
   }
-  proc chpl__promotionType() type return int;
+  proc chpl__promotionType() type do return int;
 }
 
 /////////// serial+leader/follower ///////////
@@ -88,7 +88,7 @@ class class1LF {
     for idx in RNGd.these(tag, followThis) do
       yield idx;
   }
-  proc chpl__promotionType() type return int;
+  proc chpl__promotionType() type do return int;
 }
 
 class class2LF {
@@ -107,7 +107,7 @@ class class2LF {
     for idx in RNGd.these(tag, followThis) do
       yield -idx;
   }
-  proc chpl__promotionType() type return int;
+  proc chpl__promotionType() type do return int;
 }
 
 /////////// serial + LF + SA ///////////
@@ -133,7 +133,7 @@ class class1par {
     for idx in RNGd.these(tag, followThis) do
       yield idx;
   }
-  proc chpl__promotionType() type return int;
+  proc chpl__promotionType() type do return int;
 }
 
 class class2par {
@@ -157,5 +157,5 @@ class class2par {
     for idx in RNGd.these(tag, followThis) do
       yield -idx;
   }
-  proc chpl__promotionType() type return int;
+  proc chpl__promotionType() type do return int;
 }

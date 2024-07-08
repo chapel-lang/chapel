@@ -1,5 +1,11 @@
 .. default-domain:: chpl
 
+.. index::
+   single: methods
+   single: methods; primary
+   single: methods; secondary
+   single: primary methods
+   single: secondary methods
 .. _Chapter-Methods:
 
 =======
@@ -59,6 +65,10 @@ Method calls are described in :ref:`Method_Calls`.
 The use of ``this-intent`` is described in
 :ref:`Method_receiver_and_this`.
 
+.. index::
+   single: method calls
+   single: methods; calling
+   single: calls; methods
 .. _Method_Calls:
 
 Method Calls
@@ -137,6 +147,16 @@ a way that allows these methods to be called (see :ref:`Using_Modules` and
    Future work: the semantics of privacy specifiers for methods are still under
    discussion.
 
+.. index::
+   single: methods; receiver
+   single: this
+   single: classes; this
+   single: records; this
+   single: receiver
+   single: type methods
+   single: instance methods
+   single: methods; type
+   single: methods; instance
 .. _Method_receiver_and_this:
 
 The Method Receiver and the *this* Argument
@@ -168,7 +188,7 @@ method-call-expression as specified in :ref:`Method_Calls`.
       var c1: C = new C();
       c1.foo();
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -183,11 +203,9 @@ Methods whose receivers are objects are called *instance methods*.
 Methods may also be defined to have ``type`` receivers—these are known
 as *type methods*.
 
-Note that within a method for a class ``C``, the type of ``this`` is
-generally ``borrowed C``. Within a type method on a class ``C``,
-``this`` refers to the class type ``C`` with management and nilability
-matching the type of the receiver. Please
-see :ref:`Class_Methods` for more details.
+Methods on a class ``C`` generally use a ``this`` type of ``borrowed C``
+but ``this`` will be more generic in some cases. See
+:ref:`Class_Methods`.
 
 The optional ``this-intent`` is used to specify type methods, to
 constrain a receiver argument to be a ``param``, or to specify how the
@@ -196,11 +214,8 @@ receiver argument should be passed to the method.
 When no ``this-intent`` is used, a default this intent applies. For
 methods on classes and other primitive types, the default this intent is
 the same as the default intent for that type. For record methods, the
-intent for the receiver formal argument is ``ref`` or ``const ref``,
-depending on whether the formal argument is modified inside of the
-method. Programmers wishing to be explicit about whether or not record
-methods modify the receiver can explicitly use the ``ref`` or
-``const ref`` ``this-intent``.
+intent for the receiver formal argument is ``const``.
+See :ref:`The_Default_Intent`.
 
 A method whose ``this-intent`` is ``type`` defines a *type method*. It
 can only be called on the type itself rather than on an instance of the
@@ -284,9 +299,7 @@ reference, allowing modifications to ``this``. If ``this-intent`` is
 cannot be modified inside the method. The ``this-intent`` can also
 describe an abstract intent as follows. If it is ``const``, the receiver
 argument will be passed with ``const`` intent. If it is left out
-entirely, the receiver will be passed with a default intent. For
-records, that default intent is ``ref`` if ``this`` is modified within
-the function and ``const ref`` otherwise. For other types, the default
+entirely, the receiver will be passed with a default intent. The default
 ``this`` intent matches the default argument intent described in
 :ref:`The_Default_Intent`.
 
@@ -317,6 +330,10 @@ the function and ``const ref`` otherwise. For other types, the default
    Given a variable ``x = 2``, a call to ``x.doubleMe()`` will set ``x``
    to ``4``.
 
+.. index::
+   single: methods; indexing
+   single: this
+   single: methods; this
 .. _The_this_Method:
 
 The *this* Method
@@ -369,6 +386,10 @@ be declared with parentheses even if the argument list is empty.
       3
       thisMethod.chpl:9: error: halt reached - ThreeArray index out of bounds: 4
 
+.. index::
+   single: methods; iterating
+   single: these
+   single: methods; these
 .. _The_these_Method:
 
 The *these* Method
@@ -376,7 +397,7 @@ The *these* Method
 
 An iterator method declared with the name ``these`` allows the receiver
 to be “iterated over” similarly to how a domain or array supports
-iteration. When a value supporting a ``these`` method is used as the the
+iteration. When a value supporting a ``these`` method is used as the
 ``iteratable-expression`` of a loop, the loop proceeds in a manner
 controlled by the ``these`` iterator.
 
@@ -450,3 +471,67 @@ the class type itself.
       2
       4
       8
+
+.. _Methods_without_Parentheses:
+
+Methods without parentheses
+---------------------------
+
+Similarly to :ref:`Functions_without_Parentheses`, it is possible to
+create methods that do not have parentheses. Such methods look similar to
+field access when they are called. As a result, a method without
+parentheses can be used to replace a field that was removed or renamed
+while providing the same interface as the field accessor.
+
+   *Example (parenlessMethod.chpl)*.
+
+   For example, the following code shows a ``record myType`` that has a
+   field ``x``. It also shows some code that operates on the field.
+
+   .. BLOCK-test-chapelpre
+     /*
+
+   .. code-block:: chapel
+
+      record myType {
+        var x: int;
+      }
+
+      var v: myType;
+      writeln(v.x);
+
+   .. BLOCK-test-chapelpost
+     */
+
+   Now, suppose that as ``myType`` evolves, it is adjusted to compute the
+   value of ``x`` without storing it at all. In that case, a
+   method without parentheses can allow the code using ``myType`` to
+   function as it did before:
+
+   .. code-block:: chapel
+
+      record myType {
+        // this parentheses-less function supports
+        // a field-access syntax
+        proc x : int {
+          return 0; // compute ``x`` and return it
+        }
+      }
+
+      var v: myType;
+      writeln(v.x);
+
+   .. BLOCK-test-chapeloutput
+
+      0
+
+One can create a method without parentheses to replace a field or
+parenless method in a parent class. Such methods require the ``override``
+keyword (see :ref:`Overriding_Base_Class_Methods`).
+
+Note that class methods without parentheses that return with ``type`` or
+``param`` intent use a generic type for the ``this`` argument. See
+:ref:`Class_Methods` for more details.
+
+It is a redeclaration error to define a method without parentheses with
+the same name as a field.

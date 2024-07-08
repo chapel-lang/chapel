@@ -15,7 +15,7 @@ for i in 1..testIters {
     elem *= -1;
   if elem == testElem then
     elemCount += 1;
-  lst.append(elem);
+  lst.pushBack(elem);
 }
 
 assert(lst.size == testIters);
@@ -41,10 +41,10 @@ lst.clear();
 
 // Check that remove() handles consecutive runs of elements to remove
 for i in 1..10 {
-  lst.append(testElem);
+  lst.pushBack(testElem);
 }
 for i in 1..10 {
-  lst.append(testElem * 2);
+  lst.pushBack(testElem * 2);
 }
 
 removed = lst.remove(testElem, 0);
@@ -53,7 +53,7 @@ writeln(lst);
 
 var slist: list(string, listLock);
 for w in [ "do", "do", "de", "do" ] do
-  slist.append(w);
+  slist.pushBack(w);
 
 removed = slist.remove("do", 0);
 writeln(removed);

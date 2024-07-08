@@ -14,6 +14,7 @@
 #define LLVM_LIB_CODEGEN_SELECTIONDAG_SDNODEDBGVALUE_H
 
 #include "llvm/IR/DebugLoc.h"
+#include "llvm/Support/Allocator.h"
 #include "llvm/Support/DataTypes.h"
 #include <utility>
 
@@ -229,7 +230,7 @@ public:
   bool isEmitted() const { return Emitted; }
 
   /// clearIsEmitted - Reset Emitted flag, for certain special cases where
-  /// dbg.addr is emitted twice.
+  /// SDDbgValue is emitted twice. DBG_INSTR_REF depends on this behaviour.
   void clearIsEmitted() { Emitted = false; }
 
   LLVM_DUMP_METHOD void dump() const;

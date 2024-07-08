@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,9 +28,11 @@
   Angeles Navarro. *PGAS 2011: Fifth Conference on Partitioned Global
   Address Space Programming Models*, October 2011.
 */
+@unstable("The 'DynamicIters' module is unstable")
 module DynamicIters {
 
   use ChapelLocks, DSIUtil;
+  private use Math;
 
 /*
    Toggle debugging output.
@@ -76,7 +78,7 @@ iter dynamic(c:range(?), chunkSize:int=1, numTasks:int=0) {
 }
 
 // Parallel iterator
-pragma "no doc"
+@chpldoc.nodoc
 iter dynamic(param tag:iterKind, c:range(?), chunkSize:int=1, numTasks:int=0)
 where tag == iterKind.leader
 {
@@ -85,23 +87,23 @@ where tag == iterKind.leader
   // # of tasks the range can fill. (fast) ceil so all work is represented
   const numChunks: int;
 
-  // divceilpos() doesn't accept two unsigned ints.
-  // divceil() doesn't accept args of non-matching signedness.
+  // divCeilPos() doesn't accept two unsigned ints.
+  // divCeil() doesn't accept args of non-matching signedness.
   //
-  // So we need to call divceil() for the former case, and
-  // divceilpos() for the latter.
+  // So we need to call divCeil() for the former case, and
+  // divCeilPos() for the latter.
   //
   // If c.size (of type c.idxType) is uint(64), we can safely cast the
   // chunkSize (asserted positive above) to uint(64), and can call
-  // divceil() on two unsigned ints.
+  // divCeil() on two unsigned ints.
   //
   // Otherwise, it isn't uint(64), and we can safely cast it to
-  // int(64).  Then we can call divceilpos() with it and any chunkSize
+  // int(64).  Then we can call divCeilPos() with it and any chunkSize
   // type, since then we know at least one arg is signed.
   if c.idxType == uint(64) then
-    numChunks = divceil(c.sizeAs(uint(64)), chunkSize:uint(64)): int;
+    numChunks = divCeil(c.sizeAs(uint(64)), chunkSize:uint(64)): int;
   else
-    numChunks = divceilpos(c.sizeAs(int), chunkSize): int;
+    numChunks = divCeilPos(c.sizeAs(int), chunkSize): int;
 
   // Check if the number of tasks is 0, in that case it returns a default value
   const nTasks = min(numChunks, defaultNumTasks(numTasks));
@@ -155,7 +157,7 @@ where tag == iterKind.leader
 }
 
 // Follower
-pragma "no doc"
+@chpldoc.nodoc
 iter dynamic(param tag:iterKind, c:range(?), chunkSize:int=1, numTasks:int, followThis)
 where tag == iterKind.follower
 {
@@ -163,7 +165,7 @@ where tag == iterKind.follower
   const current:rType=unDensify(followThis(0),c);
   if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
-  for i in current do {
+  for i in current {
     yield i;
   }
 }
@@ -208,7 +210,7 @@ iter dynamic(c:domain, chunkSize:int=1, numTasks:int=0, parDim:int=0)
 }
 
 //Leader
-pragma "no doc"
+@chpldoc.nodoc
 iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parDim : int = 0)
   where tag == iterKind.leader
   {
@@ -244,7 +246,7 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parD
   }
 
 //Follower
-pragma "no doc"
+@chpldoc.nodoc
 iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {
@@ -285,12 +287,12 @@ iter guided(c:range(?), numTasks:int=0) {
   for i in c do yield i;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter guided(param tag:iterKind, c:range(?), numTasks:int=0)
 where tag == iterKind.leader
 {
   // Check if the number of tasks is 0, in that case it returns a default value
-  const nTasks=min(c.sizeAs(c.intIdxType), defaultNumTasks(numTasks));
+  const nTasks=min(c.size, defaultNumTasks(numTasks));
   type rType=c.type;
   var remain:rType = densify(c,c);
   // If the number of tasks is insufficient, yield in serial
@@ -305,7 +307,7 @@ where tag == iterKind.leader
     const factor=nTasks;
     var lock: chpl_LocalSpinlock;
 
-    coforall tid in 0..#nTasks with (ref remain) do {
+    coforall tid in 0..#nTasks with (ref remain) {
       while undone.read() do {
         // There is local work in remain(tid)
         const current:rType=adaptSplit(remain, factor, undone, lock);
@@ -320,7 +322,7 @@ where tag == iterKind.leader
 }
 
 // Follower
-pragma "no doc"
+@chpldoc.nodoc
 iter guided(param tag:iterKind, c:range(?), numTasks:int, followThis)
 where tag == iterKind.follower
 
@@ -329,7 +331,7 @@ where tag == iterKind.follower
   const current:rType=unDensify(followThis(0),c);
   if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
-  for i in current do {
+  for i in current {
     yield i;
   }
 }
@@ -374,7 +376,7 @@ iter guided(c:domain, numTasks:int=0, parDim:int=0)
 }
 
 // Leader.
-pragma "no doc"
+@chpldoc.nodoc
 iter guided(param tag:iterKind, c:domain, numTasks:int=0, parDim:int=0)
 where tag == iterKind.leader
 {
@@ -406,12 +408,12 @@ where tag == iterKind.leader
 }
 
 // Follower.
-pragma "no doc"
+@chpldoc.nodoc
 iter guided(param tag:iterKind, c:domain, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {
   // Invoke the default rectangular domain follower iterator.
-  for i in c.these(tag=iterKind.follower, followThis=followThis) do {
+  for i in c.these(tag=iterKind.follower, followThis=followThis) {
     yield i;
   }
 }
@@ -454,37 +456,36 @@ iter adaptive(c:range(?), numTasks:int=0) {
 
 
 // Parallel iterator
-/*
-The enum used to represent adaptive methods.
-
-- ``Whole``
-  Each task without work tries to steal from its neighbor range
-  until it exhausts that range. Then the task continues with the next
-  neighbor range, and so on until there is no more work. This is the default
-  policy.
-
-- ``RoundRobin``
-  Each task without work tries to steal once from its neighbor range, next
-  from the following neighbor range and so on in a round-robin way until
-  there is no more work.
-
-- ``WholeTail``
-  Similar to the ``Whole`` method, but now the splitting in the victim
-  range is performed from its tail.
-*/
+/* The enum used to represent adaptive methods. */
 enum Method {
+  /*
+    Each task without work tries to steal from its neighbor range
+    until it exhausts that range. Then the task continues with the next
+    neighbor range, and so on until there is no more work. This is the default
+    policy.
+  */
   Whole = 0,
+  /*
+    Each task without work tries to steal once from its neighbor range, next
+    from the following neighbor range and so on in a round-robin way until
+    there is no more work.
+  */
   RoundRobin = 1,
+  /*
+    Similar to the :enumconstant:`~Method.Whole` method, but now the splitting
+    in the victim range is performed from its tail.
+  */
   WholeTail = 2
-};
+}
 
 /*
-  Used to select the adaptive stealing method. Defaults to ``Whole``.
-  See :data:`Method` for more information.
+  Used to select the adaptive stealing method.
+  Defaults to :enumconstant:`~Method.Whole`.
+  See :enum:`Method` for more information.
 */
 config param methodStealing = Method.Whole;
 
-pragma "no doc"
+@chpldoc.nodoc
 iter adaptive(param tag:iterKind, c:range(?), numTasks:int=0)
 where tag == iterKind.leader
 
@@ -493,7 +494,7 @@ where tag == iterKind.leader
     compilerError("methodStealing value must be between 0 and 2");*/
 
   // Check if the number of tasks is 0, in that case it returns a default value
-  const nTasks=min(c.sizeAs(c.intIdxType), defaultNumTasks(numTasks));
+  const nTasks=min(c.size, defaultNumTasks(numTasks));
   type rType=c.type;
 
   // If the number of tasks is insufficient, yield in serial
@@ -519,15 +520,15 @@ where tag == iterKind.leader
     var barrier : atomic int;
 
     // Start the parallel work
-    coforall tid in 0..#nTasks with (const in r) {
+    coforall tid in 0..#nTasks with (const in r, ref localWork, ref moreLocalWork, ref locks) {
 
       // Step 1: Initial range per Thread/Task
 
       // Initial Local range in localWork[tid]
-      const chunkSize = c.sizeAs(c.intIdxType)/nTasks;
+      const chunkSize = c.size/nTasks;
       localWork[tid]=
       if tid==nTasks-1 then
-        r#(chunkSize*(nTasks-1)-r.sizeAs(r.intIdxType))
+        r#(chunkSize*(nTasks-1)-r.size)
       else
         (r+tid*chunkSize)#chunkSize;
       barrier.add(1);
@@ -540,11 +541,11 @@ where tag == iterKind.leader
 
       // Step 2: While there is work at tid, do splitting
 
-      while moreLocalWork[tid] do {
+      while moreLocalWork[tid] {
         // There is local work
         // The current range we get after splitting locally
         const zeroBasedIters:rType=adaptSplit(localWork[tid], factorSteal, moreLocalWork[tid], locks[tid]);
-        if zeroBasedIters.sizeAs(zeroBasedIters.intIdxType) !=0 then {
+        if zeroBasedIters.size !=0 then {
           if debugDynamicIters then
             writeln("Parallel adaptive Iterator. Working locally at tid ", tid, " with range yielded as ", zeroBasedIters);
           yield (zeroBasedIters,);
@@ -557,7 +558,7 @@ where tag == iterKind.leader
       var victim=(tid+1) % nTasks;
       var stealFailed:bool=false;
 
-      while moreWork.read() do {
+      while moreWork.read() {
         if debugDynamicIters then
           writeln("Entering at Stealing phase in tid ", tid," with victim ", victim, " using method of Stealing ", methodStealing);
 
@@ -567,7 +568,7 @@ where tag == iterKind.leader
           if moreLocalWork[victim] then {
             // There is work in victim
             const zeroBasedIters2:rType=adaptSplit(localWork[victim], factorSteal, moreLocalWork[victim], locks[victim]);
-            if zeroBasedIters2.sizeAs(zeroBasedIters2.intIdxType) !=0 then {
+            if zeroBasedIters2.size !=0 then {
               if debugDynamicIters then
                 writeln("Range stolen at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
               yield (zeroBasedIters2,);
@@ -580,7 +581,7 @@ where tag == iterKind.leader
             // There is work in victim
             const zeroBasedIters2:rType=adaptSplit(localWork[victim], factorSteal, moreLocalWork[victim], locks[victim], methodStealing==Method.WholeTail);
                                           //after splitting from a victim range
-            if zeroBasedIters2.sizeAs(zeroBasedIters2.intIdxType) !=0 then {
+            if zeroBasedIters2.size !=0 then {
               if debugDynamicIters then
                 writeln("Range stolen at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
               yield (zeroBasedIters2,);
@@ -611,7 +612,7 @@ where tag == iterKind.leader
 }
 
 // Follower
-pragma "no doc"
+@chpldoc.nodoc
 iter adaptive(param tag:iterKind, c:range(?), numTasks:int, followThis)
 where tag == iterKind.follower
 {
@@ -619,7 +620,7 @@ where tag == iterKind.follower
   var current:rType=unDensify(followThis(0),c);
   if debugDynamicIters then
     writeln("Follower received range ", followThis, " ; shifting to ", current);
-  for i in current do {
+  for i in current {
     yield i;
   }
 }
@@ -665,7 +666,7 @@ iter adaptive(c:domain, numTasks:int=0, parDim:int=0)
 }
 
 // Leader.
-pragma "no doc"
+@chpldoc.nodoc
 iter adaptive(param tag:iterKind, c:domain, numTasks:int=0, parDim:int=0)
 where tag == iterKind.leader
 {
@@ -697,12 +698,12 @@ where tag == iterKind.leader
 }
 
 // Follower.
-pragma "no doc"
+@chpldoc.nodoc
 iter adaptive(param tag:iterKind, c:domain, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {
   // Invoke the default rectangular domain follower iterator.
-  for i in c.these(tag=iterKind.follower, followThis=followThis) do {
+  for i in c.these(tag=iterKind.follower, followThis=followThis) {
     yield i;
   }
 }
@@ -726,12 +727,11 @@ private proc defaultNumTasks(nTasks:int)
 private proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft, lock:chpl_LocalSpinlock, splitTail:bool=false)
 {
   type rType=rangeToSplit.type;
-  type lenType=rangeToSplit.sizeAs(rangeToSplit.intIdxType).type;
-  var totLen, size:lenType;
+  var totLen, size:int;
   const profThreshold=1;
 
   lock.lock();
-  totLen=rangeToSplit.sizeAs(rangeToSplit.intIdxType);
+  totLen=rangeToSplit.size;
   if totLen > profThreshold then
     size=max(totLen/splitFactor, profThreshold);
   else {

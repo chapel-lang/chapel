@@ -8,16 +8,16 @@ config const n = 10;
 
 const Space = {1..n, 1..n};
 
-const B = Space dmapped Block(Space);
+const B = Space dmapped new blockDist(Space);
 test(B);
 
-const C = Space dmapped Cyclic(startIdx = Space.low);
+const C = Space dmapped new cyclicDist(startIdx = Space.low);
 test(C);
 
-const BC = Space dmapped BlockCyclic(startIdx = Space.low, blocksize = (2,2));
+const BC = Space dmapped new blockCycDist(startIdx = Space.low, blocksize = (2,2));
 test(BC);
 
-const SC = Space dmapped Stencil(Space, fluff=(1,1));
+const SC = Space dmapped new stencilDist(Space, fluff=(1,1));
 test(SC);
 
 proc test(Dist) {
@@ -26,7 +26,7 @@ proc test(Dist) {
   forall d in Data do d = here.id;
 
   // check targetLocales
-  for (distloc, domloc, arrloc) in zip(Dist.dist.targetLocales(),
+  for (distloc, domloc, arrloc) in zip(Dist.distribution.targetLocales(),
                                        Dist.targetLocales(),
                                        Data.targetLocales()) {
     assert( distloc == domloc );

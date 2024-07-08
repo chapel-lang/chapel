@@ -9,6 +9,7 @@
 #include "llvm/IR/Constants.h"
 #include "llvm-c/Core.h"
 #include "llvm/AsmParser/Parser.h"
+#include "llvm/IR/ConstantFold.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Instruction.h"
@@ -61,45 +62,35 @@ TEST(ConstantsTest, Integer_i1) {
   // @i = constant i1 true
   EXPECT_EQ(One, ConstantExpr::getShl(One, Zero));
 
-  // @j = constant i1 lshr(i1 1, i1 1)  ; poison
-  // @j = constant i1 poison
-  EXPECT_EQ(Poison, ConstantExpr::getLShr(One, One));
-
-  // @m = constant i1 ashr(i1 1, i1 1)  ; poison
-  // @m = constant i1 poison
-  EXPECT_EQ(Poison, ConstantExpr::getAShr(One, One));
-
   // @n = constant i1 mul(i1 -1, i1 1)
   // @n = constant i1 true
   EXPECT_EQ(One, ConstantExpr::getMul(NegOne, One));
 
   // @o = constant i1 sdiv(i1 -1, i1 1) ; overflow
   // @o = constant i1 true
-  EXPECT_EQ(One, ConstantExpr::getSDiv(NegOne, One));
+  EXPECT_EQ(One, ConstantFoldBinaryInstruction(Instruction::SDiv, NegOne, One));
 
   // @p = constant i1 sdiv(i1 1 , i1 -1); overflow
   // @p = constant i1 true
-  EXPECT_EQ(One, ConstantExpr::getSDiv(One, NegOne));
+  EXPECT_EQ(One, ConstantFoldBinaryInstruction(Instruction::SDiv, One, NegOne));
 
   // @q = constant i1 udiv(i1 -1, i1 1)
   // @q = constant i1 true
-  EXPECT_EQ(One, ConstantExpr::getUDiv(NegOne, One));
+  EXPECT_EQ(One, ConstantFoldBinaryInstruction(Instruction::UDiv, NegOne, One));
 
   // @r = constant i1 udiv(i1 1, i1 -1)
   // @r = constant i1 true
-  EXPECT_EQ(One, ConstantExpr::getUDiv(One, NegOne));
+  EXPECT_EQ(One, ConstantFoldBinaryInstruction(Instruction::UDiv, One, NegOne));
 
   // @s = constant i1 srem(i1 -1, i1 1) ; overflow
   // @s = constant i1 false
-  EXPECT_EQ(Zero, ConstantExpr::getSRem(NegOne, One));
-
-  // @t = constant i1 urem(i1 -1, i1 1)
-  // @t = constant i1 false
-  EXPECT_EQ(Zero, ConstantExpr::getURem(NegOne, One));
+  EXPECT_EQ(Zero,
+            ConstantFoldBinaryInstruction(Instruction::SRem, NegOne, One));
 
   // @u = constant i1 srem(i1  1, i1 -1) ; overflow
   // @u = constant i1 false
-  EXPECT_EQ(Zero, ConstantExpr::getSRem(One, NegOne));
+  EXPECT_EQ(Zero,
+            ConstantFoldBinaryInstruction(Instruction::SRem, One, NegOne));
 }
 
 TEST(ConstantsTest, IntSigns) {
@@ -116,63 +107,62 @@ TEST(ConstantsTest, IntSigns) {
   EXPECT_EQ(0x3b, ConstantInt::get(Int8Ty, 0x13b)->getSExtValue());
 }
 
-TEST(ConstantsTest, FP128Test) {
-  LLVMContext Context;
-  Type *FP128Ty = Type::getFP128Ty(Context);
-
-  IntegerType *Int128Ty = Type::getIntNTy(Context, 128);
-  Constant *Zero128 = Constant::getNullValue(Int128Ty);
-  Constant *X = ConstantExpr::getUIToFP(Zero128, FP128Ty);
-  EXPECT_TRUE(isa<ConstantFP>(X));
-}
-
 TEST(ConstantsTest, PointerCast) {
   LLVMContext C;
-  Type *Int8PtrTy = Type::getInt8PtrTy(C);
-  Type *Int32PtrTy = Type::getInt32PtrTy(C);
+  Type *PtrTy = PointerType::get(C, 0);
   Type *Int64Ty = Type::getInt64Ty(C);
-  VectorType *Int8PtrVecTy = FixedVectorType::get(Int8PtrTy, 4);
-  VectorType *Int32PtrVecTy = FixedVectorType::get(Int32PtrTy, 4);
+  VectorType *PtrVecTy = FixedVectorType::get(PtrTy, 4);
   VectorType *Int64VecTy = FixedVectorType::get(Int64Ty, 4);
+  VectorType *PtrScalableVecTy = ScalableVectorType::get(PtrTy, 4);
+  VectorType *Int64ScalableVecTy = ScalableVectorType::get(Int64Ty, 4);
 
-  // ptrtoint i8* to i64
+  // ptrtoint ptr to i64
   EXPECT_EQ(
       Constant::getNullValue(Int64Ty),
-      ConstantExpr::getPointerCast(Constant::getNullValue(Int8PtrTy), Int64Ty));
+      ConstantExpr::getPointerCast(Constant::getNullValue(PtrTy), Int64Ty));
 
-  // bitcast i8* to i32*
-  EXPECT_EQ(Constant::getNullValue(Int32PtrTy),
-            ConstantExpr::getPointerCast(Constant::getNullValue(Int8PtrTy),
-                                         Int32PtrTy));
+  // bitcast ptr to ptr
+  EXPECT_EQ(Constant::getNullValue(PtrTy),
+            ConstantExpr::getPointerCast(Constant::getNullValue(PtrTy), PtrTy));
 
-  // ptrtoint <4 x i8*> to <4 x i64>
+  // ptrtoint <4 x ptr> to <4 x i64>
   EXPECT_EQ(Constant::getNullValue(Int64VecTy),
-            ConstantExpr::getPointerCast(Constant::getNullValue(Int8PtrVecTy),
+            ConstantExpr::getPointerCast(Constant::getNullValue(PtrVecTy),
                                          Int64VecTy));
 
-  // bitcast <4 x i8*> to <4 x i32*>
-  EXPECT_EQ(Constant::getNullValue(Int32PtrVecTy),
-            ConstantExpr::getPointerCast(Constant::getNullValue(Int8PtrVecTy),
-                                         Int32PtrVecTy));
+  // ptrtoint <vscale x 4 x ptr> to <vscale x 4 x i64>
+  EXPECT_EQ(Constant::getNullValue(Int64ScalableVecTy),
+            ConstantExpr::getPointerCast(
+                Constant::getNullValue(PtrScalableVecTy), Int64ScalableVecTy));
 
-  Type *Int32Ptr1Ty = Type::getInt32PtrTy(C, 1);
+  // bitcast <4 x ptr> to <4 x ptr>
+  EXPECT_EQ(
+      Constant::getNullValue(PtrVecTy),
+      ConstantExpr::getPointerCast(Constant::getNullValue(PtrVecTy), PtrVecTy));
+
+  // bitcast <vscale x 4 x ptr> to <vscale x 4 x ptr>
+  EXPECT_EQ(Constant::getNullValue(PtrScalableVecTy),
+            ConstantExpr::getPointerCast(
+                Constant::getNullValue(PtrScalableVecTy), PtrScalableVecTy));
+
+  Type *Ptr1Ty = PointerType::get(C, 1);
   ConstantInt *K = ConstantInt::get(Type::getInt64Ty(C), 1234);
 
   // Make sure that addrspacecast of inttoptr is not folded away.
   EXPECT_NE(K, ConstantExpr::getAddrSpaceCast(
-                   ConstantExpr::getIntToPtr(K, Int32PtrTy), Int32Ptr1Ty));
+                   ConstantExpr::getIntToPtr(K, PtrTy), Ptr1Ty));
   EXPECT_NE(K, ConstantExpr::getAddrSpaceCast(
-                   ConstantExpr::getIntToPtr(K, Int32Ptr1Ty), Int32PtrTy));
+                   ConstantExpr::getIntToPtr(K, Ptr1Ty), PtrTy));
 
-  Constant *NullInt32Ptr0 = Constant::getNullValue(Int32PtrTy);
-  Constant *NullInt32Ptr1 = Constant::getNullValue(Int32Ptr1Ty);
+  Constant *NullPtr0 = Constant::getNullValue(PtrTy);
+  Constant *NullPtr1 = Constant::getNullValue(Ptr1Ty);
 
   // Make sure that addrspacecast of null is not folded away.
-  EXPECT_NE(Constant::getNullValue(Int32PtrTy),
-            ConstantExpr::getAddrSpaceCast(NullInt32Ptr0, Int32Ptr1Ty));
+  EXPECT_NE(Constant::getNullValue(PtrTy),
+            ConstantExpr::getAddrSpaceCast(NullPtr0, Ptr1Ty));
 
-  EXPECT_NE(Constant::getNullValue(Int32Ptr1Ty),
-            ConstantExpr::getAddrSpaceCast(NullInt32Ptr1, Int32PtrTy));
+  EXPECT_NE(Constant::getNullValue(Ptr1Ty),
+            ConstantExpr::getAddrSpaceCast(NullPtr1, PtrTy));
 }
 
 #define CHECK(x, y)                                                            \
@@ -193,9 +183,6 @@ TEST(ConstantsTest, AsInstructionsTest) {
   Type *Int64Ty = Type::getInt64Ty(Context);
   Type *Int32Ty = Type::getInt32Ty(Context);
   Type *Int16Ty = Type::getInt16Ty(Context);
-  Type *Int1Ty = Type::getInt1Ty(Context);
-  Type *FloatTy = Type::getFloatTy(Context);
-  Type *DoubleTy = Type::getDoubleTy(Context);
 
   Constant *Global =
       M->getOrInsertGlobal("dummy", PointerType::getUnqual(Int32Ty));
@@ -203,11 +190,7 @@ TEST(ConstantsTest, AsInstructionsTest) {
       M->getOrInsertGlobal("dummy2", PointerType::getUnqual(Int32Ty));
 
   Constant *P0 = ConstantExpr::getPtrToInt(Global, Int32Ty);
-  Constant *P1 = ConstantExpr::getUIToFP(P0, FloatTy);
-  Constant *P2 = ConstantExpr::getUIToFP(P0, DoubleTy);
-  Constant *P3 = ConstantExpr::getTrunc(P0, Int1Ty);
   Constant *P4 = ConstantExpr::getPtrToInt(Global2, Int32Ty);
-  Constant *P5 = ConstantExpr::getUIToFP(P4, FloatTy);
   Constant *P6 = ConstantExpr::getBitCast(P4, FixedVectorType::get(Int16Ty, 2));
 
   Constant *One = ConstantInt::get(Int32Ty, 1);
@@ -218,62 +201,28 @@ TEST(ConstantsTest, AsInstructionsTest) {
   Constant *Undef64 = UndefValue::get(Int64Ty);
   Constant *PoisonV16 = PoisonValue::get(P6->getType());
 
-#define P0STR "ptrtoint (i32** @dummy to i32)"
-#define P1STR "uitofp (i32 ptrtoint (i32** @dummy to i32) to float)"
-#define P2STR "uitofp (i32 ptrtoint (i32** @dummy to i32) to double)"
-#define P3STR "ptrtoint (i32** @dummy to i1)"
-#define P4STR "ptrtoint (i32** @dummy2 to i32)"
-#define P5STR "uitofp (i32 ptrtoint (i32** @dummy2 to i32) to float)"
-#define P6STR "bitcast (i32 ptrtoint (i32** @dummy2 to i32) to <2 x i16>)"
+#define P0STR "ptrtoint (ptr @dummy to i32)"
+#define P3STR "ptrtoint (ptr @dummy to i1)"
+#define P4STR "ptrtoint (ptr @dummy2 to i32)"
+#define P6STR "bitcast (i32 ptrtoint (ptr @dummy2 to i32) to <2 x i16>)"
 
   CHECK(ConstantExpr::getNeg(P0), "sub i32 0, " P0STR);
-  CHECK(ConstantExpr::getFNeg(P1), "fneg float " P1STR);
   CHECK(ConstantExpr::getNot(P0), "xor i32 " P0STR ", -1");
   CHECK(ConstantExpr::getAdd(P0, P0), "add i32 " P0STR ", " P0STR);
   CHECK(ConstantExpr::getAdd(P0, P0, false, true),
         "add nsw i32 " P0STR ", " P0STR);
   CHECK(ConstantExpr::getAdd(P0, P0, true, true),
         "add nuw nsw i32 " P0STR ", " P0STR);
-  CHECK(ConstantExpr::getFAdd(P1, P1), "fadd float " P1STR ", " P1STR);
   CHECK(ConstantExpr::getSub(P0, P0), "sub i32 " P0STR ", " P0STR);
-  CHECK(ConstantExpr::getFSub(P1, P1), "fsub float " P1STR ", " P1STR);
   CHECK(ConstantExpr::getMul(P0, P0), "mul i32 " P0STR ", " P0STR);
-  CHECK(ConstantExpr::getFMul(P1, P1), "fmul float " P1STR ", " P1STR);
-  CHECK(ConstantExpr::getUDiv(P0, P0), "udiv i32 " P0STR ", " P0STR);
-  CHECK(ConstantExpr::getSDiv(P0, P0), "sdiv i32 " P0STR ", " P0STR);
-  CHECK(ConstantExpr::getFDiv(P1, P1), "fdiv float " P1STR ", " P1STR);
-  CHECK(ConstantExpr::getURem(P0, P0), "urem i32 " P0STR ", " P0STR);
-  CHECK(ConstantExpr::getSRem(P0, P0), "srem i32 " P0STR ", " P0STR);
-  CHECK(ConstantExpr::getFRem(P1, P1), "frem float " P1STR ", " P1STR);
-  CHECK(ConstantExpr::getAnd(P0, P0), "and i32 " P0STR ", " P0STR);
-  CHECK(ConstantExpr::getOr(P0, P0), "or i32 " P0STR ", " P0STR);
   CHECK(ConstantExpr::getXor(P0, P0), "xor i32 " P0STR ", " P0STR);
   CHECK(ConstantExpr::getShl(P0, P0), "shl i32 " P0STR ", " P0STR);
   CHECK(ConstantExpr::getShl(P0, P0, true), "shl nuw i32 " P0STR ", " P0STR);
   CHECK(ConstantExpr::getShl(P0, P0, false, true),
         "shl nsw i32 " P0STR ", " P0STR);
-  CHECK(ConstantExpr::getLShr(P0, P0, false), "lshr i32 " P0STR ", " P0STR);
-  CHECK(ConstantExpr::getLShr(P0, P0, true),
-        "lshr exact i32 " P0STR ", " P0STR);
-  CHECK(ConstantExpr::getAShr(P0, P0, false), "ashr i32 " P0STR ", " P0STR);
-  CHECK(ConstantExpr::getAShr(P0, P0, true),
-        "ashr exact i32 " P0STR ", " P0STR);
 
-  CHECK(ConstantExpr::getSExt(P0, Int64Ty), "sext i32 " P0STR " to i64");
-  CHECK(ConstantExpr::getZExt(P0, Int64Ty), "zext i32 " P0STR " to i64");
-  CHECK(ConstantExpr::getFPTrunc(P2, FloatTy),
-        "fptrunc double " P2STR " to float");
-  CHECK(ConstantExpr::getFPExtend(P1, DoubleTy),
-        "fpext float " P1STR " to double");
-
-  CHECK(ConstantExpr::getExactUDiv(P0, P0), "udiv exact i32 " P0STR ", " P0STR);
-
-  CHECK(ConstantExpr::getSelect(P3, P0, P4),
-        "select i1 " P3STR ", i32 " P0STR ", i32 " P4STR);
   CHECK(ConstantExpr::getICmp(CmpInst::ICMP_EQ, P0, P4),
         "icmp eq i32 " P0STR ", " P4STR);
-  CHECK(ConstantExpr::getFCmp(CmpInst::FCMP_ULT, P1, P5),
-        "fcmp ult float " P1STR ", " P5STR);
 
   std::vector<Constant *> V;
   V.push_back(One);
@@ -283,7 +232,7 @@ TEST(ConstantsTest, AsInstructionsTest) {
   //      "getelementptr i32*, i32** @dummy, i32 1");
   CHECK(ConstantExpr::getInBoundsGetElementPtr(PointerType::getUnqual(Int32Ty),
                                                Global, V),
-        "getelementptr inbounds i32*, i32** @dummy, i32 1");
+        "getelementptr inbounds ptr, ptr @dummy, i32 1");
 
   CHECK(ConstantExpr::getExtractElement(P6, One),
         "extractelement <2 x i16> " P6STR ", i32 1");
@@ -482,17 +431,13 @@ TEST(ConstantsTest, BitcastToGEP) {
       new GlobalVariable(*M, S, false, GlobalValue::ExternalLinkage, nullptr);
   auto *PtrTy = PointerType::get(i32, 0);
   auto *C = ConstantExpr::getBitCast(G, PtrTy);
-  if (Context.supportsTypedPointers()) {
-    EXPECT_EQ(cast<ConstantExpr>(C)->getOpcode(), Instruction::BitCast);
-  } else {
-    /* With opaque pointers, no cast is necessary. */
-    EXPECT_EQ(C, G);
-  }
+  /* With opaque pointers, no cast is necessary. */
+  EXPECT_EQ(C, G);
 }
 
 bool foldFuncPtrAndConstToNull(LLVMContext &Context, Module *TheModule,
                                uint64_t AndValue,
-                               MaybeAlign FunctionAlign = llvm::None) {
+                               MaybeAlign FunctionAlign = std::nullopt) {
   Type *VoidType(Type::getVoidTy(Context));
   FunctionType *FuncType(FunctionType::get(VoidType, false));
   Function *Func(
@@ -506,9 +451,9 @@ bool foldFuncPtrAndConstToNull(LLVMContext &Context, Module *TheModule,
 
   Constant *TheConstantExpr(ConstantExpr::getPtrToInt(Func, ConstantIntType));
 
-  bool Result =
-      ConstantExpr::get(Instruction::And, TheConstantExpr, TheConstant)
-          ->isNullValue();
+  Constant *C = ConstantFoldBinaryInstruction(Instruction::And, TheConstantExpr,
+                                              TheConstant);
+  bool Result = C && C->isNullValue();
 
   if (!TheModule) {
     // If the Module exists then it will delete the Function.
@@ -594,7 +539,8 @@ TEST(ConstantsTest, FoldGlobalVariablePtr) {
 
   Constant *TheConstantExpr(ConstantExpr::getPtrToInt(Global.get(), IntType));
 
-  ASSERT_TRUE(ConstantExpr::get(Instruction::And, TheConstantExpr, TheConstant)
+  ASSERT_TRUE(ConstantFoldBinaryInstruction(Instruction::And, TheConstantExpr,
+                                            TheConstant)
                   ->isNullValue());
 }
 
@@ -674,7 +620,7 @@ TEST(ConstantsTest, isElementWiseEqual) {
   EXPECT_FALSE(CF12U2->isElementWiseEqual(CF12U1));
   EXPECT_FALSE(CF12U1->isElementWiseEqual(CF12U2));
 
-  PointerType *PtrTy = Type::getInt8PtrTy(Context);
+  PointerType *PtrTy = PointerType::get(Context, 0);
   Constant *CPU = UndefValue::get(PtrTy);
   Constant *CP0 = ConstantPointerNull::get(PtrTy);
 

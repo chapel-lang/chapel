@@ -1,24 +1,24 @@
 use IO;
 
-if unicodeSupported() {
-  var f = opentmp();
+var f = openTempFile();
 
-  var euro = new ioChar(0x20ac); // euro sign "?";
-  var got = new ioChar(0);
+var euro = 0x20ac; // euro sign "?";
+var got;
 
-  writeln("Writing ", euro);
-  var writer = f.writer();
-  writer.write(euro);
-  writer.close();
+write("Writing ");
+stdout.writeCodepoint(euro);
+writeln();
 
-  var reader = f.reader();
-  reader.read(got);
-  reader.close();
+var writer = f.writer(locking=false);
+writer.writeCodepoint(euro);
+writer.close();
 
-  writeln("Read  ", got);
+var reader = f.reader(locking=false);
+got = reader.readCodepoint();
+reader.close();
 
-  assert( got == euro );
+write("Read  ");
+stdout.writeCodepoint(got);
+writeln();
 
-} else {
-  writeln("Test omitted because unicode is not supported (set e.g. LC_CTYPE=\"en_US.UTF-8\")");
-}
+assert( got == euro );

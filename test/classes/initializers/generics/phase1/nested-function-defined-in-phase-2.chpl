@@ -6,7 +6,7 @@ class Foo {
   proc init(param val) {
     field = val;
     nested();
-    this.complete();
+    init this;
 
     // Where the function definition was placed shouldn't impact its viability
     proc nested() {
@@ -16,6 +16,7 @@ class Foo {
 }
 
 proc main() {
-  var f = new borrowed Foo(13);
+  var ownF = new owned Foo(13);
+  var f = ownF.borrow();
   writeln(f.type: string);
 }

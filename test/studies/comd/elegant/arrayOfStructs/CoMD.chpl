@@ -16,7 +16,7 @@ proc main() {
   writeln("#                                                                                         Performance");
   writeln("#  Loop   Time(fs)       Total Energy   Potential Energy     Kinetic Energy  Temperature   (us/atom)     # Atoms");
 
-  var progressTimer : Timer;
+  var progressTimer : stopwatch;
 
   proc getProgress() {
     const ret = progressTimer.elapsed();

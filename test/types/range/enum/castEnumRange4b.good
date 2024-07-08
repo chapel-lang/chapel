@@ -1,0 +1,10 @@
+castEnumRange4b.chpl:4: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+castEnumRange4b.chpl:5: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+castEnumRange4b.chpl:13: In function 'outer':
+castEnumRange4b.chpl:14: warning: 1
+  castEnumRange4b.chpl:9: called as outer(param p = 1)
+castEnumRange4b.chpl:13: In function 'outer':
+castEnumRange4b.chpl:14: warning: 2
+  castEnumRange4b.chpl:10: called as outer(param p = 2)
+red..orange
+red..red

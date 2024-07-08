@@ -1,0 +1,9 @@
+warning,count,uniqueFiles
+"warning: constx is unstable. Please use consty",21,1
+"warning: fieldx is unstable.",18,1
+"warning: methodx is unstable.",12,1
+"warning: recordx is unstable.",9,1
+"warning: paramx is unstable please use paramy",9,1
+"warning: procx is unstable.",6,1
+"warning: This unstableConf is unstable",3,1
+"warning: modulex is unstable.",3,1

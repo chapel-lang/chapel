@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -209,10 +209,10 @@ module MPI {
    */
   config const requireThreadedMPI=true;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config const debugMPI=false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var CHPL_COMM_WORLD_REPLICATED : [rcDomain] MPI_Comm;
   rcReplicate(CHPL_COMM_WORLD_REPLICATED, MPI_COMM_NULL);
 
@@ -226,17 +226,17 @@ module MPI {
     return CHPL_COMM_WORLD_REPLICATED(1);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var _doinit : bool = false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var _freeChplComm : bool = false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* Module level deinit */
   proc deinit() {
     if _freeChplComm {
-      coforall loc in Locales do on loc {
+      coforall loc in Locales with (ref CHPL_COMM_WORLD_REPLICATED) do on loc {
           C_MPI.MPI_Comm_free(CHPL_COMM_WORLD_REPLICATED(1));
         }
     }
@@ -296,7 +296,7 @@ module MPI {
               halt("Unable to parse PMI_GNI_COOKIE");
             }
             const newVal = ":".join(cookieJar);
-            C_Env.setenv("PMI_GNI_COOKIE",newVal.c_str(),1);
+            C_Env.setenv("PMI_GNI_COOKIE", newVal.c_str(), 1);
           }
         }
     }
@@ -316,10 +316,10 @@ module MPI {
     setChplComm();
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc setChplComm() {
     if numLocales > 1 {
-      coforall loc in Locales do on loc {
+      coforall loc in Locales with (ref CHPL_COMM_WORLD_REPLICATED) do on loc {
         C_MPI.MPI_Comm_split(MPI_COMM_WORLD, 0, here.id : c_int,
           CHPL_COMM_WORLD_REPLICATED(1));
       }
@@ -363,7 +363,7 @@ module MPI {
     var flag, ret : c_int;
     ret = C_MPI.MPI_Test(request, flag, status);
     while (flag==0) {
-      chpl_task_yield();
+      currentTask.yieldExecution();
       ret = C_MPI.MPI_Test(request, flag, status);
     }
     return ret;
@@ -421,7 +421,7 @@ module MPI {
   }
 
   /* Get the count from a status object */
-  proc MPI_Status.getCount(tt : MPI_Datatype) {
+  proc ref MPI_Status.getCount(tt : MPI_Datatype) {
     var count : c_int;
     C_MPI.MPI_Get_count(this, tt, count);
     return count : int;
@@ -439,7 +439,7 @@ module MPI {
   extern type MPI_Op;
 
   {
-    pragma "no doc"
+    @chpldoc.nodoc
     extern proc sizeof(type t): c_size_t;
     assert(sizeof(MPI_Aint) == sizeof(c_ptrdiff));
   }
@@ -665,7 +665,7 @@ module MPI {
   extern proc MPI_Request_free (ref request: MPI_Request): c_int;
   extern proc MPI_Waitany (count: c_int, array_of_requests: []MPI_Request, ref iindex : c_int, ref status: MPI_Status): c_int;
   extern proc MPI_Testany (count: c_int, array_of_requests: []MPI_Request, ref iindex : c_int, ref flag: c_int, ref status: MPI_Status): c_int;
-  extern proc MPI_Waitall (count: c_int, array_of_requests: []MPI_Request, array_of_statuses: []MPI_Status): c_int;
+  extern proc MPI_Waitall (count: c_int, ref array_of_requests: []MPI_Request, ref array_of_statuses: []MPI_Status): c_int;
   extern proc MPI_Testall (count: c_int, array_of_requests: []MPI_Request, ref flag: c_int, array_of_statuses: []MPI_Status): c_int;
   extern proc MPI_Waitsome (incount: c_int, array_of_requests: []MPI_Request,
       ref outcount: c_int, array_of_indices: []c_int, array_of_statuses: []MPI_Status): c_int;
@@ -693,8 +693,8 @@ module MPI {
       array_of_displacements: []c_int, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
   extern proc MPI_Type_hindexed (count: c_int, array_of_blocklengths: []c_int,
       array_of_displacements: []MPI_Aint, oldtype: MPI_Datatype, ref newtype: MPI_Datatype): c_int;
-  extern proc MPI_Type_struct (count: c_int, array_of_blocklengths: []c_int,
-      array_of_displacements: []MPI_Aint, array_of_types: []MPI_Datatype, ref newtype: MPI_Datatype): c_int;
+  extern proc MPI_Type_struct (count: c_int, ref array_of_blocklengths: []c_int,
+      ref array_of_displacements: []MPI_Aint, ref array_of_types: []MPI_Datatype, ref newtype: MPI_Datatype): c_int;
   extern proc MPI_Address (ref location, ref address: MPI_Aint): c_int;
   extern proc MPI_Type_extent (datatype: MPI_Datatype, ref extent: MPI_Aint): c_int;
   extern proc MPI_Type_size (datatype: MPI_Datatype, ref size: c_int): c_int;
@@ -731,7 +731,7 @@ module MPI {
   private module C_Env {
     use CTypes;
     // Helper routines to access the environment
-    extern proc getenv(name : c_string) : c_string;
-    extern proc setenv(name : c_string, envval : c_string, overwrite : c_int) : c_int;
+    extern proc getenv(name : c_ptrConst(c_char)) : c_ptrConst(c_char);
+    extern proc setenv(name : c_ptrConst(c_char), envval : c_ptrConst(c_char), overwrite : c_int) : c_int;
   }
 }

@@ -1,5 +1,5 @@
 use DistributedDeque;
-use DistributedBag;
+use DistributedBagDeprecated;
 
 
 
@@ -19,13 +19,13 @@ var c = (
 
 // Add Bulk Test
 // We simply add a range of elements.
-var range = (if isBoundedDeque then 1..nElems + 1 else 1..nElems);
-var successfulInsertions = c.addBulk(range);
+var r = (if isBoundedDeque then 1..nElems + 1 else 1..nElems);
+var successfulInsertions = c.addBulk(r);
 assert(successfulInsertions == nElems);
 assert(c.getSize() == nElems);
 
 // Remove Bulk Test
-// We simply remove the range of elements we added. 
+// We simply remove the range of elements we added.
 var iterations = 0;
 for elt in c.removeBulk(nElems) {
 	iterations += 1;

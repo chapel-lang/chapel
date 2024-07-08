@@ -4,7 +4,7 @@ config const b = 3;
 config const n = 5;
 
 const dataLocalDom = {1..n};
-const dataDom = dataLocalDom dmapped Block(dataLocalDom); // problem
+const dataDom = dataLocalDom dmapped new blockDist(dataLocalDom); // problem
 //const dataDom = dataLocalDom; // this works
 
 var dataM: [dataDom] int = [i in 1..n] i % b + 1;
@@ -31,9 +31,9 @@ proc main {
 class PlusReduceOp: ReduceScanOp {
   type eltType;
   var  value: eltType;
-  proc identity         return 0: eltType;
+  proc identity do         return 0: eltType;
   proc accumulate(elm)  { value = value + elm; }
   proc combine(other)   { value = value + other.value; }
-  proc generate()       return value;
-  proc clone()          return new unmanaged PlusReduceOp(eltType=eltType);
+  proc generate() do       return value;
+  proc clone() do          return new unmanaged PlusReduceOp(eltType=eltType);
 }

@@ -21,13 +21,13 @@ record GRec {
   param p;
 }
 
-proc getGeneric(dummyArg) type  return GRec;
+proc getGeneric(dummyArg) type do  return GRec;
 
-proc test1(ref formal1: GRec) {
+proc test1(ref formal1: GRec(?)) {
   compilerWarning("formal1: ", formal1.type:string);
 }
 
-proc test2(ref formal2: getGeneric(0)) {
+proc test2(ref formal2: getGeneric(0)(?)) {
   compilerWarning("formal2: ", formal2.type:string);
 }
 

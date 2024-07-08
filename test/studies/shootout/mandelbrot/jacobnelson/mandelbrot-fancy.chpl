@@ -1,5 +1,5 @@
 
-use BlockDist;
+use CyclicDist;
 
 config const size : uint = 200;
 
@@ -13,9 +13,7 @@ proc main()
   const sizeRange = 0..#size:int(64);
   const myLocales = [loc in 0..#(bytesRequired:int)] Locales[loc % numLocales];
 
-  var ByteDist = new dmap(new Block(rank=2,idxType=int(64),
-                                    targetLocales=reshape(myLocales, {1..#(bytesRequired:int), 1..1}),
-                                    boundingBox={sizeRange, byteRange}));
+  var ByteDist = new cyclicDist(rank=2, startIdx=(0, 0));
 
   var ByteDom: domain(2, int(64)) dmapped ByteDist = {sizeRange, byteRange};
   var ByteArr : [ByteDom] uint(8);

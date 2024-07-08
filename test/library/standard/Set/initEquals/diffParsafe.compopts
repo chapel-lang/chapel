@@ -1,0 +1,3 @@
+ # diffParsafe.true.good
+-swarnForSetParsafeMismatch=true # diffParsafe.true.good
+-swarnForSetParsafeMismatch=false # diffParsafe.false.good

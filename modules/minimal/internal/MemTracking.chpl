@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,8 +35,8 @@ module MemTracking
                                          ref ret_memLeaksTable: bool,
                                          ref ret_memMax: uint(64),       // **
                                          ref ret_memThreshold: uint(64), // **
-                                         ref ret_memLog: c_string,
-                                         ref ret_memLeaksLog: c_string) {
+                                         ref ret_memLog: chpl__c_void_ptr,
+                                         ref ret_memLeaksLog: chpl__c_void_ptr) {
 
     // ** In minimal-modules mode, I've hard-coded these c_size_t
     // arguments to uint(64) rather than using the c_size_t aliases
@@ -45,5 +45,7 @@ module MemTracking
     // c_size_t will either be, or be compatible with, uint(64) for
     // most developers.  If that turns out not to be the case, we
     // can reconsider this choice.
+    // Since deprecating c_string type, substitute chpl__c_void_ptr here to
+    // avoid bringing in CTypes and all the other ChapelBase code.
   }
 }

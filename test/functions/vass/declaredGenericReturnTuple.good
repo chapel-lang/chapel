@@ -1,4 +1,8 @@
+declaredGenericReturnTuple.chpl:22: warning: 1*VectorListElement  isGeneric: true
+declaredGenericReturnTuple.chpl:26: warning: 1*myRecord  isGeneric: true
+declaredGenericReturnTuple.chpl:29: warning: (myRecord,VectorListElement)  isGeneric: true
+declaredGenericReturnTuple.chpl:32: warning: (int(64),owned VectorListElement)  isGeneric: true
 {x = 7}
-({x = 7})
+({x = 7},)
 {x = 7}
-({x = 7})
+({x = 7},)

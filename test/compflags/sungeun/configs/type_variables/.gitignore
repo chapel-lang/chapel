@@ -1,0 +1,8 @@
+# Test/compflags/sungeun/configs/type_variables ignores.
+/configTypeClass.good
+/configTypePrimitive.good
+/configTypeRecord.good
+/configTypeArray.good
+/configTypeUserType.good
+/configTypeFunNoType.good
+/configTypeFun.good

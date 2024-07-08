@@ -184,9 +184,9 @@ module Graph500_main
   var Edges:[edgelist_domain] directed_vertex_pair;
   var Histogram:[vertex_domain] vertex_id=0;
 
-  var generation_time: Timer;
-  var construction_time: Timer;
-  var BFS_time: [1..NUMROOTS] Timer;
+  var generation_time: stopwatch;
+  var construction_time: stopwatch;
+  var BFS_time: [1..NUMROOTS] stopwatch;
   var BFS_time_array: [1..NUMROOTS] real;
   var BFS_nedges_traversed: [1..NUMROOTS] int;
 
@@ -227,9 +227,9 @@ module Graph500_main
 
   // Generate a list of valid starting roots
   // Valid starting roots have at least one edge to another node
-  var Rand_Gen = new owned NPBRandomStream (seed = 9);
+  var Rand_Gen = new randomStream (eltType = real, seed = 9);
   var Unif_Random: [1..NUM_CANDIDATES] real;
-  Rand_Gen.fillRandom ( Unif_Random );
+  Rand_Gen.fill ( Unif_Random );
   var runID: int = 1;
   var candidate: int = 1;
   var root: vertex_id;

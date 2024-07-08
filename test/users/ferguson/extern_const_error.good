@@ -1,1 +1,1 @@
-extern_const_error.chpl:3: bad extern declaration
+extern_const_error.chpl:5: error: Could not find C variable MY_NUMBER - perhaps it is a complex macro?

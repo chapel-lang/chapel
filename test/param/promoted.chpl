@@ -5,9 +5,9 @@ config param runType = false;
 
 const rng = 1..3;
 
-proc valueFun(arg:int) return 777;
-proc paramFun(arg:int) param return 888;
-proc typeFun(arg:int) type return int;
+proc valueFun(arg:int) do return 777;
+proc paramFun(arg:int) param do return 888;
+proc typeFun(arg:int) type do return int;
 
 var arr = valueFun(rng);
 writeln(arr);

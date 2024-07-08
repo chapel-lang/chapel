@@ -7,28 +7,28 @@ class MyClass {
 
 proc bad1() {
   var x = new owned MyClass(1);
-  var y = x.release();
+  var y = owned.release(x);
   x.method();
 }
 bad1();
 
 proc bad1q() {
   var x = new owned MyClass?(1);
-  var y = x.release();
+  var y = owned.release(x);
   x!.method();
 }
 bad1q();
 
 proc bad2() {
   var x = new owned MyClass(1);
-  var y = x.release();
+  var y = owned.release(x);
   x.x = 42;
 }
 bad2();
 
 proc bad2q() {
   var x = new owned MyClass?(1);
-  var y = x.release();
+  var y = owned.release(x);
   x!.x = 42;
 }
 bad2q();
@@ -51,7 +51,7 @@ proc bad4() {
   var x = new owned MyClass(1);
   ref y = x;
   var z = x;
-  y.clear();
+  writeln(y); y = nil;
   writeln(x);
   x.method();
 }
@@ -61,7 +61,7 @@ proc bad4q() {
   var x = new owned MyClass?(1);
   ref y = x;
   var z = x;
-  y.clear();
+  y = nil;
   writeln(x);
   x!.method();
 }

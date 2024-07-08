@@ -4,16 +4,16 @@ use CTypes;
 extern type glob_t;
 extern type wordexp_t;
 
-extern proc chpl_study_glob(pattern:c_string, flags:c_int, ref ret_glob:glob_t):c_int;
-extern proc chpl_wordexp(pattern:c_string, flags:c_int, ref ret_glob:wordexp_t):c_int;
+extern proc chpl_study_glob(pattern:c_ptrConst(c_char), flags:c_int, ref ret_glob:glob_t):c_int;
+extern proc chpl_wordexp(pattern:c_ptrConst(c_char), flags:c_int, ref ret_glob:wordexp_t):c_int;
 
 extern proc glob_num(x:glob_t): c_size_t;
-extern proc glob_index(x:glob_t, idx:c_size_t): c_string;
+extern proc glob_index(x:glob_t, idx:c_size_t): c_ptrConst(c_char);
 
 extern proc wordexp_num(x:wordexp_t): c_size_t;
-extern proc wordexp_index(x:wordexp_t, idx:c_size_t): c_string;
+extern proc wordexp_index(x:wordexp_t, idx:c_size_t): c_ptrConst(c_char);
 
-extern proc chpl_isdir(path:c_string):c_int;
+extern proc chpl_isdir(path:c_ptrConst(c_char)):c_int;
 extern proc globfree(ref glb:glob_t);
 extern proc wordfree(ref glb:wordexp_t);
 
@@ -34,7 +34,7 @@ extern const WRDE_REUSE  : c_int;
 
 iter my_wordexp(pattern:string, recursive:bool = false, flags:int = 0, directory:string = ""):string {
   var err : c_int;
-  var tx  : c_string;
+  var tx  : c_ptrConst(c_char);
   var glb : wordexp_t;
 
   err = chpl_wordexp((directory + pattern).c_str(), flags:c_int, glb);
@@ -45,10 +45,10 @@ iter my_wordexp(pattern:string, recursive:bool = false, flags:int = 0, directory
   for i in 0..wordexpNum -1 {
     tx = wordexp_index(glb, i);
     if recursive && chpl_isdir(tx) == 1 {
-      const pth = createStringWithNewBuffer(tx)+ "/";
+      const pth = string.createCopyingBuffer(tx)+ "/";
       for fl in my_wordexp(pattern, recursive, flags, pth) do
         yield fl;
-    } else yield createStringWithNewBuffer(tx);
+    } else yield string.createCopyingBuffer(tx);
   }
 
   wordfree(glb);
@@ -57,7 +57,7 @@ iter my_wordexp(pattern:string, recursive:bool = false, flags:int = 0, directory
 iter my_wordexp(param tag:iterKind, pattern:string, recursive:bool = false,
              flags:int = 0, directory:string = "") : string where tag == iterKind.leader {
   var err     : c_int;
-  var tx      : c_string;
+  var tx      : c_ptrConst(c_char);
   var dirBuff : domain(string);
 
   dirBuff += directory;
@@ -96,7 +96,7 @@ iter my_wordexp(param tag:iterKind, pattern:string, recursive:bool = false,
 
 iter my_glob(pattern:string, recursive:bool = false, flags:int = 0, directory:string = ""):string {
   var err : c_int;
-  var tx  : c_string;
+  var tx  : c_ptrConst(c_char);
   var glb : glob_t;
 
   err = chpl_study_glob((directory + pattern).c_str(), flags:c_int, glb);
@@ -107,10 +107,10 @@ iter my_glob(pattern:string, recursive:bool = false, flags:int = 0, directory:st
   for i in 0..globNum - 1 {
     tx = glob_index(glb, i);
     if recursive && chpl_isdir(tx) == 1 {
-      const pth = createStringWithNewBuffer(tx)+ "/";
+      const pth = string.createCopyingBuffer(tx)+ "/";
       for fl in my_glob(pattern, recursive, flags, pth) do
         yield fl;
-    } else yield createStringWithNewBuffer(tx);
+    } else yield string.createCopyingBuffer(tx);
   }
 
   globfree(glb);
@@ -119,7 +119,7 @@ iter my_glob(pattern:string, recursive:bool = false, flags:int = 0, directory:st
 iter my_glob(param tag:iterKind, pattern:string, recursive:bool = false,
           flags:int = 0, directory:string = "") : string where tag == iterKind.leader {
   var err     : c_int;
-  var tx      : c_string;
+  var tx      : c_ptrConst(c_char);
   var dirBuff : domain(string);
 
   // We start out with the current directory

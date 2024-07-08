@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,27 +19,6 @@
  */
 
 /*
-Predefined Functions on Tuples.
-
-Tuples are a predefined structured type in Chapel. They are specified
-in the Tuples chapter of the Chapel Language Specification.
-This page lists the predefined functions on tuples.
-They are always available to all Chapel programs.
-
-Besides the functions defined here, the Chapel Language specification
-defines other operations available on tuples: indexing, iteration,
-assignment, and unary, binary, and relational operators.
-
-.. function:: proc tuple.size param
-
-   Returns the number of components of the tuple.
-
-.. function:: proc tuple.indices
-
-   Returns the range of indices that are legal for indexing into the
-   tuple: ``0..<this.size``.
-
-
 */
 module ChapelTuple {
   use ChapelStandard, DSIUtil;
@@ -83,7 +62,7 @@ module ChapelTuple {
   pragma "build tuple"
   pragma "suppress lvalue error"
   // suppressing lvalue errors -- workaround forall exprs yielding owned
-  inline proc _build_tuple_always_allow_ref(x...)
+  inline proc _build_tuple_always_allow_ref(x...) do
     return x;
 
   inline proc chpl__unref(type t) type {
@@ -97,11 +76,12 @@ module ChapelTuple {
   pragma "build tuple"
   pragma "build tuple type"
   pragma "star tuple"
+  @chpldoc.nodoc
   operator *(param p: int, type t) type {
     // body inserted during generic instantiation
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator *(param p: uint, type t) type {
     if p > max(int) then
       compilerError("Tuples of size >" + max(int):string + " are not currently supported");
@@ -109,14 +89,14 @@ module ChapelTuple {
     return pAsInt*t;
   }
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   operator *(param p: bool, type t) type {
     compilerError("Tuple types cannot be defined using boolean sizes");
   }
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   operator *(p: bool, type t) type {
     compilerError("Tuple types cannot be defined using boolean sizes");
   }
@@ -130,12 +110,14 @@ module ChapelTuple {
   }
 
   pragma "last resort"
+  @chpldoc.nodoc
   operator *(type t, param p: int) {
     compilerError("<type>*<param int> not supported.  If you're trying to specify a homogeneous tuple type, use <param int>*<type>.");
   }
 
   // last resort since if this resolves some other way, OK
   pragma "last resort"
+  @chpldoc.nodoc
   operator *(p: integral, type t) type {
     compilerError("tuple size must be known at compile-time");
   }
@@ -145,7 +127,7 @@ module ChapelTuple {
     if isTuple(x) then return x; else return (x,);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _check_tuple_var_decl(const ref x: _tuple, param p) param {
     if p == x.size {
       return true;
@@ -154,7 +136,7 @@ module ChapelTuple {
       return false;
     }
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _check_tuple_var_decl(const ref x, param p) param {
     compilerError("illegal tuple variable declaration with non-tuple initializer");
     return false;
@@ -166,6 +148,7 @@ module ChapelTuple {
   //
   pragma "compiler generated"
   pragma "last resort"
+  @chpldoc.nodoc
   inline operator =(ref x: _tuple,
                     pragma "intent ref maybe const formal" y: _tuple)
   where x.size == y.size {
@@ -177,9 +160,9 @@ module ChapelTuple {
   // homogeneous tuple accessor
   // the result is const when the tuple is
   //
-  pragma "no doc"
   pragma "reference to const when const this"
   pragma "star tuple accessor"
+  @chpldoc.nodoc
   proc _tuple.this(i : integral) ref {
     if !isHomogeneousTuple(this) then
       compilerError("invalid access of non-homogeneous tuple by runtime value");
@@ -189,9 +172,9 @@ module ChapelTuple {
     return __primitive("get svec member", this, i);
   }
 
-  pragma "no doc"
   pragma "reference to const when const this"
   pragma "star tuple accessor"
+  @chpldoc.nodoc
   proc _tuple.this(i : bool) ref {
     if !isHomogeneousTuple(this) then
       compilerError("invalid access of non-homogeneous tuple by runtime value");
@@ -212,15 +195,15 @@ module ChapelTuple {
   // This is useful to expose code where zippered iteration,
   // e.g. ``for abc in zip(A,B,C)``, may have been intended.
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   config param CHPL_WARN_TUPLE_ITERATION = "unset";
 
   //
   // iterator support for tuples
   //
-  pragma "no doc"
   pragma "reference to const when const this"
-  iter _tuple.these() ref
+  @chpldoc.nodoc
+  iter ref _tuple.these() ref
   {
 
     // If we hit this error, it generally means that the compiler wasn't
@@ -236,14 +219,13 @@ module ChapelTuple {
     if CHPL_WARN_TUPLE_ITERATION == "true" then
       compilerWarning("Iterating over tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");
 
-    foreach i in 0..#this.size {
+    foreach i in 0..#this.size with (ref this) {
       yield(this(i));
     }
   }
 
-  pragma "no doc"
-  pragma "reference to const when const this"
-  iter _tuple.these(param tag:iterKind) ref
+  @chpldoc.nodoc
+  iter _tuple.these(param tag:iterKind)
       where tag == iterKind.leader
   {
 
@@ -264,9 +246,9 @@ module ChapelTuple {
     }
   }
 
-  pragma "no doc"
   pragma "reference to const when const this"
-  iter _tuple.these(param tag:iterKind, followThis: _tuple) ref
+  @chpldoc.nodoc
+  iter ref _tuple.these(param tag:iterKind, followThis: _tuple) ref
       where tag == iterKind.follower
   {
     if followThis.size != 1 then
@@ -274,7 +256,7 @@ module ChapelTuple {
 
     var fThis = followThis(0);
 
-    foreach i in fThis {
+    foreach i in fThis with (ref this) {
       yield this(i);
     }
   }
@@ -295,12 +277,18 @@ module ChapelTuple {
   // Note: statically inlining the _chpl_complex runtime functions is necessary
   // for good performance
   //
+  /*
+  Cast from a generic two-tuple to a ``complex(64)``
+  */
   inline operator :(x: (?,?), type t: complex(64)) {
     pragma "fn synchronization free"
     extern proc _chpl_complex64(re:real(32),im:real(32)) : complex(64);
     return _chpl_complex64(x(0):real(32),x(1):real(32));
   }
 
+  /*
+  Cast from a generic two-tuple to a ``complex(128)``
+  */
   inline operator :(x: (?,?), type t: complex(128)) {
     pragma "fn synchronization free"
     extern proc _chpl_complex128(re:real(64),im:real(64)):complex(128);
@@ -312,6 +300,7 @@ module ChapelTuple {
   //
   pragma "tuple cast fn"
   pragma "unsafe"
+  @chpldoc.nodoc
   inline operator :(x: _tuple, type t:_tuple) {
     // body filled in during resolution
   }
@@ -321,7 +310,7 @@ module ChapelTuple {
   // tuple except the first
   //
   inline proc chpl__tupleRest(t: _tuple) {
-    inline proc chpl__tupleRestHelper(first, rest...)
+    inline proc chpl__tupleRestHelper(first, rest...) do
       return rest;
     return chpl__tupleRestHelper((...t));
   }
@@ -329,6 +318,7 @@ module ChapelTuple {
   //
   // standard overloaded unary operators on tuples.
   //
+  @chpldoc.nodoc
   inline operator +(a: _tuple) {
     var result: a.type;
     for param d in 0..a.size-1 do
@@ -336,6 +326,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator -(a: _tuple) {
     var result: a.type;
     for param d in 0..a.size-1 do
@@ -343,6 +334,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator ~(a: _tuple) {
     var result: a.type;
     for param d in 0..a.size-1 do
@@ -350,6 +342,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator !(a: _tuple) {
     var result: a.type;
     for param d in 0..a.size-1 do
@@ -389,6 +382,7 @@ module ChapelTuple {
   // standard overloaded binary operators on tuples.  Each pair starts
   // with a case optimized for homogeneous tuples (because the result
   // type is easy to express)...
+  @chpldoc.nodoc
   inline operator +(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to + have different sizes");
@@ -403,6 +397,7 @@ module ChapelTuple {
   // ...followed by a more complicated/general case for heterogeneous
   // tuples because the result type is more complex to describe.
   //
+  @chpldoc.nodoc
   inline operator +(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to + have different sizes");
@@ -412,7 +407,7 @@ module ChapelTuple {
       return (a(0)+b(0), (...chpl__tupleRest(a)+chpl__tupleRest(b)));
   }
 
-
+  @chpldoc.nodoc
   inline operator -(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to - have different sizes");
@@ -424,6 +419,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator -(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to - have different sizes");
@@ -433,7 +429,7 @@ module ChapelTuple {
       return (a(0)-b(0), (...chpl__tupleRest(a)-chpl__tupleRest(b)));
   }
 
-
+  @chpldoc.nodoc
   inline operator *(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to * have different sizes");
@@ -445,6 +441,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator *(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to * have different sizes");
@@ -454,6 +451,7 @@ module ChapelTuple {
       return (a(0)*b(0), (...chpl__tupleRest(a)*chpl__tupleRest(b)));
   }
 
+  @chpldoc.nodoc
   inline operator /(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to / have different sizes");
@@ -465,6 +463,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator /(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to / have different sizes");
@@ -474,6 +473,7 @@ module ChapelTuple {
       return (a(0)/b(0), (...chpl__tupleRest(a)/chpl__tupleRest(b)));
   }
 
+  @chpldoc.nodoc
   inline operator %(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to % have different sizes");
@@ -485,6 +485,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator %(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to % have different sizes");
@@ -494,6 +495,7 @@ module ChapelTuple {
       return (a(0)%b(0), (...chpl__tupleRest(a)%chpl__tupleRest(b)));
   }
 
+  @chpldoc.nodoc
   inline operator **(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to ** have different sizes");
@@ -505,6 +507,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator **(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to ** have different sizes");
@@ -514,6 +517,7 @@ module ChapelTuple {
       return (a(0)**b(0), (...chpl__tupleRest(a)**chpl__tupleRest(b)));
   }
 
+  @chpldoc.nodoc
   inline operator &(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to & have different sizes");
@@ -525,6 +529,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator &(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to & have different sizes");
@@ -534,6 +539,7 @@ module ChapelTuple {
       return (a(0)&b(0), (...chpl__tupleRest(a)&chpl__tupleRest(b)));
   }
 
+  @chpldoc.nodoc
   inline operator |(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to | have different sizes");
@@ -545,6 +551,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator |(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to | have different sizes");
@@ -554,6 +561,7 @@ module ChapelTuple {
       return (a(0)|b(0), (...chpl__tupleRest(a)|chpl__tupleRest(b)));
   }
 
+  @chpldoc.nodoc
   inline operator ^(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to ^ have different sizes");
@@ -565,6 +573,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator ^(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to ^ have different sizes");
@@ -574,6 +583,7 @@ module ChapelTuple {
       return (a(0)^b(0), (...chpl__tupleRest(a)^chpl__tupleRest(b)));
   }
 
+  @chpldoc.nodoc
   inline operator <<(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to << have different sizes");
@@ -585,6 +595,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator <<(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to << have different sizes");
@@ -594,6 +605,7 @@ module ChapelTuple {
       return (a(0)<<b(0), (...chpl__tupleRest(a)<<chpl__tupleRest(b)));
   }
 
+  @chpldoc.nodoc
   inline operator >>(a: _tuple, b: _tuple) where chpl_TwoHomogTuples(a,b) {
     if a.size != b.size then
       compilerError("tuple operands to >> have different sizes");
@@ -605,6 +617,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator >>(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to >> have different sizes");
@@ -617,6 +630,7 @@ module ChapelTuple {
   //
   // standard overloaded relational operators on tuples
   //
+  @chpldoc.nodoc
   inline operator >(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to > have different sizes");
@@ -628,6 +642,7 @@ module ChapelTuple {
     return false;
   }
 
+  @chpldoc.nodoc
   inline operator >=(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to >= have different sizes");
@@ -639,6 +654,7 @@ module ChapelTuple {
     return true;
   }
 
+  @chpldoc.nodoc
   inline operator <(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to < have different sizes");
@@ -650,6 +666,7 @@ module ChapelTuple {
     return false;
   }
 
+  @chpldoc.nodoc
   inline operator <=(a: _tuple, b: _tuple) {
     if a.size != b.size then
       compilerError("tuple operands to <= have different sizes");
@@ -661,6 +678,7 @@ module ChapelTuple {
     return true;
   }
 
+  @chpldoc.nodoc
   inline operator ==(a: _tuple, b: _tuple) {
     if a.size != b.size {
       return false;
@@ -672,6 +690,7 @@ module ChapelTuple {
     return true;
   }
 
+  @chpldoc.nodoc
   inline operator !=(a: _tuple, b: _tuple) {
     if a.size != b.size {
       return true;
@@ -687,6 +706,7 @@ module ChapelTuple {
   // standard overloaded binary operators on homog tuple / scalar
   // pairs.
   //
+  @chpldoc.nodoc
   inline operator +(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -694,6 +714,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator +(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -702,6 +723,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator -(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -709,6 +731,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator -(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -717,6 +740,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator *(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -724,6 +748,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator *(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -732,6 +757,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator /(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -739,6 +765,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator /(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -747,6 +774,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator %(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -754,6 +782,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator %(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -762,6 +791,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator **(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -769,6 +799,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator **(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                              isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -777,6 +808,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator &(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -784,6 +816,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator &(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -792,6 +825,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator |(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -799,6 +833,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator |(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -807,6 +842,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator ^(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -814,6 +850,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator ^(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -822,6 +859,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator <<(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -829,6 +867,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator <<(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                              isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -837,6 +876,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator >>(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -844,6 +884,7 @@ module ChapelTuple {
     return result;
   }
 
+  @chpldoc.nodoc
   inline operator >>(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                              isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;

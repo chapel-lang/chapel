@@ -30,8 +30,8 @@ extern void gasnete_vis_init(void) {
   #define GASNETE_VIS_ENV_YN(varname, envname, enabler) do {                                                    \
     if (enabler) {                                                                                              \
       varname = gasneti_getenv_yesno_withdefault(#envname, enabler##_DEFAULT);                                  \
-    } else if (!gasneti_mynode && gasneti_getenv(#envname) && gasneti_getenv_yesno_withdefault(#envname, 0)) {  \
-      fprintf(stderr, "WARNING: %s is set in environment, but %s support is compiled out - setting ignored\n",  \
+    } else if (gasneti_getenv(#envname) && gasneti_getenv_yesno_withdefault(#envname, 0)) {  \
+      gasneti_console0_message("WARNING","%s is set in environment, but %s support is compiled out - setting ignored\n",  \
                       #envname, #enabler);                                                                      \
     }                                                                                                           \
   } while (0)

@@ -1,0 +1,8 @@
+iterating over param range variable
+k = 0 : int(64)
+iterating over range variable
+k = 0 : int(64)
+iterating over param range literal
+k = 0 : int(64)
+iterating over range literal
+k = 0 : int(64)

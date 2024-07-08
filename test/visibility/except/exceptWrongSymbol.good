@@ -1,1 +1,2 @@
-exceptWrongSymbol.chpl:8: error: Bad identifier in 'except' clause, no known 'q' defined in 'M1'
+exceptWrongSymbol.chpl:7: In module 'M2':
+exceptWrongSymbol.chpl:8: error: cannot use 'except' clause with symbol 'q' as it is not defined in 'M1'

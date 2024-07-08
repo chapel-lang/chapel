@@ -23,11 +23,12 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#include "ObjCARC.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/Analysis/ObjCARCAnalysisUtils.h"
+#include "llvm/Analysis/ObjCARCInstKind.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/PassManager.h"
-#include "llvm/InitializePasses.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/ObjCARC.h"
@@ -144,34 +145,7 @@ bool runImpl(Module &M) {
   return Changed;
 }
 
-/// Autorelease pool elimination.
-class ObjCARCAPElim : public ModulePass {
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-  bool runOnModule(Module &M) override;
-
-public:
-  static char ID;
-  ObjCARCAPElim() : ModulePass(ID) {
-    initializeObjCARCAPElimPass(*PassRegistry::getPassRegistry());
-  }
-};
 } // namespace
-
-char ObjCARCAPElim::ID = 0;
-INITIALIZE_PASS(ObjCARCAPElim, "objc-arc-apelim",
-                "ObjC ARC autorelease pool elimination", false, false)
-
-Pass *llvm::createObjCARCAPElimPass() { return new ObjCARCAPElim(); }
-
-void ObjCARCAPElim::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.setPreservesCFG();
-}
-
-bool ObjCARCAPElim::runOnModule(Module &M) {
-  if (skipModule(M))
-    return false;
-  return runImpl(M);
-}
 
 PreservedAnalyses ObjCARCAPElimPass::run(Module &M, ModuleAnalysisManager &AM) {
   if (!runImpl(M))

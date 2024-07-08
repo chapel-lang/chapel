@@ -1,4 +1,4 @@
-use Random;
+use NPBRandom;
 use Time;
 
 enum classVals {S, W, A, B, C};
@@ -44,7 +44,7 @@ var keyBuff1: [E] int;
 var passedVerifications = 0;
 
 proc main() {
-  var time = new Timer();
+  var time = new stopwatch();
   var randomStream = new owned NPBRandomStream(real, seed);
   var tempreals: [1..4] real;
   var max = maxKey / 4;
@@ -80,9 +80,9 @@ proc main() {
   writeln(" Size            = ", totalKeys);
   writeln(" Iterations      = ", maxIterations);
   if printTime {
-    writeln(" Time in seconds = ", time.elapsed(TimeUnits.seconds));
+    writeln(" Time in seconds = ", time.elapsed());
     writeln(" Mop/s total     = ",
-            (maxIterations*totalKeys)/time.elapsed(TimeUnits.seconds)/1000000);
+            (maxIterations*totalKeys)/time.elapsed()/1000000);
   }
   if (passedVerifications == (maxIterations+1) * 5 + 1) then
     writeln(" Verification    = SUCCESSFUL");
@@ -251,4 +251,3 @@ proc fullVerify() {
   else
     passedVerifications += 1;
 }
-

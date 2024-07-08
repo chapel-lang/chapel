@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+normal_args=""
+
+ccflags=$(pkg-config --cflags yaml-0.1)
+ldflags=$(pkg-config --libs yaml-0.1)
+
+echo "${ccflags:+--ccflags '$ccflags'} ${ldflags:+--ldflags '$ldflags'} ${normal_args}"

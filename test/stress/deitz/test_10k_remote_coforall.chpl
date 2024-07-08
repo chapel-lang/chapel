@@ -3,7 +3,7 @@ config const n = 10000;
 var A: [1..n] int;
 
 on Locales(1) {
-  coforall i in 1..n {
+  coforall i in 1..n with (ref A) {
     A(i) += 1;
   }
 }

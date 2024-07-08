@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-cc -std=c99 -o version-c version.c -lzmq && ./version-c > version.good 
+cc -std=c99 -o version-c version.c `pkg-config --libs --cflags libzmq` && ./version-c > version.good

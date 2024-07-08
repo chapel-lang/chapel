@@ -1,0 +1,2 @@
+queryGenericField2.chpl:7: In function 'test':
+queryGenericField2.chpl:7: error: the type 'R' does not have a generic field 'p2'

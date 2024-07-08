@@ -1,8 +1,8 @@
-.TH "hwlocality_disc_backends" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_disc_backends" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-hwlocality_disc_backends
+hwlocality_disc_backends \- Components and Plugins: Discovery backends
 .SH SYNOPSIS
 .br
 .PP
@@ -10,67 +10,108 @@ hwlocality_disc_backends
 
 .in +1c
 .ti -1c
+.RI "struct \fBhwloc_disc_status\fP"
+.br
+.ti -1c
 .RI "struct \fBhwloc_backend\fP"
+.br
+.in -1c
+.SS "Typedefs"
+
+.in +1c
+.ti -1c
+.RI "typedef enum \fBhwloc_disc_phase_e\fP \fBhwloc_disc_phase_t\fP"
 .br
 .in -1c
 .SS "Enumerations"
 
 .in +1c
 .ti -1c
-.RI "enum \fBhwloc_backend_flag_e\fP { \fBHWLOC_BACKEND_FLAG_NEED_LEVELS\fP }"
+.RI "enum \fBhwloc_disc_phase_e\fP { \fBHWLOC_DISC_PHASE_GLOBAL\fP, \fBHWLOC_DISC_PHASE_CPU\fP, \fBHWLOC_DISC_PHASE_MEMORY\fP, \fBHWLOC_DISC_PHASE_PCI\fP, \fBHWLOC_DISC_PHASE_IO\fP, \fBHWLOC_DISC_PHASE_MISC\fP, \fBHWLOC_DISC_PHASE_ANNOTATE\fP, \fBHWLOC_DISC_PHASE_TWEAK\fP }"
+.br
+.ti -1c
+.RI "enum \fBhwloc_disc_status_flag_e\fP { \fBHWLOC_DISC_STATUS_FLAG_GOT_ALLOWED_RESOURCES\fP }"
 .br
 .in -1c
 .SS "Functions"
 
 .in +1c
 .ti -1c
-.RI "struct \fBhwloc_backend\fP * \fBhwloc_backend_alloc\fP (struct \fBhwloc_disc_component\fP *component)"
+.RI "struct \fBhwloc_backend\fP * \fBhwloc_backend_alloc\fP (struct hwloc_topology *topology, struct \fBhwloc_disc_component\fP *component)"
 .br
 .ti -1c
-.RI "int \fBhwloc_backend_enable\fP (struct hwloc_topology *topology, struct \fBhwloc_backend\fP *backend)"
-.br
-.ti -1c
-.RI "int \fBhwloc_backends_get_obj_cpuset\fP (struct \fBhwloc_backend\fP *caller, struct \fBhwloc_obj\fP *obj, \fBhwloc_bitmap_t\fP cpuset)"
-.br
-.ti -1c
-.RI "int \fBhwloc_backends_notify_new_object\fP (struct \fBhwloc_backend\fP *caller, struct \fBhwloc_obj\fP *obj)"
+.RI "int \fBhwloc_backend_enable\fP (struct \fBhwloc_backend\fP *backend)"
 .br
 .in -1c
 .SH "Detailed Description"
 .PP 
 
-.SH "Enumeration Type Documentation"
+.PP
+\fBNote\fP
+.RS 4
+These structures and functions may change when \fBHWLOC_COMPONENT_ABI\fP is modified\&. 
+.RE
+.PP
+
+.SH "Typedef Documentation"
 .PP 
-.SS "enum \fBhwloc_backend_flag_e\fP"
+.SS "typedef enum \fBhwloc_disc_phase_e\fP \fBhwloc_disc_phase_t\fP"
 
 .PP
-Backend flags\&. 
+Discovery phase\&. 
+.SH "Enumeration Type Documentation"
+.PP 
+.SS "enum \fBhwloc_disc_phase_e\fP"
+
+.PP
+Discovery phase\&. 
 .PP
 \fBEnumerator\fP
 .in +1c
 .TP
-\fB\fIHWLOC_BACKEND_FLAG_NEED_LEVELS \fP\fP
-Levels should be reconnected before this backend discover() is used\&. 
+\fB\fIHWLOC_DISC_PHASE_GLOBAL \fP\fP
+xml or synthetic, platform-specific components such as bgq\&. Discovers everything including CPU, memory, I/O and everything else\&. A component with a Global phase usually excludes all other phases\&. 
+.TP
+\fB\fIHWLOC_DISC_PHASE_CPU \fP\fP
+CPU discovery\&. 
+.TP
+\fB\fIHWLOC_DISC_PHASE_MEMORY \fP\fP
+Attach memory to existing CPU objects\&. 
+.TP
+\fB\fIHWLOC_DISC_PHASE_PCI \fP\fP
+Attach PCI devices and bridges to existing CPU objects\&. 
+.TP
+\fB\fIHWLOC_DISC_PHASE_IO \fP\fP
+I/O discovery that requires PCI devices (OS devices such as OpenCL, CUDA, etc\&.)\&. 
+.TP
+\fB\fIHWLOC_DISC_PHASE_MISC \fP\fP
+Misc objects that gets added below anything else\&. 
+.TP
+\fB\fIHWLOC_DISC_PHASE_ANNOTATE \fP\fP
+Annotating existing objects, adding distances, etc\&. 
+.TP
+\fB\fIHWLOC_DISC_PHASE_TWEAK \fP\fP
+Final tweaks to a ready-to-use topology\&. This phase runs once the topology is loaded, before it is returned to the topology\&. Hence it may only use the main hwloc API for modifying the topology, for instance by restricting it, adding info attributes, etc\&. 
+.SS "enum \fBhwloc_disc_status_flag_e\fP"
+
+.PP
+Discovery status flags\&. 
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fIHWLOC_DISC_STATUS_FLAG_GOT_ALLOWED_RESOURCES \fP\fP
+The sets of allowed resources were already retrieved\&. 
 .SH "Function Documentation"
 .PP 
-.SS "struct \fBhwloc_backend\fP* hwloc_backend_alloc (struct \fBhwloc_disc_component\fP * component)"
+.SS "struct \fBhwloc_backend\fP* hwloc_backend_alloc (struct hwloc_topology * topology, struct \fBhwloc_disc_component\fP * component)"
 
 .PP
 Allocate a backend structure, set good default values, initialize backend->component and topology, etc\&. The caller will then modify whatever needed, and call \fBhwloc_backend_enable()\fP\&. 
-.SS "int hwloc_backend_enable (struct hwloc_topology * topology, struct \fBhwloc_backend\fP * backend)"
+.SS "int hwloc_backend_enable (struct \fBhwloc_backend\fP * backend)"
 
 .PP
 Enable a previously allocated and setup backend\&. 
-.SS "int hwloc_backends_get_obj_cpuset (struct \fBhwloc_backend\fP * caller, struct \fBhwloc_obj\fP * obj, \fBhwloc_bitmap_t\fP cpuset)"
-
-.PP
-Used by backends discovery callbacks to request locality information from others\&. Traverse the list of enabled backends until one has a get_obj_cpuset() method, and call it\&. 
-.SS "int hwloc_backends_notify_new_object (struct \fBhwloc_backend\fP * caller, struct \fBhwloc_obj\fP * obj)"
-
-.PP
-Used by backends discovery callbacks to notify other backends of new objects\&. Traverse the list of enabled backends (all but caller) and invoke their notify_new_object() method to notify them that a new object just got added to the topology\&.
-.PP
-Currently only used for notifying of new PCI device objects\&. 
 .SH "Author"
 .PP 
 Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

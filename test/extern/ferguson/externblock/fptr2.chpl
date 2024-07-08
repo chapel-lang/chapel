@@ -1,4 +1,6 @@
 extern {
+  #include <stdio.h>
+
   static void runit(double (*f)(double)) {
      double result;
      printf("in runit, calling f(1.0)\n");

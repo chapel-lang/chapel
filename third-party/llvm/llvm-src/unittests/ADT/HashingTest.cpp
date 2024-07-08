@@ -17,6 +17,7 @@
 #include <deque>
 #include <list>
 #include <map>
+#include <optional>
 #include <vector>
 
 namespace llvm {
@@ -128,6 +129,23 @@ TEST(HashingTest, HashValueStdString) {
             hash_value(ws.substr(0, ws.size() - 1)));
   EXPECT_EQ(hash_combine_range(ws.c_str() + 1, ws.c_str() + ws.size() - 1),
             hash_value(ws.substr(1, ws.size() - 2)));
+}
+
+TEST(HashingTest, HashValueStdOptional) {
+  // Check that std::nullopt, false, and true all hash differently.
+  std::optional<bool> B, B0 = false, B1 = true;
+  EXPECT_NE(hash_value(B0), hash_value(B));
+  EXPECT_NE(hash_value(B1), hash_value(B));
+  EXPECT_NE(hash_value(B1), hash_value(B0));
+
+  // Check that std::nullopt, 0, and 1 all hash differently.
+  std::optional<int> I, I0 = 0, I1 = 1;
+  EXPECT_NE(hash_value(I0), hash_value(I));
+  EXPECT_NE(hash_value(I1), hash_value(I));
+  EXPECT_NE(hash_value(I1), hash_value(I0));
+
+  // Check std::nullopt hash the same way regardless of type.
+  EXPECT_EQ(hash_value(B), hash_value(I));
 }
 
 template <typename T, size_t N> T *begin(T (&arr)[N]) { return arr; }
@@ -406,8 +424,8 @@ TEST(HashingTest, HashCombineArgs18) {
 struct StructWithHashBuilderSupport {
   char C;
   int I;
-  template <typename HasherT, llvm::support::endianness Endianness>
-  friend void addHash(llvm::HashBuilderImpl<HasherT, Endianness> &HBuilder,
+  template <typename HasherT, llvm::endianness Endianness>
+  friend void addHash(llvm::HashBuilder<HasherT, Endianness> &HBuilder,
                       const StructWithHashBuilderSupport &Value) {
     HBuilder.add(Value.C, Value.I);
   }
@@ -421,8 +439,8 @@ TEST(HashingTest, HashWithHashBuilder) {
 struct StructWithHashBuilderAndHashValueSupport {
   char C;
   int I;
-  template <typename HasherT, llvm::support::endianness Endianness>
-  friend void addHash(llvm::HashBuilderImpl<HasherT, Endianness> &HBuilder,
+  template <typename HasherT, llvm::endianness Endianness>
+  friend void addHash(llvm::HashBuilder<HasherT, Endianness> &HBuilder,
                       const StructWithHashBuilderAndHashValueSupport &Value) {}
   friend hash_code
   hash_value(const StructWithHashBuilderAndHashValueSupport &Value) {

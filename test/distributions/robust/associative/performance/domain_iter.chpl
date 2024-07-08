@@ -1,4 +1,4 @@
-use Memory.Diagnostics, Types, Time, Sort;
+use MemDiagnostics, Types, Time, Sort;
 
 config const printTiming = false;
 config const verify = true;
@@ -33,7 +33,7 @@ if verify then sort(Aref);
 //
 
 {
-  var timer: Timer;
+  var timer: stopwatch;
   timer.start();
   for ai in AD {
     A((ai+offset)/2) = ai;
@@ -61,9 +61,9 @@ if verify then sort(Aref);
 //
 
 {
-  var timer: Timer;
+  var timer: stopwatch;
   timer.start();
-  forall ai in AD {
+  forall ai in AD with (ref A) {
     A((ai+offset)/2) = ai;
   }
   timer.stop();

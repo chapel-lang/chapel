@@ -10,4 +10,4 @@ proc foo(a:borrowed Derived1) {
   writeln("foo2");
 }
 
-foo(new borrowed Derived2());
+foo((new owned Derived2()).borrow());

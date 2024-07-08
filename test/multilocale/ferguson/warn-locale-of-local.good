@@ -1,0 +1,2 @@
+warn-locale-of-local.chpl:11: warning: accessing the locale of a local expression
+warn-locale-of-local.chpl:14: warning: accessing the locale of a local expression

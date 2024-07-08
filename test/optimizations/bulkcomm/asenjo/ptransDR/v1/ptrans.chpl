@@ -23,15 +23,15 @@ record localInfo {
   var B: [domB] elType;
 
   pragma "no copy return"
-  proc Acompute return A[domA];
+  proc Acompute do return A[domA];
   pragma "no copy return"
-  proc Bcompute return B[domB];
+  proc Bcompute do return B[domB];
 
   var localDelta: elType;
 }
 
 // set up the data arrays
-const gridDist = gridDom dmapped Block(gridDom, gridLocales);
+const gridDist = gridDom dmapped new blockDist(gridDom, gridLocales);
 var Data: [gridDist] localInfo;
 
 // make sure we got it right

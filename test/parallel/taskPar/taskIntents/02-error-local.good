@@ -1,14 +1,6 @@
 02-error-local.chpl:35: In function 'test':
 02-error-local.chpl:71: error: cannot assign to const variable
 02-error-local.chpl:69: note: The shadow variable 'b0' is constant due to task intents in this begin statement
-02-error-local.chpl:72: error: cannot assign to const variable
-02-error-local.chpl:69: note: The shadow variable 'b8' is constant due to task intents in this begin statement
-02-error-local.chpl:73: error: cannot assign to const variable
-02-error-local.chpl:69: note: The shadow variable 'b16' is constant due to task intents in this begin statement
-02-error-local.chpl:74: error: cannot assign to const variable
-02-error-local.chpl:69: note: The shadow variable 'b32' is constant due to task intents in this begin statement
-02-error-local.chpl:75: error: cannot assign to const variable
-02-error-local.chpl:69: note: The shadow variable 'b64' is constant due to task intents in this begin statement
 02-error-local.chpl:76: error: cannot assign to const variable
 02-error-local.chpl:69: note: The shadow variable 'u8' is constant due to task intents in this begin statement
 02-error-local.chpl:77: error: cannot assign to const variable
@@ -43,14 +35,6 @@
 02-error-local.chpl:69: note: The shadow variable 'cls' is constant due to task intents in this begin statement
 02-error-local.chpl:103: error: cannot assign to const variable
 02-error-local.chpl:101: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-02-error-local.chpl:104: error: cannot assign to const variable
-02-error-local.chpl:101: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-02-error-local.chpl:105: error: cannot assign to const variable
-02-error-local.chpl:101: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-02-error-local.chpl:106: error: cannot assign to const variable
-02-error-local.chpl:101: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-02-error-local.chpl:107: error: cannot assign to const variable
-02-error-local.chpl:101: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
 02-error-local.chpl:108: error: cannot assign to const variable
 02-error-local.chpl:101: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
 02-error-local.chpl:109: error: cannot assign to const variable
@@ -85,14 +69,6 @@
 02-error-local.chpl:101: note: The shadow variable 'cls' is constant due to task intents in this parallel statement
 02-error-local.chpl:135: error: cannot assign to const variable
 02-error-local.chpl:133: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-02-error-local.chpl:136: error: cannot assign to const variable
-02-error-local.chpl:133: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-02-error-local.chpl:137: error: cannot assign to const variable
-02-error-local.chpl:133: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-02-error-local.chpl:138: error: cannot assign to const variable
-02-error-local.chpl:133: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-02-error-local.chpl:139: error: cannot assign to const variable
-02-error-local.chpl:133: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
 02-error-local.chpl:140: error: cannot assign to const variable
 02-error-local.chpl:133: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
 02-error-local.chpl:141: error: cannot assign to const variable

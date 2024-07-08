@@ -1,1 +1,1 @@
-multipleOtherwise.chpl:4: error: Select has multiple otherwise clauses
+multipleOtherwise.chpl:4: syntax error: select has multiple otherwise clauses

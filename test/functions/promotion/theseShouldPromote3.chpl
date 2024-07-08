@@ -29,8 +29,8 @@ class C {
       yield i+x;
   }
 }
-
-var myC = new borrowed C();
+var myCObj = new C();
+var myC = myCObj.borrow();
 
 for c in myC do
   writeln(c);

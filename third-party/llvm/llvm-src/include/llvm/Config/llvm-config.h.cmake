@@ -18,7 +18,8 @@
 #cmakedefine LLVM_ENABLE_DUMP
 
 /* Target triple LLVM will generate code for by default */
-#cmakedefine LLVM_DEFAULT_TARGET_TRIPLE "${LLVM_DEFAULT_TARGET_TRIPLE}"
+/* Doesn't use `cmakedefine` because it is allowed to be empty. */
+#define LLVM_DEFAULT_TARGET_TRIPLE "${LLVM_DEFAULT_TARGET_TRIPLE}"
 
 /* Define if threads enabled */
 #cmakedefine01 LLVM_ENABLE_THREADS
@@ -52,6 +53,81 @@
 
 /* LLVM name for the native target MCA init function, if available */
 #cmakedefine LLVM_NATIVE_TARGETMCA LLVMInitialize${LLVM_NATIVE_ARCH}TargetMCA
+
+/* Define if the AArch64 target is built in */
+#cmakedefine01 LLVM_HAS_AARCH64_TARGET
+
+/* Define if the AMDGPU target is built in */
+#cmakedefine01 LLVM_HAS_AMDGPU_TARGET
+
+/* Define if the ARC target is built in */
+#cmakedefine01 LLVM_HAS_ARC_TARGET
+
+/* Define if the ARM target is built in */
+#cmakedefine01 LLVM_HAS_ARM_TARGET
+
+/* Define if the AVR target is built in */
+#cmakedefine01 LLVM_HAS_AVR_TARGET
+
+/* Define if the BPF target is built in */
+#cmakedefine01 LLVM_HAS_BPF_TARGET
+
+/* Define if the CSKY target is built in */
+#cmakedefine01 LLVM_HAS_CSKY_TARGET
+
+/* Define if the DirectX target is built in */
+#cmakedefine01 LLVM_HAS_DIRECTX_TARGET
+
+/* Define if the Hexagon target is built in */
+#cmakedefine01 LLVM_HAS_HEXAGON_TARGET
+
+/* Define if the Lanai target is built in */
+#cmakedefine01 LLVM_HAS_LANAI_TARGET
+
+/* Define if the LoongArch target is built in */
+#cmakedefine01 LLVM_HAS_LOONGARCH_TARGET
+
+/* Define if the M68k target is built in */
+#cmakedefine01 LLVM_HAS_M68K_TARGET
+
+/* Define if the Mips target is built in */
+#cmakedefine01 LLVM_HAS_MIPS_TARGET
+
+/* Define if the MSP430 target is built in */
+#cmakedefine01 LLVM_HAS_MSP430_TARGET
+
+/* Define if the NVPTX target is built in */
+#cmakedefine01 LLVM_HAS_NVPTX_TARGET
+
+/* Define if the PowerPC target is built in */
+#cmakedefine01 LLVM_HAS_POWERPC_TARGET
+
+/* Define if the RISCV target is built in */
+#cmakedefine01 LLVM_HAS_RISCV_TARGET
+
+/* Define if the Sparc target is built in */
+#cmakedefine01 LLVM_HAS_SPARC_TARGET
+
+/* Define if the SPIRV target is built in */
+#cmakedefine01 LLVM_HAS_SPIRV_TARGET
+
+/* Define if the SystemZ target is built in */
+#cmakedefine01 LLVM_HAS_SYSTEMZ_TARGET
+
+/* Define if the VE target is built in */
+#cmakedefine01 LLVM_HAS_VE_TARGET
+
+/* Define if the WebAssembly target is built in */
+#cmakedefine01 LLVM_HAS_WEBASSEMBLY_TARGET
+
+/* Define if the X86 target is built in */
+#cmakedefine01 LLVM_HAS_X86_TARGET
+
+/* Define if the XCore target is built in */
+#cmakedefine01 LLVM_HAS_XCORE_TARGET
+
+/* Define if the Xtensa target is built in */
+#cmakedefine01 LLVM_HAS_XTENSA_TARGET
 
 /* Define if this is Unixish platform */
 #cmakedefine LLVM_ON_UNIX ${LLVM_ON_UNIX}
@@ -88,20 +164,20 @@
 /* Define if we have curl and want to use it */
 #cmakedefine LLVM_ENABLE_CURL ${LLVM_ENABLE_CURL}
 
+/* Define if we have cpp-httplib and want to use it */
+#cmakedefine LLVM_ENABLE_HTTPLIB ${LLVM_ENABLE_HTTPLIB}
+
 /* Define if zlib compression is available */
 #cmakedefine01 LLVM_ENABLE_ZLIB
 
-/* Define if LLVM was built with a dependency to the libtensorflow dynamic library */
-#cmakedefine LLVM_HAVE_TF_API
+/* Define if zstd compression is available */
+#cmakedefine01 LLVM_ENABLE_ZSTD
+
+/* Define if LLVM is using tflite */
+#cmakedefine LLVM_HAVE_TFLITE
 
 /* Define to 1 if you have the <sysexits.h> header file. */
 #cmakedefine HAVE_SYSEXITS_H ${HAVE_SYSEXITS_H}
-
-/* Define to 1 to enable the experimental new pass manager by default */
-#cmakedefine01 LLVM_ENABLE_NEW_PASS_MANAGER
-
-/* Define if the xar_open() function is supported on this platform. */
-#cmakedefine LLVM_HAVE_LIBXAR ${LLVM_HAVE_LIBXAR}
 
 /* Define if building libLLVM shared library */
 #cmakedefine LLVM_BUILD_LLVM_DYLIB
@@ -110,6 +186,16 @@
 #cmakedefine LLVM_BUILD_SHARED_LIBS
 
 /* Define if building LLVM with LLVM_FORCE_USE_OLD_TOOLCHAIN_LIBS */
-#cmakedefine LLVM_FORCE_USE_OLD_TOOLCHAIN $(LLVM_FORCE_USE_OLD_TOOLCHAIN)
+#cmakedefine LLVM_FORCE_USE_OLD_TOOLCHAIN ${LLVM_FORCE_USE_OLD_TOOLCHAIN}
+
+/* Define if llvm_unreachable should be optimized with undefined behavior
+ * in non assert builds */
+#cmakedefine01 LLVM_UNREACHABLE_OPTIMIZE
+
+/* Define to 1 if you have the DIA SDK installed, and to 0 if you don't. */
+#cmakedefine01 LLVM_ENABLE_DIA_SDK
+
+/* Define if plugins enabled */
+#cmakedefine LLVM_ENABLE_PLUGINS
 
 #endif

@@ -103,6 +103,11 @@ static inline void dlist_remove_init(struct dlist_entry *item)
 	dlist_init(item);
 }
 
+#define dlist_first_entry_or_null(head, type, member) ({	\
+	struct dlist_entry *pos = (head)->next;				\
+	pos != (head) ? container_of((pos), type, member) : NULL;	\
+})
+
 #define dlist_pop_front(head, type, container, member)			\
 	do {								\
 		container = container_of((head)->next, type, member);	\
@@ -113,7 +118,7 @@ static inline void dlist_remove_init(struct dlist_entry *item)
 	for ((item) = (head)->next; (item) != (head); (item) = (item)->next)
 
 #define dlist_foreach_reverse(head, item) 					\
-	for ((item) = (head)->prev; (item) != (head); (item) = (item)->prev
+	for ((item) = (head)->prev; (item) != (head); (item) = (item)->prev)
 
 #define dlist_foreach_container(head, type, container, member)			\
 	for ((container) = container_of((head)->next, type, member);		\
@@ -239,12 +244,12 @@ static inline void dlist_splice_tail(struct dlist_entry *head,
  */
 struct dlist_ts {
 	struct dlist_entry	head;
-	fastlock_t		lock;
+	ofi_spin_t		lock;
 };
 
 static inline void dlist_ts_init(struct dlist_ts *list)
 {
-	fastlock_init(&list->lock);
+	ofi_spin_init(&list->lock);
 	dlist_init(&list->head);
 }
 
@@ -257,9 +262,9 @@ static inline void
 dlist_ts_insert_after(struct dlist_ts *list, struct dlist_entry *item,
 		      struct dlist_entry *head)
 {
-	fastlock_acquire(&list->lock);
+	ofi_spin_lock(&list->lock);
 	dlist_insert_after(item, head);
-	fastlock_release(&list->lock);
+	ofi_spin_unlock(&list->lock);
 }
 
 static inline void
@@ -275,68 +280,68 @@ dlist_ts_insert_before(struct dlist_ts *list, struct dlist_entry *item,
 static inline void
 dlist_ts_remove(struct dlist_ts *list, struct dlist_entry *item)
 {
-	fastlock_acquire(&list->lock);
+	ofi_spin_lock(&list->lock);
 	dlist_remove(item);
-	fastlock_release(&list->lock);
+	ofi_spin_unlock(&list->lock);
 }
 
 #define dlist_ts_pop_front(list, type, container, member)		\
 	do {								\
-		fastlock_acquire(&(list)->lock);			\
+		ofi_spin_lock(&(list)->lock);			\
 		if (dlist_ts_empty(list)) {				\
 			container = NULL;				\
 		} else {						\
 			dlist_pop_front(&(list)->head, type,		\
 					container, member);		\
 		}							\
-		fastlock_release(&(list)->lock);			\
+		ofi_spin_unlock(&(list)->lock);			\
 	} while (0)
 
 #define dlist_ts_foreach_end(list)				\
-		fastlock_release(&(list)->lock);		\
+		ofi_spin_unlock(&(list)->lock);		\
 	} while (0)
 
 #define dlist_ts_foreach(list, head, item)			\
 	{							\
-		fastlock_acquire(&(list)->lock);		\
+		ofi_spin_lock(&(list)->lock);		\
 		dlist_foreach(list, head, item)
 
 #define dlist_ts_foreach_reverse(list, head, item)		\
 	{							\
-		fastlock_acquire(&(list)->lock);		\
+		ofi_spin_lock(&(list)->lock);		\
 		dlist_foreach_reverse(list, head, item)
 
 #define dlist_ts_foreach_container(list, head, type, container, member)		\
 	{									\
-		fastlock_acquire(&(list)->lock);				\
+		ofi_spin_lock(&(list)->lock);				\
 		dlist_foreach_container(type, container, member)
 
 #define dlist_ts_foreach_container_reverse(list, head, type, container, member)\
 	{									\
-		fastlock_acquire(&(list)->lock);				\
+		ofi_spin_lock(&(list)->lock);				\
 		dlist_foreach_container_reverse(type, container, member)
 
 #define dlist_ts_foreach_safe(list, head, item, tmp)				\
 	{									\
-		fastlock_acquire(&(list)->lock);				\
+		ofi_spin_lock(&(list)->lock);				\
 		dlist_foreach_safe(head, item, tmp)
 
 #define dlist_ts_foreach_reverse_safe(list, head, item, tmp)			\
 	{									\
-		fastlock_acquire(&(list)->lock);				\
+		ofi_spin_lock(&(list)->lock);				\
 		dlist_foreach_reverse_safe(head, item, tmp)
 
 #define dlist_ts_foreach_container_safe(list, head, type, container,	\
 					member, tmp)			\
 	{								\
-		fastlock_acquire(&(list)->lock);			\
+		ofi_spin_lock(&(list)->lock);			\
 		dlist_foreach_container_safe(head, type, container,	\
 					     member, tmp)
 
 #define dlist_ts_foreach_container_reverse_safe(list, head, type, container,\
 					member, tmp)				\
 	{									\
-		fastlock_acquire(&(list)->lock);				\
+		ofi_spin_lock(&(list)->lock);				\
 		dlist_foreach_container_reverse_safe(head, type, container,	\
 					     member, tmp)
 
@@ -346,9 +351,9 @@ dlist_ts_find_first_match(struct dlist_ts *list, struct dlist_entry *head,
 {
 	struct dlist_entry *item;
 
-	fastlock_acquire(&list->lock);
+	ofi_spin_lock(&list->lock);
 	item = dlist_find_first_match(head, match, arg);
-	fastlock_release(&list->lock);
+	ofi_spin_unlock(&list->lock);
 
 	return item;
 }
@@ -359,18 +364,18 @@ dlist_ts_remove_first_match(struct dlist_ts *list, struct dlist_entry *head,
 {
 	struct dlist_entry *item;
 
-	fastlock_acquire(&list->lock);
+	ofi_spin_lock(&list->lock);
 	item = dlist_remove_first_match(head, match, arg);
-	fastlock_release(&list->lock);
+	ofi_spin_unlock(&list->lock);
 
 	return item;
 }
 
 #define dlist_ts_splice_head(list, head, to_splice)	\
 	{						\
-		fastlock_acquire(&(list)->lock);	\
+		ofi_spin_lock(&(list)->lock);	\
 		dlist_splice_head(head, to_splice);	\
-		fastlock_release(&list->lock);		\
+		ofi_spin_unlock(&list->lock);		\
 	} while(0)
 
 #define dlist_ts_splice_tail(list, head, to_splice)		\
@@ -443,7 +448,6 @@ static inline struct slist_entry *slist_remove_head(struct slist *list)
 #define slist_foreach(list, item, prev)				\
 	for ((prev) = NULL, (item) = (list)->head; (item); 	\
 			(prev) = (item), (item) = (item)->next)
-
 
 #define slist_remove_head_container(list, type, container, member)	\
 	do {								\

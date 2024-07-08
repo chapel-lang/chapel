@@ -9,7 +9,7 @@ var lst = new list(listType, listLock);
 
 for i in 1..stop do {
   var x = i:listType;
-  lst.append(x);
+  lst.pushBack(x);
 }
 
 writeln(lst);

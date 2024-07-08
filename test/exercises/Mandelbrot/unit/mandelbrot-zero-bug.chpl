@@ -32,7 +32,7 @@ proc main() {
   //
   // Use a forall loop to assign the array elements in parallel
   //
-  forall (i,j) in ImgSpace do
+  forall (i,j) in ImgSpace with (ref Image) do
     Image[i,j] = 0;
   //
   // This could have equivalently been written:

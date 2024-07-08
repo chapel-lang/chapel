@@ -72,6 +72,7 @@ struct JsImportedSymbol {
 struct JsModuleReference {
   bool FormattingOff = false;
   bool IsExport = false;
+  bool IsTypeOnly = false;
   // Module references are sorted into these categories, in order.
   enum ReferenceCategory {
     SIDE_EFFECT,     // "import 'something';"
@@ -107,12 +108,13 @@ bool operator<(const JsModuleReference &LHS, const JsModuleReference &RHS) {
   if (LHS.Category != RHS.Category)
     return LHS.Category < RHS.Category;
   if (LHS.Category == JsModuleReference::ReferenceCategory::SIDE_EFFECT ||
-      LHS.Category == JsModuleReference::ReferenceCategory::ALIAS)
+      LHS.Category == JsModuleReference::ReferenceCategory::ALIAS) {
     // Side effect imports and aliases might be ordering sensitive. Consider
     // them equal so that they maintain their relative order in the stable sort
     // below. This retains transitivity because LHS.Category == RHS.Category
     // here.
     return false;
+  }
   // Empty URLs sort *last* (for export {...};).
   if (LHS.URL.empty() != RHS.URL.empty())
     return LHS.URL.empty() < RHS.URL.empty();
@@ -171,8 +173,9 @@ public:
         // in a single group.
         if (!Reference.IsExport &&
             (Reference.IsExport != References[I + 1].IsExport ||
-             Reference.Category != References[I + 1].Category))
+             Reference.Category != References[I + 1].Category)) {
           ReferencesText += "\n";
+        }
       }
     }
     llvm::StringRef PreviousText = getSourceText(InsertionPoint);
@@ -187,15 +190,15 @@ public:
     // harmless and will be stripped by the subsequent formatting pass.
     // FIXME: A better long term fix is to re-calculate Ranges after sorting.
     unsigned PreviousSize = PreviousText.size();
-    while (ReferencesText.size() < PreviousSize) {
+    while (ReferencesText.size() < PreviousSize)
       ReferencesText += " ";
-    }
 
     // Separate references from the main code body of the file.
     if (FirstNonImportLine && FirstNonImportLine->First->NewlinesBefore < 2 &&
         !(FirstNonImportLine->First->is(tok::comment) &&
-          FirstNonImportLine->First->TokenText.trim() == "// clang-format on"))
+          isClangFormatOn(FirstNonImportLine->First->TokenText.trim()))) {
       ReferencesText += "\n";
+    }
 
     LLVM_DEBUG(llvm::dbgs() << "Replacing imports:\n"
                             << PreviousText << "\nwith:\n"
@@ -214,8 +217,8 @@ public:
   }
 
 private:
-  FormatToken *Current;
-  FormatToken *LineEnd;
+  FormatToken *Current = nullptr;
+  FormatToken *LineEnd = nullptr;
 
   FormatToken invalidToken;
 
@@ -304,6 +307,7 @@ private:
       if (Reference->Category == JsModuleReference::SIDE_EFFECT ||
           PreviousReference->Category == JsModuleReference::SIDE_EFFECT ||
           Reference->IsExport != PreviousReference->IsExport ||
+          Reference->IsTypeOnly != PreviousReference->IsTypeOnly ||
           !PreviousReference->Prefix.empty() || !Reference->Prefix.empty() ||
           !PreviousReference->DefaultImport.empty() ||
           !Reference->DefaultImport.empty() || Reference->Symbols.empty() ||
@@ -373,9 +377,9 @@ private:
       // This is tracked in FormattingOff here and on JsModuleReference.
       while (Current && Current->is(tok::comment)) {
         StringRef CommentText = Current->TokenText.trim();
-        if (CommentText == "// clang-format off") {
+        if (isClangFormatOff(CommentText)) {
           FormattingOff = true;
-        } else if (CommentText == "// clang-format on") {
+        } else if (isClangFormatOn(CommentText)) {
           FormattingOff = false;
           // Special case: consider a trailing "clang-format on" line to be part
           // of the module reference, so that it gets moved around together with
@@ -390,11 +394,12 @@ private:
         Current = Current->Next;
       }
       skipComments();
-      if (Start.isInvalid() || References.empty())
+      if (Start.isInvalid() || References.empty()) {
         // After the first file level comment, consider line comments to be part
         // of the import that immediately follows them by using the previously
         // set Start.
         Start = Line->First->Tok.getLocation();
+      }
       if (!Current) {
         // Only comments on this line. Could be the first non-import line.
         FirstNonImportLine = Line;
@@ -463,13 +468,14 @@ private:
       // URL = TokenText without the quotes.
       Reference.URL =
           Current->TokenText.substr(1, Current->TokenText.size() - 2);
-      if (Reference.URL.startswith(".."))
+      if (Reference.URL.starts_with("..")) {
         Reference.Category =
             JsModuleReference::ReferenceCategory::RELATIVE_PARENT;
-      else if (Reference.URL.startswith("."))
+      } else if (Reference.URL.starts_with(".")) {
         Reference.Category = JsModuleReference::ReferenceCategory::RELATIVE;
-      else
+      } else {
         Reference.Category = JsModuleReference::ReferenceCategory::ABSOLUTE;
+      }
     }
     return true;
   }
@@ -484,6 +490,11 @@ private:
   bool parseStarBinding(const AdditionalKeywords &Keywords,
                         JsModuleReference &Reference) {
     // * as prefix from '...';
+    if (Current->is(Keywords.kw_type) && Current->Next &&
+        Current->Next->is(tok::star)) {
+      Reference.IsTypeOnly = true;
+      nextToken();
+    }
     if (Current->isNot(tok::star))
       return false;
     nextToken();
@@ -499,8 +510,14 @@ private:
 
   bool parseNamedBindings(const AdditionalKeywords &Keywords,
                           JsModuleReference &Reference) {
+    if (Current->is(Keywords.kw_type) && Current->Next &&
+        Current->Next->isOneOf(tok::identifier, tok::l_brace)) {
+      Reference.IsTypeOnly = true;
+      nextToken();
+    }
+
     // eat a potential "import X, " prefix.
-    if (Current->is(tok::identifier)) {
+    if (!Reference.IsExport && Current->is(tok::identifier)) {
       Reference.DefaultImport = Current->TokenText;
       nextToken();
       if (Current->is(Keywords.kw_from))
@@ -511,10 +528,9 @@ private:
         nextToken();
         while (Current->is(tok::identifier)) {
           nextToken();
-          if (Current->is(tok::semi)) {
+          if (Current->is(tok::semi))
             return true;
-          }
-          if (!Current->is(tok::period))
+          if (Current->isNot(tok::period))
             return false;
           nextToken();
         }
@@ -532,19 +548,26 @@ private:
       nextToken();
       if (Current->is(tok::r_brace))
         break;
-      if (!Current->isOneOf(tok::identifier, tok::kw_default))
+      auto IsIdentifier = [](const auto *Tok) {
+        return Tok->isOneOf(tok::identifier, tok::kw_default, tok::kw_template);
+      };
+      bool isTypeOnly = Current->is(Keywords.kw_type) && Current->Next &&
+                        IsIdentifier(Current->Next);
+      if (!isTypeOnly && !IsIdentifier(Current))
         return false;
 
       JsImportedSymbol Symbol;
-      Symbol.Symbol = Current->TokenText;
       // Make sure to include any preceding comments.
       Symbol.Range.setBegin(
           Current->getPreviousNonComment()->Next->WhitespaceRange.getBegin());
+      if (isTypeOnly)
+        nextToken();
+      Symbol.Symbol = Current->TokenText;
       nextToken();
 
       if (Current->is(Keywords.kw_as)) {
         nextToken();
-        if (!Current->isOneOf(tok::identifier, tok::kw_default))
+        if (!IsIdentifier(Current))
           return false;
         Symbol.Alias = Current->TokenText;
         nextToken();

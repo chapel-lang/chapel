@@ -18,7 +18,7 @@ proc within_epsilon(a: real, b: real, eps=1e-6) {
 
 proc kernel_stencil9(dist_little, dist_big, dom_little, dom_big) {
   var still_correct = true;
-  var t: Timer;
+  var t: stopwatch;
   
     const northWest = {0..n-1, 0..n-1}, north = {0..n-1, 1..n}, northEast = {0..n-1, 2..n+1};
     const west = {1..n, 0..n-1}, center = {1..n, 1..n}, east = {1..n, 2..n+1};
@@ -46,7 +46,7 @@ proc kernel_stencil9(dist_little, dist_big, dom_little, dom_big) {
   }
 
   if timeit {
-    t = new Timer();
+    t = new stopwatch();
     t.start();
   }
   
@@ -136,12 +136,12 @@ proc main() {
         const dist_big = BigDom dmapped CyclicZipOpt(startIdx=BigDom.low);
         kernel_stencil9(dist_little, dist_big, Dom, BigDom);*/
     } else if dist == "C" {
-        const dist_little = Dom dmapped Cyclic(startIdx=Dom.low);
-        const dist_big = BigDom dmapped Cyclic(startIdx=BigDom.low);
+        const dist_little = Dom dmapped new cyclicDist(startIdx=Dom.low);
+        const dist_big = BigDom dmapped new cyclicDist(startIdx=BigDom.low);
         kernel_stencil9(dist_little, dist_big, Dom, BigDom); 
     } else if dist == "B" {
-        const dist_little = Dom dmapped Block(boundingBox=Dom);
-        const dist_big = BigDom dmapped Block(boundingBox=BigDom);
+        const dist_little = Dom dmapped new blockDist(boundingBox=Dom);
+        const dist_big = BigDom dmapped new blockDist(boundingBox=BigDom);
         kernel_stencil9(dist_little, dist_big, Dom, BigDom); 
     }      
 }

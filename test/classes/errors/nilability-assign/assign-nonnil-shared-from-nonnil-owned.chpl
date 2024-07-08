@@ -1,4 +1,4 @@
-//  lhs: shared!  rhs: owned!  ok
+//  lhs: shared!  rhs: owned!  error
 
 class MyClass {  var x: int;  }
 

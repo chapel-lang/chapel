@@ -31,13 +31,13 @@
 
     var _data: list((shared T, shared T));
 
-    proc push(in element) {
-      _data.append(element);
+    proc ref push(in element) {
+      _data.pushBack(element);
     }
 
-    proc pop() {
+    proc ref pop() {
       _data(0) <=> _data(_data.size-1);
-      var ret = _data.pop();
+      var ret = _data.popBack();
       return ret;
     }
   }

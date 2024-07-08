@@ -1,4 +1,4 @@
-use Memory.Diagnostics;
+use MemDiagnostics;
 use driver;
 
 writeln("start");

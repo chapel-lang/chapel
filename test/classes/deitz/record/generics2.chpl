@@ -7,6 +7,7 @@ class D {
   var c: C(borrowed D?);
 }
 
-var d = new borrowed D();
+var ownD = new owned D();
+var d = ownD.borrow();
 
 writeln(d);

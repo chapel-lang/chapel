@@ -99,7 +99,7 @@ proc testIteratorSerial(c)
   checkCorrectness(array, c);
 }
 
-proc testIteratorZippered(array,
+proc testIteratorZippered(ref array,
                           target,
                           base,
                           workerLocales,
@@ -112,7 +112,7 @@ proc testIteratorZippered(array,
       forall (i,j) in zip(distributedDynamic(target,
                                              coordinated=coordinated,
                                              workerLocales=workerLocales),
-                          base # target.size)
+                          base # target.size) with (ref array)
       do array[i,j] = (array[i,j] + 1);
     }
     when iterator.guided
@@ -120,7 +120,7 @@ proc testIteratorZippered(array,
       forall (i,j) in zip(distributedGuided(target,
                                             coordinated=coordinated,
                                             workerLocales=workerLocales),
-                          base # target.size)
+                          base # target.size) with (ref array)
       do array[i,j] = (array[i,j] + 1);
     }
   }

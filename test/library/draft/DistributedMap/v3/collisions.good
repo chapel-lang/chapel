@@ -1,0 +1,42 @@
+i: 0
+s: (0, 0)
+f: (true, (0, 0))
+(head = {entry = (key = 0, val = 0, status = full), next = nil})
+------------------------
+i: 5
+s: (0, 1)
+f: (true, (0, 1))
+(head = {entry = (key = 0, val = 0, status = full), next = {entry = (key = 5, val = 500, status = full), next = nil}})
+------------------------
+i: 8
+s: (0, 2)
+f: (true, (0, 2))
+(head = {entry = (key = 0, val = 0, status = full), next = {entry = (key = 5, val = 500, status = full), next = {entry = (key = 8, val = 800, status = full), next = nil}}})
+------------------------
+i: 13
+s: (0, 3)
+f: (true, (0, 3))
+(head = {entry = (key = 0, val = 0, status = full), next = {entry = (key = 5, val = 500, status = full), next = {entry = (key = 8, val = 800, status = full), next = {entry = (key = 13, val = 1300, status = full), next = nil}}}})
+------------------------
+size: 4
+
+5, 500
+(head = {entry = (key = 0, val = 0, status = full), next = {entry = (key = 5, val = 500, status = deleted), next = {entry = (key = 8, val = 800, status = full), next = {entry = (key = 13, val = 1300, status = full), next = nil}}}})
+13, 1300
+(head = {entry = (key = 0, val = 0, status = full), next = {entry = (key = 5, val = 500, status = deleted), next = {entry = (key = 8, val = 800, status = full), next = {entry = (key = 13, val = 1300, status = deleted), next = nil}}}})
+size: 2
+
+i: 5
+s: (0, 1)
+f: (true, (0, 1))
+(head = {entry = (key = 0, val = 0, status = full), next = {entry = (key = 5, val = 500, status = full), next = {entry = (key = 8, val = 800, status = full), next = {entry = (key = 13, val = 1300, status = deleted), next = nil}}}})
+------------------------
+i: 16
+s: (0, 3)
+f: (true, (0, 3))
+(head = {entry = (key = 0, val = 0, status = full), next = {entry = (key = 5, val = 500, status = full), next = {entry = (key = 8, val = 800, status = full), next = {entry = (key = 16, val = 1600, status = full), next = nil}}}})
+------------------------
+size: 4
+
+(head = {entry = (key = 0, val = 0, status = full), next = {entry = (key = 5, val = 500, status = full), next = {entry = (key = 8, val = 88, status = full), next = {entry = (key = 16, val = 1600, status = full), next = nil}}}})
+size: 4

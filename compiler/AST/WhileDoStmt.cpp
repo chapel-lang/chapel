@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,13 +38,13 @@ static CallExpr* isPrimIfVar(Expr* cond) {
   return nullptr;
 }
 
-BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
+BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body, LLVMMetadataList attrs)
 {
   BlockStmt* retval = NULL;
 
   if (isPrimitiveCForLoop(cond) == true)
   {
-    retval = CForLoop::buildCForLoop(toCallExpr(cond), body);
+    retval = CForLoop::buildCForLoop(toCallExpr(cond), body, attrs);
   }
   else if (CallExpr* condIV = isPrimIfVar(cond))
   {
@@ -82,6 +82,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
 
     loop->mContinueLabel = continueLabel;
     loop->mBreakLabel    = breakLabel;
+    loop->mLLVMMetadataList = attrs;
 
     loop->insertAtHead(varDef);
     varDef->init = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, borrow);
@@ -111,6 +112,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body)
 
     loop->mContinueLabel = continueLabel;
     loop->mBreakLabel    = breakLabel;
+    loop->mLLVMMetadataList = attrs;
 
     loop->insertAtTail(new DefExpr(continueLabel));
     loop->insertAtTail(new CallExpr(PRIM_MOVE, condVar, condTest->copy()));
@@ -152,6 +154,8 @@ WhileDoStmt* WhileDoStmt::copyInner(SymbolMap* map)
   WhileDoStmt* retval   = new WhileDoStmt(condExpr, body);
 
   retval->copyInnerShare(*this, map);
+  retval->userLabel = this->userLabel;
+  retval->mLLVMMetadataList = mLLVMMetadataList;
 
   return retval;
 }

@@ -8,6 +8,7 @@ param WAIT = 10000000;
 
 class C {
   var s: sync int;
+  proc init() {}
 }
 var c: unmanaged C = new unmanaged C();
 

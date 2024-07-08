@@ -11,13 +11,13 @@ const upper = 0.5 + 1.0i;
 
 const cols = size / 8;
 //const row_space = [0..#cols];
-//const row_domain: domain(1) dmapped Block(boundingBox=row_space) = row_space;
+//const row_domain: domain(1) dmapped new blockDist(boundingBox=row_space) = row_space;
 
 proc main() {
 
   var datastart:int(64);
-  var f = open(outfile, iomode.cwr);
-  var writer = f.writer();
+  var f = open(outfile, ioMode.cwr);
+  var writer = f.writer(locking=false);
   writer.writeln("P4");
   writer.writeln(size, " ", size);
   datastart = writer.offset();
@@ -25,9 +25,9 @@ proc main() {
 
   forall ipart in 0..#size {
     var c_im:real = (upper.im - lower.im) * ipart / size + lower.im;
-    var writer = f.writer(kind=iokind.native, locking=false,
-                          start=datastart+ipart*cols,
-                          end=datastart+(ipart+1)*cols);
+    var start = datastart+ipart*cols;
+    var end = datastart+(ipart+1)*cols;
+    var writer = f.writer(locking=false, region=start..#end);
 
     for rstart in 0..#cols {
 
@@ -55,7 +55,7 @@ proc main() {
         if mask == 0 then break;
       }
     
-      writer.write(mask:uint(8));
+      writer.writeBinary(mask:uint(8));
     }
 
     writer.close();

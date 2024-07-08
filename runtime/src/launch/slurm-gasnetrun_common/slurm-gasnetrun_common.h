@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include "chplcgfns.h"
 #include "chpllaunch.h"
+#include "chpl-env.h"
 #include "chpl-mem.h"
 #include "chpltypes.h"
 #include "error.h"
@@ -45,6 +46,8 @@
 #define CHPL_NODELIST_FLAG "--nodelist"
 #define CHPL_PARTITION_FLAG "--partition"
 #define CHPL_EXCLUDE_FLAG "--exclude"
+
+#define CHPL_LPN_VAR "LOCALES_PER_NODE"
 
 static char* debug = NULL;
 static char* walltime = NULL;
@@ -99,9 +102,19 @@ static int getNumCoresPerLocale(void) {
   return numCores;
 }
 
+static chpl_bool getSlurmDebug(void) {
+  chpl_bool result = false;
+  char *debugString = getenv("SALLOC_DEBUG");
+  if (debugString) {
+    result = (atoi(debugString) != 0) ? true : false;
+  }
+  return result;
+}
+
 static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
                                  int32_t numLocales,
-                                 int32_t numCoresPerLocale) {
+                                 int32_t numCoresPerLocale,
+                                 int32_t numNodes) {
   char* constraint = getenv("CHPL_LAUNCHER_CONSTRAINT");
 
   // command line walltime takes precedence over env var
@@ -133,9 +146,9 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
   if (exclude)
     fprintf(slurmFile, "#SBATCH --exclude=%s\n", exclude);
   switch (sbatch) {
-  case slurm:
-    fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
-    fprintf(slurmFile, "#SBATCH --ntasks-per-node=1\n");
+  case slurm: {
+    fprintf(slurmFile, "#SBATCH --nodes=%d\n", numNodes);
+    fprintf(slurmFile, "#SBATCH --ntasks=%d\n", numLocales);
     // If needed a constraint can be specified with the env var CHPL_LAUNCHER_CONSTRAINT
     if (constraint) {
       fprintf(slurmFile, "#SBATCH --constraint=%s\n", constraint);
@@ -144,12 +157,13 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
       fprintf(slurmFile, "#SBATCH --%s\n", nodeAccessStr);
 
     break;
+  }
   default:
     break;
   }
 }
 
-static int propagate_environment(char* buf)
+static int propagate_environment(char* buf, size_t size)
 {
   int len = 0;
 
@@ -158,12 +172,14 @@ static int propagate_environment(char* buf)
   // to leave out something important.
   char *enviro_keys = chpl_get_enviro_keys(',');
   if (enviro_keys)
-    len += sprintf(buf, " -E '%s'", enviro_keys);
+    len += snprintf(buf, size, " -E '%s'", enviro_keys);
   return len;
 }
 
 static char* chpl_launch_create_command(int argc, char* argv[],
-                                        int32_t numLocales) {
+                                        int32_t numLocales,
+                                        int32_t numLocalesPerNode) {
+
   int i;
   int size;
   char baseCommand[2*FILENAME_MAX];
@@ -184,10 +200,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   } else {
       basenamePtr++;
   }
-
   chpl_launcher_get_job_name(basenamePtr, jobName, sizeof(jobName));
 
   chpl_compute_real_binary_name(argv[0]);
+
+  int32_t numNodes = (numLocales + numLocalesPerNode - 1) / numLocalesPerNode;
 
   // command line walltime takes precedence over env var
   if (!walltime) {
@@ -202,6 +219,17 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // command line partition takes precedence over env var
   if (!partition) {
     partition = getenv("CHPL_LAUNCHER_PARTITION");
+  }
+
+  // Chapel env var takes precedence over Slurm
+  if (!partition) {
+    partition = getenv("SLURM_PARTITION");
+  }
+
+  // job's partition trumps everything
+  char *tmp = getenv("SLURM_JOB_PARTITION");
+  if (tmp) {
+    partition = tmp;
   }
 
   // command line exclude list takes precedence over env var
@@ -230,13 +258,14 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   } else {
     mypid = getpid();
   }
-  sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
+  snprintf(slurmFilename, sizeof(slurmFilename), "%s%d", baseSBATCHFilename, (int)mypid);
 
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
     slurmFile = fopen(slurmFilename, "w");
     fprintf(slurmFile, "#!/bin/sh\n\n");
     fprintf(slurmFile, "#SBATCH -J %s\n", jobName);
-    genNumLocalesOptions(slurmFile, determineSlurmVersion(), numLocales, getNumCoresPerLocale());
+    genNumLocalesOptions(slurmFile, determineSlurmVersion(), numLocales,
+                         getNumCoresPerLocale(), numNodes);
 
     if (projectString && strlen(projectString) > 0)
       fprintf(slurmFile, "#SBATCH -A %s\n", projectString);
@@ -253,7 +282,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
             CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), GASNETRUN_LAUNCHER,
             numLocales, numLocales);
 
-    propagate_environment(envProp);
+    propagate_environment(envProp, sizeof(envProp));
     fprintf(slurmFile, "%s", envProp);
 
     fprintf(slurmFile, " %s %s", chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
@@ -266,46 +295,52 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fclose(slurmFile);
     chmod(slurmFilename, 0755);
 
-    sprintf(baseCommand, "sbatch %s\n", slurmFilename);
+    snprintf(baseCommand, sizeof(baseCommand), "sbatch %s\n", slurmFilename);
   } else {
     char iCom[2*FILENAME_MAX-10];
     int len = 0;
 
-    len += sprintf(iCom+len, "--quiet ");
-    len += sprintf(iCom+len, "-J %s ", jobName);
-    len += sprintf(iCom+len, "-N %d ", numLocales);
-    len += sprintf(iCom+len, "--ntasks-per-node=1 ");
+    if (!getSlurmDebug()) {
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--quiet ");
+    }
+    len += snprintf(iCom+len, sizeof(iCom)-len, "-J %s ", jobName);
+    len += snprintf(iCom+len, sizeof(iCom)-len, "-N %d ", numNodes);
+    len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks=%d ", numLocales);
     if (nodeAccessStr != NULL)
-      len += sprintf(iCom+len, "--%s ", nodeAccessStr);
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--%s ", nodeAccessStr);
     if (walltime)
-      len += sprintf(iCom+len, "--time=%s ", walltime);
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--time=%s ", walltime);
     if (nodelist)
-      len += sprintf(iCom+len, "--nodelist=%s ", nodelist);
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--nodelist=%s ", nodelist);
     if(partition)
-      len += sprintf(iCom+len, "--partition=%s ", partition);
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--partition=%s ", partition);
     if(exclude)
-      len += sprintf(iCom+len, "--exclude=%s ", exclude);
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--exclude=%s ", exclude);
     if(projectString && strlen(projectString) > 0)
-      len += sprintf(iCom+len, "--account=%s ", projectString);
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--account=%s ",
+                     projectString);
     if (constraint)
-      len += sprintf(iCom+len, " -C %s", constraint);
-    len += sprintf(iCom+len, " %s/%s/%s -n %d -N %d -c 0",
+      len += snprintf(iCom+len, sizeof(iCom)-len, " -C %s", constraint);
+    len += snprintf(iCom+len, sizeof(iCom)-len,
+                   " %s/%s/%s -n %d -N %d -c 0",
                    CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH),
-                   GASNETRUN_LAUNCHER, numLocales, numLocales);
-    len += propagate_environment(iCom+len);
-    len += sprintf(iCom+len, " %s %s", chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
+                   GASNETRUN_LAUNCHER, numLocales, numNodes);
+    len += propagate_environment(iCom+len, sizeof(iCom) - len);
+    len += snprintf(iCom+len, sizeof(iCom)-len, " %s %s",
+                   chpl_get_real_binary_wrapper(),
+                   chpl_get_real_binary_name());
     for (i=1; i<argc; i++) {
-      len += sprintf(iCom+len, " %s", argv[i]);
+      len += snprintf(iCom+len, sizeof(iCom)-len, " %s", argv[i]);
     }
 
-    sprintf(baseCommand, "salloc %s", iCom);
+    snprintf(baseCommand, sizeof(baseCommand), "salloc %s", iCom);
   }
 
   size = strlen(baseCommand) + 1;
 
   command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
 
-  sprintf(command, "%s", baseCommand);
+  snprintf(command, size * sizeof(char), "%s", baseCommand);
 
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
@@ -323,12 +358,14 @@ static void chpl_launch_cleanup(void) {
 }
 
 
-int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+int chpl_launch(int argc, char* argv[], int32_t numLocales,
+                int32_t numLocalesPerNode) {
   int retcode;
 
   debug = getenv("CHPL_LAUNCHER_DEBUG");
 
-  retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
+  retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv,
+                                          numLocales, numLocalesPerNode),
             argv[0]);
   chpl_launch_cleanup();
   return retcode;

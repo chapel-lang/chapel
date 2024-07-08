@@ -10,12 +10,12 @@ inline proc _defaultOf(type t) where t == (int, borrowed foo?) {
 
 var tup: (int, borrowed foo?) = noinit; // Should not print message
 
-tup(1) = new borrowed foo(2);
+tup(1) = (new owned foo(2)).borrow();
 tup(0) = 5;
 
 writeln(tup);
 
 var otherTup: (int, borrowed foo?);     // Should print message
 
-otherTup(1) = new borrowed foo(3);
+otherTup(1) = (new owned foo(3)).borrow();
 writeln(otherTup);

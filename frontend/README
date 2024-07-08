@@ -1,0 +1,135 @@
+## Chapel Compiler Frontend Library
+
+This directory contains the implementation of the Chapel compiler
+frontend library. This has been created as part of an effort of revamping
+the Chapel compiler called "dyno". This file contains some information
+about the structure of this effort as well as some style guidance.
+
+### Directory Structure
+
+This `frontend/` directory contains sources for the frontend compiler
+library and tests of it. Tools using it belong in the sibling directory
+`tools/` and the main Chapel compiler effort is in the sibling directory
+`compiler/`.
+
+We have these subdirectories:
+
+ include/         -- headers defining the public API for the frontend library
+   chpl/          -- enables #includes to match with library installed or not
+     config/      -- home for cmake-generated config.h
+     framework/   -- query framework
+     parsing/     -- parsing
+     resolution/  -- scope resolution & type and call resolution
+     types/       -- representing Chapel types
+     uast/        -- representing untyped uAST
+     util/        -- utility capabilities
+
+ lib/             -- implementation of the frontend library
+     framework/   -- query framework
+     immediates/  -- implementation details for compile-time 'param' values
+     parsing/     -- parsing
+     resolution/  -- scope resolution & type and call resolution
+     types/       -- representing Chapel types
+     uast/        -- representing untyped uAST
+     util/        -- utility capabilities
+
+ test/            -- C++ tests of the frontend library
+     framework/   -- tests of the query framework
+     parsing/     -- tests of the parser
+     resolution/  -- tests of scope resolution & type and call resolution
+     uast/        -- tests for untyped uAST representation
+     util/        -- tests for utility capabilities
+
+ doc/     frontend library documentation and scripting
+
+
+Please note that when we `#include` a header we will do so assuming that
+`frontend/include` is in the `-I` path and so is the current `lib` subdir.
+Headers that are private to the implementation can and should go into the
+appropriate lib/<topic>/ directory. Were the frontend library to be
+installed on a system, only the headers in frontend/include would be
+installed.
+
+
+### Namespaces
+
+Unless there is a good reason not to, the Chapel frontend library code
+should be in the `chpl` namespace.
+
+Other than that, it is a style matter to decide when to introduce a new
+namespace. Here is some guidance about when to do so:
+ * when creating a bunch of similar types that we'd like to be able to
+   easily distinguish (e.g. uast vs old ast)
+ * when creating a bunch of free functions that we'd like to be able to
+   bundle since they are related
+
+Generally speaking, all of the subdirectories of `include/chpl` have their
+own namespace.
+ * today we make an exception for `util`
+
+
+### File Names and File Organization
+
+It is a goal to have corresponding <something>.h and <something>.cpp
+files for the header and implementation. These should be in the
+appropriate topic directory in `include/chpl/` and in `lib/`.
+
+.h and .cpp source code that primarily defines a specific type should go
+into a file sharing that type name. Type names in the frontend library
+use an InitialUpperCase.  So we have e.g. `NumericLiteral.h` /
+`NumericLiteral.cpp`.
+
+In contrast, .h and .cpp files defining a collection of things that
+aren't a specific type should go into a file using lower case and dashes.
+For example, we have `can-pass.h` and `can-pass.cpp`.
+
+
+### Error System Suggestions
+
+This frontend library has a new error system, which is intended to provide
+friendlier, more helpful, and better looking error messages than the
+production compiler currently does. This is accomplished in part by
+letting the C++ programmer working on the frontend library create
+specialized sub-classes of `ErrorBase`, which have customized output
+functionality and can store additional context about the error. For
+example, an error message class might store the type of a variable, a
+reference to a variable's declaration, etc. However, the frontend library
+also provides a simpler error reporting mechanism, via `Context::error`
+and similar methods, which does not require creating a new class. This
+means that a frontend developer is faced with a few choices when they
+need to report an error.
+
+#### When to use simple errors over class-based errors?
+
+In general, we want to avoid pointless boilerplate. Thus, if your error's
+output format is no different than the "usual" format for simple errors
+(that is, if the error you need to report will simply print the error message
+and the code location, without any additional help or information), it doesn't
+make sense to duplicate that functionality in a new error class. Thus, you
+should opt for using a simple (class-less) error.
+
+On the other hand, you probably want a class-based error if you want to do any
+of the following:
+* Specialize the error message for particular situations (e.g., "can't use
+  `new owned` for non-class datatypes" in general, and "can't use
+  `new owned` for records, which are not the same as classes").
+* Print additional help for the error message (e.g., "did you mean to write X?").
+* Show code from more than the default location, or not show any code at all.
+
+#### One class or many classes?
+
+Sometimes, many related errors are reported in the same place in the code.
+The error are typically similar, and might even require the same "contextual
+information". So, where do you draw the line between specializing error messages
+and creating new classes?
+
+The _heuristic_ we have been using is "if the same code reports many versions
+of the error, make it one class". For instance, we might report an error if
+an actual has a type incompatible with a formal; the error is reported if
+a value is passed to a type, a type is passed to a value, or a param is passed
+to a type. Since the same code, within a few lines of each other, reports
+each version of this error, it seems best to make the error a single class.
+In this case, the error message is specialized in the `write` method. Beyond
+that, it seems to make sense to make separate classes for different types of
+errors. Note that this is a heuristic; it's not clear if there is a hard rule
+to this question.

@@ -48,7 +48,7 @@ static amx_tick_t retryToticks[STATIC_RETRIES];
     retryToticks[(retrycnt)] :                                         \
     retryToticks[0] * intpow(AMUDP_RequestTimeoutBackoff,(retrycnt)))  \
   )
-extern void AMUDP_InitRetryCache() {
+extern void AMUDP_InitRetryCache(void) {
   AMX_assert(!retryToticks[0]);
   if (AMUDP_InitialRequestTimeout_us == AMUDP_TIMEOUT_INFINITE) return;
   amx_tick_t tickout = AMX_us2ticks(AMUDP_InitialRequestTimeout_us);
@@ -167,12 +167,12 @@ static amudp_node_t sourceAddrToId(ep_t ep, en_t sourceAddr, amudp_node_t hint) 
  * Linux (FIONREAD) and Solaris (I_NREAD) get this right, 
  * but all other systems seem to get it wrong, one way or another.
  * Cygwin: (bug 3284) not implemented
- * WSL (4/8/17) returns raw byte count, which can over or under-report
+ * WSL1 (4/8/17) returns raw byte count, which can over or under-report
  * FreeBSD: (bug 2827) returns raw byte count, which can over or under-report
  * others: over-report by returning total bytes in all messages waiting
  */
 #ifndef IOCTL_WORKS
- #if PLATFORM_OS_LINUX || PLATFORM_OS_SOLARIS || PLATFORM_OS_DARWIN
+ #if (PLATFORM_OS_LINUX && !PLATFORM_OS_SUBFAMILY_WSL) || PLATFORM_OS_SOLARIS || PLATFORM_OS_DARWIN
   #define IOCTL_WORKS 1
  #else
   #define IOCTL_WORKS 0
@@ -293,8 +293,8 @@ static int AMUDP_DrainNetwork(ep_t ep) {
            */
           int newsize = 2 * ep->socketRecvBufferSize;
 
-          if (newsize > AMUDP_SOCKETBUFFER_MAX) { /* create a semi-sane upper bound */
-            newsize = AMUDP_SOCKETBUFFER_MAX;
+          if (newsize <= 0 || newsize > (int)AMUDP_SocketBuffer_max) { /* create a semi-sane upper bound */
+            newsize = AMUDP_SocketBuffer_max;
             ep->socketRecvBufferMaxedOut = 1;
           }
           ep->socketRecvBufferMaxedOut += AMUDP_growSocketBufferSize(ep, newsize, SO_RCVBUF, "SO_RCVBUF");
@@ -663,8 +663,9 @@ void AMUDP_processPacket(amudp_buf_t * const buf, int isloopback) {
       /* check segment limits */
       if_pf (msg->nBytes > AMUDP_MAX_LONG)
         AMUDP_REFUSEMESSAGE(EBADLENGTH);
-      if_pf ( ep->segLength == 0 || /* empty seg */
-              ((uintptr_t)ep->segAddr + msg->destOffset) == 0) /* NULL target */
+      if_pf (msg->nBytes &&
+             ( ep->segLength == 0 || /* empty seg */
+              ((uintptr_t)ep->segAddr + msg->destOffset) == 0)) /* NULL target */
         AMUDP_REFUSEMESSAGE(EBADSEGOFF);
       if_pf (msg->destOffset + msg->nBytes > ep->segLength)
         AMUDP_REFUSEMESSAGE(EBADLENGTH);

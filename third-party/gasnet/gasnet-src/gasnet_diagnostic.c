@@ -33,7 +33,6 @@ static int num_threads = 1;
 static int peer = -1;
 static void * myseg = NULL;
 static void * peerseg = NULL;
-static void * peersegmid = NULL;
 static int iters = 0;
 static int iters0 = 0;
 static int iters2 = 0;
@@ -104,6 +103,8 @@ static void spawner_test(void);
 static void hbarrier_test(void);
 static void rexchgv_test(void);
 
+static void vlide_test(void);
+
 static gex_TM_t myteam;
 
 /* ------------------------------------------------------------------------------------ */
@@ -125,7 +126,6 @@ extern int gasneti_run_diagnostics(int iter_cnt, int threadcnt, const char *test
   myseg = myseg_arg;
   peer = peer_arg;
   peerseg = peerseg_arg;
-  peersegmid = (char *)peerseg + TEST_SEGSZ/2;
 
 #if !GASNET_SEGMENT_EVERYTHING
   for (gex_Rank_t rank =0; rank < nnodes; rank++) {
@@ -203,6 +203,8 @@ extern int gasneti_run_diagnostics(int iter_cnt, int threadcnt, const char *test
   TEST_HEADER("host-scoped barrier test") hbarrier_test();
 
   TEST_HEADER("RotatedExchangeV test") rexchgv_test();
+
+  TEST_HEADER("VLIDE test") vlide_test();
 
   #if GASNET_PAR
     num_threads = threadcnt;
@@ -524,9 +526,12 @@ static void rwlock_test(int id) {
       if (writer) { /* write lock */
         if (trywrite++ & 1) {
           int retval;
-          while ((retval=gasneti_rwlock_trywrlock(&lock1)) != 0) {
+          for (int t = 0; t < 100; t++) { // bounded try loop
+            retval = gasneti_rwlock_trywrlock(&lock1);
+            if (!retval) break; // success
             gasneti_assert_always_int(retval ,==, EBUSY);
           }
+          if (retval == EBUSY) gasneti_rwlock_wrlock(&lock1); // gave up on try, block instead
         } else {
           gasneti_rwlock_wrlock(&lock1);
         }
@@ -540,9 +545,12 @@ static void rwlock_test(int id) {
       if (!writer) { /* read lock */
         if (i & 1) {
           int retval;
-          while ((retval=gasneti_rwlock_tryrdlock(&lock1)) != 0) {
+          for (int t = 0; t < 100; t++) { // bounded try loop
+            retval = gasneti_rwlock_tryrdlock(&lock1);
+            if (!retval) break; // success
             gasneti_assert_always_int(retval ,==, EBUSY);
           }
+          if (retval == EBUSY) gasneti_rwlock_rdlock(&lock1); // gave up on try, block instead
         } else {
           gasneti_rwlock_rdlock(&lock1);
         }
@@ -903,29 +911,40 @@ static void progressfn_tester(int *counter) {
   if ((gasneti_weakatomic_read(&progressfn_req_sent,0) -
        gasneti_weakatomic_read(&progressfn_rep_rcvd,0)) <= 128U)
 #endif
-  { static int tmp = 47;
-    int sz;
+  { static int tmp;
+    // The outer context in progressfns_test() is performing RMA operations
+    // which reference only the bottom halves of our segment and of the
+    // peer's segment.  So, we subdivide the upper halves of each segment
+    // into four disjoint regions for use as source and destination buffers.
+    const size_t region_len = TEST_SEGSZ/8;
+    char *loc_src = (char *)myseg   + TEST_SEGSZ/2;
+    char *loc_dst = (char *)myseg   + TEST_SEGSZ/2 +   region_len;
+    char *rem_src = (char *)peerseg + TEST_SEGSZ/2 + 2*region_len;
+    char *rem_dst = (char *)peerseg + TEST_SEGSZ/2 + 3*region_len;
+
     gex_Event_TestSome(pf_events, pf_event_cnt, 0);
     if (pf_events[0] == GEX_EVENT_INVALID) {
-      pf_events[0] = gex_RMA_PutNB(myteam, peer, peersegmid, &tmp, sizeof(tmp), GEX_EVENT_NOW, 0);
+      tmp = *(int *)loc_src; // ensures same data if concurrent w/ the PutNBI below
+      pf_events[0] = gex_RMA_PutNB(myteam, peer, rem_dst, &tmp, sizeof(tmp), GEX_EVENT_NOW, 0);
     }
     if (pf_events[1] == GEX_EVENT_INVALID) {
       // Note _allowrecursion=1, since may run w/i client's access region
+      const size_t max_sz = MIN(128*1024,region_len);
       gasnete_begin_nbi_accessregion(0,1 GASNETI_THREAD_GET);
-      for (sz = 1; sz <= MIN(128*1024,TEST_SEGSZ/2); sz = (sz < 64?sz*2:sz*8)) {
-        gex_RMA_PutNBI(myteam, peer, peersegmid, myseg, sz, GEX_EVENT_DEFER, 0);
-        gex_RMA_GetNBI(myteam, myseg, peer, peersegmid, sz, 0);
+      for (size_t sz = 1; sz <= max_sz; sz = (sz < 64?sz*2:sz*8)) {
+        gex_RMA_PutNBI(myteam, peer, rem_dst, loc_src, sz, GEX_EVENT_DEFER, 0);
+        gex_RMA_GetNBI(myteam, loc_dst, peer, rem_src, sz, 0);
       }
       pf_events[1] = gasnete_end_nbi_accessregion(0 GASNETI_THREAD_GET);
     }
     if (gasneti_diag_havehandlers) {
       const size_t max_sz = MIN(gex_AM_MaxRequestMedium(myteam, peer, GEX_EVENT_NOW, 0, 0),
-                                MIN(64*1024,TEST_SEGSZ/2));
-      for (sz = 1; sz <= max_sz; sz = (sz < 64?sz*2:sz*8)) {
+                                MIN(64*1024,region_len));
+      for (size_t sz = 1; sz <= max_sz; sz = (sz < 64?sz*2:sz*8)) {
         gasneti_weakatomic_increment(&progressfn_req_sent,0);
-        gex_AM_RequestMedium0(myteam, peer, gasneti_diag_hidx_base + 0, myseg, sz, GEX_EVENT_NOW, 0);
+        gex_AM_RequestMedium0(myteam, peer, gasneti_diag_hidx_base + 0, loc_src, sz, GEX_EVENT_NOW, 0);
         gasneti_weakatomic_increment(&progressfn_req_sent,0);
-        gex_AM_RequestLong0(myteam, peer, gasneti_diag_hidx_base + 0, myseg, sz, peersegmid, GEX_EVENT_NOW, 0);
+        gex_AM_RequestLong0(myteam, peer, gasneti_diag_hidx_base + 0, loc_src, sz, rem_dst, GEX_EVENT_NOW, 0);
       }
     }
   }
@@ -959,13 +978,17 @@ static void progressfns_test(int id) {
     GASNETI_PROGRESSFNS_ENABLE(gasneti_pf_debug_counted,COUNTED);
     GASNETI_PROGRESSFNS_DISABLE(gasneti_pf_debug_counted,COUNTED);
 
-    /* do some work that should cause progress fns to run */
+    // do some work that should cause progress fns to run
+    // these use only the lower halves of the segments
+    gasneti_assert_always_uint(1024 ,<=, TEST_SEGSZ/4);
+    char *loc_buf = (char *)myseg;
+    char *rem_buf = (char *)peerseg + TEST_SEGSZ/4;
     for (i=0; i < 2; i++) {
       int tmp = 42;
-      gex_RMA_PutBlocking(myteam, peer, peerseg, &tmp, sizeof(tmp), 0);
-      gex_RMA_GetBlocking(myteam, &tmp, peer, peerseg, sizeof(tmp), 0);
-      gex_RMA_PutBlocking(myteam, peer, peersegmid, myseg, 1024, 0);
-      gex_RMA_GetBlocking(myteam, myseg, peer, peersegmid, 1024, 0);
+      gex_RMA_PutBlocking(myteam, peer, rem_buf, &tmp, sizeof(tmp), 0);
+      gex_RMA_GetBlocking(myteam, &tmp, peer, rem_buf, sizeof(tmp), 0);
+      gex_RMA_PutBlocking(myteam, peer, rem_buf, loc_buf, 1024, 0);
+      gex_RMA_GetBlocking(myteam, loc_buf, peer, rem_buf, 1024, 0);
       gasnet_AMPoll();
     }
 
@@ -985,13 +1008,14 @@ static void progressfns_test(int id) {
     cnt_c = pf_cnt_counted; cnt_b = pf_cnt_boolean;
     PTHREAD_BARRIER(num_threads);
 
-    /* do some work that might cause progress fns to run */
+    // (again) do some work that might cause progress fns to run
+    // these use only the lower halves of the segments
     for (i=0; i < 2; i++) {
       int tmp = 42;
-      gex_RMA_PutBlocking(myteam, peer, peerseg, &tmp, sizeof(tmp), 0);
-      gex_RMA_GetBlocking(myteam, &tmp, peer, peerseg, sizeof(tmp), 0);
-      gex_RMA_PutBlocking(myteam, peer, peersegmid, myseg, 1024, 0);
-      gex_RMA_GetBlocking(myteam, myseg, peer, peersegmid, 1024, 0);
+      gex_RMA_PutBlocking(myteam, peer, rem_buf, &tmp, sizeof(tmp), 0);
+      gex_RMA_GetBlocking(myteam, &tmp, peer, rem_buf, sizeof(tmp), 0);
+      gex_RMA_PutBlocking(myteam, peer, rem_buf, loc_buf, 1024, 0);
+      gex_RMA_GetBlocking(myteam, loc_buf, peer, rem_buf, 1024, 0);
       gasnet_AMPoll();
     }
 
@@ -1235,16 +1259,23 @@ static void op_test(int id) {
     }
     PTHREAD_LOCALBARRIER(num_threads);
     { // Test NBI fire-and-forget regions
+      // Divide each segment into four disjoint regions for use as sources and destinations:
+      const size_t region_len = TEST_SEGSZ/4;
+      char *loc_src = (char *)myseg;
+      char *loc_dst = (char *)myseg   +   region_len;
+      char *rem_src = (char *)peerseg + 2*region_len;
+      char *rem_dst = (char *)peerseg + 3*region_len;
       gex_NBI_Wait(GEX_EC_ALL,0);
       gasneti_begin_nbi_ff(GASNETI_THREAD_PASS_ALONE);
-      for (size_t sz = 1; sz <= MIN(128*1024,TEST_SEGSZ/2); sz = (sz < 64?sz*2:sz*8)) {
-        gex_RMA_PutNBI(myteam, peer, peersegmid, myseg, sz, GEX_EVENT_DEFER, 0);
-        gex_RMA_GetNBI(myteam, myseg, peer, peersegmid, sz, 0);
+      const size_t max_sz = MIN(128*1024,region_len);
+      for (size_t sz = 1; sz <= max_sz; sz = (sz < 64?sz*2:sz*8)) {
+        gex_RMA_PutNBI(myteam, peer, rem_dst, loc_src, sz, GEX_EVENT_DEFER, 0);
+        gex_RMA_GetNBI(myteam, loc_dst, peer, rem_src, sz, 0);
         if (sz <= max_medium) {
-          gex_AM_RequestMedium0(myteam, peer, gasneti_diag_hidx_base + 2, myseg, sz, GEX_EVENT_GROUP, 0);
+          gex_AM_RequestMedium0(myteam, peer, gasneti_diag_hidx_base + 2, loc_src, sz, GEX_EVENT_GROUP, 0);
         }
         if (sz <= max_long) {
-          gex_AM_RequestLong0(myteam, peer, gasneti_diag_hidx_base + 2, myseg, sz, peersegmid, GEX_EVENT_GROUP, 0);
+          gex_AM_RequestLong0(myteam, peer, gasneti_diag_hidx_base + 2, loc_src, sz, rem_dst, GEX_EVENT_GROUP, 0);
         }
       }
       gasneti_end_nbi_ff(GASNETI_THREAD_PASS_ALONE);
@@ -1598,6 +1629,104 @@ static void rexchgv_test(void) {
   }
 }
 
+/* ------------------------------------------------------------------------------------ */
+#include "gasnet_vlide.h"
+
+static void vlide_test(void) {
+  // Unit test for VLIDE compression algorithm used by VIS
+  // This is a purely serial test with no communication.
+
+  // Manual knobs for testing less-important configurations:
+  #if GASNETI_VLIDE_TEST_INT64
+    typedef uint64_t val_t;
+    typedef val_t    valint_t;
+  #else
+    typedef void *    val_t;
+    typedef uintptr_t valint_t;
+  #endif
+  #if GASNETI_VLIDE_TEST_TRIVIAL
+    #define VLIDE_ENCODE GASNETI_VLIDE_ENCODE_TRIVIAL
+    #define VLIDE_DECODE GASNETI_VLIDE_DECODE_TRIVIAL
+  #else
+    #define VLIDE_ENCODE GASNETI_VLIDE_ENCODE
+    #define VLIDE_DECODE GASNETI_VLIDE_DECODE
+  #endif
+  const int max_entries = 1000;
+  val_t * const input_buffer = gasneti_malloc(max_entries*sizeof(val_t));
+  uint8_t * const output_buffer = gasneti_calloc(max_entries+1,10);
+  // choose an arbitrary starting point that looks like a pointer
+  val_t const start = (val_t)(uintptr_t)input_buffer; 
+  uint64_t dist[12] = { 0 };
+
+  for (int iter = 0; iter < iters; iter++) {
+     int entries = TEST_RAND(1,max_entries);
+
+     // ENCODE
+     val_t oldval = 0;
+     val_t newval = start;
+     uint8_t *p = output_buffer;
+     int i = 0;
+     do {
+       input_buffer[i] = newval;
+
+       // encode one entry
+       uint8_t * const oldp = p;
+       VLIDE_ENCODE(p, (valint_t)oldval, (valint_t)newval);
+       gasneti_assert_always_ptr(p ,>, oldp);     // sanity check
+       gasneti_assert_always_ptr(p ,<=, oldp+10); // sanity check
+       dist[p-oldp]++; // record encoding size distribution
+
+       // compute next random value in a rough gaussian distribution centered on val
+       oldval = newval;
+       int bits = TEST_RAND(TEST_RAND(0,63),63);
+       uint64_t mask = ((uint64_t)-1) >> bits; // select random number of low bits
+       uint64_t rword = 0; // compute a random word
+       for (int j=0; j < 8; j++) {
+         rword <<= 8;
+         rword |= TEST_RAND(0,255);
+       }
+       // randomly flip some of the low bits
+       newval = (val_t)(valint_t)(((uint64_t)(valint_t)newval) ^ (rword & mask));
+     } while(++i < entries);
+     uint8_t * const endp = p;
+
+     // DECODE
+     oldval = 0;
+     newval = 0;
+     p = output_buffer;
+     for (i = 0; i < entries; i++) {
+       uint8_t * const oldp = p;
+       valint_t tmp; // tmp used to silence strict-aliasing warnings from gcc
+       VLIDE_DECODE(p, (valint_t)oldval, tmp);
+       newval = (val_t)tmp;
+       gasneti_assert_always_ptr(p ,>, oldp);     // sanity check
+       gasneti_assert_always_ptr(p ,<=, oldp+10); // sanity check
+
+       // verify we decoded the correct value:
+       gasneti_assert_always_uint((valint_t)newval ,==, (valint_t)input_buffer[i]); 
+
+       oldval = newval;
+     }
+     // verify agreement on end of buffer
+     gasneti_assert_always_ptr(p ,==, endp); 
+  }
+  #if GASNET_DEBUG_VERBOSE
+  if (!gasneti_mynode) {
+    uint64_t enc_sz = 0;
+    uint64_t orig_sz = 0;
+    MSG0("VLIDE encoding size distribution:");
+    for (size_t i=0; i < sizeof(dist)/sizeof(dist[0]); i++) {
+      MSG0("%2i: %8" PRIu64, (int)i, dist[i]);
+      enc_sz += dist[i]*i;
+      orig_sz += dist[i]*sizeof(val_t);
+    }
+    MSG0("VLIDE space savings: %.3f%%", 100.0*(orig_sz-enc_sz)/orig_sz);
+  }
+  #endif
+
+  gasneti_free(input_buffer);
+  gasneti_free(output_buffer);
+}
 /* ------------------------------------------------------------------------------------ */
 static gex_AM_Entry_t gasneti_diag_handlers[] = {
   #ifdef GASNETC_DIAG_HANDLERS

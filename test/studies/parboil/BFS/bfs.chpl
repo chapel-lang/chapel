@@ -14,7 +14,7 @@ enum Color {
   white, gray, black
 }
 
-proc bfs(nodes: [] Node, edges: [] Edge, colors: [] Color, costs: [] int(32), source: int(32)) {
+proc bfs(nodes: [] Node, edges: [] Edge, ref colors: [] Color, ref costs: [] int(32), source: int(32)) {
   use Deque;
   var wavefront = new deque(int(32));
   wavefront.pushBack(source);
@@ -41,9 +41,9 @@ param INF = 2**31 - 1;
 proc main {
   use Time;
   var numNodes: int(32);
-  var f = open(infileName, iomode.r);
-  var r = f.reader();
-  var inputTimer, outputTimer, computeTimer, totalTimer: Timer;
+  var f = open(infileName, ioMode.r);
+  var r = f.reader(locking=false);
+  var inputTimer, outputTimer, computeTimer, totalTimer: stopwatch;
 
   totalTimer.start();
   inputTimer.start();
@@ -83,8 +83,8 @@ proc main {
   computeTimer.stop();
 
   outputTimer.start();
-  var outf = open(outfileName, iomode.cw);
-  var w = outf.writer();
+  var outf = open(outfileName, ioMode.cw);
+  var w = outf.writer(locking=false);
   w.writeln(numNodes);
   writeln("writing nodes");
   for i in 0..#numNodes {

@@ -26,18 +26,18 @@ class GradientFlagger: Flagger {
   // of 'level_solution' with neighboring cells.  The cell is flagged
   // if this value exceeds 'tolerance'.
   //----------------------------------------------------------------------
-  
+
   override proc setFlags (
-    level_solution: unmanaged LevelSolution, 
-    flags:          [level_solution.level.possible_cells] bool )
+    level_solution: unmanaged LevelSolution,
+    ref flags:          [level_solution.level.possible_cells] bool )
   {
-    
+
     //---- Alias and prepare level_solution.current_data ----
     const current_data = level_solution.current_data;
     current_data.extrapolateGhostData();
     current_data.fillOverlaps();
     
-    
+
     //===> Test each cell for flagging ===>
     
     for grid in level_solution.level.grids {
@@ -100,11 +100,11 @@ class GradientFlagger: Flagger {
 
 
 
-proc main {
+private proc main {
   
   //===> Get names of input files ===>
   
-  const pointer_file = open("input_files.txt", iomode.r).reader();
+  const pointer_file = open("input_files.txt", ioMode.r).reader();
   var time_file_name:      string;
   var hierarchy_file_name: string;
   var velocity_file_name:  string;
@@ -152,7 +152,7 @@ proc main {
   //---- Advection velocity ----
 
   var velocity: dimension*real;
-  const velocity_file = open(velocity_file_name, iomode.r).reader();
+  const velocity_file = open(velocity_file_name, ioMode.r).reader();
   velocity_file.read( (...velocity) );
   velocity_file.close();
 

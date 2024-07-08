@@ -1,0 +1,4 @@
+# This test is verbatim from an issue and uses extern `__device__` functions
+# that doesn't compile with the cpu backend. The addressed issue is covered in
+# other unit tests in this directory.
+CHPL_GPU==cpu

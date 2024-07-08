@@ -8,6 +8,8 @@ var A: [D] int;
 class OneToTen {
   var currIndex: sync int = 1;
 
+  proc init() {}
+
   iter count() {
     var done = false;
 
@@ -22,7 +24,8 @@ class OneToTen {
   }
 }
 
-var sharedOneToTen = new borrowed OneToTen();
+var ownOneToTen = new owned OneToTen();
+var sharedOneToTen = ownOneToTen.borrow();
 
 cobegin {
   for x in sharedOneToTen.count() do register(1, x);

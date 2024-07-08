@@ -15,7 +15,7 @@ use TaskingMode;
 config param taskingMode = emptyCoforallOn;
 
 proc main() {
-  var t: Timer;
+  var t: stopwatch;
 
   t.start();
   select taskingMode {

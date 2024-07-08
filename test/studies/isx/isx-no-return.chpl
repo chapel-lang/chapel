@@ -12,9 +12,9 @@
 
 //
 // We want to use block-distributed arrays (BlockDist), barrier
-// synchronization (Barriers), and timers (Time).
+// synchronization (Collectives), log2 (Math), and timers (Time).
 //
-use BlockDist, Barriers, Time;
+use BlockDist, Collectives, Time, Math;
 
 //
 // The type of key to use when sorting.
@@ -132,7 +132,7 @@ if printConfig then
   printConfiguration();
 
 const LocBucketSpace = {0..#numBuckets};
-const BucketDist = new dmap(new Block(LocBucketSpace));
+const BucketDist = new blockDist(LocBucketSpace);
 const BucketSpace = LocBucketSpace dmapped BucketDist;
 
 var allBucketKeys: [BucketSpace] [0..#recvBuffSize] keyType;
@@ -141,7 +141,7 @@ var totalTime, inputTime, bucketCountTime, bucketOffsetTime, bucketizeTime,
     exchangeKeysTime, countKeysTime: [BucketSpace] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
-var barrier = new Barrier(numBuckets);
+var bar = new barrier(numBuckets);
 
 proc main() {
   coforall bucketID in BucketSpace do
@@ -173,8 +173,8 @@ proc main() {
 
 proc bucketSort(bucketID, trial: int, time = false, verify = false) {
   const subtime = time && useSubTimers;
-  var totalTimer: Timer;
-  var subTimer: Timer;
+  var totalTimer: stopwatch;
+  var subTimer: stopwatch;
 
   if time {
     totalTimer.start();
@@ -217,7 +217,7 @@ proc bucketSort(bucketID, trial: int, time = false, verify = false) {
   }
   
   exchangeKeys(bucketID, sendOffsets, bucketSizes, myBucketedKeys);
-  barrier.barrier();
+  bar.barrier();
 
   if subtime {
     exchangeKeysTime.localAccess[here.id][trial] = subTimer.elapsed();
@@ -242,7 +242,7 @@ proc bucketSort(bucketID, trial: int, time = false, verify = false) {
   // reset the receive offsets for the next iteration
   //
   recvOffset[bucketID].write(0);
-  barrier.barrier();
+  bar.barrier();
 }
 
 
@@ -321,7 +321,7 @@ proc verifyResults(bucketID, myBucketSize, myLocalKeyCounts) {
   //
   //
   verifyKeyCount.add(myBucketSize);
-  barrier.barrier();
+  bar.barrier();
   if verifyKeyCount.read() != totalKeys then
     halt("total key count mismatch: " + verifyKeyCount.read():string + " != " + totalKeys:string);
 

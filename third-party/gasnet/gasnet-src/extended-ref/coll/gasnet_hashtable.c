@@ -89,7 +89,7 @@ uint32_t gasnete_table_remove(gasnete_table_t * const table, uint32_t key, gasne
       }
 
 #ifdef DEBUG
-  printf("Trying to remove an item not in the table!\n");
+  gasneti_console_message("WARNING","gasnete_table_remove() trying to remove an item not in the table!");
 #endif
 
   return 1; /* item not in the table */

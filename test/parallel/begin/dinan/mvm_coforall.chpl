@@ -6,7 +6,7 @@
 
 use Time;
 
-var t: Timer;
+var t: stopwatch;
 
 config param quiet   = true;
 config const M: uint = 1024;
@@ -27,7 +27,7 @@ if !quiet {
   t.start();
 }
 
-coforall i in A.domain.dim(0) {
+coforall i in A.domain.dim(0) with (ref C) {
   for j in A.domain.dim(1) {
     C[i] += A[i,j] * B[j];
   }

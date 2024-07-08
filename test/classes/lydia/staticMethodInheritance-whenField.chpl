@@ -12,8 +12,10 @@ record Wrapper {
   var x;
 }
 
-var p:borrowed = new Parent();
-var c:borrowed = new Child();
+var ownedP = new Parent();
+var p:borrowed = ownedP;
+var ownedC = new Child();
+var c:borrowed = ownedC;
 var w1 = new Wrapper(p);
 var w2 = new Wrapper(c);
 

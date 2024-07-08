@@ -9,9 +9,8 @@ use IO;
 const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 
 proc main(args: [] string) {
-  const stdin = openfd(0),
-        input = stdin.reader(iokind.native, locking=false,
-                             hints=ioHintSet.direct(QIO_HINT_PARALLEL)),
+  const stdin = new file(0),
+        input = stdin.reader(locking=false, hints=ioHintSet.mmap(true)),
         len = stdin.size;
   var data: [0..#len] uint(8);
 
@@ -22,7 +21,7 @@ proc main(args: [] string) {
       const descOffset = input.mark();
 
       // Scan forward until we get to '\n' (end of description)
-      input.advancePastByte("\n".toByte());
+      input.advanceThrough("\n");
       const seqOffset = input.offset();
 
       // Scan forward until we get to '>' (end of sequence) or EOF
@@ -31,8 +30,8 @@ proc main(args: [] string) {
       // look for the next description, returning '(eof, its offset)'
       proc findNextDesc() throws {
         try {
-          input.advancePastByte(">".toByte());
-        } catch (e:EOFError) {
+          input.advanceThrough(">");
+        } catch (e:UnexpectedEofError) {
           return (true, len-1);
         }
         return (false, input.offset()-1);
@@ -42,7 +41,7 @@ proc main(args: [] string) {
       input.revert();
 
       // Read up to the nextDescOffset into the data array.
-      input.read(data[descOffset..nextDescOffset]);
+      input.readBinary(data[descOffset..nextDescOffset]);
 
       // chars to rewind past: 1 for '\n' and 1 for '>' if we're not yet at eof
       const rewind = if eof then 1 else 2;
@@ -53,14 +52,13 @@ proc main(args: [] string) {
   }
 
   // write the data out to stdout once all tasks have completed
-  const stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                     hints=ioHintSet.direct(QIO_CH_ALWAYS_UNBUFFERED));
-  stdoutBin.write(data);
+  const stdoutBin = (new file(1)).writer(locking=false);
+  stdoutBin.writeBinary(data);
 }
 
 // process a sequence from both ends, replacing each extreme element
 // with the table lookup of the opposite one
-proc process(seq: [?inds]) {
+proc process(ref seq: [?inds]) {
   var start = inds.low, end = inds.high;
   while start <= end {
     ref d1 = seq[start], d2 = seq[end];

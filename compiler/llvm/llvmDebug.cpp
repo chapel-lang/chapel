@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -74,6 +74,11 @@ for more information on LLVM debug information.
 char current_dir[128];
 llvm::DenseMap<const Type *, llvm::MDNode *> myTypeDescriptors;
 
+// Ifdef'd to avoid unused warning, because its only usage has the same ifdef.
+// If this gets used elsewhere the ifdef can be removed; besides the warning,
+// there is nothing wrong with this code being included without
+// HAVE_LLVM_TYPED_POINTERS.
+#ifdef HAVE_LLVM_TYPED_POINTERS
 static
 std::string myGetTypeName(llvm::Type *ty) {
   std::string TypeName;
@@ -85,6 +90,7 @@ std::string myGetTypeName(llvm::Type *ty) {
   TypeStream.flush();
   return TypeName;
 }
+#endif
 
 static
 llvm::MDNode *myGetType(const Type *type) {
@@ -105,7 +111,7 @@ void debug_data::create_compile_unit(const char *file, const char *directory, bo
   this->optimized = is_optimized;
   char version[128];
   char chapel_string[256];
-  get_version(version);
+  get_version(version, sizeof(version));
   snprintf(chapel_string, 256, "Chapel version %s", version);
   strncpy(current_dir, directory,sizeof(current_dir)-1);
 
@@ -127,7 +133,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
   GenInfo* info = gGenInfo;
   const llvm::DataLayout& layout = info->module->getDataLayout();
 
-  llvm::Type* ty = type->symbol->llvmType;
+  llvm::Type* ty = type->symbol->getLLVMType();
   const char* name = type->symbol->name;
   ModuleSymbol* defModule = type->symbol->getModule();
   const char* defFile = type->symbol->fname();
@@ -164,7 +170,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         get_type(type->getValType()),//it should return the pointee's DIType
         layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
         0, /* alignment */
-        llvm::None,
+        chpl::empty,
         name);
 
       myTypeDescriptors[type] = N;
@@ -172,8 +178,10 @@ llvm::DIType* debug_data::construct_type(Type *type)
     }
     else {
       if(type->astTag == E_PrimitiveType) {
+        // TODO: reimplement this properly within the Chapel type system
+#ifdef HAVE_LLVM_TYPED_POINTERS
         llvm::Type *PointeeTy = ty->getPointerElementType();
-        // handle string, c_string, nil, opaque, c_void_ptr
+        // handle string, c_string, nil, opaque, raw_c_void_ptr
         if(PointeeTy->isIntegerTy()) {
           llvm::DIType* pteIntDIType; //create the DI-pointeeType
           pteIntDIType = this->dibuilder.createBasicType(
@@ -185,7 +193,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
             pteIntDIType,
             layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
             0,
-            llvm::None,
+            chpl::empty,
             name);
 
           myTypeDescriptors[type] = N;
@@ -203,7 +211,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
             layout.getTypeSizeInBits(PointeeTy):
             8), /* SizeInBits */
             (PointeeTy->isSized()?
-            8*layout.getABITypeAlignment(PointeeTy):
+            8*layout.getABITypeAlign(PointeeTy).value():
             8), /* AlignInBits */
             llvm::DINode::FlagZero, /* Flags */
             NULL, /* DerivedFrom */
@@ -214,12 +222,15 @@ llvm::DIType* debug_data::construct_type(Type *type)
             pteStrDIType,
             layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
             0,
-            llvm::None,
+            chpl::empty,
             name);
 
           myTypeDescriptors[type] = N;
           return llvm::cast_or_null<llvm::DIType>(N);
         }
+#else
+        return NULL;
+#endif
       }
       else if(type->astTag == E_AggregateType) {
         // dealing with classes
@@ -239,7 +250,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
               get_type(vt),
               layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
               0,
-              llvm::None,
+              chpl::empty,
               name);
 
             myTypeDescriptors[type] = N;
@@ -261,7 +272,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
               defLine,
               0, // RuntimeLang
               layout.getTypeSizeInBits(ty),
-              8*layout.getABITypeAlignment(ty));
+              8*layout.getABITypeAlign(ty).value());
 
             //N is added to the map (early) so that element search below can find it,
             //so as to avoid infinite recursion for structs that contain pointers to
@@ -274,7 +285,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
               const char* fieldDefFile = field->defPoint->fname();
               int fieldDefLine = field->defPoint->linenum();
               TypeSymbol* fts = field->type->symbol;
-              llvm::Type* fty = fts->llvmType;
+              llvm::Type* fty = fts->getLLVMType();
               llvm::DIType* mty;
               llvm::DIType* fditype =  get_type(field->type);
               if(fditype == NULL)
@@ -291,7 +302,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
                 get_file(fieldDefFile),
                 fieldDefLine,
                 layout.getTypeSizeInBits(fty),
-                8*layout.getABITypeAlignment(fty),
+                8*layout.getABITypeAlign(fty).value(),
                 slayout->getElementOffsetInBits(this_class->getMemberGEP(field->cname, unused)),
                 llvm::DINode::FlagZero,
                 fditype);
@@ -306,7 +317,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
               get_file(defFile), /* File */
               defLine, /* LineNumber */
               layout.getTypeSizeInBits(ty), /* SizeInBits */
-              8*layout.getABITypeAlignment(ty), /* AlignInBits */
+              8*layout.getABITypeAlign(ty).value(), /* AlignInBits */
               llvm::DINode::FlagZero, /* Flags */
               derivedFrom, /* DerivedFrom */
               this->dibuilder.getOrCreateArray(EltTys) /* Elements */
@@ -340,7 +351,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
       defLine,
       0, // RuntimeLang
       layout.getTypeSizeInBits(ty),
-      8*layout.getABITypeAlignment(ty));
+      8*layout.getABITypeAlign(ty).value());
 
     //N is added to the map (early) so that element search below can find it,
     //so as to avoid infinite recursion for structs that contain pointers to
@@ -351,7 +362,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
       const char* fieldDefFile = field->defPoint->fname();
       int fieldDefLine = field->defPoint->linenum();
       TypeSymbol* fts = field->type->symbol;
-      llvm::Type* fty = fts->llvmType;
+      llvm::Type* fty = fts->getLLVMType();
       llvm::DIType* fditype =  get_type(field->type);
       if(fditype == NULL)
       // See line 270 for a comment about this if
@@ -371,7 +382,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         get_file(fieldDefFile),
         fieldDefLine,
         layout.getTypeSizeInBits(fty),
-        8*layout.getABITypeAlignment(fty),
+        8*layout.getABITypeAlign(fty).value(),
         slayout->getElementOffsetInBits(this_class->getMemberGEP(field->cname, unused)),
         llvm::DINode::FlagZero,
         fditype);
@@ -386,7 +397,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         get_file(defFile),
         defLine,
         layout.getTypeSizeInBits(ty),
-        8*layout.getABITypeAlignment(ty),
+        8*layout.getABITypeAlign(ty).value(),
         llvm::DINode::FlagZero,
         derivedFrom,
         this->dibuilder.getOrCreateArray(EltTys));
@@ -401,7 +412,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         get_file(defFile),
         defLine,
         layout.getTypeSizeInBits(ty),
-        8*layout.getABITypeAlignment(ty),
+        8*layout.getABITypeAlign(ty).value(),
         llvm::DINode::FlagZero,
         derivedFrom,
         this->dibuilder.getOrCreateArray(EltTys));
@@ -416,7 +427,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         get_file(defFile),
         defLine,
         layout.getTypeSizeInBits(ty),
-        8*layout.getABITypeAlignment(ty),
+        8*layout.getABITypeAlign(ty).value(),
         llvm::DINode::FlagZero,
         this->dibuilder.getOrCreateArray(EltTys));
 
@@ -438,7 +449,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
     if (get_type(eleType) == NULL) return NULL;
     N = this->dibuilder.createArrayType(
       Asize,
-      8*layout.getABITypeAlignment(ty),
+      8*layout.getABITypeAlign(ty).value(),
       get_type(eleType),
       this->dibuilder.getOrCreateArray(Subscripts));
 
@@ -453,11 +464,11 @@ llvm::DIType* debug_data::construct_type(Type *type)
   // These are some debug prints for helping find these types.
   //
   /*printf("Unhandled type: %s\n\ttype->astTag=%i\n", type->symbol->name, type->astTag);
-  if(type->symbol->llvmType) {
-    printf("\tllvmType->getTypeID() = %i\n", type->symbol->llvmType->getTypeID());
+  if(type->symbol->getLLVMType()) {
+    printf("\tllvmImplType->getTypeID() = %i\n", type->symbol->getLLVMType()->getTypeID());
   }
   else {
-    printf("\tllvmType is NULL\n");
+    printf("\tllvmImplType is NULL\n");
   }*/
 
   return NULL;
@@ -550,7 +561,6 @@ llvm::DISubprogram* debug_data::construct_function(FnSymbol *function)
 
   llvm::DISubroutineType* function_type = get_function_type(function);
 
-#if HAVE_LLVM_VER >= 80
   llvm::DISubprogram::DISPFlags SPFlags = llvm::DISubprogram::SPFlagDefinition;
   if (!function->hasFlag(FLAG_EXPORT))
     SPFlags |= llvm::DISubprogram::SPFlagLocalToUnit;
@@ -566,21 +576,6 @@ llvm::DISubprogram* debug_data::construct_function(FnSymbol *function)
     llvm::DINode::FlagZero, /* flags */
     SPFlags /* subprogram flags */
     );
-#else
-  llvm::DISubprogram* ret = this->dibuilder.createFunction(
-    module, /* scope */
-    name, /* name */
-    cname, /* linkage name */
-    file, line_number, function_type,
-    !function->hasFlag(FLAG_EXPORT), /* is local to unit */
-    true, /* is definition */
-    line_number, /* beginning of scope we start */
-    llvm::DINode::FlagZero, /* flags */
-    optimized /* isOptimized */
-    // TODO - in 3.8, do we need to pass Decl?
-    );
-
-#endif
   return ret;
 }
 

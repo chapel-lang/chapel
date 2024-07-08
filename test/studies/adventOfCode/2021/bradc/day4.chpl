@@ -6,7 +6,7 @@ var numbers: list(int);
 
 while true {
   const num = read(int);
-  numbers.append(num);
+  numbers.pushBack(num);
   try {
     readf(",");
   } catch {
@@ -52,7 +52,7 @@ proc playBingo() {
   halt("We didn't find a winner before running out of numbers");
 }
 
-proc lookForWinner(Checks: [] [1..5, 1..5] bool) {
+proc lookForWinner(ref Checks: [] [1..5, 1..5] bool) {
   for i in Checks.domain {
     ref b = Checks[i];
 

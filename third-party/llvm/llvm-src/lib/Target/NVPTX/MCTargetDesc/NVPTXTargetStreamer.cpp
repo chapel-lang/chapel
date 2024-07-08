@@ -21,8 +21,11 @@ using namespace llvm;
 // NVPTXTargetStreamer Implemenation
 //
 NVPTXTargetStreamer::NVPTXTargetStreamer(MCStreamer &S) : MCTargetStreamer(S) {}
-
 NVPTXTargetStreamer::~NVPTXTargetStreamer() = default;
+
+NVPTXAsmTargetStreamer::NVPTXAsmTargetStreamer(MCStreamer &S)
+    : NVPTXTargetStreamer(S) {}
+NVPTXAsmTargetStreamer::~NVPTXAsmTargetStreamer() = default;
 
 void NVPTXTargetStreamer::outputDwarfFileDirectives() {
   for (const std::string &S : DwarfFiles)
@@ -93,7 +96,7 @@ void NVPTXTargetStreamer::changeSection(const MCSection *CurSection,
     // Emit DWARF .file directives in the outermost scope.
     outputDwarfFileDirectives();
     OS << "\t.section";
-    Section->PrintSwitchToSection(*getStreamer().getContext().getAsmInfo(),
+    Section->printSwitchToSection(*getStreamer().getContext().getAsmInfo(),
                                   getStreamer().getContext().getTargetTriple(),
                                   OS, SubSection);
     // DWARF sections are enclosed into braces - emit the open one.

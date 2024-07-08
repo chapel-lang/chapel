@@ -1,19 +1,18 @@
 use IO, CTypes;
-import SysBasic.syserr;
 
-extern proc printf(fmt: c_string, x:c_ptr(int(64)), y:c_ptr(int(64)));
-extern proc printf(fmt: c_string, a:c_int, x:c_ptr(int(64)));
+extern proc printf(fmt: c_ptrConst(c_char), x:c_ptr(int(64)), y:c_ptr(int(64)));
+extern proc printf(fmt: c_ptrConst(c_char), a:c_int, x:c_ptr(int(64)));
 extern proc getaddress():c_ptr(int(64));
 extern proc getaddress2():c_ptr(int(64));
 
-extern proc qio_format_error_too_many_args():syserr;
+extern proc qio_format_error_too_many_args():errorCode;
 
 //extern proc qio_error_get_base():c_ptr(int(64));
-//extern proc qio_print_raw_error(x:syserr);
+//extern proc qio_print_raw_error(x:errorCode);
 
 config const quiet = false;
 
-var errs:[0..#numLocales] syserr;
+var errs:[0..#numLocales] errorCode;
 
 for i in 0..#numLocales {
   on Locales[i] {
@@ -24,7 +23,7 @@ for i in 0..#numLocales {
       stdout.flush();
     }
 
-    var err:syserr;
+    var err:errorCode;
     // Generate a fancy error code.
     err = qio_format_error_too_many_args();
 

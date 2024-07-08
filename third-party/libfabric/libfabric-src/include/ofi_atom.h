@@ -166,6 +166,25 @@ typedef atomic_long	ofi_atomic_int64_t;
 					int##radix##_t desired)						\
 	{												\
 		return ofi_atomic_cas_bool_strong##radix(atomic, expected, desired);			\
+	}												\
+	static inline											\
+	bool ofi_atomic_compare_exchange_weak##radix(ofi_atomic##radix##_t *atomic, 			\
+					int##radix##_t *expected,					\
+					int##radix##_t desired)						\
+	{												\
+		return atomic_compare_exchange_weak(&atomic->val, expected, desired);			\
+	}												\
+	static inline											\
+	void ofi_atomic_store_explicit##radix(ofi_atomic##radix##_t *atomic,				\
+					      int##radix##_t value, int memmodel)			\
+	{												\
+		atomic_store_explicit(&atomic->val, value, memmodel);					\
+	}												\
+	static inline											\
+	int##radix##_t ofi_atomic_load_explicit##radix(ofi_atomic##radix##_t *atomic,			\
+						       int memmodel)					\
+	{												\
+		return atomic_load_explicit(&atomic->val, memmodel);					\
 	}
 
 #elif defined HAVE_BUILTIN_ATOMICS
@@ -249,13 +268,33 @@ typedef atomic_long	ofi_atomic_int64_t;
 					     int##radix##_t desired)					\
 	{												\
 		return ofi_atomic_cas_bool##radix(atomic, expected, desired);				\
+	}												\
+	static inline											\
+	bool ofi_atomic_compare_exchange_weak##radix(ofi_atomic##radix##_t *atomic,			\
+					int##radix##_t *expected,					\
+					int##radix##_t desired)						\
+	{												\
+		return ofi_atomic_compare_exchange_weak(radix, ofi_atomic_ptr(atomic), expected,	\
+						desired, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);		\
+	}												\
+	static inline											\
+	void ofi_atomic_store_explicit##radix(ofi_atomic##radix##_t *atomic,				\
+					      int##radix##_t value, int memmodel)			\
+	{												\
+		ofi_atomic_store_explicit(radix, ofi_atomic_ptr(atomic), value, memmodel);		\
+	}												\
+	static inline											\
+	int##radix##_t ofi_atomic_load_explicit##radix(ofi_atomic##radix##_t *atomic,			\
+						       int memmodel)					\
+	{												\
+		return ofi_atomic_load_explicit(radix, ofi_atomic_ptr(atomic), memmodel);		\
 	}
 
 #else /* HAVE_ATOMICS */
 
 #define OFI_ATOMIC_DEFINE(radix)								\
 	typedef	struct {									\
-		fastlock_t lock;								\
+		ofi_spin_t lock;								\
 		int##radix##_t val;								\
 		ATOMIC_DEF_INIT;								\
 	} ofi_atomic##radix##_t;								\
@@ -265,9 +304,9 @@ typedef atomic_long	ofi_atomic_int64_t;
 	{											\
 		int##radix##_t v = 0;								\
 		ATOMIC_IS_INITIALIZED(atomic);							\
-		fastlock_acquire(&atomic->lock);						\
+		ofi_spin_lock(&atomic->lock);						\
 		v = ++(atomic->val);								\
-		fastlock_release(&atomic->lock);						\
+		ofi_spin_unlock(&atomic->lock);						\
 		return v;									\
 	}											\
 	static inline										\
@@ -275,9 +314,9 @@ typedef atomic_long	ofi_atomic_int64_t;
 	{											\
 		int##radix##_t v = 0;								\
 		ATOMIC_IS_INITIALIZED(atomic);							\
-		fastlock_acquire(&atomic->lock);						\
+		ofi_spin_lock(&atomic->lock);						\
 		v = --(atomic->val);								\
-		fastlock_release(&atomic->lock);						\
+		ofi_spin_unlock(&atomic->lock);						\
 		return v;									\
 	}											\
 	static inline										\
@@ -285,9 +324,9 @@ typedef atomic_long	ofi_atomic_int64_t;
 					     int##radix##_t value)				\
 	{											\
 		ATOMIC_IS_INITIALIZED(atomic);							\
-		fastlock_acquire(&atomic->lock);						\
+		ofi_spin_lock(&atomic->lock);						\
 		atomic->val = value;								\
-		fastlock_release(&atomic->lock);						\
+		ofi_spin_unlock(&atomic->lock);						\
 		return value;									\
 	}											\
 	static inline int##radix##_t ofi_atomic_get##radix(ofi_atomic##radix##_t *atomic)	\
@@ -299,7 +338,7 @@ typedef atomic_long	ofi_atomic_int64_t;
 	void ofi_atomic_initialize##radix(ofi_atomic##radix##_t *atomic,			\
 					  int##radix##_t value)					\
 	{											\
-		fastlock_init(&atomic->lock);							\
+		ofi_spin_init(&atomic->lock);							\
 		atomic->val = value;								\
 		ATOMIC_INIT(atomic);								\
 	}											\
@@ -309,10 +348,10 @@ typedef atomic_long	ofi_atomic_int64_t;
 	{											\
 		int##radix##_t v;								\
 		ATOMIC_IS_INITIALIZED(atomic);							\
-		fastlock_acquire(&atomic->lock);						\
+		ofi_spin_lock(&atomic->lock);						\
 		atomic->val += val;								\
 		v = atomic->val;								\
-		fastlock_release(&atomic->lock);						\
+		ofi_spin_unlock(&atomic->lock);						\
 		return v;									\
 	}											\
 	static inline										\
@@ -321,10 +360,10 @@ typedef atomic_long	ofi_atomic_int64_t;
 	{											\
 		int##radix##_t v;								\
 		ATOMIC_IS_INITIALIZED(atomic);							\
-		fastlock_acquire(&atomic->lock);						\
+		ofi_spin_lock(&atomic->lock);						\
 		atomic->val -= val;								\
 		v = atomic->val;								\
-		fastlock_release(&atomic->lock);						\
+		ofi_spin_unlock(&atomic->lock);						\
 		return v;									\
 	}											\
 	static inline										\
@@ -334,12 +373,12 @@ typedef atomic_long	ofi_atomic_int64_t;
 	{											\
 		bool ret = false;								\
 		ATOMIC_IS_INITIALIZED(atomic);							\
-		fastlock_acquire(&atomic->lock);						\
+		ofi_spin_lock(&atomic->lock);						\
 		if (atomic->val == expected) {							\
 			atomic->val = desired;							\
 			ret = true;								\
 		}										\
-		fastlock_release(&atomic->lock);						\
+		ofi_spin_unlock(&atomic->lock);						\
 		return ret;									\
 	}											\
 	static inline										\
@@ -355,7 +394,26 @@ typedef atomic_long	ofi_atomic_int64_t;
 							 int##radix##_t desired)		\
 	{											\
 		return ofi_atomic_cas_bool##radix(atomic, expected, desired);			\
-	}
+	}											\
+	static inline										\
+	bool ofi_atomic_compare_exchange_weak##radix(ofi_atomic##radix##_t *atomic,		\
+					int##radix##_t *expected,				\
+					int##radix##_t desired)					\
+	{											\
+		return ofi_atomic_cas_bool_weak##radix(atomic, *expected, desired);		\
+	}											\
+	static inline										\
+	void ofi_atomic_store_explicit##radix(ofi_atomic##radix##_t *atomic,			\
+					      int##radix##_t value, int memmodel)		\
+	{											\
+		(void) ofi_atomic_set##radix(atomic, value);						\
+	}											\
+	static inline										\
+	int##radix##_t ofi_atomic_load_explicit##radix(ofi_atomic##radix##_t *atomic,		\
+						       int memmodel)				\
+	{											\
+		return ofi_atomic_get##radix(atomic);						\
+	}											\
 
 #endif // HAVE_ATOMICS
 

@@ -1,10 +1,6 @@
 === at the module level ===
 in begin
 b0 false
-b8 false
-b16 false
-b32 false
-b64 false
 u8 0
 u16 0
 u32 0
@@ -28,10 +24,6 @@ arr2 0 0
 0 0
 after begin
 b0 true
-b8 true
-b16 true
-b32 true
-b64 true
 u8 78
 u16 716
 u32 70032
@@ -56,10 +48,6 @@ arr2 33033 33033
 === in a function ===
 in begin
 b0 false
-b8 false
-b16 false
-b32 false
-b64 false
 u8 0
 u16 0
 u32 0
@@ -83,10 +71,6 @@ arr2 0 0
 0 0
 after begin
 b0 true
-b8 true
-b16 true
-b32 true
-b64 true
 u8 78
 u16 716
 u32 70032
@@ -111,10 +95,6 @@ arr2 33033 33033
 === in a begin ===
 in begin
 b0 false
-b8 false
-b16 false
-b32 false
-b64 false
 u8 0
 u16 0
 u32 0
@@ -138,10 +118,6 @@ arr2 0 0
 0 0
 after begin
 b0 true
-b8 true
-b16 true
-b32 true
-b64 true
 u8 78
 u16 716
 u32 70032
@@ -166,10 +142,6 @@ arr2 33033 33033
 === in a cobegin ===
 in begin
 b0 false
-b8 false
-b16 false
-b32 false
-b64 false
 u8 0
 u16 0
 u32 0
@@ -193,10 +165,6 @@ arr2 0 0
 0 0
 after begin
 b0 true
-b8 true
-b16 true
-b32 true
-b64 true
 u8 78
 u16 716
 u32 70032
@@ -221,10 +189,6 @@ arr2 33033 33033
 === in a coforall ===
 in begin
 b0 false
-b8 false
-b16 false
-b32 false
-b64 false
 u8 0
 u16 0
 u32 0
@@ -248,10 +212,6 @@ arr2 0 0
 0 0
 after begin
 b0 true
-b8 true
-b16 true
-b32 true
-b64 true
 u8 78
 u16 716
 u32 70032

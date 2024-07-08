@@ -1,3 +1,0 @@
-unhandledType.chpl:1: In function 'takesCstring':
-unhandledType.chpl:1: warning: Unknown Fortran KIND generating interface for C type: c_string
-unhandledType.chpl:1: warning: Unknown Fortran type generating interface for C type: c_string

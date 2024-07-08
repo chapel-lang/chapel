@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,9 +36,9 @@
 
       - insert
       - remove
-      - sort
       - pop
       - clear
+      - sort
 
   Additionally, all references to list elements are invalidated when the list
   is deinitialized.
@@ -46,7 +46,9 @@
   Lists are not parallel safe by default, but can be made parallel safe by
   setting the param formal `parSafe` to true in any list constructor. When
   constructed from another list, the new list will inherit the parallel safety
-  mode of its originating list.
+  mode of its originating list. Note that the ``parSafe`` mode is currently
+  unstable and will eventually be replaced by a standalone parallel-safe list
+  type.
 
   Inserts and removals into a list are O(n) worst case and should be performed
   with care. Appends into a list have an amortized speed of O(1). Indexing
@@ -56,14 +58,15 @@ module List {
   import ChapelLocks;
   private use HaltWrappers;
   private use Sort;
+  private use Math;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   private const _initialCapacity = 8;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   private const _initialArrayCapacity = 16;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   private param _sanityChecks = false;
 
   //
@@ -81,41 +84,47 @@ module List {
   // contention (IE, lots of tasks trying to insert into the middle of this
   // list, or any operation that is O(n)).
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
   //
   // Use a wrapper class to let list methods have a const ref receiver even
   // when `parSafe` is `true` and the list lock is used.
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
   /* Check that element type is supported by list */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _checkType(type eltType) param {
     if isGenericType(eltType) {
       compilerWarning("creating a list with element type " +
-                      eltType:string);
-      if isClassType(eltType) && !isGenericType(borrowed eltType) {
-        compilerWarning("which now means class type with generic management");
+                      eltType:string, 2);
+      if isClassType(eltType) && !isGenericType(eltType:borrowed) {
+        compilerWarning("which is a class type with generic management", 2);
       }
-      compilerError("list element type cannot currently be generic");
+      compilerError("list element type cannot currently be generic", 2);
       // In the future we might support it if the list is not default-inited
+    }
+    if eltType == void {
+      compilerError("list element type cannot be 'void'", 2);
+    }
+    if eltType == nothing {
+      compilerError("list element type cannot be 'nothing'", 2);
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _dummyFieldType(type t) type {
     if isBorrowedClass(t) {
       return t?;
@@ -125,6 +134,15 @@ module List {
   }
 
   private use IO;
+
+  /* Impacts whether the copy initializer that takes a list will generate a
+     warning when the other list has a different ``parSafe`` setting than the
+     destination.  Compile with ``-swarnForListParsafeMismatch=false`` to turn
+     off this warning.
+
+     Defaults to ``true``
+  */
+  config param warnForListParsafeMismatch = true;
 
   /*
     A list is a lightweight container suitable for building up and iterating
@@ -139,27 +157,28 @@ module List {
 
     Unlike an array, the set of indices of a list is always `0..<size`.
   */
-  record list {
+  record list : serializable {
 
     /* The type of the elements contained in this list. */
     type eltType;
 
-    /* If `true`, this list will perform parallel safe operations. */
+    /*If `true`, this list will perform parallel safe operations.*/
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
     param parSafe = false;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _size = 0;
 
-    pragma "no doc"
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    @chpldoc.nodoc
+    var _lock = if parSafe then new _LockWrapper() else none;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _arrays: _ddata(_ddata(eltType)) = nil;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _arrayCapacity = 0;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _totalCapacity = 0;
 
     //
@@ -168,8 +187,21 @@ module List {
     // Otherwise, instantiate it as a `nothing` and let the compiler fold
     // it away. See #15575.
     //
-    pragma "no doc"
+    @chpldoc.nodoc
     var _dummyFieldToForceBorrowChecking: _dummyFieldType(eltType);
+
+    /*
+      Initializes an empty list.
+
+      :arg eltType: The type of the elements of this list.
+    */
+    proc init(type eltType) {
+      _checkType(eltType);
+      this.eltType = eltType;
+      this.parSafe = false;
+      init this;
+      this._firstTimeInitializeArrays();
+    }
 
     /*
       Initializes an empty list.
@@ -179,12 +211,32 @@ module List {
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
     */
+    pragma "last resort"
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
     proc init(type eltType, param parSafe=false) {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       this._firstTimeInitializeArrays();
+    }
+
+    /*
+      Initializes a list containing elements that are copy initialized from
+      the elements contained in another list.
+
+      Used in new expressions.
+
+      :arg other: The list to initialize from.
+    */
+    proc init(other: list(?t)) {
+      if !isCopyableType(this.type.eltType) then
+        compilerError("Cannot copy list with element type that " +
+                      "cannot be copied");
+      this.eltType = t;
+      this.parSafe = other.parSafe;
+      init this;
+      _commonInitFromIterable(other);
     }
 
     /*
@@ -198,13 +250,35 @@ module List {
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
     */
-    proc init(other: list(?t), param parSafe=false) {
+    pragma "last resort"
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
+    proc init(other: list(?t), param parSafe=other.parSafe) {
       if !isCopyableType(this.type.eltType) then
         compilerError("Cannot copy list with element type that " +
                       "cannot be copied");
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
+      _commonInitFromIterable(other);
+    }
+
+    /*
+      Initializes a list containing elements that are copy initialized from
+      the elements contained in an array.
+
+      Used in new expressions.
+
+      :arg other: The array to initialize from.
+    */
+    proc init(other: [?d] ?t) {
+      _checkType(t);
+      if !isCopyableType(t) then
+        compilerError("Cannot construct list from array with element " +
+                      "type that cannot be copied");
+
+      this.eltType = t;
+      this.parSafe = false;
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -219,6 +293,8 @@ module List {
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
     */
+    pragma "last resort"
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
     proc init(other: [?d] ?t, param parSafe=false) {
       _checkType(t);
       if !isCopyableType(t) then
@@ -227,7 +303,36 @@ module List {
 
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
+      _commonInitFromIterable(other);
+    }
+
+    /*
+      Initializes a list containing elements that are copy initialized from
+      the elements yielded by a range.
+
+      Used in new expressions.
+
+      .. note::
+
+        Attempting to initialize a list from an unbounded range will trigger
+        a compiler error.
+
+      :arg other: The range to initialize from.
+    */
+    proc init(other: range(?t)) {
+      _checkType(t);
+      this.eltType = t;
+      this.parSafe = false;
+
+      if other.bounds != boundKind.both {
+        param e = this.type:string;
+        param f = other.type:string;
+        param msg = "Cannot init " + e + " from unbounded " + f;
+        compilerError(msg);
+      }
+
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -247,19 +352,42 @@ module List {
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
     */
+    pragma "last resort"
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
     proc init(other: range(?t), param parSafe=false) {
       _checkType(t);
       this.eltType = t;
       this.parSafe = parSafe;
 
-      if !isBoundedRange(other) {
+      if other.bounds != boundKind.both {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot init " + e + " from unbounded " + f;
         compilerError(msg);
       }
 
-      this.complete();
+      init this;
+      _commonInitFromIterable(other);
+    }
+
+    /*
+      Initializes a list containing elements that are copy initialized from
+      the elements yielded by an iterator expression.
+
+      Used in new expressions.
+
+      :arg other: The iterator expression to initialize from.
+    */
+    @chpldoc.nodoc
+    proc init(other: _iteratorRecord) {
+      // get the type yielded by the iterator
+      type t = __primitive("scalar promotion type", other.type);
+
+      _checkType(t);
+      this.eltType = t;
+      this.parSafe = false;
+
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -274,6 +402,9 @@ module List {
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
     */
+    pragma "last resort"
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
+    @chpldoc.nodoc
     proc init(other: _iteratorRecord, param parSafe=false) {
       // get the type yielded by the iterator
       type t = __primitive("scalar promotion type", other.type);
@@ -282,7 +413,7 @@ module List {
       this.eltType = t;
       this.parSafe = parSafe;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -290,8 +421,6 @@ module List {
     /*
       Initializes a list containing elements that are copy initialized from
       the elements contained in another list.
-
-      ``this.parSafe`` will default to ``false`` if it is not yet set.
 
       :arg other: The list to initialize from.
     */
@@ -304,12 +433,17 @@ module List {
       this.eltType = if this.type.eltType != ?
                      then this.type.eltType
                      else other.eltType;
-      // set parSafe to false if it was not already provided in lhs type
+      // set parSafe to other.parSafe if it was not already provided in lhs type
       this.parSafe = if this.type.parSafe != ?
                      then this.type.parSafe
-                     else false;
+                     else other.parSafe;
 
-      this.complete();
+      if (this.parSafe != other.parSafe && warnForListParsafeMismatch) {
+        compilerWarning("initializing between two lists with different " +
+                        "parSafe settings\n" + "Note: this warning can be " +
+                        "silenced with '-swarnForListParsafeMismatch=false'");
+      }
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -335,7 +469,7 @@ module List {
                      then this.type.parSafe
                      else false;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -353,7 +487,7 @@ module List {
       :arg other: The range to initialize from.
     */
     proc init=(other: range(?)) {
-      if !isBoundedRange(other) {
+      if other.bounds != boundKind.both {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot init " + e + " from unbounded " + f;
@@ -369,7 +503,7 @@ module List {
                      then this.type.parSafe
                      else false;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -381,6 +515,7 @@ module List {
 
       :arg other: The iterator expression to initialize from.
     */
+    @chpldoc.nodoc
     proc init=(other: _iteratorRecord) {
       // get the type yielded by the iterator
       type t = __primitive("scalar promotion type", other.type);
@@ -394,19 +529,27 @@ module List {
                      then this.type.parSafe
                      else false;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
-    pragma "no doc"
-    proc _commonInitFromIterable(iterable) lifetime this < iterable {
+    @chpldoc.nodoc
+    proc ref _commonInitFromIterable(iterable) lifetime this < iterable {
       this._firstTimeInitializeArrays();
-      for x in iterable do
-        append(x);
+      if isSubtype(this.eltType, list) || isArrayType(this.eltType) {
+        for x in iterable {
+          var tmp: this.eltType = x;
+          pushBack(tmp);
+        }
+      } else {
+        for x in iterable {
+          pushBack(x);
+        }
+      }
     }
 
-    pragma "no doc"
-    proc _firstTimeInitializeArrays() {
+    @chpldoc.nodoc
+    proc ref _firstTimeInitializeArrays() {
       _sanity(_arrays == nil);
       _sanity(_totalCapacity == 0);
       _sanity(_size == 0);
@@ -416,8 +559,8 @@ module List {
       _totalCapacity = _initialCapacity;
     }
 
-    pragma "no doc"
-    inline proc deinit() {
+    @chpldoc.nodoc
+    inline proc ref deinit() {
       _fireAllDestructors();
       _freeAllArrays();
       _sanity(_totalCapacity == 0);
@@ -425,39 +568,39 @@ module List {
       _sanity(_arrays == nil);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _destroy(ref item: eltType) {
       chpl__autoDestroy(item);
     }
 
-    pragma "no doc"
     pragma "unsafe"
+    @chpldoc.nodoc
     inline proc _move(ref src: ?t, ref dst: t) lifetime src == dst {
       __primitive("=", dst, src);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _getArrayCapacity(array: int): int {
       const exp = array + log2(_initialCapacity);
       const result = 2 ** exp;
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _getArrayIdx(zpos: int): int {
       const adj = zpos + _initialCapacity;
       const result = log2(adj) - log2(_initialCapacity);
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _getLastArrayIdx(): int {
       const result = _getArrayIdx(_size - 1);
       _sanity(result >= 0);
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _getItemIdx(zpos: int): int {
       const adj = zpos + _initialCapacity;
       const result = adj ^ (1 << log2(adj));
@@ -468,7 +611,7 @@ module List {
     // A helper function for getting a reference to a list element.
     // May be less important now that lists use 0-based indexing(?).
     //
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc const ref _getRef(idx: int) ref {
       _sanity(idx >= 0 && idx < _totalCapacity);
       const arrayIdx = _getArrayIdx(idx);
@@ -479,19 +622,19 @@ module List {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
-        _lock$.lock();
+        _lock.lock();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
-        _lock$.unlock();
+        _lock.unlock();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc const _withinBounds(idx: int): bool {
       return (idx >= 0 && idx < _size);
     }
@@ -501,7 +644,7 @@ module List {
     // held (if parSafe==true), and releases it before throwing an error if
     // a bounds check fails.
     //
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc const _boundsCheckLeaveOnThrow(i: int, umsg: string="") throws {
       if !_withinBounds(i) {
         _leave();
@@ -512,17 +655,17 @@ module List {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _makeBlockArray(size: int) {
       return _ddata_allocate(_ddata(eltType), size);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _freeBlockArray(data: _ddata(_ddata(eltType)), size: int) {
       _ddata_free(data, size);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _makeArray(size: int) {
       var callPostAlloc = false;
       var ret = _ddata_allocate_noinit(eltType, size, callPostAlloc);
@@ -530,13 +673,13 @@ module List {
       return ret;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _freeArray(data: _ddata(eltType), size: int) {
       _ddata_free(data, size);
     }
 
-    pragma "no doc"
-    proc _maybeAcquireMem(amount: int) {
+    @chpldoc.nodoc
+    proc ref _maybeAcquireMem(amount: int) {
 
       const remaining = _totalCapacity - _size;
       _sanity(remaining >= 0);
@@ -595,8 +738,8 @@ module List {
     //
     // This method _does not_ fire destructors!
     //
-    pragma "no doc"
-    proc _maybeReleaseMem(amount: int) {
+    @chpldoc.nodoc
+    proc ref _maybeReleaseMem(amount: int) {
 
       //
       // If we're down to one single "sub array", then there's no sense in
@@ -629,7 +772,7 @@ module List {
     // `shift` positions to the right in memory, possibly resizing. May
     // expand memory if necessary.
     //
-    pragma "no doc"
+    @chpldoc.nodoc
     proc ref _expand(idx: int, shift: int=1) {
       _sanity(_withinBounds(idx));
 
@@ -654,7 +797,7 @@ module List {
     //
     // This method does not fire destructors, so do so before calling it.
     //
-    pragma "no doc"
+    @chpldoc.nodoc
     proc ref _collapse(idx: int) {
       _sanity(_withinBounds(idx));
 
@@ -682,7 +825,7 @@ module List {
     // attached so that you avoid firing a destructor early (and in the worst
     // case, fire it twice).
     //
-    pragma "no doc"
+    @chpldoc.nodoc
     proc ref _appendByRef(ref x: eltType) {
       _maybeAcquireMem(1);
       ref src = x;
@@ -700,7 +843,7 @@ module List {
       :return: List index where element was inserted.
       :rtype: `int`
     */
-    proc ref append(pragma "no auto destroy" in x: this.eltType) : int
+    proc ref pushBack(pragma "no auto destroy" in x: this.eltType) : int
     lifetime this < x {
       _enter();
 
@@ -714,7 +857,7 @@ module List {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc ref _appendGeneric(collection) {
       var startSize: int;
       var endSize: int;
@@ -738,7 +881,7 @@ module List {
     }
 
     /*
-      Append a copy of each element contained in another list to the end of this
+      Push a copy of each element contained in another list to the end of this
       list.
 
       :arg other: A list containing elements of the same type as those
@@ -748,7 +891,7 @@ module List {
       :return: List indices where elements were inserted.
       :rtype: `range`
     */
-    proc ref append(other: list(eltType, ?p)) lifetime this < other {
+    proc ref pushBack(other: list(eltType, ?p)) lifetime this < other {
       var ret: range;
       on this {
         _enter();
@@ -760,7 +903,7 @@ module List {
     }
 
     /*
-      Append a copy of each element contained in an array to the end of this
+      Push a copy of each element contained in an array to the end of this
       list.
 
       :arg other: An array containing elements of the same type as those
@@ -770,7 +913,7 @@ module List {
       :return: List indices where elements were inserted.
       :rtype: `range`
     */
-    proc ref append(other: [?d] eltType) lifetime this < other {
+    proc ref pushBack(other: [?d] eltType) lifetime this < other {
       var ret: range;
       on this {
         _enter();
@@ -781,7 +924,7 @@ module List {
     }
 
     /*
-      Append a copy of each element yielded by a range to the end of this list.
+      Push a copy of each element yielded by a range to the end of this list.
 
       .. note::
 
@@ -794,8 +937,8 @@ module List {
       :return: List indices where elements were inserted.
       :rtype: `range`
     */
-    proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
-      if !isBoundedRange(other) {
+    proc ref pushBack(other: range(eltType, ?b, ?d)) lifetime this < other {
+      if other.bounds != boundKind.both {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot extend " + e + " with unbounded " + f;
@@ -850,7 +993,8 @@ module List {
       :return: A reference to the first item in this list.
       :rtype: `ref eltType`
     */
-    proc ref first() ref {
+    @deprecated(parenful=true, notes="`list.first()` is deprecated; please use the parenless version `list.first` instead")
+    proc ref first ref {
       if parSafe then
         compilerWarning('Calling `first()` on a list initialized with ' +
                         '`parSafe=true` has been deprecated, consider ' +
@@ -881,7 +1025,8 @@ module List {
       :return: A reference to the last item in this list.
       :rtype: `ref eltType`
     */
-    proc ref last() ref {
+    @deprecated(parenful=true, notes="`list.last()` is deprecated; please use the parenless version `list.last` instead")
+    proc ref last ref {
       if parSafe then
         compilerWarning('Calling `last()` on a list initialized with ' +
                         '`parSafe=true` has been deprecated, consider ' +
@@ -900,26 +1045,11 @@ module List {
       return result;
     }
 
-    deprecated "list.extend is deprecated, please use list.append"
-    proc ref extend(other: list(eltType, ?p)) lifetime this < other {
-      append(other);
-    }
-
-    deprecated "list.extend is deprecated, please use list.append"
-    proc ref extend(other: [?d] eltType) lifetime this < other {
-      append(other);
-    }
-
-    deprecated "list.extend is deprecated, please use list.append"
-    proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
-      append(other);
-    }
-
     /*
       Insert an element at a given position in this list, shifting all elements
       currently at and following that index one to the right. The call
       ``a.insert(0, x)`` inserts an element at the front of the list `a`, and
-      ``a.insert((a.size), x)`` is equivalent to ``a.append(x)``.
+      ``a.insert((a.size), x)`` is equivalent to ``a.pushBack(x)``.
 
       If the insertion is successful, this method returns `true`. If the given
       index is out of bounds, this method does nothing and returns `false`.
@@ -966,7 +1096,7 @@ module List {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc ref _insertGenericKnownSize(idx: int, items, size: int): bool {
       var result = false;
 
@@ -1150,7 +1280,7 @@ module List {
     // Not sure if strictly necessary, since we're probably only going to
     // call this from `pop`, but I added `unlockBeforeHalt` all the same.
     //
-    pragma "no doc"
+    @chpldoc.nodoc
     proc ref _popAtIndex(idx: int, unlockBeforeHalt=true): eltType {
 
       //
@@ -1164,13 +1294,13 @@ module List {
       if boundsChecking && _size <= 0 {
         if unlockBeforeHalt then
           _leave();
-        boundsCheckHalt("Called \"list.pop\" on an empty list.");
+        boundsCheckHalt("Called \"list.getAndRemove\" on an empty list.");
       }
 
       if boundsChecking && !_withinBounds(idx) {
         if unlockBeforeHalt then
           _leave();
-        const msg = "Index for \"list.pop\" out of bounds: " + idx:string;
+        const msg = "Index for \"list.getAndRemove\" out of bounds: " + idx:string;
         boundsCheckHalt(msg);
       }
 
@@ -1204,7 +1334,7 @@ module List {
       :return: The element popped.
       :rtype: `eltType`
     */
-    proc ref pop(): eltType {
+    proc ref popBack(): eltType {
       _enter();
       var result = _popAtIndex(_size-1);
       _leave();
@@ -1218,7 +1348,7 @@ module List {
 
       .. warning::
 
-        Popping an element from this list will invalidate any reference to
+        Removing an element from this list will invalidate any reference to
         the element taken while it was contained in this list.
 
       .. warning::
@@ -1233,7 +1363,7 @@ module List {
       :return: The element popped.
       :rtype: `eltType`
     */
-    proc ref pop(idx: int): eltType {
+    proc ref getAndRemove(idx: int): eltType {
       _enter();
       var result = _popAtIndex(idx);
       _leave();
@@ -1245,8 +1375,8 @@ module List {
     // logical consistency, set size to zero once all destructors have been
     // fired.
     //
-    pragma "no doc"
-    proc _fireAllDestructors() {
+    @chpldoc.nodoc
+    proc ref _fireAllDestructors() {
       on this {
         for i in 0..#_size {
           ref item = _getRef(i);
@@ -1257,8 +1387,8 @@ module List {
       return;
     }
 
-    pragma "no doc"
-    proc _freeAllArrays() {
+    @chpldoc.nodoc
+    proc ref _freeAllArrays() {
 
       if _arrays == nil then
         return;
@@ -1287,8 +1417,8 @@ module List {
       return;
     }
 
-    pragma "no doc"
-    proc _clearLocked() {
+    @chpldoc.nodoc
+    proc ref _clearLocked() {
       _fireAllDestructors();
       _freeAllArrays();
       _sanity(_totalCapacity == 0);
@@ -1313,33 +1443,6 @@ module List {
         _clearLocked();
         _leave();
       }
-    }
-
-    /*
-      Return a zero-based index into this list of the first item whose value
-      is equal to `x`. If no such element can be found or if the list is empty,
-      this method returns the value `-1`.
-
-      .. warning::
-
-        indexOf on lists is deprecated, use :proc:`find` instead.
-
-      :arg x: An element to search for.
-      :type x: `eltType`
-
-      :arg start: The start index to start searching from.
-      :type start: `int`
-
-      :arg end: The end index to stop searching at. A value less than
-                `0` will search the entire list.
-      :type end: `int`
-
-      :return: The index of the element to search for, or `-1` on error.
-      :rtype: `int`
-    */
-    deprecated "indexOf on lists is deprecated, use :proc:`find` instead; please let us know if this is problematic for you."
-    proc const indexOf(x: eltType, start: int=0, end: int=-1): int {
-      return find(x, start, end);
     }
 
     /*
@@ -1444,6 +1547,7 @@ module List {
 
       :arg comparator: A comparator used to sort this list.
     */
+    @unstable("'list.sort' is unstable and may be replaced or modified in a future release")
     proc ref sort(comparator: ?rec=Sort.defaultComparator) {
       on this {
         _enter();
@@ -1521,10 +1625,10 @@ module List {
     }
 
     /*
-      Sets the element at a given index in this list. This method returns
+      Replaces the value at a given index with a new value. This method returns
       `false` if the index is out of bounds.
 
-      :arg i: The index of the element to set
+      :arg i: The index of the element to replace
       :type i: int
 
       :arg x: The value to set at index `i`
@@ -1533,7 +1637,7 @@ module List {
                and `false` otherwise.
       :rtype: bool
     */
-    proc ref set(i: int, pragma "no auto destroy" in x: eltType): bool {
+    proc ref replace(i: int, pragma "no auto destroy" in x: eltType): bool {
       _enter(); defer _leave();
 
       if !_withinBounds(i) {
@@ -1589,7 +1693,7 @@ module List {
       return updater(i, slot);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _warnForParSafeIndexing() {
       if parSafe then
         compilerWarning('Indexing a list initialized with `parSafe=true` ' +
@@ -1630,7 +1734,7 @@ module List {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const ref this(i: int) const ref {
       _warnForParSafeIndexing();
 
@@ -1658,12 +1762,15 @@ module List {
         yield _getRef(i);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     iter these(param tag: iterKind) ref where tag == iterKind.standalone {
       const osz = _size;
       const minChunkSize = 64;
       const hasOneChunk = osz <= minChunkSize;
-      const numTasks = if hasOneChunk then 1 else here.maxTaskPar;
+      const numTasks = if hasOneChunk then 1
+        else if dataParTasksPerLocale > 0
+          then dataParTasksPerLocale
+            else here.maxTaskPar;
       const chunkSize = floor(osz / numTasks):int;
       const trailing = osz - chunkSize * numTasks;
 
@@ -1676,7 +1783,7 @@ module List {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _computeChunk(tid, chunkSize, trailing) {
       var lo, hi = 0;
 
@@ -1691,12 +1798,15 @@ module List {
       return (lo..hi,);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     iter these(param tag) ref where tag == iterKind.leader {
       const osz = _size;
       const minChunkSize = 32;
       const hasOneChunk = osz <= minChunkSize;
-      const numTasks = if hasOneChunk then 1 else dataParTasksPerLocale;
+      const numTasks = if hasOneChunk then 1
+        else if dataParTasksPerLocale > 0
+          then dataParTasksPerLocale
+            else here.maxTaskPar;
       const chunkSize = floor(osz / numTasks):int;
       const trailing = osz - chunkSize * numTasks;
 
@@ -1707,7 +1817,7 @@ module List {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     iter these(param tag, followThis) ref where tag == iterKind.follower {
 
       //
@@ -1719,103 +1829,54 @@ module List {
     }
 
     /*
-      Write the contents of this list to a channel.
-
-      :arg ch: A channel to write to.
+      Write the contents of this list to a ``fileWriter``.
     */
-    proc writeThis(ch: channel) throws {
-      var isBinary = ch.binary();
-
+    proc serialize(writer: fileWriter(?), ref serializer) throws {
       _enter();
 
-      if isBinary {
-        // Write the number of elements
-        ch.write(_size);
-      } else {
-        ch._writeLiteral("[");
+      var ser = serializer.startList(writer, this._size);
+      for i in 0..<this._size do
+        ser.writeElement(_getRef(i));
+      ser.endList();
+
+      _leave();
+    }
+
+    @chpldoc.nodoc
+    proc init(type eltType, param parSafe : bool, reader: fileReader, ref deserializer) throws {
+      this.init(eltType, parSafe);
+      // TODO: a couple of silly initializer things I noticed:
+      // - why can't we have a try with a catch? probably old rule...
+      // - still some error that says we can't have throws stmts...
+      _readHelper(reader, deserializer);
+    }
+
+    @chpldoc.nodoc
+    proc ref _readHelper(r: fileReader, ref deserializer) throws {
+      _enter();
+
+      _clearLocked();
+
+      var des = deserializer.startList(r);
+
+      var done = false;
+      while des.hasMore() {
+        pragma "no auto destroy"
+        var elt = des.readElement(eltType);
+        // read an element
+        _appendByRef(elt);
       }
 
-      for i in 0..(_size - 2) {
-        ch.write(_getRef(i));
-        if !isBinary {
-          ch._writeLiteral(", ");
-        }
-      }
-
-      if _size > 0 then
-        ch.write(_getRef(_size-1));
-
-      if !isBinary {
-        ch._writeLiteral("]");
-      }
+      des.endList();
 
       _leave();
     }
 
     /*
-     Read the contents of this list from a channel.
-
-     :arg ch: A channel to read from.
+     Read the contents of this list from a ``fileReader``.
      */
-    proc readThis(ch: channel) throws {
-      //
-      // Special handling for reading in order to handle reading an arbitrary
-      // size.
-      //
-      const isBinary = ch.binary();
-
-      _enter();
-
-      _clearLocked();
-
-      if isBinary {
-        // How many elements should we read (for binary mode)?
-        const num = ch.read(int);
-        for i in 0..#num {
-          pragma "no auto destroy"
-          var elt: eltType = ch.read(eltType);
-          _appendByRef(elt);
-        }
-      } else {
-        var isFirst = true;
-        var hasReadEnd = false;
-
-        ch._readLiteral("[");
-
-        while !hasReadEnd {
-          if isFirst {
-            isFirst = false;
-
-            // Try reading an end bracket. If we don't, then continue on.
-            try {
-              ch._readLiteral("]");
-              hasReadEnd = true;
-              break;
-            } catch err: BadFormatError {
-              // Continue on if we didn't read an end bracket.
-            }
-          } else {
-
-            // Try to read a comma. Break if we don't.
-            try {
-              ch._readLiteral(",");
-            } catch err: BadFormatError {
-              break;
-            }
-          }
-
-          // read an element
-          pragma "no auto destroy"
-          var elt: eltType = ch.read(eltType);
-          _appendByRef(elt);
-        }
-
-        if !hasReadEnd {
-          ch._readLiteral("]");
-        }
-      }
-
-      _leave();
+    proc ref deserialize(reader: fileReader, ref deserializer) throws {
+      _readHelper(reader, deserializer);
     }
 
     /*
@@ -1911,7 +1972,7 @@ module List {
   */
   operator list.=(ref lhs: list(?t, ?), rhs: list(t, ?)) {
     lhs.clear();
-    lhs.append(rhs);
+    lhs.pushBack(rhs);
   }
 
   /*
@@ -1951,18 +2012,46 @@ module List {
     return !(a == b);
   }
 
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements contained in another list.
+
+    See :proc:`~list.init=`
+  */
   operator :(rhs:list, type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
+
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements contained in an array.
+
+    See :proc:`~list.init=`
+  */
   operator :(rhs:[], type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
+
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements yielded by a range.
+
+    See :proc:`~list.init=`
+  */
   operator :(rhs:range(?), type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
+
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements yielded by an iterator expression.
+
+    See :proc:`~list.init=`
+  */
+  @chpldoc.nodoc
   operator :(rhs:_iteratorRecord, type t:list) {
     var lst: list = rhs; // use init=
     return lst;
@@ -1971,4 +2060,3 @@ module List {
 
 
 } // End module "Lists".
-

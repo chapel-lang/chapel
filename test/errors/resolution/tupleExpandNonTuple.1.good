@@ -1,0 +1,1 @@
+error in tupleExpandNonTuple.chpl:3: cannot apply tuple expansion to an expression of non-tuple type

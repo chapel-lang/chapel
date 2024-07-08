@@ -1,7 +1,7 @@
 class C {
   var x: int;
 }
-
-var c = new borrowed C(2);
+var cObj = new C(2);
+var c = cObj.borrow();
 
 writeln(c:int);

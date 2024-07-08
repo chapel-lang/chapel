@@ -152,8 +152,13 @@ namespace {
           assocTypes.push_back(assoc.getTypeSourceInfo());
         }
 
+        if (gse->isExprPredicate())
+          return GenericSelectionExpr::Create(
+              S.Context, gse->getGenericLoc(), gse->getControllingExpr(),
+              assocTypes, assocExprs, gse->getDefaultLoc(), gse->getRParenLoc(),
+              gse->containsUnexpandedParameterPack(), resultIndex);
         return GenericSelectionExpr::Create(
-            S.Context, gse->getGenericLoc(), gse->getControllingExpr(),
+            S.Context, gse->getGenericLoc(), gse->getControllingType(),
             assocTypes, assocExprs, gse->getDefaultLoc(), gse->getRParenLoc(),
             gse->containsUnexpandedParameterPack(), resultIndex);
       }
@@ -737,11 +742,11 @@ ExprResult ObjCPropertyOpBuilder::buildGet() {
     assert(InstanceReceiver || RefExpr->isSuperReceiver());
     msg = S.BuildInstanceMessageImplicit(InstanceReceiver, receiverType,
                                          GenericLoc, Getter->getSelector(),
-                                         Getter, None);
+                                         Getter, std::nullopt);
   } else {
     msg = S.BuildClassMessageImplicit(receiverType, RefExpr->isSuperReceiver(),
-                                      GenericLoc, Getter->getSelector(),
-                                      Getter, None);
+                                      GenericLoc, Getter->getSelector(), Getter,
+                                      std::nullopt);
   }
   return msg;
 }
@@ -1190,7 +1195,7 @@ bool ObjCSubscriptOpBuilder::findAtIndexGetter() {
         /*isPropertyAccessor=*/false,
         /*isSynthesizedAccessorStub=*/false,
         /*isImplicitlyDeclared=*/true, /*isDefined=*/false,
-        ObjCMethodDecl::Required, false);
+        ObjCImplementationControl::Required, false);
     ParmVarDecl *Argument = ParmVarDecl::Create(S.Context, AtIndexGetter,
                                                 SourceLocation(), SourceLocation(),
                                                 arrayRef ? &S.Context.Idents.get("index")
@@ -1200,7 +1205,7 @@ bool ObjCSubscriptOpBuilder::findAtIndexGetter() {
                                                 /*TInfo=*/nullptr,
                                                 SC_None,
                                                 nullptr);
-    AtIndexGetter->setMethodParams(S.Context, Argument, None);
+    AtIndexGetter->setMethodParams(S.Context, Argument, std::nullopt);
   }
 
   if (!AtIndexGetter) {
@@ -1296,7 +1301,7 @@ bool ObjCSubscriptOpBuilder::findAtIndexSetter() {
         /*isPropertyAccessor=*/false,
         /*isSynthesizedAccessorStub=*/false,
         /*isImplicitlyDeclared=*/true, /*isDefined=*/false,
-        ObjCMethodDecl::Required, false);
+        ObjCImplementationControl::Required, false);
     SmallVector<ParmVarDecl *, 2> Params;
     ParmVarDecl *object = ParmVarDecl::Create(S.Context, AtIndexSetter,
                                                 SourceLocation(), SourceLocation(),
@@ -1316,7 +1321,7 @@ bool ObjCSubscriptOpBuilder::findAtIndexSetter() {
                                                 SC_None,
                                                 nullptr);
     Params.push_back(key);
-    AtIndexSetter->setMethodParams(S.Context, Params, None);
+    AtIndexSetter->setMethodParams(S.Context, Params, std::nullopt);
   }
 
   if (!AtIndexSetter) {
@@ -1446,7 +1451,8 @@ MSPropertyOpBuilder::getBaseMSProperty(MSPropertySubscriptExpr *E) {
 
 Expr *MSPropertyOpBuilder::rebuildAndCaptureObject(Expr *syntacticBase) {
   InstanceBase = capture(RefExpr->getBaseExpr());
-  llvm::for_each(CallArgs, [this](Expr *&Arg) { Arg = capture(Arg); });
+  for (Expr *&Arg : CallArgs)
+    Arg = capture(Arg);
   syntacticBase = Rebuilder(S, [=](Expr *, unsigned Idx) -> Expr * {
                     switch (Idx) {
                     case 0:

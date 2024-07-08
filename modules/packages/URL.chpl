@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -44,109 +44,92 @@ For example, the following program downloads a web-page from http://example.com 
 module URL {
   public use IO;
 
-  deprecated "openUrlReader with a style argument is deprecated"
-  proc openUrlReader(url:string,
-                     param kind=iokind.dynamic, param locking=true,
-                     start:int(64) = 0, end:int(64) = max(int(64)),
-                     style:iostyle)
-                    : channel(false, kind, locking) throws {
-    return openUrlReaderHelper(url, kind, locking, start, end,
-                               style: iostyleInternal);
+  pragma "last resort"
+  @deprecated("openUrlReader with a start and/or end argument is deprecated. Please use the new region argument instead.")
+  proc openUrlReader(url:string, param locking=true,
+                     start:int(64) = 0, end:int(64) = max(int(64)))
+                    : fileReader(locking) throws {
+    var region = if end == max(int(64)) then start..end else start..(end-1);
+    return openUrlReaderHelper(url, locking, region);
   }
+
   /*
 
-  Open a channel reading from a particular URL.
+  Open a fileReader from a particular URL.
 
-  :arg url: which url to open (for example, "http://example.com").
-  :arg kind: :type:`~IO.iokind` compile-time argument to determine the
-              corresponding parameter of the :record:`~IO.channel` type. Defaults
-              to ``iokind.dynamic``, meaning that the associated
-              :record:`~IO.iostyle` controls the formatting choices.
+  :arg url: which URL to open (for example, "http://example.com").
   :arg locking: compile-time argument to determine whether or not the
                 channel should use locking; sets the
-                corresponding parameter of the :record:`~IO.channel` type.
+                corresponding parameter of the :record:`~IO.fileReader` type.
                 Defaults to true, but when safe, setting it to false
                 can improve performance.
-  :arg start: zero-based byte offset indicating where in the file the
-              channel should start reading. Defaults to 0.
-  :arg end: zero-based byte offset indicating where in the file the
-            channel should no longer be allowed to read. Defaults
-            to a ``max(int)`` - meaning no end point.
-  :returns: an open reading channel to the requested resource.
+  :arg region: zero-based byte offset indicating where in the file the
+               fileReader should read. Defaults to ``0..`` - meaning from the
+               start of the file to no end point.
+  :returns: an open fileReader to the requested resource.
 
-  :throws SystemError: Thrown if a reading channel could not be returned.
+  :throws SystemError: If a fileReader could not be returned.
    */
-  proc openUrlReader(url:string,
-                     param kind=iokind.dynamic, param locking=true,
-                     start:int(64) = 0, end:int(64) = max(int(64)))
-                    : channel(false, kind, locking) throws {
-    return openUrlReaderHelper(url, kind, locking, start, end);
+  proc openUrlReader(url:string, param locking=true,
+                     region: range(?) = 0..)
+                    : fileReader(locking) throws {
+    return openUrlReaderHelper(url, locking, region);
   }
 
   private
-  proc openUrlReaderHelper(url:string,
-                           param kind=iokind.dynamic, param locking=true,
-                           start:int(64) = 0, end:int(64) = max(int(64)),
-                           style:iostyleInternal = defaultIOStyleInternal())
-    : channel(false, kind, locking) throws {
+  proc openUrlReaderHelper(url:string, param locking=true,
+                           region: range(?) = 0..)
+    : fileReader(locking) throws {
+
     use Curl;
     use CurlQioIntegration;
-    var f = openCurlFile(url, iomode.r, style);
-    return f.reader(kind=kind, locking=locking,
-                    start=start, end=end);
+    var f = openCurlFile(url, ioMode.r);
+    // TODO: change this back to f.reader when the kind argument is removed
+    return f.readerHelper(locking=locking, region=region);
   }
 
-  deprecated "openUrlWriter with a style argument is deprecated"
-  proc openUrlWriter(url:string,
-                 param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)),
-                 style:iostyle)
-                : channel(true, kind, locking) throws {
-    return openUrlWriterHelper(url, kind, locking, start, end,
-                               style: iostyleInternal);
+  pragma "last resort"
+  @deprecated("openUrlWriter with a start and/or end argument is deprecated. Please use the new region argument instead.")
+  proc openUrlWriter(url:string, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)))
+                : fileWriter(locking) throws {
+    var region = if end == max(int(64)) then start..end else start..(end-1);
+    return openUrlWriterHelper(url, locking, region);
   }
+
   /*
 
-  Open a channel writing to a particular URL.
+  Open a fileWriter to a particular URL.
 
-  :arg path: which file to open (for example, "ftp://127.0.0.1/upload/test.txt")
-  :arg kind: :type:`~IO.iokind` compile-time argument to determine the
-             corresponding parameter of the :record:`~IO.channel` type. Defaults
-             to ``iokind.dynamic``, meaning that the associated
-             :record:`~IO.iostyle` controls the formatting choices.
+  :arg url: which URL to open (for example, "ftp://127.0.0.1/upload/test.txt")
   :arg locking: compile-time argument to determine whether or not the
-                channel should use locking; sets the
-                corresponding parameter of the :record:`~IO.channel` type.
+                fileWriter should use locking; sets the
+                corresponding parameter of the :record:`~IO.fileWriter` type.
                 Defaults to true, but when safe, setting it to false
                 can improve performance.
-  :arg start: zero-based byte offset indicating where in the file the
-              channel should start writing. Defaults to 0.
-  :arg end: zero-based byte offset indicating where in the file the
-            channel should no longer be allowed to write. Defaults
-            to a ``max(int)`` - meaning no end point.
-  :returns: an open writing channel to the requested resource.
+  :arg region: zero-based byte offset indicating where in the file the
+               fileWriter should write. Defaults to ``0..`` - meaning from the
+               start of the file to no end point.
+  :returns: an open fileWriter to the requested resource.
 
-  :throws SystemError: Thrown if a writing channel could not be returned.
+  :throws SystemError: If a fileWriter could not be returned.
   */
-  proc openUrlWriter(url:string,
-                 param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)))
-                : channel(true, kind, locking) throws {
-    return openUrlWriterHelper(url, kind, locking, start, end);
+  proc openUrlWriter(url:string, param locking=true,
+                 region: range(?) = 0..)
+                : fileWriter(locking) throws {
+    return openUrlWriterHelper(url, locking, region);
   }
 
-  private proc openUrlWriterHelper(url:string,
-                                   param kind=iokind.dynamic,
-                                   param locking=true,
-                                   start:int(64) = 0,
-                                   end:int(64) = max(int(64)),
-                                   style:iostyleInternal = defaultIOStyleInternal())
-    : channel(true, kind, locking) throws {
+  private proc openUrlWriterHelper(url:string, param locking=true,
+                                   region: range(?) = 0..)
+    : fileWriter(locking) throws {
+
     use Curl;
     use CurlQioIntegration;
-    var f = openCurlFile(url, iomode.cw, style);
-    return f.writer(kind=kind, locking=locking,
-                    start=start, end=end);
+    var f = openCurlFile(url, ioMode.cw);
+    // TODO: change this back to f.writer when the kind argument has been
+    // removed
+    return f.writerHelper(locking=locking, region=region);
   }
 
 }

@@ -3,10 +3,10 @@ class Gen {
   type t;
 }
 
-var Glob = new borrowed Gen(real);
+var Glob = new Gen(real);
 
-iter rets(): unmanaged Gen {
-  yield Glob;
+iter rets(): unmanaged Gen(?) {
+  yield Glob.borrow();
 }
 
 var x = rets();

@@ -20,22 +20,22 @@ proc returnArrayTyped():[1..size] real {
   return X;
 }
 
-proc returnArrayArg(X) {
+proc returnArrayArg(ref X) {
   for (x,i) in zip(X, 1..size) {
     x = i;
   }
 }
 
-proc returnArrayArgTyped(X:[1..size] real) {
+proc returnArrayArgTyped(ref X:[1..size] real) {
   for (x,i) in zip(X, 1..size) {
     x = i;
   }
 }
 
-var t1 = new Timer();
-var t2 = new Timer();
-var t3 = new Timer();
-var t4 = new Timer();
+var t1 = new stopwatch();
+var t2 = new stopwatch();
+var t3 = new stopwatch();
+var t4 = new stopwatch();
 var sum0 = 0.0;
 var sum1 = 0.0;
 var sum2 = 0.0;

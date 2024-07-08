@@ -39,7 +39,7 @@ proc while_loop()
 }
 
 proc main() {
-  var t1, t2: Timer;
+  var t1, t2: stopwatch;
   t1.start();
   var res1 = for_loop();
   t1.stop();
@@ -54,9 +54,9 @@ proc main() {
   
   if verbose {
     writeln("For loop underwent ", numIterations, " iterations ", numTrials,
-          " times in ", t1.elapsed(TimeUnits.milliseconds)/1000, " seconds");
+          " times in ", t1.elapsed(), " seconds");
     writeln("While loop underwent ", numIterations, " iterations ", numTrials,
-          " times in ", t2.elapsed(TimeUnits.milliseconds)/1000, " seconds");
+          " times in ", t2.elapsed(), " seconds");
     var res3 = c_trial();
     if (res1 != res3) {
       writeln("Chapel results did not match C results");

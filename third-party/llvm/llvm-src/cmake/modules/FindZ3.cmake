@@ -18,8 +18,9 @@ function(check_z3_version z3_include z3_lib)
   # The program that will be executed to print Z3's version.
   file(WRITE ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/testz3.cpp
        "#include <assert.h>
+        #include <stdio.h> 
         #include <z3.h>
-        int main() {
+        int main(void) {
           unsigned int major, minor, build, rev;
           Z3_get_version(&major, &minor, &build, &rev);
           printf(\"%u.%u.%u\", major, minor, build);
@@ -38,7 +39,7 @@ function(check_z3_version z3_include z3_lib)
   )
 
   if(Z3_COMPILED)
-    string(REGEX REPLACE "([0-9]*\\.[0-9]*\\.[0-9]*)" "\\1"
+    string(REGEX REPLACE "([0-9]+\\.[0-9]+\\.[0-9]+)" "\\1"
            z3_version "${SRC_OUTPUT}")
     set(Z3_VERSION_STRING ${z3_version} PARENT_SCOPE)
   else()
@@ -74,7 +75,7 @@ unset(Z3_VERSION_STRING)
 
 # First, try to check it dynamically, by compiling a small program that
 # prints Z3's version
-if(Z3_INCLUDE_DIR AND Z3_LIBRARIES)
+if(Z3_INCLUDE_DIR AND Z3_LIBRARIES AND NOT CMAKE_CROSSCOMPILING)
   # We do not have the Z3 binary to query for a version. Try to use
   # a small C++ program to detect it via the Z3_get_version() API call.
   check_z3_version(${Z3_INCLUDE_DIR} ${Z3_LIBRARIES})
@@ -90,17 +91,17 @@ if(NOT Z3_VERSION_STRING AND (CMAKE_CROSSCOMPILING AND
   # Z3 4.8.1+ has the version is in a public header.
   file(STRINGS "${Z3_INCLUDE_DIR}/z3_version.h"
        z3_version_str REGEX "^#define[\t ]+Z3_MAJOR_VERSION[\t ]+.*")
-  string(REGEX REPLACE "^.*Z3_MAJOR_VERSION[\t ]+([0-9]).*$" "\\1"
+  string(REGEX REPLACE "^.*Z3_MAJOR_VERSION[\t ]+([0-9]+).*$" "\\1"
          Z3_MAJOR "${z3_version_str}")
 
   file(STRINGS "${Z3_INCLUDE_DIR}/z3_version.h"
        z3_version_str REGEX "^#define[\t ]+Z3_MINOR_VERSION[\t ]+.*")
-  string(REGEX REPLACE "^.*Z3_MINOR_VERSION[\t ]+([0-9]).*$" "\\1"
+  string(REGEX REPLACE "^.*Z3_MINOR_VERSION[\t ]+([0-9]+).*$" "\\1"
          Z3_MINOR "${z3_version_str}")
 
   file(STRINGS "${Z3_INCLUDE_DIR}/z3_version.h"
        z3_version_str REGEX "^#define[\t ]+Z3_BUILD_NUMBER[\t ]+.*")
-  string(REGEX REPLACE "^.*Z3_BUILD_NUMBER[\t ]+([0-9]).*$" "\\1"
+  string(REGEX REPLACE "^.*Z3_BUILD_NUMBER[\t ]+([0-9]+).*$" "\\1"
          Z3_BUILD "${z3_version_str}")
 
   set(Z3_VERSION_STRING ${Z3_MAJOR}.${Z3_MINOR}.${Z3_BUILD})

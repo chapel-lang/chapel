@@ -3,7 +3,8 @@ class C {
 }
 
 proc main {
-  var c = new borrowed C("a string");
+  var cObj = new owned C("a string");
+  var c = cObj.borrow();
   var b: int;
   writeln(c);
   on Locales(1) {

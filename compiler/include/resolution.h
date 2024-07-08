@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,7 @@
 #include "baseAST.h"
 #include "symbol.h"
 #include "expr.h"
+#include "ForallStmt.h"
 
 #include <map>
 #include <vector>
@@ -66,8 +67,10 @@ bool       isTupleContainingAnyReferences(Type* t);
 
 void       ensureEnumTypeResolved(EnumType* etype);
 
+bool       tryingToResolve();
 void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
 FnSymbol*  tryResolveFunction(FnSymbol* fn);
+void       printCallstackForLastError();
 
 bool       canInstantiate(Type* actualType, Type* formalType);
 
@@ -164,10 +167,11 @@ void convertFieldsOfRecordThis(FnSymbol* fn);
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
 void  resolveForallStmts2();
+bool shouldReplaceForLoopWithForall(ForLoop *forLoop);
 Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
 void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
                      ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
-void setupAndResolveShadowVars(ForallStmt* fs);
+void setupAndResolveShadowVars(LoopWithShadowVarsInterface *fs);
 bool preserveShadowVar(Symbol* var);
 void adjustNothingShadowVariables();
 Expr* lowerPrimReduce(CallExpr* call);
@@ -178,11 +182,17 @@ void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 void resolveInterfaceSymbol(InterfaceSymbol* isym);
 void resolveImplementsStmt(ImplementsStmt* istm);
 void resolveConstrainedGenericFun(FnSymbol* fn);
+bool isConstrainedGenericSymbol(Symbol* sym);
 void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG);
 Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv);
 struct ConstraintSat { ImplementsStmt* istm; IfcConstraint* icon; int indx;
   ConstraintSat(ImplementsStmt* s): istm(s), icon(0), indx(0) { }
   ConstraintSat(IfcConstraint* c, int i): istm(0), icon(c), indx(i) { } };
+ConstraintSat trySatisfyConstraintAtCallsite(CallExpr*      callsite,
+                                             Expr*          addlSite,
+                                             IfcConstraint* constraint,
+                                             SymbolMap&     substitutions);
+bool tryingToImplementInterface();
 ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr* call, Expr* addlSite,
                                               IfcConstraint* constraint,
                                               SymbolMap& substitutions);
@@ -225,10 +235,11 @@ void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 class DisambiguationContext {
 public:
                  DisambiguationContext(CallInfo& info, BlockStmt* searchScope);
-
   Vec<Symbol*>*  actuals;
   Expr*          scope;
   bool           explain;
+  bool           isMethodCall;
+  bool           useOldVisibility;
 
 private:
                  DisambiguationContext();
@@ -252,6 +263,7 @@ void      makeRefType(Type* type);
 // FnSymbol changes
 void      insertFormalTemps(FnSymbol* fn);
 void      ensureInMethodList(FnSymbol* fn);
+void      setReturnAndReturnSymbolType(FnSymbol* fn, Type* retType);
 
 
 bool      hasAutoCopyForType(Type* type);
@@ -291,6 +303,10 @@ FnSymbol* resolveNormalCall(CallExpr* call);
 void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn);
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
+
+// warn for some int -> uint and small int -> real
+void warnForSomeNumericConversions(BaseAST* context, Type* formalType,
+                                   Type* actualType, Symbol* actual);
 
 void lvalueCheck(CallExpr* call);
 
@@ -332,6 +348,14 @@ SymExpr* findSourceOfYield(CallExpr* yield);
 void expandInitFieldPrims();
 
 void removeCopyFns(Type* t);
+
+bool moveIsAcceptable(CallExpr* call);
+
+Type* moveDetermineLhsType(CallExpr* call);
+
+Type* moveDetermineRhsType(CallExpr* call);
+
+bool moveTypesAreAcceptable(Type* lhsType, Type* rhsType);
 
 std::set<Type*> getWellKnownTypesSet();
 bool isUnusedClass(Type* t, const std::set<Type*>& wellknown);
@@ -375,12 +399,35 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
 
 void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx);
 
+// emit a warning for
+//   var x: domain;
+// as a field or variable (it should be, var x: domain(?)).
+void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
+                                 AggregateType* forFieldInHere);
+
+void handleDefaultAssociativeWarnings(Symbol* sym,
+                                      Expr* typeExpr, Expr* initExpr,
+                                      AggregateType* forFieldInHere);
+
 // These enable resolution for functions that don't really match
 // according to the language definition in order to get more errors
 // reported at once. E.g. C? can pass to C.
 void startGenerousResolutionForErrors();
 bool inGenerousResolutionForErrors();
 void stopGenerousResolutionForErrors();
+
+// Indicates if there has been an error since declaring a NewErrorRecorder.
+// Implements a stack discipline.
+extern bool newErrorRecord;
+class NewErrorRecorder {
+  bool prevRecord;
+public:
+  NewErrorRecorder(): prevRecord(newErrorRecord) { newErrorRecord = false; }
+  ~NewErrorRecorder() { newErrorRecord = this->prevRecord; }
+};
+
+static inline void recordNewCompilationError() { newErrorRecord = true; }
+static inline bool seenNewCompilationError() { return newErrorRecord; }
 
 // In chpl__initCopy etc we have a definedConst argument. This argument can be
 // at different places in the function signature. In various places, we call the

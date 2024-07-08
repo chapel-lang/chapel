@@ -25,7 +25,7 @@ class AVRELFObjectWriter : public MCELFObjectTargetWriter {
 public:
   AVRELFObjectWriter(uint8_t OSABI);
 
-  virtual ~AVRELFObjectWriter() {}
+  virtual ~AVRELFObjectWriter() = default;
 
   unsigned getRelocType(MCContext &Ctx, const MCValue &Target,
                         const MCFixup &Fixup, bool IsPCRel) const override;
@@ -37,6 +37,9 @@ AVRELFObjectWriter::AVRELFObjectWriter(uint8_t OSABI)
 unsigned AVRELFObjectWriter::getRelocType(MCContext &Ctx, const MCValue &Target,
                                           const MCFixup &Fixup,
                                           bool IsPCRel) const {
+  const unsigned Kind = Fixup.getTargetKind();
+  if (Kind >= FirstLiteralRelocationKind)
+    return Kind - FirstLiteralRelocationKind;
   MCSymbolRefExpr::VariantKind Modifier = Target.getAccessVariant();
   switch ((unsigned)Fixup.getKind()) {
   case FK_Data_1:

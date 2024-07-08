@@ -32,8 +32,12 @@ typedef unsigned int __v4su __attribute__((__vector_size__(16)));
 #endif
 
 /* Define the default attributes for the functions in this file. */
-#define __DEFAULT_FN_ATTRS __attribute__((__always_inline__, __nodebug__, __target__("sse"), __min_vector_width__(128)))
-#define __DEFAULT_FN_ATTRS_MMX __attribute__((__always_inline__, __nodebug__, __target__("mmx,sse"), __min_vector_width__(64)))
+#define __DEFAULT_FN_ATTRS                                                     \
+  __attribute__((__always_inline__, __nodebug__, __target__("sse,no-evex512"), \
+                 __min_vector_width__(128)))
+#define __DEFAULT_FN_ATTRS_MMX                                                 \
+  __attribute__((__always_inline__, __nodebug__,                               \
+                 __target__("mmx,sse,no-evex512"), __min_vector_width__(64)))
 
 /// Adds the 32-bit float values in the low-order bits of the operands.
 ///
@@ -1906,7 +1910,7 @@ _mm_setr_ps(float __z, float __y, float __x, float __w)
 static __inline__ __m128 __DEFAULT_FN_ATTRS
 _mm_setzero_ps(void)
 {
-  return __extension__ (__m128){ 0, 0, 0, 0 };
+  return __extension__ (__m128){ 0.0f, 0.0f, 0.0f, 0.0f };
 }
 
 /// Stores the upper 64 bits of a 128-bit vector of [4 x float] to a
@@ -2086,7 +2090,7 @@ _mm_storer_ps(float *__p, __m128 __a)
 /// \headerfile <x86intrin.h>
 ///
 /// \code
-/// void _mm_prefetch(const void * a, const int sel);
+/// void _mm_prefetch(const void *a, const int sel);
 /// \endcode
 ///
 /// This intrinsic corresponds to the <c> PREFETCHNTA </c> instruction.
@@ -2121,9 +2125,9 @@ _mm_storer_ps(float *__p, __m128 __a)
 /// \param __a
 ///    A 64-bit integer containing the value to be stored.
 static __inline__ void __DEFAULT_FN_ATTRS_MMX
-_mm_stream_pi(__m64 *__p, __m64 __a)
+_mm_stream_pi(void *__p, __m64 __a)
 {
-  __builtin_ia32_movntq(__p, __a);
+  __builtin_ia32_movntq((__m64 *)__p, __a);
 }
 
 /// Moves packed float values from a 128-bit vector of [4 x float] to a
@@ -2140,7 +2144,7 @@ _mm_stream_pi(__m64 *__p, __m64 __a)
 /// \param __a
 ///    A 128-bit vector of [4 x float] containing the values to be moved.
 static __inline__ void __DEFAULT_FN_ATTRS
-_mm_stream_ps(float *__p, __m128 __a)
+_mm_stream_ps(void *__p, __m128 __a)
 {
   __builtin_nontemporal_store((__v4sf)__a, (__v4sf*)__p);
 }
@@ -2360,7 +2364,10 @@ _mm_mulhi_pu16(__m64 __a, __m64 __b)
 ///    00: assigned from bits [15:0] of \a a. \n
 ///    01: assigned from bits [31:16] of \a a. \n
 ///    10: assigned from bits [47:32] of \a a. \n
-///    11: assigned from bits [63:48] of \a a.
+///    11: assigned from bits [63:48] of \a a. \n
+///    Note: To generate a mask, you can use the \c _MM_SHUFFLE macro.
+///    <c>_MM_SHUFFLE(b6, b4, b2, b0)</c> can create an 8-bit mask of the form
+///    <c>[b6, b4, b2, b0]</c>.
 /// \returns A 64-bit integer vector containing the shuffled values.
 #define _mm_shuffle_pi16(a, n) \
   ((__m64)__builtin_ia32_pshufw((__v4hi)(__m64)(a), (n)))
@@ -2602,7 +2609,10 @@ void _mm_setcsr(unsigned int __i);
 ///    00: Bits [31:0] copied from the specified operand. \n
 ///    01: Bits [63:32] copied from the specified operand. \n
 ///    10: Bits [95:64] copied from the specified operand. \n
-///    11: Bits [127:96] copied from the specified operand.
+///    11: Bits [127:96] copied from the specified operand. \n
+///    Note: To generate a mask, you can use the \c _MM_SHUFFLE macro.
+///    <c>_MM_SHUFFLE(b6, b4, b2, b0)</c> can create an 8-bit mask of the form
+///    <c>[b6, b4, b2, b0]</c>.
 /// \returns A 128-bit vector of [4 x float] containing the shuffled values.
 #define _mm_shuffle_ps(a, b, mask) \
   ((__m128)__builtin_ia32_shufps((__v4sf)(__m128)(a), (__v4sf)(__m128)(b), \
@@ -2998,7 +3008,6 @@ do { \
 #define _m_pavgb _mm_avg_pu8
 #define _m_pavgw _mm_avg_pu16
 #define _m_psadbw _mm_sad_pu8
-#define _m_ _mm_
 #define _m_ _mm_
 
 #undef __DEFAULT_FN_ATTRS

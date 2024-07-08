@@ -20,6 +20,8 @@
 
 namespace llvm {
 
+class MCInstrInfo;
+
 class CSKYMCCodeEmitter : public MCCodeEmitter {
   MCContext &Ctx;
   const MCInstrInfo &MII;
@@ -30,7 +32,7 @@ public:
 
   ~CSKYMCCodeEmitter() {}
 
-  void encodeInstruction(const MCInst &Inst, raw_ostream &OS,
+  void encodeInstruction(const MCInst &Inst, SmallVectorImpl<char> &CB,
                          SmallVectorImpl<MCFixup> &Fixups,
                          const MCSubtargetInfo &STI) const override;
 
@@ -169,6 +171,16 @@ public:
     Fixups.push_back(MCFixup::create(0, MO.getExpr(), Kind, MI.getLoc()));
     return 0;
   }
+
+  void expandJBTF(const MCInst &MI, SmallVectorImpl<char> &CB,
+                  SmallVectorImpl<MCFixup> &Fixups,
+                  const MCSubtargetInfo &STI) const;
+  void expandNEG(const MCInst &MI, SmallVectorImpl<char> &CB,
+                 SmallVectorImpl<MCFixup> &Fixups,
+                 const MCSubtargetInfo &STI) const;
+  void expandRSUBI(const MCInst &MI, SmallVectorImpl<char> &CB,
+                   SmallVectorImpl<MCFixup> &Fixups,
+                   const MCSubtargetInfo &STI) const;
 };
 
 } // namespace llvm

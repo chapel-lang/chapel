@@ -1,0 +1,2 @@
+--detailed-errors # bisonSyntaxErrorNoToken-detailed.good
+--no-detailed-errors # bisonSyntaxErrorNoToken-brief.good

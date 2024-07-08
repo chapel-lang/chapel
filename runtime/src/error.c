@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -69,11 +69,11 @@ static int chpl_unwind_getLineNum(void *addr){
   // We use a little shell script for avoiding the case in which
   // addr2line isn't present
   const char* scriptPreArgs =
-    "if test -x /usr/bin/addr2line; then /usr/bin/addr2line -e ";
+    "if command -v addr2line > /dev/null 2>&1; then addr2line -e ";
   // then the path
   // then space
   // then the address
-  // then
+  // then below to close the 'if'
   const char* scriptPostArgs = "; fi";
 
   // Start the buffer out with the script

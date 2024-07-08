@@ -10,7 +10,7 @@ class Parent {
 
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   type tt;
   var y:tt;
   override proc overridden_method() {
@@ -22,12 +22,14 @@ class Child : Parent {
 }
 
 writeln("Parent(int)");
-var p = new borrowed Parent(int, 1);
+var ownP = new owned Parent(int, 1);
+var p = ownP.borrow();
 p.parent_method();
 p.overridden_method();
 
 writeln("Child(int,real)");
-var c = new borrowed Child(int, 1, real, 2.0);
+var ownC = new owned Child(int, 1, real, 2.0);
+var c = ownC.borrow();
 c.parent_method();
 c.overridden_method();
 c.child_method();

@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-if $CHPL_HOME/util/printchplenv --make --all --internal \
-     | grep CHPL_MAKE_TARGET_SYSTEM_LINK_ARGS \
-     | grep -q -e '-lnuma' ; then
-  echo 1
-else
-  echo 0
-fi

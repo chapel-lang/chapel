@@ -15,6 +15,7 @@ def brtarget21_mm : Operand<OtherVT> {
   let OperandType = "OPERAND_PCREL";
   let DecoderMethod = "DecodeBranchTarget21MM";
   let ParserMatchClass = MipsJumpTargetAsmOperand;
+  let PrintMethod = "printBranchOperand";
 }
 
 def brtarget26_mm : Operand<OtherVT> {
@@ -22,6 +23,7 @@ def brtarget26_mm : Operand<OtherVT> {
   let OperandType = "OPERAND_PCREL";
   let DecoderMethod = "DecodeBranchTarget26MM";
   let ParserMatchClass = MipsJumpTargetAsmOperand;
+  let PrintMethod = "printBranchOperand";
 }
 
 def brtargetr6 : Operand<OtherVT> {
@@ -29,6 +31,7 @@ def brtargetr6 : Operand<OtherVT> {
   let OperandType = "OPERAND_PCREL";
   let DecoderMethod = "DecodeBranchTargetMM";
   let ParserMatchClass = MipsJumpTargetAsmOperand;
+  let PrintMethod = "printBranchOperand";
 }
 
 def brtarget_lsl2_mm : Operand<OtherVT> {
@@ -38,6 +41,7 @@ def brtarget_lsl2_mm : Operand<OtherVT> {
   // set with DecodeDisambiguates
   let DecoderMethod = "";
   let ParserMatchClass = MipsJumpTargetAsmOperand;
+  let PrintMethod = "printBranchOperand";
 }
 
 //===----------------------------------------------------------------------===//
@@ -818,6 +822,7 @@ class GINV_MMR6_DESC_BASE<string opstr,
 
 class GINVI_MMR6_DESC : GINV_MMR6_DESC_BASE<"ginvi", GPR32Opnd,
                                             II_GINVI> {
+  bits<2> type = 0b00;
   dag InOperandList = (ins GPR32Opnd:$rs);
   string AsmString = "ginvi\t$rs";
 }

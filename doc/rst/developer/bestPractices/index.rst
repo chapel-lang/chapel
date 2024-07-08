@@ -27,6 +27,7 @@ Best Practices for Contributors
    Valgrind
    Sanitizers
    Deprecation
+   Unstable
    NightlyTesting
    StandardModuleStyle
    TestAnnotationsLocally
@@ -47,7 +48,7 @@ developers.  A possible reading order is roughly as follows:
 
 `Compiler documentation`: 
   :ref:`compiler-internals-index`:
-    API documentation for the compiler library
+    API documentation for the frontend library
 
   The compiler overview document in 
 
@@ -91,6 +92,9 @@ developers.  A possible reading order is roughly as follows:
 
 :ref:`best-practices-deprecation`:
   How to deprecate standard library routines
+
+:ref:`best-practices-unstable`:
+  How to mark features as unstable
 
 :ref:`readme-nightlytesting`
   How to run nightly testing

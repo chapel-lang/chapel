@@ -5,7 +5,7 @@
 #include "qt_affinity.h"
 #include "qt_envariables.h"
 
-hwloc_topology_t topology;
+hwloc_topology_t topology = NULL;
 
 // Shepherd affinity 
 struct {
@@ -91,9 +91,17 @@ int INTERNAL qt_affinity_compact(int num_workers,
 void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
                                qthread_worker_id_t   *nbworkers,
                                size_t                *hw_par)
-{                           
-  hwloc_topology_init(&topology);
-  hwloc_topology_load(topology);
+{
+#ifdef HWLOC_GET_TOPOLOGY_FUNCTION
+  extern void * HWLOC_GET_TOPOLOGY_FUNCTION;
+  topology = (hwloc_topology_t) HWLOC_GET_TOPOLOGY_FUNCTION;
+#endif
+  // Note: the lack of a teardown routine will cause topology initialization
+  // to be skipped if qthreads is re-initialized
+  if (topology == NULL) {
+    hwloc_topology_init(&topology);
+    hwloc_topology_load(topology);
+  }
   const char *bindstr = qt_internal_get_env_str("CPUBIND", "NOT_SET");
   if (!bindstr || strcmp("NOT_SET", bindstr) == 0) {
     size_t num_sheps = qt_internal_get_env_num("NUM_SHEPHERDS", 1, 0);

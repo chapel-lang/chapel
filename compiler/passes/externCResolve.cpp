@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -78,27 +78,28 @@ static Expr* convertPointerToChplType(ModuleSymbol* module,
                                       const char* typedefName=NULL) {
 
 
-  //Pointers to c_char must be converted to Chapel's C string type
-  // but only if they are const char*.
-  if (pointeeType.isConstQualified() &&
-      pointeeType.getTypePtr()->isCharType()) {
-    return tryCResolveExpr(module, "c_string");
-  }
 
   // Pointers to C functions become c_fn_ptr
   if (pointeeType.getTypePtr()->isFunctionType()) {
     return tryCResolveExpr(module, "c_fn_ptr");
   }
 
-  // Pointers to void (aka void*) convert to c_void_ptr
-  if (pointeeType.getTypePtr()->isVoidType()) {
-    return tryCResolveExpr(module, "chpl__c_void_ptr");
-  }
-
   Expr* pointee = convertToChplType(module, pointeeType.getTypePtr());
 
-  // Other pointers are represented as a call to c_ptr.
-  return new CallExpr(new UnresolvedSymExpr("c_ptr"), pointee);
+  // Other pointers are represented as a call to c_ptr or c_ptrConst.
+  if (pointeeType.isConstQualified()) {
+    return new CallExpr(new UnresolvedSymExpr("c_ptrConst"), pointee);
+  } else {
+    return new CallExpr(new UnresolvedSymExpr("c_ptr"), pointee);
+  }
+}
+
+static unsigned getMinSignedBits(const llvm::APInt& size) {
+#if HAVE_LLVM_VER >= 170
+  return size.getSignificantBits();
+#else
+  return size.getMinSignedBits();
+#endif
 }
 
 static
@@ -111,7 +112,7 @@ Expr* convertFixedSizeArrayToChplType(ModuleSymbol* module,
 
   Expr* eltTypeChapel = convertToChplType(module, eltType.getTypePtr());
 
-  if (size.getMinSignedBits() > 64)
+  if (getMinSignedBits(size) > 64)
     USR_FATAL("C array is too large");
 
   int64_t isize = size.getSExtValue();
@@ -130,7 +131,11 @@ Expr* convertArrayToChplType(ModuleSymbol* module,
   Expr* eltTypeChapel = convertToChplType(module, eltType.getTypePtr());
 
   // For now, just represent it as a c_ptr
-  return new CallExpr("c_ptr", eltTypeChapel);
+  if (eltType.isConstQualified()) {
+    return new CallExpr("c_ptrConst", eltTypeChapel);
+  } else {
+    return new CallExpr("c_ptr", eltTypeChapel);
+  }
 }
 
 static
@@ -223,8 +228,7 @@ static Expr* convertToChplType(ModuleSymbol* module,
                                const char* typedefName) {
 
   //typedefs
-  if (const clang::TypedefType *td =
-      llvm::dyn_cast_or_null<clang::TypedefType>(type)) {
+  if (auto td = type->getAs<clang::TypedefType>()) {
 
     return convertTypedefToChplType(module, td, typedefName);
 
@@ -237,14 +241,18 @@ static Expr* convertToChplType(ModuleSymbol* module,
 
   //arrays
   } else if (type->isArrayType()) {
+    // TODO: `getAsArrayTypeUnsafe` is required to desugar types. A better
+    // solution which doesn't discard qualifiers would be
+    // `Ctx.getAsConstantArrayType(type)` where `Ctx` is a `clang::AstContext`,
+    // however that would require some heavy rewrites
+    const clang::ArrayType* at = type->getAsArrayTypeUnsafe();
 
     if (type->isConstantArrayType()) {
       const clang::ConstantArrayType* cat =
-        llvm::dyn_cast<clang::ConstantArrayType>(type);
+        llvm::dyn_cast<clang::ConstantArrayType>(at);
 
       return convertFixedSizeArrayToChplType(module, cat, typedefName);
     } else {
-      const clang::ArrayType* at = llvm::dyn_cast<clang::ArrayType>(type);
 
       return convertArrayToChplType(module, at, typedefName);
     }
@@ -293,8 +301,9 @@ static Expr* convertToChplType(ModuleSymbol* module,
       INT_ASSERT(type && "Could not get enum integer type pointer");
     }
 
-    if (type->isVoidType())
-      return NULL;
+    if (type->isVoidType()) {
+      return new SymExpr(dtVoid->symbol);
+    }
 
     // handle numeric types
 
@@ -520,8 +529,8 @@ void convertDeclToChpl(ModuleSymbol* module,
                                            false,  // throws
                                            NULL, // where
                                            NULL, // lifetime constraints
-                                           NULL, // body
-                                           NULL); // docs
+                                           NULL // body
+                                         );
 
     //convert args
     for (clang::FunctionDecl::param_iterator it=fd->param_begin(); it < fd->param_end(); ++it) {

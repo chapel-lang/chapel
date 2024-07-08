@@ -18,7 +18,7 @@ if (!exists(dirWithLinks)) {
 if (!exists(fileLink)) {
   symlink(realPath(linkSrc), fileLink);
 }
-if (!isLink(fileLink)) {
+if (!isSymlink(fileLink)) {
   writeln(fileLink, " was not a symlink, removing and replacing");
   remove(fileLink);
   symlink(realPath(linkSrc), fileLink);
@@ -28,7 +28,7 @@ if (!isLink(fileLink)) {
 if (!exists(dirLink)) {
   symlink(realPath(linkSrcDir), dirLink);
 }
-if (!isLink(dirLink)) {
+if (!isSymlink(dirLink)) {
   writeln(dirLink, " was not a symlink, removing and replacing");
   rmTree(dirLink);
   symlink(realPath(linkSrcDir), dirLink);
@@ -41,7 +41,7 @@ moveDir(dirWithLinks, destLinked);
 var fileLinkInDest = "linkDest/amALink";
 var dirLinkInDest = "linkDest/dirLink";
 writeln("moved file exists: ", exists(fileLinkInDest));
-writeln("and is a link: ", isLink(fileLinkInDest));
+writeln("and is a link: ", isSymlink(fileLinkInDest));
 writeln("moved dir exists: ", exists(dirLinkInDest));
-writeln("and is a link: ", isLink(dirLinkInDest));
+writeln("and is a link: ", isSymlink(dirLinkInDest));
 writeln("Source directory does not exist any more: ", !exists(dirWithLinks));

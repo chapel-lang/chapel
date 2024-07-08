@@ -39,9 +39,9 @@ proc borrowedToOwned(type t) type {
       type tt = (t:owned class);
       return tt;
     }
+  } else {
+    return t;
   }
-
-  return t;
 }
 
 proc testToCq(type t) {
@@ -91,11 +91,13 @@ proc testValues() {
   testToCq(shared C?);
   testToC (shared C );
 
+/*
+  // new borrowed C() is an error
   testBorrowedToCq(borrowed C );
   testBorrowedToC (borrowed C?);
   testBorrowedToCq(borrowed C?);
   testBorrowedToC (borrowed C );
-
+*/
   testToCq(unmanaged C );
   testToC (unmanaged C?);
   testToCq(unmanaged C?);

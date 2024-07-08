@@ -11,6 +11,7 @@
 #include "llvm/ADT/StringSet.h"
 #include "llvm/DebugInfo/DWARF/DWARFContext.h"
 #include "llvm/DebugInfo/DWARF/DWARFDebugLoc.h"
+#include "llvm/DebugInfo/DWARF/DWARFExpression.h"
 #include "llvm/Object/ObjectFile.h"
 #include "llvm/Support/JSON.h"
 
@@ -318,7 +319,7 @@ static void collectStatsForDie(DWARFDie Die, const std::string &FnPrefix,
         auto Offset = Die.find(dwarf::DW_AT_abstract_origin);
         // Do not track this variable any more, since it has location
         // coverage.
-        llvm::erase_value(*AbstractOriginVariables, (*Offset).getRawUValue());
+        llvm::erase(*AbstractOriginVariables, (*Offset).getRawUValue());
       }
     } else {
       // The locstats will be handled at the end of
@@ -499,7 +500,8 @@ static void collectStatsRecursive(
     return;
 
   // Handle any kind of lexical scope.
-  const bool HasAbstractOrigin = Die.find(dwarf::DW_AT_abstract_origin) != None;
+  const bool HasAbstractOrigin =
+      Die.find(dwarf::DW_AT_abstract_origin) != std::nullopt;
   const bool IsFunction = Tag == dwarf::DW_TAG_subprogram;
   const bool IsBlock = Tag == dwarf::DW_TAG_lexical_block;
   const bool IsInlinedFunction = Tag == dwarf::DW_TAG_inlined_subroutine;
@@ -741,7 +743,7 @@ static void updateVarsWithAbstractOriginLocCovInfo(
          Child.find(dwarf::DW_AT_const_value))) {
       auto OffsetVar = Child.find(dwarf::DW_AT_abstract_origin);
       if (OffsetVar)
-        llvm::erase_value(AbstractOriginVars, (*OffsetVar).getRawUValue());
+        llvm::erase(AbstractOriginVars, (*OffsetVar).getRawUValue());
     } else if (ChildTag == dwarf::DW_TAG_lexical_block)
       updateVarsWithAbstractOriginLocCovInfo(Child, AbstractOriginVars);
     Child = Child.getSibling();
@@ -790,7 +792,7 @@ static void collectZeroLocCovForVarsWithAbstractOrigin(
     ProcessedFns.push_back(FnOffset);
   }
   for (auto ProcessedFn : ProcessedFns)
-    llvm::erase_value(FnsWithAbstractOriginToBeProcessed, ProcessedFn);
+    llvm::erase(FnsWithAbstractOriginToBeProcessed, ProcessedFn);
 }
 
 /// Collect zero location coverage for inlined variables which refer to
@@ -1043,14 +1045,19 @@ bool dwarfdump::collectStatsForObjectFile(ObjectFile &Obj, DWARFContext &DICtx,
                      LocStats.LocalVarNonEntryValLocStats);
   J.objectEnd();
   OS << '\n';
-  LLVM_DEBUG(llvm::dbgs() << "Total Availability: "
-                          << (int)std::round((VarParamWithLoc.Value * 100.0) /
+  LLVM_DEBUG(
+      llvm::dbgs() << "Total Availability: "
+                   << (VarParamTotal.Value
+                           ? (int)std::round((VarParamWithLoc.Value * 100.0) /
                                              VarParamTotal.Value)
-                          << "%\n";
-             llvm::dbgs() << "PC Ranges covered: "
-                          << (int)std::round(
+                           : 0)
+                   << "%\n";
+      llvm::dbgs() << "PC Ranges covered: "
+                   << (GlobalStats.ScopeBytes.Value
+                           ? (int)std::round(
                                  (GlobalStats.ScopeBytesCovered.Value * 100.0) /
                                  GlobalStats.ScopeBytes.Value)
-                          << "%\n");
+                           : 0)
+                   << "%\n");
   return true;
 }

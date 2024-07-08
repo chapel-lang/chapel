@@ -13,8 +13,8 @@ const Boxes: domain(2) = {1..3, 1..3};
 var Table: [TableSpace] int;
 
 //...then read the values from the puzzle into it
-var infile = open(infilename, iomode.r);
-var reader = infile.reader();
+var infile = open(infilename, ioMode.r);
+var reader = infile.reader(locking=false);
 
 for ij in TableSpace {
    var str: string;
@@ -69,7 +69,7 @@ var colRemainders: [tableSize] domain(int) = All;
 var boxRemainders: [Boxes] domain(int) = All;
 
 // ----- Initialize the values we still need for each row ----
-forall (i,j) in TableSpace {
+forall (i,j) in TableSpace with (ref boxRemainders, ref colRemainders, ref rowRemainders) {
   const v = Table(i,j);
   if (v != 0) {
     rowRemainders[i] -= v;
@@ -94,7 +94,7 @@ var numZeroes = + reduce (Table == 0);
 while (numZeroes > 0) {
   
   //  coforall (i,j) in TableSpace {
-  forall (i,j) in TableSpace {
+  forall (i,j) in TableSpace with (ref Table, ref boxRemainders, ref colRemainders, ref rowRemainders) {
     if (Table[i, j] == 0) {
         // initialize the current set of available numbers
     	var currSet: domain(int);

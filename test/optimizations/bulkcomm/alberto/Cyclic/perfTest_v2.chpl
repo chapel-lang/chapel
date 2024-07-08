@@ -3,9 +3,10 @@ config const printOutput=false;
 
 
 config  const n: int=20;
-/*var Dist1 = new dmap(new Block({1..n}));
-var Dist2 = new dmap(new Block({1..n,1..n}));
-var Dist3 = new dmap(new Block({1..n,1..n,1..n}));
+assert(n > 0); // relied upon in 'n:uint'
+/*var Dist1 = new blockDist({1..n});
+var Dist2 = new blockDist({1..n,1..n});
+var Dist3 = new blockDist({1..n,1..n,1..n});
 var Dom1: domain(1,int) dmapped Dist1 = {1..n};
 var Dom2: domain(2,int) dmapped Dist2 = {1..n,1..n};
 var Dom3: domain(3,int) dmapped Dist3 = {1..n,1..n,1..n};
@@ -13,9 +14,9 @@ var Dom3: domain(3,int) dmapped Dist3 = {1..n,1..n,1..n};
 const Space = {1..n};
 const Space2 = {1..n,1..n};
 const Space3 = {1..n,1..n,1..n};
-const Dom1: domain(1) dmapped Cyclic(startIdx=Space.low)=Space;
-const Dom2: domain(2) dmapped Cyclic(startIdx=Space2.low)=Space2;
-const Dom3: domain(3) dmapped Cyclic(startIdx=Space3.low)=Space3;
+const Dom1: domain(1) dmapped new cyclicDist(startIdx=Space.low)=Space;
+const Dom2: domain(2) dmapped new cyclicDist(startIdx=Space2.low)=Space2;
+const Dom3: domain(3) dmapped new cyclicDist(startIdx=Space3.low)=Space3;
 
 /*Default Rectangular. Examples 1D*/
 var ADR:[1..n] int(64)=[i in 1..n] i;
@@ -134,7 +135,7 @@ if printOutput then writeln("Block Dist. Example 2: A",D1, " Locales:",numLocale
 A[D1]=B[D1];
 for (a,b) in zip(A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
-D1={1..n by n};
+D1={1..n by n:uint};
 A=1;
 
 if printOutput then writeln("Block Dist. Example 3: A",D1, " Locales:",numLocales);
@@ -225,9 +226,9 @@ for (a,b) in zip(A3[D3],B3[D3]) do if (a!=b) then writeln("ERROR!!!!");
 
 
 const Space4 = {1..6,1..6,1..6};
-const Dom4: domain(3) dmapped Cyclic(startIdx=Space4.low)=Space4;
+const Dom4: domain(3) dmapped new cyclicDist(startIdx=Space4.low)=Space4;
 
-//var Dist4 = new dmap(new Block({1..6,1..6,1..6}));
+//var Dist4 = new blockDist({1..6,1..6,1..6});
 //var Dom4: domain(3,int) dmapped Dist4 ={1..6,1..6,1..6};
 var D4 ={1..5 by 2,1..3,1..6};
 var A4:[Dom4] int(64)=[(i,j,k) in Dom4] (i-1)*6*6 + (j-1)*6 + k;

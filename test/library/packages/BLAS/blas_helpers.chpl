@@ -41,7 +41,7 @@ proc blasPrefix(type t) {
 // Make a symmetric matrix
 // This does this explicitly, by making the lower triangular portion
 // equal to the upper triangular
-proc makeSymm(A : [?Adom]) {
+proc makeSymm(ref A : [?Adom]) {
   for (i,j) in Adom {
     if i < j then A[i,j] = A[j,i];
   }
@@ -50,16 +50,16 @@ proc makeSymm(A : [?Adom]) {
 // Make a hermitian matrix
 // This does this explicitly, by making the lower triangular portion
 // equal to the upper triangular
-proc makeHerm(A : [?Adom]) {
+proc makeHerm(ref A : [?Adom]) {
   for (i,j) in Adom {
-    if i < j then A[i,j] = conjg(A[j,i]);
+    if i < j then A[i,j] = conj(A[j,i]);
     if i==j then A[i,i] = A[i,i].re;
   }
 }
 
 
 // Make band-diagonal matrix
-proc makeBand(A:[?Adom] ?t, kl, ku)
+proc makeBand(ref A:[?Adom] ?t, kl, ku)
   where Adom.rank == 2 {
   for i in Adom.dim(0) {
     for j in Adom.dim(1) {
@@ -71,7 +71,7 @@ proc makeBand(A:[?Adom] ?t, kl, ku)
 }
 
 /* TODO -- Make band-diagonal triangular matrix */
-proc makeBandTriangular(A:[?Adom], k,  uplo:Uplo=Uplo.Upper)
+proc makeBandTriangular(ref A:[?Adom], k,  uplo:Uplo=Uplo.Upper)
   where Adom.rank == 2
 {
   compilerError('Not yet implemented');
@@ -79,7 +79,7 @@ proc makeBandTriangular(A:[?Adom], k,  uplo:Uplo=Uplo.Upper)
 
 
 // Make a lower or upper triangular matrix
-proc makeTri(A:[?Adom], uplo:Uplo = Uplo.Upper)
+proc makeTri(ref A:[?Adom], uplo:Uplo = Uplo.Upper)
   where Adom.rank == 2 {
   if uplo == Uplo.Upper {
     zeroTri(A, zeroLow=true);
@@ -88,27 +88,27 @@ proc makeTri(A:[?Adom], uplo:Uplo = Uplo.Upper)
   }
 }
 
-proc zeroTri(A:[?Adom], uplo:Uplo) where Adom.rank == 2 {
+proc zeroTri(ref A:[?Adom], uplo:Uplo) where Adom.rank == 2 {
   const zeroLow = if uplo==Uplo.Upper then true else false;
   zeroTri(A, zeroLow);
 }
 
 // Zero out upper or lower triangular piece
-proc zeroTri(A:[?Adom], zeroLow:bool=true) where Adom.rank == 2 {
+proc zeroTri(ref A:[?Adom], zeroLow:bool=true) where Adom.rank == 2 {
   type t = A.eltType;
   const zero = 0 : t;
-  forall (i,j) in Adom {
+  forall (i,j) in Adom with (ref A) {
     if (i > j) & zeroLow then A[i,j] = zero;
     if (i < j) & !zeroLow then A[i,j] = zero;
   }
 }
 
 // Make identity matrix
-proc makeUnit(A : [?Adom], val:real = 1.0) {
+proc makeUnit(ref A : [?Adom], val:real = 1.0) {
   type t = A.eltType;
   const zero = 0 : t;
   const diag = (val*1) : t;
-  forall (i,j) in Adom {
+  forall (i,j) in Adom with (ref A) {
     if (i!=j) then A[i,j] = zero;
               else A[i,i] = diag;
   }
@@ -230,20 +230,19 @@ proc transpose(A: [?D] ?t) where A.rank == 2 {
 /* Adjoint = transpose, then complex conjugate (Hermitian)*/
 proc adjoint(A: [?D] ?t) where A.rank == 2 {
   var B = transpose(A);
-  B = conjg(A);
+  B = conj(A);
   return B;
 }
 
 /* Pseudo-random nonsingular matrix ((1/n**2)*A**2 + I) */
-proc makeRandomInvertible (A: [?Adom] ?t) {
-  var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-  rng.fillRandom(A);
+proc makeRandomInvertible (ref A: [?Adom] ?t) {
+  fillRandom(A);
 
   var I: [Adom] t;
   makeUnit(I);
 
   var A2: [Adom] t;
-  forall (i,j) in A.domain do A2[i,j] = + reduce (A[i,..]*conjg(A[..,j]));
+  forall (i,j) in A.domain with (ref A2) do A2[i,j] = + reduce (A[i,..]*conj(A[..,j]));
 
   const n = Adom.shape(1);
   const scale = (1/n**2) : t;

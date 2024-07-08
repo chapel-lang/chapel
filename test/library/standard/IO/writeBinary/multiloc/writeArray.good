@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: writeBinary() array data must be on same locale as 'fileWriter'
+  writeArray.chpl:10: thrown here
+  writeArray.chpl:10: uncaught here

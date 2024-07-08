@@ -253,7 +253,6 @@ extern gasneti_TM_t gasneti_thing_that_goes_thunk_in_the_dark;
 //     More efficient replacement for `gasneti_[ei]_tm_to_i_ep()->_index`,
 //     replacing multiple alternatives which do not accept a TM-pair
 //   + gasneti_boundscheck()
-//   + gasneti_boundscheck_allowoutseg()
 //   + gasneti_formattm()
 //   + gasneti_pshm_local_rank()
 //   + gasneti_pshm_in_supernode()
@@ -447,6 +446,7 @@ gex_Rank_t gasneti_i_tm_jobrank_to_rank(gasneti_TM_t _i_tm, gex_Rank_t _jobrank)
 extern gasnet_seginfo_t *gasneti_seginfo;
 extern gasnet_seginfo_t *gasneti_seginfo_aux;
 extern gasnet_seginfo_t *gasneti_seginfo_tbl[GASNET_MAXEPS];
+extern const gasnet_seginfo_t gasneti_null_segment;
 
 // TODO: work towards dropping non-scalable seginfo tables
 GASNETI_INLINE(gasneti_client_seginfo)
@@ -455,7 +455,7 @@ const gasnet_seginfo_t *gasneti_client_seginfo(gex_TM_t _e_tm, gex_Rank_t _rank)
   gex_Rank_t _jobrank = _loc.gex_rank;
   gex_EP_Index_t _idx = _loc.gex_ep_index;
   gasnet_seginfo_t *_si_array = gasneti_seginfo_tbl[_idx];
-  gasneti_assert(_si_array);
+  if_pf (!_si_array) return &gasneti_null_segment;
   return _si_array + _jobrank;
 }
 GASNETI_INLINE(gasneti_aux_seginfo)
@@ -538,14 +538,6 @@ int _gasneti_in_segment_t(const void *_ptr, size_t _nbytes, const gex_Segment_t 
   #define gasneti_in_local_segment gasneti_in_local_clientsegment
 #endif
 
-#ifdef GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET
-  /* in-segment check for internal put/gets that may exploit outofseg support */
-  #define gasneti_in_segment_allowoutseg(e_tm,rank,ptr,nbytes) \
-          (gasneti_check_e_tm_rank(e_tm,rank), 1)
-#else
-  #define gasneti_in_segment_allowoutseg  gasneti_in_segment
-#endif
-
 #define _gasneti_boundscheck(e_tm,rank,ptr,nbytes,segtest) do {         \
     gex_TM_t _gex_bc_tm = (e_tm);                                              \
     gasneti_assert(_gex_bc_tm);                                                \
@@ -582,15 +574,12 @@ int _gasneti_in_segment_t(const void *_ptr, size_t _nbytes, const gex_Segment_t 
   } while(0)
 
 
-// gasneti_boundscheck() and gasneti_boundscheck_allowoutseg()
+// gasneti_boundscheck()
 #if GASNET_NDEBUG
   #define gasneti_boundscheck(e_tm,rank,ptr,nbytes) ((void)0)
-  #define gasneti_boundscheck_allowoutseg(e_tm,rank,ptr,nbytes) ((void)0)
 #else
   #define gasneti_boundscheck(e_tm,rank,ptr,nbytes) \
          _gasneti_boundscheck(e_tm,rank,ptr,nbytes,gasneti_in_segment)
-  #define gasneti_boundscheck_allowoutseg(e_tm,rank,ptr,nbytes) \
-         _gasneti_boundscheck(e_tm,rank,ptr,nbytes,gasneti_in_segment_allowoutseg)
 #endif
 
 /* make a GASNet core API call - if it fails, print error message and abort */
@@ -793,10 +782,13 @@ void gasneti_leaf_finish(gex_Event_t *_opt_val) {
   #elif defined GASNETI_HAVE_TLS_SUPPORT
     /* Default to OFF on some common ABIs with good TLS support */
     #if (PLATFORM_ARCH_X86_64 || PLATFORM_ARCH_MIC) && \
-        (PLATFORM_OS_DARWIN || PLATFORM_OS_SOLARIS || PLATFORM_OS_LINUX || PLATFORM_OS_CNL)
+        (PLATFORM_OS_DARWIN || PLATFORM_OS_SOLARIS || PLATFORM_OS_LINUX)
       #define GASNETI_THREADINFO_OPT    0
     #elif PLATFORM_ARCH_POWERPC && \
           PLATFORM_OS_LINUX
+      #define GASNETI_THREADINFO_OPT    0
+    #elif PLATFORM_ARCH_AARCH64 && \
+          (PLATFORM_OS_LINUX || PLATFORM_OS_DARWIN)
       #define GASNETI_THREADINFO_OPT    0
     #endif
   #endif
@@ -1129,6 +1121,19 @@ extern int gasnete_maxthreadidx;
   #define GASNETI_CHECK_INJECT()        ((void)0)
   #define GASNETI_CHECK_INJECT_REPLY()  ((void)0)
   #define GASNETI_CHECK_INJECT_RESET()  ((void)0)
+#endif
+
+// ------------------------------------------------------------------------------------
+// Checks for legacy communication calls without legacy support
+//
+#if GASNET_DEBUG
+  #define _GASNETI_CHECK_LEGACY(fnname, tm, flags) do { \
+    if (((flags) & GASNETI_FLAG_G2EX_DEBUG) && !(tm)) { \
+      gasneti_fatalerror("gasnet_" fnname "*() calls require gasnet_attach() or gex_Client_Init(..., GEX_FLAG_USES_GASNET1)"); \
+    } \
+  } while (0)
+#else
+  #define _GASNETI_CHECK_LEGACY(fnname, tm, flags) ((void)0)
 #endif
 
 /* ------------------------------------------------------------------------------------ */
@@ -1631,8 +1636,18 @@ extern gasnet_nodeinfo_t *gasneti_nodeinfo;
   #define GASNETI_MK_CLASS_HIP_CONFIG nomk_class_hip
 #endif
 
+#if GASNET_HAVE_MK_CLASS_ZE
+  #undef GASNET_HAVE_MK_CLASS_ZE
+  #define GASNET_HAVE_MK_CLASS_ZE 1
+  #define GASNETI_MK_CLASS_ZE_CONFIG mk_class_ze
+#else
+  #undef GASNET_HAVE_MK_CLASS_ZE
+  #define GASNETI_MK_CLASS_ZE_CONFIG nomk_class_ze
+#endif
+
 #if GASNET_HAVE_MK_CLASS_CUDA_UVA || \
-    GASNET_HAVE_MK_CLASS_HIP   // || GASNET_HAVE_MK_CLASS_[FOO]
+    GASNET_HAVE_MK_CLASS_HIP || \
+    GASNET_HAVE_MK_CLASS_ZE   // || GASNET_HAVE_MK_CLASS_[FOO]
   #define GASNET_HAVE_MK_CLASS_MULTIPLE 1
 #endif
 
@@ -1801,7 +1816,7 @@ gex_Rank_t gasneti_nbrhd_mapped_helper(gex_TM_t _e_tm, gex_Rank_t _rank) {
 
   if (gasneti_is_tm0(_i_tm)) {
     // fast path for TM0, which can only include primordial segments
-  #if !(GASNET_SEGMENT_EVERYTHING || GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET)
+  #if !GASNET_SEGMENT_EVERYTHING
     // Check that target segment exists by looking for non-NULL addr in seginfo table
     // TODO-EX: update if/when scalable storage replaces gasneti_seginfo[]
     // TODO-EX: update if/when it is possible to have a primordial segment which is NOT cross-mapped
@@ -1814,7 +1829,7 @@ gex_Rank_t gasneti_nbrhd_mapped_helper(gex_TM_t _e_tm, gex_Rank_t _rank) {
   gex_EP_Location_t _loc = gasneti_i_tm_rank_to_location(_i_tm, _rank, 0);
   gex_Rank_t _jobrank = _loc.gex_rank;
 
-#if !(GASNET_SEGMENT_EVERYTHING || GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET)
+#if !GASNET_SEGMENT_EVERYTHING
   // Regardless whether this query will eventually succeed or fail,
   // it is erroneous to query a target endpoint that does not yet
   // have a bound segment made known to us via gex_Segment_Attach()

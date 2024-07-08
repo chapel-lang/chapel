@@ -1,6 +1,6 @@
 config const n: int = 1024;
 
-extern proc printf(fmt: c_string, x...);
+extern proc printf(fmt: c_ptrConst(c_char), x...);
 
 proc foo(i: int) {
   if i < n {

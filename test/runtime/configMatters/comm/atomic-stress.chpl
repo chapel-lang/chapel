@@ -26,37 +26,42 @@ proc testAddSub(type t) {
     coforall 1..numTasks do
       for 1..numItersPerTask do
         a.sub(1:t);
-  assert(isclose(a.read(), 0:t));
+
+  if (isRealType(t) || isImagType(t) || isComplexType(t)) {
+    assert(isClose(a.read(), 0:t));
+  } else {
+    assert(a.read() == 0:t);
+  }
 }
 
 enum ExchangeType {cmpxchg, cmpxchgW, cas};
-inline proc AtomicT.loopAdd(value: T, param exchangeType: ExchangeType) {
+inline proc ref AtomicT.loopAdd(val: valType, param exchangeType: ExchangeType) {
   var oldValue = this.read();
   select (exchangeType) {
     when ExchangeType.cmpxchgW {
-      while !this.compareExchangeWeak(oldValue, oldValue + value) { }
+      while !this.compareExchangeWeak(oldValue, oldValue + val) { }
     }
     when ExchangeType.cmpxchg {
-      while !this.compareExchange(oldValue, oldValue + value) { }
+      while !this.compareExchange(oldValue, oldValue + val) { }
     }
     when ExchangeType.cas {
-      while !this.compareAndSwap(oldValue, oldValue + value) {
+      while !this.compareAndSwap(oldValue, oldValue + val) {
         oldValue = this.read();
       }
     }
   }
 }
-inline proc RAtomicT.loopAdd(value: T, param exchangeType: ExchangeType) {
+inline proc RAtomicT.loopAdd(val: valType, param exchangeType: ExchangeType) {
   var oldValue = this.read();
   select (exchangeType) {
     when ExchangeType.cmpxchgW {
-      while !this.compareExchangeWeak(oldValue, oldValue + value) { }
+      while !this.compareExchangeWeak(oldValue, oldValue + val) { }
     }
     when ExchangeType.cmpxchg {
-      while !this.compareExchange(oldValue, oldValue + value) { }
+      while !this.compareExchange(oldValue, oldValue + val) { }
     }
     when ExchangeType.cas {
-      while !this.compareAndSwap(oldValue, oldValue + value) {
+      while !this.compareAndSwap(oldValue, oldValue + val) {
         oldValue = this.read();
       }
     }
@@ -75,11 +80,16 @@ proc testLoopAdd(type t, param exchangeType: ExchangeType) {
     coforall 1..numTasks do
       for 1..numItersPerTask do
         a.loopAdd((-1):t, exchangeType);
-  assert(isclose(a.read(), 0:t));
+
+  if (isRealType(t) || isImagType(t) || isComplexType(t)) {
+    assert(isClose(a.read(), 0:t));
+  } else {
+    assert(a.read() == 0:t);
+  }
 }
 
 proc testLoopAdd(type t) {
-  var timer: Timer; timer.start();
+  var timer: stopwatch; timer.start();
   testLoopAdd(t, ExchangeType.cmpxchgW);
   if printTimers { writef("cmpxchgW %8s: %.2dr\n", t:string, timer.elapsed()); timer.clear(); }
 

@@ -14,7 +14,8 @@ module mymodule {
   }
 
   proc main() {
-    var instance = new borrowed MyClass(0);
+    var ownInstance = new owned MyClass(0);
+    var instance = ownInstance.borrow();
     var A = makeArray(instance);
     var B = makeArray(instance);
 

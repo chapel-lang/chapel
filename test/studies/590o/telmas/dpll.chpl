@@ -29,8 +29,8 @@ config const printTiming = true;
 var numVars : int(32); // number of variables
 var numClss : sync int(32); // number of clauses
 
-var domVars : domain(1) dmapped (Block); // domain for variables
-var domClss : domain(1) dmapped (Block); // domain for clauses
+var domVars : domain(1) dmapped (blockDist); // domain for variables
+var domClss : domain(1) dmapped (blockDist); // domain for clauses
 
 var clauses : [domClss] Clause; // clauses in the formula
 
@@ -46,7 +46,7 @@ var glb_model : Assignment; // the complete assignment if the formula is satisfi
 
 var numProcs : sync int = 0; // current number of processors assigned a search branch
 
-var timer : Timer; // timer to measure the elapsed time
+var timer : stopwatch; // timer to measure the elapsed time
 
 var stats : Statistics; // statistics object to collect measurements
 
@@ -808,7 +808,7 @@ proc main() {
 	if STAT then
 		stats = new Statistics();
 		
-	timer = new Timer();
+	timer = new stopwatch();
 	
 	parse();
 	
@@ -854,7 +854,7 @@ proc parse() {
 	var clause : Clause;
 	var c : int;
 	
-	var inputfile = open(FILENAME, iomode.r).reader();
+	var inputfile = open(FILENAME, ioMode.r).reader();
 	
 	inputfile.read(p);
 	while p != "p" {

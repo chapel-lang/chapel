@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -111,7 +111,7 @@ namespace chapel {
     printer->Print("\n");
 
     printer->Print(
-      "proc serialize(ch) throws {\n"
+      "proc ref serialize(ch) throws {\n"
       "  serializeHelper(this, ch);\n"
       "}\n"
       "\n");
@@ -156,13 +156,13 @@ namespace chapel {
 
     printer->Print("\n");
     printer->Print(
-      "proc deserialize(ch) throws {\n"
+      "proc ref deserialize(ch) throws {\n"
       "  deserializeHelper(this, ch);\n"
       "}\n"
       "\n");
 
     printer->Print(
-      "proc _deserialize(binCh) throws {\n"
+      "proc ref _deserialize(binCh) throws {\n"
       "  while true {\n"
       "    var (fieldNumber, wireType) = tagConsume(binCh);\n"
       "    select fieldNumber {\n");
@@ -182,7 +182,7 @@ namespace chapel {
               "  $field_name$ = $proto_field_type$Consume(binCh, $type_name$);\n");
           } else {
             printer->Print(vars[i],
-              "  $field_name$.append($proto_field_type$RepeatedConsume(binCh, $type_name$));\n");
+              "  $field_name$.pushBack($proto_field_type$RepeatedConsume(binCh, $type_name$));\n");
           }
         } else if(vars[i]["proto_field_type"] == "enum") {
           if(vars[i]["is_repeated"] == "0") {
@@ -198,7 +198,7 @@ namespace chapel {
               "  $field_name$ = $proto_field_type$Consume(binCh);\n");
           } else {
             printer->Print(vars[i],
-              "  $field_name$.append($proto_field_type$RepeatedConsume(binCh));\n");
+              "  $field_name$.pushBack($proto_field_type$RepeatedConsume(binCh));\n");
           }
         }
 

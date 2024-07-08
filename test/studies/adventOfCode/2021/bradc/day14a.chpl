@@ -6,10 +6,10 @@ config const steps = 10,
 // TODO: bytes + array of uint(8) would be more appropriate, storage-wise
 
 var polyTemplStr: string;
-readLine(polyTemplStr);  
+readLine(polyTemplStr);
 polyTemplStr = polyTemplStr.strip();
 
-var allChars: domain(string);
+var allChars: domain(string, parSafe=false);
 var prodMap: map(string, string);
 
 try {
@@ -25,7 +25,7 @@ try {
 } catch {
 }
 
-var allPairs: domain(string);
+var allPairs: domain(string, parSafe=true);
 forall ch in allChars with (ref allPairs) do
   forall ch2 in allChars with (ref allPairs) do
     allPairs.add(ch + ch2);
@@ -37,7 +37,7 @@ if debug {
 }
 
 var counts: [allPairs] atomic int;
-forall i in polyTemplStr.indices do
+forall i in polyTemplStr.indices with (ref counts) do
   if i != polyTemplStr.indices.last then
     counts[polyTemplStr[i]+polyTemplStr[i+1]].add(1);
 
@@ -53,7 +53,7 @@ proc processTemplate(in counts, stepsLeft) {
       for (p,c) in zip(allPairs, counts) do
         writeln(p, ": ", c);
     var finalCounts: [allChars] atomic int;
-    forall p in allPairs do
+    forall p in allPairs with (ref finalCounts) do
       finalCounts[p(0)].add(counts[p].read());
     // add 1 for the second character in the last pair, which never changed
     finalCounts[polyTemplStr[polyTemplStr.size-1]].add(1);
@@ -64,11 +64,11 @@ proc processTemplate(in counts, stepsLeft) {
   } else {
     writeln("Step ", stepsLeft);
     var newCounts: [allPairs] atomic int;
-    forall p in allPairs {
+    forall p in allPairs with (ref newCounts) {
       const count = counts[p].read();
       const firstchar = p(0);
       const secondchar = p(1);
-      var midchar = prodMap.getValue(p);
+      var midchar = prodMap[p];
       newCounts[firstchar + midchar].add(count);
       newCounts[midchar + secondchar].add(count);
     }

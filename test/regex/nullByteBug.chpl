@@ -1,17 +1,20 @@
 use Regex;
+use IO, ChplFormat;
 
-var myRegex = compile(b"a+");
+var myRegex = new regex(b"a+");
 
 var str = b"oneatwo";
 
-writef("%t\n", myRegex.subn(b"\x00", str));
+var chplout = stdout.withSerializer(chplSerializer);
 
-writef("%t\n", compile(b"\x00"):bytes);
-writef("%t\n", compile(b"a\x00"):bytes);
-writef("%t\n", compile(b"\x00a"):bytes);
+chplout.writef("%?\n", str.replaceAndCount(myRegex, b"\x00"));
 
-var r3 = compile(b"\x00+");
+chplout.writef("%?\n", (new regex(b"\x00")):bytes);
+chplout.writef("%?\n", (new regex(b"a\x00")):bytes);
+chplout.writef("%?\n", (new regex(b"\x00a")):bytes);
 
-writef("%t\n", r3:bytes);
+var r3 = new regex(b"\x00+");
 
-writef("%t\n", r3.sub(b"A", b"a\x00b\x00\x00c\x00\x00\x00"));
+chplout.writef("%?\n", r3:bytes);
+
+chplout.writef("%?\n", b"a\x00b\x00\x00c\x00\x00\x00".replace(r3, b"A"));

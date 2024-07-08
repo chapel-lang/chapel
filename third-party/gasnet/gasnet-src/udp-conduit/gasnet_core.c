@@ -91,15 +91,23 @@ static void gasnetc_bootstrapSNodeBroadcast(void *src, size_t len, void *dest, i
 
 #define INITERR(type, reason) do {                                      \
    if (gasneti_VerboseErrors) {                                         \
-     fprintf(stderr, "GASNet initialization encountered an error: %s\n" \
-      "  in %s at %s:%i\n",                                             \
+     gasneti_console_message("ERROR","GASNet initialization encountered an error: %s\n" \
+      "  in %s at %s:%i",                                               \
       #reason, GASNETI_CURRENT_FUNCTION,  __FILE__, __LINE__);          \
    }                                                                    \
    retval = GASNET_ERR_ ## type;                                        \
    goto done;                                                           \
  } while (0)
 
-static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
+static int gasnetc_init(
+                               gex_Client_t            *client_p,
+                               gex_EP_t                *ep_p,
+                               gex_TM_t                *tm_p,
+                               const char              *clientName,
+                               int                     *argc,
+                               char                    ***argv,
+                               gex_Flags_t             flags)
+{
   int retval = GASNET_OK;
 
   /*  check system sanity */
@@ -133,9 +141,9 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
 
     /* parse node count from command line */
     if (*argc < 2) {
-      fprintf(stderr, "GASNet: Missing parallel node count\n");
-      fprintf(stderr, "GASNet: Specify node count as first argument, or use upcrun/tcrun spawner script to start job\n");
-      fprintf(stderr, "GASNet: Usage '%s <num_nodes> {program arguments}'\n", (*argv)[0]);
+      gasneti_console0_message("GASNet","Missing parallel node count");
+      gasneti_console0_message("GASNet","Specify node count as first argument, or use programming model spawn script to start job");
+      gasneti_console0_message("GASNet","Usage '%s <num_nodes> {program arguments}'", (*argv)[0]);
       exit(-1);
     }
     /*
@@ -146,8 +154,8 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
      */
     num_nodes = atoi((*argv)[1]);
     if (num_nodes < 1) {
-      fprintf (stderr, "GASNet: Invalid number of nodes: %s\n", (*argv)[1]);
-      fprintf (stderr, "GASNet: Usage '%s <num_nodes> {program arguments}'\n", (*argv)[0]);
+      gasneti_console0_message("GASNet","Invalid number of nodes: %s", (*argv)[1]);
+      gasneti_console0_message("GASNet","Usage '%s <num_nodes> {program arguments}'", (*argv)[0]);
       exit (1);
     }
 
@@ -182,18 +190,17 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
     }
 
     if (!fp) {
-      fprintf (stderr, "GASNet: Invalid spawn function specified in GASNET_SPAWNFN\n");
-      fprintf (stderr, "GASNet: The following mechanisms are available:\n");
+      gasneti_console0_message("GASNet","Invalid spawn function specified in GASNET_SPAWNFN");
+      gasneti_console0_message("GASNet","The following mechanisms are available:");
       for (i=0; AMUDP_Spawnfn_Desc[i].abbrev; i++) {
-        fprintf(stderr, "    '%c'  %s\n",  
+        gasneti_console0_message("GASNet","    '%c'  %s\n",  
               toupper(AMUDP_Spawnfn_Desc[i].abbrev), AMUDP_Spawnfn_Desc[i].desc);
       }
       exit(1);
     }
 
     #if GASNET_DEBUG_VERBOSE
-      /* note - can't call trace macros during gasnet_init because trace system not yet initialized */
-      fprintf(stderr,"gasnetc_init(): about to spawn...\n"); fflush(stderr);
+      gasneti_console_message("gasnetc_init","about to spawn..."); 
     #endif
 
     retval = AMUDP_SPMDStartup(argc, argv, 
@@ -207,8 +214,6 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
   AMLOCK();
     if (gasneti_init_done) 
       INITERR(NOT_INIT, "GASNet already initialized");
-
-    gasneti_freezeForDebugger();
 
     AMX_VerboseErrors = gasneti_VerboseErrors;
     AMUDP_SPMDkillmyprocess = gasneti_killmyprocess;
@@ -236,8 +241,11 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
     gasneti_init_done = 1; /* enable early to allow tracing */
 
     gasneti_getenv_hook = (/* cast drops const */ gasneti_getenv_fn_t*)&AMUDP_SPMDgetenvMaster;
+    gasneti_check_env_prefix_hook = &AMUDP_check_env_prefix;
     gasneti_mynode = AMUDP_SPMDMyProc();
     gasneti_nodes = AMUDP_SPMDNumProcs();
+
+    gasneti_freezeForDebugger(); // must come after getenv_hook is set
 
 #if !GASNETI_CALIBRATE_TSC
     /* Must init timers after global env, and preferably before tracing */
@@ -254,10 +262,12 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
       gasnet_set_waitmode(GASNET_WAIT_BLOCK);
     }
 
-    #if GASNET_DEBUG_VERBOSE
-      fprintf(stderr,"gasnetc_init(): spawn successful - node %i/%i starting...\n", 
-        gasneti_mynode, gasneti_nodes); fflush(stderr);
-    #endif
+    gasneti_spawn_verbose = gasneti_getenv_yesno_withdefault("GASNET_SPAWN_VERBOSE",0);
+
+    if (gasneti_spawn_verbose) {
+      gasneti_console_message("gasnetc_init","spawn successful - proc %i/%i starting...",
+        gasneti_mynode, gasneti_nodes);
+    }
 
     // Note intentional lack of env var tracing when just check for deprecated use
     if (gasneti_getenv("GASNET_USE_GETHOSTID") && !gasneti_getenv("GASNET_HOST_DETECT")) {
@@ -287,9 +297,30 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
       gasneti_pshm_init(&gasnetc_bootstrapSNodeBroadcast, 0);
     #endif
 
+    //  Create first Client, EP and TM *here*, for use in subsequent bootstrap communication
+    {
+      //  allocate the client object
+      gasneti_Client_t client = gasneti_alloc_client(clientName, flags);
+      *client_p = gasneti_export_client(client);
+
+      //  create the initial endpoint with internal handlers
+      if (gex_EP_Create(ep_p, *client_p, GEX_EP_CAPABILITY_ALL, flags))
+        GASNETI_RETURN_ERRR(RESOURCE,"Error creating initial endpoint");
+      gasneti_EP_t ep = gasneti_import_ep(*ep_p);
+      gasnetc_handler = ep->_amtbl; // TODO-EX: this global variable to be removed
+
+      //  create the tm
+      gasneti_TM_t tm = gasneti_alloc_tm(ep, gasneti_mynode, gasneti_nodes, flags);
+      *tm_p = gasneti_export_tm(tm);
+    }
+
+    gasnetc_bootstrapBarrier();
+    gasneti_attach_done = 1; // Ready to use AM Short and Medium for bootstrap comms
+
     uintptr_t mmap_limit;
     #if HAVE_MMAP
     {
+    AMUNLOCK();
       // Bound per-host (sharedLimit) argument to gasneti_segmentLimit()
       // while properly reserving space for aux segments.
       uint64_t sharedLimit = gasneti_sharedLimit();
@@ -301,9 +332,8 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
       }
       sharedLimit -= hostAuxSegs;
 
-      mmap_limit = gasneti_segmentLimit((uintptr_t)-1, sharedLimit,
-                                  &gasnetc_bootstrapExchange,
-                                  &gasnetc_bootstrapBarrier);
+      mmap_limit = gasneti_segmentLimit((uintptr_t)-1, sharedLimit, NULL, NULL);
+    AMLOCK();
     }
     #else
       // TODO-EX: we can at least look at rlimits but such logic belongs in conduit-indep code
@@ -422,32 +452,21 @@ extern int gasnetc_Client_Init(
 
   //  main init
   // TODO-EX: must split off per-client and per-endpoint portions
-  if (!gasneti_init_done) {
-    int retval = gasnetc_init(argc, argv, flags);
+  if (!gasneti_init_done) { // First client
+    // NOTE: gasnetc_init() creates the first Client, EP and TM for use in bootstrap comms
+    int retval = gasnetc_init(client_p, ep_p, tm_p, clientName, argc, argv, flags);
     if (retval != GASNET_OK) GASNETI_RETURN(retval);
   #if 0
     /* called within gasnetc_init to allow init tracing */
     gasneti_trace_init(argc, argv);
   #endif
+  } else {
+    gasneti_fatalerror("No multi-client support");
   }
 
   // Do NOT move this prior to the gasneti_trace_init() call
   GASNETI_TRACE_PRINTF(O,("gex_Client_Init: name='%s' argc_p=%p argv_p=%p flags=%d",
                           clientName, (void *)argc, (void *)argv, flags));
-
-  //  allocate the client object
-  gasneti_Client_t client = gasneti_alloc_client(clientName, flags);
-  *client_p = gasneti_export_client(client);
-
-  //  create the initial endpoint with internal handlers
-  if (gex_EP_Create(ep_p, *client_p, GEX_EP_CAPABILITY_ALL, flags))
-    GASNETI_RETURN_ERRR(RESOURCE,"Error creating initial endpoint");
-  gasneti_EP_t ep = gasneti_import_ep(*ep_p);
-  gasnetc_handler = ep->_amtbl; // TODO-EX: this global variable to be removed
-
-  // TODO-EX: create team
-  gasneti_TM_t tm = gasneti_alloc_tm(ep, gasneti_mynode, gasneti_nodes, flags);
-  *tm_p = gasneti_export_tm(tm);
 
   if (0 == (flags & GASNETI_FLAG_INIT_LEGACY)) {
     /*  primary attach  */
@@ -456,6 +475,8 @@ extern int gasnetc_Client_Init(
 
     /* ensure everything is initialized across all nodes */
     gasnet_barrier(0, GASNET_BARRIERFLAG_UNNAMED);
+  } else {
+    gasneti_attach_done = 0; // Pending client call to gasnet_attach()
   }
 
   return GASNET_OK;
@@ -538,7 +559,8 @@ extern void gasnetc_exit(int exitcode) {
     gasneti_mutex_lock(&exit_lock);
   }
 
-  GASNETI_TRACE_PRINTF(C,("gasnet_exit(%i)\n", exitcode));
+  if (gasneti_spawn_verbose) gasneti_console_message("EXIT STATE","gasnet_exit(%i)",exitcode);
+  else GASNETI_TRACE_PRINTF(C,("gasnet_exit(%i)\n", exitcode));
 
   gasneti_flush_streams();
   gasneti_trace_finish();
@@ -605,11 +627,21 @@ extern gex_TI_t gasnetc_Token_Info(
   info->gex_ep = gasneti_THUNK_EP;
   result |= GEX_TI_EP;
 
-#if 0 // TODO-EX: need to implement this
-  /* (###) add code here to write the address of the handle entry into info->gex_entry (optional) */
-  info->gex_entry = ###;
-  result |= GEX_TI_ENTRY;
-#endif
+  if (mask & (GEX_TI_ENTRY|GEX_TI_IS_REQ|GEX_TI_IS_LONG)) {
+      handler_t index;
+      amudp_category_t category;
+      int is_req;
+      gasneti_assert_zeroret(AMUDP_GetTokenInfo(token,&index,&category,&is_req));
+
+      info->gex_entry = gasneti_import_ep(gasneti_THUNK_EP)->_amtbl + index;
+      result |= GEX_TI_ENTRY;
+
+      info->gex_is_req = is_req;
+      result |= GEX_TI_IS_REQ;
+
+      info->gex_is_long = (category == amudp_Long);
+      result |= GEX_TI_IS_LONG;
+  }
 
   return GASNETI_TOKEN_INFO_RETURN(result, info, mask);
 }

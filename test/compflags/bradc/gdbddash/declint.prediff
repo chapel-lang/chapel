@@ -7,15 +7,9 @@ set tmpfile = $outfile.raw.tmp
 #
 # some gdbs print out extra stuff.  This filters it out
 #
+# There is sometimes a newline between the (gdb) prompt and further program
+# output, sometimes not. The sed substitution adding a newline and the final
+# grep for non-empty lines ensures there is always exactly one.
 mv $outfile $tmpfile
-grep -v "Using host libthread_db library" $tmpfile | grep -v "Breakpoint 1 at" | grep -v "no debugging symbols found" | grep -v "Reading symbols" > $outfile
+cat $tmpfile | grep -ivE "Using host libthread_db library|Breakpoint 1 at|no debugging symbols found|Reading symbols|'tmpdirname' has unknown type" | sed 's/(gdb) quit/(gdb) /;s/(gdb) /(gdb) \n/' | grep . > $outfile
 rm $tmpfile
-
-#
-# some greps don't add a linefeed onto the end; others do
-# this ensures that a linefeed is added
-#
-set numlines = `wc -l $outfile`
-if ("$numlines" == "0 $outfile") then
-  echo >> $outfile
-endif

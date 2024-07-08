@@ -1,11 +1,11 @@
-use Barriers;
+use Collectives;
 
 config const tasksPerLoc = 4;
 
 proc main() {
   // 2 cobegins spawn coforalls that spawn tasksPerLoc tasks, each of which
   // spawn an additional task:
-  var barrier = new Barrier(2 * (tasksPerLoc * 2));
+  var bar = new barrier(2 * (tasksPerLoc * 2));
 
   cobegin {
     {
@@ -29,9 +29,9 @@ proc main() {
 
 
   proc mytask() {
-    barrier.barrier();
+    bar.barrier();
     writeln(here.runningTasks());
-    barrier.barrier();
+    bar.barrier();
   }
 }
 

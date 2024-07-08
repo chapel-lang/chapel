@@ -1,0 +1,7 @@
+─── syntax in cannotAttachPragmas.chpl:2 [CannotAttachPragmas] ───
+  Cannot attach 'pragma's to this statement.
+      |
+    2 | writeln("test");
+      |
+  Only declarations, such as variable declarations, can have 'pragma's attached to them.
+

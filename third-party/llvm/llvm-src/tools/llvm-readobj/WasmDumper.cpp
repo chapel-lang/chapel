@@ -70,7 +70,7 @@ protected:
   void printRelocation(const SectionRef &Section, const RelocationRef &Reloc);
 
 private:
-  void printSymbols() override;
+  void printSymbols(bool ExtraSymInfo) override;
   void printDynamicSymbols() override { llvm_unreachable("unimplemented"); }
 
   const WasmObjectFile *Obj;
@@ -144,7 +144,7 @@ void WasmDumper::printRelocations() {
   }
 }
 
-void WasmDumper::printSymbols() {
+void WasmDumper::printSymbols(bool /*ExtraSymInfo*/) {
   ListScope Group(W, "Symbols");
 
   for (const SymbolRef &Symbol : Obj->symbols())
@@ -156,7 +156,7 @@ void WasmDumper::printSectionHeaders() {
   for (const SectionRef &Section : Obj->sections()) {
     const WasmSection &WasmSec = Obj->getWasmSection(Section);
     DictScope SectionD(W, "Section");
-    W.printEnum("Type", WasmSec.Type, makeArrayRef(WasmSectionTypes));
+    W.printEnum("Type", WasmSec.Type, ArrayRef(WasmSectionTypes));
     W.printNumber("Size", static_cast<uint64_t>(WasmSec.Content.size()));
     W.printNumber("Offset", WasmSec.Offset);
     switch (WasmSec.Type) {
@@ -179,13 +179,15 @@ void WasmDumper::printSectionHeaders() {
         if (!Seg.Name.empty())
           W.printString("Name", Seg.Name);
         W.printNumber("Size", static_cast<uint64_t>(Seg.Content.size()));
-        if (Seg.Offset.Opcode == wasm::WASM_OPCODE_I32_CONST)
-          W.printNumber("Offset", Seg.Offset.Value.Int32);
-        else if (Seg.Offset.Opcode == wasm::WASM_OPCODE_I64_CONST)
-          W.printNumber("Offset", Seg.Offset.Value.Int64);
-        else if (Seg.Offset.Opcode == wasm::WASM_OPCODE_GLOBAL_GET) {
+        if (Seg.Offset.Extended)
+          llvm_unreachable("extended const exprs not supported");
+        else if (Seg.Offset.Inst.Opcode == wasm::WASM_OPCODE_I32_CONST)
+          W.printNumber("Offset", Seg.Offset.Inst.Value.Int32);
+        else if (Seg.Offset.Inst.Opcode == wasm::WASM_OPCODE_I64_CONST)
+          W.printNumber("Offset", Seg.Offset.Inst.Value.Int64);
+        else if (Seg.Offset.Inst.Opcode == wasm::WASM_OPCODE_GLOBAL_GET) {
           ListScope Group(W, "Offset");
-          W.printNumber("Global", Seg.Offset.Value.Global);
+          W.printNumber("Global", Seg.Offset.Inst.Value.Global);
         } else
           llvm_unreachable("unknown init expr opcode");
       }
@@ -219,8 +221,8 @@ void WasmDumper::printSymbol(const SymbolRef &Sym) {
   DictScope D(W, "Symbol");
   WasmSymbol Symbol = Obj->getWasmSymbol(Sym.getRawDataRefImpl());
   W.printString("Name", Symbol.Info.Name);
-  W.printEnum("Type", Symbol.Info.Kind, makeArrayRef(WasmSymbolTypes));
-  W.printFlags("Flags", Symbol.Info.Flags, makeArrayRef(WasmSymbolFlags));
+  W.printEnum("Type", Symbol.Info.Kind, ArrayRef(WasmSymbolTypes));
+  W.printFlags("Flags", Symbol.Info.Flags, ArrayRef(WasmSymbolFlags));
 
   if (Symbol.Info.Flags & wasm::WASM_SYMBOL_UNDEFINED) {
     if (Symbol.Info.ImportName) {

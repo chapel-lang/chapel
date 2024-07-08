@@ -11,26 +11,30 @@ config param columns = 61;
 
 
 proc main(args: [] string) {
-  // Open stdin and a binary reader channel
-  const consoleIn = openfd(0),
+  // Create a non-locking version of 'stdin' and query its size
+  const consoleIn = new file(0),
         fileLen = consoleIn.size,
-        stdinNoLock = consoleIn.reader(kind=ionative, locking=false);
+        stdin = consoleIn.reader(locking=false);
 
   // Read line-by-line until we see a line beginning with '>TH'
   var buff: [1..columns] uint(8),
       lineSize = 0,
       numRead = 0;
 
-  while stdinNoLock.readline(buff, lineSize) && !startsWithThree(buff) do
+  do {
+    lineSize = stdin.readLine(buff);
     numRead += lineSize;
+  } while lineSize > 0 && !startsWithThree(buff);
 
   // Read in the rest of the file
   var dataDom = {1..fileLen-numRead},
       data: [dataDom] uint(8),
       idx = 1;
 
-  while stdinNoLock.readline(data, lineSize, idx) do
-    idx += lineSize - 1;
+  do {
+    lineSize = stdin.readLine(data[idx..], stripNewline=true);
+    idx += lineSize;
+  } while lineSize > 0;
 
   // Resize our array to the amount actually read
   dataDom = {1..idx};
@@ -53,10 +57,11 @@ proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
   // create an array of (frequency, sequence) tuples
-  var arr = for (s,f) in freqs.items() do (f,s.val);
+  var arr = for (s,f) in zip(freqs.keys(), freqs.values()) do (f,s.val);
 
   // print the array, sorted by decreasing frequency
-  for (f, s) in sorted(arr, reverseComparator) do
+  sort(arr, reverseComparator);
+  for (f, s) in arr do
    writef("%s %.3dr\n", decode(s, nclSize),
            (100.0 * f) / (data.size - nclSize));
   writeln();
@@ -68,7 +73,7 @@ proc writeCount(data, param str) {
         freqs = calculate(data, str.numBytes),
         d = hash(strBytes, strBytes.domain.low, str.numBytes);
 
-  writeln(freqs[d], "\t", decode(d.val, str.numBytes));
+  writeln(freqs.get(d, 0), "\t", decode(d.val, str.numBytes));
 }
 
 
@@ -80,11 +85,11 @@ proc calculate(data, param nclSize) {
   coforall tid in 1..numTasks with (ref freqs) {
     var myFreqs = new map(hashVal, int);
 
-    for i in tid..(data.size-nclSize) by numTasks do
+    for i in tid..(data.size - nclSize) by numTasks do
       myFreqs[hash(data, i, nclSize)] += 1;
 
     lock.readFE();      // acquire lock
-    for (k,v) in myFreqs.items() do
+    for (k,v) in zip(myFreqs.keys(), myFreqs.values()) do
       freqs[k] += v;
     lock.writeEF(true); // release lock
   }
@@ -131,10 +136,10 @@ inline proc startsWithThree(data) {
 }
 
 
-record hashVal {
+record hashVal: hashable {
   var val: int;
   proc hash() {
-    return val;
+    return val: uint;
   }
 }
 

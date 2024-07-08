@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -31,14 +31,8 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 MAIN_OBJDIR = $(OBJ_SUBDIR)
 include Makefile.share
 
-TARGETS = COPYRIGHT \
-	LICENSE \
-	$(MAIN_OBJS)
+TARGETS = $(MAIN_OBJS)
 
-# Ensure LICENSE and COPYRIGHT are complete before building driver.o (from
-# driver.cpp). Otherwise, compiling driver.o can fail with a #include error
-# (i.e. the file is not yet available).
-OBJ_PREREQS = LICENSE COPYRIGHT
 
 include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
 
@@ -48,9 +42,3 @@ FORCE:
 # standard footer
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.foot
-
-LICENSE: ../../LICENSE
-	cat $< | sed s/\"/\\\\\"/g | sed s/\^/\"/g | sed s/$$/\\\\n\"/g > $@
-
-COPYRIGHT: ../../COPYRIGHT
-	cat $< | sed s/\"/\\\\\"/g | sed s/\^/\"/g | sed s/\$$/\\\\n\"/g > $@

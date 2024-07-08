@@ -8,7 +8,7 @@
 
 #include "llvm/InterfaceStub/IFSStub.h"
 #include "llvm/BinaryFormat/ELF.h"
-#include "llvm/Support/Error.h"
+#include "llvm/Support/ErrorHandling.h"
 
 using namespace llvm;
 using namespace llvm::ifs;
@@ -89,8 +89,9 @@ uint8_t ifs::convertIFSSymbolTypeToELF(IFSSymbolType SymbolType) {
   case IFSSymbolType::TLS:
     return ELF::STT_TLS;
   case IFSSymbolType::NoType:
-  default:
     return ELF::STT_NOTYPE;
+  default:
+    llvm_unreachable("unknown symbol type");
   }
 }
 

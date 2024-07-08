@@ -6,7 +6,7 @@ config const dsetName = "Ai";
 const pathPrefix = readPrefixEnv();
 if pathPrefix != "" {
   use FileSystem;
-  copyFile(infileName, pathPrefix + infileName);
+  copy(infileName, pathPrefix + infileName, permissions=false);
 }
 
 const script = """#!/usr/bin/env bash

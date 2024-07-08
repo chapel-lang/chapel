@@ -9,9 +9,9 @@ record R {
 }
 
 proc main() {
-  type T = R(int, U=real);
+  type T = R(int, U=real, ?);
 
-  for param i in 0..<numFields(T) {
+  for param i in 0..<getNumFields(T) {
     param name = getFieldName(T, i);
     writeln("T.", name, ": ", isFieldBound(T, name));
   }

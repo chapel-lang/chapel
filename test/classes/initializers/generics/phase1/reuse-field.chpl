@@ -23,7 +23,7 @@ record S {
   var x;
   var y;
 
-  proc init(r:R) {
+  proc init(r:R(?)) {
     this.x = r;
     this.y = x.y * 2;
   }

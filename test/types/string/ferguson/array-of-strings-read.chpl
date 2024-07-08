@@ -15,7 +15,7 @@ for i in 1..n {
 }
 
 var nines1: int;
-var t1: Timer;
+var t1: stopwatch;
 
 t1.start();
 nines1 = 0;
@@ -31,7 +31,7 @@ proc count9s(s: string): int {
 }
 
 var nines2: int;
-var t2: Timer;
+var t2: stopwatch;
 t2.start();
 nines2 = 0;
 for i in 1..numTrials {
@@ -46,7 +46,7 @@ proc count9sConstRef(const ref s: string): int {
 }
 
 var nines3: int;
-var t3: Timer;
+var t3: stopwatch;
 t3.start();
 nines3 = 0;
 for i in 1..numTrials {
@@ -61,7 +61,7 @@ proc count9sRef(ref s: string): int {
 }
 
 var nines4: int;
-var t4: Timer;
+var t4: stopwatch;
 t4.start();
 nines4 = 0;
 for i in 1..numTrials {

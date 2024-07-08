@@ -25,19 +25,19 @@ module test_elemental_explicitly_strided_cholesky {
 
   proc main {
 
-    var Rand = new owned RandomStream ( real, seed = 314159) ;
+    var Rand = new randomStream ( real, seed = 314159 ) ;
 
     const unstrided_MatIdx = { index_base .. #n, index_base .. #n };
 
     const strided_MatIdx   = { index_base .. by stride #n , 
 		               index_base .. by stride #n };
 
-    const strided_mat_dom : domain (2, stridable = true) 
-          dmapped Cyclic ( startIdx = strided_MatIdx.lowBound )
+    const strided_mat_dom : domain (2, strides = strideKind.any) 
+          dmapped new cyclicDist ( startIdx = strided_MatIdx.lowBound )
       =   strided_MatIdx;
 
-    const unstrided_mat_dom : domain (2, stridable = false) 
-          dmapped Cyclic ( startIdx = unstrided_MatIdx.lowBound )
+    const unstrided_mat_dom : domain (2, strides = strideKind.one) 
+          dmapped new cyclicDist ( startIdx = unstrided_MatIdx.lowBound )
       =   unstrided_MatIdx;
 
     const distribution_type = "cyclic";
@@ -66,7 +66,7 @@ module test_elemental_explicitly_strided_cholesky {
     // create a test problem, starting with a random general matrix B.
     // ---------------------------------------------------------------
 
-    Rand.fillRandom (B);
+    Rand.fill (B);
 
     // -------------------------------------------------------------
     // create a positive definite matrix A by setting A equal to the
@@ -76,7 +76,7 @@ module test_elemental_explicitly_strided_cholesky {
 
     A = 0.0;
 
-    forall (i,j) in unstrided_mat_dom do
+    forall (i,j) in unstrided_mat_dom with (ref A) do
       A (i,j) = + reduce (  [k in unstrided_mat_dom.dim (0) ] 
     			    B (i, k) * B (j, k) );
 
@@ -90,7 +90,7 @@ module test_elemental_explicitly_strided_cholesky {
       print_lower_triangle ( L_unstrided );
     }
 
-    var clock : Timer;
+    var clock : stopwatch;
           
     writeln ("\n\n");
     writeln ("elemental cholesky factorization symmetric index range code\n " + 

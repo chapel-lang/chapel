@@ -14,7 +14,7 @@ var temp: real;
 var ind, itemp: int;
 
 initA(A,'Adata.dat');
-[i in Vec] piv(i) = i;
+[i in Vec with (ref piv)] piv(i) = i;
 
 writeln("Unfactored Matrix:");
 writeln(A);
@@ -52,9 +52,9 @@ writeln();
 writeln("Pivot Vector:");
 writeln(piv);
 
-proc initA(A,filename:string){
+proc initA(ref A,filename:string){
 
-  var Adat = open(filename, iomode.r).reader();
+  var Adat = open(filename, ioMode.r).reader(locking=false);
 
   for ij in A.domain {
     Adat.read(A(ij));

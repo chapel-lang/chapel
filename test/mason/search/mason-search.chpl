@@ -5,10 +5,10 @@ config const pattern = "";
 
 proc main() {
   var args: list(string);
-  args.append("search");
-  args.append("--no-update");
+  args.pushBack("search");
+  args.pushBack("--no-update");
   for arg in pattern.split() {
-    if arg != "" then args.append(arg);
+    if arg != "" then args.pushBack(arg);
   }
 
   masonSearch(args);

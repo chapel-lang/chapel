@@ -7,7 +7,8 @@ class foo {
   }
 }
 
-var f = new borrowed foo();
+var ownF = new owned foo();
+var f = ownF.borrow();
 
 if f.bar
   then writeln("Bar");

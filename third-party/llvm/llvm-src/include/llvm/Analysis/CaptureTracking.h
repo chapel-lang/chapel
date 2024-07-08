@@ -14,6 +14,7 @@
 #define LLVM_ANALYSIS_CAPTURETRACKING_H
 
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/STLFunctionalExtras.h"
 
 namespace llvm {
 
@@ -41,8 +42,7 @@ namespace llvm {
   /// one value before giving up due too "too many uses". If MaxUsesToExplore
   /// is zero, a default value is assumed.
   bool PointerMayBeCaptured(const Value *V, bool ReturnCaptures,
-                            bool StoreCaptures,
-                            unsigned MaxUsesToExplore = 0);
+                            bool StoreCaptures, unsigned MaxUsesToExplore = 0);
 
   /// PointerMayBeCapturedBefore - Return true if this pointer value may be
   /// captured by the enclosing function (which is required to exist). If a
@@ -104,6 +104,24 @@ namespace llvm {
     /// avoid conservative responses when a pointer is compared to null.
     virtual bool isDereferenceableOrNull(Value *O, const DataLayout &DL);
   };
+
+  /// Types of use capture kinds, see \p DetermineUseCaptureKind.
+  enum class UseCaptureKind {
+    NO_CAPTURE,
+    MAY_CAPTURE,
+    PASSTHROUGH,
+  };
+
+  /// Determine what kind of capture behaviour \p U may exhibit.
+  ///
+  /// A use can be no-capture, a use can potentially capture, or a use can be
+  /// passthrough such that the uses of the user or \p U should be inspected.
+  /// The \p IsDereferenceableOrNull callback is used to rule out capturing for
+  /// certain comparisons.
+  UseCaptureKind
+  DetermineUseCaptureKind(const Use &U,
+                          llvm::function_ref<bool(Value *, const DataLayout &)>
+                              IsDereferenceableOrNull);
 
   /// PointerMayBeCaptured - Visit the value and the values derived from it and
   /// find values which appear to be capturing the pointer value. This feeds

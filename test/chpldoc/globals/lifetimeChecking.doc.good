@@ -23,7 +23,9 @@ or
 
 .. data:: var b = new unmanaged Foo()
 
-.. data:: var c = new borrowed Foo()
+.. data:: var cc = new Foo()
+
+.. data:: var c = cc.borrow()
 
 .. data:: var d = new shared Foo()
 
@@ -41,7 +43,11 @@ or
 
    Double check documentation 
 
-.. data:: var y = new borrowed Foo()
+.. data:: var yy = new Foo()
+
+   Double check documentation 
+
+.. data:: var y = yy.borrow()
 
    Double check documentation 
 
@@ -57,7 +63,11 @@ or
 
    Double check documentation 
 
-.. data:: var yq = new borrowed Foo()?
+.. data:: var yyq = new owned Foo()?
+
+   Double check documentation 
+
+.. data:: var yq = yyq.borrow()
 
    Double check documentation 
 

@@ -1,0 +1,4 @@
+-sformat=FormatKind.default # misc-types.default.good
+-sformat=FormatKind.json # misc-types.json.good
+-sformat=FormatKind.little # misc-types.little.good
+-sformat=FormatKind.syntax # misc-types.syntax.good

@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# filter out irrelevant parts of --help, including empty lines which are
+# inconsistent between gasnet and local builds (probably due to launcher?)
+awk 'BEGIN {write=1;} \
+     /FLAGS:/ {write=0}\
+     /Built-in config vars:/ {write=1} \
+     /unstableConfigs config vars:/ {write=1} \
+     !/^$/ {if(write) print($0)}' <$2 >$2.awked
+
+# filter out line numbers
+sed -E 's/(unstableConfigs.chpl):[[:digit:]]+:(.*)/\1:XX:\2/' <$2.awked >$2
+
+rm -f $2.awked

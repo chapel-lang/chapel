@@ -16,7 +16,7 @@ writeln("myInt = ", myInt);
 
 ////// alias of a ref-returning function //////
 
-proc justVariable() ref  return myInt;
+proc justVariable() ref do  return myInt;
 ref refExpr = justVariable();
 refExpr = 84;
 writeln("myInt = ", myInt);
@@ -37,7 +37,8 @@ writeln("myArr[2] = ", myArr[2]);
 ////// alias of a class field //////
 
 class C { var cField = 51; }
-var myC = new borrowed C();
+var ownMyC = new owned C();
+var myC = ownMyC.borrow();
 ref refClassField = myC.cField;
 myC.cField = 62;
 writeln("refClassField = ", refClassField);

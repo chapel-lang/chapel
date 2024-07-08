@@ -188,25 +188,25 @@ proc main() {
         cscuOnes: [cscuDom] int = 1;
 
   // standalone these()
-  forall r in csrsDom {
+  forall r in csrsDom with (ref csrsCopy) {
     csrsCopy[r] = 1;
   }
   assert(csrsOnes.equals(csrsCopy));
   csrsCopy = 0;
 
-  forall c in cscsDom {
+  forall c in cscsDom with (ref cscsCopy) {
     cscsCopy[c] = 1;
   }
   assert(cscsOnes.equals(cscsCopy));
   cscsCopy = 0;
 
-  forall r in csruDom {
+  forall r in csruDom with (ref csruCopy) {
     csruCopy[r] = 1;
   }
   assert(csruOnes.equals(csruCopy));
   csruCopy = 0;
 
-  forall c in cscuDom {
+  forall c in cscuDom with (ref cscuCopy) {
     cscuCopy[c] = 1;
   }
   assert(cscuOnes.equals(cscuCopy));
@@ -299,19 +299,19 @@ proc main() {
   }
 
   // Parallel .these
-  forall (i,j) in csrsArr.domain {
+  forall (i,j) in csrsArr.domain with (ref csrsArr) {
     csrsArr[i,j] = 10*i + j;
   }
 
-  forall (i,j) in cscsArr.domain {
+  forall (i,j) in cscsArr.domain with (ref cscsArr) {
     cscsArr[i,j] = 10*i + j;
   }
 
-  forall (i,j) in csruArr.domain {
+  forall (i,j) in csruArr.domain with (ref csruArr) {
     csruArr[i,j] = 10*i + j;
   }
 
-  forall (i,j) in cscuArr.domain {
+  forall (i,j) in cscuArr.domain with (ref cscuArr) {
     cscuArr[i,j] = 10*i + j;
   }
 
@@ -367,8 +367,6 @@ proc writeDSI(D) {
   writeln("alignment:\t",D.alignment);
   writeln("first:\t\t",D.first);
   writeln("last:\t\t",D.last);
-  writeln("alignedLow:\t",D.alignedLow);
-  writeln("alignedHigh:\t",D.alignedHigh);
   writeln(D);
 }
 

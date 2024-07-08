@@ -32,7 +32,7 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp-impl.h"
 
 void
-gmp_randseed_ui (gmp_randstate_t rstate,
+gmp_randseed_ui (gmp_randstate_ptr rstate,
                  unsigned long int seed)
 {
   mpz_t zseed;

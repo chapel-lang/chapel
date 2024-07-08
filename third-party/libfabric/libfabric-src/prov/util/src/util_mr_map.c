@@ -31,14 +31,15 @@
  */
 #include <config.h>
 #include <stdlib.h>
-#include <ofi_enosys.h>
-#include <ofi_util.h>
-#include <ofi_mr.h>
+#include "ofi_enosys.h"
+#include "ofi_util.h"
+#include "ofi_mr.h"
+#include "ofi_hmem.h"
 #include <assert.h>
 
 
 static struct fi_mr_attr *
-dup_mr_attr(const struct fi_mr_attr *attr)
+dup_mr_attr(const struct fi_mr_attr *attr, uint64_t flags)
 {
 	struct fi_mr_attr *dup_attr;
 
@@ -49,19 +50,29 @@ dup_mr_attr(const struct fi_mr_attr *attr)
 
 	*dup_attr = *attr;
 	dup_attr->mr_iov = (struct iovec *) (dup_attr + 1);
-	memcpy((void *) dup_attr->mr_iov, attr->mr_iov,
-		sizeof(*attr->mr_iov) * attr->iov_count);
+
+	/*
+	 * dup_mr_attr is only used insided ofi_mr_map_insert.
+	 * dmabuf must be converted to iov before the attr
+	 * is inserted to the mr_map
+	 */
+	if (flags & FI_MR_DMABUF)
+		ofi_mr_get_iov_from_dmabuf((struct iovec *)dup_attr->mr_iov,
+			attr->dmabuf, attr->iov_count);
+	else
+		memcpy((void *) dup_attr->mr_iov, attr->mr_iov,
+			sizeof(*attr->mr_iov) * attr->iov_count);
 
 	return dup_attr;
 }
 
 int ofi_mr_map_insert(struct ofi_mr_map *map, const struct fi_mr_attr *attr,
-		      uint64_t *key, void *context)
+		      uint64_t *key, void *context, uint64_t flags)
 {
 	struct fi_mr_attr *item;
 	int ret;
 
-	item = dup_mr_attr(attr);
+	item = dup_mr_attr(attr, flags);
 	if (!item)
 		return -FI_ENOMEM;
 
@@ -108,14 +119,22 @@ int ofi_mr_map_verify(struct ofi_mr_map *map, uintptr_t *io_addr,
 	void *addr;
 
 	node = ofi_rbmap_find(map->rbtree, &key);
-	if (!node)
-		return -FI_EINVAL;
+	if (!node) {
+                FI_WARN(map->prov, FI_LOG_MR,
+                        "unknown key: %" PRIu64 "\n", key);
+	        return -FI_EINVAL;
+        }
 
 	attr = node->data;
 	assert(attr);
 
 	if ((access & attr->access) != access) {
-		FI_DBG(map->prov, FI_LOG_MR, "verify_addr: invalid access\n");
+                FI_WARN(map->prov, FI_LOG_MR,
+                        "invalid access: permitted %s\n",
+                        fi_tostr(&attr->access, FI_TYPE_MR_MODE));
+                FI_WARN(map->prov, FI_LOG_MR,
+                        "invalid access: requested %s\n",
+                        fi_tostr(&access, FI_TYPE_MR_MODE));
 		return -FI_EACCES;
 	}
 
@@ -124,6 +143,13 @@ int ofi_mr_map_verify(struct ofi_mr_map *map, uintptr_t *io_addr,
 	if ((addr < attr->mr_iov[0].iov_base) ||
 	    (((char *) addr + len) > ((char *) attr->mr_iov[0].iov_base +
 			    	      attr->mr_iov[0].iov_len))) {
+                FI_WARN(map->prov, FI_LOG_MR,
+                        "target region (%p - %p) "
+                        "out of registered range (%p - %p)\n",
+                        addr, (char *) addr + len,
+                        (char *) attr->mr_iov[0].iov_base,
+                        (char *) attr->mr_iov[0].iov_base +
+                        attr->mr_iov[0].iov_len);
 		return -FI_EACCES;
 	}
 
@@ -200,9 +226,9 @@ int ofi_mr_close(struct fid *fid)
 
 	mr = container_of(fid, struct ofi_mr, mr_fid.fid);
 
-	fastlock_acquire(&mr->domain->lock);
+	ofi_genlock_lock(&mr->domain->lock);
 	ret = ofi_mr_map_remove(&mr->domain->mr_map, mr->key);
-	fastlock_release(&mr->domain->lock);
+	ofi_genlock_unlock(&mr->domain->lock);
 	if (ret)
 		return ret;
 
@@ -221,9 +247,14 @@ static struct fi_ops ofi_mr_fi_ops = {
 
 void ofi_mr_update_attr(uint32_t user_version, uint64_t caps,
 			const struct fi_mr_attr *user_attr,
-			struct fi_mr_attr *cur_abi_attr)
+			struct fi_mr_attr *cur_abi_attr,
+			uint64_t flags)
 {
-	cur_abi_attr->mr_iov = (struct iovec *) user_attr->mr_iov;
+	if (FI_VERSION_GE(user_version, FI_VERSION(1, 20))
+	    && (flags & FI_MR_DMABUF))
+		cur_abi_attr->dmabuf = user_attr->dmabuf;
+	else
+		cur_abi_attr->mr_iov = (struct iovec *) user_attr->mr_iov;
 	cur_abi_attr->iov_count = user_attr->iov_count;
 	cur_abi_attr->access = user_attr->access;
 	cur_abi_attr->offset = user_attr->offset;
@@ -241,9 +272,13 @@ void ofi_mr_update_attr(uint32_t user_version, uint64_t caps,
 	if (caps & FI_HMEM) {
 		cur_abi_attr->iface = user_attr->iface;
 		cur_abi_attr->device = user_attr->device;
+		cur_abi_attr->hmem_data = FI_VERSION_GE(user_version, FI_VERSION(1, 19))
+		                          ? user_attr->hmem_data
+		                          : NULL;
 	} else {
 		cur_abi_attr->iface = FI_HMEM_SYSTEM;
 		cur_abi_attr->device.reserved = 0;
+		cur_abi_attr->hmem_data = NULL;
 	}
 }
 
@@ -260,12 +295,23 @@ int ofi_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 		return -FI_EINVAL;
 
 	domain = container_of(fid, struct util_domain, domain_fid.fid);
+
+	if (!ofi_hmem_is_initialized(attr->iface)) {
+		FI_WARN(domain->mr_map.prov, FI_LOG_MR,
+			"Cannot register memory for uninitialized iface\n");
+		return -FI_ENOSYS;
+	}
+
 	mr = calloc(1, sizeof(*mr));
 	if (!mr)
 		return -FI_ENOMEM;
 
 	ofi_mr_update_attr(domain->fabric->fabric_fid.api_version,
-			   domain->info_domain_caps, attr, &cur_abi_attr);
+			   domain->info_domain_caps, attr, &cur_abi_attr, flags);
+
+	if ((flags & FI_HMEM_HOST_ALLOC) && (attr->iface == FI_HMEM_ZE))
+		cur_abi_attr.device.ze = -1;
+
 	if (!hmem_ops[cur_abi_attr.iface].initialized) {
 		FI_WARN(domain->mr_map.prov, FI_LOG_MR,
 			"MR registration failed - hmem iface not initialized\n");
@@ -273,7 +319,7 @@ int ofi_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 		return -FI_ENOSYS;
 	}
 
-	fastlock_acquire(&domain->lock);
+	ofi_genlock_lock(&domain->lock);
 
 	mr->mr_fid.fid.fclass = FI_CLASS_MR;
 	mr->mr_fid.fid.context = attr->context;
@@ -282,8 +328,9 @@ int ofi_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	mr->flags = flags;
 	mr->iface = cur_abi_attr.iface;
 	mr->device = cur_abi_attr.device.reserved;
+	mr->hmem_data = cur_abi_attr.hmem_data;
 
-	ret = ofi_mr_map_insert(&domain->mr_map, &cur_abi_attr, &key, mr);
+	ret = ofi_mr_map_insert(&domain->mr_map, &cur_abi_attr, &key, mr, flags);
 	if (ret) {
 		free(mr);
 		goto out;
@@ -296,7 +343,7 @@ int ofi_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	ofi_atomic_inc32(&domain->ref);
 
 out:
-	fastlock_release(&domain->lock);
+	ofi_genlock_unlock(&domain->lock);
 	return ret;
 }
 
@@ -315,6 +362,7 @@ int ofi_mr_regv(struct fid *fid, const struct iovec *iov,
 	attr.context = context;
 	attr.iface = FI_HMEM_SYSTEM;
 	attr.device.reserved = 0;
+	attr.hmem_data = NULL;
 
 	return ofi_mr_regattr(fid, &attr, flags, mr_fid);
 }
@@ -338,9 +386,9 @@ int ofi_mr_verify(struct ofi_mr_map *map, ssize_t len,
 	int ret;
 
 	domain = container_of(map, struct util_domain, mr_map);
-	fastlock_acquire(&domain->lock);
+	ofi_genlock_lock(&domain->lock);
 	ret = ofi_mr_map_verify(&domain->mr_map, addr, len,
 				key, access, NULL);
-	fastlock_release(&domain->lock);
+	ofi_genlock_unlock(&domain->lock);
 	return ret;
 }

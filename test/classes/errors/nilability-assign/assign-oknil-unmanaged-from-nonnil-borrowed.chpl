@@ -3,7 +3,7 @@
 class MyClass {  var x: int;  }
 
 var lhs: unmanaged MyClass? = nil;
-var rhs = new borrowed MyClass();
+var obj = new MyClass(); var rhs = obj.borrow();
 
 lhs = rhs;
 

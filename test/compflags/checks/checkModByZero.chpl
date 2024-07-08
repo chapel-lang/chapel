@@ -13,7 +13,7 @@ record R {
 }
 
 /* Define this so that %= is automatically defined */
-operator R.%(lhs: R, rhs: R) return new R(lhs.x % rhs.x);
+operator R.%(lhs: R, rhs: R) do return new R(lhs.x % rhs.x);
 
 var rec1 = new R(1),
     rec0 = new R(0);

@@ -1,1 +1,1 @@
-rangecastbounds.chpl:21: error: cannot cast range from bounded to boundedNone
+rangecastbounds.chpl:21: error: cannot cast range from boundKind.both to boundKind.neither

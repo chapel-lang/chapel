@@ -22,7 +22,7 @@ inline proc prefetch(ref x, len:int) {
 // Helper function we use in this test to invalidate pages we prefetched
 // into the remote cache
 pragma "insert line file info"
-extern proc chpl_cache_invalidate(node:c_int, raddr:c_void_ptr,
+extern proc chpl_cache_invalidate(node:c_int, raddr:c_ptr(void),
                                   size: c_size_t);
 
 // Constants for the tests
@@ -78,7 +78,7 @@ proc testCounters(id: int)
             // number of prefetches we did earlier.
             for i in 0..#numPrefetches {
                 const idx = i*elemsPerPage;
-                const eltPtr:c_void_ptr = c_ptrTo(A[idx]):c_void_ptr;
+                const eltPtr:c_ptr(void) = c_ptrTo(A[idx]):c_ptr(void);
                 chpl_cache_invalidate(0:c_int, eltPtr, 1:c_size_t);
             }
         }
@@ -129,7 +129,7 @@ proc testCounters(id: int)
             // force evictions of the pages we prefetched
             for i in 0..#numPrefetches {
                 const idx = i*elemsPerPage;
-                const eltPtr:c_void_ptr = c_ptrTo(A[idx]):c_void_ptr;
+                const eltPtr:c_ptr(void) = c_ptrTo(A[idx]):c_ptr(void);
                 chpl_cache_invalidate(0:c_int, eltPtr, 1:c_size_t);
             }   
         }
@@ -166,7 +166,7 @@ proc testCounters(id: int)
             // force evictions of the pages
             for i in 0..#numPrefetches {
                 const idx = i*elemsPerPage;
-                const eltPtr:c_void_ptr = c_ptrTo(A[idx]):c_void_ptr;
+                const eltPtr:c_ptr(void) = c_ptrTo(A[idx]):c_ptr(void);
                 chpl_cache_invalidate(0:c_int, eltPtr, 1:c_size_t);
             }
         }

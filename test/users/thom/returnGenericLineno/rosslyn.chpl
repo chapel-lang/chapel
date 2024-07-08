@@ -31,14 +31,14 @@ module Rosslyn
             return true;
         }
 
-        /* Time runKernel() method, return results in ms or given time unit*/
-        proc timeKernel(units = TimeUnits.milliseconds) : real
+        /* Time runKernel() method, return results in ms */
+        proc timeKernel() : real
         {
             assert(!hasBeenRun,"Benchmark instance has already been run, ",
                                "create new class instance");
             hasBeenRun = true;
 
-            var timer : Timer;
+            var timer : stopwatch;
 
             timer.start();
             runKernel(); //assume there is minimal overhead here
@@ -46,13 +46,13 @@ module Rosslyn
 
             assert(validate(),"Benchmark run did not validate");
 
-            return timer.elapsed(units);
+            return timer.elapsed() * 1000.0;
         }
 
     }
 
 
-    class BenchmarkFactory
+    class BenchmarkFactory : writeSerializable
     {
         //abstract
         proc getInstance() : unmanaged Benchmark
@@ -63,7 +63,7 @@ module Rosslyn
         }
 
 
-        proc writeThis(w) throws
+        override proc serialize(writer, ref serializer) throws
         {
             assert(false,"BenchmarkFactory.writeThis() should be",
                          "overridden in the subclass");

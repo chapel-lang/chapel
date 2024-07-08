@@ -45,6 +45,7 @@ extern "C" {
 
 enum fi_trigger_event {
 	FI_TRIGGER_THRESHOLD,
+	FI_TRIGGER_XPU,
 };
 
 enum fi_op_type {
@@ -64,6 +65,30 @@ enum fi_op_type {
 struct fi_trigger_threshold {
 	struct fid_cntr		*cntr;
 	size_t			threshold;
+};
+
+struct fi_trigger_var {
+	enum fi_datatype	datatype;
+	int			count;
+	void			*addr;
+	union {
+		uint8_t		val8;
+		uint16_t	val16;
+		uint32_t	val32;
+		uint64_t	val64;
+		uint8_t		*data;
+	} value;
+};
+
+struct fi_trigger_xpu {
+	int			count;
+	enum fi_hmem_iface	iface;
+	union {
+		uint64_t	reserved;
+		int		cuda;
+		int		ze;
+	} device;
+	struct fi_trigger_var	*var;
 };
 
 struct fi_op_msg {
@@ -121,6 +146,7 @@ struct fi_triggered_context {
 	enum fi_trigger_event			event_type;
 	union {
 		struct fi_trigger_threshold	threshold;
+		struct fi_trigger_xpu		xpu;
 		void				*internal[3];
 	} trigger;
 };
@@ -130,6 +156,7 @@ struct fi_triggered_context2 {
 	enum fi_trigger_event			event_type;
 	union {
 		struct fi_trigger_threshold	threshold;
+		struct fi_trigger_xpu		xpu;
 		void				*internal[7];
 	} trigger;
 };

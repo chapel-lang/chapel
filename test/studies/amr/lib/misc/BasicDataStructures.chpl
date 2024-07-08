@@ -1,4 +1,4 @@
-proc main {
+private proc main {
   
   writeln("List test:");
   var l = new unmanaged List(int);

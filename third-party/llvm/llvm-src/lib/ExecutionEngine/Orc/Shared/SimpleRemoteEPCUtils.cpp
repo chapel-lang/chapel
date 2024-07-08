@@ -43,8 +43,8 @@ const char *DispatchFnName = "__llvm_orc_SimpleRemoteEPC_dispatch_fn";
 
 } // end namespace SimpleRemoteEPCDefaultBootstrapSymbolNames
 
-SimpleRemoteEPCTransportClient::~SimpleRemoteEPCTransportClient() {}
-SimpleRemoteEPCTransport::~SimpleRemoteEPCTransport() {}
+SimpleRemoteEPCTransportClient::~SimpleRemoteEPCTransportClient() = default;
+SimpleRemoteEPCTransport::~SimpleRemoteEPCTransport() = default;
 
 Expected<std::unique_ptr<FDSimpleRemoteEPCTransport>>
 FDSimpleRemoteEPCTransport::Create(SimpleRemoteEPCTransportClient &C, int InFD,
@@ -137,7 +137,7 @@ static Error makeUnexpectedEOFError() {
 
 Error FDSimpleRemoteEPCTransport::readBytes(char *Dst, size_t Size,
                                             bool *IsEOF) {
-  assert(Dst && "Attempt to read into null.");
+  assert((Size == 0 || Dst) && "Attempt to read into null.");
   ssize_t Completed = 0;
   while (Completed < static_cast<ssize_t>(Size)) {
     ssize_t Read = ::read(InFD, Dst + Completed, Size - Completed);
@@ -167,7 +167,7 @@ Error FDSimpleRemoteEPCTransport::readBytes(char *Dst, size_t Size,
 }
 
 int FDSimpleRemoteEPCTransport::writeBytes(const char *Src, size_t Size) {
-  assert(Src && "Attempt to append from null.");
+  assert((Size == 0 || Src) && "Attempt to append from null.");
   ssize_t Completed = 0;
   while (Completed < static_cast<ssize_t>(Size)) {
     ssize_t Written = ::write(OutFD, Src + Completed, Size - Completed);

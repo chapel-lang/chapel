@@ -1,0 +1,2 @@
+andReduce.chpl:8: error: Loop is marked with @assertOnGpu but is not eligible for execution on a GPU
+andReduce.chpl:8: note: unsupported reduction

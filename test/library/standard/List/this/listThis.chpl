@@ -5,7 +5,7 @@ config const testIters = 8;
 var lst: list(int);
 
 for i in 1..testIters do
-  lst.append(i);
+  lst.pushBack(i);
 
 assert(!lst.isEmpty());
 

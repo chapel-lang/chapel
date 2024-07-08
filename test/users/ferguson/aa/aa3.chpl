@@ -17,7 +17,8 @@ proc foo(n:int, ref p:borrowed C, ref q:int)
 }
 
 proc doit() {
-  var p = new borrowed C(0.0);
+  var ownP = new owned C(0.0);
+  var p = ownP.borrow();
   var q = 1;
 
   foo(10, p, q);

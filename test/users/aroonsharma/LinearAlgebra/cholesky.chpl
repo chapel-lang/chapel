@@ -24,7 +24,7 @@ config var N: int = 64;
    that Cholesky decomposition can take place */
 proc initialize_matrix(distribution, n_dim: int) {
     var matrix: [distribution] real = 0.0;
-    forall (i,j) in distribution {
+    forall (i,j) in distribution with (ref matrix) {
     if i == j {
       matrix[i,j] = n_dim;
     }
@@ -53,7 +53,7 @@ proc print_matrix(A: [], n_dim: int) {
 /* The process which runs the benchmark */
 proc kernel_cholesky(dist_square, n_dim: int) {
   var still_correct = true;
-  var t:Timer;
+  var t:stopwatch;
   
   if messages {
     resetCommDiagnostics();
@@ -62,7 +62,7 @@ proc kernel_cholesky(dist_square, n_dim: int) {
   
     /******* Start the timer: this is where we do work *******/
   if timeit {
-    t = new Timer();
+    t = new stopwatch();
     t.start();
   }
   
@@ -176,10 +176,10 @@ proc main() {
         var user_dist_square = dom_square dmapped CyclicZipOpt(startIdx=dom_square.low);
         kernel_cholesky(user_dist_square, N);   */
     } else if dist == "C" {
-        var user_dist_square = dom_square dmapped Cyclic(startIdx=dom_square.low);
+        var user_dist_square = dom_square dmapped new cyclicDist(startIdx=dom_square.low);
         kernel_cholesky(user_dist_square, N); 
     } else if dist == "B" {
-        var user_dist_square = dom_square dmapped Block(boundingBox=dom_square);
+        var user_dist_square = dom_square dmapped new blockDist(boundingBox=dom_square);
         kernel_cholesky(user_dist_square, N);  
     } 
 }

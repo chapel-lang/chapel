@@ -11,11 +11,17 @@
 
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/MC/MCAssembler.h"
+#include "llvm/MC/MCFixup.h"
+#include "llvm/MC/MCFragment.h"
 #include "llvm/MC/MCSection.h"
 #include "llvm/MC/MCStreamer.h"
 
 namespace llvm {
+class MCContext;
+class MCInst;
+class MCObjectWriter;
+class MCSymbol;
+struct MCDwarfFrameInfo;
 class MCAssembler;
 class MCCodeEmitter;
 class MCSubtargetInfo;
@@ -40,7 +46,7 @@ class MCObjectStreamer : public MCStreamer {
   bool EmitDebugFrame;
   SmallVector<MCSymbol *, 2> PendingLabels;
   SmallSetVector<MCSection *, 4> PendingLabelSections;
-  unsigned CurSubsectionIdx;
+  unsigned CurSubsectionIdx = 0;
   struct PendingMCFixup {
     const MCSymbol *Sym;
     MCFixup Fixup;
@@ -107,9 +113,9 @@ protected:
   void addPendingLabel(MCSymbol* label);
 
   /// If any labels have been emitted but not assigned fragments in the current
-  /// Section and Subsection, ensure that they get assigned, either to fragment
-  /// F if possible or to a new data fragment. Optionally, one can provide an
-  /// offset \p FOffset as a symbol offset within the fragment.
+  /// Section and Subsection, ensure that they get assigned to fragment F.
+  /// Optionally, one can provide an offset \p FOffset as a symbol offset within
+  /// the fragment.
   void flushPendingLabels(MCFragment *F, uint64_t FOffset = 0);
 
 public:
@@ -142,14 +148,14 @@ public:
   /// can change its size during relaxation.
   virtual void emitInstToFragment(const MCInst &Inst, const MCSubtargetInfo &);
 
-  void emitBundleAlignMode(unsigned AlignPow2) override;
+  void emitBundleAlignMode(Align Alignment) override;
   void emitBundleLock(bool AlignToEnd) override;
   void emitBundleUnlock() override;
   void emitBytes(StringRef Data) override;
-  void emitValueToAlignment(unsigned ByteAlignment, int64_t Value = 0,
+  void emitValueToAlignment(Align Alignment, int64_t Value = 0,
                             unsigned ValueSize = 1,
                             unsigned MaxBytesToEmit = 0) override;
-  void emitCodeAlignment(unsigned ByteAlignment, const MCSubtargetInfo *STI,
+  void emitCodeAlignment(Align ByteAlignment, const MCSubtargetInfo *STI,
                          unsigned MaxBytesToEmit = 0) override;
   void emitValueToOffset(const MCExpr *Offset, unsigned char Value,
                          SMLoc Loc) override;
@@ -162,7 +168,7 @@ public:
                                 unsigned PointerSize) override;
   void emitDwarfLineEndEntry(MCSection *Section, MCSymbol *LastLabel) override;
   void emitDwarfAdvanceFrameAddr(const MCSymbol *LastLabel,
-                                 const MCSymbol *Label);
+                                 const MCSymbol *Label, SMLoc Loc);
   void emitCVLocDirective(unsigned FunctionId, unsigned FileNo, unsigned Line,
                           unsigned Column, bool PrologueEnd, bool IsStmt,
                           StringRef FileName, SMLoc Loc) override;
@@ -185,7 +191,7 @@ public:
   void emitTPRel64Value(const MCExpr *Value) override;
   void emitGPRel32Value(const MCExpr *Value) override;
   void emitGPRel64Value(const MCExpr *Value) override;
-  Optional<std::pair<bool, std::string>>
+  std::optional<std::pair<bool, std::string>>
   emitRelocDirective(const MCExpr &Offset, StringRef Name, const MCExpr *Expr,
                      SMLoc Loc, const MCSubtargetInfo &STI) override;
   using MCStreamer::emitFill;

@@ -1,0 +1,3 @@
+warning: Driver debug phase has no effect for monolithic compilation
+warning: Driver debug phase has no effect when not running with debugger
+hi

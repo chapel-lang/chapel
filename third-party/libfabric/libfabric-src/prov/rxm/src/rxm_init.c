@@ -38,7 +38,6 @@
 
 #include <ofi_prov.h>
 #include "rxm.h"
-#include "ofi_coll.h"
 
 #define RXM_ATOMIC_UNSUPPORTED_MSG_ORDER (FI_ORDER_RAW | FI_ORDER_RAR |  \
 					  FI_ORDER_WAW | FI_ORDER_WAR |  \
@@ -56,13 +55,21 @@ size_t rxm_def_tx_size = 2048;
 size_t rxm_buffer_size = 16384;
 size_t rxm_packet_size;
 
-int force_auto_progress		= 0;
-int rxm_use_write_rndv		= 0;
+int rxm_passthru = 0; /* disable by default, need to analyze performance */
+int force_auto_progress;
+int rxm_use_write_rndv;
+int rxm_detect_hmem_iface;
 enum fi_wait_obj def_wait_obj = FI_WAIT_FD, def_tcp_wait_obj = FI_WAIT_UNSPEC;
 
 char *rxm_proto_state_str[] = {
 	RXM_PROTO_STATES(OFI_STR)
 };
+
+bool rxm_passthru_info(const struct fi_info *info)
+{
+	return info && info->ep_attr &&
+	       info->ep_attr->protocol == FI_PROTO_RXM_TCP;
+}
 
 /*
  * - Support FI_MR_LOCAL/FI_LOCAL_MR as ofi_rxm can handle it.
@@ -99,6 +106,7 @@ void rxm_info_to_core_mr_modes(uint32_t version, const struct fi_info *hints,
 			core_info->domain_attr->mr_mode |= FI_MR_HMEM;
 	}
 }
+
 static bool rxm_use_srx(const struct fi_info *hints,
 			const struct fi_info *base_info)
 {
@@ -115,9 +123,92 @@ static bool rxm_use_srx(const struct fi_info *hints,
 	       strcasestr(info->fabric_attr->prov_name, "tcp");
 }
 
+static int
+rxm_info_thru_core(uint32_t version, const struct fi_info *hints,
+		   const struct fi_info *base_info, struct fi_info *core_info)
+{
+	struct fi_domain_attr *core_dom, *hint_dom;
+	struct fi_ep_attr *core_ep, *hint_ep;
+	struct fi_tx_attr *core_tx, *hint_tx;
+	struct fi_rx_attr *core_rx, *hint_rx;
+
+	if (hints) {
+		core_info->caps = hints->caps;
+		core_info->mode = hints->mode;
+
+		if (hints->domain_attr) {
+			core_dom = core_info->domain_attr;
+			hint_dom = hints->domain_attr;
+
+			core_dom->threading = hint_dom->threading;
+			core_dom->data_progress = hint_dom->data_progress;
+			core_dom->resource_mgmt = hint_dom->resource_mgmt;
+			core_dom->mr_mode = hint_dom->mr_mode;
+			core_dom->cq_data_size = hint_dom->cq_data_size;
+			core_dom->caps = hint_dom->caps;
+			core_dom->mode = hint_dom->mode;
+			core_dom->tclass = hint_dom->tclass;
+		}
+
+		if (hints->ep_attr) {
+			core_ep = core_info->ep_attr;
+			hint_ep = hints->ep_attr;
+
+			core_ep->max_msg_size = hint_ep->max_msg_size;
+			core_ep->msg_prefix_size = hint_ep->msg_prefix_size;
+			core_ep->max_order_raw_size = hint_ep->max_order_raw_size;
+			core_ep->max_order_war_size = hint_ep->max_order_war_size;
+			core_ep->max_order_waw_size = hint_ep->max_order_waw_size;
+			core_ep->mem_tag_format = hint_ep->mem_tag_format;
+		}
+
+		if (hints->tx_attr) {
+			core_tx = core_info->tx_attr;
+			hint_tx = hints->tx_attr;
+
+			core_tx->caps = hint_tx->caps;
+			core_tx->mode = hint_tx->mode;
+			core_tx->op_flags = hint_tx->op_flags;
+			core_tx->msg_order = hint_tx->msg_order;
+			core_tx->inject_size = hint_tx->inject_size;
+			core_tx->iov_limit = hint_tx->iov_limit;
+			core_tx->rma_iov_limit = hint_tx->rma_iov_limit;
+			core_tx->tclass = hint_tx->tclass;
+		}
+
+		if (hints->rx_attr) {
+			core_rx = core_info->rx_attr;
+			hint_rx = hints->rx_attr;
+
+			core_rx->caps = hint_rx->caps;
+			core_rx->mode = hint_rx->mode;
+			core_rx->op_flags = hint_rx->op_flags;
+			core_rx->msg_order = hint_rx->msg_order;
+			core_rx->iov_limit = hint_rx->iov_limit;
+		}
+	}
+
+	core_info->ep_attr->type = FI_EP_MSG;
+	core_info->ep_attr->rx_ctx_cnt = FI_SHARED_CONTEXT;
+	core_info->ep_attr->tx_ctx_cnt = 1;
+
+	core_info->tx_attr->size = rxm_msg_tx_size ?
+				   rxm_msg_tx_size : RXM_MSG_RXTX_SIZE;
+	core_info->rx_attr->size = rxm_msg_rx_size ?
+				   rxm_msg_rx_size : RXM_MSG_SRX_SIZE;
+
+	return 0;
+}
+
 int rxm_info_to_core(uint32_t version, const struct fi_info *hints,
 		     const struct fi_info *base_info, struct fi_info *core_info)
 {
+	if (rxm_passthru_info(base_info)) {
+		if (!rxm_passthru)
+			return -FI_ENODATA;
+		return rxm_info_thru_core(version, hints, base_info, core_info);
+	}
+
 	rxm_info_to_core_mr_modes(version, hints, core_info);
 
 	core_info->mode |= FI_RX_CQ_DATA | FI_CONTEXT;
@@ -150,6 +241,8 @@ int rxm_info_to_core(uint32_t version, const struct fi_info *hints,
 			core_info->rx_attr->msg_order = hints->rx_attr->msg_order;
 			core_info->rx_attr->comp_order = hints->rx_attr->comp_order;
 		}
+		if ((hints->caps & FI_HMEM) && ofi_hmem_p2p_disabled())
+			return -FI_ENODATA;
 	}
 
 	core_info->ep_attr->type = FI_EP_MSG;
@@ -174,10 +267,55 @@ int rxm_info_to_core(uint32_t version, const struct fi_info *hints,
 	return 0;
 }
 
+static int
+rxm_info_thru_rxm(uint32_t version, const struct fi_info *core_info,
+		  const struct fi_info *base_info, struct fi_info *info)
+{
+	info->caps = core_info->caps;
+	info->mode = core_info->mode;
+
+	*info->tx_attr = *core_info->tx_attr;
+	info->tx_attr->comp_order = base_info->tx_attr->comp_order;
+	info->tx_attr->size = MIN(base_info->tx_attr->size, rxm_def_tx_size);
+
+	*info->rx_attr = *core_info->rx_attr;
+	info->rx_attr->comp_order = base_info->rx_attr->comp_order;
+	info->rx_attr->size = MIN(base_info->rx_attr->size, rxm_def_rx_size);
+
+	*info->ep_attr = *base_info->ep_attr;
+	info->ep_attr->max_msg_size = core_info->ep_attr->max_msg_size;
+	info->ep_attr->max_order_raw_size = core_info->ep_attr->max_order_raw_size;
+	info->ep_attr->max_order_war_size = core_info->ep_attr->max_order_war_size;
+	info->ep_attr->max_order_waw_size = core_info->ep_attr->max_order_waw_size;
+
+	*info->domain_attr = *base_info->domain_attr;
+	info->domain_attr->mr_mode = core_info->domain_attr->mr_mode;
+	info->domain_attr->mr_key_size = core_info->domain_attr->mr_key_size;
+	info->domain_attr->cq_data_size = core_info->domain_attr->cq_data_size;
+	info->domain_attr->mr_iov_limit = core_info->domain_attr->mr_iov_limit;
+	info->domain_attr->caps = core_info->domain_attr->caps;
+	info->domain_attr->mode = core_info->domain_attr->mode;
+	info->domain_attr->max_err_data = core_info->domain_attr->max_err_data;
+	info->domain_attr->mr_cnt = core_info->domain_attr->mr_cnt;
+	info->domain_attr->tclass = core_info->domain_attr->tclass;
+
+	if (core_info->nic) {
+		info->nic = ofi_nic_dup(core_info->nic);
+		if (!info->nic)
+			return -FI_ENOMEM;
+	}
+
+	return 0;
+}
+
 int rxm_info_to_rxm(uint32_t version, const struct fi_info *core_info,
 		    const struct fi_info *base_info, struct fi_info *info)
 {
-	info->caps = base_info->caps;
+	if (rxm_passthru_info(base_info))
+		return rxm_info_thru_rxm(version, core_info, base_info, info);
+
+	info->caps = ofi_pick_core_flags(base_info->caps, core_info->caps,
+					 FI_LOCAL_COMM | FI_REMOTE_COMM);
 	info->mode = (core_info->mode & ~FI_RX_CQ_DATA) | base_info->mode;
 
 	info->tx_attr->caps		= base_info->tx_attr->caps;
@@ -229,6 +367,9 @@ int rxm_info_to_rxm(uint32_t version, const struct fi_info *core_info,
 	info->ep_attr->max_order_waw_size = core_info->ep_attr->max_order_waw_size;
 
 	*info->domain_attr = *base_info->domain_attr;
+	info->domain_attr->caps = ofi_pick_core_flags(base_info->domain_attr->caps,
+						core_info->domain_attr->caps,
+						FI_LOCAL_COMM | FI_REMOTE_COMM);
 	info->domain_attr->mr_mode |= core_info->domain_attr->mr_mode;
 	info->domain_attr->cq_data_size = MIN(core_info->domain_attr->cq_data_size,
 					      base_info->domain_attr->cq_data_size);
@@ -284,7 +425,8 @@ static void rxm_init_infos(void)
 		rxm_def_rx_size = rx_size;
 
 	for (cur = (struct fi_info *) rxm_util_prov.info; cur; cur = cur->next) {
-		cur->tx_attr->inject_size = rxm_buffer_size;
+		if (!rxm_passthru_info(cur))
+			cur->tx_attr->inject_size = rxm_buffer_size;
 		if (tx_size)
 			cur->tx_attr->size = tx_size;
 		if (rx_size)
@@ -297,6 +439,14 @@ static void rxm_alter_info(const struct fi_info *hints, struct fi_info *info)
 	struct fi_info *cur;
 
 	for (cur = info; cur; cur = cur->next) {
+		/* auto progress requires starting a listener thread */
+		if (cur->domain_attr->data_progress == FI_PROGRESS_AUTO ||
+		    force_auto_progress)
+			cur->domain_attr->threading = FI_THREAD_SAFE;
+
+		if (rxm_passthru_info(cur))
+			continue;
+
 		/* Remove the following caps if they are not requested as they
 		 * may affect performance in fast-path */
 		if (!hints) {
@@ -310,10 +460,6 @@ static void rxm_alter_info(const struct fi_info *hints, struct fi_info *info)
 			if (!(hints->caps & FI_DIRECTED_RECV)) {
 				cur->caps &= ~FI_DIRECTED_RECV;
 				cur->rx_attr->caps &= ~FI_DIRECTED_RECV;
-			}
-			if (!(hints->caps & FI_SOURCE)) {
-				cur->caps &= ~FI_SOURCE;
-				cur->rx_attr->caps &= ~FI_SOURCE;
 			}
 
 			if (hints->mode & FI_BUFFERED_RECV)
@@ -355,10 +501,6 @@ static void rxm_alter_info(const struct fi_info *hints, struct fi_info *info)
 					hints->ep_attr->mem_tag_format;
 			}
 		}
-
-		if (cur->domain_attr->data_progress == FI_PROGRESS_AUTO ||
-		    force_auto_progress)
-			cur->domain_attr->threading = FI_THREAD_SAFE;
 	}
 }
 
@@ -484,17 +626,6 @@ RXM_INI
 			"typically used as the eager message size. "
 			"(default %zu)", rxm_buffer_size);
 
-	fi_param_define(&rxm_prov, "eager_limit", FI_PARAM_SIZE_T,
-			"Specifies the maximum size transfer that the eager "
-			"protocol will be used.  For transfers smaller than "
-			"this limit, data may be copied into a bounce "
-			"buffer on the transmit side and received into "
-			"bounce buffer at the receiver.  The eager_limit must "
-			"be equal to the buffer_size when using rxm over "
-			"verbs, but may differ in the case of tcp."
-			"(default: %zu)", rxm_buffer_size);
-			/* rxm_buffer_size is correct here */
-
 	fi_param_define(&rxm_prov, "comp_per_progress", FI_PARAM_INT,
 			"Defines the maximum number of MSG provider CQ entries "
 			"(default: 1) that would be read per progress "
@@ -554,14 +685,6 @@ RXM_INI
 			"RMA writes rather than RMA reads during Rendezvous "
 			"transactions. (default: false/no).");
 
-	fi_param_define(&rxm_prov, "enable_dyn_rbuf", FI_PARAM_BOOL,
-			"Enable support for dynamic receive buffering, if "
-			"available by the message endpoint provider. "
-			"This allows direct placement of received messages "
-			"into application buffers, bypassing RxM bounce "
-			"buffers.  This feature targets using tcp sockets "
-			"for the message transport.  (default: true)");
-
 	fi_param_define(&rxm_prov, "enable_direct_send", FI_PARAM_BOOL,
 			"Enable support to pass application buffers directly "
 			"to the core provider when possible.  This avoids "
@@ -569,6 +692,25 @@ RXM_INI
 			"before passing them to the core provider.  This "
 			"feature targets small to medium size message "
 			"transfers over the tcp provider.  (default: true)");
+
+	fi_param_define(&rxm_prov, "enable_passthru", FI_PARAM_BOOL,
+			"Enable passthru optimization.  Pass thru allows "
+			"rxm to pass all data transfer calls directly to the "
+			"core provider, which eliminates the rxm protocol and "
+			"related overhead.  Pass thru is an optimized path "
+			"to the tcp provider, depending on the capabilities "
+			"requested by the application.");
+
+	fi_param_define(&rxm_prov, "detect_hmem_iface", FI_PARAM_BOOL,
+			"Detect iface for user buffers with NULL desc passed "
+			"in. This allows such buffers be copied or registered "
+			"internally by RxM. (default: false).");
+
+	/* passthru supported disabled - to re-enable would need to fix call to
+	 * fi_cq_read to pass in the correct data structure.  However, passthru
+	 * will not be needed at all with in-work tcp changes.
+	 */
+	fi_param_get_bool(&rxm_prov, "enable_passthru", &rxm_passthru);
 
 	rxm_init_infos();
 	fi_param_get_size_t(&rxm_prov, "msg_tx_size", &rxm_msg_tx_size);
@@ -588,6 +730,8 @@ RXM_INI
 		FI_INFO(&rxm_prov, FI_LOG_CORE, "auto-progress for data requested "
 			"(FI_OFI_RXM_DATA_AUTO_PROGRESS = 1), domain threading "
 			"level would be set to FI_THREAD_SAFE\n");
+
+	fi_param_get_bool(&rxm_prov, "detect_hmem_iface", &rxm_detect_hmem_iface);
 
 #if HAVE_RXM_DL
 	ofi_mem_init();

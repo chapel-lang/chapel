@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -44,6 +44,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+//
+// WARNING: elements of the '_common' functions in this file have been
+// duplicated in src/chpl-gpu.c to support strided transfers involving GPUs.
+// Updates to this file may need to be replicated in the GPU implementation.
+//
 
 //
 //

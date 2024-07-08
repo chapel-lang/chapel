@@ -33,7 +33,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************/
 
-use fft, Time;
+use fft, Time, Math;
 
 config const NUMRUNS = 1000;
 config const MIN_SIZE = 1;
@@ -58,7 +58,7 @@ proc main() {
     //  initialization
     numruns = (numruns*0.7):int;
     X(0) = 1+1.0i;
-    forall i in 1..N-1 {
+    forall i in 1..N-1 with (ref X) {
       X(i) = 0;
     }
     init_fft(N);
@@ -71,11 +71,11 @@ proc main() {
     }    
     
     //  benchmark computation
-    startTime = getCurrentTime(TimeUnits.microseconds);
+    startTime = timeSinceEpoch().totalSeconds() * 1_000_000;
     for i in 1..NUMRUNS {
       fft(N, Y, X);
     }
-    execTime = (getCurrentTime(TimeUnits.microseconds) - startTime)/NUMRUNS;
+    execTime = (timeSinceEpoch().totalSeconds()*1_000_000 - startTime)/NUMRUNS;
     if (printTimings) then
       writeln("fft_", N, ": ", execTime, "us = ", ops / execTime, " Mflop/s");
     else

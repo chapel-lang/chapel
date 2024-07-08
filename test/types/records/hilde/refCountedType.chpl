@@ -40,8 +40,8 @@ record Handle
 
 
 // Destructor
-  proc deinit() { this.release_helper(); }
-  inline proc release_helper()
+  proc ref deinit() { this.release_helper(); }
+  inline proc ref release_helper()
   {
     if _impl != nil && _impl!.release() == 0
     {
@@ -52,8 +52,8 @@ record Handle
   }
 
 // Accessors
-  proc value return _impl!.value;
-  proc freed return _impl!.freed;
+  proc value do return _impl!.value;
+  proc freed do return _impl!.freed;
 }
 
 // Assignment

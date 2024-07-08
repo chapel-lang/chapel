@@ -30,9 +30,9 @@ param nExtent = 13;
 type  AtomMatrix = nExtent*real;
 
 const GridDom  = {0..#span_x, 0..#span_y, 0..#span_z};
-const GridDist = GridDom dmapped Block(GridDom);
+const GridDist = GridDom dmapped new blockDist(GridDom);
 
-const LocalesDist = {0..#numLocales} dmapped Block({0..#numLocales});
+const LocalesDist = {0..#numLocales} dmapped new blockDist({0..#numLocales});
 
 class Cache {
 	var space: sparse subdomain(GridDom);
@@ -40,7 +40,7 @@ class Cache {
 }
 
 proc main() {
-	var t: Timer;
+	var t: stopwatch;
 
 	writeln("[[ LSMS ]]");
 	writeln("Problem size = [", span_x, ", ", span_y, ", ", span_z, "]");
@@ -87,7 +87,7 @@ proc main() {
 			}
 		}
 		//add up neighbors' contributions
-		forall (a, liz) in zip(GridDist, lizDoms) {
+		forall (a, liz) in zip(GridDist, lizDoms) with (ref atoms) {
 			local {
 				var total: AtomMatrix;
 				for ac in liz {

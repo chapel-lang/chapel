@@ -9,7 +9,6 @@ class badClass {
     writeln("in old constructor");
   }
 }
-
-var c: badClass = new badClass(); // Should fail
-// Can't distinguish between the two initializer styles.
+// 'proc badClass' is a regular method, this uses 'init'.
+var c: badClass = new badClass();
 writeln(c);

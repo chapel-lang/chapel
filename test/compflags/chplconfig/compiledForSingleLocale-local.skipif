@@ -1,0 +1,6 @@
+#!/usr/bin/env python3
+
+import os
+
+# only run when we have --local
+print('--local' not in os.getenv('COMPOPTS'))

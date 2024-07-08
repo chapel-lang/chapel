@@ -1,0 +1,2 @@
+--detailed-errors # externUnclosedPair-detailed.good
+--no-detailed-errors # externUnclosedPair-brief.good

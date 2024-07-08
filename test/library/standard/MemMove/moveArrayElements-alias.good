@@ -1,0 +1,4 @@
+IllegalArgumentError: Arguments to 'moveArrayElements' alias the same data. Regions are '{1..10}' and '{1..10}'
+IllegalArgumentError: Arguments to 'moveArrayElements' alias the same data. Regions are '{1..7}' and '{4..10}'
+IllegalArgumentError: Arguments to 'moveArrayElements' alias the same data. Regions are '{1..10}' and '{1..10}'
+IllegalArgumentError: Arguments to 'moveArrayElements' alias the same data. Regions are '1..7' and '4..10'

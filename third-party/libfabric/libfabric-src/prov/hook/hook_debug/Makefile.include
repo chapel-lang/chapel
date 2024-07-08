@@ -1,13 +1,29 @@
 if HAVE_HOOK_DEBUG
+
 _hook_debug_files = \
 	prov/hook/hook_debug/src/hook_debug.c
 
 _hook_debug_headers = \
 	prov/hook/hook_debug/include/hook_debug.h
 
-
+if HAVE_HOOK_DEBUG_DL
+pkglib_LTLIBRARIES += libhook_debug-fi.la
+libhook_debug_fi_la_SOURCES =	$(_hook_debug_files) \
+				$(_hook_debug_headers) \
+				$(common_hook_srcs) \
+				$(common_srcs)
+libhook_debug_fi_la_CPPFLAGS =	$(AM_CPPFLAGS) \
+				-I$(top_srcdir)/prov/hook/include \
+				-I$(top_srcdir)/prov/hook/perf/include \
+				-I$(top_srcdir)/prov/hook/hook_debug/include
+libhook_debug_fi_la_LIBADD =	$(linkback) $(hook_debug_shm_LIBS)
+libhook_debug_fi_la_LDFLAGS =	-module -avoid-version -shared -export-dynamic
+libhook_debug_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_HOOK_DEBUG_DL
 src_libfabric_la_SOURCES  +=	$(_hook_debug_files) \
 				$(_hook_debug_headers)
 src_libfabric_la_CPPFLAGS +=	-I$(top_srcdir)/prov/hook/hook_debug/include
 src_libfabric_la_LIBADD	  +=	$(hook_debug_shm_LIBS)
+endif !HAVE_HOOK_DEBUG_DL
+
 endif HAVE_HOOK_DEBUG

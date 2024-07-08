@@ -19,7 +19,7 @@ var stages:int= GetNumStages(n);
 var error:int=0;
 
 const Space = {1..n};
-const Dom = Space dmapped Block(boundingBox=Space);
+const Dom = Space dmapped new blockDist(boundingBox=Space);
 
 var Dstages: domain(1,int)={1..stages};
 var AA,BB,CC,DD:[Dom] real;
@@ -43,7 +43,7 @@ proc main(){
     exit(0);
   }
 
-  if timer then t1=getCurrentTime();
+  if timer then t1=timeSinceEpoch().totalSeconds();
 
 /*********************/
 /* Elimination Phase */
@@ -71,7 +71,7 @@ proc main(){
     forall (x,d,b) in zip(X,D,B) do x=d/b;
   }
 
-  if timer then t2=getCurrentTime();
+  if timer then t2=timeSinceEpoch().totalSeconds();
 	
   //writeln("Tridiagonal System Solution:");
   //PrintV(X);
@@ -93,12 +93,12 @@ proc main(){
     writeln("WRONG!!");
 } //End Main
 
-proc ComputeStage(A,B,C,D,AA,BB,CC,DD,j, msg="")
+proc ComputeStage(ref A,ref B,ref C,ref D,AA,BB,CC,DD,j, msg="")
 {
   //  writeln("ComputeStage", msg, " j=", j);
-  // if timer then t3=getCurrentTime();
+  // if timer then t3=timeSinceEpoch().totalSeconds();
   const TtS:int=1<<(j-1); //// TtS stand for "Two to the Stage (minus 1)" which is = 2**(j-1)
-  forall i in Dom do{
+  forall i in Dom with (ref A, ref B, ref C, ref D) do{
     //writeln("i ",i, " j ",j);
     const lo=i-TtS;
     const hi=i+TtS;
@@ -132,7 +132,7 @@ proc ComputeStage(A,B,C,D,AA,BB,CC,DD,j, msg="")
     }//if
   }//for all i
   //if timer then {
-  //  t4=getCurrentTime();
+  //  t4=timeSinceEpoch().totalSeconds();
   //  CalcTime[j]=t4-t3;
   //  TotCalcTime+=CalcTime[j];
   //}
@@ -164,14 +164,14 @@ proc PrintV(X)
 
 proc SetExampleMatrix()
 {
-  forall (i) in Dom{
+  forall (i) in Dom with (ref A, ref B, ref C) {
     A(i)=1.0;
     B(i)=2.0;
     C(i)=1.0;
   }
   
   A(1)=0;C(n)=0;
-  forall i in 1..(n+1)/2 do {
+  forall i in 1..(n+1)/2 with (ref D) do {
     D(i)=i;
     D(n-i+1)=i;
   }
@@ -183,6 +183,8 @@ proc SetExampleMatrix()
 
 proc GetNumStages(n: int)
 {
+  use Math;
+
   if n-2**log2(n) != 0 then
     return (log2(n)+1);
   else

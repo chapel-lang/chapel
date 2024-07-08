@@ -1,0 +1,7 @@
+This directory contains unit tests for colocales, including NIC selection.
+The tests are based on Python's unittest and are contained in colocales.py.
+The tests invoke the "colocale" executable, which is created by compiling
+colocales.chpl with the "--library" argument to produce a library that is
+linked against the colocales.c test harness. The sub_test script simply runs
+all *.py files in this directory. The *.xml files contain hwloc descriptions
+of the machine topologies used in the tests.

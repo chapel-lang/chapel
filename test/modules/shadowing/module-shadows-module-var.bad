@@ -1,0 +1,8 @@
+module-shadows-module-var.chpl:6: error: modules (like 'foo' here) cannot be called like procedures
+module-shadows-module-var.chpl:9: error: modules (like 'foo' here) cannot be called like procedures
+module-shadows-module-var.chpl:9: error: modules (like 'foo' here) cannot be called like procedures
+module-shadows-module-var.chpl:9: error: modules (like 'foo' here) cannot be called like procedures
+module-shadows-module-var.chpl:6: error: modules (like 'foo' here) cannot be called like procedures
+module-shadows-module-var.chpl:9: error: modules (like 'foo' here) cannot be called like procedures
+module-shadows-module-var.chpl:9: error: modules (like 'foo' here) cannot be called like procedures
+module-shadows-module-var.chpl:9: error: modules (like 'foo' here) cannot be called like procedures

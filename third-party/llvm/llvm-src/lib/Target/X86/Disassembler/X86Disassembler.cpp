@@ -150,11 +150,17 @@ static InstrUID decode(OpcodeType type, InstructionContext insnContext,
     dec =
         &THREEDNOW_MAP_SYM.opcodeDecisions[insnContext].modRMDecisions[opcode];
     break;
+  case MAP4:
+    dec = &MAP4_SYM.opcodeDecisions[insnContext].modRMDecisions[opcode];
+    break;
   case MAP5:
     dec = &MAP5_SYM.opcodeDecisions[insnContext].modRMDecisions[opcode];
     break;
   case MAP6:
     dec = &MAP6_SYM.opcodeDecisions[insnContext].modRMDecisions[opcode];
+    break;
+  case MAP7:
+    dec = &MAP7_SYM.opcodeDecisions[insnContext].modRMDecisions[opcode];
     break;
   }
 
@@ -194,16 +200,17 @@ template <typename T> static bool consume(InternalInstruction *insn, T &ptr) {
   uint64_t offset = insn->readerCursor - insn->startLocation;
   if (offset + sizeof(T) > r.size())
     return true;
-  T ret = 0;
-  for (unsigned i = 0; i < sizeof(T); ++i)
-    ret |= (uint64_t)r[offset + i] << (i * 8);
-  ptr = ret;
+  ptr = support::endian::read<T>(&r[offset], llvm::endianness::little);
   insn->readerCursor += sizeof(T);
   return false;
 }
 
 static bool isREX(struct InternalInstruction *insn, uint8_t prefix) {
   return insn->mode == MODE_64BIT && prefix >= 0x40 && prefix <= 0x4f;
+}
+
+static bool isREX2(struct InternalInstruction *insn, uint8_t prefix) {
+  return insn->mode == MODE_64BIT && prefix == 0xd5;
 }
 
 // Consumes all of an instruction's prefix bytes, and marks the
@@ -337,8 +344,7 @@ static int readPrefixes(struct InternalInstruction *insn) {
       return -1;
     }
 
-    if ((insn->mode == MODE_64BIT || (byte1 & 0xc0) == 0xc0) &&
-        ((~byte1 & 0x8) == 0x8) && ((byte2 & 0x4) == 0x4)) {
+    if ((insn->mode == MODE_64BIT || (byte1 & 0xc0) == 0xc0)) {
       insn->vectorExtensionType = TYPE_EVEX;
     } else {
       --insn->readerCursor; // unconsume byte1
@@ -357,13 +363,19 @@ static int readPrefixes(struct InternalInstruction *insn) {
         return -1;
       }
 
-      // We simulate the REX prefix for simplicity's sake
       if (insn->mode == MODE_64BIT) {
+        // We simulate the REX prefix for simplicity's sake
         insn->rexPrefix = 0x40 |
                           (wFromEVEX3of4(insn->vectorExtensionPrefix[2]) << 3) |
                           (rFromEVEX2of4(insn->vectorExtensionPrefix[1]) << 2) |
                           (xFromEVEX2of4(insn->vectorExtensionPrefix[1]) << 1) |
                           (bFromEVEX2of4(insn->vectorExtensionPrefix[1]) << 0);
+
+        // We simulate the REX2 prefix for simplicity's sake
+        insn->rex2ExtensionPrefix[1] =
+            (r2FromEVEX2of4(insn->vectorExtensionPrefix[1]) << 6) |
+            (x2FromEVEX3of4(insn->vectorExtensionPrefix[2]) << 5) |
+            (b2FromEVEX2of4(insn->vectorExtensionPrefix[1]) << 4);
       }
 
       LLVM_DEBUG(
@@ -474,6 +486,23 @@ static int readPrefixes(struct InternalInstruction *insn) {
                                   insn->vectorExtensionPrefix[1],
                                   insn->vectorExtensionPrefix[2]));
     }
+  } else if (isREX2(insn, byte)) {
+    uint8_t byte1;
+    if (peek(insn, byte1)) {
+      LLVM_DEBUG(dbgs() << "Couldn't read second byte of REX2");
+      return -1;
+    }
+    insn->rex2ExtensionPrefix[0] = byte;
+    consume(insn, insn->rex2ExtensionPrefix[1]);
+
+    // We simulate the REX prefix for simplicity's sake
+    insn->rexPrefix = 0x40 | (wFromREX2(insn->rex2ExtensionPrefix[1]) << 3) |
+                      (rFromREX2(insn->rex2ExtensionPrefix[1]) << 2) |
+                      (xFromREX2(insn->rex2ExtensionPrefix[1]) << 1) |
+                      (bFromREX2(insn->rex2ExtensionPrefix[1]) << 0);
+    LLVM_DEBUG(dbgs() << format("Found REX2 prefix 0x%hhx 0x%hhx",
+                                insn->rex2ExtensionPrefix[0],
+                                insn->rex2ExtensionPrefix[1]));
   } else if (isREX(insn, byte)) {
     if (peek(insn, nextByte))
       return -1;
@@ -493,16 +522,15 @@ static int readPrefixes(struct InternalInstruction *insn) {
     insn->displacementSize = (insn->hasAdSize ? 2 : 4);
     insn->immediateSize = (insn->hasOpSize ? 2 : 4);
   } else if (insn->mode == MODE_64BIT) {
+    insn->displacementSize = 4;
     if (insn->rexPrefix && wFromREX(insn->rexPrefix)) {
       insn->registerSize = 8;
       insn->addressSize = (insn->hasAdSize ? 4 : 8);
-      insn->displacementSize = 4;
       insn->immediateSize = 4;
       insn->hasOpSize = false;
     } else {
       insn->registerSize = (insn->hasOpSize ? 2 : 4);
       insn->addressSize = (insn->hasAdSize ? 4 : 8);
-      insn->displacementSize = (insn->hasOpSize ? 2 : 4);
       insn->immediateSize = (insn->hasOpSize ? 2 : 4);
     }
   }
@@ -533,7 +561,8 @@ static int readSIB(struct InternalInstruction *insn) {
   if (consume(insn, insn->sib))
     return -1;
 
-  index = indexFromSIB(insn->sib) | (xFromREX(insn->rexPrefix) << 3);
+  index = indexFromSIB(insn->sib) | (xFromREX(insn->rexPrefix) << 3) |
+          (x2FromREX2(insn->rex2ExtensionPrefix[1]) << 4);
 
   if (index == 0x4) {
     insn->sibIndex = SIB_INDEX_NONE;
@@ -543,7 +572,8 @@ static int readSIB(struct InternalInstruction *insn) {
 
   insn->sibScale = 1 << scaleFromSIB(insn->sib);
 
-  base = baseFromSIB(insn->sib) | (bFromREX(insn->rexPrefix) << 3);
+  base = baseFromSIB(insn->sib) | (bFromREX(insn->rexPrefix) << 3) |
+         (b2FromREX2(insn->rex2ExtensionPrefix[1]) << 4);
 
   switch (base) {
   case 0x5:
@@ -605,7 +635,7 @@ static int readDisplacement(struct InternalInstruction *insn) {
 
 // Consumes all addressing information (ModR/M byte, SIB byte, and displacement.
 static int readModRM(struct InternalInstruction *insn) {
-  uint8_t mod, rm, reg, evexrm;
+  uint8_t mod, rm, reg;
   LLVM_DEBUG(dbgs() << "readModRM()");
 
   if (insn->consumedModRM)
@@ -637,14 +667,13 @@ static int readModRM(struct InternalInstruction *insn) {
     break;
   }
 
-  reg |= rFromREX(insn->rexPrefix) << 3;
-  rm |= bFromREX(insn->rexPrefix) << 3;
+  reg |= (rFromREX(insn->rexPrefix) << 3) |
+         (r2FromREX2(insn->rex2ExtensionPrefix[1]) << 4);
+  rm |= (bFromREX(insn->rexPrefix) << 3) |
+        (b2FromREX2(insn->rex2ExtensionPrefix[1]) << 4);
 
-  evexrm = 0;
-  if (insn->vectorExtensionType == TYPE_EVEX && insn->mode == MODE_64BIT) {
+  if (insn->vectorExtensionType == TYPE_EVEX && insn->mode == MODE_64BIT)
     reg |= r2FromEVEX2of4(insn->vectorExtensionPrefix[1]) << 4;
-    evexrm = xFromEVEX2of4(insn->vectorExtensionPrefix[1]) << 4;
-  }
 
   insn->reg = (Reg)(insn->regBase + reg);
 
@@ -714,7 +743,7 @@ static int readModRM(struct InternalInstruction *insn) {
       break;
     case 0x1:
       insn->displacementSize = 1;
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
     case 0x2:
       insn->eaDisplacement = (mod == 0x1 ? EA_DISP_8 : EA_DISP_32);
       switch (rm & 7) {
@@ -732,7 +761,7 @@ static int readModRM(struct InternalInstruction *insn) {
       break;
     case 0x3:
       insn->eaDisplacement = EA_DISP_NONE;
-      insn->eaBase = (EABase)(insn->eaRegBase + rm + evexrm);
+      insn->eaBase = (EABase)(insn->eaRegBase + rm);
       break;
     }
     break;
@@ -742,7 +771,7 @@ static int readModRM(struct InternalInstruction *insn) {
   return 0;
 }
 
-#define GENERIC_FIXUP_FUNC(name, base, prefix, mask)                           \
+#define GENERIC_FIXUP_FUNC(name, base, prefix)                                 \
   static uint16_t name(struct InternalInstruction *insn, OperandType type,     \
                        uint8_t index, uint8_t *valid) {                        \
     *valid = 1;                                                                \
@@ -754,28 +783,15 @@ static int readModRM(struct InternalInstruction *insn) {
     case TYPE_Rv:                                                              \
       return base + index;                                                     \
     case TYPE_R8:                                                              \
-      index &= mask;                                                           \
-      if (index > 0xf)                                                         \
-        *valid = 0;                                                            \
-      if (insn->rexPrefix && index >= 4 && index <= 7) {                       \
+      if (insn->rexPrefix && index >= 4 && index <= 7)                         \
         return prefix##_SPL + (index - 4);                                     \
-      } else {                                                                 \
+      else                                                                     \
         return prefix##_AL + index;                                            \
-      }                                                                        \
     case TYPE_R16:                                                             \
-      index &= mask;                                                           \
-      if (index > 0xf)                                                         \
-        *valid = 0;                                                            \
       return prefix##_AX + index;                                              \
     case TYPE_R32:                                                             \
-      index &= mask;                                                           \
-      if (index > 0xf)                                                         \
-        *valid = 0;                                                            \
       return prefix##_EAX + index;                                             \
     case TYPE_R64:                                                             \
-      index &= mask;                                                           \
-      if (index > 0xf)                                                         \
-        *valid = 0;                                                            \
       return prefix##_RAX + index;                                             \
     case TYPE_ZMM:                                                             \
       return prefix##_ZMM0 + index;                                            \
@@ -825,8 +841,8 @@ static int readModRM(struct InternalInstruction *insn) {
 // @param valid - The address of a uint8_t.  The target is set to 1 if the
 //                field is valid for the register class; 0 if not.
 // @return      - The proper value.
-GENERIC_FIXUP_FUNC(fixupRegValue, insn->regBase, MODRM_REG, 0x1f)
-GENERIC_FIXUP_FUNC(fixupRMValue, insn->eaRegBase, EA_REG, 0xf)
+GENERIC_FIXUP_FUNC(fixupRegValue, insn->regBase, MODRM_REG)
+GENERIC_FIXUP_FUNC(fixupRMValue, insn->eaRegBase, EA_REG)
 
 // Consult an operand specifier to determine which of the fixup*Value functions
 // to use in correcting readModRM()'ss interpretation.
@@ -856,8 +872,31 @@ static int fixupReg(struct InternalInstruction *insn,
     if (!valid)
       return -1;
     break;
-  case ENCODING_SIB:
   CASE_ENCODING_RM:
+    if (insn->vectorExtensionType == TYPE_EVEX && insn->mode == MODE_64BIT &&
+        modFromModRM(insn->modRM) == 3) {
+      // EVEX_X can extend the register id to 32 for a non-GPR register that is
+      // encoded in RM.
+      // mode : MODE_64_BIT
+      //  Only 8 vector registers are available in 32 bit mode
+      // mod : 3
+      //  RM encodes a register
+      switch (op->type) {
+      case TYPE_Rv:
+      case TYPE_R8:
+      case TYPE_R16:
+      case TYPE_R32:
+      case TYPE_R64:
+        break;
+      default:
+        insn->eaBase =
+            (EABase)(insn->eaBase +
+                     (xFromEVEX2of4(insn->vectorExtensionPrefix[1]) << 4));
+        break;
+      }
+    }
+    [[fallthrough]];
+  case ENCODING_SIB:
     if (insn->eaBase >= insn->eaRegBase) {
       insn->eaBase = (EABase)fixupRMValue(
           insn, (OperandType)op->type, insn->eaBase - insn->eaRegBase, &valid);
@@ -893,6 +932,9 @@ static bool readOpcode(struct InternalInstruction *insn) {
     case VEX_LOB_0F3A:
       insn->opcodeType = THREEBYTE_3A;
       return consume(insn, insn->opcode);
+    case VEX_LOB_MAP4:
+      insn->opcodeType = MAP4;
+      return consume(insn, insn->opcode);
     case VEX_LOB_MAP5:
       insn->opcodeType = MAP5;
       return consume(insn, insn->opcode);
@@ -922,6 +964,9 @@ static bool readOpcode(struct InternalInstruction *insn) {
     case VEX_LOB_MAP6:
       insn->opcodeType = MAP6;
       return consume(insn, insn->opcode);
+    case VEX_LOB_MAP7:
+      insn->opcodeType = MAP7;
+      return consume(insn, insn->opcode);
     }
   } else if (insn->vectorExtensionType == TYPE_VEX_2B) {
     insn->opcodeType = TWOBYTE;
@@ -943,6 +988,10 @@ static bool readOpcode(struct InternalInstruction *insn) {
       insn->opcodeType = XOPA_MAP;
       return consume(insn, insn->opcode);
     }
+  } else if (mFromREX2(insn->rex2ExtensionPrefix[1])) {
+    // m bit indicates opcode map 1
+    insn->opcodeType = TWOBYTE;
+    return consume(insn, insn->opcode);
   }
 
   if (consume(insn, current))
@@ -1057,11 +1106,17 @@ static int getInstructionIDWithAttrMask(uint16_t *instructionID,
   case THREEDNOW_MAP:
     decision = &THREEDNOW_MAP_SYM;
     break;
+  case MAP4:
+    decision = &MAP4_SYM;
+    break;
   case MAP5:
     decision = &MAP5_SYM;
     break;
   case MAP6:
     decision = &MAP6_SYM;
+    break;
+  case MAP7:
+    decision = &MAP7_SYM;
     break;
   }
 
@@ -1114,7 +1169,11 @@ static int getInstructionID(struct InternalInstruction *insn,
         attrMask |= ATTR_EVEXKZ;
       if (bFromEVEX4of4(insn->vectorExtensionPrefix[3]))
         attrMask |= ATTR_EVEXB;
-      if (aaaFromEVEX4of4(insn->vectorExtensionPrefix[3]))
+      // nf bit is the MSB of aaa
+      if (nfFromEVEX4of4(insn->vectorExtensionPrefix[3]) &&
+          insn->opcodeType == MAP4)
+        attrMask |= ATTR_EVEXNF;
+      else if (aaaFromEVEX4of4(insn->vectorExtensionPrefix[3]))
         attrMask |= ATTR_EVEXK;
       if (lFromEVEX4of4(insn->vectorExtensionPrefix[3]))
         attrMask |= ATTR_VEXL;
@@ -1211,6 +1270,11 @@ static int getInstructionID(struct InternalInstruction *insn,
     attrMask &= ~ATTR_ADSIZE;
   }
 
+  // Absolute jump and pushp/popp need special handling
+  if (insn->rex2ExtensionPrefix[0] == 0xd5 && insn->opcodeType == ONEBYTE &&
+      (insn->opcode == 0xA1 || (insn->opcode & 0xf0) == 0x50))
+    attrMask |= ATTR_REX2;
+
   if (insn->mode == MODE_16BIT) {
     // JCXZ/JECXZ need special handling for 16-bit mode because the meaning
     // of the AdSize prefix is inverted w.r.t. 32-bit mode.
@@ -1270,7 +1334,8 @@ static int getInstructionID(struct InternalInstruction *insn,
   //  any position.
   if ((insn->opcodeType == ONEBYTE && ((insn->opcode & 0xFC) == 0xA0)) ||
       (insn->opcodeType == TWOBYTE && (insn->opcode == 0xAE)) ||
-      (insn->opcodeType == THREEBYTE_38 && insn->opcode == 0xF8)) {
+      (insn->opcodeType == THREEBYTE_38 && insn->opcode == 0xF8) ||
+      (insn->opcodeType == MAP4 && insn->opcode == 0xF8)) {
     // Make sure we observed the prefixes in any position.
     if (insn->hasAdSize)
       attrMask |= ATTR_ADSIZE;
@@ -1383,10 +1448,16 @@ static int readOpcodeRegister(struct InternalInstruction *insn, uint8_t size) {
   if (size == 0)
     size = insn->registerSize;
 
+  auto setOpcodeRegister = [&](unsigned base) {
+    insn->opcodeRegister =
+        (Reg)(base + ((bFromREX(insn->rexPrefix) << 3) |
+                      (b2FromREX2(insn->rex2ExtensionPrefix[1]) << 4) |
+                      (insn->opcode & 7)));
+  };
+
   switch (size) {
   case 1:
-    insn->opcodeRegister = (Reg)(
-        MODRM_REG_AL + ((bFromREX(insn->rexPrefix) << 3) | (insn->opcode & 7)));
+    setOpcodeRegister(MODRM_REG_AL);
     if (insn->rexPrefix && insn->opcodeRegister >= MODRM_REG_AL + 0x4 &&
         insn->opcodeRegister < MODRM_REG_AL + 0x8) {
       insn->opcodeRegister =
@@ -1395,18 +1466,13 @@ static int readOpcodeRegister(struct InternalInstruction *insn, uint8_t size) {
 
     break;
   case 2:
-    insn->opcodeRegister = (Reg)(
-        MODRM_REG_AX + ((bFromREX(insn->rexPrefix) << 3) | (insn->opcode & 7)));
+    setOpcodeRegister(MODRM_REG_AX);
     break;
   case 4:
-    insn->opcodeRegister =
-        (Reg)(MODRM_REG_EAX +
-              ((bFromREX(insn->rexPrefix) << 3) | (insn->opcode & 7)));
+    setOpcodeRegister(MODRM_REG_EAX);
     break;
   case 8:
-    insn->opcodeRegister =
-        (Reg)(MODRM_REG_RAX +
-              ((bFromREX(insn->rexPrefix) << 3) | (insn->opcode & 7)));
+    setOpcodeRegister(MODRM_REG_RAX);
     break;
   }
 
@@ -1722,13 +1788,13 @@ X86GenericDisassembler::X86GenericDisassembler(
                                          std::unique_ptr<const MCInstrInfo> MII)
   : MCDisassembler(STI, Ctx), MII(std::move(MII)) {
   const FeatureBitset &FB = STI.getFeatureBits();
-  if (FB[X86::Mode16Bit]) {
+  if (FB[X86::Is16Bit]) {
     fMode = MODE_16BIT;
     return;
-  } else if (FB[X86::Mode32Bit]) {
+  } else if (FB[X86::Is32Bit]) {
     fMode = MODE_32BIT;
     return;
-  } else if (FB[X86::Mode64Bit]) {
+  } else if (FB[X86::Is64Bit]) {
     fMode = MODE_64BIT;
     return;
   }
@@ -1799,46 +1865,6 @@ static void translateRegister(MCInst &mcInst, Reg reg) {
 
   MCPhysReg llvmRegnum = llvmRegnums[reg];
   mcInst.addOperand(MCOperand::createReg(llvmRegnum));
-}
-
-/// tryAddingSymbolicOperand - trys to add a symbolic operand in place of the
-/// immediate Value in the MCInst.
-///
-/// @param Value      - The immediate Value, has had any PC adjustment made by
-///                     the caller.
-/// @param isBranch   - If the instruction is a branch instruction
-/// @param Address    - The starting address of the instruction
-/// @param Offset     - The byte offset to this immediate in the instruction
-/// @param Width      - The byte width of this immediate in the instruction
-///
-/// If the getOpInfo() function was set when setupForSymbolicDisassembly() was
-/// called then that function is called to get any symbolic information for the
-/// immediate in the instruction using the Address, Offset and Width.  If that
-/// returns non-zero then the symbolic information it returns is used to create
-/// an MCExpr and that is added as an operand to the MCInst.  If getOpInfo()
-/// returns zero and isBranch is true then a symbol look up for immediate Value
-/// is done and if a symbol is found an MCExpr is created with that, else
-/// an MCExpr with the immediate Value is created.  This function returns true
-/// if it adds an operand to the MCInst and false otherwise.
-static bool tryAddingSymbolicOperand(int64_t Value, bool isBranch,
-                                     uint64_t Address, uint64_t Offset,
-                                     uint64_t Width, MCInst &MI,
-                                     const MCDisassembler *Dis) {
-  return Dis->tryAddingSymbolicOperand(MI, Value, Address, isBranch,
-                                       Offset, Width);
-}
-
-/// tryAddingPcLoadReferenceComment - trys to add a comment as to what is being
-/// referenced by a load instruction with the base register that is the rip.
-/// These can often be addresses in a literal pool.  The Address of the
-/// instruction and its immediate Value are used to determine the address
-/// being referenced in the literal pool entry.  The SymbolLookUp call back will
-/// return a pointer to a literal 'C' string if the referenced address is an
-/// address into a section with 'C' string literals.
-static void tryAddingPcLoadReferenceComment(uint64_t Address, uint64_t Value,
-                                            const void *Decoder) {
-  const MCDisassembler *Dis = static_cast<const MCDisassembler*>(Decoder);
-  Dis->tryAddingPcLoadReferenceComment(Value, Address);
 }
 
 static const uint8_t segmentRegnums[SEG_OVERRIDE_max] = {
@@ -1914,8 +1940,7 @@ static void translateImmediate(MCInst &mcInst, uint64_t immediate,
   uint64_t pcrel = 0;
   if (type == TYPE_REL) {
     isBranch = true;
-    pcrel = insn.startLocation +
-            insn.immediateOffset + insn.immediateSize;
+    pcrel = insn.startLocation + insn.length;
     switch (operand.encoding) {
     default:
       break;
@@ -1990,9 +2015,9 @@ static void translateImmediate(MCInst &mcInst, uint64_t immediate,
     break;
   }
 
-  if(!tryAddingSymbolicOperand(immediate + pcrel, isBranch, insn.startLocation,
-                               insn.immediateOffset, insn.immediateSize,
-                               mcInst, Dis))
+  if (!Dis->tryAddingSymbolicOperand(
+          mcInst, immediate + pcrel, insn.startLocation, isBranch,
+          insn.immediateOffset, insn.immediateSize, insn.length))
     mcInst.addOperand(MCOperand::createImm(immediate));
 
   if (type == TYPE_MOFFS) {
@@ -2129,11 +2154,10 @@ static bool translateRMMemory(MCInst &mcInst, InternalInstruction &insn,
         return true;
       }
       if (insn.mode == MODE_64BIT){
-        pcrel = insn.startLocation +
-                insn.displacementOffset + insn.displacementSize;
-        tryAddingPcLoadReferenceComment(insn.startLocation +
-                                        insn.displacementOffset,
-                                        insn.displacement + pcrel, Dis);
+        pcrel = insn.startLocation + insn.length;
+        Dis->tryAddingPcLoadReferenceComment(insn.displacement + pcrel,
+                                             insn.startLocation +
+                                                 insn.displacementOffset);
         // Section 2.2.1.6
         baseReg = MCOperand::createReg(insn.addressSize == 4 ? X86::EIP :
                                                                X86::RIP);
@@ -2193,9 +2217,13 @@ static bool translateRMMemory(MCInst &mcInst, InternalInstruction &insn,
   mcInst.addOperand(baseReg);
   mcInst.addOperand(scaleAmount);
   mcInst.addOperand(indexReg);
-  if(!tryAddingSymbolicOperand(insn.displacement + pcrel, false,
-                               insn.startLocation, insn.displacementOffset,
-                               insn.displacementSize, mcInst, Dis))
+
+  const uint8_t dispSize =
+      (insn.eaDisplacement == EA_DISP_NONE) ? 0 : insn.displacementSize;
+
+  if (!Dis->tryAddingSymbolicOperand(
+          mcInst, insn.displacement + pcrel, insn.startLocation, false,
+          insn.displacementOffset, dispSize, insn.length))
     mcInst.addOperand(displacement);
   mcInst.addOperand(segmentReg);
   return false;

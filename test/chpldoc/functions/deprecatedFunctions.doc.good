@@ -33,19 +33,19 @@ or
 
 .. function:: proc alpha()
 
-   There was documentation of this symbol 
-
    .. warning::
 
       alpha is deprecated
 
-.. function:: proc beta()
-
    There was documentation of this symbol 
+
+.. function:: proc beta()
 
    .. warning::
 
       beta is deprecated, use gamma instead
+
+   There was documentation of this symbol 
 
 .. function:: proc gamma()
 

@@ -6,7 +6,7 @@ class C {
 
   proc init(type idxtype) {
     this.idxtype = idxtype;
-    this.complete();
+    init this;
     for i in dom do
       data(i) = new D(idxtype);
   }

@@ -1,0 +1,2 @@
+no-static.chpl:1: In function 'f':
+no-static.chpl:3: error: cannot create function-static remote variables

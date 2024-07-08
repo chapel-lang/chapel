@@ -9,11 +9,11 @@ proc test(type T) {
 
 type T1 = owned C;
 type T2 = owned C?;
-type T3 = borrowed C?;
+//type T3 = borrowed C?;
 
 proc main() {
   test(T1);
   test(T2);
-  test(T3);
+  //test(T3);
   return;
 }

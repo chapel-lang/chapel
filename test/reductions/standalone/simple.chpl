@@ -1,9 +1,10 @@
 // This program used to produce the incorrect result (count == 0 instead of 5)
-iter myIter() {
+// when the standalone iterator (incorrectly) had the 'ref' return intent
+iter myIter(): int {
   halt("Dummy serial iterator");
 }
 
-iter myIter(param tag) ref where tag==iterKind.standalone {
+iter myIter(param tag) where tag==iterKind.standalone {
   forall i in 1..5 do yield i;
 }
 

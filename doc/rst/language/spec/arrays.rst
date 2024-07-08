@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: arrays
 .. _Chapter-Arrays:
 
 ======
@@ -11,16 +13,19 @@ of homogeneous type. Since Chapel domains support a rich variety of
 index sets, Chapel arrays are also richer than the traditional linear or
 rectilinear array types in conventional languages. Like domains, arrays
 may be distributed across multiple locales without explicitly
-partitioning them using Chapel’s Domain
-Maps (:ref:`Chapter-Domain_Maps`).
+partitioning them using Chapel’s :ref:`distributions <Chapter-Domain_Maps>`.
 
-Parallel Safety with respect to Arrays (and Domains)
-----------------------------------------------------
+Parallel Safety with respect to Arrays
+--------------------------------------
 
 Users must take care when applying operations to arrays and domains
-concurrently from distinct tasks. For more information see the parallel safety
-section for domains (:ref:`Domain_and_Array_Parallel_Safety`).
+concurrently from distinct tasks. For more information see
+:ref:`the Parallel Safety section for domains <Domain_and_Array_Parallel_Safety>`.
 
+.. index::
+   single: arrays; types
+   single: arrays; domain type
+   single: arrays; element type
 .. _Array_Types:
 
 Array Types
@@ -35,11 +40,16 @@ by the following syntax:
 .. code-block:: syntax
 
    array-type:
-     [ domain-expression ] type-expression
+     [ domain-expression[OPT] ] type-expression[OPT]
 
-The ``domain-expression`` must specify a domain that the array can be
+The ``domain-expression`` may specify a domain that the array can be
 declared over. If the ``domain-expression`` is a rectangular domain
 literal, the curly braces around the literal may be omitted.
+
+The ``domain-expression`` and ``type-expression`` are optional, but
+can currently only be omitted when the array type is specified as
+one of: a formal type expression, a procedure return type, or an
+iterator yield type.
 
    *Example (decls.chpl)*.
 
@@ -112,6 +122,11 @@ An array’s element type can be referred to using the member symbol
       real(64)
       real(64)
 
+.. index::
+   single: arrays; values
+   single: arrays; initialization
+   single: initialization; arrays
+   single: arrays; literals
 .. _Array_Values:
 
 Array Values
@@ -119,9 +134,12 @@ Array Values
 
 An array’s value is the collection of its elements’ values. Assignments
 between array variables are performed by value as described
-in :ref:`Array_Assignment`. Chapel semantics are defined so that
-the compiler will never need to insert temporary arrays of the same size
-as a user array variable.
+in :ref:`Array_Assignment`.
+
+When an array is stored in a ``const`` variable, the array elements are
+immutable. Undefined behavior will result if the domain is modified (see
+:ref:`Association_of_Arrays_to_Domains`) since that would necessarily
+add or remove elements.
 
 Array literal values can be either rectangular or associative,
 corresponding to the underlying domain which defines its indices.
@@ -134,16 +152,25 @@ corresponding to the underlying domain which defines its indices.
      rectangular-array-literal
      associative-array-literal
 
+.. index::
+   pair: rectangular arrays; literals
+   seealso: arrays; rectangular arrays
 .. _Rectangular_Array_Literals:
 
 Rectangular Array Literals
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Rectangular array literals are specified by enclosing a comma-separated
-list of expressions representing values in square brackets. A 0-based
-domain will automatically be generated for the given array literal. The
-type of the array’s values will be the type of the first element listed.
-A trailing comma is allowed.
+Rectangular array literals are specified by enclosing a
+comma-separated list of expressions in square brackets, where each
+expression represents an array element's value.  A trailing comma is
+permitted after the final array element.  For a literal with `n`
+expressions, an anonymous domain literal ``{0..<n}`` is generated to
+represent the array's indices.  If the value expressions are all of
+the same type, that type will be used as the array's element type.  If
+they are not, the array's element type is computed using the same type
+unification logic that is used when inferring the return type of a
+procedure with an implicit return type (see
+:ref:`Implicit_Return_Types`).
 
 
 
@@ -186,13 +213,6 @@ A trailing comma is allowed.
 
 ..
 
-   .. note::
-      
-      *Future:*
-      
-      Determine the type of a rectangular array literal based on the most
-      promoted type, rather than the first element’s type.
-
    *Example (decl-with-anon-domain.chpl)*.
 
    The following example declares a 2-element array ``A`` containing
@@ -219,11 +239,20 @@ A trailing comma is allowed.
 
    *Open issue*.
 
-   We would like to differentiate syntactically between array literals
-   for an array of arrays and a multi-dimensional array.
+   We would like to introduce a syntax for multi-dimensional
+   rectangular array literals, where today we can only express 1D
+   arrays whose elements are themselves 1D arrays.
 
-An rectangular array’s default value is for each array element to be
-initialized to the default value of the element type.
+
+.. index::
+   single: rectangular arrays; default values
+
+A rectangular array’s default value is an array in which each element
+is initialized to the default value of the element type.
+
+.. index::
+   pair: associative arrays; literals
+   seealso: arrays; associative arrays
 
 .. _Associative_Array_Literals:
 
@@ -234,7 +263,6 @@ Associative array values are specified by enclosing a comma separated
 list of index-to-value bindings within square brackets. It is expected
 that the indices in the listing match in type and, likewise, the types
 of values in the listing also match. A trailing comma is allowed.
-
 
 
 .. code-block:: syntax
@@ -262,7 +290,7 @@ of values in the listing also match. A trailing comma is allowed.
 
    *Example (adecl-assocLiteral.chpl)*.
 
-   The following example declares a 5 element associative array literal
+   The following example declares a 5-element associative array literal
    which maps integers to their corresponding string representation. The
    indices and their corresponding values are then printed. 
 
@@ -270,7 +298,7 @@ of values in the listing also match. A trailing comma is allowed.
 
       var A = [1 => "one", 10 => "ten", 3 => "three", 16 => "sixteen"];
 
-      for da in zip (A.domain, A) do
+      for da in zip(A.domain, A) do
         writeln(da);
 
    
@@ -292,16 +320,20 @@ of values in the listing also match. A trailing comma is allowed.
       (16, sixteen)
       (3, three)
 
+.. index::
+   single: arrays; runtime representation
 .. _Array_Runtime_Representation:
 
 Runtime Representation of Array Values
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The runtime representation of an array in memory is controlled by its
-domain’s domain map. Through this mechanism, users can reason about and
+domain’s distribution. Through this mechanism, users can reason about and
 control the runtime representation of an array’s elements. See
  :ref:`Chapter-Domain_Maps` for more details.
 
+.. index::
+   pair: arrays; indexing
 .. _Array_Indexing:
 
 Array Indexing
@@ -346,6 +378,8 @@ Except for associative arrays, if an array is indexed using an index
 that is not part of its domain’s index set, the reference is considered
 out-of-bounds and a runtime error will occur, halting the program.
 
+.. index::
+   pair: rectangular arrays; indexing
 .. _Rectangular_Array_Indexing:
 
 Rectangular Array Indexing
@@ -408,7 +442,7 @@ the array.
 
    .. code-block:: chapel
 
-      proc f(A: [], is...)
+      proc f(A: [], is...) do
         return A(is);
 
    
@@ -416,9 +450,9 @@ the array.
    .. BLOCK-test-chapelpost
 
       var B: [1..5] int;
-      [i in 1..5] B(i) = i;
+      [i in 1..5 with (ref B)] B(i) = i;
       var C: [1..5,1..5] int;
-      [(i,j) in {1..5,1..5}] C(i,j) = i+i*j;
+      [(i,j) in {1..5,1..5} with (ref C)] C(i,j) = i+i*j;
       writeln(f(B, 3));
       writeln(f(C, 3, 3));
 
@@ -435,6 +469,8 @@ the array.
    even for one-dimensional arrays because one-dimensional arrays can be
    indexed into by 1-tuples.
 
+.. index::
+   pair: associative arrays; indexing
 .. _Associative_Array_Indexing:
 
 Associative Array Indexing
@@ -448,7 +484,7 @@ Indices can be added to associative arrays through the array’s domain.
 
    .. code-block:: chapel
 
-      var D : domain(string);
+      var D : domain(string, parSafe=false);
       var A : [D] int;
 
    the array A initially contains no elements. We can change that by
@@ -469,6 +505,8 @@ Indices can be added to associative arrays through the array’s domain.
       A["b"] = 2;
       var x = A["a"];
 
+.. index::
+   pair: arrays; iteration
 .. _Iteration_over_Arrays:
 
 Iteration over Arrays
@@ -497,6 +535,8 @@ is semantically equivalent to:
 The iterator variable for an array iteration is a reference to the array
 element type.
 
+.. index::
+   pair: arrays; assignment
 .. _Array_Assignment:
 
 Array Assignment
@@ -569,7 +609,7 @@ compatible in terms of number of dimensions and shape.
       2 2 2
       2 2 2
 
-   If the zipper iteration is illegal, then the assignment is illegal.
+   If the zippered iteration is illegal, then the assignment is illegal.
    This means, for example, that a range cannot be assigned to a
    multidimensional rectangular array because the two expressions don’t
    match in shape and can’t be zipped together. Notice that the
@@ -646,6 +686,8 @@ array of booleans.  To get a single result use the ``equals`` method instead.
   arr1.equals(arr2) // compare entire arrays resulting in a single boolean
 
 
+.. index::
+   pair: arrays; slicing
 .. _Array_Slicing:
 
 Array Slicing
@@ -711,6 +753,9 @@ corresponding to the slicing domain’s index set.
    assigns the elements in the interior of ``B`` to the elements in the
    interior of ``A``.
 
+.. index::
+   single: arrays; slicing
+   pair: slicing; rectangular arrays
 .. _Rectangular_Array_Slicing:
 
 Rectangular Array Slicing
@@ -731,6 +776,8 @@ domain by the specified ranges to create a subdomain as described
 in :ref:`Array_Slicing` and then using that subdomain to slice
 the array.
 
+.. index::
+   pair: arrays; rank change slicing
 .. _Rectangular_Array_Slicing_With_Rank_Change:
 
 Rectangular Array Slicing with a Rank Change
@@ -774,6 +821,9 @@ passed in to take the slice.
    the slice ``A[1..n, 1]`` is a one-dimensional array whose elements
    are the first column of ``A``.
 
+.. index::
+   pair: arrays; count operator
+   single: operators;# (on arrays)
 .. _Count_Operator_Arrays:
 
 Count Operator
@@ -785,6 +835,9 @@ an integer in the case of a 1D array). The operator is equivalent to
 applying the ``#`` operator to the array’s domain and using the result
 to slice the array as described in Section :ref:`Rectangular_Array_Slicing`.
 
+.. index::
+   pair: arrays; swap operator
+   single: operators;<=> (on arrays)
 .. _Array_Swap_Operator:
 
 Swap operator ``<=>``
@@ -792,14 +845,16 @@ Swap operator ``<=>``
 The ``<=>`` operator can be used to swap the contents of two arrays
 with the same shape.
 
+.. index::
+   pair: arrays; arguments
 .. _Array_Arguments_To_Functions:
 
 Array Arguments to Functions
 ----------------------------
 
-By default, arrays are passed to function by ``ref`` or ``const ref``
-depending on whether or not the formal argument is modified. The ``in``,
-``inout``, and ``out`` intent can create copies of arrays.
+By default, arrays are passed to functions by ``const``, see :ref:`The_Default_Intent`.
+Using the ``ref`` intent allows modification of the array without creating a copy.
+The ``in``, ``inout``, and ``out`` intent can create copies of arrays.
 
 When a formal argument has array type, the element type of the array can
 be omitted and/or the domain of the array can be queried or omitted. In
@@ -809,8 +864,10 @@ in :ref:`Formal_Arguments_of_Generic_Array_Types`.
 If a formal array argument specifies a domain as part of its type
 signature, the domain of the actual argument must represent the same
 index set. If the formal array’s domain was declared using an explicit
-domain map, the actual array’s domain must use an equivalent domain map.
+distribution, the actual array’s domain must use an equivalent distribution.
 
+.. index::
+   pair: arrays; promotion
 .. _Array_Promotion_of_Scalar_Functions:
 
 Array Promotion of Scalar Functions
@@ -853,6 +910,8 @@ function as defined in :ref:`Promotion`.
    if ``A``, ``B``, and ``C`` are arrays, this code assigns each element
    in ``A`` the element-wise sum of the elements in ``B`` and ``C``.
 
+.. index::
+   pair: arrays; returning
 .. _Returning_Arrays_from_Functions:
 
 Returning Arrays from Functions
@@ -864,6 +923,8 @@ intents can be used to return a reference to an array.
 Similarly to array arguments, the element type and/or domain of an array
 return type can be omitted.
 
+.. index::
+   single: arrays; sparse
 .. _Sparse_Arrays:
 
 Sparse Arrays
@@ -876,6 +937,13 @@ the *zero value*, but we refer to it as the *implicitly replicated
 value* or *IRV* since it can take on any value of the array’s element
 type in practice including non-zero numeric values, a class reference, a
 record or tuple value, etc.
+
+   .. warning::
+
+      Sparse domains and arrays are currently unstable.
+      Their functionality is likely to change in the future.
+
+
 
 An array declared over a sparse domain can be indexed using any of the
 indices in the sparse domain’s parent domain. If it is read using an
@@ -921,8 +989,11 @@ element type by assigning to a pseudo-field named ``IRV`` in the array.
 
    .. BLOCK-test-chapeloutput
 
-      sparse-error.chpl:9: error: halt reached - attempting to assign a 'zero' value in a sparse array: (1, 5)
+      sparse-error.chpl:9: error: halt reached - attempting to assign a 'zero' value in a sparse array at index (1, 5)
 
+.. index::
+   single: domains; association with arrays
+   single: arrays; association with domains
 .. _Association_of_Arrays_to_Domains:
 
 Association of Arrays to Domains
@@ -1012,9 +1083,12 @@ will halt with an error message.
 For the ``+=`` and ``|=`` operators, the value from ``B`` will overwrite
 the existing value in ``A`` when indices overlap.
 
+.. index::
+   pair: arrays; predefined functions
+   seealso: functions; predefined functions
 .. _Predefined_Functions_and_Methods_on_Arrays:
 
-Predefined Functions and Methods on Arrays
-------------------------------------------
+Predefined Routines on Arrays
+-----------------------------
 
 .. include:: ../../builtins/ChapelArray.rst

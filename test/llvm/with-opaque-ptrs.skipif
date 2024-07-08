@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+
+# Skip versions of LLVM in which we don't have opaque pointers.
+
+import os
+
+print(int(os.getenv('CHPL_LLVM_VERSION')) < 15)

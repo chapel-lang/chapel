@@ -1,0 +1,4 @@
+compareAndSwap.chpl:4: warning: 'compareAndSwap' is unstable
+compareAndSwap.chpl:5: warning: 'compareAndSwap' is unstable
+true
+1

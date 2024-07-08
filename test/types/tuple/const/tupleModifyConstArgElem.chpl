@@ -12,7 +12,7 @@ proc modifyConstArgElement(const tup: (?t,)) where isIntegralType(t) {
   tup[0] = 64;
 }
 
-proc modifyConstArgElement(const tup: (?t,)) where isFloatType(t) {
+proc modifyConstArgElement(const tup: (?t,)) where isRealType(t) || isImagType(t) {
   tup[0] = 64.0:t;
 }
 
@@ -33,7 +33,7 @@ proc modifyConstArgElement(const tup: (shared C?,)) {
 }
 
 proc modifyConstArgElement(const tup: (borrowed C?,)) {
-  tup[0] = new borrowed C?(64);
+  tup[0] = (new owned C?(64)).borrow();
 }
 
 proc modifyConstArgElement(const tup: (unmanaged C?,)) {
@@ -42,10 +42,6 @@ proc modifyConstArgElement(const tup: (unmanaged C?,)) {
 
 proc modifyConstArgElement(const tup: (?t,)) where isAtomicType(t) {
   tup[0].write(64);
-}
-
-proc modifyConstArgElement(const tup: (?t,)) where isSingleType(t) {
-  tup[0] = 64;
 }
 
 proc modifyConstArgElement(const tup: (?t,)) where isSyncType(t) {
@@ -119,18 +115,14 @@ proc test() {
   run(new shared C?());
 
   // borrowed, OK
-  run(new borrowed C?());
+  run((new owned C?()).borrow());
 
   // unmanaged, OK
   run(new unmanaged C?());
-  
+
   // atomic, OK
   var atm: atomic int;
   run(atm);
-
-  // TODO: single (cannot currently be stored in tuples)
-  // var sng: single int;
-  // run(sng);
 
   // TODO: sync (cannot currently be stored in tuples)
   // var snc: sync int;
@@ -141,7 +133,7 @@ proc test() {
 
   // bytes, OK
   run("foo":bytes);
- 
+
   // record, OK
   run(new r());
 

@@ -1,0 +1,2 @@
+too-big-param-int8.chpl:1: error: Could not coerce param into requested type
+too-big-param-int8.chpl:1: error: cannot initialize 'q' of type 'int(8)' from '257'

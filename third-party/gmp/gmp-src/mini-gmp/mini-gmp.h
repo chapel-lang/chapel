@@ -1,6 +1,6 @@
 /* mini-gmp, a minimalistic implementation of a GNU GMP subset.
 
-Copyright 2011-2015, 2017, 2019-2020 Free Software Foundation, Inc.
+Copyright 2011-2015, 2017, 2019-2021 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -244,6 +244,10 @@ mp_bitcnt_t mpz_scan1 (const mpz_t, mp_bitcnt_t);
 
 int mpz_fits_slong_p (const mpz_t);
 int mpz_fits_ulong_p (const mpz_t);
+int mpz_fits_sint_p (const mpz_t);
+int mpz_fits_uint_p (const mpz_t);
+int mpz_fits_sshort_p (const mpz_t);
+int mpz_fits_ushort_p (const mpz_t);
 long int mpz_get_si (const mpz_t);
 unsigned long int mpz_get_ui (const mpz_t);
 double mpz_get_d (const mpz_t);
@@ -292,6 +296,7 @@ int mpz_init_set_str (mpz_t, const char *, int);
   || defined (_STDIO_H_INCLUDED)      /* QNX4 */		\
   || defined (_ISO_STDIO_ISO_H)       /* Sun C++ */		\
   || defined (__STDIO_LOADED)         /* VMS */			\
+  || defined (_STDIO)                 /* HPE NonStop */         \
   || defined (__DEFINED_FILE)         /* musl */
 size_t mpz_out_str (FILE *, int, const mpz_t);
 #endif

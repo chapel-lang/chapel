@@ -32,12 +32,12 @@ proc check_expected(data, expected:string, len) {
  */
 proc test_readLine(amount: int, input: string, expected: string, stripNewline=false) throws {
   /* Write input string to f, so we can readLine() it out */
-  var f = openmem();
-  var w = f.writer();
+  var f = openMemFile();
+  var w = f.writer(locking=false);
 
   w.writeln(input);
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var numRead: int;
 
 

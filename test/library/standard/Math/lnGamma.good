@@ -1,0 +1,10 @@
+a = 1.0
+lnGamma(a) = 0.0
+b = 5.0
+lnGamma(b) = 3.17805
+c = 10.0
+lnGamma(c) = 12.8018
+d = 100.0
+lnGamma(d) = 359.134
+e = 1000.0
+lnGamma(e) = 5905.22

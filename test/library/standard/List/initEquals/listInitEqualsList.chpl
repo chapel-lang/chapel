@@ -6,7 +6,7 @@ private use List;
 {
   var lst1: list(int);
   for x in 1..8 do
-    lst1.append(x);
+    lst1.pushBack(x);
 
   var lst2: list(int) = lst1;
 

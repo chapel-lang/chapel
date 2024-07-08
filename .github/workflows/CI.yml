@@ -26,7 +26,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: make check
       run: |
         ./util/buildRelease/smokeTest chpl
@@ -39,16 +39,16 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v2
-    - name: make dyno-docs
+    - uses: actions/checkout@v4
+    - name: make frontend-docs
       run: |
-        make dyno-docs
+        make frontend-docs
     - name: make check-chpldoc && make docs
       # Uses a quickstart config to keep it from running too long
       run: |
         ./util/buildRelease/smokeTest quickstart docs
     - name: upload docs
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: documentation
         path: doc/html
@@ -61,7 +61,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: make mason
       # Use a quickstart config to keep it from running to long
       # While there, run a make check in that config for more coverage
@@ -76,14 +76,35 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: make test-dyno-with-asserts
+      # 'make modules' so the ChapelSysCTypes module is available
       run: |
-        make DYNO_ENABLE_ASSERTIONS=1 test-dyno -j`util/buildRelease/chpl-make-cpu_count`
+        CHPL_HOME=$PWD make modules
+        CHPL_HOME=$PWD make DYNO_ENABLE_ASSERTIONS=1 test-dyno -j`util/buildRelease/chpl-make-cpu_count`
     - name: run dyno linters
       run: |
-        CHPL_HOME=$PWD make run-dyno-linters
+        CHPL_HOME=$PWD CHPL_HOST_CC=clang-13 CHPL_HOST_CXX=clang++-13 make run-dyno-linters
+    - name: check undocumented symbols
+      run: |
+        CHPL_HOME=$PWD make DYNO_ENABLE_ASSERTIONS=1 chapel-py-venv -j`util/buildRelease/chpl-make-cpu_count`
+        CHPL_HOME=$PWD $PWD/tools/chpldoc/findUndocumentedSymbols --ci --ignore-deprecated --ignore-unstable $PWD/modules/standard
+    - name: lint standard modules
+      run: |
+        CHPL_HOME=$PWD make DYNO_ENABLE_ASSERTIONS=1 lint-standard-modules -j`util/buildRelease/chpl-make-cpu_count`
 
+  make_check_llvm_none:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: set llvm_none make check
+      run: |
+       CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
   check_annotations_rt_calls:
     runs-on: ubuntu-latest
     container:
@@ -92,12 +113,18 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 100000
+    - name: Set ownership
+      run: |
+        chown -R $(id -u):$(id -g) $PWD
     - name: find bad runtime calls
       run: |
         ./util/devel/lookForBadRTCalls
+    - name: find bad compiler calls
+      run: |
+        ./util/devel/lookForBadCompCalls
     - name: check annotations
       run: |
         CHPL_LLVM=none make test-venv

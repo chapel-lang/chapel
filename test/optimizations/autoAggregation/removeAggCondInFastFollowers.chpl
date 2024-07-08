@@ -2,7 +2,7 @@ use BlockDist;
 
 class Arr {
   type t;
-  var d = newBlockDom(1..10);
+  var d = blockDist.createDomain(1..10);
   var a: [d] t;
 
 }
@@ -19,7 +19,7 @@ class Arr {
 // fine.
 
 proc sliceIndexMsg(): string throws {
-  var slice: range(stridable=true) = 1..10;
+  var slice: range(strides=strideKind.any) = 1..10;
 
   proc sliceHelper(type t) throws {
       var e = new Arr(int);

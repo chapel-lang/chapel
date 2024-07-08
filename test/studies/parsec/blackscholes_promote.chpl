@@ -1,7 +1,8 @@
 use Time, IO, BlockDist;
+import Math.exp;
 
 config const timer : bool = false;
-var t : Timer;
+var t : stopwatch;
 
 //Precision to use for calculations
 
@@ -28,8 +29,8 @@ config var numOptions : int(64) = 1000;
 config const ERR_CHK = false;
 config const filename = "optionData.txt";
 
-const Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={0..#numOptions},
-                                dataParTasksPerLocale=here.maxTaskPar));
+const Dist = new blockDist(rank=1, idxType=int(64), boundingBox={0..#numOptions},
+                                dataParTasksPerLocale=here.maxTaskPar);
 const Dom : domain(1, int(64)) dmapped Dist = {0..#numOptions};
 
 var data : [Dom] OptionData;
@@ -83,6 +84,8 @@ proc CNDF ( in InputX : fptype )  : fptype
 proc BlkSchlsEqEuroNoDiv( sptprice : fptype, strike : fptype, rate : fptype,
                          volatility : fptype, time : fptype, otype : bool) : fptype
 {
+  use Math;
+
 	// local private working variables for the calculation
 	var OptionPrice  : fptype ;
 	var xD1 = rate + volatility * volatility * 0.5;
@@ -132,14 +135,14 @@ proc bs() {
 }
 
 proc main() {
-	var infile = open(filename, iomode.r).reader();
+	var infile = open(filename, ioMode.r).reader(locking=false);
 
 	// Given the input file, there are 1000 options. Manually read the input in.
 	for i in 0..#numOptions do {
 		data(i) = new OptionData();
 		if ((i % 1000 == 0) && (i > 999)) then {
 			infile.close();
-			infile = open(filename, iomode.r).reader();
+			infile = open(filename, ioMode.r).reader(locking=false);
 		}
 
 		infile.read(data(i).s, data(i).strike, data(i).r, data(i).divq, 

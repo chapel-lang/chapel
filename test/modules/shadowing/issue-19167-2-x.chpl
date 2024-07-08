@@ -1,9 +1,7 @@
 module A {
-  proc f() { writeln("A.f"); }
   var x = "A";
 }
 module B {
-  proc f() { writeln("B.f"); }
   var x = "B";
 }
 

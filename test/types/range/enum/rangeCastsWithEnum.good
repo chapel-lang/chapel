@@ -1,0 +1,267 @@
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(int(64),both,one), type t = flavor) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:17: called as tryCasts(r: range(int(64),both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(int(64),both,one), type t = size) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:17: called as tryCasts(r: range(int(64),both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(int(64),both,one), type t = polygon) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:17: called as tryCasts(r: range(int(64),both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(uint(64),both,one), type t = flavor) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:19: called as tryCasts(r: range(uint(64),both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(uint(64),both,one), type t = size) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:19: called as tryCasts(r: range(uint(64),both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(uint(64),both,one), type t = polygon) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:19: called as tryCasts(r: range(uint(64),both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(size,both,one), type t = bool) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:22: called as tryCasts(r: range(size,both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(size,both,one), type t = int(64)) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:22: called as tryCasts(r: range(size,both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(size,both,one), type t = uint(64)) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:22: called as tryCasts(r: range(size,both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(size,both,one), type t = int(8)) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:22: called as tryCasts(r: range(size,both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(size,both,one), type t = uint(8)) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:22: called as tryCasts(r: range(size,both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(polygon,both,one), type t = bool) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:23: called as tryCasts(r: range(polygon,both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(polygon,both,one), type t = int(64)) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:23: called as tryCasts(r: range(polygon,both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(polygon,both,one), type t = uint(64)) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:23: called as tryCasts(r: range(polygon,both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(polygon,both,one), type t = int(8)) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:23: called as tryCasts(r: range(polygon,both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(polygon,both,one), type t = uint(8)) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:23: called as tryCasts(r: range(polygon,both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(flavor,both,one), type t = bool) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:24: called as tryCasts(r: range(flavor,both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(flavor,both,one), type t = int(64)) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:24: called as tryCasts(r: range(flavor,both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(flavor,both,one), type t = uint(64)) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:24: called as tryCasts(r: range(flavor,both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(flavor,both,one), type t = int(8)) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:24: called as tryCasts(r: range(flavor,both,one))
+rangeCastsWithEnum.chpl:32: In function 'tryCast':
+rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
+  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(flavor,both,one), type t = uint(8)) from function 'tryCasts'
+  rangeCastsWithEnum.chpl:24: called as tryCasts(r: range(flavor,both,one))
+casting 0..1 to range of flavor
+  chocolate..vanilla: (chocolate, vanilla, 1, chocolate)
+
+casting 0..1 to stridable range of flavor:
+  chocolate..vanilla: (chocolate, vanilla, 1, chocolate)
+
+casting 0..1 to range of size
+  caught Error: bad cast from int '0' to enum 'size'
+
+casting 0..1 to stridable range of size:
+  caught Error: bad cast from int '0' to enum 'size'
+
+casting 0..1 to range of polygon
+  caught Error: bad cast from int '0' to enum 'polygon'
+
+casting 0..1 to stridable range of polygon:
+  caught Error: bad cast from int '0' to enum 'polygon'
+
+casting 1..2 to range of flavor
+  vanilla..strawberry: (vanilla, strawberry, 1, chocolate)
+
+casting 1..2 to stridable range of flavor:
+  vanilla..strawberry: (vanilla, strawberry, 1, chocolate)
+
+casting 1..2 to range of size
+  small..medium: (small, medium, 1, small)
+
+casting 1..2 to stridable range of size:
+  small..medium: (small, medium, 1, small)
+
+casting 1..2 to range of polygon
+  caught Error: bad cast from int '1' to enum 'polygon'
+
+casting 1..2 to stridable range of polygon:
+  caught Error: bad cast from int '1' to enum 'polygon'
+
+casting 0..1 to range of flavor
+  chocolate..vanilla: (chocolate, vanilla, 1, chocolate)
+
+casting 0..1 to stridable range of flavor:
+  chocolate..vanilla: (chocolate, vanilla, 1, chocolate)
+
+casting 0..1 to range of size
+  caught Error: bad cast from int '0' to enum 'size'
+
+casting 0..1 to stridable range of size:
+  caught Error: bad cast from int '0' to enum 'size'
+
+casting 0..1 to range of polygon
+  caught Error: bad cast from int '0' to enum 'polygon'
+
+casting 0..1 to stridable range of polygon:
+  caught Error: bad cast from int '0' to enum 'polygon'
+
+casting 1..2 to range of flavor
+  vanilla..strawberry: (vanilla, strawberry, 1, chocolate)
+
+casting 1..2 to stridable range of flavor:
+  vanilla..strawberry: (vanilla, strawberry, 1, chocolate)
+
+casting 1..2 to range of size
+  small..medium: (small, medium, 1, small)
+
+casting 1..2 to stridable range of size:
+  small..medium: (small, medium, 1, small)
+
+casting 1..2 to range of polygon
+  caught Error: bad cast from int '1' to enum 'polygon'
+
+casting 1..2 to stridable range of polygon:
+  caught Error: bad cast from int '1' to enum 'polygon'
+
+casting small..medium to range of bool
+  true..true: (true, true, 1, false)
+
+casting small..medium to stridable range of bool:
+  true..true: (true, true, 1, false)
+
+casting small..medium to range of int(64)
+  1..2: (1, 2, 1, 0)
+
+casting small..medium to stridable range of int(64):
+  1..2: (1, 2, 1, 0)
+
+casting small..medium to range of uint(64)
+  1..2: (1, 2, 1, 0)
+
+casting small..medium to stridable range of uint(64):
+  1..2: (1, 2, 1, 0)
+
+casting small..medium to range of int(8)
+  1..2: (1, 2, 1, 0)
+
+casting small..medium to stridable range of int(8):
+  1..2: (1, 2, 1, 0)
+
+casting small..medium to range of uint(8)
+  1..2: (1, 2, 1, 0)
+
+casting small..medium to stridable range of uint(8):
+  1..2: (1, 2, 1, 0)
+
+casting triangle..pentagon to range of bool
+  true..true: (true, true, 1, false)
+
+casting triangle..pentagon to stridable range of bool:
+  true..true: (true, true, 1, false)
+
+casting triangle..pentagon to range of int(64)
+  300..500: (300, 500, 1, 0)
+
+casting triangle..pentagon to stridable range of int(64):
+  300..500: (300, 500, 1, 0)
+
+casting triangle..pentagon to range of uint(64)
+  300..500: (300, 500, 1, 0)
+
+casting triangle..pentagon to stridable range of uint(64):
+  300..500: (300, 500, 1, 0)
+
+casting triangle..pentagon to range of int(8)
+  44..-12: (44, -12, 1, 0)
+
+casting triangle..pentagon to stridable range of int(8):
+  44..-12: (44, -12, 1, 0)
+
+casting triangle..pentagon to range of uint(8)
+  44..244: (44, 244, 1, 0)
+
+casting triangle..pentagon to stridable range of uint(8):
+  44..244: (44, 244, 1, 0)
+
+casting chocolate..strawberry to range of bool
+  false..true: (false, true, 1, false)
+
+casting chocolate..strawberry to stridable range of bool:
+  false..true: (false, true, 1, false)
+
+casting chocolate..strawberry to range of int(64)
+  0..2: (0, 2, 1, 0)
+
+casting chocolate..strawberry to stridable range of int(64):
+  0..2: (0, 2, 1, 0)
+
+casting chocolate..strawberry to range of uint(64)
+  0..2: (0, 2, 1, 0)
+
+casting chocolate..strawberry to stridable range of uint(64):
+  0..2: (0, 2, 1, 0)
+
+casting chocolate..strawberry to range of int(8)
+  0..2: (0, 2, 1, 0)
+
+casting chocolate..strawberry to stridable range of int(8):
+  0..2: (0, 2, 1, 0)
+
+casting chocolate..strawberry to range of uint(8)
+  0..2: (0, 2, 1, 0)
+
+casting chocolate..strawberry to stridable range of uint(8):
+  0..2: (0, 2, 1, 0)
+

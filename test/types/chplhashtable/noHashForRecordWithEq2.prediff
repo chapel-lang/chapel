@@ -1,0 +1,10 @@
+#!/bin/sh
+
+OUTFILE=$2
+TMPFILE=$OUTFILE.prediff.tmp
+
+# filter out line numbers
+sed -E 's/\.chpl:[0-9]*:/\.chpl:nnnn:/' < $OUTFILE > $TMPFILE
+cat $TMPFILE > $OUTFILE
+
+rm $TMPFILE

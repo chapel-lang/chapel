@@ -29,7 +29,7 @@ param stencilSize = 4*R + 1,
       weightSize = 2*R + 1,
       Wsize = 2*R + 1;
 
-var timer: Timer;
+var timer: stopwatch;
 
 //
 // Process and test input configs
@@ -81,7 +81,7 @@ for i in 1..R {
 }
 
 // Initialize the input and output arrays
-[(i, j) in Dom] input[i,j] = coefx*i + coefy*j;
+[(i, j) in Dom with (ref input)] input[i,j] = coefx*i + coefy*j;
 
 //
 // Print information before main loop

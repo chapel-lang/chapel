@@ -32,9 +32,8 @@ enum AMDGPUDwarfFlavour : unsigned { Wave64 = 0, Wave32 = 1 };
 
 MCRegisterInfo *createGCNMCRegisterInfo(AMDGPUDwarfFlavour DwarfFlavour);
 
-MCCodeEmitter *createSIMCCodeEmitter(const MCInstrInfo &MCII,
-                                     const MCRegisterInfo &MRI,
-                                     MCContext &Ctx);
+MCCodeEmitter *createAMDGPUMCCodeEmitter(const MCInstrInfo &MCII,
+                                         MCContext &Ctx);
 
 MCAsmBackend *createAMDGPUAsmBackend(const Target &T,
                                      const MCSubtargetInfo &STI,
@@ -43,15 +42,15 @@ MCAsmBackend *createAMDGPUAsmBackend(const Target &T,
 
 std::unique_ptr<MCObjectTargetWriter>
 createAMDGPUELFObjectWriter(bool Is64Bit, uint8_t OSABI,
-                            bool HasRelocationAddend, uint8_t ABIVersion);
-} // End llvm namespace
+                            bool HasRelocationAddend);
+} // namespace llvm
 
 #define GET_REGINFO_ENUM
 #include "AMDGPUGenRegisterInfo.inc"
 
 #define GET_INSTRINFO_ENUM
 #define GET_INSTRINFO_OPERAND_ENUM
-#define GET_INSTRINFO_SCHED_ENUM
+#define GET_INSTRINFO_MC_HELPER_DECLS
 #include "AMDGPUGenInstrInfo.inc"
 
 #define GET_SUBTARGETINFO_ENUM

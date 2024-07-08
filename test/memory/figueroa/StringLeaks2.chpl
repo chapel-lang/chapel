@@ -1,12 +1,12 @@
 // This test case shows that there is a memory leak due to the second assignment
 // to s.  s should be freed, but only if it was assigned to twice.
 
-use Memory.Diagnostics, IO;
+use MemDiagnostics, IO;
 
 config const n = 1;
 
 proc foo () {
-  var stdout = openfd(1).writer();
+  var stdout = (new file(1)).writer(locking=true);
   var s = "Good bye";
   if n > 0 then
     s = "Nos vemos";

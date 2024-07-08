@@ -1,17 +1,8 @@
 # suite: Release examples
-release/examples/benchmarks/lcals/LCALS-raw-short.graph
-release/examples/benchmarks/lcals/LCALS-raw-medium.graph
-release/examples/benchmarks/lcals/LCALS-raw-long.graph
-release/examples/benchmarks/lcals/LCALS-parallel-short.graph
-release/examples/benchmarks/lcals/LCALS-parallel-medium.graph
-release/examples/benchmarks/lcals/LCALS-parallel-long.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/hpcc/stream.graph
 release/examples/benchmarks/hpcc/ra.graph
 release/examples/benchmarks/hpcc/stream-ep.graph
-release/examples/benchmarks/hpcc/ptrans.graph
-release/examples/benchmarks/hpcc/fft.graph
-release/examples/benchmarks/hpcc/hpl.graph
 studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
@@ -36,12 +27,6 @@ release/examples/benchmarks/isx/isx-release.graph
 studies/hpcc/STREAM_study.graph
 studies/hpcc/STREAM_study_fragmented.graph
 release/examples/benchmarks/hpcc/ra.graph
-release/examples/benchmarks/hpcc/ptrans.graph
-release/examples/benchmarks/hpcc/fft.graph
-release/examples/benchmarks/hpcc/hpl.graph
-release/examples/benchmarks/lcals/LCALS-raw-long.graph
-release/examples/benchmarks/lcals/LCALS-parallel-short.graph
-release/examples/benchmarks/lcals/LCALS-parallel-long.graph
 studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
@@ -56,6 +41,7 @@ studies/shootout/regexdna-redux/regexdna-redux.graph
 studies/shootout/reverse-complement/revcomp.graph
 studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/thread-ring/thread-ring.graph
+library/standard/BigInteger/bigintops.graph
 npb/cg/cg-a.graph
 npb/ep/ep-b.graph
 npb/ft/ft-a.graph
@@ -90,22 +76,29 @@ studies/rbc/tvandoren/RBC.graph
 exercises/c-ray/old/c-ray.graph
 users/npadmana/twopt/twopt-buildtrees.graph
 users/npadmana/twopt/twopt-paircount.graph
-performance/compiler/bradc/AllCompTime.graph
-memleaksfull.graph
 studies/jacobi/jacobi.graph
 library/standard/List/perf/listBenchmark1.graph
+studies/1brc/1brc.graph
+studies/sinLUT/sinlut.graph
+performance/vectorization/unrolling/dotProduct-real64.graph
+performance/vectorization/unrolling/dotProduct-int32.graph
+performance/vectorization/unrolling/dotProduct-real64-big.graph
+performance/vectorization/outerLoopVectorization/clenshaw.graph
 # suite: HPC Challenge
+studies/hpcc/HPL/hpl.graph
 studies/hpcc/STREAM_study_fragmented.graph
 studies/hpcc/STREAM_study.graph
 studies/hpcc/STREAM_study_promote.graph
+studies/hpcc/FFT/fft.graph
+studies/hpcc/PTRANS/ptrans.graph
 # suite: Performance Graphs (TEPS, GB/s, etc.)
 release/examples/benchmarks/hpcc/stream_performance.graph
 release/examples/benchmarks/hpcc/ra_performance.graph
 release/examples/benchmarks/hpcc/stream-ep_performance.graph
-release/examples/benchmarks/hpcc/ptrans_performance.graph
-release/examples/benchmarks/hpcc/fft_performance.graph
-release/examples/benchmarks/hpcc/hpl_performance.graph
 studies/hpcc/STREAM_study_performance.graph
+studies/hpcc/FFT/fft_performance.graph
+studies/hpcc/HPL/hpl_performance.graph
+studies/hpcc/PTRANS/ptrans_performance.graph
 studies/ssca2/main/performance.graph
 # suite: Proxy apps
 studies/ssca2/main/SSCA2_main.graph
@@ -115,12 +108,12 @@ studies/lulesh/bradc/lulesh-dense.graph
 release/examples/benchmarks/miniMD/miniMD.graph
 studies/comd/llnl/CoMD.graph
 studies/comd/elegant/arrayOfStructs/CoMD-elegant-aos.graph
-release/examples/benchmarks/lcals/LCALS-raw-short.graph
-release/examples/benchmarks/lcals/LCALS-raw-medium.graph
-release/examples/benchmarks/lcals/LCALS-raw-long.graph
-release/examples/benchmarks/lcals/LCALS-parallel-short.graph
-release/examples/benchmarks/lcals/LCALS-parallel-medium.graph
-release/examples/benchmarks/lcals/LCALS-parallel-long.graph
+studies/lcals/LCALS-raw-short.graph
+studies/lcals/LCALS-raw-medium.graph
+studies/lcals/LCALS-raw-long.graph
+studies/lcals/LCALS-parallel-short.graph
+studies/lcals/LCALS-parallel-medium.graph
+studies/lcals/LCALS-parallel-long.graph
 # suite: Shootout benchmarks
 studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
@@ -216,6 +209,7 @@ arrays/ferguson/return-array-40000000.graph
 domains/ferguson/build-associative.graph
 performance/sparse/domainAssignment-similar.graph
 performance/sparse/domainAssignment-dissimilar.graph
+arrays/elliot/arrayInitDeinitPerf.graph
 # suite: Atomic performance
 types/atomic/ferguson/atomictest.graph
 # suite: Dynamic iterators
@@ -237,11 +231,6 @@ studies/hpcc/STREAMS/elliot/stream-task-placement.graph
 # suite: Barrier
 performance/comm/barrier/empty-chpl-barrier.graph
 studies/hpcc/STREAMS/elliot/stream-spmd-barrier.graph
-# suite: Compiler performance
-performance/compiler/bradc/fft-timecomp.graph
-performance/compiler/bradc/compSampler-timecomp.graph
-performance/compiler/bradc/cg-sparse-timecomp.graph
-performance/compiler/bradc/AllCompTime.graph
 # suite: Memory tracking
 memleaks.graph
 memleaksfull.graph
@@ -255,7 +244,7 @@ performance/elliot/no-op.graph
 # suite: MAX_LOGICAL comparison
 npb/ep/ep.graph
 npb/ep/ep-b.graph
-release/examples/benchmarks/hpcc/hpl.graph
+studies/hpcc/HPL/hpl.graph
 studies/hpcc/STREAM_study_fragmented.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/spectral-norm/spectralnorm.graph
@@ -288,10 +277,14 @@ library/standard/Random/performance/getNextPerf.graph
 studies/rbc/tvandoren/RBC.graph
 exercises/c-ray/old/c-ray.graph
 scan/scanPerf.graph
+io/corrado/qio_buf_optimization_perf/large_binary_io.graph
 # suite: Colorado State University
 studies/colostate/Jacobi1D.graph
 studies/colostate/Jacobi2D.graph
 studies/colostate/cfd-mini.graph
+# suite: ML
+studies/ml/performance/mnist_cnn.graph
+studies/ml/performance/xor_mlp.graph
 # suite: Nikhil Padmanabhan
 users/npadmana/twopt/twopt-buildtrees.graph
 users/npadmana/twopt/twopt-paircount.graph
@@ -332,6 +325,9 @@ statements/lydia/ifVersusSelect.alternates.graph
 statements/lydia/moduleVersusFunctionBaseline.graph
 statements/lydia/moduleVersusFunctionDifAccess.graph
 statements/lydia/moduleVersusFunction.graph
+# suite: plb2 benchmarks
+studies/plb2/matmul/matmul.graph
+studies/plb2/nqueen/nqueen.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph
 Samples/Performance/cleanCopy/foobar.graph

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,9 +30,9 @@ module MemConsistency {
   //  return memory_order_seq_cst;
 
   pragma "last resort"
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc _defaultOf(type t:memory_order) {
-    pragma "no doc"
+    @chpldoc.nodoc
     extern proc _defaultOfMemoryOrder(): memory_order;
 
     return _defaultOfMemoryOrder();
@@ -48,21 +48,21 @@ module MemConsistency {
     __primitive("=", lhs, rhs);
   }
 
-  proc memory_order.writeThis(ch) throws {
+  proc memory_order.serialize(writer, ref serializer) throws {
     if this == memory_order_relaxed then
-      ch.write("memory_order_relaxed");
+      writer.write("memory_order_relaxed");
     else if this == memory_order_consume then
-      ch.write("memory_order_consume");
+      writer.write("memory_order_consume");
     else if this == memory_order_acquire then
-      ch.write("memory_order_acquire");
+      writer.write("memory_order_acquire");
     else if this == memory_order_release then
-      ch.write("memory_order_release");
+      writer.write("memory_order_release");
     else if this == memory_order_acq_rel then
-      ch.write("memory_order_acq_rel");
+      writer.write("memory_order_acq_rel");
     else if this == memory_order_seq_cst then
-      ch.write("memory_order_seq_cst");
+      writer.write("memory_order_seq_cst");
     else
-      ch.write("memory_order_unknown");
+      writer.write("memory_order_unknown");
   }
 
   extern const memory_order_relaxed:memory_order;
@@ -103,15 +103,12 @@ module MemConsistency {
   // Calls to them are added by the compiler when --cache-remote is used.
 
   pragma "insert line file info"
-  pragma "no doc"
   pragma "compiler added remote fence"
   extern proc chpl_rmem_consist_release();
   pragma "insert line file info"
-  pragma "no doc"
   pragma "compiler added remote fence"
   extern proc chpl_rmem_consist_acquire();
   pragma "insert line file info"
-  pragma "no doc"
   pragma "compiler added remote fence"
   extern proc chpl_rmem_consist_maybe_release(order:memory_order);
   pragma "compiler added remote fence"
@@ -119,7 +116,6 @@ module MemConsistency {
     chpl_rmem_consist_maybe_release(c_memory_order(order));
   }
   pragma "insert line file info"
-  pragma "no doc"
   pragma "compiler added remote fence"
   extern proc chpl_rmem_consist_maybe_acquire(order:memory_order);
   pragma "compiler added remote fence"
@@ -129,7 +125,6 @@ module MemConsistency {
 
   // This one can be used in module code.
   pragma "insert line file info"
-  pragma "no doc"
   extern proc chpl_rmem_consist_fence(order:memory_order);
   proc chpl_rmem_consist_fence(param order:memoryOrder) {
     chpl_rmem_consist_fence(c_memory_order(order));

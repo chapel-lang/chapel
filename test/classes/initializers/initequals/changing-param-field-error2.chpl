@@ -4,7 +4,7 @@ record R {
   var x: int;
 }
 
-proc R.init=(rhs: R) {
+proc R.init=(rhs: R(?)) {
   // this one is not allowed to vary between lhs/rhs
   if this.type.fixed != ? {
     if this.type.fixed != rhs.fixed {
@@ -20,7 +20,7 @@ proc R.init=(rhs: R) {
   this.x = rhs.x;
 }
 
-operator R.=(ref lhs:R, const ref rhs:R) {
+operator R.=(ref lhs:R(?), const ref rhs:R(?)) {
   if lhs.fixed != rhs.fixed {
     compilerError("cannot change fixed field in assignment");
   }

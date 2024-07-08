@@ -4,4 +4,4 @@ class Generic {
 
 var inst = new owned Generic(10);
 writeln(isSubtype(inst.type, Generic));
-writeln(inst.type < Generic);
+writeln(isProperSubtype(inst.type, Generic));

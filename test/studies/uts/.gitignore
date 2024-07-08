@@ -1,0 +1,5 @@
+# Test/studies/uts ignores.
+/uts-deq
+/uts-deq-seq
+/uts-rec
+/uts-rec-seq

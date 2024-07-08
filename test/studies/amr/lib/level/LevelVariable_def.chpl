@@ -79,7 +79,7 @@ class LevelVariable {
   pragma "no copy return"
   proc this(
     grid: unmanaged Grid, 
-    D: domain(dimension, stridable=true)) 
+    D: domain(dimension, strides=strideKind.any)) 
   {
     return grid_variables(grid)!.value(D);
   }
@@ -224,13 +224,13 @@ proc LevelVariable.clawOutput (
   //==== Time file ====
   var n_grids = level.grids.size;
 
-  var outfile = open(time_filename, iomode.cw).writer();
+  var outfile = open(time_filename, ioMode.cw).writer();
   writeTimeFile(time, 1, n_grids, 0, outfile);
   outfile.close();
   
   
   //==== Solution file ====
-  outfile = open(solution_filename, iomode.cw).writer();
+  outfile = open(solution_filename, ioMode.cw).writer();
   this.writeData(1, 1, outfile);  // AMR_level=1 and base_grid_number=1 for single-level output
   outfile.close();
 
@@ -254,7 +254,7 @@ proc LevelVariable.clawOutput (
 proc LevelVariable.writeData (
   AMR_level:        int,
   base_grid_number: int,
-  outfile:          channel)
+  outfile:          fileWriter)
 {
 
   var grid_number = base_grid_number;

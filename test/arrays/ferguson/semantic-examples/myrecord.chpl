@@ -1,4 +1,4 @@
-record R {
+record R : writeSerializable {
   var x: int = 0;
 }
 
@@ -18,6 +18,6 @@ operator R.=(ref lhs: R, rhs: R) {
   lhs.x = rhs.x;
 }
 
-proc R.writeThis(writer) throws {
+proc R.serialize(writer, ref serializer) throws {
   writer.write(x);
 }

@@ -44,7 +44,7 @@ struct usdf_poll {
 	struct usdf_domain	*poll_domain;
 
 	ofi_atomic32_t		poll_refcnt;
-	fastlock_t		lock;
+	ofi_mutex_t		lock;
 	struct dlist_entry	list;
 };
 

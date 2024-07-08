@@ -21,11 +21,15 @@ or
 
    This is a color enum. 
 
+   .. enumconstant:: enum constant Red
+
+   .. enumconstant:: enum constant Yellow
+
+   .. enumconstant:: enum constant Blue
 
 .. class:: colorCup
 
    This class holds many different colors 
-
 
    .. attribute:: var defOnly = Color.Yellow
 

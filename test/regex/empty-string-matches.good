@@ -1,0 +1,87 @@
+matches on empty string
+[]  ((matched = true, byteOffset = 0, numBytes = 0),);
+[^]  ((matched = true, byteOffset = 0, numBytes = 0),);
+[^[^\s]]  ;
+[^x]  ;
+[^y]  ;
+[^z]  ;
+[$]  ((matched = true, byteOffset = 0, numBytes = 0),);
+[^$]  ((matched = true, byteOffset = 0, numBytes = 0),);
+[.*]  ((matched = true, byteOffset = 0, numBytes = 0),);
+[.+]  ;
+[.]  ;
+[x]  ;
+[y]  ;
+[z]  ;
+[y|b]  ;
+
+matches on non-empty string
+[]  ((matched = true, byteOffset = 0, numBytes = 0),) <>
+[]  ((matched = true, byteOffset = 1, numBytes = 0),) <>
+[]  ((matched = true, byteOffset = 2, numBytes = 0),) <>
+[]  ((matched = true, byteOffset = 3, numBytes = 0),) <>
+[]  ((matched = true, byteOffset = 4, numBytes = 0),) <>
+[]  done
+[^]  ((matched = true, byteOffset = 0, numBytes = 0),) <>
+[^]  done
+[^[^\s]]  ((matched = true, byteOffset = 0, numBytes = 1),) <x>
+[^[^\s]]  done
+[^x]  ((matched = true, byteOffset = 0, numBytes = 1),) <x>
+[^x]  done
+[^y]  done
+[^z]  done
+[$]  ((matched = true, byteOffset = 4, numBytes = 0),) <>
+[$]  done
+[^$]  done
+[.*]  ((matched = true, byteOffset = 0, numBytes = 4),) <xyab>
+[.*]  ((matched = true, byteOffset = 4, numBytes = 0),) <>
+[.*]  done
+[.+]  ((matched = true, byteOffset = 0, numBytes = 4),) <xyab>
+[.+]  done
+[.]  ((matched = true, byteOffset = 0, numBytes = 1),) <x>
+[.]  ((matched = true, byteOffset = 1, numBytes = 1),) <y>
+[.]  ((matched = true, byteOffset = 2, numBytes = 1),) <a>
+[.]  ((matched = true, byteOffset = 3, numBytes = 1),) <b>
+[.]  done
+[x]  ((matched = true, byteOffset = 0, numBytes = 1),) <x>
+[x]  done
+[y]  ((matched = true, byteOffset = 1, numBytes = 1),) <y>
+[y]  done
+[z]  done
+[y|b]  ((matched = true, byteOffset = 1, numBytes = 1),) <y>
+[y|b]  ((matched = true, byteOffset = 3, numBytes = 1),) <b>
+[y|b]  done
+
+search
+[]   (matched = true, byteOffset = 0, numBytes = 0)
+[^]   (matched = true, byteOffset = 0, numBytes = 0)
+[^[^\s]]   (matched = true, byteOffset = 0, numBytes = 1)
+[^x]   (matched = true, byteOffset = 0, numBytes = 1)
+[^y]   (matched = false, byteOffset = -1, numBytes = 0)
+[^z]   (matched = false, byteOffset = -1, numBytes = 0)
+[$]   (matched = true, byteOffset = 4, numBytes = 0)
+[^$]   (matched = false, byteOffset = -1, numBytes = 0)
+[.*]   (matched = true, byteOffset = 0, numBytes = 4)
+[.+]   (matched = true, byteOffset = 0, numBytes = 4)
+[.]   (matched = true, byteOffset = 0, numBytes = 1)
+[x]   (matched = true, byteOffset = 0, numBytes = 1)
+[y]   (matched = true, byteOffset = 1, numBytes = 1)
+[z]   (matched = false, byteOffset = -1, numBytes = 0)
+[y|b]   (matched = true, byteOffset = 1, numBytes = 1)
+
+search and extract
+[()]   (matched = true, byteOffset = 0, numBytes = 0) <>
+[(^)]   (matched = true, byteOffset = 0, numBytes = 0) <>
+[(^[^\s])]   (matched = true, byteOffset = 0, numBytes = 1) <x>
+[(^x)]   (matched = true, byteOffset = 0, numBytes = 1) <x>
+[(^y)]   (matched = false, byteOffset = -1, numBytes = 0) <>
+[(^z)]   (matched = false, byteOffset = -1, numBytes = 0) <>
+[($)]   (matched = true, byteOffset = 4, numBytes = 0) <>
+[(^$)]   (matched = false, byteOffset = -1, numBytes = 0) <>
+[(.*)]   (matched = true, byteOffset = 0, numBytes = 4) <xyab>
+[(.+)]   (matched = true, byteOffset = 0, numBytes = 4) <xyab>
+[(.)]   (matched = true, byteOffset = 0, numBytes = 1) <x>
+[(x)]   (matched = true, byteOffset = 0, numBytes = 1) <x>
+[(y)]   (matched = true, byteOffset = 1, numBytes = 1) <y>
+[(z)]   (matched = false, byteOffset = -1, numBytes = 0) <>
+[(y|b)]   (matched = true, byteOffset = 1, numBytes = 1) <y>

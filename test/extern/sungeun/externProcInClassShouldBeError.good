@@ -1,0 +1,1 @@
+externProcInClassShouldBeError.chpl:114: error: cannot declare class types as export or extern

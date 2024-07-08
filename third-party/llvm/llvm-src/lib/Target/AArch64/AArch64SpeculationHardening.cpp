@@ -286,18 +286,20 @@ bool AArch64SpeculationHardening::instrumentControlFlow(
   bool TmpRegisterNotAvailableEverywhere = false;
 
   RegScavenger RS;
-  RS.enterBasicBlock(MBB);
+  RS.enterBasicBlockEnd(MBB);
 
-  for (MachineBasicBlock::iterator I = MBB.begin(); I != MBB.end(); I++) {
-    MachineInstr &MI = *I;
+  for (MachineBasicBlock::iterator I = MBB.end(); I != MBB.begin(); ) {
+    MachineInstr &MI = *--I;
     if (!MI.isReturn() && !MI.isCall())
       continue;
 
     // The RegScavenger represents registers available *after* the MI
     // instruction pointed to by RS.getCurrentPosition().
     // We need to have a register that is available *before* the MI is executed.
-    if (I != MBB.begin())
-      RS.forward(std::prev(I));
+    if (I == MBB.begin())
+      RS.enterBasicBlock(MBB);
+    else
+      RS.backward(I);
     // FIXME: The below just finds *a* unused register. Maybe code could be
     // optimized more if this looks for the register that isn't used for the
     // longest time around this place, to enable more scheduling freedom. Not
@@ -556,7 +558,7 @@ bool AArch64SpeculationHardening::expandSpeculationSafeValue(
     break;
   case AArch64::SpeculationSafeValueW:
     Is64Bit = false;
-    LLVM_FALLTHROUGH;
+    [[fallthrough]];
   case AArch64::SpeculationSafeValueX:
     // Just remove the SpeculationSafe pseudo's if control flow
     // miss-speculation isn't happening because we're already inserting barriers
@@ -681,7 +683,7 @@ bool AArch64SpeculationHardening::runOnMachineFunction(MachineFunction &MF) {
   EntryBlocks.push_back(&MF.front());
   for (const LandingPadInfo &LPI : MF.getLandingPads())
     EntryBlocks.push_back(LPI.LandingPadBlock);
-  for (auto Entry : EntryBlocks)
+  for (auto *Entry : EntryBlocks)
     insertSPToRegTaintPropagation(
         *Entry, Entry->SkipPHIsLabelsAndDebug(Entry->begin()));
 

@@ -1,0 +1,26 @@
+safeCast.chpl:5: warning: integral.safeCast() is unstable and its behavior may change in the future
+safeCast.chpl:6: warning: integral.safeCast() is unstable and its behavior may change in the future
+safeCast.chpl:7: warning: integral.safeCast() is unstable and its behavior may change in the future
+safeCast.chpl:8: warning: integral.safeCast() is unstable and its behavior may change in the future
+safeCast.chpl:9: warning: integral.safeCast() is unstable and its behavior may change in the future
+safeCast.chpl:14: warning: integral.safeCast() is unstable and its behavior may change in the future
+safeCast.chpl:15: warning: integral.safeCast() is unstable and its behavior may change in the future
+safeCast.chpl:16: warning: integral.safeCast() is unstable and its behavior may change in the future
+safeCast.chpl:17: warning: integral.safeCast() is unstable and its behavior may change in the future
+safeCast.chpl:18: warning: integral.safeCast() is unstable and its behavior may change in the future
+safeCast.chpl:20: warning: bool.safeCast() is unstable and its behavior may change in the future
+safeCast.chpl:21: warning: bool.safeCast() is unstable and its behavior may change in the future
+safeCast.chpl:22: warning: bool.safeCast() is unstable and its behavior may change in the future
+35
+35
+32
+16
+true
+43
+43
+4
+32
+false
+1
+1
+true

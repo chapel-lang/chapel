@@ -58,7 +58,11 @@
 
 #include "psm_user.h"
 
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#define MM_NUM_OF_POOLS 9
+#else
 #define MM_NUM_OF_POOLS 7
+#endif
 
 typedef struct psmi_mem_ctrl {
     struct psmi_mem_block_ctrl *free_list;
@@ -72,10 +76,10 @@ typedef struct psmi_mem_ctrl {
 /*
  * MQ unexpected buffer management
  */
-void  psmi_mq_sysbuf_init(psm2_mq_t mq);
-void  psmi_mq_sysbuf_fini(psm2_mq_t mq);
-void* psmi_mq_sysbuf_alloc(psm2_mq_t mq, uint32_t nbytes);
-void  psmi_mq_sysbuf_free(psm2_mq_t mq, void *);
-void  psmi_mq_sysbuf_getinfo(psm2_mq_t mq, char *buf, size_t len);
+void  psm3_mq_sysbuf_init(psm2_mq_t mq);
+void  psm3_mq_sysbuf_fini(psm2_mq_t mq);
+void* psm3_mq_sysbuf_alloc(psm2_mq_t mq, uint32_t nbytes);
+void  psm3_mq_sysbuf_free(psm2_mq_t mq, void *);
+void  psm3_mq_sysbuf_getinfo(psm2_mq_t mq, char *buf, size_t len);
 
 #endif /* SYSBUF_INT_H */

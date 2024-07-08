@@ -48,7 +48,7 @@ use HDFS, ReplicatedVar, RecordParser;
 iter HDFSiter(path: string, type rec, regex: string) {
 
   var hdfs = hdfs_chapel_connect("default", 0);
-  var fl = hdfs.hdfs_chapel_open(path, iomode.r);
+  var fl = hdfs.hdfs_chapel_open(path, ioMode.r);
 
 
   var rr = fl.reader();
@@ -69,7 +69,7 @@ iter HDFSiter(path: string, type rec, regex: string) {
 // to have a standalone parallel iterator for this).
 // Parallel IO and zippering will probably not play nice with each, due to not
 // having a priori knowledge of how records map to positions in the file.
-pragma "no doc"
+@chpldoc.nodoc
 iter HDFSiter(param tag: iterKind, path: string, type rec, regex: string)
   where tag == iterKind.leader {
 
@@ -82,7 +82,7 @@ iter HDFSiter(param tag: iterKind, path: string, type rec, regex: string)
 
     // ----- Create a file  and filesystem pointer per locale ----
     var hdfs = hdfsChapelConnect("default", 0);
-    var globalFile   = hdfs.hdfsOpen(path, iomode.r);
+    var globalFile   = hdfs.hdfsOpen(path, ioMode.r);
 
     // -------- Get locales for blocks ------
     // Get the local file
@@ -122,7 +122,7 @@ iter HDFSiter(param tag: iterKind, path: string, type rec, regex: string)
     hdfs.hdfsChapelDisconnect();
   }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter HDFSiter(param tag: iterKind, path: string, type rec, regex: string, followThis)
   where tag == iterKind.follower {
     yield followThis;

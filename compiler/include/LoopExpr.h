@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,6 +23,12 @@
 
 #include "stmt.h"
 
+enum LoopExprType {
+  FOR_EXPR,
+  FOREACH_EXPR,
+  FORALL_EXPR
+};
+
 class LoopExpr final : public Expr {
 public:
   Expr* indices;       // DefExpr for index or
@@ -32,8 +38,7 @@ public:
   Expr* cond;          // filtering condition or NULL if none
   BlockStmt* loopBody;
 
-  // Indicates whether this loop-expression is a forall-expr or for-expr
-  bool forall;
+  LoopExprType type;
 
   // 'true' if the iteratorExpr is zippered
   bool zippered;
@@ -49,10 +54,10 @@ public:
            Expr* iteratorExpr,
            Expr* cond,
            Expr* loopBody,
-           bool forall,
+           LoopExprType type,
            bool zippered,
            bool maybeArrayType);
-  LoopExpr(bool forall, bool zippered, bool maybeArrayType);
+  LoopExpr(LoopExprType type, bool zippered, bool maybeArrayType);
 
   DECLARE_COPY(LoopExpr);
   LoopExpr* copyInner(SymbolMap* map)                 override;
@@ -63,6 +68,33 @@ public:
   GenRet  codegen()                                   override;
   Expr*   getFirstExpr()                              override;
 };
+
+/**
+
+ Check if a given symbol needs to be converted into a formal when its
+ containing expression is lifted into a function. For instance,
+ in the following loop expression:
+
+     foreach i in 1..10 do f(x, y, z)
+
+ If we are trying to create an iterator proc to implement that loop, we may
+ need to capture 'x', 'y', 'z' and potentially even 'f' (if 'f' were an
+ object with a call operator, and not an actual function) as outer variables.
+
+     iter foreachLoop(x, y, z, f) { ... }
+
+ There are some exceptions for what gets captured (global variables, modules,
+ etc.) that are encoded by this function.
+
+*/
+bool considerForOuter(Symbol* sym);
+/**
+  Create a new function ArgSymbol from a given outer variable when lifting
+  an expression into a function. See the comment on considerForOuter
+  for an example of the sort of transformations this supports.
+ */
+ArgSymbol* newOuterVarArg(Symbol* sym);
+void scopeResolveAndNormalizeGeneratedLoweringFn(FnSymbol* fn);
 
 void lowerLoopExprs(BaseAST* ast);
 

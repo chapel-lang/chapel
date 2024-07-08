@@ -47,8 +47,6 @@ or
 
    .. method:: operator !=(lhs: Foo, rhs: Foo)
 
-   .. method:: operator <~>(const ref ch: channel, const x: Foo) const ref throws
-
    .. method:: operator <(lhs: Foo, rhs: Foo)
 
    .. method:: operator <=(lhs: Foo, rhs: Foo)
@@ -77,7 +75,7 @@ or
 
    .. method:: operator -(lhs: Foo, rhs: Foo)
 
-   .. method:: operator <=>(ref lhs: owned nilable Foo, ref rhs: owned nilable Foo)
+   .. method:: operator <=>(ref lhs: owned Foo?, ref rhs: owned Foo?)
 
    .. method:: operator *=(ref lhs: Foo, rhs: Foo)
 
@@ -107,5 +105,5 @@ or
 
    .. method:: proc init=(other: Bar)
 
-   .. method:: operator =(ref lhs: Bar, rhs: Bar)
+   .. method:: operator  = (ref lhs: Bar, rhs: Bar)
 

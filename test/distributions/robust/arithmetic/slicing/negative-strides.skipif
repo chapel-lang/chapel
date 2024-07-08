@@ -1,0 +1,2 @@
+# Cyclic is one of the cases where slicing with negative does not work.
+COMPOPTS <= distType=DistType.cyclic

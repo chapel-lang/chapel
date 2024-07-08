@@ -1,1 +1,1 @@
-defaultValues_global.chpl:1: error: Export variables are not yet supported
+defaultValues_global.chpl:1: error: export variables are not yet supported

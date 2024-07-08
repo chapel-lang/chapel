@@ -5,6 +5,7 @@ class D {
 class C : D {
   var x = 1;
   proc foo() {
+    pragma "last resort"
     proc bar(_x) {
       writeln("default bar");
     }
@@ -17,9 +18,11 @@ class C : D {
   }
 }
 
-var d = new borrowed D();
+var ownD = new owned D();
+var d = ownD.borrow();
 writeln(d);
 
-var c = new borrowed C();
+var ownC = new owned C();
+var c = ownC.borrow();
 c.foo();
 writeln(c);

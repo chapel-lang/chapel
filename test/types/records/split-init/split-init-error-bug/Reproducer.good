@@ -1,0 +1,5 @@
+Reproducer.chpl:4: In function 'main':
+Reproducer.chpl:5: error: cannot default-initialize a variable with generic type
+Reproducer.chpl:5: note: 'myFoo' has generic type 'foo(false)'
+Reproducer.chpl:5: note: cannot find initialization point to split-init this variable
+Reproducer.chpl:9: note: 'myFoo' is used here before it is initialized

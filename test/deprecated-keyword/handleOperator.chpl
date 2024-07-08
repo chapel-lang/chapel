@@ -1,13 +1,13 @@
 record Foo {
   var x: int;
 
-  deprecated "Addition of Foos is deprecated"
+  @deprecated(notes="Addition of Foos is deprecated")
   operator +(arg1: Foo, arg2: Foo) {
     return new Foo(arg1.x + arg2.x);
   }
 }
 
-deprecated "Subtraction of Foos is deprecated"
+@deprecated(notes="Subtraction of Foos is deprecated")
 operator Foo.-(arg1: Foo, arg2: Foo) {
   return new Foo(arg1.x - arg2.x);
 }

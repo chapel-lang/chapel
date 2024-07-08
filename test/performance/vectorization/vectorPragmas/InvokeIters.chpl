@@ -12,7 +12,7 @@ module ItersConfig {
 module InvokeLeaderFollower {
   use ItersConfig;
   use iters;
-  forall (i,j) in zip(myiter(n, ntasks), myiter(n, ntasks)) {
+  forall (i,j) in zip(myiter(n, ntasks), myiter(n, ntasks)) with (ref A) {
     A[i] = j;
   }
 }
@@ -20,7 +20,7 @@ module InvokeLeaderFollower {
 module InvokeStandalone {
   use ItersConfig;
   use iters;
-  forall i in myiter(n, ntasks) {
+  forall i in myiter(n, ntasks) with (ref A) {
     A[i] += i;
   }
 }

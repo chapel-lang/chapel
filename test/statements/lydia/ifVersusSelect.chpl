@@ -19,7 +19,7 @@ enum filler {
   random
 }
 
-var t1, t2: Timer;
+var t1, t2: stopwatch;
 
 // Get a random number
 var arr: [1..#numElems] real;
@@ -49,15 +49,15 @@ else
   writeln("Verification failed");
 
 if (verbose) {
-  writeln("If/else branching took ", t1.elapsed(TimeUnits.milliseconds)/1000,
+  writeln("If/else branching took ", t1.elapsed(),
           " seconds");
-  writeln("Select branching took ", t2.elapsed(TimeUnits.milliseconds)/1000,
+  writeln("Select branching took ", t2.elapsed(),
           " seconds");
 }
 
 
 // Decides how to fill the array
-proc fillArr(arr) {
+proc fillArr(ref arr) {
   select fillBy {
     when filler.balanced {
       // Balanced

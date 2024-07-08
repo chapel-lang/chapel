@@ -4,14 +4,13 @@ proc main() {
   var Vector1 = {1..20};
   var Vec1 : [Vector1] real;
 
-  var rng = createRandomStream(real, 314159265, algorithm=RNG.NPB);
+  var rng = new randomStream(real, 314159265);
 
-  rng.fillRandom(Vec1);
+  rng.fill(Vec1);
   writeln(Vec1);
 
-  fillRandom(Vec1,314159265, algorithm=RNG.NPB);
+  fillRandom(Vec1,314159265);
   writeln(Vec1);
-  fillRandom(Vec1,314159265, algorithm=RNG.NPB);
+  fillRandom(Vec1,314159265);
   writeln(Vec1);
 }
-

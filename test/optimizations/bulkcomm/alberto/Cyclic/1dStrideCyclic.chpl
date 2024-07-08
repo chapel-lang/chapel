@@ -1,12 +1,13 @@
 use CyclicDist;
 
 config const n=10;
+assert(n > 0); // relied upon in the cast 'n:uint'
 const S = {1..n};
-const BDom: domain(1) dmapped Cyclic(startIdx=S.low)=S;
-//const BDist = new dmap(new Block(boundingBox=S));
+const BDom: domain(1) dmapped new cyclicDist(startIdx=S.low)=S;
+//const BDist = new blockDist(boundingBox=S);
 //const BDom : domain(1) dmapped BDist=S;
 
-//var A : [[1..n] dmapped Block(rank=1,boundingBox=[1..n])] int;
+//var A : [[1..n] dmapped new blockDist(rank=1,boundingBox=[1..n])] int;
 var A : [BDom] int;
 var B : [BDom] int;
 writeln("A and B defined on ",S);
@@ -55,8 +56,8 @@ if (Dom2.size == Dom1.size)
 	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
-Dom1 = {1..n by n};
-Dom2 = {1..n by 2*n};
+Dom1 = {1..n by n:uint};
+Dom2 = {1..n by 2*n:uint};
 writeln("Example 4: B",Dom2,"(",Dom2.size,") = A",Dom1,"(",Dom1.size,")");
 if (Dom2.size == Dom1.size)
 {
@@ -74,8 +75,8 @@ if (Dom2.size == Dom1.size)
 	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
-Dom1 = {2..n by n};
-Dom2 = {2..n by 2*n};
+Dom1 = {2..n by n:uint};
+Dom2 = {2..n by 2*n:uint};
 writeln("Example 6: B",Dom2,"(",Dom2.size,") = A",Dom1,"(",Dom1.size,")");
 if (Dom2.size == Dom1.size)
 {
@@ -183,7 +184,7 @@ if (Dom2.size == Dom1.size)
 
 
 const R = {n/2+1..3*n/2};
-const BRDom: domain(1) dmapped Cyclic(startIdx=R.low)=R;
+const BRDom: domain(1) dmapped new cyclicDist(startIdx=R.low)=R;
 
 var C : [BRDom] int;
 var D : [BRDom] int;
@@ -232,7 +233,7 @@ if (Dom4.size == Dom3.size)
 }
 
 const T = {n/2+1..5*n/2};
-const BTDom: domain(1) dmapped Cyclic(startIdx=T.low)=T;
+const BTDom: domain(1) dmapped new cyclicDist(startIdx=T.low)=T;
 
 var E : [BTDom] int;
 writeln("E defined on ",T);

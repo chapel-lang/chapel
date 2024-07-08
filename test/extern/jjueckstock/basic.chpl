@@ -8,15 +8,15 @@ module OuterModule {
     #include <stdbool.h>
 
     static inline void print_bool(bool x) { if (x) printf("yes\n"); else printf("no\n"); }
-    
+
     static inline int add_two(int x, int y) { return x+y; }
-    
+
     double my_doub = 3.14;
     const char* greet_str = "Hello";
   } }
 
   try {
-    writeln(createStringWithNewBuffer(C.greeting()));
+    writeln(string.createCopyingBuffer(C.greeting()));
   }
   catch e: DecodeError {
     writeln("Decode error creating string");
@@ -38,5 +38,5 @@ module OuterModule {
   //  at least one argument. I.e., printf must
   //  include at least one argument in addition
   //  to the format string.
-  C.printf("%s, world!\n".c_str(), C.greet_str);
+  C.printf("%s, world!\n", C.greet_str);
 }

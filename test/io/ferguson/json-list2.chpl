@@ -1,19 +1,19 @@
-use IO, List;
+use IO, List, JSON;
 
 record MyRecord {
   var numbers:list(int); // could it be [1..0] int ?
 }
 
 var myEntry:MyRecord;
-myEntry.numbers.append(1);
-myEntry.numbers.append(2);
-myEntry.numbers.append(3);
+myEntry.numbers.pushBack(1);
+myEntry.numbers.pushBack(2);
+myEntry.numbers.pushBack(3);
 
-writef("testing json write: %jt\n", myEntry);
+stdout.withSerializer(jsonSerializer).writef("testing json write: %?\n", myEntry);
 
-var f = opentmp();
+var f = openTempFile();
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": []}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -21,11 +21,11 @@ var f = opentmp();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -33,7 +33,7 @@ var f = opentmp();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -41,11 +41,11 @@ var f = opentmp();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -53,7 +53,7 @@ var f = opentmp();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -61,11 +61,11 @@ var f = opentmp();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -73,7 +73,7 @@ var f = opentmp();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2,3]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -81,11 +81,11 @@ var f = opentmp();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -93,7 +93,7 @@ var f = opentmp();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2,3,4]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -101,11 +101,11 @@ var f = opentmp();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -113,7 +113,7 @@ var f = opentmp();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2,3,4,5]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -121,11 +121,11 @@ var f = opentmp();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -133,7 +133,7 @@ var f = opentmp();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2,3,4,5,6]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -141,11 +141,11 @@ var f = opentmp();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -153,7 +153,7 @@ var f = opentmp();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2,3,4,5,6,7]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -161,11 +161,11 @@ var f = opentmp();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -173,7 +173,7 @@ var f = opentmp();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2,3,4,5,6,7,8]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -181,11 +181,11 @@ var f = opentmp();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
@@ -193,7 +193,7 @@ var f = opentmp();
 }
 
 {
-  var writer = f.writer();
+  var writer = f.writer(locking=false);
   var str = '{"numbers": [1,2,3,4,5,6,7,8,9]}';
   writeln("Writing JSON: ", str);
   writer.write(str);
@@ -201,14 +201,13 @@ var f = opentmp();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var r:MyRecord;
 
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
 
   writeln("Read: ", r);
 
   reader.close();
 }
-

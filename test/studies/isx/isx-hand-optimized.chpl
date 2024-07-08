@@ -1,5 +1,5 @@
 // isx-hand-optimized.chpl
-// 
+//
 // This is a port of ISx to Chapel, developed by Ben Harshbarger as a
 // variant on the isx-bucket-spmd.chpl version co-developed by Brad Chamberlain,
 // Lydia Duncan, and Jacob Hemstad.
@@ -15,9 +15,9 @@
 
 //
 // We want to use block-distributed arrays (BlockDist), barrier
-// synchronization (Barriers), and timers (Time).
+// synchronization (AllLocalesBarriers), timers (Time), and log2 (Math).
 //
-use BlockDist, AllLocalesBarriers, Time;
+use BlockDist, AllLocalesBarriers, Time, Math;
 
 //
 // The type of key to use when sorting.
@@ -103,7 +103,7 @@ if !quiet && mode != scaling.weakISO && isoBucketWidth != 0 then
 //
 // The maximum key value to use.  When debugging, use a small size.
 //
-config const maxKeyVal = (if mode == scaling.weakISO 
+config const maxKeyVal = (if mode == scaling.weakISO
                             then (numTasks * isoBucketWidth)
                             else (if testrun then 32 else 2**28)): keyType;
 
@@ -135,8 +135,8 @@ config const numBurnInRuns = 1,
 // Horrible hack to help https://github.com/chapel-lang/chapel/issues/9414
 record TimerArr {
   var A: [1..numTrials] real;
-  proc this(i) ref { return A[i]; }
-  iter these() ref { for a in A do yield a; }
+  proc ref this(i) ref { return A[i]; }
+  iter these() { for a in A do yield a; }
 }
 
 if printConfig then
@@ -145,7 +145,7 @@ if printConfig then
 
 
 const LocTaskSpace = {0..#numTasks};
-const DistTaskSpace = LocTaskSpace dmapped Block(LocTaskSpace);
+const DistTaskSpace = LocTaskSpace dmapped new blockDist(LocTaskSpace);
 
 var allBucketKeys: [DistTaskSpace] [0..#recvBuffSize] keyType;
 var recvOffset: [DistTaskSpace] atomic int;
@@ -184,8 +184,8 @@ proc main() {
 
 proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   const subtime = time && useSubTimers;
-  var totalTimer: Timer;
-  var subTimer: Timer;
+  var totalTimer: stopwatch;
+  var subTimer: stopwatch;
 
   if time {
     totalTimer.start();
@@ -228,7 +228,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
     bucketizeTime.localAccess[taskID][trial] = subTimer.elapsed();
     subTimer.clear();
   }
-  
+
   exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys);
 
   if subtime {
@@ -254,7 +254,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
     if subtime then
       countKeysTime.localAccess[taskID][trial] = subTimer.elapsed();
     totalTime.localAccess[taskID][trial] = totalTimer.elapsed();
-  }    
+  }
 
   if (verify) then
     verifyResults(taskID, keysInMyBucket, myLocalKeyCounts);
@@ -267,7 +267,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
 }
 
 
-proc bucketizeLocalKeys(taskID, myKeys, sendOffsets, myBucketedKeys) {
+proc bucketizeLocalKeys(taskID, myKeys, sendOffsets, ref myBucketedKeys) {
   var bucketOffsets: [0..#numTasks] int;
 
   bucketOffsets = sendOffsets;
@@ -284,7 +284,7 @@ proc bucketizeLocalKeys(taskID, myKeys, sendOffsets, myBucketedKeys) {
 }
 
 
-proc countLocalBucketSizes(myKeys, bucketSizes) {
+proc countLocalBucketSizes(myKeys, ref bucketSizes) {
   for key in myKeys {
     const bucketIndex = key / bucketWidth;
     bucketSizes[bucketIndex] += 1;
@@ -316,7 +316,7 @@ proc exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys) {
 }
 
 
-proc countLocalKeys(taskID, myBucketSize, myLocalKeyCounts) {
+proc countLocalKeys(taskID, myBucketSize, ref myLocalKeyCounts) {
   const myMinKeyVal = taskID * bucketWidth;
 
   ref myBucket = allBucketKeys[taskID];
@@ -324,7 +324,7 @@ proc countLocalKeys(taskID, myBucketSize, myLocalKeyCounts) {
     myLocalKeyCounts[myBucket[i]] += 1;
 
   if debug then
-    writeln(taskID, ": myLocalKeyCounts[", myMinKeyVal, "..] = ", 
+    writeln(taskID, ": myLocalKeyCounts[", myMinKeyVal, "..] = ",
             myLocalKeyCounts);
 }
 
@@ -362,7 +362,7 @@ proc verifyResults(taskID, myBucketSize, myLocalKeyCounts) {
 }
 
 
-proc makeInput(taskID, myKeys) {
+proc makeInput(taskID, ref myKeys) {
   use Random.PCGRandom;
   use Random.PCGRandomLib;
 
@@ -383,7 +383,7 @@ proc makeInput(taskID, myKeys) {
   local {
     for key in myKeys do key = pcg.bounded_random(inc, maxKeyVal:uint(32)):keyType;
   }
-    
+
   if (debug) then
     writeln(taskID, ": myKeys: ", myKeys);
 

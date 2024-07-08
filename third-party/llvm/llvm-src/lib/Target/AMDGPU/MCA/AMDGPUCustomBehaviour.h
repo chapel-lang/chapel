@@ -19,7 +19,7 @@
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/MCA/CustomBehaviour.h"
-#include "llvm/Support/TargetParser.h"
+#include "llvm/TargetParser/TargetParser.h"
 
 namespace llvm {
 namespace mca {
@@ -31,7 +31,7 @@ public:
   AMDGPUInstrPostProcess(const MCSubtargetInfo &STI, const MCInstrInfo &MCII)
       : InstrPostProcess(STI, MCII) {}
 
-  ~AMDGPUInstrPostProcess() {}
+  ~AMDGPUInstrPostProcess() = default;
 
   void postProcessInstruction(std::unique_ptr<Instruction> &Inst,
                               const MCInst &MCI) override;
@@ -68,6 +68,8 @@ class AMDGPUCustomBehaviour : public CustomBehaviour {
   bool hasModifiersSet(const std::unique_ptr<Instruction> &Inst,
                        unsigned OpName) const;
   /// Helper function used in generateWaitCntInfo()
+  bool isGWS(uint16_t Opcode) const;
+  /// Helper function used in generateWaitCntInfo()
   bool isAlwaysGDS(uint16_t Opcode) const;
   /// Helper function used in generateWaitCntInfo()
   bool isVMEM(const MCInstrDesc &MCID);
@@ -86,7 +88,7 @@ public:
   AMDGPUCustomBehaviour(const MCSubtargetInfo &STI,
                         const mca::SourceMgr &SrcMgr, const MCInstrInfo &MCII);
 
-  ~AMDGPUCustomBehaviour() {}
+  ~AMDGPUCustomBehaviour() = default;
   /// This method is used to determine if an instruction
   /// should be allowed to be dispatched. The return value is
   /// how many cycles until the instruction can be dispatched.

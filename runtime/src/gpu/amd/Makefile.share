@@ -1,0 +1,31 @@
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+#
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+GPU_SRCS = gpu-amd-cub.cc gpu-amd.c
+
+SRCS = $(GPU_SRCS)
+
+GPU_OBJS = $(addprefix $(GPU_OBJDIR)/,$(addsuffix .o,$(basename $(GPU_SRCS))))
+
+RUNTIME_CXXFLAGS += -x hip --offload-arch=$(CHPL_MAKE_GPU_ARCH)
+
+# Some ROCm headers have `foo()`, suppress warnings/errors from them
+RUNTIME_CFLAGS += -Wno-strict-prototypes
+
+$(RUNTIME_OBJ_DIR)/gpu-amd-cub.o: gpu-amd-cub.cc \
+                                         $(RUNTIME_OBJ_DIR_STAMP)
+	PATH=$(PATH):$(CHPL_MAKE_ROCM_PATH)/llvm/bin $(CXX) -c -std=c++17 $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<

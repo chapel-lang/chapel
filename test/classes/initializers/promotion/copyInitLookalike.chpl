@@ -32,14 +32,14 @@ class C {
 }
 
 proc main() {
-  var ci = new borrowed C(1);
-  var cr = new borrowed C(2.0);
+  var ciObj = new C(1);   var ci = ciObj.borrow();
+  var crObj = new C(2.0); var cr = crObj.borrow();
 
   // No copy initializer for C(real), so this program should fail to compile
   // (at least by the current rules). This test was written to make sure we
   // do not allow promotion for calls that look like copy initializers. For
   // example, without some compiler work this new-statement could promote to
   // init(r : real), which would be very confusing.
-  var q = new borrowed C(cr);
+  var qObj = new C(cr); var q = qObj.borrow();
   writeln("q = ", q);
 }

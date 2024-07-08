@@ -13,9 +13,11 @@
 //===----------------------------------------------------------------------===//
 
 #include "clang/AST/ASTTypeTraits.h"
+#include "clang/AST/ASTConcept.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/DeclCXX.h"
+#include "clang/AST/DeclObjC.h"
 #include "clang/AST/NestedNameSpecifier.h"
 #include "clang/AST/OpenMPClause.h"
 #include "clang/AST/TypeLoc.h"
@@ -52,10 +54,25 @@ const ASTNodeKind::KindInfo ASTNodeKind::AllKindInfo[] = {
     {NKI_None, "Attr"},
 #define ATTR(A) {NKI_Attr, #A "Attr"},
 #include "clang/Basic/AttrList.inc"
+    {NKI_None, "ObjCProtocolLoc"},
+    {NKI_None, "ConceptReference"},
 };
+
+bool ASTNodeKind::isBaseOf(ASTNodeKind Other) const {
+  return isBaseOf(KindId, Other.KindId);
+}
 
 bool ASTNodeKind::isBaseOf(ASTNodeKind Other, unsigned *Distance) const {
   return isBaseOf(KindId, Other.KindId, Distance);
+}
+
+bool ASTNodeKind::isBaseOf(NodeKindId Base, NodeKindId Derived) {
+  if (Base == NKI_None || Derived == NKI_None)
+    return false;
+  while (Derived != Base && Derived != NKI_None) {
+    Derived = AllKindInfo[Derived].ParentId;
+  }
+  return Derived == Base;
 }
 
 bool ASTNodeKind::isBaseOf(NodeKindId Base, NodeKindId Derived,
@@ -94,7 +111,7 @@ ASTNodeKind ASTNodeKind::getMostDerivedType(ASTNodeKind Kind1,
 ASTNodeKind ASTNodeKind::getMostDerivedCommonAncestor(ASTNodeKind Kind1,
                                                       ASTNodeKind Kind2) {
   NodeKindId Parent = Kind1.KindId;
-  while (!isBaseOf(Parent, Kind2.KindId, nullptr) && Parent != NKI_None) {
+  while (!isBaseOf(Parent, Kind2.KindId) && Parent != NKI_None) {
     Parent = AllKindInfo[Parent].ParentId;
   }
   return ASTNodeKind(Parent);
@@ -193,6 +210,10 @@ void DynTypedNode::print(llvm::raw_ostream &OS,
     QualType(T, 0).print(OS, PP);
   else if (const Attr *A = get<Attr>())
     A->printPretty(OS, PP);
+  else if (const ObjCProtocolLoc *P = get<ObjCProtocolLoc>())
+    P->getProtocol()->print(OS, PP);
+  else if (const ConceptReference *C = get<ConceptReference>())
+    C->print(OS, PP);
   else
     OS << "Unable to print values of type " << NodeKind.asStringRef() << "\n";
 }
@@ -205,6 +226,8 @@ void DynTypedNode::dump(llvm::raw_ostream &OS,
     S->dump(OS, Context);
   else if (const Type *T = get<Type>())
     T->dump(OS, Context);
+  else if (const ConceptReference *C = get<ConceptReference>())
+    C->dump(OS);
   else
     OS << "Unable to dump values of type " << NodeKind.asStringRef() << "\n";
 }
@@ -228,5 +251,9 @@ SourceRange DynTypedNode::getSourceRange() const {
     return CBS->getSourceRange();
   if (const auto *A = get<Attr>())
     return A->getRange();
+  if (const ObjCProtocolLoc *P = get<ObjCProtocolLoc>())
+    return P->getSourceRange();
+  if (const ConceptReference *C = get<ConceptReference>())
+    return C->getSourceRange();
   return SourceRange();
 }

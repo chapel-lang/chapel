@@ -1,7 +1,7 @@
 use BlockDist;
 
 var Space = {1..10};
-var D = Space dmapped Block(Space);
+var D = Space dmapped new blockDist(Space);
 var A:[D] int;
 
 proc f(const ref x)

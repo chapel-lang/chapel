@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -77,7 +77,7 @@ proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws 
 
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
-    const toParse = open(projectHome + "/Mason.toml", iomode.r);
+    const toParse = open(projectHome + "/Mason.toml", ioMode.r);
     const tomlFile = parseToml(toParse);
     const project = tomlFile["brick"]!["name"]!.s;
 
@@ -179,23 +179,23 @@ private proc masonBuildRun(args: [?d] string, checkProj=true) {
     if example {
       // add expected arguments for masonExample
       execopts.insert(0,["example", "--example"]);
-      for val in exampleOpts.values() do execopts.append(val);
-      if !buildExample then execopts.append("--no-build");
-      if release then execopts.append("--release");
-      if force then execopts.append("--force");
-      if show then execopts.append("--show");
+      for val in exampleOpts.values() do execopts.pushBack(val);
+      if !buildExample then execopts.pushBack("--no-build");
+      if release then execopts.pushBack("--release");
+      if force then execopts.pushBack("--force");
+      if show then execopts.pushBack("--show");
       masonExample(execopts.toArray(), checkProj);
     }
     else {
       var buildArgs: list(string);
-      buildArgs.append("build");
-      if skipUpdate then buildArgs.append("--no-update");
-                    else buildArgs.append("--update");
-      if release then buildArgs.append("--release");
-      if force then buildArgs.append("--force");
-      if show then buildArgs.append("--show");
+      buildArgs.pushBack("build");
+      if skipUpdate then buildArgs.pushBack("--no-update");
+                    else buildArgs.pushBack("--update");
+      if release then buildArgs.pushBack("--release");
+      if force then buildArgs.pushBack("--force");
+      if show then buildArgs.pushBack("--show");
       masonBuild(buildArgs.toArray(), checkProj);
-      for val in passArgs.values() do execopts.append(val);
+      for val in passArgs.values() do execopts.pushBack(val);
       runProjectBinary(show, release, execopts);
     }
   }
@@ -203,5 +203,3 @@ private proc masonBuildRun(args: [?d] string, checkProj=true) {
     stderr.writeln(e.message());
   }
 }
-
-

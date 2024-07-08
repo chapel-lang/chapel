@@ -3,10 +3,10 @@ class C {
   var f : t;
 }
 
-var c = new borrowed C(f = 1);
-
+var cObj = new C(f = 1);
+var c = cObj.borrow();
 writeln(c);
 
-var d : borrowed C(int) = new borrowed C(int, 12);
-
+var dObj = new C(int, 12);
+var d : borrowed C(int) = dObj.borrow();
 writeln(d);

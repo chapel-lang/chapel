@@ -1,0 +1,2 @@
+@notanattribute
+proc foo() {}

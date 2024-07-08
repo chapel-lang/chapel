@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,11 +19,12 @@
  */
 
 /* Version as of Chapel 1.25 - to be updated each release */
-const spackVersion = new VersionInfo('0.15.4');
+const spackVersion = new VersionInfo('0.19.0');
 const major = spackVersion.major:string;
 const minor = spackVersion.minor:string;
 const spackBranch = 'releases/v' + '.'.join(major, minor);
 const spackDefaultPath = MASON_HOME + "/spack";
+const latestSpackRelease = "v0.22";
 
 use ArgumentParser;
 use FileSystem;
@@ -118,7 +119,7 @@ proc masonExternal(args: [] string) {
       var usedCmd:string;
       var cmdList:list(string);
       // identify which, if any, subcommand was used and collect its arguments
-      for (cmd, arg) in subCmds.items() {
+      for (cmd, arg) in zip(subCmds.keys(), subCmds.values()) {
         if arg.hasValue() {
           usedCmd = cmd;
           cmdList = new list(arg.values());
@@ -184,7 +185,7 @@ proc setupSpack() throws {
   const destCLI = MASON_HOME + "/spack/";
   const spackLatestBranch = ' --branch v' + spackVersion.str() + ' ';
   const destPackages = MASON_HOME + "/spack-registry";
-  const spackMasterBranch = ' --branch releases/latest ';
+  const spackMasterBranch = ' --branch releases/' + latestSpackRelease + ' ';
   const statusCLI = cloneSpackRepository(spackLatestBranch, destCLI);
   const statusPackages = cloneSpackRepository(spackMasterBranch, destPackages);
   generateYAML();
@@ -244,8 +245,8 @@ private proc generateYAML() {
   }
   const reposOverride = 'repos:\n'+
                         '  - ' + MASON_HOME + '/spack-registry/var/spack/repos/builtin \n';
-  var yamlFile = open(yamlFilePath,iomode.cw);
-  var yamlWriter = yamlFile.writer();
+  var yamlFile = open(yamlFilePath,ioMode.cw);
+  var yamlWriter = yamlFile.writer(locking=false);
   yamlWriter.write(reposOverride);
   yamlWriter.close();
 }
@@ -261,10 +262,10 @@ proc getSpackVersion : VersionInfo {
   const command = "spack --version";
   const tmpVersion = getSpackResult(command,true).strip();
   // on systems with their own spack, spack --version can provide
-  // a version string like x.x.x-xxxx-hash
+  // a version string like x.x.x.xxxx (hash)
   // partitioning the string allows us to separate the major.minor.bug
   // from the remaining values
-  const version = tmpVersion.partition("-");
+  const version = tmpVersion.partition(" ");
   return new VersionInfo(version[0]);
 }
 
@@ -414,10 +415,10 @@ private proc editCompilers() {
    the dependencies in a toml in lock file format */
 proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
 
-  var exDom: domain(string);
+  var exDom: domain(string, parSafe=false);
   var exDepTree: [exDom] shared Toml?;
 
-  for (name, spc) in exDeps.A.items() {
+  for (name, spc) in zip(exDeps.A.keys(), exDeps.A.values()) {
     try! {
       var spec = spc!;
       select spec.tag {
@@ -455,7 +456,7 @@ proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
 proc getSpkgInfo(spec: string, ref dependencies: list(string)): shared Toml throws {
 
   var depList: list(shared Toml);
-  var spkgDom: domain(string);
+  var spkgDom: domain(string, parSafe=false);
   var spkgToml: [spkgDom] shared Toml?;
   var spkgInfo = new shared Toml(spkgToml);
 
@@ -489,7 +490,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): shared Toml thro
         var name = depSpec[0];
 
         // put dep into current packages dep list
-        depList.append(new shared Toml(name));
+        depList.pushBack(new shared Toml(name));
 
         // get dependencies of dep
         var depsOfDep = getSpkgDependencies(dep);
@@ -499,7 +500,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): shared Toml thro
         spkgInfo.set(name, getSpkgInfo(dep, depsOfDep));
 
         // remove dep for recursion
-        dependencies.pop(0);
+        dependencies.getAndRemove(0);
       }
       if depList.size > 0 {
         // Temporarily use toArray here to avoid supporting list.
@@ -540,7 +541,7 @@ proc getSpkgDependencies(spec: string): list(string) throws {
     }
     else if found {
       const dep = item.strip("^");
-      dependencies.append(dep);
+      dependencies.pushBack(dep);
     }
   }
   if !found {

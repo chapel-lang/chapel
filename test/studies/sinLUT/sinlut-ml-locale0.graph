@@ -1,0 +1,5 @@
+perfkeys: Calc Locale LOCALE0 Timer:, Lookup Locale LOCALE0 Timer:, Calc Locale LOCALE0 Timer:, Lookup Locale LOCALE0 Timer:, Calc Locale LOCALE0 Timer:, Lookup Locale LOCALE0 Timer:, Calc Locale LOCALE0 Timer:, Lookup Locale LOCALE0 Timer:
+files: chplSinReplicated.dat, chplSinReplicated.dat, chplSinReplicatedReplicand.dat, chplSinReplicatedReplicand.dat, chplSinBlock.dat, chplSinBlock.dat
+graphkeys: Replicated Calculated, Replicated Lookup, Replicand Calculated, Replicand Lookup, Block Calculated, Block Lookup
+ylabel: Time (seconds)
+graphtitle: Sin LUT locale0

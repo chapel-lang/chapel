@@ -1,0 +1,6 @@
+error in managedRecord.chpl:4: cannot use memory management strategy 'shared' with record 'MyRecord'
+  note in managedRecord.chpl:1: 'MyRecord' declared as record here
+error in managedRecord.chpl:4: Cannot resolve call: no matching candidates
+error in managedRecord.chpl:5: cannot use memory management strategy 'owned' with record 'MyRecord'
+  note in managedRecord.chpl:1: 'MyRecord' declared as record here
+error in managedRecord.chpl:5: Cannot resolve call: no matching candidates

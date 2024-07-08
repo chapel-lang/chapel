@@ -42,7 +42,7 @@ proc BlockArr.TestGetsPuts(B)
                  __primitive("array_get",dest,
                              locArr[0].myElems._value.getDataIndex(8)),
                  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
-                 rid,
+                 rid, c_sublocid_any,
                  __primitive("array_get",srcr,
                              B._value.locArr[rid].myElems._value.getDataIndex(58)),
                  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
@@ -54,7 +54,7 @@ proc BlockArr.TestGetsPuts(B)
                  __primitive("array_get",dest,
                              locArr[0].myElems._value.getDataIndex(24)),
                  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
-                 lid,
+                 lid, c_sublocid_any,
                  __primitive("array_get",srcl,
                              B._value.locArr[lid].myElems._value.getDataIndex(8)),
                  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
@@ -70,7 +70,7 @@ proc BlockArr.TestGetsPuts(B)
                  __primitive("array_get",destr,
                              B._value.locArr[rid].myElems._value.getDataIndex(76)),
                  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
-                 rid,
+                 rid, c_sublocid_any,
                  __primitive("array_get",src,
                              locArr[0].myElems._value.getDataIndex(26)),
                  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
@@ -82,7 +82,7 @@ proc BlockArr.TestGetsPuts(B)
                  __primitive("array_get",destl,
                              B._value.locArr[lid].myElems._value.getDataIndex(16)),
                  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
-                 lid,
+                 lid, c_sublocid_any,
                  __primitive("array_get",src,
                              locArr[0].myElems._value.getDataIndex(2)),
                  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
@@ -95,7 +95,7 @@ proc BlockArr.TestGetsPuts(B)
 use BlockDist;
 
 const n: int=50*numLocales;
-var Dist = new dmap(new Block({1..n}));
+var Dist = new blockDist({1..n});
 
 var Dom: domain(1,int) dmapped Dist = {1..n};
 

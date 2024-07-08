@@ -4,6 +4,6 @@ class MyClass {
   var x: int;
 }
 
-var rhs = new borrowed MyClass();
+var obj = new MyClass(); var rhs = obj.borrow();
 
 var lhs: unmanaged MyClass = rhs;

@@ -1,0 +1,8 @@
+2 buckets:
+(head = {entry = (key = a, val = 0, status = full), next = {entry = (key = c, val = 2, status = full), next = {entry = (key = e, val = 4, status = full), next = {entry = (key = g, val = 6, status = full), next = {entry = (key = i, val = 8, status = full), next = {entry = (key = k, val = 10, status = full), next = nil}}}}}})
+(head = {entry = (key = b, val = 1, status = full), next = {entry = (key = d, val = 3, status = full), next = {entry = (key = f, val = 5, status = full), next = {entry = (key = h, val = 7, status = full), next = {entry = (key = j, val = 9, status = full), next = nil}}}}})
+4 buckets:
+(head = {entry = (key = a, val = 0, status = full), next = {entry = (key = e, val = 4, status = full), next = {entry = (key = i, val = 8, status = full), next = nil}}})
+(head = {entry = (key = d, val = 3, status = full), next = {entry = (key = h, val = 7, status = full), next = nil}})
+(head = {entry = (key = c, val = 2, status = full), next = {entry = (key = g, val = 6, status = full), next = {entry = (key = k, val = 10, status = full), next = nil}}})
+(head = {entry = (key = b, val = 1, status = full), next = {entry = (key = f, val = 5, status = full), next = {entry = (key = j, val = 9, status = full), next = nil}}})

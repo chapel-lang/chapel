@@ -43,8 +43,7 @@ config const epsilon = 2.0 ** -51.0,
 // pseudo-random seed (based on the clock) or a fixed seed; and to
 // specify the fixed seed explicitly
 //
-config const useRandomSeed = true,
-  seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+config const useRandomSeed = true;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -74,7 +73,7 @@ proc main() {
   // Twiddles is the vector of twiddle values.
   //
   const TwiddleDom:
-    domain(1, idxType) dmapped Block(boundingBox={0..m/4-1}) = {0..m/4-1};
+    domain(1, idxType) dmapped new blockDist(boundingBox={0..m/4-1}) = {0..m/4-1};
   var Twiddles: [TwiddleDom] elemType;
 
   //
@@ -89,7 +88,7 @@ proc main() {
   // (used for the first half of the FFT phases).
   //
   const BlkDom:
-    domain(1, idxType) dmapped Block(boundingBox=ProblemSpace) = ProblemSpace;
+    domain(1, idxType) dmapped new blockDist(boundingBox=ProblemSpace) = ProblemSpace;
   var Zblk, z: [BlkDom] elemType;
 
   //
@@ -98,32 +97,32 @@ proc main() {
   // phases.
   //
   const CycDom:
-    domain(1, idxType) dmapped Cyclic(startIdx=0:idxType) = ProblemSpace;
+    domain(1, idxType) dmapped new cyclicDist(startIdx=0:idxType) = ProblemSpace;
 
   var Zcyc: [CycDom] elemType;
   
   initVectors(Twiddles, z);            // initialize twiddles and input vector z
   var t1,t2,T1,T2,T3,T4: real;
-  const startTime = getCurrentTime();  // capture the start time
-  [(a,b) in zip(Zblk, z)] a = conjg(b);      // store the conjugate of z in Zblk
+  const startTime = timeSinceEpoch().totalSeconds();  // capture the start time
+  [(a,b) in zip(Zblk, z)] a = conj(b);      // store the conjugate of z in Zblk
 
   //Comm y tieme bitReverse 
-  t1=getCurrentTime();
+  t1=timeSinceEpoch().totalSeconds();
   bitReverseShuffle(Zblk);                // permute Zblk
-  t2=getCurrentTime();
+  t2=timeSinceEpoch().totalSeconds();
   T1=t2-t1;
 
   //Comm and Time dfft  
-  t1=getCurrentTime();
+  t1=timeSinceEpoch().totalSeconds();
   dfft(Zblk, Twiddles, cyclicPhase=false); // compute the DFFT, block phases
-  t2=getCurrentTime();
+  t2=timeSinceEpoch().totalSeconds();
   T2=t2-t1;
 
   //Comm and Time first forall
-  t1=getCurrentTime();
+  t1=timeSinceEpoch().totalSeconds();
   //  copyBtoC(Zblk,Zcyc);
   Zcyc=Zblk;
-  t2=getCurrentTime();
+  t2=timeSinceEpoch().totalSeconds();
   T3=t2-t1;
 
   /*
@@ -133,20 +132,20 @@ proc main() {
     writeln("ERROR = ",e);
     if (e==0.0) then writeln("Correct"); else writeln("Wrong!");
   */
-  t1=getCurrentTime();
+  t1=timeSinceEpoch().totalSeconds();
   dfft(Zcyc, Twiddles, cyclicPhase=true); // compute the DFFT, cyclic phases
-  t2=getCurrentTime();
+  t2=timeSinceEpoch().totalSeconds();
   T2=T2+t2-t1; 
  
-  t1=getCurrentTime();
+  t1=timeSinceEpoch().totalSeconds();
   //    forall (b, c) in zip(Zblk, Zcyc) do        // copy vector back to Block storage
   //   b = c;
   //  copyCtoB(Zblk,Zcyc);
   Zblk=Zcyc;
-  t2=getCurrentTime();
+  t2=timeSinceEpoch().totalSeconds();
   T4=t2-t1;
 
-  const execTime = getCurrentTime() - startTime;     // store the elapsed time
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;     // store the elapsed time
   //  writeln("bitReverse Time = ",T1);  
   //  writeln("dffts Time = ",T2," copyBtoC time= ",T3, " copyCtoB time= ",T4);
 
@@ -158,7 +157,7 @@ proc main() {
 // compute the discrete fast Fourier transform of a vector A declared
 // over domain ADom using twiddle vector W
 //
-proc dfft(A: [?ADom], W, cyclicPhase) {
+proc dfft(ref A: [?ADom], W, cyclicPhase) {
   const numElements = A.size;
   //
   // loop over the phases of the DFT sequentially using custom
@@ -185,7 +184,7 @@ proc dfft(A: [?ADom], W, cyclicPhase) {
       //       lo.. by str #num == lo, lo+str, lo+2*str, ... lo+(num-1)*str
       //
       forall lo in bankStart..#str do
-        on ADom.dist.idxToLocale(lo) do
+        on ADom.distribution.idxToLocale(lo) do
           local do butterfly(wk1, wk2, wk3, A.localSlice(lo..by str #radix));
 
       //
@@ -200,7 +199,7 @@ proc dfft(A: [?ADom], W, cyclicPhase) {
       // loop in parallel over the high bank, computing butterflies
       //
       forall lo in bankStart+span..#str do
-        on ADom.dist.idxToLocale(lo) do
+        on ADom.distribution.idxToLocale(lo) do
           local do butterfly(wk1, wk2, wk3, A.localSlice(lo.. by str #radix));
     }
   }
@@ -216,15 +215,15 @@ proc dfft(A: [?ADom], W, cyclicPhase) {
     //
     if (str*radix == numElements) {
       forall lo in 0..#str do
-        on ADom.dist.idxToLocale(lo) do
+        on ADom.distribution.idxToLocale(lo) do
           local do butterfly(1.0, 1.0, 1.0, A.localSlice(lo.. by str # radix));
     }
     //
     // ...otherwise using a simple radix-2 butterfly scheme
     //
     else
-      forall lo in 0..#str do
-        on ADom.dist.idxToLocale(lo) do
+      forall lo in 0..#str with (ref A) do
+        on ADom.distribution.idxToLocale(lo) do
           local {
             const a = A(lo),
 	      b = A(lo+str);
@@ -238,7 +237,7 @@ proc dfft(A: [?ADom], W, cyclicPhase) {
 // this is the radix-4 butterfly routine that takes multipliers wk1,
 // wk2, and wk3 and a 4-element array (slice) A.
 //
-proc butterfly(wk1, wk2, wk3, X:[?D]) {
+proc butterfly(wk1, wk2, wk3, ref X:[?D]) {
   const i0 = D.lowBound,
         i1 = i0 + D.stride,
         i2 = i1 + D.stride,
@@ -288,11 +287,13 @@ proc printConfiguration() {
 // Initialize the twiddle vector and random input vector and
 // optionally print them to the console
 //
-proc initVectors(Twiddles, z) {
+proc initVectors(ref Twiddles, ref z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
-  fillRandom(z, seed);
+  if useRandomSeed
+    then fillRandom(z);
+    else fillRandom(z, 314159265);
 
   if (printArrays) {
     writeln("After initialization, Twiddles is: ", Twiddles, "\n");
@@ -303,14 +304,14 @@ proc initVectors(Twiddles, z) {
 //
 // Compute the twiddle vector values
 //
-proc computeTwiddles(Twiddles) {
+proc computeTwiddles(ref Twiddles) {
   const numTwdls = Twiddles.size,
     delta = 2.0 * atan(1.0) / numTwdls;
 
   Twiddles(0) = 1.0;
   Twiddles(numTwdls/2) = let x = cos(delta * numTwdls/2)
     in (x, x): elemType;
-  forall i in 1..numTwdls/2-1 {
+  forall i in 1..numTwdls/2-1 with (ref Twiddles) {
     const x = cos(delta*i),
       y = sin(delta*i);
     Twiddles(i)            = (x, y): elemType;
@@ -322,7 +323,7 @@ proc computeTwiddles(Twiddles) {
 // Perform a permutation of the argument vector by reversing the bits
 // of the indices
 //
-proc bitReverseShuffle(Vect: [?Dom]) {
+proc bitReverseShuffle(ref Vect: [?Dom]) {
   const numBits = log2(Vect.size),
     Perm: [Dom] Vect.eltType = [i in Dom] Vect(bitReverse(i, revBits=numBits));
   Vect = Perm;
@@ -341,16 +342,16 @@ proc bitReverse(val: ?valType, revBits = 64) {
 //
 // Compute the log base 4 of x
 //
-proc log4(x) return logBasePow2(x, 2);  
+proc log4(x) do return logBasePow2(x, 2);  
 
 	     //
 	     // verify that the results are correct by reapplying the dfft and then
 	     // calculating the maximum error, comparing against epsilon
 	     //
-	     proc verifyResults(z, Zblk, Zcyc, Twiddles) {
+	     proc verifyResults(ref z, ref Zblk, ref Zcyc, Twiddles) {
 	       if (printArrays) then writeln("After FFT, Z is: ", Zblk, "\n");
 
-	       [z in Zblk] z = conjg(z) / m;
+	       [z in Zblk] z = conj(z) / m;
 	       bitReverseShuffle(Zblk);
 	       dfft(Zblk, Twiddles, cyclicPhase=false);
 	       forall (b, c) in zip(Zblk, Zcyc) do

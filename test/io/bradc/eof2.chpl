@@ -1,6 +1,6 @@
 use IO;
 
-var infile = open("eof.in", iomode.r).reader();
+var infile = open("eof.in", ioMode.r).reader();
 
 while !infile.eof {
   var s = infile.read(string);

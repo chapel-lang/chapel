@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,6 +31,13 @@
 //
 // An interface formal is a TypeSymbol, defining a ConstrainedType.
 //
+
+InterfaceSymbol* gHashable = nullptr;
+InterfaceSymbol* gContextManager = nullptr;
+InterfaceSymbol* gWriteSerializable = nullptr;
+InterfaceSymbol* gReadDeserializable = nullptr;
+InterfaceSymbol* gInitDeserializable = nullptr;
+InterfaceSymbol* gSerializable = nullptr;
 
 static Symbol* isInterfaceFormalSymbol(Symbol* sym) {
   if (TypeSymbol* var = toTypeSymbol(sym))
@@ -66,6 +73,20 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
                                    BlockStmt*  body)
 {
   InterfaceSymbol* isym = new InterfaceSymbol(name, body);
+
+  if (gHashable == nullptr && strcmp("hashable", name) == 0) {
+    gHashable = isym;
+  } else if (gContextManager == nullptr && strcmp("contextManager", name) == 0) {
+    gContextManager = isym;
+  } else if (gWriteSerializable == nullptr && strcmp("writeSerializable", name) == 0) {
+    gWriteSerializable = isym;
+  } else if (gReadDeserializable == nullptr && strcmp("readDeserializable", name) == 0) {
+    gReadDeserializable = isym;
+  } else if (gInitDeserializable == nullptr && strcmp("initDeserializable", name) == 0) {
+    gInitDeserializable = isym;
+  } else if (gSerializable == nullptr && strcmp("serializable", name) == 0) {
+    gSerializable = isym;
+  }
 
   for_alist(formal, formals->argList) {
     isym->ifcFormals.insertAtTail(formal->remove());
@@ -182,15 +203,17 @@ void InterfaceSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     INT_FATAL(this, "Unexpected case in InterfaceSymbol::replaceChild");
 }
 
-void InterfaceSymbol::printDocs(std::ostream* file, unsigned int tabs) {
-  if (this->noDocGen()) return;
-  INT_FATAL(this, "printDocs is to be implemented");
-}
-
-
 /////////////////////////////////////////////////////////////////////////////
 // IfcConstraint
 //
+
+IfcConstraint* IfcConstraint::build(InterfaceSymbol* isym,
+                                    CallExpr* actuals) {
+  IfcConstraint* icon = new IfcConstraint(new SymExpr(isym));
+  for_alist(actual, actuals->argList)
+    icon->consActuals.insertAtTail(actual->remove());
+  return icon;
+}
 
 IfcConstraint* IfcConstraint::build(const char* name,
                                     CallExpr* actuals) {

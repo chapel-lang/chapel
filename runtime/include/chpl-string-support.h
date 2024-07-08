@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -47,6 +47,9 @@ extern "C" {
 // calls.  Also, the returned value may change due to the activity of other
 // threads.
 typedef const char* c_string;
+
+// Used in the process of deprecating 'c_string' by the compiler.
+typedef c_string c_string_rehook;
 
 static inline
 int8_t ascii(c_string s) {

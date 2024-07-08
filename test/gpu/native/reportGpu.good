@@ -1,0 +1,22 @@
+GPU INELIGIBLE LOOPS:
+---------------------
+reportGpu.chpl:1
+reportGpu.chpl:5
+reportGpu.chpl:10
+reportGpu.chpl:22
+reportGpu.chpl:32
+reportGpu.chpl:36
+reportGpu.chpl:100
+
+GPU ELIGIBLE LOOPS:
+-------------------
+reportGpu.chpl:41
+reportGpu.chpl:45
+reportGpu.chpl:51
+reportGpu.chpl:58
+reportGpu.chpl:63
+reportGpu.chpl:64
+reportGpu.chpl:66
+reportGpu.chpl:67
+reportGpu.chpl:68
+reportGpu.chpl:69

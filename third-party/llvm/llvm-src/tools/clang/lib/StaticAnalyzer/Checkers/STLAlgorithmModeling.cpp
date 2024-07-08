@@ -61,7 +61,7 @@ class STLAlgorithmModeling : public Checker<eval::Call> {
 public:
   STLAlgorithmModeling() = default;
 
-  bool AggressiveStdFindModeling;
+  bool AggressiveStdFindModeling = false;
 
   bool evalCall(const CallEvent &Call, CheckerContext &C) const;
 }; //
@@ -131,7 +131,7 @@ void STLAlgorithmModeling::Find(CheckerContext &C, const CallExpr *CE,
                                         nonloc::SymbolVal(NewPos->getOffset()),
                                         nonloc::SymbolVal(Pos->getOffset()),
                                         SVB.getConditionType());
-    assert(GreaterOrEqual.getAs<DefinedSVal>() &&
+    assert(isa<DefinedSVal>(GreaterOrEqual) &&
            "Symbol comparison must be a `DefinedSVal`");
     StateFound = StateFound->assume(GreaterOrEqual.castAs<DefinedSVal>(), true);
   }
@@ -153,7 +153,7 @@ void STLAlgorithmModeling::Find(CheckerContext &C, const CallExpr *CE,
                               nonloc::SymbolVal(NewPos->getOffset()),
                               nonloc::SymbolVal(Pos->getOffset()),
                               SVB.getConditionType());
-    assert(Less.getAs<DefinedSVal>() &&
+    assert(isa<DefinedSVal>(Less) &&
            "Symbol comparison must be a `DefinedSVal`");
     StateFound = StateFound->assume(Less.castAs<DefinedSVal>(), true);
   }

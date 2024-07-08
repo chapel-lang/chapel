@@ -13,7 +13,7 @@ proc main() {
       aUnion.s = "string literal";
 
         var container = new Container();
-          container.items.append(aUnion);
+          container.items.pushBack(aUnion);
 
             writeln(container);
 }

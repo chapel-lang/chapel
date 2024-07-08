@@ -1,0 +1,2 @@
+--detailed-errors # recordInheritanceNotSupported-detailed.good
+--no-detailed-errors # recordInheritanceNotSupported-brief.good

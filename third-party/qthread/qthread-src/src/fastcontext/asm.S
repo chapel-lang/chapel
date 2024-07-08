@@ -42,12 +42,21 @@
 #  define NEEDPOWERCONTEXT 1
 #  define SET _qt_setmctxt
 #  define GET _qt_getmctxt
+# elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64)
+#  define NEEDARMA64CONTEXT 1
+#  define ISAPPLEMACHOASM 1
+#  define SET _qt_setmctxt
+#  define GET _qt_getmctxt
 # else
-#  error What kind of a Mac is this? If M1, use CFLAGS=-D_XOPEN_SOURCE and --disable-fastcontext --with-default-stack-size=65536 in configure.
+#  error What kind of a Mac is this?
 # endif
 #elif defined(__linux__)
 # if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARM)
 #  define NEEDARMCONTEXT 1
+#  define SET qt_setmctxt
+#  define GET qt_getmctxt
+# elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64)
+#  define NEEDARMA64CONTEXT 1
 #  define SET qt_setmctxt
 #  define GET qt_getmctxt
 # elif (QTHREAD_ASSEMBLY_ARCH == QTHREAD_TILEPRO)
@@ -782,9 +791,124 @@ SET:
         blr
 #endif
 
+#ifdef NEEDARMA64CONTEXT
+/* Register Usage:
+ * X0 - holds pointer to context
+ * X1 - X30 - GP registers
+ */
+.globl GET
+.global GET
+#ifndef ISAPPLEMACHOASM
+ .type GET, %function
+#else
+.p2align 4
+#endif
+
+GET:
+        /* Store GP registers */
+        stp     X1, X2, [X0,#8]
+        stp     X3, X4, [X0,#24]
+        stp     X5, X6, [X0,#40]
+        stp     X7, X8, [X0,#56]
+        stp     X9, X10, [X0,#72]
+        stp     X11, X12, [X0,#88]
+        stp     X13, X14, [X0,#104]
+        stp     X15, X16, [X0,#120]
+        stp     X17, X18, [X0,#136]
+        stp     X19, X20, [X0,#152]
+        stp     X21, X22, [X0,#168]  
+        stp     X23, X24, [X0,#184]  
+        stp     X25, X26, [X0,#200]  
+        stp     X27, X28, [X0,#216]
+        stp     X29, X30, [X0,#232]     /* X30 is LR */
+        mov     X29, SP
+        str     X29, [X0,#248]           /* sp, not sure if ARMv8 allows storing SP directly */
+        ldr     X29, [X0,#232]           /* restore FP just to be safe */
+
+        /* Store fpu/vector registers */
+        add     X0, X0, #256            /* Update pointer to avoid immediate growing to large for STP/LDP instruction */
+        stp     Q0, Q1, [X0]
+        stp     Q2, Q3, [X0,#32]
+        stp     Q4, Q5, [X0,#64]
+        stp     Q6, Q7, [X0,#96]
+        stp     Q8, Q9, [X0,#128]
+        stp     Q10, Q11, [X0,#160]
+        stp     Q12, Q13, [X0,#192]
+        stp     Q14, Q15, [X0,#224]
+        stp     Q16, Q17, [X0,#256]
+        stp     Q18, Q19, [X0,#288]
+        stp     Q20, Q21, [X0,#320]
+        stp     Q22, Q23, [X0,#352]
+        stp     Q24, Q25, [X0,#384]
+        stp     Q26, Q27, [X0,#416]
+        stp     Q28, Q29, [X0,#448]
+        stp     Q30, Q31, [X0,#480]
+        sub     X0, X0, #256
+
+        /* Store 1 as X0-to-restore */
+        mov     X1, #1
+        str     X1, [X0]                
+        
+        /* return 0 */
+        mov     X0, #0
+        ret
+
+/*
+ * TODO: add vector registers for both NEON and SVE
+ * https://developer.arm.com/documentation/102374/0101/Loads-and-stores---using-floating-point-registers
+ */
+
+.globl SET
+.global SET
+#ifndef ISAPPLEMACHOASM
+ .type SET, %function
+#else
+.p2align 4
+#endif
+SET:
+        /* Load GP registers */
+        ldp     X1, X2, [X0,#8]
+        ldp     X3, X4, [X0,#24]
+        ldp     X5, X6, [X0,#40]
+        ldp     X7, X8, [X0,#56]
+        ldp     X9, X10, [X0,#72]
+        ldp     X11, X12, [X0,#88]
+        ldp     X13, X14, [X0,#104]
+        ldp     X15, X16, [X0,#120]
+        ldp     X17, X18, [X0,#136]
+        ldp     X19, X20, [X0,#152]
+        ldp     X21, X22, [X0,#168]  
+        ldp     X23, X24, [X0,#184]  
+        ldp     X25, X26, [X0,#200]  
+        ldp     X27, X28, [X0,#216]
+        ldr     X29, [X0,#248]
+        mov	SP, X29
+        ldp	X29, X30, [X0,#232]
+        
+        /* Load fpu/vector registers */
+        add     X0, X0, #256
+        ldp     Q0, Q1, [X0]
+        ldp     Q2, Q3, [X0,#32]
+        ldp     Q4, Q5, [X0,#64]
+        ldp     Q6, Q7, [X0,#96]
+        ldp     Q8, Q9, [X0,#128]
+        ldp     Q10, Q11, [X0,#160]
+        ldp     Q12, Q13, [X0,#192]
+        ldp     Q14, Q15, [X0,#224]
+        ldp     Q16, Q17, [X0,#256]
+        ldp     Q18, Q19, [X0,#288]
+        ldp     Q20, Q21, [X0,#320]
+        ldp     Q22, Q23, [X0,#352]
+        ldp     Q24, Q25, [X0,#384]
+        ldp     Q26, Q27, [X0,#416]
+        ldp     Q28, Q29, [X0,#448]
+        ldp     Q30, Q31, [X0,#480]
+        sub     X0, X0, #256
+        ldr     X0, [X0]
+	ret
+#endif
+
 #ifdef NEEDARMCONTEXT
-#warning NEEDARMCONTEXT
-#warning GET SET
 /* Register Usage:
  *
  * r0/a1       - Argument/result/scratch1
@@ -827,7 +951,7 @@ GET:
         str     r1, [r0]           _(/* arg 1 / RET 1 */)
         _(/*) return 0 */)
         mov     r0, #0
-		bx      lr
+	bx      lr
 
 .globl SET
 .global SET
@@ -848,10 +972,9 @@ SET:
         ldr     r13, [r0,#52]
         ldr     r14, [r0,#56]
         ldr     r0, [r0]
-		bx      lr
+	bx      lr
 #endif
 
 #if defined(__ELF__) && !defined(__SUNPRO_C)
 .section .note.GNU-stack,"",%progbits
 #endif
-

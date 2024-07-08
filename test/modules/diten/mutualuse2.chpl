@@ -23,8 +23,8 @@ module M1 {
   class C {
     var field: int;
   }
-
-  var a:borrowed C = new C(1);
+  var myOwnedC = new C(1);
+  var a:borrowed C = myOwnedC;
 }
 
 module M2 {

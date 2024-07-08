@@ -1,0 +1,1 @@
+CastCArrayToCPtr-multiple.chpl:49: error: const actual is passed to 'ref' formal 'x' of operator :

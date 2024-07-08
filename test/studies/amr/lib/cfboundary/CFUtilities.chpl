@@ -74,12 +74,12 @@ proc refine (
 
 
   //==== Set and return new domain ====
-  var ranges: dimension*range(stridable=true);
+  var ranges: dimension*range(strides=strideKind.any);
 
   for d in dimensions do
     ranges(d) = fine_cells_low(d) .. fine_cells_high(d) by 2;
 
-  var fine_cells: domain(dimension,stridable=true) = ranges;
+  var fine_cells: domain(dimension,strides=strideKind.any) = ranges;
   return fine_cells;
 
 }
@@ -91,7 +91,7 @@ proc refine (
 //---------------------------------------------------------------
 
 proc refine (
-  coarse_cells: domain(dimension,stridable=true),
+  coarse_cells: domain(dimension,strides=strideKind.any),
   ref_ratio:    dimension*int )
 {
  
@@ -105,12 +105,12 @@ proc refine (
 
 
   //==== Set and return new domain ====
-  var ranges: dimension*range(stridable=true);
+  var ranges: dimension*range(strides=strideKind.any);
 
   for d in dimensions do
     ranges(d) = fine_cells_low(d) .. fine_cells_high(d) by 2;
 
-  var fine_cells: domain(dimension,stridable=true) = ranges;
+  var fine_cells: domain(dimension,strides=strideKind.any) = ranges;
   return fine_cells;
   
 }
@@ -156,7 +156,7 @@ proc coarsen (
 //-----------------------------------------------------------------
 
 proc coarsen (
-  fine_cells: domain(dimension,stridable=true),
+  fine_cells: domain(dimension,strides=strideKind.any),
   ref_ratio:  dimension*int)
 {
  
@@ -166,12 +166,12 @@ proc coarsen (
   
 
   //==== Set and return new domain ====
-  var ranges: dimension*range(stridable=true);
+  var ranges: dimension*range(strides=strideKind.any);
   for d in dimensions do
     ranges(d) = low_coarse(d) .. high_coarse(d) by 2;
 
 
-  var coarse_cells: domain(dimension,stridable=true) = ranges;
+  var coarse_cells: domain(dimension,strides=strideKind.any) = ranges;
   return coarse_cells;
   
 }

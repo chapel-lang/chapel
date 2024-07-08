@@ -12,8 +12,8 @@ enum DistType {
 
 proc main() {
   var D = {1..10, 1..10};
-  var S = if distType == DistType.block then D dmapped Block(D)
-          else D dmapped Stencil(D, fluff=(1,1));
+  var S = if distType == DistType.block then D dmapped new blockDist(D)
+          else D dmapped new stencilDist(D, fluff=(1,1));
   var A, B : [S] int;
 
   writeln("Dist=Dist: ", chpl__bulkTransferArray(A, B));
@@ -25,7 +25,7 @@ proc main() {
   }
 
   {
-    var CD = S dmapped Cyclic(S.low);
+    var CD = S dmapped new cyclicDist(S.low);
     var C : [CD] int;
     writeln("Dist=Cyclic: ", chpl__bulkTransferArray(A, C));
   }

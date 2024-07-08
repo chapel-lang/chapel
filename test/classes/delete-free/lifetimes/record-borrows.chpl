@@ -44,9 +44,9 @@ var globalRMyClass:RMyClass;
 {
   var ri = new Rint(1);
   var sub = new unmanaged SubClass(1, ri);
-  globalMyClass = new unmanaged MyClass(sub);
+  var myUnmanaged = new unmanaged MyClass(sub);
+  globalMyClass = myUnmanaged;
 }
-
 proc refIdentity(ref x) ref {
   return x;
 }

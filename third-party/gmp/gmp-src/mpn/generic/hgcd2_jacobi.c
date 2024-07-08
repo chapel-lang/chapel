@@ -4,7 +4,8 @@
    SAFE TO REACH THEM THROUGH DOCUMENTED INTERFACES.  IN FACT, IT IS ALMOST
    GUARANTEED THAT THEY'LL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
-Copyright 1996, 1998, 2000-2004, 2008, 2011 Free Software Foundation, Inc.
+Copyright 1996, 1998, 2000-2004, 2008, 2011, 2020 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -35,123 +36,11 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp-impl.h"
 #include "longlong.h"
 
-#if GMP_NAIL_BITS > 0
-#error Nails not supported.
+#include "mpn/generic/hgcd2-div.h"
+
+#if GMP_NAIL_BITS != 0
+#error Nails not implemented
 #endif
-
-/* FIXME: Duplicated in hgcd2.c. Should move to gmp-impl.h, and
-   possibly be renamed. */
-static inline mp_limb_t
-div1 (mp_ptr rp,
-      mp_limb_t n0,
-      mp_limb_t d0)
-{
-  mp_limb_t q = 0;
-
-  if ((mp_limb_signed_t) n0 < 0)
-    {
-      int cnt;
-      for (cnt = 1; (mp_limb_signed_t) d0 >= 0; cnt++)
-	{
-	  d0 = d0 << 1;
-	}
-
-      q = 0;
-      while (cnt)
-	{
-	  q <<= 1;
-	  if (n0 >= d0)
-	    {
-	      n0 = n0 - d0;
-	      q |= 1;
-	    }
-	  d0 = d0 >> 1;
-	  cnt--;
-	}
-    }
-  else
-    {
-      int cnt;
-      for (cnt = 0; n0 >= d0; cnt++)
-	{
-	  d0 = d0 << 1;
-	}
-
-      q = 0;
-      while (cnt)
-	{
-	  d0 = d0 >> 1;
-	  q <<= 1;
-	  if (n0 >= d0)
-	    {
-	      n0 = n0 - d0;
-	      q |= 1;
-	    }
-	  cnt--;
-	}
-    }
-  *rp = n0;
-  return q;
-}
-
-/* Two-limb division optimized for small quotients.  */
-static inline mp_limb_t
-div2 (mp_ptr rp,
-      mp_limb_t nh, mp_limb_t nl,
-      mp_limb_t dh, mp_limb_t dl)
-{
-  mp_limb_t q = 0;
-
-  if ((mp_limb_signed_t) nh < 0)
-    {
-      int cnt;
-      for (cnt = 1; (mp_limb_signed_t) dh >= 0; cnt++)
-	{
-	  dh = (dh << 1) | (dl >> (GMP_LIMB_BITS - 1));
-	  dl = dl << 1;
-	}
-
-      while (cnt)
-	{
-	  q <<= 1;
-	  if (nh > dh || (nh == dh && nl >= dl))
-	    {
-	      sub_ddmmss (nh, nl, nh, nl, dh, dl);
-	      q |= 1;
-	    }
-	  dl = (dh << (GMP_LIMB_BITS - 1)) | (dl >> 1);
-	  dh = dh >> 1;
-	  cnt--;
-	}
-    }
-  else
-    {
-      int cnt;
-      for (cnt = 0; nh > dh || (nh == dh && nl >= dl); cnt++)
-	{
-	  dh = (dh << 1) | (dl >> (GMP_LIMB_BITS - 1));
-	  dl = dl << 1;
-	}
-
-      while (cnt)
-	{
-	  dl = (dh << (GMP_LIMB_BITS - 1)) | (dl >> 1);
-	  dh = dh >> 1;
-	  q <<= 1;
-	  if (nh > dh || (nh == dh && nl >= dl))
-	    {
-	      sub_ddmmss (nh, nl, nh, nl, dh, dl);
-	      q |= 1;
-	    }
-	  cnt--;
-	}
-    }
-
-  rp[0] = nl;
-  rp[1] = nh;
-
-  return q;
-}
 
 int
 mpn_hgcd2_jacobi (mp_limb_t ah, mp_limb_t al, mp_limb_t bh, mp_limb_t bl,
@@ -281,15 +170,12 @@ mpn_hgcd2_jacobi (mp_limb_t ah, mp_limb_t al, mp_limb_t bh, mp_limb_t bl,
 	}
     }
 
-  /* NOTE: Since we discard the least significant half limb, we don't
-     get a truly maximal M (corresponding to |a - b| <
-     2^{GMP_LIMB_BITS +1}). */
+  /* NOTE: Since we discard the least significant half limb, we don't get a
+     truly maximal M (corresponding to |a - b| < 2^{GMP_LIMB_BITS +1}). */
   /* Single precision loop */
   for (;;)
     {
       ASSERT (ah >= bh);
-      if (ah == bh)
-	break;
 
       ah -= bh;
       if (ah < (CNST_LIMB (1) << (GMP_LIMB_BITS / 2 + 1)))
@@ -304,9 +190,10 @@ mpn_hgcd2_jacobi (mp_limb_t ah, mp_limb_t al, mp_limb_t bh, mp_limb_t bl,
 	}
       else
 	{
-	  mp_limb_t r;
-	  mp_limb_t q = div1 (&r, ah, bh);
-	  ah = r;
+	  mp_double_limb_t rq = div1 (ah, bh);
+	  mp_limb_t q = rq.d1;
+	  ah = rq.d0;
+
 	  if (ah < (CNST_LIMB(1) << (GMP_LIMB_BITS / 2 + 1)))
 	    {
 	      /* A is too small, but q is correct. */
@@ -322,8 +209,6 @@ mpn_hgcd2_jacobi (mp_limb_t ah, mp_limb_t al, mp_limb_t bh, mp_limb_t bl,
 	}
     subtract_a1:
       ASSERT (bh >= ah);
-      if (ah == bh)
-	break;
 
       bh -= ah;
       if (bh < (CNST_LIMB (1) << (GMP_LIMB_BITS / 2 + 1)))
@@ -338,9 +223,10 @@ mpn_hgcd2_jacobi (mp_limb_t ah, mp_limb_t al, mp_limb_t bh, mp_limb_t bl,
 	}
       else
 	{
-	  mp_limb_t r;
-	  mp_limb_t q = div1 (&r, bh, ah);
-	  bh = r;
+	  mp_double_limb_t rq = div1 (bh, ah);
+	  mp_limb_t q = rq.d1;
+	  bh = rq.d0;
+
 	  if (bh < (CNST_LIMB(1) << (GMP_LIMB_BITS / 2 + 1)))
 	    {
 	      /* B is too small, but q is correct. */

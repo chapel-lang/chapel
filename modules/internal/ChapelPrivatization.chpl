@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,16 +23,15 @@ module ChapelPrivatization {
   private use CTypes;
 
   // the type of elements in chpl_privateObjects.
-  pragma "no doc"
   extern record chpl_privateObject_t {
-    var obj:c_void_ptr;
+    var obj:c_ptr(void);
   }
 
-  pragma "no doc"
+  pragma "codegen for CPU and GPU"
   extern var chpl_privateObjects:c_ptr(chpl_privateObject_t);
 
-  pragma "no doc"
   pragma "fn returns infinite lifetime"
+  @chpldoc.nodoc
   // should this use pragma "local args"?
   // Why is the compiler making the objectType argument wide?
   inline

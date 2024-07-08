@@ -16,4 +16,4 @@ class Child : Parent {
   }
 }
 
-var c = new borrowed Child();
+var c = new Child();

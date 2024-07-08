@@ -26,9 +26,9 @@ implements Ifc1(int(8));
 implements Ifc2(int(16));
 implements Ifc3(int(32)); // error: reqFun3 is not defined
 
-proc integral.AT1 type return int(16);
-proc integral.AT2 type return int(32);
-proc integral.AT3 type return int(8);
+proc integral.AT1 type do return int(16);
+proc integral.AT2 type do return int(32);
+proc integral.AT3 type do return int(8);
 
 proc reqFun1() { }
 proc reqFun2() { }

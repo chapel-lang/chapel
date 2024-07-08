@@ -128,6 +128,22 @@ values:
   :language: text
   :lines: 27,25
 
+Any non-promoted arguments to a promoted call are only promoted once. Consider
+a promoted call to ``maybeCopy()`` where the first two arguments are promoted
+and the third argument is not.
+
+.. literalinclude:: examples/users-guide/datapar/promotion.chpl
+  :language: chapel
+  :lines: 199-202,206
+
+The third argument, the result of a call to ``computeMask()``, will be resolved
+before the promotion and the message will only be printed once. The equivalent
+forall-loop is:
+
+.. literalinclude:: examples/users-guide/datapar/promotion.chpl
+  :language: chapel
+  :lines: 210-212
+
 
 Promoted Calls and Forall Intents
 ---------------------------------

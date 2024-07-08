@@ -1,0 +1,12 @@
+#!/bin/bash
+
+TEST=$1
+LOG=$2
+# PREDIFF: Script to execute before diff'ing output (arguments: <test
+#    executable>, <log>, <compiler executable>)
+
+# include only the 'define' line
+# looking for define internal i64 @munge-with-ids.foo() 
+#
+cat $LOG | grep define | sed -E 's/#[[:digit:]]+/#n/' > $LOG.tmp
+mv $LOG.tmp $LOG

@@ -9,10 +9,6 @@
  * device class.
  */
 
-// WARNING: This test exercises one or more EXPERIMENTAL features.
-// One should not clone the logic in this test, since details of such features
-// may change without notice.
-
 #include <gasnetex.h>
 #include <gasnet_mk.h>
 #include <gasnet_coll.h>
@@ -241,7 +237,7 @@ int main(int argc, char **argv)
 
       // Create first GPU endpoint and bind its segment
       GASNET_Safe( gex_EP_Create(&gpu1_ep, myclient, GEX_EP_CAPABILITY_RMA, 0));
-      gex_EP_BindSegment(gpu1_ep, d_segment1, 0);
+      GASNET_Safe( gex_EP_BindSegment(gpu1_ep, d_segment1, 0) );
       GASNET_Safe( gex_EP_PublishBoundSegment(myteam, &gpu1_ep, 1, 0) );
 
       // Repeat to create a second local GPU segment
@@ -256,7 +252,7 @@ int main(int argc, char **argv)
         assert_always(tmp_ctx == ctx);
       }
       GASNET_Safe( gex_EP_Create(&gpu2_ep, myclient, GEX_EP_CAPABILITY_RMA, 0));
-      gex_EP_BindSegment(gpu2_ep, d_segment2, 0);
+      GASNET_Safe( gex_EP_BindSegment(gpu2_ep, d_segment2, 0) );
       GASNET_Safe( gex_EP_PublishBoundSegment(myteam, &gpu2_ep, 1, 0) );
 
       // TM pairs for several possible pairings

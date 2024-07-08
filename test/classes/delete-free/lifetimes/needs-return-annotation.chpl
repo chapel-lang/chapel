@@ -1,7 +1,7 @@
 class C { var x: int; } 
 
-
-var globalValue = new borrowed C(1);
+var ownGlobalValue = new owned C(1);
+var globalValue = ownGlobalValue.borrow();
 proc getGlobalHashtableElement (key: C) {
   return globalValue;
 }

@@ -1,5 +1,6 @@
 
 module M {
+  use Map;
   proc main(args:[]string) {
     writeln("Test for when main has args but argument parser not used");
     // skip the first argument because the executable name/location may change

@@ -43,7 +43,7 @@
 
 #include <sys/select.h>
 
-#if PLATFORM_COMPILER_CRAY && (PLATFORM_OS_CNL || PLATFORM_OS_LINUX)
+#if PLATFORM_COMPILER_CRAY && PLATFORM_OS_LINUX
   /* Cray CC botches the inline assembly implementing FD_ZERO in Linux */
   #undef FD_ZERO
   #define FD_ZERO(pfd_set) (memset(pfd_set, 0, sizeof(*(pfd_set))))
@@ -111,7 +111,7 @@ typedef unsigned int SOCKET;
 typedef fd_set FD_SET;
 
 /*  resolve disagreements about types of arguments to misc. functions */
-#if PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || PLATFORM_OS_WSL || \
+#if PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || \
     PLATFORM_OS_FREEBSD || PLATFORM_OS_NETBSD || \
     PLATFORM_OS_SOLARIS || (PLATFORM_OS_AIX && defined(_AIX51))
 #  define GETSOCKNAME_LENGTH_T socklen_t
@@ -128,7 +128,7 @@ typedef fd_set FD_SET;
 #define ioctlsocket ioctl
 
 #if PLATFORM_OS_CYGWIN || PLATFORM_OS_AIX || PLATFORM_OS_SOLARIS || \
-    PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || PLATFORM_OS_WSL || \
+    PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || \
     PLATFORM_OS_TRU64 || PLATFORM_OS_SUPERUX || \
     PLATFORM_OS_DARWIN || /* bug 2428 */ \
     PLATFORM_ARCH_CRAYX1 /* X1 docs claim it's a size_t, they lie */
@@ -140,7 +140,7 @@ typedef fd_set FD_SET;
 #endif
 
 /* addr-length argument type fiasco.. */
-#if PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || PLATFORM_OS_WSL || \
+#if PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || \
     PLATFORM_OS_FREEBSD || PLATFORM_OS_AIX || \
     PLATFORM_OS_SOLARIS || PLATFORM_OS_NETBSD
 #  define LENGTH_PARAM socklen_t

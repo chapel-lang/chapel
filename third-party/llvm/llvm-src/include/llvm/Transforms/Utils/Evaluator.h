@@ -18,8 +18,6 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/GlobalVariable.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/Value.h"
 #include "llvm/Support/Casting.h"
 #include <cassert>
 #include <deque>
@@ -27,6 +25,7 @@
 
 namespace llvm {
 
+class CallBase;
 class DataLayout;
 class Function;
 class TargetLibraryInfo;
@@ -56,15 +55,15 @@ class Evaluator {
     ~MutableValue() { clear(); }
 
     Type *getType() const {
-      if (auto *C = Val.dyn_cast<Constant *>())
+      if (auto *C = dyn_cast_if_present<Constant *>(Val))
         return C->getType();
-      return Val.get<MutableAggregate *>()->Ty;
+      return cast<MutableAggregate *>(Val)->Ty;
     }
 
     Constant *toConstant() const {
-      if (auto *C = Val.dyn_cast<Constant *>())
+      if (auto *C = dyn_cast_if_present<Constant *>(Val))
         return C;
-      return Val.get<MutableAggregate *>()->toConstant();
+      return cast<MutableAggregate *>(Val)->toConstant();
     }
 
     Constant *read(Type *Ty, APInt Offset, const DataLayout &DL) const;
@@ -102,7 +101,7 @@ public:
 
   DenseMap<GlobalVariable *, Constant *> getMutatedInitializers() const {
     DenseMap<GlobalVariable *, Constant *> Result;
-    for (auto &Pair : MutatedMemory)
+    for (const auto &Pair : MutatedMemory)
       Result[Pair.first] = Pair.second.toConstant();
     return Result;
   }
@@ -139,6 +138,8 @@ private:
                        SmallVectorImpl<Constant *> &Formals);
 
   Constant *ComputeLoadResult(Constant *P, Type *Ty);
+  Constant *ComputeLoadResult(GlobalVariable *GV, Type *Ty,
+                              const APInt &Offset);
 
   /// As we compute SSA register values, we store their contents here. The back
   /// of the deque contains the current function and the stack contains the

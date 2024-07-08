@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,13 +25,22 @@
 
 #include "alist.h"
 #include "genret.h"
+#include "intents.h"
 
-#include "../dyno/lib/immediates/num.h"
+#include "../../frontend/lib/immediates/num.h"
+
+#include "chpl/util/hash.h"
 
 #include <cstdio>
 #include <map>
 #include <set>
+#include <sstream>
+#include <string>
 #include <vector>
+
+#ifdef HAVE_LLVM
+namespace llvm { class Type; }
+#endif
 
 /*
   Things which must be changed if instance variables are added
@@ -66,6 +75,7 @@ public:
   GenRet         codegen()   override;
   bool           inTree()    override;
   QualifiedType  qualType()  override;
+  Type*          typeInfo()  override { return this; }
   void           verify()    override;
 
   virtual void           codegenDef();
@@ -118,6 +128,10 @@ public:
 
   // Only used for LLVM.
   std::map<std::string, int> GEPMap;
+#ifdef HAVE_LLVM
+  llvm::Type* getLLVMType();
+  int getLLVMAlignment();
+#endif
 
 protected:
   Type(AstTag astTag, Symbol* init_defaultVal);
@@ -341,11 +355,6 @@ class EnumType final : public Type {
   bool isAbstract();  // is the enum abstract?  (has no associated values)
   bool isConcrete();  // is the enum concrete?  (all have associated values)
   PrimitiveType* getIntegerType();
-
-  void printDocs(std::ostream *file, unsigned int tabs);
-
-private:
-  std::string docsDirective();
 };
 
 
@@ -373,11 +382,6 @@ class PrimitiveType final : public Type {
 
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
   void codegenDef()                                     override;
-
-  void printDocs(std::ostream *file, unsigned int tabs);
-
-private:
-  std::string docsDirective();
 };
 
 
@@ -418,10 +422,100 @@ public:
 
   static TypeSymbol*      buildSym(const char* name, ConstrainedTypeUse use);
   static ConstrainedType* buildType(const char* name, ConstrainedTypeUse use);
-
-  void printDocs(std::ostream *file, unsigned int tabs);
 };
 
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+class FunctionType final : public Type {
+ public:
+  enum Kind { PROC, ITER, OPERATOR };
+
+  struct Formal {
+    Type* type = nullptr;
+    IntentTag intent = INTENT_BLANK;
+    const char* name = nullptr;
+    bool operator==(const Formal& other) const;
+    size_t hash() const;
+    bool isGeneric() const;
+  };
+
+ private:
+  Kind kind_;
+  std::vector<Formal> formals_;
+  RetTag returnIntent_;
+  Type* returnType_;
+  bool throws_;
+  bool isAnyFormalNamed_;
+  const char* userTypeString_;
+
+  static const char*
+  buildUserFacingTypeString(Kind kind,
+                            const std::vector<Formal>& formals,
+                            RetTag returnIntent,
+                            Type* returnType,
+                            bool throws);
+
+  FunctionType(Kind kind, std::vector<Formal> formals,
+               RetTag returnIntent,
+               Type* returnType,
+               bool throws,
+               bool isAnyFormalNamed,
+               const char* userTypeString);
+
+  static FunctionType* create(Kind kind, std::vector<Formal> formals,
+                              RetTag returnIntent,
+                              Type* returnType,
+                              bool throws);
+
+ public:
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
+  DECLARE_COPY(FunctionType);
+  FunctionType* copyInner(SymbolMap* map) override;
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
+  void codegenDef() override;
+
+  /*** Result is shared by functions of the same type. */
+  static FunctionType* get(Kind kind, std::vector<Formal> formals,
+                           RetTag returnIntent,
+                           Type* returnType,
+                           bool throws);
+
+  /*** Result is shared by functions of the same type. Does not resolve. */
+  static FunctionType* get(FnSymbol* fn);
+
+  Kind kind() const;
+  int numFormals() const;
+  const Formal* formal(int idx) const;
+  RetTag returnIntent() const;
+  Type* returnType() const;
+  bool throws() const;
+  bool isAnyFormalNamed() const;
+  bool isGeneric() const;
+  const char* toString() const;
+  const char* toStringMangledForCodegen() const;
+  size_t hash() const;
+  bool equals(const FunctionType* rhs) const;
+
+  static FunctionType::Kind determineKind(FnSymbol* fn);
+  static bool isIntentSameAsDefault(IntentTag intent, Type* t);
+
+  // Prints things in a 'user facing' fashion, no mangling.
+  static const char* kindToString(Kind kind);
+  static const char* intentToString(IntentTag intent);
+  static const char* typeToString(Type* t);
+  static const char* returnIntentToString(RetTag intent);
+
+  // Intended for codegen.
+  static const char* intentTagMnemonicMangled(IntentTag tag);
+  static const char* typeToStringMangled(Type* t);
+  static const char* retTagMnemonicMangled(RetTag tag);
+};
 
 /************************************* | **************************************
 *                                                                             *
@@ -435,7 +529,6 @@ public:
 
 // internal types
 TYPE_EXTERN Type*             dtAny;
-TYPE_EXTERN Type*             dtAnyBool;
 TYPE_EXTERN Type*             dtAnyComplex;
 TYPE_EXTERN Type*             dtAnyEnumerated;
 TYPE_EXTERN Type*             dtAnyImag;
@@ -446,6 +539,7 @@ TYPE_EXTERN Type*             dtIteratorRecord;
 TYPE_EXTERN Type*             dtIteratorClass;
 TYPE_EXTERN Type*             dtIntegral;
 TYPE_EXTERN Type*             dtNumeric;
+TYPE_EXTERN Type*             dtThunkRecord;
 
 TYPE_EXTERN PrimitiveType*    dtNil;
 TYPE_EXTERN PrimitiveType*    dtUnknown;
@@ -472,18 +566,17 @@ TYPE_EXTERN PrimitiveType*    dtSplitInitType;
 // Anything declared as PrimitiveType* can now also be declared as Type*
 // This change was made to allow dtComplex to be represented by a record.
 TYPE_EXTERN PrimitiveType*    dtBool;
-TYPE_EXTERN PrimitiveType*    dtBools[BOOL_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtUInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtReal[FLOAT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtImag[FLOAT_SIZE_NUM];
-TYPE_EXTERN PrimitiveType*    dtFile;
 TYPE_EXTERN PrimitiveType*    dtOpaque;
 TYPE_EXTERN PrimitiveType*    dtTaskID;
 TYPE_EXTERN PrimitiveType*    dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType*    dtSingleVarAuxFields;
 
 TYPE_EXTERN PrimitiveType*    dtStringC; // the type of a C string (unowned)
+// TODO: replace raw dtCVoidPtr with a well-known AggregateType for c_ptr(void)
 TYPE_EXTERN PrimitiveType*    dtCVoidPtr; // the type of a C void* (unowned)
 TYPE_EXTERN PrimitiveType*    dtCFnPtr;   // a C function pointer (unowned)
 
@@ -506,7 +599,12 @@ bool is_imag_type(Type*);
 bool is_complex_type(Type*);
 bool is_enum_type(Type*);
 bool isLegalParamType(Type*);
+// returns the width in bytes of a numeric type
 int  get_width(Type*);
+// returns the component width in bytes of a numeric type
+// like get_width but for complex types, returns get_width/2
+// since that is the width of the real or imaginary component.
+int  get_component_width(Type*);
 int  get_mantissa_width(Type*);
 int  get_exponent_width(Type*);
 bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
@@ -516,13 +614,18 @@ bool isUnmanagedClass(Type* t);
 bool isBorrowedClass(Type* t);
 bool isOwnedOrSharedOrBorrowed(Type* t);
 bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
+
 bool isBuiltinGenericClassType(Type* t); // 'unmanaged' 'borrowed' etc
+bool isBuiltinGenericType(Type* t); // 'integral' 'unmanaged' etc
+
 bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
 bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
+bool isCVoidPtr(Type* t); // includes both c_ptr(void) and raw_c_void_ptr
 bool isClassLikeOrNil(Type* t);
 bool isRecord(Type* t);
 bool isUserRecord(Type* t); // is it a record from the user viewpoint?
 bool isUnion(Type* t);
+bool isCPtrConstChar(Type* t); // replacement for c_string
 
 bool isReferenceType(const Type* t);
 
@@ -540,6 +643,11 @@ AggregateType* getManagedPtrManagerType(Type* t);
 bool isSyncType(const Type* t);
 bool isSingleType(const Type* t);
 bool isAtomicType(const Type* t);
+
+bool isOrContainsSyncType(Type* t, bool checkRefs = true);
+bool isOrContainsSingleType(Type* t, bool checkRefs = true);
+bool isOrContainsAtomicType(Type* t, bool checkRefs = true);
+
 bool isRefIterType(Type* t);
 
 bool isSubClass(Type* type, Type* baseType);
@@ -595,6 +703,7 @@ const Immediate& getDefaultImmediate(Type* t);
 #define UNION_ID_TYPE dtInt[INT_SIZE_64]
 #define SIZE_TYPE dtInt[INT_SIZE_64]
 #define NODE_ID_TYPE dtInt[INT_SIZE_32]
+#define SUBLOC_ID_TYPE dtInt[INT_SIZE_32]
 #define LOCALE_ID_TYPE dtLocaleID->typeInfo()
 
 #define is_arithmetic_type(t)                        \

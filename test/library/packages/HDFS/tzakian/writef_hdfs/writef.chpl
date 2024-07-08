@@ -1,7 +1,7 @@
-use HDFS;
+use HDFS, JSON;
 
 var hdfs = hdfs_chapel_connect("default", 0);
-var ff = hdfs.hdfs_chapel_open("/tmp/writef_test.txt", iomode.cw);
+var ff = hdfs.hdfs_chapel_open("/tmp/writef_test.txt", ioMode.cw);
 var ch = ff.writer();
 
 ch.writeln("Part 1");
@@ -38,10 +38,10 @@ ch.writef("%Xr\n", 1.02e27);
 ch.writef("%Xr\n", 1.02e-27);
 
 ch.writeln("Part 4");
-ch.writef("%t\n", (1,17));
+ch.writef("%?\n", (1,17));
 ch.writef("%xt\n", (1,17));
 ch.writef("%@xt\n", (1,17));
-ch.writef("%jt\n", (1,17));
+ch.withSerializer(jsonSerializer).writef("%?\n", (1,17));
 
 ch.writeln("Part 5");
 ch.writef("%*i\n", 17, 1);
@@ -95,7 +95,7 @@ ch.writef("%.3'S\n", "abcd");
 
 ch.close();
 ff.close();
-var r = hdfs.hdfs_chapel_open("/tmp/writef_test.txt", iomode.r);
+var r = hdfs.hdfs_chapel_open("/tmp/writef_test.txt", ioMode.r);
 var rr = r.reader();
 
 var str:  string;

@@ -1,0 +1,2 @@
+proc justCheck(i: int) { ... }
+r

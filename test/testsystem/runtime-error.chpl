@@ -1,2 +1,2 @@
 // Test xSocket runtime error
-halt('Master got an xSocket: error in sendAll');
+halt('Slave got an xSocket: connection closed on recv');

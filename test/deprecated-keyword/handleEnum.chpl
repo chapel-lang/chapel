@@ -1,4 +1,4 @@
-deprecated "Enum e is deprecated, use enum f"
+@deprecated(notes="Enum e is deprecated, use enum f")
 enum e { a, b, c };
 enum f { a = 1, b = 2, c = 3};
 

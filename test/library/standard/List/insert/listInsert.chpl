@@ -6,7 +6,7 @@ config const testElem = 42;
 var lst: list(int);
 
 for i in 1..testIters do
-  lst.append(i);
+  lst.pushBack(i);
 
 for i in 1..testIters do
   assert(lst.insert(0, testElem));
@@ -24,4 +24,3 @@ lst.clear();
 assert(lst.size == 0);
 
 assert(lst.insert(0, testElem));
-

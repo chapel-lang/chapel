@@ -229,7 +229,7 @@ class LocBlock1DDist {
   //
   // a helper function for mapping processors to indices
   //
-  proc procToData(x, lo)
+  proc procToData(x, lo) do
     return (lo + (x: lo.type) + (x:real != x:int:real): lo.type);
 
   //
@@ -301,7 +301,7 @@ class Block1DDom: BaseArithmeticDomain {
   // TODO: This really should go over the elements in row-major order,
   // not the block orders.
   //
-  proc these() {
+  iter these() {
     for blk in locDoms do
       // TODO: Would want to do something like:     
       // on blk do
@@ -329,7 +329,7 @@ class Block1DDom: BaseArithmeticDomain {
   // clause interact with a loop that used an on clause explicitly
   // within its body?  How would it be done efficiently?
   //
-  proc these(param tag: iterKind) where tag == iterKind.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     //
     // TODO: This currently only results in a single level of
     // per-locale parallelism -- no per-core parallelism; maybe
@@ -360,7 +360,7 @@ class Block1DDom: BaseArithmeticDomain {
       }
   }
 
-  proc these(param tag: iterKind, followThis) where tag == iterKind.follower {
+  iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     //
     // TODO: Abstract this addition of low into a function?
     // Note relationship between this operation and the
@@ -420,7 +420,7 @@ class Block1DDom: BaseArithmeticDomain {
   // INTERFACE NOTES: Could we make setIndices() for an arithmetic
   // domain take a domain rather than something else?
   //
-  proc setIndices(x: domain) {
+  proc setIndices(x: domain(?)) {
     if x.rank != 1 then
       compilerError("rank mismatch in domain assignment");
     if x._value.idxType != idxType then
@@ -465,7 +465,7 @@ class Block1DDom: BaseArithmeticDomain {
 
   }
 
-  proc supportsPrivatization() param return true;
+  proc supportsPrivatization() param do return true;
   proc privatize1() {
     var c = new Block1DDom(idxType=idxType, rank=rank, stridable=stridable, dist=dist);
     c.locDoms = locDoms;
@@ -521,7 +521,7 @@ class LocBlock1DDom {
   //
   // iterator over this locale's indices
   //
-  proc these() {
+  iter these() {
     // May want to do something like:     
     // on this do
     // But can't currently have yields in on clauses
@@ -533,12 +533,12 @@ class LocBlock1DDom {
   // this is the parallel iterator for the local domain, see global
   // domain parallel iterators for general notes on the approach
   //
-  proc these(param tag: iterKind) where tag == iterKind.leader {
+  iter these(param tag: iterKind): domain(1) where tag == iterKind.leader {
     halt("This is bogus");
     yield {1..100};
   }
 
-  proc these(param tag: iterKind, followThis) where tag == iterKind.follower {
+  iter these(param tag: iterKind, followThis): int where tag == iterKind.follower {
     halt("This is bogus");
     yield 2;
   }
@@ -617,7 +617,7 @@ class Block1DArr: BaseArray {
         locArr(localeIdx) = new LocBlock1DArr(idxType, eltType, stridable, dom.locDoms(localeIdx));
   }
 
-  proc supportsPrivatization() param return true;
+  proc supportsPrivatization() param do return true;
   proc privatize1() {
     var c = new Block1DArr(idxType, eltType, stridable, dom);
     c.locArr = locArr;
@@ -646,7 +646,7 @@ class Block1DArr: BaseArray {
   //
   // the iterator over the array's elements, currently sequential
   //
-  proc these() ref {
+  iter these() ref {
     for loc in dom.dist.targetLocDom {
       // TODO: May want to do something like:     
       // on this do
@@ -661,7 +661,7 @@ class Block1DArr: BaseArray {
   // this is the parallel iterator for the global array, see the
   // example for general notes on the approach
   //
-  proc these(param tag: iterKind) where tag == iterKind.leader {
+  iter these(param tag: iterKind) where tag == iterKind.leader {
     //
     // TODO: Rewrite this to reuse more of the global domain iterator
     // logic?  (e.g., can we forward the forall to the global domain
@@ -672,9 +672,9 @@ class Block1DArr: BaseArray {
         yield locDom.myBlock - dom.whole.low;
   }
 
-  proc supportsAlignedFollower() param return true;
+  proc supportsAlignedFollower() param do return true;
 
-  proc these(param tag: iterKind, followThis, param aligned: bool = false) ref where tag == iterKind.follower {
+  iter these(param tag: iterKind, followThis, param aligned: bool = false) ref where tag == iterKind.follower {
     //
     // TODO: Would like to write this as followThis += dom.low;
     //
@@ -828,7 +828,7 @@ class LocBlock1DArr {
   //
   // iterator over the elements owned by this locale
   //
-  proc these() ref {
+  iter these() ref {
     for elem in myElems {
       yield elem;
     }
@@ -838,12 +838,12 @@ class LocBlock1DArr {
   // this is the parallel iterator for the local array, see global
   // domain parallel iterators for general notes on the approach
   //
-  proc these(param tag: iterKind) where tag == iterKind.leader {
+  iter these(param tag: iterKind) : domain(1) where tag == iterKind.leader {
     halt("This is bogus");
     yield {1..100};
   }
 
-  proc these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
+  iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
     yield myElems(0);
   }
 

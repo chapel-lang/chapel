@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,6 +33,25 @@ MAYBE_GPU static inline int chpl_macro_double_isnan(double x) { return isnan(x);
 MAYBE_GPU static inline int chpl_macro_float_isnan(float x) { return isnan(x); }
 MAYBE_GPU static inline int chpl_macro_double_signbit(double x) { return signbit(x); }
 MAYBE_GPU static inline int chpl_macro_float_signbit(float x) { return signbit(x); }
+
+
+#ifdef __cplusplus
+// workaround for C++ lacking C99 complex support
+MAYBE_GPU static inline double chpl_creal(_complex128 x) { return __builtin_creal(x); }
+MAYBE_GPU static inline float  chpl_crealf(_complex64 x) { return __builtin_crealf(x); }
+MAYBE_GPU static inline _imag64 chpl_cimag(_complex128 x) { return __builtin_cimag(x); }
+MAYBE_GPU static inline _imag32 chpl_cimagf(_complex64 x) { return __builtin_cimagf(x); }
+#else
+MAYBE_GPU static inline double chpl_creal(_complex128 x) { return creal(x); }
+MAYBE_GPU static inline float  chpl_crealf(_complex64 x) { return crealf(x); }
+MAYBE_GPU static inline _imag64 chpl_cimag(_complex128 x) { return cimag(x); }
+MAYBE_GPU static inline _imag32 chpl_cimagf(_complex64 x) { return cimagf(x); }
+#endif
+
+MAYBE_GPU static inline double chpl_sqrt64(double x) { return sqrt(x);  }
+MAYBE_GPU static inline float  chpl_sqrt32(float x)  { return sqrtf(x); }
+MAYBE_GPU static inline double chpl_fabs64(double x) { return fabs(x);  }
+MAYBE_GPU static inline float  chpl_fabs32(float x)  { return fabsf(x); }
 
 // 32-bit Bessel functions aren't available on all platforms. For cases where
 // we know they're available use them since they should be faster, but in other

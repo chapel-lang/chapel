@@ -2,15 +2,15 @@ writeln();
 
 use BlockDist;
 
-var a = newBlockArr(0..10, int);
-var b = newBlockArr(0..10, int);
+var a = blockDist.createArray(0..10, int);
+var b = blockDist.createArray(0..10, int);
 
 for i in b.domain {
   b[i] = i;
 }
 
 writeln("Loop 1");
-forall i in a.domain {
+forall i in a.domain with (ref a) {
   a[i] = b[10-i];
 }
 writeln("End Loop 1");
@@ -21,7 +21,7 @@ writeln();
 b = 0;
 
 writeln("Loop 2");
-forall i in a.domain {
+forall i in a.domain with (ref a, ref b) {
   a[i] = b[10-i];
   b[10-i] += 5; // should thwart the optimization
 }

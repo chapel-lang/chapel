@@ -57,7 +57,7 @@ proc main() {
     writeln('Multiplying A*A');
   }
 
-  var t: Timer;
+  var t: stopwatch;
 
   t.start();
   var AA = SPAdot(A, A);
@@ -117,7 +117,7 @@ proc memberCheck(A) {
 proc SPAdot(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
 
   const D = {Adom.dim(0), Bdom.dim(1)};
-  var Cdom: sparse subdomain(D) dmapped CS(sortedIndices=false);
+  var Cdom: sparse subdomain(D) dmapped new dmap(new CS(sortedIndices=false));
   var C: [Cdom] A.eltType;
 
   // pre-allocate nnz(A) + nnz(B) -- TODO: shrink later
@@ -149,15 +149,15 @@ proc SPAdot(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
   return C;
 
   /* Cleaner startIdx accessor */
-  proc _array.IR ref return this._value.dom.startIdx;
+  proc _array.IR ref do return this._value.dom.startIdx;
   /* Cleaner idx accessor */
-  proc _array.JC ref return this._value.dom.idx;
+  proc _array.JC ref do return this._value.dom.idx;
   /* Cleaner data accessor */
-  proc _array.NUM ref return this._value.data;
+  proc _array.NUM ref do return this._value.data;
 
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Sparse-accumulator */
 record _SPA {
   var cols: domain(1);
@@ -167,24 +167,24 @@ record _SPA {
       ls: list(int);      // indices
 
   /* Reset w, b, and ls to empty */
-  proc reset() {
+  proc ref reset() {
     b = false;
     w = 0;
     ls.clear();
   }
 
   /* Accumulate nonzeros in SPA */
-  proc scatter(const value, const pos) {
+  proc ref scatter(const value, const pos) {
     if this.b[pos] == 0 {
       this.w[pos] = value;
       this.b[pos] = true;
-      this.ls.append(pos);
+      this.ls.pushBack(pos);
     } else {
       this.w[pos] += value;
     }
   }
 
-  proc gather(ref C: [?Cdom], i) {
+  proc ref gather(ref C: [?Cdom], i) {
     const nzcur = C.IR[i];
     var nzi = 0;
     this.ls.sort();

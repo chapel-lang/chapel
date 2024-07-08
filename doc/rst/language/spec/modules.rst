@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: modules
 .. _Chapter-Modules:
 
 =======
@@ -19,6 +21,10 @@ in :ref:`Visibility_Of_Symbols`. The execution of a program
 and module initialization/deinitialization are described
 in :ref:`Program_Execution`.
 
+.. index::
+   single: module
+   single: modules; definitions
+   single: modules; top-level
 .. _Module_Definitions:
 
 Module Definitions
@@ -55,6 +61,8 @@ Any module declaration that is not contained within another module
 creates a *top-level module*. Module declarations within other modules
 create nested modules (:ref:`Nested_Modules`).
 
+.. index::
+   single: modules; prototype
 .. _Prototype_Modules:
 
 Prototype Modules
@@ -70,6 +78,10 @@ errors that are not handled will terminate the program
 Implicit modules (:ref:`Implicit_Modules`) are implicitly considered
 ``prototype`` modules as well.
 
+.. index::
+   single: modules; and files
+   single: implicit modules
+   single: modules; implicit
 .. _Implicit_Modules:
 
 Files and Implicit Modules
@@ -166,6 +178,9 @@ identifier, it cannot be referenced in a use statement.
    Module implicit defines the module-scope symbols x, y, printX, and
    printY.
 
+.. index::
+   single: modules; nested
+   single: modules; sub-modules
 .. _Nested_Modules:
 
 Nested Modules
@@ -254,10 +269,11 @@ nested modules.
 
    .. BLOCK-test-chapeloutput
 
-      nested.chpl:9: warning: This file-scope code is outside of any explicit module declarations (e.g., module MY), so an implicit module named 'nested' is being introduced to contain the file's contents.
       0
       0
 
+.. index::
+   single: modules; access
 .. _Access_Of_Module_Contents:
 
 Access of Module Contents
@@ -270,6 +286,8 @@ done via the use statement (:ref:`Using_Modules`), the import
 statement (:ref:`Importing_Modules`) or qualified
 naming (:ref:`Explicit_Naming`).
 
+.. index::
+   single: modules; access
 .. _Visibility_Of_A_Module:
 
 Visibility Of A Module
@@ -302,6 +320,8 @@ imported with just its name, even from the scope in which the module is defined,
 unless it has already been brought into scope by another ``use`` or ``import``
 statement.
 
+.. index::
+   single: modules; symbol visibility
 .. _Visibility_Of_Symbols:
 
 Visibility Of A Module’s Symbols
@@ -317,6 +337,9 @@ it contains are accessible via the use statement (:ref:`Using_Modules`), import
 statement (:ref:`Importing_Modules`), or qualified
 naming (:ref:`Explicit_Naming`).
 
+.. index::
+   single: modules; using
+   single: modules; importing
 .. _Using_And_Importing:
 
 Using and Importing
@@ -814,6 +837,8 @@ in the second example of re-exporting, if module A's import of B only allowed
 access to certain symbols, that list will also limit which of the symbols from
 C1, C2, and C3 will be available to A.
 
+.. index::
+   single: modules; qualified naming
 .. _Explicit_Naming:
 
 Qualified Naming of Module Symbols
@@ -885,7 +910,7 @@ be used to disambiguate the symbols in this case.
         }
       }
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -966,51 +991,17 @@ import, a strategy which will be referred to as `re-exporting`.
       module A {
         proc main() {
           use B;
-          writeln(B.C.cSymbol);
           writeln(B.cSymbol);
         }
       }
 
-   In this case, C will be visible to A as though it was a submodule of B, and
-   its symbols can also be treated as though they were defined within B.  This
-   means that A can contain mentions like ``B.C.cSymbol`` if cSymbol was a
-   symbol defined in C, regardless of if C was actually a submodule of B.
+   In this case, the symbols within ``C`` will be treated as though they
+   were defined within B.  As a result, ``A`` can contain mentions like
+   ``B.cSymbol`` which would access ``C``'s ``cSymbol``.
 
-   This also means that A can contain mentions like ``B.cSymbol`` which would
-   access C's cSymbol, assuming these symbols were not shadowed by symbols with
-   the same name in B.
-
-   .. BLOCK-test-chapeloutput
-
-      0
-      0
-
-   *Example (use-reexport2.chpl)*.
-
-   However, if the public use of C also disabled accesses to the module name
-   using the ``as`` keyword, e.g.
-
-   .. code-block:: chapel
-
-      module C {
-        var cSymbol: int;
-      }
-
-      module B {
-        public use C as _;
-      }
-
-      module A {
-        proc main() {
-          use B;
-          // writeln(B.C.cSymbol); // Would not work
-          writeln(B.cSymbol);
-        }
-      }
-
-   Then A could only contain mentions like ``B.cSymbol``, it could not access
-   ``cSymbol`` using ``B.C.cSymbol``.  This is because C is not present as a
-   public name in B's scope.
+   Note that something like ``B.C.cSymbol`` will not compile in this
+   specific example. Please see :ref:`Public_Use` for details, including
+   how to enable patterns like this.
 
    .. BLOCK-test-chapeloutput
 
@@ -1019,9 +1010,8 @@ import, a strategy which will be referred to as `re-exporting`.
 Conversely, if B's use of C was ``private`` then A would not be able to see C's
 symbols at all due to that ``use``.
 
-The situation for ``import`` is similar.  Because import statements only
-enable either qualified or unqualified access to a symbol, it more closely
-resembles the second example instead of the first.
+The situation for ``import`` is similar.  However, import statements only
+enable either qualified or unqualified access to a symbol, but not both.
 
    *Example (import-reexport1.chpl)*.
 
@@ -1089,7 +1079,7 @@ symbols due to that ``import``.
 This notion of re-exporting extends to the case in which a scope uses multiple
 modules.
 
-   *Example (use-reexport3.chpl)*.
+   *Example (use-reexport2.chpl)*.
 
    Say we have a module A that uses a module B, and module B contains a
    public use of modules C1, C2, and C3.
@@ -1115,34 +1105,30 @@ modules.
       module A {
         proc main() {
           use B;
-          writeln(B.C1.c1Symbol);
-          writeln(B.C2.c2Symbol);
-          writeln(B.C3.c3Symbol);
-
           writeln(B.c1Symbol);
           writeln(B.c2Symbol);
           writeln(B.c3Symbol);
         }
       }
 
-   In this case all three of those modules will be accessible by A as though
-   they were submodules of B.  This also means that symbols in C1, C2, and C3
-   will be accessible as though they were defined in B, assuming these symbols
-   were not shadowed by symbols with the same name in B and that these symbols
-   do not conflict with each other.
+   In this case, symbols in C1, C2, and C3 will be accessible as though
+   they were defined in B, assuming these symbols were not shadowed by
+   symbols with the same name in B and that these symbols do not conflict
+   with each other.
+
+   Note that something like ``B.C1.c1Symbol`` will not compile in this
+   specific example. Please see :ref:`Public_Use` for details, including
+   how to enable patterns like this.
 
    .. BLOCK-test-chapeloutput
 
       0
       false
       3
-      0
-      false
-      3
 
-This similarly applies to import statements that contain multiple
-subexpressions.
 
+.. index::
+   pair: modules; initialization
 .. _Module_Initialization:
 
 Module Initialization
@@ -1188,6 +1174,8 @@ module, other than function and type declarations, are executed.
 Module initialization order is discussed
 in :ref:`Module_Initialization_Order`.
 
+.. index::
+   pair: modules; deinitialization
 .. _Module_Deinitialization:
 
 Module Deinitialization
@@ -1205,6 +1193,9 @@ deinitialization:
 Module deinitialization order is discussed
 in :ref:`Module_Deinitialization_Order`.
 
+.. index::
+   single: program execution
+   single: program initialization
 .. _Program_Execution:
 
 Program Execution
@@ -1293,6 +1284,10 @@ the following situations in order:
    Notice that ``main`` is treated like just another procedure if it is not
    in the main module and can be called as such.
 
+.. index::
+   single: main
+   single: functions; main
+   single: exploratory programming
 .. _The_main_Procedure:
 
 The *main* Procedure
@@ -1336,14 +1331,21 @@ procedure. The default main function is equivalent to:
    The compiler adds an empty default ``main`` which runs after that
    module is initialized.
 
+.. index::
+   single: modules; initialization order
 .. _Module_Initialization_Order:
 
 Module Initialization Order
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Module initialization is performed using the following algorithm.
+Module initialization is performed at program start-up and initializes
+modules in an order determined by the ``use`` and ``import`` statements.
+Not all modules need to be initialized (see :ref:`Module_Initialization`
+for details).
 
-Starting from the module that defines the main procedure, the modules named in
+The following describes the module initialization order.
+
+Starting from :ref:`The_main_Module`, the modules named in
 its use and import statements are visited depth-first and initialized in
 post-order. If a use or import statement names a module that has already been
 visited, it is not visited a second time. Thus, infinite recursion is avoided.
@@ -1394,6 +1396,8 @@ uses are initialized before the nested module and its uses or imports.
    M2) must be initialized first. M2 itself is initialized, followed by
    M2.M3. Finally M1 is initialized, and the main procedure is run.
 
+.. index::
+   single: modules; deinitialization order
 .. _Module_Deinitialization_Order:
 
 Module Deinitialization Order

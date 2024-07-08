@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -241,6 +241,7 @@
 
  */
 
+@unstable("ArgumentParser is unstable.")
 module ArgumentParser {
   use List;
   use Map;
@@ -256,14 +257,11 @@ module ArgumentParser {
   // TODO: Move logic splitting '=' into '_match'
   // TODO: Add public github issue when available
 
-  if chpl_warnUnstable then
-    compilerWarning("ArgumentParser is unstable.");
-
-  pragma "no doc"
-  enum argKind { positional, subcommand, option, flag, passthrough };
+  @chpldoc.nodoc
+  enum argKind { positional, subcommand, option, flag, passthrough }
 
   // stores an argument definition
-  pragma "no doc"
+  @chpldoc.nodoc
   class ArgumentHandler {
     // friendly name for this argument
     var _name:string;
@@ -319,7 +317,7 @@ module ArgumentParser {
    argumentHelp record stores the information related only to the help
    message printout for the argument
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   record argumentHelp {
     // the message to display for the argument
     var help="";
@@ -331,7 +329,7 @@ module ArgumentParser {
   }
 
   // stores a passthrough delimiter definition
-  pragma "no doc"
+  @chpldoc.nodoc
   class PassThrough : SubCommand {
 
     proc init(delimiter:string, help:argumentHelp) {
@@ -347,7 +345,7 @@ module ArgumentParser {
       var next = pos + 1;
 
       if args[pos] == this._name {
-        myArg._values.append(args[pos+1..endPos]);
+        myArg._values.pushBack(args[pos+1..endPos]);
         return endPos + 1;
       } else {
         // failed to match the delimiter at this index, which shouldn't happen
@@ -358,7 +356,7 @@ module ArgumentParser {
   }
 
   // stores a subcommand definition
-  pragma "no doc"
+  @chpldoc.nodoc
   class SubCommand : ArgumentHandler {
 
     proc init(cmd:string, help:argumentHelp) {
@@ -376,7 +374,7 @@ module ArgumentParser {
       var pos = startPos;
       var next = pos + 1;
       if args[pos] == this._name {
-        myArg._values.append(args[pos..endPos]);
+        myArg._values.pushBack(args[pos..endPos]);
         return endPos + 1;
       } else {
         // failed to match the cmd, this should not happen
@@ -386,7 +384,7 @@ module ArgumentParser {
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class Positional : ArgumentHandler {
     // indicates if this argument is required to be entered by the user
     var _required:bool;
@@ -401,9 +399,9 @@ module ArgumentParser {
       this._defaultValue = new list(string);
       // add default value(s) if supplied
       if isStringType(t) {
-        this._defaultValue.append(defaultValue);
+        this._defaultValue.pushBack(defaultValue);
       } else if t == list(string) || isArray(t) {
-        this._defaultValue.append(defaultValue);
+        this._defaultValue.pushBack(defaultValue);
       }
       // this._numArgs = numArgs;
       // this._help=help;
@@ -433,7 +431,7 @@ module ArgumentParser {
       // make sure we didn't already satisfy this positional
       if myArg._present && myArg._values.size == high then return startPos;
       do {
-        myArg._values.append(args[pos]);
+        myArg._values.pushBack(args[pos]);
         myArg._present = true;
         pos=next;
         next+=1;
@@ -458,7 +456,7 @@ module ArgumentParser {
   }
 
   // stores the definition of a Flag (bool) argument
-  pragma "no doc"
+  @chpldoc.nodoc
   class Flag : ArgumentHandler {
     // indicates if this flag is required to be entered by the user
     var _required:bool;
@@ -477,7 +475,7 @@ module ArgumentParser {
       // this._name=name;
       this._required = required;
       this._defaultValue = new list(string);
-      if isBoolType(t) then this._defaultValue.append(defaultValue:string);
+      if isBoolType(t) then this._defaultValue.pushBack(defaultValue:string);
       this._yesFlags = new list(yesFlags);
       this._noFlags = new list(noFlags);
       // this._numArgs = numArgs;
@@ -505,16 +503,16 @@ module ArgumentParser {
       var next = pos+1;
       if _yesFlags.contains(args[pos]) && _numArgs.low == 0 {
         myArg._values.clear();
-        myArg._values.append("true");
+        myArg._values.pushBack("true");
       } else if _noFlags.contains(args[pos]) && _numArgs.low == 0 {
         myArg._values.clear();
-        myArg._values.append("false");
+        myArg._values.pushBack("false");
       }
       if high > 0 && next <= endPos {
         var flagVal:bool;
         if _convertStringToBool(args[next], flagVal) {
           myArg._values.clear();
-          myArg._values.append(flagVal:string);
+          myArg._values.pushBack(flagVal:string);
           pos = next;
           next += 1;
         } else if _numArgs.low > 0 {
@@ -554,7 +552,7 @@ module ArgumentParser {
             if flagStr.size > 1 {
               noStr = "-" + noStr;
             }
-            flagsUsage.append(noStr);
+            flagsUsage.pushBack(noStr);
           }
           message += ", ".join(flagsUsage.toArray());
         }
@@ -564,7 +562,7 @@ module ArgumentParser {
   }
 
   // stores an option definition
-  pragma "no doc"
+  @chpldoc.nodoc
   class Option : ArgumentHandler {
     // number of option flags that can indicate this argument
     var _numOpts:int;
@@ -622,7 +620,7 @@ module ArgumentParser {
         pos=next;
         next+=1;
         matched+=1;
-        myArg._values.append(args[pos]);
+        myArg._values.pushBack(args[pos]);
       }
       return next;
     }
@@ -657,14 +655,14 @@ module ArgumentParser {
 
   // the helpWrapper record coordinates the help text generation and is
   // the entry point for the argumentParser to handle help message requests
-  pragma "no doc"
+  @chpldoc.nodoc
   record helpWrapper {
     // a help message handler to control what happens when help is called
     var _helpHandler: shared HelpHandler;
     // the name of the binary for the USAGE message
     var _binaryName: string;
     // use the generator to build help and usage messages
-    var _helpGenerator: HelpGenerator;
+    var _helpGenerator: owned HelpGenerator;
 
     proc init(helpHandler=new shared HelpHandler(), binaryName="") {
       _helpHandler=helpHandler;
@@ -698,7 +696,7 @@ module ArgumentParser {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class HelpGenerator {
 
     // create some sections to store the help text per section
@@ -737,14 +735,14 @@ module ArgumentParser {
         return rows.size;
       }
 
-      proc append(item) {
-        rows.append(item);
+      proc ref append(item) {
+        rows.pushBack(item);
       }
 
       proc render(inset=1, separator="\t") : string {
         var elemList:list(string);
         for elt in rows.these() {
-          elemList.append(separator * inset + elt.render(separator));
+          elemList.pushBack(separator * inset + elt.render(separator));
         }
         return "\n".join(elemList.toArray());
       }
@@ -762,8 +760,8 @@ module ArgumentParser {
     // needs to be called before generating usage or help
     proc _setArguments(argStack: map(string, ArgumentHandler)) {
       _argStack = new map(string, borrowed ArgumentHandler);
-      for k in argStack.these() {
-        _argStack.addOrSet(k,argStack.getBorrowed(k) );
+      for k in argStack.keys() {
+        _argStack.addOrReplace(k,try! argStack[k] );
       }
       generateSections();
     }
@@ -777,33 +775,33 @@ module ArgumentParser {
                         argKind.option, argKind.subcommand];
 
       var usage = new usageMessage();
-      usage.components.append(binaryName);
+      usage.components.pushBack(binaryName);
       var hasSubcommands = false;
       for kindOfArg in usageOrder {
         for name in sorted(_argStack.keys()) {
-          const handler = _argStack.getBorrowed(name);
+          const handler = try! _argStack[name];
           if !handler._help.visible then continue;
           var elem = handler._getUsageCommand();
           if handler._kind == kindOfArg {
             select handler._kind {
               when argKind.positional {
-                usage.components.append(elem);
+                usage.components.pushBack(elem);
               }
               when argKind.option {
-                usage.components.append(elem);
+                usage.components.pushBack(elem);
               }
               when argKind.subcommand {
                 hasSubcommands = true;
               }
               when argKind.flag {
-                usage.components.append(elem);
+                usage.components.pushBack(elem);
               }
             }
           }
         }
       }
       if hasSubcommands then
-        usage.components.append("[SUBCOMMAND]");
+        usage.components.pushBack("[SUBCOMMAND]");
       return usage;
     }
 
@@ -811,7 +809,7 @@ module ArgumentParser {
     // the arguments have been added to the argumentParser.
     proc generateSections() {
       for name in sorted(_argStack.keys()) {
-        const handler = _argStack.getBorrowed(name);
+        const handler = try! _argStack[name];
         if !handler._help.visible then continue;
         var elem = new element(handler._getHelpCommand(),
                                handler._getHelpMessage());
@@ -861,6 +859,8 @@ module ArgumentParser {
     }
   }
 
+  private param globalLifetime = 0;
+
   /*
   A parser that performs the following functions:
 
@@ -907,37 +907,37 @@ module ArgumentParser {
   */
   record argumentParser {
     // store the arguments by their familiar names
-    pragma "no doc"
+    @chpldoc.nodoc
     var _result: map(string, shared Argument);
     // store the argument handlers by their familiar names
-    pragma "no doc"
+    @chpldoc.nodoc
     var _handlers: map(string, owned ArgumentHandler);
     // map an option string to its familiar name
-    pragma "no doc"
+    @chpldoc.nodoc
     var _options: map(string, string);
     // store positional definitions
-    pragma "no doc"
+    @chpldoc.nodoc
     var _positionals: list(borrowed Positional);
     // store subcommand names
-    pragma "no doc"
+    @chpldoc.nodoc
     var _subcommands: list(string);
     // recognize help flags
-    pragma "no doc"
+    @chpldoc.nodoc
     var _helpFlags: list(string);
     // exit if error in arguments
-    pragma "no doc"
+    @chpldoc.nodoc
     var _exitOnError: bool;
     // automatically add and handle help flag (-h/--help)
-    pragma "no doc"
+    @chpldoc.nodoc
     var _addHelp: bool;
     // keep track of which help flag was used so a dev can check it later
-    pragma "no doc"
+    @chpldoc.nodoc
     var _helpUsed=(false,"");
     // should the parser exit after printing the help message
-    pragma "no doc"
+    @chpldoc.nodoc
     var _exitAfterHelp: bool;
     // store a help wrapper
-    pragma "no doc"
+    @chpldoc.nodoc
     var _help : helpWrapper;
 
 
@@ -965,7 +965,11 @@ module ArgumentParser {
                         Cannot be used in conjunction with `helpHandler`.
     */
     proc init(addHelp=true, exitOnError=true, exitAfterHelp=true,
-              in helpHandler:?h=none, helpMessage:?t=none) {
+              in helpHandler:?h=none, helpMessage:?t=none)
+      lifetime return globalLifetime
+      /* lifetime clause indicate result has global lifetime and is
+         a work-around for issue #22599. */
+    {
 
       if (!isNothingType(h) && !isNothingType(t)) then
         compilerError("Cannot set help message and help handler, choose one.");
@@ -979,15 +983,20 @@ module ArgumentParser {
       _exitAfterHelp = exitAfterHelp;
 
       var _helpHandler = new shared HelpHandler();
-      if !isNothingType(h) then
-        _helpHandler = helpHandler;
+      if !isNothingType(h) {
+        if isBorrowedClass(helpHandler)
+          then compilerError("Cannot initialize a help handler from a 'borrowed' class");
+        if !isSharedClass(helpHandler)
+          then _helpHandler = shared.adopt(helpHandler);
+          else _helpHandler = helpHandler;
+      }
 
       _help = new helpWrapper(_helpHandler);
       if isStringType(t) then
         _help.setHelp(helpMessage);
 
 
-      this.complete();
+      init this;
 
       try! {
         // configure to allow consuming of -- if passed from runtime
@@ -1004,10 +1013,10 @@ module ArgumentParser {
     }
 
     // setup automatic help handling on -h or --help
-    pragma "no doc"
-    proc addHelpFlag(name="ArgumentParserAddedHelp",
+    @chpldoc.nodoc
+    proc ref addHelpFlag(name="ArgumentParserAddedHelp",
                      opts:[?optsD]=["-h","--help"]) throws {
-      _helpFlags.append(opts);
+      _helpFlags.pushBack(opts);
       return addFlag(name, opts, defaultValue=false, help="Display this message and exit");
     }
 
@@ -1030,12 +1039,12 @@ module ArgumentParser {
     :arg name: a friendly name to give this argument. This would typically be
                displayed in the `help` or `usage` message.
 
+    :arg numArgs: an exact number of values expected from the command line.
+                  An ArgumentError will be thrown if more or fewer values are entered.
+
     :arg defaultValue: a value to assign the argument when it is not provided
                        on the command line. If `numArgs` is greater than 1,
                        an array or list may be passed. Defaults to `none`.
-
-    :arg numArgs: an exact number of values expected from the command line.
-                  An ArgumentError will be thrown if more or fewer values are entered.
 
     :arg help: a message to display for this argument when help is requested
 
@@ -1048,14 +1057,14 @@ module ArgumentParser {
 
     :returns: a shared `Argument` where parsed values will be placed
 
-    :throws: ArgumentError in any of the following conditions:
+    :throws: `ArgumentError` in any of the following conditions:
 
              * `name` is already defined for this parser
              * `defaultValue` is something other than a string, array or list
                of strings.
 
     */
-    proc addArgument(name:string,
+    proc ref addArgument(name:string,
                      numArgs=1,
                      defaultValue:?t=none,
                      help="",
@@ -1084,15 +1093,15 @@ module ArgumentParser {
     :arg name: a friendly name to give this argument. This would typically be
                displayed in the `help` or `usage` message.
 
-    :arg defaultValue: a value to assign the argument when it is not provided
-                       on the command line. If `numArgs` is greater than 1,
-                       an array or list may be passed. Defaults to `none`.
-
     :arg numArgs: a range of values expected from the command line. If using a
                   range, the argument must be the only positional that accepts a range,
                   and must be specified last relative to other positional arguments
                   to avoid ambiguity.
                   An ArgumentError will be thrown if more or fewer values are entered.
+
+    :arg defaultValue: a value to assign the argument when it is not provided
+                       on the command line. If `numArgs` is greater than 1,
+                       an array or list may be passed. Defaults to `none`.
 
     :arg help: a message to display for this argument when help is requested
 
@@ -1105,7 +1114,7 @@ module ArgumentParser {
 
     :returns: a shared `Argument` where parsed values will be placed
 
-    :throws: ArgumentError in any of the following conditions:
+    :throws: `ArgumentError` in any of the following conditions:
 
              * `name` is already defined for this parser
              * `defaultValue` is something other than a string, array or list
@@ -1113,7 +1122,7 @@ module ArgumentParser {
              * `numArgs` is neither low-bound nor fully-bound
 
     */
-    proc addArgument(name:string,
+    proc ref addArgument(name:string,
                      numArgs:range(?),
                      defaultValue:?t=none,
                      help="",
@@ -1136,7 +1145,7 @@ module ArgumentParser {
         }
       }
 
-      _positionals.append(handler.borrow());
+      _positionals.pushBack(handler.borrow());
       //create, add, and return the shared argument
       return _addHandler(handler);
     }
@@ -1168,6 +1177,10 @@ module ArgumentParser {
                 Defaults to a long version of the `name` field with leading double
                 dashes ``--``.
 
+    :arg numArgs: the exact number of values expected to follow the option on the
+                  command line. An ArgumentError will be thrown if more or fewer
+                  values are entered.
+
     :arg required: a bool to set this option as a required command line argument.
                     If set to `true`, an ArgumentError will be thrown if the user
                     fails to enter the option on the command line. Defaults to `false`.
@@ -1175,10 +1188,6 @@ module ArgumentParser {
     :arg defaultValue: a value to assign the argument when an option is not required,
                         and a is not entered on the command line. If `numArgs` is
                         greater than 1, an array or list may be passed. Defaults to `none`.
-
-    :arg numArgs: the exact number of values expected to follow the option on the
-                  command line. An ArgumentError will be thrown if more or fewer
-                  values are entered.
 
     :arg help: a message to display for this option when help is requested
 
@@ -1191,7 +1200,7 @@ module ArgumentParser {
 
     :returns: a shared `Argument` where parsed values will be placed
 
-    :throws: ArgumentError in any of the following conditions:
+    :throws: `ArgumentError` in any of the following conditions:
 
              * `name` or `opts` are already defined for this parser
              * values in `opts` do not begin with a dash ``-``
@@ -1199,7 +1208,7 @@ module ArgumentParser {
                of strings.
 
     */
-    proc addOption(name:string,
+    proc ref addOption(name:string,
                    opts:[]string=_processNameToOpts(name),
                    numArgs=1,
                    required=false,
@@ -1243,6 +1252,11 @@ module ArgumentParser {
                 Defaults to a long version of the `name` field with leading double
                 dashes ``--``.
 
+    :arg numArgs: a range of values expected to follow the option on the
+                  command line. This may be a fully-bound range like ``1..10``
+                  or a lower-bound range like ``1..``. An ArgumentError will be
+                  thrown if more or fewer values are entered.
+
     :arg required: a bool to set this option as a required command line argument.
                     If set to `true`, an ArgumentError will be thrown if the user
                     fails to enter the option on the command line. Defaults to `false`.
@@ -1250,11 +1264,6 @@ module ArgumentParser {
     :arg defaultValue: a value to assign the argument when an option is not required,
                         and a is not entered on the command line. If `numArgs` is
                         greater than 1, an array or list may be passed. Defaults to `none`.
-
-    :arg numArgs: a range of values expected to follow the option on the
-                  command line. This may be a fully-bound range like ``1..10``
-                  or a lower-bound range like ``1..``. An ArgumentError will be
-                  thrown if more or fewer values are entered.
 
     :arg help: a message to display for this option when help is requested
 
@@ -1267,7 +1276,7 @@ module ArgumentParser {
 
     :returns: a shared `Argument` where parsed values will be placed
 
-    :throws: ArgumentError in any of the following conditions:
+    :throws: `ArgumentError` in any of the following conditions:
 
              * `name` or `opts` are already defined for this parser
              * values in `opts` do not begin with a dash ``-``
@@ -1276,7 +1285,7 @@ module ArgumentParser {
              * `numArgs` does not have a low-bound
 
     */
-    proc addOption(name:string,
+    proc ref addOption(name:string,
                    opts:[]string=_processNameToOpts(name),
                    numArgs:range(?),
                    required=false,
@@ -1291,10 +1300,10 @@ module ArgumentParser {
       var myDefault = new list(string);
 
       if isStringType(t) {
-        myDefault.append(defaultValue);
+        myDefault.pushBack(defaultValue);
       } else if t==list(string) ||
                 (isArray(t) && isString(defaultValue[0])) {
-        myDefault.append(defaultValue);
+        myDefault.pushBack(defaultValue);
       } else if !isNothingType(t) {
         throw new ArgumentError("Only string and list of strings are supported "
                                 + "as default values at this time");
@@ -1363,7 +1372,7 @@ module ArgumentParser {
 
     :returns: a shared `Argument` where parsed values will be placed
 
-    :throws: ArgumentError in any of the following conditions:
+    :throws: `ArgumentError` in any of the following conditions:
 
               * `name` or `opts` are already defined for this parser
               * `numArgs` > 1
@@ -1374,7 +1383,7 @@ module ArgumentParser {
               * values in `opts` do not begin with a dash ``-``
 
     */
-    proc addFlag(name:string,
+    proc ref addFlag(name:string,
                  opts:[?optsD]=_processNameToOpts(name),
                  required=false, defaultValue:?t=none, flagInversion=false,
                  numArgs=0,
@@ -1446,7 +1455,7 @@ module ArgumentParser {
 
     :returns: a shared `Argument` where parsed values will be placed
 
-    :throws: ArgumentError in any of the following conditions:
+    :throws: `ArgumentError` in any of the following conditions:
 
              * `name` or `opts` are already defined for this parser
              * `numArgs` high-bound > 1
@@ -1458,7 +1467,7 @@ module ArgumentParser {
              * values in `opts` do not begin with a dash ``-``
 
     */
-    proc addFlag(name:string,
+    proc ref addFlag(name:string,
                  opts:[?optsD]=_processNameToOpts(name),
                  required=false, defaultValue:?t=none, flagInversion=false,
                  numArgs:range,
@@ -1495,7 +1504,7 @@ module ArgumentParser {
           if flagStr.size > 1 {
             noStr = "-" + noStr;
           }
-          noFlagOpts.append(noStr);
+          noFlagOpts.pushBack(noStr);
           _options.add(noStr, argName);
         }
       }
@@ -1543,14 +1552,14 @@ module ArgumentParser {
 
     :returns: a shared `Argument` where parsed values will be placed
 
-    :throws: ArgumentError if `cmd` is already defined for this parser
+    :throws: `ArgumentError` if `cmd` is already defined for this parser
 
     */
-    proc addSubCommand(cmd:string, help="",
+    proc ref addSubCommand(cmd:string, help="",
                        visible=true) : shared Argument throws {
       var argHelp = new argumentHelp(help, visible, cmd);
       var handler = new owned SubCommand(cmd, argHelp);
-      _subcommands.append(cmd);
+      _subcommands.pushBack(cmd);
       _options.add(cmd, cmd);
       return _addHandler(handler);
     }
@@ -1577,27 +1586,27 @@ module ArgumentParser {
     :returns: a shared `Argument` where collected values will be placed for use
               by the developer
 
-    :throws: ArgumentError if `delimiter` is already defined for this parser
+    :throws: `ArgumentError` if `delimiter` is already defined for this parser
 
     */
-    proc addPassThrough(delimiter="--") : shared Argument throws {
+    proc ref addPassThrough(delimiter="--") : shared Argument throws {
       // remove the dummyHandler first
       if delimiter == "--" then _removeHandler("dummyDashHandler", ["--"]);
       var argHelp = new argumentHelp(visible=false,
                                      help="pass all following arguments without parsing",
                                      valueName=delimiter);
       var handler = new owned PassThrough(delimiter, argHelp);
-      _subcommands.append(delimiter);
+      _subcommands.pushBack(delimiter);
       _options.add(delimiter, delimiter);
       return _addHandler(handler);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _parsePositionals(arguments:[?argsD] string, endIdx:int) throws {
       var endPos = argsD.low;
       var idx = argsD.low;
       for handler in _positionals {
-        var arg = _result.getReference(handler._name);
+        var arg = _result[handler._name];
         endPos = handler._match(arguments, idx, arg, endIdx);
         idx = endPos;
         if idx == endIdx then break;
@@ -1625,11 +1634,11 @@ module ArgumentParser {
 
     :arg arguments: The array of values passed from the command line to `main(args:[]string)`
 
-    :throws: If argumentParser initialized with exitOnError=false,
-             then an ArgumentError is raised if invalid or undefined command
-             line arguments found in `arguments`
+    :throws: `ArgumentError` if argumentParser is initialized with
+             `exitOnError=false`, and invalid or undefined command line
+             arguments are found in `arguments`.
     */
-    proc parseArgs(arguments:[?argsD] string) throws {
+    proc ref parseArgs(arguments:[?argsD] string) throws {
       // normal operation is to catch parsing error, write help message,
       // and exit. User may choose to handle errors themselves though.
       if _addHelp {
@@ -1654,8 +1663,8 @@ module ArgumentParser {
       }
     }
 
-    pragma "no doc"
-    proc _tryParseArgs(arguments:[?argsD] string) throws {
+    @chpldoc.nodoc
+    proc ref _tryParseArgs(arguments:[?argsD] string) throws {
       // TODO: Find out why the in intent is breaking here
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
       var k = 0;
@@ -1677,7 +1686,7 @@ module ArgumentParser {
           var elems = new list(arrElt.split("=", 1));
           // replace this opt=val with opt val
           var idx = argsList.find(arrElt);
-          argsList.pop(idx);
+          argsList.getAndRemove(idx);
           argsList.insert(idx, elems.toArray());
         }
       }
@@ -1687,8 +1696,8 @@ module ArgumentParser {
       for i in argsList.indices {
         const argElt = argsList[i];
         if _options.contains(argElt) {
-          var optName = _options.getValue(argElt);
-          var argRslt = _result.getValue(optName);
+          var optName = _options[argElt];
+          var argRslt = _result[optName];
           // create an entry for this index and the argument name
           optionIndices.add(i, optName);
           argRslt._present = true;
@@ -1728,9 +1737,9 @@ module ArgumentParser {
         var idx = arrayOptionIndices[i][0];
         var name = arrayOptionIndices[i][1];
         // get a ref to the argument
-        var arg = _result.getReference(name);
+        var arg = _result[name];
         // get the argument handler to match
-        const handler = _handlers.getBorrowed(name);
+        const handler = _handlers[name].borrow();
         // try to match values in argstring, get the last value position
         var stopPos = argsList.size - 1;
         if arrayOptionIndices.size > i + 1 {
@@ -1785,7 +1794,7 @@ module ArgumentParser {
       return _helpUsed;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _checkTrailingPositionals(remainingArgs:[?argsD]string, stopPos:int,
                                    argLen:int) throws {
       // check if unidentified value is a positional or an error
@@ -1799,25 +1808,25 @@ module ArgumentParser {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _assignDefaultsToMissingOpts() {
       // set any default values as needed
       for name in this._handlers.keys() {
-        const handler = this._handlers.getBorrowed(name);
-        const arg = this._result.getReference(name);
+        const handler = try! this._handlers[name].borrow();
+        const arg = try! this._result[name];
         if !arg._present && handler._hasDefault() {
-          arg._values.append(handler._getDefaultValue());
+          arg._values.pushBack(handler._getDefaultValue());
           arg._present = true;
         }
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _checkSatisfiedOptions() throws {
       // make sure we satisfied options that require a value
       for name in this._handlers.keys() {
-        const handler = this._handlers.getBorrowed(name);
-        const arg = this._result.getReference(name);
+        const handler = this._handlers[name].borrow();
+        const arg = this._result[name];
         var rtnMsg = handler._validate(arg._present, arg._values.size);
         if rtnMsg != "" {
           throw new ArgumentError(handler._name + " " + rtnMsg);
@@ -1825,8 +1834,8 @@ module ArgumentParser {
       }
     }
 
-    pragma "no doc"
-    proc _checkAndSaveOpts(opts:[?optsD], name:string) throws {
+    @chpldoc.nodoc
+    proc ref _checkAndSaveOpts(opts:[?optsD], name:string) throws {
       // validate supplied opt vals have valid prefix and don't conflict
       // then collect them
       for i in optsD {
@@ -1844,8 +1853,8 @@ module ArgumentParser {
       }
     }
 
-    pragma "no doc"
-    proc _addHandler(in handler : ArgumentHandler) throws {
+    @chpldoc.nodoc
+    proc ref _addHandler(in handler : ArgumentHandler) throws {
 
       // ensure option names are unique
       if _handlers.contains(handler._name) {
@@ -1863,8 +1872,8 @@ module ArgumentParser {
     }
 
     // remove a handler for an option or flag
-    pragma "no doc"
-    proc _removeHandler(name:string, opts:[?optsD]string) {
+    @chpldoc.nodoc
+    proc ref _removeHandler(name:string, opts:[?optsD]string) {
       if _result.remove(name) {
         _handlers.remove(name);
         for opt in opts do _options.remove(opt);
@@ -1873,7 +1882,7 @@ module ArgumentParser {
   }
 
   // A generic argument parser error
-  pragma "no doc"
+  @chpldoc.nodoc
   class ArgumentError : Error {
     proc init(msg:string) {
       super.init(msg);
@@ -1887,16 +1896,16 @@ module ArgumentParser {
   class Argument {
 
     //indicates if an argument was entered on the command line
-    pragma "no doc"
+    @chpldoc.nodoc
     var _present: bool=false;
     // hold the values of the argument from the command line
-    pragma "no doc"
+    @chpldoc.nodoc
     var _values: list(string);
 
     /*
     Return the single value collected from the command line, if any.
     If no value was collected, the program will halt as result of
-    calling ``list.first()`` on an empty list.
+    calling ``list.first`` on an empty list.
 
     .. warning::
       This can only be called safely if you are sure a value was collected,
@@ -1916,7 +1925,7 @@ module ArgumentParser {
 
     */
     proc value() : string {
-      return this._values.first();
+      return this._values.first;
     }
 
     /*
@@ -1967,12 +1976,12 @@ module ArgumentParser {
 
       if !this.hasValue() {
         throw new ArgumentError("No value in this argument to convert");
-      } else if _convertStringToBool(this._values.first(), rtn) {
+      } else if _convertStringToBool(this._values.first, rtn) {
         return rtn;
       }
       else {
         throw new ArgumentError("Boolean requested but could not convert " +
-                                this._values.first():string + " to bool");
+                                this._values.first:string + " to bool");
       }
     }
   }
@@ -1986,7 +1995,7 @@ module ArgumentParser {
   */
   class HelpHandler {
     // the help message to display on ./progName --help
-    pragma "no doc"
+    @chpldoc.nodoc
     var _helpMessage:string;
 
     /*
@@ -2000,7 +2009,7 @@ module ArgumentParser {
 
 
   // helper to prepare numArgs ranges for use
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _prepareRange(rIn: range(?)) : range throws {
     var nArgs:range;
     if rIn.hasLowBound() && !rIn.hasHighBound() {
@@ -2014,7 +2023,7 @@ module ArgumentParser {
   }
 
   // helper to convert string values to booleans
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _convertStringToBool(strVal:string, inout boolVal:bool) : bool {
     var strippedVal = strVal.strip(" ").toLower();
 
@@ -2035,18 +2044,18 @@ module ArgumentParser {
   }
 
   // helper to provide a default value for opts, based on the name
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _processNameToOpts(name:string) : []string {
     var opts:list(string);
     if name.startsWith("-") {
-      opts.append(name);
+      opts.pushBack(name);
     } else {
-      opts.append("--" + name);
+      opts.pushBack("--" + name);
     }
     return opts.toArray();
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc debugTrace(msg:string) {
     if DEBUG then try! {stderr.writeln(msg);}
   }

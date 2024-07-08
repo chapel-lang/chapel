@@ -11,10 +11,12 @@
 
 #include "AMDGPU.h"
 #include "Cuda.h"
-#include "clang/Basic/DebugInfoOptions.h"
+#include "LazyDetector.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Tool.h"
 #include "clang/Driver/ToolChain.h"
+#include "llvm/Frontend/Debug/Options.h"
+#include "llvm/WindowsDriver/MSVCPaths.h"
 
 namespace clang {
 namespace driver {
@@ -22,7 +24,7 @@ namespace tools {
 
 /// Visual studio tools.
 namespace visualstudio {
-class LLVM_LIBRARY_VISIBILITY Linker : public Tool {
+class LLVM_LIBRARY_VISIBILITY Linker final : public Tool {
 public:
   Linker(const ToolChain &TC) : Tool("visualstudio::Linker", "linker", TC) {}
 
@@ -49,8 +51,8 @@ public:
   TranslateArgs(const llvm::opt::DerivedArgList &Args, StringRef BoundArch,
                 Action::OffloadKind DeviceOffloadKind) const override;
 
-  bool IsIntegratedAssemblerDefault() const override;
-  bool IsUnwindTablesDefault(const llvm::opt::ArgList &Args) const override;
+  UnwindTableLevel
+  getDefaultUnwindTableLevel(const llvm::opt::ArgList &Args) const override;
   bool isPICDefault() const override;
   bool isPIEDefault(const llvm::opt::ArgList &Args) const override;
   bool isPICDefaultForced() const override;
@@ -58,9 +60,10 @@ public:
   /// Set CodeView as the default debug info format for non-MachO binary
   /// formats, and to DWARF otherwise. Users can use -gcodeview and -gdwarf to
   /// override the default.
-  codegenoptions::DebugInfoFormat getDefaultDebugFormat() const override {
-    return getTriple().isOSBinFormatMachO() ? codegenoptions::DIF_DWARF
-                                            : codegenoptions::DIF_CodeView;
+  llvm::codegenoptions::DebugInfoFormat getDefaultDebugFormat() const override {
+    return getTriple().isOSBinFormatMachO()
+               ? llvm::codegenoptions::DIF_DWARF
+               : llvm::codegenoptions::DIF_CodeView;
   }
 
   /// Set the debugger tuning to "default", since we're definitely not tuning
@@ -73,28 +76,14 @@ public:
     return 4;
   }
 
-  enum class SubDirectoryType {
-    Bin,
-    Include,
-    Lib,
-  };
-  std::string getSubDirectoryPath(SubDirectoryType Type,
-                                  llvm::StringRef SubdirParent,
+  std::string getSubDirectoryPath(llvm::SubDirectoryType Type,
+                                  llvm::StringRef SubdirParent = "") const;
+  std::string getSubDirectoryPath(llvm::SubDirectoryType Type,
                                   llvm::Triple::ArchType TargetArch) const;
 
-  // Convenience overload.
-  // Uses the current target arch.
-  std::string getSubDirectoryPath(SubDirectoryType Type,
-                                  llvm::StringRef SubdirParent = "") const {
-    return getSubDirectoryPath(Type, SubdirParent, getArch());
+  bool getIsVS2017OrNewer() const {
+    return VSLayout == llvm::ToolsetLayout::VS2017OrNewer;
   }
-
-  enum class ToolsetLayout {
-    OlderVS,
-    VS2017OrNewer,
-    DevDivInternal,
-  };
-  bool getIsVS2017OrNewer() const { return VSLayout == ToolsetLayout::VS2017OrNewer; }
 
   void
   AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
@@ -108,6 +97,9 @@ public:
 
   void AddHIPIncludeArgs(const llvm::opt::ArgList &DriverArgs,
                          llvm::opt::ArgStringList &CC1Args) const override;
+
+  void AddHIPRuntimeLibArgs(const llvm::opt::ArgList &Args,
+                            llvm::opt::ArgStringList &CmdArgs) const override;
 
   bool getWindowsSDKLibraryPath(
       const llvm::opt::ArgList &Args, std::string &path) const;
@@ -142,10 +134,11 @@ protected:
   Tool *buildLinker() const override;
   Tool *buildAssembler() const override;
 private:
+  std::optional<llvm::StringRef> WinSdkDir, WinSdkVersion, WinSysRoot;
   std::string VCToolChainPath;
-  ToolsetLayout VSLayout = ToolsetLayout::OlderVS;
-  CudaInstallationDetector CudaInstallation;
-  RocmInstallationDetector RocmInstallation;
+  llvm::ToolsetLayout VSLayout = llvm::ToolsetLayout::OlderVS;
+  LazyDetector<CudaInstallationDetector> CudaInstallation;
+  LazyDetector<RocmInstallationDetector> RocmInstallation;
 };
 
 } // end namespace toolchains

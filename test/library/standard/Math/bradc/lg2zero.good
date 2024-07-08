@@ -1,1 +1,1 @@
-lg2zero.chpl:1: error: halt reached - Can't take the log() of a non-positive integer
+lg2zero.chpl:2: error: halt reached - Can't take the log() of a non-positive integer

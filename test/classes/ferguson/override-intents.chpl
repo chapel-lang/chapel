@@ -150,8 +150,8 @@ class Child : Parent {
 }
 
 proc main() {
-  var x:borrowed Parent = new borrowed Child();
-
+  var child = new Child();
+  var x:borrowed Parent = child.borrow();
   var s = "hi"*2;
 
   x.in_in(s);

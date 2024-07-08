@@ -14,15 +14,15 @@ module cholesky_test {
 
   proc main {
 
-    var Rand = new owned RandomStream ( real, seed = 314159) ;
+    var Rand = new randomStream ( real, seed = 314159 ) ;
 
     const MatIdx = { index_base .. #n, index_base .. #n };
 
-    const mat_dom : domain (2) dmapped Cyclic ( startIdx = MatIdx.low )
-      = MatIdx; 
+    const mat_dom : domain (2) dmapped new cyclicDist ( startIdx = MatIdx.low )
+      = MatIdx;
 
-    //  const mat_dom : domain (2) dmapped Block ( boundingBox = MatIdx )
-    //    = MatIdx; 
+    //  const mat_dom : domain (2) dmapped new blockDist ( boundingBox = MatIdx )
+    //    = MatIdx;
 
     var A : [mat_dom] real,
         B : [mat_dom] real,
@@ -39,18 +39,18 @@ module cholesky_test {
     // create a test problem, starting with a random general matrix B.
     // ---------------------------------------------------------------
 
-    Rand.fillRandom (B);
+    Rand.fill (B);
 
     // -------------------------------------------------------------
     // create a positive definite matrix A by setting A equal to the
-    // matrix-matrix product B B^T.  This normal equations matrix is 
+    // matrix-matrix product B B^T.  This normal equations matrix is
     // positive-definite as long as B is full rank.
     // -------------------------------------------------------------
 
     A = 0.0;
 
-    forall (i,j) in mat_dom do
-      A (i,j) = + reduce (  [k in mat_dom.dim (0) ] 
+    forall (i,j) in mat_dom with (ref A) do
+      A (i,j) = + reduce (  [k in mat_dom.dim (0) ]
     			    B (i, k) * B (j, k) );
 
     // factorization algorithms overwrite a copy of A, leaving
@@ -68,21 +68,21 @@ module cholesky_test {
       writeln ("factorization failed for non-positive semi-definite matrix");
   }
 
-  proc scalar_outer_product_cholesky ( A : [] )
+  proc scalar_outer_product_cholesky ( ref A : [] )
 
-    where ( A.domain.rank == 2 ) 
+    where ( A.domain.rank == 2 )
 
   {
     // -----------------------------------------------------------------------
-    // the input argument is a square symmetric matrix, whose entries will be 
-    // overwritten by the entries of the Cholesky factor.  Only the entries in 
+    // the input argument is a square symmetric matrix, whose entries will be
+    // overwritten by the entries of the Cholesky factor.  Only the entries in
     // the lower triangule are referenced and modified.
     // The procedure additionally returns a success / failure flag, which is
     //   true if the matrix is numerically positive definite
     //   false if the matrix is not positive definite
-    // Note that while a factorization is computable for positive 
+    // Note that while a factorization is computable for positive
     // semi-definite matrices, we do not compute it because this factorization
-    // is designed for use in a context of solving a system of linear 
+    // is designed for use in a context of solving a system of linear
     // equations.
     // -----------------------------------------------------------------------
 
@@ -129,9 +129,9 @@ module cholesky_test {
 
     assert ( A.domain.dim (0) == A.domain.dim (1)  &&
 	     L.domain.dim (0) == A.domain.dim (0)  &&
-	     L.domain.dim (1) == A.domain.dim (1) 
+	     L.domain.dim (1) == A.domain.dim (1)
 	     );
-    
+
     const mat_dom  = A.domain,
 	  mat_rows = A.domain.dim(0),
 	  n        = A.domain.dim(0).size;
@@ -145,10 +145,10 @@ module cholesky_test {
 
     for i in mat_rows do
       d (i) = sqrt ( A (i,i) );
-    
+
     forall (i,j) in mat_dom with (ref max_ratio) do {  // race
       const resid : real =
-               abs (A (i,j) - 
+               abs (A (i,j) -
 		    + reduce ( [k in mat_dom.dim(0) (..min (i,j))]
 			       L (i,k) * L (j,k) ) ) ;
       max_ratio = max ( max_ratio,
@@ -162,4 +162,3 @@ module cholesky_test {
       writeln ("factorization error exceeds bound by ratio:", max_ratio);
   }
 }
-    

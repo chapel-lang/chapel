@@ -1,5 +1,5 @@
 class C {
-  proc foo(i : int, j : int)
+  proc foo(i : int, j : int) do
     return i**2 + j**2;
 }
 

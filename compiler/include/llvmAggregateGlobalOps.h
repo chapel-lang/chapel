@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,9 +25,51 @@
 
 #include "llvmUtil.h"
 
+#include "llvm/IR/PassManager.h"
 #include "llvm/Pass.h"
 
-llvm::FunctionPass *createAggregateGlobalOpsOptPass(unsigned globalSpace);
+// the core implementation pass
+struct AggregateGlobalOpsOpt final {
+  const llvm::DataLayout *DL = nullptr;
+  unsigned globalSpace = 100;
+
+  AggregateGlobalOpsOpt();
+  explicit AggregateGlobalOpsOpt(unsigned _globalSpace);
+
+  bool run(llvm::Function& F);
+  llvm::Instruction* tryAggregating(llvm::Instruction *I,
+                                    llvm::Value* StartPtr,
+                                    bool DebugThis);
+};
+
+// old pass manager version
+struct LegacyAggregateGlobalOpsOptPass final : public llvm::FunctionPass {
+  static char ID; // Pass identification, replacement for typeid
+  AggregateGlobalOpsOpt pass;
+
+  LegacyAggregateGlobalOpsOptPass() : llvm::FunctionPass(ID) { }
+  explicit LegacyAggregateGlobalOpsOptPass(unsigned globalSpace)
+    : llvm::FunctionPass(ID), pass(globalSpace) { }
+
+  bool runOnFunction(llvm::Function &F) override;
+  void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
+};
+
+// new pass manager version
+struct AggregateGlobalOpsOptPass final
+  : public llvm::PassInfoMixin<AggregateGlobalOpsOptPass> {
+
+  AggregateGlobalOpsOpt pass;
+
+  AggregateGlobalOpsOptPass() { }
+  explicit AggregateGlobalOpsOptPass(unsigned globalSpace)
+    : pass(globalSpace) { }
+
+  llvm::PreservedAnalyses run(llvm::Function &F,
+                              llvm::FunctionAnalysisManager &AM);
+};
+
+llvm::FunctionPass *createLegacyAggregateGlobalOpsOptPass(unsigned globalSpace);
 
 #endif
 

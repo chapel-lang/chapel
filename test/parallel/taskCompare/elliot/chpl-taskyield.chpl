@@ -13,7 +13,7 @@ proc main() {
 }
 
 proc taskYield(oversub) {
-  var t: Timer;
+  var t: stopwatch;
 
   t.start();
   var total: atomic int;
@@ -21,7 +21,7 @@ proc taskYield(oversub) {
     var i: int;
     for 1..numTrials {
       i += 1;
-      chpl_task_yield();
+      currentTask.yieldExecution();
     }
     total.add(i);
   }

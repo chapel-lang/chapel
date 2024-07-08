@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,7 @@
 
 #include "astutil.h"
 #include "AstVisitor.h"
+#include "DecoratedClassType.h"
 #include "passes.h"
 #include "stringutil.h"
 #include "wellknown.h"
@@ -247,9 +248,10 @@ void CallExpr::verify() {
   } else if (CallExpr* subCall = toCallExpr(baseExpr)) {
     // Confirm that this is a partial call, but only if the call is not
     // within a DefExpr (indicated by not having a stmt-expr)
-    if (!partOfNonNormalizableExpr(this))
-      if (normalized && subCall->getStmtExpr() != NULL)
-        INT_ASSERT(subCall->partialTag == true);
+    if (normalized && subCall->getStmtExpr() != NULL)
+      INT_ASSERT(subCall->partialTag == true
+                 // non-normalizable expressions are also exempt
+                 || partOfNonNormalizableExpr(this));
   }
 
   verifyNotOnList(baseExpr);
@@ -476,14 +478,20 @@ QualifiedType CallExpr::qualType(void) {
     // Handle type constructor calls
     Type* retType = dtUnknown;
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-      AggregateType* at = toAggregateType(se->typeInfo());
-      if (at && at->isGeneric() == false) {
-        retType = at;
+      Type* t = se->typeInfo();
+      if (auto at = toAggregateType(t)) {
+        if (!at->isGeneric()) retType = at;
+      } else if (auto dct = toDecoratedClassType(t)) {
+        if (!dct->getCanonicalClass()->isGeneric()) retType = dct;
       } else if (isPrimitiveType(se->typeInfo()) && numActuals() == 0) {
         // (call uint(64) 8) represents 'uint(8)', so we don't want to return
         // a ``uint(64)`` unless there are zero arguments
         retType = se->typeInfo();
       }
+    }
+
+    if (auto fnType = toFunctionType(se->symbol()->type)) {
+      retType = fnType->returnType();
     }
 
     retval = QualifiedType(QUAL_UNKNOWN, retType);

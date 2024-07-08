@@ -1,10 +1,10 @@
-// Check that numFields et al. handles a variety of aggregate types.
+// Check that getNumFields et al. handles a variety of aggregate types.
 // See also: test/param/ferguson/field*
 use Reflection;
 
 proc test(type tp) {
   compilerWarning("===== ", tp:string);
-  compilerWarning("  numFields       ", numFields(tp)            :string);
+  compilerWarning("  getNumFields    ", getNumFields(tp)         :string);
   compilerWarning("  getFieldName    ", getFieldName(tp, 5)             );
   compilerWarning("  hasField        ", hasField(tp, "f6")       :string);
   compilerWarning("  getFieldIndex   ", getFieldIndex(tp, "f6")  :string);
@@ -32,15 +32,15 @@ class CGen {
   var f1, f2, f3, f4, f5, f6;
 }
 
-test(CGen);
-test(CGen: owned class);
-test(CGen: owned class?);
-test(CGen: shared class);
-test(CGen: shared class?);
-test(CGen: borrowed class);
-test(CGen: borrowed class?);
-test(CGen: unmanaged class);
-test(CGen: unmanaged class?);
+test(CGen(?));
+test(CGen(?): owned class);
+test(CGen(?): owned class?);
+test(CGen(?): shared class);
+test(CGen(?): shared class?);
+test(CGen(?): borrowed class);
+test(CGen(?): borrowed class?);
+test(CGen(?): unmanaged class);
+test(CGen(?): unmanaged class?);
 
 
 record RCon {
@@ -54,7 +54,7 @@ record RGen {
   var f1, f2, f3, f4, f5, f6;
 }
 
-test(RGen);
+test(RGen(?));
 
 
 union UCon {
@@ -68,7 +68,7 @@ union UGen {
   var f1, f2, f3, f4, f5, f6;
 }
 
-test(UGen);
+test(UGen(?));
 
 
 compilerError("=== done ===");

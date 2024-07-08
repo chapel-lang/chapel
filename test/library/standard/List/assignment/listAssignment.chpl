@@ -6,7 +6,7 @@ param listLock = true;
 var lst1: list(listType, listLock);
 
 for i in 1..8 do
-  lst1.append(i);
+  lst1.pushBack(i);
 
 var lst2: list(listType, listLock);
 
@@ -27,4 +27,3 @@ lst2 = lst1;
 
 writeln(lst1);
 writeln(lst2);
-

@@ -1,2 +1,4 @@
-error: a program with multiple user modules requires a main function
-note: alternatively, specify a main module with --main-module
+<command line>: error: unknown main module due to multiple command line modules
+<command line>: note: add a 'proc main' or use '--main-module'
+multiple_modules_no_main1.chpl:1: note: 'module M1' could be the main module
+multiple_modules_no_main1.chpl:5: note: 'module M2' could be the main module

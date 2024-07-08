@@ -1,4 +1,4 @@
-proc foo(A: [2..4, 2..4] int) {
+proc foo(ref A: [2..4, 2..4] int) {
   for ie in zip(A.domain,A) do
     writeln(ie);
 }

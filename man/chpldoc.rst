@@ -24,15 +24,21 @@ reStructuredText as an intermediate format.
 
 *Documentation Options*
 
+.. _man-output-dir:
+
 **-o, \--output-dir <dirname>**
 
     Specify the *directory* name into which documentation should be saved
     (defaults to 'docs' if unspecified).
 
+.. _man-author:
+
 **\--author <**\ *authortext*\ **>**
 
     Documentation author string. *authortext* becomes the copyright and
     author in the output documentation.
+
+.. _man-comment-style:
 
 **\--comment-style <string>**
 
@@ -40,41 +46,72 @@ reStructuredText as an intermediate format.
     documentation comment from a normal one (defaults to '/\*' if
     unspecified).
 
+.. _man-process-used-modules:
+
 **\--process-used-modules**
 
     By default, **chpldoc** only generates documentation for the source
     **file**\ (s) named on the command-line. When this flag is thrown,
     modules that it 'use's are also parsed and processed.
 
+.. _man-save-sphinx:
+
 **\--save-sphinx <**\ *directory*\ **>**
 
     Save generated Sphinx project in *directory*.
+
+.. _man-text-only:
 
 **\--text-only**
 
     Generate text-based documentation instead of HTML. Takes precedence over
     \--[no-]html
 
+.. _man-html:
+
 **\--[no-]html**
 
     [Don't] generate HTML-based documentation (on by default)
+
+.. _man-project-version:
 
 **\--project-version <**\ *projectversion*\ **>**
 
     Sets the documentation version to *projectversion*
     (documentation version defaults to '0.0.1' if unspecified).
 
+.. _man-print-commands:
+
 **\--[no-]print-commands**
 
     Prints the system commands that **chpldoc** executes in order to create
     the documentation.
 
+.. _man-warn-unknown-attribute-toolname:
+
+**\--[no-]warn-unknown-attribute-toolname**
+
+    [Don't] warn about attribute tool names that aren't recognized. Without this
+    warning, attributes belonging to unknown tools will be silently ignored.
+
+.. _man-using-attribute-toolname:
+
+**\--using-attribute-toolname <**\ *toolname*\ **>**
+
+    Provide a tool name whose use in an attribute will not trigger an
+    "unknown tool name" warning. To provide multiple tool names, use one
+    **\--using-attribute-toolname** flag per name.
+
 *Information Options*
+
+.. _man-help:
 
 **-h, \--help**
 
     Print a list of the command line options, indicating the arguments that
     they expect and a brief summary of their purpose.
+
+.. _man-help-env:
 
 **\--help-env**
 
@@ -82,23 +119,25 @@ reStructuredText as an intermediate format.
     variable equivalent for each flag, if applicable (see ENVIRONMENT), and
     its current value.
 
+.. _man-help-settings:
+
 **\--help-settings**
 
     Print the command line option help message, listing the current setting
     of each option as specified by environment variables and other flags on
     the command line.
 
+.. _man-version:
+
 **\--version**
 
     Print **chpldoc**\ 's version number.
 
+.. _man-copyright:
+
 **\--copyright**
 
     Print **chpldoc**\ 's copyright information.
-
-**\--license**
-
-    Print **chpldoc**\ 's license information.
 
 ENVIRONMENT
 -----------
@@ -147,5 +186,5 @@ See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 COPYRIGHT
 ---------
 
-| Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+| Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 | Copyright 2004-2019 Cray Inc.

@@ -1,0 +1,1 @@
+notGenericQ-var.chpl:4: error: the variable x is marked generic with (?) but the type 'R' is not generic

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -73,7 +73,7 @@ explainInstantiation(FnSymbol* fn) {
   SymbolMapVector elts = sortedSymbolMapElts(fn->substitutions);
 
   char msg[1024] = "";
-  int len = sprintf(msg, "instantiated %s(", fn->name);
+  int len = snprintf(msg, sizeof(msg), "instantiated %s(", fn->name);
   bool first = true;
   for_formals(formal, fn) {
     for (auto elem: elts) {
@@ -83,28 +83,28 @@ explainInstantiation(FnSymbol* fn) {
         if (first)
           first = false;
         else
-          len += sprintf(msg+len, ", ");
+          len += snprintf(msg+len, sizeof(msg)-len, ", ");
         INT_ASSERT(arg);
         if (strcmp(fn->name, tupleInitName))
-          len += sprintf(msg+len, "%s = ", arg->name);
+          len += snprintf(msg+len, sizeof(msg)-len, "%s = ", arg->name);
         if (VarSymbol* vs = toVarSymbol(elem.value)) {
           if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
-            len += sprintf(msg+len, "%" PRId64, vs->immediate->int_value());
+            len += snprintf(msg+len, sizeof(msg)-len, "%" PRId64, vs->immediate->int_value());
           else if (vs->immediate && vs->immediate->const_kind == CONST_KIND_STRING)
-            len += sprintf(msg+len, "\"%s\"", vs->immediate->v_string.c_str());
+            len += snprintf(msg+len, sizeof(msg)-len, "\"%s\"", vs->immediate->v_string.c_str());
           else
-            len += sprintf(msg+len, "%s", vs->name);
+            len += snprintf(msg+len, sizeof(msg)-len, "%s", vs->name);
         }
         else if (Symbol* s = toSymbol(elem.value))
       // For a generic symbol, just print the name.
       // Additional clauses for specific symbol types should precede this one.
-          len += sprintf(msg+len, "%s", s->name);
+          len += snprintf(msg+len, sizeof(msg)-len, "%s", s->name);
         else
           INT_FATAL("unexpected case using --explain-instantiation");
       }
     }
   }
-  sprintf(msg+len, ")");
+  snprintf(msg+len, sizeof(msg)-len, ")");
   if (callStack.n) {
     USR_PRINT(callStack.v[callStack.n-1], "%s", msg);
   } else {
@@ -337,6 +337,74 @@ void instantiateBody(FnSymbol* fn) {
   }
 }
 
+static std::vector<Symbol*>
+collectDetupledFormalComponentsUsedInWhere(FnSymbol* fn) {
+  std::vector<Symbol*> ret;
+  for_formals(formal, fn) {
+    auto components = findAllDetupledComponents(formal);
+    if (components.empty()) continue;
+    for (auto component : components) {
+      for_SymbolSymExprs(se, component) {
+        for (Expr* up = se; up; up = up->parentExpr) {
+          if (up == fn->where) ret.push_back(component);
+          if (up == fn->body) continue;
+        }
+      }
+    }
+  }
+  return ret;
+}
+
+static void
+partiallyResolveDetupledFormalComponentsUsedInWhere(FnSymbol* fn) {
+  auto components = collectDetupledFormalComponentsUsedInWhere(fn);
+  if (components.empty()) return;
+
+  // Resolve the component types so the 'where' can be evaluated.
+  for (auto component : components) {
+
+    // Walk uses of the component to find the originating call-temp.
+    Symbol* callTempForIndexIntoTuple = nullptr;
+    for_SymbolSymExprs(se, component) {
+      auto initVar = toCallExpr(se->parentExpr);
+      if (initVar && initVar->isPrimitive(PRIM_INIT_VAR) &&
+          initVar->get(1) == se) {
+        INT_ASSERT(initVar->numActuals() == 2);
+        auto seCallTemp = toSymExpr(initVar->get(2));
+        if (seCallTemp) {
+          callTempForIndexIntoTuple = seCallTemp->symbol();
+          break;
+        }
+      }
+    }
+
+    // The call-temp should always exist.
+    INT_ASSERT(callTempForIndexIntoTuple);
+    INT_ASSERT(callTempForIndexIntoTuple->hasFlag(FLAG_TEMP));
+
+    // Resolve all mentions of the call-temp.
+    int numSymExprs = 0;
+    for_SymbolSymExprs(se, callTempForIndexIntoTuple) {
+      for_exprs_postorder(e, se->parentExpr) resolveExpr(e);
+      resolveExpr(se->parentExpr);
+      numSymExprs++;
+    }
+
+    // (There should only ever be two uses.)
+    INT_ASSERT(numSymExprs == 2);
+  }
+}
+
+static void finalizeIfAnyDetupledFormalIsUsedInWhere(FnSymbol* fn) {
+  auto pcd = getPartialCopyData(fn);
+  auto root = pcd ? pcd->partialCopySource : nullptr;
+
+  if (!pcd || !root || !root->where) return;
+  if (collectDetupledFormalComponentsUsedInWhere(root).empty()) return;
+
+  fn->finalizeCopy();
+}
+
 /** Instantiate enough of the function for it to make it through the candidate
  *  filtering and disambiguation process.
  *
@@ -458,6 +526,8 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       // Resolve formal type-exprs before checking if formals are generic
       resolveSignature(newFn);
       newFn->tagIfGeneric(&subs);
+
+      finalizeIfAnyDetupledFormalIsUsedInWhere(newFn);
 
       explainAndCheckInstantiation(newFn, fn);
 
@@ -801,6 +871,8 @@ bool evaluateWhereClause(FnSymbol* fn) {
     whereStack.add(fn);
 
     resolveSignature(fn);
+
+    partiallyResolveDetupledFormalComponentsUsedInWhere(fn);
 
     resolveBlockStmt(fn->where);
 

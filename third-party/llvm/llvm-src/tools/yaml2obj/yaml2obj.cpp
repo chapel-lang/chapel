@@ -24,6 +24,7 @@
 #include "llvm/Support/WithColor.h"
 #include "llvm/Support/YAMLTraits.h"
 #include "llvm/Support/raw_ostream.h"
+#include <optional>
 #include <system_error>
 
 using namespace llvm;
@@ -39,6 +40,9 @@ cl::list<std::string>
       cl::desc("Defined the specified macros to their specified "
                "definition. The syntax is <macro>=<definition>"),
       cl::cat(Cat));
+
+cl::opt<bool> PreprocessOnly("E", cl::desc("Just print the preprocessed file"),
+                             cl::cat(Cat));
 
 cl::opt<unsigned>
     DocNum("docnum", cl::init(1),
@@ -56,8 +60,8 @@ cl::opt<std::string> OutputFilename("o", cl::desc("Output filename"),
                                     cl::Prefix, cl::cat(Cat));
 } // namespace
 
-static Optional<std::string> preprocess(StringRef Buf,
-                                        yaml::ErrorHandler ErrHandler) {
+static std::optional<std::string> preprocess(StringRef Buf,
+                                             yaml::ErrorHandler ErrHandler) {
   DenseMap<StringRef, StringRef> Defines;
   for (StringRef Define : D) {
     StringRef Macro, Definition;
@@ -74,9 +78,9 @@ static Optional<std::string> preprocess(StringRef Buf,
 
   std::string Preprocessed;
   while (!Buf.empty()) {
-    if (Buf.startswith("[[")) {
+    if (Buf.starts_with("[[")) {
       size_t I = Buf.find_first_of("[]", 2);
-      if (Buf.substr(I).startswith("]]")) {
+      if (Buf.substr(I).starts_with("]]")) {
         StringRef MacroExpr = Buf.substr(2, I - 2);
         StringRef Macro;
         StringRef Default;
@@ -85,10 +89,10 @@ static Optional<std::string> preprocess(StringRef Buf,
         // When the -D option is requested, we use the provided value.
         // Otherwise we use a default macro value if present.
         auto It = Defines.find(Macro);
-        Optional<StringRef> Value;
+        std::optional<StringRef> Value;
         if (It != Defines.end())
           Value = It->second;
-        else if (!Default.empty() || MacroExpr.endswith("="))
+        else if (!Default.empty() || MacroExpr.ends_with("="))
           Value = Default;
 
         if (Value) {
@@ -130,14 +134,20 @@ int main(int argc, char **argv) {
   if (!Buf)
     return 1;
 
-  Optional<std::string> Buffer = preprocess(Buf.get()->getBuffer(), ErrHandler);
+  std::optional<std::string> Buffer =
+      preprocess(Buf.get()->getBuffer(), ErrHandler);
   if (!Buffer)
     return 1;
-  yaml::Input YIn(*Buffer);
 
-  if (!convertYAML(YIn, Out->os(), ErrHandler, DocNum,
-                   MaxSize == 0 ? UINT64_MAX : MaxSize))
-    return 1;
+  if (PreprocessOnly) {
+    Out->os() << Buffer;
+  } else {
+    yaml::Input YIn(*Buffer);
+
+    if (!convertYAML(YIn, Out->os(), ErrHandler, DocNum,
+                     MaxSize == 0 ? UINT64_MAX : MaxSize))
+      return 1;
+  }
 
   Out->keep();
   Out->os().flush();

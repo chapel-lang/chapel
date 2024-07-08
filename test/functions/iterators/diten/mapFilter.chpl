@@ -58,7 +58,7 @@ for i in udIter().map(imaginate) {
   writeln(i);
 }
 
-proc threevenPlusOne(x: int) return x%3 == 1;
+proc threevenPlusOne(x: int) do return x%3 == 1;
 
 writeln("chained on user-defined iterator");
 for i in udIter().filter(threevenPlusOne).map(imaginate) {

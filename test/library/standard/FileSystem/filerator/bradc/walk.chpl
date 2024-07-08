@@ -10,8 +10,8 @@ config const sort = true;
 config const defaults = false;
 
 if defaults then
-  for filename in walkdirs(sort=sort) do
+  for filename in walkDirs(sort=sort) do
     writeln(filename);
 else
-  for filename in walkdirs(startdir, topdown, depth, dotfiles, followlinks, sort=sort) do
+  for filename in walkDirs(startdir, topdown, depth, dotfiles, followlinks, sort=sort) do
     writeln(filename);

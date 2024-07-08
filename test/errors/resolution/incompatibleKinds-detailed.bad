@@ -1,0 +1,49 @@
+─── error in incompatibleKinds.chpl:3 [IncompatibleKinds] ───
+  A regular variable cannot be initialized with a type.
+  In the following initialization expression:
+      |
+    3 | var a = int;
+      |         ⎺⎺⎺
+      |
+  the initialization expression is the type 'int(64)'.
+
+─── error in incompatibleKinds.chpl:4 [IncompatibleKinds] ───
+  A type variable cannot be initialized with a regular value.
+  In the following initialization expression:
+      |
+    4 | type b = notAType;
+      |          ⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  the initialization expression is a value of type 'string'.
+  If you were trying to extract the type of the expression on the left of the '=', try using '.type'?
+
+─── error in incompatibleKinds.chpl:7 [IncompatibleKinds] ───
+  A 'param' cannot be initialized with a non-'param' value.
+  In the following initialization expression:
+      |
+    7 | param d = c;
+      |           ⎺
+      |
+  the initialization expression is a value of type 'int(64)'.
+  Note that 'param' values must be known at compile-time.
+
+─── error in incompatibleKinds.chpl:10 [IncompatibleKinds] ───
+  A regular variable cannot be initialized with a type.
+  In the following initialization expression:
+       |
+    10 | var e = MyRecord;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  the initialization expression is the type 'MyRecord'.
+  If you're trying to create a new value of type 'MyRecord', try writing 'new MyRecord()' instead
+
+─── error in incompatibleKinds.chpl:13 [IncompatibleKinds] ───
+  A regular variable cannot be initialized with a type.
+  In the following initialization expression:
+       |
+    13 | var f = aliasToRecord;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  the initialization expression is the type 'MyRecord'.
+  If you're trying to create a new value of type 'MyRecord', try using the 'new' keyword
+

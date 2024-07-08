@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,5 @@
 #define _TMPDIRNAME_H_
 
 extern const char* tmpdirname;
-extern const char* doctmpdirname;
 
 #endif

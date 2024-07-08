@@ -18,6 +18,6 @@ class D {
   }
 }
 
-var c = new owned C(1.5);
+var c = new owned C(2);
 
 var d = new owned D(1.5);

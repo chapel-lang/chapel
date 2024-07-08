@@ -1,7 +1,7 @@
 const D = {1..9, 1..9};
 var A: [D] real;
 
-forall (i,j) in D do
+forall (i,j) in D with (ref A) do
   A[i,j] = i + j/10.0;
 
 A.reindex(0..8, 2..10) = 0.0;
@@ -15,7 +15,7 @@ writeln(A, "\n");
 
 ref B = A.reindex(2..10, 0..8);
 
-forall (i,j) in B.domain do
+forall (i,j) in B.domain with (ref B) do
   B[i,j] = i + j/10.0;
 
 writeln(A, "\n");

@@ -4,13 +4,13 @@ use BlockDist;
 
 param dummy = 1;
 
-var dom = newBlockDom(0..10);
+var dom = blockDist.createDomain(0..10);
 var a: [dom] int;
 var b: [dom] int;
-var c = newBlockArr(0..10, int);
+var c = blockDist.createArray(0..10, int);
 
 writeln("Loop 1 -- expecting destination aggregation");
-forall i in a.domain {
+forall i in a.domain with (ref a) {
   a[10-i] = dummy;
 }
 writeln("End Loop 1");
@@ -19,7 +19,7 @@ writeln(a);
 writeln();
 
 writeln("Loop 2 -- expecting no aggregation");
-forall i in a.domain {
+forall i in a.domain with (ref a) {
   a[i] = dummy;
 }
 writeln("End Loop 2");
@@ -29,7 +29,7 @@ writeln();
 
 // index is comming from an aligned follower
 writeln("Loop 3 -- expecting no aggregation");
-forall (elem,i) in zip(a, a.domain) {
+forall (elem,i) in zip(a, a.domain) with (ref a) {
   elem = 5;
   a[i] = dummy;
 }
@@ -40,7 +40,7 @@ writeln();
 
 // index is comming from an aligned follower
 writeln("Loop 4 -- expecting no aggregation");
-forall (elem,i) in zip(b, a.domain) {
+forall (elem,i) in zip(b, a.domain) with (ref a) {
   elem = 5;
   a[i] = dummy;
 }

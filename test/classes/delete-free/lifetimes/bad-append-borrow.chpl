@@ -24,7 +24,7 @@ proc addone()
   // This should result in lifetime checking errror.
   //  * shared I destroyed at the end of this function
   //  * a borrow of it is saved in d.iLst.
-  d.iLst.append(new shared I(i.r));
+  d.iLst.pushBack(new shared I(i.r));
 }
 
 addone();

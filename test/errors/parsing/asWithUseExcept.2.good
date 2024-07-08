@@ -1,0 +1,8 @@
+─── error in asWithUseExcept.chpl:6 [AsWithUseExcept] ───
+  Cannot rename in 'except' list.
+  The renaming occurs because of the use of 'as' here:
+      |
+    6 |   use M except a as b;
+      |                ⎺⎺⎺⎺⎺⎺
+      |
+

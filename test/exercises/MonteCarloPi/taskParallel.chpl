@@ -9,7 +9,7 @@ writeln("Random number seed  = ", seed);
 writeln("Number of tasks     = ", tasks);
 
 //
-// Use a coforall to create the configured number of tasks.  Have each 
+// Use a coforall to create the configured number of tasks.  Have each
 // task construct a RandomStream object with the same seed, fast forward
 // to the task's unique point in the stream (in order to avoid using
 // the same random numbers redundantly while also getting the same
@@ -19,15 +19,15 @@ writeln("Number of tasks     = ", tasks);
 // task.
 //
 var counts: [0..#tasks] int;
-coforall tid in 0..#tasks {
-  var rs = new owned NPBRandomStream(real, seed, parSafe=false);
+coforall tid in 0..#tasks with (ref counts) {
+  var rs = new randomStream(real, seed);
   const nPerTask = n/tasks,
         extras = n%tasks;
-  rs.skipToNth(2*(tid*nPerTask + (if tid < extras then tid else extras)));
+  rs.skipTo(2*(tid*nPerTask + (if tid < extras then tid else extras)));
 
   var count = 0;
   for i in 1..nPerTask + (tid < extras) do
-    count += (rs.getNext()**2 + rs.getNext()**2) <= 1.0;
+    count += (rs.next()**2 + rs.next()**2) <= 1.0;
 
   counts[tid] = count;
 }

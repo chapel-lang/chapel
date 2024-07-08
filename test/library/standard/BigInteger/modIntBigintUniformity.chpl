@@ -76,7 +76,7 @@ record met_vs_met {
 
         const amb = mod(a, b);
         var amb_bi = new bigint();
-        amb_bi.mod(a_bi, b_bi);
+        mod(amb_bi, a_bi, b_bi);
 
         return (
             amb == amb_bi,
@@ -91,7 +91,7 @@ record met_vs_met_int {
         var a_bi = new bigint(a);
 
         const amb = mod(a, b);
-        const amb_bi = a_bi.mod(a_bi, b);
+        const amb_bi = mod(a_bi, a_bi, b);
 
         return (
             amb == amb_bi && amb == a_bi,
@@ -109,7 +109,7 @@ record met_vs_met_uint {
             var a_bi = new bigint(a);
 
             const amb = mod(a, b);
-            const amb_bi = a_bi.mod(a_bi, b:uint);
+            const amb_bi = mod(a_bi, a_bi, b:uint);
 
             return (
                 amb == amb_bi && amb == a_bi,

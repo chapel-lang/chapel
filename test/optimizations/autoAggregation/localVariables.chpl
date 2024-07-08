@@ -1,8 +1,8 @@
 use BlockDist;
 
-var a = newBlockArr(0..10, int);
+var a = blockDist.createArray(0..10, int);
 
-forall i in a.domain {
+forall i in a.domain with (ref a) {
   var d: 11*int;
   a[i] = d[10-i];
 }

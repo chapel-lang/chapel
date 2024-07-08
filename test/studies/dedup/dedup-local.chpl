@@ -14,19 +14,19 @@ proc main(args:[] string)
 
   for arg in args[1..] {
     if isFile(arg) then
-      paths.append(arg);
+      paths.pushBack(arg);
     else if isDir(arg) then
-      for path in findfiles(arg, recursive=true) do
-        paths.append(path);
+      for path in findFiles(arg, recursive=true) do
+        paths.pushBack(path);
   }
 
   // Create an array of hashes and file ids
   // a file id is just the index into the paths array.
   var hashAndFileId:[0..#paths.size] (Hash, int);
- 
+
   // Compute the SHA1 sums using the external program
   var pathsArray = paths.toArray();
-  forall (id,path) in zip(pathsArray.domain, pathsArray) {
+  forall (id,path) in zip(pathsArray.domain, pathsArray) with (ref hashAndFileId) {
     if verbose then
       writeln("Running sha1sum ", path);
     var sub = spawn(["sha1sum", path], stdout=pipeStyle.pipe);
@@ -75,18 +75,15 @@ proc stringToHash(s:string): Hash {
   //  * loop over characters in a string
   //  * equivalent of sscanf
   //  * readf for integers with a maximum field width
-  var f = openmem();
-  var w = f.writer();
+  var f = openMemFile();
+  var w = f.writer(locking=false);
   w.write(s[1..16], " ");
   w.write(s[17..32], " ");
   w.write(s[17..32]);
   w.close();
-  var r = f.reader();
+  var r = f.reader(locking=false);
   var hash:Hash;
   r.readf("%xu%xu%xu", hash(0), hash(1), hash(2));
   r.close();
   return hash;
 }
-
-
-

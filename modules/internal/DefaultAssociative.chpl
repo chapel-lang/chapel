@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,9 +34,19 @@ module DefaultAssociative {
 
   config param defaultAssociativeSupportsAutoLocalAccess = true;
 
+  private proc _usingSerializers(f) param : bool {
+    if f._writing then return f.serializerType != nothing;
+    else return f.deserializerType != nothing;
+  }
+
+  private proc _isDefaultDeser(f) param : bool {
+    if f._writing then return f.serializerType == IO.defaultSerializer;
+    else return f.deserializerType == IO.defaultDeserializer;
+  }
+
   // helps to move around array elements when rehashing the domain
   class DefaultAssociativeDomRehashHelper : chpl__rehashHelpers {
-    var dom: unmanaged DefaultAssociativeDom;
+    var dom: unmanaged DefaultAssociativeDom(?);
     override proc startRehash(newSize: int) {
       for arr in dom._arrs {
         arr._startRehash(newSize);
@@ -74,8 +84,8 @@ module DefaultAssociative {
       if parSafe then tableLock.unlock();
     }
 
-    override proc linksDistribution() param return false;
-    override proc dsiLinksDistribution() return false;
+    override proc linksDistribution() param do return false;
+    override proc dsiLinksDistribution() do return false;
 
     proc init(type idxType,
               param parSafe: bool,
@@ -84,11 +94,11 @@ module DefaultAssociative {
       this.parSafe = parSafe;
       this.dist = dist;
       this.table = new chpl__hashtable(idxType, nothing);
-      this.complete();
+      init this;
 
       // set the rehash helpers
       this.table.rehashHelpers =
-        new DefaultAssociativeDomRehashHelper(this:unmanaged class);
+        new DefaultAssociativeDomRehashHelper(this:unmanaged);
     }
     proc deinit() {
       // chpl__hashtable.deinit does all we need here
@@ -101,12 +111,32 @@ module DefaultAssociative {
       return new unmanaged DefaultAssociativeArr(eltType=eltType,
                                                  idxType=idxType,
                                                  parSafeDom=parSafe,
-                                                 dom=_to_unmanaged(this),
+                                                 dom=this:unmanaged,
                                                  initElts=initElts);
     }
 
+    proc dsiSerialWrite(f) throws where _usingSerializers(f) && !_isDefaultDeser(f) {
+      var ser = f.serializer.startList(f, dsiNumIndices);
+      for idx in this do
+        ser.writeElement(idx);
+      ser.endList();
+    }
+
+    proc dsiSerialRead(f) throws where _usingSerializers(f) && !_isDefaultDeser(f) {
+      dsiClear();
+      var des = f.deserializer.startList(f);
+      while true {
+        try {
+          dsiAdd(des.readElement(idxType));
+        } catch {
+          break;
+        }
+      }
+      des.endList();
+    }
+
     proc dsiSerialWrite(f) throws {
-      const binary = f.binary();
+      const binary = f._binary();
 
       if binary {
         f.write(dsiNumIndices);
@@ -115,19 +145,19 @@ module DefaultAssociative {
         }
       } else {
         var first = true;
-        f._writeLiteral("{");
+        f.writeLiteral("{");
         for idx in this {
           if first then
             first = false;
           else
-            f._writeLiteral(", ");
+            f.writeLiteral(", ");
           f.write(idx);
         }
-        f._writeLiteral("}");
+        f.writeLiteral("}");
       }
     }
     proc dsiSerialRead(f) throws {
-      const binary = f.binary();
+      const binary = f._binary();
 
       // Clear the domain so it only contains indices read in.
       dsiClear();
@@ -138,7 +168,7 @@ module DefaultAssociative {
           dsiAdd(f.read(idxType));
         }
       } else {
-        f._readLiteral("{");
+        f.readLiteral("{");
 
         var first = true;
 
@@ -146,14 +176,14 @@ module DefaultAssociative {
 
           // Try reading an end curly. If we get it, then break.
           try {
-            f._readLiteral("}");
+            f.readLiteral("}");
             break;
           } catch err: BadFormatError {
             // We didn't read an end brace, so continue on.
           }
 
           // Try reading a comma.
-          if !first then f._readLiteral(",", true);
+          if !first then f.readLiteral(",", true);
           first = false;
 
           // Read an index.
@@ -287,26 +317,15 @@ module DefaultAssociative {
     }
 
     // returns the number of indices added
+    // todo: when is it better to have a ref or const ref intent for 'idx'?
+    // Ideally, we would like to restrict `idx: idxType`. If we do, however,
+    // then the compiler will choose BaseAssociativeDom.dsiAdd(), undesirably,
+    // when the actual is not of idxType, however is coercible to it. Ex:
+    //   test/domains/sungeun/assoc/parSafeMember.chpl
     override proc dsiAdd(in idx) {
-      // add helpers will return a tuple like (slotNum, numIndicesAdded);
+      // domain.add(idx) ensures the following:
+      compilerAssert(isCoercible(idx.type, idxType));
 
-      // these two seemingly redundant lines were necessary to work around a
-      // compiler bug. I was unable to create a smaller case that has the same
-      // issue.
-      // More: `return _addWrapper(idx)[2]` Call to _addWrapper seems to
-      // have no effect when `idx` is a range and the line is promoted. My
-      // understanding of promotion makes me believe that things might go haywire
-      // since return type of the method becomes an array(?). However, it seemed
-      // that _addWrapper is never called when the return statement is promoted.
-      // I checked the C code and couldn't see any call to _addWrapper.
-      // I tried to replicate the issue with generic classes but it always
-      // worked smoothly.
-      const numInds = _addWrapper(idx)[1];
-      return numInds;
-    }
-
-    proc _addWrapper(in idx: idxType) {
-      var slotNum = -1;
       var retVal = 0;
 
       on this {
@@ -315,10 +334,11 @@ module DefaultAssociative {
           unlockTable();
         }
 
-        (slotNum, retVal) = _add(idx);
+        const (slotNum, addCount) = _add(idx);
+        retVal = addCount;
       }
 
-      return (slotNum, retVal);
+      return retVal;
     }
 
     proc _add(in idx: idxType) {
@@ -414,11 +434,11 @@ module DefaultAssociative {
       return chpl_getSingletonLocaleArray(this.locale);
     }
 
-    proc dsiHasSingleLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param do return true;
 
     proc dsiLocalSubdomain(loc: locale) {
       if this.locale == loc {
-        return _getDomain(_to_unmanaged(this));
+        return _getDomain(this:unmanaged);
       } else {
         var a: domain(idxType, parSafe=parSafe);
         return a;
@@ -430,7 +450,7 @@ module DefaultAssociative {
     }
   }
 
-  class DefaultAssociativeArr: AbsBaseArr {
+  class DefaultAssociativeArr: AbsBaseArr(?) {
     type idxType;
     param parSafeDom: bool;
     var dom: unmanaged DefaultAssociativeDom(idxType, parSafe=parSafeDom);
@@ -460,7 +480,7 @@ module DefaultAssociative {
       this.data = dom.table.allocateData(tableSize, eltType);
       this.tmpData = nil;
       this.eltsNeedDeinit = initElts;
-      this.complete();
+      init this;
 
       if initElts {
         if isNonNilableClass(this.eltType) {
@@ -496,8 +516,14 @@ module DefaultAssociative {
               }
             }
           }
+          when ArrayInit.gpuInit {
+            // may not be too difficult, not a priority at the moment
+            halt("Associative arrays cannot be initialized on GPU locales with",
+                 " CHPL_MEM_STRATEGY=array_on_device yet.");
+          }
           otherwise {
-            halt("ArrayInit.heuristicInit should have been made concrete");
+            halt("ArrayInit.", initMethod,
+                 " heuristicInit should have been implemented");
           }
         }
       }
@@ -514,7 +540,7 @@ module DefaultAssociative {
 
     proc rank param { return 1; }
 
-    override proc dsiGetBaseDom() return dom;
+    override proc dsiGetBaseDom() do return dom;
 
 
     // ref version
@@ -547,7 +573,6 @@ module DefaultAssociative {
         return data(slotNum);
       } else {
         halt("array index out of bounds: ", idx);
-        return data(0);
       }
     }
 
@@ -564,7 +589,6 @@ module DefaultAssociative {
         return data(slotNum);
       } else {
         halt("array index out of bounds: ", idx);
-        return data(0);
       }
     }
 
@@ -572,14 +596,14 @@ module DefaultAssociative {
       return dsiAccess(idx(0));
     }
 
-    inline proc dsiLocalAccess(i) ref
+    inline proc dsiLocalAccess(i) ref do
       return dsiAccess(i);
 
     inline proc dsiLocalAccess(i)
-    where shouldReturnRvalueByValue(eltType)
+    where shouldReturnRvalueByValue(eltType) do
       return dsiAccess(i);
 
-    inline proc dsiLocalAccess(i) const ref
+    inline proc dsiLocalAccess(i) const ref do
       return dsiAccess(i);
 
 
@@ -635,14 +659,68 @@ module DefaultAssociative {
       }
     }
 
+    proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
+    where _usingSerializers(f) && !_isDefaultDeser(f) {
+      if f._writing {
+        var ser = f.serializer.startMap(f, dom.dsiNumIndices);
+
+        for (key, val) in zip(this.dom, this) {
+          ser.writeKey(key);
+          ser.writeValue(val);
+        }
+
+        ser.endMap();
+      } else {
+        var des = f.deserializer.startMap(f);
+
+        for 0..<dom.dsiNumIndices {
+          const k = des.readKey(idxType);
+
+          if !dom.dsiMember(k) {
+            // TODO: throw error
+          } else {
+            dsiAccess(k) = des.readValue(eltType);
+          }
+        }
+
+        des.endMap();
+      }
+    }
+
+    proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
+    where _isDefaultDeser(f) {
+      if f._writing {
+        const size = dom.dsiNumIndices:int;
+        var ser = f.serializer.startArray(f, size);
+        ser.startDim(size);
+
+        for (key, val) in zip(this.dom, this) {
+          ser.writeElement(val);
+        }
+
+        ser.endDim();
+        ser.endArray();
+      } else {
+        var des = f.deserializer.startArray(f);
+        des.startDim();
+
+        for (key, val) in zip(this.dom, this) {
+          val = des.readElement(val.type);
+        }
+
+        des.endDim();
+        des.endArray();
+      }
+    }
+
     proc dsiSerialReadWrite(f /*: channel*/, in printBraces=true, inout first = true) throws {
-      var binary = f.binary();
+      var binary = f._binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
       var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
       var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
 
-      if !f.writing && ischpl {
+      if !f._writing && ischpl {
         this.readChapelStyleAssocArray(f);
         return;
       }
@@ -650,7 +728,7 @@ module DefaultAssociative {
       printBraces &&= (isjson || ischpl);
 
       inline proc rwLiteral(lit:string) throws {
-        if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+        if f._writing then f.writeLiteral(lit); else f.readLiteral(lit);
       }
 
       if printBraces then rwLiteral("[");
@@ -660,12 +738,12 @@ module DefaultAssociative {
         else if isspace then rwLiteral(" ");
         else if isjson || ischpl then rwLiteral(", ");
 
-        if f.writing && ischpl {
+        if f._writing && ischpl {
           f.write(key);
-          f._writeLiteral(" => ");
+          f.writeLiteral(" => ");
         }
 
-        if f.writing then f.write(val);
+        if f._writing then f.write(val);
         else val = f.read(eltType);
       }
 
@@ -678,7 +756,7 @@ module DefaultAssociative {
       var first = true;
       var readEnd = true;
 
-      f._readLiteral(openBracket);
+      f.readLiteral(openBracket);
 
       while true {
         if first {
@@ -686,7 +764,7 @@ module DefaultAssociative {
 
           // Break if we read an immediate closed bracket.
           try {
-            f._readLiteral(closedBracket);
+            f.readLiteral(closedBracket);
             readEnd = false;
             break;
           } catch err: BadFormatError {
@@ -696,7 +774,7 @@ module DefaultAssociative {
 
           // Try reading a comma. If we don't, then break.
           try {
-            f._readLiteral(",");
+            f.readLiteral(",");
           } catch err: BadFormatError {
             // Break out of the loop if we didn't read a comma.
             break;
@@ -705,13 +783,13 @@ module DefaultAssociative {
 
         // Read a key.
         var key: idxType = f.read(idxType);
-        f._readLiteral("=>");
+        f.readLiteral("=>");
 
         // Read the value.
         dsiAccess(key) = f.read(eltType);
       }
 
-      if readEnd then f._readLiteral(closedBracket);
+      if readEnd then f.readLiteral(closedBracket);
     }
 
     proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
@@ -796,7 +874,7 @@ module DefaultAssociative {
       return chpl_getSingletonLocaleArray(this.locale);
     }
 
-    proc dsiHasSingleLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param do return true;
 
     proc dsiLocalSubdomain(loc: locale) {
       if this.locale == loc {
@@ -823,7 +901,7 @@ module DefaultAssociative {
     override proc dsiDestroyArr(deinitElts:bool) {
       if deinitElts && this.eltsNeedDeinit {
         if _elementNeedsDeinit() {
-          if _deinitElementsIsParallel(eltType) {
+          if _deinitElementsIsParallel(eltType, dom.table.tableSize) {
             forall slot in dom.table.allSlots() {
               if dom._isSlotFull(slot) {
                 _deinitElement(data[slot]);
@@ -842,20 +920,46 @@ module DefaultAssociative {
     }
   }
 
+  proc chpl_serialReadWriteAssociativeHelper(f, arr, dom) throws
+  where _usingSerializers(f) && !_isDefaultDeser(f) {
+      if f._writing {
+        var ser = f.serializer.startMap(f, dom.dsiNumIndices);
+        for key in dom {
+          ser.writeKey(key);
+          ser.writeValue(arr.dsiAccess(key));
+        }
+        ser.endMap();
+      } else {
+        var des = f.deserializer.startMap(f);
+        for 0..<dom.dsiNumIndices {
+          const k = des.readKey(dom.idxType);
+
+          if !dom.dsiMember(k) {
+            // TODO: throw an error. What kind of error is most appropriate?
+          } else {
+            arr.dsiAccess(k) = des.readValue(arr.eltType);
+          }
+        }
+        des.endMap();
+      }
+  }
+
+  // TODO: rewrite to use 'startArray' serializer API, rather than relying on
+  // reading and writing literals.
   proc chpl_serialReadWriteAssociativeHelper(f, arr, dom) throws {
-    var binary = f.binary();
+    var binary = f._binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
     var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
     var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
     var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
 
-    if !f.writing && ischpl {
+    if !f._writing && ischpl {
       halt("This form of I/O on a default array slice is not yet supported");
       return;
     }
 
     inline proc rwLiteral(lit:string) throws {
-      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f.writeLiteral(lit); else f.readLiteral(lit);
     }
 
     if isjson || ischpl then rwLiteral("[");
@@ -867,12 +971,12 @@ module DefaultAssociative {
       else if isspace then rwLiteral(" ");
       else if isjson || ischpl then rwLiteral(", ");
 
-      if f.writing && ischpl {
+      if f._writing && ischpl {
         f.write(key);
-        f._writeLiteral(" => ");
+        f.writeLiteral(" => ");
       }
 
-      if f.writing then f.write(arr.dsiAccess(key));
+      if f._writing then f.write(arr.dsiAccess(key));
       else arr.dsiAccess(key) = f.read(arr.eltType);
     }
 

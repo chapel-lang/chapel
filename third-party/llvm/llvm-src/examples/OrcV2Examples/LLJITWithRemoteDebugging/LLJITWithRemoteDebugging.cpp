@@ -77,6 +77,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "llvm/ExecutionEngine/Orc/Debugging/DebuggerSupport.h"
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 #include "llvm/ExecutionEngine/Orc/LLJIT.h"
 #include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
@@ -88,6 +89,7 @@
 #include "llvm/Support/InitLLVM.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/TargetParser/Host.h"
 
 #include "../ExampleModules.h"
 #include "RemoteJITUtils.h"
@@ -105,12 +107,12 @@ static cl::list<std::string> InputFiles(cl::Positional, cl::OneOrMore,
 // Command line arguments to pass to the JITed main function.
 static cl::list<std::string> InputArgv("args", cl::Positional,
                                        cl::desc("<program arguments>..."),
-                                       cl::ZeroOrMore, cl::PositionalEatsArgs);
+                                       cl::PositionalEatsArgs);
 
 // Given paths must exist on the remote target.
 static cl::list<std::string>
     Dylibs("dlopen", cl::desc("Dynamic libraries to load before linking"),
-           cl::value_desc("filename"), cl::ZeroOrMore);
+           cl::value_desc("filename"));
 
 // File path of the executable to launch for execution in a child process.
 // Inter-process communication will go through stdin/stdout pipes.
@@ -173,41 +175,13 @@ int main(int argc, char *argv[]) {
     TSMs.push_back(ExitOnErr(parseExampleModuleFromFile(Path)));
   }
 
-  StringRef TT;
-  StringRef MainModuleName;
-  TSMs.front().withModuleDo([&MainModuleName, &TT](Module &M) {
-    MainModuleName = M.getName();
-    TT = M.getTargetTriple();
-  });
-
-  for (const ThreadSafeModule &TSM : TSMs)
-    ExitOnErr(TSM.withModuleDo([TT, MainModuleName](Module &M) -> Error {
-      if (M.getTargetTriple() != TT)
-        return make_error<StringError>(
-            formatv("Different target triples in input files:\n"
-                    "  '{0}' in '{1}'\n  '{2}' in '{3}'",
-                    TT, MainModuleName, M.getTargetTriple(), M.getName()),
-            inconvertibleErrorCode());
-      return Error::success();
-    }));
-
-  // Create a target machine that matches the input triple.
-  JITTargetMachineBuilder JTMB((Triple(TT)));
-  JTMB.setCodeModel(CodeModel::Small);
-  JTMB.setRelocationModel(Reloc::PIC_);
-
   // Create LLJIT and destroy it before disconnecting the target process.
   outs() << "Initializing LLJIT for remote executor\n";
-  auto J = ExitOnErr(LLJITBuilder()
-                          .setExecutorProcessControl(std::move(EPC))
-                          .setJITTargetMachineBuilder(std::move(JTMB))
-                          .setObjectLinkingLayerCreator([&](auto &ES, const auto &TT) {
-                            return std::make_unique<ObjectLinkingLayer>(ES);
-                          })
-                          .create());
+  auto J = ExitOnErr(
+      LLJITBuilder().setExecutorProcessControl(std::move(EPC)).create());
 
   // Add plugin for debug support.
-  ExitOnErr(addDebugSupport(J->getObjLinkingLayer()));
+  ExitOnErr(enableDebuggerSupport(*J));
 
   // Load required shared libraries on the remote target and add a generator
   // for each of it, so the compiler can lookup their symbols.
@@ -223,7 +197,7 @@ int main(int argc, char *argv[]) {
   // The example uses a non-lazy JIT for simplicity. Thus, looking up the main
   // function will materialize all reachable code. It also triggers debug
   // registration in the remote target process.
-  JITEvaluatedSymbol MainFn = ExitOnErr(J->lookup("main"));
+  auto MainAddr = ExitOnErr(J->lookup("main"));
 
   outs() << "Running: main(";
   int Pos = 0;
@@ -238,10 +212,9 @@ int main(int argc, char *argv[]) {
   // the debugger attached to the target, it should be possible to inspect the
   // JITed code as if it was compiled statically.
   {
-    JITTargetAddress MainFnAddr = MainFn.getAddress();
     ExecutorProcessControl &EPC =
         J->getExecutionSession().getExecutorProcessControl();
-    int Result = ExitOnErr(EPC.runAsMain(ExecutorAddr(MainFnAddr), ActualArgv));
+    int Result = ExitOnErr(EPC.runAsMain(MainAddr, ActualArgv));
     outs() << "Exit code: " << Result << "\n";
   }
 

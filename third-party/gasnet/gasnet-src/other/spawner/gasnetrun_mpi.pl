@@ -6,26 +6,32 @@
 require 5.004;
 use strict;
 
-# NOTE: The value of $ENV{'MPIRUN_CMD'} may be set in the shell wrapper
-my $orig_spawncmd = $ENV{'MPIRUN_CMD'} || 'mpirun -np %N %P %A';
+# NOTE: The shell wrapper must set values for GASNET_SPAWN_CONDUIT and either
+# MPIRUN_CMD or PMIRUN_CMD (as appropriate).
+
+my $spawner_var = 'GASNET_' . $ENV{'GASNET_SPAWN_CONDUIT'} . '_SPAWNER';
+my $cmd_var = uc($ENV{$spawner_var}) . 'RUN_CMD';
+
+my $orig_spawncmd = $ENV{$cmd_var} || 'mpirun -np %N %P %A';
 $orig_spawncmd = stripouterquotes($orig_spawncmd);
 (my $spawncmd = $orig_spawncmd) =~ s/%C/%P %A/;	# deal with common alias
 
 # Validate the spawncmd
-my $cmd_ok = exists($ENV{'MPIRUN_CMD_OK'});
-if ($spawncmd =~ m/MPIRUN_CMD_OK/) {
-  $spawncmd =~ s/\s*MPIRUN_CMD_OK//g;
+my $cmd_ok_var = $cmd_var . '_OK';
+my $cmd_ok = exists($ENV{$cmd_ok_var});
+if ($spawncmd =~ m/$cmd_ok_var/) {
+  $spawncmd =~ s/\s*$cmd_ok_var//g;
   $cmd_ok = 1;
 }
 unless ($cmd_ok ||
         (($spawncmd =~ m/%P/) && ($spawncmd =~ m/%[AQ]/) && ($spawncmd =~ m/%N/))) {
-	die("gasnetrun: ERROR: MPIRUN_CMD='$orig_spawncmd'\n"
-          . "The environment variable MPIRUN_CMD must contain the strings '%P' and '%A'\n"
+	die("gasnetrun: ERROR: $cmd_var='$orig_spawncmd'\n"
+          . "The environment variable $cmd_var must contain the strings '%P' and '%A'\n"
           . "for expansion into the program and its arguments; and '%N' for expansion\n"
           . "into the number of processes ('%C' is acceptible as an alias for '%P %A'\n"
           . "and '%Q' may be substituted for '%A' to request extra quoting.)\n"
-          . "To disable this check, set MPIRUN_CMD_OK in your environment, \n"
-          . "or append the string MPIRUN_CMD_OK to the command.\n");
+          . "To disable this check, set $cmd_ok_var in your environment, \n"
+          . "or append the string $cmd_ok_var to the command.\n");
 }
 
 # Globals
@@ -100,7 +106,7 @@ sub gasnet_encode($) {
     my $is_crayt3e_mpi = ($uname =~ m|cray t3e|i );
     my $is_sgi_mpi = ($mpirun_help =~ m|\[-miser\]|);
     my $is_poe      = ($mpirun_help =~ m|Parallel Operating Environment|);
-    my $is_aprun    = ($mpirun_help =~ m|aprunwrapper\|aprun_version\|rchitecture type.*?xt|i);
+    my $is_aprun    = ($mpirun_help =~ m|Usage: aprun \|aprunwrapper\|aprun_version\|rchitecture type.*?xt|i);
     my $is_yod      = ($mpirun_help =~ m| yod |);
     my $is_hp_mpi  = ($mpirun_help =~ m|-universe_size|);
     my $is_elan_mpi  = ($mpirun_help =~ m|MPIRUN_ELANIDMAP_FILE|);
@@ -289,7 +295,7 @@ sub usage
     print "      -N <n>                number of nodes to run on (not supported on all mpiruns)\n";
     print "      -c <n>                number of cpus per process (not supported on all mpiruns)\n";
     print "      -E <VAR1[,VAR2...]>   list of environment vars to propagate\n";
-    print "      -v                    be verbose about what is happening\n";
+    print "      -v                    enable verbose output, repeated use increases verbosity\\n";
     print "      -t                    test only, don't execute anything (implies -v)\n";
     print "      -k                    keep any temporary files created (implies -v)\n";
     print "      -(no)encode[-args,-env]   use encoding of args, env or both to help with buggy spawners\n";
@@ -358,13 +364,13 @@ sub expand {
 	} elsif ($_ =~ /^(-c)([0-9]+)$/) {
 	    $numcpu = $2;
 	} elsif ($_ eq '-v') {
-	    $verbose = 1;
+	    $verbose++;
 	} elsif ($_ eq '-t') {
 	    $dryrun = 1;
-	    $verbose = 1;
+            $verbose = 1 if (!$verbose);
 	} elsif ($_ eq '-k') {
 	    $keep = 1;
-	    $verbose = 1;
+            $verbose = 1 if (!$verbose);
 	} elsif ($_ =~ /^-+(no)?encode-args$/) {
           $encode_args = !(defined $1);
 	} elsif ($_ =~ /^-+(no)?encode-env$/) {
@@ -380,7 +386,7 @@ sub expand {
 	shift;
     }
 
-    print "gasnetrun: identified MPI spawner as: $spawner_desc\n" if ($verbose);
+    print "gasnetrun: identified spawner as: $spawner_desc\n" if ($verbose);
 
 # Validate -n as needed
     if (!defined($numproc) && $spawncmd =~ /%N/) {
@@ -425,7 +431,12 @@ sub expand {
 
 # We need to gather a list of important environment variables
     # Form a list of the vars given by -E, plus any GASNET_* vars
-    $ENV{"GASNET_VERBOSEENV"} = "1" if ($verbose);
+    if ($verbose >= 1) {
+      $ENV{"GASNET_VERBOSEENV"} = "1" unless (exists($ENV{"GASNET_VERBOSEENV"}));
+    }
+    if ($verbose >= 2) {
+      $ENV{"GASNET_SPAWN_VERBOSE"} = "1" unless (exists($ENV{"GASNET_SPAWN_VERBOSE"}));
+    }
     my @envvars = ((grep {+exists($ENV{$_})} split(',', $envlist)),
 		   (grep {+m/^GASNET_/} keys(%ENV)));
 
@@ -799,7 +810,7 @@ if (!$numnode) {
 			  } elsif ($_ eq '%M') {
 			    $numnode || $numproc;
 			  } elsif ($_ eq '%H') {
-                              $nodefile or die "gasnetrun: %H appears in MPIRUN_CMD, but GASNET_NODEFILE is not set in the environment\n";
+                              $nodefile or die "gasnetrun: %H appears in $cmd_var, but GASNET_NODEFILE is not set in the environment\n";
 			  } elsif ($_ eq '%P') {
 			      ( $env_before_exe ? (@envargs, $exename) : ($exename, @envargs) );
 		              #my @tmp = @envargs;

@@ -12,7 +12,7 @@ use TaskingMode;
 config param taskingMode = qtChplLikeT;
 
 proc main() {
-  var t: Timer;
+  var t: stopwatch;
 
   t.start();
   select taskingMode {

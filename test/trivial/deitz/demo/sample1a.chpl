@@ -1,14 +1,14 @@
-class trio {
+class trio : writeSerializable {
   var x1;
   var x2;
   var x3;
 
-  proc sum()
+  proc sum() do
     return x1 + x2 + x3;
 }
 
-override proc trio.writeThis(f) throws {
-  f.write("(", x1, " & ", x2, " & ", x3, ")");
+override proc trio.serialize(writer, ref serializer) throws {
+  writer.write("(", x1, " & ", x2, " & ", x3, ")");
 }
 
 var t1 = new owned trio(1, 2, 3);

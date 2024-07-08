@@ -13,13 +13,14 @@ config const M = 10000; // number of entries in the table per task
 const numUpdates = N * numTasks;
 const tableSize = M * numTasks;
 
-// Block array access is faster than Cyclic currently. We hadn't optimized
-// these before because the comm overhead dominated, but that's no longer true
-// with aggregation. `-suseBlockArr` and/or `-sdefaultDisableLazyRADOpt` will
-// help indexing speed until we optimize them.
-config param useBlockArr = false;
+// Block array access is faster than Cyclic currently. We hadn't
+// optimized these before because the comm overhead dominated, but
+// that's no longer true with aggregation. `-suseBlockArr` (the
+// default) and/or `-sdefaultDisableLazyRADOpt` will help indexing
+// speed until we optimize them.
+config param useBlockArr = true;
 
-var t: Timer;
+var t: stopwatch;
 proc startTimer() {
   t.start();
 }
@@ -31,11 +32,11 @@ proc stopTimer(name) {
 }
 
 proc main() {
-  const D = if useBlockArr then newBlockDom(0..#tableSize)
-                           else newCyclicDom(0..#tableSize);
+  const D = if useBlockArr then blockDist.createDomain(0..#tableSize)
+                           else cyclicDist.createDomain(0..#tableSize);
   var A: [D] int = D;
 
-  const UpdatesDom = newBlockDom(0..#numUpdates);
+  const UpdatesDom = blockDist.createDomain(0..#numUpdates);
   var Rindex: [UpdatesDom] int;
 
   fillRandom(Rindex, 208);

@@ -130,11 +130,11 @@ function removeUsage() {
 
 ## ChapelTuple ##
 
-file=ChapelTuple.rst
+file="./ChapelTuple.rst"
 removePrefixFunctions $file
 removePattern "param size" $file
 removePattern "record:: _tuple" $file
-fixTitle "Tuples" $file
+removeTitle $file
 removeUsage $file
 
 ## End ChapelTuple ##
@@ -156,9 +156,8 @@ removeUsage $file
 
 file="./ChapelSyncvar.rst"
 replace "_syncvar" "sync" $file
-replace "_singlevar" "single" $file
 removePrefixFunctions $file
-fixTitle "Synchronization Variables" $file
+removeTitle $file
 removeUsage $file
 
 ## End ChapelSyncvar ##
@@ -195,7 +194,7 @@ file="./Atomics.rst"
 removePrefixFunctions $file
 
 replace "record:: AtomicBool" "type:: atomic \(bool\)" $file
-replace "record:: AtomicT"    "type:: atomic \(T\)" $file
+replace "record:: AtomicT"    "type:: atomic \(valType\)" $file
 
 removeTitle $file
 removeUsage $file
@@ -214,7 +213,7 @@ removeUsage $file
 ## String ##
 
 file="./String.rst"
-fixTitle "Strings" $file
+removeTitle $file
 removeUsage $file
 replace "chpl_bytes" "bytes" $file
 
@@ -223,25 +222,37 @@ replace "chpl_bytes" "bytes" $file
 ## Bytes ##
 
 file="./Bytes.rst"
-fixTitle "Bytes" $file
-removeUsage $file
 replace "chpl_bytes" "bytes" $file
+removeTitle $file
+removeUsage $file
 
 ## End of Bytes ##
 
 ## OwnedObject ##
 file=OwnedObject.rst
-fixTitle "owned" $file
+removeTitle $file
 replace "_owned" "owned" $file
 replace "chpl_t" "t" $file
+replace ".. record:: owned" ".. type:: owned" $file
 removeUsage $file
 ## End of OwnedObject ##
 
 ## SharedObject ##
 file=SharedObject.rst
-fixTitle "shared" $file
+removeTitle $file
 replace "_owned" "owned" $file
 replace "_shared" "shared" $file
 replace "chpl_t" "t" $file
+replace ".. record:: shared" ".. type:: shared" $file
 removeUsage $file
 ## End of SharedObject ##
+
+# Bending the rules a little to modify CTypes, which is not an internal module.
+# This is a hack that won't be necessary if #22461 is implemented.
+# Has to be at the end of the script due to the cd. (or cd back after)
+cd "${TEMPDIR}/source/modules/standard/"
+## CTypes ##
+file=CTypes.rst
+replace "class:: c_ptr" "type:: c_ptr" $file # also gets c_ptrConst
+replace "record:: c_array" "type:: c_array" $file
+## End of CTypes ##

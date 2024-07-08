@@ -6,16 +6,17 @@ module test {
   proc abd(arg:borrowed)  { writeln("abd ", arg.type:string); }
   proc abq(arg:borrowed class?) { writeln("abq ", arg.type:string); }
   proc abb(arg:borrowed class) { writeln("abb ", arg.type:string); }
-  
+
   proc aud(arg:unmanaged)  { writeln("aud ", arg.type:string); }
   proc auq(arg:unmanaged class?) { writeln("auq ", arg.type:string); }
   proc aub(arg:unmanaged class) { writeln("aub ", arg.type:string); }
 
   proc main() {
-    var c = (new owned Child(1, 2)).borrow();
+    var ownC = new owned Child(1, 2);
+    var c = ownC.borrow();
 
-    var cu = c:unmanaged;
-    var cuq = c:unmanaged class?;
+    var cu = c!:unmanaged;
+    var cuq = c!:unmanaged class?;
     var cb = c:borrowed;
     var cbq = c:borrowed class?;
     writeln();

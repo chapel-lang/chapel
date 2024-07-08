@@ -1,0 +1,3 @@
+#!/bin/bash
+
+grep 'chpl_debugtrap();' output/check-c-debugger.c | tr -d ' ' > $2

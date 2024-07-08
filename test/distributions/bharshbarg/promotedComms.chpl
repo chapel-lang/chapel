@@ -3,7 +3,7 @@ use CommDiagnostics;
 
 proc main() {
   var Dom = {1..100};
-  var Space = Dom dmapped Block(Dom);
+  var Space = Dom dmapped new blockDist(Dom);
   var A, B, C : [Space] real = 0;
 
   startCommDiagnostics();

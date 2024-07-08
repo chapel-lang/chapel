@@ -9,7 +9,7 @@ var c = new bigint(2);
 // a = (5 % 2)^(-1)
 // a = (1)^(-1)
 // a = 1
-a.invert(b, c);
+invert(a, b, c);
 
 writeln("Inverse Exists Case:");
 writeln("\tcorrect inverse: ", a == 1);
@@ -25,7 +25,7 @@ try {
     // d = (100 % 10)^(-1)
     // d = (0)^(-1)
     // d = undefined
-    d.invert(e, f);    
+    invert(d, e, f);    
 } catch e: InversionError {
     writeln("\tcaught: ", e);
 } catch {

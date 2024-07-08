@@ -1,8 +1,8 @@
 class C {
   var x : int;
 }
-
-var c = new borrowed C(x = 2);
+var cObj = new C(x = 2);
+var c = cObj.borrow();
 
 proc foo(type t) {
   var x : t;

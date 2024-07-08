@@ -35,7 +35,7 @@ var Lyrics: [LyricsSpace] string;     // array of lyrics
 //
 // compute the array of lyrics in parallel using a forall loop
 //
-forall verse in LyricsSpace do
+forall verse in LyricsSpace with (ref Lyrics) do
   Lyrics[verse] = computeLyrics(verse);
 
 

@@ -91,10 +91,10 @@ int rxd_mr_verify(struct rxd_domain *rxd_domain, ssize_t len,
 {
 	int ret;
 
-	fastlock_acquire(&rxd_domain->util_domain.lock);
+	ofi_genlock_lock(&rxd_domain->util_domain.lock);
 	ret = ofi_mr_map_verify(&rxd_domain->mr_map, io_addr, len,
 				key, access, NULL);
-	fastlock_release(&rxd_domain->util_domain.lock);
+	ofi_genlock_unlock(&rxd_domain->util_domain.lock);
 	return ret;
 }
 
@@ -137,7 +137,8 @@ int rxd_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 	rxd_domain->max_seg_sz = rxd_domain->max_mtu_sz - sizeof(struct rxd_data_pkt) -
 				 dg_info->ep_attr->msg_prefix_size;
 
-	ret = ofi_domain_init(fabric, info, &rxd_domain->util_domain, context);
+	ret = ofi_domain_init(fabric, info, &rxd_domain->util_domain, context,
+			      OFI_LOCK_MUTEX);
 	if (ret) {
 		goto err3;
 	}

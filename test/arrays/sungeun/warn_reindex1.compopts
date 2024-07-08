@@ -1,0 +1,2 @@
+--main-module warn_reindex1  # warn_reindex1.yeswarn.good
+-snoNegativeStrideWarnings   # warn_reindex1.nowarn.good

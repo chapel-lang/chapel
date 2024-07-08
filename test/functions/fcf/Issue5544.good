@@ -1,0 +1,3 @@
+Issue5544.chpl:5: In function 'test':
+Issue5544.chpl:6: error: cannot capture proc because it refers to outer variables
+Issue5544.chpl:6: note: such as 'k', here

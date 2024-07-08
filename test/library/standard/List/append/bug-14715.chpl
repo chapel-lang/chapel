@@ -8,7 +8,7 @@ m['a'] = new list(int);
 writeln(m);
 // {a: []}
 
-m['a'].append(1);
+m['a'].pushBack(1);
 writeln(m);
 // {a: [1]}
 

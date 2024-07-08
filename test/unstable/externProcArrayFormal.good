@@ -1,0 +1,1 @@
+externProcArrayFormal.chpl:1: warning: using a Chapel array type in an 'extern proc' is unstable and may change in the future

@@ -1,0 +1,1 @@
+isCloseBadType1.chpl:5: error: 'isClose' does not support promotion, please call it with the individual values

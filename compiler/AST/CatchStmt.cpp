@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,13 +46,13 @@ CatchStmt* CatchStmt::build(BlockStmt* body) {
   return new CatchStmt(NULL, NULL, body);
 }
 
-CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body)
+CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr)
   : Stmt(E_CatchStmt) {
 
   _name = name ? astr(name) : NULL;
   _type = type;
   _body = body;
-  _createdErr = false;
+  _createdErr = createdErr;
 
   gCatchStmts.add(this);
 }
@@ -129,7 +129,7 @@ void CatchStmt::accept(AstVisitor* visitor) {
 }
 
 CatchStmt* CatchStmt::copyInner(SymbolMap* map) {
-  return new CatchStmt(_name, COPY_INT(_type), COPY_INT(_body));
+  return new CatchStmt(_name, COPY_INT(_type), COPY_INT(_body), _createdErr);
 }
 
 void CatchStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
@@ -273,7 +273,7 @@ void CatchStmt::cleanup()
 
   if (catchall) {
     Expr* nonNilC = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, casted);
-    Expr* toOwned = new CallExpr(PRIM_NEW, new CallExpr("_owned", nonNilC));
+    Expr* toOwned = new CallExpr(PRIM_NEW, new CallExpr(new SymExpr(dtOwned->symbol), nonNilC));
 
     errorDef->init = toOwned;
 
@@ -289,7 +289,7 @@ void CatchStmt::cleanup()
     castedDef->insertAfter(cond);
 
     Expr* nonNilC = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, casted);
-    Expr* toOwned = new CallExpr(PRIM_NEW, new CallExpr("_owned", nonNilC));
+    Expr* toOwned = new CallExpr(PRIM_NEW, new CallExpr(new SymExpr(dtOwned->symbol), nonNilC));
 
     errorDef->init = toOwned;
 

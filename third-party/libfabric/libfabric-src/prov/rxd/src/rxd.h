@@ -223,7 +223,7 @@ struct rxd_ep {
 /* ensure ep lock is held before this function is called */
 static inline struct rxd_peer *rxd_peer(struct rxd_ep *ep, fi_addr_t rxd_addr)
 {
-	return ofi_idm_lookup(&ep->peers_idm, rxd_addr);
+	return ofi_idm_lookup(&ep->peers_idm, (int) rxd_addr);
 
 }
 static inline struct rxd_domain *rxd_ep_domain(struct rxd_ep *ep)
@@ -429,12 +429,12 @@ int rxd_av_insert_dg_addr(struct rxd_av *av, const void *addr,
 			  void *context);
 
 /* Pkt resource functions */
-int rxd_ep_post_buf(struct rxd_ep *ep);
+ssize_t rxd_ep_post_buf(struct rxd_ep *ep);
 void rxd_ep_send_ack(struct rxd_ep *rxd_ep, fi_addr_t peer);
 struct rxd_pkt_entry *rxd_get_tx_pkt(struct rxd_ep *ep);
 struct rxd_x_entry *rxd_get_tx_entry(struct rxd_ep *ep, uint32_t op);
 struct rxd_x_entry *rxd_get_rx_entry(struct rxd_ep *ep, uint32_t op);
-int rxd_ep_send_pkt(struct rxd_ep *ep, struct rxd_pkt_entry *pkt_entry);
+ssize_t rxd_ep_send_pkt(struct rxd_ep *ep, struct rxd_pkt_entry *pkt_entry);
 ssize_t rxd_ep_post_data_pkts(struct rxd_ep *ep, struct rxd_x_entry *tx_entry);
 void rxd_insert_unacked(struct rxd_ep *ep, fi_addr_t peer,
 			struct rxd_pkt_entry *pkt_entry);
@@ -474,8 +474,8 @@ struct rxd_x_entry *rxd_rx_entry_init(struct rxd_ep *ep,
 			uint32_t op, uint32_t flags);
 void rxd_tx_entry_free(struct rxd_ep *ep, struct rxd_x_entry *tx_entry);
 void rxd_rx_entry_free(struct rxd_ep *ep, struct rxd_x_entry *rx_entry);
-int rxd_get_timeout(uint8_t retry_cnt);
-uint64_t rxd_get_retry_time(uint64_t start, uint8_t retry_cnt);
+int rxd_get_timeout(int retry_cnt);
+uint64_t rxd_get_retry_time(uint64_t start, int retry_cnt);
 
 /* Generic message functions */
 ssize_t rxd_ep_generic_recvmsg(struct rxd_ep *rxd_ep, const struct iovec *iov,

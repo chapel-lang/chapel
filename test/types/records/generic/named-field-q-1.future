@@ -1,0 +1,2 @@
+bug: range(bounds=?) incorrectly accepts non-default strides
+#24591

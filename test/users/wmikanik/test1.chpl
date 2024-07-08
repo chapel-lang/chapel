@@ -1,5 +1,5 @@
 use Time;
-var t: Timer;
+var t: stopwatch;
 
 config const verbose : bool = true;
 

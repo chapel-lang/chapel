@@ -1,4 +1,4 @@
-deprecated "intA is deprecated" type intA = int(8);
+@deprecated(notes="intA is deprecated") type intA = int(8);
 type intB = int(8);
 
 proc main() {

@@ -22,7 +22,7 @@ var maxpos = max reduce positions;
 
 var fuel: [0..maxpos] int;
 
-forall target in 0..maxpos do
+forall target in 0..maxpos with (ref fuel) do
   fuel[target] = + reduce (abs(positions-target));
 
 writeln(fuel);

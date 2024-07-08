@@ -31,14 +31,14 @@ testLocal();
 proc testDist() {
   writeln("testing distributed sorting");
   var D = {0..#n};
-  var DD: domain(1) dmapped Block(boundingBox=D) = D;
+  var DD: domain(1) dmapped new blockDist(boundingBox=D) = D;
   var A: [DD] int;
 
   fillRandom(A, seed=seed);
   A = abs(A) % bound;
-  writeln("TwoArrayRadixSort.twoArrayRadixSort");
+  writeln("TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort");
   var AA = A;
-  TwoArrayRadixSort.twoArrayRadixSort(AA);
+  TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort(AA);
   writeln("Result is sorted? ", isSorted(AA));
 
   writeln("standard sort");

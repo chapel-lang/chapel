@@ -1,2 +1,2 @@
-underscore_name.chpl:1: syntax error: near '_'
-underscore_name.chpl:3: syntax error: near '_'
+underscore_name.chpl:1: error: Throwaway variable '_' is not allowed in this context
+underscore_name.chpl:3: error: Throwaway variable '_' is not allowed in this context

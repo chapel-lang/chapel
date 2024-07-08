@@ -9,8 +9,6 @@ init 7
 init 8
 init 9
 init 10
-after last use of temporaries
-sum1: 55
 deinit 10
 deinit 9
 deinit 8
@@ -21,6 +19,8 @@ deinit 4
 deinit 3
 deinit 2
 deinit 1
+after last use of temporaries
+sum1: 55
 t2
 init 1
 init 2

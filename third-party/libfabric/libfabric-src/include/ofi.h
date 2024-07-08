@@ -2,6 +2,7 @@
  * Copyright (c) 2013-2018 Intel Corporation. All rights reserved.
  * Copyright (c) 2016-2018 Cisco Systems, Inc. All rights reserved.
  * Copyright (c) 2019 Amazon.com, Inc. or its affiliates. All rights reserved.
+ * Copyright (c) 2022 DataDirect Networks, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -35,7 +36,7 @@
 #ifndef _OFI_H_
 #define _OFI_H_
 
-#include "config.h"
+#include <config.h>
 
 #include <assert.h>
 #include <pthread.h>
@@ -50,7 +51,6 @@
 #include <ofi_file.h>
 #include <ofi_lock.h>
 #include <ofi_atom.h>
-#include <ofi_mem.h>
 #include <ofi_net.h>
 #include <rdma/providers/fi_prov.h>
 #include <rdma/providers/fi_log.h>
@@ -75,6 +75,7 @@ extern "C" {
 #define OFI_GETINFO_INTERNAL	(1ULL << 58)
 #define OFI_CORE_PROV_ONLY	(1ULL << 59)
 #define OFI_GETINFO_HIDDEN	(1ULL << 60)
+#define OFI_OFFLOAD_PROV_ONLY	(1ULL << 61)
 
 #define OFI_ORDER_RAR_SET	(FI_ORDER_RAR | FI_ORDER_RMA_RAR | \
 				 FI_ORDER_ATOMIC_RAR)
@@ -85,13 +86,52 @@ extern "C" {
 #define OFI_ORDER_WAW_SET	(FI_ORDER_WAW | FI_ORDER_RMA_WAW | \
 				 FI_ORDER_ATOMIC_WAW)
 
+#define OFI_PRIMARY_TX_CAPS \
+	(FI_MSG | FI_RMA | FI_TAGGED | FI_ATOMIC | FI_MULTICAST | \
+	 FI_READ | FI_WRITE | FI_SEND | \
+	 FI_COLLECTIVE | FI_NAMED_RX_CTX | FI_HMEM)
+
+#define OFI_SECONDARY_TX_CAPS \
+	(FI_TRIGGER | FI_FENCE | FI_RMA_PMEM)
+
+#define OFI_PRIMARY_RX_CAPS \
+	(FI_MSG | FI_RMA | FI_TAGGED | FI_ATOMIC | \
+	 FI_REMOTE_READ | FI_REMOTE_WRITE | FI_RECV | \
+	 FI_DIRECTED_RECV | FI_COLLECTIVE | FI_HMEM)
+
+#define OFI_SECONDARY_RX_CAPS \
+	(FI_MULTI_RECV | FI_TRIGGER | FI_RMA_PMEM | FI_SOURCE | \
+	 FI_RMA_EVENT | FI_SOURCE_ERR)
+
+#define OFI_DOMAIN_PRIMARY_CAPS FI_AV_USER_ID
+#define OFI_DOMAIN_SECONDARY_CAPS \
+	(FI_SHARED_AV | FI_REMOTE_COMM | FI_LOCAL_COMM)
+
+ #define OFI_PRIMARY_CAPS \
+	(OFI_PRIMARY_TX_CAPS | OFI_PRIMARY_RX_CAPS | OFI_DOMAIN_PRIMARY_CAPS)
+
+ #define OFI_SECONDARY_CAPS \
+        (OFI_SECONDARY_TX_CAPS | OFI_SECONDARY_RX_CAPS | \
+	 OFI_DOMAIN_SECONDARY_CAPS)
+
+#define OFI_TX_MSG_CAPS (FI_MSG | FI_SEND)
+#define OFI_RX_MSG_CAPS (FI_MSG | FI_RECV)
+#define OFI_TX_RMA_CAPS (FI_RMA | FI_READ | FI_WRITE)
+#define OFI_RX_RMA_CAPS (FI_RMA | FI_REMOTE_READ | FI_REMOTE_WRITE)
+
 #define OFI_IGNORED_TX_CAPS /* older Rx caps not applicable to Tx */ \
 	(FI_REMOTE_READ | FI_REMOTE_WRITE | FI_RECV | FI_DIRECTED_RECV | \
-	 FI_VARIABLE_MSG | FI_MULTI_RECV | FI_SOURCE | FI_RMA_EVENT | \
-	 FI_SOURCE_ERR)
+	 FI_MULTI_RECV | FI_SOURCE | FI_RMA_EVENT | FI_SOURCE_ERR)
 #define OFI_IGNORED_RX_CAPS /* Older Tx caps not applicable to Rx */ \
 	(FI_READ | FI_WRITE | FI_SEND | FI_FENCE | FI_MULTICAST | \
 	 FI_NAMED_RX_CTX)
+
+#define OFI_TX_OP_FLAGS \
+	(FI_COMMIT_COMPLETE | FI_COMPLETION | FI_DELIVERY_COMPLETE | \
+	 FI_INJECT | FI_INJECT_COMPLETE | FI_MULTICAST | FI_TRANSMIT_COMPLETE)
+
+#define OFI_RX_OP_FLAGS \
+	(FI_COMPLETION | FI_MULTI_RECV)
 
 
 #define sizeof_field(type, field) sizeof(((type *)0)->field)
@@ -153,6 +193,11 @@ static inline int ofi_val32_ge(uint32_t x, uint32_t y) {
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
+#ifndef STRINGIFY
+#define __STRINGIFY(expr) #expr
+#define STRINGIFY(expr) __STRINGIFY(expr)
+#endif
+
 #define TAB "    "
 
 #define CASEENUMSTRN(SYM, N) \
@@ -182,46 +227,67 @@ enum ofi_prov_type {
 	OFI_PROV_CORE,
 	OFI_PROV_UTIL,
 	OFI_PROV_HOOK,
+	OFI_PROV_OFFLOAD,
 };
 
 /* Restrict to size of struct fi_provider::context (struct fi_context) */
-struct fi_prov_context {
+struct ofi_prov_context {
 	enum ofi_prov_type type;
-	int disable_logging;
-	int disable_layering;
+	bool disable_logging;
+	bool disable_layering;	/* applies to core providers only */
 };
 
-struct fi_filter {
+static inline struct ofi_prov_context *
+ofi_prov_ctx(const struct fi_provider *prov)
+{
+	return (struct ofi_prov_context *) &prov->context;
+}
+
+struct ofi_filter {
 	char **names;
-	int negated;
+	bool negated;
 };
 
-extern struct fi_filter prov_log_filter;
+extern struct ofi_filter prov_log_filter;
 extern struct fi_provider core_prov;
+extern const char *log_prefix;
 
-void ofi_create_filter(struct fi_filter *filter, const char *env_name);
-void ofi_free_filter(struct fi_filter *filter);
-int ofi_apply_filter(struct fi_filter *filter, const char *name);
+void ofi_create_filter(struct ofi_filter *filter, const char *env_name);
+void ofi_free_filter(struct ofi_filter *filter);
+int ofi_apply_filter(struct ofi_filter *filter, const char *name);
 
 int ofi_nic_close(struct fid *fid);
 struct fid_nic *ofi_nic_dup(const struct fid_nic *nic);
-int ofi_nic_tostr(const struct fid *fid_nic, char *buf, size_t len);
-
-struct fi_provider *ofi_get_hook(const char *name);
 
 void fi_log_init(void);
 void fi_log_fini(void);
 void fi_param_init(void);
 void fi_param_fini(void);
 void fi_param_undefine(const struct fi_provider *provider);
-void ofi_hook_init(void);
-void ofi_hook_fini(void);
-void ofi_hook_install(struct fid_fabric *hfabric, struct fid_fabric **fabric,
-		      struct fi_provider *prov);
 void ofi_remove_comma(char *buffer);
-void ofi_strncatf(char *dest, size_t n, const char *fmt, ...);
+void ofi_dump_sysconfig(void);
 
 const char *ofi_hex_str(const uint8_t *data, size_t len);
+
+#define MAX_MR_HANDLE_SIZE	64
+
+/*
+ * This structure is part of the
+ * the shm communication protocol
+ * defined in prov/shm/src/smr_util.h.
+ * Please make sure the SMR_VERSION are
+ * bumped and SMR_CMD_SIZE are large
+ * enough, for any changes in this
+ * structure.
+ */
+struct ipc_info {
+	uint64_t	iface;
+	uint64_t	base_addr;
+	uint64_t	base_length;
+	uint64_t	device;
+	uint64_t	offset;
+	uint8_t		ipc_handle[MAX_MR_HANDLE_SIZE];
+};
 
 static inline uint64_t roundup_power_of_two(uint64_t n)
 {
@@ -261,10 +327,20 @@ static inline void *ofi_get_page_end(const void *addr, size_t page_size)
 			+ page_size, page_size) - 1);
 }
 
+static inline bool ofi_is_size_multiple(size_t size, size_t multiple)
+{
+	return ((size % multiple) == 0);
+}
+
+static inline bool ofi_is_addr_aligned(void *addr, size_t alignment)
+{
+	return ((((uintptr_t) addr) % alignment) == 0);
+}
+
 static inline size_t
 ofi_get_page_bytes(const void *addr, size_t len, size_t page_size)
 {
-	char *start = ofi_get_page_start(addr, page_size);
+	char *start = (char *)ofi_get_page_start(addr, page_size);
 	char *end = (char *)ofi_get_page_start((const char*)addr + len - 1, page_size)
 		    + page_size;
 	size_t result = end - start;
@@ -282,6 +358,9 @@ uint8_t ofi_msb(uint64_t num);
 uint8_t ofi_lsb(uint64_t num);
 
 extern size_t ofi_universe_size;
+extern int ofi_av_remove_cleanup;
+extern char *ofi_offload_coll_prov_name;
+extern int ofi_prefer_sysconfig;
 
 bool ofi_send_allowed(uint64_t caps);
 bool ofi_recv_allowed(uint64_t caps);
@@ -378,6 +457,14 @@ static inline uint32_t ofi_xorshift_random_r(uint32_t *seed)
 uint32_t ofi_generate_seed(void);
 
 size_t ofi_vrb_speed(uint8_t speed, uint8_t width);
+
+int ofi_open_log(uint32_t version, void *attr, size_t attr_len,
+		 uint64_t flags, struct fid **fid, void *context);
+void ofi_tostr_log_level(char *buf, size_t len, enum fi_log_level level);
+void ofi_tostr_log_subsys(char *buf, size_t len, enum fi_log_subsys subsys);
+
+int ofi_nic_close(struct fid *fid);
+int ofi_nic_control(struct fid *fid, int command, void *arg);
 
 #ifdef __cplusplus
 }

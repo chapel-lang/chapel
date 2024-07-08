@@ -1,0 +1,2 @@
+elseThrowsPhase1.chpl:12: In initializer:
+elseThrowsPhase1.chpl:19: error: cannot call a throwing function outside of a try! before phase 2

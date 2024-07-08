@@ -5,7 +5,7 @@ use MasonPublish;
 
 proc main() {
   var args: list(string);
-  args.append('publish');
+  args.pushBack('publish');
   here.chdir('offlinePackage');
   masonPublish(args);
 }

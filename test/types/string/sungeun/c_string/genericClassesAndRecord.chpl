@@ -5,19 +5,23 @@ use checkType;
     var x;
   }
 
-  var c0 = new borrowed C("blah");
+  var ownC0 = new owned C("blah");
+  var c0 = ownC0.borrow();
   checkType(c0.x.type);
 
   param blah1 = "blah";
-  var c1 = new borrowed C(blah1);
+  var ownC1 = new owned C(blah1);
+  var c1 = ownC1.borrow();
   checkType(c1.x.type);
 
-  const blah2: c_string = "blah";
-  var c2 = new borrowed C(blah2);
-  checkType(c_string, c2.x.type);
+  const blah2: c_ptrConst(c_char) = "blah";
+  var ownC2 = new owned C(blah2);
+  var c2 = ownC2.borrow();
+  checkType(c_ptrConst(c_char), c2.x.type);
 
   const blah3 = "blah";
-  var c3 = new borrowed C(blah3);
+  var ownC3 = new owned C(blah3);
+  var c3 = ownC3.borrow();
   checkType(c3.x.type);
 }
 
@@ -26,11 +30,13 @@ use checkType;
     param x;
   }
 
-  var c0 = new borrowed C("blah");
+  var ownC0 = new owned C("blah");
+  var c0 = ownC0.borrow();
   checkType(string, c0.x.type);
 
   param blah1 = "blah";
-  var c1 = new borrowed C(blah1);
+  var ownC1 = new owned C(blah1);
+  var c1 = ownC1.borrow();
   checkType(string, c1.x.type);
 }
 
@@ -46,9 +52,9 @@ use checkType;
   var r1 = new R(blah1);
   checkType(r1.x.type);
 
-  const blah2: c_string = "blah";
+  const blah2: c_ptrConst(c_char) = "blah";
   var r2 = new R(blah2);
-  checkType(c_string, r2.x.type);
+  checkType(c_ptrConst(c_char), r2.x.type);
 
   const blah3 = "blah";
   var r3 = new R(blah3);

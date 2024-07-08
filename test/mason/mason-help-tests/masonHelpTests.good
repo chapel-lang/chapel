@@ -21,8 +21,11 @@ Usage:
 Options:
     -h, --help                   Display this message
         --show                   Increase verbosity
+        --no-vcs                 Do not initialize a git repository
+        --app                    Create a Mason "application" (package with main function)
+        --lib                    Create a Mason "library" (package without main function)
+        --light                  Create a Mason "lightweight" project (place a TOML file in current directory)
     --name <legalName>           Specify package name different from directory name
-    -d, --default                Override interactive session and initialize project
 ********************************************************************************
 $ mason add -h
 Modify a Mason package's Mason.toml

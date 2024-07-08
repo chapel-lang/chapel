@@ -1,0 +1,3 @@
+# Test/library/standard/FileSystem/fsouza/isdir ignores.
+/my_dir
+/my_file

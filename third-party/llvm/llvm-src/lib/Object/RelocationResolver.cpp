@@ -11,6 +11,20 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Object/RelocationResolver.h"
+#include "llvm/ADT/Twine.h"
+#include "llvm/BinaryFormat/COFF.h"
+#include "llvm/BinaryFormat/ELF.h"
+#include "llvm/BinaryFormat/MachO.h"
+#include "llvm/BinaryFormat/Wasm.h"
+#include "llvm/Object/ELFObjectFile.h"
+#include "llvm/Object/ELFTypes.h"
+#include "llvm/Object/ObjectFile.h"
+#include "llvm/Object/SymbolicFile.h"
+#include "llvm/Support/Casting.h"
+#include "llvm/Support/Error.h"
+#include "llvm/Support/ErrorHandling.h"
+#include "llvm/TargetParser/Triple.h"
+#include <cassert>
 
 namespace llvm {
 namespace object {
@@ -63,6 +77,7 @@ static bool supportsAArch64(uint64_t Type) {
   switch (Type) {
   case ELF::R_AARCH64_ABS32:
   case ELF::R_AARCH64_ABS64:
+  case ELF::R_AARCH64_PREL16:
   case ELF::R_AARCH64_PREL32:
   case ELF::R_AARCH64_PREL64:
     return true;
@@ -78,6 +93,8 @@ static uint64_t resolveAArch64(uint64_t Type, uint64_t Offset, uint64_t S,
     return (S + Addend) & 0xFFFFFFFF;
   case ELF::R_AARCH64_ABS64:
     return S + Addend;
+  case ELF::R_AARCH64_PREL16:
+    return (S + Addend - Offset) & 0xFFFF;
   case ELF::R_AARCH64_PREL32:
     return (S + Addend - Offset) & 0xFFFFFFFF;
   case ELF::R_AARCH64_PREL64:
@@ -232,6 +249,19 @@ static uint64_t resolveSparc64(uint64_t Type, uint64_t Offset, uint64_t S,
   default:
     llvm_unreachable("Invalid relocation type");
   }
+}
+
+/// Returns true if \c Obj is an AMDGPU code object based solely on the value
+/// of e_machine.
+///
+/// AMDGPU code objects with an e_machine of EF_AMDGPU_MACH_NONE do not
+/// identify their arch as either r600 or amdgcn, but we can still handle
+/// their relocations. When we identify an ELF object with an UnknownArch,
+/// we use isAMDGPU to check for this case.
+static bool isAMDGPU(const ObjectFile &Obj) {
+  if (const auto *ELFObj = dyn_cast<ELFObjectFileBase>(&Obj))
+    return ELFObj->getEMachine() == ELF::EM_AMDGPU;
+  return false;
 }
 
 static bool supportsAmdgpu(uint64_t Type) {
@@ -415,11 +445,14 @@ static bool supportsRISCV(uint64_t Type) {
   case ELF::R_RISCV_32_PCREL:
   case ELF::R_RISCV_64:
   case ELF::R_RISCV_SET6:
+  case ELF::R_RISCV_SET8:
   case ELF::R_RISCV_SUB6:
   case ELF::R_RISCV_ADD8:
   case ELF::R_RISCV_SUB8:
+  case ELF::R_RISCV_SET16:
   case ELF::R_RISCV_ADD16:
   case ELF::R_RISCV_SUB16:
+  case ELF::R_RISCV_SET32:
   case ELF::R_RISCV_ADD32:
   case ELF::R_RISCV_SUB32:
   case ELF::R_RISCV_ADD64:
@@ -447,14 +480,20 @@ static uint64_t resolveRISCV(uint64_t Type, uint64_t Offset, uint64_t S,
     return (A & 0xC0) | ((S + RA) & 0x3F);
   case ELF::R_RISCV_SUB6:
     return (A & 0xC0) | (((A & 0x3F) - (S + RA)) & 0x3F);
+  case ELF::R_RISCV_SET8:
+    return (S + RA) & 0xFF;
   case ELF::R_RISCV_ADD8:
     return (A + (S + RA)) & 0xFF;
   case ELF::R_RISCV_SUB8:
     return (A - (S + RA)) & 0xFF;
+  case ELF::R_RISCV_SET16:
+    return (S + RA) & 0xFFFF;
   case ELF::R_RISCV_ADD16:
     return (A + (S + RA)) & 0xFFFF;
   case ELF::R_RISCV_SUB16:
     return (A - (S + RA)) & 0xFFFF;
+  case ELF::R_RISCV_SET32:
+    return (S + RA) & 0xFFFFFFFF;
   case ELF::R_RISCV_ADD32:
     return (A + (S + RA)) & 0xFFFFFFFF;
   case ELF::R_RISCV_SUB32:
@@ -463,6 +502,89 @@ static uint64_t resolveRISCV(uint64_t Type, uint64_t Offset, uint64_t S,
     return (A + (S + RA));
   case ELF::R_RISCV_SUB64:
     return (A - (S + RA));
+  default:
+    llvm_unreachable("Invalid relocation type");
+  }
+}
+
+static bool supportsCSKY(uint64_t Type) {
+  switch (Type) {
+  case ELF::R_CKCORE_NONE:
+  case ELF::R_CKCORE_ADDR32:
+  case ELF::R_CKCORE_PCREL32:
+    return true;
+  default:
+    return false;
+  }
+}
+
+static uint64_t resolveCSKY(uint64_t Type, uint64_t Offset, uint64_t S,
+                            uint64_t LocData, int64_t Addend) {
+  switch (Type) {
+  case ELF::R_CKCORE_NONE:
+    return LocData;
+  case ELF::R_CKCORE_ADDR32:
+    return (S + Addend) & 0xFFFFFFFF;
+  case ELF::R_CKCORE_PCREL32:
+    return (S + Addend - Offset) & 0xFFFFFFFF;
+  default:
+    llvm_unreachable("Invalid relocation type");
+  }
+}
+
+static bool supportsLoongArch(uint64_t Type) {
+  switch (Type) {
+  case ELF::R_LARCH_NONE:
+  case ELF::R_LARCH_32:
+  case ELF::R_LARCH_32_PCREL:
+  case ELF::R_LARCH_64:
+  case ELF::R_LARCH_ADD6:
+  case ELF::R_LARCH_SUB6:
+  case ELF::R_LARCH_ADD8:
+  case ELF::R_LARCH_SUB8:
+  case ELF::R_LARCH_ADD16:
+  case ELF::R_LARCH_SUB16:
+  case ELF::R_LARCH_ADD32:
+  case ELF::R_LARCH_SUB32:
+  case ELF::R_LARCH_ADD64:
+  case ELF::R_LARCH_SUB64:
+    return true;
+  default:
+    return false;
+  }
+}
+
+static uint64_t resolveLoongArch(uint64_t Type, uint64_t Offset, uint64_t S,
+                                 uint64_t LocData, int64_t Addend) {
+  switch (Type) {
+  case ELF::R_LARCH_NONE:
+    return LocData;
+  case ELF::R_LARCH_32:
+    return (S + Addend) & 0xFFFFFFFF;
+  case ELF::R_LARCH_32_PCREL:
+    return (S + Addend - Offset) & 0xFFFFFFFF;
+  case ELF::R_LARCH_64:
+    return S + Addend;
+  case ELF::R_LARCH_ADD6:
+    return (LocData & 0xC0) | ((LocData + S + Addend) & 0x3F);
+  case ELF::R_LARCH_SUB6:
+    return (LocData & 0xC0) | ((LocData - (S + Addend)) & 0x3F);
+  case ELF::R_LARCH_ADD8:
+    return (LocData + (S + Addend)) & 0xFF;
+  case ELF::R_LARCH_SUB8:
+    return (LocData - (S + Addend)) & 0xFF;
+  case ELF::R_LARCH_ADD16:
+    return (LocData + (S + Addend)) & 0xFFFF;
+  case ELF::R_LARCH_SUB16:
+    return (LocData - (S + Addend)) & 0xFFFF;
+  case ELF::R_LARCH_ADD32:
+    return (LocData + (S + Addend)) & 0xFFFFFFFF;
+  case ELF::R_LARCH_SUB32:
+    return (LocData - (S + Addend)) & 0xFFFFFFFF;
+  case ELF::R_LARCH_ADD64:
+    return (LocData + (S + Addend));
+  case ELF::R_LARCH_SUB64:
+    return (LocData - (S + Addend));
   default:
     llvm_unreachable("Invalid relocation type");
   }
@@ -668,6 +790,8 @@ getRelocationResolver(const ObjectFile &Obj) {
       case Triple::bpfel:
       case Triple::bpfeb:
         return {supportsBPF, resolveBPF};
+      case Triple::loongarch64:
+        return {supportsLoongArch, resolveLoongArch};
       case Triple::mips64el:
       case Triple::mips64:
         return {supportsMips64, resolveMips64};
@@ -683,6 +807,8 @@ getRelocationResolver(const ObjectFile &Obj) {
       case Triple::riscv64:
         return {supportsRISCV, resolveRISCV};
       default:
+        if (isAMDGPU(Obj))
+          return {supportsAmdgpu, resolveAmdgpu};
         return {nullptr, nullptr};
       }
     }
@@ -704,6 +830,8 @@ getRelocationResolver(const ObjectFile &Obj) {
       return {supportsAVR, resolveAVR};
     case Triple::lanai:
       return {supportsLanai, resolveLanai};
+    case Triple::loongarch32:
+      return {supportsLoongArch, resolveLoongArch};
     case Triple::mipsel:
     case Triple::mips:
       return {supportsMips32, resolveMips32};
@@ -713,9 +841,15 @@ getRelocationResolver(const ObjectFile &Obj) {
       return {supportsSparc32, resolveSparc32};
     case Triple::hexagon:
       return {supportsHexagon, resolveHexagon};
+    case Triple::r600:
+      return {supportsAmdgpu, resolveAmdgpu};
     case Triple::riscv32:
       return {supportsRISCV, resolveRISCV};
+    case Triple::csky:
+      return {supportsCSKY, resolveCSKY};
     default:
+      if (isAMDGPU(Obj))
+        return {supportsAmdgpu, resolveAmdgpu};
       return {nullptr, nullptr};
     }
   } else if (Obj.isMachO()) {
@@ -751,8 +885,10 @@ uint64_t resolveRelocation(RelocationResolver Resolver, const RelocationRef &R,
 
       if (GetRelSectionType() == ELF::SHT_RELA) {
         Addend = getELFAddend(R);
-        // RISCV relocations use both LocData and Addend.
-        if (Obj->getArch() != Triple::riscv32 &&
+        // LoongArch and RISCV relocations use both LocData and Addend.
+        if (Obj->getArch() != Triple::loongarch32 &&
+            Obj->getArch() != Triple::loongarch64 &&
+            Obj->getArch() != Triple::riscv32 &&
             Obj->getArch() != Triple::riscv64)
           LocData = 0;
       }

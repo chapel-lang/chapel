@@ -1,0 +1,4 @@
+unstable_type.chpl:4: In function 'main':
+unstable_type.chpl:5: warning: a is unstable
+int(8)
+int(8)

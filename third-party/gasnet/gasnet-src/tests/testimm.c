@@ -408,7 +408,7 @@ void doGet(gex_Flags_t imm_flag) {
     init_remain();
     gasnett_tick_t start_ticks = gasnett_ticks_now();
     ACTIVE( gex_RMA_GetNBI(myteam, local_addr, r, TEST_SEG(r), param_SZ, imm_flag),
-            GEX_EC_PUT );
+            GEX_EC_GET );
     gasnett_tick_t end_ticks = gasnett_ticks_now();
     double elapsed = 1e-9 * gasnett_ticks_to_ns(end_ticks - start_ticks);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,7 +40,6 @@ int chpl_verbose_comm_stacktrace = 0;
 int chpl_comm_diagnostics = 0;
 int chpl_comm_diags_print_unstable = 0;
 
-atomic_int_least16_t chpl_comm_diags_disable_flag;
 chpl_atomic_commDiagnostics chpl_comm_diags_counters;
 
 static pthread_once_t bcastPrintUnstable_once = PTHREAD_ONCE_INIT;
@@ -48,48 +47,74 @@ static pthread_once_t bcastPrintUnstable_once = PTHREAD_ONCE_INIT;
 
 static
 void broadcast_print_unstable(void) {
-  chpl_comm_diags_disable();
+  chpl_bool prevDisabled = chpl_task_setCommDiagsTemporarilyDisabled(true);
   chpl_comm_bcast_rt_private(chpl_comm_diags_print_unstable);
-  chpl_comm_diags_enable();
+  (void)chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
 }
 
 
-void chpl_comm_startVerbose(chpl_bool stacktrace, chpl_bool print_unstable) {
+void chpl_comm_startVerbose(chpl_bool stacktrace,
+                            chpl_bool print_unstable,
+                            int32_t lineno,
+                            int32_t filename) {
   chpl_comm_diags_print_unstable = (print_unstable == true);
   chpl_verbose_comm_stacktrace = (stacktrace == true);
   if (pthread_once(&bcastPrintUnstable_once, broadcast_print_unstable) != 0) {
     chpl_internal_error("pthread_once(&bcastPrintUnstable_once) failed");
   }
 
+  if (chpl_verbose_comm == 1) {
+    chpl_warning("verbose comm was already started", lineno, filename);
+  }
   chpl_verbose_comm = 1;
-  chpl_comm_diags_disable();
+
+  chpl_bool prevDisabled = chpl_task_setCommDiagsTemporarilyDisabled(true);
   chpl_comm_bcast_rt_private(chpl_verbose_comm);
   chpl_comm_bcast_rt_private(chpl_verbose_comm_stacktrace);
-  chpl_comm_diags_enable();
+  (void)chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
 }
 
 
-void chpl_comm_stopVerbose() {
+void chpl_comm_stopVerbose(int32_t lineno,
+                           int32_t filename) {
+
+  if (chpl_verbose_comm == 0) {
+    chpl_warning("verbose comm was never started", lineno, filename);
+  }
   chpl_verbose_comm = 0;
-  chpl_comm_diags_disable();
+
+  chpl_bool prevDisabled = chpl_task_setCommDiagsTemporarilyDisabled(true);
   chpl_comm_bcast_rt_private(chpl_verbose_comm);
-  chpl_comm_diags_enable();
+  (void)chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
 }
 
 
-void chpl_comm_startVerboseHere(chpl_bool stacktrace, chpl_bool print_unstable) {
+void chpl_comm_startVerboseHere(chpl_bool stacktrace,
+                                chpl_bool print_unstable,
+                                int32_t lineno,
+                                int32_t filename) {
   chpl_comm_diags_print_unstable = (print_unstable == true);
   chpl_verbose_comm_stacktrace = (stacktrace == true);
+
+  if (chpl_verbose_comm == 1) {
+    chpl_warning("verbose comm was already started", lineno, filename);
+  }
   chpl_verbose_comm = 1;
 }
 
 
-void chpl_comm_stopVerboseHere() {
+void chpl_comm_stopVerboseHere(int32_t lineno, int32_t filename) {
+
+  if (chpl_verbose_comm == 0) {
+    chpl_warning("verbose comm was never started", lineno, filename);
+  }
   chpl_verbose_comm = 0;
 }
 
 
-void chpl_comm_startDiagnostics(chpl_bool print_unstable) {
+void chpl_comm_startDiagnostics(chpl_bool print_unstable,
+                                int32_t lineno,
+                                int32_t filename) {
   chpl_comm_diags_print_unstable = (print_unstable == true);
 
   if (pthread_once(&bcastPrintUnstable_once, broadcast_print_unstable) != 0) {
@@ -97,45 +122,61 @@ void chpl_comm_startDiagnostics(chpl_bool print_unstable) {
   }
 
   // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(0, 0);
+  chpl_rmem_consist_release(lineno, filename);
 
+  if (chpl_comm_diagnostics == 1) {
+    chpl_warning("comm diagnostics was already started", lineno, filename);
+  }
   chpl_comm_diagnostics = 1;
-  chpl_comm_diags_disable();
+
+  chpl_bool prevDisabled = chpl_task_setCommDiagsTemporarilyDisabled(true);
   chpl_comm_bcast_rt_private(chpl_comm_diagnostics);
-  chpl_comm_diags_enable();
+  (void)chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
 }
 
 
-void chpl_comm_stopDiagnostics() {
+void chpl_comm_stopDiagnostics(int32_t lineno, int32_t filename) {
   // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(0, 0);
+  chpl_rmem_consist_release(lineno, filename);
 
+  if (chpl_comm_diagnostics == 0) {
+    chpl_warning("comm diagnostics was never started", lineno, filename);
+  }
   chpl_comm_diagnostics = 0;
-  chpl_comm_diags_disable();
+
+  chpl_bool prevDisabled = chpl_task_setCommDiagsTemporarilyDisabled(true);
   chpl_comm_bcast_rt_private(chpl_comm_diagnostics);
-  chpl_comm_diags_enable();
+  (void)chpl_task_setCommDiagsTemporarilyDisabled(prevDisabled);
 }
 
 
-void chpl_comm_startDiagnosticsHere(chpl_bool print_unstable) {
+void chpl_comm_startDiagnosticsHere(chpl_bool print_unstable,
+                                    int32_t lineno,
+                                    int32_t filename) {
   chpl_comm_diags_print_unstable = (print_unstable == true);
 
   // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(0, 0);
+  chpl_rmem_consist_release(lineno, filename);
 
+  if (chpl_comm_diagnostics == 1) {
+    chpl_warning("comm diagnostics was already started", lineno, filename);
+  }
   chpl_comm_diagnostics = 1;
 }
 
 
-void chpl_comm_stopDiagnosticsHere() {
+void chpl_comm_stopDiagnosticsHere(int32_t lineno, int32_t filename) {
   // Make sure that there are no pending communication operations.
-  chpl_rmem_consist_release(0, 0);
+  chpl_rmem_consist_release(lineno, filename);
 
+  if (chpl_comm_diagnostics == 0) {
+    chpl_warning("comm diagnostics was never started", lineno, filename);
+  }
   chpl_comm_diagnostics = 0;
 }
 
 
-void chpl_comm_resetDiagnosticsHere() {
+void chpl_comm_resetDiagnosticsHere(void) {
   chpl_comm_diags_reset();
 }
 

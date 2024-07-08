@@ -3,7 +3,7 @@ require "passViewToExtern.h";
 var A: [1..9] real = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
 var B: [1..3, 1..3] real;
 
-forall (i,j) in {1..3, 1..3} do
+forall (i,j) in {1..3, 1..3} with (ref B) do
   B[i,j] = i + j / 10.0;
 
 extern proc printThree(ptr: [] real);

@@ -12,4 +12,4 @@ var A: [D] int;
 
 for e in A do e = next();
 writeln(A);
-writeln(dist_eq(A.domain.dist, Dist2D));
+writeln(dist_eq(A.domain.distribution, Dist2D));

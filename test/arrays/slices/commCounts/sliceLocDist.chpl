@@ -5,7 +5,7 @@ config const printArray = true;
 
 proc main() {
   {
-    const D = {1..10, 1..10} dmapped Block({1..10, 1..10});
+    const D = {1..10, 1..10} dmapped new blockDist({1..10, 1..10});
     var A: [D] real;
     const DInner = D[3..8, 3..8];
 
@@ -14,7 +14,7 @@ proc main() {
     testit(A, DInner);
   }
   {
-    const D = {1..10, 1..10} dmapped Block({1..10, 1..10});
+    const D = {1..10, 1..10} dmapped new blockDist({1..10, 1..10});
     var A: [D] real;
     const DInner = {3..8, 3..8};
 
@@ -24,7 +24,7 @@ proc main() {
   }
   {
     const DLoc = {1..10, 1..10};
-    const D = DLoc dmapped Block({1..10, 1..10});
+    const D = DLoc dmapped new blockDist({1..10, 1..10});
     var A: [DLoc] real;
     const DInner = D[3..8, 3..8];
 
@@ -34,7 +34,7 @@ proc main() {
   }
 }
 
-proc testit(A: [?DA], DInner) {
+proc testit(ref A: [?DA], DInner) {
   forall a in A do
     a = here.id;
 
@@ -63,7 +63,7 @@ proc testit(A: [?DA], DInner) {
   writeln("-------------------------");
 
   startTrial();
-  forall ij in B.domain do
+  forall ij in B.domain with (ref B) do
     B[ij] += 0.1;
   stopTrial();
 
@@ -101,17 +101,17 @@ proc testit(A: [?DA], DInner) {
       writeln("\nA is:\n", A);
   }
 
-  proc increment(X, D) {
+  proc increment(ref X, D) {
     writeln("Incrementing in routine by access");
     writeln("---------------------------------");
 
     startTrial();
-    forall ij in D do
+    forall ij in D with (ref X) do
       X[ij] += 0.1;
     stopTrial();
   }
 
-  proc increment(X) {
+  proc increment(ref X) {
     writeln("Incrementing in routine by iteration");
     writeln("------------------------------------");
 

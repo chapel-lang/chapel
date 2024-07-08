@@ -26,7 +26,7 @@ proc main()
 {
 	var test = read(int), t:int = 1;
 
-	var T: Timer;
+	var T: stopwatch;
 	//T.start();
 	var totalTime: real(64);
 

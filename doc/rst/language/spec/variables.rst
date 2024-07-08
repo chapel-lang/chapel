@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: variables
 .. _Chapter-Variables:
 
 =========
@@ -11,6 +13,9 @@ statically-typed, type-safe language so every variable has a type that
 is known at compile-time and the compiler enforces that values assigned
 to the variable can be stored in that variable as specified by its type.
 
+.. index::
+   single: variables; declarations
+   single: declarations; variables
 .. _Variable_Declarations:
 
 Variable Declarations
@@ -120,10 +125,12 @@ defined in :ref:`Multiple_Variable_Declarations`.
 Multiple variables can be grouped together using a tuple notation as
 described in :ref:`Variable_Declarations_in_a_Tuple`.
 
+.. index::
+   single: split initialization
 .. _Split_Initialization:
 
 Split Initialization
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 Split initialization is a feature that allows an initialization
 expression for a variable to be in a statement after the variable
@@ -135,10 +142,52 @@ earliest assignment statement(s) setting that variable that occurs before
 the variable is otherwise mentioned. It will consider the variable passed
 to an ``out`` intent argument as an assignment statement for this
 purpose.  It will search only within block statements ``{ }``,
-``local`` blocks, ``serial`` blocks, ``try`` blocks, ``try!`` blocks, and
-conditionals.  These assignment statements and calls to functions with
+``local`` blocks, ``serial`` blocks, ``sync`` blocks,
+``try`` blocks, ``try!`` blocks, ``select`` blocks, and
+conditionals.  For ``select`` blocks and conditionals, the compiler will 
+ignore blocks that are statically known to be unreachable.
+These assignment statements and calls to functions with
 ``out`` intent are called applicable assignment statements.  They perform
 initialization, not assignment, of that variable.
+
+Split initialization does not apply:
+
+ * when the variable is a field, config variable, or ``extern`` variable.
+ * when an applicable assignment statement setting the variable could not
+   be identified
+ * when an applicable assignment statement is in at least one branch of a
+   conditional or ``select`` block but not in another, unless:
+
+     * the variable is not an ``out`` intent formal, and
+     * every branch without an applicable assignment statement always
+       returns or throws. Note that an ``if`` statement written without an
+       ``else`` is considered to have an empty ``else`` branch. Similarly,
+       a ``select`` without an ``otherwise`` is considered to have an empty
+       ``otherwise``.
+
+   This rule prevents split-initialization when the applicable assignment
+   statement is in a conditional that has no ``else`` branch and the
+   ``if`` branch does not return or throw. The same applies for a ``select`` 
+   without an ``otherwise``.
+
+ * when an applicable assignment statement is in a ``try`` or ``try!``
+   block which has ``catch`` clauses that mention the variable
+
+ * when an applicable assignment statement is in a ``try`` or ``try!``
+   with ``catch`` clauses unless:
+
+     * the variable is not an ``out`` intent formal, and
+     * all catch clauses return or throw
+
+In the case that the variable is declared with no ``type-part`` or with a
+generic declared type, and where multiple applicable assignment
+statements are identified, all of the assignment statements need to
+contain an initialization expression of the same type.
+
+Any variables declared in a particular scope that are initialized with
+split init in multiple branches of a conditional or ``select``
+must be initialized in the same order in all branches that do not
+unconditionally return.
 
    *Example (simple-split-init.chpl)*
 
@@ -228,34 +277,112 @@ initialization, not assignment, of that variable.
       5
 
 
-Split initialization does not apply:
+   *Example (split-init-select-ignored-path.chpl)*
 
- * when the variable is a field, config variable, or ``extern`` variable.
- * when an applicable assignment statement setting the variable could not
-   be identified
- * when an applicable assignment statement is in one branch of a
-   conditional but not in the other, and when the other branch
-   does not always return or throw. This rule prevents
-   split-initialization when the applicable assignment statement is
-   in a conditional that has no ``else`` branch.
- * when an applicable assignment statement is in a ``try`` or ``try!``
-   block which has ``catch`` clauses that mention the variable
-   or which has ``catch`` clauses that do not always throw or return.
+   When the condition for a ``select`` or conditional statement
+   can be evaluated at compile-time, the compiler only considers
+   the path that will be taken:
+    
+   .. code-block:: chapel
+      
+      proc splitInitsBecausePathKnown(type T) {
+        var x: int;
+        select T {
+          when int {
+            // split initialization occurs here when T==int
+            x = 1; 
+          }
+          when string {
+            //compiler ignores this block when T==int
+            writeln("T==string");
+          }
+        }
+        writeln(x);
+      }
+      proc noSplitInitBecausePathUnknown(arg: int) {
+        var x: int;
+        select arg {
+          when 0 {
+            // no split init, not all paths return, throw, or initialize
+            x = 1; 
+          }
+          when 1 {
+            // this block not ignored by compiler
+            // arg value unknown at compile-time
+            writeln("no initialization");
+          } 
+        }
+        writeln(x);
+      }
+      proc main() {
+        splitInitsBecausePathKnown(int);
+        noSplitInitBecausePathUnknown(0);
+      }
+    
+   .. BLOCK-test-chapeloutput
 
-In the case that the variable is declared without a ``type-part`` and
-where multiple applicable assignment statements are identified, all of
-the assignment statements need to contain an initialization expression of
-the same type.
+      1
+      1
 
-Any variables declared in a particular scope that are initialized with
-split init in both the ``then`` and ``else`` branches of a conditional
-must be initialized in the same order in the ``then`` and ``else``
-branches.
+   *Example (split-init-select-otherwise.chpl)*
 
+   For split initialization with a ``select`` statement, the ``otherwise``
+   clause (or its absence) impact whether or not split initialization is 
+   possible within the ``when`` clauses:
+      
+   .. code-block:: chapel
+
+      proc noSplitInitMissingOtherwise(arg: int) {
+        var x: int;
+        select arg {
+          when 0 {
+            // no split init, not all paths return, throw, or initialize
+            // consider path taken when arg==2
+            x = 1; 
+          }
+          when 1 {
+            x = 2; 
+          } 
+          // since this select statement does not have an `otherwise`,
+          // the compiler considers it equivalent to an empty `otherwise`:
+          // otherwise { }
+        }
+        writeln(x);
+      }
+      proc splitInitHasOtherwise(arg: int) {
+        var x: int;
+        select arg {
+          when 0 {
+            // split init will occur here
+            x = 1;
+          }
+          when 1 {
+            x = 2;
+          } 
+          otherwise {
+            // now all paths initialize, return, or throw.
+            return; 
+          }
+        }
+        writeln(x);
+      }
+      proc main() {
+        noSplitInitMissingOtherwise(1);
+        splitInitHasOtherwise(2);
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      2
+
+.. index::
+   single: default initialization; variables
+   single: variables; default initialization
+   single: variables; default values
 .. _Default_Values_For_Types:
 
 Default Initialization
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 If a variable declaration has no initialization expression, a variable
 is initialized to the default value of its type. The default values are
@@ -264,7 +391,7 @@ as follows:
 =========== =======================================
 **Type**    **Default Value**
 =========== =======================================
-bool(*)     false
+bool        false
 int(*)      0
 uint(*)     0
 real(*)     0.0
@@ -278,18 +405,20 @@ records     default constructed record
 ranges      1..0 (empty range)
 arrays      elements are default values
 tuples      components are default values
-sync/single base default value and *empty* status
+sync        base default value and *empty* status
 atomic      base default value
 =========== =======================================
 
+.. index::
+   single: type inference
+   single: type inference; local
 .. _Local_Type_Inference:
 
 Local Type Inference
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 If the type is omitted from a variable declaration, the type of the
 variable is defined to be the type of the initialization expression.
-With the exception of sync and single expressions, the declaration
 
 
 .. code-block:: chapel
@@ -302,13 +431,15 @@ is equivalent to
 
    var v: e.type = e;
 
-for an arbitrary expression ``e``. If ``e`` is of sync or single type,
-the type of ``v`` is the base type of ``e``.
+for an arbitrary expression ``e``.
 
+.. index::
+   single: declarations; multiple variables
+   single: variables; multiple variable declarations
 .. _Multiple_Variable_Declarations:
 
 Multiple Variable Declarations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------
 
 All variables defined in the same ``identifier-list`` are defined such
 that they have the same type and value, and so that the type and
@@ -399,9 +530,8 @@ follows:
 
    .. code-block:: chapel
 
-      proc readXX(x: sync) return x.readXX();
-      proc readXX(x: single) return x.readXX();
-      proc readXX(x) return x;
+      proc readXX(x: sync) do return x.readXX();
+      proc readXX(x) do return x;
 
    Note that the use of the helper function ``readXX()`` in this code
    fragment is solely for the purposes of illustration. It is not
@@ -411,14 +541,16 @@ follows:
 
    *Rationale*.
 
-   This algorithm is complicated by the existence of *sync* and *single*
-   variables. If these did not exist, we could rewrite any
-   multi-variable declaration such that later variables were simply
-   initialized by the first variable and the first variable was defined
-   as if it appeared alone in the ``identifier-list``. However, both
-   *sync* and *single* variables require careful handling to avoid
-   unintentional changes to their *full*/*empty* state.
+   This algorithm is complicated by the existence of *sync* variables.
+   If these did not exist, we could rewrite any multi-variable
+   declaration such that later variables were simply initialized by the
+   first variable and the first variable was defined as if it appeared
+   alone in the ``identifier-list``. However, *sync* variables require
+   careful handling to avoid unintentional changes to their
+   *full*/*empty* state.
 
+.. index::
+   single: variables; module level
 .. _Module_Level_Variables:
 
 Module Level Variables
@@ -430,6 +562,8 @@ level variables can be accessed anywhere within that module after the
 initialization of that variable. If they are public, they can also be
 accessed in other modules that use that module.
 
+.. index::
+   single: variables; local
 .. _Local_Variables:
 
 Local Variables
@@ -448,6 +582,8 @@ Note that unlike most types, variables of ``unmanaged`` class type do not
 automatically reclaim the storage that they refer to. Such storage can be
 reclaimed as described in :ref:`Class_Delete`.
 
+.. index::
+   single: constants
 .. _Constants:
 
 Constants
@@ -457,6 +593,10 @@ Constants are divided into two categories: parameters, specified with
 the keyword ``param``, are compile-time constants and constants,
 specified with the keyword ``const``, are runtime constants.
 
+.. index::
+   single: constants; compile-time
+   single: parameters
+   single: param
 .. _Compile-Time_Constants:
 
 Compile-Time Constants
@@ -500,6 +640,10 @@ Parameter expressions are restricted to the following constructs:
 -  Call expressions of parameter functions.
    See :ref:`Param_Return_Intent`.
 
+.. index::
+   single: constants; runtime
+   single: constants
+   single: const
 .. _Runtime_Constants:
 
 Runtime Constants
@@ -515,6 +659,11 @@ That is, the variable always points to the object that it was
 initialized to reference. However, the fields of that object are allowed
 to be modified.
 
+.. index::
+   single: variables; configuration
+   single: constants; configuration
+   single: parameters; configuration
+   single: config
 .. _Configuration_Variables:
 
 Configuration Variables
@@ -563,26 +712,39 @@ overrides the default value appearing in the Chapel code.
    parameter. The ``rank`` configuration variable can be used to write
    rank-independent code.
 
+.. index::
+   pair: variables; ref
 .. _Ref_Variables:
 
 Ref Variables
 -------------
 
 A *ref* variable is a variable declared using the ``ref`` keyword. A ref
-variable serves as an alias to another variable, field or array element.
+variable serves as an alias to another variable, field, tuple component,
+or array element.
 The declaration of a ref variable must contain ``initialization-part``,
-which specifies what is to be aliased and can be a variable or any
-lvalue expression.
+which specifies what is to be aliased.
+If the ref variable declaration contains ``type-part``,
+this type must equal the type of ``initialization-part``.
+If ``type-part`` is a generic type, the type of ``initialization-part``
+must be its instantiation.
+If the ``initialization-part`` is also a ref variable or a call to a function
+with a ``ref`` return intent, the declared ref variable is an alias
+to the variable being aliased by the ``initialization-part``.
 
 Access or update to a ref variable is equivalent to access or update to
 the variable being aliased. For example, an update to a ref variable is
 visible via the original variable, and visa versa.
 
-If the expression being aliased is a runtime constant variable, a formal
-argument with a ``const ref`` concrete intent
-(:ref:`Concrete Intents`), or a call to a function with a
-``const ref`` return intent (:ref:`Const_Ref_Return_Intent`),
-the corresponding ref variable must be declared as ``const ref``.
+A ref variable can also be declared using ``const ref``.
+Updates to ``const ref`` variables are disallowed.
+
+The ref variable must be declared using ``const ref`` if its
+``initialization-part`` disallows updates, for example if
+``initialization-part`` is a `const` or `const ref` variable, a formal
+argument with a ``const ref`` intent (:ref:`The_Const_Ref_Intent`), or a
+call to a function with a ``const ref`` or ``out`` return intent
+(:ref:`Const_Ref_Return_Intent`, :ref:`Out_Return_Intent`).
 Parameter constants and expressions cannot be aliased.
 
    *Open issue*.
@@ -593,13 +755,19 @@ Parameter constants and expressions cannot be aliased.
    ``const ref`` alias, making changes visible through the alias, and
    making the behavior undefined.
 
+   *Open issue*.
+
+   The behavior of a ``ref`` alias to a domain or array variable
+   when ``type-part`` is present is an open issue.
+   In particular, should the runtime types of ``type-part`` and
+   the variable being aliased be equal, or is the compile-time
+   type equality sufficient?
+
 ..
 
    *Example (refVariables.chpl)*.
 
    For example, the following code:
-
-   
 
    .. code-block:: chapel
 
@@ -611,7 +779,7 @@ Parameter constants and expressions cannot be aliased.
       writeln("myInt = ", myInt);
 
       var myArr: [1..3] int = 51;
-      proc arrayElement(i) ref  return myArr[i];
+      proc arrayElement(i) ref do  return myArr[i];
       ref refToExpr = arrayElement(3);      // alias to lvalue returned by a function
       myArr[3] = 62;
       writeln("refToExpr = ", refToExpr);
@@ -624,8 +792,6 @@ Parameter constants and expressions cannot be aliased.
 
    prints out:
 
-   
-
    .. code-block:: printoutput
 
       refInt = 62
@@ -634,6 +800,8 @@ Parameter constants and expressions cannot be aliased.
       myArr[3] = 73
       myConstRef = 52
 
+.. index::
+   single: variables; conflicts
 .. _Variable_Conflicts:
 
 Variable Conflicts
@@ -667,13 +835,17 @@ share a name with it.  While functions may share the same name (see
 :ref:`Function_Overloading`), a function sharing a name with a variable in the
 same scope will lead to conflicts.
 
+
+.. index::
+   pair: variables; lifetimes
 .. _Variable_Lifetimes:
 
 Variable Lifetimes
 ------------------
 
 A variable only exists during its lifetime. The lifetime of a variable
-begins when the variable is initialized.
+begins when the variable is initialized (whether at the declaration or
+at a later point with :ref:`Split_Initialization`).
 
 A variable's lifetime ends:
 
@@ -682,6 +854,9 @@ A variable's lifetime ends:
    :ref:`Copy_Elision`.
  * otherwise, at the variable's deinit point (see :ref:`Deinit_Points`)
 
+.. index::
+   single: variables; deinitialization points
+   single: deinitialization points
 .. _Deinit_Points:
 
 Deinit Points
@@ -703,9 +878,10 @@ Regular local variables are destroyed at the end of the containing block.
 Temporary local variables have a different rule as described below.
 
 The compiler adds temporary local variables to contain the result of
-nested call expressions. ``g()`` in the statement ``f(g());`` is an
-example of a nested call expression. If the containing statement is an
-initialization expression for some variable, such as ``var x = f(g());``,
+nested call expressions. For example, ``g()`` in the statement ``f(g());`` is
+a nested call expression. If the containing statement is an
+initialization expression for a ``ref`` or ``const ref``,
+such as ``const ref x = f(g());``,
 then the temporary local variables for that statement are deinitialized at
 the end of the containing block. Otherwise, the temporary local variables
 are deinitialized at the end of the containing statement.
@@ -751,8 +927,9 @@ are deinitialized at the end of the containing statement.
 
       proc temporaryInDeclaration() {
         const x = f(makeRecord());
+        // the temporary result of 'makeRecord()' is deinited here
         writeln("block ending");
-        // 'x' and the temporary result of 'makeRecord()' are deinited here
+        // 'x' is deinited here
       }
 
       proc temporaryInConstRefDeclaration() {
@@ -772,8 +949,8 @@ are deinitialized at the end of the containing statement.
 
       init (default)
       init (default)
-      block ending
       deinit 0
+      block ending
       deinit 0
       init (default)
       init (default)
@@ -788,6 +965,11 @@ are deinitialized at the end of the containing statement.
 
 
 
+.. index::
+   single: copy initialization
+   single: move initialization
+   single: initialization; copy
+   single: initialization; move
 .. _Copy_and_Move_Initialization:
 
 Copy and Move Initialization
@@ -795,24 +977,30 @@ Copy and Move Initialization
 
 This section uses the terminology *copy* and *move*. These terms
 describe how a Chapel program initializes a variable based upon an
-existing variable. Both *copy* and *move* create a new variable
+existing variable. Both *copy* and *move* initialize a new variable
 from an initial variable.
+The compiler may change *copy initialization* to *move initialization*
+with :ref:`Copy_Elision`.
 
 Since records can use ``init=`` and ``deinit`` methods to adjust the
 behavior of copy initialization, this section is particularly relevant
 for records. In is also relevant for non-nilable ``owned`` class types
-since copies of those types will not be allowed by the compiler.
+since copies of those types will not be allowed by the compiler,
+and to strings, arrays, and domains that have record-like behavior
+in this regard. For records and other types that behave like
+"plain old data", *copy* and *move* are indistinguishable.
 
 After a *copy*, both the new variable and the initial variable exist
-separately. Generally speaking, they can both be modified.  However, they
-should generally refer to different storage. In particular, changing a
+separately. Generally speaking, they refer to different storage and
+can be modified independently.  For example, changing a
 field in the new record variable should not change the corresponding
 field in the initial record variable.
 
-A *move* is when a variable changes storage location. It is similar to a
+A *move* is when the value changes its storage location from the initial
+to the new variable. It is similar to a
 *copy initialization* but it represents a transfer rather than
-duplication. In particular, the initial record is no longer available
-after the *move*.  A *move* can be thought of as an optimized form a
+duplication. In particular, the initial record variable is no longer available
+after the *move*.  A *move* can be thought of as an optimized form of a
 *copy* followed by destruction of the initial record.  After a *move*,
 there is only one record variable - where after a *copy* there are two.
 
@@ -882,13 +1070,15 @@ local var last mention
   again - see :ref:`Copy_Elision` for further details
 
 local var mentioned again
-  means a use of a function-local variable which is mentioned again
+  means a use of a function-local variable which is mentioned again later
 
 outer/ref
-  means a use of a module-scope variable, an outer scope variable, or a
-  reference variable or argument
+  means a use of a module-scope variable, a variable in an outer
+  function, or reference variable or argument
 
 
+.. index::
+   single: copy elision
 .. _Copy_Elision:
 
 Copy Elision
@@ -908,8 +1098,22 @@ is not mentioned again, the copy will be elided.  Since a ``return`` or
 ``throw`` exits a function, a copy can be elided if it is followed
 immediately by a ``return`` or ``throw``. When searching forward from
 variable declarations, copy elision considers eliding copies only within
-block statements ``{ }``, ``local`` blocks, ``serial`` blocks, ``try``
-blocks, ``try!`` blocks, and conditionals.
+block statements ``{ }``, ``local`` blocks, ``serial`` blocks, ``sync`` blocks,
+``try`` blocks, ``try!`` blocks, ``select`` blocks, and conditionals. As with 
+split initialization, the compiler ignores blocks that are statically known to
+be unreachable.
+
+
+Copy elision does not apply:
+
+ * when the source variable is a reference, field, or module-level
+   variable
+ * when the copy statement is in a conditional or ``select`` branch and
+   at least one branch does not contain the copy, a ``return``, or a ``throw``
+ * when the copy statement is in a ``try`` or ``try!`` block which has
+   ``catch`` clauses that mention the variable or which has ``catch``
+   clauses that do not always ``throw`` or ``return``.
+
 
    *Example (copy-elision.chpl)*
 
@@ -1006,15 +1210,4 @@ blocks, ``try!`` blocks, and conditionals.
       block ending
       deinit 0
 
-
-Copy elision does not apply:
-
- * when the source variable is a reference, field, or module-level
-   variable
- * when the copy statement is in one branch of a conditional but not in
-   the other, or when the other branch does not always ``return`` or
-   ``throw``.
- * when the copy statement is in a ``try`` or ``try!`` block which has
-   ``catch`` clauses that mention the variable or which has ``catch``
-   clauses that do not always ``throw`` or ``return``.
 

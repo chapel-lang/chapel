@@ -1,0 +1,3 @@
+slice-of-unaligned-1.chpl:3: error: halt reached - slicing of an unaligned range is currently not supported
+  (please feel encouraged to file a GitHub issue requesting this:
+   https://github.com/chapel-lang/chapel/issues)

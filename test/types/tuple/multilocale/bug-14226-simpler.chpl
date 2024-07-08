@@ -24,7 +24,7 @@ record B {
 proc main() {
 
   var r = new B(new unmanaged A());
-  var buff = [new B(new unmanaged A())];
+  var buff = [new B(new unmanaged A()), ];
 
   on Locales[numLocales-1] {
    // uncommenting the following gets it to work

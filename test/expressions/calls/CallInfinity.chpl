@@ -1,1 +1,1 @@
-writeln(INFINITY());
+writeln(inf());

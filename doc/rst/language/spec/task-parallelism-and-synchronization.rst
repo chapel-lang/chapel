@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: synchronization
 .. _Chapter-Task_Parallelism_and_Synchronization:
 
 ====================================
@@ -38,6 +40,18 @@ details task parallelism as follows:
 -  :ref:`Serial` describes the serial statement, a structured
    way to suppress parallelism.
 
+-  :ref:`Yield_Task_Execution` describes yielding the current tasks
+   execution.
+
+
+.. index::
+   single: task parallelism
+   single: parallelism; task
+   single: task parallelism; task creation
+   single: task creation
+   single: task function
+   single: task parallelism; task function
+   single: tasks
 .. _Task_parallelism:
 
 Tasks and Task Parallelism
@@ -46,8 +60,8 @@ Tasks and Task Parallelism
 A Chapel *task* is a distinct context of execution that may be running
 concurrently with other tasks. Chapel provides a simple construct, the
 ``begin`` statement, to create tasks, introducing concurrency into a
-program in an unstructured way. In addition, Chapel introduces two type
-qualifiers, ``sync`` and ``single``, for synchronization between tasks.
+program in an unstructured way. In addition, Chapel introduces the type
+qualifier ``sync`` for synchronization between tasks.
 
 Chapel provides two constructs, the ``cobegin`` and ``coforall``
 statements, to introduce concurrency in a more structured way. These
@@ -63,7 +77,10 @@ Tasks are considered to be created when execution reaches the start of a
 actually executed depends on the Chapel implementation and run-time
 execution state.
 
-A task is represented as a call to a *task function*, whose body
+Tasks created by ``begin``, ``cobegin``, and ``coforall`` can depend upon
+each other, even if that leads to the program not being serializable.
+
+A task is implemented as a call to a *task function*, whose body
 contains the Chapel code for the task. Variables defined in outer scopes
 are considered to be passed into a task function by default intent,
 unless a different *task intent* is specified explicitly by a
@@ -75,6 +92,9 @@ Memory Consistency Model
 accesses can result from aliasing due to ``ref`` argument intents or
 task intents, among others.
 
+.. index::
+   single: begin
+   single: statements; begin
 .. _Begin:
 
 The Begin Statement
@@ -132,6 +152,14 @@ task function and the role of ``task-intent-clause`` are defined in
 Yield and return statements are not allowed in begin blocks. Break and
 continue statements may not be used to exit a begin block.
 
+.. index::
+   single: sync
+   single: sync variables
+   single: single
+   single: single variables
+   single: synchronization variables; sync
+   single: synchronization types; formal arguments
+   single: synchronization types; actual arguments
 .. _Synchronization_Variables:
 
 Synchronization Variables
@@ -143,42 +171,30 @@ reads of a synchronization variable cannot proceed until the variable’s
 state is full. Normal writes of a synchronization variable cannot
 proceed until the variable’s state is empty.
 
-Chapel supports two types of synchronization variables: ``sync`` and ``single``.
-Both types behave similarly, except that a ``single`` variable may only be
-written once. Consequently, when a ``sync`` variable is read, its state
-transitions to empty, whereas when a ``single`` variable is read, its state
-does not change. When either type of synchronization variable is
-written, its state transitions to full.
-
-``sync`` and ``single`` are type qualifiers and precede the type of the
-variable’s value in the declaration. ``sync`` and ``single`` are
-supported for the primitive types ``nothing``, ``bool``, ``int``,
-``uint``, ``real``, ``imag``, ``complex``, ``range``, ``bytes``, and
-``string`` ( :ref:`Primitive_Types`); for enumerated types
+The ``sync`` type qualifier precedes the type of the variable’s value in
+the declaration. ``sync`` is supported for the primitive types
+``nothing``, ``bool``, ``int``, ``uint``, ``real``, ``imag``,
+``complex``, ``range``, ``bytes``, and ``string``
+( :ref:`Primitive_Types`); for enumerated types
 ( :ref:`Enumerated_Types`); and for class types (:ref:`Class_Types`) and
-record types (:ref:`Record_Types`). For sync variables of class type, the
-full/empty state applies to the reference to the class object, not to its
-member fields.
+record types (:ref:`Record_Types`). For sync variables of class type,
+the full/empty state applies to the reference to the class object, not
+to its member fields.
 
 If a task attempts to read or write a synchronization variable that is
 not in the correct state, the task is suspended. When the variable
 transitions to the correct state, the task is resumed. If there are
-multiple tasks blocked waiting for the state transition:
+multiple tasks blocked waiting for the state transition one task is
+non-deterministically selected to proceed and the others continue to
+wait.
 
- * for a ``sync`` variable, one task is non-deterministically selected to
-   proceed and the others continue to wait
- * for a ``single`` variable, all tasks are selected to proceed.
-
-A synchronization variable is specified with a ``sync`` or ``single``
-type given by the following syntax:
+A synchronization variable is specified with a ``sync`` type given by
+the following syntax:
 
 .. code-block:: syntax
 
    sync-type:
      'sync' type-expression
-
-   single-type:
-     'single' type-expression
 
 A default-initialized synchronization variable will be empty. A
 synchronization variable initialized from another expression will be
@@ -199,10 +215,10 @@ full and store the value from that expression.
           if (isLeaf) then
              return value;
 
-          var x$: sync int;
-          begin x$.writeEF(left!.sum());
+          var x: sync int;
+          begin x.writeEF(left!.sum());
           var y = right!.sum();
-          return x$.readFE() + y;
+          return x.readFE() + y;
         }
       }
 
@@ -228,19 +244,17 @@ full and store the value from that expression.
 
       4
 
-   the sync variable ``x$`` is assigned by an
+   the sync variable ``x`` is assigned by an
    asynchronous task created with the begin statement. The task
-   returning the sum waits on the reading of ``x$``
-   until it has been assigned. By convention, synchronization variables
-   end in ``$`` to provide a visual cue to the programmer indicating
-   that the task may block.
+   returning the sum waits on the reading of ``x``
+   until it has been assigned.
 
 ..
 
-   *Example (singleVar.chpl)*.
+   *Example (syncVar.chpl)*.
 
    The following code implements a simple split-phase barrier using a
-   single variable.
+   sync variable.
 
    .. BLOCK-test-chapelpre
 
@@ -253,19 +267,19 @@ full and store the value from that expression.
 
    .. code-block:: chapel
 
-      var count$: sync int = n;  // counter which also serves as a lock
-      var release$: single bool; // barrier release
+      var count: sync int = n;  // counter which also serves as a lock
+      var release: sync bool; // barrier release
 
       forall t in 1..n do begin {
         work(t);
-        var myc = count$.readFE();  // read the count, set state to empty
+        var myc = count.readFE();  // read the count, set state to empty
         if myc!=1 {
           write(".");
-          count$.writeEF(myc-1);   // update the count, set state to full
+          count.writeEF(myc-1);   // update the count, set state to full
           // we could also do some work here before blocking
-          release$.readFF();
+          release.readFF();
         } else {
-          release$.writeEF(true);  // last one here, release everyone
+          release.writeEF(true);  // last one here, release everyone
           writeln("done");
         }
       }
@@ -277,11 +291,11 @@ full and store the value from that expression.
       ...........................................done
 
    In each iteration of the forall loop after the work is completed, the
-   task reads the ``count$`` variable, which is used
+   task reads the ``count`` variable, which is used
    to tally the number of tasks that have arrived. All tasks except the
    last task to arrive will block while trying to read the variable
-   ``release$``. The last task to arrive will write
-   to ``release$``, setting its state to full at
+   ``release``. The last task to arrive will write
+   to ``release``, setting its state to full at
    which time all the other tasks can be unblocked and run.
 
 If a formal argument with a default intent either has a synchronization
@@ -290,113 +304,25 @@ type or the formal is generic
 synchronization type, the actual must be an lvalue and is passed by
 reference. In these cases the formal itself is an lvalue, too. The
 actual argument is not read or written during argument passing; its
-state is not changed or waited on. The qualifier ``sync`` or ``single``
-without the value type can be used to specify a generic formal argument
-that requires a ``sync`` or ``single`` actual.
+state is not changed or waited on. The qualifier ``sync`` without the
+value type can be used to specify a generic formal argument that
+requires a ``sync`` actual.
 
-When the actual argument is a ``sync`` or ``single`` and the
-corresponding formal has the actual’s base type or is implicitly
-converted from that type, a normal read of the actual is performed when
-the call is made, and the read value is passed to the formal.
-
+.. index::
+   pair: sync; predefined functions
 .. _Functions_on_Synchronization_Variables:
 
-Predefined Single and Sync Methods
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Predefined Sync Methods
+~~~~~~~~~~~~~~~~~~~~~~~
 
-The following methods are defined for variables of ``sync`` and
-``single`` type.
+The following methods are defined for variables of ``sync`` type:
 
+.. include:: /builtins/ChapelSyncvar.rst
 
-   .. code-block:: chapel
-
-      proc (sync t).readFE(): t
-
-Returns the value of the sync variable. This method blocks until the
-sync variable is full. The state of the sync variable is set to empty
-when this method completes. This method implements the normal read of a
-``sync`` variable.
-
-
-
-   .. code-block:: chapel
-
-      proc (sync t).readFF(): t
-      proc (single t).readFF(): t
-
-Returns a copy of the value of the ``sync`` or ``single`` variable. This
-method blocks until the ``sync`` or ``single`` variable is full. The
-state of the ``sync`` or ``single`` variable remains full when this
-method completes. This method implements the normal read of a ``single``
-variable.
-
-   .. code-block:: chapel
-
-      proc (sync t).readXX(): t
-      proc (single t).readXX(): t
-
-This method does not block and the state of the ``sync`` or ``single``
-variable is unchanged when this method completes.
-
-This function returns:
-
-  * for a full ``sync`` or ``single``, a copy of the value stored
-  * for an empty ``sync`` or ``single``, the implementation will return
-    either a new default-initialized value of type ``t`` or the last value
-    stored.
-
-
-   .. code-block:: chapel
-
-      proc (sync t).writeEF(v: t)
-      proc (single t).writeEF(v: t)
-
-Assigns ``v`` to the value of the sync or single variable. This method
-blocks until the sync or single variable is empty. The state of the sync
-or single variable is set to full when this method completes. This
-method implements the normal write of a ``sync`` or ``single`` variable.
-
-
-
-   .. code-block:: chapel
-
-      proc (sync t).writeFF(v: t)
-
-Assigns ``v`` to the value of the sync variable. This method blocks
-until the sync variable is full. The state of the sync variable remains
-full when this method completes.
-
-
-
-   .. code-block:: chapel
-
-      proc (sync t).writeXF(v: t)
-
-Assigns ``v`` to the value of the sync variable. This method is
-non-blocking and the state of the sync variable is set to full when this
-method completes.
-
-
-
-   .. code-block:: chapel
-
-      proc (sync t).reset()
-
-Assigns the default value of type ``t`` to the value of the sync
-variable. This method is non-blocking and the state of the sync variable
-is set to empty when this method completes.
-
-
-
-   .. code-block:: chapel
-
-      proc (sync t).isFull: bool
-      proc (single t).isFull: bool
-
-Returns ``true`` if the sync or single variable is full and ``false``
-otherwise. This method is non-blocking and the state of the sync or
-single variable is unchanged when this method completes.
-
+.. index::
+   single: atomic variables; atomic
+   single: atomic
+   pair: atomic; predefined functions
 .. _Atomic_Variables:
 .. _Functions_on_Atomic_Variables:
 
@@ -415,6 +341,9 @@ by the following syntax:
 
 .. include:: /builtins/Atomics.rst
 
+.. index::
+   single: cobegin
+   single: statements; cobegin
 .. _Cobegin:
 
 The Cobegin Statement
@@ -445,10 +374,10 @@ statements may not be used to exit a cobegin block.
 
    .. BLOCK-test-chapelpre
 
-      var s1, s2: sync int;
-      proc stmt1() { s1.readFE(); }
-      proc stmt2() { s2.readFE(); s1.writeEF(1); }
-      proc stmt3() { s2.writeEF(1); }
+      var sync1, sync2: sync int;
+      proc stmt1() { sync1.readFE(); }
+      proc stmt2() { sync2.readFE(); sync1.writeEF(1); }
+      proc stmt3() { sync2.writeEF(1); }
 
 
 
@@ -461,21 +390,24 @@ statements may not be used to exit a cobegin block.
       }
 
    is equivalent to the following code that uses only begin statements
-   and single variables to introduce concurrency and synchronize:
+   and sync variables to introduce concurrency and synchronize:
 
 
    .. code-block:: chapel
 
-      var s1$, s2$, s3$: single bool;
-      begin { stmt1(); s1$.writeEF(true); }
-      begin { stmt2(); s2$.writeEF(true); }
-      begin { stmt3(); s3$.writeEF(true); }
-      s1$.readFF(); s2$.readFF(); s3$.readFF();
+      var s1, s2, s3: sync bool;
+      begin { stmt1(); s1.writeEF(true); }
+      begin { stmt2(); s2.writeEF(true); }
+      begin { stmt3(); s3.writeEF(true); }
+      s1.readFF(); s2.readFF(); s3.readFF();
 
    Each begin statement is executed concurrently but control does not
-   continue past the final line above until each of the single variables
+   continue past the final line above until each of the sync variables
    is written, thereby ensuring that each of the functions has finished.
 
+.. index::
+   single: coforall
+   single: statements; coforall
 .. _Coforall:
 
 The Coforall Loop
@@ -525,36 +457,41 @@ statements may not be used to exit a coforall block.
       }
 
    is equivalent to the following code that uses only begin statements
-   and sync and single variables to introduce concurrency and
-   synchronize:
+   and sync variables to introduce concurrency and synchronize:
 
    .. code-block:: chapel
 
-      var runningCount$: sync int = 1;
-      var finished$: single bool;
+      var runningCount: sync int = 1;
+      var finished: sync bool;
       for i in iterator() {
-        runningCount$.writeEF(runningCount$.readFE() + 1);
+        runningCount.writeEF(runningCount.readFE() + 1);
         begin {
           body();
-          var tmp = runningCount$.readFE();
-          runningCount$.writeEF(tmp-1);
-          if tmp == 1 then finished$.writeEF(true);
+          var tmp = runningCount.readFE();
+          runningCount.writeEF(tmp-1);
+          if tmp == 1 then finished.writeEF(true);
         }
       }
-      var tmp = runningCount$.readFE();
-      runningCount$.writeEF(tmp-1);
-      if tmp == 1 then finished$.writeEF(true);
-      finished$.readFF();
+      var tmp = runningCount.readFE();
+      runningCount.writeEF(tmp-1);
+      if tmp == 1 then finished.writeEF(true);
+      finished.readFF();
 
    Each call to ``body()`` executes concurrently because it is in a
    begin statement. The sync variable
-   ``runningCount$`` is used to keep track of the
+   ``runningCount`` is used to keep track of the
    number of executing tasks plus one for the main task. When this
-   variable reaches zero, the single variable
-   ``finished$`` is used to signal that all of the
+   variable reaches zero, the sync variable
+   ``finished`` is used to signal that all of the
    tasks have completed. Thus control does not continue past the last
    line until all of the tasks have completed.
 
+.. index::
+   single: keywords; with (task intent)
+   single: with; task intent
+   single: task intents
+   single: task parallelism; task functions
+   single: task parallelism; task intents
 .. _Task_Intents:
 
 Task Intents
@@ -569,17 +506,24 @@ task creation time. All references to the variable within the task
 function implicitly refer to a *shadow variable*, i.e. the task
 function’s corresponding formal argument.
 
-When the task construct is inside a method on a record and accesses a
-field of ``this``, the field itself is treated as an outer variable. That is,
+When the task construct is inside a method on a record, accesses a
+field of ``this``, and does not contain an explicit task intent on ``this``
+(see below), the field itself is treated as an outer variable. That is,
 it is passed as an actual argument to the task function and all
 references to the field within the task function implicitly refer to the
 corresponding shadow variable.
 
-Each formal argument of a task function has the default argument intent
-by default. For variables of primitive and class types, this has the
-effect of capturing the value of the variable at task creation time and
-referencing that value instead of the original variable within the
-lexical scope of the task construct.
+The implicit formals of task functions generally have
+:ref:`the default argument intent <The_Default_Intent>` by default. Note that
+the default intent usually allows the compiler to assume that the value will
+not be concurrently modified. That assumption is useful for the compiler to, for example, make a per-task copy of an outer variable of ``int`` type.
+
+Implicit formals of array types are an exception: they inherit their default
+intent from the array actual. An immutable array has a default intent of
+``const`` and a mutable array has a default intent of ``ref``. This allows
+arrays to be modified inside the body of a task function if it is modifiable
+outside the body of the task function. A mutable array can have an explicit
+``const`` task intent to make it immutable inside the body of a task function.
 
 A formal can be given another argument intent explicitly by listing it
 with that intent in the optional ``task-intent-clause``. For example,
@@ -717,6 +661,9 @@ subject to such treatment within nested task constructs, if any.
       which would apply the intent to all variables. An example of syntax
       for a blanket ``ref`` intent would be ``ref *``.
 
+.. index::
+   single: sync
+   single: statements; sync
 .. _Sync_Statement:
 
 The Sync Statement
@@ -805,10 +752,17 @@ continue statements may not be used to exit a sync statement block.
    wait for these begin statements to complete whereas the latter code
    will not.
 
+.. index::
+   single: serial
+   single: statements; serial
 .. _Serial:
 
 The Serial Statement
 --------------------
+
+.. note::
+
+   The ``serial`` statement is unstable and likely to be deprecated.
 
 The ``serial`` statement can be used to dynamically disable parallelism.
 The syntax is:
@@ -926,3 +880,12 @@ generates task according to normal Chapel rules.
 
    because the expression evaluated to determine whether to serialize
    always evaluates to true.
+
+.. _Yield_Task_Execution:
+
+Yielding Task Execution
+-----------------------
+
+Execution of the current task can be explicitly yielded with
+``currentTask.yieldExecution()``, providing an opportunity for other tasks to
+execute.

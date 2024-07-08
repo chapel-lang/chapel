@@ -10,27 +10,27 @@ proc main(args:[] string)
 
   for arg in args[1..] {
     if isFile(arg) then
-      paths.append(arg);
+      paths.pushBack(arg);
     else if isDir(arg) then
-      for path in findfiles(arg, recursive=true) do
-        paths.append(path);
+      for path in findFiles(arg, recursive=true) do
+        paths.pushBack(path);
   }
 
   // Now create a distributed-memory version of paths.
 
   var n:int = paths.size;
-  var BlockN = {1..n} dmapped Block({1..n});
+  var BlockN = {1..n} dmapped new blockDist({1..n});
   var distributedPaths:[BlockN] string;
   distributedPaths = paths.toArray();
-  var BlockNumLocales = {0..#numLocales} dmapped Block({0..#numLocales});
+  var BlockNumLocales = {0..#numLocales} dmapped new blockDist({0..#numLocales});
   var distributedBuffers: [BlockNumLocales] file;
   var distributedWriters: [BlockNumLocales]
-    channel(writing=true, kind=iokind.native, locking=true);
+    fileWriter(locking=true);
   
   // Open up buffers to store the hashes 
   forall (f,w) in zip(distributedBuffers, distributedWriters) {
-    f = openmem();
-    w = f.writer();
+    f = openMemFile();
+    w = f.writer(locking=false);
   }
   // Compute the SHA1 sums using the external program
   // Do so in parallel across all locales
@@ -52,8 +52,8 @@ proc main(args:[] string)
       for f in distributedBuffers {
         on f do {
           var data:string;
-          var reader = f.reader();
-          reader.readstring(data);
+          var reader = f.reader(locking=false);
+          reader.readAll(data);
           sorter.stdin.writeln(data);
         }
       }
@@ -84,6 +84,3 @@ proc main(args:[] string)
 
   sorter.wait();
 }
-
-
-

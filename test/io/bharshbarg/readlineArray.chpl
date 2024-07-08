@@ -4,9 +4,9 @@ config const n = 100;
 config const line = 60;
 config const debug = false;
 
-var f = openmem();
-var r = f.reader();
-var w = f.writer();
+var f = openMemFile();
+var r = f.reader(locking=false);
+var w = f.writer(locking=false);
 
 var numChars = 0;
 for i in 1..n {

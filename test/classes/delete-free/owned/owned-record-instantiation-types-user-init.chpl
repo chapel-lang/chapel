@@ -32,8 +32,9 @@ record GenericCollection {
 }
 
 {
+  var ownInner = new owned MyClass();
   var c:GenericCollection(borrowed MyClass)
-        = new GenericCollection(new borrowed MyClass());
+        = new GenericCollection(ownInner.borrow());
   writeln("(borrowed) c ", c.type:string, " has field ", c.field.type:string);
 }
 

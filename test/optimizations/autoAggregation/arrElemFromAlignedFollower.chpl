@@ -2,7 +2,7 @@ writeln();
 
 use BlockDist;
 
-var dom = newBlockDom(0..10);
+var dom = blockDist.createDomain(0..10);
 
 var a: [dom] int, b: [dom] int;
 
@@ -13,7 +13,7 @@ for i in a.domain {
 // we want the follower's index to be recognized as local, and have destination
 // aggregation to fire
 writeln("Loop 1 -- expecting destination aggregation");
-forall (i, elem) in zip(a.domain, a) {
+forall (i, elem) in zip(a.domain, a) with (ref b) {
   b[10-i] = elem;
 }
 writeln("End Loop 1");
@@ -25,7 +25,7 @@ writeln();
 // in compilation because the statement not being the last one in the body
 var dummy = 0;
 writeln("Loop 2 -- expecting no aggregation");
-forall (i, elem) in zip(a.domain, a) with (ref dummy) {
+forall (i, elem) in zip(a.domain, a) with (ref dummy, ref b) {
   b[10-i] = elem;
   dummy = b[10-i];
 }
@@ -35,9 +35,9 @@ writeln(b);
 writeln();
 
 // scatter-like pattern
-var randomIndices = [i in 0..10 by -1] i;
+var randomIndices = [i in 0..10] i;
 writeln("Loop 3 -- expecting destination aggregation");
-forall (idx, elem) in zip(dom, a) {
+forall (idx, elem) in zip(dom, a) with (ref b) {
   b[randomIndices[idx]] = elem;  // expect two confirmations: fast follower, slow follower
 }
 writeln("End Loop 3");
@@ -59,7 +59,7 @@ writeln();
 // inspired by arkouda -- rhs is local but not leader, lhs is random access
 writeln("Loop 5 -- expecting destination aggregation");
 var otherArr: [dom] int;
-forall (aElem, bElem) in zip(a, b) {
+forall (aElem, bElem) in zip(a, b) with (ref otherArr) {
   otherArr[aElem] = bElem;
 }
 writeln("End Loop 5");

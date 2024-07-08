@@ -93,9 +93,9 @@ This specification is organized as follows:
    programs on distributed-memory systems.
 
 -  Chapter :ref:`Chapter-Domain_Maps` describes
-   Chapel’s *domain map* construct for defining the layout of domains
-   and arrays within a single locale and/or the distribution of domains
-   and arrays across multiple locales.
+   Chapel’s *distributions*, which define how domains and arrays are stored
+   in memory and/or distributed across multiple locales and how
+   data-parallel operations are performed.
 
 -  Chapter :ref:`Chapter-User_Defined_Reductions_and_Scans` describes
    how Chapel programmers

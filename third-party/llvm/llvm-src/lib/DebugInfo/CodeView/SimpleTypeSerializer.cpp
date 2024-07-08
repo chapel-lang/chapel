@@ -7,7 +7,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/DebugInfo/CodeView/SimpleTypeSerializer.h"
-#include "llvm/DebugInfo/CodeView/TypeRecord.h"
+#include "llvm/DebugInfo/CodeView/CVRecord.h"
+#include "llvm/DebugInfo/CodeView/RecordSerialization.h"
 #include "llvm/DebugInfo/CodeView/TypeRecordMapping.h"
 #include "llvm/Support/BinaryStreamWriter.h"
 
@@ -29,11 +30,11 @@ static void addPadding(BinaryStreamWriter &Writer) {
 
 SimpleTypeSerializer::SimpleTypeSerializer() : ScratchBuffer(MaxRecordLength) {}
 
-SimpleTypeSerializer::~SimpleTypeSerializer() {}
+SimpleTypeSerializer::~SimpleTypeSerializer() = default;
 
 template <typename T>
 ArrayRef<uint8_t> SimpleTypeSerializer::serialize(T &Record) {
-  BinaryStreamWriter Writer(ScratchBuffer, support::little);
+  BinaryStreamWriter Writer(ScratchBuffer, llvm::endianness::little);
   TypeRecordMapping Mapping(Writer);
 
   // Write the record prefix first with a dummy length but real kind.

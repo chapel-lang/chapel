@@ -1,0 +1,8 @@
+Tests the slurm-srun launcher when there are slurm reservations included in
+the sinfo output. It makes use of Python's unittest framework. Note that the
+functionality of hello.chpl doesn't matter, it is invoked with --dry-run so
+that it doesn't actually run. The tests look for the proper launcher
+arguments in the output. The launcher invokes sbatch and sinfo during
+processing, dummy versions of these are in ./bin so that the launcher doesn't
+invoke the real versions and instead gets canned output. These tests can
+therefore run on a non-slurm system as long as CHPL_LAUNCHER=slurm-srun.

@@ -212,8 +212,8 @@ out:
 	return ret;
 }
 
-static int sock_cq_report_context(struct sock_cq *cq, fi_addr_t addr,
-				  struct sock_pe_entry *pe_entry)
+static ssize_t sock_cq_report_context(struct sock_cq *cq, fi_addr_t addr,
+				      struct sock_pe_entry *pe_entry)
 {
 	struct fi_cq_entry cq_entry;
 	cq_entry.op_context = (void *) (uintptr_t) pe_entry->context;
@@ -229,8 +229,8 @@ static uint64_t sock_cq_sanitize_flags(uint64_t flags)
 				FI_REMOTE_CQ_DATA | FI_MULTI_RECV));
 }
 
-static int sock_cq_report_msg(struct sock_cq *cq, fi_addr_t addr,
-			      struct sock_pe_entry *pe_entry)
+static ssize_t sock_cq_report_msg(struct sock_cq *cq, fi_addr_t addr,
+			          struct sock_pe_entry *pe_entry)
 {
 	struct fi_cq_msg_entry cq_entry;
 	cq_entry.op_context = (void *) (uintptr_t) pe_entry->context;
@@ -239,8 +239,8 @@ static int sock_cq_report_msg(struct sock_cq *cq, fi_addr_t addr,
 	return _sock_cq_write(cq, addr, &cq_entry, sizeof(cq_entry));
 }
 
-static int sock_cq_report_data(struct sock_cq *cq, fi_addr_t addr,
-			       struct sock_pe_entry *pe_entry)
+static ssize_t sock_cq_report_data(struct sock_cq *cq, fi_addr_t addr,
+			           struct sock_pe_entry *pe_entry)
 {
 	struct fi_cq_data_entry cq_entry;
 	cq_entry.op_context = (void *) (uintptr_t) pe_entry->context;
@@ -251,8 +251,8 @@ static int sock_cq_report_data(struct sock_cq *cq, fi_addr_t addr,
 	return _sock_cq_write(cq, addr, &cq_entry, sizeof(cq_entry));
 }
 
-static int sock_cq_report_tagged(struct sock_cq *cq, fi_addr_t addr,
-				 struct sock_pe_entry *pe_entry)
+static ssize_t sock_cq_report_tagged(struct sock_cq *cq, fi_addr_t addr,
+				     struct sock_pe_entry *pe_entry)
 {
 	struct fi_cq_tagged_entry cq_entry;
 	cq_entry.op_context = (void *) (uintptr_t) pe_entry->context;
@@ -333,7 +333,7 @@ static inline ssize_t sock_cq_rbuf_read(struct sock_cq *cq, void *buf,
 static ssize_t sock_cq_sreadfrom(struct fid_cq *cq, void *buf, size_t count,
 			fi_addr_t *src_addr, const void *cond, int timeout)
 {
-	int ret = 0;
+	ssize_t ret = 0;
 	size_t threshold;
 	struct sock_cq *sock_cq;
 	uint64_t start_ms;
@@ -449,7 +449,8 @@ static ssize_t sock_cq_readerr(struct fid_cq *cq, struct fi_cq_err_entry *buf,
 			&& buf->err_data && buf->err_data_size) {
 			err_data = buf->err_data;
 			err_data_size = buf->err_data_size;
-			*buf = entry;
+			ofi_cq_err_memcpy(api_version, buf, &entry);
+
 			buf->err_data = err_data;
 
 			/* Fill provided user's buffer */
@@ -733,7 +734,7 @@ int sock_cq_report_error(struct sock_cq *cq, struct sock_pe_entry *entry,
 			 size_t err_data_size)
 {
 	int ret;
-	struct fi_cq_err_entry err_entry;
+	struct fi_cq_err_entry err_entry = {0};
 
 	pthread_mutex_lock(&cq->lock);
 	if (ofi_rbavail(&cq->cqerr_rb) < sizeof(err_entry)) {

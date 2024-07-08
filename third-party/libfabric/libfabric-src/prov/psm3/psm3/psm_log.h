@@ -226,7 +226,7 @@ extern void psmi_log_fini(void);
 /* EPM is short for Emit Protocol Message to the log file.
 OPCODE is an int, and corresponds to one of the OPCODES declared in ptl_ips/ips_proto_header.h
 TXRX is an int, and should be one of the above two consts (PSM2_LOG_TX, or PSM2_LOG_RX).
-FROMEPID and TOEPID are uint64_t's and the fromepid should be the epid (end point id) of the sender   of the message
+FROMEPID and TOEPID are psm2_epid_t's and the fromepid should be the epid (end point id) of the sender   of the message
                                    and the toepid   should be the epid (end point id) of the receiver of the message
     */
 #define PSM2_LOG_EPM(OPCODE,TXRX,FROMEPID,TOEPID,FORMAT,...)				\

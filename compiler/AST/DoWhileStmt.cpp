@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,7 +29,7 @@
 *                                                                           *
 ************************************* | ************************************/
 
-BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
+BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body, LLVMMetadataList attrs)
 {
   VarSymbol*   condVar       = newTemp();
   CallExpr*    condTest      = new CallExpr("_cond_test", cond);
@@ -53,6 +53,8 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body)
 
   loop->mContinueLabel = continueLabel;
   loop->mBreakLabel    = breakLabel;
+
+  loop->mLLVMMetadataList = attrs;
 
   retval->insertAtTail(new DefExpr(condVar));
 
@@ -87,6 +89,8 @@ DoWhileStmt* DoWhileStmt::copyInner(SymbolMap* map)
   DoWhileStmt* retval = new DoWhileStmt(cond, body);
 
   retval->copyInnerShare(*this, map);
+  retval->userLabel = this->userLabel;
+  retval->mLLVMMetadataList = mLLVMMetadataList;
 
   return retval;
 }

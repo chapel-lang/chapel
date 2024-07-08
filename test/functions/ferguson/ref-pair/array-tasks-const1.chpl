@@ -48,7 +48,7 @@ readCaptureCoforall(getter(globalArray));
 readCaptureCobegin(getter(globalArray));
 readCaptureBegin(getter(globalArray));
 
-proc writeit(x) {
+proc writeit(ref x) {
   x = 1;
 }
 

@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -16,16 +16,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ifeq ($(CHPL_MAKE_GASNET_VERSION),ex)
+  COMM_SUFFIX=-ex
+endif
+
 COMM_LAUNCHER_SRCS = \
         comm-gasnet-launch.c \
         comm-gasnet-locales.c \
 
 COMM_SRCS = \
-	comm-gasnet.c \
+	comm-gasnet$(COMM_SUFFIX).c \
 	comm-gasnet-locales.c \
 
 SRCS = \
-  comm-gasnet.c \
+  comm-gasnet$(COMM_SUFFIX).c \
   comm-gasnet-launch.c \
   comm-gasnet-locales.c \
 
@@ -45,6 +49,6 @@ endif
 endif
 endif
 
-$(RUNTIME_OBJ_DIR)/comm-gasnet.o: comm-gasnet.c $(RUNTIME_OBJ_DIR_STAMP)
+$(RUNTIME_OBJ_DIR)/comm-gasnet$(COMM_SUFFIX).o: comm-gasnet$(COMM_SUFFIX).c $(RUNTIME_OBJ_DIR_STAMP)
 	$(CC) -c $(RUNTIME_CFLAGS) $(CHPL_GASNET_CFLAGS) $(RUNTIME_INCLS) -o $@ $<
 

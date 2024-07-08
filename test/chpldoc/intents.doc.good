@@ -1,4 +1,4 @@
-intents.doc.chpl:78: warning: This file-scope code is outside of any explicit module declarations (e.g., module Inner), so an implicit module named 'intents.doc' is being introduced to contain the file's contents.
+warning in intents.doc.chpl:78: an implicit module named 'intents.doc' is being introduced to contain file-scope code
 .. default-domain:: chpl
 
 .. module:: intents.doc
@@ -85,6 +85,31 @@ or
 .. function:: proc fourteen()
 
    This function has a return intent (other than ref) and a body 
+
+.. record:: foo
+
+   .. method:: proc contains(x: eltType): bool
+
+      this method has a "const" "this" intent 
+
+   .. method:: proc eighteen
+
+      
+      This method has a "const ref" "this" intent
+      
+
+.. function:: proc fifteen(type t) param: int
+
+   I am test fifteen, a test for return intent and type 
+
+.. function:: proc sixteen(v: int) param: bool
+
+   I am test sixteen, a test for return intent and type 
+
+.. function:: proc seventeen(param q: bool) param: string
+
+   I am test seventeen, cousin of sixteen,
+   also a test for return intent and type 
 
 .. default-domain:: chpl
 

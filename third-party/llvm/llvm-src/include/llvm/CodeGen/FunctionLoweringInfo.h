@@ -35,7 +35,7 @@ namespace llvm {
 class Argument;
 class BasicBlock;
 class BranchProbabilityInfo;
-class LegacyDivergenceAnalysis;
+class DbgDeclareInst;
 class Function;
 class Instruction;
 class MachineFunction;
@@ -44,6 +44,11 @@ class MachineRegisterInfo;
 class MVT;
 class SelectionDAG;
 class TargetLowering;
+
+template <typename T> class GenericSSAContext;
+using SSAContext = GenericSSAContext<Function>;
+template <typename T> class GenericUniformityInfo;
+using UniformityInfo = GenericUniformityInfo<SSAContext>;
 
 //===--------------------------------------------------------------------===//
 /// FunctionLoweringInfo - This contains information that is global to a
@@ -56,7 +61,7 @@ public:
   const TargetLowering *TLI;
   MachineRegisterInfo *RegInfo;
   BranchProbabilityInfo *BPI;
-  const LegacyDivergenceAnalysis *DA;
+  const UniformityInfo *UA;
   /// CanLowerReturn - true iff the function's return value can be lowered to
   /// registers.
   bool CanLowerReturn;
@@ -101,6 +106,10 @@ public:
       // Value was lowered to tied def and gc.relocate should be replaced with
       // copy from vreg.
       VReg,
+      // Value was lowered to tied def and gc.relocate should be replaced with
+      // SDValue kept in StatepointLoweringInfo structure. This valid for local
+      // relocates only.
+      SDValueNode,
     } type = NoRelocate;
     // Payload contains either frame index of the stack slot in which the value
     // was spilled, or virtual register which contains the re-definition.
@@ -178,6 +187,11 @@ public:
   /// selector registers are copied into these virtual registers by
   /// SelectionDAGISel::PrepareEHLandingPad().
   unsigned ExceptionPointerVirtReg, ExceptionSelectorVirtReg;
+
+  /// Collection of dbg.declare instructions handled after argument
+  /// lowering and before ISel proper.
+  SmallPtrSet<const DbgDeclareInst *, 8> PreprocessedDbgDeclares;
+  SmallPtrSet<const DPValue *, 8> PreprocessedDPVDeclares;
 
   /// set - Initialize this FunctionLoweringInfo with the given Function
   /// and its associated MachineFunction.

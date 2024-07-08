@@ -1,0 +1,19 @@
+string - ref:
+true 123456789
+true 987654321
+false 
+
+string - return:
+123456789
+987654321
+EofError: end of file (Encountered EOF in readTo(string))
+
+bytes - ref:
+true 123456789
+true 987654321
+false 
+
+bytes - return:
+123456789
+987654321
+EofError: end of file (Encountered EOF in readTo(bytes))

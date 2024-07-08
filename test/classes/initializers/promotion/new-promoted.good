@@ -5,7 +5,7 @@ CR.init: 2
 CR.postinit: 2
 CR.init: 3
 CR.postinit: 3
-[domain(1,int(64),false)] CR
+[domain(1,int(64),one)] CR
 (x = 1) (x = 2) (x = 3)
 ----- Default Value -----
 CR.init: 1
@@ -14,7 +14,7 @@ CR.init: 2
 CR.postinit: 2
 CR.init: 3
 CR.postinit: 3
-[domain(1,int(64),false)] CR
+[domain(1,int(64),one)] CR
 (x = 1) (x = 2) (x = 3)
 
 ===== Generic Record =====
@@ -24,7 +24,7 @@ GR.init: 2
 GR.postinit: 2
 GR.init: 3
 GR.postinit: 3
-[domain(1,int(64),false)] GR(int(64))
+[domain(1,int(64),one)] GR(int(64))
 (x = 1) (x = 2) (x = 3)
 ----- Default Value -----
 GR.init: 1
@@ -33,7 +33,7 @@ GR.init: 2
 GR.postinit: 2
 GR.init: 3
 GR.postinit: 3
-[domain(1,int(64),false)] GR(int(64))
+[domain(1,int(64),one)] GR(int(64))
 (x = 1) (x = 2) (x = 3)
 
 ===== Concrete Class =====
@@ -43,7 +43,7 @@ CC.init: 2
 CC.postinit: 2
 CC.init: 3
 CC.postinit: 3
-[domain(1,int(64),false)] unmanaged CC
+[domain(1,int(64),one)] unmanaged CC
 {x = 1} {x = 2} {x = 3}
 CC.init: 1
 CC.postinit: 1
@@ -51,7 +51,7 @@ CC.init: 2
 CC.postinit: 2
 CC.init: 3
 CC.postinit: 3
-[domain(1,int(64),false)] borrowed CC
+[domain(1,int(64),one)] owned CC
 {x = 1} {x = 2} {x = 3}
 CC.init: 1
 CC.postinit: 1
@@ -59,15 +59,7 @@ CC.init: 2
 CC.postinit: 2
 CC.init: 3
 CC.postinit: 3
-[domain(1,int(64),false)] owned CC
-{x = 1} {x = 2} {x = 3}
-CC.init: 1
-CC.postinit: 1
-CC.init: 2
-CC.postinit: 2
-CC.init: 3
-CC.postinit: 3
-[domain(1,int(64),false)] shared CC
+[domain(1,int(64),one)] shared CC
 {x = 1} {x = 2} {x = 3}
 ----- Default Value -----
 CC.init: 1
@@ -88,11 +80,11 @@ CC.init: 2
 CC.postinit: 2
 CC.init: 3
 CC.postinit: 3
-[domain(1,int(64),false)] unmanaged CC
+[domain(1,int(64),one)] unmanaged CC
 {x = 1} {x = 2} {x = 3}
-[domain(1,int(64),false)] owned CC
+[domain(1,int(64),one)] owned CC
 {x = 1} {x = 2} {x = 3}
-[domain(1,int(64),false)] shared CC
+[domain(1,int(64),one)] shared CC
 {x = 1} {x = 2} {x = 3}
 
 ===== Generic Class =====
@@ -102,7 +94,7 @@ GC.init: 2
 GC.postinit: 2
 GC.init: 3
 GC.postinit: 3
-[domain(1,int(64),false)] unmanaged GC(int(64))
+[domain(1,int(64),one)] unmanaged GC(int(64))
 {x = 1} {x = 2} {x = 3}
 GC.init: 1
 GC.postinit: 1
@@ -110,7 +102,7 @@ GC.init: 2
 GC.postinit: 2
 GC.init: 3
 GC.postinit: 3
-[domain(1,int(64),false)] borrowed GC(int(64))
+[domain(1,int(64),one)] owned GC(int(64))
 {x = 1} {x = 2} {x = 3}
 GC.init: 1
 GC.postinit: 1
@@ -118,15 +110,7 @@ GC.init: 2
 GC.postinit: 2
 GC.init: 3
 GC.postinit: 3
-[domain(1,int(64),false)] owned GC(int(64))
-{x = 1} {x = 2} {x = 3}
-GC.init: 1
-GC.postinit: 1
-GC.init: 2
-GC.postinit: 2
-GC.init: 3
-GC.postinit: 3
-[domain(1,int(64),false)] shared GC(int(64))
+[domain(1,int(64),one)] shared GC(int(64))
 {x = 1} {x = 2} {x = 3}
 ----- Default Value -----
 GC.init: 1
@@ -147,10 +131,10 @@ GC.init: 2
 GC.postinit: 2
 GC.init: 3
 GC.postinit: 3
-[domain(1,int(64),false)] unmanaged GC(int(64))
+[domain(1,int(64),one)] unmanaged GC(int(64))
 {x = 1} {x = 2} {x = 3}
-[domain(1,int(64),false)] owned GC(int(64))
+[domain(1,int(64),one)] owned GC(int(64))
 {x = 1} {x = 2} {x = 3}
-[domain(1,int(64),false)] shared GC(int(64))
+[domain(1,int(64),one)] shared GC(int(64))
 {x = 1} {x = 2} {x = 3}
 

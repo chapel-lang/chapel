@@ -87,100 +87,97 @@ or
 
 .. class:: A
 
-   There was documentation of this symbol 
-
-
    .. warning::
 
       A is deprecated
 
-   .. attribute:: var a: int
+   There was documentation of this symbol 
 
-      There was documentation of this field 
+   .. attribute:: var a: int
 
       .. warning::
 
          a is deprecated
 
-   .. method:: proc foo()
+      There was documentation of this field 
 
-      There was documentation of this method 
+   .. method:: proc foo()
 
       .. warning::
 
          foo is deprecated
 
-   .. method:: proc type bar()
+      There was documentation of this method 
 
-      There was documentation of this type method 
+   .. method:: proc type bar()
 
       .. warning::
 
          bar is deprecated
 
+      There was documentation of this type method 
+
 .. class:: B
-
-   This symbol also was documented 
-
 
    .. warning::
 
       B is deprecated, use C instead
 
-   .. attribute:: var a: int
+   This symbol also was documented 
 
-      There was documentation of this field 
+   .. attribute:: var a: int
 
       .. warning::
 
          field a is deprecated
 
-   .. method:: proc foo()
+      There was documentation of this field 
 
-      There was documentation of this method 
+   .. method:: proc foo()
 
       .. warning::
 
          method foo is deprecated
 
-   .. method:: proc type bar()
+      There was documentation of this method 
 
-      There was documentation of this type method 
+   .. method:: proc type bar()
 
       .. warning::
 
          type method bar is deprecated
 
+      There was documentation of this type method 
+
 .. class:: C
 
    .. attribute:: var a: int
-
-      There was documentation of this field 
 
       .. warning::
 
          a is deprecated
 
-   .. method:: proc foo()
+      There was documentation of this field 
 
-      There was documentation of this method 
+   .. method:: proc foo()
 
       .. warning::
 
          method foo is deprecated
 
-   .. method:: proc type bar()
+      There was documentation of this method 
 
-      There was documentation of this type method 
+   .. method:: proc type bar()
 
       .. warning::
 
          bar is deprecated
 
+      There was documentation of this type method 
+
 .. class:: D
 
    This symbol is deprecated 
-
 
    .. attribute:: var a: int
 
@@ -197,7 +194,6 @@ or
 .. class:: E
 
    This symbol is also deprecated, please use F instead 
-
 
    .. attribute:: var a: int
 

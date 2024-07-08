@@ -1,0 +1,4 @@
+@chpledoc.nodoc
+proc foo() {
+
+}

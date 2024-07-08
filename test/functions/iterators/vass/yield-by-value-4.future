@@ -1,0 +1,13 @@
+bug: memory leak when detupling an iterator into _
+
+Given
+
+   for/forall (idx1, _, idx3) in myIter() do ....
+
+currently the value corresponding to the `_` leaks.
+
+// Once this is fixed, this test can be removed
+// and instead the tests yield-by-value-2.chpl and yield-by-value-3.chpl
+// can be extended by adding a sibling to `ARR` that is included in
+// the tuple yielded by each iterator and by adding an `_` to each
+// detupling expression.

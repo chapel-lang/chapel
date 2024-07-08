@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,14 +22,15 @@
    be called without IO and not cause circular dependencies.
 */
 module ChapelIOStringifyHelper {
-  private use ChapelStandard;
+  private use ChapelStandard, CTypes;
   private use BytesStringCommon only decodePolicy;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _can_stringify_direct(t) param : bool {
     if (t.type == string ||
         t.type == bytes ||
-        t.type == c_string ||
+        t.type == chpl_c_string ||
+        t.type == c_ptrConst(c_char) ||
         isRangeType(t.type) ||
         isPrimitiveType(t.type)) {
       return true;
@@ -44,24 +45,20 @@ module ChapelIOStringifyHelper {
     }
   }
 
-  // This routine is called in DefaultRectangular in order
-  // to report an out of bounds access for a halt. A normal
-  // call to halt might not be possible because of module
-  // order issues.
-  pragma "no doc"
-  proc _stringify_tuple(tup:?t) where isTuple(t){
+  private proc _stringify_tuple(tup: _tuple) {
     var str = "(";
 
     for param i in 0..tup.size-1 {
-      if i != 0 then str += ", ";
-      if (tup[i].type == c_string) {
+      if (tup[i].type == chpl_c_string || tup[i].type == c_ptrConst(c_char)) {
         try! {
-          str += createStringWithNewBuffer(tup[i]);
+          str += string.createCopyingBuffer(tup[i]);
         }
       }
       else {
         str += tup[i]:string;
       }
+      if tup.size == 1 then str += ",";
+      else if i < tup.size-1 then str += ", ";
     }
 
     str += ")";
@@ -69,7 +66,7 @@ module ChapelIOStringifyHelper {
     return str;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
     proc stringify_simple(const args ...?k): string {
     // As an optimization, use string concatenation for
     // all primitive type stringify...
@@ -81,10 +78,10 @@ module ChapelIOStringifyHelper {
     for param i in 0..k-1 {
       if (args[i].type == string) {
         str += args[i];
-      } else if (args[i].type == c_string) {
+      } else if (args[i].type == chpl_c_string || args[i].type == c_ptrConst(c_char)) {
         //decodePolicy.replace never throws
         try! {
-          str += createStringWithNewBuffer(args[i],
+          str += string.createCopyingBuffer(args[i],
                                            policy=decodePolicy.replace);
         }
       } else if (args[i].type == bytes) {

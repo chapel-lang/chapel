@@ -29,7 +29,7 @@ static cl::list<std::string> InputFiles(cl::Positional, cl::OneOrMore,
 
 static cl::list<std::string> InputArgv("args", cl::Positional,
                                        cl::desc("<program arguments>..."),
-                                       cl::ZeroOrMore, cl::PositionalEatsArgs);
+                                       cl::PositionalEatsArgs);
 
 static cl::opt<unsigned> NumThreads("num-threads", cl::Optional,
                                     cl::desc("Number of compile threads"),
@@ -57,7 +57,7 @@ public:
 
     auto LCTMgr = createLocalLazyCallThroughManager(
         JTMB->getTargetTriple(), *ES,
-        pointerToJITTargetAddress(explodeOnLazyCompileFailure));
+        ExecutorAddr::fromPtr(explodeOnLazyCompileFailure));
     if (!LCTMgr)
       return LCTMgr.takeError();
 
@@ -85,7 +85,7 @@ public:
     return CODLayer.add(MainJD, std::move(TSM));
   }
 
-  Expected<JITEvaluatedSymbol> lookup(StringRef UnmangledName) {
+  Expected<ExecutorSymbolDef> lookup(StringRef UnmangledName) {
     return ES->lookup({&MainJD}, Mangle(UnmangledName));
   }
 
@@ -183,8 +183,7 @@ int main(int argc, char *argv[]) {
   }
 
   auto MainSym = ExitOnErr(SJ->lookup("main"));
-  auto Main =
-      jitTargetAddressToFunction<int (*)(int, char *[])>(MainSym.getAddress());
+  auto Main = MainSym.getAddress().toPtr<int (*)(int, char *[])>();
 
   return runAsMain(Main, InputArgv, StringRef(InputFiles.front()));
 

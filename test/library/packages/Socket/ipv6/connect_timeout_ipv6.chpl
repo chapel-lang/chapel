@@ -1,5 +1,6 @@
 use UnitTest;
 use Socket;
+use OS.POSIX;
 
 proc test_success_ipv6(test: borrowed Test) throws {
   var port:uint(16) = 8822;
@@ -10,7 +11,7 @@ proc test_success_ipv6(test: borrowed Test) throws {
     begin {
       var conn = server.accept();
     }
-    var conn = connect(address, new timeval(2,0));
+    var conn = connect(address, new struct_timeval(2,0));
     test.assertEqual(conn.addr, address);
   }
 }
@@ -24,7 +25,7 @@ proc test_fail_backlog_ipv6(test: borrowed Test) throws {
   var failures = 0;
   coforall x in 1..20 with (+ reduce failures) do {
     try {
-      var conn = connect(address, new timeval(1, 0));
+      var conn = connect(address, new struct_timeval(1, 0));
     }
     catch e {
       failures += 1;

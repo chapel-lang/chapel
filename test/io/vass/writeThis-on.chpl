@@ -1,11 +1,15 @@
 // Illustrate the issue by using a customized writeThis method.
 
-class C {
+class C : writeSerializable {
   const home = here.id;
-  override proc writeThis(f) throws { f.write("here=", here.id, " home=", home); }
+  override proc serialize(writer, ref serializer) throws { writer.write("here=", here.id, " home=", home); }
 }
 
-for l in Locales do on l do { const c = new borrowed C(); writeln(c); }
+for l in Locales do on l {
+  const cObj = new owned C();
+  const c = cObj.borrow();
+  writeln(c);
+}
 writeln();
 
 
@@ -19,7 +23,7 @@ const dmp = newDimensionalDist2D(dim1, dim2, Locales);
 
 const ix = (1, 1);
 const D = {1..1, 1..1};
-const R = D dmapped new dmap(dmp);
+const R = D dmapped dmp;
 var A: [R] int;
 
 writeln("initializing");

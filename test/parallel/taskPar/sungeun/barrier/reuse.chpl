@@ -1,14 +1,14 @@
-use Barriers;
+use Collectives;
 use BlockDist;
 
 config const printResults = false;
 config const numTasks = 31;
 config const numRemoteTasks = numLocales*11;
 
-proc localTest(b: Barrier, numTasks) {
+proc localTest(b: barrier, numTasks) {
   const barSpace = 0..#numTasks;
   var A: [barSpace] int = -1;
-  coforall t in barSpace do {
+  coforall t in barSpace with (ref A) do {
     A[t] = t;
     for i in 1..numTasks {
       if i%2 {
@@ -22,11 +22,11 @@ proc localTest(b: Barrier, numTasks) {
   }
 }
 
-proc remoteTest(b: Barrier, numRemoteTasks) {
+proc remoteTest(b: barrier, numRemoteTasks) {
   const barSpace = 0..#numRemoteTasks;
-  var A: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = barSpace;
-  var B: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = -1;
-  coforall t in barSpace do on A.domain.dist.idxToLocale(t) {
+  var A: [{barSpace} dmapped new blockDist({barSpace})] int = barSpace;
+  var B: [{barSpace} dmapped new blockDist({barSpace})] int = -1;
+  coforall t in barSpace with (ref B) do on A.domain.distribution.idxToLocale(t) {
     B[t] = A[t];
     for i in 1..numRemoteTasks {
       if i%2 {
@@ -41,14 +41,8 @@ proc remoteTest(b: Barrier, numRemoteTasks) {
 }
 
 
-var b = new Barrier(numTasks, BarrierType.Atomic);
+var b = new barrier(numTasks);
 localTest(b, numTasks);
 
 b.reset(numRemoteTasks);
 remoteTest(b, numRemoteTasks);
-
-var sb = new Barrier(numTasks, BarrierType.Sync);
-localTest(sb, numTasks);
-
-sb.reset(numRemoteTasks);
-remoteTest(sb, numRemoteTasks);

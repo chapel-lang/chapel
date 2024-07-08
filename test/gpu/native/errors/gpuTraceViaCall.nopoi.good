@@ -1,0 +1,4 @@
+gpuTraceViaCall.chpl:18: In function 'main':
+gpuTraceViaCall.chpl:20: error: Loop is marked with @assertOnGpu but is not eligible for execution on a GPU
+gpuTraceViaCall.chpl:14: note: use of ineligible standard library function 'doSomething'
+gpuTraceViaCall.chpl:20: note:   reached via call to 'notEligible' in loop body here

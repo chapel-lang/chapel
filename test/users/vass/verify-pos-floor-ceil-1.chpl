@@ -1,12 +1,13 @@
-// Testing divceilpos() and divfloorpos()
+// Testing divCeilPos() and divFloorPos()
+use Math;
 
 var testcount = 0, errcount = 0;
 
 proc test(type T, m: T, n: T) {
   testcount += 1;
   // actual
-  const rc = divceilpos(m,n);
-  const rf = divfloorpos(m,n);
+  const rc = divCeilPos(m,n);
+  const rf = divFloorPos(m,n);
   writeln(T:string, "  ", m, ",", n, "  ceil ", rc, "  floor ", rf);
   // expected
   const floor = m/n;
@@ -14,11 +15,11 @@ proc test(type T, m: T, n: T) {
   // verify
   if rc != ceil {
     errcount += 1;
-    writeln(" *** error in divceilpos:  expected ", ceil, "  got ", rc);
+    writeln(" *** error in divCeilPos:  expected ", ceil, "  got ", rc);
   }
   if rf != floor {
     errcount += 1;
-    writeln(" *** error in divfloorpos:  expected ", floor, "  got ", rf);
+    writeln(" *** error in divFloorPos:  expected ", floor, "  got ", rf);
   }
 }
 
@@ -38,7 +39,7 @@ proc tests(type TT) {
   test(TT, mm, mm-1);
   test(TT, mm-1, mm-1);
   test(TT, mm, 1);
-// divceilpos() and divfloorpos() do not handle 0
+// divCeilPos() and divFloorPos() do not handle 0
 //test(TT, 0:TT, mm);
   for d in numbers() do
     test(TT, mm, d:TT);
@@ -49,7 +50,7 @@ proc tests(type TT) {
 
 tests(int(64));
 tests(int(32));
-// divceilpos() and divfloorpos() handle signed ints only
+// divCeilPos() and divFloorPos() handle signed ints only
 //tests(uint(64));
 //tests(uint(32));
 

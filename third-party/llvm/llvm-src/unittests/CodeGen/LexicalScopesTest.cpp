@@ -58,8 +58,8 @@ public:
   // Some meaningless instructions -- the first is fully meaningless,
   // while the second is supposed to impersonate DBG_VALUEs through its
   // opcode.
-  MCInstrDesc BeanInst;
-  MCInstrDesc DbgValueInst;
+  MCInstrDesc BeanInst{};
+  MCInstrDesc DbgValueInst{};
 
   LexicalScopesTest() : Ctx(), Mod("beehives", Ctx) {
     memset(&BeanInst, 0, sizeof(BeanInst));
@@ -69,6 +69,7 @@ public:
     memset(&DbgValueInst, 0, sizeof(DbgValueInst));
     DbgValueInst.Opcode = TargetOpcode::DBG_VALUE;
     DbgValueInst.Size = 1;
+    DbgValueInst.Flags = 1U << MCID::Meta;
 
     // Boilerplate that creates a MachineFunction and associated blocks.
     MF = createMachineFunction(Ctx, Mod);
@@ -101,7 +102,8 @@ public:
     OurFile = DIB.createFile("xyzzy.c", "/cave");
     OurCU =
         DIB.createCompileUnit(dwarf::DW_LANG_C99, OurFile, "nou", false, "", 0);
-    auto OurSubT = DIB.createSubroutineType(DIB.getOrCreateTypeArray(None));
+    auto OurSubT =
+        DIB.createSubroutineType(DIB.getOrCreateTypeArray(std::nullopt));
     OurFunc =
         DIB.createFunction(OurCU, "bees", "", OurFile, 1, OurSubT, 1,
                            DINode::FlagZero, DISubprogram::SPFlagDefinition);

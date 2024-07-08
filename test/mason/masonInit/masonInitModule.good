@@ -1,2 +1,3 @@
-Initialized new library project in project-testSrc: project
+Created new application project: project
+Tip: To convert existing code to a mason project, move the driver application to the `src/project.chpl` file. For adding other source code, using submodules is the recommended approach to avoid namespace collisions.
 Project.chpl has been successfully created

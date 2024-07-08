@@ -14,18 +14,15 @@
 #define LLVM_TRANSFORMS_IPO_FORCEFUNCTIONATTRS_H
 
 #include "llvm/IR/PassManager.h"
-#include "llvm/Pass.h"
 
 namespace llvm {
+class Module;
 
 /// Pass which forces specific function attributes into the IR, primarily as
 /// a debugging tool.
 struct ForceFunctionAttrsPass : PassInfoMixin<ForceFunctionAttrsPass> {
   PreservedAnalyses run(Module &M, ModuleAnalysisManager &);
 };
-
-/// Create a legacy pass manager instance of a pass to force function attrs.
-Pass *createForceFunctionAttrsLegacyPass();
 
 }
 

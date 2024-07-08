@@ -7,5 +7,12 @@ updated incorrectly.
 The current error message states that we are trying to zipper a
 heterogeneous tuple, but that is incorrect.
 
-See test/types/tuple/sungeun/iteration.future for details on they
-actual bug here.
+
+In this example:
+
+  for ij in zip((i1(), i2()), i1()) do
+    writeln(ij);
+
+the first tuple (i1(), i2()) is a tuple of arrays, yet their types are
+represented by the iterator record, so that the test for homogenous
+tuple fails during function resolution.

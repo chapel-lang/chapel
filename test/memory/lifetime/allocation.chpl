@@ -9,23 +9,23 @@ config const numTrials : int = 3;
 config const allocationsPerTrial : int = 16 * 1024 * 1024;
 
 proc doUnmanagedAllocation() {
-  var timer = new Timer();
+  var timer = new stopwatch();
   
   
   var times : [1..numTrials] real;
   for trial in 0..numTrials {
     {
       timer.start();
-      var arr : [1..allocationsPerTrial] unmanaged object?;
+      var arr : [1..allocationsPerTrial] unmanaged RootClass?;
       for i in 1..allocationsPerTrial {
-        arr[i] = new unmanaged object();
+        arr[i] = new unmanaged RootClass();
       }
       for i in 1..allocationsPerTrial {
         delete arr[i];
       }
     }
     timer.stop();
-    if trial != 0 then times[trial] = timer.elapsed(TimeUnits.seconds);
+    if trial != 0 then times[trial] = timer.elapsed();
     timer.clear();
   }
   
@@ -33,19 +33,19 @@ proc doUnmanagedAllocation() {
 }
 
 proc doSharedAllocation() {
-  var timer = new Timer();
+  var timer = new stopwatch();
   
   var times : [1..numTrials] real;
   for trial in 0..numTrials {
     {
       timer.start();
-      var arr : [1..allocationsPerTrial] shared object?;
+      var arr : [1..allocationsPerTrial] shared RootClass?;
       for i in 1..allocationsPerTrial {
-        arr[i] = new shared object();
+        arr[i] = new shared RootClass();
       }
     }
     timer.stop();
-    if trial != 0 then times[trial] = timer.elapsed(TimeUnits.seconds);
+    if trial != 0 then times[trial] = timer.elapsed();
     timer.clear();
   }
 
@@ -53,19 +53,19 @@ proc doSharedAllocation() {
 }
 
 proc doOwnedAllocation() {
-  var timer = new Timer();
+  var timer = new stopwatch();
   
   var times : [1..numTrials] real;
   for trial in 0..numTrials {
     {
       timer.start();
-      var arr : [1..allocationsPerTrial] owned object?;
+      var arr : [1..allocationsPerTrial] owned RootClass?;
       for i in 1..allocationsPerTrial {
-        arr[i] = new owned object();
+        arr[i] = new owned RootClass();
       }
     }
     timer.stop();
-    if trial != 0 then times[trial] = timer.elapsed(TimeUnits.seconds);
+    if trial != 0 then times[trial] = timer.elapsed();
     timer.clear();
   }
 

@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: generics
 .. _Chapter-Generics:
 
 ========
@@ -10,6 +12,9 @@ Chapel supports generic functions and types that are parameterizable
 over both types and parameters. The generic functions and types look
 similar to non-generic functions and types already discussed.
 
+.. index::
+   single: functions; generic
+   single: generics; functions
 .. _Generic_Functions:
 
 Generic Functions
@@ -33,6 +38,8 @@ A function is generic if any of the following conditions hold:
 
 These conditions are discussed in the next sections.
 
+.. index::
+   single: intents; type
 .. _Formal_Type_Arguments:
 
 Formal Type Arguments
@@ -48,7 +55,7 @@ call site. The formal argument has the semantics of a type alias.
    The following code defines a function that takes two types at the
    call site and returns a 2-tuple where the types of the components of
    the tuple are defined by the two type arguments and the values are
-   specified by the types default values. 
+   specified by the types default values.
 
    .. code-block:: chapel
 
@@ -59,20 +66,20 @@ call site. The formal argument has the semantics of a type alias.
       }
 
    This function is instantiated with “normal” function call syntax
-   where the arguments are types: 
+   where the arguments are types:
 
    .. code-block:: chapel
 
       var t2 = build2Tuple(int, string);
       t2 = (1, "hello");
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln(t2);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -85,7 +92,7 @@ accepting type arguments that only apply to a specific group of types.
    *Example (typeColonArgument.chpl)*.
 
    Suppose that we’d like to define a function that accepts a type
-   argument and returns 1 represented in that type. 
+   argument and returns 1 represented in that type.
 
    .. code-block:: chapel
 
@@ -94,27 +101,29 @@ accepting type arguments that only apply to a specific group of types.
       }
 
    Now calls to this function will resolve to the appropriate version
-   based upon the argument type supplied. 
+   based upon the argument type supplied.
 
    .. code-block:: chapel
 
       var anInt8 = getOne(int(8));
       var aReal = getOne(real);
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln(anInt8.type:string, " ", anInt8);
       writeln(aReal.type:string, " ", aReal);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
       int(8) 1
       real(64) 1.0
 
+.. index::
+   single: intents; param
 .. _Formal_Parameter_Arguments:
 
 Formal Parameter Arguments
@@ -131,7 +140,7 @@ this function at a call site. The formal argument is a parameter.
    ``p`` at the call site as well as a regular actual argument of
    integer type ``x``. The function returns a homogeneous tuple of size
    ``p`` where each component in the tuple has the value of ``x``.
-   
+
 
    .. code-block:: chapel
 
@@ -142,13 +151,13 @@ this function at a call site. The formal argument is a parameter.
         return result;
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln(fillTuple(3,3));
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -157,6 +166,8 @@ this function at a call site. The formal argument is a parameter.
    The function call ``fillTuple(3, 3)`` returns a 3-tuple where each
    component contains the value ``3``.
 
+.. index::
+   single: formal arguments; without types
 .. _Formal_Arguments_without_Types:
 
 Formal Arguments without Types
@@ -176,7 +187,7 @@ each unique actual type.
    parameter argument can allow any type be passed. The following code
    defines a function that returns a homogeneous tuple of size ``p``
    where each component in the tuple is initialized to ``x``:
-   
+
 
    .. code-block:: chapel
 
@@ -187,7 +198,7 @@ each unique actual type.
         return result;
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -195,7 +206,7 @@ each unique actual type.
       writeln(x);
       writeln(x.type:string);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -207,6 +218,8 @@ each unique actual type.
    3-tuple of real values ``(3.14, 3.14, 3.14)``. The return type is
    ``(real, real, real)``.
 
+.. index::
+   single: formal arguments; with queried types
 .. _Formal_Arguments_with_Queried_Types:
 
 Formal Arguments with Queried Types
@@ -221,7 +234,7 @@ semantics of a type alias.
    *Example (fillTuple3.chpl)*.
 
    The example from the previous section can be rewritten to use a
-   queried type for clarity: 
+   queried type for clarity:
 
    .. code-block:: chapel
 
@@ -232,7 +245,7 @@ semantics of a type alias.
         return result;
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -240,7 +253,7 @@ semantics of a type alias.
       writeln(x);
       writeln(x.type:string);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -256,7 +269,7 @@ semantics of a type alias.
    query on the first argument establishes type constraints on the other
    arguments and also determines the return type.
 
-   The code 
+   The code
 
    .. code-block:: chapel
 
@@ -270,13 +283,15 @@ semantics of a type alias.
          return sum;
       }
 
-   produces the output 
+   produces the output
 
    .. code-block:: printoutput
 
       6
       12.0
 
+.. index::
+   single: formal arguments; with generic type
 .. _Formal_Arguments_of_Generic_Type:
 
 Formal Arguments of Generic Type
@@ -295,11 +310,11 @@ type.
    actual argument that is a generic stack
    (see :ref:`Example_Generic_Stack`) and outputs the top element
    of the stack. The function is generic on the type of its argument.
-   
+
 
    .. code-block:: chapel
 
-      proc writeTop(s: Stack) {
+      proc writeTop(s: Stack(?)) {
         write(s.top.item);
       }
 
@@ -310,8 +325,8 @@ to ``s.itemType``.
 
 Note that generic types which have default values for all of their
 generic fields, *e.g. range*, are not generic when simply specified and
-require a query to mark the argument as generic. For simplicity, the
-identifier may be omitted.
+require a query to mark the argument as generic. See also
+:ref:`Marking_Generic_Types`.
 
    *Example*.
 
@@ -319,7 +334,7 @@ identifier may be omitted.
    default value. Function ``f`` is defined to take an argument of this
    class type where the type field is instantiated to the default.
    Function ``g``, on the other hand, is generic on its argument because
-   of the use of the question mark. 
+   of the use of the question mark.
 
    .. code-block:: chapel
 
@@ -333,6 +348,10 @@ identifier may be omitted.
         // c.type may not be int
       }
 
+.. index::
+   single: formal arguments; partially concrete
+   single: formal arguments; partially generic
+   single: where; implicit
 .. _Formal_Arguments_of_Partially_Generic_Type:
 
 Formal Arguments of Partially Generic Type
@@ -346,7 +365,7 @@ concrete* for the purpose of function resolution.
 
    *Example (nested-type-queries.chpl)*.
 
-   Given the code: 
+   Given the code:
 
    .. code-block:: chapel
 
@@ -368,15 +387,15 @@ concrete* for the purpose of function resolution.
    following function, ``g``, can only apply when ``c.containerType`` is
    an instance of ``Container``:
 
-   
+
 
    .. code-block:: chapel
 
-      proc g(c: C(?t,?u,Container)) {
+      proc g(c: C(?t,?u,Container(?))) {
         // ...
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -390,7 +409,7 @@ concrete* argument.
 
    *Example*.
 
-   The function definition 
+   The function definition
 
    .. code-block:: chapel
 
@@ -404,17 +423,17 @@ Homogeneous tuple arguments of generic type are also supported:
 
    *Example (partially-concrete-star-tuple.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
       record Number {
         var n;
       }
-      proc f(tuple: 2*Number) {
+      proc f(tuple: 2*Number(?)) {
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -430,7 +449,7 @@ constrained.
 
    *Example (partially-concrete-tuple-ambiguity.chpl)*.
 
-   The following program results in an ambiguity error: 
+   The following program results in an ambiguity error:
 
    .. code-block:: chapel
 
@@ -441,7 +460,7 @@ constrained.
       f( (1.0, 2.0) );
 
    since the ``tuple`` arguments in both versions of ``f`` are
-   *partially concrete*. 
+   *partially concrete*.
 
    .. BLOCK-test-chapelprediff
 
@@ -453,12 +472,14 @@ constrained.
       head -n 1 $outfile > $outfile.2
       mv $outfile.2 $outfile
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
       partially-concrete-tuple-ambiguity.chpl:5: error: ambiguous call 'f(2*real(64))'
 
+.. index::
+   single: formal arguments; array
 .. _Formal_Arguments_of_Generic_Array_Types:
 
 Formal Arguments of Generic Array Types
@@ -474,6 +495,8 @@ formal argument is taken to be the domain of the actual argument.
 A queried domain may not be modified via the name to which it is bound
 (see :ref:`Association_of_Arrays_to_Domains` for rationale).
 
+.. index::
+   single: generics; function visibility
 .. _Function_Visibility_in_Generic_Functions:
 
 Function Visibility in Generic Functions
@@ -482,11 +505,14 @@ Function Visibility in Generic Functions
 When resolving a function call, as defined in :ref:`Function_Resolution`,
 there is an additional source of visible functions when the call is
 nested within a generic function. The additional source is the functions
-visible from the call site that the enclosing generic function is invoked from.
-This call site is referred to as the *point of instantiation*.
-If there are multiple enclosing generic functions or the call is nested
-within a concrete function that is, in turn, nested in generic function(s),
-the point of instantiation is the call site of the innermost generic function.
+visible from the call site that the enclosing generic function is invoked
+from.  This call site is referred to as the *point of instantiation*.  If
+there are multiple enclosing generic functions or the call is nested
+within a concrete function that is, in turn, nested in generic
+function(s), the point of instantiation is the call site of the innermost
+generic function. This rule does not apply to non-method functions declared
+without parentheses (:ref:`Functions_without_Parentheses`): such
+functions cannot be discovered through the point of instantiation.
 
 If no candidate functions are found during the initial steps of
 identifying visible and candidate functions, function resolution
@@ -504,7 +530,7 @@ the compiler issues a "call cannot be resolved" error.
    *Example (point-of-instantiation.chpl)*.
 
    Consider the following code:
-   
+
 
    .. code-block:: chapel
 
@@ -578,6 +604,9 @@ or instantiated (if the derived type is generic).
    Note that the Chapel lookup mechanism is still under development and
    discussion. Comments or questions are appreciated.
 
+.. index::
+   single: generics; types
+   single: types; generic
 .. _Generic_Types:
 
 Generic Types
@@ -586,7 +615,18 @@ Generic Types
 Generic types comprise built-in generic types, generic classes, and
 generic records.
 
-.. _Built_in_Generic_types:
+.. index::
+   single: integral (generic type)
+   single: numeric (generic type)
+   single: enumerated (generic type)
+   single: enum (generic type)
+   single: class (generic type)
+   single: unmanaged (generic type)
+   single: owned (generic type)
+   single: shared (generic type)
+   single: borrowed (generic type)
+   single: record (generic type)
+.. _Built_in_Generic_Types:
 
 Built-in Generic Types
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -635,22 +675,34 @@ instantiated as follows:
 -  ``unmanaged``, ``unmanaged class``, ``unmanaged class?`` behave
    similarly to the above but with ``unmanaged`` management strategy.
 
+ .. index::
+   single: generics; classes
+   single: classes; generic
+   single: generics; records
+   single: records; generic
+   single: generics; fields
+   single: fields; generic
+
 Generic Classes and Records
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The remainder of this section :ref:`Generic_Types` specifies
 generic class and record types that are not built-in types
-(:ref:`Built_in_Generic_types`).
+(:ref:`Built_in_Generic_Types`).
 
 A class or record is generic if it contains one or more generic fields.
 A generic field is one of:
 
--  a specified or unspecified type alias,
+-  a specified or unspecified type alias (that is, both ``type t=int;`` and
+   ``type u;``)
 
 -  a parameter field, or
 
 -  a ``var`` or ``const`` field that has no type and no initialization
    expression.
+
+-  a ``var`` or ``const`` field with a generic type marked with ``(?)``
+   and no initialization expression.
 
 For each generic field, the class or record is parameterized over:
 
@@ -663,6 +715,9 @@ For each generic field, the class or record is parameterized over:
 Correspondingly, the class or record is instantiated with a set of types
 and parameter values, one type or value per generic field.
 
+.. index::
+   single: type aliases; in classes or records
+   single: fields; type alias
 .. _Type_Aliases_in_Generic_Types:
 
 Type Aliases in Generic Types
@@ -694,7 +749,7 @@ instead.
 
    The following code defines a class called ``Node`` that implements a
    linked list data structure. It is generic over the type of the
-   element contained in the linked list. 
+   element contained in the linked list.
 
    .. code-block:: chapel
 
@@ -704,7 +759,7 @@ instead.
         var next: unmanaged Node(eltType)?;
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -714,7 +769,7 @@ instead.
       writeln(n.next.type:string);
       delete n;
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -731,13 +786,18 @@ instead.
    ``next`` is the same type as the type of the object that it is a
    field of.
 
+.. index::
+   single: parameters; in classes or records
+   single: fields; parameter
+   pair: fields; param
 .. _Parameters_in_Generic_Types:
 
 Parameters in Generic Types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If a class or record defines a parameter field, the class or record is
-generic over the value that is bound to that field. The field can be
+generic over the value that is bound to that field. A parameter field is
+always generic, whether or not includes a default. The field can be
 accessed from a class or record instance or from the instantiated class
 or record type itself.
 
@@ -761,7 +821,7 @@ instead.
 
    The following code defines a class called ``IntegerTuple`` that is
    generic over an integer parameter which defines the number of
-   components in the class. 
+   components in the class.
 
    .. code-block:: chapel
 
@@ -770,7 +830,7 @@ instead.
         var data: size*int;
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -778,7 +838,7 @@ instead.
       writeln(x.data);
       delete x;
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -790,6 +850,48 @@ instead.
    instance is ``IntegerTuple(3)``. The type specified by
    ``IntegerTuple`` is a generic type.
 
+
+   *Example (MemberWidth.chpl)*.
+
+   The following code defines a record called ``R`` that is generic over an
+   integer parameter ``width`` that describes the width of the integers
+   contained in the record's array field ``A``.
+
+   .. code-block:: chapel
+
+      record R {
+         param width: int;
+         var D = {1..10};
+         var A: [D] int(width);
+      }
+
+      config const big : bool;
+
+      if (big) {
+         var r = new R(64);
+         writeln(r.type:string);
+      } else {
+         var r = new R(32);
+         writeln(r.type:string);
+      }
+
+
+   .. BLOCK-test-chapelexecopts
+      -sbig=true
+
+
+   .. BLOCK-test-chapeloutput
+      R(64)
+
+
+
+   Running this example with ``-sbig=true`` will print out ``R(64)``, and with
+   ``-sbig=false`` or no argument it will print out ``R(32)``.
+
+.. index::
+   single: fields; variable and constant, without types
+   single: variables; in classes or records
+   single: constants; in classes or records
 .. _Fields_without_Types:
 
 Fields without Types
@@ -816,13 +918,18 @@ constructor is invoked, the class or record is instantiated by binding
 the type of the field to the actual type passed to the corresponding
 argument.
 
+Note that records containing fields without types or fields with generic
+types (see :ref:`Fields_with_Generic_Types`) cannot be
+default-initialized.
+
+
    *Example (fieldWithoutType.chpl)*.
 
    The following code defines another class called ``Node`` that
    implements a linked list data structure. It is generic over the type
    of the element contained in the linked list. This code does not
    specify the element type directly in the class as a type alias but
-   rather omits the type from the ``data`` field. 
+   rather omits the type from the ``data`` field.
 
    .. code-block:: chapel
 
@@ -833,14 +940,14 @@ argument.
 
    A node with integer element type can be defined in the call to the
    initializer. The call ``new Node(1)`` defines a node with the value
-   ``1``. The code 
+   ``1``. The code
 
    .. code-block:: chapel
 
       var list = new unmanaged Node(1);
       list.next = new unmanaged Node(2);
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -849,7 +956,7 @@ argument.
       delete list.next;
       delete list;
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -859,35 +966,75 @@ argument.
    defines a two-element list with nodes containing the values ``1`` and
    ``2``. The type of each object could be specified as ``Node(int)``.
 
+ .. _Fields_with_Generic_Types:
+
+Fields with Generic Types
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A field declared with a generic type is similar to a field declared
+without any type (:ref:`Fields_without_Types`); however, the generic type
+constrains the possible field types to instantiations of the generic.
+The types for such fields must either be a built-in generic type (see
+:ref:`Built_in_Generic_Types`) or include a ``?`` to mark them as generic
+(see :ref:`Marking_Generic_Types`).
+
+   *Example (fieldWithGenericType.chpl)*.
+
+   This code defines a generic record ``queue`` and then a generic record
+   ``wrapper`` that uses a field to hold a ``queue``.
+
+   .. code-block:: chapel
+
+      record queue {
+        type eltType;
+      }
+
+      record wrapper {
+        var q: queue(?); // indicates 'q' is generic but is an instantiation
+                         // of 'queue'
+      }
+
+   .. BLOCK-test-chapelpost
+
+      var x = new wrapper(new queue(int));
+
+
+
+.. index::
+   single: generics; type constructor
+   single: initializers; type constructors
+   single: generics; instantiated type
 .. _Type_Constructors:
 
 The Type Constructor
 ~~~~~~~~~~~~~~~~~~~~
 
 A type constructor is automatically created for each class or record. A
-type constructor is a type function (:ref:`Type_Return_Intent`)
-that has the same name as the class or record. It takes one argument per
-the class’s or record’s generic field, including fields inherited from
-the superclasses, if any. The formal argument has intent ``type`` for a
-type alias field and is a parameter for a parameter field. It accepts
-the type to be bound to the type alias and the value to be bound to the
-parameter, respectively. For a generic ``var`` or ``const`` field, the
-corresponding formal argument also has intent ``type``. It accepts the
-type of the field, as opposed to a value as is the case for a parameter
-field. The formal arguments occur in the same order as the fields are
-declared and have the same names as the corresponding fields. Unlike the
-compiler-generated initializer, the type constructor has only those
-arguments that correspond to generic fields.
+type constructor is a type function (:ref:`Type_Return_Intent`) that has
+the same name as the class or record. It takes one argument per the
+class’s or record’s generic field, including fields inherited from the
+superclasses, if any. The formal argument has intent ``type`` for a type
+alias field and is a parameter for a parameter field. It accepts the type
+to be bound to the type alias and the value to be bound to the parameter,
+respectively. For a generic ``var`` or ``const`` field, the corresponding
+formal argument also has intent ``type``. It accepts the type of the
+field, as opposed to a value as is the case for a parameter field. The
+formal arguments occur in the same order as the fields are declared and
+formals for ``type``/``param`` fields have the same names as the
+corresponding fields. Unlike the compiler-generated initializer, the type
+constructor only has arguments that correspond to generic fields.
 
 A call to a type constructor accepts actual types and parameter values
 and returns the type of the class or record that is instantiated
 appropriately for each field
 (:ref:`Type_Aliases_in_Generic_Types`,
 :ref:`Parameters_in_Generic_Types`,
-:ref:`Fields_without_Types`). Such an instantiated type must
-be used as the type of a variable, array element, non-generic formal
-argument, and in other cases where uninstantiated generic class or
-record types are not allowed.
+:ref:`Fields_without_Types`).
+A call to a type constructor need not include actual arguments for each
+generic field if it ends with a ``?`` argument. This argument indicates
+that the remaining arguments should remain generic. Additionally, for a
+generic type ``T``, in some cases it is necessary to mark the type as
+generic, and that can be done by writing ``T(?)``.
 
 When a generic field declaration has an initialization expression or a
 type alias is specified, that initializer becomes the default value for
@@ -897,6 +1044,84 @@ aliases result in arguments with no defaults; actual types or values for
 these arguments must always be provided when invoking the type
 constructor.
 
+.. _Fully_Defaulted_Generic_Types:
+
+Fully Defaulted Generic Types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A generic record can be written that includes defaults for all ``type``
+and ``param`` fields and does not use any other generic fields. Such a
+generic record type is called a *fully defaulted generic* type.
+
+For a fully defaulted generic type ``T``, the type expression ``T``
+refers to the instantiation with defaults. This allows the type to be
+used in a manner similar to a concrete type. In contrast, ``T(?)``
+indicates the fully generic type and ignores the defaults.
+
+   *Example (fully-defaulted.chpl)*.
+
+   The type ``fullyDefaulted`` below is an example of a fully-defaulted
+   type because the ``type`` and ``param`` fields have defaults. It can
+   be used in a manner similar to a non-generic type, and in that case,
+   the default values for the ``type`` and ``param`` fields will apply.
+
+   .. code-block:: chapel
+
+      record fullyDefaulted {
+        type t = int;
+        param p = 2;
+      }
+      var x:fullyDefaulted; // here, 'fullyDefaulted' uses the defaults
+      writeln(x.t:string); // 'int(64)'
+      writeln(x.p:string); // '2'
+      var y: fullyDefaulted(real, 0); // but, other instantiations are possible
+      writeln(y.t:string); // 'real(64)'
+      writeln(y.p:string); // '0'
+
+   .. BLOCK-test-chapeloutput
+
+      int(64)
+      2
+      real(64)
+      0
+
+
+.. _Marking_Generic_Types:
+
+Marking Generic Types
+~~~~~~~~~~~~~~~~~~~~~
+
+In order to make it clearer when a type expression ``T`` refers to a
+generic type, the syntax ``T(?)`` can be used. This syntax will generate
+an error if ``T`` is not a generic type. As a result, writing ``T(?)``
+communicates to a reader of the code that ``T`` is a generic type.
+
+Marking is not necessary for the built-in generic types listed in
+:ref:`Built_in_Generic_Types`. For fully defaulted generic types
+(:ref:`Fully_Defaulted_Generic_Types`), marking indicates the generic
+type rather than the instantiation with the defaults.
+
+Otherwise, generic types used in the following situations should be
+marked with ``(?)``:
+
+ * fields declared with generic type (see :ref:`Fields_with_Generic_Types`)
+
+ * variables declared with generic type (see
+   :ref:`Variable_Declarations`)
+
+ * formal argument type expressions  (see
+   :ref:`Formal_Arguments_of_Generic_Type`)
+
+ * declared return or yield types (see :ref:`Return_Types`)
+
+ * ``class-inherit`` expressions (see :ref:`Inheritance`)
+
+ * generic types passed to a `type` formal argument (see
+   :ref:`Formal_Type_Arguments`)
+
+.. index::
+   single: generics; methods
+   single: methods; generic
 .. _Generic_Methods:
 
 Generic Methods
@@ -906,6 +1131,9 @@ All methods bound to generic classes or records, including initializers,
 are generic over the implicit ``this`` argument. This is in addition to
 being generic over any other argument that is generic.
 
+.. index::
+   single: generics; compiler-generated initializers
+   single: compiler-generated initializers;for generic classes or records
 .. _Generic_Compiler_Generated_Initializers:
 
 The Compiler-Generated Generic Initializer
@@ -935,6 +1163,9 @@ corresponding to the generic ``var`` and ``const`` fields, if any, never
 have defaults, so the corresponding actual values must always be
 provided.
 
+.. index::
+   single: generics; user-defined initializers
+   single: user-defined initializers; for generic classes or records
 .. _Generic_User_Initializers:
 
 User-Defined Initializers
@@ -949,7 +1180,7 @@ type.
 
    *Example (initializersForGenericFields.chpl)*.
 
-   In the following code: 
+   In the following code:
 
    .. code-block:: chapel
 
@@ -992,7 +1223,7 @@ type.
       var g2 = new MyGenericClass(int, "this is g2", 3.3, 333, 3333,
                                   real, 2, 222, 222.2, 22);
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -1003,13 +1234,13 @@ type.
       writeln(g2.p5);
       writeln(g2);
 
-   
+
 
    .. BLOCK-test-chapelcompopts
 
       --no-warnings
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -1024,6 +1255,12 @@ type.
    ``c1``, and ``v1``. Otherwise, field initializations may be omitted
    according to previously-described initializer semantics.
 
+.. index::
+   single: user-defined compiler diagnostics
+   single: user-defined compiler errors
+   single: user-defined compiler warnings
+   single: compilerError
+   single: compilerWarning
 .. _User_Defined_Compiler_Errors:
 
 User-Defined Compiler Diagnostics
@@ -1044,7 +1281,7 @@ continue after encountering a ``compilerWarning``.
    *Example (compilerDiagnostics.chpl)*.
 
    The following code shows an example of using user-defined compiler
-   diagnostics to generate warnings and errors: 
+   diagnostics to generate warnings and errors:
 
    .. code-block:: chapel
 
@@ -1069,7 +1306,7 @@ continue after encountering a ``compilerWarning``.
 
    Thus, if the program foo.chpl contained the following calls:
 
-   
+
 
    .. code-block:: chapel
       :linenos:
@@ -1084,7 +1321,7 @@ continue after encountering a ``compilerWarning``.
 
    compiling the program would generate output like:
 
-   
+
 
    .. code-block:: bash
 
@@ -1092,7 +1329,7 @@ continue after encountering a ``compilerWarning``.
       foo.chpl:2: warning: 1-argument version of foo called with type: string
       foo.chpl:6: error: foo() called with non-matching types: int(64) != real(64)
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -1100,6 +1337,10 @@ continue after encountering a ``compilerWarning``.
       compilerDiagnostics.chpl:16: warning: 1-argument version of foo called with type: string
       compilerDiagnostics.chpl:20: error: foo() called with non-matching types: int(64) != real(64)
 
+.. index::
+   single: specific instantiations
+   single: generic specialization
+   single: generic functions and special versions
 .. _Creating_General_and_Specialized_Versions_of_a_Function:
 
 Creating General and Specialized Versions of a Function
@@ -1111,15 +1352,16 @@ create a general generic implementation and also a special
 implementation for specific concrete types.
 
 The first mechanism applies to functions. According to the function
-resolution rules described in :ref:`Function_Resolution`,
-functions accepting concrete arguments are selected in preference to
-those with a totally generic argument. So, creating a second version of
-a generic function that declares a concrete type will cause the concrete
-function to be used where possible:
+resolution rules described in :ref:`Function_Resolution`, if there is no
+implicit conversion involved, functions accepting concrete arguments are
+selected in preference to those with a totally generic argument. So,
+creating a second version of a generic function that declares a concrete
+type will cause the concrete function to be used when the call site
+matches its type:
 
    *Example (specializeGenericFunction.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -1133,14 +1375,17 @@ function to be used where possible:
       var myReal:real;
       foo(myReal); // outputs "in generic foo(x)"
       var myInt:int;
-      foo(myInt); // outputs "in specific foo(x:int)"
+      foo(myInt);  // outputs "in specific foo(x:int)"
+      var myInt8: int(8);
+      foo(myInt8); // outputs "in generic foo(x)"
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
       in generic foo(x)
       in specific foo(x:int)
+      in generic foo(x)
 
 This program will run the generic foo function if the argument is a
 real, but it runs the specific version for int if the argument is an
@@ -1155,7 +1400,7 @@ concrete method to be selected when applicable. For example:
 
    *Example (specializeGenericMethod.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -1187,6 +1432,8 @@ that works with some set of types - in other words, the special
 implementation can still be a generic function. See also
 :ref:`Where_Clauses`.
 
+.. index::
+   single: generics; stack example
 .. _Example_Generic_Stack:
 
 Example: A Generic Stack
@@ -1194,7 +1441,7 @@ Example: A Generic Stack
 
    *Example (genericStack.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -1208,11 +1455,11 @@ Example: A Generic Stack
         type itemType;             // type of items
         var top: unmanaged MyNode(itemType)?; // top node on stack linked list
 
-        proc push(item: itemType) {
+        proc ref push(item: itemType) {
           top = new unmanaged MyNode(itemType, item, top);
         }
 
-        proc pop() {
+        proc ref pop() {
           if isEmpty then
             halt("attempt to pop an item off an empty stack");
           var oldTop = top;
@@ -1222,10 +1469,10 @@ Example: A Generic Stack
           return oldItem;
         }
 
-        proc isEmpty return top == nil;
+        proc isEmpty do return top == nil;
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -1236,7 +1483,7 @@ Example: A Generic Stack
       while !s.isEmpty do
         writeln(s.pop());
 
-   
+
 
    .. BLOCK-test-chapeloutput
 

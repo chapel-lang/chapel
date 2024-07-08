@@ -1,9 +1,5 @@
 03-error-in-fun.chpl:70: In function 'funBlank':
 03-error-in-fun.chpl:107: error: cannot assign to const variable
-03-error-in-fun.chpl:108: error: cannot assign to const variable
-03-error-in-fun.chpl:109: error: cannot assign to const variable
-03-error-in-fun.chpl:110: error: cannot assign to const variable
-03-error-in-fun.chpl:111: error: cannot assign to const variable
 03-error-in-fun.chpl:112: error: cannot assign to const variable
 03-error-in-fun.chpl:113: error: cannot assign to const variable
 03-error-in-fun.chpl:114: error: cannot assign to const variable
@@ -21,10 +17,6 @@
 03-error-in-fun.chpl:127: error: cannot assign to const variable
 03-error-in-fun.chpl:130: error: cannot assign to const variable
 03-error-in-fun.chpl:139: error: cannot assign to const variable
-03-error-in-fun.chpl:140: error: cannot assign to const variable
-03-error-in-fun.chpl:141: error: cannot assign to const variable
-03-error-in-fun.chpl:142: error: cannot assign to const variable
-03-error-in-fun.chpl:143: error: cannot assign to const variable
 03-error-in-fun.chpl:144: error: cannot assign to const variable
 03-error-in-fun.chpl:145: error: cannot assign to const variable
 03-error-in-fun.chpl:146: error: cannot assign to const variable
@@ -42,10 +34,6 @@
 03-error-in-fun.chpl:159: error: cannot assign to const variable
 03-error-in-fun.chpl:162: error: cannot assign to const variable
 03-error-in-fun.chpl:171: error: cannot assign to const variable
-03-error-in-fun.chpl:172: error: cannot assign to const variable
-03-error-in-fun.chpl:173: error: cannot assign to const variable
-03-error-in-fun.chpl:174: error: cannot assign to const variable
-03-error-in-fun.chpl:175: error: cannot assign to const variable
 03-error-in-fun.chpl:176: error: cannot assign to const variable
 03-error-in-fun.chpl:177: error: cannot assign to const variable
 03-error-in-fun.chpl:178: error: cannot assign to const variable
@@ -64,10 +52,6 @@
 03-error-in-fun.chpl:194: error: cannot assign to const variable
 03-error-in-fun.chpl:240: In function 'funConst':
 03-error-in-fun.chpl:277: error: cannot assign to const variable
-03-error-in-fun.chpl:278: error: cannot assign to const variable
-03-error-in-fun.chpl:279: error: cannot assign to const variable
-03-error-in-fun.chpl:280: error: cannot assign to const variable
-03-error-in-fun.chpl:281: error: cannot assign to const variable
 03-error-in-fun.chpl:282: error: cannot assign to const variable
 03-error-in-fun.chpl:283: error: cannot assign to const variable
 03-error-in-fun.chpl:284: error: cannot assign to const variable
@@ -85,10 +69,6 @@
 03-error-in-fun.chpl:297: error: cannot assign to const variable
 03-error-in-fun.chpl:300: error: cannot assign to const variable
 03-error-in-fun.chpl:309: error: cannot assign to const variable
-03-error-in-fun.chpl:310: error: cannot assign to const variable
-03-error-in-fun.chpl:311: error: cannot assign to const variable
-03-error-in-fun.chpl:312: error: cannot assign to const variable
-03-error-in-fun.chpl:313: error: cannot assign to const variable
 03-error-in-fun.chpl:314: error: cannot assign to const variable
 03-error-in-fun.chpl:315: error: cannot assign to const variable
 03-error-in-fun.chpl:316: error: cannot assign to const variable
@@ -106,10 +86,6 @@
 03-error-in-fun.chpl:329: error: cannot assign to const variable
 03-error-in-fun.chpl:332: error: cannot assign to const variable
 03-error-in-fun.chpl:341: error: cannot assign to const variable
-03-error-in-fun.chpl:342: error: cannot assign to const variable
-03-error-in-fun.chpl:343: error: cannot assign to const variable
-03-error-in-fun.chpl:344: error: cannot assign to const variable
-03-error-in-fun.chpl:345: error: cannot assign to const variable
 03-error-in-fun.chpl:346: error: cannot assign to const variable
 03-error-in-fun.chpl:347: error: cannot assign to const variable
 03-error-in-fun.chpl:348: error: cannot assign to const variable
@@ -128,10 +104,6 @@
 03-error-in-fun.chpl:364: error: cannot assign to const variable
 03-error-in-fun.chpl:410: In function 'funConstIn':
 03-error-in-fun.chpl:447: error: cannot assign to const variable
-03-error-in-fun.chpl:448: error: cannot assign to const variable
-03-error-in-fun.chpl:449: error: cannot assign to const variable
-03-error-in-fun.chpl:450: error: cannot assign to const variable
-03-error-in-fun.chpl:451: error: cannot assign to const variable
 03-error-in-fun.chpl:452: error: cannot assign to const variable
 03-error-in-fun.chpl:453: error: cannot assign to const variable
 03-error-in-fun.chpl:454: error: cannot assign to const variable
@@ -149,10 +121,6 @@
 03-error-in-fun.chpl:467: error: cannot assign to const variable
 03-error-in-fun.chpl:470: error: cannot assign to const variable
 03-error-in-fun.chpl:479: error: cannot assign to const variable
-03-error-in-fun.chpl:480: error: cannot assign to const variable
-03-error-in-fun.chpl:481: error: cannot assign to const variable
-03-error-in-fun.chpl:482: error: cannot assign to const variable
-03-error-in-fun.chpl:483: error: cannot assign to const variable
 03-error-in-fun.chpl:484: error: cannot assign to const variable
 03-error-in-fun.chpl:485: error: cannot assign to const variable
 03-error-in-fun.chpl:486: error: cannot assign to const variable
@@ -170,10 +138,6 @@
 03-error-in-fun.chpl:499: error: cannot assign to const variable
 03-error-in-fun.chpl:502: error: cannot assign to const variable
 03-error-in-fun.chpl:511: error: cannot assign to const variable
-03-error-in-fun.chpl:512: error: cannot assign to const variable
-03-error-in-fun.chpl:513: error: cannot assign to const variable
-03-error-in-fun.chpl:514: error: cannot assign to const variable
-03-error-in-fun.chpl:515: error: cannot assign to const variable
 03-error-in-fun.chpl:516: error: cannot assign to const variable
 03-error-in-fun.chpl:517: error: cannot assign to const variable
 03-error-in-fun.chpl:518: error: cannot assign to const variable
@@ -193,14 +157,6 @@
 03-error-in-fun.chpl:580: In function 'funIn':
 03-error-in-fun.chpl:617: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'b0' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:618: error: cannot assign to const variable
-03-error-in-fun.chpl:615: note: The shadow variable 'b8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:619: error: cannot assign to const variable
-03-error-in-fun.chpl:615: note: The shadow variable 'b16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:620: error: cannot assign to const variable
-03-error-in-fun.chpl:615: note: The shadow variable 'b32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:621: error: cannot assign to const variable
-03-error-in-fun.chpl:615: note: The shadow variable 'b64' is constant due to task intents in this begin statement
 03-error-in-fun.chpl:622: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'u8' is constant due to task intents in this begin statement
 03-error-in-fun.chpl:623: error: cannot assign to const variable
@@ -235,14 +191,6 @@
 03-error-in-fun.chpl:615: note: The shadow variable 'cls' is constant due to task intents in this begin statement
 03-error-in-fun.chpl:649: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:650: error: cannot assign to const variable
-03-error-in-fun.chpl:647: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:651: error: cannot assign to const variable
-03-error-in-fun.chpl:647: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:652: error: cannot assign to const variable
-03-error-in-fun.chpl:647: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:653: error: cannot assign to const variable
-03-error-in-fun.chpl:647: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:654: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:655: error: cannot assign to const variable
@@ -277,14 +225,6 @@
 03-error-in-fun.chpl:647: note: The shadow variable 'cls' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:681: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:682: error: cannot assign to const variable
-03-error-in-fun.chpl:679: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:683: error: cannot assign to const variable
-03-error-in-fun.chpl:679: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:684: error: cannot assign to const variable
-03-error-in-fun.chpl:679: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:685: error: cannot assign to const variable
-03-error-in-fun.chpl:679: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:686: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:687: error: cannot assign to const variable
@@ -320,14 +260,6 @@
 03-error-in-fun.chpl:750: In function 'funInOut':
 03-error-in-fun.chpl:787: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'b0' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:788: error: cannot assign to const variable
-03-error-in-fun.chpl:785: note: The shadow variable 'b8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:789: error: cannot assign to const variable
-03-error-in-fun.chpl:785: note: The shadow variable 'b16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:790: error: cannot assign to const variable
-03-error-in-fun.chpl:785: note: The shadow variable 'b32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:791: error: cannot assign to const variable
-03-error-in-fun.chpl:785: note: The shadow variable 'b64' is constant due to task intents in this begin statement
 03-error-in-fun.chpl:792: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'u8' is constant due to task intents in this begin statement
 03-error-in-fun.chpl:793: error: cannot assign to const variable
@@ -366,14 +298,6 @@
 03-error-in-fun.chpl:785: note: The shadow variable 'dom2' is constant due to task intents in this begin statement
 03-error-in-fun.chpl:819: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:820: error: cannot assign to const variable
-03-error-in-fun.chpl:817: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:821: error: cannot assign to const variable
-03-error-in-fun.chpl:817: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:822: error: cannot assign to const variable
-03-error-in-fun.chpl:817: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:823: error: cannot assign to const variable
-03-error-in-fun.chpl:817: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:824: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:825: error: cannot assign to const variable
@@ -412,14 +336,6 @@
 03-error-in-fun.chpl:817: note: The shadow variable 'dom2' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:851: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:852: error: cannot assign to const variable
-03-error-in-fun.chpl:849: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:853: error: cannot assign to const variable
-03-error-in-fun.chpl:849: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:854: error: cannot assign to const variable
-03-error-in-fun.chpl:849: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:855: error: cannot assign to const variable
-03-error-in-fun.chpl:849: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:856: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:857: error: cannot assign to const variable
@@ -459,14 +375,6 @@
 03-error-in-fun.chpl:920: In function 'funOut':
 03-error-in-fun.chpl:957: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'b0' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:958: error: cannot assign to const variable
-03-error-in-fun.chpl:955: note: The shadow variable 'b8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:959: error: cannot assign to const variable
-03-error-in-fun.chpl:955: note: The shadow variable 'b16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:960: error: cannot assign to const variable
-03-error-in-fun.chpl:955: note: The shadow variable 'b32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:961: error: cannot assign to const variable
-03-error-in-fun.chpl:955: note: The shadow variable 'b64' is constant due to task intents in this begin statement
 03-error-in-fun.chpl:962: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'u8' is constant due to task intents in this begin statement
 03-error-in-fun.chpl:963: error: cannot assign to const variable
@@ -501,14 +409,6 @@
 03-error-in-fun.chpl:955: note: The shadow variable 'cls' is constant due to task intents in this begin statement
 03-error-in-fun.chpl:989: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:990: error: cannot assign to const variable
-03-error-in-fun.chpl:987: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:991: error: cannot assign to const variable
-03-error-in-fun.chpl:987: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:992: error: cannot assign to const variable
-03-error-in-fun.chpl:987: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:993: error: cannot assign to const variable
-03-error-in-fun.chpl:987: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:994: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:995: error: cannot assign to const variable
@@ -543,14 +443,6 @@
 03-error-in-fun.chpl:987: note: The shadow variable 'cls' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1021: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1022: error: cannot assign to const variable
-03-error-in-fun.chpl:1019: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1023: error: cannot assign to const variable
-03-error-in-fun.chpl:1019: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1024: error: cannot assign to const variable
-03-error-in-fun.chpl:1019: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1025: error: cannot assign to const variable
-03-error-in-fun.chpl:1019: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1026: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1027: error: cannot assign to const variable
@@ -586,14 +478,6 @@
 03-error-in-fun.chpl:1090: In function 'funRef':
 03-error-in-fun.chpl:1127: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'b0' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1128: error: cannot assign to const variable
-03-error-in-fun.chpl:1125: note: The shadow variable 'b8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1129: error: cannot assign to const variable
-03-error-in-fun.chpl:1125: note: The shadow variable 'b16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1130: error: cannot assign to const variable
-03-error-in-fun.chpl:1125: note: The shadow variable 'b32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1131: error: cannot assign to const variable
-03-error-in-fun.chpl:1125: note: The shadow variable 'b64' is constant due to task intents in this begin statement
 03-error-in-fun.chpl:1132: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'u8' is constant due to task intents in this begin statement
 03-error-in-fun.chpl:1133: error: cannot assign to const variable
@@ -632,14 +516,6 @@
 03-error-in-fun.chpl:1125: note: The shadow variable 'dom2' is constant due to task intents in this begin statement
 03-error-in-fun.chpl:1159: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1160: error: cannot assign to const variable
-03-error-in-fun.chpl:1157: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1161: error: cannot assign to const variable
-03-error-in-fun.chpl:1157: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1162: error: cannot assign to const variable
-03-error-in-fun.chpl:1157: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1163: error: cannot assign to const variable
-03-error-in-fun.chpl:1157: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1164: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1165: error: cannot assign to const variable
@@ -678,14 +554,6 @@
 03-error-in-fun.chpl:1157: note: The shadow variable 'dom2' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1191: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1192: error: cannot assign to const variable
-03-error-in-fun.chpl:1189: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1193: error: cannot assign to const variable
-03-error-in-fun.chpl:1189: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1194: error: cannot assign to const variable
-03-error-in-fun.chpl:1189: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1195: error: cannot assign to const variable
-03-error-in-fun.chpl:1189: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1196: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1197: error: cannot assign to const variable
@@ -724,10 +592,6 @@
 03-error-in-fun.chpl:1189: note: The shadow variable 'dom2' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1260: In function 'funConstRef':
 03-error-in-fun.chpl:1297: error: cannot assign to const variable
-03-error-in-fun.chpl:1298: error: cannot assign to const variable
-03-error-in-fun.chpl:1299: error: cannot assign to const variable
-03-error-in-fun.chpl:1300: error: cannot assign to const variable
-03-error-in-fun.chpl:1301: error: cannot assign to const variable
 03-error-in-fun.chpl:1302: error: cannot assign to const variable
 03-error-in-fun.chpl:1303: error: cannot assign to const variable
 03-error-in-fun.chpl:1304: error: cannot assign to const variable
@@ -749,10 +613,6 @@
 03-error-in-fun.chpl:1324: error: cannot assign to const variable
 03-error-in-fun.chpl:1325: error: cannot assign to const variable
 03-error-in-fun.chpl:1329: error: cannot assign to const variable
-03-error-in-fun.chpl:1330: error: cannot assign to const variable
-03-error-in-fun.chpl:1331: error: cannot assign to const variable
-03-error-in-fun.chpl:1332: error: cannot assign to const variable
-03-error-in-fun.chpl:1333: error: cannot assign to const variable
 03-error-in-fun.chpl:1334: error: cannot assign to const variable
 03-error-in-fun.chpl:1335: error: cannot assign to const variable
 03-error-in-fun.chpl:1336: error: cannot assign to const variable
@@ -774,10 +634,6 @@
 03-error-in-fun.chpl:1356: error: cannot assign to const variable
 03-error-in-fun.chpl:1357: error: cannot assign to const variable
 03-error-in-fun.chpl:1361: error: cannot assign to const variable
-03-error-in-fun.chpl:1362: error: cannot assign to const variable
-03-error-in-fun.chpl:1363: error: cannot assign to const variable
-03-error-in-fun.chpl:1364: error: cannot assign to const variable
-03-error-in-fun.chpl:1365: error: cannot assign to const variable
 03-error-in-fun.chpl:1366: error: cannot assign to const variable
 03-error-in-fun.chpl:1367: error: cannot assign to const variable
 03-error-in-fun.chpl:1368: error: cannot assign to const variable

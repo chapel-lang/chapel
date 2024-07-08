@@ -27,16 +27,11 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/TypeSize.h"
 #include <cassert>
 #include <utility>
 
 using namespace llvm;
-
-static cl::opt<bool>
-    OpaquePointersCL("opaque-pointers", cl::desc("Use opaque pointers"),
-                     cl::init(false));
 
 LLVMContextImpl::LLVMContextImpl(LLVMContext &C)
     : DiagHandler(std::make_unique<DiagnosticHandler>()),
@@ -50,6 +45,14 @@ LLVMContextImpl::LLVMContextImpl(LLVMContext &C)
       Int16Ty(C, 16), Int32Ty(C, 32), Int64Ty(C, 64), Int128Ty(C, 128) {}
 
 LLVMContextImpl::~LLVMContextImpl() {
+#ifndef NDEBUG
+  // Check that any variable location records that fell off the end of a block
+  // when it's terminator was removed were eventually replaced. This assertion
+  // firing indicates that DPValues went missing during the lifetime of the
+  // LLVMContext.
+  assert(TrailingDPValues.empty() && "DPValue records in blocks not cleaned");
+#endif
+
   // NOTE: We need to delete the contents of OwnedModules, but Module's dtor
   // will call LLVMContextImpl::removeModule, thus invalidating iterators into
   // the container. Avoid iterators during this operation:
@@ -65,15 +68,8 @@ LLVMContextImpl::~LLVMContextImpl() {
 
   // Drop references for MDNodes.  Do this before Values get deleted to avoid
   // unnecessary RAUW when nodes are still unresolved.
-  for (auto *I : DistinctMDNodes) {
-    // We may have DIArgList that were uniqued, and as it has a custom
-    // implementation of dropAllReferences, it needs to be explicitly invoked.
-    if (auto *AL = dyn_cast<DIArgList>(I)) {
-      AL->dropAllReferences();
-      continue;
-    }
+  for (auto *I : DistinctMDNodes)
     I->dropAllReferences();
-  }
 #define HANDLE_MDNODE_LEAF_UNIQUABLE(CLASS)                                    \
   for (auto *I : CLASS##s)                                                     \
     I->dropAllReferences();
@@ -84,6 +80,13 @@ LLVMContextImpl::~LLVMContextImpl() {
     Pair.second->dropUsers();
   for (auto &Pair : MetadataAsValues)
     Pair.second->dropUse();
+  // Do not untrack ValueAsMetadata references for DIArgLists, as they have
+  // already been more efficiently untracked above.
+  for (DIArgList *AL : DIArgLists) {
+    AL->dropAllReferences(/* Untrack */ false);
+    delete AL;
+  }
+  DIArgLists.clear();
 
   // Destroy MDNodes.
   for (MDNode *I : DistinctMDNodes)
@@ -110,8 +113,11 @@ LLVMContextImpl::~LLVMContextImpl() {
 
   CAZConstants.clear();
   CPNConstants.clear();
+  CTNConstants.clear();
   UVConstants.clear();
   PVConstants.clear();
+  IntZeroConstants.clear();
+  IntOneConstants.clear();
   IntConstants.clear();
   FPConstants.clear();
   CDSConstants.clear();
@@ -237,18 +243,10 @@ void LLVMContextImpl::getSyncScopeNames(
 /// singleton OptBisect if not explicitly set.
 OptPassGate &LLVMContextImpl::getOptPassGate() const {
   if (!OPG)
-    OPG = &(*OptBisector);
+    OPG = &getGlobalPassGate();
   return *OPG;
 }
 
 void LLVMContextImpl::setOptPassGate(OptPassGate& OPG) {
   this->OPG = &OPG;
 }
-
-bool LLVMContextImpl::getOpaquePointers() {
-  if (LLVM_UNLIKELY(!(OpaquePointers.hasValue())))
-    OpaquePointers = OpaquePointersCL;
-  return *OpaquePointers;
-}
-
-void LLVMContextImpl::setOpaquePointers(bool OP) { OpaquePointers = OP; }

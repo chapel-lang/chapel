@@ -1,0 +1,11 @@
+BootStrap: docker
+From: archlinux:base-devel
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/pacman-deps.sh
+
+%runscript
+    ../../provision-scripts/run.sh "$@"

@@ -52,7 +52,7 @@ proc plot(NumSteps:[]) where NumSteps.rank == 2 {
   // to it.
   //
   const outfilename = filename + "." + format;
-  const outfile = open(outfilename, iomode.cw).writer();
+  const outfile = open(outfilename, ioMode.cw).writer(locking=false);
 
   //
   // Plot the image to the file (could also pass stdout in as the file...)
@@ -162,23 +162,23 @@ const header_size = 14;
 
   // Write the BMP image header
   outfile.writef("BM");
-  outfile.writeBinary(size:uint(32), ioendian.little);
-  outfile.writeBinary(0:uint(16), ioendian.little); /* reserved1 */
-  outfile.writeBinary(0:uint(16), ioendian.little); /* reserved2 */
-  outfile.writeBinary(offset_to_pixel_data:uint(32), ioendian.little);
+  outfile.writeBinary(size:uint(32), endianness.little);
+  outfile.writeBinary(0:uint(16), endianness.little); /* reserved1 */
+  outfile.writeBinary(0:uint(16), endianness.little); /* reserved2 */
+  outfile.writeBinary(offset_to_pixel_data:uint(32), endianness.little);
 
   // Write the DIB header BITMAPINFOHEADER
-  outfile.writeBinary(dib_header_size:uint(32), ioendian.little);
-  outfile.writeBinary(cols:int(32), ioendian.little);
-  outfile.writeBinary(-rows:int(32), ioendian.little); /*neg for swap*/
-  outfile.writeBinary(1:uint(16), ioendian.little); /* 1 color plane */
-  outfile.writeBinary(bits_per_pixel:uint(16), ioendian.little);
-  outfile.writeBinary(0:uint(32), ioendian.little); /* no compression */
-  outfile.writeBinary(pixels_size:uint(32), ioendian.little);
-  outfile.writeBinary(2835:uint(32), ioendian.little); /*pixels/meter print resolution=72dpi*/
-  outfile.writeBinary(2835:uint(32), ioendian.little); /*pixels/meter print resolution=72dpi*/
-  outfile.writeBinary(0:uint(32), ioendian.little); /* colors in palette */
-  outfile.writeBinary(0:uint(32), ioendian.little); /* "important" colors */
+  outfile.writeBinary(dib_header_size:uint(32), endianness.little);
+  outfile.writeBinary(cols:int(32), endianness.little);
+  outfile.writeBinary(-rows:int(32), endianness.little); /*neg for swap*/
+  outfile.writeBinary(1:uint(16), endianness.little); /* 1 color plane */
+  outfile.writeBinary(bits_per_pixel:uint(16), endianness.little);
+  outfile.writeBinary(0:uint(32), endianness.little); /* no compression */
+  outfile.writeBinary(pixels_size:uint(32), endianness.little);
+  outfile.writeBinary(2835:uint(32), endianness.little); /*pixels/meter print resolution=72dpi*/
+  outfile.writeBinary(2835:uint(32), endianness.little); /*pixels/meter print resolution=72dpi*/
+  outfile.writeBinary(0:uint(32), endianness.little); /* colors in palette */
+  outfile.writeBinary(0:uint(32), endianness.little); /* "important" colors */
 
   //
   // compute the maximum number of steps that were taken, just in case
@@ -197,15 +197,15 @@ const header_size = 14;
         var nbits = 0;
         for j in Dom.dim(1) {
           var bit = (if NumSteps[i,j] then 255 else 0):uint;
-          outfile.writebits(bit, 8);
-          outfile.writebits(bit, 8);
-          outfile.writebits(bit, 8);
+          outfile.writeBits(bit, 8);
+          outfile.writeBits(bit, 8);
+          outfile.writeBits(bit, 8);
           nbits += 24;
         }
         // write the padding.
         // The padding is only rounding up to 4 bytes so
-        // can be written in a single writebits call.
-        outfile.writebits(0:uint, (row_size_bits-nbits):int(8));
+        // can be written in a single writeBits call.
+        outfile.writeBits(0:uint, (row_size_bits-nbits):int(8));
       }
     }
 
@@ -215,15 +215,15 @@ const header_size = 14;
         for j in Dom.dim(1) {
           var grey = ((255*NumSteps[i,j])/maxSteps):uint;
           // write 24-bit color value by repeating grey
-          outfile.writebits(grey, 8);
-          outfile.writebits(grey, 8);
-          outfile.writebits(grey, 8);
+          outfile.writeBits(grey, 8);
+          outfile.writeBits(grey, 8);
+          outfile.writeBits(grey, 8);
           nbits += 24;
         }
         // write the padding.
         // The padding is only rounding up to 4 bytes so
-        // can be written in a single writebits call.
-        outfile.writebits(0:uint, (row_size_bits-nbits):int(8));
+        // can be written in a single writeBits call.
+        outfile.writeBits(0:uint, (row_size_bits-nbits):int(8));
       }
     }
 
@@ -235,15 +235,15 @@ const header_size = 14;
           var blue:uint = 0;
           var red = ((255*NumSteps[i,j])/maxSteps):uint;
           // write 24-bit color value
-          outfile.writebits(blue, 8);
-          outfile.writebits(green, 8);
-          outfile.writebits(red, 8);
+          outfile.writeBits(blue, 8);
+          outfile.writeBits(green, 8);
+          outfile.writeBits(red, 8);
           nbits += 24;
         }
         // write the padding.
         // The padding is only rounding up to 4 bytes so
-        // can be written in a single writebits call.
-        outfile.writebits(0:uint, (row_size_bits-nbits):int(8));
+        // can be written in a single writeBits call.
+        outfile.writeBits(0:uint, (row_size_bits-nbits):int(8));
       }
     }
   }

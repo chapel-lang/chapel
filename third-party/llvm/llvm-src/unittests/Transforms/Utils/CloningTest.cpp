@@ -25,6 +25,7 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Support/SourceMgr.h"
 #include "gtest/gtest.h"
 
 using namespace llvm;
@@ -136,7 +137,7 @@ TEST_F(CloneInstruction, OverflowBits) {
 }
 
 TEST_F(CloneInstruction, Inbounds) {
-  V = new Argument(Type::getInt32PtrTy(context));
+  V = new Argument(PointerType::get(context, 0));
 
   Constant *Z = Constant::getNullValue(Type::getInt32Ty(context));
   std::vector<Value *> ops;
@@ -160,8 +161,9 @@ TEST_F(CloneInstruction, Exact) {
 }
 
 TEST_F(CloneInstruction, Attributes) {
-  Type *ArgTy1[] = { Type::getInt32PtrTy(context) };
-  FunctionType *FT1 =  FunctionType::get(Type::getVoidTy(context), ArgTy1, false);
+  Type *ArgTy1[] = {PointerType::get(context, 0)};
+  FunctionType *FT1 =
+      FunctionType::get(Type::getVoidTy(context), ArgTy1, false);
 
   Function *F1 = Function::Create(FT1, Function::ExternalLinkage);
   BasicBlock *BB = BasicBlock::Create(context, "", F1);
@@ -186,8 +188,9 @@ TEST_F(CloneInstruction, Attributes) {
 }
 
 TEST_F(CloneInstruction, CallingConvention) {
-  Type *ArgTy1[] = { Type::getInt32PtrTy(context) };
-  FunctionType *FT1 =  FunctionType::get(Type::getVoidTy(context), ArgTy1, false);
+  Type *ArgTy1[] = {PointerType::get(context, 0)};
+  FunctionType *FT1 =
+      FunctionType::get(Type::getVoidTy(context), ArgTy1, false);
 
   Function *F1 = Function::Create(FT1, Function::ExternalLinkage);
   F1->setCallingConv(CallingConv::Cold);
@@ -210,7 +213,7 @@ TEST_F(CloneInstruction, CallingConvention) {
 }
 
 TEST_F(CloneInstruction, DuplicateInstructionsToSplit) {
-  Type *ArgTy1[] = {Type::getInt32PtrTy(context)};
+  Type *ArgTy1[] = {PointerType::get(context, 0)};
   FunctionType *FT = FunctionType::get(Type::getVoidTy(context), ArgTy1, false);
   V = new Argument(Type::getInt32Ty(context));
 
@@ -259,7 +262,7 @@ TEST_F(CloneInstruction, DuplicateInstructionsToSplit) {
 }
 
 TEST_F(CloneInstruction, DuplicateInstructionsToSplitBlocksEq1) {
-  Type *ArgTy1[] = {Type::getInt32PtrTy(context)};
+  Type *ArgTy1[] = {PointerType::get(context, 0)};
   FunctionType *FT = FunctionType::get(Type::getVoidTy(context), ArgTy1, false);
   V = new Argument(Type::getInt32Ty(context));
 
@@ -312,7 +315,7 @@ TEST_F(CloneInstruction, DuplicateInstructionsToSplitBlocksEq1) {
 }
 
 TEST_F(CloneInstruction, DuplicateInstructionsToSplitBlocksEq2) {
-  Type *ArgTy1[] = {Type::getInt32PtrTy(context)};
+  Type *ArgTy1[] = {PointerType::get(context, 0)};
   FunctionType *FT = FunctionType::get(Type::getVoidTy(context), ArgTy1, false);
   V = new Argument(Type::getInt32Ty(context));
 
@@ -437,11 +440,11 @@ for.end:
         EXPECT_NE(NewLoop, nullptr);
         EXPECT_EQ(NewLoop->getSubLoops().size(), 1u);
         Loop::block_iterator BI = NewLoop->block_begin();
-        EXPECT_TRUE((*BI)->getName().startswith("for.outer"));
-        EXPECT_TRUE((*(++BI))->getName().startswith("for.inner.preheader"));
-        EXPECT_TRUE((*(++BI))->getName().startswith("for.inner"));
-        EXPECT_TRUE((*(++BI))->getName().startswith("for.inner.exit"));
-        EXPECT_TRUE((*(++BI))->getName().startswith("for.outer.latch"));
+        EXPECT_TRUE((*BI)->getName().starts_with("for.outer"));
+        EXPECT_TRUE((*(++BI))->getName().starts_with("for.inner.preheader"));
+        EXPECT_TRUE((*(++BI))->getName().starts_with("for.inner"));
+        EXPECT_TRUE((*(++BI))->getName().starts_with("for.inner.exit"));
+        EXPECT_TRUE((*(++BI))->getName().starts_with("for.outer.latch"));
       });
 }
 
@@ -472,7 +475,7 @@ protected:
 
     // Function DI
     auto *File = DBuilder.createFile("filename.c", "/file/dir/");
-    DITypeRefArray ParamTypes = DBuilder.getOrCreateTypeArray(None);
+    DITypeRefArray ParamTypes = DBuilder.getOrCreateTypeArray(std::nullopt);
     DISubroutineType *FuncType =
         DBuilder.createSubroutineType(ParamTypes);
     auto *CU = DBuilder.createCompileUnit(dwarf::DW_LANG_C99,
@@ -798,6 +801,58 @@ TEST(CloneFunction, CloneFunctionWithSubprograms) {
   EXPECT_FALSE(verifyModule(*ImplModule, &errs()));
 }
 
+TEST(CloneFunction, CloneFunctionWithInlinedSubprograms) {
+  StringRef ImplAssembly = R"(
+    declare void @llvm.dbg.declare(metadata, metadata, metadata)
+
+    define void @test() !dbg !3 {
+      call void @llvm.dbg.declare(metadata i8* undef, metadata !5, metadata !DIExpression()), !dbg !7
+      ret void
+    }
+
+    declare void @cloned()
+
+    !llvm.dbg.cu = !{!0}
+    !llvm.module.flags = !{!2}
+    !0 = distinct !DICompileUnit(language: DW_LANG_C99, file: !1)
+    !1 = !DIFile(filename: "test.cpp",  directory: "")
+    !2 = !{i32 1, !"Debug Info Version", i32 3}
+    !3 = distinct !DISubprogram(name: "test", scope: !0, unit: !0)
+    !4 = distinct !DISubprogram(name: "inlined", scope: !0, unit: !0, retainedNodes: !{!5})
+    !5 = !DILocalVariable(name: "awaitables", scope: !4)
+    !6 = distinct !DILexicalBlock(scope: !4, file: !1, line: 1)
+    !7 = !DILocation(line: 1, scope: !6, inlinedAt: !8)
+    !8 = !DILocation(line: 10, scope: !3)
+  )";
+
+  LLVMContext Context;
+  SMDiagnostic Error;
+
+  auto ImplModule = parseAssemblyString(ImplAssembly, Error, Context);
+  EXPECT_TRUE(ImplModule != nullptr);
+  auto *Func = ImplModule->getFunction("test");
+  EXPECT_TRUE(Func != nullptr);
+  auto *ClonedFunc = ImplModule->getFunction("cloned");
+  EXPECT_TRUE(ClonedFunc != nullptr);
+
+  ValueToValueMapTy VMap;
+  SmallVector<ReturnInst *, 8> Returns;
+  ClonedCodeInfo CCI;
+  CloneFunctionInto(ClonedFunc, Func, VMap,
+                    CloneFunctionChangeType::GlobalChanges, Returns, "", &CCI);
+
+  EXPECT_FALSE(verifyModule(*ImplModule, &errs()));
+
+  // Check that DILexicalBlock of inlined function was not cloned.
+  auto DbgDeclareI = Func->begin()->begin();
+  auto ClonedDbgDeclareI = ClonedFunc->begin()->begin();
+  const DebugLoc &DbgLoc = DbgDeclareI->getDebugLoc();
+  const DebugLoc &ClonedDbgLoc = ClonedDbgDeclareI->getDebugLoc();
+  EXPECT_NE(DbgLoc.get(), ClonedDbgLoc.get());
+  EXPECT_EQ(cast<DILexicalBlock>(DbgLoc.getScope()),
+            cast<DILexicalBlock>(ClonedDbgLoc.getScope()));
+}
+
 TEST(CloneFunction, CloneFunctionToDifferentModule) {
   StringRef ImplAssembly = R"(
     define void @foo() {
@@ -869,6 +924,23 @@ protected:
     GV->addMetadata(LLVMContext::MD_type, *MDNode::get(C, {}));
     GV->setComdat(CD);
 
+    // Add ifuncs
+    {
+      const unsigned AddrSpace = 123;
+      auto *FuncPtrTy = PointerType::get(C, AddrSpace);
+      auto *FuncTy = FunctionType::get(FuncPtrTy, false);
+
+      auto *ResolverF = Function::Create(FuncTy, GlobalValue::PrivateLinkage,
+                                         AddrSpace, "resolver", OldM);
+      BasicBlock *ResolverBody = BasicBlock::Create(C, "", ResolverF);
+      ReturnInst::Create(C, ConstantPointerNull::get(FuncPtrTy), ResolverBody);
+
+      GlobalIFunc *GI = GlobalIFunc::create(FuncTy, AddrSpace,
+                                            GlobalValue::LinkOnceODRLinkage,
+                                            "an_ifunc", ResolverF, OldM);
+      GI->setVisibility(GlobalValue::ProtectedVisibility);
+    }
+
     {
       // Add an empty compile unit first that isn't otherwise referenced, to
       // confirm that compile units get cloned in the correct order.
@@ -892,7 +964,7 @@ protected:
 
     // Create debug info
     auto *File = DBuilder.createFile("filename.c", "/file/dir/");
-    DITypeRefArray ParamTypes = DBuilder.getOrCreateTypeArray(None);
+    DITypeRefArray ParamTypes = DBuilder.getOrCreateTypeArray(std::nullopt);
     DISubroutineType *DFuncType = DBuilder.createSubroutineType(ParamTypes);
     auto *CU = DBuilder.createCompileUnit(dwarf::DW_LANG_C99,
                                           DBuilder.createFile("filename.c",
@@ -1033,5 +1105,20 @@ TEST_F(CloneModule, Comdat) {
 
   Function *NewF = NewM->getFunction("f");
   EXPECT_EQ(CD, NewF->getComdat());
+}
+
+TEST_F(CloneModule, IFunc) {
+  ASSERT_EQ(1u, NewM->ifunc_size());
+
+  const GlobalIFunc &IFunc = *NewM->ifunc_begin();
+  EXPECT_EQ("an_ifunc", IFunc.getName());
+  EXPECT_EQ(GlobalValue::LinkOnceODRLinkage, IFunc.getLinkage());
+  EXPECT_EQ(GlobalValue::ProtectedVisibility, IFunc.getVisibility());
+  EXPECT_EQ(123u, IFunc.getAddressSpace());
+
+  const Function *Resolver = IFunc.getResolverFunction();
+  ASSERT_NE(nullptr, Resolver);
+  EXPECT_EQ("resolver", Resolver->getName());
+  EXPECT_EQ(GlobalValue::PrivateLinkage, Resolver->getLinkage());
 }
 }

@@ -1,4 +1,4 @@
-class Derived : Base {
+class Derived : Base(?) {
   var  z : t;
 
   proc init(_x : int, _y : int, _z : int) {
@@ -6,7 +6,7 @@ class Derived : Base {
 
     z = _z;
 
-    complete();
+    init this;
   }
 }
 
@@ -23,13 +23,14 @@ class Base {
     x = _x;
     y = _y;
 
-    complete();
+    init this;
   }
 }
 
 
 proc main() {
-  var c = new borrowed Derived(10, 20, 30);
+  var ownC = new owned Derived(10, 20, 30);
+  var c = ownC.borrow();
 
   writeln(c);
 }

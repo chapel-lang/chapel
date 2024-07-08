@@ -1,0 +1,8 @@
+warnUnstableBoth.chpl:1: In module 'M':
+warnUnstableBoth.chpl:7: warning: testNumLocalsUnstableProc is unstable
+warnUnstableBoth.chpl:8: warning: testPathUnstableProc is unstable
+In personal NumLocales module
+In my personal copy of Path
+inside M
+In my personal NumLocales - unstable proc
+In personal Path - unstable proc

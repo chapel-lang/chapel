@@ -772,11 +772,17 @@ extern int gasnete_coll_consensus_barrier(gasnete_coll_team_t team GASNETI_THREA
 	 (gasneti_assert(GASNETI_POWEROFTWO(GASNETE_COLL_P2P_TABLE_SIZE)), \
           ((uint32_t)(S) & (GASNETE_COLL_P2P_TABLE_SIZE-1)))
 
-gasnete_coll_p2p_t *gasnete_coll_p2p_get(uint32_t team_id, uint32_t sequence) {
-  gasnete_coll_team_t team = gasnete_coll_team_lookup(team_id);
+// If finalize is zero, returns with the lock held
+// If finalize is non-zero, returns without the lock held and additionally
+// in GASNET_DEBUG build will ensure future attempts at growth are fatal
+gasnete_coll_p2p_t *gasnete_coll_p2p_get_inner(
+                        gasnete_coll_team_t team, uint32_t sequence,
+                        size_t nstates, size_t ncounters, size_t ndata,
+                        int finalize)
+{
   unsigned int slot_nr = GASNETE_COLL_P2P_TABLE_SLOT(sequence);
   gasnete_coll_p2p_t *p2p, **prev_p;
-  int i;
+
   
   gex_HSL_Lock(&team->p2p_lock);
 
@@ -788,54 +794,24 @@ gasnete_coll_p2p_t *gasnete_coll_p2p_get(uint32_t team_id, uint32_t sequence) {
     p2p = p2p->p2p_next;
   }
 
-  /* If not found, create it with all zeros */
+  // If not found, create it
   if_pf ((p2p == NULL) || (p2p->sequence != sequence)) {
-    size_t statesz = GASNETI_ALIGNUP(2*team->total_ranks * sizeof(uint32_t), 8);
-    size_t countersz = GASNETI_ALIGNUP(2*team->total_ranks * sizeof(gasneti_weakatomic_t), 8);
     gasnete_coll_p2p_t *next = p2p;
-        
     p2p = team->p2p_freelist;
-        
     if_pf (p2p == NULL) {
-      /* Round to 8-byte alignment of entry array */
-      size_t alloc_size = GASNETI_ALIGNUP(sizeof(gasnete_coll_p2p_t) + statesz + countersz,8)
-        + team->p2p_eager_buffersz;
-      void *alloc_ptr = gasneti_malloc(alloc_size);
-      gasneti_leak(alloc_ptr);
-      uintptr_t p = (uintptr_t)alloc_ptr;
-      GASNETI_STAT_EVENT_VAL(W, COLL_P2P_ALLOC, alloc_size);
-          
-      p2p = (gasnete_coll_p2p_t *)p;
-      p += sizeof(gasnete_coll_p2p_t);
-          
-      p2p->state = (uint32_t *)p;
-      p += statesz;
-          
-      p2p->counter = (gasneti_weakatomic_t *)p;
-      p += countersz;
-          
-      p = GASNETI_ALIGNUP(p,8);
-      p2p->data = (uint8_t *)p;
-          
-      p2p->p2p_next = NULL;
+      p2p = gasneti_calloc(1, sizeof(gasnete_coll_p2p_t));
+      gasneti_leak(p2p);
+      GASNETI_STAT_EVENT(W, COLL_P2P_ALLOC);
+    } else {
+      team->p2p_freelist = p2p->p2p_next;
     }
-        
-    memset((void *)p2p->state, 0, statesz);
-    memset(p2p->data, 0, team->p2p_eager_buffersz);
-    for(i=0; i<2*team->total_ranks; i++) {
-      gasneti_weakatomic_set(&p2p->counter[i], 0, 0);
-    }
-    gasneti_sync_writes();
-        
 #if GASNET_DEBUG
-    p2p->team_id = team_id;
+    p2p->team_id = team->team_id;
 #endif
     p2p->sequence = sequence;
     gex_HSL_Init(&p2p->lock);
-        
-    team->p2p_freelist = p2p->p2p_next;
-        
-    /* Insert in order before the last location searched */
+
+    // Insert in order before the last location searched
     gasneti_assert(prev_p != NULL);
     gasneti_assert(!next || (next->p2p_prev_p == prev_p));
     *prev_p = p2p;
@@ -848,12 +824,61 @@ gasnete_coll_p2p_t *gasnete_coll_p2p_get(uint32_t team_id, uint32_t sequence) {
     GASNETE_P2P_EXTRA_INIT(p2p)
 #endif
   }
-      
-  gex_HSL_Unlock(&team->p2p_lock);
+
+  // TODO: it may make sense to drop team->p2p_lock here in favor of p2p->lock
+
+  if (p2p->finalized) {
+    gasneti_assert(!finalize); // may only finalize once
+    gasneti_assert_uint(p2p->nstates   ,>=, nstates);
+    gasneti_assert_uint(p2p->ncounters ,>=, ncounters);
+    gasneti_assert_uint(p2p->ndata     ,>=, ndata);
+  } else {
+    // Grow by at least double, subject to a limit
+    #define GASNETE_P2P_NEW_SZ(have,want,limit) \
+            (gasneti_assert((want) <= (limit)), MIN(limit, MAX(want, 2*(have))))
+
+    // Allocate or grow fields as needed
+    if (p2p->nstates < nstates) {
+      nstates = GASNETE_P2P_NEW_SZ(p2p->nstates, nstates, 2 * team->total_ranks);
+      uint32_t *tmp;
+      size_t allocsz = nstates * sizeof(*tmp);
+      tmp = gasneti_realloc((void*)p2p->state, allocsz); // cast discards `volatile` w/o a warning
+      size_t zerosz = (nstates - p2p->nstates) * sizeof(*tmp);
+      memset(tmp + p2p->nstates, 0, zerosz);
+      p2p->state = tmp;
+      p2p->nstates = nstates;
+    }
+    if (p2p->ncounters < ncounters) {
+      ncounters = GASNETE_P2P_NEW_SZ(p2p->ncounters, ncounters, 2 * team->total_ranks);
+      gasneti_weakatomic_t *tmp;
+      size_t allocsz = ncounters * sizeof(*tmp);
+      tmp = gasneti_realloc((void*)p2p->counter, allocsz); // cast discards `volatile` w/o a warning
+      for (int i = p2p->ncounters; i < ncounters; i++) {
+        gasneti_weakatomic_set(tmp + i, 0, 0);
+      }
+      p2p->counter = tmp;
+      p2p->ncounters = ncounters;
+    }
+    if (p2p->ndata < ndata) {
+      ndata = GASNETE_P2P_NEW_SZ(p2p->ndata, ndata, team->p2p_eager_buffersz);
+      uint8_t *tmp = gasneti_realloc(p2p->data, ndata);
+      memset(tmp + p2p->ndata, 0, ndata - p2p->ndata);
+      p2p->data = tmp;
+      p2p->ndata = ndata;
+    }
+
+    #undef GASNETE_P2P_NEW_SZ
+  }
+
+  gasnete_coll_p2p_check(p2p);
+
+  if (finalize) {
+    gasneti_assert(!p2p->finalized);
+    p2p->finalized = 1;
+    gex_HSL_Unlock(&team->p2p_lock);
+  }
       
   gasneti_assert(p2p != NULL);
-  gasneti_assert(p2p->state != NULL);
-  gasneti_assert(p2p->data != NULL);
   gasneti_assert(p2p->team_id == team->team_id);
       
   return p2p;
@@ -863,15 +888,29 @@ void gasnete_coll_p2p_free(gasnete_coll_team_t team, gasnete_coll_p2p_t *p2p) {
   gasneti_assert(p2p != NULL);
   gasneti_assert(p2p->team_id == team->team_id);
 
+  // Even though we've reached the end of the collective operation, it is
+  // possible that an AM handler is still between its "real work" and its
+  // release of the p2p_lock.  So it is NOT safe to operate lock-free on p2p.
+
   gex_HSL_Lock(&team->p2p_lock);
+
+  gasnete_coll_p2p_check(p2p);
+  gasneti_free(p2p->data);
+  p2p->data = NULL;     p2p->ndata = 0;
+  gasneti_free((void*)p2p->state); // cast discards `volatile` w/o a warning
+  p2p->state = NULL;    p2p->nstates = 0;
+  gasneti_free((void*)p2p->counter); // cast discards `volatile` w/o a warning
+  p2p->counter = NULL;  p2p->ncounters = 0;
+  p2p->finalized = 0;
+
+#ifdef GASNETE_P2P_EXTRA_FREE
+  GASNETE_P2P_EXTRA_FREE(p2p)
+#endif
 
   *(p2p->p2p_prev_p) = p2p->p2p_next;
   if (p2p->p2p_next) {
     p2p->p2p_next->p2p_prev_p = p2p->p2p_prev_p;
   }
-#ifdef GASNETE_P2P_EXTRA_FREE
-  GASNETE_P2P_EXTRA_FREE(p2p)
-#endif
 
   p2p->p2p_next = team->p2p_freelist;
   team->p2p_freelist = p2p;
@@ -894,6 +933,7 @@ void gasnete_coll_p2p_purge(gasnete_coll_team_t team) {
   while (p2p) {
     gasnete_coll_p2p_t *next = p2p->p2p_next;
     gasneti_free(p2p);
+    GASNETI_STAT_EVENT(W, COLL_P2P_FREE);
     p2p = next;
   }
 
@@ -912,16 +952,19 @@ extern void gasnete_coll_p2p_long_reqh(gex_Token_t token, void *buf, size_t nbyt
                                        gex_AM_Arg_t count,
                                        gex_AM_Arg_t offset,
                                        gex_AM_Arg_t state) {
-  gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get(team_id, sequence);
-  int i;
+  size_t nstates = count ? offset + count : 0;
+  gasnete_coll_team_t team = gasnete_coll_team_lookup(team_id);
+  gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get_locked(team, sequence, nstates, 0, 0);
 
   if (nbytes) {
     gasneti_sync_writes();
   }
 
-  for (i = 0; i < count; ++i, ++offset) {
+  for (int i = 0; i < count; ++i, ++offset) {
     p2p->state[offset] = state;
   }
+
+  gasnete_coll_p2p_unlock(team, p2p);
 }
 
 /* Delivers a medium payload to the eager buffer space and updates 1 or more states
@@ -937,17 +980,21 @@ extern void gasnete_coll_p2p_med_reqh(gex_Token_t token, void *buf, size_t nbyte
                                       gex_AM_Arg_t offset,
                                       gex_AM_Arg_t state,
                                       gex_AM_Arg_t size) {
-  gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get(team_id, sequence);
-  int i;
+  size_t nstates = count ? offset + count : 0;
+  size_t ndata = nbytes ? offset * size + nbytes : 0;
+  gasnete_coll_team_t team = gasnete_coll_team_lookup(team_id);
+  gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get_locked(team, sequence, nstates, 0, ndata);
 
   if (nbytes) {
     GASNETE_FAST_UNALIGNED_MEMCPY(p2p->data + offset*size, buf, nbytes);
     gasneti_sync_writes();
   }
 
-  for (i = 0; i < count; ++i, ++offset) {
+  for (int i = 0; i < count; ++i, ++offset) {
     p2p->state[offset] = state;
   }
+
+  gasnete_coll_p2p_unlock(team, p2p);
 }
 
 extern void gasnete_coll_p2p_med_counting_reqh(gex_Token_t token, void *buf, size_t nbytes,
@@ -956,7 +1003,9 @@ extern void gasnete_coll_p2p_med_counting_reqh(gex_Token_t token, void *buf, siz
                                                gex_AM_Arg_t offset,
                                                gex_AM_Arg_t idx,
                                                gex_AM_Arg_t size) {
-  gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get(team_id, sequence);
+  size_t ndata = nbytes ? offset * size + nbytes : 0;
+  gasnete_coll_team_t team = gasnete_coll_team_lookup(team_id);
+  gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get_locked(team, sequence, 0, idx+1, ndata);
   
   if (nbytes) {
     GASNETE_FAST_UNALIGNED_MEMCPY(p2p->data + offset*size, buf, nbytes);
@@ -964,6 +1013,8 @@ extern void gasnete_coll_p2p_med_counting_reqh(gex_Token_t token, void *buf, siz
   }
   
   gasneti_weakatomic_increment(&p2p->counter[idx], 0);
+
+  gasnete_coll_p2p_unlock(team, p2p);
 }
 
 /* Delivers a medium payload to the eager buffer space and updates 1 state
@@ -972,13 +1023,15 @@ extern void gasnete_coll_p2p_med_counting_reqh(gex_Token_t token, void *buf, siz
 extern void gasnete_coll_p2p_med_tree_reqh(gex_Token_t token, void *buf, size_t nbytes,
                                            gex_AM_Arg_t team_id,
                                            gex_AM_Arg_t sequence) {
-  gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get(team_id, sequence);
-      
+  gasnete_coll_team_t team = gasnete_coll_team_lookup(team_id);
+  gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get_locked(team, sequence, 1, 0, nbytes);
+
   GASNETE_FAST_UNALIGNED_MEMCPY(p2p->data, buf, nbytes);
   gasneti_sync_writes();
       
   p2p->state[0] = 1;
-      
+
+  gasnete_coll_p2p_unlock(team, p2p);
 }
 
 /* No payload to deliver, just updates 1 or more states
@@ -992,12 +1045,15 @@ extern void gasnete_coll_p2p_short_reqh(gex_Token_t token,
                                         gex_AM_Arg_t count,
                                         gex_AM_Arg_t offset,
                                         gex_AM_Arg_t state) {
-  gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get(team_id, sequence);
-  int i;
+  size_t nstates = count ? offset + count : 0;
+  gasnete_coll_team_t team = gasnete_coll_team_lookup(team_id);
+  gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get_locked(team, sequence, nstates, 0, 0);
 
-  for (i = 0; i < count; ++i, ++offset) {
+  for (int i = 0; i < count; ++i, ++offset) {
     p2p->state[offset] = state;
   }
+
+  gasnete_coll_p2p_unlock(team, p2p);
 }
 
 /* Increment atomic counter */
@@ -1005,9 +1061,12 @@ extern void gasnete_coll_p2p_advance_reqh(gex_Token_t token,
                                           gex_AM_Arg_t team_id,
                                           gex_AM_Arg_t sequence,
                                           gex_AM_Arg_t idx) {
+  gasnete_coll_team_t team = gasnete_coll_team_lookup(team_id);
+  gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get_locked(team, sequence, 0, idx+1, 0);
 
-  gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get(team_id, sequence);
   gasneti_weakatomic_increment(&p2p->counter[idx], 0);
+
+  gasnete_coll_p2p_unlock(team, p2p);
 }
 
 /* Send the data and increment atomic counter */
@@ -1015,15 +1074,16 @@ extern void gasnete_coll_p2p_put_and_advance_reqh(gex_Token_t token, void *buf, 
                                                   gex_AM_Arg_t team_id,
                                                   gex_AM_Arg_t sequence,
                                                   gex_AM_Arg_t idx) {
-
-  gasnete_coll_p2p_t *p2p;
-
   if (nbytes) {
     gasneti_sync_writes();
   }
       
-  p2p = gasnete_coll_p2p_get(team_id, sequence);
+  gasnete_coll_team_t team = gasnete_coll_team_lookup(team_id);
+  gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get_locked(team, sequence, 0, idx+1, 0);
+
   gasneti_weakatomic_increment(&p2p->counter[idx], 0);
+
+  gasnete_coll_p2p_unlock(team, p2p);
 }
 
 /* Memcopy payload and then decrement atomic counter if requested */
@@ -1033,12 +1093,15 @@ GASNETI_INLINE(gasnete_coll_p2p_memcpy_reqh_inner)
                                              gex_AM_Arg_t team_id,
                                              gex_AM_Arg_t sequence,
                                              gex_AM_Arg_t decrement) {
-  gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get(team_id, sequence);
+  gasnete_coll_team_t team = gasnete_coll_team_lookup(team_id);
+  gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get_locked(team, sequence, 0, !!decrement, 0);
 
   GASNETE_FAST_UNALIGNED_MEMCPY(dest, buf, nbytes);
   if (decrement) {
     gasneti_weakatomic_decrement(&p2p->counter[0], GASNETI_ATOMIC_REL);
   }
+
+  gasnete_coll_p2p_unlock(team, p2p);
 }
 MEDIUM_HANDLER(gasnete_coll_p2p_memcpy_reqh,4,5,
                (token,addr,nbytes, UNPACK(a0),      a1, a2, a3),
@@ -1179,6 +1242,9 @@ int gasnete_tm_p2p_send_rtr(
 //   0: no data remains to be sent (done)
 //   1: unsent data remains OR xfer has not even started
 //   2: unsent data remains, but was not sent due to IMMEDIATE back-pressure
+// p2p usage:
+//   p2p->data holds an array of struct gasnete_tm_p2p_send_struct (void*,size_t)
+//   p2p->state[offset] holds state in [0..2]
 int gasnete_tm_p2p_send_data(gasnete_coll_op_t *op, gasnete_coll_p2p_t *p2p,
                              gex_Rank_t rank, uint32_t offset,
                              const void *src, size_t nbytes,
@@ -1299,7 +1365,12 @@ gasnete_coll_op_generic_init_with_scratch(gasnete_coll_team_t team, int flags,
 
     /* Conditionally allocate data for point-to-point syncs */
     if (data->options & GASNETE_COLL_GENERIC_OPT_P2P) {
-      data->p2p = gasnete_coll_p2p_get(team->team_id, sequence);
+      // Historical (worst-case) array sizes
+      // TODO: eliminate use of this code path -- *no* algorithm uses all three worst case sizes
+      size_t nstates = 2 * team->total_ranks;
+      size_t ncounters = 2 * team->total_ranks;
+      size_t ndata = team->p2p_eager_buffersz;
+      data->p2p = gasnete_coll_p2p_get_final(team, sequence, nstates, ncounters, ndata);
     }
 
     /* Unconditionally allocate an eop */
@@ -1910,56 +1981,141 @@ gasnete_coll_gather_nb_default(gasnet_team_handle_t team,
 /*---------------------------------------------------------------------------------*/
 /* gasnete_coll_gather_all_nb() */
 
-/* gall Gath: Implement gather_all in terms of simultaneous gathers */
-/* This is meant mostly as an example and a short-term solution */
-/* Valid wherever the underlying gather is valid */
-static int gasnete_coll_pf_gall_Gath(gasnete_coll_op_t *op GASNETI_THREAD_FARG) {
+// gall GathBcast: Implement gather_all in terms of gather + broadcast
+// Naturally OUT_MYSYNC due to tree-based broadcast
+// Valid for all flags, segment dispositions and sizes
+static int gasnete_coll_pf_gall_GathBcast(gasnete_coll_op_t *op GASNETI_THREAD_FARG) {
   gasnete_coll_generic_data_t *data = op->data;
   const gasnete_coll_gather_all_args_t *args = GASNETE_COLL_GENERIC_ARGS(data, gather_all);
   int result = 0;
+  gasnete_coll_p2p_t *p2p = data->p2p;
+
+  gasneti_assert(p2p != NULL);
+  gasneti_assert(p2p->state != NULL);
+  gasneti_assert(p2p->data != NULL);
+
+  struct pdata {
+    size_t      offset;
+    size_t      remain;
+    size_t      chunk_len;
+    gex_Rank_t  width;
+    gex_Rank_t  self;
+    gex_Rank_t  child_cnt;
+    gex_Rank_t  parent;
+    gex_Rank_t  age;
+    int         phase;
+    int         last;
+  } *pdata = data->private_data;
 
   switch (data->state) {
-  case 0:	/* Optional IN barrier */
+  case 0: {     // Allocate and initialize pdata used by the broadcast
+    gex_TM_t const tm = op->e_tm;
+    pdata = gasneti_calloc(1, sizeof(struct pdata));
+    pdata->remain    = args->nbytes * gex_TM_QuerySize(tm);
+    pdata->chunk_len = MIN(op->team->p2p_eager_buffersz, gex_AM_LUBRequestMedium());
+    pdata->self      = gex_TM_QueryRank(tm);
+    pdata->child_cnt = gasnete_tm_binom_children(tm, pdata->self);
+    pdata->parent    = gasnete_tm_binom_parent(tm, pdata->self);
+    pdata->age       = gasnete_tm_binom_age(tm, pdata->self);
+    pdata->width     = 1 + gasnete_coll_log2_rank(gex_TM_QuerySize(tm) - 1);
+    pdata->phase     = 1;
+
+    gasneti_assert(!data->private_data);
+    data->private_data = pdata;
+    data->state = 1; GASNETI_FALLTHROUGH
+  }
+
+  case 1:       // Optional IN barrier
     if (!gasnete_coll_generic_all_threads(data) ||
         !gasnete_coll_generic_insync(op->team, data)) {
       break;
     }
-    data->state = 1; GASNETI_FALLTHROUGH
-
-  case 1:	/* Initiate data movement */
-    {
-      gex_Event_t *h;
-      int flags = GASNETE_COLL_FORWARD_FLAGS(op->flags);
-      gasnet_team_handle_t team = op->team;
-      void *dst = args->dst;
-      void *src = args->src;
-      size_t nbytes = args->nbytes;
-      gasnet_image_t i;
-
-      /* XXX: freelist ? */
-      h = gasneti_malloc(op->team->total_ranks * sizeof(gex_Event_t));
-      data->private_data = h;
-
-      for (i = 0; i < op->team->total_ranks; ++i, ++h) {
-        *h = gasnete_coll_gather_nb(team, i, dst, src, nbytes,
-                                    flags|GASNETE_COLL_NONROOT_SUBORDINATE|GASNET_COLL_DISABLE_AUTOTUNE, op->sequence+i+1 GASNETI_THREAD_PASS);
-        gasnete_coll_save_event(h);
-      }
-    }
     data->state = 2; GASNETI_FALLTHROUGH
 
-  case 2:	/* Sync data movement */
-    if (!gasnete_coll_generic_coll_sync(data->private_data, op->team->total_ranks GASNETI_THREAD_PASS)) {
+  case 2: {     // Initiate data #1: gather to rank 0
+    int flags = GASNETE_COLL_FORWARD_FLAGS(op->flags)|GASNETE_COLL_NONROOT_SUBORDINATE|GASNET_COLL_DISABLE_AUTOTUNE;
+    data->handle = gasnete_coll_gather_nb(op->team, 0, args->dst, args->src, args->nbytes,
+                                          flags, op->sequence+1 GASNETI_THREAD_PASS);
+    gasnete_coll_save_event(&data->handle);
+    data->state = 3; GASNETI_FALLTHROUGH
+  }
+
+  case 3:       // Sync gather
+    if (data->handle != GEX_EVENT_INVALID) {
       break;
     }
-    data->state = 3; GASNETI_FALLTHROUGH
+    data->state = 4; GASNETI_FALLTHROUGH
 
-  case 3:	/* Optional OUT barrier */
+  case 4: {     // Initiate one round of binomial broadcast
+    // TODO: use of IMM and maybe lc_opt
+    gex_TM_t const tm = op->e_tm;
+    void *dst = (void *)(pdata->offset + (uintptr_t)args->dst);
+    const int ready = pdata->phase;
+    pdata->last = (pdata->remain <= pdata->chunk_len);
+    if (pdata->last) {
+      pdata->chunk_len = pdata->remain;
+    }
+    if (pdata->self) {
+      // Wait for arrival of data from parent (if any)
+      if (p2p->state[pdata->width] != ready) break;
+      gasneti_sync_reads();
+      GASNETI_MEMCPY(dst, p2p->data, pdata->chunk_len);
+      // Acknowledge parent (CTS) if there is a next round
+      if (! pdata->last) {
+        gasnete_tm_p2p_change_state(op, pdata->parent, /*flags*/0,
+                                    pdata->age, ready GASNETI_THREAD_PASS);
+      }
+    }
+    if (pdata->child_cnt) {
+      // Send to children (if any)
+      const gex_Rank_t size = gex_TM_QuerySize(tm);
+      const gex_Rank_t child_cnt = pdata->child_cnt;
+      const gex_Rank_t self      = pdata->self;
+      for (int idx = child_cnt - 1; idx >= 0; --idx) { // Reverse order for deepest subtree first
+          gex_Rank_t distance = 1 << idx;
+          gex_Rank_t peer = (distance >= size - self) ? self - (size - distance) : self + distance;
+          // Deliver to p2p->data space W/O an offset, but set a state[i] for non-zero i:
+          //   count=1, offset=i, elem_size=0
+          gasneti_assert_zeroret(
+             gex_AM_RequestMedium6(tm, peer, gasneti_handleridx(gasnete_coll_p2p_med_reqh),
+                                   dst, pdata->chunk_len, GEX_EVENT_NOW, /*flags*/0,
+                                   op->team->team_id, op->sequence,
+                                   /*count*/1, /*offset*/pdata->width,
+                                   /*state*/ready, /*elem_size*/0));
+        }
+      }
+      if (pdata->last) goto bcast_done;
+      data->state = 5; GASNETI_FALLTHROUGH
+    }
+
+    case 5:
+      if (pdata->child_cnt) { // Stall for CTS
+        const int ready = pdata->phase;
+        for (gex_Rank_t r = 0; r < pdata->child_cnt; ++r) {
+          if (p2p->state[r] != ready) return 0; // At least one child has not acknowledged
+        }
+      }
+
+      // Advance phase, offset and remain for next iter
+      pdata->phase ^= 1;
+      pdata->offset += pdata->chunk_len;
+      pdata->remain -= pdata->chunk_len;
+      gasneti_assert(pdata->remain);
+
+      // Yield.  Control will resume at next iteration.
+      gasneti_assert(! result);
+      data->state = 4;
+      break;
+
+    bcast_done:
+      data->state = 6; GASNETI_FALLTHROUGH
+
+  case 6:       // Optional OUT barrier
     if (!gasnete_coll_generic_outsync(op->team, data)) {
       break;
     }
 
-    gasneti_free(data->private_data);
+    gasneti_free(pdata);
     gasnete_coll_generic_free(op->team, data GASNETI_THREAD_PASS);
     result = (GASNETE_COLL_OP_COMPLETE | GASNETE_COLL_OP_INACTIVE);
   }
@@ -1967,7 +2123,8 @@ static int gasnete_coll_pf_gall_Gath(gasnete_coll_op_t *op GASNETI_THREAD_FARG) 
   return result;
 }
 extern gex_Event_t
-gasnete_coll_gall_Gath(gasnet_team_handle_t team,
+gasnete_coll_gall_GathBcast(
+                       gasnet_team_handle_t team,
                        void *dst, void *src,
                        size_t nbytes, int flags, 
                        gasnete_coll_implementation_t coll_params,
@@ -1975,18 +2132,19 @@ gasnete_coll_gall_Gath(gasnet_team_handle_t team,
                        GASNETI_THREAD_FARG)
 {
   int options = GASNETE_COLL_GENERIC_OPT_INSYNC_IF (!(flags & GASNET_COLL_IN_NOSYNC)) |
-		GASNETE_COLL_GENERIC_OPT_OUTSYNC_IF(!(flags & GASNET_COLL_OUT_NOSYNC));
+                GASNETE_COLL_GENERIC_OPT_OUTSYNC_IF(flags & GASNET_COLL_OUT_ALLSYNC) |
+                GASNETE_COLL_GENERIC_OPT_P2P;
 
   if(flags & GASNETE_COLL_SUBORDINATE) 
     return gasnete_coll_generic_gather_all_nb(team, dst, src, nbytes, flags,
-                                              &gasnete_coll_pf_gall_Gath, options,
+                                              &gasnete_coll_pf_gall_GathBcast, options,
                                               NULL, sequence,
                                               coll_params->num_params, coll_params->param_list 
                                               GASNETI_THREAD_PASS); 
   else {
     return gasnete_coll_generic_gather_all_nb(team, dst, src, nbytes, flags,
-                                              &gasnete_coll_pf_gall_Gath, options,
-                                              NULL, team->total_ranks,
+                                              &gasnete_coll_pf_gall_GathBcast, options,
+                                              NULL, 1, // single non-root subordinate gather
                                               coll_params->num_params, coll_params->param_list
                                               GASNETI_THREAD_PASS); 
   }
@@ -2275,6 +2433,7 @@ gasnete_tm_broadcast_nb_default(gex_TM_t e_tm, gex_Rank_t root,
                                 size_t nbytes, gex_Flags_t flags,
                                 uint32_t sequence GASNETI_THREAD_FARG)
 {
+  GASNETI_TRACE_TM_BROADCAST(COLL_BROADCAST_NB,e_tm,root,dst,src,nbytes,flags);
   gasnet_team_handle_t team = gasneti_import_tm_nonpair(e_tm)->_coll_team;
   int coll_flags = GASNET_COLL_LOCAL | GASNET_COLL_IN_MYSYNC | GASNET_COLL_OUT_MYSYNC;
   coll_flags |= (flags & GASNETI_FLAG_COLL_SUBORDINATE) ? GASNETE_COLL_SUBORDINATE : 0;
@@ -2598,11 +2757,11 @@ extern void gasnete_coll_stat(void) {
   gasnete_coll_threaddata_t *td = GASNETE_COLL_MYTHREAD_NOALLOC;
   int used = gasnete_coll_event_list.used;
   gasnete_coll_op_t *op;
-  fprintf(stderr, "%d> %d events used\n", (int)gasneti_mynode, used);
+  gasneti_console_message("COLL INFO","%d events used\n", used);
 
   if (used) {
     for (int i = 0; i < used; ++i) {
-      fprintf(stderr, "EVENT %p\n", (void *)gasnete_coll_event_list.events[i]);
+      gasneti_console_message("COLL INFO","EVENT %p\n", (void *)gasnete_coll_event_list.events[i]);
     }
   }
 
@@ -2610,7 +2769,7 @@ extern void gasnete_coll_stat(void) {
   op = gasnete_coll_active_first();
   while (op) {
     gasnete_coll_generic_data_t *data = op->data;
-    fprintf(stderr, "OP: %p in state %d\n", (void *)op, data->state);
+    gasneti_console_message("COLL INFO","OP: %p in state %d\n", (void *)op, data->state);
     op = gasnete_coll_active_next(op);
   }
   /* gasneti_mutex_unlock(&gasnete_coll_active_lock); */

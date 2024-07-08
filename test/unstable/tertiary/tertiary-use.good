@@ -1,0 +1,3 @@
+tertiary-use.chpl:9: In module 'M3':
+tertiary-use.chpl:11: warning: using a type's name ('R' in this case) in a 'use' statement to access its tertiary methods is an unstable feature
+hi

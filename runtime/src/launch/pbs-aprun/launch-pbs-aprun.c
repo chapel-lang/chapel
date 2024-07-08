@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -103,6 +103,7 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
   int length = 0;
   FILE *qsubScript = NULL;
   char *qsubFilename = expectFilename;
+  size_t qsubFilenameSize = sizeof(expectFilename);
   char jobName[128];
 
   if (!queue) {
@@ -116,7 +117,8 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
 
   if (generate_qsub_script) {
     pid_t mypid = debug ? 0 : getpid();
-    sprintf(qsubFilename, "qsub.%s-%d", genFilename, (int) mypid);
+    snprintf(qsubFilename, qsubFilenameSize, "qsub.%s-%d", genFilename,
+             (int) mypid);
     qsubScript = fopen(qsubFilename, "w");
     fprintf(qsubScript, "#PBS -j oe\n");
     fprintf(qsubScript, "#PBS -zV\n");
@@ -392,9 +394,14 @@ static void chpl_launch_cleanup(void) {
   }
 }
 
-int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+int chpl_launch(int argc, char* argv[], int32_t numLocales,
+                int32_t numLocalesPerNode) {
   int retcode;
   debug = getenv("CHPL_LAUNCHER_DEBUG");
+
+  if (numLocalesPerNode > 1) {
+    chpl_launcher_no_colocales_error(NULL);
+  }
 
   if (generate_qsub_script) {
     genQsubScript(argc, argv, numLocales);

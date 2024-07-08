@@ -1,7 +1,7 @@
 record R {
   param size: uint;
 
-  proc type t type
+  proc type t type do
     return uint(size);
 
   type this_type = R(size); // Recursive? This line causes a segfault.

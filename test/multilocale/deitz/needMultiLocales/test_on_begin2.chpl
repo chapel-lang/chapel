@@ -1,6 +1,6 @@
-use Time;
+use Time, CTypes;
 
-extern proc printf(fmt: c_string, x...);
+extern proc printf(fmt: c_ptrConst(c_char), x...);
 
 proc foo() {
   var x: int = 2;

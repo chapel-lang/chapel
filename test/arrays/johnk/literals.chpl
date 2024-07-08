@@ -1,4 +1,4 @@
-var justOne = [1];
+var justOne = [1, ];
 
 var ints = [ 1,2,3 ];
 var reals = [ 10.5, 11.3, 3.1415, 6.0, 9.10 ];

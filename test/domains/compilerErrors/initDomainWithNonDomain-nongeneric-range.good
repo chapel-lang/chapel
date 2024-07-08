@@ -1,0 +1,2 @@
+{0..9}: domain(1,int(64),one)
+{0..19}: domain(1,int(64),one)

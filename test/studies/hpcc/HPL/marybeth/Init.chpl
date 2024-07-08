@@ -62,8 +62,8 @@ record HPLparams {
   var L1, U: transtype;
   var memAlign: int;
 
-  proc postinit() {
-     var infile = open(inFileName, iomode.r).reader();
+  proc ref postinit() {
+     var infile = open(inFileName, ioMode.r).reader(locking=false);
 
      infile.readln();
      infile.readln();
@@ -176,16 +176,16 @@ record HPLparams {
   }
 }
 
-proc init(A:[?D]) {
+proc initialize(A:[?D]) {
 //  Rather than initialize A = [Asquare | b] with one call to 
-//  fillRandom, Asquare is initialized first, followed by b.
+//  'fill', Asquare is initialized first, followed by b.
 //  This is to match the previous version of benchmark where
 //  A and b were stored separately. 
   var n = D.dim(0).size;
   ref Asquare = A(..,1..n);
   ref b = A(..,n+1);
-  var rstream = new owned RandomStream(real, seed=1234567891);
+  var rstream = new randomStream(real, seed=1234567891);
 
-  rstream.fillRandom(Asquare);
-  rstream.fillRandom(b);
+  rstream.fill(Asquare);
+  rstream.fill(b);
 }

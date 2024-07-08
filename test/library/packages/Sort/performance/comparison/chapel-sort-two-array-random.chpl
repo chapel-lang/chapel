@@ -11,11 +11,12 @@ proc main() {
 
   fillRandom(A);
 
-  var timer:Timer;
+  var timer:stopwatch;
   timer.start();
   TwoArrayRadixSort.twoArrayRadixSort(A);
   timer.stop();
 
   writeln("Sorted ", n, " elements in ", timer.elapsed(), " seconds");
   writeln(8*n/timer.elapsed()/1024.0/1024.0, " MiB/s");
+  writeln(8*n/timer.elapsed()/1000.0/1000.0, " MB/s");
 }

@@ -45,6 +45,17 @@ static volatile int	psmx3_wait_thread_ready = 0;
 static volatile int	psmx3_wait_thread_enabled = 0;
 static volatile int	psmx3_wait_thread_busy = 0;
 
+// When fi_wait is called, this thread is activated (psmx3_wait_thread_enabled)
+// While activiated it loops checking each domain for progress.
+// When progress is made, CQs/CNTRs with wait_sets will get fd events and
+// be woken from the fi_wait call below which will then deactivate this thread.
+// In future, once psm3_wait supports multi-EP and multi-rail/QP/addr
+// could use psm3_wait to wait for a potentially interesting event and then
+// use psmx3_progress_all to check for CQ and CNTR events which will wake
+// FDs in the waitset and hence wake the fi_wait.  However, psm3_wait is not
+// supported by all modes or HALs so need to use the existing polling approach
+// if the HAL does not support psm3_wait, which could be determined by an
+// error return from  psm3_wait (PSM2_PARAM_ERR or PSM2_INTERNAL_ERR).
 static void *psmx3_wait_progress(void *args)
 {
 	struct psmx3_fid_fabric *fabric = args;
@@ -118,7 +129,7 @@ static void psmx3_wait_start_progress(struct psmx3_fid_fabric *fabric)
 		err = pthread_create(&psmx3_wait_thread, &attr,
 				     psmx3_wait_progress, (void *)fabric);
 		if (err)
-			FI_WARN(&psmx3_prov, FI_LOG_EQ,
+			PSMX3_WARN(&psmx3_prov, FI_LOG_EQ,
 				"cannot create wait progress thread\n");
 		pthread_attr_destroy(&attr);
 		while (!psmx3_wait_thread_ready)
@@ -140,6 +151,44 @@ static void psmx3_wait_stop_progress(void)
 static struct fi_ops_wait *psmx3_wait_ops_save;
 static struct fi_ops_wait psmx3_wait_ops;
 
+static int psmx3_wait_wait_wait(struct fid_wait *wait_fid, int timeout)
+{
+	struct ofi_epollfds_event event;
+	struct util_wait_fd *wait;
+	uint64_t endtime;
+	int ret;
+
+	wait = container_of(wait_fid, struct util_wait_fd, util_wait.wait_fid);
+	endtime = ofi_timeout_time(timeout);
+
+	while (1) {
+		ret = wait->util_wait.wait_try(&wait->util_wait);
+		if (ret) {
+			return ret == -FI_EAGAIN ? 0 : ret;
+		}
+
+		if (ofi_adjust_timeout(endtime, &timeout))
+			return -FI_ETIMEDOUT;
+
+		ret = (wait->util_wait.wait_obj == FI_WAIT_FD) ?
+		      ofi_epoll_wait(wait->epoll_fd, &event, 1, 100) :
+		      ofi_pollfds_wait(wait->pollfds, &event, 1, 100);
+		if (ret > 0)
+			return FI_SUCCESS;
+
+		if (ret < 0) {
+#if ENABLE_DEBUG
+			/* ignore interrupts in order to enable debugging */
+			if (ret == -FI_EINTR)
+				continue;
+#endif
+			PSMX3_WARN(wait->util_wait.prov, FI_LOG_FABRIC,
+				"poll failed\n");
+			return ret;
+		}
+	}
+}
+
 DIRECT_FN
 STATIC int psmx3_wait_wait(struct fid_wait *wait, int timeout)
 {
@@ -150,9 +199,36 @@ STATIC int psmx3_wait_wait(struct fid_wait *wait, int timeout)
 	wait_priv = container_of(wait, struct util_wait, wait_fid);
 	fabric = container_of(wait_priv->fabric, struct psmx3_fid_fabric, util_fabric);
 
+	// special fi_wait support for Intel MPI when FI_PSM3_YIELD_MODE=1
+	// When used, fi_wait always delays until next PSM3 internal progress event
+	// regardless of how the waitset has been constructed.
+	// After fi_wait returns, caller must check for OFI CQ and CNTR events of
+	// interest and if none, call fi_wait again.  Those OFI CQ and CNTR checks
+	// will do progress_all as needed to complete OFI completion delivery.
+	// TBD, in future could perhaps build waitset a specific way, such as
+	// FI_WAIT_YIELD entries and then use waitset to figure out which EPs
+	// are of interest to the given fi_wait call.  Doing so would need more
+	// code in this file as the util_fd_wait code used and the fd_pollset
+	// seem opaque and hence don't reveal which their waitset contains.  They
+	// don't seem extensible and they have no way to determine if they are empty
+	// so we depend on FI_PSM3_YIELD_MODE=1 to disable normal waitset handling
+	// and allow this simplified use to meet Intel MPI needs.
+	//if (wait_priv->pollset is empty && wait_priv->wait_obj == FI_WAIT_YIELD)
+	//	psm3_wait();
+	if (psmx3_env.yield_mode) {
+		switch (psm3_wait(timeout)) {
+		case PSM2_OK:
+			return FI_SUCCESS;
+		case PSM2_TIMEOUT:
+			return -FI_ETIMEDOUT;
+		default:
+			return -FI_EINVAL;
+		}
+	}
+
 	psmx3_wait_start_progress(fabric);
 
-	err = psmx3_wait_ops_save->wait(wait, timeout);
+	err = psmx3_wait_wait_wait(wait, timeout);
 
 	psmx3_wait_stop_progress();
 
@@ -165,8 +241,16 @@ int psmx3_wait_open(struct fid_fabric *fabric, struct fi_wait_attr *attr,
 {
 	struct fid_wait *wait;
 	int err;
-
-	err = ofi_wait_fd_open(fabric, attr, &wait);
+	if (psmx3_env.yield_mode && attr->wait_obj == FI_WAIT_YIELD) {
+		// CQ and CNTR won't be allowed to be added to waitset, so
+		// we simply create an UNSPEC fd waitset for simplicity here
+		// It should not actually be used
+		struct fi_wait_attr tmp = *attr;
+		tmp.wait_obj = FI_WAIT_UNSPEC;
+		err = ofi_wait_fd_open(fabric, &tmp, &wait);
+	} else {
+		err = ofi_wait_fd_open(fabric, attr, &wait);
+	}
 	if (err)
 		return err;
 

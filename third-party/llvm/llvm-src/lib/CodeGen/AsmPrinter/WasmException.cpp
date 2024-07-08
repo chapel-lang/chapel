@@ -12,6 +12,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "WasmException.h"
+#include "llvm/CodeGen/AsmPrinter.h"
+#include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/IR/Mangler.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCStreamer.h"
@@ -37,16 +39,6 @@ void WasmException::endModule() {
         Asm->OutStreamer->emitLabel(ExceptionSym);
       }
     }
-  }
-}
-
-void WasmException::markFunctionEnd() {
-  // Get rid of any dead landing pads.
-  if (!Asm->MF->getLandingPads().empty()) {
-    auto *NonConstMF = const_cast<MachineFunction *>(Asm->MF);
-    // Wasm does not set BeginLabel and EndLabel information for landing pads,
-    // so we should set the second argument false.
-    NonConstMF->tidyLandingPads(nullptr, /* TidyIfNoBeginLabels */ false);
   }
 }
 

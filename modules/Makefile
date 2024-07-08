@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -69,16 +69,17 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 
 MODULES_TO_DOCUMENT = \
 	standard/AutoMath.chpl \
-	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
 	standard/ChapelIO.chpl \
 	standard/ChplConfig.chpl \
+	standard/Collectives.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/Communication.chpl \
-	standard/GPUDiagnostics.chpl \
+	standard/Debugger.chpl \
+	standard/GpuDiagnostics.chpl \
+	standard/GPU.chpl \
 	standard/CTypes.chpl \
-	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
 	standard/Errors.chpl \
 	standard/FileSystem.chpl \
@@ -86,27 +87,23 @@ MODULES_TO_DOCUMENT = \
 	standard/Heap.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
+	standard/JSON.chpl \
 	standard/List.chpl \
 	standard/Map.chpl \
 	standard/Math.chpl \
-	standard/Memory.chpl \
-	standard/Memory/Diagnostics.chpl \
-	standard/Memory/Initialization.chpl \
+	standard/MemMove.chpl \
+	standard/MemDiagnostics.chpl \
 	standard/OS.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
 	standard/Reflection.chpl \
 	standard/Regex.chpl \
 	standard/Set.chpl \
-	standard/Spawn.chpl \
 	standard/Subprocess.chpl \
-	standard/Sys.chpl \
-	standard/SysBasic.chpl \
-	standard/SysError.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
-	standard/VectorizingIterator.chpl \
-	standard/Version.chpl
+	standard/Version.chpl \
+	standard/WeakPointer.chpl \
 
 PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
@@ -115,12 +112,14 @@ PACKAGES_TO_DOCUMENT = \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
 	packages/Channel.chpl \
+	packages/ChplFormat.chpl \
 	packages/Collection.chpl \
 	packages/ConcurrentMap.chpl \
 	packages/CopyAggregation.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/DistributedBag.chpl \
+	packages/DistributedBagDeprecated.chpl \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
 	packages/EpochManager.chpl \
@@ -129,6 +128,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Futures.chpl \
 	packages/HDF5.chpl \
 	packages/HDFS.chpl \
+	packages/Image.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
 	packages/LinkedLists.chpl \
@@ -136,7 +136,10 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
+	packages/NPBRandom.chpl \
+	packages/ObjectSerialization.chpl \
 	packages/ProtobufProtocolSupport.chpl \
+	packages/ParallelIO.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
@@ -153,6 +156,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/UnorderedCopy.chpl \
 	packages/UnrolledLinkedList.chpl \
 	packages/VisualDebug.chpl \
+	packages/YAML.chpl \
+	packages/Zarr.chpl \
 	packages/ZMQ.chpl \
 
 
@@ -209,7 +214,6 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	@cp -rf ${MODULE_SPHINX}/source/modules/layouts    ${DOC_BUILD}/modules
 	@cp -rf ${DOC_RST}/meta/modules/* ${DOC_BUILD}/modules
 	@cp -rf ${MODULE_SPHINX}/source/modules/internal/* ${DOC_BUILD}/builtins
-	@cp -rf ${DOC_RST}/meta/builtins/* ${DOC_BUILD}/builtins
 	@echo "Updating generated module documentation in ${DOC_RST}"
 	@mkdir -p ${DOC_RST}/modules
 	@mkdir -p ${DOC_RST}/builtins

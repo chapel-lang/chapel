@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,11 +25,12 @@
    per locale.
 
    The :var:`allLocalesBarrier` barrier only supports the
-   :proc:`~Barriers.Barrier.barrier()` and :proc:`~Barriers.Barrier.reset()`
-   methods of the :attr:`~Barriers.Barrier` interface. By default it can be
+   :proc:`~Collectives.barrier.barrier()` and
+   :proc:`~Collectives.barrier.reset()` methods of the
+   :attr:`~Collectives.barrier` interface. By default it can be
    used as a barrier between 1 task on each locale. The
-   :proc:`~Barriers.Barrier.reset()` method can be used change how many tasks
-   per locale will participate in each barrier.
+   :proc:`~Collectives.barrier.reset()` method can be used to change how
+   many tasks per locale will participate in each barrier.
 
    Use of this barrier is similar to ``shmem_barrier_all()`` or
    ``MPI_Barrier(MPI_COMM_WORLD)``, except that it's possible for multiple
@@ -65,13 +66,13 @@
    barrier that's optimized for the network will be used.
 */
 module AllLocalesBarriers {
-  use BlockDist, Barriers;
+  use BlockDist, Collectives;
 
-  private const BarrierSpace = LocaleSpace dmapped Block(LocaleSpace);
-  private var globalBarrier = [b in BarrierSpace] new unmanaged aBarrier(1, reusable=true, procAtomics=true, hackIntoCommBarrier=true);
+  private const BarrierSpace = LocaleSpace dmapped new blockDist(LocaleSpace);
+  private var globalBarrier = [BarrierSpace] new unmanaged aBarrier(1, reusable=true, procAtomics=true, hackIntoCommBarrier=true);
   private proc deinit() { [b in globalBarrier] delete b; }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class AllLocalesBarrier: BarrierBaseType {
 
     override proc barrier() {

@@ -29,13 +29,13 @@ if dist=='NONE' {
   //totalcomm2=volume;
   dobench(mydist, mydom);  
 } */else if dist=='C' {
-  var mydist = mydom dmapped Cyclic(startIdx=mydom.low);
+  var mydist = mydom dmapped new cyclicDist(startIdx=mydom.low);
   dobench(mydist, mydom);  
 } else if dist=='BC' {
-  var mydist = mydom dmapped BlockCyclic(startIdx=mydom.low, blocksize=blocksize);
+  var mydist = mydom dmapped new blockCycDist(startIdx=mydom.low, blocksize=blocksize);
   dobench(mydist, mydom);
 } else if dist=='B' {
-  var mydist = mydom dmapped Block(boundingBox=mydom);
+  var mydist = mydom dmapped new blockDist(boundingBox=mydom);
   dobench(mydist, mydom);
 }
 
@@ -48,7 +48,7 @@ var at:[mydom]int = {1..n2};
 var bt:[mydom]int;
 var still_correct = true;
 
-var timer:Timer;
+var timer:stopwatch;
 
 if messages {
   resetCommDiagnostics();
@@ -56,7 +56,7 @@ if messages {
 }
 
 if timeit {
-  timer = new Timer();
+  timer = new stopwatch();
   timer.start();
 }
 

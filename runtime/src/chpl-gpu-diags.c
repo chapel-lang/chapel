@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -49,48 +49,63 @@ static pthread_once_t bcastPrintUnstable_once = PTHREAD_ONCE_INIT;
 
 static
 void broadcast_print_unstable(void) {
-  chpl_comm_diags_disable();
   chpl_comm_bcast_rt_private(chpl_gpu_diags_print_unstable);
-  chpl_comm_diags_enable();
 }
 
 
-void chpl_gpu_startVerbose(chpl_bool stacktrace, chpl_bool print_unstable) {
+void chpl_gpu_startVerbose(chpl_bool stacktrace,
+                           chpl_bool print_unstable,
+                           int32_t lineno,
+                           int32_t filename) {
   chpl_gpu_diags_print_unstable = (print_unstable == true);
   chpl_verbose_gpu_stacktrace = (stacktrace == true);
   if (pthread_once(&bcastPrintUnstable_once, broadcast_print_unstable) != 0) {
     chpl_internal_error("pthread_once(&bcastPrintUnstable_once) failed");
   }
 
+  if (chpl_verbose_gpu == 1) {
+    chpl_warning("verbose gpu was already started", lineno, filename);
+  }
   chpl_verbose_gpu = 1;
-  chpl_comm_diags_disable();
   chpl_comm_bcast_rt_private(chpl_verbose_gpu);
   chpl_comm_bcast_rt_private(chpl_verbose_gpu_stacktrace);
-  chpl_comm_diags_enable();
 }
 
 
-void chpl_gpu_stopVerbose() {
+void chpl_gpu_stopVerbose(int32_t lineno, int32_t filename) {
+  if (chpl_verbose_gpu == 0) {
+    chpl_warning("verbose gpu was never started", lineno, filename);
+  }
   chpl_verbose_gpu = 0;
-  chpl_comm_diags_disable();
   chpl_comm_bcast_rt_private(chpl_verbose_gpu);
-  chpl_comm_diags_enable();
 }
 
 
-void chpl_gpu_startVerboseHere(chpl_bool stacktrace, chpl_bool print_unstable) {
+void chpl_gpu_startVerboseHere(chpl_bool stacktrace,
+                               chpl_bool print_unstable,
+                               int32_t lineno,
+                               int32_t filename) {
   chpl_gpu_diags_print_unstable = (print_unstable == true);
   chpl_verbose_gpu_stacktrace = (stacktrace == true);
+
+  if (chpl_verbose_gpu == 1) {
+    chpl_warning("verbose gpu was already started", lineno, filename);
+  }
   chpl_verbose_gpu = 1;
 }
 
 
-void chpl_gpu_stopVerboseHere() {
+void chpl_gpu_stopVerboseHere(int32_t lineno, int32_t filename) {
+  if (chpl_verbose_gpu == 0) {
+    chpl_warning("verbose gpu was never started", lineno, filename);
+  }
   chpl_verbose_gpu = 0;
 }
 
 
-void chpl_gpu_startDiagnostics(chpl_bool print_unstable) {
+void chpl_gpu_startDiagnostics(chpl_bool print_unstable,
+                               int32_t lineno,
+                               int32_t filename) {
   chpl_gpu_diags_print_unstable = (print_unstable == true);
 
   if (pthread_once(&bcastPrintUnstable_once, broadcast_print_unstable) != 0) {
@@ -98,45 +113,55 @@ void chpl_gpu_startDiagnostics(chpl_bool print_unstable) {
   }
 
   // Make sure that there are no pending GPU operations.
-  chpl_rmem_consist_release(0, 0);
+  chpl_rmem_consist_release(lineno, filename);
 
+  if (chpl_gpu_diagnostics == 1) {
+    chpl_warning("gpu diagnostics was already started", lineno, filename);
+  }
   chpl_gpu_diagnostics = 1;
-  chpl_comm_diags_disable();
   chpl_comm_bcast_rt_private(chpl_gpu_diagnostics);
-  chpl_comm_diags_enable();
 }
 
 
-void chpl_gpu_stopDiagnostics() {
+void chpl_gpu_stopDiagnostics(int32_t lineno, int32_t filename) {
   // Make sure that there are no pending GPU operations.
-  chpl_rmem_consist_release(0, 0);
+  chpl_rmem_consist_release(lineno, filename);
 
+  if (chpl_gpu_diagnostics == 0) {
+    chpl_warning("gpu diagnostics was never started", lineno, filename);
+  }
   chpl_gpu_diagnostics = 0;
-  chpl_comm_diags_disable();
   chpl_comm_bcast_rt_private(chpl_gpu_diagnostics);
-  chpl_comm_diags_enable();
 }
 
 
-void chpl_gpu_startDiagnosticsHere(chpl_bool print_unstable) {
+void chpl_gpu_startDiagnosticsHere(chpl_bool print_unstable,
+                                   int32_t lineno,
+                                   int32_t filename) {
   chpl_gpu_diags_print_unstable = (print_unstable == true);
 
   // Make sure that there are no pending GPU operations.
-  chpl_rmem_consist_release(0, 0);
+  chpl_rmem_consist_release(lineno, filename);
 
+  if (chpl_gpu_diagnostics == 1) {
+    chpl_warning("gpu diagnostics was already started", lineno, filename);
+  }
   chpl_gpu_diagnostics = 1;
 }
 
 
-void chpl_gpu_stopDiagnosticsHere() {
+void chpl_gpu_stopDiagnosticsHere(int32_t lineno, int32_t filename) {
   // Make sure that there are no pending GPU operations.
-  chpl_rmem_consist_release(0, 0);
+  chpl_rmem_consist_release(lineno, filename);
 
+  if (chpl_gpu_diagnostics == 0) {
+    chpl_warning("gpu diagnostics was never started", lineno, filename);
+  }
   chpl_gpu_diagnostics = 0;
 }
 
 
-void chpl_gpu_resetDiagnosticsHere() {
+void chpl_gpu_resetDiagnosticsHere(void) {
   chpl_gpu_diags_reset();
 }
 

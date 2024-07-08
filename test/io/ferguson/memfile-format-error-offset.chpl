@@ -1,12 +1,12 @@
 use IO;
 
-var f = openmem();
+var f = openMemFile();
 
-f.writer().write("1 2 3 error");
+f.writer(locking=false).write("1 2 3 error");
 
-var r = f.reader();
+var r = f.reader(locking=false);
 
-r.read(new ioLiteral("1"));
-r.read(new ioLiteral("2"));
-r.read(new ioLiteral("3"));
-r.read(new ioLiteral("4"));
+r.readLiteral("1");
+r.readLiteral("2");
+r.readLiteral("3");
+r.readLiteral("4");

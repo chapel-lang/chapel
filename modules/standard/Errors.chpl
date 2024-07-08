@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,19 +40,19 @@ module Errors {
   // TODO: should Error include list pointers for TaskErrors?
   /* :class:`Error` is the base class for errors */
   class Error {
-    pragma "no doc"
+    @chpldoc.nodoc
     var _next: unmanaged Error? = nil; // managed by lock in record TaskErrorsRecord
 
     // These fields save the line/file where the error was thrown.
-    pragma "no doc"
+    @chpldoc.nodoc
     var thrownLine:int;
-    pragma "no doc"
+    @chpldoc.nodoc
     var thrownFileId:int(32);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _msg: string;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _hasThrowInfo: bool = false;
 
     /* Construct an Error */
@@ -80,21 +80,28 @@ module Errors {
      will be thrown instead.
    */
   class NilThrownError : Error {
-    pragma "no doc"
+    @chpldoc.nodoc
     override proc message() {
       return "thrown error was nil";
     }
   }
 
+  /*
+    A `NilClassError` is thrown if a cast from a `nil` class is made.
+  */
   class NilClassError : Error {
-    pragma "no doc"
+    @chpldoc.nodoc
     override proc message() {
       return "cannot convert nil class to non nilable type";
     }
   }
 
+  /*
+    A `ClassCastError` is thrown if a cast between class types fails and the
+    destination is not nilable.
+  */
   class ClassCastError : Error {
-    pragma "no doc"
+    @chpldoc.nodoc
     override proc message() {
       return "cannot cast class to type - runtime types not compatible";
     }
@@ -102,45 +109,80 @@ module Errors {
 
   /*
    A `DecodeError` is thrown if an attempt to create a string with non-UTF8 byte
-   sequences are made at runtime. This includes calling the
-   `bytes.decode(decodePolicy.strict)` method on a bytes with non-UTF8 byte
+   sequences is made at runtime. This includes calling the
+   `bytes.decode(decodePolicy.strict)` method on a ``bytes`` with non-UTF8 byte
    sequences.
    */
   class DecodeError: Error {
 
-    pragma "no doc"
+    @chpldoc.nodoc
     override proc message() {
       return "Invalid UTF-8 character encountered.";
     }
   }
 
+  /*
+    An `IllegalArgumentError` is thrown if bad arguments are passed as arguments
+    to procedures.
+  */
   class IllegalArgumentError : Error {
+    @chpldoc.nodoc
     proc init() {}
 
+    @chpldoc.nodoc
+    proc init(msg: string) {
+      super.init(msg);
+    }
+
+    /*
+      .. warning::
+        ``new IllegalArgumentError(info=)`` is deprecated; please use the initializer that takes a formal ``msg`` instead.
+    */
+    pragma "last resort"
     proc init(info: string) {
+      compilerWarning("`new IllegalArgumentError(info=)` is deprecated; please use the initializer that takes a formal `msg` instead.");
       super.init(info);
     }
 
+    /*
+      .. warning::
+        IllegalArgumentError's two-argument initializer is deprecated; please use the single-arg initializer instead.
+    */
     proc init(formal: string, info: string) {
+      compilerWarning("IllegalArgumentError's two-argument initializer is deprecated; please use the single-arg initializer instead.");
       var msg = "illegal argument '" + formal + "': " + info;
       super.init(msg);
     }
   }
 
+
   /*
-   A `CodepointSplittingError` is thrown if an attempt to slice a string with
-   byteIndex-based ranges where the range boundaries does not align with
-   codepoint boundaries.
-   */
-  class CodepointSplittingError: Error {
+    A ``CodepointSplitError`` is thrown when slicing a string with
+    byteIndex-based ranges where the range boundaries do not align
+    with codepoint boundaries.
+  */
+  class CodepointSplitError: Error {
+    @chpldoc.nodoc
     proc init(info: string) {
       super.init(info);
     }
 
+    @chpldoc.nodoc
     override proc message() {
       return "Attempting to split a multi-byte codepoint. " + _msg;
     }
   }
+
+  @unstable("`ArrayOomError` is unstable; expect this error to change in the future.")
+  class ArrayOomError: Error {
+    @chpldoc.nodoc
+    override proc message() {
+      return "out of memory allocating array elements";
+    }
+  }
+
+  @deprecated(notes=":class:`CodepointSplittingError` is deprecated; please use :class:`CodepointSplitError` instead")
+  type CodepointSplittingError = CodepointSplitError;
 
   // Used by the runtime to accumulate errors. This type
   // supports adding errors concurrently but need not support
@@ -148,16 +190,14 @@ module Errors {
   // will be read from this after all tasks that can add
   // errors have completed; at that point it no longer needs
   // to be parallel-safe.
-  pragma "no doc"
   record chpl_TaskErrors {
     var _head: unmanaged Error? = nil;
     var _errorsLock: chpl_LocalSpinlock;
 
-    proc append(err: unmanaged Error) {
+    proc ref append(err: unmanaged Error) {
       on this {
         _errorsLock.lock();
-        var tmp = _head;
-        err._next = tmp;
+        err._next = _head;
         _head = err;
         _errorsLock.unlock();
       }
@@ -190,32 +230,28 @@ module Errors {
     // with the parallel array initialization code.
     // The array stores nilable errors so that users can transfer
     // out of them (e.g. throw one of them).
-    pragma "no doc"
+    @chpldoc.nodoc
     var nErrors: int;
-    pragma "no doc"
+    @chpldoc.nodoc
     var errorsArray: c_ptr(owned Error?);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(ref group:chpl_TaskErrors) {
       var head: unmanaged Error? = group._head;
       group._head = nil;
-      this.complete();
-
-      var cur: unmanaged Error?;
+      init this;
 
       // Count the number of errors, including from nested errors
       var n = 0;
-      cur = head;
-      while cur != nil {
-        var curnext = cur!._next;
-        var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
-        if asTaskErr == nil {
-          n += 1;
-        } else {
-          for e in asTaskErr! {
-            if e != nil then
+      var cur = head;
+      while const curr = cur {
+        var curnext = curr._next;
+        if const asTaskErr = curr: unmanaged TaskErrors? {
+          on asTaskErr do
+            for asTaskErr do
               n += 1;
-          }
+        } else {
+          n += 1;
         }
         cur = curnext;
       }
@@ -224,27 +260,30 @@ module Errors {
       // (Note, this assumes that owned Error can be zero'd
       //  and that is valid initialization)
       nErrors = n;
-      errorsArray = c_calloc(owned Error?, n);
+      errorsArray = allocate(owned Error?, n:c_size_t, clear=true);
 
       // Gather the errors into errorsArray starting at index idx
       var idx = 0;
       cur = head;
-      while cur != nil {
-        var curnext = cur!._next;
-        cur!._next = nil; // remove from any lists
-        var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
-        if asTaskErr == nil {
-          errorsArray[idx].retain(cur!);
-          idx += 1;
-        } else {
-          for e in asTaskErr!.these() {
-            // e is an owned error
-            if e != nil {
-              errorsArray[idx] = e;
-              idx += 1;
-            }
-          }
+      while const curr = cur {
+        var curnext = curr._next;
+        curr._next = nil; // remove from any lists
+        if const asTaskErr = curr: unmanaged TaskErrors? {
+          const origLoc = here, EA = errorsArray, idxPtr = c_ptrTo(idx); //RVF
+          // For performance we want to bring over asTaskError.errorsArrays
+          // in one comm. [Ensure asTaskError.deinit happens properly.]
+          // Ideally, use the same copy in the first while-loop as well.
+          on asTaskErr do
+            for e in asTaskErr do
+              // e is an owned error
+              on origLoc {
+                EA[idxPtr.deref()] = e;
+                idxPtr.deref() += 1;
+              }
           delete asTaskErr;
+        } else {
+          errorsArray[idx] = owned.adopt(curr);
+          idx += 1;
         }
         cur = curnext;
       }
@@ -253,10 +292,10 @@ module Errors {
     /* Create a :class:`TaskErrors` containing only the passed error */
     proc init(err: unmanaged Error) {
       nErrors = 1;
-      errorsArray = c_calloc(owned Error?, 1);
-      this.complete();
+      errorsArray = allocate(owned Error?, 1, clear=true);
+      init this;
       err._next = nil;
-      errorsArray[0].retain(err);
+      errorsArray[0] = owned.adopt(err);
     }
 
     /* Create a :class:`TaskErrors` not containing any errors */
@@ -265,12 +304,13 @@ module Errors {
       errorsArray = nil;
     }
 
+    @chpldoc.nodoc
     proc deinit() {
-      if errorsArray {
+      if errorsArray then on this {
         for i in 0..#nErrors {
-          errorsArray[i].clear();
+          errorsArray[i] = nil;
         }
-        c_free(errorsArray);
+        deallocate(errorsArray);
       }
     }
 
@@ -289,6 +329,9 @@ module Errors {
        that are not storing ``nil`` at the time of the call.
      */
     iter these() ref : owned Error? {
+      if boundsChecking then assert(this.locale.id == here.id,
+        "iterating over a TaskErrors object allocated on locale ",
+        this.locale.id, " while being on locale ", here.id);
       foreach i in 0..#nErrors {
         if errorsArray[i] != nil {
           yield errorsArray[i];
@@ -297,7 +340,11 @@ module Errors {
     }
 
     /* Returns the first non-nil error contained in this TaskErrors group */
+    @unstable("`TaskErrors.first` is unstable; expect this method to change in the future.")
     proc first() ref : owned Error? {
+      if boundsChecking then assert(this.locale.id == here.id,
+        "querying first() of a TaskErrors object allocated on locale ",
+        this.locale.id, " while being on locale ", here.id);
       var first = 0;
       for i in 0..#nErrors {
         if errorsArray[i] != nil {
@@ -379,31 +426,29 @@ module Errors {
           yield e;
       }
     }
-    pragma "no doc"
+    @chpldoc.nodoc
     iter filter(type t) {
       compilerError("Filtered iterator only supports subclasses of Error");
     }
     /* Returns `true` if this :class:`TaskErrors` contains an error
        of the given type or a subclass of that type. */
     proc contains(type t) {
-      for e in filter(t) {
+      for filter(t) {
         return true;
       }
       return false;
     }
   }
 
-  pragma "no doc"
   proc chpl_error_type_name(err: borrowed Error) : string {
     var cid =  __primitive("getcid", err);
-    var nameC: c_string = __primitive("class name by id", cid);
+    var nameC = __primitive("class name by id", cid);
     var nameS: string;
     try! {
-      nameS = createStringWithNewBuffer(nameC);
+      nameS = string.createCopyingBuffer(nameC:c_ptrConst(c_char));
     }
     return nameS;
   }
-  pragma "no doc"
   proc chpl_describe_error(err: borrowed Error) : string {
     var nameS = chpl_error_type_name(err);
 
@@ -412,7 +457,6 @@ module Errors {
     return ret;
   }
 
-  pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_do_fix_thrown_error(err: unmanaged Error?): unmanaged Error {
@@ -437,31 +481,27 @@ module Errors {
     return _to_nonnil(fixErr);
   }
 
-  pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
   pragma "ignore in global analysis"
   proc chpl_fix_thrown_error(in err: owned Error?): unmanaged Error {
-    return chpl_do_fix_thrown_error(err.release());
+    return chpl_do_fix_thrown_error(owned.release(err));
   }
 
-  pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
   pragma "ignore transfer errors"
   pragma "ignore in global analysis"
   proc chpl_fix_thrown_error(in err: owned Error): unmanaged Error {
-    return chpl_do_fix_thrown_error(err.release());
+    return chpl_do_fix_thrown_error(owned.release(err));
   }
 
-  pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_fix_thrown_error(err: _nilType) {
     return chpl_do_fix_thrown_error(nil);
   }
 
-  pragma "no doc"
   pragma "last resort"
   proc chpl_fix_thrown_error(err) {
     type t = err.type;
@@ -478,36 +518,33 @@ module Errors {
     }
   }
 
-  pragma "no doc"
   pragma "last resort"
   proc chpl_fix_thrown_error(type errType) {
     compilerError("Cannot throw a type: '", errType:string, "'. Did you forget the keyword 'new'?");
   }
 
-  pragma "no doc"
   proc chpl_delete_error(err: unmanaged Error?) {
     if err != nil then delete err;
   }
-  pragma "no doc"
   pragma "function terminates program"
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_uncaught_error(err: unmanaged Error) {
-    extern proc chpl_error_preformatted(c_string);
+    extern proc chpl_error_preformatted(ptr:c_ptrConst(c_char));
 
-    const myFileC:c_string = __primitive("chpl_lookupFilename",
+    const myFileC = __primitive("chpl_lookupFilename",
                                          __primitive("_get_user_file"));
     var myFileS: string;
     try! {
-      myFileS = createStringWithNewBuffer(myFileC);
+      myFileS = string.createCopyingBuffer(myFileC:c_ptrConst(c_char));
     }
     const myLine = __primitive("_get_user_line");
 
-    const thrownFileC:c_string = __primitive("chpl_lookupFilename",
+    const thrownFileC = __primitive("chpl_lookupFilename",
                                              err.thrownFileId);
     var thrownFileS: string;
     try! {
-      thrownFileS = createStringWithNewBuffer(thrownFileC);
+      thrownFileS = string.createCopyingBuffer(thrownFileC:c_ptrConst(c_char));
     }
     const thrownLine = err.thrownLine;
 
@@ -519,7 +556,6 @@ module Errors {
   // This is like the above, but it is only ever added by the
   // compiler. In case of iterator inlining (say), this call
   // should be replaced by goto-error-handling.
-  pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_propagate_error(err: unmanaged Error) {
@@ -529,7 +565,6 @@ module Errors {
   // from a forall loop, so that it is always TaskErrors
   // (since the author of the forall loop shouldn't need to know
   //  how many tasks were run in that loop).
-  pragma "no doc"
   proc chpl_forall_error(err: unmanaged Error) : unmanaged Error {
     if err:unmanaged TaskErrors? then
       return err;
@@ -539,7 +574,6 @@ module Errors {
 
   // The compiler generates functions to cast from strings to enums. This
   // function helps the compiler throw errors from those generated casts.
-  pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_enum_cast_error(casted: string, enumName: string) throws {
@@ -549,26 +583,22 @@ module Errors {
       throw new owned IllegalArgumentError("bad cast from string '" + casted + "' to enum '" + enumName + "'");
   }
 
-  pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_enum_cast_error(casted: integral, enumName: string) throws {
-    throw new owned IllegalArgumentError("bad cast from int '" + casted:string + "' to enum '" + enumName, "'");
+    throw new owned IllegalArgumentError("bad cast from int '" + casted:string + "' to enum '" + enumName + "'");
   }
 
-  pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
-    proc chpl_enum_cast_error_no_int(enumName: string, constName: string) throws {
+  proc chpl_enum_cast_error_no_int(enumName: string, constName: string): int throws {
     throw new owned IllegalArgumentError("bad cast: enum '" + enumName + "." +
-                                         constName + "' has no integer value");
-    return 0;
+                                          constName + "' has no integer value");
   }
 
 
   // The compiler generates functions to cast from bytes to enums. This
   // function helps the compiler throw errors from those generated casts.
-  pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_enum_cast_error(casted: bytes, enumName: string) throws {
@@ -594,14 +624,14 @@ module Errors {
   pragma "always propagate line file info"
   proc assert(test: bool) {
     if !test then
-      __primitive("chpl_error", c"assert failed");
+      __primitive("chpl_error", "assert failed".c_str());
   }
 
 
   /*
     Assert that a boolean condition is true.  If it is false, prints
     'assert failed - ' followed by all subsequent arguments, as though
-    printed using :proc:`~ChapelIO.write()`.
+    printed using :proc:`~IO.write()`.
 
     .. note :: In the current implementation, this assert never becomes a no-op.
                That is, using it will always incur execution-time checks.
@@ -613,7 +643,7 @@ module Errors {
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc assert(test: bool, args ...?numArgs) {
+  proc assert(test: bool, args...) {
     if !test {
       var tmpstring = "assert failed - " + chpl_stringify_wrapper((...args));
       __primitive("chpl_error", tmpstring.c_str());
@@ -633,8 +663,8 @@ module Errors {
 
      :arg errorDepth: controls the depth of the error stack trace
   */
-  pragma "no doc"
-  proc compilerError(param msg: string ...?n, param errorDepth: int) {
+  @chpldoc.nodoc
+  proc compilerError(param msg: string..., param errorDepth: int) {
     __primitive("error");
   }
 
@@ -642,7 +672,7 @@ module Errors {
      Generate a compile-time error.
      The error text is a concatenation of the arguments.
   */
-  proc compilerError(param msg: string ...?n) {
+  proc compilerError(param msg: string...) {
     __primitive("error");
   }
 
@@ -652,8 +682,8 @@ module Errors {
 
      :arg errorDepth: controls the depth of the error stack trace
   */
-  pragma "no doc"
-  proc compilerWarning(param msg: string ...?n, param errorDepth: int) {
+  @chpldoc.nodoc
+  proc compilerWarning(param msg: string..., param errorDepth: int) {
     __primitive("warning");
   }
 
@@ -661,7 +691,7 @@ module Errors {
      Generate a compile-time warning.
      The warning text is a concatenation of the arguments.
   */
-  proc compilerWarning(param msg: string ...?n) {
+  proc compilerWarning(param msg: string...) {
     __primitive("warning");
   }
 
@@ -677,7 +707,7 @@ module Errors {
 
      :arg errorDepth: controls the depth of the error stack trace
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc compilerAssert(param test: bool, param errorDepth: int) {
     if !test then compilerError("assert failed", errorDepth + 1);
   }
@@ -686,7 +716,7 @@ module Errors {
      Generate a compile-time error if the `test` argument is false.
      The warning text is a concatenation of the string arguments.
   */
-  proc compilerAssert(param test: bool, param msg: string ...?n) {
+  proc compilerAssert(param test: bool, param msg: string...) {
     if !test then compilerError("assert failed - ", (...msg));
   }
 
@@ -696,8 +726,8 @@ module Errors {
 
      :arg errorDepth: controls the depth of the error stack trace
   */
-  pragma "no doc"
-  proc compilerAssert(param test: bool, param msg: string ...?n,
+  @chpldoc.nodoc
+  proc compilerAssert(param test: bool, param msg: string...,
                       param errorDepth: int) {
     if !test then compilerError("assert failed - ", (...msg), errorDepth + 1);
   }
@@ -707,7 +737,10 @@ module Errors {
   //
 
   /*
-    Exit the program
+    Exit the program.
+
+    The compiler ignores the code following a call to `exit`
+    until the end of the block where this call is made.
 
     :arg status: The exit code for the program
   */
@@ -718,22 +751,20 @@ module Errors {
 
   /*
      Prints an error message to stderr giving the location of the call to
-     ``halt`` in the Chapel source, followed by the arguments to the call,
-     if any, then exits the program.
+     ``halt`` in the Chapel source, then exits the program.
+
+     The compiler ignores the code following a call to `halt`
+     until the end of the block where this call is made.
    */
   pragma "function terminates program"
   pragma "always propagate line file info"
   proc halt() {
-    __primitive("chpl_error", c"halt reached");
+    __primitive("chpl_error", "halt reached".c_str());
   }
 
-  /*
-     Prints an error message to stderr giving the location of the call to
-     ``halt`` in the Chapel source, followed by the arguments to the call,
-     if any, then exits the program.
-   */
   pragma "function terminates program"
   pragma "always propagate line file info"
+  @chpldoc.nodoc  // documented in the varargs overload
   proc halt(msg:string) {
     halt(msg.localize().c_str());
   }
@@ -741,11 +772,14 @@ module Errors {
   /*
      Prints an error message to stderr giving the location of the call to
      ``halt`` in the Chapel source, followed by the arguments to the call,
-     if any, then exits the program.
+     then exits the program.
+
+     The compiler ignores the code following a call to `halt`
+     until the end of the block where this call is made.
    */
   pragma "function terminates program"
   pragma "always propagate line file info"
-  proc halt(args ...?numArgs) {
+  proc halt(args...) {
     var tmpstring = "halt reached - " + chpl_stringify_wrapper((...args));
     __primitive("chpl_error", tmpstring.c_str());
   }
@@ -764,7 +798,7 @@ module Errors {
     in the Chapel source, followed by the argument(s) to the call.
   */
   pragma "always propagate line file info"
-  proc warning(args ...?numArgs) {
+  proc warning(args...) {
     var tmpstring = chpl_stringify_wrapper((...args));
     warning(tmpstring);
   }

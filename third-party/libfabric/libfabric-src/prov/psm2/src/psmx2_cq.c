@@ -769,9 +769,12 @@ psmx2_mq_status_copy(struct psm2_mq_req_user *req, void *status_array, int entry
 			op_context = sendv_rep->user_context;
 			buf = sendv_rep->buf;
 			flags |= sendv_rep->comp_flag;
+			data = PSMX2_GET_CQDATA(sendv_rep->tag);
+			if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(sendv_rep->tag)))
+				flags |= FI_REMOTE_CQ_DATA;
 			err = psmx2_cq_rx_complete(
 					status_data->poll_cq, ep->recv_cq, ep->av,
-					req, op_context, buf, flags, 0,
+					req, op_context, buf, flags, data,
 					entry, status_data->src_addr, &event_saved);
 			if (OFI_UNLIKELY(err)) {
 				free(sendv_rep);
@@ -961,7 +964,7 @@ static inline int psmx2_cq_any_complete(struct psmx2_fid_cq *poll_cq,
 
 		if (event == event_in) {
 			if (src_addr) {
-				src_addr[*read_count] = 
+				src_addr[*read_count] =
 					psmx2_av_translate_source(av, source, source_sep_id);
 				if (src_addr[*read_count] == FI_ADDR_NOTAVAIL) {
 					event = psmx2_cq_alloc_event(comp_cq);
@@ -1507,9 +1510,12 @@ int psmx2_cq_poll_mq(struct psmx2_fid_cq *cq,
 					buf = sendv_rep->buf;
 					flags = psmx2_comp_flags[context_type] |
 						sendv_rep->comp_flag;
+					data = PSMX2_GET_CQDATA(sendv_rep->tag);
+					if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(sendv_rep->tag)))
+						flags |= FI_REMOTE_CQ_DATA;
 					err = psmx2_cq_rx_complete(
 							cq, ep->recv_cq, ep->av,
-							status, op_context, buf, flags, 0,
+							status, op_context, buf, flags, data,
 							event_in, count, &read_count,
 							&read_more, src_addr);
 					if (err) {
@@ -1678,19 +1684,13 @@ STATIC ssize_t psmx2_cq_readerr(struct fid_cq *cq, struct fi_cq_err_entry *buf,
 				uint64_t flags)
 {
 	struct psmx2_fid_cq *cq_priv;
-	uint32_t api_version;
-	size_t size;
 
 	cq_priv = container_of(cq, struct psmx2_fid_cq, cq);
 
 	cq_priv->domain->cq_lock_fn(&cq_priv->lock, 2);
 	if (cq_priv->pending_error) {
-		api_version = cq_priv->domain->fabric->util_fabric.
-			      fabric_fid.api_version;
-		size = FI_VERSION_GE(api_version, FI_VERSION(1, 5)) ?
-			sizeof(*buf) : sizeof(struct fi_cq_err_entry_1_0);
-
-		memcpy(buf, &cq_priv->pending_error->cqe, size);
+		ofi_cq_err_memcpy(cq_priv->domain->fabric->util_fabric.fabric_fid.api_version,
+				  buf, &cq_priv->pending_error->cqe.err);
 		free(cq_priv->pending_error);
 		cq_priv->pending_error = NULL;
 		psmx2_unlock(&cq_priv->lock, 2);
@@ -1831,7 +1831,7 @@ static int psmx2_cq_close(fid_t fid)
 		free(item);
 	}
 
-	fastlock_destroy(&cq->lock);
+	ofi_spin_destroy(&cq->lock);
 
 	if (cq->wait) {
 		fi_poll_del(&cq->wait->pollset->poll_fid, &cq->cq.fid, 0);
@@ -2004,7 +2004,7 @@ int psmx2_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
 	slist_init(&cq_priv->poll_list);
 	slist_init(&cq_priv->event_queue);
 	slist_init(&cq_priv->free_list);
-	fastlock_init(&cq_priv->lock);
+	ofi_spin_init(&cq_priv->lock);
 
 #define PSMX2_FREE_LIST_SIZE	64
 	for (i=0; i<PSMX2_FREE_LIST_SIZE; i++) {

@@ -38,9 +38,9 @@ proc test(n_prefetch:int): (int,real) {
   var ret_sum : int;
 
   on Locales[1] {
-    var clock : Timer;
+    var clock : stopwatch;
     var sum = 0;
-    var elapsed_time = INFINITY;
+    var elapsed_time = inf;
 
 
     for i in 1..n_experiments {

@@ -8,14 +8,11 @@
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseSet.h"
-#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/StringSet.h"
 #include "llvm/ADT/StringSwitch.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/BinaryFormat/Wasm.h"
-#include "llvm/MC/SubtargetFeature.h"
 #include "llvm/Object/Binary.h"
 #include "llvm/Object/Error.h"
 #include "llvm/Object/ObjectFile.h"
@@ -26,11 +23,12 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/LEB128.h"
 #include "llvm/Support/ScopedPrinter.h"
+#include "llvm/TargetParser/SubtargetFeature.h"
+#include "llvm/TargetParser/Triple.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
-#include <system_error>
 
 #define DEBUG_TYPE "wasm-object"
 
@@ -40,7 +38,18 @@ using namespace object;
 void WasmSymbol::print(raw_ostream &Out) const {
   Out << "Name=" << Info.Name
       << ", Kind=" << toString(wasm::WasmSymbolType(Info.Kind)) << ", Flags=0x"
-      << Twine::utohexstr(Info.Flags);
+      << Twine::utohexstr(Info.Flags) << " [";
+  switch (getBinding()) {
+    case wasm::WASM_SYMBOL_BINDING_GLOBAL: Out << "global"; break;
+    case wasm::WASM_SYMBOL_BINDING_LOCAL: Out << "local"; break;
+    case wasm::WASM_SYMBOL_BINDING_WEAK: Out << "weak"; break;
+  }
+  if (isHidden()) {
+    Out << ", hidden";
+  } else {
+    Out << ", default";
+  }
+  Out << "]";
   if (!isTypeData()) {
     Out << ", ElemIndex=" << Info.ElementIndex;
   } else if (isDefined()) {
@@ -166,23 +175,25 @@ static uint8_t readOpcode(WasmObjectFile::ReadContext &Ctx) {
 
 static Error readInitExpr(wasm::WasmInitExpr &Expr,
                           WasmObjectFile::ReadContext &Ctx) {
-  Expr.Opcode = readOpcode(Ctx);
+  auto Start = Ctx.Ptr;
 
-  switch (Expr.Opcode) {
+  Expr.Extended = false;
+  Expr.Inst.Opcode = readOpcode(Ctx);
+  switch (Expr.Inst.Opcode) {
   case wasm::WASM_OPCODE_I32_CONST:
-    Expr.Value.Int32 = readVarint32(Ctx);
+    Expr.Inst.Value.Int32 = readVarint32(Ctx);
     break;
   case wasm::WASM_OPCODE_I64_CONST:
-    Expr.Value.Int64 = readVarint64(Ctx);
+    Expr.Inst.Value.Int64 = readVarint64(Ctx);
     break;
   case wasm::WASM_OPCODE_F32_CONST:
-    Expr.Value.Float32 = readFloat32(Ctx);
+    Expr.Inst.Value.Float32 = readFloat32(Ctx);
     break;
   case wasm::WASM_OPCODE_F64_CONST:
-    Expr.Value.Float64 = readFloat64(Ctx);
+    Expr.Inst.Value.Float64 = readFloat64(Ctx);
     break;
   case wasm::WASM_OPCODE_GLOBAL_GET:
-    Expr.Value.Global = readULEB128(Ctx);
+    Expr.Inst.Value.Global = readULEB128(Ctx);
     break;
   case wasm::WASM_OPCODE_REF_NULL: {
     wasm::ValType Ty = static_cast<wasm::ValType>(readULEB128(Ctx));
@@ -193,15 +204,46 @@ static Error readInitExpr(wasm::WasmInitExpr &Expr,
     break;
   }
   default:
-    return make_error<GenericBinaryError>("invalid opcode in init_expr",
-                                          object_error::parse_failed);
+    Expr.Extended = true;
   }
 
-  uint8_t EndOpcode = readOpcode(Ctx);
-  if (EndOpcode != wasm::WASM_OPCODE_END) {
-    return make_error<GenericBinaryError>("invalid init_expr",
-                                          object_error::parse_failed);
+  if (!Expr.Extended) {
+    uint8_t EndOpcode = readOpcode(Ctx);
+    if (EndOpcode != wasm::WASM_OPCODE_END)
+      Expr.Extended = true;
   }
+
+  if (Expr.Extended) {
+    Ctx.Ptr = Start;
+    while (true) {
+      uint8_t Opcode = readOpcode(Ctx);
+      switch (Opcode) {
+      case wasm::WASM_OPCODE_I32_CONST:
+      case wasm::WASM_OPCODE_GLOBAL_GET:
+      case wasm::WASM_OPCODE_REF_NULL:
+      case wasm::WASM_OPCODE_I64_CONST:
+      case wasm::WASM_OPCODE_F32_CONST:
+      case wasm::WASM_OPCODE_F64_CONST:
+        readULEB128(Ctx);
+        break;
+      case wasm::WASM_OPCODE_I32_ADD:
+      case wasm::WASM_OPCODE_I32_SUB:
+      case wasm::WASM_OPCODE_I32_MUL:
+      case wasm::WASM_OPCODE_I64_ADD:
+      case wasm::WASM_OPCODE_I64_SUB:
+      case wasm::WASM_OPCODE_I64_MUL:
+        break;
+      case wasm::WASM_OPCODE_END:
+        Expr.Body = ArrayRef<uint8_t>(Start, Ctx.Ptr - Start);
+        return Error::success();
+      default:
+        return make_error<GenericBinaryError>(
+            Twine("invalid opcode in init_expr: ") + Twine(unsigned(Opcode)),
+            object_error::parse_failed);
+      }
+    }
+  }
+
   return Error::success();
 }
 
@@ -216,17 +258,21 @@ static wasm::WasmLimits readLimits(WasmObjectFile::ReadContext &Ctx) {
 
 static wasm::WasmTableType readTableType(WasmObjectFile::ReadContext &Ctx) {
   wasm::WasmTableType TableType;
-  TableType.ElemType = readUint8(Ctx);
+  TableType.ElemType = wasm::ValType(readVaruint32(Ctx));
   TableType.Limits = readLimits(Ctx);
   return TableType;
 }
 
 static Error readSection(WasmSection &Section, WasmObjectFile::ReadContext &Ctx,
                          WasmSectionOrderChecker &Checker) {
-  Section.Offset = Ctx.Ptr - Ctx.Start;
   Section.Type = readUint8(Ctx);
   LLVM_DEBUG(dbgs() << "readSection type=" << Section.Type << "\n");
+  // When reading the section's size, store the size of the LEB used to encode
+  // it. This allows objcopy/strip to reproduce the binary identically.
+  const uint8_t *PreSizePtr = Ctx.Ptr;
   uint32_t Size = readVaruint32(Ctx);
+  Section.HeaderSecSizeEncodingLen = Ctx.Ptr - PreSizePtr;
+  Section.Offset = Ctx.Ptr - Ctx.Start;
   if (Size == 0)
     return make_error<StringError>("zero length section",
                                    object_error::parse_failed);
@@ -420,10 +466,6 @@ Error WasmObjectFile::parseNameSection(ReadContext &Ctx) {
   llvm::DenseSet<uint64_t> SeenFunctions;
   llvm::DenseSet<uint64_t> SeenGlobals;
   llvm::DenseSet<uint64_t> SeenSegments;
-  if (Functions.size() && !SeenCodeSection) {
-    return make_error<GenericBinaryError>("names must come after code section",
-                                          object_error::parse_failed);
-  }
 
   while (Ctx.Ptr < Ctx.End) {
     uint8_t Type = readUint8(Ctx);
@@ -443,7 +485,7 @@ Error WasmObjectFile::parseNameSection(ReadContext &Ctx) {
             return make_error<GenericBinaryError>(
                 "function named more than once", object_error::parse_failed);
           if (!isValidFunctionIndex(Index) || Name.empty())
-            return make_error<GenericBinaryError>("invalid name entry",
+            return make_error<GenericBinaryError>("invalid function name entry",
                                                   object_error::parse_failed);
 
           if (isDefinedFunctionIndex(Index))
@@ -454,7 +496,7 @@ Error WasmObjectFile::parseNameSection(ReadContext &Ctx) {
             return make_error<GenericBinaryError>("global named more than once",
                                                   object_error::parse_failed);
           if (!isValidGlobalIndex(Index) || Name.empty())
-            return make_error<GenericBinaryError>("invalid name entry",
+            return make_error<GenericBinaryError>("invalid global name entry",
                                                   object_error::parse_failed);
         } else {
           nameType = wasm::NameType::DATA_SEGMENT;
@@ -462,7 +504,7 @@ Error WasmObjectFile::parseNameSection(ReadContext &Ctx) {
             return make_error<GenericBinaryError>(
                 "segment named more than once", object_error::parse_failed);
           if (Index > DataSegments.size())
-            return make_error<GenericBinaryError>("invalid named data segment",
+            return make_error<GenericBinaryError>("invalid data segment name entry",
                                                   object_error::parse_failed);
         }
         DebugNames.push_back(wasm::WasmDebugName{nameType, Index, Name});
@@ -488,11 +530,6 @@ Error WasmObjectFile::parseNameSection(ReadContext &Ctx) {
 
 Error WasmObjectFile::parseLinkingSection(ReadContext &Ctx) {
   HasLinkingSection = true;
-  if (Functions.size() && !SeenCodeSection) {
-    return make_error<GenericBinaryError>(
-        "linking data must come after code section",
-        object_error::parse_failed);
-  }
 
   LinkingData.Version = readVaruint32(Ctx);
   if (LinkingData.Version != wasm::WasmMetadataVersion) {
@@ -562,6 +599,10 @@ Error WasmObjectFile::parseLinkingSection(ReadContext &Ctx) {
 
 Error WasmObjectFile::parseLinkingSectionSymtab(ReadContext &Ctx) {
   uint32_t Count = readVaruint32(Ctx);
+  // Clear out any symbol information that was derived from the exports
+  // section.
+  LinkingData.SymbolTable.clear();
+  Symbols.clear();
   LinkingData.SymbolTable.reserve(Count);
   Symbols.reserve(Count);
   StringSet<> SymbolNames;
@@ -618,9 +659,7 @@ Error WasmObjectFile::parseLinkingSectionSymtab(ReadContext &Ctx) {
           Info.Name = Import.Field;
         }
         Signature = &Signatures[Import.SigIndex];
-        if (!Import.Module.empty()) {
-          Info.ImportModule = Import.Module;
-        }
+        Info.ImportModule = Import.Module;
       }
       break;
 
@@ -650,9 +689,7 @@ Error WasmObjectFile::parseLinkingSectionSymtab(ReadContext &Ctx) {
           Info.Name = Import.Field;
         }
         GlobalType = &Import.Global;
-        if (!Import.Module.empty()) {
-          Info.ImportModule = Import.Module;
-        }
+        Info.ImportModule = Import.Module;
       }
       break;
 
@@ -682,9 +719,7 @@ Error WasmObjectFile::parseLinkingSectionSymtab(ReadContext &Ctx) {
           Info.Name = Import.Field;
         }
         TableType = &Import.Table;
-        if (!Import.Module.empty()) {
-          Info.ImportModule = Import.Module;
-        }
+        Info.ImportModule = Import.Module;
       }
       break;
 
@@ -692,17 +727,21 @@ Error WasmObjectFile::parseLinkingSectionSymtab(ReadContext &Ctx) {
       Info.Name = readString(Ctx);
       if (IsDefined) {
         auto Index = readVaruint32(Ctx);
-        if (Index >= DataSegments.size())
-          return make_error<GenericBinaryError>("invalid data symbol index",
-                                                object_error::parse_failed);
         auto Offset = readVaruint64(Ctx);
         auto Size = readVaruint64(Ctx);
-        size_t SegmentSize = DataSegments[Index].Data.Content.size();
-        if (Offset > SegmentSize)
-          return make_error<GenericBinaryError>(
-              "invalid data symbol offset: `" + Info.Name + "` (offset: " +
-                  Twine(Offset) + " segment size: " + Twine(SegmentSize) + ")",
-              object_error::parse_failed);
+        if (!(Info.Flags & wasm::WASM_SYMBOL_ABSOLUTE)) {
+          if (static_cast<size_t>(Index) >= DataSegments.size())
+            return make_error<GenericBinaryError>(
+                "invalid data segment index: " + Twine(Index),
+                object_error::parse_failed);
+          size_t SegmentSize = DataSegments[Index].Data.Content.size();
+          if (Offset > SegmentSize)
+            return make_error<GenericBinaryError>(
+                "invalid data symbol offset: `" + Info.Name +
+                    "` (offset: " + Twine(Offset) +
+                    " segment size: " + Twine(SegmentSize) + ")",
+                object_error::parse_failed);
+        }
         Info.DataRef = wasm::WasmDataReference{Index, Offset, Size};
       }
       break;
@@ -747,9 +786,7 @@ Error WasmObjectFile::parseLinkingSectionSymtab(ReadContext &Ctx) {
           Info.Name = Import.Field;
         }
         Signature = &Signatures[Import.SigIndex];
-        if (!Import.Module.empty()) {
-          Info.ImportModule = Import.Module;
-        }
+        Info.ImportModule = Import.Module;
       }
       break;
     }
@@ -923,6 +960,7 @@ Error WasmObjectFile::parseRelocSection(StringRef Name, ReadContext &Ctx) {
     Reloc.Index = readVaruint32(Ctx);
     switch (type) {
     case wasm::R_WASM_FUNCTION_INDEX_LEB:
+    case wasm::R_WASM_FUNCTION_INDEX_I32:
     case wasm::R_WASM_TABLE_INDEX_SLEB:
     case wasm::R_WASM_TABLE_INDEX_SLEB64:
     case wasm::R_WASM_TABLE_INDEX_I32:
@@ -1020,6 +1058,7 @@ Error WasmObjectFile::parseRelocSection(StringRef Name, ReadContext &Ctx) {
         Reloc.Type == wasm::R_WASM_MEMORY_ADDR_LOCREL_I32 ||
         Reloc.Type == wasm::R_WASM_SECTION_OFFSET_I32 ||
         Reloc.Type == wasm::R_WASM_FUNCTION_OFFSET_I32 ||
+        Reloc.Type == wasm::R_WASM_FUNCTION_INDEX_I32 ||
         Reloc.Type == wasm::R_WASM_GLOBAL_INDEX_I32)
       Size = 4;
     if (Reloc.Type == wasm::R_WASM_TABLE_INDEX_I64 ||
@@ -1057,7 +1096,7 @@ Error WasmObjectFile::parseCustomSection(WasmSection &Sec, ReadContext &Ctx) {
   } else if (Sec.Name == "target_features") {
     if (Error Err = parseTargetFeaturesSection(Ctx))
       return Err;
-  } else if (Sec.Name.startswith("reloc.")) {
+  } else if (Sec.Name.starts_with("reloc.")) {
     if (Error Err = parseRelocSection(Sec.Name, Ctx))
       return Err;
   }
@@ -1124,8 +1163,8 @@ Error WasmObjectFile::parseImportSection(ReadContext &Ctx) {
       Im.Table = readTableType(Ctx);
       NumImportedTables++;
       auto ElemType = Im.Table.ElemType;
-      if (ElemType != wasm::WASM_TYPE_FUNCREF &&
-          ElemType != wasm::WASM_TYPE_EXTERNREF)
+      if (ElemType != wasm::ValType::FUNCREF &&
+          ElemType != wasm::ValType::EXTERNREF)
         return make_error<GenericBinaryError>("invalid table element type",
                                               object_error::parse_failed);
       break;
@@ -1181,8 +1220,8 @@ Error WasmObjectFile::parseTableSection(ReadContext &Ctx) {
     T.Index = NumImportedTables + Tables.size();
     Tables.push_back(T);
     auto ElemType = Tables.back().Type.ElemType;
-    if (ElemType != wasm::WASM_TYPE_FUNCREF &&
-        ElemType != wasm::WASM_TYPE_EXTERNREF) {
+    if (ElemType != wasm::ValType::FUNCREF &&
+        ElemType != wasm::ValType::EXTERNREF) {
       return make_error<GenericBinaryError>("invalid table element type",
                                             object_error::parse_failed);
     }
@@ -1255,37 +1294,76 @@ Error WasmObjectFile::parseGlobalSection(ReadContext &Ctx) {
 Error WasmObjectFile::parseExportSection(ReadContext &Ctx) {
   uint32_t Count = readVaruint32(Ctx);
   Exports.reserve(Count);
+  LinkingData.SymbolTable.reserve(Count);
+  Symbols.reserve(Count);
   for (uint32_t I = 0; I < Count; I++) {
     wasm::WasmExport Ex;
     Ex.Name = readString(Ctx);
     Ex.Kind = readUint8(Ctx);
     Ex.Index = readVaruint32(Ctx);
+    const wasm::WasmSignature *Signature = nullptr;
+    const wasm::WasmGlobalType *GlobalType = nullptr;
+    const wasm::WasmTableType *TableType = nullptr;
+    wasm::WasmSymbolInfo Info;
+    Info.Name = Ex.Name;
+    Info.Flags = 0;
     switch (Ex.Kind) {
-    case wasm::WASM_EXTERNAL_FUNCTION:
-
+    case wasm::WASM_EXTERNAL_FUNCTION: {
       if (!isDefinedFunctionIndex(Ex.Index))
         return make_error<GenericBinaryError>("invalid function export",
                                               object_error::parse_failed);
       getDefinedFunction(Ex.Index).ExportName = Ex.Name;
+      Info.Kind = wasm::WASM_SYMBOL_TYPE_FUNCTION;
+      Info.ElementIndex = Ex.Index;
+      unsigned FuncIndex = Info.ElementIndex - NumImportedFunctions;
+      wasm::WasmFunction &Function = Functions[FuncIndex];
+      Signature = &Signatures[Function.SigIndex];
       break;
-    case wasm::WASM_EXTERNAL_GLOBAL:
+    }
+    case wasm::WASM_EXTERNAL_GLOBAL: {
       if (!isValidGlobalIndex(Ex.Index))
         return make_error<GenericBinaryError>("invalid global export",
                                               object_error::parse_failed);
+      Info.Kind = wasm::WASM_SYMBOL_TYPE_DATA;
+      uint64_t Offset = 0;
+      if (isDefinedGlobalIndex(Ex.Index)) {
+        auto Global = getDefinedGlobal(Ex.Index);
+        if (!Global.InitExpr.Extended) {
+          auto Inst = Global.InitExpr.Inst;
+          if (Inst.Opcode == wasm::WASM_OPCODE_I32_CONST) {
+            Offset = Inst.Value.Int32;
+          } else if (Inst.Opcode == wasm::WASM_OPCODE_I64_CONST) {
+            Offset = Inst.Value.Int64;
+          }
+        }
+      }
+      Info.DataRef = wasm::WasmDataReference{0, Offset, 0};
       break;
+    }
     case wasm::WASM_EXTERNAL_TAG:
       if (!isValidTagIndex(Ex.Index))
         return make_error<GenericBinaryError>("invalid tag export",
                                               object_error::parse_failed);
+      Info.Kind = wasm::WASM_SYMBOL_TYPE_TAG;
+      Info.ElementIndex = Ex.Index;
       break;
     case wasm::WASM_EXTERNAL_MEMORY:
+      break;
     case wasm::WASM_EXTERNAL_TABLE:
+      Info.Kind = wasm::WASM_SYMBOL_TYPE_TABLE;
+      Info.ElementIndex = Ex.Index;
       break;
     default:
       return make_error<GenericBinaryError>("unexpected export kind",
                                             object_error::parse_failed);
     }
     Exports.push_back(Ex);
+    if (Ex.Kind != wasm::WASM_EXTERNAL_MEMORY) {
+      LinkingData.SymbolTable.emplace_back(Info);
+      Symbols.emplace_back(LinkingData.SymbolTable.back(), GlobalType,
+                           TableType, Signature);
+      LLVM_DEBUG(dbgs() << "Adding symbol: " << Symbols.back() << "\n");
+    }
   }
   if (Ctx.Ptr != Ctx.End)
     return make_error<GenericBinaryError>("export section ended prematurely",
@@ -1379,7 +1457,6 @@ Error WasmObjectFile::parseStartSection(ReadContext &Ctx) {
 }
 
 Error WasmObjectFile::parseCodeSection(ReadContext &Ctx) {
-  SeenCodeSection = true;
   CodeSection = Sections.size();
   uint32_t FunctionCount = readVaruint32(Ctx);
   if (FunctionCount != Functions.size()) {
@@ -1408,6 +1485,11 @@ Error WasmObjectFile::parseCodeSection(ReadContext &Ctx) {
     }
 
     uint32_t BodySize = FunctionEnd - Ctx.Ptr;
+    // Ensure that Function is within Ctx's buffer.
+    if (Ctx.Ptr + BodySize > Ctx.End) {
+      return make_error<GenericBinaryError>("Function extends beyond buffer",
+                                            object_error::parse_failed);
+    }
     Function.Body = ArrayRef<uint8_t>(Ctx.Ptr, BodySize);
     // This will be set later when reading in the linking metadata section.
     Function.Comdat = UINT32_MAX;
@@ -1443,29 +1525,31 @@ Error WasmObjectFile::parseElemSection(ReadContext &Ctx) {
                                             object_error::parse_failed);
 
     if (Segment.Flags & wasm::WASM_ELEM_SEGMENT_IS_PASSIVE) {
-      Segment.Offset.Opcode = wasm::WASM_OPCODE_I32_CONST;
-      Segment.Offset.Value.Int32 = 0;
+      Segment.Offset.Extended = false;
+      Segment.Offset.Inst.Opcode = wasm::WASM_OPCODE_I32_CONST;
+      Segment.Offset.Inst.Value.Int32 = 0;
     } else {
       if (Error Err = readInitExpr(Segment.Offset, Ctx))
         return Err;
     }
 
     if (Segment.Flags & wasm::WASM_ELEM_SEGMENT_MASK_HAS_ELEM_KIND) {
-      Segment.ElemKind = readUint8(Ctx);
+      auto ElemKind = readVaruint32(Ctx);
       if (Segment.Flags & wasm::WASM_ELEM_SEGMENT_HAS_INIT_EXPRS) {
-        if (Segment.ElemKind != uint8_t(wasm::ValType::FUNCREF) &&
-            Segment.ElemKind != uint8_t(wasm::ValType::EXTERNREF)) {
+        Segment.ElemKind = wasm::ValType(ElemKind);
+        if (Segment.ElemKind != wasm::ValType::FUNCREF &&
+            Segment.ElemKind != wasm::ValType::EXTERNREF) {
           return make_error<GenericBinaryError>("invalid reference type",
                                                 object_error::parse_failed);
         }
       } else {
-        if (Segment.ElemKind != 0)
+        if (ElemKind != 0)
           return make_error<GenericBinaryError>("invalid elemtype",
                                                 object_error::parse_failed);
-        Segment.ElemKind = uint8_t(wasm::ValType::FUNCREF);
+        Segment.ElemKind = wasm::ValType::FUNCREF;
       }
     } else {
-      Segment.ElemKind = uint8_t(wasm::ValType::FUNCREF);
+      Segment.ElemKind = wasm::ValType::FUNCREF;
     }
 
     if (Segment.Flags & wasm::WASM_ELEM_SEGMENT_HAS_INIT_EXPRS)
@@ -1488,7 +1572,7 @@ Error WasmObjectFile::parseElemSection(ReadContext &Ctx) {
 Error WasmObjectFile::parseDataSection(ReadContext &Ctx) {
   DataSection = Sections.size();
   uint32_t Count = readVaruint32(Ctx);
-  if (DataCount && Count != DataCount.getValue())
+  if (DataCount && Count != *DataCount)
     return make_error<GenericBinaryError>(
         "number of data segments does not match DataCount section");
   DataSegments.reserve(Count);
@@ -1503,8 +1587,9 @@ Error WasmObjectFile::parseDataSection(ReadContext &Ctx) {
       if (Error Err = readInitExpr(Segment.Data.Offset, Ctx))
         return Err;
     } else {
-      Segment.Data.Offset.Opcode = wasm::WASM_OPCODE_I32_CONST;
-      Segment.Data.Offset.Value.Int32 = 0;
+      Segment.Data.Offset.Extended = false;
+      Segment.Data.Offset.Inst.Opcode = wasm::WASM_OPCODE_I32_CONST;
+      Segment.Data.Offset.Inst.Value.Int32 = 0;
     }
     uint32_t Size = readVaruint32(Ctx);
     if (Size > (size_t)(Ctx.End - Ctx.Ptr))
@@ -1584,10 +1669,18 @@ Expected<StringRef> WasmObjectFile::getSymbolName(DataRefImpl Symb) const {
 Expected<uint64_t> WasmObjectFile::getSymbolAddress(DataRefImpl Symb) const {
   auto &Sym = getWasmSymbol(Symb);
   if (Sym.Info.Kind == wasm::WASM_SYMBOL_TYPE_FUNCTION &&
-      isDefinedFunctionIndex(Sym.Info.ElementIndex))
-    return getDefinedFunction(Sym.Info.ElementIndex).CodeSectionOffset;
-  else
-    return getSymbolValue(Symb);
+      isDefinedFunctionIndex(Sym.Info.ElementIndex)) {
+    // For object files, use the section offset. The linker relies on this.
+    // For linked files, use the file offset. This behavior matches the way
+    // browsers print stack traces and is useful for binary size analysis.
+    // (see https://webassembly.github.io/spec/web-api/index.html#conventions)
+    uint32_t Adjustment = isRelocatableObject() || isSharedObject()
+                              ? 0
+                              : Sections[CodeSection].Offset;
+    return getDefinedFunction(Sym.Info.ElementIndex).CodeSectionOffset +
+           Adjustment;
+  }
+  return getSymbolValue(Symb);
 }
 
 uint64_t WasmObjectFile::getWasmSymbolValue(const WasmSymbol &Sym) const {
@@ -1602,10 +1695,14 @@ uint64_t WasmObjectFile::getWasmSymbolValue(const WasmSymbol &Sym) const {
     // offset within the segment.
     uint32_t SegmentIndex = Sym.Info.DataRef.Segment;
     const wasm::WasmDataSegment &Segment = DataSegments[SegmentIndex].Data;
-    if (Segment.Offset.Opcode == wasm::WASM_OPCODE_I32_CONST) {
-      return Segment.Offset.Value.Int32 + Sym.Info.DataRef.Offset;
-    } else if (Segment.Offset.Opcode == wasm::WASM_OPCODE_I64_CONST) {
-      return Segment.Offset.Value.Int64 + Sym.Info.DataRef.Offset;
+    if (Segment.Offset.Extended) {
+      llvm_unreachable("extended init exprs not supported");
+    } else if (Segment.Offset.Inst.Opcode == wasm::WASM_OPCODE_I32_CONST) {
+      return Segment.Offset.Inst.Value.Int32 + Sym.Info.DataRef.Offset;
+    } else if (Segment.Offset.Inst.Opcode == wasm::WASM_OPCODE_I64_CONST) {
+      return Segment.Offset.Inst.Value.Int64 + Sym.Info.DataRef.Offset;
+    } else if (Segment.Offset.Inst.Opcode == wasm::WASM_OPCODE_GLOBAL_GET) {
+      return Sym.Info.DataRef.Offset;
     } else {
       llvm_unreachable("unknown init expr opcode");
     }
@@ -1692,29 +1789,11 @@ void WasmObjectFile::moveSectionNext(DataRefImpl &Sec) const { Sec.d.a++; }
 
 Expected<StringRef> WasmObjectFile::getSectionName(DataRefImpl Sec) const {
   const WasmSection &S = Sections[Sec.d.a];
-#define ECase(X)                                                               \
-  case wasm::WASM_SEC_##X:                                                     \
-    return #X;
-  switch (S.Type) {
-    ECase(TYPE);
-    ECase(IMPORT);
-    ECase(FUNCTION);
-    ECase(TABLE);
-    ECase(MEMORY);
-    ECase(GLOBAL);
-    ECase(TAG);
-    ECase(EXPORT);
-    ECase(START);
-    ECase(ELEM);
-    ECase(CODE);
-    ECase(DATA);
-    ECase(DATACOUNT);
-  case wasm::WASM_SEC_CUSTOM:
+  if (S.Type == wasm::WASM_SEC_CUSTOM)
     return S.Name;
-  default:
+  if (S.Type > wasm::WASM_SEC_LAST_KNOWN)
     return createStringError(object_error::invalid_section_index, "");
-  }
-#undef ECase
+  return wasm::sectionTypeToString(S.Type);
 }
 
 uint64_t WasmObjectFile::getSectionAddress(DataRefImpl Sec) const { return 0; }
@@ -1834,7 +1913,7 @@ Triple::ArchType WasmObjectFile::getArch() const {
   return HasMemory64 ? Triple::wasm64 : Triple::wasm32;
 }
 
-SubtargetFeatures WasmObjectFile::getFeatures() const {
+Expected<SubtargetFeatures> WasmObjectFile::getFeatures() const {
   return SubtargetFeatures();
 }
 

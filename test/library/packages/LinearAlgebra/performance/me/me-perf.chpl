@@ -14,7 +14,7 @@ const nbytes = numBytes(eltType);
 
 proc test_expm() {
   const Space = {0..<m, 0..<m};
-  var t: Timer;
+  var t: stopwatch;
 
   if !correctness {
     writeln('=========================================');
@@ -173,12 +173,12 @@ proc test_expm() {
     // Sparse Input Matrix
     // 10% Filled.
 
-    var r = new owned PCGRandomStream(int);
+    var r = new randomStream(int, false);
 
     var X: [Space] eltType;
 
     for i in 0..<m {
-      X(r.getNext(0,m-1), i) = 1.0;
+      X(r.next(0,m-1), i) = 1.0;
     }
 
     var curIter = 0;
@@ -204,13 +204,13 @@ proc test_expm() {
     // Dense Input Matrix
     // 90% Filled.
 
-    var r = new owned PCGRandomStream(int);
+    var r = new randomStream(int, false);
 
     var X: [Space] eltType;
     X = X + 1.0;
 
     for i in 0..<m {
-      X(r.getNext(0,m-1), i) = 0.0;
+      X(r.next(0,m-1), i) = 0.0;
     }
 
     var curIter = 0;
@@ -272,7 +272,7 @@ proc test_sinm() {
     // [ 0.0     -1.0       1.0 + 1i]
 
     const Space = {0..<m, 0..<m};
-    var t: Timer;
+    var t: stopwatch;
 
     var X: [Space] complex;
     setDiag(X, 0, 1.0 + 1i);
@@ -307,7 +307,7 @@ proc test_cosm() {
     // [ 0.0     -1.0       1.0 + 1i]
 
     const Space = {0..<m, 0..<m};
-    var t: Timer;
+    var t: stopwatch;
 
     var X: [Space] complex;
     setDiag(X, 0, 1.0 + 1i);
@@ -342,7 +342,7 @@ proc test_sincos() {
     // [ 0.0     -1.0       1.0 + 1i]
 
     const Space = {0..<m, 0..<m};
-    var t: Timer;
+    var t: stopwatch;
 
     var X: [Space] complex;
     setDiag(X, 0, 1.0 + 1i);

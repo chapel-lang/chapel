@@ -173,7 +173,7 @@ static int sock_wait_wait(struct fid_wait *wait_fid, int timeout)
 		break;
 
 	case FI_WAIT_MUTEX_COND:
-		err = fi_wait_cond(&wait->wobj.mutex_cond.cond,
+		err = ofi_wait_cond(&wait->wobj.mutex_cond.cond,
 				   &wait->wobj.mutex_cond.mutex, timeout);
 		break;
 

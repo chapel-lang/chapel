@@ -1,15 +1,15 @@
-use Barriers;
+use Collectives;
 
 config const nTasks = 4;
 
-proc copyInBar(in bar: Barrier) {
+proc copyInBar(in bar: barrier) {
   coforall tid in 1..nTasks {
     bar.barrier();
   }
   writeln("first coforall done!");
 }
 
-var bar = new Barrier(nTasks);
+var bar = new barrier(nTasks);
 
 copyInBar(bar);
 
@@ -19,7 +19,7 @@ coforall tid in 1..nTasks {
 
 writeln("second coforall done!");
 
-proc varCopyBar(bar: Barrier) {
+proc varCopyBar(bar: barrier) {
   var x = bar;
   coforall tid in 1..nTasks {
     if tid % 2 == 0 then

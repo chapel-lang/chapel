@@ -36,7 +36,7 @@ class GridVariable {
   //----------------------------------------------------
 
   pragma "no copy return"
-  proc this(D: domain)
+  proc this(D: domain(?))
   {
     return value(D);
   }
@@ -115,7 +115,7 @@ proc writeTimeFile(
   meqn:    int,
   ngrids:  int,
   naux:    int,
-  outfile: channel)
+  outfile: fileWriter)
 {
 
   //==== Formatting parameters ====
@@ -146,7 +146,7 @@ proc writeTimeFile(
 proc GridVariable.writeData (
   grid_number: int,
   AMR_level:   int,
-  outfile: channel)
+  outfile: fileWriter)
 {
 
   //==== Formatting parameters ====
@@ -206,11 +206,11 @@ proc GridVariable.writeData (
     // Transpose cells; iterating over the transpose in row major
     // order achieves column major order on the original domain.
     //------------------------------------------------------------
-    var range_tuple: dimension*range(stridable=true);
+    var range_tuple: dimension*range(strides=strideKind.any);
     [d in dimensions with (ref range_tuple)] // could also be 'for param d'
       range_tuple(d) = grid.cells.dim(dimension - (d+1));
 
-    var cells_transposed: domain(dimension, stridable=true);
+    var cells_transposed: domain(dimension, strides=strideKind.any);
     cells_transposed = {(...range_tuple)};
 
     var cell:       dimension*int;
@@ -275,13 +275,13 @@ proc GridVariable.clawOutput(
 
 
   //==== Time file ====
-  var outfile = open(time_filename, iomode.cw).writer();
+  var outfile = open(time_filename, ioMode.cw).writer();
   writeTimeFile(time, 1, 1, 0, outfile);
   outfile.close();
   
   
   //==== Data file ====
-  outfile = open(data_filename, iomode.cw).writer();
+  outfile = open(data_filename, ioMode.cw).writer();
   this.writeData(1, 1, outfile);
   outfile.close();
 

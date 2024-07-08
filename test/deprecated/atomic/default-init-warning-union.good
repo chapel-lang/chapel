@@ -1,0 +1,1 @@
+default-init.chpl:n: warning: compiler generated default initializers for AT with 'atomic' fields are deprecated, please supply an 'init' method

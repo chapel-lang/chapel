@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,6 +20,13 @@
 
 /* Functions for producing program help and usage.
 
+   .. note::
+
+    You must declare your ``main`` function to take an array of string arguments
+    to use the ``Help`` module. See the examples below or the technical note about
+    :ref:`getting arguments from main()<technote-mainWithArgs>` for more
+    information on this feature.
+
    Chapel programs can declare main to take arguments like this:
 
    .. code-block:: chapel
@@ -31,13 +38,11 @@
        }
      }
 
-   See :ref:`doc/rst/technotes/main.rst <readme-main>` in a Chapel release for
-   more information on this feature.
-
    Programs that use this feature might need to expand upon the usage message
    that explains which config variables are available. To do so, this module
    includes the :proc:`printUsage` function.
  */
+@unstable("The 'Help' module is unstable")
 module Help {
 
   /*

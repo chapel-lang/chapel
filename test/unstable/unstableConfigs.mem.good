@@ -1,0 +1,13 @@
+unstableConfigs.mem.chpl:11: warning: Hey it's unstable!
+0
+0
+0
+<command-line arg>:1: warning: The variable 'memTrack' is unstable and its interface is subject to change in the future
+<command-line arg>:2: warning: The variable 'memStats' is unstable and its interface is subject to change in the future
+<command-line arg>:3: warning: The variable 'memLeaksByType' is unstable and its interface is subject to change in the future
+<command-line arg>:4: warning: The variable 'memLeaks' is unstable and its interface is subject to change in the future
+<command-line arg>:5: warning: The variable 'memMax' is unstable and its interface is subject to change in the future
+<command-line arg>:6: warning: The variable 'memThreshold' is unstable and its interface is subject to change in the future
+<command-line arg>:7: warning: The variable 'memLog' is unstable and its interface is subject to change in the future
+<command-line arg>:8: warning: The variable 'memLeaksLog' is unstable and its interface is subject to change in the future
+<command-line arg>:9: warning: The variable 'memLeaksByDesc' is unstable and its interface is subject to change in the future

@@ -1,0 +1,2 @@
+moveArrayElements-errors.chpl:nnnn: In function 'main':
+moveArrayElements-errors.chpl:nnnn: error: 'moveArrayElements' does not accept range regions for arrays with more than 1 dimension

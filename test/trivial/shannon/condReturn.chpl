@@ -6,13 +6,13 @@ proc buildC() {
   return new owned C();
 }
 
-proc foo(x: int ...?numargs) {
+proc foo(x: int ...?numargs): owned C {
   writeln("In foo()");
   if (numargs > 1) {
     return buildC();
   } else {
     halt("not enough args");
-    return none;
+    return none; // note that this line is ignored
   }
 }
 
