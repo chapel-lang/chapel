@@ -436,8 +436,18 @@ module ChapelRange {
 
   proc chpl_build_bounded_sequence(low: ?t1, high: ?t2)
     where isTuple(low) != isTuple(high) {
-    compilerError("Domains defined using tuple bounds must use tuples, but got '" +
-                  low.type:string + "' and '" + high.type:string + "'");
+    if isTuple(low) {
+      var highTuple: t1.size*t2;
+      for param i in 0..<t1.size do highTuple[i] = high;
+      return chpl_build_bounded_sequence(low, highTuple);
+    } else if isTuple(high) {
+      var lowTuple: t2.size*t1;
+      for param i in 0..<t2.size do lowTuple[i] = low;
+      return chpl_build_bounded_sequence(lowTuple, high);
+    } else {
+      compilerError("Domains defined using tuple bounds must use tuples, but got '" +
+                    low.type:string + "' and '" + high.type:string + "'");
+    }
   }
 
   proc chpl_build_bounded_sequence(low: ?t1, high: ?t2)
@@ -494,6 +504,20 @@ module ChapelRange {
       compilerError("Ranges defined using bounds of type '" + low.type:string + ".." + high.type:string + "' are not currently supported");
   }
 
+  proc chpl__nudgeLowBound(low) where isTuple(low) {
+    var newLow: low.type;
+    for param i in 0..<low.size do
+      newLow[i] = chpl__nudgeLowBound(low[i]);
+    return newLow;
+  }
+
+  proc chpl__nudgeHighBound(high) where isTuple(high) {
+    var newHigh: high.type;
+    for param i in 0..<high.size do
+      newHigh[i] = chpl__nudgeHighBound(high[i]);
+    return newHigh;
+  }
+  
   proc chpl__nudgeLowBound(low) {
     return chpl__intToIdx(low.type, chpl__idxToInt(low) + 1);
   }

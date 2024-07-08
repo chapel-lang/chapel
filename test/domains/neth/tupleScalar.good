@@ -1,1 +1,0 @@
-tupleScalar.chpl:1: error: Domains defined using tuple bounds must use tuples, but got 'int(64)' and '1*int(64)'
