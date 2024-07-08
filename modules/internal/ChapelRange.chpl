@@ -434,37 +434,43 @@ module ChapelRange {
   proc chpl_build_bounded_sequence(low: bool, high: bool) do
     return new range(bool, low=low, high=high);
 
-  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2) 
+  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2)
     where isTuple(low) != isTuple(high) {
-    compilerError("Domains defined using tuple bounds must use tuples, but got '" + low.type:string + "' and '" + high.type:string + "'");
-  }
-  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2) 
-    where isTuple(low) && isTuple(high) &&
-          !(isHomogeneousTuple(low) && isHomogeneousTuple(high)) {
-    compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" + low.type:string + "' and '" + high.type:string + "'");
+    compilerError("Domains defined using tuple bounds must use tuples, but got '" +
+                  low.type:string + "' and '" + high.type:string + "'");
   }
 
-  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2) 
+  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2)
+    where isTuple(low) && isTuple(high) &&
+          !(isHomogeneousTuple(low) && isHomogeneousTuple(high)) {
+    compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" +
+                  low.type:string + "' and '" + high.type:string + "'");
+  }
+
+  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2)
     where isTuple(low) && isTuple(high) &&
           isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
           low.size != high.size {
-    compilerError("Domains defined using tuple bounds must use tuples of the same length, but got '" + low.type:string + "' and '" + high.type:string + "'");
+    compilerError("Domains defined using tuple bounds must use tuples of the same length, " +
+                  "but got '" + low.type:string + "' and '" + high.type:string + "'");
   }
-  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2) 
+  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2)
     where isTuple(low) && isTuple(high) &&
           isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
           low.size == high.size &&
           !(isCoercible(low(0).type, high(0).type) ||
             isCoercible(high(0).type, low(0).type)) {
-    compilerError("Domains defined using tuple bounds must use tuples of coercible types. Cannot coerce between '" + low(0).type:string + "' and '" + high(0).type:string + "'");
+    compilerError("Domains defined using tuple bounds must use tuples of coercible types. " +
+                  "Cannot coerce between '" + low(0).type:string + "' and '" +
+                  high(0).type:string + "'");
   }
 
-  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2) 
+  proc chpl_build_bounded_sequence(low: ?t1, high: ?t2)
     where isTuple(low) && isTuple(high) &&
           isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
-          low.size == high.size && 
-            (isCoercible(low(0).type, high(0).type) ||
-             isCoercible(high(0).type, low(0).type)) 
+          low.size == high.size &&
+          (isCoercible(low(0).type, high(0).type) ||
+           isCoercible(high(0).type, low(0).type))
   {
     param size = low.size;
     type eltType;
