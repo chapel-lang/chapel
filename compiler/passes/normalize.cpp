@@ -26,6 +26,7 @@
 #include "baseAST.h"
 #include "passes.h"
 
+#include "arrayViewElision.h"
 #include "astutil.h"
 #include "build.h"
 #include "DecoratedClassType.h"
@@ -171,6 +172,8 @@ void normalize() {
   preNormalizeHandleStaticVars();
 
   insertModuleInit();
+
+  arrayViewElision();
 
   doPreNormalizeArrayOptimizations();
 

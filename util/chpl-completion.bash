@@ -23,6 +23,7 @@ _chpl ()
       # developer options
       local devel_opts="\
 --allow-noinit-array-not-pod \
+--array-view-elision \
 --atomics \
 --auto-aggregation \
 --auto-local-access \
@@ -174,6 +175,7 @@ _chpl ()
 --network-atomics \
 --nil-checks \
 --no-allow-noinit-array-not-pod \
+--no-array-view-elision \
 --no-auto-aggregation \
 --no-auto-local-access \
 --no-bounds-checks \
@@ -277,6 +279,7 @@ _chpl ()
 --no-remove-unreachable-blocks \
 --no-replace-array-accesses-with-ref-temps \
 --no-report-aliases \
+--no-report-array-view-elision \
 --no-report-auto-aggregation \
 --no-report-auto-local-access \
 --no-report-blocking \
@@ -356,6 +359,7 @@ _chpl ()
 --remove-unreachable-blocks \
 --replace-array-accesses-with-ref-temps \
 --report-aliases \
+--report-array-view-elision \
 --report-auto-aggregation \
 --report-auto-local-access \
 --report-blocking \
@@ -428,6 +432,7 @@ _chpl ()
 
       # user options
       local nodevel_opts="\
+--array-view-elision \
 --atomics \
 --auto-aggregation \
 --auto-local-access \
@@ -494,6 +499,7 @@ _chpl ()
 --munge-user-idents \
 --network-atomics \
 --nil-checks \
+--no-array-view-elision \
 --no-auto-aggregation \
 --no-auto-local-access \
 --no-bounds-checks \

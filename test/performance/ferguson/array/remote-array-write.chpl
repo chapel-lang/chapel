@@ -17,4 +17,4 @@ stop();
 writeln(A[1]);
 writeln(A[n]);
 
-report(maxGets=5, maxOns=1);
+report(maxGets=3, maxOns=1);
