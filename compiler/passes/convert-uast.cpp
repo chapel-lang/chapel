@@ -458,15 +458,6 @@ struct Converter {
     return FLAG_UNKNOWN;
   }
 
-  static bool isBlockComment(const uast::Comment* node) {
-    const auto& str = node->str();
-    if (str.size() < 4) return false;
-    if (str[0] != '/' || str[1] != '*') return false;
-    INT_ASSERT(str[str.size()-1] == '/');
-    INT_ASSERT(str[str.size()-2] == '*');
-    return true;
-  }
-
   Expr* visit(const uast::Comment* node) {
     return nullptr;
   }
