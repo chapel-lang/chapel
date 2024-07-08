@@ -26,15 +26,15 @@ else
   fi
 
   # load llvm
-  if [ -f /cray/css/users/chapelu/setup_system_llvm.bash ] ; then
-    source /cray/css/users/chapelu/setup_system_llvm.bash
+  if [ -f /hpcdc/project/chapel/setup_system_llvm.bash ] ; then
+    source /hpcdc/project/chapel/setup_system_llvm.bash
   elif [ -f /cy/users/chapelu/setup_system_llvm.bash ] ; then
     source /cy/users/chapelu/setup_system_llvm.bash
   fi
 
   # load cmake
-  if [ -f /cray/css/users/chapelu/setup_cmake_nightly.bash ] ; then
-    source /cray/css/users/chapelu/setup_cmake_nightly.bash
+  if [ -f /hpcdc/project/chapel/setup_cmake_nightly.bash ] ; then
+    source /hpcdc/project/chapel/setup_cmake_nightly.bash
   elif [ -f /cy/users/chapelu/setup_cmake_nightly.bash ] ; then
     source /cy/users/chapelu/setup_cmake_nightly.bash
   fi

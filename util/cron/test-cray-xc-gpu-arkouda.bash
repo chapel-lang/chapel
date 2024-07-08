@@ -7,7 +7,7 @@ CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
 
 # Setup for GPU:
-source /cray/css/users/chapelu/setup_system_llvm.bash $LLVM_VERSION
+source /hpcdc/project/chapel/setup_system_llvm.bash $LLVM_VERSION
 module load cudatoolkit
 export CHPL_TARGET_COMPILER=llvm
 export CHPL_LLVM=system
