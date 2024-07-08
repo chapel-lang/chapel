@@ -2286,6 +2286,7 @@ static bool isCallToConstructor(CallExpr* call) {
 
 static void normalizeCallToConstructor(CallExpr* call) {
   if (call->getStmtExpr() != NULL) {
+    // int idx = call->isPrimitive(PRIM_NEW) ? 1 : 2;
     if (CallExpr* arg1 = toCallExpr(call->get(1))) {
       if (isSymExpr(arg1->baseExpr) == true) {
         if (arg1->partialTag == false) {
@@ -2352,6 +2353,7 @@ static bool callNeedsAnOwner(CallExpr* call) {
 static void fixPrimNew(CallExpr* primNewToFix) {
   SET_LINENO(primNewToFix);
 
+  // int idx = primNewToFix->isPrimitive(PRIM_NEW) ? 1 : 2;
   CallExpr* callInNew    = toCallExpr(primNewToFix->get(1));
   CallExpr* newNew       = new CallExpr(PRIM_NEW);
   newNew->tryTag = primNewToFix->tryTag; // preserve the tryTag

@@ -28,40 +28,41 @@ module Allocators {
   private use CTypes;
   private use Reflection;
   import ChapelLocks;
+  private use ChplConfig;
 
   private inline proc alignup(ptr: c_ptr(void), param alignment): c_ptr(void) {
     return ((ptr:c_intptr + (alignment-1)) & ~(alignment-1)):c_intptr:c_ptr(void);
   }
 
-  // TODO: this should just use interfaces
-  proc chpl_isValidAllocator(allocator: ?) param {
-    var dummyBytes: int;
-
-    if ! canResolveMethod(allocator, "allocate", dummyBytes) {
-      return false;
-    }
-    type resType = allocator.allocate(dummyBytes).type;
-    if resType != c_ptr(void) {
-      return false;
-    }
-
-    var dummyPtr: c_ptr(void);
-
-    if ! canResolveMethod(allocator, "deallocate", dummyPtr) {
-      return false;
-    }
-
-    return true;
+  interface allocator {
+    proc ref Self.allocate(n: int): c_ptr(void);
+    proc ref Self.deallocate(p: c_ptr(void));
   }
+
+  private proc newTypeCheckHelper(type T) param {
+    if !isClassType(T) then
+      compilerError(T:string + " is not a class", 2);
+    if !isUnmanagedClassType(T) then
+      compilerError(T:string + " is not unmanaged", 2);
+  }
+  private proc checkInterfaceHelper(alloc) param {
+    if __primitive("implements interface", alloc, allocator) == 2 {
+      compilerError(alloc.type:string + " does not implement 'allocator'", 2);
+    }
+  }
+
 
   @chpldoc.nodoc
   /* See docs for :proc:`~Allocators.newWithAllocator` */
-  inline proc newWithAllocator(ref allocator: ?, type T): T {
-    return __primitive("new with allocator", allocator, T);
+  inline proc newWithAllocator(ref alloc, type T): T {
+    checkInterfaceHelper(alloc);
+    newTypeCheckHelper(T);
+
+    return __primitive("new with allocator", alloc, T);
   }
 
   /*
-    Allocate a new class with type ``T`` using the given ``allocator``. This is a drop-in replacement for ``new``.
+    Allocate a new class with type ``T`` by invoking the ``allocate`` method of the given ``alloc``. This is a drop-in replacement for ``new``.
 
     Example:
 
@@ -72,13 +73,31 @@ module Allocators {
        // The following two lines are equivalent, but the second one uses the allocator
        var x = new unmanaged MyClass(1);
        var x = newWithAllocator(allocator, unmanaged MyClass, 1);
-
-    .. warning::
-       Using a managed class type may causes memory issues with some allocators.
-       It is recommend to use ``unmanaged``.
   */
-  inline proc newWithAllocator(ref allocator: ?, type T, args...): T {
-    return __primitive("new with allocator", allocator, T, (...args));
+  inline proc newWithAllocator(ref alloc, type T, args...): T {
+    checkInterfaceHelper(alloc);
+    newTypeCheckHelper(T);
+
+    return __primitive("new with allocator", alloc, T, (...args));
+  }
+
+  /*
+    Delete the ``objects`` by invoking the ``deallocate`` method of the given ``allocator``. This is a drop-in replacement for ``delete``.
+  */
+  inline proc deleteWithAllocator(ref alloc, objects...?k) {
+    checkInterfaceHelper(alloc);
+    for param i in 0..#k {
+      newTypeCheckHelper(objects(i).type);
+      if compiledForSingleLocale() {
+        var p = c_ptrTo(objects(i));
+        alloc.deallocate(p);
+      } else {
+        on objects(i) {
+          var p = c_ptrTo(objects(i));
+          alloc.deallocate(p);
+        }
+      }
+    }
   }
 
   @chpldoc.nodoc
@@ -93,7 +112,17 @@ module Allocators {
     }
   }
 
-  record bumpPtrMemPool {
+  // todo rename me
+  record malloc: allocator {
+    proc ref allocate(n: int): c_ptr(void) {
+      return CTypes.allocate(int(8), n.safeCast(c_size_t));
+    }
+    proc ref deallocate(p: c_ptr(void)) {
+      CTypes.deallocate(p);
+    }
+  }
+
+  record bumpPtrMemPool: allocator {
     param parSafe: bool = false;
     var size: int(64);
     var basePtr: c_ptr(int(8));

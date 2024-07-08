@@ -71,9 +71,7 @@ module LocaleModelHelpMem {
   pragma "allocator"
   pragma "llvm return noalias"
   pragma "always propagate line file info"
-  proc chpl_here_alloc_with_allocator(size:integral, md:chpl_mem_descInt_t, ref allocator): c_ptr(void) {
-    if ! Allocators.chpl_isValidAllocator(allocator) then
-      halt("chpl_here_alloc_with_allocator: invalid allocator");
+  proc chpl_here_alloc_with_allocator(size:int(64), md:chpl_mem_descInt_t, ref allocator): c_ptr(void) {
     // TODO: what to do with `md`?
     return allocator.allocate(size);
   }
