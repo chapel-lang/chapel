@@ -403,8 +403,7 @@ struct Converter {
 
   bool shouldScopeResolve(ID symbolId) {
     if (canScopeResolve) {
-      return fDynoScopeBundled ||
-             !chpl::parsing::idIsInBundledModule(context, symbolId);
+      return fDynoScopeBundled || topLevelModTag == MOD_USER;
     }
 
     return false;
@@ -418,7 +417,7 @@ struct Converter {
   }
   bool shouldResolve(ID symbolId) {
     if (fDynoCompilerLibrary) {
-      return !chpl::parsing::idIsInBundledModule(context, symbolId);
+      return topLevelModTag == MOD_USER;
     } else {
       return shouldResolve(symbolId.symbolPath());
     }
