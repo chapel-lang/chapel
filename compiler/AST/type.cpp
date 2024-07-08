@@ -2305,7 +2305,7 @@ llvm::SmallVector<std::string, 2> explainGeneric(Type* t) {
     }
   }
   if (t->symbol->hasFlag(FLAG_ARRAY)) {
-    return {"'" + std::string(t->name()) + "' is an array, which is considered generic due to runtime type information"};
+    return {"arrays are considered generic due to runtime type information"};
   }
   if (auto at = toAggregateType(t)) {
     if (at->isGeneric()) {
