@@ -26,16 +26,18 @@ export GASNET_PHYSMEM_MAX="0.90"
 # When the multi-local playground is not used, set `SKIP_ML_PLAYGROUND=1
 #
 
-SKIP_ML_PLAYGROUND=1
+SKIP_ML_PLAYGROUND=0
 if [[ "$SKIP_ML_PLAYGROUND" == "1" ]]; then
   log_info "Skipping testing of the multi-local playground"
   exit
 fi
 
-GITHUB_USER=chapel-lang
-GITHUB_BRANCH=main
-SHORT_NAME=main
-START_DATE=06/17/24
+GITHUB_USER=jhh67
+GITHUB_BRANCH=no-op
+SHORT_NAME=no-op
+START_DATE=07/08/24
+
+export CHPL_NIGHTLY_TEST_DIRS="performance/elliot"
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
