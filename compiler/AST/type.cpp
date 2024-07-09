@@ -2301,11 +2301,11 @@ const Immediate& getDefaultImmediate(Type* t) {
 llvm::SmallVector<std::string, 2> explainGeneric(Type* t) {
   if (auto clsType = toDecoratedClassType(t)) {
     if (isDecoratorUnknownManagement(clsType->getDecorator())) {
-      return {"'" + std::string(t->name()) + "' has generic lifetime management"};
+      return {"'" + std::string(t->name()) + "' is a class with unknown management"};
     }
   }
   if (t->symbol->hasFlag(FLAG_ARRAY)) {
-    return {"arrays are considered generic due to runtime type information"};
+    return {"it is an array with runtime type information"};
   }
   if (auto at = toAggregateType(t)) {
     if (at->isGeneric()) {
