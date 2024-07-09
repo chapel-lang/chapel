@@ -1171,4 +1171,21 @@ module JSON {
       }
     }
   }
+
+  @unstable
+  proc fromJson(jsonString: string, type loadAs): loadAs throws {
+    var fileReader = openStringReader(jsonString,
+                                      deserializer=new jsonDeserializer());
+    return fileReader.read(loadAs);
+  }
+
+  @unstable
+  proc toJson(arg): string throws {
+    var memWriter = openMemFile();
+    var writer = memWriter.writer(locking=false).withSerializer(jsonSerializer);
+    writer.write(arg);
+    writer.close();
+
+    return memWriter.reader(locking=false).readAll(string);
+  }
 }
