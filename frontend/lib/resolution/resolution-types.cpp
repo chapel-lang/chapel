@@ -26,6 +26,7 @@
 #include "chpl/framework/update-functions.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/types/EnumType.h"
 #include "chpl/types/TupleType.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"
@@ -843,6 +844,48 @@ void TypedFnSignature::stringify(std::ostream& ss,
     formalType(i).stringify(ss, stringKind);
   }
   ss << ")";
+}
+
+bool TypedFnSignature::
+fetchIterKindStr(Context* context, UniqueString& outIterKindStr) const {
+  if (!isIterator()) return false;
+
+  // Has to just be a serial iterator.
+  if (numFormals() == 0 || (isMethod() && numFormals() == 1)) return true;
+
+  auto ik = types::EnumType::getIterKindType(context);
+  auto m = types::EnumType::getParamConstantsMapOrNull(context, ik);
+  if (m == nullptr) return false;
+
+  QualifiedType tagFormalType;
+  bool foundTagFormal = false;
+  UniqueString iterKindStr;
+
+  // Loop over the formals since they could be in any position.
+  for (int i = 0; i < numFormals(); i++) {
+    if (formalName(i) == USTR("tag")) {
+      foundTagFormal = true;
+      tagFormalType = formalType(i);
+      if (m != nullptr) {
+        for (auto& p : *m) {
+          if (formalType(i) != p.second) continue;
+          iterKindStr = p.first;
+          break;
+        }
+      }
+    }
+    if (foundTagFormal) break;
+  }
+
+  bool tagFormalMatches = tagFormalType.type() == ik &&
+                          tagFormalType.param();
+  if (tagFormalMatches) {
+    CHPL_ASSERT(!iterKindStr.isEmpty());
+    outIterKindStr = iterKindStr;
+  }
+
+  bool ret = !foundTagFormal || tagFormalMatches;
+  return ret;
 }
 
 void CandidatesAndForwardingInfo::stringify(

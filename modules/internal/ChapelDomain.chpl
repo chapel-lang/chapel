@@ -56,6 +56,27 @@ module ChapelDomain {
       return new _domain(nullPid, value, _unowned=true);
   }
 
+  @chpldoc.nodoc
+  proc tupleOfRangesSlice(base, slice) where chpl__isTupleOfRanges(base) &&
+                                             chpl__isTupleOfRanges(slice) {
+
+    if base.size != slice.size then
+      compilerError("tuple size mismatch in tupleOfRangesSlice");
+
+    param rank = base.size;
+
+    proc resultStrides(param dim = 0) param do return
+      if dim == rank-1 then ( base(dim)[slice(dim)] ).strides
+      else chpl_strideUnion( ( base(dim)[slice(dim)] ).strides,
+                                    resultStrides(dim+1) );
+
+    var r: rank*range(base[0].idxType, boundKind.both, resultStrides());
+    for param i in 0..rank-1 {
+      r(i) = base(i)[slice(i)];
+    }
+    return r;
+  }
+
   // Run-time type support
   //
   // NOTE: the bodies of functions marked with runtime type init fn (such as
@@ -174,6 +195,7 @@ module ChapelDomain {
   //
 
   proc chpl__isTupleOfRanges(tup) param {
+    if !isTuple(tup) then return false;
     for param i in 0..tup.size-1 {
       if !isRangeType(tup(i).type) then
         return false;
@@ -1406,17 +1428,7 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc this(ranges...rank)
     where chpl__isTupleOfRanges(ranges) {
-      const myDims = dims();
-
-      proc resultStrides(param dim = 0) param do return
-        if dim == rank-1 then ( myDims(dim)[ranges(dim)] ).strides
-        else chpl_strideUnion( ( myDims(dim)[ranges(dim)] ).strides,
-                                      resultStrides(dim+1) );
-
-      var r: rank*range(_value.idxType, boundKind.both, resultStrides());
-      for param i in 0..rank-1 {
-        r(i) = myDims(i)[ranges(i)];
-      }
+      const r = tupleOfRangesSlice(dims(), ranges);
       return new _domain(distribution, rank, _value.idxType, r(0).strides, r);
     }
 

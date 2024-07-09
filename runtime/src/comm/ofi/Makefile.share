@@ -26,7 +26,7 @@ COMM_SRCS = \
 
 COMM_SRCS += comm-ofi-oob-$(CHPL_MAKE_COMM_OFI_OOB).c
 
-ifneq (, $(findstring CHPL_MAKE_COMM_OFI_OOB, pmi2))
+ifneq (, $(findstring $(CHPL_MAKE_COMM_OFI_OOB), pmi2))
   ifeq ($(MAKE_LAUNCHER),1)
     RUNTIME_DEFS += -DCOMM_OFI_OOB_PMI2
   endif

@@ -8,7 +8,7 @@ set tmpfile = $outfile.raw.tmp
 # some gdbs print out extra stuff.  This filters it out
 #
 mv $outfile $tmpfile
-cat $tmpfile | grep -ivE "Using host libthread_db library|Breakpoint 1 at|no debugging symbols found|Reading symbols|'tmpdirname' has unknown type" | sed 's@(gdb) quit@(gdb) @' > $outfile
+cat $tmpfile | grep -ivE "Using host libthread_db library|Breakpoint 1 at|no debugging symbols found|Reading symbols" | sed 's@(gdb) quit@(gdb) @' > $outfile
 rm $tmpfile
 
 #

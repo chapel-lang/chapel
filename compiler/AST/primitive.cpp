@@ -1070,6 +1070,8 @@ initPrimitive() {
   prim_def(PRIM_MAYBE_LOCAL_ARR_ELEM, "may be local array element", returnInfoUnknown);
   prim_def(PRIM_MAYBE_AGGREGATE_ASSIGN, "may be aggregated assignment", returnInfoUnknown);
 
+  prim_def(PRIM_PROTO_SLICE_ASSIGN, "assign proto slices", returnInfoVoid);
+
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);
   prim_def(PRIM_WHEN, "when case expressions", returnInfoVoid);

@@ -122,6 +122,7 @@ struct Visitor {
   void checkNewBorrowed(const FnCall* node);
   void checkBorrowFromNew(const FnCall* node);
   void checkSparseKeyword(const FnCall* node);
+  void checkSparseDomainArgCount(const FnCall* node);
   void checkPrimCallInUserCode(const PrimCall* node);
   void checkDmappedKeyword(const OpCall* node);
   void checkNonAssociativeComparisons(const OpCall* node);
@@ -726,13 +727,32 @@ void Visitor::checkBorrowFromNew(const FnCall* node) {
                "variable to store the new class");
 }
 
+static bool isCallWithName(const FnCall* call, UniqueString checkName) {
+  auto calledExpr = call->calledExpression();
+  if (!calledExpr) return false;
+
+  if (auto ident = calledExpr->toIdentifier()) {
+    if (ident->name() == checkName) return true;
+  }
+
+  return false;
+}
+
 void Visitor::checkSparseKeyword(const FnCall* node) {
   if (shouldEmitUnstableWarning(node)) // start with a cheap check
-    if (auto calledExpr = node->calledExpression())
-      if (auto ident = calledExpr->toIdentifier())
-        if (ident->name() == USTR("sparse"))
-          warn(node, "sparse domains are unstable,"
-               " their behavior is likely to change in the future.");
+    if (isCallWithName(node, USTR("sparse")))
+      warn(node, "sparse domains are unstable,"
+           " their behavior is likely to change in the future.");
+}
+
+void Visitor::checkSparseDomainArgCount(const FnCall* node) {
+  if (isCallWithName(node, USTR("sparse"))) {
+    if (node->numActuals() == 1)
+      if (auto childCall = node->actual(0)->toFnCall())
+        if (isCallWithName(childCall, USTR("subdomain")))
+          if (childCall->numActuals() != 1)
+            error(childCall, "the 'sparse subdomain' expression expects exactly one argument (the parent domain)");
+  }
 }
 
 // TODO: remove this check and warning after 2.0?
@@ -1665,6 +1685,7 @@ void Visitor::visit(const FnCall* node) {
   checkNewBorrowed(node);
   checkBorrowFromNew(node);
   checkSparseKeyword(node);
+  checkSparseDomainArgCount(node);
 
 }
 

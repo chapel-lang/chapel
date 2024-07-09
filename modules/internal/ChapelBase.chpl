@@ -2234,8 +2234,17 @@ module ChapelBase {
   inline operator :(x:chpl_anyreal, type t:chpl_anyreal) do
     return __primitive("cast", t, x);
 
+  proc chpl_checkCastAbstractEnumError(type enumType, type dstType) param do
+    if isAbstractEnumType(enumType) then
+      compilerError("cannot cast abstract enum type '" +
+                    enumType:string +
+                    "' to '" +
+                    dstType:string +
+                    "'");
+
   @unstable("enum-to-bool casts are likely to be deprecated in the future")
   inline operator :(x: enum, type t:bool) throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return x: int: bool;
   }
   // operator :(x: enum, type t:integral)
@@ -2245,6 +2254,7 @@ module ChapelBase {
 
   @unstable("enum-to-float casts are likely to be deprecated in the future")
   inline operator :(x: enum, type t:chpl_anyreal) throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return x: int: real;
   }
 
@@ -2431,8 +2441,10 @@ module ChapelBase {
     return (x.re, x.im):t;
 
   @unstable("enum-to-float casts are likely to be deprecated in the future")
-  inline operator :(x: enum, type t:chpl_anycomplex) throws do
+  inline operator :(x: enum, type t:chpl_anycomplex) throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return (x:real, 0):t;
+  }
 
   //
   // casts to imag
@@ -2453,8 +2465,10 @@ module ChapelBase {
     return __primitive("cast", t, x.im);
 
   @unstable("enum-to-float casts are likely to be deprecated in the future")
-  inline operator :(x: enum, type t:chpl_anyimag)  throws do
+  inline operator :(x: enum, type t:chpl_anyimag)  throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return x:real:imag;
+  }
 
   //
   // casts from complex
@@ -3484,5 +3498,16 @@ module ChapelBase {
 
   inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
     return a > b;
+  }
+
+  // check if both arguments are local without `.locale` or `here`
+  proc chpl__bothLocal(const ref a, const ref b) {
+    extern proc chpl_equals_localeID(const ref x, const ref y): bool;
+
+    const aLoc = __primitive("_wide_get_locale", a._value);
+    const bLoc = __primitive("_wide_get_locale", b._value);
+
+    return chpl_equals_localeID(aLoc, bLoc) &&
+           chpl_equals_localeID(aLoc, here_id);
   }
 }

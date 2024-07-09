@@ -35,5 +35,6 @@ ccode/
 /variables
 /varargs
 /test.bin
+/test.txt
 
 /tempfile.txt

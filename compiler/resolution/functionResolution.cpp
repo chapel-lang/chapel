@@ -4758,12 +4758,12 @@ void printResolutionErrorUnresolved(CallInfo&       info,
         EnumType* srcEnumType = toEnumType(srcType);
         if (srcEnumType && srcEnumType->isAbstract()) {
           USR_FATAL_CONT(call,
-                         "can't cast from an abstract enum ('%s') to %s",
+                         "cannot cast abstract enum type '%s' to '%s'",
                          toString(srcType),
                          toString(dstType));
         } else if (dstEnumType && dstEnumType->isAbstract()) {
           USR_FATAL_CONT(call,
-                         "can't cast from %s to an abstract enum type ('%s')",
+                         "cannot cast '%s' to abstract enum type '%s'",
                          toString(srcType),
                          toString(dstType));
         } else {
@@ -7760,6 +7760,17 @@ static Symbol* maybeGetBaseSymHelper(SymExpr* def) {
             }
             return baseSym;
           }
+        } else if (maybeMethodCall->isPrimitive(PRIM_GET_MEMBER)) {
+          // handle tuples
+          if (auto baseExpr = toSymExpr(maybeMethodCall->get(1))) {
+            auto baseSym = baseExpr->symbol();
+            if (baseSym->hasFlag(FLAG_TEMP)) {
+              if(auto sym = maybeGetBaseSym(baseSym)) {
+                return sym;
+              }
+            }
+            return baseSym;
+          }
         }
       }
     }
@@ -10649,6 +10660,21 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
       USR_FATAL_CONT(use, "the %s '%s' is generic and cannot be captured",
                      kindStr,
                      fn->name);
+    }
+
+    for(auto i = 0; i < ft->numFormals(); i++) {
+      auto formal = ft->formal(i);
+      if (formal->isGeneric()) {
+        std::string reason;
+        auto reasons = explainGeneric(formal->type);
+        if (reasons.empty()) {
+          USR_PRINT(use, "the formal '%s' is generic", formal->name);
+        } else {
+          for (auto& r : reasons) {
+            USR_PRINT(use, "the formal '%s' is generic because %s", formal->name, r.c_str());
+          }
+        }
+      }
     }
 
     // Return a "sink" to handle any "illegal access" errors later.

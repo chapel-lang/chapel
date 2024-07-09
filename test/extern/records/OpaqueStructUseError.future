@@ -1,2 +1,0 @@
-bug: compiler crashes when using an opaque C struct
-#25191

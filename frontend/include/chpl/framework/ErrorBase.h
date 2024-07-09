@@ -257,7 +257,7 @@ class GeneralError : public BasicError {
       return owned<ErrorBase>(new Error##NAME__(*this));\
     }\
 \
-    ErrorInfo info() const { return info_; }\
+    const ErrorInfo& info() const { return info_; }\
   };
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS

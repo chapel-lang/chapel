@@ -1,0 +1,1 @@
+bad-cast-to-type.chpl:3: error: cannot cast abstract enum type 'E' to 'complex(128)'

@@ -4,7 +4,7 @@
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-COMMON_DIR=/cray/css/users/chapelu
+COMMON_DIR=/hpcdc/project/chapel
 if [ ! -d "$COMMON_DIR" ]; then
   COMMON_DIR=/cy/users/chapelu
 fi

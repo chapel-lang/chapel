@@ -548,6 +548,12 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                int ln, int32_t fn);
 
 //
+// Ensure that the communication layer makes progress if there are any
+// outstanding non-blocking operations.
+//
+void chpl_comm_ensure_progress(void);
+
+//
 // Hook to ensure remote memory consistency after unordered operations.
 //
 #ifndef CHPL_COMM_IMPL_UNORDERED_TASK_FENCE

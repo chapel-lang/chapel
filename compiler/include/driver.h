@@ -68,6 +68,9 @@ extern bool fReportAutoLocalAccess;
 extern bool fAutoAggregation;
 extern bool fReportAutoAggregation;
 
+extern bool fArrayViewElision;
+extern bool fReportArrayViewElision;
+
 extern bool fNoRemoteValueForwarding;
 extern bool fNoInferConstRefs;
 extern bool fNoRemoteSerialization;

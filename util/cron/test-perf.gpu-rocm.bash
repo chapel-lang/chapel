@@ -30,7 +30,7 @@ export CHPL_TARGET_CPU=native
 module load rocm
 
 # Use LLVM 14 as we don't support the ROCM bundled LLVM yet.
-source /cray/css/users/chapelu/setup_system_llvm.bash 14
+source /hpcdc/project/chapel/setup_system_llvm.bash 14
 
 nightly_args="${nightly_args} -startdate 07/20/23"
 

@@ -215,6 +215,9 @@ bool fReportAutoLocalAccess= false;
 bool fAutoAggregation = false;
 bool fReportAutoAggregation= false;
 
+bool fArrayViewElision = true;
+bool fReportArrayViewElision = false;
+
 bool  printPasses     = false;
 FILE* printPassesFile = NULL;
 
@@ -1274,6 +1277,8 @@ static ArgumentDescription arg_desc[] = {
 
  {"auto-aggregation", ' ', NULL, "Enable [disable] automatically aggregating remote accesses in foralls", "N", &fAutoAggregation, "CHPL_AUTO_AGGREGATION", NULL},
 
+ {"array-view-elision", ' ', NULL, "Enable [disable] array view elision", "N", &fArrayViewElision, "CHPL_DISABLE_ARRAY_VIEW_ELISION", NULL},
+
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"checks", ' ', NULL, "Enable [disable] all following run-time checks", "n", &fNoChecks, "CHPL_CHECKS", setChecks},
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_BOUNDS_CHECKING", NULL},
@@ -1403,6 +1408,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-optimized-on", ' ', NULL, "Print information about on clauses that have been optimized for potential fast remote fork operation", "F", &fReportOptimizedOn, NULL, NULL},
  {"report-auto-local-access", ' ', NULL, "Enable compiler logs for auto local access optimization", "N", &fReportAutoLocalAccess, "CHPL_REPORT_AUTO_LOCAL_ACCESS", NULL},
  {"report-auto-aggregation", ' ', NULL, "Enable compiler logs for automatic aggregation", "N", &fReportAutoAggregation, "CHPL_REPORT_AUTO_AGGREGATION", NULL},
+ {"report-array-view-elision", ' ', NULL, "Enable compiler logs for array view elision", "N", &fReportArrayViewElision, "CHPL_REPORT_ARRAY_VIEW_ELISION", NULL},
  {"report-optimized-forall-unordered-ops", ' ', NULL, "Show which statements in foralls have been converted to unordered operations", "F", &fReportOptimizeForallUnordered, NULL, NULL},
  {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
