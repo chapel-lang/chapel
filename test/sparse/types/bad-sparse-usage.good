@@ -1,0 +1,3 @@
+bad-sparse-usage.chpl:5: syntax error: near 'domain'
+bad-sparse-usage.chpl:3: error: sparse can only be used with subdomain with a single argument
+bad-sparse-usage.chpl:4: error: sparse can only be used with subdomain with a single argument
