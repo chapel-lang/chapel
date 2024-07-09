@@ -249,22 +249,21 @@ module ChapelDomain {
   //
   // Support for creating domains using tuples of bounds
   //
-  
-  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true) 
-    where !isTuple(t1) && !isTuple(t2) 
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
+    where !isTuple(t1) && !isTuple(t2)
   {
     return if inclusive then {low..high} else {low..<high};
   }
 
-  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true) 
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
     where isTuple(t1) && isTuple(t2) &&
-          !(isHomogeneousTuple(low) && isHomogeneousTuple(high)) 
+          !(isHomogeneousTuple(low) && isHomogeneousTuple(high))
   {
     compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" +
                   low.type:string + "' and '" + high.type:string + "'");
   }
 
-  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true) 
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
     where isTuple(low) && isTuple(high) &&
           isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
           low.size != high.size {
@@ -301,17 +300,17 @@ module ChapelDomain {
     for param i in 0..<size {
         if inclusive then
           ranges[i] = low[i]..high[i];
-        else 
+        else
           ranges[i] = low[i]..<high[i];
     }
     const d: domain(size, eltType) = ranges;
     return d;
   }
 
-  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true) 
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
     where isTuple(low) != isTuple(high) {
       param size = if isTuple(low) then low.size else high.size;
-      type eltType = if isTuple(low) then 
+      type eltType = if isTuple(low) then
                        (if low(0).type == high.type then low(0).type else (low(0) + high).type)
                      else
                        (if high(0).type == low.type then high(0).type else (low + high(0)).type);
