@@ -1,4 +1,5 @@
 first-class-generic-function.chpl:329: In function 'main':
 first-class-generic-function.chpl:389: error: the proc 'scalar_outer_product_cholesky' is generic and cannot be captured
+first-class-generic-function.chpl:389: note: the formal 'A' is generic because it is an array with runtime type information
 first-class-generic-function.chpl:329: In function 'main':
 first-class-generic-function.chpl:416: error: illegal access of procedure
