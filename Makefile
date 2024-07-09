@@ -146,15 +146,6 @@ chpldoc: third-party-chpldoc-venv
 	@cd modules && $(MAKE)
 	@test -r Makefile.devel && $(MAKE) man-chpldoc || echo ""
 
-chpldef: FORCE
-	@echo "Making chpldef..."
-	@cd third-party && $(MAKE) llvm
-	cd compiler && $(MAKE) chpldef
-	@cd modules && $(MAKE)
-
-chpldef-fast: FORCE
-	cd compiler && $(MAKE) chpldef-fast
-
 always-build-test-venv: FORCE
 	-@if [ -n "$$CHPL_ALWAYS_BUILD_TEST_VENV" ]; then \
 	$(MAKE) test-venv; \
