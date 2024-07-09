@@ -1178,7 +1178,6 @@ tmpchars
 tmpchr
 tmpcols
 tmpdir
-tmpdirname
 tmpdirprefix
 tmpdirsuffix
 tmpfilename
@@ -9605,7 +9604,6 @@ titus
 tjong
 tmacd
 tmpbinname
-tmpdirname
 tmps
 tmpservername
 tmpvar
