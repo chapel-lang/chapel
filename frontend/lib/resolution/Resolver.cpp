@@ -4510,6 +4510,11 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
   bool loopRequiresParallel = loop->isForall();
   bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
 
+  if (rv.scopeResolveOnly) {
+    zip->traverse(rv);
+    return {};
+  }
+
   // We build up tuple element types by resolving all the zip actuals.
   std::vector<QualifiedType> eltTypes;
 
