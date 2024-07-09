@@ -727,12 +727,36 @@ void Visitor::checkBorrowFromNew(const FnCall* node) {
 }
 
 void Visitor::checkSparseKeyword(const FnCall* node) {
-  if (shouldEmitUnstableWarning(node)) // start with a cheap check
-    if (auto calledExpr = node->calledExpression())
-      if (auto ident = calledExpr->toIdentifier())
-        if (ident->name() == USTR("sparse"))
+  if (auto calledExpr = node->calledExpression())
+    if (auto ident = calledExpr->toIdentifier())
+      if (ident->name() == USTR("sparse")) {
+        if (shouldEmitUnstableWarning(node))
           warn(node, "sparse domains are unstable,"
-               " their behavior is likely to change in the future.");
+                     " their behavior is likely to change in the future.");
+
+        // there should be one actual passed to `sparse`, a call to subdomain.
+        // the call to subdomain should have exactly one actual
+
+        if (node->numActuals() != 1) {
+          // this should already be caught by the parser
+          error(node, "sparse can only be used with subdomain");
+          return;
+        }
+        auto subdomainOk = false;
+        if (auto subdomain = node->actual(0)->toFnCall()) {
+          if (auto subdomainIdent = subdomain->calledExpression()->toIdentifier()) {
+            if (subdomainIdent->name() == USTR("subdomain")) {
+              if (subdomain->numActuals() == 1) {
+                subdomainOk = true;
+              }
+            }
+          }
+        }
+        if (!subdomainOk) {
+          error(node, "sparse can only be used with subdomain with a single argument");
+          return;
+        }
+      }
 }
 
 // TODO: remove this check and warning after 2.0?
@@ -1869,7 +1893,7 @@ void Visitor::checkModuleNotInModule(const Module* mod) {
     error(mod, "Modules must be declared at module- or file-scope");
   }
 }
- 
+
 void Visitor::visit(const Module* node){
   checkImplicitModuleSameName(node);
   checkModuleNotInModule(node);
