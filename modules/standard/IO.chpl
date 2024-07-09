@@ -5116,6 +5116,29 @@ proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes
 }
 
 /*
+
+*/
+proc fileReader.advanceThroughNewline() throws {
+  on this._home {
+    param nl = "\n".toByte():c_int;
+
+    try this.lock(); defer { this.unlock(); }
+    var err: errorCode = 0;
+
+    err = qio_channel_advance_past_byte(false, this._channel_internal, nl, max(int(64)), true);
+    if err {
+      if err == EEOF {
+        try this._ch_ioerror(err, "in advanceThroughNewline)");
+      } else if err == ESHORT {
+        throw new UnexpectedEofError("separator not found in advanceThroughNewline");
+      } else {
+        try this._ch_ioerror(err, "in advanceThroughNewline");
+      }
+    }
+  }
+}
+
+/*
    Read until a separator is found, leaving the :record:`fileReader` offset just
    before it.
 
