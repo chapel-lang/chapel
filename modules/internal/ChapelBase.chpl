@@ -2234,8 +2234,16 @@ module ChapelBase {
   inline operator :(x:chpl_anyreal, type t:chpl_anyreal) do
     return __primitive("cast", t, x);
 
+  proc chpl_checkCastAbstractEnumError(type enumType, type dstType) param do
+    if isAbstractEnumType(enumType) then
+      compilerError("can't cast from an abstract enum ('" +
+                    enumType:string +
+                    "') to " +
+                    dstType:string);
+
   @unstable("enum-to-bool casts are likely to be deprecated in the future")
   inline operator :(x: enum, type t:bool) throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return x: int: bool;
   }
   // operator :(x: enum, type t:integral)
@@ -2245,6 +2253,7 @@ module ChapelBase {
 
   @unstable("enum-to-float casts are likely to be deprecated in the future")
   inline operator :(x: enum, type t:chpl_anyreal) throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return x: int: real;
   }
 
@@ -2431,8 +2440,10 @@ module ChapelBase {
     return (x.re, x.im):t;
 
   @unstable("enum-to-float casts are likely to be deprecated in the future")
-  inline operator :(x: enum, type t:chpl_anycomplex) throws do
+  inline operator :(x: enum, type t:chpl_anycomplex) throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return (x:real, 0):t;
+  }
 
   //
   // casts to imag
@@ -2453,8 +2464,10 @@ module ChapelBase {
     return __primitive("cast", t, x.im);
 
   @unstable("enum-to-float casts are likely to be deprecated in the future")
-  inline operator :(x: enum, type t:chpl_anyimag)  throws do
+  inline operator :(x: enum, type t:chpl_anyimag)  throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return x:real:imag;
+  }
 
   //
   // casts from complex
