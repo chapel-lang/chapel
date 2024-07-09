@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,9 +33,10 @@ void printConfigVarTable(void);
 void initSetValue(const char* varName, const char* value,
                   const char* moduleName, int32_t lineno, int32_t filename);
 const char* lookupSetValue(const char* varName, const char* moduleName);
-void installConfigVar(const char* varName, const char* value,
+void installConfigVar(const char* varName, const char* type,
                       const char* moduleName, int isPrivate, int deprecated,
-                      const char* deprecationMsg);
+                      const char* deprecationMsg, int unstable,
+                      const char* unstableMsg);
 
 int handlePossibleConfigVar(int* argc, char* argv[], int argnum,
                             int32_t lineno, int32_t filename);
@@ -47,6 +48,7 @@ c_string chpl_config_get_value(c_string v, c_string m);
 
 extern const int mainHasArgs;
 extern const int mainPreserveDelimiter;
+extern const int warnUnstable;
 extern chpl_main_argument chpl_gen_main_arg;
 
 #ifdef __cplusplus

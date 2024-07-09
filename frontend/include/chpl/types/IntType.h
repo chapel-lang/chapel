@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,16 +45,16 @@ class IntType final : public PrimitiveType {
 
   static const owned<IntType>& getIntType(Context* context, int bitwidth);
 
-  /** what is stored in bitwidth_ for the default 'int'? */
-  static int defaultBitwidth() {
-    return 64;
-  }
-
  public:
   ~IntType() = default;
 
   /** Get an integer type. Bitwidth 0 creates a default width int. */
   static const IntType* get(Context* context, int bitwidth);
+
+  /** what is stored in bitwidth_ for the default 'int'? */
+  static int defaultBitwidth() {
+    return 64;
+  }
 
   int bitwidth() const override {
     return bitwidth_;

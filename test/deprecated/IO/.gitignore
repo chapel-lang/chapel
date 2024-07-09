@@ -1,3 +1,4 @@
+# Test/deprecated/IO ignores.
 blah.txt
 blah2.txt
 blah3.txt
@@ -7,3 +8,5 @@ wrb.txt
 fileWriterHigh.txt
 wb.txt
 test.bin
+filePtrTest.txt
+/test.txt

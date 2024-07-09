@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,15 +38,6 @@ void* chpl_gpu_load_module(const char* fatbin_data) {
   return (void*)cuda_module;
 }
 
-static inline
-void* chpl_gpu_load_function(CUmodule cuda_module, const char* kernel_name) {
-  CUfunction function;
-
-  CUDA_CALL(cuModuleGetFunction(&function, cuda_module, kernel_name));
-  assert(function);
-
-  return (void*)function;
-}
 
 // this is part of the interface (used by the module code as an extern)
 static inline

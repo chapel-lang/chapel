@@ -5,12 +5,12 @@ class Foo {
     x = xVal + yVal;
     on xVal.locale {
       cobegin {
-        this.complete();
+        init this;
         writeln("in on+cobegin, whee!");
       }
     }
   }
 }
 
-var foo = (new owned Foo(5, 2)).borrow();
+var foo = new Foo(5, 2);
 writeln(foo);

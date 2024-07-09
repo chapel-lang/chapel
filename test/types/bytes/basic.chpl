@@ -1,7 +1,7 @@
 use CTypes;
 var b = b"this is a bytes";
 var s = "this is a string";
-var cs: c_string = "this is a c_string";
+var cs: c_ptrConst(c_char) = "this is a c_string";
 
 writeln(b);
 writeln(s);

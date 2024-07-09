@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,22 +26,19 @@ namespace uast {
 
 
 std::string Class::dumpChildLabelInner(int i) const {
-  if (i == parentClassChildNum_) {
-    return "parent-class";
-  }
-
-  return "";
+  return aggregateDeclDumpChildLabelInner(i);
 }
 
 owned<Class> Class::build(Builder* builder, Location loc,
                           owned<AttributeGroup> attributeGroup,
                           Decl::Visibility vis,
                           UniqueString name,
-                          owned<AstNode> parentClass,
+                          AstList inheritExprs,
                           AstList contents) {
   AstList lst;
   int attributeGroupChildNum = NO_CHILD;
   int parentClassChildNum = NO_CHILD;
+  int numInheritExprs = 0;
   int elementsChildNum = NO_CHILD;
   int numElements = 0;
 
@@ -50,9 +47,12 @@ owned<Class> Class::build(Builder* builder, Location loc,
     lst.push_back(std::move(attributeGroup));
   }
 
-  if (parentClass.get() != nullptr) {
+  numInheritExprs = inheritExprs.size();
+  if (numInheritExprs > 0) {
     parentClassChildNum = lst.size();
-    lst.push_back(std::move(parentClass));
+    for (auto & inheritExpr : inheritExprs) {
+      lst.push_back(std::move(inheritExpr));
+    }
   }
   numElements = contents.size();
   if (numElements > 0) {
@@ -63,9 +63,10 @@ owned<Class> Class::build(Builder* builder, Location loc,
   }
 
   Class* ret = new Class(std::move(lst), attributeGroupChildNum, vis, name,
+                         parentClassChildNum,
+                         numInheritExprs,
                          elementsChildNum,
-                         numElements,
-                         parentClassChildNum);
+                         numElements);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

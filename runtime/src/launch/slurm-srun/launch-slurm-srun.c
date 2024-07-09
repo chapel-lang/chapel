@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,8 +39,6 @@
 #define CHPL_PARTITION_FLAG "--partition"
 #define CHPL_EXCLUDE_FLAG "--exclude"
 
-#define CHPL_LPN_VAR "LOCALES_PER_NODE"
-
 static char* debug = NULL;
 static char* walltime = NULL;
 static int generate_sbatch_script = 0;
@@ -51,14 +49,6 @@ static char* exclude = NULL;
 
 char slurmFilename[FILENAME_MAX];
 
-
-typedef enum {
-  slurmpro,
-  uma,
-  slurm,
-  unknown
-} sbatchVersion;
-
 // /tmp is always available on cray compute nodes (it's a memory mounted dir.)
 // If we ever need this to run on non-cray machines, we should update this to
 // look for the ISO/IEC 9945 env var options first, then P_tmpdir, then "/tmp"
@@ -67,28 +57,29 @@ static const char* getTmpDir(void) {
 }
 
 // Check what version of slurm is on the system
-static sbatchVersion determineSlurmVersion(void) {
+// Returns 0 on success, 1 and prints an error message on failure
+static int checkSlurmVersion(void) {
   const int buflen = 256;
-  char version[buflen];
+  char versionBuf[buflen];
   char *argv[3];
   argv[0] = (char *) "sbatch";
   argv[1] = (char *) "--version";
   argv[2] = NULL;
 
-  memset(version, 0, buflen);
-  if (chpl_run_utility1K("sbatch", argv, version, buflen) <= 0) {
-    chpl_error("Error trying to determine slurm version", 0, 0);
+  char* version = getenv("CHPL_LAUNCHER_SLURM_VERSION");
+  if (version == NULL) {
+    version = versionBuf;
+    memset(version, 0, buflen);
+    if (chpl_run_utility1K("sbatch", argv, version, buflen) <= 0) {
+      chpl_error("Error trying to determine slurm version", 0, 0);
+    }
   }
-
-  if (strstr(version, "SBATCHPro")) {
-    return slurmpro;
-  } else if (strstr(version, "wrapper sbatch SBATCH UMA 1.0")) {
-    return uma;
-  } else if (strstr(version, "slurm")) {
-    return slurm;
-  } else {
-    return unknown;
+  if (!strstr(version, "slurm")) {
+    printf("Error: This launcher is only compatible with native slurm\n");
+    printf("Output of \"sbatch --version\" was: %s\n", version);
+    return 1;
   }
+  return 0;
 }
 
 static int nomultithread(int batch) {
@@ -109,6 +100,7 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
   int threadsPerCore = -1;
   const int buflen = 1024;
   char buf[buflen];
+  char orig[buflen];
   char partition_arg[128];
   char* argv[7];
   char reservationBuf[128];
@@ -151,8 +143,7 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
     chpl_error("Error trying to determine number of cores per node", 0, 0);
   }
 
-  if (!strncmp("Invalid node format specification: i", buf,
-               strlen("Invalid node format specification: i"))) {
+  if (strstr(buf, "Invalid node format specification: i")) {
     // older versions of sinfo don't support the %i format. Try again
     // without it. We won't be able to exclude reservations, but there's
     // not much we can do about that.
@@ -164,6 +155,7 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
 
   char *cursor = buf;
   char *line;
+  strcpy(orig, buf);
   chpl_bool found = false;
   while ((line = strsep(&cursor, "\n")) != NULL) {
     if (*line != '\0') {
@@ -183,8 +175,12 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
     }
   }
   if (!found) {
-    chpl_error("unable to determine number of cores per locale; "
-               "please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
+    char msg[2048];
+    snprintf(msg, sizeof(msg),
+            "unable to determine number of cores per locale; "
+             "please set CHPL_LAUNCHER_CORES_PER_LOCALE\n"
+             "Output of \"sinfo\" was:\n%s", orig);
+    chpl_error(msg, 0, 0);
   }
 
   if (nomultithread) {
@@ -213,7 +209,8 @@ static chpl_bool getSlurmDebug(chpl_bool batch) {
 // create the command that will actually launch the program and
 // create any files needed for the launch like the batch script
 static char* chpl_launch_create_command(int argc, char* argv[],
-                                        int32_t numLocales) {
+                                        int32_t numLocales,
+                                        int32_t numLocalesPerNode) {
   int i;
   int size;
   char baseCommand[MAX_COM_LEN];
@@ -224,13 +221,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
   char* errorfn = getenv("CHPL_LAUNCHER_SLURM_ERROR_FILENAME");
   char* nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
+  char* gpusPerNode = getenv("CHPL_LAUNCHER_GPUS_PER_NODE");
   char* memEnv = getenv("CHPL_LAUNCHER_MEM");
   const char* nodeAccessStr = NULL;
   const char* memStr = NULL;
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
   char  jobName[128];
-  int localesPerNode = 1;
 
   // For programs with large amounts of output, a lot of time can be
   // spent syncing the stdout buffer to the output file. This can cause
@@ -256,6 +253,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char stdoutFile         [MAX_COM_LEN];
   char stdoutFileNoFmt    [MAX_COM_LEN];
   char tmpStdoutFileNoFmt [MAX_COM_LEN];
+
+  // Note: if numLocalesPerNode > numLocales then some cores will go unused. This
+  // is by design, as it allows for scalability testing by increasing the
+  // number of locales per node. If the user wants a single locale to use all
+  // of the cores they should set CHPL_RT_LOCALES_PER_NODE to 1 or not set it
+  // at all.
 
   // command line walltime takes precedence over env var
   if (!walltime) {
@@ -314,20 +317,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     memStr = memEnv;
   }
 
-  localesPerNode = chpl_env_rt_get_int(CHPL_LPN_VAR, 1);
-  if (localesPerNode <= 0) {
-    char msg[100];
-    snprintf(msg, sizeof(msg), "%s must be > 0.", "CHPL_RT_" CHPL_LPN_VAR);
-    chpl_warning(msg, 0, 0);
-    localesPerNode = 1;
-  }
-
-  // Note: if localesPerNode > numLocales then some cores will go unused. This
-  // is by design, as it allows for scalability testing by increasing the
-  // number of locales per node. If the user wants a single locale to use all
-  // of the cores they should set CHPL_RT_LOCALES_PER_NODE to 1 or not set it
-  // at all.
-
   if (basenamePtr == NULL) {
     basenamePtr = argv[0];
   } else {
@@ -368,12 +357,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "#SBATCH --quiet\n");
     }
 
-    int32_t numNodes = (numLocales + localesPerNode - 1) / localesPerNode;
+    int32_t numNodes = (numLocales + numLocalesPerNode - 1) / numLocalesPerNode;
 
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numNodes);
     fprintf(slurmFile, "#SBATCH --ntasks=%d\n", numLocales);
-    int localesOnNode = (numLocales < localesPerNode) ?
-                        numLocales : localesPerNode;
+    int localesOnNode = (numLocales < numLocalesPerNode) ?
+                        numLocales : numLocalesPerNode;
     int cpusPerTask = getCoresPerLocale(nomultithread(true), localesOnNode);
     fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n", cpusPerTask);
 
@@ -415,6 +404,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "#SBATCH --account=%s\n", account);
     }
 
+    // set gpus-per-node if one was provided
+    if (gpusPerNode && strlen(gpusPerNode) > 0) {
+      fprintf(slurmFile, "#SBATCH --gpus-per-node=%s\n", gpusPerNode);
+    }
+
     // set the output file name to either the user specified
     // name or to the binaryName.<jobID>.out if none specified
     if (outputfn != NULL) {
@@ -447,7 +441,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     fprintf(slurmFile, "--cpus-per-task=%d ", cpusPerTask);
 
-    if (localesPerNode > 1) {
+    if (numLocalesPerNode > 1) {
       fprintf(slurmFile, "--cpu-bind=none ");
     }
     // add the (possibly wrapped) binary name.
@@ -503,17 +497,17 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // request the number of locales, with 1 task per node, and number of cores
     // cpus-per-task. We probably don't need --nodes and --ntasks specified
     // since 1 task-per-node with n --tasks implies -n nodes
-    int32_t numNodes = (numLocales + localesPerNode - 1) / localesPerNode;
+    int32_t numNodes = (numLocales + numLocalesPerNode - 1) / numLocalesPerNode;
 
     len += snprintf(iCom+len, sizeof(iCom)-len, "--nodes=%d ",numNodes);
     len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks=%d ", numLocales);
-    int localesOnNode = (numLocales < localesPerNode) ?
-                        numLocales : localesPerNode;
+    int localesOnNode = (numLocales < numLocalesPerNode) ?
+                        numLocales : numLocalesPerNode;
     int cpusPerTask = getCoresPerLocale(nomultithread(false), localesOnNode);
     len += snprintf(iCom+len, sizeof(iCom)-len, "--cpus-per-task=%d ",
                     cpusPerTask);
 
-    if (localesPerNode > 1) {
+    if (numLocalesPerNode > 1) {
       len += snprintf(iCom+len, sizeof(iCom)-len, "--cpu-bind=none ");
     }
 
@@ -559,6 +553,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       len += snprintf(iCom+len, sizeof(iCom)-len, "--account=%s ", account);
     }
 
+    // set gpus-per-node if one was provided
+    if (gpusPerNode && strlen(gpusPerNode) > 0) {
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--gpus-per-node=%s ", gpusPerNode);
+    }
+
     // add the (possibly wrapped) binary name
     len += snprintf(iCom+len, sizeof(iCom)-len, "%s %s",
         chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
@@ -584,8 +583,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 }
 
 
-static void genSBatchScript(int argc, char *argv[], int numLocales) {
-  chpl_launch_create_command(argc, argv, numLocales);
+static void genSBatchScript(int argc, char *argv[], int numLocales,
+                            int numLocalesPerNode) {
+  chpl_launch_create_command(argc, argv, numLocales, numLocalesPerNode);
 }
 
 
@@ -606,14 +606,11 @@ static void chpl_launch_cleanup(void) {
 }
 
 
-int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+int chpl_launch(int argc, char* argv[], int32_t numLocales,
+                int32_t numLocalesPerNode) {
   int retcode;
-
   // check the slurm version before continuing
-  sbatchVersion sVersion = determineSlurmVersion();
-  if (sVersion != slurm) {
-    printf("Error: This launcher is only compatible with native slurm\n");
-    printf("Slurm version was %d\n", sVersion);
+  if (checkSlurmVersion()) {
     return 1;
   }
 
@@ -621,12 +618,13 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
   // generate a batch script and exit if user wanted to
   if (generate_sbatch_script) {
-    genSBatchScript(argc, argv, numLocales);
+    genSBatchScript(argc, argv, numLocales, numLocalesPerNode);
     retcode = 0;
   }
   // otherwise generate the batch file or srun command and execute it
   else {
-    char *cmd = chpl_launch_create_command(argc, argv, numLocales);
+    char *cmd = chpl_launch_create_command(argc, argv, numLocales,
+                                           numLocalesPerNode);
     retcode = chpl_launch_using_system(cmd, argv[0]);
 
     chpl_launch_cleanup();

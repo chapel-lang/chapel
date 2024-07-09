@@ -6,7 +6,7 @@ var A : [dom] int;
 
 assert(numLocales >= 3, "Test requires at least three locales.");
 
-proc test(dest, src) {
+proc test(ref dest, ref src) {
   dest = 1;
   src = 3;
   // Assumes we enter the strided transfer path

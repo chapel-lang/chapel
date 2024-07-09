@@ -10,25 +10,25 @@ record r {
   var ptr = new shared C();
 
   proc init() {
-    this.complete();
+    init this;
     debugln('default-init: ', this);
   }
 
   proc init(other: r) {
     this.ptr = other.ptr;
-    this.complete();
+    init this;
     debugln('init-r: ', this);
   }
 
   proc init(num: int) {
     this.ptr = new shared C(num);
-    this.complete();
+    init this;
     debugln('init-int: ', this);
   }
 
   proc init=(rhs: r) {
     this.ptr = rhs.ptr;
-    this.complete();
+    init this;
     debugln('init=: ', this);
   }
 

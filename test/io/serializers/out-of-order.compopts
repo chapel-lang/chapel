@@ -1,0 +1,2 @@
+-sformat=FormatKind.default # out-of-order.default.good
+-sformat=FormatKind.json # out-of-order.json.good

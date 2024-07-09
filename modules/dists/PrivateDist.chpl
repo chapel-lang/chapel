@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,15 +18,21 @@
  * limitations under the License.
  */
 
+@unstable("PrivateDist is unstable and may change in the future")
+prototype module PrivateDist {
+
+use ChplConfig only compiledForSingleLocale;
+use DSIUtil;
+
 //
 // Private Distribution, Domain, and Array
 //  Defines PrivateSpace, an instance of PrivateDom
 //
 /*
-This Private distribution maps each index ``i``
+This ``privateDist`` distribution maps each index ``i``
 between ``0`` and ``numLocales-1`` to ``Locales[i]``.
 
-The index set of a domain distributed over a Private distribution
+The index set of a domain distributed over ``privateDist``
 is always ``0..numLocales-1``, regardless of the domain's rank,
 and cannot be changed.
 
@@ -35,7 +41,7 @@ so user programs do not need to declare their own:
 
   .. code-block:: chapel
 
-    const PrivateSpace: domain(1) dmapped Private();
+    const PrivateSpace: domain(1) dmapped new privateDist();
 
 
 **Example**
@@ -53,7 +59,7 @@ corresponding to that locale to that locale's number of cores.
 
 **Data-Parallel Iteration**
 
-A `forall` loop over a Private-distributed domain or array
+A `forall` loop over a ``privateDist`` domain or array
 runs a single task on each locale.
 That task executes the loop's iteration corresponding to
 that locale's index in the ``Locales`` array.
@@ -67,20 +73,98 @@ do not provide some standard domain/array functionality.
 This distribution may perform unnecessary communication
 between locales.
 */
-class Private: BaseDist {
+
+record privateDist: writeSerializable {
+  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged PrivateImpl);
+
+  proc init() {
+    const value = new unmanaged PrivateImpl();
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                          if _isPrivatized(value)
+                            then _newPrivatizedClass(value)
+                            else nullPid,
+                          value);
+  }
+
+    proc init(_pid : int, _instance, _unowned : bool) {
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
+                                                         _instance,
+                                                         _unowned);
+    }
+
+    proc init(value) {
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                             if _isPrivatized(value)
+                               then _newPrivatizedClass(value)
+                               else nullPid,
+                             _to_unmanaged(value));
+    }
+
+    // does not match the type of 'other'. That case is handled by the compiler
+    // via coercions.
+    proc init=(const ref other : privateDist) {
+      this.init(other._value.dsiClone());
+    }
+
+    proc clone() {
+      return new privateDist(this._value.dsiClone());
+    }
+
+  @chpldoc.nodoc
+  inline operator ==(d1: privateDist, d2: privateDist) {
+    if (d1._value == d2._value) then
+      return true;
+    return d1._value.dsiEqualDMaps(d2._value);
+  }
+
+  @chpldoc.nodoc
+  inline operator !=(d1: privateDist, d2: privateDist) {
+    return !(d1 == d2);
+  }
+
+  proc serialize(writer, ref serializer) throws {
+    chpl_distHelp.serialize(writer, serializer);
+  }
+}
+
+
+@chpldoc.nodoc
+@unstable(category="experimental", reason="assignment between distributions is currently unstable due to lack of testing")
+operator =(ref a: privateDist, b: privateDist) {
+  if a._value == nil {
+    __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
+  } else {
+    if a._value.type != b._value.type then
+      compilerError("type mismatch in distribution assignment");
+    if a._value == b._value {
+      // do nothing
+    } else
+        a._value.dsiAssign(b._value);
+    if _isPrivatized(a._instance) then
+      _reprivatize(a._value);
+  }
+}
+
+
+@deprecated("'Private' is deprecated, please use 'privateDist' instead")
+type Private = privateDist;
+
+
+@chpldoc.nodoc
+class PrivateImpl: BaseDist, writeSerializable {
   override proc dsiNewRectangularDom(param rank: int, type idxType,
-                                     param stridable: bool, inds) {
+                                     param strides: strideKind, inds) {
     for i in inds do
       if i.size != 0 then
         halt("Tried to create a privateDom with a specific index set");
 
     return new unmanaged PrivateDom(rank=rank, idxType=idxType,
-                                    stridable=stridable,
+                                    strides=strides,
                                     dist=_to_unmanaged(this));
   }
 
-  proc writeThis(x) throws {
-    x.writeln("Private Distribution");
+  override proc serialize(writer, ref serializer) throws {
+    writer.writeln("Private Distribution");
   }
 
   // acts like a singleton
@@ -93,8 +177,8 @@ class Private: BaseDist {
   override proc singleton() param do return true;
 }
 
-class PrivateDom: BaseRectangularDom {
-  var dist: unmanaged Private;
+class PrivateDom: BaseRectangularDom(?) {
+  var dist: unmanaged PrivateImpl;
 
   iter these() { for i in 0..numLocales-1 do yield i; }
 
@@ -116,7 +200,7 @@ class PrivateDom: BaseRectangularDom {
   proc dsiBuildArray(type eltType, param initElts:bool) {
     return new unmanaged PrivateArr(eltType=eltType, rank=rank,
                                     idxType=idxType,
-                                    stridable=stridable,
+                                    strides=strides,
                                     dom=_to_unmanaged(this),
                                     initElts=initElts);
   }
@@ -151,7 +235,7 @@ class PrivateDom: BaseRectangularDom {
 
   proc dsiPrivatize(privatizeData) {
     return new unmanaged PrivateDom(rank=rank, idxType=idxType,
-                                    stridable=stridable,
+                                    strides=strides,
                                     dist=dist);
   }
 
@@ -162,15 +246,22 @@ class PrivateDom: BaseRectangularDom {
   proc dsiMember(i) do return (0 <= i && i <= numLocales-1);
 
   override proc dsiMyDist() do return dist;
+
+  proc dsiGetDist() {
+    if _isPrivatized(dist) then
+      return new privateDist(dist.pid, dist, _unowned=true);
+    else
+      return new privateDist(nullPid, dist, _unowned=true);
+}
 }
 
 private proc checkCanMakeDefaultValue(type eltType) param {
   var default: eltType;
 }
 
-class PrivateArr: BaseRectangularArr {
+class PrivateArr: BaseRectangularArr(?) {
 
-  var dom: unmanaged PrivateDom(rank, idxType, stridable);
+  var dom: unmanaged PrivateDom(rank, idxType, strides);
 
   // may be initialized separately
   // always destroyed explicitly (to control deiniting elts)
@@ -183,11 +274,11 @@ class PrivateArr: BaseRectangularArr {
   proc init(type eltType,
             param rank,
             type idxType,
-            param stridable,
-            dom: unmanaged PrivateDom(rank, idxType, stridable),
+            param strides,
+            dom: unmanaged PrivateDom(rank, idxType, strides),
             param initElts: bool) {
     super.init(eltType=eltType, rank=rank, idxType=idxType,
-               stridable=stridable);
+               strides=strides);
     this.dom = dom;
     // this.data not initialized
     this.isPrivatizedCopy = false;
@@ -204,12 +295,12 @@ class PrivateArr: BaseRectangularArr {
     var privdom = chpl_getPrivatizedCopy(toPrivatize.dom.type,
                                          toPrivatize.dom.pid);
     super.init(eltType=toPrivatize.eltType, rank=toPrivatize.rank,
-               idxType=toPrivatize.idxType, stridable=toPrivatize.stridable);
+               idxType=toPrivatize.idxType, strides=toPrivatize.strides);
     this.dom = privdom;
     // this.data not initialized
     this.isPrivatizedCopy = true;
     this.defaultInitDataOnPrivatize = toPrivatize.defaultInitDataOnPrivatize;
-    this.complete();
+    init this;
 
     if defaultInitDataOnPrivatize {
       pragma "no auto destroy" pragma "unsafe"
@@ -241,7 +332,7 @@ override proc PrivateArr.dsiDestroyArr(deinitElts:bool) {
     param needsDestroy = __primitive("needs auto destroy", eltType);
 
     if needsDestroy {
-      if _local {
+      if compiledForSingleLocale() {
         chpl__autoDestroy(data);
       } else {
         const pid = this.pid;
@@ -267,7 +358,7 @@ proc PrivateArr.dsiPrivatize(privatizeData) {
 }
 
 proc PrivateArr.dsiAccess(i: idxType) ref {
-  if _local then
+  if compiledForSingleLocale() then
     return data;
   else if i == here.id then
     return data;
@@ -321,7 +412,7 @@ proc PrivateArr.doiScan(op, dom) where (rank == 1) &&
 
   var localArr: [0..numLocales-1] resType;
 
-  coforall loc in Locales do on loc do
+  coforall loc in Locales with (ref localArr) do on loc do
     localArr[here.id] = if _isPrivatized(this) then chpl_getPrivatizedCopy(this.type, this.pid).data else data;
 
   var localRes = localArr._scan(op);
@@ -344,14 +435,16 @@ proc PrivateArr.doiScan(op, dom) where (rank == 1) &&
 // deinitializer, which is called before deinitializing module-scope variables
 // which would cause use-after-free during the cleanup of PrivateSpace
 var chpl_privateCW = new chpl_privateDistCleanupWrapper();
-var chpl_privateDist = new unmanaged Private();
-const PrivateSpace: domain(1) dmapped new dmap(chpl_privateDist);
+var chpl_privateDist = new unmanaged PrivateImpl();
+const PrivateSpace: domain(1) dmapped new privateDist(chpl_privateDist);
 
 record chpl_privateDistCleanupWrapper {
-  var val = nil : unmanaged Private?;
+  var val = nil : unmanaged PrivateImpl?;
   proc deinit() { delete val!; }
 }
 
 proc deinit() {
   chpl_privateCW.val = chpl_privateDist;
 }
+
+} // PrivateDist

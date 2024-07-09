@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -44,13 +44,6 @@
 
 #include <queue>
 
-AggregateType* dtObject = NULL;
-AggregateType* dtBytes  = NULL;
-AggregateType* dtString = NULL;
-AggregateType* dtLocale = NULL;
-AggregateType* dtOwned  = NULL;
-AggregateType* dtShared = NULL;
-
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
 
@@ -62,6 +55,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
   builtReaderInit     = false;
   initializerResolved = false;
   iteratorInfo        = NULL;
+  thunkInvoke         = NULL;
   doc                 = NULL;
 
   instantiatedFrom    = NULL;
@@ -72,6 +66,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
   genericField        = 0;
   mIsGeneric          = false;
   mIsGenericWithDefaults = false;
+  mIsGenericWithSomeDefaults = false;
   foundGenericFields = false;
   typeSignature      = NULL;
 
@@ -176,8 +171,16 @@ bool AggregateType::isGenericWithDefaults() const {
   return mIsGenericWithDefaults;
 }
 
+bool AggregateType::isGenericWithSomeDefaults() const {
+  return mIsGenericWithSomeDefaults;
+}
+
 void AggregateType::markAsGenericWithDefaults() {
   mIsGenericWithDefaults = true;
+}
+
+void AggregateType::markAsGenericWithSomeDefaults() {
+  mIsGenericWithSomeDefaults = true;
 }
 
 void AggregateType::verify() {
@@ -310,18 +313,11 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr,
   }
 
   // Partial generic expressions with '?'
-  if (CallExpr* call = toCallExpr(typeExpr)) {
-    if (SymExpr* se = toSymExpr(call->baseExpr)) {
-      if (se->symbol()->type->symbol->hasFlag(FLAG_GENERIC)) {
-        for_actuals(actual, call) {
-          if (SymExpr* act = toSymExpr(actual)) {
-            if (act->symbol() == gUninstantiated) {
-              return true;
-            }
-          }
-        }
-      }
-    }
+  if (findSymExprFor(typeExpr, gUninstantiated)) {
+    // Note: this assumes that ? used in a nested call makes the type generic.
+    // That's not strictly true, but is close enough until
+    // we can use the dyno resolver to handle this in a more principled way.
+    return true;
   }
 
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(typeExpr)) {
@@ -527,7 +523,7 @@ DefExpr* AggregateType::toLocalField(SymExpr* expr) const {
 DefExpr* AggregateType::toLocalField(CallExpr* expr) const {
   DefExpr* retval = NULL;
 
-  if (expr->isNamed(".") == true) {
+  if (expr->isNamedAstr(astrSdot)) {
     SymExpr* base = toSymExpr(expr->get(1));
     SymExpr* name = toSymExpr(expr->get(2));
 
@@ -911,19 +907,9 @@ static Symbol* substitutionForField(Symbol* field, SymbolMap& subs) {
   return retval;
 }
 
-// Deprecated by Vass in 1.31: given `range(boundedType=...),
-// redirect it to `range(bounds=...)`, with a deprecation warning.
-static void checkRangeDeprecations(AggregateType* at, NamedExpr* ne,
-                                   Symbol*& field) {
-  if (!strcmp(ne->name, "boundedType") && at->symbol->hasFlag(FLAG_RANGE)) {
-    USR_WARN(ne,
-      "range.boundedType is deprecated; please use '.bounds' instead");
-    field = at->getField("bounds", false);
-  }
-}
-
-AggregateType* AggregateType::generateType(CallExpr* call, const char* callString) {
-
+AggregateType* AggregateType::generateType(CallExpr* call,
+                                           const char* callString,
+                                           bool allowAllNamedArgs) {
   checkNumArgsErrors(this, call, callString);
 
   if (call->numActuals() == 0 && mIsGenericWithDefaults == false) {
@@ -943,11 +929,25 @@ AggregateType* AggregateType::generateType(CallExpr* call, const char* callStrin
     Expr* actual = call->get(i);
     if (NamedExpr* ne = toNamedExpr(actual)) {
       Symbol* field = getField(ne->name, false);
-      checkRangeDeprecations(this, ne, field); // may update 'field'
       if (field == NULL) {
         USR_FATAL_CONT(call, "invalid type specifier '%s'", callString);
         USR_PRINT(call, "type specifier did not match: %s", typeSignature);
         USR_PRINT(call, "type '%s' does not contain a field named '%s'", symbol->name, ne->name);
+        USR_STOP();
+      } else if (field->hasFlag(FLAG_DEPRECATED)) {
+        field->maybeGenerateDeprecationWarning(ne);
+      } else if (field->hasFlag(FLAG_UNSTABLE)) {
+        field->maybeGenerateUnstableWarning(ne);
+      }
+      // don't allow type-constructor calls to use named-argument passing
+      // for a field that isn't 'type' or 'param'
+      if (!allowAllNamedArgs &&
+          !field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+        USR_FATAL_CONT(call, "named arguments can only be used in "
+                             "type construction to set "
+                             "'type' or 'param' fields");
+        USR_PRINT(field, "field '%s' declared here is not 'type' or 'param'",
+                  field->name);
         USR_STOP();
       }
       map.put(field, toSymExpr(ne->actual)->symbol());
@@ -964,6 +964,21 @@ AggregateType* AggregateType::generateType(CallExpr* call, const char* callStrin
   // place positional args in a map based on remaining unspecified fields
   for_vector(Symbol, field, genericFields) {
     if (substitutionForField(field, map) == NULL && notNamed.size() > 0) {
+      /*
+        emit an unstable warning when a map or set type is specified with
+        a value for 'parSafe' (e.g., 'map(int, int, false)'))
+
+        This conditional can be removed if/when the 'parSafe' field is no
+        longer marked as unstable.
+      */
+      if (
+        getModule()->modTag == MOD_STANDARD && field->hasFlag(FLAG_UNSTABLE) &&
+        strcmp(field->name, "parSafe") == 0 && !allowAllNamedArgs &&
+        (strcmp(name(), "map") == 0 || strcmp(name(), "set") == 0)
+      ) {
+        field->maybeGenerateUnstableWarning(call);
+      }
+
       map.put(field, notNamed.front());
       notNamed.pop();
     }
@@ -986,13 +1001,23 @@ static Expr* resolveFieldExpr(Expr* expr, bool addCopy) {
   if (isBlockStmt(expr) == false) {
     BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
     expr->replace(block);
+    bool callTypeCtor = false;
+
     if (isSymExpr(expr) && toSymExpr(expr)->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
         expr->typeInfo()->symbol->hasFlag(FLAG_GENERIC) &&
         isPrimitiveType(expr->typeInfo()) == false) {
+
+      AggregateType* at = toAggregateType(canonicalClassType(expr->typeInfo()));
+      if (at != nullptr)
+        callTypeCtor = at->isGenericWithDefaults();
+    }
+
+    if (callTypeCtor) {
       block->insertAtTail(new CallExpr(expr->typeInfo()->symbol));
     } else {
       block->insertAtTail(expr);
     }
+
     normalize(block);
     expr = block;
     if (CallExpr* last = toCallExpr(block->body.tail)) {
@@ -1318,6 +1343,8 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
 }
 
 void AggregateType::resolveConcreteType() {
+  if (this->id == breakOnResolveID) gdbShouldBreakHere();
+
   if (resolveStatus == RESOLVING || resolveStatus == RESOLVED) {
     // Recursively constructing this type
     return;
@@ -1558,7 +1585,6 @@ static bool buildFieldNames(AggregateType* at, std::string& str, bool cname) {
       // A fully instantiated type
       bool isFirst = true;
       for_vector(Symbol, field, root->genericFields) {
-
         if (isFirst) {
           isFirst = false;
         } else {
@@ -1818,6 +1844,11 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
   }
 
   instantiations.push_back(retval);
+
+  checkSurprisingGenericDecls(field, field->defPoint->exprType, this);
+
+  handleDefaultAssociativeWarnings(field, field->defPoint->exprType,
+                                   /*initExpr*/ nullptr, this);
 
   return retval;
 }
@@ -2095,10 +2126,29 @@ void AggregateType::processGenericFields() {
     return;
   }
 
+  // convert domain(?) into domain
+  // but do not convert range(?) into range (if it is generic with defaults)
+  for_fields(field, this) {
+    if (CallExpr* call = toCallExpr(field->defPoint->exprType)) {
+      if (call->numActuals() == 1) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          if (se->symbol() == gUninstantiated) {
+            auto baseType = toAggregateType(call->baseExpr->typeInfo());
+            if (!baseType->mIsGenericWithDefaults) {
+              call->replace(call->baseExpr->remove());
+              field->addFlag(FLAG_MARKED_GENERIC);
+            }
+          }
+        }
+      }
+    }
+  }
+
   std::set<AggregateType*> visited;
 
   foundGenericFields = true;
-  bool isGenericWithDefaults = mIsGeneric;
+  bool anyDefaultedGenericFields = false;
+  bool allDefaultedGenericFields = true;
 
   if (isClass() == true && dispatchParents.n > 0) {
     AggregateType* parent = dispatchParents.v[0];
@@ -2106,7 +2156,9 @@ void AggregateType::processGenericFields() {
       parent->processGenericFields();
 
       if (parent->mIsGeneric) {
-        isGenericWithDefaults = parent->mIsGenericWithDefaults;
+        anyDefaultedGenericFields = parent->mIsGenericWithSomeDefaults ||
+                                    parent->mIsGenericWithDefaults;
+        allDefaultedGenericFields = parent->mIsGenericWithDefaults;
       }
 
       for_vector(Symbol, field, parent->genericFields) {
@@ -2124,23 +2176,29 @@ void AggregateType::processGenericFields() {
       if (isTypeSymbol(field) == false) {
         genericFields.push_back(field);
         if (field->defPoint->init == NULL) {
-          isGenericWithDefaults = false;
+          allDefaultedGenericFields = false;
+        } else {
+          anyDefaultedGenericFields = true;
         }
       }
     } else if (field->defPoint->init == NULL) {
       if (field->defPoint->exprType == NULL) {
         genericFields.push_back(field); // "var x;"
-        isGenericWithDefaults = false;
+        allDefaultedGenericFields = false;
       } else if (isFieldTypeExprGeneric(field->defPoint->exprType, visited)) {
         genericFields.push_back(field); // "var x : integral;"
-        isGenericWithDefaults = false;
+        allDefaultedGenericFields = false;
       }
     }
   }
 
   typeSignature = buildTypeSignature(this);
 
-  this->mIsGenericWithDefaults = isGenericWithDefaults;
+  this->mIsGenericWithDefaults = genericFields.size() > 0 &&
+                                 allDefaultedGenericFields;
+  this->mIsGenericWithSomeDefaults = genericFields.size() > 0 &&
+                                     anyDefaultedGenericFields &&
+                                     !allDefaultedGenericFields;
 }
 
 bool AggregateType::isFieldInThisClass(const char* name) const {
@@ -2181,10 +2239,11 @@ void AggregateType::buildDefaultInitializer() {
       std::set<const char*> names;
       SymbolMap fieldArgMap;
 
-      if (handleSuperFields(fn, names, fieldArgMap) == true) {
+      if (!badParentInit()) {
+        handleSuperFields(fn, names, fieldArgMap,
+                          /*fileReader=*/nullptr, /*desHelper=*/nullptr);
         // Parent fields before child fields
         fieldToArg(fn, names, fieldArgMap,
-                   /*fileReader=*/nullptr,
                    /*formatter=*/nullptr);
 
         // Replaces field references with argument references
@@ -2207,6 +2266,7 @@ void AggregateType::buildDefaultInitializer() {
         checkUseBeforeDefs(fn);
 
         methods.add(fn);
+
       } else {
         USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
       }
@@ -2262,7 +2322,7 @@ static bool hasFullyGenericField(AggregateType* at) {
 }
 
 void AggregateType::buildReaderInitializer() {
-  if (!fUseIOFormatters) return;
+  if (fNoIOGenSerialization) return;
 
   // Neither 'fileReader' nor 'chpl__isFileReader' are available in our
   // internal modules. Initializers in such cases will need to take a
@@ -2286,7 +2346,8 @@ void AggregateType::buildReaderInitializer() {
     ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",  dtMethodToken);
     ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", this);
 
-    ArgSymbol* reader = new ArgSymbol(INTENT_BLANK, "chpl__reader", dtAny);
+    ArgSymbol* reader = new ArgSymbol(INTENT_BLANK, "reader", dtAny);
+    ArgSymbol* deser  = new ArgSymbol(INTENT_REF, "deserializer", dtAny);
 
     // TODO: Can we avoid the where-clause with an import in ChapelIO?
     //   import IO.fileReader as chpl__fileReader
@@ -2305,7 +2366,7 @@ void AggregateType::buildReaderInitializer() {
     fn->insertFormalAtTail(_mt);
     fn->insertFormalAtTail(_this);
     fn->insertFormalAtTail(reader);
-
+    fn->insertFormalAtTail(deser);
 
     if (this->isUnion() == false) {
       std::set<const char*> names;
@@ -2315,22 +2376,23 @@ void AggregateType::buildReaderInitializer() {
       // for compatibility with the new-expression-type-alias feature, in
       // which instantiated fields are passed to this initializer with
       // named-expressions.
-      if (handleSuperFields(fn, names, fieldArgMap, reader) == true) {
+      if (!badParentInit()) {
+        auto startKind = this->isClass() ? "startClass" : "startRecord";
+        CallExpr* readStart = new CallExpr(startKind, gMethodToken, deser,
+                                           reader, new CallExpr(PRIM_SIMPLE_TYPE_NAME, fn->_this));
+        VarSymbol* desHelper = new VarSymbol("_chpl_des_helper");
+        DefExpr* helperDef = new DefExpr(desHelper, readStart);
+        fn->insertAtHead(helperDef);
 
-        VarSymbol* formatter = newTemp("_fmt", QualifiedType(QUAL_REF, dtUnknown));
-        formatter->addFlag(FLAG_REF_VAR);
-        CallExpr* getFormatter = new CallExpr(".", reader, new_CStringSymbol("formatter"));
+        handleSuperFields(fn, names, fieldArgMap, reader, desHelper);
 
-        CallExpr* readStart = new CallExpr("readTypeStart", gMethodToken, formatter,
-                                           reader, new SymExpr(this->symbol));
-        fn->insertAtHead(readStart);
-        fn->insertAtHead(new DefExpr(formatter, getFormatter));
+        fn->insertAtHead(helperDef->remove());
 
         // Parent fields before child fields
-        fieldToArg(fn, names, fieldArgMap, reader, formatter);
+        fieldToArg(fn, names, fieldArgMap, desHelper);
 
-        CallExpr* readEnd = new CallExpr("readTypeEnd", gMethodToken, formatter,
-                                         reader, new SymExpr(this->symbol));
+        auto endKind = this->isClass() ? "endClass" : "endRecord";
+        CallExpr* readEnd = new CallExpr(endKind, gMethodToken, desHelper);
         fn->insertAtTail(readEnd);
 
         // Replaces field references with argument references
@@ -2359,8 +2421,12 @@ void AggregateType::buildReaderInitializer() {
       }
     }
 
+    // TODO: currently need to juggle these formals around while other things
+    // are inserted. Can we avoid these touch-ups?
     reader->defPoint->remove();
     fn->insertFormalAtTail(reader);
+    deser->defPoint->remove();
+    fn->insertFormalAtTail(deser);
 
     builtReaderInit = true;
   }
@@ -2369,11 +2435,12 @@ void AggregateType::buildReaderInitializer() {
 void AggregateType::fieldToArg(FnSymbol*              fn,
                                std::set<const char*>& names,
                                SymbolMap&             fieldArgMap,
-                               ArgSymbol*             fileReader,
-                               VarSymbol*             formatter) {
-  bool isReaderInit = (fileReader != nullptr);
+                               Symbol*                desHelper) {
+  bool isReaderInit = (desHelper != nullptr);
+  int fieldNum = isClass() ? -1 : 0;
   for_fields(fieldDefExpr, this) {
     SET_LINENO(fieldDefExpr);
+    fieldNum += 1;
 
     if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
       if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
@@ -2491,7 +2558,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
                                         arg));
         } else {
           // isReaderInit == true, and we need to generate code to invoke
-          // the 'readField' interface from the formatter.
+          // the 'readField' method from the deserializer.
           Expr* typeExpr = nullptr;
           if (defPoint->exprType != NULL) {
             typeExpr = defPoint->exprType->copy();
@@ -2500,15 +2567,14 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           }
 
           if (typeExpr != nullptr) {
-            CallExpr* readField = new CallExpr("readField", gMethodToken, formatter,
-                                               fileReader,
-                                               new_StringSymbol(name),
+            CallExpr* desField = new CallExpr("readField", gMethodToken, desHelper,
+                                               new CallExpr(PRIM_FIELD_NUM_TO_NAME, fn->_this, new_IntSymbol(fieldNum)),
                                                typeExpr);
             fn->insertAtTail(new CallExpr("=",
                                           new CallExpr(".",
                                                        fn->_this,
                                                        new_CStringSymbol(name)),
-                                          readField));
+                                          desField));
           }
         }
       }
@@ -2517,29 +2583,56 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 }
 
 void AggregateType::fieldToArgType(DefExpr* fieldDef, ArgSymbol* arg) {
-  BlockStmt* exprType = new BlockStmt(fieldDef->exprType->copy(), BLOCK_TYPE);
-
   // If the type is simple, just set the argument's type directly.
-  // Otherwise, give it the block we just created.
-  if (exprType->body.length == 1) {
-    Type* type = exprType->body.only()->typeInfo();
+  Expr* only = fieldDef->exprType;
+
+  if (only) {
+    Type* type = only->typeInfo();
     if (type != dtUnknown && type != dtAny) {
       arg->type = type;
-
-    } else {
-      arg->typeExpr = exprType;
+      return;
     }
-
-  } else {
-    arg->typeExpr = exprType;
   }
+
+  // Otherwise, copy the block and use it
+  BlockStmt* exprType = new BlockStmt(fieldDef->exprType->copy(), BLOCK_TYPE);
+  arg->typeExpr = exprType;
 }
 
-bool AggregateType::handleSuperFields(FnSymbol*                    fn,
+bool AggregateType::badParentInit() {
+  // Lydia NOTE 06/16/17: be sure to avoid applying this to tuples, too!
+  if (isClass()                    ==  true &&
+      symbol->hasFlag(FLAG_REF)    == false &&
+      dispatchParents.n            >      0 &&
+      symbol->hasFlag(FLAG_EXTERN) == false) {
+    if (AggregateType* parent = dispatchParents.v[0]) {
+
+      if (parent->hasUserDefinedInit == false && parent != dtObject) {
+        // We want to call the compiler-generated all-fields initializer
+
+        // First, ensure we have a default initializer for the parent
+        if (parent->builtDefaultInit == false && parent->wantsDefaultInitializer()) {
+          parent->buildDefaultInitializer();
+          parent->buildReaderInitializer();
+        }
+
+        return !parent->builtDefaultInit;
+
+
+      }
+    }
+  }
+
+  // Nothing to be done for records.
+
+  return false;
+}
+
+void AggregateType::handleSuperFields(FnSymbol*                    fn,
                                       const std::set<const char*>& names,
                                       SymbolMap& fieldArgMap,
-                                      ArgSymbol* fileReader) {
-  bool retval = true;
+                                      Symbol* fileReader,
+                                      Symbol* desHelper) {
 
   // Lydia NOTE 06/16/17: be sure to avoid applying this to tuples, too!
   if (isClass()                    ==  true &&
@@ -2558,12 +2651,6 @@ bool AggregateType::handleSuperFields(FnSymbol*                    fn,
       if (parent->hasUserDefinedInit == false && parent != dtObject) {
         // We want to call the compiler-generated all-fields initializer
 
-        // First, ensure we have a default initializer for the parent
-        if (parent->builtDefaultInit == false && parent->wantsDefaultInitializer()) {
-          parent->buildDefaultInitializer();
-          parent->buildReaderInitializer();
-        }
-
         // Otherwise, we are good to go!
         FnSymbol* defaultInit = NULL;
         forv_Vec(FnSymbol, method, parent->methods) {
@@ -2572,43 +2659,37 @@ bool AggregateType::handleSuperFields(FnSymbol*                    fn,
             break;
           }
         }
+        INT_ASSERT(defaultInit != nullptr);
 
-        if (defaultInit == NULL) {
-          retval = false;
-        } else {
-          // Add an argument per argument in the parent initializer
-          for_formals(formal, defaultInit) {
-            if (formal->type                   == dtMethodToken ||
-                formal->hasFlag(FLAG_ARG_THIS) == true) {
+        // Add an argument per argument in the parent initializer
+        for_formals(formal, defaultInit) {
+          if (formal->type                   == dtMethodToken ||
+              formal->hasFlag(FLAG_ARG_THIS) == true) {
+            continue;
+          }
 
-            // Skip arguments shadowed by this class' fields
-            } else if (names.find(formal->name) != names.end()) {
+          VarSymbol* field = toVarSymbol(parent->getField(formal->name));
 
-            } else {
-              DefExpr* superArg = formal->defPoint->copy();
+          // Skip arguments shadowed by this class' fields
+          if (names.find(formal->name) != names.end()) {
 
-              VarSymbol* field = toVarSymbol(parent->getField(superArg->sym->name));
+          } else if (desHelper == nullptr ||
+                     field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+            DefExpr* superArg = formal->defPoint->copy();
 
-              if (fileReader != nullptr &&
-                  !field->hasFlag(FLAG_TYPE_VARIABLE) &&
-                  !field->hasFlag(FLAG_PARAM)) {
-                continue;
-              }
+            fieldArgMap.put(field, superArg->sym);
+            fieldArgMap.put(formal, superArg->sym);
 
-              fieldArgMap.put(field, superArg->sym);
-              fieldArgMap.put(formal, superArg->sym);
+            fn->insertFormalAtTail(superArg);
 
-              fn->insertFormalAtTail(superArg);
-
-              superCall->insertAtTail(superArg->sym);
-            }
+            superCall->insertAtTail(superArg->sym);
           }
         }
 
-        if (fileReader != nullptr) {
-          superCall->insertAtTail(new SymExpr(fileReader));
+        if (desHelper != nullptr) {
+          superCall->insertAtTail(new NamedExpr("reader", new SymExpr(fileReader)));
+          superCall->insertAtTail(new NamedExpr("deserializer", new SymExpr(desHelper)));
         }
-
       }
 
       fn->body->insertAtHead(superCall);
@@ -2616,8 +2697,6 @@ bool AggregateType::handleSuperFields(FnSymbol*                    fn,
   }
 
   // Nothing to be done for records.
-
-  return retval;
 }
 
 void AggregateType::buildCopyInitializer() {
@@ -2822,11 +2901,50 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
 
   globalSeen.insert(this);
 
-  addRootType();
+  // Note: logic in the Dyno scope resolver will sometimes catch multiple inheritance,
+  // but not in every case. So for now, duplicate some checks here.
+  //
+  // TODO: what's a good way to centralize the multiple inheritance handling?
+  Expr* firstParent = nullptr;
 
   // Walk the base class list, and add parents into the class hierarchy.
   for_alist(expr, inherits) {
-    AggregateType* pt = discoverParentAndCheck(expr);
+    AggregateType* pt;
+    InterfaceSymbol* isym;
+    discoverParentAndCheck(expr, pt, isym);
+
+    // Handle class A : MyInterface and continue early.
+    if (isym) {
+      SET_LINENO(expr);
+
+      // For classes, we need to include management style in the implements
+      // statement so that it's picked up when necessary.
+      Symbol* implementFor = this->symbol;
+      if (this->isClass() && isClassLikeOrManaged(this)) {
+        Type* useType =
+          this->getDecoratedClass(ClassTypeDecorator::GENERIC_NONNIL);
+        implementFor = useType->symbol;
+      }
+
+      auto ifcActuals = new CallExpr(PRIM_ACTUALS_LIST, new SymExpr(implementFor));
+      auto istmt = ImplementsStmt::build(isym->name, ifcActuals, nullptr);
+      this->symbol->getModule()->block->insertAtTail(istmt);
+
+      expr->remove();
+      continue;
+    }
+
+    if (this->isRecord()) {
+      USR_FATAL(expr, "inheritance is not currently supported for records");
+    } else if (this->isUnion()) {
+      USR_FATAL(expr, "inheritance is not currently supported for unions");
+    }
+
+    if (firstParent) {
+      USR_FATAL(expr, "invalid use of multiple inheritance in class '%s'",
+                this->name());
+    }
+    firstParent = expr;
 
     localSeen.insert(this);
 
@@ -2883,11 +3001,19 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
     }
   }
 
+  if (!firstParent) {
+    addRootType();
+  }
+
   checkSameNameFields();
 }
 
-AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
+void AggregateType::discoverParentAndCheck(Expr* storesName,
+                                           AggregateType* &outParent,
+                                           InterfaceSymbol* &outIsym) {
   TypeSymbol*        ts  = NULL;
+  outIsym = nullptr;
+  outParent = nullptr;
 
   if (UnresolvedSymExpr* se = toUnresolvedSymExpr(storesName)) {
     Symbol* sym = lookup(se->unresolved, storesName);
@@ -2899,8 +3025,14 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
       sym = canonicalClassType(sym->type)->symbol;
     }
     ts = toTypeSymbol(sym);
+    outIsym = toInterfaceSymbol(sym);
   } else if (SymExpr* se = toSymExpr(storesName)) {
     ts = toTypeSymbol(se->symbol());
+    outIsym = toInterfaceSymbol(se->symbol());
+  }
+
+  if (outIsym != nullptr) {
+    return;
   }
 
   if (ts == NULL) {
@@ -2933,7 +3065,7 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
               pt->symbol->name);
   }
 
-  return pt;
+  outParent = pt;
 }
 
 void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
@@ -3168,4 +3300,32 @@ int64_t AggregateType::cArrayLength() const {
   if (sizeInt < 0)
     USR_FATAL(symbol, "c_array must have positive size");
   return sizeInt;
+}
+
+Type* AggregateType::arrayElementType() const {
+  if (!symbol->hasFlag(FLAG_ARRAY)) return nullptr;
+  Type* ret = nullptr;
+  Type* instType = this->getField("_instance")->type;
+  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+  if (!instClass) return nullptr;
+  TypeSymbol* ts = getDataClassType(instClass->symbol);
+  // if no eltType here, go to the super class
+  while (ts == nullptr) {
+    if (Symbol* super = instClass->getSubstitutionWithName(astr("super"))) {
+        instClass = toAggregateType(canonicalClassType(super->type));
+        ts = getDataClassType(instClass->symbol);
+    } else break;
+  }
+  if (ts != nullptr) ret = ts->type;
+  return ret;
+}
+
+Type* AggregateType::finalArrayElementType() const {
+  AggregateType* arrayType = (AggregateType*) this;
+  Type* ret = nullptr;
+  do {
+    ret = arrayType->arrayElementType();
+    arrayType = toAggregateType(ret);
+  } while (arrayType && arrayType->symbol->hasFlag(FLAG_ARRAY));
+  return ret;
 }

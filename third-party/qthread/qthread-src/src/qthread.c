@@ -84,6 +84,7 @@
 #include "qt_subsystems.h"
 #include "qt_output_macros.h"
 #include "qt_int_log.h"
+#include "qt_hash.h"
 
 
 #if !(defined(HAVE_GCC_INLINE_ASSEMBLY) &&              \
@@ -130,6 +131,9 @@ int GUARD_PAGES = 1;
 #else
 #define GUARD_PAGES 0
 #endif
+
+extern int INTERNAL spinlocks_finalize();
+extern int INTERNAL spinlocks_initialize();
 
 /* Internal Prototypes */
 #ifdef QTHREAD_MAKECONTEXT_SPLIT
@@ -1006,9 +1010,13 @@ int API_FUNC qthread_initialize(void)
         qlib->shepherds[i].uniquelockaddrs = qt_hash_create(need_sync);
         qlib->shepherds[i].uniquefebaddrs  = qt_hash_create(need_sync);
 #endif
+        
 
         qthread_debug(SHEPHERD_DETAILS, "shepherd %i set up (%p)\n", i, &qlib->shepherds[i]);
     }
+
+    spinlocks_initialize();
+
     qthread_debug(SHEPHERD_DETAILS, "done setting up shepherds.\n");
 
 /* now, transform the current main context into a qthread,
@@ -1564,6 +1572,8 @@ void API_FUNC qthread_finalize(void)
     }
     qthread_debug(CORE_DETAILS, "freeing shep0's threadqueue\n");
     qt_threadqueue_free(shep0->ready);
+
+    spinlocks_finalize();
 
     qthread_debug(CORE_DETAILS, "calling cleanup functions\n");
     while (qt_cleanup_funcs != NULL) {
@@ -2405,19 +2415,6 @@ void API_FUNC qthread_flushsc(void)
  */
 #define QTHREAD_SPAWN_MASK_TEAMS (QTHREAD_SPAWN_NEW_TEAM | QTHREAD_SPAWN_NEW_SUBTEAM)
 
-void API_FUNC qthread_chpl_reset_spawn_order(void) {
-    assert(qthread_library_initialized);
-    qthread_t            *me = qthread_internal_self();
-
-    if (me) {
-        assert(me->rdata);
-        me->rdata->shepherd_ptr->sched_shepherd = 0;
-    } else {
-        qlib->sched_shepherd = 0;
-        MACHINE_FENCE;
-    }
-}
-
 int API_FUNC qthread_spawn(qthread_f             f,
                            const void           *arg,
                            size_t                arg_size,
@@ -3002,6 +2999,19 @@ int API_FUNC qthread_migrate_to(const qthread_shepherd_id_t shepherd)
         return QTHREAD_BADARGS;
     }
 }                      /*}}} */
+
+void API_FUNC qthread_reset_target_shep(void) {
+    assert(qthread_library_initialized);
+    qthread_t *me = qthread_internal_self();
+
+    if (me) {
+        assert(me->rdata);
+        me->rdata->shepherd_ptr->sched_shepherd = 0;
+    } else {
+        qlib->sched_shepherd = 0;
+        MACHINE_FENCE;
+    }
+}
 
 
 /* These are just accessor functions */

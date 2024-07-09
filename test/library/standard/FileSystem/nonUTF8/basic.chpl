@@ -3,6 +3,7 @@ use IO;
 use Sort;
 use List;
 use OS.POSIX;
+use ChplFormat;
 
 proc getMode(filename: string) throws {
 
@@ -49,7 +50,7 @@ here.chdir(dirname1);
 
 writeln("Creating file");
 var f = open(filename1, ioMode.cw);
-var writer = f.writer();
+var writer = f.writer(locking=false);
 writer.write("test file");
 writer.close();
 f.close();
@@ -61,7 +62,7 @@ writeln("exists works: ", exists(filename1) == true);
 
 const gid = getGid(filename1);
 const uid = getUid(filename1);
-const mode = getMode(filename1); 
+const mode = getMode(filename1);
 const size = getFileSize(filename1);
 writeln();
 
@@ -126,8 +127,9 @@ var l: list(string);
 for f in listDir(dirname1) {
   l.pushBack(f);
 }
+var chplout = stdout.withSerializer(chplSerializer);
 for f in sorted(l.toArray()) {
-  writef("%ht\n", f.encode(policy=encodePolicy.unescape));
+  chplout.writeln(f.encode(policy=encodePolicy.unescape));
 }
 writeln();
 

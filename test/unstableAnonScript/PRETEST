@@ -1,0 +1,3 @@
+#!/bin/bash
+CHPL=$1
+$CHPL $CHPL_HOME/tools/unstableWarningAnonymizer/unstableAnonScript.chpl -o unstableAnonScript

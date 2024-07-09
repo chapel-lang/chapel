@@ -27,6 +27,7 @@
 #include "llvm/Support/SystemUtils.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include <memory>
+#include <optional>
 using namespace llvm;
 
 cl::OptionCategory AsCat("llvm-as Options");
@@ -74,7 +75,7 @@ static void WriteOutputFile(const Module *M, const ModuleSummaryIndex *Index) {
       OutputFilename = "-";
     } else {
       StringRef IFN = InputFilename;
-      OutputFilename = (IFN.endswith(".ll") ? IFN.drop_back(3) : IFN).str();
+      OutputFilename = (IFN.ends_with(".ll") ? IFN.drop_back(3) : IFN).str();
       OutputFilename += ".bc";
     }
   }
@@ -120,9 +121,9 @@ int main(int argc, char **argv) {
 
   // Parse the file now...
   SMDiagnostic Err;
-  auto SetDataLayout = [](StringRef) -> Optional<std::string> {
+  auto SetDataLayout = [](StringRef, StringRef) -> std::optional<std::string> {
     if (ClDataLayout.empty())
-      return None;
+      return std::nullopt;
     return ClDataLayout;
   };
   ParsedModuleAndIndex ModuleAndIndex;

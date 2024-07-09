@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,9 +47,6 @@ PrimitiveType::getWithNameAndWidth(Context* context,
   if (name == USTR("uint"))
     if (bitwidth == 8 || bitwidth == 16 || bitwidth == 32 || bitwidth == 64)
       return UintType::get(context, bitwidth);
-  if (name == USTR("bool"))
-    if (bitwidth == 8 || bitwidth == 16 || bitwidth == 32 || bitwidth == 64)
-      return BoolType::get(context, bitwidth);
   if (name == USTR("real"))
     if (bitwidth == 32 || bitwidth == 64)
       return RealType::get(context, bitwidth);

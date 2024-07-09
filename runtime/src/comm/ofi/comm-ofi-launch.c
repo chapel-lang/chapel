@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,7 +19,7 @@
  */
 
 //
-// Launch assistance for the uGNI communication interface.
+// Launch assistance for the OFI communication interface.
 //
 
 #include <inttypes.h>
@@ -84,4 +84,19 @@ void chpl_comm_preLaunch(int32_t numLocales) {
     //
     chpl_env_set("PMI_NO_PREINITIALIZE", "y", 1);
   }
+  if (chpl_env_rt_get_bool("COMM_OFI_USE_HUGEPAGES", false)) {
+    //
+    // Don't map virtual hugepages to physical pages when allocating a
+    // fixed heap. We want to do it ourselves so we can stripe the heap
+    // across NUMA domains.
+    //
+    chpl_env_set("HUGETLB_NO_RESERVE", "yes", 0);
+  } else {
+    //
+    // Don't allow morecore to use hugepages, otherwise we'll end up using
+    // hugepages when we allocate the fixed heap using memalign.
+    //
+    chpl_env_set("HUGETLB_MORECORE", "no", 1);
+  }
+
 }

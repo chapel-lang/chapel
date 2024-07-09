@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -18,6 +18,7 @@
 target_sources(ChplFrontend-obj
                PRIVATE
 
+               AnyClassType.cpp
                AnyType.cpp
                ArrayType.cpp
                BasicClassType.cpp
@@ -28,9 +29,11 @@ target_sources(ChplFrontend-obj
                ClassTypeDecorator.cpp
                ComplexType.cpp
                CompositeType.cpp
+               CPtrType.cpp
                DomainType.cpp
                EnumType.cpp
                ErroneousType.cpp
+               ExternType.cpp
                ImagType.cpp
                IntType.cpp
                NilType.cpp

@@ -8,13 +8,13 @@ class MyMapper {
   }
 }
 
-var myMapper = lambda(ind:real, targetLocs: Locales.type) {
+var myMapper = proc(ind:real, targetLocs: Locales.type) {
                         const numlocs = targetLocs.domain.size;
                         const indAsInt = ind: int;
                         return indAsInt % numlocs;
                      };
 
-var D: domain(real) dmapped Hashed(idxType=real, mapper=new MyMapper());
+var D: domain(real) dmapped new hashedDist(idxType=real, mapper=new MyMapper());
 
 D += 1.3;
 D += 22.0;

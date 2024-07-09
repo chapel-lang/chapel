@@ -27,10 +27,11 @@
 #include "clang/Sema/SemaInternal.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Support/ConvertUTF.h"
+#include <optional>
 
 using namespace clang;
 using namespace sema;
-using llvm::makeArrayRef;
+using llvm::ArrayRef;
 
 ExprResult Sema::ParseObjCStringLiteral(SourceLocation *AtLocs,
                                         ArrayRef<Expr *> Strings) {
@@ -70,7 +71,7 @@ ExprResult Sema::ParseObjCStringLiteral(SourceLocation *AtLocs,
     QualType StrTy = Context.getConstantArrayType(
         CAT->getElementType(), llvm::APInt(32, StrBuf.size() + 1), nullptr,
         CAT->getSizeModifier(), CAT->getIndexTypeCVRQualifiers());
-    S = StringLiteral::Create(Context, StrBuf, StringLiteral::Ordinary,
+    S = StringLiteral::Create(Context, StrBuf, StringLiteralKind::Ordinary,
                               /*Pascal=*/false, StrTy, &StrLocs[0],
                               StrLocs.size());
   }
@@ -243,7 +244,7 @@ static ObjCMethodDecl *getNSNumberFactoryMethod(Sema &S, SourceLocation Loc,
                                                 QualType NumberType,
                                                 bool isLiteral = false,
                                                 SourceRange R = SourceRange()) {
-  Optional<NSAPI::NSNumberLiteralMethodKind> Kind =
+  std::optional<NSAPI::NSNumberLiteralMethodKind> Kind =
       S.NSAPIObj->getNSNumberFactoryMethodKind(NumberType);
 
   if (!Kind) {
@@ -284,21 +285,21 @@ static ObjCMethodDecl *getNSNumberFactoryMethod(Sema &S, SourceLocation Loc,
   if (!Method && S.getLangOpts().DebuggerObjCLiteral) {
     // create a stub definition this NSNumber factory method.
     TypeSourceInfo *ReturnTInfo = nullptr;
-    Method =
-        ObjCMethodDecl::Create(CX, SourceLocation(), SourceLocation(), Sel,
-                               S.NSNumberPointer, ReturnTInfo, S.NSNumberDecl,
-                               /*isInstance=*/false, /*isVariadic=*/false,
-                               /*isPropertyAccessor=*/false,
-                               /*isSynthesizedAccessorStub=*/false,
-                               /*isImplicitlyDeclared=*/true,
-                               /*isDefined=*/false, ObjCMethodDecl::Required,
-                               /*HasRelatedResultType=*/false);
+    Method = ObjCMethodDecl::Create(
+        CX, SourceLocation(), SourceLocation(), Sel, S.NSNumberPointer,
+        ReturnTInfo, S.NSNumberDecl,
+        /*isInstance=*/false, /*isVariadic=*/false,
+        /*isPropertyAccessor=*/false,
+        /*isSynthesizedAccessorStub=*/false,
+        /*isImplicitlyDeclared=*/true,
+        /*isDefined=*/false, ObjCImplementationControl::Required,
+        /*HasRelatedResultType=*/false);
     ParmVarDecl *value = ParmVarDecl::Create(S.Context, Method,
                                              SourceLocation(), SourceLocation(),
                                              &CX.Idents.get("value"),
                                              NumberType, /*TInfo=*/nullptr,
                                              SC_None, nullptr);
-    Method->setMethodParams(S.Context, value, None);
+    Method->setMethodParams(S.Context, value, std::nullopt);
   }
 
   if (!validateBoxingMethod(S, Loc, S.NSNumberDecl, Sel, Method))
@@ -320,20 +321,20 @@ ExprResult Sema::BuildObjCNumericLiteral(SourceLocation AtLoc, Expr *Number) {
     // In C, character literals have type 'int'. That's not the type we want
     // to use to determine the Objective-c literal kind.
     switch (Char->getKind()) {
-    case CharacterLiteral::Ascii:
-    case CharacterLiteral::UTF8:
+    case CharacterLiteralKind::Ascii:
+    case CharacterLiteralKind::UTF8:
       NumberType = Context.CharTy;
       break;
 
-    case CharacterLiteral::Wide:
+    case CharacterLiteralKind::Wide:
       NumberType = Context.getWideCharType();
       break;
 
-    case CharacterLiteral::UTF16:
+    case CharacterLiteralKind::UTF16:
       NumberType = Context.Char16Ty;
       break;
 
-    case CharacterLiteral::UTF32:
+    case CharacterLiteralKind::UTF32:
       NumberType = Context.Char32Ty;
       break;
     }
@@ -567,7 +568,7 @@ ExprResult Sema::BuildObjCBoxedExpr(SourceRange SR, Expr *ValueExpr) {
               /*isPropertyAccessor=*/false,
               /*isSynthesizedAccessorStub=*/false,
               /*isImplicitlyDeclared=*/true,
-              /*isDefined=*/false, ObjCMethodDecl::Required,
+              /*isDefined=*/false, ObjCImplementationControl::Required,
               /*HasRelatedResultType=*/false);
           QualType ConstCharType = Context.CharTy.withConst();
           ParmVarDecl *value =
@@ -577,7 +578,7 @@ ExprResult Sema::BuildObjCBoxedExpr(SourceRange SR, Expr *ValueExpr) {
                                 Context.getPointerType(ConstCharType),
                                 /*TInfo=*/nullptr,
                                 SC_None, nullptr);
-          M->setMethodParams(Context, value, None);
+          M->setMethodParams(Context, value, std::nullopt);
           BoxingMethod = M;
         }
 
@@ -591,8 +592,8 @@ ExprResult Sema::BuildObjCBoxedExpr(SourceRange SR, Expr *ValueExpr) {
       BoxingMethod = StringWithUTF8StringMethod;
       BoxedType = NSStringPointer;
       // Transfer the nullability from method's return type.
-      Optional<NullabilityKind> Nullability =
-          BoxingMethod->getReturnType()->getNullability(Context);
+      std::optional<NullabilityKind> Nullability =
+          BoxingMethod->getReturnType()->getNullability();
       if (Nullability)
         BoxedType = Context.getAttributedType(
             AttributedType::getNullabilityAttrKind(*Nullability), BoxedType,
@@ -610,20 +611,20 @@ ExprResult Sema::BuildObjCBoxedExpr(SourceRange SR, Expr *ValueExpr) {
       // In C, character literals have type 'int'. That's not the type we want
       // to use to determine the Objective-c literal kind.
       switch (Char->getKind()) {
-      case CharacterLiteral::Ascii:
-      case CharacterLiteral::UTF8:
+      case CharacterLiteralKind::Ascii:
+      case CharacterLiteralKind::UTF8:
         ValueType = Context.CharTy;
         break;
 
-      case CharacterLiteral::Wide:
+      case CharacterLiteralKind::Wide:
         ValueType = Context.getWideCharType();
         break;
 
-      case CharacterLiteral::UTF16:
+      case CharacterLiteralKind::UTF16:
         ValueType = Context.Char16Ty;
         break;
 
-      case CharacterLiteral::UTF32:
+      case CharacterLiteralKind::UTF32:
         ValueType = Context.Char32Ty;
         break;
       }
@@ -681,7 +682,7 @@ ExprResult Sema::BuildObjCBoxedExpr(SourceRange SR, Expr *ValueExpr) {
             /*isPropertyAccessor=*/false,
             /*isSynthesizedAccessorStub=*/false,
             /*isImplicitlyDeclared=*/true,
-            /*isDefined=*/false, ObjCMethodDecl::Required,
+            /*isDefined=*/false, ObjCImplementationControl::Required,
             /*HasRelatedResultType=*/false);
 
         SmallVector<ParmVarDecl *, 2> Params;
@@ -705,7 +706,7 @@ ExprResult Sema::BuildObjCBoxedExpr(SourceRange SR, Expr *ValueExpr) {
                             SC_None, nullptr);
         Params.push_back(type);
 
-        M->setMethodParams(Context, Params, None);
+        M->setMethodParams(Context, Params, std::nullopt);
         BoxingMethod = M;
       }
 
@@ -815,7 +816,7 @@ ExprResult Sema::BuildObjCArrayLiteral(SourceRange SR, MultiExprArg Elements) {
           false /*isVariadic*/,
           /*isPropertyAccessor=*/false, /*isSynthesizedAccessorStub=*/false,
           /*isImplicitlyDeclared=*/true, /*isDefined=*/false,
-          ObjCMethodDecl::Required, false);
+          ObjCImplementationControl::Required, false);
       SmallVector<ParmVarDecl *, 2> Params;
       ParmVarDecl *objects = ParmVarDecl::Create(Context, Method,
                                                  SourceLocation(),
@@ -833,7 +834,7 @@ ExprResult Sema::BuildObjCArrayLiteral(SourceRange SR, MultiExprArg Elements) {
                                              /*TInfo=*/nullptr, SC_None,
                                              nullptr);
       Params.push_back(cnt);
-      Method->setMethodParams(Context, Params, None);
+      Method->setMethodParams(Context, Params, std::nullopt);
     }
 
     if (!validateBoxingMethod(*this, Loc, NSArrayDecl, Sel, Method))
@@ -977,7 +978,7 @@ ExprResult Sema::BuildObjCDictionaryLiteral(SourceRange SR,
           /*isPropertyAccessor=*/false,
           /*isSynthesizedAccessorStub=*/false,
           /*isImplicitlyDeclared=*/true, /*isDefined=*/false,
-          ObjCMethodDecl::Required, false);
+          ObjCImplementationControl::Required, false);
       SmallVector<ParmVarDecl *, 3> Params;
       ParmVarDecl *objects = ParmVarDecl::Create(Context, Method,
                                                  SourceLocation(),
@@ -1003,7 +1004,7 @@ ExprResult Sema::BuildObjCDictionaryLiteral(SourceRange SR,
                                              /*TInfo=*/nullptr, SC_None,
                                              nullptr);
       Params.push_back(cnt);
-      Method->setMethodParams(Context, Params, None);
+      Method->setMethodParams(Context, Params, std::nullopt);
     }
 
     if (!validateBoxingMethod(*this, SR.getBegin(), NSDictionaryDecl, Sel,
@@ -1037,12 +1038,9 @@ ExprResult Sema::BuildObjCDictionaryLiteral(SourceRange SR,
           if (ObjCProtocolDecl *NSCopyingPDecl =
               LookupProtocol(&Context.Idents.get("NSCopying"), SR.getBegin())) {
             ObjCProtocolDecl *PQ[] = {NSCopyingPDecl};
-            QIDNSCopying =
-              Context.getObjCObjectType(Context.ObjCBuiltinIdTy, { },
-                                        llvm::makeArrayRef(
-                                          (ObjCProtocolDecl**) PQ,
-                                          1),
-                                        false);
+            QIDNSCopying = Context.getObjCObjectType(
+                Context.ObjCBuiltinIdTy, {},
+                llvm::ArrayRef((ObjCProtocolDecl **)PQ, 1), false);
             QIDNSCopying = Context.getObjCObjectPointerType(QIDNSCopying);
           }
         }
@@ -1349,7 +1347,8 @@ ExprResult Sema::ParseObjCSelectorExpression(Selector Sel,
   }
 
   if (Method &&
-      Method->getImplementationControl() != ObjCMethodDecl::Optional &&
+      Method->getImplementationControl() !=
+          ObjCImplementationControl::Optional &&
       !getSourceManager().isInSystemHeader(Method->getLocation()))
     ReferencedSelectors.insert(std::make_pair(Sel, AtLoc));
 
@@ -1466,8 +1465,8 @@ static QualType getBaseMessageSendResultType(Sema &S,
   // result type to the returned result.
   auto transferNullability = [&](QualType type) -> QualType {
     // If the method's result type has nullability, extract it.
-    if (auto nullability = Method->getSendResultType(ReceiverType)
-                             ->getNullability(Context)){
+    if (auto nullability =
+            Method->getSendResultType(ReceiverType)->getNullability()) {
       // Strip off any outer nullability sugar from the provided type.
       (void)AttributedType::stripOuterNullability(type);
 
@@ -1546,7 +1545,7 @@ QualType Sema::getMessageSendResultType(const Expr *Receiver,
         assert(MD->isClassMethod() && "expected a class method");
         QualType NewResultType = Context.getObjCObjectPointerType(
             Context.getObjCInterfaceType(MD->getClassInterface()));
-        if (auto Nullability = resultType->getNullability(Context))
+        if (auto Nullability = resultType->getNullability())
           NewResultType = Context.getAttributedType(
               AttributedType::getNullabilityAttrKind(*Nullability),
               NewResultType, NewResultType);
@@ -1563,16 +1562,16 @@ QualType Sema::getMessageSendResultType(const Expr *Receiver,
 
   // Map the nullability of the result into a table index.
   unsigned receiverNullabilityIdx = 0;
-  if (Optional<NullabilityKind> nullability =
-          ReceiverType->getNullability(Context)) {
+  if (std::optional<NullabilityKind> nullability =
+          ReceiverType->getNullability()) {
     if (*nullability == NullabilityKind::NullableResult)
       nullability = NullabilityKind::Nullable;
     receiverNullabilityIdx = 1 + static_cast<unsigned>(*nullability);
   }
 
   unsigned resultNullabilityIdx = 0;
-  if (Optional<NullabilityKind> nullability =
-          resultType->getNullability(Context)) {
+  if (std::optional<NullabilityKind> nullability =
+          resultType->getNullability()) {
     if (*nullability == NullabilityKind::NullableResult)
       nullability = NullabilityKind::Nullable;
     resultNullabilityIdx = 1 + static_cast<unsigned>(*nullability);
@@ -1605,7 +1604,7 @@ QualType Sema::getMessageSendResultType(const Expr *Receiver,
     } else {
       resultType = resultType.getDesugaredType(Context);
     }
-  } while (resultType->getNullability(Context));
+  } while (resultType->getNullability());
 
   // Add nullability back if needed.
   if (newResultNullabilityIdx > 0) {
@@ -1802,14 +1801,15 @@ bool Sema::CheckMessageArgumentTypes(
   // FIXME. This need be cleaned up.
   if (Args.size() < NumNamedArgs) {
     Diag(SelLoc, diag::err_typecheck_call_too_few_args)
-      << 2 << NumNamedArgs << static_cast<unsigned>(Args.size());
+        << 2 << NumNamedArgs << static_cast<unsigned>(Args.size())
+        << /*is non object*/ 0;
     return false;
   }
 
   // Compute the set of type arguments to be substituted into each parameter
   // type.
-  Optional<ArrayRef<QualType>> typeArgs
-    = ReceiverType->getObjCSubstitutions(Method->getDeclContext());
+  std::optional<ArrayRef<QualType>> typeArgs =
+      ReceiverType->getObjCSubstitutions(Method->getDeclContext());
   bool IsError = false;
   for (unsigned i = 0; i < NumNamedArgs; i++) {
     // We can't do any type-checking on a type-dependent argument.
@@ -1900,7 +1900,7 @@ bool Sema::CheckMessageArgumentTypes(
       Diag(Args[NumNamedArgs]->getBeginLoc(),
            diag::err_typecheck_call_too_many_args)
           << 2 /*method*/ << NumNamedArgs << static_cast<unsigned>(Args.size())
-          << Method->getSourceRange()
+          << Method->getSourceRange() << /*is non object*/ 0
           << SourceRange(Args[NumNamedArgs]->getBeginLoc(),
                          Args.back()->getEndLoc());
     }
@@ -1909,8 +1909,8 @@ bool Sema::CheckMessageArgumentTypes(
   DiagnoseSentinelCalls(Method, SelLoc, Args);
 
   // Do additional checkings on method.
-  IsError |= CheckObjCMethodCall(
-      Method, SelLoc, makeArrayRef(Args.data(), Args.size()));
+  IsError |=
+      CheckObjCMethodCall(Method, SelLoc, ArrayRef(Args.data(), Args.size()));
 
   return IsError;
 }
@@ -2440,6 +2440,9 @@ ExprResult Sema::BuildClassMessageImplicit(QualType ReceiverType,
   if (!ReceiverType.isNull())
     receiverTypeInfo = Context.getTrivialTypeSourceInfo(ReceiverType);
 
+  assert(((isSuperReceiver && Loc.isValid()) || receiverTypeInfo) &&
+         "Either the super receiver location needs to be valid or the receiver "
+         "needs valid type source information");
   return BuildClassMessage(receiverTypeInfo, ReceiverType,
                           /*SuperLoc=*/isSuperReceiver ? Loc : SourceLocation(),
                            Sel, Method, Loc, Loc, Loc, Args,
@@ -2633,10 +2636,10 @@ ExprResult Sema::BuildClassMessage(TypeSourceInfo *ReceiverTypeInfo,
     unsigned NumArgs = ArgsIn.size();
     Expr **Args = ArgsIn.data();
     assert(SuperLoc.isInvalid() && "Message to super with dependent type");
-    return ObjCMessageExpr::Create(
-        Context, ReceiverType, VK_PRValue, LBracLoc, ReceiverTypeInfo, Sel,
-        SelectorLocs, /*Method=*/nullptr, makeArrayRef(Args, NumArgs), RBracLoc,
-        isImplicit);
+    return ObjCMessageExpr::Create(Context, ReceiverType, VK_PRValue, LBracLoc,
+                                   ReceiverTypeInfo, Sel, SelectorLocs,
+                                   /*Method=*/nullptr, ArrayRef(Args, NumArgs),
+                                   RBracLoc, isImplicit);
   }
 
   // Find the class to which we are sending this message.
@@ -2735,21 +2738,19 @@ ExprResult Sema::BuildClassMessage(TypeSourceInfo *ReceiverTypeInfo,
   // Construct the appropriate ObjCMessageExpr.
   ObjCMessageExpr *Result;
   if (SuperLoc.isValid())
-    Result = ObjCMessageExpr::Create(Context, ReturnType, VK, LBracLoc,
-                                     SuperLoc, /*IsInstanceSuper=*/false,
-                                     ReceiverType, Sel, SelectorLocs,
-                                     Method, makeArrayRef(Args, NumArgs),
-                                     RBracLoc, isImplicit);
+    Result = ObjCMessageExpr::Create(
+        Context, ReturnType, VK, LBracLoc, SuperLoc, /*IsInstanceSuper=*/false,
+        ReceiverType, Sel, SelectorLocs, Method, ArrayRef(Args, NumArgs),
+        RBracLoc, isImplicit);
   else {
-    Result = ObjCMessageExpr::Create(Context, ReturnType, VK, LBracLoc,
-                                     ReceiverTypeInfo, Sel, SelectorLocs,
-                                     Method, makeArrayRef(Args, NumArgs),
-                                     RBracLoc, isImplicit);
+    Result = ObjCMessageExpr::Create(
+        Context, ReturnType, VK, LBracLoc, ReceiverTypeInfo, Sel, SelectorLocs,
+        Method, ArrayRef(Args, NumArgs), RBracLoc, isImplicit);
     if (!isImplicit)
       checkCocoaAPI(*this, Result);
   }
   if (Method)
-    checkFoundationAPI(*this, SelLoc, Method, makeArrayRef(Args, NumArgs),
+    checkFoundationAPI(*this, SelLoc, Method, ArrayRef(Args, NumArgs),
                        ReceiverType, /*IsClassObjectCall=*/true);
   return MaybeBindToTemporary(Result);
 }
@@ -2888,8 +2889,8 @@ ExprResult Sema::BuildInstanceMessage(Expr *Receiver,
       assert(SuperLoc.isInvalid() && "Message to super with dependent type");
       return ObjCMessageExpr::Create(
           Context, Context.DependentTy, VK_PRValue, LBracLoc, Receiver, Sel,
-          SelectorLocs, /*Method=*/nullptr, makeArrayRef(Args, NumArgs),
-          RBracLoc, isImplicit);
+          SelectorLocs, /*Method=*/nullptr, ArrayRef(Args, NumArgs), RBracLoc,
+          isImplicit);
     }
 
     // If necessary, apply function/array conversion to the receiver.
@@ -3326,16 +3327,14 @@ ExprResult Sema::BuildInstanceMessage(Expr *Receiver,
   // Construct the appropriate ObjCMessageExpr instance.
   ObjCMessageExpr *Result;
   if (SuperLoc.isValid())
-    Result = ObjCMessageExpr::Create(Context, ReturnType, VK, LBracLoc,
-                                     SuperLoc,  /*IsInstanceSuper=*/true,
-                                     ReceiverType, Sel, SelectorLocs, Method,
-                                     makeArrayRef(Args, NumArgs), RBracLoc,
-                                     isImplicit);
+    Result = ObjCMessageExpr::Create(
+        Context, ReturnType, VK, LBracLoc, SuperLoc, /*IsInstanceSuper=*/true,
+        ReceiverType, Sel, SelectorLocs, Method, ArrayRef(Args, NumArgs),
+        RBracLoc, isImplicit);
   else {
-    Result = ObjCMessageExpr::Create(Context, ReturnType, VK, LBracLoc,
-                                     Receiver, Sel, SelectorLocs, Method,
-                                     makeArrayRef(Args, NumArgs), RBracLoc,
-                                     isImplicit);
+    Result = ObjCMessageExpr::Create(
+        Context, ReturnType, VK, LBracLoc, Receiver, Sel, SelectorLocs, Method,
+        ArrayRef(Args, NumArgs), RBracLoc, isImplicit);
     if (!isImplicit)
       checkCocoaAPI(*this, Result);
   }
@@ -3356,7 +3355,7 @@ ExprResult Sema::BuildInstanceMessage(Expr *Receiver,
         }
       }
     }
-    checkFoundationAPI(*this, SelLoc, Method, makeArrayRef(Args, NumArgs),
+    checkFoundationAPI(*this, SelLoc, Method, ArrayRef(Args, NumArgs),
                        ReceiverType, IsClassObjectCall);
   }
 
@@ -3860,7 +3859,7 @@ static inline T *getObjCBridgeAttr(const TypedefType *TD) {
 
 static ObjCBridgeRelatedAttr *ObjCBridgeRelatedAttrFromType(QualType T,
                                                             TypedefNameDecl *&TDNDecl) {
-  while (const TypedefType *TD = dyn_cast<TypedefType>(T.getTypePtr())) {
+  while (const auto *TD = T->getAs<TypedefType>()) {
     TDNDecl = TD->getDecl();
     if (ObjCBridgeRelatedAttr *ObjCBAttr =
         getObjCBridgeAttr<ObjCBridgeRelatedAttr>(TD))
@@ -4007,7 +4006,7 @@ static bool CheckObjCBridgeNSCast(Sema &S, QualType castType, Expr *castExpr,
                                   bool &HadTheAttribute, bool warn) {
   QualType T = castExpr->getType();
   HadTheAttribute = false;
-  while (const TypedefType *TD = dyn_cast<TypedefType>(T.getTypePtr())) {
+  while (const auto *TD = T->getAs<TypedefType>()) {
     TypedefNameDecl *TDNDecl = TD->getDecl();
     if (TB *ObjCBAttr = getObjCBridgeAttr<TB>(TD)) {
       if (IdentifierInfo *Parm = ObjCBAttr->getBridgedType()) {
@@ -4070,7 +4069,7 @@ static bool CheckObjCBridgeCFCast(Sema &S, QualType castType, Expr *castExpr,
                                   bool &HadTheAttribute, bool warn) {
   QualType T = castType;
   HadTheAttribute = false;
-  while (const TypedefType *TD = dyn_cast<TypedefType>(T.getTypePtr())) {
+  while (const auto *TD = T->getAs<TypedefType>()) {
     TypedefNameDecl *TDNDecl = TD->getDecl();
     if (TB *ObjCBAttr = getObjCBridgeAttr<TB>(TD)) {
       if (IdentifierInfo *Parm = ObjCBAttr->getBridgedType()) {
@@ -4377,11 +4376,9 @@ Sema::CheckObjCBridgeRelatedConversions(SourceLocation Loc,
         Diag(RelatedClass->getBeginLoc(), diag::note_declared_at);
         Diag(TDNDecl->getBeginLoc(), diag::note_declared_at);
 
-        ExprResult msg =
-          BuildInstanceMessageImplicit(SrcExpr, SrcType,
-                                       InstanceMethod->getLocation(),
-                                       InstanceMethod->getSelector(),
-                                       InstanceMethod, None);
+        ExprResult msg = BuildInstanceMessageImplicit(
+            SrcExpr, SrcType, InstanceMethod->getLocation(),
+            InstanceMethod->getSelector(), InstanceMethod, std::nullopt);
         SrcExpr = msg.get();
       }
       return true;
@@ -4559,6 +4556,7 @@ Expr *Sema::stripARCUnbridgedCast(Expr *e) {
                                  CurFPFeatureOverrides());
   } else if (GenericSelectionExpr *gse = dyn_cast<GenericSelectionExpr>(e)) {
     assert(!gse->isResultDependent());
+    assert(!gse->isTypePredicate());
 
     unsigned n = gse->getNumAssocs();
     SmallVector<Expr *, 4> subExprs;

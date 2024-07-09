@@ -38,8 +38,7 @@ config const numTrials = 10,
 // pseudo-random seed (based on the clock) or a fixed seed; and to
 // specify the fixed seed explicitly
 //
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.currentTime else 314159265;
+config const useRandomSeed = true;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -123,11 +122,13 @@ proc printConfiguration() {
 // Initialize vectors B and C using a random stream of values and
 // optionally print them to the console
 //
-proc initVectors(B, C) {
-  var randlist = new RandomStream(seed);
+proc initVectors(B: [] ?t, C) {
+  var randlist = if useRandomSeed
+    then new randomStream(t)
+    else new randomStream(t, 314159265);
 
-  randlist.fillRandom(B);
-  randlist.fillRandom(C);
+  randlist.fill(B);
+  randlist.fill(C);
 
   if (printArrays) {
     writeln("B is: ", B, "\n");

@@ -4,7 +4,7 @@ use IO, Regex;
 const bars = new regex(b"\\|{2,}");
 
 // try to match when a separator isn't present
-var r = openReader("maxSizeBytesInput.txt");
+var r = openReader("maxSizeBytesInput.txt", locking=false);
 try {
     writeln(r.readThrough(bars, maxSize=6));
 } catch e {
@@ -15,7 +15,7 @@ try {
 r.close();
 
 // try to match when a *full* separator isn't present
-r = openReader("maxSizeBytesInput.txt");
+r = openReader("maxSizeBytesInput.txt", locking=false);
 try {
     writeln(r.readThrough(bars, maxSize=7));
 } catch e {
@@ -26,11 +26,11 @@ try {
 r.close();
 
 // separator is present - don't strip
-writeln(openReader("maxSizeBytesInput.txt").readThrough(bars, maxSize=8));
-writeln(openReader("maxSizeBytesInput.txt").readThrough(bars, maxSize=9));
-writeln(openReader("maxSizeBytesInput.txt").readThrough(bars, maxSize=13));
+writeln(openReader("maxSizeBytesInput.txt", locking=false).readThrough(bars, maxSize=8));
+writeln(openReader("maxSizeBytesInput.txt", locking=false).readThrough(bars, maxSize=9));
+writeln(openReader("maxSizeBytesInput.txt", locking=false).readThrough(bars, maxSize=13));
 
 // separator is present - do strip
-writeln(openReader("maxSizeBytesInput.txt").readThrough(bars, maxSize=8, true));
-writeln(openReader("maxSizeBytesInput.txt").readThrough(bars, maxSize=9, true));
-writeln(openReader("maxSizeBytesInput.txt").readThrough(bars, maxSize=13, true));
+writeln(openReader("maxSizeBytesInput.txt", locking=false).readThrough(bars, maxSize=8, true));
+writeln(openReader("maxSizeBytesInput.txt", locking=false).readThrough(bars, maxSize=9, true));
+writeln(openReader("maxSizeBytesInput.txt", locking=false).readThrough(bars, maxSize=13, true));

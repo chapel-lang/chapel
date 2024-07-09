@@ -23,20 +23,20 @@ proc eval_A(i,j : int) : real
   return 1.0 / d;
 }
 
-proc eval_A_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRange2 : int)
+proc eval_A_times_u(u : [] real, inRange : int, ref Au : [] real, outRange1, outRange2 : int)
 {
   for i in outRange1..outRange2-1 do {
     Au(i) = + reduce [j in 0..inRange-1] (u(j) * eval_A(i,j));
   }
 }
 
-proc eval_At_times_u(u : [] real, inRange : int, Au : [] real, outRange1, outRange2 : int)
+proc eval_At_times_u(u : [] real, inRange : int, ref Au : [] real, outRange1, outRange2 : int)
 {
   for i in outRange1..outRange2-1 do
     Au(i) = + reduce [j in 0..inRange-1] (u(j) * eval_A(j,i));
 }
 
-proc eval_AtA_times_u(u,AtAu,v : [] real, inRange, range1, range2 : int)
+proc eval_AtA_times_u(u,ref AtAu,ref v : [] real, inRange, range1, range2 : int)
 {
            eval_A_times_u(u, inRange, v, range1, range2);
            b!.barrier();
@@ -52,7 +52,7 @@ proc main() {
   u = 1.0;
   b = new owned BarrierWF(numThreads);
 
-  coforall i in 0..#numThreads do {
+  coforall i in 0..#numThreads with (ref tmp, ref u, ref v) do {
     var r_begin = i * chunk;
     var r_end : int;
     if (i < (numThreads - 1)) then
@@ -70,5 +70,5 @@ proc main() {
   var   vBv = + reduce (u * v);
   const res = sqrt(vBv/vv);
 
-  writeln(res, new iostyleInternal(precision=10));
+  writef("%.10r\n", res);
 }

@@ -1,0 +1,2 @@
+forwarding-field-access.chpl:9: In method 'foo':
+forwarding-field-access.chpl:10: error: 'x' undeclared (first use this function)

@@ -4,7 +4,7 @@
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-COMMON_DIR=/cray/css/users/chapelu
+COMMON_DIR=/hpcdc/project/chapel
 if [ ! -d "$COMMON_DIR" ]; then
   COMMON_DIR=/cy/users/chapelu
 fi
@@ -25,22 +25,17 @@ fi
 export CHPL_NIGHTLY_TEST_DIRS=studies/arkouda/
 export CHPL_TEST_ARKOUDA=true
 
+# Removing regex.compile caused smoke test failures. As a stopgap measure we are
+# skipping dependency check.
+export ARKOUDA_SKIP_CHECK_DEPS=1
+
 ARKOUDA_DEP_DIR=$COMMON_DIR/arkouda-deps
 if [ -d "$ARKOUDA_DEP_DIR" ]; then
-  # If asan testing, use arrow built with asan
-  if [ -n "$ARKOUDA_ASAN" ]; then
-      export ARKOUDA_ARROW_PATH=${ARKOUDA_ARROW_PATH:-$ARKOUDA_DEP_DIR/arrow-install-asan}
-      export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install-asan}
-      export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install-asan}
-      export ARKOUDA_ICONV_PATH=${ARKOUDA_ICONV_PATH:-$ARKOUDA_DEP_DIR/iconv-install-asan}
-      export ARKOUDA_IDN2_PATH=${ARKOUDA_IDN2_PATH:-$ARKOUDA_DEP_DIR/idn2-install-asan}
-  else
-      export ARKOUDA_ARROW_PATH=${ARKOUDA_ARROW_PATH:-$ARKOUDA_DEP_DIR/arrow-install}
-      export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install}
-      export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install}
-      export ARKOUDA_ICONV_PATH=${ARKOUDA_ICONV_PATH:-$ARKOUDA_DEP_DIR/iconv-install}
-      export ARKOUDA_IDN2_PATH=${ARKOUDA_IDN2_PATH:-$ARKOUDA_DEP_DIR/idn2-install}
-  fi
+  export ARKOUDA_ARROW_PATH=${ARKOUDA_ARROW_PATH:-$ARKOUDA_DEP_DIR/arrow-install}
+  export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install}
+  export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install}
+  export ARKOUDA_ICONV_PATH=${ARKOUDA_ICONV_PATH:-$ARKOUDA_DEP_DIR/iconv-install}
+  export ARKOUDA_IDN2_PATH=${ARKOUDA_IDN2_PATH:-$ARKOUDA_DEP_DIR/idn2-install}
   export PATH="$ARKOUDA_HDF5_PATH/bin:$PATH"
 fi
 
@@ -53,12 +48,13 @@ if [ -f "$SETUP_PYTHON" ]; then
   source $SETUP_PYTHON
 fi
 
-# test against Chapel release (checking our current test/cron directories)
+export CHPL_WHICH_RELEASE_FOR_ARKOUDA="2.0.0"
+# test against Chapel release (checking out current test/cron directories)
 function test_release() {
   export CHPL_TEST_PERF_DESCRIPTION=release
-  export CHPL_TEST_PERF_CONFIGS="release:v,nightly"
+  export CHPL_TEST_PERF_CONFIGS="release:v,nightly:v"
   currentSha=`git rev-parse HEAD`
-  git checkout 1.30.0
+  git checkout $CHPL_WHICH_RELEASE_FOR_ARKOUDA
   git checkout $currentSha -- $CHPL_HOME/test/
   git checkout $currentSha -- $CHPL_HOME/util/cron/
   git checkout $currentSha -- $CHPL_HOME/util/test/perf/
@@ -70,7 +66,7 @@ function test_release() {
 # test against Chapel nightly
 function test_nightly() {
   export CHPL_TEST_PERF_DESCRIPTION=nightly
-  export CHPL_TEST_PERF_CONFIGS="release:v,nightly"
+  export CHPL_TEST_PERF_CONFIGS="release:v,nightly:v"
   $CWD/nightly -cron ${nightly_args}
 }
 

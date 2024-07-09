@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -158,8 +158,8 @@ module ChapelTaskTable {
 
   export proc chpldev_taskTable_print()
   {
-    use IO;
-    extern proc chpl_lookupFilename(idx: int(32)): c_string;
+    use IO, CTypes;
+    extern proc chpl_lookupFilename(idx: int(32)): c_ptrConst(c_char);
 
     if (chpldev_taskTable == nil) then return;
 

@@ -1,10 +1,11 @@
 /*
  * Copyright © 2015-2018 Intel
- * Copyright © 2015-2018 Inria.  All rights reserved.
+ * Copyright © 2015-2020 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
-#include <private/autogen/config.h>
+#include "private/autogen/config.h"
+
 #include <stdio.h>
 #include <stdint.h>
 #include <dirent.h>
@@ -26,7 +27,7 @@
 /* unexpected strings, found at least in Dell C6320p BIOS <=1.4.1 */
 #define KNL_DELL_GROUP_STRING "Knights Landing Association"
 
-static char *allowed_group_strings[] =
+static const char *allowed_group_strings[] =
 {
     KNL_INTEL_GROUP_STRING,
     KNM_INTEL_GROUP_STRING,
@@ -471,9 +472,11 @@ int hwloc_dump_hwdata_knl_smbios(const char *input_fsroot, const char *outfile)
     DIR *d;
     int i;
     struct dirent *dir;
-    struct parser_data data = { 0 };
+    struct parser_data data;
     char path[PATH_SIZE];
     int err;
+
+    memset(&data, 0, sizeof(data));
 
     printf("Dumping Xeon Phi SMBIOS Memory-Side Cache information:\n");
 

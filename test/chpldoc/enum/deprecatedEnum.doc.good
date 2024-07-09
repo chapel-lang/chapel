@@ -23,49 +23,109 @@ or
 
       colors is deprecated
 
+   .. enumconstant:: enum constant red
+
+   .. enumconstant:: enum constant green
+
+   .. enumconstant:: enum constant blue
+
 .. enum:: enum stooges { curly, moe, larry }
 
    .. warning::
 
       stooges is deprecated, use marx instead
 
+   .. enumconstant:: enum constant curly
+
+   .. enumconstant:: enum constant moe
+
+   .. enumconstant:: enum constant larry
+
 .. enum:: enum marx { harpo, groucho, chico, zeppo }
 
+   .. enumconstant:: enum constant harpo
+
+   .. enumconstant:: enum constant groucho
+
+   .. enumconstant:: enum constant chico
+
+   .. enumconstant:: enum constant zeppo
+
 .. enum:: enum atomicSymbols { proton, electron, neutron }
-
-   There was documentation of this symbol 
-
 
    .. warning::
 
       atomicSymbols is deprecated
 
+   There was documentation of this symbol 
+
+   .. enumconstant:: enum constant proton
+
+   .. enumconstant:: enum constant electron
+
+   .. enumconstant:: enum constant neutron
+
 .. enum:: enum monsters { vampire, werewolf, ghost }
-
-   This symbol also was documented 
-
 
    .. warning::
 
       monsters is deprecated, use monsterMash instead
 
+   This symbol also was documented 
+
+   .. enumconstant:: enum constant vampire
+
+   .. enumconstant:: enum constant werewolf
+
+   .. enumconstant:: enum constant ghost
+
 .. enum:: enum monsterMash { Frankenstein, Wolfman, Dracula, Casper }
 
    Truncated Frankenstein's monster 
 
+   .. enumconstant:: enum constant Frankenstein
+
+   .. enumconstant:: enum constant Wolfman
+
+   .. enumconstant:: enum constant Dracula
+
+   .. enumconstant:: enum constant Casper
 
 .. enum:: enum directions { north, south, east, west }
 
    This symbol is deprecated 
 
+   .. enumconstant:: enum constant north
+
+   .. enumconstant:: enum constant south
+
+   .. enumconstant:: enum constant east
+
+   .. enumconstant:: enum constant west
 
 .. enum:: enum bodyParts { head, shoulders, knees, toes }
 
    This symbol is also deprecated, please use bones instead 
 
+   .. enumconstant:: enum constant head
+
+   .. enumconstant:: enum constant shoulders
+
+   .. enumconstant:: enum constant knees
+
+   .. enumconstant:: enum constant toes
 
 .. enum:: enum bones { tibia, fibia, skull, rib, kneecap }
 
    Replaces the deprecated bodyParts 
 
+   .. enumconstant:: enum constant tibia
+
+   .. enumconstant:: enum constant fibia
+
+   .. enumconstant:: enum constant skull
+
+   .. enumconstant:: enum constant rib
+
+   .. enumconstant:: enum constant kneecap
 

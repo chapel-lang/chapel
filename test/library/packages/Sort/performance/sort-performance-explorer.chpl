@@ -4,6 +4,7 @@
 use Sort;
 use Random;
 use Time;
+use CTypes;
 
 config const printStats = true;
 config const minSize = 1;
@@ -16,12 +17,12 @@ config const parallel = true;
 config param reverse = false;
 config type eltType = int;
 
-config const seed = SeedGenerator.oddCurrentTime;
+config const seed = NPBRandom.oddTimeSeed();
 
 var methods = ["default", "msbRadixSort", "quickSort", "mergeSort",
                "twoArraySample", "twoArrayRadix", "timSort"];
 
-proc testsort(input, method, parallel, cmp) {
+proc testsort(ref input, method, parallel, cmp) {
 
   if method == "default" {
     if parallel == false {
@@ -71,11 +72,11 @@ proc testsort(input, method, parallel, cmp) {
 }
 
 proc doString() param {
-  return eltType == string || eltType == c_string;
+  return eltType == string || eltType == c_ptrConst(c_char);
 }
 proc makeInput(array, inputStrings) {
   if doString() {
-    if eltType == c_string {
+    if eltType == c_ptrConst(c_char) {
       var result = forall a in inputStrings do a.c_str();
       return result;
     } else {
@@ -92,16 +93,22 @@ proc makeInput(array, inputStrings) {
   }
 }
 
-proc testsize(size:int) {
+proc generateArray(size:int, describe=false) {
   var array:[1..size] int;
 
   if inputDataScheme == 0 {
     // scheme 0 : all zeros
+    if describe then
+      writeln("generating all zeros input");
   } else if inputDataScheme == 1 {
     // scheme 1: random ints
+    if describe then
+      writeln("generating random input");
     fillRandom(array, seed=seed);
   } else if inputDataScheme == 2 {
     // scheme 2: random ints, only top byte set
+    if describe then
+      writeln("generating random input setting only the top byte");
     fillRandom(array, seed=seed);
     for a in array {
       a >>= 56;
@@ -109,6 +116,8 @@ proc testsize(size:int) {
     }
   } else if inputDataScheme == 3 {
     // scheme 3: random ints, only a middle byte set
+    if describe then
+      writeln("generating random input setting only a middle byte");
     fillRandom(array, seed=seed);
     for a in array {
       a >>= 56;
@@ -117,6 +126,8 @@ proc testsize(size:int) {
     }
   } else if inputDataScheme == 4 {
     // scheme 4: random ints, only bottom byte set
+    if describe then
+      writeln("generating random input setting only the bottom byte");
     fillRandom(array, seed=seed);
     for a in array {
       a &= 0xff;
@@ -124,13 +135,31 @@ proc testsize(size:int) {
   } else if inputDataScheme == 5 {
     // scheme 5: heavily skewed distribution,
     // values are (1 << (random % 64))
+    if describe then
+      writeln("generating random powers of 2 input");
     fillRandom(array, seed=seed);
     for a in array {
       var shift = mod(a, 64);
       a = 1 << shift;
     }
+  } else if inputDataScheme == 6 {
+    // scheme 6: data is already in sorted order
+    if describe then
+      writeln("generating already-sorted input");
+    array = 1..size;
+  } else if inputDataScheme == 7 {
+    // scheme 7: data is in reverse sorted order
+    if describe then
+      writeln("generating reverse-sorted input");
+    array = 1..size by -1;
   }
 
+  return array;
+}
+
+proc testsize(size:int) {
+
+  var array = generateArray(size);
 
   var inputStringsDomain = {1..0};
   var inputStrings:[inputStringsDomain] string;
@@ -139,7 +168,7 @@ proc testsize(size:int) {
     inputStrings = forall a in array do a:string;
   }
 
-  var nBytes = size*8;
+  var nBytes = size*numBytes(eltType);
   var kibibytes = nBytes/1024.0;
   var mibibytes = kibibytes/1024.0;
   var sizestr = nBytes:string + " bytes";
@@ -153,10 +182,15 @@ proc testsize(size:int) {
   var input = makeInput(array, inputStrings);
 
   var ntrials = 1;
-  if mibibytes < 1 then
-    ntrials = 10;
-  if kibibytes < 1 then
-    ntrials = 100;
+  if printStats {
+    // use more trials for small problem sizes when measuring speed
+    if mibibytes < 1 then
+      ntrials = 100;
+    if kibibytes < 100 then
+      ntrials = 1_000;
+    if kibibytes < 0.4 then
+      ntrials = 10_000;
+  }
 
   for m in methods {
     const ref cmp = if reverse then reverseComparator else defaultComparator;
@@ -175,6 +209,9 @@ proc testsize(size:int) {
 }
 
 proc main() {
+  // run generateArray to output the distribution
+  generateArray(100, describe=printStats);
+
   if printStats {
     writeln("Note, speeds are in MiB/s");
     writef("% 16s", "size");

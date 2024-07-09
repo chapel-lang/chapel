@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,6 +43,8 @@ namespace uast {
   (for a, b, c in the example).
  */
 class Enum final : public TypeDecl {
+ friend class AstNode;
+
  private:
   Enum(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
        UniqueString name)
@@ -63,8 +65,11 @@ class Enum final : public TypeDecl {
     #endif
   }
 
-  Enum(Deserializer& des)
-    : TypeDecl(asttags::Enum, des) {}
+  void serializeInner(Serializer& ser) const override {
+    typeDeclSerializeInner(ser);
+  }
+
+  explicit Enum(Deserializer& des) : TypeDecl(asttags::Enum, des) { }
 
   int declOrCommentChildNum() const {
     return attributeGroup() ? 1 : 0;
@@ -126,13 +131,6 @@ class Enum final : public TypeDecl {
     auto end = begin + numDeclOrComments();
     return AstListNoCommentsIteratorPair<EnumElement>(begin, end);
   }
-
-  void serialize(Serializer& ser) const override {
-    TypeDecl::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Enum);
-
 };
 
 

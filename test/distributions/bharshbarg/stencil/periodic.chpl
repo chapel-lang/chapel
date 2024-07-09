@@ -4,7 +4,7 @@ config const debug = false;
 
 config const maxFluff = 2;
 
-proc test(dom : domain) {
+proc test(dom : domain(?)) {
   for i in 1..maxFluff {
     var halo : dom.rank * int;
     for j in 0..dom.rank-1 do halo(j) = i;
@@ -12,15 +12,15 @@ proc test(dom : domain) {
   }
 }
 
-proc test(dom : domain, halo : dom.rank * int) {
+proc test(dom : domain(?), halo : dom.rank * int) {
   param rank = dom.rank;
 
   if debug then writeln("Testing domain ", dom, " with halo ", halo);
-  var Space = dom dmapped Stencil(dom, fluff=halo, periodic=true);
+  var Space = dom dmapped new stencilDist(dom, fluff=halo, periodic=true);
 
   var A : [Space] int;
   const n = dom.dim(0).size;
-  forall idx in Space {
+  forall idx in Space with (ref A) {
     var val = 0;
     for i in 0..rank-1 do val += n*idx(i);
     A[idx] = val;

@@ -11,11 +11,13 @@
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/BitmaskEnum.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include <cstdint>
+#include <optional>
+#include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace llvm {
@@ -25,7 +27,7 @@ class raw_ostream;
 namespace clang {
 namespace RISCV {
 
-using VScaleVal = llvm::Optional<unsigned>;
+using VScaleVal = std::optional<unsigned>;
 
 // Modifier for vector type.
 enum class VectorTypeModifier : uint8_t {
@@ -56,6 +58,20 @@ enum class VectorTypeModifier : uint8_t {
   SFixedLog2LMUL1,
   SFixedLog2LMUL2,
   SFixedLog2LMUL3,
+  SEFixedLog2LMULN3,
+  SEFixedLog2LMULN2,
+  SEFixedLog2LMULN1,
+  SEFixedLog2LMUL0,
+  SEFixedLog2LMUL1,
+  SEFixedLog2LMUL2,
+  SEFixedLog2LMUL3,
+  Tuple2,
+  Tuple3,
+  Tuple4,
+  Tuple5,
+  Tuple6,
+  Tuple7,
+  Tuple8,
 };
 
 // Similar to basic type but used to describe what's kind of type related to
@@ -69,6 +85,7 @@ enum class BaseTypeModifier : uint8_t {
   Ptrdiff,
   UnsignedLong,
   SignedLong,
+  Float32
 };
 
 // Modifier for type, used for both scalar and vector types.
@@ -80,14 +97,72 @@ enum class TypeModifier : uint8_t {
   UnsignedInteger = 1 << 3,
   SignedInteger = 1 << 4,
   Float = 1 << 5,
+  BFloat = 1 << 6,
   // LMUL1 should be kind of VectorTypeModifier, but that might come with
   // Widening2XVector for widening reduction.
   // However that might require VectorTypeModifier become bitmask rather than
   // simple enum, so we decide keek LMUL1 in TypeModifier for code size
   // optimization of clang binary size.
-  LMUL1 = 1 << 6,
-  MaxOffset = 6,
+  LMUL1 = 1 << 7,
+  MaxOffset = 7,
   LLVM_MARK_AS_BITMASK_ENUM(LMUL1),
+};
+
+class Policy {
+public:
+  enum PolicyType {
+    Undisturbed,
+    Agnostic,
+  };
+
+private:
+  // The default assumption for an RVV instruction is TAMA, as an undisturbed
+  // policy generally will affect the performance of an out-of-order core.
+  const PolicyType TailPolicy = Agnostic;
+  const PolicyType MaskPolicy = Agnostic;
+
+public:
+  Policy() = default;
+  Policy(PolicyType TailPolicy) : TailPolicy(TailPolicy) {}
+  Policy(PolicyType TailPolicy, PolicyType MaskPolicy)
+      : TailPolicy(TailPolicy), MaskPolicy(MaskPolicy) {}
+
+  bool isTAMAPolicy() const {
+    return TailPolicy == Agnostic && MaskPolicy == Agnostic;
+  }
+
+  bool isTAMUPolicy() const {
+    return TailPolicy == Agnostic && MaskPolicy == Undisturbed;
+  }
+
+  bool isTUMAPolicy() const {
+    return TailPolicy == Undisturbed && MaskPolicy == Agnostic;
+  }
+
+  bool isTUMUPolicy() const {
+    return TailPolicy == Undisturbed && MaskPolicy == Undisturbed;
+  }
+
+  bool isTAPolicy() const { return TailPolicy == Agnostic; }
+
+  bool isTUPolicy() const { return TailPolicy == Undisturbed; }
+
+  bool isMAPolicy() const { return MaskPolicy == Agnostic; }
+
+  bool isMUPolicy() const { return MaskPolicy == Undisturbed; }
+
+  bool operator==(const Policy &Other) const {
+    return TailPolicy == Other.TailPolicy && MaskPolicy == Other.MaskPolicy;
+  }
+
+  bool operator!=(const Policy &Other) const { return !(*this == Other); }
+
+  bool operator<(const Policy &Other) const {
+    // Just for maintain the old order for quick test.
+    if (MaskPolicy != Other.MaskPolicy)
+      return Other.MaskPolicy < MaskPolicy;
+    return TailPolicy < Other.TailPolicy;
+  }
 };
 
 // PrototypeDescriptor is used to compute type info of arguments or return
@@ -119,7 +194,7 @@ struct PrototypeDescriptor {
   static const PrototypeDescriptor Mask;
   static const PrototypeDescriptor Vector;
   static const PrototypeDescriptor VL;
-  static llvm::Optional<PrototypeDescriptor>
+  static std::optional<PrototypeDescriptor>
   parsePrototypeDescriptor(llvm::StringRef PrototypeStr);
 };
 
@@ -133,10 +208,11 @@ enum class BasicType : uint8_t {
   Int16 = 1 << 1,
   Int32 = 1 << 2,
   Int64 = 1 << 3,
-  Float16 = 1 << 4,
-  Float32 = 1 << 5,
-  Float64 = 1 << 6,
-  MaxOffset = 6,
+  BFloat16 = 1 << 4,
+  Float16 = 1 << 5,
+  Float32 = 1 << 6,
+  Float64 = 1 << 7,
+  MaxOffset = 7,
   LLVM_MARK_AS_BITMASK_ENUM(Float64),
 };
 
@@ -151,7 +227,9 @@ enum ScalarTypeKind : uint8_t {
   SignedInteger,
   UnsignedInteger,
   Float,
+  BFloat,
   Invalid,
+  Undefined,
 };
 
 // Exponential LMUL
@@ -160,18 +238,21 @@ struct LMULType {
   LMULType(int Log2LMUL);
   // Return the C/C++ string representation of LMUL
   std::string str() const;
-  llvm::Optional<unsigned> getScale(unsigned ElementBitwidth) const;
+  std::optional<unsigned> getScale(unsigned ElementBitwidth) const;
   void MulLog2LMUL(int Log2LMUL);
 };
 
 class RVVType;
 using RVVTypePtr = RVVType *;
 using RVVTypes = std::vector<RVVTypePtr>;
+class RVVTypeCache;
 
 // This class is compact representation of a valid and invalid RVVType.
 class RVVType {
+  friend class RVVTypeCache;
+
   BasicType BT;
-  ScalarTypeKind ScalarType = Invalid;
+  ScalarTypeKind ScalarType = Undefined;
   LMULType LMUL;
   bool IsPointer = false;
   // IsConstant indices are "int", but have the constant expression.
@@ -181,18 +262,19 @@ class RVVType {
   unsigned ElementBitwidth = 0;
   VScaleVal Scale = 0;
   bool Valid;
+  bool IsTuple = false;
+  unsigned NF = 0;
 
   std::string BuiltinStr;
   std::string ClangBuiltinStr;
   std::string Str;
   std::string ShortStr;
 
-  enum class FixedLMULType { LargerThan, SmallerThan };
+  enum class FixedLMULType { LargerThan, SmallerThan, SmallerOrEqual };
 
-public:
-  RVVType() : BT(BasicType::Unknown), LMUL(0), Valid(false) {}
   RVVType(BasicType BT, int Log2LMUL, const PrototypeDescriptor &Profile);
 
+public:
   // Return the string representation of a type, which is an encoded string for
   // passing to the BUILTIN() macro in Builtins.def.
   const std::string &getBuiltinStr() const { return BuiltinStr; }
@@ -215,12 +297,13 @@ public:
   }
 
   bool isValid() const { return Valid; }
-  bool isScalar() const { return Scale && Scale.value() == 0; }
-  bool isVector() const { return Scale && Scale.value() != 0; }
+  bool isScalar() const { return Scale && *Scale == 0; }
+  bool isVector() const { return Scale && *Scale != 0; }
   bool isVector(unsigned Width) const {
     return isVector() && ElementBitwidth == Width;
   }
   bool isFloat() const { return ScalarType == ScalarTypeKind::Float; }
+  bool isBFloat() const { return ScalarType == ScalarTypeKind::BFloat; }
   bool isSignedInteger() const {
     return ScalarType == ScalarTypeKind::SignedInteger;
   }
@@ -232,10 +315,15 @@ public:
   }
   bool isConstant() const { return IsConstant; }
   bool isPointer() const { return IsPointer; }
+  bool isTuple() const { return IsTuple; }
   unsigned getElementBitwidth() const { return ElementBitwidth; }
 
   ScalarTypeKind getScalarType() const { return ScalarType; }
   VScaleVal getScale() const { return Scale; }
+  unsigned getNF() const {
+    assert(NF > 1 && NF <= 8 && "Only legal NF should be fetched");
+    return NF;
+  }
 
 private:
   // Verify RVV vector type and set Valid.
@@ -260,21 +348,30 @@ private:
   void initTypeStr();
   // Compute and record a short name of a type for C/C++ name suffix.
   void initShortStr();
+};
+
+// This class is used to manage RVVType, RVVType should only created by this
+// class, also provided thread-safe cache capability.
+class RVVTypeCache {
+private:
+  std::unordered_map<uint64_t, RVVType> LegalTypes;
+  std::set<uint64_t> IllegalTypes;
 
 public:
   /// Compute output and input types by applying different config (basic type
   /// and LMUL with type transformers). It also record result of type in legal
   /// or illegal set to avoid compute the same config again. The result maybe
   /// have illegal RVVType.
-  static llvm::Optional<RVVTypes>
+  std::optional<RVVTypes>
   computeTypes(BasicType BT, int Log2LMUL, unsigned NF,
                llvm::ArrayRef<PrototypeDescriptor> Prototype);
-  static llvm::Optional<RVVTypePtr> computeType(BasicType BT, int Log2LMUL,
-                                                PrototypeDescriptor Proto);
+  std::optional<RVVTypePtr> computeType(BasicType BT, int Log2LMUL,
+                                        PrototypeDescriptor Proto);
 };
 
 enum PolicyScheme : uint8_t {
   SchemeNone,
+  // Passthru operand is at first parameter in C builtin.
   HasPassthruOperand,
   HasPolicyOperand,
 };
@@ -290,9 +387,10 @@ private:
   std::string OverloadedName;
   std::string IRName;
   bool IsMasked;
+  bool HasMaskedOffOperand;
   bool HasVL;
   PolicyScheme Scheme;
-  bool HasUnMaskedOverloaded;
+  bool SupportOverloading;
   bool HasBuiltinAlias;
   std::string ManualCodegen;
   RVVTypePtr OutputType; // Builtin output type
@@ -301,17 +399,18 @@ private:
   // InputTypes. -1 means the return type.
   std::vector<int64_t> IntrinsicTypes;
   unsigned NF = 1;
+  Policy PolicyAttrs;
 
 public:
   RVVIntrinsic(llvm::StringRef Name, llvm::StringRef Suffix,
                llvm::StringRef OverloadedName, llvm::StringRef OverloadedSuffix,
                llvm::StringRef IRName, bool IsMasked, bool HasMaskedOffOperand,
-               bool HasVL, PolicyScheme Scheme, bool HasUnMaskedOverloaded,
+               bool HasVL, PolicyScheme Scheme, bool SupportOverloading,
                bool HasBuiltinAlias, llvm::StringRef ManualCodegen,
                const RVVTypes &Types,
                const std::vector<int64_t> &IntrinsicTypes,
                const std::vector<llvm::StringRef> &RequiredFeatures,
-               unsigned NF);
+               unsigned NF, Policy PolicyAttrs, bool HasFRMRoundModeOp);
   ~RVVIntrinsic() = default;
 
   RVVTypePtr getOutputType() const { return OutputType; }
@@ -319,11 +418,16 @@ public:
   llvm::StringRef getBuiltinName() const { return BuiltinName; }
   llvm::StringRef getName() const { return Name; }
   llvm::StringRef getOverloadedName() const { return OverloadedName; }
+  bool hasMaskedOffOperand() const { return HasMaskedOffOperand; }
   bool hasVL() const { return HasVL; }
-  bool hasPolicy() const { return Scheme != SchemeNone; }
-  bool hasPassthruOperand() const { return Scheme == HasPassthruOperand; }
-  bool hasPolicyOperand() const { return Scheme == HasPolicyOperand; }
-  bool hasUnMaskedOverloaded() const { return HasUnMaskedOverloaded; }
+  bool hasPolicy() const { return Scheme != PolicyScheme::SchemeNone; }
+  bool hasPassthruOperand() const {
+    return Scheme == PolicyScheme::HasPassthruOperand;
+  }
+  bool hasPolicyOperand() const {
+    return Scheme == PolicyScheme::HasPolicyOperand;
+  }
+  bool supportOverloading() const { return SupportOverloading; }
   bool hasBuiltinAlias() const { return HasBuiltinAlias; }
   bool hasManualCodegen() const { return !ManualCodegen.empty(); }
   bool isMasked() const { return IsMasked; }
@@ -334,28 +438,74 @@ public:
   const std::vector<int64_t> &getIntrinsicTypes() const {
     return IntrinsicTypes;
   }
+  Policy getPolicyAttrs() const {
+    return PolicyAttrs;
+  }
+  unsigned getPolicyAttrsBits() const {
+    // CGBuiltin.cpp
+    // The 0th bit simulates the `vta` of RVV
+    // The 1st bit simulates the `vma` of RVV
+    // int PolicyAttrs = 0;
+
+    if (PolicyAttrs.isTUMAPolicy())
+      return 2;
+    if (PolicyAttrs.isTAMAPolicy())
+      return 3;
+    if (PolicyAttrs.isTUMUPolicy())
+      return 0;
+    if (PolicyAttrs.isTAMUPolicy())
+      return 1;
+
+    llvm_unreachable("unsupport policy");
+    return 0;
+  }
 
   // Return the type string for a BUILTIN() macro in Builtins.def.
   std::string getBuiltinTypeStr() const;
 
   static std::string
-  getSuffixStr(BasicType Type, int Log2LMUL,
+  getSuffixStr(RVVTypeCache &TypeCache, BasicType Type, int Log2LMUL,
                llvm::ArrayRef<PrototypeDescriptor> PrototypeDescriptors);
 
   static llvm::SmallVector<PrototypeDescriptor>
-      computeBuiltinTypes(llvm::ArrayRef<PrototypeDescriptor> Prototype,
-                          bool IsMasked, bool HasMaskedOffOperand, bool HasVL,
-                          unsigned NF);
+  computeBuiltinTypes(llvm::ArrayRef<PrototypeDescriptor> Prototype,
+                      bool IsMasked, bool HasMaskedOffOperand, bool HasVL,
+                      unsigned NF, PolicyScheme DefaultScheme,
+                      Policy PolicyAttrs, bool IsTuple);
+
+  static llvm::SmallVector<Policy> getSupportedUnMaskedPolicies();
+  static llvm::SmallVector<Policy>
+      getSupportedMaskedPolicies(bool HasTailPolicy, bool HasMaskPolicy);
+
+  static void updateNamesAndPolicy(bool IsMasked, bool HasPolicy,
+                                   std::string &Name, std::string &BuiltinName,
+                                   std::string &OverloadedName,
+                                   Policy &PolicyAttrs, bool HasFRMRoundModeOp);
 };
 
 // RVVRequire should be sync'ed with target features, but only
 // required features used in riscv_vector.td.
-enum RVVRequire : uint8_t {
+enum RVVRequire : uint32_t {
   RVV_REQ_None = 0,
   RVV_REQ_RV64 = 1 << 0,
-  RVV_REQ_FullMultiply = 1 << 1,
+  RVV_REQ_Zvfhmin = 1 << 1,
+  RVV_REQ_Xsfvcp = 1 << 2,
+  RVV_REQ_Xsfvfnrclipxfqf = 1 << 3,
+  RVV_REQ_Xsfvfwmaccqqq = 1 << 4,
+  RVV_REQ_Xsfvqmaccdod = 1 << 5,
+  RVV_REQ_Xsfvqmaccqoq = 1 << 6,
+  RVV_REQ_Zvbb = 1 << 7,
+  RVV_REQ_Zvbc = 1 << 8,
+  RVV_REQ_Zvkb = 1 << 9,
+  RVV_REQ_Zvkg = 1 << 10,
+  RVV_REQ_Zvkned = 1 << 11,
+  RVV_REQ_Zvknha = 1 << 12,
+  RVV_REQ_Zvknhb = 1 << 13,
+  RVV_REQ_Zvksed = 1 << 14,
+  RVV_REQ_Zvksh = 1 << 15,
+  RVV_REQ_Experimental = 1 << 16,
 
-  LLVM_MARK_AS_BITMASK_ENUM(RVV_REQ_FullMultiply)
+  LLVM_MARK_AS_BITMASK_ENUM(RVV_REQ_Experimental)
 };
 
 // Raw RVV intrinsic info, used to expand later.
@@ -387,7 +537,7 @@ struct RVVIntrinsicRecord {
   uint8_t OverloadedSuffixSize;
 
   // Required target features for this intrinsic.
-  uint8_t RequiredExtensions;
+  uint32_t RequiredExtensions;
 
   // Supported type, mask of BasicType.
   uint8_t TypeRangeMask;
@@ -401,6 +551,12 @@ struct RVVIntrinsicRecord {
   bool HasMasked : 1;
   bool HasVL : 1;
   bool HasMaskedOffOperand : 1;
+  bool HasTailPolicy : 1;
+  bool HasMaskPolicy : 1;
+  bool HasFRMRoundModeOp : 1;
+  bool IsTuple : 1;
+  uint8_t UnMaskedPolicyScheme : 2;
+  uint8_t MaskedPolicyScheme : 2;
 };
 
 llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,

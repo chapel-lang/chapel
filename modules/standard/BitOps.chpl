@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -42,17 +42,6 @@ module BitOps {
    */
   inline proc ctz(x: integral) {
     return BitOps_internal.ctz(x);
-  }
-
-  /*
-    Find the population count of `x`.
-
-    :returns: the number of 1 bits set in `x` as `x.type`
-    :rtype: `x.type`
-   */
-  @deprecated(notes="popcount is deprecated - please use :proc:`popCount` instead")
-  inline proc popcount(x: integral) {
-    return popCount(x);
   }
 
   /*

@@ -22,6 +22,7 @@
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/CodeGen/BasicTTIImpl.h"
 #include "llvm/IR/Function.h"
+#include <optional>
 
 namespace llvm {
 
@@ -37,11 +38,32 @@ class RISCVTTIImpl : public BasicTTIImplBase<RISCVTTIImpl> {
   const RISCVSubtarget *getST() const { return ST; }
   const RISCVTargetLowering *getTLI() const { return TLI; }
 
-  unsigned getMaxVLFor(VectorType *Ty);
+  /// This function returns an estimate for VL to be used in VL based terms
+  /// of the cost model.  For fixed length vectors, this is simply the
+  /// vector length.  For scalable vectors, we return results consistent
+  /// with getVScaleForTuning under the assumption that clients are also
+  /// using that when comparing costs between scalar and vector representation.
+  /// This does unfortunately mean that we can both undershoot and overshot
+  /// the true cost significantly if getVScaleForTuning is wildly off for the
+  /// actual target hardware.
+  unsigned getEstimatedVLFor(VectorType *Ty);
+
+  InstructionCost getRISCVInstructionCost(ArrayRef<unsigned> OpCodes, MVT VT,
+                                          TTI::TargetCostKind CostKind);
+
+  /// Return the cost of accessing a constant pool entry of the specified
+  /// type.
+  InstructionCost getConstantPoolLoadCost(Type *Ty,
+                                          TTI::TargetCostKind CostKind);
 public:
   explicit RISCVTTIImpl(const RISCVTargetMachine *TM, const Function &F)
       : BaseT(TM, F.getParent()->getDataLayout()), ST(TM->getSubtargetImpl(F)),
         TLI(ST->getTargetLowering()) {}
+
+  /// Return the cost of materializing an immediate for a value operand of
+  /// a store instruction.
+  InstructionCost getStoreImmCost(Type *VecTy, TTI::OperandValueInfo OpInfo,
+                                  TTI::TargetCostKind CostKind);
 
   InstructionCost getIntImmCost(const APInt &Imm, Type *Ty,
                                 TTI::TargetCostKind CostKind);
@@ -57,20 +79,38 @@ public:
 
   bool shouldExpandReduction(const IntrinsicInst *II) const;
   bool supportsScalableVectors() const { return ST->hasVInstructions(); }
-  PredicationStyle emitGetActiveLaneMask() const {
-    return ST->hasVInstructions() ? PredicationStyle::Data
-                                  : PredicationStyle::None;
+  bool enableOrderedReductions() const { return true; }
+  bool enableScalableVectorization() const { return ST->hasVInstructions(); }
+  TailFoldingStyle
+  getPreferredTailFoldingStyle(bool IVUpdateMayOverflow) const {
+    return ST->hasVInstructions() ? TailFoldingStyle::Data
+                                  : TailFoldingStyle::DataWithoutLaneMask;
   }
-  Optional<unsigned> getMaxVScale() const;
-  Optional<unsigned> getVScaleForTuning() const;
+  std::optional<unsigned> getMaxVScale() const;
+  std::optional<unsigned> getVScaleForTuning() const;
 
   TypeSize getRegisterBitWidth(TargetTransformInfo::RegisterKind K) const;
 
   unsigned getRegUsageForType(Type *Ty);
 
+  unsigned getMaximumVF(unsigned ElemWidth, unsigned Opcode) const;
+
+  bool preferEpilogueVectorization() const {
+    // Epilogue vectorization is usually unprofitable - tail folding or
+    // a smaller VF would have been better.  This a blunt hammer - we
+    // should re-examine this once vectorization is better tuned.
+    return false;
+  }
+
   InstructionCost getMaskedMemoryOpCost(unsigned Opcode, Type *Src,
                                         Align Alignment, unsigned AddressSpace,
                                         TTI::TargetCostKind CostKind);
+
+  InstructionCost getPointersChainCost(ArrayRef<const Value *> Ptrs,
+                                       const Value *Base,
+                                       const TTI::PointersChainInfo &Info,
+                                       Type *AccessTy,
+                                       TTI::TargetCostKind CostKind);
 
   void getUnrollingPreferences(Loop *L, ScalarEvolution &SE,
                                TTI::UnrollingPreferences &UP,
@@ -83,14 +123,19 @@ public:
     return ST->useRVVForFixedLengthVectors() ? 16 : 0;
   }
 
-  InstructionCost getSpliceCost(VectorType *Tp, int Index);
   InstructionCost getShuffleCost(TTI::ShuffleKind Kind, VectorType *Tp,
-                                 ArrayRef<int> Mask, int Index,
+                                 ArrayRef<int> Mask,
+                                 TTI::TargetCostKind CostKind, int Index,
                                  VectorType *SubTp,
-                                 ArrayRef<const Value *> Args = None);
+                                 ArrayRef<const Value *> Args = std::nullopt);
 
   InstructionCost getIntrinsicInstrCost(const IntrinsicCostAttributes &ICA,
                                         TTI::TargetCostKind CostKind);
+
+  InstructionCost getInterleavedMemoryOpCost(
+      unsigned Opcode, Type *VecTy, unsigned Factor, ArrayRef<unsigned> Indices,
+      Align Alignment, unsigned AddressSpace, TTI::TargetCostKind CostKind,
+      bool UseMaskForCond = false, bool UseMaskForGaps = false);
 
   InstructionCost getGatherScatterOpCost(unsigned Opcode, Type *DataTy,
                                          const Value *Ptr, bool VariableMask,
@@ -103,37 +148,65 @@ public:
                                    TTI::TargetCostKind CostKind,
                                    const Instruction *I = nullptr);
 
-  InstructionCost getMinMaxReductionCost(VectorType *Ty, VectorType *CondTy,
-                                         bool IsUnsigned,
+  InstructionCost getMinMaxReductionCost(Intrinsic::ID IID, VectorType *Ty,
+                                         FastMathFlags FMF,
                                          TTI::TargetCostKind CostKind);
 
   InstructionCost getArithmeticReductionCost(unsigned Opcode, VectorType *Ty,
-                                             Optional<FastMathFlags> FMF,
+                                             std::optional<FastMathFlags> FMF,
                                              TTI::TargetCostKind CostKind);
 
+  InstructionCost getExtendedReductionCost(unsigned Opcode, bool IsUnsigned,
+                                           Type *ResTy, VectorType *ValTy,
+                                           FastMathFlags FMF,
+                                           TTI::TargetCostKind CostKind);
+
+  InstructionCost
+  getMemoryOpCost(unsigned Opcode, Type *Src, MaybeAlign Alignment,
+                  unsigned AddressSpace, TTI::TargetCostKind CostKind,
+                  TTI::OperandValueInfo OpdInfo = {TTI::OK_AnyValue, TTI::OP_None},
+                  const Instruction *I = nullptr);
+
+  InstructionCost getCmpSelInstrCost(unsigned Opcode, Type *ValTy, Type *CondTy,
+                                     CmpInst::Predicate VecPred,
+                                     TTI::TargetCostKind CostKind,
+                                     const Instruction *I = nullptr);
+
+  InstructionCost getCFInstrCost(unsigned Opcode, TTI::TargetCostKind CostKind,
+                                 const Instruction *I = nullptr);
+
+  using BaseT::getVectorInstrCost;
+  InstructionCost getVectorInstrCost(unsigned Opcode, Type *Val,
+                                     TTI::TargetCostKind CostKind,
+                                     unsigned Index, Value *Op0, Value *Op1);
+
+  InstructionCost getArithmeticInstrCost(
+      unsigned Opcode, Type *Ty, TTI::TargetCostKind CostKind,
+      TTI::OperandValueInfo Op1Info = {TTI::OK_AnyValue, TTI::OP_None},
+      TTI::OperandValueInfo Op2Info = {TTI::OK_AnyValue, TTI::OP_None},
+      ArrayRef<const Value *> Args = ArrayRef<const Value *>(),
+      const Instruction *CxtI = nullptr);
+
   bool isElementTypeLegalForScalableVector(Type *Ty) const {
-    return TLI->isLegalElementTypeForRVV(Ty);
+    return TLI->isLegalElementTypeForRVV(TLI->getValueType(DL, Ty));
   }
 
   bool isLegalMaskedLoadStore(Type *DataType, Align Alignment) {
     if (!ST->hasVInstructions())
       return false;
 
+    EVT DataTypeVT = TLI->getValueType(DL, DataType);
+
     // Only support fixed vectors if we know the minimum vector size.
-    if (isa<FixedVectorType>(DataType) && !ST->useRVVForFixedLengthVectors())
+    if (DataTypeVT.isFixedLengthVector() && !ST->useRVVForFixedLengthVectors())
       return false;
 
-    // Don't allow elements larger than the ELEN.
-    // FIXME: How to limit for scalable vectors?
-    if (isa<FixedVectorType>(DataType) &&
-        DataType->getScalarSizeInBits() > ST->getELEN())
+    EVT ElemType = DataTypeVT.getScalarType();
+    if (!ST->hasFastUnalignedAccess() && Alignment < ElemType.getStoreSize())
       return false;
 
-    if (Alignment <
-        DL.getTypeStoreSize(DataType->getScalarType()).getFixedSize())
-      return false;
+    return TLI->isLegalElementTypeForRVV(ElemType);
 
-    return TLI->isLegalElementTypeForRVV(DataType->getScalarType());
   }
 
   bool isLegalMaskedLoad(Type *DataType, Align Alignment) {
@@ -147,21 +220,17 @@ public:
     if (!ST->hasVInstructions())
       return false;
 
+    EVT DataTypeVT = TLI->getValueType(DL, DataType);
+
     // Only support fixed vectors if we know the minimum vector size.
-    if (isa<FixedVectorType>(DataType) && !ST->useRVVForFixedLengthVectors())
+    if (DataTypeVT.isFixedLengthVector() && !ST->useRVVForFixedLengthVectors())
       return false;
 
-    // Don't allow elements larger than the ELEN.
-    // FIXME: How to limit for scalable vectors?
-    if (isa<FixedVectorType>(DataType) &&
-        DataType->getScalarSizeInBits() > ST->getELEN())
+    EVT ElemType = DataTypeVT.getScalarType();
+    if (!ST->hasFastUnalignedAccess() && Alignment < ElemType.getStoreSize())
       return false;
 
-    if (Alignment <
-        DL.getTypeStoreSize(DataType->getScalarType()).getFixedSize())
-      return false;
-
-    return TLI->isLegalElementTypeForRVV(DataType->getScalarType());
+    return TLI->isLegalElementTypeForRVV(ElemType);
   }
 
   bool isLegalMaskedGather(Type *DataType, Align Alignment) {
@@ -181,11 +250,21 @@ public:
     return ST->is64Bit() && !ST->hasVInstructionsI64();
   }
 
+  bool isVScaleKnownToBeAPowerOfTwo() const {
+    return TLI->isVScaleKnownToBeAPowerOfTwo();
+  }
+
   /// \returns How the target needs this vector-predicated operation to be
   /// transformed.
   TargetTransformInfo::VPLegalization
   getVPLegalizationStrategy(const VPIntrinsic &PI) const {
     using VPLegalization = TargetTransformInfo::VPLegalization;
+    if (!ST->hasVInstructions() ||
+        (PI.getIntrinsicID() == Intrinsic::vp_reduce_mul &&
+         cast<VectorType>(PI.getArgOperand(1)->getType())
+                 ->getElementType()
+                 ->getIntegerBitWidth() != 1))
+      return VPLegalization(VPLegalization::Discard, VPLegalization::Convert);
     return VPLegalization(VPLegalization::Legal, VPLegalization::Legal);
   }
 
@@ -195,7 +274,7 @@ public:
       return true;
 
     Type *Ty = RdxDesc.getRecurrenceType();
-    if (!TLI->isLegalElementTypeForRVV(Ty))
+    if (!TLI->isLegalElementTypeForRVV(TLI->getValueType(DL, Ty)))
       return false;
 
     switch (RdxDesc.getRecurrenceKind()) {
@@ -210,17 +289,25 @@ public:
     case RecurKind::UMax:
     case RecurKind::FMin:
     case RecurKind::FMax:
+    case RecurKind::FMulAdd:
+    case RecurKind::IAnyOf:
+    case RecurKind::FAnyOf:
       return true;
     default:
       return false;
     }
   }
 
-  unsigned getMaxInterleaveFactor(unsigned VF) {
+  unsigned getMaxInterleaveFactor(ElementCount VF) {
+    // Don't interleave if the loop has been vectorized with scalable vectors.
+    if (VF.isScalable())
+      return 1;
     // If the loop will not be vectorized, don't interleave the loop.
     // Let regular unroll to unroll the loop.
-    return VF == 1 ? 1 : ST->getMaxInterleaveFactor();
+    return VF.isScalar() ? 1 : ST->getMaxInterleaveFactor();
   }
+
+  bool enableInterleavedAccessVectorization() { return true; }
 
   enum RISCVRegisterClass { GPRRC, FPRRC, VRRC };
   unsigned getNumberOfRegisters(unsigned ClassID) const {
@@ -250,7 +337,7 @@ public:
       return RISCVRegisterClass::GPRRC;
 
     Type *ScalarTy = Ty->getScalarType();
-    if ((ScalarTy->isHalfTy() && ST->hasStdExtZfh()) ||
+    if ((ScalarTy->isHalfTy() && ST->hasStdExtZfhmin()) ||
         (ScalarTy->isFloatTy() && ST->hasStdExtF()) ||
         (ScalarTy->isDoubleTy() && ST->hasStdExtD())) {
       return RISCVRegisterClass::FPRRC;
@@ -269,6 +356,13 @@ public:
       return "RISCV::VRRC";
     }
     llvm_unreachable("unknown register class");
+  }
+
+  bool isLSRCostLess(const TargetTransformInfo::LSRCost &C1,
+                     const TargetTransformInfo::LSRCost &C2);
+
+  bool shouldFoldTerminatingConditionAfterLSR() const {
+    return true;
   }
 };
 

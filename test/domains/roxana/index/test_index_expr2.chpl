@@ -4,7 +4,7 @@ var D : domain(2) = {1..n, 1..n};
 
 var A : [D] real;
 
-forall k in D {
+forall k in D with (ref A) {
   A(k) = 1;
 }
 

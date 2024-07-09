@@ -19,5 +19,5 @@ var locale0sMode = here.umask(oldMode);
 if (locale0sMode == newMode) {
   writeln("As expected, changing locale 1's mode didn't affect locale 0's mode");
 } else {
-  writeln("Changing locale 1's mode alterred locale 0's mode");
+  writeln("Changing locale 1's mode altered locale 0's mode");
 }

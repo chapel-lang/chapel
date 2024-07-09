@@ -1,2 +1,0 @@
-oMap.chpl:1: warning: The OrderedMap module and the orderedMap type are deprecated in favor of SortedMap and sortedMap
-{5: 10}

@@ -1,1 +1,0 @@
-openmem.chpl:3: warning: openmem is deprecated - please use openMemFile instead

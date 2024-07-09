@@ -3,7 +3,8 @@ class Foo {
   var x: t;
 }
 
-var foo = (new owned Foo(int)).borrow();
+var ownFoo = new owned Foo(int);
+var foo = ownFoo.borrow();
 
 writeln(foo.type: string);
 writeln(foo);

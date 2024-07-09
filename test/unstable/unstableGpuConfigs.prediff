@@ -1,0 +1,4 @@
+#!/bin/sh
+
+cat $2 | grep -v "GPU support is under active development" | grep unstable > $2.filtered
+mv $2.filtered $2

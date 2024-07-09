@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -52,6 +52,8 @@ namespace uast {
 
  */
 class TupleDecl final : public Decl {
+ friend class AstNode;
+
  public:
   enum IntentOrKind {
     DEFAULT_INTENT = (int) Qualifier::DEFAULT_INTENT,
@@ -74,6 +76,7 @@ class TupleDecl final : public Decl {
   int numElements_;
   int typeExpressionChildNum_;
   int initExpressionChildNum_;
+  bool isTupleDeclFormal_;
 
   TupleDecl(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
             Decl::Linkage linkage,
@@ -91,15 +94,33 @@ class TupleDecl final : public Decl {
       initExpressionChildNum_(initExpressionChildNum) {
 
     CHPL_ASSERT(assertAcceptableTupleDecl());
+
+    isTupleDeclFormal_ = false;
+    for (auto decl : decls()) {
+      if (decl->isFormal()) {
+        isTupleDeclFormal_ = true;
+        break;
+      }
+    }
   }
 
-  TupleDecl(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    declSerializeInner(ser);
+    ser.write(intentOrKind_);
+    ser.writeVInt(numElements_);
+    ser.writeVInt(typeExpressionChildNum_);
+    ser.writeVInt(initExpressionChildNum_);
+    ser.write(isTupleDeclFormal_);
+  }
+
+  explicit TupleDecl(Deserializer& des)
     : Decl(asttags::TupleDecl, des) {
-      intentOrKind_ = des.read<IntentOrKind>();
-      numElements_ = des.read<int>();
-      typeExpressionChildNum_ = des.read<int>();
-      initExpressionChildNum_ = des.read<int>();
-    }
+    intentOrKind_ = des.read<IntentOrKind>();
+    numElements_ = des.readVInt();
+    typeExpressionChildNum_ = des.readVInt();
+    initExpressionChildNum_ = des.readVInt();
+    isTupleDeclFormal_ = des.read<bool>();
+  }
 
   bool assertAcceptableTupleDecl();
 
@@ -110,7 +131,8 @@ class TupleDecl final : public Decl {
            lhs->intentOrKind_ == rhs->intentOrKind_ &&
            lhs->numElements_ == rhs->numElements_ &&
            lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_ &&
-           lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_;
+           lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_ &&
+           lhs->isTupleDeclFormal_ == rhs->isTupleDeclFormal_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -201,16 +223,12 @@ class TupleDecl final : public Decl {
    */
   static const char* intentOrKindToString(IntentOrKind kind);
 
-  void serialize(Serializer& ser) const override {
-    Decl::serialize(ser);
-    ser.write(intentOrKind_);
-    ser.write(numElements_);
-    ser.write(typeExpressionChildNum_);
-    ser.write(initExpressionChildNum_);
+  /**
+    Returns 'true' if this TupleDecl is a formal in a procedure.
+   */
+  const bool isTupleDeclFormal() const {
+    return isTupleDeclFormal_;
   }
-
-  DECLARE_STATIC_DESERIALIZE(TupleDecl);
-
 };
 
 

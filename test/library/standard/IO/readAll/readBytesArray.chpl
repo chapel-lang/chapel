@@ -3,7 +3,7 @@ use CTypes;
 
 // the correct unsigned bytes are read:
 var a_unsigned : [0..<1032] uint(8);
-var ch = openReader("./jab.txt");
+var ch = openReader("./jab.txt", locking=false);
 const num_b_us = ch.readAll(a_unsigned);
 ch.close();
 
@@ -12,7 +12,7 @@ writeBytesArray(a_unsigned, num_b_us);
 
 // the correct signed bytes are read:
 var a_signed: [0..<1032] int(8);
-ch = openReader("./jab.txt");
+ch = openReader("./jab.txt", locking=false);
 const num_b_s = ch.readAll(a_signed);
 ch.close();
 
@@ -20,7 +20,7 @@ writeln("\nsigned:");
 writeBytesArray(a_signed, num_b_s);
 
 // helper to recreate original text from bytes arrays
-proc writeBytesArray(a: [], nb: int) {
+proc writeBytesArray(ref a: [], nb: int) {
     const s = string.createBorrowingBuffer(c_ptrTo(a), length=nb, size=a.size);
     writeln(s);
 }

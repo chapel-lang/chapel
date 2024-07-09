@@ -9,13 +9,13 @@ var inputArr = ["John", "Jacob", "Jingleheimer", "Schmidt", "his", "name", "is",
                 "la"];
 
 forall key in inputArr with
-(var agg = dm1.updateAggregator(updater=lambda (ref element: int) { element += 1; })) {
+(var agg = dm1.updateAggregator(updater=proc(ref element: int) { element += 1; })) {
   agg.update(key);
 }
 
 // agg.flush(); // agg doesn't live outside the forall so can't flush here
 
-var ch = openWriter("mapOutput.txt");
+var ch = openWriter("mapOutput.txt", locking=false);
 
 var first = true;
 for key in dm1.keys() { // won't be great perf but that's okay for now

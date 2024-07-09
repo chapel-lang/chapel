@@ -1,0 +1,3 @@
+--fast --llvm-remarks='inline'
+--fast --llvm-remarks-function='main'
+--fast --llvm-remarks-function='foo' # nothing.good

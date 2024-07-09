@@ -1,0 +1,8 @@
+# Util ignores.
+/tokencount/lex.yy.c
+/tokencount/tokencount
+/tokencount/tokencount.cron
+/tokencount/tokencount.dbg
+/tokencount/tokencount.output
+/tokencount/tokencount.tab.c
+/tokencount/tokencount.tab.h

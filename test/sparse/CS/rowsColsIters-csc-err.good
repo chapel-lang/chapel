@@ -1,0 +1,1 @@
+rowsColsIters.chpl:36: error: Can't (efficiently) iterate over rows using a CSC layout

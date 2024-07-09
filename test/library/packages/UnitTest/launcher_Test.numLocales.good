@@ -7,12 +7,12 @@ test_locales.chpl:55: error: halt reached - array index out of bounds: (0)
 ======================================================================
 FAIL test_locales.chpl: s4()
 ----------------------------------------------------------------------
-UnexpectedLocales: Max Locales is less than Min Locales
+UnexpectedLocales: in test_locales.chpl:22 - Max Locales is less than Min Locales
 
 ======================================================================
 FAIL test_locales.chpl: s8()
 ----------------------------------------------------------------------
-UnexpectedLocales: Max Locales is less than 1
+UnexpectedLocales: in test_locales.chpl:44 - Max Locales is less than 1
 
 ======================================================================
 FAIL test_locales.chpl: s7()

@@ -48,15 +48,15 @@ module analyze_RMAT_graph_associative_array {
 
       proc numNeighbors() do  return ndom.size;
 
-      // firstAvail$ must be passed by reference
-      proc addEdgeOnVertex(uArg, vArg, wArg, firstAvail$: sync int) {
+      // firstAvail must be passed by reference
+      proc ref addEdgeOnVertex(uArg, vArg, wArg, firstAvail: sync int) {
         on this do {
           // todo: the compiler should make these values local automatically!
           const /*u = uArg,*/ v = vArg, w = wArg;
             // Lock and unlock should be within 'local', but currently
             // need to pull them out due to implementation.
             // lock the vertex
-            const edgePos = firstAvail$.readFE();
+            const edgePos = firstAvail.readFE();
 
           local {
             const prevNdomLen = ndom.high;
@@ -71,15 +71,15 @@ module analyze_RMAT_graph_associative_array {
           }
 
             // release the lock
-            firstAvail$.writeEF(edgePos + 1);
+            firstAvail.writeEF(edgePos + 1);
         } // on
       }
 
       // not parallel-safe
-      proc tidyNeighbors(firstAvail$: sync int) {
+      proc ref tidyNeighbors(firstAvail: sync int) {
         local {
           // no synchronization here
-          var edgeCount = firstAvail$.readXX() - 1;
+          var edgeCount = firstAvail.readXX() - 1;
           RemoveDuplicates(1, edgeCount);
           // TODO: ideally if we don't save much memory, do not resize
           if edgeCount != ndom.size {
@@ -94,7 +94,7 @@ module analyze_RMAT_graph_associative_array {
       // Jargon: a "duplicate" is an edge v1->v2 for which
       // there is another edge v1->v2, possibly with a different weight.
       //
-      proc RemoveDuplicates(lo, inout hi) {
+      proc ref RemoveDuplicates(lo, inout hi) {
         use IO;
 
         param showArrays = false;  // beware of 'local' in the caller
@@ -187,16 +187,16 @@ module analyze_RMAT_graph_associative_array {
   proc  generate_and_analyze_associative_array_RMAT_graph_representation {
 
     // -----------------------------------------------------------------
-    // compute a random power law graph with 2^SCALE vertices, using 
-    // the RMAT generator. Initially generate a list of triples. 
-    // Then convert it to a Chapel representation of a sparse graph, 
+    // compute a random power law graph with 2^SCALE vertices, using
+    // the RMAT generator. Initially generate a list of triples.
+    // Then convert it to a Chapel representation of a sparse graph,
     // timing this step (Kernel 1).  Finally, execute Kernels 2, 3 and 4
     // of SSCA #2, using identically the same code as in the various
     // torus cases.
     // -----------------------------------------------------------------
 
     use SSCA2_compilation_config_params, SSCA2_execution_config_consts;
-  
+
     use SSCA2_driver, SSCA2_RMAT_graph_generator;
 
     use BlockDist;
@@ -222,17 +222,17 @@ module analyze_RMAT_graph_associative_array {
 
     // ------------------------------------------------------------------------
     // The data structures below are chosen to implement an irregular (sparse)
-    // graph using rectangular domains and arrays.  
+    // graph using rectangular domains and arrays.
     // Each node in the graph has a list of neighbors and a corresponding list
-    // of (integer) weights for the implicit edges.  
+    // of (integer) weights for the implicit edges.
     // ------------------------------------------------------------------------
 
-    const vertex_domain = 
+    const vertex_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
-        {1..N_VERTICES} dmapped Block ( {1..N_VERTICES} )
+        {1..N_VERTICES} dmapped new blockDist ( {1..N_VERTICES} )
       else
     {1..N_VERTICES} ;
-	
+
     class Associative_Graph {
       const vertices;
       var   Row      : [vertices] VertexData;
@@ -290,7 +290,7 @@ module analyze_RMAT_graph_associative_array {
 
       // return the number of all neighbors
 
-      proc   n_Neighbors (v : index (vertices) ) 
+      proc   n_Neighbors (v : index (vertices) )
       {return Row (v).numNeighbors();}
 
     } // class Associative_Graph
@@ -305,7 +305,7 @@ module analyze_RMAT_graph_associative_array {
 
    if graphInputFile == "" {
     Gen_RMAT_graph ( RMAT_a, RMAT_b, RMAT_c, RMAT_d, vertex_domain,
-		     SCALE, N_VERTICES, n_raw_edges, MAX_EDGE_WEIGHT, G ); 
+		     SCALE, N_VERTICES, n_raw_edges, MAX_EDGE_WEIGHT, G );
 
     if graphOutputFile != "" then
       Writeout_RMAT_graph ( G, graphOutputFile, graphOutputDStyle );

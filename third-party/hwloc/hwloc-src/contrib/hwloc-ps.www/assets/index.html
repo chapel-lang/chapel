@@ -1,0 +1,65 @@
+<!-- Copyright © 2018-2019 Inria.  All rights reserved. -->
+<!doctype html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" type="text/css" href="/stylecss">
+  <link rel="stylesheet" type="text/css" href="/maincss">
+  <meta charset="utf-8">
+  <title>Dynamic SVG</title>
+  <script type='text/javascript' src='/js'></script>
+</head>
+
+ <ul class='navul'>
+  <li class='navli'><a onclick='clearProc()'>Clear processes</a></li>
+  <li class='navli'><a class='procButton' type='all'>All processes</a></li>
+  <li class='navli'><a class='procButton' type='bound'>Bound processes</a></li>
+  <li class='navli'><label for="threads">Show threads<input id='threads' class='checkbox' type="checkbox" name="threads"></label></li>
+  <li class='navli'><label for="lastLocation">Show last location<input id='lastcpulocation' class='checkbox' type="checkbox" name="lastLocation"></label></li>
+  <li class='navli'><input class='hide-mobile' type='text' placeholder='PID or Name' value='' id='searchId'/> <input class='button hide-mobile' type='button' value='Search process' onclick="procByid()"/></li>
+</ul>
+
+<body style='text-align: center; background-color: #959ba5'>
+
+	<object style='margin-top: 50px' id="svg-object" type="image/svg+xml" data="/svg">
+	  Your browser does not support SVG.
+	</object>
+  <br>
+
+  <div style="display: inline-block;">
+    <div id='info' class='hidden'>
+      <ul>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+      </ul>
+    </div>
+    <div id='info-not-found' class='hidden'>
+      <ul style="list-style: none;">
+        <li> Process : not found </li>
+      </ul>
+    </div>
+  </div>
+
+  <div id='processTable' class="table100 ver2 m-b-110 hidden">
+    <div class="table100-head">
+      <table>
+        <thead>
+          <tr class="row100 head">
+            <th class="cell100 column1">Process id</th>
+            <th class="cell100 column2">Name</th>
+            <th class="cell100 column3">Displayed <input id='mainCheck' checked='true' type="checkbox"></input> </th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+
+    <div class="table100-body js-pscroll">
+      <table>
+        <tbody id='table'>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

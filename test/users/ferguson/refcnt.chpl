@@ -14,14 +14,14 @@ record R {
   proc retain() {
     refcnt!.count += 1;
   }
-  proc release() {
+  proc ref release() {
     refcnt!.count -= 1;
     if refcnt!.count == 0 {
       delete refcnt;
       refcnt = nil;
     }
   }
-  proc deinit() {
+  proc ref deinit() {
     writeln("In ~R() ", refcnt!.count);
     this.release();
   }
@@ -34,7 +34,7 @@ proc R.init() {
 proc R.init=(x: R) {
   writeln("In R.init=(R) ", x.refcnt);
   this.refcnt = x.refcnt;
-  this.complete();
+  init this;
   this.retain();
 }
 

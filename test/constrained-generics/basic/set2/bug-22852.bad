@@ -1,0 +1,4 @@
+bug-22852.chpl:10: In function 'needsAdvanced':
+bug-22852.chpl:11: error: unresolved call 'needsBasic(t_Advanced)'
+bug-22852.chpl:9: note: this candidate did not match: needsBasic(x: Basic)
+bug-22852.chpl:9: note: because interface constraint(s) were not satisfied

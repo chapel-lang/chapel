@@ -24,6 +24,12 @@ namespace VEISD {
 enum NodeType : unsigned {
   FIRST_NUMBER = ISD::BUILTIN_OP_END,
 
+  CMPI, // Compare between two signed integer values.
+  CMPU, // Compare between two unsigned integer values.
+  CMPF, // Compare between two floating-point values.
+  CMPQ, // Compare between two quad floating-point values.
+  CMOV, // Select between two values using the result of comparison.
+
   CALL,                   // A call instruction.
   EH_SJLJ_LONGJMP,        // SjLj exception handling longjmp.
   EH_SJLJ_SETJMP,         // SjLj exception handling setjmp.
@@ -35,8 +41,7 @@ enum NodeType : unsigned {
   GLOBAL_BASE_REG,        // Global base reg for PIC.
   Hi,                     // Hi/Lo operations, typically on a global address.
   Lo,                     // Hi/Lo operations, typically on a global address.
-  MEMBARRIER,             // Compiler barrier only; generate a no-op.
-  RET_FLAG,               // Return with a flag operand.
+  RET_GLUE,               // Return with a flag operand.
   TS1AM,                  // A TS1AM instruction used for 1/2 bytes swap.
   VEC_UNPACK_LO,          // unpack the lo v256 slice of a packed v512 vector.
   VEC_UNPACK_HI,          // unpack the hi v256 slice of a packed v512 vector.
@@ -58,6 +63,96 @@ enum NodeType : unsigned {
 #define ADD_VVP_OP(VVP_NAME, ...) VVP_NAME,
 #include "VVPNodes.def"
 };
+}
+
+/// Convert a DAG integer condition code to a VE ICC condition.
+inline static VECC::CondCode intCondCode2Icc(ISD::CondCode CC) {
+  switch (CC) {
+  default:
+    llvm_unreachable("Unknown integer condition code!");
+  case ISD::SETEQ:
+    return VECC::CC_IEQ;
+  case ISD::SETNE:
+    return VECC::CC_INE;
+  case ISD::SETLT:
+    return VECC::CC_IL;
+  case ISD::SETGT:
+    return VECC::CC_IG;
+  case ISD::SETLE:
+    return VECC::CC_ILE;
+  case ISD::SETGE:
+    return VECC::CC_IGE;
+  case ISD::SETULT:
+    return VECC::CC_IL;
+  case ISD::SETULE:
+    return VECC::CC_ILE;
+  case ISD::SETUGT:
+    return VECC::CC_IG;
+  case ISD::SETUGE:
+    return VECC::CC_IGE;
+  }
+}
+
+/// Convert a DAG floating point condition code to a VE FCC condition.
+inline static VECC::CondCode fpCondCode2Fcc(ISD::CondCode CC) {
+  switch (CC) {
+  default:
+    llvm_unreachable("Unknown fp condition code!");
+  case ISD::SETFALSE:
+    return VECC::CC_AF;
+  case ISD::SETEQ:
+  case ISD::SETOEQ:
+    return VECC::CC_EQ;
+  case ISD::SETNE:
+  case ISD::SETONE:
+    return VECC::CC_NE;
+  case ISD::SETLT:
+  case ISD::SETOLT:
+    return VECC::CC_L;
+  case ISD::SETGT:
+  case ISD::SETOGT:
+    return VECC::CC_G;
+  case ISD::SETLE:
+  case ISD::SETOLE:
+    return VECC::CC_LE;
+  case ISD::SETGE:
+  case ISD::SETOGE:
+    return VECC::CC_GE;
+  case ISD::SETO:
+    return VECC::CC_NUM;
+  case ISD::SETUO:
+    return VECC::CC_NAN;
+  case ISD::SETUEQ:
+    return VECC::CC_EQNAN;
+  case ISD::SETUNE:
+    return VECC::CC_NENAN;
+  case ISD::SETULT:
+    return VECC::CC_LNAN;
+  case ISD::SETUGT:
+    return VECC::CC_GNAN;
+  case ISD::SETULE:
+    return VECC::CC_LENAN;
+  case ISD::SETUGE:
+    return VECC::CC_GENAN;
+  case ISD::SETTRUE:
+    return VECC::CC_AT;
+  }
+}
+
+/// getImmVal - get immediate representation of integer value
+inline static uint64_t getImmVal(const ConstantSDNode *N) {
+  return N->getSExtValue();
+}
+
+/// getFpImmVal - get immediate representation of floating point value
+inline static uint64_t getFpImmVal(const ConstantFPSDNode *N) {
+  const APInt &Imm = N->getValueAPF().bitcastToAPInt();
+  uint64_t Val = Imm.getZExtValue();
+  if (Imm.getBitWidth() == 32) {
+    // Immediate value of float place places at higher bits on VE.
+    Val <<= 32;
+  }
+  return Val;
 }
 
 class VECustomDAG;
@@ -200,6 +295,8 @@ public:
   /// Custom DAGCombine {
   SDValue PerformDAGCombine(SDNode *N, DAGCombinerInfo &DCI) const override;
 
+  SDValue combineSelect(SDNode *N, DAGCombinerInfo &DCI) const;
+  SDValue combineSelectCC(SDNode *N, DAGCombinerInfo &DCI) const;
   SDValue combineTRUNCATE(SDNode *N, DAGCombinerInfo &DCI) const;
   /// } Custom DAGCombine
 
@@ -215,7 +312,7 @@ public:
   /// specified type.
   bool allowsMisalignedMemoryAccesses(EVT VT, unsigned AS, Align A,
                                       MachineMemOperand::Flags Flags,
-                                      bool *Fast) const override;
+                                      unsigned *Fast) const override;
 
   /// Inline Assembly {
 
@@ -236,7 +333,7 @@ public:
   // VE doesn't have rem.
   bool hasStandaloneRem(EVT) const override { return false; }
   // VE LDZ instruction returns 64 if the input is zero.
-  bool isCheapToSpeculateCtlz() const override { return true; }
+  bool isCheapToSpeculateCtlz(Type *) const override { return true; }
   // VE LDZ instruction is fast.
   bool isCtlzFast() const override { return true; }
   // VE has NND instruction.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,7 +23,6 @@
 #include "chpl/util/filesystem.h"
 #include "chpl/util/printf.h"
 
-#include "llvm/ADT/Optional.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/JSON.h"
 
@@ -69,6 +68,7 @@ Logger& Logger::operator=(Logger&& other) noexcept {
   filePath_ = other.filePath_;
   flushImmediately_ = other.flushImmediately_;
   level_ = other.level_;
+  header_ = other.header_;
   stream_.swap(other.stream_);
   if (other.stream_.is_open()) other.stream_.close();
   return *this;
@@ -80,6 +80,17 @@ Logger::~Logger() {
 
 bool Logger::isLoggingToBuiltin() const {
   return output_ != Logger::FILEPATH;
+}
+
+const char* Logger::levelToString(Level level) {
+  switch (level) {
+    case Logger::OFF: return "off";
+    case Logger::MESSAGES: return "messages";
+    case Logger::VERBOSE: return "verbose";
+    case Logger::TRACE: return "trace";
+  }
+  CHPLDEF_IMPOSSIBLE();
+  return nullptr;
 }
 
 bool Logger::isLogging() const {
@@ -116,14 +127,10 @@ void Logger::flush() {
 
 void Logger::logit(const char* msg) {
   if (!isLogging()) return;
-  switch (output_) {
-    case STDERR: std::cerr << msg; break;
-    case STDOUT: std::cout << msg; break;
-    case FILEPATH: stream_ << msg; break;
-  }
-  if (flushImmediately_) {
-    flush();
-  }
+  auto& out = stream();
+  if (!header_.empty()) out << header_ << " ";
+  out << msg;
+  if (flushImmediately_) flush();
 }
 
 void Logger::logit(std::string msg) {

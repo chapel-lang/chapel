@@ -1,2 +1,1 @@
 record_with1.chpl:6: error: inheritance is not currently supported for records
-record_with1.chpl:6: note: cpoint declared as a record here

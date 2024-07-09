@@ -3,7 +3,7 @@ config var n = 9;
 var D = {1..n, 1..n};
 var A: [D] real;
 
-forall (i,j) in D {
+forall (i,j) in D with (ref A) {
   A(i,j) = i + j/10.0;
 }
 

@@ -81,7 +81,7 @@ for i in 1..R {
 }
 
 // Initialize the input and output arrays
-[(i, j) in Dom] input[i,j] = coefx*i + coefy*j;
+[(i, j) in Dom with (ref input)] input[i,j] = coefx*i + coefy*j;
 
 //
 // Print information before main loop

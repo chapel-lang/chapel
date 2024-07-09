@@ -27,6 +27,10 @@ size_t maxsz = 0;
 #endif
 #include "test.h"
 
+#if GASNET_HAVE_MK_CLASS_ZE
+  #include "zekind.h"
+#endif
+
 #define GASNET_HEADNODE 0
 #define PRINT_LATENCY 0
 #define PRINT_THROUGHPUT 1
@@ -53,6 +57,7 @@ int iamsender = 0;
 int unitsMB = 0;
 int doputs = 1;
 int dogets = 1;
+int lbufs = 0;
 
 #if GASNET_HAVE_MK_CLASS_MULTIPLE
   static int use_loc_gpu = 0;
@@ -144,8 +149,15 @@ void bulk_test(int iters) {GASNET_BEGIN_FUNCTION();
 		if (iamsender && doputs) {
 			/* measure the throughput of sending a message */
 			begin = TIME();
-			for (i = 0; i < iters; i++) {
+			if (lbufs > 1) {
+			    for (i = 0; i < iters; i++) {
+				void *loc_addr = (void*)((uintptr_t)msgbuf + max_payload * (i%lbufs));
+				gex_RMA_PutBlocking(myteam, peerproc, tgtmem, loc_addr, payload, 0);
+			    }
+			} else {
+			    for (i = 0; i < iters; i++) {
 				gex_RMA_PutBlocking(myteam, peerproc, tgtmem, msgbuf, payload, 0);
+			    }
 			}
 			end = TIME();
 		 	update_stat(&stput, (end - begin), iters);
@@ -162,8 +174,15 @@ void bulk_test(int iters) {GASNET_BEGIN_FUNCTION();
 		if (iamsender && dogets) {
 			/* measure the throughput of receiving a message */
 			begin = TIME();
-			for (i = 0; i < iters; i++) {
-			    gex_RMA_GetBlocking(myteam, msgbuf, peerproc, tgtmem, payload, 0);
+			if (lbufs > 1) {
+			    for (i = 0; i < iters; i++) {
+				void *loc_addr = (void*)((uintptr_t)msgbuf + max_payload * (i%lbufs));
+				gex_RMA_GetBlocking(myteam, loc_addr, peerproc, tgtmem, payload, 0);
+			    }
+			} else {
+			    for (i = 0; i < iters; i++) {
+				gex_RMA_GetBlocking(myteam, msgbuf, peerproc, tgtmem, payload, 0);
+			    }
 			}
 			end = TIME();
 		 	update_stat(&stget, (end - begin), iters);
@@ -195,8 +214,15 @@ void bulk_test_nbi(int iters, int doalc) {GASNET_BEGIN_FUNCTION();
 		if (iamsender && doputs) {
 			/* measure the throughput of sending a message */
 			begin = TIME();
-			for (i = 0; i < iters; i++) {
+			if (lbufs > 1) {
+			    for (i = 0; i < iters; i++) {
+				void *loc_addr = (void*)((uintptr_t)msgbuf + max_payload * (i%lbufs));
+				gex_RMA_PutNBI(myteam, peerproc, tgtmem, loc_addr, payload, lc_opt, 0);
+			    }
+			} else {
+			    for (i = 0; i < iters; i++) {
 				gex_RMA_PutNBI(myteam, peerproc, tgtmem, msgbuf, payload, lc_opt, 0);
+			    }
 			}
 			gex_NBI_Wait(doalc ? GEX_EC_ALL : GEX_EC_PUT, 0);
 			end = TIME();
@@ -215,8 +241,15 @@ void bulk_test_nbi(int iters, int doalc) {GASNET_BEGIN_FUNCTION();
 		if (iamsender && dogets && !doalc) {
 			/* measure the throughput of receiving a message */
 			begin = TIME();
-			for (i = 0; i < iters; i++) {
-			    gex_RMA_GetNBI(myteam, msgbuf, peerproc, tgtmem, payload, 0);
+			if (lbufs > 1) {
+			    for (i = 0; i < iters; i++) {
+				void *loc_addr = (void*)((uintptr_t)msgbuf + max_payload * (i%lbufs));
+				gex_RMA_GetNBI(myteam, loc_addr, peerproc, tgtmem, payload, 0);
+			    }
+			} else {
+			    for (i = 0; i < iters; i++) {
+				gex_RMA_GetNBI(myteam, msgbuf, peerproc, tgtmem, payload, 0);
+			    }
 			}
 			gex_NBI_Wait(GEX_EC_GET,0);
 			end = TIME();
@@ -253,8 +286,15 @@ void bulk_test_nb(int iters, int doalc) {GASNET_BEGIN_FUNCTION();
 			/* measure the throughput of sending a message */
 			gex_Event_t *lc_opt = doalc ? (events+iters) : GEX_EVENT_DEFER;
 			begin = TIME();
-			for (i = 0; i < iters; i++, lc_opt += doalc) {
+			if (lbufs > 1) {
+			    for (i = 0; i < iters; i++, lc_opt += doalc) {
+				void *loc_addr = (void*)((uintptr_t)msgbuf + max_payload * (i%lbufs));
+				events[i] = gex_RMA_PutNB(myteam, peerproc, tgtmem, loc_addr, payload, lc_opt, 0);
+			    }
+			} else {
+			    for (i = 0; i < iters; i++, lc_opt += doalc) {
 				events[i] = gex_RMA_PutNB(myteam, peerproc, tgtmem, msgbuf, payload, lc_opt, 0);
+			    }
 			}
 			gex_Event_WaitAll(events, nevents, 0);
 			end = TIME();
@@ -273,8 +313,15 @@ void bulk_test_nb(int iters, int doalc) {GASNET_BEGIN_FUNCTION();
 		if (iamsender && dogets && !doalc) {
 			/* measure the throughput of receiving a message */
 			begin = TIME();
-			for (i = 0; i < iters; i++) {
-			    events[i] = gex_RMA_GetNB(myteam, msgbuf, peerproc, tgtmem, payload, 0);
+			if (lbufs > 1) {
+			    for (i = 0; i < iters; i++) {
+				void *loc_addr = (void*)((uintptr_t)msgbuf + max_payload * (i%lbufs));
+				events[i] = gex_RMA_GetNB(myteam, loc_addr, peerproc, tgtmem, payload, 0);
+			    }
+			} else {
+			    for (i = 0; i < iters; i++) {
+				events[i] = gex_RMA_GetNB(myteam, msgbuf, peerproc, tgtmem, payload, 0);
+			    }
 			}
 			gex_Event_WaitAll(events, iters, 0);
 			end = TIME();
@@ -304,10 +351,13 @@ int main(int argc, char **argv)
     int fullduplexmode = 0;
     int crossmachinemode = 0;
     int skipwarmup = 0;
+    size_t segsz = 0;
 #if GASNET_HAVE_MK_CLASS_MULTIPLE
     int use_cuda_uva = 0;
     int use_hip = 0;
+    int use_ze = 0;
 #endif
+    int use_host = 1;
     int help = 0;   
 
     /* call startup */
@@ -351,22 +401,45 @@ int main(int argc, char **argv)
         ++arg;
         if (argc > arg) { max_step = gasnett_parse_int(argv[arg], 1); arg++; }
         else help = 1;
-#if GASNET_HAVE_MK_CLASS_CUDA_UVA
-      // UNDOCUMENTED
+      } else if (!strcmp(argv[arg], "-lbufs")) {
+        ++arg;
+        if (argc > arg) { lbufs = atoi(argv[arg]); arg++; }
+        else help = 1;
+      } else if (!strcmp(argv[arg], "-segsz")) {
+        ++arg;
+        if (argc > arg) { segsz = gasnett_parse_int(argv[arg], 1024*1024); arg++; }
+        else help = 1;
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+  #if GASNET_HAVE_MK_CLASS_CUDA_UVA
       } else if (!strcmp(argv[arg], "-cuda-uva")) {
         use_cuda_uva = 1;
         use_hip = 0;
+        use_ze = 0;
+        use_host = 0;
         ++arg;
-#endif
-#if GASNET_HAVE_MK_CLASS_HIP
-      // UNDOCUMENTED
+  #endif
+  #if GASNET_HAVE_MK_CLASS_HIP
       } else if (!strcmp(argv[arg], "-hip")) {
         use_hip = 1;
         use_cuda_uva = 0;
+        use_ze = 0;
+        use_host = 0;
         ++arg;
-#endif
-#if GASNET_HAVE_MK_CLASS_MULTIPLE
-      // UNDOCUMENTED
+  #endif
+  #if GASNET_HAVE_MK_CLASS_ZE
+      } else if (!strcmp(argv[arg], "-ze")) {
+        use_cuda_uva = 0;
+        use_hip = 0;
+        use_ze = 1;
+        use_host = 0;
+        ++arg;
+  #endif
+      } else if (!strcmp(argv[arg], "-host")) {
+        use_cuda_uva = 0;
+        use_hip = 0;
+        use_ze = 0;
+        use_host = 1;
+        ++arg;
       } else if (!strcmp(argv[arg], "-local-gpu")) {
         use_loc_gpu = 1;
         ++arg;
@@ -392,8 +465,23 @@ int main(int argc, char **argv)
     if (!maxsz) maxsz = 2*1024*1024; /* 2 MB default */
     if (argc > arg) { TEST_SECTION_PARSE(argv[arg]); arg++; }
 
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+    if (use_host) {
+       use_loc_gpu = use_rem_gpu = 0;
+    }
+#endif
+
     if (!max_step) max_step = maxsz;
     if (!min_payload) min_payload = 16;
+
+    if (!insegment) {
+        // silently map out-of-range to iters
+        if ((lbufs < 0) || (lbufs > iters)) lbufs = iters;
+    } else if (lbufs) {
+        MSG0("WARNING: Ignoring '-lbufs N' without '-out'.");
+        lbufs = 1;
+    }
+    if (!lbufs) lbufs = 1; // default
 
     /* get SPMD info (needed for segment size) */
     myproc = gex_TM_QueryRank(myteam);
@@ -402,7 +490,48 @@ int main(int argc, char **argv)
     #ifdef GASNET_SEGMENT_EVERYTHING
       if (maxsz > TEST_SEGSZ) { ERR("maxsz must be <= %"PRIuPTR" on GASNET_SEGMENT_EVERYTHING",(uintptr_t)TEST_SEGSZ); gasnet_exit(1); }
     #endif
-    GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
+    if (segsz == 0) {
+      segsz = TEST_SEGSZ_REQUEST;
+    } else if (segsz < TEST_SEGSZ_REQUEST) {
+      ERR("Command line -segsz %"PRIuPTR" is less than %"PRIuPTR,
+           (uintptr_t)segsz, (uintptr_t)(TEST_SEGSZ_REQUEST));
+      gasnet_exit(1);
+    }
+    GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, segsz));
+
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+  #define KIND_USAGE_BEGIN \
+        "\n" \
+        "  Memory kind selection (last-used has precedence):\n" \
+        "    -host         Test host memory, aka GEX_MK_CLASS_HOST (default)\n"
+  #define KIND_USAGE_END \
+        "  Memory kind buffer location (ignored with -host):\n" \
+        "    Local buffer location  (last-used has precedence):\n" \
+        "      -local-host   Local buffer is in host memory (default)\n" \
+        "      -local-gpu    Local buffer is in GPU memory\n" \
+        "    Remote buffer location  (last-used has precedence):\n" \
+        "      -remote-host  Remote buffer is in host memory\n" \
+        "      -remote-gpu   Remote buffer is in GPU memory (default)"
+#else
+  #define KIND_USAGE_BEGIN       // empty
+  #define KIND_USAGE_END         // empty
+#endif
+#if GASNET_HAVE_MK_CLASS_CUDA_UVA
+  #define KIND_USAGE_CUDA_UVA    "    -cuda-uva     Test GEX_MK_CLASS_CUDA_UVA\n"
+#else
+  #define KIND_USAGE_CUDA_UVA    // empty
+#endif
+#if GASNET_HAVE_MK_CLASS_HIP
+  #define KIND_USAGE_HIP         "    -hip          Test GEX_MK_CLASS_HIP\n"
+#else
+  #define KIND_USAGE_HIP         // empty
+#endif
+#if GASNET_HAVE_MK_CLASS_ZE
+  #define KIND_USAGE_ZE          "    -ze           Test GEX_MK_CLASS_ZE\n"
+#else
+  #define KIND_USAGE_ZE          // empty
+#endif
+
     test_init("testlarge",1, "[options] (iters) (maxsz) (test_sections)\n"
                "  The '-in' or '-out' option selects whether the initiator-side\n"
                "   memory is in the GASNet segment or not (default is 'in').\n"
@@ -415,7 +544,17 @@ int main(int argc, char **argv)
                "   nodes communicate with each other, while all other nodes sit idle.\n"
                "  The '-minsz N' option sets the minimum transfer size tested (default is 16).\n"
                "  The '-max-step N' option selects the maximum step between transfer sizes,\n"
-               "    which by default advance by doubling until maxsz is reached.");
+               "    which by default advance by doubling until maxsz is reached.\n"
+               "  The '-segsz N' option sets the segment space to use (in MB).\n"
+               "    The default is the minimum necessary to complete the tests.\n"
+               "  The '-lbufs N' option is valid only with '-out' and sets the number of\n"
+               "    distinct local (initiator-side) buffers to cycle through (default is 1)."
+               KIND_USAGE_BEGIN
+               KIND_USAGE_CUDA_UVA
+               KIND_USAGE_HIP
+               KIND_USAGE_ZE
+               KIND_USAGE_END
+              );
     if (help || argc > arg) test_usage();
     
     max_payload = maxsz;
@@ -468,17 +607,27 @@ int main(int argc, char **argv)
     int use_device = 0;
 
     if (use_cuda_uva) {
-      MSG0("***NOTICE***: Using EXPERIMENTAL support for CUDA UVA memory kind (local %s, remote %s)",
+      MSG0("***NOTICE***: Using EXPERIMENTAL/UNTUNED support for CUDA UVA memory kind (local %s, remote %s)",
            (use_loc_gpu ? "GPU" : "host"), (use_rem_gpu ? "GPU" : "host"));
       args.gex_class = GEX_MK_CLASS_CUDA_UVA;
       args.gex_args.gex_class_cuda_uva.gex_CUdevice = 0;
       use_device = 1;
     }
     if (use_hip) {
-      MSG0("***NOTICE***: Using EXPERIMENTAL support for HIP memory kind (local %s, remote %s)",
+      MSG0("***NOTICE***: Using EXPERIMENTAL/UNTUNED support for HIP memory kind (local %s, remote %s)",
            (use_loc_gpu ? "GPU" : "host"), (use_rem_gpu ? "GPU" : "host"));
       args.gex_class = GEX_MK_CLASS_HIP;
       args.gex_args.gex_class_hip.gex_hipDevice = 0;
+      use_device = 1;
+    }
+    if (use_ze) {
+      MSG0("***NOTICE***: Using EXPERIMENTAL/UNTUNED support for ZE memory kind (local %s, remote %s)",
+           (use_loc_gpu ? "GPU" : "host"), (use_rem_gpu ? "GPU" : "host"));
+    #if GASNET_HAVE_MK_CLASS_ZE
+      if (! test_open_ze_device(0, &args)) {
+        FATALERR("GEX_MK_CLASS_ZE: could not find a GPU device");
+      }
+    #endif
       use_device = 1;
     }
 
@@ -490,7 +639,7 @@ int main(int argc, char **argv)
       }
 
       GASNET_Safe( gex_MK_Create(&kind, myclient, &args, 0) );
-      GASNET_Safe( gex_Segment_Create(&d_segment, myclient, NULL, TEST_SEGSZ_REQUEST, kind, 0) );
+      GASNET_Safe( gex_Segment_Create(&d_segment, myclient, NULL, segsz, kind, 0) );
       GASNET_Safe( gex_EP_Create(&gpu_ep, myclient, GEX_EP_CAPABILITY_RMA, 0) );
       GASNET_Safe( gex_EP_BindSegment(gpu_ep, d_segment, 0) );
       gex_EP_PublishBoundSegment(myteam, &gpu_ep, 1, 0);
@@ -509,20 +658,25 @@ int main(int argc, char **argv)
            msgbuf = (void *) myseg;
 #endif
         } else {
-	    alloc = (void *) test_calloc(maxsz+PAGESZ,1); /* calloc prevents valgrind warnings */
+            alloc = (void *) test_calloc(maxsz*lbufs+PAGESZ,1); // calloc prevents valgrind warnings
             msgbuf = (void *) alignup(((uintptr_t)alloc), PAGESZ); /* ensure page alignment of base */
         }
         assert(((uintptr_t)msgbuf) % PAGESZ == 0);
 
-        if (myproc == 0) 
-          MSG("Running %i iterations of %s%s%sbulk %s%s%s with local addresses %sside the segment for sizes: %"PRIuPTR"...%"PRIuPTR"\n", 
+        if (myproc == 0) {
+          MSG("Running %i iterations of %s%s%sbulk %s%s%s with %d local address%s %sside the segment for sizes: %"PRIuPTR"...%"PRIuPTR"\n", 
           iters, 
           (firstlastmode ? "first/last " : ""),
           (fullduplexmode ? "full-duplex ": ""),
           (crossmachinemode ? "cross-machine ": ""),
           doputs?"put":"", (doputs&&dogets)?"/":"", dogets?"get":"",
+          lbufs, (lbufs>1)?"s":"",
           insegment ? "in" : "out", 
           (uintptr_t)min_payload, (uintptr_t)max_payload);
+          if (segsz > TEST_SEGSZ_REQUEST) {
+            MSG("Using non-default segment size %"PRIuPTR, (uintptr_t)segsz);
+          }
+        }
         BARRIER();
 
         if (iamsender && !skipwarmup) { /* pay some warm-up costs */
@@ -537,8 +691,16 @@ int main(int argc, char **argv)
               h[i] = gex_RMA_PutNB(myteam, peerproc, tgtmem, msgbuf, 8, GEX_EVENT_DEFER, 0);
               h[i+warm_iters] = gex_RMA_GetNB(myteam, msgbuf, peerproc, tgtmem, 8, 0);
            }
-           gex_RMA_PutBlocking(myteam, peerproc, tgtmem, msgbuf, max_payload, 0);
-           gex_RMA_GetBlocking(myteam, msgbuf, peerproc, tgtmem, max_payload, 0);
+           if (lbufs > 1) {
+             for (i = 0; i < lbufs; i++) {
+                void * loc_addr = (void*)((uintptr_t)msgbuf + max_payload * i);
+                gex_RMA_PutBlocking(myteam, peerproc, tgtmem, loc_addr, max_payload, 0);
+                gex_RMA_GetBlocking(myteam, loc_addr, peerproc, tgtmem, max_payload, 0);
+             }
+           } else {
+             gex_RMA_PutBlocking(myteam, peerproc, tgtmem, msgbuf, max_payload, 0);
+             gex_RMA_GetBlocking(myteam, msgbuf, peerproc, tgtmem, max_payload, 0);
+           }
            gex_Event_WaitAll(h, warm_iters*2, 0);
            gex_NBI_Wait(GEX_EC_ALL,0);
            test_free(h);

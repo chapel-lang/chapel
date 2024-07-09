@@ -1,4 +1,4 @@
-proc partition(arr, left: int, right: int) : int{
+proc partition(ref arr, left: int, right: int) : int{
 	var x : int = arr(right);
 	var i : int = (left - 1);
  
@@ -16,7 +16,7 @@ proc partition(arr, left: int, right: int) : int{
     	return (i + 1);
 }
 
-proc quickselect(arr, left, right, k) : int{
+proc quickselect(ref arr, left, right, k) : int{
     	// If k is more than number of elements in array
     	if ((left + k) >= left && k <= right - left + 1){
 		

@@ -5,26 +5,26 @@ use IO;
 
 testBinaryRead("./input/tu8.bin", makeUnsignedArray(8));
 
-testBinaryRead("./input/tu16.bin", makeUnsignedArray(16), ioendian.big);
-testBinaryRead("./input/tu32.bin", makeUnsignedArray(32), ioendian.big);
-testBinaryRead("./input/tu64.bin", makeUnsignedArray(64), ioendian.big);
+testBinaryRead("./input/tu16.bin", makeUnsignedArray(16), endianness.big);
+testBinaryRead("./input/tu32.bin", makeUnsignedArray(32), endianness.big);
+testBinaryRead("./input/tu64.bin", makeUnsignedArray(64), endianness.big);
 
-testBinaryRead("./input/tu16le.bin", makeUnsignedArray(16), ioendian.little);
-testBinaryRead("./input/tu32le.bin", makeUnsignedArray(32), ioendian.little);
-testBinaryRead("./input/tu64le.bin", makeUnsignedArray(64), ioendian.little);
+testBinaryRead("./input/tu16le.bin", makeUnsignedArray(16), endianness.little);
+testBinaryRead("./input/tu32le.bin", makeUnsignedArray(32), endianness.little);
+testBinaryRead("./input/tu64le.bin", makeUnsignedArray(64), endianness.little);
 
 testBinaryRead("./input/ti8.bin", makeSignedArray(8));
 
-testBinaryRead("./input/ti16.bin", makeSignedArray(16), ioendian.big);
-testBinaryRead("./input/ti32.bin", makeSignedArray(32), ioendian.big);
-testBinaryRead("./input/ti64.bin", makeSignedArray(64), ioendian.big);
+testBinaryRead("./input/ti16.bin", makeSignedArray(16), endianness.big);
+testBinaryRead("./input/ti32.bin", makeSignedArray(32), endianness.big);
+testBinaryRead("./input/ti64.bin", makeSignedArray(64), endianness.big);
 
-testBinaryRead("./input/ti16le.bin", makeSignedArray(16), ioendian.little);
-testBinaryRead("./input/ti32le.bin", makeSignedArray(32), ioendian.little);
-testBinaryRead("./input/ti64le.bin", makeSignedArray(64), ioendian.little);
+testBinaryRead("./input/ti16le.bin", makeSignedArray(16), endianness.little);
+testBinaryRead("./input/ti32le.bin", makeSignedArray(32), endianness.little);
+testBinaryRead("./input/ti64le.bin", makeSignedArray(64), endianness.little);
 
-proc testBinaryRead(path: string, expected_values, endian: ioendian = ioendian.native) {
-    var reader = openReader(path);
+proc testBinaryRead(path: string, expected_values, endian: endianness = endianness.native) {
+    var reader = openReader(path, locking=false);
     var values : expected_values.type;
 
     try {

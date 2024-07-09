@@ -13,10 +13,10 @@ class Foo {
     if (xVal > 5) {
       x = xVal;
       funcThatThrows1();
-      this.complete();
+      init this;
     } else {
       x = xVal + 5;
-      this.complete();
+      init this;
       funcThatThrows2();
     }
   }

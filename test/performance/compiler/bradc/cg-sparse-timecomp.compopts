@@ -1,1 +1,1 @@
-cg-makea.chpl -O --no-bounds-checks
+-snoParSafeWarning cg-makea.chpl -O --no-bounds-checks

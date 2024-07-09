@@ -84,8 +84,16 @@ tu_alloc (size_t size)
 static void *
 tu_realloc (void *p, size_t old_size, size_t new_size)
 {
-  size_t *block = block_check (p);
-  block = (size_t *) realloc (block, sizeof(size_t) + new_size + sizeof(block_end));
+  size_t *block;
+  size_t *old_block = block_check (p);
+  if (old_block[0] != old_size)
+    {
+      fprintf (stderr, "%s:%d: bad old_size: want %ld, got %ld.\n", __FILE__, __LINE__,
+                 (long)old_block[0], (long)old_size);
+      abort ();
+    }
+
+  block = (size_t *) realloc (old_block, sizeof(size_t) + new_size + sizeof(block_end));
   if (!block)
     {
       fprintf (stderr, "Virtual memory exhausted.\n");
@@ -98,17 +106,24 @@ tu_realloc (void *p, size_t old_size, size_t new_size)
 static void
 tu_free (void *p, size_t old_size)
 {
-  free (block_check (p));
+  size_t *old_block = block_check (p);
+  if (old_block[0] != old_size && old_size != 0)
+    {
+      fprintf (stderr, "%s:%d: bad old_size: want %ld, got %ld.\n", __FILE__, __LINE__,
+                 (long)old_block[0], (long)old_size);
+      abort ();
+    }
+  free (old_block);
 }
 
 /* Free memory allocated via mini-gmp allocation function. */
 void
-testfree (void *p)
+testfree (void *p, size_t size)
 {
   void (*freefunc) (void *, size_t);
   mp_get_memory_functions (NULL, NULL, &freefunc);
 
-  freefunc (p, 0);
+  freefunc (p, size);
 }
 
 int
@@ -158,7 +173,7 @@ dump (const char *label, const mpz_t x)
 {
   char *buf = mpz_get_str (NULL, 16, x);
   fprintf (stderr, "%s: %s\n", label, buf);
-  testfree (buf);
+  testfree (buf, strlen(buf) + 1);
 }
 
 void

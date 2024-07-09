@@ -7,4 +7,4 @@ var lst: list(int);
 for i in 1..testIters do
   lst.pushBack(i);
 
-const elem = lst.pop(testIters + 1);
+const elem = lst.getAndRemove(testIters + 1);

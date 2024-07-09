@@ -7,8 +7,8 @@ proc test_eq(x, y) {
   writeln(x == y);
 }
 
-var a: c_void_ptr = c_nil;
-var b: c_void_ptr = a;
+var a: c_ptr(void) = nil;
+var b: c_ptr(void) = a;
 var a_cptr = a : c_ptr(int);
 var b_cptr = b : c_ptr(int);
 var a_cptrconst = a : c_ptrConst(int);

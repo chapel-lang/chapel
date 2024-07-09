@@ -17,7 +17,7 @@ var F:[{rngs,rng}] int=0;
 
 writeln("Checking a non-strided range");
 // The iterator
-forall i in guided(rng,nTasks) do {
+forall i in guided(rng,nTasks) with (ref A) do {
   A[i]=A[i]+1;
 }
 // Check if parallel assignment of Arr[] using guided() Iterator is correct
@@ -25,7 +25,7 @@ checkCorrectness(A,rng);
 
 writeln("Checking a non-strided domain");
 // The iterator
-forall i in guided(dmn,nTasks) do {
+forall i in guided(dmn,nTasks) with (ref D) do {
   D[i]=D[i]+1;
 }
 // Check if parallel assignment of Arr[] using guided() Iterator is correct
@@ -33,7 +33,7 @@ checkCorrectness(D,dmn);
 
 writeln("Checking a strided range");
 // The iterator
-forall i in guided(rngs,nTasks) do {
+forall i in guided(rngs,nTasks) with (ref B) do {
   B[i]=B[i]+1;
 }
 // Check if parallel assignment of Arr[] using guided() Iterator is correct
@@ -41,7 +41,7 @@ checkCorrectness(B,rngs);
 
 writeln("Checking a strided domain");
 // The iterator
-forall i in guided(dmns,nTasks) do {
+forall i in guided(dmns,nTasks) with (ref E) do {
   E[i]=E[i]+1;
 }
 // Check if parallel assignment of Arr[] using guided() Iterator is correct
@@ -49,7 +49,7 @@ checkCorrectness(E,dmns);
 
 writeln("Checking a zippered iteration (range)");
 // The iterator
-forall (i,j) in zip(guided(rngs,nTasks),rng#rngs.size) do {
+forall (i,j) in zip(guided(rngs,nTasks),rng#rngs.size) with (ref C) do {
   C[i,j]=C[i,j]+1;
 }
 // Check if parallel assignment of Arr[] using dynamic() Iterator is correct
@@ -57,7 +57,7 @@ checkCorrectness2(C,rngs,rng);
 
 writeln("Checking a zippered iteration (domain)");
 // The iterator
-forall (i,j) in zip(guided(dmns,nTasks),dmn#dmns.size) do {
+forall (i,j) in zip(guided(dmns,nTasks),dmn#dmns.size) with (ref F) do {
   F[i,j]=F[i,j]+1;
 }
 // Check if parallel assignment of Arr[] using dynamic() Iterator is correct
@@ -78,7 +78,7 @@ proc checkCorrectness(Arr:[]int,r:range(?))
     writeln("Guided Iterator: Correct");
 }
 
-proc checkCorrectness(Arr:[]int,c:domain)
+proc checkCorrectness(Arr:[]int,c:domain(?))
 {
   var check=true;
   for i in c do {
@@ -110,7 +110,7 @@ proc checkCorrectness2(Arr:[]int,r:range(?),r2:range(?))
 
 }
 
-proc checkCorrectness2(Arr:[]int,c:domain,c2:domain)
+proc checkCorrectness2(Arr:[]int,c:domain(?),c2:domain(?))
 {
   var check=true;
   for (i,j) in zip(c,c2#c.size) do {

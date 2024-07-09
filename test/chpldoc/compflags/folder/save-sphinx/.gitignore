@@ -1,0 +1,3 @@
+# Test/chpldoc/compflags/folder/save-sphinx ignores.
+/my-sphinx
+/deep-sphinx

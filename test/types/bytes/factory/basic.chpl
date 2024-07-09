@@ -88,3 +88,54 @@ cCharPtr[3] = 0:uint(8);
 
 writeln();
 
+const cUCharConstPtr = allocate(uint(8), 4);
+cUCharConstPtr[0] = 65:uint(8);
+cUCharConstPtr[1] = 66:uint(8);
+cUCharConstPtr[2] = 67:uint(8);
+cUCharConstPtr[3] = 0:uint(8);
+{
+  // there should be 1 allocate, 2 frees
+  writeln("Initialize from c_ptrConst(c_uchar)");
+
+  var sNew = bytes.createCopyingBuffer(cUCharConstPtr, length=3, size=4);
+  var sBorrowed = bytes.createBorrowingBuffer(cUCharConstPtr, length=3, size=4);
+  var sOwned = bytes.createAdoptingBuffer(cUCharConstPtr, length=3, size=4);
+
+  writeln(sNew);
+  writeln(sBorrowed);
+  writeln(sOwned);
+
+  cUCharConstPtr[1] = 32:uint(8);
+
+  writeln(sNew);
+  writeln(sBorrowed);
+  writeln(sOwned);
+}
+
+writeln();
+
+const cCharConstPtr = allocate(uint(8), 4);
+cCharConstPtr[0] = 65:uint(8);
+cCharConstPtr[1] = 66:uint(8);
+cCharConstPtr[2] = 67:uint(8);
+cCharConstPtr[3] = 0:uint(8);
+{
+  // there should be 1 allocate, 2 frees
+  writeln("Initialize from c_ptrConst(c_char)");
+
+  var sNew = bytes.createCopyingBuffer(cCharConstPtr, length=3, size=4);
+  var sBorrowed = bytes.createBorrowingBuffer(cCharConstPtr, length=3, size=4);
+  var sOwned = bytes.createAdoptingBuffer(cCharConstPtr, length=3, size=4);
+
+  writeln(sNew);
+  writeln(sBorrowed);
+  writeln(sOwned);
+
+  cCharConstPtr[1] = 32:uint(8);
+
+  writeln(sNew);
+  writeln(sBorrowed);
+  writeln(sOwned);
+}
+
+writeln();

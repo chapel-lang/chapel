@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,12 +36,20 @@ std::string DoWhile::dumpChildLabelInner(int i) const {
 owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
                               BlockStyle blockStyle,
                               owned<Block> body,
-                              owned<AstNode> condition) {
+                              owned<AstNode> condition,
+                              owned<AttributeGroup> attributeGroup) {
 
   CHPL_ASSERT(condition.get() != nullptr);
   CHPL_ASSERT(body.get() != nullptr);
 
   AstList lst;
+  int attributeGroupChildNum = NO_CHILD;
+
+  if (attributeGroup.get() != nullptr) {
+    attributeGroupChildNum = lst.size();
+    lst.push_back(std::move(attributeGroup));
+  }
+
   const int loopBodyChildNum = lst.size();
 
   lst.push_back(std::move(body));
@@ -51,7 +59,8 @@ owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
 
   DoWhile* ret = new DoWhile(std::move(lst), blockStyle,
                              loopBodyChildNum,
-                             conditionChildNum);
+                             conditionChildNum,
+                             attributeGroupChildNum);
 
   builder->noteLocation(ret, loc);
   return toOwned(ret);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -89,6 +89,7 @@ public:
   GenRet         codegen()   override;
   bool           inTree()    override;
   QualifiedType  qualType()  override;
+  Type*          typeInfo()  override { return type; }
   void           verify()    override;
 
   // Note: copy may add copied Symbols to the supplied map
@@ -131,6 +132,7 @@ public:
   // const ref. It can depend on the variable for ref to arrays.
   Qualifier*         fieldQualifiers;
 
+  // these two must be astrs
   const char*        name;
   const char*        cname;    // Name of symbol for C code
 
@@ -438,6 +440,12 @@ public:
 *                                                                   *
 ********************************* | ********************************/
 
+// TypeSymbol::llvmAlignment et al. obey this convention in LLVM codegen
+enum AlignmentStatus {
+  ALIGNMENT_UNINIT = 0,   // used only for assertions
+  ALIGNMENT_DEFER  = 1    // defer to LLVM to calculate
+  // >1 ==> the ABI alignment
+};
 
 // These map from Chapel function types to LLVM function types. They
 // live here rather than in 'llvmUtil.h' because of a name conflict
@@ -453,7 +461,23 @@ class TypeSymbol final : public Symbol {
   // for this type has already been codegen'd
   // and cache it if it has.
 #ifdef HAVE_LLVM
+  // These type and alignment are set or finalized upon Type::codegenDef().
+  // For a class type, they store the info about the corresponding struct.
   llvm::Type* llvmImplType;
+  int         llvmAlignment;  // see AlignmentStatus
+
+  bool hasLLVMType() const;
+
+  // The following pairs return the same result except for class types, where
+  //  - the "Structure" versions return the info about its struct,
+  //  - the non-structure versions return the info about the pointer.
+  llvm::Type* getLLVMStructureType();
+  llvm::Type* getLLVMType();
+  int getLLVMStructureAlignment();  // these two may return ALIGNMENT_DEFER
+  int getLLVMAlignment();
+
+  int getABIAlignment(llvm::Type* llvmType);  // always >= 1, never "defer"
+
   llvm::MDNode* llvmTbaaTypeDescriptor;       // scalar type descriptor
   llvm::MDNode* llvmTbaaAccessTag;            // scalar access tag
   llvm::MDNode* llvmConstTbaaAccessTag;       // scalar const access tag
@@ -463,12 +487,11 @@ class TypeSymbol final : public Symbol {
   llvm::MDNode* llvmTbaaStructCopyNode;       // tbaa.struct for memcpy
   llvm::MDNode* llvmConstTbaaStructCopyNode;  // const tbaa.struct
   llvm::MDNode* llvmDIType;
-  llvm::Type* getLLVMStructureType();         // get structure type for class
-  llvm::Type* getLLVMType();                  // get pointer to structure type for class
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
   void* llvmImplType;
+  int   llvmAlignment;
   void* llvmTbaaTypeDescriptor;
   void* llvmTbaaAccessTag;
   void* llvmConstTbaaAccessTag;
@@ -565,7 +588,19 @@ public:
   //  - to itself, if there is a default implementation
   //  - to gDummyWitness, otherwise
   SymbolMap  requiredFns;
+
+  // Set to true if this interface has an "eny intent" function; such interfaces
+  // cannot be used in CG functions, because the resulting intent of the call to
+  // the witness cannot be known.
+  bool hasAnyIntentFn = false;
 };
+
+extern InterfaceSymbol* gHashable;
+extern InterfaceSymbol* gContextManager;
+extern InterfaceSymbol* gWriteSerializable;
+extern InterfaceSymbol* gReadDeserializable;
+extern InterfaceSymbol* gInitDeserializable;
+extern InterfaceSymbol* gSerializable;
 
 /************************************* | **************************************
 *                                                                             *
@@ -705,6 +740,16 @@ inline bool ShadowVarSymbol::isCompilerAdded() const {
   }
 }
 
+#ifdef HAVE_LLVM
+inline bool TypeSymbol::hasLLVMType() const { return llvmImplType != nullptr; }
+inline llvm::Type* Type::getLLVMType() { return symbol->getLLVMType();  }
+inline int Type::getLLVMAlignment()    { return symbol->getLLVMAlignment();}
+
+static inline
+bool isDeferredAlignment(int align) { return align <= ALIGNMENT_DEFER; }
+int  llvmAlignmentOrDefer(int alignment, llvm::Type* type);
+#endif
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -727,8 +772,8 @@ VarSymbol *new_StringOrBytesSymbol(const char *s, AggregateType *at);
 // Creates a new C string literal with the given value.
 VarSymbol *new_CStringSymbol(const char *s);
 
-// Creates a new boolean literal with the given value and bit-width.
-VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS);
+// Creates a new boolean literal with the given value
+VarSymbol *new_BoolSymbol(bool b);
 
 // Creates a new (signed) integer literal with the given value and bit-width.
 VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_64);
@@ -801,14 +846,19 @@ extern const char* astrSlt;     // <
 extern const char* astrSlte;    // <=
 extern const char* astrSswap;   // <=>
 extern const char* astrScolon;  // :
+extern const char* astrScomma;  // ,
+extern const char* astrSstar;   // *
+extern const char* astrSstarstar;   // **
 extern const char* astr_defaultOf;
 extern const char* astrInit;
 extern const char* astrInitEquals;
 extern const char* astrNew;
 extern const char* astrDeinit;
 extern const char* astrPostinit;
+extern const char* astrBuildTuple;
 extern const char* astrTag;
 extern const char* astrThis;
+extern const char* astrThese;
 extern const char* astrSuper;
 extern const char* astr_chpl_cname;
 extern const char* astr_chpl_forward_tgt;
@@ -876,22 +926,14 @@ extern Symbol *gDummyRef;
 extern Symbol *gFixupRequiredToken;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
-extern VarSymbol *gBoundsChecking;
-extern VarSymbol *gCastChecking;
-extern VarSymbol *gNilChecking;
-extern VarSymbol *gOverloadSetsChecks;
-extern VarSymbol *gDivZeroChecking;
-extern VarSymbol *gCacheRemote;
-extern VarSymbol *gPrivatization;
-extern VarSymbol *gLocal;
-extern VarSymbol *gWarnUnstable;
 extern VarSymbol *gIteratorBreakToken;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
 extern VarSymbol *gInfinity;
 extern VarSymbol *gNan;
 extern VarSymbol *gUninstantiated;
-extern VarSymbol *gUseIOFormatters;
+
+extern llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
@@ -911,9 +953,13 @@ typedef enum {
        // and match ExtensionPointTy in PassManagerBuilder
        EarlyAsPossible,
        ModuleOptimizerEarly,
+       LateLoopOptimizer,
        LoopOptimizerEnd,
        ScalarOptimizerLate,
+       EarlySimplification,
+       OptimizerEarly,
        OptimizerLast,
+       CGSCCOptimizerLate,
        VectorizerStart,
        EnabledOnOptLevel0,
        Peephole,
@@ -929,18 +975,18 @@ extern llvmStageNum_t llvmPrintIrStageNum;
 const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum);
 llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName);
 
-void addNameToPrintLlvmIr(const char* name);
-void addCNameToPrintLlvmIr(const char* name);
+void addNameToPrintLlvmIrRequestedNames(const char* name);
 
-bool shouldLlvmPrintIrName(const char* name);
 bool shouldLlvmPrintIrCName(const char* name);
-bool shouldLlvmPrintIrFn(FnSymbol* fn);
+
 std::vector<std::string> gatherPrintLlvmIrCNames();
 
 #ifdef HAVE_LLVM
 void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage);
 #endif
 
+// Restore list of cnames to print, from tmp file on disk into memory.
+void restorePrintIrCNames();
 void preparePrintLlvmIrForCodegen();
 void completePrintLlvmIrStage(llvmStageNum_t numStage);
 

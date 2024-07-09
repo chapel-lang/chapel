@@ -9,7 +9,7 @@ record MyMapper {
 }
 
 proc doit() {
-  var newDist = new dmap(new unmanaged Hashed(idxType=real, mapper=new MyMapper()));
+  var newDist = new hashedDist(idxType=real, mapper=new MyMapper());
 
   var D: domain(real) dmapped newDist;
 

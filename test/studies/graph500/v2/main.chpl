@@ -4,7 +4,6 @@
 module Graph500_main
 {
   proc main () {
-    use BlockDist;
     use Time;
     use Random;
 
@@ -94,7 +93,7 @@ module Graph500_main
     // Optimally here we would use the histogram to define a domain distribution
     // Here we are still using a fixed Block distribution
 
-    var G = new unmanaged Graph (vertex_domain, Histogram);
+    var G = new Graph (vertex_domain, Histogram);
 
     constructGraph (Edges, G);
 
@@ -105,9 +104,8 @@ module Graph500_main
 
     // Generate a list of valid starting roots
     // Valid starting roots have at least one edge to another node
-    var Rand_Gen = new owned RandomStream (real, seed = 9);
     var Unif_Random: [1..NUM_CANDIDATES] real;
-    Rand_Gen.fillRandom ( Unif_Random );
+    fillRandom(Unif_Random, seed=9);
     var runID: int = 1;
     var candidate: int = 1;
     var root: vertex_id;
@@ -156,8 +154,6 @@ module Graph500_main
     output_results (SCALE, N_VERTICES, EDGEFACTOR, A, B, C, D,
                     generation_time.elapsed(), construction_time.elapsed(), NUMROOTS,
                     BFS_time_array(1), BFS_nedges_traversed(1) );
-
-    delete G;
   }
 
   // make it possible to call the above code from other files

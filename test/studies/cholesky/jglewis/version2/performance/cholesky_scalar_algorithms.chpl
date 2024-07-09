@@ -46,7 +46,7 @@ module cholesky_scalar_algorithms {
   // the factorization.  
   // =========================================================================
     
-  proc scalar_row_major_outer_product_cholesky ( A : [] )
+  proc scalar_row_major_outer_product_cholesky ( ref A : [] )
 
     where ( A.domain.rank == 2 ) 
 
@@ -94,7 +94,7 @@ module cholesky_scalar_algorithms {
 
   }
 
-  proc scalar_row_major_outer_product_no_vector_cholesky ( A : [] )
+  proc scalar_row_major_outer_product_no_vector_cholesky ( ref A : [] )
 
     where ( A.domain.rank == 2 ) 
 
@@ -129,13 +129,13 @@ module cholesky_scalar_algorithms {
 	// compute the jth column of L
 
 	A (j, j)      = sqrt ( A (j, j) );
-	forall k in  A_rc_indices (j+1..) do
+	forall k in  A_rc_indices (j+1..) with (ref A) do
 	  A (j, k) /= A (j, j);
 
 	// make rank 1 (outerproduct) modification to the remaining rows
 	// and columns of  A, which become the Schur complement
 
-	forall k in A_rc_indices (j+1..) do
+	forall k in A_rc_indices (j+1..) with (ref A) do
 	  for q in A_rc_indices (k..) do
 	    A (k, q) -= A(j, q) * A (j, k);
       }
@@ -148,7 +148,7 @@ module cholesky_scalar_algorithms {
 
   }
 
-  proc scalar_row_major_bounded_outer_product_cholesky ( A : [] )
+  proc scalar_row_major_bounded_outer_product_cholesky ( ref A : [] )
 
     where ( A.domain.rank == 2 ) 
 
@@ -198,7 +198,7 @@ module cholesky_scalar_algorithms {
 
   }
 
-  proc scalar_row_major_temp_outer_product_cholesky ( A : [] )
+  proc scalar_row_major_temp_outer_product_cholesky ( ref A : [] )
 
     where ( A.domain.rank == 2 ) 
 
@@ -250,7 +250,7 @@ module cholesky_scalar_algorithms {
 
   }
 
-  proc scalar_column_major_outer_product_cholesky ( A : [] )
+  proc scalar_column_major_outer_product_cholesky ( ref A : [] )
 
     where ( A.domain.rank == 2 ) 
 
@@ -307,7 +307,7 @@ module cholesky_scalar_algorithms {
   // matrix-vector product form.
   // =========================================================================
     
-  proc scalar_inner_product_cholesky ( A : [] ) 
+  proc scalar_inner_product_cholesky ( ref A : [] ) 
 
     where ( A.domain.rank == 2 ) 
     {
@@ -371,7 +371,7 @@ module cholesky_scalar_algorithms {
   // rows and columns (i+1..).
   // =========================================================================
     
-  proc scalar_bordering_cholesky ( A : [] )  
+  proc scalar_bordering_cholesky ( ref A : [] )  
 
     where ( A.domain.rank == 2 ) {
 

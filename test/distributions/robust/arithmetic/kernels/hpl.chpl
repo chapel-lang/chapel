@@ -41,8 +41,7 @@ config const epsilon = 2.0e-15;
 // pseudo-random seed (based on the clock) or a fixed seed; and to
 // specify the fixed seed explicitly
 //
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 31415;
+config const useRandomSeed = true;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -96,8 +95,8 @@ proc main() {
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-proc LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
-                piv: [1..n] indexType) {
+proc LUFactorize(n: indexType, ref Ab: [1..n, 1..n+1] elemType,
+                ref piv: [1..n] indexType) {
   const AbD = Ab.domain;    // alias Ab.domain to save typing
   
   // Initialize the pivot vector to represent the initially unpivoted matrix.
@@ -226,7 +225,7 @@ proc schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
 //
 proc dgemm(A: [?AD] ?t,
            B: [?BD] t,
-           C: [?CD] t) {
+           ref C: [?CD] t) {
   // Calculate (i,j) using a dot product of a row of A and a column of B.
   for i in AD.dim(0) do
     for j in CD.dim(1) do
@@ -238,9 +237,9 @@ proc dgemm(A: [?AD] ?t,
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 //
-proc panelSolve(Ab: [] ?t,
+proc panelSolve(ref Ab: [] ?t,
                panel: domain(2, indexType) dmapped Dist2D,
-               piv: [] indexType) {
+               ref piv: [] indexType) {
   const pnlRows = panel.dim(0),
         pnlCols = panel.dim(1);
 
@@ -277,7 +276,7 @@ proc panelSolve(Ab: [] ?t,
     
     // update all other values below the pivot
     if k+1 <= pnlRows.high && k+1 <= pnlCols.high then
-      forall (i,j) in panel[k+1.., k+1..] do
+      forall (i,j) in panel[k+1.., k+1..] with (ref Ab) do
         Ab[i,j] -= Ab[i,k] * Ab[k,j];
   }
 }
@@ -288,7 +287,7 @@ proc panelSolve(Ab: [] ?t,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-proc updateBlockRow(Ab: [] ?t, tl: domain(2) dmapped Dist2D, tr: domain(2) dmapped Dist2D) {
+proc updateBlockRow(ref Ab: [] ?t, tl: domain(2) dmapped Dist2D, tr: domain(2) dmapped Dist2D) {
   const tlRows = tl.dim(0),
         tlCols = tl.dim(1),
         trRows = tr.dim(0),
@@ -302,7 +301,7 @@ proc updateBlockRow(Ab: [] ?t, tl: domain(2) dmapped Dist2D, tr: domain(2) dmapp
   // in the dgemm.  We have not yet undertaken that optimization.
   //
   for i in trRows do
-    forall j in trCols do
+    forall j in trCols with (ref Ab) do
       for k in tlRows.low..i-1 do
         Ab[i, j] -= Ab[i, k] * Ab[k,j];
 }
@@ -342,15 +341,17 @@ proc printConfiguration() {
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
-proc initAB(Ab: [] elemType) {
-  fillRandom(Ab, seed);
+proc initAB(ref Ab: [] elemType) {
+  if useRandomSeed
+    then fillRandom(Ab);
+    else fillRandom(Ab, 31415);
   Ab = Ab * 2.0 - 1.0;
 }
 
 //
 // calculate norms and residuals to verify the results
 //
-proc verifyResults(Ab, MatrixSpace, x) {
+proc verifyResults(ref Ab, MatrixSpace, x) {
   ref A = Ab[MatrixSpace],
       b = Ab[.., n+1];
 

@@ -28,7 +28,7 @@ use IO;
 use DynamicIters;
 
 config const printTime: bool = true; // print timer
-config const globalSeed = SeedGenerator.oddCurrentTime;
+config const globalSeed = NPBRandom.oddTimeSeed();
 config const problemSize = 100000;
 config const T = 1000; // number of time steps
 config const tau = 10;
@@ -112,21 +112,21 @@ proc main(){
   var space: [0..1, totalSpaceRange ] Cell;
   var timer: stopwatch;
   // initialize space with values
-  var generator = new RandomStream( real, globalSeed, parSafe = false );
+  var generator = new randomStream(real, globalSeed);
 
-  forall i in computationSpaceRange do{
+  forall i in computationSpaceRange with (ref space) do{
     space[0, i] = 0;
     space[1, i] = 0;
   }
 
   for i in computationSpaceRange do
-    space[0, i] = generator.getNext();
+    space[0, i] = generator.next();
 
   // 3 - jacobi 1D timed within an openmp loop
   timer.start();
 
   forall (read, write, x) in DiamondTileIterator( lowerBound, upperBound, T,
-                                                   tau ){
+                                                   tau ) with (ref space) {
     space[write, x] = (space[read, x-1] +
                        space[read, x] +
                        space[read, x+1]) / 3;
@@ -148,7 +148,7 @@ proc main(){
 
 // return true if the current end state is the same as the
 // stencil applied to the original state, in serial iteration.
-proc verifyResult(space: [] Cell, lowerBound: int, upperBound: int,
+proc verifyResult(ref space: [] Cell, lowerBound: int, upperBound: int,
              verbose: bool = true ): bool {
 
   var totalSpaceRange = lowerBound - 1 .. upperBound + 1;
@@ -160,10 +160,10 @@ proc verifyResult(space: [] Cell, lowerBound: int, upperBound: int,
   for x in computationSpaceRange do
     spaceEndState[ x ] = space[ T & 1, x ];
 
-  var generator = new RandomStream( real, globalSeed, parSafe = false );
+  var generator = new randomStream( real, globalSeed );
 
   for i in computationSpaceRange do
-    space[0, i] = generator.getNext();
+    space[0, i] = generator.next();
 
   var read  = 0;
   var write = 1;

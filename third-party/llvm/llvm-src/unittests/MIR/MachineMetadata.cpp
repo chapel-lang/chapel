@@ -72,8 +72,9 @@ protected:
     if (!T)
       return nullptr;
     TargetOptions Options;
-    return std::unique_ptr<LLVMTargetMachine>(static_cast<LLVMTargetMachine *>(
-        T->createTargetMachine(TT, CPU, FS, Options, None, None)));
+    return std::unique_ptr<LLVMTargetMachine>(
+        static_cast<LLVMTargetMachine *>(T->createTargetMachine(
+            TT, CPU, FS, Options, std::nullopt, std::nullopt)));
   }
 
   std::unique_ptr<Module> parseMIR(const TargetMachine &TM, StringRef MIRCode,
@@ -192,8 +193,7 @@ static bool checkOutput(std::string CheckString, std::string Output) {
   SourceMgr SM;
   SM.AddNewSourceBuffer(MemoryBuffer::getMemBuffer(CheckFileText, "CheckFile"),
                         SMLoc());
-  Regex PrefixRE = FC.buildCheckPrefixRegex();
-  if (FC.readCheckFile(SM, CheckFileText, PrefixRE))
+  if (FC.readCheckFile(SM, CheckFileText))
     return false;
 
   auto OutBuffer = OutputBuffer->getBuffer();
@@ -333,7 +333,7 @@ body:             |
   LIFETIME_END 0
   PSEUDO_PROBE 6699318081062747564, 1, 0, 0
   $xmm0 = ARITH_FENCE $xmm0
-  Int_MemBarrier
+  MEMBARRIER
 ...
 )MIR";
 

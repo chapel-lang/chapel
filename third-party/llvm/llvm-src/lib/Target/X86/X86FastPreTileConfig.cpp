@@ -20,7 +20,6 @@
 #include "X86MachineFunctionInfo.h"
 #include "X86RegisterInfo.h"
 #include "X86Subtarget.h"
-#include "llvm/ADT/DepthFirstIterator.h"
 #include "llvm/ADT/PostOrderIterator.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
@@ -208,7 +207,8 @@ void X86FastPreTileConfig::spill(MachineBasicBlock::iterator Before,
   const TargetRegisterClass &RC = *MRI->getRegClass(VirtReg);
   // Don't need shape information for tile store, becasue it is adjacent to
   // the tile def instruction.
-  TII->storeRegToStackSlot(*MBB, Before, VirtReg, Kill, FI, &RC, TRI);
+  TII->storeRegToStackSlot(*MBB, Before, VirtReg, Kill, FI, &RC, TRI,
+                           Register());
   ++NumStores;
 
   // TODO: update DBG_VALUEs

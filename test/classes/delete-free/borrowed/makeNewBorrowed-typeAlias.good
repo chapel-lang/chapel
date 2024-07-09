@@ -1,0 +1,4 @@
+makeNewBorrowed-typeAlias.chpl:5: error: cannot create a 'borrowed' object using 'new'
+makeNewBorrowed-typeAlias.chpl:9: error: cannot create a 'borrowed' object using 'new'
+makeNewBorrowed-typeAlias.chpl:16: error: cannot create a 'borrowed' object using 'new'
+makeNewBorrowed-typeAlias.chpl:23: error: cannot create a 'borrowed' object using 'new'

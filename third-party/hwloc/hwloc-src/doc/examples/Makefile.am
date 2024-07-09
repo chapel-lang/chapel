@@ -1,4 +1,4 @@
-# Copyright © 2009-2018 Inria.  All rights reserved.
+# Copyright © 2009-2022 Inria.  All rights reserved.
 # Copyright © 2009-2013, 2017 Université Bordeaux
 # Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -11,7 +11,7 @@ AM_CFLAGS = $(HWLOC_CFLAGS)
 AM_CPPFLAGS = $(HWLOC_CPPFLAGS)
 AM_LDFLAGS = $(HWLOC_LDFLAGS)
 
-LDADD = $(HWLOC_top_builddir)/src/libhwloc.la
+LDADD = $(HWLOC_top_builddir)/hwloc/libhwloc.la
 DEPENDENCIES = $(LDADD)
 
 TESTS = hwloc-hello
@@ -19,7 +19,7 @@ if HWLOC_HAVE_CXX
 TESTS += hwloc-hello-cpp
 endif HWLOC_HAVE_CXX
 
-check_PROGRAMS = $(TESTS) cpuset+bitmap+cpubind nodeset+membind+policy get-knl-modes gpu
+check_PROGRAMS = $(TESTS) cpuset+bitmap+cpubind nodeset+membind+policy get-knl-modes gpu memory-attributes
 if !HWLOC_HAVE_WINDOWS
 check_PROGRAMS += sharedcaches
 endif

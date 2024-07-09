@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -55,6 +55,10 @@
 #endif // else (HAVE_LLVM_VER<160)
 
 #endif // else (HAVE_LLVM_VER>=150)
+
+#if HAVE_LLVM_VER < 160
+#define LLVM_USE_OLD_PASSES 1
+#endif
 
 #endif //HAVE_LLVM
 

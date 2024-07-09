@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -121,7 +121,7 @@ struct Collector {
     if (rv.hasAst(call)) {
       const ResolvedExpression& result = rv.byAst(call);
       if (result.mostSpecific().isEmpty() == false) {
-        const TypedFnSignature* sig = result.mostSpecific().only();
+        const TypedFnSignature* sig = result.mostSpecific().only().fn();
         auto fn = resolveFunction(rv.context(), sig, result.poiScope());
 
         ResolvedVisitor<Collector> newRV(rv.context(), nullptr, *this, fn->resolutionById());

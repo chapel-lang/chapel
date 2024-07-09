@@ -2,6 +2,7 @@ use CTypes;
 use GpuDiagnostics;
 use GPU;
 use Time;
+use Math;
 
 // This test implements matrix transpose operations based on the following example:
 //
@@ -27,17 +28,17 @@ config param blockSize = 16;
 config param blockPadding = 1;
 config type dataType = real(32);
 
-inline proc transposeNaive(original, output) {
+inline proc transposeNaive(original, ref output) {
+  @assertOnGpu
   foreach (x,y) in original.domain {
-    assertOnGpu();
     output[y,x] = original[x,y];
   }
 }
 
-inline proc transposeClever(original, output) {
+inline proc transposeClever(original, ref output) {
+  @assertOnGpu
+  @gpu.blockSize(blockSize * blockSize)
   foreach 0..<original.size {
-    assertOnGpu();
-    setBlockSize(blockSize * blockSize);
     param paddedBlockSize = blockSize + blockPadding;
     var smArrPtr = createSharedArray(dataType, paddedBlockSize*blockSize);
 
@@ -107,53 +108,78 @@ export proc transposeMatrix(odata: c_ptr(dataType), idata: c_ptr(dataType), widt
   }
 }
 
-inline proc transposeLowLevel(original, output) {
+inline proc transposeLowLevel(original, ref output) {
+  var cfg = __primitive("gpu init kernel cfg 3d",
+                        /*fn*/ "transposeMatrix":chpl_c_string,
+                        /*grd_dims*/ sizeX / blockSize, sizeY / blockSize, 1,
+                        /*blk_dims*/ blockSize, blockSize, 1,
+                        /*args*/4,
+                        /*pids*/0,
+                        /*reductions*/0);
+
+  // 1 is an enum value that says: "pass the address of this to the
+  //   kernel_params, while not offloading anything".
+  __primitive("gpu arg", cfg, c_ptrTo(output), 1);
+  __primitive("gpu arg", cfg, c_ptrToConst(original), 1);
+  __primitive("gpu arg", cfg, sizeX, 1);
+  __primitive("gpu arg", cfg, sizeY, 1);
+
   __primitive("gpu kernel launch",
-          c"transposeMatrix",
-          /* grid size */  sizeX / blockSize, sizeY / blockSize, 1,
-          /* block size */ blockSize, blockSize, 1,
-          /* kernel args */ c_ptrTo(output), c_ptrTo(original), sizeX, sizeY);
+              /* kernel config */ cfg);
 }
 
-on here.gpus[0] {
-  var original: [0..#sizeX, 0..#sizeY] dataType;
-  var output: [0..#sizeY, 0..#sizeY] dataType;
+var originalHost: [0..#sizeX, 0..#sizeY] dataType;
+var outputHost: [0..#sizeY, 0..#sizeX] dataType;
+forall (a, (x,y)) in zip(originalHost, originalHost.domain) {
+  a = x*sizeY + y;
+}
 
-  for (a, (x,y)) in zip(original, original.domain) {
-    a = x*sizeY + y;
-  }
+var timer: stopwatch;
+
+
+on here.gpus[0] {
+  var originalDev: [0..#sizeX, 0..#sizeY] dataType;
+  var outputDev: [0..#sizeY, 0..#sizeX] dataType;
+
+  originalDev = originalHost;
 
   // Make sure a is on device if we're using unified memory.
-  foreach a in original do a = a + 1;
+  foreach a in originalDev do a = a + 1;
 
-  var timer: stopwatch;
   for 1..#numTrials {
     timer.start();
     select impl {
-      when naive do transposeNaive(original, output);
-      when clever do transposeClever(original, output);
-      when lowlevel do transposeLowLevel(original, output);
+      when naive do transposeNaive(originalDev, outputDev);
+      when clever do transposeClever(originalDev, outputDev);
+      when lowlevel do transposeLowLevel(originalDev, outputDev);
     }
     timer.stop();
   }
-  var elapsed = timer.elapsed() / numTrials;
 
-  var sizeInBytes = original.size * numBytes(dataType);
-  var sizeInGb = sizeInBytes / (1000.0 * 1000.0 * 1000.0);
-  var gbPerSec = sizeInGb / elapsed;
-  if perftest {
-    writeln("Wall clock time (s): ", elapsed);
-    writeln("Performance (GB/s): ", gbPerSec);
-  }
-
-  var passed = true;
-  for (x,y) in original.domain {
-    if original[x,y] != output[y,x] {
-      writeln("Incorrect output at ", (x,y),
-              ". Expected ", original[x,y],
-              ", got ", output[y,x]);
-      passed = false;
-    }
-  }
-  writeln(if passed then "Passed" else "Failed");
+  outputHost = outputDev;
 }
+
+var elapsed = timer.elapsed() / numTrials;
+
+if perftest {
+var sizeInBytes = originalHost.size * numBytes(dataType);
+  writeln("Wall clock time (s): ", elapsed);
+  var sizeInGb = sizeInBytes / (1000.0 * 1000.0 * 1000.0);
+  var gibPerSec = sizeInGb / elapsed;
+  // GiB/s is the precise metric here. However, GB/s can be used interchangably
+  // and that's how we started testing. Changing it confuses the test system.
+  // Note that we report this as GiB/s in the relevant plot.
+  writeln("Performance (GB/s): ", gibPerSec);
+}
+
+var passed = true;
+for (x,y) in originalHost.domain {
+  // -1 because we incremented the input once as a warmup
+  if !isClose(originalHost[x,y], outputHost[y,x]-1) {
+    writeln("Incorrect output at ", (x,y),
+            ". Expected ", originalHost[x,y],
+            ", got ", outputHost[y,x]);
+    passed = false;
+  }
+}
+writeln(if passed then "Passed" else "Failed");

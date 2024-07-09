@@ -17,6 +17,7 @@
 #include "llvm/Support/FileOutputBuffer.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/MemoryBuffer.h"
+#include <optional>
 
 using llvm::object::ELFObjectFile;
 
@@ -31,13 +32,13 @@ namespace ifs {
 struct DynamicEntries {
   uint64_t StrTabAddr = 0;
   uint64_t StrSize = 0;
-  Optional<uint64_t> SONameOffset;
+  std::optional<uint64_t> SONameOffset;
   std::vector<uint64_t> NeededLibNames;
   // Symbol table:
   uint64_t DynSymAddr = 0;
   // Hash tables:
-  Optional<uint64_t> ElfHash;
-  Optional<uint64_t> GnuHash;
+  std::optional<uint64_t> ElfHash;
+  std::optional<uint64_t> GnuHash;
 };
 
 /// This initializes an ELF file header with information specific to a binary
@@ -56,7 +57,7 @@ static void initELFHeader(typename ELFT::Ehdr &ElfHeader, uint16_t Machine) {
   ElfHeader.e_ident[EI_MAG2] = ElfMagic[EI_MAG2];
   ElfHeader.e_ident[EI_MAG3] = ElfMagic[EI_MAG3];
   ElfHeader.e_ident[EI_CLASS] = ELFT::Is64Bits ? ELFCLASS64 : ELFCLASS32;
-  bool IsLittleEndian = ELFT::TargetEndianness == support::little;
+  bool IsLittleEndian = ELFT::TargetEndianness == llvm::endianness::little;
   ElfHeader.e_ident[EI_DATA] = IsLittleEndian ? ELFDATA2LSB : ELFDATA2MSB;
   ElfHeader.e_ident[EI_VERSION] = EV_CURRENT;
   ElfHeader.e_ident[EI_OSABI] = ELFOSABI_NONE;

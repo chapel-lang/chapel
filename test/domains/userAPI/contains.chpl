@@ -40,8 +40,8 @@ proc same(idx, d1, d2) {
   assert(d2.contains(d1));
 }
 
-proc check(idx, super, sub) {
+proc check(idx, sup, sub) {
   writeln(idx);
-  assert(super.contains(sub));
-  assert(!sub.contains(super));
+  assert(sup.contains(sub));
+  assert(!sub.contains(sup));
 }

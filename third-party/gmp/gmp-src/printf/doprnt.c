@@ -45,10 +45,9 @@ see https://www.gnu.org/licenses/.  */
 
 #if HAVE_INTTYPES_H
 # include <inttypes.h> /* for intmax_t */
-#else
-# if HAVE_STDINT_H
-#  include <stdint.h>
-# endif
+#endif
+#if HAVE_STDINT_H
+# include <stdint.h>
 #endif
 
 #if HAVE_LANGINFO_H

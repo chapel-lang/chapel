@@ -19,22 +19,19 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
 
 
 proc main(args: [] string) {
-  var stdinBin  = openfd(0).reader(iokind.native, locking=false,
-                           hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
-      stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                           hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
+  var stdin = (new file(0)).reader(locking=false),
       bufLen = 8 * 1024,
       bufDom = {0..<bufLen},
       buf: [bufDom] uint(8),
       end = 0;
 
   // read in the data using an incrementally growing buffer
-  while stdinBin.read(buf[end..]) {
+  while stdin.readBinary(buf[end..]) {
     end = bufLen;
     bufLen += min(1024**2, bufLen);
     bufDom = {0..<bufLen};
   }
-  end = stdinBin.offset()-1;
+  end = stdin.offset() - 1;
 
   // process the buffer a sequence at a time, working from the end
   var hi = end;
@@ -46,9 +43,8 @@ proc main(args: [] string) {
 
     // skip past header line
     var seqlo = lo;
-    while buf[seqlo] != eol {
+    while buf[seqlo] != eol do
       seqlo += 1;
-    }
 
     // reverse and complement the sequence
     revcomp(buf, seqlo+1, hi);
@@ -57,11 +53,11 @@ proc main(args: [] string) {
   }
 
   // write out the transformed buffer
-  stdoutBin.write(buf[..end]);
+  stdout.writeBinary(buf[..end]);
 }
 
 
-proc revcomp(buf, lo, hi) {
+proc revcomp(ref buf, lo, hi) {
   // shift all of the linefeeds into the right places
   const len = hi - lo + 1,
         off = (len - 1) % cols,

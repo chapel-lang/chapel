@@ -129,11 +129,9 @@ static const Type *getFullyQualifiedTemplateType(const ASTContext &Ctx,
   if (const auto *TST = dyn_cast<const TemplateSpecializationType>(TypePtr)) {
     bool MightHaveChanged = false;
     SmallVector<TemplateArgument, 4> FQArgs;
-    for (TemplateSpecializationType::iterator I = TST->begin(), E = TST->end();
-         I != E; ++I) {
-      // Cheap to copy and potentially modified by
-      // getFullyQualifedTemplateArgument.
-      TemplateArgument Arg(*I);
+    // Cheap to copy and potentially modified by
+    // getFullyQualifedTemplateArgument.
+    for (TemplateArgument Arg : TST->template_arguments()) {
       MightHaveChanged |= getFullyQualifiedTemplateArgument(
           Ctx, Arg, WithGlobalNsPrefix);
       FQArgs.push_back(Arg);
@@ -422,13 +420,6 @@ QualType getFullyQualifiedType(QualType QT, const ASTContext &Ctx,
     return QT;
   }
 
-  // We don't consider the alias introduced by `using a::X` as a new type.
-  // The qualified name is still a::X.
-  if (isa<UsingType>(QT.getTypePtr())) {
-    return getFullyQualifiedType(QT.getSingleStepDesugaredType(Ctx), Ctx,
-                                 WithGlobalNsPrefix);
-  }
-
   // Remove the part of the type related to the type being a template
   // parameter (we won't report it as part of the 'type name' and it
   // is actually make the code below to be more complex (to handle
@@ -449,12 +440,20 @@ QualType getFullyQualifiedType(QualType QT, const ASTContext &Ctx,
   // elaborated type.
   Qualifiers PrefixQualifiers = QT.getLocalQualifiers();
   QT = QualType(QT.getTypePtr(), 0);
-  ElaboratedTypeKeyword Keyword = ETK_None;
+  ElaboratedTypeKeyword Keyword = ElaboratedTypeKeyword::None;
   if (const auto *ETypeInput = dyn_cast<ElaboratedType>(QT.getTypePtr())) {
     QT = ETypeInput->getNamedType();
     assert(!QT.hasLocalQualifiers());
     Keyword = ETypeInput->getKeyword();
   }
+
+  // We don't consider the alias introduced by `using a::X` as a new type.
+  // The qualified name is still a::X.
+  if (const auto *UT = QT->getAs<UsingType>()) {
+    QT = Ctx.getQualifiedType(UT->getUnderlyingType(), PrefixQualifiers);
+    return getFullyQualifiedType(QT, Ctx, WithGlobalNsPrefix);
+  }
+
   // Create a nested name specifier if needed.
   Prefix = createNestedNameSpecifierForScopeOf(Ctx, QT.getTypePtr(),
                                                true /*FullyQualified*/,
@@ -472,7 +471,7 @@ QualType getFullyQualifiedType(QualType QT, const ASTContext &Ctx,
         Ctx, QT.getTypePtr(), WithGlobalNsPrefix);
     QT = QualType(TypePtr, 0);
   }
-  if (Prefix || Keyword != ETK_None) {
+  if (Prefix || Keyword != ElaboratedTypeKeyword::None) {
     QT = Ctx.getElaboratedType(Keyword, Prefix, QT);
   }
   QT = Ctx.getQualifiedType(QT, PrefixQualifiers);

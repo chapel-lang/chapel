@@ -56,6 +56,11 @@ static inline int ofi_shm_remap(struct util_shm *shm, size_t newsize, void **map
 	return -1;
 }
 
+static inline ssize_t ofi_get_addr_page_size(const void *addr)
+{
+	return ofi_sysconf(_SC_PAGESIZE);
+}
+
 static inline ssize_t ofi_get_hugepage_size(void)
 {
 	return -FI_ENOSYS;

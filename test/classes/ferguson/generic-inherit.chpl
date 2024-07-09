@@ -10,7 +10,7 @@ class Parent {
 
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   var y:t;
   override proc overridden_method() {
     writeln(x,y);

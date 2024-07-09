@@ -1,11 +1,11 @@
 rangeAPItest.chpl:3: In function 'testRangeAPI':
-rangeAPItest.chpl:46: warning: invoking 'offset' on an unstrided range has no effect.
-  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),both,false), idx: int(64), subr: range(int(64),both,false), offset: int(64), count: int(64))
+rangeAPItest.chpl:42: warning: invoking 'offset' on an unstrided range has no effect.
+  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),both,one), idx: int(64), subr: range(int(64),both,one), offset: int(64), count: int(64))
 basic range
 ------------
 1..10
 idxType          = int(64)
-stridable        = false
+strides          = one
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -28,8 +28,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-boundsCheck(4) = true
-boundsCheck(3..6) = true
 indexOrder(4) = 3
 orderToIndex(3)  = 4
 expand(2)        = -1..12
@@ -55,7 +53,7 @@ strided range
 ------------
 1..20 by 2
 idxType          = int(64)
-stridable        = true
+strides          = positive
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -78,8 +76,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(7) = true
 contains(5..13 by 2) = true
-boundsCheck(7) = true
-boundsCheck(5..13 by 2) = true
 indexOrder(7) = 3
 orderToIndex(3)  = 7
 expand(2)        = -1..22 by 2
@@ -105,7 +101,7 @@ neg. str. range
 ------------
 1..20 by -2
 idxType          = int(64)
-stridable        = true
+strides          = negative
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -128,8 +124,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(14) = true
 contains(16..8 by -2) = true
-boundsCheck(14) = true
-boundsCheck(16..8 by -2) = true
 indexOrder(14) = 3
 orderToIndex(3)  = 14
 expand(2)        = -1..22 by -2
@@ -155,7 +149,7 @@ unbounded range
 ------------
 1..
 idxType          = int(64)
-stridable        = false
+strides          = one
 bounds           = low
 isRangeType()    = true
 hasLowBound()    = true
@@ -176,8 +170,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-boundsCheck(4) = true
-boundsCheck(3..6) = true
 indexOrder(4) = 3
 orderToIndex(3)  = 4
 translate(2)     = 3..
@@ -200,7 +192,7 @@ upper unbnd range
 ------------
 ..10
 idxType          = int(64)
-stridable        = false
+strides          = one
 bounds           = high
 isRangeType()    = true
 hasLowBound()    = false
@@ -221,8 +213,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-boundsCheck(4) = true
-boundsCheck(3..6) = true
 indexOrder(4) = -1
 translate(2)     = ..12
 translate(-2)    = ..8
@@ -241,7 +231,7 @@ neg upper unbnd range
 ------------
 ..10 by -1
 idxType          = int(64)
-stridable        = true
+strides          = negOne
 bounds           = high
 isRangeType()    = true
 hasLowBound()    = false
@@ -262,8 +252,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6 by -1) = true
-boundsCheck(4) = true
-boundsCheck(3..6 by -1) = true
 indexOrder(4) = 6
 orderToIndex(3)  = 7
 translate(2)     = ..12 by -1
@@ -286,7 +274,7 @@ unbounded range
 ------------
 ..
 idxType          = int(64)
-stridable        = false
+strides          = one
 bounds           = neither
 isRangeType()    = true
 hasLowBound()    = false
@@ -307,8 +295,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
-boundsCheck(4) = true
-boundsCheck(3..6) = true
 indexOrder(4) = -1
 translate(2)     = ..
 translate(-2)    = ..

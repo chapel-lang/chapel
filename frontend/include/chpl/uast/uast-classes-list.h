@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -66,6 +66,7 @@
   AST_NODE(Implements)                 // old AST: ImplementsStmt
   AST_NODE(Import)                     // old AST: ImportStmt
   AST_NODE(Include)                    //
+  AST_NODE(Init)                       //
   AST_NODE(Label)                      //
   AST_NODE(Let)                        //
   AST_NODE(New)                        //
@@ -75,9 +76,9 @@
   AST_NODE(Select)                     //
   AST_NODE(Throw)                      //
   AST_NODE(Try)                        // old AST: TryStmt
-  AST_NODE(TypeQuery)                  //
   AST_NODE(Use)                        // old AST: UseStmt
   AST_NODE(VisibilityClause)           //
+  AST_NODE(When)                       //
   AST_NODE(WithClause)                 //
   AST_NODE(Yield)                      //
 
@@ -90,7 +91,6 @@
     AST_NODE(On)                       //
     AST_NODE(Serial)                   //
     AST_NODE(Sync)                     //
-    AST_NODE(When)                     //
   AST_END_SUBCLASSES(SimpleBlockLike)
 
   AST_BEGIN_SUBCLASSES(Loop)           // old AST: LoopExpr / LoopStmt
@@ -146,6 +146,7 @@
       AST_NODE(Function)                   // old AST: FnSymbol
       AST_NODE(Interface)                  // old AST: InterfaceSymbol
       AST_NODE(Module)                     // old AST: ModuleSymbol
+      AST_NODE(TypeQuery)
       AST_NODE(ReduceIntent)
 
       AST_BEGIN_SUBCLASSES(VarLikeDecl)

@@ -33,7 +33,7 @@ config const printWarmupTiming = false;
 config const printTimings = false;
 config const printCommDiags = false;
 
-const remoteVarSpace = LocaleSpace dmapped Block(LocaleSpace);
+const remoteVarSpace = LocaleSpace dmapped new blockDist(LocaleSpace);
 var remoteVar: [remoteVarSpace] int;
 var remoteVarAtomic: [remoteVarSpace] atomic int;
 
@@ -86,7 +86,7 @@ proc main() {
 
   allLocalesBarrier.reset(numTasksPerNode);
 
-  coforall locIdx in 0..#numLocales {
+  coforall locIdx in 0..#numLocales with (ref remoteVar, ref remoteVarAtomic, ref numOpsOnNodes, ref timeOnNodes) {
     on Locales(locIdx) {
       if locIdx == 0 || locIdx == 1 {
         //
@@ -106,7 +106,7 @@ proc main() {
         var numOpsOnTasks: [1..numTasksPerNode] int;
         var timeOnTasks: [1..numTasksPerNode] real;
 
-        coforall taskIdx in 1..numTasksPerNode with (ref x, ref xAtomic) {
+        coforall taskIdx in 1..numTasksPerNode with (ref x, ref xAtomic, ref numOpsOnTasks, ref timeOnTasks, ref numOpsOnNodes, ref timeOnNodes) {
           var nopsAtCheck = minOpsPerTimerCheck;
           var nops: int;
 

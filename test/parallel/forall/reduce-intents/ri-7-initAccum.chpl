@@ -33,7 +33,7 @@ class PlusReduceOp: ReduceScanOp {
   proc identity do         return 0: eltType;
   proc accumulate(elm)  { value = value + elm; }
   proc accumulateOntoState(ref state, elm) { state = state + elm; }
-  proc initialAccumulate(elm)  { writef("initialAccumulate(%t)\n", elm); accumulate(elm); }
+  proc initialAccumulate(elm)  { writef("initialAccumulate(%i)\n", elm); accumulate(elm); }
   proc combine(other)   { value = value + other.value; }
   proc generate() do       return value;
   proc clone() do          return new unmanaged PlusReduceOp(eltType=eltType);

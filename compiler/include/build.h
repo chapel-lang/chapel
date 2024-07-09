@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -95,9 +95,12 @@ ImportStmt* buildImportStmt(Expr* mod);
 ImportStmt* buildImportStmt(Expr* mod, const char* rename);
 ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names);
 void setImportPrivacy(BlockStmt* list, bool isPrivate);
-bool processStringInRequireStmt(const char* str, bool parseTime,
+bool processStringInRequireStmt(Expr* expr,
+                                bool atModuleScope,
+                                const char* str,
+                                bool parseTime,
                                 const char* modFilename);
-BlockStmt* buildRequireStmt(CallExpr* args);
+BlockStmt* buildRequireStmt(CallExpr* args, bool atModuleScope);
 DefExpr* buildQueriedExpr(const char *expr);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
@@ -135,6 +138,12 @@ Expr* buildForLoopExpr(Expr* indices,
                        Expr* cond = NULL,
                        bool maybeArrayType = false,
                        bool zippered = false);
+Expr* buildForeachLoopExpr(Expr* indices,
+                           Expr* iterator,
+                           Expr* expr,
+                           Expr* cond = NULL,
+                           bool maybeArrayType = false,
+                           bool zippered = false);
 Expr* buildForallLoopExpr(Expr* indices,
                           Expr* iterator,
                           Expr* expr,
@@ -159,12 +168,13 @@ std::set<Flag>* buildVarDeclFlags(Flag flag1 = FLAG_UNKNOWN,
 BlockStmt* buildVarDecls(BlockStmt* stmts,
                          std::set<Flag>* flags = NULL, Expr* cnameExpr = NULL);
 
-DefExpr*  buildClassDefExpr(const char*   name,
-                            const char*   cname,
-                            AggregateTag  tag,
-                            Expr*         inherit,
-                            BlockStmt*    decls,
-                            Flag          isExtern);
+DefExpr*  buildClassDefExpr(const char*               name,
+                            const char*               cname,
+                            AggregateTag              tag,
+                            const std::vector<Expr*>& inherits,
+                            BlockStmt*                decls,
+                            Flag                      isExtern,
+                            ModTag                    modTag);
 
 void setupTypeIntentArg(ArgSymbol* arg);
 
@@ -201,7 +211,8 @@ BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
                              const char* resourceName);
-BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block);
+BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block,
+                           ModTag modTag);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);
 BlockStmt* buildSyncStmt(Expr* stmt);

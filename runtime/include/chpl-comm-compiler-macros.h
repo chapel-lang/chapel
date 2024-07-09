@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,6 +30,7 @@
 
 #include "chpl-prefetch.h" // for chpl_prefetch
 #include "chpl-cache.h" // chpl_cache_enabled, chpl_cache_comm_get etc
+#include "chpl-gpu.h" // for comm between device and host
 
 // Don't warn about chpl_comm_get e.g. in this file.
 #include "chpl-comm-no-warning-macros.h"
@@ -47,12 +48,12 @@ extern "C" {
 #define CHPL_COMM_UNKNOWN_ID -1
 
 
-static inline
+static ___always_inline
 void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
                        size_t size, int32_t commID, int ln, int32_t fn)
 {
   if (chpl_nodeID == node) {
-    chpl_memmove(addr, raddr, size);
+    memmove(addr, raddr, size);
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
     chpl_cache_comm_get(addr, node, raddr, size, commID, ln, fn);
@@ -61,6 +62,29 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
     chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
   }
 }
+#ifdef HAS_GPU_LOCALE
+static inline
+void chpl_gen_comm_get_from_subloc(void *addr, c_nodeid_t src_node,
+                                   c_sublocid_t src_subloc, void* raddr,
+                                   size_t size, int32_t commID, int ln,
+                                   int32_t fn)
+{
+  c_sublocid_t dst_subloc = chpl_task_getRequestedSubloc();
+
+  if (chpl_nodeID == src_node) {
+    chpl_gpu_memcpy(dst_subloc, addr, src_subloc, raddr, size, commID, ln, fn);
+  } else if (dst_subloc >= 0 || src_subloc >= 0) {
+    chpl_gpu_comm_get(dst_subloc, addr, src_node, src_subloc, raddr, size,
+                      commID, ln, fn);
+#ifdef HAS_CHPL_CACHE_FNS
+  } else if( chpl_cache_enabled() ) {
+    chpl_cache_comm_get(addr, src_node, raddr, size, commID, ln, fn);
+#endif
+  } else {
+    chpl_comm_get(addr, src_node, raddr, size, commID, ln, fn);
+  }
+}
+#endif // HAS_GPU_LOCALE
 
 static inline
 void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
@@ -88,12 +112,12 @@ void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
 }
 
 
-static inline
+static ___always_inline
 void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
                        size_t size, int32_t commID, int ln, int32_t fn)
 {
   if (chpl_nodeID == node) {
-    chpl_memmove(raddr, addr, size);
+    memmove(raddr, addr, size);
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
     chpl_cache_comm_put(addr, node, raddr, size, commID, ln, fn);
@@ -102,13 +126,47 @@ void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
     chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
   }
 }
+#ifdef HAS_GPU_LOCALE
+static inline
+void chpl_gen_comm_put_to_subloc(void* addr,
+                                 c_nodeid_t dst_node, c_sublocid_t dst_subloc,
+                                 void* raddr, size_t size, int32_t commID,
+                                 int ln, int32_t fn)
+{
+
+  c_sublocid_t src_subloc = chpl_task_getRequestedSubloc();
+
+  if (chpl_nodeID == dst_node) {
+    chpl_gpu_memcpy(dst_subloc, raddr, src_subloc, addr, size, commID, ln, fn);
+  } else if (dst_subloc >= 0 || src_subloc >= 0) {
+    chpl_gpu_comm_put(dst_node, dst_subloc, raddr, src_subloc, addr, size,
+                      commID, ln, fn);
+#ifdef HAS_CHPL_CACHE_FNS
+  } else if( chpl_cache_enabled() ) {
+      chpl_cache_comm_put(addr, dst_node, raddr, size, commID, ln, fn);
+#endif
+  } else {
+      chpl_comm_put(addr, dst_node, raddr, size, commID, ln, fn);
+  }
+}
+#endif // HAS_GPU_LOCALE
 
 static inline
-void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
+void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, c_sublocid_t src_subloc, void *raddr,
                        void *srcstr, void *count, int32_t strlevels,
                        size_t elemSize, int32_t commID, int ln, int32_t fn)
 {
+#ifdef HAS_GPU_LOCALE
+  c_sublocid_t dst_subloc = chpl_task_getRequestedSubloc();
+
+  if (dst_subloc >= 0 || src_subloc >= 0) {
+    chpl_gpu_comm_get_strd(dst_subloc, addr, (size_t*)dststr,
+                           node, src_subloc, raddr, (size_t*)srcstr,
+                           (size_t*)count, strlevels, elemSize,
+                           commID, ln, fn);
+#else
   if( 0 ) {
+#endif // HAS_GPU_LOCALE
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
     chpl_cache_comm_get_strd(addr, (size_t*)dststr, node, raddr, (size_t*)srcstr, (size_t*)count, strlevels, elemSize, commID, ln, fn);
@@ -119,11 +177,21 @@ void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *rad
 }
 
 static inline
-void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,
+void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, c_sublocid_t dst_subloc, void *raddr,
                        void *srcstr, void *count, int32_t strlevels,
                        size_t elemSize, int32_t commID, int ln, int32_t fn)
 {
+#ifdef HAS_GPU_LOCALE
+  c_sublocid_t src_subloc = chpl_task_getRequestedSubloc();
+
+  if (dst_subloc >= 0 || src_subloc >= 0) {
+    chpl_gpu_comm_put_strd(src_subloc, addr, (size_t*)dststr,
+                           node, dst_subloc, raddr, (size_t*)srcstr,
+                           (size_t*)count, strlevels, elemSize,
+                           commID, ln, fn);
+#else
   if( 0 ) {
+#endif // HAS_GPU_LOCALE
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
     chpl_cache_comm_put_strd(addr, (size_t*)dststr, node, raddr, (size_t*)srcstr, (size_t*)count, strlevels, elemSize, commID, ln, fn);
@@ -209,7 +277,7 @@ void chpl_check_local(c_nodeid_t node, int32_t ln, int32_t file, const char* err
 }
 
 static inline
-void chpl_check_nil(void* ptr, int32_t lineno, int32_t filename)
+void chpl_check_nil(const void* ptr, int32_t lineno, int32_t filename)
 {
   if (ptr == nil)
     chpl_error("attempt to dereference nil", lineno, filename);

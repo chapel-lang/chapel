@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -74,24 +74,21 @@ static ssize_t posToFileIndex(const char* buf, int row, int col) {
 static std::string fileText(Context* context, const Location& loc) {
   auto path = loc.path();
   if (path.isEmpty()) return "";
+  if (!parsing::hasFileText(context, std::string(path.c_str()))) return "";
   auto fileText = parsing::fileText(context, path);
   return fileText.text();
+}
+
+bool ErrorWriter::noteFilePath(std::string newPath) {
+  bool toReturn = lastFilePath_ != newPath;
+  lastFilePath_ = std::move(newPath);
+  return toReturn;
 }
 
 void ErrorWriter::setColor(TermColorName color) {
   if (useColor_) {
     oss_ << getColorFormat(color);
   }
-}
-
-static const char* kindText(ErrorBase::Kind kind) {
-  switch (kind) {
-    case ErrorBase::Kind::NOTE: return "note";
-    case ErrorBase::Kind::WARNING: return "warning";
-    case ErrorBase::Kind::SYNTAX: return "syntax";
-    case ErrorBase::Kind::ERROR: return "error";
-  }
-  return "(unknown kind)";
 }
 
 static TermColorName kindColor(ErrorBase::Kind kind) {
@@ -104,15 +101,29 @@ static TermColorName kindColor(ErrorBase::Kind kind) {
   return CLEAR;
 }
 
-static void writeFile(std::ostream& oss, const Location& loc) {
-  auto pathUstr = loc.path();
+static std::string locToPath(Context* context, const Location& loc) {
+  UniqueString pathUstr = loc.path();
+  if (context) pathUstr = context->adjustPathForErrorMsg(pathUstr);
   auto path = pathUstr.c_str();
-  int lineno = loc.line();
   bool validPath = (path != nullptr && path[0] != '\0');
+  if (validPath) return path;
+  return "";
+}
 
-  if (validPath && lineno > 0) oss << path << ":" << lineno;
-  else if (validPath) oss << path;
-  else oss << "(unknown location)";
+static void writeFile(Context* context,
+                      std::ostream& oss,
+                      const Location& loc,
+                      std::string* outFilePath = nullptr) {
+  int lineno = loc.line();
+  auto path = locToPath(context, loc);
+  if (outFilePath) *outFilePath = path;
+
+  if (!path.empty()) {
+    if (lineno > 0) oss << path << ":" << lineno;
+    else oss << path;
+  } else {
+    oss << "(unknown location)";
+  }
 }
 
 void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
@@ -123,10 +134,16 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
   }
 
   setColor(kindColor(kind));
-  oss_ << kindText(kind);
+  oss_ << ErrorBase::getKindName(kind);
   setColor(CLEAR);
   oss_ << " in ";
-  writeFile(oss_, errordetail::locate(context, loc));
+
+  // Printing the header prints the file path, so we need to update the
+  // 'lastFilePath_' field.
+  std::string printedPath;
+  writeFile(context_, oss_, errordetail::locate(context_, loc), &printedPath);
+  noteFilePath(std::move(printedPath));
+
   if (outputFormat_ == DETAILED) {
     // Second part of the error decoration
     const char* name = ErrorBase::getTypeName(type);
@@ -148,7 +165,7 @@ void ErrorWriter::writeNote(IdOrLocation loc, const std::string& str) {
   if (outputFormat_ == BRIEF) {
     // Indent notes in brief mode to make things easier to organize
     oss_ << "  note in ";
-    writeFile(oss_, errordetail::locate(context, loc));
+    writeFile(context_, oss_, errordetail::locate(context_, loc));
     oss_ << ": ";
   } else {
     // In detailed mode, the body is indented.
@@ -171,9 +188,9 @@ static void printLineNo(std::ostream& os, size_t gutterLength, int line) {
 
 void ErrorWriter::writeCode(const Location& location,
                            const std::vector<Location>& toHighlight) {
-  if (outputFormat_ != DETAILED || context == nullptr) return;
+  if (outputFormat_ != DETAILED || context_ == nullptr) return;
 
-  auto str = fileText(context, location);
+  auto str = fileText(context_, location);
   if (str.empty()) return;
 
   ssize_t startIndex = posToFileIndex(str.c_str(), location.firstLine(), 1);
@@ -203,6 +220,14 @@ void ErrorWriter::writeCode(const Location& location,
   // message indent and the one extra space of padding.
   size_t codeIndent = gutterSize+3;
   int lineNumber = location.firstLine();
+
+  // Print the file path if it's changed since the last code block. Printing
+  // a code block will display the file path if needed, so lastFilePath_ needs
+  // to be updated.
+  if (noteFilePath(locToPath(context_, location))) {
+    printBlank(oss_, codeIndent - 1);
+    oss_ << "--> " << lastFilePath_ << std::endl;
+  }
 
   printBlank(oss_, codeIndent);
   oss_ << "|";

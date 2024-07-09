@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -68,10 +68,10 @@ module ChapelSyncvar {
 
   private proc ensureFEType(type t) {
     if isSupported(t) == false then
-      compilerError("sync/single types cannot contain type '", t : string, "'");
+      compilerError("sync types cannot contain type '", t : string, "'");
 
     if isGenericType(t) then
-      compilerError("sync/single types cannot contain generic types");
+      compilerError("sync types cannot contain generic types");
   }
 
   @chpldoc.nodoc
@@ -106,8 +106,11 @@ module ChapelSyncvar {
     return ret;
   }
 
-  @chpldoc.nodoc
   proc chpl__readXX(x) do return x;
+
+  // TODO Jade 7/5/23: supports deprecation of returning atomics by value
+  // can be removed when that is
+  proc chpl__readXX(x) where isAtomicType(x.type) do return x.read();
 
   /************************************ | *************************************
   *                                                                           *
@@ -118,7 +121,7 @@ module ChapelSyncvar {
   pragma "sync"
   pragma "default intent is ref"
   @chpldoc.nodoc
-  record _syncvar {
+  record _syncvar : writeSerializable, readDeserializable {
     type valType;                              // The compiler knows this name
 
     var  wrapped : getSyncClassType(valType);
@@ -182,20 +185,21 @@ module ChapelSyncvar {
     }
 
     // Do not allow implicit reads of sync vars.
-    proc readThis(x) throws {
+    proc deserialize(reader, ref deserializer) throws {
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
     }
 
-    proc type decodeFrom(r) throws {
+    @chpldoc.nodoc
+    proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
       return ret;
     }
 
     // Do not allow implicit writes of sync vars.
-    proc writeThis(x) throws {
+    proc serialize(writer, ref serializer) throws {
       compilerError("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
-     }
+    }
   }
 
   /*
@@ -232,9 +236,10 @@ module ChapelSyncvar {
 
     :returns: The value of the ``sync`` variable.
   */
+  @unstable("'readXX' is unstable")
   proc _syncvar.readXX() {
     // Yield to allow readXX in a loop to make progress
-    chpl_task_yield();
+    currentTask.yieldExecution();
     return wrapped.readXX();
   }
 
@@ -243,10 +248,10 @@ module ChapelSyncvar {
     1) Block until the ``sync`` variable is empty.
     2) Write the value of the ``sync`` variable and leave the variable full.
 
-    :arg x: New value of the ``sync`` variable.
+    :arg val: New value of the ``sync`` variable.
   */
-  proc _syncvar.writeEF(in x : valType) {
-    wrapped.writeEF(x);
+  proc _syncvar.writeEF(in val : valType) {
+    wrapped.writeEF(val);
   }
 
   /* Write into a full ``sync`` variable, leaving it full.
@@ -254,10 +259,11 @@ module ChapelSyncvar {
     1) Block until the ``sync`` variable is full.
     2) Write the value of the ``sync`` variable and leave the variable full.
 
-    :arg x: New value of the ``sync`` variable.
+    :arg val: New value of the ``sync`` variable.
   */
-  proc _syncvar.writeFF(in x : valType) {
-    wrapped.writeFF(x);
+  @unstable("'writeFF' is unstable")
+  proc _syncvar.writeFF(in val : valType) {
+    wrapped.writeFF(val);
   }
 
   /* Write into a ``sync`` variable regardless of its state, leaving it full.
@@ -265,10 +271,11 @@ module ChapelSyncvar {
     1) Do not block.
     2) Write the value of the ``sync`` variable, leave it's state full.
 
-    :arg x: New value of the ``sync`` variable.
+    :arg val: New value of the ``sync`` variable.
   */
-  proc _syncvar.writeXF(in x : valType) {
-    wrapped.writeXF(x);
+  @unstable("'writeXF' is unstable")
+  proc _syncvar.writeXF(in val : valType) {
+    wrapped.writeXF(val);
   }
 
   /*
@@ -276,6 +283,7 @@ module ChapelSyncvar {
     its type. This method is non-blocking and the state of the ``sync``
     variable is set to empty when this method completes.
   */
+  @unstable("'reset' is unstable")
   proc _syncvar.reset() {
     wrapped.reset();
   }
@@ -286,13 +294,14 @@ module ChapelSyncvar {
 
     :returns: ``true`` if the state of the ``sync`` variable is full, ``false`` if it's empty.
   */
+  @unstable("'isFull' is unstable")
   proc _syncvar.isFull {
     return wrapped.isFull;
   }
 
   @chpldoc.nodoc
+  @deprecated(notes="Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one")
   operator =(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one");
     lhs.wrapped.writeEF(rhs);
   }
 
@@ -310,77 +319,79 @@ module ChapelSyncvar {
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator +=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() +  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator -=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() -  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator *=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() *  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator /=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() /  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator %=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() %  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator **=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() ** rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator &=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() &  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator |=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() |  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator ^=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() ^  rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator >>=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() >> rhs);
   }
 
   @chpldoc.nodoc
+  @deprecated("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one")
   operator <<=(ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() << rhs);
   }
 
+  // TODO Jade: remove me when compiler generated inits are removed
   proc chpl__compilerGeneratedAssignSyncSingle(ref lhs: _syncvar(?),
                                                ref rhs: _syncvar(?)) {
     // TODO: Should this clone the value and the full/empty state instead?
     lhs.writeEF(rhs.readFE());
   }
 
+// TODO Jade: remove me when compiler generated inits are removed
   proc chpl__compilerGeneratedCopySyncSingle(ref sv : _syncvar(?)) {
     // TODO: this should probably clone the value and full/empty state instead
     var ret: sv.type = sv.readFE();
@@ -394,7 +405,6 @@ module ChapelSyncvar {
   }
 
   pragma "auto copy fn"
-  @chpldoc.nodoc
   proc chpl__autoCopy(const ref rhs : _syncvar, definedConst: bool) {
     // Does it make sense to have a const sync? If so, can we make use of that
     // information here?
@@ -410,7 +420,6 @@ module ChapelSyncvar {
       delete x.wrapped;
   }
 
-  @chpldoc.nodoc
   proc chpl__readXX(const ref x : _syncvar(?)) do return x.readXX();
 
   @chpldoc.nodoc
@@ -430,8 +439,9 @@ module ChapelSyncvar {
   }
 
   @chpldoc.nodoc
+  @deprecated(notes="Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods")
   operator <=>(lhs : _syncvar, rhs : _syncvar) {
-    compilerWarning("Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods");
+
     const tmp = lhs.readFE();
     lhs.writeEF(rhs.readFE());
     rhs.writeEF(tmp);
@@ -463,7 +473,7 @@ module ChapelSyncvar {
     proc init(type valType) {
       this.valType = valType;
       this.value = _retEmptyVal(valType);
-      this.complete();
+      init this;
       chpl_sync_initAux(syncAux);
     }
 
@@ -471,7 +481,7 @@ module ChapelSyncvar {
     proc init(type valType, in value: valType) {
       this.valType = valType;
       this.value = value;
-      this.complete();
+      init this;
       chpl_sync_initAux(syncAux);
       chpl_sync_lock(syncAux);
       chpl_sync_markAndSignalFull(syncAux);
@@ -670,7 +680,7 @@ module ChapelSyncvar {
     pragma "dont disable remote value forwarding"
     proc init(type valType) {
       this.valType = valType;
-      this.complete();
+      init this;
       // MPF: I think we can just call qthread_purge here
       // because all of the types supported here have a default of 0
       qthread_purge_to(alignedValue, defaultOfAlignedT(valType));
@@ -794,7 +804,7 @@ module ChapelSyncvar {
   pragma "single"
   pragma "default intent is ref"
   @chpldoc.nodoc
-  record _singlevar {
+  record _singlevar : writeSerializable, readDeserializable {
     type valType;                              // The compiler knows this name
 
     var  wrapped : unmanaged _singlecls(valType);
@@ -829,8 +839,8 @@ module ChapelSyncvar {
       isOwned = false;
     }
 
+    @deprecated(notes="Initializing a type-inferred variable from a 'single' is deprecated; apply a 'read??()' method to the right-hand side")
     proc init=(const ref other : _singlevar) {
-      compilerWarning("Initializing a type-inferred variable from a 'single' is deprecated; apply a 'read??()' method to the right-hand side");
       // Allow initialization from compatible single variables, e.g.:
       //   var x : single int = 5;
       //   var y : single real = x;
@@ -855,14 +865,21 @@ module ChapelSyncvar {
     }
 
     // Do not allow implicit reads of single vars.
-    proc readThis(x) throws {
+    proc deserialize(reader, ref deserializer) throws {
       compilerError("single variables cannot currently be read - use writeEF instead");
     }
 
+    @chpldoc.nodoc
+    proc type deserializeFrom(reader, ref deserializer) throws {
+      var ret : this;
+      compilerError("single variables cannot currently be read - use writeEF instead");
+      return ret;
+    }
+
     // Do not allow implicit writes of single vars.
-    proc writeThis(x) throws {
+    proc serialize(writer, ref serializer) throws {
       compilerError("single variables cannot currently be written - apply readFF() to those variables first");
-     }
+    }
   }
 
   /* Read a full ``single`` variable, leaving it full.
@@ -872,6 +889,7 @@ module ChapelSyncvar {
 
     :returns: The value of the ``single`` variable.
   */
+  @chpldoc.nodoc
   proc _singlevar.readFF() {
     return wrapped.readFF();
   }
@@ -887,9 +905,10 @@ module ChapelSyncvar {
 
     :returns: The value of the ``single`` variable.
   */
+  @chpldoc.nodoc
   proc _singlevar.readXX() {
     // Yield to allow readXX in a loop to make progress
-    chpl_task_yield();
+    currentTask.yieldExecution();
     return wrapped.readXX();
   }
 
@@ -898,10 +917,11 @@ module ChapelSyncvar {
     1) Block until the ``single`` variable is empty.
     2) Write the value of the ``single`` variable and leave the variable full.
 
-    :arg x: New value of the single variable.
+    :arg val: New value of the single variable.
   */
-  proc _singlevar.writeEF(in x : valType) {
-    wrapped.writeEF(x);
+  @chpldoc.nodoc
+  proc _singlevar.writeEF(in val : valType) {
+    wrapped.writeEF(val);
   }
 
   /*
@@ -910,13 +930,14 @@ module ChapelSyncvar {
 
      :returns: ``true`` if the state of the ``single`` variable is full, ``false`` if it's empty.
   */
+  @chpldoc.nodoc
   proc _singlevar.isFull {
     return wrapped.isFull;
   }
 
   @chpldoc.nodoc
+  @deprecated("Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one")
   operator =(ref lhs : _singlevar(?t), rhs : t) {
-    compilerWarning("Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one");
     lhs.wrapped.writeEF(rhs);
   }
 
@@ -933,12 +954,14 @@ module ChapelSyncvar {
     return new _singlevar(from);
   }
 
+  // TODO Jade: remove me when compiler generated inits are removed
   proc chpl__compilerGeneratedAssignSyncSingle(ref lhs : _singlevar(?),
                                                ref rhs : _singlevar(?)) {
     // TODO: Should this clone the value and the full/empty state instead?
     lhs.writeEF(rhs.readFF());
   }
 
+// TODO Jade: remove me when compiler generated inits are removed
   proc chpl__compilerGeneratedCopySyncSingle(ref sv : _singlevar(?)) {
     // TODO: this should probably clone the value and full/empty state instead
     var ret: sv.type = sv.readFF();
@@ -946,13 +969,12 @@ module ChapelSyncvar {
   }
 
   pragma "init copy fn"
+  @deprecated(notes="Initializing a type-inferred variable from a 'single' is deprecated; apply '.readFF()' to the right-hand side")
   proc chpl__initCopy(ref sv : _singlevar(?t), definedConst: bool) {
-    compilerWarning("Initializing a type-inferred variable from a 'single' is deprecated; apply '.readFF()' to the right-hand side");
     return sv.readFF();
   }
 
   pragma "auto copy fn"
-  @chpldoc.nodoc
   proc chpl__autoCopy(const ref rhs : _singlevar, definedConst: bool) {
     return new _singlevar(rhs);
   }
@@ -966,7 +988,6 @@ module ChapelSyncvar {
       delete x.wrapped;
   }
 
-  @chpldoc.nodoc
   proc chpl__readXX(const ref x : _singlevar(?)) do return x.readXX();
 
   /************************************ | *************************************
@@ -987,14 +1008,14 @@ module ChapelSyncvar {
     proc init(type valType) {
       this.valType = valType;
       this.value = _retEmptyVal(valType);
-      this.complete();
+      init this;
       chpl_single_initAux(singleAux);
     }
 
     proc init(type valType, in value: valType) {
       this.valType = valType;
       this.value = value;
-      this.complete();
+      init this;
       chpl_single_initAux(singleAux);
       chpl_single_lock(singleAux);
       chpl_single_markAndSignalFull(singleAux);
@@ -1137,7 +1158,7 @@ private module SyncVarRuntimeSupport {
   extern proc   chpl_sync_markAndSignalEmpty(ref aux : chpl_sync_aux_t);
   extern proc   chpl_sync_markAndSignalFull (ref aux : chpl_sync_aux_t);
 
-  extern proc   chpl_sync_isFull(value   : c_void_ptr,
+  extern proc   chpl_sync_isFull(value   : c_ptr(void),
                                  ref aux : chpl_sync_aux_t) : bool;
 
 
@@ -1159,7 +1180,7 @@ private module SyncVarRuntimeSupport {
 
   extern proc   chpl_single_markAndSignalFull (ref aux : chpl_single_aux_t);
 
-  extern proc   chpl_single_isFull(value   : c_void_ptr,
+  extern proc   chpl_single_isFull(value   : c_ptr(void),
                                    ref aux : chpl_single_aux_t) : bool;
 
 
@@ -1167,12 +1188,11 @@ private module SyncVarRuntimeSupport {
   // Native qthreads sync var helpers and externs
   //
 
-  // native qthreads aligned_t sync vars only work on non-ARM 64-bit platform,
-  // and we only support casting between certain types and aligned_t
+  // native qthreads aligned_t sync vars only work on 64-bit platforms right
+  // now, and we only support casting between certain types and aligned_t
   proc supportsNativeSyncVar(type t) param {
     use ChplConfig;
     return CHPL_TASKS == "qthreads" &&
-           CHPL_TARGET_ARCH != "aarch64" &&
            castableToAlignedT(t) &&
            numBits(c_uintptr) == 64;
   }
@@ -1214,7 +1234,7 @@ private module AlignedTSupport {
   inline operator :(x: bool, type t:aligned_t) {
     return __primitive("cast", t, x);
   }
-  inline operator :(x : aligned_t, type t:chpl_anybool) {
+  inline operator :(x : aligned_t, type t:bool) {
     return __primitive("cast", t, x);
   }
   inline operator :(x : aligned_t, type t:integral) {
@@ -1228,20 +1248,18 @@ private module AlignedTSupport {
   }
 
   // read/write support
-  proc aligned_t.writeThis(f) throws {
-    var tmp : uint(64) = this : uint(64);
-    f.write(tmp);
-  }
-  proc aligned_t.readThis(f) throws {
-    this = f.read(uint(64)) : aligned_t;
+  proc aligned_t.deserialize(reader, ref deserializer) throws {
+    this = reader.read(uint(64)) : aligned_t;
   }
 
-  proc aligned_t.encodeTo(f) throws {
-    writeThis(f);
+  @chpldoc.nodoc
+  proc aligned_t.serialize(writer, ref serializer) throws {
+    var tmp : uint(64) = this : uint(64);
+    writer.write(tmp);
   }
-  proc type aligned_t.readThis(f) throws {
+  proc type aligned_t.deserializeFrom(reader, ref deserializer) throws {
     var ret : aligned_t;
-    ret.readThis(f);
+    ret.deserialize(reader, deserializer);
     return ret;
   }
 }

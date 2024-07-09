@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,7 +25,6 @@
 #include "view.h"
 
 #include "AstDump.h"
-#include "AstDumpToNode.h"
 #include "CForLoop.h"
 #include "CatchStmt.h"
 #include "DecoratedClassType.h"
@@ -417,7 +416,7 @@ static const char* aidNotFoundError(const char* callerMsg, int id) {
 }
 static const char* aidIgnoreError(const char* callerMsg, int id) {
   return aidErrorMessage(callerMsg, id,
-                         " is small, use aid09(id) to examine it");
+                         "is small, use aid09(id) to examine it");
 }
 
 // This version of aid*() does not exclude any id.
@@ -710,24 +709,6 @@ void astDump_view(BaseAST* ast) {
     printf("<NULL>");
   } else {
     AstDump logger(stdout);
-    ast->accept(&logger);
-  }
-  printf("\n\n");
-  fflush(stdout);
-}
-
-
-// feel free to propose a better name
-void astDumpToNode_view(int id) {
-  if (BaseAST* ast = aidWithError(id, "astDumpToNode_view"))
-    astDumpToNode_view(ast);
-}
-
-void astDumpToNode_view(BaseAST* ast) {
-  if (ast==NULL) {
-    printf("<NULL>");
-  } else {
-    AstDumpToNode logger(stdout);
     ast->accept(&logger);
   }
   printf("\n\n");

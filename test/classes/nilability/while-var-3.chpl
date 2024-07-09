@@ -28,10 +28,10 @@ proc showU1(name: string, list) {
 
 proc showU2(name: string, list) {
   write("showU2 ", name, ":");
-  var curr = list: unmanaged class?;  // another workaround
+  var curr = list.borrow(): unmanaged class?;  // another workaround
   while const cur = curr {
     write(" ", cur.elm);
-    curr = cur.next: unmanaged class?;
+    curr = cur.next.borrow(): unmanaged class?;
   }
   writeln();
 }

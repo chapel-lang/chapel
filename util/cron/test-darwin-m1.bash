@@ -9,7 +9,4 @@ source $CWD/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="darwin-m1"
 
-# Quiet warnings from defaulting to fifo
-export CHPL_RT_NUM_THREADS_PER_LOCALE_QUIET=yes
-
 $CWD/nightly -cron $(get_nightly_paratest_args)

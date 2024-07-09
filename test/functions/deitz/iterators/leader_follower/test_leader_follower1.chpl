@@ -25,7 +25,7 @@ for i in foo(n) {
 
 writeln(A);
 
-forall i in foo(n) {
+forall i in foo(n) with (ref A) {
   A(i) = 2;
 }
 

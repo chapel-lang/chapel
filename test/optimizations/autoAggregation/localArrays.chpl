@@ -21,24 +21,23 @@ var baseDom2D = {1..10, 1..10};
 }
 
 {
-  var csrDom: sparse subdomain(baseDom2D) dmapped CS();
+  var csrDom: sparse subdomain(baseDom2D) dmapped new dmap(new CS());
   csrDom += [(1,1),(2,2)];
   test(csrDom, "CSR");
 }
 
 {
-  var cscDom: sparse subdomain(baseDom2D) dmapped CS(compressRows=false);
+  var cscDom: sparse subdomain(baseDom2D) dmapped new dmap(new CS(compressRows=false));
   cscDom += [(1,1),(2,2)];
   test(cscDom, "CSC");
 }
 
 {
-  var assocDom: domain(string);
-  assocDom += ["foo", "bar"];
+  var assocDom: domain(string) = {"foo", "bar"};
   test(assocDom, "associative domain with string keys");
 }
 
-proc test(dom:domain, name) {
+proc test(dom:domain(?), name) {
   use CyclicDist;
 
   writeln("Testing ", name);
@@ -47,7 +46,7 @@ proc test(dom:domain, name) {
   var sourceArr: [dom] int;
 
 
-  forall i in dom {
+  forall i in dom with (ref destArr) {
     destArr[i] = sourceArr[generateIdx(i)]; // RHS will be seen as non-local
   }
 

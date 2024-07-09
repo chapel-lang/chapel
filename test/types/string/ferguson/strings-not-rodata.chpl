@@ -3,10 +3,10 @@ use CTypes;
 writeln("Printing before modification");
 
 writeln("Hello World!");
-writeln("Hello World!".c_str():string);
+writeln(string.createBorrowingBuffer("Hello World!".c_str()));
 
 writeln(b"Hello World!");
-writeln(b"Hello World!".c_str():string);
+writeln(string.createBorrowingBuffer(b"Hello World!".c_str()));
 
 // Now modify a string literal
 // this is not an OK thing for code to do in general
@@ -20,18 +20,18 @@ writeln("Modifying");
 
 {
   var s = "Hello World!";
-  var cptr = s.c_str():c_void_ptr:c_ptr(uint(8));
+  var cptr = c_ptrTo(s);
   cptr[0] = 66; // 'B'
   writeln("Hello World!");
   writeln(s);
-  writeln(s.c_str():string);
+  writeln(string.createBorrowingBuffer(c_ptrTo(s)));
 }
 
 {
   var s = b"Hello World!";
-  var cptr = s.c_str():c_void_ptr:c_ptr(uint(8));
+  var cptr = c_ptrTo(s);
   cptr[0] = 66; // 'B'
   writeln(b"Hello World!");
   writeln(s);
-  writeln(s.c_str():string);
+  writeln(string.createBorrowingBuffer(c_ptrTo(s)));
 }

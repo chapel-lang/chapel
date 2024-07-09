@@ -76,6 +76,9 @@ LegacyLegalizerInfo::LegacyLegalizerInfo() {
 
   setScalarAction(TargetOpcode::G_INTRINSIC, 0, {{1, Legal}});
   setScalarAction(TargetOpcode::G_INTRINSIC_W_SIDE_EFFECTS, 0, {{1, Legal}});
+  setScalarAction(TargetOpcode::G_INTRINSIC_CONVERGENT, 0, {{1, Legal}});
+  setScalarAction(TargetOpcode::G_INTRINSIC_CONVERGENT_W_SIDE_EFFECTS, 0,
+                  {{1, Legal}});
 
   setLegalizeScalarToDifferentSizeStrategy(
       TargetOpcode::G_IMPLICIT_DEF, 0, narrowToSmallerAndUnsupportedIfTooSmall);
@@ -264,7 +267,7 @@ LegacyLegalizerInfo::findAction(const SizeAndActionsVec &Vec, const uint32_t Siz
     // Special case for scalarization:
     if (Vec == SizeAndActionsVec({{1, FewerElements}}))
       return {1, FewerElements};
-    LLVM_FALLTHROUGH;
+    [[fallthrough]];
   case NarrowScalar: {
     // The following needs to be a loop, as for now, we do allow needing to
     // go over "Unsupported" bit sizes before finding a legalizable bit size.

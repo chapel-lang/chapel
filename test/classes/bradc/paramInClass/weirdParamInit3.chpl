@@ -3,13 +3,14 @@ class C {
 }
 
 class D {
-  var c: borrowed C = (new owned C(2)).borrow();
+  var cc = new owned C(2);
+  var c: borrowed C(?) = cc.borrow();
   param y: int = c.x;
 }
 
 var c = new C(2);
 
-var d = new D(c);
+var d = new D(c=c);
 
 writeln("c is: ", c);
 writeln("d is: ", d);

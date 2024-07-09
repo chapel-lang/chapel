@@ -1,5 +1,6 @@
 use GpuDiagnostics;
 
+
 startGpuDiagnostics();
 on here.gpus[0] {
   var A = [1,2,3,4,5];
@@ -77,7 +78,7 @@ on here.gpus[0] {
 
 stopGpuDiagnostics();
 
-writeln(getGpuDiagnostics());
+assertGpuDiags(kernel_launch_um=5, kernel_launch_aod=5);
 
 proc writeArr(A) {
   write("Array: ");

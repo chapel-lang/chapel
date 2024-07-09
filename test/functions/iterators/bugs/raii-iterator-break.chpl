@@ -14,14 +14,16 @@ record RAIILock {
 }
 
 class StatefulIterator {
-	var _lock$ : sync bool;
+	var _lock : sync bool;
+
+  proc init() {}
 
 	proc lock() {
-		_lock$.writeEF(true);
+		_lock.writeEF(true);
 	}
 
 	proc unlock() {
-		_lock$.readFE();
+		_lock.readFE();
 	}
 
 	iter these() {
@@ -33,6 +35,6 @@ class StatefulIterator {
 var si = new StatefulIterator();
 // This is safe: RAIILock will unlock when it is reclaimed...
 for i in si do ;
-writeln("Iteration w/o Break; Lock Status: ", si._lock$.isFull);
+writeln("Iteration w/o Break; Lock Status: ", si._lock.isFull);
 for i in si do break;
-writeln("Iteration w/ Break; Lock Status: ", si._lock$.isFull);
+writeln("Iteration w/ Break; Lock Status: ", si._lock.isFull);

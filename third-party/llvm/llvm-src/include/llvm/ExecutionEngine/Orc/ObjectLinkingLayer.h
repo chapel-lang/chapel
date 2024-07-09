@@ -15,7 +15,6 @@
 #define LLVM_EXECUTIONENGINE_ORC_OBJECTLINKINGLAYER_H
 
 #include "llvm/ADT/STLExtras.h"
-#include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ExecutionEngine/JITLink/JITLink.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
@@ -80,8 +79,8 @@ public:
       return Error::success();
     }
     virtual Error notifyFailed(MaterializationResponsibility &MR) = 0;
-    virtual Error notifyRemovingResources(ResourceKey K) = 0;
-    virtual void notifyTransferringResources(ResourceKey DstKey,
+    virtual Error notifyRemovingResources(JITDylib &JD, ResourceKey K) = 0;
+    virtual void notifyTransferringResources(JITDylib &JD, ResourceKey DstKey,
                                              ResourceKey SrcKey) = 0;
 
     /// Return any dependencies that synthetic symbols (e.g. init symbols)
@@ -188,8 +187,9 @@ private:
   void notifyLoaded(MaterializationResponsibility &MR);
   Error notifyEmitted(MaterializationResponsibility &MR, FinalizedAlloc FA);
 
-  Error handleRemoveResources(ResourceKey K) override;
-  void handleTransferResources(ResourceKey DstKey, ResourceKey SrcKey) override;
+  Error handleRemoveResources(JITDylib &JD, ResourceKey K) override;
+  void handleTransferResources(JITDylib &JD, ResourceKey DstKey,
+                               ResourceKey SrcKey) override;
 
   mutable std::mutex LayerMutex;
   jitlink::JITLinkMemoryManager &MemMgr;
@@ -211,8 +211,8 @@ public:
                         jitlink::PassConfiguration &PassConfig) override;
   Error notifyEmitted(MaterializationResponsibility &MR) override;
   Error notifyFailed(MaterializationResponsibility &MR) override;
-  Error notifyRemovingResources(ResourceKey K) override;
-  void notifyTransferringResources(ResourceKey DstKey,
+  Error notifyRemovingResources(JITDylib &JD, ResourceKey K) override;
+  void notifyTransferringResources(JITDylib &JD, ResourceKey DstKey,
                                    ResourceKey SrcKey) override;
 
 private:

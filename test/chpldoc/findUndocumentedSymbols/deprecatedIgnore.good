@@ -1,0 +1,6 @@
+─── warning in (unknown location) [ImplicitFileModule] ───
+  An implicit module named 'deprecated' is being introduced to contain file-scope code.
+  The following is the first file-scope statement:
+  The implicit module 'deprecated' is being created because the above code is outside of any module declarations (e.g., 'module M').
+  Note that all of the file's contents -- including module 'M' -- will be placed into the new 'deprecated' module.
+

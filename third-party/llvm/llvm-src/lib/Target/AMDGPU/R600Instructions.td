@@ -641,16 +641,16 @@ def CF_ALU_ELSE_AFTER : ALU_CLAUSE<15, "ALU_ELSE_AFTER">;
 def FETCH_CLAUSE : R600WrapperInst <(outs),
 (ins i32imm:$addr), "Fetch clause starting at $addr:", [] > {
   field bits<8> Inst;
-  bits<8> num;
-  let Inst = num;
+  bits<8> addr;
+  let Inst = addr;
   let isCodeGenOnly = 1;
 }
 
 def ALU_CLAUSE : R600WrapperInst <(outs),
 (ins i32imm:$addr), "ALU clause starting at $addr:", [] > {
   field bits<8> Inst;
-  bits<8> num;
-  let Inst = num;
+  bits<8> addr;
+  let Inst = addr;
   let isCodeGenOnly = 1;
 }
 
@@ -782,7 +782,7 @@ def SETNE_DX10 : R600_2OP <
 def FRACT : R600_1OP_Helper <0x10, "FRACT", AMDGPUfract>;
 def TRUNC : R600_1OP_Helper <0x11, "TRUNC", ftrunc>;
 def CEIL : R600_1OP_Helper <0x12, "CEIL", fceil>;
-def RNDNE : R600_1OP_Helper <0x13, "RNDNE", frint>;
+def RNDNE : R600_1OP_Helper <0x13, "RNDNE", froundeven>;
 def FLOOR : R600_1OP_Helper <0x14, "FLOOR", ffloor>;
 
 def MOV : R600_1OP <0x19, "MOV", []>;
@@ -1090,7 +1090,7 @@ multiclass CUBE_Common <bits<11> inst> {
 } // End mayLoad = 0, mayStore = 0, hasSideEffects = 0
 
 class EXP_IEEE_Common <bits<11> inst> : R600_1OP_Helper <
-  inst, "EXP_IEEE", fexp2
+  inst, "EXP_IEEE", AMDGPUexp
 > {
   let Itinerary = TransALU;
 }
@@ -1124,7 +1124,7 @@ class LOG_CLAMPED_Common <bits<11> inst> : R600_1OP <
 >;
 
 class LOG_IEEE_Common <bits<11> inst> : R600_1OP_Helper <
-  inst, "LOG_IEEE", flog2
+  inst, "LOG_IEEE", AMDGPUlog
 > {
   let Itinerary = TransALU;
 }
@@ -1452,8 +1452,8 @@ def CONST_COPY : Instruction {
 } // end usesCustomInserter = 1, isCodeGenOnly = 1, isPseudo = 1, Namespace = "AMDGPU"
 
 def TEX_VTX_CONSTBUF :
-  InstR600ISA <(outs R600_Reg128:$dst), (ins MEMxi:$ptr, i32imm:$buffer_id), "VTX_READ_eg $dst, $ptr",
-      [(set v4i32:$dst, (CONST_ADDRESS ADDRGA_VAR_OFFSET:$ptr, (i32 imm:$buffer_id)))]>,
+  InstR600ISA <(outs R600_Reg128:$dst_gpr), (ins (MEMxi $src_gpr, $src_index):$src, i32imm:$buffer_id), "VTX_READ_eg $dst_gpr, $src",
+      [(set v4i32:$dst_gpr, (CONST_ADDRESS ADDRGA_VAR_OFFSET:$src, (i32 imm:$buffer_id)))]>,
   VTX_WORD1_GPR, VTX_WORD0_eg {
 
   let VC_INST = 0;
@@ -1506,7 +1506,7 @@ def TEX_VTX_CONSTBUF :
 }
 
 def TEX_VTX_TEXBUF:
-  InstR600ISA <(outs R600_Reg128:$dst), (ins MEMxi:$ptr, i32imm:$buffer_id), "TEX_VTX_EXPLICIT_READ $dst, $ptr">,
+  InstR600ISA <(outs R600_Reg128:$dst_gpr), (ins (MEMxi $src_gpr, $src_index):$src, i32imm:$buffer_id), "TEX_VTX_EXPLICIT_READ $dst_gpr, $src">,
 VTX_WORD1_GPR, VTX_WORD0_eg {
 
 let VC_INST = 0;

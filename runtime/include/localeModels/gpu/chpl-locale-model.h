@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -70,6 +70,13 @@ static inline
 c_sublocid_t chpl_rt_sublocFromLocaleID(chpl_localeID_t loc) {
   return loc.subloc;
 }
+
+static inline
+int chpl_equals_localeID(chpl_localeID_t* loc1, chpl_localeID_t* loc2) {
+  return loc1->node == loc2->node &&
+         loc1->subloc == loc2->subloc;
+}
+
 
 //
 // These functions are exported from the locale model for use by

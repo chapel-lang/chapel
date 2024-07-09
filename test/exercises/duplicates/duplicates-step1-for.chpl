@@ -13,7 +13,7 @@ config const filter = "";
    file stored at that path and save the result in that
    array element.
  */
-proc computeHashes(hashAndPath:[] (SHA256Hash, string)) {
+proc computeHashes(ref hashAndPath:[] (SHA256Hash, string)) {
 
   // computeHashes is called by the below code to
   // fill in the hash components of the array hashAndPath.

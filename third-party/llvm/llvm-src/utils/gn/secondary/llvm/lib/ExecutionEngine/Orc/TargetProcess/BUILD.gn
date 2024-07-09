@@ -3,10 +3,12 @@ static_library("TargetProcess") {
   deps = [
     "//llvm/lib/ExecutionEngine/Orc/Shared",
     "//llvm/lib/Support",
+    "//llvm/lib/TargetParser",
   ]
   sources = [
     "ExecutorSharedMemoryMapperService.cpp",
     "JITLoaderGDB.cpp",
+    "JITLoaderPerf.cpp",
     "OrcRTBootstrap.cpp",
     "RegisterEHFrames.cpp",
     "SimpleExecutorDylibManager.cpp",

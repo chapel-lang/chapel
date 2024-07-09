@@ -1,0 +1,1 @@
+assertOnGpuNoLoops.chpl:3: error: Found GPU attributes on a variable declaration, but no subexpression to apply them to

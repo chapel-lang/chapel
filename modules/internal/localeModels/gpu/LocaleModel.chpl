@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,7 +40,7 @@ module LocaleModel {
   }
 
   private inline
-  proc addrIsInGPU(addr:c_void_ptr): bool {
+  proc addrIsInGPU(addr:c_ptr(void)): bool {
     extern proc chpl_gpu_is_device_ptr(ptr): bool;
     return chpl_gpu_is_device_ptr(addr);
   }
@@ -60,14 +60,14 @@ module LocaleModel {
   pragma "allocator"
   pragma "locale model alloc"
   pragma "always propagate line file info"
-  proc chpl_here_alloc(size:int(64), md:chpl_mem_descInt_t): c_void_ptr {
+  proc chpl_here_alloc(size:int(64), md:chpl_mem_descInt_t): c_ptr(void) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_gpu_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_gpu_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
 
     if runningOnGPUSublocale() then
@@ -79,14 +79,14 @@ module LocaleModel {
   pragma "allocator"
   pragma "llvm return noalias"
   pragma "always propagate line file info"
-  proc chpl_here_alloc(size:integral, md:chpl_mem_descInt_t): c_void_ptr {
+  proc chpl_here_alloc(size:integral, md:chpl_mem_descInt_t): c_ptr(void) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_gpu_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_gpu_mem_alloc(size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
 
     if runningOnGPUSublocale() then
@@ -99,14 +99,14 @@ module LocaleModel {
   pragma "llvm return noalias"
   pragma "always propagate line file info"
   proc chpl_here_aligned_alloc(alignment:integral, size:integral,
-                               md:chpl_mem_descInt_t): c_void_ptr {
+                               md:chpl_mem_descInt_t): c_ptr(void) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_memalign(alignment:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_memalign(alignment:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_gpu_mem_memalign(alignment:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_gpu_mem_memalign(alignment:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     if runningOnGPUSublocale() then
       return chpl_gpu_mem_memalign(alignment.safeCast(c_size_t),
@@ -121,14 +121,14 @@ module LocaleModel {
   pragma "allocator"
   pragma "llvm return noalias"
   pragma "always propagate line file info"
-  proc chpl_here_calloc(size:integral, number:integral, md:chpl_mem_descInt_t): c_void_ptr {
+  proc chpl_here_calloc(size:integral, number:integral, md:chpl_mem_descInt_t): c_ptr(void) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_calloc(number:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_calloc(number:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_gpu_mem_calloc(number:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_gpu_mem_calloc(number:c_size_t, size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     if runningOnGPUSublocale() then
       return chpl_gpu_mem_calloc(number.safeCast(c_size_t), size.safeCast(c_size_t), md + chpl_memhook_md_num());
@@ -138,14 +138,14 @@ module LocaleModel {
 
   pragma "allocator"
   pragma "always propagate line file info"
-  proc chpl_here_realloc(ptr:c_void_ptr, size:integral, md:chpl_mem_descInt_t): c_void_ptr {
+  proc chpl_here_realloc(ptr:c_ptr(void), size:integral, md:chpl_mem_descInt_t): c_ptr(void) {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_realloc(ptr:c_void_ptr, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_mem_realloc(ptr:c_ptr(void), size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_gpu_mem_realloc(ptr:c_void_ptr, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern proc chpl_gpu_mem_realloc(ptr:c_ptr(void), size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     if addrIsInGPU(ptr) {
       if !runningOnGPUSublocale() {
@@ -173,14 +173,14 @@ module LocaleModel {
 
   pragma "locale model free"
   pragma "always propagate line file info"
-  proc chpl_here_free(ptr:c_void_ptr): void {
+  proc chpl_here_free(ptr:c_ptr(void)): void {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_mem_free(ptr:c_void_ptr) : void;
+    extern proc chpl_mem_free(ptr:c_ptr(void)) : void;
 
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc chpl_gpu_mem_free(ptr:c_void_ptr) : void;
+    extern proc chpl_gpu_mem_free(ptr:c_ptr(void)) : void;
 
     if addrIsInGPU(ptr) {
       if !runningOnGPUSublocale() {
@@ -211,7 +211,7 @@ module LocaleModel {
     return execution_subloc;  // no info needed from full sublocale
   }
 
-  class GPULocale : AbstractLocaleModel {
+  class GPULocale : AbstractLocaleModel, writeSerializable {
     const sid: chpl_sublocID_t;
 
     override proc chpl_id() do return try! (parent._value:LocaleModel)._node_id; // top-level node id
@@ -239,12 +239,11 @@ module LocaleModel {
       sid = _sid;
     }
 
-    override proc writeThis(f) throws {
-      parent.writeThis(f);
-      f.write("-GPU" + sid:string);
+    override proc serialize(writer, ref serializer) throws {
+      parent.serialize(writer, serializer);
+      writer.write("-GPU" + sid:string);
     }
 
-    override proc getChildCount(): int { return 0; }
     override proc _getChildCount(): int { return 0; }
 
     iter getChildIndices() : int {
@@ -254,13 +253,8 @@ module LocaleModel {
     proc addChild(loc:locale) {
       halt("Cannot add children to this locale type.");
     }
-    override proc getChild(idx:int) : locale {
-      halt("requesting a child from a GPULocale locale");
-      return new locale(this);
-    }
     override proc _getChild(idx:int) : locale {
       halt("requesting a child from a GPULocale locale");
-      return new locale(this);
     }
 
     override proc isGpu() : bool { return true; }
@@ -301,7 +295,7 @@ module LocaleModel {
       numSublocales = chpl_gpu_num_devices;
       childSpace = {0..#numSublocales};
 
-      this.complete();
+      init this;
 
       setup();
     }
@@ -319,7 +313,7 @@ module LocaleModel {
       numSublocales = chpl_gpu_num_devices;
       childSpace = {0..#numSublocales};
 
-      this.complete();
+      init this;
 
       setup();
     }
@@ -334,7 +328,6 @@ module LocaleModel {
 
     proc getChildSpace() do return childSpace;
 
-    override proc getChildCount() do return numSublocales;
     override proc _getChildCount() do return numSublocales;
 
     iter getChildIndices() : int {
@@ -342,12 +335,6 @@ module LocaleModel {
         yield idx;
     }
 
-    override proc getChild(idx:int) : locale {
-      if boundsChecking then
-        if (idx < 0) || (idx >= numSublocales) then
-          halt("sublocale child index out of bounds (",idx,")");
-      return new locale(childLocales[idx]);
-    }
     override proc _getChild(idx:int) : locale {
       if boundsChecking then
         if (idx < 0) || (idx >= numSublocales) then
@@ -385,7 +372,7 @@ module LocaleModel {
   // may overwrite this instance or any of its children to establish a more customized
   // representation of the system resources.
   //
-  class RootLocale : AbstractRootLocale {
+  class RootLocale : AbstractRootLocale, writeSerializable {
 
     const myLocaleSpace: domain(1) = {0..numLocales-1};
     pragma "unsafe"
@@ -418,11 +405,10 @@ module LocaleModel {
     override proc chpl_name() do return local_name();
     proc local_name() do return "rootLocale";
 
-    override proc writeThis(f) throws {
-      f.write(name);
+    override proc serialize(writer, ref serializer) throws {
+      writer.write(name);
     }
 
-    override proc getChildCount() do return this.myLocaleSpace.size;
     override proc _getChildCount() do return this.myLocaleSpace.size;
 
     proc getChildSpace() do return this.myLocaleSpace;
@@ -432,7 +418,6 @@ module LocaleModel {
         yield idx;
     }
 
-    override proc getChild(idx:int) do return this.myLocales[idx];
     override proc _getChild(idx:int) do return this.myLocales[idx];
 
     iter getChildren() : locale  {

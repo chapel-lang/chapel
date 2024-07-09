@@ -1,12 +1,12 @@
 config param testError = 0, testDisplayRepresentation = false;
 
-proc readArray(X) {
+proc readArray(ref X) {
   use IO;
 
-  open("realValues.txt", ioMode.r).reader().read(X);
+  open("realValues.txt", ioMode.r).reader(locking=false).read(X);
 }
 
-proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
+proc testArrayAPI1D(lbl, ref X: [], sliceDom, reindexDom) {
   // print header
   writeln(lbl);
   writeln("----------------");
@@ -31,7 +31,7 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   }
   writeln();
   // Test write accesses via tuples and varargs
-  forall ind in X.domain do
+  forall ind in X.domain with (ref X) do
     X[ind] += 0.1;
   writeln("X is:\n", X);
   writeln();
@@ -39,7 +39,7 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   writeln("low element is: ", X[X.domain.low]);
   writeln();
   // Test local write accesses via tuples and varargs
-  forall ind in X.domain do
+  forall ind in X.domain with (ref X) do
     X.localAccess[ind] += 0.1;
   writeln("X is:\n", X);
   writeln();
@@ -96,7 +96,7 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
     writeln("IRV is: ", X.IRV);
 }
 
-proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
+proc testArrayAPI2D(lbl, ref X: [], sliceDom, reindexDom) {
   // print header
   writeln(lbl);
   writeln("----------------");
@@ -126,12 +126,12 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   writeln();
 
   // Test write accesses via tuples and varargs
-  forall ind in X.domain do
+  forall ind in X.domain with (ref X) do
     X[ind] += 0.1;
   writeln("X is:\n", X);
   writeln();
   if (X.rank > 1) then
-    forall ind in X.domain do
+    forall ind in X.domain with (ref X) do
       X[(...ind)] += 0.1;
   writeln("X is:\n", X);
   writeln();
@@ -143,12 +143,12 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   writeln();
 
   // Test local write accesses via tuples and varargs
-  forall ind in X.domain do
+  forall ind in X.domain with (ref X) do
     X.localAccess[ind] += 0.1;
   writeln("X is:\n", X);
   writeln();
   if (X.rank > 1) then
-    forall ind in X.domain do
+    forall ind in X.domain with (ref X) do
       X.localAccess[(...ind)] += 0.1;
   writeln("X is:\n", X);
   writeln();

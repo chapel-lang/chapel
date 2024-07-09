@@ -3,17 +3,17 @@
 //
 // This algorithm can compute the lower or the upper triangular
 // factorization.
-// 
+//
 // This version of the blocked Cholesky method uses a new
 // iterator for the blocked outer loop.  This iterator
 // returns subdomains.  That way, when the array slices are
 // created, conditional array aliases are not needed to handle
 // either the lower or the upper triangular factorization cases.
-// The subdomains are defined by the iterator according to the 
-// value of the variable "upper."  
+// The subdomains are defined by the iterator according to the
+// value of the variable "upper."
 //
 // These subdomains and the variable "upper" are passed to the
-// iterators for the blas and unblocked Cholesky loop nests.  
+// iterators for the blas and unblocked Cholesky loop nests.
 // These iterators compute the indices according to the value
 // of upper, iterating through the domains accordingly.
 //
@@ -32,7 +32,7 @@ config const inputfile = "lehmer10.dat";
 config const upper = true;
 
 proc main() {
-  var Adat = open(inputfile, ioMode.r).reader();
+  var Adat = open(inputfile, ioMode.r).reader(locking=false);
 
   const n = readSize(Adat);
   var blk = readBlk(Adat);
@@ -44,7 +44,7 @@ proc main() {
   blk = min(blk,n);
 
   var A1D = 1..n;
-  const A2D = {A1D,A1D}; 
+  const A2D = {A1D,A1D};
   var A: [A2D] real;
   initA(A,Adat);
   Adat.close();
@@ -61,7 +61,7 @@ proc main() {
   writeln();
 }
 
-proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
+proc blockChol(ref A:[?D],blk,factor:string) where (D.rank == 2) {
   if (D.dim(0) != D.dim(1)) then
     halt("error:  blockChol requires a square matrix with same dimensions");
 
@@ -75,7 +75,7 @@ proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
     ref G2 = A[DG2];
     ref A1 = A[DA1];
     ref A2 = A[DA2];
- 
+
     for (ij, jk, ik) in IterSyrk(DG1, upper) {
       A(ij) -= G1(jk)*G1(ik);
     }
@@ -84,20 +84,20 @@ proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
 
       A1(diag) -= dotProd(A1(iRange,jRange),A1(iRange,jRange));
 
-      if (A1(diag) <= zero) then 
+      if (A1(diag) <= zero) then
         halt("Matrix is not positive definite.");
       else
         A1(diag) = sqrt(A1(diag));
-  
+
       if upper then
         for i in nextRange {
           A1(jRange,i..i) -= dotProd(A1(iRange,i..i),A1(iRange,jRange));
           A1(jRange,i..i) /= A1(diag);
         }
-      else 
-        for i in nextRange { 
+      else
+        for i in nextRange {
           A1(i..i,iRange) -= dotProd(A1(i..i,jRange),A1(iRange,jRange));
-          A1(i..i,iRange) /= A1(diag);  
+          A1(i..i,iRange) /= A1(diag);
         }
     }
 
@@ -114,7 +114,7 @@ proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
 
 iter Block(D:range,blksize,upper) {
 // This iterator defines the subdomains used in each iteration
-// of blocked Cholesky.  
+// of blocked Cholesky.
   var start = D.low;
   var stop = D.high;
   var hi: int;
@@ -123,19 +123,19 @@ iter Block(D:range,blksize,upper) {
     hi = min(i+blksize-1,stop);
     if upper {
       var D1 = {start..i-1,i..hi};
-      var D2 = {start..i-1,hi+1..stop};     
+      var D2 = {start..i-1,hi+1..stop};
       var D3 = {i..hi,i..hi};
       var D4 = {i..hi,hi+1..stop};
       yield (D1, D2, D3, D4);
     }
     else {
       var D1 = {i..hi,start..i-1};
-      var D2 = {hi+1..stop,start..i-1};     
+      var D2 = {hi+1..stop,start..i-1};
       var D3 = {i..hi,i..hi};
       var D4 = {hi+1..stop,i..hi};
       yield (D1, D2, D3, D4);
     }
-  
+
   }
 }
 
@@ -163,11 +163,11 @@ iter IterSyrk(D, upper) {
     for j in rows do
       for (k,i) in {cols, rows(j..)} do
         yield((i,j), (j,k), (i,k));
-}  
+}
 
 iter IterChol(D,upper) {
 // This iterator computes the indices and ranges for
-// the non-blocked cholesky factorization of the current 
+// the non-blocked cholesky factorization of the current
 // diagonal block of A.
   const rows = D.dim(0);
   for j in rows do
@@ -175,7 +175,7 @@ iter IterChol(D,upper) {
       yield((j,j), rows(..(j-1)), j..j, rows((j+1)..));
     else
       yield((j,j), j..j, rows(..(j-1)), rows((j+1)..));
-} 
+}
 
 iter IterGemm(D1, D2, upper) {
 //  This iterator computes the matrix-matrix multiplication
@@ -191,7 +191,7 @@ iter IterGemm(D1, D2, upper) {
       for k in D1.dim(1) do
         for i in D2.dim(0) do
           yield ((i,j), (j,k), (i,k));
-}  
+}
 
 iter IterTrsm(D, upper) {
 // This iterator computes the indices and ranges used in the
@@ -202,7 +202,7 @@ iter IterTrsm(D, upper) {
   const Drows = D.dim(0);
   const Dcols = D.dim(1);
 
-  if upper then 
+  if upper then
     for j in Dcols do
       for i in Drows do
         yield((i,i), (i,j), Drows(..i-1), Drows(..i-1), i..i, j..j);
@@ -222,16 +222,16 @@ proc readSize(Adat) {
 
   Adat.read(n);
   return n;
-} 
+}
 
 proc readBlk(Adat) {
   var blk: int;
 
   Adat.read(blk);
   return blk;
-} 
+}
 
-proc initA(A,Adat){
+proc initA(ref A,Adat){
   for ij in A.domain {
     Adat.read(A(ij));
   }
@@ -255,4 +255,4 @@ proc writeCholFactor(A:[?D],fac:string) {
     }
   }
   writeln(G);
-} 
+}

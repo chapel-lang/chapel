@@ -53,7 +53,7 @@ writeln("#bits in result = ", numBits(q.type));
 var r = floor(x);
 writeln("#bits in result = ", numBits(r.type));
 
-var s = lgamma(x);
+var s = lnGamma(x);
 writeln("#bits in result = ", numBits(s.type));
 
 var t = log(x);

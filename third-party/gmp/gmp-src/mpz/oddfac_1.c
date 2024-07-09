@@ -7,7 +7,7 @@ IT IS ONLY SAFE TO REACH IT THROUGH DOCUMENTED INTERFACES.
 IN FACT, IT IS ALMOST GUARANTEED THAT IT WILL CHANGE OR
 DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
-Copyright 2010-2012, 2015-2017 Free Software Foundation, Inc.
+Copyright 2010-2012, 2015-2017, 2020, 2021 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -61,31 +61,31 @@ see https://www.gnu.org/licenses/.  */
       (PR) *= (P);						\
   } while (0)
 
-#define LOOP_ON_SIEVE_CONTINUE(prime,end,sieve)			\
+#define LOOP_ON_SIEVE_CONTINUE(prime,end)			\
     __max_i = (end);						\
 								\
     do {							\
       ++__i;							\
-      if (((sieve)[__index] & __mask) == 0)			\
+      if ((*__sieve & __mask) == 0)				\
 	{							\
 	  mp_limb_t prime;					\
 	  prime = id_to_n(__i)
 
 #define LOOP_ON_SIEVE_BEGIN(prime,start,end,off,sieve)		\
   do {								\
-    mp_limb_t __mask, __index, __max_i, __i;			\
+    mp_limb_t __mask, *__sieve, __max_i, __i;			\
 								\
     __i = (start)-(off);					\
-    __index = __i / GMP_LIMB_BITS;				\
+    __sieve = (sieve) + __i / GMP_LIMB_BITS;			\
     __mask = CNST_LIMB(1) << (__i % GMP_LIMB_BITS);		\
     __i += (off);						\
 								\
-    LOOP_ON_SIEVE_CONTINUE(prime,end,sieve)
+    LOOP_ON_SIEVE_CONTINUE(prime,end)
 
 #define LOOP_ON_SIEVE_STOP					\
 	}							\
       __mask = __mask << 1 | __mask >> (GMP_LIMB_BITS-1);	\
-      __index += __mask & 1;					\
+      __sieve += __mask & 1;					\
     }  while (__i <= __max_i)
 
 #define LOOP_ON_SIEVE_END					\
@@ -132,7 +132,7 @@ limb_apprsqrt (mp_limb_t x)
   ASSERT (x > 2);
   count_leading_zeros (s, x);
   s = (GMP_LIMB_BITS - s) >> 1;
-  return ((CNST_LIMB(1) << s) + (x >> s)) >> 1;
+  return ((CNST_LIMB(1) << (s - 1)) + (x >> 1 >> s));
 }
 
 #if 0
@@ -222,7 +222,7 @@ mpz_2multiswing_1 (mpz_ptr x, mp_limb_t n, mp_ptr sieve, mp_ptr factors)
 
     l_max_prod = max_prod * 3;
 
-    LOOP_ON_SIEVE_CONTINUE (prime, n_to_bit (n/3), sieve);
+    LOOP_ON_SIEVE_CONTINUE (prime, n_to_bit (n/3));
     SH_SWING_A_PRIME (prime, n, prod, l_max_prod, factors, j);
     LOOP_ON_SIEVE_END;
   }
@@ -257,10 +257,12 @@ mpz_2multiswing_1 (mpz_ptr x, mp_limb_t n, mp_ptr sieve, mp_ptr factors)
 /* Section oddfac: odd factorial, needed also by binomial*/
 /*********************************************************/
 
+/* FIXME: refine che following estimate. */
+
 #if TUNE_PROGRAM_BUILD
-#define FACTORS_PER_LIMB (GMP_NUMB_BITS / (LOG2C(FAC_DSC_THRESHOLD_LIMIT-1)+1))
+#define FACTORS_PER_LIMB (GMP_NUMB_BITS * 2 / (LOG2C(FAC_DSC_THRESHOLD_LIMIT*FAC_DSC_THRESHOLD_LIMIT-1)+1) - 1)
 #else
-#define FACTORS_PER_LIMB (GMP_NUMB_BITS / (LOG2C(FAC_DSC_THRESHOLD-1)+1))
+#define FACTORS_PER_LIMB (GMP_NUMB_BITS * 2 / (LOG2C(FAC_DSC_THRESHOLD*FAC_DSC_THRESHOLD-1)+1) - 1)
 #endif
 
 /* mpz_oddfac_1 computes the odd part of the factorial of the
@@ -304,7 +306,7 @@ mpz_oddfac_1 (mpz_ptr x, mp_limb_t n, unsigned flag)
       s = 0;
       {
 	mp_limb_t tn;
-	mp_limb_t prod, max_prod, i;
+	mp_limb_t prod, max_prod;
 	mp_size_t j;
 	TMP_SDECL;
 
@@ -325,20 +327,31 @@ mpz_oddfac_1 (mpz_ptr x, mp_limb_t n, unsigned flag)
 
 	prod = 1;
 #if TUNE_PROGRAM_BUILD
-	max_prod = GMP_NUMB_MAX / FAC_DSC_THRESHOLD_LIMIT;
+	max_prod = GMP_NUMB_MAX / (FAC_DSC_THRESHOLD_LIMIT * FAC_DSC_THRESHOLD_LIMIT);
 #else
-	max_prod = GMP_NUMB_MAX / FAC_DSC_THRESHOLD;
+	max_prod = GMP_NUMB_MAX / (FAC_DSC_THRESHOLD * FAC_DSC_THRESHOLD);
 #endif
 
 	ASSERT (tn > ODD_DOUBLEFACTORIAL_TABLE_LIMIT + 1);
 	do {
-	  i = ODD_DOUBLEFACTORIAL_TABLE_LIMIT + 2;
 	  factors[j++] = ODD_DOUBLEFACTORIAL_TABLE_MAX;
-	  do {
-	    FACTOR_LIST_STORE (i, prod, max_prod, factors, j);
-	    i += 2;
-	  } while (i <= tn);
-	  max_prod <<= 1;
+	  mp_limb_t diff = (tn - ODD_DOUBLEFACTORIAL_TABLE_LIMIT) & -CNST_LIMB (2);
+	  if ((diff & 2) != 0)
+	    {
+	      FACTOR_LIST_STORE (ODD_DOUBLEFACTORIAL_TABLE_LIMIT + diff, prod, max_prod, factors, j);
+	      diff -= 2;
+	    }
+	  if (diff != 0)
+	    {
+	      mp_limb_t fac = (ODD_DOUBLEFACTORIAL_TABLE_LIMIT + 2) *
+		(ODD_DOUBLEFACTORIAL_TABLE_LIMIT + diff);
+	      do {
+		FACTOR_LIST_STORE (fac, prod, max_prod, factors, j);
+		diff -= 4;
+		fac += diff * 2;
+	      } while (diff != 0);
+	    }
+	  max_prod <<= 2;
 	  tn >>= 1;
 	} while (tn > ODD_DOUBLEFACTORIAL_TABLE_LIMIT + 1);
 

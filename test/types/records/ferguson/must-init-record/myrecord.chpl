@@ -1,7 +1,7 @@
-/* This test record asserts that any record passed to 
+/* This test record asserts that any record passed to
    auto copy/ init copy /assign has been initialized.
  */
-
+use CTypes;
 config const debug = false;
 
 record R {
@@ -13,7 +13,7 @@ record R {
 proc ref R.setup(x:int, allow_zero:bool=false) {
   if !allow_zero then assert(x != 0);
   this.x = x;
-  
+
   if canary != 42 {
     writeln("setup with uninitialized record!");
     assert(canary == 42);
@@ -25,7 +25,7 @@ proc ref R.destroy() { }
 
 proc ref R.increment() {
   assert(x != 0);
-  
+
   if canary != 42 {
     writeln("increment with uninitialized record!");
     assert(canary == 42);
@@ -45,7 +45,7 @@ proc R.deinit() {
 }
 
 proc R.verify() {
-  extern proc printf(fmt:c_string, arg:c_ptr(int), arg2:c_ptr(int));
+  extern proc printf(fmt:c_ptrConst(c_char), arg:c_ptr(int), arg2:c_ptr(int));
 
   if canary != 42 {
     writeln("R.verify failed - got canary=", canary, " but expected 42");
@@ -59,7 +59,7 @@ proc R.init=(const ref arg: R) {
     assert(arg.canary == 42);
   }
 
-  this.complete();
+  init this;
   // allow copies of a default-initialized record.
   this.setup(x = arg.x, true);
 

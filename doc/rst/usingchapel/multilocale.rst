@@ -7,11 +7,12 @@ Multilocale Chapel Execution
 This document outlines the steps to get started with multilocale Chapel using
 GASNet-based communication.  This configuration is fully functional on every
 platform that supports multilocale Chapel.  However, there are also other
-communication configurations that work in specific situations.  On Cray
-XC systems, using native communication as described in :ref:`Using
-Chapel on Cray Systems <readme-cray>` will probably give the best performance.
-For instructions on using the OpenFabrics Interfaces
-libfabric-based ``ofi`` communication layer, see :ref:`readme-libfabric`.
+communication configurations that work in specific situations.  For
+instructions on using the OpenFabrics Interface's libfabric-based
+``ofi`` communication layer---the preferred option on HPE Cray EX
+systems---see :ref:`readme-libfabric`.  On Cray XC systems, using
+native ``ugni`` communication as described in :ref:`Using Chapel on
+Cray Systems <readme-cray>` typically gives the best performance.
 
 Steps 2-3 describe how to build a multilocale Chapel, and steps 4-6 cover
 compiling and running multilocale Chapel programs.
@@ -64,7 +65,7 @@ compiling and running multilocale Chapel programs.
    .. code-block:: bash
 
      export GASNET_SPAWNFN=S
-     export GASNET_SSH_SERVERS="host1 host2 host3 ..."
+     export GASNET_SSH_SERVERS="host1 host2 host3 ..."  # or SSH_SERVERS
 
 #. Specify the number of locales on the command line. For example:
 
@@ -175,29 +176,103 @@ smp                  fast
 other                everything
 ===================  ====================
 
+
+Co-locales
+++++++++++
+
+On some platforms Chapel can run multiple locales on the same node without
+oversubscription (i.e., without sharing cores). For example, on a node with
+multiple sockets performance may be improved by running one locale in each
+socket to avoid inter-socket memory latencies. We refer to this functionality
+as *co-locales*. Chapel supports co-locales in the
+following configurations:
+
+=========   =============
+CHPL_COMM   CHPL_LAUNCHER
+=========   =============
+gasnet      gasnetrun_*
+gasnet      pbs-gasnetrun_ibv
+gasnet      slurm-gasnetrun_*
+gasnet      slurm-srun
+gasnet      smp
+ofi         slurm-srun
+=========   =============
+
+There are two ways to create co-locales. The first is to set the
+``CHPL_RT_LOCALES_PER_NODE`` environment variable. If set, Chapel will run
+the specified number of locales per node. The second way to create co-locales
+is to use the command-line argument ``-nl NxLt``, where ``N`` is the number
+of nodes, ``L`` is the number of locales per node, and ``t`` is an optional
+suffix indicating the architectural feature to which the co-locales should be
+bound. The ``L`` is optional; if it isn't specified then Chapel will run
+the "ideal" number of locales based on the node architecture. Currently this
+is limited to the value of ``CHPL_RT_LOCALES_PER_NODE``; in future releases
+we plan to include more sophisticated heuristics such as automatically
+running one locale per socket on nodes with multiple sockets.
+
+.. note::
+
+   The ``-nl NxLt`` syntax is considered unstable and may change in the
+   future.
+
+By default, Chapel will try to bind co-locales to an architectural feature.
+For example, launching a Chapel program with the argument ``-nl 1x2`` on a
+node with two sockets will bind each co-locale to its own socket. Chapel
+looks at the number of sockets, NUMA domains, caches, and cores on the node,
+in that order, to determine if the co-locales can be bound to an
+architectural feature. If the number of co-locales requested does not match
+the number of any feature then Chapel simply assigns an equal number of cores
+to each co-locale. Any remaining cores are unused.
+
+You can force Chapel to bind co-locales to an architectural feature with a
+suffix to the ``-nl`` argument. The valid suffixes and their bindings are:
+
+===========   =============
+Suffix        Binding
+===========   =============
+s or socket   socket
+numa          NUMA domain
+llc           last-level cache
+c or core     core
+===========   =============
+
+It is an error to specify a number of co-locales greater than the number of
+the specified architectural feature. For example, specifying ``-nl 1x2s`` on a
+node with a single socket is an error. Any remaining cores are
+unused; for example, specifying ``-nl 1x1s`` on a node with two sockets
+will leave the cores in one socket unused.
+
 Troubleshooting
 +++++++++++++++
 
 If you are trying to debug job launch, try adding ``-v`` or
-``--dry-run`` to your program's command line and set:
+``--dry-run`` to your program's command-line to see the command(s)
+that the Chapel launcher is executing to get things running.
+
+For ``CHPL_COMM=gasnet`` runs, you may also want to consider setting
+one or both of:
 
   .. code-block:: bash
 
+    export GASNET_SPAWN_VERBOSE=1
     export GASNET_VERBOSEENV=1
 
-We've had best results with console I/O using:
+where the first prints more information about GASNet's job launch
+actions, and the second is used to audit environment variable
+settings.
+
+When running ``CHPL_COMM=gasnet`` programs using the ``udp`` conduit,
+we've had best results with console I/O using:
 
   .. code-block:: bash
 
     export GASNET_ROUTE_OUTPUT=0
 
-but your mileage may vary.
-
 .. _set-comm-debugging:
 
-Advanced users may want to set ``CHPL_COMM_DEBUG`` in order to enable
-GASNet's internal sanity checking. (It is off by default.)
-Note that you'll need to re-make GASNet and runtime when changing
-this setting.
-
+Advanced users may also want to set ``CHPL_COMM_DEBUG`` in order to
+enable GASNet's internal sanity checking (it is off by default).  Note
+that you'll need to re-build GASNet and runtime when changing this
+setting (i.e., re-run the ``make`` command you used for your initial
+Chapel install).
 

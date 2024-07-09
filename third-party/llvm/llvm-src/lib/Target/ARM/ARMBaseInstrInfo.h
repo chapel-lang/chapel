@@ -104,13 +104,13 @@ protected:
   /// If the specific machine instruction is an instruction that moves/copies
   /// value from one register to another register return destination and source
   /// registers as machine operands.
-  Optional<DestSourcePair>
+  std::optional<DestSourcePair>
   isCopyInstrImpl(const MachineInstr &MI) const override;
 
   /// Specialization of \ref TargetInstrInfo::describeLoadedValue, used to
   /// enhance debug entry value descriptions for ARM targets.
-  Optional<ParamLoadedValue> describeLoadedValue(const MachineInstr &MI,
-                                                 Register Reg) const override;
+  std::optional<ParamLoadedValue>
+  describeLoadedValue(const MachineInstr &MI, Register Reg) const override;
 
 public:
   // Return whether the target has an explicit NOP encoding.
@@ -207,16 +207,17 @@ public:
                    bool KillSrc) const override;
 
   void storeRegToStackSlot(MachineBasicBlock &MBB,
-                           MachineBasicBlock::iterator MBBI,
-                           Register SrcReg, bool isKill, int FrameIndex,
+                           MachineBasicBlock::iterator MBBI, Register SrcReg,
+                           bool isKill, int FrameIndex,
                            const TargetRegisterClass *RC,
-                           const TargetRegisterInfo *TRI) const override;
+                           const TargetRegisterInfo *TRI,
+                           Register VReg) const override;
 
   void loadRegFromStackSlot(MachineBasicBlock &MBB,
-                            MachineBasicBlock::iterator MBBI,
-                            Register DestReg, int FrameIndex,
-                            const TargetRegisterClass *RC,
-                            const TargetRegisterInfo *TRI) const override;
+                            MachineBasicBlock::iterator MBBI, Register DestReg,
+                            int FrameIndex, const TargetRegisterClass *RC,
+                            const TargetRegisterInfo *TRI,
+                            Register VReg) const override;
 
   bool expandPostRAPseudo(MachineInstr &MI) const override;
 
@@ -315,13 +316,15 @@ public:
   unsigned getNumMicroOps(const InstrItineraryData *ItinData,
                           const MachineInstr &MI) const override;
 
-  int getOperandLatency(const InstrItineraryData *ItinData,
-                        const MachineInstr &DefMI, unsigned DefIdx,
-                        const MachineInstr &UseMI,
-                        unsigned UseIdx) const override;
-  int getOperandLatency(const InstrItineraryData *ItinData,
-                        SDNode *DefNode, unsigned DefIdx,
-                        SDNode *UseNode, unsigned UseIdx) const override;
+  std::optional<unsigned> getOperandLatency(const InstrItineraryData *ItinData,
+                                            const MachineInstr &DefMI,
+                                            unsigned DefIdx,
+                                            const MachineInstr &UseMI,
+                                            unsigned UseIdx) const override;
+  std::optional<unsigned> getOperandLatency(const InstrItineraryData *ItinData,
+                                            SDNode *DefNode, unsigned DefIdx,
+                                            SDNode *UseNode,
+                                            unsigned UseIdx) const override;
 
   /// VFP/NEON execution domains.
   std::pair<uint16_t, uint16_t>
@@ -347,11 +350,11 @@ public:
   /// ARM supports the MachineOutliner.
   bool isFunctionSafeToOutlineFrom(MachineFunction &MF,
                                    bool OutlineFromLinkOnceODRs) const override;
-  outliner::OutlinedFunction getOutliningCandidateInfo(
+  std::optional<outliner::OutlinedFunction> getOutliningCandidateInfo(
       std::vector<outliner::Candidate> &RepeatedSequenceLocs) const override;
   void mergeOutliningCandidateAttributes(
       Function &F, std::vector<outliner::Candidate> &Candidates) const override;
-  outliner::InstrType getOutliningType(MachineBasicBlock::iterator &MIT,
+  outliner::InstrType getOutliningTypeImpl(MachineBasicBlock::iterator &MIT,
                                        unsigned Flags) const override;
   bool isMBBSafeToOutlineFrom(MachineBasicBlock &MBB,
                               unsigned &Flags) const override;
@@ -420,34 +423,34 @@ private:
 
   unsigned getInstBundleLength(const MachineInstr &MI) const;
 
-  int getVLDMDefCycle(const InstrItineraryData *ItinData,
-                      const MCInstrDesc &DefMCID,
-                      unsigned DefClass,
-                      unsigned DefIdx, unsigned DefAlign) const;
-  int getLDMDefCycle(const InstrItineraryData *ItinData,
-                     const MCInstrDesc &DefMCID,
-                     unsigned DefClass,
-                     unsigned DefIdx, unsigned DefAlign) const;
-  int getVSTMUseCycle(const InstrItineraryData *ItinData,
-                      const MCInstrDesc &UseMCID,
-                      unsigned UseClass,
-                      unsigned UseIdx, unsigned UseAlign) const;
-  int getSTMUseCycle(const InstrItineraryData *ItinData,
-                     const MCInstrDesc &UseMCID,
-                     unsigned UseClass,
-                     unsigned UseIdx, unsigned UseAlign) const;
-  int getOperandLatency(const InstrItineraryData *ItinData,
-                        const MCInstrDesc &DefMCID,
-                        unsigned DefIdx, unsigned DefAlign,
-                        const MCInstrDesc &UseMCID,
-                        unsigned UseIdx, unsigned UseAlign) const;
+  std::optional<unsigned> getVLDMDefCycle(const InstrItineraryData *ItinData,
+                                          const MCInstrDesc &DefMCID,
+                                          unsigned DefClass, unsigned DefIdx,
+                                          unsigned DefAlign) const;
+  std::optional<unsigned> getLDMDefCycle(const InstrItineraryData *ItinData,
+                                         const MCInstrDesc &DefMCID,
+                                         unsigned DefClass, unsigned DefIdx,
+                                         unsigned DefAlign) const;
+  std::optional<unsigned> getVSTMUseCycle(const InstrItineraryData *ItinData,
+                                          const MCInstrDesc &UseMCID,
+                                          unsigned UseClass, unsigned UseIdx,
+                                          unsigned UseAlign) const;
+  std::optional<unsigned> getSTMUseCycle(const InstrItineraryData *ItinData,
+                                         const MCInstrDesc &UseMCID,
+                                         unsigned UseClass, unsigned UseIdx,
+                                         unsigned UseAlign) const;
+  std::optional<unsigned> getOperandLatency(const InstrItineraryData *ItinData,
+                                            const MCInstrDesc &DefMCID,
+                                            unsigned DefIdx, unsigned DefAlign,
+                                            const MCInstrDesc &UseMCID,
+                                            unsigned UseIdx,
+                                            unsigned UseAlign) const;
 
-  int getOperandLatencyImpl(const InstrItineraryData *ItinData,
-                            const MachineInstr &DefMI, unsigned DefIdx,
-                            const MCInstrDesc &DefMCID, unsigned DefAdj,
-                            const MachineOperand &DefMO, unsigned Reg,
-                            const MachineInstr &UseMI, unsigned UseIdx,
-                            const MCInstrDesc &UseMCID, unsigned UseAdj) const;
+  std::optional<unsigned> getOperandLatencyImpl(
+      const InstrItineraryData *ItinData, const MachineInstr &DefMI,
+      unsigned DefIdx, const MCInstrDesc &DefMCID, unsigned DefAdj,
+      const MachineOperand &DefMO, unsigned Reg, const MachineInstr &UseMI,
+      unsigned UseIdx, const MCInstrDesc &UseMCID, unsigned UseAdj) const;
 
   unsigned getPredicationCost(const MachineInstr &MI) const override;
 
@@ -455,8 +458,8 @@ private:
                            const MachineInstr &MI,
                            unsigned *PredCost = nullptr) const override;
 
-  int getInstrLatency(const InstrItineraryData *ItinData,
-                      SDNode *Node) const override;
+  unsigned getInstrLatency(const InstrItineraryData *ItinData,
+                           SDNode *Node) const override;
 
   bool hasHighOperandLatency(const TargetSchedModel &SchedModel,
                              const MachineRegisterInfo *MRI,
@@ -531,8 +534,8 @@ public:
     return MI.getOperand(3).getReg();
   }
 
-  Optional<RegImmPair> isAddImmediate(const MachineInstr &MI,
-                                      Register Reg) const override;
+  std::optional<RegImmPair> isAddImmediate(const MachineInstr &MI,
+                                           Register Reg) const override;
 };
 
 /// Get the operands corresponding to the given \p Pred value. By default, the

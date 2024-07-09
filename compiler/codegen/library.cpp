@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,6 +19,7 @@
  */
 
 #include <cstring>
+#include <regex>
 
 #include "library.h"
 
@@ -313,6 +314,7 @@ static void printCMakeListsIncludes(fileinfo cmakelists, std::string name) {
 static void printCMakeListsLibraries(fileinfo cmakelists, std::string name) {
   std::string varValue = "";
   std::string libraries = getCompilelineOption("libraries");
+  libraries = std::regex_replace(libraries, std::regex("(-framework \\S*)(\\s)"), "\"$1\"$2");
   std::string libname = getLibname(name);
 
   std::string requires_ = getRequireLibraries();
@@ -454,6 +456,8 @@ static void setupPythonTypeMap() {
   pythonNames[dtReal[FLOAT_SIZE_64]->symbol] = std::make_pair("double", "float");
   pythonNames[dtBool->symbol] = std::make_pair("bint", "bint");
   pythonNames[dtStringC->symbol] = std::make_pair("const char *", "bytes");
+  // TODO: what're the proper map values for c_ptrConst(c_char) to replace c_string?
+  // 08/30/2023
   pythonNames[dtComplex[COMPLEX_SIZE_64]->symbol] =
               std::make_pair("float complex", "numpy.complex64");
   pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =
@@ -501,12 +505,13 @@ std::string getPythonTypeName(Type* type, PythonFileType pxd) {
         return base + " *";
       }
     } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+      bool isConst = type->symbol->hasFlag(FLAG_C_PTRCONST_CLASS);
       Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
       std::string base = getPythonTypeName(pointedTo, pxd);
       if (pxd == C_PYX) {
         return "";
       } else {
-        return base + " *";
+        return isConst ? "const " + base + " *" : base + " *";
       }
     } else {
       return type->codegen().c;
@@ -787,7 +792,7 @@ static void makeOpaqueArrayClass() {
   fprintf(outfile, "\t\tself.val = val\n\n");
 
   fprintf(outfile, "\tdef cleanup(self):\n");
-  fprintf(outfile, "\t\tcleanupOpaqueArray(&self.val);\n\n");
+  fprintf(outfile, "\t\tcleanupOpaqueArray(&self.val)\n\n");
 
   // Allows the Python type to be created and cleaned up appropriately in a
   // Python "with" clause
@@ -845,11 +850,11 @@ static void makePYFile() {
       libraries += getCompilelineOption("multilocale-lib-deps");
     }
 
-    char copyOfLib[libraries.length() + 1];
-    libraries.copy(copyOfLib, libraries.length(), 0);
+    auto copyOfLib = std::make_unique<char[]>(libraries.length() + 1);
+    libraries.copy(copyOfLib.get(), libraries.length(), 0);
     copyOfLib[libraries.length()] = '\0';
     int prefixLen = strlen("-l");
-    char* curSection = strtok(copyOfLib, " \n");
+    char* curSection = strtok(copyOfLib.get(), " \n");
     // Get the libraries from compileline --libraries, taking the `name`
     // portion from all `-lname` parts of that command's output
     while (curSection != NULL) {

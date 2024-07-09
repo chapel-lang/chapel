@@ -1,0 +1,20 @@
+─── warning in (unknown location) [ImplicitFileModule] ───
+  An implicit module named 'nesting' is being introduced to contain file-scope code.
+  The following is the first file-scope statement:
+  The implicit module 'nesting' is being created because the above code is outside of any module declarations (e.g., 'module M9').
+  Note that all of the file's contents -- including module 'M9' -- will be placed into the new 'nesting' module.
+
+warning: 'M1' at nesting.chpl:1 is undocumented
+warning: 'M1.SubModule' at nesting.chpl:2 is undocumented
+warning: 'SubModule.noComment' at nesting.chpl:3 is undocumented
+warning: 'M2.SubModule' at nesting.chpl:9 is undocumented
+warning: 'SubModule.noComment' at nesting.chpl:10 is undocumented
+warning: 'M3' at nesting.chpl:14 is undocumented
+warning: 'SubModule.noComment' at nesting.chpl:17 is undocumented
+warning: 'M4' at nesting.chpl:21 is undocumented
+warning: 'M4.SubModule' at nesting.chpl:22 is undocumented
+warning: 'M6' at nesting.chpl:35 is undocumented
+warning: 'M7' at nesting.chpl:42 is undocumented
+warning: 'M7.SubModule' at nesting.chpl:43 is undocumented
+warning: 'M9' at nesting.chpl:56 is undocumented
+warning: 'main' at nesting.chpl:63 is undocumented

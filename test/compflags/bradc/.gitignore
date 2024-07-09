@@ -1,0 +1,3 @@
+# Test/compflags/bradc ignores.
+/savecDirExists
+/savecDir

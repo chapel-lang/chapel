@@ -12,7 +12,6 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/CachedHashString.h"
 #include "llvm/ADT/DenseSet.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
@@ -22,6 +21,7 @@
 #include "llvm/Support/Regex.h"
 // Necessary for llvm::DebugCompressionType::None
 #include "llvm/Target/TargetOptions.h"
+#include <optional>
 #include <vector>
 
 namespace llvm {
@@ -69,13 +69,14 @@ enum SectionFlag {
   SecContents = 1 << 10,
   SecShare = 1 << 11,
   SecExclude = 1 << 12,
-  LLVM_MARK_AS_BITMASK_ENUM(/*LargestValue=*/SecExclude)
+  SecLarge = 1 << 13,
+  LLVM_MARK_AS_BITMASK_ENUM(/*LargestValue=*/SecLarge)
 };
 
 struct SectionRename {
   StringRef OriginalName;
   StringRef NewName;
-  Optional<SectionFlag> NewFlags;
+  std::optional<SectionFlag> NewFlags;
 };
 
 struct SectionFlagsUpdate {
@@ -115,10 +116,10 @@ public:
          llvm::function_ref<Error(Error)> ErrorCallback);
 
   bool isPositiveMatch() const { return IsPositiveMatch; }
-  Optional<StringRef> getName() const {
+  std::optional<StringRef> getName() const {
     if (!R && !G)
       return Name;
-    return None;
+    return std::nullopt;
   }
   bool operator==(StringRef S) const {
     return R ? R->match(S) : G ? G->match(S) : Name == S;
@@ -138,7 +139,7 @@ public:
     if (!Matcher)
       return Matcher.takeError();
     if (Matcher->isPositiveMatch()) {
-      if (Optional<StringRef> MaybeName = Matcher->getName())
+      if (std::optional<StringRef> MaybeName = Matcher->getName())
         PosNames.insert(CachedHashStringRef(*MaybeName));
       else
         PosPatterns.push_back(std::move(*Matcher));
@@ -206,13 +207,15 @@ struct CommonConfig {
   FileFormat OutputFormat = FileFormat::Unspecified;
 
   // Only applicable when --output-format!=binary (e.g. elf64-x86-64).
-  Optional<MachineInfo> OutputArch;
+  std::optional<MachineInfo> OutputArch;
 
   // Advanced options
   StringRef AddGnuDebugLink;
   // Cached gnu_debuglink's target CRC
   uint32_t GnuDebugLinkCRC32;
-  Optional<StringRef> ExtractPartition;
+  std::optional<StringRef> ExtractPartition;
+  uint8_t GapFill = 0;
+  uint64_t PadTo = 0;
   StringRef SplitDWO;
   StringRef SymbolsPrefix;
   StringRef AllocSectionsPrefix;

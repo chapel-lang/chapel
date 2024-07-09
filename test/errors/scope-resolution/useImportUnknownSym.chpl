@@ -6,4 +6,5 @@ module N {
   import M.b;
 
   writeln("here");
+  proc main() { }
 }

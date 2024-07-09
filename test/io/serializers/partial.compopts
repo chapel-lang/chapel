@@ -1,0 +1,15 @@
+-svariant=Variants.A -smode=Modes.Write
+-svariant=Variants.A -smode=Modes.Read
+-svariant=Variants.A -smode=Modes.Init # partial.A-init.good
+-svariant=Variants.B -smode=Modes.Write
+-svariant=Variants.B -smode=Modes.Read # partial.no-des.good
+-svariant=Variants.B -smode=Modes.Init # partial.noinit.good
+-svariant=Variants.C -smode=Modes.Write # partial.noser.good
+-svariant=Variants.C -smode=Modes.Read # partial.no-des.good
+-svariant=Variants.C -smode=Modes.Init
+-svariant=Variants.CG -smode=Modes.Write # partial.noser.good
+-svariant=Variants.CG -smode=Modes.Read # partial.no-des.good
+-svariant=Variants.CG -smode=Modes.Init
+-svariant=Variants.D -smode=Modes.Write # partial.noser.good
+-svariant=Variants.D -smode=Modes.Read
+-svariant=Variants.D -smode=Modes.Init # partial.noinit.good

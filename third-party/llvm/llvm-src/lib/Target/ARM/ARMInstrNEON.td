@@ -439,39 +439,39 @@ def VecListFourQWordIndexed : Operand<i32> {
 }
 
 def dword_alignedload : PatFrag<(ops node:$ptr), (load node:$ptr), [{
-  return cast<LoadSDNode>(N)->getAlignment() >= 8;
+  return cast<LoadSDNode>(N)->getAlign() >= 8;
 }]>;
 def dword_alignedstore : PatFrag<(ops node:$val, node:$ptr),
                                  (store node:$val, node:$ptr), [{
-  return cast<StoreSDNode>(N)->getAlignment() >= 8;
+  return cast<StoreSDNode>(N)->getAlign() >= 8;
 }]>;
 def word_alignedload : PatFrag<(ops node:$ptr), (load node:$ptr), [{
-  return cast<LoadSDNode>(N)->getAlignment() == 4;
+  return cast<LoadSDNode>(N)->getAlign() == 4;
 }]>;
 def word_alignedstore : PatFrag<(ops node:$val, node:$ptr),
                                  (store node:$val, node:$ptr), [{
-  return cast<StoreSDNode>(N)->getAlignment() == 4;
+  return cast<StoreSDNode>(N)->getAlign() == 4;
 }]>;
 def hword_alignedload : PatFrag<(ops node:$ptr), (load node:$ptr), [{
-  return cast<LoadSDNode>(N)->getAlignment() == 2;
+  return cast<LoadSDNode>(N)->getAlign() == 2;
 }]>;
 def hword_alignedstore : PatFrag<(ops node:$val, node:$ptr),
                                  (store node:$val, node:$ptr), [{
-  return cast<StoreSDNode>(N)->getAlignment() == 2;
+  return cast<StoreSDNode>(N)->getAlign() == 2;
 }]>;
 def byte_alignedload : PatFrag<(ops node:$ptr), (load node:$ptr), [{
-  return cast<LoadSDNode>(N)->getAlignment() == 1;
+  return cast<LoadSDNode>(N)->getAlign() == 1;
 }]>;
 def byte_alignedstore : PatFrag<(ops node:$val, node:$ptr),
                              (store node:$val, node:$ptr), [{
-  return cast<StoreSDNode>(N)->getAlignment() == 1;
+  return cast<StoreSDNode>(N)->getAlign() == 1;
 }]>;
 def non_word_alignedload : PatFrag<(ops node:$ptr), (load node:$ptr), [{
-  return cast<LoadSDNode>(N)->getAlignment() < 4;
+  return cast<LoadSDNode>(N)->getAlign() < 4;
 }]>;
 def non_word_alignedstore : PatFrag<(ops node:$val, node:$ptr),
                                     (store node:$val, node:$ptr), [{
-  return cast<StoreSDNode>(N)->getAlignment() < 4;
+  return cast<StoreSDNode>(N)->getAlign() < 4;
 }]>;
 
 //===----------------------------------------------------------------------===//
@@ -5711,19 +5711,19 @@ let PostEncoderMethod = "NEONThumb2V8PostEncoder", DecoderNamespace = "v8NEON" i
   def NEON_VMAXNMNDf  : N3VDIntnp<0b00110, 0b00, 0b1111, 0, 1,
                                   N3RegFrm, NoItinerary, "vmaxnm", "f32",
                                   v2f32, v2f32, fmaxnum, 1>,
-                                  Requires<[HasV8, HasNEON]>;
+                                  Requires<[HasFPARMv8, HasNEON]>;
   def NEON_VMAXNMNQf  : N3VQIntnp<0b00110, 0b00, 0b1111, 1, 1,
                                   N3RegFrm, NoItinerary, "vmaxnm", "f32",
                                   v4f32, v4f32, fmaxnum, 1>,
-                                  Requires<[HasV8, HasNEON]>;
+                                  Requires<[HasFPARMv8, HasNEON]>;
   def NEON_VMAXNMNDh  : N3VDIntnp<0b00110, 0b01, 0b1111, 0, 1,
                                   N3RegFrm, NoItinerary, "vmaxnm", "f16",
                                   v4f16, v4f16, fmaxnum, 1>,
-                                  Requires<[HasV8, HasNEON, HasFullFP16]>;
+                                  Requires<[HasFPARMv8, HasNEON, HasFullFP16]>;
   def NEON_VMAXNMNQh  : N3VQIntnp<0b00110, 0b01, 0b1111, 1, 1,
                                   N3RegFrm, NoItinerary, "vmaxnm", "f16",
                                   v8f16, v8f16, fmaxnum, 1>,
-                                  Requires<[HasV8, HasNEON, HasFullFP16]>;
+                                  Requires<[HasFPARMv8, HasNEON, HasFullFP16]>;
 }
 
 //   VMIN     : Vector Minimum
@@ -5753,19 +5753,19 @@ let PostEncoderMethod = "NEONThumb2V8PostEncoder", DecoderNamespace = "v8NEON" i
   def NEON_VMINNMNDf  : N3VDIntnp<0b00110, 0b10, 0b1111, 0, 1,
                                   N3RegFrm, NoItinerary, "vminnm", "f32",
                                   v2f32, v2f32, fminnum, 1>,
-                                  Requires<[HasV8, HasNEON]>;
+                                  Requires<[HasFPARMv8, HasNEON]>;
   def NEON_VMINNMNQf  : N3VQIntnp<0b00110, 0b10, 0b1111, 1, 1,
                                   N3RegFrm, NoItinerary, "vminnm", "f32",
                                   v4f32, v4f32, fminnum, 1>,
-                                  Requires<[HasV8, HasNEON]>;
+                                  Requires<[HasFPARMv8, HasNEON]>;
   def NEON_VMINNMNDh  : N3VDIntnp<0b00110, 0b11, 0b1111, 0, 1,
                                   N3RegFrm, NoItinerary, "vminnm", "f16",
                                   v4f16, v4f16, fminnum, 1>,
-                                  Requires<[HasV8, HasNEON, HasFullFP16]>;
+                                  Requires<[HasFPARMv8, HasNEON, HasFullFP16]>;
   def NEON_VMINNMNQh  : N3VQIntnp<0b00110, 0b11, 0b1111, 1, 1,
                                   N3RegFrm, NoItinerary, "vminnm", "f16",
                                   v8f16, v8f16, fminnum, 1>,
-                                  Requires<[HasV8, HasNEON, HasFullFP16]>;
+                                  Requires<[HasFPARMv8, HasNEON, HasFullFP16]>;
 }
 
 // Vector Pairwise Operations.
@@ -6396,6 +6396,10 @@ def VGETLNi32 : NVGetLane<{1,1,1,0,0,0,?,1}, 0b1011, 0b00,
                 Requires<[HasFPRegs, HasFastVGETLNi32]> {
   let Inst{21} = lane{0};
 }
+// VGETLNi32 is also legal as just vmov r0,d0[0] without the .32 suffix
+def : InstAlias<"vmov${p} $R, $V$lane",
+    (VGETLNi32 GPR:$R, DPR:$V, VectorIndex32:$lane, pred:$p), 0>,
+    Requires<VGETLNi32.Predicates>;
 let Predicates = [HasNEON] in {
 // def VGETLNf32: see FMRDH and FMRDL in ARMInstrVFP.td
 def : Pat<(ARMvgetlanes (v16i8 QPR:$src), imm:$lane),
@@ -6538,6 +6542,10 @@ def VSETLNi32 : NVSetLane<{1,1,1,0,0,0,?,0}, 0b1011, 0b00, (outs DPR:$V),
   let isInsertSubreg = 1;
 }
 }
+// VSETLNi32 is also legal as just vmov d0[0],r0 without the .32 suffix
+def : InstAlias<"vmov${p} $V$lane, $R",
+    (VSETLNi32 DPR:$V, GPR:$R, VectorIndex32:$lane, pred:$p), 0>,
+    Requires<VSETLNi32.Predicates>;
 
 // TODO: for odd lanes we could optimize this a bit by using the VINS
 // FullFP16 instruction when it is available
@@ -6697,7 +6705,7 @@ def VDUPLN32q : VDUPLNQ<{?,1,0,0}, "vdup", "32", v4i32, v2i32, VectorIndex32> {
 
 let Predicates = [HasNEON] in {
 def : Pat<(v4f16 (ARMvduplane (v4f16 DPR:$Vm), imm:$lane)),
-          (VDUPLN32d DPR:$Vm, imm:$lane)>;
+          (VDUPLN16d DPR:$Vm, imm:$lane)>;
 
 def : Pat<(v2f32 (ARMvduplane (v2f32 DPR:$Vm), imm:$lane)),
           (VDUPLN32d DPR:$Vm, imm:$lane)>;
@@ -6982,6 +6990,10 @@ let Predicates = [HasNEON] in {
             (VREV64q16 QPR:$Vm)>;
   def : Pat<(v4f16 (ARMvrev64 (v4f16 DPR:$Vm))),
             (VREV64d16 DPR:$Vm)>;
+  def : Pat<(v8bf16 (ARMvrev64 (v8bf16 QPR:$Vm))),
+            (VREV64q16 QPR:$Vm)>;
+  def : Pat<(v4bf16 (ARMvrev64 (v4bf16 DPR:$Vm))),
+            (VREV64d16 DPR:$Vm)>;
 }
 
 //   VREV32   : Vector Reverse elements within 32-bit words
@@ -7007,6 +7019,10 @@ let Predicates = [HasNEON] in {
   def : Pat<(v8f16 (ARMvrev32 (v8f16 QPR:$Vm))),
             (VREV32q16 QPR:$Vm)>;
   def : Pat<(v4f16 (ARMvrev32 (v4f16 DPR:$Vm))),
+            (VREV32d16 DPR:$Vm)>;
+  def : Pat<(v8bf16 (ARMvrev32 (v8bf16 QPR:$Vm))),
+            (VREV32q16 QPR:$Vm)>;
+  def : Pat<(v4bf16 (ARMvrev32 (v4bf16 DPR:$Vm))),
             (VREV32d16 DPR:$Vm)>;
 }
 
@@ -7036,19 +7052,15 @@ class AlignedVEXTq<ValueType DestTy, ValueType SrcTy, SDNodeXForm LaneCVT>
         Requires<[HasNEON]>;
 
 def : AlignedVEXTq<v8i8, v16i8, DSubReg_i8_reg>;
-
 def : AlignedVEXTq<v4i16, v8i16, DSubReg_i16_reg>;
-
 def : AlignedVEXTq<v2i32, v4i32, DSubReg_i32_reg>;
-
 def : AlignedVEXTq<v1i64, v2i64, DSubReg_f64_reg>;
-
 def : AlignedVEXTq<v2f32, v4f32, DSubReg_i32_reg>;
+def : AlignedVEXTq<v4f16, v8f16, DSubReg_i16_reg>;
+def : AlignedVEXTq<v4bf16, v8bf16, DSubReg_i16_reg>;
 
-def : AlignedVEXTq<v4f16, v8f16, DSubReg_i16_reg>; // v8f16 -> v4f16
 
 //   VEXT     : Vector Extract
-
 
 // All of these have a two-operand InstAlias.
 let TwoOperandAliasConstraint = "$Vn = $Vd" in {
@@ -7084,6 +7096,8 @@ def VEXTd16 : VEXTd<"vext", "16", v4i16, imm0_3> {
 let Predicates = [HasNEON] in {
 def : Pat<(v4f16 (NEONvext (v4f16 DPR:$Vn), (v4f16 DPR:$Vm), (i32 imm:$index))),
           (VEXTd16 DPR:$Vn, DPR:$Vm, imm:$index)>;
+def : Pat<(v4bf16 (NEONvext (v4bf16 DPR:$Vn), (v4bf16 DPR:$Vm), (i32 imm:$index))),
+          (VEXTd16 DPR:$Vn, DPR:$Vm, imm:$index)>;
 }
 
 def VEXTd32 : VEXTd<"vext", "32", v2i32, imm0_1> {
@@ -7104,6 +7118,8 @@ def VEXTq16 : VEXTq<"vext", "16", v8i16, imm0_7> {
 }
 let Predicates = [HasNEON] in {
 def : Pat<(v8f16 (NEONvext (v8f16 QPR:$Vn), (v8f16 QPR:$Vm), (i32 imm:$index))),
+          (VEXTq16 QPR:$Vn, QPR:$Vm, imm:$index)>;
+def : Pat<(v8bf16 (NEONvext (v8bf16 QPR:$Vn), (v8bf16 QPR:$Vm), (i32 imm:$index))),
           (VEXTq16 QPR:$Vn, QPR:$Vm, imm:$index)>;
 }
 
@@ -7984,28 +8000,25 @@ multiclass Lengthen_HalfDouble_Big_Endian<string DestLanes, string DestTy, strin
                    (!cast<PatFrag>("extloadv" # SrcTy) addrmode6:$addr)),
          (EXTRACT_SUBREG (!cast<Instruction>("VMOVLuv" # Insn2Lanes # Insn2Ty)
            (EXTRACT_SUBREG (!cast<Instruction>("VMOVLuv" # Insn1Lanes # Insn1Ty)
-            (!cast<Instruction>("VREV16d8")
-             (VLD1LNd16 addrmode6:$addr, (f64 (IMPLICIT_DEF)), (i32 0)))),
+             (VREV16d8 (VLD1LNd16 addrmode6:$addr, (f64 (IMPLICIT_DEF)), (i32 0)))),
              dsub_0)),
-          dsub_0)>,
+           dsub_0)>,
              Requires<[HasNEON]>;
   def _Z   : Pat<(!cast<ValueType>("v" # DestLanes # DestTy)
                    (!cast<PatFrag>("zextloadv" # SrcTy) addrmode6:$addr)),
          (EXTRACT_SUBREG (!cast<Instruction>("VMOVLuv" # Insn2Lanes # Insn2Ty)
            (EXTRACT_SUBREG (!cast<Instruction>("VMOVLuv" # Insn1Lanes # Insn1Ty)
-            (!cast<Instruction>("VREV16d8")
-             (VLD1LNd16 addrmode6:$addr, (f64 (IMPLICIT_DEF)), (i32 0)))),
+             (VREV16d8 (VLD1LNd16 addrmode6:$addr, (f64 (IMPLICIT_DEF)), (i32 0)))),
              dsub_0)),
-          dsub_0)>,
+           dsub_0)>,
              Requires<[HasNEON]>;
   def _S   : Pat<(!cast<ValueType>("v" # DestLanes # DestTy)
                    (!cast<PatFrag>("sextloadv" # SrcTy) addrmode6:$addr)),
          (EXTRACT_SUBREG (!cast<Instruction>("VMOVLsv" # Insn2Lanes # Insn2Ty)
            (EXTRACT_SUBREG (!cast<Instruction>("VMOVLsv" # Insn1Lanes # Insn1Ty)
-            (!cast<Instruction>("VREV16d8")
-             (VLD1LNd16 addrmode6:$addr, (f64 (IMPLICIT_DEF)), (i32 0)))),
+             (VREV16d8 (VLD1LNd16 addrmode6:$addr, (f64 (IMPLICIT_DEF)), (i32 0)))),
              dsub_0)),
-          dsub_0)>,
+           dsub_0)>,
              Requires<[HasNEON]>;
 }
 
@@ -8058,17 +8071,17 @@ let Predicates = [HasNEON,IsLE] in {
 let Predicates = [HasNEON,IsBE] in {
   def : Pat<(v2i64 (extloadvi8 addrmode6:$addr)),
         (VMOVLuv2i64 (EXTRACT_SUBREG (VMOVLuv4i32 (EXTRACT_SUBREG (VMOVLuv8i16
-           (!cast<Instruction>("VREV16d8")
+           (VREV16d8
              (VLD1LNd16 addrmode6:$addr,
                         (f64 (IMPLICIT_DEF)), (i32 0)))), dsub_0)), dsub_0))>;
   def : Pat<(v2i64 (zextloadvi8 addrmode6:$addr)),
         (VMOVLuv2i64 (EXTRACT_SUBREG (VMOVLuv4i32 (EXTRACT_SUBREG (VMOVLuv8i16
-           (!cast<Instruction>("VREV16d8")
+           (VREV16d8
              (VLD1LNd16 addrmode6:$addr,
                         (f64 (IMPLICIT_DEF)), (i32 0)))), dsub_0)), dsub_0))>;
   def : Pat<(v2i64 (sextloadvi8 addrmode6:$addr)),
         (VMOVLsv2i64 (EXTRACT_SUBREG (VMOVLsv4i32 (EXTRACT_SUBREG (VMOVLsv8i16
-           (!cast<Instruction>("VREV16d8")
+           (VREV16d8
              (VLD1LNd16 addrmode6:$addr,
                         (f64 (IMPLICIT_DEF)), (i32 0)))), dsub_0)), dsub_0))>;
 }

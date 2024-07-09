@@ -8,7 +8,10 @@ tablegen("Options") {
 executable("llvm-dwarfutil") {
   deps = [
     ":Options",
+    "//llvm/lib/CodeGen",
     "//llvm/lib/DWARFLinker",
+    "//llvm/lib/DWARFLinker/Classic",
+    "//llvm/lib/DWARFLinker/Parallel",
     "//llvm/lib/DebugInfo/DWARF",
     "//llvm/lib/MC",
     "//llvm/lib/ObjCopy",
@@ -16,13 +19,13 @@ executable("llvm-dwarfutil") {
     "//llvm/lib/Option",
     "//llvm/lib/Support",
     "//llvm/lib/Target",
-    "//llvm/lib/Target:TargetsToBuild",
     "//llvm/lib/Target:AllTargetsCodeGens",
     "//llvm/lib/Target:AllTargetsDescs",
     "//llvm/lib/Target:AllTargetsInfos",
+    "//llvm/lib/TargetParser",
   ]
   sources = [
-    "llvm-dwarfutil.cpp",
     "DebugInfoLinker.cpp",
+    "llvm-dwarfutil.cpp",
   ]
 }

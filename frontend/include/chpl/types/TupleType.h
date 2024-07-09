@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,6 +47,8 @@ class TupleType final : public CompositeType {
                     instantiatedFrom, std::move(subs)),
       isVarArgTuple_(isVarArgTuple)
   {
+    assert(!id.isEmpty());
+    assert(!name.isEmpty());
     // Let a single entry in the SubstitutionsMap with a postOrderId of '-1'
     // represent the star-type of a tuple with an unknown size. This is a
     // useful representation for VarArgs.
@@ -55,6 +57,8 @@ class TupleType final : public CompositeType {
       if (elt.postOrderId() == -1) {
         isKnownSize_ = false;
       }
+    } else if (subs_.size() == 0) {
+      isKnownSize_ = false;
     }
     computeIsStarTuple();
     computeIsParamKnown();
@@ -72,7 +76,7 @@ class TupleType final : public CompositeType {
   }
 
   static const owned<TupleType>&
-  getTupleType(Context* context, ID id, UniqueString name,
+  getTupleType(Context* context,
                const TupleType* instantiatedFrom,
                SubstitutionsMap subs,
                bool isVarArgTuple = false);

@@ -1,12 +1,2 @@
-unstable_module.chpl:6: warning: This Matrix which uses 'Linear Algebra' is unstable
-unstable_module.chpl:7: warning: This Matrix which uses 'Linear Algebra' is unstable
-unstable_module.chpl:14: warning: This Matrix which uses 'Linear Algebra' is unstable
-unstable_module.chpl:15: warning: This Matrix which uses 'Linear Algebra' is unstable
-unstable_module.chpl:18: warning: This Matrix which uses 'Linear Algebra' is unstable
-3 3 3 3
-3 3 3 3
-3 3 3 3
-3 3 3 3
-matrix rank: 2
-matrix size: 16
-matrix shape: (4, 4)
+unstable_module.chpl:2: warning: the amodule is unstable
+unstable_module.chpl:4: error: string

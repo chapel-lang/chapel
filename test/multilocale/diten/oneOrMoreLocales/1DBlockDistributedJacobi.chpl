@@ -7,7 +7,7 @@ class DistribArrayNode {
   var arr: [0..size-1] arrType;
 }
 
-class DistribArray {
+class DistribArray : writeSerializable {
   type arrType;
   const arrSize: int;
   const localSize:int = arrSize / numLocales;
@@ -73,10 +73,10 @@ class DistribArray {
     }
   }
 
-  proc writeThis(w) throws {
+  override proc serialize(writer, ref serializer) throws {
     on Locales(0) {
       for i in 0..arrSize-1 {
-        w.writeln(element(i));
+        writer.writeln(element(i));
       }
     }
   }

@@ -3,8 +3,10 @@ class myclass {
   var y: real = 4.2;
 }
 
-var a: borrowed myclass? = (new owned myclass()).borrow();
-var b: borrowed myclass? = (new owned myclass()).borrow();
+var ownA = new owned myclass();
+var a: borrowed myclass? = ownA.borrow();
+var ownB = new owned myclass();
+var b: borrowed myclass? = ownB.borrow();
 
 writeln("a is: ", a, ", b is: ", b);
 

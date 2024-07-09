@@ -127,11 +127,11 @@ proc abs(T)
 //| >    Range/domain arithmetic    | >
 //|/________________________________|/
 //==== Range exponentiation ====
-operator **(R: range(stridable=?s), param n: int) {
+operator **(R: range(strides=?s), param n: int) {
   var ranges: n*R.type;
   for i in 0..#n do ranges(i) = R;
 
-  var D: domain(n,idxType=R.idxType,stridable=s) = ranges;
+  var D: domain(n,idxType=R.idxType,strides=s) = ranges;
   return D;
 }
 

@@ -20,7 +20,7 @@ record MyRec {
   type AT4;
 }
 
-proc reqFun(cgFormal:  MyRec,
+proc reqFun(cgFormal:  MyRec(?),
             atFormal1: cgFormal.AT1,
             atFormal2: cgFormal.AT3, // should be AT2
             atFormal3: cgFormal.AT2, // should be AT3

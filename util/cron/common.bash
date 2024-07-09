@@ -6,30 +6,7 @@
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/functions.bash
 
-# For our internal testing, this is necessary to get the latest version of gcc
-# on the system.
-if [ -z "${CHPL_SOURCED_BASHRC}" -a -f ~/.bashrc ] ; then
-    source ~/.bashrc
-    export CHPL_SOURCED_BASHRC=true
-fi
-
-if [ -z "${OFFICIAL_SYSTEM_LLVM}" ] ; then
-  if [ -f /data/cf/chapel/setup_system_llvm.bash ] ; then
-    source /data/cf/chapel/setup_system_llvm.bash
-  elif [ -f /cray/css/users/chapelu/setup_system_llvm.bash ] ; then
-    source /cray/css/users/chapelu/setup_system_llvm.bash
-  elif [ -f /cy/users/chapelu/setup_system_llvm.bash ] ; then
-    source /cy/users/chapelu/setup_system_llvm.bash
-  fi
-fi
-
-if [ -f /data/cf/chapel/setup_cmake_nightly.bash ] ; then
-  source /data/cf/chapel/setup_cmake_nightly.bash
-elif [ -f /cray/css/users/chapelu/setup_cmake_nightly.bash ] ; then
-  source /cray/css/users/chapelu/setup_cmake_nightly.bash
-elif [ -f /cy/users/chapelu/setup_cmake_nightly.bash ] ; then
-  source /cy/users/chapelu/setup_cmake_nightly.bash
-fi
+source $CWD/load-base-deps.bash
 
 log_info "gcc version: $(which gcc)"
 gcc --version
@@ -106,7 +83,7 @@ export CHPL_TARGET_CPU=none
 
 explicit_prefix=${CHPL_NIGHTLY_LOG_PREFIX}
 default_prefix=${TMPDIR:-/tmp}/chapel_logs
-css_prefix=/cray/css/users/chapelu
+css_prefix=/hpcdc/project/chapel
 if [ -n "$explicit_prefix" ]; then
     LOGDIR_PREFIX=$explicit_prefix
 elif [ -d $css_prefix ] ; then
@@ -120,7 +97,7 @@ else
 fi
 export LOGDIR_PREFIX
 
-default_perf_prefix=/cray/css/users/chapelu
+default_perf_prefix=/hpcdc/project/chapel
 if [ ! -d $default_perf_prefix ] ; then
   default_perf_prefix=/cy/users/chapelu
 fi

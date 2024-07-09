@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -41,6 +41,7 @@ Variable::build(Builder* builder, Location loc,
                 Decl::Visibility vis,
                 Decl::Linkage linkage,
                 owned<AstNode> linkageName,
+                owned<AstNode> destination,
                 UniqueString name,
                 Variable::Kind kind,
                 bool isConfig,
@@ -50,6 +51,7 @@ Variable::build(Builder* builder, Location loc,
   AstList lst;
   int attributeGroupChildNum = NO_CHILD;
   int linkageNameChildNum = NO_CHILD;
+  int8_t destinationChildNum = NO_CHILD;
   int8_t typeExpressionChildNum = NO_CHILD;
   int8_t initExpressionChildNum = NO_CHILD;
 
@@ -61,6 +63,11 @@ Variable::build(Builder* builder, Location loc,
   if (linkageName.get() != nullptr) {
     linkageNameChildNum = lst.size();
     lst.push_back(std::move(linkageName));
+  }
+
+  if (destination.get() != nullptr) {
+    destinationChildNum = lst.size();
+    lst.push_back(std::move(destination));
   }
 
   if (typeExpression.get() != nullptr) {
@@ -77,6 +84,7 @@ Variable::build(Builder* builder, Location loc,
                                vis,
                                linkage,
                                linkageNameChildNum,
+                               destinationChildNum,
                                name,
                                kind,
                                isConfig,

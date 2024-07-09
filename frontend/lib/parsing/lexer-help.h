@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -82,9 +82,16 @@ static void syntax(yyscan_t scanner, int nLines, int nCols,
 *                                                                           *
 ************************************* | ************************************/
 
-static int processIdentifier(yyscan_t scanner, bool queried) {
+// specialInitialChar might be:
+//  * '?' for a query identifier as in 'proc foo(arg: ?t)'
+//  * '@' for an attribute identifier as in @chpldoc.nodoc
+//  * everything else is considered a normal identifier
+static int processIdentifier(yyscan_t scanner, char specialInitialChar) {
   YYSTYPE* val = yyget_lval(scanner);
-  int retval = processToken(scanner, queried ? TQUERIEDIDENT : TIDENT);
+  int tokenType = TIDENT;
+  if (specialInitialChar == '?')      tokenType = TQUERIEDIDENT;
+  else if (specialInitialChar == '@') tokenType = TATTRIBUTEIDENT;
+  int retval = processToken(scanner, tokenType);
   // note: processToken calls updateLocation.
 
   const char* pch = yyget_text(scanner);
@@ -125,21 +132,23 @@ static int processToken(yyscan_t scanner, int t) {
 
 static std::string eatStringLiteral(yyscan_t scanner,
                                     const char* startChar,
+                                    int nColOffset,
                                     bool& isErroneousOut);
 static std::string eatTripleStringLiteral(yyscan_t scanner,
                                           const char* startChar,
+                                          int nColOffset,
                                           bool& isErroneousOut);
 
 static int processStringLiteral(yyscan_t scanner,
                                 const char* startChar,
                                 int type) {
-  // update the location for the string start (e.g. b" )
+  // figure out the location offset for the string start (e.g. b" )
   const char* pch = yyget_text(scanner);
+  int nColOffset = (int) strlen(pch);
   YYLTYPE* loc = yyget_lloc(scanner);
-  updateLocation(loc, 0, strlen(pch));
 
   bool erroneous = false;
-  std::string value = eatStringLiteral(scanner, startChar, erroneous);
+  std::string value = eatStringLiteral(scanner, startChar, nColOffset, erroneous);
 
   ParserContext* context = yyget_extra(scanner);
   if (context->parseStats)
@@ -181,13 +190,13 @@ static int processStringLiteral(yyscan_t scanner,
 static int processTripleStringLiteral(yyscan_t scanner,
                                       const char* startChar,
                                       int type) {
-  // update the location for the string start (e.g. b" )
+  // figure out the location offset for the string start (e.g. b" )
   const char* pch = yyget_text(scanner);
+  int nColOffset = (int) strlen(pch);
   YYLTYPE* loc = yyget_lloc(scanner);
-  updateLocation(loc, 0, strlen(pch));
 
   bool erroneous = false;
-  std::string value = eatTripleStringLiteral(scanner, startChar, erroneous);
+  std::string value = eatTripleStringLiteral(scanner, startChar, nColOffset, erroneous);
 
   ParserContext* context = yyget_extra(scanner);
   if (context->parseStats)
@@ -265,12 +274,13 @@ static inline SizedStr makeSizedStr(const char* allocatedData, long size) {
 
 static std::string eatStringLiteral(yyscan_t scanner,
                                     const char* startChar,
+                                    int nColOffset,
                                     bool& isErroneousOut) {
   YYLTYPE* loc = yyget_lloc(scanner);
   const char startCh = *startChar;
   int        c       = 0;
   int nLines = 0;
-  int nCols = 0;
+  int nCols = nColOffset;
   std::string s;
 
   isErroneousOut = false;
@@ -386,13 +396,14 @@ static std::string eatStringLiteral(yyscan_t scanner,
 
 static std::string eatTripleStringLiteral(yyscan_t scanner,
                                           const char* startChar,
+                                          int nColOffset,
                                           bool& isErroneousOut) {
   YYLTYPE* loc       = yyget_lloc(scanner);
   const char startCh = *startChar;
   int startChCount   = 0;
   int c              = 0;
   int nLines = 0;
-  int nCols = 0;
+  int nCols = nColOffset;
   std::string s;
 
   isErroneousOut = false;

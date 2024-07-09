@@ -1,11 +1,15 @@
 # AtomicObjects uses extern blocks
 CHPL_LLVM==none
-# AtomicObjects uses GCC inline assembly, so only test it on gcc/clang
+# AtomicObjects uses GCC inline assembly (for x86) or a compiler builtin
+# (for arm), so only test it on gcc/clang (which we know support this builtin)
 CHPL_TARGET_COMPILER==cray-prgenv-pgi
 CHPL_TARGET_COMPILER==pgi
 CHPL_TARGET_COMPILER==cray-prgenv-cray
-CHPL_TARGET_COMPILER==pgi
 CHPL_TARGET_COMPILER==intel
 CHPL_TARGET_COMPILER==cray-prgenv-intel
-# AtomicObjects uses x86-64 instructions in the inline assembly
-CHPL_TARGET_ARCH != x86_64
+
+# These tests have known memory leaks. To cover this, we have a subset of tests
+# where we explicitly pass '--memLeaks' as an execopt. For other correctness
+# tests, we don't want them to fail in our broader "memory leak" job so we skip
+# when we're running that job.
+CHPL_MEM_LEAK_TESTING==true

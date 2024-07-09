@@ -22,7 +22,10 @@
 #include "llvm/ADT/EnumeratedArray.h"
 #include "llvm/ADT/PostOrderIterator.h"
 #include "llvm/ADT/SetVector.h"
+#include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Statistic.h"
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Analysis/CallGraph.h"
 #include "llvm/Analysis/CallGraphSCCPass.h"
@@ -30,27 +33,33 @@
 #include "llvm/Analysis/OptimizationRemarkEmitter.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/Frontend/OpenMP/OMPConstants.h"
+#include "llvm/Frontend/OpenMP/OMPDeviceConstants.h"
 #include "llvm/Frontend/OpenMP/OMPIRBuilder.h"
 #include "llvm/IR/Assumptions.h"
+#include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DiagnosticInfo.h"
+#include "llvm/IR/Dominators.h"
+#include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/GlobalVariable.h"
+#include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/IntrinsicsAMDGPU.h"
 #include "llvm/IR/IntrinsicsNVPTX.h"
 #include "llvm/IR/LLVMContext.h"
-#include "llvm/InitializePasses.h"
+#include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
-#include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/Attributor.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/CallGraphUpdater.h"
 
 #include <algorithm>
+#include <optional>
+#include <string>
 
 using namespace llvm;
 using namespace omp;
@@ -71,6 +80,8 @@ static cl::opt<bool>
                            cl::desc("Disable function internalization."),
                            cl::Hidden, cl::init(false));
 
+static cl::opt<bool> DeduceICVValues("openmp-deduce-icv-values",
+                                     cl::init(false), cl::Hidden);
 static cl::opt<bool> PrintICVValues("openmp-print-icv-values", cl::init(false),
                                     cl::Hidden);
 static cl::opt<bool> PrintOpenMPKernels("openmp-print-gpu-kernels",
@@ -147,6 +158,8 @@ STATISTIC(NumOpenMPRuntimeFunctionUsesIdentified,
           "Number of OpenMP runtime function uses identified");
 STATISTIC(NumOpenMPTargetRegionKernels,
           "Number of OpenMP target region entry points (=kernels) identified");
+STATISTIC(NumNonOpenMPTargetRegionKernels,
+          "Number of non-OpenMP target region kernels identified");
 STATISTIC(NumOpenMPTargetRegionKernelsSPMD,
           "Number of OpenMP target region entry points (=kernels) executed in "
           "SPMD-mode instead of generic-mode");
@@ -172,6 +185,92 @@ STATISTIC(NumBarriersEliminated, "Number of redundant barriers eliminated");
 static constexpr auto TAG = "[" DEBUG_TYPE "]";
 #endif
 
+namespace KernelInfo {
+
+// struct ConfigurationEnvironmentTy {
+//   uint8_t UseGenericStateMachine;
+//   uint8_t MayUseNestedParallelism;
+//   llvm::omp::OMPTgtExecModeFlags ExecMode;
+//   int32_t MinThreads;
+//   int32_t MaxThreads;
+//   int32_t MinTeams;
+//   int32_t MaxTeams;
+// };
+
+// struct DynamicEnvironmentTy {
+//   uint16_t DebugIndentionLevel;
+// };
+
+// struct KernelEnvironmentTy {
+//   ConfigurationEnvironmentTy Configuration;
+//   IdentTy *Ident;
+//   DynamicEnvironmentTy *DynamicEnv;
+// };
+
+#define KERNEL_ENVIRONMENT_IDX(MEMBER, IDX)                                    \
+  constexpr const unsigned MEMBER##Idx = IDX;
+
+KERNEL_ENVIRONMENT_IDX(Configuration, 0)
+KERNEL_ENVIRONMENT_IDX(Ident, 1)
+
+#undef KERNEL_ENVIRONMENT_IDX
+
+#define KERNEL_ENVIRONMENT_CONFIGURATION_IDX(MEMBER, IDX)                      \
+  constexpr const unsigned MEMBER##Idx = IDX;
+
+KERNEL_ENVIRONMENT_CONFIGURATION_IDX(UseGenericStateMachine, 0)
+KERNEL_ENVIRONMENT_CONFIGURATION_IDX(MayUseNestedParallelism, 1)
+KERNEL_ENVIRONMENT_CONFIGURATION_IDX(ExecMode, 2)
+KERNEL_ENVIRONMENT_CONFIGURATION_IDX(MinThreads, 3)
+KERNEL_ENVIRONMENT_CONFIGURATION_IDX(MaxThreads, 4)
+KERNEL_ENVIRONMENT_CONFIGURATION_IDX(MinTeams, 5)
+KERNEL_ENVIRONMENT_CONFIGURATION_IDX(MaxTeams, 6)
+
+#undef KERNEL_ENVIRONMENT_CONFIGURATION_IDX
+
+#define KERNEL_ENVIRONMENT_GETTER(MEMBER, RETURNTYPE)                          \
+  RETURNTYPE *get##MEMBER##FromKernelEnvironment(ConstantStruct *KernelEnvC) { \
+    return cast<RETURNTYPE>(KernelEnvC->getAggregateElement(MEMBER##Idx));     \
+  }
+
+KERNEL_ENVIRONMENT_GETTER(Ident, Constant)
+KERNEL_ENVIRONMENT_GETTER(Configuration, ConstantStruct)
+
+#undef KERNEL_ENVIRONMENT_GETTER
+
+#define KERNEL_ENVIRONMENT_CONFIGURATION_GETTER(MEMBER)                        \
+  ConstantInt *get##MEMBER##FromKernelEnvironment(                             \
+      ConstantStruct *KernelEnvC) {                                            \
+    ConstantStruct *ConfigC =                                                  \
+        getConfigurationFromKernelEnvironment(KernelEnvC);                     \
+    return dyn_cast<ConstantInt>(ConfigC->getAggregateElement(MEMBER##Idx));   \
+  }
+
+KERNEL_ENVIRONMENT_CONFIGURATION_GETTER(UseGenericStateMachine)
+KERNEL_ENVIRONMENT_CONFIGURATION_GETTER(MayUseNestedParallelism)
+KERNEL_ENVIRONMENT_CONFIGURATION_GETTER(ExecMode)
+KERNEL_ENVIRONMENT_CONFIGURATION_GETTER(MinThreads)
+KERNEL_ENVIRONMENT_CONFIGURATION_GETTER(MaxThreads)
+KERNEL_ENVIRONMENT_CONFIGURATION_GETTER(MinTeams)
+KERNEL_ENVIRONMENT_CONFIGURATION_GETTER(MaxTeams)
+
+#undef KERNEL_ENVIRONMENT_CONFIGURATION_GETTER
+
+GlobalVariable *
+getKernelEnvironementGVFromKernelInitCB(CallBase *KernelInitCB) {
+  constexpr const int InitKernelEnvironmentArgNo = 0;
+  return cast<GlobalVariable>(
+      KernelInitCB->getArgOperand(InitKernelEnvironmentArgNo)
+          ->stripPointerCasts());
+}
+
+ConstantStruct *getKernelEnvironementFromKernelInitCB(CallBase *KernelInitCB) {
+  GlobalVariable *KernelEnvGV =
+      getKernelEnvironementGVFromKernelInitCB(KernelInitCB);
+  return cast<ConstantStruct>(KernelEnvGV->getInitializer());
+}
+} // namespace KernelInfo
+
 namespace {
 
 struct AAHeapToShared;
@@ -182,13 +281,14 @@ struct AAICVTracker;
 /// Attributor runs.
 struct OMPInformationCache : public InformationCache {
   OMPInformationCache(Module &M, AnalysisGetter &AG,
-                      BumpPtrAllocator &Allocator, SetVector<Function *> &CGSCC,
-                      KernelSet &Kernels)
-      : InformationCache(M, AG, Allocator, &CGSCC), OMPBuilder(M),
-        Kernels(Kernels) {
+                      BumpPtrAllocator &Allocator, SetVector<Function *> *CGSCC,
+                      bool OpenMPPostLink)
+      : InformationCache(M, AG, Allocator, CGSCC), OMPBuilder(M),
+        OpenMPPostLink(OpenMPPostLink) {
 
+    OMPBuilder.Config.IsTargetDevice = isOpenMPDevice(OMPBuilder.M);
     OMPBuilder.initialize();
-    initializeRuntimeFunctions();
+    initializeRuntimeFunctions(M);
     initializeInternalControlVars();
   }
 
@@ -412,7 +512,7 @@ struct OMPInformationCache : public InformationCache {
     // TODO: We directly convert uses into proper calls and unknown uses.
     for (Use &U : RFI.Declaration->uses()) {
       if (Instruction *UserI = dyn_cast<Instruction>(U.getUser())) {
-        if (ModuleSlice.count(UserI->getFunction())) {
+        if (!CGSCC || CGSCC->empty() || CGSCC->contains(UserI->getFunction())) {
           RFI.getOrCreateUseVector(UserI->getFunction()).push_back(&U);
           ++NumUses;
         }
@@ -443,10 +543,27 @@ struct OMPInformationCache : public InformationCache {
       CI->setCallingConv(Fn->getCallingConv());
   }
 
+  // Helper function to determine if it's legal to create a call to the runtime
+  // functions.
+  bool runtimeFnsAvailable(ArrayRef<RuntimeFunction> Fns) {
+    // We can always emit calls if we haven't yet linked in the runtime.
+    if (!OpenMPPostLink)
+      return true;
+
+    // Once the runtime has been already been linked in we cannot emit calls to
+    // any undefined functions.
+    for (RuntimeFunction Fn : Fns) {
+      RuntimeFunctionInfo &RFI = RFIs[Fn];
+
+      if (RFI.Declaration && RFI.Declaration->isDeclaration())
+        return false;
+    }
+    return true;
+  }
+
   /// Helper to initialize all runtime function information for those defined
   /// in OpenMPKinds.def.
-  void initializeRuntimeFunctions() {
-    Module &M = *((*ModuleSlice.begin())->getParent());
+  void initializeRuntimeFunctions(Module &M) {
 
     // Helper macros for handling __VA_ARGS__ in OMP_RTL
 #define OMP_TYPE(VarName, ...)                                                 \
@@ -499,13 +616,13 @@ struct OMPInformationCache : public InformationCache {
   }
 #include "llvm/Frontend/OpenMP/OMPKinds.def"
 
-    // Remove the `noinline` attribute from `__kmpc`, `_OMP::` and `omp_`
+    // Remove the `noinline` attribute from `__kmpc`, `ompx::` and `omp_`
     // functions, except if `optnone` is present.
     if (isOpenMPDevice(M)) {
       for (Function &F : M) {
-        for (StringRef Prefix : {"__kmpc", "_ZN4_OMP", "omp_"})
+        for (StringRef Prefix : {"__kmpc", "_ZN4ompx", "omp_"})
           if (F.hasFnAttribute(Attribute::NoInline) &&
-              F.getName().startswith(Prefix) &&
+              F.getName().starts_with(Prefix) &&
               !F.hasFnAttribute(Attribute::OptimizeNone))
             F.removeFnAttr(Attribute::NoInline);
       }
@@ -514,11 +631,11 @@ struct OMPInformationCache : public InformationCache {
     // TODO: We should attach the attributes defined in OMPKinds.def.
   }
 
-  /// Collection of known kernels (\see Kernel) in the module.
-  KernelSet &Kernels;
-
   /// Collection of known OpenMP runtime functions..
   DenseSet<const Function *> RTLFunctions;
+
+  /// Indicates if we have already linked in the OpenMP device library.
+  bool OpenMPPostLink = false;
 };
 
 template <typename Ty, bool InsertInvalidates = true>
@@ -569,7 +686,7 @@ struct KernelInfoState : AbstractState {
 
   /// The parallel regions (identified by the outlined parallel functions) that
   /// can be reached from the associated function.
-  BooleanStateWithPtrSetVector<Function, /* InsertInvalidates */ false>
+  BooleanStateWithPtrSetVector<CallBase, /* InsertInvalidates */ false>
       ReachedKnownParallelRegions;
 
   /// State to track what parallel region we might reach.
@@ -583,6 +700,10 @@ struct KernelInfoState : AbstractState {
   /// The __kmpc_target_init call in this kernel, if any. If we find more than
   /// one we abort as the kernel is malformed.
   CallBase *KernelInitCB = nullptr;
+
+  /// The constant kernel environement as taken from and passed to
+  /// __kmpc_target_init.
+  ConstantStruct *KernelEnvC = nullptr;
 
   /// The __kmpc_target_deinit call in this kernel, if any. If we find more than
   /// one we abort as the kernel is malformed.
@@ -598,6 +719,9 @@ struct KernelInfoState : AbstractState {
   /// function. We will give up tracking if we encounter unknown caller or the
   /// caller is __kmpc_parallel_51.
   BooleanStateWithSetVector<uint8_t> ParallelLevels;
+
+  /// Flag that indicates if the kernel has nested Parallelism
+  bool NestedParallelism = false;
 
   /// Abstract State interface
   ///{
@@ -617,16 +741,19 @@ struct KernelInfoState : AbstractState {
   /// See AbstractState::indicatePessimisticFixpoint(...)
   ChangeStatus indicatePessimisticFixpoint() override {
     IsAtFixpoint = true;
+    ParallelLevels.indicatePessimisticFixpoint();
     ReachingKernelEntries.indicatePessimisticFixpoint();
     SPMDCompatibilityTracker.indicatePessimisticFixpoint();
     ReachedKnownParallelRegions.indicatePessimisticFixpoint();
     ReachedUnknownParallelRegions.indicatePessimisticFixpoint();
+    NestedParallelism = true;
     return ChangeStatus::CHANGED;
   }
 
   /// See AbstractState::indicateOptimisticFixpoint(...)
   ChangeStatus indicateOptimisticFixpoint() override {
     IsAtFixpoint = true;
+    ParallelLevels.indicateOptimisticFixpoint();
     ReachingKernelEntries.indicateOptimisticFixpoint();
     SPMDCompatibilityTracker.indicateOptimisticFixpoint();
     ReachedKnownParallelRegions.indicateOptimisticFixpoint();
@@ -646,6 +773,10 @@ struct KernelInfoState : AbstractState {
     if (ReachedUnknownParallelRegions != RHS.ReachedUnknownParallelRegions)
       return false;
     if (ReachingKernelEntries != RHS.ReachingKernelEntries)
+      return false;
+    if (ParallelLevels != RHS.ParallelLevels)
+      return false;
+    if (NestedParallelism != RHS.NestedParallelism)
       return false;
     return true;
   }
@@ -681,9 +812,16 @@ struct KernelInfoState : AbstractState {
                          "assumptions.");
       KernelDeinitCB = KIS.KernelDeinitCB;
     }
+    if (KIS.KernelEnvC) {
+      if (KernelEnvC && KernelEnvC != KIS.KernelEnvC)
+        llvm_unreachable("Kernel that calls another kernel violates OpenMP-Opt "
+                         "assumptions.");
+      KernelEnvC = KIS.KernelEnvC;
+    }
     SPMDCompatibilityTracker ^= KIS.SPMDCompatibilityTracker;
     ReachedKnownParallelRegions ^= KIS.ReachedKnownParallelRegions;
     ReachedUnknownParallelRegions ^= KIS.ReachedUnknownParallelRegions;
+    NestedParallelism |= KIS.NestedParallelism;
     return *this;
   }
 
@@ -796,7 +934,7 @@ struct OpenMPOpt {
     return Ctx.getDiagHandlerPtr()->isAnyRemarkEnabled(DEBUG_TYPE);
   }
 
-  /// Run all OpenMP optimizations on the underlying SCC/ModuleSlice.
+  /// Run all OpenMP optimizations on the underlying SCC.
   bool run(bool IsModulePass) {
     if (SCC.empty())
       return false;
@@ -804,8 +942,7 @@ struct OpenMPOpt {
     bool Changed = false;
 
     LLVM_DEBUG(dbgs() << TAG << "Run on SCC with " << SCC.size()
-                      << " functions in a slice with "
-                      << OMPInfoCache.ModuleSlice.size() << " functions\n");
+                      << " functions\n");
 
     if (IsModulePass) {
       Changed |= runAttributor(IsModulePass);
@@ -818,8 +955,6 @@ struct OpenMPOpt {
 
       if (remarksEnabled())
         analysisGlobalization();
-
-      Changed |= eliminateBarriers();
     } else {
       if (PrintICVValues)
         printICVs();
@@ -842,9 +977,10 @@ struct OpenMPOpt {
           Changed = true;
         }
       }
-
-      Changed |= eliminateBarriers();
     }
+
+    if (OMPInfoCache.OpenMPPostLink)
+      Changed |= removeRuntimeSymbols();
 
     return Changed;
   }
@@ -855,7 +991,7 @@ struct OpenMPOpt {
     InternalControlVar ICVs[] = {ICV_nthreads, ICV_active_levels, ICV_cancel,
                                  ICV_proc_bind};
 
-    for (Function *F : OMPInfoCache.ModuleSlice) {
+    for (Function *F : SCC) {
       for (auto ICV : ICVs) {
         auto ICVInfo = OMPInfoCache.ICVs[ICV];
         auto Remark = [&](OptimizationRemarkAnalysis ORA) {
@@ -874,7 +1010,7 @@ struct OpenMPOpt {
   /// Print OpenMP GPU kernels for testing.
   void printKernels() const {
     for (Function *F : SCC) {
-      if (!OMPInfoCache.Kernels.count(F))
+      if (!omp::isOpenMPKernel(*F))
         continue;
 
       auto Remark = [&](OptimizationRemarkAnalysis ORA) {
@@ -1375,6 +1511,37 @@ private:
     return Changed;
   }
 
+  /// Tries to remove known runtime symbols that are optional from the module.
+  bool removeRuntimeSymbols() {
+    // The RPC client symbol is defined in `libc` and indicates that something
+    // required an RPC server. If its users were all optimized out then we can
+    // safely remove it.
+    // TODO: This should be somewhere more common in the future.
+    if (GlobalVariable *GV = M.getNamedGlobal("__llvm_libc_rpc_client")) {
+      if (!GV->getType()->isPointerTy())
+        return false;
+
+      Constant *C = GV->getInitializer();
+      if (!C)
+        return false;
+
+      // Check to see if the only user of the RPC client is the external handle.
+      GlobalVariable *Client = dyn_cast<GlobalVariable>(C->stripPointerCasts());
+      if (!Client || Client->getNumUses() > 1 ||
+          Client->user_back() != GV->getInitializer())
+        return false;
+
+      Client->replaceAllUsesWith(PoisonValue::get(Client->getType()));
+      Client->eraseFromParent();
+
+      GV->replaceAllUsesWith(PoisonValue::get(GV->getType()));
+      GV->eraseFromParent();
+
+      return true;
+    }
+    return false;
+  }
+
   /// Tries to hide the latency of runtime calls that involve host to
   /// device memory transfers by splitting them into their "issue" and "wait"
   /// versions. The "issue" is moved upwards as much as possible. The "wait" is
@@ -1404,213 +1571,10 @@ private:
       Changed |= WasSplit;
       return WasSplit;
     };
-    RFI.foreachUse(SCC, SplitMemTransfers);
-
-    return Changed;
-  }
-
-  /// Eliminates redundant, aligned barriers in OpenMP offloaded kernels.
-  /// TODO: Make this an AA and expand it to work across blocks and functions.
-  bool eliminateBarriers() {
-    bool Changed = false;
-
-    if (DisableOpenMPOptBarrierElimination)
-      return /*Changed=*/false;
-
-    if (OMPInfoCache.Kernels.empty())
-      return /*Changed=*/false;
-
-    enum ImplicitBarrierType { IBT_ENTRY, IBT_EXIT };
-
-    class BarrierInfo {
-      Instruction *I;
-      enum ImplicitBarrierType Type;
-
-    public:
-      BarrierInfo(enum ImplicitBarrierType Type) : I(nullptr), Type(Type) {}
-      BarrierInfo(Instruction &I) : I(&I) {}
-
-      bool isImplicit() { return !I; }
-
-      bool isImplicitEntry() { return isImplicit() && Type == IBT_ENTRY; }
-
-      bool isImplicitExit() { return isImplicit() && Type == IBT_EXIT; }
-
-      Instruction *getInstruction() { return I; }
-    };
-
-    for (Function *Kernel : OMPInfoCache.Kernels) {
-      for (BasicBlock &BB : *Kernel) {
-        SmallVector<BarrierInfo, 8> BarriersInBlock;
-        SmallPtrSet<Instruction *, 8> BarriersToBeDeleted;
-
-        // Add the kernel entry implicit barrier.
-        if (&Kernel->getEntryBlock() == &BB)
-          BarriersInBlock.push_back(IBT_ENTRY);
-
-        // Find implicit and explicit aligned barriers in the same basic block.
-        for (Instruction &I : BB) {
-          if (isa<ReturnInst>(I)) {
-            // Add the implicit barrier when exiting the kernel.
-            BarriersInBlock.push_back(IBT_EXIT);
-            continue;
-          }
-          CallBase *CB = dyn_cast<CallBase>(&I);
-          if (!CB)
-            continue;
-
-          auto IsAlignBarrierCB = [&](CallBase &CB) {
-            switch (CB.getIntrinsicID()) {
-            case Intrinsic::nvvm_barrier0:
-            case Intrinsic::nvvm_barrier0_and:
-            case Intrinsic::nvvm_barrier0_or:
-            case Intrinsic::nvvm_barrier0_popc:
-              return true;
-            default:
-              break;
-            }
-            return hasAssumption(CB,
-                                 KnownAssumptionString("ompx_aligned_barrier"));
-          };
-
-          if (IsAlignBarrierCB(*CB)) {
-            // Add an explicit aligned barrier.
-            BarriersInBlock.push_back(I);
-          }
-        }
-
-        if (BarriersInBlock.size() <= 1)
-          continue;
-
-        // A barrier in a barrier pair is removeable if all instructions
-        // between the barriers in the pair are side-effect free modulo the
-        // barrier operation.
-        auto IsBarrierRemoveable = [&Kernel](BarrierInfo *StartBI,
-                                             BarrierInfo *EndBI) {
-          assert(
-              !StartBI->isImplicitExit() &&
-              "Expected start barrier to be other than a kernel exit barrier");
-          assert(
-              !EndBI->isImplicitEntry() &&
-              "Expected end barrier to be other than a kernel entry barrier");
-          // If StarBI instructions is null then this the implicit
-          // kernel entry barrier, so iterate from the first instruction in the
-          // entry block.
-          Instruction *I = (StartBI->isImplicitEntry())
-                               ? &Kernel->getEntryBlock().front()
-                               : StartBI->getInstruction()->getNextNode();
-          assert(I && "Expected non-null start instruction");
-          Instruction *E = (EndBI->isImplicitExit())
-                               ? I->getParent()->getTerminator()
-                               : EndBI->getInstruction();
-          assert(E && "Expected non-null end instruction");
-
-          for (; I != E; I = I->getNextNode()) {
-            if (!I->mayHaveSideEffects() && !I->mayReadFromMemory())
-              continue;
-
-            auto IsPotentiallyAffectedByBarrier =
-                [](Optional<MemoryLocation> Loc) {
-                  const Value *Obj = (Loc && Loc->Ptr)
-                                         ? getUnderlyingObject(Loc->Ptr)
-                                         : nullptr;
-                  if (!Obj) {
-                    LLVM_DEBUG(
-                        dbgs()
-                        << "Access to unknown location requires barriers\n");
-                    return true;
-                  }
-                  if (isa<UndefValue>(Obj))
-                    return false;
-                  if (isa<AllocaInst>(Obj))
-                    return false;
-                  if (auto *GV = dyn_cast<GlobalVariable>(Obj)) {
-                    if (GV->isConstant())
-                      return false;
-                    if (GV->isThreadLocal())
-                      return false;
-                    if (GV->getAddressSpace() == (int)AddressSpace::Local)
-                      return false;
-                    if (GV->getAddressSpace() == (int)AddressSpace::Constant)
-                      return false;
-                  }
-                  LLVM_DEBUG(dbgs() << "Access to '" << *Obj
-                                    << "' requires barriers\n");
-                  return true;
-                };
-
-            if (MemIntrinsic *MI = dyn_cast<MemIntrinsic>(I)) {
-              Optional<MemoryLocation> Loc = MemoryLocation::getForDest(MI);
-              if (IsPotentiallyAffectedByBarrier(Loc))
-                return false;
-              if (MemTransferInst *MTI = dyn_cast<MemTransferInst>(I)) {
-                Optional<MemoryLocation> Loc =
-                    MemoryLocation::getForSource(MTI);
-                if (IsPotentiallyAffectedByBarrier(Loc))
-                  return false;
-              }
-              continue;
-            }
-
-            if (auto *LI = dyn_cast<LoadInst>(I))
-              if (LI->hasMetadata(LLVMContext::MD_invariant_load))
-                continue;
-
-            Optional<MemoryLocation> Loc = MemoryLocation::getOrNone(I);
-            if (IsPotentiallyAffectedByBarrier(Loc))
-              return false;
-          }
-
-          return true;
-        };
-
-        // Iterate barrier pairs and remove an explicit barrier if analysis
-        // deems it removeable.
-        for (auto *It = BarriersInBlock.begin(),
-                  *End = BarriersInBlock.end() - 1;
-             It != End; ++It) {
-
-          BarrierInfo *StartBI = It;
-          BarrierInfo *EndBI = (It + 1);
-
-          // Cannot remove when both are implicit barriers, continue.
-          if (StartBI->isImplicit() && EndBI->isImplicit())
-            continue;
-
-          if (!IsBarrierRemoveable(StartBI, EndBI))
-            continue;
-
-          assert(!(StartBI->isImplicit() && EndBI->isImplicit()) &&
-                 "Expected at least one explicit barrier to remove.");
-
-          // Remove an explicit barrier, check first, then second.
-          if (!StartBI->isImplicit()) {
-            LLVM_DEBUG(dbgs() << "Remove start barrier "
-                              << *StartBI->getInstruction() << "\n");
-            BarriersToBeDeleted.insert(StartBI->getInstruction());
-          } else {
-            LLVM_DEBUG(dbgs() << "Remove end barrier "
-                              << *EndBI->getInstruction() << "\n");
-            BarriersToBeDeleted.insert(EndBI->getInstruction());
-          }
-        }
-
-        if (BarriersToBeDeleted.empty())
-          continue;
-
-        Changed = true;
-        for (Instruction *I : BarriersToBeDeleted) {
-          ++NumBarriersEliminated;
-          auto Remark = [&](OptimizationRemark OR) {
-            return OR << "Redundant barrier eliminated.";
-          };
-
-          if (EnableVerboseRemarks)
-            emitRemark<OptimizationRemark>(I, "OMP190", Remark);
-          I->eraseFromParent();
-        }
-      }
-    }
+    if (OMPInfoCache.runtimeFnsAvailable(
+            {OMPRTL___tgt_target_data_begin_mapper_issue,
+             OMPRTL___tgt_target_data_begin_mapper_wait}))
+      RFI.foreachUse(SCC, SplitMemTransfers);
 
     return Changed;
   }
@@ -1755,10 +1719,14 @@ private:
     // function. Used for storing information of the async transfer, allowing to
     // wait on it later.
     auto &IRBuilder = OMPInfoCache.OMPBuilder;
-    auto *F = RuntimeCall.getCaller();
-    Instruction *FirstInst = &(F->getEntryBlock().front());
-    AllocaInst *Handle = new AllocaInst(
-        IRBuilder.AsyncInfo, F->getAddressSpace(), "handle", FirstInst);
+    Function *F = RuntimeCall.getCaller();
+    BasicBlock &Entry = F->getEntryBlock();
+    IRBuilder.Builder.SetInsertPoint(&Entry,
+                                     Entry.getFirstNonPHIOrDbgOrAlloca());
+    Value *Handle = IRBuilder.Builder.CreateAlloca(
+        IRBuilder.AsyncInfo, /*ArraySize=*/nullptr, "handle");
+    Handle =
+        IRBuilder.Builder.CreateAddrSpaceCast(Handle, IRBuilder.AsyncInfoPtr);
 
     // Add "issue" runtime call declaration:
     // declare %struct.tgt_async_info @__tgt_target_data_begin_issue(i64, i32,
@@ -1875,37 +1843,27 @@ private:
     };
 
     if (!ReplVal) {
-      for (Use *U : *UV)
+      auto *DT =
+          OMPInfoCache.getAnalysisResultForFunction<DominatorTreeAnalysis>(F);
+      if (!DT)
+        return false;
+      Instruction *IP = nullptr;
+      for (Use *U : *UV) {
         if (CallInst *CI = getCallIfRegularCall(*U, &RFI)) {
+          if (IP)
+            IP = DT->findNearestCommonDominator(IP, CI);
+          else
+            IP = CI;
           if (!CanBeMoved(*CI))
             continue;
-
-          // If the function is a kernel, dedup will move
-          // the runtime call right after the kernel init callsite. Otherwise,
-          // it will move it to the beginning of the caller function.
-          if (isKernel(F)) {
-            auto &KernelInitRFI = OMPInfoCache.RFIs[OMPRTL___kmpc_target_init];
-            auto *KernelInitUV = KernelInitRFI.getUseVector(F);
-
-            if (KernelInitUV->empty())
-              continue;
-
-            assert(KernelInitUV->size() == 1 &&
-                   "Expected a single __kmpc_target_init in kernel\n");
-
-            CallInst *KernelInitCI =
-                getCallIfRegularCall(*KernelInitUV->front(), &KernelInitRFI);
-            assert(KernelInitCI &&
-                   "Expected a call to __kmpc_target_init in kernel\n");
-
-            CI->moveAfter(KernelInitCI);
-          } else
-            CI->moveBefore(&*F.getEntryBlock().getFirstInsertionPt());
-          ReplVal = CI;
-          break;
+          if (!ReplVal)
+            ReplVal = CI;
         }
+      }
       if (!ReplVal)
         return false;
+      assert(IP && "Expected insertion point!");
+      cast<Instruction>(ReplVal)->moveBefore(IP);
     }
 
     // If we use a call as a replacement value we need to make sure the ident is
@@ -2003,11 +1961,8 @@ private:
   ///
   ///{{
 
-  /// Check if \p F is a kernel, hence entry point for target offloading.
-  bool isKernel(Function &F) { return OMPInfoCache.Kernels.count(&F); }
-
   /// Cache to remember the unique kernel for a function.
-  DenseMap<Function *, Optional<Kernel>> UniqueKernelMap;
+  DenseMap<Function *, std::optional<Kernel>> UniqueKernelMap;
 
   /// Find the unique kernel that will execute \p F, if any.
   Kernel getUniqueKernelFor(Function &F);
@@ -2041,7 +1996,7 @@ private:
     Function *F = I->getParent()->getParent();
     auto &ORE = OREGetter(F);
 
-    if (RemarkName.startswith("OMP"))
+    if (RemarkName.starts_with("OMP"))
       ORE.emit([&]() {
         return RemarkCB(RemarkKind(DEBUG_TYPE, RemarkName, I))
                << " [" << RemarkName << "]";
@@ -2057,7 +2012,7 @@ private:
                   RemarkCallBack &&RemarkCB) const {
     auto &ORE = OREGetter(F);
 
-    if (RemarkName.startswith("OMP"))
+    if (RemarkName.starts_with("OMP"))
       ORE.emit([&]() {
         return RemarkCB(RemarkKind(DEBUG_TYPE, RemarkName, F))
                << " [" << RemarkName << "]";
@@ -2066,30 +2021,6 @@ private:
       ORE.emit(
           [&]() { return RemarkCB(RemarkKind(DEBUG_TYPE, RemarkName, F)); });
   }
-
-  /// RAII struct to temporarily change an RTL function's linkage to external.
-  /// This prevents it from being mistakenly removed by other optimizations.
-  struct ExternalizationRAII {
-    ExternalizationRAII(OMPInformationCache &OMPInfoCache,
-                        RuntimeFunction RFKind)
-        : Declaration(OMPInfoCache.RFIs[RFKind].Declaration) {
-      if (!Declaration)
-        return;
-
-      LinkageType = Declaration->getLinkage();
-      Declaration->setLinkage(GlobalValue::ExternalLinkage);
-    }
-
-    ~ExternalizationRAII() {
-      if (!Declaration)
-        return;
-
-      Declaration->setLinkage(LinkageType);
-    }
-
-    Function *Declaration;
-    GlobalValue::LinkageTypes LinkageType;
-  };
 
   /// The underlying module.
   Module &M;
@@ -2115,21 +2046,6 @@ private:
     if (SCC.empty())
       return false;
 
-    // Temporarily make these function have external linkage so the Attributor
-    // doesn't remove them when we try to look them up later.
-    ExternalizationRAII Parallel(OMPInfoCache, OMPRTL___kmpc_kernel_parallel);
-    ExternalizationRAII EndParallel(OMPInfoCache,
-                                    OMPRTL___kmpc_kernel_end_parallel);
-    ExternalizationRAII BarrierSPMD(OMPInfoCache,
-                                    OMPRTL___kmpc_barrier_simple_spmd);
-    ExternalizationRAII BarrierGeneric(OMPInfoCache,
-                                       OMPRTL___kmpc_barrier_simple_generic);
-    ExternalizationRAII ThreadId(OMPInfoCache,
-                                 OMPRTL___kmpc_get_hardware_thread_id_in_block);
-    ExternalizationRAII NumThreads(
-        OMPInfoCache, OMPRTL___kmpc_get_hardware_num_threads_in_block);
-    ExternalizationRAII WarpSize(OMPInfoCache, OMPRTL___kmpc_get_warp_size);
-
     registerAAs(IsModulePass);
 
     ChangeStatus Changed = A.run();
@@ -2137,30 +2053,39 @@ private:
     LLVM_DEBUG(dbgs() << "[Attributor] Done with " << SCC.size()
                       << " functions, result: " << Changed << ".\n");
 
+    if (Changed == ChangeStatus::CHANGED)
+      OMPInfoCache.invalidateAnalyses();
+
     return Changed == ChangeStatus::CHANGED;
   }
 
   void registerFoldRuntimeCall(RuntimeFunction RF);
 
   /// Populate the Attributor with abstract attribute opportunities in the
-  /// function.
+  /// functions.
   void registerAAs(bool IsModulePass);
+
+public:
+  /// Callback to register AAs for live functions, including internal functions
+  /// marked live during the traversal.
+  static void registerAAsForFunction(Attributor &A, const Function &F);
 };
 
 Kernel OpenMPOpt::getUniqueKernelFor(Function &F) {
-  if (!OMPInfoCache.ModuleSlice.count(&F))
+  if (OMPInfoCache.CGSCC && !OMPInfoCache.CGSCC->empty() &&
+      !OMPInfoCache.CGSCC->contains(&F))
     return nullptr;
 
   // Use a scope to keep the lifetime of the CachedKernel short.
   {
-    Optional<Kernel> &CachedKernel = UniqueKernelMap[&F];
+    std::optional<Kernel> &CachedKernel = UniqueKernelMap[&F];
     if (CachedKernel)
       return *CachedKernel;
 
     // TODO: We should use an AA to create an (optimistic and callback
     //       call-aware) call graph. For now we stick to simple patterns that
     //       are less powerful, basically the worst fixpoint.
-    if (isKernel(F)) {
+    if (isOpenMPKernel(F)) {
       CachedKernel = Kernel(&F);
       return *CachedKernel;
     }
@@ -2323,12 +2248,6 @@ struct AAICVTracker : public StateWrapper<BooleanState, AbstractAttribute> {
   using Base = StateWrapper<BooleanState, AbstractAttribute>;
   AAICVTracker(const IRPosition &IRP, Attributor &A) : Base(IRP) {}
 
-  void initialize(Attributor &A) override {
-    Function *F = getAnchorScope();
-    if (!F || !A.isFunctionIPOAmendable(*F))
-      indicatePessimisticFixpoint();
-  }
-
   /// Returns true if value is assumed to be tracked.
   bool isAssumedTracked() const { return getAssumed(); }
 
@@ -2339,16 +2258,16 @@ struct AAICVTracker : public StateWrapper<BooleanState, AbstractAttribute> {
   static AAICVTracker &createForPosition(const IRPosition &IRP, Attributor &A);
 
   /// Return the value with which \p I can be replaced for specific \p ICV.
-  virtual Optional<Value *> getReplacementValue(InternalControlVar ICV,
-                                                const Instruction *I,
-                                                Attributor &A) const {
-    return None;
+  virtual std::optional<Value *> getReplacementValue(InternalControlVar ICV,
+                                                     const Instruction *I,
+                                                     Attributor &A) const {
+    return std::nullopt;
   }
 
   /// Return an assumed unique ICV value if a single candidate is found. If
-  /// there cannot be one, return a nullptr. If it is not clear yet, return the
-  /// Optional::NoneType.
-  virtual Optional<Value *>
+  /// there cannot be one, return a nullptr. If it is not clear yet, return
+  /// std::nullopt.
+  virtual std::optional<Value *>
   getUniqueReplacementValue(InternalControlVar ICV) const = 0;
 
   // Currently only nthreads is being tracked.
@@ -2374,7 +2293,9 @@ struct AAICVTrackerFunction : public AAICVTracker {
       : AAICVTracker(IRP, A) {}
 
   // FIXME: come up with better string.
-  const std::string getAsStr() const override { return "ICVTrackerFunction"; }
+  const std::string getAsStr(Attributor *) const override {
+    return "ICVTrackerFunction";
+  }
 
   // FIXME: come up with some stats.
   void trackStatistics() const override {}
@@ -2414,7 +2335,7 @@ struct AAICVTrackerFunction : public AAICVTracker {
       };
 
       auto CallCheck = [&](Instruction &I) {
-        Optional<Value *> ReplVal = getValueForCall(A, I, ICV);
+        std::optional<Value *> ReplVal = getValueForCall(A, I, ICV);
         if (ReplVal && ValuesMap.insert(std::make_pair(&I, *ReplVal)).second)
           HasChanged = ChangeStatus::CHANGED;
 
@@ -2441,13 +2362,13 @@ struct AAICVTrackerFunction : public AAICVTracker {
 
   /// Helper to check if \p I is a call and get the value for it if it is
   /// unique.
-  Optional<Value *> getValueForCall(Attributor &A, const Instruction &I,
-                                    InternalControlVar &ICV) const {
+  std::optional<Value *> getValueForCall(Attributor &A, const Instruction &I,
+                                         InternalControlVar &ICV) const {
 
     const auto *CB = dyn_cast<CallBase>(&I);
     if (!CB || CB->hasFnAttr("no_openmp") ||
         CB->hasFnAttr("no_openmp_routines"))
-      return None;
+      return std::nullopt;
 
     auto &OMPInfoCache = static_cast<OMPInformationCache &>(A.getInfoCache());
     auto &GetterRFI = OMPInfoCache.RFIs[OMPInfoCache.ICVs[ICV].Getter];
@@ -2458,7 +2379,7 @@ struct AAICVTrackerFunction : public AAICVTracker {
     if (CalledFunction == nullptr)
       return nullptr;
     if (CalledFunction == GetterRFI.Declaration)
-      return None;
+      return std::nullopt;
     if (CalledFunction == SetterRFI.Declaration) {
       if (ICVReplacementValuesMap[ICV].count(&I))
         return ICVReplacementValuesMap[ICV].lookup(&I);
@@ -2470,11 +2391,12 @@ struct AAICVTrackerFunction : public AAICVTracker {
     if (CalledFunction->isDeclaration())
       return nullptr;
 
-    const auto &ICVTrackingAA = A.getAAFor<AAICVTracker>(
+    const auto *ICVTrackingAA = A.getAAFor<AAICVTracker>(
         *this, IRPosition::callsite_returned(*CB), DepClassTy::REQUIRED);
 
-    if (ICVTrackingAA.isAssumedTracked()) {
-      Optional<Value *> URV = ICVTrackingAA.getUniqueReplacementValue(ICV);
+    if (ICVTrackingAA->isAssumedTracked()) {
+      std::optional<Value *> URV =
+          ICVTrackingAA->getUniqueReplacementValue(ICV);
       if (!URV || (*URV && AA::isValidAtPosition(AA::ValueAndContext(**URV, I),
                                                  OMPInfoCache)))
         return URV;
@@ -2484,16 +2406,16 @@ struct AAICVTrackerFunction : public AAICVTracker {
     return nullptr;
   }
 
-  // We don't check unique value for a function, so return None.
-  Optional<Value *>
+  // We don't check unique value for a function, so return std::nullopt.
+  std::optional<Value *>
   getUniqueReplacementValue(InternalControlVar ICV) const override {
-    return None;
+    return std::nullopt;
   }
 
   /// Return the value with which \p I can be replaced for specific \p ICV.
-  Optional<Value *> getReplacementValue(InternalControlVar ICV,
-                                        const Instruction *I,
-                                        Attributor &A) const override {
+  std::optional<Value *> getReplacementValue(InternalControlVar ICV,
+                                             const Instruction *I,
+                                             Attributor &A) const override {
     const auto &ValuesMap = ICVReplacementValuesMap[ICV];
     if (ValuesMap.count(I))
       return ValuesMap.lookup(I);
@@ -2502,7 +2424,7 @@ struct AAICVTrackerFunction : public AAICVTracker {
     SmallPtrSet<const Instruction *, 16> Visited;
     Worklist.push_back(I);
 
-    Optional<Value *> ReplVal;
+    std::optional<Value *> ReplVal;
 
     while (!Worklist.empty()) {
       const Instruction *CurrInst = Worklist.pop_back_val();
@@ -2515,7 +2437,7 @@ struct AAICVTrackerFunction : public AAICVTracker {
       // ICV.
       while ((CurrInst = CurrInst->getPrevNode())) {
         if (ValuesMap.count(CurrInst)) {
-          Optional<Value *> NewReplVal = ValuesMap.lookup(CurrInst);
+          std::optional<Value *> NewReplVal = ValuesMap.lookup(CurrInst);
           // Unknown value, track new.
           if (!ReplVal) {
             ReplVal = NewReplVal;
@@ -2530,7 +2452,7 @@ struct AAICVTrackerFunction : public AAICVTracker {
           break;
         }
 
-        Optional<Value *> NewReplVal = getValueForCall(A, *CurrInst, ICV);
+        std::optional<Value *> NewReplVal = getValueForCall(A, *CurrInst, ICV);
         if (!NewReplVal)
           continue;
 
@@ -2565,7 +2487,7 @@ struct AAICVTrackerFunctionReturned : AAICVTracker {
       : AAICVTracker(IRP, A) {}
 
   // FIXME: come up with better string.
-  const std::string getAsStr() const override {
+  const std::string getAsStr(Attributor *) const override {
     return "ICVTrackerFunctionReturned";
   }
 
@@ -2578,31 +2500,31 @@ struct AAICVTrackerFunctionReturned : AAICVTracker {
   }
 
   // Map of ICV to their values at specific program point.
-  EnumeratedArray<Optional<Value *>, InternalControlVar,
+  EnumeratedArray<std::optional<Value *>, InternalControlVar,
                   InternalControlVar::ICV___last>
       ICVReplacementValuesMap;
 
   /// Return the value with which \p I can be replaced for specific \p ICV.
-  Optional<Value *>
+  std::optional<Value *>
   getUniqueReplacementValue(InternalControlVar ICV) const override {
     return ICVReplacementValuesMap[ICV];
   }
 
   ChangeStatus updateImpl(Attributor &A) override {
     ChangeStatus Changed = ChangeStatus::UNCHANGED;
-    const auto &ICVTrackingAA = A.getAAFor<AAICVTracker>(
+    const auto *ICVTrackingAA = A.getAAFor<AAICVTracker>(
         *this, IRPosition::function(*getAnchorScope()), DepClassTy::REQUIRED);
 
-    if (!ICVTrackingAA.isAssumedTracked())
+    if (!ICVTrackingAA->isAssumedTracked())
       return indicatePessimisticFixpoint();
 
     for (InternalControlVar ICV : TrackableICVs) {
-      Optional<Value *> &ReplVal = ICVReplacementValuesMap[ICV];
-      Optional<Value *> UniqueICVValue;
+      std::optional<Value *> &ReplVal = ICVReplacementValuesMap[ICV];
+      std::optional<Value *> UniqueICVValue;
 
       auto CheckReturnInst = [&](Instruction &I) {
-        Optional<Value *> NewReplVal =
-            ICVTrackingAA.getReplacementValue(ICV, &I, A);
+        std::optional<Value *> NewReplVal =
+            ICVTrackingAA->getReplacementValue(ICV, &I, A);
 
         // If we found a second ICV value there is no unique returned value.
         if (UniqueICVValue && UniqueICVValue != NewReplVal)
@@ -2635,9 +2557,7 @@ struct AAICVTrackerCallSite : AAICVTracker {
       : AAICVTracker(IRP, A) {}
 
   void initialize(Attributor &A) override {
-    Function *F = getAnchorScope();
-    if (!F || !A.isFunctionIPOAmendable(*F))
-      indicatePessimisticFixpoint();
+    assert(getAnchorScope() && "Expected anchor function");
 
     // We only initialize this AA for getters, so we need to know which ICV it
     // gets.
@@ -2666,24 +2586,26 @@ struct AAICVTrackerCallSite : AAICVTracker {
   }
 
   // FIXME: come up with better string.
-  const std::string getAsStr() const override { return "ICVTrackerCallSite"; }
+  const std::string getAsStr(Attributor *) const override {
+    return "ICVTrackerCallSite";
+  }
 
   // FIXME: come up with some stats.
   void trackStatistics() const override {}
 
   InternalControlVar AssociatedICV;
-  Optional<Value *> ReplVal;
+  std::optional<Value *> ReplVal;
 
   ChangeStatus updateImpl(Attributor &A) override {
-    const auto &ICVTrackingAA = A.getAAFor<AAICVTracker>(
+    const auto *ICVTrackingAA = A.getAAFor<AAICVTracker>(
         *this, IRPosition::function(*getAnchorScope()), DepClassTy::REQUIRED);
 
     // We don't have any information, so we assume it changes the ICV.
-    if (!ICVTrackingAA.isAssumedTracked())
+    if (!ICVTrackingAA->isAssumedTracked())
       return indicatePessimisticFixpoint();
 
-    Optional<Value *> NewReplVal =
-        ICVTrackingAA.getReplacementValue(AssociatedICV, getCtxI(), A);
+    std::optional<Value *> NewReplVal =
+        ICVTrackingAA->getReplacementValue(AssociatedICV, getCtxI(), A);
 
     if (ReplVal == NewReplVal)
       return ChangeStatus::UNCHANGED;
@@ -2694,7 +2616,7 @@ struct AAICVTrackerCallSite : AAICVTracker {
 
   // Return the value with which associated value can be replaced for specific
   // \p ICV.
-  Optional<Value *>
+  std::optional<Value *>
   getUniqueReplacementValue(InternalControlVar ICV) const override {
     return ReplVal;
   }
@@ -2705,7 +2627,7 @@ struct AAICVTrackerCallSiteReturned : AAICVTracker {
       : AAICVTracker(IRP, A) {}
 
   // FIXME: come up with better string.
-  const std::string getAsStr() const override {
+  const std::string getAsStr(Attributor *) const override {
     return "ICVTrackerCallSiteReturned";
   }
 
@@ -2718,31 +2640,31 @@ struct AAICVTrackerCallSiteReturned : AAICVTracker {
   }
 
   // Map of ICV to their values at specific program point.
-  EnumeratedArray<Optional<Value *>, InternalControlVar,
+  EnumeratedArray<std::optional<Value *>, InternalControlVar,
                   InternalControlVar::ICV___last>
       ICVReplacementValuesMap;
 
   /// Return the value with which associated value can be replaced for specific
   /// \p ICV.
-  Optional<Value *>
+  std::optional<Value *>
   getUniqueReplacementValue(InternalControlVar ICV) const override {
     return ICVReplacementValuesMap[ICV];
   }
 
   ChangeStatus updateImpl(Attributor &A) override {
     ChangeStatus Changed = ChangeStatus::UNCHANGED;
-    const auto &ICVTrackingAA = A.getAAFor<AAICVTracker>(
+    const auto *ICVTrackingAA = A.getAAFor<AAICVTracker>(
         *this, IRPosition::returned(*getAssociatedFunction()),
         DepClassTy::REQUIRED);
 
     // We don't have any information, so we assume it changes the ICV.
-    if (!ICVTrackingAA.isAssumedTracked())
+    if (!ICVTrackingAA->isAssumedTracked())
       return indicatePessimisticFixpoint();
 
     for (InternalControlVar ICV : TrackableICVs) {
-      Optional<Value *> &ReplVal = ICVReplacementValuesMap[ICV];
-      Optional<Value *> NewReplVal =
-          ICVTrackingAA.getUniqueReplacementValue(ICV);
+      std::optional<Value *> &ReplVal = ICVReplacementValuesMap[ICV];
+      std::optional<Value *> NewReplVal =
+          ICVTrackingAA->getUniqueReplacementValue(ICV);
 
       if (ReplVal == NewReplVal)
         continue;
@@ -2754,81 +2676,250 @@ struct AAICVTrackerCallSiteReturned : AAICVTracker {
   }
 };
 
+/// Determines if \p BB exits the function unconditionally itself or reaches a
+/// block that does through only unique successors.
+static bool hasFunctionEndAsUniqueSuccessor(const BasicBlock *BB) {
+  if (succ_empty(BB))
+    return true;
+  const BasicBlock *const Successor = BB->getUniqueSuccessor();
+  if (!Successor)
+    return false;
+  return hasFunctionEndAsUniqueSuccessor(Successor);
+}
+
 struct AAExecutionDomainFunction : public AAExecutionDomain {
   AAExecutionDomainFunction(const IRPosition &IRP, Attributor &A)
       : AAExecutionDomain(IRP, A) {}
 
-  const std::string getAsStr() const override {
-    return "[AAExecutionDomain] " + std::to_string(SingleThreadedBBs.size()) +
-           "/" + std::to_string(NumBBs) + " BBs thread 0 only.";
+  ~AAExecutionDomainFunction() { delete RPOT; }
+
+  void initialize(Attributor &A) override {
+    Function *F = getAnchorScope();
+    assert(F && "Expected anchor function");
+    RPOT = new ReversePostOrderTraversal<Function *>(F);
+  }
+
+  const std::string getAsStr(Attributor *) const override {
+    unsigned TotalBlocks = 0, InitialThreadBlocks = 0, AlignedBlocks = 0;
+    for (auto &It : BEDMap) {
+      if (!It.getFirst())
+        continue;
+      TotalBlocks++;
+      InitialThreadBlocks += It.getSecond().IsExecutedByInitialThreadOnly;
+      AlignedBlocks += It.getSecond().IsReachedFromAlignedBarrierOnly &&
+                       It.getSecond().IsReachingAlignedBarrierOnly;
+    }
+    return "[AAExecutionDomain] " + std::to_string(InitialThreadBlocks) + "/" +
+           std::to_string(AlignedBlocks) + " of " +
+           std::to_string(TotalBlocks) +
+           " executed by initial thread / aligned";
   }
 
   /// See AbstractAttribute::trackStatistics().
   void trackStatistics() const override {}
 
-  void initialize(Attributor &A) override {
-    Function *F = getAnchorScope();
-    for (const auto &BB : *F)
-      SingleThreadedBBs.insert(&BB);
-    NumBBs = SingleThreadedBBs.size();
-  }
-
   ChangeStatus manifest(Attributor &A) override {
     LLVM_DEBUG({
-      for (const BasicBlock *BB : SingleThreadedBBs)
+      for (const BasicBlock &BB : *getAnchorScope()) {
+        if (!isExecutedByInitialThreadOnly(BB))
+          continue;
         dbgs() << TAG << " Basic block @" << getAnchorScope()->getName() << " "
-               << BB->getName() << " is executed by a single thread.\n";
+               << BB.getName() << " is executed by a single thread.\n";
+      }
     });
-    return ChangeStatus::UNCHANGED;
+
+    ChangeStatus Changed = ChangeStatus::UNCHANGED;
+
+    if (DisableOpenMPOptBarrierElimination)
+      return Changed;
+
+    SmallPtrSet<CallBase *, 16> DeletedBarriers;
+    auto HandleAlignedBarrier = [&](CallBase *CB) {
+      const ExecutionDomainTy &ED = CB ? CEDMap[{CB, PRE}] : BEDMap[nullptr];
+      if (!ED.IsReachedFromAlignedBarrierOnly ||
+          ED.EncounteredNonLocalSideEffect)
+        return;
+      if (!ED.EncounteredAssumes.empty() && !A.isModulePass())
+        return;
+
+      // We can remove this barrier, if it is one, or aligned barriers reaching
+      // the kernel end (if CB is nullptr). Aligned barriers reaching the kernel
+      // end should only be removed if the kernel end is their unique successor;
+      // otherwise, they may have side-effects that aren't accounted for in the
+      // kernel end in their other successors. If those barriers have other
+      // barriers reaching them, those can be transitively removed as well as
+      // long as the kernel end is also their unique successor.
+      if (CB) {
+        DeletedBarriers.insert(CB);
+        A.deleteAfterManifest(*CB);
+        ++NumBarriersEliminated;
+        Changed = ChangeStatus::CHANGED;
+      } else if (!ED.AlignedBarriers.empty()) {
+        Changed = ChangeStatus::CHANGED;
+        SmallVector<CallBase *> Worklist(ED.AlignedBarriers.begin(),
+                                         ED.AlignedBarriers.end());
+        SmallSetVector<CallBase *, 16> Visited;
+        while (!Worklist.empty()) {
+          CallBase *LastCB = Worklist.pop_back_val();
+          if (!Visited.insert(LastCB))
+            continue;
+          if (LastCB->getFunction() != getAnchorScope())
+            continue;
+          if (!hasFunctionEndAsUniqueSuccessor(LastCB->getParent()))
+            continue;
+          if (!DeletedBarriers.count(LastCB)) {
+            ++NumBarriersEliminated;
+            A.deleteAfterManifest(*LastCB);
+            continue;
+          }
+          // The final aligned barrier (LastCB) reaching the kernel end was
+          // removed already. This means we can go one step further and remove
+          // the barriers encoutered last before (LastCB).
+          const ExecutionDomainTy &LastED = CEDMap[{LastCB, PRE}];
+          Worklist.append(LastED.AlignedBarriers.begin(),
+                          LastED.AlignedBarriers.end());
+        }
+      }
+
+      // If we actually eliminated a barrier we need to eliminate the associated
+      // llvm.assumes as well to avoid creating UB.
+      if (!ED.EncounteredAssumes.empty() && (CB || !ED.AlignedBarriers.empty()))
+        for (auto *AssumeCB : ED.EncounteredAssumes)
+          A.deleteAfterManifest(*AssumeCB);
+    };
+
+    for (auto *CB : AlignedBarriers)
+      HandleAlignedBarrier(CB);
+
+    // Handle the "kernel end barrier" for kernels too.
+    if (omp::isOpenMPKernel(*getAnchorScope()))
+      HandleAlignedBarrier(nullptr);
+
+    return Changed;
   }
 
+  bool isNoOpFence(const FenceInst &FI) const override {
+    return getState().isValidState() && !NonNoOpFences.count(&FI);
+  }
+
+  /// Merge barrier and assumption information from \p PredED into the successor
+  /// \p ED.
+  void
+  mergeInPredecessorBarriersAndAssumptions(Attributor &A, ExecutionDomainTy &ED,
+                                           const ExecutionDomainTy &PredED);
+
+  /// Merge all information from \p PredED into the successor \p ED. If
+  /// \p InitialEdgeOnly is set, only the initial edge will enter the block
+  /// represented by \p ED from this predecessor.
+  bool mergeInPredecessor(Attributor &A, ExecutionDomainTy &ED,
+                          const ExecutionDomainTy &PredED,
+                          bool InitialEdgeOnly = false);
+
+  /// Accumulate information for the entry block in \p EntryBBED.
+  bool handleCallees(Attributor &A, ExecutionDomainTy &EntryBBED);
+
+  /// See AbstractAttribute::updateImpl.
   ChangeStatus updateImpl(Attributor &A) override;
 
-  /// Check if an instruction is executed by a single thread.
-  bool isExecutedByInitialThreadOnly(const Instruction &I) const override {
-    return isExecutedByInitialThreadOnly(*I.getParent());
-  }
-
+  /// Query interface, see AAExecutionDomain
+  ///{
   bool isExecutedByInitialThreadOnly(const BasicBlock &BB) const override {
-    return isValidState() && SingleThreadedBBs.contains(&BB);
+    if (!isValidState())
+      return false;
+    assert(BB.getParent() == getAnchorScope() && "Block is out of scope!");
+    return BEDMap.lookup(&BB).IsExecutedByInitialThreadOnly;
   }
 
-  /// Set of basic blocks that are executed by a single thread.
-  SmallSetVector<const BasicBlock *, 16> SingleThreadedBBs;
+  bool isExecutedInAlignedRegion(Attributor &A,
+                                 const Instruction &I) const override {
+    assert(I.getFunction() == getAnchorScope() &&
+           "Instruction is out of scope!");
+    if (!isValidState())
+      return false;
 
-  /// Total number of basic blocks in this function.
-  long unsigned NumBBs = 0;
-};
+    bool ForwardIsOk = true;
+    const Instruction *CurI;
 
-ChangeStatus AAExecutionDomainFunction::updateImpl(Attributor &A) {
-  Function *F = getAnchorScope();
-  ReversePostOrderTraversal<Function *> RPOT(F);
-  auto NumSingleThreadedBBs = SingleThreadedBBs.size();
+    // Check forward until a call or the block end is reached.
+    CurI = &I;
+    do {
+      auto *CB = dyn_cast<CallBase>(CurI);
+      if (!CB)
+        continue;
+      if (CB != &I && AlignedBarriers.contains(const_cast<CallBase *>(CB)))
+        return true;
+      const auto &It = CEDMap.find({CB, PRE});
+      if (It == CEDMap.end())
+        continue;
+      if (!It->getSecond().IsReachingAlignedBarrierOnly)
+        ForwardIsOk = false;
+      break;
+    } while ((CurI = CurI->getNextNonDebugInstruction()));
 
-  bool AllCallSitesKnown;
-  auto PredForCallSite = [&](AbstractCallSite ACS) {
-    const auto &ExecutionDomainAA = A.getAAFor<AAExecutionDomain>(
-        *this, IRPosition::function(*ACS.getInstruction()->getFunction()),
-        DepClassTy::REQUIRED);
-    return ACS.isDirectCall() &&
-           ExecutionDomainAA.isExecutedByInitialThreadOnly(
-               *ACS.getInstruction());
-  };
+    if (!CurI && !BEDMap.lookup(I.getParent()).IsReachingAlignedBarrierOnly)
+      ForwardIsOk = false;
 
-  if (!A.checkForAllCallSites(PredForCallSite, *this,
-                              /* RequiresAllCallSites */ true,
-                              AllCallSitesKnown))
-    SingleThreadedBBs.remove(&F->getEntryBlock());
+    // Check backward until a call or the block beginning is reached.
+    CurI = &I;
+    do {
+      auto *CB = dyn_cast<CallBase>(CurI);
+      if (!CB)
+        continue;
+      if (CB != &I && AlignedBarriers.contains(const_cast<CallBase *>(CB)))
+        return true;
+      const auto &It = CEDMap.find({CB, POST});
+      if (It == CEDMap.end())
+        continue;
+      if (It->getSecond().IsReachedFromAlignedBarrierOnly)
+        break;
+      return false;
+    } while ((CurI = CurI->getPrevNonDebugInstruction()));
 
-  auto &OMPInfoCache = static_cast<OMPInformationCache &>(A.getInfoCache());
-  auto &RFI = OMPInfoCache.RFIs[OMPRTL___kmpc_target_init];
+    // Delayed decision on the forward pass to allow aligned barrier detection
+    // in the backwards traversal.
+    if (!ForwardIsOk)
+      return false;
+
+    if (!CurI) {
+      const BasicBlock *BB = I.getParent();
+      if (BB == &BB->getParent()->getEntryBlock())
+        return BEDMap.lookup(nullptr).IsReachedFromAlignedBarrierOnly;
+      if (!llvm::all_of(predecessors(BB), [&](const BasicBlock *PredBB) {
+            return BEDMap.lookup(PredBB).IsReachedFromAlignedBarrierOnly;
+          })) {
+        return false;
+      }
+    }
+
+    // On neither traversal we found a anything but aligned barriers.
+    return true;
+  }
+
+  ExecutionDomainTy getExecutionDomain(const BasicBlock &BB) const override {
+    assert(isValidState() &&
+           "No request should be made against an invalid state!");
+    return BEDMap.lookup(&BB);
+  }
+  std::pair<ExecutionDomainTy, ExecutionDomainTy>
+  getExecutionDomain(const CallBase &CB) const override {
+    assert(isValidState() &&
+           "No request should be made against an invalid state!");
+    return {CEDMap.lookup({&CB, PRE}), CEDMap.lookup({&CB, POST})};
+  }
+  ExecutionDomainTy getFunctionExecutionDomain() const override {
+    assert(isValidState() &&
+           "No request should be made against an invalid state!");
+    return InterProceduralED;
+  }
+  ///}
 
   // Check if the edge into the successor block contains a condition that only
   // lets the main thread execute it.
-  auto IsInitialThreadOnly = [&](BranchInst *Edge, BasicBlock *SuccessorBB) {
+  static bool isInitialThreadOnlyEdge(Attributor &A, BranchInst *Edge,
+                                      BasicBlock &SuccessorBB) {
     if (!Edge || !Edge->isConditional())
       return false;
-    if (Edge->getSuccessor(0) != SuccessorBB)
+    if (Edge->getSuccessor(0) != &SuccessorBB)
       return false;
 
     auto *Cmp = dyn_cast<CmpInst>(Edge->getCondition());
@@ -2842,12 +2933,16 @@ ChangeStatus AAExecutionDomainFunction::updateImpl(Attributor &A) {
     // Match: -1 == __kmpc_target_init (for non-SPMD kernels only!)
     if (C->isAllOnesValue()) {
       auto *CB = dyn_cast<CallBase>(Cmp->getOperand(0));
+      auto &OMPInfoCache = static_cast<OMPInformationCache &>(A.getInfoCache());
+      auto &RFI = OMPInfoCache.RFIs[OMPRTL___kmpc_target_init];
       CB = CB ? OpenMPOpt::getCallIfRegularCall(*CB, &RFI) : nullptr;
       if (!CB)
         return false;
-      const int InitModeArgNo = 1;
-      auto *ModeCI = dyn_cast<ConstantInt>(CB->getOperand(InitModeArgNo));
-      return ModeCI && (ModeCI->getSExtValue() & OMP_TGT_EXEC_MODE_GENERIC);
+      ConstantStruct *KernelEnvC =
+          KernelInfo::getKernelEnvironementFromKernelInitCB(CB);
+      ConstantInt *ExecModeC =
+          KernelInfo::getExecModeFromKernelEnvironment(KernelEnvC);
+      return ExecModeC->getSExtValue() & OMP_TGT_EXEC_MODE_GENERIC;
     }
 
     if (C->isZero()) {
@@ -2865,30 +2960,414 @@ ChangeStatus AAExecutionDomainFunction::updateImpl(Attributor &A) {
     return false;
   };
 
-  // Merge all the predecessor states into the current basic block. A basic
-  // block is executed by a single thread if all of its predecessors are.
-  auto MergePredecessorStates = [&](BasicBlock *BB) {
-    if (pred_empty(BB))
-      return SingleThreadedBBs.contains(BB);
+  /// Mapping containing information about the function for other AAs.
+  ExecutionDomainTy InterProceduralED;
 
-    bool IsInitialThread = true;
-    for (BasicBlock *PredBB : predecessors(BB)) {
-      if (!IsInitialThreadOnly(dyn_cast<BranchInst>(PredBB->getTerminator()),
-                               BB))
-        IsInitialThread &= SingleThreadedBBs.contains(PredBB);
-    }
+  enum Direction { PRE = 0, POST = 1 };
+  /// Mapping containing information per block.
+  DenseMap<const BasicBlock *, ExecutionDomainTy> BEDMap;
+  DenseMap<PointerIntPair<const CallBase *, 1, Direction>, ExecutionDomainTy>
+      CEDMap;
+  SmallSetVector<CallBase *, 16> AlignedBarriers;
 
-    return IsInitialThread;
-  };
+  ReversePostOrderTraversal<Function *> *RPOT = nullptr;
 
-  for (auto *BB : RPOT) {
-    if (!MergePredecessorStates(BB))
-      SingleThreadedBBs.remove(BB);
+  /// Set \p R to \V and report true if that changed \p R.
+  static bool setAndRecord(bool &R, bool V) {
+    bool Eq = (R == V);
+    R = V;
+    return !Eq;
   }
 
-  return (NumSingleThreadedBBs == SingleThreadedBBs.size())
-             ? ChangeStatus::UNCHANGED
-             : ChangeStatus::CHANGED;
+  /// Collection of fences known to be non-no-opt. All fences not in this set
+  /// can be assumed no-opt.
+  SmallPtrSet<const FenceInst *, 8> NonNoOpFences;
+};
+
+void AAExecutionDomainFunction::mergeInPredecessorBarriersAndAssumptions(
+    Attributor &A, ExecutionDomainTy &ED, const ExecutionDomainTy &PredED) {
+  for (auto *EA : PredED.EncounteredAssumes)
+    ED.addAssumeInst(A, *EA);
+
+  for (auto *AB : PredED.AlignedBarriers)
+    ED.addAlignedBarrier(A, *AB);
+}
+
+bool AAExecutionDomainFunction::mergeInPredecessor(
+    Attributor &A, ExecutionDomainTy &ED, const ExecutionDomainTy &PredED,
+    bool InitialEdgeOnly) {
+
+  bool Changed = false;
+  Changed |=
+      setAndRecord(ED.IsExecutedByInitialThreadOnly,
+                   InitialEdgeOnly || (PredED.IsExecutedByInitialThreadOnly &&
+                                       ED.IsExecutedByInitialThreadOnly));
+
+  Changed |= setAndRecord(ED.IsReachedFromAlignedBarrierOnly,
+                          ED.IsReachedFromAlignedBarrierOnly &&
+                              PredED.IsReachedFromAlignedBarrierOnly);
+  Changed |= setAndRecord(ED.EncounteredNonLocalSideEffect,
+                          ED.EncounteredNonLocalSideEffect |
+                              PredED.EncounteredNonLocalSideEffect);
+  // Do not track assumptions and barriers as part of Changed.
+  if (ED.IsReachedFromAlignedBarrierOnly)
+    mergeInPredecessorBarriersAndAssumptions(A, ED, PredED);
+  else
+    ED.clearAssumeInstAndAlignedBarriers();
+  return Changed;
+}
+
+bool AAExecutionDomainFunction::handleCallees(Attributor &A,
+                                              ExecutionDomainTy &EntryBBED) {
+  SmallVector<std::pair<ExecutionDomainTy, ExecutionDomainTy>, 4> CallSiteEDs;
+  auto PredForCallSite = [&](AbstractCallSite ACS) {
+    const auto *EDAA = A.getAAFor<AAExecutionDomain>(
+        *this, IRPosition::function(*ACS.getInstruction()->getFunction()),
+        DepClassTy::OPTIONAL);
+    if (!EDAA || !EDAA->getState().isValidState())
+      return false;
+    CallSiteEDs.emplace_back(
+        EDAA->getExecutionDomain(*cast<CallBase>(ACS.getInstruction())));
+    return true;
+  };
+
+  ExecutionDomainTy ExitED;
+  bool AllCallSitesKnown;
+  if (A.checkForAllCallSites(PredForCallSite, *this,
+                             /* RequiresAllCallSites */ true,
+                             AllCallSitesKnown)) {
+    for (const auto &[CSInED, CSOutED] : CallSiteEDs) {
+      mergeInPredecessor(A, EntryBBED, CSInED);
+      ExitED.IsReachingAlignedBarrierOnly &=
+          CSOutED.IsReachingAlignedBarrierOnly;
+    }
+
+  } else {
+    // We could not find all predecessors, so this is either a kernel or a
+    // function with external linkage (or with some other weird uses).
+    if (omp::isOpenMPKernel(*getAnchorScope())) {
+      EntryBBED.IsExecutedByInitialThreadOnly = false;
+      EntryBBED.IsReachedFromAlignedBarrierOnly = true;
+      EntryBBED.EncounteredNonLocalSideEffect = false;
+      ExitED.IsReachingAlignedBarrierOnly = false;
+    } else {
+      EntryBBED.IsExecutedByInitialThreadOnly = false;
+      EntryBBED.IsReachedFromAlignedBarrierOnly = false;
+      EntryBBED.EncounteredNonLocalSideEffect = true;
+      ExitED.IsReachingAlignedBarrierOnly = false;
+    }
+  }
+
+  bool Changed = false;
+  auto &FnED = BEDMap[nullptr];
+  Changed |= setAndRecord(FnED.IsReachedFromAlignedBarrierOnly,
+                          FnED.IsReachedFromAlignedBarrierOnly &
+                              EntryBBED.IsReachedFromAlignedBarrierOnly);
+  Changed |= setAndRecord(FnED.IsReachingAlignedBarrierOnly,
+                          FnED.IsReachingAlignedBarrierOnly &
+                              ExitED.IsReachingAlignedBarrierOnly);
+  Changed |= setAndRecord(FnED.IsExecutedByInitialThreadOnly,
+                          EntryBBED.IsExecutedByInitialThreadOnly);
+  return Changed;
+}
+
+ChangeStatus AAExecutionDomainFunction::updateImpl(Attributor &A) {
+
+  bool Changed = false;
+
+  // Helper to deal with an aligned barrier encountered during the forward
+  // traversal. \p CB is the aligned barrier, \p ED is the execution domain when
+  // it was encountered.
+  auto HandleAlignedBarrier = [&](CallBase &CB, ExecutionDomainTy &ED) {
+    Changed |= AlignedBarriers.insert(&CB);
+    // First, update the barrier ED kept in the separate CEDMap.
+    auto &CallInED = CEDMap[{&CB, PRE}];
+    Changed |= mergeInPredecessor(A, CallInED, ED);
+    CallInED.IsReachingAlignedBarrierOnly = true;
+    // Next adjust the ED we use for the traversal.
+    ED.EncounteredNonLocalSideEffect = false;
+    ED.IsReachedFromAlignedBarrierOnly = true;
+    // Aligned barrier collection has to come last.
+    ED.clearAssumeInstAndAlignedBarriers();
+    ED.addAlignedBarrier(A, CB);
+    auto &CallOutED = CEDMap[{&CB, POST}];
+    Changed |= mergeInPredecessor(A, CallOutED, ED);
+  };
+
+  auto *LivenessAA =
+      A.getAAFor<AAIsDead>(*this, getIRPosition(), DepClassTy::OPTIONAL);
+
+  Function *F = getAnchorScope();
+  BasicBlock &EntryBB = F->getEntryBlock();
+  bool IsKernel = omp::isOpenMPKernel(*F);
+
+  SmallVector<Instruction *> SyncInstWorklist;
+  for (auto &RIt : *RPOT) {
+    BasicBlock &BB = *RIt;
+
+    bool IsEntryBB = &BB == &EntryBB;
+    // TODO: We use local reasoning since we don't have a divergence analysis
+    // 	     running as well. We could basically allow uniform branches here.
+    bool AlignedBarrierLastInBlock = IsEntryBB && IsKernel;
+    bool IsExplicitlyAligned = IsEntryBB && IsKernel;
+    ExecutionDomainTy ED;
+    // Propagate "incoming edges" into information about this block.
+    if (IsEntryBB) {
+      Changed |= handleCallees(A, ED);
+    } else {
+      // For live non-entry blocks we only propagate
+      // information via live edges.
+      if (LivenessAA && LivenessAA->isAssumedDead(&BB))
+        continue;
+
+      for (auto *PredBB : predecessors(&BB)) {
+        if (LivenessAA && LivenessAA->isEdgeDead(PredBB, &BB))
+          continue;
+        bool InitialEdgeOnly = isInitialThreadOnlyEdge(
+            A, dyn_cast<BranchInst>(PredBB->getTerminator()), BB);
+        mergeInPredecessor(A, ED, BEDMap[PredBB], InitialEdgeOnly);
+      }
+    }
+
+    // Now we traverse the block, accumulate effects in ED and attach
+    // information to calls.
+    for (Instruction &I : BB) {
+      bool UsedAssumedInformation;
+      if (A.isAssumedDead(I, *this, LivenessAA, UsedAssumedInformation,
+                          /* CheckBBLivenessOnly */ false, DepClassTy::OPTIONAL,
+                          /* CheckForDeadStore */ true))
+        continue;
+
+      // Asummes and "assume-like" (dbg, lifetime, ...) are handled first, the
+      // former is collected the latter is ignored.
+      if (auto *II = dyn_cast<IntrinsicInst>(&I)) {
+        if (auto *AI = dyn_cast_or_null<AssumeInst>(II)) {
+          ED.addAssumeInst(A, *AI);
+          continue;
+        }
+        // TODO: Should we also collect and delete lifetime markers?
+        if (II->isAssumeLikeIntrinsic())
+          continue;
+      }
+
+      if (auto *FI = dyn_cast<FenceInst>(&I)) {
+        if (!ED.EncounteredNonLocalSideEffect) {
+          // An aligned fence without non-local side-effects is a no-op.
+          if (ED.IsReachedFromAlignedBarrierOnly)
+            continue;
+          // A non-aligned fence without non-local side-effects is a no-op
+          // if the ordering only publishes non-local side-effects (or less).
+          switch (FI->getOrdering()) {
+          case AtomicOrdering::NotAtomic:
+            continue;
+          case AtomicOrdering::Unordered:
+            continue;
+          case AtomicOrdering::Monotonic:
+            continue;
+          case AtomicOrdering::Acquire:
+            break;
+          case AtomicOrdering::Release:
+            continue;
+          case AtomicOrdering::AcquireRelease:
+            break;
+          case AtomicOrdering::SequentiallyConsistent:
+            break;
+          };
+        }
+        NonNoOpFences.insert(FI);
+      }
+
+      auto *CB = dyn_cast<CallBase>(&I);
+      bool IsNoSync = AA::isNoSyncInst(A, I, *this);
+      bool IsAlignedBarrier =
+          !IsNoSync && CB &&
+          AANoSync::isAlignedBarrier(*CB, AlignedBarrierLastInBlock);
+
+      AlignedBarrierLastInBlock &= IsNoSync;
+      IsExplicitlyAligned &= IsNoSync;
+
+      // Next we check for calls. Aligned barriers are handled
+      // explicitly, everything else is kept for the backward traversal and will
+      // also affect our state.
+      if (CB) {
+        if (IsAlignedBarrier) {
+          HandleAlignedBarrier(*CB, ED);
+          AlignedBarrierLastInBlock = true;
+          IsExplicitlyAligned = true;
+          continue;
+        }
+
+        // Check the pointer(s) of a memory intrinsic explicitly.
+        if (isa<MemIntrinsic>(&I)) {
+          if (!ED.EncounteredNonLocalSideEffect &&
+              AA::isPotentiallyAffectedByBarrier(A, I, *this))
+            ED.EncounteredNonLocalSideEffect = true;
+          if (!IsNoSync) {
+            ED.IsReachedFromAlignedBarrierOnly = false;
+            SyncInstWorklist.push_back(&I);
+          }
+          continue;
+        }
+
+        // Record how we entered the call, then accumulate the effect of the
+        // call in ED for potential use by the callee.
+        auto &CallInED = CEDMap[{CB, PRE}];
+        Changed |= mergeInPredecessor(A, CallInED, ED);
+
+        // If we have a sync-definition we can check if it starts/ends in an
+        // aligned barrier. If we are unsure we assume any sync breaks
+        // alignment.
+        Function *Callee = CB->getCalledFunction();
+        if (!IsNoSync && Callee && !Callee->isDeclaration()) {
+          const auto *EDAA = A.getAAFor<AAExecutionDomain>(
+              *this, IRPosition::function(*Callee), DepClassTy::OPTIONAL);
+          if (EDAA && EDAA->getState().isValidState()) {
+            const auto &CalleeED = EDAA->getFunctionExecutionDomain();
+            ED.IsReachedFromAlignedBarrierOnly =
+                CalleeED.IsReachedFromAlignedBarrierOnly;
+            AlignedBarrierLastInBlock = ED.IsReachedFromAlignedBarrierOnly;
+            if (IsNoSync || !CalleeED.IsReachedFromAlignedBarrierOnly)
+              ED.EncounteredNonLocalSideEffect |=
+                  CalleeED.EncounteredNonLocalSideEffect;
+            else
+              ED.EncounteredNonLocalSideEffect =
+                  CalleeED.EncounteredNonLocalSideEffect;
+            if (!CalleeED.IsReachingAlignedBarrierOnly) {
+              Changed |=
+                  setAndRecord(CallInED.IsReachingAlignedBarrierOnly, false);
+              SyncInstWorklist.push_back(&I);
+            }
+            if (CalleeED.IsReachedFromAlignedBarrierOnly)
+              mergeInPredecessorBarriersAndAssumptions(A, ED, CalleeED);
+            auto &CallOutED = CEDMap[{CB, POST}];
+            Changed |= mergeInPredecessor(A, CallOutED, ED);
+            continue;
+          }
+        }
+        if (!IsNoSync) {
+          ED.IsReachedFromAlignedBarrierOnly = false;
+          Changed |= setAndRecord(CallInED.IsReachingAlignedBarrierOnly, false);
+          SyncInstWorklist.push_back(&I);
+        }
+        AlignedBarrierLastInBlock &= ED.IsReachedFromAlignedBarrierOnly;
+        ED.EncounteredNonLocalSideEffect |= !CB->doesNotAccessMemory();
+        auto &CallOutED = CEDMap[{CB, POST}];
+        Changed |= mergeInPredecessor(A, CallOutED, ED);
+      }
+
+      if (!I.mayHaveSideEffects() && !I.mayReadFromMemory())
+        continue;
+
+      // If we have a callee we try to use fine-grained information to
+      // determine local side-effects.
+      if (CB) {
+        const auto *MemAA = A.getAAFor<AAMemoryLocation>(
+            *this, IRPosition::callsite_function(*CB), DepClassTy::OPTIONAL);
+
+        auto AccessPred = [&](const Instruction *I, const Value *Ptr,
+                              AAMemoryLocation::AccessKind,
+                              AAMemoryLocation::MemoryLocationsKind) {
+          return !AA::isPotentiallyAffectedByBarrier(A, {Ptr}, *this, I);
+        };
+        if (MemAA && MemAA->getState().isValidState() &&
+            MemAA->checkForAllAccessesToMemoryKind(
+                AccessPred, AAMemoryLocation::ALL_LOCATIONS))
+          continue;
+      }
+
+      auto &InfoCache = A.getInfoCache();
+      if (!I.mayHaveSideEffects() && InfoCache.isOnlyUsedByAssume(I))
+        continue;
+
+      if (auto *LI = dyn_cast<LoadInst>(&I))
+        if (LI->hasMetadata(LLVMContext::MD_invariant_load))
+          continue;
+
+      if (!ED.EncounteredNonLocalSideEffect &&
+          AA::isPotentiallyAffectedByBarrier(A, I, *this))
+        ED.EncounteredNonLocalSideEffect = true;
+    }
+
+    bool IsEndAndNotReachingAlignedBarriersOnly = false;
+    if (!isa<UnreachableInst>(BB.getTerminator()) &&
+        !BB.getTerminator()->getNumSuccessors()) {
+
+      Changed |= mergeInPredecessor(A, InterProceduralED, ED);
+
+      auto &FnED = BEDMap[nullptr];
+      if (IsKernel && !IsExplicitlyAligned)
+        FnED.IsReachingAlignedBarrierOnly = false;
+      Changed |= mergeInPredecessor(A, FnED, ED);
+
+      if (!FnED.IsReachingAlignedBarrierOnly) {
+        IsEndAndNotReachingAlignedBarriersOnly = true;
+        SyncInstWorklist.push_back(BB.getTerminator());
+        auto &BBED = BEDMap[&BB];
+        Changed |= setAndRecord(BBED.IsReachingAlignedBarrierOnly, false);
+      }
+    }
+
+    ExecutionDomainTy &StoredED = BEDMap[&BB];
+    ED.IsReachingAlignedBarrierOnly = StoredED.IsReachingAlignedBarrierOnly &
+                                      !IsEndAndNotReachingAlignedBarriersOnly;
+
+    // Check if we computed anything different as part of the forward
+    // traversal. We do not take assumptions and aligned barriers into account
+    // as they do not influence the state we iterate. Backward traversal values
+    // are handled later on.
+    if (ED.IsExecutedByInitialThreadOnly !=
+            StoredED.IsExecutedByInitialThreadOnly ||
+        ED.IsReachedFromAlignedBarrierOnly !=
+            StoredED.IsReachedFromAlignedBarrierOnly ||
+        ED.EncounteredNonLocalSideEffect !=
+            StoredED.EncounteredNonLocalSideEffect)
+      Changed = true;
+
+    // Update the state with the new value.
+    StoredED = std::move(ED);
+  }
+
+  // Propagate (non-aligned) sync instruction effects backwards until the
+  // entry is hit or an aligned barrier.
+  SmallSetVector<BasicBlock *, 16> Visited;
+  while (!SyncInstWorklist.empty()) {
+    Instruction *SyncInst = SyncInstWorklist.pop_back_val();
+    Instruction *CurInst = SyncInst;
+    bool HitAlignedBarrierOrKnownEnd = false;
+    while ((CurInst = CurInst->getPrevNode())) {
+      auto *CB = dyn_cast<CallBase>(CurInst);
+      if (!CB)
+        continue;
+      auto &CallOutED = CEDMap[{CB, POST}];
+      Changed |= setAndRecord(CallOutED.IsReachingAlignedBarrierOnly, false);
+      auto &CallInED = CEDMap[{CB, PRE}];
+      HitAlignedBarrierOrKnownEnd =
+          AlignedBarriers.count(CB) || !CallInED.IsReachingAlignedBarrierOnly;
+      if (HitAlignedBarrierOrKnownEnd)
+        break;
+      Changed |= setAndRecord(CallInED.IsReachingAlignedBarrierOnly, false);
+    }
+    if (HitAlignedBarrierOrKnownEnd)
+      continue;
+    BasicBlock *SyncBB = SyncInst->getParent();
+    for (auto *PredBB : predecessors(SyncBB)) {
+      if (LivenessAA && LivenessAA->isEdgeDead(PredBB, SyncBB))
+        continue;
+      if (!Visited.insert(PredBB))
+        continue;
+      auto &PredED = BEDMap[PredBB];
+      if (setAndRecord(PredED.IsReachingAlignedBarrierOnly, false)) {
+        Changed = true;
+        SyncInstWorklist.push_back(PredBB->getTerminator());
+      }
+    }
+    if (SyncBB != &EntryBB)
+      continue;
+    Changed |=
+        setAndRecord(InterProceduralED.IsReachingAlignedBarrierOnly, false);
+  }
+
+  return Changed ? ChangeStatus::CHANGED : ChangeStatus::UNCHANGED;
 }
 
 /// Try to replace memory allocation calls called by a single thread with a
@@ -2928,7 +3407,7 @@ struct AAHeapToSharedFunction : public AAHeapToShared {
   AAHeapToSharedFunction(const IRPosition &IRP, Attributor &A)
       : AAHeapToShared(IRP, A) {}
 
-  const std::string getAsStr() const override {
+  const std::string getAsStr(Attributor *) const override {
     return "[AAHeapToShared] " + std::to_string(MallocCalls.size()) +
            " malloc calls eligible.";
   }
@@ -2967,12 +3446,18 @@ struct AAHeapToSharedFunction : public AAHeapToShared {
 
     auto &OMPInfoCache = static_cast<OMPInformationCache &>(A.getInfoCache());
     auto &RFI = OMPInfoCache.RFIs[OMPRTL___kmpc_alloc_shared];
+    if (!RFI.Declaration)
+      return;
 
     Attributor::SimplifictionCallbackTy SCB =
         [](const IRPosition &, const AbstractAttribute *,
-           bool &) -> Optional<Value *> { return nullptr; };
+           bool &) -> std::optional<Value *> { return nullptr; };
+
+    Function *F = getAnchorScope();
     for (User *U : RFI.Declaration->users())
       if (CallBase *CB = dyn_cast<CallBase>(U)) {
+        if (CB->getFunction() != F)
+          continue;
         MallocCalls.insert(CB);
         A.registerSimplificationCallback(IRPosition::callsite_returned(*CB),
                                          SCB);
@@ -3037,7 +3522,7 @@ struct AAHeapToSharedFunction : public AAHeapToShared {
       Type *Int8ArrTy = ArrayType::get(Int8Ty, AllocSize->getZExtValue());
       auto *SharedMem = new GlobalVariable(
           *M, Int8ArrTy, /* IsConstant */ false, GlobalValue::InternalLinkage,
-          UndefValue::get(Int8ArrTy), CB->getName() + "_shared", nullptr,
+          PoisonValue::get(Int8ArrTy), CB->getName() + "_shared", nullptr,
           GlobalValue::NotThreadLocal,
           static_cast<unsigned>(AddressSpace::Shared));
       auto *NewBuffer =
@@ -3046,7 +3531,7 @@ struct AAHeapToSharedFunction : public AAHeapToShared {
       auto Remark = [&](OptimizationRemark OR) {
         return OR << "Replaced globalized variable with "
                   << ore::NV("SharedMemory", AllocSize->getZExtValue())
-                  << ((AllocSize->getZExtValue() != 1) ? " bytes " : " byte ")
+                  << (AllocSize->isOne() ? " byte " : " bytes ")
                   << "of shared memory.";
       };
       A.emitRemark<OptimizationRemark>(CB, "OMP111", Remark);
@@ -3054,7 +3539,7 @@ struct AAHeapToSharedFunction : public AAHeapToShared {
       MaybeAlign Alignment = CB->getRetAlign();
       assert(Alignment &&
              "HeapToShared on allocation without alignment attribute");
-      SharedMem->setAlignment(MaybeAlign(Alignment));
+      SharedMem->setAlignment(*Alignment);
 
       A.changeAfterManifest(IRPosition::callsite_returned(*CB), *NewBuffer);
       A.deleteAfterManifest(*CB);
@@ -3069,20 +3554,33 @@ struct AAHeapToSharedFunction : public AAHeapToShared {
   }
 
   ChangeStatus updateImpl(Attributor &A) override {
+    if (MallocCalls.empty())
+      return indicatePessimisticFixpoint();
     auto &OMPInfoCache = static_cast<OMPInformationCache &>(A.getInfoCache());
     auto &RFI = OMPInfoCache.RFIs[OMPRTL___kmpc_alloc_shared];
+    if (!RFI.Declaration)
+      return ChangeStatus::UNCHANGED;
+
     Function *F = getAnchorScope();
 
     auto NumMallocCalls = MallocCalls.size();
 
     // Only consider malloc calls executed by a single thread with a constant.
     for (User *U : RFI.Declaration->users()) {
-      const auto &ED = A.getAAFor<AAExecutionDomain>(
-          *this, IRPosition::function(*F), DepClassTy::REQUIRED);
-      if (CallBase *CB = dyn_cast<CallBase>(U))
-        if (!isa<ConstantInt>(CB->getArgOperand(0)) ||
-            !ED.isExecutedByInitialThreadOnly(*CB))
+      if (CallBase *CB = dyn_cast<CallBase>(U)) {
+        if (CB->getCaller() != F)
+          continue;
+        if (!MallocCalls.count(CB))
+          continue;
+        if (!isa<ConstantInt>(CB->getArgOperand(0))) {
           MallocCalls.remove(CB);
+          continue;
+        }
+        const auto *ED = A.getAAFor<AAExecutionDomain>(
+            *this, IRPosition::function(*F), DepClassTy::REQUIRED);
+        if (!ED || !ED->isExecutedByInitialThreadOnly(*CB))
+          MallocCalls.remove(CB);
+      }
     }
 
     findPotentialRemovedFreeCalls(A);
@@ -3105,11 +3603,15 @@ struct AAKernelInfo : public StateWrapper<KernelInfoState, AbstractAttribute> {
   using Base = StateWrapper<KernelInfoState, AbstractAttribute>;
   AAKernelInfo(const IRPosition &IRP, Attributor &A) : Base(IRP) {}
 
+  /// The callee value is tracked beyond a simple stripPointerCasts, so we allow
+  /// unknown callees.
+  static bool requiresCalleeForCallBase() { return false; }
+
   /// Statistics are tracked as part of manifest for now.
   void trackStatistics() const override {}
 
   /// See AbstractAttribute::getAsStr()
-  const std::string getAsStr() const override {
+  const std::string getAsStr(Attributor *) const override {
     if (!isValidState())
       return "<invalid>";
     return std::string(SPMDCompatibilityTracker.isAssumed() ? "SPMD"
@@ -3127,7 +3629,12 @@ struct AAKernelInfo : public StateWrapper<KernelInfoState, AbstractAttribute> {
            ", #Reaching Kernels: " +
            (ReachingKernelEntries.isValidState()
                 ? std::to_string(ReachingKernelEntries.size())
-                : "<invalid>");
+                : "<invalid>") +
+           ", #ParLevels: " +
+           (ParallelLevels.isValidState()
+                ? std::to_string(ParallelLevels.size())
+                : "<invalid>") +
+           ", NestedPar: " + (NestedParallelism ? "yes" : "no");
   }
 
   /// Create an abstract attribute biew for the position \p IRP.
@@ -3158,6 +3665,33 @@ struct AAKernelInfoFunction : AAKernelInfo {
   SmallPtrSetImpl<Instruction *> &getGuardedInstructions() {
     return GuardedInstructions;
   }
+
+  void setConfigurationOfKernelEnvironment(ConstantStruct *ConfigC) {
+    Constant *NewKernelEnvC = ConstantFoldInsertValueInstruction(
+        KernelEnvC, ConfigC, {KernelInfo::ConfigurationIdx});
+    assert(NewKernelEnvC && "Failed to create new kernel environment");
+    KernelEnvC = cast<ConstantStruct>(NewKernelEnvC);
+  }
+
+#define KERNEL_ENVIRONMENT_CONFIGURATION_SETTER(MEMBER)                        \
+  void set##MEMBER##OfKernelEnvironment(ConstantInt *NewVal) {                 \
+    ConstantStruct *ConfigC =                                                  \
+        KernelInfo::getConfigurationFromKernelEnvironment(KernelEnvC);         \
+    Constant *NewConfigC = ConstantFoldInsertValueInstruction(                 \
+        ConfigC, NewVal, {KernelInfo::MEMBER##Idx});                           \
+    assert(NewConfigC && "Failed to create new configuration environment");    \
+    setConfigurationOfKernelEnvironment(cast<ConstantStruct>(NewConfigC));     \
+  }
+
+  KERNEL_ENVIRONMENT_CONFIGURATION_SETTER(UseGenericStateMachine)
+  KERNEL_ENVIRONMENT_CONFIGURATION_SETTER(MayUseNestedParallelism)
+  KERNEL_ENVIRONMENT_CONFIGURATION_SETTER(ExecMode)
+  KERNEL_ENVIRONMENT_CONFIGURATION_SETTER(MinThreads)
+  KERNEL_ENVIRONMENT_CONFIGURATION_SETTER(MaxThreads)
+  KERNEL_ENVIRONMENT_CONFIGURATION_SETTER(MinTeams)
+  KERNEL_ENVIRONMENT_CONFIGURATION_SETTER(MaxTeams)
+
+#undef KERNEL_ENVIRONMENT_CONFIGURATION_SETTER
 
   /// See AbstractAttribute::initialize(...).
   void initialize(Attributor &A) override {
@@ -3207,107 +3741,151 @@ struct AAKernelInfoFunction : AAKernelInfo {
     ReachingKernelEntries.insert(Fn);
     IsKernelEntry = true;
 
-    // For kernels we might need to initialize/finalize the IsSPMD state and
-    // we need to register a simplification callback so that the Attributor
-    // knows the constant arguments to __kmpc_target_init and
-    // __kmpc_target_deinit might actually change.
+    KernelEnvC =
+        KernelInfo::getKernelEnvironementFromKernelInitCB(KernelInitCB);
+    GlobalVariable *KernelEnvGV =
+        KernelInfo::getKernelEnvironementGVFromKernelInitCB(KernelInitCB);
 
-    Attributor::SimplifictionCallbackTy StateMachineSimplifyCB =
-        [&](const IRPosition &IRP, const AbstractAttribute *AA,
-            bool &UsedAssumedInformation) -> Optional<Value *> {
-      // IRP represents the "use generic state machine" argument of an
-      // __kmpc_target_init call. We will answer this one with the internal
-      // state. As long as we are not in an invalid state, we will create a
-      // custom state machine so the value should be a `i1 false`. If we are
-      // in an invalid state, we won't change the value that is in the IR.
-      if (!ReachedKnownParallelRegions.isValidState())
-        return nullptr;
-      // If we have disabled state machine rewrites, don't make a custom one.
-      if (DisableOpenMPOptStateMachineRewrite)
-        return nullptr;
-      if (AA)
+    Attributor::GlobalVariableSimplifictionCallbackTy
+        KernelConfigurationSimplifyCB =
+            [&](const GlobalVariable &GV, const AbstractAttribute *AA,
+                bool &UsedAssumedInformation) -> std::optional<Constant *> {
+      if (!isAtFixpoint()) {
+        if (!AA)
+          return nullptr;
+        UsedAssumedInformation = true;
         A.recordDependence(*this, *AA, DepClassTy::OPTIONAL);
-      UsedAssumedInformation = !isAtFixpoint();
-      auto *FalseVal =
-          ConstantInt::getBool(IRP.getAnchorValue().getContext(), false);
-      return FalseVal;
-    };
-
-    Attributor::SimplifictionCallbackTy ModeSimplifyCB =
-        [&](const IRPosition &IRP, const AbstractAttribute *AA,
-            bool &UsedAssumedInformation) -> Optional<Value *> {
-      // IRP represents the "SPMDCompatibilityTracker" argument of an
-      // __kmpc_target_init or
-      // __kmpc_target_deinit call. We will answer this one with the internal
-      // state.
-      if (!SPMDCompatibilityTracker.isValidState())
-        return nullptr;
-      if (!SPMDCompatibilityTracker.isAtFixpoint()) {
-        if (AA)
-          A.recordDependence(*this, *AA, DepClassTy::OPTIONAL);
-        UsedAssumedInformation = true;
-      } else {
-        UsedAssumedInformation = false;
       }
-      auto *Val = ConstantInt::getSigned(
-          IntegerType::getInt8Ty(IRP.getAnchorValue().getContext()),
-          SPMDCompatibilityTracker.isAssumed() ? OMP_TGT_EXEC_MODE_SPMD
-                                               : OMP_TGT_EXEC_MODE_GENERIC);
-      return Val;
+      return KernelEnvC;
     };
 
-    Attributor::SimplifictionCallbackTy IsGenericModeSimplifyCB =
-        [&](const IRPosition &IRP, const AbstractAttribute *AA,
-            bool &UsedAssumedInformation) -> Optional<Value *> {
-      // IRP represents the "RequiresFullRuntime" argument of an
-      // __kmpc_target_init or __kmpc_target_deinit call. We will answer this
-      // one with the internal state of the SPMDCompatibilityTracker, so if
-      // generic then true, if SPMD then false.
-      if (!SPMDCompatibilityTracker.isValidState())
-        return nullptr;
-      if (!SPMDCompatibilityTracker.isAtFixpoint()) {
-        if (AA)
-          A.recordDependence(*this, *AA, DepClassTy::OPTIONAL);
-        UsedAssumedInformation = true;
-      } else {
-        UsedAssumedInformation = false;
-      }
-      auto *Val = ConstantInt::getBool(IRP.getAnchorValue().getContext(),
-                                       !SPMDCompatibilityTracker.isAssumed());
-      return Val;
-    };
-
-    constexpr const int InitModeArgNo = 1;
-    constexpr const int DeinitModeArgNo = 1;
-    constexpr const int InitUseStateMachineArgNo = 2;
-    constexpr const int InitRequiresFullRuntimeArgNo = 3;
-    constexpr const int DeinitRequiresFullRuntimeArgNo = 2;
-    A.registerSimplificationCallback(
-        IRPosition::callsite_argument(*KernelInitCB, InitUseStateMachineArgNo),
-        StateMachineSimplifyCB);
-    A.registerSimplificationCallback(
-        IRPosition::callsite_argument(*KernelInitCB, InitModeArgNo),
-        ModeSimplifyCB);
-    A.registerSimplificationCallback(
-        IRPosition::callsite_argument(*KernelDeinitCB, DeinitModeArgNo),
-        ModeSimplifyCB);
-    A.registerSimplificationCallback(
-        IRPosition::callsite_argument(*KernelInitCB,
-                                      InitRequiresFullRuntimeArgNo),
-        IsGenericModeSimplifyCB);
-    A.registerSimplificationCallback(
-        IRPosition::callsite_argument(*KernelDeinitCB,
-                                      DeinitRequiresFullRuntimeArgNo),
-        IsGenericModeSimplifyCB);
+    A.registerGlobalVariableSimplificationCallback(
+        *KernelEnvGV, KernelConfigurationSimplifyCB);
 
     // Check if we know we are in SPMD-mode already.
-    ConstantInt *ModeArg =
-        dyn_cast<ConstantInt>(KernelInitCB->getArgOperand(InitModeArgNo));
-    if (ModeArg && (ModeArg->getSExtValue() & OMP_TGT_EXEC_MODE_SPMD))
+    ConstantInt *ExecModeC =
+        KernelInfo::getExecModeFromKernelEnvironment(KernelEnvC);
+    ConstantInt *AssumedExecModeC = ConstantInt::get(
+        ExecModeC->getIntegerType(),
+        ExecModeC->getSExtValue() | OMP_TGT_EXEC_MODE_GENERIC_SPMD);
+    if (ExecModeC->getSExtValue() & OMP_TGT_EXEC_MODE_SPMD)
       SPMDCompatibilityTracker.indicateOptimisticFixpoint();
-    // This is a generic region but SPMDization is disabled so stop tracking.
     else if (DisableOpenMPOptSPMDization)
+      // This is a generic region but SPMDization is disabled so stop
+      // tracking.
       SPMDCompatibilityTracker.indicatePessimisticFixpoint();
+    else
+      setExecModeOfKernelEnvironment(AssumedExecModeC);
+
+    const Triple T(Fn->getParent()->getTargetTriple());
+    auto *Int32Ty = Type::getInt32Ty(Fn->getContext());
+    auto [MinThreads, MaxThreads] =
+        OpenMPIRBuilder::readThreadBoundsForKernel(T, *Fn);
+    if (MinThreads)
+      setMinThreadsOfKernelEnvironment(ConstantInt::get(Int32Ty, MinThreads));
+    if (MaxThreads)
+      setMaxThreadsOfKernelEnvironment(ConstantInt::get(Int32Ty, MaxThreads));
+    auto [MinTeams, MaxTeams] =
+        OpenMPIRBuilder::readTeamBoundsForKernel(T, *Fn);
+    if (MinTeams)
+      setMinTeamsOfKernelEnvironment(ConstantInt::get(Int32Ty, MinTeams));
+    if (MaxTeams)
+      setMaxTeamsOfKernelEnvironment(ConstantInt::get(Int32Ty, MaxTeams));
+
+    ConstantInt *MayUseNestedParallelismC =
+        KernelInfo::getMayUseNestedParallelismFromKernelEnvironment(KernelEnvC);
+    ConstantInt *AssumedMayUseNestedParallelismC = ConstantInt::get(
+        MayUseNestedParallelismC->getIntegerType(), NestedParallelism);
+    setMayUseNestedParallelismOfKernelEnvironment(
+        AssumedMayUseNestedParallelismC);
+
+    if (!DisableOpenMPOptStateMachineRewrite) {
+      ConstantInt *UseGenericStateMachineC =
+          KernelInfo::getUseGenericStateMachineFromKernelEnvironment(
+              KernelEnvC);
+      ConstantInt *AssumedUseGenericStateMachineC =
+          ConstantInt::get(UseGenericStateMachineC->getIntegerType(), false);
+      setUseGenericStateMachineOfKernelEnvironment(
+          AssumedUseGenericStateMachineC);
+    }
+
+    // Register virtual uses of functions we might need to preserve.
+    auto RegisterVirtualUse = [&](RuntimeFunction RFKind,
+                                  Attributor::VirtualUseCallbackTy &CB) {
+      if (!OMPInfoCache.RFIs[RFKind].Declaration)
+        return;
+      A.registerVirtualUseCallback(*OMPInfoCache.RFIs[RFKind].Declaration, CB);
+    };
+
+    // Add a dependence to ensure updates if the state changes.
+    auto AddDependence = [](Attributor &A, const AAKernelInfo *KI,
+                            const AbstractAttribute *QueryingAA) {
+      if (QueryingAA) {
+        A.recordDependence(*KI, *QueryingAA, DepClassTy::OPTIONAL);
+      }
+      return true;
+    };
+
+    Attributor::VirtualUseCallbackTy CustomStateMachineUseCB =
+        [&](Attributor &A, const AbstractAttribute *QueryingAA) {
+          // Whenever we create a custom state machine we will insert calls to
+          // __kmpc_get_hardware_num_threads_in_block,
+          // __kmpc_get_warp_size,
+          // __kmpc_barrier_simple_generic,
+          // __kmpc_kernel_parallel, and
+          // __kmpc_kernel_end_parallel.
+          // Not needed if we are on track for SPMDzation.
+          if (SPMDCompatibilityTracker.isValidState())
+            return AddDependence(A, this, QueryingAA);
+          // Not needed if we can't rewrite due to an invalid state.
+          if (!ReachedKnownParallelRegions.isValidState())
+            return AddDependence(A, this, QueryingAA);
+          return false;
+        };
+
+    // Not needed if we are pre-runtime merge.
+    if (!KernelInitCB->getCalledFunction()->isDeclaration()) {
+      RegisterVirtualUse(OMPRTL___kmpc_get_hardware_num_threads_in_block,
+                         CustomStateMachineUseCB);
+      RegisterVirtualUse(OMPRTL___kmpc_get_warp_size, CustomStateMachineUseCB);
+      RegisterVirtualUse(OMPRTL___kmpc_barrier_simple_generic,
+                         CustomStateMachineUseCB);
+      RegisterVirtualUse(OMPRTL___kmpc_kernel_parallel,
+                         CustomStateMachineUseCB);
+      RegisterVirtualUse(OMPRTL___kmpc_kernel_end_parallel,
+                         CustomStateMachineUseCB);
+    }
+
+    // If we do not perform SPMDzation we do not need the virtual uses below.
+    if (SPMDCompatibilityTracker.isAtFixpoint())
+      return;
+
+    Attributor::VirtualUseCallbackTy HWThreadIdUseCB =
+        [&](Attributor &A, const AbstractAttribute *QueryingAA) {
+          // Whenever we perform SPMDzation we will insert
+          // __kmpc_get_hardware_thread_id_in_block calls.
+          if (!SPMDCompatibilityTracker.isValidState())
+            return AddDependence(A, this, QueryingAA);
+          return false;
+        };
+    RegisterVirtualUse(OMPRTL___kmpc_get_hardware_thread_id_in_block,
+                       HWThreadIdUseCB);
+
+    Attributor::VirtualUseCallbackTy SPMDBarrierUseCB =
+        [&](Attributor &A, const AbstractAttribute *QueryingAA) {
+          // Whenever we perform SPMDzation with guarding we will insert
+          // __kmpc_simple_barrier_spmd calls. If SPMDzation failed, there is
+          // nothing to guard, or there are no parallel regions, we don't need
+          // the calls.
+          if (!SPMDCompatibilityTracker.isValidState())
+            return AddDependence(A, this, QueryingAA);
+          if (SPMDCompatibilityTracker.empty())
+            return AddDependence(A, this, QueryingAA);
+          if (!mayContainParallelRegion())
+            return AddDependence(A, this, QueryingAA);
+          return false;
+        };
+    RegisterVirtualUse(OMPRTL___kmpc_barrier_simple_spmd, SPMDBarrierUseCB);
   }
 
   /// Sanitize the string \p S such that it is a suitable global symbol name.
@@ -3330,76 +3908,39 @@ struct AAKernelInfoFunction : AAKernelInfo {
     if (!KernelInitCB || !KernelDeinitCB)
       return ChangeStatus::UNCHANGED;
 
-    // If we can we change the execution mode to SPMD-mode otherwise we build a
-    // custom state machine.
     ChangeStatus Changed = ChangeStatus::UNCHANGED;
-    if (!changeToSPMDMode(A, Changed))
-      return buildCustomStateMachine(A);
+
+    bool HasBuiltStateMachine = true;
+    if (!changeToSPMDMode(A, Changed)) {
+      if (!KernelInitCB->getCalledFunction()->isDeclaration())
+        HasBuiltStateMachine = buildCustomStateMachine(A, Changed);
+      else
+        HasBuiltStateMachine = false;
+    }
+
+    // We need to reset KernelEnvC if specific rewriting is not done.
+    ConstantStruct *ExistingKernelEnvC =
+        KernelInfo::getKernelEnvironementFromKernelInitCB(KernelInitCB);
+    ConstantInt *OldUseGenericStateMachineVal =
+        KernelInfo::getUseGenericStateMachineFromKernelEnvironment(
+            ExistingKernelEnvC);
+    if (!HasBuiltStateMachine)
+      setUseGenericStateMachineOfKernelEnvironment(
+          OldUseGenericStateMachineVal);
+
+    // At last, update the KernelEnvc
+    GlobalVariable *KernelEnvGV =
+        KernelInfo::getKernelEnvironementGVFromKernelInitCB(KernelInitCB);
+    if (KernelEnvGV->getInitializer() != KernelEnvC) {
+      KernelEnvGV->setInitializer(KernelEnvC);
+      Changed = ChangeStatus::CHANGED;
+    }
 
     return Changed;
   }
 
-  bool changeToSPMDMode(Attributor &A, ChangeStatus &Changed) {
-    if (!mayContainParallelRegion())
-      return false;
-
+  void insertInstructionGuardsHelper(Attributor &A) {
     auto &OMPInfoCache = static_cast<OMPInformationCache &>(A.getInfoCache());
-
-    if (!SPMDCompatibilityTracker.isAssumed()) {
-      for (Instruction *NonCompatibleI : SPMDCompatibilityTracker) {
-        if (!NonCompatibleI)
-          continue;
-
-        // Skip diagnostics on calls to known OpenMP runtime functions for now.
-        if (auto *CB = dyn_cast<CallBase>(NonCompatibleI))
-          if (OMPInfoCache.RTLFunctions.contains(CB->getCalledFunction()))
-            continue;
-
-        auto Remark = [&](OptimizationRemarkAnalysis ORA) {
-          ORA << "Value has potential side effects preventing SPMD-mode "
-                 "execution";
-          if (isa<CallBase>(NonCompatibleI)) {
-            ORA << ". Add `__attribute__((assume(\"ompx_spmd_amenable\")))` to "
-                   "the called function to override";
-          }
-          return ORA << ".";
-        };
-        A.emitRemark<OptimizationRemarkAnalysis>(NonCompatibleI, "OMP121",
-                                                 Remark);
-
-        LLVM_DEBUG(dbgs() << TAG << "SPMD-incompatible side-effect: "
-                          << *NonCompatibleI << "\n");
-      }
-
-      return false;
-    }
-
-    // Get the actual kernel, could be the caller of the anchor scope if we have
-    // a debug wrapper.
-    Function *Kernel = getAnchorScope();
-    if (Kernel->hasLocalLinkage()) {
-      assert(Kernel->hasOneUse() && "Unexpected use of debug kernel wrapper.");
-      auto *CB = cast<CallBase>(Kernel->user_back());
-      Kernel = CB->getCaller();
-    }
-    assert(OMPInfoCache.Kernels.count(Kernel) && "Expected kernel function!");
-
-    // Check if the kernel is already in SPMD mode, if so, return success.
-    GlobalVariable *ExecMode = Kernel->getParent()->getGlobalVariable(
-        (Kernel->getName() + "_exec_mode").str());
-    assert(ExecMode && "Kernel without exec mode?");
-    assert(ExecMode->getInitializer() && "ExecMode doesn't have initializer!");
-
-    // Set the global exec mode flag to indicate SPMD-Generic mode.
-    assert(isa<ConstantInt>(ExecMode->getInitializer()) &&
-           "ExecMode is not an integer!");
-    const int8_t ExecModeVal =
-        cast<ConstantInt>(ExecMode->getInitializer())->getSExtValue();
-    if (ExecModeVal != OMP_TGT_EXEC_MODE_GENERIC)
-      return true;
-
-    // We will now unconditionally modify the IR, indicate a change.
-    Changed = ChangeStatus::CHANGED;
 
     auto CreateGuardedRegion = [&](Instruction *RegionStartI,
                                    Instruction *RegionEndI) {
@@ -3462,14 +4003,14 @@ struct AAKernelInfoFunction : AAKernelInfo {
       // Find escaping outputs from the guarded region to outside users and
       // broadcast their values to them.
       for (Instruction &I : *RegionStartBB) {
-        SmallPtrSet<Instruction *, 4> OutsideUsers;
-        for (User *Usr : I.users()) {
-          Instruction &UsrI = *cast<Instruction>(Usr);
+        SmallVector<Use *, 4> OutsideUses;
+        for (Use &U : I.uses()) {
+          Instruction &UsrI = *cast<Instruction>(U.getUser());
           if (UsrI.getParent() != RegionStartBB)
-            OutsideUsers.insert(&UsrI);
+            OutsideUses.push_back(&U);
         }
 
-        if (OutsideUsers.empty())
+        if (OutsideUses.empty())
           continue;
 
         HasBroadcastValues = true;
@@ -3492,8 +4033,8 @@ struct AAKernelInfoFunction : AAKernelInfo {
                                        RegionBarrierBB->getTerminator());
 
         // Emit a load instruction and replace uses of the output value.
-        for (Instruction *UsrI : OutsideUsers)
-          UsrI->replaceUsesOfWith(&I, LoadI);
+        for (Use *U : OutsideUses)
+          A.changeUseAfterManifest(*U, *LoadI);
       }
 
       auto &OMPInfoCache = static_cast<OMPInformationCache &>(A.getInfoCache());
@@ -3617,40 +4158,134 @@ struct AAKernelInfoFunction : AAKernelInfo {
 
     for (auto &GR : GuardedRegions)
       CreateGuardedRegion(GR.first, GR.second);
+  }
+
+  void forceSingleThreadPerWorkgroupHelper(Attributor &A) {
+    // Only allow 1 thread per workgroup to continue executing the user code.
+    //
+    //     InitCB = __kmpc_target_init(...)
+    //     ThreadIdInBlock = __kmpc_get_hardware_thread_id_in_block();
+    //     if (ThreadIdInBlock != 0) return;
+    // UserCode:
+    //     // user code
+    //
+    auto &Ctx = getAnchorValue().getContext();
+    Function *Kernel = getAssociatedFunction();
+    assert(Kernel && "Expected an associated function!");
+
+    // Create block for user code to branch to from initial block.
+    BasicBlock *InitBB = KernelInitCB->getParent();
+    BasicBlock *UserCodeBB = InitBB->splitBasicBlock(
+        KernelInitCB->getNextNode(), "main.thread.user_code");
+    BasicBlock *ReturnBB =
+        BasicBlock::Create(Ctx, "exit.threads", Kernel, UserCodeBB);
+
+    // Register blocks with attributor:
+    A.registerManifestAddedBasicBlock(*InitBB);
+    A.registerManifestAddedBasicBlock(*UserCodeBB);
+    A.registerManifestAddedBasicBlock(*ReturnBB);
+
+    // Debug location:
+    const DebugLoc &DLoc = KernelInitCB->getDebugLoc();
+    ReturnInst::Create(Ctx, ReturnBB)->setDebugLoc(DLoc);
+    InitBB->getTerminator()->eraseFromParent();
+
+    // Prepare call to OMPRTL___kmpc_get_hardware_thread_id_in_block.
+    Module &M = *Kernel->getParent();
+    auto &OMPInfoCache = static_cast<OMPInformationCache &>(A.getInfoCache());
+    FunctionCallee ThreadIdInBlockFn =
+        OMPInfoCache.OMPBuilder.getOrCreateRuntimeFunction(
+            M, OMPRTL___kmpc_get_hardware_thread_id_in_block);
+
+    // Get thread ID in block.
+    CallInst *ThreadIdInBlock =
+        CallInst::Create(ThreadIdInBlockFn, "thread_id.in.block", InitBB);
+    OMPInfoCache.setCallingConvention(ThreadIdInBlockFn, ThreadIdInBlock);
+    ThreadIdInBlock->setDebugLoc(DLoc);
+
+    // Eliminate all threads in the block with ID not equal to 0:
+    Instruction *IsMainThread =
+        ICmpInst::Create(ICmpInst::ICmp, CmpInst::ICMP_NE, ThreadIdInBlock,
+                         ConstantInt::get(ThreadIdInBlock->getType(), 0),
+                         "thread.is_main", InitBB);
+    IsMainThread->setDebugLoc(DLoc);
+    BranchInst::Create(ReturnBB, UserCodeBB, IsMainThread, InitBB);
+  }
+
+  bool changeToSPMDMode(Attributor &A, ChangeStatus &Changed) {
+    auto &OMPInfoCache = static_cast<OMPInformationCache &>(A.getInfoCache());
+
+    // We cannot change to SPMD mode if the runtime functions aren't availible.
+    if (!OMPInfoCache.runtimeFnsAvailable(
+            {OMPRTL___kmpc_get_hardware_thread_id_in_block,
+             OMPRTL___kmpc_barrier_simple_spmd}))
+      return false;
+
+    if (!SPMDCompatibilityTracker.isAssumed()) {
+      for (Instruction *NonCompatibleI : SPMDCompatibilityTracker) {
+        if (!NonCompatibleI)
+          continue;
+
+        // Skip diagnostics on calls to known OpenMP runtime functions for now.
+        if (auto *CB = dyn_cast<CallBase>(NonCompatibleI))
+          if (OMPInfoCache.RTLFunctions.contains(CB->getCalledFunction()))
+            continue;
+
+        auto Remark = [&](OptimizationRemarkAnalysis ORA) {
+          ORA << "Value has potential side effects preventing SPMD-mode "
+                 "execution";
+          if (isa<CallBase>(NonCompatibleI)) {
+            ORA << ". Add `__attribute__((assume(\"ompx_spmd_amenable\")))` to "
+                   "the called function to override";
+          }
+          return ORA << ".";
+        };
+        A.emitRemark<OptimizationRemarkAnalysis>(NonCompatibleI, "OMP121",
+                                                 Remark);
+
+        LLVM_DEBUG(dbgs() << TAG << "SPMD-incompatible side-effect: "
+                          << *NonCompatibleI << "\n");
+      }
+
+      return false;
+    }
+
+    // Get the actual kernel, could be the caller of the anchor scope if we have
+    // a debug wrapper.
+    Function *Kernel = getAnchorScope();
+    if (Kernel->hasLocalLinkage()) {
+      assert(Kernel->hasOneUse() && "Unexpected use of debug kernel wrapper.");
+      auto *CB = cast<CallBase>(Kernel->user_back());
+      Kernel = CB->getCaller();
+    }
+    assert(omp::isOpenMPKernel(*Kernel) && "Expected kernel function!");
+
+    // Check if the kernel is already in SPMD mode, if so, return success.
+    ConstantStruct *ExistingKernelEnvC =
+        KernelInfo::getKernelEnvironementFromKernelInitCB(KernelInitCB);
+    auto *ExecModeC =
+        KernelInfo::getExecModeFromKernelEnvironment(ExistingKernelEnvC);
+    const int8_t ExecModeVal = ExecModeC->getSExtValue();
+    if (ExecModeVal != OMP_TGT_EXEC_MODE_GENERIC)
+      return true;
+
+    // We will now unconditionally modify the IR, indicate a change.
+    Changed = ChangeStatus::CHANGED;
+
+    // Do not use instruction guards when no parallel is present inside
+    // the target region.
+    if (mayContainParallelRegion())
+      insertInstructionGuardsHelper(A);
+    else
+      forceSingleThreadPerWorkgroupHelper(A);
 
     // Adjust the global exec mode flag that tells the runtime what mode this
     // kernel is executed in.
     assert(ExecModeVal == OMP_TGT_EXEC_MODE_GENERIC &&
            "Initially non-SPMD kernel has SPMD exec mode!");
-    ExecMode->setInitializer(
-        ConstantInt::get(ExecMode->getInitializer()->getType(),
+    setExecModeOfKernelEnvironment(
+        ConstantInt::get(ExecModeC->getIntegerType(),
                          ExecModeVal | OMP_TGT_EXEC_MODE_GENERIC_SPMD));
-
-    // Next rewrite the init and deinit calls to indicate we use SPMD-mode now.
-    const int InitModeArgNo = 1;
-    const int DeinitModeArgNo = 1;
-    const int InitUseStateMachineArgNo = 2;
-    const int InitRequiresFullRuntimeArgNo = 3;
-    const int DeinitRequiresFullRuntimeArgNo = 2;
-
-    auto &Ctx = getAnchorValue().getContext();
-    A.changeUseAfterManifest(
-        KernelInitCB->getArgOperandUse(InitModeArgNo),
-        *ConstantInt::getSigned(IntegerType::getInt8Ty(Ctx),
-                                OMP_TGT_EXEC_MODE_SPMD));
-    A.changeUseAfterManifest(
-        KernelInitCB->getArgOperandUse(InitUseStateMachineArgNo),
-        *ConstantInt::getBool(Ctx, false));
-    A.changeUseAfterManifest(
-        KernelDeinitCB->getArgOperandUse(DeinitModeArgNo),
-        *ConstantInt::getSigned(IntegerType::getInt8Ty(Ctx),
-                                OMP_TGT_EXEC_MODE_SPMD));
-    A.changeUseAfterManifest(
-        KernelInitCB->getArgOperandUse(InitRequiresFullRuntimeArgNo),
-        *ConstantInt::getBool(Ctx, false));
-    A.changeUseAfterManifest(
-        KernelDeinitCB->getArgOperandUse(DeinitRequiresFullRuntimeArgNo),
-        *ConstantInt::getBool(Ctx, false));
 
     ++NumOpenMPTargetRegionKernelsSPMD;
 
@@ -3661,39 +4296,47 @@ struct AAKernelInfoFunction : AAKernelInfo {
     return true;
   };
 
-  ChangeStatus buildCustomStateMachine(Attributor &A) {
+  bool buildCustomStateMachine(Attributor &A, ChangeStatus &Changed) {
     // If we have disabled state machine rewrites, don't make a custom one
     if (DisableOpenMPOptStateMachineRewrite)
-      return ChangeStatus::UNCHANGED;
+      return false;
 
     // Don't rewrite the state machine if we are not in a valid state.
     if (!ReachedKnownParallelRegions.isValidState())
-      return ChangeStatus::UNCHANGED;
+      return false;
 
-    const int InitModeArgNo = 1;
-    const int InitUseStateMachineArgNo = 2;
+    auto &OMPInfoCache = static_cast<OMPInformationCache &>(A.getInfoCache());
+    if (!OMPInfoCache.runtimeFnsAvailable(
+            {OMPRTL___kmpc_get_hardware_num_threads_in_block,
+             OMPRTL___kmpc_get_warp_size, OMPRTL___kmpc_barrier_simple_generic,
+             OMPRTL___kmpc_kernel_parallel, OMPRTL___kmpc_kernel_end_parallel}))
+      return false;
+
+    ConstantStruct *ExistingKernelEnvC =
+        KernelInfo::getKernelEnvironementFromKernelInitCB(KernelInitCB);
 
     // Check if the current configuration is non-SPMD and generic state machine.
     // If we already have SPMD mode or a custom state machine we do not need to
     // go any further. If it is anything but a constant something is weird and
     // we give up.
-    ConstantInt *UseStateMachine = dyn_cast<ConstantInt>(
-        KernelInitCB->getArgOperand(InitUseStateMachineArgNo));
-    ConstantInt *Mode =
-        dyn_cast<ConstantInt>(KernelInitCB->getArgOperand(InitModeArgNo));
+    ConstantInt *UseStateMachineC =
+        KernelInfo::getUseGenericStateMachineFromKernelEnvironment(
+            ExistingKernelEnvC);
+    ConstantInt *ModeC =
+        KernelInfo::getExecModeFromKernelEnvironment(ExistingKernelEnvC);
 
     // If we are stuck with generic mode, try to create a custom device (=GPU)
     // state machine which is specialized for the parallel regions that are
     // reachable by the kernel.
-    if (!UseStateMachine || UseStateMachine->isZero() || !Mode ||
-        (Mode->getSExtValue() & OMP_TGT_EXEC_MODE_SPMD))
-      return ChangeStatus::UNCHANGED;
+    if (UseStateMachineC->isZero() ||
+        (ModeC->getSExtValue() & OMP_TGT_EXEC_MODE_SPMD))
+      return false;
+
+    Changed = ChangeStatus::CHANGED;
 
     // If not SPMD mode, indicate we use a custom state machine now.
-    auto &Ctx = getAnchorValue().getContext();
-    auto *FalseVal = ConstantInt::getBool(Ctx, false);
-    A.changeUseAfterManifest(
-        KernelInitCB->getArgOperandUse(InitUseStateMachineArgNo), *FalseVal);
+    setUseGenericStateMachineOfKernelEnvironment(
+        ConstantInt::get(UseStateMachineC->getIntegerType(), false));
 
     // If we don't actually need a state machine we are done here. This can
     // happen if there simply are no parallel regions. In the resulting kernel
@@ -3707,7 +4350,7 @@ struct AAKernelInfoFunction : AAKernelInfo {
       };
       A.emitRemark<OptimizationRemark>(KernelInitCB, "OMP130", Remark);
 
-      return ChangeStatus::CHANGED;
+      return true;
     }
 
     // Keep track in the statistics of our new shiny custom state machine.
@@ -3772,6 +4415,7 @@ struct AAKernelInfoFunction : AAKernelInfo {
     // UserCodeEntryBB:      // user code
     //                       __kmpc_target_deinit(...)
     //
+    auto &Ctx = getAnchorValue().getContext();
     Function *Kernel = getAssociatedFunction();
     assert(Kernel && "Expected an associated function!");
 
@@ -3816,7 +4460,6 @@ struct AAKernelInfoFunction : AAKernelInfo {
     BranchInst::Create(IsWorkerCheckBB, UserCodeEntryBB, IsWorker, InitBB);
 
     Module &M = *Kernel->getParent();
-    auto &OMPInfoCache = static_cast<OMPInformationCache &>(A.getInfoCache());
     FunctionCallee BlockHwSizeFn =
         OMPInfoCache.OMPBuilder.getOrCreateRuntimeFunction(
             M, OMPRTL___kmpc_get_hardware_num_threads_in_block);
@@ -3843,7 +4486,7 @@ struct AAKernelInfoFunction : AAKernelInfo {
 
     // Create local storage for the work function pointer.
     const DataLayout &DL = M.getDataLayout();
-    Type *VoidPtrTy = Type::getInt8PtrTy(Ctx);
+    Type *VoidPtrTy = PointerType::getUnqual(Ctx);
     Instruction *WorkFnAI =
         new AllocaInst(VoidPtrTy, DL.getAllocaAddrSpace(), nullptr,
                        "worker.work_fn.addr", &Kernel->getEntryBlock().front());
@@ -3855,7 +4498,7 @@ struct AAKernelInfoFunction : AAKernelInfo {
                                      StateMachineBeginBB->end()),
             DLoc));
 
-    Value *Ident = KernelInitCB->getArgOperand(0);
+    Value *Ident = KernelInfo::getIdentFromKernelEnvironment(KernelEnvC);
     Value *GTid = KernelInitCB;
 
     FunctionCallee BarrierFn =
@@ -3869,10 +4512,7 @@ struct AAKernelInfoFunction : AAKernelInfo {
     if (WorkFnAI->getType()->getPointerAddressSpace() !=
         (unsigned int)AddressSpace::Generic) {
       WorkFnAI = new AddrSpaceCastInst(
-          WorkFnAI,
-          PointerType::getWithSamePointeeType(
-              cast<PointerType>(WorkFnAI->getType()),
-              (unsigned int)AddressSpace::Generic),
+          WorkFnAI, PointerType::get(Ctx, (unsigned int)AddressSpace::Generic),
           WorkFnAI->getName() + ".generic", StateMachineBeginBB);
       WorkFnAI->setDebugLoc(DLoc);
     }
@@ -3891,9 +4531,6 @@ struct AAKernelInfoFunction : AAKernelInfo {
     FunctionType *ParallelRegionFnTy = FunctionType::get(
         Type::getVoidTy(Ctx), {Type::getInt16Ty(Ctx), Type::getInt32Ty(Ctx)},
         false);
-    Value *WorkFnCast = BitCastInst::CreatePointerBitCastOrAddrSpaceCast(
-        WorkFn, ParallelRegionFnTy->getPointerTo(), "worker.work_fn.addr_cast",
-        StateMachineBeginBB);
 
     Instruction *IsDone =
         ICmpInst::Create(ICmpInst::ICmp, llvm::CmpInst::ICMP_EQ, WorkFn,
@@ -3912,11 +4549,15 @@ struct AAKernelInfoFunction : AAKernelInfo {
     Value *ZeroArg =
         Constant::getNullValue(ParallelRegionFnTy->getParamType(0));
 
+    const unsigned int WrapperFunctionArgNo = 6;
+
     // Now that we have most of the CFG skeleton it is time for the if-cascade
     // that checks the function pointer we got from the runtime against the
     // parallel regions we expect, if there are any.
     for (int I = 0, E = ReachedKnownParallelRegions.size(); I < E; ++I) {
-      auto *ParallelRegion = ReachedKnownParallelRegions[I];
+      auto *CB = ReachedKnownParallelRegions[I];
+      auto *ParallelRegion = dyn_cast<Function>(
+          CB->getArgOperand(WrapperFunctionArgNo)->stripPointerCasts());
       BasicBlock *PRExecuteBB = BasicBlock::Create(
           Ctx, "worker_state_machine.parallel_region.execute", Kernel,
           StateMachineEndParallelBB);
@@ -3928,13 +4569,15 @@ struct AAKernelInfoFunction : AAKernelInfo {
       BasicBlock *PRNextBB =
           BasicBlock::Create(Ctx, "worker_state_machine.parallel_region.check",
                              Kernel, StateMachineEndParallelBB);
+      A.registerManifestAddedBasicBlock(*PRExecuteBB);
+      A.registerManifestAddedBasicBlock(*PRNextBB);
 
       // Check if we need to compare the pointer at all or if we can just
       // call the parallel region function.
       Value *IsPR;
       if (I + 1 < E || !ReachedUnknownParallelRegions.empty()) {
         Instruction *CmpI = ICmpInst::Create(
-            ICmpInst::ICmp, llvm::CmpInst::ICMP_EQ, WorkFnCast, ParallelRegion,
+            ICmpInst::ICmp, llvm::CmpInst::ICMP_EQ, WorkFn, ParallelRegion,
             "worker.check_parallel_region", StateMachineIfCascadeCurrentBB);
         CmpI->setDebugLoc(DLoc);
         IsPR = CmpI;
@@ -3954,7 +4597,7 @@ struct AAKernelInfoFunction : AAKernelInfo {
     if (!ReachedUnknownParallelRegions.empty()) {
       StateMachineIfCascadeCurrentBB->setName(
           "worker_state_machine.parallel_region.fallback.execute");
-      CallInst::Create(ParallelRegionFnTy, WorkFnCast, {ZeroArg, GTid}, "",
+      CallInst::Create(ParallelRegionFnTy, WorkFn, {ZeroArg, GTid}, "",
                        StateMachineIfCascadeCurrentBB)
           ->setDebugLoc(DLoc);
     }
@@ -3977,13 +4620,53 @@ struct AAKernelInfoFunction : AAKernelInfo {
     BranchInst::Create(StateMachineBeginBB, StateMachineDoneBarrierBB)
         ->setDebugLoc(DLoc);
 
-    return ChangeStatus::CHANGED;
+    return true;
   }
 
   /// Fixpoint iteration update function. Will be called every time a dependence
   /// changed its state (and in the beginning).
   ChangeStatus updateImpl(Attributor &A) override {
     KernelInfoState StateBefore = getState();
+
+    // When we leave this function this RAII will make sure the member
+    // KernelEnvC is updated properly depending on the state. That member is
+    // used for simplification of values and needs to be up to date at all
+    // times.
+    struct UpdateKernelEnvCRAII {
+      AAKernelInfoFunction &AA;
+
+      UpdateKernelEnvCRAII(AAKernelInfoFunction &AA) : AA(AA) {}
+
+      ~UpdateKernelEnvCRAII() {
+        if (!AA.KernelEnvC)
+          return;
+
+        ConstantStruct *ExistingKernelEnvC =
+            KernelInfo::getKernelEnvironementFromKernelInitCB(AA.KernelInitCB);
+
+        if (!AA.isValidState()) {
+          AA.KernelEnvC = ExistingKernelEnvC;
+          return;
+        }
+
+        if (!AA.ReachedKnownParallelRegions.isValidState())
+          AA.setUseGenericStateMachineOfKernelEnvironment(
+              KernelInfo::getUseGenericStateMachineFromKernelEnvironment(
+                  ExistingKernelEnvC));
+
+        if (!AA.SPMDCompatibilityTracker.isValidState())
+          AA.setExecModeOfKernelEnvironment(
+              KernelInfo::getExecModeFromKernelEnvironment(ExistingKernelEnvC));
+
+        ConstantInt *MayUseNestedParallelismC =
+            KernelInfo::getMayUseNestedParallelismFromKernelEnvironment(
+                AA.KernelEnvC);
+        ConstantInt *NewMayUseNestedParallelismC = ConstantInt::get(
+            MayUseNestedParallelismC->getIntegerType(), AA.NestedParallelism);
+        AA.setMayUseNestedParallelismOfKernelEnvironment(
+            NewMayUseNestedParallelismC);
+      }
+    } RAII(*this);
 
     // Callback to check a read/write instruction.
     auto CheckRWInst = [&](Instruction &I) {
@@ -3994,23 +4677,22 @@ struct AAKernelInfoFunction : AAKernelInfo {
       if (!I.mayWriteToMemory())
         return true;
       if (auto *SI = dyn_cast<StoreInst>(&I)) {
-        SmallVector<const Value *> Objects;
-        getUnderlyingObjects(SI->getPointerOperand(), Objects);
-        if (llvm::all_of(Objects,
-                         [](const Value *Obj) { return isa<AllocaInst>(Obj); }))
-          return true;
-        // Check for AAHeapToStack moved objects which must not be guarded.
-        auto &HS = A.getAAFor<AAHeapToStack>(
+        const auto *UnderlyingObjsAA = A.getAAFor<AAUnderlyingObjects>(
+            *this, IRPosition::value(*SI->getPointerOperand()),
+            DepClassTy::OPTIONAL);
+        auto *HS = A.getAAFor<AAHeapToStack>(
             *this, IRPosition::function(*I.getFunction()),
             DepClassTy::OPTIONAL);
-        if (llvm::all_of(Objects, [&HS](const Value *Obj) {
-              auto *CB = dyn_cast<CallBase>(Obj);
-              if (!CB)
-                return false;
-              return HS.isAssumedHeapToStack(*CB);
-            })) {
+        if (UnderlyingObjsAA &&
+            UnderlyingObjsAA->forallUnderlyingObjects([&](Value &Obj) {
+              if (AA::isAssumedThreadLocalObject(A, Obj, *this))
+                return true;
+              // Check for AAHeapToStack moved objects which must not be
+              // guarded.
+              auto *CB = dyn_cast<CallBase>(&Obj);
+              return CB && HS && HS->isAssumedHeapToStack(*CB);
+            }))
           return true;
-        }
       }
 
       // Insert instruction that needs guarding.
@@ -4032,28 +4714,30 @@ struct AAKernelInfoFunction : AAKernelInfo {
       updateReachingKernelEntries(A, AllReachingKernelsKnown);
       UsedAssumedInformationFromReachingKernels = !AllReachingKernelsKnown;
 
-      if (!ParallelLevels.isValidState())
-        SPMDCompatibilityTracker.indicatePessimisticFixpoint();
-      else if (!ReachingKernelEntries.isValidState())
-        SPMDCompatibilityTracker.indicatePessimisticFixpoint();
-      else if (!SPMDCompatibilityTracker.empty()) {
-        // Check if all reaching kernels agree on the mode as we can otherwise
-        // not guard instructions. We might not be sure about the mode so we
-        // we cannot fix the internal spmd-zation state either.
-        int SPMD = 0, Generic = 0;
-        for (auto *Kernel : ReachingKernelEntries) {
-          auto &CBAA = A.getAAFor<AAKernelInfo>(
-              *this, IRPosition::function(*Kernel), DepClassTy::OPTIONAL);
-          if (CBAA.SPMDCompatibilityTracker.isValidState() &&
-              CBAA.SPMDCompatibilityTracker.isAssumed())
-            ++SPMD;
-          else
-            ++Generic;
-          if (!CBAA.SPMDCompatibilityTracker.isAtFixpoint())
-            UsedAssumedInformationFromReachingKernels = true;
-        }
-        if (SPMD != 0 && Generic != 0)
+      if (!SPMDCompatibilityTracker.empty()) {
+        if (!ParallelLevels.isValidState())
           SPMDCompatibilityTracker.indicatePessimisticFixpoint();
+        else if (!ReachingKernelEntries.isValidState())
+          SPMDCompatibilityTracker.indicatePessimisticFixpoint();
+        else {
+          // Check if all reaching kernels agree on the mode as we can otherwise
+          // not guard instructions. We might not be sure about the mode so we
+          // we cannot fix the internal spmd-zation state either.
+          int SPMD = 0, Generic = 0;
+          for (auto *Kernel : ReachingKernelEntries) {
+            auto *CBAA = A.getAAFor<AAKernelInfo>(
+                *this, IRPosition::function(*Kernel), DepClassTy::OPTIONAL);
+            if (CBAA && CBAA->SPMDCompatibilityTracker.isValidState() &&
+                CBAA->SPMDCompatibilityTracker.isAssumed())
+              ++SPMD;
+            else
+              ++Generic;
+            if (!CBAA || !CBAA->SPMDCompatibilityTracker.isAtFixpoint())
+              UsedAssumedInformationFromReachingKernels = true;
+          }
+          if (SPMD != 0 && Generic != 0)
+            SPMDCompatibilityTracker.indicatePessimisticFixpoint();
+        }
       }
     }
 
@@ -4062,14 +4746,16 @@ struct AAKernelInfoFunction : AAKernelInfo {
     bool AllSPMDStatesWereFixed = true;
     auto CheckCallInst = [&](Instruction &I) {
       auto &CB = cast<CallBase>(I);
-      auto &CBAA = A.getAAFor<AAKernelInfo>(
+      auto *CBAA = A.getAAFor<AAKernelInfo>(
           *this, IRPosition::callsite_function(CB), DepClassTy::OPTIONAL);
-      getState() ^= CBAA.getState();
-      AllSPMDStatesWereFixed &= CBAA.SPMDCompatibilityTracker.isAtFixpoint();
+      if (!CBAA)
+        return false;
+      getState() ^= CBAA->getState();
+      AllSPMDStatesWereFixed &= CBAA->SPMDCompatibilityTracker.isAtFixpoint();
       AllParallelRegionStatesWereFixed &=
-          CBAA.ReachedKnownParallelRegions.isAtFixpoint();
+          CBAA->ReachedKnownParallelRegions.isAtFixpoint();
       AllParallelRegionStatesWereFixed &=
-          CBAA.ReachedUnknownParallelRegions.isAtFixpoint();
+          CBAA->ReachedUnknownParallelRegions.isAtFixpoint();
       return true;
     };
 
@@ -4088,15 +4774,6 @@ struct AAKernelInfoFunction : AAKernelInfo {
       ReachedKnownParallelRegions.indicateOptimisticFixpoint();
       ReachedUnknownParallelRegions.indicateOptimisticFixpoint();
     }
-
-    // If we are sure there are no parallel regions in the kernel we do not
-    // want SPMD mode.
-    if (IsKernelEntry && ReachedUnknownParallelRegions.isAtFixpoint() &&
-        ReachedKnownParallelRegions.isAtFixpoint() &&
-        ReachedUnknownParallelRegions.isValidState() &&
-        ReachedKnownParallelRegions.isValidState() &&
-        !mayContainParallelRegion())
-      SPMDCompatibilityTracker.indicatePessimisticFixpoint();
 
     // If we haven't used any assumed information for the SPMD state we can fix
     // it.
@@ -4118,10 +4795,10 @@ private:
 
       assert(Caller && "Caller is nullptr");
 
-      auto &CAA = A.getOrCreateAAFor<AAKernelInfo>(
+      auto *CAA = A.getOrCreateAAFor<AAKernelInfo>(
           IRPosition::function(*Caller), this, DepClassTy::REQUIRED);
-      if (CAA.ReachingKernelEntries.isValidState()) {
-        ReachingKernelEntries ^= CAA.ReachingKernelEntries;
+      if (CAA && CAA->ReachingKernelEntries.isValidState()) {
+        ReachingKernelEntries ^= CAA->ReachingKernelEntries;
         return true;
       }
 
@@ -4149,9 +4826,9 @@ private:
 
       assert(Caller && "Caller is nullptr");
 
-      auto &CAA =
+      auto *CAA =
           A.getOrCreateAAFor<AAKernelInfo>(IRPosition::function(*Caller));
-      if (CAA.ParallelLevels.isValidState()) {
+      if (CAA && CAA->ParallelLevels.isValidState()) {
         // Any function that is called by `__kmpc_parallel_51` will not be
         // folded as the parallel level in the function is updated. In order to
         // get it right, all the analysis would depend on the implentation. That
@@ -4162,7 +4839,7 @@ private:
           return true;
         }
 
-        ParallelLevels ^= CAA.ParallelLevels;
+        ParallelLevels ^= CAA->ParallelLevels;
 
         return true;
       }
@@ -4194,15 +4871,13 @@ struct AAKernelInfoCallSite : AAKernelInfo {
     AAKernelInfo::initialize(A);
 
     CallBase &CB = cast<CallBase>(getAssociatedValue());
-    Function *Callee = getAssociatedFunction();
-
-    auto &AssumptionAA = A.getAAFor<AAAssumptionInfo>(
+    auto *AssumptionAA = A.getAAFor<AAAssumptionInfo>(
         *this, IRPosition::callsite_function(CB), DepClassTy::OPTIONAL);
 
     // Check for SPMD-mode assumptions.
-    if (AssumptionAA.hasAssumption("ompx_spmd_amenable")) {
-      SPMDCompatibilityTracker.indicateOptimisticFixpoint();
+    if (AssumptionAA && AssumptionAA->hasAssumption("ompx_spmd_amenable")) {
       indicateOptimisticFixpoint();
+      return;
     }
 
     // First weed out calls we do not care about, that is readonly/readnone
@@ -4217,117 +4892,156 @@ struct AAKernelInfoCallSite : AAKernelInfo {
     // we will handle them explicitly in the switch below. If it is not, we
     // will use an AAKernelInfo object on the callee to gather information and
     // merge that into the current state. The latter happens in the updateImpl.
-    auto &OMPInfoCache = static_cast<OMPInformationCache &>(A.getInfoCache());
-    const auto &It = OMPInfoCache.RuntimeFunctionIDMap.find(Callee);
-    if (It == OMPInfoCache.RuntimeFunctionIDMap.end()) {
-      // Unknown caller or declarations are not analyzable, we give up.
-      if (!Callee || !A.isFunctionIPOAmendable(*Callee)) {
+    auto CheckCallee = [&](Function *Callee, unsigned NumCallees) {
+      auto &OMPInfoCache = static_cast<OMPInformationCache &>(A.getInfoCache());
+      const auto &It = OMPInfoCache.RuntimeFunctionIDMap.find(Callee);
+      if (It == OMPInfoCache.RuntimeFunctionIDMap.end()) {
+        // Unknown caller or declarations are not analyzable, we give up.
+        if (!Callee || !A.isFunctionIPOAmendable(*Callee)) {
 
-        // Unknown callees might contain parallel regions, except if they have
-        // an appropriate assumption attached.
-        if (!(AssumptionAA.hasAssumption("omp_no_openmp") ||
-              AssumptionAA.hasAssumption("omp_no_parallelism")))
-          ReachedUnknownParallelRegions.insert(&CB);
+          // Unknown callees might contain parallel regions, except if they have
+          // an appropriate assumption attached.
+          if (!AssumptionAA ||
+              !(AssumptionAA->hasAssumption("omp_no_openmp") ||
+                AssumptionAA->hasAssumption("omp_no_parallelism")))
+            ReachedUnknownParallelRegions.insert(&CB);
 
-        // If SPMDCompatibilityTracker is not fixed, we need to give up on the
-        // idea we can run something unknown in SPMD-mode.
-        if (!SPMDCompatibilityTracker.isAtFixpoint()) {
+          // If SPMDCompatibilityTracker is not fixed, we need to give up on the
+          // idea we can run something unknown in SPMD-mode.
+          if (!SPMDCompatibilityTracker.isAtFixpoint()) {
+            SPMDCompatibilityTracker.indicatePessimisticFixpoint();
+            SPMDCompatibilityTracker.insert(&CB);
+          }
+
+          // We have updated the state for this unknown call properly, there
+          // won't be any change so we indicate a fixpoint.
+          indicateOptimisticFixpoint();
+        }
+        // If the callee is known and can be used in IPO, we will update the
+        // state based on the callee state in updateImpl.
+        return;
+      }
+      if (NumCallees > 1) {
+        indicatePessimisticFixpoint();
+        return;
+      }
+
+      RuntimeFunction RF = It->getSecond();
+      switch (RF) {
+      // All the functions we know are compatible with SPMD mode.
+      case OMPRTL___kmpc_is_spmd_exec_mode:
+      case OMPRTL___kmpc_distribute_static_fini:
+      case OMPRTL___kmpc_for_static_fini:
+      case OMPRTL___kmpc_global_thread_num:
+      case OMPRTL___kmpc_get_hardware_num_threads_in_block:
+      case OMPRTL___kmpc_get_hardware_num_blocks:
+      case OMPRTL___kmpc_single:
+      case OMPRTL___kmpc_end_single:
+      case OMPRTL___kmpc_master:
+      case OMPRTL___kmpc_end_master:
+      case OMPRTL___kmpc_barrier:
+      case OMPRTL___kmpc_nvptx_parallel_reduce_nowait_v2:
+      case OMPRTL___kmpc_nvptx_teams_reduce_nowait_v2:
+      case OMPRTL___kmpc_error:
+      case OMPRTL___kmpc_flush:
+      case OMPRTL___kmpc_get_hardware_thread_id_in_block:
+      case OMPRTL___kmpc_get_warp_size:
+      case OMPRTL_omp_get_thread_num:
+      case OMPRTL_omp_get_num_threads:
+      case OMPRTL_omp_get_max_threads:
+      case OMPRTL_omp_in_parallel:
+      case OMPRTL_omp_get_dynamic:
+      case OMPRTL_omp_get_cancellation:
+      case OMPRTL_omp_get_nested:
+      case OMPRTL_omp_get_schedule:
+      case OMPRTL_omp_get_thread_limit:
+      case OMPRTL_omp_get_supported_active_levels:
+      case OMPRTL_omp_get_max_active_levels:
+      case OMPRTL_omp_get_level:
+      case OMPRTL_omp_get_ancestor_thread_num:
+      case OMPRTL_omp_get_team_size:
+      case OMPRTL_omp_get_active_level:
+      case OMPRTL_omp_in_final:
+      case OMPRTL_omp_get_proc_bind:
+      case OMPRTL_omp_get_num_places:
+      case OMPRTL_omp_get_num_procs:
+      case OMPRTL_omp_get_place_proc_ids:
+      case OMPRTL_omp_get_place_num:
+      case OMPRTL_omp_get_partition_num_places:
+      case OMPRTL_omp_get_partition_place_nums:
+      case OMPRTL_omp_get_wtime:
+        break;
+      case OMPRTL___kmpc_distribute_static_init_4:
+      case OMPRTL___kmpc_distribute_static_init_4u:
+      case OMPRTL___kmpc_distribute_static_init_8:
+      case OMPRTL___kmpc_distribute_static_init_8u:
+      case OMPRTL___kmpc_for_static_init_4:
+      case OMPRTL___kmpc_for_static_init_4u:
+      case OMPRTL___kmpc_for_static_init_8:
+      case OMPRTL___kmpc_for_static_init_8u: {
+        // Check the schedule and allow static schedule in SPMD mode.
+        unsigned ScheduleArgOpNo = 2;
+        auto *ScheduleTypeCI =
+            dyn_cast<ConstantInt>(CB.getArgOperand(ScheduleArgOpNo));
+        unsigned ScheduleTypeVal =
+            ScheduleTypeCI ? ScheduleTypeCI->getZExtValue() : 0;
+        switch (OMPScheduleType(ScheduleTypeVal)) {
+        case OMPScheduleType::UnorderedStatic:
+        case OMPScheduleType::UnorderedStaticChunked:
+        case OMPScheduleType::OrderedDistribute:
+        case OMPScheduleType::OrderedDistributeChunked:
+          break;
+        default:
           SPMDCompatibilityTracker.indicatePessimisticFixpoint();
           SPMDCompatibilityTracker.insert(&CB);
-        }
-
-        // We have updated the state for this unknown call properly, there won't
-        // be any change so we indicate a fixpoint.
-        indicateOptimisticFixpoint();
-      }
-      // If the callee is known and can be used in IPO, we will update the state
-      // based on the callee state in updateImpl.
-      return;
-    }
-
-    const unsigned int WrapperFunctionArgNo = 6;
-    RuntimeFunction RF = It->getSecond();
-    switch (RF) {
-    // All the functions we know are compatible with SPMD mode.
-    case OMPRTL___kmpc_is_spmd_exec_mode:
-    case OMPRTL___kmpc_distribute_static_fini:
-    case OMPRTL___kmpc_for_static_fini:
-    case OMPRTL___kmpc_global_thread_num:
-    case OMPRTL___kmpc_get_hardware_num_threads_in_block:
-    case OMPRTL___kmpc_get_hardware_num_blocks:
-    case OMPRTL___kmpc_single:
-    case OMPRTL___kmpc_end_single:
-    case OMPRTL___kmpc_master:
-    case OMPRTL___kmpc_end_master:
-    case OMPRTL___kmpc_barrier:
-    case OMPRTL___kmpc_nvptx_parallel_reduce_nowait_v2:
-    case OMPRTL___kmpc_nvptx_teams_reduce_nowait_v2:
-    case OMPRTL___kmpc_nvptx_end_reduce_nowait:
-      break;
-    case OMPRTL___kmpc_distribute_static_init_4:
-    case OMPRTL___kmpc_distribute_static_init_4u:
-    case OMPRTL___kmpc_distribute_static_init_8:
-    case OMPRTL___kmpc_distribute_static_init_8u:
-    case OMPRTL___kmpc_for_static_init_4:
-    case OMPRTL___kmpc_for_static_init_4u:
-    case OMPRTL___kmpc_for_static_init_8:
-    case OMPRTL___kmpc_for_static_init_8u: {
-      // Check the schedule and allow static schedule in SPMD mode.
-      unsigned ScheduleArgOpNo = 2;
-      auto *ScheduleTypeCI =
-          dyn_cast<ConstantInt>(CB.getArgOperand(ScheduleArgOpNo));
-      unsigned ScheduleTypeVal =
-          ScheduleTypeCI ? ScheduleTypeCI->getZExtValue() : 0;
-      switch (OMPScheduleType(ScheduleTypeVal)) {
-      case OMPScheduleType::UnorderedStatic:
-      case OMPScheduleType::UnorderedStaticChunked:
-      case OMPScheduleType::OrderedDistribute:
-      case OMPScheduleType::OrderedDistributeChunked:
+          break;
+        };
+      } break;
+      case OMPRTL___kmpc_target_init:
+        KernelInitCB = &CB;
         break;
+      case OMPRTL___kmpc_target_deinit:
+        KernelDeinitCB = &CB;
+        break;
+      case OMPRTL___kmpc_parallel_51:
+        if (!handleParallel51(A, CB))
+          indicatePessimisticFixpoint();
+        return;
+      case OMPRTL___kmpc_omp_task:
+        // We do not look into tasks right now, just give up.
+        SPMDCompatibilityTracker.indicatePessimisticFixpoint();
+        SPMDCompatibilityTracker.insert(&CB);
+        ReachedUnknownParallelRegions.insert(&CB);
+        break;
+      case OMPRTL___kmpc_alloc_shared:
+      case OMPRTL___kmpc_free_shared:
+        // Return without setting a fixpoint, to be resolved in updateImpl.
+        return;
       default:
+        // Unknown OpenMP runtime calls cannot be executed in SPMD-mode,
+        // generally. However, they do not hide parallel regions.
         SPMDCompatibilityTracker.indicatePessimisticFixpoint();
         SPMDCompatibilityTracker.insert(&CB);
         break;
-      };
-    } break;
-    case OMPRTL___kmpc_target_init:
-      KernelInitCB = &CB;
-      break;
-    case OMPRTL___kmpc_target_deinit:
-      KernelDeinitCB = &CB;
-      break;
-    case OMPRTL___kmpc_parallel_51:
-      if (auto *ParallelRegion = dyn_cast<Function>(
-              CB.getArgOperand(WrapperFunctionArgNo)->stripPointerCasts())) {
-        ReachedKnownParallelRegions.insert(ParallelRegion);
-        break;
       }
-      // The condition above should usually get the parallel region function
-      // pointer and record it. In the off chance it doesn't we assume the
-      // worst.
-      ReachedUnknownParallelRegions.insert(&CB);
-      break;
-    case OMPRTL___kmpc_omp_task:
-      // We do not look into tasks right now, just give up.
-      SPMDCompatibilityTracker.indicatePessimisticFixpoint();
-      SPMDCompatibilityTracker.insert(&CB);
-      ReachedUnknownParallelRegions.insert(&CB);
-      break;
-    case OMPRTL___kmpc_alloc_shared:
-    case OMPRTL___kmpc_free_shared:
-      // Return without setting a fixpoint, to be resolved in updateImpl.
+      // All other OpenMP runtime calls will not reach parallel regions so they
+      // can be safely ignored for now. Since it is a known OpenMP runtime call
+      // we have now modeled all effects and there is no need for any update.
+      indicateOptimisticFixpoint();
+    };
+
+    const auto *AACE =
+        A.getAAFor<AACallEdges>(*this, getIRPosition(), DepClassTy::OPTIONAL);
+    if (!AACE || !AACE->getState().isValidState() || AACE->hasUnknownCallee()) {
+      CheckCallee(getAssociatedFunction(), 1);
       return;
-    default:
-      // Unknown OpenMP runtime calls cannot be executed in SPMD-mode,
-      // generally. However, they do not hide parallel regions.
-      SPMDCompatibilityTracker.indicatePessimisticFixpoint();
-      SPMDCompatibilityTracker.insert(&CB);
-      break;
     }
-    // All other OpenMP runtime calls will not reach parallel regions so they
-    // can be safely ignored for now. Since it is a known OpenMP runtime call we
-    // have now modeled all effects and there is no need for any update.
-    indicateOptimisticFixpoint();
+    const auto &OptimisticEdges = AACE->getOptimisticEdges();
+    for (auto *Callee : OptimisticEdges) {
+      CheckCallee(Callee, OptimisticEdges.size());
+      if (isAtFixpoint())
+        break;
+    }
   }
 
   ChangeStatus updateImpl(Attributor &A) override {
@@ -4335,57 +5049,114 @@ struct AAKernelInfoCallSite : AAKernelInfo {
     //       call site specific liveness information and then it makes
     //       sense to specialize attributes for call sites arguments instead of
     //       redirecting requests to the callee argument.
-    Function *F = getAssociatedFunction();
-
     auto &OMPInfoCache = static_cast<OMPInformationCache &>(A.getInfoCache());
-    const auto &It = OMPInfoCache.RuntimeFunctionIDMap.find(F);
-
-    // If F is not a runtime function, propagate the AAKernelInfo of the callee.
-    if (It == OMPInfoCache.RuntimeFunctionIDMap.end()) {
-      const IRPosition &FnPos = IRPosition::function(*F);
-      auto &FnAA = A.getAAFor<AAKernelInfo>(*this, FnPos, DepClassTy::REQUIRED);
-      if (getState() == FnAA.getState())
-        return ChangeStatus::UNCHANGED;
-      getState() = FnAA.getState();
-      return ChangeStatus::CHANGED;
-    }
-
-    // F is a runtime function that allocates or frees memory, check
-    // AAHeapToStack and AAHeapToShared.
     KernelInfoState StateBefore = getState();
-    assert((It->getSecond() == OMPRTL___kmpc_alloc_shared ||
-            It->getSecond() == OMPRTL___kmpc_free_shared) &&
-           "Expected a __kmpc_alloc_shared or __kmpc_free_shared runtime call");
 
-    CallBase &CB = cast<CallBase>(getAssociatedValue());
+    auto CheckCallee = [&](Function *F, int NumCallees) {
+      const auto &It = OMPInfoCache.RuntimeFunctionIDMap.find(F);
 
-    auto &HeapToStackAA = A.getAAFor<AAHeapToStack>(
-        *this, IRPosition::function(*CB.getCaller()), DepClassTy::OPTIONAL);
-    auto &HeapToSharedAA = A.getAAFor<AAHeapToShared>(
-        *this, IRPosition::function(*CB.getCaller()), DepClassTy::OPTIONAL);
+      // If F is not a runtime function, propagate the AAKernelInfo of the
+      // callee.
+      if (It == OMPInfoCache.RuntimeFunctionIDMap.end()) {
+        const IRPosition &FnPos = IRPosition::function(*F);
+        auto *FnAA =
+            A.getAAFor<AAKernelInfo>(*this, FnPos, DepClassTy::REQUIRED);
+        if (!FnAA)
+          return indicatePessimisticFixpoint();
+        if (getState() == FnAA->getState())
+          return ChangeStatus::UNCHANGED;
+        getState() = FnAA->getState();
+        return ChangeStatus::CHANGED;
+      }
+      if (NumCallees > 1)
+        return indicatePessimisticFixpoint();
 
-    RuntimeFunction RF = It->getSecond();
+      CallBase &CB = cast<CallBase>(getAssociatedValue());
+      if (It->getSecond() == OMPRTL___kmpc_parallel_51) {
+        if (!handleParallel51(A, CB))
+          return indicatePessimisticFixpoint();
+        return StateBefore == getState() ? ChangeStatus::UNCHANGED
+                                         : ChangeStatus::CHANGED;
+      }
 
-    switch (RF) {
-    // If neither HeapToStack nor HeapToShared assume the call is removed,
-    // assume SPMD incompatibility.
-    case OMPRTL___kmpc_alloc_shared:
-      if (!HeapToStackAA.isAssumedHeapToStack(CB) &&
-          !HeapToSharedAA.isAssumedHeapToShared(CB))
+      // F is a runtime function that allocates or frees memory, check
+      // AAHeapToStack and AAHeapToShared.
+      assert(
+          (It->getSecond() == OMPRTL___kmpc_alloc_shared ||
+           It->getSecond() == OMPRTL___kmpc_free_shared) &&
+          "Expected a __kmpc_alloc_shared or __kmpc_free_shared runtime call");
+
+      auto *HeapToStackAA = A.getAAFor<AAHeapToStack>(
+          *this, IRPosition::function(*CB.getCaller()), DepClassTy::OPTIONAL);
+      auto *HeapToSharedAA = A.getAAFor<AAHeapToShared>(
+          *this, IRPosition::function(*CB.getCaller()), DepClassTy::OPTIONAL);
+
+      RuntimeFunction RF = It->getSecond();
+
+      switch (RF) {
+      // If neither HeapToStack nor HeapToShared assume the call is removed,
+      // assume SPMD incompatibility.
+      case OMPRTL___kmpc_alloc_shared:
+        if ((!HeapToStackAA || !HeapToStackAA->isAssumedHeapToStack(CB)) &&
+            (!HeapToSharedAA || !HeapToSharedAA->isAssumedHeapToShared(CB)))
+          SPMDCompatibilityTracker.insert(&CB);
+        break;
+      case OMPRTL___kmpc_free_shared:
+        if ((!HeapToStackAA ||
+             !HeapToStackAA->isAssumedHeapToStackRemovedFree(CB)) &&
+            (!HeapToSharedAA ||
+             !HeapToSharedAA->isAssumedHeapToSharedRemovedFree(CB)))
+          SPMDCompatibilityTracker.insert(&CB);
+        break;
+      default:
+        SPMDCompatibilityTracker.indicatePessimisticFixpoint();
         SPMDCompatibilityTracker.insert(&CB);
-      break;
-    case OMPRTL___kmpc_free_shared:
-      if (!HeapToStackAA.isAssumedHeapToStackRemovedFree(CB) &&
-          !HeapToSharedAA.isAssumedHeapToSharedRemovedFree(CB))
-        SPMDCompatibilityTracker.insert(&CB);
-      break;
-    default:
-      SPMDCompatibilityTracker.indicatePessimisticFixpoint();
-      SPMDCompatibilityTracker.insert(&CB);
+      }
+      return ChangeStatus::CHANGED;
+    };
+
+    const auto *AACE =
+        A.getAAFor<AACallEdges>(*this, getIRPosition(), DepClassTy::OPTIONAL);
+    if (!AACE || !AACE->getState().isValidState() || AACE->hasUnknownCallee()) {
+      if (Function *F = getAssociatedFunction())
+        CheckCallee(F, /*NumCallees=*/1);
+    } else {
+      const auto &OptimisticEdges = AACE->getOptimisticEdges();
+      for (auto *Callee : OptimisticEdges) {
+        CheckCallee(Callee, OptimisticEdges.size());
+        if (isAtFixpoint())
+          break;
+      }
     }
 
     return StateBefore == getState() ? ChangeStatus::UNCHANGED
                                      : ChangeStatus::CHANGED;
+  }
+
+  /// Deal with a __kmpc_parallel_51 call (\p CB). Returns true if the call was
+  /// handled, if a problem occurred, false is returned.
+  bool handleParallel51(Attributor &A, CallBase &CB) {
+    const unsigned int NonWrapperFunctionArgNo = 5;
+    const unsigned int WrapperFunctionArgNo = 6;
+    auto ParallelRegionOpArgNo = SPMDCompatibilityTracker.isAssumed()
+                                     ? NonWrapperFunctionArgNo
+                                     : WrapperFunctionArgNo;
+
+    auto *ParallelRegion = dyn_cast<Function>(
+        CB.getArgOperand(ParallelRegionOpArgNo)->stripPointerCasts());
+    if (!ParallelRegion)
+      return false;
+
+    ReachedKnownParallelRegions.insert(&CB);
+    /// Check nested parallelism
+    auto *FnAA = A.getAAFor<AAKernelInfo>(
+        *this, IRPosition::function(*ParallelRegion), DepClassTy::OPTIONAL);
+    NestedParallelism |= !FnAA || !FnAA->getState().isValidState() ||
+                         !FnAA->ReachedKnownParallelRegions.empty() ||
+                         !FnAA->ReachedKnownParallelRegions.isValidState() ||
+                         !FnAA->ReachedUnknownParallelRegions.isValidState() ||
+                         !FnAA->ReachedUnknownParallelRegions.empty();
+    return true;
   }
 };
 
@@ -4422,7 +5193,7 @@ struct AAFoldRuntimeCallCallSiteReturned : AAFoldRuntimeCall {
       : AAFoldRuntimeCall(IRP, A) {}
 
   /// See AbstractAttribute::getAsStr()
-  const std::string getAsStr() const override {
+  const std::string getAsStr(Attributor *) const override {
     if (!isValidState())
       return "<invalid>";
 
@@ -4431,10 +5202,10 @@ struct AAFoldRuntimeCallCallSiteReturned : AAFoldRuntimeCall {
     if (!SimplifiedValue)
       return Str + std::string("none");
 
-    if (!SimplifiedValue.value())
+    if (!*SimplifiedValue)
       return Str + std::string("nullptr");
 
-    if (ConstantInt *CI = dyn_cast<ConstantInt>(SimplifiedValue.value()))
+    if (ConstantInt *CI = dyn_cast<ConstantInt>(*SimplifiedValue))
       return Str + std::to_string(CI->getSExtValue());
 
     return Str + std::string("unknown");
@@ -4457,9 +5228,9 @@ struct AAFoldRuntimeCallCallSiteReturned : AAFoldRuntimeCall {
     A.registerSimplificationCallback(
         IRPosition::callsite_returned(CB),
         [&](const IRPosition &IRP, const AbstractAttribute *AA,
-            bool &UsedAssumedInformation) -> Optional<Value *> {
+            bool &UsedAssumedInformation) -> std::optional<Value *> {
           assert((isValidState() ||
-                  (SimplifiedValue && SimplifiedValue.value() == nullptr)) &&
+                  (SimplifiedValue && *SimplifiedValue == nullptr)) &&
                  "Unexpected invalid state!");
 
           if (!isAtFixpoint()) {
@@ -4476,9 +5247,6 @@ struct AAFoldRuntimeCallCallSiteReturned : AAFoldRuntimeCall {
     switch (RFKind) {
     case OMPRTL___kmpc_is_spmd_exec_mode:
       Changed |= foldIsSPMDExecMode(A);
-      break;
-    case OMPRTL___kmpc_is_generic_main_thread_id:
-      Changed |= foldIsGenericMainThread(A);
       break;
     case OMPRTL___kmpc_parallel_level:
       Changed |= foldParallelLevel(A);
@@ -4534,32 +5302,33 @@ struct AAFoldRuntimeCallCallSiteReturned : AAFoldRuntimeCall {
 private:
   /// Fold __kmpc_is_spmd_exec_mode into a constant if possible.
   ChangeStatus foldIsSPMDExecMode(Attributor &A) {
-    Optional<Value *> SimplifiedValueBefore = SimplifiedValue;
+    std::optional<Value *> SimplifiedValueBefore = SimplifiedValue;
 
     unsigned AssumedSPMDCount = 0, KnownSPMDCount = 0;
     unsigned AssumedNonSPMDCount = 0, KnownNonSPMDCount = 0;
-    auto &CallerKernelInfoAA = A.getAAFor<AAKernelInfo>(
+    auto *CallerKernelInfoAA = A.getAAFor<AAKernelInfo>(
         *this, IRPosition::function(*getAnchorScope()), DepClassTy::REQUIRED);
 
-    if (!CallerKernelInfoAA.ReachingKernelEntries.isValidState())
+    if (!CallerKernelInfoAA ||
+        !CallerKernelInfoAA->ReachingKernelEntries.isValidState())
       return indicatePessimisticFixpoint();
 
-    for (Kernel K : CallerKernelInfoAA.ReachingKernelEntries) {
-      auto &AA = A.getAAFor<AAKernelInfo>(*this, IRPosition::function(*K),
+    for (Kernel K : CallerKernelInfoAA->ReachingKernelEntries) {
+      auto *AA = A.getAAFor<AAKernelInfo>(*this, IRPosition::function(*K),
                                           DepClassTy::REQUIRED);
 
-      if (!AA.isValidState()) {
+      if (!AA || !AA->isValidState()) {
         SimplifiedValue = nullptr;
         return indicatePessimisticFixpoint();
       }
 
-      if (AA.SPMDCompatibilityTracker.isAssumed()) {
-        if (AA.SPMDCompatibilityTracker.isAtFixpoint())
+      if (AA->SPMDCompatibilityTracker.isAssumed()) {
+        if (AA->SPMDCompatibilityTracker.isAtFixpoint())
           ++KnownSPMDCount;
         else
           ++AssumedSPMDCount;
       } else {
-        if (AA.SPMDCompatibilityTracker.isAtFixpoint())
+        if (AA->SPMDCompatibilityTracker.isAtFixpoint())
           ++KnownNonSPMDCount;
         else
           ++AssumedNonSPMDCount;
@@ -4594,42 +5363,21 @@ private:
                                                     : ChangeStatus::CHANGED;
   }
 
-  /// Fold __kmpc_is_generic_main_thread_id into a constant if possible.
-  ChangeStatus foldIsGenericMainThread(Attributor &A) {
-    Optional<Value *> SimplifiedValueBefore = SimplifiedValue;
-
-    CallBase &CB = cast<CallBase>(getAssociatedValue());
-    Function *F = CB.getFunction();
-    const auto &ExecutionDomainAA = A.getAAFor<AAExecutionDomain>(
-        *this, IRPosition::function(*F), DepClassTy::REQUIRED);
-
-    if (!ExecutionDomainAA.isValidState())
-      return indicatePessimisticFixpoint();
-
-    auto &Ctx = getAnchorValue().getContext();
-    if (ExecutionDomainAA.isExecutedByInitialThreadOnly(CB))
-      SimplifiedValue = ConstantInt::get(Type::getInt8Ty(Ctx), true);
-    else
-      return indicatePessimisticFixpoint();
-
-    return SimplifiedValue == SimplifiedValueBefore ? ChangeStatus::UNCHANGED
-                                                    : ChangeStatus::CHANGED;
-  }
-
   /// Fold __kmpc_parallel_level into a constant if possible.
   ChangeStatus foldParallelLevel(Attributor &A) {
-    Optional<Value *> SimplifiedValueBefore = SimplifiedValue;
+    std::optional<Value *> SimplifiedValueBefore = SimplifiedValue;
 
-    auto &CallerKernelInfoAA = A.getAAFor<AAKernelInfo>(
+    auto *CallerKernelInfoAA = A.getAAFor<AAKernelInfo>(
         *this, IRPosition::function(*getAnchorScope()), DepClassTy::REQUIRED);
 
-    if (!CallerKernelInfoAA.ParallelLevels.isValidState())
+    if (!CallerKernelInfoAA ||
+        !CallerKernelInfoAA->ParallelLevels.isValidState())
       return indicatePessimisticFixpoint();
 
-    if (!CallerKernelInfoAA.ReachingKernelEntries.isValidState())
+    if (!CallerKernelInfoAA->ReachingKernelEntries.isValidState())
       return indicatePessimisticFixpoint();
 
-    if (CallerKernelInfoAA.ReachingKernelEntries.empty()) {
+    if (CallerKernelInfoAA->ReachingKernelEntries.empty()) {
       assert(!SimplifiedValue &&
              "SimplifiedValue should keep none at this point");
       return ChangeStatus::UNCHANGED;
@@ -4637,19 +5385,19 @@ private:
 
     unsigned AssumedSPMDCount = 0, KnownSPMDCount = 0;
     unsigned AssumedNonSPMDCount = 0, KnownNonSPMDCount = 0;
-    for (Kernel K : CallerKernelInfoAA.ReachingKernelEntries) {
-      auto &AA = A.getAAFor<AAKernelInfo>(*this, IRPosition::function(*K),
+    for (Kernel K : CallerKernelInfoAA->ReachingKernelEntries) {
+      auto *AA = A.getAAFor<AAKernelInfo>(*this, IRPosition::function(*K),
                                           DepClassTy::REQUIRED);
-      if (!AA.SPMDCompatibilityTracker.isValidState())
+      if (!AA || !AA->SPMDCompatibilityTracker.isValidState())
         return indicatePessimisticFixpoint();
 
-      if (AA.SPMDCompatibilityTracker.isAssumed()) {
-        if (AA.SPMDCompatibilityTracker.isAtFixpoint())
+      if (AA->SPMDCompatibilityTracker.isAssumed()) {
+        if (AA->SPMDCompatibilityTracker.isAtFixpoint())
           ++KnownSPMDCount;
         else
           ++AssumedSPMDCount;
       } else {
-        if (AA.SPMDCompatibilityTracker.isAtFixpoint())
+        if (AA->SPMDCompatibilityTracker.isAtFixpoint())
           ++KnownNonSPMDCount;
         else
           ++AssumedNonSPMDCount;
@@ -4680,20 +5428,18 @@ private:
   ChangeStatus foldKernelFnAttribute(Attributor &A, llvm::StringRef Attr) {
     // Specialize only if all the calls agree with the attribute constant value
     int32_t CurrentAttrValue = -1;
-    Optional<Value *> SimplifiedValueBefore = SimplifiedValue;
+    std::optional<Value *> SimplifiedValueBefore = SimplifiedValue;
 
-    auto &CallerKernelInfoAA = A.getAAFor<AAKernelInfo>(
+    auto *CallerKernelInfoAA = A.getAAFor<AAKernelInfo>(
         *this, IRPosition::function(*getAnchorScope()), DepClassTy::REQUIRED);
 
-    if (!CallerKernelInfoAA.ReachingKernelEntries.isValidState())
+    if (!CallerKernelInfoAA ||
+        !CallerKernelInfoAA->ReachingKernelEntries.isValidState())
       return indicatePessimisticFixpoint();
 
     // Iterate over the kernels that reach this function
-    for (Kernel K : CallerKernelInfoAA.ReachingKernelEntries) {
-      int32_t NextAttrVal = -1;
-      if (K->hasFnAttribute(Attr))
-        NextAttrVal =
-            std::stoi(K->getFnAttribute(Attr).getValueAsString().str());
+    for (Kernel K : CallerKernelInfoAA->ReachingKernelEntries) {
+      int32_t NextAttrVal = K->getFnAttributeAsParsedInteger(Attr, -1);
 
       if (NextAttrVal == -1 ||
           (CurrentAttrValue != -1 && CurrentAttrValue != NextAttrVal))
@@ -4713,7 +5459,7 @@ private:
   /// An optional value the associated value is assumed to fold to. That is, we
   /// assume the associated value (which is a call) can be replaced by this
   /// simplified value.
-  Optional<Value *> SimplifiedValue;
+  std::optional<Value *> SimplifiedValue;
 
   /// The runtime function kind of the callee of the associated call site.
   RuntimeFunction RFKind;
@@ -4756,7 +5502,6 @@ void OpenMPOpt::registerAAs(bool IsModulePass) {
         OMPInfoCache.RFIs[OMPRTL___kmpc_target_init];
     InitRFI.foreachUse(SCC, CreateKernelInfoCB);
 
-    registerFoldRuntimeCall(OMPRTL___kmpc_is_generic_main_thread_id);
     registerFoldRuntimeCall(OMPRTL___kmpc_is_spmd_exec_mode);
     registerFoldRuntimeCall(OMPRTL___kmpc_parallel_level);
     registerFoldRuntimeCall(OMPRTL___kmpc_get_hardware_num_threads_in_block);
@@ -4764,32 +5509,27 @@ void OpenMPOpt::registerAAs(bool IsModulePass) {
   }
 
   // Create CallSite AA for all Getters.
-  for (int Idx = 0; Idx < OMPInfoCache.ICVs.size() - 1; ++Idx) {
-    auto ICVInfo = OMPInfoCache.ICVs[static_cast<InternalControlVar>(Idx)];
+  if (DeduceICVValues) {
+    for (int Idx = 0; Idx < OMPInfoCache.ICVs.size() - 1; ++Idx) {
+      auto ICVInfo = OMPInfoCache.ICVs[static_cast<InternalControlVar>(Idx)];
 
-    auto &GetterRFI = OMPInfoCache.RFIs[ICVInfo.Getter];
+      auto &GetterRFI = OMPInfoCache.RFIs[ICVInfo.Getter];
 
-    auto CreateAA = [&](Use &U, Function &Caller) {
-      CallInst *CI = OpenMPOpt::getCallIfRegularCall(U, &GetterRFI);
-      if (!CI)
+      auto CreateAA = [&](Use &U, Function &Caller) {
+        CallInst *CI = OpenMPOpt::getCallIfRegularCall(U, &GetterRFI);
+        if (!CI)
+          return false;
+
+        auto &CB = cast<CallBase>(*CI);
+
+        IRPosition CBPos = IRPosition::callsite_function(CB);
+        A.getOrCreateAAFor<AAICVTracker>(CBPos);
         return false;
+      };
 
-      auto &CB = cast<CallBase>(*CI);
-
-      IRPosition CBPos = IRPosition::callsite_function(CB);
-      A.getOrCreateAAFor<AAICVTracker>(CBPos);
-      return false;
-    };
-
-    GetterRFI.foreachUse(SCC, CreateAA);
+      GetterRFI.foreachUse(SCC, CreateAA);
+    }
   }
-  auto &GlobalizationRFI = OMPInfoCache.RFIs[OMPRTL___kmpc_alloc_shared];
-  auto CreateAA = [&](Use &U, Function &F) {
-    A.getOrCreateAAFor<AAHeapToShared>(IRPosition::function(F));
-    return false;
-  };
-  if (!DisableOpenMPOptDeglobalization)
-    GlobalizationRFI.foreachUse(SCC, CreateAA);
 
   // Create an ExecutionDomain AA for every function and a HeapToStack AA for
   // every function if there is a device kernel.
@@ -4800,17 +5540,55 @@ void OpenMPOpt::registerAAs(bool IsModulePass) {
     if (F->isDeclaration())
       continue;
 
-    A.getOrCreateAAFor<AAExecutionDomain>(IRPosition::function(*F));
-    if (!DisableOpenMPOptDeglobalization)
-      A.getOrCreateAAFor<AAHeapToStack>(IRPosition::function(*F));
+    // We look at internal functions only on-demand but if any use is not a
+    // direct call or outside the current set of analyzed functions, we have
+    // to do it eagerly.
+    if (F->hasLocalLinkage()) {
+      if (llvm::all_of(F->uses(), [this](const Use &U) {
+            const auto *CB = dyn_cast<CallBase>(U.getUser());
+            return CB && CB->isCallee(&U) &&
+                   A.isRunOn(const_cast<Function *>(CB->getCaller()));
+          }))
+        continue;
+    }
+    registerAAsForFunction(A, *F);
+  }
+}
 
-    for (auto &I : instructions(*F)) {
-      if (auto *LI = dyn_cast<LoadInst>(&I)) {
-        bool UsedAssumedInformation = false;
-        A.getAssumedSimplified(IRPosition::value(*LI), /* AA */ nullptr,
-                               UsedAssumedInformation, AA::Interprocedural);
-      } else if (auto *SI = dyn_cast<StoreInst>(&I)) {
-        A.getOrCreateAAFor<AAIsDead>(IRPosition::value(*SI));
+void OpenMPOpt::registerAAsForFunction(Attributor &A, const Function &F) {
+  if (!DisableOpenMPOptDeglobalization)
+    A.getOrCreateAAFor<AAHeapToShared>(IRPosition::function(F));
+  A.getOrCreateAAFor<AAExecutionDomain>(IRPosition::function(F));
+  if (!DisableOpenMPOptDeglobalization)
+    A.getOrCreateAAFor<AAHeapToStack>(IRPosition::function(F));
+  if (F.hasFnAttribute(Attribute::Convergent))
+    A.getOrCreateAAFor<AANonConvergent>(IRPosition::function(F));
+
+  for (auto &I : instructions(F)) {
+    if (auto *LI = dyn_cast<LoadInst>(&I)) {
+      bool UsedAssumedInformation = false;
+      A.getAssumedSimplified(IRPosition::value(*LI), /* AA */ nullptr,
+                             UsedAssumedInformation, AA::Interprocedural);
+      continue;
+    }
+    if (auto *CI = dyn_cast<CallBase>(&I)) {
+      if (CI->isIndirectCall())
+        A.getOrCreateAAFor<AAIndirectCallInfo>(
+            IRPosition::callsite_function(*CI));
+    }
+    if (auto *SI = dyn_cast<StoreInst>(&I)) {
+      A.getOrCreateAAFor<AAIsDead>(IRPosition::value(*SI));
+      continue;
+    }
+    if (auto *FI = dyn_cast<FenceInst>(&I)) {
+      A.getOrCreateAAFor<AAIsDead>(IRPosition::value(*FI));
+      continue;
+    }
+    if (auto *II = dyn_cast<IntrinsicInst>(&I)) {
+      if (II->getIntrinsicID() == Intrinsic::assume) {
+        A.getOrCreateAAFor<AAPotentialValues>(
+            IRPosition::value(*II->getArgOperand(0)));
+        continue;
       }
     }
   }
@@ -4963,6 +5741,8 @@ PreservedAnalyses OpenMPOptPass::run(Module &M, ModuleAnalysisManager &AM) {
     });
   };
 
+  bool Changed = false;
+
   // Create internal copies of each function if this is a kernel Module. This
   // allows iterprocedural passes to see every call edge.
   DenseMap<Function *, Function *> InternalizedMap;
@@ -4978,17 +5758,21 @@ PreservedAnalyses OpenMPOptPass::run(Module &M, ModuleAnalysisManager &AM) {
         }
       }
 
-    Attributor::internalizeFunctions(InternalizeFns, InternalizedMap);
+    Changed |=
+        Attributor::internalizeFunctions(InternalizeFns, InternalizedMap);
   }
 
   // Look at every function in the Module unless it was internalized.
+  SetVector<Function *> Functions;
   SmallVector<Function *, 16> SCC;
   for (Function &F : M)
-    if (!F.isDeclaration() && !InternalizedMap.lookup(&F))
+    if (!F.isDeclaration() && !InternalizedMap.lookup(&F)) {
       SCC.push_back(&F);
+      Functions.insert(&F);
+    }
 
   if (SCC.empty())
-    return PreservedAnalyses::all();
+    return Changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
 
   AnalysisGetter AG(FAM);
 
@@ -4999,23 +5783,29 @@ PreservedAnalyses OpenMPOptPass::run(Module &M, ModuleAnalysisManager &AM) {
   BumpPtrAllocator Allocator;
   CallGraphUpdater CGUpdater;
 
-  SetVector<Function *> Functions(SCC.begin(), SCC.end());
-  OMPInformationCache InfoCache(M, AG, Allocator, /*CGSCC*/ Functions, Kernels);
+  bool PostLink = LTOPhase == ThinOrFullLTOPhase::FullLTOPostLink ||
+                  LTOPhase == ThinOrFullLTOPhase::ThinLTOPreLink;
+  OMPInformationCache InfoCache(M, AG, Allocator, /*CGSCC*/ nullptr, PostLink);
 
   unsigned MaxFixpointIterations =
       (isOpenMPDevice(M)) ? SetFixpointIterations : 32;
 
   AttributorConfig AC(CGUpdater);
   AC.DefaultInitializeLiveInternals = false;
+  AC.IsModulePass = true;
   AC.RewriteSignatures = false;
   AC.MaxFixpointIterations = MaxFixpointIterations;
   AC.OREGetter = OREGetter;
   AC.PassName = DEBUG_TYPE;
+  AC.InitializationCallback = OpenMPOpt::registerAAsForFunction;
+  AC.IPOAmendableCB = [](const Function &F) {
+    return F.hasFnAttribute("kernel");
+  };
 
   Attributor A(Functions, InfoCache, AC);
 
   OpenMPOpt OMPOpt(SCC, CGUpdater, OREGetter, InfoCache, A);
-  bool Changed = OMPOpt.run(true);
+  Changed |= OMPOpt.run(true);
 
   // Optionally inline device functions for potentially better performance.
   if (AlwaysInlineDeviceFunctions && isOpenMPDevice(M))
@@ -5072,9 +5862,11 @@ PreservedAnalyses OpenMPOptCGSCCPass::run(LazyCallGraph::SCC &C,
   CallGraphUpdater CGUpdater;
   CGUpdater.initialize(CG, C, AM, UR);
 
+  bool PostLink = LTOPhase == ThinOrFullLTOPhase::FullLTOPostLink ||
+                  LTOPhase == ThinOrFullLTOPhase::ThinLTOPreLink;
   SetVector<Function *> Functions(SCC.begin(), SCC.end());
   OMPInformationCache InfoCache(*(Functions.back()->getParent()), AG, Allocator,
-                                /*CGSCC*/ Functions, Kernels);
+                                /*CGSCC*/ &Functions, PostLink);
 
   unsigned MaxFixpointIterations =
       (isOpenMPDevice(M)) ? SetFixpointIterations : 32;
@@ -5086,6 +5878,7 @@ PreservedAnalyses OpenMPOptCGSCCPass::run(LazyCallGraph::SCC &C,
   AC.MaxFixpointIterations = MaxFixpointIterations;
   AC.OREGetter = OREGetter;
   AC.PassName = DEBUG_TYPE;
+  AC.InitializationCallback = OpenMPOpt::registerAAsForFunction;
 
   Attributor A(Functions, InfoCache, AC);
 
@@ -5101,90 +5894,13 @@ PreservedAnalyses OpenMPOptCGSCCPass::run(LazyCallGraph::SCC &C,
   return PreservedAnalyses::all();
 }
 
-namespace {
-
-struct OpenMPOptCGSCCLegacyPass : public CallGraphSCCPass {
-  CallGraphUpdater CGUpdater;
-  static char ID;
-
-  OpenMPOptCGSCCLegacyPass() : CallGraphSCCPass(ID) {
-    initializeOpenMPOptCGSCCLegacyPassPass(*PassRegistry::getPassRegistry());
-  }
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    CallGraphSCCPass::getAnalysisUsage(AU);
-  }
-
-  bool runOnSCC(CallGraphSCC &CGSCC) override {
-    if (!containsOpenMP(CGSCC.getCallGraph().getModule()))
-      return false;
-    if (DisableOpenMPOptimizations || skipSCC(CGSCC))
-      return false;
-
-    SmallVector<Function *, 16> SCC;
-    // If there are kernels in the module, we have to run on all SCC's.
-    for (CallGraphNode *CGN : CGSCC) {
-      Function *Fn = CGN->getFunction();
-      if (!Fn || Fn->isDeclaration())
-        continue;
-      SCC.push_back(Fn);
-    }
-
-    if (SCC.empty())
-      return false;
-
-    Module &M = CGSCC.getCallGraph().getModule();
-    KernelSet Kernels = getDeviceKernels(M);
-
-    CallGraph &CG = getAnalysis<CallGraphWrapperPass>().getCallGraph();
-    CGUpdater.initialize(CG, CGSCC);
-
-    // Maintain a map of functions to avoid rebuilding the ORE
-    DenseMap<Function *, std::unique_ptr<OptimizationRemarkEmitter>> OREMap;
-    auto OREGetter = [&OREMap](Function *F) -> OptimizationRemarkEmitter & {
-      std::unique_ptr<OptimizationRemarkEmitter> &ORE = OREMap[F];
-      if (!ORE)
-        ORE = std::make_unique<OptimizationRemarkEmitter>(F);
-      return *ORE;
-    };
-
-    AnalysisGetter AG;
-    SetVector<Function *> Functions(SCC.begin(), SCC.end());
-    BumpPtrAllocator Allocator;
-    OMPInformationCache InfoCache(*(Functions.back()->getParent()), AG,
-                                  Allocator,
-                                  /*CGSCC*/ Functions, Kernels);
-
-    unsigned MaxFixpointIterations =
-        (isOpenMPDevice(M)) ? SetFixpointIterations : 32;
-
-    AttributorConfig AC(CGUpdater);
-    AC.DefaultInitializeLiveInternals = false;
-    AC.IsModulePass = false;
-    AC.RewriteSignatures = false;
-    AC.MaxFixpointIterations = MaxFixpointIterations;
-    AC.OREGetter = OREGetter;
-    AC.PassName = DEBUG_TYPE;
-
-    Attributor A(Functions, InfoCache, AC);
-
-    OpenMPOpt OMPOpt(SCC, CGUpdater, OREGetter, InfoCache, A);
-    bool Result = OMPOpt.run(false);
-
-    if (PrintModuleAfterOptimizations)
-      LLVM_DEBUG(dbgs() << TAG << "Module after OpenMPOpt CGSCC Pass:\n" << M);
-
-    return Result;
-  }
-
-  bool doFinalization(CallGraph &CG) override { return CGUpdater.finalize(); }
-};
-
-} // end anonymous namespace
+bool llvm::omp::isOpenMPKernel(Function &Fn) {
+  return Fn.hasFnAttribute("kernel");
+}
 
 KernelSet llvm::omp::getDeviceKernels(Module &M) {
   // TODO: Create a more cross-platform way of determining device kernels.
-  NamedMDNode *MD = M.getOrInsertNamedMetadata("nvvm.annotations");
+  NamedMDNode *MD = M.getNamedMetadata("nvvm.annotations");
   KernelSet Kernels;
 
   if (!MD)
@@ -5202,9 +5918,13 @@ KernelSet llvm::omp::getDeviceKernels(Module &M) {
     if (!KernelFn)
       continue;
 
-    ++NumOpenMPTargetRegionKernels;
-
-    Kernels.insert(KernelFn);
+    // We are only interested in OpenMP target regions. Others, such as kernels
+    // generated by CUDA but linked together, are not interesting to this pass.
+    if (isOpenMPKernel(*KernelFn)) {
+      ++NumOpenMPTargetRegionKernels;
+      Kernels.insert(KernelFn);
+    } else
+      ++NumNonOpenMPTargetRegionKernels;
   }
 
   return Kernels;
@@ -5224,16 +5944,4 @@ bool llvm::omp::isOpenMPDevice(Module &M) {
     return false;
 
   return true;
-}
-
-char OpenMPOptCGSCCLegacyPass::ID = 0;
-
-INITIALIZE_PASS_BEGIN(OpenMPOptCGSCCLegacyPass, "openmp-opt-cgscc",
-                      "OpenMP specific optimizations", false, false)
-INITIALIZE_PASS_DEPENDENCY(CallGraphWrapperPass)
-INITIALIZE_PASS_END(OpenMPOptCGSCCLegacyPass, "openmp-opt-cgscc",
-                    "OpenMP specific optimizations", false, false)
-
-Pass *llvm::createOpenMPOptCGSCCLegacyPass() {
-  return new OpenMPOptCGSCCLegacyPass();
 }

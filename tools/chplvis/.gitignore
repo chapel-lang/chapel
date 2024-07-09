@@ -1,0 +1,4 @@
+# Tools/chplvis ignores.
+/chplvis
+/chplvis.cxx
+/chplvis.h

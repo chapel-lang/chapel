@@ -8,10 +8,10 @@ enum DMType { default, block, cyclic, blockcyclic, replicated };
 proc myDM(param dmType: DMType) {
   select dmType {
     when DMType.default do return defaultDist;
-    when DMType.block do return new dmap(new Block(rank=1, boundingBox={1..n}));
-    when DMType.cyclic do return new dmap(new Cyclic(startIdx=1));
-    when DMType.blockcyclic do return new dmap(new BlockCyclic(startIdx=(1,), blocksize=(3,)));
-    when DMType.replicated do return new dmap(new Replicated());
+    when DMType.block do return new blockDist(rank=1, boundingBox={1..n});
+    when DMType.cyclic do return new cyclicDist(startIdx=1);
+    when DMType.blockcyclic do return new blockCycDist(startIdx=(1,), blocksize=(3,));
+    when DMType.replicated do return new replicatedDist();
     otherwise halt("unexpected 'dmType': ", dmType);
     }
 }

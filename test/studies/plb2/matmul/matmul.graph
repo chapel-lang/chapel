@@ -1,0 +1,5 @@
+perfkeys: real
+files: matmul.dat
+graphkeys: Chapel version
+ylabel: Time (seconds)
+graphtitle: plb2 matmul

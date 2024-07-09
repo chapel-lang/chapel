@@ -1,0 +1,3 @@
+# We don't expect to ever call the primitives this test is about directly when
+# using cpu-as-device mode.
+CHPL_GPU==cpu

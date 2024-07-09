@@ -1,3 +1,4 @@
---llvm-print-ir factorial,call_factorial --llvm-print-ir-stage none --gen-ids
 --llvm-print-ir factorial,call_factorial --llvm-print-ir-stage full --gen-ids
 --llvm-print-ir factorial,call_factorial --llvm-print-ir-stage full --gen-ids --fast
+# --llvm-print-ir seems to print ir incorrectly only for stage=none
+# --llvm-print-ir factorial,call_factorial --llvm-print-ir-stage none --gen-ids

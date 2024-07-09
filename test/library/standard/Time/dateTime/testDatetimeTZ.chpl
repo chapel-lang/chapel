@@ -1,0 +1,568 @@
+use Time;
+
+class FixedOffset: Timezone {
+  var offset: timeDelta;
+  var name: string;
+  var dstoffset: timeDelta;
+  proc init(offset: timeDelta, name: string, dstoffset: timeDelta = new timeDelta(minutes=42)) {
+    this.offset = offset;
+    this.name = name;
+    this.dstoffset = dstoffset;
+  }
+  proc init(offset: int, name, dstoffset:int=42) {
+    this.offset = new timeDelta(minutes=offset);
+    this.name = name;
+    this.dstoffset = new timeDelta(minutes=dstoffset);
+  }
+
+  override proc utcOffset(dt: dateTime) {
+    return offset;
+  }
+  override proc tzname(dt: dateTime) {
+    return name;
+  }
+  override proc dst(dt: dateTime) {
+    return dstoffset;
+  }
+  override proc fromUtc(dt: dateTime) {
+    var dtoff = dt.utcOffset();
+    var dtdst = dt.dst();
+    var delta = dtoff - dtdst;
+    var dt2 = dt + delta;
+    dtdst = dt2.dst();
+    return dt2 + dtdst;
+  }
+}
+
+proc test_trivial() {
+  var dt = new dateTime(1, 2, 3, 4, 5, 6, 7);
+  assert(dt.year == 1);
+  assert(dt.month == 2);
+  assert(dt.day == 3);
+  assert(dt.hour == 4);
+  assert(dt.minute == 5);
+  assert(dt.second == 6);
+  assert(dt.microsecond == 7);
+  assert(dt.timezone.borrow() == nil);
+}
+
+proc test_even_more_compare() {
+  // Smallest possible after UTC adjustment.
+  var t1 = new dateTime(1, 1, 1,
+                        tz=new shared FixedOffset(1439, ""));
+  // Largest possible after UTC adjustment.
+  var t2 = new dateTime(date.max.year, 12, 31, 23, 59, 59, 999999,
+                        tz=new shared FixedOffset(-1439, ""));
+
+  // Make sure those compare correctly, and w/o overflow.
+  assert(t1 < t2);
+  assert(t1 != t2);
+  assert(t2 > t1);
+
+  assert(t1 == t1);
+  assert(t2 == t2);
+
+  // Equal afer adjustment.
+  t1 = new dateTime(1, 12, 31, 23, 59,
+                    tz=new shared FixedOffset(1, ""));
+  t2 = new dateTime(2, 1, 1, 3, 13,
+                    tz=new shared FixedOffset(3*60+13+2, ""));
+  assert(t1 == t2);
+
+  // Change t1 not to subtract a minute, and t1 should be larger.
+  t1 = new dateTime(1, 12, 31, 23, 59,
+                    tz=new shared FixedOffset(0, ""));
+  assert(t1 > t2);
+
+  // Change t1 to subtract 2 minutes, and t1 should be smaller.
+  t1 = new dateTime(1, 12, 31, 23, 59,
+                    tz=new shared FixedOffset(2, ""));
+  assert(t1 < t2);
+
+  // Back to the original t1, but make seconds resolve it.
+  t1 = new dateTime(1, 12, 31, 23, 59,
+                    tz=new shared FixedOffset(1, ""),
+                    second=1);
+  assert(t1 > t2);
+
+  // Likewise, but make microseconds resolve it.
+  t1 = new dateTime(1, 12, 31, 23, 59,
+                    tz=new shared FixedOffset(1, ""),
+                    microsecond=1);
+  assert(t1 > t2);
+}
+
+proc test_zones() {
+  var est = new shared FixedOffset(-300, "EST");
+  var utc = new shared FixedOffset(0, "UTC");
+  var met = new shared FixedOffset(60, "MET");
+  var t1 = new dateTime(2002, 3, 19,  7, 47, tz=est);
+  var t2 = new dateTime(2002, 3, 19, 12, 47, tz=utc);
+  var t3 = new dateTime(2002, 3, 19, 13, 47, tz=met);
+  assert(t1.timezone == est);
+  assert(t2.timezone == utc);
+  assert(t3.timezone == met);
+  assert(t1.utcOffset() == new timeDelta(minutes=-300));
+  assert(t2.utcOffset() == new timeDelta(minutes=0));
+  assert(t3.utcOffset() == new timeDelta(minutes=60));
+  assert(t1.tzname() == "EST");
+  assert(t2.tzname() == "UTC");
+  assert(t3.tzname() == "MET");
+  assert(t1 == t2);
+  assert(t1 == t3);
+  assert(t2 == t3);
+}
+
+proc test_init_combine() {
+  var met = new shared FixedOffset(60, "MET");
+  var d = new date(2002, 3, 4);
+  var tz = new time(18, 45, 3, 1234, tz=met);
+  var dt = new dateTime(d, tz);
+  assert(dt == new dateTime(2002, 3, 4, 18, 45, 3, 1234,
+                          tz=met));
+}
+
+proc test_extract() {
+  var met = new shared FixedOffset(60, "MET");
+  var dt = new dateTime(2002, 3, 4, 18, 45, 3, 1234, tz=met);
+  assert(dt.getDate() == new date(2002, 3, 4));
+  assert(dt.getTime() == new time(18, 45, 3, 1234));
+  assert(dt.timetz() == new time(18, 45, 3, 1234, tz=met));
+}
+
+proc test_tz_aware_arithmetic() {
+  use Random;
+  var rng = new randomStream(eltType=int);
+
+  var now = dateTime.now();
+  var tz55 = new shared FixedOffset(-330, "west 5:30");
+  var timeaware = now.getTime().replace(tz=tz55);
+  var nowaware = new dateTime(now.getDate(), timeaware);
+  assert(nowaware.timezone == tz55);
+  assert(nowaware.timetz() == timeaware);
+
+  // Subtracting should yield 0.
+  assert(now - now == new timeDelta(0));
+  assert(nowaware - nowaware == new timeDelta(0));
+
+  // Adding a delta should preserve tz.
+  var delta = new timeDelta(weeks=1, minutes=12, microseconds=5678);
+  var nowawareplus = nowaware + delta;
+  assert(nowaware.timezone == tz55);
+  var nowawareplus2 = delta + nowaware;
+  assert(nowawareplus2.timezone == tz55);
+  assert(nowawareplus == nowawareplus2);
+
+  // that - delta should be what we started with, and that - what we
+  // started with should be delta.
+  var diff = nowawareplus - delta;
+  assert(diff.timezone == tz55);
+  assert(nowaware == diff);
+  //self.assertRaises(TypeError, lambda: delta - nowawareplus);
+  assert(nowawareplus - nowaware == delta);
+
+  // Make up a random timezone.
+  var tzr = new shared FixedOffset(rng.next(-1439, 1439), "randomtimezone");
+  // Attach it to nowawareplus.
+  nowawareplus = nowawareplus.replace(tz=tzr);
+  assert(nowawareplus.timezone == tzr);
+  // Make sure the difference takes the timezone adjustments into account.
+  var got = nowaware - nowawareplus;
+  // Expected:  (nowaware base - nowaware offset) -
+  //            (nowawareplus base - nowawareplus offset) =
+  //            (nowaware base - nowawareplus base) +
+  //            (nowawareplus offset - nowaware offset) =
+  //            -delta + nowawareplus offset - nowaware offset
+  var expected = nowawareplus.utcOffset() - nowaware.utcOffset() - delta;
+  assert(got == expected);
+
+  // Try max possible difference.
+  var min = new dateTime(1, 1, 1,
+                         tz=new shared FixedOffset(1439, "min"));
+  var max = new dateTime(date.max.year, 12, 31, 23, 59, 59, 999999,
+                      tz=new shared FixedOffset(-1439, "max"));
+  var maxdiff = max - min;
+  assert(maxdiff == dateTime.max - dateTime.min +
+                    new timeDelta(minutes=2*1439));
+}
+
+proc test_tzinfo_now() {
+  // Ensure it doesn't require tz (i.e., that this doesn't blow up).
+  var base = dateTime.now();
+  // Try with and without naming the keyword.
+  var off42 = new shared FixedOffset(42, "42");
+  var another = dateTime.now(off42);
+  var again = dateTime.now(tz=off42);
+  assert(another.timezone == again.timezone);
+  assert(another.utcOffset() == new timeDelta(minutes=42));
+
+  // We don't know which time zone we're in, and don't have a tz
+  // class to represent it, so seeing whether a tz argument actually
+  // does a conversion is tricky.
+  var weirdtz = new shared FixedOffset(new timeDelta(hours=15, minutes=58),
+                                           "weirdtz", new timeDelta(0));
+  var utc = new shared FixedOffset(0, "utc", 0);
+  for 0..2 {
+    var now = dateTime.now(weirdtz);
+    assert(now.timezone == weirdtz);
+    var utcnow = dateTime.utcNow().replace(tz=utc);
+    var now2 = utcnow.astimezone(weirdtz);
+    if (now - now2).abs() < new timeDelta(seconds=30) {
+      break;
+    // Else the code is broken, or more than 30 seconds passed between
+    // calls; assuming the latter, just try again.
+    } else {
+      // Three strikes and we're out.
+      halt("utcnow(), now(tz), or astimezone() may be broken");
+    }
+  }
+}
+
+proc test_tzinfo_fromtimestamp() {
+  proc getTimeOfDay() {
+    // POSIX sys/time.h types used with gettimeofday
+    extern type time_t;
+    extern type suseconds_t;
+    extern "struct timeval" record timeval {
+      var tv_sec: time_t;
+      var tv_usec: suseconds_t;
+    }
+    extern proc gettimeofday(ref tv: timeval, tz): int;
+
+    var tv: timeval;
+    if gettimeofday(tv, nil) != 0 then
+      halt("error in call to gettimeofday()");
+    return (__primitive("cast", int, tv.tv_sec),
+            __primitive("cast", int, tv.tv_usec));
+  }
+
+  var ts = getTimeOfDay()(1);
+  // Ensure it doesn't require tz (i.e., that this doesn't blow up).
+  var base = dateTime.createFromTimestamp(ts);
+  // Try with and without naming the keyword.
+  var off42 = new shared FixedOffset(42, "42");
+  var another = dateTime.createFromTimestamp(ts, off42);
+  var again = dateTime.createFromTimestamp(ts, tz=off42);
+  assert(another.timezone == again.timezone);
+  assert(another.utcOffset() == new timeDelta(minutes=42));
+
+  // Try to make sure tz= actually does some conversion.
+  var timestamp = 1000000000;
+  var utcdateTime = dateTime.createUtcFromTimestamp(timestamp);
+  // In POSIX (epoch 1970), that's 2001-09-09 01:46:40 UTC, give or take.
+  // But on some flavor of Mac, it's nowhere near that.  So we can't have
+  // any idea here what time that actually is, we can only test that
+  // relative changes match.
+  var utcoffset = new timeDelta(hours=-15, minutes=39); // arbitrary, but not zero
+  var tz = new shared FixedOffset(utcoffset, "tz", new timeDelta());
+  var expected = utcdateTime + utcoffset;
+  var got = dateTime.createFromTimestamp(timestamp, tz);
+  assert(expected == got.replace(tz=nil));
+}
+
+proc test_tzinfo_timetuple() {
+  // TestDateTime tested most of this.  dateTime adds a twist to the
+  // DST flag.
+  class DST: Timezone {
+    var dstvalue: timeDelta;
+    proc init(i) {
+      dstvalue = new timeDelta(minutes=i);
+    }
+    override proc dst(dt) {
+      return dstvalue;
+    }
+  }
+
+  for (dstvalue, flag) in ((-33, 1), (33, 1), (0, 0)) {
+    var d = new dateTime(1, 1, 1, 10, 20, 30, 40,
+                         tz=new shared DST(dstvalue));
+    var t = d.timetuple();
+    assert(1 == t.tm_year);
+    assert(1 == t.tm_mon);
+    assert(1 == t.tm_mday);
+    assert(10 == t.tm_hour);
+    assert(20 == t.tm_min);
+    assert(30 == t.tm_sec);
+    assert(0 == t.tm_wday);
+    assert(1 == t.tm_yday);
+    assert(flag == t.tm_isdst);
+  }
+
+  // dst() at the edge.
+  assert((new dateTime(1,1,1, tz=new shared DST(1439))).timetuple().tm_isdst == 1);
+  assert((new dateTime(1,1,1, tz=new shared DST(-1439))).timetuple().tm_isdst == 1);
+}
+
+proc test_utctimetuple() {
+  class DST: Timezone {
+    var dstvalue: timeDelta;
+    proc init(dstvalue) {
+      this.dstvalue = new timeDelta(minutes=dstvalue);
+    }
+    override proc dst(dt) {
+      return dstvalue;
+    }
+  }
+
+  class UOFS: DST {
+    var uofs: timeDelta;
+    proc init(uofs, dofs=0) {
+      super.init(dofs);
+      this.uofs = new timeDelta(minutes=uofs);
+    }
+    override proc utcOffset(dt) {
+      return uofs;
+    }
+  }
+
+  // Ensure tm_isdst is 0 regardless of what dst() says:  DST is never
+  // in effect for a UTC time.
+  for dstvalue in (-33, 33, 0) {
+    var d = new dateTime(1, 2, 3, 10, 20, 30, 40, tz=new shared UOFS(-53, dstvalue));
+    var t = d.utctimetuple();
+    assert(d.year == t.tm_year);
+    assert(d.month == t.tm_mon);
+    assert(d.day == t.tm_mday);
+    assert(11 == t.tm_hour); // 20mm + 53mm = 1hn + 13mm
+    assert(13 == t.tm_min);
+    assert(d.second == t.tm_sec);
+    assert((d.getDate().weekday():int - 1) == t.tm_wday);
+    assert(d.getDate().toOrdinal() - (new date(1, 1, 1)).toOrdinal() + 1 ==
+        t.tm_yday);
+    assert(0 == t.tm_isdst);
+  }
+
+  // At the edges, UTC adjustment can normalize into years out-of-range
+  // for a dateTime object.  Ensure that a correct timetuple is
+  // created anyway.
+  var tiny = new dateTime(date.min.year, 1, 1, 0, 0, 37, tz=new shared UOFS(1439));
+  // That goes back 1 minute less than a full day.
+  var t = tiny.utctimetuple();
+  assert(t.tm_year == date.min.year-1);
+  assert(t.tm_mon == 12);
+  assert(t.tm_mday == 31);
+  assert(t.tm_hour == 0);
+  assert(t.tm_min == 1);
+  assert(t.tm_sec == 37);
+  assert(t.tm_yday == 366);    // "year 0" is a leap year
+  assert(t.tm_isdst == 0);
+
+  var huge = new dateTime(date.max.year, 12, 31, 23, 59, 37, 999999, tz=new shared UOFS(-1439));
+  // That goes forward 1 minute less than a full day.
+  t = huge.utctimetuple();
+  assert(t.tm_year == date.max.year+1);
+  assert(t.tm_mon == 1);
+  assert(t.tm_mday == 1);
+  assert(t.tm_hour == 23);
+  assert(t.tm_min == 58);
+  assert(t.tm_sec == 37);
+  assert(t.tm_yday == 1);
+  assert(t.tm_isdst == 0);
+}
+
+proc test_tzinfo_tostring() {
+  var zero = new shared FixedOffset(0, "+00:00");
+  var plus = new shared FixedOffset(220, "+03:40");
+  var minus = new shared FixedOffset(-231, "-03:51");
+
+  var datestr = '0001-02-03';
+  for ofs in (zero, plus, minus) {
+    for us in (0, 987001) {
+      var d = new dateTime(1, 2, 3, 4, 5, 59, us, tz=ofs);
+      var timestr = '04:05:59' + if us != 0 then '.987001' else '';
+      var ofsstr = d.tzname();
+      var tailstr = timestr + ofsstr;
+      var iso = d:string;
+      assert(iso == datestr + 'T' + tailstr);
+    }
+  }
+}
+
+proc test_replace() {
+  var z100 = new shared FixedOffset(100, "+100");
+  var zm200 = new shared FixedOffset(new timeDelta(minutes=-200), "-200");
+  var args = (1, 2, 3, 4, 5, 6, 7);
+  var base = new dateTime((...args), z100);
+  assert(base == base.replace(tz=base.timezone));
+
+  var i = 0;
+  for (name, newval) in (("year", 2),
+                         ("month", 3),
+                         ("day", 4),
+                         ("hour", 5),
+                         ("minute", 6),
+                         ("second", 7),
+                         ("microsecond", 8)) {
+    var newargs = args;
+    newargs[i] = newval;
+    var expected = new dateTime((...newargs), z100);
+    var got: dateTime;
+    if name == "year" then
+      got = base.replace(year=newval, tz=z100);
+    else if name == "month" then
+      got = base.replace(month=newval, tz=z100);
+    else if name == "day" then
+      got = base.replace(day=newval, tz=z100);
+    else if name == "hour" then
+      got = base.replace(hour=newval, tz=z100);
+    else if name == "minute" then
+      got = base.replace(minute=newval, tz=z100);
+    else if name == "second" then
+      got = base.replace(second=newval, tz=z100);
+    else if name == "microsecond" then
+      got = base.replace(microsecond=newval, tz=z100);
+    assert(expected == got);
+    i += 1;
+  }
+
+  { // test replacing the timezone
+    var newargs = args;
+    var expected = new dateTime((...newargs), zm200);
+    var got = base.replace(tz=zm200);
+    assert(expected == got);
+  }
+
+  // Ensure we can get rid of a tz.
+  assert(base.tzname() == "+100");
+  var base2 = base.replace(tz=nil);
+  assert(base2.timezone.borrow() == nil);
+
+  // Ensure we can add one.
+  var base3 = base2.replace(tz=z100);
+  assert(base == base3);
+  assert(base.timezone == base3.timezone);
+}
+
+proc test_more_astimezone() {
+  // The inherited test_astimezone covered some trivial and error cases.
+  var f44m = new shared FixedOffset(44, "44");
+  var fm5h = new shared FixedOffset(-(new timeDelta(hours=5)), "m300");
+
+  var dt = dateTime.now(tz=f44m);
+  assert(dt.timezone == f44m);
+
+  // Replacing with same tz makes no change.
+  var x = dt.astimezone(dt.timezone:shared Timezone);
+  assert(x.timezone == f44m);
+  assert(x.getDate() == dt.getDate());
+  assert(x.getTime() == dt.getTime());
+
+  // Replacing with different tz does adjust.
+  var got = dt.astimezone(fm5h);
+  assert(got.timezone == fm5h);
+  assert(got.utcOffset() == new timeDelta(hours=-5));
+  var expected = dt - dt.utcOffset();  // in effect, convert to UTC
+  expected += fm5h.utcOffset(dt);  // and from there to local time
+  expected = expected.replace(tz=fm5h); // and attach new tz
+  assert(got.getDate() == expected.getDate());
+  assert(got.getTime() == expected.getTime());
+  assert(got.timetz() == expected.timetz());
+  assert(got.timezone == expected.timezone);
+  assert(got == expected);
+}
+
+proc test_aware_subtract() {
+  // Ensure that utcoffset() is ignored when the operands have the
+  // same tz member.
+  class OperandDependentOffset: Timezone {
+    override proc utcOffset(dt: dateTime) {
+      if dt.minute < 10 {
+        // d0 and d1 equal after adjustment
+        return new timeDelta(minutes=dt.minute);
+      } else {
+        // d2 off in the weeds
+        return new timeDelta(minutes=59);
+      }
+    }
+  }
+
+  var base = new dateTime(8, 9, 10, 11, 12, 13, 14, tz=new shared OperandDependentOffset());
+  var d0 = base.replace(minute=3, tz=base.timezone);
+  var d1 = base.replace(minute=9, tz=base.timezone);
+  var d2 = base.replace(minute=11, tz=base.timezone);
+  for x in (d0, d1, d2) {
+    for y in (d0, d1, d2) {
+      var got = x - y;
+      var expected = new timeDelta(minutes=x.minute - y.minute);
+      assert(got == expected);
+    }
+  }
+  // OTOH, if the tz members are distinct, utcoffsets aren't
+  // ignored.
+  base = new dateTime(8, 9, 10, 11, 12, 13, 14);
+  d0 = base.replace(minute=3, tz=new shared OperandDependentOffset());
+  d1 = base.replace(minute=9, tz=new shared OperandDependentOffset());
+  d2 = base.replace(minute=11, tz=new shared OperandDependentOffset());
+  for x in (d0, d1, d2) {
+    for y in (d0, d1, d2) {
+      var got = x - y;
+      var expected: timeDelta;
+      if (x == d0 || x == d1) && (y == d0 || y == d1) then
+        expected = new timeDelta(0);
+      else if x == y && x == d2 then
+        expected = new timeDelta(0);
+      else if x == d2 then
+        expected = new timeDelta(minutes=(11-59)-0);
+      else {
+        assert(y == d2);
+        expected = new timeDelta(minutes=0-(11-59));
+      }
+      assert(got == expected);
+    }
+  }
+}
+
+proc test_mixed_compare() {
+  var t1 = new dateTime(1, 2, 3, 4, 5, 6, 7);
+  var t2 = new dateTime(1, 2, 3, 4, 5, 6, 7);
+  assert(t1 == t2);
+  t2 = t2.replace(tz=nil);
+  assert(t1 == t2);
+  t2 = t2.replace(tz=new shared FixedOffset(0, ""));
+
+  // In dateTime w/ identical tz objects, utcoffset is ignored.
+  class Varies: Timezone {
+    var offset: timeDelta;
+    proc init() {
+      offset = new timeDelta(minutes=22);
+    }
+    override proc utcOffset(dt: dateTime) {
+      offset += new timeDelta(minutes=1);
+      return offset;
+    }
+  }
+
+  var v = new shared Varies();
+  t1 = t2.replace(tz=v);
+  t2 = t2.replace(tz=v);
+  assert(t1.utcOffset() == new timeDelta(minutes=23));
+  assert(t2.utcOffset() == new timeDelta(minutes=24));
+  assert(t1 == t2);
+
+  // But if they're not identical, it isn't ignored.
+  t2 = t2.replace(tz=new shared Varies());
+  assert(t1 < t2);  // t1's offset counter still going up
+}
+
+proc first_sunday_on_or_after(in dt) {
+  var days_to_go = 7 - dt.weekday():int;
+  if days_to_go != 0 then
+    dt += new timeDelta(days_to_go);
+  return dt;
+}
+
+test_trivial();
+test_even_more_compare();
+test_zones();
+test_init_combine();
+test_extract();
+test_tz_aware_arithmetic();
+test_tzinfo_now();
+test_tzinfo_fromtimestamp();
+test_tzinfo_timetuple();
+test_utctimetuple();
+test_tzinfo_tostring();
+test_replace();
+test_more_astimezone();
+test_aware_subtract();
+test_mixed_compare();

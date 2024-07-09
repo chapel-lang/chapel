@@ -16,7 +16,7 @@
 // This tablegen backend processes CompressPat declarations in a
 // td file and generates all the required checks to validate the pattern
 // declarations; validate the input and output operands to generate the correct
-// compressed instructions. The checks include validating  different types of
+// compressed instructions. The checks include validating different types of
 // operands; register operands, immediate operands, fixed register and fixed
 // immediate inputs.
 //
@@ -26,7 +26,7 @@
 // /// CompressInstEmitter backend.
 // class CompressPat<dag input, dag output, list<Predicate> predicates = []> {
 //   /// Uncompressed instruction description.
-//   dag Input  = input;
+//   dag Input = input;
 //   /// Compressed instruction description.
 //   dag Output = output;
 //   /// Predicates that must be true for this to match.
@@ -45,20 +45,16 @@
 // instructions, plus some helper functions:
 //
 // bool compressInst(MCInst &OutInst, const MCInst &MI,
-//                   const MCSubtargetInfo &STI,
-//                   MCContext &Context);
+//                   const MCSubtargetInfo &STI);
 //
 // bool uncompressInst(MCInst &OutInst, const MCInst &MI,
-//                     const MCRegisterInfo &MRI,
 //                     const MCSubtargetInfo &STI);
 //
 // In addition, it exports a function for checking whether
 // an instruction is compressable:
 //
 // bool isCompressibleInst(const MachineInstr& MI,
-//                         const <TargetName>Subtarget *Subtarget,
-//                         const MCRegisterInfo &MRI,
-//                         const MCSubtargetInfo &STI);
+//                         const <TargetName>Subtarget &STI);
 //
 // The clients that include this auto-generated header file and
 // invoke these functions can compress an instruction before emitting
@@ -69,6 +65,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "CodeGenInstruction.h"
+#include "CodeGenRegisters.h"
 #include "CodeGenTarget.h"
 #include "llvm/ADT/IndexedMap.h"
 #include "llvm/ADT/SmallVector.h"
@@ -108,8 +105,8 @@ class CompressInstEmitter {
     // Required target features to enable pattern.
     std::vector<Record *> PatReqFeatures;
     // Maps operands in the Source Instruction to
-    IndexedMap<OpData> SourceOperandMap;
     // the corresponding Dest instruction operand.
+    IndexedMap<OpData> SourceOperandMap;
     // Maps operands in the Dest Instruction
     // to the corresponding Source instruction operand.
     IndexedMap<OpData> DestOperandMap;
@@ -129,7 +126,7 @@ class CompressInstEmitter {
   void addDagOperandMapping(Record *Rec, DagInit *Dag, CodeGenInstruction &Inst,
                             IndexedMap<OpData> &OperandMap, bool IsSourceInst);
   void evaluateCompressPat(Record *Compress);
-  void emitCompressInstEmitter(raw_ostream &o, EmitterType EType);
+  void emitCompressInstEmitter(raw_ostream &OS, EmitterType EType);
   bool validateTypes(Record *SubType, Record *Type, bool IsSourceInst);
   bool validateRegister(Record *Reg, Record *RegClass);
   void createDagOperandMapping(Record *Rec, StringMap<unsigned> &SourceOperands,
@@ -147,7 +144,7 @@ class CompressInstEmitter {
 public:
   CompressInstEmitter(RecordKeeper &R) : Records(R), Target(R) {}
 
-  void run(raw_ostream &o);
+  void run(raw_ostream &OS);
 };
 } // End anonymous namespace.
 
@@ -209,53 +206,53 @@ void CompressInstEmitter::addDagOperandMapping(Record *Rec, DagInit *Dag,
   // than number of operands in the Dag due to how tied operands
   // are represented.
   unsigned TiedCount = 0;
-  for (unsigned i = 0, e = Inst.Operands.size(); i != e; ++i) {
-    int TiedOpIdx = Inst.Operands[i].getTiedRegister();
+  for (unsigned I = 0, E = Inst.Operands.size(); I != E; ++I) {
+    int TiedOpIdx = Inst.Operands[I].getTiedRegister();
     if (-1 != TiedOpIdx) {
       // Set the entry in OperandMap for the tied operand we're skipping.
-      OperandMap[i].Kind = OperandMap[TiedOpIdx].Kind;
-      OperandMap[i].Data = OperandMap[TiedOpIdx].Data;
+      OperandMap[I].Kind = OperandMap[TiedOpIdx].Kind;
+      OperandMap[I].Data = OperandMap[TiedOpIdx].Data;
       TiedCount++;
       continue;
     }
-    if (DefInit *DI = dyn_cast<DefInit>(Dag->getArg(i - TiedCount))) {
+    if (DefInit *DI = dyn_cast<DefInit>(Dag->getArg(I - TiedCount))) {
       if (DI->getDef()->isSubClassOf("Register")) {
         // Check if the fixed register belongs to the Register class.
-        if (!validateRegister(DI->getDef(), Inst.Operands[i].Rec))
+        if (!validateRegister(DI->getDef(), Inst.Operands[I].Rec))
           PrintFatalError(Rec->getLoc(),
                           "Error in Dag '" + Dag->getAsString() +
                               "'Register: '" + DI->getDef()->getName() +
                               "' is not in register class '" +
-                              Inst.Operands[i].Rec->getName() + "'");
-        OperandMap[i].Kind = OpData::Reg;
-        OperandMap[i].Data.Reg = DI->getDef();
+                              Inst.Operands[I].Rec->getName() + "'");
+        OperandMap[I].Kind = OpData::Reg;
+        OperandMap[I].Data.Reg = DI->getDef();
         continue;
       }
       // Validate that Dag operand type matches the type defined in the
       // corresponding instruction. Operands in the input Dag pattern are
       // allowed to be a subclass of the type specified in corresponding
       // instruction operand instead of being an exact match.
-      if (!validateTypes(DI->getDef(), Inst.Operands[i].Rec, IsSourceInst))
+      if (!validateTypes(DI->getDef(), Inst.Operands[I].Rec, IsSourceInst))
         PrintFatalError(Rec->getLoc(),
                         "Error in Dag '" + Dag->getAsString() + "'. Operand '" +
-                            Dag->getArgNameStr(i - TiedCount) + "' has type '" +
+                            Dag->getArgNameStr(I - TiedCount) + "' has type '" +
                             DI->getDef()->getName() +
                             "' which does not match the type '" +
-                            Inst.Operands[i].Rec->getName() +
+                            Inst.Operands[I].Rec->getName() +
                             "' in the corresponding instruction operand!");
 
-      OperandMap[i].Kind = OpData::Operand;
-    } else if (IntInit *II = dyn_cast<IntInit>(Dag->getArg(i - TiedCount))) {
+      OperandMap[I].Kind = OpData::Operand;
+    } else if (IntInit *II = dyn_cast<IntInit>(Dag->getArg(I - TiedCount))) {
       // Validate that corresponding instruction operand expects an immediate.
-      if (Inst.Operands[i].Rec->isSubClassOf("RegisterClass"))
+      if (Inst.Operands[I].Rec->isSubClassOf("RegisterClass"))
         PrintFatalError(
             Rec->getLoc(),
             "Error in Dag '" + Dag->getAsString() + "' Found immediate: '" +
                 II->getAsString() +
                 "' but corresponding instruction operand expected a register!");
       // No pattern validation check possible for values of fixed immediate.
-      OperandMap[i].Kind = OpData::Imm;
-      OperandMap[i].Data.Imm = II->getValue();
+      OperandMap[I].Kind = OpData::Imm;
+      OperandMap[I].Data.Imm = II->getValue();
       LLVM_DEBUG(
           dbgs() << "  Found immediate '" << II->getValue() << "' at "
                  << (IsSourceInst ? "input " : "output ")
@@ -284,7 +281,7 @@ static bool verifyDagOpCount(CodeGenInstruction &Inst, DagInit *Dag,
                         "' and Dag operand count mismatch");
 
   // The Instruction might have tied operands so the Dag might have
-  //  a fewer operand count.
+  // a fewer operand count.
   unsigned RealCount = Inst.Operands.size();
   for (const auto &Operand : Inst.Operands)
     if (Operand.getTiedRegister() != -1)
@@ -310,43 +307,43 @@ void CompressInstEmitter::createDagOperandMapping(
     Record *Rec, StringMap<unsigned> &SourceOperands,
     StringMap<unsigned> &DestOperands, DagInit *SourceDag, DagInit *DestDag,
     IndexedMap<OpData> &SourceOperandMap) {
-  for (unsigned i = 0; i < DestDag->getNumArgs(); ++i) {
+  for (unsigned I = 0; I < DestDag->getNumArgs(); ++I) {
     // Skip fixed immediates and registers, they were handled in
     // addDagOperandMapping.
-    if ("" == DestDag->getArgNameStr(i))
+    if ("" == DestDag->getArgNameStr(I))
       continue;
-    DestOperands[DestDag->getArgNameStr(i)] = i;
+    DestOperands[DestDag->getArgNameStr(I)] = I;
   }
 
-  for (unsigned i = 0; i < SourceDag->getNumArgs(); ++i) {
+  for (unsigned I = 0; I < SourceDag->getNumArgs(); ++I) {
     // Skip fixed immediates and registers, they were handled in
     // addDagOperandMapping.
-    if ("" == SourceDag->getArgNameStr(i))
+    if ("" == SourceDag->getArgNameStr(I))
       continue;
 
-    StringMap<unsigned>::iterator it =
-        SourceOperands.find(SourceDag->getArgNameStr(i));
-    if (it != SourceOperands.end()) {
+    StringMap<unsigned>::iterator It =
+        SourceOperands.find(SourceDag->getArgNameStr(I));
+    if (It != SourceOperands.end()) {
       // Operand sharing the same name in the Dag should be mapped as tied.
-      SourceOperandMap[i].TiedOpIdx = it->getValue();
-      if (!validateArgsTypes(SourceDag->getArg(it->getValue()),
-                             SourceDag->getArg(i)))
+      SourceOperandMap[I].TiedOpIdx = It->getValue();
+      if (!validateArgsTypes(SourceDag->getArg(It->getValue()),
+                             SourceDag->getArg(I)))
         PrintFatalError(Rec->getLoc(),
-                        "Input Operand '" + SourceDag->getArgNameStr(i) +
+                        "Input Operand '" + SourceDag->getArgNameStr(I) +
                             "' has a mismatched tied operand!\n");
     }
-    it = DestOperands.find(SourceDag->getArgNameStr(i));
-    if (it == DestOperands.end())
-      PrintFatalError(Rec->getLoc(), "Operand " + SourceDag->getArgNameStr(i) +
+    It = DestOperands.find(SourceDag->getArgNameStr(I));
+    if (It == DestOperands.end())
+      PrintFatalError(Rec->getLoc(), "Operand " + SourceDag->getArgNameStr(I) +
                                          " defined in Input Dag but not used in"
                                          " Output Dag!\n");
     // Input Dag operand types must match output Dag operand type.
-    if (!validateArgsTypes(DestDag->getArg(it->getValue()),
-                           SourceDag->getArg(i)))
+    if (!validateArgsTypes(DestDag->getArg(It->getValue()),
+                           SourceDag->getArg(I)))
       PrintFatalError(Rec->getLoc(), "Type mismatch between Input and "
                                      "Output Dag operand '" +
-                                         SourceDag->getArgNameStr(i) + "'!");
-    SourceOperands[SourceDag->getArgNameStr(i)] = i;
+                                         SourceDag->getArgNameStr(I) + "'!");
+    SourceOperands[SourceDag->getArgNameStr(I)] = I;
   }
 }
 
@@ -361,27 +358,27 @@ void CompressInstEmitter::createInstOperandMapping(
   // operands list to get to the corresponding Dag operand.
   unsigned TiedCount = 0;
   LLVM_DEBUG(dbgs() << "  Operand mapping:\n  Source   Dest\n");
-  for (unsigned i = 0, e = DestInst.Operands.size(); i != e; ++i) {
-    int TiedInstOpIdx = DestInst.Operands[i].getTiedRegister();
+  for (unsigned I = 0, E = DestInst.Operands.size(); I != E; ++I) {
+    int TiedInstOpIdx = DestInst.Operands[I].getTiedRegister();
     if (TiedInstOpIdx != -1) {
       ++TiedCount;
-      DestOperandMap[i].Data = DestOperandMap[TiedInstOpIdx].Data;
-      DestOperandMap[i].Kind = DestOperandMap[TiedInstOpIdx].Kind;
-      if (DestOperandMap[i].Kind == OpData::Operand)
+      DestOperandMap[I].Data = DestOperandMap[TiedInstOpIdx].Data;
+      DestOperandMap[I].Kind = DestOperandMap[TiedInstOpIdx].Kind;
+      if (DestOperandMap[I].Kind == OpData::Operand)
         // No need to fill the SourceOperandMap here since it was mapped to
         // destination operand 'TiedInstOpIdx' in a previous iteration.
-        LLVM_DEBUG(dbgs() << "    " << DestOperandMap[i].Data.Operand
-                          << " ====> " << i
+        LLVM_DEBUG(dbgs() << "    " << DestOperandMap[I].Data.Operand
+                          << " ====> " << I
                           << "  Dest operand tied with operand '"
                           << TiedInstOpIdx << "'\n");
       continue;
     }
     // Skip fixed immediates and registers, they were handled in
     // addDagOperandMapping.
-    if (DestOperandMap[i].Kind != OpData::Operand)
+    if (DestOperandMap[I].Kind != OpData::Operand)
       continue;
 
-    unsigned DagArgIdx = i - TiedCount;
+    unsigned DagArgIdx = I - TiedCount;
     StringMap<unsigned>::iterator SourceOp =
         SourceOperands.find(DestDag->getArgNameStr(DagArgIdx));
     if (SourceOp == SourceOperands.end())
@@ -393,9 +390,9 @@ void CompressInstEmitter::createInstOperandMapping(
     assert(DestDag->getArgNameStr(DagArgIdx) ==
                SourceDag->getArgNameStr(SourceOp->getValue()) &&
            "Incorrect operand mapping detected!\n");
-    DestOperandMap[i].Data.Operand = SourceOp->getValue();
-    SourceOperandMap[SourceOp->getValue()].Data.Operand = i;
-    LLVM_DEBUG(dbgs() << "    " << SourceOp->getValue() << " ====> " << i
+    DestOperandMap[I].Data.Operand = SourceOp->getValue();
+    SourceOperandMap[SourceOp->getValue()].Data.Operand = I;
+    LLVM_DEBUG(dbgs() << "    " << SourceOp->getValue() << " ====> " << I
                       << "\n");
   }
 }
@@ -406,10 +403,10 @@ void CompressInstEmitter::createInstOperandMapping(
 /// - Dag Input opcode is an expanded instruction and Dag Output opcode is a
 ///   compressed instruction.
 /// - Operands in Dag Input must be all used in Dag Output.
-///   Register Operand type in Dag Input Type  must be contained in the
+///   Register Operand type in Dag Input Type must be contained in the
 ///   corresponding Source Instruction type.
-/// - Register Operand type in Dag Input must be the  same as in  Dag Ouput.
-/// - Register Operand type in  Dag Output must be the same  as the
+/// - Register Operand type in Dag Input must be the same as in Dag Ouput.
+/// - Register Operand type in Dag Output must be the same as the
 ///   corresponding Destination Inst type.
 /// - Immediate Operand type in Dag Input must be the same as in Dag Ouput.
 /// - Immediate Operand type in Dag Ouput must be the same as the corresponding
@@ -417,11 +414,12 @@ void CompressInstEmitter::createInstOperandMapping(
 /// - Fixed register must be contained in the corresponding Source Instruction
 ///   type.
 /// - Fixed register must be contained in the corresponding Destination
-///   Instruction type. Warning message printed under these conditions:
+///   Instruction type.
+/// Warning message printed under these conditions:
 /// - Fixed immediate in Dag Input or Dag Ouput cannot be checked at this time
 ///   and generate warning.
 /// - Immediate operand type in Dag Input differs from the corresponding Source
-///   Instruction type  and generate a warning.
+///   Instruction type and generate a warning.
 void CompressInstEmitter::evaluateCompressPat(Record *Rec) {
   // Validate input Dag operands.
   DagInit *SourceDag = Rec->getValueAsDag("Input");
@@ -429,8 +427,8 @@ void CompressInstEmitter::evaluateCompressPat(Record *Rec) {
   LLVM_DEBUG(dbgs() << "Input: " << *SourceDag << "\n");
 
   // Checking we are transforming from compressed to uncompressed instructions.
-  Record *Operator = SourceDag->getOperatorAsDef(Rec->getLoc());
-  CodeGenInstruction SourceInst(Operator);
+  Record *SourceOperator = SourceDag->getOperatorAsDef(Rec->getLoc());
+  CodeGenInstruction SourceInst(SourceOperator);
   verifyDagOpCount(SourceInst, SourceDag, true);
 
   // Validate output Dag operands.
@@ -442,12 +440,13 @@ void CompressInstEmitter::evaluateCompressPat(Record *Rec) {
   CodeGenInstruction DestInst(DestOperator);
   verifyDagOpCount(DestInst, DestDag, false);
 
-  if (Operator->getValueAsInt("Size") <= DestOperator->getValueAsInt("Size"))
+  if (SourceOperator->getValueAsInt("Size") <=
+      DestOperator->getValueAsInt("Size"))
     PrintFatalError(
         Rec->getLoc(),
         "Compressed instruction '" + DestOperator->getName() +
             "'is not strictly smaller than the uncompressed instruction '" +
-            Operator->getName() + "' !");
+            SourceOperator->getName() + "' !");
 
   // Fill the mapping from the source to destination instructions.
 
@@ -541,13 +540,13 @@ static unsigned getPredicates(DenseMap<const Record *, unsigned> &PredicateMap,
 }
 
 static void printPredicates(const std::vector<const Record *> &Predicates,
-                            StringRef Name, raw_ostream &o) {
-  for (unsigned i = 0; i < Predicates.size(); ++i) {
-    StringRef Pred = Predicates[i]->getValueAsString(Name);
-    o << "  case " << i + 1 << ": {\n"
-      << "  // " << Predicates[i]->getName() << "\n"
-      << "  " << Pred << "\n"
-      << "  }\n";
+                            StringRef Name, raw_ostream &OS) {
+  for (unsigned I = 0; I < Predicates.size(); ++I) {
+    StringRef Pred = Predicates[I]->getValueAsString(Name);
+    OS << "  case " << I + 1 << ": {\n"
+       << "  // " << Predicates[I]->getName() << "\n"
+       << "  " << Pred << "\n"
+       << "  }\n";
   }
 }
 
@@ -561,7 +560,7 @@ static void mergeCondAndCode(raw_ostream &CombinedStream, StringRef CondStr,
   CombinedStream.indent(4) << "} // if\n";
 }
 
-void CompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
+void CompressInstEmitter::emitCompressInstEmitter(raw_ostream &OS,
                                                   EmitterType EType) {
   Record *AsmWriter = Target.getAsmWriter();
   if (!AsmWriter->getValueAsInt("PassSubtarget"))
@@ -580,8 +579,7 @@ void CompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
                                               const CompressPat &RHS) {
     if (EType == EmitterType::Compress || EType == EmitterType::CheckCompress)
       return (LHS.Source.TheDef->getName() < RHS.Source.TheDef->getName());
-    else
-      return (LHS.Dest.TheDef->getName() < RHS.Dest.TheDef->getName());
+    return (LHS.Dest.TheDef->getName() < RHS.Dest.TheDef->getName());
   });
 
   // A list of MCOperandPredicates for all operands in use, and the reverse map.
@@ -595,44 +593,39 @@ void CompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
   std::string FH;
   raw_string_ostream Func(F);
   raw_string_ostream FuncH(FH);
-  bool NeedMRI = false;
 
   if (EType == EmitterType::Compress)
-    o << "\n#ifdef GEN_COMPRESS_INSTR\n"
-      << "#undef GEN_COMPRESS_INSTR\n\n";
+    OS << "\n#ifdef GEN_COMPRESS_INSTR\n"
+       << "#undef GEN_COMPRESS_INSTR\n\n";
   else if (EType == EmitterType::Uncompress)
-    o << "\n#ifdef GEN_UNCOMPRESS_INSTR\n"
-      << "#undef GEN_UNCOMPRESS_INSTR\n\n";
+    OS << "\n#ifdef GEN_UNCOMPRESS_INSTR\n"
+       << "#undef GEN_UNCOMPRESS_INSTR\n\n";
   else if (EType == EmitterType::CheckCompress)
-    o << "\n#ifdef GEN_CHECK_COMPRESS_INSTR\n"
-      << "#undef GEN_CHECK_COMPRESS_INSTR\n\n";
+    OS << "\n#ifdef GEN_CHECK_COMPRESS_INSTR\n"
+       << "#undef GEN_CHECK_COMPRESS_INSTR\n\n";
 
   if (EType == EmitterType::Compress) {
     FuncH << "static bool compressInst(MCInst &OutInst,\n";
     FuncH.indent(25) << "const MCInst &MI,\n";
-    FuncH.indent(25) << "const MCSubtargetInfo &STI,\n";
-    FuncH.indent(25) << "MCContext &Context) {\n";
+    FuncH.indent(25) << "const MCSubtargetInfo &STI) {\n";
   } else if (EType == EmitterType::Uncompress) {
     FuncH << "static bool uncompressInst(MCInst &OutInst,\n";
     FuncH.indent(27) << "const MCInst &MI,\n";
-    FuncH.indent(27) << "const MCRegisterInfo &MRI,\n";
     FuncH.indent(27) << "const MCSubtargetInfo &STI) {\n";
   } else if (EType == EmitterType::CheckCompress) {
     FuncH << "static bool isCompressibleInst(const MachineInstr &MI,\n";
-    FuncH.indent(27) << "const " << TargetName << "Subtarget *Subtarget,\n";
-    FuncH.indent(27) << "const MCRegisterInfo &MRI,\n";
-    FuncH.indent(27) << "const MCSubtargetInfo &STI) {\n";
+    FuncH.indent(31) << "const " << TargetName << "Subtarget &STI) {\n";
   }
 
   if (CompressPatterns.empty()) {
-    o << FuncH.str();
-    o.indent(2) << "return false;\n}\n";
+    OS << FuncH.str();
+    OS.indent(2) << "return false;\n}\n";
     if (EType == EmitterType::Compress)
-      o << "\n#endif //GEN_COMPRESS_INSTR\n";
+      OS << "\n#endif //GEN_COMPRESS_INSTR\n";
     else if (EType == EmitterType::Uncompress)
-      o << "\n#endif //GEN_UNCOMPRESS_INSTR\n\n";
+      OS << "\n#endif //GEN_UNCOMPRESS_INSTR\n\n";
     else if (EType == EmitterType::CheckCompress)
-      o << "\n#endif //GEN_CHECK_COMPRESS_INSTR\n\n";
+      OS << "\n#endif //GEN_CHECK_COMPRESS_INSTR\n\n";
     return;
   }
 
@@ -647,6 +640,12 @@ void CompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
       EType == EmitterType::Compress || EType == EmitterType::CheckCompress;
   bool CompressOrUncompress =
       EType == EmitterType::Compress || EType == EmitterType::Uncompress;
+  std::string ValidatorName =
+      CompressOrUncompress
+          ? (TargetName + "ValidateMCOperandFor" +
+             (EType == EmitterType::Compress ? "Compress" : "Uncompress"))
+                .str()
+          : "";
 
   for (auto &CompressPat : CompressPatterns) {
     if (EType == EmitterType::Uncompress && CompressPat.IsCompressOnly)
@@ -700,11 +699,11 @@ void CompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
     for (auto &Set : AnyOfFeatureSets) {
       CondStream.indent(6) << "(";
       for (auto &Op : Set) {
-        bool isLast = &Op == &*Set.rbegin();
+        bool IsLast = &Op == &*Set.rbegin();
         StringRef Not = Op.first ? "!" : "";
         CondStream << Not << "STI.getFeatureBits()[" << TargetName
                    << "::" << Op.second << "]";
-        if (!isLast)
+        if (!IsLast)
           CondStream << " || ";
       }
       CondStream << ") &&\n";
@@ -716,7 +715,10 @@ void CompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
       if (SourceOperandMap[OpNo].TiedOpIdx != -1) {
         if (Source.Operands[OpNo].Rec->isSubClassOf("RegisterClass"))
           CondStream.indent(6)
-              << "(MI.getOperand(" << OpNo << ").getReg() ==  MI.getOperand("
+              << "(MI.getOperand(" << OpNo << ").isReg()) && (MI.getOperand("
+              << SourceOperandMap[OpNo].TiedOpIdx << ").isReg()) &&\n"
+              << "      (MI.getOperand(" << OpNo
+              << ").getReg() ==  MI.getOperand("
               << SourceOperandMap[OpNo].TiedOpIdx << ").getReg()) &&\n";
         else
           PrintFatalError("Unexpected tied operand types!\n");
@@ -735,7 +737,8 @@ void CompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
       case OpData::Reg: {
         Record *Reg = SourceOperandMap[OpNo].Data.Reg;
         CondStream.indent(6)
-            << "(MI.getOperand(" << OpNo << ").getReg() == " << TargetName
+            << "(MI.getOperand(" << OpNo << ").isReg()) &&\n"
+            << "      (MI.getOperand(" << OpNo << ").getReg() == " << TargetName
             << "::" << Reg->getName() << ") &&\n";
         break;
       }
@@ -753,16 +756,21 @@ void CompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
         unsigned OpIdx = DestOperandMap[OpNo].Data.Operand;
         // Check that the operand in the Source instruction fits
         // the type for the Dest instruction.
-        if (DestOperand.Rec->isSubClassOf("RegisterClass")) {
-          NeedMRI = true;
+        if (DestOperand.Rec->isSubClassOf("RegisterClass") ||
+            DestOperand.Rec->isSubClassOf("RegisterOperand")) {
+          auto *ClassRec = DestOperand.Rec->isSubClassOf("RegisterClass")
+                               ? DestOperand.Rec
+                               : DestOperand.Rec->getValueAsDef("RegClass");
           // This is a register operand. Check the register class.
           // Don't check register class if this is a tied operand, it was done
           // for the operand its tied to.
           if (DestOperand.getTiedRegister() == -1)
-            CondStream.indent(6) << "(MRI.getRegClass(" << TargetName
-                                 << "::" << DestOperand.Rec->getName()
-                                 << "RegClassID).contains(MI.getOperand("
-                                 << OpIdx << ").getReg())) &&\n";
+            CondStream.indent(6)
+                << "(MI.getOperand(" << OpIdx << ").isReg()) &&\n"
+                << "      (" << TargetName << "MCRegisterClasses[" << TargetName
+                << "::" << ClassRec->getName()
+                << "RegClassID].contains(MI.getOperand(" << OpIdx
+                << ").getReg())) &&\n";
 
           if (CompressOrUncompress)
             CodeStream.indent(6)
@@ -774,7 +782,7 @@ void CompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
                 getPredicates(MCOpPredicateMap, MCOpPredicates, DestOperand.Rec,
                               "MCOperandPredicate");
             CondStream.indent(6)
-                << TargetName << "ValidateMCOperand("
+                << ValidatorName << "("
                 << "MI.getOperand(" << OpIdx << "), STI, " << Entry << ") &&\n";
           } else {
             unsigned Entry =
@@ -783,8 +791,8 @@ void CompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
             CondStream.indent(6)
                 << "MI.getOperand(" << OpIdx << ").isImm() &&\n";
             CondStream.indent(6) << TargetName << "ValidateMachineOperand("
-                                 << "MI.getOperand(" << OpIdx
-                                 << "), Subtarget, " << Entry << ") &&\n";
+                                 << "MI.getOperand(" << OpIdx << "), &STI, "
+                                 << Entry << ") &&\n";
           }
           if (CompressOrUncompress)
             CodeStream.indent(6)
@@ -797,7 +805,7 @@ void CompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
           unsigned Entry = getPredicates(MCOpPredicateMap, MCOpPredicates,
                                          DestOperand.Rec, "MCOperandPredicate");
           CondStream.indent(6)
-              << TargetName << "ValidateMCOperand("
+              << ValidatorName << "("
               << "MCOperand::createImm(" << DestOperandMap[OpNo].Data.Imm
               << "), STI, " << Entry << ") &&\n";
         } else {
@@ -806,7 +814,7 @@ void CompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
           CondStream.indent(6)
               << TargetName
               << "ValidateMachineOperand(MachineOperand::CreateImm("
-              << DestOperandMap[OpNo].Data.Imm << "), SubTarget, " << Entry
+              << DestOperandMap[OpNo].Data.Imm << "), &STI, " << Entry
               << ") &&\n";
         }
         if (CompressOrUncompress)
@@ -837,72 +845,64 @@ void CompressInstEmitter::emitCompressInstEmitter(raw_ostream &o,
   Func.indent(2) << "return false;\n}\n";
 
   if (!MCOpPredicates.empty()) {
-    o << "static bool " << TargetName
-      << "ValidateMCOperand(const MCOperand &MCOp,\n"
-      << "                  const MCSubtargetInfo &STI,\n"
-      << "                  unsigned PredicateIndex) {\n"
-      << "  switch (PredicateIndex) {\n"
-      << "  default:\n"
-      << "    llvm_unreachable(\"Unknown MCOperandPredicate kind\");\n"
-      << "    break;\n";
+    OS << "static bool " << ValidatorName << "(const MCOperand &MCOp,\n"
+       << "                  const MCSubtargetInfo &STI,\n"
+       << "                  unsigned PredicateIndex) {\n"
+       << "  switch (PredicateIndex) {\n"
+       << "  default:\n"
+       << "    llvm_unreachable(\"Unknown MCOperandPredicate kind\");\n"
+       << "    break;\n";
 
-    printPredicates(MCOpPredicates, "MCOperandPredicate", o);
+    printPredicates(MCOpPredicates, "MCOperandPredicate", OS);
 
-    o << "  }\n"
-      << "}\n\n";
+    OS << "  }\n"
+       << "}\n\n";
   }
 
   if (!ImmLeafPredicates.empty()) {
-    o << "static bool " << TargetName
-      << "ValidateMachineOperand(const MachineOperand &MO,\n"
-      << "                  const " << TargetName << "Subtarget *Subtarget,\n"
-      << "                  unsigned PredicateIndex) {\n"
-      << "  int64_t Imm = MO.getImm();\n"
-      << "  switch (PredicateIndex) {\n"
-      << "  default:\n"
-      << "    llvm_unreachable(\"Unknown ImmLeaf Predicate kind\");\n"
-      << "    break;\n";
+    OS << "static bool " << TargetName
+       << "ValidateMachineOperand(const MachineOperand &MO,\n"
+       << "                  const " << TargetName << "Subtarget *Subtarget,\n"
+       << "                  unsigned PredicateIndex) {\n"
+       << "  int64_t Imm = MO.getImm();\n"
+       << "  switch (PredicateIndex) {\n"
+       << "  default:\n"
+       << "    llvm_unreachable(\"Unknown ImmLeaf Predicate kind\");\n"
+       << "    break;\n";
 
-    printPredicates(ImmLeafPredicates, "ImmediateCode", o);
+    printPredicates(ImmLeafPredicates, "ImmediateCode", OS);
 
-    o << "  }\n"
-      << "}\n\n";
+    OS << "  }\n"
+       << "}\n\n";
   }
 
-  o << FuncH.str();
-  if (NeedMRI && EType == EmitterType::Compress)
-    o.indent(2) << "const MCRegisterInfo &MRI = *Context.getRegisterInfo();\n";
-  o << Func.str();
+  OS << FuncH.str();
+  OS << Func.str();
 
   if (EType == EmitterType::Compress)
-    o << "\n#endif //GEN_COMPRESS_INSTR\n";
+    OS << "\n#endif //GEN_COMPRESS_INSTR\n";
   else if (EType == EmitterType::Uncompress)
-    o << "\n#endif //GEN_UNCOMPRESS_INSTR\n\n";
+    OS << "\n#endif //GEN_UNCOMPRESS_INSTR\n\n";
   else if (EType == EmitterType::CheckCompress)
-    o << "\n#endif //GEN_CHECK_COMPRESS_INSTR\n\n";
+    OS << "\n#endif //GEN_CHECK_COMPRESS_INSTR\n\n";
 }
 
-void CompressInstEmitter::run(raw_ostream &o) {
+void CompressInstEmitter::run(raw_ostream &OS) {
   std::vector<Record *> Insts = Records.getAllDerivedDefinitions("CompressPat");
 
   // Process the CompressPat definitions, validating them as we do so.
-  for (unsigned i = 0, e = Insts.size(); i != e; ++i)
-    evaluateCompressPat(Insts[i]);
+  for (unsigned I = 0, E = Insts.size(); I != E; ++I)
+    evaluateCompressPat(Insts[I]);
 
   // Emit file header.
-  emitSourceFileHeader("Compress instruction Source Fragment", o);
+  emitSourceFileHeader("Compress instruction Source Fragment", OS, Records);
   // Generate compressInst() function.
-  emitCompressInstEmitter(o, EmitterType::Compress);
+  emitCompressInstEmitter(OS, EmitterType::Compress);
   // Generate uncompressInst() function.
-  emitCompressInstEmitter(o, EmitterType::Uncompress);
+  emitCompressInstEmitter(OS, EmitterType::Uncompress);
   // Generate isCompressibleInst() function.
-  emitCompressInstEmitter(o, EmitterType::CheckCompress);
+  emitCompressInstEmitter(OS, EmitterType::CheckCompress);
 }
 
-namespace llvm {
-
-void EmitCompressInst(RecordKeeper &RK, raw_ostream &OS) {
-  CompressInstEmitter(RK).run(OS);
-}
-
-} // namespace llvm
+static TableGen::Emitter::OptClass<CompressInstEmitter>
+    X("gen-compress-inst-emitter", "Generate compressed instructions.");

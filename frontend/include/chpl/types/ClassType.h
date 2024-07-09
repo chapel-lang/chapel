@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #define CHPL_TYPES_CLASS_TYPE_H
 
 #include "chpl/types/BasicClassType.h"
+#include "chpl/types/AnyClassType.h"
 #include "chpl/types/ClassTypeDecorator.h"
 #include "chpl/types/Type.h"
 
@@ -34,15 +35,15 @@ namespace types {
  */
 class ClassType final : public Type {
  private:
-  const BasicClassType* basicType_;
+  const ManageableType* manageableType_;
   const Type* manager_;
   ClassTypeDecorator decorator_;
 
-  ClassType(const BasicClassType* basicType,
+  ClassType(const ManageableType* manageableType,
             const Type* manager,
             ClassTypeDecorator decorator)
     : Type(typetags::ClassType),
-      basicType_(basicType),
+      manageableType_(manageableType),
       manager_(manager),
       decorator_(decorator)
   { }
@@ -50,7 +51,7 @@ class ClassType final : public Type {
   bool contentsMatchInner(const Type* other) const override {
     const ClassType* lhs = this;
     const ClassType* rhs = (const ClassType*) other;
-    return lhs->basicType_ == rhs->basicType_ &&
+    return lhs->manageableType_ == rhs->manageableType_ &&
            lhs->manager_ == rhs->manager_ &&
            lhs->decorator_ == rhs->decorator_;
   }
@@ -61,7 +62,7 @@ class ClassType final : public Type {
 
   static const owned<ClassType>&
   getClassType(Context* context,
-               const BasicClassType* basicType,
+               const ManageableType* manageableType,
                const Type* manager,
                ClassTypeDecorator decorator);
 
@@ -78,7 +79,7 @@ class ClassType final : public Type {
                  chpl::StringifyKind stringKind) const override;
 
   static const ClassType* get(Context* context,
-                              const BasicClassType* basicType,
+                              const ManageableType* manageableType,
                               const Type* manager,
                               ClassTypeDecorator decorator);
 
@@ -95,9 +96,15 @@ class ClassType final : public Type {
     return manager_;
   }
 
+  /** Returns the type being managed */
+  const ManageableType* manageableType() const {
+    return manageableType_;
+  }
+
   /** Returns the basic class type */
   const BasicClassType* basicClassType() const {
-    return basicType_;
+    if (manageableType_) return manageableType_->toBasicClassType();
+    return nullptr;
   }
 
   /** Returns the version of this ClassType with the passed decorator */

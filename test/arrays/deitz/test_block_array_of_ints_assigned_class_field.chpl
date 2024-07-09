@@ -1,12 +1,13 @@
 use BlockDist;
 
-const D = {1..4} dmapped Block({1..4});
+const D = {1..4} dmapped new blockDist({1..4});
 
 class C {
   var i: int = -1;
 }
 
-var c = (new owned C()).borrow();
+var cOwn = new owned C();
+var c = cOwn.borrow();
 
 var A: [D] int = c.i;
 

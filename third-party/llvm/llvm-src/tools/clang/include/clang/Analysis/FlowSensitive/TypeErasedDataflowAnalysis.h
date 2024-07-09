@@ -14,6 +14,7 @@
 #ifndef LLVM_CLANG_ANALYSIS_FLOWSENSITIVE_TYPEERASEDDATAFLOWANALYSIS_H
 #define LLVM_CLANG_ANALYSIS_FLOWSENSITIVE_TYPEERASEDDATAFLOWANALYSIS_H
 
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -21,25 +22,22 @@
 #include "clang/AST/Stmt.h"
 #include "clang/Analysis/CFG.h"
 #include "clang/Analysis/FlowSensitive/ControlFlowContext.h"
+#include "clang/Analysis/FlowSensitive/DataflowAnalysisContext.h"
 #include "clang/Analysis/FlowSensitive/DataflowEnvironment.h"
 #include "clang/Analysis/FlowSensitive/DataflowLattice.h"
-#include "clang/Analysis/FlowSensitive/Transfer.h"
 #include "llvm/ADT/Any.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/Support/Error.h"
 
 namespace clang {
 namespace dataflow {
 
 struct DataflowAnalysisOptions {
-  /// Determines whether to apply the built-in transfer functions.
+  /// Options for the built-in model, or empty to not apply them.
   // FIXME: Remove this option once the framework supports composing analyses
   // (at which point the built-in transfer functions can be simply a standalone
   // analysis).
-  bool ApplyBuiltinTransfer = true;
-
-  /// Only has an effect if `ApplyBuiltinTransfer` is true.
-  TransferOptions BuiltinTransferOptions;
+  std::optional<DataflowAnalysisContext::Options> BuiltinOpts =
+      DataflowAnalysisContext::Options{};
 };
 
 /// Type-erased lattice element container.
@@ -59,10 +57,6 @@ class TypeErasedDataflowAnalysis : public Environment::ValueModel {
 public:
   TypeErasedDataflowAnalysis() : Options({}) {}
 
-  /// Deprecated. Use the `DataflowAnalysisOptions` constructor instead.
-  TypeErasedDataflowAnalysis(bool ApplyBuiltinTransfer)
-      : Options({ApplyBuiltinTransfer, TransferOptions{}}) {}
-
   TypeErasedDataflowAnalysis(DataflowAnalysisOptions Options)
       : Options(Options) {}
 
@@ -78,26 +72,47 @@ public:
   /// Joins two type-erased lattice elements by computing their least upper
   /// bound. Places the join result in the left element and returns an effect
   /// indicating whether any changes were made to it.
-  virtual LatticeJoinEffect joinTypeErased(TypeErasedLattice &,
+  virtual TypeErasedLattice joinTypeErased(const TypeErasedLattice &,
                                            const TypeErasedLattice &) = 0;
+
+  /// Chooses a lattice element that approximates the current element at a
+  /// program point, given the previous element at that point. Places the
+  /// widened result in the current element (`Current`). Widening is optional --
+  /// it is only needed to either accelerate convergence (for lattices with
+  /// non-trivial height) or guarantee convergence (for lattices with infinite
+  /// height).
+  ///
+  /// Returns an indication of whether any changes were made to `Current` in
+  /// order to widen. This saves a separate call to `isEqualTypeErased` after
+  /// the widening.
+  virtual LatticeJoinEffect
+  widenTypeErased(TypeErasedLattice &Current,
+                  const TypeErasedLattice &Previous) = 0;
 
   /// Returns true if and only if the two given type-erased lattice elements are
   /// equal.
   virtual bool isEqualTypeErased(const TypeErasedLattice &,
                                  const TypeErasedLattice &) = 0;
 
-  /// Applies the analysis transfer function for a given statement and
-  /// type-erased lattice element.
-  virtual void transferTypeErased(const Stmt *, TypeErasedLattice &,
+  /// Applies the analysis transfer function for a given control flow graph
+  /// element and type-erased lattice element.
+  virtual void transferTypeErased(const CFGElement &, TypeErasedLattice &,
                                   Environment &) = 0;
 
-  /// Determines whether to apply the built-in transfer functions, which model
-  /// the heap and stack in the `Environment`.
-  bool applyBuiltinTransfer() const { return Options.ApplyBuiltinTransfer; }
+  /// Applies the analysis transfer function for a given edge from a CFG block
+  /// of a conditional statement.
+  /// @param Stmt The condition which is responsible for the split in the CFG.
+  /// @param Branch True if the edge goes to the basic block where the
+  /// condition is true.
+  // FIXME: Change `Stmt` argument to a reference.
+  virtual void transferBranchTypeErased(bool Branch, const Stmt *,
+                                        TypeErasedLattice &, Environment &) = 0;
 
-  /// Returns the options to be passed to the built-in transfer functions.
-  TransferOptions builtinTransferOptions() const {
-    return Options.BuiltinTransferOptions;
+  /// If the built-in model is enabled, returns the options to be passed to
+  /// them. Otherwise returns empty.
+  const std::optional<DataflowAnalysisContext::Options> &
+  builtinOptions() const {
+    return Options.BuiltinOpts;
   }
 };
 
@@ -111,39 +126,32 @@ struct TypeErasedDataflowAnalysisState {
 
   TypeErasedDataflowAnalysisState(TypeErasedLattice Lattice, Environment Env)
       : Lattice(std::move(Lattice)), Env(std::move(Env)) {}
-};
 
-/// Transfers the state of a basic block by evaluating each of its statements in
-/// the context of `Analysis` and the states of its predecessors that are
-/// available in `BlockStates`. `HandleTransferredStmt` (if provided) will be
-/// applied to each statement in the block, after it is evaluated.
-///
-/// Requirements:
-///
-///   All predecessors of `Block` except those with loop back edges must have
-///   already been transferred. States in `BlockStates` that are set to
-///   `llvm::None` represent basic blocks that are not evaluated yet.
-TypeErasedDataflowAnalysisState transferBlock(
-    const ControlFlowContext &CFCtx,
-    std::vector<llvm::Optional<TypeErasedDataflowAnalysisState>> &BlockStates,
-    const CFGBlock &Block, const Environment &InitEnv,
-    TypeErasedDataflowAnalysis &Analysis,
-    std::function<void(const CFGStmt &,
-                       const TypeErasedDataflowAnalysisState &)>
-        HandleTransferredStmt = nullptr);
+  TypeErasedDataflowAnalysisState fork() const {
+    return TypeErasedDataflowAnalysisState(Lattice, Env.fork());
+  }
+};
 
 /// Performs dataflow analysis and returns a mapping from basic block IDs to
 /// dataflow analysis states that model the respective basic blocks. Indices of
 /// the returned vector correspond to basic block IDs. Returns an error if the
 /// dataflow analysis cannot be performed successfully. Otherwise, calls
-/// `PostVisitStmt` on each statement with the final analysis results at that
+/// `PostVisitCFG` on each CFG element with the final analysis results at that
 /// program point.
-llvm::Expected<std::vector<llvm::Optional<TypeErasedDataflowAnalysisState>>>
+///
+/// `MaxBlockVisits` caps the number of block visits during analysis. It doesn't
+/// distinguish between repeat visits to the same block and visits to distinct
+/// blocks. This parameter is a backstop to prevent infinite loops, in the case
+/// of bugs in the lattice and/or transfer functions that prevent the analysis
+/// from converging.
+llvm::Expected<std::vector<std::optional<TypeErasedDataflowAnalysisState>>>
 runTypeErasedDataflowAnalysis(
     const ControlFlowContext &CFCtx, TypeErasedDataflowAnalysis &Analysis,
     const Environment &InitEnv,
-    std::function<void(const Stmt *, const TypeErasedDataflowAnalysisState &)>
-        PostVisitStmt = nullptr);
+    std::function<void(const CFGElement &,
+                       const TypeErasedDataflowAnalysisState &)>
+        PostVisitCFG,
+    std::int32_t MaxBlockVisits);
 
 } // namespace dataflow
 } // namespace clang

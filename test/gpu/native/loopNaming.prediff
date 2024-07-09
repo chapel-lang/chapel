@@ -1,0 +1,2 @@
+#! /bin/sh
+sed -nE 's/(Kernel: chpl_gpu_kernel_loopNaming_line_[0-9]+_).*/\1/p' $2 | uniq | sort > $2.temp && mv $2.temp $2

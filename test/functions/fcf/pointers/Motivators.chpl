@@ -2,7 +2,6 @@ module Motivators {
 
   // Tests were written progressively with these things in mind.
   compilerAssert(fcfsUsePointerImplementation);
-  compilerAssert(!fcfsUseLegacyBehavior);
 
   var globalCounter = 0;
 

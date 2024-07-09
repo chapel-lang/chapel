@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -49,7 +49,7 @@ proc _isPrimitiveType(type t) param do return
   isRealType(t)     ||
 //To allow imag, need to define casts from primitive types into imag.
 //isImagType(t)     ||
-  (t == c_string);
+  (t == chpl_c_string);
 
 /*
 Returns ``true`` if the type ``t`` is a primitive type,
@@ -77,8 +77,8 @@ proc isIntegralType(type t) param do return
 proc isNothingType(type t) param do return t == nothing;
 
 /* Returns ``true`` if the type ``t`` is a ``bool`` type, of any width. */
-proc isBoolType(type t) param do return
-  (t == bool) || (t == bool(8)) || (t == bool(16)) || (t == bool(32)) || (t == bool(64));
+proc isBoolType(type t) param do
+  return (t == bool);
 
 /* Returns ``true`` if the type ``t`` is an ``int`` type, of any width. */
 proc isIntType(type t) param do return
@@ -114,9 +114,11 @@ proc isEnumType(type t) param {
 }
 
 /* Return true if ``t`` is a class type. Otherwise return false. */
+pragma "suppress generic actual warning"
 proc isClassType(type t) param do return __primitive("is class type", t);
 
 /* Return true if ``t`` is a record type. Otherwise return false. */
+pragma "suppress generic actual warning"
 proc isRecordType(type t) param {
   if __primitive("is record type", t) == false then
     return false;
@@ -138,6 +140,7 @@ proc isRecordType(type t) param {
 }
 
 /* Return true if ``t`` is a union type. Otherwise return false. */
+pragma "suppress generic actual warning"
 proc isUnionType(type t) param do return __primitive("is union type", t);
 
 /* Returns ``true`` if its argument is a tuple type.  */
@@ -235,6 +238,10 @@ Primitive numeric/boolean/enum Chapel types are POD types as well.
  */
 @chpldoc.nodoc // I don't think we want to make this public yet
 proc isPODType(type t) param {
+  use CTypes;
+  if isSubtype(t, c_array) then
+    return isPODType(t.eltType);
+
   return __primitive("is pod type", t);
 }
 @chpldoc.nodoc
@@ -259,7 +266,6 @@ proc isDefaultInitializableType(type t) param {
 }
 
 // Returns the unsigned equivalent of the input type.
-@chpldoc.nodoc
 proc chpl__unsignedType(type t) type
 {
   return uint(numBits(t));
@@ -267,13 +273,11 @@ proc chpl__unsignedType(type t) type
 
 
 // Returns the signed equivalent of the input type.
-@chpldoc.nodoc
 proc chpl__signedType(type t) type
 {
   return int(numBits(t));
 }
 
-@chpldoc.nodoc
 proc chpl__maxIntTypeSameSign(type t) type {
   if ! isIntegralType(t) then
     compilerError("type t is non-integral: ", t:string);
@@ -454,8 +458,10 @@ proc isSingle(type t)    param do  return isSingleType(t);
 @chpldoc.nodoc
 proc isAtomic(type t)    param do  return isAtomicType(t);
 
+pragma "suppress generic actual warning"
 @chpldoc.nodoc
 proc isGeneric(type t)   param do  return isGenericType(t);
+
 @chpldoc.nodoc
 proc isHomogeneousTuple(type t)  param do  return isHomogeneousTupleType(t);
 @chpldoc.nodoc
@@ -582,7 +588,7 @@ that can be copy-initialized and ``false`` otherwise.
 
 Note that even if this function returns ``true``, it might be the case that the
 type only supports copy-initialization from mutable values.
-:record:`~OwnedObject.owned` is an example of a type with that behavior.
+:type:`~OwnedObject.owned` is an example of a type with that behavior.
 
 See also the specification section :ref:`Copy_Initialization_of_Records`.
 
@@ -594,7 +600,7 @@ proc isCopyable(e) param do return isCopyableValue(e);
 Returns ``true`` if the argument is a type or an expression of a type
 that can be copy-initialized from a ``const`` value and ``false`` otherwise.
 
-Returns ``false`` for :record:`~OwnedObject.owned` because copy-initialization
+Returns ``false`` for :type:`~OwnedObject.owned` because copy-initialization
 for that type leaves the source argument storing ``nil``.
 
 See also the specification section :ref:`Copy_Initialization_of_Records`.
@@ -609,7 +615,7 @@ can be assigned from another value and ``false`` otherwise.
 
 Note that even if this function returns ``true``, it might be the case that the
 type only supports assignment from mutable values.
-:record:`~OwnedObject.owned` is an example of a type with that behavior.
+:type:`~OwnedObject.owned` is an example of a type with that behavior.
 
 See also the specification section :ref:`Record_Assignment`.
 
@@ -621,7 +627,7 @@ proc isAssignable(e) param do return isCopyableValue(e);
 Returns ``true`` if the argument is a type or expression of a type that
 can be assigned from a ``const`` value and ``false`` otherwise.
 
-Returns ``false`` for  :record:`~OwnedObject.owned` because assignment
+Returns ``false`` for  :type:`~OwnedObject.owned` because assignment
 for that type leaves the source argument storing ``nil``.
 
 See also the specification section :ref:`Record_Assignment`.
@@ -644,7 +650,6 @@ proc isDefaultInitializable(e) param do return isDefaultInitializableValue(e);
 
 
 // for internal use until we have a better name
-@chpldoc.nodoc
 proc chpl_isSyncSingleAtomic(e: ?t) param do return
   isSyncType(t) ||
   isSingleType(t) ||
@@ -653,7 +658,6 @@ proc chpl_isSyncSingleAtomic(e: ?t) param do return
 // isSubtype(), isProperSubtype() are now directly handled by compiler
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
-@chpldoc.nodoc
 proc chpl__legalIntCoerce(type t1, type t2) param
 {
   if (isIntType(t2)) {
@@ -705,20 +709,12 @@ proc toNilableIfClassType(type arg) type {
 // joint documentation, for user convenience
 /*
 Returns the number of bits used to store the values of type ``t``.
-This is available for all numeric types and fixed-width ``bool`` types.
-It is not available for default-width ``bool``.
+This is available for all numeric types.
 */
+pragma "no where doc"
 proc numBits(type t) param where t == bool {
   compilerError("default-width 'bool' does not have a well-defined size");
 }
-@chpldoc.nodoc
-proc numBits(type t) param where t == bool(8) do return 8;
-@chpldoc.nodoc
-proc numBits(type t) param where t == bool(16) do return 16;
-@chpldoc.nodoc
-proc numBits(type t) param where t == bool(32) do return 32;
-@chpldoc.nodoc
-proc numBits(type t) param where t == bool(64) do return 64;
 @chpldoc.nodoc
 proc numBits(type t) param where t == int(8) do return 8;
 @chpldoc.nodoc
@@ -757,8 +753,7 @@ param bitsPerByte = 8;
 
 /*
 Returns the number of bytes used to store the values of type ``t``.
-This is available for all numeric types and fixed-width ``bool`` types.
-It is not available for default-width ``bool``.
+This is available for all numeric types.
 */
 proc numBytes(type t) param do return numBits(t)/8;
 
@@ -771,6 +766,7 @@ When ``t`` is a ``bool`` type, it returns ``false``.
 When ``t`` is ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
+pragma "no where doc"
 proc min(type t) param  where isBool(t) do      return false: t;
 
 @chpldoc.nodoc
@@ -809,6 +805,7 @@ When ``t`` is a ``bool`` type, it returns ``true``.
 When ``t`` is a ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
+pragma "no where doc"
 proc max(type t) param  where isBool(t) do      return true: t;
 
 @chpldoc.nodoc
@@ -870,39 +867,42 @@ private proc chpl_enum_minbits(type t: enum) param {
 }
 // TODO - maybe this function can be useful for the user, for C interop?
 // If so, give it a different name.
-@chpldoc.nodoc
 proc chpl_enum_mintype(type t: enum) type {
   return uint(chpl_enum_minbits(t));
 }
 
 
 /*
-Returns ``this``, cast to the type ``T``.
-Generates a run-time error if ``this`` cannot be represented by ``T``,
+The following ``safeCast()`` methods return ``this`` cast to the type ``T``.
+At present, these halt the program if ``this`` cannot be represented by ``T``,
 for example ``(-1).safeCast(uint)`` or ``256.safeCast(uint(8))``.
 
-This method performs the minimum number of runtime checks.
+These methods perform the minimum number of runtime checks.
 For example, when casting from ``uint(8)`` to ``uint(64)``,
 no checks at all will be done.
 */
+@unstable("integral.safeCast() is unstable and its behavior may change in the future")
 inline proc integral.safeCast(type T: integral) : T {
   if castChecking then
-    checkValue();
+    if const error = this.chpl_checkValue(T) then
+      HaltWrappers.safeCastCheckHalt(error.message());
   return this:T;
+}
 
-  proc checkValue() {
+/* Return 'nil' if 'this' fits into 'T', an IllegalArgumentError otherwise. */
+proc integral.chpl_checkValue(type T: integral): owned IllegalArgumentError? {
     if isUintType(T) {
       if isIntType(this.type) {
         // int(?) -> uint(?)
         if this < 0 then // runtime check
-          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+          return new IllegalArgumentError("bad cast from "+this.type:string+
                                          " less than 0 to "+T:string);
       }
 
       if max(this.type):uint > max(T):uint {
         // [u]int(?) -> uint(?)
         if (this:uint > max(T):uint) then // runtime check
-          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+          return new IllegalArgumentError("bad cast from "+this.type:string+
                                          " with a value greater than the maximum of "+ T:string+" to "+T:string);
       }
     }
@@ -913,13 +913,13 @@ inline proc integral.safeCast(type T: integral) : T {
         if isUintType(this.type) {
           // uint(?) -> int(?)
           if this:uint > max(T):uint then // runtime check
-            HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+            return new IllegalArgumentError("bad cast from "+this.type:string+
                                            " with a value greater than the maximum of "+ T:string+" to "+T:string);
         } else {
           // int(?) -> int(?)
           // max(T) <= max(int), so cast to int is safe
           if this:int > max(T):int then // runtime check
-            HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+            return new IllegalArgumentError("bad cast from "+this.type:string+
                                            " with a value greater than the maximum of "+ T:string+" to "+T:string);
         }
       }
@@ -927,17 +927,36 @@ inline proc integral.safeCast(type T: integral) : T {
         if min(this.type):int < min(T):int {
           // int(?) -> int(?)
           if this:int < min(T):int then // runtime check
-            HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+            return new IllegalArgumentError("bad cast from "+this.type:string+
                                            " with a value less than the minimum of "+ T:string+" to "+T:string);
         }
       }
     }
-  }
+
+  return nil;
+}
+
+@unstable("integral.safeCast() is unstable and its behavior may change in the future")
+proc integral.safeCast(type T: bool) {
+  if this != 0 && this != 1 then
+    HaltWrappers.safeCastCheckHalt("casting "+this.type:string+" to 'bool' requires it to have a value of either 0 or 1, but the current value is " + this:string);
+  return this: bool;
+}
+
+@unstable("bool.safeCast() is unstable and its behavior may change in the future")
+proc bool.safeCast(type T: integral) {
+  return this: T;
+}
+
+@unstable("bool.safeCast() is unstable and its behavior may change in the future")
+proc bool.safeCast(type T: bool) {
+  return this;
 }
 
 @chpldoc.nodoc // documented with the other safeCast above
 proc integral.safeCast(type T) {
-  compilerError("safeCast is only supported between integral types");
+  compilerError("safeCasts are not supported from " + this.type:string +
+                " to " + T:string);
 }
 
 //
@@ -995,28 +1014,28 @@ proc isCoercible(type from, type to) param {
   return __primitive("is_coercible", from, to);
 }
 
-/* Returns ``true`` if the type ``sub`` is a subtype of the type ``super``.
+/* Returns ``true`` if the type ``sub`` is a subtype of the type ``sup``.
    See also :ref:`Subtype`.
 
    In particular, returns ``true`` in any of these cases:
 
-     * ``sub`` is the same type as ``super``
-     * ``sub`` is an instantiation of a generic type ``super``
-     * ``sub`` is a class type inheriting from ``super``
-     * ``sub`` is non-nilable class type and ``super`` is the nilable version of the
+     * ``sub`` is the same type as ``sup``
+     * ``sub`` is an instantiation of a generic type ``sup``
+     * ``sub`` is a class type inheriting from ``sup``
+     * ``sub`` is non-nilable class type and ``sup`` is the nilable version of the
        same class type
    */
 pragma "docs only"
-proc isSubtype(type sub, type super) param {
-  return __primitive("is_subtype", super, sub);
+proc isSubtype(type sub, type sup) param {
+  return __primitive("is_subtype", sup, sub);
 }
 
 /* Similar to :proc:`isSubtype` but returns ``false`` if
-   ``sub`` and ``super`` refer to the same type.
+   ``sub`` and ``sup`` refer to the same type.
    */
 pragma "docs only"
-proc isProperSubtype(type sub, type super) param {
-  return __primitive("is_proper_subtype", super, sub);
+proc isProperSubtype(type sub, type sup) param {
+  return __primitive("is_proper_subtype", sup, sub);
 }
 
 /* :returns: isProperSubtype(a,b) */

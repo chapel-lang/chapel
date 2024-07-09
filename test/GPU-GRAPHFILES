@@ -1,23 +1,30 @@
-gpu/native/studies/shoc/shoc-triad-bw-sm.graph
-gpu/native/studies/shoc/triad.graph
-gpu/native/studies/shoc/kernel.graph
-gpu/native/studies/shoc/shoc-triad-bw-lg.graph
-gpu/native/studies/shoc/triad2.graph
-gpu/native/studies/shoc/kernel2.graph
+gpu/native/studies/shoc/shoc-triad-all-sm.graph
+gpu/native/studies/shoc/shoc-triad-kernel-sm.graph
+gpu/native/studies/shoc/shoc-triad-all-lg.graph
+gpu/native/studies/shoc/shoc-triad-kernel-lg.graph
 
-gpu/native/array_on_device/studies/shoc/triadAodBw1.graph
-gpu/native/array_on_device/studies/shoc/triadAodBw2.graph
-
-gpu/native/studies/shoc/sort.graph
+gpu/native/studies/shoc/shoc-sort.graph
 
 gpu/native/streamPrototype/gpuStream.graph
+gpu/native/studies/multiGpuStream/multiGpuStream.graph
 
 gpu/native/studies/kernelLaunch/emptyKernelLaunch.graph
+gpu/native/studies/tightLoopNotOnGpu/tightLoopNotOnGpu.graph
+gpu/native/studies/tightLoopNotOnGpu/tightLoopOnGpu.graph
+gpu/native/studies/gpuArrayOps/gpuArrayOps.graph
 
-gpu/native/studies/transpose/transpose-throughput.graph
 gpu/native/studies/transpose/transpose-time.graph
 
-gpu/native/studies/chop/chplGPU.graph
+gpu/native/studies/chop/chop.graph
+
+gpu/native/studies/coral/coral.graph
+
+gpu/native/studies/minibude/Bude.graph
 
 gpu/native/studies/compiler-performance/transform.graph
 gpu/native/studies/compiler-performance/end-to-end.graph
+
+
+gpu/native/studies/sort/radixSortGpu.graph
+gpu/native/studies/sort/radixSortGpuHistorical.graph
+gpu/native/studies/sort/scanTest.graph

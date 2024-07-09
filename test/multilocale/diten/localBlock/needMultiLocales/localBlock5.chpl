@@ -1,22 +1,22 @@
 class C {
   var a: int;
-  var next: unmanaged C?;
+  var next: shared C?;
 }
 
-var A: [1..5] unmanaged C?;
+var A: [1..5] shared C?;
 
 on Locales(1) {
-  [i in A.domain] A(i) = new unmanaged C(i);
+  [i in A.domain] A(i) = new shared C(i);
 }
 
-[i in A.domain] A(i)!.next = new unmanaged C(i+1);
+[i in A.domain] A(i)!.next = new shared C(i+1);
 
 var B = A!.next;
 local {
-  B!.next = new unmanaged C(B!.a + 1);
+  B!.next = new shared C(B!.a + 1);
 }
 
-proc foo(c: unmanaged C?) {
+proc foo(c: C?) {
   c!.a = c!.a - 3;
 }
 

@@ -9,14 +9,14 @@ config const tasksPerLocale = 1;
 config const verbose: bool = false;
 
 proc main() {
-  const Dist = new dmap(new Block(rank=1,idxType=int(64),boundingBox={1..m},
-                                  dataParTasksPerLocale=tasksPerLocale));
+  const Dist = new blockDist(rank=1,idxType=int(64),boundingBox={1..m},
+                                  dataParTasksPerLocale=tasksPerLocale);
   const ProblemSpace: domain(1, int(64)) dmapped Dist = {1..m};
   var A, B, C: [ProblemSpace] elemType;
 
-  var randlist = new owned NPBRandomStream(real, seed);
-  randlist.fillRandom(B);
-  randlist.fillRandom(C);
+  var randlist = new randomStream(real, seed);
+  randlist.fill(B);
+  randlist.fill(C);
   startCommDiagnostics();
   forall (a, b, c) in zip(A, B, C) do
     a = b + alpha * c;

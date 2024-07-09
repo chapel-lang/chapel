@@ -5,12 +5,12 @@ record Wrapper {
   var val: retType;
   var err: owned Error? = nil;
 
-  proc get(): retType throws {
+  proc ref get(): retType throws {
     if err then throw err;
     return val;
   }
 
-  proc oops() {
+  proc ref oops() {
     err = new owned StringError("called oops()");
   }
 }

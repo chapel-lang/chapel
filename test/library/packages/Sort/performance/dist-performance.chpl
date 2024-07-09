@@ -68,11 +68,11 @@ inline proc endDiag(name, x) {
 }
 
 proc main() {
-  var A = Block.createArray({1..nElems}, elemType);
+  var A = blockDist.createArray({1..nElems}, elemType);
   fillRandom(A, seed=314159265);
 
   startDiag();
-  TwoArrayRadixSort.twoArrayRadixSort(A);
+  TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort(A);
   endDiag("Sort");
   assert(isSorted(A));
 }

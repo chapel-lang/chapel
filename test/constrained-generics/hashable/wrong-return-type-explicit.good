@@ -1,0 +1,6 @@
+wrong-return-type-explicit.chpl:1: In 'implements hashable' statement:
+wrong-return-type-explicit.chpl:1: error: when checking this implements statement
+wrong-return-type-explicit.chpl:2: note: this implementation of the required function hash
+wrong-return-type-explicit.chpl:2: note: has return type 'int(64)'
+$CHPL_HOME/modules/internal/ChapelHashing.chpl:29: note: which does not match the expected return type 'uint(64)'
+$CHPL_HOME/modules/internal/ChapelHashing.chpl:29: note: the required function hash in the interface hashable is declared here

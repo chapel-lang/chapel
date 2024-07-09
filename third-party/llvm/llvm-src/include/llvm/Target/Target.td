@@ -14,11 +14,13 @@
 // Include all information about LLVM intrinsics.
 include "llvm/IR/Intrinsics.td"
 
+class Predicate; // Forward def
+
 //===----------------------------------------------------------------------===//
 // Register file description - These classes are used to fill in the target
 // description classes.
 
-class HwMode<string FS> {
+class HwMode<string FS, list<Predicate> Ps> {
   // A string representing subtarget features that turn on this HW mode.
   // For example, "+feat1,-feat2" will indicate that the mode is active
   // when "feat1" is enabled and "feat2" is disabled at the same time.
@@ -26,12 +28,15 @@ class HwMode<string FS> {
   // When multiple modes are used, they should be mutually exclusive,
   // otherwise the results are unpredictable.
   string Features = FS;
+
+  // A list of predicates that turn on this HW mode.
+  list<Predicate> Predicates = Ps;
 }
 
 // A special mode recognized by tablegen. This mode is considered active
 // when no other mode is active. For targets that do not use specific hw
 // modes, this is the only mode.
-def DefaultMode : HwMode<"">;
+def DefaultMode : HwMode<"", []>;
 
 // A class used to associate objects with HW modes. It is only intended to
 // be used as a base class, where the derived class should contain a member
@@ -51,6 +56,16 @@ class ValueTypeByHwMode<list<HwMode> Ms, list<ValueType> Ts>
     : HwModeSelect<Ms>, ValueType<0, 0> {
   // The length of this list must be the same as the length of Ms.
   list<ValueType> Objects = Ts;
+}
+
+// A class that implements a counterpart of PtrValueType, which is
+// dependent on a HW mode. This class inherits from PtrValueType itself,
+// which makes it possible to use objects of this class where PtrValueType
+// or ValueType could be used. This is specifically applicable to selection
+// patterns.
+class PtrValueTypeByHwMode<ValueTypeByHwMode scalar, int addrspace>
+    : HwModeSelect<scalar.Modes>, PtrValueType<ValueType<0, 0>, addrspace> {
+  list<ValueType> Objects = scalar.Objects;
 }
 
 // A class representing the register size, spill size and spill alignment
@@ -186,6 +201,14 @@ class Register<string n, list<string> altNames = []> {
   bits<16> HWEncoding = 0;
 
   bit isArtificial = false;
+
+  // isConstant - This register always holds a constant value (e.g. the zero
+  // register in architectures such as MIPS)
+  bit isConstant = false;
+
+  /// PositionOrder - Indicate tablegen to place the newly added register at a later
+  /// position to avoid iterations on them on unsupported target.
+  int PositionOrder = 0;
 }
 
 // RegisterWithSubRegs - This can be used to define instances of Register which
@@ -278,10 +301,13 @@ class RegisterClass<string namespace, list<ValueType> regTypes, int alignment,
   // Specify allocation priority for register allocators using a greedy
   // heuristic. Classes with higher priority values are assigned first. This is
   // useful as it is sometimes beneficial to assign registers to highly
-  // constrained classes first. The value has to be in the range [0,63].
-  // Values >= 32 should be used with care since they may overlap with other
-  // fields in the allocator's priority heuristics.
+  // constrained classes first. The value has to be in the range [0,31].
   int AllocationPriority = 0;
+
+  // Force register class to use greedy's global heuristic for all
+  // registers in this class. This should more aggressively try to
+  // avoid spilling in pathological cases.
+  bit GlobalPriority = false;
 
   // Generate register pressure set for this register class and any class
   // synthesized from it. Set to 0 to inhibit unneeded pressure sets.
@@ -303,7 +329,7 @@ class RegisterClass<string namespace, list<ValueType> regTypes, int alignment,
   string DiagnosticType = "";
 
   // A diagnostic message to emit when an invalid value is provided for this
-  // register class when it is being used an an assembly operand. If this is
+  // register class when it is being used as an assembly operand. If this is
   // non-empty, an anonymous diagnostic type enum value will be generated, and
   // the assembly matcher will provide a function to map from diagnostic types
   // to message strings.
@@ -311,6 +337,12 @@ class RegisterClass<string namespace, list<ValueType> regTypes, int alignment,
 
   // Target-specific flags. This becomes the TSFlags field in TargetRegisterClass.
   bits<8> TSFlags = 0;
+
+  // If set then consider this register class to be the base class for registers in
+  // its MemberList.  The base class for registers present in multiple base register
+  // classes will be resolved in the order defined by this value, with lower values
+  // taking precedence over higher ones.  Ties are resolved by enumeration order.
+  int BaseClassOrder = ?;
 }
 
 // The memberList in a RegisterClass is a dag of set operations. TableGen
@@ -389,6 +421,10 @@ class RegisterTuples<list<SubRegIndex> Indices, list<dag> Regs,
 
   // List of asm names for the generated tuple registers.
   list<string> RegAsmNames = RegNames;
+
+  // PositionOrder - Indicate tablegen to place the newly added register at a later
+  // position to avoid iterations on them on unsupported target.
+  int PositionOrder = 0;
 }
 
 // RegisterCategory - This class is a list of RegisterClasses that belong to a
@@ -424,6 +460,52 @@ class DwarfRegAlias<Register reg> {
 }
 
 //===----------------------------------------------------------------------===//
+// SubtargetFeature - A characteristic of the chip set.
+//
+class SubtargetFeature<string n, string f, string v, string d,
+                       list<SubtargetFeature> i = []> {
+  // Name - Feature name.  Used by command line (-mattr=) to determine the
+  // appropriate target chip.
+  //
+  string Name = n;
+
+  // FieldName - Field in XXXSubtarget to be set by feature.
+  //
+  string FieldName = f;
+
+  // Value - Value the XXXSubtarget field to be set to by feature.
+  //
+  // A value of "true" or "false" implies the field is a bool. Otherwise,
+  // it is assumed to be an integer. the integer value may be the name of an
+  // enum constant. If multiple features use the same integer field, the
+  // field will be set to the maximum value of all enabled features that
+  // share the field.
+  //
+  string Value = v;
+
+  // Desc - Feature description.  Used by command line (-mattr=) to display help
+  // information.
+  //
+  string Desc = d;
+
+  // Implies - Features that this feature implies are present. If one of those
+  // features isn't set, then this one shouldn't be set either.
+  //
+  list<SubtargetFeature> Implies = i;
+}
+
+/// Specifies a Subtarget feature that this instruction is deprecated on.
+class Deprecated<SubtargetFeature dep> {
+  SubtargetFeature DeprecatedFeatureMask = dep;
+}
+
+/// A custom predicate used to determine if an instruction is
+/// deprecated or not.
+class ComplexDeprecationPredicate<string dep> {
+  string ComplexDeprecationPredicate = dep;
+}
+
+//===----------------------------------------------------------------------===//
 // Pull in the common support for MCPredicate (portable scheduling predicates).
 //
 include "llvm/Target/TargetInstrPredicate.td"
@@ -432,8 +514,6 @@ include "llvm/Target/TargetInstrPredicate.td"
 // Pull in the common support for scheduling
 //
 include "llvm/Target/TargetSchedule.td"
-
-class Predicate; // Forward def
 
 class InstructionEncoding {
   // Size of encoded instruction.
@@ -783,11 +863,17 @@ def operand;
 /// Both DAG represent bit 6 to 8 (total of 3 bits) in the encoding of operand
 /// `$src`.
 def slice;
-/// You can use `encoder` to specify a custom encoder function for a specific
-/// `operand` or `encoder` directive. For example:
+/// You can use `encoder` or `decoder` to specify a custom encoder or decoder
+/// function for a specific `operand` or `slice` directive. For example:
 ///     (operand "$src", 4, (encoder "encodeMyImm"))
 ///     (slice "$src", 8, 6, (encoder "encodeMyReg"))
+///     (operand "$src", 4, (encoder "encodeMyImm"), (decoder "decodeMyImm"))
+/// The ordering of `encoder` and `decoder` in the same `operand` or `slice`
+/// doesn't matter.
+/// Note that currently we cannot assign different decoders in the same
+/// (instruction) operand.
 def encoder;
+def decoder;
 
 /// PointerLikeRegClass - Values that are designed to have pointer width are
 /// derived from this.  TableGen treats the register class as having a symbolic
@@ -1039,27 +1125,6 @@ class InstrInfo {
   //
   // This option is a temporary migration help. It will go away.
   bit guessInstructionProperties = true;
-
-  // TableGen's instruction encoder generator has support for matching operands
-  // to bit-field variables both by name and by position. While matching by
-  // name is preferred, this is currently not possible for complex operands,
-  // and some targets still reply on the positional encoding rules. When
-  // generating a decoder for such targets, the positional encoding rules must
-  // be used by the decoder generator as well.
-  //
-  // This option is temporary; it will go away once the TableGen decoder
-  // generator has better support for complex operands and targets have
-  // migrated away from using positionally encoded operands.
-  bit decodePositionallyEncodedOperands = false;
-
-  // When set, this indicates that there will be no overlap between those
-  // operands that are matched by ordering (positional operands) and those
-  // matched by name.
-  //
-  // This option is temporary; it will go away once the TableGen decoder
-  // generator has better support for complex operands and targets have
-  // migrated away from using positionally encoded operands.
-  bit noNamedPositionallyEncodedOperands = false;
 }
 
 // Standard Pseudo Instructions.
@@ -1401,6 +1466,22 @@ def ICALL_BRANCH_FUNNEL : StandardPseudoInstruction {
   let AsmString = "";
   let hasSideEffects = true;
 }
+def MEMBARRIER : StandardPseudoInstruction {
+  let OutOperandList = (outs);
+  let InOperandList = (ins);
+  let AsmString = "";
+  let hasSideEffects = true;
+  let Size = 0;
+  let isMeta = true;
+}
+def JUMP_TABLE_DEBUG_INFO : StandardPseudoInstruction {
+  let OutOperandList = (outs);
+  let InOperandList = (ins i64imm:$jti);
+  let AsmString = "";
+  let hasSideEffects = false;
+  let Size = 0;
+  let isMeta = true;
+}
 
 // Generic opcodes used in GlobalISel.
 include "llvm/Target/GenericOpcodes.td"
@@ -1454,6 +1535,16 @@ class AsmParser {
   // to matching the parsed instruction, so to allow more detailed error
   // messages.
   bit ReportMultipleNearMisses = false;
+
+  // OperandParserMethod - If non-empty, this is the name of a custom
+  // member function of the AsmParser class to call for every instruction
+  // operand to be parsed.
+  string OperandParserMethod = "";
+
+  // CallCustomParserForAllOperands - Set to true if the custom parser
+  // method shall be called for all operands as opposed to only those
+  // that have their own specified custom parsers.
+  bit CallCustomParserForAllOperands = false;
 }
 def DefaultAsmParser : AsmParser;
 
@@ -1633,46 +1724,6 @@ class Target {
   // setting hasExtraDefRegAllocReq and hasExtraSrcRegAllocReq to 1
   // for all opcodes if this flag is set to 0.
   int AllowRegisterRenaming = 0;
-}
-
-//===----------------------------------------------------------------------===//
-// SubtargetFeature - A characteristic of the chip set.
-//
-class SubtargetFeature<string n, string a,  string v, string d,
-                       list<SubtargetFeature> i = []> {
-  // Name - Feature name.  Used by command line (-mattr=) to determine the
-  // appropriate target chip.
-  //
-  string Name = n;
-
-  // Attribute - Attribute to be set by feature.
-  //
-  string Attribute = a;
-
-  // Value - Value the attribute to be set to by feature.
-  //
-  string Value = v;
-
-  // Desc - Feature description.  Used by command line (-mattr=) to display help
-  // information.
-  //
-  string Desc = d;
-
-  // Implies - Features that this feature implies are present. If one of those
-  // features isn't set, then this one shouldn't be set either.
-  //
-  list<SubtargetFeature> Implies = i;
-}
-
-/// Specifies a Subtarget feature that this instruction is deprecated on.
-class Deprecated<SubtargetFeature dep> {
-  SubtargetFeature DeprecatedFeatureMask = dep;
-}
-
-/// A custom predicate used to determine if an instruction is
-/// deprecated or not.
-class ComplexDeprecationPredicate<string dep> {
-  string ComplexDeprecationPredicate = dep;
 }
 
 //===----------------------------------------------------------------------===//

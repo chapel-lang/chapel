@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,6 +21,7 @@
 
 
 /* A helper file of utilities for Mason */
+private use CTypes;
 public use FileSystem;
 private use List;
 private use Map;
@@ -32,9 +33,9 @@ use Regex;
 
 
 /* Gets environment variables for spawn commands */
-extern proc getenv(name : c_string) : c_string;
 proc getEnv(name: string): string {
-  var cname: c_string = name.c_str();
+  extern proc getenv(name : c_ptrConst(c_char)) : c_ptrConst(c_char);
+  var cname = name.c_str();
   var value = getenv(cname);
   return string.createCopyingBuffer(value);
 }
@@ -114,8 +115,14 @@ proc runCommand(cmd, quiet=false) : string throws {
       while process.stderr.readLine(line) do write(line);
     }
     process.wait();
-  }
-  catch {
+    if process.exitCode != 0 {
+      throw new owned MasonError("Command failed: '" + cmd + "'");
+    }
+  } catch e: FileNotFoundError {
+    throw new owned MasonError("Command not found: '" + cmd + "'");
+  } catch e: MasonError {
+    throw e;
+  } catch {
     throw new owned MasonError("Internal mason error");
   }
   return ret;
@@ -388,9 +395,8 @@ proc gitC(newDir, command, quiet=false) throws {
   var ret : string;
   const oldDir = here.cwd();
   here.chdir(newDir);
+  defer here.chdir(oldDir);
   ret = runCommand(command, quiet);
-
-  here.chdir(oldDir);
 
   return ret;
 }
@@ -426,7 +432,7 @@ extern "struct timespec" record chpl_timespec {
 proc getLastModified(filename: string) : int {
   use CTypes;
 
-  extern proc sys_stat(filename: c_string, ref chpl_stat): c_int;
+  extern proc sys_stat(filename: c_ptrConst(c_char), ref chpl_stat): c_int;
 
   var file_buf: chpl_stat;
   var file_path = filename.c_str();
@@ -568,7 +574,7 @@ proc getDepToml(depName: string, depVersion: string) throws {
 
   if results.size > 0 {
     const brickPath = '/'.join(registries[0], 'Bricks', packages[0], versions[0]) + '.toml';
-    const openFile = openReader(brickPath);
+    const openFile = openReader(brickPath, locking=false);
     const toml = parseToml(openFile);
 
     return toml;
@@ -598,7 +604,7 @@ proc findLatest(packageDir: string): VersionInfo {
     // Skip packages that are out of version bounds
     const chplVersion = getChapelVersionInfo();
 
-    const manifestReader = openReader(packageDir + '/' + manifest);
+    const manifestReader = openReader(packageDir + '/' + manifest, locking=false);
     const manifestToml = parseToml(manifestReader);
     const brick = manifestToml['brick'];
     var (low, high) = parseChplVersion(brick);
@@ -722,7 +728,7 @@ proc splitNameVersion(ref package: string, original: bool) {
 
 /* Print a TOML file. Expects full path. */
 proc showToml(tomlFile : string) {
-  const openFile = openReader(tomlFile);
+  const openFile = openReader(tomlFile, locking=false);
   const toml = parseToml(openFile);
   writeln(toml);
   openFile.close();

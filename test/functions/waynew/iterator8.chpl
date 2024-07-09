@@ -50,6 +50,7 @@ iter simple4( c: borrowed C) : int {
   }
 }
 
-var c: borrowed C = (new owned C()).borrow();
+var cOwn = new owned C();
+var c: borrowed C = cOwn.borrow();
 c.max = 10;
 writeln( "test4: ", simple4( c));

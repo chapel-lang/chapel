@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,19 +18,23 @@
  * limitations under the License.
  */
 
+
 //
 // Block dimension specifier - for use with DimensionalDist2D.
 //
+
+@unstable("BlockDim is intended for use with DimensionalDist2D, which is unstable")
+prototype module BlockDim {
 
 private use DimensionalDist2D;
 
 
 /*
 This Block dimension specifier is for use with the
-:class:`DimensionalDist2D` distribution.
+:mod:`dimensionalDist2D <DimensionalDist2D>` distribution.
 
 It specifies the mapping of indices in its dimension
-that would be produced by a 1D :class:`~BlockDist.Block` distribution.
+that would be produced by a 1D :class:`~BlockDist.blockDist` distribution.
 
 **Initializer Arguments**
 
@@ -57,8 +61,8 @@ a convenient replacement for the ``boundingBox`` argument,
 which specifies the bounding box in this dimension.
 
 The ``idxType``, whether provided or inferred, must match
-the index type of the domains "dmapped" using the corresponding
-``DimensionalDist2D`` distribution.
+the index type of the domains created using the corresponding
+``dimensionalDist2D`` distribution.
 */
 record BlockDim {
   // the type of bbStart, bbLength
@@ -77,13 +81,13 @@ record BlockDim {
 
 record Block1dom {
   type idxType;
-  param stridable: bool;
+  param strides: strideKind;
 
   // convenience
-  proc rangeT type do  return range(idxType, boundKind.both, stridable);
+  proc rangeT type do  return range(idxType, boundKind.both, strides);
 
   // our range
-  var wholeR: range(idxType, boundKind.both, stridable);
+  var wholeR: range(idxType, boundKind.both, strides);
 
   // privatized distribution descriptor
   const pdist;
@@ -137,7 +141,7 @@ proc Block1dom.dsiGetPrivatizeData1d() {
 proc type Block1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
   return new Block1dom(idxType   = this.idxType,
-                  stridable = this.stridable,
+                  strides   = this.strides,
                   wholeR    = privatizeData(0),
                   pdist     = privDist);
 }
@@ -146,7 +150,7 @@ proc Block1dom.dsiGetReprivatizeData1d() {
   return (wholeR,);
 }
 
-proc Block1dom.dsiReprivatize1d(reprivatizeData) {
+proc ref Block1dom.dsiReprivatize1d(reprivatizeData) {
   this.wholeR = reprivatizeData(0);
 }
 
@@ -172,7 +176,7 @@ proc BlockDim.init(numLocales, boundingBoxLow, boundingBoxHigh, type idxType = b
 proc BlockDim.toString() do
   return "BlockDim(" + numLocales:string + ", " + boundingBox:string + ")";
 
-proc BlockDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
+proc BlockDim.dsiNewRectangularDom1d(type idxType, param strides: strideKind,
                                      type stoIndexT)
 {
   // ignore stoIndexT - all we need is for other places to work out
@@ -180,13 +184,13 @@ proc BlockDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
     compilerError("The index type ", idxType:string,
                   " does not match the index type ",this.idxType:string,
                   " of the 'BlockDim' 1-d distribution");
-  return new Block1dom(idxType = idxType, stridable = stridable, pdist = this);
+  return new Block1dom(idxType = idxType, strides = strides, pdist = this);
 }
 
 proc Block1dom.dsiIsReplicated1d() param do return false;
 
 proc Block1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  var defaultVal: range(stoIndexT, stridable=this.stridable);
+  var defaultVal: range(stoIndexT, strides=this.strides);
   return new Block1locdom(myRange = defaultVal);
 }
 
@@ -219,7 +223,7 @@ proc BlockDim.dsiIndexToLocale1d(indexx): locIdT {
   return result:locIdT;
 }
 
-proc Block1dom.dsiSetIndices1d(rangeArg: rangeT): void {
+proc ref Block1dom.dsiSetIndices1d(rangeArg: rangeT): void {
   wholeR = rangeArg;
 }
 
@@ -236,7 +240,7 @@ proc Block1dom._dsiComputeMyRange(locId): rangeT {
   return chunk;
 }
 
-proc Block1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
+proc ref Block1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
   myRange = globDD._dsiComputeMyRange(locId);
   return myRange;
 }
@@ -325,4 +329,6 @@ iter Block1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
       }
     }
   }
+}
+
 }

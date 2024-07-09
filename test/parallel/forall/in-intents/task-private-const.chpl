@@ -23,7 +23,7 @@ proc main {
   forall jjj in myiter() with (in myarr, in myvar) {
     myvar += 100;
     myarr += 200;
-    writef("%t:     %t  %t\n", jjj, myvar, myarr);
+    writef("%?:     %?  %?\n", jjj, myvar, myarr);
   }
-  writef("done:  %t  %t\n", myvar, myarr);
+  writef("done:  %?  %?\n", myvar, myarr);
 }

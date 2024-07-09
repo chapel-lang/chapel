@@ -46,7 +46,7 @@ public:
     uint8_t *Ptr = Allocator.Allocate<uint8_t>(Size);
     ::memcpy(Ptr, Ref.data(), Ref.size());
     ::memcpy(Ptr + Ref.size(), Data.data(), BytesLeft);
-    Buffer = makeArrayRef<uint8_t>(Ptr, Size);
+    Buffer = ArrayRef<uint8_t>(Ptr, Size);
     return Error::success();
   }
 
@@ -102,8 +102,9 @@ private:
   BumpPtrAllocator Allocator;
 };
 
-constexpr endianness Endians[] = {big, little, native};
-constexpr uint32_t NumEndians = llvm::array_lengthof(Endians);
+constexpr llvm::endianness Endians[] = {
+    llvm::endianness::big, llvm::endianness::little, llvm::endianness::native};
+constexpr uint32_t NumEndians = std::size(Endians);
 constexpr uint32_t NumStreams = 2 * NumEndians;
 
 class BinaryStreamTest : public testing::Test {
@@ -203,9 +204,9 @@ TEST_F(BinaryStreamTest, BinaryByteStreamBounds) {
     // 1. If the read fits it should work.
     ASSERT_EQ(InputData.size(), Stream.Input->getLength());
     ASSERT_THAT_ERROR(Stream.Input->readBytes(2, 1, Buffer), Succeeded());
-    EXPECT_EQ(makeArrayRef(InputData).slice(2, 1), Buffer);
+    EXPECT_EQ(ArrayRef(InputData).slice(2, 1), Buffer);
     ASSERT_THAT_ERROR(Stream.Input->readBytes(0, 4, Buffer), Succeeded());
-    EXPECT_EQ(makeArrayRef(InputData).slice(0, 4), Buffer);
+    EXPECT_EQ(ArrayRef(InputData).slice(0, 4), Buffer);
 
     // 2. Reading past the bounds of the input should fail.
     EXPECT_THAT_ERROR(Stream.Input->readBytes(4, 2, Buffer), Failed());
@@ -223,12 +224,12 @@ TEST_F(BinaryStreamTest, StreamRefBounds) {
     // Read 1 byte from offset 2 should work
     ASSERT_EQ(InputData.size(), Ref.getLength());
     ASSERT_THAT_ERROR(Ref.readBytes(2, 1, Buffer), Succeeded());
-    EXPECT_EQ(makeArrayRef(InputData).slice(2, 1), Buffer);
+    EXPECT_EQ(ArrayRef(InputData).slice(2, 1), Buffer);
 
     // Reading everything from offset 2 on.
     ASSERT_THAT_ERROR(Ref.readLongestContiguousChunk(2, Buffer), Succeeded());
     if (Stream.IsContiguous)
-      EXPECT_EQ(makeArrayRef(InputData).slice(2), Buffer);
+      EXPECT_EQ(ArrayRef(InputData).slice(2), Buffer);
     else
       EXPECT_FALSE(Buffer.empty());
 
@@ -241,14 +242,14 @@ TEST_F(BinaryStreamTest, StreamRefBounds) {
     Ref = Ref.drop_front(1);
     ASSERT_THAT_ERROR(Ref.readBytes(2, 1, Buffer), Succeeded());
     if (Stream.IsContiguous)
-      EXPECT_EQ(makeArrayRef(InputData).slice(3, 1), Buffer);
+      EXPECT_EQ(ArrayRef(InputData).slice(3, 1), Buffer);
     else
       EXPECT_FALSE(Buffer.empty());
 
     // Reading everything from offset 2 on after dropping 1 byte.
     ASSERT_THAT_ERROR(Ref.readLongestContiguousChunk(2, Buffer), Succeeded());
     if (Stream.IsContiguous)
-      EXPECT_EQ(makeArrayRef(InputData).slice(3), Buffer);
+      EXPECT_EQ(ArrayRef(InputData).slice(3), Buffer);
     else
       EXPECT_FALSE(Buffer.empty());
 
@@ -260,13 +261,13 @@ TEST_F(BinaryStreamTest, StreamRefBounds) {
     // But if we read the longest contiguous chunk instead, we should still
     // get the 1 byte at the end.
     ASSERT_THAT_ERROR(Ref.readLongestContiguousChunk(2, Buffer), Succeeded());
-    EXPECT_EQ(makeArrayRef(InputData).take_back(), Buffer);
+    EXPECT_EQ(ArrayRef(InputData).take_back(), Buffer);
   }
 }
 
 TEST_F(BinaryStreamTest, StreamRefDynamicSize) {
   StringRef Strings[] = {"1", "2", "3", "4"};
-  AppendingBinaryByteStream Stream(support::little);
+  AppendingBinaryByteStream Stream(llvm::endianness::little);
 
   BinaryStreamWriter Writer(Stream);
   BinaryStreamReader Reader(Stream);
@@ -316,11 +317,11 @@ TEST_F(BinaryStreamTest, StreamRefDynamicSize) {
 
 TEST_F(BinaryStreamTest, DropOperations) {
   std::vector<uint8_t> InputData = {1, 2, 3, 4, 5, 4, 3, 2, 1};
-  auto RefData = makeArrayRef(InputData);
+  auto RefData = ArrayRef(InputData);
   initializeInput(InputData, 1);
 
   ArrayRef<uint8_t> Result;
-  BinaryStreamRef Original(InputData, support::little);
+  BinaryStreamRef Original(InputData, llvm::endianness::little);
   ASSERT_EQ(InputData.size(), Original.getLength());
 
   EXPECT_THAT_ERROR(Original.readBytes(0, InputData.size(), Result),
@@ -383,7 +384,7 @@ TEST_F(BinaryStreamTest, MutableBinaryByteStreamBounds) {
       ArrayRef<uint8_t> Data2;
       ASSERT_THAT_ERROR(Stream.Output->readBytes(Offset, ExpectedSize, Data2),
                         Succeeded());
-      EXPECT_EQ(makeArrayRef(InputData).drop_front(Offset), Data2);
+      EXPECT_EQ(ArrayRef(InputData).drop_front(Offset), Data2);
     }
 
     std::vector<uint8_t> BigData = {0, 1, 2, 3, 4};
@@ -393,11 +394,11 @@ TEST_F(BinaryStreamTest, MutableBinaryByteStreamBounds) {
 }
 
 TEST_F(BinaryStreamTest, AppendingStream) {
-  AppendingBinaryByteStream Stream(llvm::support::little);
+  AppendingBinaryByteStream Stream(llvm::endianness::little);
   EXPECT_EQ(0U, Stream.getLength());
 
   std::vector<uint8_t> InputData = {'T', 'e', 's', 't', 'T', 'e', 's', 't'};
-  auto Test = makeArrayRef(InputData).take_front(4);
+  auto Test = ArrayRef(InputData).take_front(4);
   // Writing past the end of the stream is an error.
   EXPECT_THAT_ERROR(Stream.writeBytes(4, Test), Failed());
 
@@ -575,7 +576,7 @@ TEST_F(BinaryStreamTest, StreamReaderIntegerArray) {
     ArrayRef<int> IntsRef;
     ASSERT_THAT_ERROR(Reader.readArray(IntsRef, Ints.size()), Succeeded());
     ASSERT_EQ(0U, Reader.bytesRemaining());
-    EXPECT_EQ(makeArrayRef(Ints), IntsRef);
+    EXPECT_EQ(ArrayRef(Ints), IntsRef);
 
     Reader.setOffset(0);
     FixedStreamArray<int> FixedIntsRef;
@@ -699,7 +700,7 @@ TEST_F(BinaryStreamTest, StreamReaderObject) {
 
   const uint8_t *Bytes = reinterpret_cast<const uint8_t *>(&Foos[0]);
 
-  initializeInput(makeArrayRef(Bytes, 3 * sizeof(Foo)), alignof(Foo));
+  initializeInput(ArrayRef(Bytes, 3 * sizeof(Foo)), alignof(Foo));
 
   for (auto &Stream : Streams) {
     // 1. Reading object pointers.
@@ -803,7 +804,7 @@ TEST_F(BinaryStreamTest, StreamWriterIntegerArrays) {
     ASSERT_THAT_ERROR(ReaderBacker.readArray(Ints2, SourceInts.size()),
                       Succeeded());
 
-    EXPECT_EQ(makeArrayRef(SourceInts), Ints2);
+    EXPECT_EQ(ArrayRef(SourceInts), Ints2);
   }
 }
 
@@ -827,7 +828,7 @@ TEST_F(BinaryStreamTest, StreamWriterStrings) {
       ASSERT_THAT_ERROR(Reader.readCString(S), Succeeded());
       InStrings.push_back(S);
     }
-    EXPECT_EQ(makeArrayRef(Strings), makeArrayRef(InStrings));
+    EXPECT_EQ(ArrayRef(Strings), ArrayRef(InStrings));
   }
 }
 
@@ -835,7 +836,7 @@ TEST_F(BinaryStreamTest, StreamWriterPadToAlignment) {
   // This test may seem excessive but it is checking for past bugs and corner
   // cases by making sure that the stream is allowed to grow and that
   // both multiple pad chunks and single chunk extensions work.
-  AppendingBinaryByteStream Stream(support::little);
+  AppendingBinaryByteStream Stream(llvm::endianness::little);
   BinaryStreamWriter Writer(Stream);
 
   // Offset 0: '0'
@@ -874,7 +875,7 @@ TEST_F(BinaryStreamTest, StreamWriterPadToAlignment) {
 
 TEST_F(BinaryStreamTest, StreamWriterAppend) {
   StringRef Strings[] = {"First", "Second", "Third", "Fourth"};
-  AppendingBinaryByteStream Stream(support::little);
+  AppendingBinaryByteStream Stream(llvm::endianness::little);
   BinaryStreamWriter Writer(Stream);
 
   for (auto &Str : Strings) {
@@ -925,13 +926,13 @@ TEST_F(BinaryStreamTest, BinaryItemStream) {
     uint8_t *Ptr = static_cast<uint8_t *>(Allocator.Allocate(sizeof(Foo),
                                                              alignof(Foo)));
     MutableArrayRef<uint8_t> Buffer(Ptr, sizeof(Foo));
-    MutableBinaryByteStream Stream(Buffer, llvm::support::big);
+    MutableBinaryByteStream Stream(Buffer, llvm::endianness::big);
     BinaryStreamWriter Writer(Stream);
     ASSERT_THAT_ERROR(Writer.writeObject(F), Succeeded());
     Objects.push_back(BinaryItemStreamObject(Buffer));
   }
 
-  BinaryItemStream<BinaryItemStreamObject> ItemStream(big);
+  BinaryItemStream<BinaryItemStreamObject> ItemStream(llvm::endianness::big);
   ItemStream.setItems(Objects);
   BinaryStreamReader Reader(ItemStream);
 

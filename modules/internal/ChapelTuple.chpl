@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -148,6 +148,7 @@ module ChapelTuple {
   //
   pragma "compiler generated"
   pragma "last resort"
+  pragma "no array view elision"
   @chpldoc.nodoc
   inline operator =(ref x: _tuple,
                     pragma "intent ref maybe const formal" y: _tuple)
@@ -203,7 +204,7 @@ module ChapelTuple {
   //
   pragma "reference to const when const this"
   @chpldoc.nodoc
-  iter _tuple.these() ref
+  iter ref _tuple.these() ref
   {
 
     // If we hit this error, it generally means that the compiler wasn't
@@ -219,7 +220,7 @@ module ChapelTuple {
     if CHPL_WARN_TUPLE_ITERATION == "true" then
       compilerWarning("Iterating over tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");
 
-    foreach i in 0..#this.size {
+    foreach i in 0..#this.size with (ref this) {
       yield(this(i));
     }
   }
@@ -248,7 +249,7 @@ module ChapelTuple {
 
   pragma "reference to const when const this"
   @chpldoc.nodoc
-  iter _tuple.these(param tag:iterKind, followThis: _tuple) ref
+  iter ref _tuple.these(param tag:iterKind, followThis: _tuple) ref
       where tag == iterKind.follower
   {
     if followThis.size != 1 then
@@ -256,7 +257,7 @@ module ChapelTuple {
 
     var fThis = followThis(0);
 
-    foreach i in fThis {
+    foreach i in fThis with (ref this) {
       yield this(i);
     }
   }

@@ -1,4 +1,4 @@
-use CommDiagnostics;
+use CommDiagnostics, CTypes;
 
 proc f(param p: int) {
   var x: p*int;
@@ -11,7 +11,7 @@ const x = f(256);
 
 startVerboseComm();
 
-extern proc printf(fmt: c_string, x...);
+extern proc printf(fmt: c_ptrConst(c_char), x...);
 
 on Locales(1) {
   for param i in 0..255 do

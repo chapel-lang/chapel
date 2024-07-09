@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,6 +49,8 @@ namespace uast {
 
  */
 class FnCall : public Call {
+ friend class AstNode;
+
  private:
   // For each actual (matching Call's actuals), what are the names?
   // if the actual is unnamed, it is the empty string.
@@ -62,11 +64,19 @@ class FnCall : public Call {
       actualNames_(std::move(actualNames)),
       callUsedSquareBrackets_(callUsedSquareBrackets) {
   }
-  FnCall(Deserializer& des)
+
+  void serializeInner(Serializer& ser) const override {
+    callSerializeInner(ser);
+    ser.write(actualNames_);
+    ser.write(callUsedSquareBrackets_);
+  }
+
+  explicit FnCall(Deserializer& des)
     : Call(asttags::FnCall, des) {
     actualNames_ = des.read<std::vector<UniqueString>>();
     callUsedSquareBrackets_ = des.read<bool>();
   }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const FnCall* lhs = this;
     const FnCall* rhs = (const FnCall*) other;
@@ -134,14 +144,6 @@ class FnCall : public Call {
   bool callUsedSquareBrackets() const {
     return callUsedSquareBrackets_;
   }
-
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
-    ser.write(actualNames_);
-    ser.write(callUsedSquareBrackets_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(FnCall);
 };
 
 

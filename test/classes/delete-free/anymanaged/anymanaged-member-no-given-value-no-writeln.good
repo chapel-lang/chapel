@@ -1,1 +1,4 @@
+anymanaged-member-no-given-value-no-writeln.chpl:2: warning: field is declared with generic memory management
+note: consider adding 'owned', 'shared', or 'borrowed'
+note: if generic memory management is desired, use a 'type' field to store the class type
 anymanaged-member-no-given-value-no-writeln.chpl:7: error: initialization requires an argument for thing2

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,17 +45,27 @@ namespace uast {
 
  */
 class While final : public Loop {
+ friend class AstNode;
+
  private:
+  int8_t conditionChildNum_;
+
   While(AstList children, int8_t conditionChildNum,
         BlockStyle blockStyle,
-        int loopBodyChildNum)
+        int loopBodyChildNum,
+        int attributeGroupChildNum)
     : Loop(asttags::While, std::move(children), blockStyle,
-           loopBodyChildNum, NO_CHILD /*attributeGroup*/),
+           loopBodyChildNum, attributeGroupChildNum),
       conditionChildNum_(conditionChildNum) {
     CHPL_ASSERT(condition());
   }
 
-  While(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    loopSerializeInner(ser);
+    ser.write(conditionChildNum_);
+  }
+
+  explicit While(Deserializer& des)
     : Loop(asttags::While, des) {
     conditionChildNum_ = des.read<int8_t>();
   }
@@ -79,8 +89,6 @@ class While final : public Loop {
 
   std::string dumpChildLabelInner(int i) const override;
 
-  int8_t conditionChildNum_;
-
  public:
   ~While() override = default;
 
@@ -90,7 +98,8 @@ class While final : public Loop {
   static owned<While> build(Builder* builder, Location loc,
                             owned<AstNode> condition,
                             BlockStyle blockStyle,
-                            owned<Block> stmts);
+                            owned<Block> stmts,
+                            owned<AttributeGroup> attributeGroup = nullptr);
 
 
   /**
@@ -100,14 +109,6 @@ class While final : public Loop {
     auto ret = child(conditionChildNum_);
     return ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    Loop::serialize(ser);
-    ser.write(conditionChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(While);
-
 };
 
 

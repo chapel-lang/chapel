@@ -47,8 +47,8 @@ protected:
 
     TargetOptions Options;
     TM = std::unique_ptr<LLVMTargetMachine>(static_cast<LLVMTargetMachine *>(
-        T->createTargetMachine("AArch64", "", "+sve", Options, None, None,
-                               CodeGenOpt::Aggressive)));
+        T->createTargetMachine("AArch64", "", "+sve", Options, std::nullopt,
+                               std::nullopt, CodeGenOptLevel::Aggressive)));
     if (!TM)
       GTEST_SKIP();
 
@@ -73,11 +73,11 @@ protected:
     MF = std::make_unique<MachineFunction>(*F, *TM, *TM->getSubtargetImpl(*F),
                                            0, MMI);
 
-    DAG = std::make_unique<SelectionDAG>(*TM, CodeGenOpt::None);
+    DAG = std::make_unique<SelectionDAG>(*TM, CodeGenOptLevel::None);
     if (!DAG)
       report_fatal_error("DAG?");
     OptimizationRemarkEmitter ORE(F);
-    DAG->init(*MF, ORE, nullptr, nullptr, nullptr, nullptr, nullptr);
+    DAG->init(*MF, ORE, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
   }
 
   TargetLoweringBase::LegalizeTypeAction getTypeAction(EVT VT) {
@@ -105,12 +105,12 @@ TEST_F(SelectionDAGAddressAnalysisTest, sameFrameObject) {
   SDValue FIPtr = DAG->CreateStackTemporary(VecVT);
   int FI = cast<FrameIndexSDNode>(FIPtr.getNode())->getIndex();
   MachinePointerInfo PtrInfo = MachinePointerInfo::getFixedStack(*MF, FI);
-  TypeSize Offset = TypeSize::Fixed(0);
+  TypeSize Offset = TypeSize::getFixed(0);
   SDValue Value = DAG->getConstant(0, Loc, VecVT);
   SDValue Index = DAG->getMemBasePlusOffset(FIPtr, Offset, Loc);
   SDValue Store = DAG->getStore(DAG->getEntryNode(), Loc, Value, Index,
                                 PtrInfo.getWithOffset(Offset));
-  Optional<int64_t> NumBytes = MemoryLocation::getSizeOrUnknown(
+  std::optional<int64_t> NumBytes = MemoryLocation::getSizeOrUnknown(
       cast<StoreSDNode>(Store)->getMemoryVT().getStoreSize());
 
   bool IsAlias;
@@ -128,7 +128,7 @@ TEST_F(SelectionDAGAddressAnalysisTest, sameFrameObjectUnknownSize) {
   SDValue FIPtr = DAG->CreateStackTemporary(VecVT);
   int FI = cast<FrameIndexSDNode>(FIPtr.getNode())->getIndex();
   MachinePointerInfo PtrInfo = MachinePointerInfo::getFixedStack(*MF, FI);
-  TypeSize Offset = TypeSize::Fixed(0);
+  TypeSize Offset = TypeSize::getFixed(0);
   SDValue Value = DAG->getConstant(0, Loc, VecVT);
   SDValue Index = DAG->getMemBasePlusOffset(FIPtr, Offset, Loc);
   SDValue Store = DAG->getStore(DAG->getEntryNode(), Loc, Value, Index,
@@ -137,7 +137,7 @@ TEST_F(SelectionDAGAddressAnalysisTest, sameFrameObjectUnknownSize) {
   // Maybe unlikely that BaseIndexOffset::computeAliasing is used with the
   // optional NumBytes being unset like in this test, but it would be confusing
   // if that function determined IsAlias=false here.
-  Optional<int64_t> NumBytes;
+  std::optional<int64_t> NumBytes;
 
   bool IsAlias;
   bool IsValid = BaseIndexOffset::computeAliasing(
@@ -157,7 +157,7 @@ TEST_F(SelectionDAGAddressAnalysisTest, noAliasingFrameObjects) {
   int FI = cast<FrameIndexSDNode>(FIPtr.getNode())->getIndex();
   MachinePointerInfo PtrInfo = MachinePointerInfo::getFixedStack(*MF, FI);
   SDValue Value = DAG->getConstant(0, Loc, SubVecVT);
-  TypeSize Offset0 = TypeSize::Fixed(0);
+  TypeSize Offset0 = TypeSize::getFixed(0);
   TypeSize Offset1 = SubVecVT.getStoreSize();
   SDValue Index0 = DAG->getMemBasePlusOffset(FIPtr, Offset0, Loc);
   SDValue Index1 = DAG->getMemBasePlusOffset(FIPtr, Offset1, Loc);
@@ -165,9 +165,9 @@ TEST_F(SelectionDAGAddressAnalysisTest, noAliasingFrameObjects) {
                                  PtrInfo.getWithOffset(Offset0));
   SDValue Store1 = DAG->getStore(DAG->getEntryNode(), Loc, Value, Index1,
                                  PtrInfo.getWithOffset(Offset1));
-  Optional<int64_t> NumBytes0 = MemoryLocation::getSizeOrUnknown(
+  std::optional<int64_t> NumBytes0 = MemoryLocation::getSizeOrUnknown(
       cast<StoreSDNode>(Store0)->getMemoryVT().getStoreSize());
-  Optional<int64_t> NumBytes1 = MemoryLocation::getSizeOrUnknown(
+  std::optional<int64_t> NumBytes1 = MemoryLocation::getSizeOrUnknown(
       cast<StoreSDNode>(Store1)->getMemoryVT().getStoreSize());
 
   bool IsAlias;
@@ -195,9 +195,9 @@ TEST_F(SelectionDAGAddressAnalysisTest, unknownSizeFrameObjects) {
       DAG->getStore(DAG->getEntryNode(), Loc, Value, FIPtr, PtrInfo);
   SDValue Store1 = DAG->getStore(DAG->getEntryNode(), Loc, Value, Index1,
                                  MachinePointerInfo(PtrInfo.getAddrSpace()));
-  Optional<int64_t> NumBytes0 = MemoryLocation::getSizeOrUnknown(
+  std::optional<int64_t> NumBytes0 = MemoryLocation::getSizeOrUnknown(
       cast<StoreSDNode>(Store0)->getMemoryVT().getStoreSize());
-  Optional<int64_t> NumBytes1 = MemoryLocation::getSizeOrUnknown(
+  std::optional<int64_t> NumBytes1 = MemoryLocation::getSizeOrUnknown(
       cast<StoreSDNode>(Store1)->getMemoryVT().getStoreSize());
 
   bool IsAlias;
@@ -216,11 +216,11 @@ TEST_F(SelectionDAGAddressAnalysisTest, globalWithFrameObject) {
   int FI = cast<FrameIndexSDNode>(FIPtr.getNode())->getIndex();
   MachinePointerInfo PtrInfo = MachinePointerInfo::getFixedStack(*MF, FI);
   SDValue Value = DAG->getConstant(0, Loc, VecVT);
-  TypeSize Offset = TypeSize::Fixed(0);
+  TypeSize Offset = TypeSize::getFixed(0);
   SDValue Index = DAG->getMemBasePlusOffset(FIPtr, Offset, Loc);
   SDValue Store = DAG->getStore(DAG->getEntryNode(), Loc, Value, Index,
                                 PtrInfo.getWithOffset(Offset));
-  Optional<int64_t> NumBytes = MemoryLocation::getSizeOrUnknown(
+  std::optional<int64_t> NumBytes = MemoryLocation::getSizeOrUnknown(
       cast<StoreSDNode>(Store)->getMemoryVT().getStoreSize());
   EVT GTy = DAG->getTargetLoweringInfo().getValueType(DAG->getDataLayout(),
                                                       G->getType());
@@ -228,7 +228,7 @@ TEST_F(SelectionDAGAddressAnalysisTest, globalWithFrameObject) {
   SDValue GAddr = DAG->getGlobalAddress(G, Loc, GTy);
   SDValue GStore = DAG->getStore(DAG->getEntryNode(), Loc, GValue, GAddr,
                                  MachinePointerInfo(G, 0));
-  Optional<int64_t> GNumBytes = MemoryLocation::getSizeOrUnknown(
+  std::optional<int64_t> GNumBytes = MemoryLocation::getSizeOrUnknown(
       cast<StoreSDNode>(GStore)->getMemoryVT().getStoreSize());
 
   bool IsAlias;
@@ -248,7 +248,7 @@ TEST_F(SelectionDAGAddressAnalysisTest, globalWithAliasedGlobal) {
   SDValue GAddr = DAG->getGlobalAddress(G, Loc, GTy);
   SDValue GStore = DAG->getStore(DAG->getEntryNode(), Loc, GValue, GAddr,
                                  MachinePointerInfo(G, 0));
-  Optional<int64_t> GNumBytes = MemoryLocation::getSizeOrUnknown(
+  std::optional<int64_t> GNumBytes = MemoryLocation::getSizeOrUnknown(
       cast<StoreSDNode>(GStore)->getMemoryVT().getStoreSize());
 
   SDValue AliasedGValue = DAG->getConstant(1, Loc, GTy);
@@ -282,7 +282,7 @@ TEST_F(SelectionDAGAddressAnalysisTest, fixedSizeFrameObjectsWithinDiff) {
   MachinePointerInfo PtrInfo = MachinePointerInfo::getFixedStack(*MF, FI);
   SDValue Value0 = DAG->getConstant(0, Loc, SubFixedVecVT2xi8);
   SDValue Value1 = DAG->getConstant(0, Loc, SubVecVT);
-  TypeSize Offset0 = TypeSize::Fixed(0);
+  TypeSize Offset0 = TypeSize::getFixed(0);
   TypeSize Offset1 = SubFixedVecVT2xi8.getStoreSize();
   SDValue Index0 = DAG->getMemBasePlusOffset(FIPtr, Offset0, Loc);
   SDValue Index1 = DAG->getMemBasePlusOffset(FIPtr, Offset1, Loc);
@@ -290,9 +290,9 @@ TEST_F(SelectionDAGAddressAnalysisTest, fixedSizeFrameObjectsWithinDiff) {
                                  PtrInfo.getWithOffset(Offset0));
   SDValue Store1 = DAG->getStore(DAG->getEntryNode(), Loc, Value1, Index1,
                                  PtrInfo.getWithOffset(Offset1));
-  Optional<int64_t> NumBytes0 = MemoryLocation::getSizeOrUnknown(
+  std::optional<int64_t> NumBytes0 = MemoryLocation::getSizeOrUnknown(
       cast<StoreSDNode>(Store0)->getMemoryVT().getStoreSize());
-  Optional<int64_t> NumBytes1 = MemoryLocation::getSizeOrUnknown(
+  std::optional<int64_t> NumBytes1 = MemoryLocation::getSizeOrUnknown(
       cast<StoreSDNode>(Store1)->getMemoryVT().getStoreSize());
 
   bool IsAlias;
@@ -323,7 +323,7 @@ TEST_F(SelectionDAGAddressAnalysisTest, fixedSizeFrameObjectsOutOfDiff) {
   MachinePointerInfo PtrInfo = MachinePointerInfo::getFixedStack(*MF, FI);
   SDValue Value0 = DAG->getConstant(0, Loc, SubFixedVecVT4xi8);
   SDValue Value1 = DAG->getConstant(0, Loc, SubVecVT);
-  TypeSize Offset0 = TypeSize::Fixed(0);
+  TypeSize Offset0 = TypeSize::getFixed(0);
   TypeSize Offset1 = SubFixedVecVT2xi8.getStoreSize();
   SDValue Index0 = DAG->getMemBasePlusOffset(FIPtr, Offset0, Loc);
   SDValue Index1 = DAG->getMemBasePlusOffset(FIPtr, Offset1, Loc);
@@ -331,9 +331,9 @@ TEST_F(SelectionDAGAddressAnalysisTest, fixedSizeFrameObjectsOutOfDiff) {
                                  PtrInfo.getWithOffset(Offset0));
   SDValue Store1 = DAG->getStore(DAG->getEntryNode(), Loc, Value1, Index1,
                                  PtrInfo.getWithOffset(Offset1));
-  Optional<int64_t> NumBytes0 = MemoryLocation::getSizeOrUnknown(
+  std::optional<int64_t> NumBytes0 = MemoryLocation::getSizeOrUnknown(
       cast<StoreSDNode>(Store0)->getMemoryVT().getStoreSize());
-  Optional<int64_t> NumBytes1 = MemoryLocation::getSizeOrUnknown(
+  std::optional<int64_t> NumBytes1 = MemoryLocation::getSizeOrUnknown(
       cast<StoreSDNode>(Store1)->getMemoryVT().getStoreSize());
 
   bool IsAlias;
@@ -358,16 +358,16 @@ TEST_F(SelectionDAGAddressAnalysisTest, twoFixedStackObjects) {
   MachinePointerInfo PtrInfo1 = MachinePointerInfo::getFixedStack(*MF, FI1);
   SDValue Value0 = DAG->getConstant(0, Loc, FixedVecVT);
   SDValue Value1 = DAG->getConstant(0, Loc, VecVT);
-  TypeSize Offset0 = TypeSize::Fixed(0);
+  TypeSize Offset0 = TypeSize::getFixed(0);
   SDValue Index0 = DAG->getMemBasePlusOffset(FIPtr0, Offset0, Loc);
   SDValue Index1 = DAG->getMemBasePlusOffset(FIPtr1, Offset0, Loc);
   SDValue Store0 = DAG->getStore(DAG->getEntryNode(), Loc, Value0, Index0,
                                  PtrInfo0.getWithOffset(Offset0));
   SDValue Store1 = DAG->getStore(DAG->getEntryNode(), Loc, Value1, Index1,
                                  PtrInfo1.getWithOffset(Offset0));
-  Optional<int64_t> NumBytes0 = MemoryLocation::getSizeOrUnknown(
+  std::optional<int64_t> NumBytes0 = MemoryLocation::getSizeOrUnknown(
       cast<StoreSDNode>(Store0)->getMemoryVT().getStoreSize());
-  Optional<int64_t> NumBytes1 = MemoryLocation::getSizeOrUnknown(
+  std::optional<int64_t> NumBytes1 = MemoryLocation::getSizeOrUnknown(
       cast<StoreSDNode>(Store1)->getMemoryVT().getStoreSize());
 
   bool IsAlias;

@@ -35,6 +35,9 @@ case "$host" in
   armv7l-*)
     qt_host_based_enable_fastcontext=yes
 	;;
+  *aarch64*)
+    qt_host_based_enable_fastcontext=yes
+	;;
   *)
     qt_host_based_enable_fastcontext=no
 	;;

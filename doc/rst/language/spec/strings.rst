@@ -1,5 +1,8 @@
 .. default-domain:: chpl
 
+.. index::
+   single: string
+   single: types; string
 .. _Chapter-Strings:
 
 =======
@@ -81,7 +84,7 @@ strategy is similar to Python's "surrogate escapes" and is as follows.
 
 This strategy typically results in storing 3 bytes for each byte in the illegal
 sequence. Similarly escaped strings can also be created with
-:proc:`~String.createStringWithNewBuffer` using a C buffer.
+:proc:`~String.string.createCopyingBuffer` using a C buffer.
 
 An escaped data sequence can be reconstructed with :proc:`~String.string.encode`:
 

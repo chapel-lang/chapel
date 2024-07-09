@@ -4,7 +4,7 @@ record foo {
   proc _getRef(ref e: eltType) ref: eltType lifetime e > this{
     return e;
   }
-  proc set(x: eltType) {
+  proc ref set(x: eltType) {
     _getRef(element) = x;
   }    
 }

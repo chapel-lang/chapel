@@ -1,7 +1,7 @@
 class Parent { type t; }
-class Child : Parent { }
+class Child : Parent(?) { }
 
-proc f(type t: borrowed Parent) {
+proc f(type t: borrowed Parent(?)) {
   writeln(t:string);
 }
 

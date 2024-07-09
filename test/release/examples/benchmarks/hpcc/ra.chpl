@@ -98,8 +98,8 @@ config const useOnVerify = true;
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = new dmap(new Block(boundingBox={0..m-1})),
-      UpdateDist = new dmap(new Block(boundingBox={0..N_U-1}));
+const TableDist = new blockDist(boundingBox={0..m-1}),
+      UpdateDist = new blockDist(boundingBox={0..N_U-1});
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
@@ -128,7 +128,7 @@ proc main() {
   //
   // In parallel, initialize the table such that each position
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
-  // i in TableSpace"
+  // i in TableSpace".
   //
   [i in TableSpace] T[i] = i;
 
@@ -174,7 +174,7 @@ proc printConfiguration() {
 //
 // Verify that the computation is correct
 //
-proc verifyResults(T) {
+proc verifyResults(ref T) {
   if (!verify) then return true;
   //
   // We protect against errors in verification by using locks to
@@ -245,10 +245,14 @@ proc verifyResults(T) {
 //
 record vlock {
   var l: atomic bool;
-  proc lock() {
-    on this do while l.testAndSet() != false do chpl_task_yield();
+  proc init() {}
+  proc init=(other: vlock) {
+    this.l = other.l.read();
   }
-  proc unlock() {
+  proc ref lock() {
+    on this do while l.testAndSet() != false do currentTask.yieldExecution();
+  }
+  proc ref unlock() {
     l.write(false);
   }
 }

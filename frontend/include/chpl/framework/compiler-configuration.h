@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,30 @@
 
 namespace chpl {
 
+  /** Information about the program's compilation state that's available to
+      the programs themselves via global variables. */
+  struct CompilerGlobals {
+    #define COMPILER_GLOBAL(TYPE__, IDENT__, NAME__) TYPE__ NAME__;
+    #include "chpl/uast/compiler-globals-list.h"
+    #undef COMPILER_GLOBAL
+
+    static bool update(CompilerGlobals& keep, CompilerGlobals& addin);
+
+    void mark(Context* context) const {}
+    void swap(CompilerGlobals& other);
+    bool operator==(const CompilerGlobals& other) const;
+    bool operator!=(const CompilerGlobals& other) const;
+  };
+
+  /** Get the values of compiler-provided global variables. Variables here
+      are intended to be those influenced by command-line flags.
+   */
+  const CompilerGlobals& compilerGlobals(Context* context);
+
+  /**
+    Set the values of the various compiler global variables.
+   */
+  void setCompilerGlobals(Context* Context, CompilerGlobals newValue);
 
   /**
     Get the flags for the current session. The class returned by this

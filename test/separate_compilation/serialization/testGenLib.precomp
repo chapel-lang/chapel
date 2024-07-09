@@ -5,14 +5,23 @@ from pathlib import Path
 
 def genDyno(val):
     dyno = ""
+    args = [ ]
     if val == "<standard>":
         dyno = "chpl_standard.dyno"
+        args = ["--dyno-gen-std"]
     else:
         stem = Path(val).stem
         dyno = stem + ".dyno"
+        args = ["--dyno-gen-lib", dyno, val]
     if not os.path.exists(dyno):
-        subprocess.run([sys.argv[3], "testGenLib.chpl", "--dyno-gen-lib", val])
+        cmd = [sys.argv[3]] + args
+        print("Creating lib with", " ".join(cmd))
+        subprocess.run(cmd, check=True)
 
+# Modify the .dyno files for MyMod and OtherMod so that it's easy for the test
+# to check that it is using the library file.  This is pretty hacky and may stop
+# working in the future, and then it can be removed. In the meantime, it gives
+# more confidence that the library file is being used.
 def genAndMod(name):
     dotChpl = name + ".chpl"
     dotDyno = name + ".dyno"

@@ -1,0 +1,2 @@
+array-string-cast.chpl:2: warning: casting arrays to string is deprecated; please use 'try! "%?".format()' from IO.FormattedIO instead
+0 0 0 0 0 0 0 0 0 0

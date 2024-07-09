@@ -20,12 +20,12 @@ config const findVal = n - 1;
 config param eurekaInterval = 2**17;
 
 // This is the array of values to search in.
-const valsD: domain(1) dmapped Block(boundingBox={0..#n}) = {0..#n};
+const valsD: domain(1) dmapped new blockDist(boundingBox={0..#n}) = {0..#n};
 var vals: [valsD] int;
-[i in valsD] { vals[i] = i; }
+[i in valsD with (ref vals)] { vals[i] = i; }
 
 // If we do find findVal, this is where we'll record its index.
-const foundD: domain(1) dmapped Block(boundingBox={0..#numLocales})
+const foundD: domain(1) dmapped new blockDist(boundingBox={0..#numLocales})
               = {0..#numLocales};
 var found: [foundD] atomic int;
 [f in found] f.write(-1); // alas, can't (yet) write this as an initial value
@@ -34,7 +34,7 @@ var T: stopwatch;
 T.start();
 
 // Do a parallel search across the locales.
-coforall loc in Locales {
+coforall loc in Locales with (ref found) {
   on loc {
     // Split the on-locale work coarsely enough that every task/CPU has some.
     const rangeOnLoc = chunk(vals.domain.dim(0), numLocales, here.id);
@@ -44,7 +44,7 @@ coforall loc in Locales {
                           else dataParTasksPerLocale);
 
     // Do a parallel search across the CPUs on this locale.
-    coforall rangeOnCpu in chunks(rangeOnLoc, numChunks) {
+    coforall rangeOnCpu in chunks(rangeOnLoc, numChunks) with (ref found) {
       // Do a serial search over this task's (CPU's) portion of the array.
       for i in rangeOnCpu {
         // If we find the value, tell everyone and quit looking.

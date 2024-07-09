@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -799,6 +799,11 @@ qioerr qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohint
   if( err ) {
     return err;
   } else {
+    // if append, set the initial position to be the length
+    if( rc & O_APPEND ) {
+      initial_pos = initial_length;
+    }
+
     rc &= O_ACCMODE;
     // When setting the file mode, we pretend no matter what
     // that stdin is read-only and stdout/stderr are write-only.
@@ -1304,7 +1309,7 @@ qioerr qio_file_path(qio_file_t* f, const char** string_out)
   if (f->fd != -1)
     return qio_file_path_for_fd(f->fd, string_out);
   else if (f->file_info != NULL)
-    return chpl_qio_getpath(f->file_info, string_out, &len);
+    return chpl_qio_getpath(f->file_info, (uint8_t**) string_out, &len);
   else
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 }
@@ -2824,26 +2829,33 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
   ) {
     // copy out what remains in the buffer before making a system call
     gotlen = qio_ptr_diff(ch->cached_end, ch->cached_cur);
-    if ( gotlen > 0 ) {
-      start = qbuffer_iter_at(&ch->buf, qio_channel_offset_unlocked(ch));
-      // start = qbuffer_iter_at(&ch->buf, ch->cached_start_pos + qio_ptr_diff(ch->cached_cur, ch->cached_start));
-      end = start;
-      qbuffer_iter_advance(&ch->buf, &end, gotlen);  // end of available data
 
+    if ( ch->cached_start == NULL ) {
+      // only use the right-mark-start offset if the buffered offset does not exist
+      start = qbuffer_iter_at(&ch->buf, qio_channel_offset_unlocked(ch));
+    } else {
+      start = qbuffer_iter_at(&ch->buf, ch->cached_start_pos + qio_ptr_diff(ch->cached_cur, ch->cached_start));
+    }
+    end = start;
+    qbuffer_iter_advance(&ch->buf, &end, gotlen);  // end of available data
+
+    if ( gotlen > 0 ) {
       // copy 'gotlen' bytes into the ptr
       err = qbuffer_copyout(&ch->buf, start, end, ptr, gotlen);
       if( err ) return err;
-
-      // advance the ptr, start of aviliabe data, etc.
-      ptr = qio_ptr_add(ptr, gotlen);
-      _set_right_mark_start(ch, end.offset);
-      ch->cached_cur = qio_ptr_add(ch->cached_cur, gotlen);
-      remaining -= gotlen;
-      *amt_read = gotlen;
-
-      // clean up the now unused portion of the buffer
-      qbuffer_trim_front(&ch->buf, gotlen);
     }
+
+    // advance the ptr, start of available data, etc.
+    ptr = qio_ptr_add(ptr, gotlen);
+    _set_right_mark_start(ch, end.offset);
+    remaining -= gotlen;
+    *amt_read = gotlen;
+
+    // clean up the now unused portion of the buffer
+    qbuffer_trim_front(&ch->buf, gotlen);
+    ch->cached_cur = NULL;
+    ch->cached_end = NULL;
+    ch->cached_start = NULL;
 
     // make a direct system call to read the rest
     while( remaining > 0 ) {
@@ -2878,7 +2890,7 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
       }
       // Return early on an error or on EOF.
       if( err ) {
-        *amt_read = len - remaining;
+        // do not update 'amt_read' because zero bytes were read on EOF
         return err;
       }
       ptr = qio_ptr_add(ptr, num_read);
@@ -3777,9 +3789,11 @@ error:
   return err;
 }
 
-qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte, const int consume_byte)
+qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte, int64_t max_bytes_to_advance, const int consume_byte)
 {
   qioerr err=0;
+  int64_t advanced = 0;
+  bool foundit = false;
 
   if( threadsafe ) {
     err = qio_lock(&ch->lock);
@@ -3789,36 +3803,59 @@ qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, in
   }
 
   // Is there room in our fast path buffer?
-  while (err==0) {
+  while (err==0 && advanced < max_bytes_to_advance) {
     if( qio_space_in_ptr_diff(1, ch->cached_end, ch->cached_cur) ) {
       size_t len = qio_ptr_diff(ch->cached_end, ch->cached_cur);
+      if (len > max_bytes_to_advance - advanced) {
+        len = max_bytes_to_advance - advanced;
+      }
       void* found = memchr(ch->cached_cur, byte, len);
       if (found != NULL) {
         ssize_t off = qio_ptr_diff(found, ch->cached_cur);
         if ( consume_byte ) off += 1;
         ch->cached_cur = qio_ptr_add(ch->cached_cur, off);
+        foundit = true;
         break;
       } else {
         // We checked the data in the buffer, advance to the next section.
+        advanced += qio_ptr_diff(ch->cached_end, ch->cached_cur);
         ch->cached_cur = ch->cached_end;
       }
     } else {
       // There's not enough data in the buffer, apparently. Try it the slow way.
       qio_channel_mark(false, ch);
-      ssize_t amt_read;
-      uint8_t tmp;
+      ssize_t amt_read = 0;
+      uint8_t tmp = 0;
       err = _qio_slow_read(ch, &tmp, 1, &amt_read);
-      if( err == 0 ) {
-        if (tmp == byte) {
-          if ( consume_byte ) qio_channel_commit_unlocked(ch);
-          else qio_channel_revert_unlocked(ch);
-          break;
-        }
-        if (amt_read != 1) err = QIO_ESHORT;
+      if ((err == 0 && amt_read != 1) ||
+          (qio_err_to_int(err) == EEOF && advanced > 0)) {
+        err = QIO_ESHORT;
       }
-      // advance 1 byte
-      qio_channel_revert_unlocked(ch);
+      if (err) {
+        qio_channel_revert_unlocked(ch);
+        break;
+      }
+      if (tmp == byte) {
+        if ( consume_byte ) qio_channel_commit_unlocked(ch);
+        else qio_channel_revert_unlocked(ch);
+        foundit = true;
+        break;
+      }
+      // if not found, advance 1 byte and continue
+      qio_channel_commit_unlocked(ch);
+      advanced += 1;
     }
+  }
+
+  if (!err && !foundit) {
+    if (advanced >= max_bytes_to_advance)
+      err = qio_int_to_err(EFORMAT); // separator not found until limit
+    else
+      err = QIO_ESHORT; // separator not found until EOF
+  }
+
+  if (!foundit && advanced == 0 && err == QIO_ESHORT) {
+    err = QIO_EEOF;
   }
 
   if( threadsafe ) {
@@ -3937,7 +3974,8 @@ qioerr qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes)
   if( nbytes < 0 ) nbytes = 0;
 
   // Fast path: all data is available in the cached area.
-  if( qio_space_in_ptr_diff(nbytes, ch->cached_end, ch->cached_cur) ) {
+  if( nbytes < INTPTR_MAX &&
+      qio_space_in_ptr_diff(nbytes, ch->cached_end, ch->cached_cur) ) {
     ch->cached_cur = qio_ptr_add(ch->cached_cur, nbytes);
     return 0;
   }
@@ -4626,6 +4664,16 @@ qioerr qio_get_fd(qio_file_t* fl, int* out)
   return 0;
 }
 
+qioerr qio_get_fp(qio_file_t* fl, FILE** out) {
+  if(fl != NULL && fl->fp != NULL)
+    *out = fl->fp;
+  else {
+    *out = NULL;
+    QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fp");
+  }
+
+  return 0;
+}
 
 qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
 {

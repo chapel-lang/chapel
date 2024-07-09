@@ -1,48 +1,48 @@
 // This is the counterpart to tuple-vararg-in-lt-clause.chpl
 // that ensures that these constraints fire when they should.
 
-var global = (new owned Test()).borrow();
+var globalObj = new Test(); var global = globalObj.borrow();
 
 class Test {
   /** a single constraint **/
-  proc dependsOnN1(tests: object...)
+  proc dependsOnN1(tests: RootClass...)
     lifetime this < tests
   { }                                       // varargs not mentioned in body
-  proc dependsOnX1(tests: object...)
+  proc dependsOnX1(tests: RootClass...)
     lifetime this < tests
   { writeln(tests(0)); }                    // access a single vararg
-  proc dependsOnY1(tests: object...)
+  proc dependsOnY1(tests: RootClass...)
     lifetime this < tests
   { var quests = tests; writeln(quests); }  // access all varargs collectively
 
   /** two constraints **/
-  proc dependsOnN2(tests: object...)
+  proc dependsOnN2(tests: RootClass...)
     lifetime tests > this, this < tests
   { }
-  proc dependsOnX2(tests: object...)
+  proc dependsOnX2(tests: RootClass...)
     lifetime tests > this, this < tests
   { writeln(tests(0)); }
-  proc dependsOnY2(tests: object...)
+  proc dependsOnY2(tests: RootClass...)
     lifetime tests > this, this < tests
   { var quests = tests; writeln(quests); }
 
   /** three constraints **/
-  proc dependsOnN3(tests: object...)
+  proc dependsOnN3(tests: RootClass...)
     lifetime tests > global, tests > this, this < tests
   { }
-  proc dependsOnX3(tests: object...)
+  proc dependsOnX3(tests: RootClass...)
     lifetime tests > global, tests > this, this < tests
   { writeln(tests(0)); }
-  proc dependsOnY3(tests: object...)
+  proc dependsOnY3(tests: RootClass...)
     lifetime tests > global, tests > this, this < tests
   { var quests = tests; writeln(quests); }
 }
 
 proc main {
-  const ttt = (new owned Test()).borrow();
-  const jbo = (new owned object()).borrow();
+  const ownedTtt = new owned Test();        const ttt = ownedTtt.borrow();
+  const ownedJbo = new owned RootClass();   const jbo = ownedJbo.borrow();
   {
-    const obj = (new owned object()).borrow();
+    const ownedObj = new owned RootClass(); const obj = ownedObj.borrow();
 
     /* dependsOnN1 */
     ttt.dependsOnN1(obj);

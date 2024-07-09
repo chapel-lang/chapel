@@ -140,7 +140,7 @@ proc test_scatter() {
   const worldRank = commRank(),
         worldSize = commSize();
   var arr : [{0..3,0..3}]real(32);
-  forall (i,j) in arr.domain {
+  forall (i,j) in arr.domain with (ref arr) {
     arr[i,j] = (i*4 + j):real(32);
   }
   var recbuf : [0..3]real(32);
@@ -148,7 +148,7 @@ proc test_scatter() {
   // Use MPI Scatter
   {
     MPI_Scatter(arr[0,0], 4, MPI_FLOAT, recbuf[0], 4, MPI_FLOAT, 0, MPI_COMM_WORLD);
-    writef("SCATTER1 : Rank %i :%t\n",worldRank,recbuf);
+    writef("SCATTER1 : Rank %i :%?\n",worldRank,recbuf);
     MPI_Barrier(MPI_COMM_WORLD);
   }
 
@@ -173,7 +173,7 @@ proc test_scatter() {
       MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
     }
     MPI_Barrier(MPI_COMM_WORLD);
-    writef("SCATTER2 : Rank %i :%t\n",worldRank,recbuf);
+    writef("SCATTER2 : Rank %i :%?\n",worldRank,recbuf);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Type_free(rowtype);
   }
@@ -198,7 +198,7 @@ proc test_scatter() {
       MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
     }
     MPI_Barrier(MPI_COMM_WORLD);
-    writef("SCATTER3 : Rank %i :%t\n",worldRank,recbuf);
+    writef("SCATTER3 : Rank %i :%?\n",worldRank,recbuf);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Type_free(coltype);
   }
@@ -228,7 +228,7 @@ proc test_scatter() {
       MPI_Recv(recbuf[0], 4, MPI_FLOAT, 0, 1, MPI_COMM_WORLD, stat);
     }
     MPI_Barrier(MPI_COMM_WORLD);
-    writef("SCATTER4 : Rank %i :%t\n",worldRank, recbuf);
+    writef("SCATTER4 : Rank %i :%?\n",worldRank, recbuf);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Type_free(indextype);
   }

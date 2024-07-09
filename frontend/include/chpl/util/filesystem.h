@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,8 @@
 #ifndef CHPL_UTIL_FILESYSTEM_H
 #define CHPL_UTIL_FILESYSTEM_H
 
+#include "chpl/framework/UniqueString.h"
+
 #include "llvm/Config/llvm-config.h"
 
 #include "llvm/Support/ErrorOr.h"
@@ -37,7 +39,7 @@ namespace chpl {
   Reads the contents of a file into a string.
   If something failed, returns false and sets errorOut.
  */
-bool readfile(const char* path, std::string& strOut, std::string& errorOut);
+bool readFile(const char* path, std::string& strOut, std::string& errorOut);
 
 /**
   Writes a string to a file, replacing its contents.
@@ -58,11 +60,19 @@ bool fileExists(const char* path);
  */
 std::error_code ensureDirExists(const llvm::Twine& dirname);
 
+/**
+ * Check if the path specified is writeable by us.
+ *
+ * path the path to check write permission of
+ * returns bool
+ */
+bool isPathWriteable(const llvm::Twine& path);
+
 
 /**
  * creates a directory in the temp location for the system
- * with the pattern "<TMP>/<dirPrefix>-<username>.deleteme-XXXXXX/"
- * (where <TMP> is typically /tmp)
+ * with the pattern "[TMP]/[dirPrefix]-[username].deleteme-XXXXXX/"
+ * (where [TMP] is typically /tmp)
  *
  * prefix a prefix to put at the start of the directory name
  * tmpDirPathOut ref to a string that be set to the path of  the created dir
@@ -108,9 +118,40 @@ std::string getExecutablePath(const char* argv0, void* MainExecAddr);
 /**
   Compare two paths to see if they point to the same filesystem object.
   Utilizes llvm::sys::fs:equivalent to do the comparison.
-*/
-bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2);
 
+  Returns false if either path is "" and both paths are not "".
+*/
+bool isSameFile(llvm::StringRef path1, llvm::StringRef path2);
+
+/**
+  Remove duplicate files/directories from a vector of paths.
+  Checks if the files/directories are the same, even if they
+  have different names.
+
+  Returns a de-duplicated vector of paths.
+ */
+std::vector<std::string>
+deduplicateSamePaths(const std::vector<std::string>& paths);
+
+/**
+  Removes any number of leading ./ from 'path'.
+ */
+std::string cleanLocalPath(std::string path);
+
+/**
+  Returns 'true' if 'filepath' refers to a file contained in 'dir'.
+  This is an operation on the paths & does not check if the file exists.
+
+  If dirPath is "", returns false. Use "." for the current dir.
+ */
+bool filePathInDirPath(llvm::StringRef filePath, llvm::StringRef dirPath);
+/**
+  Returns 'true' if 'filepath' refers to a file contained in 'dir'
+  This is an operation on the paths & does not check if the file exists.
+
+  If dirPath is "", returns false. Use "." for the current dir.
+ */
+bool filePathInDirPath(UniqueString filePath, UniqueString dirPath);
 
 #if LLVM_VERSION_MAJOR >= 13
 /**
@@ -133,6 +174,11 @@ std::string fileHashToHex(const HashFileResult& hash);
   considered an implementation detail.
  */
 llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path);
+
+/**
+  Returns a hash of the passed string using the same hashing algorithm
+  as 'hashFile' */
+HashFileResult hashString(llvm::StringRef data);
 
 /**
   Sets the modification and access time of one file to the

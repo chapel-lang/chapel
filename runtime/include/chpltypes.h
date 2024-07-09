@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,6 +39,8 @@ typedef double _Complex       _complex128;
 #ifndef _Complex_I
 static const _complex64 _Complex_I = {0.0f, 1.0f};
 #endif
+// C's complex I macro conflicts with some template parameters in e.g. rocPRIM
+#undef I
 
 #ifdef __cplusplus
 extern "C" {
@@ -58,8 +60,11 @@ typedef long long c_longlong;
 typedef unsigned long long c_ulonglong;
 typedef float c_float;
 typedef double c_double;
-typedef void* c_void_ptr;
+typedef void* raw_c_void_ptr;
 typedef void* c_fn_ptr;  // a white lie
+// Rehook used for convenience in unstable-izing this soon to be removed symbol,
+// similar to c_string_rehook.
+typedef c_fn_ptr c_fn_ptr_rehook;
 typedef uintptr_t c_uintptr;
 typedef intptr_t c_intptr;
 typedef ptrdiff_t c_ptrdiff;
@@ -74,15 +79,7 @@ typedef bool chpl_bool;
 #endif
 
 static inline void* c_pointer_return(void* x) { return x; }
-// TODO: Return a const void* and remove the const-discarding cast, here as well
-// as in the GPU runtime versions.
-// This is currently not possible as our C backend does not consistently respect
-// constness and would generate code that discards the const qualifier.
-// Constness is casted away here because we still need to accept a const
-// argument to get pointers to const Chapel variables; preventing mutation of
-// pointed-to const variables is enforced before this point.
-// Anna, April 2023.
-static inline void* c_pointer_return_const(const void* x) { return (void*)x; }
+static inline const void* c_pointer_return_const(const void* x) { return x; }
 static inline ptrdiff_t c_pointer_diff(void* a, void* b, ptrdiff_t eltSize) {
   return (((unsigned char*)a) - ((unsigned char*)b)) / eltSize;
 }
@@ -252,10 +249,47 @@ typedef struct chpl_main_argument_s {
 } chpl_main_argument;
 
 static inline _complex128 _chpl_complex128(_real64 re, _real64 im) {
+// though CMPLX works for some C++ compilers, it doesn't work for all in our
+// test environments, so dodge it to be safe;  Currently, we only compile
+// this header using a C++ compiler when compiling our re2 stubs, which
+// don't seem to use this routine anyway.
+#if defined(CMPLX) && !defined(__cplusplus)
+  return CMPLX(re, im);
+#else
+#ifndef CHPL_DONT_USE_CMPLX_PTR_ALIASING
+#define cmplx_re64(c) (((double *)&(c))[0])
+#define cmplx_im64(c) (((double *)&(c))[1])
+  _complex128 val;
+  cmplx_re64(val) = re;
+  cmplx_im64(val) = im;
+  return val;
+#else
+  // This can generate bad values in the face of inf/nan values
   return re + im*_Complex_I;
+#endif
+#endif
 }
+
 static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
+// though CMPLXF works for some C++ compilers, it doesn't work for all in our
+// test environments, so dodge it to be safe;  Currently, we only compile
+// this header using a C++ compiler when compiling our re2 stubs, which
+// don't seem to use this routine anyway.
+#if defined(CMPLXF) && !defined(__cplusplus)
+  return CMPLXF(re, im);
+#else
+#ifndef CHPL_DONT_USE_CMPLX_PTR_ALIASING
+#define cmplx_re32(c) (((float *)&(c))[0])
+#define cmplx_im32(c) (((float *)&(c))[1])
+  _complex64 val;
+  cmplx_re32(val) = re;
+  cmplx_im32(val) = im;
+  return val;
+#else
+  // This can generate bad values in the face of inf/nan values
   return re + im*_Complex_I;
+#endif
+#endif
 }
 
 static inline _real64* complex128GetRealRef(_complex128* cplx) {
@@ -334,5 +368,7 @@ typedef int8_t chpl_arg_bundle_kind_t;
 #endif
 
 #include "chpl-string-support.h"
+
+#include "gdb.h"
 
 #endif

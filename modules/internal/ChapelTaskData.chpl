@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,7 +38,7 @@ module ChapelTaskData {
   // What is the size of a wide _EndCount pointer?
   private
   proc sizeof_endcount_ptr() {
-    return c_sizeof(chpl_localeID_t) + c_sizeof(c_void_ptr);
+    return c_sizeof(chpl_localeID_t) + c_sizeof(c_ptr(void));
   }
 
   // These functions get/set parts of the Chapel managed
@@ -57,7 +57,7 @@ module ChapelTaskData {
 
     // Copy the address
     i += c_sizeof(chpl_localeID_t);
-    memcpy(c_ptrTo(prv[i]), c_ptrTo(adr), c_sizeof(c_void_ptr));
+    memcpy(c_ptrTo(prv[i]), c_ptrTo(adr), c_sizeof(c_ptr(void)));
   }
 
   proc chpl_task_data_getDynamicEndCount(tls:c_ptr(chpl_task_infoChapel_t)) {
@@ -65,7 +65,7 @@ module ChapelTaskData {
     var i:c_size_t;
 
     var loc:chpl_localeID_t;
-    var adr:c_void_ptr;
+    var adr:c_ptr(void);
 
     // Copy the localeID
     i = chpl_offset_endCount;
@@ -73,7 +73,7 @@ module ChapelTaskData {
 
     // Copy the address
     i += c_sizeof(chpl_localeID_t);
-    memcpy(c_ptrTo(adr), c_ptrTo(prv[i]), c_sizeof(c_void_ptr));
+    memcpy(c_ptrTo(adr), c_ptrTo(prv[i]), c_sizeof(c_ptr(void)));
 
     // Construct a pointer to return.
     var ret = __primitive("_wide_make", _remoteEndCountType, loc, adr);

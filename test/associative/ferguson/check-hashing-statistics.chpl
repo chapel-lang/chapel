@@ -135,8 +135,7 @@ proc runTest() {
       seeds[i] = sha256hash(i:uint);
     }
   } else {
-    var rng = new RandomStream(uint(64), seed=0x1BAD5EED);
-    rng.fillRandom(seeds);
+    fillRandom(seeds, seed=0x1BAD5EED);
   }
 
   for i in 1..N {

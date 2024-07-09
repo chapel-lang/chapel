@@ -40,11 +40,11 @@ class Grid {
 
   const dx: dimension*real;
           
-  var cells:          domain(dimension, stridable=true);
-  var extended_cells: domain(dimension, stridable=true);
+  var cells:          domain(dimension, strides=strideKind.any);
+  var extended_cells: domain(dimension, strides=strideKind.any);
   
   // const ghost_domains: MultiDomain(dimension, stridable=true);
-  var ghost_domains: unmanaged List( domain(dimension, stridable=true) );
+  var ghost_domains: unmanaged List( domain(dimension, strides=strideKind.any) );
 
 
 
@@ -75,7 +75,7 @@ class Grid {
       i_high(d) = i_low(d) + 2*n_cells(d);
 
     //==== Physical cells ====
-    var ranges: dimension*range(stridable = true);
+    var ranges: dimension*range(strides = strideKind.any);
     for d in dimensions
     {
       ranges(d) = (i_low(d)+1 .. by 2) #n_cells(d);
@@ -99,8 +99,8 @@ class Grid {
     // the grid and stored in a linked list.
     //-------------------------------------------------------------
 
-    ghost_domains = new unmanaged List( domain(dimension,stridable=true) );
-    this.complete();
+    ghost_domains = new unmanaged List( domain(dimension,strides=strideKind.any) );
+    init this;
 
     //==== Sanity check ====
     sanityChecks();
@@ -108,7 +108,7 @@ class Grid {
     var inner_location: dimension*loc1d;
     for d in dimensions do inner_location(d) = loc1d.inner;
 
-    var ghost_domain: domain(dimension, stridable=true);
+    var ghost_domain: domain(dimension, strides=strideKind.any);
     for loc in (loc1d.below .. loc1d.above by 2)**dimension {
       if loc != inner_location {
         for d in dimensions {
@@ -196,7 +196,7 @@ class Grid {
     return loc;
   }
 
-  proc relativeLocation(D: domain(dimension, stridable=true)){
+  proc relativeLocation(D: domain(dimension, strides=strideKind.any)){
     var loc_low  = relativeLocation(D.low);
     var loc_high = relativeLocation(D.high);
 

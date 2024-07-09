@@ -25,7 +25,7 @@ const lsize2 = 2*lsize,
 const vectorDom = {0..#size2};
 
 const parentDom = {0..#size2, 0..#size2};
-var matrixDom: sparse subdomain(parentDom) dmapped CS();
+var matrixDom: sparse subdomain(parentDom) dmapped new dmap(new CS());
 
 // temporary index buffer for fast initialization
 const indBufDom = {0..#(size2*stencilSize)};
@@ -47,7 +47,7 @@ for row in 0..#size2 {
     bufIdx += 4;
   }
 }
-matrixDom.bulkAdd(indBuf, preserveInds=false);
+matrixDom.bulkAddNoPreserveInds(indBuf);
 
 //do a sanitiy check to make sure we have created correct numver of
 //indicese in the sparse domain
@@ -55,7 +55,7 @@ if matrixDom.size != size2*stencilSize then
   halt("Incorrect number of indices created");
 
 var matrix: [matrixDom] real;
-[(i,j) in matrixDom] matrix[i,j] = 1.0/(j+1);
+[(i,j) in matrixDom with (ref matrix)] matrix[i,j] = 1.0/(j+1);
 
 var vector: [vectorDom] real;
 var result: [vectorDom] real;
@@ -78,9 +78,9 @@ var t = new stopwatch();
 for niter in 0..iterations {
 
   if niter == 1 then t.start();
-  [i in vectorDom] vector[i] += i+1;
+  [i in vectorDom with (ref vector)] vector[i] += i+1;
 
-  forall i in matrix.domain.dim(0) do
+  forall i in matrix.domain.dim(0) with (ref result) do
     for j in matrix.domain.dimIter(1,i) do
     result[i] += matrix[i,j] * vector[j];
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,6 +45,8 @@ namespace uast {
   visible within the module Foo.
 */
 class Include final : public AstNode {
+ friend class AstNode;
+
  private:
   Decl::Visibility visibility_;
   bool isPrototype_;
@@ -58,13 +60,18 @@ class Include final : public AstNode {
     CHPL_ASSERT(!name_.isEmpty());
   }
 
-  Include(Deserializer& des)
-    : AstNode(asttags::Include, des) {
-      visibility_ = des.read<Decl::Visibility>();
-      isPrototype_ = des.read<bool>();
-      name_ = des.read<UniqueString>();
-    }
+  void serializeInner(Serializer& ser) const override {
+    ser.write(visibility_);
+    ser.write(isPrototype_);
+    ser.write(name_);
+  }
 
+  explicit Include(Deserializer& des)
+    : AstNode(asttags::Include, des) {
+    visibility_ = des.read<Decl::Visibility>();
+    isPrototype_ = des.read<bool>();
+    name_ = des.read<UniqueString>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Include* lhs = this;
@@ -110,16 +117,6 @@ class Include final : public AstNode {
   UniqueString name() const {
     return name_;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(visibility_);
-    ser.write(isPrototype_);
-    ser.write(name_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Include);
-
 };
 
 

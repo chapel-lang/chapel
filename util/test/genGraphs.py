@@ -55,6 +55,10 @@ parser.add_option('-m', '--configs', dest='multiConf',
                        'duplicated for local and --no-local both of which will '
                        'be visible by default on the web page.',
                   default='')
+parser.add_option('-f', '--addfile', dest='addfile',
+                  help='comma-separated paths to files that should be copied '
+                       'into the html directory.',
+                  default='')
 
 if annotate:
     parser.add_option('-j', '--annotate', dest='annotation_file',
@@ -538,6 +542,8 @@ class GraphStuff:
                 graphs[currgraph].numseries = int(rest.strip())
             elif key == 'sort':
                 graphs[currgraph].sort = rest.lower() in ('true', 't', '1', 'on', 'y', 'yes')
+            else:
+                sys.stdout.write('WARNING: Invalid graph file key {0} in {1}\n'.format(key, fullFname))
 
         try:
             graphs[currgraph].generateGraphData(self, currgraph)
@@ -1120,17 +1126,23 @@ def main():
             # files were copied over. This is used to see if we should sync the
             # files over to the website.
             sys.stdout.write('Created SUCCESS file\n')
-            #
-            # recursively chmod the html/ directory for access via web servers
-            #  - for directories, chmod u+rwx and go+rx
-            #  - for directories, chmod go+r
-            #
-            for root, dirs, files in os.walk(outdir):
-                os.chmod(root, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
-                for momo in dirs:
-                    os.chmod(os.path.join(root, momo), stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
-                for momo in files:
-                    os.chmod(os.path.join(root, momo), stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+
+        #
+        # recursively chmod the html/ directory for access via web servers
+        #  - for directories, chmod u+rwx and go+rx
+        #  - for directories, chmod go+r
+        #
+        for root, dirs, files in os.walk(outdir):
+            os.chmod(root, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+            for momo in dirs:
+                os.chmod(os.path.join(root, momo), stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+            for momo in files:
+                os.chmod(os.path.join(root, momo), stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+
+        if len(options.addfile) > 0:
+            for file in options.addfile.split(','):
+                shutil.copy(file, outdir)
+                sys.stdout.write('Copied %s into %s\n'%(file, outdir))
 
 
     return 0

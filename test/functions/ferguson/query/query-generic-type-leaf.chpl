@@ -20,10 +20,15 @@ proc g(x: Wrapper(GenericClass(?))) {
 }
 
 
-var a = new Wrapper((new owned GenericClass(int, 3)).borrow());
-var b = new Wrapper((new owned GenericClass(real, 4)).borrow());
-var c = new Wrapper((new owned OtherGenericClass(int, 3)).borrow());
-var d = new Wrapper((new owned OtherGenericClass(real, 4)).borrow());
+var aObj = new owned GenericClass(int, 3);
+var bObj = new owned GenericClass(real, 4);
+var cObj = new owned OtherGenericClass(int, 3);
+var dObj = new owned OtherGenericClass(real, 4);
+
+var a = new Wrapper(aObj.borrow());
+var b = new Wrapper(bObj.borrow());
+var c = new Wrapper(cObj.borrow());
+var d = new Wrapper(dObj.borrow());
 
 // these should work
 f(a);

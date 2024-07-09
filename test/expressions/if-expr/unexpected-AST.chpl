@@ -50,7 +50,7 @@ iter DefaultRectangularDom.myIter(param tag) {
           yield i;
         }
       } else {
-        var locBlock: rank*range(intIdxType);
+        var locBlock: rank*range(idxType);
         for param i in 1..rank {
           locBlock(i) = offset(i)..#(ranges(i).size);
         }
@@ -58,7 +58,7 @@ iter DefaultRectangularDom.myIter(param tag) {
           chpl_debug_writeln("*** DI: locBlock = ", locBlock);
         }
         coforall chunk in 0..#numChunks {
-          var followMe: rank*range(intIdxType) = locBlock;
+          var followMe: rank*range(idxType) = locBlock;
           const (lo,hi) = _computeBlock(locBlock(parDim).size,
                                         numChunks, chunk,
                                         locBlock(parDim)._high,
@@ -68,9 +68,9 @@ iter DefaultRectangularDom.myIter(param tag) {
           if debugDefaultDist {
             chpl_debug_writeln("*** DI[", chunk, "]: followMe = ", followMe);
           }
-          var block: rank*range(idxType=intIdxType, stridable=stridable);
-          if stridable {
-            type strType = chpl__signedType(intIdxType);
+          var block: rank*range(idxType=idxType, strides=strides);
+          if ! strides.isOne() {
+            type strType = chpl__signedType(idxType);
             for param i in 1..rank {
               // Note that a range.stride is signed, even if the range is not
               const rStride = ranges(i).stride;
@@ -78,14 +78,14 @@ iter DefaultRectangularDom.myIter(param tag) {
               if rStride > 0 {
                 // Since stride is positive, the following line results
                 // in a positive number, so casting it to e.g. uint is OK
-                const riStride = rStride:intIdxType;
+                const riStride = rStride:idxType;
                 const low = ranges(i).alignedLowAsInt + followMe(i).low*riStride,
                       high = ranges(i).alignedLowAsInt + followMe(i).high*riStride,
                       stride = rSignedStride;
                 block(i) = low..high by stride;
               } else {
                 // Stride is negative, so the following number is positive.
-                const riStride = (-rStride):intIdxType;
+                const riStride = (-rStride):idxType;
                 const low = ranges(i).alignedHighAsInt - followMe(i).high*riStride,
                       high = ranges(i).alignedHighAsInt - followMe(i).low*riStride,
                       stride = rSignedStride;
@@ -94,7 +94,7 @@ iter DefaultRectangularDom.myIter(param tag) {
             }
           } else {
             for  param i in 1..rank do
-              block(i) = ranges(i)._low+followMe(i).low:intIdxType..ranges(i)._low+followMe(i).high:intIdxType;
+              block(i) = ranges(i)._low+followMe(i).low:idxType..ranges(i)._low+followMe(i).high:idxType;
           }
           for i in these_help(1, block) {
             yield chpl_intToIdx(i);

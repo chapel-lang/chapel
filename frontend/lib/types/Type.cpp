@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,12 +19,15 @@
 
 #include "chpl/types/Type.h"
 
+#include "chpl/framework/query-impl.h"
+#include "chpl/types/AnyClassType.h"
 #include "chpl/types/AnyType.h"
 #include "chpl/types/BoolType.h"
 #include "chpl/types/BuiltinType.h"
 #include "chpl/types/CStringType.h"
 #include "chpl/types/ClassType.h"
 #include "chpl/types/ComplexType.h"
+#include "chpl/types/CPtrType.h"
 #include "chpl/types/DomainType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
@@ -37,6 +40,8 @@
 #include "chpl/types/UnknownType.h"
 #include "chpl/types/TupleType.h"
 #include "chpl/types/VoidType.h"
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/resolution-queries.h"
 
 namespace chpl {
 namespace types {
@@ -63,11 +68,7 @@ void gatherPrimitiveType(Context* context,
 void Type::gatherBuiltins(Context* context,
                           std::unordered_map<UniqueString,const Type*>& map) {
 
-  gatherPrimitiveType(context, map, BoolType::get(context, 0));
-  gatherPrimitiveType(context, map, BoolType::get(context, 8));
-  gatherPrimitiveType(context, map, BoolType::get(context, 16));
-  gatherPrimitiveType(context, map, BoolType::get(context, 32));
-  gatherPrimitiveType(context, map, BoolType::get(context, 64));
+  gatherPrimitiveType(context, map, BoolType::get(context));
 
   gatherPrimitiveType(context, map, IntType::get(context, 8));
   gatherPrimitiveType(context, map, IntType::get(context, 16));
@@ -101,11 +102,11 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "_any", AnyType::get(context));
   gatherType(context, map, "_nilType", NilType::get(context));
   gatherType(context, map, "_unknown", UnknownType::get(context));
-  gatherType(context, map, "c_string", CStringType::get(context));
+  gatherType(context, map, "chpl_c_string", CStringType::get(context));
   gatherType(context, map, "nothing", NothingType::get(context));
   gatherType(context, map, "void", VoidType::get(context));
 
-  gatherType(context, map, "object", BasicClassType::getObjectType(context));
+  gatherType(context, map, "RootClass", BasicClassType::getRootClassType(context));
 
   gatherType(context, map, "_tuple", TupleType::getGenericTupleType(context));
 
@@ -115,10 +116,24 @@ void Type::gatherBuiltins(Context* context,
   auto stringType = CompositeType::getStringType(context);
   gatherType(context, map, "string", stringType);
   gatherType(context, map, "_string", stringType);
+  auto localeType = CompositeType::getLocaleType(context);
+  gatherType(context, map, "locale", localeType);
+  gatherType(context, map, "_locale", localeType);
+  gatherType(context, map, "chpl_localeID_t", CompositeType::getLocaleIDType(context));
+
+  auto rangeType = CompositeType::getRangeType(context);
+  gatherType(context, map, "range", rangeType);
+  gatherType(context, map, "_range", rangeType);
 
   gatherType(context, map, "Error", CompositeType::getErrorType(context));
 
   gatherType(context, map, "domain", DomainType::getGenericDomainType(context));
+
+  gatherType(context, map, "class", AnyClassType::get(context));
+  auto genericBorrowed = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::BORROWED));
+  gatherType(context, map, "borrowed", genericBorrowed);
+  auto genericUnmanaged = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::UNMANAGED));
+  gatherType(context, map, "unmanaged", genericUnmanaged);
 
   BuiltinType::gatherBuiltins(context, map);
 }
@@ -140,7 +155,9 @@ void Type::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   for (int i = 0; i < leadingSpaces; i++) {
     ss << "  ";
   }
-  ss << "type ";
+  if (stringKind != chpl::StringifyKind::CHPL_SYNTAX) {
+    ss << "type ";
+  }
   ss << typetags::tagToString(this->tag());
 }
 
@@ -157,6 +174,14 @@ bool Type::isStringType() const {
 bool Type::isBytesType() const {
   if (auto rec = toRecordType()) {
     if (rec->name() == USTR("bytes"))
+      return true;
+  }
+  return false;
+}
+
+bool Type::isLocaleType() const {
+  if (auto rec = toRecordType()) {
+    if (rec->name() == USTR("locale"))
       return true;
   }
   return false;
@@ -189,17 +214,91 @@ bool Type::isUserRecordType() const {
   return true;
 }
 
+bool Type::hasPragma(Context* context, uast::pragmatags::PragmaTag p) const {
+  if (auto ct = this->toCompositeType()) {
+    if (auto id = ct->id()) {
+      if (auto ag = parsing::idToAttributeGroup(context, id)) {
+        return ag->hasPragma(p);
+      }
+    }
+  }
+  return false;
+}
 
 const CompositeType* Type::getCompositeType() const {
   if (auto at = toCompositeType())
     return at;
 
   if (auto ct = toClassType())
-    return ct->basicClassType();
+    return ct->manageableType();
 
   return nullptr;
 }
 
+static bool
+compositeTypeIsPod(Context* context, const Type* t) {
+  using namespace resolution;
+
+  auto ct = t->getCompositeType();
+  if (!ct) return false;
+
+  const uast::AstNode* ast = nullptr;
+  if (auto id = ct->id()) ast = parsing::idToAst(context, std::move(id));
+
+  auto& rf = fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
+  for (int i = 0; i < rf.numFields(); i++) {
+    auto qt = rf.fieldType(i);
+    if (auto ft = qt.type()) {
+      if (qt.kind() == QualifiedType::PARAM ||
+          qt.kind() == QualifiedType::TYPE) continue;
+      if (!Type::isPod(context, ft)) return false;
+    } else {
+      return false;
+    }
+  }
+
+  if (auto tfs = tryResolveDeinit(context, ast, t)) {
+    if (!tfs->isCompilerGenerated()) return false;
+  }
+  if (auto tfs = tryResolveInitEq(context, ast, t, t)) {
+    if (!tfs->isCompilerGenerated()) return false;
+  }
+  if (auto tfs = tryResolveAssign(context, ast, t, t)) {
+    if (!tfs->isCompilerGenerated()) return false;
+  }
+
+  return true;
+}
+
+static const bool&
+compositeTypeIsPodQuery(Context* context, const Type* t) {
+  QUERY_BEGIN(compositeTypeIsPodQuery, context, t);
+  bool ret = compositeTypeIsPod(context, t);
+  return QUERY_END(ret);
+}
+
+bool Type::isPod(Context* context, const Type* t) {
+  if (t->isUnknownType() || t->isErroneousType() ||
+      t->isAnyType()) return false;
+  if (t->hasPragma(context, uast::PRAGMA_POD)) return true;
+  if (t->hasPragma(context, uast::PRAGMA_IGNORE_NOINIT)) return false;
+  if (t->hasPragma(context, uast::PRAGMA_ATOMIC_TYPE)) return false;
+  if (t->hasPragma(context, uast::PRAGMA_SYNC)) return false;
+  if (t->hasPragma(context, uast::PRAGMA_SINGLE)) return false;
+  if (t->isDomainType()) return false;
+  if (t->isArrayType()) return false;
+  if (auto cls = t->toClassType()) {
+    if (cls->decorator().isManaged()) return false;
+  }
+  // TODO: We might like to be able to mark something as POD if it contains
+  // all marked-as-POD members (e.g., all ranges) even if it is generic.
+  // Currently, we can't do that, because call resolution can't get far
+  // when given a generic actual.
+  auto g = resolution::getTypeGenericity(context, t);
+  if (g != Type::CONCRETE) return false;
+  if (t->getCompositeType()) return compositeTypeIsPodQuery(context, t);
+  return true;
+}
 
 } // end namespace types
 } // end namespace chpl

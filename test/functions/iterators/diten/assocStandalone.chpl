@@ -8,7 +8,7 @@ for i in 1..n do
 var A: [D] int;
 
 writeln("first forall");
-forall i in D do
+forall i in D with (ref A) do
   A[i] = i:int;
 
 writeln("second forall");

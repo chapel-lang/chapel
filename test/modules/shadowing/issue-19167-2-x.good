@@ -1,6 +1,6 @@
 issue-19167-2-x.chpl:12: error: 'x' has multiple definitions in this scope
-issue-19167-2-x.chpl:13: note: it was first defined through the 'use' statement here
+issue-19167-2-x.chpl:13: note: it was first defined through the 'use' of 'A' here
 issue-19167-2-x.chpl:2: note: leading to the definition here
-issue-19167-2-x.chpl:14: note: redefined through the 'use' statement here
-issue-19167-2-x.chpl:9: note: and then through the 'use' statement here
+issue-19167-2-x.chpl:14: note: redefined through the 'use' of 'UseB' here
+issue-19167-2-x.chpl:9: note: and then through the 'use' of 'B' here
 issue-19167-2-x.chpl:5: note: leading to the definition here

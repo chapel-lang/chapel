@@ -4,3 +4,5 @@ fileWriterLimited.txt
 fileWriterBadRegion.txt
 writeBinary/*.bin
 writeStringAndBytes/*.txt
+outOfRange.txt
+out.txt

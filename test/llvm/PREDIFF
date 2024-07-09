@@ -2,6 +2,12 @@
 TESTNAME=$1
 OUTFILE=$2
 
+# If the test failed to compile, fail
+HAS_COMPILE_ERROR=`grep "error:" $OUTFILE`
+if [ -n "$HAS_COMPILE_ERROR" ]; then
+  exit 0
+fi
+
 TMPFILE="$OUTFILE.prediff.tmp"
 
 FILECHECK='FileCheck'

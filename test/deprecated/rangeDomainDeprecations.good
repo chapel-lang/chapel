@@ -1,0 +1,1 @@
+rangeDomainDeprecations.chpl:3: error: 'domain.dist' is no longer supported, use 'domain.distribution' instead

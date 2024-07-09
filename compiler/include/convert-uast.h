@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +27,10 @@
 #include "chpl/framework/Context.h"
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Module.h"
+
+// when converting, only convert modules in this set
+// TODO: switch to converting a module-at-a-time (including submodules)
+extern std::set<chpl::ID> gConvertFilterModuleIds;
 
 ModuleSymbol*
 convertToplevelModule(chpl::Context* context,

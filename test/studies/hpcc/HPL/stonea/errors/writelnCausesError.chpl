@@ -11,7 +11,7 @@ proc dgemm(
     r : int,    // number of cols in B
     A : [?AD] ?t,
     B : [?BD] t,
-    C : [?CD] t)
+    ref C : [?CD] t)
 {
     // Calculate (i,j) using a dot product of a row of A and a column of B.
     for i in AD.dim(0) {
@@ -27,9 +27,9 @@ proc dgemm(
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 proc panelSolve(
-    A : [] ?t,
+    ref A : [] ?t,
     panel : domain(2),
-    piv : [] int)
+    ref piv : [] int)
 {
     var pnlRows = panel.dim(0);
     var pnlCols = panel.dim(1);
@@ -65,7 +65,7 @@ proc panelSolve(
 
         // update all other values below the pivot
         if k+1 <= pnlRows.high && k+1 <= pnlCols.high {
-            forall (i,j) in panel[k+1.., k+1..] {
+            forall (i,j) in panel[k+1.., k+1..] with (ref A) {
                 A[i,j] -= A[i,k] * A[k,j];
             }
         }
@@ -76,7 +76,7 @@ proc panelSolve(
 // LU decomposition.  Each step of the LU decomposition will solve a block
 // (tl for top-left) portion of a matrix. This function solves the rows to the
 // right of the block.
-proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
+proc updateBlockRow(ref A : [] ?t, tl : domain(2), tr : domain(2))
 {
     var tlRows = tl.dim(0);
     var tlCols = tl.dim(1);
@@ -86,7 +86,7 @@ proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
     assert(tlCols == trRows);
 
     for i in trRows {
-        forall j in trCols {
+        forall j in trCols with (ref A) {
             for k in tlRows.low..i-1 {
                 A[i, j] -= A[i, k] * A[k,j];
             }
@@ -96,7 +96,7 @@ proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
 
 // blocked LU factorization with pivoting for matrix augmented with vector of
 // RHS values.
-proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
+proc LUFactorize(n : int, ref A : [1..n, 1..n+1] real, ref piv : [1..n] int) {
     const ARows = A.domain.dim(0);
     const ACols = A.domain.dim(1);
 
@@ -317,7 +317,7 @@ proc test_permuteMatrix(rprt = true) : bool {
     // little too meta here?)
 
     param n = 10;
-    var rand = new owned RandomStream();
+    var rand = new randomStream(real, parSafe=false);
 
     // this n by n array is filled so each element is assigned to its
     // row number. This test will permute these elements, keeping a pivot
@@ -351,7 +351,7 @@ proc test_permuteMatrix(rprt = true) : bool {
 }
 
 proc test_panelSolve(rprt = true) : bool {
-    var rand = new owned RandomStream();
+    var rand = new randomStream(real, parSafe=false);
 
     var piv : [1..8] int = [i in 1..8] i;
     var A : [1..8, 1..9] real =
@@ -391,7 +391,7 @@ proc test_panelSolve(rprt = true) : bool {
 }
 
 proc test_updateBlockRow(rprt = true) : bool {
-    var rand = new owned RandomStream();
+    var rand = new randomStream(real, parSafe=false);
 
     // construct a matrix A = [X | Y], where X is an already LU-factorized
     // submatrix and Y is the block row we wish to update and test

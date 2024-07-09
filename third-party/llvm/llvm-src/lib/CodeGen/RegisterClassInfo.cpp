@@ -52,22 +52,43 @@ void RegisterClassInfo::runOnMachineFunction(const MachineFunction &mf) {
     Update = true;
   }
 
-  // Does this MF have different CSRs?
-  assert(TRI && "no register info set");
+  // Test if CSRs have changed from the previous function.
+  const MachineRegisterInfo &MRI = MF->getRegInfo();
+  const MCPhysReg *CSR = MRI.getCalleeSavedRegs();
+  bool CSRChanged = true;
+  if (!Update) {
+    CSRChanged = false;
+    size_t LastSize = LastCalleeSavedRegs.size();
+    for (unsigned I = 0;; ++I) {
+      if (CSR[I] == 0) {
+        CSRChanged = I != LastSize;
+        break;
+      }
+      if (I >= LastSize) {
+        CSRChanged = true;
+        break;
+      }
+      if (CSR[I] != LastCalleeSavedRegs[I]) {
+        CSRChanged = true;
+        break;
+      }
+    }
+  }
 
   // Get the callee saved registers.
-  const MCPhysReg *CSR = MF->getRegInfo().getCalleeSavedRegs();
-  if (Update || CSR != CalleeSavedRegs) {
+  if (CSRChanged) {
+    LastCalleeSavedRegs.clear();
     // Build a CSRAlias map. Every CSR alias saves the last
     // overlapping CSR.
     CalleeSavedAliases.assign(TRI->getNumRegs(), 0);
-    for (const MCPhysReg *I = CSR; *I; ++I)
+    for (const MCPhysReg *I = CSR; *I; ++I) {
       for (MCRegAliasIterator AI(*I, TRI, true); AI.isValid(); ++AI)
         CalleeSavedAliases[*AI] = *I;
+      LastCalleeSavedRegs.push_back(*I);
+    }
 
     Update = true;
   }
-  CalleeSavedRegs = CSR;
 
   // Even if CSR list is same, we could have had a different allocation order
   // if ignoreCSRForAllocationOrder is evaluated differently.
@@ -144,8 +165,7 @@ void RegisterClassInfo::compute(const TargetRegisterClass *RC) const {
   assert(RCI.NumRegs <= NumRegs && "Allocation order larger than regclass");
 
   // CSR aliases go after the volatile registers, preserve the target's order.
-  for (unsigned i = 0, e = CSRAlias.size(); i != e; ++i) {
-    unsigned PhysReg = CSRAlias[i];
+  for (unsigned PhysReg : CSRAlias) {
     uint8_t Cost = RegCosts[PhysReg];
     if (Cost != LastCost)
       LastCostChange = N;

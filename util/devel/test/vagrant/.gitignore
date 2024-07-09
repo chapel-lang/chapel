@@ -1,0 +1,4 @@
+# Util/devel/test/vagrant ignores.
+/log
+/log2
+/*/*-cloudimg-console.log

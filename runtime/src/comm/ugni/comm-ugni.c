@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -17,6 +17,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#ifdef __STRICT_ANSI__
+// For builds with NVIDIA we define this, but this source is not compatible with
+// it. So, undefine if it was defined
+#undef __STRICT_ANSI__
+#endif
 
 //
 // GNI-based implementation of Chapel communication interface.
@@ -1825,7 +1831,7 @@ int32_t chpl_comm_getMaxThreads(void)
   return 0;
 }
 
-void chpl_comm_pre_topo_init(void) {
+void chpl_comm_init(int *argc_p, char ***argv_p) {
   if (fork_op_num_ops > (1 << FORK_OP_BITS))
     CHPL_INTERNAL_ERROR("too many fork OPs for internal encoding");
 
@@ -1866,11 +1872,6 @@ void chpl_comm_pre_topo_init(void) {
     CHPL_INTERNAL_ERROR("PMI_Get_numpes_in_app_on_smp() failed");
   }
   chpl_set_num_locales_on_node((int32_t) count);
-}
-
-
-void chpl_comm_init(int *argc_p, char ***argv_p)
-{
 
   {
     GNI_CHECK(GNI_GetDeviceType(&nic_type));
@@ -3009,7 +3010,7 @@ void chpl_comm_rollcall(void)
   // Initialize diags
   chpl_comm_diags_init();
 
-  chpl_msg(2, "executing on node %d of %d node(s): %s\n", chpl_nodeID,
+  chpl_msg(2, "executing locale %d of %d on node '%s'\n", chpl_nodeID,
            chpl_numNodes, chpl_nodeName());
 
   if (chpl_numNodes == 1)
@@ -3904,7 +3905,7 @@ void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
 }
 
 
-wide_ptr_t* chpl_comm_broadcast_global_vars_helper() {
+wide_ptr_t* chpl_comm_broadcast_global_vars_helper(void) {
   //
   // Gather the global variables' wide pointers on node 0 into a
   // buffer, and broadcast the address of that buffer to the other
@@ -7946,3 +7947,5 @@ static void _psv_print(int li, chpl_comm_pstats_t* ps)
 #undef _PSV_PRINT
 }
 #endif
+
+void chpl_comm_ensure_progress(void) { }

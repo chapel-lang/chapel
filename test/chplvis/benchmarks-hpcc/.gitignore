@@ -1,0 +1,4 @@
+# Test/chplvis/benchmarks-hpcc ignores.
+/FFTvis
+/HPLvis
+/RAvis

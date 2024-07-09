@@ -11,9 +11,9 @@ module Structure {
   class Parent : GrandParent {
     param rank:int;
     type idxType;
-    param stridable: bool;
+    param strides: strideKind;
 
-    proc foo( arg: rank*range(idxType, boundKind.both,stridable) ) {
+    proc foo( arg: rank*range(idxType, boundKind.both,strides) ) {
       writeln("in Parent(", rank, ") foo ", arg);
     }
     proc bar() {
@@ -22,7 +22,7 @@ module Structure {
 
   }
 
-  class SubParent : Parent {
+  class SubParent : Parent(?) {
     type eltType;
   }
 
@@ -34,10 +34,10 @@ module Structure {
   class ListerParent : ListerGrandParent {
     param rank:int;
     type idxType;
-    param stridable: bool;
+    param strides: strideKind;
 
     proc getListedType() type {
-      return unmanaged Parent(rank=rank, idxType=idxType, stridable=stridable);
+      return unmanaged Parent(rank=rank, idxType=idxType, strides=strides);
     }
   }
 
@@ -63,10 +63,10 @@ module Structure {
 module Impl {
   use Structure;
 
-  class Child : SubParent {
+  class Child : SubParent(?) {
     var x:eltType;
     
-    override proc foo( arg: rank*range(idxType, boundKind.both,stridable) ) {
+    override proc foo( arg: rank*range(idxType, boundKind.both, strides) ) {
       writeln("in Child(", rank, ") foo ", arg, " " , x);
     }
     override proc bar() {
@@ -80,11 +80,12 @@ module Impl {
 
 
   proc main() {
-    var aa = new unmanaged Child(rank=1, idxType=int, stridable=false, eltType=real);
+    var aa = new unmanaged Child(rank=1, idxType=int, strides=strideKind.one, eltType=real);
     writeln(aa);
 
-    var a = new unmanaged Child(rank=1, idxType=int, stridable=false, eltType=int);
-    var d = (new owned ListerParent(rank=1, idxType=int, stridable=false)).borrow();
+    var a = new unmanaged Child(rank=1, idxType=int, strides=strideKind.one, eltType=int);
+    var ownD = new owned ListerParent(rank=1, idxType=int, strides=strideKind.one);
+    var d = ownD.borrow();
     d.lst.append(a);
 
     test(d);

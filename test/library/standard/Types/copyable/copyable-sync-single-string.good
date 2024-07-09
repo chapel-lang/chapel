@@ -1,0 +1,2 @@
+isCopyableType(sync string) = true
+isCopyableType(single string) = true

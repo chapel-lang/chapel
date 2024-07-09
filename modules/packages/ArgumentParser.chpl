@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -258,7 +258,7 @@ module ArgumentParser {
   // TODO: Add public github issue when available
 
   @chpldoc.nodoc
-  enum argKind { positional, subcommand, option, flag, passthrough };
+  enum argKind { positional, subcommand, option, flag, passthrough }
 
   // stores an argument definition
   @chpldoc.nodoc
@@ -662,7 +662,7 @@ module ArgumentParser {
     // the name of the binary for the USAGE message
     var _binaryName: string;
     // use the generator to build help and usage messages
-    var _helpGenerator: HelpGenerator;
+    var _helpGenerator: owned HelpGenerator;
 
     proc init(helpHandler=new shared HelpHandler(), binaryName="") {
       _helpHandler=helpHandler;
@@ -735,7 +735,7 @@ module ArgumentParser {
         return rows.size;
       }
 
-      proc append(item) {
+      proc ref append(item) {
         rows.pushBack(item);
       }
 
@@ -761,7 +761,7 @@ module ArgumentParser {
     proc _setArguments(argStack: map(string, ArgumentHandler)) {
       _argStack = new map(string, borrowed ArgumentHandler);
       for k in argStack.keys() {
-        _argStack.addOrSet(k,try! argStack[k] );
+        _argStack.addOrReplace(k,try! argStack[k] );
       }
       generateSections();
     }
@@ -858,6 +858,8 @@ module ArgumentParser {
       return helpMessage;
     }
   }
+
+  private param globalLifetime = 0;
 
   /*
   A parser that performs the following functions:
@@ -963,7 +965,11 @@ module ArgumentParser {
                         Cannot be used in conjunction with `helpHandler`.
     */
     proc init(addHelp=true, exitOnError=true, exitAfterHelp=true,
-              in helpHandler:?h=none, helpMessage:?t=none) {
+              in helpHandler:?h=none, helpMessage:?t=none)
+      lifetime return globalLifetime
+      /* lifetime clause indicate result has global lifetime and is
+         a work-around for issue #22599. */
+    {
 
       if (!isNothingType(h) && !isNothingType(t)) then
         compilerError("Cannot set help message and help handler, choose one.");
@@ -977,15 +983,20 @@ module ArgumentParser {
       _exitAfterHelp = exitAfterHelp;
 
       var _helpHandler = new shared HelpHandler();
-      if !isNothingType(h) then
-        _helpHandler = helpHandler: shared h.chpl_t;
+      if !isNothingType(h) {
+        if isBorrowedClass(helpHandler)
+          then compilerError("Cannot initialize a help handler from a 'borrowed' class");
+        if !isSharedClass(helpHandler)
+          then _helpHandler = shared.adopt(helpHandler);
+          else _helpHandler = helpHandler;
+      }
 
       _help = new helpWrapper(_helpHandler);
       if isStringType(t) then
         _help.setHelp(helpMessage);
 
 
-      this.complete();
+      init this;
 
       try! {
         // configure to allow consuming of -- if passed from runtime
@@ -1003,7 +1014,7 @@ module ArgumentParser {
 
     // setup automatic help handling on -h or --help
     @chpldoc.nodoc
-    proc addHelpFlag(name="ArgumentParserAddedHelp",
+    proc ref addHelpFlag(name="ArgumentParserAddedHelp",
                      opts:[?optsD]=["-h","--help"]) throws {
       _helpFlags.pushBack(opts);
       return addFlag(name, opts, defaultValue=false, help="Display this message and exit");
@@ -1028,12 +1039,12 @@ module ArgumentParser {
     :arg name: a friendly name to give this argument. This would typically be
                displayed in the `help` or `usage` message.
 
+    :arg numArgs: an exact number of values expected from the command line.
+                  An ArgumentError will be thrown if more or fewer values are entered.
+
     :arg defaultValue: a value to assign the argument when it is not provided
                        on the command line. If `numArgs` is greater than 1,
                        an array or list may be passed. Defaults to `none`.
-
-    :arg numArgs: an exact number of values expected from the command line.
-                  An ArgumentError will be thrown if more or fewer values are entered.
 
     :arg help: a message to display for this argument when help is requested
 
@@ -1053,7 +1064,7 @@ module ArgumentParser {
                of strings.
 
     */
-    proc addArgument(name:string,
+    proc ref addArgument(name:string,
                      numArgs=1,
                      defaultValue:?t=none,
                      help="",
@@ -1082,15 +1093,15 @@ module ArgumentParser {
     :arg name: a friendly name to give this argument. This would typically be
                displayed in the `help` or `usage` message.
 
-    :arg defaultValue: a value to assign the argument when it is not provided
-                       on the command line. If `numArgs` is greater than 1,
-                       an array or list may be passed. Defaults to `none`.
-
     :arg numArgs: a range of values expected from the command line. If using a
                   range, the argument must be the only positional that accepts a range,
                   and must be specified last relative to other positional arguments
                   to avoid ambiguity.
                   An ArgumentError will be thrown if more or fewer values are entered.
+
+    :arg defaultValue: a value to assign the argument when it is not provided
+                       on the command line. If `numArgs` is greater than 1,
+                       an array or list may be passed. Defaults to `none`.
 
     :arg help: a message to display for this argument when help is requested
 
@@ -1111,7 +1122,7 @@ module ArgumentParser {
              * `numArgs` is neither low-bound nor fully-bound
 
     */
-    proc addArgument(name:string,
+    proc ref addArgument(name:string,
                      numArgs:range(?),
                      defaultValue:?t=none,
                      help="",
@@ -1166,6 +1177,10 @@ module ArgumentParser {
                 Defaults to a long version of the `name` field with leading double
                 dashes ``--``.
 
+    :arg numArgs: the exact number of values expected to follow the option on the
+                  command line. An ArgumentError will be thrown if more or fewer
+                  values are entered.
+
     :arg required: a bool to set this option as a required command line argument.
                     If set to `true`, an ArgumentError will be thrown if the user
                     fails to enter the option on the command line. Defaults to `false`.
@@ -1173,10 +1188,6 @@ module ArgumentParser {
     :arg defaultValue: a value to assign the argument when an option is not required,
                         and a is not entered on the command line. If `numArgs` is
                         greater than 1, an array or list may be passed. Defaults to `none`.
-
-    :arg numArgs: the exact number of values expected to follow the option on the
-                  command line. An ArgumentError will be thrown if more or fewer
-                  values are entered.
 
     :arg help: a message to display for this option when help is requested
 
@@ -1197,7 +1208,7 @@ module ArgumentParser {
                of strings.
 
     */
-    proc addOption(name:string,
+    proc ref addOption(name:string,
                    opts:[]string=_processNameToOpts(name),
                    numArgs=1,
                    required=false,
@@ -1241,6 +1252,11 @@ module ArgumentParser {
                 Defaults to a long version of the `name` field with leading double
                 dashes ``--``.
 
+    :arg numArgs: a range of values expected to follow the option on the
+                  command line. This may be a fully-bound range like ``1..10``
+                  or a lower-bound range like ``1..``. An ArgumentError will be
+                  thrown if more or fewer values are entered.
+
     :arg required: a bool to set this option as a required command line argument.
                     If set to `true`, an ArgumentError will be thrown if the user
                     fails to enter the option on the command line. Defaults to `false`.
@@ -1248,11 +1264,6 @@ module ArgumentParser {
     :arg defaultValue: a value to assign the argument when an option is not required,
                         and a is not entered on the command line. If `numArgs` is
                         greater than 1, an array or list may be passed. Defaults to `none`.
-
-    :arg numArgs: a range of values expected to follow the option on the
-                  command line. This may be a fully-bound range like ``1..10``
-                  or a lower-bound range like ``1..``. An ArgumentError will be
-                  thrown if more or fewer values are entered.
 
     :arg help: a message to display for this option when help is requested
 
@@ -1274,7 +1285,7 @@ module ArgumentParser {
              * `numArgs` does not have a low-bound
 
     */
-    proc addOption(name:string,
+    proc ref addOption(name:string,
                    opts:[]string=_processNameToOpts(name),
                    numArgs:range(?),
                    required=false,
@@ -1372,7 +1383,7 @@ module ArgumentParser {
               * values in `opts` do not begin with a dash ``-``
 
     */
-    proc addFlag(name:string,
+    proc ref addFlag(name:string,
                  opts:[?optsD]=_processNameToOpts(name),
                  required=false, defaultValue:?t=none, flagInversion=false,
                  numArgs=0,
@@ -1456,7 +1467,7 @@ module ArgumentParser {
              * values in `opts` do not begin with a dash ``-``
 
     */
-    proc addFlag(name:string,
+    proc ref addFlag(name:string,
                  opts:[?optsD]=_processNameToOpts(name),
                  required=false, defaultValue:?t=none, flagInversion=false,
                  numArgs:range,
@@ -1544,7 +1555,7 @@ module ArgumentParser {
     :throws: `ArgumentError` if `cmd` is already defined for this parser
 
     */
-    proc addSubCommand(cmd:string, help="",
+    proc ref addSubCommand(cmd:string, help="",
                        visible=true) : shared Argument throws {
       var argHelp = new argumentHelp(help, visible, cmd);
       var handler = new owned SubCommand(cmd, argHelp);
@@ -1578,7 +1589,7 @@ module ArgumentParser {
     :throws: `ArgumentError` if `delimiter` is already defined for this parser
 
     */
-    proc addPassThrough(delimiter="--") : shared Argument throws {
+    proc ref addPassThrough(delimiter="--") : shared Argument throws {
       // remove the dummyHandler first
       if delimiter == "--" then _removeHandler("dummyDashHandler", ["--"]);
       var argHelp = new argumentHelp(visible=false,
@@ -1627,7 +1638,7 @@ module ArgumentParser {
              `exitOnError=false`, and invalid or undefined command line
              arguments are found in `arguments`.
     */
-    proc parseArgs(arguments:[?argsD] string) throws {
+    proc ref parseArgs(arguments:[?argsD] string) throws {
       // normal operation is to catch parsing error, write help message,
       // and exit. User may choose to handle errors themselves though.
       if _addHelp {
@@ -1653,7 +1664,7 @@ module ArgumentParser {
     }
 
     @chpldoc.nodoc
-    proc _tryParseArgs(arguments:[?argsD] string) throws {
+    proc ref _tryParseArgs(arguments:[?argsD] string) throws {
       // TODO: Find out why the in intent is breaking here
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
       var k = 0;
@@ -1675,7 +1686,7 @@ module ArgumentParser {
           var elems = new list(arrElt.split("=", 1));
           // replace this opt=val with opt val
           var idx = argsList.find(arrElt);
-          argsList.pop(idx);
+          argsList.getAndRemove(idx);
           argsList.insert(idx, elems.toArray());
         }
       }
@@ -1824,7 +1835,7 @@ module ArgumentParser {
     }
 
     @chpldoc.nodoc
-    proc _checkAndSaveOpts(opts:[?optsD], name:string) throws {
+    proc ref _checkAndSaveOpts(opts:[?optsD], name:string) throws {
       // validate supplied opt vals have valid prefix and don't conflict
       // then collect them
       for i in optsD {
@@ -1843,7 +1854,7 @@ module ArgumentParser {
     }
 
     @chpldoc.nodoc
-    proc _addHandler(in handler : ArgumentHandler) throws {
+    proc ref _addHandler(in handler : ArgumentHandler) throws {
 
       // ensure option names are unique
       if _handlers.contains(handler._name) {
@@ -1862,7 +1873,7 @@ module ArgumentParser {
 
     // remove a handler for an option or flag
     @chpldoc.nodoc
-    proc _removeHandler(name:string, opts:[?optsD]string) {
+    proc ref _removeHandler(name:string, opts:[?optsD]string) {
       if _result.remove(name) {
         _handlers.remove(name);
         for opt in opts do _options.remove(opt);
@@ -1894,7 +1905,7 @@ module ArgumentParser {
     /*
     Return the single value collected from the command line, if any.
     If no value was collected, the program will halt as result of
-    calling ``list.first()`` on an empty list.
+    calling ``list.first`` on an empty list.
 
     .. warning::
       This can only be called safely if you are sure a value was collected,
@@ -1914,7 +1925,7 @@ module ArgumentParser {
 
     */
     proc value() : string {
-      return this._values.first();
+      return this._values.first;
     }
 
     /*
@@ -1965,12 +1976,12 @@ module ArgumentParser {
 
       if !this.hasValue() {
         throw new ArgumentError("No value in this argument to convert");
-      } else if _convertStringToBool(this._values.first(), rtn) {
+      } else if _convertStringToBool(this._values.first, rtn) {
         return rtn;
       }
       else {
         throw new ArgumentError("Boolean requested but could not convert " +
-                                this._values.first():string + " to bool");
+                                this._values.first:string + " to bool");
       }
     }
   }

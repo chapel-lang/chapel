@@ -1,0 +1,1 @@
+-Llib/ -lfoo `$CHPL_HOME/util/config/compileline --libraries`

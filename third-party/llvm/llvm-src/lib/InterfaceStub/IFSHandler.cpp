@@ -10,14 +10,15 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/StringSwitch.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/InterfaceStub/IFSStub.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/GlobPattern.h"
 #include "llvm/Support/LineIterator.h"
 #include "llvm/Support/YAMLTraits.h"
+#include "llvm/TargetParser/Triple.h"
 #include <functional>
+#include <optional>
 
 using namespace llvm;
 using namespace llvm::ifs;
@@ -166,7 +167,7 @@ template <> struct MappingTraits<IFSStubTriple> {
 bool usesTriple(StringRef Buf) {
   for (line_iterator I(MemoryBufferRef(Buf, "ELFStub")); !I.is_at_eof(); ++I) {
     StringRef Line = (*I).trim();
-    if (Line.startswith("Target:")) {
+    if (Line.starts_with("Target:")) {
       if (Line == "Target:" || Line.contains("{")) {
         return false;
       }
@@ -192,8 +193,19 @@ Expected<std::unique_ptr<IFSStub>> ifs::readIFSFromBuffer(StringRef Buf) {
         "IFS version " + Stub->IfsVersion.getAsString() + " is unsupported.",
         std::make_error_code(std::errc::invalid_argument));
   if (Stub->Target.ArchString) {
-    Stub->Target.Arch =
+    uint16_t eMachine =
         ELF::convertArchNameToEMachine(*Stub->Target.ArchString);
+    if (eMachine == ELF::EM_NONE)
+      return createStringError(
+          std::make_error_code(std::errc::invalid_argument),
+          "IFS arch '" + *Stub->Target.ArchString + "' is unsupported");
+    Stub->Target.Arch = eMachine;
+  }
+  for (const auto &Item : Stub->Symbols) {
+    if (Item.Type == IFSSymbolType::Unknown)
+      return createStringError(
+          std::make_error_code(std::errc::invalid_argument),
+          "IFS symbol type for symbol '" + Item.Name + "' is unsupported");
   }
   return std::move(Stub);
 }
@@ -203,7 +215,7 @@ Error ifs::writeIFSToOutputStream(raw_ostream &OS, const IFSStub &Stub) {
   std::unique_ptr<IFSStubTriple> CopyStub(new IFSStubTriple(Stub));
   if (Stub.Target.Arch) {
     CopyStub->Target.ArchString =
-        std::string(ELF::convertEMachineToArchName(Stub.Target.Arch.value()));
+        std::string(ELF::convertEMachineToArchName(*Stub.Target.Arch));
   }
   IFSTarget Target = Stub.Target;
 
@@ -216,41 +228,40 @@ Error ifs::writeIFSToOutputStream(raw_ostream &OS, const IFSStub &Stub) {
   return Error::success();
 }
 
-Error ifs::overrideIFSTarget(IFSStub &Stub, Optional<IFSArch> OverrideArch,
-                             Optional<IFSEndiannessType> OverrideEndianness,
-                             Optional<IFSBitWidthType> OverrideBitWidth,
-                             Optional<std::string> OverrideTriple) {
+Error ifs::overrideIFSTarget(
+    IFSStub &Stub, std::optional<IFSArch> OverrideArch,
+    std::optional<IFSEndiannessType> OverrideEndianness,
+    std::optional<IFSBitWidthType> OverrideBitWidth,
+    std::optional<std::string> OverrideTriple) {
   std::error_code OverrideEC(1, std::generic_category());
   if (OverrideArch) {
-    if (Stub.Target.Arch && Stub.Target.Arch.value() != OverrideArch.value()) {
+    if (Stub.Target.Arch && *Stub.Target.Arch != *OverrideArch) {
       return make_error<StringError>(
           "Supplied Arch conflicts with the text stub", OverrideEC);
     }
-    Stub.Target.Arch = OverrideArch.value();
+    Stub.Target.Arch = *OverrideArch;
   }
   if (OverrideEndianness) {
     if (Stub.Target.Endianness &&
-        Stub.Target.Endianness.value() != OverrideEndianness.value()) {
+        *Stub.Target.Endianness != *OverrideEndianness) {
       return make_error<StringError>(
           "Supplied Endianness conflicts with the text stub", OverrideEC);
     }
-    Stub.Target.Endianness = OverrideEndianness.value();
+    Stub.Target.Endianness = *OverrideEndianness;
   }
   if (OverrideBitWidth) {
-    if (Stub.Target.BitWidth &&
-        Stub.Target.BitWidth.value() != OverrideBitWidth.value()) {
+    if (Stub.Target.BitWidth && *Stub.Target.BitWidth != *OverrideBitWidth) {
       return make_error<StringError>(
           "Supplied BitWidth conflicts with the text stub", OverrideEC);
     }
-    Stub.Target.BitWidth = OverrideBitWidth.value();
+    Stub.Target.BitWidth = *OverrideBitWidth;
   }
   if (OverrideTriple) {
-    if (Stub.Target.Triple &&
-        Stub.Target.Triple.value() != OverrideTriple.value()) {
+    if (Stub.Target.Triple && *Stub.Target.Triple != *OverrideTriple) {
       return make_error<StringError>(
           "Supplied Triple conflicts with the text stub", OverrideEC);
     }
-    Stub.Target.Triple = OverrideTriple.value();
+    Stub.Target.Triple = *OverrideTriple;
   }
   return Error::success();
 }
@@ -300,6 +311,9 @@ IFSTarget ifs::parseTriple(StringRef TripleStr) {
     break;
   case Triple::ArchType::x86_64:
     RetTarget.Arch = (IFSArch)ELF::EM_X86_64;
+    break;
+  case Triple::ArchType::riscv64:
+    RetTarget.Arch = (IFSArch)ELF::EM_RISCV;
     break;
   default:
     RetTarget.Arch = (IFSArch)ELF::EM_NONE;

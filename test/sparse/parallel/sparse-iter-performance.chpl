@@ -37,7 +37,7 @@ proc test(param dim:int, d: domain(dim)) {
   var A, B, C: [sd] int;
   var alpha = 10;
 
-  st; forall i in sd { A(i) = 10; }
+  st; forall i in sd with (ref A) { A(i) = 10; }
   fi("ix = const | par");
 
   st; for    i in sd { B(i) = 20; }
@@ -49,13 +49,13 @@ proc test(param dim:int, d: domain(dim)) {
   st; for    b in B { b = 40; }
   fi("ivar = const | seq");
 
-  st; forall i in sd { C(i) = A(i) + alpha * B(i); }
+  st; forall i in sd with (ref C) { C(i) = A(i) + alpha * B(i); }
   fi("ix = ix, ix | par");
 
   st; for    i in sd { A(i) = B(i) + alpha * C(i); }
   fi("ix = ix, ix | seq");
 
-  st; forall (i,j,k) in zip(sd,sd,sd) { C(i) = A(j) + alpha * B(k); }
+  st; forall (i,j,k) in zip(sd,sd,sd) with (ref C) { C(i) = A(j) + alpha * B(k); }
   fi("ix1 = ix2, ix3 | par");
 
   st; for    (i,j,k) in zip(sd,sd,sd) { A(i) = B(j) + alpha * C(k); }

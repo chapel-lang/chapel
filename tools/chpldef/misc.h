@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -49,7 +49,8 @@
 
 #define CHPLDEF_FATAL(server__, ...) \
   do { \
-    server__->message("FATAL [%s:%d]...\n", __FUNCTION__, __LINE__); \
+    server__->message("FATAL [%s:%s:%d]...\n", \
+                      __FILE__, __FUNCTION__, __LINE__); \
     server__->message(__VA_ARGS__); \
     std::abort(); \
   } while (0)
@@ -69,14 +70,8 @@ using JsonObject = llvm::json::Object;
 using JsonPath = llvm::json::Path;
 using JsonMapper = llvm::json::ObjectMapper;
 
-/** Wrapper around LLVM's optional type. */
-#if LLVM_VERSION_MAJOR >= 16
-  #include <optional>
-  static_assert(std::is_same<std::optional<T>, llvm::Optional<T>>::value);
-  template <typename T> using opt = std::optional<T>;
-#else
-  template <typename T> using opt = llvm::Optional<T>;
-#endif
+/** Wrapper around Chapel's optional type. */
+template <typename T> using opt = chpl::optional<T>;
 
 template <typename T>
 inline opt<T> option(T&& t) { return opt<T>(std::move(t)); }
@@ -87,8 +82,14 @@ inline opt<T> option(const T& t) { return opt<T>(t); }
 /** Cast a string to an integer, return 'false' if there was an error. */
 bool cast(std::string str, int& out) noexcept;
 
-/** Print a JSON value's tag as a string. */
-const char* jsonTagStr(const JsonValue& json);
+/** Cast a string to an integer, return 'false' if there was an error. */
+bool cast(std::string str, int64_t& out) noexcept;
+
+/** Print a JSON value's kind as a string. */
+const char* jsonKindToString(const JsonValue& json);
+
+/** Print a JSON value's kind as a string. */
+const char* jsonKindToString(JsonValue::Kind kind);
 
 /** Print a JSON value. */
 std::string jsonToString(const JsonValue& json, bool pretty=false);

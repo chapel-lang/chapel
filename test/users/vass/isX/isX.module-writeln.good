@@ -30,8 +30,6 @@ ArrType1 (arr1)  isArray  isArrayValue  isArrayType  .
 ArrType2 (arr2)  isArray  isArrayValue  isArrayType  .
 sync int (syInt)  isSync  isSyncValue  isSyncType  .
 sync real (syReal)  isSync  isSyncValue  isSyncType  .
-single int (siInt)  isSingle  isSingleValue  isSingleType  .
-single real (siReal)  isSingle  isSingleValue  isSingleType  .
 atomic int (aInt)  isAtomic  isAtomicValue  isAtomicType  .
 atomic real (aReal)  isAtomic  isAtomicValue  isAtomicType  .
 

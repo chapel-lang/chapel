@@ -62,5 +62,5 @@ writeln("Section 4");
 doit4(unmanaged A(int));
 doit4(owned A(int));
 doit4(shared A(int));
-doit4(borrowed A(int));
+
 doit4(A(int));

@@ -28,8 +28,8 @@ config var numOptions : int(64) = 1000;
 config const ERR_CHK = false;
 config const filename = "optionData.txt";
 
-const Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={0..#numOptions},
-                                dataParTasksPerLocale=here.maxTaskPar));
+const Dist = new blockDist(rank=1, idxType=int(64), boundingBox={0..#numOptions},
+                                dataParTasksPerLocale=here.maxTaskPar);
 const Dom : domain(1, int(64)) dmapped Dist = {0..#numOptions};
 
 var data : [Dom] OptionData;
@@ -112,7 +112,7 @@ proc BlkSchlsEqEuroNoDiv( sptprice : fptype, strike : fptype, rate : fptype,
 
 proc bs() {
 	for 0..#NUM_RUNS do {
-		forall i in Dom do {
+		forall i in Dom with (ref prices) do {
 			/* Calling main function to calculate option value based on 
 			 * Black & Sholes's equation.
 			 */
@@ -133,14 +133,14 @@ proc bs() {
 }
 
 proc main() {
-	var infile = open(filename, ioMode.r).reader();
+	var infile = open(filename, ioMode.r).reader(locking=false);
 
 	// Given the input file, there are 1000 options. Manually read the input in.
 	for i in 0..#numOptions do {
 		data(i) = new OptionData();
 		if ((i % 1000 == 0) && (i > 999)) then {
 			infile.close();
-			infile = open(filename, ioMode.r).reader();
+			infile = open(filename, ioMode.r).reader(locking=false);
 		}
 
 		infile.read(data(i).s, data(i).strike, data(i).r, data(i).divq, 

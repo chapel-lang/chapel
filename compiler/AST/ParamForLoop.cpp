@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -191,6 +191,7 @@ ParamForLoop* ParamForLoop::copyInner(SymbolMap* map)
   retval->blockTag       = blockTag;
   retval->mBreakLabel    = mBreakLabel;
   retval->mContinueLabel = mContinueLabel;
+  retval->mLLVMMetadataList = mLLVMMetadataList;
 
   if (mResolveInfo != 0)
     retval->mResolveInfo = mResolveInfo->copy(map, true);
@@ -474,7 +475,7 @@ CallExpr* ParamForLoop::foldForResolve()
         SymbolMap map;
 
         if (is_bool_type(idxType)) {
-          map.put(idxSym, new_BoolSymbol(i, BOOL_SIZE_SYS));
+          map.put(idxSym, new_BoolSymbol(i));
         } else {
           map.put(idxSym, new_UIntSymbol(i, idxSize));
         }
@@ -490,7 +491,7 @@ CallExpr* ParamForLoop::foldForResolve()
         SymbolMap map;
 
         if (is_bool_type(idxType)) {
-          map.put(idxSym, new_BoolSymbol(i, BOOL_SIZE_SYS));
+          map.put(idxSym, new_BoolSymbol(i));
         } else {
           map.put(idxSym, new_UIntSymbol(i, idxSize));
         }

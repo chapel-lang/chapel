@@ -7,7 +7,7 @@ record Wrapper {
   var f;
 }
 
-proc f(x: 2*Wrapper) {
+proc f(x: 2*Wrapper(?)) {
   writeln(x);
 }
 proc g(x: 2*Wrapper(unmanaged GenericClass(?t))) {

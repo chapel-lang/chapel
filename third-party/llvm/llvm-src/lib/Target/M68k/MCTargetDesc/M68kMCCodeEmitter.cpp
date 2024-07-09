@@ -59,13 +59,17 @@ class M68kMCCodeEmitter : public MCCodeEmitter {
                       APInt &Value, SmallVectorImpl<MCFixup> &Fixups,
                       const MCSubtargetInfo &STI) const;
 
+  void encodeFPSYSSelect(const MCInst &MI, unsigned OpIdx, unsigned InsertPos,
+                         APInt &Value, SmallVectorImpl<MCFixup> &Fixups,
+                         const MCSubtargetInfo &STI) const;
+
 public:
   M68kMCCodeEmitter(const MCInstrInfo &mcii, MCContext &ctx)
       : MCII(mcii), Ctx(ctx) {}
 
   ~M68kMCCodeEmitter() override {}
 
-  void encodeInstruction(const MCInst &MI, raw_ostream &OS,
+  void encodeInstruction(const MCInst &MI, SmallVectorImpl<char> &CB,
                          SmallVectorImpl<MCFixup> &Fixups,
                          const MCSubtargetInfo &STI) const override;
 };
@@ -83,24 +87,6 @@ template <unsigned Size> struct select_uint_t {
           typename std::conditional<Size == 32, uint32_t,
                                     uint64_t>::type>::type>::type;
 };
-
-// On a LE host:
-// MSB                   LSB    MSB                   LSB
-// | 0x12 0x34 | 0xAB 0xCD | -> | 0xAB 0xCD | 0x12 0x34 |
-// (On a BE host nothing changes)
-template <typename value_t> static value_t swapWord(value_t Val) {
-  const unsigned NumWords = sizeof(Val) / 2;
-  if (NumWords <= 1)
-    return Val;
-  Val = support::endian::byte_swap(Val, support::big);
-  value_t NewVal = 0;
-  for (unsigned i = 0U; i != NumWords; ++i) {
-    uint16_t Part = (Val >> (i * 16)) & 0xFFFF;
-    Part = support::endian::byte_swap(Part, support::big);
-    NewVal |= (Part << (i * 16));
-  }
-  return NewVal;
-}
 
 // Figure out which byte we're at in big endian mode.
 template <unsigned Size> static unsigned getBytePosition(unsigned BitPos) {
@@ -135,14 +121,14 @@ void M68kMCCodeEmitter::encodeRelocImm(const MCInst &MI, unsigned OpIdx,
   using value_t = typename select_uint_t<Size>::type;
   const MCOperand &MCO = MI.getOperand(OpIdx);
   if (MCO.isImm()) {
-    Value |= swapWord<value_t>(static_cast<value_t>(MCO.getImm()));
+    Value |= M68k::swapWord<value_t>(static_cast<value_t>(MCO.getImm()));
   } else if (MCO.isExpr()) {
     const MCExpr *Expr = MCO.getExpr();
 
     // Absolute address
     int64_t Addr;
     if (Expr->evaluateAsAbsolute(Addr)) {
-      Value |= swapWord<value_t>(static_cast<value_t>(Addr));
+      Value |= M68k::swapWord<value_t>(static_cast<value_t>(Addr));
       return;
     }
 
@@ -162,7 +148,7 @@ void M68kMCCodeEmitter::encodePCRelImm(const MCInst &MI, unsigned OpIdx,
   const MCOperand &MCO = MI.getOperand(OpIdx);
   if (MCO.isImm()) {
     using value_t = typename select_uint_t<Size>::type;
-    Value |= swapWord<value_t>(static_cast<value_t>(MCO.getImm()));
+    Value |= M68k::swapWord<value_t>(static_cast<value_t>(MCO.getImm()));
   } else if (MCO.isExpr()) {
     const MCExpr *Expr = MCO.getExpr();
     unsigned InsertByte = getBytePosition<Size>(InsertPos);
@@ -187,6 +173,26 @@ void M68kMCCodeEmitter::encodePCRelImm(const MCInst &MI, unsigned OpIdx,
     Fixups.push_back(MCFixup::create(InsertByte, Expr,
                                      getFixupForSize(Size, /*IsPCRel=*/true),
                                      MI.getLoc()));
+  }
+}
+
+void M68kMCCodeEmitter::encodeFPSYSSelect(const MCInst &MI, unsigned OpIdx,
+                                          unsigned InsertPos, APInt &Value,
+                                          SmallVectorImpl<MCFixup> &Fixups,
+                                          const MCSubtargetInfo &STI) const {
+  MCRegister FPSysReg = MI.getOperand(OpIdx).getReg();
+  switch (FPSysReg) {
+  case M68k::FPC:
+    Value = 0b100;
+    break;
+  case M68k::FPS:
+    Value = 0b010;
+    break;
+  case M68k::FPIAR:
+    Value = 0b001;
+    break;
+  default:
+    llvm_unreachable("Unrecognized FPSYS register");
   }
 }
 
@@ -217,25 +223,25 @@ void M68kMCCodeEmitter::getMachineOpValue(const MCInst &MI, const MCOperand &Op,
   }
 }
 
-void M68kMCCodeEmitter::encodeInstruction(const MCInst &MI, raw_ostream &OS,
+void M68kMCCodeEmitter::encodeInstruction(const MCInst &MI,
+                                          SmallVectorImpl<char> &CB,
                                           SmallVectorImpl<MCFixup> &Fixups,
                                           const MCSubtargetInfo &STI) const {
-  unsigned Opcode = MI.getOpcode();
-
-  LLVM_DEBUG(dbgs() << "EncodeInstruction: " << MCII.getName(Opcode) << "("
-                    << Opcode << ")\n");
+  LLVM_DEBUG(dbgs() << "EncodeInstruction: " << MCII.getName(MI.getOpcode())
+                    << "(" << MI.getOpcode() << ")\n");
+  (void)MCII;
 
   // Try using the new method first.
   APInt EncodedInst(16, 0U);
-  APInt Scratch(16, 0U);
+  APInt Scratch(64, 0U); // One APInt word is enough.
   getBinaryCodeForInstr(MI, Fixups, EncodedInst, Scratch, STI);
 
   ArrayRef<uint64_t> Data(EncodedInst.getRawData(), EncodedInst.getNumWords());
   int64_t InstSize = EncodedInst.getBitWidth();
   for (uint64_t Word : Data) {
     for (int i = 0; i < 4 && InstSize > 0; ++i, InstSize -= 16) {
-      support::endian::write<uint16_t>(OS, static_cast<uint16_t>(Word),
-                                       support::big);
+      support::endian::write<uint16_t>(CB, static_cast<uint16_t>(Word),
+                                       llvm::endianness::big);
       Word >>= 16;
     }
   }

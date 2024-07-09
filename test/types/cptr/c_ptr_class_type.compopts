@@ -1,2 +1,0 @@
--s cPtrToStringBytesClassLogicalAddress=false # c_ptr_class_type.old.good
--s cPtrToStringBytesClassLogicalAddress=true  # c_ptr_class_type.new.good

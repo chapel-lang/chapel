@@ -10,10 +10,10 @@ proc main() {
   {
     var lines: list(string);
    
-    // Repeated push/pop of the same index should not leak.
+    // Repeated pushBack/getAndRemove of the same index should not leak.
     for i in 1..testIters {
       lines.pushBack(s);
-      lines.pop(0);
+      lines.getAndRemove(0);
     }
   }
 }

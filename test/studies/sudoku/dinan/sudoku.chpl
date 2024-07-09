@@ -8,12 +8,12 @@ config const MAX_ITER  = 1000000;
 var givenBoard: [1..9, 1..9] int;  // The given board
 var initBoard:  [1..9, 1..9] int;  // The initialized board
 
-var myRand = new owned NPBRandomStream(real, seed=314159265);
+var myRand = new randomStream(real, seed=314159265);
 
 
 // Return a random number on the range [1, n]
 proc getRand(n: int) {
-  return (myRand.getNext()*max(int)):int%n+1;
+  return (myRand.next()*max(int)):int%n+1;
 }
 
 
@@ -56,7 +56,7 @@ proc costFcn(board: [] int): int {
 
 
 proc main() {
-  var boardData = open(inputfile, ioMode.r).reader();
+  var boardData = open(inputfile, ioMode.r).reader(locking=false);
 
   // Read the board from the input file
 

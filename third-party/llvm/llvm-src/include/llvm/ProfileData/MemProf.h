@@ -1,7 +1,6 @@
 #ifndef LLVM_PROFILEDATA_MEMPROF_H_
 #define LLVM_PROFILEDATA_MEMPROF_H_
 
-#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/STLFunctionalExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/GlobalValue.h"
@@ -11,6 +10,7 @@
 #include "llvm/Support/raw_ostream.h"
 
 #include <cstdint>
+#include <optional>
 
 namespace llvm {
 namespace memprof {
@@ -49,7 +49,7 @@ struct PortableMemInfoBlock {
       switch (Id) {
 #define MIBEntryDef(NameTag, Name, Type)                                       \
   case Meta::Name: {                                                           \
-    Name = endian::readNext<Type, little, unaligned>(Ptr);                     \
+    Name = endian::readNext<Type, llvm::endianness::little, unaligned>(Ptr);   \
   } break;
 #include "llvm/ProfileData/MIBEntryDef.inc"
 #undef MIBEntryDef
@@ -65,7 +65,7 @@ struct PortableMemInfoBlock {
   void serialize(const MemProfSchema &Schema, raw_ostream &OS) const {
     using namespace support;
 
-    endian::Writer LE(OS, little);
+    endian::Writer LE(OS, llvm::endianness::little);
     for (const Meta Id : Schema) {
       switch (Id) {
 #define MIBEntryDef(NameTag, Name, Type)                                       \
@@ -144,7 +144,7 @@ struct Frame {
   GlobalValue::GUID Function;
   // The symbol name for the function. Only populated in the Frame by the reader
   // if requested during initialization. This field should not be serialized.
-  llvm::Optional<std::string> SymbolName;
+  std::optional<std::string> SymbolName;
   // The source line offset of the call from the beginning of parent function.
   uint32_t LineOffset;
   // The source column number of the call to help distinguish multiple calls
@@ -186,7 +186,7 @@ struct Frame {
   void serialize(raw_ostream &OS) const {
     using namespace support;
 
-    endian::Writer LE(OS, little);
+    endian::Writer LE(OS, llvm::endianness::little);
 
     // If the type of the GlobalValue::GUID changes, then we need to update
     // the reader and the writer.
@@ -203,10 +203,14 @@ struct Frame {
   static Frame deserialize(const unsigned char *Ptr) {
     using namespace support;
 
-    const uint64_t F = endian::readNext<uint64_t, little, unaligned>(Ptr);
-    const uint32_t L = endian::readNext<uint32_t, little, unaligned>(Ptr);
-    const uint32_t C = endian::readNext<uint32_t, little, unaligned>(Ptr);
-    const bool I = endian::readNext<bool, little, unaligned>(Ptr);
+    const uint64_t F =
+        endian::readNext<uint64_t, llvm::endianness::little, unaligned>(Ptr);
+    const uint32_t L =
+        endian::readNext<uint32_t, llvm::endianness::little, unaligned>(Ptr);
+    const uint32_t C =
+        endian::readNext<uint32_t, llvm::endianness::little, unaligned>(Ptr);
+    const bool I =
+        endian::readNext<bool, llvm::endianness::little, unaligned>(Ptr);
     return Frame(/*Function=*/F, /*LineOffset=*/L, /*Column=*/C,
                  /*IsInlineFrame=*/I);
   }
@@ -465,14 +469,17 @@ public:
   ReadKeyDataLength(const unsigned char *&D) {
     using namespace support;
 
-    offset_type KeyLen = endian::readNext<offset_type, little, unaligned>(D);
-    offset_type DataLen = endian::readNext<offset_type, little, unaligned>(D);
+    offset_type KeyLen =
+        endian::readNext<offset_type, llvm::endianness::little, unaligned>(D);
+    offset_type DataLen =
+        endian::readNext<offset_type, llvm::endianness::little, unaligned>(D);
     return std::make_pair(KeyLen, DataLen);
   }
 
   uint64_t ReadKey(const unsigned char *D, offset_type /*Unused*/) {
     using namespace support;
-    return endian::readNext<external_key_type, little, unaligned>(D);
+    return endian::readNext<external_key_type, llvm::endianness::little,
+                            unaligned>(D);
   }
 
   data_type ReadData(uint64_t K, const unsigned char *D,
@@ -513,7 +520,7 @@ public:
   EmitKeyDataLength(raw_ostream &Out, key_type_ref K, data_type_ref V) {
     using namespace support;
 
-    endian::Writer LE(Out, little);
+    endian::Writer LE(Out, llvm::endianness::little);
     offset_type N = sizeof(K);
     LE.write<offset_type>(N);
     offset_type M = V.serializedSize();
@@ -523,7 +530,7 @@ public:
 
   void EmitKey(raw_ostream &Out, key_type_ref K, offset_type /*Unused*/) {
     using namespace support;
-    endian::Writer LE(Out, little);
+    endian::Writer LE(Out, llvm::endianness::little);
     LE.write<uint64_t>(K);
   }
 
@@ -531,6 +538,11 @@ public:
                 offset_type /*Unused*/) {
     assert(Schema != nullptr && "MemProf schema is not initialized!");
     V.serialize(*Schema, Out);
+    // Clear the IndexedMemProfRecord which results in clearing/freeing its
+    // vectors of allocs and callsites. This is owned by the associated on-disk
+    // hash table, but unused after this point. See also the comment added to
+    // the client which constructs the on-disk hash table for this trait.
+    V.clear();
   }
 };
 
@@ -551,7 +563,7 @@ public:
   static std::pair<offset_type, offset_type>
   EmitKeyDataLength(raw_ostream &Out, key_type_ref K, data_type_ref V) {
     using namespace support;
-    endian::Writer LE(Out, little);
+    endian::Writer LE(Out, llvm::endianness::little);
     offset_type N = sizeof(K);
     LE.write<offset_type>(N);
     offset_type M = V.serializedSize();
@@ -561,7 +573,7 @@ public:
 
   void EmitKey(raw_ostream &Out, key_type_ref K, offset_type /*Unused*/) {
     using namespace support;
-    endian::Writer LE(Out, little);
+    endian::Writer LE(Out, llvm::endianness::little);
     LE.write<key_type>(K);
   }
 
@@ -592,14 +604,17 @@ public:
   ReadKeyDataLength(const unsigned char *&D) {
     using namespace support;
 
-    offset_type KeyLen = endian::readNext<offset_type, little, unaligned>(D);
-    offset_type DataLen = endian::readNext<offset_type, little, unaligned>(D);
+    offset_type KeyLen =
+        endian::readNext<offset_type, llvm::endianness::little, unaligned>(D);
+    offset_type DataLen =
+        endian::readNext<offset_type, llvm::endianness::little, unaligned>(D);
     return std::make_pair(KeyLen, DataLen);
   }
 
   uint64_t ReadKey(const unsigned char *D, offset_type /*Unused*/) {
     using namespace support;
-    return endian::readNext<external_key_type, little, unaligned>(D);
+    return endian::readNext<external_key_type, llvm::endianness::little,
+                            unaligned>(D);
   }
 
   data_type ReadData(uint64_t K, const unsigned char *D,

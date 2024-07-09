@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -172,7 +172,9 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
 
 BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
                           Expr*      iteratorExpr,
+                          CallExpr*  intents,
                           BlockStmt* body,
+                          LLVMMetadataList attrs,
                           bool       coforall,
                           bool       zippered,
                           bool       isLoweredForall,
@@ -192,8 +194,16 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
 
   iterator->addFlag(FLAG_EXPR_TEMP);
 
+  loop->setAdditionalLLVMMetadata(attrs);
+
   if (isForeach) {
     loop->orderIndependentSet(true);
+  }
+
+  // We want to apply implicit intents only to user
+  // written foreach loops
+  if (!isForeach || isLoweredForall || isForExpr) {
+    loop->exemptFromImplicitIntents();
   }
 
   // Unzippered loop, treat all objects (including tuples) the same
@@ -269,7 +279,7 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
 
       // try to optimize anonymous range iteration
       if (CallExpr* call = toCallExpr(iteratorExpr))
-        if (call->isNamed("_build_tuple"))
+        if (call->isNamedAstr(astrBuildTuple))
           for_actuals(actual, call)
             tryToReplaceWithDirectRangeIterator(actual);
     }
@@ -294,6 +304,12 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
   loop->mContinueLabel = continueLabel;
   loop->mBreakLabel    = breakLabel;
 
+  // Transfer the DefExprs of the intent variables (ShadowVarSymbols).
+  if (intents) {
+    while (Expr* src = intents->argList.head)
+      loop->shadowVariables().insertAtTail(src->remove());
+  }
+
   loop->insertAtTail(new DefExpr(continueLabel));
 
   retval->insertAtTail(new DefExpr(index));
@@ -314,9 +330,13 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
                                  Expr*      iteratorExpr,
                                  BlockStmt* body,
                                  bool       zippered,
-                                 bool       isForExpr)
+                                 bool       isForExpr,
+                                 LLVMMetadataList attrs)
 {
-  return doBuildForLoop(indices, iteratorExpr, body,
+  return doBuildForLoop(indices, iteratorExpr,
+                        /* intents */ nullptr,
+                        body,
+                        attrs,
                         /* coforall */ false,
                         zippered,
                         /* isLoweredForall */ false,
@@ -326,12 +346,15 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
 
 BlockStmt* ForLoop::buildForeachLoop(Expr*      indices,
                                      Expr*      iteratorExpr,
+                                     CallExpr*  intents,
                                      BlockStmt* body,
                                      bool       zippered,
-                                     bool       isForExpr)
+                                     bool       isForExpr,
+                                     LLVMMetadataList attrs)
 
 {
-  return doBuildForLoop(indices, iteratorExpr, body,
+  return doBuildForLoop(indices, iteratorExpr, intents, body,
+                        attrs,
                         /* coforall */ false,
                         zippered,
                         /* isLoweredForall */ false,
@@ -342,9 +365,13 @@ BlockStmt* ForLoop::buildForeachLoop(Expr*      indices,
 BlockStmt* ForLoop::buildCoforallLoop(Expr*      indices,
                                       Expr*      iteratorExpr,
                                       BlockStmt* body,
-                                      bool       zippered)
+                                      bool       zippered,
+                                      LLVMMetadataList attrs)
 {
-  return doBuildForLoop(indices, iteratorExpr, body,
+  return doBuildForLoop(indices, iteratorExpr,
+                        /* intents */ nullptr,
+                        body,
+                        attrs,
                         /* coforall */ true,
                         zippered,
                         /* isLoweredForall */ false,
@@ -357,9 +384,13 @@ BlockStmt* ForLoop::buildLoweredForallLoop(Expr*      indices,
                                            Expr*      iteratorExpr,
                                            BlockStmt* body,
                                            bool       zippered,
-                                           bool       isForExpr)
+                                           bool       isForExpr,
+                                           LLVMMetadataList attrs)
 {
-  return doBuildForLoop(indices, iteratorExpr, body,
+  return doBuildForLoop(indices, iteratorExpr,
+                        /* intents */ nullptr,
+                        body,
+                        attrs,
                         /* coforall */ false,
                         zippered,
                         /* isLoweredForall */ true,
@@ -381,6 +412,7 @@ ForLoop::ForLoop() : LoopStmt(0)
   mZippered = false;
   mLoweredForall = false;
   mIsForExpr = false;
+  fShadowVars.parent = this;
 }
 
 ForLoop::ForLoop(VarSymbol* index,
@@ -395,11 +427,15 @@ ForLoop::ForLoop(VarSymbol* index,
   mZippered = zippered;
   mLoweredForall = isLoweredForall;
   mIsForExpr = isForExpr;
+  fShadowVars.parent = this;
 }
 
 ForLoop* ForLoop::copyInner(SymbolMap* map)
 {
   ForLoop*   retval         = new ForLoop();
+
+  for_alist(expr, fShadowVars)
+    retval->fShadowVars.insertAtTail(COPY_INT(expr));
 
   retval->astloc            = astloc;
   retval->blockTag          = blockTag;
@@ -407,6 +443,8 @@ ForLoop* ForLoop::copyInner(SymbolMap* map)
   retval->mBreakLabel       = mBreakLabel;
   retval->mContinueLabel    = mContinueLabel;
   retval->mOrderIndependent = mOrderIndependent;
+  retval->mExemptFromImplicitIntents = mExemptFromImplicitIntents;
+  retval->mLLVMMetadataList = mLLVMMetadataList;
 
   retval->mIndex            = mIndex->copy(map, true),
   retval->mIterator         = mIterator->copy(map, true);
@@ -626,4 +664,8 @@ Expr* ForLoop::getNextExpr(Expr* expr)
     retval = body.head->getFirstExpr();
 
   return retval;
+}
+
+bool ForLoop::isInductionVar(Symbol* sym) {
+  return sym == mIndex->symbol();
 }

@@ -13,7 +13,7 @@ l.pushBack(2);
 l.pushBack(3);
 
 
-[(i,j) in SD] SA[i,j] = i + j / 10.0;
+[(i,j) in SD with (ref SA)] SA[i,j] = i + j / 10.0;
 
 var M = ["brad" => 1, "ben" => 2, "bilbo" => 3];
 

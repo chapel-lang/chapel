@@ -10,7 +10,7 @@ a = 0;
 for i in 1..3 {
   j.writeEF(i);
   var k = i;
-  begin {
+  begin with (ref a, ref b) {
     a(i) = j.readFE();
     b(i) = k;
     count.writeEF(count.readFE() + 1);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,8 +33,8 @@ namespace types {
  */
 class BoolType final : public PrimitiveType {
  private:
-  BoolType(int bitwidth)
-    : PrimitiveType(typetags::BoolType, bitwidth)
+  BoolType()
+    : PrimitiveType(typetags::BoolType, 0)
   { }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -45,7 +45,7 @@ class BoolType final : public PrimitiveType {
     primitiveTypeMarkUniqueStringsInner(context);
   }
 
-  static const owned<BoolType>& getBoolType(Context* context, int bitwidth);
+  static const owned<BoolType>& getBoolType(Context* context);
 
   /** what is stored in bitwidth_ for the default 'bool' ? */
   static int defaultBitwidth() {
@@ -55,41 +55,18 @@ class BoolType final : public PrimitiveType {
  public:
   ~BoolType() = default;
 
-  static const BoolType* get(Context* context, int bitwidth);
+  static const BoolType* get(Context* context);
 
   int bitwidth() const override {
-    if (bitwidth_ == 0) return 8;
-    return bitwidth_;
+    return 8; // Chapel doesn't guarantee this bitwidth, so this seems fragile...
   }
 
   bool isDefaultWidth() const override {
-    return bitwidth_ == defaultBitwidth();
+    return true;
   }
 
   const char* c_str() const override {
-    switch (bitwidth_) {
-      case 0:
-        return "bool";
-      case 8:
-        return "bool(8)";
-      case 16:
-        return "bool(16)";
-      case 32:
-        return "bool(32)";
-      case 64:
-        return "bool(64)";
-      default:
-        CHPL_ASSERT(false && "bool bit width case not handled");
-        return "bool(<unknown>)";
-    }
-  }
-
-  /**
-   Returns `true` if this is the type `bool` which is distinct from
-   `bool(8)`.
-   */
-  bool isDefaultBool() const {
-    return bitwidth_ == 0;
+    return "bool";
   }
 };
 

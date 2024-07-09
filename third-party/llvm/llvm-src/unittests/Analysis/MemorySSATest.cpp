@@ -76,9 +76,8 @@ TEST_F(MemorySSATest, CreateALoad) {
   // We create a diamond where there is a store on one side, and then after
   // building MemorySSA, create a load after the merge point, and use it to test
   // updating by creating an access for the load.
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
   BasicBlock *Entry(BasicBlock::Create(C, "", F));
   BasicBlock *Left(BasicBlock::Create(C, "", F));
   BasicBlock *Right(BasicBlock::Create(C, "", F));
@@ -114,9 +113,8 @@ TEST_F(MemorySSATest, CreateLoadsAndStoreUpdater) {
   // incrementally update it by inserting a store in the, entry, a load in the
   // merge point, then a store in the branch, another load in the merge point,
   // and then a store in the entry.
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
   BasicBlock *Entry(BasicBlock::Create(C, "", F));
   BasicBlock *Left(BasicBlock::Create(C, "", F));
   BasicBlock *Right(BasicBlock::Create(C, "", F));
@@ -204,9 +202,8 @@ TEST_F(MemorySSATest, CreateALoadUpdater) {
   // We create a diamond, then build memoryssa with no memory accesses, and
   // incrementally update it by inserting a store in one of the branches, and a
   // load in the merge point
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
   BasicBlock *Entry(BasicBlock::Create(C, "", F));
   BasicBlock *Left(BasicBlock::Create(C, "", F));
   BasicBlock *Right(BasicBlock::Create(C, "", F));
@@ -248,9 +245,8 @@ TEST_F(MemorySSATest, CreateALoadUpdater) {
 }
 
 TEST_F(MemorySSATest, SinkLoad) {
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
   BasicBlock *Entry(BasicBlock::Create(C, "", F));
   BasicBlock *Left(BasicBlock::Create(C, "", F));
   BasicBlock *Right(BasicBlock::Create(C, "", F));
@@ -282,7 +278,7 @@ TEST_F(MemorySSATest, SinkLoad) {
   // - remove from original block
 
   LoadInst *LoadInstClone = cast<LoadInst>(LoadInst1->clone());
-  Merge->getInstList().insert(Merge->begin(), LoadInstClone);
+  LoadInstClone->insertInto(Merge, Merge->begin());
   MemoryAccess * NewLoadAccess =
       Updater.createMemoryAccessInBB(LoadInstClone, nullptr,
                                      LoadInstClone->getParent(),
@@ -298,9 +294,8 @@ TEST_F(MemorySSATest, MoveAStore) {
   // a load at the end.  After building MemorySSA, we test updating by moving
   // the store from the side block to the entry block. This destroys the old
   // access.
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
   BasicBlock *Entry(BasicBlock::Create(C, "", F));
   BasicBlock *Left(BasicBlock::Create(C, "", F));
   BasicBlock *Right(BasicBlock::Create(C, "", F));
@@ -334,9 +329,8 @@ TEST_F(MemorySSATest, MoveAStoreUpdater) {
   // a load at the end.  After building MemorySSA, we test updating by moving
   // the store from the side block to the entry block.  This destroys the old
   // access.
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
   BasicBlock *Entry(BasicBlock::Create(C, "", F));
   BasicBlock *Left(BasicBlock::Create(C, "", F));
   BasicBlock *Right(BasicBlock::Create(C, "", F));
@@ -380,9 +374,8 @@ TEST_F(MemorySSATest, MoveAStoreUpdaterMove) {
   // a load at the end.  After building MemorySSA, we test updating by moving
   // the store from the side block to the entry block.  This does not destroy
   // the old access.
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
   BasicBlock *Entry(BasicBlock::Create(C, "", F));
   BasicBlock *Left(BasicBlock::Create(C, "", F));
   BasicBlock *Right(BasicBlock::Create(C, "", F));
@@ -424,9 +417,8 @@ TEST_F(MemorySSATest, MoveAStoreAllAround) {
   // a load at the end.  After building MemorySSA, we test updating by moving
   // the store from the side block to the entry block, then to the other side
   // block, then to before the load.  This does not destroy the old access.
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
   BasicBlock *Entry(BasicBlock::Create(C, "", F));
   BasicBlock *Left(BasicBlock::Create(C, "", F));
   BasicBlock *Right(BasicBlock::Create(C, "", F));
@@ -479,9 +471,8 @@ TEST_F(MemorySSATest, RemoveAPhi) {
   // We create a diamond where there is a store on one side, and then a load
   // after the merge point.  This enables us to test a bunch of different
   // removal cases.
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
   BasicBlock *Entry(BasicBlock::Create(C, "", F));
   BasicBlock *Left(BasicBlock::Create(C, "", F));
   BasicBlock *Right(BasicBlock::Create(C, "", F));
@@ -524,9 +515,8 @@ TEST_F(MemorySSATest, RemoveMemoryAccess) {
   // We create a diamond where there is a store on one side, and then a load
   // after the merge point.  This enables us to test a bunch of different
   // removal cases.
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
   BasicBlock *Entry(BasicBlock::Create(C, "", F));
   BasicBlock *Left(BasicBlock::Create(C, "", F));
   BasicBlock *Right(BasicBlock::Create(C, "", F));
@@ -885,9 +875,8 @@ TEST_F(MemorySSATest, Irreducible) {
 
   SmallVector<PHINode *, 8> Inserted;
   IRBuilder<> B(C);
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
 
   // Make blocks
   BasicBlock *IfBB = BasicBlock::Create(C, "if", F);
@@ -924,9 +913,8 @@ TEST_F(MemorySSATest, MoveToBeforeLiveOnEntryInvalidatesCache) {
   // ...And be sure that MSSA's caching doesn't give us `1` for the clobber of
   // `2` after `1` is removed.
   IRBuilder<> B(C);
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
 
   BasicBlock *Entry = BasicBlock::Create(C, "if", F);
   B.SetInsertPoint(Entry);
@@ -969,9 +957,8 @@ TEST_F(MemorySSATest, RemovingDefInvalidatesCache) {
   // And be sure that MSSA's caching handles the removal of def `1`
   // appropriately.
   IRBuilder<> B(C);
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
 
   BasicBlock *Entry = BasicBlock::Create(C, "if", F);
   B.SetInsertPoint(Entry);
@@ -1003,50 +990,6 @@ TEST_F(MemorySSATest, RemovingDefInvalidatesCache) {
       << "(DefX1 = " << DefX1 << ")";
 }
 
-// Test Must alias for optimized uses
-TEST_F(MemorySSATest, TestLoadMustAlias) {
-  F = Function::Create(FunctionType::get(B.getVoidTy(), {}, false),
-                       GlobalValue::ExternalLinkage, "F", &M);
-  B.SetInsertPoint(BasicBlock::Create(C, "", F));
-  Type *Int8 = Type::getInt8Ty(C);
-  Value *AllocaA = B.CreateAlloca(Int8, ConstantInt::get(Int8, 1), "A");
-  Value *AllocaB = B.CreateAlloca(Int8, ConstantInt::get(Int8, 1), "B");
-
-  B.CreateStore(ConstantInt::get(Int8, 1), AllocaB);
-  // Check load from LOE
-  LoadInst *LA1 = B.CreateLoad(Int8, AllocaA, "");
-  // Check load alias cached for second load
-  LoadInst *LA2 = B.CreateLoad(Int8, AllocaA, "");
-
-  B.CreateStore(ConstantInt::get(Int8, 1), AllocaA);
-  // Check load from store/def
-  LoadInst *LA3 = B.CreateLoad(Int8, AllocaA, "");
-  // Check load alias cached for second load
-  LoadInst *LA4 = B.CreateLoad(Int8, AllocaA, "");
-
-  setupAnalyses();
-  MemorySSA &MSSA = *Analyses->MSSA;
-  MSSA.ensureOptimizedUses();
-
-  unsigned I = 0;
-  for (LoadInst *V : {LA1, LA2}) {
-    MemoryUse *MemUse = dyn_cast_or_null<MemoryUse>(MSSA.getMemoryAccess(V));
-    EXPECT_EQ(MemUse->getOptimizedAccessType(), None)
-        << "Load " << I << " doesn't have the correct alias information";
-    // EXPECT_EQ expands such that if we increment I above, it won't get
-    // incremented except when we try to print the error message.
-    ++I;
-  }
-  for (LoadInst *V : {LA3, LA4}) {
-    MemoryUse *MemUse = dyn_cast_or_null<MemoryUse>(MSSA.getMemoryAccess(V));
-    EXPECT_EQ(*MemUse->getOptimizedAccessType(), AliasResult::MustAlias)
-        << "Load " << I << " doesn't have the correct alias information";
-    // EXPECT_EQ expands such that if we increment I above, it won't get
-    // incremented except when we try to print the error message.
-    ++I;
-  }
-}
-
 // Test Must alias for optimized defs.
 TEST_F(MemorySSATest, TestStoreMustAlias) {
   F = Function::Create(FunctionType::get(B.getVoidTy(), {}, false),
@@ -1071,9 +1014,6 @@ TEST_F(MemorySSATest, TestStoreMustAlias) {
     MemoryDef *MemDef = dyn_cast_or_null<MemoryDef>(MSSA.getMemoryAccess(V));
     EXPECT_EQ(MemDef->isOptimized(), false)
         << "Store " << I << " is optimized from the start?";
-    EXPECT_EQ(MemDef->getOptimizedAccessType(), None)
-        << "Store " << I
-        << " has correct alias information before being optimized?";
     if (V == SA1)
       Walker->getClobberingMemoryAccess(V);
     else {
@@ -1084,55 +1024,6 @@ TEST_F(MemorySSATest, TestStoreMustAlias) {
     }
     EXPECT_EQ(MemDef->isOptimized(), true)
         << "Store " << I << " was not optimized";
-    if (I == 0 || I == 1)
-      EXPECT_EQ(MemDef->getOptimizedAccessType(), None)
-          << "Store " << I << " doesn't have the correct alias information";
-    else
-      EXPECT_EQ(*MemDef->getOptimizedAccessType(), AliasResult::MustAlias)
-          << "Store " << I << " doesn't have the correct alias information";
-    // EXPECT_EQ expands such that if we increment I above, it won't get
-    // incremented except when we try to print the error message.
-    ++I;
-  }
-}
-
-// Test May alias for optimized uses.
-TEST_F(MemorySSATest, TestLoadMayAlias) {
-  F = Function::Create(FunctionType::get(B.getVoidTy(),
-                                         {B.getInt8PtrTy(), B.getInt8PtrTy()},
-                                         false),
-                       GlobalValue::ExternalLinkage, "F", &M);
-  B.SetInsertPoint(BasicBlock::Create(C, "", F));
-  Type *Int8 = Type::getInt8Ty(C);
-  auto *ArgIt = F->arg_begin();
-  Argument *PointerA = &*ArgIt;
-  Argument *PointerB = &*(++ArgIt);
-  B.CreateStore(ConstantInt::get(Int8, 1), PointerB);
-  LoadInst *LA1 = B.CreateLoad(Int8, PointerA, "");
-  B.CreateStore(ConstantInt::get(Int8, 0), PointerA);
-  LoadInst *LB1 = B.CreateLoad(Int8, PointerB, "");
-  B.CreateStore(ConstantInt::get(Int8, 0), PointerA);
-  LoadInst *LA2 = B.CreateLoad(Int8, PointerA, "");
-  B.CreateStore(ConstantInt::get(Int8, 0), PointerB);
-  LoadInst *LB2 = B.CreateLoad(Int8, PointerB, "");
-
-  setupAnalyses();
-  MemorySSA &MSSA = *Analyses->MSSA;
-  MSSA.ensureOptimizedUses();
-
-  unsigned I = 0;
-  for (LoadInst *V : {LA1, LB1}) {
-    MemoryUse *MemUse = dyn_cast_or_null<MemoryUse>(MSSA.getMemoryAccess(V));
-    EXPECT_EQ(*MemUse->getOptimizedAccessType(), AliasResult::MayAlias)
-        << "Load " << I << " doesn't have the correct alias information";
-    // EXPECT_EQ expands such that if we increment I above, it won't get
-    // incremented except when we try to print the error message.
-    ++I;
-  }
-  for (LoadInst *V : {LA2, LB2}) {
-    MemoryUse *MemUse = dyn_cast_or_null<MemoryUse>(MSSA.getMemoryAccess(V));
-    EXPECT_EQ(*MemUse->getOptimizedAccessType(), AliasResult::MustAlias)
-        << "Load " << I << " doesn't have the correct alias information";
     // EXPECT_EQ expands such that if we increment I above, it won't get
     // incremented except when we try to print the error message.
     ++I;
@@ -1141,10 +1032,9 @@ TEST_F(MemorySSATest, TestLoadMayAlias) {
 
 // Test May alias for optimized defs.
 TEST_F(MemorySSATest, TestStoreMayAlias) {
-  F = Function::Create(FunctionType::get(B.getVoidTy(),
-                                         {B.getInt8PtrTy(), B.getInt8PtrTy()},
-                                         false),
-                       GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(
+      FunctionType::get(B.getVoidTy(), {B.getPtrTy(), B.getPtrTy()}, false),
+      GlobalValue::ExternalLinkage, "F", &M);
   B.SetInsertPoint(BasicBlock::Create(C, "", F));
   Type *Int8 = Type::getInt8Ty(C);
   auto *ArgIt = F->arg_begin();
@@ -1176,9 +1066,6 @@ TEST_F(MemorySSATest, TestStoreMayAlias) {
     MemoryDef *MemDef = dyn_cast_or_null<MemoryDef>(MSSA.getMemoryAccess(V));
     EXPECT_EQ(MemDef->isOptimized(), false)
         << "Store " << I << " is optimized from the start?";
-    EXPECT_EQ(MemDef->getOptimizedAccessType(), None)
-        << "Store " << I
-        << " has correct alias information before being optimized?";
     ++I;
   }
 
@@ -1190,16 +1077,6 @@ TEST_F(MemorySSATest, TestStoreMayAlias) {
     MemoryDef *MemDef = dyn_cast_or_null<MemoryDef>(MSSA.getMemoryAccess(V));
     EXPECT_EQ(MemDef->isOptimized(), true)
         << "Store " << I << " was not optimized";
-    if (I == 1 || I == 3 || I == 4)
-      EXPECT_EQ(MemDef->getOptimizedAccessType().value(), AliasResult::MayAlias)
-          << "Store " << I << " doesn't have the correct alias information";
-    else if (I == 0 || I == 2)
-      EXPECT_EQ(MemDef->getOptimizedAccessType(), None)
-          << "Store " << I << " doesn't have the correct alias information";
-    else
-      EXPECT_EQ(MemDef->getOptimizedAccessType().value(),
-                AliasResult::MustAlias)
-          << "Store " << I << " doesn't have the correct alias information";
     // EXPECT_EQ expands such that if we increment I above, it won't get
     // incremented except when we try to print the error message.
     ++I;
@@ -1226,9 +1103,8 @@ TEST_F(MemorySSATest, LifetimeMarkersAreClobbers) {
   // it.
 
   IRBuilder<> B(C);
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
 
   // Make blocks
   BasicBlock *Entry = BasicBlock::Create(C, "entry", F);
@@ -1236,8 +1112,8 @@ TEST_F(MemorySSATest, LifetimeMarkersAreClobbers) {
   B.SetInsertPoint(Entry);
   Value *Foo = &*F->arg_begin();
 
-  Value *Bar = B.CreateGEP(B.getInt8Ty(), Foo, B.getInt64(1), "bar");
-  Value *Baz = B.CreateGEP(B.getInt8Ty(), Foo, B.getInt64(2), "baz");
+  Value *Bar = B.CreatePtrAdd(Foo, B.getInt64(1), "bar");
+  Value *Baz = B.CreatePtrAdd(Foo, B.getInt64(2), "baz");
 
   B.CreateStore(B.getInt8(0), Foo);
   B.CreateStore(B.getInt8(0), Bar);
@@ -1353,10 +1229,9 @@ TEST_F(MemorySSATest, DefOptimizationsAreInvalidatedOnMoving) {
 }
 
 TEST_F(MemorySSATest, TestOptimizedDefsAreProperUses) {
-  F = Function::Create(FunctionType::get(B.getVoidTy(),
-                                         {B.getInt8PtrTy(), B.getInt8PtrTy()},
-                                         false),
-                       GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(
+      FunctionType::get(B.getVoidTy(), {B.getPtrTy(), B.getPtrTy()}, false),
+      GlobalValue::ExternalLinkage, "F", &M);
   B.SetInsertPoint(BasicBlock::Create(C, "", F));
   Type *Int8 = Type::getInt8Ty(C);
   Value *AllocA = B.CreateAlloca(Int8, ConstantInt::get(Int8, 1), "A");
@@ -1431,9 +1306,8 @@ TEST_F(MemorySSATest, TestOptimizedDefsAreProperUses) {
 //  ; 4 = MemoryDef(3); optimized to 3, cannot optimize thorugh phi.
 //  Insert edge: entry -> exit, check mssa Update is correct.
 TEST_F(MemorySSATest, TestAddedEdgeToBlockWithPhiNotOpt) {
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
   Argument *PointerArg = &*F->arg_begin();
   BasicBlock *Entry(BasicBlock::Create(C, "entry", F));
   BasicBlock *Header(BasicBlock::Create(C, "header", F));
@@ -1487,9 +1361,8 @@ TEST_F(MemorySSATest, TestAddedEdgeToBlockWithPhiNotOpt) {
 //  the optimized access.
 //  Insert edge: entry -> exit, check mssa Update is correct.
 TEST_F(MemorySSATest, TestAddedEdgeToBlockWithPhiOpt) {
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
   Argument *PointerArg = &*F->arg_begin();
   Type *Int8 = Type::getInt8Ty(C);
   BasicBlock *Entry(BasicBlock::Create(C, "entry", F));
@@ -1559,9 +1432,8 @@ TEST_F(MemorySSATest, TestAddedEdgeToBlockWithPhiOpt) {
 // e:
 //  ; 2 = MemoryPhi({d, 4}, {f, 1})
 TEST_F(MemorySSATest, TestAddedEdgeToBlockWithNoPhiAddNewPhis) {
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
   Argument *PointerArg = &*F->arg_begin();
   BasicBlock *Entry(BasicBlock::Create(C, "entry", F));
   BasicBlock *ABlock(BasicBlock::Create(C, "a", F));
@@ -1608,14 +1480,13 @@ TEST_F(MemorySSATest, TestAddedEdgeToBlockWithNoPhiAddNewPhis) {
 }
 
 TEST_F(MemorySSATest, TestCallClobber) {
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
 
   Value *Pointer1 = &*F->arg_begin();
   BasicBlock *Entry(BasicBlock::Create(C, "", F));
   B.SetInsertPoint(Entry);
-  Value *Pointer2 = B.CreateGEP(B.getInt8Ty(), Pointer1, B.getInt64(1));
+  Value *Pointer2 = B.CreatePtrAdd(Pointer1, B.getInt64(1));
   Instruction *StorePointer1 = B.CreateStore(B.getInt8(0), Pointer1);
   Instruction *StorePointer2 = B.CreateStore(B.getInt8(0), Pointer2);
   Instruction *MemSet = B.CreateMemSet(Pointer2, B.getInt8(0), 1, Align(1));
@@ -1641,14 +1512,13 @@ TEST_F(MemorySSATest, TestCallClobber) {
 }
 
 TEST_F(MemorySSATest, TestLoadClobber) {
-  F = Function::Create(
-      FunctionType::get(B.getVoidTy(), {B.getInt8PtrTy()}, false),
-      GlobalValue::ExternalLinkage, "F", &M);
+  F = Function::Create(FunctionType::get(B.getVoidTy(), {B.getPtrTy()}, false),
+                       GlobalValue::ExternalLinkage, "F", &M);
 
   Value *Pointer1 = &*F->arg_begin();
   BasicBlock *Entry(BasicBlock::Create(C, "", F));
   B.SetInsertPoint(Entry);
-  Value *Pointer2 = B.CreateGEP(B.getInt8Ty(), Pointer1, B.getInt64(1));
+  Value *Pointer2 = B.CreatePtrAdd(Pointer1, B.getInt64(1));
   Instruction *LoadPointer1 =
       B.CreateLoad(B.getInt8Ty(), Pointer1, /* Volatile */ true);
   Instruction *LoadPointer2 =
@@ -1860,4 +1730,48 @@ TEST_F(MemorySSATest, TestVisitedBlocks) {
     if (MemoryUseOrDef *MUD = MSSA.getMemoryAccess(LI))
       Updater.moveToPlace(MUD, BB, MemorySSA::BeforeTerminator);
   }
+}
+
+TEST_F(MemorySSATest, TestNoDbgInsts) {
+  SMDiagnostic E;
+  auto M = parseAssemblyString(R"(
+      define void @test() presplitcoroutine {
+      entry:
+        %i = alloca i32
+        call void @llvm.dbg.declare(metadata ptr %i, metadata !6, metadata !DIExpression()), !dbg !10
+        call void @llvm.dbg.value(metadata ptr %i, metadata !6, metadata !DIExpression()), !dbg !10
+        ret void
+      }
+
+      declare void @llvm.dbg.declare(metadata, metadata, metadata) nocallback nofree nosync nounwind readnone speculatable willreturn
+      declare void @llvm.dbg.value(metadata, metadata, metadata) nocallback nofree nosync nounwind readnone speculatable willreturn
+
+      !llvm.dbg.cu = !{!0}
+
+      !0 = distinct !DICompileUnit(language: DW_LANG_C_plus_plus_14, file: !1, producer: "clang version 15.0.0", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !2, retainedTypes: !2, splitDebugInlining: false, nameTableKind: None)
+      !1 = !DIFile(filename: "repro.cpp", directory: ".")
+      !2 = !{}
+      !3 = !{i32 7, !"Dwarf Version", i32 4}
+      !4 = !{i32 2, !"Debug Info Version", i32 3}
+      !5 = !{!"clang version 15.0.0"}
+      !6 = !DILocalVariable(name: "i", scope: !7, file: !1, line: 24, type: !10)
+      !7 = distinct !DILexicalBlock(scope: !8, file: !1, line: 23, column: 12)
+      !8 = distinct !DISubprogram(name: "foo", linkageName: "_Z3foov", scope: !1, file: !1, line: 23, type: !9, scopeLine: 23, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
+      !9 = !DISubroutineType(types: !2)
+      !10 = !DILocation(line: 24, column: 7, scope: !7)
+    )",
+    E, C);
+  ASSERT_TRUE(M);
+  F = M->getFunction("test");
+  ASSERT_TRUE(F);
+  setupAnalyses();
+  MemorySSA &MSSA = *Analyses->MSSA;
+  MemorySSAUpdater Updater(&MSSA);
+
+  BasicBlock &Entry = F->front();
+  auto I = Entry.begin();
+  Instruction *DbgDeclare = cast<Instruction>(I++);
+  Instruction *DbgValue = cast<Instruction>(I++);
+  ASSERT_EQ(MSSA.getMemoryAccess(DbgDeclare), nullptr);
+  ASSERT_EQ(MSSA.getMemoryAccess(DbgValue), nullptr);
 }

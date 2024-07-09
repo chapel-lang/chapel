@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+void chpl_finalize(int status, int all);
 
 void cleanup_for_exit(void);    // must be exposed to avoid dead-code elim.
 

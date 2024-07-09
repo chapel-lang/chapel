@@ -10,6 +10,7 @@
 #include "GCNSubtarget.h"
 #include "MCTargetDesc/AMDGPUMCTargetDesc.h"
 #include "SIRegisterInfo.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/CodeGen/LivePhysRegs.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineOperand.h"
@@ -32,6 +33,7 @@ class SIOptimizeExecMasking : public MachineFunctionPass {
 
   DenseMap<MachineInstr *, MachineInstr *> SaveExecVCmpMapping;
   SmallVector<std::pair<MachineInstr *, MachineInstr *>, 1> OrXors;
+  SmallVector<MachineOperand *, 1> KillFlagCandidates;
 
   Register isCopyFromExec(const MachineInstr &MI) const;
   Register isCopyToExec(const MachineInstr &MI) const;
@@ -39,17 +41,18 @@ class SIOptimizeExecMasking : public MachineFunctionPass {
   MachineBasicBlock::reverse_iterator
   fixTerminators(MachineBasicBlock &MBB) const;
   MachineBasicBlock::reverse_iterator
-  findExecCopy(MachineBasicBlock &MBB, MachineBasicBlock::reverse_iterator I,
-               unsigned CopyToExec) const;
-
+  findExecCopy(MachineBasicBlock &MBB,
+               MachineBasicBlock::reverse_iterator I) const;
   bool isRegisterInUseBetween(MachineInstr &Stop, MachineInstr &Start,
                               MCRegister Reg, bool UseLiveOuts = false,
                               bool IgnoreStart = false) const;
   bool isRegisterInUseAfter(MachineInstr &Stop, MCRegister Reg) const;
-  MachineInstr *findInstrBackwards(MachineInstr &Origin,
-                                   std::function<bool(MachineInstr *)> Pred,
-                                   ArrayRef<MCRegister> NonModifiableRegs,
-                                   unsigned MaxInstructions = 20) const;
+  MachineInstr *findInstrBackwards(
+      MachineInstr &Origin, std::function<bool(MachineInstr *)> Pred,
+      ArrayRef<MCRegister> NonModifiableRegs,
+      MachineInstr *Terminator = nullptr,
+      SmallVectorImpl<MachineOperand *> *KillFlagCandidates = nullptr,
+      unsigned MaxInstructions = 20) const;
   bool optimizeExecSequence();
   void tryRecordVCmpxAndSaveexecSequence(MachineInstr &MI);
   bool optimizeVCMPSaveExecSequence(MachineInstr &SaveExecInstr,
@@ -296,10 +299,8 @@ SIOptimizeExecMasking::fixTerminators(MachineBasicBlock &MBB) const {
   return FirstNonTerm;
 }
 
-MachineBasicBlock::reverse_iterator
-SIOptimizeExecMasking::findExecCopy(MachineBasicBlock &MBB,
-                                    MachineBasicBlock::reverse_iterator I,
-                                    unsigned CopyToExec) const {
+MachineBasicBlock::reverse_iterator SIOptimizeExecMasking::findExecCopy(
+    MachineBasicBlock &MBB, MachineBasicBlock::reverse_iterator I) const {
   const unsigned InstLimit = 25;
 
   auto E = MBB.rend();
@@ -327,11 +328,13 @@ static bool isLiveOut(const MachineBasicBlock &MBB, unsigned Reg) {
 // Backwards-iterate from Origin (for n=MaxInstructions iterations) until either
 // the beginning of the BB is reached or Pred evaluates to true - which can be
 // an arbitrary condition based on the current MachineInstr, for instance an
-// target instruction. Breaks prematurely by returning nullptr if  one of the
+// target instruction. Breaks prematurely by returning nullptr if one of the
 // registers given in NonModifiableRegs is modified by the current instruction.
 MachineInstr *SIOptimizeExecMasking::findInstrBackwards(
     MachineInstr &Origin, std::function<bool(MachineInstr *)> Pred,
-    ArrayRef<MCRegister> NonModifiableRegs, unsigned MaxInstructions) const {
+    ArrayRef<MCRegister> NonModifiableRegs, MachineInstr *Terminator,
+    SmallVectorImpl<MachineOperand *> *KillFlagCandidates,
+    unsigned MaxInstructions) const {
   MachineBasicBlock::reverse_iterator A = Origin.getReverseIterator(),
                                       E = Origin.getParent()->rend();
   unsigned CurrentIteration = 0;
@@ -346,6 +349,21 @@ MachineInstr *SIOptimizeExecMasking::findInstrBackwards(
     for (MCRegister Reg : NonModifiableRegs) {
       if (A->modifiesRegister(Reg, TRI))
         return nullptr;
+
+      // Check for kills that appear after the terminator instruction, that
+      // would not be detected by clearKillFlags, since they will cause the
+      // register to be dead at a later place, causing the verifier to fail.
+      // We use the candidates to clear the kill flags later.
+      if (Terminator && KillFlagCandidates && A != Terminator &&
+          A->killsRegister(Reg, TRI)) {
+        for (MachineOperand &MO : A->operands()) {
+          if (MO.isReg() && MO.isKill()) {
+            Register Candidate = MO.getReg();
+            if (Candidate != Reg && TRI->regsOverlap(Candidate, Reg))
+              KillFlagCandidates->push_back(&MO);
+          }
+        }
+      }
     }
 
     ++CurrentIteration;
@@ -370,7 +388,6 @@ bool SIOptimizeExecMasking::isRegisterInUseBetween(MachineInstr &Stop,
     LR.addLiveOuts(*Stop.getParent());
 
   MachineBasicBlock::reverse_iterator A(Start);
-  MachineBasicBlock::reverse_iterator E(Stop);
 
   if (IgnoreStart)
     ++A;
@@ -425,7 +442,7 @@ bool SIOptimizeExecMasking::optimizeExecSequence() {
 
     // Scan backwards to find the def.
     auto *CopyToExecInst = &*I;
-    auto CopyFromExecInst = findExecCopy(MBB, I, CopyToExec);
+    auto CopyFromExecInst = findExecCopy(MBB, I);
     if (CopyFromExecInst == E) {
       auto PrepareExecInst = std::next(I);
       if (PrepareExecInst == E)
@@ -602,6 +619,9 @@ bool SIOptimizeExecMasking::optimizeVCMPSaveExecSequence(
   if (Src1->isReg())
     MRI->clearKillFlags(Src1->getReg());
 
+  for (MachineOperand *MO : KillFlagCandidates)
+    MO->setIsKill(false);
+
   SaveExecInstr.eraseFromParent();
   VCmp.eraseFromParent();
 
@@ -635,9 +655,9 @@ void SIOptimizeExecMasking::tryRecordVCmpxAndSaveexecSequence(
     return;
 
   // Tries to find a possibility to optimize a v_cmp ..., s_and_saveexec
-  // sequence by looking at an instance of a s_and_saveexec instruction. Returns
-  // a pointer to the v_cmp instruction if it is safe to replace the sequence
-  // (see the conditions in the function body). This is after register
+  // sequence by looking at an instance of an s_and_saveexec instruction.
+  // Returns a pointer to the v_cmp instruction if it is safe to replace the
+  // sequence (see the conditions in the function body). This is after register
   // allocation, so some checks on operand dependencies need to be considered.
   MachineInstr *VCmp = nullptr;
 
@@ -669,7 +689,7 @@ void SIOptimizeExecMasking::tryRecordVCmpxAndSaveexecSequence(
     return;
 
   // Don't do the transformation if the destination operand is included in
-  // it's MBB Live-outs, meaning it's used in any of it's successors, leading
+  // it's MBB Live-outs, meaning it's used in any of its successors, leading
   // to incorrect code if the v_cmp and therefore the def of
   // the dest operand is removed.
   if (isLiveOut(*VCmp->getParent(), VCmpDest->getReg()))
@@ -693,7 +713,8 @@ void SIOptimizeExecMasking::tryRecordVCmpxAndSaveexecSequence(
     NonDefRegs.push_back(Src1->getReg());
 
   if (!findInstrBackwards(
-          MI, [&](MachineInstr *Check) { return Check == VCmp; }, NonDefRegs))
+          MI, [&](MachineInstr *Check) { return Check == VCmp; }, NonDefRegs,
+          VCmp, &KillFlagCandidates))
     return;
 
   if (VCmp)
@@ -780,6 +801,7 @@ bool SIOptimizeExecMasking::runOnMachineFunction(MachineFunction &MF) {
 
   OrXors.clear();
   SaveExecVCmpMapping.clear();
+  KillFlagCandidates.clear();
   static unsigned SearchWindow = 10;
   for (MachineBasicBlock &MBB : MF) {
     unsigned SearchCount = 0;

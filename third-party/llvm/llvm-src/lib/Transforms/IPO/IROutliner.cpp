@@ -22,10 +22,9 @@
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/PassManager.h"
-#include "llvm/InitializePasses.h"
-#include "llvm/Pass.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Transforms/IPO.h"
+#include <optional>
 #include <vector>
 
 #define DEBUG_TYPE "iroutliner"
@@ -133,7 +132,7 @@ struct OutlinableGroup {
 
   /// The argument that needs to be marked with the swifterr attribute.  If not
   /// needed, there is no value.
-  Optional<unsigned> SwiftErrorArgument;
+  std::optional<unsigned> SwiftErrorArgument;
 
   /// For the \ref Regions, we look at every Value.  If it is a constant,
   /// we check whether it is the same in Region.
@@ -155,8 +154,7 @@ struct OutlinableGroup {
 /// \param SourceBB - the BasicBlock to pull Instructions from.
 /// \param TargetBB - the BasicBlock to put Instruction into.
 static void moveBBContents(BasicBlock &SourceBB, BasicBlock &TargetBB) {
-  for (Instruction &I : llvm::make_early_inc_range(SourceBB))
-    I.moveBefore(TargetBB, TargetBB.end());
+  TargetBB.splice(TargetBB.end(), &SourceBB);
 }
 
 /// A function to sort the keys of \p Map, which must be a mapping of constant
@@ -169,11 +167,17 @@ static void getSortedConstantKeys(std::vector<Value *> &SortedKeys,
   for (auto &VtoBB : Map)
     SortedKeys.push_back(VtoBB.first);
 
+  // Here we expect to have either 1 value that is void (nullptr) or multiple
+  // values that are all constant integers.
+  if (SortedKeys.size() == 1) {
+    assert(!SortedKeys[0] && "Expected a single void value.");
+    return;
+  }
+
   stable_sort(SortedKeys, [](const Value *LHS, const Value *RHS) {
-    const ConstantInt *LHSC = dyn_cast<ConstantInt>(LHS);
-    const ConstantInt *RHSC = dyn_cast<ConstantInt>(RHS);
-    assert(RHSC && "Not a constant integer in return value?");
-    assert(LHSC && "Not a constant integer in return value?");
+    assert(LHS && RHS && "Expected non void values.");
+    const ConstantInt *LHSC = cast<ConstantInt>(LHS);
+    const ConstantInt *RHSC = cast<ConstantInt>(RHS);
 
     return LHSC->getLimitedValue() < RHSC->getLimitedValue();
   });
@@ -181,18 +185,19 @@ static void getSortedConstantKeys(std::vector<Value *> &SortedKeys,
 
 Value *OutlinableRegion::findCorrespondingValueIn(const OutlinableRegion &Other,
                                                   Value *V) {
-  Optional<unsigned> GVN = Candidate->getGVN(V);
+  std::optional<unsigned> GVN = Candidate->getGVN(V);
   assert(GVN && "No GVN for incoming value");
-  Optional<unsigned> CanonNum = Candidate->getCanonicalNum(*GVN);
-  Optional<unsigned> FirstGVN = Other.Candidate->fromCanonicalNum(*CanonNum);
-  Optional<Value *> FoundValueOpt = Other.Candidate->fromGVN(*FirstGVN);
+  std::optional<unsigned> CanonNum = Candidate->getCanonicalNum(*GVN);
+  std::optional<unsigned> FirstGVN =
+      Other.Candidate->fromCanonicalNum(*CanonNum);
+  std::optional<Value *> FoundValueOpt = Other.Candidate->fromGVN(*FirstGVN);
   return FoundValueOpt.value_or(nullptr);
 }
 
 BasicBlock *
 OutlinableRegion::findCorrespondingBlockIn(const OutlinableRegion &Other,
                                            BasicBlock *BB) {
-  Instruction *FirstNonPHI = BB->getFirstNonPHI();
+  Instruction *FirstNonPHI = BB->getFirstNonPHIOrDbg();
   assert(FirstNonPHI && "block is empty?");
   Value *CorrespondingVal = findCorrespondingValueIn(Other, FirstNonPHI);
   if (!CorrespondingVal)
@@ -453,14 +458,14 @@ void OutlinableRegion::reattachCandidate() {
 /// \param GVNToConstant - The mapping of global value number to Constants.
 /// \returns true if the Value matches the Constant mapped to by V and false if
 /// it \p V is a Constant but does not match.
-/// \returns None if \p V is not a Constant.
-static Optional<bool>
+/// \returns std::nullopt if \p V is not a Constant.
+static std::optional<bool>
 constantMatches(Value *V, unsigned GVN,
                 DenseMap<unsigned, Constant *> &GVNToConstant) {
   // See if we have a constants
   Constant *CST = dyn_cast<Constant>(V);
   if (!CST)
-    return None;
+    return std::nullopt;
 
   // Holds a mapping from a global value number to a Constant.
   DenseMap<unsigned, Constant *>::iterator GVNToConstantIt;
@@ -551,11 +556,11 @@ collectRegionsConstants(OutlinableRegion &Region,
 
     // Iterate over the operands in an instruction. If the global value number,
     // assigned by the IRSimilarityCandidate, has been seen before, we check if
-    // the the number has been found to be not the same value in each instance.
+    // the number has been found to be not the same value in each instance.
     for (Value *V : ID.OperVals) {
-      Optional<unsigned> GVNOpt = C.getGVN(V);
+      std::optional<unsigned> GVNOpt = C.getGVN(V);
       assert(GVNOpt && "Expected a GVN for operand?");
-      unsigned GVN = GVNOpt.value();
+      unsigned GVN = *GVNOpt;
 
       // Check if this global value has been found to not be the same already.
       if (NotSame.contains(GVN)) {
@@ -568,9 +573,10 @@ collectRegionsConstants(OutlinableRegion &Region,
       // associated Constant value match the previous instances of the same
       // global value number.  If the global value does not map to a Constant,
       // it is considered to not be the same value.
-      Optional<bool> ConstantMatches = constantMatches(V, GVN, GVNToConstant);
+      std::optional<bool> ConstantMatches =
+          constantMatches(V, GVN, GVNToConstant);
       if (ConstantMatches) {
-        if (ConstantMatches.value())
+        if (*ConstantMatches)
           continue;
         else
           ConstantsTheSame = false;
@@ -579,7 +585,7 @@ collectRegionsConstants(OutlinableRegion &Region,
       // While this value is a register, it might not have been previously,
       // make sure we don't already have a constant mapped to this global value
       // number.
-      if (GVNToConstant.find(GVN) != GVNToConstant.end())
+      if (GVNToConstant.contains(GVN))
         ConstantsTheSame = false;
 
       NotSame.insert(GVN);
@@ -651,7 +657,7 @@ Function *IROutliner::createFunction(Module &M, OutlinableGroup &Group,
 
   // Transfer the swifterr attribute to the correct function parameter.
   if (Group.SwiftErrorArgument)
-    Group.OutlinedFunction->addParamAttr(Group.SwiftErrorArgument.value(),
+    Group.OutlinedFunction->addParamAttr(*Group.SwiftErrorArgument,
                                          Attribute::SwiftError);
 
   Group.OutlinedFunction->addFnAttr(Attribute::OptimizeForSize);
@@ -675,7 +681,8 @@ Function *IROutliner::createFunction(Module &M, OutlinableGroup &Group,
         Unit /* Context */, F->getName(), MangledNameStream.str(),
         Unit /* File */,
         0 /* Line 0 is reserved for compiler-generated code. */,
-        DB.createSubroutineType(DB.getOrCreateTypeArray(None)), /* void type */
+        DB.createSubroutineType(
+            DB.getOrCreateTypeArray(std::nullopt)), /* void type */
         0, /* Line 0 is reserved for compiler-generated code. */
         DINode::DIFlags::FlagArtificial /* Compiler-generated code. */,
         /* Outlined code is optimized code by definition. */
@@ -758,7 +765,7 @@ static void moveFunctionData(Function &Old, Function &New,
   }
 }
 
-/// Find the the constants that will need to be lifted into arguments
+/// Find the constants that will need to be lifted into arguments
 /// as they are not the same in each instance of the region.
 ///
 /// \param [in] C - The IRSimilarityCandidate containing the region we are
@@ -806,10 +813,10 @@ static void mapInputsToGVNs(IRSimilarityCandidate &C,
   // replacement.
   for (Value *Input : CurrentInputs) {
     assert(Input && "Have a nullptr as an input");
-    if (OutputMappings.find(Input) != OutputMappings.end())
+    if (OutputMappings.contains(Input))
       Input = OutputMappings.find(Input)->second;
     assert(C.getGVN(Input) && "Could not find a numbering for the given input");
-    EndInputNumbers.push_back(C.getGVN(Input).value());
+    EndInputNumbers.push_back(*C.getGVN(Input));
   }
 }
 
@@ -828,7 +835,7 @@ remapExtractedInputs(const ArrayRef<Value *> ArgInputs,
   // Get the global value number for each input that will be extracted as an
   // argument by the code extractor, remapping if needed for reloaded values.
   for (Value *Input : ArgInputs) {
-    if (OutputMappings.find(Input) != OutputMappings.end())
+    if (OutputMappings.contains(Input))
       Input = OutputMappings.find(Input)->second;
     RemappedArgInputs.insert(Input);
   }
@@ -946,13 +953,13 @@ findExtractedInputToOverallInputMapping(OutlinableRegion &Region,
   // we find argument locations for the canonical value numbering.  This
   // numbering overrides any discovered location for the extracted code.
   for (unsigned InputVal : InputGVNs) {
-    Optional<unsigned> CanonicalNumberOpt = C.getCanonicalNum(InputVal);
+    std::optional<unsigned> CanonicalNumberOpt = C.getCanonicalNum(InputVal);
     assert(CanonicalNumberOpt && "Canonical number not found?");
-    unsigned CanonicalNumber = CanonicalNumberOpt.value();
+    unsigned CanonicalNumber = *CanonicalNumberOpt;
 
-    Optional<Value *> InputOpt = C.fromGVN(InputVal);
+    std::optional<Value *> InputOpt = C.fromGVN(InputVal);
     assert(InputOpt && "Global value number not found?");
-    Value *Input = InputOpt.value();
+    Value *Input = *InputOpt;
 
     DenseMap<unsigned, unsigned>::iterator AggArgIt =
         Group.CanonicalNumberToAggArg.find(CanonicalNumber);
@@ -1161,12 +1168,12 @@ static hash_code encodePHINodeData(PHINodeData &PND) {
 /// \param PN - The PHINode we are analyzing.
 /// \param Blocks - The blocks for the region we are analyzing.
 /// \param AggArgIdx - The argument \p PN will be stored into.
-/// \returns An optional holding the assigned canonical number, or None if
-/// there is some attribute of the PHINode blocking it from being used.
-static Optional<unsigned> getGVNForPHINode(OutlinableRegion &Region,
-                                           PHINode *PN,
-                                           DenseSet<BasicBlock *> &Blocks,
-                                           unsigned AggArgIdx) {
+/// \returns An optional holding the assigned canonical number, or std::nullopt
+/// if there is some attribute of the PHINode blocking it from being used.
+static std::optional<unsigned> getGVNForPHINode(OutlinableRegion &Region,
+                                                PHINode *PN,
+                                                DenseSet<BasicBlock *> &Blocks,
+                                                unsigned AggArgIdx) {
   OutlinableGroup &Group = *Region.Parent;
   IRSimilarityCandidate &Cand = *Region.Candidate;
   BasicBlock *PHIBB = PN->getParent();
@@ -1181,10 +1188,10 @@ static Optional<unsigned> getGVNForPHINode(OutlinableRegion &Region,
     // are trying to analyze, meaning, that if it was outlined, we would be
     // adding an extra input.  We ignore this case for now, and so ignore the
     // region.
-    Optional<unsigned> OGVN = Cand.getGVN(Incoming);
+    std::optional<unsigned> OGVN = Cand.getGVN(Incoming);
     if (!OGVN && Blocks.contains(IncomingBlock)) {
       Region.IgnoreRegion = true;
-      return None;
+      return std::nullopt;
     }
 
     // If the incoming block isn't in the region, we don't have to worry about
@@ -1202,7 +1209,7 @@ static Optional<unsigned> getGVNForPHINode(OutlinableRegion &Region,
     // the hash for the PHINode.
     OGVN = Cand.getGVN(IncomingBlock);
 
-    // If there is no number for the incoming block, it is becaause we have
+    // If there is no number for the incoming block, it is because we have
     // split the candidate basic blocks.  So we use the previous block that it
     // was split from to find the valid global value numbering for the PHINode.
     if (!OGVN) {
@@ -1233,16 +1240,16 @@ static Optional<unsigned> getGVNForPHINode(OutlinableRegion &Region,
   // PHINode to generate a hash value representing this instance of the PHINode.
   DenseMap<hash_code, unsigned>::iterator GVNToPHIIt;
   DenseMap<unsigned, PHINodeData>::iterator PHIToGVNIt;
-  Optional<unsigned> BBGVN = Cand.getGVN(PHIBB);
+  std::optional<unsigned> BBGVN = Cand.getGVN(PHIBB);
   assert(BBGVN && "Could not find GVN for the incoming block!");
 
-  BBGVN = Cand.getCanonicalNum(BBGVN.value());
+  BBGVN = Cand.getCanonicalNum(*BBGVN);
   assert(BBGVN && "Could not find canonical number for the incoming block!");
   // Create a pair of the exit block canonical value, and the aggregate
   // argument location, connected to the canonical numbers stored in the
   // PHINode.
   PHINodeData TemporaryPair =
-      std::make_pair(std::make_pair(BBGVN.value(), AggArgIdx), PHIGVNs);
+      std::make_pair(std::make_pair(*BBGVN, AggArgIdx), PHIGVNs);
   hash_code PHINodeDataHash = encodePHINodeData(TemporaryPair);
 
   // Look for and create a new entry in our connection between canonical
@@ -1265,7 +1272,7 @@ static Optional<unsigned> getGVNForPHINode(OutlinableRegion &Region,
 /// \param [in,out] Region - The region of code to be analyzed.
 /// \param [in] Outputs - The values found by the code extractor.
 static void
-findExtractedOutputToOverallOutputMapping(OutlinableRegion &Region,
+findExtractedOutputToOverallOutputMapping(Module &M, OutlinableRegion &Region,
                                           SetVector<Value *> &Outputs) {
   OutlinableGroup &Group = *Region.Parent;
   IRSimilarityCandidate &C = *Region.Candidate;
@@ -1320,7 +1327,7 @@ findExtractedOutputToOverallOutputMapping(OutlinableRegion &Region,
 
     unsigned AggArgIdx = 0;
     for (unsigned Jdx = TypeIndex; Jdx < ArgumentSize; Jdx++) {
-      if (Group.ArgumentTypes[Jdx] != PointerType::getUnqual(Output->getType()))
+      if (!isa<PointerType>(Group.ArgumentTypes[Jdx]))
         continue;
 
       if (AggArgsUsed.contains(Jdx))
@@ -1338,7 +1345,8 @@ findExtractedOutputToOverallOutputMapping(OutlinableRegion &Region,
     // the output, so we add a pointer type to the argument types of the overall
     // function to handle this output and create a mapping to it.
     if (!TypeFound) {
-      Group.ArgumentTypes.push_back(PointerType::getUnqual(Output->getType()));
+      Group.ArgumentTypes.push_back(PointerType::get(Output->getContext(),
+          M.getDataLayout().getAllocaAddrSpace()));
       // Mark the new pointer type as the last value in the aggregate argument
       // list.
       unsigned ArgTypeIdx = Group.ArgumentTypes.size() - 1;
@@ -1353,7 +1361,7 @@ findExtractedOutputToOverallOutputMapping(OutlinableRegion &Region,
     // TODO: Adapt to the extra input from the PHINode.
     PHINode *PN = dyn_cast<PHINode>(Output);
 
-    Optional<unsigned> GVN;
+    std::optional<unsigned> GVN;
     if (PN && !BlocksInRegion.contains(PN->getParent())) {
       // Values outside the region can be combined into PHINode when we
       // have multiple exits. We collect both of these into a list to identify
@@ -1406,7 +1414,7 @@ void IROutliner::findAddInputsOutputs(Module &M, OutlinableRegion &Region,
 
   // Map the outputs found by the CodeExtractor to the arguments found for
   // the overall function.
-  findExtractedOutputToOverallOutputMapping(Region, Outputs);
+  findExtractedOutputToOverallOutputMapping(M, Region, Outputs);
 }
 
 /// Replace the extracted function in the Region with a call to the overall
@@ -1470,8 +1478,7 @@ CallInst *replaceCalledFunction(Module &M, OutlinableRegion &Region) {
     }
 
     // If it is a constant, we simply add it to the argument list as a value.
-    if (Region.AggArgToConstant.find(AggArgIdx) !=
-        Region.AggArgToConstant.end()) {
+    if (Region.AggArgToConstant.contains(AggArgIdx)) {
       Constant *CST = Region.AggArgToConstant.find(AggArgIdx)->second;
       LLVM_DEBUG(dbgs() << "Setting argument " << AggArgIdx << " to value "
                         << *CST << "\n");
@@ -1516,7 +1523,7 @@ CallInst *replaceCalledFunction(Module &M, OutlinableRegion &Region) {
   // Make sure that the argument in the new function has the SwiftError
   // argument.
   if (Group.SwiftErrorArgument)
-    Call->addParamAttr(Group.SwiftErrorArgument.value(), Attribute::SwiftError);
+    Call->addParamAttr(*Group.SwiftErrorArgument, Attribute::SwiftError);
 
   return Call;
 }
@@ -1646,9 +1653,9 @@ static void findCanonNumsForPHI(
     IVal = findOutputMapping(OutputMappings, IVal);
 
     // Find and add the canonical number for the incoming value.
-    Optional<unsigned> GVN = Region.Candidate->getGVN(IVal);
+    std::optional<unsigned> GVN = Region.Candidate->getGVN(IVal);
     assert(GVN && "No GVN for incoming value");
-    Optional<unsigned> CanonNum = Region.Candidate->getCanonicalNum(*GVN);
+    std::optional<unsigned> CanonNum = Region.Candidate->getCanonicalNum(*GVN);
     assert(CanonNum && "No Canonical Number for GVN");
     CanonNums.push_back(std::make_pair(*CanonNum, IBlock));
   }
@@ -1805,8 +1812,7 @@ replaceArgumentUses(OutlinableRegion &Region,
 
   for (unsigned ArgIdx = 0; ArgIdx < Region.ExtractedFunction->arg_size();
        ArgIdx++) {
-    assert(Region.ExtractedArgToAgg.find(ArgIdx) !=
-               Region.ExtractedArgToAgg.end() &&
+    assert(Region.ExtractedArgToAgg.contains(ArgIdx) &&
            "No mapping from extracted to outlined?");
     unsigned AggArgIdx = Region.ExtractedArgToAgg.find(ArgIdx)->second;
     Argument *AggArg = Group.OutlinedFunction->getArg(AggArgIdx);
@@ -1861,7 +1867,7 @@ replaceArgumentUses(OutlinableRegion &Region,
       StoreInst *NewI = cast<StoreInst>(I->clone());
       NewI->setDebugLoc(DebugLoc());
       BasicBlock *OutputBB = VBBIt->second;
-      OutputBB->getInstList().push_back(NewI);
+      NewI->insertInto(OutputBB, OutputBB->end());
       LLVM_DEBUG(dbgs() << "Move store for instruction " << *I << " to "
                         << *OutputBB << "\n");
 
@@ -1958,7 +1964,7 @@ void replaceConstants(OutlinableRegion &Region) {
 /// \param OutputBBs [in] the blocks we are looking for a duplicate of.
 /// \param OutputStoreBBs [in] The existing output blocks.
 /// \returns an optional value with the number output block if there is a match.
-Optional<unsigned> findDuplicateOutputBlock(
+std::optional<unsigned> findDuplicateOutputBlock(
     DenseMap<Value *, BasicBlock *> &OutputBBs,
     std::vector<DenseMap<Value *, BasicBlock *>> &OutputStoreBBs) {
 
@@ -2004,7 +2010,7 @@ Optional<unsigned> findDuplicateOutputBlock(
     MatchingNum++;
   }
 
-  return None;
+  return std::nullopt;
 }
 
 /// Remove empty output blocks from the outlined region.
@@ -2073,17 +2079,16 @@ static void alignOutputBlockWithAggFunc(
     return;
 
   // Determine is there is a duplicate set of blocks.
-  Optional<unsigned> MatchingBB =
+  std::optional<unsigned> MatchingBB =
       findDuplicateOutputBlock(OutputBBs, OutputStoreBBs);
 
   // If there is, we remove the new output blocks.  If it does not,
   // we add it to our list of sets of output blocks.
   if (MatchingBB) {
     LLVM_DEBUG(dbgs() << "Set output block for region in function"
-                      << Region.ExtractedFunction << " to "
-                      << MatchingBB.value());
+                      << Region.ExtractedFunction << " to " << *MatchingBB);
 
-    Region.OutputBlockNum = MatchingBB.value();
+    Region.OutputBlockNum = *MatchingBB;
     for (std::pair<Value *, BasicBlock *> &VtoBB : OutputBBs)
       VtoBB.second->eraseFromParent();
     return;
@@ -2415,6 +2420,7 @@ void IROutliner::pruneIncompatibleRegions(
     PreviouslyOutlined = false;
     unsigned StartIdx = IRSC.getStartIdx();
     unsigned EndIdx = IRSC.getEndIdx();
+    const Function &FnForCurrCand = *IRSC.getFunction();
 
     for (unsigned Idx = StartIdx; Idx <= EndIdx; Idx++)
       if (Outlined.contains(Idx)) {
@@ -2434,8 +2440,16 @@ void IROutliner::pruneIncompatibleRegions(
     if (BBHasAddressTaken)
       continue;
 
-    if (IRSC.getFunction()->hasOptNone())
+    if (FnForCurrCand.hasOptNone())
       continue;
+
+    if (FnForCurrCand.hasFnAttribute("nooutline")) {
+      LLVM_DEBUG({
+        dbgs() << "... Skipping function with nooutline attribute: "
+               << FnForCurrCand.getName() << "\n";
+      });
+      continue;
+    }
 
     if (IRSC.front()->Inst->getFunction()->hasLinkOnceODRLinkage() &&
         !OutlineFromLinkODRs)
@@ -2500,9 +2514,10 @@ static Value *findOutputValueInRegion(OutlinableRegion &Region,
     assert(It->second.second.size() > 0 && "PHINode does not have any values!");
     OutputCanon = *It->second.second.begin();
   }
-  Optional<unsigned> OGVN = Region.Candidate->fromCanonicalNum(OutputCanon);
+  std::optional<unsigned> OGVN =
+      Region.Candidate->fromCanonicalNum(OutputCanon);
   assert(OGVN && "Could not find GVN for Canonical Number?");
-  Optional<Value *> OV = Region.Candidate->fromGVN(*OGVN);
+  std::optional<Value *> OV = Region.Candidate->fromGVN(*OGVN);
   assert(OV && "Could not find value for GVN?");
   return *OV;
 }
@@ -2663,7 +2678,7 @@ void IROutliner::updateOutputMapping(OutlinableRegion &Region,
                                      LoadInst *LI) {
   // For and load instructions following the call
   Value *Operand = LI->getPointerOperand();
-  Optional<unsigned> OutputIdx = None;
+  std::optional<unsigned> OutputIdx;
   // Find if the operand it is an output register.
   for (unsigned ArgIdx = Region.NumExtractedInputs;
        ArgIdx < Region.Call->arg_size(); ArgIdx++) {
@@ -2678,14 +2693,14 @@ void IROutliner::updateOutputMapping(OutlinableRegion &Region,
   if (!OutputIdx)
     return;
 
-  if (OutputMappings.find(Outputs[OutputIdx.value()]) == OutputMappings.end()) {
+  if (!OutputMappings.contains(Outputs[*OutputIdx])) {
     LLVM_DEBUG(dbgs() << "Mapping extracted output " << *LI << " to "
-                      << *Outputs[OutputIdx.value()] << "\n");
-    OutputMappings.insert(std::make_pair(LI, Outputs[OutputIdx.value()]));
+                      << *Outputs[*OutputIdx] << "\n");
+    OutputMappings.insert(std::make_pair(LI, Outputs[*OutputIdx]));
   } else {
-    Value *Orig = OutputMappings.find(Outputs[OutputIdx.value()])->second;
+    Value *Orig = OutputMappings.find(Outputs[*OutputIdx])->second;
     LLVM_DEBUG(dbgs() << "Mapping extracted output " << *Orig << " to "
-                      << *Outputs[OutputIdx.value()] << "\n");
+                      << *Outputs[*OutputIdx] << "\n");
     OutputMappings.insert(std::make_pair(LI, Orig));
   }
 }
@@ -3002,46 +3017,6 @@ bool IROutliner::run(Module &M) {
   return doOutline(M) > 0;
 }
 
-// Pass Manager Boilerplate
-namespace {
-class IROutlinerLegacyPass : public ModulePass {
-public:
-  static char ID;
-  IROutlinerLegacyPass() : ModulePass(ID) {
-    initializeIROutlinerLegacyPassPass(*PassRegistry::getPassRegistry());
-  }
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.addRequired<OptimizationRemarkEmitterWrapperPass>();
-    AU.addRequired<TargetTransformInfoWrapperPass>();
-    AU.addRequired<IRSimilarityIdentifierWrapperPass>();
-  }
-
-  bool runOnModule(Module &M) override;
-};
-} // namespace
-
-bool IROutlinerLegacyPass::runOnModule(Module &M) {
-  if (skipModule(M))
-    return false;
-
-  std::unique_ptr<OptimizationRemarkEmitter> ORE;
-  auto GORE = [&ORE](Function &F) -> OptimizationRemarkEmitter & {
-    ORE.reset(new OptimizationRemarkEmitter(&F));
-    return *ORE;
-  };
-
-  auto GTTI = [this](Function &F) -> TargetTransformInfo & {
-    return this->getAnalysis<TargetTransformInfoWrapperPass>().getTTI(F);
-  };
-
-  auto GIRSI = [this](Module &) -> IRSimilarityIdentifier & {
-    return this->getAnalysis<IRSimilarityIdentifierWrapperPass>().getIRSI();
-  };
-
-  return IROutliner(GTTI, GIRSI, GORE).run(M);
-}
-
 PreservedAnalyses IROutlinerPass::run(Module &M, ModuleAnalysisManager &AM) {
   auto &FAM = AM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
 
@@ -3066,14 +3041,3 @@ PreservedAnalyses IROutlinerPass::run(Module &M, ModuleAnalysisManager &AM) {
     return PreservedAnalyses::none();
   return PreservedAnalyses::all();
 }
-
-char IROutlinerLegacyPass::ID = 0;
-INITIALIZE_PASS_BEGIN(IROutlinerLegacyPass, "iroutliner", "IR Outliner", false,
-                      false)
-INITIALIZE_PASS_DEPENDENCY(IRSimilarityIdentifierWrapperPass)
-INITIALIZE_PASS_DEPENDENCY(OptimizationRemarkEmitterWrapperPass)
-INITIALIZE_PASS_DEPENDENCY(TargetTransformInfoWrapperPass)
-INITIALIZE_PASS_END(IROutlinerLegacyPass, "iroutliner", "IR Outliner", false,
-                    false)
-
-ModulePass *llvm::createIROutlinerPass() { return new IROutlinerLegacyPass(); }

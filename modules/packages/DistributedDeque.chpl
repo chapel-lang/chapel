@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -158,7 +158,7 @@
   Planned Improvements
   ____________________
 
-  1.  Double the size of each successor up to some maximum, similar to :mod:`DistributedBag` for unroll blocks.
+  1.  Double the size of each successor up to some maximum, similar to :mod:`DistributedBag` for segments.
       Currently they are fixed-sized, but it can benefit from improved locality if a lot of elements are added at
       once.
 
@@ -246,11 +246,12 @@ module DistributedDeque {
   @chpldoc.nodoc
   class DistributedDequeCounter {
     var _value : atomic int;
+    proc init() {}
 
     forwarding _value;
   }
 
-  class DistributedDequeImpl : CollectionImpl {
+  class DistributedDequeImpl : CollectionImpl(?) {
     /*
       Capacity, the maximum number of elements a Deque can hold. A `cap` of -1 is
       considered unbounded.
@@ -304,7 +305,7 @@ module DistributedDeque {
       const dummyLD = new unmanaged LocalDeque(eltType);
       this.slots = dummyLD;
 
-      complete();
+      init this;
 
       // Initialize each slot. We use a round-robin algorithm.
       var idx : atomic int;
@@ -348,7 +349,7 @@ module DistributedDeque {
       this.slotSpace = {0..#this.nSlots};
       slots = other.slots;
 
-      complete();
+      init this;
     }
 
     @chpldoc.nodoc
@@ -387,9 +388,8 @@ module DistributedDeque {
           on queueSize {
             var readSize = queueSize!.read();
             // Attempt to fix, but yield to reduce potential contention and CPU hogging.
-            while readSize < 0 && !queueSize!.compareAndSwap(readSize, 0) {
-              chpl_task_yield();
-              readSize = queueSize!.read();
+            while readSize < 0 && !queueSize!.compareExchangeWeak(readSize, 0) {
+              currentTask.yieldExecution();
             }
           }
 
@@ -432,9 +432,8 @@ module DistributedDeque {
             on queueSize {
               var readSize = queueSize!.read();
               // Attempt to fix, but yield to reduce potential contention and CPU hogging.
-              while readSize > this.cap && !queueSize!.compareAndSwap(readSize, this.cap) {
-                chpl_task_yield();
-                readSize = queueSize!.read();
+              while readSize > this.cap && !queueSize!.compareExchangeWeak(readSize, this.cap) {
+                currentTask.yieldExecution();
               }
             }
 
@@ -601,7 +600,7 @@ module DistributedDeque {
     */
     iter these(param order : Ordering = Ordering.NONE) : eltType where order == Ordering.NONE {
       for slot in slots {
-        slot.lock$.writeEF(true);
+        slot.lock.writeEF(true);
         var node = slot.head;
 
         while node != nil {
@@ -617,7 +616,7 @@ module DistributedDeque {
           node = node!.next;
         }
 
-        slot.lock$.readFE();
+        slot.lock.readFE();
       }
     }
 
@@ -633,7 +632,7 @@ module DistributedDeque {
       }
 
       // Acquire in locking order...
-      for slot in slots do slot.lock$.writeEF(true);
+      for slot in slots do slot.lock.writeEF(true);
 
       // We iterate directly over the heads of each slot, so we capture them in advance.
       var nodes : [{0..#nSlots}] (int, int, unmanaged LocalDequeNode(eltType)?);
@@ -681,7 +680,7 @@ module DistributedDeque {
       }
 
       // Release in locking order...
-      for slot in slots do slot.lock$.readFE();
+      for slot in slots do slot.lock.readFE();
     }
 
     iter these(param order : Ordering = Ordering.NONE) : eltType where order == Ordering.LIFO {
@@ -696,7 +695,7 @@ module DistributedDeque {
       }
 
       // Acquire in locking order...
-      for slot in slots do slot.lock$.writeEF(true);
+      for slot in slots do slot.lock.writeEF(true);
 
       // We iterate directly over the heads of each slot, so we capture them in advance.
       var nodes : [{0..#nSlots}] (int, int, unmanaged LocalDequeNode(eltType)?);
@@ -743,7 +742,7 @@ module DistributedDeque {
       }
 
       // Release in locking order...
-      for slot in slots do slot.lock$.readFE();
+      for slot in slots do slot.lock.readFE();
     }
 
     iter these(param order : Ordering = Ordering.NONE, param tag : iterKind) where tag == iterKind.leader {
@@ -758,7 +757,7 @@ module DistributedDeque {
         compilerWarning("Parallel iteration only supports ordering of type: ", Ordering.NONE);
       }
 
-      followThis.lock$.writeEF(true);
+      followThis.lock.writeEF(true);
       var node = followThis.head;
 
       while node != nil {
@@ -774,7 +773,7 @@ module DistributedDeque {
         node = node!.next;
       }
 
-      followThis.lock$.readFE();
+      followThis.lock.readFE();
     }
 
     @chpldoc.nodoc
@@ -860,7 +859,7 @@ module DistributedDeque {
   class LocalDeque {
     type eltType;
 
-    var lock$ : sync bool;
+    var lock : sync bool;
 
     var head : unmanaged LocalDequeNode(eltType)?;
     var tail : unmanaged LocalDequeNode(eltType)?;
@@ -871,6 +870,10 @@ module DistributedDeque {
     // The size of a segment. This is used as both a means of knowing when an element
     // gets added, as well as a barrier to prevent the head and tail from being cached.
     var size : atomic int;
+
+    proc init(type eltType) {
+      this.eltType = eltType;
+    }
 
     inline proc recycleNode() {
       // If we have cached a previous used node, reuse it here...
@@ -904,7 +907,7 @@ module DistributedDeque {
       on this {
         var _elt = elt;
         local {
-          lock$.writeEF(true);
+          lock.writeEF(true);
 
           // Its empty...
           if tail == nil {
@@ -923,7 +926,7 @@ module DistributedDeque {
           tail!.pushBack(_elt);
           size.add(1);
 
-          lock$.readFE();
+          lock.readFE();
         }
       }
     }
@@ -937,15 +940,15 @@ module DistributedDeque {
             // Check if there is an element for us...
             if size.read() == 0 {
               while size.read() == 0 {
-                chpl_task_yield();
+                currentTask.yieldExecution();
               }
             }
 
-            lock$.writeEF(true);
+            lock.writeEF(true);
 
             // Someone else came in and took a value, wait for the next one...
             if size.read() == 0 {
-              lock$.readFE();
+              lock.readFE();
               continue;
             }
 
@@ -967,7 +970,7 @@ module DistributedDeque {
             }
 
             size.sub(1);
-            lock$.readFE();
+            lock.readFE();
             break;
           }
         }
@@ -981,7 +984,7 @@ module DistributedDeque {
       on this {
         var _elt = elt;
         local {
-          lock$.writeEF(true);
+          lock.writeEF(true);
 
           // Its empty...
           if head == nil {
@@ -1000,7 +1003,7 @@ module DistributedDeque {
           head!.pushFront(_elt);
           size.add(1);
 
-          lock$.readFE();
+          lock.readFE();
         }
       }
     }
@@ -1014,15 +1017,15 @@ module DistributedDeque {
             // Check if there is an element for us...
             if size.read() == 0 {
               while size.read() == 0 {
-                chpl_task_yield();
+                currentTask.yieldExecution();
               }
             }
 
-            lock$.writeEF(true);
+            lock.writeEF(true);
 
             // Someone else came in and took a value, wait for the next one...
             if size.read() == 0 {
-              lock$.readFE();
+              lock.readFE();
               continue;
             }
 
@@ -1044,7 +1047,7 @@ module DistributedDeque {
             }
 
             size.sub(1);
-            lock$.readFE();
+            lock.readFE();
             break;
           }
         }

@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -15,14 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-comp_unit_test(testRecursionFails)
-set_tests_properties(testRecursionFails PROPERTIES WILL_FAIL TRUE)
-
 comp_unit_test(testDependencies)
 comp_unit_test(testErrorTracking)
 comp_unit_test(testIds)
+comp_unit_test(testQueryEquivalence)
+comp_unit_test(testRecursionFails)
 comp_unit_test(testUniqueString)
-
-# Copy the moby.txt to the binary dir for use by testUniqueString
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../../test/types/string/psahabu/perf/moby.txt
-     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+comp_unit_test(testVarint)

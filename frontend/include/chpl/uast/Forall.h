@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,13 +45,16 @@ namespace uast {
 
  */
 class Forall final : public IndexableLoop {
+ friend class AstNode;
+
  private:
   Forall(AstList children, int8_t indexChildNum,
          int8_t iterandChildNum,
          int8_t withClauseChildNum,
          BlockStyle blockStyle,
          int loopBodyChildNum,
-         bool isExpressionLevel)
+         bool isExpressionLevel,
+         int attributeGroupChildNum)
     : IndexableLoop(asttags::Forall, std::move(children),
                     indexChildNum,
                     iterandChildNum,
@@ -59,12 +62,14 @@ class Forall final : public IndexableLoop {
                     blockStyle,
                     loopBodyChildNum,
                     isExpressionLevel,
-                    NO_CHILD /*attributeGroup*/) {
+                    attributeGroupChildNum) {
   }
 
-  Forall(Deserializer& des)
-    : IndexableLoop(asttags::Forall, des) {
+  void serializeInner(Serializer& ser) const override {
+    indexableLoopSerializeInner(ser);
   }
+
+  explicit Forall(Deserializer& des) : IndexableLoop(asttags::Forall, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());
@@ -86,14 +91,8 @@ class Forall final : public IndexableLoop {
                              owned<WithClause> withClause,
                              BlockStyle blockStyle,
                              owned<Block> body,
-                             bool isExpressionLevel);
-
-  void serialize(Serializer& ser) const override {
-    IndexableLoop::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Forall);
-
+                             bool isExpressionLevel,
+                             owned<AttributeGroup> attributeGroup = nullptr);
 };
 
 

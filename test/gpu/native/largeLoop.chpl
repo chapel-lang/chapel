@@ -9,8 +9,8 @@ var AHost: [0..<n] uint(8);
 
 on here.gpus[0] {
   var A: [0..<n] uint(8);
+  @assertOnGpu
   foreach i in 0..<n {
-    assertOnGpu();
     A[i] = 1;
   }
   AHost = A;

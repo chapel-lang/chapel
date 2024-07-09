@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,13 +27,9 @@
 
       - It relies on Chapel ``extern`` code blocks and so requires that
         the Chapel compiler is built with LLVM enabled.
-      - Currently only ``CHPL_TARGET_ARCH=x86_64`` is supported as it uses
-        the x86-64 instruction: CMPXCHG16B_.
-      - The implementation relies on ``GCC`` style inline assembly, and so
-        is restricted to a ``CHPL_TARGET_COMPILER`` value of ``gnu``,
-        ``clang``, or ``llvm``.
-
-    .. _CMPXCHG16B: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+      - The implementation relies on using either ``GCC`` style inline assembly
+        (for x86-64) or a GCC/clang builtin, and so is restricted to a
+        ``CHPL_TARGET_COMPILER`` value of ``gnu``, ``clang``, or ``llvm``.
 
   An implementation of the Michael & Scott [#]_, a lock-free queue. Concurrent safe
   memory reclamation is handled by an internal :record:`EpochManager`. Usage of the
@@ -136,7 +132,7 @@ module LockFreeQueue {
 
     proc init(type objType) {
       this.objType = objType;
-      this.complete();
+      init this;
       var _node = new unmanaged Node(objType);
       _head.write(_node);
       _tail.write(_node);
@@ -161,7 +157,7 @@ module LockFreeQueue {
         else {
           _tail.compareAndSwap(curr_tail, next);
         }
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
       tok.unpin();
     }
@@ -189,7 +185,7 @@ module LockFreeQueue {
             return (true, ret_val);
           }
         }
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
 
       tok.unpin();
@@ -208,7 +204,7 @@ module LockFreeQueue {
     }
 
     iter drain(param tag : iterKind) : objTypeOpt where tag == iterKind.standalone {
-      coforall tid in 1..here.maxTaskPar {
+      coforall 1..here.maxTaskPar {
         var tok = getToken();
         var (hasElt, elt) = dequeue(tok);
         while hasElt {

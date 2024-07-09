@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -95,6 +95,9 @@ struct AdjustMaybeRefs {
 
   bool enter(const Call* ast, RV& rv);
   void exit(const Call* ast, RV& rv);
+
+  bool enter(const NamedDecl* ast, RV& rv);
+  void exit(const NamedDecl* ast, RV& rv);
 
   bool enter(const uast::AstNode* node, RV& rv);
   void exit(const uast::AstNode* node, RV& rv);
@@ -254,10 +257,10 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   // is it return intent overloading? resolve that
   if (candidates.numBest() > 1) {
     Access access = currentAccess();
-    const TypedFnSignature* bestRef = candidates.bestRef();
-    const TypedFnSignature* bestConstRef = candidates.bestConstRef();
-    const TypedFnSignature* bestValue = candidates.bestValue();
-    const TypedFnSignature* best = nullptr;
+    MostSpecificCandidate bestRef = candidates.bestRef();
+    MostSpecificCandidate bestConstRef = candidates.bestConstRef();
+    MostSpecificCandidate bestValue = candidates.bestValue();
+    MostSpecificCandidate best = {};
     if (access == REF) {
       if (bestRef) best = bestRef;
       else if (bestConstRef) best = bestConstRef;
@@ -278,18 +281,19 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
       else best = bestRef;
     }
 
-    re.setMostSpecific(MostSpecificCandidates::getOnly(best));
+    resolver.validateAndSetMostSpecific(re, ast, MostSpecificCandidates::getOnly(best));
 
     // recompute the return type
     // (all that actually needs to change is the return intent)
-    re.setType(returnType(context, best, resolver.poiScope));
+    re.setType(returnType(context, best.fn(), resolver.poiScope));
   }
 
   // there should be only one candidate at this point
   CHPL_ASSERT(candidates.numBest() <= 1);
 
   // then, traverse nested call-expressions
-  if (const TypedFnSignature* fn = candidates.only()) {
+  if (auto msc = candidates.only()) {
+    auto fn = msc.fn();
     auto resolvedFn = inferRefMaybeConstFormals(context, fn, resolver.poiScope);
     if (resolvedFn) {
       fn = resolvedFn;
@@ -301,14 +305,28 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
                                /* raiseErrors */ false,
                                &actualAsts);
 
+    // If this call was inferred to have a receiver, then CallInfo::create will
+    // not have added a 'this' formal. Instead, grab the receiver type from
+    // this visitor's resolver and create a new CallInfo.
+    bool inferredReceiver = false;
+    if (ci.isMethodCall() == false &&
+        fn->untyped()->isMethod()) {
+      ci = CallInfo::createWithReceiver(ci, resolver.methodReceiverType());
+      inferredReceiver = true;
+    }
+
     auto formalActualMap = FormalActualMap(fn, ci);
     int nActuals = ci.numActuals();
-    for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
+    int startingActual = ci.isMethodCall() ? 1 : 0;
+    for (int actualIdx = startingActual; actualIdx < nActuals; actualIdx++) {
       const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
       int formalIdx = fa->formalIdx();
 
       if (fa->hasActual()) {
-        const AstNode* actualAst = actualAsts[actualIdx];
+        // actualAsts might not include an entry for the method receiver if
+        // it was inferred, so we need to offset by one.
+        const AstNode* actualAst = inferredReceiver ? actualAsts[actualIdx-1] :
+                                                      actualAsts[actualIdx];
         Access access = accessForQualifier(fa->formalType().kind());
 
         exprStack.push_back(ExprStackEntry(actualAst, access,
@@ -334,6 +352,18 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   return false;
 }
 void AdjustMaybeRefs::exit(const Call* ast, RV& rv) {
+}
+
+bool AdjustMaybeRefs::enter(const uast::NamedDecl* node, RV& rv) {
+  if (node->id().isSymbolDefiningScope()) {
+    // It's a symbol with a different path, e.g. a Function.
+    // Don't try to resolve it now in this
+    // traversal. Instead, resolve it e.g. when the function is called.
+    return false;
+  }
+  return true;
+}
+void AdjustMaybeRefs::exit(const uast::NamedDecl* node, RV& rv) {
 }
 
 bool AdjustMaybeRefs::enter(const uast::AstNode* node, RV& rv) {

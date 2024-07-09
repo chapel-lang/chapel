@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -80,7 +80,7 @@ static void test0(Parser* parser) {
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
-  assert(cls->parentClass() == nullptr);
+  assert(cls->inheritExpr(0) == nullptr);
   assert(cls->numDeclOrComments() == 0);
   assert(cls->linkage() == Decl::DEFAULT_LINKAGE);
   assert(!cls->linkageName());
@@ -93,8 +93,8 @@ static void test1(Parser* parser) {
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
-  assert(cls->parentClass());
-  auto parentId = cls->parentClass()->toIdentifier();
+  assert(cls->inheritExpr(0));
+  auto parentId = cls->inheritExpr(0)->toIdentifier();
   assert(parentId);
   assert(parentId->name() == "P");
   assert(cls->numDeclOrComments() == 0);
@@ -109,7 +109,7 @@ static void test2(Parser* parser) {
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
-  assert(cls->parentClass() == nullptr);
+  assert(cls->inheritExpr(0) == nullptr);
   assert(cls->numDeclOrComments() == 1);
   assert(cls->linkage() == Decl::DEFAULT_LINKAGE);
   assert(!cls->linkageName());
@@ -126,7 +126,7 @@ static void test3(Parser* parser) {
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
-  assert(cls->parentClass() == nullptr);
+  assert(cls->inheritExpr(0) == nullptr);
   assert(cls->numDeclOrComments() == 1);
   assert(cls->linkage() == Decl::DEFAULT_LINKAGE);
   assert(!cls->linkageName());
@@ -228,7 +228,7 @@ static void test8(Parser* parser) {
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
-  auto parentId = cls->parentClass()->toIdentifier();
+  auto parentId = cls->inheritExpr(0)->toIdentifier();
   assert(parentId);
   assert(parentId->name() == "P");
   assert(cls->numDeclOrComments() == 5);
@@ -262,6 +262,7 @@ static void test9(Parser* parser) {
                             "  proc ref rf(arg) ref { }\n"
                             "  proc param prm(arg) param { }\n"
                             "  proc type tp(arg) type { }\n"
+                            "  proc ou(arg) out { }\n"
                             "}\n"
                             "proc R.df2(arg) { }\n"
                             "proc const R.cnst2(arg) const { }\n"
@@ -269,12 +270,13 @@ static void test9(Parser* parser) {
                             "proc ref R.rf2(arg) ref { }\n"
                             "proc param R.prm2(arg) param { }\n"
                             "proc type R.tp2(arg) type { }\n"
+                            "proc R.ou2(arg) out { }\n"
                             );
 
   auto rec = agg->toRecord();
   assert(rec);
   assert(rec->name() == "R");
-  assert(rec->numDeclOrComments() == 6);
+  assert(rec->numDeclOrComments() == 7);
   assert(rec->linkage() == Decl::DEFAULT_LINKAGE);
   assert(!rec->linkageName());
   assert(rec->declOrComment(0)->isFunction());
@@ -283,6 +285,7 @@ static void test9(Parser* parser) {
   assert(rec->declOrComment(3)->isFunction());
   assert(rec->declOrComment(4)->isFunction());
   assert(rec->declOrComment(5)->isFunction());
+  assert(rec->declOrComment(6)->isFunction());
 
   {
     auto df = rec->declOrComment(0)->toFunction();
@@ -291,6 +294,7 @@ static void test9(Parser* parser) {
     auto rf = rec->declOrComment(3)->toFunction();
     auto prm = rec->declOrComment(4)->toFunction();
     auto tp = rec->declOrComment(5)->toFunction();
+    auto ou = rec->declOrComment(6)->toFunction();
 
     assert(df->name() == "df");
     assert(df->returnIntent() == Function::DEFAULT_RETURN_INTENT);
@@ -333,6 +337,13 @@ static void test9(Parser* parser) {
     assert(tp->isPrimaryMethod());
     checkThisFormal(tp, "R", Formal::TYPE, /* isPrimary */ true);
     assert(tp->numFormals() == 2);
+
+    assert(ou->name() == "ou");
+    assert(ou->returnIntent() == Function::OUT);
+    assert(ou->thisFormal());
+    assert(ou->isPrimaryMethod());
+    checkThisFormal(ou, "R", Formal::DEFAULT_INTENT, /* isPrimary */ true);
+    assert(ou->numFormals() == 2);
   }
 
   auto mod = res.singleModule();
@@ -344,6 +355,7 @@ static void test9(Parser* parser) {
   assert(mod->stmt(4)->isFunction());
   assert(mod->stmt(5)->isFunction());
   assert(mod->stmt(6)->isFunction());
+  assert(mod->stmt(7)->isFunction());
 
   {
     auto df2 = mod->stmt(1)->toFunction();
@@ -352,6 +364,7 @@ static void test9(Parser* parser) {
     auto rf2 = mod->stmt(4)->toFunction();
     auto prm2 = mod->stmt(5)->toFunction();
     auto tp2 = mod->stmt(6)->toFunction();
+    auto ou2 = mod->stmt(7)->toFunction();
 
     assert(df2->name() == "df2");
     assert(df2->returnIntent() == Function::DEFAULT_RETURN_INTENT);
@@ -394,6 +407,13 @@ static void test9(Parser* parser) {
     assert(tp2->isPrimaryMethod() == false);
     checkThisFormal(tp2, "R", Formal::TYPE, /* isPrimary */ false);
     assert(tp2->numFormals() == 2);
+
+    assert(ou2->name() == "ou2");
+    assert(ou2->returnIntent() == Function::OUT);
+    assert(ou2->thisFormal());
+    assert(ou2->isPrimaryMethod() == false);
+    checkThisFormal(ou2, "R", Formal::DEFAULT_INTENT, /* isPrimary */ false);
+    assert(ou2->numFormals() == 2);
   }
 }
 
@@ -549,6 +569,21 @@ static void test12(Parser* parser) {
   assert(mod);
 }
 
+static void test13(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  std::string base = " foo /*comment*/ {}\n";
+  for (auto keyword : {"class", "record", "union"}) {
+    auto parseResult = parseStringAndReportErrors(parser, "test13.chpl",
+          (std::string(keyword) + base).c_str());
+    assert(guard.realizeErrors() == 0);
+    auto mod = parseResult.singleModule();
+    assert(mod);
+    assert(mod->numStmts() == 1);
+    assert(mod->stmt(0)->isAggregateDecl());
+    assert(mod->stmt(0)->toAggregateDecl()->numDeclOrComments() == 1);
+  }
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -569,6 +604,7 @@ int main() {
   test10(p);
   test11(p);
   test12(p);
+  test13(p);
 
   return 0;
 }

@@ -7,13 +7,13 @@ class C {
   }
 }
 
-class D : C {
+class D : C(?) {
   proc init(type t) {
     super.init(t);
-    this.complete();
+    init this;
     this.x = int;
   }
 }
 
-var myD = (new owned D(real)).borrow();
+var myD = new D(real);
 writeln(myD);

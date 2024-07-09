@@ -1,6 +1,7 @@
 
 use IO;
 use OS;
+use JSON;
 
 //
 // Test cases:
@@ -25,10 +26,10 @@ var RBR = if useStrings then "]" else b"]";
 proc testBasic() throws {
   var f = openMemFile();
   {
-    var w = f.writer();
+    var w = f.writer(locking=false);
     w.write(fiveSquare);
   }
-  var r = f.reader();
+  var r = f.reader(locking=false);
   r.readLiteral(LBR);
   writeln(r.read(int));
   r.readLiteral(RBR);
@@ -38,11 +39,11 @@ proc testBasic() throws {
 proc testFailure() {
   var f = openMemFile();
   {
-    var w = f.writer();
+    var w = f.writer(locking=false);
     w.write(fiveSquare);
   }
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
   try {
     param paren = if useStrings then "(" else b"(";
     r.readLiteral(paren); // trying to read the wrong opening symbol
@@ -70,16 +71,13 @@ proc testJSON() {
   var f = openMemFile();
   param quote = if useStrings then '"' else b"\"";
   {
-    var w = f.writer();
+    var w = f.writer(locking=false);
     w.write(quote);
     w.write(fiveSquare);
     w.write(quote);
   }
 
-  var r = f.reader(locking=false);
-  var st = r._styleInternal();
-  st.string_format = iostringformat.json:uint(8);
-  r._set_styleInternal(st);
+  var r = f.reader(locking=false, deserializer=new jsonDeserializer());
 
   try {
     var x = "[";
@@ -104,7 +102,7 @@ proc testJSON() {
 proc testWhitespace() {
   var f = openMemFile();
   {
-    var w = f.writer();
+    var w = f.writer(locking=false);
     const str = "   [5   ]";
     const spaced = if useStrings then str else str.encode();
     w.write(spaced);
@@ -131,7 +129,7 @@ proc testSpeculative() {
   param comma = if useStrings then "," else b",";
   var f = openMemFile();
   {
-    var w = f.writer();
+    var w = f.writer(locking=false);
     w.write(LBR);
     for i in 1..9 do w.write(i, comma);
     w.write(10);
@@ -139,7 +137,7 @@ proc testSpeculative() {
   }
 
   var A : [1..10] bool;
-  var r = f.reader();
+  var r = f.reader(locking=false);
   r.readLiteral(LBR);
   while true {
     const i = r.read(int);
@@ -164,7 +162,7 @@ proc testNewline() {
   const numSpaces = 5;
   const start = "start";
   {
-    var w = f.writer();
+    var w = f.writer(locking=false);
     w.write(start);
     // by default readnewline should read past contiguous whitespace
     w.write(" " * numSpaces);
@@ -173,7 +171,7 @@ proc testNewline() {
   }
   {
     // try to read a newline with 'start' in the way
-    var r = f.reader();
+    var r = f.reader(locking=false);
     try {
       r.readNewline();
     } catch e:BadFormatError {
@@ -183,13 +181,13 @@ proc testNewline() {
     }
   }
   {
-    var r = f.reader();
+    var r = f.reader(locking=false);
     r.readLiteral(start);
     r.readNewline();
     assert(r.offset() == start.size + numSpaces + 1);
   }
   {
-    var r = f.reader();
+    var r = f.reader(locking=false);
     r.readLiteral(start);
     while true {
       try {

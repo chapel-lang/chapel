@@ -1,4 +1,4 @@
-//===-- RISCVFrameLowering.h - Define frame lowering for RISCV -*- C++ -*--===//
+//===-- RISCVFrameLowering.h - Define frame lowering for RISC-V -*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This class implements RISCV-specific bits of TargetFrameLowering class.
+// This class implements RISC-V specific bits of TargetFrameLowering class.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,11 +21,7 @@ class RISCVSubtarget;
 
 class RISCVFrameLowering : public TargetFrameLowering {
 public:
-  explicit RISCVFrameLowering(const RISCVSubtarget &STI)
-      : TargetFrameLowering(StackGrowsDown,
-                            /*StackAlignment=*/Align(16),
-                            /*LocalAreaOffset=*/0),
-        STI(STI) {}
+  explicit RISCVFrameLowering(const RISCVSubtarget &STI);
 
   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
@@ -60,7 +56,7 @@ public:
                               const TargetRegisterInfo *TRI) const override;
 
   // Get the first stack adjustment amount for SplitSPAdjust.
-  // Return 0 if we don't want to to split the SP adjustment in prologue and
+  // Return 0 if we don't want to split the SP adjustment in prologue and
   // epilogue.
   uint64_t getFirstSPAdjustAmount(const MachineFunction &MF) const;
 
@@ -72,14 +68,17 @@ public:
   bool isSupportedStackID(TargetStackID::Value ID) const override;
   TargetStackID::Value getStackIDForScalableVectors() const override;
 
+  bool isStackIdSafeForLocalArea(unsigned StackId) const override {
+    // We don't support putting RISC-V Vector objects into the pre-allocated
+    // local frame block at the moment.
+    return StackId != TargetStackID::ScalableVector;
+  }
+
 protected:
   const RISCVSubtarget &STI;
 
 private:
   void determineFrameLayout(MachineFunction &MF) const;
-  void adjustReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
-                 const DebugLoc &DL, Register DestReg, Register SrcReg,
-                 int64_t Val, MachineInstr::MIFlag Flag) const;
   void adjustStackForRVV(MachineFunction &MF, MachineBasicBlock &MBB,
                          MachineBasicBlock::iterator MBBI, const DebugLoc &DL,
                          int64_t Amount, MachineInstr::MIFlag Flag) const;

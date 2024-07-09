@@ -1,0 +1,4 @@
+-snoParSafeWarning -sformat=FormatKind.default # associative.default.good
+-snoParSafeWarning -sformat=FormatKind.json # associative.json.good
+-snoParSafeWarning -sformat=FormatKind.little # associative.little.good
+-snoParSafeWarning -sformat=FormatKind.syntax # associative.syntax.good

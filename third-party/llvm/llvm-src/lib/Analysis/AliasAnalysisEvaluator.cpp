@@ -14,8 +14,6 @@
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
-#include "llvm/InitializePasses.h"
-#include "llvm/Pass.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
 using namespace llvm;
@@ -31,10 +29,6 @@ static cl::opt<bool> PrintNoModRef("print-no-modref", cl::ReallyHidden);
 static cl::opt<bool> PrintRef("print-ref", cl::ReallyHidden);
 static cl::opt<bool> PrintMod("print-mod", cl::ReallyHidden);
 static cl::opt<bool> PrintModRef("print-modref", cl::ReallyHidden);
-static cl::opt<bool> PrintMust("print-must", cl::ReallyHidden);
-static cl::opt<bool> PrintMustRef("print-mustref", cl::ReallyHidden);
-static cl::opt<bool> PrintMustMod("print-mustmod", cl::ReallyHidden);
-static cl::opt<bool> PrintMustModRef("print-mustmodref", cl::ReallyHidden);
 
 static cl::opt<bool> EvalAAMD("evaluate-aa-metadata", cl::ReallyHidden);
 
@@ -238,25 +232,6 @@ void AAEvaluator::runInternal(Function &F, AAResults &AA) {
                            F.getParent());
         ++ModRefCount;
         break;
-      case ModRefInfo::Must:
-        PrintModRefResults("Must", PrintMust, Call, Pointer, F.getParent());
-        ++MustCount;
-        break;
-      case ModRefInfo::MustMod:
-        PrintModRefResults("Just Mod (MustAlias)", PrintMustMod, Call, Pointer,
-                           F.getParent());
-        ++MustModCount;
-        break;
-      case ModRefInfo::MustRef:
-        PrintModRefResults("Just Ref (MustAlias)", PrintMustRef, Call, Pointer,
-                           F.getParent());
-        ++MustRefCount;
-        break;
-      case ModRefInfo::MustModRef:
-        PrintModRefResults("Both ModRef (MustAlias)", PrintMustModRef, Call,
-                           Pointer, F.getParent());
-        ++MustModRefCount;
-        break;
       }
     }
   }
@@ -284,25 +259,6 @@ void AAEvaluator::runInternal(Function &F, AAResults &AA) {
         PrintModRefResults("Both ModRef", PrintModRef, CallA, CallB,
                            F.getParent());
         ++ModRefCount;
-        break;
-      case ModRefInfo::Must:
-        PrintModRefResults("Must", PrintMust, CallA, CallB, F.getParent());
-        ++MustCount;
-        break;
-      case ModRefInfo::MustMod:
-        PrintModRefResults("Just Mod (MustAlias)", PrintMustMod, CallA, CallB,
-                           F.getParent());
-        ++MustModCount;
-        break;
-      case ModRefInfo::MustRef:
-        PrintModRefResults("Just Ref (MustAlias)", PrintMustRef, CallA, CallB,
-                           F.getParent());
-        ++MustRefCount;
-        break;
-      case ModRefInfo::MustModRef:
-        PrintModRefResults("Both ModRef (MustAlias)", PrintMustModRef, CallA,
-                           CallB, F.getParent());
-        ++MustModRefCount;
         break;
       }
     }
@@ -341,8 +297,7 @@ AAEvaluator::~AAEvaluator() {
   }
 
   // Display the summary for mod/ref analysis
-  int64_t ModRefSum = NoModRefCount + RefCount + ModCount + ModRefCount +
-                      MustCount + MustRefCount + MustModCount + MustModRefCount;
+  int64_t ModRefSum = NoModRefCount + RefCount + ModCount + ModRefCount;
   if (ModRefSum == 0) {
     errs() << "  Alias Analysis Mod/Ref Evaluator Summary: no "
               "mod/ref!\n";
@@ -356,63 +311,9 @@ AAEvaluator::~AAEvaluator() {
     PrintPercent(RefCount, ModRefSum);
     errs() << "  " << ModRefCount << " mod & ref responses ";
     PrintPercent(ModRefCount, ModRefSum);
-    errs() << "  " << MustCount << " must responses ";
-    PrintPercent(MustCount, ModRefSum);
-    errs() << "  " << MustModCount << " must mod responses ";
-    PrintPercent(MustModCount, ModRefSum);
-    errs() << "  " << MustRefCount << " must ref responses ";
-    PrintPercent(MustRefCount, ModRefSum);
-    errs() << "  " << MustModRefCount << " must mod & ref responses ";
-    PrintPercent(MustModRefCount, ModRefSum);
     errs() << "  Alias Analysis Evaluator Mod/Ref Summary: "
            << NoModRefCount * 100 / ModRefSum << "%/"
            << ModCount * 100 / ModRefSum << "%/" << RefCount * 100 / ModRefSum
-           << "%/" << ModRefCount * 100 / ModRefSum << "%/"
-           << MustCount * 100 / ModRefSum << "%/"
-           << MustRefCount * 100 / ModRefSum << "%/"
-           << MustModCount * 100 / ModRefSum << "%/"
-           << MustModRefCount * 100 / ModRefSum << "%\n";
+           << "%/" << ModRefCount * 100 / ModRefSum << "%\n";
   }
 }
-
-namespace llvm {
-class AAEvalLegacyPass : public FunctionPass {
-  std::unique_ptr<AAEvaluator> P;
-
-public:
-  static char ID; // Pass identification, replacement for typeid
-  AAEvalLegacyPass() : FunctionPass(ID) {
-    initializeAAEvalLegacyPassPass(*PassRegistry::getPassRegistry());
-  }
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.addRequired<AAResultsWrapperPass>();
-    AU.setPreservesAll();
-  }
-
-  bool doInitialization(Module &M) override {
-    P.reset(new AAEvaluator());
-    return false;
-  }
-
-  bool runOnFunction(Function &F) override {
-    P->runInternal(F, getAnalysis<AAResultsWrapperPass>().getAAResults());
-    return false;
-  }
-  bool doFinalization(Module &M) override {
-    P.reset();
-    return false;
-  }
-};
-}
-
-char AAEvalLegacyPass::ID = 0;
-INITIALIZE_PASS_BEGIN(AAEvalLegacyPass, "aa-eval",
-                      "Exhaustive Alias Analysis Precision Evaluator", false,
-                      true)
-INITIALIZE_PASS_DEPENDENCY(AAResultsWrapperPass)
-INITIALIZE_PASS_END(AAEvalLegacyPass, "aa-eval",
-                    "Exhaustive Alias Analysis Precision Evaluator", false,
-                    true)
-
-FunctionPass *llvm::createAAEvalPass() { return new AAEvalLegacyPass(); }

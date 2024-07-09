@@ -15,8 +15,8 @@
 #ifndef LLVM_TRANSFORMS_IPO_SAMPLECONTEXTTRACKER_H
 #define LLVM_TRANSFORMS_IPO_SAMPLECONTEXTTRACKER_H
 
-#include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/iterator.h"
 #include "llvm/ProfileData/SampleProf.h"
 #include <map>
 #include <queue>
@@ -34,23 +34,23 @@ class Instruction;
 class ContextTrieNode {
 public:
   ContextTrieNode(ContextTrieNode *Parent = nullptr,
-                  StringRef FName = StringRef(),
+                  FunctionId FName = FunctionId(),
                   FunctionSamples *FSamples = nullptr,
                   LineLocation CallLoc = {0, 0})
       : ParentContext(Parent), FuncName(FName), FuncSamples(FSamples),
         CallSiteLoc(CallLoc){};
   ContextTrieNode *getChildContext(const LineLocation &CallSite,
-                                   StringRef ChildName);
+                                   FunctionId ChildName);
   ContextTrieNode *getHottestChildContext(const LineLocation &CallSite);
   ContextTrieNode *getOrCreateChildContext(const LineLocation &CallSite,
-                                           StringRef ChildName,
+                                           FunctionId ChildName,
                                            bool AllowCreate = true);
-  void removeChildContext(const LineLocation &CallSite, StringRef ChildName);
+  void removeChildContext(const LineLocation &CallSite, FunctionId ChildName);
   std::map<uint64_t, ContextTrieNode> &getAllChildContext();
-  StringRef getFuncName() const;
+  FunctionId getFuncName() const;
   FunctionSamples *getFunctionSamples() const;
   void setFunctionSamples(FunctionSamples *FSamples);
-  Optional<uint32_t> getFunctionSize() const;
+  std::optional<uint32_t> getFunctionSize() const;
   void addFunctionSize(uint32_t FSize);
   LineLocation getCallSiteLoc() const;
   ContextTrieNode *getParentContext() const;
@@ -67,13 +67,13 @@ private:
   ContextTrieNode *ParentContext;
 
   // Function name for current context
-  StringRef FuncName;
+  FunctionId FuncName;
 
   // Function Samples for current context
   FunctionSamples *FuncSamples;
 
   // Function size for current context
-  Optional<uint32_t> FuncSize;
+  std::optional<uint32_t> FuncSize;
 
   // Callsite location in parent context
   LineLocation CallSiteLoc;
@@ -117,7 +117,8 @@ public:
   FunctionSamples *getBaseSamplesFor(const Function &Func,
                                      bool MergeContext = true);
   // Query base profile for a given function by name.
-  FunctionSamples *getBaseSamplesFor(StringRef Name, bool MergeContext = true);
+  FunctionSamples *getBaseSamplesFor(FunctionId Name,
+                                     bool MergeContext = true);
   // Retrieve the context trie node for given profile context
   ContextTrieNode *getContextFor(const SampleContext &Context);
   // Get real function name for a given trie node.
@@ -128,7 +129,7 @@ public:
   void markContextSamplesInlined(const FunctionSamples *InlinedSamples);
   ContextTrieNode &getRootContext();
   void promoteMergeContextSamplesTree(const Instruction &Inst,
-                                      StringRef CalleeName);
+                                      FunctionId CalleeName);
 
   // Create a merged conext-less profile map.
   void createContextLessProfileMap(SampleProfileMap &ContextLessProfiles);
@@ -139,12 +140,14 @@ public:
       return nullptr;
     return I->second;
   }
-  StringMap<ContextSamplesTy> &getFuncToCtxtProfiles() {
+  HashKeyMap<std::unordered_map, FunctionId, ContextSamplesTy>
+      &getFuncToCtxtProfiles() {
     return FuncToCtxtProfiles;
   }
 
-  class Iterator : public std::iterator<std::forward_iterator_tag,
-                                        const ContextTrieNode *> {
+  class Iterator : public llvm::iterator_facade_base<
+                       Iterator, std::forward_iterator_tag, ContextTrieNode *,
+                       std::ptrdiff_t, ContextTrieNode **, ContextTrieNode *> {
     std::queue<ContextTrieNode *> NodeQueue;
 
   public:
@@ -159,12 +162,6 @@ public:
       return *this;
     }
 
-    Iterator operator++(int) {
-      assert(!NodeQueue.empty() && "Iterator already at the end");
-      Iterator Ret = *this;
-      ++(*this);
-      return Ret;
-    }
     bool operator==(const Iterator &Other) const {
       if (NodeQueue.empty() && Other.NodeQueue.empty())
         return true;
@@ -172,7 +169,7 @@ public:
         return false;
       return NodeQueue.front() == Other.NodeQueue.front();
     }
-    bool operator!=(const Iterator &Other) const { return !(*this == Other); }
+
     ContextTrieNode *operator*() const {
       assert(!NodeQueue.empty() && "Invalid access to end iterator");
       return NodeQueue.front();
@@ -193,9 +190,9 @@ public:
 private:
   ContextTrieNode *getContextFor(const DILocation *DIL);
   ContextTrieNode *getCalleeContextFor(const DILocation *DIL,
-                                       StringRef CalleeName);
-  ContextTrieNode *getTopLevelContextNode(StringRef FName);
-  ContextTrieNode &addTopLevelContextNode(StringRef FName);
+                                       FunctionId CalleeName);
+  ContextTrieNode *getTopLevelContextNode(FunctionId FName);
+  ContextTrieNode &addTopLevelContextNode(FunctionId FName);
   ContextTrieNode &promoteMergeContextSamplesTree(ContextTrieNode &NodeToPromo);
   void mergeContextNode(ContextTrieNode &FromNode, ContextTrieNode &ToNode);
   ContextTrieNode &
@@ -208,7 +205,8 @@ private:
     ProfileToNodeMap[FSample] = Node;
   }
   // Map from function name to context profiles (excluding base profile)
-  StringMap<ContextSamplesTy> FuncToCtxtProfiles;
+  HashKeyMap<std::unordered_map, FunctionId, ContextSamplesTy>
+      FuncToCtxtProfiles;
 
   // Map from current FunctionSample to the belonged context trie.
   std::unordered_map<const FunctionSamples *, ContextTrieNode *>

@@ -49,6 +49,7 @@ SUBDIRS = contrib
 # include all headers, documentation, etc. 
 # and any subdirectories not containing Makefile.am's
 CONDUIT_FILELIST =           \
+      license.txt            \
       gasnet_core.c          \
       gasnet_core.h          \
       gasnet_core_fwd.h      \

@@ -1,3 +1,5 @@
+use IO, ChplFormat;
+
 var b = b"some\tbytes with € (the euro char)";
 writeln("Direct print: ", b);
-writef("Print repr: %ht\n", b);
+stdout.withSerializer(chplSerializer).writef("Print repr: %?\n", b);

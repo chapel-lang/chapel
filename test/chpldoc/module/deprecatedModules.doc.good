@@ -203,11 +203,11 @@ or
 
    D/*
 
-There was documentation of this symbol 
-
 .. warning::
 
    D is deprecated
+
+There was documentation of this symbol 
 
 .. default-domain:: chpl
 
@@ -229,11 +229,11 @@ or
 
    import D.InnerD;
 
-There was documentation of this symbol 
-
 .. warning::
 
    InnerD is deprecated
+
+There was documentation of this symbol 
 
 .. default-domain:: chpl
 
@@ -263,11 +263,11 @@ or
 
    E/*
 
-This symbol also was documented 
-
 .. warning::
 
    E is deprecated, use F instead
+
+This symbol also was documented 
 
 .. default-domain:: chpl
 
@@ -289,11 +289,11 @@ or
 
    import E.InnerE;
 
-This symbol also was documented 
-
 .. warning::
 
    InnerE is deprecated, use F.InnerF2 instead
+
+This symbol also was documented 
 
 .. default-domain:: chpl
 
@@ -342,11 +342,11 @@ or
 
    import F.InnerF;
 
-This symbol also was documented 
-
 .. warning::
 
    InnerF is deprecated, use InnerF2 instead
+
+This symbol also was documented 
 
 .. default-domain:: chpl
 

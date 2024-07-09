@@ -7,6 +7,9 @@ var A: [1..n] int;
 class syncStack {
   var v: sync bool;
   var next: unmanaged syncStack?;
+  proc init(next: unmanaged syncStack? = nil) {
+    this.next = next;
+  }
 }
 
 proc pushSyncStack(s: unmanaged syncStack?) do return new unmanaged syncStack(next=s);
@@ -15,7 +18,7 @@ var ss: unmanaged syncStack?;
 
 for i in 1..n {
   var me = pushSyncStack(ss);
-  begin {
+  begin with (ref A) {
     sleep(i:uint);
     A(i) = i;
     me.v.writeEF(true);

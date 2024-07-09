@@ -1,16 +1,16 @@
 use CTypes;
 
-extern proc fopen(name: c_string, mode: c_string): c_FILE;
-extern proc fread(ref data, size: int, n: int, f: c_FILE): int;
-extern proc fwrite(ref data, size: int, n: int, f: c_FILE): int;
-extern proc fclose(f: c_FILE);
+extern proc fopen(name: c_ptrConst(c_char), mode: c_ptrConst(c_char)): c_ptr(c_FILE);
+extern proc fread(ref data, size: int, n: int, f: c_ptr(c_FILE)): int;
+extern proc fwrite(ref data, size: int, n: int, f: c_ptr(c_FILE)): int;
+extern proc fclose(f: c_ptr(c_FILE));
 extern proc sizeof(x): int;
 
 var i = 1, j = 2.0;
 
 writeln((i, j));
 
-var f: c_FILE;
+var f: c_ptr(c_FILE);
 f = fopen("myfile.dat", "wb");
 fwrite(i, sizeof(i), 1, f);
 fwrite(j, sizeof(j), 1, f);

@@ -15,8 +15,6 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/DenseSet.h"
-#include "llvm/ADT/None.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/Argument.h"
@@ -33,6 +31,7 @@
 #include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Metadata.h"
 #include "llvm/IR/Operator.h"
 #include "llvm/IR/Type.h"
@@ -147,6 +146,7 @@ public:
   Value *mapValue(const Value *V);
   void remapInstruction(Instruction *I);
   void remapFunction(Function &F);
+  void remapDPValue(DPValue &DPV);
 
   Constant *mapConstant(const Constant *C) {
     return cast_or_null<Constant>(mapValue(C));
@@ -181,7 +181,7 @@ private:
   Value *mapBlockAddress(const BlockAddress &BA);
 
   /// Map metadata that doesn't require visiting operands.
-  Optional<Metadata *> mapSimpleMetadata(const Metadata *MD);
+  std::optional<Metadata *> mapSimpleMetadata(const Metadata *MD);
 
   Metadata *mapToMetadata(const Metadata *Key, Metadata *Val);
   Metadata *mapToSelf(const Metadata *MD);
@@ -270,9 +270,10 @@ private:
   /// MDNode, compute and return the mapping.  If it's a distinct \a MDNode,
   /// return the result of \a mapDistinctNode().
   ///
-  /// \return None if \c Op is an unmapped uniqued \a MDNode.
-  /// \post getMappedOp(Op) only returns None if this returns None.
-  Optional<Metadata *> tryToMapOperand(const Metadata *Op);
+  /// \return std::nullopt if \c Op is an unmapped uniqued \a MDNode.
+  /// \post getMappedOp(Op) only returns std::nullopt if this returns
+  /// std::nullopt.
+  std::optional<Metadata *> tryToMapOperand(const Metadata *Op);
 
   /// Map a distinct node.
   ///
@@ -284,7 +285,7 @@ private:
   MDNode *mapDistinctNode(const MDNode &N);
 
   /// Get a previously mapped node.
-  Optional<Metadata *> getMappedOp(const Metadata *Op) const;
+  std::optional<Metadata *> getMappedOp(const Metadata *Op) const;
 
   /// Create a post-order traversal of an unmapped uniqued node subgraph.
   ///
@@ -317,11 +318,10 @@ private:
   /// This visits all the nodes in \c G in post-order, using the identity
   /// mapping or creating a new node depending on \a Data::HasChanged.
   ///
-  /// \pre \a getMappedOp() returns None for nodes in \c G, but not for any of
-  /// their operands outside of \c G.
-  /// \pre \a Data::HasChanged is true for a node in \c G iff any of its
-  /// operands have changed.
-  /// \post \a getMappedOp() returns the mapped node for every node in \c G.
+  /// \pre \a getMappedOp() returns std::nullopt for nodes in \c G, but not for
+  /// any of their operands outside of \c G. \pre \a Data::HasChanged is true
+  /// for a node in \c G iff any of its operands have changed. \post \a
+  /// getMappedOp() returns the mapped node for every node in \c G.
   void mapNodesInPOT(UniquedGraph &G);
 
   /// Remap a node's operands using the given functor.
@@ -391,8 +391,9 @@ Value *Mapper::mapValue(const Value *V) {
       // ensures metadata operands only reference defined SSA values.
       return (Flags & RF_IgnoreMissingLocals)
                  ? nullptr
-                 : MetadataAsValue::get(V->getContext(),
-                                        MDTuple::get(V->getContext(), None));
+                 : MetadataAsValue::get(
+                       V->getContext(),
+                       MDTuple::get(V->getContext(), std::nullopt));
     }
     if (auto *AL = dyn_cast<DIArgList>(MD)) {
       SmallVector<ValueAsMetadata *, 4> MappedArgs;
@@ -524,12 +525,57 @@ Value *Mapper::mapValue(const Value *V) {
   if (isa<ConstantVector>(C))
     return getVM()[V] = ConstantVector::get(Ops);
   // If this is a no-operand constant, it must be because the type was remapped.
+  if (isa<PoisonValue>(C))
+    return getVM()[V] = PoisonValue::get(NewTy);
   if (isa<UndefValue>(C))
     return getVM()[V] = UndefValue::get(NewTy);
   if (isa<ConstantAggregateZero>(C))
     return getVM()[V] = ConstantAggregateZero::get(NewTy);
+  if (isa<ConstantTargetNone>(C))
+    return getVM()[V] = Constant::getNullValue(NewTy);
   assert(isa<ConstantPointerNull>(C));
   return getVM()[V] = ConstantPointerNull::get(cast<PointerType>(NewTy));
+}
+
+void Mapper::remapDPValue(DPValue &V) {
+  // Remap variables and DILocations.
+  auto *MappedVar = mapMetadata(V.getVariable());
+  auto *MappedDILoc = mapMetadata(V.getDebugLoc());
+  V.setVariable(cast<DILocalVariable>(MappedVar));
+  V.setDebugLoc(DebugLoc(cast<DILocation>(MappedDILoc)));
+
+  bool IgnoreMissingLocals = Flags & RF_IgnoreMissingLocals;
+
+  if (V.isDbgAssign()) {
+    auto *NewAddr = mapValue(V.getAddress());
+    if (!IgnoreMissingLocals && !NewAddr)
+      V.setKillAddress();
+    else if (NewAddr)
+      V.setAddress(NewAddr);
+  }
+
+  // Find Value operands and remap those.
+  SmallVector<Value *, 4> Vals, NewVals;
+  for (Value *Val : V.location_ops())
+    Vals.push_back(Val);
+  for (Value *Val : Vals)
+    NewVals.push_back(mapValue(Val));
+
+  // If there are no changes to the Value operands, finished.
+  if (Vals == NewVals)
+    return;
+
+  // Otherwise, do some replacement.
+  if (!IgnoreMissingLocals &&
+      llvm::any_of(NewVals, [&](Value *V) { return V == nullptr; })) {
+    V.setKillLocation();
+  } else {
+    // Either we have all non-empty NewVals, or we're permitted to ignore
+    // missing locals.
+    for (unsigned int I = 0; I < Vals.size(); ++I)
+      if (NewVals[I])
+        V.replaceVariableLocationOp(I, NewVals[I]);
+  }
 }
 
 Value *Mapper::mapBlockAddress(const BlockAddress &BA) {
@@ -558,11 +604,11 @@ Metadata *Mapper::mapToSelf(const Metadata *MD) {
   return mapToMetadata(MD, const_cast<Metadata *>(MD));
 }
 
-Optional<Metadata *> MDNodeMapper::tryToMapOperand(const Metadata *Op) {
+std::optional<Metadata *> MDNodeMapper::tryToMapOperand(const Metadata *Op) {
   if (!Op)
     return nullptr;
 
-  if (Optional<Metadata *> MappedOp = M.mapSimpleMetadata(Op)) {
+  if (std::optional<Metadata *> MappedOp = M.mapSimpleMetadata(Op)) {
 #ifndef NDEBUG
     if (auto *CMD = dyn_cast<ConstantAsMetadata>(Op))
       assert((!*MappedOp || M.getVM().count(CMD->getValue()) ||
@@ -578,7 +624,7 @@ Optional<Metadata *> MDNodeMapper::tryToMapOperand(const Metadata *Op) {
   const MDNode &N = *cast<MDNode>(Op);
   if (N.isDistinct())
     return mapDistinctNode(N);
-  return None;
+  return std::nullopt;
 }
 
 MDNode *MDNodeMapper::mapDistinctNode(const MDNode &N) {
@@ -606,11 +652,11 @@ static ConstantAsMetadata *wrapConstantAsMetadata(const ConstantAsMetadata &CMD,
   return MappedV ? ConstantAsMetadata::getConstant(MappedV) : nullptr;
 }
 
-Optional<Metadata *> MDNodeMapper::getMappedOp(const Metadata *Op) const {
+std::optional<Metadata *> MDNodeMapper::getMappedOp(const Metadata *Op) const {
   if (!Op)
     return nullptr;
 
-  if (Optional<Metadata *> MappedOp = M.getVM().getMappedMD(Op))
+  if (std::optional<Metadata *> MappedOp = M.getVM().getMappedMD(Op))
     return *MappedOp;
 
   if (isa<MDString>(Op))
@@ -619,7 +665,7 @@ Optional<Metadata *> MDNodeMapper::getMappedOp(const Metadata *Op) const {
   if (auto *CMD = dyn_cast<ConstantAsMetadata>(Op))
     return wrapConstantAsMetadata(*CMD, M.getVM().lookup(CMD->getValue()));
 
-  return None;
+  return std::nullopt;
 }
 
 Metadata &MDNodeMapper::UniquedGraph::getFwdReference(MDNode &Op) {
@@ -704,7 +750,7 @@ MDNode *MDNodeMapper::visitOperands(UniquedGraph &G, MDNode::op_iterator &I,
                                     MDNode::op_iterator E, bool &HasChanged) {
   while (I != E) {
     Metadata *Op = *I++; // Increment even on early return.
-    if (Optional<Metadata *> MappedOp = tryToMapOperand(Op)) {
+    if (std::optional<Metadata *> MappedOp = tryToMapOperand(Op)) {
       // Check if the operand changes.
       HasChanged |= Op != *MappedOp;
       continue;
@@ -757,7 +803,7 @@ void MDNodeMapper::mapNodesInPOT(UniquedGraph &G) {
     // Clone the uniqued node and remap the operands.
     TempMDNode ClonedN = D.Placeholder ? std::move(D.Placeholder) : N->clone();
     remapOperands(*ClonedN, [this, &D, &G](Metadata *Old) {
-      if (Optional<Metadata *> MappedOp = getMappedOp(Old))
+      if (std::optional<Metadata *> MappedOp = getMappedOp(Old))
         return *MappedOp;
       (void)D;
       assert(G.Info[Old].ID > D.ID && "Expected a forward reference");
@@ -796,7 +842,7 @@ Metadata *MDNodeMapper::map(const MDNode &N) {
       N.isUniqued() ? mapTopLevelUniquedNode(N) : mapDistinctNode(N);
   while (!DistinctWorklist.empty())
     remapOperands(*DistinctWorklist.pop_back_val(), [this](Metadata *Old) {
-      if (Optional<Metadata *> MappedOp = tryToMapOperand(Old))
+      if (std::optional<Metadata *> MappedOp = tryToMapOperand(Old))
         return *MappedOp;
       return mapTopLevelUniquedNode(*cast<MDNode>(Old));
     });
@@ -825,9 +871,9 @@ Metadata *MDNodeMapper::mapTopLevelUniquedNode(const MDNode &FirstN) {
   return *getMappedOp(&FirstN);
 }
 
-Optional<Metadata *> Mapper::mapSimpleMetadata(const Metadata *MD) {
+std::optional<Metadata *> Mapper::mapSimpleMetadata(const Metadata *MD) {
   // If the value already exists in the map, use it.
-  if (Optional<Metadata *> NewMD = getVM().getMappedMD(MD))
+  if (std::optional<Metadata *> NewMD = getVM().getMappedMD(MD))
     return *NewMD;
 
   if (isa<MDString>(MD))
@@ -848,14 +894,14 @@ Optional<Metadata *> Mapper::mapSimpleMetadata(const Metadata *MD) {
 
   assert(isa<MDNode>(MD) && "Expected a metadata node");
 
-  return None;
+  return std::nullopt;
 }
 
 Metadata *Mapper::mapMetadata(const Metadata *MD) {
   assert(MD && "Expected valid metadata");
   assert(!isa<LocalAsMetadata>(MD) && "Unexpected local metadata");
 
-  if (Optional<Metadata *> NewMD = mapSimpleMetadata(MD))
+  if (std::optional<Metadata *> NewMD = mapSimpleMetadata(MD))
     return *NewMD;
 
   return MDNodeMapper(*this).map(*cast<MDNode>(MD));
@@ -881,7 +927,7 @@ void Mapper::flush() {
       AppendingInits.resize(PrefixSize);
       mapAppendingVariable(*E.Data.AppendingGV.GV,
                            E.Data.AppendingGV.InitPrefix,
-                           E.AppendingGVIsOldCtorDtor, makeArrayRef(NewInits));
+                           E.AppendingGVIsOldCtorDtor, ArrayRef(NewInits));
       break;
     }
     case WorklistEntry::MapAliasOrIFunc: {
@@ -1031,7 +1077,7 @@ void Mapper::mapAppendingVariable(GlobalVariable &GV, Constant *InitPrefix,
   if (IsOldCtorDtor) {
     // FIXME: This upgrade is done during linking to support the C API.  See
     // also IRLinker::linkAppendingVarProto() in IRMover.cpp.
-    VoidPtrTy = Type::getInt8Ty(GV.getContext())->getPointerTo();
+    VoidPtrTy = PointerType::getUnqual(GV.getContext());
     auto &ST = *cast<StructType>(NewMembers.front()->getType());
     Type *Tys[3] = {ST.getElementType(0), ST.getElementType(1), VoidPtrTy};
     EltTy = StructType::get(GV.getContext(), Tys, false);
@@ -1176,8 +1222,23 @@ void ValueMapper::remapInstruction(Instruction &I) {
   FlushingMapper(pImpl)->remapInstruction(&I);
 }
 
+void ValueMapper::remapDPValue(Module *M, DPValue &V) {
+  FlushingMapper(pImpl)->remapDPValue(V);
+}
+
+void ValueMapper::remapDPValueRange(
+    Module *M, iterator_range<DPValue::self_iterator> Range) {
+  for (DPValue &DPV : Range) {
+    remapDPValue(M, DPV);
+  }
+}
+
 void ValueMapper::remapFunction(Function &F) {
   FlushingMapper(pImpl)->remapFunction(F);
+}
+
+void ValueMapper::remapGlobalObjectMetadata(GlobalObject &GO) {
+  FlushingMapper(pImpl)->remapGlobalObjectMetadata(GO);
 }
 
 void ValueMapper::scheduleMapGlobalInitializer(GlobalVariable &GV,

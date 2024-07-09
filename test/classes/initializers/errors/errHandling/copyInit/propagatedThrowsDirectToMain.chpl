@@ -3,7 +3,7 @@ record Foo {
 
   proc init=(val: int) throws {
     x = val;
-    this.complete();
+    init this;
     funcThatThrows(val); // Some post checking
   }
 

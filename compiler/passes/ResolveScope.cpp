@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -200,11 +200,7 @@ void ResolveScope::addBuiltIns() {
   extend(gNone);
   extend(gVoid);
 
-  extend(dtBools[BOOL_SIZE_SYS]->symbol);
-  extend(dtBools[BOOL_SIZE_8]->symbol);
-  extend(dtBools[BOOL_SIZE_16]->symbol);
-  extend(dtBools[BOOL_SIZE_32]->symbol);
-  extend(dtBools[BOOL_SIZE_64]->symbol);
+  extend(dtBool->symbol);
 
   extend(dtInt[INT_SIZE_8]->symbol);
   extend(dtInt[INT_SIZE_16]->symbol);
@@ -241,7 +237,6 @@ void ResolveScope::addBuiltIns() {
   extend(gSingleVarAuxFields);
 
   extend(dtAny->symbol);
-  extend(dtAnyBool->symbol);
   extend(dtAnyComplex->symbol);
   extend(dtAnyEnumerated->symbol);
   extend(dtAnyImag->symbol);
@@ -253,6 +248,7 @@ void ResolveScope::addBuiltIns() {
 
   extend(dtIteratorRecord->symbol);
   extend(dtIteratorClass->symbol);
+  extend(dtThunkRecord->symbol);
   extend(dtBorrowed->symbol);
   extend(dtBorrowedNonNilable->symbol);
   extend(dtBorrowedNilable->symbol);
@@ -272,17 +268,11 @@ void ResolveScope::addBuiltIns() {
   extend(dtModuleToken->symbol);
   extend(gModuleToken);
 
-  extend(gBoundsChecking);
-  extend(gCastChecking);
-  extend(gNilChecking);
-  extend(gOverloadSetsChecks);
-  extend(gDivZeroChecking);
-  extend(gCacheRemote);
-  extend(gPrivatization);
-  extend(gLocal);
-  extend(gWarnUnstable);
+  for (auto compilerGlobalParam : gCompilerGlobalParams) {
+    extend(compilerGlobalParam);
+  }
+
   extend(gNodeID);
-  extend(gUseIOFormatters);
 
   extend(gInfinity);
   extend(gNan);
@@ -707,6 +697,35 @@ void ResolveScope::firstImportedModuleName(Expr* expr,
   }
 }
 
+static void scopeResolveVisibilityStmtsIfNeeded(const ResolveScope* in,
+                                                const ResolveScope* toResolve) {
+  if (toResolve->progress == IUP_NOT_STARTED) {
+    // Don't go into the unprocessed uses and imports now if the scope is in
+    // progress - this should only happen if we're currently in the scope
+    // being processed, or if there's a circular dependency.
+    //
+    // Otherwise, traverse this scope and trigger the resolution of the
+    // uses and imports now
+    for_alist(expr, toResolve->asBlockStmt()->body) {
+      if (UseStmt* useStmt = toUseStmt(expr)) {
+        BaseAST* astScope = getScope(useStmt);
+        ResolveScope* useScope = in->getScopeFor(astScope);
+        useStmt->scopeResolve(useScope);
+
+      } else if (ImportStmt* importStmt = toImportStmt(expr)) {
+        BaseAST* astScope = getScope(importStmt);
+        ResolveScope* importScope = in->getScopeFor(astScope);
+        importStmt->scopeResolve(importScope);
+      }
+      if (toResolve->progress == IUP_COMPLETED) {
+        // Don't bother continuing to traverse the block's stmts if we've
+        // found all the uses or imports we know about.
+        break;
+      }
+    }
+  }
+}
+
 SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
                                                    bool isUse) const {
   Symbol* retval = NULL;
@@ -840,52 +859,30 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
     INT_ASSERT(rhsName != NULL);
 
     ResolveScope* scope = getScopeFor(outerMod->block);
-    if (Symbol* symbol = scope->getField(rhsName)) {
+
+    if (Symbol* symbol = scope->getFieldLocally(rhsName)) {
       if (retval == symbol) {
         USR_FATAL(expr, "duplicate mention of the same module '%s'",
                   symbol->name);
       }
       retval = symbol;
 
-    } else if (scope->matchesTypeWithMethods(rhsName)) {
-      // We would need to resolve further to know the exact type it is defined
-      // on, so for now just clear the symbol being returned and update the
-      // return argument to track this
-      retval = NULL;
-      symName = rhsName;
-
     } else {
-      if (scope->progress == IUP_NOT_STARTED) {
-        // Don't go into the unprocessed uses and imports now if the scope is in
-        // progress - this should only happen if we're currently in the scope
-        // being processed, or if there's a circular dependency.
-        //
-        // Otherwise, traverse this scope and trigger the resolution of the
-        // uses and imports now
-        for_alist(expr, scope->asBlockStmt()->body) {
-          if (UseStmt* useStmt = toUseStmt(expr)) {
-            BaseAST* astScope = getScope(useStmt);
-            ResolveScope* useScope = getScopeFor(astScope);
-            useStmt->scopeResolve(useScope);
-
-          } else if (ImportStmt* importStmt = toImportStmt(expr)) {
-            BaseAST* astScope = getScope(importStmt);
-            ResolveScope* importScope = getScopeFor(astScope);
-            importStmt->scopeResolve(importScope);
-          }
-          if (scope->progress == IUP_COMPLETED) {
-            // Don't bother continuing to traverse the block's stmts if we've
-            // found all the uses or imports we know about.
-            break;
-          }
-        }
-      }
+      scopeResolveVisibilityStmtsIfNeeded(this, scope);
       if (Symbol* symbol = scope->lookupPublicVisStmts(rhsName)) {
         retval = symbol;
       } else if (Symbol *symbol =
           scope->lookupPublicUnqualAccessSyms(rhsName, call)) {
         retval = symbol;
+      } else if (scope->matchesTypeWithMethods(rhsName)) {
+        // This check only works after module / symbols have been accessed,
+        // because only then are the mVisibilityStmts populated for the scope.
 
+        // We would need to resolve further to know the exact type it is defined
+        // on, so for now just clear the symbol being returned and update the
+        // return argument to track this
+        retval = NULL;
+        symName = rhsName;
       } else {
         USR_FATAL(call, "Cannot find symbol '%s' in module '%s'",
                   rhsName, outerMod->name);
@@ -1146,10 +1143,46 @@ Symbol* ResolveScope::getFieldLocally(const char* fieldName) const {
 ************************************** | *************************************/
 
 bool ResolveScope::matchesTypeWithMethods(const char* name) const {
-  std::set<const char*>::const_iterator it = mMethodsOnTypeName.find(astr(name));
   // Returns true if we found a method defined on this name in scope, false
   // if no such method was found
-  return it != mMethodsOnTypeName.end();
+
+  auto it = mMethodsOnTypeName.find(astr(name));
+  if (it != mMethodsOnTypeName.end()) {
+    return true;
+  }
+
+  // If it doesn't re-export, no point checking public uses for matching methods.
+  if (!this->canReexport) return false;
+
+  for_vector_allowing_0s(VisibilityStmt, visStmt, mUseImportList) {
+    // Note: assumes that UseStmt and ImportStmt are the only subclasses of
+    // VisibilityStmt
+    if (visStmt != NULL) {
+      if (!visStmt->isPrivate) {
+        if (!visStmt->skipSymbolSearch(name)) {
+          const char *nameToUse = name;
+          const bool isSymRenamed = visStmt->isARenamedSym(name);
+          if (isSymRenamed) {
+            nameToUse = visStmt->getRenamedSym(name);
+          }
+          if (SymExpr *se = toSymExpr(visStmt->src)) {
+            if (ModuleSymbol *ms = toModuleSymbol(se->symbol())) {
+              ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
+
+              // Mimick the behavior of lookupPublicUnqualAccessSyms, and don't
+              // recurse. Maybe not sufficient?
+              auto it = scope->mMethodsOnTypeName.find(astr(nameToUse));
+              if (it != scope->mMethodsOnTypeName.end()) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
 /************************************* | **************************************
@@ -1330,6 +1363,8 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
     symbols.push_back(sym);
 
   } else {
+    scopeResolveVisibilityStmtsIfNeeded(this, this);
+
     if (mUseImportList.size() > 0) {
       std::vector<VisibilityStmt*> useImportList = mUseImportList;
 

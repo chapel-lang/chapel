@@ -156,7 +156,6 @@ removeUsage $file
 
 file="./ChapelSyncvar.rst"
 replace "_syncvar" "sync" $file
-replace "_singlevar" "single" $file
 removePrefixFunctions $file
 removeTitle $file
 removeUsage $file
@@ -195,7 +194,7 @@ file="./Atomics.rst"
 removePrefixFunctions $file
 
 replace "record:: AtomicBool" "type:: atomic \(bool\)" $file
-replace "record:: AtomicT"    "type:: atomic \(T\)" $file
+replace "record:: AtomicT"    "type:: atomic \(valType\)" $file
 
 removeTitle $file
 removeUsage $file
@@ -234,6 +233,7 @@ file=OwnedObject.rst
 removeTitle $file
 replace "_owned" "owned" $file
 replace "chpl_t" "t" $file
+replace ".. record:: owned" ".. type:: owned" $file
 removeUsage $file
 ## End of OwnedObject ##
 
@@ -243,11 +243,16 @@ removeTitle $file
 replace "_owned" "owned" $file
 replace "_shared" "shared" $file
 replace "chpl_t" "t" $file
+replace ".. record:: shared" ".. type:: shared" $file
 removeUsage $file
 ## End of SharedObject ##
 
-## WeakPointer ##
-file=WeakPointer.rst
-replace "_shared" "shared" $file
-removeUsage $file
-## End of WeakPointer ##
+# Bending the rules a little to modify CTypes, which is not an internal module.
+# This is a hack that won't be necessary if #22461 is implemented.
+# Has to be at the end of the script due to the cd. (or cd back after)
+cd "${TEMPDIR}/source/modules/standard/"
+## CTypes ##
+file=CTypes.rst
+replace "class:: c_ptr" "type:: c_ptr" $file # also gets c_ptrConst
+replace "record:: c_array" "type:: c_array" $file
+## End of CTypes ##

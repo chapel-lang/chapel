@@ -1,7 +1,7 @@
 
 record R {
   var x : int = 5;
-  proc postinit() {
+  proc ref postinit() {
     this.x = 42;
   }
 }

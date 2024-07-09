@@ -61,7 +61,7 @@ module block_1D_bordering_cholesky {
   // block rows and columns (I+1..).
   // =========================================================================
     
-  proc block_1D_bordering_cholesky ( A : [] )  
+  proc block_1D_bordering_cholesky ( ref A : [] )  
 
     where ( A.domain.rank == 2 ) {
 
@@ -101,8 +101,8 @@ module block_1D_bordering_cholesky {
 	// apply the outer product modifications to the symmetric 
 	// diagonal block
 
-	forall i in A11_rc_indices do
-	  forall j in A11_rc_indices (..i) do
+	forall i in A11_rc_indices with (ref A) do
+	  forall j in A11_rc_indices (..i) with (ref A) do
 	    for k in A00_rc_indices do
 	      A (i,j) -= A (i,k) * A (j,k);
       }

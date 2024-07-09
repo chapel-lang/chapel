@@ -94,8 +94,8 @@ a.shape; // (3, 5)
 writeln(a.eltType: string); // real(64)
 
 // Array type in format of:
-//   ``[domain(rank, index-type, stridable)] element-type``
-writeln(a.type: string); // [domain(2,int(64),false)] real(64)
+//   ``[domain(rank, index-type, strides)] element-type``
+writeln(a.type: string); // [domain(2,int(64),one)] real(64)
 
 // Element-wise addition (and subtraction)
 a = a + 1; // or, a += 1
@@ -414,7 +414,7 @@ use LinearAlgebra.Sparse;
 {
   use LayoutCS;
   const parentDom = {1..100, 1..100};
-  var csrDom: sparse subdomain(parentDom) dmapped CS();
+  var csrDom: sparse subdomain(parentDom) dmapped new dmap(new CS());
   var csrMatrix: [csrDom] real; // Supported by LinearAlgebra.Sparse
 }
 
@@ -476,7 +476,7 @@ use LinearAlgebra.Sparse;
 // Creating CSR domains & arrays in Chapel without ``LinearAlgebra.Sparse``:
 use LayoutCS;
 var parentDom = {0..#3, 0..#3}; // Parent domain
-var csrDom: sparse subdomain(parentDom) dmapped CS(); // CSR domain
+var csrDom: sparse subdomain(parentDom) dmapped new dmap(new CS()); // CSR domain
 var csrArr: [csrDom] real; // CSR array
 
 // Adding indices to a sparse domain:

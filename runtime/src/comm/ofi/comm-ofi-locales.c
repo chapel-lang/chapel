@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -45,3 +45,7 @@ void chpl_comm_verify_num_locales(int64_t proposedNumLocales) {
   }
 #endif
 }
+
+
+void chpl_comm_verify_supports_colocales(int64_t numColocales) { }
+

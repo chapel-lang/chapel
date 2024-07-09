@@ -7,8 +7,8 @@ const ParentDom = {0..#N, 0..#N};
 enum layoutTypes {coo, csr, csc};
 config param layoutType = layoutTypes.coo;
 
-var csrDom: sparse subdomain(ParentDom) dmapped CS(compressRows=true);
-var cscDom: sparse subdomain(ParentDom) dmapped CS(compressRows=false);
+var csrDom: sparse subdomain(ParentDom) dmapped new dmap(new CS(compressRows=true));
+var cscDom: sparse subdomain(ParentDom) dmapped new dmap(new CS(compressRows=false));
 var cooDom: sparse subdomain(ParentDom);
 
 var SparseDom = if layoutType == layoutTypes.csr then 

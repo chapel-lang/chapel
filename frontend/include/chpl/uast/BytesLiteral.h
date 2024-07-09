@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,13 +33,19 @@ namespace uast {
   and `b''' bytes contents here '''`.
  */
 class BytesLiteral final : public StringLikeLiteral {
+ friend class AstNode;
+
  private:
   BytesLiteral(const types::StringParam* value,
                StringLikeLiteral::QuoteStyle quotes)
     : StringLikeLiteral(asttags::BytesLiteral, value, quotes)
   { }
 
-  BytesLiteral(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    stringLikeLiteralSerializeInner(ser);
+  }
+
+  explicit BytesLiteral(Deserializer& des)
     : StringLikeLiteral(asttags::BytesLiteral, des)
   { }
 
@@ -52,13 +58,6 @@ class BytesLiteral final : public StringLikeLiteral {
   static owned<BytesLiteral> build(Builder* builder, Location loc,
                                    const std::string& value,
                                    StringLikeLiteral::QuoteStyle quotes);
-
-  void serialize(Serializer& ser) const override {
-    StringLikeLiteral::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(BytesLiteral);
-
 };
 
 

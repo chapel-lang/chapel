@@ -49,6 +49,7 @@ static_library("LLVMPowerPCCodeGen") {
     "//llvm/lib/MC",
     "//llvm/lib/Support",
     "//llvm/lib/Target",
+    "//llvm/lib/TargetParser",
     "//llvm/lib/Transforms/Utils",
   ]
   include_dirs = [ "." ]
@@ -82,6 +83,7 @@ static_library("LLVMPowerPCCodeGen") {
     "PPCMachineFunctionInfo.cpp",
     "PPCMachineScheduler.cpp",
     "PPCMacroFusion.cpp",
+    "PPCMergeStringPool.cpp",
     "PPCPreEmitPeephole.cpp",
     "PPCReduceCRLogicals.cpp",
     "PPCRegisterInfo.cpp",

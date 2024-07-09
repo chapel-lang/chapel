@@ -7,10 +7,10 @@ config const m = 8;//6;
 config const n = 8;//3;
 config const o = 8;//4;
 var e=false;
-//var Dist1 = new dmap(new Block({1..m,1..n,1..o}));
+//var Dist1 = new blockDist({1..m,1..n,1..o});
 //var Dom: domain(3,int) dmapped Dist1 = {1..m,1..n,1..o};
 const S = {1..m,1..n,1..o};
-const Dom: domain(3) dmapped Cyclic(startIdx=S.low)=S;
+const Dom: domain(3) dmapped new cyclicDist(startIdx=S.low)=S;
 
 var A:[Dom] int(64); //real
 var B:[Dom] int(64);

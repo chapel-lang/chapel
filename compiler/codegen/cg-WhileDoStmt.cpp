@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,6 +25,8 @@
 #include "CForLoop.h"
 #include "codegen.h"
 #include "LayeredValueTable.h"
+#include "llvmTracker.h"
+#include "llvmVer.h"
 
 #ifdef HAVE_LLVM
 #include "llvm/IR/Module.h"
@@ -82,11 +84,19 @@ GenRet WhileDoStmt::codegen()
     blockStmtBody = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
     blockStmtEnd  = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end"));
     blockStmtCond = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_cond"));
+    trackLLVMValue(blockStmtBody);
+    trackLLVMValue(blockStmtEnd);
+    trackLLVMValue(blockStmtCond);
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockStmtCond);
+#else
     func->getBasicBlockList().push_back(blockStmtCond);
+#endif
 
     // Insert an explicit branch from the current block to the loop start.
-    info->irBuilder->CreateBr(blockStmtCond);
+    llvm::BranchInst* toStart = info->irBuilder->CreateBr(blockStmtCond);
+    trackLLVMValue(toStart);
 
     // Now switch to the condition for code generation
     info->irBuilder->SetInsertPoint(blockStmtCond);
@@ -99,13 +109,19 @@ GenRet WhileDoStmt::codegen()
       condValue = info->irBuilder->CreateICmpNE(condValue,
                                                 llvm::ConstantInt::get(condValue->getType(), 0),
                                                 FNAME("condition"));
+      trackLLVMValue(condValue);
     }
 
     // Now we might go either to the Body or to the End.
-    info->irBuilder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
+    llvm::BranchInst* condBr = info->irBuilder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
+    trackLLVMValue(condBr);
 
     // Now add the body.
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockStmtBody);
+#else
     func->getBasicBlockList().push_back(blockStmtBody);
+#endif
 
     info->irBuilder->SetInsertPoint(blockStmtBody);
     info->lvt->addLayer();
@@ -114,12 +130,19 @@ GenRet WhileDoStmt::codegen()
 
     info->lvt->removeLayer();
 
-    if (blockStmtCond)
-      info->irBuilder->CreateBr(blockStmtCond);
-    else
-      info->irBuilder->CreateBr(blockStmtEnd);
+    if (blockStmtCond) {
+      llvm::BranchInst* toCond = info->irBuilder->CreateBr(blockStmtCond);
+      trackLLVMValue(toCond);
+    } else {
+      llvm::BranchInst* toEnd = info->irBuilder->CreateBr(blockStmtEnd);
+      trackLLVMValue(toEnd);
+    }
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockStmtEnd);
+#else
     func->getBasicBlockList().push_back(blockStmtEnd);
+#endif
 
     info->irBuilder->SetInsertPoint(blockStmtEnd);
 

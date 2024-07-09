@@ -1,0 +1,4 @@
+generic-contradictory-warning.chpl:5: warning: please use '?' when declaring a variable with generic type
+generic-contradictory-warning.chpl:5: note: for example 'R(?)'
+generic-contradictory-warning.chpl:1: note: 'R' is generic without defaults
+note: this warning will become an error in the future

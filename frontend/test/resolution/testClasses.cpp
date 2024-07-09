@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -89,8 +89,77 @@ static void test1() {
   assert(functionT->formalType(0).type() == anyNonNil);
 }
 
+static void test2() {
+  printf("test2\n");
+
+  // This test exists to ensure the compiler can correctly infer the type
+  // of 'myParent' without resolving the field's initialization expression,
+  // which would result in recursion.
+  std::string program = R"""(
+    var sentinelValue = new MyRecord();
+
+    record MyRecord {
+      var inst : unmanaged MyClass?;
+
+      proc init() { }
+    }
+
+    class MyClass {
+      const myParent : MyRecord = sentinelValue;
+    }
+
+    proc main() {
+      var x = sentinelValue;
+    }
+  )""";
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+  auto m = parseModule(context, program);
+  auto results = resolveModule(context, m->id());
+
+  auto var = findVariable(m, "x");
+  auto rec = m->stmt(1)->toRecord();
+  auto qt = results.byAst(var).type();
+  assert(!qt.isErroneousType());
+  assert(qt.type()->isRecordType());
+  assert(qt.type()->toRecordType()->id() == rec->id());
+}
+
+// test that we can resolve the type of multi-decl fields properly when they
+// they are later used as a return type of a method
+static void test3() {
+  printf("test3\n");
+
+  std::string program = R"""(
+    class C {
+      var a, b : int;
+    }
+
+    proc C.getA() {
+      return a;
+    }
+
+    var foo = new C(40, 2);
+    var x = foo.getA();
+    )""";
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+  auto m = parseModule(context, program);
+  auto results = resolveModule(context, m->id());
+  auto var = findVariable(m, "x");
+  auto qt = results.byAst(var).type();
+  assert(qt.type()->isIntType());
+  assert(qt.type()->toIntType()->bitwidth() == 64);
+}
+
+
 int main() {
   test1();
+  test2();
+  test3();
 
   return 0;
 }

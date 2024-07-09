@@ -1,8 +1,0 @@
-isBounded.chpl:2: warning: 'isBoundedRange()' is deprecated; use 'isRangeValue()' and check the range's '.bounds' field directly instead
-isBounded.chpl:3: warning: 'isBoundedRange()' is deprecated; use 'isRangeValue()' instead
-isBounded.chpl:4: warning: 'isBoundedRange()' is deprecated; compare against 'boundKind.both' directly instead
-isBounded.chpl:5: warning: 'range.isBounded()' is deprecated; check the range's '.bounds' field directly, comparing to 'boundKind.both'
-true
-false
-true
-true

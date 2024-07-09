@@ -31,29 +31,29 @@ if case == "2D COO" {
 }
 
 if case == "CSR" {
-  var csrDom: sparse subdomain(baseDom2D) dmapped CS();
+  var csrDom: sparse subdomain(baseDom2D) dmapped new dmap(new CS());
   csrDom += [(1,1),(2,2)];
   test(csrDom, "CSR");
 }
 
 if case == "CSC" {
-  var cscDom: sparse subdomain(baseDom2D) dmapped CS(compressRows=false);
+  var cscDom: sparse subdomain(baseDom2D) dmapped new dmap(new CS(compressRows=false));
   cscDom += [(1,1),(2,2)];
   test(cscDom, "CSC");
 }
 
 if case == "associative domain with string keys" {
-  var assocDom: domain(string);
-  assocDom += ["foo", "bar"];
+  var assocDom: domain(string) = {"foo", "bar"};
+
   test(assocDom, "associative domain with string keys");
 }
 
-proc test(dom:domain, name) {
+proc test(dom:domain(?), name) {
   writeln("Testing ", name);
 
   var arr: [dom] int;
 
-  forall i in dom {
+  forall i in dom with (ref arr) {
     arr[i] = idxToInt(i);
   }
 

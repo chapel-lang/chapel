@@ -10,12 +10,12 @@
 #define LLVM_SUPPORT_BINARYSTREAMREF_H
 
 #include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/Support/BinaryStream.h"
 #include "llvm/Support/BinaryStreamError.h"
 #include "llvm/Support/Error.h"
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 namespace llvm {
 
@@ -30,11 +30,11 @@ protected:
   }
 
   BinaryStreamRefBase(std::shared_ptr<StreamType> SharedImpl, uint64_t Offset,
-                      Optional<uint64_t> Length)
+                      std::optional<uint64_t> Length)
       : SharedImpl(SharedImpl), BorrowedImpl(SharedImpl.get()),
         ViewOffset(Offset), Length(Length) {}
   BinaryStreamRefBase(StreamType &BorrowedImpl, uint64_t Offset,
-                      Optional<uint64_t> Length)
+                      std::optional<uint64_t> Length)
       : BorrowedImpl(&BorrowedImpl), ViewOffset(Offset), Length(Length) {}
   BinaryStreamRefBase(const BinaryStreamRefBase &Other) = default;
   BinaryStreamRefBase &operator=(const BinaryStreamRefBase &Other) = default;
@@ -43,9 +43,7 @@ protected:
   BinaryStreamRefBase(BinaryStreamRefBase &&Other) = default;
 
 public:
-  llvm::support::endianness getEndian() const {
-    return BorrowedImpl->getEndian();
-  }
+  llvm::endianness getEndian() const { return BorrowedImpl->getEndian(); }
 
   uint64_t getLength() const {
     if (Length)
@@ -142,7 +140,7 @@ protected:
   std::shared_ptr<StreamType> SharedImpl;
   StreamType *BorrowedImpl = nullptr;
   uint64_t ViewOffset = 0;
-  Optional<uint64_t> Length;
+  std::optional<uint64_t> Length;
 };
 
 /// BinaryStreamRef is to BinaryStream what ArrayRef is to an Array.  It
@@ -157,17 +155,16 @@ class BinaryStreamRef
   friend BinaryStreamRefBase<BinaryStreamRef, BinaryStream>;
   friend class WritableBinaryStreamRef;
   BinaryStreamRef(std::shared_ptr<BinaryStream> Impl, uint64_t ViewOffset,
-                  Optional<uint64_t> Length)
+                  std::optional<uint64_t> Length)
       : BinaryStreamRefBase(Impl, ViewOffset, Length) {}
 
 public:
   BinaryStreamRef() = default;
   BinaryStreamRef(BinaryStream &Stream);
   BinaryStreamRef(BinaryStream &Stream, uint64_t Offset,
-                  Optional<uint64_t> Length);
-  explicit BinaryStreamRef(ArrayRef<uint8_t> Data,
-                           llvm::support::endianness Endian);
-  explicit BinaryStreamRef(StringRef Data, llvm::support::endianness Endian);
+                  std::optional<uint64_t> Length);
+  explicit BinaryStreamRef(ArrayRef<uint8_t> Data, llvm::endianness Endian);
+  explicit BinaryStreamRef(StringRef Data, llvm::endianness Endian);
 
   BinaryStreamRef(const BinaryStreamRef &Other) = default;
   BinaryStreamRef &operator=(const BinaryStreamRef &Other) = default;
@@ -222,7 +219,7 @@ class WritableBinaryStreamRef
                                  WritableBinaryStream> {
   friend BinaryStreamRefBase<WritableBinaryStreamRef, WritableBinaryStream>;
   WritableBinaryStreamRef(std::shared_ptr<WritableBinaryStream> Impl,
-                          uint64_t ViewOffset, Optional<uint64_t> Length)
+                          uint64_t ViewOffset, std::optional<uint64_t> Length)
       : BinaryStreamRefBase(Impl, ViewOffset, Length) {}
 
   Error checkOffsetForWrite(uint64_t Offset, uint64_t DataSize) const {
@@ -238,9 +235,9 @@ public:
   WritableBinaryStreamRef() = default;
   WritableBinaryStreamRef(WritableBinaryStream &Stream);
   WritableBinaryStreamRef(WritableBinaryStream &Stream, uint64_t Offset,
-                          Optional<uint64_t> Length);
+                          std::optional<uint64_t> Length);
   explicit WritableBinaryStreamRef(MutableArrayRef<uint8_t> Data,
-                                   llvm::support::endianness Endian);
+                                   llvm::endianness Endian);
   WritableBinaryStreamRef(const WritableBinaryStreamRef &Other) = default;
   WritableBinaryStreamRef &
   operator=(const WritableBinaryStreamRef &Other) = default;

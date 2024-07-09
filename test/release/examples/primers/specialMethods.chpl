@@ -34,7 +34,11 @@ proc ExampleRecord2.secondaryMethod() { }
 
 // First we will declare a simple record with a field that is a tuple of
 // integers.  We'll add special methods and iterators to this record later.
-record R {
+// To make the language recognize a special method, it's necessary to implement
+// the corresponding interface. For the ``hash`` method we'll see below, the
+// appropriate interface is ``hashable``. We can mark ``R`` as implementing
+// ``hashable`` by including a ``: hashable`` after its name when we declare it.
+record R : hashable, writeSerializable, readDeserializable {
   param size: int = 10;
   var vals: size*int;
 }
@@ -68,7 +72,7 @@ record R {
 
 // The ``this`` method gives the record the ability to be accessed like an
 // array.  Here we use the argument as an index to choose a tuple element.
-proc R.this(n: int) ref {
+proc ref R.this(n: int) ref {
   if !vals.indices.contains(n) then
     halt("index out of bounds accessing R");
   return vals[n];
@@ -94,7 +98,7 @@ writeln(r.vals);
 // An iterator named ``these`` that can accept zero arguments is automatically
 // called when a record or class instance is used in the iterator position
 // of a ``for`` loop.
-iter R.these() ref {
+iter ref R.these() ref {
   for i in vals.indices {
     yield vals[i];
   }
@@ -123,9 +127,9 @@ writeln(r.vals);
 
 use Map;
 
-proc R.hash(): int {
+proc R.hash(): uint {
   writeln("In custom hash function");
-  return vals[0];
+  return vals[0] : uint;
 }
 
 // Now that the record R has a ``hash`` method defined, Chapel's,
@@ -144,54 +148,53 @@ myD += myR;
   ----------
 */
 
-// The ``writeThis`` method defines how to write an instance of R to a
+// The ``serialize`` method defines how to write an instance of R to a
 // channel. We'll write the ``vals`` tuple between asterisks. See section
-// :ref:`readThis-writeThis` for more information  on the ``writeThis`` and
-// ``readThis`` methods.
+// :ref:`serialize-deserialize` for more information  on the ``serialize`` and
+// ``deserialize`` methods.
 
 use IO; // required for file operations
 
 config const filename = "tempfile.txt";
 
-proc R.writeThis(ch: fileWriter) throws {
-  ch.write("*", vals, "*");
+proc R.serialize(writer: fileWriter(?),
+                 ref serializer: writer.serializerType) throws {
+  writer.write("*", vals, "*");
 }
 
 {
-  // Open the file in a new block so that deinitializers
+  // Open the fileWriter in a new block so that deinitializers
   // will close it at the end of the block
-  var f = open(filename, ioMode.cw);
-  var ch = f.writer();
-  ch.writeln(r);
+  var fw = openWriter(filename);
+  fw.writeln(r);
 }
 
-// The ``readThis`` method defines how to read an instance of R from a
+// The ``deserialize`` method defines how to read an instance of R from a
 // channel. We'll read the ``vals`` tuple between asterisks like how it
 // was written above.
-proc R.readThis(ch: fileReader) throws {
-  var star = new ioLiteral("*");
-  ch.read(star);
-  ch.read(vals);
-  ch.read(star);
+proc ref R.deserialize(reader: fileReader(?),
+                       ref deserializer: reader.deserializerType) throws {
+  reader.readLiteral("*");
+  reader.read(vals);
+  reader.readLiteral("*");
 }
 
 {
-  var f = open(filename, ioMode.r);
-  var ch = f.reader();
+  var fr = openReader(filename);
   var r2 = new R();
-  ch.readln(r2);
+  fr.readln(r2);
   assert(r == r2);
 }
 
 {
-  var chW = openWriter(filename);
-  chW.writeln(r);
-  chW.flush();
+  var fw = openWriter(filename);
+  fw.writeln(r);
+  fw.flush();
 
   writeln(r);
   var r2 = new R();
-  var chR = openReader(filename);
-  chR.readln(r2);
+  var fr = openReader(filename);
+  fr.readln(r2);
   assert(r == r2);
 }
 

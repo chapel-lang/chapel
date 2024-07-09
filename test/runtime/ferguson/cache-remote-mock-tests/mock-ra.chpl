@@ -16,7 +16,7 @@ config const basePtr:uint = 0x7ffff5931010;
 config const printStats = false;
 
 proc main() {
-  var rng = new RandomStream(uint, seed, parSafe=false);
+  var rng = new randomStream(uint, seed);
 
   var t:stopwatch;
 
@@ -29,8 +29,8 @@ proc main() {
 
   t.start();
   for update in 0..<numUpdates {
-    const node = rng.getNext(min=0, max=nLocales-1);
-    const addr = rng.getNext(min=0, max=spacePerLocale-1);
+    const node = rng.next(min=0, max=nLocales-1);
+    const addr = rng.next(min=0, max=spacePerLocale-1);
     chpl_cache_mock_get(node:c_int, basePtr+addr, 8);
     if printStats && update % (numUpdates/3) == 0 {
       writeln("After ", update+1, " updates");

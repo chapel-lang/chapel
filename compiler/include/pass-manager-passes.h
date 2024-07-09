@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -276,6 +276,7 @@ class InsertLineNumbers : public PassTU<FnSymbol*, CallExpr*> {
   LineAndFile getLineAndFileForFn(FnSymbol *fn);
 
   std::unordered_map<FnSymbol*, LineAndFile> lineAndFilenameMap;
+  std::unordered_set<CallExpr*> fixedCalls;
 };
 
 #endif

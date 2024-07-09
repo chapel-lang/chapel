@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -62,6 +62,7 @@ public:
   int compare(const astlocT& other) const;
   void convertIdToFileLine(const char*& filename, int& lineno) const;
   const char* stringLoc() const;
+  const char* stringLineno() const;
 
   bool isEmpty() const {
     if (filename_ != nullptr)

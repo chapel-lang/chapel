@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -118,7 +118,7 @@ class RecordReader {
   /* The regular expression to read (using match on the channel) */
   var matchRegex: regex(string);
   @chpldoc.nodoc
-  param num_fields = numFields(t); // Number of fields in record
+  param num_fields = getNumFields(t); // Number of fields in record
 
   /* Create a RecordReader to match an auto-generated regular expression
      for a record created by the :proc:`createRegex` routine.
@@ -130,7 +130,7 @@ class RecordReader {
     this.t = t;
     this.myReader = myReader;
     // TODO: remove the following once we can throw from init() calls
-    this.complete();
+    init this;
     try! {
       this.matchRegex = new regex(createRegex());
     }
@@ -148,7 +148,7 @@ class RecordReader {
     this.t = t;
     this.myReader = myReader;
     // TODO: remove the following once we can throw from init() calls
-    this.complete();
+    init this;
     try! {
         this.matchRegex = new regex(mRegex);
     }
@@ -164,9 +164,15 @@ class RecordReader {
     // This is a VERY loose regex, and therefore could lead to errors unless the
     // data is very nice... (but hey, the programmer wasn't willing to give us a
     // regex..)
-    var accum: string = "\\s*";
+    var accum: string = "";
     for param n in 0..<num_fields {
-      accum = accum + getFieldName(t, n) + "\\s*(.*?)" + "\\s*";
+      if n == 0 then
+        accum += "\\s*"; // consume spaces at the start, but don't require any
+      else
+        accum += "\\s+"; // require and consume spaces between fields
+      accum += getFieldName(t, n); // match the field name
+      accum += "\\s+"; // match some spaces
+      accum += "(.*\\b)"; // match the value & end at a word boundary
     }
     return accum;
   }
@@ -183,7 +189,7 @@ class RecordReader {
         var (rec, once) = _get_internal(offst, len);
         if (once == true) {
           try! myReader.lock();
-          var o = myReader.chpl_offset();
+          var o = myReader.offset();
           myReader.unlock();
           if (o >= offst+len) { // rec.end >= start + len
             // So yield and break

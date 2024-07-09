@@ -1,0 +1,3 @@
+--mode="mgpu" --printElapsedTime=true --size=15 --initial_depth=5 # chop-15
+--mode="mgpu" --printElapsedTime=true --size=16 --initial_depth=5 # chop-16
+--mode="mgpu" --printElapsedTime=true --size=17 --initial_depth=5 # chop-17

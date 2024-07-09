@@ -30,11 +30,12 @@ static bool canComputePointerDiff(ScalarEvolution &SE,
       SE.getEffectiveSCEVType(B->getType()))
     return false;
 
-  return SE.instructionCouldExistWitthOperands(A, B);
+  return SE.instructionCouldExistWithOperands(A, B);
 }
 
 AliasResult SCEVAAResult::alias(const MemoryLocation &LocA,
-                                const MemoryLocation &LocB, AAQueryInfo &AAQI) {
+                                const MemoryLocation &LocB, AAQueryInfo &AAQI,
+                                const Instruction *) {
   // If either of the memory references is empty, it doesn't matter what the
   // pointer values are. This allows the code below to ignore this special
   // case.
@@ -54,10 +55,10 @@ AliasResult SCEVAAResult::alias(const MemoryLocation &LocA,
   if (canComputePointerDiff(SE, AS, BS)) {
     unsigned BitWidth = SE.getTypeSizeInBits(AS->getType());
     APInt ASizeInt(BitWidth, LocA.Size.hasValue()
-                                 ? LocA.Size.getValue()
+                                 ? static_cast<uint64_t>(LocA.Size.getValue())
                                  : MemoryLocation::UnknownSize);
     APInt BSizeInt(BitWidth, LocB.Size.hasValue()
-                                 ? LocB.Size.getValue()
+                                 ? static_cast<uint64_t>(LocB.Size.getValue())
                                  : MemoryLocation::UnknownSize);
 
     // Compute the difference between the two pointers.
@@ -101,11 +102,10 @@ AliasResult SCEVAAResult::alias(const MemoryLocation &LocA,
                              BO ? LocationSize::beforeOrAfterPointer()
                                 : LocB.Size,
                              BO ? AAMDNodes() : LocB.AATags),
-              AAQI) == AliasResult::NoAlias)
+              AAQI, nullptr) == AliasResult::NoAlias)
       return AliasResult::NoAlias;
 
-  // Forward the query to the next analysis.
-  return AAResultBase::alias(LocA, LocB, AAQI);
+  return AliasResult::MayAlias;
 }
 
 /// Given an expression, try to find a base value.

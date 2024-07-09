@@ -34,7 +34,7 @@ proc R.R(x:int) {
 proc ref R.init(x:int, allow_zero:bool = false) {
   if !allow_zero then assert(x != 0);
   this.x = x;
-  this.complete();
+  init this;
   set_self_ptr();
 }
 

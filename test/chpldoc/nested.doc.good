@@ -1,0 +1,49 @@
+.. default-domain:: chpl
+
+.. module:: nested.doc
+
+nested.doc
+==========
+**Usage**
+
+.. code-block:: chapel
+
+   use nested.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import nested.doc;
+
+.. record:: R
+
+   
+   Documentation for record R.
+   
+   .. code-block:: text
+   
+     a code block!
+
+   .. attribute:: var x: int
+
+   .. method:: proc foo()
+
+      Document 'foo' 
+
+   .. record:: Inner
+
+      
+      Documentation for ``Inner``
+      
+      .. code-block:: text
+      
+        This code-block should not overflow to 'innerMethod'!
+      
+      
+
+      .. method:: proc innerMethod()
+
+      Inner Method. 
+

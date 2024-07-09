@@ -10,4 +10,7 @@ module _MyHiddenModule {
 
   class _Underscore_ {
   }
+
+  // don't warn for use of special _ (as in dropping a value in de-tupling)
+  var (x, _) = (1, 2);
 }

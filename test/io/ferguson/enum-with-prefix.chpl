@@ -1,4 +1,4 @@
-use IO;
+use IO, JSON;
 
 enum myenum {red, green, blue}
 use myenum;
@@ -9,17 +9,19 @@ writeln(myenum.green);
 writeln(myenum.blue);
 writeln();
 
+var jsonOut = stdout.withSerializer(jsonSerializer);
+
 writeln("JSON WRITE OF ENUM VALS");
-writef("%jt\n", myenum.red);
-writef("%jt\n", myenum.green);
-writef("%jt\n", myenum.blue);
+jsonOut.writef("%?\n", myenum.red);
+jsonOut.writef("%?\n", myenum.green);
+jsonOut.writef("%?\n", myenum.blue);
 writeln();
 
 proc reade(s: string) : myenum {
   var f = openMemFile();
-  f.writer().write(s);
+  f.writer(locking=false).write(s);
     
-  var reader = f.reader();
+  var reader = f.reader(locking=false);
 
   var e: myenum = myenum.red;
   reader.read(e);
@@ -28,12 +30,12 @@ proc reade(s: string) : myenum {
 
 proc readj(s: string) : myenum {
   var f = openMemFile();
-  f.writer().write(s);
+  f.writer(locking=false).write(s);
     
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new jsonDeserializer(), locking=false);
 
   var e: myenum = myenum.red;
-  reader.readf("%jt", e);
+  reader.readf("%?", e);
   return e;
 }
 

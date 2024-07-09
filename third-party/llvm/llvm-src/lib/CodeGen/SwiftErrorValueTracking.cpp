@@ -202,11 +202,10 @@ void SwiftErrorValueTracking::propagateVRegs() {
       // downward defs.
       bool needPHI =
           VRegs.size() >= 1 &&
-          llvm::find_if(
+          llvm::any_of(
               VRegs,
               [&](const std::pair<const MachineBasicBlock *, Register> &V)
-                  -> bool { return V.second != VRegs[0].second; }) !=
-              VRegs.end();
+                  -> bool { return V.second != VRegs[0].second; });
 
       // If there is no upwards exposed used and we don't need a phi just
       // forward the swifterror vreg from the predecessor(s).
@@ -253,6 +252,25 @@ void SwiftErrorValueTracking::propagateVRegs() {
       if (!UpwardsUse)
         setCurrentVReg(MBB, SwiftErrorVal, PHIVReg);
     }
+  }
+
+  // Create implicit defs for upward uses from unreachable blocks
+  MachineRegisterInfo &MRI = MF->getRegInfo();
+  for (const auto &Use : VRegUpwardsUse) {
+    const MachineBasicBlock *UseBB = Use.first.first;
+    Register VReg = Use.second;
+    if (!MRI.def_begin(VReg).atEnd())
+      continue;
+
+#ifdef EXPENSIVE_CHECKS
+    assert(std::find(RPOT.begin(), RPOT.end(), UseBB) == RPOT.end() &&
+           "Reachable block has VReg upward use without definition.");
+#endif
+
+    MachineBasicBlock *UseBBMut = MF->getBlockNumbered(UseBB->getNumber());
+
+    BuildMI(*UseBBMut, UseBBMut->getFirstNonPHI(), DebugLoc(),
+            TII->get(TargetOpcode::IMPLICIT_DEF), VReg);
   }
 }
 

@@ -12,4 +12,3 @@ proc main() {
   writeln(u.type:string, " ", u);
   writeln(bb.type:string, " ", bb);
 }
-

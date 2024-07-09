@@ -22,6 +22,7 @@
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Operator.h"
 #include "llvm/IR/PatternMatch.h"
+#include <optional>
 #include <utility>
 
 namespace llvm {
@@ -46,12 +47,12 @@ public:
   const DataLayout &getDataLayout() const { return DL; }
 
   InstructionCost getGEPCost(Type *PointeeType, const Value *Ptr,
-                             ArrayRef<const Value *> Operands,
+                             ArrayRef<const Value *> Operands, Type *AccessType,
                              TTI::TargetCostKind CostKind) const {
     // In the basic model, we just assume that all-constant GEPs will be folded
     // into their uses via addressing modes.
-    for (unsigned Idx = 0, Size = Operands.size(); Idx != Size; ++Idx)
-      if (!isa<Constant>(Operands[Idx]))
+    for (const Value *Operand : Operands)
+      if (!isa<Constant>(Operand))
         return TTI::TCC_Basic;
 
     return TTI::TCC_Free;
@@ -68,12 +69,23 @@ public:
   }
 
   unsigned getInliningThresholdMultiplier() const { return 1; }
+  unsigned getInliningCostBenefitAnalysisSavingsMultiplier() const { return 8; }
+  unsigned getInliningCostBenefitAnalysisProfitableMultiplier() const {
+    return 8;
+  }
   unsigned adjustInliningThreshold(const CallBase *CB) const { return 0; }
+  unsigned getCallerAllocaCost(const CallBase *CB, const AllocaInst *AI) const {
+    return 0;
+  };
 
   int getInlinerVectorBonusPercent() const { return 150; }
 
   InstructionCost getMemcpyCost(const Instruction *I) const {
     return TTI::TCC_Expensive;
+  }
+
+  uint64_t getMaxMemIntrinsicInlineSizeThreshold() const {
+    return 64;
   }
 
   // Although this default value is arbitrary, it is not random. It is assumed
@@ -86,13 +98,19 @@ public:
     return BranchProbability(99, 100);
   }
 
-  bool hasBranchDivergence() const { return false; }
-
-  bool useGPUDivergenceAnalysis() const { return false; }
+  bool hasBranchDivergence(const Function *F = nullptr) const { return false; }
 
   bool isSourceOfDivergence(const Value *V) const { return false; }
 
   bool isAlwaysUniform(const Value *V) const { return false; }
+
+  bool isValidAddrSpaceCast(unsigned FromAS, unsigned ToAS) const {
+    return false;
+  }
+
+  bool addrspacesMayAlias(unsigned AS0, unsigned AS1) const {
+    return true;
+  }
 
   unsigned getFlatAddressSpace() const { return -1; }
 
@@ -107,6 +125,8 @@ public:
   };
 
   unsigned getAssumedAddrSpace(const Value *V) const { return -1; }
+
+  bool isSingleThreaded() const { return false; }
 
   std::pair<const Value *, unsigned>
   getPredicatedAddrSpace(const Value *V) const {
@@ -160,35 +180,31 @@ public:
     return false;
   }
 
-  bool preferPredicateOverEpilogue(Loop *L, LoopInfo *LI, ScalarEvolution &SE,
-                                   AssumptionCache &AC, TargetLibraryInfo *TLI,
-                                   DominatorTree *DT,
-                                   LoopVectorizationLegality *LVL) const {
-    return false;
+  bool preferPredicateOverEpilogue(TailFoldingInfo *TFI) const { return false; }
+
+  TailFoldingStyle
+  getPreferredTailFoldingStyle(bool IVUpdateMayOverflow = true) const {
+    return TailFoldingStyle::DataWithoutLaneMask;
   }
 
-  PredicationStyle emitGetActiveLaneMask() const {
-    return PredicationStyle::None;
+  std::optional<Instruction *> instCombineIntrinsic(InstCombiner &IC,
+                                                    IntrinsicInst &II) const {
+    return std::nullopt;
   }
 
-  Optional<Instruction *> instCombineIntrinsic(InstCombiner &IC,
-                                               IntrinsicInst &II) const {
-    return None;
-  }
-
-  Optional<Value *>
+  std::optional<Value *>
   simplifyDemandedUseBitsIntrinsic(InstCombiner &IC, IntrinsicInst &II,
                                    APInt DemandedMask, KnownBits &Known,
                                    bool &KnownBitsComputed) const {
-    return None;
+    return std::nullopt;
   }
 
-  Optional<Value *> simplifyDemandedVectorEltsIntrinsic(
+  std::optional<Value *> simplifyDemandedVectorEltsIntrinsic(
       InstCombiner &IC, IntrinsicInst &II, APInt DemandedElts, APInt &UndefElts,
       APInt &UndefElts2, APInt &UndefElts3,
       std::function<void(Instruction *, unsigned, APInt, APInt &)>
           SimplifyAndSetOp) const {
-    return None;
+    return std::nullopt;
   }
 
   void getUnrollingPreferences(Loop *, ScalarEvolution &,
@@ -218,6 +234,8 @@ public:
   }
 
   bool isNumRegsMajorCostOfLSR() const { return true; }
+
+  bool shouldFoldTerminatingConditionAfterLSR() const { return false; }
 
   bool isProfitableLSRChainElement(Instruction *I) const { return false; }
 
@@ -329,18 +347,25 @@ public:
 
   InstructionCost getScalarizationOverhead(VectorType *Ty,
                                            const APInt &DemandedElts,
-                                           bool Insert, bool Extract) const {
+                                           bool Insert, bool Extract,
+                                           TTI::TargetCostKind CostKind) const {
     return 0;
   }
 
-  InstructionCost getOperandsScalarizationOverhead(ArrayRef<const Value *> Args,
-                                                   ArrayRef<Type *> Tys) const {
+  InstructionCost
+  getOperandsScalarizationOverhead(ArrayRef<const Value *> Args,
+                                   ArrayRef<Type *> Tys,
+                                   TTI::TargetCostKind CostKind) const {
     return 0;
   }
 
   bool supportsEfficientVectorElementLoadStore() const { return false; }
 
   bool supportsTailCalls() const { return true; }
+
+  bool supportsTailCallFor(const CallBase *CB) const {
+    return supportsTailCalls();
+  }
 
   bool enableAggressiveInterleaving(bool LoopHasReductions) const {
     return false;
@@ -351,6 +376,17 @@ public:
     return {};
   }
 
+  bool enableSelectOptimize() const { return true; }
+
+  bool shouldTreatInstructionLikeSelect(const Instruction *I) {
+    // If the select is a logical-and/logical-or then it is better treated as a
+    // and/or by the backend.
+    using namespace llvm::PatternMatch;
+    return isa<SelectInst>(I) &&
+           !match(I, m_CombineOr(m_LogicalAnd(m_Value(), m_Value()),
+                                 m_LogicalOr(m_Value(), m_Value())));
+  }
+
   bool enableInterleavedAccessVectorization() const { return false; }
 
   bool enableMaskedInterleavedAccessVectorization() const { return false; }
@@ -359,7 +395,7 @@ public:
 
   bool allowsMisalignedMemoryAccesses(LLVMContext &Context, unsigned BitWidth,
                                       unsigned AddressSpace, Align Alignment,
-                                      bool *Fast) const {
+                                      unsigned *Fast) const {
     return false;
   }
 
@@ -368,6 +404,8 @@ public:
   }
 
   bool haveFastSqrt(Type *Ty) const { return false; }
+
+  bool isExpensiveToSpeculativelyExecute(const Instruction *I) { return true; }
 
   bool isFCmpOrdCheaperThanFCmpZero(Type *Ty) const { return true; }
 
@@ -398,6 +436,11 @@ public:
     return TTI::TCC_Free;
   }
 
+  bool preferToKeepConstantsAttached(const Instruction &Inst,
+                                     const Function &Fn) const {
+    return false;
+  }
+
   unsigned getNumberOfRegisters(unsigned ClassID) const { return 8; }
 
   unsigned getRegisterClassForType(bool Vector, Type *Ty = nullptr) const {
@@ -421,8 +464,9 @@ public:
 
   unsigned getMinVectorRegisterBitWidth() const { return 128; }
 
-  Optional<unsigned> getMaxVScale() const { return None; }
-  Optional<unsigned> getVScaleForTuning() const { return None; }
+  std::optional<unsigned> getMaxVScale() const { return std::nullopt; }
+  std::optional<unsigned> getVScaleForTuning() const { return std::nullopt; }
+  bool isVScaleKnownToBeAPowerOfTwo() const { return false; }
 
   bool
   shouldMaximizeVectorBandwidth(TargetTransformInfo::RegisterKind K) const {
@@ -443,29 +487,30 @@ public:
   }
 
   unsigned getCacheLineSize() const { return 0; }
-
-  llvm::Optional<unsigned>
+  std::optional<unsigned>
   getCacheSize(TargetTransformInfo::CacheLevel Level) const {
     switch (Level) {
     case TargetTransformInfo::CacheLevel::L1D:
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
     case TargetTransformInfo::CacheLevel::L2D:
-      return llvm::Optional<unsigned>();
+      return std::nullopt;
     }
     llvm_unreachable("Unknown TargetTransformInfo::CacheLevel");
   }
 
-  llvm::Optional<unsigned>
+  std::optional<unsigned>
   getCacheAssociativity(TargetTransformInfo::CacheLevel Level) const {
     switch (Level) {
     case TargetTransformInfo::CacheLevel::L1D:
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
     case TargetTransformInfo::CacheLevel::L2D:
-      return llvm::Optional<unsigned>();
+      return std::nullopt;
     }
 
     llvm_unreachable("Unknown TargetTransformInfo::CacheLevel");
   }
+
+  std::optional<unsigned> getMinPageSize() const { return {}; }
 
   unsigned getPrefetchDistance() const { return 0; }
   unsigned getMinPrefetchStride(unsigned NumMemAccesses,
@@ -475,15 +520,23 @@ public:
   }
   unsigned getMaxPrefetchIterationsAhead() const { return UINT_MAX; }
   bool enableWritePrefetching() const { return false; }
+  bool shouldPrefetchAddressSpace(unsigned AS) const { return !AS; }
 
-  unsigned getMaxInterleaveFactor(unsigned VF) const { return 1; }
+  unsigned getMaxInterleaveFactor(ElementCount VF) const { return 1; }
 
   InstructionCost getArithmeticInstrCost(
       unsigned Opcode, Type *Ty, TTI::TargetCostKind CostKind,
-      TTI::OperandValueKind Opd1Info, TTI::OperandValueKind Opd2Info,
-      TTI::OperandValueProperties Opd1PropInfo,
-      TTI::OperandValueProperties Opd2PropInfo, ArrayRef<const Value *> Args,
+      TTI::OperandValueInfo Opd1Info, TTI::OperandValueInfo Opd2Info,
+      ArrayRef<const Value *> Args,
       const Instruction *CxtI = nullptr) const {
+    // Widenable conditions will eventually lower into constants, so some
+    // operations with them will be trivially optimized away.
+    auto IsWidenableCondition = [](const Value *V) {
+      if (auto *II = dyn_cast<IntrinsicInst>(V))
+        if (II->getIntrinsicID() == Intrinsic::experimental_widenable_condition)
+          return true;
+      return false;
+    };
     // FIXME: A number of transformation tests seem to require these values
     // which seems a little odd for how arbitary there are.
     switch (Opcode) {
@@ -497,14 +550,32 @@ public:
     case Instruction::URem:
       // FIXME: Unlikely to be true for CodeSize.
       return TTI::TCC_Expensive;
+    case Instruction::And:
+    case Instruction::Or:
+      if (any_of(Args, IsWidenableCondition))
+        return TTI::TCC_Free;
+      break;
     }
+
+    // Assume a 3cy latency for fp arithmetic ops.
+    if (CostKind == TTI::TCK_Latency)
+      if (Ty->getScalarType()->isFloatingPointTy())
+        return 3;
+
     return 1;
   }
 
-  InstructionCost getShuffleCost(TTI::ShuffleKind Kind, VectorType *Ty,
-                                 ArrayRef<int> Mask, int Index,
-                                 VectorType *SubTp,
-                                 ArrayRef<const Value *> Args = None) const {
+  InstructionCost getAltInstrCost(VectorType *VecTy, unsigned Opcode0,
+                                  unsigned Opcode1,
+                                  const SmallBitVector &OpcodeMask,
+                                  TTI::TargetCostKind CostKind) const {
+    return InstructionCost::getInvalid();
+  }
+
+  InstructionCost
+  getShuffleCost(TTI::ShuffleKind Kind, VectorType *Ty, ArrayRef<int> Mask,
+                 TTI::TargetCostKind CostKind, int Index, VectorType *SubTp,
+                 ArrayRef<const Value *> Args = std::nullopt) const {
     return 1;
   }
 
@@ -538,7 +609,7 @@ public:
       // trunc to a native type is free (assuming the target has compare and
       // shift-right of the same width).
       TypeSize DstSize = DL.getTypeSizeInBits(Dst);
-      if (!DstSize.isScalable() && DL.isLegalInteger(DstSize.getFixedSize()))
+      if (!DstSize.isScalable() && DL.isLegalInteger(DstSize.getFixedValue()))
         return 0;
       break;
     }
@@ -569,6 +640,14 @@ public:
   }
 
   InstructionCost getVectorInstrCost(unsigned Opcode, Type *Val,
+                                     TTI::TargetCostKind CostKind,
+                                     unsigned Index, Value *Op0,
+                                     Value *Op1) const {
+    return 1;
+  }
+
+  InstructionCost getVectorInstrCost(const Instruction &I, Type *Val,
+                                     TTI::TargetCostKind CostKind,
                                      unsigned Index) const {
     return 1;
   }
@@ -582,6 +661,7 @@ public:
   InstructionCost getMemoryOpCost(unsigned Opcode, Type *Src, Align Alignment,
                                   unsigned AddressSpace,
                                   TTI::TargetCostKind CostKind,
+                                  TTI::OperandValueInfo OpInfo,
                                   const Instruction *I) const {
     return 1;
   }
@@ -624,6 +704,7 @@ public:
     case Intrinsic::sideeffect:
     case Intrinsic::pseudoprobe:
     case Intrinsic::arithmetic_fence:
+    case Intrinsic::dbg_assign:
     case Intrinsic::dbg_declare:
     case Intrinsic::dbg_value:
     case Intrinsic::dbg_label:
@@ -649,6 +730,9 @@ public:
     case Intrinsic::coro_align:
     case Intrinsic::coro_suspend:
     case Intrinsic::coro_subfn_addr:
+    case Intrinsic::threadlocal_address:
+    case Intrinsic::experimental_widenable_condition:
+    case Intrinsic::ssa_copy:
       // These intrinsics don't actually represent code after lowering.
       return 0;
     }
@@ -670,20 +754,27 @@ public:
   }
 
   InstructionCost getArithmeticReductionCost(unsigned, VectorType *,
-                                             Optional<FastMathFlags> FMF,
+                                             std::optional<FastMathFlags> FMF,
                                              TTI::TargetCostKind) const {
     return 1;
   }
 
-  InstructionCost getMinMaxReductionCost(VectorType *, VectorType *, bool,
+  InstructionCost getMinMaxReductionCost(Intrinsic::ID IID, VectorType *,
+                                         FastMathFlags,
                                          TTI::TargetCostKind) const {
     return 1;
   }
 
-  InstructionCost
-  getExtendedAddReductionCost(bool IsMLA, bool IsUnsigned, Type *ResTy,
-                              VectorType *Ty,
-                              TTI::TargetCostKind CostKind) const {
+  InstructionCost getExtendedReductionCost(unsigned Opcode, bool IsUnsigned,
+                                           Type *ResTy, VectorType *Ty,
+                                           FastMathFlags FMF,
+                                           TTI::TargetCostKind CostKind) const {
+    return 1;
+  }
+
+  InstructionCost getMulAccReductionCost(bool IsUnsigned, Type *ResTy,
+                                         VectorType *Ty,
+                                         TTI::TargetCostKind CostKind) const {
     return 1;
   }
 
@@ -709,10 +800,11 @@ public:
     return nullptr;
   }
 
-  Type *getMemcpyLoopLoweringType(LLVMContext &Context, Value *Length,
-                                  unsigned SrcAddrSpace, unsigned DestAddrSpace,
-                                  unsigned SrcAlign, unsigned DestAlign,
-                                  Optional<uint32_t> AtomicElementSize) const {
+  Type *
+  getMemcpyLoopLoweringType(LLVMContext &Context, Value *Length,
+                            unsigned SrcAddrSpace, unsigned DestAddrSpace,
+                            unsigned SrcAlign, unsigned DestAlign,
+                            std::optional<uint32_t> AtomicElementSize) const {
     return AtomicElementSize ? Type::getIntNTy(Context, *AtomicElementSize * 8)
                              : Type::getInt8Ty(Context);
   }
@@ -721,7 +813,7 @@ public:
       SmallVectorImpl<Type *> &OpsOut, LLVMContext &Context,
       unsigned RemainingBytes, unsigned SrcAddrSpace, unsigned DestAddrSpace,
       unsigned SrcAlign, unsigned DestAlign,
-      Optional<uint32_t> AtomicCpySize) const {
+      std::optional<uint32_t> AtomicCpySize) const {
     unsigned OpSizeInBytes = AtomicCpySize ? *AtomicCpySize : 1;
     Type *OpType = Type::getIntNTy(Context, OpSizeInBytes * 8);
     for (unsigned i = 0; i != RemainingBytes; i += OpSizeInBytes)
@@ -734,6 +826,11 @@ public:
             Callee->getFnAttribute("target-cpu")) &&
            (Caller->getFnAttribute("target-features") ==
             Callee->getFnAttribute("target-features"));
+  }
+
+  unsigned getInlineCallPenalty(const Function *F, const CallBase &Call,
+                                unsigned DefaultCallPenalty) const {
+    return DefaultCallPenalty;
   }
 
   bool areTypesABICompatible(const Function *Caller, const Function *Callee,
@@ -799,6 +896,10 @@ public:
     return false;
   }
 
+  bool preferEpilogueVectorization() const {
+    return true;
+  }
+
   bool shouldExpandReduction(const IntrinsicInst *II) const { return true; }
 
   unsigned getGISelRematGlobalCost() const { return 1; }
@@ -821,6 +922,10 @@ public:
         /* OperatorStrategy */ TargetTransformInfo::VPLegalization::Convert);
   }
 
+  bool hasArmWideBranch(bool) const { return false; }
+
+  unsigned getMaxNumArgs() const { return UINT_MAX; }
+
 protected:
   // Obtain the minimum required size to hold the value (without the sign)
   // In case of a vector it returns the min required size for one element.
@@ -837,7 +942,7 @@ protected:
 
       // The max required size is the size of the vector element type
       unsigned MaxRequiredSize =
-          VT->getElementType()->getPrimitiveSizeInBits().getFixedSize();
+          VT->getElementType()->getPrimitiveSizeInBits().getFixedValue();
 
       unsigned MinRequiredSize = 0;
       for (unsigned i = 0, e = VT->getNumElements(); i < e; ++i) {
@@ -846,7 +951,7 @@ protected:
           bool signedElement = IntElement->getValue().isNegative();
           // Get the element min required size.
           unsigned ElementMinRequiredSize =
-              IntElement->getValue().getMinSignedBits() - 1;
+              IntElement->getValue().getSignificantBits() - 1;
           // In case one element is signed then all the vector is signed.
           isSigned |= signedElement;
           // Save the max required bit size between all the elements.
@@ -861,7 +966,7 @@ protected:
 
     if (const auto *CI = dyn_cast<ConstantInt>(Val)) {
       isSigned = CI->getValue().isNegative();
-      return CI->getValue().getMinSignedBits() - 1;
+      return CI->getValue().getSignificantBits() - 1;
     }
 
     if (const auto *Cast = dyn_cast<SExtInst>(Val)) {
@@ -917,12 +1022,9 @@ public:
   using BaseT::getGEPCost;
 
   InstructionCost getGEPCost(Type *PointeeType, const Value *Ptr,
-                             ArrayRef<const Value *> Operands,
+                             ArrayRef<const Value *> Operands, Type *AccessType,
                              TTI::TargetCostKind CostKind) {
     assert(PointeeType && Ptr && "can't get GEPCost of nullptr");
-    assert(cast<PointerType>(Ptr->getType()->getScalarType())
-               ->isOpaqueOrPointeeTypeMatches(PointeeType) &&
-           "explicit pointee type doesn't match operand's pointee type");
     auto *BaseGV = dyn_cast<GlobalValue>(Ptr->stripPointerCasts());
     bool HasBaseReg = (BaseGV == nullptr);
 
@@ -953,11 +1055,11 @@ public:
         BaseOffset += DL.getStructLayout(STy)->getElementOffset(Field);
       } else {
         // If this operand is a scalable type, bail out early.
-        // TODO: handle scalable vectors
-        if (isa<ScalableVectorType>(TargetType))
+        // TODO: Make isLegalAddressingMode TypeSize aware.
+        if (TargetType->isScalableTy())
           return TTI::TCC_Basic;
         int64_t ElementSize =
-            DL.getTypeAllocSize(GTI.getIndexedType()).getFixedSize();
+            GTI.getSequentialElementStride(DL).getFixedValue();
         if (ConstIdx) {
           BaseOffset +=
               ConstIdx->getValue().sextOrTrunc(PtrSizeBits) * ElementSize;
@@ -971,16 +1073,72 @@ public:
       }
     }
 
+    // If we haven't been provided a hint, use the target type for now.
+    //
+    // TODO: Take a look at potentially removing this: This is *slightly* wrong
+    // as it's possible to have a GEP with a foldable target type but a memory
+    // access that isn't foldable. For example, this load isn't foldable on
+    // RISC-V:
+    //
+    // %p = getelementptr i32, ptr %base, i32 42
+    // %x = load <2 x i32>, ptr %p
+    if (!AccessType)
+      AccessType = TargetType;
+
+    // If the final address of the GEP is a legal addressing mode for the given
+    // access type, then we can fold it into its users.
     if (static_cast<T *>(this)->isLegalAddressingMode(
-            TargetType, const_cast<GlobalValue *>(BaseGV),
+            AccessType, const_cast<GlobalValue *>(BaseGV),
             BaseOffset.sextOrTrunc(64).getSExtValue(), HasBaseReg, Scale,
             Ptr->getType()->getPointerAddressSpace()))
       return TTI::TCC_Free;
+
+    // TODO: Instead of returning TCC_Basic here, we should use
+    // getArithmeticInstrCost. Or better yet, provide a hook to let the target
+    // model it.
     return TTI::TCC_Basic;
   }
 
-  InstructionCost getUserCost(const User *U, ArrayRef<const Value *> Operands,
-                              TTI::TargetCostKind CostKind) {
+  InstructionCost getPointersChainCost(ArrayRef<const Value *> Ptrs,
+                                       const Value *Base,
+                                       const TTI::PointersChainInfo &Info,
+                                       Type *AccessTy,
+                                       TTI::TargetCostKind CostKind) {
+    InstructionCost Cost = TTI::TCC_Free;
+    // In the basic model we take into account GEP instructions only
+    // (although here can come alloca instruction, a value, constants and/or
+    // constant expressions, PHIs, bitcasts ... whatever allowed to be used as a
+    // pointer). Typically, if Base is a not a GEP-instruction and all the
+    // pointers are relative to the same base address, all the rest are
+    // either GEP instructions, PHIs, bitcasts or constants. When we have same
+    // base, we just calculate cost of each non-Base GEP as an ADD operation if
+    // any their index is a non-const.
+    // If no known dependecies between the pointers cost is calculated as a sum
+    // of costs of GEP instructions.
+    for (const Value *V : Ptrs) {
+      const auto *GEP = dyn_cast<GetElementPtrInst>(V);
+      if (!GEP)
+        continue;
+      if (Info.isSameBase() && V != Base) {
+        if (GEP->hasAllConstantIndices())
+          continue;
+        Cost += static_cast<T *>(this)->getArithmeticInstrCost(
+            Instruction::Add, GEP->getType(), CostKind,
+            {TTI::OK_AnyValue, TTI::OP_None}, {TTI::OK_AnyValue, TTI::OP_None},
+            std::nullopt);
+      } else {
+        SmallVector<const Value *> Indices(GEP->indices());
+        Cost += static_cast<T *>(this)->getGEPCost(GEP->getSourceElementType(),
+                                                   GEP->getPointerOperand(),
+                                                   Indices, AccessTy, CostKind);
+      }
+    }
+    return Cost;
+  }
+
+  InstructionCost getInstructionCost(const User *U,
+                                     ArrayRef<const Value *> Operands,
+                                     TTI::TargetCostKind CostKind) {
     using namespace llvm::PatternMatch;
 
     auto *TargetTTI = static_cast<T *>(this);
@@ -1024,9 +1182,15 @@ public:
       break;
     case Instruction::GetElementPtr: {
       const auto *GEP = cast<GEPOperator>(U);
+      Type *AccessType = nullptr;
+      // For now, only provide the AccessType in the simple case where the GEP
+      // only has one user.
+      if (GEP->hasOneUser() && I)
+        AccessType = I->user_back()->getAccessType();
+
       return TargetTTI->getGEPCost(GEP->getSourceElementType(),
-                                   GEP->getPointerOperand(),
-                                   Operands.drop_front(), CostKind);
+                                   Operands.front(), Operands.drop_front(),
+                                   AccessType, CostKind);
     }
     case Instruction::Add:
     case Instruction::FAdd:
@@ -1047,16 +1211,12 @@ public:
     case Instruction::Or:
     case Instruction::Xor:
     case Instruction::FNeg: {
-      TTI::OperandValueProperties Op1VP = TTI::OP_None;
-      TTI::OperandValueProperties Op2VP = TTI::OP_None;
-      TTI::OperandValueKind Op1VK =
-        TTI::getOperandInfo(U->getOperand(0), Op1VP);
-      TTI::OperandValueKind Op2VK = Opcode != Instruction::FNeg ?
-        TTI::getOperandInfo(U->getOperand(1), Op2VP) : TTI::OK_AnyValue;
-      SmallVector<const Value *, 2> Operands(U->operand_values());
-      return TargetTTI->getArithmeticInstrCost(Opcode, Ty, CostKind,
-                                               Op1VK, Op2VK,
-                                               Op1VP, Op2VP, Operands, I);
+      const TTI::OperandValueInfo Op1Info = TTI::getOperandInfo(Operands[0]);
+      TTI::OperandValueInfo Op2Info;
+      if (Opcode != Instruction::FNeg)
+        Op2Info = TTI::getOperandInfo(Operands[1]);
+      return TargetTTI->getArithmeticInstrCost(Opcode, Ty, CostKind, Op1Info,
+                                               Op2Info, Operands, I);
     }
     case Instruction::IntToPtr:
     case Instruction::PtrToInt:
@@ -1071,18 +1231,22 @@ public:
     case Instruction::SExt:
     case Instruction::ZExt:
     case Instruction::AddrSpaceCast: {
-      Type *OpTy = U->getOperand(0)->getType();
+      Type *OpTy = Operands[0]->getType();
       return TargetTTI->getCastInstrCost(
           Opcode, Ty, OpTy, TTI::getCastContextHint(I), CostKind, I);
     }
     case Instruction::Store: {
       auto *SI = cast<StoreInst>(U);
-      Type *ValTy = U->getOperand(0)->getType();
+      Type *ValTy = Operands[0]->getType();
+      TTI::OperandValueInfo OpInfo = TTI::getOperandInfo(Operands[0]);
       return TargetTTI->getMemoryOpCost(Opcode, ValTy, SI->getAlign(),
-                                        SI->getPointerAddressSpace(),
-                                        CostKind, I);
+                                        SI->getPointerAddressSpace(), CostKind,
+                                        OpInfo, I);
     }
     case Instruction::Load: {
+      // FIXME: Arbitary cost which could come from the backend.
+      if (CostKind == TTI::TCK_Latency)
+        return 4;
       auto *LI = cast<LoadInst>(U);
       Type *LoadType = U->getType();
       // If there is a non-register sized type, the cost estimation may expand
@@ -1093,13 +1257,13 @@ public:
       // destination type of the trunc instruction rather than the load to
       // accurately estimate the cost of this load instruction.
       if (CostKind == TTI::TCK_CodeSize && LI->hasOneUse() &&
-          !LoadType->isVectorTy()) {    
+          !LoadType->isVectorTy()) {
         if (const TruncInst *TI = dyn_cast<TruncInst>(*LI->user_begin()))
           LoadType = TI->getDestTy();
       }
       return TargetTTI->getMemoryOpCost(Opcode, LoadType, LI->getAlign(),
-                                        LI->getPointerAddressSpace(),
-                                        CostKind, I);
+                                        LI->getPointerAddressSpace(), CostKind,
+                                        {TTI::OK_AnyValue, TTI::OP_None}, I);
     }
     case Instruction::Select: {
       const Value *Op0, *Op1;
@@ -1107,26 +1271,24 @@ public:
           match(U, m_LogicalOr(m_Value(Op0), m_Value(Op1)))) {
         // select x, y, false --> x & y
         // select x, true, y --> x | y
-        TTI::OperandValueProperties Op1VP = TTI::OP_None;
-        TTI::OperandValueProperties Op2VP = TTI::OP_None;
-        TTI::OperandValueKind Op1VK = TTI::getOperandInfo(Op0, Op1VP);
-        TTI::OperandValueKind Op2VK = TTI::getOperandInfo(Op1, Op2VP);
+        const auto Op1Info = TTI::getOperandInfo(Op0);
+        const auto Op2Info = TTI::getOperandInfo(Op1);
         assert(Op0->getType()->getScalarSizeInBits() == 1 &&
                Op1->getType()->getScalarSizeInBits() == 1);
 
         SmallVector<const Value *, 2> Operands{Op0, Op1};
         return TargetTTI->getArithmeticInstrCost(
             match(U, m_LogicalOr()) ? Instruction::Or : Instruction::And, Ty,
-            CostKind, Op1VK, Op2VK, Op1VP, Op2VP, Operands, I);
+            CostKind, Op1Info, Op2Info, Operands, I);
       }
-      Type *CondTy = U->getOperand(0)->getType();
+      Type *CondTy = Operands[0]->getType();
       return TargetTTI->getCmpSelInstrCost(Opcode, U->getType(), CondTy,
                                            CmpInst::BAD_ICMP_PREDICATE,
                                            CostKind, I);
     }
     case Instruction::ICmp:
     case Instruction::FCmp: {
-      Type *ValTy = U->getOperand(0)->getType();
+      Type *ValTy = Operands[0]->getType();
       // TODO: Also handle ICmp/FCmp constant expressions.
       return TargetTTI->getCmpSelInstrCost(Opcode, ValTy, U->getType(),
                                            I ? cast<CmpInst>(I)->getPredicate()
@@ -1138,10 +1300,10 @@ public:
       if (!IE)
         return TTI::TCC_Basic; // FIXME
       unsigned Idx = -1;
-      if (auto *CI = dyn_cast<ConstantInt>(IE->getOperand(2)))
+      if (auto *CI = dyn_cast<ConstantInt>(Operands[2]))
         if (CI->getValue().getActiveBits() <= 32)
           Idx = CI->getZExtValue();
-      return TargetTTI->getVectorInstrCost(Opcode, Ty, Idx);
+      return TargetTTI->getVectorInstrCost(*IE, Ty, CostKind, Idx);
     }
     case Instruction::ShuffleVector: {
       auto *Shuffle = dyn_cast<ShuffleVectorInst>(U);
@@ -1149,7 +1311,7 @@ public:
         return TTI::TCC_Basic; // FIXME
 
       auto *VecTy = cast<VectorType>(U->getType());
-      auto *VecSrcTy = cast<VectorType>(U->getOperand(0)->getType());
+      auto *VecSrcTy = cast<VectorType>(Operands[0]->getType());
       int NumSubElts, SubIndex;
 
       if (Shuffle->changesLength()) {
@@ -1159,22 +1321,22 @@ public:
 
         if (Shuffle->isExtractSubvectorMask(SubIndex))
           return TargetTTI->getShuffleCost(TTI::SK_ExtractSubvector, VecSrcTy,
-                                           Shuffle->getShuffleMask(), SubIndex,
-                                           VecTy, Operands);
+                                           Shuffle->getShuffleMask(), CostKind,
+                                           SubIndex, VecTy, Operands);
 
         if (Shuffle->isInsertSubvectorMask(NumSubElts, SubIndex))
           return TargetTTI->getShuffleCost(
               TTI::SK_InsertSubvector, VecTy, Shuffle->getShuffleMask(),
-              SubIndex,
+              CostKind, SubIndex,
               FixedVectorType::get(VecTy->getScalarType(), NumSubElts),
               Operands);
 
         int ReplicationFactor, VF;
         if (Shuffle->isReplicationMask(ReplicationFactor, VF)) {
           APInt DemandedDstElts =
-              APInt::getNullValue(Shuffle->getShuffleMask().size());
+              APInt::getZero(Shuffle->getShuffleMask().size());
           for (auto I : enumerate(Shuffle->getShuffleMask())) {
-            if (I.value() != UndefMaskElem)
+            if (I.value() != PoisonMaskElem)
               DemandedDstElts.setBit(I.index());
           }
           return TargetTTI->getReplicationShuffleCost(
@@ -1190,83 +1352,68 @@ public:
 
       if (Shuffle->isReverse())
         return TargetTTI->getShuffleCost(TTI::SK_Reverse, VecTy,
-                                         Shuffle->getShuffleMask(), 0, nullptr,
-                                         Operands);
+                                         Shuffle->getShuffleMask(), CostKind, 0,
+                                         nullptr, Operands);
 
       if (Shuffle->isSelect())
         return TargetTTI->getShuffleCost(TTI::SK_Select, VecTy,
-                                         Shuffle->getShuffleMask(), 0, nullptr,
-                                         Operands);
+                                         Shuffle->getShuffleMask(), CostKind, 0,
+                                         nullptr, Operands);
 
       if (Shuffle->isTranspose())
         return TargetTTI->getShuffleCost(TTI::SK_Transpose, VecTy,
-                                         Shuffle->getShuffleMask(), 0, nullptr,
-                                         Operands);
+                                         Shuffle->getShuffleMask(), CostKind, 0,
+                                         nullptr, Operands);
 
       if (Shuffle->isZeroEltSplat())
         return TargetTTI->getShuffleCost(TTI::SK_Broadcast, VecTy,
-                                         Shuffle->getShuffleMask(), 0, nullptr,
-                                         Operands);
+                                         Shuffle->getShuffleMask(), CostKind, 0,
+                                         nullptr, Operands);
 
       if (Shuffle->isSingleSource())
         return TargetTTI->getShuffleCost(TTI::SK_PermuteSingleSrc, VecTy,
-                                         Shuffle->getShuffleMask(), 0, nullptr,
-                                         Operands);
+                                         Shuffle->getShuffleMask(), CostKind, 0,
+                                         nullptr, Operands);
 
       if (Shuffle->isInsertSubvectorMask(NumSubElts, SubIndex))
         return TargetTTI->getShuffleCost(
-            TTI::SK_InsertSubvector, VecTy, Shuffle->getShuffleMask(), SubIndex,
-            FixedVectorType::get(VecTy->getScalarType(), NumSubElts), Operands);
+            TTI::SK_InsertSubvector, VecTy, Shuffle->getShuffleMask(), CostKind,
+            SubIndex, FixedVectorType::get(VecTy->getScalarType(), NumSubElts),
+            Operands);
+
+      if (Shuffle->isSplice(SubIndex))
+        return TargetTTI->getShuffleCost(TTI::SK_Splice, VecTy,
+                                         Shuffle->getShuffleMask(), CostKind,
+                                         SubIndex, nullptr, Operands);
 
       return TargetTTI->getShuffleCost(TTI::SK_PermuteTwoSrc, VecTy,
-                                       Shuffle->getShuffleMask(), 0, nullptr,
-                                       Operands);
+                                       Shuffle->getShuffleMask(), CostKind, 0,
+                                       nullptr, Operands);
     }
     case Instruction::ExtractElement: {
       auto *EEI = dyn_cast<ExtractElementInst>(U);
       if (!EEI)
         return TTI::TCC_Basic; // FIXME
       unsigned Idx = -1;
-      if (auto *CI = dyn_cast<ConstantInt>(EEI->getOperand(1)))
+      if (auto *CI = dyn_cast<ConstantInt>(Operands[1]))
         if (CI->getValue().getActiveBits() <= 32)
           Idx = CI->getZExtValue();
-      Type *DstTy = U->getOperand(0)->getType();
-      return TargetTTI->getVectorInstrCost(Opcode, DstTy, Idx);
+      Type *DstTy = Operands[0]->getType();
+      return TargetTTI->getVectorInstrCost(*EEI, DstTy, CostKind, Idx);
     }
     }
-    // By default, just classify everything as 'basic'.
-    return TTI::TCC_Basic;
+
+    // By default, just classify everything as 'basic' or -1 to represent that
+    // don't know the throughput cost.
+    return CostKind == TTI::TCK_RecipThroughput ? -1 : TTI::TCC_Basic;
   }
 
-  InstructionCost getInstructionLatency(const Instruction *I) {
-    SmallVector<const Value *, 4> Operands(I->operand_values());
-    if (getUserCost(I, Operands, TTI::TCK_Latency) == TTI::TCC_Free)
-      return 0;
-
-    if (isa<LoadInst>(I))
-      return 4;
-
-    Type *DstTy = I->getType();
-
-    // Usually an intrinsic is a simple instruction.
-    // A real function call is much slower.
-    if (auto *CI = dyn_cast<CallInst>(I)) {
-      const Function *F = CI->getCalledFunction();
-      if (!F || static_cast<T *>(this)->isLoweredToCall(F))
-        return 40;
-      // Some intrinsics return a value and a flag, we use the value type
-      // to decide its latency.
-      if (StructType *StructTy = dyn_cast<StructType>(DstTy))
-        DstTy = StructTy->getElementType(0);
-      // Fall through to simple instructions.
-    }
-
-    if (VectorType *VectorTy = dyn_cast<VectorType>(DstTy))
-      DstTy = VectorTy->getElementType();
-    if (DstTy->isFloatingPointTy())
-      return 3;
-
-    return 1;
+  bool isExpensiveToSpeculativelyExecute(const Instruction *I) {
+    auto *TargetTTI = static_cast<T *>(this);
+    SmallVector<const Value *, 4> Ops(I->operand_values());
+    InstructionCost Cost = TargetTTI->getInstructionCost(
+        I, Ops, TargetTransformInfo::TCK_SizeAndLatency);
+    return Cost >= TargetTransformInfo::TCC_Expensive;
   }
 };
 } // namespace llvm

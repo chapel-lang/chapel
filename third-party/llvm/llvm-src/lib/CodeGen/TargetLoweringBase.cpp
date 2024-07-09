@@ -15,7 +15,6 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/Analysis/Loads.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
@@ -29,6 +28,7 @@
 #include "llvm/CodeGen/MachineMemOperand.h"
 #include "llvm/CodeGen/MachineOperand.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/CodeGen/MachineValueType.h"
 #include "llvm/CodeGen/RuntimeLibcalls.h"
 #include "llvm/CodeGen/StackMaps.h"
 #include "llvm/CodeGen/TargetLowering.h"
@@ -49,10 +49,10 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/MachineValueType.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
+#include "llvm/TargetParser/Triple.h"
 #include "llvm/Transforms/Utils/SizeOpts.h"
 #include <algorithm>
 #include <cassert>
@@ -208,6 +208,18 @@ void TargetLoweringBase::InitLibcalls(const Triple &TT) {
 
   if (TT.isOSOpenBSD()) {
     setLibcallName(RTLIB::STACKPROTECTOR_CHECK_FAIL, nullptr);
+  }
+
+  if (TT.isOSWindows() && !TT.isOSCygMing()) {
+    setLibcallName(RTLIB::LDEXP_F32, nullptr);
+    setLibcallName(RTLIB::LDEXP_F80, nullptr);
+    setLibcallName(RTLIB::LDEXP_F128, nullptr);
+    setLibcallName(RTLIB::LDEXP_PPCF128, nullptr);
+
+    setLibcallName(RTLIB::FREXP_F32, nullptr);
+    setLibcallName(RTLIB::FREXP_F80, nullptr);
+    setLibcallName(RTLIB::FREXP_F128, nullptr);
+    setLibcallName(RTLIB::FREXP_PPCF128, nullptr);
   }
 }
 
@@ -498,27 +510,38 @@ RTLIB::Libcall RTLIB::getPOWI(EVT RetVT) {
                       POWI_PPCF128);
 }
 
-RTLIB::Libcall RTLIB::getOUTLINE_ATOMIC(unsigned Opc, AtomicOrdering Order,
-                                        MVT VT) {
+RTLIB::Libcall RTLIB::getLDEXP(EVT RetVT) {
+  return getFPLibCall(RetVT, LDEXP_F32, LDEXP_F64, LDEXP_F80, LDEXP_F128,
+                      LDEXP_PPCF128);
+}
+
+RTLIB::Libcall RTLIB::getFREXP(EVT RetVT) {
+  return getFPLibCall(RetVT, FREXP_F32, FREXP_F64, FREXP_F80, FREXP_F128,
+                      FREXP_PPCF128);
+}
+
+RTLIB::Libcall RTLIB::getOutlineAtomicHelper(const Libcall (&LC)[5][4],
+                                             AtomicOrdering Order,
+                                             uint64_t MemSize) {
   unsigned ModeN, ModelN;
-  switch (VT.SimpleTy) {
-  case MVT::i8:
+  switch (MemSize) {
+  case 1:
     ModeN = 0;
     break;
-  case MVT::i16:
+  case 2:
     ModeN = 1;
     break;
-  case MVT::i32:
+  case 4:
     ModeN = 2;
     break;
-  case MVT::i64:
+  case 8:
     ModeN = 3;
     break;
-  case MVT::i128:
+  case 16:
     ModeN = 4;
     break;
   default:
-    return UNKNOWN_LIBCALL;
+    return RTLIB::UNKNOWN_LIBCALL;
   }
 
   switch (Order) {
@@ -539,6 +562,15 @@ RTLIB::Libcall RTLIB::getOUTLINE_ATOMIC(unsigned Opc, AtomicOrdering Order,
     return UNKNOWN_LIBCALL;
   }
 
+  return LC[ModeN][ModelN];
+}
+
+RTLIB::Libcall RTLIB::getOUTLINE_ATOMIC(unsigned Opc, AtomicOrdering Order,
+                                        MVT VT) {
+  if (!VT.isScalarInteger())
+    return UNKNOWN_LIBCALL;
+  uint64_t MemSize = VT.getScalarSizeInBits() / 8;
+
 #define LCALLS(A, B)                                                           \
   { A##B##_RELAX, A##B##_ACQ, A##B##_REL, A##B##_ACQ_REL }
 #define LCALL5(A)                                                              \
@@ -546,27 +578,27 @@ RTLIB::Libcall RTLIB::getOUTLINE_ATOMIC(unsigned Opc, AtomicOrdering Order,
   switch (Opc) {
   case ISD::ATOMIC_CMP_SWAP: {
     const Libcall LC[5][4] = {LCALL5(OUTLINE_ATOMIC_CAS)};
-    return LC[ModeN][ModelN];
+    return getOutlineAtomicHelper(LC, Order, MemSize);
   }
   case ISD::ATOMIC_SWAP: {
     const Libcall LC[5][4] = {LCALL5(OUTLINE_ATOMIC_SWP)};
-    return LC[ModeN][ModelN];
+    return getOutlineAtomicHelper(LC, Order, MemSize);
   }
   case ISD::ATOMIC_LOAD_ADD: {
     const Libcall LC[5][4] = {LCALL5(OUTLINE_ATOMIC_LDADD)};
-    return LC[ModeN][ModelN];
+    return getOutlineAtomicHelper(LC, Order, MemSize);
   }
   case ISD::ATOMIC_LOAD_OR: {
     const Libcall LC[5][4] = {LCALL5(OUTLINE_ATOMIC_LDSET)};
-    return LC[ModeN][ModelN];
+    return getOutlineAtomicHelper(LC, Order, MemSize);
   }
   case ISD::ATOMIC_LOAD_CLR: {
     const Libcall LC[5][4] = {LCALL5(OUTLINE_ATOMIC_LDCLR)};
-    return LC[ModeN][ModelN];
+    return getOutlineAtomicHelper(LC, Order, MemSize);
   }
   case ISD::ATOMIC_LOAD_XOR: {
     const Libcall LC[5][4] = {LCALL5(OUTLINE_ATOMIC_LDEOR)};
-    return LC[ModeN][ModelN];
+    return getOutlineAtomicHelper(LC, Order, MemSize);
   }
   default:
     return UNKNOWN_LIBCALL;
@@ -720,9 +752,13 @@ TargetLoweringBase::TargetLoweringBase(const TargetMachine &tm) : TM(tm) {
   GatherAllAliasesMaxDepth = 18;
   IsStrictFPEnabled = DisableStrictNodeMutation;
   MaxBytesForAlignment = 0;
-  // TODO: the default will be switched to 0 in the next commit, along
-  // with the Target-specific changes necessary.
-  MaxAtomicSizeInBitsSupported = 1024;
+  MaxAtomicSizeInBitsSupported = 0;
+
+  // Assume that even with libcalls, no target supports wider than 128 bit
+  // division.
+  MaxDivRemBitWidthSupported = 128;
+
+  MaxLargeFPConvertBitWidthSupported = llvm::IntegerType::MAX_INT_BITS;
 
   MinCmpXchgSizeInBits = 0;
   SupportsUnalignedAtomics = false;
@@ -815,8 +851,8 @@ void TargetLoweringBase::initActions() {
                         ISD::SMULO, ISD::UMULO},
                        VT, Expand);
 
-    // ADDCARRY operations default to expand
-    setOperationAction({ISD::ADDCARRY, ISD::SUBCARRY, ISD::SETCCCARRY,
+    // Carry-using overflow operations default to expand.
+    setOperationAction({ISD::UADDO_CARRY, ISD::USUBO_CARRY, ISD::SETCCCARRY,
                         ISD::SADDO_CARRY, ISD::SSUBO_CARRY},
                        VT, Expand);
 
@@ -839,17 +875,18 @@ void TargetLoweringBase::initActions() {
     setOperationAction({ISD::BITREVERSE, ISD::PARITY}, VT, Expand);
 
     // These library functions default to expand.
-    setOperationAction({ISD::FROUND, ISD::FROUNDEVEN, ISD::FPOWI}, VT, Expand);
+    setOperationAction({ISD::FROUND, ISD::FPOWI, ISD::FLDEXP, ISD::FFREXP}, VT,
+                       Expand);
 
     // These operations default to expand for vector types.
     if (VT.isVector())
-      setOperationAction({ISD::FCOPYSIGN, ISD::SIGN_EXTEND_INREG,
-                          ISD::ANY_EXTEND_VECTOR_INREG,
-                          ISD::SIGN_EXTEND_VECTOR_INREG,
-                          ISD::ZERO_EXTEND_VECTOR_INREG, ISD::SPLAT_VECTOR},
-                         VT, Expand);
+      setOperationAction(
+          {ISD::FCOPYSIGN, ISD::SIGN_EXTEND_INREG, ISD::ANY_EXTEND_VECTOR_INREG,
+           ISD::SIGN_EXTEND_VECTOR_INREG, ISD::ZERO_EXTEND_VECTOR_INREG,
+           ISD::SPLAT_VECTOR, ISD::LRINT, ISD::LLRINT},
+          VT, Expand);
 
-    // Constrained floating-point operations default to expand.
+      // Constrained floating-point operations default to expand.
 #define DAG_INSTRUCTION(NAME, NARG, ROUND_MODE, INTRINSIC, DAGN)               \
     setOperationAction(ISD::STRICT_##DAGN, VT, Expand);
 #include "llvm/IR/ConstrainedOps.def"
@@ -863,11 +900,22 @@ void TargetLoweringBase::initActions() {
          ISD::VECREDUCE_MUL, ISD::VECREDUCE_AND, ISD::VECREDUCE_OR,
          ISD::VECREDUCE_XOR, ISD::VECREDUCE_SMAX, ISD::VECREDUCE_SMIN,
          ISD::VECREDUCE_UMAX, ISD::VECREDUCE_UMIN, ISD::VECREDUCE_FMAX,
-         ISD::VECREDUCE_FMIN, ISD::VECREDUCE_SEQ_FADD, ISD::VECREDUCE_SEQ_FMUL},
+         ISD::VECREDUCE_FMIN, ISD::VECREDUCE_FMAXIMUM, ISD::VECREDUCE_FMINIMUM,
+         ISD::VECREDUCE_SEQ_FADD, ISD::VECREDUCE_SEQ_FMUL},
         VT, Expand);
 
     // Named vector shuffles default to expand.
     setOperationAction(ISD::VECTOR_SPLICE, VT, Expand);
+
+    // VP operations default to expand.
+#define BEGIN_REGISTER_VP_SDNODE(SDOPC, ...)                                   \
+    setOperationAction(ISD::SDOPC, VT, Expand);
+#include "llvm/IR/VPIntrinsics.def"
+
+    // FP environment operations default to expand.
+    setOperationAction(ISD::GET_FPENV, VT, Expand);
+    setOperationAction(ISD::SET_FPENV, VT, Expand);
+    setOperationAction(ISD::RESET_FPENV, VT, Expand);
   }
 
   // Most targets ignore the @llvm.prefetch intrinsic.
@@ -880,14 +928,14 @@ void TargetLoweringBase::initActions() {
   // Legal, in which case all fp constants are legal, or use isFPImmLegal()
   // to optimize expansions for certain constants.
   setOperationAction(ISD::ConstantFP,
-                     {MVT::f16, MVT::f32, MVT::f64, MVT::f80, MVT::f128},
+                     {MVT::bf16, MVT::f16, MVT::f32, MVT::f64, MVT::f80, MVT::f128},
                      Expand);
 
   // These library functions default to expand.
   setOperationAction({ISD::FCBRT, ISD::FLOG, ISD::FLOG2, ISD::FLOG10, ISD::FEXP,
-                      ISD::FEXP2, ISD::FFLOOR, ISD::FNEARBYINT, ISD::FCEIL,
-                      ISD::FRINT, ISD::FTRUNC, ISD::LROUND, ISD::LLROUND,
-                      ISD::LRINT, ISD::LLRINT},
+                      ISD::FEXP2, ISD::FEXP10, ISD::FFLOOR, ISD::FNEARBYINT,
+                      ISD::FCEIL, ISD::FRINT, ISD::FTRUNC, ISD::LROUND,
+                      ISD::LLROUND, ISD::LRINT, ISD::LLRINT, ISD::FROUNDEVEN},
                      {MVT::f32, MVT::f64, MVT::f128}, Expand);
 
   // Default ISD::TRAP to expand (which turns it into abort).
@@ -898,6 +946,15 @@ void TargetLoweringBase::initActions() {
   setOperationAction(ISD::DEBUGTRAP, MVT::Other, Expand);
 
   setOperationAction(ISD::UBSANTRAP, MVT::Other, Expand);
+
+  setOperationAction(ISD::GET_FPENV_MEM, MVT::Other, Expand);
+  setOperationAction(ISD::SET_FPENV_MEM, MVT::Other, Expand);
+
+  for (MVT VT : {MVT::i8, MVT::i16, MVT::i32, MVT::i64}) {
+    setOperationAction(ISD::GET_FPMODE, VT, Expand);
+    setOperationAction(ISD::SET_FPMODE, VT, Expand);
+  }
+  setOperationAction(ISD::RESET_FPMODE, MVT::Other, Expand);
 }
 
 MVT TargetLoweringBase::getScalarShiftAmountTy(const DataLayout &DL,
@@ -950,7 +1007,7 @@ TargetLoweringBase::getTypeConversion(LLVMContext &Context, EVT VT) const {
   // If this is a simple type, use the ComputeRegisterProp mechanism.
   if (VT.isSimple()) {
     MVT SVT = VT.getSimpleVT();
-    assert((unsigned)SVT.SimpleTy < array_lengthof(TransformToType));
+    assert((unsigned)SVT.SimpleTy < std::size(TransformToType));
     MVT NVT = TransformToType[SVT.SimpleTy];
     LegalizeTypeAction LA = ValueTypeActions.getTypeAction(SVT);
 
@@ -1128,8 +1185,7 @@ static unsigned getVectorTypeBreakdownMVT(MVT VT, MVT &IntermediateVT,
   unsigned LaneSizeInBits = NewVT.getScalarSizeInBits();
 
   // Convert sizes such as i33 to i64.
-  if (!isPowerOf2_32(LaneSizeInBits))
-    LaneSizeInBits = NextPowerOf2(LaneSizeInBits);
+  LaneSizeInBits = llvm::bit_ceil(LaneSizeInBits);
 
   MVT DestVT = TLI->getRegisterType(NewVT);
   RegisterVT = DestVT;
@@ -1342,6 +1398,15 @@ void TargetLoweringBase::computeRegisterProperties(
     ValueTypeActions.setTypeAction(MVT::f128, TypeSoftenFloat);
   }
 
+  // Decide how to handle f80. If the target does not have native f80 support,
+  // expand it to i96 and we will be generating soft float library calls.
+  if (!isTypeLegal(MVT::f80)) {
+    NumRegistersForVT[MVT::f80] = 3*NumRegistersForVT[MVT::i32];
+    RegisterTypeForVT[MVT::f80] = RegisterTypeForVT[MVT::i32];
+    TransformToType[MVT::f80] = MVT::i32;
+    ValueTypeActions.setTypeAction(MVT::f80, TypeSoftenFloat);
+  }
+
   // Decide how to handle f64. If the target does not have native f64 support,
   // expand it to i64 and we will be generating soft float library calls.
   if (!isTypeLegal(MVT::f64)) {
@@ -1385,7 +1450,7 @@ void TargetLoweringBase::computeRegisterProperties(
     NumRegistersForVT[MVT::bf16] = NumRegistersForVT[MVT::f32];
     RegisterTypeForVT[MVT::bf16] = RegisterTypeForVT[MVT::f32];
     TransformToType[MVT::bf16] = MVT::f32;
-    ValueTypeActions.setTypeAction(MVT::bf16, TypePromoteFloat);
+    ValueTypeActions.setTypeAction(MVT::bf16, TypeSoftPromoteHalf);
   }
 
   // Loop over all of the vector value types to see which need transformations.
@@ -1424,7 +1489,7 @@ void TargetLoweringBase::computeRegisterProperties(
       }
       if (IsLegalWiderType)
         break;
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
     }
 
     case TypeWidenVector:
@@ -1458,7 +1523,7 @@ void TargetLoweringBase::computeRegisterProperties(
           break;
         }
       }
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
 
     case TypeSplitVector:
     case TypeScalarizeVector: {
@@ -1609,7 +1674,7 @@ unsigned TargetLoweringBase::getVectorTypeBreakdown(LLVMContext &Context,
   if (EVT(DestVT).bitsLT(NewVT)) {  // Value is expanded, e.g. i64 -> i16.
     TypeSize NewVTSize = NewVT.getSizeInBits();
     // Convert sizes such as i33 to i64.
-    if (!isPowerOf2_32(NewVTSize.getKnownMinSize()))
+    if (!llvm::has_single_bit<uint32_t>(NewVTSize.getKnownMinValue()))
       NewVTSize = NewVTSize.coefficientNextPowerOf2();
     return NumVectorRegs*(NewVTSize/DestVT.getSizeInBits());
   }
@@ -1673,7 +1738,7 @@ void llvm::GetReturnInfo(CallingConv::ID CC, Type *ReturnType,
     // conventions. The frontend should mark functions whose return values
     // require promoting with signext or zeroext attributes.
     if (ExtendKind != ISD::ANY_EXTEND && VT.isInteger()) {
-      MVT MinVT = TLI.getRegisterType(ReturnType->getContext(), MVT::i32);
+      MVT MinVT = TLI.getRegisterType(MVT::i32);
       if (VT.bitsLT(MinVT))
         VT = MinVT;
     }
@@ -1709,7 +1774,7 @@ uint64_t TargetLoweringBase::getByValTypeAlignment(Type *Ty,
 
 bool TargetLoweringBase::allowsMemoryAccessForAlignment(
     LLVMContext &Context, const DataLayout &DL, EVT VT, unsigned AddrSpace,
-    Align Alignment, MachineMemOperand::Flags Flags, bool *Fast) const {
+    Align Alignment, MachineMemOperand::Flags Flags, unsigned *Fast) const {
   // Check if the specified alignment is sufficient based on the data layout.
   // TODO: While using the data layout works in practice, a better solution
   // would be to implement this check directly (make this a virtual function).
@@ -1719,7 +1784,7 @@ bool TargetLoweringBase::allowsMemoryAccessForAlignment(
   if (VT.isZeroSized() || Alignment >= DL.getABITypeAlign(Ty)) {
     // Assume that an access that meets the ABI-specified alignment is fast.
     if (Fast != nullptr)
-      *Fast = true;
+      *Fast = 1;
     return true;
   }
 
@@ -1729,7 +1794,7 @@ bool TargetLoweringBase::allowsMemoryAccessForAlignment(
 
 bool TargetLoweringBase::allowsMemoryAccessForAlignment(
     LLVMContext &Context, const DataLayout &DL, EVT VT,
-    const MachineMemOperand &MMO, bool *Fast) const {
+    const MachineMemOperand &MMO, unsigned *Fast) const {
   return allowsMemoryAccessForAlignment(Context, DL, VT, MMO.getAddrSpace(),
                                         MMO.getAlign(), MMO.getFlags(), Fast);
 }
@@ -1738,7 +1803,7 @@ bool TargetLoweringBase::allowsMemoryAccess(LLVMContext &Context,
                                             const DataLayout &DL, EVT VT,
                                             unsigned AddrSpace, Align Alignment,
                                             MachineMemOperand::Flags Flags,
-                                            bool *Fast) const {
+                                            unsigned *Fast) const {
   return allowsMemoryAccessForAlignment(Context, DL, VT, AddrSpace, Alignment,
                                         Flags, Fast);
 }
@@ -1746,7 +1811,7 @@ bool TargetLoweringBase::allowsMemoryAccess(LLVMContext &Context,
 bool TargetLoweringBase::allowsMemoryAccess(LLVMContext &Context,
                                             const DataLayout &DL, EVT VT,
                                             const MachineMemOperand &MMO,
-                                            bool *Fast) const {
+                                            unsigned *Fast) const {
   return allowsMemoryAccess(Context, DL, VT, MMO.getAddrSpace(), MMO.getAlign(),
                             MMO.getFlags(), Fast);
 }
@@ -1754,7 +1819,7 @@ bool TargetLoweringBase::allowsMemoryAccess(LLVMContext &Context,
 bool TargetLoweringBase::allowsMemoryAccess(LLVMContext &Context,
                                             const DataLayout &DL, LLT Ty,
                                             const MachineMemOperand &MMO,
-                                            bool *Fast) const {
+                                            unsigned *Fast) const {
   EVT VT = getApproximateEVTForLLT(Ty, DL, Context);
   return allowsMemoryAccess(Context, DL, VT, MMO.getAddrSpace(), MMO.getAlign(),
                             MMO.getFlags(), Fast);
@@ -1843,41 +1908,6 @@ int TargetLoweringBase::InstructionOpcodeToISD(unsigned Opcode) const {
   llvm_unreachable("Unknown instruction type encountered!");
 }
 
-std::pair<InstructionCost, MVT>
-TargetLoweringBase::getTypeLegalizationCost(const DataLayout &DL,
-                                            Type *Ty) const {
-  LLVMContext &C = Ty->getContext();
-  EVT MTy = getValueType(DL, Ty);
-
-  InstructionCost Cost = 1;
-  // We keep legalizing the type until we find a legal kind. We assume that
-  // the only operation that costs anything is the split. After splitting
-  // we need to handle two types.
-  while (true) {
-    LegalizeKind LK = getTypeConversion(C, MTy);
-
-    if (LK.first == TypeScalarizeScalableVector) {
-      // Ensure we return a sensible simple VT here, since many callers of this
-      // function require it.
-      MVT VT = MTy.isSimple() ? MTy.getSimpleVT() : MVT::i64;
-      return std::make_pair(InstructionCost::getInvalid(), VT);
-    }
-
-    if (LK.first == TypeLegal)
-      return std::make_pair(Cost, MTy.getSimpleVT());
-
-    if (LK.first == TypeSplitVector || LK.first == TypeExpandInteger)
-      Cost *= 2;
-
-    // Do not loop with f128 type.
-    if (MTy == LK.second)
-      return std::make_pair(Cost, MTy.getSimpleVT());
-
-    // Keep legalizing the type.
-    MTy = LK.second;
-  }
-}
-
 Value *
 TargetLoweringBase::getDefaultSafeStackPointerLocation(IRBuilderBase &IRB,
                                                        bool UseTLS) const {
@@ -1888,7 +1918,7 @@ TargetLoweringBase::getDefaultSafeStackPointerLocation(IRBuilderBase &IRB,
   auto UnsafeStackPtr =
       dyn_cast_or_null<GlobalVariable>(M->getNamedValue(UnsafeStackPtrVar));
 
-  Type *StackPtrTy = Type::getInt8PtrTy(M->getContext());
+  Type *StackPtrTy = PointerType::getUnqual(M->getContext());
 
   if (!UnsafeStackPtr) {
     auto TLSModel = UseTLS ?
@@ -1919,9 +1949,9 @@ TargetLoweringBase::getSafeStackPointerLocation(IRBuilderBase &IRB) const {
   // Android provides a libc function to retrieve the address of the current
   // thread's unsafe stack pointer.
   Module *M = IRB.GetInsertBlock()->getParent()->getParent();
-  Type *StackPtrTy = Type::getInt8PtrTy(M->getContext());
-  FunctionCallee Fn = M->getOrInsertFunction("__safestack_pointer_address",
-                                             StackPtrTy->getPointerTo(0));
+  auto *PtrTy = PointerType::getUnqual(M->getContext());
+  FunctionCallee Fn =
+      M->getOrInsertFunction("__safestack_pointer_address", PtrTy);
   return IRB.CreateCall(Fn);
 }
 
@@ -1975,7 +2005,7 @@ bool TargetLoweringBase::isLegalAddressingMode(const DataLayout &DL,
 Value *TargetLoweringBase::getIRStackGuard(IRBuilderBase &IRB) const {
   if (getTargetMachine().getTargetTriple().isOSOpenBSD()) {
     Module &M = *IRB.GetInsertBlock()->getParent()->getParent();
-    PointerType *PtrTy = Type::getInt8PtrTy(M.getContext());
+    PointerType *PtrTy = PointerType::getUnqual(M.getContext());
     Constant *C = M.getOrInsertGlobal("__guard_local", PtrTy);
     if (GlobalVariable *G = dyn_cast_or_null<GlobalVariable>(C))
       G->setVisibility(GlobalValue::HiddenVisibility);
@@ -1988,14 +2018,16 @@ Value *TargetLoweringBase::getIRStackGuard(IRBuilderBase &IRB) const {
 // TODO: add LOAD_STACK_GUARD support.
 void TargetLoweringBase::insertSSPDeclarations(Module &M) const {
   if (!M.getNamedValue("__stack_chk_guard")) {
-    auto *GV = new GlobalVariable(M, Type::getInt8PtrTy(M.getContext()), false,
-                                  GlobalVariable::ExternalLinkage, nullptr,
-                                  "__stack_chk_guard");
+    auto *GV = new GlobalVariable(M, PointerType::getUnqual(M.getContext()),
+                                  false, GlobalVariable::ExternalLinkage,
+                                  nullptr, "__stack_chk_guard");
 
     // FreeBSD has "__stack_chk_guard" defined externally on libc.so
-    if (TM.getRelocationModel() == Reloc::Static &&
+    if (M.getDirectAccessExternalData() &&
         !TM.getTargetTriple().isWindowsGNUEnvironment() &&
-        !TM.getTargetTriple().isOSFreeBSD())
+        !TM.getTargetTriple().isOSFreeBSD() &&
+        (!TM.getTargetTriple().isOSDarwin() ||
+         TM.getRelocationModel() == Reloc::Static))
       GV->setDSOLocal(true);
   }
 }
@@ -2231,13 +2263,41 @@ int TargetLoweringBase::getDivRefinementSteps(EVT VT,
   return getOpRefinementSteps(false, VT, getRecipEstimateForFunc(MF));
 }
 
+bool TargetLoweringBase::isLoadBitCastBeneficial(
+    EVT LoadVT, EVT BitcastVT, const SelectionDAG &DAG,
+    const MachineMemOperand &MMO) const {
+  // Single-element vectors are scalarized, so we should generally avoid having
+  // any memory operations on such types, as they would get scalarized too.
+  if (LoadVT.isFixedLengthVector() && BitcastVT.isFixedLengthVector() &&
+      BitcastVT.getVectorNumElements() == 1)
+    return false;
+
+  // Don't do if we could do an indexed load on the original type, but not on
+  // the new one.
+  if (!LoadVT.isSimple() || !BitcastVT.isSimple())
+    return true;
+
+  MVT LoadMVT = LoadVT.getSimpleVT();
+
+  // Don't bother doing this if it's just going to be promoted again later, as
+  // doing so might interfere with other combines.
+  if (getOperationAction(ISD::LOAD, LoadMVT) == Promote &&
+      getTypeToPromoteTo(ISD::LOAD, LoadMVT) == BitcastVT.getSimpleVT())
+    return false;
+
+  unsigned Fast = 0;
+  return allowsMemoryAccess(*DAG.getContext(), DAG.getDataLayout(), BitcastVT,
+                            MMO, &Fast) &&
+         Fast;
+}
+
 void TargetLoweringBase::finalizeLowering(MachineFunction &MF) const {
   MF.getRegInfo().freezeReservedRegs(MF);
 }
 
-MachineMemOperand::Flags
-TargetLoweringBase::getLoadMemOperandFlags(const LoadInst &LI,
-                                           const DataLayout &DL) const {
+MachineMemOperand::Flags TargetLoweringBase::getLoadMemOperandFlags(
+    const LoadInst &LI, const DataLayout &DL, AssumptionCache *AC,
+    const TargetLibraryInfo *LibInfo) const {
   MachineMemOperand::Flags Flags = MachineMemOperand::MOLoad;
   if (LI.isVolatile())
     Flags |= MachineMemOperand::MOVolatile;
@@ -2248,7 +2308,9 @@ TargetLoweringBase::getLoadMemOperandFlags(const LoadInst &LI,
   if (LI.hasMetadata(LLVMContext::MD_invariant_load))
     Flags |= MachineMemOperand::MOInvariant;
 
-  if (isDereferenceablePointer(LI.getPointerOperand(), LI.getType(), DL))
+  if (isDereferenceableAndAlignedPointer(LI.getPointerOperand(), LI.getType(),
+                                         LI.getAlign(), DL, &LI, AC,
+                                         /*DT=*/nullptr, LibInfo))
     Flags |= MachineMemOperand::MODereferenceable;
 
   Flags |= getTargetMMOFlags(LI);
@@ -2325,7 +2387,7 @@ bool TargetLoweringBase::shouldLocalize(const MachineInstr &MI,
   auto maxUses = [](unsigned RematCost) {
     // A cost of 1 means remats are basically free.
     if (RematCost == 1)
-      return UINT_MAX;
+      return std::numeric_limits<unsigned>::max();
     if (RematCost == 2)
       return 2U;
 
@@ -2333,18 +2395,6 @@ bool TargetLoweringBase::shouldLocalize(const MachineInstr &MI,
     if (RematCost > 2)
       return 1U;
     llvm_unreachable("Unexpected remat cost");
-  };
-
-  // Helper to walk through uses and terminate if we've reached a limit. Saves
-  // us spending time traversing uses if all we want to know is if it's >= min.
-  auto isUsesAtMost = [&](unsigned Reg, unsigned MaxUses) {
-    unsigned NumUses = 0;
-    auto UI = MRI.use_instr_nodbg_begin(Reg), UE = MRI.use_instr_nodbg_end();
-    for (; UI != UE && NumUses < MaxUses; ++UI) {
-      NumUses++;
-    }
-    // If we haven't reached the end yet then there are more than MaxUses users.
-    return UI == UE;
   };
 
   switch (MI.getOpcode()) {
@@ -2363,8 +2413,7 @@ bool TargetLoweringBase::shouldLocalize(const MachineInstr &MI,
     unsigned MaxUses = maxUses(RematCost);
     if (MaxUses == UINT_MAX)
       return true; // Remats are "free" so always localize.
-    bool B = isUsesAtMost(Reg, MaxUses);
-    return B;
+    return MRI.hasAtMostUserInstrs(Reg, MaxUses);
   }
   }
 }

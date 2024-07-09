@@ -1,0 +1,2 @@
+# Test/memory/gbt ignores.
+/test-memLog.memLog.*

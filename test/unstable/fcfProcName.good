@@ -1,0 +1,3 @@
+fcfProcName.chpl:3: warning: use of routines as values is unstable
+fcfProcName.chpl:3: warning: using 'getRoutineName' inside first-class procedures is currently unstable
+chpl_anon_proc_0

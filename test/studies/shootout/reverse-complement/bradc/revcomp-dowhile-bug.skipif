@@ -1,0 +1,2 @@
+# I have seen clang generate warnings for this test, causing .bad mismatch
+CHPL_HOST_COMPILER != llvm

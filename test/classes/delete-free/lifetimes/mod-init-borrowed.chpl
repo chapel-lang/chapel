@@ -3,12 +3,12 @@ module M0 {
   proc main() {
     use M1 only;
     use M2 only;
-
-    var a   = (new owned A(10)).borrow();
+    var ownA = new owned A(10);
+    var a = ownA.borrow();
 
     writeln();
-
-    var m1a = (new owned M1.A(20)).borrow();
+    var ownM1a = new owned M1.A(20);
+    var m1a = ownM1a.borrow();
 
     writeln();
 

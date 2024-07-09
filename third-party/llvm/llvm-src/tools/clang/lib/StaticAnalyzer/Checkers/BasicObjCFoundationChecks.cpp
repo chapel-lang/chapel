@@ -30,9 +30,11 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/ExprEngine.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/MemRegion.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/Support/raw_ostream.h"
+#include <optional>
 
 using namespace clang;
 using namespace ento;
@@ -42,7 +44,7 @@ namespace {
 class APIMisuse : public BugType {
 public:
   APIMisuse(const CheckerBase *checker, const char *name)
-      : BugType(checker, name, "API Misuse (Apple)") {}
+      : BugType(checker, name, categories::AppleAPIMisuse) {}
 };
 } // end anonymous namespace
 
@@ -94,56 +96,64 @@ static FoundationClass findKnownClass(const ObjCInterfaceDecl *ID,
 //===----------------------------------------------------------------------===//
 
 namespace {
-  class NilArgChecker : public Checker<check::PreObjCMessage,
-                                       check::PostStmt<ObjCDictionaryLiteral>,
-                                       check::PostStmt<ObjCArrayLiteral> > {
-    mutable std::unique_ptr<APIMisuse> BT;
+class NilArgChecker : public Checker<check::PreObjCMessage,
+                                     check::PostStmt<ObjCDictionaryLiteral>,
+                                     check::PostStmt<ObjCArrayLiteral>,
+                                     EventDispatcher<ImplicitNullDerefEvent>> {
+  mutable std::unique_ptr<APIMisuse> BT;
 
-    mutable llvm::SmallDenseMap<Selector, unsigned, 16> StringSelectors;
-    mutable Selector ArrayWithObjectSel;
-    mutable Selector AddObjectSel;
-    mutable Selector InsertObjectAtIndexSel;
-    mutable Selector ReplaceObjectAtIndexWithObjectSel;
-    mutable Selector SetObjectAtIndexedSubscriptSel;
-    mutable Selector ArrayByAddingObjectSel;
-    mutable Selector DictionaryWithObjectForKeySel;
-    mutable Selector SetObjectForKeySel;
-    mutable Selector SetObjectForKeyedSubscriptSel;
-    mutable Selector RemoveObjectForKeySel;
+  mutable llvm::SmallDenseMap<Selector, unsigned, 16> StringSelectors;
+  mutable Selector ArrayWithObjectSel;
+  mutable Selector AddObjectSel;
+  mutable Selector InsertObjectAtIndexSel;
+  mutable Selector ReplaceObjectAtIndexWithObjectSel;
+  mutable Selector SetObjectAtIndexedSubscriptSel;
+  mutable Selector ArrayByAddingObjectSel;
+  mutable Selector DictionaryWithObjectForKeySel;
+  mutable Selector SetObjectForKeySel;
+  mutable Selector SetObjectForKeyedSubscriptSel;
+  mutable Selector RemoveObjectForKeySel;
 
-    void warnIfNilExpr(const Expr *E,
-                       const char *Msg,
-                       CheckerContext &C) const;
+  void warnIfNilExpr(const Expr *E, const char *Msg, CheckerContext &C) const;
 
-    void warnIfNilArg(CheckerContext &C,
-                      const ObjCMethodCall &msg, unsigned Arg,
-                      FoundationClass Class,
-                      bool CanBeSubscript = false) const;
+  void warnIfNilArg(CheckerContext &C, const ObjCMethodCall &msg, unsigned Arg,
+                    FoundationClass Class, bool CanBeSubscript = false) const;
 
-    void generateBugReport(ExplodedNode *N,
-                           StringRef Msg,
-                           SourceRange Range,
-                           const Expr *Expr,
-                           CheckerContext &C) const;
+  void generateBugReport(ExplodedNode *N, StringRef Msg, SourceRange Range,
+                         const Expr *Expr, CheckerContext &C) const;
 
-  public:
-    void checkPreObjCMessage(const ObjCMethodCall &M, CheckerContext &C) const;
-    void checkPostStmt(const ObjCDictionaryLiteral *DL,
-                       CheckerContext &C) const;
-    void checkPostStmt(const ObjCArrayLiteral *AL,
-                       CheckerContext &C) const;
-  };
+public:
+  void checkPreObjCMessage(const ObjCMethodCall &M, CheckerContext &C) const;
+  void checkPostStmt(const ObjCDictionaryLiteral *DL, CheckerContext &C) const;
+  void checkPostStmt(const ObjCArrayLiteral *AL, CheckerContext &C) const;
+};
 } // end anonymous namespace
 
 void NilArgChecker::warnIfNilExpr(const Expr *E,
                                   const char *Msg,
                                   CheckerContext &C) const {
-  ProgramStateRef State = C.getState();
-  if (State->isNull(C.getSVal(E)).isConstrainedTrue()) {
+  auto Location = C.getSVal(E).getAs<Loc>();
+  if (!Location)
+    return;
 
+  auto [NonNull, Null] = C.getState()->assume(*Location);
+
+  // If it's known to be null.
+  if (!NonNull && Null) {
     if (ExplodedNode *N = C.generateErrorNode()) {
       generateBugReport(N, Msg, E->getSourceRange(), E, C);
+      return;
     }
+  }
+
+  // If it might be null, assume that it cannot after this operation.
+  if (Null) {
+    // One needs to make sure the pointer is non-null to be used here.
+    if (ExplodedNode *N = C.generateSink(Null, C.getPredecessor())) {
+      dispatchEvent({*Location, /*IsLoad=*/false, N, &C.getBugReporter(),
+                     /*IsDirectDereference=*/false});
+    }
+    C.addTransition(NonNull);
   }
 }
 
@@ -342,9 +352,9 @@ void NilArgChecker::checkPostStmt(const ObjCDictionaryLiteral *DL,
 namespace {
 class CFNumberChecker : public Checker< check::PreStmt<CallExpr> > {
   mutable std::unique_ptr<APIMisuse> BT;
-  mutable IdentifierInfo *ICreate, *IGetValue;
+  mutable IdentifierInfo *ICreate = nullptr, *IGetValue = nullptr;
 public:
-  CFNumberChecker() : ICreate(nullptr), IGetValue(nullptr) {}
+  CFNumberChecker() = default;
 
   void checkPreStmt(const CallExpr *CE, CheckerContext &C) const;
 };
@@ -369,7 +379,7 @@ enum CFNumberType {
   kCFNumberCGFloatType = 16
 };
 
-static Optional<uint64_t> GetCFNumberSize(ASTContext &Ctx, uint64_t i) {
+static std::optional<uint64_t> GetCFNumberSize(ASTContext &Ctx, uint64_t i) {
   static const unsigned char FixedSize[] = { 8, 16, 32, 64, 32, 64 };
 
   if (i < kCFNumberCharType)
@@ -390,7 +400,7 @@ static Optional<uint64_t> GetCFNumberSize(ASTContext &Ctx, uint64_t i) {
     case kCFNumberCGFloatType:
       // FIXME: We need a way to map from names to Type*.
     default:
-      return None;
+      return std::nullopt;
   }
 
   return Ctx.getTypeSize(T);
@@ -442,12 +452,13 @@ void CFNumberChecker::checkPreStmt(const CallExpr *CE,
 
   // FIXME: We really should allow ranges of valid theType values, and
   //   bifurcate the state appropriately.
-  Optional<nonloc::ConcreteInt> V = dyn_cast<nonloc::ConcreteInt>(TheTypeVal);
+  std::optional<nonloc::ConcreteInt> V =
+      dyn_cast<nonloc::ConcreteInt>(TheTypeVal);
   if (!V)
     return;
 
   uint64_t NumberKind = V->getValue().getLimitedValue();
-  Optional<uint64_t> OptCFNumberSize = GetCFNumberSize(Ctx, NumberKind);
+  std::optional<uint64_t> OptCFNumberSize = GetCFNumberSize(Ctx, NumberKind);
 
   // FIXME: In some cases we can emit an error.
   if (!OptCFNumberSize)
@@ -462,7 +473,7 @@ void CFNumberChecker::checkPreStmt(const CallExpr *CE,
 
   // FIXME: Eventually we should handle arbitrary locations.  We can do this
   //  by having an enhanced memory model that does low-level typing.
-  Optional<loc::MemRegionVal> LV = TheValueExpr.getAs<loc::MemRegionVal>();
+  std::optional<loc::MemRegionVal> LV = TheValueExpr.getAs<loc::MemRegionVal>();
   if (!LV)
     return;
 
@@ -531,10 +542,10 @@ namespace {
 class CFRetainReleaseChecker : public Checker<check::PreCall> {
   mutable APIMisuse BT{this, "null passed to CF memory management function"};
   const CallDescriptionSet ModelledCalls = {
-      {"CFRetain", 1},
-      {"CFRelease", 1},
-      {"CFMakeCollectable", 1},
-      {"CFAutorelease", 1},
+      {{"CFRetain"}, 1},
+      {{"CFRelease"}, 1},
+      {{"CFMakeCollectable"}, 1},
+      {{"CFAutorelease"}, 1},
   };
 
 public:
@@ -554,7 +565,7 @@ void CFRetainReleaseChecker::checkPreCall(const CallEvent &Call,
 
   // Get the argument's value.
   SVal ArgVal = Call.getArgSVal(0);
-  Optional<DefinedSVal> DefArgVal = ArgVal.getAs<DefinedSVal>();
+  std::optional<DefinedSVal> DefArgVal = ArgVal.getAs<DefinedSVal>();
   if (!DefArgVal)
     return;
 
@@ -742,7 +753,7 @@ void VariadicMethodTypeChecker::checkPreObjCMessage(const ObjCMethodCall &msg,
     return;
 
   // Verify that all arguments have Objective-C types.
-  Optional<ExplodedNode*> errorNode;
+  std::optional<ExplodedNode *> errorNode;
 
   for (unsigned I = variadicArgsBegin; I != variadicArgsEnd; ++I) {
     QualType ArgTy = msg.getArgExpr(I)->getType();
@@ -769,7 +780,7 @@ void VariadicMethodTypeChecker::checkPreObjCMessage(const ObjCMethodCall &msg,
     if (!errorNode)
       errorNode = C.generateNonFatalErrorNode();
 
-    if (!errorNode.value())
+    if (!*errorNode)
       continue;
 
     SmallString<128> sbuf;
@@ -786,8 +797,8 @@ void VariadicMethodTypeChecker::checkPreObjCMessage(const ObjCMethodCall &msg,
     ArgTy.print(os, C.getLangOpts());
     os << "'";
 
-    auto R = std::make_unique<PathSensitiveBugReport>(*BT, os.str(),
-                                                      errorNode.value());
+    auto R =
+        std::make_unique<PathSensitiveBugReport>(*BT, os.str(), *errorNode);
     R->addRange(msg.getArgSourceRange(I));
     C.emitReport(std::move(R));
   }
@@ -808,13 +819,13 @@ class ObjCLoopChecker
                    check::PostObjCMessage,
                    check::DeadSymbols,
                    check::PointerEscape > {
-  mutable IdentifierInfo *CountSelectorII;
+  mutable IdentifierInfo *CountSelectorII = nullptr;
 
   bool isCollectionCountMethod(const ObjCMethodCall &M,
                                CheckerContext &C) const;
 
 public:
-  ObjCLoopChecker() : CountSelectorII(nullptr) {}
+  ObjCLoopChecker() = default;
   void checkPostStmt(const ObjCForCollectionStmt *FCS, CheckerContext &C) const;
   void checkPostObjCMessage(const ObjCMethodCall &M, CheckerContext &C) const;
   void checkDeadSymbols(SymbolReaper &SymReaper, CheckerContext &C) const;
@@ -857,7 +868,8 @@ static ProgramStateRef checkCollectionNonNil(CheckerContext &C,
     return nullptr;
 
   SVal CollectionVal = C.getSVal(FCS->getCollection());
-  Optional<DefinedSVal> KnownCollection = CollectionVal.getAs<DefinedSVal>();
+  std::optional<DefinedSVal> KnownCollection =
+      CollectionVal.getAs<DefinedSVal>();
   if (!KnownCollection)
     return State;
 
@@ -889,7 +901,7 @@ static ProgramStateRef checkElementNonNil(CheckerContext &C,
   const Stmt *Element = FCS->getElement();
 
   // FIXME: Copied from ExprEngineObjC.
-  Optional<Loc> ElementLoc;
+  std::optional<Loc> ElementLoc;
   if (const DeclStmt *DS = dyn_cast<DeclStmt>(Element)) {
     const VarDecl *ElemDecl = cast<VarDecl>(DS->getSingleDecl());
     assert(ElemDecl->getInit() == nullptr);
@@ -928,8 +940,8 @@ assumeCollectionNonEmpty(CheckerContext &C, ProgramStateRef State,
                           nonloc::SymbolVal(*CountS),
                           SvalBuilder.makeIntVal(0, (*CountS)->getType()),
                           SvalBuilder.getConditionType());
-  Optional<DefinedSVal> CountGreaterThanZero =
-    CountGreaterThanZeroVal.getAs<DefinedSVal>();
+  std::optional<DefinedSVal> CountGreaterThanZero =
+      CountGreaterThanZeroVal.getAs<DefinedSVal>();
   if (!CountGreaterThanZero) {
     // The SValBuilder cannot construct a valid SVal for this condition.
     // This means we cannot properly reason about it.
@@ -957,14 +969,13 @@ static bool alreadyExecutedAtLeastOneLoopIteration(const ExplodedNode *N,
     return false;
 
   ProgramPoint P = N->getLocation();
-  if (Optional<BlockEdge> BE = P.getAs<BlockEdge>()) {
+  if (std::optional<BlockEdge> BE = P.getAs<BlockEdge>()) {
     return BE->getSrc()->getLoopTarget() == FCS;
   }
 
   // Keep looking for a block edge.
-  for (ExplodedNode::const_pred_iterator I = N->pred_begin(),
-                                         E = N->pred_end(); I != E; ++I) {
-    if (alreadyExecutedAtLeastOneLoopIteration(*I, FCS))
+  for (const ExplodedNode *N : N->preds()) {
+    if (alreadyExecutedAtLeastOneLoopIteration(N, FCS))
       return true;
   }
 
@@ -1092,12 +1103,8 @@ ObjCLoopChecker::checkPointerEscape(ProgramStateRef State,
                                     PointerEscapeKind Kind) const {
   SymbolRef ImmutableReceiver = getMethodReceiverIfKnownImmutable(Call);
 
-  // Remove the invalidated symbols form the collection count map.
-  for (InvalidatedSymbols::const_iterator I = Escaped.begin(),
-       E = Escaped.end();
-       I != E; ++I) {
-    SymbolRef Sym = *I;
-
+  // Remove the invalidated symbols from the collection count map.
+  for (SymbolRef Sym : Escaped) {
     // Don't invalidate this symbol's count if we know the method being called
     // is declared on an immutable class. This isn't completely correct if the
     // receiver is also passed as an argument, but in most uses of NSArray,
@@ -1119,9 +1126,7 @@ void ObjCLoopChecker::checkDeadSymbols(SymbolReaper &SymReaper,
 
   // Remove the dead symbols from the collection count map.
   ContainerCountMapTy Tracked = State->get<ContainerCountMap>();
-  for (ContainerCountMapTy::iterator I = Tracked.begin(),
-                                     E = Tracked.end(); I != E; ++I) {
-    SymbolRef Sym = I->first;
+  for (SymbolRef Sym : llvm::make_first_range(Tracked)) {
     if (SymReaper.isDead(Sym)) {
       State = State->remove<ContainerCountMap>(Sym);
       State = State->remove<ContainerNonEmptyMap>(Sym);
@@ -1140,13 +1145,13 @@ class ObjCNonNilReturnValueChecker
                    check::PostStmt<ObjCArrayLiteral>,
                    check::PostStmt<ObjCDictionaryLiteral>,
                    check::PostStmt<ObjCBoxedExpr> > {
-    mutable bool Initialized;
+    mutable bool Initialized = false;
     mutable Selector ObjectAtIndex;
     mutable Selector ObjectAtIndexedSubscript;
     mutable Selector NullSelector;
 
 public:
-  ObjCNonNilReturnValueChecker() : Initialized(false) {}
+  ObjCNonNilReturnValueChecker() = default;
 
   ProgramStateRef assumeExprIsNonNull(const Expr *NonNullExpr,
                                       ProgramStateRef State,
@@ -1174,7 +1179,8 @@ ObjCNonNilReturnValueChecker::assumeExprIsNonNull(const Expr *NonNullExpr,
                                                   ProgramStateRef State,
                                                   CheckerContext &C) const {
   SVal Val = C.getSVal(NonNullExpr);
-  if (Optional<DefinedOrUnknownSVal> DV = Val.getAs<DefinedOrUnknownSVal>())
+  if (std::optional<DefinedOrUnknownSVal> DV =
+          Val.getAs<DefinedOrUnknownSVal>())
     return State->assume(*DV, true);
   return State;
 }

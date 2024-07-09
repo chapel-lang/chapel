@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,19 +30,47 @@
 namespace chpl {
 namespace resolution {
 
-/**
-  Helper macro to report an error to the context, and produce an
-  erroneous QualifiedType. Accepts the pointer to the context,
-  the name of the error to report, and additional error information arguments,
-  the exact types of which depend on the type of error (see error-classes-list.h)
- */
-#define CHPL_TYPE_ERROR(CONTEXT, NAME, EINFO...)\
-  (CHPL_REPORT(CONTEXT, NAME, EINFO),\
-   QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(CONTEXT)))
-
 struct Resolver {
   // types used below
   using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
+  using ActionAndId = std::tuple<AssociatedAction::Action, ID>;
+
+  /**
+    When looking up matches for a particular identifier, we might encounter
+    several. This is not always an error: specifically, we might be finding
+    multiple parenless procedures, each with a potentially-false 'where' clause.
+
+    This struct contains additional information to be returned from identifier
+    lookup to help detect this case, and adjust the resolution strategy
+    accordingly.
+   */
+  struct ParenlessOverloadInfo {
+   private:
+    /* Whether some of the parenless procedures were methods. This means the
+       receiver type should be considered when resolving the call. */
+    bool hasMethodCandidates_ = false;
+    /* Whether some of the parenless procedures were not methods. This
+       means non-method resolution should be attempted. */
+    bool hasNonMethodCandidates_ = false;
+
+    ParenlessOverloadInfo(bool hasMethodCandidates, bool hasNonMethodCandidates)
+      : hasMethodCandidates_(hasMethodCandidates),
+        hasNonMethodCandidates_(hasNonMethodCandidates) {}
+   public:
+    ParenlessOverloadInfo() = default;
+
+    static ParenlessOverloadInfo fromBorrowedIds(Context* context,
+                                                 const std::vector<BorrowedIdsWithName>&);
+
+    bool areCandidatesOnlyParenlessProcs() const {
+      // Note: constructor sets both to false when it discovers a single
+      //       non-parenless candidate.
+      return hasMethodCandidates_ || hasNonMethodCandidates_;
+    }
+
+    bool hasMethodCandidates() const { return hasMethodCandidates_; }
+    bool hasNonMethodCandidates() const { return hasNonMethodCandidates_; }
+  };
 
   // inputs to the resolution process
   Context* context = nullptr;
@@ -63,16 +91,18 @@ struct Resolver {
   bool signatureOnly = false;
   bool fieldOrFormalsComputed = false;
   bool scopeResolveOnly = false;
+  bool fieldTypesOnly = false;
   const uast::Block* fnBody = nullptr;
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
-  std::set<ID> splitInitTypeInferredVariables;
   std::set<UniqueString> namesWithErrorsEmitted;
-  const uast::Call* inLeafCall = nullptr;
+  std::vector<const uast::Call*> callNodeStack;
+  std::vector<std::pair<UniqueString, const uast::AstNode*>> genericReceiverOverrideStack;
   bool receiverScopesComputed = false;
   ReceiverScopesVec savedReceiverScopes;
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
+  owned<OuterVariables> outerVars;
 
   // results of the resolution process
 
@@ -101,7 +131,8 @@ struct Resolver {
            const PoiScope* poiScope)
     : context(context), symbol(symbol),
       poiScope(poiScope),
-      byPostorder(byPostorder), poiInfo(makePoiInfo(poiScope)) {
+      byPostorder(byPostorder),
+      poiInfo(makePoiInfo(poiScope)) {
 
     tagTracker.resize(uast::asttags::AstTag::NUM_AST_TAGS);
     enterScope(symbol);
@@ -153,7 +184,8 @@ struct Resolver {
   // set up Resolver to scope resolve a Function
   static Resolver
   createForScopeResolvingFunction(Context* context, const uast::Function* fn,
-                                  ResolutionResultByPostorderID& byPostorder);
+                                  ResolutionResultByPostorderID& byPostorder,
+                                  owned <OuterVariables> outerVars);
 
   static Resolver createForScopeResolvingField(Context* context,
                                          const uast::AggregateDecl* ad,
@@ -178,6 +210,12 @@ struct Resolver {
                                  const PoiScope* poiScope,
                                  ResolutionResultByPostorderID& byPostorder,
                                  DefaultsPolicy defaultsPolicy);
+
+  // Set up Resolver to resolve the numeric values of enum elements
+  static Resolver
+  createForEnumElements(Context* context,
+                        const uast::Enum* enumNode,
+                        ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to resolve instantiated field declaration types
   // without knowing the CompositeType
@@ -206,6 +244,16 @@ struct Resolver {
   static Resolver paramLoopResolver(Resolver& parent,
                                     const uast::For* loop,
                                     ResolutionResultByPostorderID& bodyResults);
+
+  /**
+    During AST traversal, find the last called expression we entered.
+    e.g., will return 'f' if we just entered 'f()'.
+   */
+  const chpl::uast::AstNode* nearestCalledExpression() const;
+
+  // Set the composite type of this Resolver. It is an error to call this
+  // method when a composite type is already set.
+  void setCompositeType(const types::CompositeType* ct);
 
   /* Get the formal types from a Resolver that computed them
    */
@@ -297,12 +345,6 @@ struct Resolver {
                          types::QualifiedType declaredType,
                          types::QualifiedType initExprType);
 
-  // helper for getTypeForDecl
-  // tries to resolve an init= that initializes one type from another
-  const types::Type* tryResolveCrossTypeInitEq(const uast::AstNode* ast,
-                                               types::QualifiedType lhsType,
-                                               types::QualifiedType rhsType);
-
   const types::Type* computeCustomInferType(const uast::AstNode* initExpr,
                                             const types::CompositeType* ct);
 
@@ -322,6 +364,13 @@ struct Resolver {
   void resolveNamedDecl(const uast::NamedDecl* decl,
                         const types::Type* useType);
 
+  // helper to compute the intent for formals
+  // (including type constructor formals)
+  void computeFormalIntent(const uast::NamedDecl* decl,
+                                 types::QualifiedType::Kind& qtKind,
+                           const types::Type* typePtr,
+                           const types::Param* paramPtr);
+
   // issue ambiguity / no matching candidates / etc error
   void issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
                                          const CallInfo& ci,
@@ -332,23 +381,42 @@ struct Resolver {
                                     ID moduleId,
                                     LookupConfig failedConfig);
 
+  // after resolving the child nodes of the call as needed, perform call resolution
+  // if appropriate. This is a helper function because it has some complicated
+  // control flow, and we want to make sure to always keep callNodeStack in sync.
+  void handleCallExpr(const uast::Call* call);
+
   // handle the result of one of the functions to resolve a call. Handles:
   //  * r.setMostSpecific
   //  * r.setPoiScope
   //  * r.setType
-  //  * issueErrorForFailedCallResolution if there was an error
   //  * poiInfo.accumulate
+  //
+  // Does not handle:
+  //
+  //  * issueErrorForFailedCallResolution if there was an error
+  //
+  // Instead, returns 'true' if an error needs to be issued.
+  bool handleResolvedCallWithoutError(ResolvedExpression& r,
+                                      const uast::AstNode* astForErr,
+                                      const CallInfo& ci,
+                                      const CallResolutionResult& c,
+                                      optional<ActionAndId> associatedActionAndId = {});
+  // Same as handleResolvedCallWithoutError, except actually issues the error.
   void handleResolvedCall(ResolvedExpression& r,
                           const uast::AstNode* astForErr,
                           const CallInfo& ci,
-                          const CallResolutionResult& c);
-  // like handleResolvedCall saves the call in associatedFns.
-  void handleResolvedAssociatedCall(ResolvedExpression& r,
-                                    const uast::AstNode* astForErr,
-                                    const CallInfo& ci,
-                                    const CallResolutionResult& c,
-                                    AssociatedAction::Action action,
-                                    ID id);
+                          const CallResolutionResult& c,
+                          optional<ActionAndId> associatedActionAndId = {});
+  // like handleResolvedCall, but prints the candidates that were rejected
+  // by the error in detail.
+  void handleResolvedCallPrintCandidates(ResolvedExpression& r,
+                                         const uast::Call* call,
+                                         const CallInfo& ci,
+                                         const CallScopeInfo& inScopes,
+                                         const types::QualifiedType& receiverType,
+                                         const CallResolutionResult& c,
+                                         optional<ActionAndId> associatedActionAndId = {});
 
   // If the variable with the passed ID has unknown or generic type,
   // and it has not yet been initialized, set its type to rhsType.
@@ -390,6 +458,10 @@ struct Resolver {
                           const uast::AstNode* exr,
                           const ID& id);
 
+  void validateAndSetMostSpecific(ResolvedExpression& r,
+                                  const uast::AstNode* exr,
+                                  const MostSpecificCandidates& mostSpecific);
+
   // e.g. new shared C(a, 0)
   // also resolves initializer call as a side effect
   bool resolveSpecialNewCall(const uast::Call* call);
@@ -397,16 +469,15 @@ struct Resolver {
   // resolve a special op call such as tuple unpack assign
   bool resolveSpecialOpCall(const uast::Call* call);
 
+  // resolve a special primitive call such as 'resolves', which has its
+  // own logic for traversing actuals etc.
+  bool resolveSpecialPrimitiveCall(const uast::Call* call);
+
   // resolve a keyword call like index(D)
   bool resolveSpecialKeywordCall(const uast::Call* call);
 
   // Resolve a || or && operation.
   types::QualifiedType typeForBooleanOp(const uast::OpCall* op);
-
-  // Handle ==, !=, and other operators as defined on types.
-  types::QualifiedType typeForTypeOperator(const uast::OpCall* op,
-                                           const types::QualifiedType& left,
-                                           const types::QualifiedType& right);
 
   // find the element, if any, that a name refers to.
   // Sets outAmbiguous to true if multiple elements of the same name are found,
@@ -418,8 +489,12 @@ struct Resolver {
   // Given the results of looking up an enum element, construct a QualifiedType.
   types::QualifiedType
   typeForScopeResolvedEnumElement(const types::EnumType* enumType,
-                                            const ID& refersToId,
-                                            bool ambiguous);
+                                  const ID& refersToId,
+                                  bool ambiguous);
+  types::QualifiedType
+  typeForScopeResolvedEnumElement(const ID& enumTypeId,
+                                  const ID& refersToId,
+                                  bool ambiguous);
   // Given a particular enum type, determine the type of a particular element.
   types::QualifiedType typeForEnumElement(const types::EnumType* type,
                                           UniqueString elemName,
@@ -449,9 +524,23 @@ struct Resolver {
 
   bool identHasMoreMentions(const uast::Identifier* ident);
 
+  // When an identifier is ambiguous, try issuing an error, but only if
+  // one hasn't been issued before. In doing so, re-run scope search to
+  // figure out how each candidate was found.
+  void issueAmbiguityErrorIfNeeded(const chpl::uast::Identifier* ident,
+                                   const Scope* scope,
+                                   llvm::ArrayRef<const Scope*> receiverScopes,
+                                   LookupConfig prevConfig);
+
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
-                   llvm::ArrayRef<const Scope*> receiverScopes);
+                   llvm::ArrayRef<const Scope*> receiverScopes,
+                   ParenlessOverloadInfo& outParenlessOverloadInfo);
+
+
+  void tryResolveParenlessCall(const ParenlessOverloadInfo& info,
+                               const uast::Identifier* ident,
+                               llvm::ArrayRef<const Scope*> receiverScopes);
 
   void resolveIdentifier(const uast::Identifier* ident,
                          llvm::ArrayRef<const Scope*> receiverScopes);
@@ -469,11 +558,17 @@ struct Resolver {
   bool enter(const uast::Conditional* cond);
   void exit(const uast::Conditional* cond);
 
+  bool enter(const uast::Select* sel);
+  void exit(const uast::Select* sel);
+
   bool enter(const uast::Literal* literal);
   void exit(const uast::Literal* literal);
 
   bool enter(const uast::Identifier* ident);
   void exit(const uast::Identifier* ident);
+
+  bool enter(const uast::Init* init);
+  void exit(const uast::Init* init);
 
   bool enter(const uast::TypeQuery* tq);
   void exit(const uast::TypeQuery* tq);
@@ -505,6 +600,9 @@ struct Resolver {
 
   bool enter(const uast::IndexableLoop* loop);
   void exit(const uast::IndexableLoop* loop);
+
+  bool enter(const uast::DoWhile* loop);
+  void exit(const uast::DoWhile* loop);
 
   bool enter(const uast::ReduceIntent* reduce);
   void exit(const uast::ReduceIntent* reduce);

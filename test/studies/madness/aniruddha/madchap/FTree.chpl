@@ -1,6 +1,6 @@
 /** FTree: The tree data structure used to store the numerical representation
     of a function.
-    
+
     For 1d Madness, an FTree is a binary tree, for 2d it would
     be a quad tree, 3d an octtree, and so on.  The FTree used here uses level
     and index hashing to store the tree rather than storing connectivity
@@ -69,7 +69,11 @@ class LocTree {
                                          // reading something that has not yet
                                          // been set.
 
-    var oneAtATime$: sync bool = true;
+    var oneAtATime: sync bool = true;
+
+    proc init(coeffDom: domain(1)) {
+      this.coeffDom = coeffDom;
+    }
 
     /** Access an element in the associative domain.  If the element
         doesn't exist it will be created.
@@ -82,32 +86,32 @@ class LocTree {
 
      */
     proc this(node: Node) ref {
-        oneAtATime$.readFE();
+        oneAtATime.readFE();
         if !nodes.contains(node) {
             nodes += node;
         }
-       
+
         ref c = coeffs[node];
-        oneAtATime$.writeEF(true);
+        oneAtATime.writeEF(true);
         return c;
     }
     proc this(node: Node) const ref {
-        oneAtATime$.readFE();
+        oneAtATime.readFE();
         if !nodes.contains(node) {
           // This is a getter so it shouldn't be modifying what
           // we return, should be safe to return the zero vector.
           // FIXME: Zeroes should really be a const, but can't
           //        return const from a var fcn.
-          oneAtATime$.writeEF(true);
+          oneAtATime.writeEF(true);
           return zeroes;
         }
-       
+
         ref c = coeffs[node];
-        oneAtATime$.writeEF(true);
+        oneAtATime.writeEF(true);
         return c;
     }
- 
-  
+
+
     /** Access an element in the associative domain.  If it doesn't exist,
         return None.
      */
@@ -121,10 +125,10 @@ class LocTree {
     /** Unordered iterator over all coefficients
      */
     iter these() {
-        for c in coeffs do 
+        for c in coeffs do
             yield c;
     }
-    
+
     /** Unordered iterator over all boxes in a particular level.
         This is not a particularly fast way to do this, but for many of the
         Madness levelwise iterators that do all levels from 0..max_level this
@@ -140,9 +144,9 @@ class LocTree {
     /** Check if there are coefficients in box (lvl, idx)
      */
     proc has_coeffs(node: Node) {
-        oneAtATime$.readFE();
+        oneAtATime.readFE();
         const b = nodes.contains(node);
-        oneAtATime$.writeEF(true);
+        oneAtATime.writeEF(true);
         return b;
     }
 
@@ -150,9 +154,9 @@ class LocTree {
         does not exist, it is ignored.
      */
     proc remove(node: Node) {
-        oneAtATime$.readFE();
+        oneAtATime.readFE();
         if nodes.contains(node) then nodes.remove(node);
-        oneAtATime$.writeEF(true);
+        oneAtATime.writeEF(true);
     }
 
     iter node_iter(lvl: int) {
@@ -186,7 +190,7 @@ class FTree {
         this.coeffDom = {0..order-1};
 
         var tree: [LocaleSpace] unmanaged LocTree?;
-        coforall loc in Locales do
+        coforall loc in Locales with (ref tree) do
             on loc do tree[loc.id] = new unmanaged LocTree(coeffDom);
         this.tree = tree!;
     }
@@ -234,7 +238,7 @@ class FTree {
             for coeffs in t.coeffs_iter(lvl) do
                 yield coeffs;
     }
-    
+
     proc peek(node: Node) ref {
         const t = tree[node2loc(node).id];
         return t.peek(node);
@@ -249,7 +253,7 @@ class FTree {
         const t = tree[node2loc(node).id];
         t.remove(node);
     }
-   
+
     //AGS: Provide constructor that can copy a tree instead of create-then-copy
     /** Return a copy of this FTree
      */
@@ -277,7 +281,7 @@ proc main() {
     var f = new unmanaged FTree(2);
 
     for (i, j) in {1..3, 2..4} {
-        const node = new unmanaged Node(i, j); 
+        const node = new unmanaged Node(i, j);
         f[node] = (i, j);
     }
 
@@ -286,7 +290,7 @@ proc main() {
         for coeffs in f[loc] do
             writeln(coeffs);
     }
-    
+
     var node = new unmanaged Node(4, 5);
     writeln("\n\nf.has_coeffs((4, 5)) = ", f.has_coeffs(node));
     writeln("f.peek((4, 5)) = ", f.peek(node));

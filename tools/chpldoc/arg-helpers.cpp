@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2022-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,9 @@
 
 #include <iostream>
 #include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <inttypes.h>
 
 extern chpl::Context* gContext;
 
@@ -103,8 +106,8 @@ std::string findProgramPath(const char* argv0, void* mainAddr)
     }                                                             \
     type##_t val;                                                 \
     int numitems = sscanf(str, format, &val);                     \
-    char checkStr[len+1];                                         \
-    snprintf(checkStr, len+1, format, val);                       \
+    auto checkStr = std::make_unique<char[]>(len+1);              \
+    snprintf(checkStr.get(), len+1, format, val);                 \
     if (numitems != 1) {                                          \
       std::cerr<<"error: Illegal string passed to strTo_" #type "()" << std::endl;    \
       clean_exit(1);                                              \
@@ -114,7 +117,7 @@ std::string findProgramPath(const char* argv0, void* mainAddr)
     while (str[startPos] == '0' && startPos < len-1) {            \
       startPos++;                                                 \
     }                                                             \
-    if (strcmp(str+startPos, checkStr) != 0) {                    \
+    if (strcmp(str+startPos, checkStr.get()) != 0) {              \
                                   \
         std::cerr<< "error: Integer literal overflow: '" + std::string(str) + "' is too" \
                   " big for type '" #type "'" << std::endl;              \
@@ -129,3 +132,23 @@ define_str2Int(int64, "%" SCNd64)
 
 define_str2Int(uint64, "%" SCNu64)
 
+void arg_fatalError(const char *msg) {
+  std::cerr << "error: " << msg << std::endl;
+  clean_exit(1);
+}
+
+void arg_fatalUserError(const char *msg) {
+  arg_fatalError(msg);
+}
+
+const char *arg_programLoc(const char *argv0, void *mainAddr) {
+  return strdup(findProgramPath(argv0, mainAddr).c_str());
+}
+
+void arg_fatalErrorCont(const char *msg) {
+  std::cerr << "error: " << msg << std::endl;
+}
+
+void arg_warn(const char *msg, const char* path) {
+  std::cerr << "warning: " << msg << std::endl;
+}

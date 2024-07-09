@@ -187,11 +187,6 @@ struct ips_scb {
 	void *cb_param;
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	psm2_mq_req_t mq_req;		/* back pointer to original request */
-#ifdef PSM_ONEAPI
-	/* For munmap GDR buffer */
-	unsigned long gdr_addr;
-	size_t gdr_size;
-#endif
 #endif /* PSM_CUDA || PSM_ONEAPI */
 	struct {
 		struct ips_message_header ips_lrh;

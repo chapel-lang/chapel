@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,7 +46,11 @@ namespace uast {
 
  */
 class Begin final : public SimpleBlockLike {
+ friend class AstNode;
+
  private:
+  int8_t withClauseChildNum_;
+
   Begin(AstList children, int8_t withClauseChildNum, BlockStyle blockStyle,
         int bodyChildNum,
         int numBodyStmts)
@@ -56,10 +60,14 @@ class Begin final : public SimpleBlockLike {
       withClauseChildNum_(withClauseChildNum) {
   }
 
-    Begin(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    ser.write(withClauseChildNum_);
+  }
+
+  explicit Begin(Deserializer& des)
     : SimpleBlockLike(asttags::Begin, des) {
-      withClauseChildNum_ = des.read<int8_t>();
-    }
+    withClauseChildNum_ = des.read<int8_t>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Begin* lhs = this;
@@ -79,8 +87,6 @@ class Begin final : public SimpleBlockLike {
   }
 
   std::string dumpChildLabelInner(int i) const override;
-
-  int8_t withClauseChildNum_;
 
  public:
 
@@ -102,14 +108,6 @@ class Begin final : public SimpleBlockLike {
     CHPL_ASSERT(ret->isWithClause());
     return (const WithClause*)ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
-    ser.write(withClauseChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Begin);
-
 };
 
 

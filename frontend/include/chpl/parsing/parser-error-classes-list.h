@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,9 +27,7 @@
 // Calls to the ERROR_CLASS/WARNING_CLASS/etc. macros should list the new
 // error's name first, followed a list of types describing error details.
 //
-// Errors are grouped by which compilation stage they relate to, and sorted
-// alphabetically within these groups. Groups themselves are ordered by the
-// order their compilation stages occur in.
+// Errors/warnings/etc should be ordered alphabetically by name.
 //
 // Also, the macro calls in this file should each be on a single line,
 // even though that makes long lines that are normally avoided.
@@ -42,7 +40,7 @@ PARSER_ERROR_CLASS(BisonUnknownError, std::string, std::string)
 // other parser errors
 PARSER_SYNTAX_CLASS(CannotAttachPragmas, const uast::AstNode*)
 PARSER_SYNTAX_CLASS(CommentEOF, Location, Location)
-PARSER_SYNTAX_CLASS(ExceptOnlyInvalidExpr, uast::VisibilityClause::LimitationKind)
+PARSER_SYNTAX_CLASS(ExceptOnlyInvalidExpr, Location, uast::VisibilityClause::LimitationKind)
 PARSER_SYNTAX_CLASS(ExternUnclosedPair, std::string)
 PARSER_SYNTAX_CLASS(InvalidIndexExpr)
 PARSER_SYNTAX_CLASS(InvalidNewForm, const uast::AstNode*)
@@ -51,8 +49,6 @@ PARSER_SYNTAX_CLASS(LabelIneligibleStmt, const uast::AstNode*)
 PARSER_ERROR_CLASS(MultipleExternalRenaming)
 PARSER_SYNTAX_CLASS(NewWithoutArgs, const uast::AstNode*)
 PARSER_WARNING_CLASS(PreIncDecOp, bool)
-PARSER_WARNING_CLASS(SingleStmtReturnDeprecated, const uast::AstNode*)
-PARSER_ERROR_CLASS(RecordInheritanceNotSupported, std::string)
 PARSER_SYNTAX_CLASS(StringLiteralEOF, char, int)
 PARSER_SYNTAX_CLASS(UseImportNeedsModule, bool)
 
@@ -63,11 +59,24 @@ PARSER_SYNTAX_CLASS(ParseSyntax, std::string)
 
 /* begin post-parse-checks errors */
 POSTPARSE_ERROR_CLASS(CantApplyPrivate, std::string)
+POSTPARSE_ERROR_CLASS(WhenAfterOtherwise, const uast::When*, const uast::When*)
 ERROR_CLASS(DisallowedControlFlow, const uast::AstNode*, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(IllegalUseImport, const uast::AstNode*, const uast::AstNode*)
+ERROR_CLASS(InvalidThrowaway, const uast::AstNode*, const uast::AstNode*)
+ERROR_CLASS(InvalidGpuAssertion, const uast::AstNode*, const uast::Attribute*)
+ERROR_CLASS(InvalidBlockSize, const uast::AstNode*, const uast::Attribute*)
+ERROR_CLASS(InvalidImplementsIdent, const uast::Implements*, const uast::Identifier*)
+ERROR_CLASS(InvalidParenfulDeprecation, const uast::AttributeGroup*, const uast::AstNode*)
 POSTPARSE_ERROR_CLASS(MultipleManagementStrategies, const uast::New::Management, const uast::New::Management)
-WARNING_CLASS(ParenlessAttributeArgDeprecated, const uast::Attribute*)
+ERROR_CLASS(NonAssociativeComparison, const uast::OpCall*, std::vector<const uast::OpCall*>, std::vector<const uast::AstNode*>)
 POSTPARSE_ERROR_CLASS(PostParseErr, std::string)
 POSTPARSE_WARNING_CLASS(PostParseWarn, std::string)
 ERROR_CLASS(UnsupportedAsIdent, const uast::As*, const uast::AstNode*)
 /* end post-parse-checks errors */
+
+// errors to do with finding the main module / command line invocation
+WARNING_CLASS(AmbiguousSourceFile, IdOrLocation, std::string, std::string, bool)
+ERROR_CLASS(AmbiguousMain, IdOrLocation, std::vector<const uast::Function*>, std::vector<ID>, std::vector<UniqueString>)
+ERROR_CLASS(AmbiguousMainModule, IdOrLocation, std::vector<const uast::Module*>)
+ERROR_CLASS(UnknownMainModule, IdOrLocation, UniqueString)
+WARNING_CLASS(ImplicitModuleSameName, const uast::Module*)

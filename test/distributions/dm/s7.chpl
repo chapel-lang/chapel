@@ -2,7 +2,7 @@
 
 use DimensionalDist2D, ReplicatedDim;
 use BlockCycDim; //MBC //BC
-use Time, Random;
+use Time;
 
 config const verb = false;
 
@@ -29,14 +29,11 @@ const
   bdim2 = new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2);
 
 const AbD: domain(2, indexType)
-   dmapped DimensionalDist2D(tla, bdim1, bdim2, "dim") //BC
+   dmapped new dimensionalDist2D(tla, bdim1, bdim2, "dim") //BC
   = MatVectSpace;
 
 var Ab: [AbD] elemType;  // the matrix A and vector b
 
-// for the reference implementation
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 31415;
 config const verify = false;
 var Abref: [MatVectSpace] elemType;
 var refsuccess = true;
@@ -46,9 +43,9 @@ writeln("n ", n, "  blkSize ", blkSize, "  locales ", tl1, "*", tl2);
 // the domains for the arrays used for replication
 const
   replAD = {1..n, 1..blkSize} dmapped
-    DimensionalDist2D(tla, bdim1, rdim2, "distBR"),
+    new dimensionalDist2D(tla, bdim1, rdim2, "distBR"),
   replBD = {1..blkSize, 1..n+1} dmapped
-    DimensionalDist2D(tla, rdim1, bdim2, "distRB");
+    new dimensionalDist2D(tla, rdim1, bdim2, "distRB");
 
 var replA: [replAD] elemType,
     replB: [replBD] elemType;
@@ -71,20 +68,20 @@ if verb then
               "\nreplA\n", copyToDF(replA),
               "\nreplB\n", copyToDF(replB), "\n");
 
-var a$: sync int;
+var a: sync int;
 
 forall (row,col) in AbD by blkSize do {
   if row + blkSize - 1 <= n && col + blkSize - 1 <= n + 1 {
     const cur1 = (1..n)(row..#blkSize),
           cur2 = (1..n+1)(col..#blkSize);
-    a$.writeEF(1);
+    a.writeEF(1);
     if verb then writeln(cur1, ", ", cur2, "  on ", here.id);
     local {
       test(Ab.localSlice(cur1, cur2),
            replA.localSlice(cur1, 1..blkSize),
            replB.localSlice(1..blkSize, cur2));
     }
-    a$.readFE();
+    a.readFE();
   } else {
     if verb then writeln((row, col), "  on ", here.id, "  skipped");
   }
@@ -94,7 +91,7 @@ writeln();
 writeln(Ab);
 writeln("DONE");
 
-proc test(X, Y, Z) {
+proc test(ref X, Y, Z) {
   for (x, y, z) in zip(X, Y, Z) do x = y + z;
 }
 
@@ -102,7 +99,7 @@ proc test(X, Y, Z) {
 
 // copy to a default-rectangular array, for writeln()
 proc copyToDF(A:[]) {
-  var D: domain(A.rank, A.domain.idxType, A.domain.stridable);
+  var D: domain(A.rank, A.domain.idxType, A.domain.strides);
   D = A.domain;
   var Res: [D] A.eltType = A;
   return Res;

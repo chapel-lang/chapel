@@ -25,7 +25,7 @@ const float_n: real = 1.2;
 /* Initializes a matrix based on a distribution */
 proc initialize_matrix(distribution, m_dim: int) {
     var matrix: [distribution] real = 0.0;
-    forall (i,j) in distribution {
+    forall (i,j) in distribution with (ref matrix) {
         matrix[i,j] = ((i - 1) * (j - 1)):real / m_dim;
     }
     return matrix;
@@ -84,15 +84,15 @@ proc kernel_covariance(dist_square, dist_linear, m_dim: int, n_dim: int) {
     }
     
     /* Center the column vectors */
-    forall (i,j) in dist_square {
+    forall (i,j) in dist_square with (ref data) {
         data[i,j] -= mean[j];
     }
 
     /* Calculate the m * m correlation matrix. Computes only upper triangle */
-    forall (i, j) in dist_square {
+    forall (i, j) in dist_square with (ref symmat) {
         if (i <= j) {
             var tempArray: [1..m_dim] real;
-            forall(d1, d2, k) in zip(data[1..m_dim, i], data[1..m_dim, j], 1..) {
+            forall(d1, d2, k) in zip(data[1..m_dim, i], data[1..m_dim, j], 1..) with (ref tempArray) {
                 tempArray[k] = d1 * d2;
             }
             symmat[i,j] = + reduce(tempArray);
@@ -129,15 +129,15 @@ proc kernel_covariance(dist_square, dist_linear, m_dim: int, n_dim: int) {
       }
     
       /* Center the column vectors */
-      forall (i,j) in {1..m_dim,1..n_dim} {
+      forall (i,j) in {1..m_dim,1..n_dim} with (ref dataTest) {
           dataTest[i,j] -= meanTest[j];
       }
 
       /* Calculate the m * m correlation matrix. Computes only upper triangle */
-      forall (i, j) in {1..m_dim,1..n_dim} {
+      forall (i, j) in {1..m_dim,1..n_dim} with (ref symmatTest) {
           if (i <= j) {
               var tempArray: [1..m_dim] real;
-              forall(d1, d2, k) in zip(dataTest[1..m_dim, i], dataTest[1..m_dim, j], 1..) {
+              forall(d1, d2, k) in zip(dataTest[1..m_dim, i], dataTest[1..m_dim, j], 1..) with (ref tempArray) {
                   tempArray[k] = d1 * d2;
               }
               symmatTest[i,j] = + reduce(tempArray);
@@ -195,12 +195,12 @@ proc main() {
         var user_dist_linear = dom_linear dmapped CyclicZipOpt(startIdx=dom_linear.low);
         kernel_covariance(user_dist_square, user_dist_linear, M, N);   */
     } else if dist == "C" {
-        var user_dist_square = dom_square dmapped Cyclic(startIdx=dom_square.low);
-        var user_dist_linear = dom_linear dmapped Cyclic(startIdx=dom_linear.low);
+        var user_dist_square = dom_square dmapped new cyclicDist(startIdx=dom_square.low);
+        var user_dist_linear = dom_linear dmapped new cyclicDist(startIdx=dom_linear.low);
         kernel_covariance(user_dist_square, user_dist_linear, M, N); 
     } else if dist == "B" {
-        var user_dist_square = dom_square dmapped Block(boundingBox=dom_square);
-        var user_dist_linear = dom_linear dmapped Block(boundingBox=dom_linear);
+        var user_dist_square = dom_square dmapped new blockDist(boundingBox=dom_square);
+        var user_dist_linear = dom_linear dmapped new blockDist(boundingBox=dom_linear);
         kernel_covariance(user_dist_square, user_dist_linear, M, N);  
     } 
 }

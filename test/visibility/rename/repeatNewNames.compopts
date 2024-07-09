@@ -1,0 +1,2 @@
+--no-detailed-errors # repeatNewNames.good
+--detailed-errors    # repeatNewNames.detail.good

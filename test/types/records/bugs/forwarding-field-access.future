@@ -1,0 +1,3 @@
+bug: scope resolution isn't considering forwarding properly
+
+#22656 / #5979

@@ -23,7 +23,7 @@ const hetInstance = (101, 102.5, "hetInstance");
 class ClassType {
   var zzz: int;
 }
-const cInstance = (new owned ClassType(44444444)).borrow();
+const cObj = new ClassType(44444444); const cInstance = cObj.borrow();
 
 record RecordSmall {
   var xxx: int;
@@ -40,9 +40,9 @@ const uInstance = uInstanceVar;
 type DomType1 = domain(1);
 const init1dom: DomType1 = {7770..7771};
 
-type DomType2 = domain(2, uint(32), true);
-const init2dom: DomType2 = {110001..110002:uint(32),
-                            330004..330033:uint(32) by 3};
+type DomType2 = domain(2, uint(32), strideKind.positive);
+const init2dom: DomType2 = {110001:uint(32)..110002:uint(32),
+                            330004:uint(32)..330033:uint(32) by 3};
 
 type ArrType1 = [init1dom] int;
 const init1arr: ArrType1 = 11011;
@@ -56,10 +56,6 @@ const init2arr: ArrType2; // TODO: = 5555;
 // declare our varaibles //
 
 var b0:  bool;
-
-
-
-
 
 var i8:  int(8);
 var i16: int(16);
@@ -83,12 +79,13 @@ var enm:    EnumType;
 var homtup: HomTupType;
 var hettup: HetTupType;
 
-var cls:  borrowed ClassType = (new owned ClassType()).borrow();
+var clsObj = new ClassType();
+var cls:  borrowed ClassType = clsObj.borrow();
 var rec1: RecordSmall;
 var unn:  UnionType;
 
 var rng1: range;
-var rng2: range(uint(8), boundKind.neither, true);
+var rng2: range(uint(8), boundKind.neither, strideKind.negative);
 var dmp = defaultDist;
 var dom1: DomType1;
 var dom2: DomType2;
@@ -97,8 +94,6 @@ var arr2: ArrType2;
 
 var syInt:  sync int;
 var syReal: sync real;
-var siInt:  single int;
-var siReal: single real;
 var aInt:   atomic int;
 var aReal:  atomic real;
 
@@ -162,9 +157,6 @@ proc test(arg) {
   report(isSync(arg), "isSync");
   report(isSyncValue(arg), "isSyncValue");
   report(isSyncType(arg.type), "isSyncType");
-  report(isSingle(arg), "isSingle");
-  report(isSingleValue(arg), "isSingleValue");
-  report(isSingleType(arg.type), "isSingleType");
   report(isAtomic(arg), "isAtomic");
   report(isAtomicValue(arg), "isAtomicValue");
   report(isAtomicType(arg.type), "isAtomicType");
@@ -186,10 +178,6 @@ proc test(arg) {
 }
 
 test(b0);
-
-
-
-
 test(i8);
 test(i16);
 test(i32);
@@ -220,8 +208,6 @@ test(arr1);
 test(arr2);
 test(syInt);
 test(syReal);
-test(siInt);
-test(siReal);
 test(aInt);
 test(aReal);
 

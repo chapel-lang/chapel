@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,6 +33,8 @@ namespace uast {
   This includes things like fields, formals, or variables.
  */
 class VarLikeDecl : public NamedDecl {
+ friend class AstNode;
+
  protected:
   Qualifier storageKind_;
   int8_t typeExpressionChildNum_;
@@ -64,13 +66,19 @@ class VarLikeDecl : public NamedDecl {
     }
   }
 
+  void varLikeDeclSerializeInner(Serializer& ser) const {
+    namedDeclSerializeInner(ser);
+    ser.write(storageKind_);
+    ser.write(typeExpressionChildNum_);
+    ser.write(initExpressionChildNum_);
+  }
+
   VarLikeDecl(AstTag tag, Deserializer& des)
     : NamedDecl(tag, des) {
     storageKind_ = des.read<Qualifier>();
     typeExpressionChildNum_ = des.read<int8_t>();
     initExpressionChildNum_ = des.read<int8_t>();
   }
-
 
   bool varLikeDeclContentsMatchInner(const AstNode* other) const {
     const VarLikeDecl* lhs = this;
@@ -124,13 +132,6 @@ class VarLikeDecl : public NamedDecl {
     } else {
       return nullptr;
     }
-  }
-
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
-    ser.write(storageKind_);
-    ser.write(typeExpressionChildNum_);
-    ser.write(initExpressionChildNum_);
   }
 };
 

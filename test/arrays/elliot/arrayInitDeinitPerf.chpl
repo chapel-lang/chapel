@@ -1,6 +1,6 @@
 use Time, CTypes;
 config const size = 40_000_000;
-config const innerSize = 40;
+config const innerSize : c_size_t = 40;
 
 config const printTiming = true;
 

@@ -1,0 +1,1 @@
+bug: stdin/stdout/stderr '_home' field set to dummyLocale, not locale 0

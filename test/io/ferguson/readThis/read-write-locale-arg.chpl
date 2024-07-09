@@ -1,63 +1,58 @@
 use IO;
 
-class A {
+class A : writeSerializable {
   var x:int;
-  proc writeThis(writer) throws {
+  override proc serialize(writer, ref serializer) throws {
     var loc = writer.readWriteThisFromLocale();
-    writeln("in A.writeThis loc= ", loc.id);
+    writeln("in A.serialize loc= ", loc.id);
     writer.writeln(x);
   }
 }
 
-class B {
+class B : readDeserializable, initDeserializable {
   var x:int;
   proc init(x: int = 0) { this.x = x; }
-  proc init(r: fileReader) {
-    var loc = r.readWriteThisFromLocale();
-    writeln("in B.readThis loc= ", loc.id);
-    this.x = r.readln(int);
+  proc init(reader: fileReader(?), ref deserializer) {
+    var loc = reader.readWriteThisFromLocale();
+    writeln("in B.init loc= ", loc.id);
+    this.x = reader.readln(int);
   }
-  proc readThis(writer) throws {
+  override proc deserialize(reader, ref deserializer) throws {
+    var loc = reader.readWriteThisFromLocale();
+    writeln("in B.deserialize loc= ", loc.id);
+    reader.readln(x);
+  }
+}
+
+class C : serializable {
+  var x:int;
+  proc init(x: int = 0) { this.x = x; }
+  proc init(reader: fileReader(?), ref deserializer) {
+    var loc = reader.readWriteThisFromLocale();
+    writeln("in C.init loc= ", loc.id);
+    this.x = reader.read(int);
+  }
+
+  override proc deserialize(reader, ref deserializer) throws {
+    var loc = reader.readWriteThisFromLocale();
+    writeln("in C.deserialize loc= ", loc.id);
+    reader.read(x);
+  }
+
+  override proc serialize(writer, ref serializer) throws {
     var loc = writer.readWriteThisFromLocale();
-    writeln("in B.readThis loc= ", loc.id);
-    writer.readln(x);
-  }
-}
-
-class C {
-  var x:int;
-  proc init(x: int = 0) { this.x = x; }
-  proc init(r: fileReader) {
-    var loc = r.readWriteThisFromLocale();
-    writeln("in C.readWriteHelper loc= ", loc.id);
-    this.x = r.read(int);
-  }
-
-  proc readThis(r) throws {
-    readWriteHelper(r);
-  }
-
-  proc writeThis(w) throws {
-    readWriteHelper(w);
-  }
-
-  proc readWriteHelper(rw) throws {
-    var loc = rw.readWriteThisFromLocale();
-    writeln("in C.readWriteHelper loc= ", loc.id);
-    if rw.writing then
-      rw.write(x);
-    else
-      rw.read(x);
+    writeln("in C.serialize loc= ", loc.id);
+    writer.write(x);
   }
 }
 
 
-var a = new unmanaged A(1);
-var b = new unmanaged B(1);
-var c = new unmanaged C(1);
+var a = new A(1);
+var b = new B(1);
+var c = new C(1);
 
 var f = openMemFile();
-var w = f.writer();
+var w = f.writer(locking=false);
 
 writeln("Writes from Locale 1");
 on Locales[1] {
@@ -74,7 +69,7 @@ on Locales[2] {
 }
 
 
-var r = f.reader();
+var r = f.reader(locking=false);
 
 writeln("Reads from Locale 1");
 on Locales[1] {
@@ -89,8 +84,3 @@ on Locales[2] {
   r.readln(b);
   r.readln(c);
 }
-
-
-delete a;
-delete b;
-delete c;

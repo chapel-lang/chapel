@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2016-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -216,12 +216,12 @@ static Fl_Menu_Item GridGraphMenu[] = {
  {"Reset Zoom", 0,  (Fl_Callback*)menu_cb_Reset, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
  {0,0,0,0,0,0,0,0,0},
  {"Data", 0,  0, 0, FL_SUBMENU, FL_NORMAL_LABEL, 0, 14, 0},
- {"Locales", 0,  0, 0, FL_MENU_INACTIVE|FL_MENU_DIVIDER, FL_ENGRAVED_LABEL, 0, 14, 0},
+ {"Locales", 0,  0, 0, FL_MENU_INACTIVE|FL_MENU_DIVIDER, (uchar)(FL_ENGRAVED_LABEL), 0, 14, 0},
  {"Show Tasks", 0,  (Fl_Callback*)menu_cb_ShowTasks, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
  {"Show CPU", 0,  (Fl_Callback*)menu_cb_ShowCpu, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
  {"Show Clock", 0,  (Fl_Callback*)menu_cb_ShowClock, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
  {"Show Concurrency", 0,  (Fl_Callback*)menu_cb_ShowConc, 0, 128, FL_NORMAL_LABEL, 0, 14, 0},
- {"Communication", 0,  0, 0, FL_MENU_INACTIVE|FL_MENU_DIVIDER, FL_ENGRAVED_LABEL, 0, 14, 0},
+ {"Communication", 0,  0, 0, FL_MENU_INACTIVE|FL_MENU_DIVIDER, (uchar)(FL_ENGRAVED_LABEL), 0, 14, 0},
  {"Show Count", 0,  (Fl_Callback*)menu_cb_ShowComm, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
  {"Show Size", 0,  (Fl_Callback*)menu_cb_ShowDsize, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
  {0,0,0,0,0,0,0,0,0}, {0,0,0,0,0,0,0,0,0}
@@ -234,12 +234,12 @@ static Fl_Menu_Item gg_popup_Menu[] = {
  {"Reset Zoom", 0,  (Fl_Callback*)menu_cb_Reset, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
  {0,0,0,0,0,0,0,0,0},
  {"Data", 0,  0, 0, FL_SUBMENU, FL_NORMAL_LABEL, 0, 14, 0},
- {"Locales", 0,  0, 0, FL_MENU_INACTIVE|FL_MENU_DIVIDER, FL_ENGRAVED_LABEL, 0, 14, 0},
+ {"Locales", 0,  0, 0, FL_MENU_INACTIVE|FL_MENU_DIVIDER, (uchar)(FL_ENGRAVED_LABEL), 0, 14, 0},
  {"Show Tasks", 0,  (Fl_Callback*)menu_cb_ShowTasks, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
  {"Show CPU", 0,  (Fl_Callback*)menu_cb_ShowCpu, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
  {"Show Clock", 0,  (Fl_Callback*)menu_cb_ShowClock, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
  {"Show Concurrency", 0,  (Fl_Callback*)menu_cb_ShowConc, 0, 128, FL_NORMAL_LABEL, 0, 14, 0},
- {"Communication", 0,  0, 0, FL_MENU_INACTIVE|FL_MENU_DIVIDER, FL_ENGRAVED_LABEL, 0, 14, 0},
+ {"Communication", 0,  0, 0, FL_MENU_INACTIVE|FL_MENU_DIVIDER, (uchar)(FL_ENGRAVED_LABEL), 0, 14, 0},
  {"Show Count", 0,  (Fl_Callback*)menu_cb_ShowComm, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
  {"Show Size", 0,  (Fl_Callback*)menu_cb_ShowDsize, 0, 0, FL_NORMAL_LABEL, 0, 14, 0},
  {0,0,0,0,0,0,0,0,0},

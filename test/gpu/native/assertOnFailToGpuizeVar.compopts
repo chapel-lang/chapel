@@ -1,0 +1,5 @@
+-suseLoopType=promotedOverLoopExpr -suseForall=true    # assertOnFailToGpuizeVar.promoteLoop.forall.good
+-suseLoopType=promotedOverLoopExpr -suseForall=false   # assertOnFailToGpuizeVar.promoteLoop.foreach.good
+-suseLoopType=promotedOverArray -suseForall=true       # assertOnFailToGpuizeVar.promoteArray.good
+-suseLoopType=explicit -suseForall=true                # assertOnFailToGpuizeVar.forall.good
+-suseLoopType=explicit -suseForall=false               # assertOnFailToGpuizeVar.foreach.good

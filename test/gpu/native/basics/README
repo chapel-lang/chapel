@@ -1,0 +1,4 @@
+This directory is to contain tests for fundamental operations like being able to
+launch kernels, pass arguments correctly and simple data movement. I am hoping
+that we can do a test rearrangement soon to move more of the existing tests into
+this directory.

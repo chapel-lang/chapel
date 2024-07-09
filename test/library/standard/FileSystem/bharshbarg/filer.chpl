@@ -5,7 +5,7 @@ use Sort;
 // This module defines several iterators that are designed to help
 // support reasoning about directory and file contents.  At present,
 // all are serial and single-locale, though the ultimate intention
-// is to also support parallel and multi-locale options.  
+// is to also support parallel and multi-locale options.
 //
 // These interfaces should be considered experimental and subject to
 // change for the 1.10 release.  For that reason, send in feedback if
@@ -14,7 +14,7 @@ use Sort;
 // wrong.
 //
 
-/* iter listdir(path: string, hidden=false, dirs=true, files=true, 
+/* iter listdir(path: string, hidden=false, dirs=true, files=true,
    listlinks=true): string
 
    listdir() lists the contents of a directory, similar to 'ls'
@@ -29,18 +29,18 @@ use Sort;
  start with '.'
  */
 
-iter listdir(path: string, hidden=false, dirs=true, files=true, 
+iter listdir(path: string, hidden=false, dirs=true, files=true,
     listlinks=true): string {
   use CTypes;
 
-  extern type DIRptr;
-  extern type direntptr;
-  extern proc opendir(name: c_string): DIRptr;
+  extern type DIRptr = c_ptr(opaque);
+  extern type direntptr = c_ptr(opaque);
+  extern proc opendir(name: c_ptrConst(c_char)): DIRptr;
   extern proc readdir(dirp: DIRptr): direntptr;
   extern proc closedir(dirp: DIRptr): c_int;
 
-  proc direntptr.d_name(): c_string {
-    extern proc chpl_rt_direntptr_getname(d: direntptr): c_string;
+  proc direntptr.d_name(): c_ptrConst(c_char) {
+    extern proc chpl_rt_direntptr_getname(d: direntptr): c_ptrConst(c_char);
 
     return chpl_rt_direntptr_getname(this);
   }
@@ -48,9 +48,9 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
   var dir: DIRptr;
   var ent: direntptr;
   dir = opendir(path.c_str());
-  if (!is_c_nil(dir)) {
+  if (dir != nil) {
     ent = readdir(dir);
-    while (!is_c_nil(ent)) {
+    while (ent != nil) {
       const filename = string.createCopyingBuffer(ent.d_name());
       if (hidden || filename[0] != '.') {
         if (filename != "." && filename != "..") {
@@ -86,13 +86,13 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
     }
     closedir(dir);
   } else {
-    extern proc perror(s: c_string);
+    extern proc perror(s: c_ptrConst(c_char));
     perror("error in listdir(): ");
   }
 }
 
 
-/* iter walkdirs(path: string=".", topdown=true, depth=max(int), 
+/* iter walkdirs(path: string=".", topdown=true, depth=max(int),
    hidden=false, followlinks=false, sort=false): string
 
    walkdirs() recursively walks a directory structure, yielding
@@ -114,7 +114,7 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
  sort the directories by default.
  */
 
-iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
+iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
     followlinks=false, sort=false): string {
 
   if (topdown) then
@@ -126,7 +126,7 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
       QuickSort.quickSort(subdirs);
     for subdir in subdirs {
       const fullpath = path + "/" + subdir;
-      for subdir in walkdirs(fullpath, topdown, depth-1, hidden, 
+      for subdir in walkdirs(fullpath, topdown, depth-1, hidden,
           followlinks, sort) do
         yield subdir;
     }
@@ -140,8 +140,8 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
 //
 // Here's a parallel version
 //
-iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
-    followlinks=false, sort=false, param tag: iterKind): string 
+iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
+    followlinks=false, sort=false, param tag: iterKind): string
                                                          where tag == iterKind.standalone {
   if (sort) then
     warning("sorting has no effect for parallel invocations of walkdirs()");

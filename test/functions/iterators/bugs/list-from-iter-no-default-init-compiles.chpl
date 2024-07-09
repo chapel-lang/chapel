@@ -22,7 +22,7 @@ record Beacon {
 
 iter loadInput() {
     var a, b, c, d: int;
-    const f = open(inf, ioMode.r).reader();
+    const f = open(inf, ioMode.r).reader(locking=false);
     while f.readf("Sensor at x=%i, y=%i: closest beacon is at x=%i, y=%i\n", a, b, c, d) {
         yield new Beacon((a, b), (c, d));
     }

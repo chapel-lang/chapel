@@ -11,4 +11,4 @@ From: amazonlinux:2023
     dnf -y install clang clang-devel llvm-devel
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

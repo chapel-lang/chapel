@@ -1,1 +1,1 @@
-../../../release/examples/benchmarks/hpcc/fft.chpl
+fft.chpl -M ../../../release/examples/benchmarks/hpcc/

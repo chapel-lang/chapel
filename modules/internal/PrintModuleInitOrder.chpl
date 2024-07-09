@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,8 +28,9 @@
 //
 pragma "export init"
 module PrintModuleInitOrder {
-  private use ChapelBase;
+  private use ChapelBase, CTypes;
 
+  @unstable("The variable 'printModuleInitOrder' is unstable and its interface is subject to change in the future")
   config const printModuleInitOrder = false;
   pragma "print module init indent level" var moduleInitLevel = 2:int(32);
 
@@ -37,15 +38,17 @@ module PrintModuleInitOrder {
   // Called by all modules during initialization
   //
   pragma "print module init fn"
-  proc printModuleInit(s1: c_string, s2: c_string, len: int) {
-    extern proc printf(s1: c_string, len: int(32), s2: c_string);
+  proc printModuleInit(s1: chpl_c_string, s2: chpl_c_string, len: int) {
+    extern proc printf(s1: c_ptrConst(c_char), len: int(32), s2: c_ptrConst(c_char));
     if printModuleInitOrder then
       printf(s1, moduleInitLevel+len:int(32)+2:int(32), s2);
   }
 
+
   proc initPrint() {
-    extern proc printf(s: c_string);
-    printf ("Initializing Modules:\n");
+    // printf requires a 'fmt' argument to avoid a format-security warning from gcc
+    extern proc printf(fmt, s);
+    printf("%s\n", "Initializing Modules:");
   }
 
   if printModuleInitOrder then initPrint();

@@ -4,13 +4,34 @@
 
 CHAMPS_BRANCH=${CHAMPS_BRANCH:-development}
 
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $CWD/functions.bash
+
+if [ ! -z "$CHAMPS_QUICKSTART" ]; then
+  if [ -z "$CHPL_HOME" ]; then
+    echo "[Error: \$CHPL_HOME is unset]"
+    exit 1
+  fi
+  export CHAMPS_COMMON_DIR=$CWD/champs-nightly
+
+  if [ -d "$CHAMPS_COMMON_DIR" ]; then
+    echo "[Warning: $CHAMPS_COMMON_DIR exists, will try to git pull]"
+    update_nightly_repo
+  else 
+    echo "Creating $CHAMPS_COMMON_DIR"
+    pushd $(dirname $CHAMPS_COMMON_DIR)
+    git clone https://github.com/chapelu-champs/champs-nightly.git
+    popd
+  fi
+else
+  update_nightly_repo
+fi
+
 CHAMPS_PATCH_PATH=$CHAMPS_COMMON_DIR/patches
 CHAMPS_GRAPH_PATH=$CHAMPS_COMMON_DIR/graph-infra
 CHAMPS_DATA_PATH=$CHAMPS_COMMON_DIR/data
 CHAMPS_CFG_PATH=$CHAMPS_COMMON_DIR/configs
-
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/functions.bash
+CHAMPS_DEP_PATH=$CHAMPS_COMMON_DIR/deps-manual
 
 subtest_start
 
@@ -31,7 +52,12 @@ else
 fi
 cd ${CHAMPS_HOME}
 
-CHAMPS_VERSION=$(git describe --tags --abbrev=0)
+# CHAMPS versions are tagged. Not all commits have tags, in which case this
+# command fails. Note that this is exactly as what CHAMPS Makefile does. IOW,
+# they must be seeing and ignoring the same error. To avoid triage confusion, I
+# am redirecting stderr to dev/null. (I think they should use --always
+# --abbrev=10 or something)
+CHAMPS_VERSION=$(git describe --tags --abbrev=0 2>/dev/null)
 
 # Apply patches
 for p in $CHAMPS_PATCH_PATH/*patch; do
@@ -42,37 +68,66 @@ if [ "${CHPL_LLVM}" != "none" ] ; then
   apply_patch $CHAMPS_PATCH_PATH/optional/llvm.patch
 fi
 
+if [ ! -z "$CHAMPS_QUICKSTART" ]; then
+  git checkout -b quickstart-triage
+  echo "[New branch (quickstart-triage) created]"
+  git commit -am "Snapshot after applying patches (by sub_test)" >/dev/null
+  echo "[Patch commit created]"
+  git clean -df >/dev/null
+  git status
+fi
+
+# some debugging output before starting the run
+echo "contents of $CHAMPS_HOME"
+ls $CHAMPS_HOME
 
 # Compile CHAMPS executables
-test_compile prep
-test_compile flow
 test_compile icing
-test_compile drop
-test_compile potential
-test_compile potentialPrep
-test_compile geo
-test_compile thermo
-test_compile postLink
-test_compile post
-test_compile stochasticIcing
-test_compile octree
-test_compile eigenSolvePost
-test_compile externalSolverPost
-test_compile meshDeformation
-test_compile continuation
-test_compile stability
-test_compile coloring
 
-# copy the input data to the filesystem we're running on
+if [ -z "$CHAMPS_QUICKSTART" ] || [ ! -z "$CHAMPS_COMPILE_ALL_EXECS" ] ; then
+  test_compile prep
+  test_compile flow
+  test_compile drop
+  test_compile potential
+  test_compile potentialPrep
+  test_compile geo
+  test_compile thermo
+  test_compile postLink
+  test_compile post
+  test_compile stochasticIcing
+  test_compile octree
+  test_compile eigenSolvePost
+  test_compile externalSolverPost
+  test_compile meshDeformation
+  test_compile continuation
+  test_compile stability
+  test_compile coloring
+fi
 
-# I can't tell whether prep is running too slow or just freezing, for now don't run it
-# cp $CHAMPS_DATA_PATH/CRMHL_coarse.cgns $CHAMPS_HOME/
-# test_run prep 1
 
-# as a temporary workaround, copy the prepartitoned grid for 16 locales
-cp $CHAMPS_DATA_PATH/CRMHL_coarse_768B.cgns $CHAMPS_HOME/
-test_run flow 16
+if [ -z "$CHAMPS_QUICKSTART" ] ; then
+  # copy the input data to the filesystem we're running on
+  # I can't tell whether prep is running too slow or just freezing, for now don't run it
+  # cp $CHAMPS_DATA_PATH/CRMHL_coarse.cgns $CHAMPS_HOME/
+  # test_run prep 1
 
-$CHPL_HOME/util/test/genGraphs --configs $CHPL_TEST_PERF_CONFIGS --annotate $CHPL_HOME/test/ANNOTATIONS.yaml --name $CHPL_TEST_PERF_CONFIG_NAME --perfdir $CHPL_TEST_PERF_DIR --outdir $CHPL_TEST_PERF_DIR/html --graphlist $CHAMPS_GRAPH_PATH/GRAPHLIST --testdir $CHAMPS_GRAPH_PATH --alttitle "CHAMPS Performance Graphs"
+  # copy the prepartitoned grid for 16 locales into scratch space
+  cp $CHAMPS_DATA_PATH/CRMHL_coarse_1152B.cgns $CHAMPS_HOME/
+
+  # in the system where we run this, compute nodes don't have access to our shared
+  # non-scratch space. I do not want to store those in the scratch space for good.
+  # So, what we are doing here is to copy the stuff from CHAMPS_CFG_PATH and
+  # CHAMPS_DEP_PATH to the scratch space for running the code.
+  cp $CHAMPS_CFG_PATH/flow.in $CHAMPS_HOME/
+
+  # ... and this is where it really gets unfortunate.
+  cp -r $CHAMPS_DEP_PATH $CHAMPS_HOME/
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CHAMPS_HOME/deps-manual/lib
+  echo LD_LIBRARY_PATH=$LD_LIBRARY_PATH
+
+  test_run flow 16
+
+  $CHPL_HOME/util/test/genGraphs --configs $CHPL_TEST_PERF_CONFIGS --annotate $CHPL_HOME/test/ANNOTATIONS.yaml --name $CHPL_TEST_PERF_CONFIG_NAME --perfdir $CHPL_TEST_PERF_DIR --outdir $CHPL_TEST_PERF_DIR/html --graphlist $CHAMPS_GRAPH_PATH/GRAPHLIST --testdir $CHAMPS_GRAPH_PATH --alttitle "CHAMPS Performance Graphs"
+fi
 
 subtest_end

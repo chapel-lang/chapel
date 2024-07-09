@@ -1,1 +1,1 @@
-equals_minus_illegal_2.chpl:6: error: Cannot remove indices from a rectangular domain
+equals_minus_illegal_2.chpl:6: error: subtraction of a rectangular domain and int(64) is currently not supported

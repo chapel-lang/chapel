@@ -49,11 +49,28 @@ TEST(ElfYamlTextAPI, YAMLReadableTBE) {
   EXPECT_NE(Stub.get(), nullptr);
   EXPECT_FALSE(Stub->SoName.has_value());
   EXPECT_TRUE(Stub->Target.Arch.has_value());
-  EXPECT_EQ(Stub->Target.Arch.value(), (uint16_t)llvm::ELF::EM_X86_64);
+  EXPECT_EQ(*Stub->Target.Arch, (uint16_t)llvm::ELF::EM_X86_64);
   EXPECT_EQ(Stub->NeededLibs.size(), 3u);
   EXPECT_STREQ(Stub->NeededLibs[0].c_str(), "libc.so");
   EXPECT_STREQ(Stub->NeededLibs[1].c_str(), "libfoo.so");
   EXPECT_STREQ(Stub->NeededLibs[2].c_str(), "libbar.so");
+}
+
+TEST(ElfYamlTextAPI, YAMLReadsInvalidSymbols) {
+  const char Data[] =
+      "--- !ifs-v1\n"
+      "IfsVersion: 1.0\n"
+      "SoName: test.so\n"
+      "Target: { ObjectFormat: ELF, Arch: x86_64, Endianness: little, "
+      "BitWidth: 64 }\n"
+      "Symbols:\n"
+      "  - { Name: not, Type: File, Undefined: true, Size: 111, "
+      "Weak: true, Warning: \'All fields populated!\' }\n"
+      "...\n";
+  Expected<std::unique_ptr<IFSStub>> StubOrErr = readIFSFromBuffer(Data);
+  ASSERT_THAT_ERROR(
+      StubOrErr.takeError(),
+      FailedWithMessage("IFS symbol type for symbol 'not' is unsupported"));
 }
 
 TEST(ElfYamlTextAPI, YAMLReadsTBESymbols) {
@@ -68,7 +85,7 @@ TEST(ElfYamlTextAPI, YAMLReadsTBESymbols) {
       "  - { Name: baz, Type: TLS, Size: 3 }\n"
       "  - { Name: foo, Type: Func, Warning: \"Deprecated!\" }\n"
       "  - { Name: nor, Type: NoType, Undefined: true }\n"
-      "  - { Name: not, Type: File, Undefined: true, Size: 111, "
+      "  - { Name: not, Type: NoType, Undefined: true, Size: 111, "
       "Weak: true, Warning: \'All fields populated!\' }\n"
       "...\n";
   Expected<std::unique_ptr<IFSStub>> StubOrErr = readIFSFromBuffer(Data);
@@ -116,7 +133,7 @@ TEST(ElfYamlTextAPI, YAMLReadsTBESymbols) {
   IFSSymbol const &SymNot = *Iterator++;
   EXPECT_STREQ(SymNot.Name.c_str(), "not");
   EXPECT_EQ(*SymNot.Size, 111u);
-  EXPECT_EQ(SymNot.Type, IFSSymbolType::Unknown);
+  EXPECT_EQ(SymNot.Type, IFSSymbolType::NoType);
   EXPECT_TRUE(SymNot.Undefined);
   EXPECT_TRUE(SymNot.Weak);
   EXPECT_TRUE(SymNot.Warning);

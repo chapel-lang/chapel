@@ -3,7 +3,7 @@
   <pass name="DumpCodePass">
     <copyright>
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -137,7 +137,7 @@ We anticipate the following additions:
     <substitution find="double" replace="c_double" />
     <substitution find="float" replace="c_float" />
     <substitution find="char" replace="c_char" />
-    <substitution find="void" replace="c_void_ptr" />
+    <substitution find="void" replace="c_ptr(void)" />
     <substitution find="lapack_int" replace="c_int" />
     <substitution find="lapack_logical" replace="c_int" />
     <substitution find="lapack_complex_double" replace="complex(128)" />

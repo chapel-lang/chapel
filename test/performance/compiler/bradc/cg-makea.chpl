@@ -1,6 +1,6 @@
 module CGMakeA {
 
-  use Random, Sort;
+  use NPBRandom, Sort;
 
   config const rcond = 0.1;
 
@@ -76,7 +76,7 @@ module CGMakeA {
   }
 
 
-  proc sprnvc(type elemType, n, nz, v, iv, randStr) {
+  proc sprnvc(type elemType, n, nz, ref v, ref iv, randStr) {
     var nn1 = 1;
     while (nn1 < n) do nn1 *= 2;
 
@@ -98,7 +98,7 @@ module CGMakeA {
   }
 
 
-  proc vecset(v, iv, inout nzv, i, val) {
+  proc vecset(ref v, ref iv, inout nzv, i, val) {
     var set = false;
     for k in 1..nzv {
       if (iv(k) == i) {

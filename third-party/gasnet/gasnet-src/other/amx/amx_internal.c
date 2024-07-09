@@ -101,9 +101,14 @@ extern void AMX_FatalErr(const char *msg, ...) {
 /* ------------------------------------------------------------------------------------ */
 static void AMX_defaultAMHandler(void *token) {
   int srcnode = -1;
+  handler_t hidx;
+  amx_category_t category;
+  int is_req;
   AMX_GetSourceId(token, &srcnode);
-  AMX_FatalErr(AMX_LIB_STR" received an AM message from node %i for a handler index "
-                     "with no associated AM handler function registered", srcnode);
+  AMX_GetTokenInfo(token,&hidx,&category,&is_req);
+  AMX_FatalErr(AMX_LIB_STR" received an AM %s from node %i for a handler index %i "
+               "with no associated AM handler function registered",
+               (is_req?"Request":"Reply"), srcnode, (int)hidx);
 }
 amx_handler_fn_t amx_unused_handler = (amx_handler_fn_t)&AMX_defaultAMHandler;
 /*------------------------------------------------------------------------------------

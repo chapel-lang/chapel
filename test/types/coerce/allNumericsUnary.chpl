@@ -52,7 +52,7 @@ proc f(x) {
 
 // next, call 'f' with all combinations of numeric types
 proc callF(type t1) {
-  writef(" actual %-12s -> ", t1:string);
+  writef(" actual %<12s -> ", t1:string);
   var x: t1;
   f(x);
 }

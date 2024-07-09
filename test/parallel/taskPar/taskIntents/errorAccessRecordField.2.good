@@ -1,0 +1,8 @@
+errorAccessRecordField.chpl:21: error: const actual is passed to 'ref' formal 'this' of modify()
+errorAccessRecordField.chpl:1: note: to formal of type R
+errorAccessRecordField.chpl:14: note: The shadow variable 'r' is constant due to task intents in this loop
+errorAccessRecordField.chpl:4: note: to ref formal here
+errorAccessRecordField.chpl:22: error: const actual is passed to 'ref' formal 'this' of this()
+errorAccessRecordField.chpl:1: note: to formal of type R
+errorAccessRecordField.chpl:14: note: The shadow variable 'r' is constant due to task intents in this loop
+errorAccessRecordField.chpl:5: note: to ref formal here

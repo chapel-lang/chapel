@@ -1,7 +1,7 @@
 /*
 Computes heat equation until convergence
-Array is "manually" distributed on locales so each locale has a DR subblock 
-Halo communications are implemented a la MPI: 
+Array is "manually" distributed on locales so each locale has a DR subblock
+Halo communications are implemented a la MPI:
 explicit Data[localeA].DR[sliceHalo]=Data[localeB].DR[sliceSource]
 */
 
@@ -29,7 +29,7 @@ record localInfo {
 }
 
 // set up the data arrays
-const gridDist = gridDom dmapped Block(gridDom, gridLocales);
+const gridDist = gridDom dmapped new blockDist(gridDom, gridLocales);
 var Data: [gridDist] localInfo;
 var delta: elType;
 config const epsilon = 0.1;
@@ -51,11 +51,11 @@ var errCount = 0;
 // oddphase: refdataB -> refdataA
 proc refcomp(oddphase: bool, out delta: elType) {
   if oddphase {
-    forall (i,j) in {1..globN, 1..globM} {
+    forall (i,j) in {1..globN, 1..globM} with (ref refdataA) {
       refdataA[i,j] = (refdataB[i-1,j] + refdataB[i,j+1] + refdataB[i+1,j] + refdataB[i,j-1]) / 4;
     }
   } else {
-    forall (i,j) in {1..globN, 1..globM} {
+    forall (i,j) in {1..globN, 1..globM} with (ref refdataB) {
       refdataB[i,j] = (refdataA[i-1,j] + refdataA[i,j+1] + refdataA[i+1,j] + refdataA[i,j-1]) / 4;
     }
   }
@@ -63,17 +63,17 @@ proc refcomp(oddphase: bool, out delta: elType) {
 }
 // oddphase: A vs. refdataA
 proc verify(oddphase: bool) {
-  var globdiff$: sync elType = min(elType);
+  var globdiff: sync elType = min(elType);
   forall ((gi,gj), dat) in zip(gridDom, Data) {
     const locdiff = max reduce [(i,j) in dat.domCompute]
       abs( (if oddphase then dat.A[i,j] else dat.B[i,j]) -
 	   (if oddphase then refdataA[work2ref(i,j,gi,gj)]
 	                else refdataB[work2ref(i,j,gi,gj)]) );
-    globdiff$.writeEF(max(globdiff$.readFE(), locdiff));
+    globdiff.writeEF(max(globdiff.readFE(), locdiff));
   } // forall
 
-  if globdiff$.readXX() > 0.000001 {
-    writeln("too much of a difference from reference: ", globdiff$.readXX());
+  if globdiff.readXX() > 0.000001 {
+    writeln("too much of a difference from reference: ", globdiff.readXX());
     errCount += 1;
   }
 }
@@ -84,12 +84,12 @@ proc work2ref(i,j,gi,gj) {
 // initialize B
 
 config const singleinit = true;
-forall (dat, (gi,gj)) in zip(Data, gridDom) {
+forall (dat, (gi,gj)) in zip(Data, gridDom) with (ref refdataB) {
   if singleinit {
     dat.B[2,2] = 100;
     refdataB[work2ref(2,2,gi,gj)] = 100;
   } else {
-    forall ((i,j), a) in zip(dat.domCompute, dat.Bcompute) {
+    forall ((i,j), a) in zip(dat.domCompute, dat.Bcompute) with (ref refdataB) {
       a = i*0.1 + j;
       refdataB[work2ref(i,j,gi,gj)] = a;
     }
@@ -139,7 +139,7 @@ proc fetch(oddphase: bool) {
 var i=0;
 proc progress() {
   i=i+1;
-  fetch(true);          showfetch(true); 
+  fetch(true);          showfetch(true);
   compute(true, delta); showme(true, delta, "After odd phase: "+i:string);
   refcomp(true, refdelta); showref(true);
   verify(true);

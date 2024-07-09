@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,8 +26,10 @@ LoopStmt::LoopStmt(BlockStmt* initBody) : BlockStmt(initBody)
   mBreakLabel       = 0;
   mContinueLabel    = 0;
   mOrderIndependent = false;
+  mExemptFromImplicitIntents = false;
   mVectorizationHazard = false;
   mParallelAccessVectorizationHazard = false;
+  mLLVMMetadataList = {};
 }
 
 LabelSymbol* LoopStmt::breakLabelGet() const
@@ -58,6 +60,14 @@ bool LoopStmt::isOrderIndependent() const
 void LoopStmt::orderIndependentSet(bool orderIndependent)
 {
   mOrderIndependent = orderIndependent;
+}
+
+void LoopStmt::exemptFromImplicitIntents() {
+  mExemptFromImplicitIntents = true;
+}
+
+bool LoopStmt::isExemptFromImplicitIntents() const {
+  return mExemptFromImplicitIntents;
 }
 
 bool LoopStmt::hasVectorizationHazard() const
@@ -92,6 +102,26 @@ bool LoopStmt::isParallelAccessVectorizable() const
   return mOrderIndependent &&
          !mVectorizationHazard &&
          !mParallelAccessVectorizationHazard;
+}
+
+bool LoopStmt::hasAdditionalLLVMMetadata() const {
+  return !mLLVMMetadataList.empty();
+}
+bool LoopStmt::hasAdditionalLLVMMetadata(const char* a) const {
+  return this->getAdditionalLLVMMetadata(a) != nullptr;
+}
+const LLVMMetadataList& LoopStmt::getAdditionalLLVMMetadata() const {
+  return mLLVMMetadataList;
+}
+LLVMMetadataPtr LoopStmt::getAdditionalLLVMMetadata(const char* a) const {
+  const char* aa = astr(a);
+  auto it = std::find_if(mLLVMMetadataList.begin(),
+                         mLLVMMetadataList.end(),
+                         [aa](auto elm) {return elm->key == aa;});
+  return it != mLLVMMetadataList.end() ? *it : nullptr;
+}
+void LoopStmt::setAdditionalLLVMMetadata(const LLVMMetadataList& al) {
+  mLLVMMetadataList = al;
 }
 
 // what if the nearest enclosing loop is a forall?

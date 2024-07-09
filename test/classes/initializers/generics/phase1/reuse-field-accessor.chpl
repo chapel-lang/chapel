@@ -1,11 +1,11 @@
 
 record R {
-  var x;
+  var x_;
   var y;
 
   proc x ref {
     writeln("R.x");
-    return x;
+    return x_;
   }
 
   proc init(A,B) {

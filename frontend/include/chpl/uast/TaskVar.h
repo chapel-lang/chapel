@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,6 +46,8 @@ namespace uast {
   ref intent.
  */
 class TaskVar final : public VarLikeDecl {
+ friend class AstNode;
+
  public:
   enum Intent {
     // Use Qualifier here for consistent enum values.
@@ -73,10 +75,11 @@ class TaskVar final : public VarLikeDecl {
                     initExpressionChildNum) {
   }
 
-  TaskVar(Deserializer& des)
-      : VarLikeDecl(asttags::TaskVar, des) {
-
+  void serializeInner(Serializer& ser) const override {
+    varLikeDeclSerializeInner(ser);
   }
+
+  explicit TaskVar(Deserializer& des) : VarLikeDecl(asttags::TaskVar, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const TaskVar* lhs = this;
@@ -103,13 +106,6 @@ class TaskVar final : public VarLikeDecl {
     Returns the intent of this task variable.
   */
   Intent intent() const { return (Intent)((int)storageKind()); }
-
-  void serialize(Serializer& ser) const override {
-    VarLikeDecl::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(TaskVar);
-
 };
 
 // DECLARE_SERDE_ENUM(uast::TaskVar::Intent, uint8_t);

@@ -70,7 +70,7 @@ protected:
   void printRelocation(const SectionRef &Section, const RelocationRef &Reloc);
 
 private:
-  void printSymbols() override;
+  void printSymbols(bool ExtraSymInfo) override;
   void printDynamicSymbols() override { llvm_unreachable("unimplemented"); }
 
   const WasmObjectFile *Obj;
@@ -144,7 +144,7 @@ void WasmDumper::printRelocations() {
   }
 }
 
-void WasmDumper::printSymbols() {
+void WasmDumper::printSymbols(bool /*ExtraSymInfo*/) {
   ListScope Group(W, "Symbols");
 
   for (const SymbolRef &Symbol : Obj->symbols())
@@ -156,7 +156,7 @@ void WasmDumper::printSectionHeaders() {
   for (const SectionRef &Section : Obj->sections()) {
     const WasmSection &WasmSec = Obj->getWasmSection(Section);
     DictScope SectionD(W, "Section");
-    W.printEnum("Type", WasmSec.Type, makeArrayRef(WasmSectionTypes));
+    W.printEnum("Type", WasmSec.Type, ArrayRef(WasmSectionTypes));
     W.printNumber("Size", static_cast<uint64_t>(WasmSec.Content.size()));
     W.printNumber("Offset", WasmSec.Offset);
     switch (WasmSec.Type) {
@@ -221,8 +221,8 @@ void WasmDumper::printSymbol(const SymbolRef &Sym) {
   DictScope D(W, "Symbol");
   WasmSymbol Symbol = Obj->getWasmSymbol(Sym.getRawDataRefImpl());
   W.printString("Name", Symbol.Info.Name);
-  W.printEnum("Type", Symbol.Info.Kind, makeArrayRef(WasmSymbolTypes));
-  W.printFlags("Flags", Symbol.Info.Flags, makeArrayRef(WasmSymbolFlags));
+  W.printEnum("Type", Symbol.Info.Kind, ArrayRef(WasmSymbolTypes));
+  W.printFlags("Flags", Symbol.Info.Flags, ArrayRef(WasmSymbolFlags));
 
   if (Symbol.Info.Flags & wasm::WASM_SYMBOL_UNDEFINED) {
     if (Symbol.Info.ImportName) {

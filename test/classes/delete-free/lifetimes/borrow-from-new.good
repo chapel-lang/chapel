@@ -1,0 +1,7 @@
+borrow-from-new.chpl:9: In function 'main':
+borrow-from-new.chpl:10: warning: Class created by nested 'new' will be deinitialized before the borrow can be used. Please update this code to use a separate variable to store the new class
+borrow-from-new.chpl:11: warning: Class created by nested 'new' will be deinitialized before the borrow can be used. Please update this code to use a separate variable to store the new class
+borrow-from-new.chpl:12: warning: Class created by nested 'new' will be deinitialized before the borrow can be used. Please update this code to use a separate variable to store the new class
+borrow-from-new.chpl:10: error: Scoped variable x would outlive the value it is set to
+borrow-from-new.chpl:11: error: Scoped variable y would outlive the value it is set to
+borrow-from-new.chpl:12: error: Scoped variable z would outlive the value it is set to

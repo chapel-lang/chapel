@@ -3,7 +3,7 @@ record R {
 
   proc init(xVal: int = 0) {
     x = xVal;
-    this.complete();
+    init this;
   }
 }
 

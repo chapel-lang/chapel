@@ -70,7 +70,8 @@ class Foo {
   }
 }
 
-var myFoo = (new owned Foo()).borrow();
+var ownMyFoo = new owned Foo();
+var myFoo = ownMyFoo.borrow();
 ref myrefFoo = myFoo;
 writeln('\n', "myFoo     myrefFoo");
 writeln(myFoo, ' ', myrefFoo);

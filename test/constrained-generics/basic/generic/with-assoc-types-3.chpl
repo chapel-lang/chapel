@@ -46,9 +46,9 @@ record RT1 {
   proc AT type do return int;
 }
 private
-proc reqFun(cgArg: RT1)            : void { show("RT1", cgArg); }
+proc reqFun(cgArg: RT1(?))            : void { show("RT1", cgArg); }
 private
-proc reqFun(cgArg: RT1, atArg: int): void { show("RT1", cgArg,
+proc reqFun(cgArg: RT1(?), atArg: int): void { show("RT1", cgArg,
                                                  "int", atArg); }
 RT1 implements IFC1;
 
@@ -59,9 +59,9 @@ record RT2 {
   type AT;
 }
 private
-proc reqFun(cgArg: RT2)                 : void { show("RT2", cgArg); }
+proc reqFun(cgArg: RT2(?))                 : void { show("RT2", cgArg); }
 private
-proc reqFun(cgArg: RT2, atArg: cgArg.AT): void { show("RT2", cgArg,
+proc reqFun(cgArg: RT2(?), atArg: cgArg.AT): void { show("RT2", cgArg,
                                                       "AT",  atArg); }
 RT2 implements IFC1;
 
@@ -73,9 +73,9 @@ record RT3 {
   proc AT type do return GT;
 }
 private
-proc reqFun(cgArg: RT3)                 : void { show("RT3", cgArg); }
+proc reqFun(cgArg: RT3(?))                 : void { show("RT3", cgArg); }
 private
-proc reqFun(cgArg: RT3, atArg: cgArg.GT): void { show("RT3", cgArg,
+proc reqFun(cgArg: RT3(?), atArg: cgArg.GT): void { show("RT3", cgArg,
                                                       "GT",  atArg); }
 RT3 implements IFC1;
 
@@ -87,9 +87,9 @@ record RT4 {
   proc AT type do return this.type;
 }
 private
-proc reqFun(cgArg: RT4)                   : void { show("RT4", cgArg); }
+proc reqFun(cgArg: RT4(?))                   : void { show("RT4", cgArg); }
 private
-proc reqFun(cgArg: RT4, atArg: cgArg.type): void { show("RT4", cgArg,
+proc reqFun(cgArg: RT4(?), atArg: cgArg.type): void { show("RT4", cgArg,
                                                         "self",atArg); }
 RT4 implements IFC1;
 
@@ -102,9 +102,9 @@ record RV1 {
   proc AT type do return int;
 }
 private
-proc reqFun(cgArg: RV1)            : void { show("RV1", cgArg); }
+proc reqFun(cgArg: RV1(?))            : void { show("RV1", cgArg); }
 private
-proc reqFun(cgArg: RV1, atArg: int): void { show("RV1", cgArg,
+proc reqFun(cgArg: RV1(?), atArg: int): void { show("RV1", cgArg,
                                                  "int", atArg); }
 RV1 implements IFC1;
 
@@ -115,9 +115,9 @@ record RV3 {
   proc AT type do return xx.type;
 }
 private
-proc reqFun(cgArg: RV3)                 : void { show("RV3", cgArg); }
+proc reqFun(cgArg: RV3(?))                 : void { show("RV3", cgArg); }
 private
-proc reqFun(cgArg: RV3, atArg: cgArg.AT): void { show("RV3", cgArg,
+proc reqFun(cgArg: RV3(?), atArg: cgArg.AT): void { show("RV3", cgArg,
                                                       "AT",  atArg); }
 RV3 implements IFC1;
 
@@ -128,9 +128,9 @@ record RV4 {
   proc AT type do return this.type;
 }
 private
-proc reqFun(cgArg: RV4)                   : void { show("RV4", cgArg); }
+proc reqFun(cgArg: RV4(?))                   : void { show("RV4", cgArg); }
 private
-proc reqFun(cgArg: RV4, atArg: cgArg.type): void { show("RV4", cgArg,
+proc reqFun(cgArg: RV4(?), atArg: cgArg.type): void { show("RV4", cgArg,
                                                         "self",atArg); }
 RV4 implements IFC1;
 
@@ -146,9 +146,9 @@ record RTX1 {
   param PP;
 }
 private
-proc reqFun(cgArg: RTX1)            : void { show("RTX1", cgArg); }
+proc reqFun(cgArg: RTX1(?))            : void { show("RTX1", cgArg); }
 private
-proc reqFun(cgArg: RTX1, atArg: int): void { show("RTX1", cgArg,
+proc reqFun(cgArg: RTX1(?), atArg: int): void { show("RTX1", cgArg,
                                                  "int", atArg); }
 RTX1 implements IFC1;
 
@@ -160,9 +160,9 @@ record RTX2 {
   param PP;
 }
 private
-proc reqFun(cgArg: RTX2)                 : void { show("RTX2", cgArg); }
+proc reqFun(cgArg: RTX2(?))                 : void { show("RTX2", cgArg); }
 private
-proc reqFun(cgArg: RTX2, atArg: cgArg.AT): void { show("RTX2", cgArg,
+proc reqFun(cgArg: RTX2(?), atArg: cgArg.AT): void { show("RTX2", cgArg,
                                                       "AT",  atArg); }
 RTX2 implements IFC1;
 
@@ -175,9 +175,9 @@ record RTX3 {
   param PP;
 }
 private
-proc reqFun(cgArg: RTX3)                 : void { show("RTX3", cgArg); }
+proc reqFun(cgArg: RTX3(?))                 : void { show("RTX3", cgArg); }
 private
-proc reqFun(cgArg: RTX3, atArg: cgArg.GT): void { show("RTX3", cgArg,
+proc reqFun(cgArg: RTX3(?), atArg: cgArg.GT): void { show("RTX3", cgArg,
                                                       "GT",  atArg); }
 RTX3 implements IFC1;
 
@@ -190,9 +190,9 @@ record RTX4 {
   param PP;
 }
 private
-proc reqFun(cgArg: RTX4)                   : void { show("RTX4", cgArg); }
+proc reqFun(cgArg: RTX4(?))                   : void { show("RTX4", cgArg); }
 private
-proc reqFun(cgArg: RTX4, atArg: cgArg.type): void { show("RTX4", cgArg,
+proc reqFun(cgArg: RTX4(?), atArg: cgArg.type): void { show("RTX4", cgArg,
                                                         "self",atArg); }
 RTX4 implements IFC1;
 
@@ -204,9 +204,9 @@ record RVX1 {
   param PP;
 }
 private
-proc reqFun(cgArg: RVX1)            : void { show("RVX1", cgArg); }
+proc reqFun(cgArg: RVX1(?))            : void { show("RVX1", cgArg); }
 private
-proc reqFun(cgArg: RVX1, atArg: int): void { show("RVX1", cgArg,
+proc reqFun(cgArg: RVX1(?), atArg: int): void { show("RVX1", cgArg,
                                                  "int", atArg); }
 RVX1 implements IFC1;
 
@@ -218,9 +218,9 @@ record RVX3 {
   param PP;
 }
 private
-proc reqFun(cgArg: RVX3)                 : void { show("RVX3", cgArg); }
+proc reqFun(cgArg: RVX3(?))                 : void { show("RVX3", cgArg); }
 private
-proc reqFun(cgArg: RVX3, atArg: cgArg.AT): void { show("RVX3", cgArg,
+proc reqFun(cgArg: RVX3(?), atArg: cgArg.AT): void { show("RVX3", cgArg,
                                                       "AT",  atArg); }
 RVX3 implements IFC1;
 
@@ -231,9 +231,9 @@ record RVX4 {
   param PP;
 }
 private
-proc reqFun(cgArg: RVX4)                   : void { show("RVX4", cgArg); }
+proc reqFun(cgArg: RVX4(?))                   : void { show("RVX4", cgArg); }
 private
-proc reqFun(cgArg: RVX4, atArg: cgArg.type): void { show("RVX4", cgArg,
+proc reqFun(cgArg: RVX4(?), atArg: cgArg.type): void { show("RVX4", cgArg,
                                                         "self",atArg); }
 RVX4 implements IFC1;
 

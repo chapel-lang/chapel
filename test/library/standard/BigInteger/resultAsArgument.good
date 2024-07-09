@@ -1,5 +1,5 @@
-divexact 2
-divexact 2
+divExact 2
+divExact 2
 powMod 1
 powMod 1
 powMod 1
@@ -8,12 +8,12 @@ powMod 1
 pow 0
 pow 16
 root 2
-rootrem 2 1
-rootrem 2 1
+rootRem 2 1
+rootRem 2 1
 sqrt 3
-sqrtrem 3 1
-sqrtrem 3 1
-nextprime 17
+sqrtRem 3 1
+sqrtRem 3 1
+nextPrime 17
 gcd 4
 gcd 4
 gcd 4
@@ -41,31 +41,31 @@ mul 30
 mul 30
 mul 30
 mul 30
-addmul 35
-addmul 36
-addmul 35
-submul -25
-submul -24
-submul -25
-mul_2exp 20
+addMul 35
+addMul 36
+addMul 35
+subMul -25
+subMul -24
+subMul -25
+mul2Exp 20
 neg -5
 abs 5
-divQ 5
-divQ 5
-divR 0
-divR 0
-divQR 5 0
-divQR 5 0
-divQ2Exp 1
-divR2Exp 1
+div 5
+div 5
+rem 0
+rem 0
+divRem 5 0
+divRem 5 0
+div2Exp 1
+rem2Exp 1
 mod 1
 mod 1
 mod 1
 and 4
 and 4
-ior 7
-ior 7
-ior 1267650600228229401496703205386
+or 7
+or 7
+or 1267650600228229401496703205386
 xor 3
 xor 3
 com -6

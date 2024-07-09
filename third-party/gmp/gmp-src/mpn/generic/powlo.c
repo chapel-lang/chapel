@@ -1,6 +1,7 @@
 /* mpn_powlo -- Compute R = U^E mod B^n, where B is the limb base.
 
-Copyright 2007-2009, 2012, 2015, 2016, 2018 Free Software Foundation, Inc.
+Copyright 2007-2009, 2012, 2015, 2016, 2018, 2020 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -43,7 +44,7 @@ getbits (const mp_limb_t *p, mp_bitcnt_t bi, unsigned nbits)
   mp_limb_t r;
   mp_size_t i;
 
-  if (bi < nbits)
+  if (bi <= nbits)
     {
       return p[0] & (((mp_limb_t) 1 << bi) - 1);
     }
@@ -56,7 +57,7 @@ getbits (const mp_limb_t *p, mp_bitcnt_t bi, unsigned nbits)
       nbits_in_r = GMP_NUMB_BITS - bi;	/* number of bits now in r */
       if (nbits_in_r < nbits)		/* did we get enough bits? */
 	r += p[i + 1] << nbits_in_r;	/* prepend bits from higher word */
-      return r & (((mp_limb_t ) 1 << nbits) - 1);
+      return r & (((mp_limb_t) 1 << nbits) - 1);
     }
 }
 
@@ -121,10 +122,10 @@ mpn_powlo (mp_ptr rp, mp_srcptr bp,
 	} while (--i != 0);
 
       expbits = getbits (ep, ebi, windowsize);
+      ebi -= windowsize;
 
       /* THINK: Should we initialise the case expbits % 4 == 0 with a mullo? */
       count_trailing_zeros (cnt, expbits);
-      ebi -= windowsize;
       ebi += cnt;
       expbits >>= cnt;
 
@@ -156,11 +157,10 @@ mpn_powlo (mp_ptr rp, mp_srcptr bp,
 
       expbits = getbits (ep, ebi, windowsize);
       this_windowsize = MIN (windowsize, ebi);
-      ebi -= this_windowsize;
 
       count_trailing_zeros (cnt, expbits);
       this_windowsize -= cnt;
-      ebi += cnt;
+      ebi -= this_windowsize;
       expbits >>= cnt;
 
       while (this_windowsize > 1)

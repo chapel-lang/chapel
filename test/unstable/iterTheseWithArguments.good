@@ -1,0 +1,16 @@
+iterTheseWithArguments.chpl:41: warning: defining a serial 'these' iterator that takes arguments is unstable and may change in the future
+iterTheseWithArguments.chpl:69: warning: defining a serial 'these' iterator that takes arguments is unstable and may change in the future
+iterTheseWithArguments.chpl:129: warning: defining a serial 'these' iterator that takes arguments is unstable and may change in the future
+iterTheseWithArguments.chpl:157: warning: defining a serial 'these' iterator that takes arguments is unstable and may change in the future
+iterTheseWithArguments.chpl:47: warning: defining a parallel 'these' standalone iterator that takes extra arguments is unstable and may change in the future
+iterTheseWithArguments.chpl:53: warning: defining a parallel 'these' leader iterator that takes extra arguments is unstable and may change in the future
+iterTheseWithArguments.chpl:57: warning: defining a parallel 'these' follower iterator that takes extra arguments is unstable and may change in the future
+iterTheseWithArguments.chpl:75: warning: defining a parallel 'these' standalone iterator that takes extra arguments is unstable and may change in the future
+iterTheseWithArguments.chpl:81: warning: defining a parallel 'these' leader iterator that takes extra arguments is unstable and may change in the future
+iterTheseWithArguments.chpl:85: warning: defining a parallel 'these' follower iterator that takes extra arguments is unstable and may change in the future
+iterTheseWithArguments.chpl:135: warning: defining a parallel 'these' standalone iterator that takes extra arguments is unstable and may change in the future
+iterTheseWithArguments.chpl:141: warning: defining a parallel 'these' leader iterator that takes extra arguments is unstable and may change in the future
+iterTheseWithArguments.chpl:145: warning: defining a parallel 'these' follower iterator that takes extra arguments is unstable and may change in the future
+iterTheseWithArguments.chpl:163: warning: defining a parallel 'these' standalone iterator that takes extra arguments is unstable and may change in the future
+iterTheseWithArguments.chpl:169: warning: defining a parallel 'these' leader iterator that takes extra arguments is unstable and may change in the future
+iterTheseWithArguments.chpl:173: warning: defining a parallel 'these' follower iterator that takes extra arguments is unstable and may change in the future

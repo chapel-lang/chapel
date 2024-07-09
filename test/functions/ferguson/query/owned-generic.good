@@ -1,2 +1,4 @@
+owned-generic.chpl:6: In function 'f':
+owned-generic.chpl:6: warning: need '(?)' on the type 'GenericClass' of the formal 'x' because this type is generic
 {v = 3}
 {v = 4}

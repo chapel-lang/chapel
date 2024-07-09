@@ -47,86 +47,6 @@ static cl::opt<bool> TypeBasedIntrinsicCost("type-based-intrinsic-cost",
 #define CM_NAME "cost-model"
 #define DEBUG_TYPE CM_NAME
 
-namespace {
-  class CostModelAnalysis : public FunctionPass {
-
-  public:
-    static char ID; // Class identification, replacement for typeinfo
-    CostModelAnalysis() : FunctionPass(ID) {
-      initializeCostModelAnalysisPass(
-        *PassRegistry::getPassRegistry());
-    }
-
-    /// Returns the expected cost of the instruction.
-    /// Returns -1 if the cost is unknown.
-    /// Note, this method does not cache the cost calculation and it
-    /// can be expensive in some cases.
-    InstructionCost getInstructionCost(const Instruction *I) const {
-      return TTI->getInstructionCost(I, TargetTransformInfo::TCK_RecipThroughput);
-    }
-
-  private:
-    void getAnalysisUsage(AnalysisUsage &AU) const override;
-    bool runOnFunction(Function &F) override;
-    void print(raw_ostream &OS, const Module*) const override;
-
-    /// The function that we analyze.
-    Function *F = nullptr;
-    /// Target information.
-    const TargetTransformInfo *TTI = nullptr;
-  };
-}  // End of anonymous namespace
-
-// Register this pass.
-char CostModelAnalysis::ID = 0;
-static const char cm_name[] = "Cost Model Analysis";
-INITIALIZE_PASS_BEGIN(CostModelAnalysis, CM_NAME, cm_name, false, true)
-INITIALIZE_PASS_END  (CostModelAnalysis, CM_NAME, cm_name, false, true)
-
-FunctionPass *llvm::createCostModelAnalysisPass() {
-  return new CostModelAnalysis();
-}
-
-void
-CostModelAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.setPreservesAll();
-}
-
-bool
-CostModelAnalysis::runOnFunction(Function &F) {
- this->F = &F;
- auto *TTIWP = getAnalysisIfAvailable<TargetTransformInfoWrapperPass>();
- TTI = TTIWP ? &TTIWP->getTTI(F) : nullptr;
-
- return false;
-}
-
-void CostModelAnalysis::print(raw_ostream &OS, const Module*) const {
-  if (!F)
-    return;
-
-  for (BasicBlock &B : *F) {
-    for (Instruction &Inst : B) {
-      InstructionCost Cost;
-      if (TypeBasedIntrinsicCost && isa<IntrinsicInst>(&Inst)) {
-        auto *II = dyn_cast<IntrinsicInst>(&Inst);
-        IntrinsicCostAttributes ICA(II->getIntrinsicID(), *II,
-                                    InstructionCost::getInvalid(), true);
-        Cost = TTI->getIntrinsicInstrCost(ICA, CostKind);
-      }
-      else {
-        Cost = TTI->getInstructionCost(&Inst, CostKind);
-      }
-      if (auto CostVal = Cost.getValue())
-        OS << "Cost Model: Found an estimated cost of " << *CostVal;
-      else
-        OS << "Cost Model: Invalid cost";
-
-      OS << " for instruction: " << Inst << "\n";
-    }
-  }
-}
-
 PreservedAnalyses CostModelPrinterPass::run(Function &F,
                                             FunctionAnalysisManager &AM) {
   auto &TTI = AM.getResult<TargetIRAnalysis>(F);
@@ -136,8 +56,8 @@ PreservedAnalyses CostModelPrinterPass::run(Function &F,
       // TODO: Use a pass parameter instead of cl::opt CostKind to determine
       // which cost kind to print.
       InstructionCost Cost;
-      if (TypeBasedIntrinsicCost && isa<IntrinsicInst>(&Inst)) {
-        auto *II = dyn_cast<IntrinsicInst>(&Inst);
+      auto *II = dyn_cast<IntrinsicInst>(&Inst);
+      if (II && TypeBasedIntrinsicCost) {
         IntrinsicCostAttributes ICA(II->getIntrinsicID(), *II,
                                     InstructionCost::getInvalid(), true);
         Cost = TTI.getIntrinsicInstrCost(ICA, CostKind);
@@ -145,6 +65,7 @@ PreservedAnalyses CostModelPrinterPass::run(Function &F,
       else {
         Cost = TTI.getInstructionCost(&Inst, CostKind);
       }
+
       if (auto CostVal = Cost.getValue())
         OS << "Cost Model: Found an estimated cost of " << *CostVal;
       else

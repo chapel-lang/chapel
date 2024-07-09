@@ -25,9 +25,7 @@
 #include "X86Subtarget.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/STLExtras.h"
-#include "llvm/ADT/ScopeExit.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallVector.h"
@@ -57,6 +55,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
+#include <optional>
 #include <utility>
 
 using namespace llvm;
@@ -164,7 +163,7 @@ private:
   const X86InstrInfo *TII = nullptr;
   const TargetRegisterInfo *TRI = nullptr;
 
-  Optional<PredState> PS;
+  std::optional<PredState> PS;
 
   void hardenEdgesWithLFENCE(MachineFunction &MF);
 
@@ -1145,7 +1144,7 @@ X86SpeculativeLoadHardeningPass::tracePredStateThroughIndirectBranches(
     // Insert a comparison of the incoming target register with this block's
     // address. This also requires us to mark the block as having its address
     // taken explicitly.
-    MBB.setHasAddressTaken();
+    MBB.setMachineBlockAddressTaken();
     auto InsertPt = MBB.SkipPHIsLabelsAndDebug(MBB.begin());
     if (MF.getTarget().getCodeModel() == CodeModel::Small &&
         !Subtarget->isPositionIndependent()) {
@@ -1318,20 +1317,13 @@ void X86SpeculativeLoadHardeningPass::tracePredStateThroughBlocksAndHarden(
           continue;
 
         // Extract the memory operand information about this instruction.
-        // FIXME: This doesn't handle loading pseudo instructions which we often
-        // could handle with similarly generic logic. We probably need to add an
-        // MI-layer routine similar to the MC-layer one we use here which maps
-        // pseudos much like this maps real instructions.
-        const MCInstrDesc &Desc = MI.getDesc();
-        int MemRefBeginIdx = X86II::getMemoryOperandNo(Desc.TSFlags);
+        const int MemRefBeginIdx = X86::getFirstAddrOperandIdx(MI);
         if (MemRefBeginIdx < 0) {
           LLVM_DEBUG(dbgs()
                          << "WARNING: unable to harden loading instruction: ";
                      MI.dump());
           continue;
         }
-
-        MemRefBeginIdx += X86II::getOperandBias(Desc);
 
         MachineOperand &BaseMO =
             MI.getOperand(MemRefBeginIdx + X86::AddrBaseReg);
@@ -1401,11 +1393,8 @@ void X86SpeculativeLoadHardeningPass::tracePredStateThroughBlocksAndHarden(
 
         // Check if this is a load whose address needs to be hardened.
         if (HardenLoadAddr.erase(&MI)) {
-          const MCInstrDesc &Desc = MI.getDesc();
-          int MemRefBeginIdx = X86II::getMemoryOperandNo(Desc.TSFlags);
+          const int MemRefBeginIdx = X86::getFirstAddrOperandIdx(MI);
           assert(MemRefBeginIdx >= 0 && "Cannot have an invalid index here!");
-
-          MemRefBeginIdx += X86II::getOperandBias(Desc);
 
           MachineOperand &BaseMO =
               MI.getOperand(MemRefBeginIdx + X86::AddrBaseReg);
@@ -1781,7 +1770,7 @@ MachineInstr *X86SpeculativeLoadHardeningPass::sinkPostLoadHardenedInst(
 
   // See if we can sink hardening the loaded value.
   auto SinkCheckToSingleUse =
-      [&](MachineInstr &MI) -> Optional<MachineInstr *> {
+      [&](MachineInstr &MI) -> std::optional<MachineInstr *> {
     Register DefReg = MI.getOperand(0).getReg();
 
     // We need to find a single use which we can sink the check. We can
@@ -1803,11 +1792,9 @@ MachineInstr *X86SpeculativeLoadHardeningPass::sinkPostLoadHardenedInst(
 
         // Otherwise, this is a load and the load component can't be data
         // invariant so check how this register is being used.
-        const MCInstrDesc &Desc = UseMI.getDesc();
-        int MemRefBeginIdx = X86II::getMemoryOperandNo(Desc.TSFlags);
+        const int MemRefBeginIdx = X86::getFirstAddrOperandIdx(UseMI);
         assert(MemRefBeginIdx >= 0 &&
                "Should always have mem references here!");
-        MemRefBeginIdx += X86II::getOperandBias(Desc);
 
         MachineOperand &BaseMO =
             UseMI.getOperand(MemRefBeginIdx + X86::AddrBaseReg);
@@ -1841,7 +1828,7 @@ MachineInstr *X86SpeculativeLoadHardeningPass::sinkPostLoadHardenedInst(
       // just bail. Also check that its register class is one of the ones we
       // can harden.
       Register UseDefReg = UseMI.getOperand(0).getReg();
-      if (!UseDefReg.isVirtual() || !canHardenRegister(UseDefReg))
+      if (!canHardenRegister(UseDefReg))
         return {};
 
       SingleUseMI = &UseMI;
@@ -1853,7 +1840,7 @@ MachineInstr *X86SpeculativeLoadHardeningPass::sinkPostLoadHardenedInst(
   };
 
   MachineInstr *MI = &InitialMI;
-  while (Optional<MachineInstr *> SingleUse = SinkCheckToSingleUse(*MI)) {
+  while (std::optional<MachineInstr *> SingleUse = SinkCheckToSingleUse(*MI)) {
     // Update which MI we're checking now.
     MI = *SingleUse;
     if (!MI)
@@ -1864,6 +1851,10 @@ MachineInstr *X86SpeculativeLoadHardeningPass::sinkPostLoadHardenedInst(
 }
 
 bool X86SpeculativeLoadHardeningPass::canHardenRegister(Register Reg) {
+  // We only support hardening virtual registers.
+  if (!Reg.isVirtual())
+    return false;
+
   auto *RC = MRI->getRegClass(Reg);
   int RegBytes = TRI->getRegSizeInBits(*RC) / 8;
   if (RegBytes > 8)
@@ -1910,7 +1901,6 @@ unsigned X86SpeculativeLoadHardeningPass::hardenValueInRegister(
     Register Reg, MachineBasicBlock &MBB, MachineBasicBlock::iterator InsertPt,
     const DebugLoc &Loc) {
   assert(canHardenRegister(Reg) && "Cannot harden this register!");
-  assert(Reg.isVirtual() && "Cannot harden a physical register!");
 
   auto *RC = MRI->getRegClass(Reg);
   int Bytes = TRI->getRegSizeInBits(*RC) / 8;

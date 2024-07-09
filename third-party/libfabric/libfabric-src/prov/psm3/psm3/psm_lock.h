@@ -236,4 +236,29 @@ PSMI_ALWAYS_INLINE(int psmi_init_semaphore(sem_t **sem, const char *name,
 	return 0;
 }
 
+/* C11 standard compiler built in atomic functions available in GCC 4.9 & later
+ * (4.9 is a safe bet, some web sites claim 4.4 or 4.7 added these)
+ * We keep it simple and just define the basics we need, C11 can do more.
+ * On x86_64, var can be 4 or 8 byte int, unsigned or pointer types.
+ * Some abiguity on support for 1 and 2 byte types (original icc did not).
+ * INC and DEC return value after the math.
+ * SEQ_CST is most conservative memory ordering, no extra cost on x86, but
+ * may have more cost on other CPU architectures.
+ */
+#if __GNUC_PREREQ(4, 9)
+#define PSM3_ATOMIC_DECL(type, var) type var
+#define PSM3_ATOMIC_INC(var) __atomic_add_fetch(&(var), 1, __ATOMIC_SEQ_CST)
+#define PSM3_ATOMIC_DEC(var) __atomic_sub_fetch(&(var), 1, __ATOMIC_SEQ_CST)
+#define PSM3_ATOMIC_SET(var, val) __atomic_store_n((&(var), val, \
+													 __ATOMIC_SEQ_CST)
+#define PSM3_ATOMIC_GET(var) __atomic_load_n(&(var), __ATOMIC_SEQ_CST)
+#else
+/* older compiler built-in, 1st established with Intel Itanium icc */
+#define PSM3_ATOMIC_DECL(type, var) type var
+#define PSM3_ATOMIC_INC(var) __sync_add_and_fetch(&(var), 1)
+#define PSM3_ATOMIC_DEC(var) __sync_sub_and_fetch(&(var), 1)
+#define PSM3_ATOMIC_SET(var, val) (var) = (val)
+#define PSM3_ATOMIC_GET(var) (var)
+#endif
+
 #endif /* _PSMI_LOCK_H */

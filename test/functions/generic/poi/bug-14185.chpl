@@ -1,9 +1,9 @@
 module NewTypeMod {
-    record NewType {
+    record NewType : writeSerializable {
         var x: int;
 
-        proc writeThis(f) throws {
-            f.write("NewType with ", x);
+        proc serialize(writer, ref serializer) throws {
+            writer.write("NewType with ", x);
         }
     }
 }

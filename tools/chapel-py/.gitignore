@@ -1,0 +1,4 @@
+build/*
+*.egg-info
+*.so
+src/chapel/core/__init__.pyi

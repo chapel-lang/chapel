@@ -6,6 +6,6 @@ record R {
   proc init() {
     this.y = 1.0;
     this.x = 5;
-    this.complete();
+    init this;
   }
 }

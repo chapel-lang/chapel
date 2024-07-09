@@ -26,7 +26,7 @@ writeln("myC is: ", myC);
 
 delete myC;
 
-proc foo(x,y) {
+proc foo(ref x,y) {
   x(1) = y;
 }
 

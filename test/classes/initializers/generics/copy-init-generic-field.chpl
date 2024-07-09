@@ -16,4 +16,7 @@ record R {
   var something = foobar(foo);
 }
 
-var r : R(int);
+var r = new R(0);
+var copy = r;
+writeln(r);
+writeln(copy);

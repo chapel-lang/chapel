@@ -33,13 +33,31 @@ public:
   TokenList
   expand(llvm::StringRef Name,
          const SmallVector<llvm::SmallVector<FormatToken *, 8>, 1> &Args) {
+    return expandInternal(Name, Args);
+  }
+
+  TokenList expand(llvm::StringRef Name) { return expandInternal(Name, {}); }
+
+  TokenList expand(llvm::StringRef Name, const std::vector<std::string> &Args) {
+    return expandInternal(Name, lexArgs(Args));
+  }
+
+  const UnexpandedMap &getUnexpanded() const { return Unexpanded; }
+
+  const TokenList &getTokens() const { return Tokens; }
+
+private:
+  TokenList expandInternal(
+      llvm::StringRef Name,
+      const std::optional<SmallVector<llvm::SmallVector<FormatToken *, 8>, 1>>
+          &Args) {
     auto *ID = Lex.id(Name);
     auto UnexpandedLine = std::make_unique<UnwrappedLine>();
     UnexpandedLine->Tokens.push_back(ID);
-    if (!Args.empty()) {
+    if (Args && !Args->empty()) {
       UnexpandedLine->Tokens.push_back(Lex.id("("));
-      for (auto I = Args.begin(), E = Args.end(); I != E; ++I) {
-        if (I != Args.begin())
+      for (auto I = Args->begin(), E = Args->end(); I != E; ++I) {
+        if (I != Args->begin())
           UnexpandedLine->Tokens.push_back(Lex.id(","));
         UnexpandedLine->Tokens.insert(UnexpandedLine->Tokens.end(), I->begin(),
                                       I->end());
@@ -52,28 +70,16 @@ public:
     Tokens.append(Expanded.begin(), Expanded.end());
 
     TokenList UnexpandedTokens;
-    for (const UnwrappedLineNode &Node : Unexpanded[ID]->Tokens) {
+    for (const UnwrappedLineNode &Node : Unexpanded[ID]->Tokens)
       UnexpandedTokens.push_back(Node.Tok);
-    }
     return UnexpandedTokens;
   }
 
-  TokenList expand(llvm::StringRef Name,
-                   const std::vector<std::string> &Args = {}) {
-    return expand(Name, lexArgs(Args));
-  }
-
-  const UnexpandedMap &getUnexpanded() const { return Unexpanded; }
-
-  const TokenList &getTokens() const { return Tokens; }
-
-private:
   llvm::SmallVector<TokenList, 1>
   lexArgs(const std::vector<std::string> &Args) {
     llvm::SmallVector<TokenList, 1> Result;
-    for (const auto &Arg : Args) {
+    for (const auto &Arg : Args)
       Result.push_back(uneof(Lex.lex(Arg)));
-    }
     return Result;
   }
   llvm::DenseMap<FormatToken *, std::unique_ptr<UnwrappedLine>> Unexpanded;
@@ -99,12 +105,20 @@ struct Matcher {
   Matcher(const TokenList &Tokens, TestLexer &Lex)
       : Tokens(Tokens), It(this->Tokens.begin()), Lex(Lex) {}
 
+  bool tokenMatches(const FormatToken *Left, const FormatToken *Right) {
+    if (Left->getType() == Right->getType() &&
+        Left->TokenText == Right->TokenText) {
+      return true;
+    }
+    llvm::dbgs() << Left->TokenText << " != " << Right->TokenText << "\n";
+    return false;
+  }
+
   Chunk consume(StringRef Tokens) {
     TokenList Result;
     for (const FormatToken *Token : uneof(Lex.lex(Tokens))) {
-      (void)Token;  // Fix unused variable warning when asserts are disabled.
-      assert((*It)->getType() == Token->getType() &&
-             (*It)->TokenText == Token->TokenText);
+      (void)Token; // Fix unused variable warning when asserts are disabled.
+      assert(tokenMatches(*It, Token));
       Result.push_back(*It);
       ++It;
     }
@@ -119,12 +133,10 @@ struct Matcher {
 UnexpandedMap mergeUnexpanded(const UnexpandedMap &M1,
                               const UnexpandedMap &M2) {
   UnexpandedMap Result;
-  for (const auto &KV : M1) {
+  for (const auto &KV : M1)
     Result[KV.first] = std::make_unique<UnwrappedLine>(*KV.second);
-  }
-  for (const auto &KV : M2) {
+  for (const auto &KV : M2)
     Result[KV.first] = std::make_unique<UnwrappedLine>(*KV.second);
-  }
   return Result;
 }
 
@@ -141,9 +153,8 @@ public:
 
   UnwrappedLine line(llvm::ArrayRef<FormatToken *> Tokens) {
     UnwrappedLine Result;
-    for (FormatToken *Tok : Tokens) {
+    for (FormatToken *Tok : Tokens)
       Result.Tokens.push_back(UnwrappedLineNode(Tok));
-    }
     return Result;
   }
 
@@ -560,34 +571,6 @@ TEST_F(MacroCallReconstructorTest, ParentOutsideMacroCall) {
   EXPECT_THAT(std::move(Unexp).takeResult(), matchesLine(Expected));
 }
 
-TEST_F(MacroCallReconstructorTest, UnusedMacroArguments) {
-  auto Macros = createExpander({"X=x"});
-  Expansion Exp(Lex, *Macros);
-  TokenList Call = Exp.expand("X", {"a", "b", "c"});
-
-  MacroCallReconstructor Unexp(0, Exp.getUnexpanded());
-  Unexp.addLine(line(Exp.getTokens()));
-  EXPECT_TRUE(Unexp.finished());
-  Matcher U(Call, Lex);
-  EXPECT_THAT(std::move(Unexp).takeResult(),
-              matchesLine(line(U.consume("X(a, b, c)"))));
-}
-
-TEST_F(MacroCallReconstructorTest, UnusedEmptyMacroArgument) {
-  auto Macros = createExpander({"X=x"});
-  Expansion Exp(Lex, *Macros);
-  TokenList Call = Exp.expand("X", {std::string("")});
-
-  MacroCallReconstructor Unexp(0, Exp.getUnexpanded());
-  Matcher E(Exp.getTokens(), Lex);
-  auto Semi = tokens(";");
-  Unexp.addLine(line({E.consume("x"), Semi}));
-  EXPECT_TRUE(Unexp.finished());
-  Matcher U(Call, Lex);
-  EXPECT_THAT(std::move(Unexp).takeResult(),
-              matchesLine(line({U.consume("X()"), Semi})));
-}
-
 TEST_F(MacroCallReconstructorTest, ChildrenSplitAcrossArguments) {
   auto Macros = createExpander({"CALL(a, b)=f([]() a b)"});
   Expansion Exp(Lex, *Macros);
@@ -652,7 +635,7 @@ TEST_F(MacroCallReconstructorTest, ChildrenAfterMacroCall) {
 }
 
 TEST_F(MacroCallReconstructorTest, InvalidCodeSplittingBracesAcrossArgs) {
-  auto Macros = createExpander({"M(a, b)=(a) (b)"});
+  auto Macros = createExpander({"M(a, b, c)=(a) (b) c"});
   Expansion Exp(Lex, *Macros);
   TokenList Call = Exp.expand("M", {std::string("{"), "x", ""});
 

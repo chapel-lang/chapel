@@ -29,8 +29,12 @@ class X86Subtarget;
 namespace X86 {
 
 enum AsmComments {
+  // For instr that was compressed from EVEX to LEGACY.
+  AC_EVEX_2_LEGACY = MachineInstr::TAsmComments,
   // For instr that was compressed from EVEX to VEX.
-  AC_EVEX_2_VEX = MachineInstr::TAsmComments
+  AC_EVEX_2_VEX = AC_EVEX_2_LEGACY << 1,
+  // For instr that was compressed from EVEX to EVEX.
+  AC_EVEX_2_EVEX = AC_EVEX_2_VEX << 1
 };
 
 /// Return a pair of condition code for the given predicate and whether
@@ -75,6 +79,16 @@ unsigned getSwappedVCMPImm(unsigned Imm);
 
 /// Check if the instruction is X87 instruction.
 bool isX87Instruction(MachineInstr &MI);
+
+/// Return the index of the instruction's first address operand, if it has a
+/// memory reference, or -1 if it has none. Unlike X86II::getMemoryOperandNo(),
+/// this also works for both pseudo instructions (e.g., TCRETURNmi) as well as
+/// real instructions (e.g., JMP64m).
+int getFirstAddrOperandIdx(const MachineInstr &MI);
+
+/// Find any constant pool entry associated with a specific instruction operand.
+const Constant *getConstantFromPool(const MachineInstr &MI, unsigned OpNo);
+
 } // namespace X86
 
 /// isGlobalStubReference - Return true if the specified TargetFlag operand is
@@ -149,6 +163,17 @@ class X86InstrInfo final : public X86GenInstrInfo {
 
 public:
   explicit X86InstrInfo(X86Subtarget &STI);
+
+  /// Given a machine instruction descriptor, returns the register
+  /// class constraint for OpNum, or NULL. Returned register class
+  /// may be different from the definition in the TD file, e.g.
+  /// GR*RegClass (definition in TD file)
+  /// ->
+  /// GR*_NOREX2RegClass (Returned register class)
+  const TargetRegisterClass *
+  getRegClass(const MCInstrDesc &MCID, unsigned OpNum,
+              const TargetRegisterInfo *TRI,
+              const MachineFunction &MF) const override;
 
   /// getRegisterInfo - TargetInstrInfo is a superset of MRegister info.  As
   /// such, whenever a client has an instance of instruction info, it should
@@ -327,7 +352,9 @@ public:
                      SmallVectorImpl<MachineOperand> &Cond,
                      bool AllowModify) const override;
 
-  Optional<ExtAddrMode>
+  int getJumpTableIndex(const MachineInstr &MI) const override;
+
+  std::optional<ExtAddrMode>
   getAddrModeFromMemoryOp(const MachineInstr &MemI,
                           const TargetRegisterInfo *TRI) const override;
 
@@ -367,12 +394,18 @@ public:
                            MachineBasicBlock::iterator MI, Register SrcReg,
                            bool isKill, int FrameIndex,
                            const TargetRegisterClass *RC,
-                           const TargetRegisterInfo *TRI) const override;
+                           const TargetRegisterInfo *TRI,
+                           Register VReg) const override;
 
   void loadRegFromStackSlot(MachineBasicBlock &MBB,
                             MachineBasicBlock::iterator MI, Register DestReg,
                             int FrameIndex, const TargetRegisterClass *RC,
-                            const TargetRegisterInfo *TRI) const override;
+                            const TargetRegisterInfo *TRI,
+                            Register VReg) const override;
+
+  void loadStoreTileReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
+                        unsigned Opc, Register Reg, int FrameIdx,
+                        bool isKill = false) const;
 
   bool expandPostRAPseudo(MachineInstr &MI) const override;
 
@@ -449,6 +482,9 @@ public:
                                int64_t Offset2,
                                unsigned NumLoads) const override;
 
+  void insertNoop(MachineBasicBlock &MBB,
+                  MachineBasicBlock::iterator MI) const override;
+
   MCInst getNop() const override;
 
   bool
@@ -502,7 +538,8 @@ public:
 
   bool useMachineCombiner() const override { return true; }
 
-  bool isAssociativeAndCommutative(const MachineInstr &Inst) const override;
+  bool isAssociativeAndCommutative(const MachineInstr &Inst,
+                                   bool Invert) const override;
 
   bool hasReassociableOperands(const MachineInstr &Inst,
                                const MachineBasicBlock *MBB) const override;
@@ -538,20 +575,29 @@ public:
                                   Register &FoldAsLoadDefReg,
                                   MachineInstr *&DefMI) const override;
 
+  bool FoldImmediateImpl(MachineInstr &UseMI, MachineInstr *DefMI, Register Reg,
+                         int64_t ImmVal, MachineRegisterInfo *MRI,
+                         bool MakeChange) const;
+
+  /// Reg is known to be defined by a move immediate instruction, try to fold
+  /// the immediate into the use instruction.
+  bool FoldImmediate(MachineInstr &UseMI, MachineInstr &DefMI, Register Reg,
+                     MachineRegisterInfo *MRI) const override;
+
   std::pair<unsigned, unsigned>
   decomposeMachineOperandsTargetFlags(unsigned TF) const override;
 
   ArrayRef<std::pair<unsigned, const char *>>
   getSerializableDirectMachineOperandTargetFlags() const override;
 
-  outliner::OutlinedFunction getOutliningCandidateInfo(
+  std::optional<outliner::OutlinedFunction> getOutliningCandidateInfo(
       std::vector<outliner::Candidate> &RepeatedSequenceLocs) const override;
 
   bool isFunctionSafeToOutlineFrom(MachineFunction &MF,
                                    bool OutlineFromLinkOnceODRs) const override;
 
   outliner::InstrType
-  getOutliningType(MachineBasicBlock::iterator &MIT, unsigned Flags) const override;
+  getOutliningTypeImpl(MachineBasicBlock::iterator &MIT, unsigned Flags) const override;
 
   void buildOutlinedFrame(MachineBasicBlock &MBB, MachineFunction &MF,
                           const outliner::OutlinedFunction &OF) const override;
@@ -560,6 +606,10 @@ public:
   insertOutlinedCall(Module &M, MachineBasicBlock &MBB,
                      MachineBasicBlock::iterator &It, MachineFunction &MF,
                      outliner::Candidate &C) const override;
+
+  void buildClearRegister(Register Reg, MachineBasicBlock &MBB,
+                          MachineBasicBlock::iterator Iter, DebugLoc &DL,
+                          bool AllowSideEffects = true) const override;
 
   bool verifyInstruction(const MachineInstr &MI,
                          StringRef &ErrInfo) const override;
@@ -570,8 +620,8 @@ public:
     return MI.getDesc().TSFlags & X86II::LOCK;
   }
 
-  Optional<ParamLoadedValue> describeLoadedValue(const MachineInstr &MI,
-                                                 Register Reg) const override;
+  std::optional<ParamLoadedValue>
+  describeLoadedValue(const MachineInstr &MI, Register Reg) const override;
 
 protected:
   /// Commutes the operands in the given instruction by changing the operands
@@ -592,8 +642,39 @@ protected:
   /// If the specific machine instruction is a instruction that moves/copies
   /// value from one register to another register return destination and source
   /// registers as machine operands.
-  Optional<DestSourcePair>
+  std::optional<DestSourcePair>
   isCopyInstrImpl(const MachineInstr &MI) const override;
+
+  /// Return true when there is potentially a faster code sequence for an
+  /// instruction chain ending in \p Root. All potential patterns are listed in
+  /// the \p Pattern vector. Pattern should be sorted in priority order since
+  /// the pattern evaluator stops checking as soon as it finds a faster
+  /// sequence.
+  bool
+  getMachineCombinerPatterns(MachineInstr &Root,
+                             SmallVectorImpl<MachineCombinerPattern> &Patterns,
+                             bool DoRegPressureReduce) const override;
+
+  /// When getMachineCombinerPatterns() finds potential patterns,
+  /// this function generates the instructions that could replace the
+  /// original code sequence.
+  void genAlternativeCodeSequence(
+      MachineInstr &Root, MachineCombinerPattern Pattern,
+      SmallVectorImpl<MachineInstr *> &InsInstrs,
+      SmallVectorImpl<MachineInstr *> &DelInstrs,
+      DenseMap<unsigned, unsigned> &InstrIdxForVirtReg) const override;
+
+  /// When calculate the latency of the root instruction, accumulate the
+  /// latency of the sequence to the root latency.
+  /// \param Root - Instruction that could be combined with one of its operands
+  /// For X86 instruction (vpmaddwd + vpmaddwd) -> vpdpwssd, the vpmaddwd
+  /// is not in the critical path, so the root latency only include vpmaddwd.
+  bool accumulateInstrSeqToRootLatency(MachineInstr &Root) const override {
+    return false;
+  }
+
+  void getFrameIndexOperands(SmallVectorImpl<MachineOperand> &Ops,
+                             int FI) const override;
 
 private:
   /// This is a helper for convertToThreeAddress for 8 and 16-bit instructions.

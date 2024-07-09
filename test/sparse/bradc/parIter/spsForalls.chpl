@@ -9,7 +9,7 @@ var A: [S] real;
 for i in 1..n do
   S += (i,i);
 
-forall (i,j) in S do
+forall (i,j) in S with (ref A) do
   A(i,j) = i + j/10.0;
 
 writeln("A is: ", A);

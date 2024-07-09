@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -757,12 +757,14 @@ void chpl_launcher_get_job_name(char *baseName, char *jobName, int jobLen) {
 }
 
 
-int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales) {
+int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales,
+                     int32_t* c_execNumLocalesPerNode) {
   //
   // This is a user invocation, so parse the arguments to determine
   // the number of locales.
   //
   int32_t execNumLocales;
+  int32_t execNumLocalesPerNode;
   int argc = *c_argc;
 
   // Set up main argument parsing.
@@ -790,6 +792,12 @@ int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales) {
   //
   chpl_comm_verify_num_locales(execNumLocales);
 
+  execNumLocalesPerNode = getArgNumLocalesPerNode();
+  if (execNumLocalesPerNode > 1) {
+    chpl_comm_verify_supports_colocales(execNumLocalesPerNode);
+  }
+
+
   //
   // Let the comm layer do any last-minute pre-launch activities it
   // needs to.
@@ -797,6 +805,7 @@ int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales) {
   CHPL_COMM_PRELAUNCH(execNumLocales);
 
   *c_execNumLocales = execNumLocales;
+  *c_execNumLocalesPerNode = execNumLocalesPerNode;
   *c_argc = argc;
 
   return 0;
@@ -805,13 +814,15 @@ int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales) {
 
 int chpl_launcher_main(int argc, char* argv[]) {
   int32_t execNumLocales;
+  int32_t execNumLocalesPerNode;
 
   //
   // The chpl_launch_prep function calls parseArgs, which modifies argc, so
   // so we need to make sure those changes are visible before calling
   // chpl_launch.
   //
-  if (chpl_launch_prep(&argc, argv, &execNumLocales)) {
+  if (chpl_launch_prep(&argc, argv, &execNumLocales,
+                       &execNumLocalesPerNode)) {
     return -1;
   }
 
@@ -819,7 +830,16 @@ int chpl_launcher_main(int argc, char* argv[]) {
   // Launch the program.
   // This may not return (e.g., if calling chpl_launch_using_exec()).
   //
-  int retval = chpl_launch(argc, argv, execNumLocales);
+  int retval = chpl_launch(argc, argv, execNumLocales, execNumLocalesPerNode);
   chpl_mem_free(chpl_real_binary_name, 0, 0);
   return retval;
+}
+
+void chpl_launcher_no_colocales_error(const char *name) {
+  char msg[100];
+  if (name == NULL) {
+    name = CHPL_LAUNCHER;
+  }
+  snprintf(msg, sizeof(msg), "'%s' launcher does not support co-locales.", name);
+  chpl_error(msg, 0, 0);
 }

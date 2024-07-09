@@ -56,15 +56,14 @@ How to benchmark/time it?
  ::
 
   use Time;
-  var mytimer:Timer;
-  mytimer.clear();
-
-  mytimer.start();
+  var mytimer: stopwatch;
+  
+  mytimer.restart();
 
   ... measured code goes here ...
   mytimer.stop();
 
-  writeln("time taken: " + mytimer.elapsed() + " seconds");
+  writeln("time taken: ", mytimer.elapsed(), " seconds");
 
 .. _Time Module: https://chapel-lang.org/docs/modules/standard/Time.html
 
@@ -176,127 +175,32 @@ then call ``sdirs`` from the gdb prompt (do not use `~` or `$CHPL_HOME`), e.g.:
 Profiling the generated code
 ----------------------------
 
-We basically use ``gprof`` for profiling. (There is also ``gcov``.)
+Some Chapel programmers have had success profiling Chapel's generated
+code using ``gprof`` using the instructions given below.  Others have
+had successes with the Linux-based ``perf`` command, HPCToolkit, or
+other performance analysis tools (not covered here).
 
+To use ``gprof``:
 
-* Be sure your runtime is compiled with optimization (see above).
+* Note that, at present, this is only supported when using the C
+  back-end, not the LLVM back-end.  As a result,
+  ``CHPL_TARGET_COMPILER`` must be set or inferred to something other
+  than ``llvm``.
 
+* For best results, be sure your runtime is compiled with
+  ``OPTIMIZE=1`` to reduce the time spent in runtime code.  You may
+  also want to build it with ``PROFILE=1`` in order to have it
+  included in your profiling report.
 
 * When compiling, use:
 
       ``--ccflags -pg --ldflags -pg --fast --savec DIRECTORY``
 
-  This produces `gprof-enabled` executable. (See `gprof` docs if unfamiliar.)
+  This produces a `gprof-enabled` executable.
 
-  You probably want ``--fast`` ``--savec``, but they do not affect profilability.
-
-
-* If you want to profile the runtime as well, build it so:
-
- ::
-      
-      cd $CHPL_HOME/runtime
-      make clean
-      make DEBUG=0 OPTIMIZE=1 PROFILE=1
-
-Note: currently you can have only one compilation of the runtime (see above).
-
-
-Debugging/profiling the generated code, alternative approach
-------------------------------------------------------------
-
-You might find it more convenient to debug and profile (``gprof``/``gcov``)
-*the same* version of the generated code.
-
-
-* Keep track of how your runtime is presently built (see above).
-
-
-* When compiling, use ``--savec`` but not ``-g`` (I think), ``--ccflags``, or ``--ldflags``,
-  for example:
-
-      ``--fast --savec DIR --c-line-numbers``
-
-* Option A: run ``make -f DIR/Makefile`` then adjust the compilation
-  commands being issued. (You might even be able to redirect the
-  compilation to different runtime/lib directories.)
-
-
-* Option B is to replace `DIR/Makefile`
-  with the following (change ``a.out`` to your preferred executable name):
-
-.. code-block :: bash
-
-
-  ifneq ($(DB),)
-  EXTR_FLAGS += -g
-  EXTR_sfx += .db
-  endif
-
-  ifneq ($(GP),)
-  EXTR_FLAGS += -pg
-  EXTR_sfx += .gp
-  endif
-
-  ifneq ($(GC),)
-  EXTR_FLAGS += -fprofile-arcs -ftest-coverage
-  EXTR_sfx += .gc
-  endif
-
-  ifneq ($(DB),)
-  # don't want OPT_CFLAGS
-  COMP_GEN_CFLAGS = $(EXTR_FLAGS) $(WARN_GEN_CFLAGS)               $(NO_IEEE_FLOAT_GEN_CFLAGS)
-  else
-  COMP_GEN_CFLAGS = $(EXTR_FLAGS) $(WARN_GEN_CFLAGS) $(OPT_CFLAGS) $(NO_IEEE_FLOAT_GEN_CFLAGS)
-  endif
-
-  COMP_GEN_LFLAGS = $(EXTR_FLAGS) 
-  BINNAME = a.out$(EXTR_sfx)
-  TMPDIRNAME := $(dir $(lastword $(MAKEFILE_LIST)))
-  TMPBINNAME = $(TMPDIRNAME)a.out.tmp
-  CHAPEL_ROOT = $(CHPL_HOME)
-  TAGS_COMMAND = -@which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && test -f $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) && cd $(TMPDIRNAME) && cp $(CHAPEL_ROOT)/runtime/$(CHPL_TAGS_FILE) . && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(CHPL_TAGS_APPEND_FLAG) *.c *.h
-
-  CHPLSRC = $(TMPDIRNAME)_main.c 
-  LIBS =
-
-  include $(CHAPEL_ROOT)/runtime/etc/Makefile.include
-
-
-Do all compilations in DIR (e.g. the directory with the generated code).
-
-::
-
-      make DB=1   # generates 'a.out.db' for debugging
-      make GP=1   # generates 'a.out.gp' for gprof
-      make GC=1   # generates 'a.out.gc' for gcov
-
-For ``gcov``, you may need to rename a couple of files by hand:
-
-::
-
-      rm *.c.gcov *.gcda *.gcno
-      make GC=1
-      ./a.out.gc <whatever options you have for a.out>
-      mv a.out{.tmp,}.gcda
-      mv a.out{.tmp,}.gcno
-      gcov a.out.gc
-
-
-Profiling only parts of the runtime
------------------------------------
-
-Do you want ``gprof/gcov/...`` to look only at certain parts of the runtime,
-to reduce profiling overhead, making the results more true to reality?
-
-One way to do so is to transplant those parts from the runtime into
-the generated code, patching everything involved to satisfaction
-(e.g. so that those parts compile and the generated code refers to
-them instead of the original runtime). This can easily be laborious,
-but you get good control over what's going on.
-
-Be sure NOT to re-run the Chapel compiler.
-
+  The use of ``--fast`` and ``--savec`` are not strictly necessary,
+  but will improve execution time and give you access to the generated
+  C code (in the named directory), respectively.
 
 
 Miscellanea

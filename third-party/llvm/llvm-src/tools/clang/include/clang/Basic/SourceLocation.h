@@ -14,6 +14,7 @@
 #ifndef LLVM_CLANG_BASIC_SOURCELOCATION_H
 #define LLVM_CLANG_BASIC_SOURCELOCATION_H
 
+#include "clang/Basic/FileEntry.h"
 #include "clang/Basic/LLVM.h"
 #include "llvm/ADT/StringRef.h"
 #include <cassert>
@@ -58,6 +59,7 @@ private:
   friend class ASTWriter;
   friend class ASTReader;
   friend class SourceManager;
+  friend class SourceManagerTestHelper;
 
   static FileID get(int V) {
     FileID F;
@@ -356,8 +358,6 @@ public:
   }
 };
 
-class FileEntry;
-
 /// A SourceLocation and its associated SourceManager.
 ///
 /// This is useful for argument passing to functions that expect both objects.
@@ -398,6 +398,12 @@ public:
   unsigned getExpansionLineNumber(bool *Invalid = nullptr) const;
   unsigned getExpansionColumnNumber(bool *Invalid = nullptr) const;
 
+  /// Decompose the underlying \c SourceLocation into a raw (FileID + Offset)
+  /// pair, after walking through all expansion records.
+  ///
+  /// \see SourceManager::getDecomposedExpansionLoc
+  std::pair<FileID, unsigned> getDecomposedExpansionLoc() const;
+
   unsigned getSpellingLineNumber(bool *Invalid = nullptr) const;
   unsigned getSpellingColumnNumber(bool *Invalid = nullptr) const;
 
@@ -407,6 +413,7 @@ public:
   unsigned getColumnNumber(bool *Invalid = nullptr) const;
 
   const FileEntry *getFileEntry() const;
+  OptionalFileEntryRef getFileEntryRef() const;
 
   /// Return a StringRef to the source buffer data for the
   /// specified FileID.

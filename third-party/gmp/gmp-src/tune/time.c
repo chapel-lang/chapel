@@ -151,6 +151,7 @@ see https://www.gnu.org/licenses/.  */
    speed, on 4xx chips it's either that or an external clock.  Measuring
    against gettimeofday might be ok.  */
 
+
 #include "config.h"
 
 #include <errno.h>
@@ -1476,10 +1477,8 @@ speed_endtime (void)
 
       if (use_gtod)
 	printf ("   gettimeofday  %ld.%06ld -> %ld.%06ld\n",
-		(long) start_gtod.tv_sec,
-		(long) start_gtod.tv_usec,
-		(long) end_gtod.tv_sec,
-		(long) end_gtod.tv_usec);
+		(long) start_gtod.tv_sec, (long) start_gtod.tv_usec,
+		(long) end_gtod.tv_sec, (long) end_gtod.tv_usec);
 
       if (use_grus)
 	printf ("   getrusage  %ld.%06ld -> %ld.%06ld\n",

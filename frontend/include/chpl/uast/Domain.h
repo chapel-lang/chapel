@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -41,6 +41,8 @@ namespace uast {
   A domain expression will never contain comments.
  */
 class Domain final : public AstNode {
+ friend class AstNode;
+
  private:
   bool usedCurlyBraces_;
 
@@ -49,7 +51,12 @@ class Domain final : public AstNode {
     : AstNode(asttags::Domain, std::move(children)),
       usedCurlyBraces_(usedCurlyBraces) {
   }
-  Domain(Deserializer& des)
+
+  void serializeInner(Serializer& ser) const override {
+    ser.write(usedCurlyBraces_);
+  }
+
+  explicit Domain(Deserializer& des)
     : AstNode(asttags::Domain, des) {
     usedCurlyBraces_ = des.read<bool>();
   }
@@ -101,14 +108,6 @@ class Domain final : public AstNode {
   bool usedCurlyBraces() const {
     return usedCurlyBraces_;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(usedCurlyBraces_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Domain);
-
 };
 
 

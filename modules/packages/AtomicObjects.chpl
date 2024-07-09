@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,13 +26,9 @@
 
       - It relies on Chapel ``extern`` code blocks and so requires that
         the Chapel compiler is built with LLVM enabled.
-      - Currently only ``CHPL_TARGET_ARCH=x86_64`` is supported as it uses
-        the x86-64 instruction: CMPXCHG16B_.
-      - The implementation relies on ``GCC`` style inline assembly, and so
-        is restricted to a ``CHPL_TARGET_COMPILER`` value of ``gnu``,
-        ``clang``, or ``llvm``.
-
-    .. _CMPXCHG16B: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+      - The implementation relies on using either ``GCC`` style inline assembly
+        (for x86-64) or a GCC/clang builtin, and so is restricted to a
+        ``CHPL_TARGET_COMPILER`` value of ``gnu``, ``clang``, or ``llvm``.
 
   This module provides support for performing atomic operations on pointers
   to  ``unmanaged`` classes, which can be thought of as building blocks for
@@ -119,16 +115,13 @@ prototype module AtomicObjects {
   private use IO;
   private use OS.POSIX;
 
-  if CHPL_TARGET_ARCH != "x86_64" {
-    compilerWarning("The AtomicObjects package module cannot support CHPL_TARGET_ARCH=", CHPL_TARGET_ARCH, ", only x86_64 is supported.");
-  }
-
   // Declaration of ``CMPXCHG16B`` primitives.
   extern {
     #include <stdint.h>
     #include <stdio.h>
     #include <stdlib.h>
 
+    __attribute__ ((aligned (16)))
     typedef struct uint128 {
       uint64_t lo;
       uint64_t hi;
@@ -138,23 +131,39 @@ prototype module AtomicObjects {
     // cmp: Expected value
     // with: New value to replace old
     // Returns: If successful or not
-    static inline int _cas128bit(uint128_t *src, uint128_t *cmp, uint128_t *with) {
-      char result;
-      __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
-        "setz %7; "
-        : "=a" (cmp->lo),
-        "=d" (cmp->hi)
-        : "0" (cmp->lo),
-        "1" (cmp->hi),
-        "b" (with->lo),
-        "c" (with->hi),
-        "r" (src),
-        "m" (result)
-        : "cc", "memory");
+    static inline int _cas128bit(volatile uint128_t *src, uint128_t *cmp, uint128_t *with) {
+      #if defined(__x86_64__)
+        // We originally wrote _cas128bit expecting it to only apply on x86_64
+        // but later added a version that calls into a clang/gcc builtin that
+        // can handle other architectures. Maybe we should remove this branch
+        // and just always use the builtin but I'm hesitant to make that change
+        // without doing a performance analysis to ensure that it performs as
+        // well (or better) than this branch (I fully expect that it would).
+        char result;
+        __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
+          "setz %7; "
+          : "=a" (cmp->lo),
+          "=d" (cmp->hi)
+          : "0" (cmp->lo),
+          "1" (cmp->hi),
+          "b" (with->lo),
+          "c" (with->hi),
+          "r" (src),
+          "m" (result)
+          : "cc", "memory");
         return result;
+      #elif defined(__has_builtin)
+        #if __has_builtin (__atomic_compare_exchange)
+          return __atomic_compare_exchange(src, cmp, with, 1, 1, 1);
+        #else
+          #error "Unable to build the AtomicObjects package module " \
+                 "so that it can perform 128-bit compare-and-swap operations."
+        #endif
+      #else
+        #error "Unable to build the AtomicObjects package module " \
+               "so that it can perform 128-bit compare-and-swap operations."
+      #endif
     }
-
-    typedef struct uint128 uint128_t;
 
     // srcvp: Address of a 16-byte aligned address or else General Protection Fault (GPF)
     // cmpvp: Expected value
@@ -248,7 +257,9 @@ prototype module AtomicObjects {
   extern type c_nodeid_t;
 
   @chpldoc.nodoc
-  extern proc chpl_return_wide_ptr_node(c_nodeid_t, c_void_ptr) : wide_ptr_t;
+  type type_c_void_ptr = c_ptr(void);
+
+  extern proc chpl_return_wide_ptr_node(c_nodeid_t, type_c_void_ptr) : wide_ptr_t;
 
   if numLocales >= 2**16 {
     writeln("[WARNING]: AtomicObjects currently only supports up to 65535 locales!");
@@ -272,7 +283,7 @@ prototype module AtomicObjects {
 
   @chpldoc.nodoc
   inline proc uintToCVoidPtr(addr) {
-    return __primitive("cast", c_void_ptr, addr);
+    return __primitive("cast", c_ptr(void), addr);
   }
 
   @chpldoc.nodoc
@@ -324,7 +335,7 @@ prototype module AtomicObjects {
     // faster compression method so we need to decompress it in the same way...
     var locId = descr >> compressedLocIdOffset;
     var addr = descr & compressedAddrMask;
-    if _local || locId == here.id then return castToObj(objType, addr);
+    if compiledForSingleLocale() || locId == here.id then return castToObj(objType, addr);
 
     // We've created the wide pointer, but unfortunately Chapel does not support
     // the ability to cast it to the actual object, so we have to do some
@@ -349,7 +360,7 @@ prototype module AtomicObjects {
      should be created by LocalAtomicObject. The object protected by this ABA wrapper can
      be extracted via 'getObject'.
   */
-  record ABA {
+  record ABA : serializable {
     type __ABA_objType;
     @chpldoc.nodoc
     var __ABA_ptr : uint(64);
@@ -389,18 +400,19 @@ prototype module AtomicObjects {
     }
 
     @chpldoc.nodoc
-    proc readThis(f) throws {
+    proc deserialize(reader, ref deserializer) throws {
       compilerWarning("Reading an ABA is not supported");
     }
 
-    proc init(type __ABA_objType, r: fileReader) {
+    @chpldoc.nodoc
+    proc init(type __ABA_objType, reader: fileReader, ref deserializer) {
       this.init(__ABA_objType);
-      compilerWarning("Reading an ABA is not supported");
+      compilerWarning("Deserializing an ABA is not yet supported");
     }
 
     /* Writes an ABA */
-    proc writeThis(f) throws {
-      f.write("(ABA){cnt=", this.__ABA_cnt, ", obj=", this.getObject(), "}");
+    proc serialize(writer, ref serializer) throws {
+      writer.write("(ABA){cnt=", this.__ABA_cnt, ", obj=", this.getObject(), "}");
     }
 
     forwarding this.getObject()!;
@@ -420,19 +432,25 @@ prototype module AtomicObjects {
 
     proc init(type objType, ptr : uint(64), cnt : uint(64)) {
       this.objType = objType;
-      this.complete();
+      init this;
       this._ABA_ptr.write(ptr);
       this._ABA_cnt.write(cnt);
     }
 
     proc init(type objType, ptr : uint(64)) {
       this.objType = objType;
-      this.complete();
+      init this;
       this._ABA_ptr.write(ptr);
     }
 
     proc init(type objType) {
       this.objType = objType;
+    }
+
+    proc init=(other: _ABAInternal) {
+      this.objType = other.objType;
+      this._ABA_ptr = other._ABA_ptr.read();
+      this._ABA_cnt = other._ABA_cnt.read();
     }
   }
 
@@ -447,7 +465,7 @@ prototype module AtomicObjects {
     return aba1.__ABA_cnt != aba2.__ABA_cnt || aba1.__ABA_ptr != aba2.__ABA_ptr;
   }
 
-  record AtomicObject {
+  record AtomicObject : serializable {
     type objType;
     // If this atomic instance provides ABA support
     param hasABASupport : bool;
@@ -455,16 +473,16 @@ prototype module AtomicObjects {
     param hasGlobalSupport : bool;
     var atomicVar : if hasABASupport then _ddata(_ABAInternal(objType?)) else atomic uint(64);
 
-    proc init(type objType, param hasABASupport = false, param hasGlobalSupport = !_local) {
+    proc init(type objType, param hasABASupport = false, param hasGlobalSupport = !compiledForSingleLocale()) {
       if !isUnmanagedClass(objType) {
         compilerError ("LocalAtomicObject must take a 'unmanaged' type, not ", objType : string);
       }
       this.objType = objType;
       this.hasABASupport = hasABASupport;
       this.hasGlobalSupport = hasGlobalSupport;
-      this.complete();
+      init this;
       if hasABASupport {
-        var ptr : c_void_ptr;
+        var ptr : c_ptr(void);
         var retval = posix_memalign(c_addrOf(ptr), 16, c_sizeof(ABA(objType?)));
         if retval then halt();
         this.atomicVar = ptr:_ddata(_ABAInternal(objType?));
@@ -472,7 +490,7 @@ prototype module AtomicObjects {
       }
     }
 
-    proc init(type objType, defaultValue : objType, param hasABASupport = false, param hasGlobalSupport = !_local) {
+    proc init(type objType, defaultValue : objType, param hasABASupport = false, param hasGlobalSupport = !compiledForSingleLocale()) {
       init(objType, hasABASupport, hasGlobalSupport);
       var ptr : uint(64);
       if hasGlobalSupport {
@@ -488,8 +506,17 @@ prototype module AtomicObjects {
       }
     }
 
+    proc init=(other: AtomicObject) {
+      this.objType = other.objType;
+      this.hasABASupport = other.hasABASupport;
+      this.hasGlobalSupport = other.hasGlobalSupport;
+      if hasABASupport
+        then this.atomicVar = other.atomicVar;
+        else this.atomicVar = other.atomicVar.read();
+    }
+
     @chpldoc.nodoc
-    inline proc atomicVariable ref {
+    inline proc ref atomicVariable ref {
       if hasABASupport {
         return atomicVar[0]._ABA_ptr;
       } else {
@@ -504,9 +531,9 @@ prototype module AtomicObjects {
         return compress(obj);
       } else {
         // Check if an object is non-local when 'hasGlobalSupport' is false
-        // Note: Both `_local` and `boundsChecking` are compile-time constants
-        // and will compile this away.
-        if !_local && boundsChecking {
+        // Note: Both `compiledForSingleLocale()` and `boundsChecking` are
+        // compile-time constants and will compile this away.
+        if !compiledForSingleLocale() && boundsChecking {
           localityCheck(obj);
         }
         return getAddr(obj);
@@ -543,17 +570,17 @@ prototype module AtomicObjects {
       var ret : ABA(objType?);
       on this {
         var dest : ABA(objType?);
-        read128bit(atomicVar:c_void_ptr, c_addrOf(dest));
+        read128bit(atomicVar:c_ptr(void), c_addrOf(dest));
         ret = dest;
       }
       return ret;
     }
 
-    proc read() : objType? {
+    proc ref read() : objType? {
       return fromPointer(atomicVariable.read());
     }
 
-    proc compareAndSwap(expectedObj : objType?, newObj : objType?) : bool {
+    proc ref compareAndSwap(expectedObj : objType?, newObj : objType?) : bool {
       return atomicVariable.compareAndSwap(toPointer(expectedObj), toPointer(newObj));
     }
 
@@ -565,7 +592,7 @@ prototype module AtomicObjects {
         // Note that no 'cas128bit_special' is needed here as the 'cas128bit' will detect
         // a change from the expectedObj passed, which of course includes the _ABA_cnt.
         var val = new ABA(objType?, toPointer(newObj), atomicVar[0]._ABA_cnt.read() + 1);
-        ret = cas128bit(atomicVar:c_void_ptr, c_addrOf(cmp), c_addrOf(val)) : bool;
+        ret = cas128bit(atomicVar:c_ptr(void), c_addrOf(cmp), c_addrOf(val)) : bool;
       }
       return ret;
     }
@@ -574,7 +601,7 @@ prototype module AtomicObjects {
       compareAndSwapABA(expectedObj, newObj.getObject());
     }
 
-    proc write(newObj:objType?) {
+    proc ref write(newObj:objType?) {
       atomicVariable.write(toPointer(newObj));
     }
 
@@ -584,7 +611,7 @@ prototype module AtomicObjects {
 
     proc writeABA(newObj: ABA(objType?)) {
       doABACheck();
-      write128bit(atomicVar:c_void_ptr, c_addrOf(newObj));
+      write128bit(atomicVar:c_ptr(void), c_addrOf(newObj));
     }
 
     proc writeABA(newObj: objType?) {
@@ -599,7 +626,7 @@ prototype module AtomicObjects {
       write128bit_special(new ABA(objType?, toPointer(newObj), 0));
     }
 
-    inline proc exchange(newObj:objType?) : objType? {
+    inline proc ref exchange(newObj:objType?) : objType? {
       return fromPointer(atomicVariable.exchange(toPointer(newObj)));
     }
 
@@ -610,7 +637,7 @@ prototype module AtomicObjects {
         var retval : ABA(objType?);
         var _newObj = newObj;
         var val = new ABA(objType?, toPointer(newObj), 0);
-        exchange128bit_special(atomicVar:c_void_ptr, c_addrOf(_newObj), c_addrOf(retval));
+        exchange128bit_special(atomicVar:c_ptr(void), c_addrOf(_newObj), c_addrOf(retval));
         ret = retval;
       }
 
@@ -624,7 +651,7 @@ prototype module AtomicObjects {
         var retval : ABA(objType?);
         var _newObj = newObj;
         var val = newObj;
-        exchange128bit(atomicVar:c_void_ptr, c_addrOf(_newObj), c_addrOf(retval));
+        exchange128bit(atomicVar:c_ptr(void), c_addrOf(_newObj), c_addrOf(retval));
         ret = retval;
       }
 
@@ -632,20 +659,23 @@ prototype module AtomicObjects {
     }
 
     @chpldoc.nodoc
-    proc readThis(f) throws {
+    proc deserialize(reader, ref deserializer) throws {
       compilerWarning("Reading an AtomicObject is not supported");
     }
 
+    @chpldoc.nodoc
     proc init(type objType,
               param hasABASupport: bool,
               param hasGlobalSupport: bool,
-              r: fileReader) {
+              reader: fileReader,
+              ref deserializer) {
       init(objType, hasABASupport, hasGlobalSupport);
-      compilerWarning("Reading an AtomicObject is not supported");
+      compilerWarning("Deserializing an AtomicObject is not yet supported");
     }
 
-    proc writeThis(f) throws {
-      f.write(atomicVariable.read());
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writer.write(atomicVariable.read());
     }
   }
 }

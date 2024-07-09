@@ -140,10 +140,10 @@ struct mrail_req *mrail_dequeue_deferred_req(struct mrail_ep *mrail_ep)
 {
 	struct mrail_req *req;
 
-	ofi_ep_lock_acquire(&mrail_ep->util_ep);
+	ofi_genlock_lock(&mrail_ep->util_ep.lock);
 	slist_remove_head_container(&mrail_ep->deferred_reqs, struct mrail_req,
 			req, entry);
-	ofi_ep_lock_release(&mrail_ep->util_ep);
+	ofi_genlock_unlock(&mrail_ep->util_ep.lock);
 
 	return req;
 }
@@ -151,17 +151,17 @@ struct mrail_req *mrail_dequeue_deferred_req(struct mrail_ep *mrail_ep)
 static inline void mrail_requeue_deferred_req(struct mrail_ep *mrail_ep,
 		struct mrail_req *req)
 {
-	ofi_ep_lock_acquire(&mrail_ep->util_ep);
+	ofi_genlock_lock(&mrail_ep->util_ep.lock);
 	slist_insert_head(&req->entry, &mrail_ep->deferred_reqs);
-	ofi_ep_lock_release(&mrail_ep->util_ep);
+	ofi_genlock_unlock(&mrail_ep->util_ep.lock);
 }
 
 static inline void mrail_queue_deferred_req(struct mrail_ep *mrail_ep,
 		struct mrail_req *req)
 {
-	ofi_ep_lock_acquire(&mrail_ep->util_ep);
+	ofi_genlock_lock(&mrail_ep->util_ep.lock);
 	slist_insert_tail(&req->entry, &mrail_ep->deferred_reqs);
-	ofi_ep_lock_release(&mrail_ep->util_ep);
+	ofi_genlock_unlock(&mrail_ep->util_ep.lock);
 }
 
 void mrail_progress_deferred_reqs(struct mrail_ep *mrail_ep)
@@ -402,7 +402,7 @@ static ssize_t mrail_ep_inject_write(struct fid_ep *ep_fid, const void *buf,
 			rail);
 		return ret;
 	}
-	ofi_ep_wr_cntr_inc(&mrail_ep->util_ep);
+	ofi_ep_cntr_inc(&mrail_ep->util_ep, CNTR_WR);
 
 	return 0;
 }

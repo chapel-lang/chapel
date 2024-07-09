@@ -7,12 +7,13 @@ class MyClass {
 
     y = val;
 
-    complete();
+    init this;
   }
 }
 
 proc main() {
-  var c : borrowed MyClass = (new owned MyClass(50)).borrow();
+  var ownC = new owned MyClass(50);
+  var c : borrowed MyClass = ownC.borrow();
 
   writeln(c);
 }

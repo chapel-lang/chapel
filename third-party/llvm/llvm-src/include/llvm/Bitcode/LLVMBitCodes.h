@@ -175,6 +175,8 @@ enum TypeCodes {
   TYPE_CODE_X86_AMX = 24, // X86 AMX
 
   TYPE_CODE_OPAQUE_POINTER = 25, // OPAQUE_POINTER: [addrspace]
+
+  TYPE_CODE_TARGET_TYPE = 26, // TARGET_TYPE
 };
 
 enum OperandBundleTagCode {
@@ -208,7 +210,7 @@ enum GlobalValueSummarySymtabCodes {
   FS_PERMODULE = 1,
   // PERMODULE_PROFILE: [valueid, flags, instcount, numrefs,
   //                     numrefs x valueid,
-  //                     n x (valueid, hotness)]
+  //                     n x (valueid, hotness+tailcall)]
   FS_PERMODULE_PROFILE = 2,
   // PERMODULE_GLOBALVAR_INIT_REFS: [valueid, flags, n x valueid]
   FS_PERMODULE_GLOBALVAR_INIT_REFS = 3,
@@ -217,7 +219,7 @@ enum GlobalValueSummarySymtabCodes {
   FS_COMBINED = 4,
   // COMBINED_PROFILE: [valueid, modid, flags, instcount, numrefs,
   //                    numrefs x valueid,
-  //                    n x (valueid, hotness)]
+  //                    n x (valueid, hotness+tailcall)]
   FS_COMBINED_PROFILE = 5,
   // COMBINED_GLOBALVAR_INIT_REFS: [valueid, modid, flags, n x valueid]
   FS_COMBINED_GLOBALVAR_INIT_REFS = 6,
@@ -266,7 +268,7 @@ enum GlobalValueSummarySymtabCodes {
   // Per-module summary that also adds relative block frequency to callee info.
   // PERMODULE_RELBF: [valueid, flags, instcount, numrefs,
   //                   numrefs x valueid,
-  //                   n x (valueid, relblockfreq)]
+  //                   n x (valueid, relblockfreq+tailcall)]
   FS_PERMODULE_RELBF = 19,
   // Index-wide flags
   FS_FLAGS = 20,
@@ -301,6 +303,22 @@ enum GlobalValueSummarySymtabCodes {
   // Range information for accessed offsets for every argument.
   // [n x (paramno, range, numcalls, numcalls x (callee_guid, paramno, range))]
   FS_PARAM_ACCESS = 25,
+  // Summary of per-module memprof callsite metadata.
+  // [valueid, n x stackidindex]
+  FS_PERMODULE_CALLSITE_INFO = 26,
+  // Summary of per-module allocation memprof metadata.
+  // [n x (alloc type, nummib, nummib x stackidindex)]
+  FS_PERMODULE_ALLOC_INFO = 27,
+  // Summary of combined index memprof callsite metadata.
+  // [valueid, numstackindices, numver,
+  //  numstackindices x stackidindex, numver x version]
+  FS_COMBINED_CALLSITE_INFO = 28,
+  // Summary of combined index allocation memprof metadata.
+  // [nummib, numver,
+  //  nummib x (alloc type, numstackids, numstackids x stackidindex),
+  //  numver x version]
+  FS_COMBINED_ALLOC_INFO = 29,
+  FS_STACK_IDS = 30,
 };
 
 enum MetadataCodes {
@@ -349,7 +367,8 @@ enum MetadataCodes {
   // info.
   METADATA_COMMON_BLOCK = 44,     // [distinct, scope, name, variable,...]
   METADATA_GENERIC_SUBRANGE = 45, // [distinct, count, lo, up, stride]
-  METADATA_ARG_LIST = 46          // [n x [type num, value num]]
+  METADATA_ARG_LIST = 46,         // [n x [type num, value num]]
+  METADATA_ASSIGN_ID = 47,        // [distinct, ...]
 };
 
 // The constants block (CONSTANTS_BLOCK_ID) describes emission for each
@@ -460,7 +479,9 @@ enum RMWOperations {
   RMW_FADD = 11,
   RMW_FSUB = 12,
   RMW_FMAX = 13,
-  RMW_FMIN = 14
+  RMW_FMIN = 14,
+  RMW_UINC_WRAP = 15,
+  RMW_UDEC_WRAP = 16
 };
 
 /// OverflowingBinaryOperatorOptionalFlags - Flags for serializing
@@ -484,9 +505,16 @@ enum FastMathMap {
   AllowReassoc    = (1 << 7)
 };
 
+/// Flags for serializing PossiblyNonNegInst's SubclassOptionalData contents.
+enum PossiblyNonNegInstOptionalFlags { PNNI_NON_NEG = 0 };
+
 /// PossiblyExactOperatorOptionalFlags - Flags for serializing
 /// PossiblyExactOperator's SubclassOptionalData contents.
 enum PossiblyExactOperatorOptionalFlags { PEO_EXACT = 0 };
+
+/// PossiblyDisjointInstOptionalFlags - Flags for serializing
+/// PossiblyDisjointInst's SubclassOptionalData contents.
+enum PossiblyDisjointInstOptionalFlags { PDI_DISJOINT = 0 };
 
 /// Encoded AtomicOrdering values.
 enum AtomicOrderingCodes {
@@ -689,6 +717,13 @@ enum AttributeKindCodes {
   ATTR_KIND_ALLOC_KIND = 82,
   ATTR_KIND_PRESPLIT_COROUTINE = 83,
   ATTR_KIND_FNRETTHUNK_EXTERN = 84,
+  ATTR_KIND_SKIP_PROFILE = 85,
+  ATTR_KIND_MEMORY = 86,
+  ATTR_KIND_NOFPCLASS = 87,
+  ATTR_KIND_OPTIMIZE_FOR_DEBUGGING = 88,
+  ATTR_KIND_WRITABLE = 89,
+  ATTR_KIND_CORO_ONLY_DESTROY_WHEN_COMPLETE = 90,
+  ATTR_KIND_DEAD_ON_UNWIND = 91,
 };
 
 enum ComdatSelectionKindCodes {

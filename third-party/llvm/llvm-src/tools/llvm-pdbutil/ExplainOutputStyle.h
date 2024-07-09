@@ -13,8 +13,6 @@
 
 #include "llvm/DebugInfo/PDB/Native/LinePrinter.h"
 
-#include <string>
-
 namespace llvm {
 
 namespace pdb {
@@ -43,7 +41,7 @@ private:
   bool isPdbFpmBlock() const;
   bool isPdbBlockMapBlock() const;
   bool isPdbStreamDirectoryBlock() const;
-  Optional<uint32_t> getPdbBlockStreamIndex() const;
+  std::optional<uint32_t> getPdbBlockStreamIndex() const;
 
   void explainPdbSuperBlockOffset();
   void explainPdbFpmBlockOffset();

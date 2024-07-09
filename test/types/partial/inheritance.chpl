@@ -4,7 +4,7 @@ class Base {
   param x : T;
 }
 
-class Child : Base {
+class Child : Base(?) {
   type U;
   param y : U;
 }
@@ -14,11 +14,11 @@ class X {
   param b : bool;
 }
 
-class Y : X {
+class Y : X(?) {
   param p : T;
 }
 
-class Z : Y {
+class Z : Y(?) {
   type U;
   param zz : U;
 }

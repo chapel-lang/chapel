@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -57,6 +57,22 @@
 // Quiets warnings about _BSD_SOURCE being deprecated in glibc >= 2.20
 // This define enables everything _BSD_SOURCE does (and more) with glibc >= 2.19
 #define _DEFAULT_SOURCE
+#endif
+
+// define `___always_inline`, this should be used sparingly, prefer `inline`
+#if defined __has_attribute
+  #if __has_attribute (always_inline)
+    #define ___always_inline inline __attribute__ ((always_inline))
+  #endif
+  #ifndef ___always_inline
+    #if __has_attribute (__always_inline__)
+      #define ___always_inline inline __attribute__ ((__always_inline__))
+    #endif
+  #endif
+#endif
+#ifndef ___always_inline
+  // always_inline is not supported, just use inline
+  #define ___always_inline inline
 #endif
 
 // Ask a C++ compiler if it would please include e.g. INT64_MAX

@@ -1,4 +1,28 @@
+/*
 
+A prototype distributed list.
+
+Note: in the future, it is unlikely that we will add a distributed list data
+  structure to the standard library. Instead, we would likely add some more
+  constrained list-like data structures such as a distributed dequeue or stack.
+  This is for a couple of reasons:
+
+  - some of the methods on `list` are very inefficient to implement on a
+        distributed list. Namely, `remove`, `insert`, and `getAndRemove`.
+        With the below implementation in particular, supporting these methods
+        harms the performance of other methods because global locking is
+        required. Such methods would not be included in a distributed queue,
+        stack, or dequeue.
+  - one of the initial motivations for creating a distributed list was that
+       we'd eventually like to have a distributed version of all (or most) of
+       the collection types supported by the standard library. However, in some
+       discussions about the `list` data structure, we decided it would be
+       okay to keep list as a single-locale-only collection, and to add a queue,
+       stack, and/or dequeue (along with their distributed versions) to the library.
+
+  (see: https://github.com/chapel-lang/chapel/issues/21933, for more discussion)
+
+*/
 module DistributedList {
 
     private use HaltWrappers;
@@ -25,7 +49,7 @@ module DistributedList {
 
     */
 
-    record distributedList {
+    record distributedList : writeSerializable {
         type eltType;
         param blockSize: int;
 
@@ -34,7 +58,7 @@ module DistributedList {
 
         @chpldoc.nodoc
         const locDom = {0..<targetLocales.size}
-            dmapped Cyclic(startIdx=0, targetLocales=targetLocales);
+            dmapped new cyclicDist(startIdx=0, targetLocales=targetLocales);
 
         @chpldoc.nodoc
         var locks: [locDom] ChapelLocks.chpl_LocalSpinlock =
@@ -50,16 +74,16 @@ module DistributedList {
         proc init(type eltType, param blockSize=DefaultBlockSize) {
             this.eltType = eltType;
             this.blockSize = blockSize;
-            this.complete();
+            init this;
             this.numEntries.write(0);
         }
 
         proc init(arr: [?d] ?t, param blockSize=DefaultBlockSize)
-            where d.rank == 1 && !d.stridable && d.dist._value.dsiIsLayout()
+            where d.rank == 1 && d.hasUnitStride() && d.distribution._value.dsiIsLayout()
         {
             this.eltType = t;
             this.blockSize = blockSize;
-            this.complete();
+            init this;
 
             const numBlocks = d.size / blockSize,
                   remainder = d.size % blockSize,
@@ -98,6 +122,15 @@ module DistributedList {
 
             this.numEntries.write(d.size);
         }
+        proc init=(other: distributedList(?)) {
+          this.eltType = other.eltType;
+          this.blockSize = other.blockSize;
+          this.targetLocales = other.targetLocales;
+          this.locDom = other.locDom;
+          this.locks = other.locks;
+          this.blockLists = other.blockLists;
+          this.numEntries = other.numEntries.read();
+        }
 
         // append a new element to the end of the list
         proc ref append(pragma "no auto destroy" in x: eltType): int {
@@ -118,7 +151,7 @@ module DistributedList {
 
         // append a group of elements to the end of the list
         proc ref append(x: [?d] eltType): range(d.idxType)
-            where d.rank == 1 && !d.stridable && d.dist._value.dsiIsLayout()
+            where d.rank == 1 && d.hasUnitStride() && d.distribution._value.dsiIsLayout()
         {
             this.lockAll(); defer this.unlockAll();
 
@@ -157,7 +190,7 @@ module DistributedList {
         }
 
         // does this list contain at least one 'x'?
-        proc contains(x: eltType): bool {
+        proc ref contains(x: eltType): bool {
             this.lockAll(); defer this.unlockAll();
             for e in this.these() do
                 if e == x then return true;
@@ -165,7 +198,7 @@ module DistributedList {
         }
 
         // return a reference to the list's first element
-        proc first() ref {
+        proc ref first() ref {
             this.lockAll(); defer this.unlockAll();
             assert(this.numEntries.read() > 0, "list is empty; cannot get first element");
             const (locIdx, blockIdx, eltIdx) = indicesFor(0);
@@ -173,7 +206,7 @@ module DistributedList {
         }
 
         // return a reference to the list's last element
-        proc last() ref {
+        proc ref last() ref {
             this.lockAll(); defer this.unlockAll();
             assert(this.numEntries.read() > 0, "list is empty; cannot get last element");
             const (locIdx, blockIdx, eltIdx) = indicesFor(this.numEntries.read() - 1);
@@ -231,7 +264,7 @@ module DistributedList {
 
         // insert an array of elements. shift all subsequent elements 'd.size' slots to the right
         proc ref insert(idx: int, arr: [?d] eltType): bool
-            where d.rank == 1 && !d.stridable && d.dist._value.dsiIsLayout()
+            where d.rank == 1 && d.hasUnitStride() && d.distribution._value.dsiIsLayout()
         {
             this.lockAll(); defer this.unlockAll();
             if this.boundsCheck(idx) {
@@ -314,7 +347,7 @@ module DistributedList {
 
         // non-locking pop
         @chpldoc.nodoc
-        proc _pop(idx: int): eltType {
+        proc ref _pop(idx: int): eltType {
             const lastIdx = this.numEntries.read() - 1;
 
             // take the value at idx
@@ -352,7 +385,7 @@ module DistributedList {
         }
 
         // return the number of times 'x' occurs in the list
-        proc count(x: eltType): int {
+        proc ref count(x: eltType): int {
             this.lockAll();
             var cnt = 0;
             coforall locIdx in this.locDom with (+ reduce cnt)
@@ -368,7 +401,7 @@ module DistributedList {
 
         // return the first index of 'x' in the given range
         // return '-1' if 'x' is not found
-        proc find(x: eltType, start: int = 0, end: int = -1): int {
+        proc ref find(x: eltType, start: int = 0, end: int = -1): int {
             assert(boundsCheck(start), "'start' index out of bounds in 'find'");
             assert(end == -1 || boundsCheck(end), "'end' index out of bounds in 'find'");
             this.lockAll(); defer this.unlockAll();
@@ -400,7 +433,7 @@ module DistributedList {
         }
 
         // get a copy of the value at 'idx'
-        proc getValue(idx: int): eltType {
+        proc ref getValue(idx: int): eltType {
             this.lockAll(); defer this.unlockAll();
             assert(this.boundsCheck(idx));
             const (locIdx, blockIdx, eltIdx) = indicesFor(idx);
@@ -460,13 +493,13 @@ module DistributedList {
         }
 
         // create a block-cyclic distributed array from the distributed list
-        proc toArray(): [] eltType {
+        proc ref toArray(): [] eltType {
             this.lockAll();
             const dom = {0..<this.numEntries.read()} dmapped
-                BlockCyclic(startIdx=0, blocksize=this.blockSize, targetLocales=this.targetLocales);
+                new blockCycDist(startIdx=0, blocksize=this.blockSize, targetLocales=this.targetLocales);
 
             var a : [dom] this.eltType;
-            coforall (loc, locIdx) in zip(this.targetLocales, this.locDom) do on loc {
+            coforall (loc, locIdx) in zip(this.targetLocales, this.locDom) with (ref a) do on loc {
                 for (elt, blockIdx, eltIdx) in this.blockLists[locIdx].valsAndIndices() do
                     a[this.globalIndex(locIdx, blockIdx, eltIdx)] = elt;
             }
@@ -483,13 +516,13 @@ module DistributedList {
             }
         }
 
-        proc writeThis(fr) throws {
-            fr.write('[');
+        proc serialize(writer, ref serializer) throws {
+            writer.write('[');
             for (elt, i) in zip(this.these(), 0..) {
-                if i > 0 then fr.write(", ");
-                fr.write(elt);
+                if i > 0 then writer.write(", ");
+                writer.write(elt);
             }
-            fr.write(']');
+            writer.write(']');
         }
 
         // TODO: readThis()?
@@ -499,7 +532,7 @@ module DistributedList {
         // ---------------------
 
         @chpldoc.nodoc
-        inline proc deinit() {
+        inline proc ref deinit() {
             for (loc, locIdx) in zip(this.targetLocales, this.locDom) do on loc {
                 this.blockLists[locIdx]._empty();
             }
@@ -525,12 +558,12 @@ module DistributedList {
         }
 
         @chpldoc.nodoc
-        inline proc lockAll() {
+        inline proc ref lockAll() {
             for lock in this.locks do lock.lock();
         }
 
         @chpldoc.nodoc
-        inline proc unlockAll() {
+        inline proc ref unlockAll() {
             for lock in this.locks do lock.unlock();
         }
 
@@ -611,7 +644,7 @@ module DistributedList {
             this.numBlocks = DefaultNumBufferedBlocksPerLocale;
             this.numFilled = 0;
 
-            this.complete();
+            init this;
             on this {
                 this.blocks = this._makeBlockArray(this.numBlocks);
                 for i in 0..<this.numBlocks do this.blocks[i] = this._makeBlock();
@@ -620,7 +653,7 @@ module DistributedList {
 
         // replace the current blocks with n new blocks
         //  n defaults to twice the current number of blocks
-        proc acquireBlocks(n: int = this.numBlocks * 2) {
+        proc ref acquireBlocks(n: int = this.numBlocks * 2) {
             on this {
                 // allocate new blocks
                 assert(n > this.numBlocks);
@@ -676,7 +709,7 @@ module DistributedList {
 
         // assumes that the current block is full
         // and that the next block has already been allocated
-        proc appendBlock(arr: [?d] eltType) {
+        proc ref appendBlock(arr: [?d] eltType) {
             const nextBlockIdx = this.numFilled / this.blockSize;
 
             assert(d.size == this.blockSize);
@@ -692,7 +725,7 @@ module DistributedList {
         }
 
         // free this blockList's memory and reallocate the default # of blocks
-        proc clear() {
+        proc ref clear() {
             // free all memory
             this._empty();
 
@@ -705,7 +738,7 @@ module DistributedList {
             this.numBlocks = DefaultNumBufferedBlocksPerLocale;
         }
 
-        proc _empty() {
+        proc ref _empty() {
             // free each block
             for b in 0..#this.numBlocks {
                 if this.blocks[b] == nil { continue; }

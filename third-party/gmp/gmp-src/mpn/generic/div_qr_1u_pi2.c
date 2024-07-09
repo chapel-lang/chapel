@@ -71,9 +71,10 @@ see https://www.gnu.org/licenses/.  */
 
 #if defined (__aarch64__) && W_TYPE_SIZE == 64
 #define add_sssaaaa(s2, s1, s0, a1, a0, b1, b0)				\
-  __asm__ ("adds\t%2, %x6, %7\n\tadcs\t%1, %x4, %x5\n\tadc\t%0, %3, xzr"\
+  __asm__ ("adds\t%2, %x6, %7\n\tadcs\t%1, %x4, %x5\n\tadc\t%0, %x3, xzr"\
 	   : "=r" (s2), "=&r" (s1), "=&r" (s0)				\
-	   : "rZ" (s2), "%rZ"  (a1), "rZ" (b1), "%rZ" (a0), "rI" (b0) __CLOBBER_CC)
+	   : "rZ" (s2), "%rZ"  (a1), "rZ" (b1), "%rZ" (a0), "rI" (b0)	\
+	     __CLOBBER_CC)
 #endif
 
 #if HAVE_HOST_CPU_FAMILY_powerpc && !defined (_LONG_LONG_LIMB)

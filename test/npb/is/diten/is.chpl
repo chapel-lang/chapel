@@ -1,4 +1,4 @@
-use Random;
+use NPBRandom;
 use Time;
 use Math;
 
@@ -132,7 +132,8 @@ proc rank(iteration: int) {
 
   if useBuckets {
     bucketSize.write(0);
-    bucketSize(keyArray >> shift).add(1);
+    // bucketSize(keyArray >> shift).add(1);
+    forall k in keyArray with (ref bucketSize) do bucketSize(k >> shift).add(1);
 
     bucketPtrs(0) = 0;
     for i in 1..numBuckets-1 do
@@ -143,11 +144,13 @@ proc rank(iteration: int) {
       bucketPtrs(key >> shift) += 1;
     }
     keyBuff1 = 0;
-    keyBuff1(keyBuff2) += 1;
+    // keyBuff1(keyBuff2) += 1;
+    forall k in keyBuff2 with (+ reduce keyBuff1) do keyBuff1(k) += 1;
     keyBuff1 = + scan keyBuff1;
   } else {
     keyBuff1 = 0;
-    keyBuff1(keyArray) += 1;
+    // keyBuff1(keyArray) += 1;
+    forall k in keyArray with (+ reduce keyBuff1) do keyBuff1(k) += 1;
     keyBuff1 = + scan keyBuff1;
   }
   partialVerification(iteration);
@@ -265,4 +268,3 @@ proc fullVerify() {
   else
     passedVerifications += 1;
 }
-

@@ -10,6 +10,9 @@ LOG=log
 declare -a NAME
 declare -a RESULT
 
+# enable resizing for FreeBSD images
+export VAGRANT_EXPERIMENTAL="disks"
+
 echo > log
 echo > log2
 echo "Running command on images:" | tee -a log

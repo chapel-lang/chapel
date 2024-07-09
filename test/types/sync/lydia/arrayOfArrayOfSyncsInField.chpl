@@ -5,6 +5,10 @@ record Foo {
   proc init(val: int) {
     otherField = val;
   }
+  proc init=(other: Foo) {
+    this.x = other.x; // should this work?
+    this.otherField = other.otherField;
+  }
 }
 
 proc main() {

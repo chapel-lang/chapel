@@ -36,7 +36,7 @@ see https://www.gnu.org/licenses/.  */
    So rprec+1 == dsize - xsize + 1, hence dprec = rprec+xsize.  */
 
 void
-mpf_reldiff (mpf_t rdiff, mpf_srcptr x, mpf_srcptr y)
+mpf_reldiff (mpf_ptr rdiff, mpf_srcptr x, mpf_srcptr y)
 {
   if (UNLIKELY (SIZ(x) == 0))
     {

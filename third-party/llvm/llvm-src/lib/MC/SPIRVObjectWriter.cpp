@@ -14,6 +14,7 @@
 
 using namespace llvm;
 
+namespace {
 class SPIRVObjectWriter : public MCObjectWriter {
   ::support::endian::Writer W;
 
@@ -23,7 +24,7 @@ class SPIRVObjectWriter : public MCObjectWriter {
 public:
   SPIRVObjectWriter(std::unique_ptr<MCSPIRVObjectTargetWriter> MOTW,
                     raw_pwrite_stream &OS)
-      : W(OS, support::little), TargetObjectWriter(std::move(MOTW)) {}
+      : W(OS, llvm::endianness::little), TargetObjectWriter(std::move(MOTW)) {}
 
   ~SPIRVObjectWriter() override {}
 
@@ -38,6 +39,7 @@ private:
   uint64_t writeObject(MCAssembler &Asm, const MCAsmLayout &Layout) override;
   void writeHeader(const MCAssembler &Asm);
 };
+} // namespace
 
 void SPIRVObjectWriter::writeHeader(const MCAssembler &Asm) {
   constexpr uint32_t MagicNumber = 0x07230203;

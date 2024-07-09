@@ -18,12 +18,12 @@ config const printTiming = false;
 
 const shift = (123, 456, 789);
 
-use Random, Time;
+use Random, Time, Math;
 
 if numLocales < 3 then halt("numLocales must be >= 3");
 var declLocale = Locales(numLocales-1);
 var putLocale = Locales(0);
-var remoteLocale = Locales(divfloorpos(numLocales, 2));
+var remoteLocale = Locales(divFloorPos(numLocales, 2));
 if printOutput {
   if ttype==testType.localGet then
     writeln("Exercising local get on ", declLocale);
@@ -160,7 +160,7 @@ on declLocale {
 }
 
 
-proc assignMe(A, B) {
+proc assignMe(ref A, B) {
   var st, dt: real;
   select ttype {
     when testType.localGet {

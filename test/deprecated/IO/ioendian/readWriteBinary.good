@@ -1,0 +1,8 @@
+readWriteBinary.chpl:6: In function 'writeout':
+readWriteBinary.chpl:7: warning: ioendian is deprecated; please use endianness instead
+readWriteBinary.chpl:8: warning: ioendian is deprecated; please use endianness instead
+readWriteBinary.chpl:9: warning: ioendian is deprecated; please use endianness instead
+readWriteBinary.chpl:12: In function 'readin':
+readWriteBinary.chpl:13: warning: ioendian is deprecated; please use endianness instead
+readWriteBinary.chpl:14: warning: ioendian is deprecated; please use endianness instead
+readWriteBinary.chpl:15: warning: ioendian is deprecated; please use endianness instead

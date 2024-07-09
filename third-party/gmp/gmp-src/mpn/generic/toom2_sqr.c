@@ -6,7 +6,7 @@
    SAFE TO REACH IT THROUGH DOCUMENTED INTERFACES.  IN FACT, IT IS ALMOST
    GUARANTEED THAT IT WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
-Copyright 2006-2010, 2012, 2014, 2018 Free Software Foundation, Inc.
+Copyright 2006-2010, 2012, 2014, 2018, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -80,12 +80,12 @@ mpn_toom2_sqr (mp_ptr pp,
   s = an >> 1;
   n = an - s;
 
-  ASSERT (0 < s && s <= n && s >= n - 1);
+  ASSERT (0 < s && s <= n && (n - s) == (an & 1));
 
   asm1 = pp;
 
   /* Compute asm1.  */
-  if (s == n)
+  if ((an & 1) == 0) /* s == n */
     {
       if (mpn_cmp (a0, a1, n) < 0)
 	{

@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# Normalize all instances of "- 0.0i" to "+ 0.0i" as mathematically equivalent.
+# This is due to an unknown quirk in which direct execution gives a positive
+# zero and execution with Valgrind memcheck gives a negative zero.
+
+#TESTNAME=$1
+OUTFILE=$2
+
+TMPFILE="$outfile.prediff.tmp"
+mv $OUTFILE $TMPFILE
+sed -e 's/- 0.0i/+ 0.0i/g' $TMPFILE > $OUTFILE
+rm $TMPFILE

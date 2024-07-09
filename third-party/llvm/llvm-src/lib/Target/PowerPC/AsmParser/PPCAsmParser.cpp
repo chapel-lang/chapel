@@ -29,7 +29,7 @@
 
 using namespace llvm;
 
-DEFINE_PPC_REGCLASSES;
+DEFINE_PPC_REGCLASSES
 
 // Evaluate an expression containing condition register
 // or condition register field symbols.  Returns positive
@@ -103,11 +103,11 @@ class PPCAsmParser : public MCTargetAsmParser {
 
   bool isPPC64() const { return IsPPC64; }
 
-  bool MatchRegisterName(unsigned &RegNo, int64_t &IntVal);
+  bool MatchRegisterName(MCRegister &RegNo, int64_t &IntVal);
 
-  bool ParseRegister(unsigned &RegNo, SMLoc &StartLoc, SMLoc &EndLoc) override;
-  OperandMatchResultTy tryParseRegister(unsigned &RegNo, SMLoc &StartLoc,
-                                        SMLoc &EndLoc) override;
+  bool parseRegister(MCRegister &Reg, SMLoc &StartLoc, SMLoc &EndLoc) override;
+  ParseStatus tryParseRegister(MCRegister &Reg, SMLoc &StartLoc,
+                               SMLoc &EndLoc) override;
 
   const MCExpr *ExtractModifierFromExpr(const MCExpr *E,
                                         PPCMCExpr::VariantKind &Variant);
@@ -281,6 +281,11 @@ public:
     return (unsigned) Imm.Val;
   }
 
+  unsigned getFpReg() const {
+    assert(isEvenRegNumber() && "Invalid access!");
+    return (unsigned)(Imm.Val >> 1);
+  }
+
   unsigned getVSReg() const {
     assert(isVSRegNumber() && "Invalid access!");
     return (unsigned) Imm.Val;
@@ -289,6 +294,26 @@ public:
   unsigned getACCReg() const {
     assert(isACCRegNumber() && "Invalid access!");
     return (unsigned) Imm.Val;
+  }
+
+  unsigned getDMRROWReg() const {
+    assert(isDMRROWRegNumber() && "Invalid access!");
+    return (unsigned)Imm.Val;
+  }
+
+  unsigned getDMRROWpReg() const {
+    assert(isDMRROWpRegNumber() && "Invalid access!");
+    return (unsigned)Imm.Val;
+  }
+
+  unsigned getDMRReg() const {
+    assert(isDMRRegNumber() && "Invalid access!");
+    return (unsigned)Imm.Val;
+  }
+
+  unsigned getDMRpReg() const {
+    assert(isDMRpRegNumber() && "Invalid access!");
+    return (unsigned)Imm.Val;
   }
 
   unsigned getVSRpEvenReg() const {
@@ -313,7 +338,7 @@ public:
 
   unsigned getCRBitMask() const {
     assert(isCRBitMask() && "Invalid access!");
-    return 7 - countTrailingZeros<uint64_t>(Imm.Val);
+    return 7 - llvm::countr_zero<uint64_t>(Imm.Val);
   }
 
   bool isToken() const override { return Kind == Token; }
@@ -391,6 +416,18 @@ public:
   bool isACCRegNumber() const {
     return Kind == Immediate && isUInt<3>(getImm());
   }
+  bool isDMRROWRegNumber() const {
+    return Kind == Immediate && isUInt<6>(getImm());
+  }
+  bool isDMRROWpRegNumber() const {
+    return Kind == Immediate && isUInt<5>(getImm());
+  }
+  bool isDMRRegNumber() const {
+    return Kind == Immediate && isUInt<3>(getImm());
+  }
+  bool isDMRpRegNumber() const {
+    return Kind == Immediate && isUInt<2>(getImm());
+  }
   bool isVSRpEvenRegNumber() const {
     return Kind == Immediate && isUInt<6>(getImm()) && ((getImm() & 1) == 0);
   }
@@ -408,8 +445,10 @@ public:
 
   bool isEvenRegNumber() const { return isRegNumber() && (getImm() & 1) == 0; }
 
-  bool isCRBitMask() const { return Kind == Immediate && isUInt<8>(getImm()) &&
-                                    isPowerOf2_32(getImm()); }
+  bool isCRBitMask() const {
+    return Kind == Immediate && isUInt<8>(getImm()) &&
+           llvm::has_single_bit<uint32_t>(getImm());
+  }
   bool isATBitsAsHint() const { return false; }
   bool isMem() const override { return false; }
   bool isReg() const override { return false; }
@@ -467,6 +506,11 @@ public:
     Inst.addOperand(MCOperand::createReg(FRegs[getReg()]));
   }
 
+  void addRegFpRCOperands(MCInst &Inst, unsigned N) const {
+    assert(N == 1 && "Invalid number of operands!");
+    Inst.addOperand(MCOperand::createReg(FpRegs[getFpReg()]));
+  }
+
   void addRegVFRCOperands(MCInst &Inst, unsigned N) const {
     assert(N == 1 && "Invalid number of operands!");
     Inst.addOperand(MCOperand::createReg(VFRegs[getReg()]));
@@ -505,6 +549,36 @@ public:
   void addRegACCRCOperands(MCInst &Inst, unsigned N) const {
     assert(N == 1 && "Invalid number of operands!");
     Inst.addOperand(MCOperand::createReg(ACCRegs[getACCReg()]));
+  }
+
+  void addRegDMRROWRCOperands(MCInst &Inst, unsigned N) const {
+    assert(N == 1 && "Invalid number of operands!");
+    Inst.addOperand(MCOperand::createReg(DMRROWRegs[getDMRROWReg()]));
+  }
+
+  void addRegDMRROWpRCOperands(MCInst &Inst, unsigned N) const {
+    assert(N == 1 && "Invalid number of operands!");
+    Inst.addOperand(MCOperand::createReg(DMRROWpRegs[getDMRROWpReg()]));
+  }
+
+  void addRegDMRRCOperands(MCInst &Inst, unsigned N) const {
+    assert(N == 1 && "Invalid number of operands!");
+    Inst.addOperand(MCOperand::createReg(DMRRegs[getDMRReg()]));
+  }
+
+  void addRegDMRpRCOperands(MCInst &Inst, unsigned N) const {
+    assert(N == 1 && "Invalid number of operands!");
+    Inst.addOperand(MCOperand::createReg(DMRpRegs[getDMRpReg()]));
+  }
+
+  void addRegWACCRCOperands(MCInst &Inst, unsigned N) const {
+    assert(N == 1 && "Invalid number of operands!");
+    Inst.addOperand(MCOperand::createReg(WACCRegs[getACCReg()]));
+  }
+
+  void addRegWACC_HIRCOperands(MCInst &Inst, unsigned N) const {
+    assert(N == 1 && "Invalid number of operands!");
+    Inst.addOperand(MCOperand::createReg(WACC_HIRegs[getACCReg()]));
   }
 
   void addRegVSRpRCOperands(MCInst &Inst, unsigned N) const {
@@ -812,9 +886,38 @@ void PPCAsmParser::ProcessInstruction(MCInst &Inst,
     Inst = TmpInst;
     break;
   }
+  case PPC::PLA8:
+  case PPC::PLA: {
+    MCInst TmpInst;
+    TmpInst.setOpcode(Opcode == PPC::PLA ? PPC::PADDI : PPC::PADDI8);
+    TmpInst.addOperand(Inst.getOperand(0));
+    TmpInst.addOperand(Inst.getOperand(1));
+    TmpInst.addOperand(Inst.getOperand(2));
+    Inst = TmpInst;
+    break;
+  }
+  case PPC::PLA8pc:
+  case PPC::PLApc: {
+    MCInst TmpInst;
+    TmpInst.setOpcode(Opcode == PPC::PLApc ? PPC::PADDIpc : PPC::PADDI8pc);
+    TmpInst.addOperand(Inst.getOperand(0));
+    TmpInst.addOperand(MCOperand::createImm(0));
+    TmpInst.addOperand(Inst.getOperand(1));
+    Inst = TmpInst;
+    break;
+  }
   case PPC::SUBI: {
     MCInst TmpInst;
     TmpInst.setOpcode(PPC::ADDI);
+    TmpInst.addOperand(Inst.getOperand(0));
+    TmpInst.addOperand(Inst.getOperand(1));
+    addNegOperand(TmpInst, Inst.getOperand(2), getContext());
+    Inst = TmpInst;
+    break;
+  }
+  case PPC::PSUBI: {
+    MCInst TmpInst;
+    TmpInst.setOpcode(PPC::PADDI);
     TmpInst.addOperand(Inst.getOperand(0));
     TmpInst.addOperand(Inst.getOperand(1));
     addNegOperand(TmpInst, Inst.getOperand(2), getContext());
@@ -1135,7 +1238,7 @@ void PPCAsmParser::ProcessInstruction(MCInst &Inst,
     break;
   }
   case PPC::MFTB: {
-    if (getSTI().getFeatureBits()[PPC::FeatureMFTB]) {
+    if (getSTI().hasFeature(PPC::FeatureMFTB)) {
       assert(Inst.getNumOperands() == 2 && "Expecting two operands");
       Inst.setOpcode(PPC::MFSPR);
     }
@@ -1186,7 +1289,7 @@ bool PPCAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
   llvm_unreachable("Implement any new match types added!");
 }
 
-bool PPCAsmParser::MatchRegisterName(unsigned &RegNo, int64_t &IntVal) {
+bool PPCAsmParser::MatchRegisterName(MCRegister &RegNo, int64_t &IntVal) {
   if (getParser().getTok().is(AsmToken::Percent))
     getParser().Lex(); // Eat the '%'.
 
@@ -1203,45 +1306,65 @@ bool PPCAsmParser::MatchRegisterName(unsigned &RegNo, int64_t &IntVal) {
   } else if (Name.equals_insensitive("vrsave")) {
     RegNo = PPC::VRSAVE;
     IntVal = 256;
-  } else if (Name.startswith_insensitive("r") &&
+  } else if (Name.starts_with_insensitive("r") &&
              !Name.substr(1).getAsInteger(10, IntVal) && IntVal < 32) {
     RegNo = isPPC64() ? XRegs[IntVal] : RRegs[IntVal];
-  } else if (Name.startswith_insensitive("f") &&
+  } else if (Name.starts_with_insensitive("f") &&
              !Name.substr(1).getAsInteger(10, IntVal) && IntVal < 32) {
     RegNo = FRegs[IntVal];
-  } else if (Name.startswith_insensitive("vs") &&
+  } else if (Name.starts_with_insensitive("vs") &&
              !Name.substr(2).getAsInteger(10, IntVal) && IntVal < 64) {
     RegNo = VSRegs[IntVal];
-  } else if (Name.startswith_insensitive("v") &&
+  } else if (Name.starts_with_insensitive("v") &&
              !Name.substr(1).getAsInteger(10, IntVal) && IntVal < 32) {
     RegNo = VRegs[IntVal];
-  } else if (Name.startswith_insensitive("cr") &&
+  } else if (Name.starts_with_insensitive("cr") &&
              !Name.substr(2).getAsInteger(10, IntVal) && IntVal < 8) {
     RegNo = CRRegs[IntVal];
+  } else if (Name.starts_with_insensitive("acc") &&
+             !Name.substr(3).getAsInteger(10, IntVal) && IntVal < 8) {
+    RegNo = ACCRegs[IntVal];
+  } else if (Name.starts_with_insensitive("wacc_hi") &&
+             !Name.substr(7).getAsInteger(10, IntVal) && IntVal < 8) {
+    RegNo = ACCRegs[IntVal];
+  } else if (Name.starts_with_insensitive("wacc") &&
+             !Name.substr(4).getAsInteger(10, IntVal) && IntVal < 8) {
+    RegNo = WACCRegs[IntVal];
+  } else if (Name.starts_with_insensitive("dmrrowp") &&
+             !Name.substr(7).getAsInteger(10, IntVal) && IntVal < 32) {
+    RegNo = DMRROWpRegs[IntVal];
+  } else if (Name.starts_with_insensitive("dmrrow") &&
+             !Name.substr(6).getAsInteger(10, IntVal) && IntVal < 64) {
+    RegNo = DMRROWRegs[IntVal];
+  } else if (Name.starts_with_insensitive("dmrp") &&
+             !Name.substr(4).getAsInteger(10, IntVal) && IntVal < 4) {
+    RegNo = DMRROWpRegs[IntVal];
+  } else if (Name.starts_with_insensitive("dmr") &&
+             !Name.substr(3).getAsInteger(10, IntVal) && IntVal < 8) {
+    RegNo = DMRRegs[IntVal];
   } else
     return true;
   getParser().Lex();
   return false;
 }
 
-bool PPCAsmParser::
-ParseRegister(unsigned &RegNo, SMLoc &StartLoc, SMLoc &EndLoc) {
-  if (tryParseRegister(RegNo, StartLoc, EndLoc) != MatchOperand_Success)
+bool PPCAsmParser::parseRegister(MCRegister &Reg, SMLoc &StartLoc,
+                                 SMLoc &EndLoc) {
+  if (!tryParseRegister(Reg, StartLoc, EndLoc).isSuccess())
     return TokError("invalid register name");
   return false;
 }
 
-OperandMatchResultTy PPCAsmParser::tryParseRegister(unsigned &RegNo,
-                                                    SMLoc &StartLoc,
-                                                    SMLoc &EndLoc) {
+ParseStatus PPCAsmParser::tryParseRegister(MCRegister &Reg, SMLoc &StartLoc,
+                                           SMLoc &EndLoc) {
   const AsmToken &Tok = getParser().getTok();
   StartLoc = Tok.getLoc();
   EndLoc = Tok.getEndLoc();
-  RegNo = 0;
+  Reg = PPC::NoRegister;
   int64_t IntVal;
-  if (MatchRegisterName(RegNo, IntVal))
-    return MatchOperand_NoMatch;
-  return MatchOperand_Success;
+  if (MatchRegisterName(Reg, IntVal))
+    return ParseStatus::NoMatch;
+  return ParseStatus::Success;
 }
 
 /// Extract \code @l/@ha \endcode modifier from expression.  Recursively scan
@@ -1419,7 +1542,7 @@ bool PPCAsmParser::ParseOperand(OperandVector &Operands) {
   // Special handling for register names.  These are interpreted
   // as immediates corresponding to the register number.
   case AsmToken::Percent: {
-    unsigned RegNo;
+    MCRegister RegNo;
     int64_t IntVal;
     if (MatchRegisterName(RegNo, IntVal))
       return Error(S, "invalid register name");
@@ -1439,7 +1562,7 @@ bool PPCAsmParser::ParseOperand(OperandVector &Operands) {
     if (!ParseExpression(EVal))
       break;
     // Fall-through
-    LLVM_FALLTHROUGH;
+    [[fallthrough]];
   default:
     return Error(S, "unknown operand");
   }
@@ -1448,34 +1571,64 @@ bool PPCAsmParser::ParseOperand(OperandVector &Operands) {
   Operands.push_back(PPCOperand::CreateFromMCExpr(EVal, S, E, isPPC64()));
 
   // Check whether this is a TLS call expression
-  bool TLSCall = false;
-  if (const MCSymbolRefExpr *Ref = dyn_cast<MCSymbolRefExpr>(EVal))
-    TLSCall = Ref->getSymbol().getName() == "__tls_get_addr";
+  const char TlsGetAddr[] = "__tls_get_addr";
+  bool TlsCall = false;
+  const MCExpr *TlsCallAddend = nullptr;
+  if (auto *Ref = dyn_cast<MCSymbolRefExpr>(EVal)) {
+    TlsCall = Ref->getSymbol().getName() == TlsGetAddr;
+  } else if (auto *Bin = dyn_cast<MCBinaryExpr>(EVal);
+             Bin && Bin->getOpcode() == MCBinaryExpr::Add) {
+    if (auto *Ref = dyn_cast<MCSymbolRefExpr>(Bin->getLHS())) {
+      TlsCall = Ref->getSymbol().getName() == TlsGetAddr;
+      TlsCallAddend = Bin->getRHS();
+    }
+  }
 
-  if (TLSCall && getLexer().is(AsmToken::LParen)) {
+  if (TlsCall && parseOptionalToken(AsmToken::LParen)) {
     const MCExpr *TLSSym;
-
-    Parser.Lex(); // Eat the '('.
-    S = Parser.getTok().getLoc();
+    const SMLoc S2 = Parser.getTok().getLoc();
     if (ParseExpression(TLSSym))
-      return Error(S, "invalid TLS call expression");
-    if (getLexer().isNot(AsmToken::RParen))
-      return Error(Parser.getTok().getLoc(), "missing ')'");
+      return Error(S2, "invalid TLS call expression");
     E = Parser.getTok().getLoc();
-    Parser.Lex(); // Eat the ')'.
+    if (parseToken(AsmToken::RParen, "expected ')'"))
+      return true;
+    // PPC32 allows bl __tls_get_addr[+a](x@tlsgd)@plt+b. Parse "@plt[+b]".
+    if (!isPPC64() && parseOptionalToken(AsmToken::At)) {
+      AsmToken Tok = getTok();
+      if (!(parseOptionalToken(AsmToken::Identifier) &&
+            Tok.getString().compare_insensitive("plt") == 0))
+        return Error(Tok.getLoc(), "expected 'plt'");
+      EVal = MCSymbolRefExpr::create(TlsGetAddr, MCSymbolRefExpr::VK_PLT,
+                                     getContext());
+      if (parseOptionalToken(AsmToken::Plus)) {
+        const MCExpr *Addend = nullptr;
+        SMLoc EndLoc;
+        if (parsePrimaryExpr(Addend, EndLoc))
+          return true;
+        if (TlsCallAddend) // __tls_get_addr+a(x@tlsgd)@plt+b
+          TlsCallAddend =
+              MCBinaryExpr::createAdd(TlsCallAddend, Addend, getContext());
+        else // __tls_get_addr(x@tlsgd)@plt+b
+          TlsCallAddend = Addend;
+      }
+      if (TlsCallAddend)
+        EVal = MCBinaryExpr::createAdd(EVal, TlsCallAddend, getContext());
+      // Add a __tls_get_addr operand with addend a, b, or a+b.
+      Operands.back() = PPCOperand::CreateFromMCExpr(
+          EVal, S, Parser.getTok().getLoc(), false);
+    }
 
     Operands.push_back(PPCOperand::CreateFromMCExpr(TLSSym, S, E, isPPC64()));
   }
 
   // Otherwise, check for D-form memory operands
-  if (!TLSCall && getLexer().is(AsmToken::LParen)) {
-    Parser.Lex(); // Eat the '('.
+  if (!TlsCall && parseOptionalToken(AsmToken::LParen)) {
     S = Parser.getTok().getLoc();
 
     int64_t IntVal;
     switch (getLexer().getKind()) {
     case AsmToken::Percent: {
-      unsigned RegNo;
+      MCRegister RegNo;
       if (MatchRegisterName(RegNo, IntVal))
         return Error(S, "invalid register name");
       break;
@@ -1556,7 +1709,7 @@ bool PPCAsmParser::ParseInstruction(ParseInstructionInfo &Info, StringRef Name,
   //  where th can be omitted when it is 0. dcbtst is the same. We take the
   //  server form to be the default, so swap the operands if we're parsing for
   //  an embedded core (they'll be swapped again upon printing).
-  if (getSTI().getFeatureBits()[PPC::FeatureBookE] &&
+  if (getSTI().hasFeature(PPC::FeatureBookE) &&
       Operands.size() == 4 &&
       (Name == "dcbt" || Name == "dcbtst")) {
     std::swap(Operands[1], Operands[3]);
@@ -1591,7 +1744,7 @@ bool PPCAsmParser::ParseDirective(AsmToken DirectiveID) {
     ParseDirectiveAbiVersion(DirectiveID.getLoc());
   else if (IDVal == ".localentry")
     ParseDirectiveLocalEntry(DirectiveID.getLoc());
-  else if (IDVal.startswith(".gnu_attribute"))
+  else if (IDVal.starts_with(".gnu_attribute"))
     ParseGNUAttribute(DirectiveID.getLoc());
   else
     return true;
@@ -1635,7 +1788,7 @@ bool PPCAsmParser::ParseDirectiveTC(unsigned Size, AsmToken ID) {
     return addErrorSuffix(" in '.tc' directive");
 
   // Align to word size.
-  getParser().getStreamer().emitValueToAlignment(Size);
+  getParser().getStreamer().emitValueToAlignment(Align(Size));
 
   // Emit expressions.
   return ParseDirectiveWord(Size, ID);

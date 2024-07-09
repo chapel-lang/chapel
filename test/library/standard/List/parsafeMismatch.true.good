@@ -1,0 +1,3 @@
+parsafeMismatch.chpl:18: In initializer:
+parsafeMismatch.chpl:19: warning: initializing between two lists with different parSafe settings
+Note: this warning can be silenced with '-swarnForListParsafeMismatch=false'

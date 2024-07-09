@@ -13,7 +13,7 @@ proc main() {
     var raddr = __primitive("_wide_get_addr", obj);
     var node2 = chpl_nodeFromLocaleID(loc);
 
-    var c_void_nil:c_void_ptr = c_nil;
+    var c_void_nil:c_ptr(void) = nil;
     assert(node == 0);
     assert(node2 == 0);
     assert(raddr != c_void_nil);
@@ -26,7 +26,7 @@ proc main() {
       var raddr = __primitive("_wide_get_addr", obj);
       var node2 = chpl_nodeFromLocaleID(loc);
 
-      var c_void_nil:c_void_ptr = c_nil;
+      var c_void_nil:c_ptr(void) = nil;
       assert(node == 0);
       assert(node2 == 0);
       assert(raddr != c_void_nil);

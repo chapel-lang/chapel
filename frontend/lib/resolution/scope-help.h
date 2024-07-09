@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,11 +29,13 @@ namespace uast {
 namespace resolution {
 
 
-void gatherDeclsWithin(const uast::AstNode* ast,
+void gatherDeclsWithin(Context* context,
+                       const uast::AstNode* ast,
                        DeclMap& declared,
                        bool& containsUseImport,
                        bool& containsFunctionDecls,
-                       bool& containsExternBlock);
+                       bool& containsExternBlock,
+                       bool& containsRequire);
 
 
 } // end namespace resolution

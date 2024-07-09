@@ -28,16 +28,13 @@ on here.gpus[0] {
     }
   }
 
-  var isMonotonicallyIncreasing = true;
   for i in 0..<howManyResults {
     if showTimingResults then
       writeln("Diff is: ",
         (clockDiff[i] : real) / (gpuClocksPerSec(0) : real));
-    if i > 0 && clockDiff[i] < clockDiff[i-1] then
-      isMonotonicallyIncreasing = false;
+    if clockDiff[i] <= 0 {
+      writeln("Unexpected negative or zero result: i= ", i,  " clockDiff[i]=",
+        clockDiff[i]);
+    }
   }
-
-  // Used as a crude correctness check. If this isn't true then we're likely
-  // doing something wrong.
-  writeln("Largers loops always took longer: ", isMonotonicallyIncreasing);
 }

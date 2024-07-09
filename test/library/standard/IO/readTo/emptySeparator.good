@@ -1,2 +1,4 @@
-BadFormatError: bad format (in fileReader.readTo(string) with path "pattern.txt" offset 0)
+IllegalArgumentError: readTo(string) called with empty separator
+123456789.... . .-.. .-.. --- .-- --- .-. .-.. -.. -.-.--987654321
+IllegalArgumentError: readTo(bytes) called with empty separator
 123456789.... . .-.. .-.. --- .-- --- .-. .-.. -.. -.-.--987654321

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -75,6 +75,7 @@ std::string Function::dumpChildLabelInner(int i) const {
 const char* Function::returnIntentToString(ReturnIntent intent) {
   switch (intent) {
     case Function::DEFAULT_RETURN_INTENT: return "";
+    case Function::OUT:                   return "out";
     case Function::CONST:                 return "const";
     case Function::CONST_REF:             return "const ref";
     case Function::REF:                   return "ref";

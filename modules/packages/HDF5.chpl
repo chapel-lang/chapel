@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -100,23 +100,23 @@ module HDF5 {
 
     extern proc H5is_library_threadsafe(ref is_ts : hbool_t) : herr_t;
 
-    extern proc H5free_memory(mem : c_void_ptr) : herr_t;
+    extern proc H5free_memory(mem : c_ptr(void)) : herr_t;
 
-    extern proc H5allocate_memory(size : c_size_t, clear : hbool_t) : c_void_ptr;
+    extern proc H5allocate_memory(size : c_size_t, clear : hbool_t) : c_ptr(void);
 
-    extern proc H5resize_memory(mem : c_void_ptr, size : c_size_t) : c_void_ptr;
+    extern proc H5resize_memory(mem : c_ptr(void), size : c_size_t) : c_ptr(void);
 
-    extern proc H5Iregister(type_arg : H5I_type_t, object : c_void_ptr) : hid_t;
+    extern proc H5Iregister(type_arg : H5I_type_t, object : c_ptr(void)) : hid_t;
 
-    extern proc H5Iobject_verify(id : hid_t, id_type : H5I_type_t) : c_void_ptr;
+    extern proc H5Iobject_verify(id : hid_t, id_type : H5I_type_t) : c_ptr(void);
 
-    extern proc H5Iremove_verify(id : hid_t, id_type : H5I_type_t) : c_void_ptr;
+    extern proc H5Iremove_verify(id : hid_t, id_type : H5I_type_t) : c_ptr(void);
 
     extern proc H5Iget_type(id : hid_t) : H5I_type_t;
 
     extern proc H5Iget_file_id(id : hid_t) : hid_t;
 
-    extern proc H5Iget_name(id : hid_t, name : c_string, size : c_size_t) : c_ssize_t;
+    extern proc H5Iget_name(id : hid_t, name : c_ptrConst(c_char), size : c_size_t) : c_ssize_t;
 
     extern proc H5Iinc_ref(id : hid_t) : c_int;
 
@@ -136,7 +136,7 @@ module HDF5 {
 
     extern proc H5Iget_type_ref(type_arg : H5I_type_t) : c_int;
 
-    extern proc H5Isearch(type_arg : H5I_type_t, func : H5I_search_func_t, key : c_void_ptr) : c_void_ptr;
+    extern proc H5Isearch(type_arg : H5I_type_t, func : H5I_search_func_t, key : c_ptr(void)) : c_ptr(void);
 
     extern proc H5Inmembers(type_arg : H5I_type_t, ref num_members : hsize_t) : herr_t;
 
@@ -324,9 +324,9 @@ module HDF5 {
 
     extern proc H5Tlock(type_id : hid_t) : herr_t;
 
-    extern proc H5Tcommit2(loc_id : hid_t, name : c_string, type_id : hid_t, lcpl_id : hid_t, tcpl_id : hid_t, tapl_id : hid_t) : herr_t;
+    extern proc H5Tcommit2(loc_id : hid_t, name : c_ptrConst(c_char), type_id : hid_t, lcpl_id : hid_t, tcpl_id : hid_t, tapl_id : hid_t) : herr_t;
 
-    extern proc H5Topen2(loc_id : hid_t, name : c_string, tapl_id : hid_t) : hid_t;
+    extern proc H5Topen2(loc_id : hid_t, name : c_ptrConst(c_char), tapl_id : hid_t) : hid_t;
 
     extern proc H5Tcommit_anon(loc_id : hid_t, type_id : hid_t, tcpl_id : hid_t, tapl_id : hid_t) : herr_t;
 
@@ -334,25 +334,25 @@ module HDF5 {
 
     extern proc H5Tcommitted(type_id : hid_t) : htri_t;
 
-    extern proc H5Tencode(obj_id : hid_t, buf : c_void_ptr, ref nalloc : c_size_t) : herr_t;
+    extern proc H5Tencode(obj_id : hid_t, buf : c_ptr(void), ref nalloc : c_size_t) : herr_t;
 
-    extern proc H5Tdecode(buf : c_void_ptr) : hid_t;
+    extern proc H5Tdecode(buf : c_ptr(void)) : hid_t;
 
     extern proc H5Tflush(type_id : hid_t) : herr_t;
 
     extern proc H5Trefresh(type_id : hid_t) : herr_t;
 
-    extern proc H5Tinsert(parent_id : hid_t, name : c_string, offset : c_size_t, member_id : hid_t) : herr_t;
+    extern proc H5Tinsert(parent_id : hid_t, name : c_ptrConst(c_char), offset : c_size_t, member_id : hid_t) : herr_t;
 
     extern proc H5Tpack(type_id : hid_t) : herr_t;
 
     extern proc H5Tenum_create(base_id : hid_t) : hid_t;
 
-    extern proc H5Tenum_insert(type_arg : hid_t, name : c_string, value : c_void_ptr) : herr_t;
+    extern proc H5Tenum_insert(type_arg : hid_t, name : c_ptrConst(c_char), value : c_ptr(void)) : herr_t;
 
-    extern proc H5Tenum_nameof(type_arg : hid_t, value : c_void_ptr, name : c_string, size : c_size_t) : herr_t;
+    extern proc H5Tenum_nameof(type_arg : hid_t, value : c_ptr(void), name : c_ptrConst(c_char), size : c_size_t) : herr_t;
 
-    extern proc H5Tenum_valueof(type_arg : hid_t, name : c_string, value : c_void_ptr) : herr_t;
+    extern proc H5Tenum_valueof(type_arg : hid_t, name : c_ptrConst(c_char), value : c_ptr(void)) : herr_t;
 
     extern proc H5Tvlen_create(base_id : hid_t) : hid_t;
 
@@ -362,9 +362,9 @@ module HDF5 {
 
     extern proc H5Tget_array_dims2(type_id : hid_t, dims : c_ptr(hsize_t)) : c_int;
 
-    extern proc H5Tset_tag(type_arg : hid_t, tag : c_string) : herr_t;
+    extern proc H5Tset_tag(type_arg : hid_t, tag : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Tget_tag(type_arg : hid_t) : c_string;
+    extern proc H5Tget_tag(type_arg : hid_t) : c_ptrConst(c_char);
 
     extern proc H5Tget_super(type_arg : hid_t) : hid_t;
 
@@ -396,9 +396,9 @@ module HDF5 {
 
     extern proc H5Tget_nmembers(type_id : hid_t) : c_int;
 
-    extern proc H5Tget_member_name(type_id : hid_t, membno : c_uint) : c_string;
+    extern proc H5Tget_member_name(type_id : hid_t, membno : c_uint) : c_ptrConst(c_char);
 
-    extern proc H5Tget_member_index(type_id : hid_t, name : c_string) : c_int;
+    extern proc H5Tget_member_index(type_id : hid_t, name : c_ptrConst(c_char)) : c_int;
 
     extern proc H5Tget_member_offset(type_id : hid_t, membno : c_uint) : c_size_t;
 
@@ -406,7 +406,7 @@ module HDF5 {
 
     extern proc H5Tget_member_type(type_id : hid_t, membno : c_uint) : hid_t;
 
-    extern proc H5Tget_member_value(type_id : hid_t, membno : c_uint, value : c_void_ptr) : herr_t;
+    extern proc H5Tget_member_value(type_id : hid_t, membno : c_uint, value : c_ptr(void)) : herr_t;
 
     extern proc H5Tget_cset(type_id : hid_t) : H5T_cset_t;
 
@@ -438,57 +438,57 @@ module HDF5 {
 
     extern proc H5Tset_strpad(type_id : hid_t, strpad : H5T_str_t) : herr_t;
 
-    extern proc H5Tregister(pers : H5T_pers_t, name : c_string, src_id : hid_t, dst_id : hid_t, func : H5T_conv_t) : herr_t;
+    extern proc H5Tregister(pers : H5T_pers_t, name : c_ptrConst(c_char), src_id : hid_t, dst_id : hid_t, func : H5T_conv_t) : herr_t;
 
-    extern proc H5Tunregister(pers : H5T_pers_t, name : c_string, src_id : hid_t, dst_id : hid_t, func : H5T_conv_t) : herr_t;
+    extern proc H5Tunregister(pers : H5T_pers_t, name : c_ptrConst(c_char), src_id : hid_t, dst_id : hid_t, func : H5T_conv_t) : herr_t;
 
     extern proc H5Tfind(src_id : hid_t, dst_id : hid_t, ref pcdata : c_ptr(H5T_cdata_t)) : H5T_conv_t;
 
     extern proc H5Tcompiler_conv(src_id : hid_t, dst_id : hid_t) : htri_t;
 
-    extern proc H5Tconvert(src_id : hid_t, dst_id : hid_t, nelmts : c_size_t, buf : c_void_ptr, background : c_void_ptr, plist_id : hid_t) : herr_t;
+    extern proc H5Tconvert(src_id : hid_t, dst_id : hid_t, nelmts : c_size_t, buf : c_ptr(void), background : c_ptr(void), plist_id : hid_t) : herr_t;
 
-    extern proc H5Tcommit1(loc_id : hid_t, name : c_string, type_id : hid_t) : herr_t;
+    extern proc H5Tcommit1(loc_id : hid_t, name : c_ptrConst(c_char), type_id : hid_t) : herr_t;
 
-    extern proc H5Topen1(loc_id : hid_t, name : c_string) : hid_t;
+    extern proc H5Topen1(loc_id : hid_t, name : c_ptrConst(c_char)) : hid_t;
 
     extern proc H5Tarray_create1(base_id : hid_t, ndims : c_int, dim : c_ptr(hsize_t), perm : c_ptr(c_int)) : hid_t;
 
     extern proc H5Tget_array_dims1(type_id : hid_t, dims : c_ptr(hsize_t), perm : c_ptr(c_int)) : c_int;
 
-    extern proc H5Lmove(src_loc : hid_t, src_name : c_string, dst_loc : hid_t, dst_name : c_string, lcpl_id : hid_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Lmove(src_loc : hid_t, src_name : c_ptrConst(c_char), dst_loc : hid_t, dst_name : c_ptrConst(c_char), lcpl_id : hid_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Lcopy(src_loc : hid_t, src_name : c_string, dst_loc : hid_t, dst_name : c_string, lcpl_id : hid_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Lcopy(src_loc : hid_t, src_name : c_ptrConst(c_char), dst_loc : hid_t, dst_name : c_ptrConst(c_char), lcpl_id : hid_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Lcreate_hard(cur_loc : hid_t, cur_name : c_string, dst_loc : hid_t, dst_name : c_string, lcpl_id : hid_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Lcreate_hard(cur_loc : hid_t, cur_name : c_ptrConst(c_char), dst_loc : hid_t, dst_name : c_ptrConst(c_char), lcpl_id : hid_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Lcreate_soft(link_target : c_string, link_loc_id : hid_t, link_name : c_string, lcpl_id : hid_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Lcreate_soft(link_target : c_ptrConst(c_char), link_loc_id : hid_t, link_name : c_ptrConst(c_char), lcpl_id : hid_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Ldelete(loc_id : hid_t, name : c_string, lapl_id : hid_t) : herr_t;
+    extern proc H5Ldelete(loc_id : hid_t, name : c_ptrConst(c_char), lapl_id : hid_t) : herr_t;
 
-    extern proc H5Ldelete_by_idx(loc_id : hid_t, group_name : c_string, idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Ldelete_by_idx(loc_id : hid_t, group_name : c_ptrConst(c_char), idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Lget_val(loc_id : hid_t, name : c_string, buf : c_void_ptr, size : c_size_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Lget_val(loc_id : hid_t, name : c_ptrConst(c_char), buf : c_ptr(void), size : c_size_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Lget_val_by_idx(loc_id : hid_t, group_name : c_string, idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, buf : c_void_ptr, size : c_size_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Lget_val_by_idx(loc_id : hid_t, group_name : c_ptrConst(c_char), idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, buf : c_ptr(void), size : c_size_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Lexists(loc_id : hid_t, name : c_string, lapl_id : hid_t) : htri_t;
+    extern proc H5Lexists(loc_id : hid_t, name : c_ptrConst(c_char), lapl_id : hid_t) : htri_t;
 
-    extern proc H5Lget_info(loc_id : hid_t, name : c_string, ref linfo : H5L_info_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Lget_info(loc_id : hid_t, name : c_ptrConst(c_char), ref linfo : H5L_info_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Lget_info_by_idx(loc_id : hid_t, group_name : c_string, idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, ref linfo : H5L_info_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Lget_info_by_idx(loc_id : hid_t, group_name : c_ptrConst(c_char), idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, ref linfo : H5L_info_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Lget_name_by_idx(loc_id : hid_t, group_name : c_string, idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, name : c_string, size : c_size_t, lapl_id : hid_t) : c_ssize_t;
+    extern proc H5Lget_name_by_idx(loc_id : hid_t, group_name : c_ptrConst(c_char), idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, name : c_ptrConst(c_char), size : c_size_t, lapl_id : hid_t) : c_ssize_t;
 
-    extern proc H5Literate(grp_id : hid_t, idx_type : H5_index_t, order : H5_iter_order_t, ref idx : hsize_t, op : H5L_iterate_t, op_data : c_void_ptr) : herr_t;
+    extern proc H5Literate(grp_id : hid_t, idx_type : H5_index_t, order : H5_iter_order_t, ref idx : hsize_t, op : H5L_iterate_t, op_data : c_ptr(void)) : herr_t;
 
-    extern proc H5Literate_by_name(loc_id : hid_t, group_name : c_string, idx_type : H5_index_t, order : H5_iter_order_t, ref idx : hsize_t, op : H5L_iterate_t, op_data : c_void_ptr, lapl_id : hid_t) : herr_t;
+    extern proc H5Literate_by_name(loc_id : hid_t, group_name : c_ptrConst(c_char), idx_type : H5_index_t, order : H5_iter_order_t, ref idx : hsize_t, op : H5L_iterate_t, op_data : c_ptr(void), lapl_id : hid_t) : herr_t;
 
-    extern proc H5Lvisit(grp_id : hid_t, idx_type : H5_index_t, order : H5_iter_order_t, op : H5L_iterate_t, op_data : c_void_ptr) : herr_t;
+    extern proc H5Lvisit(grp_id : hid_t, idx_type : H5_index_t, order : H5_iter_order_t, op : H5L_iterate_t, op_data : c_ptr(void)) : herr_t;
 
-    extern proc H5Lvisit_by_name(loc_id : hid_t, group_name : c_string, idx_type : H5_index_t, order : H5_iter_order_t, op : H5L_iterate_t, op_data : c_void_ptr, lapl_id : hid_t) : herr_t;
+    extern proc H5Lvisit_by_name(loc_id : hid_t, group_name : c_ptrConst(c_char), idx_type : H5_index_t, order : H5_iter_order_t, op : H5L_iterate_t, op_data : c_ptr(void), lapl_id : hid_t) : herr_t;
 
-    extern proc H5Lcreate_ud(link_loc_id : hid_t, link_name : c_string, link_type : H5L_type_t, udata : c_void_ptr, udata_size : c_size_t, lcpl_id : hid_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Lcreate_ud(link_loc_id : hid_t, link_name : c_ptrConst(c_char), link_type : H5L_type_t, udata : c_ptr(void), udata_size : c_size_t, lcpl_id : hid_t, lapl_id : hid_t) : herr_t;
 
     extern proc H5Lregister(ref cls : H5L_class_t) : herr_t;
 
@@ -496,43 +496,43 @@ module HDF5 {
 
     extern proc H5Lis_registered(id : H5L_type_t) : htri_t;
 
-    extern proc H5Lunpack_elink_val(ext_linkval : c_void_ptr, link_size : c_size_t, ref flags : c_uint, ref filename : c_string, ref obj_path : c_string) : herr_t;
+    extern proc H5Lunpack_elink_val(ext_linkval : c_ptr(void), link_size : c_size_t, ref flags : c_uint, ref filename : c_ptrConst(c_char), ref obj_path : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Lcreate_external(file_name : c_string, obj_name : c_string, link_loc_id : hid_t, link_name : c_string, lcpl_id : hid_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Lcreate_external(file_name : c_ptrConst(c_char), obj_name : c_ptrConst(c_char), link_loc_id : hid_t, link_name : c_ptrConst(c_char), lcpl_id : hid_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Oopen(loc_id : hid_t, name : c_string, lapl_id : hid_t) : hid_t;
+    extern proc H5Oopen(loc_id : hid_t, name : c_ptrConst(c_char), lapl_id : hid_t) : hid_t;
 
     extern proc H5Oopen_by_addr(loc_id : hid_t, addr : haddr_t) : hid_t;
 
-    extern proc H5Oopen_by_idx(loc_id : hid_t, group_name : c_string, idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, lapl_id : hid_t) : hid_t;
+    extern proc H5Oopen_by_idx(loc_id : hid_t, group_name : c_ptrConst(c_char), idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, lapl_id : hid_t) : hid_t;
 
-    extern proc H5Oexists_by_name(loc_id : hid_t, name : c_string, lapl_id : hid_t) : htri_t;
+    extern proc H5Oexists_by_name(loc_id : hid_t, name : c_ptrConst(c_char), lapl_id : hid_t) : htri_t;
 
     extern proc H5Oget_info(loc_id : hid_t, ref oinfo : H5O_info_t) : herr_t;
 
-    extern proc H5Oget_info_by_name(loc_id : hid_t, name : c_string, ref oinfo : H5O_info_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Oget_info_by_name(loc_id : hid_t, name : c_ptrConst(c_char), ref oinfo : H5O_info_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Oget_info_by_idx(loc_id : hid_t, group_name : c_string, idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, ref oinfo : H5O_info_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Oget_info_by_idx(loc_id : hid_t, group_name : c_ptrConst(c_char), idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, ref oinfo : H5O_info_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Olink(obj_id : hid_t, new_loc_id : hid_t, new_name : c_string, lcpl_id : hid_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Olink(obj_id : hid_t, new_loc_id : hid_t, new_name : c_ptrConst(c_char), lcpl_id : hid_t, lapl_id : hid_t) : herr_t;
 
     extern proc H5Oincr_refcount(object_id : hid_t) : herr_t;
 
     extern proc H5Odecr_refcount(object_id : hid_t) : herr_t;
 
-    extern proc H5Ocopy(src_loc_id : hid_t, src_name : c_string, dst_loc_id : hid_t, dst_name : c_string, ocpypl_id : hid_t, lcpl_id : hid_t) : herr_t;
+    extern proc H5Ocopy(src_loc_id : hid_t, src_name : c_ptrConst(c_char), dst_loc_id : hid_t, dst_name : c_ptrConst(c_char), ocpypl_id : hid_t, lcpl_id : hid_t) : herr_t;
 
-    extern proc H5Oset_comment(obj_id : hid_t, comment : c_string) : herr_t;
+    extern proc H5Oset_comment(obj_id : hid_t, comment : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Oset_comment_by_name(loc_id : hid_t, name : c_string, comment : c_string, lapl_id : hid_t) : herr_t;
+    extern proc H5Oset_comment_by_name(loc_id : hid_t, name : c_ptrConst(c_char), comment : c_ptrConst(c_char), lapl_id : hid_t) : herr_t;
 
-    extern proc H5Oget_comment(obj_id : hid_t, comment : c_string, bufsize : c_size_t) : c_ssize_t;
+    extern proc H5Oget_comment(obj_id : hid_t, comment : c_ptrConst(c_char), bufsize : c_size_t) : c_ssize_t;
 
-    extern proc H5Oget_comment_by_name(loc_id : hid_t, name : c_string, comment : c_string, bufsize : c_size_t, lapl_id : hid_t) : c_ssize_t;
+    extern proc H5Oget_comment_by_name(loc_id : hid_t, name : c_ptrConst(c_char), comment : c_ptrConst(c_char), bufsize : c_size_t, lapl_id : hid_t) : c_ssize_t;
 
-    extern proc H5Ovisit(obj_id : hid_t, idx_type : H5_index_t, order : H5_iter_order_t, op : H5O_iterate_t, op_data : c_void_ptr) : herr_t;
+    extern proc H5Ovisit(obj_id : hid_t, idx_type : H5_index_t, order : H5_iter_order_t, op : H5O_iterate_t, op_data : c_ptr(void)) : herr_t;
 
-    extern proc H5Ovisit_by_name(loc_id : hid_t, obj_name : c_string, idx_type : H5_index_t, order : H5_iter_order_t, op : H5O_iterate_t, op_data : c_void_ptr, lapl_id : hid_t) : herr_t;
+    extern proc H5Ovisit_by_name(loc_id : hid_t, obj_name : c_ptrConst(c_char), idx_type : H5_index_t, order : H5_iter_order_t, op : H5O_iterate_t, op_data : c_ptr(void), lapl_id : hid_t) : herr_t;
 
     extern proc H5Oclose(object_id : hid_t) : herr_t;
 
@@ -546,19 +546,19 @@ module HDF5 {
 
     extern proc H5Oare_mdc_flushes_disabled(object_id : hid_t, ref are_disabled : hbool_t) : herr_t;
 
-    extern proc H5Acreate2(loc_id : hid_t, attr_name : c_string, type_id : hid_t, space_id : hid_t, acpl_id : hid_t, aapl_id : hid_t) : hid_t;
+    extern proc H5Acreate2(loc_id : hid_t, attr_name : c_ptrConst(c_char), type_id : hid_t, space_id : hid_t, acpl_id : hid_t, aapl_id : hid_t) : hid_t;
 
-    extern proc H5Acreate_by_name(loc_id : hid_t, obj_name : c_string, attr_name : c_string, type_id : hid_t, space_id : hid_t, acpl_id : hid_t, aapl_id : hid_t, lapl_id : hid_t) : hid_t;
+    extern proc H5Acreate_by_name(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), type_id : hid_t, space_id : hid_t, acpl_id : hid_t, aapl_id : hid_t, lapl_id : hid_t) : hid_t;
 
-    extern proc H5Aopen(obj_id : hid_t, attr_name : c_string, aapl_id : hid_t) : hid_t;
+    extern proc H5Aopen(obj_id : hid_t, attr_name : c_ptrConst(c_char), aapl_id : hid_t) : hid_t;
 
-    extern proc H5Aopen_by_name(loc_id : hid_t, obj_name : c_string, attr_name : c_string, aapl_id : hid_t, lapl_id : hid_t) : hid_t;
+    extern proc H5Aopen_by_name(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), aapl_id : hid_t, lapl_id : hid_t) : hid_t;
 
-    extern proc H5Aopen_by_idx(loc_id : hid_t, obj_name : c_string, idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, aapl_id : hid_t, lapl_id : hid_t) : hid_t;
+    extern proc H5Aopen_by_idx(loc_id : hid_t, obj_name : c_ptrConst(c_char), idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, aapl_id : hid_t, lapl_id : hid_t) : hid_t;
 
-    extern proc H5Awrite(attr_id : hid_t, type_id : hid_t, buf : c_void_ptr) : herr_t;
+    extern proc H5Awrite(attr_id : hid_t, type_id : hid_t, buf : c_ptr(void)) : herr_t;
 
-    extern proc H5Aread(attr_id : hid_t, type_id : hid_t, buf : c_void_ptr) : herr_t;
+    extern proc H5Aread(attr_id : hid_t, type_id : hid_t, buf : c_ptr(void)) : herr_t;
 
     extern proc H5Aclose(attr_id : hid_t) : herr_t;
 
@@ -568,45 +568,45 @@ module HDF5 {
 
     extern proc H5Aget_create_plist(attr_id : hid_t) : hid_t;
 
-    extern proc H5Aget_name(attr_id : hid_t, buf_size : c_size_t, buf : c_string) : c_ssize_t;
+    extern proc H5Aget_name(attr_id : hid_t, buf_size : c_size_t, buf : c_ptrConst(c_char)) : c_ssize_t;
 
-    extern proc H5Aget_name_by_idx(loc_id : hid_t, obj_name : c_string, idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, name : c_string, size : c_size_t, lapl_id : hid_t) : c_ssize_t;
+    extern proc H5Aget_name_by_idx(loc_id : hid_t, obj_name : c_ptrConst(c_char), idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, name : c_ptrConst(c_char), size : c_size_t, lapl_id : hid_t) : c_ssize_t;
 
     extern proc H5Aget_storage_size(attr_id : hid_t) : hsize_t;
 
     extern proc H5Aget_info(attr_id : hid_t, ref ainfo : H5A_info_t) : herr_t;
 
-    extern proc H5Aget_info_by_name(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref ainfo : H5A_info_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Aget_info_by_name(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref ainfo : H5A_info_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Aget_info_by_idx(loc_id : hid_t, obj_name : c_string, idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, ref ainfo : H5A_info_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Aget_info_by_idx(loc_id : hid_t, obj_name : c_ptrConst(c_char), idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, ref ainfo : H5A_info_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Arename(loc_id : hid_t, old_name : c_string, new_name : c_string) : herr_t;
+    extern proc H5Arename(loc_id : hid_t, old_name : c_ptrConst(c_char), new_name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Arename_by_name(loc_id : hid_t, obj_name : c_string, old_attr_name : c_string, new_attr_name : c_string, lapl_id : hid_t) : herr_t;
+    extern proc H5Arename_by_name(loc_id : hid_t, obj_name : c_ptrConst(c_char), old_attr_name : c_ptrConst(c_char), new_attr_name : c_ptrConst(c_char), lapl_id : hid_t) : herr_t;
 
-    extern proc H5Aiterate2(loc_id : hid_t, idx_type : H5_index_t, order : H5_iter_order_t, ref idx : hsize_t, op : H5A_operator2_t, op_data : c_void_ptr) : herr_t;
+    extern proc H5Aiterate2(loc_id : hid_t, idx_type : H5_index_t, order : H5_iter_order_t, ref idx : hsize_t, op : H5A_operator2_t, op_data : c_ptr(void)) : herr_t;
 
-    extern proc H5Aiterate_by_name(loc_id : hid_t, obj_name : c_string, idx_type : H5_index_t, order : H5_iter_order_t, ref idx : hsize_t, op : H5A_operator2_t, op_data : c_void_ptr, lapd_id : hid_t) : herr_t;
+    extern proc H5Aiterate_by_name(loc_id : hid_t, obj_name : c_ptrConst(c_char), idx_type : H5_index_t, order : H5_iter_order_t, ref idx : hsize_t, op : H5A_operator2_t, op_data : c_ptr(void), lapd_id : hid_t) : herr_t;
 
-    extern proc H5Adelete(loc_id : hid_t, name : c_string) : herr_t;
+    extern proc H5Adelete(loc_id : hid_t, name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Adelete_by_name(loc_id : hid_t, obj_name : c_string, attr_name : c_string, lapl_id : hid_t) : herr_t;
+    extern proc H5Adelete_by_name(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), lapl_id : hid_t) : herr_t;
 
-    extern proc H5Adelete_by_idx(loc_id : hid_t, obj_name : c_string, idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Adelete_by_idx(loc_id : hid_t, obj_name : c_ptrConst(c_char), idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Aexists(obj_id : hid_t, attr_name : c_string) : htri_t;
+    extern proc H5Aexists(obj_id : hid_t, attr_name : c_ptrConst(c_char)) : htri_t;
 
-    extern proc H5Aexists_by_name(obj_id : hid_t, obj_name : c_string, attr_name : c_string, lapl_id : hid_t) : htri_t;
+    extern proc H5Aexists_by_name(obj_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), lapl_id : hid_t) : htri_t;
 
-    extern proc H5Acreate1(loc_id : hid_t, name : c_string, type_id : hid_t, space_id : hid_t, acpl_id : hid_t) : hid_t;
+    extern proc H5Acreate1(loc_id : hid_t, name : c_ptrConst(c_char), type_id : hid_t, space_id : hid_t, acpl_id : hid_t) : hid_t;
 
-    extern proc H5Aopen_name(loc_id : hid_t, name : c_string) : hid_t;
+    extern proc H5Aopen_name(loc_id : hid_t, name : c_ptrConst(c_char)) : hid_t;
 
     extern proc H5Aopen_idx(loc_id : hid_t, idx : c_uint) : hid_t;
 
     extern proc H5Aget_num_attrs(loc_id : hid_t) : c_int;
 
-    extern proc H5Aiterate1(loc_id : hid_t, ref attr_num : c_uint, op : H5A_operator1_t, op_data : c_void_ptr) : herr_t;
+    extern proc H5Aiterate1(loc_id : hid_t, ref attr_num : c_uint, op : H5A_operator1_t, op_data : c_ptr(void)) : herr_t;
 
     // Enum: H5C_cache_incr_mode
     extern type H5C_cache_incr_mode = c_int;
@@ -628,12 +628,12 @@ module HDF5 {
     extern const H5C_decr__age_out_with_threshold :H5C_cache_decr_mode;
 
 
-    extern proc H5Dcreate2(loc_id : hid_t, name : c_string, type_id : hid_t, space_id : hid_t, lcpl_id : hid_t, dcpl_id : hid_t, dapl_id : hid_t) : hid_t;
+    extern proc H5Dcreate2(loc_id : hid_t, name : c_ptrConst(c_char), type_id : hid_t, space_id : hid_t, lcpl_id : hid_t, dcpl_id : hid_t, dapl_id : hid_t) : hid_t;
 
     extern proc H5Dcreate_anon(file_id : hid_t, type_id : hid_t, space_id : hid_t, plist_id : hid_t, dapl_id : hid_t) : hid_t;
 
-    extern proc H5Dopen2(file_id : hid_t, name : c_string, dapl_id : hid_t) : hid_t;
-    extern proc H5Dopen(file_id : hid_t, name : c_string, dapl_id : hid_t) : hid_t;
+    extern proc H5Dopen2(file_id : hid_t, name : c_ptrConst(c_char), dapl_id : hid_t) : hid_t;
+    extern proc H5Dopen(file_id : hid_t, name : c_ptrConst(c_char), dapl_id : hid_t) : hid_t;
 
     extern proc H5Dclose(dset_id : hid_t) : herr_t;
 
@@ -651,17 +651,17 @@ module HDF5 {
 
     extern proc H5Dget_offset(dset_id : hid_t) : haddr_t;
 
-    extern proc H5Dread(dset_id : hid_t, mem_type_id : hid_t, mem_space_id : hid_t, file_space_id : hid_t, plist_id : hid_t, buf : c_void_ptr) : herr_t;
+    extern proc H5Dread(dset_id : hid_t, mem_type_id : hid_t, mem_space_id : hid_t, file_space_id : hid_t, plist_id : hid_t, buf : c_ptr(void)) : herr_t;
 
-    extern proc H5Dwrite(dset_id : hid_t, mem_type_id : hid_t, mem_space_id : hid_t, file_space_id : hid_t, plist_id : hid_t, buf : c_void_ptr) : herr_t;
+    extern proc H5Dwrite(dset_id : hid_t, mem_type_id : hid_t, mem_space_id : hid_t, file_space_id : hid_t, plist_id : hid_t, buf : c_ptr(void)) : herr_t;
 
-    extern proc H5Diterate(buf : c_void_ptr, type_id : hid_t, space_id : hid_t, op : H5D_operator_t, operator_data : c_void_ptr) : herr_t;
+    extern proc H5Diterate(buf : c_ptr(void), type_id : hid_t, space_id : hid_t, op : H5D_operator_t, operator_data : c_ptr(void)) : herr_t;
 
-    extern proc H5Dvlen_reclaim(type_id : hid_t, space_id : hid_t, plist_id : hid_t, buf : c_void_ptr) : herr_t;
+    extern proc H5Dvlen_reclaim(type_id : hid_t, space_id : hid_t, plist_id : hid_t, buf : c_ptr(void)) : herr_t;
 
     extern proc H5Dvlen_get_buf_size(dataset_id : hid_t, type_id : hid_t, space_id : hid_t, ref size : hsize_t) : herr_t;
 
-    extern proc H5Dfill(fill : c_void_ptr, fill_type : hid_t, buf : c_void_ptr, buf_type : hid_t, space : hid_t) : herr_t;
+    extern proc H5Dfill(fill : c_ptr(void), fill_type : hid_t, buf : c_ptr(void), buf_type : hid_t, space : hid_t) : herr_t;
 
     extern proc H5Dset_extent(dset_id : hid_t, size : c_ptr(hsize_t)) : herr_t;
 
@@ -669,9 +669,9 @@ module HDF5 {
 
     extern proc H5Drefresh(dset_id : hid_t) : herr_t;
 
-    extern proc H5Dscatter(op : H5D_scatter_func_t, op_data : c_void_ptr, type_id : hid_t, dst_space_id : hid_t, dst_buf : c_void_ptr) : herr_t;
+    extern proc H5Dscatter(op : H5D_scatter_func_t, op_data : c_ptr(void), type_id : hid_t, dst_space_id : hid_t, dst_buf : c_ptr(void)) : herr_t;
 
-    extern proc H5Dgather(src_space_id : hid_t, src_buf : c_void_ptr, type_id : hid_t, dst_buf_size : c_size_t, dst_buf : c_void_ptr, op : H5D_gather_func_t, op_data : c_void_ptr) : herr_t;
+    extern proc H5Dgather(src_space_id : hid_t, src_buf : c_ptr(void), type_id : hid_t, dst_buf_size : c_size_t, dst_buf : c_ptr(void), op : H5D_gather_func_t, op_data : c_ptr(void)) : herr_t;
 
     extern proc H5Ddebug(dset_id : hid_t) : herr_t;
 
@@ -679,9 +679,9 @@ module HDF5 {
 
     extern proc H5Dget_chunk_index_type(did : hid_t, ref idx_type : H5D_chunk_index_t) : herr_t;
 
-    extern proc H5Dcreate1(file_id : hid_t, name : c_string, type_id : hid_t, space_id : hid_t, dcpl_id : hid_t) : hid_t;
+    extern proc H5Dcreate1(file_id : hid_t, name : c_ptrConst(c_char), type_id : hid_t, space_id : hid_t, dcpl_id : hid_t) : hid_t;
 
-    extern proc H5Dopen1(file_id : hid_t, name : c_string) : hid_t;
+    extern proc H5Dopen1(file_id : hid_t, name : c_ptrConst(c_char)) : hid_t;
 
     extern proc H5Dextend(dset_id : hid_t, size : c_ptr(hsize_t)) : herr_t;
 
@@ -1013,13 +1013,13 @@ module HDF5 {
 
     extern var H5E_BADSIZE_g : hid_t;
 
-    extern proc H5Eregister_class(cls_name : c_string, lib_name : c_string, version : c_string) : hid_t;
+    extern proc H5Eregister_class(cls_name : c_ptrConst(c_char), lib_name : c_ptrConst(c_char), version : c_ptrConst(c_char)) : hid_t;
 
     extern proc H5Eunregister_class(class_id : hid_t) : herr_t;
 
     extern proc H5Eclose_msg(err_id : hid_t) : herr_t;
 
-    extern proc H5Ecreate_msg(cls : hid_t, msg_type : H5E_type_t, msg : c_string) : hid_t;
+    extern proc H5Ecreate_msg(cls : hid_t, msg_type : H5E_type_t, msg : c_ptrConst(c_char)) : hid_t;
 
     extern proc H5Ecreate_stack() : hid_t;
 
@@ -1027,54 +1027,54 @@ module HDF5 {
 
     extern proc H5Eclose_stack(stack_id : hid_t) : herr_t;
 
-    extern proc H5Eget_class_name(class_id : hid_t, name : c_string, size : c_size_t) : c_ssize_t;
+    extern proc H5Eget_class_name(class_id : hid_t, name : c_ptrConst(c_char), size : c_size_t) : c_ssize_t;
 
     extern proc H5Eset_current_stack(err_stack_id : hid_t) : herr_t;
 
-    extern proc H5Epush2(err_stack : hid_t, file : c_string, func : c_string, line : c_uint, cls_id : hid_t, maj_id : hid_t, min_id : hid_t, msg : c_string, c__varargs ...) : herr_t;
+    extern proc H5Epush2(err_stack : hid_t, file : c_ptrConst(c_char), func : c_ptrConst(c_char), line : c_uint, cls_id : hid_t, maj_id : hid_t, min_id : hid_t, msg : c_ptrConst(c_char), c__varargs ...) : herr_t;
 
     // Overload for empty varargs
-    extern proc H5Epush2(err_stack : hid_t,file : c_string,func : c_string,line : c_uint,cls_id : hid_t,maj_id : hid_t,min_id : hid_t,msg : c_string) : herr_t;
+    extern proc H5Epush2(err_stack : hid_t,file : c_ptrConst(c_char),func : c_ptrConst(c_char),line : c_uint,cls_id : hid_t,maj_id : hid_t,min_id : hid_t,msg : c_ptrConst(c_char)) : herr_t;
 
     extern proc H5Epop(err_stack : hid_t, count : c_size_t) : herr_t;
 
-    extern proc H5Eprint2(err_stack : hid_t, ref stream : c_FILE) : herr_t;
+    extern proc H5Eprint2(err_stack : hid_t, ref stream : c_ptr(c_FILE)) : herr_t;
 
-    extern proc H5Ewalk2(err_stack : hid_t, direction : H5E_direction_t, func : H5E_walk2_t, client_data : c_void_ptr) : herr_t;
+    extern proc H5Ewalk2(err_stack : hid_t, direction : H5E_direction_t, func : H5E_walk2_t, client_data : c_ptr(void)) : herr_t;
 
-    extern proc H5Eget_auto2(estack_id : hid_t, ref func : H5E_auto2_t, ref client_data : c_void_ptr) : herr_t;
+    extern proc H5Eget_auto2(estack_id : hid_t, ref func : H5E_auto2_t, ref client_data : c_ptr(void)) : herr_t;
 
-    extern proc H5Eset_auto2(estack_id : hid_t, func : H5E_auto2_t, client_data : c_void_ptr) : herr_t;
+    extern proc H5Eset_auto2(estack_id : hid_t, func : H5E_auto2_t, client_data : c_ptr(void)) : herr_t;
 
     extern proc H5Eclear2(err_stack : hid_t) : herr_t;
 
     extern proc H5Eauto_is_v2(err_stack : hid_t, ref is_stack : c_uint) : herr_t;
 
-    extern proc H5Eget_msg(msg_id : hid_t, ref type_arg : H5E_type_t, msg : c_string, size : c_size_t) : c_ssize_t;
+    extern proc H5Eget_msg(msg_id : hid_t, ref type_arg : H5E_type_t, msg : c_ptrConst(c_char), size : c_size_t) : c_ssize_t;
 
     extern proc H5Eget_num(error_stack_id : hid_t) : c_ssize_t;
 
     extern proc H5Eclear1() : herr_t;
 
-    extern proc H5Eget_auto1(ref func : H5E_auto1_t, ref client_data : c_void_ptr) : herr_t;
+    extern proc H5Eget_auto1(ref func : H5E_auto1_t, ref client_data : c_ptr(void)) : herr_t;
 
-    extern proc H5Epush1(file : c_string, func : c_string, line : c_uint, maj : H5E_major_t, min : H5E_minor_t, str : c_string) : herr_t;
+    extern proc H5Epush1(file : c_ptrConst(c_char), func : c_ptrConst(c_char), line : c_uint, maj : H5E_major_t, min : H5E_minor_t, str : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Eprint1(ref stream : c_FILE) : herr_t;
+    extern proc H5Eprint1(ref stream : c_ptr(c_FILE)) : herr_t;
 
-    extern proc H5Eset_auto1(func : H5E_auto1_t, client_data : c_void_ptr) : herr_t;
+    extern proc H5Eset_auto1(func : H5E_auto1_t, client_data : c_ptr(void)) : herr_t;
 
-    extern proc H5Ewalk1(direction : H5E_direction_t, func : H5E_walk1_t, client_data : c_void_ptr) : herr_t;
+    extern proc H5Ewalk1(direction : H5E_direction_t, func : H5E_walk1_t, client_data : c_ptr(void)) : herr_t;
 
-    extern proc H5Eget_major(maj : H5E_major_t) : c_string;
+    extern proc H5Eget_major(maj : H5E_major_t) : c_ptrConst(c_char);
 
-    extern proc H5Eget_minor(min : H5E_minor_t) : c_string;
+    extern proc H5Eget_minor(min : H5E_minor_t) : c_ptrConst(c_char);
 
-    extern proc H5Fis_hdf5(filename : c_string) : htri_t;
+    extern proc H5Fis_hdf5(filename : c_ptrConst(c_char)) : htri_t;
 
-    extern proc H5Fcreate(filename : c_string, flags : c_uint, create_plist : hid_t, access_plist : hid_t) : hid_t;
+    extern proc H5Fcreate(filename : c_ptrConst(c_char), flags : c_uint, create_plist : hid_t, access_plist : hid_t) : hid_t;
 
-    extern proc H5Fopen(filename : c_string, flags : c_uint, access_plist : hid_t) : hid_t;
+    extern proc H5Fopen(filename : c_ptrConst(c_char), flags : c_uint, access_plist : hid_t) : hid_t;
 
     extern proc H5Freopen(file_id : hid_t) : hid_t;
 
@@ -1092,17 +1092,17 @@ module HDF5 {
 
     extern proc H5Fget_obj_ids(file_id : hid_t, types : c_uint, max_objs : c_size_t, ref obj_id_list : hid_t) : c_ssize_t;
 
-    extern proc H5Fget_vfd_handle(file_id : hid_t, fapl : hid_t, ref file_handle : c_void_ptr) : herr_t;
+    extern proc H5Fget_vfd_handle(file_id : hid_t, fapl : hid_t, ref file_handle : c_ptr(void)) : herr_t;
 
-    extern proc H5Fmount(loc : hid_t, name : c_string, child : hid_t, plist : hid_t) : herr_t;
+    extern proc H5Fmount(loc : hid_t, name : c_ptrConst(c_char), child : hid_t, plist : hid_t) : herr_t;
 
-    extern proc H5Funmount(loc : hid_t, name : c_string) : herr_t;
+    extern proc H5Funmount(loc : hid_t, name : c_ptrConst(c_char)) : herr_t;
 
     extern proc H5Fget_freespace(file_id : hid_t) : hssize_t;
 
     extern proc H5Fget_filesize(file_id : hid_t, ref size : hsize_t) : herr_t;
 
-    extern proc H5Fget_file_image(file_id : hid_t, buf_ptr : c_void_ptr, buf_len : c_size_t) : c_ssize_t;
+    extern proc H5Fget_file_image(file_id : hid_t, buf_ptr : c_ptr(void), buf_len : c_size_t) : c_ssize_t;
 
     extern proc H5Fget_mdc_config(file_id : hid_t, ref config_ptr : H5AC_cache_config_t) : herr_t;
 
@@ -1114,7 +1114,7 @@ module HDF5 {
 
     extern proc H5Freset_mdc_hit_rate_stats(file_id : hid_t) : herr_t;
 
-    extern proc H5Fget_name(obj_id : hid_t, name : c_string, size : c_size_t) : c_ssize_t;
+    extern proc H5Fget_name(obj_id : hid_t, name : c_ptrConst(c_char), size : c_size_t) : c_ssize_t;
 
     extern proc H5Fget_info2(obj_id : hid_t, ref finfo : H5F_info2_t) : herr_t;
 
@@ -1161,7 +1161,7 @@ module HDF5 {
 
     extern proc H5FDunregister(driver_id : hid_t) : herr_t;
 
-    extern proc H5FDopen(name : c_string, flags : c_uint, fapl_id : hid_t, maxaddr : haddr_t) : c_ptr(H5FD_t);
+    extern proc H5FDopen(name : c_ptrConst(c_char), flags : c_uint, fapl_id : hid_t, maxaddr : haddr_t) : c_ptr(H5FD_t);
 
     extern proc H5FDclose(ref file : H5FD_t) : herr_t;
 
@@ -1179,11 +1179,11 @@ module HDF5 {
 
     extern proc H5FDget_eof(ref file : H5FD_t, type_arg : H5FD_mem_t) : haddr_t;
 
-    extern proc H5FDget_vfd_handle(ref file : H5FD_t, fapl : hid_t, ref file_handle : c_void_ptr) : herr_t;
+    extern proc H5FDget_vfd_handle(ref file : H5FD_t, fapl : hid_t, ref file_handle : c_ptr(void)) : herr_t;
 
-    extern proc H5FDread(ref file : H5FD_t, type_arg : H5FD_mem_t, dxpl_id : hid_t, addr : haddr_t, size : c_size_t, buf : c_void_ptr) : herr_t;
+    extern proc H5FDread(ref file : H5FD_t, type_arg : H5FD_mem_t, dxpl_id : hid_t, addr : haddr_t, size : c_size_t, buf : c_ptr(void)) : herr_t;
 
-    extern proc H5FDwrite(ref file : H5FD_t, type_arg : H5FD_mem_t, dxpl_id : hid_t, addr : haddr_t, size : c_size_t, buf : c_void_ptr) : herr_t;
+    extern proc H5FDwrite(ref file : H5FD_t, type_arg : H5FD_mem_t, dxpl_id : hid_t, addr : haddr_t, size : c_size_t, buf : c_ptr(void)) : herr_t;
 
     extern proc H5FDflush(ref file : H5FD_t, dxpl_id : hid_t, closing : hbool_t) : herr_t;
 
@@ -1193,19 +1193,19 @@ module HDF5 {
 
     extern proc H5FDunlock(ref file : H5FD_t) : herr_t;
 
-    extern proc H5Gcreate2(loc_id : hid_t, name : c_string, lcpl_id : hid_t, gcpl_id : hid_t, gapl_id : hid_t) : hid_t;
+    extern proc H5Gcreate2(loc_id : hid_t, name : c_ptrConst(c_char), lcpl_id : hid_t, gcpl_id : hid_t, gapl_id : hid_t) : hid_t;
 
     extern proc H5Gcreate_anon(loc_id : hid_t, gcpl_id : hid_t, gapl_id : hid_t) : hid_t;
 
-    extern proc H5Gopen2(loc_id : hid_t, name : c_string, gapl_id : hid_t) : hid_t;
+    extern proc H5Gopen2(loc_id : hid_t, name : c_ptrConst(c_char), gapl_id : hid_t) : hid_t;
 
     extern proc H5Gget_create_plist(group_id : hid_t) : hid_t;
 
     extern proc H5Gget_info(loc_id : hid_t, ref ginfo : H5G_info_t) : herr_t;
 
-    extern proc H5Gget_info_by_name(loc_id : hid_t, name : c_string, ref ginfo : H5G_info_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Gget_info_by_name(loc_id : hid_t, name : c_ptrConst(c_char), ref ginfo : H5G_info_t, lapl_id : hid_t) : herr_t;
 
-    extern proc H5Gget_info_by_idx(loc_id : hid_t, group_name : c_string, idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, ref ginfo : H5G_info_t, lapl_id : hid_t) : herr_t;
+    extern proc H5Gget_info_by_idx(loc_id : hid_t, group_name : c_ptrConst(c_char), idx_type : H5_index_t, order : H5_iter_order_t, n : hsize_t, ref ginfo : H5G_info_t, lapl_id : hid_t) : herr_t;
 
     extern proc H5Gclose(group_id : hid_t) : herr_t;
 
@@ -1213,37 +1213,37 @@ module HDF5 {
 
     extern proc H5Grefresh(group_id : hid_t) : herr_t;
 
-    extern proc H5Gcreate1(loc_id : hid_t, name : c_string, size_hint : c_size_t) : hid_t;
+    extern proc H5Gcreate1(loc_id : hid_t, name : c_ptrConst(c_char), size_hint : c_size_t) : hid_t;
 
-    extern proc H5Gopen1(loc_id : hid_t, name : c_string) : hid_t;
+    extern proc H5Gopen1(loc_id : hid_t, name : c_ptrConst(c_char)) : hid_t;
 
-    extern proc H5Glink(cur_loc_id : hid_t, type_arg : H5L_type_t, cur_name : c_string, new_name : c_string) : herr_t;
+    extern proc H5Glink(cur_loc_id : hid_t, type_arg : H5L_type_t, cur_name : c_ptrConst(c_char), new_name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Glink2(cur_loc_id : hid_t, cur_name : c_string, type_arg : H5L_type_t, new_loc_id : hid_t, new_name : c_string) : herr_t;
+    extern proc H5Glink2(cur_loc_id : hid_t, cur_name : c_ptrConst(c_char), type_arg : H5L_type_t, new_loc_id : hid_t, new_name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Gmove(src_loc_id : hid_t, src_name : c_string, dst_name : c_string) : herr_t;
+    extern proc H5Gmove(src_loc_id : hid_t, src_name : c_ptrConst(c_char), dst_name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Gmove2(src_loc_id : hid_t, src_name : c_string, dst_loc_id : hid_t, dst_name : c_string) : herr_t;
+    extern proc H5Gmove2(src_loc_id : hid_t, src_name : c_ptrConst(c_char), dst_loc_id : hid_t, dst_name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Gunlink(loc_id : hid_t, name : c_string) : herr_t;
+    extern proc H5Gunlink(loc_id : hid_t, name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Gget_linkval(loc_id : hid_t, name : c_string, size : c_size_t, buf : c_string) : herr_t;
+    extern proc H5Gget_linkval(loc_id : hid_t, name : c_ptrConst(c_char), size : c_size_t, buf : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Gset_comment(loc_id : hid_t, name : c_string, comment : c_string) : herr_t;
+    extern proc H5Gset_comment(loc_id : hid_t, name : c_ptrConst(c_char), comment : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Gget_comment(loc_id : hid_t, name : c_string, bufsize : c_size_t, buf : c_string) : c_int;
+    extern proc H5Gget_comment(loc_id : hid_t, name : c_ptrConst(c_char), bufsize : c_size_t, buf : c_ptrConst(c_char)) : c_int;
 
-    extern proc H5Giterate(loc_id : hid_t, name : c_string, ref idx : c_int, op : H5G_iterate_t, op_data : c_void_ptr) : herr_t;
+    extern proc H5Giterate(loc_id : hid_t, name : c_ptrConst(c_char), ref idx : c_int, op : H5G_iterate_t, op_data : c_ptr(void)) : herr_t;
 
     extern proc H5Gget_num_objs(loc_id : hid_t, ref num_objs : hsize_t) : herr_t;
 
-    extern proc H5Gget_objinfo(loc_id : hid_t, name : c_string, follow_link : hbool_t, ref statbuf : H5G_stat_t) : herr_t;
+    extern proc H5Gget_objinfo(loc_id : hid_t, name : c_ptrConst(c_char), follow_link : hbool_t, ref statbuf : H5G_stat_t) : herr_t;
 
-    extern proc H5Gget_objname_by_idx(loc_id : hid_t, idx : hsize_t, name : c_string, size : c_size_t) : c_ssize_t;
+    extern proc H5Gget_objname_by_idx(loc_id : hid_t, idx : hsize_t, name : c_ptrConst(c_char), size : c_size_t) : c_ssize_t;
 
     extern proc H5Gget_objtype_by_idx(loc_id : hid_t, idx : hsize_t) : H5G_obj_t;
 
-    extern proc H5Zregister(cls : c_void_ptr) : herr_t;
+    extern proc H5Zregister(cls : c_ptr(void)) : herr_t;
 
     extern proc H5Zunregister(id : H5Z_filter_t) : herr_t;
 
@@ -1317,25 +1317,25 @@ module HDF5 {
 
     extern var H5P_LST_LINK_ACCESS_ID_g : hid_t;
 
-    extern proc H5Pcreate_class(parent : hid_t, name : c_string, cls_create : H5P_cls_create_func_t, create_data : c_void_ptr, cls_copy : H5P_cls_copy_func_t, copy_data : c_void_ptr, cls_close : H5P_cls_close_func_t, close_data : c_void_ptr) : hid_t;
+    extern proc H5Pcreate_class(parent : hid_t, name : c_ptrConst(c_char), cls_create : H5P_cls_create_func_t, create_data : c_ptr(void), cls_copy : H5P_cls_copy_func_t, copy_data : c_ptr(void), cls_close : H5P_cls_close_func_t, close_data : c_ptr(void)) : hid_t;
 
-    extern proc H5Pget_class_name(pclass_id : hid_t) : c_string;
+    extern proc H5Pget_class_name(pclass_id : hid_t) : c_ptrConst(c_char);
 
     extern proc H5Pcreate(cls_id : hid_t) : hid_t;
 
-    extern proc H5Pregister2(cls_id : hid_t, name : c_string, size : c_size_t, def_value : c_void_ptr, prp_create : H5P_prp_create_func_t, prp_set : H5P_prp_set_func_t, prp_get : H5P_prp_get_func_t, prp_del : H5P_prp_delete_func_t, prp_copy : H5P_prp_copy_func_t, prp_cmp : H5P_prp_compare_func_t, prp_close : H5P_prp_close_func_t) : herr_t;
+    extern proc H5Pregister2(cls_id : hid_t, name : c_ptrConst(c_char), size : c_size_t, def_value : c_ptr(void), prp_create : H5P_prp_create_func_t, prp_set : H5P_prp_set_func_t, prp_get : H5P_prp_get_func_t, prp_del : H5P_prp_delete_func_t, prp_copy : H5P_prp_copy_func_t, prp_cmp : H5P_prp_compare_func_t, prp_close : H5P_prp_close_func_t) : herr_t;
 
-    extern proc H5Pinsert2(plist_id : hid_t, name : c_string, size : c_size_t, value : c_void_ptr, prp_set : H5P_prp_set_func_t, prp_get : H5P_prp_get_func_t, prp_delete : H5P_prp_delete_func_t, prp_copy : H5P_prp_copy_func_t, prp_cmp : H5P_prp_compare_func_t, prp_close : H5P_prp_close_func_t) : herr_t;
+    extern proc H5Pinsert2(plist_id : hid_t, name : c_ptrConst(c_char), size : c_size_t, value : c_ptr(void), prp_set : H5P_prp_set_func_t, prp_get : H5P_prp_get_func_t, prp_delete : H5P_prp_delete_func_t, prp_copy : H5P_prp_copy_func_t, prp_cmp : H5P_prp_compare_func_t, prp_close : H5P_prp_close_func_t) : herr_t;
 
-    extern proc H5Pset(plist_id : hid_t, name : c_string, value : c_void_ptr) : herr_t;
+    extern proc H5Pset(plist_id : hid_t, name : c_ptrConst(c_char), value : c_ptr(void)) : herr_t;
 
-    extern proc H5Pexist(plist_id : hid_t, name : c_string) : htri_t;
+    extern proc H5Pexist(plist_id : hid_t, name : c_ptrConst(c_char)) : htri_t;
 
-    extern proc H5Pencode(plist_id : hid_t, buf : c_void_ptr, ref nalloc : c_size_t) : herr_t;
+    extern proc H5Pencode(plist_id : hid_t, buf : c_ptr(void), ref nalloc : c_size_t) : herr_t;
 
-    extern proc H5Pdecode(buf : c_void_ptr) : hid_t;
+    extern proc H5Pdecode(buf : c_ptr(void)) : hid_t;
 
-    extern proc H5Pget_size(id : hid_t, name : c_string, ref size : c_size_t) : herr_t;
+    extern proc H5Pget_size(id : hid_t, name : c_ptrConst(c_char), ref size : c_size_t) : herr_t;
 
     extern proc H5Pget_nprops(id : hid_t, ref nprops : c_size_t) : herr_t;
 
@@ -1343,19 +1343,19 @@ module HDF5 {
 
     extern proc H5Pget_class_parent(pclass_id : hid_t) : hid_t;
 
-    extern proc H5Pget(plist_id : hid_t, name : c_string, value : c_void_ptr) : herr_t;
+    extern proc H5Pget(plist_id : hid_t, name : c_ptrConst(c_char), value : c_ptr(void)) : herr_t;
 
     extern proc H5Pequal(id1 : hid_t, id2 : hid_t) : htri_t;
 
     extern proc H5Pisa_class(plist_id : hid_t, pclass_id : hid_t) : htri_t;
 
-    extern proc H5Piterate(id : hid_t, ref idx : c_int, iter_func : H5P_iterate_t, iter_data : c_void_ptr) : c_int;
+    extern proc H5Piterate(id : hid_t, ref idx : c_int, iter_func : H5P_iterate_t, iter_data : c_ptr(void)) : c_int;
 
-    extern proc H5Pcopy_prop(dst_id : hid_t, src_id : hid_t, name : c_string) : herr_t;
+    extern proc H5Pcopy_prop(dst_id : hid_t, src_id : hid_t, name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Premove(plist_id : hid_t, name : c_string) : herr_t;
+    extern proc H5Premove(plist_id : hid_t, name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Punregister(pclass_id : hid_t, name : c_string) : herr_t;
+    extern proc H5Punregister(pclass_id : hid_t, name : c_ptrConst(c_char)) : herr_t;
 
     extern proc H5Pclose_class(plist_id : hid_t) : herr_t;
 
@@ -1433,11 +1433,11 @@ module HDF5 {
 
     extern proc H5Pget_alignment(fapl_id : hid_t, ref threshold : hsize_t, ref alignment : hsize_t) : herr_t;
 
-    extern proc H5Pset_driver(plist_id : hid_t, driver_id : hid_t, driver_info : c_void_ptr) : herr_t;
+    extern proc H5Pset_driver(plist_id : hid_t, driver_id : hid_t, driver_info : c_ptr(void)) : herr_t;
 
     extern proc H5Pget_driver(plist_id : hid_t) : hid_t;
 
-    extern proc H5Pget_driver_info(plist_id : hid_t) : c_void_ptr;
+    extern proc H5Pget_driver_info(plist_id : hid_t) : c_ptr(void);
 
     extern proc H5Pset_family_offset(fapl_id : hid_t, offset : hsize_t) : herr_t;
 
@@ -1483,9 +1483,9 @@ module HDF5 {
 
     extern proc H5Pget_elink_file_cache_size(plist_id : hid_t, ref efc_size : c_uint) : herr_t;
 
-    extern proc H5Pset_file_image(fapl_id : hid_t, buf_ptr : c_void_ptr, buf_len : c_size_t) : herr_t;
+    extern proc H5Pset_file_image(fapl_id : hid_t, buf_ptr : c_ptr(void), buf_len : c_size_t) : herr_t;
 
-    extern proc H5Pget_file_image(fapl_id : hid_t, ref buf_ptr_ptr : c_void_ptr, ref buf_len_ptr : c_size_t) : herr_t;
+    extern proc H5Pget_file_image(fapl_id : hid_t, ref buf_ptr_ptr : c_ptr(void), ref buf_len_ptr : c_size_t) : herr_t;
 
     extern proc H5Pset_file_image_callbacks(fapl_id : hid_t, ref callbacks_ptr : H5FD_file_image_callbacks_t) : herr_t;
 
@@ -1499,13 +1499,13 @@ module HDF5 {
 
     extern proc H5Pget_metadata_read_attempts(plist_id : hid_t, ref attempts : c_uint) : herr_t;
 
-    extern proc H5Pset_object_flush_cb(plist_id : hid_t, func : H5F_flush_cb_t, udata : c_void_ptr) : herr_t;
+    extern proc H5Pset_object_flush_cb(plist_id : hid_t, func : H5F_flush_cb_t, udata : c_ptr(void)) : herr_t;
 
-    extern proc H5Pget_object_flush_cb(plist_id : hid_t, ref func : H5F_flush_cb_t, ref udata : c_void_ptr) : herr_t;
+    extern proc H5Pget_object_flush_cb(plist_id : hid_t, ref func : H5F_flush_cb_t, ref udata : c_ptr(void)) : herr_t;
 
-    extern proc H5Pset_mdc_log_options(plist_id : hid_t, is_enabled : hbool_t, location : c_string, start_on_access : hbool_t) : herr_t;
+    extern proc H5Pset_mdc_log_options(plist_id : hid_t, is_enabled : hbool_t, location : c_ptrConst(c_char), start_on_access : hbool_t) : herr_t;
 
-    extern proc H5Pget_mdc_log_options(plist_id : hid_t, ref is_enabled : hbool_t, location : c_string, ref location_size : c_size_t, ref start_on_access : hbool_t) : herr_t;
+    extern proc H5Pget_mdc_log_options(plist_id : hid_t, ref is_enabled : hbool_t, location : c_ptrConst(c_char), ref location_size : c_size_t, ref start_on_access : hbool_t) : herr_t;
 
     extern proc H5Pset_evict_on_close(fapl_id : hid_t, evict_on_close : hbool_t) : herr_t;
 
@@ -1527,7 +1527,7 @@ module HDF5 {
 
     extern proc H5Pget_chunk(plist_id : hid_t, max_ndims : c_int, dim : c_ptr(hsize_t)) : c_int;
 
-    extern proc H5Pset_virtual(dcpl_id : hid_t, vspace_id : hid_t, src_file_name : c_string, src_dset_name : c_string, src_space_id : hid_t) : herr_t;
+    extern proc H5Pset_virtual(dcpl_id : hid_t, vspace_id : hid_t, src_file_name : c_ptrConst(c_char), src_dset_name : c_ptrConst(c_char), src_space_id : hid_t) : herr_t;
 
     extern proc H5Pget_virtual_count(dcpl_id : hid_t, ref count : c_size_t) : herr_t;
 
@@ -1535,11 +1535,11 @@ module HDF5 {
 
     extern proc H5Pget_virtual_srcspace(dcpl_id : hid_t, index_arg : c_size_t) : hid_t;
 
-    extern proc H5Pget_virtual_filename(dcpl_id : hid_t, index_arg : c_size_t, name : c_string, size : c_size_t) : c_ssize_t;
+    extern proc H5Pget_virtual_filename(dcpl_id : hid_t, index_arg : c_size_t, name : c_ptrConst(c_char), size : c_size_t) : c_ssize_t;
 
-    extern proc H5Pget_virtual_dsetname(dcpl_id : hid_t, index_arg : c_size_t, name : c_string, size : c_size_t) : c_ssize_t;
+    extern proc H5Pget_virtual_dsetname(dcpl_id : hid_t, index_arg : c_size_t, name : c_ptrConst(c_char), size : c_size_t) : c_ssize_t;
 
-    extern proc H5Pset_external(plist_id : hid_t, name : c_string, offset : off_t, size : hsize_t) : herr_t;
+    extern proc H5Pset_external(plist_id : hid_t, name : c_ptrConst(c_char), offset : off_t, size : hsize_t) : herr_t;
 
     extern proc H5Pset_chunk_opts(plist_id : hid_t, opts : c_uint) : herr_t;
 
@@ -1547,7 +1547,7 @@ module HDF5 {
 
     extern proc H5Pget_external_count(plist_id : hid_t) : c_int;
 
-    extern proc H5Pget_external(plist_id : hid_t, idx : c_uint, name_size : c_size_t, name : c_string, ref offset : off_t, ref size : hsize_t) : herr_t;
+    extern proc H5Pget_external(plist_id : hid_t, idx : c_uint, name_size : c_size_t, name : c_ptrConst(c_char), ref offset : off_t, ref size : hsize_t) : herr_t;
 
     extern proc H5Pset_szip(plist_id : hid_t, options_mask : c_uint, pixels_per_block : c_uint) : herr_t;
 
@@ -1557,9 +1557,9 @@ module HDF5 {
 
     extern proc H5Pset_scaleoffset(plist_id : hid_t, scale_type : H5Z_SO_scale_type_t, scale_factor : c_int) : herr_t;
 
-    extern proc H5Pset_fill_value(plist_id : hid_t, type_id : hid_t, value : c_void_ptr) : herr_t;
+    extern proc H5Pset_fill_value(plist_id : hid_t, type_id : hid_t, value : c_ptr(void)) : herr_t;
 
-    extern proc H5Pget_fill_value(plist_id : hid_t, type_id : hid_t, value : c_void_ptr) : herr_t;
+    extern proc H5Pget_fill_value(plist_id : hid_t, type_id : hid_t, value : c_ptr(void)) : herr_t;
 
     extern proc H5Pfill_value_defined(plist : hid_t, ref status : H5D_fill_value_t) : herr_t;
 
@@ -1583,21 +1583,21 @@ module HDF5 {
 
     extern proc H5Pget_virtual_printf_gap(plist_id : hid_t, ref gap_size : hsize_t) : herr_t;
 
-    extern proc H5Pset_append_flush(plist_id : hid_t, ndims : c_uint, boundary : c_ptr(hsize_t), func : H5D_append_cb_t, udata : c_void_ptr) : herr_t;
+    extern proc H5Pset_append_flush(plist_id : hid_t, ndims : c_uint, boundary : c_ptr(hsize_t), func : H5D_append_cb_t, udata : c_ptr(void)) : herr_t;
 
-    extern proc H5Pget_append_flush(plist_id : hid_t, dims : c_uint, boundary : c_ptr(hsize_t), ref func : H5D_append_cb_t, ref udata : c_void_ptr) : herr_t;
+    extern proc H5Pget_append_flush(plist_id : hid_t, dims : c_uint, boundary : c_ptr(hsize_t), ref func : H5D_append_cb_t, ref udata : c_ptr(void)) : herr_t;
 
-    extern proc H5Pset_efile_prefix(dapl_id : hid_t, prefix : c_string) : herr_t;
+    extern proc H5Pset_efile_prefix(dapl_id : hid_t, prefix : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Pget_efile_prefix(dapl_id : hid_t, prefix : c_string, size : c_size_t) : c_ssize_t;
+    extern proc H5Pget_efile_prefix(dapl_id : hid_t, prefix : c_ptrConst(c_char), size : c_size_t) : c_ssize_t;
 
-    extern proc H5Pset_data_transform(plist_id : hid_t, expression : c_string) : herr_t;
+    extern proc H5Pset_data_transform(plist_id : hid_t, expression : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Pget_data_transform(plist_id : hid_t, expression : c_string, size : c_size_t) : c_ssize_t;
+    extern proc H5Pget_data_transform(plist_id : hid_t, expression : c_ptrConst(c_char), size : c_size_t) : c_ssize_t;
 
-    extern proc H5Pset_buffer(plist_id : hid_t, size : c_size_t, tconv : c_void_ptr, bkg : c_void_ptr) : herr_t;
+    extern proc H5Pset_buffer(plist_id : hid_t, size : c_size_t, tconv : c_ptr(void), bkg : c_ptr(void)) : herr_t;
 
-    extern proc H5Pget_buffer(plist_id : hid_t, ref tconv : c_void_ptr, ref bkg : c_void_ptr) : c_size_t;
+    extern proc H5Pget_buffer(plist_id : hid_t, ref tconv : c_ptr(void), ref bkg : c_ptr(void)) : c_size_t;
 
     extern proc H5Pset_preserve(plist_id : hid_t, status : hbool_t) : herr_t;
 
@@ -1607,23 +1607,23 @@ module HDF5 {
 
     extern proc H5Pget_edc_check(plist_id : hid_t) : H5Z_EDC_t;
 
-    extern proc H5Pset_filter_callback(plist_id : hid_t, func : H5Z_filter_func_t, op_data : c_void_ptr) : herr_t;
+    extern proc H5Pset_filter_callback(plist_id : hid_t, func : H5Z_filter_func_t, op_data : c_ptr(void)) : herr_t;
 
     extern proc H5Pset_btree_ratios(plist_id : hid_t, left : c_double, middle : c_double, right : c_double) : herr_t;
 
     extern proc H5Pget_btree_ratios(plist_id : hid_t, ref left : c_double, ref middle : c_double, ref right : c_double) : herr_t;
 
-    extern proc H5Pset_vlen_mem_manager(plist_id : hid_t, alloc_func : H5MM_allocate_t, alloc_info : c_void_ptr, free_func : H5MM_free_t, free_info : c_void_ptr) : herr_t;
+    extern proc H5Pset_vlen_mem_manager(plist_id : hid_t, alloc_func : H5MM_allocate_t, alloc_info : c_ptr(void), free_func : H5MM_free_t, free_info : c_ptr(void)) : herr_t;
 
-    extern proc H5Pget_vlen_mem_manager(plist_id : hid_t, ref alloc_func : H5MM_allocate_t, ref alloc_info : c_void_ptr, ref free_func : H5MM_free_t, ref free_info : c_void_ptr) : herr_t;
+    extern proc H5Pget_vlen_mem_manager(plist_id : hid_t, ref alloc_func : H5MM_allocate_t, ref alloc_info : c_ptr(void), ref free_func : H5MM_free_t, ref free_info : c_ptr(void)) : herr_t;
 
     extern proc H5Pset_hyper_vector_size(fapl_id : hid_t, size : c_size_t) : herr_t;
 
     extern proc H5Pget_hyper_vector_size(fapl_id : hid_t, ref size : c_size_t) : herr_t;
 
-    extern proc H5Pset_type_conv_cb(dxpl_id : hid_t, op : H5T_conv_except_func_t, operate_data : c_void_ptr) : herr_t;
+    extern proc H5Pset_type_conv_cb(dxpl_id : hid_t, op : H5T_conv_except_func_t, operate_data : c_ptr(void)) : herr_t;
 
-    extern proc H5Pget_type_conv_cb(dxpl_id : hid_t, ref op : H5T_conv_except_func_t, ref operate_data : c_void_ptr) : herr_t;
+    extern proc H5Pget_type_conv_cb(dxpl_id : hid_t, ref op : H5T_conv_except_func_t, ref operate_data : c_ptr(void)) : herr_t;
 
     extern proc H5Pset_create_intermediate_group(plist_id : hid_t, crt_intmd : c_uint) : herr_t;
 
@@ -1653,9 +1653,9 @@ module HDF5 {
 
     extern proc H5Pget_nlinks(plist_id : hid_t, ref nlinks : c_size_t) : herr_t;
 
-    extern proc H5Pset_elink_prefix(plist_id : hid_t, prefix : c_string) : herr_t;
+    extern proc H5Pset_elink_prefix(plist_id : hid_t, prefix : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5Pget_elink_prefix(plist_id : hid_t, prefix : c_string, size : c_size_t) : c_ssize_t;
+    extern proc H5Pget_elink_prefix(plist_id : hid_t, prefix : c_ptrConst(c_char), size : c_size_t) : c_ssize_t;
 
     extern proc H5Pget_elink_fapl(lapl_id : hid_t) : hid_t;
 
@@ -1665,25 +1665,25 @@ module HDF5 {
 
     extern proc H5Pget_elink_acc_flags(lapl_id : hid_t, ref flags : c_uint) : herr_t;
 
-    extern proc H5Pset_elink_cb(lapl_id : hid_t, func : H5L_elink_traverse_t, op_data : c_void_ptr) : herr_t;
+    extern proc H5Pset_elink_cb(lapl_id : hid_t, func : H5L_elink_traverse_t, op_data : c_ptr(void)) : herr_t;
 
-    extern proc H5Pget_elink_cb(lapl_id : hid_t, ref func : H5L_elink_traverse_t, ref op_data : c_void_ptr) : herr_t;
+    extern proc H5Pget_elink_cb(lapl_id : hid_t, ref func : H5L_elink_traverse_t, ref op_data : c_ptr(void)) : herr_t;
 
     extern proc H5Pset_copy_object(plist_id : hid_t, crt_intmd : c_uint) : herr_t;
 
     extern proc H5Pget_copy_object(plist_id : hid_t, ref crt_intmd : c_uint) : herr_t;
 
-    extern proc H5Padd_merge_committed_dtype_path(plist_id : hid_t, path : c_string) : herr_t;
+    extern proc H5Padd_merge_committed_dtype_path(plist_id : hid_t, path : c_ptrConst(c_char)) : herr_t;
 
     extern proc H5Pfree_merge_committed_dtype_paths(plist_id : hid_t) : herr_t;
 
-    extern proc H5Pset_mcdt_search_cb(plist_id : hid_t, func : H5O_mcdt_search_cb_t, op_data : c_void_ptr) : herr_t;
+    extern proc H5Pset_mcdt_search_cb(plist_id : hid_t, func : H5O_mcdt_search_cb_t, op_data : c_ptr(void)) : herr_t;
 
-    extern proc H5Pget_mcdt_search_cb(plist_id : hid_t, ref func : H5O_mcdt_search_cb_t, ref op_data : c_void_ptr) : herr_t;
+    extern proc H5Pget_mcdt_search_cb(plist_id : hid_t, ref func : H5O_mcdt_search_cb_t, ref op_data : c_ptr(void)) : herr_t;
 
-    extern proc H5Pregister1(cls_id : hid_t, name : c_string, size : c_size_t, def_value : c_void_ptr, prp_create : H5P_prp_create_func_t, prp_set : H5P_prp_set_func_t, prp_get : H5P_prp_get_func_t, prp_del : H5P_prp_delete_func_t, prp_copy : H5P_prp_copy_func_t, prp_close : H5P_prp_close_func_t) : herr_t;
+    extern proc H5Pregister1(cls_id : hid_t, name : c_ptrConst(c_char), size : c_size_t, def_value : c_ptr(void), prp_create : H5P_prp_create_func_t, prp_set : H5P_prp_set_func_t, prp_get : H5P_prp_get_func_t, prp_del : H5P_prp_delete_func_t, prp_copy : H5P_prp_copy_func_t, prp_close : H5P_prp_close_func_t) : herr_t;
 
-    extern proc H5Pinsert1(plist_id : hid_t, name : c_string, size : c_size_t, value : c_void_ptr, prp_set : H5P_prp_set_func_t, prp_get : H5P_prp_get_func_t, prp_delete : H5P_prp_delete_func_t, prp_copy : H5P_prp_copy_func_t, prp_close : H5P_prp_close_func_t) : herr_t;
+    extern proc H5Pinsert1(plist_id : hid_t, name : c_ptrConst(c_char), size : c_size_t, value : c_ptr(void), prp_set : H5P_prp_set_func_t, prp_get : H5P_prp_get_func_t, prp_delete : H5P_prp_delete_func_t, prp_copy : H5P_prp_copy_func_t, prp_close : H5P_prp_close_func_t) : herr_t;
 
     extern proc H5Pget_filter1(plist_id : hid_t, filter : c_uint, ref flags : c_uint, ref cd_nelmts : c_size_t, cd_values : c_ptr(c_uint), namelen : c_size_t, name : c_ptr(c_char)) : H5Z_filter_t;
 
@@ -1699,33 +1699,33 @@ module HDF5 {
 
     extern proc H5PLget_loading_state(ref plugin_type : c_uint) : herr_t;
 
-    extern proc H5PLappend(plugin_path : c_string) : herr_t;
+    extern proc H5PLappend(plugin_path : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5PLprepend(plugin_path : c_string) : herr_t;
+    extern proc H5PLprepend(plugin_path : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5PLreplace(plugin_path : c_string, index_arg : c_uint) : herr_t;
+    extern proc H5PLreplace(plugin_path : c_ptrConst(c_char), index_arg : c_uint) : herr_t;
 
-    extern proc H5PLinsert(plugin_path : c_string, index_arg : c_uint) : herr_t;
+    extern proc H5PLinsert(plugin_path : c_ptrConst(c_char), index_arg : c_uint) : herr_t;
 
     extern proc H5PLremove(index_arg : c_uint) : herr_t;
 
-    extern proc H5PLget(index_arg : c_uint, pathname : c_string, size : c_size_t) : c_ssize_t;
+    extern proc H5PLget(index_arg : c_uint, pathname : c_ptrConst(c_char), size : c_size_t) : c_ssize_t;
 
     extern proc H5PLsize(ref listsize : c_uint) : herr_t;
 
-    extern proc H5Rcreate(ref_arg : c_void_ptr, loc_id : hid_t, name : c_string, ref_type : H5R_type_t, space_id : hid_t) : herr_t;
+    extern proc H5Rcreate(ref_arg : c_ptr(void), loc_id : hid_t, name : c_ptrConst(c_char), ref_type : H5R_type_t, space_id : hid_t) : herr_t;
 
-    extern proc H5Rdereference2(obj_id : hid_t, oapl_id : hid_t, ref_type : H5R_type_t, ref_arg : c_void_ptr) : hid_t;
+    extern proc H5Rdereference2(obj_id : hid_t, oapl_id : hid_t, ref_type : H5R_type_t, ref_arg : c_ptr(void)) : hid_t;
 
-    extern proc H5Rget_region(dataset : hid_t, ref_type : H5R_type_t, ref_arg : c_void_ptr) : hid_t;
+    extern proc H5Rget_region(dataset : hid_t, ref_type : H5R_type_t, ref_arg : c_ptr(void)) : hid_t;
 
-    extern proc H5Rget_obj_type2(id : hid_t, ref_type : H5R_type_t, _ref : c_void_ptr, ref obj_type : H5O_type_t) : herr_t;
+    extern proc H5Rget_obj_type2(id : hid_t, ref_type : H5R_type_t, _ref : c_ptr(void), ref obj_type : H5O_type_t) : herr_t;
 
-    extern proc H5Rget_name(loc_id : hid_t, ref_type : H5R_type_t, ref_arg : c_void_ptr, name : c_string, size : c_size_t) : c_ssize_t;
+    extern proc H5Rget_name(loc_id : hid_t, ref_type : H5R_type_t, ref_arg : c_ptr(void), name : c_ptrConst(c_char), size : c_size_t) : c_ssize_t;
 
-    extern proc H5Rget_obj_type1(id : hid_t, ref_type : H5R_type_t, _ref : c_void_ptr) : H5G_obj_t;
+    extern proc H5Rget_obj_type1(id : hid_t, ref_type : H5R_type_t, _ref : c_ptr(void)) : H5G_obj_t;
 
-    extern proc H5Rdereference1(obj_id : hid_t, ref_type : H5R_type_t, ref_arg : c_void_ptr) : hid_t;
+    extern proc H5Rdereference1(obj_id : hid_t, ref_type : H5R_type_t, ref_arg : c_ptr(void)) : hid_t;
 
     extern proc H5Screate(type_arg : H5S_class_t) : hid_t;
 
@@ -1737,9 +1737,9 @@ module HDF5 {
 
     extern proc H5Sclose(space_id : hid_t) : herr_t;
 
-    extern proc H5Sencode(obj_id : hid_t, buf : c_void_ptr, ref nalloc : c_size_t) : herr_t;
+    extern proc H5Sencode(obj_id : hid_t, buf : c_ptr(void), ref nalloc : c_size_t) : herr_t;
 
-    extern proc H5Sdecode(buf : c_void_ptr) : hid_t;
+    extern proc H5Sdecode(buf : c_ptr(void)) : hid_t;
 
     extern proc H5Sget_simple_extent_npoints(space_id : hid_t) : hssize_t;
 
@@ -1801,15 +1801,15 @@ module HDF5 {
 
     extern proc H5FD_log_init() : hid_t;
 
-    extern proc H5Pset_fapl_log(fapl_id : hid_t, logfile : c_string, flags : c_ulonglong, buf_size : c_size_t) : herr_t;
+    extern proc H5Pset_fapl_log(fapl_id : hid_t, logfile : c_ptrConst(c_char), flags : c_ulonglong, buf_size : c_size_t) : herr_t;
 
     extern proc H5FD_multi_init() : hid_t;
 
-    extern proc H5Pset_fapl_multi(fapl_id : hid_t, ref memb_map : H5FD_mem_t, ref memb_fapl : hid_t, ref memb_name : c_string, ref memb_addr : haddr_t, relax : hbool_t) : herr_t;
+    extern proc H5Pset_fapl_multi(fapl_id : hid_t, ref memb_map : H5FD_mem_t, ref memb_fapl : hid_t, ref memb_name : c_ptrConst(c_char), ref memb_addr : haddr_t, relax : hbool_t) : herr_t;
 
-    extern proc H5Pget_fapl_multi(fapl_id : hid_t, ref memb_map : H5FD_mem_t, ref memb_fapl : hid_t, ref memb_name : c_string, ref memb_addr : haddr_t, ref relax : hbool_t) : herr_t;
+    extern proc H5Pget_fapl_multi(fapl_id : hid_t, ref memb_map : H5FD_mem_t, ref memb_fapl : hid_t, ref memb_name : c_ptrConst(c_char), ref memb_addr : haddr_t, ref relax : hbool_t) : herr_t;
 
-    extern proc H5Pset_fapl_split(fapl : hid_t, meta_ext : c_string, meta_plist_id : hid_t, raw_ext : c_string, raw_plist_id : hid_t) : herr_t;
+    extern proc H5Pset_fapl_split(fapl : hid_t, meta_ext : c_ptrConst(c_char), meta_plist_id : hid_t, raw_ext : c_ptrConst(c_char), raw_plist_id : hid_t) : herr_t;
 
     extern proc H5FD_sec2_init() : hid_t;
 
@@ -1819,208 +1819,208 @@ module HDF5 {
 
     extern proc H5Pset_fapl_stdio(fapl_id : hid_t) : herr_t;
 
-    extern proc H5DOwrite_chunk(dset_id : hid_t, dxpl_id : hid_t, filters : uint(32), ref offset : hsize_t, data_size : c_size_t, buf : c_void_ptr) : herr_t;
+    extern proc H5DOwrite_chunk(dset_id : hid_t, dxpl_id : hid_t, filters : uint(32), ref offset : hsize_t, data_size : c_size_t, buf : c_ptr(void)) : herr_t;
 
-    extern proc H5DOappend(dset_id : hid_t, dxpl_id : hid_t, axis : c_uint, extension : c_size_t, memtype : hid_t, buf : c_void_ptr) : herr_t;
+    extern proc H5DOappend(dset_id : hid_t, dxpl_id : hid_t, axis : c_uint, extension : c_size_t, memtype : hid_t, buf : c_ptr(void)) : herr_t;
 
     extern proc H5DSattach_scale(did : hid_t, dsid : hid_t, idx : c_uint) : herr_t;
 
     extern proc H5DSdetach_scale(did : hid_t, dsid : hid_t, idx : c_uint) : herr_t;
 
-    extern proc H5DSset_scale(dsid : hid_t, dimname : c_string) : herr_t;
+    extern proc H5DSset_scale(dsid : hid_t, dimname : c_ptrConst(c_char)) : herr_t;
 
     extern proc H5DSget_num_scales(did : hid_t, dim : c_uint) : c_int;
 
-    extern proc H5DSset_label(did : hid_t, idx : c_uint, label_arg : c_string) : herr_t;
+    extern proc H5DSset_label(did : hid_t, idx : c_uint, label_arg : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5DSget_label(did : hid_t, idx : c_uint, label_arg : c_string, size : c_size_t) : c_ssize_t;
+    extern proc H5DSget_label(did : hid_t, idx : c_uint, label_arg : c_ptrConst(c_char), size : c_size_t) : c_ssize_t;
 
-    extern proc H5DSget_scale_name(did : hid_t, name : c_string, size : c_size_t) : c_ssize_t;
+    extern proc H5DSget_scale_name(did : hid_t, name : c_ptrConst(c_char), size : c_size_t) : c_ssize_t;
 
     extern proc H5DSis_scale(did : hid_t) : htri_t;
 
-    extern proc H5DSiterate_scales(did : hid_t, dim : c_uint, ref idx : c_int, visitor : H5DS_iterate_t, visitor_data : c_void_ptr) : herr_t;
+    extern proc H5DSiterate_scales(did : hid_t, dim : c_uint, ref idx : c_int, visitor : H5DS_iterate_t, visitor_data : c_ptr(void)) : herr_t;
 
     extern proc H5DSis_attached(did : hid_t, dsid : hid_t, idx : c_uint) : htri_t;
 
-    extern proc H5LTmake_dataset(loc_id : hid_t, dset_name : c_string, rank : c_int, ref dims : hsize_t, type_id : hid_t, buffer : c_void_ptr) : herr_t;
+    extern proc H5LTmake_dataset(loc_id : hid_t, dset_name : c_ptrConst(c_char), rank : c_int, ref dims : hsize_t, type_id : hid_t, buffer : c_ptr(void)) : herr_t;
 
-    extern proc H5LTmake_dataset_char(loc_id : hid_t, dset_name : c_string, rank : c_int, ref dims : hsize_t, buffer : c_string) : herr_t;
+    extern proc H5LTmake_dataset_char(loc_id : hid_t, dset_name : c_ptrConst(c_char), rank : c_int, ref dims : hsize_t, buffer : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5LTmake_dataset_short(loc_id : hid_t, dset_name : c_string, rank : c_int, ref dims : hsize_t, ref buffer : c_short) : herr_t;
+    extern proc H5LTmake_dataset_short(loc_id : hid_t, dset_name : c_ptrConst(c_char), rank : c_int, ref dims : hsize_t, ref buffer : c_short) : herr_t;
 
-    extern proc H5LTmake_dataset_int(loc_id : hid_t, dset_name : c_string, rank : c_int, ref dims : hsize_t, ref buffer : c_int) : herr_t;
+    extern proc H5LTmake_dataset_int(loc_id : hid_t, dset_name : c_ptrConst(c_char), rank : c_int, ref dims : hsize_t, ref buffer : c_int) : herr_t;
 
-    extern proc H5LTmake_dataset_long(loc_id : hid_t, dset_name : c_string, rank : c_int, ref dims : hsize_t, ref buffer : c_long) : herr_t;
+    extern proc H5LTmake_dataset_long(loc_id : hid_t, dset_name : c_ptrConst(c_char), rank : c_int, ref dims : hsize_t, ref buffer : c_long) : herr_t;
 
-    extern proc H5LTmake_dataset_float(loc_id : hid_t, dset_name : c_string, rank : c_int, ref dims : hsize_t, ref buffer : c_float) : herr_t;
+    extern proc H5LTmake_dataset_float(loc_id : hid_t, dset_name : c_ptrConst(c_char), rank : c_int, ref dims : hsize_t, ref buffer : c_float) : herr_t;
 
-    extern proc H5LTmake_dataset_double(loc_id : hid_t, dset_name : c_string, rank : c_int, ref dims : hsize_t, ref buffer : c_double) : herr_t;
+    extern proc H5LTmake_dataset_double(loc_id : hid_t, dset_name : c_ptrConst(c_char), rank : c_int, ref dims : hsize_t, ref buffer : c_double) : herr_t;
 
-    extern proc H5LTmake_dataset_string(loc_id : hid_t, dset_name : c_string, buf : c_string) : herr_t;
+    extern proc H5LTmake_dataset_string(loc_id : hid_t, dset_name : c_ptrConst(c_char), buf : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5LTread_dataset(loc_id : hid_t, dset_name : c_string, type_id : hid_t, buffer : c_void_ptr) : herr_t;
+    extern proc H5LTread_dataset(loc_id : hid_t, dset_name : c_ptrConst(c_char), type_id : hid_t, buffer : c_ptr(void)) : herr_t;
 
-    extern proc H5LTread_dataset_char(loc_id : hid_t, dset_name : c_string, buffer : c_string) : herr_t;
+    extern proc H5LTread_dataset_char(loc_id : hid_t, dset_name : c_ptrConst(c_char), buffer : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5LTread_dataset_short(loc_id : hid_t, dset_name : c_string, ref buffer : c_short) : herr_t;
+    extern proc H5LTread_dataset_short(loc_id : hid_t, dset_name : c_ptrConst(c_char), ref buffer : c_short) : herr_t;
 
-    extern proc H5LTread_dataset_int(loc_id : hid_t, dset_name : c_string, ref buffer : c_int) : herr_t;
+    extern proc H5LTread_dataset_int(loc_id : hid_t, dset_name : c_ptrConst(c_char), ref buffer : c_int) : herr_t;
 
-    extern proc H5LTread_dataset_long(loc_id : hid_t, dset_name : c_string, ref buffer : c_long) : herr_t;
+    extern proc H5LTread_dataset_long(loc_id : hid_t, dset_name : c_ptrConst(c_char), ref buffer : c_long) : herr_t;
 
-    extern proc H5LTread_dataset_float(loc_id : hid_t, dset_name : c_string, ref buffer : c_float) : herr_t;
+    extern proc H5LTread_dataset_float(loc_id : hid_t, dset_name : c_ptrConst(c_char), ref buffer : c_float) : herr_t;
 
-    extern proc H5LTread_dataset_double(loc_id : hid_t, dset_name : c_string, ref buffer : c_double) : herr_t;
+    extern proc H5LTread_dataset_double(loc_id : hid_t, dset_name : c_ptrConst(c_char), ref buffer : c_double) : herr_t;
 
-    extern proc H5LTread_dataset_string(loc_id : hid_t, dset_name : c_string, buf : c_string) : herr_t;
+    extern proc H5LTread_dataset_string(loc_id : hid_t, dset_name : c_ptrConst(c_char), buf : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5LTget_dataset_ndims(loc_id : hid_t, dset_name : c_string, ref rank : c_int) : herr_t;
+    extern proc H5LTget_dataset_ndims(loc_id : hid_t, dset_name : c_ptrConst(c_char), ref rank : c_int) : herr_t;
 
-    extern proc H5LTget_dataset_info(loc_id : hid_t, dset_name : c_string, ref dims : hsize_t, ref type_class : H5T_class_t, ref type_size : c_size_t) : herr_t;
-    extern proc H5LTget_dataset_info(loc_id : hid_t, dset_name : c_string, ref dims : hsize_t, type_class : c_ptr(H5T_class_t), type_size : c_ptr(c_size_t)) : herr_t;
+    extern proc H5LTget_dataset_info(loc_id : hid_t, dset_name : c_ptrConst(c_char), ref dims : hsize_t, ref type_class : H5T_class_t, ref type_size : c_size_t) : herr_t;
+    extern proc H5LTget_dataset_info(loc_id : hid_t, dset_name : c_ptrConst(c_char), ref dims : hsize_t, type_class : c_ptr(H5T_class_t), type_size : c_ptr(c_size_t)) : herr_t;
 
-    extern proc H5LTfind_dataset(loc_id : hid_t, name : c_string) : herr_t;
+    extern proc H5LTfind_dataset(loc_id : hid_t, name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5LTset_attribute_string(loc_id : hid_t, obj_name : c_string, attr_name : c_string, attr_data : c_string) : herr_t;
+    extern proc H5LTset_attribute_string(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), attr_data : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5LTset_attribute_char(loc_id : hid_t, obj_name : c_string, attr_name : c_string, buffer : c_string, size : c_size_t) : herr_t;
+    extern proc H5LTset_attribute_char(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), buffer : c_ptrConst(c_char), size : c_size_t) : herr_t;
 
-    extern proc H5LTset_attribute_uchar(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref buffer : c_uchar, size : c_size_t) : herr_t;
+    extern proc H5LTset_attribute_uchar(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref buffer : c_uchar, size : c_size_t) : herr_t;
 
-    extern proc H5LTset_attribute_short(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref buffer : c_short, size : c_size_t) : herr_t;
+    extern proc H5LTset_attribute_short(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref buffer : c_short, size : c_size_t) : herr_t;
 
-    extern proc H5LTset_attribute_ushort(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref buffer : c_ushort, size : c_size_t) : herr_t;
+    extern proc H5LTset_attribute_ushort(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref buffer : c_ushort, size : c_size_t) : herr_t;
 
-    extern proc H5LTset_attribute_int(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref buffer : c_int, size : c_size_t) : herr_t;
+    extern proc H5LTset_attribute_int(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref buffer : c_int, size : c_size_t) : herr_t;
 
-    extern proc H5LTset_attribute_uint(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref buffer : c_uint, size : c_size_t) : herr_t;
+    extern proc H5LTset_attribute_uint(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref buffer : c_uint, size : c_size_t) : herr_t;
 
-    extern proc H5LTset_attribute_long(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref buffer : c_long, size : c_size_t) : herr_t;
+    extern proc H5LTset_attribute_long(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref buffer : c_long, size : c_size_t) : herr_t;
 
-    extern proc H5LTset_attribute_long_long(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref buffer : c_longlong, size : c_size_t) : herr_t;
+    extern proc H5LTset_attribute_long_long(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref buffer : c_longlong, size : c_size_t) : herr_t;
 
-    extern proc H5LTset_attribute_ulong(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref buffer : c_ulong, size : c_size_t) : herr_t;
+    extern proc H5LTset_attribute_ulong(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref buffer : c_ulong, size : c_size_t) : herr_t;
 
-    extern proc H5LTset_attribute_float(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref buffer : c_float, size : c_size_t) : herr_t;
+    extern proc H5LTset_attribute_float(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref buffer : c_float, size : c_size_t) : herr_t;
 
-    extern proc H5LTset_attribute_double(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref buffer : c_double, size : c_size_t) : herr_t;
+    extern proc H5LTset_attribute_double(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref buffer : c_double, size : c_size_t) : herr_t;
 
-    extern proc H5LTget_attribute(loc_id : hid_t, obj_name : c_string, attr_name : c_string, mem_type_id : hid_t, data : c_void_ptr) : herr_t;
+    extern proc H5LTget_attribute(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), mem_type_id : hid_t, data : c_ptr(void)) : herr_t;
 
-    extern proc H5LTget_attribute_string(loc_id : hid_t, obj_name : c_string, attr_name : c_string, data : c_string) : herr_t;
+    extern proc H5LTget_attribute_string(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), data : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5LTget_attribute_char(loc_id : hid_t, obj_name : c_string, attr_name : c_string, data : c_string) : herr_t;
+    extern proc H5LTget_attribute_char(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), data : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5LTget_attribute_uchar(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref data : c_uchar) : herr_t;
+    extern proc H5LTget_attribute_uchar(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref data : c_uchar) : herr_t;
 
-    extern proc H5LTget_attribute_short(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref data : c_short) : herr_t;
+    extern proc H5LTget_attribute_short(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref data : c_short) : herr_t;
 
-    extern proc H5LTget_attribute_ushort(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref data : c_ushort) : herr_t;
+    extern proc H5LTget_attribute_ushort(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref data : c_ushort) : herr_t;
 
-    extern proc H5LTget_attribute_int(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref data : c_int) : herr_t;
+    extern proc H5LTget_attribute_int(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref data : c_int) : herr_t;
 
-    extern proc H5LTget_attribute_uint(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref data : c_uint) : herr_t;
+    extern proc H5LTget_attribute_uint(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref data : c_uint) : herr_t;
 
-    extern proc H5LTget_attribute_long(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref data : c_long) : herr_t;
+    extern proc H5LTget_attribute_long(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref data : c_long) : herr_t;
 
-    extern proc H5LTget_attribute_long_long(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref data : c_longlong) : herr_t;
+    extern proc H5LTget_attribute_long_long(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref data : c_longlong) : herr_t;
 
-    extern proc H5LTget_attribute_ulong(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref data : c_ulong) : herr_t;
+    extern proc H5LTget_attribute_ulong(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref data : c_ulong) : herr_t;
 
-    extern proc H5LTget_attribute_float(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref data : c_float) : herr_t;
+    extern proc H5LTget_attribute_float(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref data : c_float) : herr_t;
 
-    extern proc H5LTget_attribute_double(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref data : c_double) : herr_t;
+    extern proc H5LTget_attribute_double(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref data : c_double) : herr_t;
 
-    extern proc H5LTget_attribute_ndims(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref rank : c_int) : herr_t;
+    extern proc H5LTget_attribute_ndims(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref rank : c_int) : herr_t;
 
-    extern proc H5LTget_attribute_info(loc_id : hid_t, obj_name : c_string, attr_name : c_string, ref dims : hsize_t, ref type_class : H5T_class_t, ref type_size : c_size_t) : herr_t;
+    extern proc H5LTget_attribute_info(loc_id : hid_t, obj_name : c_ptrConst(c_char), attr_name : c_ptrConst(c_char), ref dims : hsize_t, ref type_class : H5T_class_t, ref type_size : c_size_t) : herr_t;
 
-    extern proc H5LTtext_to_dtype(text : c_string, lang_type : H5LT_lang_t) : hid_t;
+    extern proc H5LTtext_to_dtype(text : c_ptrConst(c_char), lang_type : H5LT_lang_t) : hid_t;
 
-    extern proc H5LTdtype_to_text(dtype : hid_t, str : c_string, lang_type : H5LT_lang_t, ref len : c_size_t) : herr_t;
+    extern proc H5LTdtype_to_text(dtype : hid_t, str : c_ptrConst(c_char), lang_type : H5LT_lang_t, ref len : c_size_t) : herr_t;
 
-    extern proc H5LTfind_attribute(loc_id : hid_t, name : c_string) : herr_t;
+    extern proc H5LTfind_attribute(loc_id : hid_t, name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5LTpath_valid(loc_id : hid_t, path : c_string, check_object_valid : hbool_t) : htri_t;
+    extern proc H5LTpath_valid(loc_id : hid_t, path : c_ptrConst(c_char), check_object_valid : hbool_t) : htri_t;
 
-    extern proc H5LTopen_file_image(buf_ptr : c_void_ptr, buf_size : c_size_t, flags : c_uint) : hid_t;
+    extern proc H5LTopen_file_image(buf_ptr : c_ptr(void), buf_size : c_size_t, flags : c_uint) : hid_t;
 
-    extern proc H5IMmake_image_8bit(loc_id : hid_t, dset_name : c_string, width : hsize_t, height : hsize_t, ref buffer : c_uchar) : herr_t;
+    extern proc H5IMmake_image_8bit(loc_id : hid_t, dset_name : c_ptrConst(c_char), width : hsize_t, height : hsize_t, ref buffer : c_uchar) : herr_t;
 
-    extern proc H5IMmake_image_24bit(loc_id : hid_t, dset_name : c_string, width : hsize_t, height : hsize_t, interlace : c_string, ref buffer : c_uchar) : herr_t;
+    extern proc H5IMmake_image_24bit(loc_id : hid_t, dset_name : c_ptrConst(c_char), width : hsize_t, height : hsize_t, interlace : c_ptrConst(c_char), ref buffer : c_uchar) : herr_t;
 
-    extern proc H5IMget_image_info(loc_id : hid_t, dset_name : c_string, ref width : hsize_t, ref height : hsize_t, ref planes : hsize_t, interlace : c_string, ref npals : hssize_t) : herr_t;
+    extern proc H5IMget_image_info(loc_id : hid_t, dset_name : c_ptrConst(c_char), ref width : hsize_t, ref height : hsize_t, ref planes : hsize_t, interlace : c_ptrConst(c_char), ref npals : hssize_t) : herr_t;
 
-    extern proc H5IMread_image(loc_id : hid_t, dset_name : c_string, ref buffer : c_uchar) : herr_t;
+    extern proc H5IMread_image(loc_id : hid_t, dset_name : c_ptrConst(c_char), ref buffer : c_uchar) : herr_t;
 
-    extern proc H5IMmake_palette(loc_id : hid_t, pal_name : c_string, ref pal_dims : hsize_t, ref pal_data : c_uchar) : herr_t;
+    extern proc H5IMmake_palette(loc_id : hid_t, pal_name : c_ptrConst(c_char), ref pal_dims : hsize_t, ref pal_data : c_uchar) : herr_t;
 
-    extern proc H5IMlink_palette(loc_id : hid_t, image_name : c_string, pal_name : c_string) : herr_t;
+    extern proc H5IMlink_palette(loc_id : hid_t, image_name : c_ptrConst(c_char), pal_name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5IMunlink_palette(loc_id : hid_t, image_name : c_string, pal_name : c_string) : herr_t;
+    extern proc H5IMunlink_palette(loc_id : hid_t, image_name : c_ptrConst(c_char), pal_name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5IMget_npalettes(loc_id : hid_t, image_name : c_string, ref npals : hssize_t) : herr_t;
+    extern proc H5IMget_npalettes(loc_id : hid_t, image_name : c_ptrConst(c_char), ref npals : hssize_t) : herr_t;
 
-    extern proc H5IMget_palette_info(loc_id : hid_t, image_name : c_string, pal_number : c_int, ref pal_dims : hsize_t) : herr_t;
+    extern proc H5IMget_palette_info(loc_id : hid_t, image_name : c_ptrConst(c_char), pal_number : c_int, ref pal_dims : hsize_t) : herr_t;
 
-    extern proc H5IMget_palette(loc_id : hid_t, image_name : c_string, pal_number : c_int, ref pal_data : c_uchar) : herr_t;
+    extern proc H5IMget_palette(loc_id : hid_t, image_name : c_ptrConst(c_char), pal_number : c_int, ref pal_data : c_uchar) : herr_t;
 
-    extern proc H5IMis_image(loc_id : hid_t, dset_name : c_string) : herr_t;
+    extern proc H5IMis_image(loc_id : hid_t, dset_name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5IMis_palette(loc_id : hid_t, dset_name : c_string) : herr_t;
+    extern proc H5IMis_palette(loc_id : hid_t, dset_name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5TBmake_table(table_title : c_string, loc_id : hid_t, dset_name : c_string, nfields : hsize_t, nrecords : hsize_t, type_size : c_size_t, field_names : c_ptr(c_string), ref field_offset : c_size_t, ref field_types : hid_t, chunk_size : hsize_t, fill_data : c_void_ptr, compress : c_int, buf : c_void_ptr) : herr_t;
+    extern proc H5TBmake_table(table_title : c_ptrConst(c_char), loc_id : hid_t, dset_name : c_ptrConst(c_char), nfields : hsize_t, nrecords : hsize_t, type_size : c_size_t, field_names : c_ptr(c_ptrConst(c_char)), ref field_offset : c_size_t, ref field_types : hid_t, chunk_size : hsize_t, fill_data : c_ptr(void), compress : c_int, buf : c_ptr(void)) : herr_t;
 
-    extern proc H5TBappend_records(loc_id : hid_t, dset_name : c_string, nrecords : hsize_t, type_size : c_size_t, ref field_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_void_ptr) : herr_t;
+    extern proc H5TBappend_records(loc_id : hid_t, dset_name : c_ptrConst(c_char), nrecords : hsize_t, type_size : c_size_t, ref field_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_ptr(void)) : herr_t;
 
-    extern proc H5TBwrite_records(loc_id : hid_t, dset_name : c_string, start : hsize_t, nrecords : hsize_t, type_size : c_size_t, ref field_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_void_ptr) : herr_t;
+    extern proc H5TBwrite_records(loc_id : hid_t, dset_name : c_ptrConst(c_char), start : hsize_t, nrecords : hsize_t, type_size : c_size_t, ref field_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_ptr(void)) : herr_t;
 
-    extern proc H5TBwrite_fields_name(loc_id : hid_t, dset_name : c_string, field_names : c_string, start : hsize_t, nrecords : hsize_t, type_size : c_size_t, ref field_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_void_ptr) : herr_t;
+    extern proc H5TBwrite_fields_name(loc_id : hid_t, dset_name : c_ptrConst(c_char), field_names : c_ptrConst(c_char), start : hsize_t, nrecords : hsize_t, type_size : c_size_t, ref field_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_ptr(void)) : herr_t;
 
-    extern proc H5TBwrite_fields_index(loc_id : hid_t, dset_name : c_string, nfields : hsize_t, ref field_index : c_int, start : hsize_t, nrecords : hsize_t, type_size : c_size_t, ref field_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_void_ptr) : herr_t;
+    extern proc H5TBwrite_fields_index(loc_id : hid_t, dset_name : c_ptrConst(c_char), nfields : hsize_t, ref field_index : c_int, start : hsize_t, nrecords : hsize_t, type_size : c_size_t, ref field_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_ptr(void)) : herr_t;
 
-    extern proc H5TBread_table(loc_id : hid_t, dset_name : c_string, dst_size : c_size_t, ref dst_offset : c_size_t, ref dst_sizes : c_size_t, dst_buf : c_void_ptr) : herr_t;
+    extern proc H5TBread_table(loc_id : hid_t, dset_name : c_ptrConst(c_char), dst_size : c_size_t, ref dst_offset : c_size_t, ref dst_sizes : c_size_t, dst_buf : c_ptr(void)) : herr_t;
 
-    extern proc H5TBread_fields_name(loc_id : hid_t, dset_name : c_string, field_names : c_string, start : hsize_t, nrecords : hsize_t, type_size : c_size_t, ref field_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_void_ptr) : herr_t;
+    extern proc H5TBread_fields_name(loc_id : hid_t, dset_name : c_ptrConst(c_char), field_names : c_ptrConst(c_char), start : hsize_t, nrecords : hsize_t, type_size : c_size_t, ref field_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_ptr(void)) : herr_t;
 
-    extern proc H5TBread_fields_index(loc_id : hid_t, dset_name : c_string, nfields : hsize_t, ref field_index : c_int, start : hsize_t, nrecords : hsize_t, type_size : c_size_t, ref field_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_void_ptr) : herr_t;
+    extern proc H5TBread_fields_index(loc_id : hid_t, dset_name : c_ptrConst(c_char), nfields : hsize_t, ref field_index : c_int, start : hsize_t, nrecords : hsize_t, type_size : c_size_t, ref field_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_ptr(void)) : herr_t;
 
-    extern proc H5TBread_records(loc_id : hid_t, dset_name : c_string, start : hsize_t, nrecords : hsize_t, type_size : c_size_t, ref dst_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_void_ptr) : herr_t;
+    extern proc H5TBread_records(loc_id : hid_t, dset_name : c_ptrConst(c_char), start : hsize_t, nrecords : hsize_t, type_size : c_size_t, ref dst_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_ptr(void)) : herr_t;
 
-    extern proc H5TBget_table_info(loc_id : hid_t, dset_name : c_string, ref nfields : hsize_t, ref nrecords : hsize_t) : herr_t;
+    extern proc H5TBget_table_info(loc_id : hid_t, dset_name : c_ptrConst(c_char), ref nfields : hsize_t, ref nrecords : hsize_t) : herr_t;
 
-    extern proc H5TBget_field_info(loc_id : hid_t, dset_name : c_string, field_names : c_ptr(c_string), ref field_sizes : c_size_t, ref field_offsets : c_size_t, ref type_size : c_size_t) : herr_t;
+    extern proc H5TBget_field_info(loc_id : hid_t, dset_name : c_ptrConst(c_char), field_names : c_ptr(c_ptrConst(c_char)), ref field_sizes : c_size_t, ref field_offsets : c_size_t, ref type_size : c_size_t) : herr_t;
 
-    extern proc H5TBdelete_record(loc_id : hid_t, dset_name : c_string, start : hsize_t, nrecords : hsize_t) : herr_t;
+    extern proc H5TBdelete_record(loc_id : hid_t, dset_name : c_ptrConst(c_char), start : hsize_t, nrecords : hsize_t) : herr_t;
 
-    extern proc H5TBinsert_record(loc_id : hid_t, dset_name : c_string, start : hsize_t, nrecords : hsize_t, dst_size : c_size_t, ref dst_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_void_ptr) : herr_t;
+    extern proc H5TBinsert_record(loc_id : hid_t, dset_name : c_ptrConst(c_char), start : hsize_t, nrecords : hsize_t, dst_size : c_size_t, ref dst_offset : c_size_t, ref dst_sizes : c_size_t, buf : c_ptr(void)) : herr_t;
 
-    extern proc H5TBadd_records_from(loc_id : hid_t, dset_name1 : c_string, start1 : hsize_t, nrecords : hsize_t, dset_name2 : c_string, start2 : hsize_t) : herr_t;
+    extern proc H5TBadd_records_from(loc_id : hid_t, dset_name1 : c_ptrConst(c_char), start1 : hsize_t, nrecords : hsize_t, dset_name2 : c_ptrConst(c_char), start2 : hsize_t) : herr_t;
 
-    extern proc H5TBcombine_tables(loc_id1 : hid_t, dset_name1 : c_string, loc_id2 : hid_t, dset_name2 : c_string, dset_name3 : c_string) : herr_t;
+    extern proc H5TBcombine_tables(loc_id1 : hid_t, dset_name1 : c_ptrConst(c_char), loc_id2 : hid_t, dset_name2 : c_ptrConst(c_char), dset_name3 : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5TBinsert_field(loc_id : hid_t, dset_name : c_string, field_name : c_string, field_type : hid_t, position : hsize_t, fill_data : c_void_ptr, buf : c_void_ptr) : herr_t;
+    extern proc H5TBinsert_field(loc_id : hid_t, dset_name : c_ptrConst(c_char), field_name : c_ptrConst(c_char), field_type : hid_t, position : hsize_t, fill_data : c_ptr(void), buf : c_ptr(void)) : herr_t;
 
-    extern proc H5TBdelete_field(loc_id : hid_t, dset_name : c_string, field_name : c_string) : herr_t;
+    extern proc H5TBdelete_field(loc_id : hid_t, dset_name : c_ptrConst(c_char), field_name : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5TBAget_title(loc_id : hid_t, table_title : c_string) : herr_t;
+    extern proc H5TBAget_title(loc_id : hid_t, table_title : c_ptrConst(c_char)) : herr_t;
 
-    extern proc H5TBAget_fill(loc_id : hid_t, dset_name : c_string, dset_id : hid_t, ref dst_buf : c_uchar) : htri_t;
+    extern proc H5TBAget_fill(loc_id : hid_t, dset_name : c_ptrConst(c_char), dset_id : hid_t, ref dst_buf : c_uchar) : htri_t;
 
-    extern proc H5PTcreate(loc_id : hid_t, dset_name : c_string, dtype_id : hid_t, chunk_size : hsize_t, plist_id : hid_t) : hid_t;
+    extern proc H5PTcreate(loc_id : hid_t, dset_name : c_ptrConst(c_char), dtype_id : hid_t, chunk_size : hsize_t, plist_id : hid_t) : hid_t;
 
-    extern proc H5PTopen(loc_id : hid_t, dset_name : c_string) : hid_t;
+    extern proc H5PTopen(loc_id : hid_t, dset_name : c_ptrConst(c_char)) : hid_t;
 
     extern proc H5PTclose(table_id : hid_t) : herr_t;
 
-    extern proc H5PTcreate_fl(loc_id : hid_t, dset_name : c_string, dtype_id : hid_t, chunk_size : hsize_t, compression : c_int) : hid_t;
+    extern proc H5PTcreate_fl(loc_id : hid_t, dset_name : c_ptrConst(c_char), dtype_id : hid_t, chunk_size : hsize_t, compression : c_int) : hid_t;
 
-    extern proc H5PTappend(table_id : hid_t, nrecords : c_size_t, data : c_void_ptr) : herr_t;
+    extern proc H5PTappend(table_id : hid_t, nrecords : c_size_t, data : c_ptr(void)) : herr_t;
 
-    extern proc H5PTget_next(table_id : hid_t, nrecords : c_size_t, data : c_void_ptr) : herr_t;
+    extern proc H5PTget_next(table_id : hid_t, nrecords : c_size_t, data : c_ptr(void)) : herr_t;
 
-    extern proc H5PTread_packets(table_id : hid_t, start : hsize_t, nrecords : c_size_t, data : c_void_ptr) : herr_t;
+    extern proc H5PTread_packets(table_id : hid_t, start : hsize_t, nrecords : c_size_t, data : c_ptr(void)) : herr_t;
 
     extern proc H5PTget_num_packets(table_id : hid_t, ref nrecords : hsize_t) : herr_t;
 
@@ -2038,13 +2038,13 @@ module HDF5 {
 
     extern proc H5PTget_index(table_id : hid_t, ref pt_index : hsize_t) : herr_t;
 
-    extern proc H5PTfree_vlen_buff(table_id : hid_t, bufflen : c_size_t, buff : c_void_ptr) : herr_t;
+    extern proc H5PTfree_vlen_buff(table_id : hid_t, bufflen : c_size_t, buff : c_ptr(void)) : herr_t;
 
     extern proc H5LDget_dset_dims(did : hid_t, ref cur_dims : hsize_t) : herr_t;
 
-    extern proc H5LDget_dset_type_size(did : hid_t, fields : c_string) : c_size_t;
+    extern proc H5LDget_dset_type_size(did : hid_t, fields : c_ptrConst(c_char)) : c_size_t;
 
-    extern proc H5LDget_dset_elmts(did : hid_t, ref prev_dims : hsize_t, ref cur_dims : hsize_t, fields : c_string, buf : c_void_ptr) : herr_t;
+    extern proc H5LDget_dset_elmts(did : hid_t, ref prev_dims : hsize_t, ref cur_dims : hsize_t, fields : c_ptrConst(c_char), buf : c_ptr(void)) : herr_t;
 
     // ==== c2chapel typedefs ====
 
@@ -2211,10 +2211,10 @@ module HDF5 {
     extern record H5E_error1_t {
       var maj_num : H5E_major_t;
       var min_num : H5E_minor_t;
-      var func_name : c_string;
-      var file_name : c_string;
+      var func_name : c_ptrConst(c_char);
+      var file_name : c_ptrConst(c_char);
       var line : c_uint;
-      var desc : c_string;
+      var desc : c_ptrConst(c_char);
     }
 
     extern record H5E_error2_t {
@@ -2222,9 +2222,9 @@ module HDF5 {
       var maj_num : hid_t;
       var min_num : hid_t;
       var line : c_uint;
-      var func_name : c_string;
-      var file_name : c_string;
-      var desc : c_string;
+      var func_name : c_ptrConst(c_char);
+      var file_name : c_ptrConst(c_char);
+      var desc : c_ptrConst(c_char);
     }
 
     extern type H5E_major_t = hid_t;
@@ -2242,7 +2242,7 @@ module HDF5 {
     extern type H5E_walk2_t = c_fn_ptr;
 
     extern record H5FD_class_t {
-      var name : c_string;
+      var name : c_ptrConst(c_char);
       var maxaddr : haddr_t;
       var fc_degree : H5F_close_degree_t;
       var terminate : c_fn_ptr;
@@ -2283,7 +2283,7 @@ module HDF5 {
       var image_free : c_fn_ptr;
       var udata_copy : c_fn_ptr;
       var udata_free : c_fn_ptr;
-      var udata : c_void_ptr;
+      var udata : c_ptr(void);
     }
 
     // H5FD_file_image_op_t enum
@@ -2385,7 +2385,7 @@ module HDF5 {
     }
 
     extern record H5F_info2_t {
-      var super : unnamedStruct1;
+      extern "super" var super_ : unnamedStruct1;
       var free : unnamedStruct2;
       var sohm : unnamedStruct3;
     }
@@ -2494,7 +2494,7 @@ module HDF5 {
     extern record H5L_class_t {
       var version : c_int;
       var id : H5L_type_t;
-      var comment : c_string;
+      var comment : c_ptrConst(c_char);
       var create_func : H5L_create_func_t;
       var move_func : H5L_move_func_t;
       var copy_func : H5L_copy_func_t;
@@ -2676,7 +2676,7 @@ module HDF5 {
       var command : H5T_cmd_t;
       var need_bkg : H5T_bkg_t;
       var recalc : hbool_t;
-      var priv : c_void_ptr;
+      var priv : c_ptr(void);
     }
 
     // H5T_class_t enum
@@ -2843,12 +2843,12 @@ module HDF5 {
 
     extern record H5Z_cb_t {
       var func : H5Z_filter_func_t;
-      var op_data : c_void_ptr;
+      var op_data : c_ptr(void);
     }
 
     extern record H5Z_class1_t {
       var id : H5Z_filter_t;
-      var name : c_string;
+      var name : c_ptrConst(c_char);
       var can_apply : H5Z_can_apply_func_t;
       var set_local : H5Z_set_local_func_t;
       var filter : H5Z_func_t;
@@ -2859,7 +2859,7 @@ module HDF5 {
       var id : H5Z_filter_t;
       var encoder_present : c_uint;
       var decoder_present : c_uint;
-      var name : c_string;
+      var name : c_ptrConst(c_char);
       var can_apply : H5Z_can_apply_func_t;
       var set_local : H5Z_set_local_func_t;
       var filter : H5Z_func_t;
@@ -2913,14 +2913,14 @@ module HDF5 {
 
     extern record hvl_t {
       var len : c_size_t;
-      var p : c_void_ptr;
+      var p : c_ptr(void);
     }
 
     /* Macros defined in H5public.h */
     extern const H5_VERS_MAJOR: c_uint;
     extern const H5_VERS_MINOR: c_uint;
     extern const H5_VERS_RELEASE: c_uint;
-    extern const H5_VERS_SUBRELEASE: c_string;
+    extern const H5_VERS_SUBRELEASE: c_ptrConst(c_char);
 
     proc H5check() {
       H5check_version(H5_VERS_MAJOR, H5_VERS_MINOR, H5_VERS_RELEASE);
@@ -3472,17 +3472,17 @@ module HDF5 {
       use CTypes;
 
       extern proc H5LTget_dataset_info_WAR(loc_id: hid_t,
-                                           dset_name: c_string,
-                                           dims: c_void_ptr,
+                                           dset_name: c_ptrConst(c_char),
+                                           dims: c_ptr(void),
                                            type_class: c_ptr(H5T_class_t),
                                            type_size: c_ptr(c_size_t)): herr_t;
 
       extern proc H5LTmake_dataset_WAR(loc_id: hid_t,
-                                       dset_name: c_string,
+                                       dset_name: c_ptrConst(c_char),
                                        rank: c_int,
-                                       dims: c_void_ptr,
+                                       dims: c_ptr(void),
                                        type_id: hid_t,
-                                       buffer: c_void_ptr): herr_t;
+                                       buffer: c_ptr(void)): herr_t;
     }
   }
 
@@ -3539,6 +3539,9 @@ module HDF5 {
         filenames.pushBack(f);
       }
     }
+    // TODO: this should check that it found any files and stop if none were
+    // found because the next operation (readAllNamedHDF5Files) gives a poor
+    // error message about an empty bounding box when no files are located.
     var fArray: [1..filenames.size] string;
     for (l, a) in zip(filenames, fArray) {
       a = l;
@@ -3554,7 +3557,7 @@ module HDF5 {
     use BlockDist;
 
     const Space = filenames.domain;
-    const BlockSpace = Space dmapped Block(Space, locs,
+    const BlockSpace = Space dmapped new blockDist(Space, locs,
                                            dataParTasksPerLocale=1);
     var files: [BlockSpace] ArrayWrapper(eltType, rank);
     forall (f, name) in zip(files, filenames) {
@@ -3623,9 +3626,9 @@ module HDF5 {
   /* Read the dataset named `dsetName` from the open file that `file_id`
      refers to.  Store the dataset into the array `data`.
      Can read data of type int/uint (size 8, 16, 32, 64), real (size 32, 64),
-     and c_string.
+     and c_ptrConst(c_char).
    */
-  proc readHDF5Dataset(file_id, dsetName: string, data) {
+  proc readHDF5Dataset(file_id, dsetName: string, ref data) {
     if !isArray(data) then compilerError("'data' must be an array");
 
     type eltType = data.eltType;
@@ -3650,7 +3653,7 @@ module HDF5 {
       when real(32) do hdf5Type = C_HDF5.H5T_IEEE_F32LE;
       when real(64) do hdf5Type = C_HDF5.H5T_IEEE_F64LE;
 
-      when c_string {
+      when c_ptrConst(c_char) {
         hdf5Type = C_HDF5.H5Tcopy(C_HDF5.H5T_C_S1);
         C_HDF5.H5Tset_size(hdf5Type, C_HDF5.H5T_VARIABLE);
       }
@@ -3666,7 +3669,7 @@ module HDF5 {
      clear the contents of an existing file.  `Append` will add to a file
      that already exists.  Both will open a new empty file.
    */
-  enum Hdf5OpenMode { Truncate, Append };
+  enum Hdf5OpenMode { Truncate, Append }
 
   /* Write the arrays from the :record:`ArrayWrapper` records stored in
      the `data` argument to the corresponding filename in the
@@ -3688,7 +3691,7 @@ module HDF5 {
   proc writeArraysToHDF5Files(dirName: string, dsetNames: [] string,
                               filenames: [] string, type eltType,
                               param rank: int,
-                              data: [] ArrayWrapper(eltType, rank),
+                              ref data: [] ArrayWrapper(eltType, rank),
                               mode: Hdf5OpenMode) throws {
     use BlockDist, FileSystem;
 
@@ -3885,7 +3888,7 @@ module HDF5 {
      to do preprocessing as desired before returning the data read.
    */
   class HDF5Preprocessor {
-    proc preprocess(A: []) {
+    proc preprocess(ref A: []) {
       import HaltWrappers;
       HaltWrappers.pureVirtualMethodHalt();
     }
@@ -3928,7 +3931,7 @@ module HDF5 {
       extern proc H5Pset_dxpl_mpio(xferPlist: C_HDF5.hid_t,
                                    flag: C_HDF5.H5FD_mpio_xfer_t): C_HDF5.herr_t;
 
-      proc isBlock(D: Block) param do return true;
+      proc isBlock(D: blockDist) param do return true;
       proc isBlock(D) param do return false;
 
       if !isBlock(A.dom.dist) {
@@ -4052,9 +4055,9 @@ module HDF5 {
       // A11, A12, B11, B12
       // A21, A22, B21, B22
       use BlockDist, CyclicDist, super.C_HDF5;
-      proc isBlock(D: Block) param do return true;
+      proc isBlock(D: blockDist) param do return true;
       proc isBlock(D) param do return false;
-      proc isCyclic(D: Cyclic) param do return true;
+      proc isCyclic(D: cyclicDist) param do return true;
       proc isCyclic(D) param do return false;
       if !(isBlock(A.dom.dist) || isCyclic(A.dom.dist)) then
         compilerError("hdf5ReadDistributedArray currently only supports block or cyclic distributed arrays");

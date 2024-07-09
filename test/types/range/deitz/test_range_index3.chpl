@@ -10,7 +10,7 @@ testRangeIndexing(1..10 by -3, 3..8);
 testRangeIndexing(1..10 by -3, 3..7);
 testRangeIndexing(1..10 by -3, 3..6);
 
-testRangeIndexing(1..265 by 131, 1..233:uint(8));
+testRangeIndexing(1..265 by 131, 1:uint(8)..233:uint(8));
 
 testRangeIndexing(1..11 by -3, 3..8 by -3);
 

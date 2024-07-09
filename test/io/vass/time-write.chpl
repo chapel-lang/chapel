@@ -56,7 +56,7 @@ locking=false with printf_unlocked.
 that does not lock the FILE* so it's only safe to use in a serial context.]
 */
 
-use Time, IO;
+use Time, IO, CTypes;
 
 config const n = 3;
 config const tries = 2;
@@ -74,28 +74,28 @@ extern proc cf_trial(n: int);
 extern proc cs_trial(n: int);
 
 proc lstr_trial() {
-  extern proc printf(format: c_string, arg...);
+  extern proc printf(format: c_ptrConst(c_char), arg...);
   for 1..n do
-    printf("%s", "\n".c_str());
+    printf("%s", "\n");
 }
 
 proc lcs_trial() {
-  extern proc printf(format: c_string, arg...);
-  const c_newline_local: c_string = "\n";
+  extern proc printf(format: c_ptrConst(c_char), arg...);
+  const c_newline_local: c_ptrConst(c_char) = "\n";
   for 1..n do
     printf("%s", c_newline_local);
 }
 
 const str_newline_global = "\n";
 proc gstr_trial() {
-  extern proc printf(format: c_string, arg...);
+  extern proc printf(format: c_ptrConst(c_char), arg...);
   for 1..n do
     printf("%s", str_newline_global.c_str());
 }
 
-const c_newline_global: c_string = "\n";
+const c_newline_global: c_ptrConst(c_char) = "\n";
 proc gcs_trial() {
-  extern proc printf(format: c_string, arg...);
+  extern proc printf(format: c_ptrConst(c_char), arg...);
   for 1..n do
     printf("%s", c_newline_global);
 }
@@ -129,7 +129,7 @@ inline proc addTime(ref t: real) {
 
 }
 
-const reportFormat = "%-24s " + fmt + "\n";
+const reportFormat = "%<24s " + fmt + "\n";
 inline proc reportTime(title: string, time: real) {
   info.writef(reportFormat, title, time);
 }

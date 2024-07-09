@@ -1,14 +1,14 @@
 use BlockDist;
 
 proc test(a, b) {
-  writeln(a.domain.dist == b.domain.dist);
+  writeln(a.domain.distribution == b.domain.distribution);
 }
 
 var space = {0..9, 0..9};
 var offsetSpace = {10..19, 10..19};
 
-var dom = space dmapped Block(space);
-var offsetDom = space dmapped Block(offsetSpace);
+var dom = space dmapped new blockDist(space);
+var offsetDom = space dmapped new blockDist(offsetSpace);
 
 var arr: [dom] int;
 var offsetArr: [offsetDom] int;

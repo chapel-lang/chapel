@@ -11,16 +11,16 @@ var A: [BigDom] real,
     B: [ProbDom] real,
     W: [ProbDom] arr33;
 
-forall (i,j) in ProbDom {
+forall (i,j) in ProbDom with (ref A, ref W) {
   A(i,j) = (i-1)*n + j;
-  forall (x,y) in StencDom {
+  forall (x,y) in StencDom with (ref W) {
     W(i,j)(x+1)(y+1) = if (x == y) then 0.0 else 1.0;
   }
 }
 
 writeln("A is:\n", A, "\n");
 
-forall ij in ProbDom do
+forall ij in ProbDom with (ref B) do
   B(ij) = (+ reduce [(x,y) in StencDom] W(ij)(x+1)(y+1)*A(ij+(x,y))) / 6;
 
 writeln("B is:\n", B, "\n");

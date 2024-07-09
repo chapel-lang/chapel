@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -105,6 +105,11 @@ public:
   BlockStmt*                 body;
   IntentTag                  thisTag;
   RetTag                     retTag;
+
+  // If the parenful version of this function is deprecated, the deprecation
+  // message.
+  std::string                parenfulDeprecationMsg;
+  const char*                getParenfulDeprecationMsg() const;
 
   // Support for iterator lowering.
   IteratorInfo*              iteratorInfo;
@@ -245,6 +250,7 @@ public:
   bool                       isInitializer()                             const;
   bool                       isPostInitializer()                         const;
   bool                       isDefaultInit()                             const;
+  bool                       isDefaultCopyInit()                         const;
   bool                       isCopyInit()                                const;
 
   bool                       isGeneric()                                 const;

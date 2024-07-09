@@ -7,7 +7,7 @@ class C {
 }
 
 proc foo(x) type {
-  var nn = (new owned C(x)).borrow();
+  var nnObj = new C(x); var nn = nnObj.borrow();
   for i in 1..x do
     writeln(i);
   return nn.type;

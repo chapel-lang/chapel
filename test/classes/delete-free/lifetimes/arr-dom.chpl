@@ -11,7 +11,7 @@ proc badReturnBorrowedArrayDom() {
 proc badReturnBorrowedArrayDomDist() {
   var A:[1..10] int;
 
-  return A.domain.dist;
+  return A.domain.distribution;
   // A and its elements are destroyed here
 }
 

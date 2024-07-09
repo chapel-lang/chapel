@@ -5,7 +5,7 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   writeln("------------");
   writeln(r);
   writeln("idxType          = ", r.idxType:string);
-  writeln("stridable        = ", r.stridable);
+  writeln("strides          = ", r.strides);
   writeln("bounds           = ", r.bounds);
 
 
@@ -14,7 +14,7 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   writeln("hasHighBound()   = ", r.hasHighBound());
   writeln("stride           = ", r.stride);
   writeln("alignment        = ", r.alignment);
-  writeln("aligned          = ", r.aligned);
+  writeln("aligned          = ", r.isAligned());
   writeln("first            = ", if r.hasFirst() then r.first:string else "undefined");
   writeln("last             = ", if r.hasLast() then r.last:string else "undefined");
   writeln("lowBound         = ", if r.hasLowBound() then r.lowBound else "undefined");
@@ -28,14 +28,10 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   }
   writeln("hasFirst()       = ", r.hasFirst());
   writeln("hasLast()        = ", r.hasLast());
-  writeln("isNat.Algned()   = ", r.isNaturallyAligned());
-  writeln("isAmbiguous      = ", r.isAmbiguous());
+  writeln("isNat.Algned()   = ", r.chpl_isNaturallyAligned());
+  writeln("isAmbiguous      = ", ! r.isAligned());
   writeln("contains(", idx, ") = ", r.contains(idx));
   writeln("contains(", subr, ") = ", r.contains(subr));
-
-
-  writeln("boundsCheck(", idx, ") = ", r.boundsCheck(idx));
-  writeln("boundsCheck(", subr, ") = ", r.boundsCheck(subr));
   writeln("indexOrder(", idx, ") = ", r.indexOrder(idx));
   if (r.hasFirst()) then
     writeln("orderToIndex(", offset, ")  = ", r.orderToIndex(offset));

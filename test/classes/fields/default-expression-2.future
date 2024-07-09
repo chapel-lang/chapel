@@ -1,0 +1,2 @@
+bug: "first-touch" instantiation of a default-initialized field
+#24594

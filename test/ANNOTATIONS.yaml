@@ -522,7 +522,7 @@ all:
     - text: Improvements for iterating over unbounded enum/bool ranges (#21332)
       config: chapcs
     - text: Avoid loading CUDA module at each kernel launch (#21346)
-      config: gpu
+      config: 1-node-p100
   01/19/23:
     - text: Support for one locale per socket (#21057)
       config: 16-node-xc, 16-node-cs-hdr
@@ -533,7 +533,7 @@ all:
     - text: Fix default and const argument intents on tuples (#21665)
       config: chapcs, 1-node-xc
     - text: Do less normalization in gpuTransforms and do gpuTransforms after loop invariant code motion (#21673)
-      config: gpu
+      config: 1-node-p100
   03/07/23:
     - text: Switch DR.dsiAccess tuple arg to const ref (#21777)
       config: chapcs, 1-node-xc
@@ -542,7 +542,44 @@ all:
       config: chapcs
   03/16/23:
     - text: Update GPU performance tests to not count launches in perf mode (#21891)
-      config: gpu
+      config: 1-node-p100
+  04/06/23:
+    - text: Make Dyno scope resolution default (#21983)
+      config: chapcs
+  05/26/23:
+    - text: Upgrade to llvm 15
+      config: chapcs
+  06/01/23:
+    - text: Remove calls to codegenInvariantStart (#22439)
+      config: chapcs
+  08/09/23:
+    - text: Deprecate c_string in user facing modules (#22622)
+      config: chapcs
+  08/31/23:
+    - text: Relax LICM aliasing rules for GPU kernels to try benefit performance (#22664)
+      config: 1-node-p100, 1-node-mi60
+  09/01/23:
+    - text: Switch the default GPU memory strategy to `array_on_device` (#23138)
+      config: 1-node-p100, 1-node-mi60
+  09/15/23:
+    - text: Use per-task, per-device GPU streams for asynchronous execution (#23307)
+      config: 1-node-p100, 1-node-mi60
+  01/11/24:
+    - text: Remove the old slicing rule (#24154)
+      config: chapcs
+  05/01/24:
+    - text: upgrade default LLVM to LLVM 17
+      config: chapcs
+  06/03/24:
+    - text: Stop setting CHPL_TARGET_CPU (#25161)
+      config: chapcs
+  06/12/24:
+    - text: Add support for GASNet PSHM and send progress thread (#25140)
+      config: 16-node-apollo-hdr
+  06/17/24:
+    - text: Revert to default GASNET_SND_THREAD=0 (#25307)
+      config: 16-node-apollo-hdr
+
 # End all
 
 allocate:
@@ -577,6 +614,8 @@ arrayPerformance-1d:
 arrayPerformance-2d:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+  06/02/23:
+    - Rename range.stridable to range.strides strideKind (#22441)
 
 array-assign-get:
   11/13/19:
@@ -908,6 +947,10 @@ fasta:
     - Disable enum->int casts for enums without values (#10114)
   07/14/18:
     - Optimize enum->int casts for concrete types (#10308)
+  08/23/23:
+    - Deprecate 'iokind' type and 'kind' field (#23007)
+  08/30/23:
+    - Improve performance of readBinary and writeBinary for dense arrays (#23162)
 
 fastaredux:
   01/14/14:
@@ -948,6 +991,11 @@ ft:
 ft-a:
   09/05/14:
     - switched uses of locale.numCores to locale.maxTaskPar
+
+heat_2d_dist.ml-time:
+  08/31/23:
+    - Optimize swap operation for Cyclic and Stencil distributions (#23019)
+
 hpl:
   12/11/15:
     - Fixed string leak in DimensionalDist2D (#3013)
@@ -1090,6 +1138,10 @@ knucleotide: &knucleotide-base
 knucleotide-submitted:
   <<: *knucleotide-base
 
+large_binary_io:
+  05/02/23:
+    - IO non-buffered read optimization (#22031)
+
 LCALS-raw-short: &lcals-base
   10/20/16:
     - Clean up to HYDRO_2D kernel (#4757)
@@ -1158,6 +1210,9 @@ mandelbrot:
     - Implement a Swift-like version of mandelbrot (#5168)
   01/19/17:
     - Mandelbrot tweaks (#5188)
+  05/08/24:
+    - Remove complex math function wrappers for LLVM 16+ (#25019)
+
 
 mandelbrot-extras:
   01/03/14:
@@ -1585,6 +1640,12 @@ nbody:
     - Refactor PRIM_NEW resolution to enable promotion (#10919)
   05/03/19:
     - Govern slice expressions by slicing domain (#12931)
+  12/18/23:
+    - Always use -fno-math-errno to configure the LLVM optimizer (#24066)
+  02/21/24:
+    - Codegen sqrt and fabs directly to llvm intrinsics when possible (#24455)
+  04/03/24:
+    - Change param-based nbody to foreach-based (#24745)
 
 no-op:
   02/24/17:
@@ -1607,6 +1668,8 @@ parOpEquals:
     - (no-local) Move the check for src==dst from comm_get to array op= (#1410)
   05/24/19:
     - Increased usage of initializers for domains and distributions (#13018)
+  09/12/23:
+    - Deprecate modifying an array in a promoted expression (#23208)
 
 pidigits: &pidigits-base
   05/16/16:
@@ -1740,6 +1803,8 @@ regexdna: &regexdna-base
     - Add a field to the string record to store a cached size (#15758)
   02/24/21:
     - Upgrade to re2 2021-02-02 (#17230)
+  04/08/24:
+    - Avoid string copies by implementing replace with match (#24757)
 regexdna-redux:
   <<: *regexdna-base
 regexdna-submitted:
@@ -1814,6 +1879,10 @@ revcomp: &revcomp-base
     - Reduce uses of Math by automatically included modules (#19885)
   03/07/23:
     - Parallelize array.find() (#21750)
+  08/23/23:
+    - Deprecate 'iokind' type and 'kind' field (#23007)
+  08/30/23:
+    - Improve performance of readBinary and writeBinary for dense arrays (#23162)
 
 revcomp-submitted:
   06/07/22:
@@ -2192,6 +2261,10 @@ compilerAndTestingStats: &compiler-perf-base
     - Yield tuples by value when appropriate (#21789)
   03/14/23:
     - Eliminate extra destructions when yielding tuples (#21887)
+  12/01/23:
+    - Move the GpuSort Module code into the GPU module (#23989)
+  01/18/24:
+    - Remove 'use GPU' from ChapelGpuSupport (#24185)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2346,6 +2419,54 @@ arkouda: &arkouda-base
     - Upgrade Arkouda release testing from 1.29 to 1.30 (#21969)
   03/30/23:
     - Bump bigint groupby benchmark problem size (Bears-R-Us/arkouda#2326)
+  04/07/23:
+    - Fix BigInteger issue with a result parameter used as an argument (#22039)
+  04/08/23:
+    - Fix regression in BigInteger with ref arguments (#22075)
+  05/25/23:
+    - Revert SegArray to Client Side (Bears-R-Us/arkouda#2439)
+  07/22/23:
+    - new format specifier (#22766)
+  08/05/23:
+    - Resolve Arkouda deprecation warnings for 1.32 to date (Bears-R-Us/arkouda#2632)
+  07/06/23:
+    - Upgrade Arkouda release testing from 1.30 to 1.31 (#22669)
+  08/29/23:
+    - Closes 2734 Fix remaining missed symbol table entry creation for distributed builds (Bears-R-Us/arkouda#2735)
+  09/07/23:
+    - Closes 2757 Add overload of makeDistArray that takes an array (Bears-R-Us/arkouda#2758)
+  09/28/23:
+    - Closes 2790 Convert non sym entry array creations to new throwing interface (Bears-R-Us/arkouda#2791)
+  09/29/23:
+    - Closes 2796 Reduce Parquet IO benchmark default size (Bears-R-Us/arkouda#2797)
+  10/26/23:
+    - Fix chpl linker warnings on macOS (#23647)
+  11/07/23:
+    - Modify chpl link line change to not exclude jemalloc (#23767)
+  11/15/23:
+    - Scaffolding for multi-dimensional arrays (Bears-R-Us/arkouda#2829)
+  11/21/23:
+    - Update Arkouda release testing from 1.31 to 1.32 (#23900)
+  12/07/23:
+    - Array creation perf patch (Bears-R-Us/arkouda#2869)
+  12/11/23:
+    - Closes 2873 Short strings optimization for multicol groupby (Bears-R-Us/arkouda#2877)
+  01/07/24:
+    - Array API infrastructure and partial implementation (Bears-R-Us/arkouda#2865)
+  02/07/24:
+    - Update Arkouda release testing from 1.32 to 1.33 (#24355)
+  03/28/24:
+    - Update Arkouda release testing from 1.33 to 2.0 (#24704)
+  05/07/24:
+    - Closes 3089 Avoid OOM Crashes caused due to in intents on makeDistArray (Bears-R-Us/arkouda#3163)
+  05/14/24:
+    - Dataframe Indexing (Bears-R-Us/arkouda#3109)
+  06/14/24:
+    - Reverts DataFrame Indexing Changes (Bears-R-Us/arkouda#3323)
+  6/25/24:
+    - Closes 3334, 3351 Simplify server side string code and added fixed length (Bears-R-Us/arkouda#3335)
+  6/27/24:
+    - Remove number of files multiplication for IO benchmark (Bears-R-Us/arkouda#3368)
 
 
 arkouda-string:
@@ -2386,18 +2507,32 @@ arkouda-comp:
   05/02/23:
     - Generate write method stubs for FCF superclass types (#22195)
 
-shoc-triad-bw-lg:
+arkouda-array_create:
+  <<: *arkouda-base
+  04/05/24:
+    - Closes 3071 Add permutation to our generators (Bears-R-Us/arkouda#3078)
+
+shoc-triad-all-lg:
   11/10/22:
     - Ensure we time mem transfer in SHOC Triad (#20961)
 
-triadAodBw1:
-  02/28/23:
-    - Include chpl-env in files that use CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE  macro (#21699)
-
-sort:
+shoc-sort:
   02/24/23:
     - Improve SHOC-Sort implementation (#21610)
 
-chplGPU:
+chop:
   03/25/23:
     - Upstream changes
+  09/18/23:
+    - Upstream changes
+
+coral:
+  09/20/23:
+    - Can't repro on RTX A2000
+  11/21/23:
+    - text: Pin CUDA 11.3 on a test system that was defaulting to 11.0 (#23894)
+      config: 1-node-p100
+
+transpose-time:
+  09/01/23:
+    - Can only repro on nightly testing system

@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+CHOP_BRANCH=main
+CHOP_URL=${CHOP_URL:-https://github.com/tcarneirop/ChOp.git}
+CHOP_BRANCH=${CHOP_BRANCH:-main}
+
+# Clone ChOp, skipif clone failed. Timeouts are frequent enough we don't want
+# to cause a failure.  It would be nice to add extra output to the log to
+# explain why it skipped but any output beyond "True" or "False" (even if sent
+# to stderr) will cause the skipif itself to fail.
+rm -rf ChOp
+if ! git clone ${CHOP_URL} --branch=${CHOP_BRANCH} --depth=1 2>gitClone.out; then
+  #echo "git clone failed; output:" >&2
+  #cat gitClone.out >&2
+  echo "True"
+  exit
+fi
+
+# Apply patches, if any
+if ! (for p in $(find patches -name "*patch"); do git -C ChOp apply ../$p; done) 2>gitPatch.out; then
+  echo "Patching failed; output:" >&2
+  cat gitPatch.out >&2
+  echo "True"
+  exit
+fi
+
+echo "False"

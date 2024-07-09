@@ -2,7 +2,7 @@ class Foo {
   var x: int;
 
   proc init(val: int) throws {
-    this.complete();
+    init this;
     x = funcThatThrows(val);
   }
 }

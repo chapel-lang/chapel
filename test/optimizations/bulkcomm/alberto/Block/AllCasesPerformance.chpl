@@ -13,9 +13,9 @@ config const printComm=false;
 var st,dt=timeSinceEpoch().totalSeconds();
 var e=false;
 //writeln(" N:",n," P:",p," Q:",q);
-//EXAMPLES 2d Block with and without stride
-var d2Dist1 = new dmap(new Block({1..n,1..n}));
-var d2Dist2 = new dmap(new Block({1..(2*n),1..(2*n)}));
+//EXAMPLES 2d blockDist with and without stride
+var d2Dist1 = new blockDist({1..n,1..n});
+var d2Dist2 = new blockDist({1..(2*n),1..(2*n)});
 var d2DomB1: domain(2,int) dmapped d2Dist1 = {1..n,1..n};
 var d2DomB2: domain(2,int) dmapped d2Dist2 = {1..2*n,1..2*n};
 
@@ -228,8 +228,8 @@ writeln();
 
  // ==============================================================================
 //EXAMPLES 3d Block with and stride
-var d3Dist1 = new dmap(new Block({1..p,1..p,1..p}));
-var d3Dist2 = new dmap(new Block({1..2*p,1..2*p,1..2*p}));
+var d3Dist1 = new blockDist({1..p,1..p,1..p});
+var d3Dist2 = new blockDist({1..2*p,1..2*p,1..2*p});
 var d3DomB1: domain(3,int) dmapped d3Dist1 = {1..p,1..p,1..p};
 var d3DomB2: domain(3,int) dmapped d3Dist2 = {1..2*p,1..2*p,1..2*p};
 
@@ -384,8 +384,8 @@ if printTime then writeln("Example 17. Time elapsed: ", dt);
 writeln();
 //***********************************************************************
 //Example 4d Block with stride
-var d4Dist1 = new dmap(new Block({1..q,1..q,1..q,1..q}));
-var d4Dist2 = new dmap(new Block({1..2*q,1..2*q,1..2*q,1..2*q}));
+var d4Dist1 = new blockDist({1..q,1..q,1..q,1..q});
+var d4Dist2 = new blockDist({1..2*q,1..2*q,1..2*q,1..2*q});
 var d4DomB1: domain(4,int) dmapped d4Dist1 = {1..q,1..q,1..q,1..q};
 var d4DomB2: domain(4,int) dmapped d4Dist2 = {1..2*q,1..2*q,1..2*q,1..2*q};
 

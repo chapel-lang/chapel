@@ -25,7 +25,7 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Format.h"
-#include "llvm/Support/InitLLVM.h"
+#include "llvm/Support/LLVMDriver.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/WithColor.h"
 #include "llvm/Support/raw_ostream.h"
@@ -40,32 +40,27 @@ namespace {
 using namespace llvm::opt; // for HelpHidden in Opts.inc
 enum ID {
   OPT_INVALID = 0, // This is not an option ID.
-#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM,  \
-               HELPTEXT, METAVAR, VALUES)                                      \
-  OPT_##ID,
+#define OPTION(...) LLVM_MAKE_OPT_ID(__VA_ARGS__),
 #include "Opts.inc"
 #undef OPTION
 };
 
-#define PREFIX(NAME, VALUE) const char *const NAME[] = VALUE;
+#define PREFIX(NAME, VALUE)                                                    \
+  static constexpr StringLiteral NAME##_init[] = VALUE;                        \
+  static constexpr ArrayRef<StringLiteral> NAME(NAME##_init,                   \
+                                                std::size(NAME##_init) - 1);
 #include "Opts.inc"
 #undef PREFIX
 
-const opt::OptTable::Info InfoTable[] = {
-#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM,  \
-               HELPTEXT, METAVAR, VALUES)                                      \
-  {                                                                            \
-      PREFIX,      NAME,      HELPTEXT,                                        \
-      METAVAR,     OPT_##ID,  opt::Option::KIND##Class,                        \
-      PARAM,       FLAGS,     OPT_##GROUP,                                     \
-      OPT_##ALIAS, ALIASARGS, VALUES},
+static constexpr opt::OptTable::Info InfoTable[] = {
+#define OPTION(...) LLVM_CONSTRUCT_OPT_INFO(__VA_ARGS__),
 #include "Opts.inc"
 #undef OPTION
 };
 
-class SizeOptTable : public opt::OptTable {
+class SizeOptTable : public opt::GenericOptTable {
 public:
-  SizeOptTable() : OptTable(InfoTable) { setGroupedShortOptions(true); }
+  SizeOptTable() : GenericOptTable(InfoTable) { setGroupedShortOptions(true); }
 };
 
 enum OutputFormatTy { berkeley, sysv, darwin };
@@ -570,6 +565,8 @@ static void printFileSectionSizes(StringRef file) {
         else if (MachO && OutputFormat == darwin)
           outs() << a->getFileName() << "(" << o->getFileName() << "):\n";
         printObjectSectionSizes(o);
+        if (!MachO && OutputFormat == darwin)
+          outs() << o->getFileName() << " (ex " << a->getFileName() << ")\n";
         if (OutputFormat == berkeley) {
           if (MachO)
             outs() << a->getFileName() << "(" << o->getFileName() << ")\n";
@@ -836,6 +833,8 @@ static void printFileSectionSizes(StringRef file) {
     else if (MachO && OutputFormat == darwin && MoreThanOneFile)
       outs() << o->getFileName() << ":\n";
     printObjectSectionSizes(o);
+    if (!MachO && OutputFormat == darwin)
+      outs() << o->getFileName() << "\n";
     if (OutputFormat == berkeley) {
       if (!MachO || MoreThanOneFile)
         outs() << o->getFileName();
@@ -862,8 +861,7 @@ static void printBerkeleyTotals() {
          << "(TOTALS)\n";
 }
 
-int main(int argc, char **argv) {
-  InitLLVM X(argc, argv);
+int llvm_size_main(int argc, char **argv, const llvm::ToolContext &) {
   BumpPtrAllocator A;
   StringSaver Saver(A);
   SizeOptTable Tbl;
@@ -937,4 +935,5 @@ int main(int argc, char **argv) {
 
   if (HadError)
     return 1;
+  return 0;
 }

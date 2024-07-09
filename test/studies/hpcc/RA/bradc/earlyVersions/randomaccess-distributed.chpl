@@ -11,7 +11,7 @@ const TableInds: domain(1) dmapped(UMA) = [1..tableSize];
 var T: [TableInds] int64 = 0;
 
 const numUpdates: int = 2**(n+2);
-const UpdateInds: domain(1) dmapped(Cyclic) = [1..numUpdates];
+const UpdateInds: domain(1) dmapped(cyclicDist) = [1..numUpdates];
 
 const numLoBits: int = 64-n;             -- e.g.,        10
 const loBitMask: int64 = 2**numLowBits - 1;  -- e.g., 0x00003ff

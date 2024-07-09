@@ -1,5 +1,0 @@
-perfkeys: TriadBdwth BlckSz:    64KB Median:, TriadBdwth BlckSz:    64KB Median:, TriadBdwth BlckSz:    64KB Median:
-files: triad.dat, triadalt1.dat, triadalt2.dat
-graphkeys: Transliteration, NoSliceLHS, NoSlice
-ylabel: Bandwidth (GB/s)
-graphtitle: SHOC Triad - Bandwidth - 64KB

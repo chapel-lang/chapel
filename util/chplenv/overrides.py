@@ -34,6 +34,7 @@ chplvars = [
 
              'CHPL_LOCALE_MODEL',
              'CHPL_GPU',
+             'CHPL_GPU_MEM_STRATEGY',
              'CHPL_CUDA_PATH',
              'CHPL_ROCM_PATH',
              'CHPL_GPU_ARCH',
@@ -41,7 +42,9 @@ chplvars = [
              'CHPL_COMM',
              'CHPL_COMM_SUBSTRATE',
              'CHPL_GASNET_SEGMENT',
+             'CHPL_GASNET_VERSION',
              'CHPL_LIBFABRIC',
+             'CHPL_COMM_OFI_OOB',
 
              'CHPL_TASKS',
              'CHPL_LAUNCHER',
@@ -65,6 +68,8 @@ chplvars = [
              'CHPL_LLVM',
              'CHPL_LLVM_SUPPORT',
              'CHPL_LLVM_CONFIG',
+             'CHPL_LLVM_CLANG_C',
+             'CHPL_LLVM_CLANG_CXX',
              # CHPL_LLVM_VERSION -- doesn't make sense to override it
              'CHPL_LLVM_GCC_PREFIX', # not in printchplenv --all
 
@@ -78,6 +83,14 @@ chplvars = [
              'CHPL_HOST_USE_SYSTEM_LIBCXX',
            ]
 
+
+# this has to be defined here to prevent circular imports with chpl_home_utils
+def get_chpl_home(source):
+    chpl_home = source.get('CHPL_HOME', '')
+    if not chpl_home:
+        dirname = os.path.dirname
+        chpl_home = dirname(dirname(dirname(os.path.realpath(__file__))))
+    return chpl_home
 
 class ChapelConfig(object):
     """ Class for parsing chplconfig file and providing 'get' interface """
@@ -116,7 +129,7 @@ class ChapelConfig(object):
         # Places to look for a chplconfig file, in order of priority
         chpl_config = os.environ.get('CHPL_CONFIG')
         home = os.path.expanduser('~')
-        chpl_home = os.environ.get('CHPL_HOME')
+        chpl_home = get_chpl_home(os.environ)
 
         if self.chplconfig_found(chpl_config, 'CHPL_CONFIG'):
             return

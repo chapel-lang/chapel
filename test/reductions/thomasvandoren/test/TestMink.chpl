@@ -15,7 +15,7 @@ writeln("mink real result: ", realResult);
 // elements, in sorted order, with the other values filled in with max(real).
 var smallA: [1..5] real;
 
-randStream.fillRandom(smallA);
+randStream.fill(smallA);
 writeln("mink int small result: ", mink reduce smallA);
 
 // Verify calling reduction on empty array returns array of max(eltType)

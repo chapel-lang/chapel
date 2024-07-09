@@ -16,7 +16,6 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/BinaryFormat/Magic.h"
 #include "llvm/BinaryFormat/Swift.h"
@@ -26,6 +25,7 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/MemoryBufferRef.h"
+#include "llvm/TargetParser/Triple.h"
 #include <cassert>
 #include <cstdint>
 #include <memory>
@@ -46,6 +46,7 @@ class WasmObjectFile;
 
 using section_iterator = content_iterator<SectionRef>;
 
+typedef std::function<bool(const SectionRef &)> SectionFilterPredicate;
 /// This is a value type class that represents a single relocation in the list
 /// of relocations in the object file.
 class RelocationRef {
@@ -99,8 +100,8 @@ public:
   uint64_t getSize() const;
   Expected<StringRef> getContents() const;
 
-  /// Get the alignment of this section as the actual value (not log 2).
-  uint64_t getAlignment() const;
+  /// Get the alignment of this section.
+  Align getAlignment() const;
 
   bool isCompressed() const;
   /// Whether this section contains instructions.
@@ -328,14 +329,19 @@ public:
     return section_iterator_range(section_begin(), section_end());
   }
 
+  virtual bool hasDebugInfo() const;
+
   /// The number of bytes used to represent an address in this object
   ///        file format.
   virtual uint8_t getBytesInAddress() const = 0;
 
   virtual StringRef getFileFormatName() const = 0;
   virtual Triple::ArchType getArch() const = 0;
-  virtual SubtargetFeatures getFeatures() const = 0;
-  virtual Optional<StringRef> tryGetCPUName() const { return None; };
+  virtual Triple::OSType getOS() const { return Triple::UnknownOS; }
+  virtual Expected<SubtargetFeatures> getFeatures() const = 0;
+  virtual std::optional<StringRef> tryGetCPUName() const {
+    return std::nullopt;
+  };
   virtual void setARMSubArch(Triple &TheTriple) const { }
   virtual Expected<uint64_t> getStartAddress() const {
     return errorCodeToError(object_error::parse_failed);
@@ -384,12 +390,66 @@ public:
   createELFObjectFile(MemoryBufferRef Object, bool InitContent = true);
 
   static Expected<std::unique_ptr<MachOObjectFile>>
-  createMachOObjectFile(MemoryBufferRef Object,
-                        uint32_t UniversalCputype = 0,
-                        uint32_t UniversalIndex = 0);
+  createMachOObjectFile(MemoryBufferRef Object, uint32_t UniversalCputype = 0,
+                        uint32_t UniversalIndex = 0,
+                        size_t MachOFilesetEntryOffset = 0);
+
+  static Expected<std::unique_ptr<ObjectFile>>
+  createGOFFObjectFile(MemoryBufferRef Object);
 
   static Expected<std::unique_ptr<WasmObjectFile>>
   createWasmObjectFile(MemoryBufferRef Object);
+};
+
+/// A filtered iterator for SectionRefs that skips sections based on some given
+/// predicate.
+class SectionFilterIterator {
+public:
+  SectionFilterIterator(SectionFilterPredicate Pred,
+                        const section_iterator &Begin,
+                        const section_iterator &End)
+      : Predicate(std::move(Pred)), Iterator(Begin), End(End) {
+    scanPredicate();
+  }
+  const SectionRef &operator*() const { return *Iterator; }
+  SectionFilterIterator &operator++() {
+    ++Iterator;
+    scanPredicate();
+    return *this;
+  }
+  bool operator!=(const SectionFilterIterator &Other) const {
+    return Iterator != Other.Iterator;
+  }
+
+private:
+  void scanPredicate() {
+    while (Iterator != End && !Predicate(*Iterator)) {
+      ++Iterator;
+    }
+  }
+  SectionFilterPredicate Predicate;
+  section_iterator Iterator;
+  section_iterator End;
+};
+
+/// Creates an iterator range of SectionFilterIterators for a given Object and
+/// predicate.
+class SectionFilter {
+public:
+  SectionFilter(SectionFilterPredicate Pred, const ObjectFile &Obj)
+      : Predicate(std::move(Pred)), Object(Obj) {}
+  SectionFilterIterator begin() {
+    return SectionFilterIterator(Predicate, Object.section_begin(),
+                                 Object.section_end());
+  }
+  SectionFilterIterator end() {
+    return SectionFilterIterator(Predicate, Object.section_end(),
+                                 Object.section_end());
+  }
+
+private:
+  SectionFilterPredicate Predicate;
+  const ObjectFile &Object;
 };
 
 // Inline function definitions.
@@ -477,8 +537,9 @@ inline Expected<StringRef> SectionRef::getContents() const {
   return StringRef(reinterpret_cast<const char *>(Res->data()), Res->size());
 }
 
-inline uint64_t SectionRef::getAlignment() const {
-  return OwningObject->getSectionAlignment(SectionPimpl);
+inline Align SectionRef::getAlignment() const {
+  return MaybeAlign(OwningObject->getSectionAlignment(SectionPimpl))
+      .valueOrOne();
 }
 
 inline bool SectionRef::isCompressed() const {

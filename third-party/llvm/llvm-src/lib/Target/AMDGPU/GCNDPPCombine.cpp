@@ -123,10 +123,15 @@ bool GCNDPPCombine::isShrinkable(MachineInstr &MI) const {
     LLVM_DEBUG(dbgs() << "  Inst hasn't e32 equivalent\n");
     return false;
   }
+  // Do not shrink True16 instructions pre-RA to avoid the restriction in
+  // register allocation from only being able to use 128 VGPRs
+  if (AMDGPU::isTrue16Inst(Op))
+    return false;
   if (const auto *SDst = TII->getNamedOperand(MI, AMDGPU::OpName::sdst)) {
-    // Give up if there are any uses of the carry-out from instructions like
-    // V_ADD_CO_U32. The shrunken form of the instruction would write it to vcc
-    // instead of to a virtual register.
+    // Give up if there are any uses of the sdst in carry-out or VOPC.
+    // The shrunken form of the instruction would write it to vcc instead of to
+    // a virtual register. If we rewrote the uses the shrinking would be
+    // possible.
     if (!MRI->use_nodbg_empty(SDst->getReg()))
       return false;
   }
@@ -186,6 +191,16 @@ MachineOperand *GCNDPPCombine::getOldOpndValue(MachineOperand &OldOpnd) const {
   return &OldOpnd;
 }
 
+[[maybe_unused]] static unsigned getOperandSize(MachineInstr &MI, unsigned Idx,
+                               MachineRegisterInfo &MRI) {
+  int16_t RegClass = MI.getDesc().operands()[Idx].RegClass;
+  if (RegClass == -1)
+    return 0;
+
+  const TargetRegisterInfo *TRI = MRI.getTargetRegisterInfo();
+  return TRI->getRegSizeInBits(*TRI->getRegClass(RegClass));
+}
+
 MachineInstr *GCNDPPCombine::createDPPInst(MachineInstr &OrigMI,
                                            MachineInstr &MovMI,
                                            RegSubRegPair CombOldVGPR,
@@ -211,10 +226,10 @@ MachineInstr *GCNDPPCombine::createDPPInst(MachineInstr &OrigMI,
   const bool MaskAllLanes =
       RowMaskOpnd->getImm() == 0xF && BankMaskOpnd->getImm() == 0xF;
   (void)MaskAllLanes;
-  assert(MaskAllLanes ||
-         !(TII->isVOPC(DPPOp) ||
-           (TII->isVOP3(DPPOp) && OrigOpE32 != -1 && TII->isVOPC(OrigOpE32))) &&
-             "VOPC cannot form DPP unless mask is full");
+  assert((MaskAllLanes ||
+          !(TII->isVOPC(DPPOp) || (TII->isVOP3(DPPOp) && OrigOpE32 != -1 &&
+                                   TII->isVOPC(OrigOpE32)))) &&
+         "VOPC cannot form DPP unless mask is full");
 
   auto DPPInst = BuildMI(*OrigMI.getParent(), OrigMI,
                          OrigMI.getDebugLoc(), TII->get(DPPOp))
@@ -259,21 +274,21 @@ MachineInstr *GCNDPPCombine::createDPPInst(MachineInstr &OrigMI,
       break;
     }
 
-    if (auto *Mod0 = TII->getNamedOperand(OrigMI,
-                                          AMDGPU::OpName::src0_modifiers)) {
+    auto *Mod0 = TII->getNamedOperand(OrigMI, AMDGPU::OpName::src0_modifiers);
+    if (Mod0) {
       assert(NumOperands == AMDGPU::getNamedOperandIdx(DPPOp,
                                           AMDGPU::OpName::src0_modifiers));
       assert(HasVOP3DPP ||
              (0LL == (Mod0->getImm() & ~(SISrcMods::ABS | SISrcMods::NEG))));
       DPPInst.addImm(Mod0->getImm());
       ++NumOperands;
-    } else if (AMDGPU::getNamedOperandIdx(DPPOp,
-                   AMDGPU::OpName::src0_modifiers) != -1) {
+    } else if (AMDGPU::hasNamedOperand(DPPOp, AMDGPU::OpName::src0_modifiers)) {
       DPPInst.addImm(0);
       ++NumOperands;
     }
     auto *Src0 = TII->getNamedOperand(MovMI, AMDGPU::OpName::src0);
     assert(Src0);
+    int Src0Idx = NumOperands;
     if (!TII->isOperandLegal(*DPPInst.getInstr(), NumOperands, Src0)) {
       LLVM_DEBUG(dbgs() << "  failed: src0 is illegal\n");
       Fail = true;
@@ -283,22 +298,31 @@ MachineInstr *GCNDPPCombine::createDPPInst(MachineInstr &OrigMI,
     DPPInst->getOperand(NumOperands).setIsKill(false);
     ++NumOperands;
 
-    if (auto *Mod1 = TII->getNamedOperand(OrigMI,
-                                          AMDGPU::OpName::src1_modifiers)) {
+    auto *Mod1 = TII->getNamedOperand(OrigMI, AMDGPU::OpName::src1_modifiers);
+    if (Mod1) {
       assert(NumOperands == AMDGPU::getNamedOperandIdx(DPPOp,
                                           AMDGPU::OpName::src1_modifiers));
       assert(HasVOP3DPP ||
              (0LL == (Mod1->getImm() & ~(SISrcMods::ABS | SISrcMods::NEG))));
       DPPInst.addImm(Mod1->getImm());
       ++NumOperands;
-    } else if (AMDGPU::getNamedOperandIdx(DPPOp,
-                   AMDGPU::OpName::src1_modifiers) != -1) {
+    } else if (AMDGPU::hasNamedOperand(DPPOp, AMDGPU::OpName::src1_modifiers)) {
       DPPInst.addImm(0);
       ++NumOperands;
     }
     auto *Src1 = TII->getNamedOperand(OrigMI, AMDGPU::OpName::src1);
     if (Src1) {
-      if (!TII->isOperandLegal(*DPPInst.getInstr(), NumOperands, Src1)) {
+      int OpNum = NumOperands;
+      // If subtarget does not support SGPRs for src1 operand then the
+      // requirements are the same as for src0. We check src0 instead because
+      // pseudos are shared between subtargets and allow SGPR for src1 on all.
+      if (!ST->hasDPPSrc1SGPR()) {
+        assert(getOperandSize(*DPPInst, Src0Idx, *MRI) ==
+                   getOperandSize(*DPPInst, NumOperands, *MRI) &&
+               "Src0 and Src1 operands should have the same size");
+        OpNum = Src0Idx;
+      }
+      if (!TII->isOperandLegal(*DPPInst.getInstr(), OpNum, Src1)) {
         LLVM_DEBUG(dbgs() << "  failed: src1 is illegal\n");
         Fail = true;
         break;
@@ -306,8 +330,9 @@ MachineInstr *GCNDPPCombine::createDPPInst(MachineInstr &OrigMI,
       DPPInst.add(*Src1);
       ++NumOperands;
     }
-    if (auto *Mod2 =
-            TII->getNamedOperand(OrigMI, AMDGPU::OpName::src2_modifiers)) {
+
+    auto *Mod2 = TII->getNamedOperand(OrigMI, AMDGPU::OpName::src2_modifiers);
+    if (Mod2) {
       assert(NumOperands ==
              AMDGPU::getNamedOperandIdx(DPPOp, AMDGPU::OpName::src2_modifiers));
       assert(HasVOP3DPP ||
@@ -326,38 +351,47 @@ MachineInstr *GCNDPPCombine::createDPPInst(MachineInstr &OrigMI,
       DPPInst.add(*Src2);
       ++NumOperands;
     }
+
     if (HasVOP3DPP) {
       auto *ClampOpr = TII->getNamedOperand(OrigMI, AMDGPU::OpName::clamp);
-      if (ClampOpr &&
-          AMDGPU::getNamedOperandIdx(DPPOp, AMDGPU::OpName::clamp) != -1) {
+      if (ClampOpr && AMDGPU::hasNamedOperand(DPPOp, AMDGPU::OpName::clamp)) {
         DPPInst.addImm(ClampOpr->getImm());
       }
       auto *VdstInOpr = TII->getNamedOperand(OrigMI, AMDGPU::OpName::vdst_in);
       if (VdstInOpr &&
-          AMDGPU::getNamedOperandIdx(DPPOp, AMDGPU::OpName::vdst_in) != -1) {
+          AMDGPU::hasNamedOperand(DPPOp, AMDGPU::OpName::vdst_in)) {
         DPPInst.add(*VdstInOpr);
       }
       auto *OmodOpr = TII->getNamedOperand(OrigMI, AMDGPU::OpName::omod);
-      if (OmodOpr &&
-          AMDGPU::getNamedOperandIdx(DPPOp, AMDGPU::OpName::omod) != -1) {
+      if (OmodOpr && AMDGPU::hasNamedOperand(DPPOp, AMDGPU::OpName::omod)) {
         DPPInst.addImm(OmodOpr->getImm());
       }
       // Validate OP_SEL has to be set to all 0 and OP_SEL_HI has to be set to
       // all 1.
       if (auto *OpSelOpr =
               TII->getNamedOperand(OrigMI, AMDGPU::OpName::op_sel)) {
-        auto OpSel = OpSelOpr->getImm();
+        int64_t OpSel = 0;
+        OpSel |= (Mod0 ? (!!(Mod0->getImm() & SISrcMods::OP_SEL_0) << 0) : 0);
+        OpSel |= (Mod1 ? (!!(Mod1->getImm() & SISrcMods::OP_SEL_0) << 1) : 0);
+        OpSel |= (Mod2 ? (!!(Mod2->getImm() & SISrcMods::OP_SEL_0) << 2) : 0);
+        if (Mod0 && TII->isVOP3(OrigMI) && !TII->isVOP3P(OrigMI))
+          OpSel |= !!(Mod0->getImm() & SISrcMods::DST_OP_SEL) << 3;
+
         if (OpSel != 0) {
           LLVM_DEBUG(dbgs() << "  failed: op_sel must be zero\n");
           Fail = true;
           break;
         }
-        if (AMDGPU::getNamedOperandIdx(DPPOp, AMDGPU::OpName::op_sel) != -1)
+        if (AMDGPU::hasNamedOperand(DPPOp, AMDGPU::OpName::op_sel))
           DPPInst.addImm(OpSel);
       }
       if (auto *OpSelHiOpr =
               TII->getNamedOperand(OrigMI, AMDGPU::OpName::op_sel_hi)) {
-        auto OpSelHi = OpSelHiOpr->getImm();
+        int64_t OpSelHi = 0;
+        OpSelHi |= (Mod0 ? (!!(Mod0->getImm() & SISrcMods::OP_SEL_1) << 0) : 0);
+        OpSelHi |= (Mod1 ? (!!(Mod1->getImm() & SISrcMods::OP_SEL_1) << 1) : 0);
+        OpSelHi |= (Mod2 ? (!!(Mod2->getImm() & SISrcMods::OP_SEL_1) << 2) : 0);
+
         // Only vop3p has op_sel_hi, and all vop3p have 3 operands, so check
         // the bitmask for 3 op_sel_hi bits set
         assert(Src2 && "Expected vop3p with 3 operands");
@@ -366,17 +400,15 @@ MachineInstr *GCNDPPCombine::createDPPInst(MachineInstr &OrigMI,
           Fail = true;
           break;
         }
-        if (AMDGPU::getNamedOperandIdx(DPPOp, AMDGPU::OpName::op_sel_hi) != -1)
+        if (AMDGPU::hasNamedOperand(DPPOp, AMDGPU::OpName::op_sel_hi))
           DPPInst.addImm(OpSelHi);
       }
       auto *NegOpr = TII->getNamedOperand(OrigMI, AMDGPU::OpName::neg_lo);
-      if (NegOpr &&
-          AMDGPU::getNamedOperandIdx(DPPOp, AMDGPU::OpName::neg_lo) != -1) {
+      if (NegOpr && AMDGPU::hasNamedOperand(DPPOp, AMDGPU::OpName::neg_lo)) {
         DPPInst.addImm(NegOpr->getImm());
       }
       auto *NegHiOpr = TII->getNamedOperand(OrigMI, AMDGPU::OpName::neg_hi);
-      if (NegHiOpr &&
-          AMDGPU::getNamedOperandIdx(DPPOp, AMDGPU::OpName::neg_hi) != -1) {
+      if (NegHiOpr && AMDGPU::hasNamedOperand(DPPOp, AMDGPU::OpName::neg_hi)) {
         DPPInst.addImm(NegHiOpr->getImm());
       }
     }
@@ -506,7 +538,7 @@ bool GCNDPPCombine::combineDPPMov(MachineInstr &MovMI) const {
       MovMI.getOpcode() == AMDGPU::V_MOV_B64_dpp) {
     auto *DppCtrl = TII->getNamedOperand(MovMI, AMDGPU::OpName::dpp_ctrl);
     assert(DppCtrl && DppCtrl->isImm());
-    if (!AMDGPU::isLegal64BitDPPControl(DppCtrl->getImm())) {
+    if (!AMDGPU::isLegalDPALU_DPPControl(DppCtrl->getImm())) {
       LLVM_DEBUG(dbgs() << "  failed: 64 bit dpp move uses unsupported"
                            " control value\n");
       // Let it split, then control may become legal.
@@ -600,6 +632,8 @@ bool GCNDPPCombine::combineDPPMov(MachineInstr &MovMI) const {
     LLVM_DEBUG(dbgs() << "  try: " << OrigMI);
 
     auto OrigOp = OrigMI.getOpcode();
+    assert((TII->get(OrigOp).getSize() != 4 || !AMDGPU::isTrue16Inst(OrigOp)) &&
+           "There should not be e32 True16 instructions pre-RA");
     if (OrigOp == AMDGPU::REG_SEQUENCE) {
       Register FwdReg = OrigMI.getOperand(0).getReg();
       unsigned FwdSubReg = 0;
@@ -704,7 +738,7 @@ bool GCNDPPCombine::combineDPPMov(MachineInstr &MovMI) const {
         continue;
       }
       while (!S.second.empty())
-        S.first->getOperand(S.second.pop_back_val()).setIsUndef(true);
+        S.first->getOperand(S.second.pop_back_val()).setIsUndef();
     }
   }
 
@@ -727,12 +761,12 @@ bool GCNDPPCombine::runOnMachineFunction(MachineFunction &MF) {
         ++NumDPPMovsCombined;
       } else if (MI.getOpcode() == AMDGPU::V_MOV_B64_DPP_PSEUDO ||
                  MI.getOpcode() == AMDGPU::V_MOV_B64_dpp) {
-        if (ST->has64BitDPP() && combineDPPMov(MI)) {
+        if (ST->hasDPALU_DPP() && combineDPPMov(MI)) {
           Changed = true;
           ++NumDPPMovsCombined;
         } else {
           auto Split = TII->expandMovDPP64(MI);
-          for (auto M : { Split.first, Split.second }) {
+          for (auto *M : {Split.first, Split.second}) {
             if (M && combineDPPMov(*M))
               ++NumDPPMovsCombined;
           }

@@ -89,7 +89,7 @@ static bool reduceDbgValsForwardScan(MachineBasicBlock &MBB) {
 
   for (auto &MI : MBB) {
     if (MI.isDebugValue()) {
-      DebugVariable Var(MI.getDebugVariable(), NoneType(),
+      DebugVariable Var(MI.getDebugVariable(), std::nullopt,
                         MI.getDebugLoc()->getInlinedAt());
       auto VMI = VariableMap.find(Var);
       // Just stop tracking this variable, until we cover DBG_VALUE_LIST.
@@ -105,7 +105,7 @@ static bool reduceDbgValsForwardScan(MachineBasicBlock &MBB) {
 
       MachineOperand &Loc = MI.getDebugOperand(0);
       if (!Loc.isReg()) {
-        // If it it's not a register, just stop tracking such variable.
+        // If it's not a register, just stop tracking such variable.
         if (VMI != VariableMap.end())
           VariableMap.erase(VMI);
         continue;

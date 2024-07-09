@@ -1,4 +1,4 @@
-var s = 1..10 by 1;
+var s = (1..10) :range(strides=strideKind.any);
 writeln("10 = ", s.size);
 s = 1..10 by 2;
 writeln("5 = ", s.size);

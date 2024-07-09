@@ -28,7 +28,7 @@ for i in D {
 }
 if verify then sort(Aref);
 
-forall i in AD {
+forall i in AD with (ref AA) {
   AA(i) = i;
 }
 
@@ -74,7 +74,7 @@ if verify {
 {
   var parastopwatch: stopwatch;
   parastopwatch.start();
-  forall aa in AA {
+  forall aa in AA with (ref A) {
     var ai = aa;
     A((ai+offset)/2) = ai;
   }

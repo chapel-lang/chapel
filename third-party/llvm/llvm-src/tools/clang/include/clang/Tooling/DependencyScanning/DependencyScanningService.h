@@ -10,6 +10,7 @@
 #define LLVM_CLANG_TOOLING_DEPENDENCYSCANNING_DEPENDENCYSCANNINGSERVICE_H
 
 #include "clang/Tooling/DependencyScanning/DependencyScanningFilesystem.h"
+#include "llvm/ADT/BitmaskEnum.h"
 
 namespace clang {
 namespace tooling {
@@ -35,26 +36,45 @@ enum class ScanningOutputFormat {
   /// intermodule dependency information.
   Make,
 
-  /// This outputs the full module dependency graph suitable for use for
+  /// This outputs the full clang module dependency graph suitable for use for
   /// explicitly building modules.
   Full,
+
+  /// This outputs the dependency graph for standard c++ modules in P1689R5
+  /// format.
+  P1689,
 };
 
-/// The dependency scanning service contains the shared state that is used by
-/// the invidual dependency scanning workers.
+enum class ScanningOptimizations {
+  None = 0,
+
+  /// Remove unused header search paths including header maps.
+  HeaderSearch = 1,
+
+  /// Remove warnings from system modules.
+  SystemWarnings = 2,
+
+  LLVM_MARK_AS_BITMASK_ENUM(SystemWarnings),
+  All = HeaderSearch | SystemWarnings,
+  Default = All
+};
+
+/// The dependency scanning service contains shared configuration and state that
+/// is used by the individual dependency scanning workers.
 class DependencyScanningService {
 public:
-  DependencyScanningService(ScanningMode Mode, ScanningOutputFormat Format,
-                            bool ReuseFileManager = true,
-                            bool OptimizeArgs = false);
+  DependencyScanningService(
+      ScanningMode Mode, ScanningOutputFormat Format,
+      ScanningOptimizations OptimizeArgs = ScanningOptimizations::Default,
+      bool EagerLoadModules = false);
 
   ScanningMode getMode() const { return Mode; }
 
   ScanningOutputFormat getFormat() const { return Format; }
 
-  bool canReuseFileManager() const { return ReuseFileManager; }
+  ScanningOptimizations getOptimizeArgs() const { return OptimizeArgs; }
 
-  bool canOptimizeArgs() const { return OptimizeArgs; }
+  bool shouldEagerLoadModules() const { return EagerLoadModules; }
 
   DependencyScanningFilesystemSharedCache &getSharedCache() {
     return SharedCache;
@@ -63,9 +83,10 @@ public:
 private:
   const ScanningMode Mode;
   const ScanningOutputFormat Format;
-  const bool ReuseFileManager;
   /// Whether to optimize the modules' command-line arguments.
-  const bool OptimizeArgs;
+  const ScanningOptimizations OptimizeArgs;
+  /// Whether to set up command-lines to load PCM files eagerly.
+  const bool EagerLoadModules;
   /// The global file system cache.
   DependencyScanningFilesystemSharedCache SharedCache;
 };

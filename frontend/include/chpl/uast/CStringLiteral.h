@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,13 +32,19 @@ namespace uast {
   This class represents a C string literal, for example `c"hello"`.
  */
 class CStringLiteral final : public StringLikeLiteral {
+ friend class AstNode;
+
  private:
   CStringLiteral(const types::StringParam* value,
                  StringLikeLiteral::QuoteStyle quotes)
     : StringLikeLiteral(asttags::CStringLiteral, value, quotes)
   { }
 
-  CStringLiteral(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    stringLikeLiteralSerializeInner(ser);
+  }
+
+  explicit CStringLiteral(Deserializer& des)
     : StringLikeLiteral(asttags::CStringLiteral, des)
   { }
 
@@ -51,13 +57,6 @@ class CStringLiteral final : public StringLikeLiteral {
   static owned<CStringLiteral> build(Builder* builder, Location loc,
                                      const std::string& value,
                                      StringLikeLiteral::QuoteStyle quotes);
-
-  void serialize(Serializer& ser) const override {
-    StringLikeLiteral::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(CStringLiteral);
-
 };
 
 

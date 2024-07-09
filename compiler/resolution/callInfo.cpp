@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -191,6 +191,9 @@ const char* CallInfo::toString() {
     if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)   == true &&
         ii->iterator->hasFlag(FLAG_PROMOTION_WRAPPER) == true) {
       retval = astr(retval, "promoted expression");
+
+    } else if (sym == gUninstantiated) {
+      retval = astr(retval, "?");
 
     } else if (sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       retval = astr(retval, "type ", ::toString(type));

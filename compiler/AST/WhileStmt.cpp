@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,6 +46,7 @@ void WhileStmt::copyInnerShare(const WhileStmt& ref,
   mBreakLabel       = ref.mBreakLabel;
   mContinueLabel    = ref.mContinueLabel;
   mOrderIndependent = ref.mOrderIndependent;
+  mLLVMMetadataList = ref.mLLVMMetadataList;
 
   if (condExpr != 0)
     mCondExpr = condExpr->copy(map, true);

@@ -117,11 +117,11 @@ let Namespace = "Hexagon" in {
 
   def isub_lo  : SubRegIndex<32>;
   def isub_hi  : SubRegIndex<32, 32>;
-  def vsub_lo  : SubRegIndex<512>;
-  def vsub_hi  : SubRegIndex<512, 512>;
-  def vsub_fake: SubRegIndex<512>;
-  def wsub_lo  : SubRegIndex<1024>;
-  def wsub_hi  : SubRegIndex<1024, 1024>;
+  def vsub_lo  : SubRegIndex<-1, -1>;
+  def vsub_hi  : SubRegIndex<-1, -1>;
+  def vsub_fake: SubRegIndex<-1, -1>;
+  def wsub_lo  : SubRegIndex<-1, -1>;
+  def wsub_hi  : SubRegIndex<-1, -1>;
   def subreg_overflow : SubRegIndex<1, 0>;
 
   // Integer registers.
@@ -513,7 +513,7 @@ def HvxVR : RegisterClass<"Hexagon", [VecI8, VecI16, VecI32, VecF16, VecF32], 51
 def HvxWR : RegisterClass<"Hexagon", [VecPI8, VecPI16, VecPI32, VecPF16, VecPF32], 1024,
   (add (sequence "W%u", 0, 15), (sequence "WR%u", 0, 15))> {
   let RegInfos = RegInfoByHwMode<[Hvx64, Hvx128, DefaultMode],
-    [RegInfo<1024,1024,1024>, RegInfo<2048,2048,2048>, RegInfo<1024,1024,1024>]>;
+    [RegInfo<1024,1024,512>, RegInfo<2048,2048,1024>, RegInfo<1024,1024,512>]>;
 }
 
 def HvxQR : RegisterClass<"Hexagon", [VecI1, VecQ8, VecQ16, VecQ32], 128,
@@ -525,7 +525,7 @@ def HvxQR : RegisterClass<"Hexagon", [VecI1, VecQ8, VecQ16, VecQ32], 128,
 def HvxVQR : RegisterClass<"Hexagon", [untyped], 2048,
   (add (sequence "VQ%u", 0, 7))> {
   let RegInfos = RegInfoByHwMode<[Hvx64, Hvx128, DefaultMode],
-    [RegInfo<2048,2048,2048>, RegInfo<4096,4096,4096>, RegInfo<2048,2048,2048>]>;
+    [RegInfo<2048,2048,512>, RegInfo<4096,4096,1024>, RegInfo<2048,2048,512>]>;
 }
 
 // Core register classes

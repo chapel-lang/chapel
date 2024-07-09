@@ -1,9 +1,10 @@
 use BlockDist;
-const D = {1..5} dmapped Block({1..5});
+const D = {1..5} dmapped new blockDist({1..5});
 
 // returns getExternalArrayType(makeBlockArray_chpl.ret)
 export proc makeBlockArray(): chpl_opaque_array {
-  var ret = convertToExternalArray(makeBlockArray_chpl());
+  var t = makeBlockArray_chpl();
+  var ret = convertToExternalArray(t);
   return ret;
 }
 
@@ -44,6 +45,6 @@ export proc addEltBlock(ref x: chpl_opaque_array, idx: int, val: int) {
   addEltBlock(chpl_x, idx, val);
 }
 
-proc addEltBlock(x: [D] int, idx: int, val: int) {
+proc addEltBlock(ref x: [D] int, idx: int, val: int) {
   x[idx] = val;
 }

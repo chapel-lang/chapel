@@ -1,3 +1,4 @@
+LICM: may-alias report for a loop in function test:
 noAliasSets: no-aliases for function main:
   A no alias B
 noAliasSets: no-aliases for function callTest:
@@ -5,4 +6,3 @@ noAliasSets: no-aliases for function callTest:
 noAliasSets: no-aliases for function test:
   a no ref alias b
   <array get pointer> no alias <array get pointer>
-LICM: may-alias report for a loop in function test:

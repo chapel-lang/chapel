@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -241,6 +241,7 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
   newFn->copyFlags(this);
   newFn->deprecationMsg = this->deprecationMsg;
   newFn->unstableMsg = this->unstableMsg;
+  newFn->parenfulDeprecationMsg = this->parenfulDeprecationMsg;
 
   if (this->throwsError() == true) {
     newFn->throwsErrorInit();
@@ -776,7 +777,7 @@ CallExpr* FnSymbol::singleInvocation() const {
     if (se == parent->baseExpr) {
       retval = parent;
     }
-    else if (parent->isPrimitive(PRIM_GPU_KERNEL_LAUNCH_FLAT)) {
+    else if (parent->isPrimitive(PRIM_GPU_KERNEL_LAUNCH)) {
       if (se == parent->get(1)) {
         retval = parent;
       }
@@ -785,6 +786,16 @@ CallExpr* FnSymbol::singleInvocation() const {
 
   // The use is not as the callee, ex. as a FCF.
   return retval;
+}
+
+const char* FnSymbol::getParenfulDeprecationMsg() const {
+  if (parenfulDeprecationMsg[0] == '\0') {
+    const char* msg = astr("the parenful form of function ", name, " is deprecated");
+    return msg;
+  }
+  else {
+    return parenfulDeprecationMsg.c_str();
+  }
 }
 
 
@@ -862,6 +873,14 @@ static void checkFormalType(const FnSymbol* enclosingFn, ArgSymbol* formal) {
         if (target->retTag != RET_TYPE)
           USR_FATAL_CONT(typeExp, "The declared type of the formal "
           "%s is given by non-type function '%s'", formal->name, target->name);
+    }
+
+    if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+      if (enclosingFn->hasFlag(FLAG_COMPILER_GENERATED)) {
+        // We shouldn't complain to the user about routines we generate
+      } else {
+        warnIfGenericFormalMissingQ(formal, formal->type, nullptr);
+      }
     }
   }
 }
@@ -1125,6 +1144,14 @@ bool FnSymbol::isDefaultInit() const {
          hasFlag(FLAG_COPY_INIT) == false &&
          isInitializer();
 }
+
+bool FnSymbol::isDefaultCopyInit() const {
+  return hasFlag(FLAG_COMPILER_GENERATED) &&
+         hasFlag(FLAG_DEFAULT_INIT) &&
+         hasFlag(FLAG_COPY_INIT) &&
+         isCopyInit();
+}
+
 
 bool FnSymbol::isCopyInit() const {
   return isMethod() && name == astrInitEquals;

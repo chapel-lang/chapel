@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -44,12 +44,13 @@ extern "C" {
 #define _default_format_read_string       "%255s"
 
 typedef FILE* _cfile;
+typedef FILE _cfiletype;
 
 static inline _cfile chpl_cnullfile(void) { return (_cfile) 0; }
 
 // These should be moved to chpl-string.h and eventually go away.
 // These return the Chapel idea of a (narrow) string.
-chpl_string chpl_refToString(void* ref);
+chpl_string chpl_refToString(const void* ref);
 chpl_string chpl_wideRefToString(c_nodeid_t node, void* addr);
 
 typedef FILE* c_file;

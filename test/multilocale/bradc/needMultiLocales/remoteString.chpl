@@ -1,8 +1,9 @@
+use CTypes;
 var s1: string;
 var flag1: sync bool;
 var done: sync bool;
 
-extern proc printf(fmt:c_string, x...);
+extern proc printf(fmt:c_ptrConst(c_char), x...);
 
 proc main() {
   s1 = "foo";

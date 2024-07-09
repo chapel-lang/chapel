@@ -1,0 +1,2 @@
+bug: unable to import tertiary methods for ints via `import M.int`
+https://github.com/chapel-lang/chapel/issues/22763

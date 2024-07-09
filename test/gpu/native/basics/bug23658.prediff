@@ -1,0 +1,5 @@
+#!/bin/bash
+
+grep "No kernel launched since num_threads is <=0" $2 > $2.tmp
+
+mv $2.tmp $2

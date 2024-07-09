@@ -103,6 +103,8 @@ static void spawner_test(void);
 static void hbarrier_test(void);
 static void rexchgv_test(void);
 
+static void vlide_test(void);
+
 static gex_TM_t myteam;
 
 /* ------------------------------------------------------------------------------------ */
@@ -201,6 +203,8 @@ extern int gasneti_run_diagnostics(int iter_cnt, int threadcnt, const char *test
   TEST_HEADER("host-scoped barrier test") hbarrier_test();
 
   TEST_HEADER("RotatedExchangeV test") rexchgv_test();
+
+  TEST_HEADER("VLIDE test") vlide_test();
 
   #if GASNET_PAR
     num_threads = threadcnt;
@@ -1625,6 +1629,104 @@ static void rexchgv_test(void) {
   }
 }
 
+/* ------------------------------------------------------------------------------------ */
+#include "gasnet_vlide.h"
+
+static void vlide_test(void) {
+  // Unit test for VLIDE compression algorithm used by VIS
+  // This is a purely serial test with no communication.
+
+  // Manual knobs for testing less-important configurations:
+  #if GASNETI_VLIDE_TEST_INT64
+    typedef uint64_t val_t;
+    typedef val_t    valint_t;
+  #else
+    typedef void *    val_t;
+    typedef uintptr_t valint_t;
+  #endif
+  #if GASNETI_VLIDE_TEST_TRIVIAL
+    #define VLIDE_ENCODE GASNETI_VLIDE_ENCODE_TRIVIAL
+    #define VLIDE_DECODE GASNETI_VLIDE_DECODE_TRIVIAL
+  #else
+    #define VLIDE_ENCODE GASNETI_VLIDE_ENCODE
+    #define VLIDE_DECODE GASNETI_VLIDE_DECODE
+  #endif
+  const int max_entries = 1000;
+  val_t * const input_buffer = gasneti_malloc(max_entries*sizeof(val_t));
+  uint8_t * const output_buffer = gasneti_calloc(max_entries+1,10);
+  // choose an arbitrary starting point that looks like a pointer
+  val_t const start = (val_t)(uintptr_t)input_buffer; 
+  uint64_t dist[12] = { 0 };
+
+  for (int iter = 0; iter < iters; iter++) {
+     int entries = TEST_RAND(1,max_entries);
+
+     // ENCODE
+     val_t oldval = 0;
+     val_t newval = start;
+     uint8_t *p = output_buffer;
+     int i = 0;
+     do {
+       input_buffer[i] = newval;
+
+       // encode one entry
+       uint8_t * const oldp = p;
+       VLIDE_ENCODE(p, (valint_t)oldval, (valint_t)newval);
+       gasneti_assert_always_ptr(p ,>, oldp);     // sanity check
+       gasneti_assert_always_ptr(p ,<=, oldp+10); // sanity check
+       dist[p-oldp]++; // record encoding size distribution
+
+       // compute next random value in a rough gaussian distribution centered on val
+       oldval = newval;
+       int bits = TEST_RAND(TEST_RAND(0,63),63);
+       uint64_t mask = ((uint64_t)-1) >> bits; // select random number of low bits
+       uint64_t rword = 0; // compute a random word
+       for (int j=0; j < 8; j++) {
+         rword <<= 8;
+         rword |= TEST_RAND(0,255);
+       }
+       // randomly flip some of the low bits
+       newval = (val_t)(valint_t)(((uint64_t)(valint_t)newval) ^ (rword & mask));
+     } while(++i < entries);
+     uint8_t * const endp = p;
+
+     // DECODE
+     oldval = 0;
+     newval = 0;
+     p = output_buffer;
+     for (i = 0; i < entries; i++) {
+       uint8_t * const oldp = p;
+       valint_t tmp; // tmp used to silence strict-aliasing warnings from gcc
+       VLIDE_DECODE(p, (valint_t)oldval, tmp);
+       newval = (val_t)tmp;
+       gasneti_assert_always_ptr(p ,>, oldp);     // sanity check
+       gasneti_assert_always_ptr(p ,<=, oldp+10); // sanity check
+
+       // verify we decoded the correct value:
+       gasneti_assert_always_uint((valint_t)newval ,==, (valint_t)input_buffer[i]); 
+
+       oldval = newval;
+     }
+     // verify agreement on end of buffer
+     gasneti_assert_always_ptr(p ,==, endp); 
+  }
+  #if GASNET_DEBUG_VERBOSE
+  if (!gasneti_mynode) {
+    uint64_t enc_sz = 0;
+    uint64_t orig_sz = 0;
+    MSG0("VLIDE encoding size distribution:");
+    for (size_t i=0; i < sizeof(dist)/sizeof(dist[0]); i++) {
+      MSG0("%2i: %8" PRIu64, (int)i, dist[i]);
+      enc_sz += dist[i]*i;
+      orig_sz += dist[i]*sizeof(val_t);
+    }
+    MSG0("VLIDE space savings: %.3f%%", 100.0*(orig_sz-enc_sz)/orig_sz);
+  }
+  #endif
+
+  gasneti_free(input_buffer);
+  gasneti_free(output_buffer);
+}
 /* ------------------------------------------------------------------------------------ */
 static gex_AM_Entry_t gasneti_diag_handlers[] = {
   #ifdef GASNETC_DIAG_HANDLERS

@@ -37,16 +37,15 @@ using namespace llvm;
 // Construct the lowerer base class and initialize its members.
 coro::LowererBase::LowererBase(Module &M)
     : TheModule(M), Context(M.getContext()),
-      Int8Ptr(Type::getInt8PtrTy(Context)),
+      Int8Ptr(PointerType::get(Context, 0)),
       ResumeFnType(FunctionType::get(Type::getVoidTy(Context), Int8Ptr,
                                      /*isVarArg=*/false)),
       NullPtr(ConstantPointerNull::get(Int8Ptr)) {}
 
-// Creates a sequence of instructions to obtain a resume function address using
-// llvm.coro.subfn.addr. It generates the following sequence:
+// Creates a call to llvm.coro.subfn.addr to obtain a resume function address.
+// It generates the following:
 //
-//    call i8* @llvm.coro.subfn.addr(i8* %Arg, i8 %index)
-//    bitcast i8* %2 to void(i8*)*
+//    call ptr @llvm.coro.subfn.addr(ptr %Arg, i8 %index)
 
 Value *coro::LowererBase::makeSubFnCall(Value *Arg, int Index,
                                         Instruction *InsertPt) {
@@ -56,11 +55,7 @@ Value *coro::LowererBase::makeSubFnCall(Value *Arg, int Index,
   assert(Index >= CoroSubFnInst::IndexFirst &&
          Index < CoroSubFnInst::IndexLast &&
          "makeSubFnCall: Index value out of range");
-  auto *Call = CallInst::Create(Fn, {Arg, IndexVal}, "", InsertPt);
-
-  auto *Bitcast =
-      new BitCastInst(Call, ResumeFnType->getPointerTo(), "", InsertPt);
-  return Bitcast;
+  return CallInst::Create(Fn, {Arg, IndexVal}, "", InsertPt);
 }
 
 // NOTE: Must be sorted!
@@ -137,8 +132,9 @@ void coro::replaceCoroFree(CoroIdInst *CoroId, bool Elide) {
     return;
 
   Value *Replacement =
-      Elide ? ConstantPointerNull::get(Type::getInt8PtrTy(CoroId->getContext()))
-            : CoroFrees.front()->getFrame();
+      Elide
+          ? ConstantPointerNull::get(PointerType::get(CoroId->getContext(), 0))
+          : CoroFrees.front()->getFrame();
 
   for (CoroFreeInst *CF : CoroFrees) {
     CF->replaceAllUsesWith(Replacement);
@@ -171,6 +167,7 @@ static CoroSaveInst *createCoroSave(CoroBeginInst *CoroBegin,
 // Collect "interesting" coroutine intrinsics.
 void coro::Shape::buildFrom(Function &F) {
   bool HasFinalSuspend = false;
+  bool HasUnwindCoroEnd = false;
   size_t FinalSuspendIndex = 0;
   clear(*this);
   SmallVector<CoroFrameInst *, 8> CoroFrames;
@@ -242,6 +239,10 @@ void coro::Shape::buildFrom(Function &F) {
         if (auto *AsyncEnd = dyn_cast<CoroAsyncEndInst>(II)) {
           AsyncEnd->checkWellFormed();
         }
+
+        if (CoroEnds.back()->isUnwind())
+          HasUnwindCoroEnd = true;
+
         if (CoroEnds.back()->isFallthrough() && isa<CoroEndInst>(II)) {
           // Make sure that the fallthrough coro.end is the first element in the
           // CoroEnds vector.
@@ -262,7 +263,7 @@ void coro::Shape::buildFrom(Function &F) {
   if (!CoroBegin) {
     // Replace coro.frame which are supposed to be lowered to the result of
     // coro.begin with undef.
-    auto *Undef = UndefValue::get(Type::getInt8PtrTy(F.getContext()));
+    auto *Undef = UndefValue::get(PointerType::get(F.getContext(), 0));
     for (CoroFrameInst *CF : CoroFrames) {
       CF->replaceAllUsesWith(Undef);
       CF->eraseFromParent();
@@ -290,11 +291,12 @@ void coro::Shape::buildFrom(Function &F) {
     auto SwitchId = cast<CoroIdInst>(Id);
     this->ABI = coro::ABI::Switch;
     this->SwitchLowering.HasFinalSuspend = HasFinalSuspend;
+    this->SwitchLowering.HasUnwindCoroEnd = HasUnwindCoroEnd;
     this->SwitchLowering.ResumeSwitch = nullptr;
     this->SwitchLowering.PromiseAlloca = SwitchId->getPromise();
     this->SwitchLowering.ResumeEntryBlock = nullptr;
 
-    for (auto AnySuspend : CoroSuspends) {
+    for (auto *AnySuspend : CoroSuspends) {
       auto Suspend = dyn_cast<CoroSuspendInst>(AnySuspend);
       if (!Suspend) {
 #ifndef NDEBUG
@@ -340,7 +342,7 @@ void coro::Shape::buildFrom(Function &F) {
     auto ResultTys = getRetconResultTypes();
     auto ResumeTys = getRetconResumeTypes();
 
-    for (auto AnySuspend : CoroSuspends) {
+    for (auto *AnySuspend : CoroSuspends) {
       auto Suspend = dyn_cast<CoroSuspendRetconInst>(AnySuspend);
       if (!Suspend) {
 #ifndef NDEBUG
@@ -590,20 +592,6 @@ static void checkAsyncFuncPointer(const Instruction *I, Value *V) {
   auto *AsyncFuncPtrAddr = dyn_cast<GlobalVariable>(V->stripPointerCasts());
   if (!AsyncFuncPtrAddr)
     fail(I, "llvm.coro.id.async async function pointer not a global", V);
-
-  if (AsyncFuncPtrAddr->getType()->isOpaquePointerTy())
-    return;
-
-  auto *StructTy = cast<StructType>(
-      AsyncFuncPtrAddr->getType()->getNonOpaquePointerElementType());
-  if (StructTy->isOpaque() || !StructTy->isPacked() ||
-      StructTy->getNumElements() != 2 ||
-      !StructTy->getElementType(0)->isIntegerTy(32) ||
-      !StructTy->getElementType(1)->isIntegerTy(32))
-    fail(I,
-         "llvm.coro.id.async async function pointer argument's type is not "
-         "<{i32, i32}>",
-         V);
 }
 
 void CoroIdAsyncInst::checkWellFormed() const {
@@ -619,19 +607,15 @@ void CoroIdAsyncInst::checkWellFormed() const {
 static void checkAsyncContextProjectFunction(const Instruction *I,
                                              Function *F) {
   auto *FunTy = cast<FunctionType>(F->getValueType());
-  Type *Int8Ty = Type::getInt8Ty(F->getContext());
-  auto *RetPtrTy = dyn_cast<PointerType>(FunTy->getReturnType());
-  if (!RetPtrTy || !RetPtrTy->isOpaqueOrPointeeTypeMatches(Int8Ty))
+  if (!FunTy->getReturnType()->isPointerTy())
     fail(I,
          "llvm.coro.suspend.async resume function projection function must "
-         "return an i8* type",
+         "return a ptr type",
          F);
-  if (FunTy->getNumParams() != 1 || !FunTy->getParamType(0)->isPointerTy() ||
-      !cast<PointerType>(FunTy->getParamType(0))
-           ->isOpaqueOrPointeeTypeMatches(Int8Ty))
+  if (FunTy->getNumParams() != 1 || !FunTy->getParamType(0)->isPointerTy())
     fail(I,
          "llvm.coro.suspend.async resume function projection function must "
-         "take one i8* type as parameter",
+         "take one ptr type as parameter",
          F);
 }
 

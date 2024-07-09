@@ -9,8 +9,8 @@ proc testText(ref seeds: domain(int)) {
   var pk: [po] real;
   seeds.add(1);
   delta[1] = 12;
-  var c = lf.writer();
-  var z = lf.reader();
+  var c = lf.writer(locking=false);
+  var z = lf.reader(locking=false);
   c.write(seeds);
   c.flush();
   writeln("Wrote: ", seeds.sorted());
@@ -26,8 +26,8 @@ proc testBinary(ref seeds: domain(int)) {
   var pk: [po] real;
   seeds.add(1);
   delta[1] = 12;
-  var c = lf.writer(kind=ionative);
-  var z = lf.reader(kind=ionative);
+  var c = lf.writer(serializer=new binarySerializer(), locking=false);
+  var z = lf.reader(deserializer=new binaryDeserializer(), locking=false);
   c.write(seeds);
   c.flush();
   writeln("Wrote: ", seeds.sorted());

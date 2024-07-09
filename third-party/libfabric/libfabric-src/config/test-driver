@@ -1,9 +1,9 @@
 #! /bin/sh
 # test-driver - basic testsuite driver script.
 
-scriptversion=2013-07-13.22; # UTC
+scriptversion=2016-01-11.22; # UTC
 
-# Copyright (C) 2011-2014 Free Software Foundation, Inc.
+# Copyright (C) 2011-2017 Free Software Foundation, Inc.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -56,21 +56,26 @@ trs_file=  # Where to save the metadata of the test run.
 expect_failure=no
 color_tests=no
 enable_hard_errors=yes
-while test $# -gt 0; do
-  case $1 in
+while test $# -gt 1; do
+ arg=${1%=*}
+ val=${1#*=}
+ if [ $arg = $val ]; then
+   val=$2
+   shift
+ fi
+ case $arg in
   --help) print_usage; exit $?;;
   --version) echo "test-driver $scriptversion"; exit $?;;
-  --test-name) test_name=$2; shift;;
-  --log-file) log_file=$2; shift;;
-  --trs-file) trs_file=$2; shift;;
-  --color-tests) color_tests=$2; shift;;
-  --expect-failure) expect_failure=$2; shift;;
-  --enable-hard-errors) enable_hard_errors=$2; shift;;
-  --) shift; break;;
+  --test-name) test_name=$val;;
+  --log-file) log_file=$val;;
+  --trs-file) trs_file=$val;;
+  --color-tests) color_tests=$val;;
+  --expect-failure) expect_failure=$val;;
+  --enable-hard-errors) enable_hard_errors=$val;;
+  --) break;;
   -*) usage_error "invalid option: '$1'";;
-   *) break;;
   esac
-  shift
+  [ $arg != $val ] && shift
 done
 
 missing_opts=
@@ -143,6 +148,6 @@ echo ":copy-in-global-log: $gcopy" >> $trs_file
 # eval: (add-hook 'write-file-hooks 'time-stamp)
 # time-stamp-start: "scriptversion="
 # time-stamp-format: "%:y-%02m-%02d.%02H"
-# time-stamp-time-zone: "UTC"
+# time-stamp-time-zone: "UTC0"
 # time-stamp-end: "; # UTC"
 # End:

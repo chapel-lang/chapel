@@ -29,9 +29,6 @@
     <ClInclude Include="..\..\include\hwloc\helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\hwloc\myriexpress.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\hwloc\openfabrics-verbs.h">
       <Filter>Header Files</Filter>
     </ClInclude>

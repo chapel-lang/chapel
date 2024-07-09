@@ -69,7 +69,7 @@ private:
   /// LiveRegDefs - A set of physical registers and their definition
   /// that are "live". These nodes must be scheduled before any other nodes that
   /// modifies the registers can be scheduled.
-  unsigned NumLiveRegs;
+  unsigned NumLiveRegs = 0u;
   std::vector<SUnit*> LiveRegDefs;
   std::vector<unsigned> LiveRegCycles;
 
@@ -296,28 +296,24 @@ SUnit *ScheduleDAGFast::CopyAndMoveSuccessors(SUnit *SU) {
       if (isNewLoad)
         AddPred(LoadSU, ChainPred);
     }
-    for (unsigned i = 0, e = LoadPreds.size(); i != e; ++i) {
-      const SDep &Pred = LoadPreds[i];
+    for (const SDep &Pred : LoadPreds) {
       RemovePred(SU, Pred);
       if (isNewLoad) {
         AddPred(LoadSU, Pred);
       }
     }
-    for (unsigned i = 0, e = NodePreds.size(); i != e; ++i) {
-      const SDep &Pred = NodePreds[i];
+    for (const SDep &Pred : NodePreds) {
       RemovePred(SU, Pred);
       AddPred(NewSU, Pred);
     }
-    for (unsigned i = 0, e = NodeSuccs.size(); i != e; ++i) {
-      SDep D = NodeSuccs[i];
+    for (SDep D : NodeSuccs) {
       SUnit *SuccDep = D.getSUnit();
       D.setSUnit(SU);
       RemovePred(SuccDep, D);
       D.setSUnit(NewSU);
       AddPred(SuccDep, D);
     }
-    for (unsigned i = 0, e = ChainSuccs.size(); i != e; ++i) {
-      SDep D = ChainSuccs[i];
+    for (SDep D : ChainSuccs) {
       SUnit *SuccDep = D.getSUnit();
       D.setSUnit(SU);
       RemovePred(SuccDep, D);
@@ -426,10 +422,11 @@ static MVT getPhysicalRegisterVT(SDNode *N, unsigned Reg,
     NumRes = 1;
   } else {
     const MCInstrDesc &MCID = TII->get(N->getMachineOpcode());
-    assert(MCID.ImplicitDefs && "Physical reg def must be in implicit def list!");
+    assert(!MCID.implicit_defs().empty() &&
+           "Physical reg def must be in implicit def list!");
     NumRes = MCID.getNumDefs();
-    for (const MCPhysReg *ImpDef = MCID.getImplicitDefs(); *ImpDef; ++ImpDef) {
-      if (Reg == *ImpDef)
+    for (MCPhysReg ImpDef : MCID.implicit_defs()) {
+      if (Reg == ImpDef)
         break;
       ++NumRes;
     }
@@ -495,14 +492,13 @@ bool ScheduleDAGFast::DelayForLiveRegsBottomUp(SUnit *SU,
         --NumOps;  // Ignore the glue operand.
 
       for (unsigned i = InlineAsm::Op_FirstOperand; i != NumOps;) {
-        unsigned Flags =
-          cast<ConstantSDNode>(Node->getOperand(i))->getZExtValue();
-        unsigned NumVals = InlineAsm::getNumOperandRegisters(Flags);
+        unsigned Flags = Node->getConstantOperandVal(i);
+        const InlineAsm::Flag F(Flags);
+        unsigned NumVals = F.getNumOperandRegisters();
 
         ++i; // Skip the ID value.
-        if (InlineAsm::isRegDefKind(Flags) ||
-            InlineAsm::isRegDefEarlyClobberKind(Flags) ||
-            InlineAsm::isClobberKind(Flags)) {
+        if (F.isRegDefKind() || F.isRegDefEarlyClobberKind() ||
+            F.isClobberKind()) {
           // Check for def of register or earlyclobber register.
           for (; NumVals; --NumVals, ++i) {
             unsigned Reg = cast<RegisterSDNode>(Node->getOperand(i))->getReg();
@@ -526,11 +522,8 @@ bool ScheduleDAGFast::DelayForLiveRegsBottomUp(SUnit *SU,
     if (!Node->isMachineOpcode())
       continue;
     const MCInstrDesc &MCID = TII->get(Node->getMachineOpcode());
-    if (!MCID.ImplicitDefs)
-      continue;
-    for (const MCPhysReg *Reg = MCID.getImplicitDefs(); *Reg; ++Reg) {
-      CheckForLiveRegDef(SU, *Reg, LiveRegDefs, RegAdded, LRegs, TRI);
-    }
+    for (MCPhysReg Reg : MCID.implicit_defs())
+      CheckForLiveRegDef(SU, Reg, LiveRegDefs, RegAdded, LRegs, TRI);
   }
   return !LRegs.empty();
 }
@@ -777,8 +770,7 @@ void ScheduleDAGLinearize::Schedule() {
 
 MachineBasicBlock*
 ScheduleDAGLinearize::EmitSchedule(MachineBasicBlock::iterator &InsertPos) {
-  InstrEmitter Emitter(DAG->getTarget(), BB, InsertPos,
-                       DAG->getUseInstrRefDebugInfo());
+  InstrEmitter Emitter(DAG->getTarget(), BB, InsertPos);
   DenseMap<SDValue, Register> VRBaseMap;
 
   LLVM_DEBUG({ dbgs() << "\n*** Final schedule ***\n"; });
@@ -811,12 +803,12 @@ ScheduleDAGLinearize::EmitSchedule(MachineBasicBlock::iterator &InsertPos) {
 //                         Public Constructor Functions
 //===----------------------------------------------------------------------===//
 
-llvm::ScheduleDAGSDNodes *
-llvm::createFastDAGScheduler(SelectionDAGISel *IS, CodeGenOpt::Level) {
+llvm::ScheduleDAGSDNodes *llvm::createFastDAGScheduler(SelectionDAGISel *IS,
+                                                       CodeGenOptLevel) {
   return new ScheduleDAGFast(*IS->MF);
 }
 
-llvm::ScheduleDAGSDNodes *
-llvm::createDAGLinearizer(SelectionDAGISel *IS, CodeGenOpt::Level) {
+llvm::ScheduleDAGSDNodes *llvm::createDAGLinearizer(SelectionDAGISel *IS,
+                                                    CodeGenOptLevel) {
   return new ScheduleDAGLinearize(*IS->MF);
 }

@@ -37,8 +37,7 @@ else:
 
 # Check Serial section as a whole
 # Should be a 1:1 mapping of each other
-good_serial = [ "learnChapelInYMinutes.chpl:24: warning: an implicit module named 'learnChapelInYMinutes' is being introduced to contain file-scope code",
-                'Hello, World!', 
+good_serial = [ 'Hello, World!', 
                 'There are 3 commas (",") in this line of code', 
                 'This goes to standard output, just like plain writeln() does',
                 '-123, 777, false',
@@ -321,24 +320,6 @@ try:
 
 except IndexError:
   writeOutput( "FAILED! Section 7 of parallel test: Missing lines." )
-  exit( 1 )
-
-
-# Single
-good_parallel_8 = [ 'Reader: waiting to read.', 'Writer: will write in...', '3', '2', '1'] + [ "Reader: iteration " + str(i) + ", and the value is 5" for i in range(1,6) ]
-
-try:
-  
-  test_parallel_8 = [ test_parallel.pop(0) for i in range(5+5) ]
-  for value in good_parallel_8:
-    count = test_parallel_8.count( value )
-    if count != 1:
-      writeOutput( "Failed! Section 8 of parallel test: There are exactly " + str( count ) + " occurences of \"" + str( value ) + "\" expected exactly 1" )
-      exit( -1-len(test_serial)-18 )
-  
-
-except IndexError:
-  writeOutput( "FAILED! Section 8 of parallel test: Missing lines." )
   exit( 1 )
 
 

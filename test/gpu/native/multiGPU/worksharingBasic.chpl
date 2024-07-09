@@ -13,10 +13,10 @@ assert((n/2)%numGPUs == 0);
 
 startGpuDiagnostics();
 
-cobegin {
+cobegin with (ref A) {
   A[0..#cpuSize] += 1;
 
-  coforall (gpu, gpuID) in zip(here.gpus, here.gpus.domain) do on gpu {
+  coforall (gpu, gpuID) in zip(here.gpus, here.gpus.domain) with (ref A) do on gpu {
     const myShare = cpuSize+gpuSize*gpuID..#gpuSize;
 
     var AonThisGPU = A[myShare];
@@ -32,4 +32,8 @@ writeln(A);
 const nLaunch = getGpuDiagnostics().kernel_launch;
 
 assert(nLaunch == here.gpus.size);
-assert((+ reduce A) == n);
+// Reduction done "manually" due to this bug:
+// https://github.com/chapel-lang/chapel/issues/22736
+var AReduce = 0;
+for a in A do AReduce += a;
+assert(AReduce == n);

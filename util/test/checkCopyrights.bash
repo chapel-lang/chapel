@@ -4,7 +4,7 @@
 #
 # Check that files matching the following patterns have copyright in their
 # sources. This check does not necessary ensure these are comments within the
-# first few lines of the file, but that seems excessive.
+# first few lines of the file.
 #
 #  *.c
 #  *.cc
@@ -18,13 +18,23 @@
 #  Make*
 #
 
+# Skip check if we are within a grace period at the beginning of a new year.
+grace_period_end="01-07"
+# Get today's date and the grace period end date as %m%d format for comparison.
 todate=`date "+%m%d"`
-#This hardcoding is intentional. Date accepts a full date like this, but %m%d cuts off the year so it only compares 0107 to the current date
-cond=`date -d 2023-01-07 "+%m%d"`
+# Invoke macOS and Linux `date` differently to get the same output.
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  cond=`date -j -f "%m-%d" $grace_period_end "+%m%d"`
+else
+  # The hardcoded year is just a placeholder. Date accepts a full date like this,
+  # but %m%d cuts off the year so it only compares 0107 to the current date.
+  cond=`date -d 1970-$grace_period_end "+%m%d"`
+fi
 
 if [ $todate -le $cond ];
 then
- exit 0;
+  echo "[INFO] Skipping copyright check as we are within the grace period (ending $grace_period_end)"
+  exit 0;
 fi
 
 CWD=$(cd $(dirname $0) ; pwd)
@@ -32,7 +42,9 @@ CHPL_HOME=${CHPL_HOME:-$CWD/../..}
 
 this_year=$(date '+%Y')
 copyright_pattern="Copyright .*${this_year}[^0-9]* Hewlett Packard Enterprise Development LP"
-source_dirs="compiler runtime make modules*"
+outdated_copyright_pattern="Copyright .* Hewlett Packard Enterprise Development LP"
+
+source_dirs="compiler frontend runtime make modules*"
 
 echo "[INFO] Moving to CHPL_HOME: ${CHPL_HOME}"
 cd $CHPL_HOME
@@ -48,6 +60,7 @@ echo "[INFO] Checking for copyrights in source files: ${copyright_pattern}"
 
 files_wo_copy=$(find $source_dirs -type f \( \
     -name Make\* -o \
+    -name CMakeLists.txt -o \
     -name \*.c -o \
     -name \*.cc -o \
     -name \*.chpl -o \
@@ -60,16 +73,17 @@ files_wo_copy=$(find $source_dirs -type f \( \
     grep -v compiler/include/bison-chapel.h        | \
     grep -v compiler/include/flex-chapel.h         | \
     grep -v compiler/parser/bison-chapel.cpp       | \
-    grep -v compiler/dyno/lib/parsing/bison-chpl-lib.h | \
-    grep -v compiler/dyno/lib/parsing/bison-chpl-lib.cpp | \
-    grep -v compiler/dyno/lib/parsing/flex-chpl-lib.h | \
-    grep -v compiler/dyno/lib/parsing/flex-chpl-lib.cpp | \
+    grep -v frontend/lib/parsing/bison-chpl-lib.h | \
+    grep -v frontend/lib/parsing/bison-chpl-lib.cpp | \
+    grep -v frontend/lib/parsing/flex-chpl-lib.h | \
+    grep -v frontend/lib/parsing/flex-chpl-lib.cpp | \
+    grep -v frontend/lib/util/git-version.cpp | \
     grep -v 'modules/standard/gen/.*/ChapelSysCTypes.chpl' | \
     xargs grep -i -L "${copyright_pattern}")
 
 
 # Check the top-level Makefiles in CHPL_HOME
-root_files_wo_copy=$(find . -maxdepth 1 -name Make\* | xargs grep -i -L "${copyright_pattern}")
+root_files_wo_copy=$(find . -maxdepth 1 -name Make\* -o -name CMakeLists.txt | xargs grep -i -L "${copyright_pattern}")
 
 
 # Check CHPL_HOME/tools. Filename suffixes actually used, by subdir:
@@ -79,6 +93,7 @@ root_files_wo_copy=$(find . -maxdepth 1 -name Make\* | xargs grep -i -L "${copyr
 
 tools_wo_copy=$(find tools \( -type d \( -name test -o -name utils \) -prune \) -o \( -type f \( \
     -name Make\* -o \
+    -name CMakeLists.txt -o \
     -name \*.c -o \
     -name \*.cc -o \
     -name \*.chpl -o \
@@ -92,10 +107,24 @@ tools_wo_copy=$(find tools \( -type d \( -name test -o -name utils \) -prune \) 
     xargs grep -i -L "${copyright_pattern}")
 
 if [ -n "${files_wo_copy}" -o -n "${root_files_wo_copy}" -o -n "${tools_wo_copy}" ] ; then
-    echo "[ERROR] The following files have missing or incorrect copyrights:"
-    echo "${files_wo_copy}"
-    echo "${root_files_wo_copy}"
-    echo "${tools_wo_copy}"
-    echo "Add the copyright with: \$CHPL_HOME/util/buildRelease/add_license_to_sources.py <files>"
+    echo "[ERROR] Missing or incorrect copyrights"
+    echo
+
+    files="${files_wo_copy} ${root_files_wo_copy} ${tools_wo_copy}"
+    incorrect=$(echo "${files}" | xargs grep -i -l "${outdated_copyright_pattern}")
+    missing=$(echo "${files}" | xargs grep -i -L "${outdated_copyright_pattern}")
+    if [ -n "${incorrect}" ] ; then
+      echo "[ERROR] The following files have incorrect copyrights:"
+      echo "${incorrect}"
+      echo
+      echo " Please correct these by updating the copyright date"
+      echo
+    fi
+    if [ -n "${missing}" ] ; then
+      echo "[ERROR] The following files have missing copyrights:"
+      echo "${missing}"
+      echo
+      echo "${missing}" | xargs echo " Add the copyright to these files with \$CHPL_HOME/util/buildRelease/add_license_to_sources.py "
+    fi
     exit 1
 fi

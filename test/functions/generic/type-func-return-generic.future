@@ -1,0 +1,4 @@
+bug: type functions should not segfault when return generic types
+#25039
+
+When resolving this future, remove the skipif

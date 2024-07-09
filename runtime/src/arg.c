@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +32,7 @@
 #include "chpl-linefile-support.h"
 #include "config.h"
 #include "error.h"
+#include "chpl-comm-locales.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -241,19 +242,104 @@ void printHelpTable(void) {
 
 
 static int32_t _argNumLocales = 0;
+static int32_t _argNumLocalesPerNode = 1;
 
 void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
   int invalid;
   char invalidChars[2] = "\0\0";
-  _argNumLocales = c_string_to_int32_t_precise(numPtr, &invalid, invalidChars);
-  if (invalid) {
-    char* message = chpl_glom_strings(3, "\"", numPtr,
-                                      "\" is not a valid number of locales");
-    chpl_error(message, lineno, filename);
+  char *expr = chpl_mem_alloc(strlen(numPtr)+1, CHPL_RT_MD_COMMAND_BUFFER,
+                              lineno, filename);
+  strcpy(expr, numPtr);
+  char *x = strchr(expr, 'x');
+  if (x != NULL) {
+    // parse locale expression of the form NxLt where L and t are optional
+    *x = '\0';
+    char *lpn = x+1;
+    if (*lpn != '\0') {
+      // locales per node (L) was specified
+      _argNumLocalesPerNode = c_string_to_int32_t_precise(lpn, &invalid,
+                                                   invalidChars);
+      const char *t = NULL;
+      if (invalid) {
+        char *suffix = strchr(lpn, invalidChars[0]);
+        assert(suffix);
+        if (suffix == lpn) {
+          // locales per node must be specified if there is a suffix
+          char *message = chpl_glom_strings(3, "\"", suffix,
+                          "\" is not a valid number of co-locales.");
+          chpl_error(message, lineno, filename);
+        }
+
+        if (!strcmp(suffix, "s") || !strcmp(suffix, "socket")) {
+          t = "socket";
+        } else if (!strcmp(suffix, "numa")) {
+          t = "numa";
+        } else if (!strcmp(suffix, "llc")) {
+          t = "cache";
+        } else if (!strcmp(suffix, "c") || !strcmp(suffix, "core")) {
+          t = "core";
+        } else {
+          char *message = chpl_glom_strings(3, "\"", suffix,
+                          "\" is not a valid suffix.");
+          chpl_error(message, lineno, filename);
+        }
+      }
+      if (t) {
+        chpl_env_set("CHPL_RT_COLOCALE_OBJ_TYPE", t, 1);
+      }
+
+      if (_argNumLocalesPerNode < 1) {
+        chpl_error("Number of locales per node must be > 0.",
+                   lineno, filename);
+      } else {
+        chpl_env_set_uint("CHPL_RT_LOCALES_PER_NODE",
+                          (uint64_t)_argNumLocalesPerNode, 1);
+      }
+    } else {
+
+      // L wasn't specified, determine the default from
+      // CHPL_RT_LOCALES_PER_NODE. It is an error if it is not set.
+
+      if (!chpl_env_rt_get("LOCALES_PER_NODE", NULL)) {
+        chpl_error("CHPL_RT_LOCALES_PER_NODE must be set.", lineno, filename);
+      }
+      _argNumLocalesPerNode = (int32_t) chpl_env_rt_get_int("LOCALES_PER_NODE", 1);
+      if (_argNumLocalesPerNode < 1) {
+        chpl_error("CHPL_RT_LOCALES_PER_NODE must be > 0.", lineno, filename);
+      }
+
+      // TODO: allow for a suffix w/out L
+    }
+
+    int32_t numNodes = c_string_to_int32_t_precise(expr, &invalid,
+                                                   invalidChars);
+    if (invalid) {
+      char* message = chpl_glom_strings(3, "\"", expr,
+                                        "\" is not a valid number of nodes.");
+      chpl_error(message, lineno, filename);
+    }
+    if (numNodes < 1) {
+      chpl_error("Number of nodes must be > 0.",
+                 lineno, filename);
+    }
+    _argNumLocales = numNodes * _argNumLocalesPerNode;
+  } else {
+    // parse simple number of locales
+    _argNumLocales = c_string_to_int32_t_precise(expr, &invalid, invalidChars);
+    if (invalid) {
+      char* message = chpl_glom_strings(3, "\"", expr,
+                                        "\" is not a valid number of locales.");
+      chpl_error(message, lineno, filename);
+    }
+    if (_argNumLocales < 1) {
+      chpl_error("Number of locales must be > 0.", lineno, filename);
+    }
+    _argNumLocalesPerNode = (int32_t) chpl_env_rt_get_int("LOCALES_PER_NODE", 1);
+    if (_argNumLocalesPerNode < 1) {
+      chpl_error("CHPL_RT_LOCALES_PER_NODE must be > 0.", lineno, filename);
+    }
   }
-  if (_argNumLocales < 1) {
-    chpl_error("Number of locales must be greater than 0", lineno, filename);
-  }
+  chpl_mem_free(expr, lineno, filename);
 }
 
 int32_t getArgNumLocales(void) {
@@ -262,6 +348,10 @@ int32_t getArgNumLocales(void) {
     retval = _argNumLocales;
   }
   return retval;
+}
+
+int32_t getArgNumLocalesPerNode(void) {
+  return _argNumLocalesPerNode;
 }
 
 

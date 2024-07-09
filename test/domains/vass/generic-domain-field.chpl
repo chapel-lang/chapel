@@ -1,7 +1,7 @@
 class C { 
-  var x: domain;
+  var x: domain(?);
 }
-proc writeDom(y: domain) {
+proc writeDom(y: domain(?)) {
   writeln(y);
 }
 var c = new unmanaged C({1..2});

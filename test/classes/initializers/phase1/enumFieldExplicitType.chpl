@@ -24,5 +24,6 @@ class Foo {
   }
 }
 
-var foo = (new owned Foo(Color.blue)).borrow();
+var ownFoo = new owned Foo(Color.blue);
+var foo = ownFoo.borrow();
 writeln(foo);

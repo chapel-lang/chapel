@@ -1,0 +1,7 @@
+7 instances of "warning: constx is unstable. Please use consty" across 1 file
+6 instances of "warning: fieldx is unstable." across 1 file
+4 instances of "warning: methodx is unstable." across 1 file
+3 instances of "warning: recordx is unstable." across 1 file
+3 instances of "warning: paramx is unstable please use paramy" across 1 file
+2 instances of "warning: procx is unstable." across 1 file
+1 instance of "warning: modulex is unstable." across 1 file

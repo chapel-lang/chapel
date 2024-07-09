@@ -1,1 +1,0 @@
-depDefaultIostyle.chpl:3: warning: defaultIOStyle is unstable due to returning an unstable type

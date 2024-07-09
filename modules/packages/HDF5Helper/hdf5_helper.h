@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -52,7 +52,7 @@ static herr_t H5LTget_dataset_info_WAR(hid_t loc_id,
                                        size_t* type_size) {
   return H5LTget_dataset_info(loc_id,
                               dset_name,
-                              (unsigned long long*)dims,
+                              (hsize_t*)dims,
                               type_class,
                               type_size);
 }
@@ -66,7 +66,7 @@ static herr_t H5LTmake_dataset_WAR(hid_t loc_id,
   return H5LTmake_dataset(loc_id,
                           dset_name,
                           rank,
-                          (unsigned long long*)dims,
+                          (hsize_t*)dims,
                           type_id,
                           buffer);
 }

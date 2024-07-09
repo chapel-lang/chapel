@@ -10,7 +10,7 @@ const bas_info : [1..natom] range = [i in 1..natom] (1..10/(i%2+1)) + 5*(i/2) + 
 const n = (natom/2)*10 + ((natom+1)/2)*5;
 const matD : domain(2) = {1..n, 1..n}; 
 const dmat : [matD] elemType = [(i,j) in matD] 1.0/(i+j); 
-var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType; 
+var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType;
 
 proc buildjk() {
   var loc = LocaleSpace.low;
@@ -25,12 +25,12 @@ proc buildjk() {
       }
   }
 
-  cobegin {
-    [(i,j) in matD] jmat2T(i,j) = jmat2(j,i);
-    [(i,j) in matD] kmat2T(i,j) = kmat2(j,i);
+  cobegin with (ref jmat2T, ref kmat2T) {
+    [(i,j) in matD with (ref jmat2T)] jmat2T(i,j) = jmat2(j,i);
+    [(i,j) in matD with (ref kmat2T)] kmat2T(i,j) = kmat2(j,i);
   }
 
-  cobegin {
+  cobegin with (ref jmat2, ref kmat2) {
     jmat2 = (jmat2 + jmat2T) * 2;
     kmat2 += kmat2T;
   }

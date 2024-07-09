@@ -1,0 +1,2 @@
+Issue21265.chpl:10: In function 'test2':
+Issue21265.chpl:11: error: list element type cannot be 'nothing'

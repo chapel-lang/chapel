@@ -1,0 +1,2 @@
+ReflectionNumFields.chpl:5: In function 'main':
+ReflectionNumFields.chpl:6: warning: 'numFields' is deprecated - please use 'getNumFields' instead

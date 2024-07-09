@@ -21,7 +21,6 @@ or
 
    Used to demonstrate the behavior of lifetime checking and documentation 
 
-
    .. attribute:: var a: unmanaged
 
    .. attribute:: var b: shared

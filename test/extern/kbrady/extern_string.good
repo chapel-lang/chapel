@@ -1,1 +1,1 @@
-extern_string.chpl:1: error: extern procedures should not take arguments of type string, use c_string instead
+extern_string.chpl:1: error: extern procedures should not take arguments of type string, use c_ptrConst(c_char) instead

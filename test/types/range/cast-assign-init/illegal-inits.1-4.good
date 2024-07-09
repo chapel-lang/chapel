@@ -1,0 +1,2 @@
+illegal-inits.chpl:8: error: invalid copy-initialization
+illegal-inits.chpl:8: error: initializing a range with idxType color from a range with idxType int(64)

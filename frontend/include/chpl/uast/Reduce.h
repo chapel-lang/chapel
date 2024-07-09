@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -63,6 +63,8 @@ namespace uast {
 
 */
 class Reduce final : public Call {
+ friend class AstNode;
+
  private:
   static const int opChildNum_ = 0;
   static const int iterandExprChildNum_ = 1;
@@ -73,8 +75,11 @@ class Reduce final : public Call {
     CHPL_ASSERT(numChildren() == 2);
   }
 
-  Reduce(Deserializer& des)
-      : Call(asttags::Reduce, des) { }
+  void serializeInner(Serializer& ser) const override {
+    callSerializeInner(ser);
+  }
+
+  explicit Reduce(Deserializer& des) : Call(asttags::Reduce, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Reduce* rhs = other->toReduce();
@@ -113,13 +118,6 @@ class Reduce final : public Call {
   const AstNode* iterand() const {
     return this->child(iterandExprChildNum_);
   }
-
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Reduce);
-
 };
 
 

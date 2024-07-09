@@ -1,2 +1,0 @@
---use-io-formatters -sformat=FormatKind.default # basic-types.default.good
---use-io-formatters -sformat=FormatKind.json # basic-types.json.good

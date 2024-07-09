@@ -14,7 +14,8 @@ class foo {
   }
 }
 
-var f : borrowed foo = (new owned foo()).borrow();
+var ownF = new owned foo();
+var f : borrowed foo = ownF.borrow();
 
 writeln(f.x);
 writeln(f.getx());

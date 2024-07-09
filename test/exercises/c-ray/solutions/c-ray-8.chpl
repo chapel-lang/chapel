@@ -24,10 +24,10 @@
  * ----------------------------------------------------------------------------
  */
 
-use Image;    // use helper module related to writing out images
+use CRayImage;    // use helper module related to writing out images
 use List;
 use IO;       // allow use of stderr, stdin, ioMode
-import Math.quarter_pi;
+import Math.pi;
 
 //
 // =================================================
@@ -46,7 +46,7 @@ config const size = "800x600",            // size of output image
              imgType = extToFmt(image),   // the image file format
              usage = false,               // print usage message?
 
-             fieldOfView = quarter_pi,    // field of view in radians
+             fieldOfView = pi/4,          // field of view in radians
              maxRayDepth = 5,             // raytrace recursion limit
              rayMagnitude = 1000.0,       // trace rays of this magnitude
              errorMargin = 1e-6,          // margin to avoid surface acne
@@ -139,7 +139,7 @@ proc main() {
   // A local domain, distributed domain, and array representing the image
   //
   const imageSize = {0..#yres, 0..#xres};
-  const pixelPlane = imageSize dmapped Block(imageSize);
+  const pixelPlane = imageSize dmapped new blockDist(imageSize);
   var pixels: [pixelPlane] pixelType;
 
   //
@@ -175,7 +175,7 @@ proc main() {
   // random numbers.  This avoids communication back to locale #0
   // (where they were allocated) to access them from other locales.
   //
-  forall (y, x) in pixelPlane with (in scene, in rands) {
+  forall (y, x) in pixelPlane with (in scene, in rands, ref pixels) {
     pixels[y, x] = computePixel(y, x, scene, rands);
   }
 
@@ -491,15 +491,15 @@ proc initRands() {
   } else {
     use Random;
 
-    var rng = new owned RandomStream(seed=(if seed then seed
-                                                   else SeedGenerator.currentTime),
-                                     eltType=real);
+    var rng = if seed
+      then new randomStream(real, seed)
+      else new randomStream(real);
     for u in rands.urand do
-      u(X) = rng.getNext() - 0.5;
+      u(X) = rng.next() - 0.5;
     for u in rands.urand do
-      u(Y) = rng.getNext() - 0.5;
+      u(Y) = rng.next() - 0.5;
     for r in rands.irand do
-      r = (nran * rng.getNext()): int;
+      r = (nran * rng.next()): int;
   }
 
   return rands;
@@ -540,7 +540,7 @@ proc loadScene() {
 
   // the input file channel
   const infile = if scene == "stdin" then stdin
-                                     else open(scene, ioMode.r).reader();
+                                     else open(scene, ioMode.r).reader(locking=true);
 
   // a map (associative array) from the supported input file argument
   // types to the number of columns of input they expect

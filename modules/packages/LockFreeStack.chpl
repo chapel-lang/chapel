@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,13 +28,9 @@
 
       - It relies on Chapel ``extern`` code blocks and so requires that
         the Chapel compiler is built with LLVM enabled.
-      - Currently only ``CHPL_TARGET_ARCH=x86_64`` is supported as it uses
-        the x86-64 instruction: CMPXCHG16B_.
-      - The implementation relies on ``GCC`` style inline assembly, and so
-        is restricted to a ``CHPL_TARGET_COMPILER`` value of ``gnu``,
-        ``clang``, or ``llvm``.
-
-    .. _CMPXCHG16B: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+      - The implementation relies on using either ``GCC`` style inline assembly
+        (for x86-64) or a GCC/clang builtin, and so is restricted to a
+        ``CHPL_TARGET_COMPILER`` value of ``gnu``, ``clang``, or ``llvm``.
 
   An implementation of the Treiber Stack [#]_, a lock-free stack. Concurrent safe
   memory reclamation is handled by an internal :record:`EpochManager`. Usage of the
@@ -149,7 +145,7 @@ module LockFreeStack {
       do {
         var oldTop = _top.read();
         n.next = oldTop;
-        if shouldYield then chpl_task_yield();
+        if shouldYield then currentTask.yieldExecution();
         shouldYield = true;
       } while (!_top.compareAndSwap(oldTop, n));
       tok.unpin();
@@ -167,7 +163,7 @@ module LockFreeStack {
           return (false, retval);
         }
         var newTop = oldTop!.next;
-        if shouldYield then chpl_task_yield();
+        if shouldYield then currentTask.yieldExecution();
         shouldYield = true;
       } while (!_top.compareAndSwap(oldTop, newTop));
       var retval = oldTop!.val;
@@ -187,7 +183,7 @@ module LockFreeStack {
     }
 
     iter drain(param tag : iterKind) : objTypeOpt where tag == iterKind.standalone {
-      coforall tid in 1..here.maxTaskPar {
+      coforall 1..here.maxTaskPar {
         var tok = getToken();
         var (hasElt, elt) = pop(tok);
         while hasElt {

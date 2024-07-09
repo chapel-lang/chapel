@@ -48,10 +48,10 @@ bool llvm::objcarc::CanAlterRefCount(const Instruction *Inst, const Value *Ptr,
   const auto *Call = cast<CallBase>(Inst);
 
   // See if AliasAnalysis can help us with the call.
-  FunctionModRefBehavior MRB = PA.getAA()->getModRefBehavior(Call);
-  if (AliasAnalysis::onlyReadsMemory(MRB))
+  MemoryEffects ME = PA.getAA()->getMemoryEffects(Call);
+  if (ME.onlyReadsMemory())
     return false;
-  if (AliasAnalysis::onlyAccessesArgPointees(MRB)) {
+  if (ME.onlyAccessesArgPointees()) {
     for (const Value *Op : Call->args()) {
       if (IsPotentialRetainableObjPtr(Op, *PA.getAA()) && PA.related(Ptr, Op))
         return true;
@@ -242,7 +242,7 @@ static bool findDependencies(DependenceKind Flavor, const Value *Arg,
   } while (!Worklist.empty());
 
   // Determine whether the original StartBB post-dominates all of the blocks we
-  // visited. If not, insert a sentinal indicating that most optimizations are
+  // visited. If not, insert a sentinel indicating that most optimizations are
   // not safe.
   for (const BasicBlock *BB : Visited) {
     if (BB == StartBB)

@@ -4,11 +4,11 @@ module m {
     use IO;
     use CTypes;
 
-    extern proc openTestFile(): c_FILE;
+    extern proc openTestFile(): c_ptr(c_FILE);
 
     try! {
         var f = new file(openTestFile(), own=true);
-        var r = f.reader();
+        var r = f.reader(locking=false);
         write(r.readLine());
     }
 }

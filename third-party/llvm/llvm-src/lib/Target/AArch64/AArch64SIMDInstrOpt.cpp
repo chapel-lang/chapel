@@ -50,6 +50,7 @@
 #include "llvm/MC/MCSchedule.h"
 #include "llvm/Pass.h"
 #include <unordered_map>
+#include <map>
 
 using namespace llvm;
 
@@ -237,7 +238,7 @@ shouldReplaceInst(MachineFunction *MF, const MCInstrDesc *InstDesc,
     SIMDInstrTable[InstID] = false;
     return false;
   }
-  for (auto IDesc : InstDescRepl)
+  for (const auto *IDesc : InstDescRepl)
   {
     SCDescRepl = SchedModel.getMCSchedModel()->getSchedClassDesc(
       IDesc->getSchedClass());
@@ -250,7 +251,7 @@ shouldReplaceInst(MachineFunction *MF, const MCInstrDesc *InstDesc,
 
   // Replacement cost.
   unsigned ReplCost = 0;
-  for (auto IDesc :InstDescRepl)
+  for (const auto *IDesc :InstDescRepl)
     ReplCost += SchedModel.computeInstrLatency(IDesc->getOpcode());
 
   if (SchedModel.computeInstrLatency(InstDesc->getOpcode()) > ReplCost)

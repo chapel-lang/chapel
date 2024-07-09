@@ -1,3 +1,13 @@
+mod-init-fails.chpl:1: In module 'Main':
+mod-init-fails.chpl:3: warning: potentially surprising shadowing for 'M2'
+mod-init-fails.chpl:2: note: it refers to a symbol found through the 'use' of 'M1' here
+mod-init-fails.chpl:26: note: leading to 'M2' defined here
+mod-init-fails.chpl:33: note: but, there is a shadowed symbol 'M2' defined here
+mod-init-fails.chpl:61: In module 'M4':
+mod-init-fails.chpl:63: warning: potentially surprising shadowing for 'M2'
+mod-init-fails.chpl:62: note: it refers to a symbol found through the 'use' of 'M1' here
+mod-init-fails.chpl:26: note: leading to 'M2' defined here
+mod-init-fails.chpl:33: note: but, there is a shadowed symbol 'M2' defined here
 1.1: Module M1.M2
 1.2: Module M3.M2
 1.3: Module M4.M3

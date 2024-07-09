@@ -1,0 +1,2 @@
+# This check is turned off by --fast, so don't run with it
+COMPOPTS <= --fast

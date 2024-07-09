@@ -12,12 +12,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Transforms/Instrumentation.h"
-#include "llvm-c/Initialization.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Module.h"
-#include "llvm/InitializePasses.h"
-#include "llvm/PassRegistry.h"
+#include "llvm/TargetParser/Triple.h"
 
 using namespace llvm;
 
@@ -88,17 +85,15 @@ Comdat *llvm::getOrCreateFunctionComdat(Function &F, Triple &T) {
   return C;
 }
 
-/// initializeInstrumentation - Initialize all passes in the TransformUtils
-/// library.
-void llvm::initializeInstrumentation(PassRegistry &Registry) {
-  initializeMemProfilerLegacyPassPass(Registry);
-  initializeModuleMemProfilerLegacyPassPass(Registry);
-  initializeBoundsCheckingLegacyPassPass(Registry);
-  initializeDataFlowSanitizerLegacyPassPass(Registry);
-}
-
-/// LLVMInitializeInstrumentation - C binding for
-/// initializeInstrumentation.
-void LLVMInitializeInstrumentation(LLVMPassRegistryRef R) {
-  initializeInstrumentation(*unwrap(R));
+void llvm::setGlobalVariableLargeSection(const Triple &TargetTriple,
+                                         GlobalVariable &GV) {
+  // Limit to x86-64 ELF.
+  if (TargetTriple.getArch() != Triple::x86_64 ||
+      TargetTriple.getObjectFormat() != Triple::ELF)
+    return;
+  // Limit to medium/large code models.
+  std::optional<CodeModel::Model> CM = GV.getParent()->getCodeModel();
+  if (!CM || (*CM != CodeModel::Medium && *CM != CodeModel::Large))
+    return;
+  GV.setCodeModel(CodeModel::Large);
 }

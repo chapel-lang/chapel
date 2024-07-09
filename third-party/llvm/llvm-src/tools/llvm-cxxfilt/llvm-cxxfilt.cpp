@@ -7,16 +7,17 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/ADT/StringExtras.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/Demangle/Demangle.h"
+#include "llvm/Demangle/StringViewExtras.h"
 #include "llvm/Option/Arg.h"
 #include "llvm/Option/ArgList.h"
 #include "llvm/Option/Option.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Host.h"
-#include "llvm/Support/InitLLVM.h"
+#include "llvm/Support/LLVMDriver.h"
 #include "llvm/Support/WithColor.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/TargetParser/Host.h"
+#include "llvm/TargetParser/Triple.h"
 #include <cstdlib>
 #include <iostream>
 
@@ -25,35 +26,34 @@ using namespace llvm;
 namespace {
 enum ID {
   OPT_INVALID = 0, // This is not an option ID.
-#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM,  \
-               HELPTEXT, METAVAR, VALUES)                                      \
-  OPT_##ID,
+#define OPTION(...) LLVM_MAKE_OPT_ID(__VA_ARGS__),
 #include "Opts.inc"
 #undef OPTION
 };
 
-#define PREFIX(NAME, VALUE) const char *const NAME[] = VALUE;
+#define PREFIX(NAME, VALUE)                                                    \
+  static constexpr llvm::StringLiteral NAME##_init[] = VALUE;                  \
+  static constexpr llvm::ArrayRef<llvm::StringLiteral> NAME(                   \
+      NAME##_init, std::size(NAME##_init) - 1);
 #include "Opts.inc"
 #undef PREFIX
 
-const opt::OptTable::Info InfoTable[] = {
-#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM,  \
-               HELPTEXT, METAVAR, VALUES)                                      \
-  {                                                                            \
-      PREFIX,      NAME,      HELPTEXT,                                        \
-      METAVAR,     OPT_##ID,  opt::Option::KIND##Class,                        \
-      PARAM,       FLAGS,     OPT_##GROUP,                                     \
-      OPT_##ALIAS, ALIASARGS, VALUES},
+using namespace llvm::opt;
+static constexpr opt::OptTable::Info InfoTable[] = {
+#define OPTION(...) LLVM_CONSTRUCT_OPT_INFO(__VA_ARGS__),
 #include "Opts.inc"
 #undef OPTION
 };
 
-class CxxfiltOptTable : public opt::OptTable {
+class CxxfiltOptTable : public opt::GenericOptTable {
 public:
-  CxxfiltOptTable() : OptTable(InfoTable) { setGroupedShortOptions(true); }
+  CxxfiltOptTable() : opt::GenericOptTable(InfoTable) {
+    setGroupedShortOptions(true);
+  }
 };
 } // namespace
 
+static bool ParseParams;
 static bool StripUnderscore;
 static bool Types;
 
@@ -65,24 +65,28 @@ static void error(const Twine &Message) {
 }
 
 static std::string demangle(const std::string &Mangled) {
-  const char *DecoratedStr = Mangled.c_str();
-  if (StripUnderscore)
-    if (DecoratedStr[0] == '_')
-      ++DecoratedStr;
+  using llvm::itanium_demangle::starts_with;
+  std::string_view DecoratedStr = Mangled;
+  bool CanHaveLeadingDot = true;
+  if (StripUnderscore && DecoratedStr[0] == '_') {
+    DecoratedStr.remove_prefix(1);
+    CanHaveLeadingDot = false;
+  }
 
   std::string Result;
-  if (nonMicrosoftDemangle(DecoratedStr, Result))
+  if (nonMicrosoftDemangle(DecoratedStr, Result, CanHaveLeadingDot,
+                           ParseParams))
     return Result;
 
   std::string Prefix;
   char *Undecorated = nullptr;
 
   if (Types)
-    Undecorated = itaniumDemangle(DecoratedStr, nullptr, nullptr, nullptr);
+    Undecorated = itaniumDemangle(DecoratedStr, ParseParams);
 
-  if (!Undecorated && strncmp(DecoratedStr, "__imp_", 6) == 0) {
+  if (!Undecorated && starts_with(DecoratedStr, "__imp_")) {
     Prefix = "import thunk for ";
-    Undecorated = itaniumDemangle(DecoratedStr + 6, nullptr, nullptr, nullptr);
+    Undecorated = itaniumDemangle(DecoratedStr.substr(6), ParseParams);
   }
 
   Result = Undecorated ? Prefix + Undecorated : Mangled;
@@ -140,8 +144,7 @@ static void demangleLine(llvm::raw_ostream &OS, StringRef Mangled, bool Split) {
   OS.flush();
 }
 
-int llvm_cxxfilt_main(int argc, char **argv) {
-  InitLLVM X(argc, argv);
+int llvm_cxxfilt_main(int argc, char **argv, const llvm::ToolContext &) {
   BumpPtrAllocator A;
   StringSaver Saver(A);
   CxxfiltOptTable Tbl;
@@ -169,6 +172,8 @@ int llvm_cxxfilt_main(int argc, char **argv) {
     StripUnderscore = A->getOption().matches(OPT_strip_underscore);
   else
     StripUnderscore = Triple(sys::getProcessTriple()).isOSBinFormatMachO();
+
+  ParseParams = !Args.hasArg(OPT_no_params);
 
   Types = Args.hasArg(OPT_types);
 

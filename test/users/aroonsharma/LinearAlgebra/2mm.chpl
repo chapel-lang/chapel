@@ -35,9 +35,9 @@ proc map_distribution(size:int): domain(2) {
     /*} else if dist == "CM" {
       user_dist = dom dmapped CyclicZipOpt(startIdx=dom.low);*/
     } else if dist == "C" {
-      user_dist = dom dmapped Cyclic(startIdx=dom.low);
+      user_dist = dom dmapped new cyclicDist(startIdx=dom.low);
     } else if dist == "B" {
-      user_dist = dom dmapped Block(boundingBox=dom);
+      user_dist = dom dmapped new blockDist(boundingBox=dom);
     } 
     return user_dist;
 }
@@ -45,7 +45,7 @@ proc map_distribution(size:int): domain(2) {
 /* Initializes a matrix based on a domain distribution (might be mapped)*/
 proc initialize_matrix(distribution, matrix_size: int, adder: int) {
     var matrix: [distribution] real = 0.0;
-    forall (i,j) in distribution {
+    forall (i,j) in distribution with (ref matrix) {
         matrix[i,j] = i * (j + adder) / matrix_size;
     }
     return matrix;
@@ -77,18 +77,18 @@ proc kernel_2mm(alpha: int, beta: int, distribution, matrix_size: int) {
     /* The matrices that will be the result of the operation */
     var D, E: [distribution] real = 0.0;
 
-    forall (i,j) in distribution {
+    forall (i,j) in distribution with (ref D) {
         var tempArray: [1..matrix_size] real;
-        forall (b, a, k) in zip(B[1..matrix_size, j], A[i, 1..matrix_size], 1..) {
+        forall (b, a, k) in zip(B[1..matrix_size, j], A[i, 1..matrix_size], 1..) with (ref tempArray) {
             var temp = a * b;
             tempArray[k] = temp;
         }
         D[i,j] = alpha * (+ reduce (tempArray));
     }
     
-    forall (i,j) in distribution {
+    forall (i,j) in distribution with (ref E) {
         var tempArray: [1..matrix_size] real;
-        forall (d, c, k) in zip(D[1..matrix_size, j], C[i, 1..matrix_size], 1..) {
+        forall (d, c, k) in zip(D[1..matrix_size, j], C[i, 1..matrix_size], 1..) with (ref tempArray) {
       var temp = c * d;
       tempArray[k] = temp;
         }
@@ -151,18 +151,18 @@ proc kernel_2mm(alpha: int, beta: int, distribution, matrix_size: int) {
     var Dtest: [{1..size, 1..size}] real = 0.0;
     var Etest: [{1..size, 1..size}] real = 0.0;
     
-      forall (i,j) in {1..matrix_size, 1..matrix_size} {
+      forall (i,j) in {1..matrix_size, 1..matrix_size} with (ref Dtest) {
           var tempArray: [1..matrix_size] real;
-          forall (a, b, k) in zip(Atest[i, 1..matrix_size], Btest[1..matrix_size, j], 1..) {
+          forall (a, b, k) in zip(Atest[i, 1..matrix_size], Btest[1..matrix_size, j], 1..) with (ref tempArray) {
               var temp = a * b;
               tempArray[k] = temp;
           }
           Dtest[i,j] = alpha * (+ reduce (tempArray));
       }
     
-      forall (i,j) in {1..matrix_size, 1..matrix_size} {
+      forall (i,j) in {1..matrix_size, 1..matrix_size} with (ref Etest) {
           var tempArray: [1..matrix_size] real;
-          forall (c, d, k) in zip(Ctest[i, 1..matrix_size], Dtest[1..matrix_size, j], 1..) {
+          forall (c, d, k) in zip(Ctest[i, 1..matrix_size], Dtest[1..matrix_size, j], 1..) with (ref tempArray) {
         var temp = c * d;
         tempArray[k] = temp;
           }
@@ -216,13 +216,13 @@ proc main() {
       var user_dist = dom dmapped CyclicZipOpt(startIdx=dom.low);
       kernel_2mm(alpha, beta, user_dist, size);   */
     } else if dist == "C" {
-        var user_dist = dom dmapped Cyclic(startIdx=dom.low);
+        var user_dist = dom dmapped new cyclicDist(startIdx=dom.low);
         kernel_2mm(alpha, beta, user_dist, size);   
     } else if dist == "B" {
-        var user_dist = dom dmapped Block(boundingBox=dom);
+        var user_dist = dom dmapped new blockDist(boundingBox=dom);
         kernel_2mm(alpha, beta, user_dist, size);   
     } /*else if dist == "BC" {
-      var user_dist = dom dmapped BlockCyclic(startIdx=dom.low, blocksize=(2,2));
+      var user_dist = dom dmapped new blockCycDist(startIdx=dom.low, blocksize=(2,2));
     kernel_2mm(alpha, beta, user_dist, size);
     }*/
 }

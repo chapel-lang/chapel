@@ -1,67 +1,59 @@
-cmake_minimum_required(VERSION 3.4)
+# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
+# Other additional copyright holders may be indicated within.
+#
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
+cmake_minimum_required(VERSION 3.20.0)
+project(llvm-pgas)
 
-# Detect LLVM
-# The user is supposed to set this to a valid llvm 3.7 install root
-set(LLVM_ROOT "" CACHE PATH "Root of LLVM install.")
-# and source tree
-# (we use lit.py from the LLVM source tree)
-set(LLVM_SRC "" CACHE PATH "Root of LLVM source tree.")
+# relies on an external env variable, CHPL_LLVM_CONFIG, which can be set by:
+# export `printchplenv --all --simple | grep CHPL_LLVM_CONFIG`
+execute_process(COMMAND $ENV{CHPL_LLVM_CONFIG} --cmakedir OUTPUT_VARIABLE LLVM_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND $ENV{CHPL_LLVM_CONFIG} --bindir OUTPUT_VARIABLE LLVM_BIN OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-set(LLVM_LIT "${LLVM_SRC}/utils/lit/lit.py")
+# uses LLVM_DIR from chplenv
+find_package(LLVM 16 REQUIRED CONFIG)
 
-# sanity check LLVM install path
-if(NOT EXISTS "${LLVM_ROOT}/include/llvm" )
-    message(FATAL_ERROR
-            "LLVM_ROOT (${LLVM_ROOT}) is invalid")
+if(LLVM_VERSION VERSION_LESS 16)
+  message(FATAL_ERROR "Did not find LLVM 16 -- found ${LLVM_VERSION}")
 endif()
 
+set(LLVM_LIT "$ENV{CHPL_HOME}/third-party/llvm/llvm-src/utils/lit/lit.py")
 
-# sanity check LLVM src path
-if(NOT EXISTS "${LLVM_SRC}/lib/Transforms" )
-    message(FATAL_ERROR
-            "LLVM_SRC (${LLVM_SRC}) is invalid")
-endif()
+set(CMAKE_CXX_STANDARD 17)
 
 # find Python
 find_package(PythonInterp)
 
-#
-#set( LLVM_DIR "${LLVM_ROOT}/share/llvm/cmake" )
-#set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${LLVM_DIR} )
-#find_package(LLVM)
-#include(AddLLVM)
-#add_definitions(${LLVM_DEFINITIONS})
-#include_directories(${LLVM_INCLUDE_DIRS})
-#link_directories(${LLVM_LIBRARY_DIRS})
-# Load various LLVM config stuff,
-# see http://llvm.org/docs/CMake.html#developing-llvm-passes-out-of-source
-
-# Load LLVM CMake config
-#list(APPEND CMAKE_PREFIX_PATH "${LLVM_ROOT}/share/llvm/cmake")
-#set( LLVM_DIR "${LLVM_ROOT}/share/llvm/cmake" )
-#set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${LLVM_DIR} )
-find_package(LLVM REQUIRED CONFIG)
-
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
-include(HandleLLVMOptions) # load additional config
-include(AddLLVM) # used to add our own modules
 
-# propagate LLVM-specific variables to this project
-add_definitions(${LLVM_DEFINITIONS} -DHAVE_LLVM)
+include(LLVM-Config)
+include(HandleLLVMOptions)
+include(AddLLVM)
+
 include_directories(${LLVM_INCLUDE_DIRS})
-# See commit r197394, needed by add_llvm_module in llvm/CMakeLists.txt
-set(LLVM_RUNTIME_OUTPUT_INTDIR "${CMAKE_BINARY_DIR}/bin/${CMAKE_CFG_INT_DIR}")
-set(LLVM_LIBRARY_OUTPUT_INTDIR "${CMAKE_BINARY_DIR}/lib/${CMAKE_CFG_INT_DIR}")
 
-set(SOURCES
-      llvmAggregateGlobalOps.cpp
-      llvmGlobalToWide.cpp
-      llvmUtil.cpp
-   )
+# no interesting code unless we define this
+add_definitions(-DHAVE_LLVM)
 
-add_llvm_loadable_module( llvm-pgas ${SOURCES} )
-#set_target_properties( llvm-pgas PROPERTIES COMPILE_FLAGS "-fno-rtti" )
+add_llvm_pass_plugin(llvm-pgas MODULE
+    llvmAggregateGlobalOps.cpp
+    llvmGlobalToWide.cpp
+    llvmPgasPlugin.cpp
+    llvmUtil.cpp
+)
 
 # set various configuration settings in the test suite
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/test/lit.cfg.in" "${CMAKE_CURRENT_BINARY_DIR}/test/lit.cfg")
@@ -75,14 +67,14 @@ foreach( test_file ${test_files} )
     "${CMAKE_CURRENT_BINARY_DIR}/${test_file}" COPYONLY)
 endforeach( test_file )
 
-if(NOT EXISTS ${LLVM_ROOT}/bin/FileCheck)
-    message(FATAL_ERROR "need FileCheck installed to run tests; configure LLVM with -DLLVM_INSTALL_UTILS")
-endif()
+#if(NOT EXISTS ${LLVM_ROOT}/bin/FileCheck)
+#    message(FATAL_ERROR "need FileCheck installed to run tests; configure LLVM with -DLLVM_INSTALL_UTILS")
+#endif()
+
 
 # support make check with the LLVM tester lit in the tests directory
 add_custom_target(check
     COMMAND ${PYTHON_EXECUTABLE} ${LLVM_LIT}
-            "${CMAKE_CURRENT_BINARY_DIR}/test/" -v
-            DEPENDS llvm-pgas
-)
+            "${CMAKE_CURRENT_BINARY_DIR}/test/" -v --path ${LLVM_BIN}
+            DEPENDS llvm-pgas )
 

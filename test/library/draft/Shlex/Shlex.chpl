@@ -155,7 +155,7 @@ module Shlex {
     */
     proc get_token(): string {
       if !this.pushback.isEmpty() {
-        var tok = this.pushback.pop(0);
+        var tok = this.pushback.getAndRemove(0);
         if this.debug >= 1 {
           writeln("shlex: popping token " + tok);
         }

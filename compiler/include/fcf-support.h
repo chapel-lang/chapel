@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,12 +38,6 @@ class Type;
 // function and closure types.
 //
 namespace fcfs {
-
-/***
-  Determine if the 'fcfsUseLegacyBehavior' config param in the 'ChapelBase'
-  module is set to 'true'. The module must be resolved.
-*/
-bool useLegacyBehavior(void);
 
 /***
   Determine if the 'fcfsUsePointerImplementation' config param in the

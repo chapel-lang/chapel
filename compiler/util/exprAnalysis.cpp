@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -217,6 +217,7 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
     case PRIM_FIELD_NAME_TO_NUM:
     case PRIM_FIELD_BY_NUM:
     case PRIM_IS_RECORD_TYPE:
+    case PRIM_IS_FCF_TYPE:
     case PRIM_IS_UNION_TYPE:
     case PRIM_IS_ATOMIC_TYPE:
     case PRIM_IS_REF_ITER_TYPE:
@@ -257,6 +258,9 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_SUBTRACT:
     case PRIM_MULT:
     case PRIM_MOD:
+    case PRIM_FMA:
+    case PRIM_SQRT:
+    case PRIM_ABS:
     case PRIM_LSH:
     case PRIM_RSH:
     case PRIM_EQUAL:

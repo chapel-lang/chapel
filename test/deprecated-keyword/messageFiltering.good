@@ -23,6 +23,7 @@ messageFiltering.chpl:n: warning: Lorem ipsum test dolor sit amet
 messageFiltering.chpl:n: warning: Lorem ipsum test dolor sit amet
 messageFiltering.chpl:n: warning: Lorem ipsum test dolor sit amet
 messageFiltering.chpl:n: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:n: warning: Lorem ipsum test.constant dolor sit amet
 messageFiltering.chpl:n: warning: Lorem abc ipsum def dolor ghi sit jkl amet
 messageFiltering.chpl:n: warning: Lorem abc ipsum def dolor ghi sit jkl amet
 messageFiltering.chpl:n: warning: Lorem abc ipsum def dolor ghi sit amet
@@ -110,6 +111,7 @@ messageFiltering.chpl:n: warning: Lorem ipsum :proc:`abc <def.ghi>` dolor sit am
 3013
 3014
 3015
+3016
 4000
 4001
 4002

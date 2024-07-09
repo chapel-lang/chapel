@@ -1,12 +1,12 @@
 use BlockDist;
 
-var A: [{1..4, 1..4} dmapped Block(boundingBox={1..4,1..4},
+var A: [{1..4, 1..4} dmapped new blockDist(boundingBox={1..4,1..4},
                                        dataParTasksPerLocale=2,
                                        dataParIgnoreRunningTasks=true)] real;
 
 writeln("Distribution Representation");
 writeln();
-A.domain.dist.displayRepresentation();
+A.domain.distribution.displayRepresentation();
 
 writeln();
 writeln("Domain");

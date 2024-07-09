@@ -19,12 +19,8 @@
 // values. This will prevent other code from seeing the same undef uses and
 // resolving them to different values.
 //
-// These routines are designed to tolerate moderately incomplete IR, such as
-// instructions that are not connected to basic blocks yet. However, they do
-// require that all the IR that they encounter be valid. In particular, they
-// require that all non-constant values be defined in the same function, and the
-// same call context of that function (and not split between caller and callee
-// contexts of a directly recursive call, for example).
+// They require that all the IR that they encounter be valid and inserted into a
+// parent function.
 //
 // Additionally, these routines can't simplify to the instructions that are not
 // def-reachable, meaning we can't just scan the basic block for instructions
@@ -35,7 +31,7 @@
 #ifndef LLVM_ANALYSIS_INSTRUCTIONSIMPLIFY_H
 #define LLVM_ANALYSIS_INSTRUCTIONSIMPLIFY_H
 
-#include "llvm/IR/PatternMatch.h"
+#include "llvm/Analysis/SimplifyQuery.h"
 
 namespace llvm {
 
@@ -49,110 +45,45 @@ class DominatorTree;
 class Function;
 class Instruction;
 struct LoopStandardAnalysisResults;
-class MDNode;
-class OptimizationRemarkEmitter;
 class Pass;
 template <class T, unsigned n> class SmallSetVector;
 class TargetLibraryInfo;
 class Type;
 class Value;
 
-/// InstrInfoQuery provides an interface to query additional information for
-/// instructions like metadata or keywords like nsw, which provides conservative
-/// results if the users specified it is safe to use.
-struct InstrInfoQuery {
-  InstrInfoQuery(bool UMD) : UseInstrInfo(UMD) {}
-  InstrInfoQuery() = default;
-  bool UseInstrInfo = true;
-
-  MDNode *getMetadata(const Instruction *I, unsigned KindID) const {
-    if (UseInstrInfo)
-      return I->getMetadata(KindID);
-    return nullptr;
-  }
-
-  template <class InstT> bool hasNoUnsignedWrap(const InstT *Op) const {
-    if (UseInstrInfo)
-      return Op->hasNoUnsignedWrap();
-    return false;
-  }
-
-  template <class InstT> bool hasNoSignedWrap(const InstT *Op) const {
-    if (UseInstrInfo)
-      return Op->hasNoSignedWrap();
-    return false;
-  }
-
-  bool isExact(const BinaryOperator *Op) const {
-    if (UseInstrInfo && isa<PossiblyExactOperator>(Op))
-      return cast<PossiblyExactOperator>(Op)->isExact();
-    return false;
-  }
-};
-
-struct SimplifyQuery {
-  const DataLayout &DL;
-  const TargetLibraryInfo *TLI = nullptr;
-  const DominatorTree *DT = nullptr;
-  AssumptionCache *AC = nullptr;
-  const Instruction *CxtI = nullptr;
-
-  // Wrapper to query additional information for instructions like metadata or
-  // keywords like nsw, which provides conservative results if those cannot
-  // be safely used.
-  const InstrInfoQuery IIQ;
-
-  /// Controls whether simplifications are allowed to constrain the range of
-  /// possible values for uses of undef. If it is false, simplifications are not
-  /// allowed to assume a particular value for a use of undef for example.
-  bool CanUseUndef = true;
-
-  SimplifyQuery(const DataLayout &DL, const Instruction *CXTI = nullptr)
-      : DL(DL), CxtI(CXTI) {}
-
-  SimplifyQuery(const DataLayout &DL, const TargetLibraryInfo *TLI,
-                const DominatorTree *DT = nullptr,
-                AssumptionCache *AC = nullptr,
-                const Instruction *CXTI = nullptr, bool UseInstrInfo = true,
-                bool CanUseUndef = true)
-      : DL(DL), TLI(TLI), DT(DT), AC(AC), CxtI(CXTI), IIQ(UseInstrInfo),
-        CanUseUndef(CanUseUndef) {}
-  SimplifyQuery getWithInstruction(Instruction *I) const {
-    SimplifyQuery Copy(*this);
-    Copy.CxtI = I;
-    return Copy;
-  }
-  SimplifyQuery getWithoutUndef() const {
-    SimplifyQuery Copy(*this);
-    Copy.CanUseUndef = false;
-    return Copy;
-  }
-
-  /// If CanUseUndef is true, returns whether \p V is undef.
-  /// Otherwise always return false.
-  bool isUndefValue(Value *V) const {
-    if (!CanUseUndef)
-      return false;
-
-    using namespace PatternMatch;
-    return match(V, m_Undef());
-  }
-};
-
 // NOTE: the explicit multiple argument versions of these functions are
 // deprecated.
 // Please use the SimplifyQuery versions in new code.
 
-/// Given operand for an FNeg, fold the result or return null.
-Value *simplifyFNegInst(Value *Op, FastMathFlags FMF, const SimplifyQuery &Q);
-
 /// Given operands for an Add, fold the result or return null.
-Value *simplifyAddInst(Value *LHS, Value *RHS, bool isNSW, bool isNUW,
+Value *simplifyAddInst(Value *LHS, Value *RHS, bool IsNSW, bool IsNUW,
                        const SimplifyQuery &Q);
 
 /// Given operands for a Sub, fold the result or return null.
-Value *simplifySubInst(Value *LHS, Value *RHS, bool isNSW, bool isNUW,
+Value *simplifySubInst(Value *LHS, Value *RHS, bool IsNSW, bool IsNUW,
                        const SimplifyQuery &Q);
+
+/// Given operands for a Mul, fold the result or return null.
+Value *simplifyMulInst(Value *LHS, Value *RHS, bool IsNSW, bool IsNUW,
+                       const SimplifyQuery &Q);
+
+/// Given operands for an SDiv, fold the result or return null.
+Value *simplifySDivInst(Value *LHS, Value *RHS, bool IsExact,
+                        const SimplifyQuery &Q);
+
+/// Given operands for a UDiv, fold the result or return null.
+Value *simplifyUDivInst(Value *LHS, Value *RHS, bool IsExact,
+                        const SimplifyQuery &Q);
+
+/// Given operands for an SRem, fold the result or return null.
+Value *simplifySRemInst(Value *LHS, Value *RHS, const SimplifyQuery &Q);
+
+/// Given operands for a URem, fold the result or return null.
+Value *simplifyURemInst(Value *LHS, Value *RHS, const SimplifyQuery &Q);
+
+/// Given operand for an FNeg, fold the result or return null.
+Value *simplifyFNegInst(Value *Op, FastMathFlags FMF, const SimplifyQuery &Q);
+
 
 /// Given operands for an FAdd, fold the result or return null.
 Value *
@@ -184,27 +115,12 @@ Value *simplifyFMAFMul(Value *LHS, Value *RHS, FastMathFlags FMF,
                        fp::ExceptionBehavior ExBehavior = fp::ebIgnore,
                        RoundingMode Rounding = RoundingMode::NearestTiesToEven);
 
-/// Given operands for a Mul, fold the result or return null.
-Value *simplifyMulInst(Value *LHS, Value *RHS, const SimplifyQuery &Q);
-
-/// Given operands for an SDiv, fold the result or return null.
-Value *simplifySDivInst(Value *LHS, Value *RHS, const SimplifyQuery &Q);
-
-/// Given operands for a UDiv, fold the result or return null.
-Value *simplifyUDivInst(Value *LHS, Value *RHS, const SimplifyQuery &Q);
-
 /// Given operands for an FDiv, fold the result or return null.
 Value *
 simplifyFDivInst(Value *LHS, Value *RHS, FastMathFlags FMF,
                  const SimplifyQuery &Q,
                  fp::ExceptionBehavior ExBehavior = fp::ebIgnore,
                  RoundingMode Rounding = RoundingMode::NearestTiesToEven);
-
-/// Given operands for an SRem, fold the result or return null.
-Value *simplifySRemInst(Value *LHS, Value *RHS, const SimplifyQuery &Q);
-
-/// Given operands for a URem, fold the result or return null.
-Value *simplifyURemInst(Value *LHS, Value *RHS, const SimplifyQuery &Q);
 
 /// Given operands for an FRem, fold the result or return null.
 Value *
@@ -214,15 +130,15 @@ simplifyFRemInst(Value *LHS, Value *RHS, FastMathFlags FMF,
                  RoundingMode Rounding = RoundingMode::NearestTiesToEven);
 
 /// Given operands for a Shl, fold the result or return null.
-Value *simplifyShlInst(Value *Op0, Value *Op1, bool isNSW, bool isNUW,
+Value *simplifyShlInst(Value *Op0, Value *Op1, bool IsNSW, bool IsNUW,
                        const SimplifyQuery &Q);
 
 /// Given operands for a LShr, fold the result or return null.
-Value *simplifyLShrInst(Value *Op0, Value *Op1, bool isExact,
+Value *simplifyLShrInst(Value *Op0, Value *Op1, bool IsExact,
                         const SimplifyQuery &Q);
 
 /// Given operands for a AShr, fold the result or return nulll.
-Value *simplifyAShrInst(Value *Op0, Value *Op1, bool isExact,
+Value *simplifyAShrInst(Value *Op0, Value *Op1, bool IsExact,
                         const SimplifyQuery &Q);
 
 /// Given operands for an And, fold the result or return null.
@@ -298,8 +214,9 @@ Value *simplifyBinOp(unsigned Opcode, Value *LHS, Value *RHS,
 Value *simplifyBinOp(unsigned Opcode, Value *LHS, Value *RHS, FastMathFlags FMF,
                      const SimplifyQuery &Q);
 
-/// Given a callsite, fold the result or return null.
-Value *simplifyCall(CallBase *Call, const SimplifyQuery &Q);
+/// Given a callsite, callee, and arguments, fold the result or return null.
+Value *simplifyCall(CallBase *Call, Value *Callee, ArrayRef<Value *> Args,
+                    const SimplifyQuery &Q);
 
 /// Given a constrained FP intrinsic call, tries to compute its simplified
 /// version. Returns a simplified result or null.
@@ -314,24 +231,33 @@ Value *simplifyConstrainedFPCall(CallBase *Call, const SimplifyQuery &Q);
 /// If not, this returns null.
 Value *simplifyFreezeInst(Value *Op, const SimplifyQuery &Q);
 
+/// Given a load instruction and its pointer operand, fold the result or return
+/// null.
+Value *simplifyLoadInst(LoadInst *LI, Value *PtrOp, const SimplifyQuery &Q);
+
 /// See if we can compute a simplified version of this instruction. If not,
 /// return null.
-Value *simplifyInstruction(Instruction *I, const SimplifyQuery &Q,
-                           OptimizationRemarkEmitter *ORE = nullptr);
+Value *simplifyInstruction(Instruction *I, const SimplifyQuery &Q);
 
 /// Like \p simplifyInstruction but the operands of \p I are replaced with
 /// \p NewOps. Returns a simplified value, or null if none was found.
 Value *
 simplifyInstructionWithOperands(Instruction *I, ArrayRef<Value *> NewOps,
-                                const SimplifyQuery &Q,
-                                OptimizationRemarkEmitter *ORE = nullptr);
+                                const SimplifyQuery &Q);
 
 /// See if V simplifies when its operand Op is replaced with RepOp. If not,
 /// return null.
 /// AllowRefinement specifies whether the simplification can be a refinement
 /// (e.g. 0 instead of poison), or whether it needs to be strictly identical.
-Value *simplifyWithOpReplaced(Value *V, Value *Op, Value *RepOp,
-                              const SimplifyQuery &Q, bool AllowRefinement);
+/// Op and RepOp can be assumed to not be poison when determining refinement.
+///
+/// If DropFlags is passed, then the replacement result is only valid if
+/// poison-generating flags/metadata on those instructions are dropped. This
+/// is only useful in conjunction with AllowRefinement=false.
+Value *
+simplifyWithOpReplaced(Value *V, Value *Op, Value *RepOp,
+                       const SimplifyQuery &Q, bool AllowRefinement,
+                       SmallVectorImpl<Instruction *> *DropFlags = nullptr);
 
 /// Replace all uses of 'I' with 'SimpleV' and simplify the uses recursively.
 ///

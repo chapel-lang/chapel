@@ -5,7 +5,7 @@ class Foo {
   type t = int;
 
   proc init() {
-    this.complete();
+    init this;
     t = int; // This should fail
   }
 }

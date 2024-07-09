@@ -1,0 +1,5 @@
+perfkeys: Chapel Calculated:, Chapel Lookup:, C Calculated:, C Lookup:
+files: chplSin.dat, chplSin.dat, chplSin.dat, chplSin.dat
+graphkeys: Chapel Calculated, Chapel Lookup, C Calculated, C Lookup
+ylabel: Time (seconds)
+graphtitle: Sin LUT single locale

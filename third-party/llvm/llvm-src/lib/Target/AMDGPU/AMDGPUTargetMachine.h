@@ -17,6 +17,7 @@
 #include "GCNSubtarget.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/Target/TargetMachine.h"
+#include <optional>
 #include <utility>
 
 namespace llvm {
@@ -39,8 +40,8 @@ public:
 
   AMDGPUTargetMachine(const Target &T, const Triple &TT, StringRef CPU,
                       StringRef FS, TargetOptions Options,
-                      Optional<Reloc::Model> RM, Optional<CodeModel::Model> CM,
-                      CodeGenOpt::Level OL);
+                      std::optional<Reloc::Model> RM,
+                      std::optional<CodeModel::Model> CM, CodeGenOptLevel OL);
   ~AMDGPUTargetMachine() override;
 
   const TargetSubtargetInfo *getSubtargetImpl() const;
@@ -50,9 +51,8 @@ public:
     return TLOF.get();
   }
 
-  void adjustPassManager(PassManagerBuilder &) override;
-
-  void registerPassBuilderCallbacks(PassBuilder &PB) override;
+  void registerPassBuilderCallbacks(PassBuilder &PB,
+                                    bool PopulateClassToPassNames) override;
   void registerDefaultAliasAnalyses(AAManager &) override;
 
   /// Get the integer value of a null pointer in the given address space.
@@ -79,8 +79,9 @@ private:
 public:
   GCNTargetMachine(const Target &T, const Triple &TT, StringRef CPU,
                    StringRef FS, TargetOptions Options,
-                   Optional<Reloc::Model> RM, Optional<CodeModel::Model> CM,
-                   CodeGenOpt::Level OL, bool JIT);
+                   std::optional<Reloc::Model> RM,
+                   std::optional<CodeModel::Model> CM, CodeGenOptLevel OL,
+                   bool JIT);
 
   TargetPassConfig *createPassConfig(PassManagerBase &PM) override;
 
@@ -91,6 +92,12 @@ public:
   bool useIPRA() const override {
     return true;
   }
+
+  void registerMachineRegisterInfoCallback(MachineFunction &MF) const override;
+
+  MachineFunctionInfo *
+  createMachineFunctionInfo(BumpPtrAllocator &Allocator, const Function &F,
+                            const TargetSubtargetInfo *STI) const override;
 
   yaml::MachineFunctionInfo *createDefaultFuncInfoYAML() const override;
   yaml::MachineFunctionInfo *
@@ -131,7 +138,7 @@ public:
   /// be used given that a pass shall work at an optimization \p Level
   /// minimum.
   bool isPassEnabled(const cl::opt<bool> &Opt,
-                     CodeGenOpt::Level Level = CodeGenOpt::Default) const {
+                     CodeGenOptLevel Level = CodeGenOptLevel::Default) const {
     if (Opt.getNumOccurrences())
       return Opt;
     if (TM->getOptLevel() < Level)

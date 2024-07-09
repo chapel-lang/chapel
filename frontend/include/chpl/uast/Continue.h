@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,14 +40,22 @@ namespace uast {
   \endrst
 */
 class Continue : public AstNode {
+ friend class AstNode;
+
  private:
+  int8_t targetChildNum_;
+
   Continue(AstList children, int8_t targetChildNum)
     : AstNode(asttags::Continue, std::move(children)),
       targetChildNum_(targetChildNum) {
     CHPL_ASSERT(numChildren() <= 1);
   }
 
-  Continue(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    ser.write(targetChildNum_);
+  }
+
+  explicit Continue(Deserializer& des)
     : AstNode(asttags::Continue, des) {
     targetChildNum_ = des.read<int8_t>();
   }
@@ -67,8 +75,6 @@ class Continue : public AstNode {
 
   std::string dumpChildLabelInner(int i) const override;
 
-  int8_t targetChildNum_;
-
  public:
 
   /**
@@ -87,14 +93,6 @@ class Continue : public AstNode {
     CHPL_ASSERT(ret->isIdentifier());
     return (const Identifier*)ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(targetChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Continue);
-
 };
 
 

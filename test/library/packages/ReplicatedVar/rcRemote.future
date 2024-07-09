@@ -1,0 +1,2 @@
+bug: ReplicatedVar.rcRemote fails to compile for a basic program
+#13525

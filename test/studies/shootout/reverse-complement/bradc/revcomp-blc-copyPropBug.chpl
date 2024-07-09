@@ -8,10 +8,8 @@
 
 proc main(args: [] string) {
   use IO;
-  const stdinBin = (new file(0)).reader(iokind.native, locking=false,
-                                        hints = ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
-    stdoutBin = (new file(1)).writer(iokind.native, locking=false,
-                                     hints = ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
+  const stdinBin = (new file(0)).reader(deserializer=new binaryDeserializer(), locking=false),
+        stdoutBin = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
 
   // read in the data using an incrementally growing buffer
   var bufLen = 8 * 1024,
@@ -44,11 +42,11 @@ proc main(args: [] string) {
   }
 
   // write out the transformed buffer
-  stdoutBin.write(buf[..end]);
+  stdoutBin.writeBinary(buf[..end]);
 }
 
 
-proc revcomp(buf, in lo, hi) {
+proc revcomp(ref buf, in lo, hi) {
   param eol = "\n".toByte(),  // end-of-line, as an integer
         cols = 61,            // # of characters per full row (including '\n')
         // A 'bytes' value that stores the complement of each base at its index
@@ -67,7 +65,7 @@ proc revcomp(buf, in lo, hi) {
         shift = cols - off - 1;
 
   if off {
-    forall m in lo+off..<hi by cols {
+    forall m in lo+off..<hi by cols with (ref buf) {
       for i in m..#shift by -1 do
         buf[i+1] = buf[i];
       buf[m] = eol;
@@ -75,6 +73,6 @@ proc revcomp(buf, in lo, hi) {
   }
 
   // walk from both ends of the sequence, complementing and swapping
-  forall (i,j) in zip(lo..#(len/2), ..<hi by -1) do
+  forall (i,j) in zip(lo..#(len/2), ..<hi by -1) with (ref buf) do
     (buf[i], buf[j]) = (cmp[buf[j]], cmp[buf[i]]);
 }

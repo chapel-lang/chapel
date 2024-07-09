@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -419,7 +419,7 @@ bool AstDumpToHtml::enterLoopExpr(LoopExpr* node) {
 
   fprintf(mFP, "(%d ", node->id);
 
-  if (node->forall) {
+  if (node->type == FORALL_EXPR) {
     if (node->maybeArrayType) fprintf(mFP, "[ ");
     else fprintf(mFP, "<B>forall</B> ");
   } else {

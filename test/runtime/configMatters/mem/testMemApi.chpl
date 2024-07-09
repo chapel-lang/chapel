@@ -3,9 +3,10 @@ use CTypes;
 // check a couple of sizes can be allocated and freed
 var sizes = (0, 1, 16, 17, 1000);
 for size in sizes {
-  var m = allocate(int, size);
-  var c = allocate(int, size, clear=true);
-  var a = allocate(int, size, alignment=8);
+  var sizeAsCSizeT : c_size_t = size.safeCast(c_size_t);
+  var m = allocate(int, sizeAsCSizeT);
+  var c = allocate(int, sizeAsCSizeT, clear=true);
+  var a = allocate(int, sizeAsCSizeT, alignment=8);
   deallocate(m);
   deallocate(a);
   deallocate(c);

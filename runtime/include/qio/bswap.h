@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,7 +30,7 @@
 #define _BSWAP_H_
 
 // On a BSD derived system (such as Mac OS X),
-// sys_basic will define _USE_BSD and include sys/types.h,
+// sys_basic will define _BSD_SOURCE and include sys/types.h,
 // and between that and sys/param.h, a BSD system should
 // give us these byte order functions.
 // (A BSD-derived system might define them in sys/endian.h,

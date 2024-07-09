@@ -1,5 +1,5 @@
 use Collectives;
-use DistributedBag;
+use DistributedBagDeprecated;
 use DistributedDeque;
 
 /*
@@ -166,7 +166,7 @@ coforall loc in Locales do on loc {
           halt("Spun: ", nSpins);
         }
 
-        chpl_task_yield();
+        currentTask.yieldExecution();
         continue;
       }
 

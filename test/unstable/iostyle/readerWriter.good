@@ -1,2 +1,0 @@
-readerWriter.chpl:6: warning: writer with a style argument is unstable
-readerWriter.chpl:8: warning: reader with a style argument is unstable

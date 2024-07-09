@@ -1,5 +1,5 @@
 proc butterfly(wk1: complex, wk2: complex, wk3: complex, 
-              abcd: [?D] complex) {
+              ref abcd: [?D] complex) {
   const a = D.low,
         b = a + D.stride,
         c = b + D.stride,
@@ -30,7 +30,7 @@ const D = {0..N-1};
 
 var A: [D] complex;
 
-[i in D] A(i) = (2*i, 2*i+1):complex;
+[i in D with (ref A)] A(i) = (2*i, 2*i+1):complex;
 
 for i in D by 4 {
   butterfly((-1.0, -2.0):complex, (-3.0, -4.0):complex, (-5.0, -6.0):complex,

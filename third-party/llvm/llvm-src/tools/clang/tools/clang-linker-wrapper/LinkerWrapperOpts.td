@@ -25,13 +25,20 @@ def opt_level : Joined<["--"], "opt-level=">,
 def bitcode_library_EQ : Joined<["--"], "bitcode-library=">,
   Flags<[WrapperOnlyOption]>, MetaVarName<"<kind>-<triple>-<arch>=<path>">,
   HelpText<"Extra bitcode library to link">;
+def builtin_bitcode_EQ : Joined<["--"], "builtin-bitcode=">,
+  Flags<[WrapperOnlyOption]>, MetaVarName<"<triple>=<path>">,
+  HelpText<"Perform a special internalizing link on the bitcode file. "
+           "This is necessary for some vendor libraries to be linked correctly">;
 def device_linker_args_EQ : Joined<["--"], "device-linker=">,
   Flags<[WrapperOnlyOption]>, MetaVarName<"<value> or <triple>=<value>">,
   HelpText<"Arguments to pass to the device linker invocation">;
+def clang_backend : Flag<["--"], "clang-backend">,
+  Flags<[WrapperOnlyOption]>,
+  HelpText<"Run the backend using clang rather than the LTO backend">;
 def dry_run : Flag<["--"], "dry-run">,
   Flags<[WrapperOnlyOption]>,
   HelpText<"Print program arguments without running">;
-def verbose : Flag<["--"], "verbose">,
+def verbose : Flag<["--"], "wrapper-verbose">,
   Flags<[WrapperOnlyOption]>, HelpText<"Verbose output from tools">;
 def embed_bitcode : Flag<["--"], "embed-bitcode">,
   Flags<[WrapperOnlyOption]>, HelpText<"Embed linked bitcode in the module">;
@@ -59,6 +66,10 @@ def wrapper_time_trace_granularity : Joined<["--"], "wrapper-time-trace-granular
   Flags<[WrapperOnlyOption]>, MetaVarName<"<number>">,
   HelpText<"Set the granularity of time-trace updates">;
 
+def wrapper_jobs : Joined<["--"], "wrapper-jobs=">,
+  Flags<[WrapperOnlyOption]>, MetaVarName<"<number>">,
+  HelpText<"Sets the number of parallel jobs to use for device linking">;
+
 // Flags passed to the device linker.
 def arch_EQ : Joined<["--"], "arch=">,
   Flags<[DeviceOnlyOption, HelpHidden]>, MetaVarName<"<arch>">,
@@ -84,7 +95,7 @@ def offload_opt_eq_minus : Joined<["--", "-"], "offload-opt=-">, Flags<[HelpHidd
   HelpText<"Options passed to LLVM">;
 
 // Standard linker flags also used by the linker wrapper.
-def sysroot_EQ : Joined<["--"], "sysroot">, HelpText<"Set the system root">;
+def sysroot_EQ : Joined<["--"], "sysroot=">, HelpText<"Set the system root">;
 
 def o : JoinedOrSeparate<["-"], "o">, MetaVarName<"<path>">,
   HelpText<"Path to file to write output">;
@@ -107,14 +118,16 @@ def library_S : Separate<["--", "-"], "library">, Flags<[HelpHidden]>,
 def library_EQ : Joined<["--", "-"], "library=">, Flags<[HelpHidden]>,
   Alias<library_path>;
 
-def as_needed : Flag<["--", "-"], "as-needed">;
-def no_as_needed : Flag<["--", "-"], "no-as-needed">;
-
 def rpath : Separate<["--", "-"], "rpath">;
 def rpath_EQ : Joined<["--", "-"], "rpath=">, Flags<[HelpHidden]>, Alias<rpath>;
 
-def dynamic_linker : Separate<["--", "-"], "dynamic-linker">;
-def dynamic_linker_EQ : Joined<["--", "-"], "dynamic-linker=">, Alias<dynamic_linker>;
-
 def v : Flag<["--", "-"], "v">, HelpText<"Display the version number and exit">;
 def version : Flag<["--", "-"], "version">, Flags<[HelpHidden]>, Alias<v>;
+
+def whole_archive : Flag<["--", "-"], "whole-archive">, Flags<[HelpHidden]>;
+def no_whole_archive : Flag<["--", "-"], "no-whole-archive">, Flags<[HelpHidden]>;
+
+// link.exe-style linker options.
+def out : Joined<["/", "-", "/?", "-?"], "out:">, Flags<[HelpHidden]>;
+def libpath : Joined<["/", "-", "/?", "-?"], "libpath:">, Flags<[HelpHidden]>;
+def wholearchive_flag : Joined<["/", "-", "/?", "-?"], "wholearchive">, Flags<[HelpHidden]>;

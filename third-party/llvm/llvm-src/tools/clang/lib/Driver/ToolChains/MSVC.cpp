@@ -18,17 +18,16 @@
 #include "clang/Driver/Options.h"
 #include "clang/Driver/SanitizerArgs.h"
 #include "llvm/ADT/StringExtras.h"
-#include "llvm/ADT/StringSwitch.h"
 #include "llvm/Option/Arg.h"
 #include "llvm/Option/ArgList.h"
 #include "llvm/Support/ConvertUTF.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FileSystem.h"
-#include "llvm/Support/Host.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Process.h"
 #include "llvm/Support/VirtualFileSystem.h"
+#include "llvm/TargetParser/Host.h"
 #include <cstdio>
 
 #ifdef _WIN32
@@ -132,7 +131,7 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
 
   if (C.getDriver().IsFlangMode()) {
     addFortranRuntimeLibraryPath(TC, Args, CmdArgs);
-    addFortranRuntimeLibs(TC, CmdArgs);
+    addFortranRuntimeLibs(TC, Args, CmdArgs);
 
     // Inform the MSVC linker that we're generating a console application, i.e.
     // one with `main` as the "user-defined" entry point. The `main` function is
@@ -228,7 +227,7 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   Args.AddAllArgValues(CmdArgs, options::OPT__SLASH_link);
 
   // Control Flow Guard checks
-  if (Arg *A = Args.getLastArg(options::OPT__SLASH_guard)) {
+  for (const Arg *A : Args.filtered(options::OPT__SLASH_guard)) {
     StringRef GuardArgs = A->getValue();
     if (GuardArgs.equals_insensitive("cf") ||
         GuardArgs.equals_insensitive("cf,nochecks")) {
@@ -270,6 +269,26 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     AddRunTimeLibs(TC, TC.getDriver(), CmdArgs, Args);
   }
 
+  StringRef Linker =
+      Args.getLastArgValue(options::OPT_fuse_ld_EQ, CLANG_DEFAULT_LINKER);
+  if (Linker.empty())
+    Linker = "link";
+  // We need to translate 'lld' into 'lld-link'.
+  else if (Linker.equals_insensitive("lld"))
+    Linker = "lld-link";
+
+  if (Linker == "lld-link") {
+    for (Arg *A : Args.filtered(options::OPT_vfsoverlay))
+      CmdArgs.push_back(
+          Args.MakeArgString(std::string("/vfsoverlay:") + A->getValue()));
+
+    if (C.getDriver().isUsingLTO() &&
+        Args.hasFlag(options::OPT_gsplit_dwarf, options::OPT_gno_split_dwarf,
+                     false))
+      CmdArgs.push_back(Args.MakeArgString(Twine("/dwodir:") +
+                                           Output.getFilename() + "_dwo"));
+  }
+
   // Add filenames, libraries, and other linker inputs.
   for (const auto &Input : Inputs) {
     if (Input.isFilename()) {
@@ -283,7 +302,7 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     if (A.getOption().matches(options::OPT_l)) {
       StringRef Lib = A.getValue();
       const char *LinkLibArg;
-      if (Lib.endswith(".lib"))
+      if (Lib.ends_with(".lib"))
         LinkLibArg = Args.MakeArgString(Lib);
       else
         LinkLibArg = Args.MakeArgString(Lib + ".lib");
@@ -296,23 +315,15 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     A.renderAsInput(Args, CmdArgs);
   }
 
-  addHIPRuntimeLibArgs(TC, Args, CmdArgs);
+  addHIPRuntimeLibArgs(TC, C, Args, CmdArgs);
 
   TC.addProfileRTLibs(Args, CmdArgs);
 
   std::vector<const char *> Environment;
 
-  // We need to special case some linker paths.  In the case of lld, we need to
-  // translate 'lld' into 'lld-link', and in the case of the regular msvc
+  // We need to special case some linker paths. In the case of the regular msvc
   // linker, we need to use a special search algorithm.
   llvm::SmallString<128> linkPath;
-  StringRef Linker
-    = Args.getLastArgValue(options::OPT_fuse_ld_EQ, CLANG_DEFAULT_LINKER);
-  if (Linker.empty())
-    Linker = "link";
-  if (Linker.equals_insensitive("lld"))
-    Linker = "lld-link";
-
   if (Linker.equals_insensitive("link")) {
     // If we're using the MSVC linker, it's not sufficient to just use link
     // from the program PATH, because other environments like GnuWin32 install
@@ -331,6 +342,11 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
         C.getDriver().Diag(clang::diag::warn_drv_msvc_not_found);
       }
     }
+
+    // Clang handles passing the proper asan libs to the linker, which goes
+    // against link.exe's /INFERASANLIBS which automatically finds asan libs.
+    if (TC.getSanitizerArgs(Args).needsAsanRt())
+      CmdArgs.push_back("/INFERASANLIBS:NO");
 
 #ifdef _WIN32
     // When cross-compiling with VS2017 or newer, link.exe expects to have
@@ -372,7 +388,7 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
       // find it.
       for (const char *Cursor = EnvBlock.data(); *Cursor != '\0';) {
         llvm::StringRef EnvVar(Cursor);
-        if (EnvVar.startswith_insensitive("path=")) {
+        if (EnvVar.starts_with_insensitive("path=")) {
           constexpr size_t PrefixLen = 5; // strlen("path=")
           Environment.push_back(Args.MakeArgString(
               EnvVar.substr(0, PrefixLen) +
@@ -411,7 +427,7 @@ MSVCToolChain::MSVCToolChain(const Driver &D, const llvm::Triple &Triple,
   if (getDriver().getInstalledDir() != getDriver().Dir)
     getProgramPaths().push_back(getDriver().Dir);
 
-  Optional<llvm::StringRef> VCToolsDir, VCToolsVersion;
+  std::optional<llvm::StringRef> VCToolsDir, VCToolsVersion;
   if (Arg *A = Args.getLastArg(options::OPT__SLASH_vctoolsdir))
     VCToolsDir = A->getValue();
   if (Arg *A = Args.getLastArg(options::OPT__SLASH_vctoolsversion))
@@ -431,8 +447,8 @@ MSVCToolChain::MSVCToolChain(const Driver &D, const llvm::Triple &Triple,
                                       WinSysRoot, VCToolChainPath, VSLayout) ||
       llvm::findVCToolChainViaEnvironment(getVFS(), VCToolChainPath,
                                           VSLayout) ||
-      llvm::findVCToolChainViaSetupConfig(getVFS(), VCToolChainPath,
-                                          VSLayout) ||
+      llvm::findVCToolChainViaSetupConfig(getVFS(), VCToolsVersion,
+                                          VCToolChainPath, VSLayout) ||
       llvm::findVCToolChainViaRegistry(VCToolChainPath, VSLayout);
 }
 
@@ -447,20 +463,20 @@ Tool *MSVCToolChain::buildAssembler() const {
   return nullptr;
 }
 
-bool MSVCToolChain::IsIntegratedAssemblerDefault() const {
-  return true;
-}
-
-bool MSVCToolChain::IsUnwindTablesDefault(const ArgList &Args) const {
+ToolChain::UnwindTableLevel
+MSVCToolChain::getDefaultUnwindTableLevel(const ArgList &Args) const {
   // Don't emit unwind tables by default for MachO targets.
   if (getTriple().isOSBinFormatMachO())
-    return false;
+    return UnwindTableLevel::None;
 
   // All non-x86_32 Windows targets require unwind tables. However, LLVM
   // doesn't know how to generate them for all targets, so only enable
   // the ones that are actually implemented.
-  return getArch() == llvm::Triple::x86_64 || getArch() == llvm::Triple::arm ||
-         getArch() == llvm::Triple::thumb || getArch() == llvm::Triple::aarch64;
+  if (getArch() == llvm::Triple::x86_64 || getArch() == llvm::Triple::arm ||
+      getArch() == llvm::Triple::thumb || getArch() == llvm::Triple::aarch64)
+    return UnwindTableLevel::Asynchronous;
+
+  return UnwindTableLevel::None;
 }
 
 bool MSVCToolChain::isPICDefault() const {
@@ -479,24 +495,24 @@ bool MSVCToolChain::isPICDefaultForced() const {
 
 void MSVCToolChain::AddCudaIncludeArgs(const ArgList &DriverArgs,
                                        ArgStringList &CC1Args) const {
-  CudaInstallation.AddCudaIncludeArgs(DriverArgs, CC1Args);
+  CudaInstallation->AddCudaIncludeArgs(DriverArgs, CC1Args);
 }
 
 void MSVCToolChain::AddHIPIncludeArgs(const ArgList &DriverArgs,
                                       ArgStringList &CC1Args) const {
-  RocmInstallation.AddHIPIncludeArgs(DriverArgs, CC1Args);
+  RocmInstallation->AddHIPIncludeArgs(DriverArgs, CC1Args);
 }
 
 void MSVCToolChain::AddHIPRuntimeLibArgs(const ArgList &Args,
                                          ArgStringList &CmdArgs) const {
   CmdArgs.append({Args.MakeArgString(StringRef("-libpath:") +
-                                     RocmInstallation.getLibPath()),
+                                     RocmInstallation->getLibPath()),
                   "amdhip64.lib"});
 }
 
 void MSVCToolChain::printVerboseInfo(raw_ostream &OS) const {
-  CudaInstallation.print(OS);
-  RocmInstallation.print(OS);
+  CudaInstallation->print(OS);
+  RocmInstallation->print(OS);
 }
 
 std::string
@@ -533,6 +549,10 @@ bool MSVCToolChain::getWindowsSDKLibraryPath(const ArgList &Args,
 
   llvm::SmallString<128> libPath(sdkPath);
   llvm::sys::path::append(libPath, "Lib");
+  if (sdkMajor >= 10)
+    if (!(WinSdkDir.has_value() || WinSysRoot.has_value()) &&
+        WinSdkVersion.has_value())
+      windowsSDKLibVersion = *WinSdkVersion;
   if (sdkMajor >= 8)
     llvm::sys::path::append(libPath, windowsSDKLibVersion, "um");
   return llvm::appendArchToWindowsSDKLibPath(sdkMajor, libPath, getArch(),
@@ -554,6 +574,10 @@ bool MSVCToolChain::getUniversalCRTLibraryPath(const ArgList &Args,
                                    UCRTVersion))
     return false;
 
+  if (!(WinSdkDir.has_value() || WinSysRoot.has_value()) &&
+      WinSdkVersion.has_value())
+    UCRTVersion = *WinSdkVersion;
+
   StringRef ArchName = llvm::archToWindowsSDKArch(getArch());
   if (ArchName.empty())
     return false;
@@ -561,7 +585,7 @@ bool MSVCToolChain::getUniversalCRTLibraryPath(const ArgList &Args,
   llvm::SmallString<128> LibPath(UniversalCRTSdkPath);
   llvm::sys::path::append(LibPath, "Lib", UCRTVersion, "ucrt", ArchName);
 
-  Path = std::string(LibPath.str());
+  Path = std::string(LibPath);
   return true;
 }
 
@@ -683,6 +707,9 @@ void MSVCToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
       if (llvm::getUniversalCRTSdkDir(getVFS(), WinSdkDir, WinSdkVersion,
                                       WinSysRoot, UniversalCRTSdkPath,
                                       UCRTVersion)) {
+        if (!(WinSdkDir.has_value() || WinSysRoot.has_value()) &&
+            WinSdkVersion.has_value())
+          UCRTVersion = *WinSdkVersion;
         AddSystemIncludeWithSubfolder(DriverArgs, CC1Args, UniversalCRTSdkPath,
                                       "Include", UCRTVersion, "ucrt");
       }
@@ -695,6 +722,10 @@ void MSVCToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
     if (llvm::getWindowsSDKDir(getVFS(), WinSdkDir, WinSdkVersion, WinSysRoot,
                                WindowsSDKDir, major, windowsSDKIncludeVersion,
                                windowsSDKLibVersion)) {
+      if (major >= 10)
+        if (!(WinSdkDir.has_value() || WinSysRoot.has_value()) &&
+            WinSdkVersion.has_value())
+          windowsSDKIncludeVersion = windowsSDKLibVersion = *WinSdkVersion;
       if (major >= 8) {
         // Note: windowsSDKIncludeVersion is empty for SDKs prior to v10.
         // Anyway, llvm::sys::path::append is able to manage it.
@@ -756,8 +787,11 @@ VersionTuple MSVCToolChain::computeMSVCVersion(const Driver *D,
   if (MSVT.empty() &&
       Args.hasFlag(options::OPT_fms_extensions, options::OPT_fno_ms_extensions,
                    IsWindowsMSVC)) {
-    // -fms-compatibility-version=19.20 is default, aka 2019, 16.x
-    MSVT = VersionTuple(19, 20);
+    // -fms-compatibility-version=19.33 is default, aka 2022, 17.3
+    // NOTE: when changing this value, also update
+    // clang/docs/CommandGuide/clang.rst and clang/docs/UsersManual.rst
+    // accordingly.
+    MSVT = VersionTuple(19, 33);
   }
   return MSVT;
 }

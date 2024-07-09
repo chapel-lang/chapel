@@ -51,11 +51,15 @@ const char *MemoryWriteBuffersWrapperName =
     "__llvm_orc_bootstrap_mem_write_buffers_wrapper";
 
 const char *RegisterEHFrameSectionWrapperName =
-    "__llvm_orc_bootstrap_register_ehframe_section_wrapper";
+    "llvm_orc_registerEHFrameSectionWrapper";
 const char *DeregisterEHFrameSectionWrapperName =
-    "__llvm_orc_bootstrap_deregister_ehframe_section_wrapper";
+    "llvm_orc_deregisterEHFrameSectionWrapper";
 
 const char *RunAsMainWrapperName = "__llvm_orc_bootstrap_run_as_main_wrapper";
+const char *RunAsVoidFunctionWrapperName =
+    "__llvm_orc_bootstrap_run_as_void_function_wrapper";
+const char *RunAsIntFunctionWrapperName =
+    "__llvm_orc_bootstrap_run_as_int_function_wrapper";
 
 } // end namespace rt
 } // end namespace orc

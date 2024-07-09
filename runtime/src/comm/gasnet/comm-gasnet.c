@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -824,8 +824,17 @@ static void set_max_segsize() {
 
 static void set_num_comm_domains() {
 #if defined(GASNET_CONDUIT_ARIES)
-  const int num_cpus = chpl_topo_getNumCPUsPhysical(true) + 1;
-  chpl_env_set_uint("GASNET_DOMAIN_COUNT", num_cpus, 0);
+  // aries requires setting GASNET_DOMAIN_COUNT which we would like to set to
+  // the number of accessible cores. At this point during initialization we
+  // don't know that because there may be other co-locales on the node that
+  // we don't know about, so instead we use an upper limit on the number of
+  // accessible cores.
+  int num_cpus = chpl_topo_getNumCPUsPhysical(false);
+  int maxLocalesOnNode = chpl_env_rt_get_int("LOCALES_PER_NODE", 1);
+  if (maxLocalesOnNode > 0) {
+    num_cpus = (num_cpus + maxLocalesOnNode - 1) / maxLocalesOnNode;
+  }
+  chpl_env_set_uint("GASNET_DOMAIN_COUNT", num_cpus + 1, 0);
   chpl_env_set("GASNET_AM_DOMAIN_POLL_MASK", "0", 0);
 
   // GASNET_DOMAIN_COUNT increases the shutdown time. Work around this for now.
@@ -836,13 +845,14 @@ static void set_num_comm_domains() {
 #endif
 }
 
-void chpl_comm_pre_topo_init(void) {
-  // not supported on this platform
-  chpl_set_num_locales_on_node(1);
-}
-
 void chpl_comm_init(int *argc_p, char ***argv_p) {
-//  int status; // Some compilers complain about unused variable 'status'.
+  // Initialize gasnet so that we can call gex_System_QueryHostInfo and
+  // set the number of locales on our node which allows the rest of the
+  // runtime to determine which cores this locale will use. gasnet_attach
+  // is called in chpl_comm_init which is called after the cores have been
+  // determined.
+  gex_Rank_t      infoCount;
+  gex_Rank_t      myIndex;
 
   // For configurations that register a fixed heap at startup use a gasnet hook
   // to allow us to fault and interleave in the memory in parallel for faster
@@ -858,11 +868,29 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   setup_ibv();
   setup_polling();
 
+  // PSHM needs an external progress thread to guarantee AM handlers make
+  // progress in the absence of other GASNet calls, so if we've disabled our
+  // external progress thread then we should disable PSHM
+  if (!pollingRequired) {
+    // disable PSHM even if it was enabled during configuration.
+    chpl_env_set("GASNET_SUPERNODE_MAXSIZE", "1", 0);
+  }
+
   assert(sizeof(gasnet_handlerarg_t)==sizeof(uint32_t));
 
   gasnet_init(argc_p, argv_p);
   chpl_nodeID = gasnet_mynode();
   chpl_numNodes = gasnet_nodes();
+
+  // get information about locales on the same node
+  gex_System_QueryHostInfo(NULL, &infoCount, &myIndex);
+  chpl_set_num_locales_on_node((int32_t) infoCount);
+  chpl_set_local_rank(myIndex);
+}
+
+void chpl_comm_pre_mem_init(void) {
+  //  int status; // Some compilers complain about unused variable 'status'.
+
   GASNET_Safe(gasnet_attach(ftable,
                             sizeof(ftable)/sizeof(gasnet_handlerentry_t),
                             gasnet_getMaxLocalSegmentSize(),
@@ -937,8 +965,6 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   gasnet_set_waitmode(GASNET_WAIT_BLOCK);
 }
 
-void chpl_comm_pre_mem_init(void) { }
-
 void chpl_comm_post_mem_init(void) {
   chpl_comm_init_prv_bcast_tab();
 }
@@ -965,7 +991,7 @@ void chpl_comm_rollcall(void) {
   // Initialize diags
   chpl_comm_diags_init();
 
-  chpl_msg(2, "executing on node %d of %d node(s): %s\n", chpl_nodeID,
+  chpl_msg(2, "executing locale %d of %d on node '%s'\n", chpl_nodeID,
            chpl_numNodes, chpl_nodeName());
 }
 
@@ -1632,3 +1658,5 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                       /*fast*/ true, /*blocking*/ true);
   }
 }
+
+void chpl_comm_ensure_progress(void) { }

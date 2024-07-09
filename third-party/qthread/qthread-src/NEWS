@@ -1,5 +1,36 @@
+--- 1.19 (current) ---
 
---- 1.17 (current) ---
+New Features:
+ - Add a mechanism to reset the default task spawn order
+ - Enable the use of HWLOC_GET_TOPOLOGY_FUNCTION
+
+Improvements:
+ - Fix fast context swap on ARM64
+ - Mature support of ARM64 for Apple MacOS and Linux
+ - Improvements to testing
+ - Improvements to configure scripts
+ - Remove unused files
+ - Make version numbering consistent
+
+Notes:
+ - Software repository migrated to new locaton
+
+--- 1.18 ---
+
+New Features:
+ - Add support for Apple Mac Mx hardware
+ - Add spinlock-based implementation of locking API
+ - Add support for recursive locks
+
+Improvements:
+ - Fix synchronization primitives by adding correct fencing
+ - Use stdatomic fence acquire and release for >=C11 
+ - Increase default stack size from 4kB to 16kB
+ - Fix hang in qt_blocking_subsystem_internal_stopwork on qthreads_finalize 
+ - Enable QTHREAD_ARMV8_A64 context swap on Apple Mx hardware
+ - Add distributable package gen script
+
+--- 1.17 ---
 
 Improvements:
  - Add GitHub actions for CI testing

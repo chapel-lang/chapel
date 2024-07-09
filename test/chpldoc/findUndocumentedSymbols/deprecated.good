@@ -1,0 +1,31 @@
+─── warning in (unknown location) [ImplicitFileModule] ───
+  An implicit module named 'deprecated' is being introduced to contain file-scope code.
+  The following is the first file-scope statement:
+  The implicit module 'deprecated' is being created because the above code is outside of any module declarations (e.g., 'module M').
+  Note that all of the file's contents -- including module 'M' -- will be placed into the new 'deprecated' module.
+
+warning: 'foo' at deprecated.chpl:2 is undocumented
+warning: 'a' at deprecated.chpl:5 is undocumented
+warning: 'R' at deprecated.chpl:8 is undocumented
+warning: 'R.myMethod' at deprecated.chpl:9 is undocumented
+warning: 'R.myMethod2' at deprecated.chpl:12 is undocumented
+warning: 'C' at deprecated.chpl:15 is undocumented
+warning: 'C.a' at deprecated.chpl:16 is undocumented
+warning: 'C.b' at deprecated.chpl:16 is undocumented
+warning: 'C.c' at deprecated.chpl:18 is undocumented
+warning: 'C.these' at deprecated.chpl:20 is undocumented
+warning: 'C.+' at deprecated.chpl:25 is undocumented
+warning: 'U' at deprecated.chpl:28 is undocumented
+warning: 'U.a' at deprecated.chpl:29 is undocumented
+warning: 'U.b' at deprecated.chpl:30 is undocumented
+warning: 'E' at deprecated.chpl:34 is undocumented
+warning: 'A' at deprecated.chpl:35 is undocumented
+warning: 'B' at deprecated.chpl:36 is undocumented
+warning: 'C' at deprecated.chpl:37 is undocumented
+warning: 'M' at deprecated.chpl:48 is undocumented
+warning: 'M.foo' at deprecated.chpl:50 is undocumented
+warning: 'M.R' at deprecated.chpl:51 is undocumented
+warning: 'M.a' at deprecated.chpl:52 is undocumented
+warning: 'M.E' at deprecated.chpl:53 is undocumented
+warning: 'M.A' at deprecated.chpl:53 is undocumented
+warning: 'chpl_bar' at deprecated.chpl:59 is undocumented

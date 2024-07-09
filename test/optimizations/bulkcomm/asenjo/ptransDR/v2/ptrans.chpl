@@ -24,7 +24,7 @@ record localInfo {
 }
 
 // set up the data arrays
-const gridDist = gridDom dmapped Block(gridDom, gridLocales);
+const gridDist = gridDom dmapped new blockDist(gridDom, gridLocales);
 var Data: [gridDist] localInfo;
 
 // make sure we got it right
@@ -37,7 +37,7 @@ config const singleinit = false;
 var errCount: atomic int;
 
 //showfetch(true);
-init();
+initialize();
 transpose();          
 showfetch(false);
 verify();
@@ -46,7 +46,7 @@ if errCount.read() != 0 then writeln(errCount.read(), " ERRORS");
 
 /////////////////////////////////
 
-proc init(){
+proc initialize(){
   forall (dat, (gi,gj)) in zip(Data, gridDom) {
     if singleinit {
       dat.B[2,2] = 99;
@@ -90,7 +90,7 @@ proc transpose() {
   forall dat in Data {
     local {
       ref B = dat.B, C = dat.C;
-      forall (i,j) in dat.domB do C[j,i] = B[i,j];
+      forall (i,j) in dat.domB with (ref C) do C[j,i] = B[i,j];
     }
   }  
   // global transpose (comms)

@@ -16,4 +16,4 @@ fi
 
 echo "Checking out github branch $GITHUB_USER/$GITHUB_BRANCH"
 
-./tryit.sh ../../provision-scripts/chapel-branch.sh "$GITHUB_USER" "$GITHUB_BRANCH"
+./tryit.py ../../provision-scripts/chapel-branch.sh "$GITHUB_USER" "$GITHUB_BRANCH"

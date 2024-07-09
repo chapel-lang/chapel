@@ -8,6 +8,6 @@ for i in 1..testIters do
   lst.pushBack(i);
 
 for i in 1..testIters {
-  const elem = lst.pop(0);
+  const elem = lst.getAndRemove(0);
   assert(elem == i);
 }

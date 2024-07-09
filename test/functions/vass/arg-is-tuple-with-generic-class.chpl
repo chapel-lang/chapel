@@ -1,10 +1,10 @@
-class TestDom: BaseSparseDom {
+class TestDom: BaseSparseDom(?) {
   param rank_ : int;
   type idxType_;
   var parentDom_;
 
   proc init(param rank, type idxType,
-                               parentDom: domain) {
+                               parentDom: domain(?)) {
     super.init(rank, idxType, parentDom);
     this.rank_ = rank;
     this.idxType_ = idxType;

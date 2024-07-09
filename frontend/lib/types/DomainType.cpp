@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #include "chpl/types/DomainType.h"
 
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/intents.h"
 #include "chpl/types/Param.h"
 #include "chpl/types/TupleType.h"
@@ -52,8 +53,7 @@ void DomainType::stringify(std::ostream& ss,
 }
 
 static ID getDomainID(Context* context) {
-  auto symbolPath = UniqueString::get(context, "ChapelDomain._domain");
-  return ID(symbolPath, -1, 0);
+  return parsing::getSymbolFromTopLevelModule(context, "ChapelDomain", "_domain");
 }
 
 const owned<DomainType>&

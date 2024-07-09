@@ -1,7 +1,7 @@
 use IO;
 import OS.POSIX.EILSEQ;
 
-var w = open("./bs.bin", ioMode.cw).writer();
+var w = open("./bs.bin", ioMode.cw).writer(locking=false);
 var d: string = "some very interesting output data 👍\n";
 
 // test normal behavior

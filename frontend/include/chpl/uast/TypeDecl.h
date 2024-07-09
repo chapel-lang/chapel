@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,6 +31,8 @@ namespace uast {
   (e.g. classes, records, enums).
  */
 class TypeDecl : public NamedDecl {
+ friend class AstNode;
+
  protected:
   TypeDecl(asttags::AstTag tag, AstList children, int attributeGroupChildNum,
            Decl::Visibility vis,
@@ -43,8 +45,12 @@ class TypeDecl : public NamedDecl {
                 name) {
 
   }
-  TypeDecl(AstTag tag, Deserializer& des)
-    : NamedDecl(tag, des) { }
+
+  void typeDeclSerializeInner(Serializer& ser) const {
+    namedDeclSerializeInner(ser);
+  }
+
+  TypeDecl(AstTag tag, Deserializer& des) : NamedDecl(tag, des) { }
 
   bool typeDeclContentsMatchInner(const TypeDecl* other) const {
     return namedDeclContentsMatchInner(other);
@@ -56,10 +62,6 @@ class TypeDecl : public NamedDecl {
 
  public:
   virtual ~TypeDecl() = 0; // this is an abstract base class
-
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
-  }
 };
 
 

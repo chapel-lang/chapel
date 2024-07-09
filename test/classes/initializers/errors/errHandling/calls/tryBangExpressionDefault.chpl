@@ -18,7 +18,7 @@ module tryBangExpressionDefault {
     // type method call triggered a specific error message
     proc init(xVal: Bar = Bar.a) throws {
       x = xVal;
-      this.complete();
+      init this;
       validate(xVal.x);
     }
   }

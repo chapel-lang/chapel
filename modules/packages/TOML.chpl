@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -62,7 +62,7 @@ to access to the following TOML file's project name,
      name = "example"
      version = "1.0.0"
 
-Use the following code in chapel.
+Use the following code in Chapel.
 
 .. code-block:: chapel
 
@@ -87,7 +87,7 @@ Use the following code in chapel.
 */
 proc parseToml(input: file) : shared Toml {
   var tomlStr: string;
-  var tomlFile = input.reader();
+  var tomlFile = input.reader(locking=false);
   tomlFile.readAll(tomlStr);
   tomlFile.close();
   return parseToml(tomlStr);
@@ -106,11 +106,10 @@ proc parseToml(input: string) : shared Toml {
   var D: domain(string);
   var table: [D] shared Toml?;
   var rootTable = new shared Toml(table);
-  const source = new unmanaged Source(input);
+  const source = new shared Source(input);
   const parser = new unmanaged Parser(source, rootTable);
   const tomlData = parser.parseLoop();
   delete parser;
-  delete source;
   return tomlData;
 }
 
@@ -149,7 +148,7 @@ module TomlParser {
   @chpldoc.nodoc
   class Parser {
 
-    var source: Source;
+    var source: shared Source;
     var rootTable: shared Toml;
     var curTable: string;
 
@@ -423,7 +422,6 @@ module TomlParser {
         // Error
         else {
           throw new owned TomlError("Line "+ debugCounter:string +": Unexpected Token -> " + getToken(source));
-          return new shared Toml(val);
         }
       }
       catch e: IllegalArgumentError {
@@ -460,7 +458,7 @@ module TomlParser {
    fieldEmpty,
    fieldDate,
    fieldTime,
-   fieldDateTime };
+   fieldDateTime }
  private use fieldtag;
 
  @chpldoc.nodoc
@@ -580,7 +578,7 @@ module TomlParser {
 Class to hold various types parsed from input
 used to recursively hold tables and respective values
 */
-  class Toml {
+  class Toml : writeSerializable {
 
     @chpldoc.nodoc
     var i: int,
@@ -608,14 +606,14 @@ used to recursively hold tables and respective values
 
     // Toml
     proc init(A: [?D] shared Toml) where D.isAssociative() {
-      this.complete();
+      init this;
       for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
     }
 
     @chpldoc.nodoc
     proc init(A: [?D] shared Toml?) where D.isAssociative() {
-      this.complete();
+      init this;
       for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
     }
@@ -686,7 +684,7 @@ used to recursively hold tables and respective values
     // Clone
     proc init(root: Toml) {
       // INIT TODO: Can this be written in phase one?
-      this.complete();
+      init this;
       this.boo = root.boo;
       this.i = root.i;
       this.re = root.re;
@@ -843,8 +841,8 @@ used to recursively hold tables and respective values
 
 
     /* Write a Table to channel f in TOML format */
-    override proc writeThis(f) throws {
-      writeTOML(f);
+    override proc serialize(writer, ref serializer) throws {
+      writeTOML(writer);
     }
 
     /* Write a Table to channel f in TOML format */
@@ -1067,12 +1065,11 @@ used to recursively hold tables and respective values
         when fieldReal do return val.re:string;
         when fieldString do return ('"' + val.s + '"');
         when fieldEmpty do return ""; // empty
-        when fieldDate do return val.ld.isoFormat();
-        when fieldTime do return val.ti.isoFormat();
-        when fieldDateTime do return val.dt.isoFormat();
+        when fieldDate do return val.ld:string;
+        when fieldTime do return val.ti:string;
+        when fieldDateTime do return val.dt:string;
         otherwise {
           throw new owned TomlError("Error in printing " + val.s);
-          return val.s;
         }
       }
     }
@@ -1113,7 +1110,6 @@ used to recursively hold tables and respective values
         when fieldToml do return 'toml';
         otherwise {
           throw new owned TomlError("Unknown type");
-          return "nil";
         }
       }
     }
@@ -1188,7 +1184,7 @@ module TomlReader {
 
     proc init(tomlStr: string) {
      this.tomlStr = tomlStr;
-     this.complete();
+     init this;
      genTokenlist(tomlStr);
     }
 
@@ -1277,7 +1273,7 @@ module TomlReader {
         }
         else {
           var ptrhold = currentLine;
-          tokenlist.pop(0);
+          tokenlist.getAndRemove(0);
           currentLine = tokenlist[0];
           delete ptrhold;
           return true;
@@ -1319,7 +1315,7 @@ module TomlReader {
 
 
   /* Array wrapper */
-  class Tokens {
+  class Tokens : serializable {
     var A: list(string);
 
     proc init(A: list(string)) {
@@ -1327,11 +1323,11 @@ module TomlReader {
     }
 
     proc skip() {
-      A.pop(0);
+      A.getAndRemove(0);
     }
 
     proc next() {
-      var toke = A.pop(0);
+      var toke = A.getAndRemove(0);
       return toke;
     }
 
@@ -1354,17 +1350,19 @@ module TomlReader {
     }
 
     @chpldoc.nodoc
-    proc readThis(f) throws {
+    proc deserialize(reader, ref deserializer) throws {
       compilerError("Reading a Tokens type is not supported");
     }
 
-    proc init(r: fileReader) {
-      this.complete();
+    @chpldoc.nodoc
+    proc init(reader: fileReader, ref deserializer) {
+      init this;
       compilerError("Reading a Tokens type is not supported");
     }
 
-    proc writeThis(f) throws {
-      f.write(this.A.toArray());
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writer.write(this.A.toArray());
     }
   }
 }

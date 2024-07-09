@@ -22,7 +22,7 @@ config const n: int = 8;
 
 var A: [1..n] int;
 
-forall i in bar(n, 1) do
+forall i in bar(n, 1) with (ref A) do
   A(i) = i;
 
 writeln(A);

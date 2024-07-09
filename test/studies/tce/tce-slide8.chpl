@@ -10,7 +10,7 @@ const DVVOO = {DV, DV, DO, DO},
 var A, C, S: [DVVOO] real,
     B, D: [DVVVO] real;
 
-forall (a, b, i, j) in DVVOO do
+forall (a, b, i, j) in DVVOO with (ref S) do
   S(a,b,i,j) = + reduce [(c,d,e,f,k,l) in {DV,DV,DV,DV,DO,DO}]
                    (A(a,c,i,k) * B(b,e,f,l) * C(d,f,j,k) * D(c,d,e,l));
 

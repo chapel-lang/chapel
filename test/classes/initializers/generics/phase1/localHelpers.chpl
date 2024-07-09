@@ -10,7 +10,7 @@ class UsesHelpers {
     // value for it.
     f2 = helper;
     f3 = val;
-    this.complete();
+    init this;
     if (helper > 10) {
       writeln("double digits, woo!");
     }
@@ -23,7 +23,8 @@ proc helperFunc(val: int) {
 }
 
 proc main() {
-  var c = (new owned UsesHelpers(9)).borrow();
+  var ownC = new owned UsesHelpers(9);
+  var c = ownC.borrow();
   writeln(c.type: string);
   writeln(c);
 }

@@ -16,8 +16,7 @@ config const m = computeProblemSize(numVectors, elemType),
 config const numTrials = 10,
              epsilon = 0.0;
 
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+config const useRandomSeed = true;
 
 config const printParams = true,
              printArrays = false,
@@ -26,7 +25,7 @@ config const printParams = true,
 proc main() {
   printConfiguration();   // print the problem size, number of trials, etc.
 
-  const ProblemSpace: domain(1) dmapped Block(boundingBox={1..m}) = {1..m};
+  const ProblemSpace: domain(1) dmapped new blockDist(boundingBox={1..m}) = {1..m};
 
   var A, B: [ProblemSpace] elemType;
 
@@ -37,7 +36,7 @@ proc main() {
   for trial in 1..numTrials {                        // loop over the trials
     const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
-    forall i in ProblemSpace do
+    forall i in ProblemSpace with (ref A) do
       A[i] = B[i+0];
 
     execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
@@ -62,10 +61,12 @@ proc printConfiguration() {
 // Initialize vectors B and C using a random stream of values and
 // optionally print them to the console
 //
-proc initVector(B) {
-  var randlist = new NPBRandomStream(eltType=real, seed=seed);
+proc initVector(ref B) {
+  var randlist = if useRandomSeed
+    then new randomStream(eltType=real)
+    else new randomStream(eltType=real, seed=314159265);
 
-  randlist.fillRandom(B);
+  randlist.fill(B);
 
   if (printArrays) {
     writeln("B is: ", B, "\n");

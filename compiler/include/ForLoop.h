@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,7 @@
 #define _FOR_LOOP_H_
 
 #include "LoopStmt.h"
+#include "LoopWithShadowVarsInterface.h"
 
 // A ForLoop represents the for-statement language construct as described in
 // the specification (see "The For Loop" section in the chapter on "Statements").
@@ -29,7 +30,7 @@
 // parser production into its internal representation.
 // ForLoop objects are also used to represent coforall-statements and zippered
 // iteration.
-class ForLoop final : public LoopStmt
+class ForLoop final : public LoopStmt, public LoopWithShadowVarsInterface
 {
   //
   // Class interface
@@ -39,30 +40,37 @@ public:
                                        Expr*      iteratorExpr,
                                        BlockStmt* body,
                                        bool       zippered,
-                                       bool       isForExpr);
+                                       bool       isForExpr,
+                                       LLVMMetadataList attrs = {});
 
   static BlockStmt*      buildForeachLoop (Expr*      indices,
                                            Expr*      iteratorExpr,
+                                           CallExpr*  intents,
                                            BlockStmt* body,
                                            bool       zippered,
-                                           bool       isForExpr);
+                                           bool       isForExpr,
+                                           LLVMMetadataList attrs = {});
 
   static BlockStmt*      buildCoforallLoop (Expr*      indices,
                                             Expr*      iteratorExpr,
                                             BlockStmt* body,
-                                            bool       zippered);
+                                            bool       zippered,
+                                            LLVMMetadataList attrs = {});
 
   static BlockStmt*      buildLoweredForallLoop (Expr*      indices,
                                                  Expr*      iteratorExpr,
                                                  BlockStmt* body,
                                                  bool       zippered,
-                                                 bool       isForExpr);
+                                                 bool       isForExpr,
+                                                 LLVMMetadataList attrs = {});
 
 
 private:
   static BlockStmt*      doBuildForLoop (Expr*      indices,
                                          Expr*      iteratorExpr,
+                                         CallExpr*  intents,
                                          BlockStmt* body,
+                                         LLVMMetadataList attrs,
                                          bool       coforall,
                                          bool       zippered,
                                          bool       isLoweredForall,
@@ -127,6 +135,19 @@ public:
   CallExpr*              blockInfoGet()                      const override;
   CallExpr*              blockInfoSet(CallExpr* expr)              override;
 
+  AList&                 shadowVariables() override;
+
+  bool needToHandleOuterVars() const override { return true; }
+  BlockStmt* loopBody() const override {
+    return const_cast<ForLoop*>(this);
+  }
+  bool needsInitialAccumulate() const override { return false; }
+  Expr* asExpr() override { return this; }
+  bool isInductionVar(Symbol* sym) override;
+
+  bool isForallStmt() final override { return false; }
+  ForallStmt *forallStmt() final override { return nullptr; }
+
 private:
                          ForLoop();
 
@@ -135,6 +156,10 @@ private:
   bool                   mZippered;
   bool                   mLoweredForall;
   bool                   mIsForExpr;
+
+  AList                  fShadowVars;  // may be empty
 };
+
+inline AList& ForLoop::shadowVariables() { return fShadowVars; }
 
 #endif

@@ -1,0 +1,1 @@
+Issue21265.chpl:6: error: iterators with no reachable 'yield' statements must declare their return type

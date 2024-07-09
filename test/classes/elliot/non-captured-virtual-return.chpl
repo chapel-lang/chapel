@@ -6,5 +6,6 @@ class Child: Parent {
   override proc foo() { return (1,1); }
 }
 
-var child: borrowed Parent = (new owned Child()).borrow();
+var ownChild = new owned Child();
+var child: borrowed Parent = ownChild.borrow();
 child.foo();

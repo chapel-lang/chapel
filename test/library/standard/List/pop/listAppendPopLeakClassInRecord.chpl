@@ -49,6 +49,6 @@ proc main() {
 
     lines.pushBack(r);
 
-    const elem = lines.pop(0);
+    const elem = lines.getAndRemove(0);
   }
 }

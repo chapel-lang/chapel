@@ -19,18 +19,18 @@ var newA:[D] real;
 var delta:[D] real;
 
 // initialization of A
-[e in D] A(e) = 0.0;
-[e in northOfD] A(e) = 0.0;
-[e in southOfD] A(e) = 1.0;
-[e in westOfD]  A(e) = 0.0;
-[e in eastOfD]  A(e) = 0.0;
+[e in D with (ref A)] A(e) = 0.0;
+[e in northOfD with (ref A)] A(e) = 0.0;
+[e in southOfD with (ref A)] A(e) = 1.0;
+[e in westOfD with (ref A)]  A(e) = 0.0;
+[e in eastOfD with (ref A)]  A(e) = 0.0;
 
 do {
-  forall (i,j) in D do
+  forall (i,j) in D with (ref newA) do
     newA(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
-  [e in D] delta(e) = abs( newA(e) - A(e));
+  [e in D with (ref delta)] delta(e) = abs( newA(e) - A(e));
   maxdelta = max reduce delta;
-  [e in D] A(e) = newA(e);
+  [e in D with (ref A)] A(e) = newA(e);
 } while (maxdelta > THRESHOLD);
 
 writeln( A);

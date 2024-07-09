@@ -323,6 +323,11 @@ static bool importFunctions(const char *argv0, Module &DestModule) {
   };
 
   ModuleLazyLoaderCache ModuleLoaderCache(ModuleLoader);
+  // Owns the filename strings used to key into the ImportList. Normally this is
+  // constructed from the index and the strings are owned by the index, however,
+  // since we are synthesizing this data structure from options we need a cache
+  // to own those strings.
+  StringSet<> FileNameStringCache;
   for (const auto &Import : Imports) {
     // Identify the requested function and its bitcode source file.
     size_t Idx = Import.find(':');
@@ -360,7 +365,8 @@ static bool importFunctions(const char *argv0, Module &DestModule) {
     if (Verbose)
       errs() << "Importing " << FunctionName << " from " << FileName << "\n";
 
-    auto &Entry = ImportList[FileName];
+    auto &Entry =
+        ImportList[FileNameStringCache.insert(FileName).first->getKey()];
     Entry.insert(F->getGUID());
   }
   auto CachedModuleLoader = [&](StringRef Identifier) {
@@ -456,11 +462,12 @@ int main(int argc, char **argv) {
   InitLLVM X(argc, argv);
   ExitOnErr.setBanner(std::string(argv[0]) + ": ");
 
+  cl::HideUnrelatedOptions({&LinkCategory, &getColorCategory()});
+  cl::ParseCommandLineOptions(argc, argv, "llvm linker\n");
+
   LLVMContext Context;
   Context.setDiagnosticHandler(std::make_unique<LLVMLinkDiagnosticHandler>(),
                                true);
-  cl::HideUnrelatedOptions({&LinkCategory, &getColorCategory()});
-  cl::ParseCommandLineOptions(argc, argv, "llvm linker\n");
 
   if (!DisableDITypeMap)
     Context.enableDebugTypeODRUniquing();

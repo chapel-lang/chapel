@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -108,7 +108,7 @@ bool TemporaryFileResult::update(owned<TemporaryFileResult>& keep,
   if (const TemporaryFileResult* t = addin.get()) {
     if (!t->path_.empty()) {
       // 'complete' should be called on a TemporaryFileResult after the
-      // data is stored within the file. If it is forgetten, the query
+      // data is stored within the file. If it is forgotten, the query
       // framework will not correctly handle incremental changes. So,
       // check here in the update function (which will be called when
       // the TemporaryFileResult is the result of a query) that the data

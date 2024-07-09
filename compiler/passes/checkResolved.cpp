@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -52,6 +52,7 @@ static void checkReturnPaths(FnSymbol* fn);
 static void checkCalls();
 static void checkExternProcs();
 static void checkExportedProcs();
+static void checkTheseWithArguments();
 
 static void
 checkConstLoops() {
@@ -72,6 +73,86 @@ static void checkForClassAssignOps(FnSymbol* fn) {
           isUnmanagedClass(formalType)) {
         USR_FATAL_CONT(fn, "Can't overload assignments for class types");
       }
+    }
+  }
+}
+
+// This function is checking for any AggregateType (record/class/union) which
+// contains a non-default initializable/non-copyable field
+// (sync/single/atomic), but fails to explicitly define either `init` or
+// `init=`. This includes having a field which is a container for that type
+// like an array or tuple.
+static void checkSyncSingleAtomicDefaultInit() {
+  for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
+    bool hasCompilerGeneratedInit = false;
+    bool hasCompilerGeneratedCopyInit = false;
+    for (auto fn : at->methods) {
+      if (fn && fn->isDefaultInit()) {
+        hasCompilerGeneratedInit = true;
+        break;
+      }
+      if (fn && fn->isDefaultCopyInit()) {
+        hasCompilerGeneratedCopyInit = true;
+        break;
+      }
+    }
+
+    if (hasCompilerGeneratedInit || hasCompilerGeneratedCopyInit) {
+      for_fields(field, at) {
+        bool isSync = isOrContainsSyncType(field->type);
+        bool isSingle = isOrContainsSingleType(field->type);
+        bool isAtomic = isOrContainsAtomicType(field->type);
+        if (isSync || isSingle || isAtomic) {
+          USR_WARN(at,
+                  "compiler generated default initializers for %s with '%s' "
+                  "fields are deprecated, please supply an 'init%s' method",
+                  at->isClass() ? "classes" : (at->isRecord() ? "records" : "unions"),
+                  isSync ? "sync" : (isSingle ? "single" : "atomic"), hasCompilerGeneratedCopyInit ? "=" : "");
+        }
+      }
+    }
+  }
+
+}
+
+
+// This function is checking for any function which returns a non-default
+// copyable type (sync/single/atomic). This has exclusions for functions that
+// don't copy like array aliases or explicit "no copy" functions. This
+// includes functions which return a type which is a container for that type
+// like an array or tuple.
+static void checkSyncSingleAtomicReturnByCopy() {
+
+  const char* astrCompilerCopySyncSingle = astr("chpl__compilerGeneratedCopySyncSingle");
+
+  //checks for return by anything by ref
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+
+    // skip functions which support deprecation
+    if (fn->name == astrCompilerCopySyncSingle) continue;
+    if (fn->hasFlag(FLAG_DEPRECATED)) continue;
+
+    bool isSync = isOrContainsSyncType(fn->retType, false);
+    bool isSingle = isOrContainsSingleType(fn->retType, false);
+    bool isAtomic = isOrContainsAtomicType(fn->retType, false);
+    bool isRef = fn->returnsRefOrConstRef() || fn->retType->isRef();
+
+    bool isInitAutoCopy = fn->hasEitherFlag(FLAG_INIT_COPY_FN, FLAG_AUTO_COPY_FN);
+    bool isNoCopy = fn->hasEitherFlag(FLAG_NO_COPY, FLAG_NO_COPY_RETURN) || fn->hasFlag(FLAG_NO_COPY_RETURNS_OWNED);
+    bool isCoerce = fn->hasFlag(FLAG_COERCE_FN);
+    bool isDefaultOf = fn->name == astr_defaultOf;
+    bool isAliasing = fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY);
+    bool isDefaultActualFn = fn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
+    bool optOut = isInitAutoCopy || isNoCopy ||
+                  isCoerce || isDefaultOf || isAliasing || isDefaultActualFn;
+
+    bool shouldWarn = !optOut && !isRef && (isSync || isSingle || isAtomic);
+
+    if (shouldWarn) {
+      USR_WARN(fn,
+               "returning a%s by %s is deprecated",
+               isSync ? " sync" : (isSingle ? " single" : "n atomic"),
+               retTagDescrString(fn->retTag));
     }
   }
 }
@@ -135,6 +216,11 @@ checkResolved() {
   checkConstLoops();
   checkExternProcs();
   checkExportedProcs();
+
+  checkSyncSingleAtomicDefaultInit();
+  checkSyncSingleAtomicReturnByCopy();
+
+  checkTheseWithArguments();
 }
 
 
@@ -454,14 +540,23 @@ checkBadLocalReturn(FnSymbol* fn, Symbol* retVar) {
 static void
 checkReturnPaths(FnSymbol* fn) {
   // Check to see if the function returns a value.
+  //
+  // FLAG_THUNK_BUILDER is analogous to isIterator (both produce a record
+  // that contains outer variables and other information), so they are
+  // next to each other in the if statement. Similarly, FLAG_THUNK_INVOKE
+  // is analogous to FLAG_AUTO_II (both mark compiler-generated methods
+  // on the thunk record / iterator record that are filled in late in
+  // compilation)
   if (fn->isIterator() ||
+      fn->hasFlag(FLAG_THUNK_BUILDER) ||
       !strcmp(fn->name, "=") || // TODO: Remove this to enforce new signature.
       !strcmp(fn->name, "chpl__buildArrayRuntimeType") ||
       fn->retType == dtVoid ||
       fn->retTag == RET_TYPE ||
       fn->hasFlag(FLAG_EXTERN) ||
       fn->hasFlag(FLAG_INIT_TUPLE) ||
-      fn->hasFlag(FLAG_AUTO_II))
+      fn->hasFlag(FLAG_AUTO_II) ||
+      fn->hasFlag(FLAG_THUNK_INVOKE))
     return; // No.
 
   // Check to see if the returned value is initialized.
@@ -497,6 +592,14 @@ checkReturnPaths(FnSymbol* fn) {
       checkBadLocalReturn(fn, alias);
     }
   }
+}
+
+static void checkIteratorContextPrimitives(CallExpr* call) {
+  if (call->isPrimitive(PRIM_INNERMOST_CONTEXT) ||
+      call->isPrimitive(PRIM_OUTER_CONTEXT)     ||
+      call->isPrimitive(PRIM_HOIST_TO_CONTEXT)  )
+    USR_FATAL_CONT(call,
+      "use of this feature requires compiling with --iterator-contexts");
 }
 
 static void
@@ -547,8 +650,11 @@ checkBadAddrOf(CallExpr* call)
 static void
 checkCalls()
 {
-  forv_Vec(CallExpr, call, gCallExprs)
+  forv_Vec(CallExpr, call, gCallExprs) {
     checkBadAddrOf(call);
+    if (! fIteratorContexts)
+      checkIteratorContextPrimitives(call);
+  }
 }
 
 // This function checks that the passed type is an acceptable
@@ -567,10 +673,10 @@ static void externExportTypeError(FnSymbol* fn, Type* t) {
     if (t == dtString) {
       if (isExtern)
         USR_FATAL_CONT(fn, "extern procedures should not take arguments of "
-                           "type string, use c_string instead");
+                           "type string, use c_ptrConst(c_char) instead");
       else
         USR_FATAL_CONT(fn, "export procedures should not take arguments of "
-                           "type string, use c_string instead");
+                           "type string, use c_ptrConst(c_char) instead");
     } else {
       if (isExtern)
         USR_FATAL_CONT(fn, "extern procedure argument types should be "
@@ -605,7 +711,7 @@ static void externExportTypeError(FnSymbol* fn, Type* t) {
     }
 
     if (t == dtString)
-      USR_PRINT(fn, "use c_string instead");
+      USR_PRINT(fn, "use c_ptrConst(c_char) instead");
   }
 }
 
@@ -707,4 +813,66 @@ static void checkExportedProcs() {
       USR_FATAL_CONT(fn, "exported procedures should not return c_array");
     }
   }
+}
+
+static bool isTheseIterator(FnSymbol* fn) {
+  return fn->isIterator() && fn->isMethod() && fn->name == astrThese;
+}
+static bool hasIterTag(FnSymbol* fn, Symbol* iterKind) {
+  if (Symbol* tag = fn->getSubstitutionWithName(astr("tag"))) {
+    return tag->type == iterKind->type && tag->name == iterKind->name;
+  }
+  return false;
+}
+static bool isParallelTheseIterator(FnSymbol* fn) {
+  return isTheseIterator(fn) &&
+          (hasIterTag(fn, gStandaloneTag) ||
+           hasIterTag(fn, gLeaderTag) ||
+           hasIterTag(fn, gFollowerTag));
+}
+static bool isStandaloneTheseIterator(FnSymbol* fn) {
+  return isTheseIterator(fn) && hasIterTag(fn, gStandaloneTag);
+}
+static bool isLeaderTheseIterator(FnSymbol* fn) {
+  return isTheseIterator(fn) && hasIterTag(fn, gLeaderTag);
+}
+static bool isFollowerTheseIterator(FnSymbol* fn) {
+  return isTheseIterator(fn) && hasIterTag(fn, gFollowerTag);
+}
+static bool isSerialTheseIterator(FnSymbol* fn) {
+  return isTheseIterator(fn) && !isParallelTheseIterator(fn);
+}
+
+static void checkTheseWithArguments() {
+  // only do these checks if `--warn-unstable`
+  if (!fWarnUnstable) return;
+
+  // keep track of if we have run these checks,
+  // because checkResolved is called multiple times with `--verify`
+  // and these should only run once
+  static bool hasPerformedChecks = false;
+  if (hasPerformedChecks) return;
+
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (shouldWarnUnstableFor(fn)) {
+      if (isSerialTheseIterator(fn) && fn->numFormals() > 1) {
+        USR_WARN(fn,
+                 "defining a serial 'these' iterator that takes arguments "
+                 "is unstable and may change in the future");
+      } else if (isStandaloneTheseIterator(fn) && fn->numFormals() > 1) {
+        USR_WARN(fn,
+                 "defining a parallel 'these' standalone iterator that takes "
+                 "extra arguments is unstable and may change in the future");
+      } else if (isLeaderTheseIterator(fn) && fn->numFormals() > 1) {
+        USR_WARN(fn,
+                 "defining a parallel 'these' leader iterator that takes "
+                 "extra arguments is unstable and may change in the future");
+      } else if (isFollowerTheseIterator(fn) && fn->numFormals() > 2) {
+        USR_WARN(fn,
+                 "defining a parallel 'these' follower iterator that takes "
+                 "extra arguments is unstable and may change in the future");
+      }
+    }
+  }
+  hasPerformedChecks = true;
 }

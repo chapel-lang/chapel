@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,6 +40,7 @@ namespace uast {
   \endrst
  */
 class Identifier final : public AstNode {
+ friend class AstNode;
 
  private:
   UniqueString name_;
@@ -50,11 +51,14 @@ class Identifier final : public AstNode {
     CHPL_ASSERT(!name.isEmpty());
   }
 
-  Identifier(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    ser.write(name_);
+  }
+
+  explicit Identifier(Deserializer& des)
     : AstNode(asttags::Identifier, des) {
     name_ = des.read<UniqueString>();
   }
-
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Identifier* lhs = this;
@@ -71,13 +75,6 @@ class Identifier final : public AstNode {
   ~Identifier() override = default;
   static owned<Identifier> build(Builder* builder, Location loc, UniqueString name);
   UniqueString name() const { return name_; }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(name_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Identifier);
 };
 
 /*

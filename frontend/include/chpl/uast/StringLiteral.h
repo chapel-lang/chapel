@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,13 +32,19 @@ namespace uast {
   and `''' string contents here '''`.
  */
 class StringLiteral final : public StringLikeLiteral {
+ friend class AstNode;
+
  private:
   StringLiteral(const types::StringParam* value,
                 StringLikeLiteral::QuoteStyle quotes)
     : StringLikeLiteral(asttags::StringLiteral, value, quotes)
   { }
 
-  StringLiteral(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    stringLikeLiteralSerializeInner(ser);
+  }
+
+  explicit StringLiteral(Deserializer& des)
     : StringLikeLiteral(asttags::StringLiteral, des)
   { }
 
@@ -51,12 +57,6 @@ class StringLiteral final : public StringLikeLiteral {
   static owned<StringLiteral> build(Builder* builder, Location loc,
                                     const std::string& value,
                                     StringLikeLiteral::QuoteStyle quotes);
-
-  void serialize(Serializer& ser) const override {
-    StringLikeLiteral::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(StringLiteral);
 };
 
 

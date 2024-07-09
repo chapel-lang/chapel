@@ -1,0 +1,8 @@
+bug: missing checks that the runtime types match
+
+When declaring the type of a reference to a domain or array,
+the runtime types of the declared type and the referenced domain or array
+must match:
+
+ref r2: [d2] int = a1;      // require same domain identity d2 and a1.domain 
+ref br2: dom2.type = dom1;  // require same dist. identity of dom1 and dom2

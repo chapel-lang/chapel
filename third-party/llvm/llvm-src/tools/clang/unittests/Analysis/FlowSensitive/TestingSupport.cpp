@@ -4,26 +4,21 @@
 #include "clang/AST/Stmt.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
-#include "clang/Analysis/CFG.h"
-#include "clang/Analysis/FlowSensitive/DataflowAnalysis.h"
-#include "clang/Analysis/FlowSensitive/DataflowEnvironment.h"
+#include "clang/Analysis/FlowSensitive/NoopAnalysis.h"
 #include "clang/Basic/LLVM.h"
 #include "clang/Basic/LangOptions.h"
+#include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Basic/TokenKinds.h"
 #include "clang/Lex/Lexer.h"
-#include "clang/Serialization/PCHContainerOperations.h"
-#include "clang/Tooling/ArgumentsAdjusters.h"
-#include "clang/Tooling/Tooling.h"
-#include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/StringSet.h"
 #include "llvm/Support/Error.h"
-#include "llvm/Testing/Support/Annotations.h"
+#include "llvm/Testing/Annotations/Annotations.h"
+#include "gtest/gtest.h"
 #include <cassert>
 #include <functional>
-#include <memory>
 #include <string>
 #include <system_error>
 #include <utility>
@@ -52,10 +47,32 @@ isAnnotationDirectlyAfterStatement(const Stmt *Stmt, unsigned AnnotationBegin,
   return true;
 }
 
+llvm::DenseMap<unsigned, std::string> test::buildLineToAnnotationMapping(
+    const SourceManager &SM, const LangOptions &LangOpts,
+    SourceRange BoundingRange, llvm::Annotations AnnotatedCode) {
+  CharSourceRange CharBoundingRange =
+      Lexer::getAsCharRange(BoundingRange, SM, LangOpts);
+
+  llvm::DenseMap<unsigned, std::string> LineNumberToContent;
+  auto Code = AnnotatedCode.code();
+  auto Annotations = AnnotatedCode.ranges();
+  for (auto &AnnotationRange : Annotations) {
+    SourceLocation Loc = SM.getLocForStartOfFile(SM.getMainFileID())
+                             .getLocWithOffset(AnnotationRange.Begin);
+    if (SM.isPointWithin(Loc, CharBoundingRange.getBegin(),
+                         CharBoundingRange.getEnd())) {
+      LineNumberToContent[SM.getPresumedLineNumber(Loc)] =
+          Code.slice(AnnotationRange.Begin, AnnotationRange.End).str();
+    }
+  }
+  return LineNumberToContent;
+}
+
 llvm::Expected<llvm::DenseMap<const Stmt *, std::string>>
 test::buildStatementToAnnotationMapping(const FunctionDecl *Func,
                                         llvm::Annotations AnnotatedCode) {
   llvm::DenseMap<const Stmt *, std::string> Result;
+  llvm::StringSet<> ExistingAnnotations;
 
   auto StmtMatcher =
       findAll(stmt(unless(anyOf(hasParent(expr()), hasParent(returnStmt()))))
@@ -73,11 +90,18 @@ test::buildStatementToAnnotationMapping(const FunctionDecl *Func,
     Stmts[Offset] = S;
   }
 
-  unsigned I = 0;
-  auto Annotations = AnnotatedCode.ranges();
+  unsigned FunctionBeginOffset =
+      SourceManager.getFileOffset(Func->getBeginLoc());
+  unsigned FunctionEndOffset = SourceManager.getFileOffset(Func->getEndLoc());
+
+  std::vector<llvm::Annotations::Range> Annotations = AnnotatedCode.ranges();
+  llvm::erase_if(Annotations, [=](llvm::Annotations::Range R) {
+    return R.Begin < FunctionBeginOffset || R.End >= FunctionEndOffset;
+  });
   std::reverse(Annotations.begin(), Annotations.end());
   auto Code = AnnotatedCode.code();
 
+  unsigned I = 0;
   for (auto OffsetAndStmt = Stmts.rbegin(); OffsetAndStmt != Stmts.rend();
        OffsetAndStmt++) {
     unsigned Offset = OffsetAndStmt->first;
@@ -97,7 +121,14 @@ test::buildStatementToAnnotationMapping(const FunctionDecl *Func,
                 .data());
       }
 
-      Result[Stmt] = Code.slice(Range.Begin, Range.End).str();
+      auto Annotation = Code.slice(Range.Begin, Range.End).str();
+      if (!ExistingAnnotations.insert(Annotation).second) {
+        return llvm::createStringError(
+            std::make_error_code(std::errc::invalid_argument),
+            "Repeated use of annotation: %s", Annotation.data());
+      }
+      Result[Stmt] = std::move(Annotation);
+
       I++;
 
       if (I < Annotations.size() && Annotations[I].Begin >= Offset) {
@@ -123,10 +154,86 @@ test::buildStatementToAnnotationMapping(const FunctionDecl *Func,
   return Result;
 }
 
+llvm::Error test::checkDataflowWithNoopAnalysis(
+    llvm::StringRef Code,
+    std::function<
+        void(const llvm::StringMap<DataflowAnalysisState<NoopLattice>> &,
+             ASTContext &)>
+        VerifyResults,
+    DataflowAnalysisOptions Options, LangStandard::Kind Std,
+    llvm::StringRef TargetFun) {
+  return checkDataflowWithNoopAnalysis(Code, ast_matchers::hasName(TargetFun),
+                                       VerifyResults, Options, Std);
+}
+
+llvm::Error test::checkDataflowWithNoopAnalysis(
+    llvm::StringRef Code,
+    ast_matchers::internal::Matcher<FunctionDecl> TargetFuncMatcher,
+    std::function<
+        void(const llvm::StringMap<DataflowAnalysisState<NoopLattice>> &,
+             ASTContext &)>
+        VerifyResults,
+    DataflowAnalysisOptions Options, LangStandard::Kind Std,
+    std::function<llvm::StringMap<QualType>(QualType)> SyntheticFieldCallback) {
+  llvm::SmallVector<std::string, 3> ASTBuildArgs = {
+      // -fnodelayed-template-parsing is the default everywhere but on Windows.
+      // Set it explicitly so that tests behave the same on Windows as on other
+      // platforms.
+      "-fsyntax-only", "-fno-delayed-template-parsing",
+      "-std=" +
+          std::string(LangStandard::getLangStandardForKind(Std).getName())};
+  AnalysisInputs<NoopAnalysis> AI(
+      Code, TargetFuncMatcher,
+      [UseBuiltinModel = Options.BuiltinOpts.has_value(),
+       &SyntheticFieldCallback](ASTContext &C, Environment &Env) {
+        Env.getDataflowAnalysisContext().setSyntheticFieldCallback(
+            std::move(SyntheticFieldCallback));
+        return NoopAnalysis(
+            C,
+            DataflowAnalysisOptions{
+                UseBuiltinModel ? Env.getDataflowAnalysisContext().getOptions()
+                                : std::optional<BuiltinOptions>()});
+      });
+  AI.ASTBuildArgs = ASTBuildArgs;
+  if (Options.BuiltinOpts)
+    AI.BuiltinOptions = *Options.BuiltinOpts;
+  return checkDataflow<NoopAnalysis>(
+      std::move(AI),
+      /*VerifyResults=*/
+      [&VerifyResults](
+          const llvm::StringMap<DataflowAnalysisState<NoopLattice>> &Results,
+          const AnalysisOutputs &AO) { VerifyResults(Results, AO.ASTCtx); });
+}
+
 const ValueDecl *test::findValueDecl(ASTContext &ASTCtx, llvm::StringRef Name) {
-  auto TargetNodes = match(valueDecl(hasName(Name)).bind("v"), ASTCtx);
+  auto TargetNodes = match(
+      valueDecl(unless(indirectFieldDecl()), hasName(Name)).bind("v"), ASTCtx);
   assert(TargetNodes.size() == 1 && "Name must be unique");
   auto *const Result = selectFirst<ValueDecl>("v", TargetNodes);
   assert(Result != nullptr);
+  return Result;
+}
+
+const IndirectFieldDecl *test::findIndirectFieldDecl(ASTContext &ASTCtx,
+                                                     llvm::StringRef Name) {
+  auto TargetNodes = match(indirectFieldDecl(hasName(Name)).bind("i"), ASTCtx);
+  assert(TargetNodes.size() == 1 && "Name must be unique");
+  const auto *Result = selectFirst<IndirectFieldDecl>("i", TargetNodes);
+  assert(Result != nullptr);
+  return Result;
+}
+
+std::vector<const Formula *> test::parseFormulas(Arena &A, StringRef Lines) {
+  std::vector<const Formula *> Result;
+  while (!Lines.empty()) {
+    auto [First, Rest] = Lines.split('\n');
+    Lines = Rest;
+    if (First.trim().empty())
+      continue;
+    if (auto F = A.parseFormula(First))
+      Result.push_back(&*F);
+    else
+      ADD_FAILURE() << llvm::toString(F.takeError());
+  }
   return Result;
 }

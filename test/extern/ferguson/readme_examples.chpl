@@ -28,7 +28,7 @@ byRef(x); // ref argument intent allows the variable to be passed directly
 byPtr(c_ptrTo(x)); // c_ptr argument must be constructed explicitly
 
 // both of these correspond to void fn(const char* x)
-extern proc byCString(x:c_string);
+extern proc byCString(x:c_ptrConst(c_char));
 
-byCString("Hello".c_str());
+byCString("Hello");
 

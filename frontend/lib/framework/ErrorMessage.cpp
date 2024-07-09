@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,6 +35,11 @@ Location IdOrLocation::computeLocation(Context* context) const {
 
   // otherwise, use the location stored here
   return location_;
+}
+
+IdOrLocation IdOrLocation::createForCommandLineLocation(Context* context) {
+  auto name = UniqueString::get(context, "<command line>");
+  return IdOrLocation(Location(name));
 }
 
 ErrorMessage::ErrorMessage(Kind kind, IdOrLocation idOrLoc, std::string message)

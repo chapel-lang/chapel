@@ -1,34 +1,34 @@
 module Construct_Graph
 {
-// Code to construct graph from the Edges (the array of Chapels records 
+// Code to construct graph from the Edges (the array of Chapels records
 // containing the vertex pairs )
 
 
-proc constructGraph(Edges:[?ArrD] , G) 
+proc constructGraph(Edges:[?ArrD] , G)
 {
    use Graph500_defs;
    use Sort;
 
-   var Histogram$ : [G.my_vertices] atomic int; // initialized to 0 by default, right?
+   var Histogram : [G.my_vertices] atomic int; // initialized to 0 by default, right?
 
    // Generate a histogram from the Edges to guide the distribution
    // of the graph
 
-   forall e in Edges do {
+   forall e in Edges with (ref Histogram) do {
       var u = e.start;
       var v = e.end;
-      Histogram$[u].add(1);
-      Histogram$[v].add(1);
+      Histogram[u].add(1);
+      Histogram[v].add(1);
    }
 
    // Resize Neighbor lists for each vertex based on Histogram
 /* use zippering instead:
    forall v in G.my_vertices {
-       G.Vertices[v].nd = {1..Histogram$[v].read()};
+       G.Vertices[v].nd = {1..Histogram[v].read()};
    }
 */
    // zippered version of the above
-   forall (vertex, histogram) in zip(G.Vertices, Histogram$) do
+   forall (vertex, histogram) in zip(G.Vertices, Histogram) do
      vertex.nd = {1..histogram.read()};
 
 // Note that graph for Graph500 benchmark is undirected
@@ -84,7 +84,7 @@ proc constructGraph(Edges:[?ArrD] , G)
         writeln ( "# of duplicates           ", duplicates );
 */
 
-//      Generate histogram of node distributions by number of outgoing edges        
+//      Generate histogram of node distributions by number of outgoing edges
         var max_edges = max reduce [v in G.Vertices] v.neighbor_count.read();
         writeln (" Maximum size of Neighbor list over all vertices: ",max_edges);
 

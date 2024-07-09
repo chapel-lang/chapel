@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Analysis/LazyCallGraph.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/AsmParser/Parser.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
@@ -16,6 +15,7 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/SourceMgr.h"
+#include "llvm/TargetParser/Triple.h"
 #include "gtest/gtest.h"
 #include <memory>
 
@@ -2079,7 +2079,7 @@ TEST(LazyCallGraphTest, ReplaceNodeFunction) {
   D.replaceAllUsesWith(&E);
 
   // Splice the body of the old function into the new one.
-  E.getBasicBlockList().splice(E.begin(), D.getBasicBlockList());
+  E.splice(E.begin(), &D);
   // And fix up the one argument.
   D.arg_begin()->replaceAllUsesWith(&*E.arg_begin());
   E.arg_begin()->takeName(&*D.arg_begin());
@@ -2092,7 +2092,7 @@ TEST(LazyCallGraphTest, ReplaceNodeFunction) {
   EXPECT_EQ(&DN, &(*BN)[DN].getNode());
 }
 
-TEST(LazyCallGraphTest, RemoveFunctionWithSpurriousRef) {
+TEST(LazyCallGraphTest, RemoveFunctionWithSpuriousRef) {
   LLVMContext Context;
   // A graph with a couple of RefSCCs.
   std::unique_ptr<Module> M =
@@ -2173,6 +2173,163 @@ TEST(LazyCallGraphTest, RemoveFunctionWithSpurriousRef) {
   EXPECT_EQ(CG.postorder_ref_scc_end(), I);
 }
 
+TEST(LazyCallGraphTest, RemoveFunctionWithSpuriousRefRecursive) {
+  LLVMContext Context;
+  std::unique_ptr<Module> M =
+      parseAssembly(Context, "define void @a(ptr %p) {\n"
+                             "  store ptr @b, ptr %p\n"
+                             "  ret void\n"
+                             "}\n"
+                             "define void @b(ptr %p) {\n"
+                             "  store ptr @c, ptr %p\n"
+                             "  ret void\n"
+                             "}\n"
+                             "define void @c(ptr %p) {\n"
+                             "  ret void\n"
+                             "}\n");
+  LazyCallGraph CG = buildCG(*M);
+
+  LazyCallGraph::Node &AN = CG.get(lookupFunction(*M, "a"));
+  LazyCallGraph::Node &BN = CG.get(lookupFunction(*M, "b"));
+  LazyCallGraph::Node &CN = CG.get(lookupFunction(*M, "c"));
+  AN.populate();
+  BN.populate();
+  CN.populate();
+  // Insert spurious ref edge.
+  CG.insertEdge(CN, AN, LazyCallGraph::Edge::Ref);
+
+  // Force the graph to be fully expanded.
+  CG.buildRefSCCs();
+  auto I = CG.postorder_ref_scc_begin();
+  LazyCallGraph::RefSCC &RC = *I++;
+  EXPECT_EQ(CG.postorder_ref_scc_end(), I);
+
+  ASSERT_EQ(RC.size(), 3);
+
+  EXPECT_EQ(&RC, CG.lookupRefSCC(AN));
+  EXPECT_EQ(&RC, CG.lookupRefSCC(BN));
+  EXPECT_EQ(&RC, CG.lookupRefSCC(CN));
+
+  // Now delete 'a'. There are no uses of this function but there are
+  // spurious references.
+  CG.removeDeadFunction(AN.getFunction());
+
+  // The only observable change should be that the RefSCC is gone from the
+  // postorder sequence.
+  I = CG.postorder_ref_scc_begin();
+  EXPECT_EQ(CG.lookupRefSCC(CN), &*I++);
+  EXPECT_EQ(CG.lookupRefSCC(BN), &*I++);
+  EXPECT_EQ(CG.postorder_ref_scc_end(), I);
+}
+
+TEST(LazyCallGraphTest, RemoveFunctionWithSpuriousRefRecursive2) {
+  LLVMContext Context;
+  std::unique_ptr<Module> M =
+      parseAssembly(Context, "define void @a(ptr %p) {\n"
+                             "  store ptr @b, ptr %p\n"
+                             "  ret void\n"
+                             "}\n"
+                             "define void @b(ptr %p) {\n"
+                             "  store ptr @c, ptr %p\n"
+                             "  ret void\n"
+                             "}\n"
+                             "define void @c(ptr %p) {\n"
+                             "  store ptr @b, ptr %p\n"
+                             "  store ptr @d, ptr %p\n"
+                             "  ret void\n"
+                             "}\n"
+                             "define void @d(ptr %p) {\n"
+                             "  ret void\n"
+                             "}\n");
+  LazyCallGraph CG = buildCG(*M);
+
+  LazyCallGraph::Node &AN = CG.get(lookupFunction(*M, "a"));
+  LazyCallGraph::Node &BN = CG.get(lookupFunction(*M, "b"));
+  LazyCallGraph::Node &CN = CG.get(lookupFunction(*M, "c"));
+  LazyCallGraph::Node &DN = CG.get(lookupFunction(*M, "d"));
+  AN.populate();
+  BN.populate();
+  CN.populate();
+  DN.populate();
+  // Insert spurious ref edge.
+  CG.insertEdge(DN, AN, LazyCallGraph::Edge::Ref);
+
+  // Force the graph to be fully expanded.
+  CG.buildRefSCCs();
+  auto I = CG.postorder_ref_scc_begin();
+  LazyCallGraph::RefSCC &RC = *I++;
+  EXPECT_EQ(CG.postorder_ref_scc_end(), I);
+
+  ASSERT_EQ(4, RC.size());
+
+  EXPECT_EQ(&RC, CG.lookupRefSCC(AN));
+  EXPECT_EQ(&RC, CG.lookupRefSCC(BN));
+  EXPECT_EQ(&RC, CG.lookupRefSCC(CN));
+  EXPECT_EQ(&RC, CG.lookupRefSCC(DN));
+
+  // Now delete 'a'. There are no uses of this function but there are
+  // spurious references.
+  CG.removeDeadFunction(AN.getFunction());
+
+  // The only observable change should be that the RefSCC is gone from the
+  // postorder sequence.
+  I = CG.postorder_ref_scc_begin();
+  EXPECT_EQ(CG.lookupRefSCC(DN), &*I++);
+  EXPECT_EQ(CG.lookupRefSCC(CN), &*I);
+  EXPECT_EQ(CG.lookupRefSCC(BN), &*I++);
+  EXPECT_EQ(CG.postorder_ref_scc_end(), I);
+}
+
+TEST(LazyCallGraphTest, RemoveFunctionWithSpuriousRefRecursive3) {
+  LLVMContext Context;
+  std::unique_ptr<Module> M =
+      parseAssembly(Context, "define void @a(ptr %p) {\n"
+                             "  store ptr @b, ptr %p\n"
+                             "  ret void\n"
+                             "}\n"
+                             "define void @b(ptr %p) {\n"
+                             "  store ptr @c, ptr %p\n"
+                             "  ret void\n"
+                             "}\n"
+                             "define void @c(ptr %p) {\n"
+                             "  ret void\n"
+                             "}\n");
+  LazyCallGraph CG = buildCG(*M);
+
+  LazyCallGraph::Node &AN = CG.get(lookupFunction(*M, "a"));
+  LazyCallGraph::Node &BN = CG.get(lookupFunction(*M, "b"));
+  LazyCallGraph::Node &CN = CG.get(lookupFunction(*M, "c"));
+  AN.populate();
+  BN.populate();
+  CN.populate();
+  // Insert spurious ref edges.
+  CG.insertEdge(CN, AN, LazyCallGraph::Edge::Ref);
+  CG.insertEdge(BN, AN, LazyCallGraph::Edge::Ref);
+
+  // Force the graph to be fully expanded.
+  CG.buildRefSCCs();
+  auto I = CG.postorder_ref_scc_begin();
+  LazyCallGraph::RefSCC &RC = *I++;
+  EXPECT_EQ(CG.postorder_ref_scc_end(), I);
+
+  ASSERT_EQ(RC.size(), 3);
+
+  EXPECT_EQ(&RC, CG.lookupRefSCC(AN));
+  EXPECT_EQ(&RC, CG.lookupRefSCC(BN));
+  EXPECT_EQ(&RC, CG.lookupRefSCC(CN));
+
+  // Now delete 'a'. There are no uses of this function but there are
+  // spurious references.
+  CG.removeDeadFunction(AN.getFunction());
+
+  // The only observable change should be that the RefSCC is gone from the
+  // postorder sequence.
+  I = CG.postorder_ref_scc_begin();
+  EXPECT_EQ(CG.lookupRefSCC(CN), &*I++);
+  EXPECT_EQ(CG.lookupRefSCC(BN), &*I++);
+  EXPECT_EQ(CG.postorder_ref_scc_end(), I);
+}
+
 TEST(LazyCallGraphTest, AddSplitFunction1) {
   LLVMContext Context;
   std::unique_ptr<Module> M = parseAssembly(Context, "define void @f() {\n"
@@ -2235,7 +2392,7 @@ TEST(LazyCallGraphTest, AddSplitFunction2) {
   (void)ReturnInst::Create(Context, GBB);
 
   // Create f -ref-> g.
-  (void)CastInst::CreatePointerCast(G, Type::getInt8PtrTy(Context), "",
+  (void)CastInst::CreatePointerCast(G, PointerType::getUnqual(Context), "",
                                     &*F.getEntryBlock().begin());
 
   EXPECT_FALSE(verifyModule(*M, &errs()));
@@ -2274,7 +2431,8 @@ TEST(LazyCallGraphTest, AddSplitFunction3) {
                              F.getAddressSpace(), "g", F.getParent());
   BasicBlock *GBB = BasicBlock::Create(Context, "", G);
   // Create g -ref-> f.
-  (void)CastInst::CreatePointerCast(&F, Type::getInt8PtrTy(Context), "", GBB);
+  (void)CastInst::CreatePointerCast(&F, PointerType::getUnqual(Context), "",
+                                    GBB);
   (void)ReturnInst::Create(Context, GBB);
 
   // Create f -call-> g.
@@ -2318,11 +2476,12 @@ TEST(LazyCallGraphTest, AddSplitFunction4) {
                              F.getAddressSpace(), "g", F.getParent());
   BasicBlock *GBB = BasicBlock::Create(Context, "", G);
   // Create g -ref-> f.
-  (void)CastInst::CreatePointerCast(&F, Type::getInt8PtrTy(Context), "", GBB);
+  (void)CastInst::CreatePointerCast(&F, PointerType::getUnqual(Context), "",
+                                    GBB);
   (void)ReturnInst::Create(Context, GBB);
 
   // Create f -ref-> g.
-  (void)CastInst::CreatePointerCast(G, Type::getInt8PtrTy(Context), "",
+  (void)CastInst::CreatePointerCast(G, PointerType::getUnqual(Context), "",
                                     &*F.getEntryBlock().begin());
 
   EXPECT_FALSE(verifyModule(*M, &errs()));
@@ -2368,7 +2527,7 @@ TEST(LazyCallGraphTest, AddSplitFunction5) {
   (void)ReturnInst::Create(Context, GBB);
 
   // Create f -ref-> g.
-  (void)CastInst::CreatePointerCast(G, Type::getInt8PtrTy(Context), "",
+  (void)CastInst::CreatePointerCast(G, PointerType::getUnqual(Context), "",
                                     &*F.getEntryBlock().begin());
 
   EXPECT_FALSE(verifyModule(*M, &errs()));
@@ -2516,7 +2675,7 @@ TEST(LazyCallGraphTest, AddSplitFunction8) {
   (void)ReturnInst::Create(Context, GBB);
 
   // Create f -ref-> g.
-  (void)CastInst::CreatePointerCast(G, Type::getInt8PtrTy(Context), "",
+  (void)CastInst::CreatePointerCast(G, PointerType::getUnqual(Context), "",
                                     &*F.getEntryBlock().begin());
 
   EXPECT_FALSE(verifyModule(*M, &errs()));
@@ -2565,7 +2724,8 @@ TEST(LazyCallGraphTest, AddSplitFunction9) {
                              F.getAddressSpace(), "g", F.getParent());
   BasicBlock *GBB = BasicBlock::Create(Context, "", G);
   // Create g -ref-> f2.
-  (void)CastInst::CreatePointerCast(&F2, Type::getInt8PtrTy(Context), "", GBB);
+  (void)CastInst::CreatePointerCast(&F2, PointerType::getUnqual(Context), "",
+                                    GBB);
   (void)ReturnInst::Create(Context, GBB);
 
   // Create f -call-> g.
@@ -2612,7 +2772,7 @@ TEST(LazyCallGraphTest, AddSplitFunctions1) {
   (void)ReturnInst::Create(Context, GBB);
 
   // Create f -ref-> g.
-  (void)CastInst::CreatePointerCast(G, Type::getInt8PtrTy(Context), "",
+  (void)CastInst::CreatePointerCast(G, PointerType::getUnqual(Context), "",
                                     &*F.getEntryBlock().begin());
 
   EXPECT_FALSE(verifyModule(*M, &errs()));
@@ -2651,11 +2811,12 @@ TEST(LazyCallGraphTest, AddSplitFunctions2) {
                              F.getAddressSpace(), "g", F.getParent());
   BasicBlock *GBB = BasicBlock::Create(Context, "", G);
   // Create g -ref-> f.
-  (void)CastInst::CreatePointerCast(&F, Type::getInt8PtrTy(Context), "", GBB);
+  (void)CastInst::CreatePointerCast(&F, PointerType::getUnqual(Context), "",
+                                    GBB);
   (void)ReturnInst::Create(Context, GBB);
 
   // Create f -ref-> g.
-  (void)CastInst::CreatePointerCast(G, Type::getInt8PtrTy(Context), "",
+  (void)CastInst::CreatePointerCast(G, PointerType::getUnqual(Context), "",
                                     &*F.getEntryBlock().begin());
 
   EXPECT_FALSE(verifyModule(*M, &errs()));
@@ -2700,15 +2861,17 @@ TEST(LazyCallGraphTest, AddSplitFunctions3) {
   BasicBlock *G1BB = BasicBlock::Create(Context, "", G1);
   BasicBlock *G2BB = BasicBlock::Create(Context, "", G2);
   // Create g1 -ref-> g2 and g2 -ref-> g1.
-  (void)CastInst::CreatePointerCast(G2, Type::getInt8PtrTy(Context), "", G1BB);
-  (void)CastInst::CreatePointerCast(G1, Type::getInt8PtrTy(Context), "", G2BB);
+  (void)CastInst::CreatePointerCast(G2, PointerType::getUnqual(Context), "",
+                                    G1BB);
+  (void)CastInst::CreatePointerCast(G1, PointerType::getUnqual(Context), "",
+                                    G2BB);
   (void)ReturnInst::Create(Context, G1BB);
   (void)ReturnInst::Create(Context, G2BB);
 
   // Create f -ref-> g1 and f -ref-> g2.
-  (void)CastInst::CreatePointerCast(G1, Type::getInt8PtrTy(Context), "",
+  (void)CastInst::CreatePointerCast(G1, PointerType::getUnqual(Context), "",
                                     &*F.getEntryBlock().begin());
-  (void)CastInst::CreatePointerCast(G2, Type::getInt8PtrTy(Context), "",
+  (void)CastInst::CreatePointerCast(G2, PointerType::getUnqual(Context), "",
                                     &*F.getEntryBlock().begin());
 
   EXPECT_FALSE(verifyModule(*M, &errs()));
@@ -2754,17 +2917,20 @@ TEST(LazyCallGraphTest, AddSplitFunctions4) {
   BasicBlock *G1BB = BasicBlock::Create(Context, "", G1);
   BasicBlock *G2BB = BasicBlock::Create(Context, "", G2);
   // Create g1 -ref-> g2 and g2 -ref-> g1.
-  (void)CastInst::CreatePointerCast(G2, Type::getInt8PtrTy(Context), "", G1BB);
-  (void)CastInst::CreatePointerCast(G1, Type::getInt8PtrTy(Context), "", G2BB);
+  (void)CastInst::CreatePointerCast(G2, PointerType::getUnqual(Context), "",
+                                    G1BB);
+  (void)CastInst::CreatePointerCast(G1, PointerType::getUnqual(Context), "",
+                                    G2BB);
   // Create g2 -ref-> f.
-  (void)CastInst::CreatePointerCast(&F, Type::getInt8PtrTy(Context), "", G2BB);
+  (void)CastInst::CreatePointerCast(&F, PointerType::getUnqual(Context), "",
+                                    G2BB);
   (void)ReturnInst::Create(Context, G1BB);
   (void)ReturnInst::Create(Context, G2BB);
 
   // Create f -ref-> g1 and f -ref-> g2.
-  (void)CastInst::CreatePointerCast(G1, Type::getInt8PtrTy(Context), "",
+  (void)CastInst::CreatePointerCast(G1, PointerType::getUnqual(Context), "",
                                     &*F.getEntryBlock().begin());
-  (void)CastInst::CreatePointerCast(G2, Type::getInt8PtrTy(Context), "",
+  (void)CastInst::CreatePointerCast(G2, PointerType::getUnqual(Context), "",
                                     &*F.getEntryBlock().begin());
 
   EXPECT_FALSE(verifyModule(*M, &errs()));
@@ -2821,17 +2987,20 @@ TEST(LazyCallGraphTest, AddSplitFunctions5) {
   BasicBlock *G1BB = BasicBlock::Create(Context, "", G1);
   BasicBlock *G2BB = BasicBlock::Create(Context, "", G2);
   // Create g1 -ref-> g2 and g2 -ref-> g1.
-  (void)CastInst::CreatePointerCast(G2, Type::getInt8PtrTy(Context), "", G1BB);
-  (void)CastInst::CreatePointerCast(G1, Type::getInt8PtrTy(Context), "", G2BB);
+  (void)CastInst::CreatePointerCast(G2, PointerType::getUnqual(Context), "",
+                                    G1BB);
+  (void)CastInst::CreatePointerCast(G1, PointerType::getUnqual(Context), "",
+                                    G2BB);
   // Create g2 -ref-> f2.
-  (void)CastInst::CreatePointerCast(&F2, Type::getInt8PtrTy(Context), "", G2BB);
+  (void)CastInst::CreatePointerCast(&F2, PointerType::getUnqual(Context), "",
+                                    G2BB);
   (void)ReturnInst::Create(Context, G1BB);
   (void)ReturnInst::Create(Context, G2BB);
 
   // Create f -ref-> g1 and f -ref-> g2.
-  (void)CastInst::CreatePointerCast(G1, Type::getInt8PtrTy(Context), "",
+  (void)CastInst::CreatePointerCast(G1, PointerType::getUnqual(Context), "",
                                     &*F.getEntryBlock().begin());
-  (void)CastInst::CreatePointerCast(G2, Type::getInt8PtrTy(Context), "",
+  (void)CastInst::CreatePointerCast(G2, PointerType::getUnqual(Context), "",
                                     &*F.getEntryBlock().begin());
 
   EXPECT_FALSE(verifyModule(*M, &errs()));

@@ -1,0 +1,2 @@
+complete.chpl:8: In initializer:
+complete.chpl:9: warning: 'this.complete()' is deprecated; please use 'init this' instead

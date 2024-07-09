@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,7 +23,7 @@
 #include "chpl/uast/all-uast.h"
 #include "chpl/types/all-types.h"
 #include "chpl/resolution/scope-types.h"
-#include "llvm/ADT/Optional.h"
+#include "chpl/resolution/resolution-types.h"
 
 namespace chpl {
 
@@ -52,7 +52,8 @@ namespace chpl {
 
 class ErrorWriterBase;
 
-using Note = std::tuple<IdOrLocation, std::string>;
+using ErrorNote = std::tuple<IdOrLocation, std::string>;
+using ErrorCodeSnippet = std::tuple<Location, std::vector<Location>>;
 
 /** Enum representing the different types of errors in Dyno. */
 enum ErrorType {
@@ -101,6 +102,7 @@ class ErrorBase {
  public:
   virtual ~ErrorBase() = default;
 
+  static const char* getKindName(Kind kind);
   static const char* getTypeName(ErrorType type);
 
   template <typename T>
@@ -162,12 +164,12 @@ class BasicError : public ErrorBase {
   /** The error's message. */
   std::string message_;
   /** Additional notes / details attached to the error. */
-  std::vector<Note> notes_;
+  std::vector<ErrorNote> notes_;
 
  protected:
   BasicError(Kind kind, ErrorType type, IdOrLocation idOrLoc,
              std::string message,
-             std::vector<Note> notes) :
+             std::vector<ErrorNote> notes) :
     ErrorBase(kind, type), idOrLoc_(std::move(idOrLoc)),
     message_(std::move(message)), notes_(std::move(notes)) {}
 
@@ -190,7 +192,7 @@ class GeneralError : public BasicError {
  protected:
   GeneralError(const GeneralError& other) = default;
   GeneralError(ErrorBase::Kind kind, IdOrLocation idOrLoc,
-               std::string message, std::vector<Note> notes)
+               std::string message, std::vector<ErrorNote> notes)
     : BasicError(kind, General, std::move(idOrLoc),
                  std::move(message), std::move(notes)) {}
 
@@ -205,6 +207,9 @@ class GeneralError : public BasicError {
                                     const char* fmt,
                                     va_list vl);
   static owned<GeneralError> vbuild(ErrorBase::Kind kind, Location loc,
+                                    const char* fmt,
+                                    va_list vl);
+  static owned<GeneralError> vbuild(ErrorBase::Kind kind, IdOrLocation loc,
                                     const char* fmt,
                                     va_list vl);
 
@@ -228,16 +233,16 @@ class GeneralError : public BasicError {
   class Error##NAME__ : public ErrorBase {\
    private:\
     using ErrorInfo = std::tuple<EINFO__>;\
-    ErrorInfo info;\
+    ErrorInfo info_;\
 \
     Error##NAME__(const Error##NAME__& other) = default;\
     Error##NAME__(ErrorInfo info) :\
-      ErrorBase(KIND__, NAME__), info(std::move(info)) {}\
+      ErrorBase(KIND__, NAME__), info_(std::move(info)) {}\
 \
    protected:\
     bool contentsMatchInner(const ErrorBase* other) const override {\
       auto otherCast = static_cast<const Error##NAME__*>(other);\
-      return info == otherCast->info;\
+      return info_ == otherCast->info_;\
     }\
    public:\
     ~Error##NAME__() = default;\
@@ -246,11 +251,13 @@ class GeneralError : public BasicError {
     void write(ErrorWriterBase& writer) const override;\
     void mark(Context* context) const override {\
       ::chpl::mark<ErrorInfo> marker;\
-      marker(context, info);\
+      marker(context, info_);\
     }\
     owned<ErrorBase> clone() const override {\
       return owned<ErrorBase>(new Error##NAME__(*this));\
     }\
+\
+    const ErrorInfo& info() const { return info_; }\
   };
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
@@ -275,6 +282,16 @@ class GeneralError : public BasicError {
   CONTEXT__->report(CHPL_GET_ERROR(NAME__, EINFO__))
 #define CHPL_GET_ERROR(NAME__, EINFO__...) \
   Error##NAME__::get(std::make_tuple(EINFO__))
+
+/**
+  Helper macro to report an error to the context, and produce an
+  erroneous QualifiedType. Accepts the pointer to the context,
+  the name of the error to report, and additional error information arguments,
+  the exact types of which depend on the type of error (see error-classes-list.h)
+ */
+#define CHPL_TYPE_ERROR(CONTEXT, NAME, EINFO...)\
+  (CHPL_REPORT(CONTEXT, NAME, EINFO),\
+   QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(CONTEXT)))
 
 template <>
 struct stringify<chpl::ErrorBase::Kind> {

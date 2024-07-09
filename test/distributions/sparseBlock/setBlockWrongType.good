@@ -1,0 +1,3 @@
+setBlockWrongType.chpl:12: error: setLocalSubdomain() expects its argument to be of type CSDom(2,int(64),domain(2,int(64),one),true,true,one)
+setBlockWrongType.chpl:15: error: setLocalSubdomain() expects its argument to be of type CSDom(2,int(64),domain(2,int(64),one),true,true,one)
+setBlockWrongType.chpl:18: error: setLocalSubarray() expects its argument to be of type [CSDom(2,int(64),domain(2,int(64),one),true,true,one)] real(64)

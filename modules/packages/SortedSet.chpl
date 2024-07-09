@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,7 +43,7 @@ module SortedSet {
   private use IO;
   public use Sort only defaultComparator;
 
-  record sortedSet {
+  record sortedSet : writeSerializable {
     /* The type of the elements contained in this sortedSet. */
     type eltType;
 
@@ -94,6 +94,7 @@ module SortedSet {
       sortedSet, it will not be added again. The formal `iterable` must be a type
       with an iterator named "these" defined for it.
 
+      :arg eltType: The type of the elements of this sortedSet.
       :arg iterable: A collection of elements to add to this sortedSet.
       :arg parSafe: If `true`, this sortedSet will use parallel safe operations.
       :arg comparator: The comparator used to compare elements.
@@ -122,7 +123,7 @@ module SortedSet {
       this.instance = new treap(this.eltType, this.parSafe,
                                             other.instance.comparator);
 
-      this.complete();
+      init this;
 
 
       if !isCopyableType(eltType) then
@@ -135,11 +136,9 @@ module SortedSet {
 
     /*
       Write the contents of this sortedSet to a fileWriter.
-
-      :arg ch: A fileWriter to write to.
     */
-    inline proc const writeThis(ch: fileWriter) throws {
-      instance.writeThis(ch);
+    inline proc const serialize(writer, ref serializer) throws {
+      instance.serialize(writer, serializer);
     }
 
     /*

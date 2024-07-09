@@ -1,0 +1,2 @@
+strassen.chpl:13: warning: please use '?' when declaring a routine with a generic return type
+strassen.chpl:13: note: for example with 'Strassen(?)'

@@ -1,6 +1,6 @@
 8
-bar()
+proc bar(n: int): int { ... }
 3.1415
-bar()
+proc bar(n: int): int { ... }
 Hello!
-bar()
+proc bar(n: int): int { ... }

@@ -1,0 +1,4 @@
+unstableDiv2Exp.chpl:5: warning: div2Exp is unstable and may change in the future
+unstableDiv2Exp.chpl:7: warning: rem2Exp is unstable and may change in the future
+1
+2

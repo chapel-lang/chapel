@@ -191,7 +191,7 @@ __gmp_mt_recalc_buffer (gmp_uint_least32_t mt[])
    Note that Mersenne Twister is designed to produce outputs in
    32-bit words.  */
 void
-__gmp_randget_mt (gmp_randstate_t rstate, mp_ptr dest, unsigned long int nbits)
+__gmp_randget_mt (gmp_randstate_ptr rstate, mp_ptr dest, unsigned long int nbits)
 {
   gmp_uint_least32_t y;
   int rbits;
@@ -354,7 +354,7 @@ __gmp_randget_mt (gmp_randstate_t rstate, mp_ptr dest, unsigned long int nbits)
 }
 
 void
-__gmp_randclear_mt (gmp_randstate_t rstate)
+__gmp_randclear_mt (gmp_randstate_ptr rstate)
 {
   (*__gmp_free_func) ((void *) RNG_STATE (rstate),
 		      ALLOC (rstate->_mp_seed) * GMP_LIMB_BYTES);

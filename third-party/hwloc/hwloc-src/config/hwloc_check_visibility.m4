@@ -11,7 +11,7 @@
 #                         All rights reserved.
 # Copyright © 2006-2007 Cisco Systems, Inc.  All rights reserved.
 # and renamed/modified for hwloc:
-# Copyright © 2009 Inria.  All rights reserved.
+# Copyright © 2009-2021 Inria.  All rights reserved.
 # Copyright © 2009-2010 Université Bordeaux
 # Copyright © 2010-2012 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -63,7 +63,7 @@ AC_DEFUN([_HWLOC_CHECK_VISIBILITY],[
     # Check if the compiler has support for visibility, like some
     # versions of gcc, icc, Sun Studio cc.
     AC_ARG_ENABLE(visibility,
-        AC_HELP_STRING([--enable-visibility],
+        AS_HELP_STRING([--enable-visibility],
             [enable visibility feature of certain compilers/linkers (default: enabled on platforms that support it)]))
 
     case ${target} in

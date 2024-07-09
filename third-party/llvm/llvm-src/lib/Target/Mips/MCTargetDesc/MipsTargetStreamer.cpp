@@ -16,10 +16,10 @@
 #include "MipsInstPrinter.h"
 #include "MipsMCExpr.h"
 #include "MipsMCTargetDesc.h"
-#include "MipsTargetObjectFile.h"
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/MC/MCAssembler.h"
 #include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/MC/MCSectionELF.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/MCSymbolELF.h"
@@ -37,11 +37,11 @@ static cl::opt<bool> RoundSectionSizes(
 } // end anonymous namespace
 
 static bool isMicroMips(const MCSubtargetInfo *STI) {
-  return STI->getFeatureBits()[Mips::FeatureMicroMips];
+  return STI->hasFeature(Mips::FeatureMicroMips);
 }
 
 static bool isMips32r6(const MCSubtargetInfo *STI) {
-  return STI->getFeatureBits()[Mips::FeatureMips32r6];
+  return STI->hasFeature(Mips::FeatureMips32r6);
 }
 
 MipsTargetStreamer::MipsTargetStreamer(MCStreamer &S)
@@ -899,9 +899,9 @@ void MipsTargetELFStreamer::finish() {
   MCSection &BSSSection = *OFI.getBSSSection();
   MCA.registerSection(BSSSection);
 
-  TextSection.setAlignment(Align(std::max(16u, TextSection.getAlignment())));
-  DataSection.setAlignment(Align(std::max(16u, DataSection.getAlignment())));
-  BSSSection.setAlignment(Align(std::max(16u, BSSSection.getAlignment())));
+  TextSection.ensureMinAlignment(Align(16));
+  DataSection.ensureMinAlignment(Align(16));
+  BSSSection.ensureMinAlignment(Align(16));
 
   if (RoundSectionSizes) {
     // Make sections sizes a multiple of the alignment. This is useful for
@@ -912,14 +912,12 @@ void MipsTargetELFStreamer::finish() {
     for (MCSection &S : MCA) {
       MCSectionELF &Section = static_cast<MCSectionELF &>(S);
 
-      unsigned Alignment = Section.getAlignment();
-      if (Alignment) {
-        OS.switchSection(&Section);
-        if (Section.useCodeAlign())
-          OS.emitCodeAlignment(Alignment, &STI, Alignment);
-        else
-          OS.emitValueToAlignment(Alignment, 0, 1, Alignment);
-      }
+      Align Alignment = Section.getAlign();
+      OS.switchSection(&Section);
+      if (Section.useCodeAlign())
+        OS.emitCodeAlignment(Alignment, &STI, Alignment.value());
+      else
+        OS.emitValueToAlignment(Alignment, 0, 1, Alignment.value());
     }
   }
 
@@ -1257,7 +1255,9 @@ void MipsTargetELFStreamer::emitDirectiveCpsetup(unsigned RegNo,
     emitRRI(Mips::SD, GPReg, Mips::SP, RegOrOffset, SMLoc(), &STI);
   }
 
-  if (getABI().IsN32()) {
+#if 0
+  // We haven't support -mabicalls -mno-shared yet.
+  if (-mno-shared) {
     MCSymbol *GPSym = MCA.getContext().getOrCreateSymbol("__gnu_local_gp");
     const MipsMCExpr *HiExpr = MipsMCExpr::create(
         MipsMCExpr::MEK_HI, MCSymbolRefExpr::create(GPSym, MCA.getContext()),
@@ -1275,6 +1275,7 @@ void MipsTargetELFStreamer::emitDirectiveCpsetup(unsigned RegNo,
 
     return;
   }
+#endif
 
   const MipsMCExpr *HiExpr = MipsMCExpr::createGpOff(
       MipsMCExpr::MEK_HI, MCSymbolRefExpr::create(&Sym, MCA.getContext()),
@@ -1290,8 +1291,11 @@ void MipsTargetELFStreamer::emitDirectiveCpsetup(unsigned RegNo,
   emitRRX(Mips::ADDiu, GPReg, GPReg, MCOperand::createExpr(LoExpr), SMLoc(),
           &STI);
 
-  // daddu  $gp, $gp, $funcreg
-  emitRRR(Mips::DADDu, GPReg, GPReg, RegNo, SMLoc(), &STI);
+  // (d)addu  $gp, $gp, $funcreg
+  if (getABI().IsN32())
+    emitRRR(Mips::ADDu, GPReg, GPReg, RegNo, SMLoc(), &STI);
+  else
+    emitRRR(Mips::DADDu, GPReg, GPReg, RegNo, SMLoc(), &STI);
 }
 
 void MipsTargetELFStreamer::emitDirectiveCpreturn(unsigned SaveLocation,

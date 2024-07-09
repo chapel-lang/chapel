@@ -8,8 +8,9 @@ class C {
   }
 }
 
-const D = {1..3} dmapped Block({1..3});
+const D = {1..3} dmapped new blockDist({1..3});
 var A: [D] real;
 
-var myC = (new owned C(A)).borrow();
+var ownMyC = new owned C(A);
+var myC = ownMyC.borrow();
 writeln("myC is: ", myC);

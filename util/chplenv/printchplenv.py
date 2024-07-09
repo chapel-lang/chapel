@@ -9,43 +9,49 @@ filtered [filter].
 The default [content] provides user-facing variables.
 
 Options:
-  -h, --help    Show this help message and exit
+  -h, --help       Show this help message and exit
 
   [shortcut]
-  --all         Shortcut for --compiler --runtime --launcher, includes defaults
+  --all            Shortcut for --compiler --runtime --launcher, includes defaults
 
   [content]
-  --compiler    Select variables describing the configuration of the compiler
-  --runtime     Select variables describing the configuration of the runtime
-  --launcher    Select variables describing the configuration of the launcher
-  --internal    Select additional variables used during builds
-                 this flag is incompatible with [format]: --path
+  --compiler       Select variables describing the configuration of the compiler
+  --runtime        Select variables describing the configuration of the runtime
+  --launcher       Select variables describing the configuration of the launcher
+  --internal       Select additional variables used during builds
+                    this flag is incompatible with [format]: --path
 
   [filter]
-  --[no-]tidy   (default) [don't] Omit sub-variables irrelevant to the current
-                 configuration
-  --anonymize   Omit machine specific details, script location, and CHPL_HOME
-  --overrides   Omit variables that have not been user supplied via environment
-                 or chplconfig
-  --only-path   Omit variables that do not contibute to the build path
+  --[no-]tidy      (default) [don't] Omit sub-variables irrelevant to the current
+                    configuration
+  --anonymize      Omit machine specific details, script location, and CHPL_HOME
+  --overrides      Omit variables that have not been user supplied via environment
+                    or chplconfig
+  --only-path      Omit variables that do not contibute to the build path
 
   [format]
-  --pretty      (default) Print variables in format: CHPL_KEY: VALUE
-                 indicating which options are set by environment variables (*)
-                 and which are set by configuration files (+)
-  --simple      Print variables in format: CHPL_KEY=VALUE
-                 output is compatible with chplconfig format
-  --cmake       Print variables in format: CHPL_KEY VALUE with quotes stripped
-                 from values. Output is compatible with cmake format
-  --make        Print variables in format: CHPL_MAKE_KEY=VALUE
-  --path        Print variables in format: VALUE1/VALUE2/...
-                 this flag always excludes CHPL_HOME and CHPL_MAKE
+  --pretty         (default) Print variables in format: CHPL_KEY: VALUE
+                    indicating which options are set by environment variables (*)
+                    and which are set by configuration files (+)
+  --simple         Print variables in format: CHPL_KEY=VALUE
+                    output is compatible with chplconfig format
+  --cmake          Print variables in format: CHPL_KEY VALUE with quotes stripped
+                    from values. Output is compatible with cmake format
+  --make           Print variables in format: CHPL_MAKE_KEY=VALUE
+  --path           Print variables in format: VALUE1/VALUE2/...
+                    this flag always excludes CHPL_HOME and CHPL_MAKE
+  --bash           Print variables in format: export CHPL_KEY=VALUE
+  --csh            Print variables in format: setenv CHPL_KEY VALUE
+
+  [misc]
+  --ignore-errors  Continue processing even if an error occurs
 """
 
 from collections import namedtuple
 from functools import partial
 import optparse
 import os
+import re
 import unittest
 from sys import stdout, path
 
@@ -92,7 +98,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TARGET_CPU_FLAG', INTERNAL),
     ChapelEnv('CHPL_TARGET_BACKEND_CPU', INTERNAL),
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
-    ChapelEnv('  CHPL_GPU', RUNTIME, 'gpu'),
+    ChapelEnv('  CHPL_GPU', RUNTIME | DEFAULT, 'gpu'),
     ChapelEnv('  CHPL_GPU_ARCH', INTERNAL),
     ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME , 'gpu_mem' ),
     ChapelEnv('  CHPL_CUDA_PATH', INTERNAL),
@@ -101,7 +107,9 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
     ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME | LAUNCHER | DEFAULT),
+    ChapelEnv('  CHPL_GASNET_VERSION', RUNTIME | LAUNCHER),
     ChapelEnv('  CHPL_LIBFABRIC', RUNTIME | INTERNAL | DEFAULT),
+    ChapelEnv('  CHPL_COMM_OFI_OOB', RUNTIME | INTERNAL | DEFAULT),
     ChapelEnv('CHPL_TASKS', RUNTIME | LAUNCHER | DEFAULT, 'tasks'),
     ChapelEnv('CHPL_LAUNCHER', LAUNCHER | DEFAULT, 'launch'),
     ChapelEnv('CHPL_TIMERS', RUNTIME | LAUNCHER | DEFAULT, 'tmr'),
@@ -196,7 +204,9 @@ def compute_all_values():
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
     ENV_VALS['  CHPL_GASNET_SEGMENT'] = chpl_comm_segment.get()
+    ENV_VALS['  CHPL_GASNET_VERSION'] = chpl_gasnet.get_version()
     ENV_VALS['  CHPL_LIBFABRIC'] = chpl_libfabric.get()
+    ENV_VALS['  CHPL_COMM_OFI_OOB'] = chpl_comm_ofi_oob.get()
     ENV_VALS['CHPL_TASKS'] = chpl_tasks.get()
     ENV_VALS['CHPL_LAUNCHER'] = chpl_launcher.get()
     ENV_VALS['CHPL_TIMERS'] = chpl_timers.get()
@@ -234,7 +244,7 @@ def compute_all_values():
     chpl_arch.validate('target')
     chpl_llvm.validate_llvm_config()
     chpl_compiler.validate_compiler_settings()
-    chpl_gpu.validate(ENV_VALS['CHPL_LOCALE_MODEL'], ENV_VALS['CHPL_COMM'])
+    chpl_gpu.validate(ENV_VALS['CHPL_LOCALE_MODEL'])
 
 
 """Compute '--internal' env var values and populate global dict, ENV_VALS"""
@@ -333,7 +343,11 @@ def filter_tidy(chpl_env):
         return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_GASNET_SEGMENT':
         return comm == 'gasnet'
+    elif chpl_env.name == '  CHPL_GASNET_VERSION':
+        return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_LIBFABRIC':
+        return comm == 'ofi'
+    elif chpl_env.name == '  CHPL_COMM_OFI_OOB':
         return comm == 'ofi'
     elif chpl_env.name == '  CHPL_NETWORK_ATOMICS':
         return comm != 'none'
@@ -359,6 +373,22 @@ def _filter_content(chpl_env, contents=None):
     return chpl_env.content.intersection(contents)
 
 
+"""Quote and/or escape spaces and [some] special symbols in 'value',
+for use in a shell.
+"""
+def forShell(value):
+    # For simplicity, just wrap 'value' in single quotes, when needed.
+    # TODO: also handle single quotes occurring in 'value'.
+    # needEscapingRE is the RE that has the following symbols within []:
+    # \ " SPACE \t \n \r \f \v ~ ` # $ & * | ; " < > ? ! ( ) [ ] { }
+    needEscapingRE = "[\\\"" + \
+      r" \t\n\r\f\v\~\`\#\$\&\*\|\;\"\<\>\?\!\(\)\[\]\{\}]"
+    if re.search(needEscapingRE, value):
+        return "'" + value + "'"
+    else:
+        return value
+
+
 """Return string to be printed for a given variable and print_format
 Requires a print_format argument
 """
@@ -380,6 +410,10 @@ def _print_var(key, value, print_format=None, shortname=None):
         else:
             ret = "{0}".format(value)
         return ret + '/'
+    elif print_format == 'bash':
+        return "export {0}={1}\n".format(key_stripped, forShell(value))
+    elif print_format == 'csh':
+        return "setenv {0} {1}\n".format(key_stripped, forShell(value))
     else:
         raise ValueError("Invalid format '{0}'".format(print_format))
 
@@ -441,8 +475,6 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
                 value += '-debug'
             elif env.name == 'CHPL_TASKS' and chpl_tasks_debug.get() == 'debug':
                 value += '-debug'
-        if env.name == 'CHPL_LOCALE_MODEL' and value == 'numa' and print_format == 'pretty':
-                value += ' (deprecated)'
         ret.append(print_var(env.name, value, shortname=env.shortname))
 
     # Handle special formatting case for --path
@@ -490,6 +522,11 @@ def parse_args():
     parser.add_option('--make',   action='store_const', dest='format', const='make')
     parser.add_option('--cmake',  action='store_const', dest='format', const='cmake')
     parser.add_option('--path',   action='store_const', dest='format', const='path')
+    parser.add_option('--bash',   action='store_const', dest='format', const='bash')
+    parser.add_option('--csh',    action='store_const', dest='format', const='csh')
+
+    #[misc]
+    parser.add_option('--ignore-errors', action='store_true', dest='ignore_errors')
 
     #[hidden]
     parser.add_option('--unit-tests', action='store_true', dest='do_unit_tests')
@@ -534,6 +571,9 @@ def main():
     if options.format == 'path' and 'internal' in contents:
         stdout.write('--path and --internal are incompatible flags\n')
         exit(1)
+
+    if options.ignore_errors:
+        utils.ignore_errors = True
 
     # Populate ENV_VALS
     compute_all_values()

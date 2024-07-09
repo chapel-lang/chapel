@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -808,7 +808,7 @@ static void testMultiAttributesAndPragma(Parser* parser) {
   ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("testAttributeOnClass.chpl",
                                          R""""(
-                                          pragma "no doc"
+                                          pragma "do not RVF"
                                           @attribute(true)
                                           @attribute1()
                                           @attribute2('words')
@@ -832,7 +832,7 @@ static void testMultiAttributesAndPragma(Parser* parser) {
   auto attr2 = attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute2"));
   auto attr3 = attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute3"));
   auto attr4 = attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute4"));
-  assert(attrGrp->hasPragma(PragmaTag::PRAGMA_NO_DOC));
+  assert(attrGrp->hasPragma(PragmaTag::PRAGMA_NO_RVF));
   assert(attr0);
   assert(attr1);
   assert(attr2);
@@ -1123,6 +1123,184 @@ static void testAttributeMixedNamedArgs(Parser* parser) {
   assert(attr1->actual(2)->isIntLiteral());
 }
 
+static void testAttributeOnLoop(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto program = R""""(
+    @myAttribute
+    proc foo(A, ref sum) {
+      @myLoopAttribute("some arg here")
+      for i in A.domain {
+        sum += A[i];
+      }
+      @myLoopAttribute("some arg here")
+      for i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      // comment in the way
+      for i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      foreach i in A.domain {
+        sum += A[i];
+      }
+      @myLoopAttribute("some arg here")
+      foreach i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      // comment in the way
+      foreach i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      forall i in A.domain {
+        sum += A[i];
+      }
+      @myLoopAttribute("some arg here")
+      forall i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      // comment in the way
+      forall i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      coforall i in A.domain {
+        sum += A[i];
+      }
+      @myLoopAttribute("some arg here")
+      coforall i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      // comment in the way
+      coforall i in A.domain {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      while true {
+        sum += A[A.domain.low];
+      }
+      @myLoopAttribute("some arg here")
+      while true {
+        const ref a = A[A.domain.low];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      // comment in the way
+      while true {
+        const ref a = A[A.domain.low];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      do {
+        sum += A[A.domain.low];
+      } while false;
+      @myLoopAttribute("some arg here")
+      do {
+        const ref a = A[A.domain.low];
+        sum += a;
+      } while false;
+      @myLoopAttribute("some arg here")
+      // comment in the way
+      do {
+        const ref a = A[A.domain.low];
+        sum += a;
+      } while false;
+      @myLoopAttribute("some arg here")
+      [i in A.domain] {
+        sum += A[i];
+      }
+      @myLoopAttribute("some arg here")
+      [i in A.domain] {
+        const ref a = A[i];
+        sum += a;
+      }
+      @myLoopAttribute("some arg here")
+      // comment in the way
+      [i in A.domain] {
+        const ref a = A[i];
+        sum += a;
+      }
+    }
+  )"""";
+
+  auto parseResult = parseStringAndReportErrors(parser, "testAttributeOnLoop.chpl", program);
+  assert(guard.realizeErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto f = mod->stmt(0)->toFunction();
+  assert(f);
+  // 7 kinds of loops, 3 for each kind plus 1 comment
+  assert(f->numStmts() == (7*(3+1)));
+  for(auto s: f->stmts()) {
+    assert(s);
+    assert(s->isLoop() || s->isComment());
+    if(s->isLoop()) {
+      auto attr = s->attributeGroup();
+      assert(attr->numAttributes() == 1);
+      auto attr1 = attr->getAttributeNamed(UniqueString::get(parser->context(), "myLoopAttribute"));
+      assert(attr1);
+    }
+  }
+}
+
+static void testAttributeAndNoAttributeOnLoop(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto program = R""""(
+    proc foo(A, ref sum) {
+      @loopAttr()
+      foreach i in A.domain {
+        sum += A[i];
+      }
+    }
+    proc bar(A, ref sum) {
+      for i in A.domain {
+        sum += A[i];
+      }
+    }
+  )"""";
+
+  auto parseResult = parseStringAndReportErrors(parser, "testAttributeAndNoAttributeOnLoop.chpl", program);
+  assert(guard.realizeErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 2);
+
+  auto foo = mod->stmt(0)->toFunction();
+  assert(foo);
+  auto bar = mod->stmt(1)->toFunction();
+  assert(bar);
+
+  assert(foo->numStmts() == 1);
+  assert(bar->numStmts() == 1);
+
+  auto fooLoop = foo->stmt(0)->toForeach();
+  assert(fooLoop);
+  auto barLoop = bar->stmt(0)->toFor();
+  assert(barLoop);
+
+  // bar should have no attributes
+  assert(!barLoop->attributeGroup());
+
+  auto loopAttr = fooLoop->attributeGroup();
+  assert(loopAttr);
+  assert(loopAttr->getAttributeNamed(UniqueString::get(parser->context(), "loopAttr")));
+}
+
+
 /* a test of the parser's ability to parse a proc with an attribute that has
    3 named arguments
 */
@@ -1133,7 +1311,7 @@ static void testAttribute3NamedArgs(Parser* parser) {
     proc foo() { }
   )"""";
 
-  auto parseResult = parseStringAndReportErrors(parser, "test9.chpl", program);
+  auto parseResult = parseStringAndReportErrors(parser, "testAttribute3NamedArgs.chpl", program);
   assert(guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -1155,6 +1333,30 @@ static void testAttribute3NamedArgs(Parser* parser) {
   assert(attr1->isNamedActual(2));
   assert(attr1->actualName(2) == UniqueString::get(parser->context(), "issue"));
   assert(attr1->actual(2)->isIntLiteral());
+}
+
+/* a test of the pragma chpldoc ignore chpl prefix*/
+static void testPragmaChpldocIgnoreChplPrefix(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto program = R""""(
+    module M {
+      pragma "chpldoc ignore chpl prefix"
+      proc chpl_foo() { }
+    }
+  )"""";
+
+  auto parseResult = parseStringAndReportErrors(parser, "testPragmaChpldocIgnoreChplPrefix.chpl", program);
+
+  auto mod = parseResult.singleModule();
+  assert(guard.numErrors()==0);
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto p = mod->stmt(0)->toFunction();
+  assert(p);
+  auto attr = p->attributeGroup();
+  assert(attr);
+  assert(attr->numAttributes() == 0);
+  assert(attr->hasPragma(PragmaTag::PRAGMA_CHPLDOC_IGNORE_CHPL_PREFIX));
 }
 
 int main() {
@@ -1223,6 +1425,9 @@ int main() {
   testAttributeNamedArgs(p);
   testAttributeMixedNamedArgs(p);
   testAttribute3NamedArgs(p);
+  testAttributeOnLoop(p);
+  testAttributeAndNoAttributeOnLoop(p);
+  testPragmaChpldocIgnoreChplPrefix(p);
 
   return 0;
 }

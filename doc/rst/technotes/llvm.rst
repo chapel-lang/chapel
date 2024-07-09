@@ -62,6 +62,39 @@ files:
  * ``chpl__module.bc`` is the version that will be linked
  * ``chpl__module-nopt.bc`` is the generated code without optimizations applied.
 
+Inspecting Individual LLVM Passes
+---------------------------------
+
+When debugging LLVM optimizations, it can be useful to inspect what passes have
+run and what they changed. The Chapel compiler supports the flag
+``--llvm-print-passes``, which will print all the LLVM passes that will be run.
+These pass names are printed as a pipeline, so the output can be fed into
+something like ``opt --passes='...'``.
+
+This information can be combined with dumping LLVM IR, so that developers can
+focus on the LLVM IR level transformations without needing to worry about the
+frontend. The following flags are very useful for printing and manipulating
+LLVM IR. All should be passed as ``--mllvm <flag>``, for example
+``--mllvm --print-after-all``.
+
+ * ``--print-before=<PASSES>``
+    * Enables printing the LLVM IR before each pass.
+    * Takes a comma separated list of LLVM passes.
+ * ``--print-before-all``
+    * Enables printing the LLVM IR before every pass.
+ * ``--print-after=<PASSES>``
+    * Enables printing the LLVM IR after each pass.
+    * Takes a comma separated list of LLVM passes.
+ * ``--print-after-all``
+    * Enables printing the LLVM IR after every pass.
+ * ``--print-module-scope``
+    * When printing LLVM IR, always print the module level scope.
+    * This flag generally allows the output to be passed to ``opt`` separately
+      from Chapel.
+ * ``--filter-print-funcs=<FUNCTIONS>``
+    * When printing LLVM IR, only print the IR for the listed functions
+    * Takes a comma separated list of LLVM IR function names.
+
 --------------------
 Optimization Options
 --------------------
@@ -137,3 +170,37 @@ After the usual LLVM optimization passes run, two Chapel LLVM passes run:
 
 
 .. _LLVM-based Communication Optimizations for PGAS Programs: http://ahayashi.blogs.rice.edu/files/2013/07/Chapel_LLVM_camera_ready-q6usv4.pdf
+
+-----------------------------
+Inspecting LLVM Optimizations
+-----------------------------
+
+It may be useful to determine if specific LLVM optimizations ran and what the
+results were. LLVM remarks allow optimization passes to report what happened.
+
+To request optimization remarks, use the experimental ``--llvm-remarks`` and
+``--llvm-remarks-function`` flags.
+
+ * ``--llvm-remarks`` accepts a regular expression which matches and filters
+   optimization pass names.
+
+   * ``'.''`` -- shows remarks for all optimization passes
+   * ``inline`` -- shows remarks for any optimization pass which matches
+     '``inline``'
+   * ``(slp|loop)-vectorize`` -- shows remarks for any optimization pass which
+     matches '``slp-vectorize``' or '``loop-vectorize``'
+
+ * ``--llvm-remarks-function`` accepts a comma-separated list of function names
+   to show. Not passing this flag will show all functions
+
+These flags are also affected by if ``-g`` is set or not and whether
+``CHPL_DEVELOPER`` / ``--[no]-devel`` is set or not. Without ``-g``, the
+ability of LLVM to map remarks back to Chapel source code is limited. The
+compiler makes a best effort attempt to get Chapel source code information. If
+the compiler is run in developer mode and no function filters are set, it will
+output remarks for all code including standard and internal modules. Otherwise
+remarks will be limited to user modules only.
+
+
+.. note::
+   Introducing debug symbols with ``-g`` or changing the state of ``CHPL_DEVELOPER`` may change what optimizations can be done.

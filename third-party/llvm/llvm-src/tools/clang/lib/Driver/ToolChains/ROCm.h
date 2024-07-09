@@ -15,9 +15,9 @@
 #include "clang/Driver/Options.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringMap.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/Option/ArgList.h"
 #include "llvm/Support/VersionTuple.h"
+#include "llvm/TargetParser/Triple.h"
 
 namespace clang {
 namespace driver {
@@ -77,6 +77,9 @@ private:
   const Driver &D;
   bool HasHIPRuntime = false;
   bool HasDeviceLibrary = false;
+  bool HasHIPStdParLibrary = false;
+  bool HasRocThrustLibrary = false;
+  bool HasRocPrimLibrary = false;
 
   // Default version if not detected or specified.
   const unsigned DefaultVersionMajor = 3;
@@ -96,6 +99,13 @@ private:
   std::vector<std::string> RocmDeviceLibPathArg;
   // HIP runtime path specified by --hip-path.
   StringRef HIPPathArg;
+  // HIP Standard Parallel Algorithm acceleration library specified by
+  // --hipstdpar-path
+  StringRef HIPStdParPathArg;
+  // rocThrust algorithm library specified by --hipstdpar-thrust-path
+  StringRef HIPRocThrustPathArg;
+  // rocPrim algorithm library specified by --hipstdpar-prim-path
+  StringRef HIPRocPrimPathArg;
   // HIP version specified by --hip-version.
   StringRef HIPVersionArg;
   // Wheter -nogpulib is specified.
@@ -107,6 +117,7 @@ private:
   SmallString<0> LibPath;
   SmallString<0> LibDevicePath;
   SmallString<0> IncludePath;
+  SmallString<0> SharePath;
   llvm::StringMap<std::string> LibDeviceMap;
 
   // Libraries that are always linked.
@@ -178,6 +189,9 @@ public:
 
   /// Check whether we detected a valid ROCm device library.
   bool hasDeviceLibrary() const { return HasDeviceLibrary; }
+
+  /// Check whether we detected a valid HIP STDPAR Acceleration library.
+  bool hasHIPStdParLibrary() const { return HasHIPStdParLibrary; }
 
   /// Print information about the detected ROCm installation.
   void print(raw_ostream &OS) const;
@@ -251,8 +265,11 @@ public:
   }
 
   /// Get libdevice file for given architecture
-  std::string getLibDeviceFile(StringRef Gpu) const {
-    return LibDeviceMap.lookup(Gpu);
+  StringRef getLibDeviceFile(StringRef Gpu) const {
+    auto Loc = LibDeviceMap.find(Gpu);
+    if (Loc == LibDeviceMap.end())
+      return "";
+    return Loc->second;
   }
 
   void AddHIPIncludeArgs(const llvm::opt::ArgList &DriverArgs,
@@ -262,7 +279,7 @@ public:
   void detectHIPRuntime();
 
   /// Get the values for --rocm-device-lib-path arguments
-  std::vector<std::string> getRocmDeviceLibPathArg() const {
+  ArrayRef<std::string> getRocmDeviceLibPathArg() const {
     return RocmDeviceLibPathArg;
   }
 
@@ -272,7 +289,7 @@ public:
   /// Get the value for --hip-version argument
   StringRef getHIPVersionArg() const { return HIPVersionArg; }
 
-  std::string getHIPVersion() const { return DetectedVersion; }
+  StringRef getHIPVersion() const { return DetectedVersion; }
 };
 
 } // end namespace driver

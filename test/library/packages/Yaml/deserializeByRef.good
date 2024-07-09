@@ -1,0 +1,62 @@
+===== writing: =====
+[(x = 1, b = (t = (11, 1.1))), (x = 2, b = (t = (22, 2.2))), (x = 3, b = (t = (33, 3.3)))]
+--------------------
+- !A
+  x: 1
+  b: !B
+    t:
+    - 11
+    - 1.1
+- !A
+  x: 2
+  b: !B
+    t:
+    - 22
+    - 2.2
+- !A
+  x: 3
+  b: !B
+    t:
+    - 33
+    - 3.3
+
+====================
+IN myList.deserialize
+IN A.deserialize
+IN B.deserialize
+IN A.deserialize
+IN B.deserialize
+IN A.deserialize
+IN B.deserialize
+SUCCESS: myList
+===== writing: =====
+{1: (x = 1, b = (t = (11, 1.1))), 2: (x = 2, b = (t = (22, 2.2))), 3: (x = 3, b = (t = (33, 3.3)))}
+--------------------
+1: !A
+  x: 1
+  b: !B
+    t:
+    - 11
+    - 1.1
+2: !A
+  x: 2
+  b: !B
+    t:
+    - 22
+    - 2.2
+3: !A
+  x: 3
+  b: !B
+    t:
+    - 33
+    - 3.3
+
+====================
+IN myMap.deserialize
+IN A.deserialize
+IN B.deserialize
+IN A.deserialize
+IN B.deserialize
+IN A.deserialize
+IN B.deserialize
+SUCCESS: myMap

@@ -1,10 +1,10 @@
 record R {
   param stridable: bool = false;
-  var str: if stridable then int else void;
+  var str: if stridable then int else nothing;
 
-  proc init(param stridable) where !stridable: R {
+  proc init(param stridable) {
     this.stridable = stridable;
-    super.init();
+    init this;
     if stridable then
       str = 1;
   }

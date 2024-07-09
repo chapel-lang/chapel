@@ -1,15 +1,15 @@
 var A: [1..9, 1..9] real;
 var B: [1..9] real;
 
-proc assignViaZip(X, Y) {
+proc assignViaZip(ref X, Y) {
   forall (x,y) in zip(X,Y) do
     x = y;
 }
 
-forall (i,j) in A.domain do
+forall (i,j) in A.domain with (ref A) do
   A[i,j] = i + j/10.0;
 
-forall i in B.domain do
+forall i in B.domain with (ref B) do
   B[i] = i/10.0;
 
 writeln(A, "\n");
@@ -27,10 +27,10 @@ assignViaZip(A[1..3, 2], B[4..6]);
 writeln(A, "\n");
 
 
-forall (i,j) in A.domain do
+forall (i,j) in A.domain with (ref A) do
   A[i,j] = i + j/10.0;
 
-forall i in B.domain do
+forall i in B.domain with (ref B) do
   B[i] = i/10.0;
 
 writeln(A, "\n");

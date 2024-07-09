@@ -1022,9 +1022,9 @@ multiclass T2I_bin_ii12rs<bits<3> op23_21, string opc, SDNode opnode,
 /// T2I_adde_sube_irs - Defines a set of (op reg, {so_imm|r|so_reg}) patterns
 /// for a binary operation that produces a value and use the carry
 /// bit. It's not predicable.
-let Defs = [CPSR], Uses = [CPSR] in {
 multiclass T2I_adde_sube_irs<bits<4> opcod, string opc, SDNode opnode,
-                             bit Commutable = 0> {
+                             bit Commutable = 0, bit PostISelHook = 0> {
+  let Defs = [CPSR], Uses = [CPSR], hasPostISelHook = PostISelHook in {
    // shifted imm
    def ri : T2sTwoRegImm<(outs rGPR:$Rd), (ins rGPR:$Rn, t2_so_imm:$imm),
                  IIC_iALUi, opc, "\t$Rd, $Rn, $imm",
@@ -1058,7 +1058,26 @@ multiclass T2I_adde_sube_irs<bits<4> opcod, string opc, SDNode opnode,
      let Inst{26-25} = 0b01;
      let Inst{24-21} = opcod;
    }
-}
+  }
+  // Shortened forms
+  def : t2InstAlias<!strconcat(opc, "${s}${p}", ".w $Rdn, $imm"),
+     (!cast<Instruction>(NAME#"ri") rGPR:$Rdn, rGPR:$Rdn, t2_so_imm:$imm, pred:$p,
+                                    cc_out:$s)>;
+  def : t2InstAlias<!strconcat(opc, "${s}${p}", ".w $Rdn, $Rm"),
+     (!cast<Instruction>(NAME#"rr") rGPR:$Rdn, rGPR:$Rdn, rGPR:$Rm, pred:$p,
+                                    cc_out:$s)>;
+  def : t2InstAlias<!strconcat(opc, "${s}${p}", ".w $Rdn, $ShiftedRm"),
+     (!cast<Instruction>(NAME#"rs") rGPR:$Rdn, rGPR:$Rdn, t2_so_reg:$ShiftedRm, pred:$p,
+                                    cc_out:$s)>;
+  def : t2InstAlias<!strconcat(opc, "${s}${p}", "$Rdn, $imm"),
+     (!cast<Instruction>(NAME#"ri") rGPR:$Rdn, rGPR:$Rdn, t2_so_imm:$imm, pred:$p,
+                                    cc_out:$s)>;
+  def : t2InstAlias<!strconcat(opc, "${s}${p}", "$Rdn, $Rm"),
+     (!cast<Instruction>(NAME#"rr") rGPR:$Rdn, rGPR:$Rdn, rGPR:$Rm, pred:$p,
+                                    cc_out:$s)>;
+  def : t2InstAlias<!strconcat(opc, "${s}${p}", "$Rdn, $ShiftedRm"),
+     (!cast<Instruction>(NAME#"rs") rGPR:$Rdn, rGPR:$Rdn, t2_so_reg:$ShiftedRm, pred:$p,
+                                    cc_out:$s)>;
 }
 
 /// T2I_sh_ir - Defines a set of (op reg, {so_imm|r}) patterns for a shift /
@@ -1577,6 +1596,46 @@ def t2LDR_PRE_imm : t2AsmPseudo<"ldr${p}.w $Rt, $addr!",
 def t2LDR_POST_imm : t2AsmPseudo<"ldr${p}.w $Rt, $Rn, $imm",
                          (ins GPR:$Rt, addr_offset_none:$Rn, t2am_imm8_offset:$imm, pred:$p)>;
 
+// A7.7.46 LDRB (immediate) T3
+// .w suffixes; Constraints can't be used on t2InstAlias to describe
+// "$Rn =  $Rn_wb" on POST or "$addr.base = $Rn_wb" on PRE.
+def t2LDRB_OFFSET_imm : t2AsmPseudo<"ldrb${p}.w $Rt, $addr",
+                         (ins GPR:$Rt, t2addrmode_negimm8:$addr, pred:$p)>;
+def t2LDRB_PRE_imm : t2AsmPseudo<"ldrb${p}.w $Rt, $addr!",
+                         (ins GPR:$Rt, t2addrmode_imm8_pre:$addr, pred:$p)>;
+def t2LDRB_POST_imm : t2AsmPseudo<"ldrb${p}.w $Rt, $Rn, $imm",
+                         (ins GPR:$Rt, addr_offset_none:$Rn, t2am_imm8_offset:$imm, pred:$p)>;
+
+// A7.7.55 LDRH (immediate) T3
+// .w suffixes; Constraints can't be used on t2InstAlias to describe
+// "$Rn =  $Rn_wb" on POST or "$addr.base = $Rn_wb" on PRE.
+def t2LDRH_OFFSET_imm : t2AsmPseudo<"ldrh${p}.w $Rt, $addr",
+                         (ins GPR:$Rt, t2addrmode_negimm8:$addr, pred:$p)>;
+def t2LDRH_PRE_imm : t2AsmPseudo<"ldrh${p}.w $Rt, $addr!",
+                         (ins GPR:$Rt, t2addrmode_imm8_pre:$addr, pred:$p)>;
+def t2LDRH_POST_imm : t2AsmPseudo<"ldrh${p}.w $Rt, $Rn, $imm",
+                         (ins GPR:$Rt, addr_offset_none:$Rn, t2am_imm8_offset:$imm, pred:$p)>;
+
+// A7.7.59 LDRSB (immediate) T2
+// .w suffixes; Constraints can't be used on t2InstAlias to describe
+// "$Rn =  $Rn_wb" on POST or "$addr.base = $Rn_wb" on PRE.
+def t2LDRSB_OFFSET_imm : t2AsmPseudo<"ldrsb${p}.w $Rt, $addr",
+                         (ins GPR:$Rt, t2addrmode_negimm8:$addr, pred:$p)>;
+def t2LDRSB_PRE_imm : t2AsmPseudo<"ldrsb${p}.w $Rt, $addr!",
+                         (ins GPR:$Rt, t2addrmode_imm8_pre:$addr, pred:$p)>;
+def t2LDRSB_POST_imm : t2AsmPseudo<"ldrsb${p}.w $Rt, $Rn, $imm",
+                         (ins GPR:$Rt, addr_offset_none:$Rn, t2am_imm8_offset:$imm, pred:$p)>;
+
+// A7.7.63 LDRSH (immediate) T2
+// .w suffixes; Constraints can't be used on t2InstAlias to describe
+// "$Rn =  $Rn_wb" on POST or "$addr.base = $Rn_wb" on PRE.
+def t2LDRSH_OFFSET_imm : t2AsmPseudo<"ldrsh${p}.w $Rt, $addr",
+                         (ins GPR:$Rt, t2addrmode_negimm8:$addr, pred:$p)>;
+def t2LDRSH_PRE_imm : t2AsmPseudo<"ldrsh${p}.w $Rt, $addr!",
+                         (ins GPR:$Rt, t2addrmode_imm8_pre:$addr, pred:$p)>;
+def t2LDRSH_POST_imm : t2AsmPseudo<"ldrsh${p}.w $Rt, $Rn, $imm",
+                         (ins GPR:$Rt, addr_offset_none:$Rn, t2am_imm8_offset:$imm, pred:$p)>;
+
 // LDRT, LDRBT, LDRHT, LDRSBT, LDRSHT all have offset mode (PUW=0b110).
 // Ref: A8.6.57 LDR (immediate, Thumb) Encoding T4
 class T2IldT<bit signed, bits<2> type, string opc, InstrItinClass ii>
@@ -1741,6 +1800,26 @@ def t2STRH_preidx: t2PseudoInst<(outs GPRnopc:$Rn_wb),
 def t2STR_PRE_imm : t2AsmPseudo<"str${p}.w $Rt, $addr!",
   (ins GPR:$Rt, t2addrmode_imm8_pre:$addr, pred:$p)>;
 def t2STR_POST_imm : t2AsmPseudo<"str${p}.w $Rt, $Rn, $imm",
+  (ins GPR:$Rt, addr_offset_none:$Rn, t2am_imm8_offset:$imm, pred:$p)>;
+
+// A7.7.163 STRB (immediate) T3
+// .w suffixes; Constraints can't be used on t2InstAlias to describe
+// "$Rn =  $Rn_wb" on POST or "$addr.base = $Rn_wb" on PRE.
+def t2STRB_OFFSET_imm : t2AsmPseudo<"strb${p}.w $Rt, $addr",
+  (ins GPR:$Rt, t2addrmode_negimm8:$addr, pred:$p)>;
+def t2STRB_PRE_imm : t2AsmPseudo<"strb${p}.w $Rt, $addr!",
+  (ins GPR:$Rt, t2addrmode_imm8_pre:$addr, pred:$p)>;
+def t2STRB_POST_imm : t2AsmPseudo<"strb${p}.w $Rt, $Rn, $imm",
+  (ins GPR:$Rt, addr_offset_none:$Rn, t2am_imm8_offset:$imm, pred:$p)>;
+
+// A7.7.170 STRH (immediate) T3
+// .w suffixes; Constraints can't be used on t2InstAlias to describe
+// "$Rn =  $Rn_wb" on POST or "$addr.base = $Rn_wb" on PRE.
+def t2STRH_OFFSET_imm : t2AsmPseudo<"strh${p}.w $Rt, $addr",
+  (ins GPR:$Rt, t2addrmode_negimm8:$addr, pred:$p)>;
+def t2STRH_PRE_imm : t2AsmPseudo<"strh${p}.w $Rt, $addr!",
+  (ins GPR:$Rt, t2addrmode_imm8_pre:$addr, pred:$p)>;
+def t2STRH_POST_imm : t2AsmPseudo<"strh${p}.w $Rt, $Rn, $imm",
   (ins GPR:$Rt, addr_offset_none:$Rn, t2am_imm8_offset:$imm, pred:$p)>;
 
 // STRT, STRBT, STRHT all have offset mode (PUW=0b110) and are for disassembly
@@ -2365,15 +2444,17 @@ def : T2Pat<(ARMsubs GPRnopc:$Rn, rGPR:$Rm), (t2SUBSrr $Rn, $Rm)>;
 def : T2Pat<(ARMsubs GPRnopc:$Rn, t2_so_reg:$ShiftedRm),
             (t2SUBSrs $Rn, t2_so_reg:$ShiftedRm)>;
 
-let hasPostISelHook = 1 in {
-defm t2ADC  : T2I_adde_sube_irs<0b1010, "adc", ARMadde, 1>;
-defm t2SBC  : T2I_adde_sube_irs<0b1011, "sbc", ARMsube>;
-}
+defm t2ADC  : T2I_adde_sube_irs<0b1010, "adc", ARMadde, 1, 1>;
+defm t2SBC  : T2I_adde_sube_irs<0b1011, "sbc", ARMsube, 0, 1>;
 
 def : t2InstSubst<"adc${s}${p} $rd, $rn, $imm",
                  (t2SBCri rGPR:$rd, rGPR:$rn, t2_so_imm_not:$imm, pred:$p, s_cc_out:$s)>;
+def : t2InstSubst<"adc${s}${p} $rdn, $imm",
+                 (t2SBCri rGPR:$rdn, rGPR:$rdn, t2_so_imm_not:$imm, pred:$p, s_cc_out:$s)>;
 def : t2InstSubst<"sbc${s}${p} $rd, $rn, $imm",
                  (t2ADCri rGPR:$rd, rGPR:$rn, t2_so_imm_not:$imm, pred:$p, s_cc_out:$s)>;
+def : t2InstSubst<"sbc${s}${p} $rdn, $imm",
+                 (t2ADCri rGPR:$rdn, rGPR:$rdn, t2_so_imm_not:$imm, pred:$p, s_cc_out:$s)>;
 
 def : t2InstSubst<"add${s}${p}.w $rd, $rn, $imm",
                  (t2SUBri rGPR:$rd, GPRnopc:$rn, t2_so_imm_neg:$imm, pred:$p, s_cc_out:$s)>;
@@ -2726,10 +2807,10 @@ def t2RRX : T2sTwoReg<(outs rGPR:$Rd), (ins rGPR:$Rm), IIC_iMOVsi,
 }
 
 let isCodeGenOnly = 1, Defs = [CPSR] in {
-def t2MOVsrl_flag : T2TwoRegShiftImm<
+def t2MOVsrl_glue : T2TwoRegShiftImm<
                         (outs rGPR:$Rd), (ins rGPR:$Rm), IIC_iMOVsi,
                         "lsrs", ".w\t$Rd, $Rm, #1",
-                        [(set rGPR:$Rd, (ARMsrl_flag rGPR:$Rm))]>,
+                        [(set rGPR:$Rd, (ARMsrl_glue rGPR:$Rm))]>,
                         Sched<[WriteALU]> {
   let Inst{31-27} = 0b11101;
   let Inst{26-25} = 0b01;
@@ -2741,10 +2822,10 @@ def t2MOVsrl_flag : T2TwoRegShiftImm<
   let Inst{14-12} = 0b000;
   let Inst{7-6} = 0b01;
 }
-def t2MOVsra_flag : T2TwoRegShiftImm<
+def t2MOVsra_glue : T2TwoRegShiftImm<
                         (outs rGPR:$Rd), (ins rGPR:$Rm), IIC_iMOVsi,
                         "asrs", ".w\t$Rd, $Rm, #1",
-                        [(set rGPR:$Rd, (ARMsra_flag rGPR:$Rm))]>,
+                        [(set rGPR:$Rd, (ARMsra_glue rGPR:$Rm))]>,
                         Sched<[WriteALU]> {
   let Inst{31-27} = 0b11101;
   let Inst{26-25} = 0b01;
@@ -3367,7 +3448,7 @@ class T2I_crc32<bit C, bits<2> sz, string suffix, SDPatternOperator builtin>
   : T2ThreeRegNoP<(outs rGPR:$Rd), (ins rGPR:$Rn, rGPR:$Rm), NoItinerary,
                !strconcat("crc32", suffix, "\t$Rd, $Rn, $Rm"),
                [(set rGPR:$Rd, (builtin rGPR:$Rn, rGPR:$Rm))]>,
-               Requires<[IsThumb2, HasV8, HasCRC]> {
+               Requires<[IsThumb2, HasCRC]> {
   let Inst{31-27} = 0b11111;
   let Inst{26-21} = 0b010110;
   let Inst{20}    = C;
@@ -3896,7 +3977,7 @@ def t2TBH_JT : t2PseudoInst<(outs),
         (ins GPR:$base, GPR:$index, i32imm:$jt, i32imm:$pclbl), 0, IIC_Br, []>,
         Sched<[WriteBr]>;
 
-def t2TBB : T2I<(outs), (ins addrmode_tbb:$addr), IIC_Br,
+def t2TBB : T2I<(outs), (ins (addrmode_tbb $Rn, $Rm):$addr), IIC_Br,
                     "tbb", "\t$addr", []>, Sched<[WriteBrTbl]> {
   bits<4> Rn;
   bits<4> Rm;
@@ -3909,7 +3990,7 @@ def t2TBB : T2I<(outs), (ins addrmode_tbb:$addr), IIC_Br,
   let DecoderMethod = "DecodeThumbTableBranch";
 }
 
-def t2TBH : T2I<(outs), (ins addrmode_tbh:$addr), IIC_Br,
+def t2TBH : T2I<(outs), (ins (addrmode_tbh $Rn, $Rm):$addr), IIC_Br,
                    "tbh", "\t$addr", []>, Sched<[WriteBrTbl]> {
   bits<4> Rn;
   bits<4> Rm;
@@ -4089,6 +4170,10 @@ def : t2InstAlias<"bti$p", (t2HINT 15, pred:$p), 1>;
 def : t2InstAlias<"pac$p r12,lr,sp", (t2HINT 29, pred:$p), 1>;
 def : t2InstAlias<"aut$p r12,lr,sp", (t2HINT 45, pred:$p), 1>;
 
+// Clear BHB instruction
+def : InstAlias<"clrbhb$p", (t2HINT 22, pred:$p), 0>, Requires<[IsThumb2, HasV8]>;
+def : InstAlias<"clrbhb$p", (t2HINT 22, pred:$p), 1>, Requires<[IsThumb2, HasV8, HasCLRBHB]>;
+
 def t2DBG : T2I<(outs), (ins imm0_15:$opt), NoItinerary, "dbg", "\t$opt",
                 [(int_arm_dbg imm0_15:$opt)]> {
   bits<4> opt;
@@ -4189,7 +4274,7 @@ def t2RFEIA  : T2RFE<0b111010011001,
 let isReturn = 1, isBarrier = 1, isTerminator = 1, Defs = [PC] in
 def t2SUBS_PC_LR : T2I <(outs), (ins imm0_255:$imm), NoItinerary,
                         "subs", "\tpc, lr, $imm",
-                        [(ARMintretflag imm0_255:$imm)]>,
+                        [(ARMintretglue imm0_255:$imm)]>,
                    Requires<[IsThumb2,IsNotMClass]> {
   let Inst{31-8} = 0b111100111101111010001111;
 
@@ -4695,8 +4780,12 @@ def t2CDP2 : T2Cop<0b1111, (outs), (ins p_imm:$cop, imm0_15:$opc1,
 
 
 // Reading thread pointer from coprocessor register
+def : T2Pat<(ARMthread_pointer), (t2MRC 15, 0, 13, 0, 2)>,
+      Requires<[IsThumb2, IsReadTPTPIDRURW]>;
 def : T2Pat<(ARMthread_pointer), (t2MRC 15, 0, 13, 0, 3)>,
-      Requires<[IsThumb2, IsReadTPHard]>;
+      Requires<[IsThumb2, IsReadTPTPIDRURO]>;
+def : T2Pat<(ARMthread_pointer), (t2MRC 15, 0, 13, 0, 4)>,
+      Requires<[IsThumb2, IsReadTPTPIDRPRW]>;
 
 //===----------------------------------------------------------------------===//
 // ARMv8.1 Privilege Access Never extension
@@ -4804,23 +4893,23 @@ def : T2Pat<(atomic_load_32  t2addrmode_negimm8:$addr),
             (t2LDRi8    t2addrmode_negimm8:$addr)>;
 def : T2Pat<(atomic_load_32  t2addrmode_so_reg:$addr),
             (t2LDRs     t2addrmode_so_reg:$addr)>;
-def : T2Pat<(atomic_store_8  t2addrmode_imm12:$addr, GPR:$val),
+def : T2Pat<(atomic_store_8  GPR:$val, t2addrmode_imm12:$addr),
             (t2STRBi12  GPR:$val, t2addrmode_imm12:$addr)>;
-def : T2Pat<(atomic_store_8  t2addrmode_negimm8:$addr, GPR:$val),
+def : T2Pat<(atomic_store_8  GPR:$val, t2addrmode_negimm8:$addr),
             (t2STRBi8   GPR:$val, t2addrmode_negimm8:$addr)>;
-def : T2Pat<(atomic_store_8  t2addrmode_so_reg:$addr, GPR:$val),
+def : T2Pat<(atomic_store_8  GPR:$val, t2addrmode_so_reg:$addr),
             (t2STRBs    GPR:$val, t2addrmode_so_reg:$addr)>;
-def : T2Pat<(atomic_store_16 t2addrmode_imm12:$addr, GPR:$val),
+def : T2Pat<(atomic_store_16 GPR:$val, t2addrmode_imm12:$addr),
             (t2STRHi12  GPR:$val, t2addrmode_imm12:$addr)>;
-def : T2Pat<(atomic_store_16 t2addrmode_negimm8:$addr, GPR:$val),
+def : T2Pat<(atomic_store_16 GPR:$val, t2addrmode_negimm8:$addr),
             (t2STRHi8   GPR:$val, t2addrmode_negimm8:$addr)>;
-def : T2Pat<(atomic_store_16 t2addrmode_so_reg:$addr, GPR:$val),
+def : T2Pat<(atomic_store_16 GPR:$val, t2addrmode_so_reg:$addr),
             (t2STRHs    GPR:$val, t2addrmode_so_reg:$addr)>;
-def : T2Pat<(atomic_store_32 t2addrmode_imm12:$addr, GPR:$val),
+def : T2Pat<(atomic_store_32 GPR:$val,t2addrmode_imm12:$addr),
             (t2STRi12   GPR:$val, t2addrmode_imm12:$addr)>;
-def : T2Pat<(atomic_store_32 t2addrmode_negimm8:$addr, GPR:$val),
+def : T2Pat<(atomic_store_32 GPR:$val, t2addrmode_negimm8:$addr),
             (t2STRi8    GPR:$val, t2addrmode_negimm8:$addr)>;
-def : T2Pat<(atomic_store_32 t2addrmode_so_reg:$addr, GPR:$val),
+def : T2Pat<(atomic_store_32 GPR:$val, t2addrmode_so_reg:$addr),
             (t2STRs     GPR:$val, t2addrmode_so_reg:$addr)>;
 
 let AddedComplexity = 8, Predicates = [IsThumb, HasAcquireRelease, HasV7Clrex] in {
@@ -4842,6 +4931,11 @@ def : t2InstAlias<"adc${s}${p} $Rd, $Rn, $Rm",
                   (t2ADCrr rGPR:$Rd, rGPR:$Rn, rGPR:$Rm, pred:$p, cc_out:$s)>;
 def : t2InstAlias<"adc${s}${p} $Rd, $Rn, $ShiftedRm",
                   (t2ADCrs rGPR:$Rd, rGPR:$Rn, t2_so_reg:$ShiftedRm,
+                           pred:$p, cc_out:$s)>;
+def : t2InstAlias<"adc${s}${p} $Rdn, $Rm",
+                  (t2ADCrr rGPR:$Rdn, rGPR:$Rdn, rGPR:$Rm, pred:$p, cc_out:$s)>;
+def : t2InstAlias<"adc${s}${p} $Rdn, $ShiftedRm",
+                  (t2ADCrs rGPR:$Rdn, rGPR:$Rdn, t2_so_reg:$ShiftedRm,
                            pred:$p, cc_out:$s)>;
 
 // Aliases for SBC without the ".w" optional width specifier.
@@ -5617,6 +5711,10 @@ def t2CSINC : CS<"csinc", 0b1001>;
 def t2CSINV : CS<"csinv", 0b1010>;
 def t2CSNEG : CS<"csneg", 0b1011>;
 
+def ARMcsinc_su : PatFrag<(ops node:$lhs, node:$rhs, node:$cond),
+                          (ARMcsinc node:$lhs, node:$rhs, node:$cond), [{
+  return N->hasOneUse();
+}]>;
 
 let Predicates = [HasV8_1MMainline] in {
   multiclass CSPats<SDNode Node, Instruction Insn> {
@@ -5653,6 +5751,11 @@ let Predicates = [HasV8_1MMainline] in {
   defm : ModifiedV8_1CSEL<t2CSINC, (add rGPR:$fval, 1)>;
   defm : ModifiedV8_1CSEL<t2CSINV, (xor rGPR:$fval, -1)>;
   defm : ModifiedV8_1CSEL<t2CSNEG, (sub 0, rGPR:$fval)>;
+
+  def : T2Pat<(ARMcmov (topbitsallzero32:$Rn), (i32 1), cmovpred:$imm),
+              (t2CSINC $Rn, ZR, (inv_cond_XFORM imm:$imm))>;
+  def : T2Pat<(and (topbitsallzero32:$Rn), (ARMcsinc_su (i32 0), (i32 0), cmovpred:$imm)),
+              (t2CSEL ZR, $Rn, $imm)>;
 }
 
 // CS aliases.
@@ -5717,7 +5820,8 @@ let isBranch = 1, isTerminator = 1, isIndirectBranch = 1 in {
 
 
 class PACBTIHintSpaceInst<string asm, string ops, bits<8> imm>
-  : V8_1MI<(outs), (ins), AddrModeNone, NoItinerary, asm, ops, "", []> {
+  : Thumb2XI<(outs), (ins), AddrModeNone, 4, NoItinerary, !strconcat(asm, "\t", ops), "", []>,
+    Requires<[HasV7, IsMClass]> {
   let Inst{31-8} = 0b111100111010111110000000;
   let Inst{7-0}  = imm;
 

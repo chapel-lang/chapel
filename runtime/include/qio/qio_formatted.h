@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -476,6 +476,9 @@ qioerr qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, i
   return err;
 }
 
+// read as many UTF-8 characters as fit into maxBytes / maxCodepoints
+qioerr qio_channel_read_chars(const int threadsafe, qio_channel_t* restrict ch, char* restrict buf, ssize_t maxBytes, ssize_t maxCodepoints, ssize_t* readBytes, ssize_t* readCodepoints);
+
 // Return the number of bytes used in encoding chr,
 // or 0 if it's an invalid character.
 static inline
@@ -687,7 +690,7 @@ enum {
   QIO_CONV_ARG_TYPE_CHAR,
   QIO_CONV_ARG_TYPE_STRING,
   QIO_CONV_ARG_TYPE_BINARY_STRING,
-  QIO_CONV_ARG_TYPE_REPR,
+  QIO_CONV_ARG_TYPE_SERDE,
   QIO_CONV_ARG_TYPE_REGEX, // argument contains a regex
   QIO_CONV_ARG_TYPE_NONE_REGEX_LITERAL, // literal regex in string
   QIO_CONV_ARG_TYPE_NONE_LITERAL,

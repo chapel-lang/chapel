@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,6 +38,10 @@
 #include <string>
 #include <vector>
 
+#ifdef HAVE_LLVM
+namespace llvm { class Type; }
+#endif
+
 /*
   Things which must be changed if instance variables are added
   to Types:
@@ -71,6 +75,7 @@ public:
   GenRet         codegen()   override;
   bool           inTree()    override;
   QualifiedType  qualType()  override;
+  Type*          typeInfo()  override { return this; }
   void           verify()    override;
 
   virtual void           codegenDef();
@@ -123,6 +128,10 @@ public:
 
   // Only used for LLVM.
   std::map<std::string, int> GEPMap;
+#ifdef HAVE_LLVM
+  llvm::Type* getLLVMType();
+  int getLLVMAlignment();
+#endif
 
 protected:
   Type(AstTag astTag, Symbol* init_defaultVal);
@@ -504,9 +513,8 @@ class FunctionType final : public Type {
 
   // Intended for codegen.
   static const char* intentTagMnemonicMangled(IntentTag tag);
+  static const char* typeToStringMangled(Type* t);
   static const char* retTagMnemonicMangled(RetTag tag);
-
-
 };
 
 /************************************* | **************************************
@@ -521,7 +529,6 @@ class FunctionType final : public Type {
 
 // internal types
 TYPE_EXTERN Type*             dtAny;
-TYPE_EXTERN Type*             dtAnyBool;
 TYPE_EXTERN Type*             dtAnyComplex;
 TYPE_EXTERN Type*             dtAnyEnumerated;
 TYPE_EXTERN Type*             dtAnyImag;
@@ -532,6 +539,7 @@ TYPE_EXTERN Type*             dtIteratorRecord;
 TYPE_EXTERN Type*             dtIteratorClass;
 TYPE_EXTERN Type*             dtIntegral;
 TYPE_EXTERN Type*             dtNumeric;
+TYPE_EXTERN Type*             dtThunkRecord;
 
 TYPE_EXTERN PrimitiveType*    dtNil;
 TYPE_EXTERN PrimitiveType*    dtUnknown;
@@ -558,7 +566,6 @@ TYPE_EXTERN PrimitiveType*    dtSplitInitType;
 // Anything declared as PrimitiveType* can now also be declared as Type*
 // This change was made to allow dtComplex to be represented by a record.
 TYPE_EXTERN PrimitiveType*    dtBool;
-TYPE_EXTERN PrimitiveType*    dtBools[BOOL_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtUInt[INT_SIZE_NUM];
 TYPE_EXTERN PrimitiveType*    dtReal[FLOAT_SIZE_NUM];
@@ -569,6 +576,7 @@ TYPE_EXTERN PrimitiveType*    dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType*    dtSingleVarAuxFields;
 
 TYPE_EXTERN PrimitiveType*    dtStringC; // the type of a C string (unowned)
+// TODO: replace raw dtCVoidPtr with a well-known AggregateType for c_ptr(void)
 TYPE_EXTERN PrimitiveType*    dtCVoidPtr; // the type of a C void* (unowned)
 TYPE_EXTERN PrimitiveType*    dtCFnPtr;   // a C function pointer (unowned)
 
@@ -591,7 +599,12 @@ bool is_imag_type(Type*);
 bool is_complex_type(Type*);
 bool is_enum_type(Type*);
 bool isLegalParamType(Type*);
+// returns the width in bytes of a numeric type
 int  get_width(Type*);
+// returns the component width in bytes of a numeric type
+// like get_width but for complex types, returns get_width/2
+// since that is the width of the real or imaginary component.
+int  get_component_width(Type*);
 int  get_mantissa_width(Type*);
 int  get_exponent_width(Type*);
 bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
@@ -601,13 +614,18 @@ bool isUnmanagedClass(Type* t);
 bool isBorrowedClass(Type* t);
 bool isOwnedOrSharedOrBorrowed(Type* t);
 bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
+
 bool isBuiltinGenericClassType(Type* t); // 'unmanaged' 'borrowed' etc
+bool isBuiltinGenericType(Type* t); // 'integral' 'unmanaged' etc
+
 bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
 bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
+bool isCVoidPtr(Type* t); // includes both c_ptr(void) and raw_c_void_ptr
 bool isClassLikeOrNil(Type* t);
 bool isRecord(Type* t);
 bool isUserRecord(Type* t); // is it a record from the user viewpoint?
 bool isUnion(Type* t);
+bool isCPtrConstChar(Type* t); // replacement for c_string
 
 bool isReferenceType(const Type* t);
 
@@ -625,6 +643,11 @@ AggregateType* getManagedPtrManagerType(Type* t);
 bool isSyncType(const Type* t);
 bool isSingleType(const Type* t);
 bool isAtomicType(const Type* t);
+
+bool isOrContainsSyncType(Type* t, bool checkRefs = true);
+bool isOrContainsSingleType(Type* t, bool checkRefs = true);
+bool isOrContainsAtomicType(Type* t, bool checkRefs = true);
+
 bool isRefIterType(Type* t);
 
 bool isSubClass(Type* type, Type* baseType);
@@ -680,6 +703,7 @@ const Immediate& getDefaultImmediate(Type* t);
 #define UNION_ID_TYPE dtInt[INT_SIZE_64]
 #define SIZE_TYPE dtInt[INT_SIZE_64]
 #define NODE_ID_TYPE dtInt[INT_SIZE_32]
+#define SUBLOC_ID_TYPE dtInt[INT_SIZE_32]
 #define LOCALE_ID_TYPE dtLocaleID->typeInfo()
 
 #define is_arithmetic_type(t)                        \

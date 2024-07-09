@@ -18,7 +18,6 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/Bitfields.h"
 #include "llvm/ADT/MapVector.h"
-#include "llvm/ADT/None.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Twine.h"
@@ -38,13 +37,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <optional>
 
 namespace llvm {
 
 class APFloat;
 class APInt;
 class BasicBlock;
-class BlockAddress;
 class ConstantInt;
 class DataLayout;
 class StringRef;
@@ -107,9 +106,13 @@ public:
     return getType()->getAddressSpace();
   }
 
-  /// Get allocation size in bits. Returns None if size can't be determined,
-  /// e.g. in case of a VLA.
-  Optional<TypeSize> getAllocationSizeInBits(const DataLayout &DL) const;
+  /// Get allocation size in bytes. Returns std::nullopt if size can't be
+  /// determined, e.g. in case of a VLA.
+  std::optional<TypeSize> getAllocationSize(const DataLayout &DL) const;
+
+  /// Get allocation size in bits. Returns std::nullopt if size can't be
+  /// determined, e.g. in case of a VLA.
+  std::optional<TypeSize> getAllocationSizeInBits(const DataLayout &DL) const;
 
   /// Return the type that is being allocated by the instruction.
   Type *getAllocatedType() const { return AllocatedType; }
@@ -314,17 +317,25 @@ protected:
 public:
   StoreInst(Value *Val, Value *Ptr, Instruction *InsertBefore);
   StoreInst(Value *Val, Value *Ptr, BasicBlock *InsertAtEnd);
+  StoreInst(Value *Val, Value *Ptr, BasicBlock::iterator InsertBefore);
   StoreInst(Value *Val, Value *Ptr, bool isVolatile, Instruction *InsertBefore);
   StoreInst(Value *Val, Value *Ptr, bool isVolatile, BasicBlock *InsertAtEnd);
+  StoreInst(Value *Val, Value *Ptr, bool isVolatile,
+            BasicBlock::iterator InsertBefore);
   StoreInst(Value *Val, Value *Ptr, bool isVolatile, Align Align,
             Instruction *InsertBefore = nullptr);
   StoreInst(Value *Val, Value *Ptr, bool isVolatile, Align Align,
             BasicBlock *InsertAtEnd);
   StoreInst(Value *Val, Value *Ptr, bool isVolatile, Align Align,
+            BasicBlock::iterator InsertBefore);
+  StoreInst(Value *Val, Value *Ptr, bool isVolatile, Align Align,
             AtomicOrdering Order, SyncScope::ID SSID = SyncScope::System,
             Instruction *InsertBefore = nullptr);
   StoreInst(Value *Val, Value *Ptr, bool isVolatile, Align Align,
             AtomicOrdering Order, SyncScope::ID SSID, BasicBlock *InsertAtEnd);
+  StoreInst(Value *Val, Value *Ptr, bool isVolatile, Align Align,
+            AtomicOrdering Order, SyncScope::ID SSID,
+            BasicBlock::iterator InsertBefore);
 
   // allocate space for exactly two operands
   void *operator new(size_t S) { return User::operator new(S, 2); }
@@ -762,8 +773,16 @@ public:
     /// \p minnum matches the behavior of \p llvm.minnum.*.
     FMin,
 
+    /// Increment one up to a maximum value.
+    /// *p = (old u>= v) ? 0 : (old + 1)
+    UIncWrap,
+
+    /// Decrement one until a minimum value or zero.
+    /// *p = ((old == 0) || (old u> v)) ? v : (old - 1)
+    UDecWrap,
+
     FIRST_BINOP = Xchg,
-    LAST_BINOP = FMin,
+    LAST_BINOP = UDecWrap,
     BAD_BINOP
   };
 
@@ -775,7 +794,7 @@ private:
 
   template <unsigned Offset>
   using BinOpBitfieldElement =
-      typename Bitfield::Element<BinOp, Offset, 4, BinOp::LAST_BINOP>;
+      typename Bitfield::Element<BinOp, Offset, 5, BinOp::LAST_BINOP>;
 
 public:
   AtomicRMWInst(BinOp Operation, Value *Ptr, Value *Val, Align Alignment,
@@ -958,8 +977,6 @@ public:
                                    Instruction *InsertBefore = nullptr) {
     unsigned Values = 1 + unsigned(IdxList.size());
     assert(PointeeType && "Must specify element type");
-    assert(cast<PointerType>(Ptr->getType()->getScalarType())
-               ->isOpaqueOrPointeeTypeMatches(PointeeType));
     return new (Values) GetElementPtrInst(PointeeType, Ptr, IdxList, Values,
                                           NameStr, InsertBefore);
   }
@@ -970,8 +987,6 @@ public:
                                    BasicBlock *InsertAtEnd) {
     unsigned Values = 1 + unsigned(IdxList.size());
     assert(PointeeType && "Must specify element type");
-    assert(cast<PointerType>(Ptr->getType()->getScalarType())
-               ->isOpaqueOrPointeeTypeMatches(PointeeType));
     return new (Values) GetElementPtrInst(PointeeType, Ptr, IdxList, Values,
                                           NameStr, InsertAtEnd);
   }
@@ -1007,8 +1022,6 @@ public:
   void setResultElementType(Type *Ty) { ResultElementType = Ty; }
 
   Type *getResultElementType() const {
-    assert(cast<PointerType>(getType()->getScalarType())
-               ->isOpaqueOrPointeeTypeMatches(ResultElementType));
     return ResultElementType;
   }
 
@@ -1072,26 +1085,19 @@ public:
 
   /// Returns the pointer type returned by the GEP
   /// instruction, which may be a vector of pointers.
-  static Type *getGEPReturnType(Type *ElTy, Value *Ptr,
-                                ArrayRef<Value *> IdxList) {
-    PointerType *OrigPtrTy = cast<PointerType>(Ptr->getType()->getScalarType());
-    unsigned AddrSpace = OrigPtrTy->getAddressSpace();
-    Type *ResultElemTy = checkGEPType(getIndexedType(ElTy, IdxList));
-    Type *PtrTy = OrigPtrTy->isOpaque()
-      ? PointerType::get(OrigPtrTy->getContext(), AddrSpace)
-      : PointerType::get(ResultElemTy, AddrSpace);
+  static Type *getGEPReturnType(Value *Ptr, ArrayRef<Value *> IdxList) {
     // Vector GEP
-    if (auto *PtrVTy = dyn_cast<VectorType>(Ptr->getType())) {
-      ElementCount EltCount = PtrVTy->getElementCount();
-      return VectorType::get(PtrTy, EltCount);
-    }
+    Type *Ty = Ptr->getType();
+    if (Ty->isVectorTy())
+      return Ty;
+
     for (Value *Index : IdxList)
       if (auto *IndexVTy = dyn_cast<VectorType>(Index->getType())) {
         ElementCount EltCount = IndexVTy->getElementCount();
-        return VectorType::get(PtrTy, EltCount);
+        return VectorType::get(Ty, EltCount);
       }
     // Scalar GEP
-    return PtrTy;
+    return Ty;
   }
 
   unsigned getNumIndices() const {  // Note: always non-negative
@@ -1149,13 +1155,11 @@ GetElementPtrInst::GetElementPtrInst(Type *PointeeType, Value *Ptr,
                                      ArrayRef<Value *> IdxList, unsigned Values,
                                      const Twine &NameStr,
                                      Instruction *InsertBefore)
-    : Instruction(getGEPReturnType(PointeeType, Ptr, IdxList), GetElementPtr,
+    : Instruction(getGEPReturnType(Ptr, IdxList), GetElementPtr,
                   OperandTraits<GetElementPtrInst>::op_end(this) - Values,
                   Values, InsertBefore),
       SourceElementType(PointeeType),
       ResultElementType(getIndexedType(PointeeType, IdxList)) {
-  assert(cast<PointerType>(getType()->getScalarType())
-             ->isOpaqueOrPointeeTypeMatches(ResultElementType));
   init(Ptr, IdxList, NameStr);
 }
 
@@ -1163,13 +1167,11 @@ GetElementPtrInst::GetElementPtrInst(Type *PointeeType, Value *Ptr,
                                      ArrayRef<Value *> IdxList, unsigned Values,
                                      const Twine &NameStr,
                                      BasicBlock *InsertAtEnd)
-    : Instruction(getGEPReturnType(PointeeType, Ptr, IdxList), GetElementPtr,
+    : Instruction(getGEPReturnType(Ptr, IdxList), GetElementPtr,
                   OperandTraits<GetElementPtrInst>::op_end(this) - Values,
                   Values, InsertAtEnd),
       SourceElementType(PointeeType),
       ResultElementType(getIndexedType(PointeeType, IdxList)) {
-  assert(cast<PointerType>(getType()->getScalarType())
-             ->isOpaqueOrPointeeTypeMatches(ResultElementType));
   init(Ptr, IdxList, NameStr);
 }
 
@@ -1482,7 +1484,7 @@ class CallInst : public CallBase {
 
   inline CallInst(FunctionType *Ty, Value *Func, ArrayRef<Value *> Args,
                   const Twine &NameStr, Instruction *InsertBefore)
-      : CallInst(Ty, Func, Args, None, NameStr, InsertBefore) {}
+      : CallInst(Ty, Func, Args, std::nullopt, NameStr, InsertBefore) {}
 
   /// Construct a CallInst given a range of arguments.
   /// Construct a CallInst from a range of arguments
@@ -1523,11 +1525,11 @@ public:
                           const Twine &NameStr,
                           Instruction *InsertBefore = nullptr) {
     return new (ComputeNumOperands(Args.size()))
-        CallInst(Ty, Func, Args, None, NameStr, InsertBefore);
+        CallInst(Ty, Func, Args, std::nullopt, NameStr, InsertBefore);
   }
 
   static CallInst *Create(FunctionType *Ty, Value *Func, ArrayRef<Value *> Args,
-                          ArrayRef<OperandBundleDef> Bundles = None,
+                          ArrayRef<OperandBundleDef> Bundles = std::nullopt,
                           const Twine &NameStr = "",
                           Instruction *InsertBefore = nullptr) {
     const int NumOperands =
@@ -1546,7 +1548,7 @@ public:
   static CallInst *Create(FunctionType *Ty, Value *Func, ArrayRef<Value *> Args,
                           const Twine &NameStr, BasicBlock *InsertAtEnd) {
     return new (ComputeNumOperands(Args.size()))
-        CallInst(Ty, Func, Args, None, NameStr, InsertAtEnd);
+        CallInst(Ty, Func, Args, std::nullopt, NameStr, InsertAtEnd);
   }
 
   static CallInst *Create(FunctionType *Ty, Value *Func, ArrayRef<Value *> Args,
@@ -1567,7 +1569,7 @@ public:
   }
 
   static CallInst *Create(FunctionCallee Func, ArrayRef<Value *> Args,
-                          ArrayRef<OperandBundleDef> Bundles = None,
+                          ArrayRef<OperandBundleDef> Bundles = std::nullopt,
                           const Twine &NameStr = "",
                           Instruction *InsertBefore = nullptr) {
     return Create(Func.getFunctionType(), Func.getCallee(), Args, Bundles,
@@ -1608,44 +1610,6 @@ public:
   /// in \p Bundles.
   static CallInst *Create(CallInst *CI, ArrayRef<OperandBundleDef> Bundles,
                           Instruction *InsertPt = nullptr);
-
-  /// Generate the IR for a call to malloc:
-  /// 1. Compute the malloc call's argument as the specified type's size,
-  ///    possibly multiplied by the array size if the array size is not
-  ///    constant 1.
-  /// 2. Call malloc with that argument.
-  /// 3. Bitcast the result of the malloc call to the specified type.
-  static Instruction *CreateMalloc(Instruction *InsertBefore, Type *IntPtrTy,
-                                   Type *AllocTy, Value *AllocSize,
-                                   Value *ArraySize = nullptr,
-                                   Function *MallocF = nullptr,
-                                   const Twine &Name = "");
-  static Instruction *CreateMalloc(BasicBlock *InsertAtEnd, Type *IntPtrTy,
-                                   Type *AllocTy, Value *AllocSize,
-                                   Value *ArraySize = nullptr,
-                                   Function *MallocF = nullptr,
-                                   const Twine &Name = "");
-  static Instruction *CreateMalloc(Instruction *InsertBefore, Type *IntPtrTy,
-                                   Type *AllocTy, Value *AllocSize,
-                                   Value *ArraySize = nullptr,
-                                   ArrayRef<OperandBundleDef> Bundles = None,
-                                   Function *MallocF = nullptr,
-                                   const Twine &Name = "");
-  static Instruction *CreateMalloc(BasicBlock *InsertAtEnd, Type *IntPtrTy,
-                                   Type *AllocTy, Value *AllocSize,
-                                   Value *ArraySize = nullptr,
-                                   ArrayRef<OperandBundleDef> Bundles = None,
-                                   Function *MallocF = nullptr,
-                                   const Twine &Name = "");
-  /// Generate the IR for a call to the builtin free function.
-  static Instruction *CreateFree(Value *Source, Instruction *InsertBefore);
-  static Instruction *CreateFree(Value *Source, BasicBlock *InsertAtEnd);
-  static Instruction *CreateFree(Value *Source,
-                                 ArrayRef<OperandBundleDef> Bundles,
-                                 Instruction *InsertBefore);
-  static Instruction *CreateFree(Value *Source,
-                                 ArrayRef<OperandBundleDef> Bundles,
-                                 BasicBlock *InsertAtEnd);
 
   // Note that 'musttail' implies 'tail'.
   enum TailCallKind : unsigned {
@@ -1993,7 +1957,7 @@ DEFINE_TRANSPARENT_OPERAND_ACCESSORS(InsertElementInst, Value)
 //                           ShuffleVectorInst Class
 //===----------------------------------------------------------------------===//
 
-constexpr int UndefMaskElem = -1;
+constexpr int PoisonMaskElem = -1;
 
 /// This instruction constructs a fixed permutation of two
 /// input vectors.
@@ -2001,7 +1965,7 @@ constexpr int UndefMaskElem = -1;
 /// For each element of the result vector, the shuffle mask selects an element
 /// from one of the input vectors to copy to the result. Non-negative elements
 /// in the mask represent an index into the concatenated pair of input vectors.
-/// UndefMaskElem (-1) specifies that the result element is undefined.
+/// PoisonMaskElem (-1) specifies that the result element is poison.
 ///
 /// For scalable vectors, all the elements of the mask must be 0 or -1. This
 /// requirement may be relaxed in the future.
@@ -2059,16 +2023,16 @@ public:
   DECLARE_TRANSPARENT_OPERAND_ACCESSORS(Value);
 
   /// Return the shuffle mask value of this instruction for the given element
-  /// index. Return UndefMaskElem if the element is undef.
+  /// index. Return PoisonMaskElem if the element is undef.
   int getMaskValue(unsigned Elt) const { return ShuffleMask[Elt]; }
 
   /// Convert the input shuffle mask operand to a vector of integers. Undefined
-  /// elements of the mask are returned as UndefMaskElem.
+  /// elements of the mask are returned as PoisonMaskElem.
   static void getShuffleMask(const Constant *Mask,
                              SmallVectorImpl<int> &Result);
 
   /// Return the mask for this instruction as a vector of integers. Undefined
-  /// elements of the mask are returned as UndefMaskElem.
+  /// elements of the mask are returned as PoisonMaskElem.
   void getShuffleMask(SmallVectorImpl<int> &Result) const {
     Result.assign(ShuffleMask.begin(), ShuffleMask.end());
   }
@@ -2112,13 +2076,14 @@ public:
   /// Return true if this shuffle mask chooses elements from exactly one source
   /// vector.
   /// Example: <7,5,undef,7>
-  /// This assumes that vector operands are the same length as the mask.
-  static bool isSingleSourceMask(ArrayRef<int> Mask);
-  static bool isSingleSourceMask(const Constant *Mask) {
+  /// This assumes that vector operands (of length \p NumSrcElts) are the same
+  /// length as the mask.
+  static bool isSingleSourceMask(ArrayRef<int> Mask, int NumSrcElts);
+  static bool isSingleSourceMask(const Constant *Mask, int NumSrcElts) {
     assert(Mask->getType()->isVectorTy() && "Shuffle needs vector constant.");
     SmallVector<int, 16> MaskAsInts;
     getShuffleMask(Mask, MaskAsInts);
-    return isSingleSourceMask(MaskAsInts);
+    return isSingleSourceMask(MaskAsInts, NumSrcElts);
   }
 
   /// Return true if this shuffle chooses elements from exactly one source
@@ -2126,7 +2091,8 @@ public:
   /// Example: shufflevector <4 x n> A, <4 x n> B, <3,0,undef,3>
   /// TODO: Optionally allow length-changing shuffles.
   bool isSingleSource() const {
-    return !changesLength() && isSingleSourceMask(ShuffleMask);
+    return !changesLength() &&
+           isSingleSourceMask(ShuffleMask, ShuffleMask.size());
   }
 
   /// Return true if this shuffle mask chooses elements from exactly one source
@@ -2134,8 +2100,8 @@ public:
   /// necessarily a no-op because it may change the number of elements from its
   /// input vectors or it may provide demanded bits knowledge via undef lanes.
   /// Example: <undef,undef,2,3>
-  static bool isIdentityMask(ArrayRef<int> Mask);
-  static bool isIdentityMask(const Constant *Mask) {
+  static bool isIdentityMask(ArrayRef<int> Mask, int NumSrcElts);
+  static bool isIdentityMask(const Constant *Mask, int NumSrcElts) {
     assert(Mask->getType()->isVectorTy() && "Shuffle needs vector constant.");
 
     // Not possible to express a shuffle mask for a scalable vector for this
@@ -2145,7 +2111,7 @@ public:
 
     SmallVector<int, 16> MaskAsInts;
     getShuffleMask(Mask, MaskAsInts);
-    return isIdentityMask(MaskAsInts);
+    return isIdentityMask(MaskAsInts, NumSrcElts);
   }
 
   /// Return true if this shuffle chooses elements from exactly one source
@@ -2158,7 +2124,7 @@ public:
     if (isa<ScalableVectorType>(getType()))
       return false;
 
-    return !changesLength() && isIdentityMask(ShuffleMask);
+    return !changesLength() && isIdentityMask(ShuffleMask, ShuffleMask.size());
   }
 
   /// Return true if this shuffle lengthens exactly one source vector with
@@ -2182,12 +2148,12 @@ public:
   /// In that case, the shuffle is better classified as an identity shuffle.
   /// This assumes that vector operands are the same length as the mask
   /// (a length-changing shuffle can never be equivalent to a vector select).
-  static bool isSelectMask(ArrayRef<int> Mask);
-  static bool isSelectMask(const Constant *Mask) {
+  static bool isSelectMask(ArrayRef<int> Mask, int NumSrcElts);
+  static bool isSelectMask(const Constant *Mask, int NumSrcElts) {
     assert(Mask->getType()->isVectorTy() && "Shuffle needs vector constant.");
     SmallVector<int, 16> MaskAsInts;
     getShuffleMask(Mask, MaskAsInts);
-    return isSelectMask(MaskAsInts);
+    return isSelectMask(MaskAsInts, NumSrcElts);
   }
 
   /// Return true if this shuffle chooses elements from its source vectors
@@ -2199,19 +2165,20 @@ public:
   /// In that case, the shuffle is better classified as an identity shuffle.
   /// TODO: Optionally allow length-changing shuffles.
   bool isSelect() const {
-    return !changesLength() && isSelectMask(ShuffleMask);
+    return !changesLength() && isSelectMask(ShuffleMask, ShuffleMask.size());
   }
 
   /// Return true if this shuffle mask swaps the order of elements from exactly
   /// one source vector.
   /// Example: <7,6,undef,4>
-  /// This assumes that vector operands are the same length as the mask.
-  static bool isReverseMask(ArrayRef<int> Mask);
-  static bool isReverseMask(const Constant *Mask) {
+  /// This assumes that vector operands (of length \p NumSrcElts) are the same
+  /// length as the mask.
+  static bool isReverseMask(ArrayRef<int> Mask, int NumSrcElts);
+  static bool isReverseMask(const Constant *Mask, int NumSrcElts) {
     assert(Mask->getType()->isVectorTy() && "Shuffle needs vector constant.");
     SmallVector<int, 16> MaskAsInts;
     getShuffleMask(Mask, MaskAsInts);
-    return isReverseMask(MaskAsInts);
+    return isReverseMask(MaskAsInts, NumSrcElts);
   }
 
   /// Return true if this shuffle swaps the order of elements from exactly
@@ -2219,19 +2186,20 @@ public:
   /// Example: shufflevector <4 x n> A, <4 x n> B, <3,undef,1,undef>
   /// TODO: Optionally allow length-changing shuffles.
   bool isReverse() const {
-    return !changesLength() && isReverseMask(ShuffleMask);
+    return !changesLength() && isReverseMask(ShuffleMask, ShuffleMask.size());
   }
 
   /// Return true if this shuffle mask chooses all elements with the same value
   /// as the first element of exactly one source vector.
   /// Example: <4,undef,undef,4>
-  /// This assumes that vector operands are the same length as the mask.
-  static bool isZeroEltSplatMask(ArrayRef<int> Mask);
-  static bool isZeroEltSplatMask(const Constant *Mask) {
+  /// This assumes that vector operands (of length \p NumSrcElts) are the same
+  /// length as the mask.
+  static bool isZeroEltSplatMask(ArrayRef<int> Mask, int NumSrcElts);
+  static bool isZeroEltSplatMask(const Constant *Mask, int NumSrcElts) {
     assert(Mask->getType()->isVectorTy() && "Shuffle needs vector constant.");
     SmallVector<int, 16> MaskAsInts;
     getShuffleMask(Mask, MaskAsInts);
-    return isZeroEltSplatMask(MaskAsInts);
+    return isZeroEltSplatMask(MaskAsInts, NumSrcElts);
   }
 
   /// Return true if all elements of this shuffle are the same value as the
@@ -2241,7 +2209,8 @@ public:
   /// TODO: Optionally allow length-changing shuffles.
   /// TODO: Optionally allow splats from other elements.
   bool isZeroEltSplat() const {
-    return !changesLength() && isZeroEltSplatMask(ShuffleMask);
+    return !changesLength() &&
+           isZeroEltSplatMask(ShuffleMask, ShuffleMask.size());
   }
 
   /// Return true if this shuffle mask is a transpose mask.
@@ -2276,12 +2245,12 @@ public:
   ///   ; Transposed matrix
   ///   t0 = < a, e, c, g > = shufflevector m0, m1 < 0, 4, 2, 6 >
   ///   t1 = < b, f, d, h > = shufflevector m0, m1 < 1, 5, 3, 7 >
-  static bool isTransposeMask(ArrayRef<int> Mask);
-  static bool isTransposeMask(const Constant *Mask) {
+  static bool isTransposeMask(ArrayRef<int> Mask, int NumSrcElts);
+  static bool isTransposeMask(const Constant *Mask, int NumSrcElts) {
     assert(Mask->getType()->isVectorTy() && "Shuffle needs vector constant.");
     SmallVector<int, 16> MaskAsInts;
     getShuffleMask(Mask, MaskAsInts);
-    return isTransposeMask(MaskAsInts);
+    return isTransposeMask(MaskAsInts, NumSrcElts);
   }
 
   /// Return true if this shuffle transposes the elements of its inputs without
@@ -2290,7 +2259,30 @@ public:
   /// exact specification.
   /// Example: shufflevector <4 x n> A, <4 x n> B, <0,4,2,6>
   bool isTranspose() const {
-    return !changesLength() && isTransposeMask(ShuffleMask);
+    return !changesLength() && isTransposeMask(ShuffleMask, ShuffleMask.size());
+  }
+
+  /// Return true if this shuffle mask is a splice mask, concatenating the two
+  /// inputs together and then extracts an original width vector starting from
+  /// the splice index.
+  /// Example: shufflevector <4 x n> A, <4 x n> B, <1,2,3,4>
+  /// This assumes that vector operands (of length \p NumSrcElts) are the same
+  /// length as the mask.
+  static bool isSpliceMask(ArrayRef<int> Mask, int NumSrcElts, int &Index);
+  static bool isSpliceMask(const Constant *Mask, int NumSrcElts, int &Index) {
+    assert(Mask->getType()->isVectorTy() && "Shuffle needs vector constant.");
+    SmallVector<int, 16> MaskAsInts;
+    getShuffleMask(Mask, MaskAsInts);
+    return isSpliceMask(MaskAsInts, NumSrcElts, Index);
+  }
+
+  /// Return true if this shuffle splices two inputs without changing the length
+  /// of the vectors. This operation concatenates the two inputs together and
+  /// then extracts an original width vector starting from the splice index.
+  /// Example: shufflevector <4 x n> A, <4 x n> B, <1,2,3,4>
+  bool isSplice(int &Index) const {
+    return !changesLength() &&
+           isSpliceMask(ShuffleMask, ShuffleMask.size(), Index);
   }
 
   /// Return true if this shuffle mask is an extract subvector mask.
@@ -2324,7 +2316,7 @@ public:
 
   /// Return true if this shuffle mask is an insert subvector mask.
   /// A valid insert subvector mask inserts the lowest elements of a second
-  /// source operand into an in-place first source operand operand.
+  /// source operand into an in-place first source operand.
   /// Both the sub vector width and the insertion index is returned.
   static bool isInsertSubvectorMask(ArrayRef<int> Mask, int NumSrcElts,
                                     int &NumSubElts, int &Index);
@@ -2373,6 +2365,21 @@ public:
   /// Return true if this shuffle mask is a replication mask.
   bool isReplicationMask(int &ReplicationFactor, int &VF) const;
 
+  /// Return true if this shuffle mask represents "clustered" mask of size VF,
+  /// i.e. each index between [0..VF) is used exactly once in each submask of
+  /// size VF.
+  /// For example, the mask for \p VF=4 is:
+  /// 0, 1, 2, 3, 3, 2, 0, 1 - "clustered", because each submask of size 4
+  /// (0,1,2,3 and 3,2,0,1) uses indices [0..VF) exactly one time.
+  /// 0, 1, 2, 3, 3, 3, 1, 0 - not "clustered", because
+  ///                          element 3 is used twice in the second submask
+  ///                          (3,3,1,0) and index 2 is not used at all.
+  static bool isOneUseSingleSourceMask(ArrayRef<int> Mask, int VF);
+
+  /// Return true if this shuffle mask is a one-use-single-source("clustered")
+  /// mask.
+  bool isOneUseSingleSourceMask(int VF) const;
+
   /// Change values in a shuffle permute mask assuming the two vector operands
   /// of length InVecNumElts have swapped position.
   static void commuteShuffleMask(MutableArrayRef<int> Mask,
@@ -2385,6 +2392,52 @@ public:
              "shufflevector mask index out of range");
     }
   }
+
+  /// Return if this shuffle interleaves its two input vectors together.
+  bool isInterleave(unsigned Factor);
+
+  /// Return true if the mask interleaves one or more input vectors together.
+  ///
+  /// I.e. <0, LaneLen, ... , LaneLen*(Factor - 1), 1, LaneLen + 1, ...>
+  /// E.g. For a Factor of 2 (LaneLen=4):
+  ///   <0, 4, 1, 5, 2, 6, 3, 7>
+  /// E.g. For a Factor of 3 (LaneLen=4):
+  ///   <4, 0, 9, 5, 1, 10, 6, 2, 11, 7, 3, 12>
+  /// E.g. For a Factor of 4 (LaneLen=2):
+  ///   <0, 2, 6, 4, 1, 3, 7, 5>
+  ///
+  /// NumInputElts is the total number of elements in the input vectors.
+  ///
+  /// StartIndexes are the first indexes of each vector being interleaved,
+  /// substituting any indexes that were undef
+  /// E.g. <4, -1, 2, 5, 1, 3> (Factor=3): StartIndexes=<4, 0, 2>
+  ///
+  /// Note that this does not check if the input vectors are consecutive:
+  /// It will return true for masks such as
+  /// <0, 4, 6, 1, 5, 7> (Factor=3, LaneLen=2)
+  static bool isInterleaveMask(ArrayRef<int> Mask, unsigned Factor,
+                               unsigned NumInputElts,
+                               SmallVectorImpl<unsigned> &StartIndexes);
+  static bool isInterleaveMask(ArrayRef<int> Mask, unsigned Factor,
+                               unsigned NumInputElts) {
+    SmallVector<unsigned, 8> StartIndexes;
+    return isInterleaveMask(Mask, Factor, NumInputElts, StartIndexes);
+  }
+
+  /// Checks if the shuffle is a bit rotation of the first operand across
+  /// multiple subelements, e.g:
+  ///
+  /// shuffle <8 x i8> %a, <8 x i8> poison, <8 x i32> <1, 0, 3, 2, 5, 4, 7, 6>
+  ///
+  /// could be expressed as
+  ///
+  /// rotl <4 x i16> %a, 8
+  ///
+  /// If it can be expressed as a rotation, returns the number of subelements to
+  /// group by in NumSubElts and the number of bits to rotate left in RotateAmt.
+  static bool isBitRotateMask(ArrayRef<int> Mask, unsigned EltSizeInBits,
+                              unsigned MinSubElts, unsigned MaxSubElts,
+                              unsigned &NumSubElts, unsigned &RotateAmt);
 
   // Methods for support type inquiry through isa, cast, and dyn_cast:
   static bool classof(const Instruction *I) {
@@ -2719,28 +2772,18 @@ public:
 
   // Block iterator interface. This provides access to the list of incoming
   // basic blocks, which parallels the list of incoming values.
+  // Please note that we are not providing non-const iterators for blocks to
+  // force all updates go through an interface function.
 
   using block_iterator = BasicBlock **;
   using const_block_iterator = BasicBlock * const *;
-
-  block_iterator block_begin() {
-    return reinterpret_cast<block_iterator>(op_begin() + ReservedSpace);
-  }
 
   const_block_iterator block_begin() const {
     return reinterpret_cast<const_block_iterator>(op_begin() + ReservedSpace);
   }
 
-  block_iterator block_end() {
-    return block_begin() + getNumOperands();
-  }
-
   const_block_iterator block_end() const {
     return block_begin() + getNumOperands();
-  }
-
-  iterator_range<block_iterator> blocks() {
-    return make_range(block_begin(), block_end());
   }
 
   iterator_range<const_block_iterator> blocks() const {
@@ -2797,8 +2840,14 @@ public:
   }
 
   void setIncomingBlock(unsigned i, BasicBlock *BB) {
-    assert(BB && "PHI node got a null basic block!");
-    block_begin()[i] = BB;
+    const_cast<block_iterator>(block_begin())[i] = BB;
+  }
+
+  /// Copies the basic blocks from \p BBRange to the incoming basic block list
+  /// of this PHINode, starting at \p ToIdx.
+  void copyIncomingBlocks(iterator_range<const_block_iterator> BBRange,
+                          uint32_t ToIdx = 0) {
+    copy(BBRange, const_cast<block_iterator>(block_begin()) + ToIdx);
   }
 
   /// Replace every incoming basic block \p Old to basic block \p New.
@@ -2835,6 +2884,11 @@ public:
     assert(Idx >= 0 && "Invalid basic block argument to remove!");
     return removeIncomingValue(Idx, DeletePHIIfEmpty);
   }
+
+  /// Remove all incoming values for which the predicate returns true.
+  /// The predicate accepts the incoming value index.
+  void removeIncomingValueIf(function_ref<bool(unsigned)> Predicate,
+                             bool DeletePHIIfEmpty = true);
 
   /// Return the first index of the specified basic
   /// block in the value list for this PHI.  Returns -1 if no instance.
@@ -3584,18 +3638,16 @@ public:
 /// their prof branch_weights metadata.
 class SwitchInstProfUpdateWrapper {
   SwitchInst &SI;
-  Optional<SmallVector<uint32_t, 8> > Weights = None;
+  std::optional<SmallVector<uint32_t, 8>> Weights;
   bool Changed = false;
 
 protected:
-  static MDNode *getProfBranchWeightsMD(const SwitchInst &SI);
-
   MDNode *buildProfBranchWeightsMD();
 
   void init();
 
 public:
-  using CaseWeightOpt = Optional<uint32_t>;
+  using CaseWeightOpt = std::optional<uint32_t>;
   SwitchInst *operator->() { return &SI; }
   SwitchInst &operator*() { return SI; }
   operator SwitchInst *() { return &SI; }
@@ -3617,7 +3669,7 @@ public:
 
   /// Delegate the call to the underlying SwitchInst::eraseFromParent() and mark
   /// this object to not touch the underlying SwitchInst in destructor.
-  SymbolTableList<Instruction>::iterator eraseFromParent();
+  Instruction::InstListType::iterator eraseFromParent();
 
   void setSuccessorWeight(unsigned idx, CaseWeightOpt W);
   CaseWeightOpt getSuccessorWeight(unsigned idx);
@@ -3823,13 +3875,13 @@ public:
                             Instruction *InsertBefore = nullptr) {
     int NumOperands = ComputeNumOperands(Args.size());
     return new (NumOperands)
-        InvokeInst(Ty, Func, IfNormal, IfException, Args, None, NumOperands,
-                   NameStr, InsertBefore);
+        InvokeInst(Ty, Func, IfNormal, IfException, Args, std::nullopt,
+                   NumOperands, NameStr, InsertBefore);
   }
 
   static InvokeInst *Create(FunctionType *Ty, Value *Func, BasicBlock *IfNormal,
                             BasicBlock *IfException, ArrayRef<Value *> Args,
-                            ArrayRef<OperandBundleDef> Bundles = None,
+                            ArrayRef<OperandBundleDef> Bundles = std::nullopt,
                             const Twine &NameStr = "",
                             Instruction *InsertBefore = nullptr) {
     int NumOperands =
@@ -3846,8 +3898,8 @@ public:
                             const Twine &NameStr, BasicBlock *InsertAtEnd) {
     int NumOperands = ComputeNumOperands(Args.size());
     return new (NumOperands)
-        InvokeInst(Ty, Func, IfNormal, IfException, Args, None, NumOperands,
-                   NameStr, InsertAtEnd);
+        InvokeInst(Ty, Func, IfNormal, IfException, Args, std::nullopt,
+                   NumOperands, NameStr, InsertAtEnd);
   }
 
   static InvokeInst *Create(FunctionType *Ty, Value *Func, BasicBlock *IfNormal,
@@ -3868,12 +3920,12 @@ public:
                             const Twine &NameStr,
                             Instruction *InsertBefore = nullptr) {
     return Create(Func.getFunctionType(), Func.getCallee(), IfNormal,
-                  IfException, Args, None, NameStr, InsertBefore);
+                  IfException, Args, std::nullopt, NameStr, InsertBefore);
   }
 
   static InvokeInst *Create(FunctionCallee Func, BasicBlock *IfNormal,
                             BasicBlock *IfException, ArrayRef<Value *> Args,
-                            ArrayRef<OperandBundleDef> Bundles = None,
+                            ArrayRef<OperandBundleDef> Bundles = std::nullopt,
                             const Twine &NameStr = "",
                             Instruction *InsertBefore = nullptr) {
     return Create(Func.getFunctionType(), Func.getCallee(), IfNormal,
@@ -4029,17 +4081,15 @@ public:
                             Instruction *InsertBefore = nullptr) {
     int NumOperands = ComputeNumOperands(Args.size(), IndirectDests.size());
     return new (NumOperands)
-        CallBrInst(Ty, Func, DefaultDest, IndirectDests, Args, None,
+        CallBrInst(Ty, Func, DefaultDest, IndirectDests, Args, std::nullopt,
                    NumOperands, NameStr, InsertBefore);
   }
 
-  static CallBrInst *Create(FunctionType *Ty, Value *Func,
-                            BasicBlock *DefaultDest,
-                            ArrayRef<BasicBlock *> IndirectDests,
-                            ArrayRef<Value *> Args,
-                            ArrayRef<OperandBundleDef> Bundles = None,
-                            const Twine &NameStr = "",
-                            Instruction *InsertBefore = nullptr) {
+  static CallBrInst *
+  Create(FunctionType *Ty, Value *Func, BasicBlock *DefaultDest,
+         ArrayRef<BasicBlock *> IndirectDests, ArrayRef<Value *> Args,
+         ArrayRef<OperandBundleDef> Bundles = std::nullopt,
+         const Twine &NameStr = "", Instruction *InsertBefore = nullptr) {
     int NumOperands = ComputeNumOperands(Args.size(), IndirectDests.size(),
                                          CountBundleInputs(Bundles));
     unsigned DescriptorBytes = Bundles.size() * sizeof(BundleOpInfo);
@@ -4056,7 +4106,7 @@ public:
                             BasicBlock *InsertAtEnd) {
     int NumOperands = ComputeNumOperands(Args.size(), IndirectDests.size());
     return new (NumOperands)
-        CallBrInst(Ty, Func, DefaultDest, IndirectDests, Args, None,
+        CallBrInst(Ty, Func, DefaultDest, IndirectDests, Args, std::nullopt,
                    NumOperands, NameStr, InsertAtEnd);
   }
 
@@ -4086,7 +4136,7 @@ public:
   static CallBrInst *Create(FunctionCallee Func, BasicBlock *DefaultDest,
                             ArrayRef<BasicBlock *> IndirectDests,
                             ArrayRef<Value *> Args,
-                            ArrayRef<OperandBundleDef> Bundles = None,
+                            ArrayRef<OperandBundleDef> Bundles = std::nullopt,
                             const Twine &NameStr = "",
                             Instruction *InsertBefore = nullptr) {
     return Create(Func.getFunctionType(), Func.getCallee(), DefaultDest,
@@ -4170,8 +4220,6 @@ public:
   }
 
   unsigned getNumSuccessors() const { return getNumIndirectDests() + 1; }
-
-  BlockAddress *getBlockAddressForIndirectDest(unsigned DestNo) const;
 
   // Methods for support type inquiry through isa, cast, and dyn_cast:
   static bool classof(const Instruction *I) {
@@ -4468,7 +4516,8 @@ private:
                        NameStr, InsertAtEnd) {}
 
 public:
-  static CleanupPadInst *Create(Value *ParentPad, ArrayRef<Value *> Args = None,
+  static CleanupPadInst *Create(Value *ParentPad,
+                                ArrayRef<Value *> Args = std::nullopt,
                                 const Twine &NameStr = "",
                                 Instruction *InsertBefore = nullptr) {
     unsigned Values = 1 + Args.size();
@@ -5379,10 +5428,10 @@ inline Type *getLoadStoreType(Value *I) {
 }
 
 /// A helper function that returns an atomic operation's sync scope; returns
-/// None if it is not an atomic operation.
-inline Optional<SyncScope::ID> getAtomicSyncScopeID(const Instruction *I) {
+/// std::nullopt if it is not an atomic operation.
+inline std::optional<SyncScope::ID> getAtomicSyncScopeID(const Instruction *I) {
   if (!I->isAtomic())
-    return None;
+    return std::nullopt;
   if (auto *AI = dyn_cast<LoadInst>(I))
     return AI->getSyncScopeID();
   if (auto *AI = dyn_cast<StoreInst>(I))

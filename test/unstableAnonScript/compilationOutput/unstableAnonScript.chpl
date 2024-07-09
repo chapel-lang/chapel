@@ -1,0 +1,1 @@
+../../../tools/unstableWarningAnonymizer/unstableAnonScript.chpl

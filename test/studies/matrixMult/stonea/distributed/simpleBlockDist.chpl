@@ -16,7 +16,7 @@ record WrappedArray {
         dom = {row..row+numRows-1, col..col+numCols-1};
     }
 
-    proc this(i,j : int) ref { return data[i,j]; }
+    proc ref this(i,j : int) ref { return data[i,j]; }
 
     var dom : domain(2);
     var data : [dom] int;
@@ -27,7 +27,7 @@ proc simpleDistMultiply(
     blkSize : int,
     A : [?localesDom] WrappedArray,
     B : [localesDom] WrappedArray,
-    C : [localesDom] WrappedArray,
+    ref C : [localesDom] WrappedArray,
     myLocales : [localesDom] locale)
 {
     // Every locale needs a copy of the blocks of A in the same locale-row and
@@ -36,7 +36,7 @@ proc simpleDistMultiply(
     var colCopies : [localesDom] WrappedArray;
 
     // initialize row and col copies
-    coforall (locRow, locCol) in localesDom do on myLocales[locRow,locCol] {
+    coforall (locRow, locCol) in localesDom with (ref colCopies, ref rowCopies) do on myLocales[locRow,locCol] {
         rowCopies[locRow, locCol] = new WrappedArray(
             (locRow-1)*blkSize+1, 1, blkSize, n);
         colCopies[locRow, locCol] = new WrappedArray(
@@ -59,13 +59,13 @@ proc simpleDistMultiply(
     }
 
     // do local matrix-multiply
-    forall (locRow, locCol) in localesDom do on myLocales[locRow,locCol] {
+    forall (locRow, locCol) in localesDom with (ref C, ref colCopies, ref rowCopies) do on myLocales[locRow,locCol] {
         ref localA = rowCopies[locRow,locCol].data;
         ref localB = colCopies[locRow,locCol].data;
         ref localC = C[locRow,locCol].data;
 
-        forall i in localC.domain.dim(0) {
-            forall j in localC.domain.dim(1) {
+        forall i in localC.domain.dim(0) with (ref localC) {
+            forall j in localC.domain.dim(1) with (ref localC) {
                 for k in localA.domain.dim(1) {
                     localC[i,j] += localA[i,k] * localB[k,j];
                 }
@@ -97,8 +97,8 @@ proc main() {
     var A : [myLocales.domain] WrappedArray;
     var B : [myLocales.domain] WrappedArray;
     var C : [myLocales.domain] WrappedArray;
-    forall (i,j) in myLocales.domain do on myLocales[i,j] {
-        cobegin {
+    forall (i,j) in myLocales.domain with (ref A, ref B, ref C) do on myLocales[i,j] {
+        cobegin with (ref A, ref B, ref C) {
             A[i,j] = new WrappedArray(
                 (i-1)*blkSize+1, (j-1)*blkSize+1, blkSize, blkSize);
             B[i,j] = new WrappedArray(
@@ -107,8 +107,8 @@ proc main() {
                 (i-1)*blkSize+1, (j-1)*blkSize+1, blkSize, blkSize);
         }
 
-        forall (locRow, locCol) in A[i,j].dom {
-            cobegin {
+        forall (locRow, locCol) in A[i,j].dom with (ref A, ref B) {
+            cobegin with (ref A, ref B) {
                 A[i,j][locRow, locCol] = locRow + locCol;
                 B[i,j][locRow, locCol] = locRow * locCol;
             }

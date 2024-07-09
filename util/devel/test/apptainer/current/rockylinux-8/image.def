@@ -6,7 +6,8 @@ From: rockylinux:8
 
 %post
     /provision-scripts/dnf-deps.sh
+    # installs LLVM 16
     /provision-scripts/dnf-llvm.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

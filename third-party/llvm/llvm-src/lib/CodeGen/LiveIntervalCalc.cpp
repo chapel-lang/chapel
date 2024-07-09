@@ -12,7 +12,6 @@
 
 #include "llvm/CodeGen/LiveIntervalCalc.h"
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/iterator_range.h"
 #include "llvm/CodeGen/LiveInterval.h"
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/MachineOperand.h"
@@ -51,7 +50,7 @@ void LiveIntervalCalc::calculate(LiveInterval &LI, bool TrackSubRegs) {
   // Visit all def operands. If the same instruction has multiple defs of Reg,
   // createDeadDef() will deduplicate.
   const TargetRegisterInfo &TRI = *MRI->getTargetRegisterInfo();
-  unsigned Reg = LI.reg();
+  Register Reg = LI.reg();
   for (const MachineOperand &MO : MRI->reg_nodbg_operands(Reg)) {
     if (!MO.isDef() && !MO.readsReg())
       continue;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -692,6 +692,8 @@ switch (to->const_kind) {
      default:
        CHPL_ASSERT(false && "Illegal case in coerce_immediate switch statement"); break;
      } break;
+   case CONST_KIND_STRING:
+     to->v_string = from->v_string; break;
    } break;
  case NUM_KIND_COMPLEX:
    switch (to->num_index) {

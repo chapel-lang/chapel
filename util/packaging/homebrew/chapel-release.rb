@@ -1,75 +1,72 @@
 class Chapel < Formula
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
-  url "https://github.com/chapel-lang/chapel/releases/download/1.27.0/chapel-1.27.0.tar.gz"
-  sha256 "558b1376fb7757a5e1f254c717953f598a3e89850c8edd1936b8d09c464f3e8b"
+  url "https://github.com/chapel-lang/chapel/releases/download/2.1.0/chapel-2.1.0.tar.gz"
+  sha256 "72593c037505dd76e8b5989358b7580a3fdb213051a406adb26a487d26c68c60"
   license "Apache-2.0"
+  revision 2
+  head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
   bottle do
-    sha256 arm64_monterey: "2f3b638cc2c187ac2c11f0dc128eae825466ce6745b5ad358e2fee8b96ef0187"
-    sha256 arm64_big_sur:  "90f68a1e21e3ad61165bbcea1e79306cbf09e811f5b5dd0c91068dadb07e0aca"
-    sha256 monterey:       "f33951b329c819f7ff386b33a413b3cd331fb3a31c0823f10f435d0227c29cf2"
-    sha256 big_sur:        "aeaa92c2f32435c1c16c52f737261c66b2b44ce197ec3e6f6a479f1c029d702c"
-    sha256 catalina:       "11eebc6dbc8383482c689e8a1d74359d12a4781579a48bb29417ca25779c50c4"
-    sha256 x86_64_linux:   "c4ccfadfa28118b70d76a324310dc17be9f351011490c7c29eb6dca5eb7ab093"
+    sha256 arm64_sonoma:   "8fef36b23b39444d16b245ebdbe8db4e9eacf700237c9a45b855481147bf38ec"
+    sha256 arm64_ventura:  "9e8107f9f7a48cfd519ae6a240ad2b21a5a380d40177b7bcef8126b03447c053"
+    sha256 arm64_monterey: "1cba37d433a5b4a893f9b220cf5ca0434bca0bfa383e7724ee71096a6598fc8f"
+    sha256 sonoma:         "d4d8a4f514115690e1c7968f239e0449e3e0a55094e90dc5a857892eeb588c55"
+    sha256 ventura:        "38afff1791b315572dbb30cc11b708ad6d222f61f7501ca86caed38d7837dfe6"
+    sha256 monterey:       "b7860d273572a53d93fe98344995af049c97eb4e94c02d4cffcc45854bc6b106"
+    sha256 x86_64_linux:   "a038f17093596dfb5c2edeb04719dcb2e32f5255a6c770a6ad351b69aa6ebdff"
   end
 
+  depends_on "cmake"
   depends_on "gmp"
-  # `chapel` scripts use python on PATH (e.g. checking `command -v python3`),
-  # so it needs to depend on the currently linked Homebrew Python version.
-  # TODO: remove from versioned_dependencies_conflicts_allowlist when
-  # when Python dependency matches LLVM's Python for all OS versions.
-  depends_on "python@3.9"
-
-  on_macos do
-    depends_on "llvm" if MacOS.version > :catalina
-    # fatal error: cannot open file './sys_basic.h': No such file or directory
-    # Issue ref: https://github.com/Homebrew/homebrew-core/issues/96915
-    depends_on "llvm@11" if MacOS.version <= :catalina
-  end
-
-  on_linux do
-    depends_on "llvm"
-  end
+  depends_on "hwloc"
+  depends_on "jemalloc"
+  depends_on "llvm"
+  depends_on "pkg-config"
+  depends_on "python@3.12"
 
   # LLVM is built with gcc11 and we will fail on linux with gcc version 5.xx
   fails_with gcc: "5"
-
-  # Work around Homebrew 11-arm64 CI issue, which outputs unwanted objc warnings like:
-  # objc[42134]: Class ... is implemented in both ... One of the two will be used. Which one is undefined.
-  # These end up incorrectly failing checkChplInstall test script when it checks for stdout/stderr.
-  # TODO: remove when Homebrew CI no longer outputs these warnings or 11-arm64 is no longer used.
-  patch :DATA
 
   def llvm
     deps.map(&:to_formula).find { |f| f.name.match? "^llvm" }
   end
 
+  # This fixes an issue when using jemalloc and hwloc from the system (homebrew)
+  # provided installation. Remove in Chapel 2.2 release, after
+  # https://github.com/chapel-lang/chapel/pull/25354 is merged
+  patch :DATA
+
   def install
+    # Always detect Python used as dependency rather than needing aliased Python formula
+    python = "python3.12"
+    # It should be noted that this will expand to: 'for cmd in python3.12 python3 python python2; do'
+    # in our find-python.sh script.
+    inreplace "util/config/find-python.sh", /^(for cmd in )(python3 )/, "\\1#{python} \\2"
+
     libexec.install Dir["*"]
     # Chapel uses this ENV to work out where to install.
     ENV["CHPL_HOME"] = libexec
     ENV["CHPL_GMP"] = "system"
-    # This enables a workaround for
-    #   https://github.com/llvm/llvm-project/issues/54438
-    ENV["CHPL_HOST_USE_SYSTEM_LIBCXX"] = "yes"
+    # This ENV avoids a problem where cmake cache is invalidated by subsequent make calls
+    ENV["CHPL_CMAKE_USE_CC_CXX"] = "1"
+
+    # don't try to set CHPL_LLVM_GCC_PREFIX since the llvm
+    # package should be configured to use a reasonable GCC
+    (libexec/"chplconfig").write <<~EOS
+      CHPL_RE2=bundled
+      CHPL_GMP=system
+      CHPL_MEM=jemalloc
+      CHPL_TARGET_JEMALLOC=system
+      CHPL_HWLOC=system
+      CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
+      CHPL_LLVM_GCC_PREFIX=none
+    EOS
 
     # Must be built from within CHPL_HOME to prevent build bugs.
     # https://github.com/Homebrew/legacy-homebrew/pull/35166
     cd libexec do
-      # don't try to set CHPL_LLVM_GCC_PREFIX since the llvm@13
-      # package should be configured to use a reasonable GCC
-      (libexec/"chplconfig").write <<~EOS
-        CHPL_RE2=bundled
-        CHPL_GMP=system
-        CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
-        CHPL_LLVM_GCC_PREFIX=none
-      EOS
-
       system "./util/printchplenv", "--all"
-      with_env(CHPL_PIP_FROM_SOURCE: "1") do
-        system "make", "test-venv"
-      end
       with_env(CHPL_LLVM: "none") do
         system "make"
       end
@@ -78,6 +75,8 @@ class Chapel < Formula
       end
       with_env(CHPL_PIP_FROM_SOURCE: "1") do
         system "make", "chpldoc"
+        system "make", "chplcheck"
+        system "make", "chpl-language-server"
       end
       system "make", "mason"
       system "make", "cleanall"
@@ -110,25 +109,123 @@ class Chapel < Formula
     cd libexec do
       with_env(CHPL_LLVM: "system") do
         system "util/test/checkChplInstall"
+        system "util/test/checkChplDoc"
       end
       with_env(CHPL_LLVM: "none") do
         system "util/test/checkChplInstall"
+        system "util/test/checkChplDoc"
       end
     end
     system bin/"chpl", "--print-passes", "--print-commands", libexec/"examples/hello.chpl"
+    system bin/"chpldoc", "--version"
+    system bin/"mason", "--version"
+
+    # Test chplcheck, if it works CLS probably does too.
+    # chpl-language-server will hang indefinitely waiting for a LSP client
+    system bin/"chplcheck", "--list-rules"
+    system bin/"chplcheck", libexec/"examples/hello.chpl"
   end
 end
 
 __END__
-diff --git a/util/test/checkChplInstall b/util/test/checkChplInstall
-index 7d2eb78a88..a9ddf22054 100755
---- a/util/test/checkChplInstall
-+++ b/util/test/checkChplInstall
-@@ -189,6 +189,7 @@ fi
- if [ -n "${TEST_COMP_OUT}" ]; then
-     # apply "prediff"-like filter to remove gmake "clock skew detected" warnings, if any
-     TEST_COMP_OUT=$( grep <<<"${TEST_COMP_OUT}" -v \
-+        -e '^objc\(\[[0-9]*\]\)*: Class .* is implemented in both .* One of the two will be used\. Which one is undefined\. *$' \
-         -e '^g*make\(\[[0-9]*\]\)*: Warning: File .* has modification time .* in the future *$' \
-         -e '^g*make\(\[[0-9]*\]\)*: warning:  Clock skew detected\.  Your build may be incomplete\. *$' )
- fi
+diff --git a/third-party/jemalloc/Makefile.target.include b/third-party/jemalloc/Makefile.target.include
+deleted file mode 100644
+index 217a500dfb..0000000000
+--- a/third-party/jemalloc/Makefile.target.include
++++ /dev/null
+@@ -1,12 +0,0 @@
+-JEMALLOC_DIR=$(THIRD_PARTY_DIR)/jemalloc
+-JEMALLOC_SUBDIR = $(JEMALLOC_DIR)/jemalloc-src
+-JEMALLOC_BUILD_SUBDIR=build/$(CHPL_MAKE_TARGET_JEMALLOC_UNIQ_CFG_PATH)
+-JEMALLOC_BUILD_DIR=$(JEMALLOC_DIR)/$(JEMALLOC_BUILD_SUBDIR)
+-JEMALLOC_INSTALL_SUBDIR=install/$(CHPL_MAKE_TARGET_JEMALLOC_UNIQ_CFG_PATH)
+-JEMALLOC_INSTALL_DIR=$(JEMALLOC_DIR)/$(JEMALLOC_INSTALL_SUBDIR)
+-JEMALLOC_INCLUDE_DIR = $(JEMALLOC_INSTALL_DIR)/include
+-JEMALLOC_LIB_DIR = $(JEMALLOC_INSTALL_DIR)/lib
+-JEMALLOC_BIN_DIR = $(JEMALLOC_INSTALL_DIR)/bin
+-JEMALLOC_TARGET = --target
+-
+-CHPL_JEMALLOC_PREFIX=$(CHPL_JEMALLOC_TARGET_PREFIX)
+diff --git a/make/Makefile.base b/make/Makefile.base
+index bcbda0a9cf..1120057d47 100644
+--- a/make/Makefile.base
++++ b/make/Makefile.base
+@@ -194,7 +194,7 @@ include $(THIRD_PARTY_DIR)/jemalloc/Makefile.common.include
+ ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--host)
+ include $(THIRD_PARTY_DIR)/jemalloc/Makefile.host.include-$(CHPL_MAKE_HOST_JEMALLOC)
+ else
+-include $(THIRD_PARTY_DIR)/jemalloc/Makefile.target.include
++include $(THIRD_PARTY_DIR)/jemalloc/Makefile.target.include-$(CHPL_MAKE_TARGET_JEMALLOC)
+ endif
+ include $(THIRD_PARTY_DIR)/gmp/Makefile.include
+ include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
+diff --git a/third-party/jemalloc/Makefile.target.include-bundled b/third-party/jemalloc/Makefile.target.include-bundled
+new file mode 100644
+index 0000000000..217a500dfb
+--- /dev/null
++++ b/third-party/jemalloc/Makefile.target.include-bundled
+@@ -0,0 +1,12 @@
++JEMALLOC_DIR=$(THIRD_PARTY_DIR)/jemalloc
++JEMALLOC_SUBDIR = $(JEMALLOC_DIR)/jemalloc-src
++JEMALLOC_BUILD_SUBDIR=build/$(CHPL_MAKE_TARGET_JEMALLOC_UNIQ_CFG_PATH)
++JEMALLOC_BUILD_DIR=$(JEMALLOC_DIR)/$(JEMALLOC_BUILD_SUBDIR)
++JEMALLOC_INSTALL_SUBDIR=install/$(CHPL_MAKE_TARGET_JEMALLOC_UNIQ_CFG_PATH)
++JEMALLOC_INSTALL_DIR=$(JEMALLOC_DIR)/$(JEMALLOC_INSTALL_SUBDIR)
++JEMALLOC_INCLUDE_DIR = $(JEMALLOC_INSTALL_DIR)/include
++JEMALLOC_LIB_DIR = $(JEMALLOC_INSTALL_DIR)/lib
++JEMALLOC_BIN_DIR = $(JEMALLOC_INSTALL_DIR)/bin
++JEMALLOC_TARGET = --target
++
++CHPL_JEMALLOC_PREFIX=$(CHPL_JEMALLOC_TARGET_PREFIX)
+diff --git a/third-party/jemalloc/Makefile.target.include-none b/third-party/jemalloc/Makefile.target.include-none
+new file mode 100644
+index 0000000000..e69de29bb2
+--- /dev/null
++++ b/third-party/jemalloc/Makefile.target.include-none
+@@ -0,0 +1 @@
++
+diff --git a/third-party/jemalloc/Makefile.target.include-system b/third-party/jemalloc/Makefile.target.include-system
+new file mode 100644
+index 0000000000..e69de29bb2
+--- /dev/null
++++ b/third-party/jemalloc/Makefile.target.include-system
+@@ -0,0 +1 @@
++
+diff --git a/util/chplenv/chpl_hwloc.py b/util/chplenv/chpl_hwloc.py
+index cda5ed6bc0..9dc7f0355d 100755
+--- a/util/chplenv/chpl_hwloc.py
++++ b/util/chplenv/chpl_hwloc.py
+@@ -61,7 +61,13 @@ def get_link_args():
+             if exists and retcode != 0:
+                 error("CHPL_HWLOC=system requires hwloc >= 2.1", ValueError)
+
+-            return third_party_utils.pkgconfig_get_system_link_args('hwloc')
++            _, pclibs = third_party_utils.pkgconfig_get_system_link_args('hwloc', static=False)
++            libs = []
++            for pcl in pclibs:
++                libs.append(pcl)
++                if pcl.startswith('-L'):
++                    libs.append(pcl.replace('-L', '-Wl,-rpath,', 1))
++            return ([ ], libs)
+         else:
+             third_party_utils.could_not_find_pkgconfig_pkg("hwloc", "CHPL_HWLOC")
+
+diff --git a/util/chplenv/chpl_jemalloc.py b/util/chplenv/chpl_jemalloc.py
+index 3d665fa56b..78761c1c6e 100644
+--- a/util/chplenv/chpl_jemalloc.py
++++ b/util/chplenv/chpl_jemalloc.py
+@@ -129,7 +129,13 @@ def get_link_args(flag):
+         # try pkg-config
+         args = third_party_utils.pkgconfig_get_system_link_args('jemalloc')
+         if args != (None, None):
+-            return args
++            pclibs = args[1]
++            libs = []
++            for pcl in pclibs:
++                libs.append(pcl)
++                if pcl.startswith('-L'):
++                    libs.append(pcl.replace('-L', '-Wl,-rpath,', 1))
++            return (args[0], libs)
+         else:
+             envname = "CHPL_TARGET_JEMALLOC" if flag == "target" else "CHPL_HOST_JEMALLOC"
+             third_party_utils.could_not_find_pkgconfig_pkg("jemalloc", envname)

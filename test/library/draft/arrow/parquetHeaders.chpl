@@ -2,8 +2,8 @@
 extern const EXIT_FAILURE: int ;
 extern const EXIT_SUCCESS: int;
 require "null.h", "null.c";
-extern proc isNull(ptr: c_void_ptr): c_int;
-extern proc getNULL(): c_void_ptr;
+extern proc isNull(ptr: c_ptr(void)): c_int;
+extern proc getNULL(): c_ptr(void);
 type GErrorPtr = c_ptr(GError);
 
 // Generated with c2chapel version 0.1.0
@@ -336,19 +336,19 @@ extern proc g_atomic_int_xor(ref atomic_arg : guint, val : guint) : guint;
 
 extern proc g_atomic_int_xor(atomic_arg : c_ptr(guint), val : guint) : guint;
 
-extern proc g_atomic_pointer_get(atomic_arg : c_void_ptr) : gpointer;
+extern proc g_atomic_pointer_get(atomic_arg : c_ptr(void)) : gpointer;
 
-extern proc g_atomic_pointer_set(atomic_arg : c_void_ptr, newval : gpointer) : void;
+extern proc g_atomic_pointer_set(atomic_arg : c_ptr(void), newval : gpointer) : void;
 
-extern proc g_atomic_pointer_compare_and_exchange(atomic_arg : c_void_ptr, oldval : gpointer, newval : gpointer) : gboolean;
+extern proc g_atomic_pointer_compare_and_exchange(atomic_arg : c_ptr(void), oldval : gpointer, newval : gpointer) : gboolean;
 
-extern proc g_atomic_pointer_add(atomic_arg : c_void_ptr, val : gssize) : gssize;
+extern proc g_atomic_pointer_add(atomic_arg : c_ptr(void), val : gssize) : gssize;
 
-extern proc g_atomic_pointer_and(atomic_arg : c_void_ptr, val : gsize) : gsize;
+extern proc g_atomic_pointer_and(atomic_arg : c_ptr(void), val : gsize) : gsize;
 
-extern proc g_atomic_pointer_or(atomic_arg : c_void_ptr, val : gsize) : gsize;
+extern proc g_atomic_pointer_or(atomic_arg : c_ptr(void), val : gsize) : gsize;
 
-extern proc g_atomic_pointer_xor(atomic_arg : c_void_ptr, val : gsize) : gsize;
+extern proc g_atomic_pointer_xor(atomic_arg : c_ptr(void), val : gsize) : gsize;
 
 extern proc g_atomic_int_exchange_and_add(ref atomic_arg : gint, val : gint) : gint;
 
@@ -708,9 +708,9 @@ extern proc g_once_impl(ref once : GOnce, func : GThreadFunc, arg : gpointer) : 
 
 extern proc g_once_impl(once : c_ptr(GOnce), func : GThreadFunc, arg : gpointer) : gpointer;
 
-extern proc g_once_init_enter(location : c_void_ptr) : gboolean;
+extern proc g_once_init_enter(location : c_ptr(void)) : gboolean;
 
-extern proc g_once_init_leave(location : c_void_ptr, result : gsize) : void;
+extern proc g_once_init_leave(location : c_ptr(void), result : gsize) : void;
 
 extern proc g_get_num_processors() : guint;
 
@@ -898,11 +898,11 @@ extern proc g_bit_unlock(ref address : gint, lock_bit : gint) : void;
 
 extern proc g_bit_unlock(address : c_ptr(gint), lock_bit : gint) : void;
 
-extern proc g_pointer_bit_lock(address : c_void_ptr, lock_bit : gint) : void;
+extern proc g_pointer_bit_lock(address : c_ptr(void), lock_bit : gint) : void;
 
-extern proc g_pointer_bit_trylock(address : c_void_ptr, lock_bit : gint) : gboolean;
+extern proc g_pointer_bit_trylock(address : c_ptr(void), lock_bit : gint) : gboolean;
 
-extern proc g_pointer_bit_unlock(address : c_void_ptr, lock_bit : gint) : void;
+extern proc g_pointer_bit_unlock(address : c_ptr(void), lock_bit : gint) : void;
 
 extern proc g_time_zone_new(ref identifier : gchar) : c_ptr(GTimeZone);
 
@@ -6732,7 +6732,7 @@ extern proc g_cond_timed_wait(ref cond : GCond, ref mutex : GMutex, ref timeval 
 
 extern proc g_cond_timed_wait(cond : c_ptr(GCond), mutex : c_ptr(GMutex), timeval : c_ptr(GTimeVal)) : gboolean;
 
-extern proc g_autoptr_cleanup_generic_gfree(p : c_void_ptr) : void;
+extern proc g_autoptr_cleanup_generic_gfree(p : c_ptr(void)) : void;
 
 extern proc g_autoptr_cleanup_gstring_free(ref string_arg : GString) : void;
 
@@ -22341,13 +22341,13 @@ extern record _GInputStreamClass {
 
 extern proc g_input_stream_get_type() : GType;
 
-extern proc g_input_stream_read(ref stream : GInputStream, buffer : c_void_ptr, count : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gssize;
+extern proc g_input_stream_read(ref stream : GInputStream, buffer : c_ptr(void), count : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gssize;
 
-extern proc g_input_stream_read(stream : c_ptr(GInputStream), buffer : c_void_ptr, count : gsize, cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gssize;
+extern proc g_input_stream_read(stream : c_ptr(GInputStream), buffer : c_ptr(void), count : gsize, cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gssize;
 
-extern proc g_input_stream_read_all(ref stream : GInputStream, buffer : c_void_ptr, count : gsize, ref bytes_read : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gboolean;
+extern proc g_input_stream_read_all(ref stream : GInputStream, buffer : c_ptr(void), count : gsize, ref bytes_read : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gboolean;
 
-extern proc g_input_stream_read_all(stream : c_ptr(GInputStream), buffer : c_void_ptr, count : gsize, bytes_read : c_ptr(gsize), cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gboolean;
+extern proc g_input_stream_read_all(stream : c_ptr(GInputStream), buffer : c_ptr(void), count : gsize, bytes_read : c_ptr(gsize), cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gboolean;
 
 extern proc g_input_stream_read_bytes(ref stream : GInputStream, count : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : c_ptr(GBytes);
 
@@ -22361,17 +22361,17 @@ extern proc g_input_stream_close(ref stream : GInputStream, ref cancellable : GC
 
 extern proc g_input_stream_close(stream : c_ptr(GInputStream), cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gboolean;
 
-extern proc g_input_stream_read_async(ref stream : GInputStream, buffer : c_void_ptr, count : gsize, io_priority : c_int, ref cancellable : GCancellable, callback : GAsyncReadyCallback, user_data : gpointer) : void;
+extern proc g_input_stream_read_async(ref stream : GInputStream, buffer : c_ptr(void), count : gsize, io_priority : c_int, ref cancellable : GCancellable, callback : GAsyncReadyCallback, user_data : gpointer) : void;
 
-extern proc g_input_stream_read_async(stream : c_ptr(GInputStream), buffer : c_void_ptr, count : gsize, io_priority : c_int, cancellable : c_ptr(GCancellable), callback : GAsyncReadyCallback, user_data : gpointer) : void;
+extern proc g_input_stream_read_async(stream : c_ptr(GInputStream), buffer : c_ptr(void), count : gsize, io_priority : c_int, cancellable : c_ptr(GCancellable), callback : GAsyncReadyCallback, user_data : gpointer) : void;
 
 extern proc g_input_stream_read_finish(ref stream : GInputStream, ref result : GAsyncResult, ref error : c_ptr(GError)) : gssize;
 
 extern proc g_input_stream_read_finish(stream : c_ptr(GInputStream), result : c_ptr(GAsyncResult), error : c_ptr(c_ptr(GError))) : gssize;
 
-extern proc g_input_stream_read_all_async(ref stream : GInputStream, buffer : c_void_ptr, count : gsize, io_priority : c_int, ref cancellable : GCancellable, callback : GAsyncReadyCallback, user_data : gpointer) : void;
+extern proc g_input_stream_read_all_async(ref stream : GInputStream, buffer : c_ptr(void), count : gsize, io_priority : c_int, ref cancellable : GCancellable, callback : GAsyncReadyCallback, user_data : gpointer) : void;
 
-extern proc g_input_stream_read_all_async(stream : c_ptr(GInputStream), buffer : c_void_ptr, count : gsize, io_priority : c_int, cancellable : c_ptr(GCancellable), callback : GAsyncReadyCallback, user_data : gpointer) : void;
+extern proc g_input_stream_read_all_async(stream : c_ptr(GInputStream), buffer : c_ptr(void), count : gsize, io_priority : c_int, cancellable : c_ptr(GCancellable), callback : GAsyncReadyCallback, user_data : gpointer) : void;
 
 extern proc g_input_stream_read_all_finish(ref stream : GInputStream, ref result : GAsyncResult, ref bytes_read : gsize, ref error : c_ptr(GError)) : gboolean;
 
@@ -22482,13 +22482,13 @@ extern proc g_buffered_input_stream_get_available(ref stream : GBufferedInputStr
 
 extern proc g_buffered_input_stream_get_available(stream : c_ptr(GBufferedInputStream)) : gsize;
 
-extern proc g_buffered_input_stream_peek(ref stream : GBufferedInputStream, buffer : c_void_ptr, offset : gsize, count : gsize) : gsize;
+extern proc g_buffered_input_stream_peek(ref stream : GBufferedInputStream, buffer : c_ptr(void), offset : gsize, count : gsize) : gsize;
 
-extern proc g_buffered_input_stream_peek(stream : c_ptr(GBufferedInputStream), buffer : c_void_ptr, offset : gsize, count : gsize) : gsize;
+extern proc g_buffered_input_stream_peek(stream : c_ptr(GBufferedInputStream), buffer : c_ptr(void), offset : gsize, count : gsize) : gsize;
 
-extern proc g_buffered_input_stream_peek_buffer(ref stream : GBufferedInputStream, ref count : gsize) : c_void_ptr;
+extern proc g_buffered_input_stream_peek_buffer(ref stream : GBufferedInputStream, ref count : gsize) : c_ptr(void);
 
-extern proc g_buffered_input_stream_peek_buffer(stream : c_ptr(GBufferedInputStream), count : c_ptr(gsize)) : c_void_ptr;
+extern proc g_buffered_input_stream_peek_buffer(stream : c_ptr(GBufferedInputStream), count : c_ptr(gsize)) : c_ptr(void);
 
 extern proc g_buffered_input_stream_fill(ref stream : GBufferedInputStream, count : gssize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gssize;
 
@@ -22537,13 +22537,13 @@ extern record _GOutputStreamClass {
 
 extern proc g_output_stream_get_type() : GType;
 
-extern proc g_output_stream_write(ref stream : GOutputStream, buffer : c_void_ptr, count : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gssize;
+extern proc g_output_stream_write(ref stream : GOutputStream, buffer : c_ptr(void), count : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gssize;
 
-extern proc g_output_stream_write(stream : c_ptr(GOutputStream), buffer : c_void_ptr, count : gsize, cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gssize;
+extern proc g_output_stream_write(stream : c_ptr(GOutputStream), buffer : c_ptr(void), count : gsize, cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gssize;
 
-extern proc g_output_stream_write_all(ref stream : GOutputStream, buffer : c_void_ptr, count : gsize, ref bytes_written : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gboolean;
+extern proc g_output_stream_write_all(ref stream : GOutputStream, buffer : c_ptr(void), count : gsize, ref bytes_written : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gboolean;
 
-extern proc g_output_stream_write_all(stream : c_ptr(GOutputStream), buffer : c_void_ptr, count : gsize, bytes_written : c_ptr(gsize), cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gboolean;
+extern proc g_output_stream_write_all(stream : c_ptr(GOutputStream), buffer : c_ptr(void), count : gsize, bytes_written : c_ptr(gsize), cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gboolean;
 
 extern proc g_output_stream_writev(ref stream : GOutputStream, ref vectors : GOutputVector, n_vectors : gsize, ref bytes_written : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gboolean;
 
@@ -22578,17 +22578,17 @@ extern proc g_output_stream_close(ref stream : GOutputStream, ref cancellable : 
 
 extern proc g_output_stream_close(stream : c_ptr(GOutputStream), cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gboolean;
 
-extern proc g_output_stream_write_async(ref stream : GOutputStream, buffer : c_void_ptr, count : gsize, io_priority : c_int, ref cancellable : GCancellable, callback : GAsyncReadyCallback, user_data : gpointer) : void;
+extern proc g_output_stream_write_async(ref stream : GOutputStream, buffer : c_ptr(void), count : gsize, io_priority : c_int, ref cancellable : GCancellable, callback : GAsyncReadyCallback, user_data : gpointer) : void;
 
-extern proc g_output_stream_write_async(stream : c_ptr(GOutputStream), buffer : c_void_ptr, count : gsize, io_priority : c_int, cancellable : c_ptr(GCancellable), callback : GAsyncReadyCallback, user_data : gpointer) : void;
+extern proc g_output_stream_write_async(stream : c_ptr(GOutputStream), buffer : c_ptr(void), count : gsize, io_priority : c_int, cancellable : c_ptr(GCancellable), callback : GAsyncReadyCallback, user_data : gpointer) : void;
 
 extern proc g_output_stream_write_finish(ref stream : GOutputStream, ref result : GAsyncResult, ref error : c_ptr(GError)) : gssize;
 
 extern proc g_output_stream_write_finish(stream : c_ptr(GOutputStream), result : c_ptr(GAsyncResult), error : c_ptr(c_ptr(GError))) : gssize;
 
-extern proc g_output_stream_write_all_async(ref stream : GOutputStream, buffer : c_void_ptr, count : gsize, io_priority : c_int, ref cancellable : GCancellable, callback : GAsyncReadyCallback, user_data : gpointer) : void;
+extern proc g_output_stream_write_all_async(ref stream : GOutputStream, buffer : c_ptr(void), count : gsize, io_priority : c_int, ref cancellable : GCancellable, callback : GAsyncReadyCallback, user_data : gpointer) : void;
 
-extern proc g_output_stream_write_all_async(stream : c_ptr(GOutputStream), buffer : c_void_ptr, count : gsize, io_priority : c_int, cancellable : c_ptr(GCancellable), callback : GAsyncReadyCallback, user_data : gpointer) : void;
+extern proc g_output_stream_write_all_async(stream : c_ptr(GOutputStream), buffer : c_ptr(void), count : gsize, io_priority : c_int, cancellable : c_ptr(GCancellable), callback : GAsyncReadyCallback, user_data : gpointer) : void;
 
 extern proc g_output_stream_write_all_finish(ref stream : GOutputStream, ref result : GAsyncResult, ref bytes_written : gsize, ref error : c_ptr(GError)) : gboolean;
 
@@ -22812,9 +22812,9 @@ extern record _GConverterIface {
 
 extern proc g_converter_get_type() : GType;
 
-extern proc g_converter_convert(ref converter : GConverter, inbuf : c_void_ptr, inbuf_size : gsize, outbuf : c_void_ptr, outbuf_size : gsize, flags : GConverterFlags, ref bytes_read : gsize, ref bytes_written : gsize, ref error : c_ptr(GError)) : GConverterResult;
+extern proc g_converter_convert(ref converter : GConverter, inbuf : c_ptr(void), inbuf_size : gsize, outbuf : c_ptr(void), outbuf_size : gsize, flags : GConverterFlags, ref bytes_read : gsize, ref bytes_written : gsize, ref error : c_ptr(GError)) : GConverterResult;
 
-extern proc g_converter_convert(converter : c_ptr(GConverter), inbuf : c_void_ptr, inbuf_size : gsize, outbuf : c_void_ptr, outbuf_size : gsize, flags : GConverterFlags, bytes_read : c_ptr(gsize), bytes_written : c_ptr(gsize), error : c_ptr(c_ptr(GError))) : GConverterResult;
+extern proc g_converter_convert(converter : c_ptr(GConverter), inbuf : c_ptr(void), inbuf_size : gsize, outbuf : c_ptr(void), outbuf_size : gsize, flags : GConverterFlags, bytes_read : c_ptr(gsize), bytes_written : c_ptr(gsize), error : c_ptr(c_ptr(GError))) : GConverterResult;
 
 extern proc g_converter_reset(ref converter : GConverter) : void;
 
@@ -26762,15 +26762,15 @@ extern proc g_memory_input_stream_get_type() : GType;
 
 extern proc g_memory_input_stream_new() : c_ptr(GInputStream);
 
-extern proc g_memory_input_stream_new_from_data(data : c_void_ptr, len : gssize, destroy : GDestroyNotify) : c_ptr(GInputStream);
+extern proc g_memory_input_stream_new_from_data(data : c_ptr(void), len : gssize, destroy : GDestroyNotify) : c_ptr(GInputStream);
 
 extern proc g_memory_input_stream_new_from_bytes(ref bytes_arg : GBytes) : c_ptr(GInputStream);
 
 extern proc g_memory_input_stream_new_from_bytes(bytes_arg : c_ptr(GBytes)) : c_ptr(GInputStream);
 
-extern proc g_memory_input_stream_add_data(ref stream : GMemoryInputStream, data : c_void_ptr, len : gssize, destroy : GDestroyNotify) : void;
+extern proc g_memory_input_stream_add_data(ref stream : GMemoryInputStream, data : c_ptr(void), len : gssize, destroy : GDestroyNotify) : void;
 
-extern proc g_memory_input_stream_add_data(stream : c_ptr(GMemoryInputStream), data : c_void_ptr, len : gssize, destroy : GDestroyNotify) : void;
+extern proc g_memory_input_stream_add_data(stream : c_ptr(GMemoryInputStream), data : c_ptr(void), len : gssize, destroy : GDestroyNotify) : void;
 
 extern proc g_memory_input_stream_add_bytes(ref stream : GMemoryInputStream, ref bytes_arg : GBytes) : void;
 
@@ -27687,9 +27687,9 @@ extern proc g_pollable_input_stream_create_source(ref stream : GPollableInputStr
 
 extern proc g_pollable_input_stream_create_source(stream : c_ptr(GPollableInputStream), cancellable : c_ptr(GCancellable)) : c_ptr(GSource);
 
-extern proc g_pollable_input_stream_read_nonblocking(ref stream : GPollableInputStream, buffer : c_void_ptr, count : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gssize;
+extern proc g_pollable_input_stream_read_nonblocking(ref stream : GPollableInputStream, buffer : c_ptr(void), count : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gssize;
 
-extern proc g_pollable_input_stream_read_nonblocking(stream : c_ptr(GPollableInputStream), buffer : c_void_ptr, count : gsize, cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gssize;
+extern proc g_pollable_input_stream_read_nonblocking(stream : c_ptr(GPollableInputStream), buffer : c_ptr(void), count : gsize, cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gssize;
 
 extern record _GPollableOutputStreamInterface {
   var g_iface : GTypeInterface;
@@ -27714,9 +27714,9 @@ extern proc g_pollable_output_stream_create_source(ref stream : GPollableOutputS
 
 extern proc g_pollable_output_stream_create_source(stream : c_ptr(GPollableOutputStream), cancellable : c_ptr(GCancellable)) : c_ptr(GSource);
 
-extern proc g_pollable_output_stream_write_nonblocking(ref stream : GPollableOutputStream, buffer : c_void_ptr, count : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gssize;
+extern proc g_pollable_output_stream_write_nonblocking(ref stream : GPollableOutputStream, buffer : c_ptr(void), count : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gssize;
 
-extern proc g_pollable_output_stream_write_nonblocking(stream : c_ptr(GPollableOutputStream), buffer : c_void_ptr, count : gsize, cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gssize;
+extern proc g_pollable_output_stream_write_nonblocking(stream : c_ptr(GPollableOutputStream), buffer : c_ptr(void), count : gsize, cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gssize;
 
 extern proc g_pollable_output_stream_writev_nonblocking(ref stream : GPollableOutputStream, ref vectors : GOutputVector, n_vectors : gsize, ref bytes_written : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : GPollableReturn;
 
@@ -27730,17 +27730,17 @@ extern proc g_pollable_source_new_full(pollable_stream : gpointer, ref child_sou
 
 extern proc g_pollable_source_new_full(pollable_stream : gpointer, child_source : c_ptr(GSource), cancellable : c_ptr(GCancellable)) : c_ptr(GSource);
 
-extern proc g_pollable_stream_read(ref stream : GInputStream, buffer : c_void_ptr, count : gsize, blocking : gboolean, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gssize;
+extern proc g_pollable_stream_read(ref stream : GInputStream, buffer : c_ptr(void), count : gsize, blocking : gboolean, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gssize;
 
-extern proc g_pollable_stream_read(stream : c_ptr(GInputStream), buffer : c_void_ptr, count : gsize, blocking : gboolean, cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gssize;
+extern proc g_pollable_stream_read(stream : c_ptr(GInputStream), buffer : c_ptr(void), count : gsize, blocking : gboolean, cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gssize;
 
-extern proc g_pollable_stream_write(ref stream : GOutputStream, buffer : c_void_ptr, count : gsize, blocking : gboolean, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gssize;
+extern proc g_pollable_stream_write(ref stream : GOutputStream, buffer : c_ptr(void), count : gsize, blocking : gboolean, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gssize;
 
-extern proc g_pollable_stream_write(stream : c_ptr(GOutputStream), buffer : c_void_ptr, count : gsize, blocking : gboolean, cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gssize;
+extern proc g_pollable_stream_write(stream : c_ptr(GOutputStream), buffer : c_ptr(void), count : gsize, blocking : gboolean, cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gssize;
 
-extern proc g_pollable_stream_write_all(ref stream : GOutputStream, buffer : c_void_ptr, count : gsize, blocking : gboolean, ref bytes_written : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gboolean;
+extern proc g_pollable_stream_write_all(ref stream : GOutputStream, buffer : c_ptr(void), count : gsize, blocking : gboolean, ref bytes_written : gsize, ref cancellable : GCancellable, ref error : c_ptr(GError)) : gboolean;
 
-extern proc g_pollable_stream_write_all(stream : c_ptr(GOutputStream), buffer : c_void_ptr, count : gsize, blocking : gboolean, bytes_written : c_ptr(gsize), cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gboolean;
+extern proc g_pollable_stream_write_all(stream : c_ptr(GOutputStream), buffer : c_ptr(void), count : gsize, blocking : gboolean, bytes_written : c_ptr(gsize), cancellable : c_ptr(GCancellable), error : c_ptr(c_ptr(GError))) : gboolean;
 
 extern proc g_property_action_get_type() : GType;
 
@@ -45914,7 +45914,7 @@ extern type gchar = c_char;
 
 extern type gchararray = c_ptr(gchar);
 
-extern type gconstpointer = c_void_ptr;
+extern type gconstpointer = c_ptr(void);
 
 extern type gdouble = real(64);
 
@@ -45936,7 +45936,7 @@ extern type glong = c_long;
 
 extern type goffset = gint64;
 
-extern type gpointer = c_void_ptr;
+extern type gpointer = c_ptr(void);
 
 extern type grefcount = gint;
 
@@ -45984,9 +45984,9 @@ extern record MirConnection {};
 // Opaque struct?
 extern record MirDisplayConfig {};
 
-extern type MirEGLNativeDisplayType = c_void_ptr;
+extern type MirEGLNativeDisplayType = c_ptr(void);
 
-extern type MirEGLNativeWindowType = c_void_ptr;
+extern type MirEGLNativeWindowType = c_ptr(void);
 
 // Opaque struct?
 extern record MirPersistentId {};

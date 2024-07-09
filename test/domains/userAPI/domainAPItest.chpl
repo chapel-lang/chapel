@@ -1,13 +1,13 @@
 config param testError = 0, testDisplayRepresentation = false;
 
-proc testDomainAPI2D(lbl, D: domain, idx, OOBidx1, OOBidx2, intDom) {
+proc testDomainAPI2D(lbl, D: domain(?), idx, OOBidx1, OOBidx2, intDom) {
   writeln(lbl);
   writeln("------------");
   writeln(D);
   writeln("rank             = ", D.rank);
   writeln("idxType          = ", D.idxType:string);
   writeln("fullIdxType      = ", D.fullIdxType:string);
-  writeln("stridable        = ", D.stridable);
+  writeln("strides          = ", D.strides);
   writeln("size             = ", D.size);
   writeln("isEmpty()        = ", D.isEmpty());
   writeln("lowBound         = ", D.lowBound);

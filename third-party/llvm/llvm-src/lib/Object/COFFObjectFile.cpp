@@ -13,7 +13,6 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/StringSwitch.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/BinaryFormat/COFF.h"
 #include "llvm/Object/Binary.h"
@@ -26,6 +25,7 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/MemoryBufferRef.h"
+#include "llvm/TargetParser/Triple.h"
 #include <algorithm>
 #include <cassert>
 #include <cinttypes>
@@ -336,7 +336,7 @@ bool COFFObjectFile::isDebugSection(DataRefImpl Ref) const {
     return false;
   }
   StringRef SectionName = SectionNameOrErr.get();
-  return SectionName.startswith(".debug");
+  return SectionName.starts_with(".debug");
 }
 
 unsigned COFFObjectFile::getSectionID(SectionRef Sec) const {
@@ -753,6 +753,54 @@ Error COFFObjectFile::initLoadConfigPtr() {
     return E;
 
   LoadConfig = (const void *)IntPtr;
+
+  if (is64()) {
+    auto Config = getLoadConfig64();
+    if (Config->Size >=
+            offsetof(coff_load_configuration64, CHPEMetadataPointer) +
+                sizeof(Config->CHPEMetadataPointer) &&
+        Config->CHPEMetadataPointer) {
+      uint64_t ChpeOff = Config->CHPEMetadataPointer;
+      if (Error E =
+              getRvaPtr(ChpeOff - getImageBase(), IntPtr, "CHPE metadata"))
+        return E;
+      if (Error E = checkOffset(Data, IntPtr, sizeof(CHPEMetadata)))
+        return E;
+
+      CHPEMetadata = reinterpret_cast<const chpe_metadata *>(IntPtr);
+
+      // Validate CHPE metadata
+      if (CHPEMetadata->CodeMapCount) {
+        if (Error E = getRvaPtr(CHPEMetadata->CodeMap, IntPtr, "CHPE code map"))
+          return E;
+        if (Error E = checkOffset(Data, IntPtr,
+                                  CHPEMetadata->CodeMapCount *
+                                      sizeof(chpe_range_entry)))
+          return E;
+      }
+
+      if (CHPEMetadata->CodeRangesToEntryPointsCount) {
+        if (Error E = getRvaPtr(CHPEMetadata->CodeRangesToEntryPoints, IntPtr,
+                                "CHPE entry point ranges"))
+          return E;
+        if (Error E = checkOffset(Data, IntPtr,
+                                  CHPEMetadata->CodeRangesToEntryPointsCount *
+                                      sizeof(chpe_code_range_entry)))
+          return E;
+      }
+
+      if (CHPEMetadata->RedirectionMetadataCount) {
+        if (Error E = getRvaPtr(CHPEMetadata->RedirectionMetadata, IntPtr,
+                                "CHPE redirection metadata"))
+          return E;
+        if (Error E = checkOffset(Data, IntPtr,
+                                  CHPEMetadata->RedirectionMetadataCount *
+                                      sizeof(chpe_redirection_entry)))
+          return E;
+      }
+    }
+  }
+
   return Error::success();
 }
 
@@ -1014,6 +1062,10 @@ StringRef COFFObjectFile::getFileFormatName() const {
     return "COFF-ARM";
   case COFF::IMAGE_FILE_MACHINE_ARM64:
     return "COFF-ARM64";
+  case COFF::IMAGE_FILE_MACHINE_ARM64EC:
+    return "COFF-ARM64EC";
+  case COFF::IMAGE_FILE_MACHINE_ARM64X:
+    return "COFF-ARM64X";
   default:
     return "COFF-<unknown arch>";
   }
@@ -1028,6 +1080,8 @@ Triple::ArchType COFFObjectFile::getArch() const {
   case COFF::IMAGE_FILE_MACHINE_ARMNT:
     return Triple::thumb;
   case COFF::IMAGE_FILE_MACHINE_ARM64:
+  case COFF::IMAGE_FILE_MACHINE_ARM64EC:
+  case COFF::IMAGE_FILE_MACHINE_ARM64X:
     return Triple::aarch64;
   default:
     return Triple::UnknownArch;
@@ -1131,7 +1185,7 @@ COFFObjectFile::getSymbolAuxData(COFFSymbolRef Symbol) const {
            "Aux Symbol data did not point to the beginning of a symbol");
 #endif
   }
-  return makeArrayRef(Aux, Symbol.getNumberOfAuxSymbols() * SymbolSize);
+  return ArrayRef(Aux, Symbol.getNumberOfAuxSymbols() * SymbolSize);
 }
 
 uint32_t COFFObjectFile::getSymbolIndex(COFFSymbolRef Symbol) const {
@@ -1149,9 +1203,9 @@ COFFObjectFile::getSectionName(const coff_section *Sec) const {
   StringRef Name = StringRef(Sec->Name, COFF::NameSize).split('\0').first;
 
   // Check for string table entry. First byte is '/'.
-  if (Name.startswith("/")) {
+  if (Name.starts_with("/")) {
     uint32_t Offset;
-    if (Name.startswith("//")) {
+    if (Name.starts_with("//")) {
       if (decodeBase64StringEntry(Name.substr(2), Offset))
         return createStringError(object_error::parse_failed,
                                  "invalid section name");
@@ -1196,7 +1250,7 @@ Error COFFObjectFile::getSectionContents(const coff_section *Sec,
   uint32_t SectionSize = getSectionSize(Sec);
   if (Error E = checkOffset(Data, ConStart, SectionSize))
     return E;
-  Res = makeArrayRef(reinterpret_cast<const uint8_t *>(ConStart), SectionSize);
+  Res = ArrayRef(reinterpret_cast<const uint8_t *>(ConStart), SectionSize);
   return Error::success();
 }
 
@@ -1314,6 +1368,8 @@ StringRef COFFObjectFile::getRelocationTypeName(uint16_t Type) const {
     }
     break;
   case COFF::IMAGE_FILE_MACHINE_ARM64:
+  case COFF::IMAGE_FILE_MACHINE_ARM64EC:
+  case COFF::IMAGE_FILE_MACHINE_ARM64X:
     switch (Type) {
     LLVM_COFF_SWITCH_RELOC_TYPE_NAME(IMAGE_REL_ARM64_ABSOLUTE);
     LLVM_COFF_SWITCH_RELOC_TYPE_NAME(IMAGE_REL_ARM64_ADDR32);
@@ -1851,7 +1907,7 @@ Error ResourceSectionRef::load(const COFFObjectFile *O, const SectionRef &S) {
   Expected<StringRef> Contents = Section.getContents();
   if (!Contents)
     return Contents.takeError();
-  BBS = BinaryByteStream(*Contents, support::little);
+  BBS = BinaryByteStream(*Contents, llvm::endianness::little);
   const coff_section *COFFSect = Obj->getCOFFSection(Section);
   ArrayRef<coff_relocation> OrigRelocs = Obj->getRelocations(COFFSect);
   Relocs.reserve(OrigRelocs.size());
@@ -1896,6 +1952,8 @@ ResourceSectionRef::getContents(const coff_resource_data_entry &Entry) {
       RVAReloc = COFF::IMAGE_REL_ARM_ADDR32NB;
       break;
     case COFF::IMAGE_FILE_MACHINE_ARM64:
+    case COFF::IMAGE_FILE_MACHINE_ARM64EC:
+    case COFF::IMAGE_FILE_MACHINE_ARM64X:
       RVAReloc = COFF::IMAGE_REL_ARM64_ADDR32NB;
       break;
     default:

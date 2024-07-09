@@ -18,9 +18,9 @@ def RocketModel : SchedMachineModel {
   let MispredictPenalty = 3;
   let CompleteModel = false;
   let UnsupportedFeatures = [HasStdExtZbkb, HasStdExtZbkc, HasStdExtZbkx,
-                             HasStdExtZknd, HasStdExtZkne, HasStdExtZknh,
-                             HasStdExtZksed, HasStdExtZksh, HasStdExtZkr,
-                             HasVInstructions, HasVInstructionsI64];
+                             HasStdExtZcmt, HasStdExtZknd, HasStdExtZkne,
+                             HasStdExtZknh, HasStdExtZksed, HasStdExtZksh,
+                             HasStdExtZkr, HasVInstructions, HasVInstructionsI64];
 }
 
 //===----------------------------------------------------------------------===//
@@ -51,7 +51,6 @@ let SchedModel = RocketModel in {
 def : WriteRes<WriteJmp, [RocketUnitB]>;
 def : WriteRes<WriteJal, [RocketUnitB]>;
 def : WriteRes<WriteJalr, [RocketUnitB]>;
-def : WriteRes<WriteJmpReg, [RocketUnitB]>;
 
 // Integer arithmetic and logic
 def : WriteRes<WriteIALU32, [RocketUnitALU]>;
@@ -71,11 +70,11 @@ def : WriteRes<WriteIMul32, [RocketUnitIMul]>;
 // Worst case latency is used.
 def : WriteRes<WriteIDiv32, [RocketUnitIDiv]> {
   let Latency = 34;
-  let ResourceCycles = [34];
+  let ReleaseAtCycles = [34];
 }
 def : WriteRes<WriteIDiv, [RocketUnitIDiv]> {
   let Latency = 33;
-  let ResourceCycles = [33];
+  let ReleaseAtCycles = [33];
 }
 
 // Memory
@@ -93,7 +92,6 @@ def : WriteRes<WriteLDH, [RocketUnitMem]>;
 
 let Latency = 2 in {
 def : WriteRes<WriteLDW, [RocketUnitMem]>;
-def : WriteRes<WriteLDWU, [RocketUnitMem]>;
 def : WriteRes<WriteLDD, [RocketUnitMem]>;
 def : WriteRes<WriteFLD32, [RocketUnitMem]>;
 def : WriteRes<WriteFLD64, [RocketUnitMem]>;
@@ -111,14 +109,14 @@ def : WriteRes<WriteAtomicSTD, [RocketUnitMem]>;
 
 // Single precision.
 let Latency = 4 in {
-def : WriteRes<WriteFALU32, [RocketUnitFPALU]>;
+def : WriteRes<WriteFAdd32, [RocketUnitFPALU]>;
 def : WriteRes<WriteFSGNJ32, [RocketUnitFPALU]>;
 def : WriteRes<WriteFMinMax32, [RocketUnitFPALU]>;
 }
 
 // Double precision
 let Latency = 6 in {
-def : WriteRes<WriteFALU64, [RocketUnitFPALU]>;
+def : WriteRes<WriteFAdd64, [RocketUnitFPALU]>;
 def : WriteRes<WriteFSGNJ64, [RocketUnitFPALU]>;
 def : WriteRes<WriteFMinMax64, [RocketUnitFPALU]>;
 }
@@ -159,16 +157,16 @@ def : WriteRes<WriteFMA64, [RocketUnitFPALU]>;
 
 // FP division
 // FP division unit on Rocket is not pipelined, so set resource cycles to latency.
-let Latency = 20, ResourceCycles = [20] in {
+let Latency = 20, ReleaseAtCycles = [20] in {
 def : WriteRes<WriteFDiv32, [RocketUnitFPDivSqrt]>;
 def : WriteRes<WriteFDiv64, [RocketUnitFPDivSqrt]>;
 }
 
 // FP square root unit on Rocket is not pipelined, so set resource cycles to latency.
 def : WriteRes<WriteFSqrt32, [RocketUnitFPDivSqrt]> { let Latency = 20;
-                                                      let ResourceCycles = [20]; }
+                                                      let ReleaseAtCycles = [20]; }
 def : WriteRes<WriteFSqrt64, [RocketUnitFPDivSqrt]> { let Latency = 25;
-                                                      let ResourceCycles = [25]; }
+                                                      let ReleaseAtCycles = [25]; }
 
 // Others
 def : WriteRes<WriteCSR, []>;
@@ -201,13 +199,16 @@ def : ReadAdvance<ReadAtomicLDW, 0>;
 def : ReadAdvance<ReadAtomicLDD, 0>;
 def : ReadAdvance<ReadAtomicSTW, 0>;
 def : ReadAdvance<ReadAtomicSTD, 0>;
+def : ReadAdvance<ReadFStoreData, 0>;
 def : ReadAdvance<ReadFMemBase, 0>;
-def : ReadAdvance<ReadFALU32, 0>;
-def : ReadAdvance<ReadFALU64, 0>;
+def : ReadAdvance<ReadFAdd32, 0>;
+def : ReadAdvance<ReadFAdd64, 0>;
 def : ReadAdvance<ReadFMul32, 0>;
-def : ReadAdvance<ReadFMA32, 0>;
 def : ReadAdvance<ReadFMul64, 0>;
+def : ReadAdvance<ReadFMA32, 0>;
+def : ReadAdvance<ReadFMA32Addend, 0>;
 def : ReadAdvance<ReadFMA64, 0>;
+def : ReadAdvance<ReadFMA64Addend, 0>;
 def : ReadAdvance<ReadFDiv32, 0>;
 def : ReadAdvance<ReadFDiv64, 0>;
 def : ReadAdvance<ReadFSqrt32, 0>;
@@ -242,11 +243,9 @@ defm : UnsupportedSchedZba;
 defm : UnsupportedSchedZbb;
 defm : UnsupportedSchedZbc;
 defm : UnsupportedSchedZbs;
-defm : UnsupportedSchedZbe;
-defm : UnsupportedSchedZbf;
-defm : UnsupportedSchedZbm;
-defm : UnsupportedSchedZbp;
-defm : UnsupportedSchedZbr;
-defm : UnsupportedSchedZbt;
+defm : UnsupportedSchedZbkb;
+defm : UnsupportedSchedZbkx;
+defm : UnsupportedSchedZfa;
 defm : UnsupportedSchedZfh;
+defm : UnsupportedSchedSFB;
 }

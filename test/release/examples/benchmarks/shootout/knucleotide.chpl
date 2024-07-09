@@ -12,10 +12,10 @@ config param tableSize = 2**16,
 
 
 proc main(args: [] string) {
-  // Open stdin and a binary reader channel
+  // Open stdin and a non-locking fileReader
   const consoleIn = new file(0),
         fileLen = consoleIn.size,
-        stdinNoLock = consoleIn.reader(kind=ionative, locking=false);
+        stdinNoLock = consoleIn.reader(locking=false);
 
   // Read line-by-line until we see a line beginning with '>TH'
   var buff: [1..columns] uint(8),
@@ -37,7 +37,7 @@ proc main(args: [] string) {
     idx += lineSize - 1;
     lineSize = stdinNoLock.readLine(data[idx..]);
   }
-  
+
   // Resize our array to the amount actually read
   dataDom = {1..idx};
 
@@ -64,7 +64,7 @@ proc writeFreqs(data, param nclSize) {
   // sort by frequencies
 
   for (f, s) in sorted(arr, comparator=reverseComparator) do
-   writef("%s %.3dr\n", decode(s, nclSize), 
+   writef("%s %.3dr\n", decode(s, nclSize),
            (100.0 * f) / (data.size - nclSize));
   writeln();
 }
@@ -81,7 +81,7 @@ proc writeCount(data, param str) {
 proc calculate(data, param nclSize) {
   var freqs = new map(int, int);
 
-  var lock$: sync bool = true;
+  var lock: sync bool = true;
   const numTasks = here.maxTaskPar;
   coforall tid in 1..numTasks with (ref freqs) {
     var myArr = new map(int, int);
@@ -89,10 +89,10 @@ proc calculate(data, param nclSize) {
     for i in tid..(data.size-nclSize) by numTasks do
       myArr[hash(data, i, nclSize)] += 1;
 
-    lock$.readFE();        // acquire lock
+    lock.readFE();        // acquire lock
     for (k,v) in zip(myArr.keys(), myArr.values()) do
       freqs[k] += v;
-    lock$.writeEF(true); // release lock
+    lock.writeEF(true); // release lock
   }
 
   return freqs;

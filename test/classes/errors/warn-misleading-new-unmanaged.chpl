@@ -97,7 +97,7 @@ proc test4n() {
   var x: borrowed C? = myBorrowed;
   // warn
   x = new unmanaged C();
-  
+
   delete (x: unmanaged);
   delete myUnmanaged;
 }
@@ -109,7 +109,7 @@ proc test4nn() {
   var x: borrowed C? = myBorrowed;
   // warn
   x = new unmanaged C?();
-  
+
   delete (x: unmanaged);
   delete myUnmanaged;
 }

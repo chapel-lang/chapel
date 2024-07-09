@@ -13,6 +13,7 @@
 #include "llvm/DebugInfo/PDB/Native/RawTypes.h"
 #include "llvm/Support/BinaryStreamWriter.h"
 #include "llvm/Support/Endian.h"
+#include "llvm/Support/TimeProfiler.h"
 
 #include <map>
 
@@ -178,7 +179,7 @@ Error PDBStringTableBuilder::writeHashTable(BinaryStreamWriter &Writer) const {
     return EC;
   std::vector<ulittle32_t> Buckets(BucketCount);
 
-  for (auto &Pair : Strings) {
+  for (const auto &Pair : Strings) {
     StringRef S = Pair.getKey();
     uint32_t Offset = Pair.getValue();
     uint32_t Hash = hashStringV1(S);
@@ -207,6 +208,7 @@ Error PDBStringTableBuilder::writeEpilogue(BinaryStreamWriter &Writer) const {
 }
 
 Error PDBStringTableBuilder::commit(BinaryStreamWriter &Writer) const {
+  llvm::TimeTraceScope timeScope("Commit strings table");
   BinaryStreamWriter SectionWriter;
 
   std::tie(SectionWriter, Writer) = Writer.split(sizeof(PDBStringTableHeader));

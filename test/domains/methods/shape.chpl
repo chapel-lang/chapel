@@ -47,7 +47,7 @@ assertEqual(enumArray.shape, (10,), msg='enumArray:');
 //
 
 // Block-distributed
-var blockDom = rectDom dmapped Block(boundingBox=rectDom);
+var blockDom = rectDom dmapped new blockDist(boundingBox=rectDom);
 assertEqual(blockDom.shape, (10, 10), msg='blockDom');
 
 var blockArray: [blockDom] int;
@@ -57,6 +57,6 @@ assertEqual(blockArray.shape, (10, 10), msg='blockArray:');
 proc assertEqual(a, b, msg) {
   if a != b {
     writeln(msg);
-    writeln('AssertionError: %t != %t'.format(a, b));
+    writeln('AssertionError: %? != %?'.format(a, b));
   }
 }

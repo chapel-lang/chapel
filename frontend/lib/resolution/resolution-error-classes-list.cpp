@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -62,6 +62,10 @@ static const char* allowedItems(resolution::VisibilityStmtKind kind) {
   return kind == resolution::VIS_USE ? "modules or enums" : "modules";
 }
 
+static const char* nilabilityStr(const types::ClassTypeDecorator& dec) {
+  return dec.isNilable() ? "nilable" : "non-nilable";
+}
+
 // describe where a symbol came from
 // (in a way, it prints out a ResultVisibilityTrace)
 //
@@ -73,7 +77,6 @@ static const char* allowedItems(resolution::VisibilityStmtKind kind) {
 //
 // 'start' indicates where in the trace to start, since sometimes
 // the first element might have already been printed.
-// 'oneOnly' indicates that only the 1st match should be described
 //
 // 'intro' will be emitted before the first message for a trace
 // (only relevant if start==0). If it is not empty, it should probably
@@ -110,30 +113,37 @@ static void describeSymbolTrace(ErrorWriterBase& wr,
       if (start==0 && needsIntroText) {
         msg = intro;
       }
-      if (from != name) {
-        msg += "'" + from.str() + "'";
-      } else {
-        msg += "it";
-      }
-      wr.note(errId, msg,
-              " was provided by the automatically-included modules.");
+      wr.note(errId, msg, "in the automatically-included modules.");
       encounteredAutoModule = true;
       needsIntroText = false;
       break;
     } else if (elt.fromUseImport) {
       std::string errbegin;
       std::string nameSuffix;
+
       if (start==0 && needsIntroText) {
         errbegin = intro;
         errbegin += "through";
       } else {
-        errbegin = "and then through";
+        errbegin = "and then ";
+        errbegin += "through";
       }
       if (from != name) {
         nameSuffix += " providing '" + from.str() + "'";
       }
 
-      wr.note(locationOnly(elt.visibilityClauseId), errbegin, " the '", elt.visibilityStmtKind, "' statement", nameSuffix, " here:");
+      std::string of;
+      if (!elt.usedImportedThingName.isEmpty()) {
+        of += " of '";
+        of += elt.usedImportedThingName.str();
+        of += "'";
+      } else {
+        of = " statement";
+      }
+
+      wr.note(locationOnly(elt.visibilityClauseId), errbegin,
+              " the '", elt.visibilityStmtKind, "'", of,
+              nameSuffix, " here:");
       wr.code<ID,ID>(elt.visibilityClauseId, { elt.visibilityClauseId });
       from = elt.renameFrom;
       needsIntroText = false;
@@ -149,9 +159,9 @@ static void describeSymbolTrace(ErrorWriterBase& wr,
 
 /* begin resolution errors */
 void ErrorAmbiguousConfigName::write(ErrorWriterBase& wr) const {
-  auto& name = std::get<std::string>(info);
-  auto variable = std::get<const uast::Variable*>(info);
-  auto otherId = std::get<ID>(info);
+  auto& name = std::get<std::string>(info_);
+  auto variable = std::get<const uast::Variable*>(info_);
+  auto otherId = std::get<ID>(info_);
   wr.heading(kind_, type_, locationOnly(variable), "ambiguous config name (", name, ").");
   wr.code(variable);
   wr.note(locationOnly(otherId), "also defined here:");
@@ -160,9 +170,9 @@ void ErrorAmbiguousConfigName::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorAmbiguousConfigSet::write(ErrorWriterBase& wr) const {
-  auto& name1 = std::get<1>(info);
-  auto& name2 = std::get<2>(info);
-  auto variable = std::get<const uast::Variable*>(info);
+  auto& name1 = std::get<1>(info_);
+  auto& name2 = std::get<2>(info_);
+  auto variable = std::get<const uast::Variable*>(info_);
   wr.heading(kind_, type_, locationOnly(variable),
             "config set ambiguously via '-s", name1, "' and '-s", name2, "'");
 }
@@ -208,10 +218,10 @@ void describeAmbiguousMatch(ErrorWriterBase& wr,
 }
 
 void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
-  auto ident = std::get<const uast::Identifier*>(info);
-  auto moreMentions = std::get<bool>(info);
-  auto matches = std::get<std::vector<resolution::BorrowedIdsWithName>>(info);
-  auto trace = std::get<std::vector<resolution::ResultVisibilityTrace>>(info);
+  auto ident = std::get<const uast::Identifier*>(info_);
+  auto moreMentions = std::get<bool>(info_);
+  auto matches = std::get<std::vector<resolution::BorrowedIdsWithName>>(info_);
+  auto trace = std::get<std::vector<resolution::ResultVisibilityTrace>>(info_);
 
   wr.heading(kind_, type_, ident,
              "'", ident->name(), "' is ambiguous",
@@ -235,9 +245,9 @@ void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorAmbiguousVisibilityIdentifier::write(ErrorWriterBase& wr) const {
-  auto name = std::get<UniqueString>(info);
-  auto mentionId = std::get<ID>(info);
-  auto potentialTargetIds = std::get<std::vector<ID>>(info);
+  auto name = std::get<UniqueString>(info_);
+  auto mentionId = std::get<ID>(info_);
+  auto potentialTargetIds = std::get<std::vector<ID>>(info_);
 
   wr.heading(kind_, type_, mentionId,
              "'", name, "' is ambiguous");
@@ -256,18 +266,56 @@ void ErrorAmbiguousVisibilityIdentifier::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorAsWithUseExcept::write(ErrorWriterBase& wr) const {
-  auto use = std::get<const uast::Use*>(info);
-  auto as = std::get<const uast::As*>(info);
+  auto use = std::get<const uast::Use*>(info_);
+  auto as = std::get<const uast::As*>(info_);
   wr.heading(kind_, type_, locationOnly(use),
              "cannot rename in 'except' list.");
   wr.message("The renaming occurs because of the use of 'as' here:");
   wr.code(use, { as });
 }
 
+void ErrorAssignFieldBeforeInit::write(ErrorWriterBase& wr) const {
+  auto initCall = std::get<const uast::FnCall*>(info_);
+  auto& initializations = std::get<1>(info_);
+
+  wr.heading(kind_, type_, initCall,
+             "field initialization not allowed before 'super.init()' or 'this.init()'");
+
+  for (auto& initPair : initializations) {
+    auto decl = initPair.first;
+    auto id = initPair.second;
+    wr.note(id, "field '", decl->name(), "' is initialized before the 'init' call here:");
+    wr.code<ID, ID>(id, { id });
+  }
+}
+
+void ErrorConstRefCoercion::write(ErrorWriterBase& wr) const {
+  auto ast = std::get<const uast::AstNode*>(info_);
+  auto& c = std::get<resolution::MostSpecificCandidate>(info_);
+
+  auto formalName = c.fn()->formalName(c.constRefCoercionFormal());
+
+  wr.heading(kind_, type_, ast, "function call requires coercion of actual ",
+             (c.constRefCoercionActual() + 1) ," for 'const ref' formal '",
+             formalName, "'.");
+  if (auto call = ast->toCall()) {
+    wr.code(call, { call->actual(c.constRefCoercionActual()) });
+  } else {
+    wr.code(ast);
+  }
+  wr.message("Formals with the 'const ref' intent do not currently support coercions.");
+
+  auto fmlDecl = c.fn()->untyped()->formalDecl(c.constRefCoercionFormal());
+  if (fmlDecl) {
+    wr.message("The formal was declared 'const ref' here:");
+    wr.code(fmlDecl, { fmlDecl });
+  }
+}
+
 void ErrorDeprecation::write(ErrorWriterBase& wr) const {
-  auto msg = std::get<std::string>(info);
-  auto mention = std::get<const uast::AstNode*>(info);
-  auto target = std::get<const uast::NamedDecl*>(info);
+  auto msg = std::get<std::string>(info_);
+  auto mention = std::get<const uast::AstNode*>(info_);
+  auto target = std::get<const uast::NamedDecl*>(info_);
   CHPL_ASSERT(mention && target);
 
   wr.headingVerbatim(kind_, type_, mention, msg);
@@ -283,10 +331,10 @@ void ErrorDeprecation::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
-  auto dot = std::get<const uast::Dot*>(info);
-  auto visibilityClause = std::get<const uast::VisibilityClause*>(info);
+  auto dot = std::get<const uast::Dot*>(info_);
+  auto visibilityClause = std::get<const uast::VisibilityClause*>(info_);
   auto limitationKind =
-      std::get<const uast::VisibilityClause::LimitationKind>(info);
+      std::get<const uast::VisibilityClause::LimitationKind>(info_);
   wr.heading(kind_, type_, locationOnly(dot), "cannot use dot expression '",
              dot, "' in '", limitationKind, "' list.");
   wr.code(visibilityClause, {dot});
@@ -295,56 +343,108 @@ void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
       "'use' or 'import'.");
 }
 
-void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
-  auto formal = std::get<const uast::Formal*>(info);
-  const auto& match = std::get<resolution::BorrowedIdsWithName>(info);
-  const auto& trace = std::get<resolution::ResultVisibilityTrace>(info);
-  CHPL_ASSERT(formal && !trace.visibleThrough.empty());
-
-  // find the first visibility clause ID
-  ID firstVisibilityClauseId;
-  resolution::VisibilityStmtKind firstUseOrImport = resolution::VIS_USE;
-
-  int start = 0;
-
-  int i = 0;
-  for (const auto& elt : trace.visibleThrough) {
-    if (elt.fromUseImport) {
-      firstVisibilityClauseId = elt.visibilityClauseId;
-      firstUseOrImport = elt.visibilityStmtKind;
-      start = i+1; // skip this one in describeSymbolTrace
-      break;
-    }
-    i++;
+void ErrorDotTypeOnType::write(ErrorWriterBase& wr) const {
+  auto dot = std::get<const uast::Dot*>(info_);
+  auto dottedType = std::get<const types::Type*>(info_);
+  auto typeDeclId = std::get<ID>(info_);
+  const bool haveType = dottedType && !dottedType->isErroneousType();
+  if (haveType) {
+    wr.heading(kind_, type_, dot, "can't apply '.type' to a type ('",
+               dottedType, "').");
+  } else {
+    wr.heading(kind_, type_, dot, "can't apply '.type' to a type.");
   }
+  wr.code(dot, {dot});
+  if (haveType) {
+    wr.message(
+        "The '.type' accessor can only be applied to values, but the receiver "
+        "of the above expression is the type '",
+        dottedType, "'.");
+  } else {
+    wr.message(
+        "The '.type' accessor can only be applied to values, but the receiver "
+        "of the above expression is a type.");
+  }
+  if (typeDeclId) {
+    wr.message("The receiver is declared as a 'type' variable here:");
+    wr.code(typeDeclId);
+  }
+}
 
-  wr.heading(kind_, type_, firstVisibilityClauseId,
-             "module-level symbol is hiding function argument '",
-             formal->name(), "'");
 
-  wr.message("The formal argument:");
-  wr.code(formal, { formal });
-  wr.message("is shadowed by a symbol provided by the following '",
-             firstUseOrImport, "' statement:");
-  wr.code<ID, ID>(firstVisibilityClauseId, { firstVisibilityClauseId });
+void ErrorEnumAbstract::write(ErrorWriterBase& wr) const {
+  auto location = std::get<const uast::AstNode*>(info_);
+  auto& direction = std::get<std::string>(info_);
+  auto enumType = std::get<const types::EnumType*>(info_);
+  auto otherType = std::get<const types::Type*>(info_);
 
-  // print where it came from
-  bool encounteredAutoModule = false;
-  UniqueString from;
-  bool needsIntroText = true;
-  describeSymbolTrace(wr, formal->id(), formal->name(), trace, start, "",
-                      encounteredAutoModule, from, needsIntroText);
+  if (direction == "from" && otherType) {
+    wr.heading(kind_, type_, location,
+               "cannot cast from abstract enumeration type '", enumType->name(),"' to '", otherType, "'.");
+  } else if (direction == "to" && otherType) {
+    wr.heading(kind_, type_, location,
+               "cannot cast from '", otherType, "' to abstract enumeration type '", enumType->name(),"'.");
+  } else {
+    wr.heading(kind_, type_, location, "enumeration type '", enumType->name(),
+               "' is abstract and cannot be converted to a numeric value.");
+  }
+  wr.code(location);
+  wr.message("The enumeration type '", enumType->name(), "' is declared here:");
+  wr.codeForLocation(enumType->id());
+  wr.message("The type is abstract because none of its constants have been assigned numeric values.");
+}
 
-  if (!encounteredAutoModule) {
-    ID firstId = match.firstId();
-    wr.note(locationOnly(firstId), "found '", from, "' defined here:");
-    wr.code<ID,ID>(firstId, { firstId });
+void ErrorEnumInitializerNotParam::write(ErrorWriterBase& wr) const {
+  auto enumElement = std::get<const uast::EnumElement*>(info_);
+  auto qt = std::get<types::QualifiedType>(info_);
+
+  wr.heading(kind_, type_, enumElement,
+             "only 'param' values can be associated with enumeration constants");
+  wr.codeForLocation(enumElement);
+  wr.message("The initialization expression of '", enumElement->name(), "' is ", qt);
+}
+
+void ErrorEnumInitializerNotInteger::write(ErrorWriterBase& wr) const {
+  auto enumElement = std::get<const uast::EnumElement*>(info_);
+  auto qt = std::get<types::QualifiedType>(info_);
+
+  wr.heading(kind_, type_, enumElement,
+             "only integer (signed or unsigned) values can be associated with enumeration constants");
+  wr.codeForLocation(enumElement);
+  wr.message("The initialization expression of '", enumElement->name(), "' produces ", qt.param(), ", ", qt);
+}
+
+void ErrorEnumValueAbstract::write(ErrorWriterBase& wr) const {
+  auto location = std::get<const uast::AstNode*>(info_);
+  auto enumType = std::get<const types::EnumType*>(info_);
+  auto enumElement = std::get<const uast::EnumElement*>(info_);
+
+  wr.heading(kind_, type_, location,
+             "cannot get numeric value from abstract enumeration constant '",
+             enumElement->name(), "'");
+  wr.code(location);
+  wr.message("The constant '", enumElement->name(),
+             "' is declared here:");
+  wr.codeForLocation(enumElement);
+  wr.message("The constant is abstract because neither it nor any of the "
+             "preceding constants in '", enumType->name(),
+             "' have been assigned numeric values.");
+}
+
+void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
+  auto externBlockId = std::get<ID>(info_);
+  auto errors = std::get<std::vector<std::pair<Location, std::string>>>(info_);
+  wr.heading(kind_, type_, externBlockId,
+             "running clang on extern block failed",
+             (errors.size() > 0 ? " -- clang errors follow" : ""));
+  for (const auto& error : errors) {
+    wr.note(error.first, error.second);
   }
 }
 
 void ErrorIfVarNonClassType::write(ErrorWriterBase& wr) const {
-  auto cond = std::get<const uast::Conditional*>(info);
-  auto qtVar = std::get<types::QualifiedType>(info);
+  auto cond = std::get<const uast::Conditional*>(info_);
+  auto qtVar = std::get<types::QualifiedType>(info_);
   auto var = cond->condition()->toVariable();
   CHPL_ASSERT(var);
   auto ifKindStr = cond->isExpressionLevel() ? "expression" : "statement";
@@ -356,10 +456,10 @@ void ErrorIfVarNonClassType::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
-  auto code = std::get<const uast::AstNode*>(info);
-  auto lastModule = std::get<1>(info);
-  auto implicitModule = std::get<2>(info);
-  wr.heading(kind_, type_, code, "an implicit module named '",
+  auto code = std::get<const uast::AstNode*>(info_);
+  auto lastModule = std::get<1>(info_);
+  auto implicitModule = std::get<2>(info_);
+  wr.heading(kind_, type_, locationOnly(code), "an implicit module named '",
              implicitModule->name(), "' is being introduced to contain "
              "file-scope code.");
   wr.message("The following is the first file-scope statement:");
@@ -373,9 +473,9 @@ void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorIncompatibleIfBranches::write(ErrorWriterBase& wr) const {
-  auto ifExpr = std::get<const uast::Conditional*>(info);
-  auto qt1 = std::get<1>(info);
-  auto qt2 = std::get<2>(info);
+  auto ifExpr = std::get<const uast::Conditional*>(info_);
+  auto qt1 = std::get<1>(info_);
+  auto qt2 = std::get<2>(info_);
 
   wr.heading(kind_, type_, ifExpr, "branches of if-expression have incompatible types.");
   wr.message("In the following if-expression:");
@@ -395,9 +495,9 @@ void ErrorIncompatibleIfBranches::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorIncompatibleKinds::write(ErrorWriterBase& wr) const {
-  auto initExpr = std::get<const uast::AstNode*>(info);
-  auto initType = std::get<types::QualifiedType>(info);
-  auto declKind = std::get<types::QualifiedType::Kind>(info);
+  auto initExpr = std::get<const uast::AstNode*>(info_);
+  auto initType = std::get<types::QualifiedType>(info_);
+  auto declKind = std::get<types::QualifiedType::Kind>(info_);
 
   bool valueToType = declKind == types::QualifiedType::Kind::TYPE &&
     initType.kind() != types::QualifiedType::Kind::TYPE;
@@ -444,9 +544,9 @@ void ErrorIncompatibleKinds::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorIncompatibleRangeBounds::write(ErrorWriterBase& wr) const {
-  auto range = std::get<const uast::Range*>(info);
-  auto qt1 = std::get<1>(info);
-  auto qt2 = std::get<2>(info);
+  auto range = std::get<const uast::Range*>(info_);
+  auto qt1 = std::get<1>(info_);
+  auto qt2 = std::get<2>(info_);
 
   wr.heading(kind_, type_, range,
             "bounds of range expression have incompatible types.");
@@ -466,11 +566,11 @@ void ErrorIncompatibleRangeBounds::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
-  auto decl = std::get<0>(info);
-  auto type = std::get<1>(info);
-  auto init = std::get<2>(info);
-  auto typeExprType = std::get<3>(info);
-  auto initExprType = std::get<4>(info);
+  auto decl = std::get<0>(info_);
+  auto type = std::get<1>(info_);
+  auto init = std::get<2>(info_);
+  auto typeExprType = std::get<3>(info_);
+  auto initExprType = std::get<4>(info_);
 
   if (auto namedDecl = decl->toNamedDecl()) {
     wr.heading(kind_, type_, decl,
@@ -486,9 +586,46 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
              "initial value has type '", initExprType, "'.");
 }
 
+void ErrorInvalidClassCast::write(ErrorWriterBase& wr) const {
+  auto primCall = std::get<const uast::PrimCall*>(info_);
+  auto& type = std::get<types::QualifiedType>(info_);
+  auto prim = primCall->prim();
+
+  if (prim == uast::primtags::PRIM_TO_NILABLE_CLASS_CHECKED && !type.isType()) {
+    wr.heading(kind_, type_, primCall, "cannot apply '?' operator to a non-type argument.");
+    wr.code(primCall, { primCall->actual(0) });
+    wr.message("The argument is ", type, ", but only types are allowed.");
+    return;
+  } else if (!type.isType()) {
+    auto decoratorType = prim == uast::primtags::PRIM_TO_UNMANAGED_CLASS_CHECKED ?
+      "unmanaged" : "borrowed";
+    wr.heading(kind_, type_, primCall, "cannot use the '", decoratorType,
+                "' decorator on values.");
+    wr.message("The argument is ", type);
+    return;
+  }
+
+  const char* primitiveConversion = nullptr;
+  if (prim == uast::primtags::PRIM_TO_NILABLE_CLASS_CHECKED) {
+    primitiveConversion = "to a nilable class";
+  } else if (prim == uast::primtags::PRIM_TO_UNMANAGED_CLASS_CHECKED) {
+    primitiveConversion = "to an unmanaged class";
+  } else if (prim == uast::primtags::PRIM_TO_BORROWED_CLASS_CHECKED) {
+    primitiveConversion = "to a borrowed class";
+  }
+
+  if (primitiveConversion) {
+    wr.heading(kind_, type_, primCall, "unable to convert type '", type.type(),
+               "' ", primitiveConversion, ".");
+    wr.message("Only classes or class-like types are supported by this conversion.");
+  } else {
+    wr.heading(kind_, type_, primCall, "invalid use of class cast primitive.");
+  }
+}
+
 void ErrorInvalidIndexCall::write(ErrorWriterBase& wr) const {
-  auto fnCall = std::get<const uast::FnCall*>(info);
-  auto& type = std::get<types::QualifiedType>(info);
+  auto fnCall = std::get<const uast::FnCall*>(info_);
+  auto& type = std::get<types::QualifiedType>(info_);
 
   wr.heading(kind_, type_, fnCall,
              "invalid use of the 'index' keyword.");
@@ -507,8 +644,8 @@ void ErrorInvalidIndexCall::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorInvalidNewTarget::write(ErrorWriterBase& wr) const {
-  auto newExpr = std::get<const uast::New*>(info);
-  auto type = std::get<types::QualifiedType>(info);
+  auto newExpr = std::get<const uast::New*>(info_);
+  auto type = std::get<types::QualifiedType>(info_);
 
   if (auto primType = type.type()->toPrimitiveType()) {
     wr.heading(kind_, type_, newExpr,
@@ -527,9 +664,21 @@ void ErrorInvalidNewTarget::write(ErrorWriterBase& wr) const {
   wr.message("The 'new' expression can only be used with records or classes.");
 }
 
+void ErrorInvalidParamCast::write(ErrorWriterBase& wr) const {
+  auto astForErr = std::get<0>(info_);
+  auto& fromQt = std::get<1>(info_);
+  auto& toQt = std::get<2>(info_);
+
+  wr.heading(kind_, type_, astForErr,
+             "cannot cast param value "
+             "of type '", fromQt.type(), "' to type '", toQt.type(), "'.");
+  wr.message("In the following expression:");
+  wr.code(astForErr, { astForErr });
+}
+
 void ErrorInvalidSuper::write(ErrorWriterBase& wr) const {
-  auto superExpr = std::get<const uast::Identifier*>(info);
-  auto qt = std::get<types::QualifiedType>(info);
+  auto superExpr = std::get<const uast::Identifier*>(info_);
+  auto qt = std::get<types::QualifiedType>(info_);
 
   const types::RecordType* recordType = nullptr;
   if (auto type = qt.type()) {
@@ -556,8 +705,8 @@ void ErrorInvalidSuper::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
-  auto newCall = std::get<const uast::New*>(info);
-  auto type = std::get<const types::Type*>(info);
+  auto newCall = std::get<const uast::New*>(info_);
+  auto type = std::get<const types::Type*>(info_);
   auto record = type ? type->toRecordType() : nullptr;
 
   if (record) {
@@ -585,17 +734,17 @@ void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorMissingInclude::write(ErrorWriterBase& wr) const {
-  auto moduleInclude = std::get<const uast::Include*>(info);
-  auto& filePath = std::get<std::string>(info);
+  auto moduleInclude = std::get<const uast::Include*>(info_);
+  auto& filePath = std::get<std::string>(info_);
   wr.heading(kind_, type_, moduleInclude, "cannot find included submodule");
   wr.code(moduleInclude);
   wr.note(moduleInclude, "expected file at path '", filePath, "'");
 }
 
 void ErrorModuleAsVariable::write(ErrorWriterBase& wr) const {
-  auto node = std::get<0>(info);
-  auto parent = std::get<1>(info);
-  auto mod = std::get<const uast::Module*>(info);
+  auto node = std::get<0>(info_);
+  auto parent = std::get<1>(info_);
+  auto mod = std::get<const uast::Module*>(info_);
   const char* reason = "cannot be mentioned like variables";
 
   if (parent) {
@@ -611,9 +760,9 @@ void ErrorModuleAsVariable::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
-  auto enumAst = std::get<const uast::Enum*>(info);
-  auto elemName = std::get<UniqueString>(info);
-  auto& possibleElems = std::get<std::vector<ID>>(info);
+  auto enumAst = std::get<const uast::Enum*>(info_);
+  auto elemName = std::get<UniqueString>(info_);
+  auto& possibleElems = std::get<std::vector<ID>>(info_);
 
   wr.heading(kind_, type_, enumAst->id(), "enum '", enumAst->name(),
              "' has multiple elements named '", elemName, "'.");
@@ -627,10 +776,26 @@ void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
   wr.message("An enum cannot have repeated elements of the same name.");
 }
 
+void ErrorMultipleInheritance::write(ErrorWriterBase& wr) const {
+  auto theClass = std::get<const uast::Class*>(info_);
+  auto firstParent = std::get<1>(info_);
+  auto secondParent = std::get<2>(info_);
+
+  wr.heading(kind_, type_, theClass,
+             "invalid use of multiple inheritance in class '", theClass->name(),
+             "'; only single inheritance is supported.");
+  wr.message("The first class being inherited from is here:");
+  wr.code(justOneLine(firstParent), { firstParent });
+  wr.message("The second class being inherited from is here:");
+  wr.code(justOneLine(secondParent), { secondParent });
+  wr.message("Although a class can implement multiple interfaces, it cannot ",
+             "inherit from multiple parent classes.");
+}
+
 void ErrorMultipleQuestionArgs::write(ErrorWriterBase& wr) const {
-  auto call = std::get<const uast::FnCall*>(info);
-  auto firstQuestion = std::get<1>(info);
-  auto secondQuestion = std::get<2>(info);
+  auto call = std::get<const uast::FnCall*>(info_);
+  auto firstQuestion = std::get<1>(info_);
+  auto secondQuestion = std::get<2>(info_);
 
   wr.heading(kind_, type_, call, "cannot have '?' more than once in a call");
   wr.message("The first ? argument occurs here:");
@@ -640,10 +805,10 @@ void ErrorMultipleQuestionArgs::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
-  auto outerDecl = std::get<0>(info);
-  auto innerDecl = std::get<1>(info);
-  auto reference = std::get<2>(info);
-  auto id = std::get<3>(info);
+  auto outerDecl = std::get<0>(info_);
+  auto innerDecl = std::get<1>(info_);
+  auto reference = std::get<2>(info_);
+  auto id = std::get<3>(info_);
 
   const char* outerName = outerDecl->isClass() ? "class" : "record";
   const char* innerName = innerDecl->isClass() ? "class" : "record";
@@ -669,21 +834,180 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
   wr.codeForDef(id);
 }
 
+static std::string buildTupleDeclName(const uast::TupleDecl* tup) {
+  std::string ret = "(";
+  int count = 0;
+  for (auto decl : tup->decls()) {
+    if (count != 0) {
+      ret += ",";
+    }
+    count += 1;
+
+    if (decl->isTupleDecl()) {
+      ret += buildTupleDeclName(decl->toTupleDecl());
+    } else {
+      ret += decl->toFormal()->name().str();
+    }
+  }
+
+  if (count == 1) {
+    ret += ",";
+  }
+
+  ret += ")";
+
+  return ret;
+}
+
+void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto call = node->toCall();
+  auto& ci = std::get<resolution::CallInfo>(info_);
+  auto& rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info_);
+
+  wr.heading(kind_, type_, node, "unable to resolve call to '", ci.name(), "': no matching candidates.");
+  wr.code(node);
+
+  unsigned int printCount = 0;
+  static const unsigned int maxPrintCount = 2;
+  for (auto& candidate : rejected) {
+    if (printCount == maxPrintCount) break;
+    printCount++;
+
+    auto reason = candidate.reason();
+    wr.message("");
+    if (reason == resolution::FAIL_CANNOT_PASS &&
+        /* skip printing detailed info_ here because computing the formal-actual
+           map will go poorly with an unknown formal. */
+        candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
+      auto fn = candidate.initialForErr();
+      resolution::FormalActualMap fa(fn, ci);
+      auto badPass = fa.byFormalIdx(candidate.formalIdx());
+      auto formalDecl = badPass.formal();
+      const uast::AstNode* actualExpr = nullptr;
+      if (call && 0 <= badPass.actualIdx() && badPass.actualIdx() < call->numActuals()) {
+        actualExpr = call->actual(badPass.actualIdx());
+      }
+
+      wr.note(fn->id(), "the following candidate didn't match because an actual couldn't be passed to a formal:");
+      wr.code(fn->id(), { formalDecl });
+
+      std::string formalName;
+      if (auto named = formalDecl->toNamedDecl()) {
+        formalName = "'" + named->name().str() + "'";
+      } else if (formalDecl->isTupleDecl()) {
+        formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";
+      }
+
+      if (badPass.formalType().isUnknown()) {
+        // The formal type can be unknown in an initial instantiation if it
+        // depends on the previous formals' types. In that case, don't print it
+        // and say something nicer.
+        wr.message("The instantiated type of formal ", formalName,
+                   " does not allow actuals of type '", badPass.actualType().type(), "'.");
+      } else {
+        wr.message("The formal ", formalName, " expects ", badPass.formalType(),
+                   ", but the actual was ", badPass.actualType(), ".");
+      }
+
+      if (actualExpr) {
+        wr.code(actualExpr, { actualExpr });
+      }
+
+      auto formalReason = candidate.formalReason();
+      if (formalReason == resolution::FAIL_INCOMPATIBLE_NILABILITY) {
+        auto formalDec = badPass.formalType().type()->toClassType()->decorator();
+        auto actualDec = badPass.actualType().type()->toClassType()->decorator();
+
+        wr.message("The formal expects a ", nilabilityStr(formalDec), " class, "
+                   "but the actual is ", nilabilityStr(actualDec), ".");
+      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_MGR) {
+        auto formalMgr = badPass.formalType().type()->toClassType()->manager();
+        auto actualMgr = badPass.actualType().type()->toClassType()->manager();
+
+        wr.message("A class with '", actualMgr, "' management cannot be passed to a formal with '", formalMgr, "' management.");
+      } else if (formalReason == resolution::FAIL_EXPECTED_SUBTYPE) {
+        wr.message("Formals with kind '", badPass.formalType().kind(),
+                   "' expect the actual to be a subtype, but '", badPass.actualType().type(),
+                   "' is not a subtype of '", badPass.formalType().type(), "'.");
+      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_TUPLE_SIZE) {
+        auto formalTup = badPass.formalType().type()->toTupleType();
+        auto actualTup = badPass.actualType().type()->toTupleType();
+
+        wr.message("A tuple with ", actualTup->numElements(),
+                   " elements cannot be passed to a tuple formal with ",
+                   formalTup->numElements(), " elements.");
+      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_TUPLE_STAR) {
+        auto formalTup = badPass.formalType().type()->toTupleType();
+        auto actualTup = badPass.actualType().type()->toTupleType();
+
+        const char* formalStr = formalTup->isStarTuple() ? "is" : "is not";
+        const char* actualStr = actualTup->isStarTuple() ? "is" : "is not";
+
+        wr.message("A formal that ", formalStr, " a star tuple cannot accept an actual actual that ", actualStr, ".");
+      } else if (formalReason == resolution::FAIL_NOT_EXACT_MATCH) {
+        wr.message("The 'ref' intent requires the formal and actual types to match exactly.");
+      }
+    } else {
+      const char* reasonStr = nullptr;
+      if (reason == resolution::FAIL_FORMAL_ACTUAL_MISMATCH) {
+        reasonStr = "the provided actuals could not be mapped to its formals:";
+      } else if (reason == resolution::FAIL_VARARG_MISMATCH) {
+        reasonStr = "the number of varargs was incorrect:";
+      } else if (reason == resolution::FAIL_WHERE_CLAUSE) {
+        reasonStr = "the 'where' clause evaluated to 'false':";
+      } else if (reason == resolution::FAIL_PARENLESS_MISMATCH) {
+        if (ci.isParenless()) {
+          reasonStr = "it is parenful, but the call was parenless:";
+        } else {
+          reasonStr = "it is parenless, but the call was parenful:";
+        }
+      }
+      if (!reasonStr) {
+        wr.note(candidate.idForErr(), "the following candidate didn't match:");
+      } else {
+        wr.note(candidate.idForErr(), "the following candidate didn't match ",
+                "because ", reasonStr);
+      }
+      wr.code(candidate.idForErr());
+    }
+  }
+
+  if (printCount < rejected.size()) {
+    wr.message("");
+    wr.note(locationOnly(node), "omitting ", rejected.size() - printCount, " more candidates that didn't match.");
+  }
+}
+
 void ErrorNonIterable::write(ErrorWriterBase &wr) const {
-  auto loop = std::get<0>(info);
-  auto iterand = std::get<1>(info);
-  auto& iterandType = std::get<types::QualifiedType>(info);
+  auto loop = std::get<0>(info_);
+  auto iterand = std::get<1>(info_);
+  auto& iterandType = std::get<types::QualifiedType>(info_);
   wr.heading(kind_, type_, loop, "cannot iterate over ", decayToValue(iterandType), ".");
   wr.message("Used as an iterand in a loop here:");
   wr.code(iterand, { iterand });
 }
 
+void ErrorNoMatchingEnumValue::write(ErrorWriterBase& wr) const {
+  auto location = std::get<const uast::AstNode*>(info_);
+  auto& enumType = std::get<const types::EnumType*>(info_);
+  auto& numericValue = std::get<types::QualifiedType>(info_);
+
+  wr.heading(kind_, type_, location, "the value '", numericValue.param(),
+             "' of type '", numericValue.type(),
+             "' is not associated with any constant of the enumeration '",
+             enumType->name(), "'.");
+  wr.codeForLocation(location);
+  wr.message("Only values that were associated with an enumeration's constant "
+             "can be converted back to the enumeration type.");
+}
+
 void ErrorNotInModule::write(ErrorWriterBase& wr) const {
-  const uast::Dot* dot = std::get<0>(info);
-  //ID moduleId = std::get<1>(info);
-  UniqueString moduleName = std::get<2>(info);
-  ID renameClauseId = std::get<3>(info);
-  bool thereButPrivate = std::get<bool>(info);
+  const uast::Dot* dot = std::get<0>(info_);
+  //ID moduleId = std::get<1>(info_);
+  UniqueString moduleName = std::get<2>(info_);
+  ID renameClauseId = std::get<3>(info_);
+  bool thereButPrivate = std::get<bool>(info_);
 
   if (thereButPrivate) {
     wr.heading(kind_, type_, dot,
@@ -719,9 +1043,83 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
   return;
 }
 
+void ErrorNoTypeForEnumElem::write(ErrorWriterBase& wr) const {
+  auto enumAst = std::get<const uast::Enum*>(info_);
+  auto signedElt = std::get<1>(info_);
+  auto signedQt = std::get<2>(info_);
+  auto unsignedElt = std::get<3>(info_);
+  auto unsignedQt = std::get<4>(info_);
+
+  wr.heading(kind_, type_, enumAst, "cannot pick single numeric type to represent the elements of enum '", enumAst->name(), "'");
+  wr.note(signedElt, "the constant '", signedElt->name(), "' is associated with ", signedQt.param(), ", ", signedQt, ", which requires a signed integer type.");
+  wr.codeForLocation(signedElt);
+  wr.note(unsignedElt, "however, the constant '", unsignedElt->name(), "' is associated with ", unsignedQt.param(), ", ", unsignedQt, ", which requires an unsigned integer type.");
+  wr.codeForLocation(unsignedElt);
+}
+
+void ErrorPhaseTwoInitMarker::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto& others = std::get<std::vector<ID>>(info_);
+
+  const char* markerType = node->isInit() ? "init this" : "this.complete()";
+  wr.heading(kind_, type_, node,
+             "use of '", markerType, "' after type has been initialized.");
+  wr.code(node, { node });
+
+  auto previousMarker = others.at(0);
+  wr.note(previousMarker, "the type was previously marked as initialized here:");
+  wr.code<ID>(previousMarker, { previousMarker });
+}
+
+void ErrorPotentiallySurprisingShadowing::write(ErrorWriterBase& wr) const {
+  auto id = std::get<0>(info_);
+  auto name = std::get<1>(info_);
+  auto& result = std::get<2>(info_);
+  auto& traceResult = std::get<3>(info_);
+  auto& shadowed = std::get<4>(info_);
+  auto& traceShadowed = std::get<5>(info_);
+
+  wr.heading(kind_, type_, id,
+             "potentially surprising shadowing for '", name.c_str(), "'");
+  wr.code<ID,ID>(id, { id });
+  // only print out two matches
+  if (result.size() > 0 && shadowed.size() > 0) {
+    const char* intro = "it refers to a symbol found ";
+    bool encounteredAutoModule = false;
+    UniqueString from;
+    bool needsIntroText = true;
+
+    ID firstId = result[0].firstId();
+
+    describeSymbolTrace(wr, id, name,
+                        traceResult[0], /* start */ 0, intro,
+                        encounteredAutoModule, from, needsIntroText);
+
+    if (needsIntroText) {
+      wr.note(locationOnly(firstId), "it refers to the symbol '", from, "' defined here:");
+    } else {
+      wr.note(locationOnly(firstId), "leading to '", from, "' defined here:");
+    }
+    wr.code<ID,ID>(firstId, { firstId });
+
+    const char* intro2 = "but, there is a shadowed symbol found ";
+    describeSymbolTrace(wr, id, name,
+                        traceShadowed[0], /* start */ 0, intro2,
+                        encounteredAutoModule, from, needsIntroText);
+
+    ID otherId = shadowed[0].firstId();
+    if (needsIntroText) {
+      wr.note(locationOnly(otherId), "but, there is a shadowed symbol '", from, "' defined here:");
+    } else {
+      wr.note(locationOnly(otherId), "leading to '", from, "' defined here:");
+    }
+    wr.code<ID,ID>(otherId, { otherId });
+  }
+}
+
 void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
-  auto moduleInclude = std::get<const uast::Include*>(info);
-  auto moduleDef = std::get<const uast::Module*>(info);
+  auto moduleInclude = std::get<const uast::Include*>(info_);
+  auto moduleDef = std::get<const uast::Module*>(info_);
   wr.heading(kind_, type_, moduleInclude,
              "cannot make a private module public through "
              "an include statement");
@@ -731,16 +1129,16 @@ void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorProcDefExplicitAnonFormal::write(ErrorWriterBase& wr) const {
-  auto fn = std::get<const uast::Function*>(info);
-  auto formal = std::get<const uast::Formal*>(info);
+  auto fn = std::get<const uast::Function*>(info_);
+  auto formal = std::get<const uast::Formal*>(info_);
   wr.heading(kind_, type_, formal, "formals in a procedure definition must "
                             "be named");
   wr.code(fn, {formal});
 }
 
 void ErrorProcTypeUnannotatedFormal::write(ErrorWriterBase& wr) const {
-  auto sig = std::get<const uast::FunctionSignature*>(info);
-  auto formal = std::get<const uast::AnonFormal*>(info);
+  auto sig = std::get<const uast::FunctionSignature*>(info_);
+  auto formal = std::get<const uast::AnonFormal*>(info_);
   wr.heading(kind_, type_, formal, "unannotated formal is ambiguous in this "
                             "context");
   wr.code(sig, {formal});
@@ -751,8 +1149,8 @@ void ErrorProcTypeUnannotatedFormal::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorPrototypeInclude::write(ErrorWriterBase& wr) const {
-  auto moduleInclude = std::get<const uast::Include*>(info);
-  auto moduleDef = std::get<const uast::Module*>(info);
+  auto moduleInclude = std::get<const uast::Include*>(info_);
+  auto moduleDef = std::get<const uast::Module*>(info_);
   wr.heading(kind_, type_, moduleInclude,
              "cannot apply prototype to module in include statement");
   wr.code(moduleInclude);
@@ -780,11 +1178,81 @@ static bool firstIdFromDecls(
   return false;
 }
 
+void ErrorRecursion::write(ErrorWriterBase& wr) const {
+  auto queryName = std::get<UniqueString>(info_);
+  wr.heading(kind_, type_, ID(),
+             "recursion detected in query '", queryName.c_str(), "'");
+}
+
+static const char* recursionMessage =
+  "Recursion errors during resolution can sometimes be addressed by "
+  "explicitly specifying variable and field types instead of "
+  "relying on type inference.";
+
+template <typename Loc>
+static bool printRecursionTrace(ErrorWriterBase& wr,
+                                const std::string& rootGoal,
+                                const Loc& rootLocation,
+                                const std::vector<TraceElement>& trace) {
+  if (trace.size() == 0) return false;
+  std::string prefix = rootGoal + " led to recursion because doing so required";
+  for (size_t idx = 0; idx < trace.size(); idx++) {
+    auto& te = trace[idx];
+    wr.note(te.first, prefix, " ", te.second, ":");
+    wr.codeForLocation(te.first);
+
+    prefix = "which required";
+  }
+
+  return true;
+}
+
+void ErrorRecursionFieldDecl::write(ErrorWriterBase& wr) const {
+  auto ast = std::get<const uast::AstNode*>(info_);
+  auto ad = std::get<const uast::AggregateDecl*>(info_);
+  auto ct = std::get<const types::CompositeType*>(info_);
+  auto& trace = std::get<3>(info_);
+
+  std::string rootGoalForTrace = "resolving the field";
+  if (auto vld = ast->toVarLikeDecl()) {
+    wr.heading(kind_, type_, ast, "encountered recursion while resolving field '",
+               vld->name(),"' of type '", ad->name(),"':");
+    rootGoalForTrace += std::string(" '") + vld->name().c_str() + "'";
+  } else {
+    wr.heading(kind_, type_, ast, "encountered recursion while resolving a field"
+               "of type '", ad->name(),"':");
+  }
+  wr.codeForLocation(ast);
+  if (ct->instantiatedFromCompositeType() != nullptr) {
+    wr.note(ad, "the type '", ad->name(), "' was instantiated as '", ct, "'.");
+  }
+
+  if (printRecursionTrace(wr, rootGoalForTrace, ast, trace)) {
+    wr.message("");
+  }
+  wr.message(recursionMessage);
+}
+
+void ErrorRecursionModuleStmt::write(ErrorWriterBase& wr) const {
+  auto ast = std::get<const uast::AstNode*>(info_);
+  auto& trace = std::get<2>(info_);
+
+  wr.heading(kind_, type_, ast,
+             "encountered recursion while resolving module statement:");
+  wr.codeForLocation(ast);
+
+  auto rootGoalForTrace = "resolving the module statement";
+  if (printRecursionTrace(wr, rootGoalForTrace, ast, trace)) {
+    wr.message("");
+  }
+  wr.message(recursionMessage);
+}
+
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {
-  auto scopeId = std::get<ID>(info);
-  auto name = std::get<UniqueString>(info);
-  auto& matches = std::get<std::vector<resolution::BorrowedIdsWithName>>(info);
-  auto& trace = std::get<std::vector<resolution::ResultVisibilityTrace>>(info);
+  auto scopeId = std::get<ID>(info_);
+  auto name = std::get<UniqueString>(info_);
+  auto& matches = std::get<std::vector<resolution::BorrowedIdsWithName>>(info_);
+  auto& trace = std::get<std::vector<resolution::ResultVisibilityTrace>>(info_);
 
   // compute the anchor ID for the error message
   ID id;
@@ -855,9 +1323,9 @@ static const uast::AstNode* getReduceOrScanOp(const uast::AstNode* reduceOrScan)
 }
 
 void ErrorReductionInvalidName::write(ErrorWriterBase& wr) const {
-  auto reduceOrScan = std::get<const uast::AstNode*>(info);
-  auto name = std::get<UniqueString>(info);
-  auto& iterType = std::get<types::QualifiedType>(info);
+  auto reduceOrScan = std::get<const uast::AstNode*>(info_);
+  auto name = std::get<UniqueString>(info_);
+  auto& iterType = std::get<types::QualifiedType>(info_);
 
   auto op = getReduceOrScanOp(reduceOrScan);
   wr.heading(kind_, type_, op,
@@ -872,8 +1340,8 @@ void ErrorReductionInvalidName::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
-  auto reduceOrScan = std::get<const uast::AstNode*>(info);
-  auto actualType = std::get<types::QualifiedType>(info);
+  auto reduceOrScan = std::get<const uast::AstNode*>(info_);
+  auto actualType = std::get<types::QualifiedType>(info_);
   const types::BasicClassType* actualClassType = nullptr;
 
   auto op = getReduceOrScanOp(reduceOrScan);
@@ -882,11 +1350,12 @@ void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
 
   // Don't print the details of managed / unmanaged / etc.
   if (auto classType = actualType.type()->toClassType()) {
-    actualClassType = classType->basicClassType();
-    while (auto instFrom = actualClassType->instantiatedFrom()) {
-      actualClassType = instFrom;
+    if (auto actualClassType = classType->basicClassType()) {
+      while (auto instFrom = actualClassType->instantiatedFrom()) {
+        actualClassType = instFrom;
+      }
+      actualType = types::QualifiedType(actualType.kind(), actualClassType);
     }
-    actualType = types::QualifiedType(actualType.kind(), actualClassType);
   }
   wr.message("The operation must be a type extending 'ReduceScanOp', but "
              "it is ", actualType);
@@ -896,10 +1365,49 @@ void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorSplitInitMismatchedConditionalTypes::write(
+    ErrorWriterBase& wr) const {
+  const uast::Variable* var = std::get<0>(info_);
+  const uast::AstNode* node = std::get<1>(info_);
+  const types::QualifiedType thenType = std::get<2>(info_);
+  const types::QualifiedType elseType = std::get<3>(info_);
+  const int idx1 = std::get<4>(info_);
+  const int idx2 = std::get<5>(info_);
+
+  if (node->isConditional()) {
+    const uast::Conditional* cond = node->toConditional();
+    wr.heading(kind_, type_, var,
+             "mismatched types for split-initialization of '", var->name(),
+             "' in conditional branches.");
+    wr.note(cond->thenBlock(), "initialized with ", thenType,
+            " in 'then' branch");
+    wr.note(cond->elseBlock(), "initialized with ", elseType,
+            " in 'else' branch");
+    wr.message(
+        "Types of different initialization parts for split-initialized "
+        "declarations must exactly match");
+  } else {
+    const uast::Select* sel = node->toSelect();
+    const uast::When* branch1 = sel->whenStmt(idx1);
+    const uast::When* branch2 = sel->whenStmt(idx2);
+    wr.heading(kind_, type_, var,
+             "mismatched types for split-initialization of '", var->name(),
+             "' in select branches.");
+    
+    wr.note(branch1, "Initialized with ", thenType,
+            " in one branch");
+    wr.note(branch2, "Initialized with ", elseType,
+            " in another branch");
+    wr.message(
+        "Types of different initialization parts for split-initialized "
+        "declarations must exactly match");
+  }
+}
+
 void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
-  auto use = std::get<const uast::AstNode*>(info);
-  auto mod = std::get<const uast::Module*>(info);
-  auto useOrImport = std::get<resolution::VisibilityStmtKind>(info);
+  auto use = std::get<const uast::AstNode*>(info_);
+  auto mod = std::get<const uast::Module*>(info_);
+  auto useOrImport = std::get<resolution::VisibilityStmtKind>(info_);
   auto useOrImportStr = (useOrImport == resolution::VIS_USE) ? "use"
                                                              : "import";
   wr.heading(kind_, type_, use, "invalid use of 'super' in '",
@@ -911,9 +1419,25 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
   wr.codeForLocation(mod);
 }
 
+void ErrorTertiaryUseImportUnstable::write(ErrorWriterBase& wr) const {
+  auto name = std::get<UniqueString>(info_);
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto clause = std::get<const uast::VisibilityClause*>(info_);
+  auto searchedScope = std::get<const resolution::Scope*>(info_);
+  auto useOrImport = std::get<resolution::VisibilityStmtKind>(info_);
+  auto useOrImportStr = (useOrImport == resolution::VIS_USE) ? "a 'use'"
+                                                             : "an 'import'";
+  wr.heading(kind_, type_, clause,
+             "using a type's name ('", name, "' in this case) in ", useOrImportStr,
+             " statement to access its tertiary methods is an unstable feature.");
+  wr.message("In the following clause:");
+  wr.code(clause, { node });
+  wr.message("The type '", name, "' is not defined in '", searchedScope->name(), "'.");
+}
+
 void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
-  auto decl = std::get<const uast::TupleDecl*>(info);
-  auto type = std::get<const types::TupleType*>(info);
+  auto decl = std::get<const uast::TupleDecl*>(info_);
+  auto type = std::get<const types::TupleType*>(info_);
   wr.heading(kind_, type_, decl,
             "tuple size mismatch in split tuple declaration.");
   wr.code(decl);
@@ -923,8 +1447,8 @@ void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorTupleDeclNotTuple::write(ErrorWriterBase& wr) const {
-  auto decl = std::get<const uast::TupleDecl*>(info);
-  auto type = std::get<const types::Type*>(info);
+  auto decl = std::get<const uast::TupleDecl*>(info_);
+  auto type = std::get<const types::Type*>(info_);
   wr.heading(kind_, type_, decl,
             "value of non-tuple type '", type, "' cannot be split using a tuple "
             "declaration.");
@@ -935,15 +1459,15 @@ void ErrorTupleDeclNotTuple::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorTupleDeclUnknownType::write(ErrorWriterBase& wr) const {
-  auto decl = std::get<const uast::TupleDecl*>(info);
+  auto decl = std::get<const uast::TupleDecl*>(info_);
   wr.heading(kind_, type_, decl,
              "value of unknown type cannot be split using tuple assignment.");
   wr.code(decl);
 }
 
 void ErrorTupleExpansionNamedArgs::write(ErrorWriterBase& wr) const {
-  auto fnCall = std::get<const uast::FnCall*>(info);
-  auto tupleOp = std::get<const uast::OpCall*>(info);
+  auto fnCall = std::get<const uast::FnCall*>(info_);
+  auto tupleOp = std::get<const uast::OpCall*>(info_);
 
   wr.heading(kind_, type_, fnCall, "tuple expansion cannot be used to pass "
              "values to a non-variadic named argument.");
@@ -952,9 +1476,9 @@ void ErrorTupleExpansionNamedArgs::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorTupleExpansionNonTuple::write(ErrorWriterBase& wr) const {
-  auto call = std::get<const uast::FnCall*>(info);
-  auto expansion = std::get<const uast::OpCall*>(info);
-  auto& type = std::get<types::QualifiedType>(info);
+  auto call = std::get<const uast::FnCall*>(info_);
+  auto expansion = std::get<const uast::OpCall*>(info_);
+  auto& type = std::get<types::QualifiedType>(info_);
 
   wr.heading(kind_, type_, call, "cannot apply tuple expansion to an "
              "expression of non-tuple type");
@@ -964,10 +1488,22 @@ void ErrorTupleExpansionNonTuple::write(ErrorWriterBase& wr) const {
              "but expansion can only be used on tuples.");
 }
 
+void ErrorTupleIndexOOB::write(ErrorWriterBase& wr) const {
+  auto call = std::get<const uast::Call*>(info_);
+  auto type = std::get<const types::TupleType*>(info_);
+  auto index = std::get<const int>(info_);
+
+  wr.heading(kind_, type_, call, "tuple index ", index, " is out of bounds");
+  wr.message("In the following expression:");
+  wr.code(call, { call });
+  wr.message("the index value is '", index, "' but the valid indices for this",
+             " tuple are in the range 0..", type->numElements()-1, " (inclusive)");
+}
+
 void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info);
-  auto elemName = std::get<UniqueString>(info);
-  auto enumAst = std::get<const uast::Enum*>(info);
+  auto node = std::get<const uast::AstNode*>(info_);
+  auto elemName = std::get<UniqueString>(info_);
+  auto enumAst = std::get<const uast::Enum*>(info_);
 
   wr.heading(kind_, type_, node, "enum '", enumAst->name(),
              "' has no element named '", elemName, "'.");
@@ -977,8 +1513,8 @@ void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorUnknownIdentifier::write(ErrorWriterBase& wr) const {
-  auto ident = std::get<const uast::Identifier*>(info);
-  auto mentionedMoreThanOnce = std::get<bool>(info);
+  auto ident = std::get<const uast::Identifier*>(info_);
+  auto mentionedMoreThanOnce = std::get<bool>(info_);
 
   wr.heading(kind_, type_, ident,
              "'", ident->name(), "' cannot be found",
@@ -990,9 +1526,9 @@ void ErrorUnknownIdentifier::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorUnstable::write(ErrorWriterBase& wr) const {
-  auto msg = std::get<std::string>(info);
-  auto mention = std::get<const uast::AstNode*>(info);
-  auto target = std::get<const uast::NamedDecl*>(info);
+  auto msg = std::get<std::string>(info_);
+  auto mention = std::get<const uast::AstNode*>(info_);
+  auto target = std::get<const uast::NamedDecl*>(info_);
   CHPL_ASSERT(mention && target);
 
   wr.headingVerbatim(kind_, type_, mention, msg);
@@ -1008,9 +1544,9 @@ void ErrorUnstable::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorUseImportMultiplyDefined::write(ErrorWriterBase& wr) const {
-  auto symbolName = std::get<UniqueString>(info);
-  auto firstOccurrence = std::get<1>(info);
-  auto secondOccurrence = std::get<2>(info);
+  auto symbolName = std::get<UniqueString>(info_);
+  auto firstOccurrence = std::get<1>(info_);
+  auto secondOccurrence = std::get<2>(info_);
 
   wr.heading(kind_, type_, secondOccurrence, "'",
              symbolName, "' is multiply defined.");
@@ -1021,9 +1557,9 @@ void ErrorUseImportMultiplyDefined::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorUseImportMultiplyMentioned::write(ErrorWriterBase& wr) const {
-  auto symbolName = std::get<UniqueString>(info);
-  auto firstOccurrence = std::get<1>(info);
-  auto secondOccurrence = std::get<2>(info);
+  auto symbolName = std::get<UniqueString>(info_);
+  auto firstOccurrence = std::get<1>(info_);
+  auto secondOccurrence = std::get<2>(info_);
 
   wr.heading(kind_, type_, secondOccurrence, "'",
              symbolName, "' is repeated.");
@@ -1034,9 +1570,9 @@ void ErrorUseImportMultiplyMentioned::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
-  auto id = std::get<const ID>(info);
-  auto moduleName = std::get<std::string>(info);
-  auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
+  auto id = std::get<const ID>(info_);
+  auto moduleName = std::get<std::string>(info_);
+  auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info_);
 
   wr.heading(kind_, type_, id, "cannot '", useOrImport, "' symbol '", moduleName,
              "', which is not a ", allowedItem(useOrImport), ".");
@@ -1047,12 +1583,12 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorUseImportTransitiveRename::write(ErrorWriterBase& wr) const {
-  auto from = std::get<0>(info);
-  auto middle = std::get<1>(info);
-  auto to = std::get<2>(info);
+  auto from = std::get<0>(info_);
+  auto middle = std::get<1>(info_);
+  auto to = std::get<2>(info_);
 
-  auto firstRename = std::get<3>(info);
-  auto secondRename = std::get<4>(info);
+  auto firstRename = std::get<3>(info_);
+  auto secondRename = std::get<4>(info_);
 
   wr.heading(kind_, type_, secondRename, "'",
              middle, "' is repeated.");
@@ -1065,11 +1601,11 @@ void ErrorUseImportTransitiveRename::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
-  auto id = std::get<const ID>(info);
-  auto moduleName = std::get<2>(info);
-  auto previousPartName = std::get<3>(info);
-  auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
-  auto& improperMatches = std::get<std::vector<const uast::AstNode*>>(info);
+  auto id = std::get<const ID>(info_);
+  auto moduleName = std::get<2>(info_);
+  auto previousPartName = std::get<3>(info_);
+  auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info_);
+  auto& improperMatches = std::get<std::vector<const uast::AstNode*>>(info_);
 
   if (previousPartName.empty()) {
     wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
@@ -1126,11 +1662,11 @@ void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
-  auto visibilityClause = std::get<const uast::VisibilityClause*>(info);
-  auto symbolName = std::get<std::string>(info);
-  auto searchedScope = std::get<const resolution::Scope*>(info);
-  auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
-  auto isRename = std::get<bool>(info);
+  auto visibilityClause = std::get<const uast::VisibilityClause*>(info_);
+  auto symbolName = std::get<std::string>(info_);
+  auto searchedScope = std::get<const resolution::Scope*>(info_);
+  auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info_);
+  auto isRename = std::get<bool>(info_);
 
   auto limitationKind = visibilityClause->limitationKind();
   if (isRename) {
@@ -1160,8 +1696,8 @@ void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
-  auto stmt = std::get<const uast::AstNode*>(info);
-  auto laterId = std::get<ID>(info);
+  auto stmt = std::get<const uast::AstNode*>(info_);
+  auto laterId = std::get<ID>(info_);
   wr.heading(kind_, type_, stmt,
              "statement references a variable before it is defined.");
   wr.message("In the following statement:");
@@ -1172,15 +1708,14 @@ void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
-  auto typeExpr = std::get<const uast::AstNode*>(info);
-  auto type = std::get<types::QualifiedType>(info);
+  auto typeExpr = std::get<const uast::AstNode*>(info_);
+  auto type = std::get<types::QualifiedType>(info_);
   wr.heading(kind_, type_, typeExpr,
              "type specifier is ", type, ", but it was expected to be a type.");
   wr.message("In the following type specifier:");
   wr.code(typeExpr, { typeExpr });
   // wr.message("Did you mean to use '.type'?");
 }
-
 
 /* end resolution errors */
 

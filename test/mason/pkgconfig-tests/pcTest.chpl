@@ -16,8 +16,8 @@ proc test(goodLock: string, tf: string) {
   const lf = goodLock.replace('good', 'lock');
   var temp = open(lf, ioMode.cw);
   {
-    var w = temp.writer();
-    for line in openReader(goodLock).lines() do
+    var w = temp.writer(locking=false);
+    for line in openReader(goodLock, locking=false).lines() do
       w.write(line.replace('CHPL_CUR_FULL', currentVersion));
     w.close();
   }

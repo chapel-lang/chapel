@@ -5,6 +5,7 @@ static_library("ObjectYAML") {
     "//llvm/lib/MC",
     "//llvm/lib/Object",
     "//llvm/lib/Support",
+    "//llvm/lib/TargetParser",
   ]
   sources = [
     "ArchiveEmitter.cpp",
@@ -21,6 +22,8 @@ static_library("ObjectYAML") {
     "DXContainerYAML.cpp",
     "ELFEmitter.cpp",
     "ELFYAML.cpp",
+    "GOFFEmitter.cpp",
+    "GOFFYAML.cpp",
     "MachOEmitter.cpp",
     "MachOYAML.cpp",
     "MinidumpEmitter.cpp",

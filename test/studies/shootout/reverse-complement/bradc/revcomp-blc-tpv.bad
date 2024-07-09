@@ -1,1 +1,1 @@
-revcomp-blc-tpv.chpl:48: error: task-private variables are not supported in with-clauses for coforall/cobegin/begin blocks
+revcomp-blc-tpv.chpl:46: error: task-private variables are not supported in with-clauses for coforall/cobegin/begin blocks

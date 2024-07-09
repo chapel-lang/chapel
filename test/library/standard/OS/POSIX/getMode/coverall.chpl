@@ -24,9 +24,9 @@ for ur in [true, false] {
                 for ox in [true, false] {
                   permission += if ox then 1 else 0;
                   var perm = permission:c_int;
-                  err = chmod(c"blah", perm: mode_t);
+                  err = chmod("blah", perm: mode_t);
                   if err != 0 then halt("error in chmod");
-                  err = stat(c"blah", c_ptrTo(structStat));
+                  err = stat("blah", c_ptrTo(structStat));
                   if err != 0 then halt("error in stat");
                   var result = structStat.st_mode: c_int & 0x1ff;//bottom 9 bits
                   if (result != perm) {
@@ -53,5 +53,5 @@ for ur in [true, false] {
 
 permission = 448;
 var perm = permission:c_int;
-err = chmod(c"blah", perm: mode_t); // reset blah's permissions to only include user permissions
+err = chmod("blah", perm: mode_t); // reset blah's permissions to only include user permissions
 if err != 0 then halt("error in chmod");

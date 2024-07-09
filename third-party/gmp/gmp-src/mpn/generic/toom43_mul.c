@@ -10,7 +10,7 @@
    SAFE TO REACH IT THROUGH DOCUMENTED INTERFACES.  IN FACT, IT IS ALMOST
    GUARANTEED THAT IT WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
-Copyright 2009 Free Software Foundation, Inc.
+Copyright 2009, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -115,8 +115,12 @@ mpn_toom43_mul (mp_ptr pp,
 
   /* Compute bs2 and bsm2.  */
   b1d[n] = mpn_lshift (b1d, b1, n, 1);			/*       2b1      */
+#if HAVE_NATIVE_mpn_addlsh2_n
+  cy = mpn_addlsh2_n (b0b2, b0, b2, t);			/*  4b2      + b0 */
+#else
   cy  = mpn_lshift (b0b2, b2, t, 2);			/*  4b2           */
   cy += mpn_add_n (b0b2, b0b2, b0, t);			/*  4b2      + b0 */
+#endif
   if (t != n)
     cy = mpn_add_1 (b0b2 + t, b0 + t, n - t, cy);
   b0b2[n] = cy;
@@ -185,7 +189,8 @@ mpn_toom43_mul (mp_ptr pp,
   ASSERT (bsm2[n] <= 4);
 
   /* vm1, 2n+1 limbs */
-  mpn_mul_n (vm1, asm1, bsm1, n+1);  /* W4 */
+  vm1[2*n] = 0;
+  mpn_mul_n (vm1, asm1, bsm1, n + (asm1[n] | bsm1[n]));  /* W4 */
 
   /* vm2, 2n+1 limbs */
   mpn_mul_n (vm2, asm2, bsm2, n+1);  /* W2 */

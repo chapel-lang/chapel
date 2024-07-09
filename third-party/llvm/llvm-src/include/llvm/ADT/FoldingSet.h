@@ -17,6 +17,7 @@
 #define LLVM_ADT_FOLDINGSET_H
 
 #include "llvm/ADT/Hashing.h"
+#include "llvm/ADT/STLForwardCompat.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/iterator.h"
 #include "llvm/Support/Allocator.h"
@@ -830,9 +831,9 @@ struct FoldingSetTrait<std::pair<T1, T2>> {
 };
 
 template <typename T>
-struct FoldingSetTrait<T, typename std::enable_if_t<std::is_enum<T>::value>> {
+struct FoldingSetTrait<T, std::enable_if_t<std::is_enum<T>::value>> {
   static void Profile(const T &X, FoldingSetNodeID &ID) {
-    ID.AddInteger(static_cast<typename std::underlying_type_t<T>>(X));
+    ID.AddInteger(llvm::to_underlying(X));
   }
 };
 

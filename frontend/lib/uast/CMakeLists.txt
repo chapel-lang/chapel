@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -70,6 +70,7 @@ target_sources(ChplFrontend-obj
                Import.cpp
                Include.cpp
                IndexableLoop.cpp
+               Init.cpp
                IntLiteral.cpp
                Interface.cpp
                Label.cpp

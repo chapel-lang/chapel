@@ -1,0 +1,2 @@
+CHPL_COMM!=gasnet
+CHPL_GASNET_SEGMENT!=fast

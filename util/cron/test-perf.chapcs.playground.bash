@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test perf of IO serializers branch
-GITHUB_USER=benharsh
-GITHUB_BRANCH=dev-io-serializers
-SHORT_NAME=io-serializers
-START_DATE=05/23/23
+source /data/cf/chapel/setup_system_llvm.bash 15
+GITHUB_USER=jabraham17
+GITHUB_BRANCH=rv-playground
+SHORT_NAME=llvm-rv
+START_DATE=06/27/24
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

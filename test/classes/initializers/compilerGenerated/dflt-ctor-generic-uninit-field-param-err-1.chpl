@@ -4,4 +4,4 @@ class A {
   param p;
 }
 
-var x = (new owned A()).borrow();
+var x = new A();

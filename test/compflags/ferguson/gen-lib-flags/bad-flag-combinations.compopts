@@ -1,0 +1,2 @@
+--dyno-gen-std
+--dyno-gen-std --dyno-gen-lib test.dyno

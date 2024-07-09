@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Copyright 2001-2003, 2009-2014, 2018 Free Software Foundation, Inc.
+# Copyright 2001-2003, 2009-2014, 2018, 2019, 2021, 2022 Free Software Foundation, Inc.
 #
 # This file is part of the GNU MP Library test suite.
 #
@@ -116,11 +116,13 @@ check_PROGRAMS = t-asmtype$(EXEEXT) t-aors_1$(EXEEXT) \
 	t-toom3-sqr$(EXEEXT) t-toom4-sqr$(EXEEXT) t-toom6-sqr$(EXEEXT) \
 	t-toom8-sqr$(EXEEXT) t-div$(EXEEXT) t-mul$(EXEEXT) \
 	t-mullo$(EXEEXT) t-sqrlo$(EXEEXT) t-mulmod_bnm1$(EXEEXT) \
-	t-sqrmod_bnm1$(EXEEXT) t-mulmid$(EXEEXT) t-hgcd$(EXEEXT) \
-	t-hgcd_appr$(EXEEXT) t-matrix22$(EXEEXT) t-invert$(EXEEXT) \
-	t-bdiv$(EXEEXT) t-fib2m$(EXEEXT) t-broot$(EXEEXT) \
-	t-brootinv$(EXEEXT) t-minvert$(EXEEXT) t-sizeinbase$(EXEEXT) \
-	t-gcd_11$(EXEEXT) t-gcd_22$(EXEEXT) t-gcdext_1$(EXEEXT)
+	t-sqrmod_bnm1$(EXEEXT) t-mulmid$(EXEEXT) \
+	t-mulmod_bknp1$(EXEEXT) t-sqrmod_bknp1$(EXEEXT) \
+	t-addaddmul$(EXEEXT) t-hgcd$(EXEEXT) t-hgcd_appr$(EXEEXT) \
+	t-matrix22$(EXEEXT) t-invert$(EXEEXT) t-bdiv$(EXEEXT) \
+	t-fib2m$(EXEEXT) t-broot$(EXEEXT) t-brootinv$(EXEEXT) \
+	t-minvert$(EXEEXT) t-sizeinbase$(EXEEXT) t-gcd_11$(EXEEXT) \
+	t-gcd_22$(EXEEXT) t-gcdext_1$(EXEEXT)
 subdir = tests/mpn
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
@@ -141,6 +143,11 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+t_addaddmul_SOURCES = t-addaddmul.c
+t_addaddmul_OBJECTS = t-addaddmul.$(OBJEXT)
+t_addaddmul_LDADD = $(LDADD)
+t_addaddmul_DEPENDENCIES = $(top_builddir)/tests/libtests.la \
+	$(top_builddir)/libgmp.la
 t_aors_1_SOURCES = t-aors_1.c
 t_aors_1_OBJECTS = t-aors_1.$(OBJEXT)
 t_aors_1_LDADD = $(LDADD)
@@ -266,6 +273,11 @@ t_mulmid_OBJECTS = t-mulmid.$(OBJEXT)
 t_mulmid_LDADD = $(LDADD)
 t_mulmid_DEPENDENCIES = $(top_builddir)/tests/libtests.la \
 	$(top_builddir)/libgmp.la
+t_mulmod_bknp1_SOURCES = t-mulmod_bknp1.c
+t_mulmod_bknp1_OBJECTS = t-mulmod_bknp1.$(OBJEXT)
+t_mulmod_bknp1_LDADD = $(LDADD)
+t_mulmod_bknp1_DEPENDENCIES = $(top_builddir)/tests/libtests.la \
+	$(top_builddir)/libgmp.la
 t_mulmod_bnm1_SOURCES = t-mulmod_bnm1.c
 t_mulmod_bnm1_OBJECTS = t-mulmod_bnm1.$(OBJEXT)
 t_mulmod_bnm1_LDADD = $(LDADD)
@@ -290,6 +302,11 @@ t_sqrlo_SOURCES = t-sqrlo.c
 t_sqrlo_OBJECTS = t-sqrlo.$(OBJEXT)
 t_sqrlo_LDADD = $(LDADD)
 t_sqrlo_DEPENDENCIES = $(top_builddir)/tests/libtests.la \
+	$(top_builddir)/libgmp.la
+t_sqrmod_bknp1_SOURCES = t-sqrmod_bknp1.c
+t_sqrmod_bknp1_OBJECTS = t-sqrmod_bknp1.$(OBJEXT)
+t_sqrmod_bknp1_LDADD = $(LDADD)
+t_sqrmod_bknp1_DEPENDENCIES = $(top_builddir)/tests/libtests.la \
 	$(top_builddir)/libgmp.la
 t_sqrmod_bnm1_SOURCES = t-sqrmod_bnm1.c
 t_sqrmod_bnm1_OBJECTS = t-sqrmod_bnm1.$(OBJEXT)
@@ -419,22 +436,24 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = logic.c t-aors_1.c t-asmtype.c t-bdiv.c t-broot.c \
-	t-brootinv.c t-div.c t-divrem_1.c t-fat.c t-fib2m.c t-gcd_11.c \
-	t-gcd_22.c t-gcdext_1.c t-get_d.c t-hgcd.c t-hgcd_appr.c \
-	t-instrument.c t-invert.c t-iord_u.c t-matrix22.c t-minvert.c \
-	t-mod_1.c t-mp_bases.c t-mul.c t-mullo.c t-mulmid.c \
-	t-mulmod_bnm1.c t-perfsqr.c t-scan.c t-sizeinbase.c t-sqrlo.c \
+SOURCES = logic.c t-addaddmul.c t-aors_1.c t-asmtype.c t-bdiv.c \
+	t-broot.c t-brootinv.c t-div.c t-divrem_1.c t-fat.c t-fib2m.c \
+	t-gcd_11.c t-gcd_22.c t-gcdext_1.c t-get_d.c t-hgcd.c \
+	t-hgcd_appr.c t-instrument.c t-invert.c t-iord_u.c \
+	t-matrix22.c t-minvert.c t-mod_1.c t-mp_bases.c t-mul.c \
+	t-mullo.c t-mulmid.c t-mulmod_bknp1.c t-mulmod_bnm1.c \
+	t-perfsqr.c t-scan.c t-sizeinbase.c t-sqrlo.c t-sqrmod_bknp1.c \
 	t-sqrmod_bnm1.c t-toom2-sqr.c t-toom22.c t-toom3-sqr.c \
 	t-toom32.c t-toom33.c t-toom4-sqr.c t-toom42.c t-toom43.c \
 	t-toom44.c t-toom52.c t-toom53.c t-toom54.c t-toom6-sqr.c \
 	t-toom62.c t-toom63.c t-toom6h.c t-toom8-sqr.c t-toom8h.c
-DIST_SOURCES = logic.c t-aors_1.c t-asmtype.c t-bdiv.c t-broot.c \
-	t-brootinv.c t-div.c t-divrem_1.c t-fat.c t-fib2m.c t-gcd_11.c \
-	t-gcd_22.c t-gcdext_1.c t-get_d.c t-hgcd.c t-hgcd_appr.c \
-	t-instrument.c t-invert.c t-iord_u.c t-matrix22.c t-minvert.c \
-	t-mod_1.c t-mp_bases.c t-mul.c t-mullo.c t-mulmid.c \
-	t-mulmod_bnm1.c t-perfsqr.c t-scan.c t-sizeinbase.c t-sqrlo.c \
+DIST_SOURCES = logic.c t-addaddmul.c t-aors_1.c t-asmtype.c t-bdiv.c \
+	t-broot.c t-brootinv.c t-div.c t-divrem_1.c t-fat.c t-fib2m.c \
+	t-gcd_11.c t-gcd_22.c t-gcdext_1.c t-get_d.c t-hgcd.c \
+	t-hgcd_appr.c t-instrument.c t-invert.c t-iord_u.c \
+	t-matrix22.c t-minvert.c t-mod_1.c t-mp_bases.c t-mul.c \
+	t-mullo.c t-mulmid.c t-mulmod_bknp1.c t-mulmod_bnm1.c \
+	t-perfsqr.c t-scan.c t-sizeinbase.c t-sqrlo.c t-sqrmod_bknp1.c \
 	t-sqrmod_bnm1.c t-toom2-sqr.c t-toom22.c t-toom3-sqr.c \
 	t-toom32.c t-toom33.c t-toom4-sqr.c t-toom42.c t-toom43.c \
 	t-toom44.c t-toom52.c t-toom53.c t-toom54.c t-toom6-sqr.c \
@@ -882,6 +901,10 @@ logic$(EXEEXT): $(logic_OBJECTS) $(logic_DEPENDENCIES) $(EXTRA_logic_DEPENDENCIE
 	@rm -f logic$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(logic_OBJECTS) $(logic_LDADD) $(LIBS)
 
+t-addaddmul$(EXEEXT): $(t_addaddmul_OBJECTS) $(t_addaddmul_DEPENDENCIES) $(EXTRA_t_addaddmul_DEPENDENCIES) 
+	@rm -f t-addaddmul$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(t_addaddmul_OBJECTS) $(t_addaddmul_LDADD) $(LIBS)
+
 t-aors_1$(EXEEXT): $(t_aors_1_OBJECTS) $(t_aors_1_DEPENDENCIES) $(EXTRA_t_aors_1_DEPENDENCIES) 
 	@rm -f t-aors_1$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(t_aors_1_OBJECTS) $(t_aors_1_LDADD) $(LIBS)
@@ -982,6 +1005,10 @@ t-mulmid$(EXEEXT): $(t_mulmid_OBJECTS) $(t_mulmid_DEPENDENCIES) $(EXTRA_t_mulmid
 	@rm -f t-mulmid$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(t_mulmid_OBJECTS) $(t_mulmid_LDADD) $(LIBS)
 
+t-mulmod_bknp1$(EXEEXT): $(t_mulmod_bknp1_OBJECTS) $(t_mulmod_bknp1_DEPENDENCIES) $(EXTRA_t_mulmod_bknp1_DEPENDENCIES) 
+	@rm -f t-mulmod_bknp1$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(t_mulmod_bknp1_OBJECTS) $(t_mulmod_bknp1_LDADD) $(LIBS)
+
 t-mulmod_bnm1$(EXEEXT): $(t_mulmod_bnm1_OBJECTS) $(t_mulmod_bnm1_DEPENDENCIES) $(EXTRA_t_mulmod_bnm1_DEPENDENCIES) 
 	@rm -f t-mulmod_bnm1$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(t_mulmod_bnm1_OBJECTS) $(t_mulmod_bnm1_LDADD) $(LIBS)
@@ -1001,6 +1028,10 @@ t-sizeinbase$(EXEEXT): $(t_sizeinbase_OBJECTS) $(t_sizeinbase_DEPENDENCIES) $(EX
 t-sqrlo$(EXEEXT): $(t_sqrlo_OBJECTS) $(t_sqrlo_DEPENDENCIES) $(EXTRA_t_sqrlo_DEPENDENCIES) 
 	@rm -f t-sqrlo$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(t_sqrlo_OBJECTS) $(t_sqrlo_LDADD) $(LIBS)
+
+t-sqrmod_bknp1$(EXEEXT): $(t_sqrmod_bknp1_OBJECTS) $(t_sqrmod_bknp1_DEPENDENCIES) $(EXTRA_t_sqrmod_bknp1_DEPENDENCIES) 
+	@rm -f t-sqrmod_bknp1$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(t_sqrmod_bknp1_OBJECTS) $(t_sqrmod_bknp1_LDADD) $(LIBS)
 
 t-sqrmod_bnm1$(EXEEXT): $(t_sqrmod_bnm1_OBJECTS) $(t_sqrmod_bnm1_DEPENDENCIES) $(EXTRA_t_sqrmod_bnm1_DEPENDENCIES) 
 	@rm -f t-sqrmod_bnm1$(EXEEXT)
@@ -1547,6 +1578,27 @@ t-sqrmod_bnm1.log: t-sqrmod_bnm1$(EXEEXT)
 t-mulmid.log: t-mulmid$(EXEEXT)
 	@p='t-mulmid$(EXEEXT)'; \
 	b='t-mulmid'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+t-mulmod_bknp1.log: t-mulmod_bknp1$(EXEEXT)
+	@p='t-mulmod_bknp1$(EXEEXT)'; \
+	b='t-mulmod_bknp1'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+t-sqrmod_bknp1.log: t-sqrmod_bknp1$(EXEEXT)
+	@p='t-sqrmod_bknp1$(EXEEXT)'; \
+	b='t-sqrmod_bknp1'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+t-addaddmul.log: t-addaddmul$(EXEEXT)
+	@p='t-addaddmul$(EXEEXT)'; \
+	b='t-addaddmul'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

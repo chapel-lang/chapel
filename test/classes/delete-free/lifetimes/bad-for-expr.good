@@ -1,2 +1,3 @@
 bad-for-expr.chpl:3: In function 'badForExpr':
+bad-for-expr.chpl:4: warning: Class created by nested 'new' will be deinitialized before the borrow can be used. Please update this code to use a separate variable to store the new class
 bad-for-expr.chpl:4: error: Scoped variable would outlive the value it is set to

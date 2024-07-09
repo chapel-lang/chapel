@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: generics
 .. _Chapter-Generics:
 
 ========
@@ -10,6 +12,9 @@ Chapel supports generic functions and types that are parameterizable
 over both types and parameters. The generic functions and types look
 similar to non-generic functions and types already discussed.
 
+.. index::
+   single: functions; generic
+   single: generics; functions
 .. _Generic_Functions:
 
 Generic Functions
@@ -33,6 +38,8 @@ A function is generic if any of the following conditions hold:
 
 These conditions are discussed in the next sections.
 
+.. index::
+   single: intents; type
 .. _Formal_Type_Arguments:
 
 Formal Type Arguments
@@ -115,6 +122,8 @@ accepting type arguments that only apply to a specific group of types.
       int(8) 1
       real(64) 1.0
 
+.. index::
+   single: intents; param
 .. _Formal_Parameter_Arguments:
 
 Formal Parameter Arguments
@@ -157,6 +166,8 @@ this function at a call site. The formal argument is a parameter.
    The function call ``fillTuple(3, 3)`` returns a 3-tuple where each
    component contains the value ``3``.
 
+.. index::
+   single: formal arguments; without types
 .. _Formal_Arguments_without_Types:
 
 Formal Arguments without Types
@@ -207,6 +218,8 @@ each unique actual type.
    3-tuple of real values ``(3.14, 3.14, 3.14)``. The return type is
    ``(real, real, real)``.
 
+.. index::
+   single: formal arguments; with queried types
 .. _Formal_Arguments_with_Queried_Types:
 
 Formal Arguments with Queried Types
@@ -277,6 +290,8 @@ semantics of a type alias.
       6
       12.0
 
+.. index::
+   single: formal arguments; with generic type
 .. _Formal_Arguments_of_Generic_Type:
 
 Formal Arguments of Generic Type
@@ -299,7 +314,7 @@ type.
 
    .. code-block:: chapel
 
-      proc writeTop(s: Stack) {
+      proc writeTop(s: Stack(?)) {
         write(s.top.item);
       }
 
@@ -310,8 +325,8 @@ to ``s.itemType``.
 
 Note that generic types which have default values for all of their
 generic fields, *e.g. range*, are not generic when simply specified and
-require a query to mark the argument as generic. For simplicity, the
-identifier may be omitted.
+require a query to mark the argument as generic. See also
+:ref:`Marking_Generic_Types`.
 
    *Example*.
 
@@ -333,6 +348,10 @@ identifier may be omitted.
         // c.type may not be int
       }
 
+.. index::
+   single: formal arguments; partially concrete
+   single: formal arguments; partially generic
+   single: where; implicit
 .. _Formal_Arguments_of_Partially_Generic_Type:
 
 Formal Arguments of Partially Generic Type
@@ -372,7 +391,7 @@ concrete* for the purpose of function resolution.
 
    .. code-block:: chapel
 
-      proc g(c: C(?t,?u,Container)) {
+      proc g(c: C(?t,?u,Container(?))) {
         // ...
       }
 
@@ -411,7 +430,7 @@ Homogeneous tuple arguments of generic type are also supported:
       record Number {
         var n;
       }
-      proc f(tuple: 2*Number) {
+      proc f(tuple: 2*Number(?)) {
       }
 
 
@@ -459,6 +478,8 @@ constrained.
 
       partially-concrete-tuple-ambiguity.chpl:5: error: ambiguous call 'f(2*real(64))'
 
+.. index::
+   single: formal arguments; array
 .. _Formal_Arguments_of_Generic_Array_Types:
 
 Formal Arguments of Generic Array Types
@@ -474,6 +495,8 @@ formal argument is taken to be the domain of the actual argument.
 A queried domain may not be modified via the name to which it is bound
 (see :ref:`Association_of_Arrays_to_Domains` for rationale).
 
+.. index::
+   single: generics; function visibility
 .. _Function_Visibility_in_Generic_Functions:
 
 Function Visibility in Generic Functions
@@ -482,11 +505,14 @@ Function Visibility in Generic Functions
 When resolving a function call, as defined in :ref:`Function_Resolution`,
 there is an additional source of visible functions when the call is
 nested within a generic function. The additional source is the functions
-visible from the call site that the enclosing generic function is invoked from.
-This call site is referred to as the *point of instantiation*.
-If there are multiple enclosing generic functions or the call is nested
-within a concrete function that is, in turn, nested in generic function(s),
-the point of instantiation is the call site of the innermost generic function.
+visible from the call site that the enclosing generic function is invoked
+from.  This call site is referred to as the *point of instantiation*.  If
+there are multiple enclosing generic functions or the call is nested
+within a concrete function that is, in turn, nested in generic
+function(s), the point of instantiation is the call site of the innermost
+generic function. This rule does not apply to non-method functions declared
+without parentheses (:ref:`Functions_without_Parentheses`): such
+functions cannot be discovered through the point of instantiation.
 
 If no candidate functions are found during the initial steps of
 identifying visible and candidate functions, function resolution
@@ -578,6 +604,9 @@ or instantiated (if the derived type is generic).
    Note that the Chapel lookup mechanism is still under development and
    discussion. Comments or questions are appreciated.
 
+.. index::
+   single: generics; types
+   single: types; generic
 .. _Generic_Types:
 
 Generic Types
@@ -586,7 +615,18 @@ Generic Types
 Generic types comprise built-in generic types, generic classes, and
 generic records.
 
-.. _Built_in_Generic_types:
+.. index::
+   single: integral (generic type)
+   single: numeric (generic type)
+   single: enumerated (generic type)
+   single: enum (generic type)
+   single: class (generic type)
+   single: unmanaged (generic type)
+   single: owned (generic type)
+   single: shared (generic type)
+   single: borrowed (generic type)
+   single: record (generic type)
+.. _Built_in_Generic_Types:
 
 Built-in Generic Types
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -635,22 +675,34 @@ instantiated as follows:
 -  ``unmanaged``, ``unmanaged class``, ``unmanaged class?`` behave
    similarly to the above but with ``unmanaged`` management strategy.
 
+ .. index::
+   single: generics; classes
+   single: classes; generic
+   single: generics; records
+   single: records; generic
+   single: generics; fields
+   single: fields; generic
+
 Generic Classes and Records
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The remainder of this section :ref:`Generic_Types` specifies
 generic class and record types that are not built-in types
-(:ref:`Built_in_Generic_types`).
+(:ref:`Built_in_Generic_Types`).
 
 A class or record is generic if it contains one or more generic fields.
 A generic field is one of:
 
--  a specified or unspecified type alias,
+-  a specified or unspecified type alias (that is, both ``type t=int;`` and
+   ``type u;``)
 
 -  a parameter field, or
 
 -  a ``var`` or ``const`` field that has no type and no initialization
    expression.
+
+-  a ``var`` or ``const`` field with a generic type marked with ``(?)``
+   and no initialization expression.
 
 For each generic field, the class or record is parameterized over:
 
@@ -663,6 +715,9 @@ For each generic field, the class or record is parameterized over:
 Correspondingly, the class or record is instantiated with a set of types
 and parameter values, one type or value per generic field.
 
+.. index::
+   single: type aliases; in classes or records
+   single: fields; type alias
 .. _Type_Aliases_in_Generic_Types:
 
 Type Aliases in Generic Types
@@ -731,13 +786,18 @@ instead.
    ``next`` is the same type as the type of the object that it is a
    field of.
 
+.. index::
+   single: parameters; in classes or records
+   single: fields; parameter
+   pair: fields; param
 .. _Parameters_in_Generic_Types:
 
 Parameters in Generic Types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If a class or record defines a parameter field, the class or record is
-generic over the value that is bound to that field. The field can be
+generic over the value that is bound to that field. A parameter field is
+always generic, whether or not includes a default. The field can be
 accessed from a class or record instance or from the instantiated class
 or record type itself.
 
@@ -828,6 +888,10 @@ instead.
    Running this example with ``-sbig=true`` will print out ``R(64)``, and with
    ``-sbig=false`` or no argument it will print out ``R(32)``.
 
+.. index::
+   single: fields; variable and constant, without types
+   single: variables; in classes or records
+   single: constants; in classes or records
 .. _Fields_without_Types:
 
 Fields without Types
@@ -853,6 +917,11 @@ compiler-generated initializer
 constructor is invoked, the class or record is instantiated by binding
 the type of the field to the actual type passed to the corresponding
 argument.
+
+Note that records containing fields without types or fields with generic
+types (see :ref:`Fields_with_Generic_Types`) cannot be
+default-initialized.
+
 
    *Example (fieldWithoutType.chpl)*.
 
@@ -897,35 +966,75 @@ argument.
    defines a two-element list with nodes containing the values ``1`` and
    ``2``. The type of each object could be specified as ``Node(int)``.
 
+ .. _Fields_with_Generic_Types:
+
+Fields with Generic Types
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A field declared with a generic type is similar to a field declared
+without any type (:ref:`Fields_without_Types`); however, the generic type
+constrains the possible field types to instantiations of the generic.
+The types for such fields must either be a built-in generic type (see
+:ref:`Built_in_Generic_Types`) or include a ``?`` to mark them as generic
+(see :ref:`Marking_Generic_Types`).
+
+   *Example (fieldWithGenericType.chpl)*.
+
+   This code defines a generic record ``queue`` and then a generic record
+   ``wrapper`` that uses a field to hold a ``queue``.
+
+   .. code-block:: chapel
+
+      record queue {
+        type eltType;
+      }
+
+      record wrapper {
+        var q: queue(?); // indicates 'q' is generic but is an instantiation
+                         // of 'queue'
+      }
+
+   .. BLOCK-test-chapelpost
+
+      var x = new wrapper(new queue(int));
+
+
+
+.. index::
+   single: generics; type constructor
+   single: initializers; type constructors
+   single: generics; instantiated type
 .. _Type_Constructors:
 
 The Type Constructor
 ~~~~~~~~~~~~~~~~~~~~
 
 A type constructor is automatically created for each class or record. A
-type constructor is a type function (:ref:`Type_Return_Intent`)
-that has the same name as the class or record. It takes one argument per
-the class’s or record’s generic field, including fields inherited from
-the superclasses, if any. The formal argument has intent ``type`` for a
-type alias field and is a parameter for a parameter field. It accepts
-the type to be bound to the type alias and the value to be bound to the
-parameter, respectively. For a generic ``var`` or ``const`` field, the
-corresponding formal argument also has intent ``type``. It accepts the
-type of the field, as opposed to a value as is the case for a parameter
-field. The formal arguments occur in the same order as the fields are
-declared and have the same names as the corresponding fields. Unlike the
-compiler-generated initializer, the type constructor has only those
-arguments that correspond to generic fields.
+type constructor is a type function (:ref:`Type_Return_Intent`) that has
+the same name as the class or record. It takes one argument per the
+class’s or record’s generic field, including fields inherited from the
+superclasses, if any. The formal argument has intent ``type`` for a type
+alias field and is a parameter for a parameter field. It accepts the type
+to be bound to the type alias and the value to be bound to the parameter,
+respectively. For a generic ``var`` or ``const`` field, the corresponding
+formal argument also has intent ``type``. It accepts the type of the
+field, as opposed to a value as is the case for a parameter field. The
+formal arguments occur in the same order as the fields are declared and
+formals for ``type``/``param`` fields have the same names as the
+corresponding fields. Unlike the compiler-generated initializer, the type
+constructor only has arguments that correspond to generic fields.
 
 A call to a type constructor accepts actual types and parameter values
 and returns the type of the class or record that is instantiated
 appropriately for each field
 (:ref:`Type_Aliases_in_Generic_Types`,
 :ref:`Parameters_in_Generic_Types`,
-:ref:`Fields_without_Types`). Such an instantiated type must
-be used as the type of a variable, array element, non-generic formal
-argument, and in other cases where uninstantiated generic class or
-record types are not allowed.
+:ref:`Fields_without_Types`).
+A call to a type constructor need not include actual arguments for each
+generic field if it ends with a ``?`` argument. This argument indicates
+that the remaining arguments should remain generic. Additionally, for a
+generic type ``T``, in some cases it is necessary to mark the type as
+generic, and that can be done by writing ``T(?)``.
 
 When a generic field declaration has an initialization expression or a
 type alias is specified, that initializer becomes the default value for
@@ -935,6 +1044,84 @@ aliases result in arguments with no defaults; actual types or values for
 these arguments must always be provided when invoking the type
 constructor.
 
+.. _Fully_Defaulted_Generic_Types:
+
+Fully Defaulted Generic Types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A generic record can be written that includes defaults for all ``type``
+and ``param`` fields and does not use any other generic fields. Such a
+generic record type is called a *fully defaulted generic* type.
+
+For a fully defaulted generic type ``T``, the type expression ``T``
+refers to the instantiation with defaults. This allows the type to be
+used in a manner similar to a concrete type. In contrast, ``T(?)``
+indicates the fully generic type and ignores the defaults.
+
+   *Example (fully-defaulted.chpl)*.
+
+   The type ``fullyDefaulted`` below is an example of a fully-defaulted
+   type because the ``type`` and ``param`` fields have defaults. It can
+   be used in a manner similar to a non-generic type, and in that case,
+   the default values for the ``type`` and ``param`` fields will apply.
+
+   .. code-block:: chapel
+
+      record fullyDefaulted {
+        type t = int;
+        param p = 2;
+      }
+      var x:fullyDefaulted; // here, 'fullyDefaulted' uses the defaults
+      writeln(x.t:string); // 'int(64)'
+      writeln(x.p:string); // '2'
+      var y: fullyDefaulted(real, 0); // but, other instantiations are possible
+      writeln(y.t:string); // 'real(64)'
+      writeln(y.p:string); // '0'
+
+   .. BLOCK-test-chapeloutput
+
+      int(64)
+      2
+      real(64)
+      0
+
+
+.. _Marking_Generic_Types:
+
+Marking Generic Types
+~~~~~~~~~~~~~~~~~~~~~
+
+In order to make it clearer when a type expression ``T`` refers to a
+generic type, the syntax ``T(?)`` can be used. This syntax will generate
+an error if ``T`` is not a generic type. As a result, writing ``T(?)``
+communicates to a reader of the code that ``T`` is a generic type.
+
+Marking is not necessary for the built-in generic types listed in
+:ref:`Built_in_Generic_Types`. For fully defaulted generic types
+(:ref:`Fully_Defaulted_Generic_Types`), marking indicates the generic
+type rather than the instantiation with the defaults.
+
+Otherwise, generic types used in the following situations should be
+marked with ``(?)``:
+
+ * fields declared with generic type (see :ref:`Fields_with_Generic_Types`)
+
+ * variables declared with generic type (see
+   :ref:`Variable_Declarations`)
+
+ * formal argument type expressions  (see
+   :ref:`Formal_Arguments_of_Generic_Type`)
+
+ * declared return or yield types (see :ref:`Return_Types`)
+
+ * ``class-inherit`` expressions (see :ref:`Inheritance`)
+
+ * generic types passed to a `type` formal argument (see
+   :ref:`Formal_Type_Arguments`)
+
+.. index::
+   single: generics; methods
+   single: methods; generic
 .. _Generic_Methods:
 
 Generic Methods
@@ -944,6 +1131,9 @@ All methods bound to generic classes or records, including initializers,
 are generic over the implicit ``this`` argument. This is in addition to
 being generic over any other argument that is generic.
 
+.. index::
+   single: generics; compiler-generated initializers
+   single: compiler-generated initializers;for generic classes or records
 .. _Generic_Compiler_Generated_Initializers:
 
 The Compiler-Generated Generic Initializer
@@ -973,6 +1163,9 @@ corresponding to the generic ``var`` and ``const`` fields, if any, never
 have defaults, so the corresponding actual values must always be
 provided.
 
+.. index::
+   single: generics; user-defined initializers
+   single: user-defined initializers; for generic classes or records
 .. _Generic_User_Initializers:
 
 User-Defined Initializers
@@ -1062,6 +1255,12 @@ type.
    ``c1``, and ``v1``. Otherwise, field initializations may be omitted
    according to previously-described initializer semantics.
 
+.. index::
+   single: user-defined compiler diagnostics
+   single: user-defined compiler errors
+   single: user-defined compiler warnings
+   single: compilerError
+   single: compilerWarning
 .. _User_Defined_Compiler_Errors:
 
 User-Defined Compiler Diagnostics
@@ -1138,6 +1337,10 @@ continue after encountering a ``compilerWarning``.
       compilerDiagnostics.chpl:16: warning: 1-argument version of foo called with type: string
       compilerDiagnostics.chpl:20: error: foo() called with non-matching types: int(64) != real(64)
 
+.. index::
+   single: specific instantiations
+   single: generic specialization
+   single: generic functions and special versions
 .. _Creating_General_and_Specialized_Versions_of_a_Function:
 
 Creating General and Specialized Versions of a Function
@@ -1229,6 +1432,8 @@ that works with some set of types - in other words, the special
 implementation can still be a generic function. See also
 :ref:`Where_Clauses`.
 
+.. index::
+   single: generics; stack example
 .. _Example_Generic_Stack:
 
 Example: A Generic Stack
@@ -1250,11 +1455,11 @@ Example: A Generic Stack
         type itemType;             // type of items
         var top: unmanaged MyNode(itemType)?; // top node on stack linked list
 
-        proc push(item: itemType) {
+        proc ref push(item: itemType) {
           top = new unmanaged MyNode(itemType, item, top);
         }
 
-        proc pop() {
+        proc ref pop() {
           if isEmpty then
             halt("attempt to pop an item off an empty stack");
           var oldTop = top;

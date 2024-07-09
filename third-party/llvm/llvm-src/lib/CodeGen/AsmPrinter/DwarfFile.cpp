@@ -42,7 +42,7 @@ void DwarfFile::emitUnit(DwarfUnit *TheU, bool UseOffsets) {
 
   // Skip CUs that ended up not being needed (split CUs that were abandoned
   // because they added no information beyond the non-split CU)
-  if (llvm::empty(TheU->getUnitDie().values()))
+  if (TheU->getUnitDie().values().empty())
     return;
 
   Asm->OutStreamer->switchSection(S);
@@ -66,7 +66,7 @@ void DwarfFile::computeSizeAndOffsets() {
 
     // Skip CUs that ended up not being needed (split CUs that were abandoned
     // because they added no information beyond the non-split CU)
-    if (llvm::empty(TheU->getUnitDie().values()))
+    if (TheU->getUnitDie().values().empty())
       return;
 
     TheU->setDebugSectionOffset(SecOffset);
@@ -102,21 +102,16 @@ void DwarfFile::emitStrings(MCSection *StrSection, MCSection *OffsetSection,
   StrPool.emit(*Asm, StrSection, OffsetSection, UseRelativeOffsets);
 }
 
-bool DwarfFile::addScopeVariable(LexicalScope *LS, DbgVariable *Var) {
+void DwarfFile::addScopeVariable(LexicalScope *LS, DbgVariable *Var) {
   auto &ScopeVars = ScopeVariables[LS];
   const DILocalVariable *DV = Var->getVariable();
   if (unsigned ArgNum = DV->getArg()) {
-    auto Cached = ScopeVars.Args.find(ArgNum);
-    if (Cached == ScopeVars.Args.end())
-      ScopeVars.Args[ArgNum] = Var;
-    else {
-      Cached->second->addMMIEntry(*Var);
-      return false;
-    }
+    auto Ret = ScopeVars.Args.insert({ArgNum, Var});
+    assert(Ret.second);
+    (void)Ret;
   } else {
     ScopeVars.Locals.push_back(Var);
   }
-  return true;
 }
 
 void DwarfFile::addScopeLabel(LexicalScope *LS, DbgLabel *Label) {

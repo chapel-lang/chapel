@@ -1,0 +1,1 @@
+sparseSubdom-mismatch-2.chpl:3: error: assigning int(64) to an irregular domain

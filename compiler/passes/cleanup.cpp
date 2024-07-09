@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -182,13 +182,14 @@ static void backPropagate(BaseAST* ast) {
 }
 
 static void handleNonTypedAndNonInitedVar(DefExpr* def) {
-  if (toVarSymbol(def->sym)) {
+  if (isVarSymbol(def->sym) && !isShadowVarSymbol(def->sym)) {
     bool needsInit = false;
     // The test for FLAG_TEMP allows compiler-generated (temporary) variables
     // to be declared without an explicit type or initializer expression.
     if ((!def->init || def->init->isNoInitExpr())
         && !def->exprType && !def->sym->hasFlag(FLAG_TEMP))
-      if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
+      if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol) &&
+          !isShadowVarSymbol(def->sym))
         if (def->parentExpr != rootModule->block && def->parentExpr != stringLiteralModule->block)
           if (!def->sym->hasFlag(FLAG_INDEX_VAR))
             needsInit = true;
@@ -252,7 +253,12 @@ static void cleanup(ModuleSymbol* module) {
 
     if (BlockStmt* block = toBlockStmt(ast)) {
       if (block->blockTag == BLOCK_SCOPELESS && block->list != NULL) {
-        block->flattenAndRemove();
+        // If the scopeless block is for applying GPU attributes to promoted
+        // expressions, do not flatten it. The bounds of the block denote
+        // where the GPU attribute is applied.
+        if (!block->isGpuMetadata()) {
+          block->flattenAndRemove();
+        }
       }
 
     } else if (CallExpr* call = toCallExpr(ast)) {

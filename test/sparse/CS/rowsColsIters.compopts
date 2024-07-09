@@ -1,0 +1,4 @@
+-scompressRows=true  -scheckError=false  # rowsColsIters-csr.good
+-scompressRows=true  -scheckError=true   # rowsColsIters-csr-err.good
+-scompressRows=false -scheckError=false  # rowsColsIters-csc.good
+-scompressRows=false -scheckError=true   # rowsColsIters-csc-err.good

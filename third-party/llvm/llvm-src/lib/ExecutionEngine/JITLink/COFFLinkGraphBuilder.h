@@ -14,10 +14,10 @@
 #define LIB_EXECUTIONENGINE_JITLINK_COFFLINKGRAPHBUILDER_H
 
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/StringMap.h"
 #include "llvm/ExecutionEngine/JITLink/JITLink.h"
 #include "llvm/Object/COFF.h"
 
+#include "COFFDirectiveParser.h"
 #include "EHFrameSupportImpl.h"
 #include "JITLinkGeneric.h"
 
@@ -38,6 +38,7 @@ protected:
   using COFFSymbolIndex = int32_t;
 
   COFFLinkGraphBuilder(const object::COFFObjectFile &Obj, Triple TT,
+                       SubtargetFeatures Features,
                        LinkGraph::GetEdgeKindNameFunction GetEdgeKindName);
 
   LinkGraph &getGraph() const { return *G; }
@@ -112,8 +113,9 @@ private:
   struct ComdatExportRequest {
     COFFSymbolIndex SymbolIndex;
     jitlink::Linkage Linkage;
+    orc::ExecutorAddrDiff Size;
   };
-  std::vector<Optional<ComdatExportRequest>> PendingComdatExports;
+  std::vector<std::optional<ComdatExportRequest>> PendingComdatExports;
 
   // This represents a pending request to create a weak external symbol with a
   // name.
@@ -132,6 +134,11 @@ private:
 
   Section &getCommonSection();
 
+  Symbol *createExternalSymbol(COFFSymbolIndex SymIndex, StringRef SymbolName,
+                               object::COFFSymbolRef Symbol,
+                               const object::coff_section *Section);
+  Expected<Symbol *> createAliasSymbol(StringRef SymbolName, Linkage L, Scope S,
+                                       Symbol &Target);
   Expected<Symbol *> createDefinedSymbol(COFFSymbolIndex SymIndex,
                                          StringRef SymbolName,
                                          object::COFFSymbolRef Symbol,
@@ -142,7 +149,10 @@ private:
   Expected<Symbol *> exportCOMDATSymbol(COFFSymbolIndex SymIndex,
                                         StringRef SymbolName,
                                         object::COFFSymbolRef Symbol);
+
+  Error handleDirectiveSection(StringRef Str);
   Error flushWeakAliasRequests();
+  Error handleAlternateNames();
   Error calculateImplicitSizeOfSymbols();
 
   static uint64_t getSectionAddress(const object::COFFObjectFile &Obj,
@@ -151,19 +161,24 @@ private:
                                  const object::coff_section *Section);
   static bool isComdatSection(const object::coff_section *Section);
   static unsigned getPointerSize(const object::COFFObjectFile &Obj);
-  static support::endianness getEndianness(const object::COFFObjectFile &Obj);
+  static llvm::endianness getEndianness(const object::COFFObjectFile &Obj);
+  static StringRef getDLLImportStubPrefix() { return "__imp_"; }
+  static StringRef getDirectiveSectionName() { return ".drectve"; }
   StringRef getCOFFSectionName(COFFSectionIndex SectionIndex,
                                const object::coff_section *Sec,
                                object::COFFSymbolRef Sym);
 
   const object::COFFObjectFile &Obj;
   std::unique_ptr<LinkGraph> G;
+  COFFDirectiveParser DirectiveParser;
 
   Section *CommonSection = nullptr;
   std::vector<Block *> GraphBlocks;
   std::vector<Symbol *> GraphSymbols;
 
+  DenseMap<StringRef, StringRef> AlternateNames;
   DenseMap<StringRef, Symbol *> ExternalSymbols;
+  DenseMap<StringRef, Symbol *> DefinedSymbols;
 };
 
 template <typename RelocHandlerFunction>
@@ -177,6 +192,10 @@ Error COFFLinkGraphBuilder::forEachRelocation(const object::SectionRef &RelSec,
   Expected<StringRef> Name = Obj.getSectionName(COFFRelSect);
   if (!Name)
     return Name.takeError();
+
+  // Skip the unhandled metadata sections.
+  if (*Name == ".voltbl")
+    return Error::success();
   LLVM_DEBUG(dbgs() << "  " << *Name << ":\n");
 
   // Lookup the link-graph node corresponding to the target section name.

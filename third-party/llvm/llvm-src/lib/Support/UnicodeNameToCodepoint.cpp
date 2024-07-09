@@ -46,7 +46,7 @@ struct Node {
     std::string S;
     // Reserve enough space for most unicode code points.
     // The chosen value represent the 99th percentile of name size as of
-    // Unicode 14.
+    // Unicode 15.0.
     S.reserve(46);
     const Node *N = this;
     while (N) {
@@ -105,7 +105,7 @@ static Node readNode(uint32_t Offset, const Node *Parent = nullptr) {
     uint8_t H = UnicodeNameToCodepointIndex[Offset++];
     N.HasSibling = H & 0x80;
     bool HasChildren = H & 0x40;
-    H &= ~0xC0;
+    H &= uint8_t(~0xC0);
     if (HasChildren) {
       N.ChildrenOffset = (H << 16);
       N.ChildrenOffset |=
@@ -119,11 +119,11 @@ static Node readNode(uint32_t Offset, const Node *Parent = nullptr) {
 
 static bool startsWith(StringRef Name, StringRef Needle, bool Strict,
                        std::size_t &Consummed, char &PreviousCharInName,
-                       char &PreviousCharInNeedle, bool IsPrefix = false) {
+                       bool IsPrefix = false) {
 
   Consummed = 0;
   if (Strict) {
-    if (!Name.startswith(Needle))
+    if (!Name.starts_with(Needle))
       return false;
     Consummed = Needle.size();
     return true;
@@ -135,18 +135,18 @@ static bool startsWith(StringRef Name, StringRef Needle, bool Strict,
   auto NeedlePos = Needle.begin();
 
   char PreviousCharInNameOrigin = PreviousCharInName;
-  char PreviousCharInNeedleOrigin = PreviousCharInNeedle;
-
+  char PreviousCharInNeedle = *Needle.begin();
   auto IgnoreSpaces = [](auto It, auto End, char &PreviousChar,
-                         bool IgnoreEnd = false) {
+                         bool IsPrefix = false) {
     while (It != End) {
       const auto Next = std::next(It);
       // Ignore spaces, underscore, medial hyphens
-      // https://unicode.org/reports/tr44/#UAX44-LM2.
+      // The generator ensures a needle never ends (or starts) by a medial
+      // hyphen https://unicode.org/reports/tr44/#UAX44-LM2.
       bool Ignore =
           *It == ' ' || *It == '_' ||
           (*It == '-' && isAlnum(PreviousChar) &&
-           ((Next != End && isAlnum(*Next)) || (Next == End && IgnoreEnd)));
+           ((Next != End && isAlnum(*Next)) || (Next == End && IsPrefix)));
       PreviousChar = *It;
       if (!Ignore)
         break;
@@ -171,20 +171,18 @@ static bool startsWith(StringRef Name, StringRef Needle, bool Strict,
   Consummed = std::distance(Name.begin(), NamePos);
   if (NeedlePos != Needle.end()) {
     PreviousCharInName = PreviousCharInNameOrigin;
-    PreviousCharInNeedle = PreviousCharInNeedleOrigin;
   }
   return NeedlePos == Needle.end();
 }
 
 static std::tuple<Node, bool, uint32_t>
 compareNode(uint32_t Offset, StringRef Name, bool Strict,
-            char PreviousCharInName, char PreviousCharInNeedle,
-            BufferType &Buffer, const Node *Parent = nullptr) {
+            char PreviousCharInName, BufferType &Buffer,
+            const Node *Parent = nullptr) {
   Node N = readNode(Offset, Parent);
   std::size_t Consummed = 0;
-  bool DoesStartWith =
-      N.IsRoot || startsWith(Name, N.Name, Strict, Consummed,
-                             PreviousCharInName, PreviousCharInNeedle);
+  bool DoesStartWith = N.IsRoot || startsWith(Name, N.Name, Strict, Consummed,
+                                              PreviousCharInName);
   if (!DoesStartWith)
     return std::make_tuple(N, false, 0);
 
@@ -199,7 +197,7 @@ compareNode(uint32_t Offset, StringRef Name, bool Strict,
       uint32_t Value;
       std::tie(C, Matches, Value) =
           compareNode(ChildOffset, Name.substr(Consummed), Strict,
-                      PreviousCharInName, PreviousCharInNeedle, Buffer, &N);
+                      PreviousCharInName, Buffer, &N);
       if (Matches) {
         std::reverse_copy(C.Name.begin(), C.Name.end(),
                           std::back_inserter(Buffer));
@@ -215,7 +213,7 @@ compareNode(uint32_t Offset, StringRef Name, bool Strict,
 
 static std::tuple<Node, bool, uint32_t>
 compareNode(uint32_t Offset, StringRef Name, bool Strict, BufferType &Buffer) {
-  return compareNode(Offset, Name, Strict, 0, 0, Buffer);
+  return compareNode(Offset, Name, Strict, 0, Buffer);
 }
 
 // clang-format off
@@ -251,7 +249,7 @@ constexpr const char *const HangulSyllables[][3] = {
     };
 // clang-format on
 
-// Unicode 14.0
+// Unicode 15.0
 // 3.12 Conjoining Jamo Behavior Common constants
 constexpr const char32_t SBase = 0xAC00;
 constexpr const uint32_t LCount = 19;
@@ -262,7 +260,6 @@ static std::size_t findSyllable(StringRef Name, bool Strict,
                                 char &PreviousInName, int &Pos, int Column) {
   assert(Column == 0 || Column == 1 || Column == 2);
   static std::size_t CountPerColumn[] = {LCount, VCount, TCount};
-  char NeedleStart = 0;
   int Len = -1;
   int Prev = PreviousInName;
   for (std::size_t I = 0; I < CountPerColumn[Column]; I++) {
@@ -271,8 +268,8 @@ static std::size_t findSyllable(StringRef Name, bool Strict,
       continue;
     std::size_t Consummed = 0;
     char PreviousInNameCopy = PreviousInName;
-    bool DoesStartWith = startsWith(Name, Syllable, Strict, Consummed,
-                                    PreviousInNameCopy, NeedleStart);
+    bool DoesStartWith =
+        startsWith(Name, Syllable, Strict, Consummed, PreviousInNameCopy);
     if (!DoesStartWith)
       continue;
     Len = Consummed;
@@ -285,16 +282,16 @@ static std::size_t findSyllable(StringRef Name, bool Strict,
   return size_t(Len);
 }
 
-static llvm::Optional<char32_t>
+static std::optional<char32_t>
 nameToHangulCodePoint(StringRef Name, bool Strict, BufferType &Buffer) {
   Buffer.clear();
   // Hangul Syllable Decomposition
   std::size_t Consummed = 0;
-  char NameStart = 0, NeedleStart = 0;
-  bool DoesStartWith = startsWith(Name, "HANGUL SYLLABLE ", Strict, Consummed,
-                                  NameStart, NeedleStart);
+  char NameStart = 0;
+  bool DoesStartWith =
+      startsWith(Name, "HANGUL SYLLABLE ", Strict, Consummed, NameStart);
   if (!DoesStartWith)
-    return None;
+    return std::nullopt;
   Name = Name.substr(Consummed);
   int L = -1, V = -1, T = -1;
   Name = Name.substr(findSyllable(Name, Strict, NameStart, L, 0));
@@ -314,7 +311,7 @@ nameToHangulCodePoint(StringRef Name, bool Strict, BufferType &Buffer) {
            std::uint32_t(T);
   }
   // Otherwise, it's an illegal syllable name.
-  return None;
+  return std::nullopt;
 }
 
 struct GeneratedNamesData {
@@ -323,18 +320,18 @@ struct GeneratedNamesData {
   uint32_t End;
 };
 
-// Unicode 14.0 Table 4-8. Name Derivation Rule Prefix Strings
-// This needs to be kept in sync with
-// llvm/utils/UnicodeData/UnicodeNameMappingGenerator.cpp
+// Unicode 15.1 Table 4-8. Name Derivation Rule Prefix Strings
 static const GeneratedNamesData GeneratedNamesDataTable[] = {
     {"CJK UNIFIED IDEOGRAPH-", 0x3400, 0x4DBF},
-    {"CJK UNIFIED IDEOGRAPH-", 0x4E00, 0x9FFC},
-    {"CJK UNIFIED IDEOGRAPH-", 0x20000, 0x2A6DD},
-    {"CJK UNIFIED IDEOGRAPH-", 0x2A700, 0x2B734},
+    {"CJK UNIFIED IDEOGRAPH-", 0x4E00, 0x9FFF},
+    {"CJK UNIFIED IDEOGRAPH-", 0x20000, 0x2A6DF},
+    {"CJK UNIFIED IDEOGRAPH-", 0x2A700, 0x2B739},
     {"CJK UNIFIED IDEOGRAPH-", 0x2B740, 0x2B81D},
     {"CJK UNIFIED IDEOGRAPH-", 0x2B820, 0x2CEA1},
     {"CJK UNIFIED IDEOGRAPH-", 0x2CEB0, 0x2EBE0},
+    {"CJK UNIFIED IDEOGRAPH-", 0x2EBF0, 0x2EE5D},
     {"CJK UNIFIED IDEOGRAPH-", 0x30000, 0x3134A},
+    {"CJK UNIFIED IDEOGRAPH-", 0x31350, 0x323AF},
     {"TANGUT IDEOGRAPH-", 0x17000, 0x187F7},
     {"TANGUT IDEOGRAPH-", 0x18D00, 0x18D08},
     {"KHITAN SMALL SCRIPT CHARACTER-", 0x18B00, 0x18CD5},
@@ -344,14 +341,14 @@ static const GeneratedNamesData GeneratedNamesDataTable[] = {
     {"CJK COMPATIBILITY IDEOGRAPH-", 0x2F800, 0x2FA1D},
 };
 
-static llvm::Optional<char32_t>
+static std::optional<char32_t>
 nameToGeneratedCodePoint(StringRef Name, bool Strict, BufferType &Buffer) {
   for (auto &&Item : GeneratedNamesDataTable) {
     Buffer.clear();
     std::size_t Consummed = 0;
-    char NameStart = 0, NeedleStart = 0;
+    char NameStart = 0;
     bool DoesStartWith = startsWith(Name, Item.Prefix, Strict, Consummed,
-                                    NameStart, NeedleStart, /*isPrefix*/ true);
+                                    NameStart, /*IsPrefix=*/true);
     if (!DoesStartWith)
       continue;
     auto Number = Name.substr(Consummed);
@@ -368,15 +365,15 @@ nameToGeneratedCodePoint(StringRef Name, bool Strict, BufferType &Buffer) {
     }
     return V;
   }
-  return None;
+  return std::nullopt;
 }
 
-static llvm::Optional<char32_t> nameToCodepoint(StringRef Name, bool Strict,
-                                                BufferType &Buffer) {
+static std::optional<char32_t> nameToCodepoint(StringRef Name, bool Strict,
+                                               BufferType &Buffer) {
   if (Name.empty())
-    return None;
+    return std::nullopt;
 
-  llvm::Optional<char32_t> Res = nameToHangulCodePoint(Name, Strict, Buffer);
+  std::optional<char32_t> Res = nameToHangulCodePoint(Name, Strict, Buffer);
   if (!Res)
     Res = nameToGeneratedCodePoint(Name, Strict, Buffer);
   if (Res)
@@ -391,29 +388,28 @@ static llvm::Optional<char32_t> nameToCodepoint(StringRef Name, bool Strict,
     std::reverse(Buffer.begin(), Buffer.end());
     // UAX44-LM2. Ignore case, whitespace, underscore ('_'), and all medial
     // hyphens except the hyphen in U+1180 HANGUL JUNGSEONG O-E.
-    if (!Strict && Value == 0x116c &&
-        Name.find_insensitive("O-E") != StringRef::npos) {
+    if (!Strict && Value == 0x116c && Name.contains_insensitive("O-E")) {
       Buffer = "HANGUL JUNGSEONG O-E";
       Value = 0x1180;
     }
     return Value;
   }
-  return None;
+  return std::nullopt;
 }
 
-llvm::Optional<char32_t> nameToCodepointStrict(StringRef Name) {
+std::optional<char32_t> nameToCodepointStrict(StringRef Name) {
 
   BufferType Buffer;
   auto Opt = nameToCodepoint(Name, true, Buffer);
   return Opt;
 }
 
-llvm::Optional<LooseMatchingResult>
+std::optional<LooseMatchingResult>
 nameToCodepointLooseMatching(StringRef Name) {
   BufferType Buffer;
   auto Opt = nameToCodepoint(Name, false, Buffer);
   if (!Opt)
-    return None;
+    return std::nullopt;
   return LooseMatchingResult{*Opt, Buffer};
 }
 
@@ -445,8 +441,8 @@ nearestMatchesForCodepointName(StringRef Pattern, std::size_t MaxMatchesCount) {
       return Name;
     };
 
-    auto It = std::lower_bound(
-        Matches.begin(), Matches.end(), Distance,
+    auto It = llvm::lower_bound(
+        Matches, Distance,
         [&](const MatchForCodepointName &a, std::size_t Distance) {
           if (Distance == a.Distance)
             return a.Name < GetName();

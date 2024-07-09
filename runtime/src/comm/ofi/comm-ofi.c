@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -74,6 +74,12 @@
 #include <rdma/fi_errno.h>
 #include <rdma/fi_rma.h>
 
+#include <sys/mman.h>
+#ifndef MAP_HUGETLB
+// MAP_HUGETLB is not defined on all systems (e.g. MacOS)
+#define MAP_HUGETLB 0
+#endif
+
 #ifdef __has_include
 #if __has_include(<rdma/fi_cxi_ext.h>)
 #include <rdma/fi_cxi_ext.h>
@@ -102,11 +108,11 @@ int chpl_comm_ofi_abort_on_error;
 //
 
 //
-// This is used to check that the libfabric version the runtime is
-// linked with in a user program is the same one it was compiled
-// against.
+// This is used as the API version to request in fi_getinfo(). We don't support
+// versions older than this and requesting an older version allows using
+// different versions at build and user compile time.
 //
-#define COMM_OFI_FI_VERSION FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION)
+#define COMM_OFI_FI_VERSION FI_VERSION(1, 9)
 
 
 ////////////////////////////////////////
@@ -178,6 +184,7 @@ static chpl_bool envInjectRMA;          // env: inject RMA messages
 static chpl_bool envInjectAMO;          // env: inject AMO messages
 static chpl_bool envInjectAM;           // env: inject AM messages
 static chpl_bool envUseDedicatedAmhCores;  // env: use dedicated AM cores
+static const char* envExpectedProvider; // env: provider we should select
 
 static int numTxCtxs;
 static int numRxCtxs;
@@ -302,6 +309,52 @@ static const char* mcmModeNames[] = { "undefined",
                                       "message-order-fence",
                                       "message-order",
                                       "delivery-complete", };
+//
+// A note on injection.
+//
+// libfabric provides an "injection" feature in which there are no lingering
+// dependencies on the operation's arguments once the operation returns. Without
+// injection there may be lingering dependencies until the operation is
+// transmit-complete. For example, doing a PUT of a memory location creates a
+// dependency on that memory location until the PUT is successfully transmitted
+// to the recipient. Changing the memory contents in the interim can lead to
+// undefined results.
+//
+// Lingering dependencies can complicate the operation's caller -- consider a
+// loop that updates a variable and then PUTs it to a remote
+// memory address. The loop must wait for the PUT to be transmit-complete
+// before modifying the variable, precluding pipelining the PUTs. For this
+// reason libfabric allows the PUT to be injected via the FI_INJECT flag. See
+// the libfabric man pages for more details, but if this flag is provided
+// then the caller may reuse the arguments as soon as the operation returns.
+// In the case of the loop example the variable can be updated as soon as the
+// PUT returns. Injection isn't free, however, and may cause the operation to
+// either make a copy of its arguments or to block the operation until it is
+// transmit-complete. The exact implementation is provider-specific. As a
+// result, it only makes sense to use FI_INJECT for non-blocking constructs.
+// For example, in the case of a fetching atomic the calling task will block
+// until the atomic completes because the task needs the result of the fetch
+// to continue. There is likely no advantage to injecting the fetching atomic
+// and quite possibly higher overhead for doing so.
+//
+// Confusingly, libfabric also provides fi_inject* functions that in addition
+// to providing the FI_INJECT semantics described above also suppresses any
+// completion events. Such operations are "fire and forget" -- they have no
+// lingering dependencies and will complete without any indication that they
+// did so. However, we use FI_PROGRESS_MANUAL meaning the runtime must
+// progress the libfabric endpoints. Normally, we would use the completion
+// event to know when we can stop progressing an endpoint, but with the
+// fi_inject* routines we don't know when we can stop because we don't know
+// when the operations are transmit-complete. This might be ok with a
+// sequence of ordered operations in which all but the last are injected
+// because we can progress the endpoint until the last operation is
+// transmit-complete. However, in general we don't know whether a given
+// operation is the last. For this reason we can't use the fi_inject*
+// functions.
+// TODO: remove calls to fi_inject* from the code
+//
+
+
 
 //
 // Provider-specific support.
@@ -319,7 +372,8 @@ static struct perTxCtxInfo_t* tciAllocForAmHandler(void);
 static chpl_bool tciAllocTabEntry(struct perTxCtxInfo_t*);
 static void tciFree(struct perTxCtxInfo_t*);
 static void waitForCQSpace(struct perTxCtxInfo_t*, size_t);
-static chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t, void*, size_t);
+static chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t, void*, size_t,
+                                     chpl_bool);
 static void ofi_put_lowLevel(const void*, void*, c_nodeid_t,
                              uint64_t, uint64_t, size_t, void*,
                              uint64_t, struct perTxCtxInfo_t*);
@@ -743,17 +797,20 @@ bitmapBaseType_t bitmapElemBit(size_t i) {
 
 static inline
 void bitmapClear(struct bitmap_t* b, size_t i) {
-  b->map[bitmapElemIdx(i)] &= ~bitmapElemBit(i);
+  if (b) {
+    b->map[bitmapElemIdx(i)] &= ~bitmapElemBit(i);
+  }
 }
 
 static inline
 void bitmapSet(struct bitmap_t* b, size_t i) {
+  assert(b);
   b->map[bitmapElemIdx(i)] |= bitmapElemBit(i);
 }
 
 static inline
 int bitmapTest(struct bitmap_t* b, size_t i) {
-  return (b->map[bitmapElemIdx(i)] & bitmapElemBit(i)) != 0;
+  return (b && (b->map[bitmapElemIdx(i)] & bitmapElemBit(i)) != 0);
 }
 
 #define BITMAP_FOREACH_SET(b, i)                                        \
@@ -991,20 +1048,6 @@ static chpl_bool mrGetKey(uint64_t*, uint64_t*, int, void*, size_t);
 static chpl_bool mrGetLocalKey(void*, size_t);
 static chpl_bool mrGetDesc(void**, void*, size_t);
 
-void chpl_comm_pre_topo_init(void) {
-  chpl_comm_ofi_abort_on_error =
-    (chpl_env_rt_get("COMM_OFI_ABORT_ON_ERROR", NULL) != NULL);
-  time_init();
-  chpl_comm_ofi_oob_init();
-  DBG_INIT();
-  int32_t rank;
-  int32_t count = chpl_comm_ofi_oob_locales_on_node(&rank);
-  chpl_set_num_locales_on_node(count);
-  if (rank != -1) {
-    chpl_set_local_rank(rank);
-  }
-}
-
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   //
   // Gather run-invariant environment info as early as possible.
@@ -1026,13 +1069,25 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   envUseAmTxCntr = chpl_env_rt_get_bool("COMM_OFI_AM_TX_COUNTER", false);
   envUseAmRxCntr = chpl_env_rt_get_bool("COMM_OFI_AM_RX_COUNTER", false);
 
+  // Temporarily disable completion counters until non-blocking operations
+  // are implemented correctly.
+
+  if (envUseTxCntr || envUseAmTxCntr || envUseAmRxCntr) {
+    chpl_warning("OFI completion counters are currently disabled.", 0, 0);
+    envUseTxCntr = envUseAmTxCntr = envUseAmRxCntr = false;
+  }
+
   envUseCxiHybridMR = chpl_env_rt_get_bool("COMM_OFI_CXI_HYBRID_MR", true);
 
-  envInjectRMA = chpl_env_rt_get_bool("COMM_OFI_INJECT_RMA", true);
-  envInjectAMO = chpl_env_rt_get_bool("COMM_OFI_INJECT_AMO", true);
-  envInjectAM = chpl_env_rt_get_bool("COMM_OFI_INJECT_AM", true);
+  // TODO: default to false to workaround non-blocking ofi issue
+  // these should be changed back to true when that is fixed
+  envInjectRMA = chpl_env_rt_get_bool("COMM_OFI_INJECT_RMA", false);
+  envInjectAMO = chpl_env_rt_get_bool("COMM_OFI_INJECT_AMO", false);
+  envInjectAM = chpl_env_rt_get_bool("COMM_OFI_INJECT_AM", false);
+
   envUseDedicatedAmhCores = chpl_env_rt_get_bool(
                                   "COMM_OFI_DEDICATED_AMH_CORES", false);
+  envExpectedProvider = chpl_env_rt_get("COMM_OFI_EXPECTED_PROVIDER", NULL);
   //
   // The user can specify the provider by setting either the Chapel
   // CHPL_RT_COMM_OFI_PROVIDER environment variable or the libfabric
@@ -1046,6 +1101,18 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     }
   }
 
+  chpl_comm_ofi_abort_on_error =
+    (chpl_env_rt_get("COMM_OFI_ABORT_ON_ERROR", NULL) != NULL);
+  time_init();
+  chpl_comm_ofi_oob_init();
+  DBG_INIT();
+  int32_t rank;
+  int32_t count = chpl_comm_ofi_oob_locales_on_node(&rank);
+  chpl_set_num_locales_on_node(count);
+  if (rank != -1) {
+    chpl_set_local_rank(rank);
+  }
+
   pthread_that_inited = pthread_self();
 }
 
@@ -1053,8 +1120,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 void chpl_comm_pre_mem_init(void) {
   //
   // Reserve cores for the AM handlers. This is done here because it has to
-  // happen after chpl_topo_init has been called, but before other functions
-  // access information about the cores, such as pinning the heap.
+  // happen after the topology layer has been initialized, but before other
+  // functions access information about the cores, such as pinning the heap.
   //
   init_ofiReserveCores();
 }
@@ -1097,10 +1164,13 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
 void chpl_comm_post_task_init(void) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s()", __func__);
 
-  if (chpl_numNodes == 1)
-    return;
-  init_ofi();
-  init_bar();
+  if (chpl_numNodes == 1) {
+    // We might need to create the heap even if there is only one locale.
+    chpl_comm_regMemHeapInfo(NULL, NULL);
+  } else {
+    init_ofi();
+    init_bar();
+  }
 }
 
 
@@ -1460,6 +1530,11 @@ struct fi_info* findProvInList(struct fi_info* info,
         inAddr.device = pci->device_id;
         inAddr.function = pci->function_id;
         addr = chpl_topo_selectNicByType(&inAddr, &pciAddr);
+        if (addr == NULL) {
+          // warn that something went wrong, but use this NIC so we don't
+          // come to a halt.
+          chpl_warning("internal error finding NIC in topology", 0, 0);
+        }
         // Remember this NIC in case the NIC suggested by the topology layer
         // isn't in the list of infos, in which case we'll use this one.
         best = info;
@@ -1488,7 +1563,7 @@ struct fi_info* findProvInList(struct fi_info* info,
     chpl_warning("sockets provider is deprecated", 0, 0);
   }
 
-  // some providers incorrectly report that they supports FI_ORDER_ATOMIC_RAW
+  // some providers incorrectly report that they support FI_ORDER_ATOMIC_RAW
   // and FI_ORDER_ATOMIC_WAR
   if (best && (isInProvider("cxi", best))) {
     best->tx_attr->msg_order &= ~(FI_ORDER_ATOMIC_RAW | FI_ORDER_ATOMIC_WAR);
@@ -1609,8 +1684,11 @@ chpl_bool canBindTxCtxs(struct fi_info* info) {
   // we'll use bound tx contexts with this provider.
   //
   const struct fi_domain_attr* dom_attr = info->domain_attr;
-  int epCount = chpl_env_rt_get_int("COMM_OFI_EP_COUNT", dom_attr->ep_cnt);
-  int numWorkerTxCtxs = ((envPreferScalableTxEp
+  // The cxi provider has a bug in which it reports a maximum of only 128
+  // endpoints. Until that is fixed, assume it can create as many endpoints
+  // as we need.
+  size_t epCount = isInProvider("cxi", info) ? SIZE_MAX : dom_attr->ep_cnt;
+  size_t numWorkerTxCtxs = ((envPreferScalableTxEp
                           && dom_attr->max_ep_tx_ctx > 1)
                          ? dom_attr->max_ep_tx_ctx
                          : epCount)
@@ -1680,9 +1758,11 @@ struct fi_info* setCheckMsgOrderFenceProv(struct fi_info* info,
   //
   // Note: we don't ask for FI_ORDER_ATOMIC_RAW because the some providers
   // doesn't support it.  FI_ORDER_ATOMIC_WAR ordering is enforced by the
-  // MCM.
+  // MCM. We need FI_ORDER_RMA_WAW to ensure sequential consistency of
+  // writes.
   //
   uint64_t need_msg_orders =   FI_ORDER_ATOMIC_WAW
+                             | FI_ORDER_RMA_WAW
                              | FI_ORDER_SAS;
   if (set) {
     // Only use this mode if the tasking layer has a fixed number of threads.
@@ -2029,6 +2109,19 @@ void init_ofiFabricDomain(void) {
   //
   fi_freeinfo(hints);
 
+  //
+  // Make sure we selected the provider we were expected to select, if
+  // specified.
+  //
+  if ((envExpectedProvider != NULL) &&
+      (strcmp(ofi_info->fabric_attr->prov_name, envExpectedProvider))) {
+    char msg[128];
+    snprintf(msg, sizeof(msg),
+             "Selected incorrect provider: %s != %s",
+             ofi_info->fabric_attr->prov_name, envExpectedProvider);
+    chpl_error(msg, 0, 0);
+  }
+
   if (DBG_TEST_MASK(DBG_PROV_ALL)) {
     if (chpl_nodeID == 0) {
       DBG_PRINTF(DBG_PROV_ALL,
@@ -2067,7 +2160,7 @@ void init_ofiFabricDomain(void) {
 // Reserve cores for the AM handler(s).
 //
 static
-void init_ofiReserveCores() {
+void init_ofiReserveCores(void) {
   for (int i = 0; i < numAmHandlers; i++) {
     reservedCPUs[i] = envUseDedicatedAmhCores ?
       chpl_topo_reserveCPUPhysical() : -1;
@@ -2199,33 +2292,70 @@ void heedSlingshotSettings(struct fi_info* info) {
   CHK_SYS_MALLOC(auth_key, 1);
 
   //
-  // Service ID.  If there are more than one, then we have access to
-  // more than one interface.  But we only support one anyway and our
-  // domain logic will have found the first of them, so just take the
-  // first service ID.
+  // Find the index of our device in the list of devices.
   //
+
+  int index = 0;
+  {
+    char ev[strlen(evDevs) + 1];  // non-constant, for strtok()
+    strcpy(ev, evDevs);
+
+    char* s = ev;
+    char* tok = NULL;
+    char* lasts;
+    while((tok = strtok_r(s, ",", &lasts)) != NULL) {
+      if (!strcmp(tok, ofi_info->domain_attr->name)) {
+        break;
+      }
+      index++;
+      s = NULL;
+    }
+    CHK_TRUE(tok != NULL);
+  }
+
+
+  //
+  // Service ID. If there is more than one, use the indexth one.
   {
     char ev[strlen(evSvcIds) + 1];  // non-constant, for strtok()
     strcpy(ev, evSvcIds);
 
+    char* s = ev;
     char* tok;
     char* lasts;
-    CHK_TRUE((tok = strtok_r(ev, ",", &lasts)) != NULL);
+    char *c = strchr(ev, ',');
+
+    if (c == NULL) {
+      tok = ev;
+    } else {
+      for (int i = 0; i <= index; i++, s = NULL) {
+        CHK_TRUE((tok = strtok_r(s, ",", &lasts)) != NULL);
+      }
+    }
     CHK_TRUE(sscanf(tok, "%" SCNu32, &auth_key->svc_id) == 1);
     DBG_PRINTF(DBG_SLINGSHOT, "Slingshot svc_id %" PRIu32, auth_key->svc_id);
   }
 
   //
-  // VNI.  Similarly to the service ID case, if there are more than one,
-  // just take the first.
+  // VNI.  Similarly to the service ID case, if there is more than one,
+  // use the indexth one.
   //
   {
     char ev[strlen(evVnis) + 1];  // non-constant, for strtok()
     strcpy(ev, evVnis);
 
+    char* s = ev;
     char* tok;
     char* lasts;
-    CHK_TRUE((tok = strtok_r(ev, ",", &lasts)) != NULL);
+    char *c = strchr(ev, ',');
+
+    if (c == NULL) {
+      tok = ev;
+    } else {
+      for (int i = 0; i <= index; i++, s = NULL) {
+        CHK_TRUE((tok = strtok_r(s, ",", &lasts)) != NULL);
+      }
+    }
 
     char ev2[strlen(tok) + 1];
     strcpy(ev2, tok);
@@ -2979,18 +3109,31 @@ static void init_amHandling(void);
 
 static
 void init_ofiForAms(void) {
+
+  // Specify the amount of space we should allocate for AM landing zones. We
+  // should have enough that we needn't re-post the multi-receive buffer more
+  // often than, say, every tenth of a second. The original value was 40MB as
+  // explained in the comment below. The default is now 64MB and it's
+  // configurable, although more experiments are necessary to perform a
+  // similar size computation on more modern hardware.
   //
-  // Compute the amount of space we should allow for AM landing zones.
-  // We should have enough that we needn't re-post the multi-receive
-  // buffer more often than, say, every tenth of a second.  We know from
-  // the Chapel performance/comm/low-level/many-to-one test that the
-  // comm=ugni AM handler can handle just over 150k "fast" AM requests
-  // in 0.1 sec.  Assuming an average AM request size of 256 bytes, a 40
-  // MiB buffer is enough to give us the desired 0.1 sec lifetime before
-  // it needs renewing.  We actually then split this in half and create
-  // 2 half-sized buffers (see below), so reflect that here also.
+  // Original comment:
+  // We know from the Chapel performance/comm/low-level/many-to-one test that
+  // the comm=ugni AM handler can handle just over 150k "fast" AM requests in
+  // 0.1 sec.  Assuming an average AM request size of 256 bytes, a 40 MiB
+  // buffer is enough to give us the desired 0.1 sec lifetime before it needs
+  // renewing.  We actually then split this in half and create 2 half-sized
+  // buffers (see below), so reflect that here also.
   //
-  const size_t amLZSize = ((size_t) 40 << 20) / 2;
+  size_t amLZSize = chpl_env_rt_get_size("COMM_OFI_AM_LZ_SIZE",
+                                               (size_t) 64 << 20);
+#ifdef CHPL_COMM_DEBUG
+    char buf[10];
+    DBG_PRINTF(DBG_AM_BUF, "AM LZ size %s (%#zx)",
+               chpl_snprintf_KMG_z(buf, sizeof(buf), amLZSize), amLZSize);
+#endif
+
+  amLZSize /= 2;
 
   //
   // Set the minimum multi-receive buffer space.  Make it big enough to
@@ -3109,7 +3252,7 @@ void chpl_comm_rollcall(void) {
   // Initialize diags
   chpl_comm_diags_init();
 
-  chpl_msg(2, "executing on node %d of %d node(s): %s\n", chpl_nodeID,
+  chpl_msg(2, "executing locale %d of %d on node '%s'\n", chpl_nodeID,
            chpl_numNodes, chpl_nodeName());
 
   //
@@ -3177,7 +3320,7 @@ void chpl_comm_broadcast_private(int id, size_t size) {
   for (int i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
       (void) ofi_put(chpl_rt_priv_bcast_tab[id], i,
-                     chplPrivBcastTabMap[i][id], size);
+                     chplPrivBcastTabMap[i][id], size, true /*blocking*/);
     }
   }
 }
@@ -3352,10 +3495,30 @@ void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s()", __func__);
 
   PTHREAD_CHK(pthread_once(&fixedHeapOnce, init_fixedHeap));
-  *start_p = fixedHeapStart;
-  *size_p  = fixedHeapSize;
+  if (start_p != NULL) {
+    *start_p = fixedHeapStart;
+  }
+  if (size_p != NULL) {
+    *size_p  = fixedHeapSize;
+  }
 }
 
+static chpl_bool get_ofiUseTHP(struct fi_info* info) {
+  // set based on `CHPL_RT_COMM_OFI_THP_HINT`
+  // if not set by user, the default is based on FI_PROVIDER.
+  // by default use if the provider is efa
+
+  const char* thpHint = chpl_env_rt_get("COMM_OFI_THP_HINT", NULL);
+  chpl_bool useTHP;
+  if (thpHint == NULL && info != NULL) {
+    chpl_bool using_efa = isInProvName("efa", info->fabric_attr->prov_name);
+    useTHP = using_efa;
+  } else {
+    useTHP = chpl_env_str_to_bool("COMM_OFI_THP_HINT", thpHint, false);
+  }
+  DBG_PRINTF(DBG_HEAP, "using transparent huge pages: %s", useTHP ? "YES" : "NO");
+  return useTHP;
+}
 
 static
 void init_fixedHeap(void) {
@@ -3367,169 +3530,193 @@ void init_fixedHeap(void) {
   // may need to configure itself differently with or without a fixed
   // heap.
   //
+  struct fi_info* infoList = NULL;
+  chpl_bool createHeap = false;
 
   //
-  // Get hints describing our base requirements, the ones that are
-  // independent of which MCM conformance mode we'll eventually use.
+  // Create a fixed heap if the user needs one.
   //
-  chpl_bool txAttrsForced;
-  struct fi_info* hints = getBaseProviderHints(&txAttrsForced);
+  createHeap = chpl_env_rt_get_bool("COMM_OFI_NEED_FIXED_HEAP", false);
+  chpl_bool useTHP = get_ofiUseTHP(NULL);
 
-  //
-  // If hint construction didn't at least tentatively say we'll use a
-  // fixed heap, we definitely won't.  The checks it does are based on
-  // run-invariant info such as environment settings, whether this is
-  // a multi-node program, etc.
-  //
-  if ((hints->domain_attr->mr_mode & FI_MR_ALLOCATED) == 0) {
-    DBG_PRINTF_NODE0(DBG_HEAP, "fixedHeap: base hints say no");
-    return;
-  }
+  if (!createHeap && (chpl_numNodes > 1)) {
+    //
+    // Get hints describing our base requirements, the ones that are
+    // independent of which MCM conformance mode we'll eventually use.
+    //
+    chpl_bool txAttrsForced;
+    struct fi_info* hints = getBaseProviderHints(&txAttrsForced);
 
-  //
-  // Now do further checks.  We default to using a fixed heap on Cray XC
-  // and (for now) HPE Cray EX systems unless the user explicitly says
-  // not to.  That was checked in base hint construction.  On other
-  // platforms, we'll use a fixed heap if the best-performing "good"
-  // provider (not sockets, not tcp, not verbs;ofi_rxd) out of those
-  // that can meet our base requirements has FI_MR_ALLOCATED set to
-  // indicate it wants one.
-  //
-  if (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") != 0
-      && strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex") != 0) {
-    struct fi_info* infoList;
-    int ret;
-    OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoList),
-              ret, -FI_ENODATA);
-    if (infoList == NULL) {
-      //
-      // We found no providers at all, thus none requiring a fixed heap.
-      //
-      DBG_PRINTF_NODE0(DBG_HEAP,
-                       "fixedHeap: no, because no providers (?)");
-      return;
+    //
+    // If hint construction didn't at least tentatively say we'll use a
+    // fixed heap, we definitely won't.  The checks it does are based on
+    // run-invariant info such as environment settings, whether this is
+    // a multi-node program, etc.
+    //
+    if ((hints->domain_attr->mr_mode & FI_MR_ALLOCATED) == 0) {
+      DBG_PRINTF_NODE0(DBG_HEAP, "fixedHeap: base hints say no");
+      goto done;
     }
 
-    struct fi_info* info;
-    for (info = infoList; info != NULL; info = info->next) {
-      if (isGoodCoreProvider(info)
-          && (!isInProvider("verbs", info)
-              || !isInProvider("ofi_rxd", info))
-          && isUseableProvider(info)) {
-        break;
+    //
+    // Now do further checks.  We default to using a fixed heap on Cray XC
+    // and (for now) HPE Cray EX systems unless the user explicitly says
+    // not to.  That was checked in base hint construction.  On other
+    // platforms, we'll use a fixed heap if the best-performing "good"
+    // provider (not sockets, not tcp, not verbs;ofi_rxd) out of those
+    // that can meet our base requirements has FI_MR_ALLOCATED set to
+    // indicate it wants one.
+    //
+    if (!strcmp(CHPL_TARGET_PLATFORM, "cray-xc") ||
+        !strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex")) {
+      createHeap = true;
+    } else {
+      int ret;
+      OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoList),
+                ret, -FI_ENODATA);
+      if (infoList == NULL) {
+        //
+        // We found no providers at all, thus none requiring a fixed heap.
+        //
+        DBG_PRINTF_NODE0(DBG_HEAP,
+                         "fixedHeap: no, because no providers (?)");
+        goto done;
+      }
+
+      struct fi_info* info;
+      for (info = infoList; info != NULL; info = info->next) {
+        if (isGoodCoreProvider(info)
+            && (!isInProvider("verbs", info)
+                || !isInProvider("ofi_rxd", info))
+            && isUseableProvider(info)) {
+          break;
+        }
+      }
+
+      if (info == NULL) {
+        DBG_PRINTF_NODE0(DBG_HEAP,
+                         "fixedHeap: no, no provider needs it");
+      } else if ((info->domain_attr->mr_mode & FI_MR_ALLOCATED) == 0) {
+        DBG_PRINTF_NODE0(DBG_HEAP,
+                         "fixedHeap: no, best provider '%s' doesn't need it",
+                         info->fabric_attr->prov_name);
+      } else {
+        DBG_PRINTF_NODE0(DBG_HEAP,
+                         "fixedHeap: yes, best provider '%s' needs it",
+                         info->fabric_attr->prov_name);
+        createHeap = true;
+      }
+      useTHP = get_ofiUseTHP(info);
+    }
+  }
+  if (createHeap) {
+
+    //
+    // Either use MAX_HEAP_SIZE, or 85% of total memory
+    //
+    uint64_t max_heap_memory;
+    if (envMaxHeapSize > 0) {
+      // use user-specified envMaxHeapSize
+      max_heap_memory = envMaxHeapSize;
+    } else {
+      uint64_t total_memory = chpl_sys_physicalMemoryBytes();
+      max_heap_memory = (size_t) (0.85 * total_memory);
+    }
+
+    //
+    // Split up the heap among all the colocales
+    //
+    int num_locales_on_node = chpl_get_num_locales_on_node();
+    size_t max_heap_per_locale = (size_t) (max_heap_memory / num_locales_on_node);
+    ssize_t size = max_heap_per_locale;
+
+    //
+    // Check for hugepages.  On certain systems you really ought to use
+    // them.  But if you're on such a system and don't, we'll emit the
+    // message later.
+    //
+    void *start;
+    size_t page_size;
+    chpl_bool have_hugepages;
+
+    if ((page_size = get_hugepageSize()) == 0) {
+      have_hugepages = false;
+    } else {
+      have_hugepages = true;
+    }
+    if (!have_hugepages) {
+      page_size = chpl_getSysPageSize();
+      //
+      // We'll make a fixed heap, on whole pages.
+      //
+      size = ALIGN_UP(size, page_size);
+
+      //
+      // Work our way down from the starting size in (roughly) 5% steps
+      // until we can actually allocate a heap that size.
+      //
+      size_t decrement;
+      if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size) {
+        decrement = page_size;
+      }
+
+      size += decrement;
+      do {
+        size -= decrement;
+#ifdef CHPL_COMM_DEBUG
+        if (DBG_TEST_MASK(DBG_HEAP)) {
+          char buf[10];
+          DBG_PRINTF(DBG_HEAP, "try allocating fixed heap, size %s (%#zx)",
+                     chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
+        }
+#endif
+      if (!useTHP) {
+        CHK_SYS_MEMALIGN(start, page_size, size);
+      } else {
+        CHK_SYS_MMAP(start, size, PROT_READ | PROT_WRITE,
+                                  MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB,
+                                  -1, 0);
+      }
+      } while (start == NULL && size > decrement);
+
+      if (start == NULL)
+        chpl_error("cannot create fixed heap: cannot get memory", 0, 0);
+    } else {
+      //
+      // We'll make a fixed heap on whole hugepages.
+      //
+      size = ALIGN_UP(size, page_size);
+#ifdef CHPL_COMM_DEBUG
+        if (DBG_TEST_MASK(DBG_HEAP)) {
+          char buf[10];
+          DBG_PRINTF(DBG_HEAP, "try allocating fixed hugepage heap, size %s (%#zx)",
+                     chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
+        }
+#endif
+      start = chpl_comm_ofi_hp_get_huge_pages(size);
+      if (start == NULL) {
+        chpl_error("cannot create fixed heap: cannot get huge pages", 0, 0);
       }
     }
 
-    chpl_bool useHeap;
-    if (info == NULL) {
-      DBG_PRINTF_NODE0(DBG_HEAP,
-                       "fixedHeap: no, no provider needs it");
-      useHeap = false;
-    } else if ((info->domain_attr->mr_mode & FI_MR_ALLOCATED) == 0) {
-      DBG_PRINTF_NODE0(DBG_HEAP,
-                       "fixedHeap: no, best provider '%s' doesn't need it",
-                       info->fabric_attr->prov_name);
-      useHeap = false;
-    } else {
-      DBG_PRINTF_NODE0(DBG_HEAP,
-                       "fixedHeap: yes, best provider '%s' needs it",
-                       info->fabric_attr->prov_name);
-      useHeap = true;
-    }
+    chpl_comm_regMemHeapTouch(start, size);
 
-    fi_freeinfo(infoList);
-
-    if (!useHeap) {
-      return;
-    }
-  }
-
-  //
-  // If we get this far we'll use a fixed heap.
-  //
-  uint64_t total_memory = chpl_sys_physicalMemoryBytes();
-
-  //
-  // Don't use more than 85% of the total memory for heaps.
-  //
-  uint64_t max_heap_memory = (size_t) (0.85 * total_memory);
-
-  int num_locales_on_node = chpl_get_num_locales_on_node();
-  size_t max_heap_per_locale = (size_t) (max_heap_memory / num_locales_on_node);
-
-
-  //
-  // If the maximum heap size is not specified or it's greater than the maximum heap per
-  // locale, set it to the maximum heap per locale.
-  //
-  ssize_t size = envMaxHeapSize;
-  CHK_TRUE(size != 0);
-  if ((size < 0) || (size > max_heap_per_locale)) {
-    size = max_heap_per_locale;
-  }
-
-  //
-  // Check for hugepages.  On certain systems you really ought to use
-  // them.  But if you're on such a system and don't, we'll emit the
-  // message later.
-  //
-  size_t page_size;
-  chpl_bool have_hugepages;
-
-  if ((page_size = get_hugepageSize()) == 0) {
-    page_size = chpl_getSysPageSize();
-    have_hugepages = false;
-  } else {
-    have_hugepages = true;
-  }
-
-  //
-  // We'll make a fixed heap, on whole (huge)pages.
-  //
-  size = ALIGN_UP(size, page_size);
-
-  //
-  // Work our way down from the starting size in (roughly) 5% steps
-  // until we can actually allocate a heap that size.
-  //
-  size_t decrement;
-  if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size) {
-    decrement = page_size;
-  }
-
-  void* start;
-  size += decrement;
-  do {
-    size -= decrement;
 #ifdef CHPL_COMM_DEBUG
     if (DBG_TEST_MASK(DBG_HEAP)) {
       char buf[10];
-      DBG_PRINTF(DBG_HEAP, "try allocating fixed heap, size %s (%#zx)",
+      DBG_PRINTF(DBG_HEAP, "fixed heap on %spages, start=%p size=%s (%#zx)\n",
+                 have_hugepages ? "huge" : "regular ", start,
                  chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
     }
 #endif
-    if (have_hugepages) {
-      start = chpl_comm_ofi_hp_get_huge_pages(size);
-    } else {
-      CHK_SYS_MEMALIGN(start, page_size, size);
-    }
-  } while (start == NULL && size > decrement);
-
-  if (start == NULL)
-    chpl_error("cannot create fixed heap: cannot get memory", 0, 0);
-
-  chpl_comm_regMemHeapTouch(start, size);
-
-#ifdef CHPL_COMM_DEBUG
-  if (DBG_TEST_MASK(DBG_HEAP)) {
-    char buf[10];
-    DBG_PRINTF(DBG_HEAP, "fixed heap on %spages, start=%p size=%s (%#zx)\n",
-               have_hugepages ? "huge" : "regular ", start,
-               chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
+    fixedHeapSize  = size;
+    fixedHeapStart = start;
   }
-#endif
-  fixedHeapSize  = size;
-  fixedHeapStart = start;
+
+done:
+  if (infoList != NULL) {
+    fi_freeinfo(infoList);
+  }
 }
 
 
@@ -3552,10 +3739,24 @@ size_t get_hugepageSize(void) {
 
 static
 void init_hugepageSize(void) {
-  if (chpl_numNodes > 1
-      && getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL) {
+  chpl_bool use_hugepages = chpl_env_rt_get_bool("COMM_OFI_USE_HUGEPAGES",
+                                                 false);
+  chpl_bool need_heap = chpl_env_rt_get_bool("COMM_OFI_NEED_FIXED_HEAP",
+                                              false);
+
+  if (use_hugepages && ((chpl_numNodes > 1) || need_heap) &&
+      (getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL)) {
     hugepageSize = chpl_comm_ofi_hp_gethugepagesize();
   }
+
+  if (use_hugepages && (hugepageSize == 0)) {
+    if (chpl_comm_ofi_hp_supported()) {
+      chpl_error("Unable to get hugepage size. "
+                 "Ensure that a hugepage module is loaded.", 0, 0);
+    } else {
+      chpl_error("Chapel was not built with hugepage support.", 0, 0);
+    }
+ }
 
   DBG_PRINTF(DBG_HUGEPAGES,
              "setting hugepage info: use hugepages %s, sz %#zx",
@@ -3765,7 +3966,8 @@ void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
   DBG_PRINTF(DBG_ORDER,
              "dummy GET from %d for %s ordering",
              (int) node, dbgOrderStr);
-  uint64_t flags = (mcmMode == mcmm_msgOrdFence) ? FI_FENCE : 0;
+  uint64_t flags = (mcmMode == mcmm_msgOrdFence) ?
+                      (FI_FENCE | FI_DELIVERY_COMPLETE) : 0;
   atomic_bool txnDone;
   void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
   ofi_get_lowLevel(orderDummy, orderDummyMRDesc, node,
@@ -3962,7 +4164,7 @@ static void am_debugPrep(amRequest_t*);
 static void amRequestExecOn(c_nodeid_t, c_sublocid_t, chpl_fn_int_t,
                             chpl_comm_on_bundle_t*, size_t,
                             chpl_bool, chpl_bool);
-static void amRequestRmaPut(c_nodeid_t, void*, void*, size_t);
+static void amRequestRmaPut(c_nodeid_t, void*, void*, size_t, chpl_bool);
 static void amRequestRmaGet(c_nodeid_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
@@ -4108,7 +4310,8 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
 
 
 static inline
-void amRequestRmaPut(c_nodeid_t node, void* addr, void* raddr, size_t size) {
+void amRequestRmaPut(c_nodeid_t node, void* addr, void* raddr, size_t size,
+                     chpl_bool blocking) {
   assert(!isAmHandler);
 
   retireDelayedAmDone(false /*taskIsEnding*/);
@@ -4420,32 +4623,24 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
   case am_opExecOnLrg:
     forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
                           node /*skipNode*/, tcip);
-    havePutsOut = (tcip->putVisBitmap != NULL
-                   && bitmapTest(tcip->putVisBitmap, node));
-    haveAmosOut = (tcip->amoVisBitmap != NULL
-                   && bitmapTest(tcip->amoVisBitmap, node));
+    havePutsOut = bitmapTest(tcip->putVisBitmap, node);
+    haveAmosOut = bitmapTest(tcip->amoVisBitmap, node);
     break;
   case am_opAMO:
     {
       chpl_bool amoHasMemFx = (req->amo.ofiOp != FI_ATOMIC_READ);
       forceMemFxVisAllNodes(amoHasMemFx /*checkPuts*/, true /*checkAmos*/,
                             node /*skipNode*/, tcip);
-      havePutsOut = (amoHasMemFx
-                     && tcip->putVisBitmap != NULL
-                     && bitmapTest(tcip->putVisBitmap, node));
-      haveAmosOut = (tcip->amoVisBitmap != NULL
-                     && bitmapTest(tcip->amoVisBitmap, node));
+      havePutsOut = (amoHasMemFx && bitmapTest(tcip->putVisBitmap, node));
+      haveAmosOut = bitmapTest(tcip->amoVisBitmap, node);
     }
     break;
   case am_opGet:
-    havePutsOut = (tcip->putVisBitmap != NULL
-                   && bitmapTest(tcip->putVisBitmap, node));
-    haveAmosOut = (tcip->amoVisBitmap != NULL
-                   && bitmapTest(tcip->amoVisBitmap, node));
+    havePutsOut = bitmapTest(tcip->putVisBitmap, node);
+    haveAmosOut = bitmapTest(tcip->amoVisBitmap, node);
     break;
   case am_opPut:
-    haveAmosOut = (tcip->amoVisBitmap != NULL
-                   && bitmapTest(tcip->amoVisBitmap, node));
+    haveAmosOut = bitmapTest(tcip->amoVisBitmap, node);
     break;
   }
 
@@ -4459,12 +4654,12 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
         && reqSize <= ofi_info->tx_attr->inject_size
         && envInjectAM) {
       void* ctx = txnTrkEncodeId(__LINE__);
-      uint64_t flags = FI_FENCE | FI_INJECT;
+      uint64_t flags = FI_FENCE | FI_DELIVERY_COMPLETE | FI_INJECT;
       (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
     } else {
       atomic_bool txnDone;
       void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
-      uint64_t flags = FI_FENCE;
+      uint64_t flags = FI_FENCE | FI_DELIVERY_COMPLETE;
       (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
       waitForTxnComplete(tcip, ctx);
       txCtxCleanup(ctx);
@@ -5124,7 +5319,8 @@ void amWrapPut(struct taskArg_RMA_t* tsk_rma) {
   DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqStartStr((amRequest_t*) rma));
 
   CHK_TRUE(mrGetKey(NULL, NULL, rma->b.node, rma->raddr, rma->size));
-  (void) ofi_put(rma->addr, rma->b.node, rma->raddr, rma->size);
+  (void) ofi_put(rma->addr, rma->b.node, rma->raddr, rma->size,
+                 true /*blocking*/);
 
   //
   // Note: the RMA bytes must be visible in target memory before the
@@ -5178,35 +5374,32 @@ void amPutDone(c_nodeid_t node, amDone_t* pAmDone) {
   }
 
   //
-  // Send the 'done' indicator.  If necessary, first make sure the
-  // memory effects of all communication ops done by this AM are
-  // visible.  We and the AM's initiator are the same Chapel task,
-  // for purposes of MCM conformance, and the memory effects of the
-  // AM must be visible to that initiator by the time it sees the
-  // 'done' indicator.  In the delivery-complete mode everything is
-  // already visible.  In the message-order mode we don't have to
-  // force PUT visibility because this 'done' is also a PUT and we
-  // use write-after-write message ordering, but we do have to force
-  // AMO visibility.  In message-order-fence mode we have to force
-  // both PUT and AMO visibility.
+  // Send the 'done' indicator.  If necessary, first make sure the memory
+  // effects of all communication ops to all nodes done by this AM are
+  // visible.  We and the AM's initiator are the same Chapel task, for
+  // purposes of MCM conformance, and the memory effects of the AM must be
+  // visible to that initiator by the time it sees the'done' indicator.  In
+  // the delivery-complete mode everything is already visible.  In the
+  // message-order and message-order-fence modes we have to force PUT and AMO
+  // visibility.
   //
   if (mcmMode != mcmm_dlvrCmplt) {
-    forceMemFxVisAllNodes(mcmMode == mcmm_msgOrdFence /*checkPuts*/,
-                          true /*checkAmos*/,
+    forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
                           -1 /*skipNode*/, tcip);
   }
 
   uint64_t mrKey = 0;
   uint64_t mrRaddr = 0;
   uint64_t flags = 0;
+  atomic_bool txnDone;
+  void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
 
-  if (envInjectRMA) {
-    flags = FI_INJECT;
-  }
+
   CHK_TRUE(mrGetKey(&mrKey, &mrRaddr, node, pAmDone, sizeof(*pAmDone)));
   ofi_put_lowLevel(amDone, mrDesc, node, mrRaddr, mrKey, sizeof(*pAmDone),
-                   txnTrkEncodeId(__LINE__), flags, tcip);
-
+                   ctx, flags, tcip);
+  waitForTxnComplete(tcip, ctx);
+  txCtxCleanup(ctx);
   if (amTcip == NULL) {
     tciFree(tcip);
   }
@@ -5372,7 +5565,7 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
   chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
   chpl_comm_diags_incr(put);
 
-  (void) ofi_put(addr, node, raddr, size);
+  (void) ofi_put(addr, node, raddr, size, true /*blocking*/);
 }
 
 
@@ -5576,6 +5769,22 @@ void chpl_comm_getput_unordered_task_fence(void) {
   task_local_buff_flush(get_buff | put_buff);
 }
 
+/*
+ * Routine for ensuring the current thread's send endpoint is progressed. This
+ * should be called when waiting outside the communication layer and there
+ * may be outstanding non-blocking operations that are not yet transmitted.
+ */
+void chpl_comm_ensure_progress(void) {
+  struct perTxCtxInfo_t* tcip;
+  if (chpl_numNodes > 1) {
+    // This only makes sense if the endpoint is bound to the thread. TODO:
+    // figure out what to do in non-bound cases. Probably just disallow
+    // non-blocking operations in that case as performance will be pretty bad
+    // to begin with.
+    CHK_TRUE((tcip = tciAlloc()) != NULL);
+    (*tcip->ensureProgressFn)(tcip);
+  }
+}
 
 ////////////////////////////////////////
 //
@@ -5729,18 +5938,18 @@ void waitForCQSpace(struct perTxCtxInfo_t* tcip, size_t len) {
   }
 }
 
-
 typedef chpl_comm_nb_handle_t (rmaPutFn_t)(void* myAddr, void* mrDesc,
                                            c_nodeid_t node,
                                            uint64_t mrRaddr, uint64_t mrKey,
                                            size_t size,
+                                           chpl_bool blocking,
                                            struct perTxCtxInfo_t* tcip);
 
 static rmaPutFn_t rmaPutFn_selector;
 
 static inline
 chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
-                              void* raddr, size_t size) {
+                              void* raddr, size_t size, chpl_bool blocking) {
   //
   // Don't ask the provider to transfer more than it wants to.
   //
@@ -5755,7 +5964,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
         chunkSize = size - i;
       }
       (void) ofi_put(&((const char*) addr)[i], node, &((char*) raddr)[i],
-                     chunkSize);
+                     chunkSize, blocking);
     }
 
     return NULL;
@@ -5783,12 +5992,12 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     void* myAddr = mrLocalizeSource(&mrDesc, addr, size, "PUT src");
 
     ret = rmaPutFn_selector(myAddr, mrDesc, node, mrRaddr, mrKey, size,
-                            tcip);
+                            blocking, tcip);
 
     mrUnLocalizeSource(myAddr, addr);
     tciFree(tcip);
   } else {
-    amRequestRmaPut(node, (void*) addr, raddr, size);
+    amRequestRmaPut(node, (void*) addr, raddr, size, blocking);
     ret = NULL;
   }
 
@@ -5805,21 +6014,22 @@ chpl_comm_nb_handle_t rmaPutFn_selector(void* myAddr, void* mrDesc,
                                         c_nodeid_t node,
                                         uint64_t mrRaddr, uint64_t mrKey,
                                         size_t size,
+                                        chpl_bool blocking,
                                         struct perTxCtxInfo_t* tcip) {
   chpl_comm_nb_handle_t ret = NULL;
 
   switch (mcmMode) {
   case mcmm_msgOrdFence:
     ret = rmaPutFn_msgOrdFence(myAddr, mrDesc, node, mrRaddr, mrKey, size,
-                               tcip);
+                               blocking, tcip);
     break;
   case mcmm_msgOrd:
     ret = rmaPutFn_msgOrd(myAddr, mrDesc, node, mrRaddr, mrKey, size,
-                          tcip);
+                          blocking, tcip);
     break;
   case mcmm_dlvrCmplt:
     ret = rmaPutFn_dlvrCmplt(myAddr, mrDesc, node, mrRaddr, mrKey, size,
-                             tcip);
+                             blocking, tcip);
     break;
   default:
     INTERNAL_ERROR_V("unexpected mcmMode %d", mcmMode);
@@ -5850,52 +6060,49 @@ static ssize_t wrap_fi_writemsg(const void* addr, void* mrDesc,
 
 //
 // Implements ofi_put() when MCM mode is message ordering with fences.
+// TODO: this needs to be refactored when non-blocking Puts are implemented.
+// fi_inject_write cannot be called because it does not generate a completion
+// event, so there is no way to wait for the non-blocking Put to complete.
 //
 static
 chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
                                            c_nodeid_t node,
                                            uint64_t mrRaddr, uint64_t mrKey,
                                            size_t size,
+                                           chpl_bool blocking,
                                            struct perTxCtxInfo_t* tcip) {
+  uint64_t    flags = 0;
+  atomic_bool txnDone;
+  void        *ctx;
+
   if (tcip->bound
       && size <= ofi_info->tx_attr->inject_size
-      && (tcip->amoVisBitmap == NULL
-          || !bitmapTest(tcip->amoVisBitmap, node))
-      && envInjectRMA) {
+      && !blocking && envInjectRMA) {
     //
-    // Special case: write injection has the least latency.  We can use
-    // that if this PUT doesn't need a fence, its size doesn't exceed
-    // the injection size limit, and we have a bound tx context so we
-    // can delay forcing the memory visibility until later.
+    // Special case: write injection has the least latency.  We can use it if
+    // this PUT is non-blocking, its size doesn't exceed the injection size
+    // limit, and we have a bound tx context so we can delay forcing the
+    // memory visibility until later.
     //
-    (void) wrap_fi_inject_write(myAddr, node, mrRaddr, mrKey, size, tcip);
+    flags = FI_INJECT;
+  }
+  if (tcip->bound && bitmapTest(tcip->amoVisBitmap, node)) {
+    //
+    // Special case: If our last operation was an AMO (which can only be true
+    // with a bound tx context) then we need to do a fenced PUT to force the
+    // AMO to complete before this PUT.
+    //
+    flags |= FI_FENCE | FI_DELIVERY_COMPLETE;
+  }
+  if (blocking) {
+    ctx = txCtxInit(tcip, __LINE__, &txnDone);
   } else {
-    atomic_bool txnDone;
-    void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
+    ctx = txnTrkEncodeId(__LINE__);
+  }
 
-    if (tcip->bound
-        && bitmapTest(tcip->amoVisBitmap, node)) {
-      //
-      // Special case: If our last operation was an AMO (which can only
-      // be true with a bound tx context) then we need to do a fenced
-      // PUT to force the AMO to complete before this PUT.  We may still
-      // be able to inject the PUT, though.
-      //
-      uint64_t flags = FI_FENCE;
-      if (size <= ofi_info->tx_attr->inject_size
-          && envInjectRMA) {
-        flags |= FI_INJECT;
-      }
-      (void) wrap_fi_writemsg(myAddr, mrDesc, node, mrRaddr, mrKey, size,
+  (void) wrap_fi_writemsg(myAddr, mrDesc, node, mrRaddr, mrKey, size,
                               ctx, flags, tcip);
-    } else {
-      //
-      // General case.
-      //
-      (void) wrap_fi_write(myAddr, mrDesc, node, mrRaddr, mrKey, size,
-                           ctx, tcip);
-    }
-
+  if (blocking) {
     waitForTxnComplete(tcip, ctx);
     txCtxCleanup(ctx);
   }
@@ -5919,12 +6126,13 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
 
 //
 // Implements ofi_put() when MCM mode is message ordering.
-//
+// TODO: see comment for rmaPutFn_msgOrdFence.
 static
 chpl_comm_nb_handle_t rmaPutFn_msgOrd(void* myAddr, void* mrDesc,
                                       c_nodeid_t node,
                                       uint64_t mrRaddr, uint64_t mrKey,
                                       size_t size,
+                                      chpl_bool blocking,
                                       struct perTxCtxInfo_t* tcip) {
   //
   // When using message ordering we have to do something after the PUT
@@ -5936,7 +6144,7 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrd(void* myAddr, void* mrDesc,
 
   if (tcip->bound
       && size <= ofi_info->tx_attr->inject_size
-      && envInjectRMA) {
+      && !blocking && envInjectRMA) {
     //
     // Special case: write injection has the least latency.  We can use
     // that if this PUT's size doesn't exceed the injection size limit
@@ -5974,6 +6182,7 @@ chpl_comm_nb_handle_t rmaPutFn_dlvrCmplt(void* myAddr, void* mrDesc,
                                          c_nodeid_t node,
                                          uint64_t mrRaddr, uint64_t mrKey,
                                          size_t size,
+                                         chpl_bool blocking,
                                          struct perTxCtxInfo_t* tcip) {
   atomic_bool txnDone;
   void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
@@ -6064,11 +6273,12 @@ void ofi_put_lowLevel(const void* addr, void* mrDesc, c_nodeid_t node,
                       uint64_t mrRaddr, uint64_t mrKey, size_t size,
                       void* ctx, uint64_t flags,
                       struct perTxCtxInfo_t* tcip) {
-  if (flags == FI_INJECT
-      && size <= ofi_info->tx_attr->inject_size
-      && envInjectRMA) {
-    (void) wrap_fi_inject_write(addr, node, mrRaddr, mrKey, size, tcip);
-  } else if (flags == 0) {
+
+  // Can't inject a buffer that is too large
+  if ((flags & FI_INJECT) && (size > ofi_info->tx_attr->inject_size)) {
+    flags &= ~FI_INJECT;
+  }
+  if (flags == 0) {
     (void) wrap_fi_write(addr, mrDesc, node, mrRaddr, mrKey, size, ctx, tcip);
   } else {
     (void) wrap_fi_writemsg(addr, mrDesc, node, mrRaddr, mrKey, size, ctx,
@@ -6156,7 +6366,7 @@ void do_remote_put_buff(void* addr, c_nodeid_t node, void* raddr,
   if (size > MAX_UNORDERED_TRANS_SZ
       || !mrGetKey(&mrKey, &mrRaddr, node, raddr, size)
       || (info = task_local_buff_acquire(put_buff)) == NULL) {
-    (void) ofi_put(addr, node, raddr, size);
+    (void) ofi_put(addr, node, raddr, size, true /*blocking*/);
     return;
   }
 
@@ -6310,10 +6520,8 @@ chpl_comm_nb_handle_t rmaGetFn_msgOrdFence(void* myAddr, void* mrDesc,
                                            uint64_t mrRaddr, uint64_t mrKey,
                                            size_t size, void* ctx,
                                            struct perTxCtxInfo_t* tcip) {
-  chpl_bool havePutsOut = tcip->putVisBitmap != NULL
-                          && bitmapTest(tcip->putVisBitmap, node);
-  chpl_bool haveAmosOut = tcip->amoVisBitmap != NULL
-                          && bitmapTest(tcip->amoVisBitmap, node);
+  chpl_bool havePutsOut = bitmapTest(tcip->putVisBitmap, node);
+  chpl_bool haveAmosOut = bitmapTest(tcip->amoVisBitmap, node);
 
   if (havePutsOut || haveAmosOut) {
     //
@@ -6323,7 +6531,7 @@ chpl_comm_nb_handle_t rmaGetFn_msgOrdFence(void* myAddr, void* mrDesc,
     // that visibility.
     //
     (void) wrap_fi_readmsg(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx,
-                           FI_FENCE, tcip);
+                           FI_FENCE | FI_DELIVERY_COMPLETE, tcip);
     if (havePutsOut) {
       bitmapClear(tcip->putVisBitmap, node);
     }
@@ -6355,12 +6563,8 @@ chpl_comm_nb_handle_t rmaGetFn_msgOrd(void* myAddr, void* mrDesc,
   // visible.
   //
   if (tcip->bound) {
-    if (tcip->putVisBitmap != NULL) {
-      bitmapClear(tcip->putVisBitmap, node);
-    }
-    if (tcip->amoVisBitmap != NULL) {
-      bitmapClear(tcip->amoVisBitmap, node);
-    }
+    bitmapClear(tcip->putVisBitmap, node);
+    bitmapClear(tcip->amoVisBitmap, node);
   }
   (void) wrap_fi_read(myAddr, mrDesc, node, mrRaddr, mrKey, size, ctx, tcip);
   return NULL;
@@ -6693,85 +6897,83 @@ static ssize_t wrap_fi_atomicmsg(struct amoBundle_t* ab, uint64_t flags,
 static
 chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
                                         struct perTxCtxInfo_t* tcip) {
-  if (ab->iovRes.addr == NULL
+
+  chpl_bool famo = (ab->iovRes.addr != NULL);
+  uint64_t flags = 0;
+  chpl_bool havePutsOut = bitmapTest(tcip->putVisBitmap, ab->node);
+  chpl_bool haveAmosOut = bitmapTest(tcip->amoVisBitmap, ab->node);
+
+  //
+  // Force visibility of all pending Puts and AMOs on all locales except for
+  // the target locale. We will ensure visibility on the target below.
+  //
+  forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
+                        ab->node /*skipNode*/, tcip);
+
+  //
+  // Inject this AMO if it is non-fetching, we have a bound tx context so we
+  // can delay forcing the memory visibility until later, and the size
+  // doesn't exceed the injection size limit.
+  //
+  if (!famo
       && tcip->bound
       && ab->size <= ofi_info->tx_attr->inject_size
-      && (tcip->putVisBitmap == NULL
-          || !bitmapTest(tcip->putVisBitmap, ab->node))
       && envInjectAMO) {
-    //
-    // Special case: injection is the quickest.  We can use that if
-    // this is a non-fetching operation, we have a bound tx context so
-    // we can delay forcing the memory visibility until later, the size
-    // doesn't exceed the injection size limit, and we don't need a
-    // fence because the last thing we did to the same target node was
-    // not a PUT.
-    //
-    (void) wrap_fi_inject_atomic(ab, tcip);
-  } else {
-    //
-    // If we need a result wait for it; otherwise, we can collect
-    // the completion later and message ordering will ensure MCM
-    // conformance.
-    //
-    atomic_bool txnDone;
-    if (ab->iovRes.addr != NULL) {
-      ab->m.context = txCtxInit(tcip, __LINE__, &txnDone);;
-    }
-
-    if (tcip->bound
-        && tcip->putVisBitmap != NULL
-        && bitmapTest(tcip->putVisBitmap, ab->node)) {
-      //
-      // Special case: If our last operation to the same remote node was
-      // a PUT (which we only see with a bound tx context) then we need
-      // to do a fenced AMO to force the PUT to complete before this
-      // AMO.  We may still be able to inject the AMO, however.
-      //
-      uint64_t flags = FI_FENCE;
-      if (ab->size <= ofi_info->tx_attr->inject_size
-          && envInjectAMO) {
-        flags |= FI_INJECT;
-      }
-      (void) wrap_fi_atomicmsg(ab, flags, tcip);
-      bitmapClear(tcip->putVisBitmap, ab->node);
-    } else {
-      //
-      // General case.
-      //
-      uint64_t flags = 0;
-
-      //
-      // If it's a fetching AMO (read) and the provider doesn't support
-      // FI_ORDER_ATOMIC_RAW, then we must do a fenced AMO to force any
-      // outstanding non-fetching AMOs (writes) to complete before this AMO.
-      //
-      if ((ab->iovRes.addr != NULL) &&
-        (ofi_info->tx_attr->msg_order & FI_ORDER_ATOMIC_RAW) == 0) {
-        flags = FI_FENCE;
-      }
-      (void) wrap_fi_atomicmsg(ab, flags, tcip);
-    }
-
-    if (ab->iovRes.addr != NULL) {
-      waitForTxnComplete(tcip, ab->m.context);
-      txCtxCleanup(ab->m.context);
-    }
+    flags |= FI_INJECT;
   }
 
   //
-  // When using message ordering we have to do something after the
-  // operation to force it into visibility, and on the same tx context
-  // as the operation itself because libfabric message ordering is
-  // specific to endpoint pairs.  With a bound tx context we can do it
-  // later, when needed.  Otherwise we have to do it now.
+  // If we need a result wait for it; otherwise, we can collect the completion
+  // later and message ordering will ensure MCM conformance.
   //
+  atomic_bool txnDone;
+  if (famo) {
+    ab->m.context = txCtxInit(tcip, __LINE__, &txnDone);
+  }
+
   if (tcip->bound) {
-    bitmapSet(tcip->amoVisBitmap, ab->node);
-  } else {
-    mcmReleaseOneNode(ab->node, tcip, "AMO");
+    //
+    // Fence this AMO to force any outstanding operations to complete if A)
+    // there are outstanding PUTs to the same remote node; or B) this is a
+    // fetching AMO and there are outstanding non-fetching AMOs and the
+    // provider doesn't support FI_ORDER_ATOMIC_RAW.
+    //
+    // If either is true use a fence to force all outstanding operations to
+    // complete before performing this AMO.
+    //
+    if (havePutsOut ||
+       (famo && haveAmosOut &&
+          !(ofi_info->tx_attr->msg_order & FI_ORDER_ATOMIC_RAW))) {
+      flags |= FI_FENCE | FI_DELIVERY_COMPLETE;
+    }
+    if (havePutsOut) {
+      bitmapClear(tcip->putVisBitmap, ab->node);
+    }
+    if (haveAmosOut) {
+      bitmapClear(tcip->amoVisBitmap, ab->node);
+    }
   }
-
+  (void) wrap_fi_atomicmsg(ab, flags, tcip);
+  if (famo) {
+    //
+    // Wait for the result of a fetching operation.
+    //
+    waitForTxnComplete(tcip, ab->m.context);
+    txCtxCleanup(ab->m.context);
+  } else {
+      //
+      // When using message ordering we need to do something after a
+      // non-fetching AMO to force it into visibility, and do it on the same
+      // tx context as the operation itself because libfabric message
+      // ordering is specific to endpoint pairs.  With a bound tx context we
+      // can do it later, when needed.  Otherwise we have to do it now.
+      //
+      if (tcip->bound) {
+        bitmapSet(tcip->amoVisBitmap, ab->node);
+      } else {
+        mcmReleaseOneNode(ab->node, tcip, "AMO");
+      }
+  }
   return NULL;
 }
 
@@ -7198,10 +7400,8 @@ void forceMemFxVisOneNode(c_nodeid_t node,
   //
   if (tcip->bound) {
     chpl_bool havePutsOut = (checkPuts
-                             && tcip->putVisBitmap != NULL
                              && bitmapTest(tcip->putVisBitmap, node));
     chpl_bool haveAmosOut = (checkAmos
-                             && tcip->amoVisBitmap != NULL
                              && bitmapTest(tcip->amoVisBitmap, node));
     if (havePutsOut || haveAmosOut) {
       mcmReleaseOneNode(node, tcip, "PUT");
@@ -8035,7 +8235,7 @@ void chpl_comm_impl_barrier(const char *msg) {
     DBG_PRINTF(DBG_BARRIER, "BAR notify parent %d", (int) bar_parent);
     ofi_put(&one, bar_parent,
             (void*) &bar_infoMap[bar_parent]->child_notify[parChild],
-            sizeof(one));
+            sizeof(one), true /*blocking*/);
 
     //
     // Wait for our parent locale to release us from the barrier.
@@ -8062,7 +8262,7 @@ void chpl_comm_impl_barrier(const char *msg) {
       DBG_PRINTF(DBG_BARRIER, "BAR release child %d", (int) child);
       ofi_put(&one, child,
               (void*) &bar_infoMap[child]->parent_release,
-              sizeof(one));
+              sizeof(one), true /*blocking*/);
     }
   }
 

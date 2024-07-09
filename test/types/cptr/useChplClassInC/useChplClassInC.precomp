@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+$3 --library --library-dir lib-dir -o liblib lib.chpl

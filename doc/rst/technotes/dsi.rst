@@ -175,15 +175,13 @@ class ``GlobalDomain``
 
   .. code-block:: chapel
 
-    class GlobalDomain ... {
-      param rank: int;
-      type idxType;
-      param stridable: bool;
+    class GlobalDomain: BaseRectangularDom {
       var dist;
       ...
     }
 
-  The fields ``rank``, ``idxType``, ``stridable`` are the attributes
+  The fields ``rank``, ``idxType``, ``strides``, inherited from
+  the class BaseRectangularDom, are the attributes
   of the corresponding Chapel domain. (They could be replaced with
   parentheses-less functions of the same names and param/type intents.)
 
@@ -202,24 +200,24 @@ class ``GlobalDomain``
   Returns this domain's domain map. This procedure should be provided as shown.
   (Exception: see ``dsiLinksDistribution()``.)
 
-.. method:: proc GlobalDistribution.dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) : GlobalDomain(rank, idxType, stridable)
+.. method:: proc GlobalDistribution.dsiNewRectangularDom(param rank: int, type idxType, param strides: strideKind, inds) : GlobalDomain(rank, idxType, strides)
 
   This method is invoked when the Chapel program is creating a domain
-  value of the type domain(rank, idxType, stridable) mapped using the
+  value of the type domain(rank, idxType, strides) mapped using the
   domain map `this` with initial indices `inds`.
 
   This method returns a new ``GlobalDomain`` instance that will correspond to
   that Chapel domain value, i.e., be that value's runtime representation.
   The field ``dist`` of the returned ``GlobalDomain`` must point to `this`.
 
-.. method:: proc GlobalDomain.dsiGetIndices(): rank * range(idxType, BoundedRangeType.bounded, stridable)
+.. method:: proc GlobalDomain.dsiGetIndices(): rank * range(idxType, boundKind.both, strides)
 
   Returns a tuple of ranges describing the dimensions of this domain.
 
   ``dsiDims()`` and ``dsiGetIndices()`` have the same specification
   and so may be implemented in terms of one another.
 
-.. method:: proc GlobalDomain.dsiSetIndices(dom: domain(rank, idxType, stridable)): void
+.. method:: proc GlobalDomain.dsiSetIndices(dom: domain(rank, idxType, strides)): void
 
   Updates the internal representation of `this`
   to match the index set of ``dom``.
@@ -522,15 +520,12 @@ class ``GlobalArray``
 
     class GlobalDomain : BaseRectangularDom {
       // required
-      param rank: int;
-      type idxType;
-      param stridable: bool;
       const dist;
       // for example, store indices as a single Chapel domain
-      var myIndices: domain(rank, idxType, stridable);
+      var myIndices: domain(rank, idxType, strides);
     }
 
-    proc GlobalDomain.dsiSetIndices(dom: domain(rank,idxType,stridable)): void
+    proc GlobalDomain.dsiSetIndices(dom: domain(rank, idxType, strides)): void
     { myIndices = dom; }
 
     class GlobalArray : BaseArr {
@@ -600,9 +595,9 @@ as an indication of what procedure(s) need to be defined.
   The domain map implementer is allowed to restrict the type of ``indexx``
   that this method accepts.
 
-.. method:: proc GlobalDomain.dsiDim(dim: int): range(idxType, BoundedRangeType.bounded, stridable)
+.. method:: proc GlobalDomain.dsiDim(dim: int): range(idxType, boundKind.both, strides)
 
-.. method:: proc GlobalDomain.dsiDims(): rank * range(idxType, BoundedRangeType.bounded, stridable)
+.. method:: proc GlobalDomain.dsiDims(): rank * range(idxType, boundKind.both, strides)
 
 .. method:: proc GlobalDomain.dsiLow
 

@@ -5,7 +5,7 @@ class C {
   var i: int;
 }
 
-proc insertPrivatized(o: object, pid: int) {
+proc insertPrivatized(o: RootClass, pid: int) {
   __primitive("chpl_newPrivatizedClass", o, pid);
 }
 

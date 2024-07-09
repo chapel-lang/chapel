@@ -31,9 +31,11 @@ class State(Enum):
     HWLOC =             4
     RE2 =               5
     LIBFABRIC =         6
-    TARGET_ARCH =       7
-    COMM_SUBSTRATE =    8
-    GASNET_SEGMENT =    9
+    OFI_OOB =           7
+    TARGET_ARCH =       8
+    COMM_SUBSTRATE =    9
+    GASNET_SEGMENT =    10
+    GASNET_VERSION =    11
 
 # Maps component prefix to corresponding environment variable.
 
@@ -68,10 +70,12 @@ varNames = {
     State.HWLOC:            'CHPL_HWLOC',
     State.RE2:              'CHPL_RE2',
     State.LIBFABRIC:        'CHPL_LIBFABRIC',
+    State.OFI_OOB:          'CHPL_COMM_OFI_OOB',
     State.PREFIX:           None,
     State.TARGET_ARCH:      'CHPL_TARGET_ARCH',
     State.COMM_SUBSTRATE:   'CHPL_COMM_SUBSTRATE',
-    State.GASNET_SEGMENT:   'CHPL_GASNET_SEGMENT'
+    State.GASNET_SEGMENT:   'CHPL_GASNET_SEGMENT',
+    State.GASNET_VERSION:   'CHPL_GASNET_VERSION'
 }
 
 # State transitions. This isn't a true state machine because some of the transitions are
@@ -82,11 +86,13 @@ nextStates = {
     State.TARGET_COMPILER:  State.TARGET_ARCH,
     State.TARGET_ARCH:      State.PREFIX,
     State.PREFIX:           State.PREFIX,
-    State.LIBFABRIC:        State.PREFIX,
+    State.LIBFABRIC:        State.OFI_OOB,
+    State.OFI_OOB:          State.PREFIX,
     State.HWLOC:            State.RE2,
     State.RE2:              State.PREFIX,
     State.COMM_SUBSTRATE:   State.GASNET_SEGMENT,
-    State.GASNET_SEGMENT:   State.PREFIX
+    State.GASNET_SEGMENT:   State.GASNET_VERSION,
+    State.GASNET_VERSION:   State.PREFIX
 }
 
 # Some of the CHPL_*_DEBUG variables add a "-debug" suffix to the component
@@ -96,9 +102,7 @@ nextStates = {
 
 def ProcessDebug(fields, config):
     global used
-    print(fields)
     var = prefixes[fields[0]]
-    print(var)
     value = '-'.join(fields[1:])
     if var in ("CHPL_COMM", "CHPL_HWLOC", "CHPL_TASKS"):
         debug = var + "_DEBUG"

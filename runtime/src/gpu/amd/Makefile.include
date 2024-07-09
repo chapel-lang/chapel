@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -21,5 +21,6 @@ GPU_SUBDIR = src/gpu/amd
 GPU_OBJDIR = $(RUNTIME_BUILD)/$(GPU_SUBDIR)
 
 ALL_SRCS += $(CURDIR)/$(GPU_SUBDIR)/*.c
+ALL_SRCS += $(CURDIR)/$(GPU_SUBDIR)/*.cc
 
 include $(RUNTIME_ROOT)/$(GPU_SUBDIR)/Makefile.share

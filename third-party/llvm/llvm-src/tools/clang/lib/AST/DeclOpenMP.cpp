@@ -30,7 +30,7 @@ OMPThreadPrivateDecl *OMPThreadPrivateDecl::Create(ASTContext &C,
                                                    SourceLocation L,
                                                    ArrayRef<Expr *> VL) {
   auto *D = OMPDeclarativeDirective::createDirective<OMPThreadPrivateDecl>(
-      C, DC, llvm::None, VL.size(), L);
+      C, DC, std::nullopt, VL.size(), L);
   D->setVars(VL);
   return D;
 }
@@ -104,7 +104,7 @@ OMPDeclareReductionDecl::OMPDeclareReductionDecl(
     QualType Ty, OMPDeclareReductionDecl *PrevDeclInScope)
     : ValueDecl(DK, DC, L, Name, Ty), DeclContext(DK), Combiner(nullptr),
       PrevDeclInScope(PrevDeclInScope) {
-  setInitializer(nullptr, CallInit);
+  setInitializer(nullptr, OMPDeclareReductionInitKind::Call);
 }
 
 void OMPDeclareReductionDecl::anchor() {}

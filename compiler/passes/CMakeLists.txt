@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,7 @@ set(SRCS
     buildDefaultFunctions.cpp
     checkNormalized.cpp
     checkResolved.cpp
-    checkUast.cpp
+    checkGeneratedAst.cpp
     cleanup.cpp
     convert-uast.cpp
     createTaskFunctions.cpp
@@ -37,6 +37,7 @@ set(SRCS
     normalize.cpp
     normalizeErrors.cpp
     parallel.cpp
+    parseAndConvert.cpp
     resolveIntents.cpp
     ResolveScope.cpp
     returnStarTuplesByRefArgs.cpp

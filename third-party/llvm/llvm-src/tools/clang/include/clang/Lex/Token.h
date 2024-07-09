@@ -15,6 +15,7 @@
 
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/TokenKinds.h"
+#include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"
 #include <cassert>
 
@@ -116,8 +117,13 @@ public:
   }
 
   /// Return true if this is any of tok::annot_* kind tokens.
-  bool isAnnotation() const {
-    return tok::isAnnotation(getKind());
+  bool isAnnotation() const { return tok::isAnnotation(getKind()); }
+
+  /// Return true if the token is a keyword that is parsed in the same
+  /// position as a standard attribute, but that has semantic meaning
+  /// and so cannot be a true attribute.
+  bool isRegularKeywordAttribute() const {
+    return tok::isRegularKeywordAttribute(getKind());
   }
 
   /// Return a source location identifier for the specified
@@ -174,6 +180,8 @@ public:
     UintData = 0;
     Loc = SourceLocation().getRawEncoding();
   }
+
+  bool hasPtrData() const { return PtrData != nullptr; }
 
   IdentifierInfo *getIdentifierInfo() const {
     assert(isNot(tok::raw_identifier) &&
@@ -328,6 +336,12 @@ struct PPConditionalInfo {
   bool FoundElse;
 };
 
+// Extra information needed for annonation tokens.
+struct PragmaLoopHintInfo {
+  Token PragmaName;
+  Token Option;
+  ArrayRef<Token> Toks;
+};
 } // end namespace clang
 
 #endif // LLVM_CLANG_LEX_TOKEN_H

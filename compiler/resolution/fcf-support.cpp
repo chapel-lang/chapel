@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,6 +23,7 @@
 #include "astutil.h"
 #include "AstVisitorTraverse.h"
 #include "buildDefaultFunctions.h"
+#include "config.h"
 #include "DecoratedClassType.h"
 #include "passes.h"
 #include "resolution.h"
@@ -98,6 +99,8 @@ static const char* intentToString(IntentTag tag);
 
 static const char* typeToStringSpecializing(Type* t);
 
+static const char* typeToStringMangledSpecializing(Type* t);
+
 static const char*
 buildUserFacingTypeString(const std::vector<FcfFormalInfo>& formals,
                           RetTag retTag,
@@ -141,7 +144,7 @@ attachSuperThis(AggregateType* super,
                 bool throws);
 
 static FnSymbol*
-attachSuperWriteMethod(AggregateType* super, const char* name);
+attachSuperSerializeMethod(AggregateType* super);
 
 static AggregateType*
 insertChildWrapperAtPayload(const SharedFcfSuperInfo info,
@@ -152,9 +155,8 @@ attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
                 FnSymbol* payload);
 
 static FnSymbol*
-attachChildWriteMethod(const SharedFcfSuperInfo info, AggregateType* child,
-                       FnSymbol* payload,
-                       const char* name);
+attachChildSerializeMethod(const SharedFcfSuperInfo info, AggregateType* child,
+                       FnSymbol* payload);
 
 static FnSymbol*
 attachChildPayloadPtrGetter(const SharedFcfSuperInfo info,
@@ -225,6 +227,10 @@ static const char* intentToString(IntentTag tag) {
 
 static const char* typeToStringSpecializing(Type* t) {
   return FunctionType::typeToString(t);
+}
+
+static const char* typeToStringMangledSpecializing(Type* t) {
+  return FunctionType::typeToStringMangled(t);
 }
 
 // TODO: Original intent or concrete intent?
@@ -316,10 +322,7 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
   v->thisMethod = attachSuperThis(v->type, formals, retTag,
                                   retType,
                                   throws);
-  std::ignore = attachSuperWriteMethod(v->type, "writeThis");
-  if (fUseIOFormatters) {
-    std::ignore = attachSuperWriteMethod(v->type, "encodeTo");
-  }
+  std::ignore = attachSuperSerializeMethod(v->type);
 
   if (isAnyFormalNamed) v->thisMethod->addFlag(FLAG_OVERRIDE);
 
@@ -363,14 +366,14 @@ buildSuperName(const std::vector<FcfFormalInfo>& formals,
   for (auto& info : formals) {
     bool skip = isIntentSameAsDefault(info.intent, info.type);
     if (!skip) oss << intentTagMnemonicMangled(info.intent);
-    oss << typeToStringSpecializing(info.type) << "_";
+    oss << typeToStringMangledSpecializing(info.type) << "_";
     if (info.name) oss << info.name;
     oss << "_";
   }
 
   oss << "_";
   if (retTag != RET_VALUE) oss << retTagMnemonicMangled(retTag) << "_";
-  oss << typeToStringSpecializing(retType);
+  oss << typeToStringMangledSpecializing(retType);
   if (throws) oss << "_throws";
 
   auto ret = astr(oss.str());
@@ -419,6 +422,9 @@ attachSuperRetTypeGetter(AggregateType* super, Type* retType) {
                     "_",
                     ret->cname);
 
+  ret->addFlag(FLAG_UNSTABLE);
+  ret->unstableMsg = "The 'retType' method is unstable";
+
   auto mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
   ret->insertFormalAtTail(mt);
 
@@ -451,6 +457,9 @@ attachSuperArgTypeGetter(AggregateType* super,
   ret->cname = astr("chpl_get_",
                     super->symbol->cname, "_",
                     ret->cname);
+
+  ret->addFlag(FLAG_UNSTABLE);
+  ret->unstableMsg = "The 'argTypes' method is unstable";
 
   auto mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
   ret->insertFormalAtTail(mt);
@@ -551,9 +560,9 @@ attachSuperThis(AggregateType* super,
 }
 
 static FnSymbol*
-attachSuperWriteMethod(AggregateType* super, const char* name) {
+attachSuperSerializeMethod(AggregateType* super) {
   ArgSymbol* fileArg = nullptr;
-  auto ret = buildWriteThisFnSymbol(super, &fileArg, name);
+  auto ret = buildSerializeFnSymbol(super, &fileArg);
   ret->throwsErrorInit();
   normalize(ret);
   return ret;
@@ -654,15 +663,33 @@ attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
   return ret;
 }
 
-static FnSymbol*
-attachChildWriteMethod(const SharedFcfSuperInfo info,
-                     AggregateType* child,
-                     FnSymbol* payload,
-                     const char* name) {
-  ArgSymbol* fileArg = NULL;
-  FnSymbol* ret = buildWriteThisFnSymbol(child, &fileArg, name);
+static const char*
+generateWriteThisOutput(FnSymbol* fn) {
+  auto ft = toFunctionType(fn->type);
+  INT_ASSERT(ft && ft->kind() == FunctionType::PROC);
+  std::string str = ft->toString();
 
-  // All compiler generated writeThis routines now throw.
+  if (!fn->isAnonymous()) {
+    std::string key = FunctionType::kindToString(ft->kind());
+    auto idx = str.find(key);
+    INT_ASSERT(idx != std::string::npos);
+    auto pos = idx + key.length();
+    str.insert(pos, fn->name);
+    str.insert(pos, " ");
+  }
+
+  str += " { ... }";
+
+  return astr(str);
+}
+
+static FnSymbol*
+attachChildSerializeMethod(const SharedFcfSuperInfo info,
+                     AggregateType* child,
+                     FnSymbol* payload) {
+  ArgSymbol* fileArg = NULL;
+  FnSymbol* ret = buildSerializeFnSymbol(child, &fileArg);
+
   ret->throwsErrorInit();
 
   if (ioModule == NULL) {
@@ -671,8 +698,8 @@ attachChildWriteMethod(const SharedFcfSuperInfo info,
 
   ret->body->useListAdd(new UseStmt(ioModule, "", false));
   ret->getModule()->moduleUseAdd(ioModule);
-  auto str = new_StringSymbol(astr(payload->name, "()"));
-  auto writeCall = new CallExpr(".", fileArg, new_StringSymbol("writeIt"),
+  auto str = new_StringSymbol(generateWriteThisOutput(payload));
+  auto writeCall = new CallExpr(".", fileArg, new_StringSymbol("write"),
                                 str);
   ret->insertAtTail(new CallExpr(writeCall));
   normalize(ret);
@@ -788,10 +815,7 @@ static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use) {
   auto child = insertChildWrapperAtPayload(info, fn);
   std::ignore = attachChildThis(info, child, fn);
 
-  std::ignore = attachChildWriteMethod(info, child, fn, "writeThis");
-  if (fUseIOFormatters) {
-    std::ignore = attachChildWriteMethod(info, child, fn, "encodeTo");
-  }
+  std::ignore = attachChildSerializeMethod(info, child, fn);
 
   std::ignore = attachChildPayloadPtrGetter(info, child, fn);
   auto factory = insertSharedParentFactory(info, child, fn);
@@ -937,58 +961,15 @@ const std::vector<FnSymbol*>& ClosureEnv::childFunctions() const {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool
-readConfigParamBool(ModuleSymbol* modSym, const char* configParamName,
-                    VarSymbol*& cachedValue) {
-
-  // TODO: This is O(n) number of params, we need a better way to look
-  // things up after resolve. I think that 'dyno' can always do the
-  // elegant thing here. Just preserve the ID for 'ChapelBase', and then
-  // use it in conjunction with a lookup for the config name. You fetch
-  // the 'ResolvedExpression' and you're done.
-  if (!cachedValue) {
-    if (!modSym->initFn || !modSym->initFn->isResolved()) {
-      INT_FATAL(modSym, "Called before '%s' is resolved",
-                        modSym->name);
-    }
-
-    form_Map(SymbolMapElem, e, paramMap) {
-      auto sym = e->key;
-      if (sym->defPoint && sym->defPoint->getModule() == modSym) {
-        if (!strcmp(sym->name, configParamName)) {
-          auto vs = toVarSymbol(e->value);
-          if (!vs || (vs != gTrue && vs != gFalse)) {
-            INT_FATAL("Unexpected config param type or bad AST");
-            return false;
-          }
-          cachedValue = vs;
-          break;
-        }
-      }
-    }
-
-    // Provide a hint, just in case.
-    if (!cachedValue) {
-      INT_FATAL("Could not find '%s', is it declared in '%s'?",
-                configParamName,
-                modSym->name);
-    }
-  }
-
-  bool ret = (cachedValue == gTrue);
-  return ret;
-}
-
-bool useLegacyBehavior(void) {
-  static VarSymbol* cachedValue = nullptr;
-  return readConfigParamBool(baseModule, "fcfsUseLegacyBehavior",
-                             cachedValue);
-}
-
 bool usePointerImplementation(void) {
-  static VarSymbol* cachedValue = nullptr;
-  return readConfigParamBool(baseModule, "fcfsUsePointerImplementation",
-                             cachedValue);
+  static bool fcfsUsePointerImplementation = false;
+  static bool fcfsUsePointerImplementationLegal = false;
+  if(!fcfsUsePointerImplementationLegal) {
+    fcfsUsePointerImplementation = getConfigParamBool(baseModule,
+        "fcfsUsePointerImplementation") == gTrue;
+    fcfsUsePointerImplementationLegal = true;
+  }
+  return fcfsUsePointerImplementation;
 }
 
 Expr* createFunctionClassInstance(FnSymbol* fn, Expr* use) {

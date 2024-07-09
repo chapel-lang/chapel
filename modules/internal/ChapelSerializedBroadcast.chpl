@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,7 +27,7 @@ module ChapelSerializedBroadcast {
 
   config param chpl__enableSerializedGlobals = true;
 
-  extern proc chpl_get_global_serialize_table(idx : int) : c_void_ptr;
+  extern proc chpl_get_global_serialize_table(idx : int) : c_ptr(void);
 
   proc chpl__broadcastGlobal(ref localeZeroGlobal : ?T, id : int)
   where chpl__enableSerializedGlobals {

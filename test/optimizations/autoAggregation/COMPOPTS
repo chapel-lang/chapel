@@ -1,2 +1,2 @@
---auto-aggregation --report-auto-aggregation -sCopyAggregation.verboseAggregation=true -scPtrToStringBytesClassLogicalAddress=true
---auto-aggregation --report-auto-aggregation -sCopyAggregation.verboseAggregation=true --no-auto-local-access -scPtrToStringBytesClassLogicalAddress=true
+--auto-aggregation --report-auto-aggregation -sCopyAggregation.verboseAggregation=true
+--auto-aggregation --report-auto-aggregation -sCopyAggregation.verboseAggregation=true --no-auto-local-access

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,8 +45,7 @@ namespace resolution {
 MostSpecificCandidates
 findMostSpecificCandidates(
     Context* context,
-    const std::vector<const TypedFnSignature*>& lst,
-    const std::vector<types::QualifiedType>& forwardingInfo,
+    const CandidatesAndForwardingInfo& lst,
     const CallInfo& call,
     const Scope* callInScope,
     const PoiScope* callInPoiScope);

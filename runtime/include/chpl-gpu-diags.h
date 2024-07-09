@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,7 +43,10 @@ extern int chpl_gpu_diagnostics; // set via startCommDiagnostics
 extern int chpl_gpu_diags_print_unstable;
 
 #define CHPL_GPU_DIAGS_VARS_ALL(MACRO) \
-  MACRO(kernel_launch)
+  MACRO(kernel_launch) \
+  MACRO(host_to_device) \
+  MACRO(device_to_host) \
+  MACRO(device_to_device)
 
 
 typedef struct _chpl_gpuDiagnostics {
@@ -52,15 +55,15 @@ typedef struct _chpl_gpuDiagnostics {
 #undef _GPU_DIAGS_DECL
 } chpl_gpuDiagnostics;
 
-void chpl_gpu_startVerbose(chpl_bool, chpl_bool);
-void chpl_gpu_stopVerbose(void);
-void chpl_gpu_startVerboseHere(chpl_bool, chpl_bool);
-void chpl_gpu_stopVerboseHere(void);
+void chpl_gpu_startVerbose(chpl_bool, chpl_bool, int32_t, int32_t);
+void chpl_gpu_stopVerbose(int32_t, int32_t);
+void chpl_gpu_startVerboseHere(chpl_bool, chpl_bool, int32_t, int32_t);
+void chpl_gpu_stopVerboseHere(int32_t, int32_t);
 
-void chpl_gpu_startDiagnostics(chpl_bool);
-void chpl_gpu_stopDiagnostics(void);
-void chpl_gpu_startDiagnosticsHere(chpl_bool);
-void chpl_gpu_stopDiagnosticsHere(void);
+void chpl_gpu_startDiagnostics(chpl_bool, int32_t, int32_t);
+void chpl_gpu_stopDiagnostics(int32_t, int32_t);
+void chpl_gpu_startDiagnosticsHere(chpl_bool, int32_t, int32_t);
+void chpl_gpu_stopDiagnosticsHere(int32_t, int32_t);
 void chpl_gpu_resetDiagnosticsHere(void);
 void chpl_gpu_getDiagnosticsHere(chpl_gpuDiagnostics *cd);
 
@@ -143,6 +146,24 @@ int chpl_gpu_diags_is_enabled(void) {
     chpl_gpu_diags_verbose_printf(false, device_id,   \
     "%s:%d: kernel launch (block size: %dx%dx%d)",    \
     chpl_lookupFilename(fn), ln, blk_dim_x, blk_dim_y, blk_dim_z)
+
+#define chpl_gpu_diags_verbose_device_to_host_copy( \
+  ln, fn, src_device_id, size, commid) \
+    chpl_gpu_diags_verbose_printf(false, src_device_id,   \
+    "%s:%d: copy from device to host, %zu bytes, commid %d",    \
+    chpl_lookupFilename(fn), ln, size, commid)
+
+#define chpl_gpu_diags_verbose_host_to_device_copy( \
+  ln, fn, dst_device_id, size, commid) \
+    chpl_gpu_diags_verbose_printf(false, dst_device_id,   \
+    "%s:%d: copy from host to device, %zu bytes, commid %d",    \
+    chpl_lookupFilename(fn), ln, size, commid)
+
+#define chpl_gpu_diags_verbose_device_to_device_copy( \
+  ln, fn, dst_device_id, src_device_id, size, commid) \
+    chpl_gpu_diags_verbose_printf(false, src_device_id,   \
+    "%s:%d: copy from device (%d) to device (%d), %zu bytes, commid %d",    \
+    chpl_lookupFilename(fn), ln, src_device_id, dst_device_id, size, commid)
 
 #define chpl_gpu_diags_incr(_ctr)                                           \
   do {                                                                       \

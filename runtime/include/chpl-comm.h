@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -185,18 +185,13 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len);
 int32_t chpl_comm_getMaxThreads(void);
 
 
-// initialization required to enable comm calls made by the topo layer
-// during its initialization, specifically:
-//  * chpl_get_num_locales_on_node
-//
-void chpl_comm_pre_topo_init(void);
+void chpl_comm_pre_topo_init(int *argc_p, char ***argv_p);
 
 //
-// initializes the communications package
-//   set chpl_nodeID and chpl_numNodes
+// initializes the communications layer after topo layer initialization
+//
 // notes:
 //   * Called with the argc/argv pair passed to main()
-//
 void chpl_comm_init(int *argc_p, char ***argv_p);
 
 //
@@ -551,6 +546,12 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                chpl_fn_int_t fid,
                                chpl_comm_on_bundle_t *arg, size_t arg_size,
                                int ln, int32_t fn);
+
+//
+// Ensure that the communication layer makes progress if there are any
+// outstanding non-blocking operations.
+//
+void chpl_comm_ensure_progress(void);
 
 //
 // Hook to ensure remote memory consistency after unordered operations.

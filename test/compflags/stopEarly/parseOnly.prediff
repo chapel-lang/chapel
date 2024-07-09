@@ -6,8 +6,14 @@ tmpfile=$2
 tmptmp=`mktemp "tmp.XXXXXX"`
 cp $tmpfile $tmptmp
 
-# extract just names of passes run
+# exclude lines that don't start with whitespace since they are headers, not
+# pass names
+grep '^\s.*' $tmptmp > $tmpfile
+
+# extract lines with pass names
 sed '5,$ d' $tmpfile > $tmptmp
+
+# extract pass names from lines
 awk '{print $1}' $tmptmp > $tmpfile
 
 rm $tmptmp

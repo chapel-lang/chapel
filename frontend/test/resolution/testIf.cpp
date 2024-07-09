@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -353,6 +353,70 @@ static void testIfVarErrorNonClassType() {
   guard.realizeErrors();
 }
 
+static void testIfVarNonNilInThen() {
+  Context context;
+  auto ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME_FROM_FN_NAME(ctx);
+  std::string contents =
+    R""""(
+    class Bar {
+      var _msg : string;
+      proc message():string {
+        return _msg;
+      }
+    }
+
+    proc foo() {
+      var e : owned Bar? = new Bar("foo");
+      return e;
+    }
+
+    if var err = foo() {
+      var x = err.message();
+    }
+    )"""";
+  setFileText(ctx, path, contents);
+
+  auto& br = parseAndReportErrors(ctx, path);
+  auto mod = br.singleModule();
+  assert(mod);
+
+  auto& rr = resolveModule(ctx, mod->id());
+  (void)rr;
+  assert(guard.numErrors() == 0);
+  guard.realizeErrors();
+}
+
+static void testIfVarBorrow() {
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+    R"""(
+    class C {
+      var i : int;
+    }
+
+    proc retClass() : owned C? {
+      return new C(5);
+    }
+
+    if const obj = retClass() {
+      var x = obj.i;
+    }
+    )""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"x", "obj"});
+  assert(vars["x"].type()->isIntType());
+  auto obj = vars["obj"].type()->toClassType();
+  assert(obj->decorator().isNonNilable());
+  assert(obj->decorator().isBorrowed());
+  assert(obj->basicClassType()->name() == "C");
+}
+
 int main() {
   test1();
   test2();
@@ -360,10 +424,13 @@ int main() {
   test4();
   test5();
   test6();
+  testIfVarBorrow();
   testIfVarErrorUseInElseBranch1();
   testIfVarErrorUseInElseBranch2();
   testIfVarErrorUseInElseBranch3();
   testIfVarErrorUseInElseBranch4();
   testIfVarErrorNonClassType();
+  testIfVarNonNilInThen();
+
   return 0;
 }

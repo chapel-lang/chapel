@@ -256,28 +256,28 @@ endif
 "  - Better handing for ?
 "  - Ranges need better support eg: [.., ..)
 
-" Chapel extentions
-syn keyword chplStatement	break return continue compilerWarning delete
-syn keyword chplStatement	new delete this these use except only require import
-syn keyword chplStatement	noinit init
-syn keyword chplStatement	manage
+" Chapel extensions
+syn keyword chplStatement	break return continue compilerWarning
+syn keyword chplStatement	new delete this these super use except only require import
+syn keyword chplStatement	noinit init postinit deinit
+syn keyword chplStatement	manage implements
 syn keyword chplStatement	as module yield compilerError zip
 syn keyword chplIntent		param type in out inout ref
 syn keyword chplStorageClass    const config export extern var
 syn keyword chplType            domain sparse subdomain range index imag complex int uint real bool
-syn keyword chplType            file bytes string opaque integral numeric enumerated
+syn keyword chplType            file bytes string opaque integral numeric
 syn keyword chplType            locale sync atomic single dmapped
 syn keyword chplType            owned shared borrowed unmanaged
 syn keyword chplType            nothing void
 syn keyword chplOperator	on reduce scan by align
-syn keyword chplStructure	class record union enum
+syn keyword chplStructure	class record union enum interface
 syn keyword chplStructure	proc iter cobegin begin local sync let select where operator lambda
-syn keyword chplStructure	pragma inline with private public forwarding
+syn keyword chplStructure	pragma __primitive inline with private public forwarding
 syn keyword chplStructure	prototype override lifetime
 syn keyword chplBoolean		true false
 syn keyword chplConditional	if then else
 syn keyword chplConstant	nil none
-syn keyword chplRepeat		while for do coforall forall in serial
+syn keyword chplRepeat		while for do coforall forall foreach in serial defer
 syn keyword chplLabel	        when otherwise label
 syn keyword chplErrorHandling   throw throws try catch
 

@@ -25,6 +25,7 @@
 #include "llvm/PassRegistry.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/GenericDomTreeConstruction.h"
 #include "llvm/Support/raw_ostream.h"
 
 #include <cassert>
@@ -48,10 +49,9 @@ static constexpr bool ExpensiveChecksEnabled = false;
 #endif
 
 bool BasicBlockEdge::isSingleEdge() const {
-  const Instruction *TI = Start->getTerminator();
   unsigned NumEdgesToEnd = 0;
-  for (unsigned int i = 0, n = TI->getNumSuccessors(); i < n; ++i) {
-    if (TI->getSuccessor(i) == End)
+  for (const BasicBlock *Succ : successors(Start)) {
+    if (Succ == End)
       ++NumEdgesToEnd;
     if (NumEdgesToEnd >= 2)
       return false;
@@ -194,13 +194,6 @@ bool DominatorTree::dominates(const Instruction *Def,
     return dominates(E, UseBB);
   }
 
-  // Callbr results are similarly only usable in the default destination.
-  if (const auto *CBI = dyn_cast<CallBrInst>(Def)) {
-    BasicBlock *NormalDest = CBI->getDefaultDest();
-    BasicBlockEdge E(DefBB, NormalDest);
-    return dominates(E, UseBB);
-  }
-
   return dominates(DefBB, UseBB);
 }
 
@@ -311,13 +304,6 @@ bool DominatorTree::dominates(const Value *DefV, const Use &U) const {
     return dominates(E, U);
   }
 
-  // Callbr results are similarly only usable in the default destination.
-  if (const auto *CBI = dyn_cast<CallBrInst>(Def)) {
-    BasicBlock *NormalDest = CBI->getDefaultDest();
-    BasicBlockEdge E(DefBB, NormalDest);
-    return dominates(E, U);
-  }
-
   // If the def and use are in different blocks, do a simple CFG dominator
   // tree query.
   if (DefBB != UseBB)
@@ -353,6 +339,24 @@ bool DominatorTree::dominates(const BasicBlockEdge &BBE1,
   if (BBE1.getStart() == BBE2.getStart() && BBE1.getEnd() == BBE2.getEnd())
     return true;
   return dominates(BBE1, BBE2.getStart());
+}
+
+Instruction *DominatorTree::findNearestCommonDominator(Instruction *I1,
+                                                       Instruction *I2) const {
+  BasicBlock *BB1 = I1->getParent();
+  BasicBlock *BB2 = I2->getParent();
+  if (BB1 == BB2)
+    return I1->comesBefore(I2) ? I1 : I2;
+  if (!isReachableFromEntry(BB2))
+    return I1;
+  if (!isReachableFromEntry(BB1))
+    return I2;
+  BasicBlock *DomBB = findNearestCommonDominator(BB1, BB2);
+  if (BB1 == DomBB)
+    return I1;
+  if (BB2 == DomBB)
+    return I2;
+  return DomBB->getTerminator();
 }
 
 //===----------------------------------------------------------------------===//

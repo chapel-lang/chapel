@@ -19,9 +19,11 @@ proc foo(n: _nilType) {
 }
 
 proc main() {
-  var myC = (new owned C(x=1)).borrow();
+  var ownMyC = new owned C(x=1);
+  var myC = ownMyC.borrow();
   foo(myC);
-  var myD = (new owned D()).borrow();
+  var ownMyD = new owned D();
+  var myD = ownMyD.borrow();
   var otherC = new C();
   myD.y = otherC.borrow();
   myD.y!.x = 2;

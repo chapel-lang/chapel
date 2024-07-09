@@ -5,8 +5,8 @@ const filename = "foo";
 // a simplified example
 
 record MyRecord {
-  var de: unmanaged object;
-// this works: var de = new unmanaged object();
+  var de: unmanaged RootClass;
+// this works: var de = new unmanaged RootClass();
 }
 
 class MyClass {
@@ -15,10 +15,10 @@ class MyClass {
 
 const myC = new unmanaged MyClass();
 
-// TODO: The following seems to create an extra new unmanaged object()
+// TODO: The following seems to create an extra new unmanaged RootClass()
 // that is not deleted by `myC.files[filename].de` below.
 // Once this test passes memleaks testing, remove the --memLeaks .execopts.
-myC.files[filename] = new MyRecord(new unmanaged object());
+myC.files[filename] = new MyRecord(new unmanaged RootClass());
 
 writeln(myC);  // {files = {foo: (de = {})}}
 
@@ -49,7 +49,7 @@ use ChapelHashtable;
 // To preserve this future behavior after map updates,
 // a snapshot of `map` was taken at the time of this future
 // creation
-record map {
+record map : writeSerializable {
   type keyType;
   type valType;
 
@@ -120,33 +120,26 @@ record map {
     }
   }
 
-  proc writeThis(ch: fileWriter) throws {
-    _readWriteHelper(ch);
-  }
-
-  @chpldoc.nodoc
-  proc _readWriteHelper(ch) throws {
+  proc serialize(writer, ref serializer) throws {
     var first = true;
-    proc rwLiteral(lit:string) throws {
-      if ch.writing then ch._writeLiteral(lit); else ch._readLiteral(lit);
-    }
-    rwLiteral("{");
+
+    writer.writeLiteral("{");
     for slot in table.allSlots() {
       if table.isSlotFull(slot) {
         if first {
           first = false;
         } else {
-          rwLiteral(", ");
+          writer.writeLiteral(", ");
         }
         ref tabEntry = table.table[slot];
         ref key = tabEntry.key;
         ref val = tabEntry.val;
-        if ch.writing then ch.write(key); else key = ch.read(key.type);
-        rwLiteral(": ");
-        if ch.writing then ch.write(val); else val = ch.read(val.type);
+        writer.write(key);
+        writer.writeLiteral(": ");
+        writer.write(val);
       }
     }
-    rwLiteral("}");
+    writer.writeLiteral("}");
   }
 
   class KeyNotFoundError : Error {

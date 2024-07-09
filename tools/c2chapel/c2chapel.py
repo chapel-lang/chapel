@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -43,7 +43,7 @@ try:
     from pycparser import c_parser, c_ast, parse_file
     from pycparserext import ext_c_parser
 except ImportError as e:
-    sys.exit("Unable to import pycparser: " + str(e));
+    sys.exit("Unable to import pycparser: " + str(e))
 
 import argparse
 import os.path
@@ -91,8 +91,8 @@ c2chapel["signed int"]         = "c_int"
 c2chapel["signed long long"]   = "c_longlong"
 c2chapel["signed long"]        = "c_long"
 
-# Note: this mapping is defined by the compiler, not the ChapelSysCTypes file
-c2chapel["FILE"] = "_file"
+# Note: this mapping is defined by CTypes, not the ChapelSysCTypes file
+c2chapel["FILE"] = "c_FILE"
 
 __temp = [k for k in c2chapel.keys()]
 for key in __temp:
@@ -216,7 +216,7 @@ def getIntentInfo(ty):
     if type(curType) == c_ast.PtrDecl:
         ptrType = toChapelType(curType)
 
-    if type(curType) == c_ast.PtrDecl and not (isPointerTo(curType, "char") or isPointerTo(curType, "void") or toChapelType(curType) == "c_fn_ptr"):
+    if type(curType) == c_ast.PtrDecl and not (isPointerTo(curType, "unsigned char") or isPointerTo(curType, "char") or isPointerTo(curType, "void") or toChapelType(curType) == "c_fn_ptr"):
         if ptrType and "const" in curType.type.quals:
             refIntent = "const "
         refIntent += "ref"
@@ -239,7 +239,7 @@ def computeArgs(pl):
     for (i, arg) in enumerate(pl.params):
         if type(arg) == c_ast.EllipsisParam:
             formals.append(VARARGS_STR)
-            ptrFormals.append(VARARGS_STR);
+            ptrFormals.append(VARARGS_STR)
         else:
             (intent, typeName, ptrTypeName) = getIntentInfo(arg.type)
             argName = computeArgName(arg)
@@ -270,13 +270,16 @@ def isPointerTo(ty, text):
 
 def toChapelType(ty):
     if isPointerTo(ty, "char"):
-        return "c_string"
-    elif isPointerTo(ty, "void"):
-        return "c_void_ptr"
+        if "const" in ty.type.quals:
+            return "c_ptrConst(" + "c_char" + ")"
+        else:
+            return "c_ptr(" + "c_char" + ")"
     elif type(ty) in (c_ast.ArrayDecl, ext_c_parser.ArrayDeclExt):
         eltType = toChapelType(ty.type)
         if eltType is not None:
-            if "const" in ty.type.quals:
+            if type(ty.type) in (c_ast.ArrayDecl, ext_c_parser.ArrayDeclExt):
+                return eltType
+            elif "const" in ty.type.quals:
                 return "c_ptrConst(" + eltType + ")"
             else:
                 return "c_ptr(" + eltType + ")"
@@ -286,10 +289,12 @@ def toChapelType(ty):
         if type(ty.type) in (c_ast.FuncDecl, ext_c_parser.FuncDeclExt):
             return "c_fn_ptr"
         else:
+            eltType = ("void" if isPointerTo(ty, "void")
+                       else toChapelType(ty.type))
             if "const" in ty.type.quals:
-                return "c_ptrConst(" + toChapelType(ty.type) + ")"
+                return "c_ptrConst(" + eltType + ")"
             else:
-                return "c_ptr(" + toChapelType(ty.type) + ")"
+                return "c_ptr(" + eltType + ")"
     elif type(ty) in (c_ast.TypeDecl, ext_c_parser.TypeDeclExt):
         inner = ty.type
         name = ""
@@ -362,6 +367,9 @@ def getStructOrUnionDef(decl):
         return None
 
 
+def isStructOrUnionForwardDeclared(node):
+    return isStructOrUnionType(node) and not node.decls
+
 def genStructOrUnion(structOrUnion, name="", isAnon=False):
     if name == "":
         if structOrUnion.name is not None:
@@ -387,7 +395,7 @@ def genStructOrUnion(structOrUnion, name="", isAnon=False):
     foundTypes.add(name)
 
     # Forward Declaration
-    if not structOrUnion.decls:
+    if isStructOrUnionForwardDeclared(structOrUnion):
         print()
         return
 
@@ -453,8 +461,14 @@ def genTypeEnum(decl):
 # Simple visitor to all function declarations
 class ChapelVisitor(c_ast.NodeVisitor):
     def visit_StructOrUnion(self, node):
-        typeDefs[node.name] = None
         genStructOrUnion(node, isAnon=False)
+        # If this is not a forward declaration, then preemptively prune this
+        # struct or union from the typedef map (since this is the type's
+        # definition). However, if this _was_ a forward declaration, then we
+        # want to handle the possibility of an embedded definition later.
+        # E.g., 'typedef struct foo { int x; } foo;'
+        if not isStructOrUnionForwardDeclared(node):
+            typeDefs[node.name] = None
 
     def visit_Typedef(self, node):
         if node.name not in typeDefs:
@@ -497,7 +511,7 @@ def genTypeAlias(node):
             print("extern type " + alias + ";")
         else:
             print("extern type " + alias + " = " + typeName + ";")
-        foundTypes.add(alias);
+        foundTypes.add(alias)
         print()
 
 def isPointerToStruct(node):
@@ -528,7 +542,7 @@ def genTypedefs(defs):
                     isUnion = isinstance(node.type.type, c_ast.Union)
                     structOrUnion = "union" if isUnion else "struct"
                     genComment("Opaque " + structOrUnion + "?")
-                    gen = "extern union " if isUnion else "extern record ";
+                    gen = "extern union " if isUnion else "extern record "
                     gen += name + " {};\n"
                     print(gen)
                 else:
@@ -576,7 +590,7 @@ def handleTypedefs(defs, ignores):
 # - bitshift constants (e.g. 1<<3)
 def emit_defines(fname):
     with open(fname, "r") as f:
-        pat = re.compile("^\s*#define\s+([_a-zA-Z0-9]+)\s+[0-9]+$")
+        pat = re.compile("^\\s*#define\\s+([_a-zA-Z0-9]+)\\s+[0-9]+$")
         first = True
         for line in f:
             res = pat.match(line)

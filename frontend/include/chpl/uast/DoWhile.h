@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,22 +45,32 @@ namespace uast {
 
  */
 class DoWhile final : public Loop {
+ friend class AstNode;
+
  private:
+  int conditionChildNum_;
+
   DoWhile(AstList children, BlockStyle blockStyle,
           int loopBodyChildNum,
-          int conditionChildNum)
+          int conditionChildNum,
+          int attributeGroupChildNum)
     : Loop(asttags::DoWhile, std::move(children),
            blockStyle,
            loopBodyChildNum,
-           NO_CHILD /*attributeGroup*/),
+           attributeGroupChildNum),
       conditionChildNum_(conditionChildNum) {
     CHPL_ASSERT(condition());
   }
 
-  DoWhile(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    loopSerializeInner(ser);
+    ser.writeVInt(conditionChildNum_);
+  }
+
+  explicit DoWhile(Deserializer& des)
     : Loop(asttags::DoWhile, des) {
-      conditionChildNum_ = des.read<int>();
-    }
+      conditionChildNum_ = des.readVInt();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const DoWhile* lhs = this;
@@ -81,8 +91,6 @@ class DoWhile final : public Loop {
 
   std::string dumpChildLabelInner(int i) const override;
 
-  int conditionChildNum_;
-
  public:
   ~DoWhile() override = default;
 
@@ -92,7 +100,8 @@ class DoWhile final : public Loop {
   static owned<DoWhile> build(Builder* builder, Location loc,
                               BlockStyle blockStyle,
                               owned<Block> body,
-                              owned<AstNode> condition);
+                              owned<AstNode> condition,
+                              owned<AttributeGroup> attributeGroup = nullptr);
 
 
   /**
@@ -102,14 +111,6 @@ class DoWhile final : public Loop {
     auto ret = child(conditionChildNum_);
     return ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    Loop::serialize(ser);
-    ser.write(conditionChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(DoWhile);
-
 };
 
 

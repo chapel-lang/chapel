@@ -1,9 +1,9 @@
 // HDFS iteration (AKA "map") module
 
 /* ====================== TODO's ========================
- * 
+ *
  * Need to optimize this ALOT more....
- 
+
  * Need to look at host selection, apparently what I thought was happening actually
    wasnt... so we need to look at this as well
 
@@ -12,17 +12,17 @@
    -- See bottom of file for diagram
 
  * How to deal with breaks across blocks: For instance if we had:
-   
+
    "... the brown fox jumped over the brown cow that was jumping over the moon"
-   
+
    and we had a block structure:
-   
+
    [... the brown fox jumped over the bro](b1) [wn cow that was jumping over the moon] (b2)
 
    Then wordCount on the first phrase will be 14 whereas for the second, it will be 15
 
   * =============== PROGRAMMER ASSUMPTIONS (at least for now) ============================
-  
+
   * The programmer is responsible for making sure that they take care of block splits
      -- must know what a record end/start is and code from there
 
@@ -35,7 +35,7 @@
  */
 
 use HDFS,
-    HDFStools, 
+    HDFStools,
     ReplicatedVar,
     BlockDist;
 
@@ -44,13 +44,15 @@ use OS.POSIX;
 // ============== Serial iterator ========================
 iter HDFSmap(dataFile: string, namenode: string = "default", port: int(32) = 0) {
 
+  const localNamenode = namenode.localize();
+  const localDataFile = dataFile.localize();
 
   // use const instead of var -- better optimizations this way
-  const hdfsFS: c_void_ptr = HDFS.hdfsConnect(namenode.localize().c_str(), port);
-  const fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, dataFile.localize().c_str());
-  const blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile.localize().c_str(), 0, fileInfo.mSize); // incr 0?
+  const hdfsFS: c_ptr(void) = HDFS.hdfsConnect(localNamenode.c_str(), port);
+  const fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, localDataFile.c_str());
+  const blockHosts = HDFS.hdfsGetHosts(hdfsFS, localDataFile.c_str(), 0, fileInfo.mSize); // incr 0?
   const blockCount = HDFS.chadoopGetBlockCount(blockHosts);
-  const dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, dataFile.localize().c_str(), O_RDONLY, 0, 0, 0);
+  const dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, localDataFile.c_str(), O_RDONLY, 0, 0, 0);
   assert(HDFS.IS_NULL(dataFileLocal) == HDFS.IS_NULL_FALSE, "Failed to open dataFileLocal");
   var length = (fileInfo.mBlockSize): int(32); // LOOK
 
@@ -89,10 +91,10 @@ iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default"
   where tag == iterKind.leader {
 
     // ================== Globals and replication domains ==================
-    var onceOnly: atomic bool; 
+    var onceOnly: atomic bool;
     onceOnly.write(false);
 
-    var blockOwners: domain(string); 
+    var blockOwners: domain(string);
 
     // populate here so we dont have to dynamically resize
     for loc in Locales do
@@ -101,30 +103,31 @@ iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default"
     var Blockies: [blockOwners] domain(int);
 
     // Setup replication across our locales
-    const hdfsFS_PL:        [rcDomain] c_void_ptr;
+    const hdfsFS_PL:        [rcDomain] c_ptr(void);
     const fileInfo_PL:      [rcDomain] chadoopFileInfo;
-    const dataFileLocal_PL: [rcDomain] c_void_ptr; 
-    const blockHosts_PL:    [rcDomain] c_void_ptr;
+    const dataFileLocal_PL: [rcDomain] c_ptr(void);
+    const blockHosts_PL:    [rcDomain] c_ptr(void);
     const blockCount_PL:    [rcDomain] c_int;
     const length_PL:        [rcDomain] int(32);
     // ====================== END ==========================================
 
-    coforall loc in Locales { 
+    coforall loc in Locales {
       on loc {
-
+        var localNamenode = namenode.localize();
+        var localDataFile = dataFile.localize();
         //======================== File connection =========================
-        var hdfsFS: c_void_ptr = HDFS.hdfsConnect(namenode.localize().c_str(), port);
+        var hdfsFS: c_ptr(void) = HDFS.hdfsConnect(localNamenode.c_str(), port);
         assert(HDFS.IS_NULL(hdfsFS) == HDFS.IS_NULL_FALSE, "Failed to connect to HDFS");
 
-        var fileInfo      = HDFS.chadoopGetFileInfo(hdfsFS, dataFile.localize().c_str());
-        var dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, dataFile.localize().c_str(), O_RDONLY, 0, 0, 0);
+        var fileInfo      = HDFS.chadoopGetFileInfo(hdfsFS, localDataFile.c_str());
+        var dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, localDataFile.c_str(), O_RDONLY, 0, 0, 0);
         assert(HDFS.IS_NULL(dataFileLocal) == HDFS.IS_NULL_FALSE, "Failed to open dataFileLocal on loc ", here.id);
         // =================================== END =========================
 
         // ========== Native (Chapel) constants used throughout ============
-        // These should all be covered under the PGAS model -- right?? 
+        // These should all be covered under the PGAS model -- right??
         var length = (fileInfo.mBlockSize): int(32);
-        // Our length is going to be one less then block size since we want to 
+        // Our length is going to be one less then block size since we want to
         // read up to the point that the next read takes over (i.e We always read 0-(n-1))
         // =================================== END =========================
 
@@ -138,23 +141,25 @@ iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default"
       }
     }
 
-    // ========================== File-blocks ========================== 
+    // ========================== File-blocks ==========================
     // Get block info
     if (!onceOnly.testAndSet()) { // we might be able to get rid of the atomic here
       // Setup a mapping loc --> {block1, block2, ...}
       var fileInfo = rcLocal(fileInfo_PL);
       var hdfsFS   = rcLocal(hdfsFS_PL);
-      var blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile.localize().c_str(), 0, fileInfo.mSize); // Investigate
+      var localDataFile = dataFile.localize();
+      var blockHosts = HDFS.hdfsGetHosts(hdfsFS, localDataFile.c_str(), 0, fileInfo.mSize); // Investigate
       var blockCount: int = HDFS.chadoopGetBlockCount(blockHosts);
 
       const Space = {0..blockCount-1};
-      const Bspace = Space dmapped Block(boundingBox=Space);
+      const Bspace = Space dmapped new blockDist(boundingBox=Space);
       var Biter: [Bspace] int;
 
       forall (j, i) in zip (Biter, 0..) {
         var fileInfo = rcLocal(fileInfo_PL);
         var hdfsFS   = rcLocal(hdfsFS_PL);
-        var blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile.localize().c_str(), 0, fileInfo.mSize); // Investigate
+        var localDataFile = dataFile.localize();
+        var blockHosts = HDFS.hdfsGetHosts(hdfsFS, localDataFile.c_str(), 0, fileInfo.mSize); // Investigate
 
         //var owner_tmp = HDFS.chadoopGetHost(blockHosts, i: int(32), here.name + domainSuffix, (i % fileInfo.mReplication): int(32));
         var owner_tmp = HDFS.chadoopGetHost(blockHosts, i: int(32), (i % fileInfo.mReplication): int(32)):string;
@@ -168,7 +173,7 @@ iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default"
 
     // ======= Pop off all our work on each locale work-queue on that locale ======
     //
-    coforall loc in Locales { 
+    coforall loc in Locales {
       on loc {
 
         // Get replicated values
@@ -182,11 +187,11 @@ iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default"
           var length_tmp = length_LOCAL;
           // -- see bottom of page
           var startByte = block * fileInfo_LOCAL.mBlockSize; // GOOD
-          if ((length_LOCAL + startByte) >= fileInfo_LOCAL.mSize) { 
+          if ((length_LOCAL + startByte) >= fileInfo_LOCAL.mSize) {
             // we've reached EOF so we dont take off that byte (since we want to read
             // till the end of the file)
             // change to length_tmp ... makes safe in case we reach this case first
-            length_tmp = (fileInfo_LOCAL.mSize - startByte): int(32); 
+            length_tmp = (fileInfo_LOCAL.mSize - startByte): int(32);
             // So go to the end of the file and subtract off to where weve read already
             // to get where we should start reading from
           } //else length_tmp = length_LOCAL
@@ -197,8 +202,8 @@ iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default"
       }
     }
     // ============= Close our file on each locale ==============
-    for loc in Locales { 
-      on loc { 
+    for loc in Locales {
+      on loc {
         var hdfsFS_LOCAL = rcLocal(hdfsFS_PL);
         var dataFileLocal_LOCAL = rcLocal(dataFileLocal_PL);
         hdfsCloseFile(hdfsFS_LOCAL, dataFileLocal_LOCAL);

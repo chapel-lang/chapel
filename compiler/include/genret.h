@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -103,47 +103,39 @@ public:
 
 #ifdef HAVE_LLVM
   // one of the following is set when generating LLVM
-  llvm::Value *val; // use val->getType() to obtain LLVM type
-  llvm::Type *type; // set when generating a type only
-  Type *surroundingStruct; // surrounding structure, if this is a field
-  uint64_t fieldOffset; // byte offset of this field within struct
-  llvm::MDNode *fieldTbaaTypeDescriptor;
-  llvm::MDNode *aliasScope;
-  llvm::MDNode *noalias;
+  llvm::Value *val=nullptr; // use val->getType() to obtain LLVM type
+  llvm::Type *type=nullptr; // set when generating a type only
+  Type *surroundingStruct=nullptr; // surrounding structure, if this is a field
+  uint64_t fieldOffset=0; // byte offset of this field within struct
+  llvm::MDNode *fieldTbaaTypeDescriptor=nullptr;
+  llvm::MDNode *aliasScope=nullptr;
+  llvm::MDNode *noalias=nullptr;
 #else
   // Keeping same layout for non-LLVM builds
-  void* val;
-  void* type;
-  void* surroundingStruct;
-  uint64_t fieldOffset;
-  void* fieldTbaaTypeDescriptor;
-  void* aliasScope;
-  void* noalias;
+  void* val=nullptr;
+  void* type=nullptr;
+  void* surroundingStruct=nullptr;
+  uint64_t fieldOffset=0;
+  void* fieldTbaaTypeDescriptor=nullptr;
+  void* aliasScope=nullptr;
+  void* noalias=nullptr;
 #endif
-
-  // Used to mark variables as const after they are stored
-  // Specifically: use "llvm.invariant.start"
-  bool canBeMarkedAsConstAfterStore;
-
-  // Mark pointers we already stored to, used to assert
-  // the assumption that store to const memory
-  // is the only store to that memory
-  bool alreadyStored;
 
   // Used for generating LLVM parallel_loop_accesses metadata.
   // Loads/stores to/from loop local stack variables should not be considered
   // for this, so this variable tracks if a pointer must point to something
   // other than a local variable (e.g. an array element, a class field);
   // or if it points to a value from outside any order independent loop.
-  bool mustPointOutsideOrderIndependentLoop;
+  bool mustPointOutsideOrderIndependentLoop = false;
 
   // always set if available
   // note that the chplType of a GenRet corresponds to the Chapel
   // type of the result of codegenValue on it - that is, chplType
   // corresponds to the case when isLVPtr == GEN_VAL, and does not change
   // if isLVPtr is GEN_PTR or GEN_WIDE_PTR.
-  Type *chplType;
-  uint8_t isLVPtr; // for some L-value expression, we set isLVPtr
+  Type *chplType = nullptr;
+  uint8_t isLVPtr = GEN_VAL;
+                   // for some L-value expression, we set isLVPtr
                    // if the generated expression is a possible lvalue
                    // If isLVPtr is set, the expression is the address
                    // of the e.g. variable we are referring to.
@@ -152,18 +144,13 @@ public:
                    //  isLVPtr = GEN_WIDE_PTR > 0. If it's a local pointer,
                    //  isLVPtr = GEN_PTR > 0.
 
-  bool isUnsigned; // Is this expression unsigned?
-                   // Needed for LLVM code generation in order to
-                   // properly coerce call arguments into the correct
-                   // called type, since LLVM native integer types do not
-                   // include signed-ness.
+  bool isUnsigned = false; // Is this expression unsigned?
+                           // Needed for LLVM code generation in order to
+                           // properly coerce call arguments into the correct
+                           // called type, since LLVM native integer types do
+                           // not include signed-ness.
 
-  GenRet() : c(), val(NULL), type(NULL), surroundingStruct(NULL),
-             fieldOffset(0), fieldTbaaTypeDescriptor(NULL),
-             aliasScope(NULL), noalias(NULL),
-             canBeMarkedAsConstAfterStore(false), alreadyStored(false),
-             mustPointOutsideOrderIndependentLoop(false),
-             chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false) { }
+  GenRet() { }
 
   // Allow implicit conversion from AST elements.
   GenRet(BaseAST* ast) {

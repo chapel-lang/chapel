@@ -3,7 +3,7 @@ use IO;
 proc testReadLineRef(type dataType) {
   var f = openMemFile();
   {
-    var ch = f.writer();
+    var ch = f.writer(locking=false);
     ch.writeln("a b":dataType);
     ch.writeln("c d":dataType);
     ch.writeln("e f g h i j k l m n o p q r s t u v w x y z":dataType);
@@ -12,7 +12,7 @@ proc testReadLineRef(type dataType) {
   }
 
   {
-    var ch = f.reader();
+    var ch = f.reader(locking=false);
     var line:dataType;
     var got:bool;
     got = ch.readLine(line);
@@ -36,7 +36,7 @@ proc testReadLineRef(type dataType) {
 proc testReadLineType(type dataType){
   var f = openMemFile();
   {
-    var ch = f.writer();
+    var ch = f.writer(locking=false);
     ch.writeln("a b":dataType);
     ch.writeln("c d":dataType);
     ch.writeln("e f g h i j k l m n o p q r s t u v w x y z":dataType);
@@ -45,7 +45,7 @@ proc testReadLineType(type dataType){
   }
 
   {
-    var ch = f.reader();
+    var ch = f.reader(locking=false);
     assert( ch.readLine(dataType) == "a b\n":dataType);
     assert( ch.readLine(dataType, stripNewline=true) == "c d":dataType);
     try { ch.readLine(dataType, maxSize = 10);}
@@ -67,7 +67,7 @@ proc testReadLineType(type dataType){
 proc testReadLineArray(){
   var f = openMemFile();
   {
-    var ch = f.writer();
+    var ch = f.writer(locking=false);
     ch.writeln("a b");
     ch.writeln("c d");
     ch.writeln("e f g h i j k l m n o p q r s t u v w x y z");
@@ -76,7 +76,7 @@ proc testReadLineArray(){
   }
 
   {
-    var ch = f.reader();
+    var ch = f.reader(locking=false);
     var numRead : int;
 
     var array : [0..300] uint(8);

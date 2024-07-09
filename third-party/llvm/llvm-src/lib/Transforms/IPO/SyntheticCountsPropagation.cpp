@@ -101,7 +101,7 @@ PreservedAnalyses SyntheticCountsPropagation::run(Module &M,
   // parameter.
   auto GetCallSiteProfCount = [&](const CallGraphNode *,
                                   const CallGraphNode::CallRecord &Edge) {
-    Optional<Scaled64> Res = None;
+    std::optional<Scaled64> Res;
     if (!Edge.first)
       return Res;
     CallBase &CB = *cast<CallBase>(*Edge.first);
@@ -111,11 +111,11 @@ PreservedAnalyses SyntheticCountsPropagation::run(Module &M,
     // Now compute the callsite count from relative frequency and
     // entry count:
     BasicBlock *CSBB = CB.getParent();
-    Scaled64 EntryFreq(BFI.getEntryFreq(), 0);
+    Scaled64 EntryFreq(BFI.getEntryFreq().getFrequency(), 0);
     Scaled64 BBCount(BFI.getBlockFreq(CSBB).getFrequency(), 0);
     BBCount /= EntryFreq;
     BBCount *= Counts[Caller];
-    return Optional<Scaled64>(BBCount);
+    return std::optional<Scaled64>(BBCount);
   };
 
   CallGraph CG(M);

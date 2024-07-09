@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,13 +19,14 @@
 
 #include "chpl/parsing/parsing-queries.h"
 
-#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/libraries/LibraryFile.h"
 #include "chpl/parsing/Parser.h"
+#include "chpl/resolution/scope-queries.h" // for moduleInitializationOrder
 #include "chpl/types/RecordType.h"
-#include "chpl/uast/post-parse-checks.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
@@ -34,10 +35,15 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/MultiDecl.h"
 #include "chpl/uast/TupleDecl.h"
-#include "chpl/util/version-info.h"
+#include "chpl/uast/post-parse-checks.h"
 #include "chpl/util/filtering.h"
+#include "chpl/util/string-utils.h"
+#include "chpl/util/version-info.h"
 
 #include "../util/filesystem_help.h"
+
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Path.h"
 
 #include <cstdio>
 #include <regex>
@@ -62,7 +68,7 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   std::string text;
   std::string error;
   const ErrorBase* parseError = nullptr;
-  if (!readfile(path.c_str(), text, error)) {
+  if (!readFile(path.c_str(), text, error)) {
     // TODO does this need to be stored in FileContents?
     context->error(Location(), "error reading file: %s\n", error.c_str());
   }
@@ -103,246 +109,41 @@ static Parser helpMakeParser(Context* context,
   }
 }
 
-// <7F>HPECHPL
-#define LIBRARY_MAGIC (uint64_t)0x4C5048434550487F
-#define LIBRARY_VERSION_MAJOR 0
-#define LIBRARY_VERSION_MINOR 1
+static const BuilderResult&
+parseFileToBuilderResultQuery(Context* context, UniqueString path,
+                              UniqueString parentSymbolPath) {
+  QUERY_BEGIN(parseFileToBuilderResultQuery, context, path, parentSymbolPath);
 
-static UniqueString cleanLocalPath(Context* context, UniqueString path) {
-  if (path.startsWith("/") ||
-      path.startsWith("./") == false) {
-    return path;
+  BuilderResult result(path);
+
+  // Run the fileText query to get the file contents
+  const FileContents& contents = fileText(context, path);
+  const std::string& text = contents.text();
+  const ErrorBase* error = contents.error();
+
+  if (error == nullptr) {
+    // if there was no error reading the file, proceed to parse
+    auto parser = helpMakeParser(context, parentSymbolPath);
+    const char* pathc = path.c_str();
+    const char* textc = text.c_str();
+    BuilderResult tmpResult = parser.parseString(pathc, textc);
+    result.swap(tmpResult);
+    BuilderResult::updateFilePaths(context, result);
   }
-
-  auto str = path.str();
-  while (str.find("./") == 0) {
-    str = str.substr(2);
-  }
-
-  return chpl::UniqueString::get(context, str);
-}
-
-//
-// The library file format (whitespace not significant):
-// <magic number, uint64_t>
-// <library version, major, int>
-// <library version, minor, int>
-// <chpl version, major, int>
-// <chpl version, minor, int>
-// <chpl version, update, int>
-//
-// <user/std module descriptor, std::string>
-//
-// N:<number of BuilderResult entries, uint64_t>
-//   0..N-1: <file path i, std::string><library file offset i, uint64_t>
-//
-// M:<string cache size, uint64_t>
-//   0..M-1: <id i, int><string length, uint32_t><string, const char*>
-//
-// 0..N-1: <BuilderResult for file path i, BuilderResult>
-//
-void LibraryFile::generate(Context* context,
-                           std::vector<UniqueString> paths,
-                           std::string outFileName,
-                           bool isUser) {
-  std::ofstream myFile;
-  myFile.open(outFileName, std::ios::out | std::ios::trunc | std::ios::binary);
-  chpl::Serializer ser(myFile);
-
-  ser.write(LIBRARY_MAGIC);
-  ser.write(LIBRARY_VERSION_MAJOR);
-  ser.write(LIBRARY_VERSION_MINOR);
-
-  // Write out the version of the 'chpl' compiler generating this file
-  ser.write(getMajorVersion());
-  ser.write(getMinorVersion());
-  ser.write(getUpdateVersion());
-
-  // TODO: Currently a boolean, but might be useful to represent internal
-  // or package modules separately someday.
-  if (isUser) {
-    ser.write(std::string("USER"));
-  } else {
-    // Currently assuming that this is the mode where we generate the entire
-    // standard library.
-    ser.write(std::string("STANDARD"));
-  }
-
-  // Number of files we expect to serialize in this library
-  ser.write((uint64_t)paths.size());
-
-  std::vector<std::pair<std::string, std::string>> data;
-  uint64_t offset = 0;
-
-  // Use the same serializer so that we can build up a unified cache of
-  // UniqueStrings for this library file.
-  //
-  // Store all the text in a stringstream to be written out after the cache
-  // is written.
-  std::stringstream ss;
-  chpl::Serializer builderSer(ss);
-  for (auto path : paths) {
-    path = cleanLocalPath(context, path);
-    UniqueString empty;
-    auto& result = parseFileToBuilderResult(context, path, empty);
-    ss.str(std::string()); // clear for this iteration
-    result.serialize(builderSer);
-
-    const auto& str = ss.str();
-    data.push_back({path.str(), str});
-
-    // write the filename and the offset for the header
-    ser.write(path.str());
-    ser.write(offset);
-    offset += str.size();
-  }
-
-  const auto& stringCache = builderSer.stringCache();
-
-  // TODO: Can we avoid serializing the ID here if we sort the cache and
-  // write it in order, allowing the deserialization process to infer the ID?
-  ser.write((uint32_t)stringCache.size());
-  for (const auto& kv : stringCache) {
-    const auto& pair = kv.second;
-    ser.write(pair.first); // unique ID in this table
-    ser.write((uint32_t)pair.second); // string size
-    if (pair.second > 0) {
-      // string data
-      ser.os().write(kv.first, pair.second);
-    }
-  }
-
-  // Finally, write the saved strings from serializing a BuilderResult
-  for (const auto& pair : data) {
-    ser.os().write(pair.second.c_str(), pair.second.size());
-  }
-}
-
-LibraryFile::LibraryFile(Context* context, UniqueString libPath)
-: path_(libPath) {
-  std::ifstream myFile;
-  myFile.open(libPath.str(), std::ios::in | std::ios::binary);
-  chpl::Deserializer des(context, myFile);
-
-  // Some basic validation
-  CHPL_ASSERT(LIBRARY_MAGIC == des.read<uint64_t>());
-  CHPL_ASSERT(LIBRARY_VERSION_MAJOR == des.read<int>());
-  CHPL_ASSERT(LIBRARY_VERSION_MINOR == des.read<int>());
-
-  // Currently no checking is done for 'chpl' version
-  std::ignore = des.read<int>(); // major version
-  std::ignore = des.read<int>(); // minor version
-  std::ignore = des.read<int>(); // update version
-
-  // Is this a user module, or a standard module?
-  const auto kind = des.read<std::string>();
-  CHPL_ASSERT(kind == "USER" || kind == "STANDARD");
-  isUser_ = (kind == "USER");
-
-  // Number of builder result entries
-  const auto num = des.read<uint64_t>();
-
-  // Read in the table of '.chpl' filenames and their offsets in the file
-  std::vector<std::pair<std::string, uint64_t>> offsetsTable;
-  for (uint64_t i = 0; i < num; i++) {
-    auto path = des.read<std::string>();
-    auto offset = des.read<uint64_t>();
-    offsetsTable.push_back({path, offset});
-  }
-
-  // Read unique strings
-  {
-    const uint64_t size = des.read<uint32_t>();
-    cache_.resize(size);
-    for (uint64_t i = 0; i < size; i++) {
-      int id = des.read<int>();
-      auto len = des.read<uint32_t>();
-      if (len > 0) {
-        // TODO: Can we save some memory allocations by doing this read while
-        // we're trying to create the unique c-string?
-        auto buf = (char*)malloc(len+1);
-        des.is().read(buf, len);
-        buf[len] = '\0';
-
-        auto unique = des.context()->uniqueCString(buf, len);
-        cache_[id] = {(size_t)len, unique};
-
-        free(buf);
-      }
-    }
-  }
-
-  // Offsets are relative to the start of the actual data, so the first entry
-  // should have an offset of 0.
-  const auto dataStart = myFile.tellg();
-
-  for (const auto& pair : offsetsTable) {
-    std::streamoff off = pair.second;
-    auto ustr = UniqueString::get(context, pair.first);
-    offsets_[ustr] = dataStart + off;
-  }
-}
-
-const LibraryFile&
-loadLibraryFile(Context* context, UniqueString libPath) {
-  QUERY_BEGIN(loadLibraryFile, context, libPath);
-
-  LibraryFile result(context, libPath);
 
   return QUERY_END(result);
-}
-
-void registerFilePathsInLibrary(Context* context, UniqueString& libPath) {
-  const auto& lib = loadLibraryFile(context, libPath);
-  for (const auto& entry : lib.offsets()) {
-    context->setLibraryForFilePath(entry.first, libPath);
-  }
-}
-
-static BuilderResult
-loadBuilderResultFromFile(Context* context, UniqueString path,
-                          UniqueString libPath) {
-
-  const auto& lib = loadLibraryFile(context, libPath);
-
-  std::ifstream myFile;
-  myFile.open(libPath.str(), std::ios::in | std::ios::binary);
-  myFile.seekg(lib.offsets().at(path));
-
-  Deserializer des(context, myFile, lib.stringCache());
-  auto result = BuilderResult::deserialize(des);
-
-  return result;
 }
 
 const BuilderResult&
 parseFileToBuilderResult(Context* context, UniqueString path,
                          UniqueString parentSymbolPath) {
-  QUERY_BEGIN(parseFileToBuilderResult, context, path, parentSymbolPath);
-
-  BuilderResult result(path);
   UniqueString libPath;
-  if (context->pathHasLibrary(path, libPath)) {
-    auto tmpResult = loadBuilderResultFromFile(context, path ,libPath);
-    result.swap(tmpResult);
+  if (context->pathIsInLibrary(path, libPath)) {
+    auto lib = libraries::LibraryFile::load(context, libPath);
+    return lib->loadSourceAst(context, path);
   } else {
-    // Run the fileText query to get the file contents
-    const FileContents& contents = fileText(context, path);
-    const std::string& text = contents.text();
-    const ErrorBase* error = contents.error();
-
-    if (error == nullptr) {
-      // if there was no error reading the file, proceed to parse
-      auto parser = helpMakeParser(context, parentSymbolPath);
-      const char* pathc = path.c_str();
-      const char* textc = text.c_str();
-      BuilderResult tmpResult = parser.parseString(pathc, textc);
-      result.swap(tmpResult);
-      BuilderResult::updateFilePaths(context, result);
-    }
+    return parseFileToBuilderResultQuery(context, path, parentSymbolPath);
   }
-
-  return QUERY_END(result);
 }
 
 // TODO: can't make this a query because can't store the uast::BuilderResult&
@@ -357,6 +158,38 @@ parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
 
   checkBuilderResult(context, path, result);
   return result;
+}
+
+std::vector<const uast::AstNode*>
+introspectParsedTopLevelExpressions(Context* context) {
+  std::vector<const uast::AstNode*> toReturn;
+
+  if (auto parsedResults = context->querySavedResults(parsing::parseFileToBuilderResultQuery)) {
+    for (auto& result : *parsedResults) {
+      if (!context->isResultUpToDate(result)) continue;
+
+      for (auto topLevelExpr : result.result.topLevelExpressions()) {
+        toReturn.push_back(topLevelExpr);
+      }
+    }
+  }
+
+  return toReturn;
+}
+
+std::vector<UniqueString>
+introspectParsedFiles(Context* context) {
+  std::vector<UniqueString> toReturn;
+
+  if (auto parsedResults = context->querySavedResults(parsing::parseFileToBuilderResultQuery)) {
+    for (auto& result : *parsedResults) {
+      if (!context->isResultUpToDate(result)) continue;
+
+      toReturn.push_back(std::get<0>(result.tupleOfArgs));
+    }
+  }
+
+  return toReturn;
 }
 
 // parses whatever file exists that contains the passed ID and returns it
@@ -388,21 +221,30 @@ void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
   }
 }
 
-const Location& locateId(Context* context, ID id) {
-  QUERY_BEGIN(locateId, context, id);
-
-  Location result;
-
-  // Ask the context for the filename from the ID
-  UniqueString path;
+static const BuilderResult*
+builderResultOrNull(Context* context, ID id, UniqueString& pathOut) {
   UniqueString parentSymbolPath;
 
-  bool found = context->filePathForId(id, path, parentSymbolPath);
+  // Ask the context for the filename from the ID
+  bool found = context->filePathForId(id, pathOut, parentSymbolPath);
+
   if (found) {
     // Get the result of parsing
-    const BuilderResult& p = parseFileToBuilderResult(context, path,
-                                                      parentSymbolPath);
-    result = p.idToLocation(id, path);
+    const BuilderResult& br = parseFileToBuilderResult(context, pathOut,
+                                                       parentSymbolPath);
+    return &br;
+  }
+
+  return nullptr;
+}
+
+const Location& locateId(Context* context, ID id) {
+  QUERY_BEGIN(locateId, context, id);
+  Location result;
+
+  UniqueString path;
+  if (auto br = builderResultOrNull(context, id, path)) {
+    result = br->idToLocation(context, id, path);
   }
 
   return QUERY_END(result);
@@ -410,9 +252,37 @@ const Location& locateId(Context* context, ID id) {
 
 // this is just a convenient wrapper around locating with the id
 const Location& locateAst(Context* context, const AstNode* ast) {
-  CHPL_ASSERT(!ast->isComment() && "cant locate comment like this");
+  CHPL_ASSERT(ast && !ast->isComment() && "cant locate comment like this");
   return locateId(context, ast->id());
 }
+
+// Generate queries to fetch additional locations.
+#define LOCATION_MAP(ast__, location__) \
+  static const Location& \
+  locate##location__##WithIdQuery(Context* context, ID id) { \
+    QUERY_BEGIN(locate##location__##WithIdQuery, context, id); \
+    Location ret; \
+    UniqueString path; \
+    if (!id) return QUERY_END(ret); \
+    if (auto br = builderResultOrNull(context, id, path)) { \
+      ret = br->idTo##location__##Location(context, id, path); \
+    } \
+    return QUERY_END(ret); \
+  }
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
+
+// Generate user facing functions which are wrappers around the query.
+#define LOCATION_MAP(ast__, location__) \
+  Location locate##location__##WithId(Context* context, ID id) { \
+    return locate##location__##WithIdQuery(context, id); \
+  } \
+  Location locate##location__##WithAst(Context* context, const ast__* ast) { \
+    if (!ast) return Location(); \
+    return locate##location__##WithIdQuery(context, ast->id()); \
+  }
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
 const ModuleVec& parse(Context* context, UniqueString path,
                        UniqueString parentSymbolPath) {
@@ -437,6 +307,189 @@ const ModuleVec& parseToplevel(Context* context, UniqueString path) {
   UniqueString emptyParentSymbolPath;
   return parse(context, path, emptyParentSymbolPath);
 }
+
+const std::vector<ID>& toplevelModulesInFile(Context* context,
+                                             UniqueString path) {
+  QUERY_BEGIN(toplevelModulesInFile, context, path);
+
+  std::vector<ID> result;
+  const ModuleVec& modules = parseToplevel(context, path);
+  for (const Module* mod : modules) {
+    result.push_back(mod->id());
+  }
+
+  return QUERY_END(result);
+}
+
+struct FindMain {
+  std::vector<const Function*> mainProcsFound;
+  std::vector<const Module*> modulesFound;
+
+  FindMain(Context* context) { }
+
+  bool enter(const Function* fn) {
+    if (fn->name() == USTR("main") &&
+        fn->kind() == Function::PROC &&
+        !fn->isMethod()) {
+      mainProcsFound.push_back(fn);
+    }
+    return true;
+  }
+  void exit(const Function* fn) { }
+
+  bool enter(const Module* mod) {
+    modulesFound.push_back(mod);
+    return true;
+  }
+  void exit(const Module* mod) { }
+
+  // traverse through anything else
+  bool enter(const AstNode* ast) {
+    return true;
+  }
+  void exit(const AstNode* ast) { }
+};
+
+
+static const ID& findMainModuleImpl(Context* context,
+                                    std::vector<ID> commandLineModules,
+                                    UniqueString requestedMainModuleName,
+                                    bool libraryMode) {
+  QUERY_BEGIN(findMainModuleImpl, context,
+              commandLineModules, requestedMainModuleName, libraryMode);
+
+  ID result;
+  auto findMain = FindMain(context);
+
+  // traverse to find modules (to check name) and main functions
+  for (const auto& id : commandLineModules) {
+    if (const AstNode* ast = idToAst(context, id)) {
+      ast->traverse(findMain);
+    }
+  }
+
+  if (!requestedMainModuleName.isEmpty()) {
+    // if the main module is provided by a command-line .chpl file, use that
+    const Module* matchingModule = nullptr;
+    for (const Module* mod : findMain.modulesFound) {
+      if (mod->name() == requestedMainModuleName ||
+          mod->id().symbolPath() == requestedMainModuleName) {
+        matchingModule = mod;
+        break;
+      }
+    }
+    if (matchingModule) {
+      result = matchingModule->id();
+    } else {
+      // check for the requested module in loaded .dyno files
+      UniqueString unusedLibPath;
+      ID libId = ID(requestedMainModuleName);
+      if (context->moduleIsInLibrary(libId, unusedLibPath)) {
+        result = libId;
+      } else {
+
+        // try harder to find the main module within something loaded up by a
+        // 'use' / 'import'. This uses 'moduleInitializationOrder' as a
+        // convenient way to compute the modules used/imported (transitively)
+        const std::vector<ID>& moduleIds =
+          resolution::moduleInitializationOrder(context, ID(),
+                                                commandLineModules);
+        // consider all of the modules loaded. Is there one with the
+        // appropriate name?
+        bool found = false;
+        for (const auto& id : moduleIds) {
+          if (id.symbolName(context) == requestedMainModuleName ||
+              id.symbolPath() == requestedMainModuleName) {
+            result = id;
+            found = true;
+            break;
+          }
+        }
+
+        if (!found) {
+          auto loc = IdOrLocation::createForCommandLineLocation(context);
+          CHPL_REPORT(context, UnknownMainModule, loc, requestedMainModuleName);
+        }
+      }
+    }
+  } else if (findMain.mainProcsFound.size() > 0 && !libraryMode) {
+    // the main module is the single command-line module containing a 'main'
+    ID mainProc = findMain.mainProcsFound[0]->id();
+    result = idToParentModule(context, mainProc);
+
+    if (findMain.mainProcsFound.size() > 1) {
+      // emit an error if there were multiple 'main' procs
+      auto loc = IdOrLocation::createForCommandLineLocation(context);
+      // gather the module IDs containing the main procs
+      std::vector<UniqueString> moduleNames;
+      std::vector<ID> moduleIds;
+      for (auto f : findMain.mainProcsFound) {
+        ID moduleId = idToParentModule(context, f->id());
+        UniqueString moduleName = moduleId.symbolName(context);
+        moduleNames.push_back(moduleName);
+        moduleIds.push_back(moduleId);
+      }
+      CHPL_REPORT(context, AmbiguousMain,
+                  loc, findMain.mainProcsFound, moduleIds, moduleNames);
+    }
+  } else if (commandLineModules.size() == 1) {
+    // the main module is the single command-line module
+    result = commandLineModules[0];
+  } else if (!libraryMode) {
+    // emit an error
+    if (commandLineModules.size() == 0) {
+      // AFAIK this won't be possible to reach
+      context->error(IdOrLocation::createForCommandLineLocation(context),
+                     "could not find main module: no command-line modules");
+    } else {
+      // can't find main: no 'main' function and multiple command line modules
+      auto loc = IdOrLocation::createForCommandLineLocation(context);
+      CHPL_REPORT(context, AmbiguousMainModule, loc, findMain.modulesFound);
+    }
+  }
+
+  if (result.isEmpty() && findMain.modulesFound.size() > 0) {
+    // if we didn't find a main module, use the first
+    // module encountered as the main module so compilation can continue.
+    result = findMain.modulesFound[0]->id();
+  }
+
+  return QUERY_END(result);
+}
+
+ID findMainModule(Context* context,
+                  std::vector<ID> commandLineModules,
+                  UniqueString requestedMainModuleName,
+                  bool libraryMode) {
+  return findMainModuleImpl(context,
+                            std::move(commandLineModules),
+                            requestedMainModuleName,
+                            libraryMode);
+}
+
+std::vector<ID>
+findMainAndCommandLineModules(Context* context,
+                              std::vector<UniqueString> paths,
+                              UniqueString requestedMainModuleName,
+                              bool libraryMode,
+                              ID& mainModule) {
+  std::vector<chpl::ID> commandLineModules;
+
+  for (auto path : paths) {
+    auto ids = chpl::parsing::toplevelModulesInFile(context, path);
+    // append ids to commandLineModules
+    commandLineModules.insert(commandLineModules.end(),
+                              ids.begin(), ids.end());
+  }
+
+  mainModule = findMainModule(context,
+                              commandLineModules,
+                              requestedMainModuleName,
+                              libraryMode);
+
+  return commandLineModules;
+}
+
 
 static const std::vector<UniqueString>&
 moduleSearchPathQuery(Context* context) {
@@ -533,8 +586,9 @@ void setBundledModulePath(Context* context, UniqueString path) {
   QUERY_STORE_INPUT_RESULT(bundledModulePathQuery, context, path);
 }
 
-static void addFilePathModules(std::vector<std::string>& searchPath,
-                               const std::vector<std::string>& inputFilenames) {
+static void
+addCommandLineFileDirectories(std::vector<std::string>& searchPath,
+                              const std::vector<std::string>& inputFilenames) {
   for (auto& fname : inputFilenames) {
     auto idx = fname.find_last_of('/');
     if (idx == std::string::npos) {
@@ -564,6 +618,9 @@ void setupModuleSearchPaths(
                   const std::vector<std::string>& prependStandardModulePaths,
                   const std::vector<std::string>& cmdLinePaths,
                   const std::vector<std::string>& inputFilenames) {
+  CHPL_ASSERT(
+      context->numQueriesRunThisRevision() == 0 &&
+      "setupModuleSearchPaths should be called before any queries are run");
 
   std::string modRoot;
   if (!minimalModules) {
@@ -579,9 +636,11 @@ void setupModuleSearchPaths(
   setBundledModulePath(context, UniqueString::get(context, bundled));
 
   std::vector<std::string> searchPath;
+
   std::vector<UniqueString> uPrependedInternalModulePaths;
   std::vector<UniqueString> uPrependedStandardModulePaths;
 
+  // add the internal module paths
   for (auto& path : prependInternalModulePaths) {
     searchPath.push_back(path);
     UniqueString uPath = UniqueString::get(context, path);
@@ -590,32 +649,41 @@ void setupModuleSearchPaths(
 
   setPrependedInternalModulePath(context, uPrependedInternalModulePaths);
 
-  // TODO: Shouldn't these use the internal path we just set?
-  searchPath.push_back(modRoot + "/internal/localeModels/" + chplLocaleModel);
+  searchPath.push_back(internal + "/localeModels/" + chplLocaleModel);
 
   const char* tt = enableTaskTracking ? "on" : "off";
-  searchPath.push_back(modRoot + "/internal/tasktable/" + tt);
+  searchPath.push_back(internal + "/tasktable/" + tt);
 
-  searchPath.push_back(modRoot + "/internal/tasks/" + chplTasks);
+  searchPath.push_back(internal + "/tasks/" + chplTasks);
 
-  searchPath.push_back(modRoot + "/internal/comm/" + chplComm);
+  searchPath.push_back(internal + "/comm/" + chplComm);
 
-  searchPath.push_back(modRoot + "/internal");
+  searchPath.push_back(internal);
 
+  // move on to standard modules
   for (auto& path : prependStandardModulePaths) {
     searchPath.push_back(path);
     UniqueString uPath = UniqueString::get(context, path);
     uPrependedStandardModulePaths.push_back(uPath);
   }
 
-  // TODO: Shouldn't these use the standard path we just set?
-  searchPath.push_back(modRoot + "/standard/gen/" + chplSysModulesSubdir);
+  setPrependedStandardModulePath(context, uPrependedStandardModulePaths);
 
+  searchPath.push_back(modRoot + "/standard/gen/" + chplSysModulesSubdir);
   searchPath.push_back(modRoot + "/standard");
   searchPath.push_back(modRoot + "/packages");
   searchPath.push_back(modRoot + "/layouts");
   searchPath.push_back(modRoot + "/dists");
   searchPath.push_back(modRoot + "/dists/dims");
+
+  // move on to user module paths
+  // Add directories containing command line files
+  addCommandLineFileDirectories(searchPath, inputFilenames);
+
+  // Add paths from -M flags on the command line
+  for (const auto& p : cmdLinePaths) {
+    searchPath.push_back(p);
+  }
 
   // Add paths from the CHPL_MODULE_PATH environment variable
   if (!chplModulePath.empty()) {
@@ -628,16 +696,12 @@ void setupModuleSearchPaths(
     }
   }
 
-  addFilePathModules(searchPath, inputFilenames);
-
-  // Add paths from the command line
-  for (const auto& p : cmdLinePaths) {
-    searchPath.push_back(p);
-  }
+  // deduplicate
+  auto dedupedSearchPath = deduplicateSamePaths(searchPath);
 
   // Convert them all to UniqueStrings.
   std::vector<UniqueString> uSearchPath;
-  for (const auto& p : searchPath) {
+  for (const auto& p : dedupedSearchPath) {
     uSearchPath.push_back(UniqueString::get(context, p));
   }
 
@@ -680,19 +744,27 @@ filePathIsInInternalModule(Context* context, UniqueString filePath) {
   // the command line flag --prepend-internal-module-dir
   auto& prependedPaths = prependedInternalModulePath(context);
   for (auto& path : prependedPaths) {
-    if (filePath.startsWith(path)) return true;
+    if (filePathInDirPath(filePath, path)) return true;
   }
 
   UniqueString prefix = internalModulePath(context);
   if (prefix.isEmpty()) return false;
-  return filePath.startsWith(prefix);
+  return filePathInDirPath(filePath, prefix);
 }
 
-static bool
+bool
 filePathIsInBundledModule(Context* context, UniqueString filePath) {
   UniqueString prefix = bundledModulePath(context);
-  if (prefix.isEmpty()) return false;
-  return filePath.startsWith(prefix);
+  if (!prefix.isEmpty() && filePathInDirPath(filePath, prefix))
+    return true;
+
+  for (auto& path : prependedInternalModulePath(context))
+    if (filePathInDirPath(filePath, path)) return true;
+
+  for (auto& path : prependedStandardModulePath(context))
+    if (filePathInDirPath(filePath, path)) return true;
+
+  return false;
 }
 
 bool
@@ -701,35 +773,109 @@ filePathIsInStandardModule(Context* context, UniqueString filePath) {
   // the command line flag --prepend-standard-module-dir
   auto& prependedPaths = prependedStandardModulePath(context);
   for (auto& path : prependedPaths) {
-    if (filePath.startsWith(path)) return true;
+    if (filePathInDirPath(filePath, path)) return true;
   }
 
-  UniqueString prefix1 = bundledModulePath(context);
-  if (prefix1.isEmpty()) return false;
-  auto concat = prefix1.endsWith("/") ? "standard" : "/standard";
-  auto prefix2 = UniqueString::getConcat(context, prefix1.c_str(), concat);
-  return filePath.startsWith(prefix2);
+  UniqueString bundled = bundledModulePath(context);
+  if (bundled.isEmpty() || !filePathInDirPath(filePath, bundled)) {
+    // not a bundled module & not in --prepend-standard-module-dir paths
+    return false;
+  }
+
+  // make sure that bundled ends with a /
+  if (!bundled.endsWith("/")) {
+    bundled = UniqueString::getConcat(context, bundled.c_str(), "/");
+  }
+
+  // everything in modules/ other than modules/internal and modules/packages
+  // is a standard module
+  auto internal = UniqueString::getConcat(context, bundled.c_str(), "internal");
+  auto packages = UniqueString::getConcat(context, bundled.c_str(), "packages");
+  if (filePathInDirPath(filePath, internal) ||
+      filePathInDirPath(filePath, packages)) {
+    return false;
+  }
+
+  return true;
 }
 
 bool idIsInInternalModule(Context* context, ID id) {
   UniqueString filePath;
-  UniqueString parentSymbolPath;
-  bool found = context->filePathForId(id, filePath, parentSymbolPath);
+  bool found = context->filePathForId(id, filePath);
   return found && filePathIsInInternalModule(context, filePath);
 }
 
 bool idIsInBundledModule(Context* context, ID id) {
   UniqueString filePath;
-  UniqueString parentSymbolPath;
-  bool found = context->filePathForId(id, filePath, parentSymbolPath);
+  bool found = context->filePathForId(id, filePath);
   return found && filePathIsInBundledModule(context, filePath);
 }
 
 bool idIsInStandardModule(Context* context, ID id) {
   UniqueString filePath;
-  UniqueString parentSymbolPath;
-  bool found = context->filePathForId(id, filePath, parentSymbolPath);
+  bool found = context->filePathForId(id, filePath);
   return found && filePathIsInStandardModule(context, filePath);
+}
+
+static const std::set<std::string>& filesInDirQuery(Context* context,
+                                                    std::string dirPath) {
+  QUERY_BEGIN_INPUT(filesInDirQuery, context, dirPath);
+
+  std::set<std::string> result;
+
+  std::error_code EC;
+  llvm::sys::fs::directory_iterator I(dirPath, EC);
+  llvm::sys::fs::directory_iterator E;
+
+  while (true) {
+    if (I == E || EC) {
+      break;
+    }
+
+    llvm::StringRef fileName = llvm::sys::path::filename(I->path());
+    // filter out directories and various status errors
+    if (I->type() != llvm::sys::fs::file_type::status_error &&
+        I->type() != llvm::sys::fs::file_type::file_not_found &&
+        I->type() != llvm::sys::fs::file_type::directory_file) {
+      // it's a regular file, symlink, fifo, etc
+      result.insert(fileName.str());
+    }
+
+    I.increment(EC);
+  }
+
+  if (EC) {
+    if (EC != std::errc::no_such_file_or_directory) {
+      context->error(IdOrLocation::createForCommandLineLocation(context),
+                     "%s in directory traversal of '%s'",
+                     EC.message().c_str(), dirPath.c_str());
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+static std::string cleanDirPath(std::string dirPath)
+{
+  // Remove any trailing '/' characters before proceeding
+  while (!dirPath.empty() && dirPath.back() == '/') {
+    dirPath.pop_back();
+  }
+  // Remove any ./ at the start
+  dirPath = cleanLocalPath(std::move(dirPath));
+
+  return dirPath;
+}
+
+static const std::set<std::string>&
+filesInDirWithCleanedPath(Context* context, std::string dirPath) {
+  return filesInDirQuery(context, std::move(dirPath));
+}
+
+static
+const std::set<std::string>& filesInDir(Context* context, std::string dirPath) {
+  dirPath = cleanDirPath(std::move(dirPath));
+  return filesInDirWithCleanedPath(context, std::move(dirPath));
 }
 
 static const bool& fileExistsQuery(Context* context, std::string path) {
@@ -738,13 +884,138 @@ static const bool& fileExistsQuery(Context* context, std::string path) {
   return QUERY_END(result);
 }
 
+// TODO: remove the size once LLVM 11 is no longer supported
+using SmallVectorChar = llvm::SmallVector<char, 64>;
+
+bool checkFileExists(Context* context,
+                     std::string path,
+                     bool requireFileCaseMatches) {
+  if (requireFileCaseMatches) {
+    // use a directory-listing strategy to check the name in order
+    // to have more consistent behavior on case-insensitive filesystems.
+    //
+    // Chapel is case sensitive, so if you do 'use Bla', and there
+    // is a 'bla.chpl' with an implicit module, that should not satisfy it.
+
+    // compute the parent directory name
+    auto pathv = SmallVectorChar(path.begin(), path.end());
+    auto style = llvm::sys::path::Style::posix;
+    llvm::sys::path::remove_filename(pathv, style);
+    std::string dirPath = std::string(pathv.data(), pathv.size());
+    // compute the file name
+    llvm::StringRef filenameRef = llvm::sys::path::filename(path, style);
+    std::string filename = filenameRef.str();
+    // list in the parent directory
+    const std::set<std::string>& files =
+      filesInDir(context, std::move(dirPath));
+    // is the requested file present?
+    return files.count(filename) > 0;
+  } else {
+    return fileExistsQuery(context, std::move(path));
+  }
+}
+
+std::string getExistingFileAtPath(Context* context, std::string path) {
+  if (path.empty()) {
+    return "";
+  }
+
+  path = cleanLocalPath(std::move(path));
+
+  if (checkFileExists(context, path, /*requireFileCaseMatches*/ false)) {
+    return path;
+  } else {
+    return "";
+  }
+}
+
+static std::string getExistingFileInDirectory(Context* context,
+                                              const std::string& dirPath,
+                                              const std::string& fname) {
+  if (fname.empty()) {
+    return "";
+  }
+
+  std::string dirPathClean = cleanDirPath(dirPath);
+
+  // compute myDirPath/fname
+  std::string path = dirPathClean;
+  if (!path.empty()) {
+    path += "/";
+  }
+  path += fname;
+
+  path = cleanLocalPath(std::move(path));
+
+  // check for file text already set (supporting tests, reuse)
+  if (hasFileText(context, path)) {
+    return path;
+  }
+
+  // check if the directory listing includes the file
+  const std::set<std::string>& files =
+    filesInDirWithCleanedPath(context, dirPathClean);
+  if (files.count(fname) > 0) {
+    return path;
+  }
+
+  return "";
+}
+
+std::string getExistingFileInModuleSearchPath(Context* context,
+                                              const std::string& fname) {
+  std::string check;
+  std::string found;
+
+  for (auto path : moduleSearchPath(context)) {
+    // check if path/fname exists
+    check = getExistingFileInDirectory(context, path.str(), fname);
+
+    if (!check.empty() && !found.empty()) {
+      // issue a warning if we already found a module in a different dir,
+      // but skip the warning if 'check' and 'found' are both bundled modules
+      // (assuming that ambiguity in these is managed by the search path).
+      // Note that the check for "is it a bundled module" includes
+      // --prepend-internal-module-dir / --prepend-standard-module-dir,
+      // and we want to avoid the warning in that case because
+      // ambiguity is inherent to using these flags to replace an
+      // internal/standard module.
+
+      bool firstMatchBundled =
+        filePathIsInBundledModule(context, UniqueString::get(context, found));
+      bool curMatchBundled =
+        filePathIsInBundledModule(context, UniqueString::get(context, check));
+
+      bool skip = firstMatchBundled && curMatchBundled;
+      if (!skip) {
+        auto loc = IdOrLocation::createForCommandLineLocation(context);
+        bool warnU = isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE);
+
+        CHPL_REPORT(context, AmbiguousSourceFile, loc,
+                    replacePrefix(found, context->chplHome(), "$CHPL_HOME"),
+                    replacePrefix(check, context->chplHome(), "$CHPL_HOME"),
+                    warnU);
+      }
+      continue;
+    }
+
+    if (!check.empty() && found.empty()) {
+      // note the first match that was found
+      found = check;
+    }
+  }
+
+  return found;
+}
+
+
 static const Module* const& getToplevelModuleQuery(Context* context,
                                                    UniqueString name) {
   QUERY_BEGIN(getToplevelModuleQuery, context, name);
 
   const Module* result = nullptr;
 
-  auto searchId = ID(name, -1, 0);
+  auto searchId = ID(name);
   UniqueString path;
   UniqueString parentSymbolPath;
   bool found = context->filePathForId(searchId, path, parentSymbolPath);
@@ -760,48 +1031,31 @@ static const Module* const& getToplevelModuleQuery(Context* context,
     }
   } else {
     // Check the module search path for the module.
-    std::string check;
     std::set<ID> seenModules;
 
-    for (auto path : moduleSearchPath(context)) {
-      check = path.str();
+    std::string fname = name.str();
+    fname += ".chpl";
 
-      // Remove any '/' characters before adding one so we don't double.
-      while (!check.empty() && check.back() == '/') {
-        check.pop_back();
-      }
+    std::string check = getExistingFileInModuleSearchPath(context, fname);
 
-      // ignore empty paths
-      if (check.empty())
-        continue;
+    if (!check.empty()) {
+      auto filePath = UniqueString::get(context, check);
+      UniqueString emptyParentSymbolPath;
+      const ModuleVec& v = parse(context, filePath, emptyParentSymbolPath);
+      for (auto mod: v) {
+        if (seenModules.find(mod->id()) != seenModules.end()) continue;
 
-      check += "/";
-      check += name.c_str();
-      check += ".chpl";
-
-      if (hasFileText(context, check) || fileExistsQuery(context, check)) {
-        auto filePath = cleanLocalPath(context, UniqueString::get(context, check));
-        UniqueString emptyParentSymbolPath;
-        const ModuleVec& v = parse(context, filePath, emptyParentSymbolPath);
-        for (auto mod: v) {
-          if (seenModules.find(mod->id()) != seenModules.end()) continue;
-
-          if (mod->name() == name) {
-            result = mod;
-            break;
-          } else {
-            // TODO: Production compiler does not emit this error, keep it?
-            context->error(mod, "In use/imported file, module name %s "
-                                "does not match file name %s.chpl",
-                                mod->name().c_str(),
-                                name.c_str());
-            seenModules.insert(mod->id());
-          }
+        if (mod->name() == name) {
+          result = mod;
+          break;
+        } else {
+          // TODO: Production compiler does not emit this error, keep it?
+          context->error(mod, "In use/imported file, module name %s "
+                              "does not match file name %s.chpl",
+                              mod->name().c_str(),
+                              name.c_str());
+          seenModules.insert(mod->id());
         }
-      }
-
-      if (result != nullptr) {
-        break;
       }
     }
   }
@@ -811,6 +1065,24 @@ static const Module* const& getToplevelModuleQuery(Context* context,
 
 const Module* getToplevelModule(Context* context, UniqueString name) {
   return getToplevelModuleQuery(context, name);
+}
+
+ID getSymbolFromTopLevelModule(Context* context,
+                               const char* modName,
+                               const char* symName) {
+  std::ignore = getToplevelModule(context, UniqueString::get(context, modName));
+
+  // Performance: this has to concatenate the two strings at runtime.
+  // This presumably has an overhead over writing something like Symbol.symname
+  // explicitly. If this becomes a performance issue, we can switch to
+  // a different format of this function, either accepting a full path as
+  // a second argument, or by using templates to concatenate the strings at
+  // compile time.
+  std::string fullPath = modName;
+  fullPath += ".";
+  fullPath += symName;
+
+  return ID(UniqueString::get(context, fullPath));
 }
 
 static const Module* const&
@@ -827,14 +1099,12 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
 
   ID parentModuleId;
   UniqueString parentModulePath;
-  UniqueString parentParentSymbolPath;
   bool found = false;
   if (include != nullptr) {
     // find the ID of the module containing the 'module include'
     parentModuleId = idToParentModule(context, includeModuleId);
     // find some other information about that parent module
-    found = context->filePathForId(parentModuleId, parentModulePath,
-                                   parentParentSymbolPath);
+    found = context->filePathForId(parentModuleId, parentModulePath);
 
     // check that the computed filename matches
     std::string name1 = Builder::filenameToModulename(parentModulePath.c_str());
@@ -906,8 +1176,8 @@ const Module* getIncludedSubmodule(Context* context,
   return getIncludedSubmoduleQuery(context, includeModuleId);
 }
 
-static const AstNode* const& astForIDQuery(Context* context, ID id) {
-  QUERY_BEGIN(astForIDQuery, context, id);
+static const AstNode* const& astForIdQuery(Context* context, ID id) {
+  QUERY_BEGIN(astForIdQuery, context, id);
 
   const AstNode* result = nullptr;
   const BuilderResult* r = parseFileContainingIdToBuilderResult(context, id);
@@ -924,7 +1194,7 @@ const AstNode* idToAst(Context* context, ID id) {
     return nullptr;
   }
 
-  return astForIDQuery(context, id);
+  return astForIdQuery(context, id);
 }
 
 // TODO: could many of these get-property-of-ID queries
@@ -936,7 +1206,7 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
   if (!id.isFabricatedId()) {
-    const AstNode* ast = astForIDQuery(context, id);
+    const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       result = ast->tag();
     } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
@@ -953,6 +1223,16 @@ AstTag idToTag(Context* context, ID id) {
   return idToTagQuery(context, id);
 }
 
+bool idIsModule(Context* context, ID id) {
+  if (id.postOrderId() >= 0) {
+    // it can't possibly be a module if it's got a positive post-order ID
+    // since all modules have post-order ID -1
+    return false;
+  }
+  AstTag tag = idToTag(context, id);
+  return asttags::isModule(tag);
+}
+
 static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
   QUERY_BEGIN(idIsParenlessFunctionQuery, context, id);
 
@@ -960,7 +1240,7 @@ static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
 
   AstTag tag = idToTag(context, id);
   if (asttags::isFunction(tag)) {
-    const AstNode* ast = astForIDQuery(context, id);
+    const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       if (auto fn = ast->toFunction()) {
         result = fn->isParenless();
@@ -975,6 +1255,14 @@ bool idIsParenlessFunction(Context* context, ID id) {
   return idIsFunction(context, id) && idIsParenlessFunctionQuery(context, id);
 }
 
+bool idIsNestedFunction(Context* context, ID id) {
+  if (id.isEmpty() || !idIsFunction(context, id)) return false;
+  if (auto up = id.parentSymbolId(context)) {
+    return idIsFunction(context, up);
+  }
+  return false;
+}
+
 bool idIsFunction(Context* context, ID id) {
   // Functions always have their own ID symbol scope,
   // and if it's not a function, we can return false
@@ -985,6 +1273,28 @@ bool idIsFunction(Context* context, ID id) {
 
   AstTag tag = idToTag(context, id);
   return asttags::isFunction(tag);
+}
+
+static bool
+checkLinkage(Context* context, ID id, uast::Decl::Linkage linkage) {
+  if (id.isEmpty()) return false;
+  bool ret = false;
+
+  if (auto ast = parsing::idToAst(context, id)) {
+    if (auto decl = ast->toDecl()) {
+      ret = decl->linkage() == linkage;
+    }
+  }
+
+  return ret;
+}
+
+bool idIsExtern(Context* context, ID id) {
+  return checkLinkage(context, id, Decl::EXTERN);
+}
+
+bool idIsExport(Context* context, ID id) {
+  return checkLinkage(context, id, Decl::EXPORT);
 }
 
 static const bool& idIsPrivateDeclQuery(Context* context, ID id) {
@@ -1023,7 +1333,7 @@ static const bool& idIsMethodQuery(Context* context, ID id) {
 
   AstTag tag = idToTag(context, id);
   if (asttags::isFunction(tag)) {
-    const AstNode* ast = astForIDQuery(context, id);
+    const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       if (auto fn = ast->toFunction()) {
         result = fn->isMethod();
@@ -1042,7 +1352,7 @@ static const UniqueString& fieldIdToNameQuery(Context* context, ID id) {
   QUERY_BEGIN(fieldIdToNameQuery, context, id);
 
   UniqueString result;
-  if (auto ast = astForIDQuery(context, id)) {
+  if (auto ast = astForIdQuery(context, id)) {
     if (auto var = ast->toVariable()) {
       if (var->isField()) {
         result = var->name();
@@ -1080,6 +1390,7 @@ const ID& idToParentId(Context* context, ID id) {
 }
 
 const uast::AstNode* parentAst(Context* context, const uast::AstNode* node) {
+  if (node == nullptr) return nullptr;
   auto parentId = idToParentId(context, node->id());
   if (parentId.isEmpty()) return nullptr;
   return idToAst(context, parentId);
@@ -1116,6 +1427,16 @@ ID idToParentModule(Context* context, ID id) {
     return parentSymId;
 
   return getModuleForId(context, parentSymId);
+}
+
+bool idIsToplevelModule(Context* context, ID id) {
+  if (idIsModule(context, id)) {
+    ID parentSymId = id.parentSymbolId(context);
+    if (parentSymId.isEmpty())
+      return true;
+  }
+
+  return false;
 }
 
 static const Function::ReturnIntent&
@@ -1163,7 +1484,12 @@ idToContainingMultiDeclIdQuery(Context* context, ID id) {
   QUERY_BEGIN(idToContainingMultiDeclIdQuery, context, id);
 
   ID cur = id;
-  CHPL_ASSERT(isVariable(idToTag(context, id)));
+  AstTag tagForId = idToTag(context, id);
+  // TODO: do we really need this assert? In which cases do we arrive here unexpectedly?
+  CHPL_ASSERT(isVariable(tagForId)  ||
+              isMultiDecl(tagForId) ||
+              isTupleDecl(tagForId) ||
+              isForwardingDecl(tagForId));
 
   while (true) {
     ID parent = idToParentId(context, cur);
@@ -1357,9 +1683,16 @@ const uast::AttributeGroup*
 astToAttributeGroup(Context* context, const uast::AstNode* ast) {
   const uast::AttributeGroup* ret = nullptr;
   if (ast) {
+    // If we find an attribute group on the AST, return it.
+    if (auto ag = ast->attributeGroup()) return ag;
+
+    // Right now, only Variables and TupleDecls can inherit attributes
+    // from enclosing MultiDecls or TupleDecls.
+    if (!ast->isVariable() && !ast->isTupleDecl()) return nullptr;
+
+    // handle nesting: what if we're a Variable inside a MultiDecl or TupleDecl?
     auto parent = parentAst(context, ast);
-    bool done = ast->isMultiDecl() || !parent ||
-                (!parent->isTupleDecl() && !parent->isMultiDecl());
+    bool done = !parent || (!parent->isTupleDecl() && !parent->isMultiDecl());
     // recurse if not done
     return done
            ? ast->attributeGroup()
@@ -1402,9 +1735,53 @@ static bool isAstDeprecated(Context* context, const AstNode* ast) {
   return attr && attr->isDeprecated();
 }
 
-static bool isAstUnstable(Context* context, const AstNode* ast) {
-  auto attr = parsing::idToAttributeGroup(context, ast->id());
-  return attr && attr->isUnstable();
+static bool isUnstablePackageModule(Context* context, const ID& id) {
+  auto node = parsing::idToAst(context, id);
+  if (!node) return false;
+
+  // If the node is deprecated, no unstable warning is needed
+  if (isAstDeprecated(context, node)) return false;
+
+  bool isPackageModule = false;
+  if (node->isModule()) {
+    UniqueString path;
+    if (context->filePathForId(id, path)) {
+      path = context->adjustPathForErrorMsg(path);
+      isPackageModule = path.startsWith("$CHPL_HOME/modules/packages/");
+    }
+  }
+
+  // Some package modules may be stable, those exceptions should be encoded here
+
+  return isPackageModule;
+}
+
+static bool isIdUnstable(Context* context, const ID& id) {
+  auto attr = parsing::idToAttributeGroup(context, id);
+  return (attr && ( attr->isUnstable() || attr->hasPragma(PRAGMA_UNSTABLE) ))
+          || isUnstablePackageModule(context, id);
+}
+
+bool
+shouldWarnUnstableForPath(Context* context, UniqueString filepath) {
+  if (filePathIsInInternalModule(context, filepath))
+    return isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_INTERNAL);
+
+  else if (filePathIsInBundledModule(context, filepath))
+    return isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_STANDARD);
+
+  else
+    return isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE);
+}
+
+bool
+shouldWarnUnstableForId(Context* context, const ID& id) {
+  UniqueString filepath;
+  bool found = context->filePathForId(id, filepath);
+  if (found)
+    return shouldWarnUnstableForPath(context, filepath);
+  else
+    return isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE);
 }
 
 static bool isAstCompilerGenerated(Context* context, const AstNode* ast) {
@@ -1416,18 +1793,9 @@ static bool isAstFormal(Context* context, const AstNode* ast) {
   return ast->isFormal();
 }
 
-static bool
-isAstSuppressedStandardModule(Context* context, const AstNode* ast) {
-  if (!ast->isModule()) return false;
-  if (!idIsInStandardModule(context, ast->id())) return false;
-  return !isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_STANDARD);
-}
-
-static bool
-isAstSuppressedInternalModule(Context* context, const AstNode* ast) {
-  if (!ast->isModule()) return false;
-  if (!idIsInInternalModule(context, ast->id())) return false;
-  return !isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_INTERNAL);
+static bool hasIgnorePragma(Context* context, const AstNode* ast) {
+  auto attr = parsing::idToAttributeGroup(context, ast->id());
+  return attr && attr->hasPragma(PRAGMA_IGNORE_DEPRECATED_USE);
 }
 
 // Skip if any parent is deprecated (we want to show deprecation messages
@@ -1436,7 +1804,8 @@ isAstSuppressedInternalModule(Context* context, const AstNode* ast) {
 static bool
 shouldSkipDeprecationWarning(Context* context, const AstNode* ast) {
   return isAstCompilerGenerated(context, ast) ||
-         isAstDeprecated(context, ast);
+         isAstDeprecated(context, ast) ||
+         hasIgnorePragma(context, ast);
 }
 
 // Skip if any parent is marked deprecated or unstable. We don't want to
@@ -1444,11 +1813,11 @@ shouldSkipDeprecationWarning(Context* context, const AstNode* ast) {
 // deprecated things are likely to be removed soon.
 static bool
 shouldSkipUnstableWarning(Context* context, const AstNode* ast) {
-  return isAstUnstable(context, ast)                  ||
+  return isIdUnstable(context, ast->id())             ||
          isAstDeprecated(context, ast)                ||
          isAstCompilerGenerated(context, ast)         ||
-         isAstSuppressedStandardModule(context, ast)  ||
-         isAstSuppressedInternalModule(context, ast);
+         (ast->isModule() &&
+          !shouldWarnUnstableForId(context, ast->id()));
 }
 
 static std::string
@@ -1465,30 +1834,49 @@ createDefaultUnstableMessage(Context* context, const NamedDecl* target) {
   return ret;
 }
 
+// Hack for deprecating symbols that can't be deprecated in module code for
+// whatever reason.
+static std::string hardcodedDeprecationForId(Context* context, ID idMention,
+    ID idTarget) {
+  std::string deprecationMsg;
+
+  // If this is empty, there are no compiler-implemented deprecation warnings at
+  // the moment. Yay!
+
+  return deprecationMsg;
+}
+
 static bool
 deprecationWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
+  std::string msg;
+
   if (idMention.isEmpty() || idTarget.isEmpty()) return false;
-
-  auto attributes = parsing::idToAttributeGroup(context, idTarget);
-  if (!attributes) return false;
-
-  bool isDeprecated = attributes->hasPragma(PRAGMA_DEPRECATED) ||
-                      attributes->isDeprecated();
-  if (!isDeprecated) return false;
 
   auto mention = parsing::idToAst(context, idMention);
   auto target = parsing::idToAst(context, idTarget);
   CHPL_ASSERT(mention && target);
-
   auto targetNamedDecl = target->toNamedDecl();
   if (!targetNamedDecl) return false;
 
-  auto storedMsg = attributes->deprecationMessage();
-  std::string msg = storedMsg.isEmpty()
-      ? createDefaultDeprecationMessage(context, targetNamedDecl)
-      : storedMsg.c_str();
+  std::string hardcodedMsg = hardcodedDeprecationForId(context, idMention,
+      idTarget);
+  if (!hardcodedMsg.empty()) {
+    msg = hardcodedMsg;
+  } else {
+    auto attributes = parsing::idToAttributeGroup(context, idTarget);
+    if (!attributes) return false;
 
-  msg = removeSphinxMarkup(msg);
+    bool isDeprecated = attributes->hasPragma(PRAGMA_DEPRECATED) ||
+                        attributes->isDeprecated();
+    if (!isDeprecated) return false;
+
+    auto storedMsg = attributes->deprecationMessage();
+    msg = storedMsg.isEmpty()
+        ? createDefaultDeprecationMessage(context, targetNamedDecl)
+        : storedMsg.c_str();
+
+    msg = removeSphinxMarkup(msg);
+  }
 
   CHPL_ASSERT(msg.size() > 0);
   CHPL_REPORT(context, Deprecation, msg, mention, targetNamedDecl);
@@ -1506,12 +1894,7 @@ static bool
 unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
   if (idMention.isEmpty() || idTarget.isEmpty()) return false;
 
-  auto attributes = parsing::idToAttributeGroup(context, idTarget);
-  if (!attributes) return false;
-
-  bool isUnstable = attributes->hasPragma(PRAGMA_UNSTABLE) ||
-                    attributes->isUnstable();
-  if (!isUnstable) return false;
+  if (!isIdUnstable(context, idTarget)) return false;
 
   auto mention = parsing::idToAst(context, idMention);
   auto target = parsing::idToAst(context, idTarget);
@@ -1520,7 +1903,8 @@ unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
   auto targetNamedDecl = target->toNamedDecl();
   if (!targetNamedDecl) return false;
 
-  auto storedMsg = attributes->unstableMessage();
+  auto attributes = parsing::idToAttributeGroup(context, idTarget);
+  auto storedMsg = attributes ? attributes->unstableMessage() : UniqueString();
   std::string msg = storedMsg.isEmpty()
       ? createDefaultUnstableMessage(context, targetNamedDecl)
       : storedMsg.c_str();
@@ -1559,40 +1943,29 @@ isMentionOfWarnedTypeInReceiver(Context* context, ID idMention,
 
 void
 reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
-  auto attr = parsing::idToAttributeGroup(context, idTarget);
+  // skip checks if we have a hardcoded deprecation for this symbol
+  if (hardcodedDeprecationForId(context, idMention, idTarget).empty()) {
+    auto attr = parsing::idToAttributeGroup(context, idTarget);
 
-  // Nothing to do, symbol is not deprecated.
-  if (!attr || !attr->isDeprecated()) return;
+    // Nothing to do, symbol is not deprecated.
+    if (!attr || !attr->isDeprecated()) return;
 
-  // Don't warn for 'this' formals with deprecated types.
-  if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
+    // Don't warn for 'this' formals with deprecated types.
+    if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
 
-  // See filter function for skip policy.
-  if (anyParentMatches(context, idMention, shouldSkipDeprecationWarning)) {
-    return;
+    // See filter function for skip policy.
+    if (anyParentMatches(context, idMention, shouldSkipDeprecationWarning)) {
+      return;
+    }
   }
 
   deprecationWarningForIdQuery(context, idMention, idTarget);
 }
 
-static bool
-isUnstableAndShouldWarn(Context* context, ID idMention, ID idTarget) {
-  auto attr = parsing::idToAttributeGroup(context, idTarget);
-  if (!attr || !attr->isUnstable()) return false;
-
-  auto flag = CompilerFlags::WARN_UNSTABLE;
-  if (idIsInInternalModule(context, idMention)) {
-    flag = CompilerFlags::WARN_UNSTABLE_INTERNAL;
-  } else if (idIsInStandardModule(context, idMention)) {
-    flag = CompilerFlags::WARN_UNSTABLE_STANDARD;
-  }
-
-  return isCompilerFlagSet(context, flag);
-}
-
 void
 reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
-  if (!isUnstableAndShouldWarn(context, idMention, idTarget)) return;
+  if (!isIdUnstable(context, idTarget) ||
+      !shouldWarnUnstableForId(context, idMention)) return;
 
   // Don't warn for 'this' formals with unstable types.
   if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
@@ -1606,7 +1979,7 @@ reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
 static const Module::Kind& getModuleKindQuery(Context* context, ID moduleId) {
   Module::Kind ret = Module::Kind::DEFAULT_MODULE_KIND;
   QUERY_BEGIN(getModuleKindQuery, context, moduleId);
-  const AstNode* ast = astForIDQuery(context, moduleId);
+  const AstNode* ast = astForIdQuery(context, moduleId);
   CHPL_ASSERT(ast && "could not find AST for module ID");
   if (auto mod = ast->toModule()) {
     ret = mod->kind();

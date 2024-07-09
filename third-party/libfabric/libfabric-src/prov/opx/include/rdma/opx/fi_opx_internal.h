@@ -45,6 +45,9 @@
 
 #define FI_OPX_CQ_CONTEXT_EXT		(0x8000000000000000ull)
 #define FI_OPX_CQ_CONTEXT_MULTIRECV	(0x4000000000000000ull)
+#define FI_OPX_CQ_CONTEXT_HMEM		(0x2000000000000000ull)
+
+#define OPX_HMEM_SIZE_QWS	(2)
 
 union fi_opx_mp_egr_id {
 	uint64_t		id;
@@ -84,11 +87,6 @@ union fi_opx_context {
 
 		volatile uint64_t	byte_counter;
 	};
-};
-
-struct fi_opx_extended_context {
-	union fi_opx_context context;
-	void *src_addr;
 };
 
 struct fi_opx_context_slist {
@@ -149,12 +147,21 @@ static inline void fi_opx_context_slist_remove_item (union fi_opx_context *item,
 struct fi_opx_context_ext {
 	union fi_opx_context		opx_context;
 	struct fi_cq_err_entry		err_entry;
+
+	// offset 144 bytes
+
 	struct {
-		struct fi_context	*op_context;
+		struct fi_context2	*op_context;
 		size_t			iov_count;
 		struct iovec		*iov;
 	} msg;
-};
+
+	// offset 168 bytes
+	uint64_t			hmem_info_qws[OPX_HMEM_SIZE_QWS];
+
+	// 184 bytes
+	uint64_t			unused;
+} __attribute__((__aligned__(32)));
 
 #ifndef MAX
 #define MAX(a,b) ((a)^(((a)^(b))&-((a)<(b))))

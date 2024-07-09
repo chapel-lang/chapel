@@ -18,8 +18,12 @@ class E : C {
   var myCType = myC.printType();
 }
 
-var c = (new owned C()).borrow();
-var d = (new owned D()).borrow();
+var cOwn = new owned C();
+var c = cOwn.borrow();
+var dOwn = new owned D();
+var d = dOwn.borrow();
 
-var e1 = (new owned E(c)).borrow();
-var e2 = (new owned E(d)).borrow();
+var e1Own = new owned E(c);
+var e1 = e1Own.borrow();
+var e2Own = new owned E(d);
+var e2 = e2Own.borrow();

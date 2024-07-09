@@ -12,21 +12,21 @@ config  const n: int=100;
 
 const Space = {1..n,1..n,1..n};
 const Space2 = {1..2*n,1..2*n,1..2*n};
-const Dom1: domain(3) dmapped Cyclic(startIdx=Space.low)=Space;
-const Dom2: domain(3) dmapped Cyclic(startIdx=Space2.low)=Space2;
+const Dom1: domain(3) dmapped new cyclicDist(startIdx=Space.low)=Space;
+const Dom2: domain(3) dmapped new cyclicDist(startIdx=Space2.low)=Space2;
 const Space3 = {1..n,1..n};
 const Space4 = {1..2*n,1..2*n};
-const Dom3: domain(2) dmapped Cyclic(startIdx=Space3.low)=Space3;
-const Dom4: domain(2) dmapped Cyclic(startIdx=Space4.low)=Space4;
+const Dom3: domain(2) dmapped new cyclicDist(startIdx=Space3.low)=Space3;
+const Dom4: domain(2) dmapped new cyclicDist(startIdx=Space4.low)=Space4;
 
 
-//var Dist1 = new dmap(new Block({1..n,1..n,1..n}));
-//var Dist2 = new dmap(new Block({1..(2*n),1..(2*n),1..(2*n)}));
+//var Dist1 = new blockDist({1..n,1..n,1..n});
+//var Dist2 = new blockDist({1..(2*n),1..(2*n),1..(2*n)});
 //var Dom1: domain(3,int) dmapped Dist1 = {1..n,1..n,1..n};
 //var Dom2: domain(3,int) dmapped Dist2 = {1..2*n,1..2*n,1..2*n};
 
-var Dist3 = new dmap(new Block({1..n,1..n}));
-//var Dist4 = new dmap(new Block({1..(2*n),1..(2*n)}));
+var Dist3 = new blockDist({1..n,1..n});
+//var Dist4 = new blockDist({1..(2*n),1..(2*n)});
 var Dom3B: domain(2,int) dmapped Dist3 = {1..n,1..n};
 //var Dom4: domain(2,int) dmapped Dist4 = {1..2*n,1..2*n};
 
@@ -41,8 +41,8 @@ proc main(){
 
   var a,b:real;
   var i:int;
-  var D1={1..n by 1,1..n by 1};
-  var D2={1..n by 1,1..n by 1};
+  var D1={1..n,1..n}: domain(2, strides=strideKind.positive);
+  var D2={1..n,1..n}: domain(2, strides=strideKind.positive);
   var st,dt=timeSinceEpoch().totalSeconds();
   for (a,i) in zip(A2,{1..n*n}) do a=i;
 

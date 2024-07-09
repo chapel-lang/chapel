@@ -169,9 +169,6 @@ int main( int argc, char* argv[] ) {
       fprintf(stderr,"SUCCESS\n");
     }
   }
-  return 1;
+  return 0;
     
 }
-
-
-

@@ -52,7 +52,7 @@ proc plot(NumSteps:[]) where NumSteps.rank == 2 {
   // to it.
   //
   const outfilename = filename + "." + format;
-  const outfile = open(outfilename, ioMode.cw).writer();
+  const outfile = open(outfilename, ioMode.cw).writer(locking=false);
 
   //
   // Plot the image to the file (could also pass stdout in as the file...)
@@ -162,23 +162,23 @@ const header_size = 14;
 
   // Write the BMP image header
   outfile.writef("BM");
-  outfile.writeBinary(size:uint(32), ioendian.little);
-  outfile.writeBinary(0:uint(16), ioendian.little); /* reserved1 */
-  outfile.writeBinary(0:uint(16), ioendian.little); /* reserved2 */
-  outfile.writeBinary(offset_to_pixel_data:uint(32), ioendian.little);
+  outfile.writeBinary(size:uint(32), endianness.little);
+  outfile.writeBinary(0:uint(16), endianness.little); /* reserved1 */
+  outfile.writeBinary(0:uint(16), endianness.little); /* reserved2 */
+  outfile.writeBinary(offset_to_pixel_data:uint(32), endianness.little);
 
   // Write the DIB header BITMAPINFOHEADER
-  outfile.writeBinary(dib_header_size:uint(32), ioendian.little);
-  outfile.writeBinary(cols:int(32), ioendian.little);
-  outfile.writeBinary(-rows:int(32), ioendian.little); /*neg for swap*/
-  outfile.writeBinary(1:uint(16), ioendian.little); /* 1 color plane */
-  outfile.writeBinary(bits_per_pixel:uint(16), ioendian.little);
-  outfile.writeBinary(0:uint(32), ioendian.little); /* no compression */
-  outfile.writeBinary(pixels_size:uint(32), ioendian.little);
-  outfile.writeBinary(2835:uint(32), ioendian.little); /*pixels/meter print resolution=72dpi*/
-  outfile.writeBinary(2835:uint(32), ioendian.little); /*pixels/meter print resolution=72dpi*/
-  outfile.writeBinary(0:uint(32), ioendian.little); /* colors in palette */
-  outfile.writeBinary(0:uint(32), ioendian.little); /* "important" colors */
+  outfile.writeBinary(dib_header_size:uint(32), endianness.little);
+  outfile.writeBinary(cols:int(32), endianness.little);
+  outfile.writeBinary(-rows:int(32), endianness.little); /*neg for swap*/
+  outfile.writeBinary(1:uint(16), endianness.little); /* 1 color plane */
+  outfile.writeBinary(bits_per_pixel:uint(16), endianness.little);
+  outfile.writeBinary(0:uint(32), endianness.little); /* no compression */
+  outfile.writeBinary(pixels_size:uint(32), endianness.little);
+  outfile.writeBinary(2835:uint(32), endianness.little); /*pixels/meter print resolution=72dpi*/
+  outfile.writeBinary(2835:uint(32), endianness.little); /*pixels/meter print resolution=72dpi*/
+  outfile.writeBinary(0:uint(32), endianness.little); /* colors in palette */
+  outfile.writeBinary(0:uint(32), endianness.little); /* "important" colors */
 
   //
   // compute the maximum number of steps that were taken, just in case

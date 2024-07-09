@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/BinaryFormat/DXContainer.h"
+#include "llvm/MC/DXContainerPSVInfo.h"
 #include "llvm/ObjectYAML/ObjectYAML.h"
 #include "llvm/ObjectYAML/yaml2obj.h"
 #include "llvm/Support/Errc.h"
@@ -114,13 +115,21 @@ void DXContainerWriter::writeParts(raw_ostream &OS) {
       OS.write_zeros(PadBytes);
     }
     DXContainerYAML::Part P = std::get<0>(I);
+    RollingOffset = std::get<1>(I) + sizeof(dxbc::PartHeader);
+    uint32_t PartSize = P.Size;
+
     OS.write(P.Name.c_str(), 4);
     if (sys::IsBigEndianHost)
       sys::swapByteOrder(P.Size);
     OS.write(reinterpret_cast<const char *>(&P.Size), sizeof(uint32_t));
-    RollingOffset = std::get<1>(I) + sizeof(dxbc::PartHeader);
 
-    if (P.Name == "DXIL" && P.Program) {
+    dxbc::PartType PT = dxbc::parsePartType(P.Name);
+
+    uint64_t DataStart = OS.tell();
+    switch (PT) {
+    case dxbc::PartType::DXIL: {
+      if (!P.Program)
+        continue;
       dxbc::ProgramHeader Header;
       Header.MajorVersion = P.Program->MajorVersion;
       Header.MinorVersion = P.Program->MinorVersion;
@@ -133,17 +142,17 @@ void DXContainerWriter::writeParts(raw_ostream &OS) {
 
       // Compute the optional fields if needed...
       if (P.Program->DXILOffset)
-        Header.Bitcode.Offset = P.Program->DXILOffset.value();
+        Header.Bitcode.Offset = *P.Program->DXILOffset;
       else
         Header.Bitcode.Offset = sizeof(dxbc::BitcodeHeader);
 
       if (P.Program->DXILSize)
-        Header.Bitcode.Size = P.Program->DXILSize.value();
+        Header.Bitcode.Size = *P.Program->DXILSize;
       else
         Header.Bitcode.Size = P.Program->DXIL ? P.Program->DXIL->size() : 0;
 
       if (P.Program->Size)
-        Header.Size = P.Program->Size.value();
+        Header.Size = *P.Program->Size;
       else
         Header.Size = sizeof(dxbc::ProgramHeader) + Header.Bitcode.Size;
 
@@ -160,7 +169,103 @@ void DXContainerWriter::writeParts(raw_ostream &OS) {
         OS.write(reinterpret_cast<char *>(P.Program->DXIL->data()),
                  P.Program->DXIL->size());
       }
+      break;
     }
+    case dxbc::PartType::SFI0: {
+      // If we don't have any flags we can continue here and the data will be
+      // zeroed out.
+      if (!P.Flags.has_value())
+        continue;
+      uint64_t Flags = P.Flags->getEncodedFlags();
+      if (sys::IsBigEndianHost)
+        sys::swapByteOrder(Flags);
+      OS.write(reinterpret_cast<char *>(&Flags), sizeof(uint64_t));
+      break;
+    }
+    case dxbc::PartType::HASH: {
+      if (!P.Hash.has_value())
+        continue;
+      dxbc::ShaderHash Hash = {0, {0}};
+      if (P.Hash->IncludesSource)
+        Hash.Flags |= static_cast<uint32_t>(dxbc::HashFlags::IncludesSource);
+      memcpy(&Hash.Digest[0], &P.Hash->Digest[0], 16);
+      if (sys::IsBigEndianHost)
+        Hash.swapBytes();
+      OS.write(reinterpret_cast<char *>(&Hash), sizeof(dxbc::ShaderHash));
+      break;
+    }
+    case dxbc::PartType::PSV0: {
+      if (!P.Info.has_value())
+        continue;
+      mcdxbc::PSVRuntimeInfo PSV;
+      memcpy(&PSV.BaseData, &P.Info->Info, sizeof(dxbc::PSV::v2::RuntimeInfo));
+      PSV.Resources = P.Info->Resources;
+
+      for (auto El : P.Info->SigInputElements)
+        PSV.InputElements.push_back(mcdxbc::PSVSignatureElement{
+            El.Name, El.Indices, El.StartRow, El.Cols, El.StartCol,
+            El.Allocated, El.Kind, El.Type, El.Mode, El.DynamicMask,
+            El.Stream});
+
+      for (auto El : P.Info->SigOutputElements)
+        PSV.OutputElements.push_back(mcdxbc::PSVSignatureElement{
+            El.Name, El.Indices, El.StartRow, El.Cols, El.StartCol,
+            El.Allocated, El.Kind, El.Type, El.Mode, El.DynamicMask,
+            El.Stream});
+
+      for (auto El : P.Info->SigPatchOrPrimElements)
+        PSV.PatchOrPrimElements.push_back(mcdxbc::PSVSignatureElement{
+            El.Name, El.Indices, El.StartRow, El.Cols, El.StartCol,
+            El.Allocated, El.Kind, El.Type, El.Mode, El.DynamicMask,
+            El.Stream});
+
+      static_assert(PSV.OutputVectorMasks.size() == PSV.InputOutputMap.size());
+      for (unsigned I = 0; I < PSV.OutputVectorMasks.size(); ++I) {
+        PSV.OutputVectorMasks[I].insert(PSV.OutputVectorMasks[I].begin(),
+                                        P.Info->OutputVectorMasks[I].begin(),
+                                        P.Info->OutputVectorMasks[I].end());
+        PSV.InputOutputMap[I].insert(PSV.InputOutputMap[I].begin(),
+                                     P.Info->InputOutputMap[I].begin(),
+                                     P.Info->InputOutputMap[I].end());
+      }
+
+      PSV.PatchOrPrimMasks.insert(PSV.PatchOrPrimMasks.begin(),
+                                  P.Info->PatchOrPrimMasks.begin(),
+                                  P.Info->PatchOrPrimMasks.end());
+      PSV.InputPatchMap.insert(PSV.InputPatchMap.begin(),
+                               P.Info->InputPatchMap.begin(),
+                               P.Info->InputPatchMap.end());
+      PSV.PatchOutputMap.insert(PSV.PatchOutputMap.begin(),
+                                P.Info->PatchOutputMap.begin(),
+                                P.Info->PatchOutputMap.end());
+
+      PSV.finalize(static_cast<Triple::EnvironmentType>(
+          Triple::Pixel + P.Info->Info.ShaderStage));
+      PSV.write(OS, P.Info->Version);
+      break;
+    }
+    case dxbc::PartType::ISG1:
+    case dxbc::PartType::OSG1:
+    case dxbc::PartType::PSG1: {
+      mcdxbc::Signature Sig;
+      if (P.Signature.has_value()) {
+        for (const auto &Param : P.Signature->Parameters) {
+          Sig.addParam(Param.Stream, Param.Name, Param.Index, Param.SystemValue,
+                       Param.CompType, Param.Register, Param.Mask,
+                       Param.ExclusiveMask, Param.MinPrecision);
+        }
+      }
+      Sig.write(OS);
+      break;
+    }
+    case dxbc::PartType::Unknown:
+      break; // Skip any handling for unrecognized parts.
+    }
+    uint64_t BytesWritten = OS.tell() - DataStart;
+    RollingOffset += BytesWritten;
+    if (BytesWritten < PartSize)
+      OS.write_zeros(PartSize - BytesWritten);
+    RollingOffset += PartSize;
   }
 }
 

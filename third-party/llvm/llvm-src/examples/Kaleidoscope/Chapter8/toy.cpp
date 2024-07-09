@@ -1,5 +1,4 @@
 #include "llvm/ADT/APFloat.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
@@ -14,11 +13,11 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/FileSystem.h"
-#include "llvm/Support/Host.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
+#include "llvm/TargetParser/Host.h"
 #include <algorithm>
 #include <cassert>
 #include <cctype>
@@ -868,7 +867,7 @@ Value *IfExprAST::codegen() {
   ThenBB = Builder->GetInsertBlock();
 
   // Emit else block.
-  TheFunction->getBasicBlockList().push_back(ElseBB);
+  TheFunction->insert(TheFunction->end(), ElseBB);
   Builder->SetInsertPoint(ElseBB);
 
   Value *ElseV = Else->codegen();
@@ -880,7 +879,7 @@ Value *IfExprAST::codegen() {
   ElseBB = Builder->GetInsertBlock();
 
   // Emit merge block.
-  TheFunction->getBasicBlockList().push_back(MergeBB);
+  TheFunction->insert(TheFunction->end(), MergeBB);
   Builder->SetInsertPoint(MergeBB);
   PHINode *PN = Builder->CreatePHI(Type::getDoubleTy(*TheContext), 2, "iftmp");
 
@@ -1243,9 +1242,8 @@ int main() {
   auto Features = "";
 
   TargetOptions opt;
-  auto RM = Optional<Reloc::Model>();
-  auto TheTargetMachine =
-      Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
+  auto TheTargetMachine = Target->createTargetMachine(
+      TargetTriple, CPU, Features, opt, Reloc::PIC_);
 
   TheModule->setDataLayout(TheTargetMachine->createDataLayout());
 
@@ -1259,7 +1257,7 @@ int main() {
   }
 
   legacy::PassManager pass;
-  auto FileType = CGFT_ObjectFile;
+  auto FileType = CodeGenFileType::ObjectFile;
 
   if (TheTargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType)) {
     errs() << "TheTargetMachine can't emit a file of this type";

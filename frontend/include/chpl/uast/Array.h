@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -41,8 +41,9 @@ namespace uast {
   An array expression will never contain comments.
  */
 class Array final : public AstNode {
- private:
+ friend class AstNode;
 
+ private:
   bool trailingComma_,
        associative_;
   
@@ -52,12 +53,21 @@ class Array final : public AstNode {
     associative_ = associative;
   }
 
-  Array(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    ser.write(trailingComma_);
+    ser.write(associative_);
+  }
+
+  explicit Array(Deserializer& des)
     : AstNode(asttags::Array, des) {
+    trailingComma_ = des.read<bool>();
+    associative_ = des.read<bool>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
-    return true;
+    const Array* rhs = other->toArray();
+    return this->trailingComma_ == rhs->trailingComma_ &&
+           this->associative_ == rhs->associative_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -100,13 +110,6 @@ class Array final : public AstNode {
     const AstNode* ast = this->child(i);
     return ast;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Array);
-
 };
 
 

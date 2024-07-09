@@ -19,6 +19,8 @@
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/ExecutionEngine/Orc/Shared/AllocationActions.h"
 #include "llvm/ExecutionEngine/Orc/Shared/ExecutorAddress.h"
+#include "llvm/ExecutionEngine/Orc/Shared/ExecutorSymbolDef.h"
+#include "llvm/ExecutionEngine/Orc/Shared/MemoryFlags.h"
 #include "llvm/ExecutionEngine/Orc/Shared/SimplePackedSerialization.h"
 #include "llvm/ExecutionEngine/Orc/Shared/WrapperFunctionUtils.h"
 #include "llvm/Support/Memory.h"
@@ -29,49 +31,23 @@ namespace llvm {
 namespace orc {
 namespace tpctypes {
 
-enum WireProtectionFlags : uint8_t {
-  WPF_None = 0,
-  WPF_Read = 1U << 0,
-  WPF_Write = 1U << 1,
-  WPF_Exec = 1U << 2,
-  LLVM_MARK_AS_BITMASK_ENUM(WPF_Exec)
+struct RemoteAllocGroup {
+  RemoteAllocGroup() = default;
+  RemoteAllocGroup(MemProt Prot) : Prot(Prot) {}
+  RemoteAllocGroup(MemProt Prot, bool FinalizeLifetime)
+      : Prot(Prot), FinalizeLifetime(FinalizeLifetime) {}
+  RemoteAllocGroup(const AllocGroup &AG) : Prot(AG.getMemProt()) {
+    assert(AG.getMemLifetime() != orc::MemLifetime::NoAlloc &&
+           "Cannot use no-alloc memory in a remote alloc request");
+    FinalizeLifetime = AG.getMemLifetime() == orc::MemLifetime::Finalize;
+  }
+
+  MemProt Prot;
+  bool FinalizeLifetime = false;
 };
 
-/// Convert from sys::Memory::ProtectionFlags
-inline WireProtectionFlags
-toWireProtectionFlags(sys::Memory::ProtectionFlags PF) {
-  WireProtectionFlags WPF = WPF_None;
-  if (PF & sys::Memory::MF_READ)
-    WPF |= WPF_Read;
-  if (PF & sys::Memory::MF_WRITE)
-    WPF |= WPF_Write;
-  if (PF & sys::Memory::MF_EXEC)
-    WPF |= WPF_Exec;
-  return WPF;
-}
-
-inline sys::Memory::ProtectionFlags
-fromWireProtectionFlags(WireProtectionFlags WPF) {
-  int PF = 0;
-  if (WPF & WPF_Read)
-    PF |= sys::Memory::MF_READ;
-  if (WPF & WPF_Write)
-    PF |= sys::Memory::MF_WRITE;
-  if (WPF & WPF_Exec)
-    PF |= sys::Memory::MF_EXEC;
-  return static_cast<sys::Memory::ProtectionFlags>(PF);
-}
-
-inline std::string getWireProtectionFlagsStr(WireProtectionFlags WPF) {
-  std::string Result;
-  Result += (WPF & WPF_Read) ? 'R' : '-';
-  Result += (WPF & WPF_Write) ? 'W' : '-';
-  Result += (WPF & WPF_Exec) ? 'X' : '-';
-  return Result;
-}
-
 struct SegFinalizeRequest {
-  WireProtectionFlags Prot;
+  RemoteAllocGroup RAG;
   ExecutorAddr Addr;
   uint64_t Size;
   ArrayRef<char> Content;
@@ -83,7 +59,7 @@ struct FinalizeRequest {
 };
 
 struct SharedMemorySegFinalizeRequest {
-  WireProtectionFlags Prot;
+  RemoteAllocGroup RAG;
   ExecutorAddr Addr;
   uint64_t Size;
 };
@@ -124,26 +100,36 @@ struct BufferWrite {
   StringRef Buffer;
 };
 
-/// A handle used to represent a loaded dylib in the target process.
-using DylibHandle = JITTargetAddress;
+/// Describes a write to a pointer.
+/// For use with TargetProcessControl::MemoryAccess objects.
+struct PointerWrite {
+  PointerWrite() = default;
+  PointerWrite(ExecutorAddr Addr, ExecutorAddr Value)
+      : Addr(Addr), Value(Value) {}
 
-using LookupResult = std::vector<JITTargetAddress>;
+  ExecutorAddr Addr;
+  ExecutorAddr Value;
+};
+
+/// A handle used to represent a loaded dylib in the target process.
+using DylibHandle = ExecutorAddr;
+
+using LookupResult = std::vector<ExecutorSymbolDef>;
 
 } // end namespace tpctypes
 
 namespace shared {
 
-class SPSMemoryProtectionFlags {};
+class SPSRemoteAllocGroup;
 
 using SPSSegFinalizeRequest =
-    SPSTuple<SPSMemoryProtectionFlags, SPSExecutorAddr, uint64_t,
-             SPSSequence<char>>;
+    SPSTuple<SPSRemoteAllocGroup, SPSExecutorAddr, uint64_t, SPSSequence<char>>;
 
 using SPSFinalizeRequest = SPSTuple<SPSSequence<SPSSegFinalizeRequest>,
                                     SPSSequence<SPSAllocActionCallPair>>;
 
 using SPSSharedMemorySegFinalizeRequest =
-    SPSTuple<SPSMemoryProtectionFlags, SPSExecutorAddr, uint64_t>;
+    SPSTuple<SPSRemoteAllocGroup, SPSExecutorAddr, uint64_t>;
 
 using SPSSharedMemoryFinalizeRequest =
     SPSTuple<SPSSequence<SPSSharedMemorySegFinalizeRequest>,
@@ -158,26 +144,50 @@ using SPSMemoryAccessUInt32Write = SPSMemoryAccessUIntWrite<uint32_t>;
 using SPSMemoryAccessUInt64Write = SPSMemoryAccessUIntWrite<uint64_t>;
 
 using SPSMemoryAccessBufferWrite = SPSTuple<SPSExecutorAddr, SPSSequence<char>>;
+using SPSMemoryAccessPointerWrite = SPSTuple<SPSExecutorAddr, SPSExecutorAddr>;
 
 template <>
-class SPSSerializationTraits<SPSMemoryProtectionFlags,
-                             tpctypes::WireProtectionFlags> {
+class SPSSerializationTraits<SPSRemoteAllocGroup, tpctypes::RemoteAllocGroup> {
+  enum WireBits {
+    ReadBit = 1 << 0,
+    WriteBit = 1 << 1,
+    ExecBit = 1 << 2,
+    FinalizeBit = 1 << 3
+  };
+
 public:
-  static size_t size(const tpctypes::WireProtectionFlags &WPF) {
-    return SPSArgList<uint8_t>::size(static_cast<uint8_t>(WPF));
+  static size_t size(const tpctypes::RemoteAllocGroup &RAG) {
+    // All AllocGroup values encode to the same size.
+    return SPSArgList<uint8_t>::size(uint8_t(0));
   }
 
   static bool serialize(SPSOutputBuffer &OB,
-                        const tpctypes::WireProtectionFlags &WPF) {
-    return SPSArgList<uint8_t>::serialize(OB, static_cast<uint8_t>(WPF));
+                        const tpctypes::RemoteAllocGroup &RAG) {
+    uint8_t WireValue = 0;
+    if ((RAG.Prot & MemProt::Read) != MemProt::None)
+      WireValue |= ReadBit;
+    if ((RAG.Prot & MemProt::Write) != MemProt::None)
+      WireValue |= WriteBit;
+    if ((RAG.Prot & MemProt::Exec) != MemProt::None)
+      WireValue |= ExecBit;
+    if (RAG.FinalizeLifetime)
+      WireValue |= FinalizeBit;
+    return SPSArgList<uint8_t>::serialize(OB, WireValue);
   }
 
-  static bool deserialize(SPSInputBuffer &IB,
-                          tpctypes::WireProtectionFlags &WPF) {
+  static bool deserialize(SPSInputBuffer &IB, tpctypes::RemoteAllocGroup &RAG) {
     uint8_t Val;
     if (!SPSArgList<uint8_t>::deserialize(IB, Val))
       return false;
-    WPF = static_cast<tpctypes::WireProtectionFlags>(Val);
+    MemProt MP = MemProt::None;
+    if (Val & ReadBit)
+      MP |= MemProt::Read;
+    if (Val & WriteBit)
+      MP |= MemProt::Write;
+    if (Val & ExecBit)
+      MP |= MemProt::Exec;
+    bool FinalizeLifetime = (Val & FinalizeBit) ? true : false;
+    RAG = {MP, FinalizeLifetime};
     return true;
   }
 };
@@ -189,17 +199,17 @@ class SPSSerializationTraits<SPSSegFinalizeRequest,
 
 public:
   static size_t size(const tpctypes::SegFinalizeRequest &SFR) {
-    return SFRAL::size(SFR.Prot, SFR.Addr, SFR.Size, SFR.Content);
+    return SFRAL::size(SFR.RAG, SFR.Addr, SFR.Size, SFR.Content);
   }
 
   static bool serialize(SPSOutputBuffer &OB,
                         const tpctypes::SegFinalizeRequest &SFR) {
-    return SFRAL::serialize(OB, SFR.Prot, SFR.Addr, SFR.Size, SFR.Content);
+    return SFRAL::serialize(OB, SFR.RAG, SFR.Addr, SFR.Size, SFR.Content);
   }
 
   static bool deserialize(SPSInputBuffer &IB,
                           tpctypes::SegFinalizeRequest &SFR) {
-    return SFRAL::deserialize(IB, SFR.Prot, SFR.Addr, SFR.Size, SFR.Content);
+    return SFRAL::deserialize(IB, SFR.RAG, SFR.Addr, SFR.Size, SFR.Content);
   }
 };
 
@@ -229,17 +239,17 @@ class SPSSerializationTraits<SPSSharedMemorySegFinalizeRequest,
 
 public:
   static size_t size(const tpctypes::SharedMemorySegFinalizeRequest &SFR) {
-    return SFRAL::size(SFR.Prot, SFR.Addr, SFR.Size);
+    return SFRAL::size(SFR.RAG, SFR.Addr, SFR.Size);
   }
 
   static bool serialize(SPSOutputBuffer &OB,
                         const tpctypes::SharedMemorySegFinalizeRequest &SFR) {
-    return SFRAL::serialize(OB, SFR.Prot, SFR.Addr, SFR.Size);
+    return SFRAL::serialize(OB, SFR.RAG, SFR.Addr, SFR.Size);
   }
 
   static bool deserialize(SPSInputBuffer &IB,
                           tpctypes::SharedMemorySegFinalizeRequest &SFR) {
-    return SFRAL::deserialize(IB, SFR.Prot, SFR.Addr, SFR.Size);
+    return SFRAL::deserialize(IB, SFR.RAG, SFR.Addr, SFR.Size);
   }
 };
 
@@ -301,6 +311,26 @@ public:
     return SPSTuple<SPSExecutorAddr,
                     SPSSequence<char>>::AsArgList ::deserialize(IB, W.Addr,
                                                                 W.Buffer);
+  }
+};
+
+template <>
+class SPSSerializationTraits<SPSMemoryAccessPointerWrite,
+                             tpctypes::PointerWrite> {
+public:
+  static size_t size(const tpctypes::PointerWrite &W) {
+    return SPSTuple<SPSExecutorAddr, SPSExecutorAddr>::AsArgList::size(W.Addr,
+                                                                       W.Value);
+  }
+
+  static bool serialize(SPSOutputBuffer &OB, const tpctypes::PointerWrite &W) {
+    return SPSTuple<SPSExecutorAddr, SPSExecutorAddr>::AsArgList::serialize(
+        OB, W.Addr, W.Value);
+  }
+
+  static bool deserialize(SPSInputBuffer &IB, tpctypes::PointerWrite &W) {
+    return SPSTuple<SPSExecutorAddr, SPSExecutorAddr>::AsArgList::deserialize(
+        IB, W.Addr, W.Value);
   }
 };
 

@@ -164,9 +164,45 @@ proc test9() {
   writeln(n);
 }
 
+proc test10() {
+  const p = proc() const { return 6; };
+  writeln(p());
+}
+
+proc test11() {
+  proc int.method() { writeln('int'); }
+  proc string.method() { writeln('string'); }
+  record r {
+    var x = "8";
+    forwarding((proc() {
+      record inner {
+        var x = 8;
+        proc foo() { return x; }
+      }
+      var x: inner;
+      return x.foo();
+    })());
+  }
+  var x: r;
+  x.method();
+}
+
+proc test12() {
+  writeln((proc() { return 8; })());
+}
+
+proc test13() {
+  proc makeProc(): proc(): proc(): int {
+    return proc() { return proc() { return 8; }; };
+  }
+  var g = makeProc();
+  var h = g();
+  writeln(h());
+}
+
 proc main() {
   const tests = [test0, test1, test2a, test2b, test3, test4, test5, test6,
-                 test7, test8, test9];
+                 test7, test8, test9, test10, test11, test12, test13];
   type T = proc(): void;
   for test in tests {
     assert(test.type == T);

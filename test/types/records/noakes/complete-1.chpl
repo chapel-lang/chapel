@@ -5,7 +5,7 @@ record MyRecord {
   proc init(val : int) {
     y = val;
 
-    complete();
+    init this;
 
     y = y + 10;
   }

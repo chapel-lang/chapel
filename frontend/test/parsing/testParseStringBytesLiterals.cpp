@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -76,11 +76,25 @@ static void testCStringLiteral(Parser* parser,
                                StringLiteral::QuoteStyle expectQuoteStyle,
                                const std::string& expectValue) {
   const AstNode* initExpr = nullptr;
-  auto parseResult = parseExprAsVarInit(parser, testname, str, initExpr);
+  ErrorGuard guard(parser->context());
+  std::string toparse = "var x = ";
+  toparse += str.c_str();
+  toparse += ";\n";
+  auto parseResult = parseStringAndReportErrors(parser, testname.c_str(), toparse.c_str());
+  assert(guard.numErrors() == 1);
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto variable = mod->stmt(0)->toVariable();
+  assert(variable);
+  initExpr = variable->initExpression();
   auto strLit = initExpr->toCStringLiteral();
   assert(strLit);
   assert(strLit->quoteStyle() == expectQuoteStyle);
   assert(strLit->value().str() == expectValue);
+  assert(guard.error(0)->message() == "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'string.c_str()' from the 'CTypes' module instead");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::WARNING);
+  assert(guard.realizeErrors()==1);
 }
 
 static void testTripleLiteral(Parser* parser,

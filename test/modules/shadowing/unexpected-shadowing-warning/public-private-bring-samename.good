@@ -1,0 +1,7 @@
+public-private-bring-samename.chpl:13: In function 'main':
+public-private-bring-samename.chpl:14: warning: potentially surprising shadowing for 'x'
+public-private-bring-samename.chpl:10: note: it refers to a symbol found through the 'use' of 'M' here
+public-private-bring-samename.chpl:2: note: leading to 'x' defined here
+public-private-bring-samename.chpl:11: note: but, there is a shadowed symbol found through the 'use' of 'N' here
+public-private-bring-samename.chpl:6: note: leading to 'x' defined here
+1

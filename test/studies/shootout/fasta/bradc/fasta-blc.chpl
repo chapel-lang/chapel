@@ -39,7 +39,7 @@ const IUB = [("a", 0.27), ("c", 0.12), ("g", 0.12), ("t", 0.27),
                      ("t", 0.3015094502008)],
 
       // Redefine stdout to use lock-free binary I/O
-  stdout = (new file(1)).writer(kind=iokind.native, locking=false);
+  stdout = (new file(1)).writer(locking=false);
 
 
 proc main() {
@@ -69,12 +69,12 @@ proc repeatMake(param alu, n) {
 
   const wholeBuffers = n / (len*lineLen);
   for i in 0..<wholeBuffers {
-    stdout.write(buffer);
+    stdout.writeBytes(buffer);
   }
 
   var extra = n - wholeBuffers*len*lineLen;
   extra += extra/lineLen;
-  stdout.write(buffer[..<extra]);
+  stdout.writeBytes(buffer[..<extra]);
 
   if n % lineLen != 0 {
     stdout.writeln();
@@ -118,7 +118,7 @@ proc randomMake(nuclInfo, n) {
         buffer[j*bytesPerLine + k] = hash[getNextRand()];
       }
     }
-    stdout.write(buffer);
+    stdout.writeBinary(buffer);
   }
 
   // compute number of complete lines remaining and fill them in
@@ -138,7 +138,7 @@ proc randomMake(nuclInfo, n) {
     buffer[offset + k] = hash[getNextRand()];
   }
 
-  stdout.write(buffer[0..<offset+extra]);
+  stdout.writeBinary(buffer[0..<offset+extra]);
 
   // add a final linefeed if needed
   if (extra != 0) {

@@ -103,7 +103,7 @@ export proc test_rand_uint32():c_uint {
     // Do that a 2nd time, combining the 16-bit values.
     // The result is a 32-bit value that should show bias
     // if the bounded rand strategy is naive.
-    
+
     // E.g. 2^32 + 2^30 being max ->
     // if you just did a mod by that, the 32-bit numbers divide into 4 parts:
     //   0..2^30
@@ -173,7 +173,6 @@ writeln(name, " with seed ", seed, " using RandomStream type:");
 writeln(rs.type:string);
 writeln("RNG:");
 writeln(rs);
-
 if testReal {
   writeln("testing real RNG");
   for i in 1..10 {

@@ -12,122 +12,122 @@ proc testit(seed: int, n: int) {
   var afterA:uint;
   var afterB:uint;
 
-  var rng = new RandomStream(seed=seed, parSafe=false, eltType=int);
+  var rng = new randomStream(seed=seed, eltType=uint);
   for i in 1..n {
-    A[i] = rng.getNext(uint);
+    A[i] = rng.next();
   }
-  afterA = rng.getNext(uint);
+  afterA = rng.next();
 
   if verbose then writeln("testit ", seed, " ", n, " A");
-  rng.skipToNth(0);
+  rng.skipTo(0);
   for i in 1..n {
-    B[i] = rng.getNext(uint);
+    B[i] = rng.next();
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.next();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " B");
-  rng.skipToNth(0);
-  rng.fillRandom(B);
+  rng.skipTo(0);
+  rng.fill(B);
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.next();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " C");
   B = 0;
-  rng.skipToNth(0);
-  for (i,x) in zip(A.domain, rng.iterate(A.domain, uint)) {
+  rng.skipTo(0);
+  for (i,x) in zip(A.domain, rng.next(A.domain)) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.next();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " D");
   B = 0;
-  rng.skipToNth(0);
-  forall (i,x) in zip(A.domain, rng.iterate(A.domain, uint)) {
+  rng.skipTo(0);
+  forall (i,x) in zip(A.domain, rng.next(A.domain)) with (ref B) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.next();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " E");
   B = 0;
-  rng.skipToNth(0);
-  for (x,i) in zip(rng.iterate(A.domain, uint), A.domain) {
+  rng.skipTo(0);
+  for (x,i) in zip(rng.next(A.domain), A.domain) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.next();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " F");
   B = 0;
-  rng.skipToNth(0);
-  forall (x,i) in zip(rng.iterate(A.domain, uint), A.domain) {
+  rng.skipTo(0);
+  forall (x,i) in zip(rng.next(A.domain), A.domain) with (ref B) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.next();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " G");
-  rng.skipToNth(0);
+  rng.skipTo(0);
   for i in 1..n {
-    B[i] = rng.getNext(uint, 0, max(uint));
+    B[i] = rng.next(0, max(uint));
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.next();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " H");
-  rng.skipToNth(0);
-  rng.fillRandom(B, 0, max(uint));
+  rng.skipTo(0);
+  rng.fill(B, 0, max(uint));
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.next();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " I");
   B = 0;
-  rng.skipToNth(0);
-  for (i,x) in zip(A.domain, rng.iterate(A.domain, uint, 0, max(uint))) {
+  rng.skipTo(0);
+  for (i,x) in zip(A.domain, rng.next(A.domain, 0, max(uint))) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.next();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " J");
   B = 0;
-  rng.skipToNth(0);
-  forall (i,x) in zip(A.domain, rng.iterate(A.domain, uint, 0, max(uint))) {
+  rng.skipTo(0);
+  forall (i,x) in zip(A.domain, rng.next(A.domain, 0, max(uint))) with (ref B) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.next();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " K");
   B = 0;
-  rng.skipToNth(0);
-  for (x,i) in zip(rng.iterate(A.domain, uint, 0, max(uint)), A.domain) {
+  rng.skipTo(0);
+  for (x,i) in zip(rng.next(A.domain, 0, max(uint)), A.domain) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.next();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " L");
   B = 0;
-  rng.skipToNth(0);
-  forall (x,i) in zip(rng.iterate(A.domain, uint, 0, max(uint)), A.domain) {
+  rng.skipTo(0);
+  forall (x,i) in zip(rng.next(A.domain, 0, max(uint)), A.domain) with (ref B) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.next();
   assert(afterB == afterA);
 }
 
@@ -135,36 +135,36 @@ proc testitb(seed: int, n: int, min: uint, max: uint) {
   var A: [1..n] uint;
   var B: [1..n] uint;
 
-  var rng = new RandomStream(seed=seed, parSafe=false, eltType=int);
+  var rng = new randomStream(seed=seed, eltType=uint);
   for i in 1..n {
-    A[i] = rng.getNext(uint, min, max);
+    A[i] = rng.next(min, max);
     assert(min <= A[i] && A[i] <= max);
   }
 
   if verbose then writeln("testitb ", seed, " ", n, " ", min, " ", max, " A");
-  rng.skipToNth(0);
+  rng.skipTo(0);
   for i in 1..n {
-    B[i] = rng.getNext(uint, min, max);
+    B[i] = rng.next(min, max);
   }
   checkMatch(A, B);
 
   if verbose then writeln("testitb ", seed, " ", n, " ", min, " ", max, " B");
-  rng.skipToNth(0);
-  rng.fillRandom(B, min, max);
+  rng.skipTo(0);
+  rng.fill(B, min, max);
   checkMatch(A, B);
 
   if verbose then writeln("testitb ", seed, " ", n, " ", min, " ", max, " C");
   B = 0;
-  rng.skipToNth(0);
-  for (i,x) in zip(A.domain, rng.iterate(A.domain, uint, min, max)) {
+  rng.skipTo(0);
+  for (i,x) in zip(A.domain, rng.next(A.domain, min, max)) {
     B[i] = x;
   }
   checkMatch(A, B);
 
   if verbose then writeln("testitb ", seed, " ", n, " ", min, " ", max, " D");
   B = 0;
-  rng.skipToNth(0);
-  forall (i,x) in zip(A.domain, rng.iterate(A.domain, uint, min, max)) {
+  rng.skipTo(0);
+  forall (i,x) in zip(A.domain, rng.next(A.domain, min, max)) with (ref B) {
     B[i] = x;
   }
   checkMatch(A, B);

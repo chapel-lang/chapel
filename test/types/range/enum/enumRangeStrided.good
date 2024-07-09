@@ -1,6 +1,18 @@
+enumRangeStrided.chpl:3: In function 'testRange':
+enumRangeStrided.chpl:30: warning: range.indexOrder() is unstable and its behavior may change in the future
+enumRangeStrided.chpl:31: warning: range.indexOrder() is unstable and its behavior may change in the future
+enumRangeStrided.chpl:33: warning: range.orderToIndex() is unstable and its behavior may change in the future
+enumRangeStrided.chpl:35: warning: range.translate() is unstable and its behavior may change in the future
+enumRangeStrided.chpl:37: warning: range.interior() is unstable and its behavior may change in the future
+enumRangeStrided.chpl:38: warning: range.interior() is unstable and its behavior may change in the future
+enumRangeStrided.chpl:41: warning: range.exterior() is unstable and its behavior may change in the future
+enumRangeStrided.chpl:42: warning: range.exterior() is unstable and its behavior may change in the future
+enumRangeStrided.chpl:43: warning: range.expand() is unstable and its behavior may change in the future
+enumRangeStrided.chpl:44: warning: range.offset() is unstable and its behavior may change in the future
+  enumRangeStrided.chpl:50: called as testRange(r: range(color,both,positive))
 ---
 red..violet by 2
-range(color,both,true)
+range(color,both,positive)
 
 red
 yellow
@@ -33,7 +45,7 @@ violet
 
 ---
 yellow..indigo by 2
-range(color,both,true)
+range(color,both,positive)
 
 yellow
 blue
@@ -67,7 +79,7 @@ blue
 
 ---
 green..green by 2
-range(color,both,true)
+range(color,both,positive)
 
 green
 
@@ -92,7 +104,7 @@ green
 
 ---
 blue..green by 2
-range(color,both,true)
+range(color,both,positive)
 
 
 size = 0

@@ -11,6 +11,7 @@
 #include "llvm/BinaryFormat/MachO.h"
 #include "llvm/Object/MachO.h"
 #include "llvm/Support/Errc.h"
+#include "llvm/Support/SystemZ/zOSSupport.h"
 #include <memory>
 
 using namespace llvm;
@@ -67,7 +68,8 @@ Expected<std::vector<std::unique_ptr<Section>>> static extractSections(
                                                         LoadCmd.C.cmdsize);
        Curr < End; ++Curr) {
     SectionType Sec;
-    memcpy((void *)&Sec, Curr, sizeof(SectionType));
+    memcpy((void *)&Sec, reinterpret_cast<const char *>(Curr),
+           sizeof(SectionType));
 
     if (MachOObj.isLittleEndian() != sys::IsLittleEndianHost)
       MachO::swapStruct(Sec);
@@ -173,6 +175,9 @@ Error MachOReader::readLoadCommands(Object &O) const {
       break;
     case MachO::LC_FUNCTION_STARTS:
       O.FunctionStartsCommandIndex = O.LoadCommands.size();
+      break;
+    case MachO::LC_DYLIB_CODE_SIGN_DRS:
+      O.DylibCodeSignDRsIndex = O.LoadCommands.size();
       break;
     case MachO::LC_DYLD_EXPORTS_TRIE:
       O.ExportsTrieCommandIndex = O.LoadCommands.size();
@@ -281,10 +286,14 @@ void MachOReader::readLazyBindInfo(Object &O) const {
 }
 
 void MachOReader::readExportInfo(Object &O) const {
-  O.Exports.Trie = MachOObj.getDyldInfoExportsTrie();
+  // This information can be in LC_DYLD_INFO or in LC_DYLD_EXPORTS_TRIE
+  ArrayRef<uint8_t> Trie = MachOObj.getDyldInfoExportsTrie();
+  if (Trie.empty())
+    Trie = MachOObj.getDyldExportsTrie();
+  O.Exports.Trie = Trie;
 }
 
-void MachOReader::readLinkData(Object &O, Optional<size_t> LCIndex,
+void MachOReader::readLinkData(Object &O, std::optional<size_t> LCIndex,
                                LinkData &LD) const {
   if (!LCIndex)
     return;
@@ -307,6 +316,10 @@ void MachOReader::readFunctionStartsData(Object &O) const {
   return readLinkData(O, O.FunctionStartsCommandIndex, O.FunctionStarts);
 }
 
+void MachOReader::readDylibCodeSignDRs(Object &O) const {
+  return readLinkData(O, O.DylibCodeSignDRsIndex, O.DylibCodeSignDRs);
+}
+
 void MachOReader::readExportsTrie(Object &O) const {
   return readLinkData(O, O.ExportsTrieCommandIndex, O.ExportsTrie);
 }
@@ -322,7 +335,7 @@ void MachOReader::readIndirectSymbolTable(Object &O) const {
   for (uint32_t i = 0; i < DySymTab.nindirectsyms; ++i) {
     uint32_t Index = MachOObj.getIndirectSymbolTableEntry(DySymTab, i);
     if ((Index & AbsOrLocalMask) != 0)
-      O.IndirectSymTable.Symbols.emplace_back(Index, None);
+      O.IndirectSymTable.Symbols.emplace_back(Index, std::nullopt);
     else
       O.IndirectSymTable.Symbols.emplace_back(
           Index, O.SymTable.getSymbolByIndex(Index));
@@ -366,6 +379,7 @@ Expected<std::unique_ptr<Object>> MachOReader::create() const {
   readDataInCodeData(*Obj);
   readLinkerOptimizationHint(*Obj);
   readFunctionStartsData(*Obj);
+  readDylibCodeSignDRs(*Obj);
   readExportsTrie(*Obj);
   readChainedFixups(*Obj);
   readIndirectSymbolTable(*Obj);

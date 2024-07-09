@@ -14,7 +14,7 @@ record C {
   proc init() {
     printer(x, y, this, this.foo());
     named(x=this);
-    this.complete();
+    init this;
   }
   
   proc foo() {

@@ -1,5 +1,15 @@
-$CHPL_HOME/modules/internal/OwnedObject.chpl:167: In initializer:
-$CHPL_HOME/modules/internal/OwnedObject.chpl:172: error: Could not coerce 'nil' to 'borrowed Node?' in initialization
-  $CHPL_HOME/modules/internal/OwnedObject.chpl:247: called as owned.init(type chpl_t = borrowed Node?)
+day18-bug2.chpl:11: In initializer:
+day18-bug2.chpl:11: warning: need '(?)' on the type 'Node' of the formal 'l' because this type is generic
+day18-bug2.chpl:11: warning: need '(?)' on the type 'Node' of the formal 'r' because this type is generic
+day18-bug2.chpl:23: warning: please use '?' when declaring a routine with a generic return type
+day18-bug2.chpl:23: note: for example with 'Node(?)'
+day18-bug2.chpl:26: warning: please use '?' when declaring a variable with generic type
+day18-bug2.chpl:26: note: for example with 'Node(?)'
+$CHPL_HOME/modules/internal/OwnedObject.chpl:133: In method 'init=':
+$CHPL_HOME/modules/internal/OwnedObject.chpl:137: warning: please add '(?)' to type 'Node' because it is generic
+  day18-bug2.chpl:26: called as (owned Node?).init=(src: nil)
+$CHPL_HOME/modules/internal/OwnedObject.chpl:57: In initializer:
+$CHPL_HOME/modules/internal/OwnedObject.chpl:62: error: Could not coerce 'nil' to 'borrowed Node?' in initialization
+  $CHPL_HOME/modules/internal/OwnedObject.chpl:137: called as owned.init(type chpl_t = borrowed Node?)
   within internal functions (use --print-callstack-on-error to see)
   day18-bug2.chpl:20: called as lineToTree(line: string, pos: int(64))

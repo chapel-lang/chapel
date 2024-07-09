@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -450,7 +450,7 @@ static void test11() {
 }
 
 // multiple imports / uses of the same module don't block finding symbols
-// via the second visibility statment onwards.
+// via the second visibility statement onwards.
 static void test12() {
   printf("test12\n");
   Context ctx;
@@ -545,7 +545,7 @@ static void test13() {
   assert(guard.realizeErrors());
 }
 
-// There's specal handling for the rightmost field access. Make sure this
+// There's special handling for the rightmost field access. Make sure this
 // special handling properly handles super.
 static void test14() {
   printf("test14\n");
@@ -710,7 +710,13 @@ static void test18() {
 
   const ResolvedExpression& reY = scopeResolveIt(context, x->initExpression());
   assert(reY.toId().str() == "M@1");
+
+  // expect a warning for this code
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->kind() == ErrorBase::WARNING);
+  guard.realizeErrors();
 }
+
 // check that 'private use M' puts M in a further shadow scope from contents
 static void test19() {
   printf("test19\n");
@@ -1259,6 +1265,69 @@ static void test32b() {
   assert(vec.size() == 2);
   const Module* moduleO = vec[1];
   auto moduleResolutionResults = scopeResolveModule(context, moduleO->id());
+  assert(guard.realizeErrors() == 0);
+}
+
+static void test33() {
+  printf("test33\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module Program {
+        module Sub {
+          module SubSub {
+            var x = true;
+            x;
+            SubSub.x;
+          }
+          SubSub.x;
+          Sub.SubSub.x;
+        }
+        Sub.SubSub.x;
+        Program.Sub.SubSub.x;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* Program = vec[0];
+  assert(Program && Program->numStmts() == 3);
+  const Module* Sub = Program->stmt(0)->toModule();
+  assert(Sub && Sub->numStmts() == 3);
+  const Module* SubSub = Sub->stmt(0)->toModule();
+  assert(SubSub && SubSub->numStmts() == 3);
+
+  const Variable* x = SubSub->stmt(0)->toVariable();
+  assert(x);
+
+  const AstNode* tSubSub1 = SubSub->stmt(1);
+  assert(tSubSub1);
+  const AstNode* tSubSub2 = SubSub->stmt(2);
+  assert(tSubSub2);
+  const AstNode* tSub1 = Sub->stmt(1);
+  assert(tSub1);
+  const AstNode* tSub2 = Sub->stmt(2);
+  assert(tSub2);
+  const AstNode* tProg1 = Program->stmt(1);
+  assert(tProg1);
+  const AstNode* tProg2 = Program->stmt(2);
+  assert(tProg2);
+
+  auto rProgram = scopeResolveModule(context, Program->id());
+  auto rSub = scopeResolveModule(context, Sub->id());
+  auto rSubSub = scopeResolveModule(context, SubSub->id());
+  assert(guard.realizeErrors() == 0);
+
+  assert(rProgram.byAst(tProg1).toId() == x->id());
+  assert(rProgram.byAst(tProg2).toId() == x->id());
+  assert(rSub.byAst(tSub1).toId() == x->id());
+  assert(rSub.byAst(tSub2).toId() == x->id());
+  assert(rSubSub.byAst(tSubSub1).toId() == x->id());
+  assert(rSubSub.byAst(tSubSub2).toId() == x->id());
 }
 
 
@@ -1297,6 +1366,7 @@ int main() {
   test31();
   test32a();
   test32b();
+  test33();
 
   return 0;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,7 +32,7 @@
     default to dynamic linking.
  */
 module UgniPerfStats {
-
+  private use ChplConfig only CHPL_COMM;
   /* Zero performance counters on the current locale */
   inline proc resetStatsHere() {
     if CHPL_COMM == "ugni" {

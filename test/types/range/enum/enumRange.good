@@ -1,6 +1,6 @@
 ---
 red..violet
-range(color,both,false)
+range(color,both,one)
 
 red
 orange
@@ -38,7 +38,7 @@ violet
 
 ---
 yellow..indigo
-range(color,both,false)
+range(color,both,one)
 
 yellow
 green
@@ -75,7 +75,7 @@ indigo
 
 ---
 green..green
-range(color,both,false)
+range(color,both,one)
 
 green
 
@@ -99,7 +99,7 @@ green
 
 ---
 blue..green
-range(color,both,false)
+range(color,both,one)
 
 
 size = 0

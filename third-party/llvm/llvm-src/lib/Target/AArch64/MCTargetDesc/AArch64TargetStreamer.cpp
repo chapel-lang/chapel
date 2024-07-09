@@ -12,7 +12,6 @@
 
 #include "AArch64TargetStreamer.h"
 #include "AArch64MCAsmInfo.h"
-#include "AArch64Subtarget.h"
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/MC/ConstantPools.h"
 #include "llvm/MC/MCContext.h"
@@ -79,7 +78,7 @@ void AArch64TargetStreamer::emitNoteSection(unsigned Flags) {
   OutStreamer.switchSection(Nt);
 
   // Emit the note header.
-  OutStreamer.emitValueToAlignment(Align(8).value());
+  OutStreamer.emitValueToAlignment(Align(8));
   OutStreamer.emitIntValue(4, 4);     // data size for "GNU\0"
   OutStreamer.emitIntValue(4 * 4, 4); // Elf_Prop size
   OutStreamer.emitIntValue(ELF::NT_GNU_PROPERTY_TYPE_0, 4);
@@ -118,4 +117,8 @@ llvm::createAArch64ObjectTargetStreamer(MCStreamer &S,
   if (TT.isOSBinFormatCOFF())
     return new AArch64TargetWinCOFFStreamer(S);
   return nullptr;
+}
+
+MCTargetStreamer *llvm::createAArch64NullTargetStreamer(MCStreamer &S) {
+  return new AArch64TargetStreamer(S);
 }

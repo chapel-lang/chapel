@@ -11,8 +11,10 @@ operator C.+(a: borrowed C?, b: borrowed C?) {
 }
 
 
-var a = (new owned C(1)).borrow();
-var bq:borrowed C? = (new owned C(2)).borrow();
+var ownA = new owned C(1);
+var a = ownA.borrow();
+var ownBq = new owned C(2);
+var bq:borrowed C? = ownBq.borrow();
 
 // how is a + bq! parsed?
 //   a + (bq!)

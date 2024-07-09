@@ -1,0 +1,2 @@
+bug: Compiler error for integral type with --baseline
+#24113

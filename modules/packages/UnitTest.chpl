@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -244,7 +244,7 @@ module UnitTest {
   use Reflection;
   use TestError;
   use List, Map;
-  private use IO;
+  private use IO, IO.FormattedIO;
 
   @chpldoc.nodoc
   config const testNames: string = "None";
@@ -322,6 +322,8 @@ module UnitTest {
         throw new owned AssertionError("assertFalse failed. Given expression is True");
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*Function to call the respective method for equality checking based on the type of argument*/
     proc checkAssertEquality(first, second) throws {
@@ -371,6 +373,8 @@ module UnitTest {
       return check;
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*An equality assertion for non-array sequences (like tuples, strings, range).
       Args:
@@ -397,27 +401,29 @@ module UnitTest {
         }
         var shorterLength = min(len1, len2);
         tmpString = seq_type_name+"s differ: ";
-        tmpString += "'"+stringify(seq1)+"' != '"+stringify(seq2)+"'" ;
+        tmpString += "'%?' != '%?'".format(seq1, seq2);
         for i in 0..#shorterLength {
           if seq1[i] != seq2[i] {
-            tmpString += "\nFirst differing element at index "+i:string +":\n'"+seq1[i]:string+"'\n'"+seq2[i]:string+"'\n";
+            tmpString += "\nFirst differing element at index %?:\n'%?'\n'%?'\n".format(i, seq1[i], seq2[i]);
             break;
           }
         }
         if len1 > len2 {
           var size_diff = len1 - len2;
-          tmpString += "\nFirst "+seq_type_name+" contains "+ size_diff:string +" additional elements.\n";
-          tmpString += "First extra element is at index "+(len2):string+"\n'"+seq1[len2]:string+"'\n";
+          tmpString += "\nFirst %? contains %? additional elements.\n".format(seq_type_name, size_diff);
+          tmpString += "First extra element is at index %?\n'%?'\n".format(len2, seq1[len2]);
         }
         else if len1 < len2 {
           var size_diff = len2 - len1;
-          tmpString += "\nSecond "+seq_type_name+" contains "+ size_diff:string +" additional elements.\n";
-          tmpString += "First extra element is at index "+(len1):string+"\n'"+seq2[len1]:string+"'\n";
+          tmpString += "\nSecond %? contains %? additional elements.\n".format(seq_type_name, size_diff);
+          tmpString += "First extra element is at index %?\n'%?'\n".format(len1, seq2[len1]);
         }
       }
       throw new owned AssertionError(tmpString);
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*An array-specific equality assertion.
       Args:
@@ -425,8 +431,7 @@ module UnitTest {
       array2: The second array to compare.
     */
     proc assertArrayEqual(array1: [], array2: []) throws {
-      const genericErrorMsg = "assert failed -\n'" + stringify(array1) +
-                              "'\nand\n'"+stringify(array2) + "'\n";
+      const genericErrorMsg = "assert failed -\n'%?'\nand\n'%?'\n".format(array1, array2);
 
       // Compare array types, size, and shape
       if array1.rank != array2.rank {
@@ -446,13 +451,15 @@ module UnitTest {
         // Compare array values
         const arraysEqual = && reduce (array1 == array2);
         if !arraysEqual {
-          const errorMsg = "assert failed -\n'" + stringify(array1) +
-                           "'\n!=\n'"+stringify(array2)+"'";
+          const errorMsg = "assert failed -\n'%?'\n!=\n'%?'".format(array1, array2);
           throw new owned AssertionError(errorMsg);
         }
       }
     }
 
+
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A tuple-specific equality assertion.
@@ -467,11 +474,14 @@ module UnitTest {
         assertSequenceEqual(tuple1,tuple2,"tuple("+firstType: string+")");
       }
       else {
-        var tmpString = "assert failed - '" + stringify(tuple1) +"' and '"+stringify(tuple2) + "' are not of same type";
-        throw new owned AssertionError(tmpString);
+        const errorMsg = "assert failed - '%?' and '%?' are not of same type".format(tuple1, tuple2);
+        throw new owned AssertionError(errorMsg);
       }
     }
 
+
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A range-specific equality assertion.
@@ -483,6 +493,8 @@ module UnitTest {
       __baseAssertEqual(range1,range2);
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A string-specific equality assertion.
@@ -494,18 +506,20 @@ module UnitTest {
       assertSequenceEqual(string1,string2,"String");
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*The default assertEqual implementation, not type specific.*/
     proc __baseAssertEqual(first, second) throws {
       if canResolve("!=",first,second) {
         if (first != second) {
-          var tmpString = "assert failed - '" + stringify(first) +"' != '"+stringify(second)+"'";
-          throw new owned AssertionError(tmpString);
+          const errorMsg = "assert failed - '%?' != '%?'".format(first, second);
+          throw new owned AssertionError(errorMsg);
         }
       }
       else {
-        var tmpString = "assert failed - '" + stringify(first) +"' and '"+stringify(second) + "' are not of same type";
-        throw new owned AssertionError(tmpString);
+        const errorMsg = "assert failed - '%?' and '%?' are not of same type".format(first, second);
+        throw new owned AssertionError(errorMsg);
       }
     }
 
@@ -516,10 +530,14 @@ module UnitTest {
       :arg second: The second object to compare.
       :throws AssertionError: If both the arguments are not equal.
     */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     proc assertEqual(first, second) throws {
       checkAssertEquality(first, second);
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /* Function that checks whether two arguments are unequal or not*/
     proc checkAssertInequality(first,second) throws {
@@ -549,11 +567,13 @@ module UnitTest {
       :arg second: The second object to compare.
       :throws AssertionError: If both the arguments are equal.
     */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     proc assertNotEqual(first, second) throws {
       if canResolve("!=",first, second) {
         if !checkAssertInequality(first,second) {
-          var tmpString = "assert failed -\n'" + stringify(first) +"'\n==\n'"+stringify(second)+"'";
-          throw new owned AssertionError(tmpString);
+          const errorMsg = "assert failed -\n'%?'\n==\n'%?'".format(first, second);
+          throw new owned AssertionError(errorMsg);
         }
       }
     }
@@ -565,16 +585,20 @@ module UnitTest {
       :arg second: The second object to compare.
       :throws AssertionError: If the first argument is not greater than second argument.
     */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     proc assertGreaterThan(first, second) throws {
       if canResolve(">=",first, second) {
         checkGreater(first, second);
       }
       else {
-        var tmpString = "assert failed - First element is of type " + first.type:string +" and Second is of type "+second.type:string;
-        throw new owned AssertionError(tmpString);
+        const errorMsg = "assert failed - First element is of type %? and Second is of type %?".format(first.type:string, second.type:string);
+        throw new owned AssertionError(errorMsg);
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*checks the type of the arguments and then do greater than comparison */
     proc checkGreater(first, second) throws {
@@ -604,6 +628,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*An greater assertion for sequences (like arrays, tuples, strings).
       Args:
@@ -632,8 +658,8 @@ module UnitTest {
         for (item1, item2, i) in zip(seq1, seq2, 0..) {
           if item1 == item2 then checkequal = true;
           else if item1 < item2 {
-            tmpString += "First "+seq_type_name+" < Second "+seq_type_name+" :\n";
-            tmplarge += "\nFirst larger element in second "+seq_type_name+" is at index "+i:string +":\n'"+item1:string+"'\n'"+item2:string+"'\n";
+            tmpString += "First %? < Second %? :\n".format(seq_type_name, seq_type_name);
+            tmplarge += "\nFirst larger element in second %? is at index %?:\n'%?'\n'%?'\n".format(seq_type_name, i, item1, item2);
             checkgreater = true;
             checkequal = false;
             symbol = "<";
@@ -652,22 +678,26 @@ module UnitTest {
         if seq_type_name == "Array" {
           tmpString += "'[";
           for i in seq1.domain {
-            if i != seq1.size-1 then tmpString+= seq1[i]:string+", ";
-            else tmpString += seq1[i]:string+"]'"+symbol+ "'[";
+            tmpString += if i != seq1.size-1
+              then "%?, ".format(seq1[i])
+              else "%?]'%?'[".format(seq1[i], symbol);
           }
           for i in seq2.domain {
-            if i != seq2.size-1 then tmpString+= seq2[i]:string+", ";
-            else tmpString += seq2[i]:string+"]'";
+            tmpString += if i != seq2.size-1
+              then "%?, ".format(seq2[i])
+              else "%?]'".format(seq2[i]);
           }
         }
         else {
-          tmpString += "'"+stringify(seq1)+"'"+symbol+"'"+stringify(seq2)+"'" ;
+          tmpString += "'%?'%?'%?'".format(seq1, symbol, seq2);
         }
         tmpString+=tmplarge;
       }
       throw new owned AssertionError(tmpString);
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*An array-specific greater assertion.
       Args:
@@ -682,22 +712,24 @@ module UnitTest {
           }
           else { // can be reimplemented using `reduce`
             if all(array1 <= array2) {
-              var tmpString = "assert failed -\n'" + stringify(array1) +"'\n<=\n'"+stringify(array2)+"'";
-              throw new owned AssertionError(tmpString);
+              const errorMsg = "assert failed -\n'%?'\n<=\n'%?'".format(array1, array2);
+              throw new owned AssertionError(errorMsg);
             }
         }
         }
         else {
-          var tmpString = "assert failed - First element is of shape " + stringify(array1.shape) +" and Second is of shape "+stringify(array2.shape);
-          throw new owned AssertionError(tmpString);
+          const errorMsg = "assert failed - First element is of shape %? and Second is of shape %?".format(array1.shape, array2.shape);
+          throw new owned AssertionError(errorMsg);
         }
       }
       else {
-        var tmpString = "assert failed - First element is of type " + array1.type:string +" and Second is of type "+array2.type:string;
-        throw new owned AssertionError(tmpString);
+        const errorMsg = "assert failed - First element is of type %? and Second is of type %?".format(array1.type:string, array2.type:string);
+        throw new owned AssertionError(errorMsg);
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A tuple-specific greater assertion.
@@ -709,14 +741,16 @@ module UnitTest {
       type firstType = tuple1.type,
           secondType = tuple2.type;
       if firstType == secondType {
-        assertSequenceGreater(tuple1,tuple2,"tuple("+firstType: string+")");
+        assertSequenceGreater(tuple1,tuple2,"tuple("+firstType:string+")");
       }
       else {
-        var tmpString = "assert failed - First element is of type " + firstType:string +" and Second is of type "+secondType:string;
-        throw new owned AssertionError(tmpString);
+        const errorMsg = "assert failed - First element is of type %? and Second is of type %?".format(firstType:string, secondType:string);
+        throw new owned AssertionError(errorMsg);
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A range-specific greater assertion.
@@ -734,6 +768,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A string-specific Greater assertion.
@@ -751,12 +787,14 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
      @chpldoc.nodoc
     /*The default assertGreater implementation, not type specific.*/
     proc __baseAssertGreater(first, second) throws {
       if all(first <= second) {
-        var tmpString = "assert failed - '" + stringify(first) +"' <= '"+stringify(second)+"'";
-        throw new owned AssertionError(tmpString);
+        const errorMsg = "assert failed - '%?' <= '%?'".format(first, second);
+        throw new owned AssertionError(errorMsg);
       }
     }
 
@@ -767,16 +805,20 @@ module UnitTest {
       :arg second: The second object to compare.
       :throws AssertionError: If the first argument is not less than the second argument.
     */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     proc assertLessThan(first, second) throws {
       if canResolve("<=",first, second) {
         checkLessThan(first, second);
       }
       else {
-        var tmpString = "assert failed - First element is of type " + first.type:string +" and Second is of type "+second.type:string;
-        throw new owned AssertionError(tmpString);
+        const errorMsg = "assert failed - First element is of type %? and Second is of type %?".format(first.type:string, second.type:string);
+        throw new owned AssertionError(errorMsg);
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*checks the type of the arguments and then do less than comparison */
     proc checkLessThan(first, second) throws {
@@ -806,6 +848,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*An less than assertion for sequences (like arrays, tuples, strings).
       Args:
@@ -834,8 +878,8 @@ module UnitTest {
         for (item1, item2, i) in zip(seq1, seq2, 0..) {
           if item1 == item2 then checkequal = true;
           else if item1 > item2 {
-            tmpString += "First "+seq_type_name+" > Second "+seq_type_name+" :\n";
-            tmplarge += "\nFirst larger element in first "+seq_type_name+" is at index "+i:string +":\n'"+item1:string+"'\n'"+item2:string+"'\n";
+            tmpString += "First %? > Second %? :\n".format(seq_type_name, seq_type_name);
+            tmplarge += "\nFirst larger element in first %? is at index %?:\n'%?'\n'%?'\n".format(seq_type_name, i, item1, item2);
             checkless = true;
             checkequal = false;
             symbol = ">";
@@ -854,22 +898,26 @@ module UnitTest {
         if seq_type_name == "Array" {
           tmpString += "'[";
           for i in seq1.domain {
-            if i != seq1.size-1 then tmpString+= seq1[i]:string+", ";
-            else tmpString += seq1[i]:string+"]'"+symbol+ "'[";
+            tmpString += if i != seq1.size-1
+              then "%?, ".format(seq1[i])
+              else "%?]'%?'[".format(seq1[i], symbol);
           }
           for i in seq2.domain {
-            if i != seq2.size-1 then tmpString+= seq2[i]:string+", ";
-            else tmpString += seq2[i]:string+"]'";
+            tmpString += if i != seq2.size-1
+              then "%?, ".format(seq2[i])
+              else "%?]'".format(seq2[i]);
           }
         }
         else {
-          tmpString += "'"+stringify(seq1)+"'"+symbol+"'"+stringify(seq2)+"'" ;
+          tmpString += "'%?'%?'%?'".format(seq1, symbol, seq2);
         }
         tmpString+=tmplarge;
       }
       throw new owned AssertionError(tmpString);
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*An array-specific less than assertion.
       Args:
@@ -884,22 +932,24 @@ module UnitTest {
           }
           else {
             if all(array1 >= array2) {
-              var tmpString = "assert failed - \n'" + stringify(array1) +"'\n>=\n'"+stringify(array2)+"'";
-              throw new owned AssertionError(tmpString);
+              const errorMsg = "assert failed -\n'%?'\n>=\n'%?'".format(array1, array2);
+              throw new owned AssertionError(errorMsg);
             }
-        }
+          }
         }
         else {
-          var tmpString = "assert failed - First element is of shape " + stringify(array1.shape) +" and Second is of shape "+stringify(array2.shape);
-          throw new owned AssertionError(tmpString);
+          const errorMsg = "assert failed - First element is of shape %? and Second is of shape %?".format(array1.shape, array2.shape);
+          throw new owned AssertionError(errorMsg);
         }
       }
       else {
-        var tmpString = "assert failed - First element is of type " + array1.type:string +" and Second is of type "+array2.type:string;
-        throw new owned AssertionError(tmpString);
+        const errorMsg = "assert failed - First element is of type %? and Second is of type %?".format(array1.type:string, array2.type:string);
+        throw new owned AssertionError(errorMsg);
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A tuple-specific less than assertion.
@@ -911,7 +961,7 @@ module UnitTest {
       type firstType = tuple1.type,
           secondType = tuple2.type;
       if firstType == secondType {
-        assertSequenceLess(tuple1,tuple2,"tuple("+firstType: string+")");
+        assertSequenceLess(tuple1,tuple2,"tuple("+firstType:string+")");
       }
       else {
         var tmpString = "assert failed - First element is of type " + firstType:string +" and Second is of type "+secondType:string;
@@ -919,6 +969,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A range-specific Less than assertion.
@@ -936,6 +988,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A string-specific Less than assertion.
@@ -953,12 +1007,14 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*The default assertGreater implementation, not type specific.*/
     proc __baseAssertLess(first, second) throws {
       if all(first >= second) {
-        var tmpString = "assert failed - '" + stringify(first) +"'>='"+stringify(second)+"'";
-        throw new owned AssertionError(tmpString);
+        const errorMsg = "assert failed - '%?'>='%?'".format(first, second);
+        throw new owned AssertionError(errorMsg);
       }
     }
 
@@ -982,7 +1038,7 @@ module UnitTest {
         throw new owned UnexpectedLocales("Max Locales is less than Min Locales");
       }
       if value < numLocales {
-        throw new owned TestIncorrectNumLocales("Required Locales = "+value:string);
+        throw new owned TestIncorrectNumLocales("Required Locales = %?".format(value));
       }
     }
 
@@ -999,7 +1055,7 @@ module UnitTest {
         throw new owned UnexpectedLocales("Max Locales is less than Min Locales");
       }
       if value > numLocales {
-        throw new owned TestIncorrectNumLocales("Required Locales = "+value:string);
+        throw new owned TestIncorrectNumLocales("Required Locales = %?".format(value));
       }
     }
 
@@ -1032,9 +1088,8 @@ module UnitTest {
         }
       }
       if !canRun {
-        var localesErrorStr= "Required Locales = ";
-        localesErrorStr += ",".join(this.dictDomain:string);
-        throw new owned TestIncorrectNumLocales(localesErrorStr);
+        const errorMsg = "Required Locales = {%?}".format(", ".join([i in this.dictDomain] i:string));
+        throw new owned TestIncorrectNumLocales(errorMsg);
       }
     }
 
@@ -1061,7 +1116,7 @@ module UnitTest {
         separator2 = "-"* 70;
 
     proc startTest(test) throws {
-      stdout.writeln(test: string);
+      stdout.writeln(test);
     }
 
     proc addError(test, errMsg) throws {
@@ -1135,6 +1190,17 @@ module UnitTest {
     }
   }
 
+  private proc testNameFromProcedure(f): string {
+    var line = f: string;
+    assert(line.startsWith("proc"));
+    var parenIndex = line.find("(");
+    assert(parenIndex > -1);
+    var name = try! line[(5 : byteIndex)..<parenIndex];
+
+    // Adding parentheses to the end makes it easier to detect in stdout.
+    return name + "()";
+  }
+
   /*Runs the tests
 
     Call this as
@@ -1167,13 +1233,13 @@ module UnitTest {
     }
 
     for test in testSuite {
-      const testName = test: string;
-      testStatus.addOrSet(testName, false);
-      testsFailed.addOrSet(testName, false);
-      testsErrored.addOrSet(testName, false);
-      testsLocalFails.addOrSet(testName, false);
-      testsPassed.addOrSet(testName, false);
-      testsSkipped.addOrSet(testName, false);
+      const testName = testNameFromProcedure(test);
+      testStatus.addOrReplace(testName, false);
+      testsFailed.addOrReplace(testName, false);
+      testsErrored.addOrReplace(testName, false);
+      testsLocalFails.addOrReplace(testName, false);
+      testsPassed.addOrReplace(testName, false);
+      testsSkipped.addOrReplace(testName, false);
     }
     if testNames != "None" {
       for test in testNames.split(" ") {
@@ -1206,7 +1272,8 @@ module UnitTest {
     }
 
     for test in testSuite {
-      if !testStatus[test:string] {
+      const testName = testNameFromProcedure(test);
+      if !testStatus[testName] {
         // Create a test object per test
         var checkCircle: list(string);
         var circleFound = false;
@@ -1222,7 +1289,7 @@ module UnitTest {
                       ref testsSkipped, ref testsLocalFails, test, ref checkCircle,
                       ref circleFound) throws {
     var testResult = new TextTestResult();
-    var testName = test: string; //test is a FCF:
+    var testName = testNameFromProcedure(test); //test is a FCF:
     checkCircle.pushBack(testName);
     try {
       testResult.startTest(testName);
@@ -1232,14 +1299,15 @@ module UnitTest {
     }
     // A variety of catch statements will handle errors thrown
     catch e: AssertionError {
-      testResult.addFailure(testName, e: string);
+      testResult.addFailure(testName, try! "%?".format(e));
       testsFailed.replace(testName, true);
       // print info of the assertion error
     }
     catch e: DependencyFound {
       var allTestsRan = true;
       for superTest in testObject.testDependsOn {
-        var checkCircleCount = checkCircle.count(superTest: string);
+        var superTestName = testNameFromProcedure(superTest);
+        var checkCircleCount = checkCircle.count(superTestName);
         // cycle is checked
         if checkCircleCount > 0 {
           testsSkipped.replace(testName, true);
@@ -1250,37 +1318,37 @@ module UnitTest {
           return;
         }
         // if super test didn't Error or Failed or skipped
-        if !testsErrored[superTest: string] &&
-           !testsFailed[superTest: string] &&
-           !testsSkipped[superTest: string] {
+        if !testsErrored[superTestName] &&
+           !testsFailed[superTestName] &&
+           !testsSkipped[superTestName] {
           // checking if super test ran or not.
-          if !testStatus[superTest: string] {
+          if !testStatus[superTestName] {
             // Create a test object per test
             var superTestObject = new Test();
             // running the super test
             runTestMethod(testStatus, superTestObject, testsFailed, testsErrored,
                           testsSkipped, testsLocalFails, superTest, checkCircle,
                           circleFound);
-            var removeSuperTestCount = checkCircle.count(superTest: string);
+            var removeSuperTestCount = checkCircle.count(superTestName);
             if removeSuperTestCount > 0 {
-              checkCircle.remove(superTest: string);
+              checkCircle.remove(superTestName);
             }
             // if super test failed
-            if testsFailed[superTest: string] {
+            if testsFailed[superTestName] {
               testsSkipped.replace(testName, true);
-              var skipReason = testName + " skipped because " + superTest: string +" failed";
+              var skipReason = testName + " skipped because " + superTestName +" failed";
               testResult.addSkip(testName, skipReason);
               break;
             }
             // if super test failed
-            if testsSkipped[superTest: string] {
+            if testsSkipped[superTestName] {
               testsSkipped.replace(testName, true);
-              var skipReason = testName + " skipped because " + superTest: string +" skipped";
+              var skipReason = testName + " skipped because " + superTestName +" skipped";
               testResult.addSkip(testName, skipReason);
               break;
             }
             // this superTest has not yet finished.
-            if testsLocalFails[superTest: string] {
+            if testsLocalFails[superTestName] {
               allTestsRan = false;
             }
 
@@ -1288,32 +1356,32 @@ module UnitTest {
             if circleFound then break;
 
             // if superTest error then
-            if testsErrored[superTest: string] {
+            if testsErrored[superTestName] {
               testsSkipped.replace(testName, true);
-              var skipReason = testName + " skipped because " + superTest: string +" gave an Error";
+              var skipReason = testName + " skipped because " + superTestName +" gave an Error";
               testResult.addSkip(testName, skipReason);
               break;
             }
           }
         }
         // super test Errored
-        else if testsErrored[superTest: string] {
+        else if testsErrored[superTestName] {
           testsSkipped.replace(testName, true);
-          var skipReason = testName + " skipped because " + superTest: string +" gave an Error";
+          var skipReason = testName + " skipped because " + superTestName +" gave an Error";
           testResult.addSkip(testName, skipReason);
           break;
         }
         // super test Skipped
-        else if testsSkipped[superTest: string] {
+        else if testsSkipped[superTestName] {
           testsSkipped.replace(testName, true);
-          var skipReason = testName + " skipped because " + superTest: string +" Skipped";
+          var skipReason = testName + " skipped because " + superTestName +" Skipped";
           testResult.addSkip(testName, skipReason);
           break;
         }
         //super test failed
         else {
           testsSkipped.replace(testName, true);
-          var skipReason = testName + " skipped because " + superTest: string +" failed";
+          var skipReason = testName + " skipped because " + superTestName +" failed";
           testResult.addSkip(testName, skipReason);
         }
       }
@@ -1337,20 +1405,20 @@ module UnitTest {
       }
     }
     catch e: TestSkipped {
-      testResult.addSkip(testName, e: string);
+      testResult.addSkip(testName, "TestSkipped: " + e.message());
       testsSkipped.replace(testName, true);
       // Print info on test skipped
     }
     catch e: TestIncorrectNumLocales {
-      testResult.addIncorrectNumLocales(testName, e: string);
+      testResult.addIncorrectNumLocales(testName, "TestIncorrectNumLocales: " + e.message());
       testsLocalFails.replace(testName, true);
     }
     catch e: UnexpectedLocales {
-      testResult.addFailure(testName, e: string);
+      testResult.addFailure(testName, "UnexpectedLocales: " + e.message());
       testsFailed.replace(testName, true);
     }
     catch e {
-      testResult.addError(testName, e:string);
+      testResult.addError(testName, e.message());
       testsErrored.replace(testName, true);
     }
     testStatus.replace(testName, true);
@@ -1372,7 +1440,14 @@ module UnitTest {
 
       // Message function overridden here
       override proc message() {
-        return this.details;
+        use CTypes, IO.FormattedIO;
+        const thrownFileC = __primitive("chpl_lookupFilename",
+                                             this.thrownFileId);
+        var thrownFileS: string;
+        try! thrownFileS = string.createCopyingBuffer(thrownFileC:c_ptrConst(c_char));
+
+        var msg = try! "in %?:%i - %?".format(thrownFileS, this.thrownLine, this.details);
+        return msg;
       }
     }
 

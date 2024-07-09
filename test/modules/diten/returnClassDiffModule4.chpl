@@ -18,7 +18,7 @@ module M2 {
     use M1;
     return new unmanaged C();
   }
-  proc baz(obj:object) {
+  proc baz(obj:RootClass) {
     use M1;
     return (obj:C?)!.foo();
   }

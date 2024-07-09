@@ -10,14 +10,26 @@ module NodesEdges {
     var n1: int;              // node 1 id, edge between node 1 and node 2
     var n2: int;              // node 2 id, edge between node 1 and node 2
     var dupl: int;            // edge is/is not a duplicate
-    var vb$: sync real;       // edge betweenness
+    var vb: sync real;       // edge betweenness
     var distance: real;       // edge distance
+
+    proc init(id: int = 0,
+              n1: int = 0,
+              n2: int = 0,
+              dupl: int = 0,
+              distance: real = 0.0) {
+      this.id = id;
+      this.n1 = n1;
+      this.n2 = n2;
+      this.dupl = dupl;
+      this.distance = distance;
+    }
   }
 
   class Node {
     var id: int;              // node id
     var nNeighbors: int;      // number of neighbors (Out-degree)
-    var vb$: sync real;       // node betweeneess
+    var vb: sync real;       // node betweeneess
     var NeighborD: domain(1);
     var EdgeIndexD: domain(1);
     var Neighbors: [NeighborD] int;      // list of neighbor ids
@@ -25,6 +37,18 @@ module NodesEdges {
 
     //New variables:
     var nodeType: int;        //0=Source; 1=Sink; 2=Regular node
+
+    proc init(id: int = 0,
+              nNeighbors: int = 0,
+              NeighborD: domain(1) = {1..0},
+              EdgeIndexD: domain(1) = {1..0},
+              nodeType: int = 0) {
+      this.id = id;
+      this.nNeighbors = nNeighbors;
+      this.NeighborD = NeighborD;
+      this.EdgeIndexD = EdgeIndexD;
+      this.nodeType = nodeType;
+    }
   }
 
   class SimpleEdge {

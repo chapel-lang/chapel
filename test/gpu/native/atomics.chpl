@@ -5,17 +5,17 @@ config param excludeForRocm = (CHPL_GPU == "amd");
 
 // CPU versions of associated GPU functions. These aren't actually atomic but
 // are used for test verification:
-proc cpuAtomicAdd (ref x : ?T, val : T) : void { x += val; }
-proc cpuAtomicSub (ref x : ?T, val : T) : void { x -= val; }
-proc cpuAtomicExch(ref x : ?T, val : T) : void { x = val; }
-proc cpuAtomicMin (ref x : ?T, val : T) : void { x = min(x, val); }
-proc cpuAtomicMax (ref x : ?T, val : T) : void { x = max(x, val); }
-proc cpuAtomicInc (ref x : ?T, val : T) : void { x = if x >= val then 0:T else x + 1; }
-proc cpuAtomicDec (ref x : ?T, val : T) : void { x = if x == 0:T || x > val then val else x-1; }
-proc cpuAtomicAnd (ref x : ?T, val : T) : void { x &= val; }
-proc cpuAtomicOr  (ref x : ?T, val : T) : void { x |= val; }
-proc cpuAtomicXor (ref x : ?T, val : T) : void { x ^= val; }
-proc cpuAtomicCAS (ref x : ?T, cmp : T, val : T) : void { x = if x == cmp then val else x; }
+proc cpuAtomicAdd (ref x : ?T, val : T) : T { const retval = x; x += val; return retval;}
+proc cpuAtomicSub (ref x : ?T, val : T) : T { const retval = x; x -= val; return retval;}
+proc cpuAtomicExch(ref x : ?T, val : T) : T { const retval = x; x = val; return retval;}
+proc cpuAtomicMin (ref x : ?T, val : T) : T { const retval = x; x = min(x, val); return retval;}
+proc cpuAtomicMax (ref x : ?T, val : T) : T { const retval = x; x = max(x, val); return retval;}
+proc cpuAtomicInc (ref x : ?T, val : T) : T { const retval = x; x = if x >= val then 0:T else x + 1; return retval;}
+proc cpuAtomicDec (ref x : ?T, val : T) : T { const retval = x; x = if x == 0:T || x > val then val else x-1; return retval;}
+proc cpuAtomicAnd (ref x : ?T, val : T) : T { const retval = x; x &= val; return retval;}
+proc cpuAtomicOr  (ref x : ?T, val : T) : T { const retval = x; x |= val; return retval;}
+proc cpuAtomicXor (ref x : ?T, val : T) : T { const retval = x; x ^= val; return retval;}
+proc cpuAtomicCAS (ref x : ?T, cmp : T, val : T) : T { const retval = x; x = if x == cmp then val else x; return retval;}
 
 proc check(orig, gpuRes, cpuRes, s) {
   stopGpuDiagnostics();
@@ -29,7 +29,13 @@ proc check(orig, gpuRes, cpuRes, s) {
 
   // To get this to work we'll need to resolve https://github.com/chapel-lang/chapel/issues/22114
   var isCorrect = true;
-  for (x,y) in zip(gpuRes,cpuRes) do isCorrect &= isclose(x,y);
+  for (x,y) in zip(gpuRes,cpuRes) {
+    if (isRealValue(x) || isImagValue(x) || isComplexValue(x)) {
+      isCorrect &= isClose(x,y);
+    } else {
+      isCorrect &= (x == y);
+    }
+  }
   var printVals = false;
   if !isCorrect {
     writeln(s + " computed wrong result. ");
@@ -52,11 +58,11 @@ proc runTest(param op : string, type T) {
   stopGpuDiagnostics();
 
   var origVals : [0..2] T;
-  var gpuVals  : [0..2] T;
-  var cpuVals  : [0..2] T;
-  var rng = createRandomStream(eltType=T, parSafe=false);
+  var gpuVals  : [0..3] T;
+  var cpuVals  : [0..3] T;
+  var rng = new randomStream(eltType=T);
   for i in 0..2 {
-    origVals[i] = rng.getNext();
+    origVals[i] = rng.next();
     gpuVals[i] = origVals[i];
     cpuVals[i] = origVals[i];
   }
@@ -70,48 +76,48 @@ proc runTest(param op : string, type T) {
   // can not be captured as a FCF.
   select(op) {
     when "add" {
-      foreach n in 0..0 do gpuAtomicAdd(gpuVals[0],  gpuVals[1]);
-      cpuAtomicAdd(cpuVals[0],  cpuVals[1]);
+      foreach n in 0..0 do gpuVals[3] = gpuAtomicAdd(gpuVals[0],  gpuVals[1]);
+      cpuVals[3] = cpuAtomicAdd(cpuVals[0],  cpuVals[1]);
     }
     when "sub" {
-      foreach n in 0..0 do gpuAtomicSub(gpuVals[0],  gpuVals[1]);
-      cpuAtomicSub(cpuVals[0],  cpuVals[1]);
+      foreach n in 0..0 do gpuVals[3] = gpuAtomicSub(gpuVals[0],  gpuVals[1]);
+      cpuVals[3] = cpuAtomicSub(cpuVals[0],  cpuVals[1]);
     }
     when "exch" {
-      foreach n in 0..0 do gpuAtomicExch(gpuVals[0],  gpuVals[1]);
-      cpuAtomicExch(cpuVals[0],  cpuVals[1]);
+      foreach n in 0..0 do gpuVals[3] = gpuAtomicExch(gpuVals[0],  gpuVals[1]);
+      cpuVals[3] = cpuAtomicExch(cpuVals[0],  cpuVals[1]);
     }
     when "min" {
-      foreach n in 0..0 do gpuAtomicMin(gpuVals[0],  gpuVals[1]);
-      cpuAtomicMin(cpuVals[0],  cpuVals[1]);
+      foreach n in 0..0 do gpuVals[3] = gpuAtomicMin(gpuVals[0],  gpuVals[1]);
+      cpuVals[3] = cpuAtomicMin(cpuVals[0],  cpuVals[1]);
     }
     when "max" {
-      foreach n in 0..0 do gpuAtomicMax(gpuVals[0],  gpuVals[1]);
-      cpuAtomicMax(cpuVals[0],  cpuVals[1]);
+      foreach n in 0..0 do gpuVals[3] = gpuAtomicMax(gpuVals[0],  gpuVals[1]);
+      cpuVals[3] = cpuAtomicMax(cpuVals[0],  cpuVals[1]);
     }
     when "inc" {
-      foreach n in 0..0 do gpuAtomicInc(gpuVals[0],  gpuVals[1]);
-      cpuAtomicInc(cpuVals[0],  cpuVals[1]);
+      foreach n in 0..0 do gpuVals[3] = gpuAtomicInc(gpuVals[0],  gpuVals[1]);
+      cpuVals[3] = cpuAtomicInc(cpuVals[0],  cpuVals[1]);
     }
     when "dec" {
-      foreach n in 0..0 do gpuAtomicDec(gpuVals[0],  gpuVals[1]);
-      cpuAtomicDec(cpuVals[0],  cpuVals[1]);
+      foreach n in 0..0 do gpuVals[3] = gpuAtomicDec(gpuVals[0],  gpuVals[1]);
+      cpuVals[3] = cpuAtomicDec(cpuVals[0],  cpuVals[1]);
     }
     when "and" {
-      foreach n in 0..0 do gpuAtomicAnd(gpuVals[0],  gpuVals[1]);
-      cpuAtomicAnd(cpuVals[0],  cpuVals[1]);
+      foreach n in 0..0 do gpuVals[3] = gpuAtomicAnd(gpuVals[0],  gpuVals[1]);
+      cpuVals[3] = cpuAtomicAnd(cpuVals[0],  cpuVals[1]);
     }
     when "or" {
-      foreach n in 0..0 do gpuAtomicOr(gpuVals[0],  gpuVals[1]);
-      cpuAtomicOr(cpuVals[0],  cpuVals[1]);
+      foreach n in 0..0 do gpuVals[3] = gpuAtomicOr(gpuVals[0],  gpuVals[1]);
+      cpuVals[3] = cpuAtomicOr(cpuVals[0],  cpuVals[1]);
     }
     when "xor" {
-      foreach n in 0..0 do gpuAtomicXor(gpuVals[0],  gpuVals[1]);
-      cpuAtomicXor(cpuVals[0],  cpuVals[1]);
+      foreach n in 0..0 do gpuVals[3] = gpuAtomicXor(gpuVals[0],  gpuVals[1]);
+      cpuVals[3] = cpuAtomicXor(cpuVals[0],  cpuVals[1]);
     }
     when "CAS" {
-      foreach n in 0..0 do gpuAtomicCAS(gpuVals[0],  gpuVals[1], gpuVals[2]);
-      cpuAtomicCAS(cpuVals[0],  cpuVals[1], cpuVals[2]);
+      foreach n in 0..0 do gpuVals[3] = gpuAtomicCAS(gpuVals[0],  gpuVals[1], gpuVals[2]);
+      cpuVals[3] = cpuAtomicCAS(cpuVals[0],  cpuVals[1], cpuVals[2]);
     }
   }
   check(origVals, gpuVals, cpuVals, op);
@@ -121,7 +127,7 @@ proc main() {
   on here.gpus[0] {
     startGpuDiagnostics();
 
-    runTest("add", c_int);  runTest("add", c_uint);  runTest("add", c_float);
+    runTest("add", c_int); runTest("add", c_uint);  runTest("add", c_float);
     if(!excludeForRocm) {
       runTest("add", c_ulonglong);  runTest("add", c_double);
     }

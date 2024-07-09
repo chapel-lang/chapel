@@ -17,12 +17,12 @@ config const numChameneos2 : int = 10;
 enum color {blue = 0, red = 1, yellow = 2};
 
 class MeetingPlace {
-  var color1$, color2$: sync Color;
-  var id1$, id2$: sync int;
-  var meetingsLeft$ : sync int;
+  var color1, color2: sync Color;
+  var id1, id2: sync int;
+  var meetingsLeft : sync int;
 
   proc fill(numMeetings : int) {
-    meetingsLeft$.writeXF(numMeetings);
+    meetingsLeft.writeXF(numMeetings);
   }
 
   /* if called by chameneos who arrives 1st,
@@ -31,29 +31,29 @@ class MeetingPlace {
      (denies meetings of 3+ chameneos) */
   proc meet(chameneos : Chameneos) {
     var otherColor : Color;
-    var meetingsLeftTemp = meetingsLeft$;
+    var meetingsLeftTemp = meetingsLeft;
     writeln("id = " + chameneos.id + ", meetingsLeftTemp = " + meetingsLeftTemp);
     if (meetingsLeftTemp == 0) {
-      meetingsLeft$ = 0;
+      meetingsLeft = 0;
       return (false, chameneos.color);
     }
 
     if (meetingsLeftTemp % 2 == 0) {
-      meetingsLeft$ = meetingsLeftTemp - 1;
-      color1$ = chameneos.color;
-      id1$ = chameneos.id;
-      otherColor = color2$;
+      meetingsLeft = meetingsLeftTemp - 1;
+      color1 = chameneos.color;
+      id1 = chameneos.id;
+      otherColor = color2;
       writeln("id = " + chameneos.id + ", otherColor = " + otherColor.string());
-      if (id1$ == id2$) {
+      if (id1 == id2) {
         halt("AH! I met with myself!");
         chameneos.meetingsWithSelf += 1;
       }
     } else if (meetingsLeftTemp % 2 == 1) {
-      id2$ = chameneos.id;
-      color2$ = chameneos.color;
-      otherColor = color1$;
+      id2 = chameneos.id;
+      color2 = chameneos.color;
+      otherColor = color1;
       writeln("id = " + chameneos.id + ", otherColor = " + otherColor.string());
-      meetingsLeft$ = meetingsLeftTemp - 1;
+      meetingsLeft = meetingsLeftTemp - 1;
     }
     chameneos.meetings += 1;
     return (true, otherColor);
@@ -192,4 +192,3 @@ proc main() {
 
 
 }
-

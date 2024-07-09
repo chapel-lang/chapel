@@ -1,7 +1,7 @@
-use IO;
+use IO, ChplFormat;
 
 var b: bytes;
 readln(b);
 writeln("You have entered: ", b);
-readf("%ht", b);
+stdin.withDeserializer(chplDeserializer).readf("%?", b);
 writeln("You have entered: ", b);

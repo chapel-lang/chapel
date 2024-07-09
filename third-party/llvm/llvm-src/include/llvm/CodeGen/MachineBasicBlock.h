@@ -74,6 +74,13 @@ private:
   MBBSectionID(SectionType T) : Type(T), Number(0) {}
 };
 
+// This structure represents the information for a basic block pertaining to
+// the basic block sections profile.
+struct UniqueBBID {
+  unsigned BaseID;
+  unsigned CloneID;
+};
+
 template <> struct ilist_traits<MachineInstr> {
 private:
   friend class MachineBasicBlock; // Set by the owning MachineBasicBlock.
@@ -104,6 +111,10 @@ public:
 
     RegisterMaskPair(MCPhysReg PhysReg, LaneBitmask LaneMask)
         : PhysReg(PhysReg), LaneMask(LaneMask) {}
+
+    bool operator==(const RegisterMaskPair &other) const {
+      return PhysReg == other.PhysReg && LaneMask == other.LaneMask;
+    }
   };
 
 private:
@@ -111,6 +122,15 @@ private:
 
   const BasicBlock *BB;
   int Number;
+
+  /// The call frame size on entry to this basic block due to call frame setup
+  /// instructions in a predecessor. This is usually zero, unless basic blocks
+  /// are split in the middle of a call sequence.
+  ///
+  /// This information is only maintained until PrologEpilogInserter eliminates
+  /// call frame pseudos.
+  unsigned CallFrameSize = 0;
+
   MachineFunction *xParent;
   Instructions Insts;
 
@@ -126,7 +146,7 @@ private:
   using const_probability_iterator =
       std::vector<BranchProbability>::const_iterator;
 
-  Optional<uint64_t> IrrLoopHeaderWeight;
+  std::optional<uint64_t> IrrLoopHeaderWeight;
 
   /// Keep track of the physical registers that are livein of the basicblock.
   using LiveInVector = std::vector<RegisterMaskPair>;
@@ -143,9 +163,13 @@ private:
   /// Indicate that this basic block is entered via an exception handler.
   bool IsEHPad = false;
 
-  /// Indicate that this basic block is potentially the target of an indirect
-  /// branch.
-  bool AddressTaken = false;
+  /// Indicate that this MachineBasicBlock is referenced somewhere other than
+  /// as predecessor/successor, a terminator MachineInstr, or a jump table.
+  bool MachineBlockAddressTaken = false;
+
+  /// If this MachineBasicBlock corresponds to an IR-level "blockaddress"
+  /// constant, this contains a pointer to that block.
+  BasicBlock *AddressTakenIRBlock = nullptr;
 
   /// Indicate that this basic block needs its symbol be emitted regardless of
   /// whether the flow just falls-through to it.
@@ -164,6 +188,10 @@ private:
 
   /// Indicate that this basic block is the entry block of a cleanup funclet.
   bool IsCleanupFuncletEntry = false;
+
+  /// Fixed unique ID assigned to this basic block upon creation. Used with
+  /// basic block sections and basic block labels.
+  std::optional<UniqueBBID> BBID;
 
   /// With basic block sections, this stores the Section ID of the basic block.
   MBBSectionID SectionID{0};
@@ -216,12 +244,35 @@ public:
   /// Return a formatted string to identify this block and its parent function.
   std::string getFullName() const;
 
-  /// Test whether this block is potentially the target of an indirect branch.
-  bool hasAddressTaken() const { return AddressTaken; }
+  /// Test whether this block is used as something other than the target
+  /// of a terminator, exception-handling target, or jump table. This is
+  /// either the result of an IR-level "blockaddress", or some form
+  /// of target-specific branch lowering.
+  bool hasAddressTaken() const {
+    return MachineBlockAddressTaken || AddressTakenIRBlock;
+  }
 
-  /// Set this block to reflect that it potentially is the target of an indirect
-  /// branch.
-  void setHasAddressTaken() { AddressTaken = true; }
+  /// Test whether this block is used as something other than the target of a
+  /// terminator, exception-handling target, jump table, or IR blockaddress.
+  /// For example, its address might be loaded into a register, or
+  /// stored in some branch table that isn't part of MachineJumpTableInfo.
+  bool isMachineBlockAddressTaken() const { return MachineBlockAddressTaken; }
+
+  /// Test whether this block is the target of an IR BlockAddress.  (There can
+  /// more than one MBB associated with an IR BB where the address is taken.)
+  bool isIRBlockAddressTaken() const { return AddressTakenIRBlock; }
+
+  /// Retrieves the BasicBlock which corresponds to this MachineBasicBlock.
+  BasicBlock *getAddressTakenIRBlock() const { return AddressTakenIRBlock; }
+
+  /// Set this block to indicate that its address is used as something other
+  /// than the target of a terminator, exception-handling target, jump table,
+  /// or IR-level "blockaddress".
+  void setMachineBlockAddressTaken() { MachineBlockAddressTaken = true; }
+
+  /// Set this block to reflect that it corresponds to an IR-level basic block
+  /// with a BlockAddress.
+  void setAddressTakenIRBlock(BasicBlock *BB) { AddressTakenIRBlock = BB; }
 
   /// Test whether this block must have its label emitted.
   bool hasLabelMustBeEmitted() const { return LabelMustBeEmitted; }
@@ -426,6 +477,8 @@ public:
   /// Remove entry from the livein set and return iterator to the next.
   livein_iterator removeLiveIn(livein_iterator I);
 
+  std::vector<RegisterMaskPair> getLiveIns() const { return LiveIns; }
+
   class liveout_iterator {
   public:
     using iterator_category = std::input_iterator_tag;
@@ -593,6 +646,8 @@ public:
 
   void setIsEndSection(bool V = true) { IsEndSection = V; }
 
+  std::optional<UniqueBBID> getBBID() const { return BBID; }
+
   /// Returns the section ID of this basic block.
   MBBSectionID getSectionID() const { return SectionID; }
 
@@ -600,6 +655,12 @@ public:
   unsigned getSectionIDNum() const {
     return ((unsigned)MBBSectionID::SectionType::Cold) -
            ((unsigned)SectionID.Type) + SectionID.Number;
+  }
+
+  /// Sets the fixed BBID of this basic block.
+  void setBBID(const UniqueBBID &V) {
+    assert(!BBID.has_value() && "Cannot change BBID.");
+    BBID = V;
   }
 
   /// Sets the section ID for this basic block.
@@ -705,7 +766,7 @@ public:
   ///
   /// This is useful when doing a partial clone of successors. Afterward, the
   /// probabilities may need to be normalized.
-  void copySuccessor(MachineBasicBlock *Orig, succ_iterator I);
+  void copySuccessor(const MachineBasicBlock *Orig, succ_iterator I);
 
   /// Split the old successor into old plus new and updates the probability
   /// info.
@@ -746,12 +807,26 @@ public:
         static_cast<const MachineBasicBlock *>(this)->getSingleSuccessor());
   }
 
+  /// Return the predecessor of this block if it has a single predecessor.
+  /// Otherwise return a null pointer.
+  ///
+  const MachineBasicBlock *getSinglePredecessor() const;
+  MachineBasicBlock *getSinglePredecessor() {
+    return const_cast<MachineBasicBlock *>(
+        static_cast<const MachineBasicBlock *>(this)->getSinglePredecessor());
+  }
+
   /// Return the fallthrough block if the block can implicitly
   /// transfer control to the block after it by falling off the end of
-  /// it.  This should return null if it can reach the block after
-  /// it, but it uses an explicit branch to do so (e.g., a table
-  /// jump).  Non-null return  is a conservative answer.
-  MachineBasicBlock *getFallThrough();
+  /// it. If an explicit branch to the fallthrough block is not allowed,
+  /// set JumpToFallThrough to be false. Non-null return is a conservative
+  /// answer.
+  MachineBasicBlock *getFallThrough(bool JumpToFallThrough = true);
+
+  /// Return the fallthrough block if the block can implicitly
+  /// transfer control to it's successor, whether by a branch or
+  /// a fallthrough. Non-null return is a conservative answer.
+  MachineBasicBlock *getLogicalFallThrough() { return getFallThrough(false); }
 
   /// Return true if the block can implicitly transfer control to the
   /// block after it by falling off the end of it.  This should return
@@ -766,6 +841,9 @@ public:
   /// the first instruction, which might be PHI.
   /// Returns end() is there's no non-PHI instruction.
   iterator getFirstNonPHI();
+  const_iterator getFirstNonPHI() const {
+    return const_cast<MachineBasicBlock *>(this)->getFirstNonPHI();
+  }
 
   /// Return the first instruction in MBB after I that is not a PHI or a label.
   /// This is the correct point to insert lowered copies at the beginning of a
@@ -774,8 +852,10 @@ public:
 
   /// Return the first instruction in MBB after I that is not a PHI, label or
   /// debug.  This is the correct point to insert copies at the beginning of a
-  /// basic block.
-  iterator SkipPHIsLabelsAndDebug(iterator I, bool SkipPseudoOp = true);
+  /// basic block. \p Reg is the register being used by a spill or defined for a
+  /// restore/split during register allocation.
+  iterator SkipPHIsLabelsAndDebug(iterator I, Register Reg = Register(),
+                                  bool SkipPseudoOp = true);
 
   /// Returns an iterator to the first terminator instruction of this basic
   /// block. If a terminator does not exist, it returns end().
@@ -787,6 +867,11 @@ public:
   /// Same getFirstTerminator but it ignores bundles and return an
   /// instr_iterator instead.
   instr_iterator getFirstInstrTerminator();
+
+  /// Finds the first terminator in a block by scanning forward. This can handle
+  /// cases in GlobalISel where there may be non-terminator instructions between
+  /// terminators, for which getFirstTerminator() will not work correctly.
+  iterator getFirstTerminatorForward();
 
   /// Returns an iterator to the first non-debug instruction in the basic block,
   /// or end(). Skip any pseudo probe operation if \c SkipPseudoOp is true.
@@ -1011,31 +1096,33 @@ public:
   /// instead of basic block \p Old.
   void replacePhiUsesWith(MachineBasicBlock *Old, MachineBasicBlock *New);
 
-  /// Find the next valid DebugLoc starting at MBBI, skipping any DBG_VALUE
-  /// and DBG_LABEL instructions.  Return UnknownLoc if there is none.
+  /// Find the next valid DebugLoc starting at MBBI, skipping any debug
+  /// instructions.  Return UnknownLoc if there is none.
   DebugLoc findDebugLoc(instr_iterator MBBI);
   DebugLoc findDebugLoc(iterator MBBI) {
     return findDebugLoc(MBBI.getInstrIterator());
   }
 
-  /// Has exact same behavior as @ref findDebugLoc (it also
-  /// searches from the first to the last MI of this MBB) except
-  /// that this takes reverse iterator.
+  /// Has exact same behavior as @ref findDebugLoc (it also searches towards the
+  /// end of this MBB) except that this function takes a reverse iterator to
+  /// identify the starting MI.
   DebugLoc rfindDebugLoc(reverse_instr_iterator MBBI);
   DebugLoc rfindDebugLoc(reverse_iterator MBBI) {
     return rfindDebugLoc(MBBI.getInstrIterator());
   }
 
-  /// Find the previous valid DebugLoc preceding MBBI, skipping and DBG_VALUE
-  /// instructions.  Return UnknownLoc if there is none.
+  /// Find the previous valid DebugLoc preceding MBBI, skipping any debug
+  /// instructions. It is possible to find the last DebugLoc in the MBB using
+  /// findPrevDebugLoc(instr_end()).  Return UnknownLoc if there is none.
   DebugLoc findPrevDebugLoc(instr_iterator MBBI);
   DebugLoc findPrevDebugLoc(iterator MBBI) {
     return findPrevDebugLoc(MBBI.getInstrIterator());
   }
 
-  /// Has exact same behavior as @ref findPrevDebugLoc (it also
-  /// searches from the last to the first MI of this MBB) except
-  /// that this takes reverse iterator.
+  /// Has exact same behavior as @ref findPrevDebugLoc (it also searches towards
+  /// the beginning of this MBB) except that this function takes reverse
+  /// iterator to identify the starting MI. A minor difference compared to
+  /// findPrevDebugLoc is that we can't start scanning at "instr_end".
   DebugLoc rfindPrevDebugLoc(reverse_instr_iterator MBBI);
   DebugLoc rfindPrevDebugLoc(reverse_iterator MBBI) {
     return rfindPrevDebugLoc(MBBI.getInstrIterator());
@@ -1088,13 +1175,18 @@ public:
   int getNumber() const { return Number; }
   void setNumber(int N) { Number = N; }
 
+  /// Return the call frame size on entry to this basic block.
+  unsigned getCallFrameSize() const { return CallFrameSize; }
+  /// Set the call frame size on entry to this basic block.
+  void setCallFrameSize(unsigned N) { CallFrameSize = N; }
+
   /// Return the MCSymbol for this basic block.
   MCSymbol *getSymbol() const;
 
   /// Return the EHCatchret Symbol for this basic block.
   MCSymbol *getEHCatchretSymbol() const;
 
-  Optional<uint64_t> getIrrLoopHeaderWeight() const {
+  std::optional<uint64_t> getIrrLoopHeaderWeight() const {
     return IrrLoopHeaderWeight;
   }
 
@@ -1205,6 +1297,12 @@ template <> struct GraphTraits<Inverse<const MachineBasicBlock*>> {
   static ChildIteratorType child_begin(NodeRef N) { return N->pred_begin(); }
   static ChildIteratorType child_end(NodeRef N) { return N->pred_end(); }
 };
+
+// These accessors are handy for sharing templated code between IR and MIR.
+inline auto successors(const MachineBasicBlock *BB) { return BB->successors(); }
+inline auto predecessors(const MachineBasicBlock *BB) {
+  return BB->predecessors();
+}
 
 /// MachineInstrSpan provides an interface to get an iteration range
 /// containing the instruction it was initialized with, along with all

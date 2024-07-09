@@ -11,6 +11,7 @@
 
 #include "Cuda.h"
 #include "Gnu.h"
+#include "LazyDetector.h"
 #include "ROCm.h"
 #include "clang/Driver/Tool.h"
 #include "clang/Driver/ToolChain.h"
@@ -20,7 +21,7 @@ namespace clang {
 namespace driver {
 namespace tools {
 
-/// MinGW -- Directly call GNU Binutils assembler and linker
+/// Directly call GNU Binutils assembler and linker
 namespace MinGW {
 class LLVM_LIBRARY_VISIBILITY Assembler : public Tool {
 public:
@@ -34,7 +35,7 @@ public:
                     const char *LinkingOutput) const override;
 };
 
-class LLVM_LIBRARY_VISIBILITY Linker : public Tool {
+class LLVM_LIBRARY_VISIBILITY Linker final : public Tool {
 public:
   Linker(const ToolChain &TC) : Tool("MinGW::Linker", "linker", TC) {}
 
@@ -65,8 +66,8 @@ public:
 
   bool HasNativeLLVMSupport() const override;
 
-  bool IsIntegratedAssemblerDefault() const override;
-  bool IsUnwindTablesDefault(const llvm::opt::ArgList &Args) const override;
+  UnwindTableLevel
+  getDefaultUnwindTableLevel(const llvm::opt::ArgList &Args) const override;
   bool isPICDefault() const override;
   bool isPIEDefault(const llvm::opt::ArgList &Args) const override;
   bool isPICDefaultForced() const override;
@@ -79,6 +80,10 @@ public:
   void
   AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
                             llvm::opt::ArgStringList &CC1Args) const override;
+  void
+  addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
+                        llvm::opt::ArgStringList &CC1Args,
+                        Action::OffloadKind DeviceOffloadKind) const override;
   void AddClangCXXStdlibIncludeArgs(
       const llvm::opt::ArgList &DriverArgs,
       llvm::opt::ArgStringList &CC1Args) const override;
@@ -98,17 +103,18 @@ protected:
   Tool *buildAssembler() const override;
 
 private:
-  CudaInstallationDetector CudaInstallation;
-  RocmInstallationDetector RocmInstallation;
+  LazyDetector<CudaInstallationDetector> CudaInstallation;
+  LazyDetector<RocmInstallationDetector> RocmInstallation;
 
   std::string Base;
   std::string GccLibDir;
   clang::driver::toolchains::Generic_GCC::GCCVersion GccVer;
   std::string Ver;
   std::string SubdirName;
+  std::string TripleDirName;
   mutable std::unique_ptr<tools::gcc::Preprocessor> Preprocessor;
   mutable std::unique_ptr<tools::gcc::Compiler> Compiler;
-  void findGccLibDir();
+  void findGccLibDir(const llvm::Triple &LiteralTriple);
 
   bool NativeLLVMSupport;
 };

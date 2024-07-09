@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "PPCCallLowering.h"
+#include "PPCCallingConv.h"
 #include "PPCISelLowering.h"
 #include "PPCSubtarget.h"
 #include "PPCTargetMachine.h"
@@ -27,6 +28,46 @@
 
 using namespace llvm;
 
+namespace {
+
+struct OutgoingArgHandler : public CallLowering::OutgoingValueHandler {
+  OutgoingArgHandler(MachineIRBuilder &MIRBuilder, MachineRegisterInfo &MRI,
+                     MachineInstrBuilder MIB)
+      : OutgoingValueHandler(MIRBuilder, MRI), MIB(MIB) {}
+
+  void assignValueToReg(Register ValVReg, Register PhysReg,
+                        const CCValAssign &VA) override;
+  void assignValueToAddress(Register ValVReg, Register Addr, LLT MemTy,
+                            const MachinePointerInfo &MPO,
+                            const CCValAssign &VA) override;
+  Register getStackAddress(uint64_t Size, int64_t Offset,
+                           MachinePointerInfo &MPO,
+                           ISD::ArgFlagsTy Flags) override;
+
+  MachineInstrBuilder MIB;
+};
+} // namespace
+
+void OutgoingArgHandler::assignValueToReg(Register ValVReg, Register PhysReg,
+                                          const CCValAssign &VA) {
+  MIB.addUse(PhysReg, RegState::Implicit);
+  Register ExtReg = extendRegister(ValVReg, VA);
+  MIRBuilder.buildCopy(PhysReg, ExtReg);
+}
+
+void OutgoingArgHandler::assignValueToAddress(Register ValVReg, Register Addr,
+                                              LLT MemTy,
+                                              const MachinePointerInfo &MPO,
+                                              const CCValAssign &VA) {
+  llvm_unreachable("unimplemented");
+}
+
+Register OutgoingArgHandler::getStackAddress(uint64_t Size, int64_t Offset,
+                                             MachinePointerInfo &MPO,
+                                             ISD::ArgFlagsTy Flags) {
+  llvm_unreachable("unimplemented");
+}
+
 PPCCallLowering::PPCCallLowering(const PPCTargetLowering &TLI)
     : CallLowering(&TLI) {}
 
@@ -34,13 +75,35 @@ bool PPCCallLowering::lowerReturn(MachineIRBuilder &MIRBuilder,
                                   const Value *Val, ArrayRef<Register> VRegs,
                                   FunctionLoweringInfo &FLI,
                                   Register SwiftErrorVReg) const {
-  assert(((Val && !VRegs.empty()) || (!Val && VRegs.empty())) &&
-         "Return value without a vreg");
-  if (VRegs.size() > 0)
-    return false;
+  auto MIB = MIRBuilder.buildInstrNoInsert(PPC::BLR8);
+  bool Success = true;
+  MachineFunction &MF = MIRBuilder.getMF();
+  const Function &F = MF.getFunction();
+  MachineRegisterInfo &MRI = MF.getRegInfo();
+  auto &DL = F.getParent()->getDataLayout();
+  if (!VRegs.empty()) {
+    // Setup the information about the return value.
+    ArgInfo OrigArg{VRegs, Val->getType(), 0};
+    setArgFlags(OrigArg, AttributeList::ReturnIndex, DL, F);
 
-  MIRBuilder.buildInstr(PPC::BLR8);
-  return true;
+    // Split the return value into consecutive registers if needed.
+    SmallVector<ArgInfo, 8> SplitArgs;
+    splitToValueTypes(OrigArg, SplitArgs, DL, F.getCallingConv());
+
+    // Use the calling convention callback to determine type and location of
+    // return value.
+    OutgoingValueAssigner ArgAssigner(RetCC_PPC);
+
+    // Handler to move the return value into the correct location.
+    OutgoingArgHandler ArgHandler(MIRBuilder, MRI, MIB);
+
+    // Iterate over all return values, and move them to the assigned location.
+    Success = determineAndHandleAssignments(ArgHandler, ArgAssigner, SplitArgs,
+                                            MIRBuilder, F.getCallingConv(),
+                                            F.isVarArg());
+  }
+  MIRBuilder.insertInstr(MIB);
+  return Success;
 }
 
 bool PPCCallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
@@ -81,18 +144,18 @@ bool PPCCallLowering::lowerFormalArguments(MachineIRBuilder &MIRBuilder,
 
 void PPCIncomingValueHandler::assignValueToReg(Register ValVReg,
                                                Register PhysReg,
-                                               CCValAssign VA) {
+                                               const CCValAssign &VA) {
   markPhysRegUsed(PhysReg);
   IncomingValueHandler::assignValueToReg(ValVReg, PhysReg, VA);
 }
 
-void PPCIncomingValueHandler::assignValueToAddress(Register ValVReg,
-                                                   Register Addr, LLT MemTy,
-                                                   MachinePointerInfo &MPO,
-                                                   CCValAssign &VA) {
+void PPCIncomingValueHandler::assignValueToAddress(
+    Register ValVReg, Register Addr, LLT MemTy, const MachinePointerInfo &MPO,
+    const CCValAssign &VA) {
   // define a lambda expression to load value
-  auto BuildLoad = [](MachineIRBuilder &MIRBuilder, MachinePointerInfo &MPO,
-                      LLT MemTy, const DstOp &Res, Register Addr) {
+  auto BuildLoad = [](MachineIRBuilder &MIRBuilder,
+                      const MachinePointerInfo &MPO, LLT MemTy,
+                      const DstOp &Res, Register Addr) {
     MachineFunction &MF = MIRBuilder.getMF();
     auto *MMO = MF.getMachineMemOperand(MPO, MachineMemOperand::MOLoad, MemTy,
                                         inferAlignFromPtrInfo(MF, MPO));

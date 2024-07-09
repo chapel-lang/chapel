@@ -18,17 +18,17 @@ writeln();
 
 var re = new regex("a");
 for x in re.split("babbbba") do
-  writef("%t\n", x);
+  writef('%"S\n', x);
 
 writeln();
 
 re = new regex("z");
 for x in re.split("babbbba") do
-  writef("%t\n", x);
+  writef('%"S\n', x);
 
 writeln();
 for x in r.split(s) do
-  writef("%t\n", x);
+  writef('%"S\n', x);
 
 writeln();
 writeln("one".replaceAndCount(r, "A"));

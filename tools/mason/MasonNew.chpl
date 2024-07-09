@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -99,121 +99,6 @@ proc masonNew(args: [] string) throws {
   }
 }
 
-/*
-  Starts an interactive session to create a
-  new library project.
-*/
-proc beginInteractiveSession(defaultPackageName: string, defVer: string,
-            defChplVer: string, license: string) throws {
-  writeln("""This is an interactive session to walk you through creating a library
-project using Mason. The following queries covers the common items required to
-create the project. Suggestions for defaults are also provided which will be
-considered if no input is given.""");
-  writeln();
-  writeln("Press ^C to quit interactive mode.");
-  var packageName: string;
-  var defPackageName: string = defaultPackageName;
-  var version: string;
-  var defaultVersion = if defVer == '' then "0.1.0" else defVer;
-  var chapelVersion: string;
-  var currChapelVersion = if defChplVer == '' then getChapelVersionStr() else defChplVer;
-  var defaultLicense = if license == '' then "None" else license;
-  var currLicense: string;
-  var gotCorrectPackageName = false;
-  var gotCorrectPackageVersion = false;
-  var gotCorrectChapelVersion = false;
-  var gotCorrectLicense = false;
-  while(1){
-    try {
-      if !gotCorrectPackageName {
-        write("Package name");
-        if defPackageName != '' then write(" (" + defPackageName + ")");
-        write(": ");
-        IO.stdout.flush();
-        IO.stdin.readLine(packageName);
-        exitOnEOF(packageName);
-        packageName = packageName.strip();
-        if packageName == '' then
-          packageName = defPackageName;
-        var isIllegalName: bool = false;
-        if !isIdentifier(packageName) {
-          isIllegalName = true;
-          throw new owned MasonError("Bad package name '"+ packageName + "' - only Chapel" +
-             " identifiers are legal package names.");
-        }
-        if !isIllegalName {
-          if isDir('./' + packageName) then
-            throw new owned MasonError("Bad package name. A package with the name '"
-                              + packageName + "' already exists.");
-          if validatePackageName(packageName) then
-            gotCorrectPackageName = true;
-        }
-      }
-      if !gotCorrectPackageVersion {
-        write("Package version (" + defaultVersion + "): ");
-        IO.stdout.flush();
-        IO.stdin.readLine(version);
-        exitOnEOF(version);
-        version = version.strip();
-        if version == "" then version = defaultVersion;
-        checkVersion(version);
-        gotCorrectPackageVersion = true;
-      }
-      if !gotCorrectChapelVersion {
-        write("Chapel version (" + currChapelVersion + "): ");
-        IO.stdout.flush();
-        IO.stdin.readLine(chapelVersion);
-        exitOnEOF(chapelVersion);
-        chapelVersion = chapelVersion.strip();
-        if chapelVersion == "" then chapelVersion = currChapelVersion;
-        if chapelVersion == currChapelVersion then gotCorrectChapelVersion = true;
-        else if validateChplVersion(chapelVersion)
-        then gotCorrectChapelVersion = true;
-      }
-      if !gotCorrectLicense {
-        write("License (" + defaultLicense + "): ");
-        IO.stdout.flush();
-        IO.stdin.readLine(currLicense);
-        exitOnEOF(currLicense);
-        currLicense = currLicense.strip();
-        if currLicense == "" then currLicense = defaultLicense;
-        gotCorrectLicense = true;
-      }
-      if gotCorrectPackageName &&
-         gotCorrectPackageVersion &&
-         gotCorrectChapelVersion &&
-         gotCorrectLicense {
-          previewMasonFile(packageName, version, chapelVersion, currLicense);
-          writeln();
-          write("Is this okay ? (Y/N): ");
-          IO.stdout.flush();
-          var option: string;
-          IO.stdin.readLine(option);
-          exitOnEOF(option);
-          option = option.strip();
-          option = option.toUpper();
-          if option == "Y" then break;
-          if option == "N" then {
-            gotCorrectChapelVersion = false;
-            gotCorrectPackageName = false;
-            gotCorrectPackageVersion = false;
-            gotCorrectLicense = false;
-            defaultVersion = version;
-            currChapelVersion = chapelVersion;
-            defPackageName = packageName;
-            defaultLicense = currLicense;
-            continue;
-          }
-      }
-    }
-    catch e: MasonError {
-      writeln(e.message());
-      continue;
-    }
-  }
-  return (packageName, version, chapelVersion, currLicense);
-}
-
 /* Exit terminal when CTRL + D is pressed */
 proc exitOnEOF(parameter) {
   if parameter == '' {
@@ -263,7 +148,7 @@ proc validatePackageName(dirName) throws {
 }
 
 /* Runs the git init command */
-proc gitInit(dirName: string, show: bool) {
+proc gitInit(dirName: string, show: bool) throws {
   var initialize = "git init -q " + dirName;
   if show then initialize = "git init " + dirName;
   runCommand(initialize);
@@ -273,7 +158,7 @@ proc gitInit(dirName: string, show: bool) {
 proc addGitIgnore(dirName: string) {
   var toIgnore = "target/\nMason.lock\n";
   var gitIgnore = open(dirName+"/.gitignore", ioMode.cw);
-  var GIwriter = gitIgnore.writer();
+  var GIwriter = gitIgnore.writer(locking=false);
   GIwriter.write(toIgnore);
   GIwriter.close();
 }
@@ -308,7 +193,7 @@ proc makeBasicToml(dirName: string, path: string, version: string,
   const baseToml = getBaseTomlString(dirName, defaultVersion, defaultChplVersion,
                                      defaultLicense, packageType);
   var tomlFile = open(path+"/Mason.toml", ioMode.cw);
-  var tomlWriter = tomlFile.writer();
+  var tomlWriter = tomlFile.writer(locking=false);
   tomlWriter.write(baseToml);
   tomlWriter.close();
 }
@@ -329,7 +214,7 @@ proc makeModule(path:string, fileName:string, packageType="application") {
       ' */\nmodule '+ fileName + ' {\n  // Your library here\n}';
   }
   var lib = open(path+'/src/'+fileName+'.chpl', ioMode.cw);
-  var libWriter = lib.writer();
+  var libWriter = lib.writer(locking=false);
   libWriter.write(libTemplate + '\n');
   libWriter.close();
 }

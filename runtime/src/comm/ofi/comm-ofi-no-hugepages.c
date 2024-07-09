@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,3 +33,5 @@ void* chpl_comm_ofi_hp_get_huge_pages(size_t size) { return NULL; }
 
 
 size_t chpl_comm_ofi_hp_gethugepagesize(void) { return 0; }
+
+chpl_bool chpl_comm_ofi_hp_supported(void) { return false; }

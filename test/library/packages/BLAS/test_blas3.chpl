@@ -90,16 +90,16 @@ proc test_gemm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-    rng.fillRandom(A);
-    rng.fillRandom(B);
-    rng.fillRandom(C);
+    var rng = new randomStream(eltType=t);
+    rng.fill(A);
+    rng.fill(B);
+    rng.fill(C);
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     gemm(A,B,C,alpha,beta);
-    forall (i,j) in D.domain do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[i,..]*B[..,j]));
+    forall (i,j) in D.domain with (ref D) do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[i,..]*B[..,j]));
     var err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
@@ -115,16 +115,16 @@ proc test_gemm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-    rng.fillRandom(A);
-    rng.fillRandom(B);
-    rng.fillRandom(C);
+    var rng = new randomStream(eltType=t);
+    rng.fill(A);
+    rng.fill(B);
+    rng.fill(C);
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     gemm(A,B,C,alpha,beta, opA=Op.T);
-    forall (i,j) in D.domain do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[..,i]*B[..,j]));
+    forall (i,j) in D.domain with (ref D) do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[..,i]*B[..,j]));
     var err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
@@ -140,16 +140,16 @@ proc test_gemm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-    rng.fillRandom(A);
-    rng.fillRandom(B);
-    rng.fillRandom(C);
+    var rng = new randomStream(eltType=t);
+    rng.fill(A);
+    rng.fill(B);
+    rng.fill(C);
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     gemm(A,B,C,alpha,beta, opB=Op.H);
-    forall (i,j) in D.domain do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[i,..]*conjg(B[j,..])));
+    forall (i,j) in D.domain with (ref D) do D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[i,..]*conj(B[j,..])));
     var err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
@@ -166,16 +166,16 @@ proc test_gemm_helper(type t) {
         C : [{0.. #m, 0.. #ld}]t,
         D : [{0.. #m, 0.. #ld}]t;
 
-    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-    rng.fillRandom(A);
-    rng.fillRandom(B);
-    rng.fillRandom(C);
+    var rng = new randomStream(eltType=t);
+    rng.fill(A);
+    rng.fill(B);
+    rng.fill(C);
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     gemm(A[..,0.. #k], B[..,0.. #n], C[..,0.. #n], alpha,beta);
-    forall (i,j) in {0.. #m, 0.. #n} do
+    forall (i,j) in {0.. #m, 0.. #n} with (ref D) do
       D[i,j] = beta*D[i,j]+alpha*(+ reduce (A[i,0.. #k]*B[..,j]));
     var err = max reduce abs(C-D);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
@@ -202,15 +202,15 @@ proc test_symm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-    rng.fillRandom(A);
+    var rng = new randomStream(eltType=t);
+    rng.fill(A);
     makeSymm(A);
-    rng.fillRandom(B);
-    rng.fillRandom(C);
+    rng.fill(B);
+    rng.fill(C);
     var saveC = C;
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     symm(A, B, C, alpha, beta, uplo=Uplo.Upper, side=Side.Left);
     // Do a direct multiplication as a test
@@ -236,15 +236,15 @@ proc test_symm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-    rng.fillRandom(A);
+    var rng = new randomStream(eltType=t);
+    rng.fill(A);
     makeSymm(A);
-    rng.fillRandom(B);
-    rng.fillRandom(C);
+    rng.fill(B);
+    rng.fill(C);
     var saveC = C;
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     symm(A, B, C, alpha, beta, uplo=Uplo.Upper, side=Side.Right);
     // Do a direct multiplication as a test
@@ -280,15 +280,15 @@ proc test_hemm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-    rng.fillRandom(A);
+    var rng = new randomStream(eltType=t);
+    rng.fill(A);
     makeHerm(A);
-    rng.fillRandom(B);
-    rng.fillRandom(C);
+    rng.fill(B);
+    rng.fill(C);
     var saveC = C;
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     hemm(A, B, C, alpha, beta, uplo=Uplo.Upper, side=Side.Left);
     // Do a direct multiplication as a test
@@ -314,15 +314,15 @@ proc test_hemm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-    rng.fillRandom(A);
+    var rng = new randomStream(eltType=t);
+    rng.fill(A);
     makeHerm(A);
-    rng.fillRandom(B);
-    rng.fillRandom(C);
+    rng.fill(B);
+    rng.fill(C);
     var saveC = C;
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     hemm(A, B, C, alpha, beta, uplo=Uplo.Upper, side=Side.Right);
     // Do a direct multiplication as a test
@@ -355,15 +355,15 @@ proc test_syrk_helper(type t) {
         C : [{0.. #n, 0.. #n}]t,
         D : [{0.. #n, 0.. #n}]t;
 
-    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-    rng.fillRandom(A);
+    var rng = new randomStream(eltType=t);
+    rng.fill(A);
     var B = A;
-    rng.fillRandom(C);
+    rng.fill(C);
     makeSymm(C);
     var saveC = C;
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     syrk(A, C, alpha, beta, uplo=Uplo.Upper, trans=Op.N);
     // Do a direct multiplication as a test
@@ -421,15 +421,15 @@ proc test_herk_helper(type t) {
         C : [{0.. #n, 0.. #n}]t,
         D : [{0.. #n, 0.. #n}]t;
 
-    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-    rng.fillRandom(A);
+    var rng = new randomStream(eltType=t);
+    rng.fill(A);
     var B = A;
-    rng.fillRandom(C);
+    rng.fill(C);
     makeHerm(C);
     var saveC = C;
     D = C;
     // HERK uses real alpha and beta -- just grab the real and imaginary parts
-    var tmp = rng.getNext();
+    var tmp = rng.next();
     const alpha = tmp.re,
           beta = tmp.im;
 
@@ -491,15 +491,15 @@ proc test_syr2k_helper(type t) {
         C : [{0.. #n, 0.. #n}]t,
         D : [{0.. #n, 0.. #n}]t;
 
-    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-    rng.fillRandom(A);
-    rng.fillRandom(B);
-    rng.fillRandom(C);
+    var rng = new randomStream(eltType=t);
+    rng.fill(A);
+    rng.fill(B);
+    rng.fill(C);
     makeSymm(C);
     var saveC = C;
     D = C;
-    const alpha = rng.getNext(),
-          beta = rng.getNext();
+    const alpha = rng.next(),
+          beta = rng.next();
 
     var one = 1 : t;
     syr2k(A, B, C, alpha, beta, uplo=Uplo.Upper, trans=Op.N);
@@ -563,16 +563,16 @@ proc test_her2k_helper(type t) {
         C : [{0.. #n, 0.. #n}]t,
         D : [{0.. #n, 0.. #n}]t;
 
-    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-    rng.fillRandom(A);
-    rng.fillRandom(B);
-    rng.fillRandom(C);
+    var rng = new randomStream(eltType=t);
+    rng.fill(A);
+    rng.fill(B);
+    rng.fill(C);
     makeHerm(C);
     var saveC = C;
     D = C;
-    const alpha = rng.getNext(),
-          calpha = conjg(alpha);
-    var tmp = rng.getNext();
+    const alpha = rng.next(),
+          calpha = conj(alpha);
+    var tmp = rng.next();
     // Beta is real
     const beta = tmp.re;
 
@@ -639,10 +639,10 @@ proc test_trmm_helper(type t) {
         B : [{0.. #n, 0.. #n}]t,
         C : [{0.. #n, 0.. #n}]t;
 
-    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-    rng.fillRandom(B);
+    var rng = new randomStream(eltType=t);
+    rng.fill(B);
     var saveB = B;
-    const alpha = rng.getNext();
+    const alpha = rng.next();
 
     var zero = 0 : t;
     fillRandom(A);
@@ -706,10 +706,10 @@ proc test_trsm_helper(type t) {
 
     makeUnit(Id, 5.0);
 
-    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-    rng.fillRandom(B);
+    var rng = new randomStream(eltType=t);
+    rng.fill(B);
     var saveB = B;
-    const alpha = rng.getNext();
+    const alpha = rng.next();
 
     var zero = 0 : t,
         one = 1 : t;

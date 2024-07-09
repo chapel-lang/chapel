@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,6 +44,8 @@ namespace uast {
   \endrst
  */
 class VisibilityClause final : public AstNode {
+ friend class AstNode;
+
  public:
 
   /**
@@ -65,6 +67,13 @@ class VisibilityClause final : public AstNode {
   };
 
  private:
+  // These always exist and their position never changes.
+  static const int8_t symbolChildNum_ = 0;
+  static const int8_t limitationChildNum_ = 1;
+
+  LimitationKind limitationKind_;
+  int numLimitations_;
+
   VisibilityClause(AstList children,  LimitationKind limitationKind,
                    int numLimitations)
     : AstNode(asttags::VisibilityClause, std::move(children)),
@@ -79,10 +88,15 @@ class VisibilityClause final : public AstNode {
     }
   }
 
-  VisibilityClause(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    ser.write(limitationKind_);
+    ser.writeVInt(numLimitations_);
+  }
+
+  explicit VisibilityClause(Deserializer& des)
     : AstNode(asttags::VisibilityClause, des) {
     limitationKind_ = des.read<LimitationKind>();
-    numLimitations_ = (int)des.read<int32_t>();
+    numLimitations_ = des.readVInt();
   }
 
   // No need to check 'symbolChildNum_' or 'limitationChildNum_'.
@@ -97,13 +111,6 @@ class VisibilityClause final : public AstNode {
 
   void dumpFieldsInner(const DumpSettings& s) const override;
   std::string dumpChildLabelInner(int i) const override;
-
-  // These always exist and their position never changes.
-  static const int8_t symbolChildNum_ = 0;
-  static const int8_t limitationChildNum_ = 1;
-
-  LimitationKind limitationKind_;
-  int numLimitations_;
 
  public:
   ~VisibilityClause() override = default;
@@ -173,15 +180,6 @@ class VisibilityClause final : public AstNode {
     Return a string describing the passed LimitationKind.
    */
   static const char* limitationKindToString(LimitationKind kind);
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(limitationKind_);
-    ser.write<int32_t>(numLimitations_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(VisibilityClause);
-
 };
 
 

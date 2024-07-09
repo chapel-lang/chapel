@@ -8,9 +8,6 @@ TARGETS = \
 	stream-ep \
 	ra \
 	ra-atomics \
-	fft \
-	ptrans \
-	hpl \
 
 REALS = $(TARGETS:%=%_real)
 
@@ -32,15 +29,6 @@ ra: ra.chpl HPCCProblemSize.chpl RARandomStream.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 ra-atomics: ra-atomics.chpl HPCCProblemSize.chpl RARandomStream.chpl
-	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
-
-fft: fft.chpl HPCCProblemSize.chpl
-	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
-
-ptrans: ptrans.chpl HPCCProblemSize.chpl
-	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
-
-hpl: hpl.chpl HPCCProblemSize.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 variants: FORCE

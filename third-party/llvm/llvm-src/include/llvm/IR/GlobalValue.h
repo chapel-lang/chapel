@@ -41,6 +41,10 @@ namespace Intrinsic {
 typedef unsigned ID;
 } // end namespace Intrinsic
 
+// Choose ';' as the delimiter. ':' was used once but it doesn't work well for
+// Objective-C functions which commonly have :'s in their names.
+inline constexpr char kGlobalIdentifierDelimiter = ';';
+
 class GlobalValue : public Constant {
 public:
   /// An enumeration for the kinds of linkage for global values.
@@ -145,11 +149,19 @@ private:
     case AppendingLinkage:
     case InternalLinkage:
     case PrivateLinkage:
-      return isInterposable();
+      // Optimizations may assume builtin semantics for functions defined as
+      // nobuiltin due to attributes at call-sites. To avoid applying IPO based
+      // on nobuiltin semantics, treat such function definitions as maybe
+      // derefined.
+      return isInterposable() || isNobuiltinFnDef();
     }
 
     llvm_unreachable("Fully covered switch above!");
   }
+
+  /// Returns true if the global is a function definition with the nobuiltin
+  /// attribute.
+  bool isNobuiltinFnDef() const;
 
 protected:
   /// The intrinsic ID for this subclass (which must be a Function).
@@ -190,7 +202,9 @@ public:
 
   GlobalValue(const GlobalValue &) = delete;
 
-  unsigned getAddressSpace() const;
+  unsigned getAddressSpace() const {
+    return getType()->getAddressSpace();
+  }
 
   enum class UnnamedAddr {
     None,
@@ -267,7 +281,11 @@ public:
   bool hasDLLExportStorageClass() const {
     return DllStorageClass == DLLExportStorageClass;
   }
-  void setDLLStorageClass(DLLStorageClassTypes C) { DllStorageClass = C; }
+  void setDLLStorageClass(DLLStorageClassTypes C) {
+    assert((!hasLocalLinkage() || C == DefaultStorageClass) &&
+           "local linkage requires DefaultStorageClass");
+    DllStorageClass = C;
+  }
 
   bool hasSection() const { return !getSection().empty(); }
   StringRef getSection() const;
@@ -516,8 +534,10 @@ public:
   }
 
   void setLinkage(LinkageTypes LT) {
-    if (isLocalLinkage(LT))
+    if (isLocalLinkage(LT)) {
       Visibility = DefaultVisibility;
+      DllStorageClass = DefaultStorageClass;
+    }
     Linkage = LT;
     if (isImplicitDSOLocal())
       setDSOLocal(true);
@@ -544,8 +564,7 @@ public:
   /// arbitrary GlobalValue, this is not the function you're looking for; see
   /// Mangler.h.
   static StringRef dropLLVMManglingEscape(StringRef Name) {
-    if (!Name.empty() && Name[0] == '\1')
-      return Name.substr(1);
+    Name.consume_front("\1");
     return Name;
   }
 
@@ -622,8 +641,8 @@ public:
   bool isAbsoluteSymbolRef() const;
 
   /// If this is an absolute symbol reference, returns the range of the symbol,
-  /// otherwise returns None.
-  Optional<ConstantRange> getAbsoluteSymbolRange() const;
+  /// otherwise returns std::nullopt.
+  std::optional<ConstantRange> getAbsoluteSymbolRange() const;
 
   /// This method unlinks 'this' from the containing module, but does not delete
   /// it.

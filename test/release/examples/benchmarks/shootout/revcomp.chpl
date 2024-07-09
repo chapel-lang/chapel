@@ -40,13 +40,12 @@ proc main(args: [] string) {
       process(data, start, idx-2);
   }
 
-  const stdoutBin = (new file(1)).writer(iokind.native, locking=false,
-                                         hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
-  stdoutBin.write(data);
+  const stdoutBin = (new file(1)).writer(locking=false);
+  stdoutBin.writeBinary(data);
 }
 
 
-proc process(data, start, end) {
+proc process(ref data, start, end) {
   const extra = (end - start) % columns,
         off = columns - extra - 1;
 

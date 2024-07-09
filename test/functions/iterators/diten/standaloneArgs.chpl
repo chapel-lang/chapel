@@ -35,11 +35,11 @@ iter myiter(nn:int, nt: int, followThis, param tag: iterKind) where tag == iterK
 
 proc main {
   var A: [0..#ntasks*n] int;
-  forall (i,j) in zip(myiter(n, ntasks), myiter(n, ntasks)) {
+  forall (i,j) in zip(myiter(n, ntasks), myiter(n, ntasks)) with (ref A) {
     A[i] = j;
   }
 
-  forall i in myiter(n, ntasks) {
+  forall i in myiter(n, ntasks) with (ref A) {
     A[i] += i;
   }
 

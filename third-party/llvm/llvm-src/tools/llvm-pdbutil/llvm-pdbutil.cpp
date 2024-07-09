@@ -27,8 +27,6 @@
 #include "YAMLOutputStyle.h"
 
 #include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/BitVector.h"
-#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/BinaryFormat/Magic.h"
@@ -377,8 +375,8 @@ cl::OptionCategory PdbBytes("PDB Stream Options");
 cl::OptionCategory Types("Type Options");
 cl::OptionCategory ModuleCategory("Module Options");
 
-llvm::Optional<NumberRange> DumpBlockRange;
-llvm::Optional<NumberRange> DumpByteRange;
+std::optional<NumberRange> DumpBlockRange;
+std::optional<NumberRange> DumpByteRange;
 
 cl::opt<std::string> DumpBlockRangeOpt(
     "block-range", cl::value_desc("start[-end]"),
@@ -842,7 +840,7 @@ static void yamlToPdb(StringRef Path) {
       ExitOnErr(DbiBuilder.addModuleSourceFile(ModiBuilder, S));
     if (MI.Modi) {
       const auto &ModiStream = *MI.Modi;
-      for (auto Symbol : ModiStream.Symbols) {
+      for (const auto &Symbol : ModiStream.Symbols) {
         ModiBuilder.addSymbol(
             Symbol.toCodeViewSymbol(Allocator, CodeViewContainer::Pdb));
       }
@@ -865,7 +863,7 @@ static void yamlToPdb(StringRef Path) {
   AppendingTypeTableBuilder TS(Allocator);
   for (const auto &R : Tpi.Records) {
     CVType Type = R.toCodeViewRecord(TS);
-    TpiBuilder.addTypeRecord(Type.RecordData, None);
+    TpiBuilder.addTypeRecord(Type.RecordData, std::nullopt);
   }
 
   const auto &Ipi = YamlObj.IpiStream.value_or(DefaultIpiStream);
@@ -873,7 +871,7 @@ static void yamlToPdb(StringRef Path) {
   IpiBuilder.setVersionHeader(Ipi.Version);
   for (const auto &R : Ipi.Records) {
     CVType Type = R.toCodeViewRecord(TS);
-    IpiBuilder.addTypeRecord(Type.RecordData, None);
+    IpiBuilder.addTypeRecord(Type.RecordData, std::nullopt);
   }
 
   Builder.getStringTableBuilder().setStrings(*Strings.strings());
@@ -1353,10 +1351,10 @@ static void mergePdbs() {
   auto &DestTpi = Builder.getTpiBuilder();
   auto &DestIpi = Builder.getIpiBuilder();
   MergedTpi.ForEachRecord([&DestTpi](TypeIndex TI, const CVType &Type) {
-    DestTpi.addTypeRecord(Type.RecordData, None);
+    DestTpi.addTypeRecord(Type.RecordData, std::nullopt);
   });
   MergedIpi.ForEachRecord([&DestIpi](TypeIndex TI, const CVType &Type) {
-    DestIpi.addTypeRecord(Type.RecordData, None);
+    DestIpi.addTypeRecord(Type.RecordData, std::nullopt);
   });
   Builder.getInfoBuilder().addFeature(PdbRaw_FeatureSig::VC140);
 
@@ -1415,14 +1413,14 @@ static void exportStream() {
   SourceStream = File.createIndexedStream(Index);
   auto OutFile = ExitOnErr(
       FileOutputBuffer::create(OutFileName, SourceStream->getLength()));
-  FileBufferByteStream DestStream(std::move(OutFile), llvm::support::little);
+  FileBufferByteStream DestStream(std::move(OutFile), llvm::endianness::little);
   BinaryStreamWriter Writer(DestStream);
   ExitOnErr(Writer.writeStreamRef(*SourceStream));
   ExitOnErr(DestStream.commit());
 }
 
 static bool parseRange(StringRef Str,
-                       Optional<opts::bytes::NumberRange> &Parsed) {
+                       std::optional<opts::bytes::NumberRange> &Parsed) {
   if (Str.empty())
     return true;
 
@@ -1576,7 +1574,7 @@ int main(int Argc, const char **Argv) {
     if (opts::yaml2pdb::YamlPdbOutputFile.empty()) {
       SmallString<16> OutputFilename(opts::yaml2pdb::InputFilename.getValue());
       sys::path::replace_extension(OutputFilename, ".pdb");
-      opts::yaml2pdb::YamlPdbOutputFile = std::string(OutputFilename.str());
+      opts::yaml2pdb::YamlPdbOutputFile = std::string(OutputFilename);
     }
     yamlToPdb(opts::yaml2pdb::InputFilename);
   } else if (opts::DiaDumpSubcommand) {

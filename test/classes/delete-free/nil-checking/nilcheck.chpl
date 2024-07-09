@@ -70,14 +70,16 @@ bad9();
 
 
 proc ok1() {
-  var x:MyClass = (new owned MyClass(1)).borrow();
+  var ownX = new owned MyClass(1);
+  var x:MyClass = ownX.borrow();
   x.method();
 }
 ok1();
 
 proc ok2() {
+  var ownX = new owned MyClass(1);
   var x:borrowed MyClass?;
-  x = (new owned MyClass(1)).borrow();
+  x = ownX.borrow();
   x!.method();
 }
 ok2();

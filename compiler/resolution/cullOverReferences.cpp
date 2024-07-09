@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,6 +30,7 @@
 #include "loopDetails.h"
 #include "postFold.h"
 #include "resolution.h"
+#include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -173,72 +174,21 @@ symExprIsSetByUse(SymExpr* use) {
 }
 
 static
-bool symExprIsUsedAsConstRef(SymExpr* use) {
-  if (CallExpr* call = toCallExpr(use->parentExpr)) {
-    if (FnSymbol* calledFn = call->resolvedFunction()) {
-      ArgSymbol* formal = actual_to_formal(use);
-
-      // generally, use const-ref-return if passing to const ref formal
-      if (formal->intent == INTENT_CONST_REF) {
-        // but make an exception for initCopy calls
-        if (calledFn->hasFlag(FLAG_INIT_COPY_FN))
-          return false;
-
-        // TODO: tuples of types with blank intent
-        // being 'in' should perhaps use the value version.
-        return true;
-      }
-
-    } else if (call->isPrimitive(PRIM_RETURN) ||
-               call->isPrimitive(PRIM_YIELD)) {
-      FnSymbol* inFn = toFnSymbol(call->parentSymbol);
-
-      // use const-ref-return if returning by const ref intent
-      if (inFn->retTag == RET_CONST_REF)
-        return true;
-
-    } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
-               call->isPrimitive(PRIM_WIDE_GET_NODE)) {
-      // If we are extracting a field from the wide pointer,
-      // we need to keep it as a pointer.
-
-      // use const-ref-return if querying locale
-      return true;
-
-    } else {
-      // Check for the case that sym is moved to a compiler-introduced
-      // variable, possibly with PRIM_MOVE tmp, PRIM_ADDR_OF sym
-      if (call->isPrimitive(PRIM_ADDR_OF) ||
-          call->isPrimitive(PRIM_SET_REFERENCE) ||
-          call->isPrimitive(PRIM_GET_MEMBER) ||
-          call->isPrimitive(PRIM_GET_SVEC_MEMBER))
-        call = toCallExpr(call->parentExpr);
-
-      if (call->isPrimitive(PRIM_MOVE)) {
-        SymExpr* lhs = toSymExpr(call->get(1));
-        Symbol* lhsSymbol = lhs->symbol();
-
-        if (lhsSymbol->hasFlag(FLAG_REF_VAR)) {
-          // intended to handle 'const ref'
-          // it would be an error to reach this point if it is not const
-          INT_ASSERT(lhsSymbol->hasFlag(FLAG_CONST));
-          return true;
-        }
-
-        if (lhs != use &&
-            lhsSymbol->isRef() &&
-            symbolIsUsedAsConstRef(lhsSymbol))
-          return true;
-      }
-    }
-  }
-  return false;
-}
-
-static
 bool symbolIsUsedAsConstRef(Symbol* sym) {
+  auto checkForMove = [](SymExpr* use, CallExpr* call) {
+    SymExpr* lhs = toSymExpr(call->get(1));
+    Symbol* lhsSymbol = lhs->symbol();
+
+    if (lhsSymbol->hasFlag(FLAG_REF_VAR)) {
+      // intended to handle 'const ref'
+      // it would be an error to reach this point if it is not const
+      INT_ASSERT(lhsSymbol->hasFlag(FLAG_CONST));
+      return true;
+    }
+    return lhs != use && lhsSymbol->isRef() && symbolIsUsedAsConstRef(lhsSymbol);
+  };
   for_SymbolSymExprs(se, sym) {
-    if (symExprIsUsedAsConstRef(se)) {
+    if (symExprIsUsedAsRef(se, true, checkForMove)) {
       return true;
     }
   }
@@ -459,6 +409,88 @@ void markSymbolConst(Symbol* sym)
     sym->addFlag(FLAG_CONST);
   }
 }
+
+static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
+  bool isArgThis = arg->hasFlag(FLAG_ARG_THIS);
+  // this is still being used for tuples assignment
+  bool fromPragma = arg->hasFlag(FLAG_INTENT_REF_MAYBE_CONST_FORMAL);
+
+  bool isCompilerGenerated = false;
+  bool isTaskIntent = false;
+  if (FnSymbol* fn = arg->getFunction()) {
+    isTaskIntent = fn->hasEitherFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_BEGIN);
+    isCompilerGenerated = fn->hasFlag(FLAG_COMPILER_GENERATED);
+  }
+  // we have full control here, but this should be ok
+  bool isOuter = arg->hasFlag(FLAG_OUTER_VARIABLE);
+
+  bool isArray = arg->type->symbol->hasFlag(FLAG_ARRAY);
+
+  bool shouldWarn = !isOuter && !fromPragma && !isCompilerGenerated;
+
+  // if its an outer variable but its used in a task intent, warn
+  if (!shouldWarn && isOuter && isTaskIntent) {
+    shouldWarn = true;
+  }
+
+  // should not warn for arrays in task functions
+  if(shouldWarn && isArray && isTaskIntent) {
+    shouldWarn = false;
+  }
+
+  // should not warn if a method is marked pragma "reference to const when const this"
+  // this messes up a number of tests
+  if (shouldWarn && isArgThis) {
+    if (FnSymbol* fn = arg->getFunction()) {
+      if (fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)) {
+        shouldWarn = false;
+      }
+    }
+  }
+
+  // only warn if the default intent is not INTENT_REF_MAYBE_CONST
+  // this does to apply to `this-intent`'s, always warn for them
+  if (shouldWarn && !isArgThis) {
+    IntentTag defaultIntent = blankIntentForType(arg->type);
+    // if default intent is not ref-maybe-const, do nothing
+    if(defaultIntent != INTENT_REF_MAYBE_CONST) shouldWarn = false;
+  }
+
+  if (shouldWarn) {
+
+    const char* argName = nullptr;
+    char argBuffer[64];
+    if (isTaskIntent && arg->hasFlag(FLAG_FIELD_ACCESSOR)) {
+      argName = "this";
+    } else if (arg->hasFlag(FLAG_EXPANDED_VARARGS)) {
+      int varArgNum;
+      int ret = sscanf(arg->name, "_e%d_%63s", &varArgNum, argBuffer);
+      CHPL_ASSERT(ret == 2);
+      argName = argBuffer;
+    } else if (isArgThis) {
+      FnSymbol* fn = arg->getFunction();
+      argName = fn ? fn->name : "<unknown-method>";
+    } else {
+      argName = arg->name;
+    }
+
+    const char* intentName = isTaskIntent ?
+      "add an explicit 'ref' task intent for" :
+        (isArgThis ?
+          "use an explicit 'ref' this-intent for the method" :
+          "use an explicit 'ref' intent for the argument");
+
+    bool useFunctionForWarning = (isTaskIntent | isArgThis) && arg->getFunction();
+    Symbol* warnSym =
+      useFunctionForWarning ? (Symbol*)arg->getFunction() : (Symbol*)arg;
+    USR_WARN(warnSym,
+            "inferring a default intent to be 'ref' is deprecated "
+            "- please %s '%s'",
+            intentName,
+            argName);
+  }
+}
+
 static
 void markSymbolNotConst(Symbol* sym)
 {
@@ -469,8 +501,12 @@ void markSymbolNotConst(Symbol* sym)
   // ref-with-unknown-constness and ref-not-const,
   // so we can just leave it alone.
   INT_ASSERT(!sym->qualType().isConst());
-  if (arg && arg->intent == INTENT_REF_MAYBE_CONST)
+  if (arg && arg->intent == INTENT_REF_MAYBE_CONST) {
+
+    maybeIssueRefMaybeConstWarning(arg);
+
     arg->intent = INTENT_REF;
+  }
 
   if (sym->hasFlag(FLAG_REF_IF_MODIFIED)) {
     sym->removeFlag(FLAG_REF_IF_MODIFIED);
@@ -530,7 +566,7 @@ void markNotConst(GraphNode node)
     if (fieldIndex == 0) {
       // mark all fields
       int nFields = at->numFields();
-      for (int i = 0; i <= nFields; i++) {
+      for (int i = 1; i <= nFields; i++) {
         INT_ASSERT(sym->fieldQualifiers[i] != QUAL_CONST_REF);
       }
     } else {

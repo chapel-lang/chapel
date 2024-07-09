@@ -108,6 +108,7 @@
 #include "llvm/Transforms/Utils/LoopUtils.h"
 #include "llvm/Transforms/Utils/ScalarEvolutionExpander.h"
 #include <cassert>
+#include <cmath>
 #include <iterator>
 #include <utility>
 
@@ -659,8 +660,8 @@ PPCLoopInstrFormPrep::rewriteForBase(Loop *L, const SCEVAddRecExpr *BasePtrSCEV,
 
   Type *I8Ty = Type::getInt8Ty(BaseMemI->getParent()->getContext());
   Type *I8PtrTy =
-      Type::getInt8PtrTy(BaseMemI->getParent()->getContext(),
-                         BasePtr->getType()->getPointerAddressSpace());
+      PointerType::get(BaseMemI->getParent()->getContext(),
+                       BasePtr->getType()->getPointerAddressSpace());
 
   bool IsConstantInc = false;
   const SCEV *BasePtrIncSCEV = BasePtrSCEV->getStepRecurrence(*SE);
@@ -706,15 +707,15 @@ PPCLoopInstrFormPrep::rewriteForBase(Loop *L, const SCEVAddRecExpr *BasePtrSCEV,
   BasicBlock *LoopPredecessor = L->getLoopPredecessor();
 
   PHINode *NewPHI = PHINode::Create(I8PtrTy, HeaderLoopPredCount,
-                                    getInstrName(BaseMemI, PHINodeNameSuffix),
-                                    Header->getFirstNonPHI());
+                                    getInstrName(BaseMemI, PHINodeNameSuffix));
+  NewPHI->insertBefore(Header->getFirstNonPHIIt());
 
   Value *BasePtrStart = SCEVE.expandCodeFor(BasePtrStartSCEV, I8PtrTy,
                                             LoopPredecessor->getTerminator());
 
   // Note that LoopPredecessor might occur in the predecessor list multiple
   // times, and we need to add it the right number of times.
-  for (auto PI : predecessors(Header)) {
+  for (auto *PI : predecessors(Header)) {
     if (PI != LoopPredecessor)
       continue;
 
@@ -729,7 +730,7 @@ PPCLoopInstrFormPrep::rewriteForBase(Loop *L, const SCEVAddRecExpr *BasePtrSCEV,
         I8Ty, NewPHI, IncNode, getInstrName(BaseMemI, GEPNodeIncNameSuffix),
         InsPoint);
     cast<GetElementPtrInst>(PtrInc)->setIsInBounds(IsPtrInBounds(BasePtr));
-    for (auto PI : predecessors(Header)) {
+    for (auto *PI : predecessors(Header)) {
       if (PI == LoopPredecessor)
         continue;
 
@@ -744,7 +745,7 @@ PPCLoopInstrFormPrep::rewriteForBase(Loop *L, const SCEVAddRecExpr *BasePtrSCEV,
   } else {
     // Note that LoopPredecessor might occur in the predecessor list multiple
     // times, and we need to make sure no more incoming value for them in PHI.
-    for (auto PI : predecessors(Header)) {
+    for (auto *PI : predecessors(Header)) {
       if (PI == LoopPredecessor)
         continue;
 
@@ -909,7 +910,7 @@ bool PPCLoopInstrFormPrep::prepareBaseForDispFormChain(Bucket &BucketChain,
       unsigned Remainder = cast<SCEVConstant>(BucketChain.Elements[j].Offset)
                                ->getAPInt()
                                .urem(Form);
-      if (RemainderOffsetInfo.find(Remainder) == RemainderOffsetInfo.end())
+      if (!RemainderOffsetInfo.contains(Remainder))
         RemainderOffsetInfo[Remainder] = std::make_pair(j, 1);
       else
         RemainderOffsetInfo[Remainder].second++;
@@ -932,7 +933,7 @@ bool PPCLoopInstrFormPrep::prepareBaseForDispFormChain(Bucket &BucketChain,
   // 1 X form.
   unsigned MaxCountRemainder = 0;
   for (unsigned j = 0; j < (unsigned)Form; j++)
-    if ((RemainderOffsetInfo.find(j) != RemainderOffsetInfo.end()) &&
+    if ((RemainderOffsetInfo.contains(j)) &&
         RemainderOffsetInfo[j].second >
             RemainderOffsetInfo[MaxCountRemainder].second)
       MaxCountRemainder = j;
@@ -1049,16 +1050,15 @@ bool PPCLoopInstrFormPrep::rewriteLoadStores(
   SmallPtrSet<Value *, 16> NewPtrs;
   NewPtrs.insert(Base.first);
 
-  for (auto I = std::next(BucketChain.Elements.begin()),
-       IE = BucketChain.Elements.end(); I != IE; ++I) {
-    Value *Ptr = getPointerOperandAndType(I->Instr);
+  for (const BucketElement &BE : llvm::drop_begin(BucketChain.Elements)) {
+    Value *Ptr = getPointerOperandAndType(BE.Instr);
     assert(Ptr && "No pointer operand");
     if (NewPtrs.count(Ptr))
       continue;
 
     Instruction *NewPtr = rewriteForBucketElement(
-        Base, *I,
-        I->Offset ? cast<SCEVConstant>(I->Offset)->getValue() : nullptr,
+        Base, BE,
+        BE.Offset ? cast<SCEVConstant>(BE.Offset)->getValue() : nullptr,
         DeletedPtrs);
     assert(NewPtr && "wrong rewrite!\n");
     NewPtrs.insert(NewPtr);
@@ -1179,6 +1179,8 @@ Value *PPCLoopInstrFormPrep::getNodeForInc(Loop *L, Instruction *MemI,
 
     // Get the incoming value from the loop latch and check if the value has
     // the add form with the required increment.
+    if (CurrentPHINode->getBasicBlockIndex(LatchBB) < 0)
+      continue;
     if (Instruction *I = dyn_cast<Instruction>(
             CurrentPHINode->getIncomingValueForBlock(LatchBB))) {
       Value *StrippedBaseI = I;

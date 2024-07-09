@@ -6,7 +6,7 @@ class BaseArr {
   }
 }
 
-class ZeroBasedArr: BaseArr {
+class ZeroBasedArr: BaseArr(?) {
   var bounds: rank*int;
 
   /* This version correctly results in 'error: can't set value of field 'rank'

@@ -21,6 +21,11 @@ or
 
    This is a color enum. 
 
+   .. enumconstant:: enum constant Red
+
+   .. enumconstant:: enum constant Yellow
+
+   .. enumconstant:: enum constant Blue
 
 .. data:: var typed: Color
 

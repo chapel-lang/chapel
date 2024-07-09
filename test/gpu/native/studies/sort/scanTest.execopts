@@ -1,0 +1,10 @@
+--low=2049789 --arrSize=2     # scanTest.good # This will test hillisSteeleScan with padding
+--low=3 --arrSize=400         # scanTest.good # This will test hillisSteeleScan with padding
+--low=32 --arrSize=512        # scanTest.good # This will test hillisSteeleScan without padding
+--low=32 --arrSize=1000       # scanTest.good # This will test blellochScan with padding
+--low=2049789 --arrSize=1024  # scanTest.good # This will test blellochScan without padding
+--low=2049789 --arrSize=2048  # scanTest.good # This will test parallelArrScan with even bounds
+--low=20 --arrSize=5097       # scanTest.good # This will test parallelArrScan with odd bounds
+--low=0                       # scanTest.good # This will test parallelArrScan with even bounds but with a 0 idx array
+--low=0 --arrSize=0           # scanTest.good # This will test empty array
+--nonGpuTest                  # nonGpuScanTest.good # This tests array on cpus (unsupported)

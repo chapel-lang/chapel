@@ -1,0 +1,1 @@
+../compflags/ferguson/implicit-conversion-warnings/warn-small-integral-real.chpl

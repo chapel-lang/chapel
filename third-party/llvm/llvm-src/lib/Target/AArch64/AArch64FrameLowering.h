@@ -18,16 +18,11 @@
 
 namespace llvm {
 
-class MCCFIInstruction;
-
 class AArch64FrameLowering : public TargetFrameLowering {
 public:
   explicit AArch64FrameLowering()
       : TargetFrameLowering(StackGrowsDown, Align(16), 0, Align(16),
                             true /*StackRealignable*/) {}
-
-  void emitCalleeSavedFrameMoves(MachineBasicBlock &MBB,
-                                 MachineBasicBlock::iterator MBBI) const;
 
   void resetCFIToInitialState(MachineBasicBlock &MBB) const override;
 
@@ -39,6 +34,8 @@ public:
   /// the function.
   void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
   void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
+
+  bool enableCFIFixup(MachineFunction &MF) const override;
 
   bool canUseAsPrologue(const MachineBasicBlock &MBB) const override;
 
@@ -153,10 +150,28 @@ private:
                                   MachineBasicBlock::iterator MBBI) const;
   void emitCalleeSavedSVERestores(MachineBasicBlock &MBB,
                                   MachineBasicBlock::iterator MBBI) const;
+  void allocateStackSpace(MachineBasicBlock &MBB,
+                          MachineBasicBlock::iterator MBBI,
+                          int64_t RealignmentPadding, StackOffset AllocSize,
+                          bool NeedsWinCFI, bool *HasWinCFI, bool EmitCFI,
+                          StackOffset InitialOffset, bool FollowupAllocs) const;
 
   /// Emit target zero call-used regs.
   void emitZeroCallUsedRegs(BitVector RegsToZero,
                             MachineBasicBlock &MBB) const override;
+
+  /// Replace a StackProbe stub (if any) with the actual probe code inline
+  void inlineStackProbe(MachineFunction &MF,
+                        MachineBasicBlock &PrologueMBB) const override;
+
+  void inlineStackProbeFixed(MachineBasicBlock::iterator MBBI,
+                             Register ScratchReg, int64_t FrameSize,
+                             StackOffset CFAOffset) const;
+
+  MachineBasicBlock::iterator
+  inlineStackProbeLoopExactMultiple(MachineBasicBlock::iterator MBBI,
+                                    int64_t NegProbeSize,
+                                    Register TargetReg) const;
 };
 
 } // End llvm namespace

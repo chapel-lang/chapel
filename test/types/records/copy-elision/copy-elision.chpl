@@ -383,17 +383,17 @@ test19();
 proc test20() {
   writeln("test20");
 
-  var done$: sync int;
+  var done: sync int;
 
   begin {
     {
       var x = new R(1);
       var y = x;
     }
-    done$.writeEF(1);
+    done.writeEF(1);
   }
 
-  done$.readFE(); // wait
+  done.readFE(); // wait
 }
 test20();
 

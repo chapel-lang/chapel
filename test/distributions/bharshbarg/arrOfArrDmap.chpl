@@ -14,14 +14,14 @@ proc test(Space) {
 
 const Dom = {1..10};
 
-var BlockSpace = Dom dmapped Block(boundingBox=Dom);
+var BlockSpace = Dom dmapped new blockDist(boundingBox=Dom);
 test(BlockSpace);
 writeln("Success: Block");
 
-var CyclicSpace = Dom dmapped Cyclic(startIdx=Dom.low);
+var CyclicSpace = Dom dmapped new cyclicDist(startIdx=Dom.low);
 test(CyclicSpace);
 writeln("Success: Cyclic");
 
-var BCSpace = Dom dmapped BlockCyclic(startIdx=Dom.low, blocksize=2);
+var BCSpace = Dom dmapped new blockCycDist(startIdx=Dom.low, blocksize=2);
 test(BCSpace);
 writeln("Success: BlockCyclic");

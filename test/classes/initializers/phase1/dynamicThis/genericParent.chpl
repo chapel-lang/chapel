@@ -18,18 +18,18 @@ class Parent {
 proc foobar(p : borrowed Parent(int)) {
   writeln("foobar(Parent(int))");
 }
-proc foobar(p : borrowed Parent) {
+proc foobar(p : borrowed Parent(?)) {
   writeln("foobar(Parent(other))");
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   var y : real;
 
   proc init(type t) {
     super.init(t);
     inheritedMethod();
     foobar(this);
-    complete();
+    init this;
     inheritedMethod();
   }
 

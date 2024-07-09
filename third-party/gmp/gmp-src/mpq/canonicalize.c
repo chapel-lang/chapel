@@ -32,7 +32,7 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp-impl.h"
 
 void
-mpq_canonicalize (mpq_t op)
+mpq_canonicalize (mpq_ptr op)
 {
   mpz_t gcd;
   TMP_DECL;

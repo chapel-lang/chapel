@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +34,11 @@ const owned<NothingType>& NothingType::getNothingType(Context* context) {
 
 const NothingType* NothingType::get(Context* context) {
   return getNothingType(context).get();
+}
+
+void NothingType::stringify(std::ostream& ss,
+                            chpl::StringifyKind stringKind) const {
+  ss << "nothing";
 }
 
 

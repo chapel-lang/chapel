@@ -18,6 +18,7 @@
 #include "llvm/Object/COFF.h"
 #include "llvm/Support/BinaryStreamWriter.h"
 #include "llvm/Support/Parallel.h"
+#include "llvm/Support/TimeProfiler.h"
 
 using namespace llvm;
 using namespace llvm::codeview;
@@ -86,7 +87,7 @@ Error DbiStreamBuilder::addDbgStream(pdb::DbgHeaderType Type,
   assert(Type != DbgHeaderType::NewFPO &&
          "NewFPO data should be written via addFrameData()!");
 
-  DbgStreams[(int)Type].emplace();
+  DbgStreams[(int)Type] = DebugStream{};
   DbgStreams[(int)Type]->Size = Data.size();
   DbgStreams[(int)Type]->WriteFn = [Data](BinaryStreamWriter &Writer) {
     return Writer.writeArray(Data);
@@ -187,7 +188,7 @@ Error DbiStreamBuilder::generateFileInfoSubstream() {
   uint32_t NamesOffset = calculateNamesOffset();
 
   FileInfoBuffer = MutableBinaryByteStream(MutableArrayRef<uint8_t>(Data, Size),
-                                           llvm::support::little);
+                                           llvm::endianness::little);
 
   WritableBinaryStreamRef MetadataBuffer =
       WritableBinaryStreamRef(FileInfoBuffer).keep_front(NamesOffset);
@@ -286,7 +287,7 @@ Error DbiStreamBuilder::finalize() {
 
 Error DbiStreamBuilder::finalizeMsfLayout() {
   if (NewFpoData) {
-    DbgStreams[(int)DbgHeaderType::NewFPO].emplace();
+    DbgStreams[(int)DbgHeaderType::NewFPO] = DebugStream{};
     DbgStreams[(int)DbgHeaderType::NewFPO]->Size =
         NewFpoData->calculateSerializedSize();
     DbgStreams[(int)DbgHeaderType::NewFPO]->WriteFn =
@@ -296,12 +297,12 @@ Error DbiStreamBuilder::finalizeMsfLayout() {
   }
 
   if (!OldFpoData.empty()) {
-    DbgStreams[(int)DbgHeaderType::FPO].emplace();
+    DbgStreams[(int)DbgHeaderType::FPO] = DebugStream{};
     DbgStreams[(int)DbgHeaderType::FPO]->Size =
         sizeof(object::FpoData) * OldFpoData.size();
     DbgStreams[(int)DbgHeaderType::FPO]->WriteFn =
         [this](BinaryStreamWriter &Writer) {
-          return Writer.writeArray(makeArrayRef(OldFpoData));
+          return Writer.writeArray(ArrayRef(OldFpoData));
         };
   }
 
@@ -381,6 +382,7 @@ void DbiStreamBuilder::createSectionMap(
 
 Error DbiStreamBuilder::commit(const msf::MSFLayout &Layout,
                                WritableBinaryStreamRef MsfBuffer) {
+  llvm::TimeTraceScope timeScope("Commit DBI stream");
   if (auto EC = finalize())
     return EC;
 
@@ -406,7 +408,7 @@ Error DbiStreamBuilder::commit(const msf::MSFLayout &Layout,
   if (!SectionContribs.empty()) {
     if (auto EC = Writer.writeEnum(DbiSecContribVer60))
       return EC;
-    if (auto EC = Writer.writeArray(makeArrayRef(SectionContribs)))
+    if (auto EC = Writer.writeArray(ArrayRef(SectionContribs)))
       return EC;
   }
 
@@ -415,7 +417,7 @@ Error DbiStreamBuilder::commit(const msf::MSFLayout &Layout,
     SecMapHeader SMHeader = {Size, Size};
     if (auto EC = Writer.writeObject(SMHeader))
       return EC;
-    if (auto EC = Writer.writeArray(makeArrayRef(SectionMap)))
+    if (auto EC = Writer.writeArray(ArrayRef(SectionMap)))
       return EC;
   }
 

@@ -7,7 +7,7 @@ module loopsInForallNoVector {
     use iters;
 
     // outer loop should have vector pragma, but inner should not
-    forall (i, j) in zip(myiter(n, ntasks), myiter(n, ntasks)) {
+    forall (i, j) in zip(myiter(n, ntasks), myiter(n, ntasks)) with (ref A) {
       A[i] = 2*i;
       for x in i..j do  bogusFunction(x);
       for (x, y) in zip(i..j, i..j) do bogusFunction(x+y);
@@ -18,7 +18,7 @@ module loopsInForallNoVector {
     for a in A do writeln(a);
     A = 0;
 
-    forall i in myiter(n, ntasks) {
+    forall i in myiter(n, ntasks) with (ref A) {
       A[i] = 2*i;
       for x in i..i do  bogusFunction(x);
       for (x, y) in zip(i..i, i..i) do bogusFunction(x+y);

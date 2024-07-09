@@ -1,0 +1,3 @@
+dependencies/    : Tests that require on libs like LAPACK/BLAS to work
+no-dependencies/ : Tests that can work anywhere
+TestUtils.chpl   : Helper module for tests used in both directories

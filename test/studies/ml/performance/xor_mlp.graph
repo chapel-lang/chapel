@@ -1,0 +1,5 @@
+perfkeys: time:
+files: xor_perceptron.dat
+graphkeys: xor-perceptron
+ylabel: Time (seconds)
+graphtitle: Training Time of XOR Perceptron

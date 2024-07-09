@@ -16,9 +16,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "llvm/Transforms/IPO/DeadArgumentElimination.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/IR/Argument.h"
+#include "llvm/IR/AttributeMask.h"
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
@@ -43,7 +45,6 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO.h"
-#include "llvm/Transforms/IPO/DeadArgumentElimination.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include <cassert>
 #include <utility>
@@ -84,6 +85,11 @@ public:
 
   virtual bool shouldHackArguments() const { return false; }
 };
+
+bool isMustTailCalleeAnalyzable(const CallBase &CB) {
+  assert(CB.isMustTailCall());
+  return CB.getCalledFunction() && !CB.getCalledFunction()->isDeclaration();
+}
 
 } // end anonymous namespace
 
@@ -168,6 +174,7 @@ bool DeadArgumentEliminationPass::deleteDeadVarargs(Function &F) {
   NF->setComdat(F.getComdat());
   F.getParent()->getFunctionList().insert(F.getIterator(), NF);
   NF->takeName(&F);
+  NF->IsNewDbgInfoFormat = F.IsNewDbgInfoFormat;
 
   // Loop over all the callers of the function, transforming the call sites
   // to pass in a smaller number of arguments into the new function.
@@ -222,7 +229,7 @@ bool DeadArgumentEliminationPass::deleteDeadVarargs(Function &F) {
   // Since we have now created the new function, splice the body of the old
   // function right into the new function, leaving the old rotting hulk of the
   // function empty.
-  NF->getBasicBlockList().splice(NF->begin(), F.getBasicBlockList());
+  NF->splice(NF->begin(), &F);
 
   // Loop over the argument list, transferring uses of the old arguments over to
   // the new arguments, also transferring over the names as well.  While we're
@@ -238,11 +245,11 @@ bool DeadArgumentEliminationPass::deleteDeadVarargs(Function &F) {
   // Clone metadata from the old function, including debug info descriptor.
   SmallVector<std::pair<unsigned, MDNode *>, 1> MDs;
   F.getAllMetadata(MDs);
-  for (auto MD : MDs)
-    NF->addMetadata(MD.first, *MD.second);
+  for (auto [KindID, Node] : MDs)
+    NF->addMetadata(KindID, *Node);
 
   // Fix up any BlockAddresses that refer to the function.
-  F.replaceAllUsesWith(ConstantExpr::getBitCast(NF, F.getType()));
+  F.replaceAllUsesWith(NF);
   // Delete the bitcast that we just created, so that NF does not
   // appear to be address-taken.
   NF->removeDeadConstantUsers();
@@ -520,8 +527,16 @@ void DeadArgumentEliminationPass::surveyFunction(const Function &F) {
   for (const BasicBlock &BB : F) {
     // If we have any returns of `musttail` results - the signature can't
     // change
-    if (BB.getTerminatingMustTailCall() != nullptr)
+    if (const auto *TC = BB.getTerminatingMustTailCall()) {
       HasMustTailCalls = true;
+      // In addition, if the called function is not locally defined (or unknown,
+      // if this is an indirect call), we can't change the callsite and thus
+      // can't change this function's signature either.
+      if (!isMustTailCalleeAnalyzable(*TC)) {
+        markLive(F);
+        return;
+      }
+    }
   }
 
   if (HasMustTailCalls) {
@@ -863,6 +878,7 @@ bool DeadArgumentEliminationPass::removeDeadStuffFromFunction(Function *F) {
   // it again.
   F->getParent()->getFunctionList().insert(F->getIterator(), NF);
   NF->takeName(F);
+  NF->IsNewDbgInfoFormat = F->IsNewDbgInfoFormat;
 
   // Loop over all the callers of the function, transforming the call sites to
   // pass in a smaller number of arguments into the new function.
@@ -996,7 +1012,7 @@ bool DeadArgumentEliminationPass::removeDeadStuffFromFunction(Function *F) {
   // Since we have now created the new function, splice the body of the old
   // function right into the new function, leaving the old rotting hulk of the
   // function empty.
-  NF->getBasicBlockList().splice(NF->begin(), F->getBasicBlockList());
+  NF->splice(NF->begin(), F);
 
   // Loop over the argument list, transferring uses of the old arguments over to
   // the new arguments, also transferring over the names as well.
@@ -1056,14 +1072,14 @@ bool DeadArgumentEliminationPass::removeDeadStuffFromFunction(Function *F) {
         // value (possibly 0 if we became void).
         auto *NewRet = ReturnInst::Create(F->getContext(), RetVal, RI);
         NewRet->setDebugLoc(RI->getDebugLoc());
-        BB.getInstList().erase(RI);
+        RI->eraseFromParent();
       }
 
   // Clone metadata from the old function, including debug info descriptor.
   SmallVector<std::pair<unsigned, MDNode *>, 1> MDs;
   F->getAllMetadata(MDs);
-  for (auto MD : MDs)
-    NF->addMetadata(MD.first, *MD.second);
+  for (auto [KindID, Node] : MDs)
+    NF->addMetadata(KindID, *Node);
 
   // If either the return value(s) or argument(s) are removed, then probably the
   // function does not follow standard calling conventions anymore. Hence, add
@@ -1079,6 +1095,26 @@ bool DeadArgumentEliminationPass::removeDeadStuffFromFunction(Function *F) {
   F->eraseFromParent();
 
   return true;
+}
+
+void DeadArgumentEliminationPass::propagateVirtMustcallLiveness(
+    const Module &M) {
+  // If a function was marked "live", and it has musttail callers, they in turn
+  // can't change either.
+  LiveFuncSet NewLiveFuncs(LiveFunctions);
+  while (!NewLiveFuncs.empty()) {
+    LiveFuncSet Temp;
+    for (const auto *F : NewLiveFuncs)
+      for (const auto *U : F->users())
+        if (const auto *CB = dyn_cast<CallBase>(U))
+          if (CB->isMustTailCall())
+            if (!LiveFunctions.count(CB->getParent()->getParent()))
+              Temp.insert(CB->getParent()->getParent());
+    NewLiveFuncs.clear();
+    NewLiveFuncs.insert(Temp.begin(), Temp.end());
+    for (const auto *F : Temp)
+      markLive(*F);
+  }
 }
 
 PreservedAnalyses DeadArgumentEliminationPass::run(Module &M,
@@ -1100,6 +1136,8 @@ PreservedAnalyses DeadArgumentEliminationPass::run(Module &M,
   LLVM_DEBUG(dbgs() << "DeadArgumentEliminationPass - Determining liveness\n");
   for (auto &F : M)
     surveyFunction(F);
+
+  propagateVirtMustcallLiveness(M);
 
   // Now, remove all dead arguments and return values from each function in
   // turn.  We use make_early_inc_range here because functions will probably get

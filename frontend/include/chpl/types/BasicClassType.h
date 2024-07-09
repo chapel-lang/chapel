@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,7 +20,7 @@
 #ifndef CHPL_TYPES_BASIC_CLASS_TYPE_H
 #define CHPL_TYPES_BASIC_CLASS_TYPE_H
 
-#include "chpl/types/CompositeType.h"
+#include "chpl/types/ManageableType.h"
 #include "chpl/framework/global-strings.h"
 
 namespace chpl {
@@ -31,7 +31,7 @@ namespace types {
   This class represents an class type (e.g. `class C`)
   without considering decorators.
  */
-class BasicClassType final : public CompositeType {
+class BasicClassType final : public ManageableType {
  private:
   const BasicClassType* parentType_ = nullptr;
 
@@ -39,13 +39,13 @@ class BasicClassType final : public CompositeType {
                  const BasicClassType* parentType,
                  const BasicClassType* instantiatedFrom,
                  SubstitutionsMap subs)
-    : CompositeType(typetags::BasicClassType, id, name,
-                    instantiatedFrom, std::move(subs)),
+    : ManageableType(typetags::BasicClassType, id, name,
+                     instantiatedFrom, std::move(subs)),
       parentType_(parentType)
   {
     // all classes should have a parent type, except for object
     // which doesn't.
-    CHPL_ASSERT(parentType_ || name == USTR("object"));
+    CHPL_ASSERT(parentType_ || name == USTR("RootClass"));
   }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -74,7 +74,7 @@ class BasicClassType final : public CompositeType {
       const BasicClassType* instantiatedFrom,
       CompositeType::SubstitutionsMap subs);
 
-  static const BasicClassType* getObjectType(Context* context);
+  static const BasicClassType* getRootClassType(Context* context);
 
   static const BasicClassType* getReduceScanOpType(Context* context);
 

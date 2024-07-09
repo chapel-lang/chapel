@@ -43,14 +43,14 @@ for (i,j) in zip(foo(n), bar(n:uint)) {
 
 writeln(A);
 
-forall (i,j) in zip(foo(n), bar(n:uint)) {
+forall (i,j) in zip(foo(n), bar(n:uint)) with (ref A, ref B) {
   A(i) = 2;
   B(j) = 2;
 }
 
 writeln(A);
 
-forall (i,j) in zip(foo(n), bar(n:uint)) {
+forall (i,j) in zip(foo(n), bar(n:uint)) with (ref A, ref B) {
   A(i) = 3;
   B(j) = 3;
 }

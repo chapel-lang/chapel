@@ -5,11 +5,12 @@
 Submit a Package
 ================
 
-The mason registry will hold the manifest files for packages submitted by developers.
-To contribute a package to the mason-registry a chapel developer will need to host their
-package and submit a pull request to the mason-registry with the toml file pointing
-to their package. For a more detailed description follow the steps below. Publishing
-can be done with ``mason publish`` or manually.
+The `Mason-Registry <https://github.com/chapel-lang/mason-registry>`_ will hold
+the manifest files for packages submitted by developers. To contribute a
+package to the mason-registry a chapel developer will need to host their
+package and submit a pull request to the mason-registry with the toml file
+pointing to their package. For a more detailed description follow the steps
+below. Publishing can be done with ``mason publish`` or manually.
 
 ``mason publish`` Steps:
       1) Write a library or binary package in chapel using mason
@@ -18,7 +19,7 @@ can be done with ``mason publish`` or manually.
       4) Ensure your package has a remote origin.
       5) Run ``mason publish`` in your package
       6) Go to the link provided to open a pull request to the mason registry.
-      7) Wait for mason-registry gatekeepers to approve PR.
+      7) Wait for mason-registry maintainers to approve PR.
 
 Manual Steps:
       1) Write a library or binary package in chapel using mason
@@ -28,10 +29,10 @@ Manual Steps:
       5) Create a branch of the mason-registry and add your package's ``Mason.toml`` under ``Bricks/<package_name>/<version>.toml``
       6) Add a source field to your ``<version>.toml`` pointing to your package's repository.
       7) Open a PR in the mason-registry for your newly created branch containing just your <version>.toml.
-      8) Wait for mason-registry gatekeepers to approve the PR.
+      8) Wait for mason-registry maintainers to approve the PR.
 
 Once your package is uploaded,  please notify the chapel team if your package should be taken down.
-Your package may be removed by the Mason gatekeepers if the integrity of the package is not maintained.
+Your package may be removed by the Mason maintainers if the integrity of the package is not maintained.
 
 
 
@@ -90,4 +91,3 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
        (ex. 1.4.3, 1.7.0 --> 1.7)
     3. If multiple major versions are present, mason will print an error.
        (ex. 1.13.0, 2.1.0 --> incompatible)
-

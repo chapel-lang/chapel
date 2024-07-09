@@ -3,17 +3,21 @@ get_property(LLVM_DRIVER_OBJLIBS GLOBAL PROPERTY LLVM_DRIVER_OBJLIBS)
 
 get_property(LLVM_DRIVER_TOOLS GLOBAL PROPERTY LLVM_DRIVER_TOOLS)
 
+list(SORT LLVM_DRIVER_TOOLS)
+list(REVERSE LLVM_DRIVER_TOOLS)
 foreach(tool ${LLVM_DRIVER_TOOLS})
   string(REPLACE "-" "_" tool_entry ${tool})
-  string(REPLACE "llvm-" "" tool ${tool})
-  set(def_decl "${def_decl}LLVM_DRIVER_TOOL(\"${tool}\", ${tool_entry})\n")
+  get_property(tool_aliases GLOBAL PROPERTY LLVM_DRIVER_TOOL_ALIASES_${tool})
+  foreach(alias ${tool_aliases})
+    set_property(GLOBAL APPEND PROPERTY LLVM_DRIVER_TOOL_SYMLINKS ${alias})
+    string(REPLACE "llvm-" "" alias ${alias})
+    set(def_decl "${def_decl}LLVM_DRIVER_TOOL(\"${alias}\", ${tool_entry})\n")
+  endforeach()
 endforeach()
-
-get_property(LLVM_EXTRA_DRIVER_ENTRIES GLOBAL PROPERTY LLVM_EXTRA_DRIVER_ENTRIES)
 
 file(WRITE
           "${CMAKE_CURRENT_BINARY_DIR}/LLVMDriverTools.def"
-          "${def_decl}${LLVM_EXTRA_DRIVER_ENTRIES}#undef LLVM_DRIVER_TOOL\n")
+          "${def_decl}#undef LLVM_DRIVER_TOOL\n")
 
 target_include_directories(llvm-driver PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_sources(llvm-driver PRIVATE llvm-driver.cpp)
@@ -21,6 +25,7 @@ target_sources(llvm-driver PRIVATE llvm-driver.cpp)
 set_target_properties(llvm-driver PROPERTIES OUTPUT_NAME llvm)
 
 target_link_libraries(llvm-driver PUBLIC ${LLVM_DRIVER_OBJLIBS})
+target_link_libraries(llvm-driver PUBLIC LLVMDebuginfod)
 
 if(APPLE)
   # dsymutil uses some CoreFoundation stuff on Darwin...
@@ -28,9 +33,8 @@ if(APPLE)
 endif(APPLE)
 
 macro(generate_driver_tool_targets)
-  get_property(LLVM_DRIVER_TOOLS GLOBAL PROPERTY LLVM_DRIVER_TOOLS)
   get_property(LLVM_DRIVER_TOOL_SYMLINKS GLOBAL PROPERTY LLVM_DRIVER_TOOL_SYMLINKS)
-  foreach(name IN LISTS LLVM_DRIVER_TOOLS LLVM_DRIVER_TOOL_SYMLINKS)
+  foreach(name ${LLVM_DRIVER_TOOL_SYMLINKS})
     add_llvm_tool_symlink(${name} llvm-driver ALWAYS_GENERATE)
     # Always generate install targets
     llvm_install_symlink(LLVM ${name} llvm-driver ALWAYS_GENERATE)

@@ -16,7 +16,6 @@
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/ErrorOr.h"
-#include <string>
 
 namespace llvm {
   namespace object {
@@ -50,6 +49,6 @@ extern OutputStyleTy Output;
   { #enum, ns::enum }
 
 #define LLVM_READOBJ_ENUM_CLASS_ENT(enum_class, enum) \
-  { #enum, std::underlying_type<enum_class>::type(enum_class::enum) }
+  { #enum, std::underlying_type_t<enum_class>(enum_class::enum) }
 
 #endif

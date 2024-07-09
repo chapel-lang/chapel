@@ -1,0 +1,8 @@
+warning,count
+"warning: constx is unstable. Please use consty",7
+"warning: fieldx is unstable.",6
+"warning: methodx is unstable.",4
+"warning: modulex is unstable.",1
+"warning: paramx is unstable please use paramy",3
+"warning: procx is unstable.",2
+"warning: recordx is unstable.",3

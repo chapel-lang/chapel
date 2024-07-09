@@ -3,12 +3,12 @@ use AtomicsAPI;
 config const lastLocale = false;
 const onLocale = if lastLocale then numLocales-1 else 0;
 
-proc declareAndTestAtomicT(type basetype) {
-  var a: atomic basetype;
-  var i: basetype;
+proc declareAndTestAtomicT(type valType) {
+  var a: atomic valType;
+  var i: valType;
   var b: bool;
   on Locales[onLocale] {
-    testUnorderedAtomicT(a, i, b, basetype);
+    testUnorderedAtomicT(a, i, b);
   }
 }
 
@@ -35,5 +35,5 @@ var IInt: [1..3] int;
 var BInt: [1..3] bool;
 on Locales[onLocale] {
   write("Promotion -- ");
-  testUnorderedAtomicT(AInt, IInt, BInt, int);
+  testUnorderedAtomicT(AInt, IInt, BInt);
 }

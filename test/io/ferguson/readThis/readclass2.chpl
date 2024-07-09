@@ -1,6 +1,6 @@
 use IO;
 
-class mything {
+class mything : serializable {
   var x:int;
   var y:int;
 
@@ -8,39 +8,41 @@ class mything {
     this.x = x;
     this.y = y;
   }
-  proc init(r: fileReader) {
-    this.x = r.read(int);
-    r.readLiteral(" ");
-    this.y = r.read(int);
+  proc init(reader, ref deserializer) {
+    this.x = reader.read(int);
+    reader.readLiteral(" ");
+    this.y = reader.read(int);
   }
 
-  proc readThis(r) throws {
-    x = r.read(int);
-    r.readLiteral(" ");
-    y = r.read(int);
+  override proc deserialize(reader, ref deserializer) throws {
+    x = reader.read(int);
+    reader.readLiteral(" ");
+    y = reader.read(int);
   }
 
-  proc writeThis(w) throws {
-    w.write(x);
-    w.writeLiteral(" ");
-    w.write(y);
+  override proc serialize(writer, ref serializer) throws {
+    writer.write(x);
+    writer.writeLiteral(" ");
+    writer.write(y);
   }
 }
 
 {
-  var a = (new owned mything(1)).borrow();
+  var ownA = new owned mything(1);
+  var a = ownA.borrow();
 
   writeln("Writing ", a);
 
   var f = openMemFile();
-  var w = f.writer();
+  var w = f.writer(locking=false);
 
   w.write(a);
   w.close();
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
 
-  var b = (new owned mything(2)).borrow();
+  var ownB = new owned mything(2);
+  var b = ownB.borrow();
   r.read(b);
 
   r.close();
@@ -49,4 +51,3 @@ class mything {
 
   assert(a.x == b.x);
 }
-

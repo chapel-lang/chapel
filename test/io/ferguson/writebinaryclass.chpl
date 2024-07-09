@@ -13,18 +13,20 @@ class R {
 
 var f = open("binary-output.bin", ioMode.cwr);
 
-var A = (new owned R(1,2,3,4,5)).borrow();
+var ownA = new owned R(1,2,3,4,5);
+var A = ownA.borrow();
 
 {
-  var w = f.writer(kind=iobig);
+  var w = f.writer(serializer=new binarySerializer(endianness.big), locking=false);
   writeln("Writing ", A);
   w.write(A);
   w.close();
 }
 
 {
-  var r = f.reader(kind=iobig);
-  var B = (new owned R(0,0,0,0,0)).borrow();
+  var r = f.reader(deserializer=new binaryDeserializer(endianness.big), locking=false);
+  var ownB = new owned R(0,0,0,0,0);
+  var B = ownB.borrow();
 
   r.read(B);
   writeln("Read ", B);
@@ -34,8 +36,9 @@ var A = (new owned R(1,2,3,4,5)).borrow();
 
 
 {
-  var r = f.reader(kind=iobig);
-  var B = (new owned R(0,0,0,0,0)).borrow();
+  var r = f.reader(deserializer=new binaryDeserializer(endianness.big), locking=false);
+  var ownB = new owned R(0,0,0,0,0);
+  var B = ownB.borrow();
 
   assert(r.read(B.a));
   assert(r.read(B.b));

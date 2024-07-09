@@ -15,15 +15,14 @@ require recompilation. Note that only GCC and Clang support sanitizers.
 How-to
 ------
 
-To use AddressSanitizer with Chapel (compiler and executables):
+To use AddressSanitizer with Chapel-generated executables only:
 
 .. code-block:: bash
 
      export CHPL_MEM=cstdlib
-     export CHPL_HOST_MEM=cstdlib
      export CHPL_TASKS=fifo
-     export CHPL_LLVM=none
-     export CHPL_SANITIZE=address
+     export CHPL_LLVM=none   # or set CHPL_TARGET_COMPILER to gnu, clang, etc.
+     export CHPL_SANITIZE_EXE=address
      export ASAN_OPTIONS="use_sigaltstack=0,detect_leaks=0"
 
      cd $CHPL_HOME
@@ -31,12 +30,21 @@ To use AddressSanitizer with Chapel (compiler and executables):
      chpl <program.chpl>
      ./<program>
 
-To only sanitize executables and not the compiler:
+To use it with both the Chapel compiler and its generated executables:
 
 .. code-block:: bash
 
-     unset CHPL_SANITIZE
-     export CHPL_SANITIZE_EXE=address
+     export CHPL_MEM=cstdlib
+     export CHPL_TASKS=fifo
+     export CHPL_LLVM=none
+     export CHPL_HOST_MEM=cstdlib
+     export CHPL_SANITIZE=address
+     export ASAN_OPTIONS="use_sigaltstack=0,detect_leaks=0"
+
+     cd $CHPL_HOME
+     make
+     chpl <program.chpl>
+     ./<program>
 
 To get better stack traces when optimizations are enabled:
 

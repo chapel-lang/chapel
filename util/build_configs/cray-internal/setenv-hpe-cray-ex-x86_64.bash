@@ -132,7 +132,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         launchers=none,pals,slurm-srun
         substrates=none
         locale_models=flat
-        auxfs=none,lustre
+        auxfs=none
         libpics=none,pic
 
         log_info "Start build_configs $dry_run $verbose # no make target"
@@ -307,9 +307,9 @@ else
         list_loaded_modules
     fi
 
-    gen_version_gcc=10.3.0
+    #gen_version_gcc=10.3.0
     #[TODO] gen_version_intel=16.0.3.210
-    gen_version_cce=12.0.2
+    #gen_version_cce=15.0.1
 
     target_cpu_module=craype-x86-rome
 
@@ -317,42 +317,42 @@ else
 
         local target_prgenv="PrgEnv-gnu"
         local target_compiler="gcc"
-        local target_version=$gen_version_gcc
+        #local target_version=$gen_version_gcc
 
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
 
         # load target PrgEnv with compiler version
         load_module $target_prgenv
-        load_module_version $target_compiler $target_version
+        #load_module_version $target_compiler $target_version
     }
 
     function load_prgenv_intel() {
 
         local target_prgenv="PrgEnv-intel"
         local target_compiler="intel"
-        local target_version=$gen_version_intel
+        #local target_version=$gen_version_intel
 
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
 
         # load target PrgEnv with compiler version
         load_module $target_prgenv
-        load_module_version $target_compiler $target_version
+        #load_module_version $target_compiler $target_version
     }
 
     function load_prgenv_cray() {
 
         local target_prgenv="PrgEnv-cray"
         local target_compiler="cce"
-        local target_version=$gen_version_cce
+        #local target_version=$gen_version_cce
 
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
 
         # load target PrgEnv with compiler version
         load_module $target_prgenv
-        load_module_version $target_compiler $target_version
+        #load_module_version $target_compiler $target_version
     }
 
     function load_target_cpu() {

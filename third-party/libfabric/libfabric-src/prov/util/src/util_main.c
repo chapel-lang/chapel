@@ -72,29 +72,49 @@ static int ofi_fid_match(struct dlist_entry *entry, const void *fid)
 	return (item->fid == fid);
 }
 
+/* Serialization must be provided by the caller. */
+int fid_list_search(struct dlist_entry *fid_list, struct fid *fid)
+{
+	struct dlist_entry *entry;
+	struct fid_list_entry *item;
+
+	entry = dlist_find_first_match(fid_list, ofi_fid_match, fid);
+	if (entry)
+		return -FI_EALREADY;
+
+	item = calloc(1, sizeof(*item));
+	if (!item)
+		return -FI_ENOMEM;
+
+	item->fid = fid;
+	dlist_insert_tail(&item->entry, fid_list);
+	return 0;
+}
+
 int fid_list_insert(struct dlist_entry *fid_list, ofi_mutex_t *lock,
 		    struct fid *fid)
 {
 	int ret = 0;
-	struct dlist_entry *entry;
-	struct fid_list_entry *item;
 
-	ofi_mutex_lock(lock);
-	entry = dlist_find_first_match(fid_list, ofi_fid_match, fid);
-	if (entry)
-		goto out;
+	if (lock)
+		ofi_mutex_lock(lock);
+	ret = fid_list_search(fid_list, fid);
+	if (lock)
+		ofi_mutex_unlock(lock);
 
-	item = calloc(1, sizeof(*item));
-	if (!item) {
-		ret = -FI_ENOMEM;
-		goto out;
-	}
+	return (!ret || (ret == -FI_EALREADY)) ? 0 : ret;
+}
 
-	item->fid = fid;
-	dlist_insert_tail(&item->entry, fid_list);
-out:
-	ofi_mutex_unlock(lock);
-	return ret;
+int fid_list_insert2(struct dlist_entry *fid_list, struct ofi_genlock *lock,
+		    struct fid *fid)
+{
+	int ret = 0;
+
+	ofi_genlock_lock(lock);
+	ret = fid_list_search(fid_list, fid);
+	ofi_genlock_unlock(lock);
+
+	return (!ret || (ret == -FI_EALREADY)) ? 0 : ret;
 }
 
 void fid_list_remove(struct dlist_entry *fid_list, ofi_mutex_t *lock,
@@ -115,6 +135,22 @@ void fid_list_remove(struct dlist_entry *fid_list, ofi_mutex_t *lock,
 	}
 }
 
+void fid_list_remove2(struct dlist_entry *fid_list, struct ofi_genlock *lock,
+		      struct fid *fid)
+{
+	struct fid_list_entry *item;
+	struct dlist_entry *entry;
+
+	ofi_genlock_lock(lock);
+	entry = dlist_remove_first_match(fid_list, ofi_fid_match, fid);
+	ofi_genlock_unlock(lock);
+
+	if (entry) {
+		item = container_of(entry, struct fid_list_entry, entry);
+		free(item);
+	}
+}
+
 static int util_find_domain(struct dlist_entry *item, const void *arg)
 {
 	const struct util_domain *domain;
@@ -127,6 +163,36 @@ static int util_find_domain(struct dlist_entry *item, const void *arg)
 		 (((info->mode | info->domain_attr->mode) &
 		   domain->info_domain_mode) == domain->info_domain_mode) &&
 		 ((info->domain_attr->mr_mode & domain->mr_mode) == domain->mr_mode);
+}
+
+static int ofi_dup_auth_keys(const struct fi_info *hints, struct fi_info *info)
+{
+	if (!hints)
+		return FI_SUCCESS;
+
+	if (hints->domain_attr && hints->domain_attr->auth_key) {
+		info->domain_attr->auth_key =
+			mem_dup(hints->domain_attr->auth_key,
+				hints->domain_attr->auth_key_size);
+		if (!info->domain_attr->auth_key)
+			return -FI_ENOMEM;
+
+		info->domain_attr->auth_key_size =
+			hints->domain_attr->auth_key_size;
+	}
+
+	if (hints->ep_attr && hints->ep_attr->auth_key) {
+		info->ep_attr->auth_key =
+			mem_dup(hints->ep_attr->auth_key,
+				hints->ep_attr->auth_key_size);
+		if (!info->ep_attr->auth_key)
+			return -FI_ENOMEM;
+
+		info->ep_attr->auth_key_size =
+			hints->ep_attr->auth_key_size;
+	}
+
+	return FI_SUCCESS;
 }
 
 /*
@@ -251,6 +317,10 @@ int util_getinfo(const struct util_prov *util_prov, uint32_t version,
 					"cannot resolve source address\n");
 			}
 		}
+
+		ret = ofi_dup_auth_keys(hints, *info);
+		if (ret)
+			goto err;
 	}
 
 	*info = saved_info;

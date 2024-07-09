@@ -26,13 +26,13 @@ proc test(param dim:int, d: domain(dim)) {
   seed(B, 1); seed(C, 100); seed(Y, 1.0); seed(Z, 100.0);
   writeln("seeded"); showB; showC; showY; showZ;
 
-  forall i in sd { A(i) = sumComps(i); }
+  forall i in sd with (ref A) { A(i) = sumComps(i); }
   hd("forall(dom) { indexing = }"); showA;
 
   forall x in X { x = 10; }
   hd("forall(arr) { iterator var = }"); showX;
 
-  forall (i,j) in zip(sd,sd) { A(i) += B(j); }
+  forall (i,j) in zip(sd,sd) with (ref A) { A(i) += B(j); }
   hd("forall(dom,dom) { ix = ix }"); showA;
 
   var D: [sd] int;
@@ -48,37 +48,37 @@ proc test(param dim:int, d: domain(dim)) {
   forall (x,i) in zip(X,sd) { x = Z(i); }
   hd("forall(arr,dom) { ivar = ix }"); showX;
 
-  forall (i,j,k) in zip(sd,sd,sd) { Q(i) = Y(i) + Z(i); }
+  forall (i,j,k) in zip(sd,sd,sd) with (ref Q) { Q(i) = Y(i) + Z(i); }
   hd("forall(dom,dom,dom) { ix = ix, ix }"); showQ;
 
-  forall (i,j,c) in zip(sd,sd,C) { A(i) = B(i) - c; }
+  forall (i,j,c) in zip(sd,sd,C) with (ref A) { A(i) = B(i) - c; }
   hd("forall(dom,dom,arr) { ix = ix, ivar }"); showA;
 
   forall (i,z,x) in zip(sd,Z,X) { z = Y(i) - x; }
   hd("forall(dom,arr,arr) { ivar = ix, ivar }"); showZ;
 
-  forall (c,j,k) in zip(C,sd,sd) { A(j) = B(k) + c; }
+  forall (c,j,k) in zip(C,sd,sd) with (ref A) { A(j) = B(k) + c; }
   hd("forall(arr,dom,dom) { ix = ix, ivar }"); showA;
 
-  forall (z,x,k) in zip(Z,X,sd) { Q(k) = x + z; }
+  forall (z,x,k) in zip(Z,X,sd) with (ref Q) { Q(k) = x + z; }
   hd("forall(arr,arr,dom) { ix = ivar, ivar }"); showQ;
 
-  forall (i,j,k,l) in zip(sd,sd,sd,sd) { D(l) = A(i) + B(j) + C(k); }
+  forall (i,j,k,l) in zip(sd,sd,sd,sd) with (ref D) { D(l) = A(i) + B(j) + C(k); }
   hd("forall(dom,dom,dom,dom) { ix = 3*ix }"); showD;
 
   forall (x,y,z,q) in zip(X,Y,Z,Q) { q = x + y + z; }
   hd("forall(arr,arr,arr,arr) { ivar = 3*ivar }"); showQ;
 
-  forall (i,j,a,b) in zip(sd,sd,A,B) { C(i) = D(j) - a - b; }
+  forall (i,j,a,b) in zip(sd,sd,A,B) with (ref C) { C(i) = D(j) - a - b; }
   hd("forall(dom,dom,arr,arr) { ix = ix, ivar, ivar }"); showC;
 
   forall (x,q,i,j) in zip(X,Q,sd,sd) { q = Z(i) - x - Y(j); }
   hd("forall(arr,arr,dom,dom) { ivar = ix, ivar, ix }"); showQ;
 
-  forall (i,a,j,b) in zip(sd,A,sd,B) { D(i) = a - C(i) + b; }
+  forall (i,a,j,b) in zip(sd,A,sd,B) with (ref D) { D(i) = a - C(i) + b; }
   hd("forall(dom,arr,dom,arr) { ix = ivar, ix, ivar }"); showD;
 
-  forall(x,i,y,j) in zip(X,sd,Y,sd) { Q(i) = Z(i) - x - y; }
+  forall(x,i,y,j) in zip(X,sd,Y,sd) with (ref Q) { Q(i) = Z(i) - x - y; }
   hd("forall(arr,dom,arr,dom) { ix = ix, ivar, ivar }"); showQ;
 
   A = B; hd("A=B"); showA;
@@ -88,7 +88,7 @@ proc test(param dim:int, d: domain(dim)) {
   C = D; hd("C=D"); showC;
   B = C; hd("B=C"); showB;
   Z = Q; hd("Z=Q"); showZ;
-  Y = Z; hd("Y=Z"); showY;  
+  Y = Z; hd("Y=Z"); showY;
 }
 
 // helpers
@@ -108,10 +108,10 @@ proc populateDomain(param dim, ref sd) where dim > 1 {
   }
 }
 
-proc seed(A,f) {
+proc seed(ref A,f) {
   var cnt = f;
   // the following needs to be deterministic so the output is, too
-  for a in A { a = cnt; cnt += f; }    
+  for a in A { a = cnt; cnt += f; }
 }
 
 proc show(A, msg...) {

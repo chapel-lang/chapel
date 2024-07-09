@@ -1,0 +1,4 @@
+false false false false false false false false false false
+0 0 0 0 0 0 0 0 0 0
+[domain(1,int(64),one)] bool
+[domain(1,int(64),one)] int(64)

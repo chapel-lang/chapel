@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -44,7 +44,9 @@
 #include "wrappers.h"
 #include <llvm/ADT/SmallVector.h>
 
-static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias = NULL, bool forNewExpr = false);
+static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
+                            AggregateType* newExprAlias = NULL,
+                            bool forNewExpr = false);
 
 static void gatherInitCandidates(CallInfo&                  info,
                                  Vec<FnSymbol*>&            visibleFns,
@@ -65,12 +67,13 @@ static AggregateType* resolveNewFindType(CallExpr* newExpr);
 *                                                                             *
 ************************************** | *************************************/
 
-FnSymbol* resolveInitializer(CallExpr* call) {
+FnSymbol*
+resolveInitializer(CallExpr* call, bool emitCallResolutionErrors) {
   FnSymbol* retval = NULL;
 
   callStack.add(call);
 
-  resolveInitCall(call);
+  resolveInitCall(call, emitCallResolutionErrors);
 
   // call->isResolved() is sometimes false on this.init() calls for generic
   // records, as it might be a partial call that needs to get adjusted in order
@@ -317,7 +320,8 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
 
   // Find the correct 'init' function without wrapping/promoting
   AggregateType* alias = at == rootType ? NULL : at;
-  resolveInitCall(call, alias, true);
+  const bool emitCallResolutionErrors = true;
+  resolveInitCall(call, emitCallResolutionErrors, alias, true);
   resolveInitializerMatch(call->resolvedFunction());
   tmp->type = call->resolvedFunction()->_this->getValType();
   resolveTypeWithInitializer(toAggregateType(tmp->type), call->resolvedFunction());
@@ -336,6 +340,17 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
     USR_FATAL_CONT(call, "initializer produces a different type");
     USR_PRINT(call, "new was provided type '%s'", toString(at));
     USR_PRINT(call, "init resulted in type '%s'", toString(tmp->type));
+  }
+
+  // Avoid a potential access of uninitialized memory in the case where the
+  // record has a bool field.  C will pad around boolean fields, but that memory
+  // cannot normally be updated - without explicitly zero initializing it,
+  // valgrind will complain when we use it to create the hash to ensure inferred
+  // const ref arguments are not implicitly modified.
+  if (isRecord(tmp->type)) {
+    if (fWarnUnstable && !fNoConstArgChecks) {
+      call->insertBefore(new CallExpr(PRIM_ZERO_VARIABLE, new SymExpr(tmp)));
+    }
   }
 
   return call;
@@ -365,13 +380,13 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
   bool nilable = isNilableClassType(manager);
   if (isManagedPtrType(manager))
     manager = getManagedPtrManagerType(manager);
-  else if (manager == dtBorrowedNilable)
-    manager = dtBorrowed;
   else if (manager == dtUnmanagedNilable)
     manager = dtUnmanaged;
 
-  if (manager == dtBorrowed) {
-    USR_WARN(newExpr, "creating a 'new borrowed' type is deprecated");
+  // there is also a post-parse check for this, but it can only catch `new borrowed C()`
+  // this also catches `type T = borrowed C; new T()`
+  if (manager == dtBorrowed || manager == dtBorrowedNilable) {
+    USR_FATAL_CONT(newExpr, "cannot create a 'borrowed' object using 'new'");
   }
 
   INT_ASSERT(newExpr->isPrimitive(PRIM_NEW));
@@ -475,10 +490,6 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
     resolveBlockStmt(block);
     newExpr->convertToNoop();
 
-    // If not flattened, the hidden owned temporary for 'new borrowed' might
-    // be auto-destroyed at the end of the block.
-    block->flattenAndRemove();
-
     if (inArgSymbol) {
       // Need to insert an initCopy for promoted new-expressions in order to
       // turn an iterator record into an array.
@@ -519,7 +530,9 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool forNewExpr) {
+static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
+                            AggregateType* newExprAlias,
+                            bool forNewExpr) {
   CallInfo info;
 
   if (call->id == breakOnResolveID) {
@@ -558,12 +571,14 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
           // In the future, the compiler should not be attempting to resolve
           // an already-resolved call.
           bool existingErrors = fatalErrorsEncountered();
-          if (newExprAlias != NULL) {
+          if (newExprAlias != NULL && emitCallResolutionErrors) {
             USR_FATAL_CONT(call, "Unable to resolve new-expression with type alias '%s'", newExprAlias->symbol->name);
           }
           if (!inGenerousResolutionForErrors()) {
             startGenerousResolutionForErrors();
-            resolveInitCall(call, newExprAlias, /*forNewExpr*/ false);
+            const bool forNewExpr = false;
+            resolveInitCall(call, emitCallResolutionErrors, newExprAlias,
+                            forNewExpr);
             FnSymbol* retry = call->resolvedFunction();
             stopGenerousResolutionForErrors();
 
@@ -571,12 +586,14 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
               clearFatalErrors();
           }
         } else {
-          if (candidates.n == 0) {
-            printResolutionErrorUnresolved(info, mostApplicable);
+          if (emitCallResolutionErrors) {
+            if (candidates.n == 0) {
+              printResolutionErrorUnresolved(info, mostApplicable);
 
-            USR_STOP();
-          } else {
-            printResolutionErrorAmbiguous (info, candidates);
+              USR_STOP();
+            } else {
+              printResolutionErrorAmbiguous (info, candidates);
+            }
           }
         }
       }
@@ -584,7 +601,8 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
     } else {
       instantiateBody(best->fn);
 
-      if (explainCallLine != 0 && explainCallMatch(call) == true) {
+      if (explainCallLine != 0 && explainCallMatch(call) == true &&
+          emitCallResolutionErrors) {
         USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
       }
 
@@ -593,9 +611,10 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
 
         call->baseExpr->replace(new SymExpr(best->fn));
 
-        checkForStoringIntoTuple(call, best->fn);
-
-        resolveNormalCallCompilerWarningStuff(call, best->fn);
+        if (emitCallResolutionErrors) {
+          checkForStoringIntoTuple(call, best->fn);
+          resolveNormalCallCompilerWarningStuff(call, best->fn);
+        }
       }
     }
 
@@ -603,7 +622,7 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
       delete candidate;
     }
 
-  } else {
+  } else if (emitCallResolutionErrors) {
     info.haltNotWellFormed();
   }
 }

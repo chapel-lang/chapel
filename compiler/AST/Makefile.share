@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -20,6 +20,7 @@ AST_SRCS =                                          \
            AggregateType.cpp                        \
            alist.cpp                                \
            astutil.cpp                              \
+					 metadata.cpp						   								\
            baseAST.cpp                              \
            bb.cpp                                   \
            build.cpp                                \
@@ -44,6 +45,7 @@ AST_SRCS =                                          \
            primitive.cpp                            \
            stmt.cpp                                 \
            symbol.cpp                               \
+           thunks.cpp                               \
            TryStmt.cpp                              \
            type.cpp                                 \
            UseStmt.cpp                              \
@@ -64,7 +66,6 @@ AST_SRCS =                                          \
            AstLogger.cpp                            \
            AstDump.cpp                              \
            AstDumpToHtml.cpp                        \
-           AstDumpToNode.cpp                        \
                                                     \
            AstCount.cpp                             \
                                                     \

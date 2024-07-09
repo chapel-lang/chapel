@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,7 +54,7 @@
 #include <cstdio>
 
 namespace chpl {
-static int  processIdentifier(yyscan_t scanner, bool queried);
+static int  processIdentifier(yyscan_t scanner, char specialInitialChar);
 static int  processToken(yyscan_t scanner, int t);
 static int  processStringLiteral(yyscan_t scanner, const char* q, int type);
 static int  processTripleStringLiteral(yyscan_t scanner, const char* q, int type);
@@ -83,6 +83,7 @@ letter           [_a-zA-Z]
 
 ident            {letter}({letter}|{digit}|"$")*
 queriedIdent     \?{ident}
+atIdent          \@{ident}
 
 binaryLiteral    0[bB]{bit}(_|{bit})*
 octalLiteral     0[oO]{octDigit}(_|{octDigit})*
@@ -221,7 +222,6 @@ yield            return processToken(yyscanner, TYIELD);
 zip              return processToken(yyscanner, TZIP);
 
 "@"              return processToken(yyscanner, TATMARK);
-"_"              return processToken(yyscanner, TUNDERSCORE);
 
 "="              return processToken(yyscanner, TASSIGN);
 "+="             return processToken(yyscanner, TASSIGNPLUS);
@@ -240,6 +240,7 @@ zip              return processToken(yyscanner, TZIP);
 "reduce="        return processToken(yyscanner, TASSIGNREDUCE);
 
 "init="          return processToken(yyscanner, TINITEQUALS);
+"init"           return processToken(yyscanner, TINIT);
 
 "=>"             return processToken(yyscanner, TALIAS);
 
@@ -305,8 +306,9 @@ zip              return processToken(yyscanner, TZIP);
 {intLiteral}i    return processToken(yyscanner, IMAGLITERAL);
 {floatLiteral}i  return processToken(yyscanner, IMAGLITERAL);
 
-{ident}          return processIdentifier(yyscanner, false);
-{queriedIdent}   return processIdentifier(yyscanner, true);
+{ident}          return processIdentifier(yyscanner, '\0');
+{queriedIdent}   return processIdentifier(yyscanner, '?');
+{atIdent}        return processIdentifier(yyscanner, '@');
 
 "\"\"\""         return processTripleStringLiteral(yyscanner, "\"", STRINGLITERAL);
 "'''"            return processTripleStringLiteral(yyscanner, "'", STRINGLITERAL);

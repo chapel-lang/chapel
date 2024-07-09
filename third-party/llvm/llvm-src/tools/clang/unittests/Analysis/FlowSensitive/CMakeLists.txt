@@ -4,29 +4,38 @@ set(LLVM_LINK_COMPONENTS
   )
 
 add_clang_unittest(ClangAnalysisFlowSensitiveTests
+  ArenaTest.cpp
+  CFGMatchSwitchTest.cpp
   ChromiumCheckModelTest.cpp
   DataflowAnalysisContextTest.cpp
   DataflowEnvironmentTest.cpp
   DebugSupportTest.cpp
+  DeterminismTest.cpp
+  LoggerTest.cpp
   MapLatticeTest.cpp
   MatchSwitchTest.cpp
   MultiVarConstantPropagationTest.cpp
+  RecordOpsTest.cpp
+  SignAnalysisTest.cpp
+  SimplifyConstraintsTest.cpp
   SingleVarConstantPropagationTest.cpp
+  SolverTest.cpp
   TestingSupport.cpp
   TestingSupportTest.cpp
+  TransferBranchTest.cpp
   TransferTest.cpp
   TypeErasedDataflowAnalysisTest.cpp
-  SolverTest.cpp
   UncheckedOptionalAccessModelTest.cpp
+  ValueTest.cpp
   )
 
 clang_target_link_libraries(ClangAnalysisFlowSensitiveTests
   PRIVATE
+  clangAST
+  clangASTMatchers
   clangAnalysis
   clangAnalysisFlowSensitive
   clangAnalysisFlowSensitiveModels
-  clangAST
-  clangASTMatchers
   clangBasic
   clangFrontend
   clangLex
@@ -37,5 +46,6 @@ clang_target_link_libraries(ClangAnalysisFlowSensitiveTests
 target_link_libraries(ClangAnalysisFlowSensitiveTests
   PRIVATE
   clangTesting
+  LLVMTestingAnnotations
   LLVMTestingSupport
   )

@@ -2,9 +2,6 @@
 # suite: Performance Tracking
 npb/ep/mcahir/ep.ml-perf.graph
 npb/ft/npadmana/ft_transposed.ml-perf.graph
-release/examples/benchmarks/hpcc/fft.ml-perf.graph
-release/examples/benchmarks/hpcc/hpl.ml-perf.graph
-release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-perf.graph
 release/examples/benchmarks/hpcc/variants/ra-atomics-variations.ml-perf.graph
 release/examples/benchmarks/hpcc/ra.ml-perf.graph
@@ -16,20 +13,23 @@ studies/ssca2/main/SSCA2_main.ml-time.graph
 studies/lulesh/bradc/lulesh-dense.ml-time.graph
 release/examples/benchmarks/miniMD/miniMD.ml-time.graph
 studies/isx/isx.ml-time.graph
+studies/sinLUT/sinlut-ml.graph
+studies/sinLUT/sinlut-ml-locale0.graph
+studies/sinLUT/sinlut-ml-locale1.graph
 
 # suite: <empty>
 # suite: All (perf)
 npb/ep/mcahir/ep.ml-perf.graph
 npb/ft/npadmana/ft_transposed.ml-perf.graph
-release/examples/benchmarks/hpcc/fft.ml-perf.graph
-release/examples/benchmarks/hpcc/hpl.ml-perf.graph
-release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-perf.graph
 release/examples/benchmarks/hpcc/variants/ra-atomics-variations.ml-perf.graph
 release/examples/benchmarks/hpcc/ra.ml-perf.graph
 release/examples/benchmarks/hpcc/stream-ep.ml-perf.graph
 release/examples/benchmarks/hpcc/stream.ml-perf.graph
 release/examples/benchmarks/hpcc/variants/stream-promoted.ml-perf.graph
+studies/hpcc/FFT/fft.ml-perf.graph
+studies/hpcc/HPL/hpl.ml-perf.graph
+studies/hpcc/PTRANS/ptrans.ml-perf.graph
 studies/ssca2/main/SSCA2_main.ml-perf.graph
 studies/prk/Stencil/prk-stencil.ml-perf.graph
 studies/bale/histogram/histo-atomics.ml-perf.graph
@@ -42,15 +42,15 @@ studies/bale/indexgather/ig-variants.ml-perf.graph
 npb/ep/mcahir/ep.ml-perf.graph
 npb/ft/npadmana/ft_transposed.ml-perf.graph
 # suite: - HPCC (perf)
-release/examples/benchmarks/hpcc/fft.ml-perf.graph
-release/examples/benchmarks/hpcc/hpl.ml-perf.graph
-release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-perf.graph
 release/examples/benchmarks/hpcc/variants/ra-atomics-variations.ml-perf.graph
 release/examples/benchmarks/hpcc/ra.ml-perf.graph
 release/examples/benchmarks/hpcc/stream-ep.ml-perf.graph
 release/examples/benchmarks/hpcc/stream.ml-perf.graph
 release/examples/benchmarks/hpcc/variants/stream-promoted.ml-perf.graph
+studies/hpcc/FFT/fft.ml-perf.graph
+studies/hpcc/HPL/hpl.ml-perf.graph
+studies/hpcc/PTRANS/ptrans.ml-perf.graph
 # suite: - SSCA (perf)
 studies/ssca2/main/SSCA2_main.ml-perf.graph
 # suite: - PRK (perf)
@@ -66,14 +66,14 @@ studies/bale/indexgather/ig-variants.ml-perf.graph
 # suite: All (time)
 npb/ep/mcahir/ep.ml-time.graph
 users/npadmana/npb-mg/mg.ml-time.graph
-release/examples/benchmarks/hpcc/fft.ml-time.graph
-release/examples/benchmarks/hpcc/hpl.ml-time.graph
-release/examples/benchmarks/hpcc/ptrans.ml-time.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-time.graph
 release/examples/benchmarks/hpcc/ra.ml-time.graph
 release/examples/benchmarks/hpcc/stream-ep.ml-time.graph
 release/examples/benchmarks/hpcc/stream.ml-time.graph
 release/examples/benchmarks/hpcc/variants/stream-promoted.ml-time.graph
+studies/hpcc/FFT/fft.ml-time.graph
+studies/hpcc/HPL/hpl.ml-time.graph
+studies/hpcc/PTRANS/ptrans.ml-time.graph
 studies/ssca2/main/SSCA2_main.ml-time.graph
 studies/lulesh/bradc/lulesh-dense.ml-time.graph
 release/examples/benchmarks/miniMD/miniMD.ml-time.graph
@@ -93,14 +93,14 @@ optimizations/bulkcomm/block/exchange.ml-time.graph
 npb/ep/mcahir/ep.ml-time.graph
 users/npadmana/npb-mg/mg.ml-time.graph
 # suite: - HPCC (time)
-release/examples/benchmarks/hpcc/fft.ml-time.graph
-release/examples/benchmarks/hpcc/hpl.ml-time.graph
-release/examples/benchmarks/hpcc/ptrans.ml-time.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-time.graph
 release/examples/benchmarks/hpcc/ra.ml-time.graph
 release/examples/benchmarks/hpcc/stream-ep.ml-time.graph
 release/examples/benchmarks/hpcc/stream.ml-time.graph
 release/examples/benchmarks/hpcc/variants/stream-promoted.ml-time.graph
+studies/hpcc/FFT/fft.ml-time.graph
+studies/hpcc/HPL/hpl.ml-time.graph
+studies/hpcc/PTRANS/ptrans.ml-time.graph
 # suite: - SSCA (time)
 studies/ssca2/main/SSCA2_main.ml-time.graph
 # suite: - DOE (time)
@@ -156,3 +156,4 @@ performance/array/distCreate-large-deinit.ml-perf.graph
 library/packages/Sort/performance/dist-performance.ml-perf.graph
 runtime/ferguson/cache-remote-mock-tests/mock-ra-perf.ml-time.graph
 optimizations/autoAggregation/perf/autoAggNegativeImpact.ml-perf.graph
+exercises/diffusion-2D/heat_2d_dist.ml-time.graph

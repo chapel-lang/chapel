@@ -201,11 +201,6 @@ writeRange(..5 # -3);         // 3, 4, 5
 writeln();
 
 //
-// The ``by`` and ``align`` operators are used to create `strided
-// ranges` representing non-consecutive, evenly spaced values.
-//
-
-//
 // The ``by`` operator applies a stride to a range, selecting a
 // subsequence of its original values.  If the range was already
 // strided, the effect is multiplicative.  If the stride is negative,
@@ -262,7 +257,7 @@ writeln();
 //
 // The alignment is always taken modulo the stride, so one could also
 // declare 'allEvens' using `.. by 2 align 0`, `.. by 2 align 12`, or
-// any other even number as the alignment.:
+// any other even number as the alignment.
 //
 
 
@@ -326,9 +321,6 @@ writeln(r[allEvens] == evensBetween1and10);  // true
 // strided and/or unbounded
 // When the slicing range has a negative stride, the direction of
 // the original range is reversed.
-// As of Chapel Release 1.30, this feature requires compiling
-// with ``-snewSliceRule``. In a subsequent release this behavior
-// will be standard and the option ``-snewSliceRule`` will be removed.
 //
 const rs = 1..20 by 3;
 writeln("A slice of ", rs, " with ", 1..20 by 2);
@@ -352,7 +344,7 @@ writeln();
 //
 // * ``idxType``: The type of the range's values (defaults to ``int``)
 // * ``bounds``: A :enum:`boundKind` value indicating which bounds the range stores (defaults to ``boundKind.both``)
-// * ``stridable``: A ``bool`` indicating whether or not the range can have a stride other than 1 (defaults to ``false``)
+// * ``strides``: A :enum:`strideKind` value indicating what values the range's ``strides`` is allowed to store (defaults to ``strideKind.one``)
 //
 // Like other variables, range types can be inferred by the compiler
 // from the initializing expression for simplicity, as in the previous
@@ -360,19 +352,19 @@ writeln();
 // are some examples that are equivalent to ones we've seen before:
 //
 const rt: range(int) = 1..10,
-      rt2: range(int, bounds=boundKind.both, stridable=false)
+      rt2: range(int, bounds=boundKind.both, strides=strideKind.one)
          = 1..10,
       rte: range(color) = color.orange..color.green,
-      rts: range(stridable=true) = 1..10 by 2,
+      rts: range(strides=strideKind.any) = 1..10 by 2,
       rtub: range(bounds=boundKind.low) = 1..;
 
 // More importantly, range types can be used to make a range variable
 // more flexible than its initializer permits.  For example, this
 // range's initializer has a unit stride, but because its type is
-// declared with ``stridable=true``, it can later be assigned a range
+// declared with ``strideKind.any``, it can later be assigned a range
 // value with a stride.
 
-var rangeVar: range(int, stridable=true) = 1..10;
+var rangeVar: range(int, strides=strideKind.any) = 1..10;
 
 // Range types are also valuable in declaring formal arguments of a
 // procedure in which you want to leave certain aspects of the range

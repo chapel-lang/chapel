@@ -1,2 +1,0 @@
-choiceTestLowbounded.chpl:6: In function 'main':
-choiceTestLowbounded.chpl:12: error: input range must be bounded

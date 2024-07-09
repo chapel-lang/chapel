@@ -9,8 +9,8 @@
 #ifndef LLVM_TOOLS_LLVM_DWARFUTIL_OPTIONS_H
 #define LLVM_TOOLS_LLVM_DWARFUTIL_OPTIONS_H
 
-#include "llvm/ADT/SmallString.h"
-#include "llvm/ADT/StringRef.h"
+#include <cstdint>
+#include <string>
 
 namespace llvm {
 namespace dwarfutil {
@@ -24,6 +24,12 @@ enum class TombstoneKind {
   Exec,      /// match with address range of executable sections.
 };
 
+/// The kind of accelerator table.
+enum class DwarfUtilAccelKind : uint8_t {
+  None,
+  DWARF // DWARFv5: .debug_names
+};
+
 struct Options {
   std::string InputFileName;
   std::string OutputFileName;
@@ -34,6 +40,8 @@ struct Options {
   bool Verbose = false;
   int NumThreads = 0;
   bool Verify = false;
+  bool UseDWARFLinkerParallel = false;
+  DwarfUtilAccelKind AccelTableKind = DwarfUtilAccelKind::None;
 
   std::string getSeparateDebugFileName() const {
     return OutputFileName + ".debug";

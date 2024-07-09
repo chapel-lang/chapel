@@ -92,7 +92,6 @@ doit(owned MyClass);
 doit(shared MyClass);
 doit(atomic int);
 doit(sync int);
-doit(single int);
 doit(NotPod1);
 doit(NotPod2);
 doit(NotPod3);

@@ -1,0 +1,6 @@
+private-use-enum-vs-outer.chpl:5: In function 'main':
+private-use-enum-vs-outer.chpl:7: warning: potentially surprising shadowing for 'x'
+private-use-enum-vs-outer.chpl:6: note: it refers to a symbol found through the 'use' of 'myEnum' here
+private-use-enum-vs-outer.chpl:2: note: leading to 'x' defined here
+private-use-enum-vs-outer.chpl:4: note: but, there is a shadowed symbol 'x' defined here
+x

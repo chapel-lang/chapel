@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,10 +37,10 @@ static QualifiedType::Kind constIntentForType(const Type* t) {
   if (t == nullptr || t->isUnknownType() || t->isErroneousType())
     return QualifiedType::UNKNOWN;
 
-  if (t->isPrimitiveType() || t->isEnumType() || t->isOpaqueType() ||
-      t->isTaskIdType()  || t->isNilType() ||
+  if (t->isPrimitiveType() || t->isEnumType() || t->isExternType() ||
+      t->isOpaqueType() || t->isTaskIdType()  || t->isNilType() ||
       t->isCStringType() || t->isCVoidPtrType() || t->isCFnPtrType() ||
-      t->isNothingType() || t->isVoidType())
+      t->isNothingType() || t->isVoidType() || t->isCPtrType())
     return QualifiedType::CONST_IN;
 
   if (t->isStringType() || t->isBytesType() ||
@@ -70,10 +70,10 @@ static QualifiedType::Kind defaultIntentForType(const Type* t,
   if (t == nullptr || t->isUnknownType() || t->isErroneousType())
     return QualifiedType::UNKNOWN;
 
-  if (t->isPrimitiveType() || t->isEnumType() || t->isOpaqueType() ||
-      t->isTaskIdType() ||  t->isNilType() ||
-      t->isCStringType() || t->isCVoidPtrType() || t->isCFnPtrType() ||
-      t->isNothingType() || t->isVoidType())
+  if (t->isPrimitiveType() || t->isEnumType() || t->isExternType() ||
+      t->isOpaqueType() || t->isTaskIdType() ||  t->isNilType() ||
+      t->isCStringType() || t->isCVoidPtrType() || t->isCPtrType() ||
+      t->isCFnPtrType() || t->isNothingType() || t->isVoidType())
     return QualifiedType::CONST_IN;
 
   if (t->isStringType() || t->isBytesType() ||
@@ -116,6 +116,7 @@ QualifiedType::Kind resolveIntent(const QualifiedType& t,
     case QualifiedType::PARENLESS_FUNCTION:
     case QualifiedType::FUNCTION:
     case QualifiedType::MODULE:
+    case QualifiedType::INIT_RECEIVER:
       // these don't really have an intent
       return QualifiedType::UNKNOWN;
 

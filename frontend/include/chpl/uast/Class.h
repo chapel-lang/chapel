@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,37 +43,37 @@ namespace uast {
   The class itself (MyClass) is represented by a Class AST node.
  */
 class Class final : public AggregateDecl {
- private:
-  int parentClassChildNum_;
+ friend class AstNode;
 
+ private:
   Class(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
         UniqueString name,
+        int parentClassChildNum,
+        int numParentClasses,
         int elementsChildNum,
-        int numElements,
-        int parentClassChildNum)
+        int numElements)
     : AggregateDecl(asttags::Class, std::move(children),
                     attributeGroupChildNum,
                     vis,
                     Decl::DEFAULT_LINKAGE,
                     /*linkageNameChildNum*/ NO_CHILD,
                     name,
+                    parentClassChildNum,
+                    numParentClasses,
                     elementsChildNum,
-                    numElements),
-      parentClassChildNum_(parentClassChildNum) {
-    CHPL_ASSERT(parentClassChildNum_ == NO_CHILD ||
-           child(parentClassChildNum_)->isIdentifier());
+                    numElements) {}
+
+  void serializeInner(Serializer& ser) const override {
+    aggregateDeclSerializeInner(ser);
   }
 
-  Class(Deserializer& des)
-    : AggregateDecl(asttags::Class, des) {
-      parentClassChildNum_ = des.read<int>();
-     }
+  explicit Class(Deserializer& des)
+    : AggregateDecl(asttags::Class, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Class* lhs = this;
     const Class* rhs = (const Class*) other;
-    return lhs->aggregateDeclContentsMatchInner(rhs) &&
-           lhs->parentClassChildNum_ == rhs->parentClassChildNum_;
+    return lhs->aggregateDeclContentsMatchInner(rhs);
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -89,28 +89,8 @@ class Class final : public AggregateDecl {
                             owned<AttributeGroup> attributeGroup,
                             Decl::Visibility vis,
                             UniqueString name,
-                            owned<AstNode> parentClass,
+                            AstList inheritExprs,
                             AstList contents);
-
-  /**
-    Return the AstNode indicating the parent class or nullptr
-    if there was none.
-   */
-  const AstNode* parentClass() const {
-    if (parentClassChildNum_ < 0)
-      return nullptr;
-
-    auto ret = child(parentClassChildNum_);
-    return ret;
-  }
-
-  void serialize(Serializer& ser) const override {
-    AggregateDecl::serialize(ser);
-    ser.write(parentClassChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Class);
-
 };
 
 

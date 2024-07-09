@@ -31,7 +31,7 @@ var beta: int = 2123;
 /* Initializes a 2D structure */
 proc initialize_2D(distribution, m_dim: int) {
     var matrix: [distribution] real = 0.0;
-    forall (i,j) in distribution {
+    forall (i,j) in distribution with (ref matrix) {
         matrix[i,j] = ((i - 1) * (j - 1)) / (1.0 * m_dim);
     }
     return matrix;
@@ -73,11 +73,11 @@ proc kernel_syrk(dist_2D, m_dim: int, n_dim: int) {
     
     C *= beta;
     
-    forall i in 1..m_dim {
-        forall j in 1..n_dim {
+    forall i in 1..m_dim with (ref C) {
+        forall j in 1..n_dim with (ref C) {
             var temp: real = C[i,j];
             var tempArray: [1..n_dim] real;
-            forall (a,b,c) in zip (A[i,..], A[j,..], 1..) {
+            forall (a,b,c) in zip (A[i,..], A[j,..], 1..) with (ref tempArray) {
                 tempArray[c] = alpha * a * b; 
             }
             C[i,j] = temp + (+ reduce (tempArray));
@@ -108,11 +108,11 @@ proc kernel_syrk(dist_2D, m_dim: int, n_dim: int) {
     
       CTest *= beta;
     
-      forall i in 1..m_dim {
-          forall j in 1..n_dim {
+      forall i in 1..m_dim with (ref CTest) {
+          forall j in 1..n_dim with (ref CTest) {
               var tempTest: real = CTest[i,j];
               var tempArrayTest: [1..n_dim] real;
-              forall (a,b,c) in zip (ATest[i,..], ATest[j,..], 1..) {
+              forall (a,b,c) in zip (ATest[i,..], ATest[j,..], 1..) with (ref tempArrayTest) {
                   tempArrayTest[c] = alpha * a * b; 
               }
               CTest[i,j] = tempTest + (+ reduce (tempArrayTest));
@@ -150,10 +150,10 @@ proc main() {
         var dist_2D = dom_2D dmapped CyclicZipOpt(startIdx=dom_2D.low);
         kernel_syrk(dist_2D, M, N); 
     } */else if dist == "C" {
-        var dist_2D = dom_2D dmapped Cyclic(startIdx=dom_2D.low);
+        var dist_2D = dom_2D dmapped new cyclicDist(startIdx=dom_2D.low);
         kernel_syrk(dist_2D, M, N); 
     } else if dist == "B" {
-        var dist_2D = dom_2D dmapped Block(boundingBox=dom_2D);
+        var dist_2D = dom_2D dmapped new blockDist(boundingBox=dom_2D);
         kernel_syrk(dist_2D, M, N);  
     } 
 }

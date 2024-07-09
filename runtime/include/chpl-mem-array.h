@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,6 +54,7 @@ chpl_bool chpl_mem_size_justifies_comm_alloc(size_t size) {
 static inline
 void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
                            c_sublocid_t subloc, chpl_bool* callPostAlloc,
+                           chpl_bool haltOnOom,
                            int32_t lineno, int32_t filename) {
   void* p = NULL;
   const size_t size = nmemb * eltSize;
@@ -93,8 +94,13 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
     p = chpl_malloc(size);
   }
 
-  chpl_memhook_malloc_post(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
-                           lineno, filename);
+  if (haltOnOom) {
+    chpl_memhook_malloc_post(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                             lineno, filename);
+  } else if (p != NULL && CHPL_MEMHOOKS_ACTIVE) {
+    chpl_track_malloc(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                      lineno, filename);
+  }
 #if defined(HAS_GPU_LOCALE) && !defined(GPU_RUNTIME_CPU)
   }
 #endif

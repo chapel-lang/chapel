@@ -147,7 +147,7 @@ proc loadParticles(filename:string, p:[?D], v:[D])
 {
     use IO;
     var rawFile=open(filename, ioMode.r, ioHintSet.sequential);
-    var fileIn=rawFile.reader(iokind.dynamic,true,0.., ioHintSet.sequential);
+    var fileIn=rawFile.reader(true,0.., ioHintSet.sequential);
 
     for i in D
     {

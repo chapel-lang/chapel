@@ -1,7 +1,7 @@
 use Reflection;
 proc test(in obj) {
   writeln("===== ", obj.type:string);
-  writeln("  numFields       ", numFields(obj.type)            :string);
+  writeln("  getNumFields    ", getNumFields(obj.type)         :string);
   writeln("  getFieldName    ", getFieldName(obj.type, 5)             );
   writeln("  getField        ", getField(obj, 5)               :string);
   writeln("  getFieldRef     ", getFieldRef(obj, 5)             :string);

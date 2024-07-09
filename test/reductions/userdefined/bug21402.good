@@ -1,0 +1,1 @@
+bug21402.chpl:45: error: cannot initialize 'RP_chpl_redSVar' of type 'unmanaged WeirdReduceScanOp(int(64))' from a 'unmanaged AnyEvenReduceScanOp(int(64))'

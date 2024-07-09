@@ -19,7 +19,6 @@
 #include "TargetInfo/PowerPCTargetInfo.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/BinaryFormat/ELF.h"
 #include "llvm/MC/MCAsmBackend.h"
 #include "llvm/MC/MCAssembler.h"
@@ -44,6 +43,7 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FormattedStream.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/TargetParser/Triple.h"
 
 using namespace llvm;
 
@@ -56,6 +56,90 @@ using namespace llvm;
 
 #define GET_REGINFO_MC_DESC
 #include "PPCGenRegisterInfo.inc"
+
+/// stripRegisterPrefix - This method strips the character prefix from a
+/// register name so that only the number is left.  Used by for linux asm.
+const char *PPC::stripRegisterPrefix(const char *RegName) {
+  switch (RegName[0]) {
+    case 'a':
+      if (RegName[1] == 'c' && RegName[2] == 'c')
+	return RegName + 3;
+      break;
+    case 'f':
+      if (RegName[1] == 'p')
+	return RegName + 2;
+      [[fallthrough]];
+    case 'r':
+    case 'v':
+      if (RegName[1] == 's') {
+	if (RegName[2] == 'p')
+	  return RegName + 3;
+	return RegName + 2;
+      }
+      return RegName + 1;
+    case 'c':
+      if (RegName[1] == 'r')
+	return RegName + 2;
+      break;
+    case 'w':
+      // For wacc and wacc_hi
+      if (RegName[1] == 'a' && RegName[2] == 'c' && RegName[3] == 'c') {
+	if (RegName[4] == '_')
+	  return RegName + 7;
+	else
+	  return RegName + 4;
+      }
+      break;
+    case 'd':
+      // For dmr, dmrp, dmrrow, dmrrowp
+      if (RegName[1] == 'm' && RegName[2] == 'r') {
+	if (RegName[3] == 'r' && RegName[4] == 'o' && RegName[5] == 'w' &&
+	    RegName[6] == 'p')
+	  return RegName + 7;
+	else if (RegName[3] == 'r' && RegName[4] == 'o' && RegName[5] == 'w')
+	  return RegName + 6;
+	else if (RegName[3] == 'p')
+	  return RegName + 4;
+	else
+	  return RegName + 3;
+      }
+      break;
+  }
+
+  return RegName;
+}
+
+/// getRegNumForOperand - some operands use different numbering schemes
+/// for the same registers. For example, a VSX instruction may have any of
+/// vs0-vs63 allocated whereas an Altivec instruction could only have
+/// vs32-vs63 allocated (numbered as v0-v31). This function returns the actual
+/// register number needed for the opcode/operand number combination.
+/// The operand number argument will be useful when we need to extend this
+/// to instructions that use both Altivec and VSX numbering (for different
+/// operands).
+unsigned PPC::getRegNumForOperand(const MCInstrDesc &Desc, unsigned Reg,
+                                  unsigned OpNo) {
+  int16_t regClass = Desc.operands()[OpNo].RegClass;
+  switch (regClass) {
+    // We store F0-F31, VF0-VF31 in MCOperand and it should be F0-F31,
+    // VSX32-VSX63 during encoding/disassembling
+    case PPC::VSSRCRegClassID:
+    case PPC::VSFRCRegClassID:
+      if (PPC::isVFRegister(Reg))
+	return PPC::VSX32 + (Reg - PPC::VF0);
+      break;
+    // We store VSL0-VSL31, V0-V31 in MCOperand and it should be VSL0-VSL31,
+    // VSX32-VSX63 during encoding/disassembling
+    case PPC::VSRCRegClassID:
+      if (PPC::isVRRegister(Reg))
+	return PPC::VSX32 + (Reg - PPC::V0);
+      break;
+    // Other RegClass doesn't need mapping
+    default:
+      break;
+  }
+  return Reg;
+}
 
 PPCTargetStreamer::PPCTargetStreamer(MCStreamer &S) : MCTargetStreamer(S) {}
 
@@ -147,12 +231,12 @@ public:
       MCSymbolXCOFF *TCSym =
           cast<MCSectionXCOFF>(Streamer.getCurrentSectionOnly())
               ->getQualNameSymbol();
-      // If the variant kind is VK_PPC_AIX_TLSGDM the entry represents the
-      // region handle for the symbol, we add the relocation specifier @m.
-      // If the variant kind is VK_PPC_AIX_TLSGD the entry represents the
-      // variable offset for the symbol, we add the relocation specifier @gd.
+      // On AIX, we have a region handle (symbol@m) and the variable offset
+      // (symbol@{gd|ie|le}) for TLS variables, depending on the TLS model.
       if (Kind == MCSymbolRefExpr::VariantKind::VK_PPC_AIX_TLSGD ||
-          Kind == MCSymbolRefExpr::VariantKind::VK_PPC_AIX_TLSGDM)
+          Kind == MCSymbolRefExpr::VariantKind::VK_PPC_AIX_TLSGDM ||
+          Kind == MCSymbolRefExpr::VariantKind::VK_PPC_AIX_TLSIE ||
+          Kind == MCSymbolRefExpr::VariantKind::VK_PPC_AIX_TLSLE)
         OS << "\t.tc " << TCSym->getName() << "," << XSym->getName() << "@"
            << MCSymbolRefExpr::getVariantKindName(Kind) << '\n';
       else
@@ -196,7 +280,7 @@ public:
   void emitTCEntry(const MCSymbol &S,
                    MCSymbolRefExpr::VariantKind Kind) override {
     // Creates a R_PPC64_TOC relocation
-    Streamer.emitValueToAlignment(8);
+    Streamer.emitValueToAlignment(Align(8));
     Streamer.emitSymbolValue(&S, 8);
   }
 
@@ -289,7 +373,7 @@ private:
     case 16:
     case 32:
     case 64:
-      return (int)Log2(Offset) << (int)ELF::STO_PPC64_LOCAL_BIT;
+      return Log2_32(Offset) << ELF::STO_PPC64_LOCAL_BIT;
     }
   }
 };
@@ -325,7 +409,7 @@ public:
                    MCSymbolRefExpr::VariantKind Kind) override {
     const MCAsmInfo *MAI = Streamer.getContext().getAsmInfo();
     const unsigned PointerSize = MAI->getCodePointerSize();
-    Streamer.emitValueToAlignment(PointerSize);
+    Streamer.emitValueToAlignment(Align(PointerSize));
     Streamer.emitValue(MCSymbolRefExpr::create(&S, Kind, Streamer.getContext()),
                        PointerSize);
   }
@@ -350,6 +434,10 @@ static MCTargetStreamer *createAsmTargetStreamer(MCStreamer &S,
                                                  MCInstPrinter *InstPrint,
                                                  bool isVerboseAsm) {
   return new PPCTargetAsmStreamer(S, OS);
+}
+
+static MCTargetStreamer *createNullTargetStreamer(MCStreamer &S) {
+  return new PPCTargetStreamer(S);
 }
 
 static MCTargetStreamer *
@@ -381,7 +469,7 @@ public:
                       uint64_t &Target) const override {
     unsigned NumOps = Inst.getNumOperands();
     if (NumOps == 0 ||
-        Info->get(Inst.getOpcode()).OpInfo[NumOps - 1].OperandType !=
+        Info->get(Inst.getOpcode()).operands()[NumOps - 1].OperandType !=
             MCOI::OPERAND_PCREL)
       return false;
     Target = Addr + Inst.getOperand(NumOps - 1).getImm() * Size;
@@ -431,6 +519,9 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializePowerPCTargetMC() {
 
     // Register the asm target streamer.
     TargetRegistry::RegisterAsmTargetStreamer(*T, createAsmTargetStreamer);
+
+    // Register the null target streamer.
+    TargetRegistry::RegisterNullTargetStreamer(*T, createNullTargetStreamer);
 
     // Register the MCInstPrinter.
     TargetRegistry::RegisterMCInstPrinter(*T, createPPCMCInstPrinter);

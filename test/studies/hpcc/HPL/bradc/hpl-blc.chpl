@@ -35,8 +35,7 @@ config const epsilon = 2.0e-15;
 // pseudo-random seed (based on the clock) or a fixed seed; and to
 // specify the fixed seed explicitly
 //
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 31415;
+config const useRandomSeed = true;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -89,8 +88,8 @@ proc main() {
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
-                piv: [1..n] indexType) {
+proc LUFactorize(n: indexType, ref Ab: [?AbD] elemType,
+                ref piv: [1..n] indexType) {
   
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
@@ -169,7 +168,7 @@ proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
+proc schurComplement(Ab: [?AbD] elemType, AD: domain(?), BD: domain(?), Rest: domain(?)) {
   //
   // Copy data into replicated array so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.  These
@@ -213,7 +212,7 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 //
 proc dgemmNativeInds(A: [] elemType,
                     B: [] elemType,
-                    C: [] elemType) {
+                    ref C: [] elemType) {
   for (iA, iC) in zip(A.domain.dim(0), C.domain.dim(0)) do
     for (jA, iB) in zip(A.domain.dim(1), B.domain.dim(0)) do
       for (jB, jC) in zip(B.domain.dim(1), C.domain.dim(1)) do
@@ -247,9 +246,9 @@ proc dgemmIdeal(A: [1.., 1..] elemType,
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 //
-proc panelSolve(Ab: [] elemType,
-               panel: domain,
-               piv: [] indexType) {
+proc panelSolve(ref Ab: [] elemType,
+               panel: domain(?),
+               ref piv: [] indexType) {
 
   //
   // TODO: Use on clause here (or avoid using a range?
@@ -283,7 +282,7 @@ proc panelSolve(Ab: [] elemType,
     Ab[k+1.., k..k] /= pivotVal;
     
     // update all other values below the pivot
-    forall (i,j) in panel[k+1.., k+1..] do
+    forall (i,j) in panel[k+1.., k+1..] with (ref Ab) do
       Ab[i,j] -= Ab[i,k] * Ab[k,j];
   }
 }
@@ -294,15 +293,15 @@ proc panelSolve(Ab: [] elemType,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-proc updateBlockRow(Ab: [] elemType,
-                   tl: domain,
-                   tr: domain) {
+proc updateBlockRow(ref Ab: [] elemType,
+                   tl: domain(?),
+                   tr: domain(?)) {
 
   for row in tr.dim(0) {
     const activeRow = tr[row..row, ..],
           prevRows = tr.dim(0).low..row-1;
 
-    forall (i,j) in activeRow do
+    forall (i,j) in activeRow with (ref Ab) do
       for k in prevRows do
         Ab[i, j] -= Ab[i, k] * Ab[k,j];
   }
@@ -339,15 +338,17 @@ proc printConfiguration() {
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
-proc initAB(Ab: [] elemType) {
-  fillRandom(Ab, seed);
+proc initAB(ref Ab: [] elemType) {
+  if useRandomSeed
+    then fillRandom(Ab);
+    else fillRandom(Ab, 31415);
   Ab = Ab * 2.0 - 1.0;
 }
 
 //
 // calculate norms and residuals to verify the results
 //
-proc verifyResults(Ab, MatrixSpace, x) {
+proc verifyResults(ref Ab, MatrixSpace, x) {
   ref A = Ab[MatrixSpace],
       b = Ab[.., n+1];
 
@@ -394,7 +395,7 @@ proc gaxpyMinus(A: [?AD],
   var res: [yD] elemType;
 
   // TODO: really want a partial reduction here
-  forall i in yD do
+  forall i in yD with (ref res) do
     res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[i];
 
   return res;

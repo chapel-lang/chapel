@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+
+# This script verifies that a call to the 'Math.fma()' procedure under LLVM
+# correctly optimizes down to a single machine instruction on x86 platforms
+# that have support for FMA (see .skipif for that check).
+# Script assumes x86 and FMA support.
+
+import os, subprocess, sys, os.path
+import shutil
+
+testname = sys.argv[1]
+outfile = sys.argv[2]
+compiler = sys.argv[3]
+
+CHPL_HOME = os.getenv('CHPL_HOME')
+CHPL_LLVM_CONFIG=None
+chplenv = subprocess.check_output([CHPL_HOME + "/util/printchplenv",
+                                   "--all", "--internal", "--simple"])
+
+# This is an implementation sym that should appear with '--no-inline'.
+sym = 'fmaSelectPrimitiveOrExternCall_chpl'
+
+# This is the x86 hardware instruction.
+ins = 'vfmadd213sd'
+
+# Get the 'CHPL_LLVM_CONFIG' value.
+for line in chplenv.splitlines():
+  line_str = str(line, encoding='utf-8', errors='surrogateescape')
+  if not line_str.count('=') == 1: continue
+  (k, v) = line_str.split('=', 2)
+  if k == 'CHPL_LLVM_CONFIG': CHPL_LLVM_CONFIG=v
+
+# Get the path to 'llvm-objdump'.
+llvm_bin_bytes = subprocess.check_output([CHPL_LLVM_CONFIG, '--bindir'])
+llvm_bin = str(llvm_bin_bytes, encoding='utf-8', errors='surrogateescape')
+llvm_bin = llvm_bin.strip()
+llvm_objdump = llvm_bin + '/llvm-objdump'
+
+def attemptToDisassemble(s, b):
+  dump_args = [llvm_objdump, '-d', '--disassemble-symbols={}'.format(s),
+               '--x86-asm-syntax=intel',
+               '--demangle',
+               b]
+  cmd = ' '.join(dump_args)
+  p = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE,
+                     stderr=subprocess.PIPE)
+  return (p.returncode, p.stdout.decode(), p.stderr.decode())
+
+# Try to disassemble twice, as on some platforms symbol names in the
+# generated binary will have a leading underscore.
+(code, out, err) = attemptToDisassemble(sym, testname)
+if code != 0 or 'failed to disassemble' in err:
+  (code, out, err) = attemptToDisassemble(('_' + sym), testname)
+
+# Write the instruction on success, or the disassembler output on failure.
+with open(outfile, 'a') as fp:
+  if code != 0:
+    fp.write('Disassembly failed with exit code: {}\n'.format(code))
+  if err:
+    fp.write('There was an error:\n')
+    fp.write(err)
+    fp.write('\n')
+  if ins in out:
+    fp.write('Found {} {}\n'.format(out.count(ins), ins))
+  elif out:
+    fp.write('Did not find {}'.format(ins))
+    fp.write(out)
+    fp.write('\n')

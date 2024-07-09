@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,7 @@
 #include <string.h>
 #include "chplcgfns.h"
 #include "chpllaunch.h"
+#include "chpl-env.h"
 #include "chpl-mem.h"
 #include "error.h"
 
@@ -33,21 +34,29 @@
 #define WRAP_TO_STR(x) TO_STR(x)
 #define TO_STR(x) #x
 
+#define CHPL_LPN_VAR "LOCALES_PER_NODE"
+
 static char _nlbuf[16];
+static char _nnbuf[16];
+
 static char** chpl_launch_create_argv(const char *launch_cmd,
                                       int argc, char* argv[],
-                                      int32_t numLocales) {
+                                      int32_t numLocales,
+                                      int32_t numLocalesPerNode) {
   const int maxlargc = 9;
   char *largv[maxlargc];
 
+  int32_t numNodes = (numLocales + numLocalesPerNode - 1) / numLocalesPerNode;
+
   snprintf(_nlbuf, sizeof(_nlbuf), "%d", numLocales);
+  snprintf(_nnbuf, sizeof(_nnbuf), "%d", numNodes);
 
   int largc = 9;
   largv[0] = (char *) launch_cmd;
   largv[1] = (char *) "-n";
   largv[2] = _nlbuf;
   largv[3] = (char *) "-N";
-  largv[4] = _nlbuf;
+  largv[4] = _nnbuf;
   largv[5] = (char *) "-c";
   largv[6] = (char *) "0";
   largv[7] = (char*) "-E";
@@ -56,14 +65,16 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
   return chpl_bundle_exec_args(argc, argv, largc, largv);
 }
 
-int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+int chpl_launch(int argc, char* argv[], int32_t numLocales,
+                int32_t numLocalesPerNode) {
+
   int len = strlen(CHPL_THIRD_PARTY) + strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen(GASNETRUN_LAUNCHER) + 2;
   char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   snprintf(cmd, len, "%s/%s%s", CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), GASNETRUN_LAUNCHER);
 
   return chpl_launch_using_exec(cmd,
                                 chpl_launch_create_argv(cmd, argc, argv,
-                                                        numLocales),
+                                                        numLocales, numLocalesPerNode),
                                 argv[0]);
 }
 

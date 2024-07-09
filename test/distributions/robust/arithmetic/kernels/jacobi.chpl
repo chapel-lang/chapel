@@ -20,7 +20,7 @@ proc main() {
                                         //   X stores approximate solution
                                         //   XNew stores the next solution
 
-  [ij in ProblemSpace.exterior(1,0)]    // Set south boundary values to 1.0
+  [ij in ProblemSpace.exterior(1,0) with (ref X)]    // Set south boundary values to 1.0
     X[ij] = 1.0;
 
   if (verbose) {
@@ -35,7 +35,7 @@ proc main() {
 
   do {
     // compute next approximation using Jacobi method and store in XNew
-    forall ij in ProblemSpace do
+    forall ij in ProblemSpace with (ref XNew) do
       XNew(ij) = (X(ij+north) + X(ij+south) + X(ij+east) + X(ij+west)) / 4.0;
 
     // compute difference between next and current approximations

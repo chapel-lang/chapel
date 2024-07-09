@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,7 +39,8 @@ class Builder;
   are at a statement level will be represented with this type.
  */
 class Comment final : public AstNode {
-  friend Builder;
+ friend class AstNode;
+ friend class Builder;
 
  private:
   std::string comment_;
@@ -49,7 +50,12 @@ class Comment final : public AstNode {
     : AstNode(asttags::Comment), comment_(std::move(s)) {
   }
 
-  Comment(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    ser.write(comment_);
+    ser.write(commentId_); // TODO: don't serialize comment IDs
+  }
+
+  explicit Comment(Deserializer& des)
     : AstNode(asttags::Comment, des) {
     comment_ = des.read<std::string>();
     commentId_ = des.read<CommentID>();
@@ -85,14 +91,6 @@ class Comment final : public AstNode {
      its BuilderResult
   */
   CommentID commentId() const { return commentId_; }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(comment_);
-    ser.write(commentId_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Comment);
 
  protected:
   /**

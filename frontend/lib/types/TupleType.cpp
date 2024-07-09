@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #include "chpl/types/TupleType.h"
 
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/intents.h"
 #include "chpl/types/Param.h"
 
@@ -92,16 +93,16 @@ void TupleType::computeIsParamKnown() {
 }
 
 const owned<TupleType>&
-TupleType::getTupleType(Context* context, ID id, UniqueString name,
-                        const TupleType* instantiatedFrom,
+TupleType::getTupleType(Context* context, const TupleType* instantiatedFrom,
                         SubstitutionsMap subs,
                         bool isVarArgTuple) {
-  QUERY_BEGIN(getTupleType, context, id, name, instantiatedFrom, subs,
+  QUERY_BEGIN(getTupleType, context, instantiatedFrom, subs,
                             isVarArgTuple);
 
-  auto result = toOwned(new TupleType(id, name,
-                                      instantiatedFrom, std::move(subs),
-                                      isVarArgTuple));
+  auto name = UniqueString::get(context, "_tuple");
+  auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelTuple", "_tuple");
+  auto result = toOwned(new TupleType(id, name, instantiatedFrom,
+                                      std::move(subs), isVarArgTuple));
 
   return QUERY_END(result);
 }
@@ -116,10 +117,8 @@ TupleType::getValueTuple(Context* context, std::vector<const Type*> eltTypes) {
     i++;
   }
 
-  auto name = UniqueString::get(context, "_tuple");
-  auto id = ID();
   const TupleType* instantiatedFrom = getGenericTupleType(context);
-  return getTupleType(context, id, name, instantiatedFrom,
+  return getTupleType(context, instantiatedFrom,
                       std::move(subs)).get();
 }
 
@@ -144,20 +143,16 @@ TupleType::getReferentialTuple(Context* context,
     i++;
   }
 
-  auto name = UniqueString::get(context, "_tuple");
-  auto id = ID();
   const TupleType* instantiatedFrom = getGenericTupleType(context);
-  return getTupleType(context, id, name, instantiatedFrom,
+  return getTupleType(context, instantiatedFrom,
                       std::move(subs)).get();
 }
 
 const TupleType*
 TupleType::getGenericTupleType(Context* context) {
-  auto name = UniqueString::get(context, "_tuple");
-  auto id = ID();
   SubstitutionsMap subs;
   const TupleType* instantiatedFrom = nullptr;
-  return getTupleType(context, id, name, instantiatedFrom, subs).get();
+  return getTupleType(context, instantiatedFrom, subs).get();
 }
 
 const TupleType*
@@ -170,10 +165,8 @@ TupleType::getQualifiedTuple(Context* context,
     i++;
   }
 
-  auto name = UniqueString::get(context, "_tuple");
-  auto id = ID();
   const TupleType* instantiatedFrom = getGenericTupleType(context);
-  return getTupleType(context, id, name, instantiatedFrom,
+  return getTupleType(context, instantiatedFrom,
                       std::move(subs), true).get();
 }
 
@@ -190,13 +183,10 @@ TupleType::getStarTuple(Context* context,
     return getQualifiedTuple(context, eltTypes);
   } else {
     // Size unknown, store the expected element type
-    auto name = UniqueString::get(context, "_tuple");
-    auto id = ID();
     const TupleType* instantiatedFrom = getGenericTupleType(context);
     SubstitutionsMap subs;
     subs.emplace(idForTupElt(-1), varArgEltType);
-    return getTupleType(context, id, name, instantiatedFrom,
-                        subs, true).get();
+    return getTupleType(context, instantiatedFrom, subs, true).get();
   }
 }
 
@@ -223,9 +213,16 @@ const TupleType* TupleType::toValueTuple(Context* context) const {
   bool allValue = true;
   int n = numElements();
   for (int i = 0; i < n; i++) {
-    auto kind = elementType(i).kind();
+    const auto& eltType = elementType(i);
+    auto kind = eltType.kind();
     if (kind != QualifiedType::VAR)
       allValue = false;
+
+    if (eltType.type() && eltType.type()->isTupleType()) {
+      // Conservatively throw off 'allValue' because the nested tuple might
+      // have a reference inside it.
+      allValue = false;
+    }
   }
 
   if (numElements() == 0 || allValue)
@@ -234,7 +231,11 @@ const TupleType* TupleType::toValueTuple(Context* context) const {
   // Otherwise, compute a new value tuple
   std::vector<const Type*> eltTypes;
   for (int i = 0; i < n; i++) {
-    eltTypes.push_back(elementType(i).type());
+    auto eltType = elementType(i).type();
+    if (auto eltTup = eltType->toTupleType()) {
+      eltType = eltTup->toValueTuple(context);
+    }
+    eltTypes.push_back(eltType);
   }
 
   return getValueTuple(context, std::move(eltTypes));
@@ -246,10 +247,17 @@ const TupleType* TupleType::toReferentialTuple(Context* context) const {
   bool allRef = true;
   int n = numElements();
   for (int i = 0; i < n; i++) {
-    auto kind = elementType(i).kind();
+    const auto& eltType = elementType(i);
+    auto kind = eltType.kind();
     if (kind != QualifiedType::CONST_REF &&
         kind != QualifiedType::REF)
       allRef = false;
+
+    if (eltType.type() && eltType.type()->isTupleType()) {
+      // Conservatively throw off 'allRef' because the nested tuple might
+      // have a reference inside it.
+      allRef = false;
+    }
   }
 
   if (numElements() == 0 || allRef)
@@ -258,7 +266,11 @@ const TupleType* TupleType::toReferentialTuple(Context* context) const {
   // Otherwise, compute a new referential tuple
   std::vector<const Type*> eltTypes;
   for (int i = 0; i < n; i++) {
-    eltTypes.push_back(elementType(i).type());
+    auto eltType = elementType(i).type();
+    if (auto eltTup = eltType->toTupleType()) {
+      eltType = eltTup->toReferentialTuple(context);
+    }
+    eltTypes.push_back(eltType);
   }
 
   return getReferentialTuple(context, std::move(eltTypes));

@@ -1,0 +1,141 @@
+casting false..true to range of bool
+  false..true: (false, true, 1, false)
+
+casting false..true to range of int(64)
+  0..1: (0, 1, 1, 0)
+
+casting false..true to range of uint(64)
+  0..1: (0, 1, 1, 0)
+
+casting false..true to range of int(8)
+  0..1: (0, 1, 1, 0)
+
+casting false..true to range of uint(8)
+  0..1: (0, 1, 1, 0)
+
+casting 0..1 to range of bool
+  false..true: (false, true, 1, false)
+
+casting 0..1 to range of int(64)
+  0..1: (0, 1, 1, 0)
+
+casting 0..1 to range of uint(64)
+  0..1: (0, 1, 1, 0)
+
+casting 0..1 to range of int(8)
+  0..1: (0, 1, 1, 0)
+
+casting 0..1 to range of uint(8)
+  0..1: (0, 1, 1, 0)
+
+casting 0..1 to range of concEnum
+  IllegalArgumentError: bad cast from int '0' to enum 'concEnum'
+
+casting 1..2 to range of bool
+  true..true: (true, true, 1, false)
+
+casting 1..2 to range of int(64)
+  1..2: (1, 2, 1, 0)
+
+casting 1..2 to range of uint(64)
+  1..2: (1, 2, 1, 0)
+
+casting 1..2 to range of int(8)
+  1..2: (1, 2, 1, 0)
+
+casting 1..2 to range of uint(8)
+  1..2: (1, 2, 1, 0)
+
+casting 1..2 to range of concEnum
+  IllegalArgumentError: bad cast from int '1' to enum 'concEnum'
+
+casting -2..2 to range of bool
+  true..true: (true, true, 1, false)
+
+casting -2..2 to range of int(64)
+  -2..2: (-2, 2, 1, 0)
+
+casting -2..2 to range of uint(64)
+  18446744073709551614..2: (18446744073709551614, 2, 1, 0)
+
+casting -2..2 to range of int(8)
+  -2..2: (-2, 2, 1, 0)
+
+casting -2..2 to range of uint(8)
+  254..2: (254, 2, 1, 0)
+
+casting -2..2 to range of concEnum
+  c2m..c2p: (c2m, c2p, 1, c2m)
+
+casting 0..1 to range of bool
+  false..true: (false, true, 1, false)
+
+casting 0..1 to range of int(64)
+  0..1: (0, 1, 1, 0)
+
+casting 0..1 to range of uint(64)
+  0..1: (0, 1, 1, 0)
+
+casting 0..1 to range of int(8)
+  0..1: (0, 1, 1, 0)
+
+casting 0..1 to range of uint(8)
+  0..1: (0, 1, 1, 0)
+
+casting 0..1 to range of concEnum
+  IllegalArgumentError: bad cast from int '0' to enum 'concEnum'
+
+casting 1..2 to range of bool
+  true..true: (true, true, 1, false)
+
+casting 1..2 to range of int(64)
+  1..2: (1, 2, 1, 0)
+
+casting 1..2 to range of uint(64)
+  1..2: (1, 2, 1, 0)
+
+casting 1..2 to range of int(8)
+  1..2: (1, 2, 1, 0)
+
+casting 1..2 to range of uint(8)
+  1..2: (1, 2, 1, 0)
+
+casting 1..2 to range of concEnum
+  IllegalArgumentError: bad cast from int '1' to enum 'concEnum'
+
+casting 18446744073709551605..18446744073709551606 to range of bool
+  true..true: (true, true, 1, false)
+
+casting 18446744073709551605..18446744073709551606 to range of int(64)
+  -11..-10: (-11, -10, 1, 0)
+
+casting 18446744073709551605..18446744073709551606 to range of uint(64)
+  18446744073709551605..18446744073709551606: (18446744073709551605, 18446744073709551606, 1, 0)
+
+casting 18446744073709551605..18446744073709551606 to range of int(8)
+  -11..-10: (-11, -10, 1, 0)
+
+casting 18446744073709551605..18446744073709551606 to range of uint(8)
+  245..246: (245, 246, 1, 0)
+
+casting 18446744073709551605..18446744073709551606 to range of concEnum
+  IllegalArgumentError: bad cast from int '18446744073709551605' to enum 'concEnum'
+
+casting c2m..c2p to range of bool
+  true..true: (true, true, 1, false)
+
+casting c2m..c2p to range of int(64)
+  -2..2: (-2, 2, 1, 0)
+
+casting c2m..c2p to range of uint(64)
+  18446744073709551614..2: (18446744073709551614, 2, 1, 0)
+
+casting c2m..c2p to range of int(8)
+  -2..2: (-2, 2, 1, 0)
+
+casting c2m..c2p to range of uint(8)
+  254..2: (254, 2, 1, 0)
+
+casting c2m..c2p to range of concEnum
+  c2m..c2p: (c2m, c2p, 1, c2m)
+

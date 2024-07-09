@@ -8,14 +8,14 @@ proc main(){
   var bigArr : [r1][r2][r3] int;
 
   //initialize bigArr
-  forall (x, y, z) in dom do
+  forall (x, y, z) in dom with (ref bigArr) do
     bigArr[x][y][z] = 0;
 
   //test that dynamic(domain, chunksize, numTasks, parDim) can lead
   var count : atomic int;
   count.write(0);
 
-  forall(xyz1, xyz2) in zip(dynamic(dom, 1, 0, 1), dom)
+  forall(xyz1, xyz2) in zip(dynamic(dom, 1, 0, 1), dom) with (ref bigArr)
   {
     if (xyz1 != xyz2) then writeln("ZIPPED WRONG");
     else{
@@ -29,7 +29,7 @@ proc main(){
   count.write(0);
 
   //test that the dynamic iter can lead when parallelizing across dim2
-  forall(xyz1, xyz2) in zip(dynamic(dom, 1, 0, 2), dom)
+  forall(xyz1, xyz2) in zip(dynamic(dom, 1, 0, 2), dom) with (ref bigArr)
   {
     if (xyz1 != xyz2) then writeln("ZIPPED WRONG");
     else{
@@ -42,7 +42,7 @@ proc main(){
   count.write(0);
 
   //test that the dynamic iter can lead when the chunk size is > 1
-  forall(xyz1, xyz2) in zip(dynamic(dom, 4, 0, 1), dom)
+  forall(xyz1, xyz2) in zip(dynamic(dom, 4, 0, 1), dom) with (ref bigArr)
   {
     if (xyz1 != xyz2) then writeln("ZIPPED WRONG");
     else{
@@ -55,7 +55,7 @@ proc main(){
   count.write(0);
 
   //test that dynamic(domain, chunksize, numTasks, parDim) can follow
-  forall(xyz1, xyz2) in zip(dom, dynamic(dom, 1, 0, 1))
+  forall(xyz1, xyz2) in zip(dom, dynamic(dom, 1, 0, 1)) with (ref bigArr)
   {
     if (xyz1 != xyz2) then writeln("ZIPPED WRONG");
     else{

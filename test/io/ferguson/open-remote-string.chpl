@@ -8,7 +8,7 @@ config const verbose = false;
 
 var files = ["open-remote-string-bar", "open-remote-string-baz"];
 
-var Space = files.domain dmapped Block(files.domain);
+var Space = files.domain dmapped new blockDist(files.domain);
 var DistFiles:[Space] string = files;
 
 for f in files {
@@ -20,7 +20,7 @@ for f in DistFiles {
   on f {
     var from = f;
     var base = basename(f);
-    const uname = getenv(c"USER"):c_string;
+    const uname = getenv("USER");
     var to = "/tmp/" + string.createCopyingBuffer(uname)+ base;
     if verbose then writeln("on ", here.id, " copying from ", from, " to ", to);
     copy(from, to);

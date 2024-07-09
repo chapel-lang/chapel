@@ -105,8 +105,45 @@ TEST(VerifierTest, InvalidRetAttribute) {
   std::string Error;
   raw_string_ostream ErrorOS(Error);
   EXPECT_TRUE(verifyModule(M, &ErrorOS));
-  EXPECT_TRUE(StringRef(ErrorOS.str()).startswith(
-      "Attribute 'uwtable' does not apply to function return values"));
+  EXPECT_TRUE(
+      StringRef(ErrorOS.str())
+          .starts_with(
+              "Attribute 'uwtable' does not apply to function return values"));
+}
+
+/// Test the verifier rejects invalid nofpclass values that the assembler may
+/// also choose to reject.
+TEST(VerifierTest, InvalidNoFPClassAttribute) {
+  LLVMContext C;
+
+  const unsigned InvalidMasks[] = {0, fcAllFlags + 1};
+
+  for (unsigned InvalidMask : InvalidMasks) {
+    Module M("M", C);
+    FunctionType *FTy =
+        FunctionType::get(Type::getFloatTy(C), /*isVarArg=*/false);
+    Function *F = Function::Create(FTy, Function::ExternalLinkage, "foo", M);
+    AttributeList AS = F->getAttributes();
+
+    // Don't use getWithNoFPClass to avoid using out of bounds enum values here.
+    F->setAttributes(AS.addRetAttribute(
+        C, Attribute::get(C, Attribute::NoFPClass, InvalidMask)));
+
+    std::string Error;
+    raw_string_ostream ErrorOS(Error);
+    EXPECT_TRUE(verifyModule(M, &ErrorOS));
+
+    StringRef ErrMsg(ErrorOS.str());
+
+    if (InvalidMask == 0) {
+      EXPECT_TRUE(ErrMsg.starts_with(
+          "Attribute 'nofpclass' must have at least one test bit set"))
+          << ErrMsg;
+    } else {
+      EXPECT_TRUE(ErrMsg.starts_with("Invalid value for 'nofpclass' test mask"))
+          << ErrMsg;
+    }
+  }
 }
 
 TEST(VerifierTest, CrossModuleRef) {
@@ -160,8 +197,9 @@ TEST(VerifierTest, CrossModuleRef) {
 
   Error.clear();
   EXPECT_TRUE(verifyModule(M3, &ErrorOS));
-  EXPECT_TRUE(StringRef(ErrorOS.str()).startswith(
-      "Referencing personality function in another module!"));
+  EXPECT_TRUE(
+      StringRef(ErrorOS.str())
+          .starts_with("Referencing personality function in another module!"));
 
   // Erase bad methods to avoid triggering an assertion failure on destruction
   F1->eraseFromParent();
@@ -176,9 +214,9 @@ TEST(VerifierTest, InvalidVariableLinkage) {
   std::string Error;
   raw_string_ostream ErrorOS(Error);
   EXPECT_TRUE(verifyModule(M, &ErrorOS));
-  EXPECT_TRUE(
-      StringRef(ErrorOS.str()).startswith("Global is external, but doesn't "
-                                          "have external or weak linkage!"));
+  EXPECT_TRUE(StringRef(ErrorOS.str())
+                  .starts_with("Global is external, but doesn't "
+                               "have external or weak linkage!"));
 }
 
 TEST(VerifierTest, InvalidFunctionLinkage) {
@@ -190,9 +228,9 @@ TEST(VerifierTest, InvalidFunctionLinkage) {
   std::string Error;
   raw_string_ostream ErrorOS(Error);
   EXPECT_TRUE(verifyModule(M, &ErrorOS));
-  EXPECT_TRUE(
-      StringRef(ErrorOS.str()).startswith("Global is external, but doesn't "
-                                          "have external or weak linkage!"));
+  EXPECT_TRUE(StringRef(ErrorOS.str())
+                  .starts_with("Global is external, but doesn't "
+                               "have external or weak linkage!"));
 }
 
 TEST(VerifierTest, DetectInvalidDebugInfo) {
@@ -240,7 +278,7 @@ TEST(VerifierTest, DetectInvalidDebugInfo) {
 
 TEST(VerifierTest, MDNodeWrongContext) {
   LLVMContext C1, C2;
-  auto *Node = MDNode::get(C1, None);
+  auto *Node = MDNode::get(C1, std::nullopt);
 
   Module M("M", C2);
   auto *NamedNode = M.getOrInsertNamedMetadata("test");
@@ -249,8 +287,9 @@ TEST(VerifierTest, MDNodeWrongContext) {
   std::string Error;
   raw_string_ostream ErrorOS(Error);
   EXPECT_TRUE(verifyModule(M, &ErrorOS));
-  EXPECT_TRUE(StringRef(ErrorOS.str())
-                  .startswith("MDNode context does not match Module context!"));
+  EXPECT_TRUE(
+      StringRef(ErrorOS.str())
+          .starts_with("MDNode context does not match Module context!"));
 }
 
 TEST(VerifierTest, AttributesWrongContext) {
@@ -268,6 +307,36 @@ TEST(VerifierTest, AttributesWrongContext) {
   F2->copyAttributesFrom(F1);
 
   EXPECT_TRUE(verifyFunction(*F2));
+}
+
+TEST(VerifierTest, SwitchInst) {
+  LLVMContext C;
+  Module M("M", C);
+  IntegerType *Int32Ty = Type::getInt32Ty(C);
+  FunctionType *FTy = FunctionType::get(Type::getVoidTy(C), {Int32Ty, Int32Ty},
+                                        /*isVarArg=*/false);
+  Function *F = Function::Create(FTy, Function::ExternalLinkage, "foo", M);
+  BasicBlock *Entry = BasicBlock::Create(C, "entry", F);
+  BasicBlock *Default = BasicBlock::Create(C, "default", F);
+  BasicBlock *OnOne = BasicBlock::Create(C, "on_one", F);
+  BasicBlock *OnTwo = BasicBlock::Create(C, "on_two", F);
+
+  BasicBlock *Exit = BasicBlock::Create(C, "exit", F);
+
+  BranchInst::Create(Exit, Default);
+  BranchInst::Create(Exit, OnTwo);
+  BranchInst::Create(Exit, OnOne);
+  ReturnInst::Create(C, Exit);
+
+  Value *Cond = F->getArg(0);
+  SwitchInst *Switch = SwitchInst::Create(Cond, Default, 2, Entry);
+  Switch->addCase(ConstantInt::get(Int32Ty, 1), OnOne);
+  Switch->addCase(ConstantInt::get(Int32Ty, 2), OnTwo);
+
+  EXPECT_FALSE(verifyFunction(*F));
+  // set one case value to function argument.
+  Switch->setOperand(2, F->getArg(1));
+  EXPECT_TRUE(verifyFunction(*F));
 }
 
 } // end anonymous namespace

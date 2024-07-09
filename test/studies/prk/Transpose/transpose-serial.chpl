@@ -54,7 +54,7 @@ if (!correctness) {
 }
 
 // Fill original column matrix
-[(i, j) in Dom] A[i,j] = order*j + i;
+[(i, j) in Dom with (ref A)] A[i,j] = order*j + i;
 
 // Set transpose matrix to known garbage value
 B = -1.0;

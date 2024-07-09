@@ -1,9 +1,9 @@
 proc writeme(r:range(?)) {
   write(r.lowBound, "..", r.highBound);
-  if r.stridable {
+  if !r.hasUnitStride() {
     write(" by ", r.stride);
-    if r.aligned then write(" align ", r.alignment);
-    else              write(" align ?");
+    if r.isAligned() then write(" align ", r.alignment);
+    else                  write(" align ?");
   }
 }
 
@@ -18,8 +18,9 @@ proc test(r:range(?), offs:r.idxType) {
   const res = r.offset(offs);
   write("  offs ", offs, "  ");
   writeme(res);
-  const offs2 = if r.stridable then myMod((r.first + offs), r.stride) else 0;
-  if !res.aligned || res.alignment != offs2 then
+  const offs2 = if r.hasUnitStride() then 0
+                else myMod((r.first + offs), r.stride);
+  if !res.isAligned() || res.alignment != offs2 then
     write(" ***ERROR***");
   writeln();
 }

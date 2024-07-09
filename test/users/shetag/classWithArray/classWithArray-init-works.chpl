@@ -6,10 +6,12 @@ class C {
 
 const a : [1..2] int = (1, 2);
 
-var c2 = (new owned C(a)).borrow();
+var ownC2 = new owned C(a);
+var c2 = ownC2.borrow();
 
 var c1 : borrowed C?;
-c1 = (new owned C(a)).borrow();
+var ownC1 = new owned C(a);
+c1 = ownC1.borrow();
 
 //var c3 = new C();
 

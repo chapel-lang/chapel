@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,12 +35,18 @@ namespace uast {
   by applying the unary `-` operator.
  */
 class IntLiteral final : public NumericLiteral<int64_t, types::IntParam> {
+ friend class AstNode;
+
  private:
   IntLiteral(const types::IntParam* value, UniqueString text)
     : NumericLiteral(asttags::IntLiteral, value, text)
   { }
 
-  IntLiteral(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    numericLiteralSerializeInner(ser);
+  }
+
+  explicit IntLiteral(Deserializer& des)
     : NumericLiteral(asttags::IntLiteral, des)
   { }
 
@@ -52,12 +58,6 @@ class IntLiteral final : public NumericLiteral<int64_t, types::IntParam> {
 
   static owned<IntLiteral> build(Builder* builder, Location loc,
                                  int64_t value, UniqueString text);
-
-  void serialize(Serializer& ser) const override {
-    NumericLiteral::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(IntLiteral);
 };
 
 

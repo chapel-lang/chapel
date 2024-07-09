@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -456,6 +456,7 @@ qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname,
 
 qioerr qio_get_fs_type(qio_file_t* fl, int* out);
 qioerr qio_get_fd(qio_file_t* fl, int* out);
+qioerr qio_get_fp(qio_file_t* fl, FILE** out);
 qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out);
 qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char*** locale_names_out, int64_t* num_locs_out);
 
@@ -529,6 +530,13 @@ void* qio_file_get_plugin(qio_file_t* f) {
 // Calls stat for a file descriptor
 // Calls fflush on a FILE* first.
 qioerr qio_file_length(qio_file_t* f, int64_t *len_out);
+
+// Returns a guess for the length of an open file, if available.
+// In some cases the file length is measured when the file is opened.
+// Returns 0 if the file length was not available.
+static inline int64_t qio_file_length_guess(qio_file_t* f) {
+  return f->initial_length;
+}
 
 /* CHANNELS ..... */
 
@@ -772,6 +780,11 @@ qioerr qio_channel_error(qio_channel_t* ch) {
 static inline
 void* qio_channel_get_plugin(qio_channel_t* ch) {
   return ch->chan_info;
+}
+
+static inline
+void qio_channel_get_file_ptr(qio_channel_t* ch, qio_file_t** file_out) {
+  *file_out = ch->file;
 }
 
 qioerr _qio_channel_init_buffered(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
@@ -1045,7 +1058,7 @@ qioerr qio_channel_read_amt(const int threadsafe, qio_channel_t* restrict ch, vo
   } else {
     ssize_t amt_read = 0;
     err = _qio_slow_read(ch, ptr, len, &amt_read);
-    if( err == 0 && amt_read != len ) err = QIO_ESHORT;
+    if( (err == 0 || err == QIO_EEOF) && amt_read != 0 && amt_read != len ) err = QIO_ESHORT;
     _qio_channel_set_error_unlocked(ch, err);
   }
 
@@ -1213,7 +1226,12 @@ qioerr qio_channel_end_peek_cached(const int threadsafe, qio_channel_t* ch, void
   return err;
 }
 
-qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte, const int consume_byte);
+// returns EEOF if it started at EOF
+// returns ESHORT if the separator is not found and EOF is reached
+// returns EFORMAT if the separator is not found within max_bytes_to_advance
+// updates the channel position, including possibly to EOF if the
+// separator is not found.
+qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte, int64_t max_bytes_to_advance, const int consume_byte);
 
 qioerr qio_channel_begin_peek_buffer(const int threadsafe, qio_channel_t* ch, int64_t require, int writing, qbuffer_t** buf_out, qbuffer_iter_t* start_out, qbuffer_iter_t* end_out);
 

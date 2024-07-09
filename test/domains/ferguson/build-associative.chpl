@@ -6,7 +6,7 @@ config const table = false;
 use Time;
 use Random;
 
-var rng = createRandomStream(eltType=int, seed=0, parSafe=false, algorithm=RNG.PCG);
+var rng = new randomStream(eltType=int, seed=0);
 
 //var t2 = new stopwatch();
 //var t3 = new stopwatch();
@@ -54,7 +54,7 @@ for (cfg,idx) in zip(configs, 1..) {
 
     // Doesn't work with tuple?
     for i in 1..size {
-      var j = rng.getNext(1, num_domains);
+      var j = rng.next(1, num_domains);
       D1(j) += i;
     }
 

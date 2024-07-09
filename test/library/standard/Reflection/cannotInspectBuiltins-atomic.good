@@ -1,0 +1,1 @@
+FILE.chpl:n: error: atomic int(64) is not a class, record, or union type

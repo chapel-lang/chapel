@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -48,7 +48,7 @@ module ArrayViewSlice {
   // class implementations, it supports the standard dsi interface.
   //
   pragma "aliasing array"
-  class ArrayViewSliceArr: AbsBaseArr {
+  class ArrayViewSliceArr: AbsBaseArr(?) {
     // the representation of the slicing domain
     //
     // TODO: Can we privatize upon creation of the array-view slice and cache

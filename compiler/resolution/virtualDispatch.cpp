@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -146,8 +146,6 @@ static void virtualDispatchUpdateRoots(FnSymbol* pfn, FnSymbol* cfn);
 
 static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
 
-static bool isSubType(Type* sub, Type* super);
-
 static bool isOverrideableMethod(FnSymbol* fn);
 static bool isVirtualizableMethod(FnSymbol* fn);
 
@@ -175,7 +173,7 @@ static bool buildVirtualMaps() {
 // Add overrides of pfn to virtual maps down the inheritance hierarchy
 static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
   forv_Vec(AggregateType, ct, pct->dispatchChildren) {
-    if (ct && ct->isGeneric() == false) {
+    if (ct && ct->symbol->hasFlag(FLAG_GENERIC) == false) {
       if (ct->mayHaveInstances() == true) {
         std::vector<FnSymbol*> methods;
 
@@ -204,6 +202,8 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
 
   if (_thisAt->isGeneric() == true) {
     subs.put(_this, ct->symbol);
+  } else {
+    INT_ASSERT(!_thisAt->symbol->hasFlag(FLAG_GENERIC));
   }
 
   for (int i = 3; i <= cfn->numFormals(); i++) {
@@ -232,7 +232,9 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
     // A smaller test case:
     //   types/type_variables/deitz/test_point_of_instantiation3.chpl
     //
-    fn->setInstantiationPoint(ct->symbol->instantiationPoint);
+    if (fn->instantiationPoint() == NULL) {
+      fn->setInstantiationPoint(ct->symbol->instantiationPoint);
+    }
 
     return fn;
   }
@@ -450,6 +452,7 @@ static void resolveOverrideAndAdjustMaps(FnSymbol* pfn, FnSymbol* cfn) {
       evaluateWhereClause(cfn) &&
       evaluateWhereClause(pfn)) {
 
+    resolveSpecifiedReturnType(cfn);
     resolveFunction(cfn);
 
     // check to see if we are using defaulted actual fns
@@ -609,7 +612,7 @@ static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn) {
   }
 }
 
-static bool isSubType(Type* sub, Type* super) {
+bool isSubType(Type* sub, Type* super) {
   bool retval = false;
 
   if (sub == super) {
@@ -825,6 +828,7 @@ static void buildVirtualMethodTable() {
 static void addVirtualMethodTableEntry(Type*     type,
                                        FnSymbol* fn,
                                        bool      exclusive) {
+  type = type->getValType();
   Vec<FnSymbol*>* fns   = virtualMethodTable.get(type);
   bool            found = false;
 
@@ -1276,7 +1280,6 @@ static void checkMethodsOverride() {
                   FnSymbol* pfn = matches[0];
                   printMismatchNote(pfn, fn);
                 }
-
               } else {
                 USR_FATAL_CONT(fn, "%s.%s override keyword required for method "
                                    "matching signature of superclass method",

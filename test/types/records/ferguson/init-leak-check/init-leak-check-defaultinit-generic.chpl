@@ -9,7 +9,7 @@ proc test1() {
 test1();
 
 proc test2() {
-  var r:MyRecord = new MyRecord("Hello"*3);
+  var r:MyRecord(?) = new MyRecord("Hello"*3);
   writeln(r);
 }
 test2();

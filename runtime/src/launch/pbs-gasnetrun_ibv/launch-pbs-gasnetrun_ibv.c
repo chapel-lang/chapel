@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,28 +27,30 @@
 #include "chplcgfns.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
+#include "chpl-env.h"
 #include "chpltypes.h"
 #include "error.h"
 
 #define LAUNCH_PATH_HELP WRAP_TO_STR(LAUNCH_PATH)
 #define WRAP_TO_STR(x) TO_STR(x)
 #define TO_STR(x) #x
+#define CHPL_WALLTIME_FLAG "--walltime"
+
+static char* walltime = NULL;
 
 #define basePBSFilename ".chpl-pbs-qsub-"
 #define baseExpectFilename ".chpl-expect-"
-#define baseSysFilename ".chpl-sys-"
 
 char pbsFilename[FILENAME_MAX];
 char expectFilename[FILENAME_MAX];
-char sysFilename[FILENAME_MAX];
-
-/* copies of binary to run per node */
-#define procsPerNode 1
 
 #define launcherAccountEnvvar "CHPL_LAUNCHER_ACCOUNT"
 
+#define CHPL_LPN_VAR "LOCALES_PER_NODE"
+
 typedef enum {
-  pbspro,
+  pbspro_mpp,
+  pbspro_select,
   nccs,
   torque,
   unknown
@@ -69,8 +71,10 @@ static qsubVersion determineQsubVersion(void) {
 
   if (strstr(version, "NCCS")) {
     return nccs;
+  } else if (strstr(version, "pbs_version")) {
+    return pbspro_select;
   } else if (strstr(version, "PBSPro")) {
-    return pbspro;
+    return pbspro_mpp;
   } else if (strstr(version, "version:") || strstr(version, "Version:")) {
     return torque;
   } else {
@@ -93,38 +97,51 @@ static int getNumCoresPerLocale(void) {
 
 static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
                                  int32_t numLocales,
-                                 int32_t numCoresPerLocale) {
+                                 int32_t numCoresPerLocale,
+                                 int32_t localesPerNode,
+                                 int32_t numNodes) {
   char* queue = getenv("CHPL_LAUNCHER_QUEUE");
-  char* walltime = getenv("CHPL_LAUNCHER_WALLTIME");
+  if (!walltime) {
+    walltime = getenv("CHPL_LAUNCHER_WALLTIME");
+  }
 
   if (queue)
     fprintf(pbsFile, "#PBS -q %s\n", queue);
   if (walltime)
     fprintf(pbsFile, "#PBS -l walltime=%s\n", walltime);
   switch (qsub) {
-  case pbspro:
-  case unknown:
-    fprintf(pbsFile, "#PBS -l mppwidth=%d\n", numLocales);
-    fprintf(pbsFile, "#PBS -l mppnppn=%d\n", procsPerNode);
-    if (numCoresPerLocale)
-      fprintf(pbsFile, "#PBS -l mppdepth=%d\n", numCoresPerLocale);
-    break;
-  case torque:
-    fprintf(pbsFile, "#PBS -l nodes=%d\n", numLocales);
-    break;
-  case nccs:
-    if (!queue && !walltime)
-      chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
-                 "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
-                 "environment variables", 0, 0);
-    if (numCoresPerLocale)
-      fprintf(pbsFile, "#PBS -l nodes=%d\n", numLocales);
-    break;
+    case pbspro_select:
+    case unknown:
+      if (numCoresPerLocale) {
+        fprintf(pbsFile, "#PBS -l place=scatter:exclhost,select=%d:ncpus=%d\n",
+                numNodes, numCoresPerLocale);
+      } else {
+        fprintf(pbsFile, "#PBS -l place=scatter:exclhost,select=%d\n",numNodes);
+      }
+      break;
+    case pbspro_mpp:
+      fprintf(pbsFile, "#PBS -l mppwidth=%d\n", numNodes);
+      fprintf(pbsFile, "#PBS -l mppnppn=%d\n", localesPerNode);
+      if (numCoresPerLocale)
+        fprintf(pbsFile, "#PBS -l mppdepth=%d\n", numCoresPerLocale);
+      break;
+    case torque:
+      fprintf(pbsFile, "#PBS -l nodes=%d\n", numNodes);
+      break;
+    case nccs:
+      if (!queue && !walltime)
+        chpl_error("An execution time must be specified for the NCCS launcher if no queue is\n"
+                   "specified -- use the CHPL_LAUNCHER_WALLTIME and/or CHPL_LAUNCHER_QUEUE\n"
+                   "environment variables", 0, 0);
+      if (numCoresPerLocale)
+        fprintf(pbsFile, "#PBS -l nodes=%d\n", numNodes);
+      break;
   }
 }
 
 static char* chpl_launch_create_command(int argc, char* argv[],
-                                        int32_t numLocales) {
+                                        int32_t numLocales,
+                                        int32_t numLocalesPerNode) {
   int i;
   FILE* pbsFile, *expectFile;
   char* projectString = getenv(launcherAccountEnvvar);
@@ -132,17 +149,24 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   pid_t mypid;
   char  jobName[128];
 
+  if (basenamePtr == NULL) {
+      basenamePtr = argv[0];
+  } else {
+      // get rid of leading '/'
+      basenamePtr++;
+  }
+
   chpl_launcher_get_job_name(basenamePtr, jobName, sizeof(jobName));
 
   chpl_compute_real_binary_name(argv[0]);
+
+  int32_t numNodes = (numLocales + numLocalesPerNode - 1) / numLocalesPerNode;
 
 #ifndef DEBUG_LAUNCH
   mypid = getpid();
 #else
   mypid = 0;
 #endif
-  snprintf(sysFilename, sizeof(sysFilename), "%s%d", baseSysFilename,
-           (int)mypid);
   snprintf(expectFilename, sizeof(expectFilename), "%s%d", baseExpectFilename,
            (int)mypid);
   snprintf(pbsFilename, sizeof(pbsFilename), "%s%d", basePBSFilename,
@@ -151,7 +175,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");
   fprintf(pbsFile, "#PBS -N %s\n", jobName);
-  genNumLocalesOptions(pbsFile, determineQsubVersion(), numLocales, getNumCoresPerLocale());
+  genNumLocalesOptions(pbsFile, determineQsubVersion(), numLocales,
+                       getNumCoresPerLocale(), numLocalesPerNode, numNodes);
   if (projectString && strlen(projectString) > 0)
     fprintf(pbsFile, "#PBS -A %s\n", projectString);
   fclose(pbsFile);
@@ -160,23 +185,41 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   if (verbosity < 2) {
     fprintf(expectFile, "log_user 0\n");
   }
+  /*
+   * The following is pretty convoluted because 'expect' is typically
+   * programmed to look for the prompt after a command is executed, except we
+   * don't know what the user's prompt is, and prompts can be pretty
+   * complicated because of control characters and such. Instead, we use two
+   * sentinels to signal that commands are complete. The first is the
+   * string "CHPL_EXPECT_SENTINEL_1" which is stored in the environment
+   * variable "CHPL_ENV_EXPECT_SENTINEL_1", and it's printed after qsub has
+   * started and changed directories. The sentinel is stored in an
+   * environment variable of a different name so the sentinel doesn't appear
+   * in any output that is echoed back to us by qsub. The second sentinel is
+   * the string "CHPL_EXPECT_SENTINEL_2" and it is different from the first
+   * because the application may print its environment, in which case the
+   * first sentinel would appear in the output and confuse the 'expect'
+   * logic.
+   */
   fprintf(expectFile, "set timeout -1\n");
-  fprintf(expectFile, "set prompt \"(%%|#|\\\\$|>) $\"\n");
+  fprintf(expectFile, "set env(CHPL_ENV_EXPECT_SENTINEL_1) CHPL_EXPECT_SENTINEL_1\n");
   fprintf(expectFile, "spawn qsub -z ");
   fprintf(expectFile, "-V "); // pass through all environment variables
   fprintf(expectFile, "-I %s\n", pbsFilename);
-  fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR\\n\"\n");
-  fprintf(expectFile, "expect -re $prompt\n");
-  fprintf(expectFile, "send \"%s/%s/gasnetrun_ibv -n %d -N %d",
-          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numLocales);
+  fprintf(expectFile, "expect -re \"qsub:.*ready\"\n");
+  fprintf(expectFile, "send \"cd \\$PBS_O_WORKDIR; echo \\$CHPL_ENV_EXPECT_SENTINEL_1\\n\"\n");
+  fprintf(expectFile, "expect CHPL_EXPECT_SENTINEL_1\n");
+  fprintf(expectFile, "send \"%s %s/%s/gasnetrun_ibv -c 0 -n %d -N %d -E %s",
+          isatty(fileno(stdout)) ? "" : "stty -onlcr;",
+          CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), numLocales, numNodes,
+          chpl_get_enviro_keys(','));
   fprintf(expectFile, " %s ", chpl_get_real_binary_name());
   for (i=1; i<argc; i++) {
     fprintf(expectFile, " '%s'", argv[i]);
   }
-  fprintf(expectFile, "\\n\"\n");
-  fprintf(expectFile, "interact -o -re $prompt {return}\n");
-  fprintf(expectFile, "send_user \"\\n\"\n");
+  fprintf(expectFile, "; echo 'CHPL_EXPECT_SENTINEL_2'\\n\"\n");
+  fprintf(expectFile, "expect CHPL_EXPECT_SENTINEL_2\n"); // suck up echo of sent command
+  fprintf(expectFile, "interact -o CHPL_EXPECT_SENTINEL_2 {return}\n");
   fprintf(expectFile, "send \"exit\\n\"\n");
   fclose(expectFile);
 
@@ -209,20 +252,18 @@ static void chpl_launch_cleanup(void) {
       (void) snprintf(command, sizeof(command), "rm %s", expectFilename);
       system(command);
     }
-
-    {
-      char command[sizeof(sysFilename) + 4];
-      (void) snprintf(command, sizeof(command), "rm %s", sysFilename);
-      system(command);
-    }
   }
 #endif
 }
 
 
-int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+int chpl_launch(int argc, char* argv[], int32_t numLocales,
+                int32_t numLocalesPerNode) {
+
   int retcode =
-    chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
+    chpl_launch_using_system(chpl_launch_create_command(argc, argv,
+                                                        numLocales,
+                                                        numLocalesPerNode),
                              argv[0]);
   chpl_launch_cleanup();
   return retcode;
@@ -231,10 +272,28 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
                            int32_t lineno, int32_t filename) {
+
+  if (!strcmp(argv[argNum], CHPL_WALLTIME_FLAG)) {
+    walltime = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_WALLTIME_FLAG"=", strlen(CHPL_WALLTIME_FLAG))) {
+    walltime = &(argv[argNum][strlen(CHPL_WALLTIME_FLAG)+1]);
+    return 1;
+  }
+
   return 0;
 }
 
 
 const argDescTuple_t* chpl_launch_get_help(void) {
-  return NULL;
+
+  static const
+    argDescTuple_t args[] =
+    {
+      { CHPL_WALLTIME_FLAG " <HH:MM:SS>",
+        "specify a wallclock time limit"
+      },
+      { NULL, NULL },
+    };
+  return args;
 }

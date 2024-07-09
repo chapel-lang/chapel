@@ -1,0 +1,6 @@
+--low=2049789 --arrSize=283 --chunkSize=625
+--low=2049789 --arrSize=2454536 --chunkSize=6250
+--low=20 --arrSize=40954 --chunkSize=63
+--low=20 --arrSize=432 --chunkSize=432
+--low=0
+--low=0 --arrSize=0

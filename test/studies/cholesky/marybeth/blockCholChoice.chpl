@@ -6,7 +6,7 @@ config const inputfile = "lehmer10.dat";
 config const upper = true;
 
 proc main() {
-  var Adat = open(inputfile, ioMode.r).reader();
+  var Adat = open(inputfile, ioMode.r).reader(locking=false);
 
   const n = readSize(Adat);
   var blk = readBlk(Adat);
@@ -18,7 +18,7 @@ proc main() {
   blk = min(blk,n);
 
   var A1D = 1..n;
-  const A2D = {A1D,A1D}; 
+  const A2D = {A1D,A1D};
   var A: [A2D] real;
   initA(A,Adat);
   Adat.close();
@@ -55,7 +55,7 @@ proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
 
     for j in CurrentBlockInds {
       for (i,k) in {CurrentBlockInds(j..),PrecedingBlockInds} {
-        if upper then  
+        if upper then
           A11(j,i) -= U1(k,j)*U1(k,i);
         else
           A11(i,j) -= L1(j,k)*L1(i,k);
@@ -70,7 +70,7 @@ proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
           A11(j,j) -= A11(j,k)*A11(j,k);
       }
 
-      if (A11(j,j) <= zero) then 
+      if (A11(j,j) <= zero) then
         halt("Matrix is not positive definite.");
       else
         A11(j,j) = sqrt(A11(j,j));
@@ -99,7 +99,7 @@ proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
         }
       }
     }
-    
+
     for k in CurrentBlockInds {
       for i in TrailingBlockInds {
         if upper then
@@ -113,7 +113,7 @@ proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
         else
           A12(i,j) -= A11(j,k)*A12(i,k);
       }
-    }  
+    }
   }
 }
 
@@ -133,16 +133,16 @@ proc readSize(Adat) {
 
   Adat.read(n);
   return n;
-} 
+}
 
 proc readBlk(Adat) {
   var blk: int;
 
   Adat.read(blk);
   return blk;
-} 
+}
 
-proc initA(A,Adat){
+proc initA(ref A,Adat){
   for ij in A.domain {
     Adat.read(A(ij));
   }
@@ -166,4 +166,4 @@ proc writeCholFactor(A:[?D],fac:string) {
     }
   }
   writeln(G);
-} 
+}

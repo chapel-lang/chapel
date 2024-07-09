@@ -4,7 +4,7 @@ config const verbose: bool = true;
 if n < numLocales || n % numLocales != 0 then
   halt("the number of locales, ", numLocales, ", does not evenly divide n,", n);
 
-class DistributedArray {
+class DistributedArray : writeSerializable {
   var ndata: range(int);
   var data: [ndata] int;
   var others: [0..numLocales-1] unmanaged DistributedArray?;
@@ -18,11 +18,11 @@ proc DistributedArray.this(i: int) ref {
   }
 }
 
-proc DistributedArray.writeThis(W) throws {
+override proc DistributedArray.serialize(writer, ref serializer) throws {
   for loc in Locales {
-    W.write(if loc == here then data else others[loc.id]!.data);
+    writer.write(if loc == here then data else others[loc.id]!.data);
     if loc.id != numLocales-1 then
-      W.write(" ");
+      writer.write(" ");
   }
 }
 

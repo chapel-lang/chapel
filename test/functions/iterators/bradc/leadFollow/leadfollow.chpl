@@ -39,7 +39,7 @@ writeln("A is: ", A);
 
 if compilerRewrite {
 
-  forall i in myIter() {
+  forall i in myIter() with (ref A) {
     A(i) = i + i/10.0;
   }
 

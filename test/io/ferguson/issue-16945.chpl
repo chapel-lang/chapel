@@ -1,5 +1,5 @@
 module FooExample {
-    use IO;
+    use IO, JSON;
 
     proc main() {
         class Foo {
@@ -9,11 +9,10 @@ module FooExample {
         }
 
         var mem = try! openMemFile();
-        try! mem.writer().write('{"name":"fooOne", "id":1, "isFoo":false}');
-        var reader = try! mem.reader();
+        try! mem.writer(locking=false).write('{"name":"fooOne", "id":1, "isFoo":false}');
+        var reader = try! mem.reader(deserializer = new jsonDeserializer(), locking=false);
         var f = new Foo();
-        try! reader.readf("%jt", f);
-        try! writeln("Foo: %jt".format(f));
+        try! reader.readf("%?", f);
+        write("Foo: "); try! stdout.withSerializer(jsonSerializer).writeln(f);
     }
 }
-

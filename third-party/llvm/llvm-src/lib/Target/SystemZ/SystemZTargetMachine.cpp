@@ -9,12 +9,10 @@
 #include "SystemZTargetMachine.h"
 #include "MCTargetDesc/SystemZMCTargetDesc.h"
 #include "SystemZ.h"
+#include "SystemZMachineFunctionInfo.h"
 #include "SystemZMachineScheduler.h"
 #include "SystemZTargetTransformInfo.h"
 #include "TargetInfo/SystemZTargetInfo.h"
-#include "llvm/ADT/Optional.h"
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/CodeGen/Passes.h"
@@ -25,10 +23,13 @@
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Target/TargetLoweringObjectFile.h"
 #include "llvm/Transforms/Scalar.h"
+#include <memory>
+#include <optional>
 #include <string>
 
 using namespace llvm;
 
+// NOLINTNEXTLINE(readability-identifier-naming)
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeSystemZTarget() {
   // Register the target.
   RegisterTargetMachine<SystemZTargetMachine> X(getTheSystemZTarget());
@@ -40,39 +41,10 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeSystemZTarget() {
   initializeSystemZShortenInstPass(PR);
   initializeSystemZPostRewritePass(PR);
   initializeSystemZTDCPassPass(PR);
+  initializeSystemZDAGToDAGISelPass(PR);
 }
 
-// Determine whether we use the vector ABI.
-static bool UsesVectorABI(StringRef CPU, StringRef FS) {
-  // We use the vector ABI whenever the vector facility is avaiable.
-  // This is the case by default if CPU is z13 or later, and can be
-  // overridden via "[+-]vector" feature string elements.
-  bool VectorABI = true;
-  bool SoftFloat = false;
-  if (CPU.empty() || CPU == "generic" ||
-      CPU == "z10" || CPU == "z196" || CPU == "zEC12" ||
-      CPU == "arch8" || CPU == "arch9" || CPU == "arch10")
-    VectorABI = false;
-
-  SmallVector<StringRef, 3> Features;
-  FS.split(Features, ',', -1, false /* KeepEmpty */);
-  for (auto &Feature : Features) {
-    if (Feature == "vector" || Feature == "+vector")
-      VectorABI = true;
-    if (Feature == "-vector")
-      VectorABI = false;
-    if (Feature == "soft-float" || Feature == "+soft-float")
-      SoftFloat = true;
-    if (Feature == "-soft-float")
-      SoftFloat = false;
-  }
-
-  return VectorABI && !SoftFloat;
-}
-
-static std::string computeDataLayout(const Triple &TT, StringRef CPU,
-                                     StringRef FS) {
-  bool VectorABI = UsesVectorABI(CPU, FS);
+static std::string computeDataLayout(const Triple &TT) {
   std::string Ret;
 
   // Big endian.
@@ -92,10 +64,9 @@ static std::string computeDataLayout(const Triple &TT, StringRef CPU,
   // 128-bit floats are aligned only to 64 bits.
   Ret += "-f128:64";
 
-  // When using the vector ABI on Linux, 128-bit vectors are also aligned to 64
-  // bits. On z/OS, vector types are always aligned to 64 bits.
-  if (VectorABI || TT.isOSzOS())
-    Ret += "-v128:64";
+  // The DataLayout string always holds a vector alignment of 64 bits, see
+  // comment in clang/lib/Basic/Targets/SystemZ.h.
+  Ret += "-v128:64";
 
   // We prefer 16 bits of aligned for all globals; see above.
   Ret += "-a:8:16";
@@ -115,7 +86,7 @@ static std::unique_ptr<TargetLoweringObjectFile> createTLOF(const Triple &TT) {
   return std::make_unique<TargetLoweringObjectFileELF>();
 }
 
-static Reloc::Model getEffectiveRelocModel(Optional<Reloc::Model> RM) {
+static Reloc::Model getEffectiveRelocModel(std::optional<Reloc::Model> RM) {
   // Static code is suitable for use in a dynamic executable; there is no
   // separate DynamicNoPIC model.
   if (!RM || *RM == Reloc::DynamicNoPIC)
@@ -153,8 +124,8 @@ static Reloc::Model getEffectiveRelocModel(Optional<Reloc::Model> RM) {
 //   of copy relocs, so locally-binding data symbols might not be in
 //   the range of LARL.  We need the Medium model in that case.
 static CodeModel::Model
-getEffectiveSystemZCodeModel(Optional<CodeModel::Model> CM, Reloc::Model RM,
-                             bool JIT) {
+getEffectiveSystemZCodeModel(std::optional<CodeModel::Model> CM,
+                             Reloc::Model RM, bool JIT) {
   if (CM) {
     if (*CM == CodeModel::Tiny)
       report_fatal_error("Target does not support the tiny CodeModel", false);
@@ -170,11 +141,11 @@ getEffectiveSystemZCodeModel(Optional<CodeModel::Model> CM, Reloc::Model RM,
 SystemZTargetMachine::SystemZTargetMachine(const Target &T, const Triple &TT,
                                            StringRef CPU, StringRef FS,
                                            const TargetOptions &Options,
-                                           Optional<Reloc::Model> RM,
-                                           Optional<CodeModel::Model> CM,
-                                           CodeGenOpt::Level OL, bool JIT)
+                                           std::optional<Reloc::Model> RM,
+                                           std::optional<CodeModel::Model> CM,
+                                           CodeGenOptLevel OL, bool JIT)
     : LLVMTargetMachine(
-          T, computeDataLayout(TT, CPU, FS), TT, CPU, FS, Options,
+          T, computeDataLayout(TT), TT, CPU, FS, Options,
           getEffectiveRelocModel(RM),
           getEffectiveSystemZCodeModel(CM, getEffectiveRelocModel(RM), JIT),
           OL),
@@ -198,12 +169,14 @@ SystemZTargetMachine::getSubtargetImpl(const Function &F) const {
       FSAttr.isValid() ? FSAttr.getValueAsString().str() : TargetFS;
 
   // FIXME: This is related to the code below to reset the target options,
-  // we need to know whether or not the soft float flag is set on the
-  // function, so we can enable it as a subtarget feature.
-  bool softFloat = F.getFnAttribute("use-soft-float").getValueAsBool();
-
-  if (softFloat)
+  // we need to know whether the soft float and backchain flags are set on the
+  // function, so we can enable them as subtarget features.
+  bool SoftFloat = F.getFnAttribute("use-soft-float").getValueAsBool();
+  if (SoftFloat)
     FS += FS.empty() ? "+soft-float" : ",+soft-float";
+  bool BackChain = F.hasFnAttribute("backchain");
+  if (BackChain)
+    FS += FS.empty() ? "+backchain" : ",+backchain";
 
   auto &I = SubtargetMap[CPU + TuneCPU + FS];
   if (!I) {
@@ -250,10 +223,12 @@ public:
 } // end anonymous namespace
 
 void SystemZPassConfig::addIRPasses() {
-  if (getOptLevel() != CodeGenOpt::None) {
+  if (getOptLevel() != CodeGenOptLevel::None) {
     addPass(createSystemZTDCPass());
     addPass(createLoopDataPrefetchPass());
   }
+
+  addPass(createAtomicExpandPass());
 
   TargetPassConfig::addIRPasses();
 }
@@ -261,7 +236,7 @@ void SystemZPassConfig::addIRPasses() {
 bool SystemZPassConfig::addInstSelector() {
   addPass(createSystemZISelDag(getSystemZTargetMachine(), getOptLevel()));
 
- if (getOptLevel() != CodeGenOpt::None)
+  if (getOptLevel() != CodeGenOptLevel::None)
     addPass(createSystemZLDCleanupPass(getSystemZTargetMachine()));
 
   return false;
@@ -283,12 +258,12 @@ void SystemZPassConfig::addPostRewrite() {
 void SystemZPassConfig::addPostRegAlloc() {
   // PostRewrite needs to be run at -O0 also (in which case addPostRewrite()
   // is not called).
-  if (getOptLevel() == CodeGenOpt::None)
+  if (getOptLevel() == CodeGenOptLevel::None)
     addPass(createSystemZPostRewritePass(getSystemZTargetMachine()));
 }
 
 void SystemZPassConfig::addPreSched2() {
-  if (getOptLevel() != CodeGenOpt::None)
+  if (getOptLevel() != CodeGenOptLevel::None)
     addPass(&IfConverterID);
 }
 
@@ -296,7 +271,7 @@ void SystemZPassConfig::addPreEmitPass() {
   // Do instruction shortening before compare elimination because some
   // vector instructions will be shortened into opcodes that compare
   // elimination recognizes.
-  if (getOptLevel() != CodeGenOpt::None)
+  if (getOptLevel() != CodeGenOptLevel::None)
     addPass(createSystemZShortenInstPass(getSystemZTargetMachine()));
 
   // We eliminate comparisons here rather than earlier because some
@@ -322,14 +297,14 @@ void SystemZPassConfig::addPreEmitPass() {
   // Doing it so late makes it more likely that a register will be reused
   // between the comparison and the branch, but it isn't clear whether
   // preventing that would be a win or not.
-  if (getOptLevel() != CodeGenOpt::None)
+  if (getOptLevel() != CodeGenOptLevel::None)
     addPass(createSystemZElimComparePass(getSystemZTargetMachine()));
   addPass(createSystemZLongBranchPass(getSystemZTargetMachine()));
 
   // Do final scheduling after all other optimizations, to get an
   // optimal input for the decoder (branch relaxation must happen
   // after block placement).
-  if (getOptLevel() != CodeGenOpt::None)
+  if (getOptLevel() != CodeGenOptLevel::None)
     addPass(&PostMachineSchedulerID);
 }
 
@@ -340,4 +315,11 @@ TargetPassConfig *SystemZTargetMachine::createPassConfig(PassManagerBase &PM) {
 TargetTransformInfo
 SystemZTargetMachine::getTargetTransformInfo(const Function &F) const {
   return TargetTransformInfo(SystemZTTIImpl(this, F));
+}
+
+MachineFunctionInfo *SystemZTargetMachine::createMachineFunctionInfo(
+    BumpPtrAllocator &Allocator, const Function &F,
+    const TargetSubtargetInfo *STI) const {
+  return SystemZMachineFunctionInfo::create<SystemZMachineFunctionInfo>(
+      Allocator, F, STI);
 }

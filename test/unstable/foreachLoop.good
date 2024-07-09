@@ -1,0 +1,1 @@
+foreachLoop.chpl:1: warning: foreach loops are currently unstable and are expected to change in ways that may break some of their current uses

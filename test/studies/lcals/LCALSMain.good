@@ -1,0 +1,16 @@
+
+ allocateLoopSuiteRunInfo...
+
+ defineLoopSuiteRunInfo...
+
+ allocateLoopData...
+
+ run suite: pass = 0
+	 run loop variant ---> RAW
+	 run loop variant ---> RAW_OMP
+
+ generate reports....
+
+ freeLoopSuiteRunInfo...
+
+ DONE!!! 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -94,7 +94,7 @@ module Crypto {
   proc generateKeys(bits: int) {
    var localKeyPair: EVP_PKEY_PTR;
    var keyCtx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA: c_int,
-                                    c_nil: ENGINE_PTR);
+                                    nil: ENGINE_PTR);
    EVP_PKEY_keygen_init(keyCtx);
    EVP_PKEY_CTX_set_rsa_keygen_bits(keyCtx, bits: c_int);
    EVP_PKEY_keygen(keyCtx, localKeyPair);
@@ -105,10 +105,11 @@ module Crypto {
 
   /* The `CryptoBuffer` class is a wrapper around the internal representation
      of how the values in this library are stored. Every sequence of bytes going
-     into a Crypto utility or coming out of it, is a `CryptoBuffer`.
+     into a Crypto utility or coming out of it is a `CryptoBuffer`.
 
-     A `CryptoBuffer` can enclose a `string` or a `[] uint(8)` passed to its
-     initializer and provides helper functions to access those values.
+     A `CryptoBuffer` can enclose a `string`, `bytes`, or `[] uint(8)`
+     passed to its initializer and provides helper functions to access
+     those values.
 
   */
   class CryptoBuffer {
@@ -130,7 +131,7 @@ module Crypto {
 
     */
     proc init(s: string) {
-      this.complete();
+      init this;
       this._len = s.numBytes;
       if (this._len == 0) {
         halt("Enter a string with length greater than 0 in order to create a buffer");
@@ -140,6 +141,7 @@ module Crypto {
         elt = b;
       }
     }
+
     /* The `CryptoBuffer` class initializer that initializes the buffer
        when a `bytes` is supplied to it.
 
@@ -151,7 +153,7 @@ module Crypto {
 
     */
     proc init(s: bytes) {
-      this.complete();
+      init this;
       this._len = s.numBytes;
       if (this._len == 0) {
         halt("Enter a string with length greater than 0 in order to create a buffer");
@@ -173,13 +175,13 @@ module Crypto {
 
     */
     proc init(s: [] uint(8)) {
-      this.complete();
+      init this;
       this._len = s.size;
       if (this._len == 0) {
         halt("Enter an array with size greater than 0 in order to create a buffer");
       }
       this.buffDomain = s.domain;
-      for i in this.buffDomain do {
+      for i in this.buffDomain {
         this.buff[i] = s[i];
       }
     }
@@ -223,8 +225,12 @@ module Crypto {
     */
     proc toHex() throws {
       var buffHex: [this.buffDomain] string;
-      for i in this.buffDomain do {
-        buffHex[i] = try "%02xu".format(this.buff[i]);
+      for i in this.buffDomain {
+        const byte = this.buff[i];
+        const nib1 = convertNibble((byte>>4)&0xf, uppercase=false);
+        const nib2 = convertNibble(byte&0xf, uppercase=false);
+
+        buffHex[i].appendCodepointValues(nib1, nib2);
       }
       return buffHex;
     }
@@ -237,8 +243,12 @@ module Crypto {
     */
     proc toHexString() throws {
       var buffHexString: string;
-      for i in this.buffDomain do {
-        buffHexString += try "%02xu".format(this.buff[i]);
+      for i in this.buffDomain {
+        const byte = this.buff[i];
+        const nib1 = convertNibble((byte>>4)&0xf, uppercase=false);
+        const nib2 = convertNibble(byte&0xf, uppercase=false);
+
+        buffHexString.appendCodepointValues(nib1, nib2);
       }
       return buffHexString;
     }
@@ -246,7 +256,7 @@ module Crypto {
 
   /* `RSAKey` class encloses the `EVP_PKEY` object provided by the
      OpenSSL primitives. The `EVP_PKEY` object can contain the public key,
-     private key or both of them. Hence, the contents of an object of the
+     private key, or both of them. Hence, the contents of an object of the
      class `RSAKey` may be decided by the user.
 
      Calling the `RSAKey` initializer without using any key import or export
@@ -264,7 +274,7 @@ module Crypto {
     var keyObj: EVP_PKEY_PTR;
 
     /* The `RSAKey` class initializer that initializes the `EVP_PKEY` object
-       of OpenSSL and basically, initializes a set of public and private keys.
+       of OpenSSL and initializes a set of public and private keys.
 
        It checks for valid RSA key lengths and generates a public key and private
        key pair accordingly.
@@ -277,7 +287,7 @@ module Crypto {
 
     */
     proc init(keyLen: int) {
-      this.complete();
+      init this;
       if (keyLen != 1024 && keyLen != 2048 && keyLen != 4096) {
         halt("RSAKey: Invalid key length.");
       }
@@ -312,7 +322,7 @@ module Crypto {
     var value: owned CryptoBuffer;
 
     /* The `Envelope` class initializer that encapsulates the IV, AES encrypted
-       ciphertext buffer and an array of encrypted key buffers.
+       ciphertext buffer, and an array of encrypted key buffers.
 
        :arg iv: Initialization Vector.
        :type iv: `owned CryptoBuffer`
@@ -328,9 +338,9 @@ module Crypto {
 
     */
     proc init(iv: owned CryptoBuffer, encSymmKey: [] owned CryptoBuffer, encSymmValue: owned CryptoBuffer) {
-      this.complete();
+      init this;
       this.keyDomain = encSymmKey.domain;
-      for i in this.keyDomain do {
+      for i in this.keyDomain {
         this.keys[i] = encSymmKey[i];
       }
       this.iv = iv;
@@ -396,14 +406,14 @@ module Crypto {
 
     var ctx = CHPL_EVP_MD_CTX_new();
 
-    var hash: [0..#hashLen] uint(8); ;
+    var hash: [0..#hashLen] uint(8);
     var retHashLen: c_uint = 0;
 
     var md: CONST_EVP_MD_PTR;
     md = EVP_get_digestbyname(digestName.c_str());
 
-    EVP_DigestInit_ex(CHPL_EVP_MD_CTX_ptr(ctx), md, c_nil: ENGINE_PTR);
-    EVP_DigestUpdate(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(inputBuffer.buff): c_void_ptr, inputBuffer._len: c_size_t);
+    EVP_DigestInit_ex(CHPL_EVP_MD_CTX_ptr(ctx), md, nil: ENGINE_PTR);
+    EVP_DigestUpdate(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(inputBuffer.buff): c_ptr(void), inputBuffer._len: c_size_t);
     EVP_DigestFinal_ex(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(hash): c_ptr(c_uchar), retHashLen);
 
     CHPL_EVP_MD_CTX_free(ctx);
@@ -437,7 +447,7 @@ module Crypto {
        to be used. This initializer sets the byte length of the
        respective hash and allocates a domain for memory allocation
        for hashing. It currently supports the following hashing functions -
-       ``MD5``, ``SHA1``, ``SHA224``, ``SHA256``, ``SHA384``, ``SHA512`` and
+       ``MD5``, ``SHA1``, ``SHA224``, ``SHA256``, ``SHA384``, ``SHA512``, and
        ``RIPEMD160`` consumed via an enum, `Digest`.
 
        :arg digestName: Hashing function to be used.
@@ -454,7 +464,7 @@ module Crypto {
 
     */
     proc init(digestName: Digest) {
-      this.complete();
+      init this;
       select digestName {
         when Digest.MD5        do this.hashLen = 16;
         when Digest.SHA1       do this.hashLen = 20;
@@ -481,7 +491,7 @@ module Crypto {
       return this.digestName;
     }
 
-    /* Given a CryptoBuffer (buffer) as input, this function returns it's
+    /* Given a CryptoBuffer (buffer) as input, this function returns its
        hash digest. The returned hash digest is also a buffer that can be
        accessed by using buffer utility functions.
 
@@ -516,7 +526,7 @@ module Crypto {
 
     EVP_EncryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
-                       c_nil: ENGINE_PTR,
+                       nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
     EVP_EncryptUpdate(CHPL_EVP_CIPHER_CTX_ptr(ctx),
@@ -551,7 +561,7 @@ module Crypto {
 
     EVP_DecryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
-                       c_nil: ENGINE_PTR,
+                       nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
     EVP_DecryptUpdate(CHPL_EVP_CIPHER_CTX_ptr(ctx),
@@ -588,7 +598,7 @@ module Crypto {
      Currently, the `AES` class allows symmetric encryption using only the CBC or
      Cipher Block Chaining mode in 128, 192, and 256 key size variants.
 
-     After thorough testing, ECB, OCB and other chaining mode variants will also
+     After thorough testing, ECB, OCB, and other chaining mode variants will also
      be added to this library(TODO).
 
   */
@@ -651,7 +661,7 @@ module Crypto {
     /* This is the 'AES' encrypt routine that encrypts the user supplied message buffer
        using the key and IV.
 
-       The `encrypt` takes in the plaintext buffer, key buffer and IV buffer as the
+       The `encrypt` takes in the plaintext buffer, key buffer, and IV buffer as the
        arguments and returns a buffer of the ciphertext.
 
        :arg plaintext: A `CryptoBuffer` representing the plaintext to be encrypted.
@@ -677,7 +687,7 @@ module Crypto {
     /* This is the 'AES' decrypt routine that decrypts the user supplied ciphertext
        buffer using the same key and IV used for encryption.
 
-       The `decrypt` takes in the ciphertext buffer, key buffer and IV buffer as the
+       The `decrypt` takes in the ciphertext buffer, key buffer, and IV buffer as the
        arguments and returns a buffer of the decrypted plaintext.
 
        :arg ciphertext: A `CryptoBuffer` representing the ciphertext to be decrypted.
@@ -719,7 +729,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
     EVP_EncryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
-                       c_nil: ENGINE_PTR,
+                       nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
 
@@ -755,7 +765,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
     EVP_DecryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
-                       c_nil: ENGINE_PTR,
+                       nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
     EVP_DecryptUpdate(CHPL_EVP_CIPHER_CTX_ptr(ctx),
@@ -775,7 +785,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
   /* The `Blowfish` class represents a symmetric-key block cipher called Blowfish, designed
      in 1993 by Bruce Schneier. Considering current scenario, the Advanced Encryption
-     Standard(AES) cipher is used more in practice. Since, Blowfish is unpatented and placed
+     Standard(AES) cipher is used more in practice. Since Blowfish is unpatented and placed
      in the public domain, it receives a decent amount of attention from the community.
 
      .. note::
@@ -839,7 +849,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     /* This is the 'Blowfish' encrypt routine that encrypts the user supplied message buffer
        using the key and IV.
 
-       The `encrypt` takes in the plaintext buffer, key buffer and IV buffer as the
+       The `encrypt` takes in the plaintext buffer, key buffer, and IV buffer as the
        arguments and returns a buffer of the ciphertext.
 
        :arg plaintext: A `CryptoBuffer` representing the plaintext to be encrypted.
@@ -860,11 +870,11 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       var ivLen = IV.getBuffSize();
       var keyLen = key.getBuffSize();
       if (ivLen != 8) {
-        throw new owned IllegalArgumentError("IV", "Blowfish cipher expects a size of 8 bytes.");
+        throw new owned IllegalArgumentError("illegal argument 'IV': Blowfish cipher expects a size of 8 bytes.");
       }
 
       if (keyLen < 10) {
-        throw new owned IllegalArgumentError("key", "Blowfish cipher expects a size greater than 10 bytes.");
+        throw new owned IllegalArgumentError("illegal argument 'key': Blowfish cipher expects a size greater than 10 bytes.");
       }
       var encryptedPlaintext = bfEncrypt(plaintext, key, IV, this.cipher);
       var encryptedPlaintextBuff = new owned CryptoBuffer(encryptedPlaintext);
@@ -874,7 +884,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     /* This is the 'Blowfish' decrypt routine that decrypts the user supplied ciphertext
        buffer using the same key and IV used for encryption.
 
-       The `decrypt` takes in the ciphertext buffer, key buffer and IV buffer as the
+       The `decrypt` takes in the ciphertext buffer, key buffer, and IV buffer as the
        arguments and returns a buffer of the decrypted plaintext.
 
        :arg ciphertext: A `CryptoBuffer` representing the ciphertext to be decrypted.
@@ -938,7 +948,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     */
     proc getRandomBuffer(buffLen: int): owned CryptoBuffer throws {
       if (buffLen < 1) {
-        throw new owned IllegalArgumentError("buffLen", "Invalid random buffer length specified.");
+        throw new owned IllegalArgumentError("illegal argument 'buffLen': Invalid random buffer length specified.");
       }
       var randomizedBuff = try createRandomBuffer(buffLen);
       var randomizedCryptoBuff = new owned CryptoBuffer(randomizedBuff);
@@ -1037,7 +1047,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       EVP_CIPHER_CTX_init(ctx); // TODO
 
       var numKeys = keys.size;
-      for i in keys.domain do {
+      for i in keys.domain {
         var keySize = EVP_PKEY_size(keys[i].getKeyPair());
         var dummyMalloc: [1..((keySize): int(64))] uint(8);
         encSymmKeys[i] = new unmanaged CryptoBuffer(dummyMalloc);
@@ -1045,12 +1055,12 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
       var encSymmKeysPtr: [keys.domain] c_ptr(uint(8));
       var encryptedSymKeyLen: c_int = 0;
-      for i in keys.domain do {
+      for i in keys.domain {
         encSymmKeysPtr[i] = encSymmKeys[i].getBuffPtr();
       }
 
       var keyObjs: [keys.domain] EVP_PKEY_PTR;
-      for i in keys.domain do {
+      for i in keys.domain {
         keyObjs[i] = keys[i].getKeyPair();
       }
 
@@ -1088,7 +1098,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       var numEncKeys = encKeys.size;
       var openErrCode = 0;
 
-      for i in encKeys.domain do {
+      for i in encKeys.domain {
         openErrCode = EVP_OpenInit(ctx,
                                   EVP_aes_256_cbc(),
                                   encKeys[i].getBuffPtr(),
@@ -1101,7 +1111,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       }
 
       if (!openErrCode) {
-        throw new owned IllegalArgumentError("key", "The RSAKey is an invalid match.");
+        throw new owned IllegalArgumentError("illegal argument 'key': The RSAKey is an invalid match.");
       }
 
       var plaintextLen = ciphertext.size;
@@ -1143,7 +1153,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        'RSAKey' objects supplied in the arguments.
 
        The function returns an `Envelope` object that encloses the auto-generated
-       IV, AES encrypted ciphertext and an array of `RSA` encrypted key buffers.
+       IV, AES encrypted ciphertext, and an array of `RSA` encrypted key buffers.
        The number of encrypted keys is equal to the number of `RSAKey` objects
        in the array. This kind of use case is useful specifically in developing
        one-to-many systems such as GPG.
@@ -1163,7 +1173,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :type keys: `[] RSAKey`
 
        :return: An `owned Envelope` object which comprises of the IV buffer,
-                array of RSA encrypted keys and AES encrypted ciphertext.
+                array of RSA encrypted keys, and AES encrypted ciphertext.
        :rtype: `owned Envelope`
 
     */
@@ -1276,20 +1286,20 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern proc EVP_OpenFinal(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar), outl: c_ptr(c_int)): c_int;
 
     extern proc CHPL_OpenSSL_add_all_digests();
-    extern proc EVP_get_digestbyname(name: c_string): CONST_EVP_MD_PTR;
+    extern proc EVP_get_digestbyname(name: c_ptrConst(c_char)): CONST_EVP_MD_PTR;
 
     extern proc CHPL_EVP_MD_CTX_new(): CHPL_EVP_MD_CTX;
     extern proc CHPL_EVP_MD_CTX_free(ref c: CHPL_EVP_MD_CTX);
     extern proc CHPL_EVP_MD_CTX_ptr(ref c: CHPL_EVP_MD_CTX):EVP_MD_CTX_PTR;
     extern proc EVP_DigestInit_ex(ctx: EVP_MD_CTX_PTR, types: CONST_EVP_MD_PTR, impl: ENGINE_PTR): c_int;
-    extern proc EVP_DigestUpdate(ctx: EVP_MD_CTX_PTR, const d: c_void_ptr, cnt: c_size_t): c_int;
+    extern proc EVP_DigestUpdate(ctx: EVP_MD_CTX_PTR, const d: c_ptr(void), cnt: c_size_t): c_int;
     extern proc EVP_DigestFinal_ex(ctx: EVP_MD_CTX_PTR, md: c_ptr(c_uchar), ref s: c_uint): c_int;
 
     extern proc RAND_bytes(buf: c_ptr(c_uchar), num: c_int) : c_int;
 
     extern proc EVP_sha256(): CONST_EVP_MD_PTR;
 
-    extern proc PKCS5_PBKDF2_HMAC(pass: c_string,
+    extern proc PKCS5_PBKDF2_HMAC(pass: c_ptrConst(c_char),
                                   passlen: c_int,
                                   const salt: c_ptr(c_uchar),
                                   saltlen: c_int,
@@ -1346,6 +1356,26 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern proc EVP_bf_cfb(): CONST_EVP_CIPHER_PTR;
     extern proc EVP_bf_ofb(): CONST_EVP_CIPHER_PTR;
 
-    extern proc RAND_seed(const buf: c_void_ptr, num: c_int);
+    extern proc RAND_seed(const buf: c_ptr(void), num: c_int);
+  }
+
+  /*
+   * Convert a nibble into a character in its hexadecimal representation.
+   * Copied from Bytes.chpl.
+   * TODO: Put this in a shared location both can use.
+   */
+  @chpldoc.nodoc
+  private proc convertNibble(in nib:uint(8), uppercase: bool): uint(8) {
+    nib = nib & 0xf;
+    if 0 <= nib && nib <= 9 {
+      param zero:uint(8) = b"0"(0); // aka 0x30
+      return zero + nib;
+    } else if 10 <= nib && nib <= 15 {
+      param a:uint(8) = b"a"(0); // aka 0x61
+      param A:uint(8) = b"A"(0); // aka 0x41
+      return (if uppercase then A else a) + nib - 10;
+    }
+
+    return 0;
   }
 }

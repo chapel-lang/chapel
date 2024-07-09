@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,10 +39,11 @@ public:
     UNKNOWN,
     WARN_UNSTABLE,
     WARN_UNSTABLE_INTERNAL,
-    WARN_UNSTABLE_STANDARD,
+    WARN_UNSTABLE_STANDARD,   // warn in all bundled modules except internal
     WARN_ARRAY_OF_RANGE,
     WARN_UNKNOWN_TOOL_SPACED_ATTRS,
     PERMIT_UNHANDLED_MODULE_ERRORS,
+    WARN_INT_TO_UINT,
     NUM_FLAGS
   };
 

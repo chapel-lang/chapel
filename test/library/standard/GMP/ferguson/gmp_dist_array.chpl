@@ -3,7 +3,7 @@ use BigInteger;
 
 config const n     = 20;
 const        Space = { 1 .. n };
-const        D     = Space dmapped Block(boundingBox = Space);
+const        D     = Space dmapped new blockDist(boundingBox = Space);
 
 var A: [D] bigint;
 var B: [D] bigint;
@@ -40,7 +40,7 @@ writeln(sum.sizeInBase(10));
 
 var modulus = new bigint("10000000000000000000000000000000000000000");
 
-nextprime(modulus, modulus);
+nextPrime(modulus, modulus);
 
 writeln(modulus);
 

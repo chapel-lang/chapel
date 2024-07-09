@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -158,26 +158,26 @@ module HDFS {
   @chpldoc.nodoc
   extern type tPort = uint(16);
 
-  private extern proc hdfsConnect(nn:c_string, port:tPort):hdfsFS;
+  private extern proc hdfsConnect(nn:c_ptrConst(c_char), port:tPort):hdfsFS;
   private extern proc hdfsDisconnect(fs:hdfsFS):c_int;
-  private extern proc hdfsOpenFile(fs:hdfsFS, path:c_string, flags:c_int,
+  private extern proc hdfsOpenFile(fs:hdfsFS, path:c_ptrConst(c_char), flags:c_int,
                                    bufferSize:c_int, replication:c_short,
                                    blockSize:tSize):hdfsFile;
   private extern proc hdfsCloseFile(fs:hdfsFS, file:hdfsFile):c_int;
   private extern proc hdfsPread(fs:hdfsFS, file:hdfsFile, position:tOffset,
-                                buffer:c_void_ptr, length:tSize):tSize;
+                                buffer:c_ptr(void), length:tSize):tSize;
   private extern proc hdfsWrite(fs:hdfsFS, file:hdfsFile,
-                                buffer:c_void_ptr, length:tSize):tSize;
+                                buffer:c_ptr(void), length:tSize):tSize;
   private extern proc hdfsFlush(fs:hdfsFS, file:hdfsFile):c_int;
-  private extern proc hdfsGetPathInfo(fs:hdfsFS, path:c_string):c_ptr(hdfsFileInfo);
+  private extern proc hdfsGetPathInfo(fs:hdfsFS, path:c_ptrConst(c_char)):c_ptr(hdfsFileInfo);
   private extern proc hdfsFreeFileInfo(info:c_ptr(hdfsFileInfo), numEntries:c_int);
 
   // QIO extern stuff
-  private extern proc qio_strdup(s: c_string): c_string;
+  private extern proc qio_strdup(s: c_ptrConst(c_char)): c_ptrConst(c_char);
   private extern proc qio_mkerror_errno():errorCode;
-  private extern proc qio_channel_get_allocated_ptr_unlocked(ch:qio_channel_ptr_t, amt_requested:int(64), ref ptr_out:c_void_ptr, ref len_out:c_ssize_t, ref offset_out:int(64)):errorCode;
+  private extern proc qio_channel_get_allocated_ptr_unlocked(ch:qio_channel_ptr_t, amt_requested:int(64), ref ptr_out:c_ptr(void), ref len_out:c_ssize_t, ref offset_out:int(64)):errorCode;
   private extern proc qio_channel_advance_available_end_unlocked(ch:qio_channel_ptr_t, len:c_ssize_t);
-  private extern proc qio_channel_get_write_behind_ptr_unlocked(ch:qio_channel_ptr_t, ref ptr_out:c_void_ptr, ref len_out:c_ssize_t, ref offset_out:int(64)):errorCode;
+  private extern proc qio_channel_get_write_behind_ptr_unlocked(ch:qio_channel_ptr_t, ref ptr_out:c_ptr(void), ref len_out:c_ssize_t, ref offset_out:int(64)):errorCode;
   private extern proc qio_channel_advance_write_behind_unlocked(ch:qio_channel_ptr_t, len:c_ssize_t);
 
   private param verbose = false;
@@ -194,7 +194,7 @@ module HDFS {
 
   proc connect(nameNode: string = "default", port:int=0) throws {
     var fs = new unmanaged HDFSFileSystem(nameNode, port);
-    if fs.hfs == c_nil {
+    if fs.hfs == nil {
       var err = qio_mkerror_errno();
       delete fs;
       throw createSystemError(err, "in hdfsConnect");
@@ -249,14 +249,14 @@ module HDFS {
       this.nameNode = nameNode;
       this.port = port;
       this.hfs = hdfsConnect(this.nameNode.c_str(), this.port.safeCast(uint(16)));
-      this.complete();
+      init this;
       refCount.write(1);
     }
     @chpldoc.nodoc
     proc deinit() {
       if verbose then
         writeln("hdfsDisconnect");
-      if this.hfs != c_nil then
+      if this.hfs != nil then
         hdfsDisconnect(this.hfs);
     }
     @chpldoc.nodoc
@@ -270,30 +270,6 @@ module HDFS {
       return oldValue - 1;
     }
 
-    pragma "last resort"
-    @deprecated(notes="open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`")
-    proc open(path:string, mode:iomode,
-              style:iostyle,
-              in flags:c_int = 0, // default to based on mode
-              bufferSize:c_int = 0,    // 0 -> use hdfs default value
-              replication:c_short = 0, // 0 -> use hdfs default value
-              blockSize:tSize = 0      // 0 -> use hdfs default value
-             ) throws {
-      return open(path, IO.convertIoMode(mode), style, flags, bufferSize,
-                replication, blockSize);
-    }
-
-    @unstable("open with a style argument is unstable")
-    proc open(path:string, mode:ioMode,
-              style:iostyle,
-              in flags:c_int = 0, // default to based on mode
-              bufferSize:c_int = 0,    // 0 -> use hdfs default value
-              replication:c_short = 0, // 0 -> use hdfs default value
-              blockSize:tSize = 0      // 0 -> use hdfs default value
-             ) throws {
-      return openHelper(path, mode, style: iostyleInternal, flags, bufferSize,
-                  replication, blockSize);
-    }
     /*
 
       Open an HDFS file stored at a particular path.  Note that once the file is
@@ -313,32 +289,6 @@ module HDFS {
               replication:c_short = 0, // 0 -> use hdfs default value
               blockSize:tSize = 0      // 0 -> use hdfs default value
              ) throws {
-      return openHelper(path, mode, flags=flags, bufferSize=bufferSize,
-                        replication=replication, blockSize=blockSize);
-    }
-
-    pragma "last resort"
-    @deprecated(notes="open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`")
-    proc open(path:string, mode:iomode,
-              in flags:c_int = 0, // default to based on mode
-              bufferSize:c_int = 0,    // 0 -> use hdfs default value
-              replication:c_short = 0, // 0 -> use hdfs default value
-              blockSize:tSize = 0      // 0 -> use hdfs default value
-             ) throws {
-      return open(path, IO.convertIoMode(mode), flags=flags,
-        bufferSize=bufferSize, replication=replication, blockSize=blockSize);
-    }
-
-
-    @chpldoc.nodoc
-    proc openHelper(path:string, mode:ioMode,
-                    style:iostyleInternal = defaultIOStyleInternal(),
-                    in flags:c_int = 0, // default to based on mode
-                    bufferSize:c_int = 0,    // 0 -> use hdfs default value
-                    replication:c_short = 0, // 0 -> use hdfs default value
-                    blockSize:tSize = 0      // 0 -> use hdfs default value
-                    ) throws {
-
       if flags == 0 {
         // set flags based upon ioMode
         select mode {
@@ -359,14 +309,13 @@ module HDFS {
 
       if verbose then
         writeln("hdfsOpenFile");
-
       var hfile = hdfsOpenFile(this.hfs, path.localize().c_str(),
                                flags, bufferSize, replication, blockSize);
 
       if verbose then
         writeln("after hdfsOpenFile");
 
-      if hfile == c_nil {
+      if hfile == nil {
         throw createSystemError(qio_mkerror_errno(), "in hdfsOpenFile");
       }
 
@@ -376,7 +325,7 @@ module HDFS {
 
       var ret: file;
       try {
-        ret = openplugin(fl, mode, seekable=true, style);
+        ret = openplugin(fl, mode, seekable=true, defaultIOStyleInternal());
       } catch e {
         fl.close();
         delete fl;
@@ -431,10 +380,10 @@ module HDFS {
         writeln("HDFSFile.filelength length=", length);
       return 0;
     }
-    override proc getpath(out path:c_string, out len:int(64)):errorCode {
+    override proc getpath(out path:c_ptr(uint(8)), out len:int(64)):errorCode {
       if verbose then
         writeln("HDFSFile.getpath path=", this.path);
-      path = qio_strdup(this.path.c_str());
+      path = qio_strdup(this.path.c_str()):c_ptr(uint(8));
       len = this.path.size;
       if verbose then
         writeln("HDFSFile.getpath returning ", (path:string, len));
@@ -460,7 +409,7 @@ module HDFS {
       return 0;
     }
     override proc getLocalesForRegion(start:int(64), end:int(64), out
-        localeNames:c_ptr(c_string), ref nLocales:int(64)):errorCode {
+        localeNames:c_ptr(c_ptrConst(c_char)), ref nLocales:int(64)):errorCode {
       if verbose then
         writeln("HDFSFile.getLocalesForRegion");
       return ENOSYS;
@@ -507,7 +456,7 @@ module HDFS {
 
       var remaining = amt;
       while remaining > 0 {
-        var ptr:c_void_ptr = c_nil;
+        var ptr:c_ptr(void) = nil;
         var len = 0:c_ssize_t;
         var offset = 0;
         err = qio_channel_get_allocated_ptr_unlocked(qio_ch, amt, ptr, len, offset);
@@ -546,7 +495,7 @@ module HDFS {
       var err:errorCode = 0;
       var remaining = amt;
       while remaining > 0 {
-        var ptr:c_void_ptr = c_nil;
+        var ptr:c_ptr(void) = nil;
         var len = 0:c_ssize_t;
         var offset = 0;
         err = qio_channel_get_write_behind_ptr_unlocked(qio_ch, ptr, len, offset);

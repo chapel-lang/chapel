@@ -1,0 +1,76 @@
+rangeUnboundedEnumBoolCompare.chpl:14: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:15: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:16: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:18: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:19: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:21: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:22: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:23: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:24: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:28: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:29: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:30: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:32: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:33: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:35: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:36: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:37: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:38: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:51: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:52: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:53: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:55: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:56: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:58: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:59: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:60: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:61: warning: == between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:65: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:66: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:67: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:69: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:70: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:72: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:73: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:74: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+rangeUnboundedEnumBoolCompare.chpl:75: warning: != between unbounded and bounded ranges is unstable and its behavior may change in the future
+equalities
+true
+true
+true
+true
+true
+true
+true
+true
+false
+inequalities
+false
+false
+false
+false
+false
+false
+false
+false
+true
+equalities
+true
+true
+true
+true
+true
+true
+true
+true
+false
+inequalities
+false
+false
+false
+false
+false
+false
+false
+false
+true

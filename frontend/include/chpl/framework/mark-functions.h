@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -89,6 +89,16 @@ template<typename T> struct mark<std::vector<T>> {
     }
   }
 };
+
+template<typename T> struct mark<chpl::optional<T>> {
+  void operator()(Context* context, const chpl::optional<T>& keep) const {
+    if (keep) {
+      chpl::mark<T> marker;
+      marker(context, *keep);
+    }
+  }
+};
+
 
 template<typename K, typename V> struct mark<std::map<K, V>> {
   void operator()(Context* context, const std::map<K, V>& keep) const {

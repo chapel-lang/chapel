@@ -55,6 +55,10 @@ def title(name):
         name = '22.10 "Kinetic Kudu"'
     if name == "Lunar":
         name = '23.04 "Lunar Lobster"'
+    if name == "Mantic":
+        name = '23.10 "Mantic Minotaur"'
+    if name == "Noble":
+        name = '24.04 "Noble Numbat"'
     return name
 
 def fixname(subdir):
@@ -82,7 +86,7 @@ def fixname(subdir):
             tmp = part[:part.find("linux")]
             adj.append(title(tmp))
             adj.append("Linux")
-        elif re.search('\d$', part):
+        elif re.search('\\d$', part):
             sections = re.split('([0-9.]+)', part)
             for s in sections:
                 s = s.strip()
@@ -140,10 +144,9 @@ for d in directories:
         if "homebrew" in subpath:
             continue # skip these configurations
                      # (not sure how useful this is)
-        if ("fedora-38" in subpath or
-            "fedora-37" in subpath or
-            "amazonlinux-2023" in subpath):
-            continue # skip due to not having working LLVM dependency right now
+        if "nix" in subpath:
+            continue # skip these configurations
+                     # (not sure how useful this is)
         if "generic-x32-debian11" in subpath:
             continue # skip this one, redudant with other debian ones
 

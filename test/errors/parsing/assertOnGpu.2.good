@@ -1,0 +1,21 @@
+─── error in assertOnGpu.chpl:2 [InvalidGpuAssertion] ───
+  Statement does not support the @assertOnGpu attribute.
+  The affected statement is here:
+      |
+    2 | record myRecord {
+      |
+
+─── error in assertOnGpu.chpl:4 [InvalidGpuAssertion] ───
+  Fields do not support the @assertOnGpu attribute.
+  The affected statement is here:
+      |
+    4 |     var A = foreach i in 1..100 do i;
+      |
+
+─── error in assertOnGpu.chpl:8 [InvalidGpuAssertion] ───
+  Functions do not currently support the @assertOnGpu attribute.
+  The affected function is here:
+      |
+    8 | proc f() {
+      |
+

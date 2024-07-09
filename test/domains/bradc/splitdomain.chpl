@@ -1,4 +1,4 @@
-proc split(d: domain) where d.rank == 1 {
+proc split(d: domain(?)) where d.rank == 1 {
   const len = d.size;
   const r = d.dim(0);
   const d1 = d#(len/2);  // take the first floor(len/2) elements

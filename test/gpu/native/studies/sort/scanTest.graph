@@ -1,0 +1,5 @@
+perfkeys: GPU scan took :
+files: gpuScan.dat
+graphkeys: GPU Scan
+ylabel: Time (s)
+graphtitle: GPU Scan - 1M elements

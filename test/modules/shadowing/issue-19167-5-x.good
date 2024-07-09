@@ -1,10 +1,10 @@
 issue-19167-5-x.chpl:5: In module 'CUseA':
 issue-19167-5-x.chpl:7: error: 'x' has multiple definitions
-issue-19167-5-x.chpl:6: note: redefined through the 'use' statement here
+issue-19167-5-x.chpl:6: note: redefined through the 'use' of 'A' here
 issue-19167-5-x.chpl:2: note: leading to the definition here
 issue-19167-5-x.chpl:10: error: 'x' has multiple definitions in this scope
-issue-19167-5-x.chpl:11: note: it was first defined through the 'use' statement here
+issue-19167-5-x.chpl:11: note: it was first defined through the 'use' of 'CUseA' here
 issue-19167-5-x.chpl:7: note: leading to the definition here
-issue-19167-5-x.chpl:11: note: redefined through the 'use' statement here
-issue-19167-5-x.chpl:6: note: and then through the 'use' statement here
+issue-19167-5-x.chpl:11: note: redefined through the 'use' of 'CUseA' here
+issue-19167-5-x.chpl:6: note: and then through the 'use' of 'A' here
 issue-19167-5-x.chpl:2: note: leading to the definition here

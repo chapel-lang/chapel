@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,7 +32,7 @@ module DefaultSparse {
 
   config param defaultSparseSupportsAutoLocalAccess = true;
 
-  class DefaultSparseDom: BaseSparseDomImpl {
+  class DefaultSparseDom: BaseSparseDomImpl(?) {
     var dist: unmanaged DefaultDist;
     var _nnz = 0;
 
@@ -47,10 +47,6 @@ module DefaultSparse {
       super.init(rank, idxType, parentDom);
 
       this.dist = dist;
-    }
-
-    proc stridable param {
-      return parentDom.stridable;
     }
 
     override proc getNNZ(): int{
@@ -266,7 +262,7 @@ module DefaultSparse {
     }
 
     // this returns the position for the last sparse index added
-    override proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
+    override proc bulkAdd_help(ref inds: [?indsDom] index(rank, idxType),
         dataSorted=false, isUnique=false, addOn=nilLocale){
       import Sort;
 
@@ -413,7 +409,7 @@ module DefaultSparse {
   }
 
 
-  class DefaultSparseArr: BaseSparseArrImpl {
+  class DefaultSparseArr: BaseSparseArrImpl(?) {
 
     proc init(type eltType,
               param rank : int,
@@ -426,56 +422,20 @@ module DefaultSparse {
     // dsiDestroyArr is defined in BaseSparseArrImpl
 
     // ref version
-    proc dsiAccess(ind: idxType) ref where rank == 1 {
-      // make sure we're in the dense bounding box
-      if boundsChecking then
-        if !(dom.parentDom.contains(ind)) {
-          if debugDefaultSparse {
-            writeln("On locale ", here.id);
-            writeln("In dsiAccess, got index ", ind);
-            writeln("dom.parentDom = ", dom.parentDom);
-          }
-
-          halt("array index out of bounds: ", ind);
-        }
-
-
-      // lookup the index and return the data or IRV
-      const (found, loc) = dom.find(ind);
-      if found then
-        return data(loc);
-      else // ?fromMMS: is this error message correct? Not actually looking at value.
-        halt("attempting to assign a 'zero' value in a sparse array: ", ind);
-    }
-    // value version
-    proc dsiAccess(ind: idxType) const ref where rank == 1 {
-      // make sure we're in the dense bounding box
-      if boundsChecking then
-        if !(dom.parentDom.contains(ind)) then
-          halt("array index out of bounds: ", ind);
-
-      // lookup the index and return the data or IRV
-      const (found, loc) = dom.find(ind);
-      if found then
-        return data(loc);
-      else
-        return irv;
-    }
-
-
-    // ref version
     proc dsiAccess(ind: rank*idxType) ref {
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.contains(ind)) then
-          halt("array index out of bounds: ", ind);
+          halt("array index out of bounds: ", if rank==1 then ind(0) else ind);
 
       // lookup the index and return the data or IRV
       const (found, loc) = dom.find(ind);
       if found then
         return data(loc);
       else
-        halt("attempting to assign a 'zero' value in a sparse array: ", ind);
+        // MMS+Vass: we should reword this error message to "assign or access"
+        halt("attempting to assign a 'zero' value in a sparse array at index ",
+             if rank == 1 then ind(0) else ind);
     }
     // value version for POD types
     proc dsiAccess(ind: rank*idxType)
@@ -483,7 +443,7 @@ module DefaultSparse {
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.contains(ind)) then
-          halt("array index out of bounds: ", ind);
+          halt("array index out of bounds: ", if rank==1 then ind(0) else ind);
 
       // lookup the index and return the data or IRV
       const (found, loc) = dom.find(ind);
@@ -497,7 +457,7 @@ module DefaultSparse {
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.contains(ind)) then
-          halt("array index out of bounds: ", ind);
+          halt("array index out of bounds: ", if rank==1 then ind(0) else ind);
 
       // lookup the index and return the data or IRV
       const (found, loc) = dom.find(ind);
@@ -565,6 +525,24 @@ module DefaultSparse {
         return _getDomain(dom);
       } else {
         return dom.dsiLocalSubdomain(loc);
+      }
+    }
+
+    proc doiBulkTransferToKnown(srcDom, destClass: this.type, destDom) {
+      if !boundsChecking || srcDom == destDom {
+        destClass.data = this.data;
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    proc doiBulkTransferFromKnown(destDom, srcClass: this.type, srcDom): bool {
+      if !boundsChecking || srcDom == destDom {
+        this.data = srcClass.data;
+        return true;
+      } else {
+        return false;
       }
     }
   }

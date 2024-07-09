@@ -2,6 +2,7 @@
 
 use GpuDiagnostics;
 
+
 startGpuDiagnostics();
 
 var Days : domain(int) = {0, 10, 20};
@@ -17,5 +18,4 @@ on here.gpus[0] {
 }
 
 stopGpuDiagnostics();
-writeln("GPU diagnostics:");
-writeln(getGpuDiagnostics());
+assertGpuDiags(kernel_launch_um=0, kernel_launch_aod=1); // we are currently skipping with aod

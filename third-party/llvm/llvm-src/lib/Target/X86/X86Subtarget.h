@@ -17,9 +17,10 @@
 #include "X86ISelLowering.h"
 #include "X86InstrInfo.h"
 #include "X86SelectionDAGInfo.h"
-#include "llvm/ADT/Triple.h"
+#include "llvm/CodeGen/GlobalISel/LegalizerInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/IR/CallingConv.h"
+#include "llvm/TargetParser/Triple.h"
 #include <climits>
 #include <memory>
 
@@ -221,7 +222,8 @@ public:
     // We implicitly enable these when we have a write prefix supporting cache
     // level OR if we have prfchw, but don't already have a read prefetch from
     // 3dnow.
-    return hasSSE1() || (hasPRFCHW() && !hasThreeDNow()) || hasPREFETCHWT1();
+    return hasSSE1() || (hasPRFCHW() && !hasThreeDNow()) || hasPREFETCHWT1() ||
+           hasPREFETCHI();
   }
   bool canUseLAHFSAHF() const { return hasLAHFSAHF64() || !is64Bit(); }
   // These are generic getters that OR together all of the thunk types
@@ -242,16 +244,33 @@ public:
   // TODO: Currently we're always allowing widening on CPUs without VLX,
   // because for many cases we don't have a better option.
   bool canExtendTo512DQ() const {
-    return hasAVX512() && (!hasVLX() || getPreferVectorWidth() >= 512);
+    return hasAVX512() && hasEVEX512() &&
+           (!hasVLX() || getPreferVectorWidth() >= 512);
   }
   bool canExtendTo512BW() const  {
     return hasBWI() && canExtendTo512DQ();
   }
 
+  bool hasNoDomainDelay() const { return NoDomainDelay; }
+  bool hasNoDomainDelayMov() const {
+      return hasNoDomainDelay() || NoDomainDelayMov;
+  }
+  bool hasNoDomainDelayBlend() const {
+      return hasNoDomainDelay() || NoDomainDelayBlend;
+  }
+  bool hasNoDomainDelayShuffle() const {
+      return hasNoDomainDelay() || NoDomainDelayShuffle;
+  }
+
   // If there are no 512-bit vectors and we prefer not to use 512-bit registers,
   // disable them in the legalizer.
   bool useAVX512Regs() const {
-    return hasAVX512() && (canExtendTo512DQ() || RequiredVectorWidth > 256);
+    return hasAVX512() && hasEVEX512() &&
+           (canExtendTo512DQ() || RequiredVectorWidth > 256);
+  }
+
+  bool useLight256BitInstructions() const {
+    return getPreferVectorWidth() >= 256 || AllowLight256Bit;
   }
 
   bool useBWIRegs() const {
@@ -259,6 +278,11 @@ public:
   }
 
   bool isXRaySupported() const override { return is64Bit(); }
+
+  /// Use clflush if we have SSE2 or we're on x86-64 (even if we asked for
+  /// no-sse2). There isn't any reason to disable it if the target processor
+  /// supports it.
+  bool hasCLFLUSH() const { return hasSSE2() || is64Bit(); }
 
   /// Use mfence if we have SSE2 or we're on x86-64 (even if we asked for
   /// no-sse2). There isn't any reason to disable it if the target processor
@@ -361,7 +385,8 @@ public:
   /// Classify a global function reference for the current subtarget.
   unsigned char classifyGlobalFunctionReference(const GlobalValue *GV,
                                                 const Module &M) const;
-  unsigned char classifyGlobalFunctionReference(const GlobalValue *GV) const;
+  unsigned char
+  classifyGlobalFunctionReference(const GlobalValue *GV) const override;
 
   /// Classify a blockaddress reference for the current subtarget according to
   /// how we should reference it in a non-pcrel context.

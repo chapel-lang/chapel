@@ -50,7 +50,152 @@ public:
   const SmallVector<DTSortableEntry *, 2> &getDeps() const { return Deps; }
   void addDep(DTSortableEntry *E) { Deps.push_back(E); }
 };
+
+struct SpecialTypeDescriptor {
+  enum SpecialTypeKind {
+    STK_Empty = 0,
+    STK_Image,
+    STK_SampledImage,
+    STK_Sampler,
+    STK_Pipe,
+    STK_DeviceEvent,
+    STK_Pointer,
+    STK_Last = -1
+  };
+  SpecialTypeKind Kind;
+
+  unsigned Hash;
+
+  SpecialTypeDescriptor() = delete;
+  SpecialTypeDescriptor(SpecialTypeKind K) : Kind(K) { Hash = Kind; }
+
+  unsigned getHash() const { return Hash; }
+
+  virtual ~SpecialTypeDescriptor() {}
+};
+
+struct ImageTypeDescriptor : public SpecialTypeDescriptor {
+  union ImageAttrs {
+    struct BitFlags {
+      unsigned Dim : 3;
+      unsigned Depth : 2;
+      unsigned Arrayed : 1;
+      unsigned MS : 1;
+      unsigned Sampled : 2;
+      unsigned ImageFormat : 6;
+      unsigned AQ : 2;
+    } Flags;
+    unsigned Val;
+  };
+
+  ImageTypeDescriptor(const Type *SampledTy, unsigned Dim, unsigned Depth,
+                      unsigned Arrayed, unsigned MS, unsigned Sampled,
+                      unsigned ImageFormat, unsigned AQ = 0)
+      : SpecialTypeDescriptor(SpecialTypeKind::STK_Image) {
+    ImageAttrs Attrs;
+    Attrs.Val = 0;
+    Attrs.Flags.Dim = Dim;
+    Attrs.Flags.Depth = Depth;
+    Attrs.Flags.Arrayed = Arrayed;
+    Attrs.Flags.MS = MS;
+    Attrs.Flags.Sampled = Sampled;
+    Attrs.Flags.ImageFormat = ImageFormat;
+    Attrs.Flags.AQ = AQ;
+    Hash = (DenseMapInfo<Type *>().getHashValue(SampledTy) & 0xffff) ^
+           ((Attrs.Val << 8) | Kind);
+  }
+
+  static bool classof(const SpecialTypeDescriptor *TD) {
+    return TD->Kind == SpecialTypeKind::STK_Image;
+  }
+};
+
+struct SampledImageTypeDescriptor : public SpecialTypeDescriptor {
+  SampledImageTypeDescriptor(const Type *SampledTy, const MachineInstr *ImageTy)
+      : SpecialTypeDescriptor(SpecialTypeKind::STK_SampledImage) {
+    assert(ImageTy->getOpcode() == SPIRV::OpTypeImage);
+    ImageTypeDescriptor TD(
+        SampledTy, ImageTy->getOperand(2).getImm(),
+        ImageTy->getOperand(3).getImm(), ImageTy->getOperand(4).getImm(),
+        ImageTy->getOperand(5).getImm(), ImageTy->getOperand(6).getImm(),
+        ImageTy->getOperand(7).getImm(), ImageTy->getOperand(8).getImm());
+    Hash = TD.getHash() ^ Kind;
+  }
+
+  static bool classof(const SpecialTypeDescriptor *TD) {
+    return TD->Kind == SpecialTypeKind::STK_SampledImage;
+  }
+};
+
+struct SamplerTypeDescriptor : public SpecialTypeDescriptor {
+  SamplerTypeDescriptor()
+      : SpecialTypeDescriptor(SpecialTypeKind::STK_Sampler) {
+    Hash = Kind;
+  }
+
+  static bool classof(const SpecialTypeDescriptor *TD) {
+    return TD->Kind == SpecialTypeKind::STK_Sampler;
+  }
+};
+
+struct PipeTypeDescriptor : public SpecialTypeDescriptor {
+
+  PipeTypeDescriptor(uint8_t AQ)
+      : SpecialTypeDescriptor(SpecialTypeKind::STK_Pipe) {
+    Hash = (AQ << 8) | Kind;
+  }
+
+  static bool classof(const SpecialTypeDescriptor *TD) {
+    return TD->Kind == SpecialTypeKind::STK_Pipe;
+  }
+};
+
+struct DeviceEventTypeDescriptor : public SpecialTypeDescriptor {
+
+  DeviceEventTypeDescriptor()
+      : SpecialTypeDescriptor(SpecialTypeKind::STK_DeviceEvent) {
+    Hash = Kind;
+  }
+
+  static bool classof(const SpecialTypeDescriptor *TD) {
+    return TD->Kind == SpecialTypeKind::STK_DeviceEvent;
+  }
+};
+
+struct PointerTypeDescriptor : public SpecialTypeDescriptor {
+  const Type *ElementType;
+  unsigned AddressSpace;
+
+  PointerTypeDescriptor() = delete;
+  PointerTypeDescriptor(const Type *ElementType, unsigned AddressSpace)
+      : SpecialTypeDescriptor(SpecialTypeKind::STK_Pointer),
+        ElementType(ElementType), AddressSpace(AddressSpace) {
+    Hash = (DenseMapInfo<Type *>().getHashValue(ElementType) & 0xffff) ^
+           ((AddressSpace << 8) | Kind);
+  }
+
+  static bool classof(const SpecialTypeDescriptor *TD) {
+    return TD->Kind == SpecialTypeKind::STK_Pointer;
+  }
+};
 } // namespace SPIRV
+
+template <> struct DenseMapInfo<SPIRV::SpecialTypeDescriptor> {
+  static inline SPIRV::SpecialTypeDescriptor getEmptyKey() {
+    return SPIRV::SpecialTypeDescriptor(
+        SPIRV::SpecialTypeDescriptor::STK_Empty);
+  }
+  static inline SPIRV::SpecialTypeDescriptor getTombstoneKey() {
+    return SPIRV::SpecialTypeDescriptor(SPIRV::SpecialTypeDescriptor::STK_Last);
+  }
+  static unsigned getHashValue(SPIRV::SpecialTypeDescriptor Val) {
+    return Val.getHash();
+  }
+  static bool isEqual(SPIRV::SpecialTypeDescriptor LHS,
+                      SPIRV::SpecialTypeDescriptor RHS) {
+    return getHashValue(LHS) == getHashValue(RHS);
+  }
+};
 
 template <typename KeyTy> class SPIRVDuplicatesTrackerBase {
 public:
@@ -107,12 +252,17 @@ private:
 template <typename T>
 class SPIRVDuplicatesTracker : public SPIRVDuplicatesTrackerBase<const T *> {};
 
+template <>
+class SPIRVDuplicatesTracker<SPIRV::SpecialTypeDescriptor>
+    : public SPIRVDuplicatesTrackerBase<SPIRV::SpecialTypeDescriptor> {};
+
 class SPIRVGeneralDuplicatesTracker {
   SPIRVDuplicatesTracker<Type> TT;
   SPIRVDuplicatesTracker<Constant> CT;
   SPIRVDuplicatesTracker<GlobalVariable> GT;
   SPIRVDuplicatesTracker<Function> FT;
   SPIRVDuplicatesTracker<Argument> AT;
+  SPIRVDuplicatesTracker<SPIRV::SpecialTypeDescriptor> ST;
 
   // NOTE: using MOs instead of regs to get rid of MF dependency to be able
   // to use flat data structure.
@@ -130,8 +280,14 @@ public:
   void buildDepsGraph(std::vector<SPIRV::DTSortableEntry *> &Graph,
                       MachineModuleInfo *MMI);
 
-  void add(const Type *T, const MachineFunction *MF, Register R) {
-    TT.add(T, MF, R);
+  void add(const Type *Ty, const MachineFunction *MF, Register R) {
+    TT.add(Ty, MF, R);
+  }
+
+  void add(const Type *PointerElementType, unsigned AddressSpace,
+           const MachineFunction *MF, Register R) {
+    ST.add(SPIRV::PointerTypeDescriptor(PointerElementType, AddressSpace), MF,
+           R);
   }
 
   void add(const Constant *C, const MachineFunction *MF, Register R) {
@@ -150,8 +306,19 @@ public:
     AT.add(Arg, MF, R);
   }
 
-  Register find(const Type *T, const MachineFunction *MF) {
-    return TT.find(const_cast<Type *>(T), MF);
+  void add(const SPIRV::SpecialTypeDescriptor &TD, const MachineFunction *MF,
+           Register R) {
+    ST.add(TD, MF, R);
+  }
+
+  Register find(const Type *Ty, const MachineFunction *MF) {
+    return TT.find(const_cast<Type *>(Ty), MF);
+  }
+
+  Register find(const Type *PointerElementType, unsigned AddressSpace,
+                const MachineFunction *MF) {
+    return ST.find(
+        SPIRV::PointerTypeDescriptor(PointerElementType, AddressSpace), MF);
   }
 
   Register find(const Constant *C, const MachineFunction *MF) {
@@ -168,6 +335,11 @@ public:
 
   Register find(const Argument *Arg, const MachineFunction *MF) {
     return AT.find(const_cast<Argument *>(Arg), MF);
+  }
+
+  Register find(const SPIRV::SpecialTypeDescriptor &TD,
+                const MachineFunction *MF) {
+    return ST.find(TD, MF);
   }
 
   const SPIRVDuplicatesTracker<Type> *getTypes() { return &TT; }

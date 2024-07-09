@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,6 +44,8 @@ namespace uast {
   the number of which is denoted by the TypeQuery `?k`.
 */
 class VarArgFormal final : public VarLikeDecl {
+ friend class AstNode;
+
  private:
   int countChildNum_;
 
@@ -64,10 +66,15 @@ class VarArgFormal final : public VarLikeDecl {
       countChildNum_(countChildNum) {
   }
 
-  VarArgFormal(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    varLikeDeclSerializeInner(ser);
+    ser.writeVInt(countChildNum_);
+  }
+
+  explicit VarArgFormal(Deserializer& des)
     : VarLikeDecl(asttags::VarArgFormal, des) {
-      countChildNum_ = des.read<int>();
-    }
+    countChildNum_ = des.readVInt();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const VarArgFormal* lhs = this;
@@ -112,14 +119,6 @@ class VarArgFormal final : public VarLikeDecl {
     auto ret = child(countChildNum_);
     return ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    VarLikeDecl::serialize(ser);
-    ser.write(countChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(VarArgFormal);
-
 };
 
 

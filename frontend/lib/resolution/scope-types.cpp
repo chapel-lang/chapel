@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -245,11 +245,13 @@ void BorrowedIdsWithName::stringify(std::ostream& ss,
   }
 }
 
-Scope::Scope(const uast::AstNode* ast, const Scope* parentScope,
+Scope::Scope(Context* context,
+             const uast::AstNode* ast, const Scope* parentScope,
              bool autoUsesModules) {
   bool containsUseImport = false;
   bool containsFunctionDecls = false;
   bool containsExternBlock = false;
+  bool containsRequire = false;
   bool isMethodScope = false;
 
   parentScope_ = parentScope;
@@ -261,15 +263,17 @@ Scope::Scope(const uast::AstNode* ast, const Scope* parentScope,
   if (auto fn = ast->toFunction()) {
     isMethodScope = fn->isMethod();
   }
-  gatherDeclsWithin(ast, declared_,
+  gatherDeclsWithin(context, ast, declared_,
                     containsUseImport,
                     containsFunctionDecls,
-                    containsExternBlock);
+                    containsExternBlock,
+                    containsRequire);
 
   // compute the flags storing a few settings
   ScopeFlags flags = 0;
   if (containsFunctionDecls) { flags |= CONTAINS_FUNCTION_DECLS; }
   if (containsUseImport) {     flags |= CONTAINS_USE_IMPORT; }
+  if (containsRequire) {       flags |= CONTAINS_REQUIRE; }
   if (autoUsesModules) {       flags |= AUTO_USES_MODULES; }
   if (isMethodScope) {         flags |= METHOD_SCOPE; }
   if (containsExternBlock) {   flags |= CONTAINS_EXTERN_BLOCK; }
@@ -357,7 +361,7 @@ void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   ss << std::to_string(numDeclared());
 }
 
-bool VisibilitySymbols::lookupName(const UniqueString &name,
+bool VisibilitySymbols::lookupName(UniqueString name,
                                    UniqueString &declared) const {
   for (const auto &p : names_) {
     if (p.second == name) {
@@ -444,6 +448,10 @@ void ResolvedVisibilityScope::stringify(std::ostream& ss,
     clause.stringify(ss, stringKind);
     ss << ")";
     i++;
+  }
+
+  for (const auto& id : modulesNamedInUseOrImport_) {
+    ss << "  names " << id.str();
   }
 }
 

@@ -19,7 +19,8 @@ writeln("\nSimple zero actuals");
 writeln("\nSimple var actual");
 {
   var r = new R();
-  var s = (new owned Simple(r)).borrow();
+  var ownS = new owned Simple(r);
+  var s = ownS.borrow();
   writeln("s = ", s);
 }
 writeln("\nSimple new actual");

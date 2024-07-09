@@ -1,1 +1,1 @@
-puzzle071108.chpl:1: error: Ranges defined using bounds of type 'range(int(64),both,false)..int(64)' are not currently supported
+puzzle071108.chpl:1: error: Ranges defined using bounds of type 'range(int(64),both,one)..int(64)' are not currently supported

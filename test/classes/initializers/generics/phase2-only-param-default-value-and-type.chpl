@@ -5,10 +5,10 @@ class Foo {
   param p: int = 3;
 
   proc init() {
-    this.complete();
+    init this;
     p = 4; // This should fail
   }
 }
 
-var foo = (new owned Foo()).borrow();
+var foo = new Foo();
 writeln(foo);

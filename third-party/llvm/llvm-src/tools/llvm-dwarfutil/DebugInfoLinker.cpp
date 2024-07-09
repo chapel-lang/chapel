@@ -9,8 +9,9 @@
 #include "DebugInfoLinker.h"
 #include "Error.h"
 #include "llvm/ADT/StringSwitch.h"
-#include "llvm/DWARFLinker/DWARFLinker.h"
-#include "llvm/DWARFLinker/DWARFStreamer.h"
+#include "llvm/DWARFLinker/Classic/DWARFLinker.h"
+#include "llvm/DWARFLinker/Classic/DWARFStreamer.h"
+#include "llvm/DWARFLinker/Parallel/DWARFLinker.h"
 #include "llvm/DebugInfo/DWARF/DWARFContext.h"
 #include "llvm/DebugInfo/DWARF/DWARFExpression.h"
 #include "llvm/Object/ObjectFile.h"
@@ -18,6 +19,8 @@
 #include <vector>
 
 namespace llvm {
+using namespace dwarf_linker;
+
 namespace dwarfutil {
 
 // ObjFileAddressMap allows to check whether specified DIE referencing
@@ -56,76 +59,82 @@ public:
     for (std::unique_ptr<DWARFUnit> &CU : Context.compile_units()) {
       Expected<llvm::DWARFAddressRangesVector> ARanges =
           CU->getUnitDIE().getAddressRanges();
-      if (ARanges) {
-        for (auto &Range : *ARanges) {
-          if (!isDeadAddressRange(Range.LowPC, Range.HighPC, CU->getVersion(),
-                                  Options.Tombstone, CU->getAddressByteSize()))
-            DWARFAddressRanges.insert({Range.LowPC, Range.HighPC}, 0);
+      if (!ARanges) {
+        llvm::consumeError(ARanges.takeError());
+        continue;
+      }
+
+      for (auto &Range : *ARanges) {
+        if (!isDeadAddressRange(Range.LowPC, Range.HighPC, CU->getVersion(),
+                                Options.Tombstone, CU->getAddressByteSize())) {
+          HasValidAddressRanges = true;
+          break;
         }
       }
+
+      if (HasValidAddressRanges)
+        break;
     }
   }
 
   // should be renamed into has valid address ranges
-  bool hasValidRelocs() override { return !DWARFAddressRanges.empty(); }
+  bool hasValidRelocs() override { return HasValidAddressRanges; }
 
-  bool isLiveSubprogram(const DWARFDie &DIE,
-                        CompileUnit::DIEInfo &Info) override {
+  std::optional<int64_t> getSubprogramRelocAdjustment(const DWARFDie &DIE,
+                                                      bool Verbose) override {
     assert((DIE.getTag() == dwarf::DW_TAG_subprogram ||
             DIE.getTag() == dwarf::DW_TAG_label) &&
            "Wrong type of input die");
 
-    if (Optional<uint64_t> LowPC =
+    if (std::optional<uint64_t> LowPC =
             dwarf::toAddress(DIE.find(dwarf::DW_AT_low_pc))) {
       if (!isDeadAddress(*LowPC, DIE.getDwarfUnit()->getVersion(),
                          Opts.Tombstone,
-                         DIE.getDwarfUnit()->getAddressByteSize())) {
-        Info.AddrAdjust = 0;
-        Info.InDebugMap = true;
-        return true;
-      }
+                         DIE.getDwarfUnit()->getAddressByteSize()))
+        // Relocation value for the linked binary is 0.
+        return 0;
     }
 
-    return false;
+    return std::nullopt;
   }
 
-  bool isLiveVariable(const DWARFDie &DIE,
-                      CompileUnit::DIEInfo &Info) override {
-    assert((DIE.getTag() == dwarf::DW_TAG_variable ||
-            DIE.getTag() == dwarf::DW_TAG_constant) &&
-           "Wrong type of input die");
-
-    if (Expected<DWARFLocationExpressionsVector> Loc =
-            DIE.getLocations(dwarf::DW_AT_location)) {
-      DWARFUnit *U = DIE.getDwarfUnit();
-      for (const auto &Entry : *Loc) {
-        DataExtractor Data(toStringRef(Entry.Expr),
-                           U->getContext().isLittleEndian(), 0);
-        DWARFExpression Expression(Data, U->getAddressByteSize(),
-                                   U->getFormParams().Format);
-        bool HasLiveAddresses =
-            any_of(Expression, [&](const DWARFExpression::Operation &Op) {
-              // TODO: add handling of dwarf::DW_OP_addrx
-              return !Op.isError() &&
-                     (Op.getCode() == dwarf::DW_OP_addr &&
-                      !isDeadAddress(Op.getRawOperand(0), U->getVersion(),
-                                     Opts.Tombstone,
-                                     DIE.getDwarfUnit()->getAddressByteSize()));
-            });
-
-        if (HasLiveAddresses) {
-          Info.AddrAdjust = 0;
-          Info.InDebugMap = true;
-          return true;
-        }
+  std::optional<int64_t>
+  getExprOpAddressRelocAdjustment(DWARFUnit &U,
+                                  const DWARFExpression::Operation &Op,
+                                  uint64_t, uint64_t, bool Verbose) override {
+    switch (Op.getCode()) {
+    default: {
+      assert(false && "Specified operation does not have address operand");
+    } break;
+    case dwarf::DW_OP_const2u:
+    case dwarf::DW_OP_const4u:
+    case dwarf::DW_OP_const8u:
+    case dwarf::DW_OP_const2s:
+    case dwarf::DW_OP_const4s:
+    case dwarf::DW_OP_const8s:
+    case dwarf::DW_OP_addr: {
+      if (!isDeadAddress(Op.getRawOperand(0), U.getVersion(), Opts.Tombstone,
+                         U.getAddressByteSize()))
+        // Relocation value for the linked binary is 0.
+        return 0;
+    } break;
+    case dwarf::DW_OP_constx:
+    case dwarf::DW_OP_addrx: {
+      if (std::optional<object::SectionedAddress> Address =
+              U.getAddrOffsetSectionItem(Op.getRawOperand(0))) {
+        if (!isDeadAddress(Address->Address, U.getVersion(), Opts.Tombstone,
+                           U.getAddressByteSize()))
+          // Relocation value for the linked binary is 0.
+          return 0;
       }
-    } else {
-      // FIXME: missing DW_AT_location is OK here, but other errors should be
-      // reported to the user.
-      consumeError(Loc.takeError());
+    } break;
     }
 
-    return false;
+    return std::nullopt;
+  }
+
+  std::optional<StringRef> getLibraryInstallName() override {
+    return std::nullopt;
   }
 
   bool applyValidRelocs(MutableArrayRef<char>, uint64_t, bool) override {
@@ -133,21 +142,22 @@ public:
     return false;
   }
 
-  RangesTy &getValidAddressRanges() override { return DWARFAddressRanges; };
+  bool needToSaveValidRelocs() override { return false; }
 
-  void clear() override { DWARFAddressRanges.clear(); }
+  void updateAndSaveValidRelocs(bool, uint64_t, int64_t, uint64_t,
+                                uint64_t) override {}
 
-  llvm::Expected<uint64_t> relocateIndexedAddr(uint64_t, uint64_t) override {
-    // should not be called.
-    return object::createError("no relocations in linked binary");
-  }
+  void updateRelocationsWithUnitOffset(uint64_t OriginalUnitOffset,
+                                       uint64_t OutputUnitOffset) override {}
+
+  void clear() override {}
 
 protected:
   // returns true if specified address range is inside address ranges
   // of executable sections.
   bool isInsideExecutableSectionsAddressRange(uint64_t LowPC,
-                                              Optional<uint64_t> HighPC) {
-    Optional<AddressRange> Range =
+                                              std::optional<uint64_t> HighPC) {
+    std::optional<AddressRange> Range =
         TextAddressRanges.getRangeThatContains(LowPC);
 
     if (HighPC)
@@ -156,7 +166,7 @@ protected:
     return Range.has_value();
   }
 
-  uint64_t isBFDDeadAddressRange(uint64_t LowPC, Optional<uint64_t> HighPC,
+  uint64_t isBFDDeadAddressRange(uint64_t LowPC, std::optional<uint64_t> HighPC,
                                  uint16_t Version) {
     if (LowPC == 0)
       return true;
@@ -167,7 +177,8 @@ protected:
     return !isInsideExecutableSectionsAddressRange(LowPC, HighPC);
   }
 
-  uint64_t isMAXPCDeadAddressRange(uint64_t LowPC, Optional<uint64_t> HighPC,
+  uint64_t isMAXPCDeadAddressRange(uint64_t LowPC,
+                                   std::optional<uint64_t> HighPC,
                                    uint16_t Version, uint8_t AddressByteSize) {
     if (Version <= 4 && HighPC) {
       if (LowPC == (dwarf::computeTombstoneAddress(AddressByteSize) - 1))
@@ -182,7 +193,7 @@ protected:
     return false;
   }
 
-  bool isDeadAddressRange(uint64_t LowPC, Optional<uint64_t> HighPC,
+  bool isDeadAddressRange(uint64_t LowPC, std::optional<uint64_t> HighPC,
                           uint16_t Version, TombstoneKind Tombstone,
                           uint8_t AddressByteSize) {
     switch (Tombstone) {
@@ -202,13 +213,14 @@ protected:
 
   bool isDeadAddress(uint64_t LowPC, uint16_t Version, TombstoneKind Tombstone,
                      uint8_t AddressByteSize) {
-    return isDeadAddressRange(LowPC, None, Version, Tombstone, AddressByteSize);
+    return isDeadAddressRange(LowPC, std::nullopt, Version, Tombstone,
+                              AddressByteSize);
   }
 
 private:
-  RangesTy DWARFAddressRanges;
   AddressRanges TextAddressRanges;
   const Options &Opts;
+  bool HasValidAddressRanges = false;
 };
 
 static bool knownByDWARFUtil(StringRef SecName) {
@@ -229,85 +241,237 @@ static bool knownByDWARFUtil(StringRef SecName) {
       .Case(".debug_macinfo", true)
       .Case(".debug_str", true)
       .Case(".debug_str_offsets", true)
+      .Case(".debug_pubnames", true)
+      .Case(".debug_pubtypes", true)
+      .Case(".debug_names", true)
       .Default(false);
+}
+
+template <typename AccelTableKind>
+static std::optional<AccelTableKind>
+getAcceleratorTableKind(StringRef SecName) {
+  return llvm::StringSwitch<std::optional<AccelTableKind>>(SecName)
+      .Case(".debug_pubnames", AccelTableKind::Pub)
+      .Case(".debug_pubtypes", AccelTableKind::Pub)
+      .Case(".debug_names", AccelTableKind::DebugNames)
+      .Default(std::nullopt);
+}
+
+static std::string getMessageForReplacedAcceleratorTables(
+    SmallVector<StringRef> &AccelTableNamesToReplace,
+    DwarfUtilAccelKind TargetTable) {
+  std::string Message;
+
+  Message += "'";
+  for (StringRef Name : AccelTableNamesToReplace) {
+    if (Message.size() > 1)
+      Message += ", ";
+    Message += Name;
+  }
+
+  Message += "' will be replaced with requested ";
+
+  switch (TargetTable) {
+  case DwarfUtilAccelKind::DWARF:
+    Message += ".debug_names table";
+    break;
+
+  default:
+    assert(false);
+  }
+
+  return Message;
+}
+
+static std::string getMessageForDeletedAcceleratorTables(
+    SmallVector<StringRef> &AccelTableNamesToReplace) {
+  std::string Message;
+
+  Message += "'";
+  for (StringRef Name : AccelTableNamesToReplace) {
+    if (Message.size() > 1)
+      Message += ", ";
+    Message += Name;
+  }
+
+  Message += "' will be deleted as no accelerator tables are requested";
+
+  return Message;
+}
+
+template <typename Linker>
+Error linkDebugInfoImpl(object::ObjectFile &File, const Options &Options,
+                        raw_pwrite_stream &OutStream) {
+  std::mutex ErrorHandlerMutex;
+
+  auto ReportWarn = [&](const Twine &Message, StringRef Context,
+                        const DWARFDie *Die) {
+    // FIXME: implement warning logging which does not block other threads.
+    if (!ErrorHandlerMutex.try_lock())
+      return;
+
+    warning(Message, Context);
+    if (Options.Verbose && Die) {
+      DIDumpOptions DumpOpts;
+      DumpOpts.ChildRecurseDepth = 0;
+      DumpOpts.Verbose = Options.Verbose;
+
+      WithColor::note() << "    in DIE:\n";
+      Die->dump(errs(), /*Indent=*/6, DumpOpts);
+    }
+    ErrorHandlerMutex.unlock();
+  };
+  auto ReportErr = [&](const Twine &Message, StringRef Context,
+                       const DWARFDie *) {
+    // FIXME: implement error logging which does not block other threads.
+    if (!ErrorHandlerMutex.try_lock())
+      return;
+
+    WithColor::error(errs(), Context) << Message << '\n';
+    ErrorHandlerMutex.unlock();
+  };
+
+  // Create DWARF linker.
+  std::unique_ptr<Linker> DebugInfoLinker =
+      Linker::createLinker(ReportErr, ReportWarn);
+
+  Triple TargetTriple = File.makeTriple();
+  std::unique_ptr<classic::DwarfStreamer> Streamer;
+  if (Expected<std::unique_ptr<classic::DwarfStreamer>> StreamerOrErr =
+          classic::DwarfStreamer::createStreamer(
+              TargetTriple, Linker::OutputFileType::Object, OutStream, nullptr,
+              ReportWarn))
+    Streamer = std::move(*StreamerOrErr);
+  else
+    return StreamerOrErr.takeError();
+
+  if constexpr (std::is_same<Linker,
+                             dwarf_linker::parallel::DWARFLinker>::value) {
+    DebugInfoLinker->setOutputDWARFHandler(
+        TargetTriple,
+        [&](std::shared_ptr<dwarf_linker::parallel::SectionDescriptorBase>
+                Section) {
+          Streamer->emitSectionContents(Section->getContents(),
+                                        Section->getKind());
+        });
+  } else
+    DebugInfoLinker->setOutputDWARFEmitter(Streamer.get());
+
+  DebugInfoLinker->setEstimatedObjfilesAmount(1);
+  DebugInfoLinker->setNumThreads(Options.NumThreads);
+  DebugInfoLinker->setNoODR(!Options.DoODRDeduplication);
+  DebugInfoLinker->setVerbosity(Options.Verbose);
+  DebugInfoLinker->setUpdateIndexTablesOnly(!Options.DoGarbageCollection);
+
+  std::vector<std::unique_ptr<DWARFFile>> ObjectsForLinking(1);
+
+  // Add object files to the DWARFLinker.
+  std::unique_ptr<DWARFContext> Context = DWARFContext::create(
+      File, DWARFContext::ProcessDebugRelocations::Process, nullptr, "",
+      [&](Error Err) {
+        handleAllErrors(std::move(Err), [&](ErrorInfoBase &Info) {
+          ReportErr(Info.message(), "", nullptr);
+        });
+      },
+      [&](Error Warning) {
+        handleAllErrors(std::move(Warning), [&](ErrorInfoBase &Info) {
+          ReportWarn(Info.message(), "", nullptr);
+        });
+      });
+  std::unique_ptr<ObjFileAddressMap> AddressesMap(
+      std::make_unique<ObjFileAddressMap>(*Context, Options, File));
+
+  ObjectsForLinking[0] = std::make_unique<DWARFFile>(
+      File.getFileName(), std::move(Context), std::move(AddressesMap));
+
+  uint16_t MaxDWARFVersion = 0;
+  std::function<void(const DWARFUnit &Unit)> OnCUDieLoaded =
+      [&MaxDWARFVersion](const DWARFUnit &Unit) {
+        MaxDWARFVersion = std::max(Unit.getVersion(), MaxDWARFVersion);
+      };
+
+  for (size_t I = 0; I < ObjectsForLinking.size(); I++)
+    DebugInfoLinker->addObjectFile(*ObjectsForLinking[I], nullptr,
+                                   OnCUDieLoaded);
+
+  // If we haven't seen any CUs, pick an arbitrary valid Dwarf version anyway.
+  if (MaxDWARFVersion == 0)
+    MaxDWARFVersion = 3;
+
+  if (Error Err = DebugInfoLinker->setTargetDWARFVersion(MaxDWARFVersion))
+    return Err;
+
+  SmallVector<typename Linker::AccelTableKind> AccelTables;
+
+  switch (Options.AccelTableKind) {
+  case DwarfUtilAccelKind::None:
+    // Nothing to do.
+    break;
+  case DwarfUtilAccelKind::DWARF:
+    // use .debug_names for all DWARF versions.
+    AccelTables.push_back(Linker::AccelTableKind::DebugNames);
+    break;
+  }
+
+  // Add accelerator tables to DWARFLinker.
+  for (typename Linker::AccelTableKind Table : AccelTables)
+    DebugInfoLinker->addAccelTableKind(Table);
+
+  for (std::unique_ptr<DWARFFile> &CurFile : ObjectsForLinking) {
+    SmallVector<StringRef> AccelTableNamesToReplace;
+    SmallVector<StringRef> AccelTableNamesToDelete;
+
+    // Unknown debug sections or non-requested accelerator sections would be
+    // removed. Display warning for such sections.
+    for (SectionName Sec : CurFile->Dwarf->getDWARFObj().getSectionNames()) {
+      if (isDebugSection(Sec.Name)) {
+        std::optional<typename Linker::AccelTableKind> SrcAccelTableKind =
+            getAcceleratorTableKind<typename Linker::AccelTableKind>(Sec.Name);
+
+        if (SrcAccelTableKind) {
+          assert(knownByDWARFUtil(Sec.Name));
+
+          if (Options.AccelTableKind == DwarfUtilAccelKind::None)
+            AccelTableNamesToDelete.push_back(Sec.Name);
+          else if (!llvm::is_contained(AccelTables, *SrcAccelTableKind))
+            AccelTableNamesToReplace.push_back(Sec.Name);
+        } else if (!knownByDWARFUtil(Sec.Name)) {
+          assert(!SrcAccelTableKind);
+          warning(
+              formatv(
+                  "'{0}' is not currently supported: section will be skipped",
+                  Sec.Name),
+              Options.InputFileName);
+        }
+      }
+    }
+
+    // Display message for the replaced accelerator tables.
+    if (!AccelTableNamesToReplace.empty())
+      warning(getMessageForReplacedAcceleratorTables(AccelTableNamesToReplace,
+                                                     Options.AccelTableKind),
+              Options.InputFileName);
+
+    // Display message for the removed accelerator tables.
+    if (!AccelTableNamesToDelete.empty())
+      warning(getMessageForDeletedAcceleratorTables(AccelTableNamesToDelete),
+              Options.InputFileName);
+  }
+
+  // Link debug info.
+  if (Error Err = DebugInfoLinker->link())
+    return Err;
+
+  Streamer->finish();
+  return Error::success();
 }
 
 Error linkDebugInfo(object::ObjectFile &File, const Options &Options,
                     raw_pwrite_stream &OutStream) {
-
-  auto ReportWarn = [&](const Twine &Message, StringRef Context,
-                        const DWARFDie *Die) {
-    warning(Message, Context);
-
-    if (!Options.Verbose || !Die)
-      return;
-
-    DIDumpOptions DumpOpts;
-    DumpOpts.ChildRecurseDepth = 0;
-    DumpOpts.Verbose = Options.Verbose;
-
-    WithColor::note() << "    in DIE:\n";
-    Die->dump(errs(), /*Indent=*/6, DumpOpts);
-  };
-  auto ReportErr = [&](const Twine &Message, StringRef Context,
-                       const DWARFDie *) {
-    WithColor::error(errs(), Context) << Message << '\n';
-  };
-
-  // Create output streamer.
-  DwarfStreamer OutStreamer(OutputFileType::Object, OutStream, nullptr,
-                            ReportWarn, ReportWarn);
-  Triple TargetTriple = File.makeTriple();
-  if (!OutStreamer.init(TargetTriple, formatv("cannot create a stream for {0}",
-                                              TargetTriple.getTriple())
-                                          .str()))
-    return createStringError(std::errc::invalid_argument, "");
-
-  // Create DWARF linker.
-  DWARFLinker DebugInfoLinker(&OutStreamer, DwarfLinkerClient::LLD);
-
-  DebugInfoLinker.setEstimatedObjfilesAmount(1);
-  DebugInfoLinker.setAccelTableKind(DwarfLinkerAccelTableKind::None);
-  DebugInfoLinker.setErrorHandler(ReportErr);
-  DebugInfoLinker.setWarningHandler(ReportWarn);
-  DebugInfoLinker.setNumThreads(Options.NumThreads);
-  DebugInfoLinker.setNoODR(!Options.DoODRDeduplication);
-  DebugInfoLinker.setVerbosity(Options.Verbose);
-  DebugInfoLinker.setUpdate(!Options.DoGarbageCollection);
-
-  std::vector<std::unique_ptr<DWARFFile>> ObjectsForLinking(1);
-  std::vector<std::unique_ptr<AddressesMap>> AddresssMapForLinking(1);
-  std::vector<std::string> EmptyWarnings;
-
-  std::unique_ptr<DWARFContext> Context = DWARFContext::create(File);
-
-  // Unknown debug sections would be removed. Display warning
-  // for such sections.
-  for (SectionName Sec : Context->getDWARFObj().getSectionNames()) {
-    if (isDebugSection(Sec.Name) && !knownByDWARFUtil(Sec.Name))
-      warning(
-          formatv("'{0}' is not currently supported: section will be skipped",
-                  Sec.Name),
-          Options.InputFileName);
-  }
-
-  // Add object files to the DWARFLinker.
-  AddresssMapForLinking[0] =
-      std::make_unique<ObjFileAddressMap>(*Context, Options, File);
-
-  ObjectsForLinking[0] = std::make_unique<DWARFFile>(
-      File.getFileName(), &*Context, AddresssMapForLinking[0].get(),
-      EmptyWarnings);
-
-  for (size_t I = 0; I < ObjectsForLinking.size(); I++)
-    DebugInfoLinker.addObjectFile(*ObjectsForLinking[I]);
-
-  // Link debug info.
-  if (Error Err = DebugInfoLinker.link())
-    return Err;
-
-  OutStreamer.finish();
-  return Error::success();
+  if (Options.UseDWARFLinkerParallel)
+    return linkDebugInfoImpl<parallel::DWARFLinker>(File, Options, OutStream);
+  else
+    return linkDebugInfoImpl<classic::DWARFLinker>(File, Options, OutStream);
 }
 
 } // end of namespace dwarfutil

@@ -15,7 +15,6 @@
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringMap.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/ExecutionEngine/RuntimeDyld.h"
 #include "llvm/ExecutionEngine/RuntimeDyldChecker.h"
@@ -23,9 +22,10 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/Format.h"
-#include "llvm/Support/Host.h"
 #include "llvm/Support/Mutex.h"
 #include "llvm/Support/SwapByteOrder.h"
+#include "llvm/TargetParser/Host.h"
+#include "llvm/TargetParser/Triple.h"
 #include <deque>
 #include <map>
 #include <system_error>
@@ -301,7 +301,7 @@ protected:
   // won't be interleaved between modules.  It is also used in mapSectionAddress
   // and resolveRelocations to protect write access to internal data structures.
   //
-  // loadObject may be called on the same thread during the handling of of
+  // loadObject may be called on the same thread during the handling of
   // processRelocations, and that's OK.  The handling of the relocation lists
   // is written in such a way as to work correctly if new elements are added to
   // the end of the list while the list is being processed.
@@ -312,24 +312,30 @@ protected:
   NotifyStubEmittedFunction NotifyStubEmitted;
 
   virtual unsigned getMaxStubSize() const = 0;
-  virtual unsigned getStubAlignment() = 0;
+  virtual Align getStubAlignment() = 0;
 
   bool HasError;
   std::string ErrorStr;
 
   void writeInt16BE(uint8_t *Addr, uint16_t Value) {
-    llvm::support::endian::write<uint16_t, llvm::support::unaligned>(
-        Addr, Value, IsTargetLittleEndian ? support::little : support::big);
+    llvm::support::endian::write<uint16_t>(Addr, Value,
+                                           IsTargetLittleEndian
+                                               ? llvm::endianness::little
+                                               : llvm::endianness::big);
   }
 
   void writeInt32BE(uint8_t *Addr, uint32_t Value) {
-    llvm::support::endian::write<uint32_t, llvm::support::unaligned>(
-        Addr, Value, IsTargetLittleEndian ? support::little : support::big);
+    llvm::support::endian::write<uint32_t>(Addr, Value,
+                                           IsTargetLittleEndian
+                                               ? llvm::endianness::little
+                                               : llvm::endianness::big);
   }
 
   void writeInt64BE(uint8_t *Addr, uint64_t Value) {
-    llvm::support::endian::write<uint64_t, llvm::support::unaligned>(
-        Addr, Value, IsTargetLittleEndian ? support::little : support::big);
+    llvm::support::endian::write<uint64_t>(Addr, Value,
+                                           IsTargetLittleEndian
+                                               ? llvm::endianness::little
+                                               : llvm::endianness::big);
   }
 
   virtual void setMipsABI(const ObjectFile &Obj) {
@@ -417,10 +423,10 @@ protected:
 
   // Compute an upper bound of the memory that is required to load all
   // sections
-  Error computeTotalAllocSize(const ObjectFile &Obj,
-                              uint64_t &CodeSize, uint32_t &CodeAlign,
-                              uint64_t &RODataSize, uint32_t &RODataAlign,
-                              uint64_t &RWDataSize, uint32_t &RWDataAlign);
+  Error computeTotalAllocSize(const ObjectFile &Obj, uint64_t &CodeSize,
+                              Align &CodeAlign, uint64_t &RODataSize,
+                              Align &RODataAlign, uint64_t &RWDataSize,
+                              Align &RWDataAlign);
 
   // Compute GOT size
   unsigned computeGOTSize(const ObjectFile &Obj);
@@ -434,6 +440,10 @@ protected:
 
   // Return size of Global Offset Table (GOT) entry
   virtual size_t getGOTEntrySize() { return 0; }
+
+  // Hook for the subclasses to do further processing when a symbol is added to
+  // the global symbol table. This function may modify the symbol table entry.
+  virtual void processNewSymbol(const SymbolRef &ObjSymbol, SymbolTableEntry& Entry) {}
 
   // Return true if the relocation R may require allocating a GOT entry.
   virtual bool relocationNeedsGot(const RelocationRef &R) const {
@@ -527,7 +537,7 @@ public:
   std::map<StringRef, JITEvaluatedSymbol> getSymbolTable() const {
     std::map<StringRef, JITEvaluatedSymbol> Result;
 
-    for (auto &KV : GlobalSymbolTable) {
+    for (const auto &KV : GlobalSymbolTable) {
       auto SectionID = KV.second.getSectionID();
       uint64_t SectionAddr = getSectionLoadAddress(SectionID);
       Result[KV.first()] =

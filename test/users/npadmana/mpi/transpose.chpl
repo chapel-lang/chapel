@@ -21,7 +21,7 @@ proc main() {
   var Dom = {0.. #N, 0.. #N};
   var target : [0.. #numLocales, 0..0] locale;
   target[..,0] = Locales;
-  var Space = Dom dmapped Block(Dom, targetLocales=target);
+  var Space = Dom dmapped new blockDist(Dom, targetLocales=target);
 
   // Debug
   if debug then coforall loc in Locales do on loc {
@@ -30,7 +30,7 @@ proc main() {
 
   // Just for fun, write this out....
   if debug then for loc in Locales do on loc {
-    writef("Locale %i owns %t\n",here.id, Space.localSubdomain());
+    writef("Locale %i owns %?\n",here.id, Space.localSubdomain());
   }
 
   // Define arrays

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,34 +21,59 @@
 #ifndef CHPL_TOOLS_CHPLDEF_TRANSPORT_H
 #define CHPL_TOOLS_CHPLDEF_TRANSPORT_H
 
-#include "./Message.h"
-#include "./Server.h"
-
-#include <iostream>
-#include <fstream>
+#include "misc.h"
+#include <cstdint>
+#include <string>
 
 namespace chpldef {
 
-/**
-  This class is intended to model or wrap some existing transport layer,
-  but is currently empty.
-*/
+class Server;
+
+/** This is the base class for various transport layers. */
 class Transport {
 public:
 
-  /** Helper which reads a message from a stream in a blocking way.
-      Returns 'false' if there was an error. If there was not an
-      error, then the formal 'outJson' will contain the JSON for the
-      message. */
-  static bool
-  readJsonBlocking(chpldef::Server* ctx, std::istream& is,
-                   JsonValue& out);
+  /** Error codes indicate the result of a read or write. */
+  enum Status {
+    OK = 0,
+    ERROR = 1,
+    ERROR_JSON_PARSE_FAILED = 2,
+    ERROR_INVALID_SIZE      = 4,
+  };
 
-  /** Helper which sends JSON to a stream in a blocking way.
-      Returns 'false' if there was an error. */
-  static bool
-  sendJsonBlocking(chpldef::Server* ctx, std::ostream& os,
-                   const JsonValue& json);
+  /** Provides a way to configure each read or write. */
+  enum BehaviorTag {
+    DEFAULT             = 0,
+    READ_UNTIL_NEWLINE  = 1
+  };
+
+  /** Behavior is a bitfield composed of 'BehaviorTag'. */
+  using Behavior = int;
+
+  virtual ~Transport() = default;
+
+  /** Read up to 'size' bytes into 'str' with the given behaviors 'b'. */
+  virtual Status read(int64_t size, std::string& str, Behavior b=0) = 0;
+
+  /** Send the bytes of 'str' with the given behaviors 'b'. */
+  virtual Status send(const std::string& str, Behavior b=0) = 0;
+
+  /** Read JSON into the given JSON value 'j'. */
+  Status readJson(Server* ctx, JsonValue& j);
+
+  /** Serialize the contents of the JSON 'j' into text and send it. */
+  Status sendJson(Server* ctx, const JsonValue& j);
+};
+
+/** This transport layer performs blocking reads over STDIN and STDOUT. */
+class TransportStdio final : public Transport {
+public:
+  TransportStdio() {}
+  virtual ~TransportStdio() = default;
+  virtual Status read(int64_t size, std::string& str,
+                      Behavior b=0) override;
+  virtual Status send(const std::string& str,
+                      Behavior b=0) override;
 };
 
 } // end namespace 'chpldef'

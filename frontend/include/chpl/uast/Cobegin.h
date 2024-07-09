@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,7 +46,13 @@ namespace uast {
 
  */
 class Cobegin final : public AstNode {
+ friend class AstNode;
+
  private:
+  int8_t withClauseChildNum_;
+  int bodyChildNum_;
+  int numTaskBodies_;
+
   Cobegin(AstList children, int8_t withClauseChildNum, int bodyChildNum,
           int numTaskBodies)
     : AstNode(asttags::Cobegin, std::move(children)),
@@ -55,10 +61,16 @@ class Cobegin final : public AstNode {
       numTaskBodies_(numTaskBodies) {
   }
 
-  Cobegin(Deserializer& des) : AstNode(asttags::Cobegin, des) {
+  void serializeInner(Serializer& ser) const override {
+    ser.write(withClauseChildNum_ );
+    ser.writeVInt(bodyChildNum_);
+    ser.writeVInt(numTaskBodies_);
+  }
+
+  explicit Cobegin(Deserializer& des) : AstNode(asttags::Cobegin, des) {
     withClauseChildNum_ = des.read<int8_t>();
-    bodyChildNum_ = des.read<int>();
-    numTaskBodies_ = des.read<int>();
+    bodyChildNum_ = des.readVInt();
+    numTaskBodies_ = des.readVInt();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -81,10 +93,6 @@ class Cobegin final : public AstNode {
   }
 
   std::string dumpChildLabelInner(int i) const override;
-
-  int8_t withClauseChildNum_;
-  int bodyChildNum_;
-  int numTaskBodies_;
 
  public:
 
@@ -130,16 +138,6 @@ class Cobegin final : public AstNode {
     const AstNode* ast = this->child(i + bodyChildNum_);
     return ast;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(withClauseChildNum_ );
-    ser.write(bodyChildNum_);
-    ser.write(numTaskBodies_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Cobegin);
-
 };
 
 

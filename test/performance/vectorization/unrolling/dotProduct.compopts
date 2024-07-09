@@ -1,0 +1,4 @@
+# correctness testing with a variety of types and unroll factor
+-sunrollFactor=2 -selementType='int(16)'
+-sunrollFactor=4 -selementType='uint(64)' -sminRand=1
+-sunrollFactor=8 -selementType='real(32)'

@@ -24,12 +24,14 @@
 #include "llvm/CodeGen/MachineScheduler.h"
 #include "llvm/CodeGen/ScheduleDAG.h"
 #include "llvm/CodeGen/ScheduleDAGInstrs.h"
+#include "llvm/IR/IntrinsicsHexagon.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Target/TargetMachine.h"
 #include <algorithm>
 #include <cassert>
 #include <map>
+#include <optional>
 
 using namespace llvm;
 
@@ -75,11 +77,6 @@ static cl::opt<bool> EnableCheckBankConflict(
     "hexagon-check-bank-conflict", cl::Hidden, cl::init(true),
     cl::desc("Enable checking for cache bank conflicts"));
 
-static cl::opt<bool> EnableV68FloatCodeGen(
-    "force-hvx-float", cl::Hidden,
-    cl::desc(
-        "Enable the code-generation for vector float instructions on v68."));
-
 HexagonSubtarget::HexagonSubtarget(const Triple &TT, StringRef CPU,
                                    StringRef FS, const TargetMachine &TM)
     : HexagonGenSubtargetInfo(TT, CPU, /*TuneCPU*/ CPU, FS),
@@ -96,7 +93,7 @@ HexagonSubtarget::HexagonSubtarget(const Triple &TT, StringRef CPU,
 
 HexagonSubtarget &
 HexagonSubtarget::initializeSubtargetDependencies(StringRef CPU, StringRef FS) {
-  Optional<Hexagon::ArchEnum> ArchVer = Hexagon::getCpu(CPUString);
+  std::optional<Hexagon::ArchEnum> ArchVer = Hexagon::getCpu(CPUString);
   if (ArchVer)
     HexagonArchVersion = *ArchVer;
   else
@@ -119,13 +116,13 @@ HexagonSubtarget::initializeSubtargetDependencies(StringRef CPU, StringRef FS) {
   if (!llvm::count_if(Features.getFeatures(), IsQFloatFS)) {
     auto getHvxVersion = [&Features](StringRef FS) -> StringRef {
       for (StringRef F : llvm::reverse(Features.getFeatures())) {
-        if (F.startswith("+hvxv"))
+        if (F.starts_with("+hvxv"))
           return F;
       }
       for (StringRef F : llvm::reverse(Features.getFeatures())) {
         if (F == "-hvx")
           return StringRef();
-        if (F.startswith("+hvx") || F == "-hvx")
+        if (F.starts_with("+hvx") || F == "-hvx")
           return F.take_front(4);  // Return "+hvx" or "-hvx".
       }
       return StringRef();
@@ -133,7 +130,7 @@ HexagonSubtarget::initializeSubtargetDependencies(StringRef CPU, StringRef FS) {
 
     bool AddQFloat = false;
     StringRef HvxVer = getHvxVersion(FS);
-    if (HvxVer.startswith("+hvxv")) {
+    if (HvxVer.starts_with("+hvxv")) {
       int Ver = 0;
       if (!HvxVer.drop_front(5).consumeInteger(10, Ver) && Ver >= 68)
         AddQFloat = true;
@@ -149,19 +146,8 @@ HexagonSubtarget::initializeSubtargetDependencies(StringRef CPU, StringRef FS) {
   std::string FeatureString = Features.getString();
   ParseSubtargetFeatures(CPUString, /*TuneCPU*/ CPUString, FeatureString);
 
-  // Enable float code generation only if the flag(s) are set and
-  // the feature is enabled. v68 is guarded by additional flags.
-  bool GreaterThanV68 = false;
-  if (useHVXV69Ops())
-    GreaterThanV68 = true;
-
-  // Support for deprecated qfloat/ieee codegen flags
-  if (!GreaterThanV68) {
-    if (EnableV68FloatCodeGen)
-      UseHVXFloatingPoint = true;
-  } else {
-    UseHVXFloatingPoint = true;
-  }
+  if (useHVXV68Ops())
+    UseHVXFloatingPoint = UseHVXIEEEFPOps || UseHVXQFloatOps;
 
   if (UseHVXQFloatOps && UseHVXIEEEFPOps && UseHVXFloatingPoint)
     LLVM_DEBUG(
@@ -198,10 +184,12 @@ bool HexagonSubtarget::isHVXElementType(MVT Ty, bool IncludeBool) const {
   return llvm::is_contained(ElemTypes, Ty);
 }
 
-bool HexagonSubtarget::isHVXVectorType(MVT VecTy, bool IncludeBool) const {
+bool HexagonSubtarget::isHVXVectorType(EVT VecTy, bool IncludeBool) const {
+  if (!VecTy.isSimple())
+    return false;
   if (!VecTy.isVector() || !useHVXOps() || VecTy.isScalableVector())
     return false;
-  MVT ElemTy = VecTy.getVectorElementType();
+  MVT ElemTy = VecTy.getSimpleVT().getVectorElementType();
   if (!IncludeBool && ElemTy == MVT::i1)
     return false;
 
@@ -235,7 +223,7 @@ bool HexagonSubtarget::isTypeForHVX(Type *VecTy, bool IncludeBool) const {
   // The given type may be something like <17 x i32>, which is not MVT,
   // but can be represented as (non-simple) EVT.
   EVT Ty = EVT::getEVT(VecTy, /*HandleUnknown*/false);
-  if (Ty.getSizeInBits() <= 64 || !Ty.getVectorElementType().isSimple())
+  if (!Ty.getVectorElementType().isSimple())
     return false;
 
   auto isHvxTy = [this, IncludeBool](MVT SimpleTy) {
@@ -249,7 +237,7 @@ bool HexagonSubtarget::isTypeForHVX(Type *VecTy, bool IncludeBool) const {
   // qualifies for HVX, dividing it in half after each step.
   MVT ElemTy = Ty.getVectorElementType().getSimpleVT();
   unsigned VecLen = PowerOf2Ceil(Ty.getVectorNumElements());
-  while (ElemTy.getSizeInBits() * VecLen > 64) {
+  while (VecLen > 1) {
     MVT SimpleTy = MVT::getVectorVT(ElemTy, VecLen);
     if (SimpleTy.isValid() && isHvxTy(SimpleTy))
       return true;
@@ -363,8 +351,7 @@ void HexagonSubtarget::CallMutation::apply(ScheduleDAGInstrs *DAGInstrs) {
     // The code below checks for all the physical registers, not just R0/D0/V0.
     else if (SchedRetvalOptimization) {
       const MachineInstr *MI = DAG->SUnits[su].getInstr();
-      if (MI->isCopy() &&
-          Register::isPhysicalRegister(MI->getOperand(1).getReg())) {
+      if (MI->isCopy() && MI->getOperand(1).getReg().isPhysical()) {
         // %vregX = COPY %r0
         VRegHoldingReg[MI->getOperand(0).getReg()] = MI->getOperand(1).getReg();
         LastVRegUse.erase(MI->getOperand(1).getReg());
@@ -376,7 +363,7 @@ void HexagonSubtarget::CallMutation::apply(ScheduleDAGInstrs *DAGInstrs) {
               VRegHoldingReg.count(MO.getReg())) {
             // <use of %vregX>
             LastVRegUse[VRegHoldingReg[MO.getReg()]] = &DAG->SUnits[su];
-          } else if (MO.isDef() && Register::isPhysicalRegister(MO.getReg())) {
+          } else if (MO.isDef() && MO.getReg().isPhysical()) {
             for (MCRegAliasIterator AI(MO.getReg(), &TRI, true); AI.isValid();
                  ++AI) {
               if (LastVRegUse.count(*AI) &&
@@ -442,7 +429,7 @@ void HexagonSubtarget::BankConflictMutation::apply(ScheduleDAGInstrs *DAG) {
 /// Enable use of alias analysis during code generation (during MI
 /// scheduling, DAGCombine, etc.).
 bool HexagonSubtarget::useAA() const {
-  if (OptLevel != CodeGenOpt::None)
+  if (OptLevel != CodeGenOptLevel::None)
     return true;
   return false;
 }
@@ -480,7 +467,7 @@ void HexagonSubtarget::adjustSchedDependency(SUnit *Src, int SrcOpIdx,
   // default.
   if ((DstInst->isRegSequence() || DstInst->isCopy())) {
     Register DReg = DstInst->getOperand(0).getReg();
-    int DLatency = -1;
+    std::optional<unsigned> DLatency;
     for (const auto &DDep : Dst->Succs) {
       MachineInstr *DDst = DDep.getSUnit()->getInstr();
       int UseIdx = -1;
@@ -495,21 +482,21 @@ void HexagonSubtarget::adjustSchedDependency(SUnit *Src, int SrcOpIdx,
       if (UseIdx == -1)
         continue;
 
-      int Latency = (InstrInfo.getOperandLatency(&InstrItins, *SrcInst, 0,
-                                                 *DDst, UseIdx));
+      std::optional<unsigned> Latency =
+          InstrInfo.getOperandLatency(&InstrItins, *SrcInst, 0, *DDst, UseIdx);
+
       // Set DLatency for the first time.
-      DLatency = (DLatency == -1) ? Latency : DLatency;
+      if (!DLatency)
+        DLatency = Latency;
 
       // For multiple uses, if the Latency is different across uses, reset
       // DLatency.
       if (DLatency != Latency) {
-        DLatency = -1;
+        DLatency = std::nullopt;
         break;
       }
     }
-
-    DLatency = std::max(DLatency, 0);
-    Dep.setLatency((unsigned)DLatency);
+    Dep.setLatency(DLatency ? *DLatency : 0);
   }
 
   // Try to schedule uses near definitions to generate .cur.
@@ -594,15 +581,16 @@ void HexagonSubtarget::restoreLatency(SUnit *Src, SUnit *Dst) const {
     for (unsigned OpNum = 0; OpNum < DstI->getNumOperands(); OpNum++) {
       const MachineOperand &MO = DstI->getOperand(OpNum);
       if (MO.isReg() && MO.isUse() && MO.getReg() == DepR) {
-        int Latency = (InstrInfo.getOperandLatency(&InstrItins, *SrcI,
-                                                   DefIdx, *DstI, OpNum));
+        std::optional<unsigned> Latency = InstrInfo.getOperandLatency(
+            &InstrItins, *SrcI, DefIdx, *DstI, OpNum);
 
         // For some instructions (ex: COPY), we might end up with < 0 latency
         // as they don't have any Itinerary class associated with them.
-        Latency = std::max(Latency, 0);
+        if (!Latency)
+          Latency = 0;
         bool IsArtificial = I.isArtificial();
-        Latency = updateLatency(*SrcI, *DstI, IsArtificial, Latency);
-        I.setLatency(Latency);
+        Latency = updateLatency(*SrcI, *DstI, IsArtificial, *Latency);
+        I.setLatency(*Latency);
       }
     }
 
@@ -739,4 +727,53 @@ unsigned HexagonSubtarget::getL1PrefetchDistance() const {
 
 bool HexagonSubtarget::enableSubRegLiveness() const {
   return EnableSubregLiveness;
+}
+
+Intrinsic::ID HexagonSubtarget::getIntrinsicId(unsigned Opc) const {
+  struct Scalar {
+    unsigned Opcode;
+    Intrinsic::ID IntId;
+  };
+  struct Hvx {
+    unsigned Opcode;
+    Intrinsic::ID Int64Id, Int128Id;
+  };
+
+  static Scalar ScalarInts[] = {
+#define GET_SCALAR_INTRINSICS
+#include "HexagonDepInstrIntrinsics.inc"
+#undef GET_SCALAR_INTRINSICS
+  };
+
+  static Hvx HvxInts[] = {
+#define GET_HVX_INTRINSICS
+#include "HexagonDepInstrIntrinsics.inc"
+#undef GET_HVX_INTRINSICS
+  };
+
+  const auto CmpOpcode = [](auto A, auto B) { return A.Opcode < B.Opcode; };
+  [[maybe_unused]] static bool SortedScalar =
+      (llvm::sort(ScalarInts, CmpOpcode), true);
+  [[maybe_unused]] static bool SortedHvx =
+      (llvm::sort(HvxInts, CmpOpcode), true);
+
+  auto [BS, ES] = std::make_pair(std::begin(ScalarInts), std::end(ScalarInts));
+  auto [BH, EH] = std::make_pair(std::begin(HvxInts), std::end(HvxInts));
+
+  auto FoundScalar = std::lower_bound(BS, ES, Scalar{Opc, 0}, CmpOpcode);
+  if (FoundScalar != ES && FoundScalar->Opcode == Opc)
+    return FoundScalar->IntId;
+
+  auto FoundHvx = std::lower_bound(BH, EH, Hvx{Opc, 0, 0}, CmpOpcode);
+  if (FoundHvx != EH && FoundHvx->Opcode == Opc) {
+    unsigned HwLen = getVectorLength();
+    if (HwLen == 64)
+      return FoundHvx->Int64Id;
+    if (HwLen == 128)
+      return FoundHvx->Int128Id;
+  }
+
+  std::string error = "Invalid opcode (" + std::to_string(Opc) + ")";
+  llvm_unreachable(error.c_str());
+  return 0;
 }

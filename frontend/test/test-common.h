@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,10 +44,15 @@
 const chpl::uast::BuilderResult&
 parseAndReportErrors(chpl::Context* context, chpl::UniqueString path);
 
+const chpl::uast::BuilderResult&
+parseAndReportErrors(chpl::Context* context, const char* path);
+
 chpl::uast::BuilderResult
 parseStringAndReportErrors(chpl::parsing::Parser* parser, const char* filename,
                            const char* content);
 
 const chpl::uast::AstNode* findOnlyNamed(const chpl::uast::Module* mod, std::string name);
+
+std::unique_ptr<chpl::Context> buildStdContext();
 
 #endif

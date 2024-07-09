@@ -3,6 +3,6 @@ class C {
   var f : t;
 }
 
-var c = (new owned C(f = 1)).borrow();
-
+var cObj = new C(f = 1);
+var c = cObj.borrow();
 writeln(c);

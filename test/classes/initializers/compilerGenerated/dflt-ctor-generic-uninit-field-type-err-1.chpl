@@ -4,4 +4,4 @@ class A {
   type t;
 }
 
-var x = (new owned A()).borrow();
+var x = new A();

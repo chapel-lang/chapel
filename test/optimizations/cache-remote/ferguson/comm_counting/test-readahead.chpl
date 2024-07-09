@@ -11,7 +11,7 @@ var buf = allocate(uint(8), testSize, alignment=testSize);
 // store buf as a _ddata so we can GET from it (otherwise always narrow)
 const A = buf:_ddata(uint(8));
 
-var rng = new RandomStream(int);
+var rng = new randomStream(int);
 
 for i in 0..#testSize {
   A[i] = i:uint(8);
@@ -49,7 +49,7 @@ proc test_readahead(size:int, const reverse:bool, const misses:int) {
   }
 
   on Locales[1] {
-    var r = 0..#size by -1;
+    var r = ( 0..#size by -1 ): range(strides=strideKind.any);
     if reverse == false then
       r = 0..#size;
 

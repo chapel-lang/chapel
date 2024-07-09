@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -236,6 +236,15 @@ extern int chpl_comm_ofi_abort_on_error;
       }                                                                 \
     } while (0)
 
+#define CHK_SYS_MMAP(p, sz, prot, flags, fd, off)                              \
+    do {                                                                       \
+      if((p = mmap(NULL, (sz), (prot), (flags), (fd), (off))) == MAP_FAILED) { \
+        INTERNAL_ERROR_V("mmap(NULL, %#zx, %#zx, %#zx, %d, %d): %s",           \
+                         (size_t)(sz), (size_t)(prot), (size_t)(flags),        \
+                         (int)(fd), (int)(off), strerror(errno));              \
+      }                                                                        \
+    } while (0)
+
 #define CHK_SYS_FREE(p)                                                 \
   do {                                                                  \
     sys_free(p);                                                        \
@@ -290,6 +299,7 @@ int  chpl_comm_ofi_oob_locales_on_node(int *localRank);
 
 void* chpl_comm_ofi_hp_get_huge_pages(size_t);
 size_t chpl_comm_ofi_hp_gethugepagesize(void);
+chpl_bool chpl_comm_ofi_hp_supported(void);
 
 
 //

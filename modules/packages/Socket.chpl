@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -116,7 +116,7 @@ proc sys_sockaddr_t.init(in other: sys_sockaddr_t) {
   IPv4 and IPv6 addresses. ipAddr can be compared using
   `==` and `!=` operators.
 */
-record ipAddr {
+record ipAddr : writeSerializable {
   @chpldoc.nodoc
   var _addressStorage:sys_sockaddr_t;
 
@@ -234,8 +234,8 @@ inline operator ==(const ref lhs: ipAddr, const ref rhs: ipAddr) {
 }
 
 @chpldoc.nodoc
-proc ipAddr.writeThis(f) throws {
-  f.write("(","family:",this.family,",host:",this.host,",port:",this.port,")");
+proc ipAddr.serialize(writer, ref serializer) throws {
+  writer.write("(","family:",this.family,",host:",this.host,",port:",this.port,")");
 }
 
 /*
@@ -254,6 +254,8 @@ private extern proc qio_get_fd(fl:qio_file_ptr_t, ref fd:c_int):errorCode;
 
 /* The type returned from :proc:`connect` */
 type tcpConn = file;
+
+tcpConn implements writeSerializable;
 
 /*
   Returns the file descriptor associated with socket
@@ -322,17 +324,17 @@ inline operator ==(const ref lhs: tcpConn,const ref rhs: tcpConn) {
 }
 
 @chpldoc.nodoc
-proc tcpConn.writeThis(f) throws {
-  f.write("(","addr:",this.addr,",fd:",this.socketFd,")");
+proc tcpConn.serialize(writer, ref serializer) throws {
+  writer.write("(","addr:",this.addr,",fd:",this.socketFd,")");
 }
 
 @chpldoc.nodoc
 private extern proc sizeof(e): c_size_t;
 
 @chpldoc.nodoc
-extern "struct event_base" record event_base {};
+extern "struct event_base" record event_base {}
 @chpldoc.nodoc
-extern "struct event" record event {};
+extern "struct event" record event {}
 @chpldoc.nodoc
 extern type pthread_t;
 @chpldoc.nodoc
@@ -355,7 +357,7 @@ private extern proc event_base_free(base: c_ptr(event_base));
 private extern proc event_base_got_break(base: c_ptr(event_base)):c_int;
 private extern proc event_base_loopbreak(base: c_ptr(event_base)):c_int;
 private extern proc event_new(base: c_ptr(event_base), fd: c_int, events: c_short,
-                              callback: c_fn_ptr, callback_arg: c_void_ptr): c_ptr(event);
+                              callback: c_fn_ptr, callback_arg: c_ptr(void)): c_ptr(event);
 private extern proc event_add(ev: c_ptr(event), timeout: c_ptr(struct_timeval)):c_int;
 private extern proc event_del(ev: c_ptr(event)):c_int;
 private extern proc event_free(ev: c_ptr(event)):c_int;
@@ -364,8 +366,8 @@ private extern proc evutil_make_socket_nonblocking(fd: c_int):c_int;
 private extern proc libevent_global_shutdown();
 private extern proc evthread_use_pthreads();
 private extern proc pthread_create(thread: c_ptr(pthread_t), const attr: c_ptr(pthread_attr_t),
-                                   start_routine: c_fn_ptr, arg: c_void_ptr): c_int;
-private extern proc pthread_join(thread: pthread_t, retval: c_ptr(c_void_ptr)): c_int;
+                                   start_routine: c_fn_ptr, arg: c_ptr(void)): c_int;
+private extern proc pthread_join(thread: pthread_t, retval: c_ptr(c_ptr(void))): c_int;
 
 private extern const SOCK_STREAM:c_int;
 private extern const SOCK_DGRAM:c_int;
@@ -417,13 +419,13 @@ extern const in6addr_loopback:sys_in6_addr_t;
 // external functions for 'sys_sockaddr_t' implementation
 private extern proc sys_init_sys_sockaddr_t(ref addr:sys_sockaddr_t);
 private extern proc sys_getsockaddr_family(const ref addr: sys_sockaddr_t):c_int;
-private extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_string, port: c_uint, family: c_int):c_int;
+private extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_ptrConst(c_char), port: c_uint, family: c_int):c_int;
 private extern proc sys_set_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys_in_addr_t, port:c_uint);
 private extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint);
 private extern proc sys_host_sys_sockaddr_t(const ref addr: sys_sockaddr_t, host: c_ptr(c_char), hostlen: socklen_t, ref length: c_int) : c_int;
 private extern proc sys_port_sys_sockaddr_t(const ref addr: sys_sockaddr_t, ref port: c_uint) : c_int;
-private extern proc sys_strerror(error:c_int, ref string_out:c_string):c_int;
-private extern proc sys_readlink(path:c_string, ref string_out:c_string):c_int;
+private extern proc sys_strerror(error:c_int, ref string_out:c_ptrConst(c_char)):c_int;
+private extern proc sys_readlink(path:c_ptrConst(c_char), ref string_out:c_ptrConst(c_char)):c_int;
 
 extern const AF_INET: c_int;
 extern const AF_INET6: c_int;
@@ -440,7 +442,7 @@ extern record sys_sockaddr_t {
   var len:socklen_t;
 
   proc init() {
-    this.complete();
+    init this;
     sys_init_sys_sockaddr_t(this);
   }
 
@@ -462,7 +464,7 @@ extern record sys_sockaddr_t {
                                 `host` and `family`.
   */
   @chpldoc.nodoc
-  proc set(host: c_string, port: c_uint, family: c_int) throws {
+  proc ref set(host: c_ptrConst(c_char), port: c_uint, family: c_int) throws {
     var err_out = sys_set_sys_sockaddr_t(this, host, port, family);
     if err_out != 1 {
       throw new IllegalArgumentError("Incompatible Address and Family");
@@ -482,7 +484,7 @@ extern record sys_sockaddr_t {
   :type port: `c_uint`
   */
   @chpldoc.nodoc
-  proc set(host: sys_in_addr_t, port: c_uint) {
+  proc ref set(host: sys_in_addr_t, port: c_uint) {
     sys_set_sys_sockaddr_in_t(this, host, port);
   }
 
@@ -499,7 +501,7 @@ extern record sys_sockaddr_t {
   :type port: `c_uint`
   */
   @chpldoc.nodoc
-  proc set(host: sys_in6_addr_t, port: c_uint) {
+  proc ref set(host: sys_in6_addr_t, port: c_uint) {
     sys_set_sys_sockaddr_in6_t(this, host, port);
   }
 
@@ -584,12 +586,12 @@ private extern proc sys_fcntl_long(fd:c_int, cmd:c_int, arg:c_long, ref ret_out:
 private extern proc sys_accept(sockfd:c_int, ref add_out:sys_sockaddr_t, ref fd_out:c_int):c_int;
 private extern proc sys_bind(sockfd:c_int, const ref addr:sys_sockaddr_t):c_int;
 private extern proc sys_connect(sockfd:c_int, const ref addr:sys_sockaddr_t):c_int;
-private extern proc getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):c_int;
+private extern proc getaddrinfo(node:c_ptrConst(c_char), service:c_ptrConst(c_char), ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):c_int;
 private extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
 private extern proc sys_getpeername(sockfd:c_int, ref addr:sys_sockaddr_t):c_int;
 private extern proc sys_getsockname(sockfd:c_int, ref addr:sys_sockaddr_t):c_int;
-private extern proc sys_getsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):c_int;
-private extern proc sys_setsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):c_int;
+private extern proc sys_getsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_ptr(void), ref optlen:socklen_t):c_int;
+private extern proc sys_setsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_ptr(void), optlen:socklen_t):c_int;
 private extern proc sys_listen(sockfd:c_int, backlog:c_int):c_int;
 private extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:c_int):c_int;
 private extern proc sys_close(fd:c_int):c_int;
@@ -606,7 +608,7 @@ var event_loop_base:c_ptr(event_base);
   A record holding reference to a tcp socket
   bound and listening for connections.
 */
-record tcpListener {
+record tcpListener : writeSerializable {
   /*
     File Descriptor Associated with instance
   */
@@ -662,9 +664,9 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
   if err_out == 0 {
     return new file(fdOut):tcpConn;
   }
-  var localSync$: sync c_short;
+  var localSync: sync c_short;
   // create event pending state
-  var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
+  var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync):c_ptr(void));
   defer {
     // cleanup
     event_free(internalEvent);
@@ -679,7 +681,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
       throw new Error("accept() failed");
     }
     // return value
-    var retval = localSync$.readFE();
+    var retval = localSync.readFE();
     // stop timer
     t.stop();
     // if error was timeout throw error
@@ -774,8 +776,8 @@ inline operator ==(const ref lhs: tcpListener,const ref rhs: tcpListener) {
 }
 
 @chpldoc.nodoc
-proc tcpListener.writeThis(f) throws {
-  f.write("(","addr:",this.addr,",fd:",this.socketFd);
+proc tcpListener.serialize(writer, ref serializer) throws {
+  writer.write("(","addr:",this.addr,",fd:",this.socketFd);
 }
 
 @chpldoc.nodoc
@@ -857,9 +859,9 @@ proc connect(const ref address: ipAddr, in timeout = indefiniteTimeout): tcpConn
     setBlocking(socketFd, true);
     return new file(socketFd):tcpConn;
   }
-  var localSync$: sync int = 0;
-  localSync$.readFE();
-  var writerEvent = event_new(event_loop_base, socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
+  var localSync: sync int = 0;
+  localSync.readFE();
+  var writerEvent = event_new(event_loop_base, socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync):c_ptr(void));
   defer {
     event_del(writerEvent);
     event_free(writerEvent);
@@ -868,7 +870,7 @@ proc connect(const ref address: ipAddr, in timeout = indefiniteTimeout): tcpConn
   if err_out != 0 {
     throw new Error("connect() failed");
   }
-  var retval = localSync$.readFE();
+  var retval = localSync.readFE();
   if retval & EV_TIMEOUT != 0 {
     throw createSystemError(ETIMEDOUT, "connect() timed out");
   }
@@ -986,7 +988,7 @@ proc connect(in host: string, in port: uint(16), family: IPFamily = IPFamily.IPU
   A record holding reference to a udp socket
   bound to any available port.
 */
-record udpSocket {
+record udpSocket : writeSerializable {
   /*
     File Descriptor Associated with instance
   */
@@ -1018,7 +1020,7 @@ proc udpSocket.close throws {
 }
 
 @chpldoc.nodoc
-private extern proc sys_recvfrom(sockfd:c_int, buff:c_void_ptr, len:c_size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:c_ssize_t):c_int;
+private extern proc sys_recvfrom(sockfd:c_int, buff:c_ptr(void), len:c_size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:c_ssize_t):c_int;
 
 /*
   Reads upto `bufferLen` bytes from the socket, and
@@ -1056,8 +1058,8 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
     deallocate(buffer);
     throw createSystemError(err_out,"recv failed");
   }
-  var localSync$: sync c_short;
-  var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
+  var localSync: sync c_short;
+  var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync):c_ptr(void));
   defer {
     event_free(internalEvent);
   }
@@ -1070,7 +1072,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
       deallocate(buffer);
       throw new Error("recv failed");
     }
-    var retval = localSync$.readFE();
+    var retval = localSync.readFE();
     t.stop();
     if retval & EV_TIMEOUT != 0 {
       deallocate(buffer);
@@ -1135,7 +1137,7 @@ proc udpSocket.recv(bufferLen: int, timeout: real) throws {
 }
 
 @chpldoc.nodoc
-private extern proc sys_sendto(sockfd:c_int, buff:c_void_ptr, len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:c_ssize_t):c_int;
+private extern proc sys_sendto(sockfd:c_int, buff:c_ptr(void), len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:c_ssize_t):c_int;
 
 /*
   Send `data` over socket to the provided address and
@@ -1164,15 +1166,15 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
                     in timeout = indefiniteTimeout):c_ssize_t throws {
   var err_out:c_int = 0;
   var length:c_ssize_t;
-  err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
+  err_out = sys_sendto(this.socketFd, data.c_str():c_ptr(void), data.size:c_long, 0, address._addressStorage, length);
   if err_out == 0 {
     return length;
   }
   if err_out != 0 && err_out != EAGAIN && err_out != EWOULDBLOCK {
     throw createSystemError(err_out, "send failed");
   }
-  var localSync$: sync c_short;
-  var internalEvent = event_new(event_loop_base, this.socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
+  var localSync: sync c_short;
+  var internalEvent = event_new(event_loop_base, this.socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync):c_ptr(void));
   defer {
     event_free(internalEvent);
   }
@@ -1183,13 +1185,13 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
     if err_out != 0 {
       throw createSystemError(err_out, "send failed");
     }
-    var retval = localSync$.readFE();
+    var retval = localSync.readFE();
     t.stop();
     if retval & EV_TIMEOUT != 0 {
       throw createSystemError(ETIMEDOUT, "send timed out");
     }
     var elapsedTime = (t.elapsed()*1_000_000):c_long;
-    err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
+    err_out = sys_sendto(this.socketFd, data.c_str():c_ptr(void), data.size:c_long, 0, address._addressStorage, length);
     if err_out != 0 {
       if err_out != EAGAIN && err_out != EWOULDBLOCK {
         throw createSystemError(err_out, "send failed");
@@ -1224,8 +1226,8 @@ inline operator ==(const ref lhs: udpSocket,const ref rhs: udpSocket) {
 }
 
 @chpldoc.nodoc
-proc udpSocket.writeThis(f) throws {
-  f.write("(","addr:",this.addr,",fd:",this.socketFd);
+proc udpSocket.serialize(writer, ref serializer) throws {
+  writer.write("(","addr:",this.addr,",fd:",this.socketFd);
 }
 
 
@@ -1247,14 +1249,14 @@ extern const SO_SECINFO:c_int;
 proc setSockOpt(socketFd: c_int, level: c_int, optname: c_int, ref value: c_int) throws {
   var optlen = sizeof(value):socklen_t;
   var ptroptval = c_ptrTo(value);
-  var err_out = sys_setsockopt(socketFd, level, optname, ptroptval:c_void_ptr, optlen);
+  var err_out = sys_setsockopt(socketFd, level, optname, ptroptval:c_ptr(void), optlen);
   if err_out != 0 {
     throw createSystemError(err_out, "Failed to set socket option");
   }
 }
 
 /*
-  Set the value of the given socket option (see `setsockopt(2) </https://pubs.opengroup.org/onlinepubs/9699919799/functions/setsockopt.html#>`_)
+  Set the value of the given socket option (see `setsockopt(2) <https://pubs.opengroup.org/onlinepubs/9699919799/functions/setsockopt.html#>`_)
   on provided :type:`tcpConn`. The needed symbolic constants (SO_* etc.)
   are defined above.
 
@@ -1349,7 +1351,7 @@ proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int) throws {
   var optval:c_int;
   var ptroptval = c_ptrTo(optval);
   var optlen = sizeof(optval):socklen_t;
-  var err_out = sys_getsockopt(socketFd, level, optname, ptroptval:c_void_ptr, optlen);
+  var err_out = sys_getsockopt(socketFd, level, optname, ptroptval:c_ptr(void), optlen);
   if err_out != 0 {
     throw createSystemError(err_out, "Failed to get socket option");
   }
@@ -1357,7 +1359,7 @@ proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int) throws {
 }
 
 /*
-  Returns the value of the given socket option (see `getsockopt </https://pubs.opengroup.org/onlinepubs/9699919799/functions/getsockopt.html>`_)
+  Returns the value of the given socket option (see `getsockopt <https://pubs.opengroup.org/onlinepubs/9699919799/functions/getsockopt.html>`_)
   on provided :type:`tcpConn`. The needed symbolic constants (SO_* etc.)
   are defined above.
 
@@ -1386,7 +1388,7 @@ proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int, buflen: uint(16)) 
   else {
     var len:socklen_t = buflen;
     var buffer = allocate(c_uchar, buflen, clear=true);
-    var err_out = sys_getsockopt(socketFd, level, optname, buffer:c_void_ptr, len);
+    var err_out = sys_getsockopt(socketFd, level, optname, buffer:c_ptr(void), len);
     if err_out != 0 {
       deallocate(buffer);
       throw createSystemError(err_out, "Failed to get socket option");
@@ -1397,8 +1399,7 @@ proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int, buflen: uint(16)) 
 
 /*
   Returns the value of the given socket option which is expected to be of type
-  :type:`~Bytes.bytes` on provided :type:`tcpConn`. The needed symbolic constants (SO_* etc.)
-  are defined in :mod:`Sys` module.
+  :type:`~Bytes.bytes` on provided :type:`tcpConn`.
 
   :arg socket: socket to set option on
   :type socket: `tcpConn` or `udpSocket` or `tcpListener`
@@ -1406,6 +1407,8 @@ proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int, buflen: uint(16)) 
   :type level: `int(32)`
   :arg optname: option to set.
   :type optname: `int(32)`
+  :arg buflen: buffer length
+  :type buflen: `uint(16)`
   :return: value of socket option
   :rtype: :type:`~Bytes.bytes`
   :throws SystemError: Upon incompatible arguments
@@ -1564,7 +1567,7 @@ event_loop_base = event_base_new();
 var event_loop_thread:pthread_t;
 
 @chpldoc.nodoc
-proc dispatchLoop():c_void_ptr throws {
+proc dispatchLoop():c_ptr(void) throws {
   if event_loop_base == nil {
     throw new Error("event loop wasn't initialized");
   }
@@ -1581,7 +1584,7 @@ proc dispatchLoop():c_void_ptr throws {
 pthread_create(c_ptrTo(event_loop_thread), nil:c_ptr(pthread_attr_t), c_ptrTo(dispatchLoop), nil);
 
 @chpldoc.nodoc
-proc syncRWTCallback(fd: c_int, event: c_short, arg: c_void_ptr) {
+proc syncRWTCallback(fd: c_int, event: c_short, arg: c_ptr(void)) {
   var syncVariablePtr = arg: c_ptr(sync int);
   syncVariablePtr.deref().writeEF(event);
 }
@@ -1589,7 +1592,7 @@ proc syncRWTCallback(fd: c_int, event: c_short, arg: c_void_ptr) {
 @chpldoc.nodoc
 proc deinit() {
   event_base_loopbreak(event_loop_base);
-  pthread_join(event_loop_thread, nil:c_ptr(c_void_ptr));
+  pthread_join(event_loop_thread, nil:c_ptr(c_ptr(void)));
   event_base_free(event_loop_base);
   libevent_global_shutdown();
 }

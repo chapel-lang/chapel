@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,8 +39,9 @@ namespace uast {
   is a New node (representing 'new bar').
 */
 class New : public AstNode {
- public:
+ friend class AstNode;
 
+ public:
   /**
     Possible management flavors for a new expression.
   */
@@ -52,26 +53,21 @@ class New : public AstNode {
     UNMANAGED
   };
 
-  /**
-    Given a management style, return the Chapel keyword representing it.
-  */
-  static const char* managementToString(Management management);
-
-  /**
-    Given a string, return a management style, or 'DEFAULT_MANAGEMENT' if
-    there was not a match.
-  */
-  static Management stringToManagement(UniqueString ustr);
-
  private:
+  Management management_;
+
   New(AstList children, New::Management management)
     : AstNode(asttags::New, std::move(children)),
       management_(management) {}
 
-  New(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    ser.write(management_);
+  }
+
+  explicit New(Deserializer& des)
     : AstNode(asttags::New, des) {
-        management_ = des.read<Management>();
-      }
+    management_ = des.read<Management>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const New* lhs = this;
@@ -86,8 +82,6 @@ class New : public AstNode {
   }
 
   void dumpFieldsInner(const DumpSettings& s) const override;
-
-  Management management_;
 
  public:
 
@@ -114,13 +108,16 @@ class New : public AstNode {
     return management_;
   }
 
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(management_);
-  }
+  /**
+    Given a management style, return the Chapel keyword representing it.
+  */
+  static const char* managementToString(Management management);
 
-  DECLARE_STATIC_DESERIALIZE(New);
-
+  /**
+    Given a string, return a management style, or 'DEFAULT_MANAGEMENT' if
+    there was not a match.
+  */
+  static Management stringToManagement(UniqueString ustr);
 };
 
 

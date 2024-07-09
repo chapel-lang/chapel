@@ -1,1 +1,3 @@
-{x = 4} nil
+coerce-owned-to-shared.chpl:6: In function 'test':
+coerce-owned-to-shared.chpl:9: error: invalid copy-initialization
+coerce-owned-to-shared.chpl:9: error: cannot initialize 'shared' from a 'owned MyClass?'

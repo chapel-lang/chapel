@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -72,7 +72,7 @@ module ChapelArray {
     var _unowned:bool;
   }
 
-  proc _array.these() : this.eltType {
+  iter _array.these() : this.eltType {
     var i : this.eltType;
     yield i;
   }

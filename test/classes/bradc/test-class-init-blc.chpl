@@ -4,7 +4,7 @@ class Params {
 
   proc init() {
     numProbSizes = 3;
-    this.complete();
+    init this;
     for n in N do n = 10;
   }
 }

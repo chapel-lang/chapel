@@ -19,18 +19,18 @@
 #define LLVM_MC_TARGETREGISTRY_H
 
 #include "llvm-c/DisassemblerTypes.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FormattedStream.h"
+#include "llvm/TargetParser/Triple.h"
 #include <cassert>
 #include <cstddef>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace llvm {
@@ -60,6 +60,7 @@ class TargetOptions;
 namespace mca {
 class CustomBehaviour;
 class InstrPostProcess;
+class InstrumentManager;
 struct SourceMgr;
 } // namespace mca
 
@@ -93,6 +94,11 @@ MCStreamer *createELFStreamer(MCContext &Ctx,
                               std::unique_ptr<MCObjectWriter> &&OW,
                               std::unique_ptr<MCCodeEmitter> &&CE,
                               bool RelaxAll);
+MCStreamer *createGOFFStreamer(MCContext &Ctx,
+                               std::unique_ptr<MCAsmBackend> &&TAB,
+                               std::unique_ptr<MCObjectWriter> &&OW,
+                               std::unique_ptr<MCCodeEmitter> &&CE,
+                               bool RelaxAll);
 MCStreamer *createMachOStreamer(MCContext &Ctx,
                                 std::unique_ptr<MCAsmBackend> &&TAB,
                                 std::unique_ptr<MCObjectWriter> &&OW,
@@ -134,6 +140,9 @@ mca::CustomBehaviour *createCustomBehaviour(const MCSubtargetInfo &STI,
 mca::InstrPostProcess *createInstrPostProcess(const MCSubtargetInfo &STI,
                                               const MCInstrInfo &MCII);
 
+mca::InstrumentManager *createInstrumentManager(const MCSubtargetInfo &STI,
+                                                const MCInstrInfo &MCII);
+
 /// Target - Wrapper for Target specific information.
 ///
 /// For registration purposes, this is a POD type so that targets can be
@@ -162,8 +171,8 @@ public:
                                                        StringRef Features);
   using TargetMachineCtorTy = TargetMachine
       *(*)(const Target &T, const Triple &TT, StringRef CPU, StringRef Features,
-           const TargetOptions &Options, Optional<Reloc::Model> RM,
-           Optional<CodeModel::Model> CM, CodeGenOpt::Level OL, bool JIT);
+           const TargetOptions &Options, std::optional<Reloc::Model> RM,
+           std::optional<CodeModel::Model> CM, CodeGenOptLevel OL, bool JIT);
   // If it weren't for layering issues (this header is in llvm/Support, but
   // depends on MC?) this should take the Streamer by value rather than rvalue
   // reference.
@@ -189,6 +198,10 @@ public:
   using ELFStreamerCtorTy =
       MCStreamer *(*)(const Triple &T, MCContext &Ctx,
                       std::unique_ptr<MCAsmBackend> &&TAB,
+                      std::unique_ptr<MCObjectWriter> &&OW,
+                      std::unique_ptr<MCCodeEmitter> &&Emitter, bool RelaxAll);
+  using GOFFStreamerCtorTy =
+      MCStreamer *(*)(MCContext &Ctx, std::unique_ptr<MCAsmBackend> &&TAB,
                       std::unique_ptr<MCObjectWriter> &&OW,
                       std::unique_ptr<MCCodeEmitter> &&Emitter, bool RelaxAll);
   using MachOStreamerCtorTy =
@@ -244,6 +257,10 @@ public:
   using InstrPostProcessCtorTy =
       mca::InstrPostProcess *(*)(const MCSubtargetInfo &STI,
                                  const MCInstrInfo &MCII);
+
+  using InstrumentManagerCtorTy =
+      mca::InstrumentManager *(*)(const MCSubtargetInfo &STI,
+                                  const MCInstrInfo &MCII);
 
 private:
   /// Next - The next registered target in the linked list, maintained by the
@@ -319,6 +336,7 @@ private:
 
   // Construction functions for the various object formats, if registered.
   COFFStreamerCtorTy COFFStreamerCtorFn = nullptr;
+  GOFFStreamerCtorTy GOFFStreamerCtorFn = nullptr;
   MachOStreamerCtorTy MachOStreamerCtorFn = nullptr;
   ELFStreamerCtorTy ELFStreamerCtorFn = nullptr;
   WasmStreamerCtorTy WasmStreamerCtorFn = nullptr;
@@ -353,6 +371,10 @@ private:
   /// InstrPostProcessCtorFn - Construction function for this target's
   /// InstrPostProcess, if registered (default = nullptr).
   InstrPostProcessCtorTy InstrPostProcessCtorFn = nullptr;
+
+  /// InstrumentManagerCtorFn - Construction function for this target's
+  /// InstrumentManager, if registered (default = nullptr).
+  InstrumentManagerCtorTy InstrumentManagerCtorFn = nullptr;
 
 public:
   Target() = default;
@@ -466,13 +488,11 @@ public:
   /// feature set; it should always be provided. Generally this should be
   /// either the target triple from the module, or the target triple of the
   /// host if that does not exist.
-  TargetMachine *createTargetMachine(StringRef TT, StringRef CPU,
-                                     StringRef Features,
-                                     const TargetOptions &Options,
-                                     Optional<Reloc::Model> RM,
-                                     Optional<CodeModel::Model> CM = None,
-                                     CodeGenOpt::Level OL = CodeGenOpt::Default,
-                                     bool JIT = false) const {
+  TargetMachine *createTargetMachine(
+      StringRef TT, StringRef CPU, StringRef Features,
+      const TargetOptions &Options, std::optional<Reloc::Model> RM,
+      std::optional<CodeModel::Model> CM = std::nullopt,
+      CodeGenOptLevel OL = CodeGenOptLevel::Default, bool JIT = false) const {
     if (!TargetMachineCtorFn)
       return nullptr;
     return TargetMachineCtorFn(*this, Triple(TT), CPU, Features, Options, RM,
@@ -554,7 +574,8 @@ public:
     case Triple::UnknownObjectFormat:
       llvm_unreachable("Unknown object format");
     case Triple::COFF:
-      assert(T.isOSWindows() && "only Windows COFF is supported");
+      assert((T.isOSWindows() || T.isUEFI()) &&
+             "only Windows and UEFI COFF are supported");
       S = COFFStreamerCtorFn(Ctx, std::move(TAB), std::move(OW),
                              std::move(Emitter), RelaxAll,
                              IncrementalLinkerCompatible);
@@ -586,7 +607,13 @@ public:
                                std::move(Emitter), RelaxAll);
       break;
     case Triple::GOFF:
-      report_fatal_error("GOFF MCObjectStreamer not implemented yet");
+      if (GOFFStreamerCtorFn)
+        S = GOFFStreamerCtorFn(Ctx, std::move(TAB), std::move(OW),
+                               std::move(Emitter), RelaxAll);
+      else
+        S = createGOFFStreamer(Ctx, std::move(TAB), std::move(OW),
+                               std::move(Emitter), RelaxAll);
+      break;
     case Triple::XCOFF:
       if (XCOFFStreamerCtorFn)
         S = XCOFFStreamerCtorFn(T, Ctx, std::move(TAB), std::move(OW),
@@ -706,6 +733,17 @@ public:
     return nullptr;
   }
 
+  /// createInstrumentManager - Create a target specific
+  /// InstrumentManager. This class is used by llvm-mca and requires
+  /// backend functionality.
+  mca::InstrumentManager *
+  createInstrumentManager(const MCSubtargetInfo &STI,
+                          const MCInstrInfo &MCII) const {
+    if (InstrumentManagerCtorFn)
+      return InstrumentManagerCtorFn(STI, MCII);
+    return nullptr;
+  }
+
   /// @}
 };
 
@@ -770,8 +808,7 @@ struct TargetRegistry {
   /// \param Triple - The triple to use for finding a target.
   /// \param Error - On failure, an error string describing why no target was
   /// found.
-  static const Target *lookupTarget(const std::string &Triple,
-                                    std::string &Error);
+  static const Target *lookupTarget(StringRef Triple, std::string &Error);
 
   /// lookupTarget - Lookup a target based on an architecture name
   /// and a target triple.  If the architecture name is non-empty,
@@ -784,8 +821,8 @@ struct TargetRegistry {
   /// by architecture is done.
   /// \param Error - On failure, an error string describing why no target was
   /// found.
-  static const Target *lookupTarget(const std::string &ArchName,
-                                    Triple &TheTriple, std::string &Error);
+  static const Target *lookupTarget(StringRef ArchName, Triple &TheTriple,
+                                    std::string &Error);
 
   /// @}
   /// @name Target Registration
@@ -983,6 +1020,10 @@ struct TargetRegistry {
     T.COFFStreamerCtorFn = Fn;
   }
 
+  static void RegisterGOFFStreamer(Target &T, Target::GOFFStreamerCtorTy Fn) {
+    T.GOFFStreamerCtorFn = Fn;
+  }
+
   static void RegisterMachOStreamer(Target &T, Target::MachOStreamerCtorTy Fn) {
     T.MachOStreamerCtorFn = Fn;
   }
@@ -1076,6 +1117,21 @@ struct TargetRegistry {
   static void RegisterInstrPostProcess(Target &T,
                                        Target::InstrPostProcessCtorTy Fn) {
     T.InstrPostProcessCtorFn = Fn;
+  }
+
+  /// RegisterInstrumentManager - Register an InstrumentManager
+  /// implementation for the given target.
+  ///
+  /// Clients are responsible for ensuring that registration doesn't occur
+  /// while another thread is attempting to access the registry. Typically
+  /// this is done by initializing all targets at program startup.
+  ///
+  /// @param T - The target being registered.
+  /// @param Fn - A function to construct an InstrumentManager for the
+  /// target.
+  static void RegisterInstrumentManager(Target &T,
+                                        Target::InstrumentManagerCtorTy Fn) {
+    T.InstrumentManagerCtorFn = Fn;
   }
 
   /// @}
@@ -1323,8 +1379,8 @@ template <class TargetMachineImpl> struct RegisterTargetMachine {
 private:
   static TargetMachine *
   Allocator(const Target &T, const Triple &TT, StringRef CPU, StringRef FS,
-            const TargetOptions &Options, Optional<Reloc::Model> RM,
-            Optional<CodeModel::Model> CM, CodeGenOpt::Level OL, bool JIT) {
+            const TargetOptions &Options, std::optional<Reloc::Model> RM,
+            std::optional<CodeModel::Model> CM, CodeGenOptLevel OL, bool JIT) {
     return new TargetMachineImpl(T, TT, CPU, FS, Options, RM, CM, OL, JIT);
   }
 };

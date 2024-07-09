@@ -49,7 +49,7 @@ proc test3() {
 
   // TODO: FCFs cannot take variables by ref right now.
   for i in 0..7 do
-    lst.update(i, lambda(i: int, val: int) {
+    lst.update(i, proc(i: int, val: int) {
       writeln(val);
       return none;
     });

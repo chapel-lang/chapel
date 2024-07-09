@@ -1,0 +1,11 @@
+ReflectionUnstable.chpl:14: In function 'main':
+ReflectionUnstable.chpl:17: warning: 'isFieldBound' is unstable - consider using 'T.fieldName != ?' syntax instead
+ReflectionUnstable.chpl:18: warning: 'isFieldBound' is unstable - consider using 'T.fieldName != ?' syntax instead
+ReflectionUnstable.chpl:19: warning: The 'canResolve...' family of procedures are unstable
+ReflectionUnstable.chpl:20: warning: The 'canResolve...' family of procedures are unstable
+ReflectionUnstable.chpl:22: warning: The 'canResolve...' family of procedures are unstable
+ReflectionUnstable.chpl:23: warning: The 'canResolve...' family of procedures are unstable
+ReflectionUnstable.chpl:24: warning: The 'canResolve...' family of procedures are unstable
+ReflectionUnstable.chpl:25: warning: The 'canResolve...' family of procedures are unstable
+ReflectionUnstable.chpl:26: warning: 'getFieldRef' is unstable
+ReflectionUnstable.chpl:27: warning: 'getFieldRef' is unstable

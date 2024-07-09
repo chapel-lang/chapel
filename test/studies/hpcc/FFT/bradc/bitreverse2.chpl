@@ -7,7 +7,7 @@ var DW = {0..N/4-1};
 
 var A: [DW] complex;
 
-[i in DW] A(i) = (i, i):complex;
+[i in DW with (ref A)] A(i) = (i, i):complex;
 
 writeln("A is: ", A);
 

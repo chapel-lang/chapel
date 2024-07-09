@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,7 +31,9 @@ owned<Foreach> Foreach::build(Builder* builder,
                               owned<AstNode> iterand,
                               owned<WithClause> withClause,
                               BlockStyle blockStyle,
-                              owned<Block> body) {
+                              owned<Block> body,
+                              bool isExpressionLevel,
+                              owned<AttributeGroup> attributeGroup) {
 
   CHPL_ASSERT(iterand.get() != nullptr);
   CHPL_ASSERT(body.get() != nullptr);
@@ -40,6 +42,12 @@ owned<Foreach> Foreach::build(Builder* builder,
   int8_t indexChildNum = NO_CHILD;
   int8_t iterandChildNum = NO_CHILD;
   int8_t withClauseChildNum = NO_CHILD;
+  int attributeGroupChildNum = NO_CHILD;
+
+  if (attributeGroup.get() != nullptr) {
+    attributeGroupChildNum = lst.size();
+    lst.push_back(std::move(attributeGroup));
+  }
 
   if (index.get() != nullptr) {
     indexChildNum = lst.size();
@@ -63,7 +71,9 @@ owned<Foreach> Foreach::build(Builder* builder,
                              iterandChildNum,
                              withClauseChildNum,
                              blockStyle,
-                             loopBodyChildNum);
+                             loopBodyChildNum,
+                             isExpressionLevel,
+                             attributeGroupChildNum);
 
   builder->noteLocation(ret, loc);
   return toOwned(ret);

@@ -20,10 +20,11 @@
 #ifndef LLVM_DEBUGINFOD_DEBUGINFOD_H
 #define LLVM_DEBUGINFOD_DEBUGINFOD_H
 
-#include "llvm/ADT/Optional.h"
+#include "HTTPServer.h"
+
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Debuginfod/HTTPServer.h"
+#include "llvm/Object/BuildID.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Mutex.h"
@@ -32,17 +33,25 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <optional>
 #include <queue>
 
 namespace llvm {
 
-typedef ArrayRef<uint8_t> BuildIDRef;
-
-typedef SmallVector<uint8_t, 10> BuildID;
+/// Returns false if a debuginfod lookup can be determined to have no chance of
+/// succeeding.
+bool canUseDebuginfod();
 
 /// Finds default array of Debuginfod server URLs by checking DEBUGINFOD_URLS
 /// environment variable.
-Expected<SmallVector<StringRef>> getDefaultDebuginfodUrls();
+SmallVector<StringRef> getDefaultDebuginfodUrls();
+
+/// Returns the cache key for a given debuginfod URL path.
+std::string getDebuginfodCacheKey(StringRef UrlPath);
+
+/// Sets the list of debuginfod server URLs to query. This overrides the
+/// environment variable DEBUGINFOD_URLS.
+void setDefaultDebuginfodUrls(const SmallVector<StringRef> &URLs);
 
 /// Finds a default local file caching directory for the debuginfod client,
 /// first checking DEBUGINFOD_CACHE_PATH.
@@ -52,18 +61,29 @@ Expected<std::string> getDefaultDebuginfodCacheDirectory();
 /// DEBUGINFOD_TIMEOUT environment variable, default is 90 seconds (90000 ms).
 std::chrono::milliseconds getDefaultDebuginfodTimeout();
 
+/// Get the full URL path for a source request of a given BuildID and file
+/// path.
+std::string getDebuginfodSourceUrlPath(object::BuildIDRef ID,
+                                       StringRef SourceFilePath);
+
 /// Fetches a specified source file by searching the default local cache
 /// directory and server URLs.
-Expected<std::string> getCachedOrDownloadSource(BuildIDRef ID,
+Expected<std::string> getCachedOrDownloadSource(object::BuildIDRef ID,
                                                 StringRef SourceFilePath);
+
+/// Get the full URL path for an executable request of a given BuildID.
+std::string getDebuginfodExecutableUrlPath(object::BuildIDRef ID);
 
 /// Fetches an executable by searching the default local cache directory and
 /// server URLs.
-Expected<std::string> getCachedOrDownloadExecutable(BuildIDRef ID);
+Expected<std::string> getCachedOrDownloadExecutable(object::BuildIDRef ID);
+
+/// Get the full URL path for a debug binary request of a given BuildID.
+std::string getDebuginfodDebuginfoUrlPath(object::BuildIDRef ID);
 
 /// Fetches a debug binary by searching the default local cache directory and
 /// server URLs.
-Expected<std::string> getCachedOrDownloadDebuginfo(BuildIDRef ID);
+Expected<std::string> getCachedOrDownloadDebuginfo(object::BuildIDRef ID);
 
 /// Fetches any debuginfod artifact using the default local cache directory and
 /// server URLs.
@@ -108,8 +128,8 @@ class DebuginfodCollection {
   sys::RWMutex DebugBinariesMutex;
   StringMap<std::string> DebugBinaries;
   Error findBinaries(StringRef Path);
-  Expected<Optional<std::string>> getDebugBinaryPath(BuildIDRef);
-  Expected<Optional<std::string>> getBinaryPath(BuildIDRef);
+  Expected<std::optional<std::string>> getDebugBinaryPath(object::BuildIDRef);
+  Expected<std::optional<std::string>> getBinaryPath(object::BuildIDRef);
   // If the collection has not been updated since MinInterval, call update() and
   // return true. Otherwise return false. If update returns an error, return the
   // error.
@@ -128,8 +148,8 @@ public:
                        ThreadPool &Pool, double MinInterval);
   Error update();
   Error updateForever(std::chrono::milliseconds Interval);
-  Expected<std::string> findDebugBinaryPath(BuildIDRef);
-  Expected<std::string> findBinaryPath(BuildIDRef);
+  Expected<std::string> findDebugBinaryPath(object::BuildIDRef);
+  Expected<std::string> findBinaryPath(object::BuildIDRef);
 };
 
 struct DebuginfodServer {

@@ -46,9 +46,15 @@ function log_success() {
   echo "[Success matching ${msg}]"
 }
 
+function update_nightly_repo() {
+  pushd $CHAMPS_COMMON_DIR
+  git pull
+  popd
+}
+
 function apply_patch() {
   local patch_file=$@
-  echo "Applying patch ${patch_file}"
+  echo "[Applying patch ${patch_file}]"
   if ! patch -p1 < $patch_file ; then
     log_fatal_error "applying patch"
   else
@@ -58,9 +64,30 @@ function apply_patch() {
 
 function test_compile() {
   local kind=$@
+  local make_vars="MOD=$kind NPROCS=0"
+  local reset_chpl_stop_after_pass=false
+
+  if [ ! -z "$CHAMPS_QUICKSTART" ]; then
+    local version=quick-shared
+    if [ -z "$CHPL_STOP_AFTER_PASS" ]; then
+      reset_chpl_stop_after_pass=true
+      export CHPL_STOP_AFTER_PASS=denormalize
+    fi
+
+    # CHAMPS' Makefile runs `time` in an unportable way causing failures on
+    # darwin. Measuring time and memory in this setting is probably useless
+    # anyway. So, disable that for quickstart.
+    make_vars+=" MONITOR_MAKE=false"
+
+    echo "[Building $kind in quickstart mode. Will stop after the $CHPL_STOP_AFTER_PASS pass]"
+  else
+    local version=release
+
+    echo "[Building $kind in normal mode]"
+  fi
 
   test_start "make $kind"
-  make release MOD=$kind NPROCS=0 2> $kind.comp.out.tmp
+  make $version $make_vars 2> $kind.comp.out.tmp
   local status=$?
   cat $kind.comp.out.tmp
 
@@ -71,14 +98,21 @@ function test_compile() {
   fi
   test_end
 
-  $CHPL_HOME/util/test/computePerfStats comp-time-$kind $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION $CHAMPS_GRAPH_PATH/comp-time.perfkeys $kind.comp.out.tmp
-  if [[ $? -ne 0 ]] ; then
-    log_fatal_error "computing compile time stats for ${kind}"
+  # don't leave this environment set
+  if [ "$reset_chpl_stop_after_pass" = true ]; then
+    unset CHPL_STOP_AFTER_PASS
   fi
 
-  $CHPL_HOME/util/test/computePerfStats emitted-code-size-$kind $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION $CHAMPS_GRAPH_PATH/emitted-code-size.perfkeys $kind.comp.out.tmp
-  if [[ $? -ne 0 ]] ; then
-    log_fatal_error "computing emitted code size stats for ${kind}"
+  if [ -z "$CHAMPS_QUICKSTART" ]; then
+    $CHPL_HOME/util/test/computePerfStats comp-time-$kind $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION $CHAMPS_GRAPH_PATH/comp-time.perfkeys $kind.comp.out.tmp
+    if [[ $? -ne 0 ]] ; then
+      log_fatal_error "computing compile time stats for ${kind}"
+    fi
+
+    $CHPL_HOME/util/test/computePerfStats emitted-code-size-$kind $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION $CHAMPS_GRAPH_PATH/emitted-code-size.perfkeys $kind.comp.out.tmp
+    if [[ $? -ne 0 ]] ; then
+      log_fatal_error "computing emitted code size stats for ${kind}"
+    fi
   fi
 }
 
@@ -87,7 +121,9 @@ function test_run() {
   local nl=$2
 
   test_start "run $kind"
-  ./bin/champs_${CHAMPS_VERSION}_$kind -nl $nl -f $CHAMPS_CFG_PATH/$kind.in 2>&1 >$kind.exec.out.tmp
+  # We are setting `CHPL_LAUNCHER_TIMEOUT=pbs, but I needed this `--walltime`.
+  # Why?
+  eval $CHPL_TEST_LAUNCHCMD --walltime=2:00:00 ./bin/champs_${CHAMPS_VERSION}_$kind -nl $nl -f $kind.in 2>&1 >$kind.exec.out.tmp
 
   local status=$?
   cat $kind.exec.out.tmp

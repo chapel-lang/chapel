@@ -1,3 +1,6 @@
+slice-new-rules-1.chpl:17: In function 'test':
+slice-new-rules-1.chpl:20: warning: slicing a range(int(64),neither,positive) with a range(int(64),neither,positive) might produce an empty range and result in a halt
+  slice-new-rules-1.chpl:56: called as test(r1: range(int(64),neither,positive), r2: range(int(64),neither,positive), expected: string)
 start
 ok  1..20 , ..10 by 2 , 1..10 by 2 align 1
 ok  1..20 , 2.. by -2 , 2..20 by -2 align 0

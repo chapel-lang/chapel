@@ -66,17 +66,17 @@ record MapTable {
 
 record AssocArrTable {
   var keys: domain(Prime, parSafe=false); var dict: [keys] Prime;
-  inline proc add(key, val) { this.keys += key; this.dict[key] = val; }
+  inline proc ref add(key, val) { this.keys += key; this.dict[key] = val; }
   inline proc contains(key) { return this.keys.contains(key); }
   inline proc this(key) { return this.dict[key]; }
-  inline proc remove(key) { this.keys.remove(key);}
+  inline proc ref remove(key) { this.keys.remove(key);}
 }
 
 record BasePrimesTable { // specialized for the use here...
   record BasePrimeEntry { var fullkey: Prime; var val: Prime; }
   var cpcty: int = 8; var sz: int = 0;
   var dom = { 0 .. cpcty - 1 }; var bpa: [dom] BasePrimeEntry;
-  proc grow() {
+  proc ref grow() {
     const ndom = dom; var cbpa: [ndom] BasePrimeEntry = bpa[ndom];
     bpa = new BasePrimeEntry(); cpcty *= 2; dom = { 0 .. cpcty - 1 };
     for kv in cbpa do if kv.fullkey != 0 then add(kv.fullkey, kv.val);
@@ -92,7 +92,7 @@ record BasePrimesTable { // specialized for the use here...
     return -1; // not found!
   }
   proc contains(k: Prime): bool { return find(k) >= 0; }
-  proc add(k, v: Prime) { // if exists then replaces else new entry
+  proc ref add(k, v: Prime) { // if exists then replaces else new entry
     const fndi = find(k);
     if fndi >= 0 then bpa[fndi] = new BasePrimeEntry(k, v);
     else {
@@ -107,7 +107,7 @@ record BasePrimesTable { // specialized for the use here...
       } while loop > 0;
     }
   }
-  proc remove(k: Prime) { // if doesn't exist does nothing
+  proc ref remove(k: Prime) { // if doesn't exist does nothing
     const fndi = find(k);
     if fndi >= 0 then { bpa[fndi].fullkey = 0; sz -= 1; }
   }

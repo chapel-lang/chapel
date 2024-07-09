@@ -181,41 +181,28 @@ variables. See :ref:`readme-main` for more
 information.
 
 
------------------------------
-Setting the Number of Locales
------------------------------
+---------------------
+Multi-locale Programs
+---------------------
 
-For multi-locale Chapel executions, the number of locales on which to
-execute a program is specified on the executable's command-line.  This
-can be set either using the ``-nl`` flag, or by assigning to the built-in
-numLocales configuration constant using the normal mechanisms.  So, to
-execute on four locales, one could use:
+For multi-locale Chapel programs, the number of locales is specified on the
+executable's command-line.  This can be set either using the ``-nl`` flag
+(e.g., ``-nl 4``), or by assigning to the built-in ``numLocales``
+configuration constant (e.g., ``-snumLocales=4`` or ``--numLocales=4``).
+See :ref:`readme-multilocale` for more information about multiple locales,
+and the methods for specifying the number of locales and nodes.
 
-  .. code-block:: sh
+Multi-locale programs require a communication layer (i.e., you cannot run
+multi-locale programs if ``CHPL_COMM=none``). See :ref:`readme-multilocale`
+for information about choosing the proper communication layer for your
+platform.
 
-    ./myprogram -nl 4
-
-or:
-
-  .. code-block:: sh
-
-    ./myprogram --numLocales=4
-
-or:
-
-  .. code-block:: sh
-
-    ./myprogram -snumLocales=4
-
-For users running with ``CHPL_COMM=none`` (the default), only one
-locale can be used.  See :ref:`readme-multilocale` for more
-information about executing on multiple locales.
-
-Multi-locale programs often use a launcher executable to do some initial
-command-line checking before spawning the real program, which is then
-stored in a second binary named ``<original_binary_name>_real``.  See
-:ref:`readme-launcher` for more information about the launcher executable.
-
+Multi-locale programs typically use a launcher executable (e.g., ``hello``)
+that does some initial command-line checking before using a system launcher
+(e.g., ``slurm``) to launch the real program. The real program is named
+``<original_binary_name>_real`` (e.g., ``hello_real``). See
+:ref:`readme-launcher` for more information about launchers and
+the launcher executable.
 
 --------------------------------------
 Controlling Degree of Data Parallelism
@@ -282,9 +269,14 @@ are as follows:
   ``CHPL_RT_NUM_THREADS_PER_LOCALE``
     number of threads used to execute tasks
 
-There is a bit more information on ``CHPL_RT_CALL_STACK_SIZE`` and
-``CHPL_RT_NUM_THREADS_PER_LOCALE`` below, and more detailed discussion
-of all of these in :ref:`readme-tasks` and :ref:`readme-cray`.
+  ``CHPL_RT_USE_PU_KIND``
+    which kind of processing units to use on CPUs with hybrid
+    processing units. Values are "performance", "efficiency", or "all".
+
+There is a bit more information on ``CHPL_RT_CALL_STACK_SIZE``,
+``CHPL_RT_NUM_THREADS_PER_LOCALE``, and ``CHPL_RT_USE_PU_KIND`` below,
+and more detailed discussions
+in :ref:`readme-tasks` and :ref:`readme-cray`.
 
 
 -------------------------------
@@ -338,6 +330,27 @@ See :ref:`readme-tasks` for more information on the role of
 this variable in creating threads and executing tasks for the various
 tasking layers.
 
+
+----------------------------------------
+Controlling the Kind of Processing Units
+----------------------------------------
+
+Some CPUs, such as Intel's "Alder Lake" family of processors, have
+hybrid processing units, some of which are "performance" and others
+of which are "efficiency". The following environment variable can be used
+to select the kind of processing units used by a program.
+
+  ``CHPL_RT_USE_PU_KIND``
+    Specifies which kind of processing units to use on CPUs with hybrid
+    processing units. Values are "performance", "efficiency", or "all".
+
+By default the Chapel runtime will only use "performance" processing units.
+Note that if set to "all" the runtime will run tasks on all available
+cores/processing units indiscriminately ; it will not take the difference in
+performance into account when assigning tasks to processing units.
+
+This environment variable has no effect if the processor does not have hybrid
+processing units.
 
 -----------------------------------------
 Controlling the Amount of Non-User Output

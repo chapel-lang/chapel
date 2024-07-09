@@ -16,7 +16,7 @@ for i in Space {
 }
 
 writeln("### START ###");
-forall i in Space {
+forall i in Space with (ref A, ref B) {
   var (i0,i1,i2,i3,i4,i5) = (i);
   A(i) = (i0+i1)/i2;
   B(i) += A(i)+(i3+i4)/i5;

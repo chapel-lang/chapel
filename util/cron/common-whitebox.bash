@@ -134,7 +134,7 @@ export CHPL_LLVM=none
 
 
 # Set some vars that nightly cares about.
-export CHPL_NIGHTLY_LOGDIR=${CHPL_NIGHTLY_LOGDIR:-/cray/css/users/chapelu/Nightly}
+export CHPL_NIGHTLY_LOGDIR=${CHPL_NIGHTLY_LOGDIR:-/hpcdc/project/chapel/Nightly}
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
 # Ensure compatible CPU targeting module is loaded. Unload any existing one
@@ -149,6 +149,10 @@ module load cray-fftw
 
 log_info "Current loaded modules:"
 module list
+
+log_info "Updating LD_LIBRARY_PATH to include CRAY_LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH=$CRAY_LD_LIBRARY_PATH:$LD_LIBRARY_PATH
+echo $LD_LIBRARY_PATH
 
 log_info "Chapel environment:"
 $CHPL_HOME/util/printchplenv --all --no-tidy

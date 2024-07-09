@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,13 +42,22 @@ namespace uast {
 
  */
 class Return final : public AstNode {
+ friend class AstNode;
+
  private:
+  int8_t valueChildNum_;
+
   Return(AstList children,  int8_t valueChildNum)
     : AstNode(asttags::Return, std::move(children)),
       valueChildNum_(valueChildNum) {
     CHPL_ASSERT(valueChildNum_ <= 0);
   }
-  Return(Deserializer& des)
+
+  void serializeInner(Serializer& ser) const override {
+    ser.write(valueChildNum_);
+  }
+
+  explicit Return(Deserializer& des)
     : AstNode(asttags::Return, des) {
     valueChildNum_ = des.read<int8_t>();
   }
@@ -65,8 +74,6 @@ class Return final : public AstNode {
 
   void markUniqueStringsInner(Context* context) const override {
   }
-
-  int8_t valueChildNum_;
 
  public:
   ~Return() override = default;
@@ -87,14 +94,6 @@ class Return final : public AstNode {
     auto ret = child(valueChildNum_);
     return ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(valueChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Return);
-
 };
 
 

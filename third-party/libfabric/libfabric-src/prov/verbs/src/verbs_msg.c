@@ -33,7 +33,7 @@
 
 #include "config.h"
 
-#include "fi_verbs.h"
+#include "verbs_ofi.h"
 
 
 static inline ssize_t

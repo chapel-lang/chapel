@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,29 +26,29 @@ extern "C" {
 #endif
 
 void chpl_gpu_impl_init(int* num_devices);
-void chpl_gpu_impl_support_module_finished_initializing(void);
 
-void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
-                                 const char* name,
+void* chpl_gpu_impl_load_function(const char* kernel_name);
+void chpl_gpu_impl_load_global(const char* global_name, void** ptr,
+                               size_t* size);
+void chpl_gpu_impl_launch_kernel(void* kernel,
                                  int grd_dim_x, int grd_dim_y, int grd_dim_z,
                                  int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                                 int nargs, va_list args);
-void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
-                                 const char* name,
-                                 int64_t num_threads, int blk_dim,
-                                 int nargs, va_list args);
+                                 void* stream,
+                                 void** kernel_params);
 
 void* chpl_gpu_impl_mem_alloc(size_t size);
+void* chpl_gpu_impl_mem_array_alloc(size_t size);
 void chpl_gpu_impl_mem_free(void* memAlloc);
-void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n);
-void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n);
+void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n,
+                           void* stream);
 void chpl_gpu_impl_hostmem_register(void *memAlloc, size_t size);
 
-void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n);
-void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n);
-
-// this is all about copying within the same device that is on this subloc
-void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n);
+void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n,
+                                       void* stream);
+void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n,
+                                       void* stream);
+void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n,
+                                         void* stream);
 
 void* chpl_gpu_impl_comm_async(void *dst, void *src, size_t n);
 void chpl_gpu_impl_comm_wait(void *stream);
@@ -63,6 +63,39 @@ size_t chpl_gpu_impl_get_alloc_size(void* ptr);
 
 bool chpl_gpu_impl_can_access_peer(int dev1, int dev2);
 void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable);
+
+void chpl_gpu_impl_use_device(c_sublocid_t dev_id);
+
+void chpl_gpu_impl_synchronize(void);
+bool chpl_gpu_impl_stream_supported(void);
+void* chpl_gpu_impl_stream_create(void);
+void chpl_gpu_impl_stream_destroy(void* stream);
+bool chpl_gpu_impl_stream_ready(void* stream);
+void chpl_gpu_impl_stream_synchronize(void* stream);
+
+bool chpl_gpu_impl_can_reduce(void);
+bool chpl_gpu_impl_can_sort(void);
+
+#define DECL_ONE_REDUCE_IMPL(chpl_kind, data_type) \
+void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
+                                                    data_type* val, int* idx,\
+                                                    void* stream);
+GPU_CUB_WRAP(DECL_ONE_REDUCE_IMPL, sum)
+GPU_CUB_WRAP(DECL_ONE_REDUCE_IMPL, min)
+GPU_CUB_WRAP(DECL_ONE_REDUCE_IMPL, max)
+GPU_CUB_WRAP(DECL_ONE_REDUCE_IMPL, minloc)
+GPU_CUB_WRAP(DECL_ONE_REDUCE_IMPL, maxloc)
+
+#undef DECL_ONE_REDUCE_IMPL
+
+#define DECL_ONE_SORT_IMPL(chpl_kind, data_type) \
+void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
+                                                  data_type* data_out, \
+                                                  int n, void* stream);
+GPU_CUB_WRAP(DECL_ONE_SORT_IMPL, keys)
+// TODO: GPU_SORT(DECL_ONE_SORT_IMPL, keysDesc/ DoubleBuffer/Pairs etc)
+
+#undef DECL_ONE_SORT_IMPL
 
 #ifdef __cplusplus
 }

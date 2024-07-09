@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,7 @@
 #include <cstring>
 #include <functional>
 #include <map>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -71,6 +72,12 @@ defaultUpdateMap(std::map<K, V>& keep, std::map<K, V>& addin) {
 
 template<typename T>
 static inline bool
+defaultUpdateSet(std::set<T>& keep, std::set<T>& addin) {
+  return defaultUpdate(keep, addin);
+}
+
+template<typename T>
+static inline bool
 defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin) {
   if (keep.size() == addin.size()) {
     bool anyUpdated = false;
@@ -85,6 +92,20 @@ defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin) {
   } else {
     keep.swap(addin);
     return true; // updated
+  }
+}
+
+template<typename T>
+static inline bool
+defaultUpdateOptional(chpl::optional<T>& keep, chpl::optional<T>& addin) {
+  if (keep && addin) {
+    chpl::update<T> combiner;
+    return combiner(*keep, *addin);
+  } else if (keep || addin) {
+    std::swap(keep, addin);
+    return true;
+  } else {
+    return false;
   }
 }
 
@@ -163,9 +184,21 @@ template<typename T> struct update<std::vector<T>> {
   }
 };
 
+template<typename T> struct update<chpl::optional<T>> {
+  bool operator()(chpl::optional<T>& keep, chpl::optional<T>& addin) const {
+    return defaultUpdateOptional(keep, addin);
+  }
+};
+
 template<typename K, typename V> struct update<std::map<K, V>> {
   bool operator()(std::map<K, V>& keep, std::map<K, V>& addin) const {
     return defaultUpdateMap(keep, addin);
+  }
+};
+
+template<typename T> struct update<std::set<T>> {
+  bool operator()(std::set<T>& keep, std::set<T>& addin) const {
+    return defaultUpdateSet(keep, addin);
   }
 };
 

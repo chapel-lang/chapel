@@ -2,11 +2,11 @@ class A {
   var x: int = 0;
 }
 
-class A1: A {
+class A1: A, writeSerializable {
   var y: int = 0;
 
-  proc writeThis(ch) throws {
-    ch.write("Hello from class A1!");
+  override proc serialize(writer, ref serializer) throws {
+    writer.write("Hello from class A1!");
   }
 }
 

@@ -81,8 +81,11 @@ void DWARFUnitVector::addUnitsImpl(
       if (!Data.isValidOffset(Offset))
         return nullptr;
       DWARFUnitHeader Header;
-      if (!Header.extract(Context, Data, &Offset, SectionKind))
+      if (Error ExtractErr =
+              Header.extract(Context, Data, &Offset, SectionKind)) {
+        Context.getWarningHandler()(std::move(ExtractErr));
         return nullptr;
+      }
       if (!IndexEntry && IsDWO) {
         const DWARFUnitIndex &Index = getDWARFUnitIndex(
             Context, Header.isTypeUnit() ? DW_SECT_EXT_TYPES : DW_SECT_INFO);
@@ -134,11 +137,11 @@ void DWARFUnitVector::addUnitsImpl(
 }
 
 DWARFUnit *DWARFUnitVector::addUnit(std::unique_ptr<DWARFUnit> Unit) {
-  auto I = std::upper_bound(begin(), end(), Unit,
-                            [](const std::unique_ptr<DWARFUnit> &LHS,
-                               const std::unique_ptr<DWARFUnit> &RHS) {
-                              return LHS->getOffset() < RHS->getOffset();
-                            });
+  auto I = llvm::upper_bound(*this, Unit,
+                             [](const std::unique_ptr<DWARFUnit> &LHS,
+                                const std::unique_ptr<DWARFUnit> &RHS) {
+                               return LHS->getOffset() < RHS->getOffset();
+                             });
   return this->insert(I, std::move(Unit))->get();
 }
 
@@ -160,11 +163,11 @@ DWARFUnitVector::getUnitForIndexEntry(const DWARFUnitIndex::Entry &E) {
   if (!CUOff)
     return nullptr;
 
-  auto Offset = CUOff->Offset;
+  uint64_t Offset = CUOff->getOffset();
   auto end = begin() + getNumInfoUnits();
 
   auto *CU =
-      std::upper_bound(begin(), end, CUOff->Offset,
+      std::upper_bound(begin(), end, CUOff->getOffset(),
                        [](uint64_t LHS, const std::unique_ptr<DWARFUnit> &RHS) {
                          return LHS < RHS->getNextUnitOffset();
                        });
@@ -176,7 +179,7 @@ DWARFUnitVector::getUnitForIndexEntry(const DWARFUnitIndex::Entry &E) {
 
   auto U = Parser(Offset, DW_SECT_INFO, nullptr, &E);
   if (!U)
-    U = nullptr;
+    return nullptr;
 
   auto *NewCU = U.get();
   this->insert(CU, std::move(U));
@@ -192,7 +195,7 @@ DWARFUnit::DWARFUnit(DWARFContext &DC, const DWARFSection &Section,
                      bool IsDWO, const DWARFUnitVector &UnitVector)
     : Context(DC), InfoSection(Section), Header(Header), Abbrev(DA),
       RangeSection(RS), LineSection(LS), StringSection(SS),
-      StringOffsetSection(SOS), AddrOffsetSection(AOS), isLittleEndian(LE),
+      StringOffsetSection(SOS), AddrOffsetSection(AOS), IsLittleEndian(LE),
       IsDWO(IsDWO), UnitVector(UnitVector) {
   clear();
 }
@@ -200,11 +203,11 @@ DWARFUnit::DWARFUnit(DWARFContext &DC, const DWARFSection &Section,
 DWARFUnit::~DWARFUnit() = default;
 
 DWARFDataExtractor DWARFUnit::getDebugInfoExtractor() const {
-  return DWARFDataExtractor(Context.getDWARFObj(), InfoSection, isLittleEndian,
+  return DWARFDataExtractor(Context.getDWARFObj(), InfoSection, IsLittleEndian,
                             getAddressByteSize());
 }
 
-Optional<object::SectionedAddress>
+std::optional<object::SectionedAddress>
 DWARFUnit::getAddrOffsetSectionItem(uint32_t Index) const {
   if (!AddrOffsetSectionBase) {
     auto R = Context.info_section_units();
@@ -215,14 +218,14 @@ DWARFUnit::getAddrOffsetSectionItem(uint32_t Index) const {
     if (IsDWO && hasSingleElement(R))
       return (*R.begin())->getAddrOffsetSectionItem(Index);
 
-    return None;
+    return std::nullopt;
   }
 
   uint64_t Offset = *AddrOffsetSectionBase + Index * getAddressByteSize();
   if (AddrOffsetSection->Data.size() < Offset + getAddressByteSize())
-    return None;
+    return std::nullopt;
   DWARFDataExtractor DA(Context.getDWARFObj(), *AddrOffsetSection,
-                        isLittleEndian, getAddressByteSize());
+                        IsLittleEndian, getAddressByteSize());
   uint64_t Section;
   uint64_t Address = DA.getRelocatedAddress(&Offset, &Section);
   return {{Address, Section}};
@@ -240,14 +243,14 @@ Expected<uint64_t> DWARFUnit::getStringOffsetSectionItem(uint32_t Index) const {
                                        ", which is too large",
                                    inconvertibleErrorCode());
   DWARFDataExtractor DA(Context.getDWARFObj(), StringOffsetSection,
-                        isLittleEndian, 0);
+                        IsLittleEndian, 0);
   return DA.getRelocatedValue(ItemSize, &Offset);
 }
 
-bool DWARFUnitHeader::extract(DWARFContext &Context,
-                              const DWARFDataExtractor &debug_info,
-                              uint64_t *offset_ptr,
-                              DWARFSectionKind SectionKind) {
+Error DWARFUnitHeader::extract(DWARFContext &Context,
+                               const DWARFDataExtractor &debug_info,
+                               uint64_t *offset_ptr,
+                               DWARFSectionKind SectionKind) {
   Offset = *offset_ptr;
   Error Err = Error::success();
   IndexEntry = nullptr;
@@ -277,72 +280,58 @@ bool DWARFUnitHeader::extract(DWARFContext &Context,
   } else if (UnitType == DW_UT_split_compile || UnitType == DW_UT_skeleton)
     DWOId = debug_info.getU64(offset_ptr, &Err);
 
-  if (Err) {
-    Context.getWarningHandler()(joinErrors(
+  if (Err)
+    return joinErrors(
         createStringError(
             errc::invalid_argument,
             "DWARF unit at 0x%8.8" PRIx64 " cannot be parsed:", Offset),
-        std::move(Err)));
-    return false;
-  }
+        std::move(Err));
 
   // Header fields all parsed, capture the size of this unit header.
   assert(*offset_ptr - Offset <= 255 && "unexpected header size");
   Size = uint8_t(*offset_ptr - Offset);
   uint64_t NextCUOffset = Offset + getUnitLengthFieldByteSize() + getLength();
 
-  if (!debug_info.isValidOffset(getNextUnitOffset() - 1)) {
-    Context.getWarningHandler()(
-        createStringError(errc::invalid_argument,
-                          "DWARF unit from offset 0x%8.8" PRIx64 " incl. "
-                          "to offset  0x%8.8" PRIx64 " excl. "
-                          "extends past section size 0x%8.8zx",
-                          Offset, NextCUOffset, debug_info.size()));
-    return false;
-  }
+  if (!debug_info.isValidOffset(getNextUnitOffset() - 1))
+    return createStringError(errc::invalid_argument,
+                             "DWARF unit from offset 0x%8.8" PRIx64 " incl. "
+                             "to offset  0x%8.8" PRIx64 " excl. "
+                             "extends past section size 0x%8.8zx",
+                             Offset, NextCUOffset, debug_info.size());
 
-  if (!DWARFContext::isSupportedVersion(getVersion())) {
-    Context.getWarningHandler()(createStringError(
+  if (!DWARFContext::isSupportedVersion(getVersion()))
+    return createStringError(
         errc::invalid_argument,
         "DWARF unit at offset 0x%8.8" PRIx64 " "
         "has unsupported version %" PRIu16 ", supported are 2-%u",
-        Offset, getVersion(), DWARFContext::getMaxSupportedVersion()));
-    return false;
-  }
+        Offset, getVersion(), DWARFContext::getMaxSupportedVersion());
 
   // Type offset is unit-relative; should be after the header and before
   // the end of the current unit.
-  if (isTypeUnit() && TypeOffset < Size) {
-    Context.getWarningHandler()(
-        createStringError(errc::invalid_argument,
-                          "DWARF type unit at offset "
-                          "0x%8.8" PRIx64 " "
-                          "has its relocated type_offset 0x%8.8" PRIx64 " "
-                          "pointing inside the header",
-                          Offset, Offset + TypeOffset));
-    return false;
-  }
-  if (isTypeUnit() &&
-      TypeOffset >= getUnitLengthFieldByteSize() + getLength()) {
-    Context.getWarningHandler()(createStringError(
+  if (isTypeUnit() && TypeOffset < Size)
+    return createStringError(errc::invalid_argument,
+                             "DWARF type unit at offset "
+                             "0x%8.8" PRIx64 " "
+                             "has its relocated type_offset 0x%8.8" PRIx64 " "
+                             "pointing inside the header",
+                             Offset, Offset + TypeOffset);
+
+  if (isTypeUnit() && TypeOffset >= getUnitLengthFieldByteSize() + getLength())
+    return createStringError(
         errc::invalid_argument,
         "DWARF type unit from offset 0x%8.8" PRIx64 " incl. "
         "to offset 0x%8.8" PRIx64 " excl. has its "
         "relocated type_offset 0x%8.8" PRIx64 " pointing past the unit end",
-        Offset, NextCUOffset, Offset + TypeOffset));
-    return false;
-  }
+        Offset, NextCUOffset, Offset + TypeOffset);
 
   if (Error SizeErr = DWARFContext::checkAddressSizeSupported(
           getAddressByteSize(), errc::invalid_argument,
-          "DWARF unit at offset 0x%8.8" PRIx64, Offset)) {
-    Context.getWarningHandler()(std::move(SizeErr));
-    return false;
-  }
+          "DWARF unit at offset 0x%8.8" PRIx64, Offset))
+    return SizeErr;
 
   // Keep track of the highest DWARF version we encounter across all units.
   Context.setMaxVersionIfGreater(getVersion());
-  return true;
+  return Error::success();
 }
 
 bool DWARFUnitHeader::applyIndexEntry(const DWARFUnitIndex::Entry *Entry) {
@@ -353,12 +342,12 @@ bool DWARFUnitHeader::applyIndexEntry(const DWARFUnitIndex::Entry *Entry) {
     return false;
   auto *UnitContrib = IndexEntry->getContribution();
   if (!UnitContrib ||
-      UnitContrib->Length != (getLength() + getUnitLengthFieldByteSize()))
+      UnitContrib->getLength() != (getLength() + getUnitLengthFieldByteSize()))
     return false;
   auto *AbbrEntry = IndexEntry->getContribution(DW_SECT_ABBREV);
   if (!AbbrEntry)
     return false;
-  AbbrOffset = AbbrEntry->Offset;
+  AbbrOffset = AbbrEntry->getOffset();
   return true;
 }
 
@@ -367,7 +356,7 @@ Error DWARFUnit::extractRangeList(uint64_t RangeListOffset,
   // Require that compile unit is extracted.
   assert(!DieArray.empty());
   DWARFDataExtractor RangesData(Context.getDWARFObj(), *RangeSection,
-                                isLittleEndian, getAddressByteSize());
+                                IsLittleEndian, getAddressByteSize());
   uint64_t ActualRangeListOffset = RangeSectionBase + RangeListOffset;
   return RangeList.extract(RangesData, &ActualRangeListOffset);
 }
@@ -377,7 +366,7 @@ void DWARFUnit::clear() {
   BaseAddr.reset();
   RangeSectionBase = 0;
   LocSectionBase = 0;
-  AddrOffsetSectionBase = None;
+  AddrOffsetSectionBase = std::nullopt;
   SU = nullptr;
   clearDIEs(false);
   AddrDieMap.clear();
@@ -499,10 +488,11 @@ Error DWARFUnit::tryExtractDIEsIfNeeded(bool CUDieOnly) {
     return Error::success();
 
   DWARFDie UnitDie(this, &DieArray[0]);
-  if (Optional<uint64_t> DWOId = toUnsigned(UnitDie.find(DW_AT_GNU_dwo_id)))
+  if (std::optional<uint64_t> DWOId =
+          toUnsigned(UnitDie.find(DW_AT_GNU_dwo_id)))
     Header.setDWOId(*DWOId);
   if (!IsDWO) {
-    assert(AddrOffsetSectionBase == None);
+    assert(AddrOffsetSectionBase == std::nullopt);
     assert(RangeSectionBase == 0);
     assert(LocSectionBase == 0);
     AddrOffsetSectionBase = toSectionOffset(UnitDie.find(DW_AT_addr_base));
@@ -521,7 +511,7 @@ Error DWARFUnit::tryExtractDIEsIfNeeded(bool CUDieOnly) {
   // In both cases we need to determine the format of the contribution,
   // which may differ from the unit's format.
   DWARFDataExtractor DA(Context.getDWARFObj(), StringOffsetSection,
-                        isLittleEndian, 0);
+                        IsLittleEndian, 0);
   if (IsDWO || getVersion() >= 5) {
     auto StringOffsetOrError =
         IsDWO ? determineStringOffsetsTableContributionDWO(DA)
@@ -543,7 +533,7 @@ Error DWARFUnit::tryExtractDIEsIfNeeded(bool CUDieOnly) {
       uint64_t ContributionBaseOffset = 0;
       if (auto *IndexEntry = Header.getIndexEntry())
         if (auto *Contrib = IndexEntry->getContribution(DW_SECT_RNGLISTS))
-          ContributionBaseOffset = Contrib->Offset;
+          ContributionBaseOffset = Contrib->getOffset();
       setRangesSection(
           &Context.getDWARFObj().getRnglistsDWOSection(),
           ContributionBaseOffset +
@@ -564,9 +554,9 @@ Error DWARFUnit::tryExtractDIEsIfNeeded(bool CUDieOnly) {
     if (auto *IndexEntry = Header.getIndexEntry())
       if (const auto *C = IndexEntry->getContribution(
               Header.getVersion() >= 5 ? DW_SECT_LOCLISTS : DW_SECT_EXT_LOC))
-        Data = Data.substr(C->Offset, C->Length);
+        Data = Data.substr(C->getOffset(), C->getLength());
 
-    DWARFDataExtractor DWARFData(Data, isLittleEndian, getAddressByteSize());
+    DWARFDataExtractor DWARFData(Data, IsLittleEndian, getAddressByteSize());
     LocTable =
         std::make_unique<DWARFDebugLoclists>(DWARFData, Header.getVersion());
     LocSectionBase = DWARFListTableHeader::getHeaderSize(Header.getFormat());
@@ -574,12 +564,12 @@ Error DWARFUnit::tryExtractDIEsIfNeeded(bool CUDieOnly) {
     LocTable = std::make_unique<DWARFDebugLoclists>(
         DWARFDataExtractor(Context.getDWARFObj(),
                            Context.getDWARFObj().getLoclistsSection(),
-                           isLittleEndian, getAddressByteSize()),
+                           IsLittleEndian, getAddressByteSize()),
         getVersion());
   } else {
     LocTable = std::make_unique<DWARFDebugLoc>(DWARFDataExtractor(
         Context.getDWARFObj(), Context.getDWARFObj().getLocSection(),
-        isLittleEndian, getAddressByteSize()));
+        IsLittleEndian, getAddressByteSize()));
   }
 
   // Don't fall back to DW_AT_GNU_ranges_base: it should be ignored for
@@ -587,10 +577,10 @@ Error DWARFUnit::tryExtractDIEsIfNeeded(bool CUDieOnly) {
   return Error::success();
 }
 
-bool DWARFUnit::parseDWO() {
+bool DWARFUnit::parseDWO(StringRef DWOAlternativeLocation) {
   if (IsDWO)
     return false;
-  if (DWO.get())
+  if (DWO)
     return false;
   DWARFDie UnitDie = getUnitDIE();
   if (!UnitDie)
@@ -611,8 +601,17 @@ bool DWARFUnit::parseDWO() {
   if (!DWOId)
     return false;
   auto DWOContext = Context.getDWOContext(AbsolutePath);
-  if (!DWOContext)
-    return false;
+  if (!DWOContext) {
+    // Use the alternative location to get the DWARF context for the DWO object.
+    if (DWOAlternativeLocation.empty())
+      return false;
+    // If the alternative context does not correspond to the original DWO object
+    // (different hashes), the below 'getDWOCompileUnitForHash' call will catch
+    // the issue, with a returned null context.
+    DWOContext = Context.getDWOContext(DWOAlternativeLocation);
+    if (!DWOContext)
+      return false;
+  }
 
   DWARFCompileUnit *DWOCU = DWOContext->getDWOCompileUnitForHash(*DWOId);
   if (!DWOCU)
@@ -650,7 +649,7 @@ DWARFUnit::findRnglistFromOffset(uint64_t Offset) {
     return RangeList.getAbsoluteRanges(getBaseAddress());
   }
   DWARFDataExtractor RangesData(Context.getDWARFObj(), *RangeSection,
-                                isLittleEndian, Header.getAddressByteSize());
+                                IsLittleEndian, Header.getAddressByteSize());
   DWARFDebugRnglistTable RnglistTable;
   auto RangeListOrError = RnglistTable.findList(RangesData, Offset);
   if (RangeListOrError)
@@ -774,7 +773,7 @@ void DWARFUnit::updateVariableDieMap(DWARFDie Die) {
 
   for (const DWARFLocationExpression &Location : *Locations) {
     uint8_t AddressSize = getAddressByteSize();
-    DataExtractor Data(Location.Expr, /*IsLittleEndian=*/true, AddressSize);
+    DataExtractor Data(Location.Expr, isLittleEndian(), AddressSize);
     DWARFExpression Expr(Data, AddressSize);
     auto It = Expr.begin();
     if (It == Expr.end())
@@ -818,8 +817,8 @@ void DWARFUnit::updateVariableDieMap(DWARFDie Die) {
   // no type), then we use a size of one to still allow symbolization of the
   // exact address.
   uint64_t GVSize = 1;
-  if (DWARFDie BaseType = Die.getAttributeValueAsReferencedDie(DW_AT_type))
-    if (Optional<uint64_t> Size = Die.getTypeSize(getAddressByteSize()))
+  if (Die.getAttributeValueAsReferencedDie(DW_AT_type))
+    if (std::optional<uint64_t> Size = Die.getTypeSize(getAddressByteSize()))
       GVSize = *Size;
 
   if (Address != UINT64_MAX)
@@ -877,39 +876,66 @@ const DWARFUnitIndex &llvm::getDWARFUnitIndex(DWARFContext &Context,
 }
 
 DWARFDie DWARFUnit::getParent(const DWARFDebugInfoEntry *Die) {
-  if (!Die)
-    return DWARFDie();
-
-  if (Optional<uint32_t> ParentIdx = Die->getParentIdx()) {
-    assert(*ParentIdx < DieArray.size() &&
-           "ParentIdx is out of DieArray boundaries");
-    return DWARFDie(this, &DieArray[*ParentIdx]);
-  }
+  if (const DWARFDebugInfoEntry *Entry = getParentEntry(Die))
+    return DWARFDie(this, Entry);
 
   return DWARFDie();
+}
+
+const DWARFDebugInfoEntry *
+DWARFUnit::getParentEntry(const DWARFDebugInfoEntry *Die) const {
+  if (!Die)
+    return nullptr;
+  assert(Die >= DieArray.data() && Die < DieArray.data() + DieArray.size());
+
+  if (std::optional<uint32_t> ParentIdx = Die->getParentIdx()) {
+    assert(*ParentIdx < DieArray.size() &&
+           "ParentIdx is out of DieArray boundaries");
+    return getDebugInfoEntry(*ParentIdx);
+  }
+
+  return nullptr;
 }
 
 DWARFDie DWARFUnit::getSibling(const DWARFDebugInfoEntry *Die) {
-  if (!Die)
-    return DWARFDie();
-
-  if (Optional<uint32_t> SiblingIdx = Die->getSiblingIdx()) {
-    assert(*SiblingIdx < DieArray.size() &&
-           "SiblingIdx is out of DieArray boundaries");
-    return DWARFDie(this, &DieArray[*SiblingIdx]);
-  }
+  if (const DWARFDebugInfoEntry *Sibling = getSiblingEntry(Die))
+    return DWARFDie(this, Sibling);
 
   return DWARFDie();
 }
 
-DWARFDie DWARFUnit::getPreviousSibling(const DWARFDebugInfoEntry *Die) {
+const DWARFDebugInfoEntry *
+DWARFUnit::getSiblingEntry(const DWARFDebugInfoEntry *Die) const {
   if (!Die)
-    return DWARFDie();
+    return nullptr;
+  assert(Die >= DieArray.data() && Die < DieArray.data() + DieArray.size());
 
-  Optional<uint32_t> ParentIdx = Die->getParentIdx();
+  if (std::optional<uint32_t> SiblingIdx = Die->getSiblingIdx()) {
+    assert(*SiblingIdx < DieArray.size() &&
+           "SiblingIdx is out of DieArray boundaries");
+    return &DieArray[*SiblingIdx];
+  }
+
+  return nullptr;
+}
+
+DWARFDie DWARFUnit::getPreviousSibling(const DWARFDebugInfoEntry *Die) {
+  if (const DWARFDebugInfoEntry *Sibling = getPreviousSiblingEntry(Die))
+    return DWARFDie(this, Sibling);
+
+  return DWARFDie();
+}
+
+const DWARFDebugInfoEntry *
+DWARFUnit::getPreviousSiblingEntry(const DWARFDebugInfoEntry *Die) const {
+  if (!Die)
+    return nullptr;
+  assert(Die >= DieArray.data() && Die < DieArray.data() + DieArray.size());
+
+  std::optional<uint32_t> ParentIdx = Die->getParentIdx();
   if (!ParentIdx)
     // Die is a root die, there is no previous sibling.
-    return DWARFDie();
+    return nullptr;
 
   assert(*ParentIdx < DieArray.size() &&
          "ParentIdx is out of DieArray boundaries");
@@ -918,7 +944,7 @@ DWARFDie DWARFUnit::getPreviousSibling(const DWARFDebugInfoEntry *Die) {
   uint32_t PrevDieIdx = getDIEIndex(Die) - 1;
   if (PrevDieIdx == *ParentIdx)
     // Immediately previous node is parent, there is no previous sibling.
-    return DWARFDie();
+    return nullptr;
 
   while (DieArray[PrevDieIdx].getParentIdx() != *ParentIdx) {
     PrevDieIdx = *DieArray[PrevDieIdx].getParentIdx();
@@ -929,32 +955,56 @@ DWARFDie DWARFUnit::getPreviousSibling(const DWARFDebugInfoEntry *Die) {
            "PrevDieIdx is not a child of parent of Die");
   }
 
-  return DWARFDie(this, &DieArray[PrevDieIdx]);
+  return &DieArray[PrevDieIdx];
 }
 
 DWARFDie DWARFUnit::getFirstChild(const DWARFDebugInfoEntry *Die) {
+  if (const DWARFDebugInfoEntry *Child = getFirstChildEntry(Die))
+    return DWARFDie(this, Child);
+
+  return DWARFDie();
+}
+
+const DWARFDebugInfoEntry *
+DWARFUnit::getFirstChildEntry(const DWARFDebugInfoEntry *Die) const {
+  if (!Die)
+    return nullptr;
+  assert(Die >= DieArray.data() && Die < DieArray.data() + DieArray.size());
+
   if (!Die->hasChildren())
-    return DWARFDie();
+    return nullptr;
 
   // TODO: Instead of checking here for invalid die we might reject
   // invalid dies at parsing stage(DWARFUnit::extractDIEsToVector).
   // We do not want access out of bounds when parsing corrupted debug data.
   size_t I = getDIEIndex(Die) + 1;
   if (I >= DieArray.size())
-    return DWARFDie();
-  return DWARFDie(this, &DieArray[I]);
+    return nullptr;
+  return &DieArray[I];
 }
 
 DWARFDie DWARFUnit::getLastChild(const DWARFDebugInfoEntry *Die) {
-  if (!Die->hasChildren())
-    return DWARFDie();
+  if (const DWARFDebugInfoEntry *Child = getLastChildEntry(Die))
+    return DWARFDie(this, Child);
 
-  if (Optional<uint32_t> SiblingIdx = Die->getSiblingIdx()) {
+  return DWARFDie();
+}
+
+const DWARFDebugInfoEntry *
+DWARFUnit::getLastChildEntry(const DWARFDebugInfoEntry *Die) const {
+  if (!Die)
+    return nullptr;
+  assert(Die >= DieArray.data() && Die < DieArray.data() + DieArray.size());
+
+  if (!Die->hasChildren())
+    return nullptr;
+
+  if (std::optional<uint32_t> SiblingIdx = Die->getSiblingIdx()) {
     assert(*SiblingIdx < DieArray.size() &&
            "SiblingIdx is out of DieArray boundaries");
     assert(DieArray[*SiblingIdx - 1].getTag() == dwarf::DW_TAG_null &&
            "Bad end of children marker");
-    return DWARFDie(this, &DieArray[*SiblingIdx - 1]);
+    return &DieArray[*SiblingIdx - 1];
   }
 
   // If SiblingIdx is set for non-root dies we could be sure that DWARF is
@@ -969,25 +1019,36 @@ DWARFDie DWARFUnit::getLastChild(const DWARFDebugInfoEntry *Die) {
   if (getDIEIndex(Die) == 0 && DieArray.size() > 1 &&
       DieArray.back().getTag() == dwarf::DW_TAG_null) {
     // For the unit die we might take last item from DieArray.
-    assert(getDIEIndex(Die) == getDIEIndex(getUnitDIE()) && "Bad unit die");
-    return DWARFDie(this, &DieArray.back());
+    assert(getDIEIndex(Die) ==
+               getDIEIndex(const_cast<DWARFUnit *>(this)->getUnitDIE()) &&
+           "Bad unit die");
+    return &DieArray.back();
   }
 
-  return DWARFDie();
+  return nullptr;
 }
 
 const DWARFAbbreviationDeclarationSet *DWARFUnit::getAbbreviations() const {
-  if (!Abbrevs)
-    Abbrevs = Abbrev->getAbbreviationDeclarationSet(getAbbreviationsOffset());
+  if (!Abbrevs) {
+    Expected<const DWARFAbbreviationDeclarationSet *> AbbrevsOrError =
+        Abbrev->getAbbreviationDeclarationSet(getAbbreviationsOffset());
+    if (!AbbrevsOrError) {
+      // FIXME: We should propagate this error upwards.
+      consumeError(AbbrevsOrError.takeError());
+      return nullptr;
+    }
+    Abbrevs = *AbbrevsOrError;
+  }
   return Abbrevs;
 }
 
-llvm::Optional<object::SectionedAddress> DWARFUnit::getBaseAddress() {
+std::optional<object::SectionedAddress> DWARFUnit::getBaseAddress() {
   if (BaseAddr)
     return BaseAddr;
 
-  DWARFDie UnitDie = getUnitDIE();
-  Optional<DWARFFormValue> PC = UnitDie.find({DW_AT_low_pc, DW_AT_entry_pc});
+  DWARFDie UnitDie = (SU ? SU : this)->getUnitDIE();
+  std::optional<DWARFFormValue> PC =
+      UnitDie.find({DW_AT_low_pc, DW_AT_entry_pc});
   BaseAddr = toSectionedAddress(PC);
   return BaseAddr;
 }
@@ -1071,12 +1132,12 @@ parseDWARFStringOffsetsTableHeader(DWARFDataExtractor &DA,
   return Desc.validateContributionSize(DA);
 }
 
-Expected<Optional<StrOffsetsContributionDescriptor>>
+Expected<std::optional<StrOffsetsContributionDescriptor>>
 DWARFUnit::determineStringOffsetsTableContribution(DWARFDataExtractor &DA) {
   assert(!IsDWO);
   auto OptOffset = toSectionOffset(getUnitDIE().find(DW_AT_str_offsets_base));
   if (!OptOffset)
-    return None;
+    return std::nullopt;
   auto DescOrError =
       parseDWARFStringOffsetsTableHeader(DA, Header.getFormat(), *OptOffset);
   if (!DescOrError)
@@ -1084,18 +1145,18 @@ DWARFUnit::determineStringOffsetsTableContribution(DWARFDataExtractor &DA) {
   return *DescOrError;
 }
 
-Expected<Optional<StrOffsetsContributionDescriptor>>
-DWARFUnit::determineStringOffsetsTableContributionDWO(DWARFDataExtractor & DA) {
+Expected<std::optional<StrOffsetsContributionDescriptor>>
+DWARFUnit::determineStringOffsetsTableContributionDWO(DWARFDataExtractor &DA) {
   assert(IsDWO);
   uint64_t Offset = 0;
   auto IndexEntry = Header.getIndexEntry();
   const auto *C =
       IndexEntry ? IndexEntry->getContribution(DW_SECT_STR_OFFSETS) : nullptr;
   if (C)
-    Offset = C->Offset;
+    Offset = C->getOffset();
   if (getVersion() >= 5) {
     if (DA.getData().data() == nullptr)
-      return None;
+      return std::nullopt;
     Offset += Header.getFormat() == dwarf::DwarfFormat::DWARF32 ? 8 : 16;
     // Look for a valid contribution at the given offset.
     auto DescOrError = parseDWARFStringOffsetsTableHeader(DA, Header.getFormat(), Offset);
@@ -1108,33 +1169,33 @@ DWARFUnit::determineStringOffsetsTableContributionDWO(DWARFDataExtractor & DA) {
   // the length of the string offsets section.
   StrOffsetsContributionDescriptor Desc;
   if (C)
-    Desc = StrOffsetsContributionDescriptor(C->Offset, C->Length, 4,
+    Desc = StrOffsetsContributionDescriptor(C->getOffset(), C->getLength(), 4,
                                             Header.getFormat());
   else if (!IndexEntry && !StringOffsetSection.Data.empty())
     Desc = StrOffsetsContributionDescriptor(0, StringOffsetSection.Data.size(),
                                             4, Header.getFormat());
   else
-    return None;
+    return std::nullopt;
   auto DescOrError = Desc.validateContributionSize(DA);
   if (!DescOrError)
     return DescOrError.takeError();
   return *DescOrError;
 }
 
-Optional<uint64_t> DWARFUnit::getRnglistOffset(uint32_t Index) {
-  DataExtractor RangesData(RangeSection->Data, isLittleEndian,
+std::optional<uint64_t> DWARFUnit::getRnglistOffset(uint32_t Index) {
+  DataExtractor RangesData(RangeSection->Data, IsLittleEndian,
                            getAddressByteSize());
   DWARFDataExtractor RangesDA(Context.getDWARFObj(), *RangeSection,
-                              isLittleEndian, 0);
-  if (Optional<uint64_t> Off = llvm::DWARFListTableHeader::getOffsetEntry(
+                              IsLittleEndian, 0);
+  if (std::optional<uint64_t> Off = llvm::DWARFListTableHeader::getOffsetEntry(
           RangesData, RangeSectionBase, getFormat(), Index))
     return *Off + RangeSectionBase;
-  return None;
+  return std::nullopt;
 }
 
-Optional<uint64_t> DWARFUnit::getLoclistOffset(uint32_t Index) {
-  if (Optional<uint64_t> Off = llvm::DWARFListTableHeader::getOffsetEntry(
+std::optional<uint64_t> DWARFUnit::getLoclistOffset(uint32_t Index) {
+  if (std::optional<uint64_t> Off = llvm::DWARFListTableHeader::getOffsetEntry(
           LocTable->getData(), LocSectionBase, getFormat(), Index))
     return *Off + LocSectionBase;
-  return None;
+  return std::nullopt;
 }

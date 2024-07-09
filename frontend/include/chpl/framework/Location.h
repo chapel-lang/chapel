@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,9 +47,26 @@ public:
       firstLine_(firstLine), firstColumn_(firstColumn),
       lastLine_(lastLine), lastColumn_(lastColumn) {
   }
+  explicit
+  Location(UniqueString path,
+           std::tuple<int, int> start,
+           std::tuple<int, int> end)
+    : path_(path),
+      firstLine_(std::get<0>(start)), firstColumn_(std::get<1>(start)),
+      lastLine_(std::get<0>(end)), lastColumn_(std::get<1>(end)) {
+  }
 
   bool isEmpty() const {
     return path_.isEmpty();
+  }
+
+  inline explicit operator bool() const {
+    return !isEmpty();
+  }
+
+  inline bool isValid() const {
+    return !isEmpty() && firstLine_ >= 1 && firstColumn_ >= 1 &&
+           lastLine_ >= 1 && lastColumn_ >= 1;
   }
 
   UniqueString path() const { return path_; }
@@ -58,6 +75,13 @@ public:
   int lastLine() const { return lastLine_; }
   int lastColumn() const { return lastColumn_; }
   int line() const { return firstLine(); }
+
+  std::tuple<int, int> start() const {
+    return std::make_tuple(firstLine(), firstColumn());
+  }
+  std::tuple<int, int> end() const {
+    return std::make_tuple(lastLine(), lastColumn());
+  }
 
   inline bool operator==(const Location& other) const {
     return this->path_ == other.path_ &&
@@ -70,6 +94,7 @@ public:
   inline bool operator!=(const Location& other) const {
     return !(*this == other);
   }
+
   void swap(Location& other) {
     path_.swap(other.path_);
     std::swap(firstLine_, other.firstLine_);
@@ -84,6 +109,25 @@ public:
 
   size_t hash() const {
     return chpl::hash(path_, firstLine_, firstColumn_, lastLine_, lastColumn_);
+  }
+
+  /** Returns 'true' if this contains 'loc' or if this and 'loc' are equal.
+      Returns 'false' if either this or 'loc' are empty, or if paths do
+      not match. */
+  inline bool contains(const Location& loc) {
+    if (this->isEmpty() || loc.isEmpty()) return false;
+    if (this->path() != loc.path()) return false;
+    return firstLine() <= loc.firstLine() &&
+           firstColumn() <= loc.firstColumn() &&
+           lastLine() >= loc.lastLine() &&
+           lastColumn() >= loc.lastColumn();
+  }
+
+  /** Determine if this location is greater than the location 'rhs' without
+      considering paths. */
+  inline bool operator>(const Location& rhs) {
+    if (firstLine() > rhs.firstLine()) return true;
+    return firstLine() == rhs.firstLine() && firstColumn() > rhs.firstColumn();
   }
 
   void stringify(std::ostream& os, StringifyKind stringifyKind) const;

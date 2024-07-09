@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,6 +29,7 @@
 #include "iterator.h"
 #include "lateConstCheck.h"
 #include "lifetime.h"
+#include "LoopStmt.h"
 #include "optimizations.h"
 #include "postFold.h"
 #include "resolution.h"
@@ -197,6 +198,10 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
     // Function is an iterator "helper", e.g. getValue
     // lowerIterators should make sure that getValue returns an "owned" record.
     else if (fn->hasFlag(FLAG_AUTO_II)      == true)
+      retval = false;
+
+    // Same as above, except for thunk "helper"s.
+    else if (fn->hasFlag(FLAG_THUNK_INVOKE) == true)
       retval = false;
 
     // Can't transform extern functions
@@ -971,7 +976,7 @@ void FixupDestructors::process(FnSymbol* fn) {
   }
 }
 
-static void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor) {
+void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor) {
   if (anchor)
     return;
 
@@ -2028,8 +2033,17 @@ void RemoveElidedOnBlocks::process(BlockStmt* block) {
 
 bool AutoDestroyLoopExprTemps::shouldProcess(CallExpr* call) {
 
+  Symbol* parentSym = call->parentSymbol;
   // don't need to touch ArgSymbols
-  if (isArgSymbol(call->parentSymbol)) return false;
+  if (isArgSymbol(parentSym)) return false;
+
+  // if we are already in an iterator expression, no need to cleanup -- the
+  // caller will cleanup (e.g. foo([1..n][1..n] int);)
+  if (FnSymbol* parentFn = toFnSymbol(parentSym)) {
+    if (parentFn->hasFlag(FLAG_FN_RETURNS_ITERATOR)) {
+      return false;
+    }
+  }
 
   // are we calling a resolved call_forallexpr?
   FnSymbol* callee = call->resolvedFunction();
@@ -2064,13 +2078,53 @@ void AutoDestroyLoopExprTemps::process(CallExpr* call) {
   CallExpr* parentCall = toCallExpr(call->parentExpr);
   SymExpr* targetSE = toSymExpr(parentCall->get(1));
   Symbol* targetSym = targetSE->symbol();
+  BlockStmt* scope = call->getScopeBlock();
+  INT_ASSERT(scope);
 
   SET_LINENO(call);
-  auto calledFn = call->getFunction();
   auto destroy = new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE,
                               new SymExpr(targetSym));
 
-  calledFn->insertBeforeEpilogue(destroy);
+  bool handled = false;
+  if (LoopStmt::findEnclosingLoop(call)) {
+
+    CondStmt* ibb = nullptr;
+    for_alist (expr, scope->body) {
+      if (CondStmt* cond = toCondStmt(expr)) {
+        SymExpr* condSe = toSymExpr(cond->condExpr);
+        INT_ASSERT(condSe);
+
+        if (condSe->symbol() == gIteratorBreakToken) {
+          ibb = cond;
+          break;
+        }
+      }
+    }
+
+    if (ibb) {
+      ibb->thenStmt->insertAtHead(destroy);
+      ibb->insertAfter(destroy->copy());
+      handled = true;
+    }
+  }
+
+  // TODO: should we try to find the correct anchor to make sure that destroys
+  // are called in the correct order? But unless it is needed,
+  // I'd like us to use proper autoDestroy support for RTTs instead of
+  // engineering the same thing for RTTs here. Engin
+  if (!handled) {
+    FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
+    INT_ASSERT(parentFn);
+
+    if (parentFn->body == scope) {
+      // directly inside the function, make sure to add it before `return`
+      parentFn->insertBeforeEpilogue(destroy);
+    }
+    else {
+      // nothing special about it, just add at the end of the scope
+      scope->insertAtTail(destroy);
+    }
+  }
 }
 
 bool InsertDestructorCalls::shouldProcess(CallExpr* call) {

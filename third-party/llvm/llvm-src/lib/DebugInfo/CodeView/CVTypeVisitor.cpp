@@ -157,7 +157,7 @@ Error CVTypeVisitor::visitTypeStream(CVTypeRange Types) {
 }
 
 Error CVTypeVisitor::visitTypeStream(TypeCollection &Types) {
-  Optional<TypeIndex> I = Types.getFirst();
+  std::optional<TypeIndex> I = Types.getFirst();
   while (I) {
     CVType Type = Types.getType(*I);
     if (auto EC = visitTypeRecord(Type, *I))
@@ -185,7 +185,7 @@ Error CVTypeVisitor::visitFieldListMemberStream(BinaryStreamReader &Reader) {
 struct FieldListVisitHelper {
   FieldListVisitHelper(TypeVisitorCallbacks &Callbacks, ArrayRef<uint8_t> Data,
                        VisitorDataSource Source)
-      : Stream(Data, llvm::support::little), Reader(Stream),
+      : Stream(Data, llvm::endianness::little), Reader(Stream),
         Deserializer(Reader),
         Visitor((Source == VDS_BytesPresent) ? Pipeline : Callbacks) {
     if (Source == VDS_BytesPresent) {

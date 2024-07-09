@@ -24,18 +24,18 @@ module Lib {
   proc libAS(myArg) { r1 = r2;                  } // =
   proc libLT(myArg) { var lt = r1 < r2;         } // <
   proc libCF(myArg) { var castF = r1: int;      } // cast from
-  proc libCT(myArg) { var castT = 1: MyRecord;  } // cast to
+  proc libCT(myArg) { var castT = 1: MyRecord(?);  } // cast to
 }
 
 module User {
   use Lib;
   proc MyRecord.init(param p)            { note("User.init", 2); rp = 0; }
   proc MyRecord.init=(other)             { note("User.init=", 2); rp = 0; }
-  operator =(ref lhs:MyRecord, rhs:MyRecord) { note("User.=", 2); }
-  operator <(lhs:MyRecord, rhs:MyRecord) { note("User.<", 2);
+  operator =(ref lhs:MyRecord(?), rhs:MyRecord(?)) { note("User.=", 2); }
+  operator <(lhs:MyRecord(?), rhs:MyRecord(?)) { note("User.<", 2);
                                            return true; }
-  operator :(rhs:MyRecord, type t:int)   { note("User._castF", 2); return 1; }
-  operator :(rhs:int,      type t:MyRecord) { note("User._castT", 2);
+  operator :(rhs:MyRecord(?), type t:int)   { note("User._castF", 2); return 1; }
+  operator :(rhs:int,      type t:MyRecord(?)) { note("User._castT", 2);
                                               return new MyRecord(0); }
   proc u1() {
     note("User.u1", 1);
@@ -61,11 +61,11 @@ module User {
     // having these methods here would lead to ambiguity -- see #19352
     //proc MyRecord.init(param p)            { note("u3.init", 2); rp = 0; }
     //proc MyRecord.init=(other)             { note("u3.init=", 2); rp = 0; }
-    operator =(ref lhs:MyRecord, rhs:MyRecord) { note("u3.=", 2); }
-    operator <(lhs:MyRecord, rhs:MyRecord) { note("u3.<", 2);
+    operator =(ref lhs:MyRecord(?), rhs:MyRecord(?)) { note("u3.=", 2); }
+    operator <(lhs:MyRecord(?), rhs:MyRecord(?)) { note("u3.<", 2);
                                              return true; }
-    operator :(rhs:MyRecord, type t:int) { note("u3._castF", 2); return 1; }
-    operator :(rhs:int, type t:MyRecord) { note("u3._castT", 2);
+    operator :(rhs:MyRecord(?), type t:int) { note("u3._castF", 2); return 1; }
+    operator :(rhs:int, type t:MyRecord(?)) { note("u3._castT", 2);
                                              return new MyRecord(0); }
     note("User.u3", 1);
     libIN(1);      // cannot reuse the cache entry -> create a new one
@@ -106,11 +106,11 @@ module More1 {
   use Lib;
   proc MyRecord.init(param p)            { note("More1.init", 2); rp = 0; }
   proc MyRecord.init=(other)             { note("More1.init=", 2); rp = 0; }
-  operator =(ref lhs:MyRecord, rhs:MyRecord) { note("More1.=", 2); }
-  operator <(lhs:MyRecord, rhs:MyRecord) { note("More1.<", 2);
+  operator =(ref lhs:MyRecord(?), rhs:MyRecord(?)) { note("More1.=", 2); }
+  operator <(lhs:MyRecord(?), rhs:MyRecord(?)) { note("More1.<", 2);
                                            return true; }
-  operator :(rhs:MyRecord, type t:int) { note("More1._castF", 2); return 1; }
-  operator :(rhs:int, type t:MyRecord) { note("More1._castT", 2);
+  operator :(rhs:MyRecord(?), type t:int) { note("More1._castF", 2); return 1; }
+  operator :(rhs:int, type t:MyRecord(?)) { note("More1._castT", 2);
                                            return new MyRecord(0); }
   proc m1con() {
     note("More1.m1con", 1);
@@ -154,11 +154,11 @@ module Combo1 {
   use Lib;
   proc MyRecord.init(param p)            { note("Combo1.init", 2); rp = 0; }
   proc MyRecord.init=(other)             { note("Combo1.init=", 2); rp = 0; }
-  operator =(ref lhs:MyRecord, rhs:MyRecord) { note("Combo1.=", 2); }
-  operator <(lhs:MyRecord, rhs:MyRecord) { note("Combo1.<", 2);
+  operator =(ref lhs:MyRecord(?), rhs:MyRecord(?)) { note("Combo1.=", 2); }
+  operator <(lhs:MyRecord(?), rhs:MyRecord(?)) { note("Combo1.<", 2);
                                            return true; }
-  operator :(rhs:MyRecord, type t:int) { note("Combo1._castF", 2); return 1; }
-  operator :(rhs:int, type t:MyRecord) { note("Combo1._castT", 2);
+  operator :(rhs:MyRecord(?), type t:int) { note("Combo1._castF", 2); return 1; }
+  operator :(rhs:int, type t:MyRecord(?)) { note("Combo1._castT", 2);
                                            return new MyRecord(0); }
   proc combo1a() {
     use Combo2;

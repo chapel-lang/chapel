@@ -85,6 +85,12 @@ static void *qt_blocking_subsystem_proxy_thread(void *QUNUSED(arg))
         COMPILER_FENCE;
     }
     qthread_debug(IO_DETAILS, "proxy_exit = %i, exiting\n", proxy_exit);
+#ifdef QTHREAD_DEBUG
+    unsigned ct = qthread_incr(&io_worker_count, -1);
+    qthread_debug(IO_BEHAVIOR, "worker_count post exit is %u\n", (unsigned)ct - 1);
+#else
+    (void)qthread_incr(&io_worker_count, -1);
+#endif
     pthread_exit(NULL);
     return 0;
 } /*}}}*/
@@ -144,12 +150,6 @@ int INTERNAL qt_process_blocking_call(void)
                 qthread_debug(IO_BEHAVIOR, "condwait timed out\n");
                 if (theQueue.head == NULL) {
                     qthread_debug(IO_BEHAVIOR, "------------------------------------- exit()\n");
-#ifdef QTHREAD_DEBUG
-                    unsigned ct = qthread_incr(&io_worker_count, -1);
-                    qthread_debug(IO_BEHAVIOR, "worker_count post exit is %u\n", (unsigned)ct - 1);
-#else
-                    (void)qthread_incr(&io_worker_count, -1);
-#endif
                     QTHREAD_UNLOCK(&theQueue.lock);
                     return 1;
                 } else {

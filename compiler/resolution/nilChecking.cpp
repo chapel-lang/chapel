@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1024,10 +1024,10 @@ static bool doAdjustForConditional(CondStmt* cond, bool inThenBranch,
       {
        // If 'nil' becomes a param-like literal, it will be tricky
        // to figure out that == or != compare against it.
-       if (TE->isNamed("!=") && TE->numActuals() == 2)
+       if (TE->isNamedAstr(astrSne) && TE->numActuals() == 2)
          return adjustWhenNilCmp(TE->get(1), TE->get(2), inThenBranch, OUT);
 
-       if (TE->isNamed("==") && TE->numActuals() == 2)
+       if (TE->isNamedAstr(astrSeq) && TE->numActuals() == 2)
          return adjustWhenNilCmp(TE->get(1), TE->get(2), !inThenBranch, OUT);
       }
     }

@@ -1,1 +1,1 @@
--suseNewFileReaderRegionBounds=true
+-sOpenWriterLockingDefault=false -sOpenReaderLockingDefault=false

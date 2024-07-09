@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,14 +45,26 @@ namespace uast {
 
  */
 class Select final : public AstNode {
+ friend class AstNode;
+
  private:
+  // The position of these never change.
+  static const int8_t exprChildNum_ = 0;
+  static const int8_t whenStmtStartChildNum_ = 1;
+
+  int numWhenStmts_;
+
   Select(AstList children, int numWhenStmts)
     : AstNode(asttags::Select, std::move(children)),
       numWhenStmts_(numWhenStmts) {
   }
 
-  Select(Deserializer& des) : AstNode(asttags::Select, des) {
-    numWhenStmts_ = des.read<int>();
+  void serializeInner(Serializer& ser) const override {
+    ser.writeVInt(numWhenStmts_);
+  }
+
+  explicit Select(Deserializer& des) : AstNode(asttags::Select, des) {
+    numWhenStmts_ = des.readVInt();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -64,12 +76,6 @@ class Select final : public AstNode {
   }
 
   std::string dumpChildLabelInner(int i) const override;
-
-  // The position of these never change.
-  static const int8_t exprChildNum_ = 0;
-  static const int8_t whenStmtStartChildNum_ = 1;
-
-  int numWhenStmts_;
 
  public:
 
@@ -116,13 +122,9 @@ class Select final : public AstNode {
     return AstListIteratorPair<When>(begin, end);
   }
 
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(numWhenStmts_);
+  bool hasOtherwise() const {
+    return whenStmt(numWhenStmts()-1)->isOtherwise();
   }
-
-  DECLARE_STATIC_DESERIALIZE(Select);
-
 };
 
 

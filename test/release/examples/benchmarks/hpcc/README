@@ -6,16 +6,10 @@ This directory contains Chapel versions of the HPC Challenge
 benchmarks (http://icl.cs.utk.edu/hpcc/) and a Makefile to help build
 them.
 
-These benchmarks are very much a work-in-progress and are provided to
-give an indication of where we're going in Chapel.  Current status is
-approximately as follows:
-
-* The STREAM and RA benchmarks are scalable but have outstanding
-  performance and elegance improvements that we plan to address.
-
-* The FFT, PTRANS, and HPL benchmarks run on distributed memory, but
-  need additional work (both in the source code and the Chapel
-  implementation) to scale and perform well.
+These benchmarks are very much a work-in-progress and are provided to give an
+indication of where we're going in Chapel.  Current status is they are scalable
+but have outstanding performance and elegance improvements that we plan to
+address.
 
 Our intention is to continue improving the implementation of all of
 these benchmarks over time.  Please refer to the Chapel website
@@ -28,9 +22,6 @@ The main files for these benchmarks are as follows:
      stream-ep.chpl         : the EP STREAM Triad benchmark
      ra.chpl                : the global Random Access (RA) benchmark
      ra-atomics.chpl        : a lossless version of RA using atomic vars
-     fft.chpl               : the global 1D FFT benchmark
-     ptrans.chpl            : the global PTRANS benchmark
-     hpl.chpl               : the High Performance Linpack benchmark
 
 Other files with the same base filenames as the Chapel test programs but
 different filename extensions, are for use by the automated test system.
@@ -54,9 +45,6 @@ These benchmarks can be compiled using the following commands:
      chpl --fast -o stream-ep stream-ep.chpl
      chpl --fast -o ra ra.chpl
      chpl --fast -o ra-atomics ra-atomics.chpl
-     chpl --fast -o fft fft.chpl
-     chpl --fast -o ptrans ptrans.chpl
-     chpl --fast -o hpl hpl.chpl
 
 The presence of the --fast flag turns on optimizations, turns off
 runtime correctness checks, and permits IEEE math to be relaxed for
@@ -69,9 +57,6 @@ using:
     gmake stream-ep
     gmake ra
     gmake ra-atomics
-    gmake fft
-    gmake ptrans
-    gmake hpl
 
 Or to make them all, use:
 

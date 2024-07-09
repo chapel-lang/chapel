@@ -2,7 +2,7 @@ module OuterModule {
   use Functions;
 
   module mod1 {
-    proc write_fun( f: func(int, int) ) {
+    proc write_fun( f: proc(_: int): int) {
       writeln( f(1) );
     }
   }

@@ -3,4 +3,3 @@ proc f() type {
 }
 
 writeln(f().type:string);
-writeln(int.type:string);

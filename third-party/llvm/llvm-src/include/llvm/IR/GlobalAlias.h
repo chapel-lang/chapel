@@ -23,7 +23,7 @@ namespace llvm {
 
 class Twine;
 class Module;
-template <typename ValueSubClass> class SymbolTableListTraits;
+template <typename ValueSubClass, typename... Args> class SymbolTableListTraits;
 
 class GlobalAlias : public GlobalValue, public ilist_node<GlobalAlias> {
   friend class SymbolTableListTraits<GlobalAlias>;
@@ -93,8 +93,8 @@ public:
   }
 
   static bool isValidLinkage(LinkageTypes L) {
-    return isExternalLinkage(L) || isLocalLinkage(L) ||
-      isWeakLinkage(L) || isLinkOnceLinkage(L);
+    return isExternalLinkage(L) || isLocalLinkage(L) || isWeakLinkage(L) ||
+           isLinkOnceLinkage(L) || isAvailableExternallyLinkage(L);
   }
 
   // Methods for support type inquiry through isa, cast, and dyn_cast:

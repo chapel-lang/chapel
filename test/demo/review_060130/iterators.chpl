@@ -4,7 +4,7 @@ var d : domain(2) = {1..n, 1..n};
 
 var a : [d] int;
 
-forall (i,j) in d do
+forall (i,j) in d with (ref a) do
   a(i,j) = (i-1)*n+j-1;
 
 writeln(a);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,7 +49,9 @@ namespace uast {
   each of a-f are Variables.
  */
 class Variable final : public VarLikeDecl {
+ friend class AstNode;
  friend class Builder;
+
  public:
   enum Kind {
     // Use Qualifier here for consistent enum values.
@@ -63,9 +65,14 @@ class Variable final : public VarLikeDecl {
   };
 
  private:
+  int8_t destinationChildNum_;
+  bool isConfig_;
+  bool isField_;
+
   Variable(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
            Decl::Linkage linkage,
            int linkageNameChildNum,
+           int8_t destinationChildNum,
            UniqueString name,
            Variable::Kind kind,
            bool isConfig,
@@ -81,12 +88,21 @@ class Variable final : public VarLikeDecl {
                     (Qualifier)((int)kind),
                     typeExpressionChildNum,
                     initExpressionChildNum),
+        destinationChildNum_(destinationChildNum),
         isConfig_(isConfig),
         isField_(isField) {
   }
 
-  Variable(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    varLikeDeclSerializeInner(ser);
+    ser.write(destinationChildNum_);
+    ser.write(isConfig_);
+    ser.write(isField_);
+  }
+
+  explicit Variable(Deserializer& des)
     : VarLikeDecl(asttags::Variable, des) {
+    destinationChildNum_ = des.read<int8_t>();
     isConfig_ = des.read<bool>();
     isField_ = des.read<bool>();
   }
@@ -94,7 +110,8 @@ class Variable final : public VarLikeDecl {
   bool contentsMatchInner(const AstNode* other) const override {
     const Variable* lhs = this;
     const Variable* rhs = (const Variable*) other;
-    return lhs->isConfig_ == rhs->isConfig_ &&
+    return lhs->destinationChildNum_ == rhs->destinationChildNum_ &&
+           lhs->isConfig_ == rhs->isConfig_ &&
            lhs->isField_ == rhs->isField_ &&
            lhs->varLikeDeclContentsMatchInner(rhs);
   }
@@ -103,9 +120,6 @@ class Variable final : public VarLikeDecl {
   }
 
   void dumpFieldsInner(const DumpSettings& s) const override;
-
-  bool isConfig_;
-  bool isField_;
 
   /**
    * Allows for setting a new initExpr when this Variable is a config
@@ -122,6 +136,7 @@ class Variable final : public VarLikeDecl {
                                Decl::Visibility vis,
                                Decl::Linkage linkage,
                                owned<AstNode> linkageName,
+                               owned<AstNode> destination,
                                UniqueString name,
                                Variable::Kind kind,
                                bool isConfig,
@@ -144,14 +159,13 @@ class Variable final : public VarLikeDecl {
   */
   bool isField() const { return this->isField_; }
 
-  void serialize(Serializer& ser) const override {
-    VarLikeDecl::serialize(ser);
-    ser.write(isConfig_);
-    ser.write(isField_);
+  /**
+    Returns the destination expression, like 'loc' from 'on loc var x = 1'.
+  */
+  const AstNode* destination() const {
+    if (destinationChildNum_ < 0) return nullptr;
+    return child(destinationChildNum_);
   }
-
-  DECLARE_STATIC_DESERIALIZE(Variable);
-
 };
 
 

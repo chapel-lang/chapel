@@ -229,23 +229,23 @@ const PPCFrameLowering::SpillSlot *PPCFrameLowering::getCalleeSavedSpillSlots(
       CALLEE_SAVED_FPRS, CALLEE_SAVED_GPRS64, CALLEE_SAVED_VRS};
 
   if (Subtarget.is64BitELFABI()) {
-    NumEntries = array_lengthof(ELFOffsets64);
+    NumEntries = std::size(ELFOffsets64);
     return ELFOffsets64;
   }
 
   if (Subtarget.is32BitELFABI()) {
-    NumEntries = array_lengthof(ELFOffsets32);
+    NumEntries = std::size(ELFOffsets32);
     return ELFOffsets32;
   }
 
   assert(Subtarget.isAIXABI() && "Unexpected ABI.");
 
   if (Subtarget.isPPC64()) {
-    NumEntries = array_lengthof(AIXOffsets64);
+    NumEntries = std::size(AIXOffsets64);
     return AIXOffsets64;
   }
 
-  NumEntries = array_lengthof(AIXOffsets32);
+  NumEntries = std::size(AIXOffsets32);
   return AIXOffsets32;
 }
 
@@ -395,8 +395,7 @@ void PPCFrameLowering::replaceFPWithRealFP(MachineFunction &MF) const {
   for (MachineBasicBlock &MBB : MF)
     for (MachineBasicBlock::iterator MBBI = MBB.end(); MBBI != MBB.begin();) {
       --MBBI;
-      for (unsigned I = 0, E = MBBI->getNumOperands(); I != E; ++I) {
-        MachineOperand &MO = MBBI->getOperand(I);
+      for (MachineOperand &MO : MBBI->operands()) {
         if (!MO.isReg())
           continue;
 
@@ -459,19 +458,19 @@ PPCFrameLowering::findScratchRegister(MachineBasicBlock *MBB,
       (!UseAtEnd && (&MBB->getParent()->front() == MBB)))
     return true;
 
-  RS.enterBasicBlock(*MBB);
-
-  if (UseAtEnd && !MBB->empty()) {
-    // The scratch register will be used at the end of the block, so must
-    // consider all registers used within the block
-
+  if (UseAtEnd) {
+    // The scratch register will be used before the first terminator (or at the
+    // end of the block if there are no terminators).
     MachineBasicBlock::iterator MBBI = MBB->getFirstTerminator();
-    // If no terminator, back iterator up to previous instruction.
-    if (MBBI == MBB->end())
-      MBBI = std::prev(MBBI);
-
-    if (MBBI != MBB->begin())
-      RS.forward(MBBI);
+    if (MBBI == MBB->begin()) {
+      RS.enterBasicBlock(*MBB);
+    } else {
+      RS.enterBasicBlockEnd(*MBB);
+      RS.backward(MBBI);
+    }
+  } else {
+    // The scratch register will be used at the start of the block.
+    RS.enterBasicBlock(*MBB);
   }
 
   // If the two registers are available, we're all good.
@@ -615,6 +614,8 @@ void PPCFrameLowering::emitPrologue(MachineFunction &MF,
   DebugLoc dl;
   // AIX assembler does not support cfi directives.
   const bool needsCFI = MF.needsFrameMoves() && !Subtarget.isAIXABI();
+
+  const bool HasFastMFLR = Subtarget.hasFastMFLR();
 
   // Get processor type.
   bool isPPC64 = Subtarget.isPPC64();
@@ -837,10 +838,11 @@ void PPCFrameLowering::emitPrologue(MachineFunction &MF,
   // Generate the instruction to store the LR. In the case where ROP protection
   // is required the register holding the LR should not be killed as it will be
   // used by the hash store instruction.
-  if (MustSaveLR) {
+  auto SaveLR = [&](int64_t Offset) {
+    assert(MustSaveLR && "LR is not required to be saved!");
     BuildMI(MBB, StackUpdateLoc, dl, StoreInst)
         .addReg(ScratchReg, getKillRegState(!HasROPProtect))
-        .addImm(LROffset)
+        .addImm(Offset)
         .addReg(SPReg);
 
     // Add the ROP protection Hash Store instruction.
@@ -861,7 +863,10 @@ void PPCFrameLowering::emitPrologue(MachineFunction &MF,
           .addImm(ImmOffset)
           .addReg(SPReg);
     }
-  }
+  };
+
+  if (MustSaveLR && HasFastMFLR)
+      SaveLR(LROffset);
 
   if (MustSaveCR &&
       !(SingleScratchReg && MustSaveLR)) {
@@ -873,8 +878,11 @@ void PPCFrameLowering::emitPrologue(MachineFunction &MF,
   }
 
   // Skip the rest if this is a leaf function & all spills fit in the Red Zone.
-  if (!FrameSize)
+  if (!FrameSize) {
+    if (MustSaveLR && !HasFastMFLR)
+      SaveLR(LROffset);
     return;
+  }
 
   // Adjust stack pointer: r1 += NegFrameSize.
   // If there is a preferred stack alignment, align R1 now
@@ -888,7 +896,18 @@ void PPCFrameLowering::emitPrologue(MachineFunction &MF,
 
   // Have we generated a STUX instruction to claim stack frame? If so,
   // the negated frame size will be placed in ScratchReg.
-  bool HasSTUX = false;
+  bool HasSTUX =
+      (TLI.hasInlineStackProbe(MF) && FrameSize > TLI.getStackProbeSize(MF)) ||
+      (HasBP && MaxAlign > 1) || isLargeFrame;
+
+  // If we use STUX to update the stack pointer, we need the two scratch
+  // registers TempReg and ScratchReg, we have to save LR here which is stored
+  // in ScratchReg.
+  // If the offset can not be encoded into the store instruction, we also have
+  // to save LR here.
+  if (MustSaveLR && !HasFastMFLR &&
+      (HasSTUX || !isInt<16>(FrameSize + LROffset)))
+    SaveLR(LROffset);
 
   // If FrameSize <= TLI.getStackProbeSize(MF), as POWER ABI requires backchain
   // pointer is always stored at SP, we will get a free probe due to an essential
@@ -909,7 +928,6 @@ void PPCFrameLowering::emitPrologue(MachineFunction &MF,
       BuildMI(MBB, MBBI, dl, TII.get(PPC::SUBF), ScratchReg)
           .addReg(ScratchReg)
           .addReg(SPReg);
-      HasSTUX = true;
     }
   } else {
     // This condition must be kept in sync with canUseAsPrologue.
@@ -941,21 +959,17 @@ void PPCFrameLowering::emitPrologue(MachineFunction &MF,
           .addReg(SPReg, RegState::Kill)
           .addReg(SPReg)
           .addReg(ScratchReg);
-      HasSTUX = true;
-
     } else if (!isLargeFrame) {
       BuildMI(MBB, StackUpdateLoc, dl, StoreUpdtInst, SPReg)
           .addReg(SPReg)
           .addImm(NegFrameSize)
           .addReg(SPReg);
-
     } else {
       TII.materializeImmPostRA(MBB, MBBI, dl, ScratchReg, NegFrameSize);
       BuildMI(MBB, MBBI, dl, StoreUpdtIdxInst, SPReg)
           .addReg(SPReg, RegState::Kill)
           .addReg(SPReg)
           .addReg(ScratchReg);
-      HasSTUX = true;
     }
   }
 
@@ -1082,6 +1096,10 @@ void PPCFrameLowering::emitPrologue(MachineFunction &MF,
     }
   }
 
+  // Save the LR now.
+  if (!HasSTUX && MustSaveLR && !HasFastMFLR && isInt<16>(FrameSize + LROffset))
+    SaveLR(LROffset + FrameSize);
+
   // Add Call Frame Information for the instructions we generated above.
   if (needsCFI) {
     unsigned CFIIndex;
@@ -1171,12 +1189,6 @@ void PPCFrameLowering::emitPrologue(MachineFunction &MF,
         continue;
 
       if ((Reg == PPC::X2 || Reg == PPC::R2) && MustSaveTOC)
-        continue;
-
-      // For SVR4, don't emit a move for the CR spill slot if we haven't
-      // spilled CRs.
-      if (isSVR4ABI && (PPC::CR2 <= Reg && Reg <= PPC::CR4)
-          && !MustSaveCR)
         continue;
 
       // For 64-bit SVR4 when we have spilled CRs, the spill location
@@ -1423,8 +1435,11 @@ void PPCFrameLowering::inlineStackProbe(MachineFunction &MF,
       ProbeLoopBodyMBB->addSuccessor(ProbeLoopBodyMBB);
     }
     // Update liveins.
-    recomputeLiveIns(*ProbeLoopBodyMBB);
-    recomputeLiveIns(*ProbeExitMBB);
+    bool anyChange = false;
+    do {
+      anyChange = recomputeLiveIns(*ProbeExitMBB) ||
+                  recomputeLiveIns(*ProbeLoopBodyMBB);
+    } while (anyChange);
     return ProbeExitMBB;
   };
   // For case HasBP && MaxAlign > 1, we have to realign the SP by performing
@@ -1516,8 +1531,10 @@ void PPCFrameLowering::inlineStackProbe(MachineFunction &MF,
         buildDefCFAReg(*ExitMBB, ExitMBB->begin(), SPReg);
       }
       // Update liveins.
-      recomputeLiveIns(*LoopMBB);
-      recomputeLiveIns(*ExitMBB);
+      bool anyChange = false;
+      do {
+        anyChange = recomputeLiveIns(*ExitMBB) || recomputeLiveIns(*LoopMBB);
+      } while (anyChange);
     }
   }
   ++NumPrologProbed;
@@ -2268,13 +2285,15 @@ PPCFrameLowering::addScavengingSpillSlot(MachineFunction &MF,
   // slot for dynamic stack allocations.
 
   // The scavenger might be invoked if the frame offset does not fit into
-  // the 16-bit immediate. We don't know the complete frame size here
-  // because we've not yet computed callee-saved register spills or the
-  // needed alignment padding.
+  // the 16-bit immediate in case of not SPE and 8-bit in case of SPE.
+  // We don't know the complete frame size here because we've not yet computed
+  // callee-saved register spills or the needed alignment padding.
   unsigned StackSize = determineFrameLayout(MF, true);
   MachineFrameInfo &MFI = MF.getFrameInfo();
+  bool NeedSpills = Subtarget.hasSPE() ? !isInt<8>(StackSize) : !isInt<16>(StackSize);
+
   if (MFI.hasVarSizedObjects() || spillsCR(MF) || hasNonRISpills(MF) ||
-      (hasSpills(MF) && !isInt<16>(StackSize))) {
+      (hasSpills(MF) && NeedSpills)) {
     const TargetRegisterClass &GPRC = PPC::GPRCRegClass;
     const TargetRegisterClass &G8RC = PPC::G8RCRegClass;
     const TargetRegisterClass &RC = Subtarget.isPPC64() ? G8RC : GPRC;
@@ -2306,6 +2325,27 @@ bool PPCFrameLowering::assignCalleeSavedSpillSlots(
   if (CSI.empty())
     return true; // Early exit if no callee saved registers are modified!
 
+  const PPCRegisterInfo *RegInfo = Subtarget.getRegisterInfo();
+  const MCPhysReg *CSRegs = RegInfo->getCalleeSavedRegs(&MF);
+  const MachineRegisterInfo &MRI = MF.getRegInfo();
+
+  if (Subtarget.hasSPE()) {
+    // In case of SPE we only have SuperRegs and CRs
+    // in our CalleSaveInfo vector.
+
+    for (auto &CalleeSaveReg : CSI) {
+      MCPhysReg Reg = CalleeSaveReg.getReg();
+      MCPhysReg Lower = RegInfo->getSubReg(Reg, 1);
+      MCPhysReg Higher = RegInfo->getSubReg(Reg, 2);
+
+      if ( // Check only for SuperRegs.
+          Lower &&
+          // Replace Reg if only lower-32 bits modified
+          !MRI.isPhysRegModified(Higher))
+        CalleeSaveReg = CalleeSavedInfo(Lower);
+    }
+  }
+
   // Early exit if cannot spill gprs to volatile vector registers.
   MachineFrameInfo &MFI = MF.getFrameInfo();
   if (!EnablePEVectorSpills || MFI.hasCalls() || !Subtarget.hasP9Vector())
@@ -2314,8 +2354,6 @@ bool PPCFrameLowering::assignCalleeSavedSpillSlots(
   // Build a BitVector of VSRs that can be used for spilling GPRs.
   BitVector BVAllocatable = TRI->getAllocatableSet(MF);
   BitVector BVCalleeSaved(TRI->getNumRegs());
-  const PPCRegisterInfo *RegInfo = Subtarget.getRegisterInfo();
-  const MCPhysReg *CSRegs = RegInfo->getCalleeSavedRegs(&MF);
   for (unsigned i = 0; CSRegs[i]; ++i)
     BVCalleeSaved.set(CSRegs[i]);
 
@@ -2323,7 +2361,7 @@ bool PPCFrameLowering::assignCalleeSavedSpillSlots(
     // Set to 0 if the register is not a volatile VSX register, or if it is
     // used in the function.
     if (BVCalleeSaved[Reg] || !PPC::VSRCRegClass.contains(Reg) ||
-        MF.getRegInfo().isPhysRegUsed(Reg))
+        MRI.isPhysRegUsed(Reg))
       BVAllocatable.reset(Reg);
   }
 
@@ -2475,8 +2513,8 @@ bool PPCFrameLowering::spillCalleeSavedRegisters(
           TII.storeRegToStackSlotNoUpd(MBB, MI, Reg, !IsLiveIn,
                                        I.getFrameIdx(), RC, TRI);
         else
-          TII.storeRegToStackSlot(MBB, MI, Reg, !IsLiveIn, I.getFrameIdx(),
-                                  RC, TRI);
+          TII.storeRegToStackSlot(MBB, MI, Reg, !IsLiveIn, I.getFrameIdx(), RC,
+                                  TRI, Register());
       }
     }
   }
@@ -2648,7 +2686,8 @@ bool PPCFrameLowering::restoreCalleeSavedRegisters(
           TII.loadRegFromStackSlotNoUpd(MBB, I, Reg, CSI[i].getFrameIdx(), RC,
                                         TRI);
         else
-          TII.loadRegFromStackSlot(MBB, I, Reg, CSI[i].getFrameIdx(), RC, TRI);
+          TII.loadRegFromStackSlot(MBB, I, Reg, CSI[i].getFrameIdx(), RC, TRI,
+                                   Register());
 
         assert(I != MBB.begin() &&
                "loadRegFromStackSlot didn't insert any code!");
@@ -2691,4 +2730,18 @@ bool PPCFrameLowering::enableShrinkWrapping(const MachineFunction &MF) const {
   if (MF.getInfo<PPCFunctionInfo>()->shrinkWrapDisabled())
     return false;
   return !MF.getSubtarget<PPCSubtarget>().is32BitELFABI();
+}
+
+uint64_t PPCFrameLowering::getStackThreshold() const {
+  // On PPC64, we use `stux r1, r1, <scratch_reg>` to extend the stack;
+  // use `add r1, r1, <scratch_reg>` to release the stack frame.
+  // Scratch register contains a signed 64-bit number, which is negative
+  // when extending the stack and is positive when releasing the stack frame.
+  // To make `stux` and `add` paired, the absolute value of the number contained
+  // in the scratch register should be the same. Thus the maximum stack size
+  // is (2^63)-1, i.e., LONG_MAX.
+  if (Subtarget.isPPC64())
+    return LONG_MAX;
+
+  return TargetFrameLowering::getStackThreshold();
 }

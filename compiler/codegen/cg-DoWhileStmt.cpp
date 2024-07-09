@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,8 @@
 #include "build.h"
 #include "codegen.h"
 #include "LayeredValueTable.h"
+#include "llvmTracker.h"
+#include "llvmVer.h"
 
 #ifdef HAVE_LLVM
 #include "llvm/IR/Module.h"
@@ -72,11 +74,18 @@ GenRet DoWhileStmt::codegen()
 
     blockStmtBody = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
     blockStmtEnd  = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end"));
+    trackLLVMValue(blockStmtBody);
+    trackLLVMValue(blockStmtEnd);
 
-    info->irBuilder->CreateBr(blockStmtBody);
+    llvm::BranchInst* toBody = info->irBuilder->CreateBr(blockStmtBody);
+    trackLLVMValue(toBody);
 
     // Now add the body.
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockStmtBody);
+#else
     func->getBasicBlockList().push_back(blockStmtBody);
+#endif
 
     info->irBuilder->SetInsertPoint(blockStmtBody);
     info->lvt->addLayer();
@@ -87,11 +96,17 @@ GenRet DoWhileStmt::codegen()
 
     // Add the condition block.
     blockStmtEndCond = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end_cond"));
+    trackLLVMValue(blockStmtEndCond);
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockStmtEndCond);
+#else
     func->getBasicBlockList().push_back(blockStmtEndCond);
+#endif
 
     // Insert an explicit branch from the body block to the loop condition.
-    info->irBuilder->CreateBr(blockStmtEndCond);
+    llvm::BranchInst* toCond = info->irBuilder->CreateBr(blockStmtEndCond);
+    trackLLVMValue(toCond);
 
     // set insert point
     info->irBuilder->SetInsertPoint(blockStmtEndCond);
@@ -104,11 +119,17 @@ GenRet DoWhileStmt::codegen()
       condValue = info->irBuilder->CreateICmpNE(condValue,
                                                 llvm::ConstantInt::get(condValue->getType(), 0),
                                                 FNAME("condition"));
+      trackLLVMValue(condValue);
     }
 
-    info->irBuilder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
+    llvm::BranchInst* condBr = info->irBuilder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
+    trackLLVMValue(condBr);
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockStmtEnd);
+#else
     func->getBasicBlockList().push_back(blockStmtEnd);
+#endif
 
     info->irBuilder->SetInsertPoint(blockStmtEnd);
 

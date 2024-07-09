@@ -12,8 +12,10 @@ class ParentCallInIf {
 }
 
 proc main() {
-  var c1: borrowed ParentCallInIf = (new owned ParentCallInIf(7)).borrow();
-  var c2: borrowed ParentCallInIf = (new owned ParentCallInIf(13)).borrow();
+  var ownC1 = new owned ParentCallInIf(7);
+  var ownC2 = new owned ParentCallInIf(13);
+  var c1: borrowed ParentCallInIf = ownC1.borrow();
+  var c2: borrowed ParentCallInIf = ownC2.borrow();
   writeln(c1);
   writeln(c2);
 }

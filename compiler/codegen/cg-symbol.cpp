@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -47,6 +47,7 @@
 #include "library.h"
 #include "llvmDebug.h"
 #include "llvmExtractIR.h"
+#include "llvmTracker.h"
 #include "llvmUtil.h"
 #include "LoopStmt.h"
 #include "misc.h"
@@ -62,10 +63,14 @@
 
 #include "global-ast-vecs.h"
 
+#include "chpl/libraries/LibraryFile.h"
+#include "chpl/parsing/parsing-queries.h"
+
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
+#include <cstring>
 
 #include <inttypes.h>
 #include <stdint.h>
@@ -85,8 +90,12 @@
 ********************************* | ********************************/
 
 // these are sets of astrs
-static std::set<const char*> llvmPrintIrNames;
+// Chapel function names requested to be disassembled, and whether they've been
+// matched to C symbol names.
+static std::unordered_map<const char*, bool> llvmPrintIrRequestedNames;
+// Corresponding C function names to disassemble
 static std::set<const char*> llvmPrintIrCNames;
+static const char* cnamesToPrintFilename = "cnamesToPrint.tmp";
 
 llvmStageNum_t llvmPrintIrStageNum = llvmStageNum::NOPRINT;
 
@@ -99,9 +108,13 @@ const char* llvmStageName[llvmStageNum::LAST] = {
   "every", //llvmStageNum::EVERY
   "early-as-possible",
   "module-optimizer-early",
+  "late-loop-optimizer",
   "loop-optimizer-end",
   "scalar-optimizer-late",
+  "early-simplification",
+  "optimizer-early",
   "optimizer-last",
+  "cgscc-optimizer-late",
   "vectorizer-start",
   "enabled-on-opt-level0",
   "peephole",
@@ -121,31 +134,45 @@ llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName) {
   return llvmStageNum::NOPRINT;
 }
 
-void addNameToPrintLlvmIr(const char* name) {
-  llvmPrintIrNames.insert(astr(name));
+void addNameToPrintLlvmIrRequestedNames(const char* name) {
+  llvmPrintIrRequestedNames.emplace(astr(name), false);
 }
-void addCNameToPrintLlvmIr(const char* name) {
+
+static void addCNameToPrintLlvmIr(const char* name) {
   llvmPrintIrCNames.insert(astr(name));
 }
 
-bool shouldLlvmPrintIrName(const char* name) {
-  if (llvmPrintIrNames.empty())
-    return false;
-
-  return llvmPrintIrNames.count(astr(name));
+bool shouldLlvmPrintIrCName(const char* cname) {
+  return llvmPrintIrCNames.count(astr(cname)) > 0;
 }
 
-bool shouldLlvmPrintIrCName(const char* name) {
-  if (llvmPrintIrNames.empty())
-    return false;
+// finds if fn's name, cname, or ID is present in the requested names
+// to print for --llvm-print-ir
+static bool shouldLlvmPrintIrFnFindName(FnSymbol* fn, const char*& foundName) {
+  if (llvmPrintIrRequestedNames.count(fn->name)) {
+    foundName = fn->name;
+    return true;
+  }
 
-  return llvmPrintIrCNames.count(astr(name));
+  if (llvmPrintIrRequestedNames.count(fn->cname)) {
+    foundName = fn->cname;
+    return true;
+  }
+
+  if (!fn->astloc.id().isEmpty()) {
+    const char* idstr = astr(fn->astloc.id().symbolPath());
+    if (llvmPrintIrRequestedNames.count(idstr)) {
+      foundName = idstr;
+      return true;
+    }
+  }
+
+  return false;
 }
 
-bool shouldLlvmPrintIrFn(FnSymbol* fn) {
-  return shouldLlvmPrintIrName(fn->name) || shouldLlvmPrintIrCName(fn->cname);
-}
-
+// Collect the cnames to print into a vector with (lex) ordering.
+// Order of the list is non-deterministic otherwise, because it stores astrs
+// for performance.
 std::vector<std::string> gatherPrintLlvmIrCNames() {
   std::vector<std::string> ret;
   for (auto elt : llvmPrintIrCNames) {
@@ -191,18 +218,50 @@ void completePrintLlvmIrStage(llvmStageNum_t numStage) {
 #endif
 }
 
+void restorePrintIrCNames() {
+  assert(llvmPrintIrCNames.empty() &&
+         "tried to restore list of cnames to print from disk, but we already "
+         "have them in memory");
+
+  restoreDriverTmp(cnamesToPrintFilename, &addCNameToPrintLlvmIr);
+}
 
 void preparePrintLlvmIrForCodegen() {
-  if (llvmPrintIrNames.empty() && llvmPrintIrCNames.empty())
+  if (llvmPrintIrRequestedNames.empty() && llvmPrintIrCNames.empty())
     return;
   if (llvmPrintIrStageNum == llvmStageNum::NOPRINT)
     return;
 
   // Gather the cnames for the functions in names
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (shouldLlvmPrintIrFn(fn)) {
+    const char* foundName = nullptr;
+    if (shouldLlvmPrintIrFnFindName(fn, foundName) && foundName) {
       addCNameToPrintLlvmIr(fn->cname);
+      // mark Chapel symbol as found
+      llvmPrintIrRequestedNames[astr(foundName)] = true;
     }
+  }
+
+  // Ensure cnames were found for all Chapel function names
+  std::vector<std::string> namesNotFound;
+  for (const auto& nameInfo : llvmPrintIrRequestedNames) {
+    if (nameInfo.second == false) {
+      namesNotFound.emplace_back(nameInfo.first);
+    }
+  }
+  // Emit warning for any symbols not found
+  if (!namesNotFound.empty()) {
+    // Deterministically order
+    std::sort(namesNotFound.begin(), namesNotFound.end());
+    std::string nameList;
+    for (auto it = namesNotFound.begin(); it != namesNotFound.end(); ++it) {
+      if (it != namesNotFound.begin()) {
+        nameList += ", ";
+      }
+      nameList += *it;
+    }
+    USR_WARN("Could not find requested symbol%s for disassembly: %s",
+             (namesNotFound.size() == 1 ? "" : "s"), nameList.c_str());
   }
 
   // Extend cnames with the cnames of task functions
@@ -218,8 +277,9 @@ void preparePrintLlvmIrForCodegen() {
           if (FnSymbol* calledFn = call->resolvedFunction()) {
             if (isTaskFun(calledFn) ||
                 calledFn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
-              if (!shouldLlvmPrintIrFn(calledFn)) {
-                addCNameToPrintLlvmIr(calledFn->cname);
+              auto pair = llvmPrintIrCNames.insert(calledFn->cname);
+              if (pair.second) {
+                // it was inserted
                 changed = true;
               }
             }
@@ -228,6 +288,15 @@ void preparePrintLlvmIrForCodegen() {
       }
     }
   } while (changed);
+
+  // If running in compiler-driver mode, save cnames to print IR for to disk.
+  // This is so that handlePrintAsm can access them later from the makeBinary
+  // phase, when we don't have a way to determine name->cname correspondence.
+  if (fDriverCompilationPhase) {
+    saveDriverTmpMultiple(cnamesToPrintFilename,
+                          std::vector<const char*>(llvmPrintIrCNames.begin(),
+                                                   llvmPrintIrCNames.end()));
+  }
 }
 
 /******************************** | *********************************
@@ -266,24 +335,8 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
     case NUM_KIND_BOOL:
       switch(i->num_index) {
         case BOOL_SIZE_SYS:
-        case BOOL_SIZE_8:
           ret = llvm::ConstantInt::get(
               llvm::Type::getInt8Ty(info->module->getContext()),
-              i->bool_value());
-          break;
-        case BOOL_SIZE_16:
-          ret = llvm::ConstantInt::get(
-              llvm::Type::getInt16Ty(info->module->getContext()),
-              i->bool_value());
-          break;
-        case BOOL_SIZE_32:
-          ret = llvm::ConstantInt::get(
-              llvm::Type::getInt32Ty(info->module->getContext()),
-              i->bool_value());
-          break;
-        case BOOL_SIZE_64:
-          ret = llvm::ConstantInt::get(
-              llvm::Type::getInt64Ty(info->module->getContext()),
               i->bool_value());
           break;
       }
@@ -402,6 +455,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       // for LLVM (the C backend can just print it out).
       std::string newString = chpl::unescapeStringC(i->v_string.c_str());
       ret = info->irBuilder->CreateGlobalString(newString);
+      trackLLVMValue(ret);
       break;
   }
 
@@ -432,17 +486,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         const char* castString = "(";
         switch (immediate->num_index) {
         case BOOL_SIZE_SYS:
-        case BOOL_SIZE_8:
           castString = "UINT8(";
-          break;
-        case BOOL_SIZE_16:
-          castString = "UINT16(";
-          break;
-        case BOOL_SIZE_32:
-          castString = "UINT32(";
-          break;
-        case BOOL_SIZE_64:
-          castString = "UINT64(";
           break;
         default:
           INT_FATAL("Unexpected immediate->num_index: %d\n", immediate->num_index);
@@ -634,7 +678,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
     //   _ret:dtNil = nil
     if( typeInfo() == dtNil && 0 == strcmp(cname, "nil") ) {
       GenRet voidPtr;
-      voidPtr.val = llvm::Constant::getNullValue(info->irBuilder->getInt8PtrTy());
+      voidPtr.val = llvm::Constant::getNullValue(getPointerType(info->irBuilder));
       voidPtr.chplType = dtNil;
       return voidPtr;
     }
@@ -669,6 +713,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
           llvm::Type* gepTy = global->getValueType();
           got.val = info->irBuilder->CreateStructGEP(gepTy, got.val, 0);
           got.isLVPtr = GEN_VAL;
+          trackLLVMValue(got.val);
         }
         // check for extern global variables where there is a different
         // type provided by clang
@@ -731,11 +776,14 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         llvm::GlobalVariable *globalValue =
           llvm::cast<llvm::GlobalVariable>(
               info->module->getOrInsertGlobal
-                  (name, info->irBuilder->getInt8PtrTy()));
+                  (cname, getPointerType(info->irBuilder)));
         globalValue->setConstant(true);
-        globalValue->setInitializer(llvm::cast<llvm::Constant>(
-              info->irBuilder->CreateConstInBoundsGEP2_32(
-                gepTy, globalConstString, 0, 0)));
+        if (fDynoLibGenOrUse)
+          globalValue->setLinkage(llvm::GlobalVariable::LinkOnceODRLinkage);
+        llvm::Value* gep = info->irBuilder->CreateConstInBoundsGEP2_32(
+                                              gepTy, globalConstString, 0, 0);
+        trackLLVMValue(gep);
+        globalValue->setInitializer(llvm::cast<llvm::Constant>(gep));
         ret.val = globalValue;
         ret.isLVPtr = GEN_PTR;
       } else {
@@ -751,7 +799,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       return ret;
     } else if (std::string(cname) == "NULL") {
       GenRet voidPtr;
-      voidPtr.val = llvm::Constant::getNullValue(info->irBuilder->getInt8PtrTy());
+      voidPtr.val = llvm::Constant::getNullValue(getPointerType(info->irBuilder));
       voidPtr.chplType = typeInfo();
       return voidPtr;
     }
@@ -880,18 +928,24 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
       llvm::Type* llTy = type->codegen().type;
       INT_ASSERT(llTy);
 
+      auto linkage = llvm::GlobalVariable::InternalLinkage;
+      if (fDynoLibGenOrUse)
+        linkage = llvm::GlobalVariable::LinkOnceODRLinkage;
+      if (hasFlag(FLAG_EXPORT))
+        linkage = llvm::GlobalVariable::ExternalLinkage;
+
       llvm::GlobalVariable *gVar =
         new llvm::GlobalVariable(
             *info->module,
             llTy,
             false, /* is constant */
-            hasFlag(FLAG_EXPORT) ? llvm::GlobalVariable::ExternalLinkage
-                                 : llvm::GlobalVariable::InternalLinkage,
+            linkage,
             llvm::Constant::getNullValue(llTy), /* initializer, */
             cname);
+      trackLLVMValue(gVar);
       info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type), type);
-
       gVar->setDSOLocal(true);
+      setValueAlignment(gVar, type, this);
 
       if(debug_info){
         debug_info->get_global_variable(this);
@@ -934,9 +988,10 @@ void VarSymbol::codegenDef() {
         if(llvm::Value *constString = codegenImmediateLLVM(immediate)) {
           llvm::GlobalVariable *globalString =
             llvm::cast<llvm::GlobalVariable>(constString);
-          globalValue->setInitializer(llvm::cast<llvm::Constant>(
-                info->irBuilder->CreateConstInBoundsGEP2_32(
-                  NULL, globalString, 0, 0)));
+          llvm::Value* gep = info->irBuilder->CreateConstInBoundsGEP2_32(
+                                                NULL, globalString, 0, 0);
+          trackLLVMValue(gep);
+          globalValue->setInitializer(llvm::cast<llvm::Constant>(gep));
         } else {
           llvm::GlobalVariable *globalString =
             new llvm::GlobalVariable(
@@ -946,11 +1001,13 @@ void VarSymbol::codegenDef() {
                 llvm::GlobalVariable::PrivateLinkage,
                 NULL,
                 "string");
+          trackLLVMValue(globalString);
           globalString->setInitializer(llvm::Constant::getNullValue(
                 llvm::IntegerType::getInt8Ty(info->module->getContext())));
-          globalValue->setInitializer(llvm::cast<llvm::Constant>(
-                info->irBuilder->CreateConstInBoundsGEP1_32(
-                  NULL, globalString, 0)));
+          llvm::Value* gep = info->irBuilder->CreateConstInBoundsGEP1_32(
+                                                NULL, globalString, 0);
+          trackLLVMValue(gep);
+          globalValue->setInitializer(llvm::cast<llvm::Constant>(gep));
         }
       } else {
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
@@ -959,29 +1016,8 @@ void VarSymbol::codegenDef() {
       info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type), type);
     }
 
-#if HAVE_LLVM_VER >= 100
-    llvm::MaybeAlign alignment;
-#else
-    unsigned alignment = 0;
-#endif
-
-    alignment = getAlignment(type);
-
-    llvm::Type *varType = type->codegen().type;
-    llvm::AllocaInst *varAlloca = createVarLLVM(varType, cname);
-
-    // Update the alignment if necessary
-#if HAVE_LLVM_VER >= 100
-    if (alignment.hasValue()) {
-      varAlloca->setAlignment(alignment.getValue());
-    }
-#else
-    if (alignment > 1) {
-      varAlloca->setAlignment(alignment);
-    }
-#endif
-
-
+    llvm::Type *varType = type->getLLVMType();
+    llvm::AllocaInst *varAlloca = createVarLLVM(varType, type, this, cname);
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
 
     if(AggregateType *ctype = toAggregateType(type)) {
@@ -989,8 +1025,9 @@ void VarSymbol::codegenDef() {
          ctype->symbol->hasFlag(FLAG_WIDE_REF) ||
          ctype->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         if(isFnSymbol(defPoint->parentSymbol)) {
-          info->irBuilder->CreateStore(
+          llvm::StoreInst* store = info->irBuilder->CreateStore(
               llvm::Constant::getNullValue(varType), varAlloca);
+          trackLLVMValue(store);
         }
       }
     }
@@ -1033,7 +1070,11 @@ bool ArgSymbol::requiresCPtr(void) {
 static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
   QualifiedType q = arg->qualType();
   Type* useType = q.type();
-
+  // TODO: this is a hack to make python module generation work by substituting
+  // `const char *` instead of `int8_t *` or `uint8_t *` in the exported header
+  if (isCPtrConstChar(useType)) {
+    return dtStringC;
+  }
   if (q.isRef() && !q.isRefType())
     useType = getOrMakeRefTypeDuringCodegen(useType);
 
@@ -1057,9 +1098,11 @@ transformTypeForPointer(Type* type) {
     return referenced->codegen().c + " *";
 
   } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
-    // TODO: add const qualifier for const pointers?
     Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
-    return pointedTo->codegen().c + " *";
+    bool isConst = type->symbol->hasFlag(FLAG_C_PTRCONST_CLASS);
+    std::string ret = isConst ? "const " : "";
+    ret += pointedTo->codegen().c + " *";
+    return ret;
   }
   std::string typeName = type->codegen().c;
   return typeName;
@@ -1146,8 +1189,12 @@ static std::string getFortranTypeName(Type* type, Symbol* sym) {
 
   if (typeName.empty()) {
     if (warnedSymbols.count(sym) == 0) {
+      std::string cTypeName = type->symbol->cname;
+      if (type->symbol->type == dtStringC) {
+        cTypeName = "c_string";
+      }
       // TODO: Maybe issue an error instead?
-      USR_WARN(sym->defPoint, "Unknown Fortran type generating interface for C type: %s", type->symbol->cname);
+      USR_WARN(sym->defPoint, "Unknown Fortran type generating interface for C type: %s", cTypeName.c_str());
       warnedSymbols.insert(sym);
     }
     return type->symbol->cname;
@@ -1162,8 +1209,12 @@ static std::string getFortranKindName(Type* type, Symbol* sym) {
 
   if (kindName.empty()) {
     if (warnedSymbols.count(sym) == 0) {
+      std::string typeName = type->symbol->cname;
+      if (type->symbol->type == dtStringC) {
+        typeName = "c_string";
+      }
       // TODO: Maybe issue an error instead?
-      USR_WARN(sym->defPoint, "Unknown Fortran KIND generating interface for C type: %s", type->symbol->cname);
+      USR_WARN(sym->defPoint, "Unknown Fortran KIND generating interface for C type: %s", typeName.c_str());
       warnedSymbols.insert(sym);
     }
     return type->symbol->cname;
@@ -1416,6 +1467,26 @@ void TypeSymbol::codegenDef() {
   if (!hasFlag(FLAG_EXTERN)) {
     type->codegenDef();
   }
+  else if (info->cfile) {
+    // no action required.
+  } else {
+#ifdef HAVE_LLVM
+    if (this->hasLLVMType()) {
+      // extern type, already codegenned
+      INT_ASSERT(this->hasFlag(FLAG_CODEGENNED));
+      if (fVerify) {
+        // verify that we already have all the pieces
+        if (isCTypeUnion(cname)) INT_ASSERT(this->hasFlag(FLAG_EXTERN_UNION));
+        llvm::Type *type = info->lvt->getType(cname);
+        INT_ASSERT(type != nullptr && type == this->llvmImplType);
+        INT_ASSERT(this->llvmAlignment ==
+                   llvmAlignmentOrDefer(getCTypeAlignment(this->type), type));
+      }
+      return;
+    }
+#endif
+  }
+
 
   this->addFlag(FLAG_CODEGENNED);
 
@@ -1437,7 +1508,24 @@ void TypeSymbol::codegenDef() {
       USR_FATAL(this, "Could not find C type for %s", cname);
     }
 
-    if (llvmImplType == nullptr) llvmImplType = type;
+    if (hasFlag(FLAG_EXTERN)) {
+      INT_ASSERT(!llvmImplType); // we have not set these before
+      INT_ASSERT(llvmAlignment == ALIGNMENT_UNINIT);
+      llvmImplType = type;
+      llvmAlignment = getCTypeAlignment(this->type);
+      llvmAlignment = llvmAlignmentOrDefer(llvmAlignment, type);
+    } else {
+      llvm::Type* chkTy = type; // for an assertion
+      if (AggregateType* ag = toAggregateType(this->type)) {
+        if (ag->isClass()) {
+          chkTy = info->lvt->getType(ag->classStructName(true));
+          if (chkTy == nullptr) // c_ptr, _ddata, _ref
+            chkTy = type;
+        }
+      }
+      INT_ASSERT(getLLVMStructureType() == chkTy); // set in type->codegenDef()
+    }
+
     if(debug_info) debug_info->get_type(this->type);
 #endif
   }
@@ -1447,7 +1535,7 @@ void TypeSymbol::codegenMetadata() {
 #ifdef HAVE_LLVM
   // Don't do anything if we've already visited this type,
   // or the type is void so we don't need metadata.
-  if (llvmTbaaTypeDescriptor || type == dtNothing) return;
+  if (llvmTbaaTypeDescriptor || type == dtNothing || type == dtVoid) return;
 
   GenInfo* info = gGenInfo;
   INT_ASSERT(info->tbaaRootNode);
@@ -1477,7 +1565,7 @@ void TypeSymbol::codegenMetadata() {
     parent = superType->symbol->llvmTbaaTypeDescriptor;
   } else {
     llvm::Type *ty = NULL;
-    if (getLLVMType()) {
+    if (hasLLVMType()) {
       ty = getLLVMType();
     } else if (hasFlag(FLAG_EXTERN)) {
       ty = info->lvt->getType(cname);
@@ -1765,13 +1853,39 @@ void TypeSymbol::codegenAggMetadata() {
 }
 
 #ifdef HAVE_LLVM
-// get structure type for class
+
+// Returns 'alignment' if it is is greater than the ABI alignment of 'type'.
+// Otherwise returns ALIGNMENT_DEFER.
+int llvmAlignmentOrDefer(int alignment, llvm::Type* type) {
+  if (isDeferredAlignment(alignment))
+      return ALIGNMENT_DEFER;
+  llvm::Align abiAlignment =
+      gGenInfo->module->getDataLayout().getABITypeAlign(type);
+  if (alignment <= (int)abiAlignment.value())
+      return ALIGNMENT_DEFER;
+  return alignment;
+}
+
+static inline void ensureCodegenned(TypeSymbol* ts) {
+  // Beware that some types would fail codegenDef(), ex. LAPACK_C_SELECT1 in:
+  // test/lib./pack./LinearAlgebra/correctness/no-dependencies/no-flags/no-flags
+  if (! ts->hasLLVMType())
+    ts->codegenDef();
+}
+
+// for a class type, get its structure type
 llvm::Type* TypeSymbol::getLLVMStructureType() {
+  ensureCodegenned(this);
+
+  INT_ASSERT(llvmImplType != nullptr);
   return llvmImplType;
 }
 
-// get pointer to structure type for class
+// for a class type, get its pointer type
 llvm::Type* TypeSymbol::getLLVMType() {
+  ensureCodegenned(this);
+
+  // llvmImplType for c_ptr and _ddata is 'ptr', not a struct
   if (auto* stype = llvm::dyn_cast_or_null<llvm::StructType>(llvmImplType)) {
     if (auto* aggType = toAggregateType(this->type)) {
       if (aggType->isClass()) {
@@ -1780,7 +1894,37 @@ llvm::Type* TypeSymbol::getLLVMType() {
     }
   }
 
+  INT_ASSERT(llvmImplType != nullptr);
   return llvmImplType;
+}
+
+// for a class type, get its structure alignment
+// must be invoked after a codegenDef()/getLLVMType()/getLLVMStructureType()
+int TypeSymbol::getLLVMStructureAlignment() {
+  // If we switch the representation of llvmAlignment to llvm::MaybeAlign,
+  // we will lose this assert.
+  INT_ASSERT(llvmAlignment != ALIGNMENT_UNINIT);
+
+  return llvmAlignment;
+}
+
+// for a class type, get its pointer alignment; otherwise:
+// must be invoked after a codegenDef()/getLLVMType()/getLLVMStructureType()
+int TypeSymbol::getLLVMAlignment() {
+  if (isClass(this->type))
+    return ALIGNMENT_DEFER; // pointer alignment from LLVM
+  else
+    return getLLVMStructureAlignment();
+}
+
+// return the alignment stored in 'this' or,
+// if it is "defer", return the ABI alignment of 'llvmType'
+int TypeSymbol::getABIAlignment(llvm::Type* llvmType) {
+  int result = this->getLLVMAlignment();
+  if (isDeferredAlignment(result))
+   result = (int)
+     gGenInfo->module->getDataLayout().getABITypeAlign(llvmType).value();
+  return result;
 }
 #endif
 
@@ -1802,14 +1946,9 @@ GenRet TypeSymbol::codegen() {
     }
   } else {
 #ifdef HAVE_LLVM
-    if( ! getLLVMType() ) {
-      // If we don't have an LLVM type yet, the type hasn't been
-      // code generated, so code generate it now. This can get called
-      // when adding types partway through code generation.
-      codegenDef();
-      // codegenMetadata(); //TODO -- enable TBAA generation in the future.
-    }
+    // getLLVMType() ensures that the LLVM type has been generated
     ret.type = getLLVMType();
+    // codegenMetadata(); //TODO -- enable TBAA generation in the future.
 #endif
   }
 
@@ -1935,7 +2074,7 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
   // This function is inspired by clang's CodeGenTypes::GetFunctionType
   // and CodeGenModule::ConstructAttributeList
 
-  llvm::LLVMContext& ctx = gGenInfo->llvmContext;
+  llvm::LLVMContext& ctx = gContext->llvmContext();
   const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
   const clang::CodeGen::CGFunctionInfo* CGI = nullptr;
 
@@ -1993,7 +2132,7 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
   for_formals(formal, fn) {
     const clang::CodeGen::ABIArgInfo* argInfo = NULL;
     if (CGI) {
-      argInfo = getCGArgInfo(CGI, clangArgNum);
+      argInfo = getCGArgInfo(CGI, clangArgNum, fn);
     } else if (useDarwinArmFix(formal->type)) {
       argInfo = getSingleCGArgInfo(formal->type);
     }
@@ -2041,11 +2180,7 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
           if (argInfo->getInReg()) b.addAttribute(llvm::Attribute::InReg);
 
           if (argInfo->getIndirectByVal()) {
-          #if HAVE_LLVM_VER >= 90
             b.addByValAttr(argTy);
-          #else
-            b.addAttribute(llvm::Attribute::ByVal);
-          #endif
           }
 
           clang::CharUnits align = argInfo->getIndirectAlign();
@@ -2240,10 +2375,103 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
     llvm::FunctionType* fnType = llvm::cast<llvm::FunctionType>(t.type);
     llvm::PointerType *ptrToFnType = llvm::PointerType::get(fnType, 0);
     fngen.val = info->irBuilder->CreateBitCast(fnPtr.val, ptrToFnType);
+    trackLLVMValue(fngen.val);
 #endif
   }
   return fngen;
 }
+
+#ifdef HAVE_LLVM
+static bool shouldUsePrecompiled(FnSymbol* fn) {
+  // this is a temporary measure while development continues
+  // on separate compilation
+  return false;
+  /*
+  return fn->hasFlag(FLAG_PRECOMPILED) &&
+         !fn->astloc.id().isEmpty() &&
+         // don't do this for generic instantiations for now
+         // TODO: figure out how to get LibraryFile to
+         // differentiate between instantiations
+         !fn->hasFlag(FLAG_INSTANTIATED_GENERIC);*/
+}
+
+static GenInfo::PrecompiledModule& getPrecompiledModule(chpl::ID modId) {
+  GenInfo *info = gGenInfo;
+  UniqueString modSymPath = modId.symbolPath();
+
+  // look for a cached result; if nothing was in the map, create
+  // an entry with nullptr
+  GenInfo::PrecompiledModule& pm = info->precompiledMods[modSymPath];
+
+  if (pm.lf == nullptr) {
+    fprintf(stderr, "Reading Library File\n");
+    // get the LibraryFile
+    chpl::UniqueString libPath;
+    bool inLib = gContext->moduleIsInLibrary(modId, libPath);
+    CHPL_ASSERT(inLib && "or sym should not be marked with FLAG_PRECOMPILED");
+    CHPL_ASSERT(!libPath.isEmpty());
+
+    pm.lf = chpl::libraries::LibraryFile::load(gContext, libPath);
+    if (pm.lf == nullptr) {
+      USR_FATAL("could not load library file %s", libPath.c_str());
+    }
+  }
+
+  if (pm.mod.get() == nullptr) {
+    // need to load the LLVM module!
+    pm.mod = pm.lf->loadGenCodeModule(gContext, modSymPath);
+
+    if (pm.mod.get() == nullptr) {
+      USR_FATAL("could not load module %s", modSymPath.c_str());
+    }
+  }
+
+  return pm;
+}
+
+static llvm::Function*
+importPrecompiledFunctionProto(chpl::ID fnId, const char* cname) {
+  llvm::Function* ret = nullptr;
+  GenInfo *info = gGenInfo;
+
+  INT_ASSERT(fIdBasedMunging && "expected ID based munging");
+
+  chpl::ID modId = chpl::parsing::idToParentModule(gContext, fnId);
+  CHPL_ASSERT(!modId.isEmpty());
+
+  GenInfo::PrecompiledModule& pm = getPrecompiledModule(modId);
+
+  // check to see if the library's LLVM IR contains the symbol
+  // find the function
+  llvm::Function* SF = pm.mod->getFunction(cname);
+
+  if (SF == nullptr) {
+    USR_FATAL("could not find %s in library file", cname);
+    return nullptr;
+  }
+
+  llvm::Module* DstM = info->module;
+
+  // copy over just the function signature
+  // c.f. IRLinker::copyFunctionProto in LLVM's IRMover.cpp
+  auto *F = llvm::Function::Create(SF->getFunctionType(),
+                                   llvm::GlobalValue::ExternalLinkage,
+                                   SF->getAddressSpace(),
+                                   SF->getName(),
+                                   DstM);
+  trackLLVMValue(F);
+  F->copyAttributesFrom(SF);
+
+  // also copy the metadata
+  F->copyMetadata(SF, 0);
+
+  // record the fact that the function was probably needed
+  UniqueString ucname = UniqueString::get(gContext, cname);
+  pm.neededGlobalNames.push_back(ucname);
+
+  return ret;
+}
+#endif
 
 void FnSymbol::codegenPrototype() {
   if (id == breakOnCodegenID) gdbShouldBreakHere();
@@ -2269,6 +2497,11 @@ void FnSymbol::codegenPrototype() {
     fprintf(info->cfile, ";\n");
   } else {
 #ifdef HAVE_LLVM
+    if (shouldUsePrecompiled(this)) {
+      importPrecompiledFunctionProto(astloc.id(), cname);
+      return;
+    }
+
     std::vector<const char*> argNames;
     llvm::AttributeList argAttrs;
     llvm::FunctionType *fTy = codegenFunctionTypeLLVM(this,
@@ -2302,6 +2535,11 @@ void FnSymbol::codegenPrototype() {
     bool generatingGPUKernel = (gCodegenGPU && hasFlag(FLAG_GPU_CODEGEN));
 
     llvm::Function::LinkageTypes linkage = llvm::Function::InternalLinkage;
+    if (fDynoLibGenOrUse) {
+      linkage = llvm::Function::LinkOnceODRLinkage;
+      if (this == chpl_gen_main)
+        linkage = llvm::Function::ExternalLinkage;
+    }
     if (hasFlag(FLAG_EXPORT) || generatingGPUKernel) {
       linkage = llvm::Function::ExternalLinkage;
     }
@@ -2309,6 +2547,7 @@ void FnSymbol::codegenPrototype() {
     // No other function with the same name exists.
     llvm::Function *func = llvm::Function::Create(fTy, linkage, cname,
                                                   info->module);
+    trackLLVMValue(func);
 
     if (generatingGPUKernel) {
       func->setConvergent();
@@ -2377,21 +2616,39 @@ namespace {
   struct MarkNonStackVisitor : public AstVisitorTraverse {
     LoopStmt* outermostOrderIndependentLoop;
     MarkNonStackVisitor() : outermostOrderIndependentLoop(NULL) { }
-    void handleLoopStmt(LoopStmt* loop);
+    bool enterLoopStmt(LoopStmt* loop);
+    void exitLoopStmt(LoopStmt* loop);
+
     bool exprPointsToNonStack(Expr* e);
     bool enterCallExpr(CallExpr* call) override;
-    bool enterWhileDoStmt(WhileDoStmt* loop) override;
-    bool enterDoWhileStmt(DoWhileStmt* loop) override;
-    bool enterCForLoop(CForLoop* loop) override;
-    bool enterForLoop(ForLoop* loop) override;
+
+    bool enterWhileDoStmt(WhileDoStmt* loop) override { return enterLoopStmt(loop); }
+    void exitWhileDoStmt(WhileDoStmt* loop) override { exitLoopStmt(loop); }
+
+    bool enterDoWhileStmt(DoWhileStmt* loop) override { return enterLoopStmt(loop); }
+    void exitDoWhileStmt(DoWhileStmt* loop) override { exitLoopStmt(loop); }
+
+    bool enterCForLoop(CForLoop* loop) override { return enterLoopStmt(loop); }
+    void exitCForLoop(CForLoop* loop) override { exitLoopStmt(loop); }
+
+    bool enterForLoop(ForLoop* loop) override { return enterLoopStmt(loop); }
+    void exitForLoop(ForLoop* loop) override { exitLoopStmt(loop); }
   };
 }
 
-void MarkNonStackVisitor::handleLoopStmt(LoopStmt* loop) {
+bool MarkNonStackVisitor::enterLoopStmt(LoopStmt* loop) {
   if (loop->isOrderIndependent() && outermostOrderIndependentLoop == NULL) {
     outermostOrderIndependentLoop = loop;
   }
+  return true;
 }
+
+void MarkNonStackVisitor::exitLoopStmt(LoopStmt* loop) {
+  if (outermostOrderIndependentLoop == loop) {
+    outermostOrderIndependentLoop = NULL;
+  }
+}
+
 
 bool MarkNonStackVisitor::exprPointsToNonStack(Expr* e) {
   if (SymExpr* se = toSymExpr(e)) {
@@ -2448,22 +2705,24 @@ bool MarkNonStackVisitor::enterCallExpr(CallExpr* call) {
   return false;
 }
 
-bool MarkNonStackVisitor::enterWhileDoStmt(WhileDoStmt* loop) {
-  handleLoopStmt(loop);
-  return true;
+#ifdef HAVE_LLVM
+
+// Ensure stack allocation for numeric in-intent formals of 'export' functions.
+// Other in-intent formals are stack-allocated along other code paths.
+static bool needTempForExportInIntent(ArgSymbol* formal) {
+  return (formal->intent & INTENT_FLAG_IN)  &&
+         isPrimitiveType(formal->type)      &&
+         formal->defPoint->parentSymbol->hasFlag(FLAG_EXPORT);
 }
-bool MarkNonStackVisitor::enterDoWhileStmt(DoWhileStmt* loop) {
-  handleLoopStmt(loop);
-  return true;
+
+static GenRet createTempVarForFormal(ArgSymbol* astArg, llvm::Value* llvmArg) {
+  GenRet gArg;
+  gArg.val = llvmArg;
+  gArg.chplType = astArg->typeInfo();
+  return createTempVarWith(gArg);
 }
-bool MarkNonStackVisitor::enterCForLoop(CForLoop* loop) {
-  handleLoopStmt(loop);
-  return true;
-}
-bool MarkNonStackVisitor::enterForLoop(ForLoop* loop) {
-  handleLoopStmt(loop);
-  return true;
-}
+
+#endif
 
 void FnSymbol::codegenDef() {
   GenInfo *info = gGenInfo;
@@ -2501,6 +2760,12 @@ void FnSymbol::codegenDef() {
     fprintf(outfile, " {\n");
   } else {
 #ifdef HAVE_LLVM
+    if (shouldUsePrecompiled(this)) {
+      // the definition should have been imported along side the
+      // declaration in codegenPrototype.
+      return;
+    }
+
     // Mark local reference/ptr variables that must refer to
     // memory outside of all order-independent loops.
     // (This is necessary for llvm.loop.parallel_accesses metadata).
@@ -2511,24 +2776,26 @@ void FnSymbol::codegenDef() {
 
     llvm::IRBuilder<>* irBuilder = info->irBuilder;
     const llvm::DataLayout& layout = info->module->getDataLayout();
-    llvm::LLVMContext &ctx = info->llvmContext;
-
     unsigned int stackSpace = layout.getAllocaAddrSpace();
 
     func = getFunctionLLVM(cname);
+    trackLLVMValue(func); // 'func' was created earlier
 
     // Mark functions to dump as no-inline so they actually exist
     // after optimization
     if(llvmPrintIrStageNum != llvmStageNum::NOPRINT &&
-       shouldLlvmPrintIrFn(this)) {
+       shouldLlvmPrintIrCName(this->cname)) {
         func->addFnAttr(llvm::Attribute::NoInline);
     }
     // Also mark no-inline if the flag was set
     if (fNoInline)
       func->addFnAttr(llvm::Attribute::NoInline);
 
+#if HAVE_LLVM_VER < 160
+    // in newer LLVM versions, this is a only parameter attribute
     if (this->hasFlag(FLAG_LLVM_READNONE))
       func->addFnAttr(llvm::Attribute::ReadNone);
+#endif
 
     if (this->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
       func->addFnAttr(llvm::Attribute::NoReturn);
@@ -2545,6 +2812,7 @@ void FnSymbol::codegenDef() {
 
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
+    trackLLVMValue(block);
 
     if (!(info->irBuilder)) return;
 
@@ -2580,11 +2848,14 @@ void FnSymbol::codegenDef() {
 
     if (CGI) {
       const clang::CodeGen::ABIArgInfo &returnInfo = CGI->getReturnInfo();
+#if HAVE_LLVM_VER < 160
+      // in newer LLVM versions, this is a only parameter attribute
       // Adjust attributes based on return ABI info
       if (returnInfo.isInAlloca() || returnInfo.isIndirect()) {
         func->removeFnAttr(llvm::Attribute::ReadOnly);
         func->removeFnAttr(llvm::Attribute::ReadNone);
       }
+#endif
 
       // Skip the first LLVM formal if it is used for a struct return.
       // Note that we only consume the first _LLVM_ formal. The Clang
@@ -2605,9 +2876,11 @@ void FnSymbol::codegenDef() {
     }
 
     for_formals(arg, this) {
+      if (arg->id == breakOnCodegenID) gdbShouldBreakHere();
+
       const clang::CodeGen::ABIArgInfo* argInfo = NULL;
       if (CGI) {
-        argInfo = getCGArgInfo(CGI, clangArgNum);
+        argInfo = getCGArgInfo(CGI, clangArgNum, this);
       } else if (useDarwinArmFix(arg->type)) {
         argInfo = getSingleCGArgInfo(arg->type);
       }
@@ -2626,10 +2899,19 @@ void FnSymbol::codegenDef() {
           INT_FATAL("TODO");
       }
 
-      if (argInfo && (argInfo->isIndirect() || argInfo->isInAlloca())) {
+      bool noReadNone = argInfo && (argInfo->isIndirect() || argInfo->isInAlloca());
+#if HAVE_LLVM_VER < 160
+      // in newer LLVM versions, this is a only parameter attribute
+      if (noReadNone) {
         func->removeFnAttr(llvm::Attribute::ReadOnly);
         func->removeFnAttr(llvm::Attribute::ReadNone);
       }
+#else
+      if (this->hasFlag(FLAG_LLVM_READNONE) &&
+          llvmArg.getType()->isPointerTy() &&
+          !noReadNone)
+        llvmArg.addAttr(llvm::Attribute::ReadNone);
+#endif
 
       Type* argType = arg->typeInfo();
       llvm::Type* chapelArgTy = argType->codegen().type;
@@ -2659,7 +2941,17 @@ void FnSymbol::codegenDef() {
             val = convertValueToType(val, chapelArgTy,
                                      is_signed(argType), true);
 
-          info->lvt->addValue(arg->cname, val,  GEN_VAL, !is_signed(argType));
+          if (needTempForExportInIntent(arg)) {
+            GenRet tempVar = createTempVarForFormal(arg, val);
+            setValueAlignment(tempVar.val, arg->type, arg);
+
+            info->lvt->addValue(arg->cname, tempVar.val,
+                                tempVar.isLVPtr, tempVar.isUnsigned);
+          }
+          else {
+            info->lvt->addValue(arg->cname, val,  GEN_VAL, !is_signed(argType));
+            setValueAlignment(val, arg->type, arg);
+          }
         } else {
           // handle a more complex direct argument
           // (possibly in multiple registers)
@@ -2672,17 +2964,20 @@ void FnSymbol::codegenDef() {
             // handle a complex direct argument with multiple registers
 
             // Create a temp variable to store into
-            GenRet tmp = createTempVar(arg->typeInfo());
+            GenRet tmp = createTempVar(argType);
             llvm::Value* ptr = tmp.val;
             llvm::Type* ptrEltTy = chapelArgTy;
-            llvm::Type* i8PtrTy = irBuilder->getInt8PtrTy();
+            llvm::Type* i8PtrTy = getPointerType(irBuilder);
             llvm::Type* coercePtrTy = llvm::PointerType::get(sTy, stackSpace);
 
             // handle offset
             if (unsigned offset = argInfo->getDirectOffset()) {
               ptr = irBuilder->CreatePointerCast(ptr, i8PtrTy);
+              trackLLVMValue(ptr);
               ptr = irBuilder->CreateConstInBoundsGEP1_32(i8PtrTy, ptr, offset);
+              trackLLVMValue(ptr);
               ptr = irBuilder->CreatePointerCast(ptr, coercePtrTy);
+              trackLLVMValue(ptr);
               ptrEltTy = sTy;
             }
 
@@ -2694,9 +2989,10 @@ void FnSymbol::codegenDef() {
             llvm::Value* storeAdr = NULL;
             if (srcSize <= dstSize) {
               storeAdr = irBuilder->CreatePointerCast(ptr, coercePtrTy);
+              trackLLVMValue(storeAdr);
             } else {
-              storeAdr = makeAllocaAndLifetimeStart(irBuilder, layout, ctx,
-                                                    sTy, "coerce");
+              storeAdr = createAllocaInFunctionEntry(irBuilder, sTy, "coerce");
+              setValueAlignment(storeAdr, argType, arg);
             }
 
             unsigned nElts = sTy->getNumElements();
@@ -2706,25 +3002,17 @@ void FnSymbol::codegenDef() {
               // store it into the addr
               llvm::Value* eltPtr =
                 irBuilder->CreateStructGEP(sTy, storeAdr, i);
-              irBuilder->CreateStore(val, eltPtr);
+              trackLLVMValue(eltPtr);
+              llvm::StoreInst* storeElt = irBuilder->CreateStore(val, eltPtr);
+              trackLLVMValue(storeElt);
             }
 
             // if we allocated a temporary, memcpy from it to the main var
             //
             if (srcSize > dstSize) {
-              irBuilder->CreateMemCpy(ptr,
-#if HAVE_LLVM_VER >= 100
-                                      llvm::MaybeAlign(),
-#else
-                                      0,
-#endif
-                                      storeAdr,
-#if HAVE_LLVM_VER >= 100
-                                      llvm::MaybeAlign(),
-#else
-                                      0,
-#endif
-                                      dstSize);
+              llvm::CallInst* memcpy = irBuilder->CreateMemCpy(
+                ptr, llvm::MaybeAlign(), storeAdr, llvm::MaybeAlign(), dstSize);
+              trackLLVMValue(memcpy);
             }
 
             info->lvt->addValue(arg->cname, tmp.val,
@@ -2744,11 +3032,8 @@ void FnSymbol::codegenDef() {
               val = convertValueToType(val, chapelArgTy,
                                        is_signed(argType), true);
 
-            GenRet gArg;
-            gArg.val = val;
-            gArg.chplType = arg->typeInfo();
+            GenRet tempVar = createTempVarForFormal(arg, val);
 
-            GenRet tempVar = createTempVarWith(gArg);
             info->lvt->addValue(arg->cname, tempVar.val,
                                 tempVar.isLVPtr, tempVar.isUnsigned);
           }
@@ -2760,13 +3045,11 @@ void FnSymbol::codegenDef() {
         // consume the LLVM argument
         llvm::Argument* llArg = &*ai++;
 
-        GenRet gArg;
-        gArg.val = llArg;
-        gArg.chplType = arg->typeInfo();
-        GenRet tempVar = createTempVarWith(gArg);
+        GenRet tempVar = createTempVarForFormal(arg, llArg);
 
         info->lvt->addValue(arg->cname, tempVar.val,
                             tempVar.isLVPtr, tempVar.isUnsigned);
+
         // debug info for formal arguments
         if(debug_info){
           debug_info->get_formal_arg(arg, clangArgNum+1);
@@ -2778,7 +3061,7 @@ void FnSymbol::codegenDef() {
     // if --gen-ids is enabled, add metadata mapping the
     // function back to Chapel AST id
     if (fGenIDS) {
-      llvm::LLVMContext& ctx = info->llvmContext;
+      llvm::LLVMContext& ctx = gContext->llvmContext();
 
       llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
       llvm::Constant* c = llvm::ConstantInt::get(int64Ty, this->id);
@@ -2830,7 +3113,7 @@ void FnSymbol::codegenDef() {
 
     if((llvmPrintIrStageNum == llvmStageNum::NONE ||
         llvmPrintIrStageNum == llvmStageNum::EVERY) &&
-       shouldLlvmPrintIrFn(this))
+       shouldLlvmPrintIrCName(this->cname))
         printLlvmIr(name, func, llvmStageNum::NONE);
 
     // Now run the optimizations on that function.
@@ -2840,7 +3123,7 @@ void FnSymbol::codegenDef() {
 
     // (note, in particular, the default pass manager's
     //  populateFunctionPassManager does not include vectorization)
-    info->FPM_postgen->run(*func);
+    simplifyFunction(func);
 #endif
   }
 

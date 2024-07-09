@@ -1,0 +1,3 @@
+# Make ignores.
+/Chapel.xcodeproj/*.pbxuser
+/Chapel.xcodeproj/*.mode1v3

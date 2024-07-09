@@ -1,0 +1,4 @@
+{x = 15, y = false}
+{x = 15, y = true}
+constIntent-longerClass.chpl:8: warning: The argument 'c' was modified indirectly during this function, this behavior is unstable and may change in the future.
+If this behavior is intentional, declaring the argument as 'const ref' will silence this warning.  If not, declaring the argument as 'const in' will prevent indirect modifications

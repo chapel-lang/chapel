@@ -148,7 +148,7 @@ type coeff = 4*real; // HACK
 
 /* HACK: domains don't parse yet
 const Levels: domain(1) = {1..numLevels};
-const Base: domain(3) dmapped(Block(3)) = {1..nx, 1..ny, 1..nz};
+const Base: domain(3) dmapped(blockDist(3)) = {1..nx, 1..ny, 1..nz};
 const Hier: [lvl in Levels] domain(Base) = Base by -2**(lvl-1);
 const Stencil: domain(3) = {-1..1, -1..1, -1..1};
 */

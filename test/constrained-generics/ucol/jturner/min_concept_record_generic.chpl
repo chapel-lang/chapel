@@ -8,7 +8,7 @@ record TestMe {
 
 implements LessThan(TestMe);
 
-proc LT(x:TestMe, y:TestMe) : bool {
+proc LT(x:TestMe(?), y:TestMe(?)) : bool {
   return x.data < y.data;
 }
 

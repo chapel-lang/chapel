@@ -1,7 +1,7 @@
 proc test(ranges: range(?IT, boundKind.both, ?SB) ...?rank)
-        : rank * range(IT, boundKind.both, false)
+        : rank * range(IT, boundKind.both)
 {
-  var result: rank * range(IT, boundKind.both, false);
+  var result: rank * range(IT, boundKind.both);
   return result;
 }
 

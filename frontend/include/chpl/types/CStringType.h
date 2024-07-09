@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -50,6 +50,8 @@ class CStringType final : public Type {
   ~CStringType() = default;
 
   static const CStringType* get(Context* context);
+
+  void stringify(std::ostream& ss, StringifyKind stringKind) const override;
 };
 
 

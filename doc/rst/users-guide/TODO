@@ -85,10 +85,3 @@ Second pass
 -----------
 * Replace 'layer' with something else for runtime options?  Or embrace
   layer?
-
-Future
-------
-* As numa locale model comes on line introduce hierarchical locales
-  into the locality section (currently, the localesInChapel.rst file
-  brushes them off).  And/or as we have better written material
-  describing hierarchical locales, point to that.

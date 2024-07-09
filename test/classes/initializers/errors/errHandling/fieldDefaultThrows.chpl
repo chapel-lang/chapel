@@ -1,6 +1,6 @@
-proc funcThatThrows() throws {
+proc funcThatThrows(): int throws {
   throw new Error("whee!");
-  return 10;
+  return 10; // note that this line is ignored
 }
 
 class Foo {

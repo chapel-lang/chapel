@@ -1,0 +1,16 @@
+module M {
+
+  for 1..10 {}
+
+  @chplcheck.ignore("UnusedLoopIndex")
+  for i in 1..10 {}
+
+  @chplcheck.ignore("MethodsAfterFields")
+  record R {
+    proc foo() {}
+    var x: int;
+  }
+
+  proc foo(a: int) {}
+
+}

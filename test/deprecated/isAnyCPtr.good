@@ -1,8 +1,0 @@
-isAnyCPtr.chpl:8: warning: isAnyCPtr is deprecated
-isAnyCPtr.chpl:9: warning: isAnyCPtr is deprecated
-isAnyCPtr.chpl:10: warning: isAnyCPtr is deprecated
-isAnyCPtr.chpl:11: warning: isAnyCPtr is deprecated
-c_ptr(int(64)) true
-c_ptrConst(int(64)) true
-c_void_ptr true
-int(64) false

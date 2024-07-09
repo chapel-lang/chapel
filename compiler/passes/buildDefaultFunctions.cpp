@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -767,6 +767,11 @@ static void buildChplEntryPoints() {
   SET_LINENO(chplUserMain);
 
   chplUserMain->cname = astr("chpl_user_main");
+  if (fIdBasedMunging && !mainModule->astloc.id().isEmpty()) {
+    const char* cname = astr(mainModule->astloc.id().symbolPath().c_str(),
+                             ".main");
+    chplUserMain->cname = cname;
+  }
 
   //
   // chpl_gen_main is the entry point for the compiler-generated code.
@@ -848,7 +853,7 @@ static void buildChplEntryPoints() {
 
   bool main_ret_set = false;
 
-  if (fLibraryCompile == false) {
+  if (!fLibraryCompile && !fDynoGenStdLib) {
     SET_LINENO(chpl_gen_main);
 
     if (mainHasArgs == true) {
@@ -1670,7 +1675,7 @@ static void buildRecordHashFunction(AggregateType *ct) {
             field->hasFlag(FLAG_PARAM))) {
         CallExpr *field_access = new CallExpr(field->name, gMethodToken, arg);
         if (first) {
-          call = new CallExpr("hash", gMethodToken, field_access);
+          call = new CallExpr("chpl__defaultHashWrapperInner", field_access);
           first = false;
         } else {
           call = new CallExpr("chpl__defaultHashCombine",
@@ -1766,9 +1771,54 @@ static bool inheritsFromError(Type* t) {
 }
 
 
-// common code to create a writeThis() function without filling in the body
-FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg, const char* name) {
-  FnSymbol* fn = new FnSymbol(name);
+// common code to create a serialize method without filling in the body
+FnSymbol* buildSerializeFnSymbol(AggregateType* ct, ArgSymbol** filearg) {
+  FnSymbol* fn = new FnSymbol("serialize");
+
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  if (ct->isClass() && ct != dtObject) {
+    fn->addFlag(FLAG_OVERRIDE);
+  } else {
+    fn->addFlag(FLAG_INLINE);
+  }
+
+  fn->cname = astr("_auto_", ct->symbol->name, "_serialize");
+  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  fn->_this->addFlag(FLAG_ARG_THIS);
+
+  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "writer", dtAny);
+  *filearg = fileArg;
+
+  fileArg->addFlag(FLAG_MARKED_GENERIC);
+
+  fn->setMethod(true);
+
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  fn->insertFormalAtTail(fn->_this);
+  fn->insertFormalAtTail(fileArg);
+
+  ArgSymbol* serializer = new ArgSymbol(INTENT_REF, "serializer", dtAny);
+  fn->insertFormalAtTail(serializer);
+
+  fn->retType = dtVoid;
+
+  DefExpr* def = new DefExpr(fn);
+
+  ct->symbol->defPoint->insertBefore(def);
+
+  fn->setMethod(true);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+
+  reset_ast_loc(def, ct->symbol);
+
+  ct->methods.add(fn);
+
+  return fn;
+}
+
+static FnSymbol* buildDeserializeFnSymbol(AggregateType* ct, ArgSymbol** filearg) {
+  FnSymbol* fn = new FnSymbol("deserialize");
 
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
@@ -1777,11 +1827,13 @@ FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg, const c
   else
     fn->addFlag(FLAG_INLINE);
 
-  fn->cname = astr("_auto_", ct->symbol->name, "_write");
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  fn->cname = astr("_auto_", ct->symbol->name, "_deserialize");
+
+  auto desIntent = ct->isClass() ? INTENT_BLANK : INTENT_REF;
+  fn->_this = new ArgSymbol(desIntent, "this", ct);
   fn->_this->addFlag(FLAG_ARG_THIS);
 
-  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtAny);
+  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "reader", dtAny);
   *filearg = fileArg;
 
   fileArg->addFlag(FLAG_MARKED_GENERIC);
@@ -1809,12 +1861,13 @@ FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg, const c
 }
 
 static void buildDefaultReadWriteFunctions(AggregateType* ct) {
-  bool hasReadThis              = false;
-  bool hasWriteThis             = false;
-  bool makeReadThisAndWriteThis = true;
+  bool hasSerialize             = false;
+  bool hasDeserialize           = false;
+  bool AnySerialize             = false;
+  FnSymbol* readerInit          = nullptr;
 
-  bool hasEncodeTo              = false;
-  bool makeEncodeTo             = fUseIOFormatters;
+  // Always build for 'object' to satisfy 'override' keyword in some cases.
+  bool makeSerialize            = ct == dtObject || !fNoIOGenSerialization;
 
   //
   // We have no QIO when compiling with --minimal-modules, so no need
@@ -1834,63 +1887,60 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   if (isArrayImplType(ct))
     return;
 
-  if (functionExists("writeThis", dtMethodToken, ct, dtAny)) {
-    hasWriteThis = true;
+  if (functionExists("deserialize", dtMethodToken, ct, dtAny, dtAny)) {
+    hasDeserialize = true;
   }
 
-  if (functionExists("readThis", dtMethodToken, ct, dtAny)) {
-    hasReadThis = true;
+  if (functionExists("serialize", dtMethodToken, ct, dtAny, dtAny)) {
+    hasSerialize = true;
   }
 
-  if (functionExists("encodeTo", dtMethodToken, ct, dtAny)) {
-    hasEncodeTo = true;
+  forv_Vec(FnSymbol, method, ct->methods) {
+    int n = method ? method->numFormals() : 0;
+    if (method != nullptr &&
+        method->isInitializer() &&
+        n >= 4 &&
+        strcmp(method->getFormal(n-1)->name, "reader") == 0 &&
+        strcmp(method->getFormal(n)->name, "deserializer") == 0) {
+      readerInit = method;
+      break;
+    }
   }
 
-  // We'll make a writeThis and a readThis if neither exist.
-  // If only one exists, we leave just one (as some types
-  // can be written but not read, for example).
-  if (hasWriteThis || hasReadThis) {
-    makeReadThisAndWriteThis = false;
+  if (hasSerialize || hasDeserialize ||
+      (readerInit != nullptr &&
+       readerInit->hasFlag(FLAG_COMPILER_GENERATED) == false &&
+       ct->getModule()->modTag != MOD_INTERNAL)) {
+    // If there's a user-defined 'serialize' method...
+    // Or a user-defined 'deserialize' method...
+    // Or a user-defined 'init'-deserializing method...
+    // Then do not generate anything (except for hinting compiler errors)
+    AnySerialize = true;
   }
 
-  if (hasEncodeTo) {
-    makeEncodeTo = false;
-  }
-
-  // Make writeThis when appropriate
-  if (makeReadThisAndWriteThis == true && hasWriteThis == false) {
-    ArgSymbol* fileArg = NULL;
-    FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg, "writeThis");
-
-    // Compiler generated versions of readThis/writeThis now throw.
-    fn->throwsErrorInit();
-
-    fn->insertAtTail(new CallExpr("writeThisDefaultImpl",
-                                  fileArg,
-                                  fn->_this));
-
-    normalize(fn);
+  if (hasSerialize) {
+    makeSerialize = false;
   }
 
   //
-  // Keep generating the 'encodeTo' method so that the override versions don't
+  // Keep generating the 'serialize' method so that the override versions don't
   // cause errors.
   //
-  if (makeEncodeTo && !hasEncodeTo) {
+  if (makeSerialize && !hasSerialize) {
     ArgSymbol* fileArg = NULL;
-    FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg, "encodeTo");
+    FnSymbol* fn = buildSerializeFnSymbol(ct, &fileArg);
+    ArgSymbol* serializer = fn->getFormal(fn->numFormals());
 
-    // Compiler generated versions of readThis/writeThis now throw.
     fn->throwsErrorInit();
 
-    if (fUseIOFormatters) {
-      if (hasWriteThis) {
-        // TODO: we probably want to have a warning here to help users migrate
-        // their code to use formatters.
-        fn->insertAtTail(new CallExpr("writeThis", gMethodToken, fn->_this, fileArg));
+    if (!fNoIOGenSerialization) {
+      if (AnySerialize) {
+        auto msg = new_StringSymbol("'serialize' methods are not compiler-generated when a type has a user-defined 'deserialize' method.");
+        fn->insertAtTail(new CallExpr("compilerError", msg));
       } else {
-        fn->insertAtTail(new CallExpr("encodeToDefaultImpl",
+        fn->insertAtTail(new CallExpr("serializeDefaultImpl",
                                       fileArg,
+                                      serializer,
                                       fn->_this));
       }
     }
@@ -1898,53 +1948,35 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     normalize(fn);
   }
 
-  // Make readThis when appropriate
-  if (makeReadThisAndWriteThis == true && hasReadThis == false) {
-    FnSymbol* fn = new FnSymbol("readThis");
+  bool makeDeserialize = ct == dtObject || !fNoIOGenSerialization;
+  if (makeDeserialize && !hasDeserialize) {
+    ArgSymbol* fileArg = NULL;
+    FnSymbol* fn = buildDeserializeFnSymbol(ct, &fileArg);
 
-    // Compiler generated versions of readThis/writeThis now throw.
     fn->throwsErrorInit();
 
-    fn->addFlag(FLAG_COMPILER_GENERATED);
-    fn->addFlag(FLAG_LAST_RESORT);
-    if (ct->isClass() && ct != dtObject)
-      fn->addFlag(FLAG_OVERRIDE);
-    else
-      fn->addFlag(FLAG_INLINE);
+    ArgSymbol* deserializer = new ArgSymbol(INTENT_REF, "deserializer", dtAny);
+    fn->insertFormalAtTail(deserializer);
 
-    fn->cname = astr("_auto_", ct->symbol->name, "_read");
-
-    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
-    fn->_this->addFlag(FLAG_ARG_THIS);
-
-    ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtAny);
-
-    fileArg->addFlag(FLAG_MARKED_GENERIC);
-
-    fn->setMethod(true);
-
-    fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-    fn->insertFormalAtTail(fn->_this);
-    fn->insertFormalAtTail(fileArg);
-
-    fn->retType = dtVoid;
-
-    fn->insertAtTail(new CallExpr("readThisDefaultImpl",
-                                  fileArg,
-                                  fn->_this));
-
-    DefExpr* def = new DefExpr(fn);
-
-    ct->symbol->defPoint->insertBefore(def);
-
-    fn->setMethod(true);
-    fn->addFlag(FLAG_METHOD_PRIMARY);
-
-    reset_ast_loc(def, ct->symbol);
+    if (AnySerialize) {
+      auto msg = new_StringSymbol("'deserialize' methods are not compiler-generated when a type has a user-defined 'serialize' method.");
+      fn->insertAtTail(new CallExpr("compilerError", msg));
+    } else {
+      VarSymbol* temp = newTemp("_deser_temp");
+      fn->insertAtTail(new DefExpr(temp));
+      fn->insertAtTail(new CallExpr(PRIM_MOVE, temp, fn->_this));
+      fn->insertAtTail(new CallExpr("deserializeDefaultImpl",
+                                    fileArg,
+                                    deserializer,
+                                    temp));
+    }
 
     normalize(fn);
+  }
 
-    ct->methods.add(fn);
+  if (ct->builtReaderInit && AnySerialize && readerInit != nullptr) {
+    auto msg = new_StringSymbol("Initializers called by IO for deserialization are not compiler-generated when a user-defined 'serialize' or 'deserialize' method exists");
+    readerInit->insertAtHead(new CallExpr("compilerError", msg));
   }
 }
 

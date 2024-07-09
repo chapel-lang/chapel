@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -98,7 +98,13 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
   return chpl_bundle_exec_args(argc, argv, largc, largv);
 }
 
-int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+int chpl_launch(int argc, char* argv[], int32_t numLocales,
+                int32_t numLocalesPerNode) {
+
+  if (numLocalesPerNode > 1) {
+    chpl_launcher_no_colocales_error(NULL);
+  }
+
   int len = strlen(CHPL_THIRD_PARTY) + strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen("amudprun") + 2;
   char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   snprintf(cmd, len, "%s/%samudprun", CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH));

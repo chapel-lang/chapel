@@ -1,6 +1,6 @@
 module BC_dijkstra {
 
-  use Heap, NodesEdges;
+  use heap, NodesEdges;
 
   proc dijkstra(S: int, nEdges: int, nNodes: int, Edges, Nodes) {
     // Initialize stack
@@ -9,10 +9,10 @@ module BC_dijkstra {
     // Initialize records
     var D1 = {0..(nNodes-1)};
     var Records: [D1] unmanaged Record =
-     for i in D1 do 
+     for i in D1 do
       // onStack = next record on stack; -1 EOS; -2 not on stack
       // inHeap = location of this record in heap
-      new unmanaged Record(distance = INFINITY, onStack = -2, inHeap = -1,
+      new unmanaged Record(distance = inf, onStack = -2, inHeap = -1,
                       preEdge = new unmanaged PreEdge(edge = -1, next = nil));
 
     // Initialize heap
@@ -57,7 +57,7 @@ module BC_dijkstra {
         // First shortest path from S to neighbor is found
         //     set neighbor's distance and sigma and insert record in heap
         //     node is the pre node of neighbor
-        if (isinf(neighborDistance)) {
+        if (isInf(neighborDistance)) {
 
           Records[neighbor].distance = newDistance;
           Records[neighbor].sigma = sigma;
@@ -101,7 +101,7 @@ module BC_dijkstra {
       stack = Records[node].onStack;
 
 //      Nodes[node].vb += Records[node].delta;
-      Nodes[node].vb$.writeEF(Nodes[node].vb$.readFE() + Records[node].delta);
+      Nodes[node].vb.writeEF(Nodes[node].vb.readFE() + Records[node].delta);
 
       var ptr: unmanaged PreEdge? = Records[node].preEdge;
 
@@ -118,7 +118,7 @@ module BC_dijkstra {
         Records[predecessor].delta += factor;
 
 //        Edges[edge].vb += factor;
-        Edges[edge]!.vb$.writeEF(Edges[edge]!.vb$.readFE() + factor);
+        Edges[edge]!.vb.writeEF(Edges[edge]!.vb.readFE() + factor);
       }
     }
 

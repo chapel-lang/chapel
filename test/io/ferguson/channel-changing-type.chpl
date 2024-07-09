@@ -4,18 +4,16 @@ proc test1() {
   var f = openMemFile();
 
   {
-    var ch = f.writer(); // defaults to dynamic, text, locking
+    var ch = f.writer(locking=false); // defaults to dynamic, text
     // make a binary, unlocked channel using same buffer as ch
-    var cha: fileWriter(kind=iokind.big, locking=false);
-    cha; // no split init
-    cha = ch;
+    var cha = ch.withSerializer(new binarySerializer(endianness.big));
     cha.write(1);
   }
 
   // check the output
   {
     var i: int;
-    f.reader().readBinary(i, ioendian.big);
+    f.reader(locking=false).readBinary(i, endianness.big);
     assert(i == 1);
   }
 }
@@ -25,16 +23,16 @@ proc test2() {
   var f = openMemFile();
 
   {
-    var ch = f.writer(); // defaults to dynamic, text, locking
+    var ch = f.writer(locking=false); // defaults to dynamic, text
     // make a binary, unlocked channel using same buffer as ch
-    var cha: fileWriter(kind=iokind.big, locking=false) = ch;
+    var cha = ch.withSerializer(new binarySerializer(endianness.big));
     cha.write(1);
   }
 
   // check the output
   {
     var i: int;
-    f.reader().readBinary(i, ioendian.big);
+    f.reader(locking=false).readBinary(i, endianness.big);
     assert(i == 1);
   }
 }

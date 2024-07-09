@@ -1,4 +1,4 @@
 $CHPL_HOME/modules/standard/AutoMath.chpl:nnn: In function 'min':
 $CHPL_HOME/modules/standard/AutoMath.chpl:nnn: error: iterator or promoted expression iterator used in if or while condition
-  test_compare_range.chpl:nnn: called as min(x: range(int(64),both,false), y: range(int(64),both,false)) from function 'initMatrix'
-  test_compare_range.chpl:nnn: called as initMatrix(A: [domain(2,int(64),false)] real(64))
+  test_compare_range.chpl:nnn: called as min(x: range(int(64),both,one), y: range(int(64),both,one)) from function 'initMatrix'
+  test_compare_range.chpl:nnn: called as initMatrix(A: [domain(2,int(64),one)] real(64))

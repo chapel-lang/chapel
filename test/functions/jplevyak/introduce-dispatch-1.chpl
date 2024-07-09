@@ -1,6 +1,6 @@
 class C { var c; }
 proc C.f() { writeln(c); }
-var a = (new owned C(1)).borrow();
+var aObj = new C(1); var a = aObj.borrow();
 a.f();
-a = (new owned C(2.0)).borrow();
+var bObj = new C(2.0); a = bObj.borrow();
 a.f();

@@ -1,2 +1,0 @@
-bug: llvm backend is not emitting structure padding
-#17141

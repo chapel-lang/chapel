@@ -35,3 +35,11 @@ void test_array(int64_t* arr, int64_t len) {
 int64_t test_return(int64_t a) {
   return a + 1;
 }
+
+FILE* test_open(const char* path, const char* mode) {
+  return fopen(path, mode);
+}
+
+int test_close(FILE* file) {
+  return fclose(file);
+}

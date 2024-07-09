@@ -11,14 +11,15 @@ proc test(type t, v1:t, v2:t) {
 
   // although `isAnyCPtr` is no longer a public facing feature, I want to
   // maintain this test to ensure the feature continues to work
-  // test chpl_isAnyCPtr on the type
-  assert( chpl_isAnyCPtr(c_ptrTo(x).type) );
-  assert( chpl_isAnyCPtr(c_void_ptr) );
+  // test isAnyCPtr on the type
+  assert( isAnyCPtr(c_ptrTo(x).type) );
+  assert( isAnyCPtr(c_ptrToConst(x).type) );
+  assert( isAnyCPtr(c_ptr(void)) );
 
   // test memset on the pointer to the type
   memset( c_ptrTo(x), 0, c_sizeof(x.type) );
   // and on void pointer
-  memset( c_ptrTo(y):c_void_ptr, 0, c_sizeof(x.type) );
+  memset( c_ptrTo(y):c_ptr(void), 0, c_sizeof(x.type) );
 
   assert( x != v1 );
   assert( x == y );
@@ -33,8 +34,8 @@ proc test(type t, v1:t, v2:t) {
   x = v1;
   y = v2;
 
-  // test memmove on c_void_ptr
-  memmove( c_ptrTo(x):c_void_ptr, c_ptrTo(y):c_void_ptr, c_sizeof(x.type) );
+  // test memmove on c_ptr(void)
+  memmove( c_ptrTo(x):c_ptr(void), c_ptrTo(y):c_ptr(void), c_sizeof(x.type) );
   assert( x == y );
 
   x = v1;
@@ -47,8 +48,8 @@ proc test(type t, v1:t, v2:t) {
   x = v1;
   y = v2;
 
-  // test memcpy on c_void_ptr
-  memcpy( c_ptrTo(x):c_void_ptr, c_ptrTo(y):c_void_ptr, c_sizeof(x.type) );
+  // test memcpy on c_ptr(void)
+  memcpy( c_ptrTo(x):c_ptr(void), c_ptrTo(y):c_ptr(void), c_sizeof(x.type) );
   assert( x == y );
 
   x = v1;
@@ -61,8 +62,8 @@ proc test(type t, v1:t, v2:t) {
   // test memcmp on pointer to the type
   assert( lt != 0 );
 
-  // test memcmp on c_void_ptr
-  assert( memcmp( c_ptrTo(x):c_void_ptr, c_ptrTo(y):c_void_ptr, c_sizeof(x.type)) == lt );
+  // test memcmp on c_ptr(void)
+  assert( memcmp( c_ptrTo(x):c_ptr(void), c_ptrTo(y):c_ptr(void), c_sizeof(x.type)) == lt );
 
   x = v2;
   y = v1;
@@ -71,8 +72,8 @@ proc test(type t, v1:t, v2:t) {
   var gt = memcmp( c_ptrTo(x), c_ptrTo(y), c_sizeof(x.type));
   assert( gt != 0 );
 
-  // test memcmp on c_void_ptr
-  assert( memcmp( c_ptrTo(x):c_void_ptr, c_ptrTo(y):c_void_ptr, c_sizeof(x.type)) == gt );
+  // test memcmp on c_ptr(void)
+  assert( memcmp( c_ptrTo(x):c_ptr(void), c_ptrTo(y):c_ptr(void), c_sizeof(x.type)) == gt );
 
   assert( lt != gt );
 
@@ -82,8 +83,8 @@ proc test(type t, v1:t, v2:t) {
   // test memcmp on pointer to the type
   assert( memcmp( c_ptrTo(x), c_ptrTo(y), c_sizeof(x.type)) == 0 );
 
-  // test memcmp on c_void_ptr
-  assert( memcmp( c_ptrTo(x):c_void_ptr, c_ptrTo(y):c_void_ptr, c_sizeof(x.type)) == 0 );
+  // test memcmp on c_ptr(void)
+  assert( memcmp( c_ptrTo(x):c_ptr(void), c_ptrTo(y):c_ptr(void), c_sizeof(x.type)) == 0 );
 }
 
 test(int, 1, 2);

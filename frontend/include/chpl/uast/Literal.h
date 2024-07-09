@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,6 +32,8 @@ namespace uast {
   Literals are fixed values in the source code, like 1, 30.24, and "x".
  */
 class Literal : public AstNode {
+ friend class AstNode;
+
  protected:
   const types::Param* value_ = nullptr;
 
@@ -39,6 +41,10 @@ class Literal : public AstNode {
     : AstNode(tag), value_(value) {
 
     CHPL_ASSERT(value_ != nullptr);
+  }
+
+  void literalSerializeInner(Serializer& ser) const {
+    value_->serialize(ser);
   }
 
   Literal(AstTag tag, Deserializer& des)
@@ -61,11 +67,6 @@ class Literal : public AstNode {
    */
   const types::Param* param() const {
     return value_;
-  }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    value_->serialize(ser);
   }
 };
 

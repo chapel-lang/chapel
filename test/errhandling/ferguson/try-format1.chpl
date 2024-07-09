@@ -6,7 +6,7 @@ proc test() {
   var A:[1..2] int = 1..2;
 
   for a in A {
-    try! s += "num:%t\n".format(a);
+    try! s += "num:%?\n".format(a);
   }
 
   writeln(s);

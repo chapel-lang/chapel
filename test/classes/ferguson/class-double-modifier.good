@@ -34,6 +34,3 @@ class-double-modifier.chpl:24: error: duplicate decorators - shared shared A(int
 class-double-modifier.chpl:23: In function 'doit3':
 class-double-modifier.chpl:24: error: duplicate decorators - shared borrowed A(int(64))
   class-double-modifier.chpl:58: called as doit3(type C = borrowed A(int(64)))
-class-double-modifier.chpl:30: In function 'doit4':
-class-double-modifier.chpl:32: warning: creating a 'new borrowed' type is deprecated
-  class-double-modifier.chpl:65: called as doit4(type C = borrowed A(int(64)))

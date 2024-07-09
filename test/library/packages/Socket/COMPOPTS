@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+ccflags=$(pkg-config --cflags libevent)
+ldflags=$(pkg-config --libs libevent)
+libdir=$(pkg-config --variable=libdir libevent)
+
+echo "${ccflags:+--ccflags \"$ccflags\"} ${ldflags:+--ldflags \"$ldflags -Wl,-rpath,$libdir\"}"

@@ -8,4 +8,4 @@ writeln(c:uint);
 writeln(c:real);
 writeln(c:imag);
 writeln(c:complex);
-writef("%t\n", c);
+writef("%?\n", c);

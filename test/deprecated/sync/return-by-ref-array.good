@@ -1,0 +1,2 @@
+return-by-ref-array.chpl:23: warning: there is no checking that the domain of the initialization expression matches the domain of the declared type of the reference 'a1'
+return-by-ref-array.chpl:27: warning: there is no checking that the domain of the initialization expression matches the domain of the declared type of the reference 'a2'

@@ -5,7 +5,7 @@ use IO;
 config const inputfile = "lehmer10.dat";
 
 proc main() {
-  var Adat = open(inputfile, ioMode.r).reader();
+  var Adat = open(inputfile, ioMode.r).reader(locking=false);
 
   const n = readSize(Adat);
   var blk = readBlk(Adat);
@@ -16,7 +16,7 @@ proc main() {
   blk = min(blk,n);
 
   var A1D = 1..n;
-  const A2D = {A1D,A1D}; 
+  const A2D = {A1D,A1D};
   var A: [A2D] real;
   initA(A,Adat);
   Adat.close();
@@ -32,7 +32,7 @@ proc main() {
   writeln();
 }
 
-proc chol(A:[?D]) where (D.rank == 2) {
+proc chol(ref A:[?D]) where (D.rank == 2) {
   if (D.dim(0) != D.dim(1)) then
     halt("error:  chol requires a square matrix with same dimensions");
 
@@ -44,7 +44,7 @@ proc chol(A:[?D]) where (D.rank == 2) {
       A(j,j) -= A(j,k)*A(j,k);
     }
 
-    if (A(j,j) <= zero) then 
+    if (A(j,j) <= zero) then
       halt("Matrix is not positive definite.");
     else
       A(j,j) = sqrt(A(j,j));
@@ -63,16 +63,16 @@ proc readSize(Adat) {
 
   Adat.read(n);
   return n;
-} 
+}
 
 proc readBlk(Adat) {
   var blk: int;
 
   Adat.read(blk);
   return blk;
-} 
+}
 
-proc initA(A,Adat){
+proc initA(ref A,Adat){
 
   for ij in A.domain {
     Adat.read(A(ij));

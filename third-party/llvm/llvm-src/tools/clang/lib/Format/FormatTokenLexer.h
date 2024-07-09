@@ -22,6 +22,7 @@
 #include "clang/Basic/SourceManager.h"
 #include "clang/Format/Format.h"
 #include "llvm/ADT/MapVector.h"
+#include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/StringSet.h"
 #include "llvm/Support/Regex.h"
 
@@ -51,6 +52,7 @@ private:
   void tryMergePreviousTokens();
 
   bool tryMergeLessLess();
+  bool tryMergeGreaterGreater();
   bool tryMergeNSStringLiteral();
   bool tryMergeJSPrivateIdentifier();
   bool tryMergeCSharpStringLiteral();
@@ -60,7 +62,14 @@ private:
   bool tryMergeForEach();
   bool tryTransformTryUsageForC();
 
+  // Merge the most recently lexed tokens into a single token if their kinds are
+  // correct.
   bool tryMergeTokens(ArrayRef<tok::TokenKind> Kinds, TokenType NewType);
+  // Merge without checking their kinds.
+  bool tryMergeTokens(size_t Count, TokenType NewType);
+  // Merge if their kinds match any one of Kinds.
+  bool tryMergeTokensAny(ArrayRef<ArrayRef<tok::TokenKind>> Kinds,
+                         TokenType NewType);
 
   // Returns \c true if \p Tok can only be followed by an operand in JavaScript.
   bool precedesOperand(FormatToken *Tok);
@@ -85,6 +94,13 @@ private:
   void handleTemplateStrings();
 
   void handleCSharpVerbatimAndInterpolatedStrings();
+
+  // Handles TableGen multiline strings. It has the form [{ ... }].
+  void handleTableGenMultilineString();
+  // Handles TableGen numeric like identifiers.
+  // They have a forms of [0-9]*[_a-zA-Z]([_a-zA-Z0-9]*). But limited to the
+  // case it is not lexed as an integer.
+  void handleTableGenNumericLikeIdentifier();
 
   void tryParsePythonComment();
 
@@ -117,6 +133,8 @@ private:
   SmallVector<FormatToken *, 16> Tokens;
 
   llvm::SmallMapVector<IdentifierInfo *, TokenType, 8> Macros;
+
+  llvm::SmallPtrSet<IdentifierInfo *, 8> TypeNames;
 
   bool FormattingDisabled;
 

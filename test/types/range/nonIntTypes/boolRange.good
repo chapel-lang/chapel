@@ -1,5 +1,5 @@
 
-range(bool,both,false)
+range(bool,both,one)
 false
 true
 ---
@@ -7,32 +7,32 @@ false
 true
 
 
-range(bool,both,false)
+range(bool,both,one)
 ---
 
-range(bool,both,false)
+range(bool,both,one)
 false
 ---
 false
 
-range(bool,both,false)
+range(bool,both,one)
 true
 ---
 true
 
-range(bool,both,false)
+range(bool,both,one)
 false
 true
 ---
 false
 true
 
-range(bool,both,true)
+range(bool,both,positive)
 false
 ---
 false
 
-range(bool,both,true)
+range(bool,both,positive)
 true
 ---
 true

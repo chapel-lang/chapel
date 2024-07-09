@@ -24,7 +24,6 @@
 #include "llvm/Analysis/MemoryBuiltins.h"
 #include "llvm/Analysis/MemoryLocation.h"
 #include "llvm/Analysis/PHITransAddr.h"
-#include "llvm/Analysis/PhiValues.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/IR/BasicBlock.h"
@@ -77,9 +76,9 @@ static cl::opt<unsigned> BlockScanLimit(
              "dependency analysis (default = 100)"));
 
 static cl::opt<unsigned>
-    BlockNumberLimit("memdep-block-number-limit", cl::Hidden, cl::init(1000),
+    BlockNumberLimit("memdep-block-number-limit", cl::Hidden, cl::init(200),
                      cl::desc("The number of blocks to scan during memory "
-                              "dependency analysis (default = 1000)"));
+                              "dependency analysis (default = 200)"));
 
 // Limit on the number of memdep results to process.
 static const unsigned int NumResultsLimit = 100;
@@ -269,7 +268,7 @@ MemDepResult MemoryDependenceResults::getPointerDependencyFrom(
 MemDepResult MemoryDependenceResults::getPointerDependencyFrom(
     const MemoryLocation &MemLoc, bool isLoad, BasicBlock::iterator ScanIt,
     BasicBlock *BB, Instruction *QueryInst, unsigned *Limit) {
-  BatchAAResults BatchAA(AA);
+  BatchAAResults BatchAA(AA, &EII);
   return getPointerDependencyFrom(MemLoc, isLoad, ScanIt, BB, QueryInst, Limit,
                                   BatchAA);
 }
@@ -361,11 +360,46 @@ MemoryDependenceResults::getInvariantGroupPointerDependency(LoadInst *LI,
   return MemDepResult::getNonLocal();
 }
 
+// Check if SI that may alias with MemLoc can be safely skipped. This is
+// possible in case if SI can only must alias or no alias with MemLoc (no
+// partial overlapping possible) and it writes the same value that MemLoc
+// contains now (it was loaded before this store and was not modified in
+// between).
+static bool canSkipClobberingStore(const StoreInst *SI,
+                                   const MemoryLocation &MemLoc,
+                                   Align MemLocAlign, BatchAAResults &BatchAA,
+                                   unsigned ScanLimit) {
+  if (!MemLoc.Size.hasValue())
+    return false;
+  if (MemoryLocation::get(SI).Size != MemLoc.Size)
+    return false;
+  if (MemLoc.Size.isScalable())
+    return false;
+  if (std::min(MemLocAlign, SI->getAlign()).value() <
+      MemLoc.Size.getValue().getKnownMinValue())
+    return false;
+
+  auto *LI = dyn_cast<LoadInst>(SI->getValueOperand());
+  if (!LI || LI->getParent() != SI->getParent())
+    return false;
+  if (BatchAA.alias(MemoryLocation::get(LI), MemLoc) != AliasResult::MustAlias)
+    return false;
+  unsigned NumVisitedInsts = 0;
+  for (const Instruction *I = LI; I != SI; I = I->getNextNonDebugInstruction())
+    if (++NumVisitedInsts > ScanLimit ||
+        isModSet(BatchAA.getModRefInfo(I, MemLoc)))
+      return false;
+
+  return true;
+}
+
 MemDepResult MemoryDependenceResults::getSimplePointerDependencyFrom(
     const MemoryLocation &MemLoc, bool isLoad, BasicBlock::iterator ScanIt,
     BasicBlock *BB, Instruction *QueryInst, unsigned *Limit,
     BatchAAResults &BatchAA) {
   bool isInvariantLoad = false;
+  Align MemLocAlign =
+      MemLoc.Ptr->getPointerAlignment(BB->getModule()->getDataLayout());
 
   unsigned DefaultLimit = getDefaultBlockScanLimit();
   if (!Limit)
@@ -403,11 +437,12 @@ MemDepResult MemoryDependenceResults::getSimplePointerDependencyFrom(
   // do want to respect mustalias results since defs are useful for value
   // forwarding, but any mayalias write can be assumed to be noalias.
   // Arguably, this logic should be pushed inside AliasAnalysis itself.
-  if (isLoad && QueryInst) {
-    LoadInst *LI = dyn_cast<LoadInst>(QueryInst);
-    if (LI && LI->hasMetadata(LLVMContext::MD_invariant_load))
-      isInvariantLoad = true;
-  }
+  if (isLoad && QueryInst)
+    if (LoadInst *LI = dyn_cast<LoadInst>(QueryInst)) {
+      if (LI->hasMetadata(LLVMContext::MD_invariant_load))
+        isInvariantLoad = true;
+      MemLocAlign = LI->getAlign();
+    }
 
   // True for volatile instruction.
   // For Load/Store return true if atomic ordering is stronger than AO,
@@ -525,7 +560,7 @@ MemDepResult MemoryDependenceResults::getSimplePointerDependencyFrom(
       }
 
       // Stores don't alias loads from read-only memory.
-      if (BatchAA.pointsToConstantMemory(LoadLoc))
+      if (!isModSet(BatchAA.getModRefInfoMask(LoadLoc)))
         continue;
 
       // Stores depend on may/must aliased loads.
@@ -578,6 +613,8 @@ MemDepResult MemoryDependenceResults::getSimplePointerDependencyFrom(
         return MemDepResult::getDef(Inst);
       if (isInvariantLoad)
         continue;
+      if (canSkipClobberingStore(SI, MemLoc, MemLocAlign, BatchAA, *Limit))
+        continue;
       return MemDepResult::getClobber(Inst);
     }
 
@@ -593,6 +630,11 @@ MemDepResult MemoryDependenceResults::getSimplePointerDependencyFrom(
         return MemDepResult::getDef(Inst);
     }
 
+    // If we found a select instruction for MemLoc pointer, return it as Def
+    // dependency.
+    if (isa<SelectInst>(Inst) && MemLoc.Ptr == Inst)
+      return MemDepResult::getDef(Inst);
+
     if (isInvariantLoad)
       continue;
 
@@ -606,11 +648,7 @@ MemDepResult MemoryDependenceResults::getSimplePointerDependencyFrom(
         continue;
 
     // See if this instruction (e.g. a call or vaarg) mod/ref's the pointer.
-    ModRefInfo MR = BatchAA.getModRefInfo(Inst, MemLoc);
-    // If necessary, perform additional analysis.
-    if (isModAndRefSet(MR))
-      MR = BatchAA.callCapturesBefore(Inst, MemLoc, &DT);
-    switch (clearMust(MR)) {
+    switch (BatchAA.getModRefInfo(Inst, MemLoc)) {
     case ModRefInfo::NoModRef:
       // If the call has no effect on the queried pointer, just ignore it.
       continue;
@@ -621,7 +659,7 @@ MemDepResult MemoryDependenceResults::getSimplePointerDependencyFrom(
       // load query, we can safely ignore it (scan past it).
       if (isLoad)
         continue;
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
     default:
       // Otherwise, there is a potential dependence.  Return a clobber.
       return MemDepResult::getClobber(Inst);
@@ -963,7 +1001,7 @@ MemDepResult MemoryDependenceResults::getNonLocalInfoForBlock(
   // If the block has a dependency (i.e. it isn't completely transparent to
   // the value), remember the reverse association because we just added it
   // to Cache!
-  if (!Dep.isDef() && !Dep.isClobber())
+  if (!Dep.isLocal())
     return Dep;
 
   // Keep the ReverseNonLocalPtrDeps map up to date so we can efficiently
@@ -993,7 +1031,7 @@ SortNonLocalDepInfoCache(MemoryDependenceResults::NonLocalDepInfo &Cache,
     MemoryDependenceResults::NonLocalDepInfo::iterator Entry =
         std::upper_bound(Cache.begin(), Cache.end() - 1, Val);
     Cache.insert(Entry, Val);
-    LLVM_FALLTHROUGH;
+    [[fallthrough]];
   }
   case 1:
     // One new entry, Just insert the new value at the appropriate position.
@@ -1064,7 +1102,8 @@ bool MemoryDependenceResults::getNonLocalPointerDepFromBB(
         // be conservative.
         ThrowOutEverything =
             CacheInfo->Size.isPrecise() != Loc.Size.isPrecise() ||
-            CacheInfo->Size.getValue() < Loc.Size.getValue();
+            !TypeSize::isKnownGE(CacheInfo->Size.getValue(),
+                                 Loc.Size.getValue());
       } else {
         // For our purposes, unknown size > all others.
         ThrowOutEverything = !Loc.Size.hasValue();
@@ -1188,7 +1227,7 @@ bool MemoryDependenceResults::getNonLocalPointerDepFromBB(
   bool GotWorklistLimit = false;
   LLVM_DEBUG(AssertSorted(*Cache));
 
-  BatchAAResults BatchAA(AA);
+  BatchAAResults BatchAA(AA, &EII);
   while (!Worklist.empty()) {
     BasicBlock *BB = Worklist.pop_back_val();
 
@@ -1234,7 +1273,7 @@ bool MemoryDependenceResults::getNonLocalPointerDepFromBB(
     // phi translation to change it into a value live in the predecessor block.
     // If not, we just add the predecessors to the worklist and scan them with
     // the same Pointer.
-    if (!Pointer.NeedsPHITranslationFromBlock(BB)) {
+    if (!Pointer.needsPHITranslationFromBlock(BB)) {
       SkipFirstBlock = false;
       SmallVector<BasicBlock *, 16> NewBlocks;
       for (BasicBlock *Pred : PredCache.get(BB)) {
@@ -1253,16 +1292,16 @@ bool MemoryDependenceResults::getNonLocalPointerDepFromBB(
         if (InsertRes.first->second != Pointer.getAddr()) {
           // Make sure to clean up the Visited map before continuing on to
           // PredTranslationFailure.
-          for (unsigned i = 0; i < NewBlocks.size(); i++)
-            Visited.erase(NewBlocks[i]);
+          for (auto *NewBlock : NewBlocks)
+            Visited.erase(NewBlock);
           goto PredTranslationFailure;
         }
       }
       if (NewBlocks.size() > WorklistEntries) {
         // Make sure to clean up the Visited map before continuing on to
         // PredTranslationFailure.
-        for (unsigned i = 0; i < NewBlocks.size(); i++)
-          Visited.erase(NewBlocks[i]);
+        for (auto *NewBlock : NewBlocks)
+          Visited.erase(NewBlock);
         GotWorklistLimit = true;
         goto PredTranslationFailure;
       }
@@ -1273,7 +1312,7 @@ bool MemoryDependenceResults::getNonLocalPointerDepFromBB(
 
     // We do need to do phi translation, if we know ahead of time we can't phi
     // translate this value, don't even try.
-    if (!Pointer.IsPotentiallyPHITranslatable())
+    if (!Pointer.isPotentiallyPHITranslatable())
       goto PredTranslationFailure;
 
     // We may have added values to the cache list before this PHI translation.
@@ -1294,8 +1333,8 @@ bool MemoryDependenceResults::getNonLocalPointerDepFromBB(
       // Get the PHI translated pointer in this predecessor.  This can fail if
       // not translatable, in which case the getAddr() returns null.
       PHITransAddr &PredPointer = PredList.back().second;
-      PredPointer.PHITranslateValue(BB, Pred, &DT, /*MustDominate=*/false);
-      Value *PredPtrVal = PredPointer.getAddr();
+      Value *PredPtrVal =
+          PredPointer.translateValue(BB, Pred, &DT, /*MustDominate=*/false);
 
       // Check to see if we have already visited this pred block with another
       // pointer.  If so, we can't do this lookup.  This failure can occur
@@ -1320,8 +1359,8 @@ bool MemoryDependenceResults::getNonLocalPointerDepFromBB(
 
         // Make sure to clean up the Visited map before continuing on to
         // PredTranslationFailure.
-        for (unsigned i = 0, n = PredList.size(); i < n; ++i)
-          Visited.erase(PredList[i].first);
+        for (const auto &Pred : PredList)
+          Visited.erase(Pred.first);
 
         goto PredTranslationFailure;
       }
@@ -1332,9 +1371,9 @@ bool MemoryDependenceResults::getNonLocalPointerDepFromBB(
     // any results for.  (getNonLocalPointerDepFromBB will modify our
     // datastructures in ways the code after the PredTranslationFailure label
     // doesn't expect.)
-    for (unsigned i = 0, n = PredList.size(); i < n; ++i) {
-      BasicBlock *Pred = PredList[i].first;
-      PHITransAddr &PredPointer = PredList[i].second;
+    for (auto &I : PredList) {
+      BasicBlock *Pred = I.first;
+      PHITransAddr &PredPointer = I.second;
       Value *PredPtrVal = PredPointer.getAddr();
 
       bool CanTranslate = true;
@@ -1493,8 +1532,6 @@ void MemoryDependenceResults::invalidateCachedPointerInfo(Value *Ptr) {
   removeCachedNonLocalPointerDependencies(ValueIsLoadPair(Ptr, false));
   // Flush load info for the pointer.
   removeCachedNonLocalPointerDependencies(ValueIsLoadPair(Ptr, true));
-  // Invalidate phis that use the pointer.
-  PV.invalidateValue(Ptr);
 }
 
 void MemoryDependenceResults::invalidateCachedPredecessors() {
@@ -1502,6 +1539,8 @@ void MemoryDependenceResults::invalidateCachedPredecessors() {
 }
 
 void MemoryDependenceResults::removeInstruction(Instruction *RemInst) {
+  EII.removeInstruction(RemInst);
+
   // Walk through the Non-local dependencies, removing this one as the value
   // for any cached queries.
   NonLocalDepMapType::iterator NLDI = NonLocalDepsMap.find(RemInst);
@@ -1663,9 +1702,6 @@ void MemoryDependenceResults::removeInstruction(Instruction *RemInst) {
     }
   }
 
-  // Invalidate phis that use the removed instruction.
-  PV.invalidateValue(RemInst);
-
   assert(!NonLocalDepsMap.count(RemInst) && "RemInst got reinserted?");
   LLVM_DEBUG(verifyRemoved(RemInst));
 }
@@ -1728,8 +1764,7 @@ MemoryDependenceAnalysis::run(Function &F, FunctionAnalysisManager &AM) {
   auto &AC = AM.getResult<AssumptionAnalysis>(F);
   auto &TLI = AM.getResult<TargetLibraryAnalysis>(F);
   auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
-  auto &PV = AM.getResult<PhiValuesAnalysis>(F);
-  return MemoryDependenceResults(AA, AC, TLI, DT, PV, DefaultBlockScanLimit);
+  return MemoryDependenceResults(AA, AC, TLI, DT, DefaultBlockScanLimit);
 }
 
 char MemoryDependenceWrapperPass::ID = 0;
@@ -1740,7 +1775,6 @@ INITIALIZE_PASS_DEPENDENCY(AssumptionCacheTracker)
 INITIALIZE_PASS_DEPENDENCY(AAResultsWrapperPass)
 INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
 INITIALIZE_PASS_DEPENDENCY(TargetLibraryInfoWrapperPass)
-INITIALIZE_PASS_DEPENDENCY(PhiValuesWrapperPass)
 INITIALIZE_PASS_END(MemoryDependenceWrapperPass, "memdep",
                     "Memory Dependence Analysis", false, true)
 
@@ -1758,7 +1792,6 @@ void MemoryDependenceWrapperPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.setPreservesAll();
   AU.addRequired<AssumptionCacheTracker>();
   AU.addRequired<DominatorTreeWrapperPass>();
-  AU.addRequired<PhiValuesWrapperPass>();
   AU.addRequiredTransitive<AAResultsWrapperPass>();
   AU.addRequiredTransitive<TargetLibraryInfoWrapperPass>();
 }
@@ -1774,8 +1807,7 @@ bool MemoryDependenceResults::invalidate(Function &F, const PreservedAnalyses &P
   // Check whether the analyses we depend on became invalid for any reason.
   if (Inv.invalidate<AAManager>(F, PA) ||
       Inv.invalidate<AssumptionAnalysis>(F, PA) ||
-      Inv.invalidate<DominatorTreeAnalysis>(F, PA) ||
-      Inv.invalidate<PhiValuesAnalysis>(F, PA))
+      Inv.invalidate<DominatorTreeAnalysis>(F, PA))
     return true;
 
   // Otherwise this analysis result remains valid.
@@ -1791,7 +1823,6 @@ bool MemoryDependenceWrapperPass::runOnFunction(Function &F) {
   auto &AC = getAnalysis<AssumptionCacheTracker>().getAssumptionCache(F);
   auto &TLI = getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
   auto &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
-  auto &PV = getAnalysis<PhiValuesWrapperPass>().getResult();
-  MemDep.emplace(AA, AC, TLI, DT, PV, BlockScanLimit);
+  MemDep.emplace(AA, AC, TLI, DT, BlockScanLimit);
   return false;
 }

@@ -13,12 +13,14 @@
 #include "clang/Driver/Options.h"
 #include "clang/Driver/ToolChain.h"
 #include "llvm/ADT/StringExtras.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/StringSwitch.h"
-#include "llvm/Support/AArch64TargetParser.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/SpecialCaseList.h"
-#include "llvm/Support/TargetParser.h"
 #include "llvm/Support/VirtualFileSystem.h"
+#include "llvm/TargetParser/AArch64TargetParser.h"
+#include "llvm/TargetParser/RISCVTargetParser.h"
+#include "llvm/TargetParser/TargetParser.h"
 #include "llvm/Transforms/Instrumentation/AddressSanitizerOptions.h"
 #include <memory>
 
@@ -34,10 +36,9 @@ static const SanitizerMask NeedsUbsanRt =
 static const SanitizerMask NeedsUbsanCxxRt =
     SanitizerKind::Vptr | SanitizerKind::CFI;
 static const SanitizerMask NotAllowedWithTrap = SanitizerKind::Vptr;
-static const SanitizerMask NotAllowedWithMinimalRuntime =
-    SanitizerKind::Function | SanitizerKind::Vptr;
-static const SanitizerMask RequiresPIE =
-    SanitizerKind::DataFlow | SanitizerKind::HWAddress | SanitizerKind::Scudo;
+static const SanitizerMask NotAllowedWithMinimalRuntime = SanitizerKind::Vptr;
+static const SanitizerMask NotAllowedWithExecuteOnly =
+    SanitizerKind::Function | SanitizerKind::KCFI;
 static const SanitizerMask NeedsUnwindTables =
     SanitizerKind::Address | SanitizerKind::HWAddress | SanitizerKind::Thread |
     SanitizerKind::Memory | SanitizerKind::DataFlow;
@@ -52,15 +53,16 @@ static const SanitizerMask SupportsCoverage =
     SanitizerKind::DataFlow | SanitizerKind::Fuzzer |
     SanitizerKind::FuzzerNoLink | SanitizerKind::FloatDivideByZero |
     SanitizerKind::SafeStack | SanitizerKind::ShadowCallStack |
-    SanitizerKind::Thread | SanitizerKind::ObjCCast;
+    SanitizerKind::Thread | SanitizerKind::ObjCCast | SanitizerKind::KCFI;
 static const SanitizerMask RecoverableByDefault =
     SanitizerKind::Undefined | SanitizerKind::Integer |
     SanitizerKind::ImplicitConversion | SanitizerKind::Nullability |
     SanitizerKind::FloatDivideByZero | SanitizerKind::ObjCCast;
 static const SanitizerMask Unrecoverable =
     SanitizerKind::Unreachable | SanitizerKind::Return;
-static const SanitizerMask AlwaysRecoverable =
-    SanitizerKind::KernelAddress | SanitizerKind::KernelHWAddress;
+static const SanitizerMask AlwaysRecoverable = SanitizerKind::KernelAddress |
+                                               SanitizerKind::KernelHWAddress |
+                                               SanitizerKind::KCFI;
 static const SanitizerMask NeedsLTO = SanitizerKind::CFI;
 static const SanitizerMask TrappingSupported =
     (SanitizerKind::Undefined & ~SanitizerKind::Vptr) | SanitizerKind::Integer |
@@ -75,7 +77,7 @@ static const SanitizerMask CFIClasses =
 static const SanitizerMask CompatibleWithMinimalRuntime =
     TrappingSupported | SanitizerKind::Scudo | SanitizerKind::ShadowCallStack |
     SanitizerKind::MemtagStack | SanitizerKind::MemtagHeap |
-    SanitizerKind::MemtagGlobals;
+    SanitizerKind::MemtagGlobals | SanitizerKind::KCFI;
 
 enum CoverageFeature {
   CoverageFunc = 1 << 0,
@@ -96,6 +98,13 @@ enum CoverageFeature {
   CoverageInlineBoolFlag = 1 << 15,
   CoverageTraceLoads = 1 << 16,
   CoverageTraceStores = 1 << 17,
+  CoverageControlFlow = 1 << 18,
+};
+
+enum BinaryMetadataFeature {
+  BinaryMetadataCovered = 1 << 0,
+  BinaryMetadataAtomics = 1 << 1,
+  BinaryMetadataUAR = 1 << 2,
 };
 
 /// Parse a -fsanitize= or -fno-sanitize= argument's values, diagnosing any
@@ -107,6 +116,11 @@ static SanitizerMask parseArgValues(const Driver &D, const llvm::opt::Arg *A,
 /// components. Returns OR of members of \c CoverageFeature enumeration.
 static int parseCoverageFeatures(const Driver &D, const llvm::opt::Arg *A,
                                  bool DiagnoseErrors);
+
+/// Parse -f(no-)?sanitize-metadata= flag values, diagnosing any invalid
+/// components. Returns OR of members of \c BinaryMetadataFeature enumeration.
+static int parseBinaryMetadataFeatures(const Driver &D, const llvm::opt::Arg *A,
+                                       bool DiagnoseErrors);
 
 /// Produce an argument string from ArgList \p Args, which shows how it
 /// provides some sanitizer kind from \p Mask. For example, the argument list
@@ -126,6 +140,16 @@ static std::string describeSanitizeArg(const llvm::opt::Arg *A,
 /// Produce a string containing comma-separated names of sanitizers in \p
 /// Sanitizers set.
 static std::string toString(const clang::SanitizerSet &Sanitizers);
+
+/// Return true if an execute-only target disallows data access to code
+/// sections.
+static bool isExecuteOnlyTarget(const llvm::Triple &Triple,
+                                const llvm::opt::ArgList &Args) {
+  if (Triple.isPS5())
+    return true;
+  return Args.hasFlagNoClaim(options::OPT_mexecute_only,
+                             options::OPT_mno_execute_only, false);
+}
 
 static void validateSpecialCaseListFormat(const Driver &D,
                                           std::vector<std::string> &SCLFiles,
@@ -166,7 +190,7 @@ static void addDefaultIgnorelists(const Driver &D, SanitizerMask Kinds,
     clang::SmallString<64> Path(D.ResourceDir);
     llvm::sys::path::append(Path, "share", BL.File);
     if (D.getVFS().exists(Path))
-      IgnorelistFiles.push_back(std::string(Path.str()));
+      IgnorelistFiles.push_back(std::string(Path));
     else if (BL.Mask == SanitizerKind::CFI && DiagnoseErrors)
       // If cfi_ignorelist.txt cannot be found in the resource dir, driver
       // should fail.
@@ -236,7 +260,7 @@ static SanitizerMask parseSanitizeTrapArgs(const Driver &D,
         SanitizerSet S;
         S.Mask = InvalidValues;
         D.Diag(diag::err_drv_unsupported_option_argument)
-            << Arg->getOption().getName() << toString(S);
+            << Arg->getSpelling() << toString(S);
       }
       TrappingKinds |= expandSanitizerGroups(Add) & ~TrapRemove;
     } else if (Arg->getOption().matches(options::OPT_fno_sanitize_trap_EQ)) {
@@ -277,9 +301,7 @@ bool SanitizerArgs::needsCfiDiagRt() const {
          CfiCrossDso && !ImplicitCfiRuntime;
 }
 
-bool SanitizerArgs::requiresPIE() const {
-  return NeedPIE || (Sanitizers.Mask & RequiresPIE);
-}
+bool SanitizerArgs::requiresPIE() const { return NeedPIE; }
 
 bool SanitizerArgs::needsUnwindTables() const {
   return static_cast<bool>(Sanitizers.Mask & NeedsUnwindTables);
@@ -381,6 +403,22 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
           DiagnosedKinds |= SanitizerKind::Function;
         }
       }
+      // -fsanitize=function and -fsanitize=kcfi instrument indirect function
+      // calls to load a type hash before the function label. Therefore, an
+      // execute-only target doesn't support the function and kcfi sanitizers.
+      const llvm::Triple &Triple = TC.getTriple();
+      if (isExecuteOnlyTarget(Triple, Args)) {
+        if (SanitizerMask KindsToDiagnose =
+                Add & NotAllowedWithExecuteOnly & ~DiagnosedKinds) {
+          if (DiagnoseErrors) {
+            std::string Desc = describeSanitizeArg(Arg, KindsToDiagnose);
+            D.Diag(diag::err_drv_argument_not_allowed_with)
+                << Desc << Triple.str();
+          }
+          DiagnosedKinds |= KindsToDiagnose;
+        }
+        Add &= ~NotAllowedWithExecuteOnly;
+      }
 
       // FIXME: Make CFI on member function calls compatible with cross-DSO CFI.
       // There are currently two problems:
@@ -443,6 +481,10 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
       if (MinimalRuntime) {
         Add &= ~NotAllowedWithMinimalRuntime;
       }
+      // NotAllowedWithExecuteOnly is silently discarded on an execute-only
+      // target if implicitly enabled through group expansion.
+      if (isExecuteOnlyTarget(Triple, Args))
+        Add &= ~NotAllowedWithExecuteOnly;
       if (CfiCrossDso)
         Add &= ~SanitizerKind::CFIMFCall;
       Add &= Supported;
@@ -502,7 +544,8 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
       std::make_pair(SanitizerKind::MemTag,
                      SanitizerKind::Address | SanitizerKind::KernelAddress |
                          SanitizerKind::HWAddress |
-                         SanitizerKind::KernelHWAddress)};
+                         SanitizerKind::KernelHWAddress),
+      std::make_pair(SanitizerKind::KCFI, SanitizerKind::Function)};
   // Enable toolchain specific default sanitizers if not explicitly disabled.
   SanitizerMask Default = TC.getDefaultSanitizers() & ~AllRemove;
 
@@ -528,10 +571,8 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
         << lastArgumentForMask(D, Args, Kinds & NeedsLTO) << "-flto";
   }
 
-  if ((Kinds & SanitizerKind::ShadowCallStack) &&
-      ((TC.getTriple().isAArch64() &&
-        !llvm::AArch64::isX18ReservedByDefault(TC.getTriple())) ||
-       TC.getTriple().isRISCV()) &&
+  if ((Kinds & SanitizerKind::ShadowCallStack) && TC.getTriple().isAArch64() &&
+      !llvm::AArch64::isX18ReservedByDefault(TC.getTriple()) &&
       !Args.hasArg(options::OPT_ffixed_x18) && DiagnoseErrors) {
     D.Diag(diag::err_drv_argument_only_allowed_with)
         << lastArgumentForMask(D, Args, Kinds & SanitizerKind::ShadowCallStack)
@@ -591,7 +632,7 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
         SetToDiagnose.Mask |= KindsToDiagnose;
         if (DiagnoseErrors)
           D.Diag(diag::err_drv_unsupported_option_argument)
-              << Arg->getOption().getName() << toString(SetToDiagnose);
+              << Arg->getSpelling() << toString(SetToDiagnose);
         DiagnosedUnrecoverableKinds |= KindsToDiagnose;
       }
       RecoverableKinds |= expandSanitizerGroups(Add);
@@ -606,7 +647,7 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
         SetToDiagnose.Mask |= KindsToDiagnose;
         if (DiagnoseErrors)
           D.Diag(diag::err_drv_unsupported_option_argument)
-              << Arg->getOption().getName() << toString(SetToDiagnose);
+              << Arg->getSpelling() << toString(SetToDiagnose);
         DiagnosedAlwaysRecoverableKinds |= KindsToDiagnose;
       }
       RecoverableKinds &= ~expandSanitizerGroups(Remove);
@@ -636,14 +677,9 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
   if (AllAddedKinds & SanitizerKind::Memory) {
     if (Arg *A =
             Args.getLastArg(options::OPT_fsanitize_memory_track_origins_EQ,
-                            options::OPT_fsanitize_memory_track_origins,
                             options::OPT_fno_sanitize_memory_track_origins)) {
-      if (A->getOption().matches(options::OPT_fsanitize_memory_track_origins)) {
-        MsanTrackOrigins = 2;
-      } else if (A->getOption().matches(
-                     options::OPT_fno_sanitize_memory_track_origins)) {
-        MsanTrackOrigins = 0;
-      } else {
+      if (!A->getOption().matches(
+              options::OPT_fno_sanitize_memory_track_origins)) {
         StringRef S = A->getValue();
         if (S.getAsInteger(0, MsanTrackOrigins) || MsanTrackOrigins < 0 ||
             MsanTrackOrigins > 2) {
@@ -659,8 +695,6 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
     MsanParamRetval = Args.hasFlag(
         options::OPT_fsanitize_memory_param_retval,
         options::OPT_fno_sanitize_memory_param_retval, MsanParamRetval);
-    NeedPIE |= !(TC.getTriple().isOSLinux() &&
-                 TC.getTriple().getArch() == llvm::Triple::x86_64);
   } else if (AllAddedKinds & SanitizerKind::KernelMemory) {
     MsanUseAfterDtor = false;
     MsanParamRetval = Args.hasFlag(
@@ -702,6 +736,9 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
     CfiICallGeneralizePointers =
         Args.hasArg(options::OPT_fsanitize_cfi_icall_generalize_pointers);
 
+    CfiICallNormalizeIntegers =
+        Args.hasArg(options::OPT_fsanitize_cfi_icall_normalize_integers);
+
     if (CfiCrossDso && CfiICallGeneralizePointers && DiagnoseErrors)
       D.Diag(diag::err_drv_argument_not_allowed_with)
           << "-fsanitize-cfi-cross-dso"
@@ -710,6 +747,16 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
     CfiCanonicalJumpTables =
         Args.hasFlag(options::OPT_fsanitize_cfi_canonical_jump_tables,
                      options::OPT_fno_sanitize_cfi_canonical_jump_tables, true);
+  }
+
+  if (AllAddedKinds & SanitizerKind::KCFI) {
+    CfiICallNormalizeIntegers =
+        Args.hasArg(options::OPT_fsanitize_cfi_icall_normalize_integers);
+
+    if (AllAddedKinds & SanitizerKind::CFI && DiagnoseErrors)
+      D.Diag(diag::err_drv_argument_not_allowed_with)
+          << "-fsanitize=kcfi"
+          << lastArgumentForMask(D, Args, SanitizerKind::CFI);
   }
 
   Stats = Args.hasFlag(options::OPT_fsanitize_stats,
@@ -789,19 +836,21 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
   int InsertionPointTypes = CoverageFunc | CoverageBB | CoverageEdge;
   int InstrumentationTypes = CoverageTracePC | CoverageTracePCGuard |
                              CoverageInline8bitCounters | CoverageTraceLoads |
-                             CoverageTraceStores | CoverageInlineBoolFlag;
+                             CoverageTraceStores | CoverageInlineBoolFlag |
+                             CoverageControlFlow;
   if ((CoverageFeatures & InsertionPointTypes) &&
       !(CoverageFeatures & InstrumentationTypes) && DiagnoseErrors) {
     D.Diag(clang::diag::warn_drv_deprecated_arg)
         << "-fsanitize-coverage=[func|bb|edge]"
-        << "-fsanitize-coverage=[func|bb|edge],[trace-pc-guard|trace-pc]";
+        << "-fsanitize-coverage=[func|bb|edge],[trace-pc-guard|trace-pc],["
+           "control-flow]";
   }
 
   // trace-pc w/o func/bb/edge implies edge.
   if (!(CoverageFeatures & InsertionPointTypes)) {
     if (CoverageFeatures &
         (CoverageTracePC | CoverageTracePCGuard | CoverageInline8bitCounters |
-         CoverageInlineBoolFlag))
+         CoverageInlineBoolFlag | CoverageControlFlow))
       CoverageFeatures |= CoverageEdge;
 
     if (CoverageFeatures & CoverageStackDepth)
@@ -822,6 +871,32 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
         D, Args, CoverageIgnorelistFiles,
         options::OPT_fsanitize_coverage_ignorelist, OptSpecifier(),
         clang::diag::err_drv_malformed_sanitizer_coverage_ignorelist,
+        DiagnoseErrors);
+  }
+
+  // Parse -f(no-)?sanitize-metadata.
+  for (const auto *Arg :
+       Args.filtered(options::OPT_fexperimental_sanitize_metadata_EQ,
+                     options::OPT_fno_experimental_sanitize_metadata_EQ)) {
+    if (Arg->getOption().matches(
+            options::OPT_fexperimental_sanitize_metadata_EQ)) {
+      Arg->claim();
+      BinaryMetadataFeatures |=
+          parseBinaryMetadataFeatures(D, Arg, DiagnoseErrors);
+    } else {
+      Arg->claim();
+      BinaryMetadataFeatures &=
+          ~parseBinaryMetadataFeatures(D, Arg, DiagnoseErrors);
+    }
+  }
+
+  // Parse -fsanitize-metadata-ignorelist option if enabled.
+  if (BinaryMetadataFeatures) {
+    parseSpecialCaseListArg(
+        D, Args, BinaryMetadataIgnorelistFiles,
+        options::OPT_fexperimental_sanitize_metadata_ignorelist_EQ,
+        OptSpecifier(), // Cannot clear ignore list, only append.
+        clang::diag::err_drv_malformed_sanitizer_metadata_ignorelist,
         DiagnoseErrors);
   }
 
@@ -862,6 +937,9 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
       }
     }
 
+    StableABI = Args.hasFlag(options::OPT_fsanitize_stable_abi,
+                             options::OPT_fno_sanitize_stable_abi, false);
+
     AsanUseAfterScope = Args.hasFlag(
         options::OPT_fsanitize_address_use_after_scope,
         options::OPT_fno_sanitize_address_use_after_scope, AsanUseAfterScope);
@@ -876,19 +954,18 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
                      options::OPT_fno_sanitize_address_outline_instrumentation,
                      AsanOutlineInstrumentation);
 
-    // As a workaround for a bug in gold 2.26 and earlier, dead stripping of
-    // globals in ASan is disabled by default on most ELF targets.
-    // See https://sourceware.org/bugzilla/show_bug.cgi?id=19002
     AsanGlobalsDeadStripping = Args.hasFlag(
         options::OPT_fsanitize_address_globals_dead_stripping,
-        options::OPT_fno_sanitize_address_globals_dead_stripping,
-        !TC.getTriple().isOSBinFormatELF() || TC.getTriple().isOSFuchsia() ||
-            TC.getTriple().isPS());
+        options::OPT_fno_sanitize_address_globals_dead_stripping, true);
 
+    // Enable ODR indicators which allow better handling of mixed instrumented
+    // and uninstrumented globals. Disable them for Windows where weak odr
+    // indicators (.weak.__odr_asan_gen*) may cause multiple definition linker
+    // errors in the absence of -lldmingw.
     AsanUseOdrIndicator =
         Args.hasFlag(options::OPT_fsanitize_address_use_odr_indicator,
                      options::OPT_fno_sanitize_address_use_odr_indicator,
-                     AsanUseOdrIndicator);
+                     !TC.getTriple().isOSWindows());
 
     if (AllAddedKinds & SanitizerKind::PointerCompare & ~AllRemove) {
       AsanInvalidPointerCmp = true;
@@ -909,7 +986,7 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
       auto parsedAsanDtorKind = AsanDtorKindFromString(Arg->getValue());
       if (parsedAsanDtorKind == llvm::AsanDtorKind::Invalid && DiagnoseErrors) {
         TC.getDriver().Diag(clang::diag::err_drv_unsupported_option_argument)
-            << Arg->getOption().getName() << Arg->getValue();
+            << Arg->getSpelling() << Arg->getValue();
       }
       AsanDtorKind = parsedAsanDtorKind;
     }
@@ -922,7 +999,7 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
               llvm::AsanDetectStackUseAfterReturnMode::Invalid &&
           DiagnoseErrors) {
         TC.getDriver().Diag(clang::diag::err_drv_unsupported_option_argument)
-            << Arg->getOption().getName() << Arg->getValue();
+            << Arg->getSpelling() << Arg->getValue();
       }
       AsanUseAfterReturn = parsedAsanUseAfterReturn;
     }
@@ -1044,13 +1121,16 @@ void SanitizerArgs::addArgs(const ToolChain &TC, const llvm::opt::ArgList &Args,
   // NVPTX doesn't currently support sanitizers.  Bailing out here means
   // that e.g. -fsanitize=address applies only to host code, which is what we
   // want for now.
-  //
-  // AMDGPU sanitizer support is experimental and controlled by -fgpu-sanitize.
-  if (TC.getTriple().isNVPTX() ||
-      (TC.getTriple().isAMDGPU() &&
-       !Args.hasFlag(options::OPT_fgpu_sanitize, options::OPT_fno_gpu_sanitize,
-                     true)))
+  if (TC.getTriple().isNVPTX())
     return;
+  // AMDGPU sanitizer support is experimental and controlled by -fgpu-sanitize.
+  bool GPUSanitize = false;
+  if (TC.getTriple().isAMDGPU()) {
+    if (!Args.hasFlag(options::OPT_fgpu_sanitize, options::OPT_fno_gpu_sanitize,
+                      true))
+      return;
+    GPUSanitize = true;
+  }
 
   // Translate available CoverageFeatures to corresponding clang-cc1 flags.
   // Do it even if Sanitizers.empty() since some forms of coverage don't require
@@ -1076,7 +1156,8 @@ void SanitizerArgs::addArgs(const ToolChain &TC, const llvm::opt::ArgList &Args,
       std::make_pair(CoverageNoPrune, "-fsanitize-coverage-no-prune"),
       std::make_pair(CoverageStackDepth, "-fsanitize-coverage-stack-depth"),
       std::make_pair(CoverageTraceLoads, "-fsanitize-coverage-trace-loads"),
-      std::make_pair(CoverageTraceStores, "-fsanitize-coverage-trace-stores")};
+      std::make_pair(CoverageTraceStores, "-fsanitize-coverage-trace-stores"),
+      std::make_pair(CoverageControlFlow, "-fsanitize-coverage-control-flow")};
   for (auto F : CoverageFlags) {
     if (CoverageFeatures & F.first)
       CmdArgs.push_back(F.second);
@@ -1085,6 +1166,23 @@ void SanitizerArgs::addArgs(const ToolChain &TC, const llvm::opt::ArgList &Args,
       Args, CmdArgs, "-fsanitize-coverage-allowlist=", CoverageAllowlistFiles);
   addSpecialCaseListOpt(Args, CmdArgs, "-fsanitize-coverage-ignorelist=",
                         CoverageIgnorelistFiles);
+
+  if (!GPUSanitize) {
+    // Translate available BinaryMetadataFeatures to corresponding clang-cc1
+    // flags. Does not depend on any other sanitizers. Unsupported on GPUs.
+    const std::pair<int, std::string> BinaryMetadataFlags[] = {
+        std::make_pair(BinaryMetadataCovered, "covered"),
+        std::make_pair(BinaryMetadataAtomics, "atomics"),
+        std::make_pair(BinaryMetadataUAR, "uar")};
+    for (const auto &F : BinaryMetadataFlags) {
+      if (BinaryMetadataFeatures & F.first)
+        CmdArgs.push_back(
+            Args.MakeArgString("-fexperimental-sanitize-metadata=" + F.second));
+    }
+    addSpecialCaseListOpt(Args, CmdArgs,
+                          "-fexperimental-sanitize-metadata-ignorelist=",
+                          BinaryMetadataIgnorelistFiles);
+  }
 
   if (TC.getTriple().isOSWindows() && needsUbsanRt()) {
     // Instruct the code generator to embed linker directives in the object file
@@ -1134,8 +1232,8 @@ void SanitizerArgs::addArgs(const ToolChain &TC, const llvm::opt::ArgList &Args,
   if (MsanUseAfterDtor)
     CmdArgs.push_back("-fsanitize-memory-use-after-dtor");
 
-  if (MsanParamRetval)
-    CmdArgs.push_back("-fsanitize-memory-param-retval");
+  if (!MsanParamRetval)
+    CmdArgs.push_back("-fno-sanitize-memory-param-retval");
 
   // FIXME: Pass these parameters as function attributes, not as -llvm flags.
   if (!TsanMemoryAccess) {
@@ -1164,6 +1262,9 @@ void SanitizerArgs::addArgs(const ToolChain &TC, const llvm::opt::ArgList &Args,
   if (CfiICallGeneralizePointers)
     CmdArgs.push_back("-fsanitize-cfi-icall-generalize-pointers");
 
+  if (CfiICallNormalizeIntegers)
+    CmdArgs.push_back("-fsanitize-cfi-icall-experimental-normalize-integers");
+
   if (CfiCanonicalJumpTables)
     CmdArgs.push_back("-fsanitize-cfi-canonical-jump-tables");
 
@@ -1186,8 +1287,8 @@ void SanitizerArgs::addArgs(const ToolChain &TC, const llvm::opt::ArgList &Args,
   if (AsanGlobalsDeadStripping)
     CmdArgs.push_back("-fsanitize-address-globals-dead-stripping");
 
-  if (AsanUseOdrIndicator)
-    CmdArgs.push_back("-fsanitize-address-use-odr-indicator");
+  if (!AsanUseOdrIndicator)
+    CmdArgs.push_back("-fno-sanitize-address-use-odr-indicator");
 
   if (AsanInvalidPointerCmp) {
     CmdArgs.push_back("-mllvm");
@@ -1202,6 +1303,18 @@ void SanitizerArgs::addArgs(const ToolChain &TC, const llvm::opt::ArgList &Args,
   if (AsanOutlineInstrumentation) {
     CmdArgs.push_back("-mllvm");
     CmdArgs.push_back("-asan-instrumentation-with-call-threshold=0");
+  }
+
+  // When emitting Stable ABI instrumentation, force outlining calls and avoid
+  // inlining shadow memory poisoning. While this is a big performance burden
+  // for now it allows full abstraction from implementation details.
+  if (StableABI) {
+    CmdArgs.push_back("-mllvm");
+    CmdArgs.push_back("-asan-instrumentation-with-call-threshold=0");
+    CmdArgs.push_back("-mllvm");
+    CmdArgs.push_back("-asan-max-inline-poisoning-size=0");
+    CmdArgs.push_back("-mllvm");
+    CmdArgs.push_back("-asan-guard-against-version-mismatch=0");
   }
 
   // Only pass the option to the frontend if the user requested,
@@ -1292,7 +1405,7 @@ SanitizerMask parseArgValues(const Driver &D, const llvm::opt::Arg *A,
       Kinds |= Kind;
     else if (DiagnoseErrors)
       D.Diag(clang::diag::err_drv_unsupported_option_argument)
-          << A->getOption().getName() << Value;
+          << A->getSpelling() << Value;
   }
   return Kinds;
 }
@@ -1323,10 +1436,34 @@ int parseCoverageFeatures(const Driver &D, const llvm::opt::Arg *A,
                 .Case("stack-depth", CoverageStackDepth)
                 .Case("trace-loads", CoverageTraceLoads)
                 .Case("trace-stores", CoverageTraceStores)
+                .Case("control-flow", CoverageControlFlow)
                 .Default(0);
     if (F == 0 && DiagnoseErrors)
       D.Diag(clang::diag::err_drv_unsupported_option_argument)
-          << A->getOption().getName() << Value;
+          << A->getSpelling() << Value;
+    Features |= F;
+  }
+  return Features;
+}
+
+int parseBinaryMetadataFeatures(const Driver &D, const llvm::opt::Arg *A,
+                                bool DiagnoseErrors) {
+  assert(
+      A->getOption().matches(options::OPT_fexperimental_sanitize_metadata_EQ) ||
+      A->getOption().matches(
+          options::OPT_fno_experimental_sanitize_metadata_EQ));
+  int Features = 0;
+  for (int i = 0, n = A->getNumValues(); i != n; ++i) {
+    const char *Value = A->getValue(i);
+    int F = llvm::StringSwitch<int>(Value)
+                .Case("covered", BinaryMetadataCovered)
+                .Case("atomics", BinaryMetadataAtomics)
+                .Case("uar", BinaryMetadataUAR)
+                .Case("all", ~0)
+                .Default(0);
+    if (F == 0 && DiagnoseErrors)
+      D.Diag(clang::diag::err_drv_unsupported_option_argument)
+          << A->getSpelling() << Value;
     Features |= F;
   }
   return Features;

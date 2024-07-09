@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -93,34 +93,15 @@ static void test2() {
   Context ctx;
   Context* context = &ctx;
 
-  auto m = parseModule(context, "var b: bool;\n"
-                                "var b8: bool(8);\n"
-                                "var b16: bool(16);\n"
-                                "var b32: bool(32);\n"
-                                "var b64: bool(64);\n"
-                                "var bq: bool(?);\n");
-  assert(m->numStmts() == 6);
+  auto m = parseModule(context, "var b: bool;\n");
+
+  assert(m->numStmts() == 1);
   const Variable* b = m->stmt(0)->toVariable();
   assert(b);
-  const Variable* b8 = m->stmt(1)->toVariable();
-  assert(b8);
-  const Variable* b16 = m->stmt(2)->toVariable();
-  assert(b16);
-  const Variable* b32 = m->stmt(3)->toVariable();
-  assert(b32);
-  const Variable* b64 = m->stmt(4)->toVariable();
-  assert(b64);
-  const Variable* bq = m->stmt(5)->toVariable();
-  assert(bq);
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  assert(rr.byAst(b).type().type()   == BoolType::get(context, 0));
-  assert(rr.byAst(b8).type().type()  == BoolType::get(context, 8));
-  assert(rr.byAst(b16).type().type() == BoolType::get(context, 16));
-  assert(rr.byAst(b32).type().type() == BoolType::get(context, 32));
-  assert(rr.byAst(b64).type().type() == BoolType::get(context, 64));
-  assert(rr.byAst(bq).type().type()  == AnyBoolType::get(context));
+  assert(rr.byAst(b).type().type()   == BoolType::get(context));
 }
 
 static void test3() {
@@ -1070,7 +1051,7 @@ static void test36() {
   auto p = parseTypeAndFieldsOfX(context,
                         R""""(
                           class ClassA {
-                            var field: object;
+                            var field: RootClass;
                           }
                           var x: owned ClassA;
                         )"""");
@@ -1091,8 +1072,8 @@ static void test36() {
   assert(fct);
   assert(fct->decorator().isUnknownManagement());
   assert(fct->decorator().isNonNilable());
-  assert(fct->basicClassType()->name() == "object");
-  assert(fct->basicClassType() == BasicClassType::getObjectType(context));
+  assert(fct->basicClassType()->name() == "RootClass");
+  assert(fct->basicClassType() == BasicClassType::getRootClassType(context));
 }
 
 static void test37() {
@@ -1142,7 +1123,7 @@ static void test38() {
                             var parentField:int;
                           }
                           class Child : Parent {
-                            var childObject: object;
+                            var childObject: RootClass;
                           }
                           var x: owned Child;
                         )"""");
@@ -1163,13 +1144,13 @@ static void test38() {
   assert(fct);
   assert(fct->decorator().isUnknownManagement());
   assert(fct->decorator().isNonNilable());
-  assert(fct->basicClassType()->name() == "object");
-  assert(fct->basicClassType() == BasicClassType::getObjectType(context));
+  assert(fct->basicClassType()->name() == "RootClass");
+  assert(fct->basicClassType() == BasicClassType::getRootClassType(context));
 
   auto pct = bct->parentClassType()->toBasicClassType();
   assert(pct);
   assert(pct->parentClassType()->isObjectType());
-  assert(pct->parentClassType() == BasicClassType::getObjectType(context));
+  assert(pct->parentClassType() == BasicClassType::getRootClassType(context));
 
   auto& parentFields = fieldsForTypeDecl(context, pct, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(parentFields.numFields() == 1);

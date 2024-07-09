@@ -1,1 +1,9 @@
-CHPL_GPU_MEM_STRATEGY==array_on_device
+# This test checks that things run fine if you have a gpuizable loop who's
+# upper bound exceeds the bounds of a 32-bit signed integer. As of the writing
+# of this comment, it can run fine on cpu but it takes an awfully long time.  I
+# think the cost of waiting for it to complete outweighs the marginal benefit
+# of having it covered by nightly-testing and it seems unlikely that it would
+# show up as an issue in cpu-as-device mode and not elsewhere so I'm going to
+# skipif it for nightly testing purposes.  Hopefully, you're not looking at this
+# .skipif file because I was just proven wrong :-).
+CHPL_GPU==cpu

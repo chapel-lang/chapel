@@ -1,7 +1,7 @@
 use CTypes;
 class A {
   proc fn() : c_ptr(int) {
-    return c_nil : c_ptr(int);
+    return nil : c_ptr(int);
   }
 }
 
@@ -9,12 +9,13 @@ class A {
 proc fnSimple(arg) do return 5;
 
 proc main() {
-  var a = (new owned A()).borrow();
+  var ownA = new owned A();
+  var a = ownA.borrow();
   on Locales[0] {
     forall 1..1 {
       var ptr = a.fn();
       var ptrSimple = fnSimple(a);
-      writeln(ptr == c_nil, ptrSimple);
+      writeln(ptr == nil, ptrSimple);
     }
   }
 }

@@ -46,13 +46,10 @@
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Value.h"
-#include "llvm/InitializePasses.h"
-#include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Utils.h"
 #include "llvm/Transforms/Utils/LoopSimplify.h"
 #include "llvm/Transforms/Utils/LoopVersioning.h"
@@ -91,27 +88,37 @@ struct StoreToLoadForwardingCandidate {
   StoreToLoadForwardingCandidate(LoadInst *Load, StoreInst *Store)
       : Load(Load), Store(Store) {}
 
-  /// Return true if the dependence from the store to the load has a
-  /// distance of one.  E.g. A[i+1] = A[i]
+  /// Return true if the dependence from the store to the load has an
+  /// absolute distance of one.
+  /// E.g. A[i+1] = A[i] (or A[i-1] = A[i] for descending loop)
   bool isDependenceDistanceOfOne(PredicatedScalarEvolution &PSE,
                                  Loop *L) const {
     Value *LoadPtr = Load->getPointerOperand();
     Value *StorePtr = Store->getPointerOperand();
     Type *LoadType = getLoadStoreType(Load);
+    auto &DL = Load->getParent()->getModule()->getDataLayout();
 
     assert(LoadPtr->getType()->getPointerAddressSpace() ==
                StorePtr->getType()->getPointerAddressSpace() &&
-           LoadType == getLoadStoreType(Store) &&
+           DL.getTypeSizeInBits(LoadType) ==
+               DL.getTypeSizeInBits(getLoadStoreType(Store)) &&
            "Should be a known dependence");
 
-    // Currently we only support accesses with unit stride.  FIXME: we should be
-    // able to handle non unit stirde as well as long as the stride is equal to
-    // the dependence distance.
-    if (getPtrStride(PSE, LoadType, LoadPtr, L) != 1 ||
-        getPtrStride(PSE, LoadType, StorePtr, L) != 1)
+    int64_t StrideLoad = getPtrStride(PSE, LoadType, LoadPtr, L).value_or(0);
+    int64_t StrideStore = getPtrStride(PSE, LoadType, StorePtr, L).value_or(0);
+    if (!StrideLoad || !StrideStore || StrideLoad != StrideStore)
       return false;
 
-    auto &DL = Load->getParent()->getModule()->getDataLayout();
+    // TODO: This check for stride values other than 1 and -1 can be eliminated.
+    // However, doing so may cause the LoopAccessAnalysis to overcompensate,
+    // generating numerous non-wrap runtime checks that may undermine the
+    // benefits of load elimination. To safely implement support for non-unit
+    // strides, we would need to ensure either that the processed case does not
+    // require these additional checks, or improve the LAA to handle them more
+    // efficiently, or potentially both.
+    if (std::abs(StrideLoad) != 1)
+      return false;
+
     unsigned TypeByteSize = DL.getTypeAllocSize(const_cast<Type *>(LoadType));
 
     auto *LoadPtrSCEV = cast<SCEVAddRecExpr>(PSE.getSCEV(LoadPtr));
@@ -122,7 +129,7 @@ struct StoreToLoadForwardingCandidate {
     auto *Dist = cast<SCEVConstant>(
         PSE.getSE()->getMinusSCEV(StorePtrSCEV, LoadPtrSCEV));
     const APInt &Val = Dist->getAPInt();
-    return Val == TypeByteSize;
+    return Val == TypeByteSize * StrideLoad;
   }
 
   Value *getLoadPtr() const { return Load->getPointerOperand(); }
@@ -188,7 +195,8 @@ public:
       Instruction *Source = Dep.getSource(LAI);
       Instruction *Destination = Dep.getDestination(LAI);
 
-      if (Dep.Type == MemoryDepChecker::Dependence::Unknown) {
+      if (Dep.Type == MemoryDepChecker::Dependence::Unknown ||
+          Dep.Type == MemoryDepChecker::Dependence::IndirectUnsafe) {
         if (isa<LoadInst>(Source))
           LoadsWithUnknownDepedence.insert(Source);
         if (isa<LoadInst>(Destination))
@@ -211,9 +219,10 @@ public:
       if (!Load)
         continue;
 
-      // Only progagate the value if they are of the same type.
-      if (Store->getPointerOperandType() != Load->getPointerOperandType() ||
-          getLoadStoreType(Store) != getLoadStoreType(Load))
+      // Only propagate if the stored values are bit/pointer castable.
+      if (!CastInst::isBitOrNoopPointerCastable(
+              getLoadStoreType(Store), getLoadStoreType(Load),
+              Store->getParent()->getModule()->getDataLayout()))
         continue;
 
       Candidates.emplace_front(Load, Store);
@@ -435,10 +444,24 @@ public:
         Cand.Load->getType(), InitialPtr, "load_initial",
         /* isVolatile */ false, Cand.Load->getAlign(), PH->getTerminator());
 
-    PHINode *PHI = PHINode::Create(Initial->getType(), 2, "store_forwarded",
-                                   &L->getHeader()->front());
+    PHINode *PHI = PHINode::Create(Initial->getType(), 2, "store_forwarded");
+    PHI->insertBefore(L->getHeader()->begin());
     PHI->addIncoming(Initial, PH);
-    PHI->addIncoming(Cand.Store->getOperand(0), L->getLoopLatch());
+
+    Type *LoadType = Initial->getType();
+    Type *StoreType = Cand.Store->getValueOperand()->getType();
+    auto &DL = Cand.Load->getParent()->getModule()->getDataLayout();
+    (void)DL;
+
+    assert(DL.getTypeSizeInBits(LoadType) == DL.getTypeSizeInBits(StoreType) &&
+           "The type sizes should match!");
+
+    Value *StoreValue = Cand.Store->getValueOperand();
+    if (LoadType != StoreType)
+      StoreValue = CastInst::CreateBitOrPointerCast(
+          StoreValue, LoadType, "store_forward_cast", Cand.Store);
+
+    PHI->addIncoming(StoreValue, L->getLoopLatch());
 
     Cand.Load->replaceAllUsesWith(PHI);
   }
@@ -605,11 +628,12 @@ private:
 
 } // end anonymous namespace
 
-static bool
-eliminateLoadsAcrossLoops(Function &F, LoopInfo &LI, DominatorTree &DT,
-                          BlockFrequencyInfo *BFI, ProfileSummaryInfo *PSI,
-                          ScalarEvolution *SE, AssumptionCache *AC,
-                          function_ref<const LoopAccessInfo &(Loop &)> GetLAI) {
+static bool eliminateLoadsAcrossLoops(Function &F, LoopInfo &LI,
+                                      DominatorTree &DT,
+                                      BlockFrequencyInfo *BFI,
+                                      ProfileSummaryInfo *PSI,
+                                      ScalarEvolution *SE, AssumptionCache *AC,
+                                      LoopAccessInfoManager &LAIs) {
   // Build up a worklist of inner-loops to transform to avoid iterator
   // invalidation.
   // FIXME: This logic comes from other passes that actually change the loop
@@ -633,75 +657,12 @@ eliminateLoadsAcrossLoops(Function &F, LoopInfo &LI, DominatorTree &DT,
     if (!L->isRotatedForm() || !L->getExitingBlock())
       continue;
     // The actual work is performed by LoadEliminationForLoop.
-    LoadEliminationForLoop LEL(L, &LI, GetLAI(*L), &DT, BFI, PSI);
+    LoadEliminationForLoop LEL(L, &LI, LAIs.getInfo(*L), &DT, BFI, PSI);
     Changed |= LEL.processLoop();
+    if (Changed)
+      LAIs.clear();
   }
   return Changed;
-}
-
-namespace {
-
-/// The pass.  Most of the work is delegated to the per-loop
-/// LoadEliminationForLoop class.
-class LoopLoadElimination : public FunctionPass {
-public:
-  static char ID;
-
-  LoopLoadElimination() : FunctionPass(ID) {
-    initializeLoopLoadEliminationPass(*PassRegistry::getPassRegistry());
-  }
-
-  bool runOnFunction(Function &F) override {
-    if (skipFunction(F))
-      return false;
-
-    auto &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
-    auto &LAA = getAnalysis<LoopAccessLegacyAnalysis>();
-    auto &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
-    auto *PSI = &getAnalysis<ProfileSummaryInfoWrapperPass>().getPSI();
-    auto *BFI = (PSI && PSI->hasProfileSummary()) ?
-                &getAnalysis<LazyBlockFrequencyInfoPass>().getBFI() :
-                nullptr;
-    auto *SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
-
-    // Process each loop nest in the function.
-    return eliminateLoadsAcrossLoops(
-        F, LI, DT, BFI, PSI, SE, /*AC*/ nullptr,
-        [&LAA](Loop &L) -> const LoopAccessInfo & { return LAA.getInfo(&L); });
-  }
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.addRequiredID(LoopSimplifyID);
-    AU.addRequired<LoopInfoWrapperPass>();
-    AU.addPreserved<LoopInfoWrapperPass>();
-    AU.addRequired<LoopAccessLegacyAnalysis>();
-    AU.addRequired<ScalarEvolutionWrapperPass>();
-    AU.addRequired<DominatorTreeWrapperPass>();
-    AU.addPreserved<DominatorTreeWrapperPass>();
-    AU.addPreserved<GlobalsAAWrapperPass>();
-    AU.addRequired<ProfileSummaryInfoWrapperPass>();
-    LazyBlockFrequencyInfoPass::getLazyBFIAnalysisUsage(AU);
-  }
-};
-
-} // end anonymous namespace
-
-char LoopLoadElimination::ID;
-
-static const char LLE_name[] = "Loop Load Elimination";
-
-INITIALIZE_PASS_BEGIN(LoopLoadElimination, LLE_OPTION, LLE_name, false, false)
-INITIALIZE_PASS_DEPENDENCY(LoopInfoWrapperPass)
-INITIALIZE_PASS_DEPENDENCY(LoopAccessLegacyAnalysis)
-INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
-INITIALIZE_PASS_DEPENDENCY(ScalarEvolutionWrapperPass)
-INITIALIZE_PASS_DEPENDENCY(LoopSimplify)
-INITIALIZE_PASS_DEPENDENCY(ProfileSummaryInfoWrapperPass)
-INITIALIZE_PASS_DEPENDENCY(LazyBlockFrequencyInfoPass)
-INITIALIZE_PASS_END(LoopLoadElimination, LLE_OPTION, LLE_name, false, false)
-
-FunctionPass *llvm::createLoopLoadEliminationPass() {
-  return new LoopLoadElimination();
 }
 
 PreservedAnalyses LoopLoadEliminationPass::run(Function &F,
@@ -712,27 +673,21 @@ PreservedAnalyses LoopLoadEliminationPass::run(Function &F,
   if (LI.empty())
     return PreservedAnalyses::all();
   auto &SE = AM.getResult<ScalarEvolutionAnalysis>(F);
-  auto &TTI = AM.getResult<TargetIRAnalysis>(F);
   auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
-  auto &TLI = AM.getResult<TargetLibraryAnalysis>(F);
-  auto &AA = AM.getResult<AAManager>(F);
   auto &AC = AM.getResult<AssumptionAnalysis>(F);
   auto &MAMProxy = AM.getResult<ModuleAnalysisManagerFunctionProxy>(F);
   auto *PSI = MAMProxy.getCachedResult<ProfileSummaryAnalysis>(*F.getParent());
   auto *BFI = (PSI && PSI->hasProfileSummary()) ?
       &AM.getResult<BlockFrequencyAnalysis>(F) : nullptr;
+  LoopAccessInfoManager &LAIs = AM.getResult<LoopAccessAnalysis>(F);
 
-  auto &LAM = AM.getResult<LoopAnalysisManagerFunctionProxy>(F).getManager();
-  bool Changed = eliminateLoadsAcrossLoops(
-      F, LI, DT, BFI, PSI, &SE, &AC, [&](Loop &L) -> const LoopAccessInfo & {
-        LoopStandardAnalysisResults AR = {AA,  AC,  DT,      LI,      SE,
-                                          TLI, TTI, nullptr, nullptr, nullptr};
-        return LAM.getResult<LoopAccessAnalysis>(L, AR);
-      });
+  bool Changed = eliminateLoadsAcrossLoops(F, LI, DT, BFI, PSI, &SE, &AC, LAIs);
 
   if (!Changed)
     return PreservedAnalyses::all();
 
   PreservedAnalyses PA;
+  PA.preserve<DominatorTreeAnalysis>();
+  PA.preserve<LoopAnalysis>();
   return PA;
 }

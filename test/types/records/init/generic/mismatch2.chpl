@@ -11,7 +11,7 @@ record A {
     this.x = x;
   }
 
-  proc init(a:A) { // copy initializer to avoid confusion with the above
+  proc init(a:A(?)) { // copy initializer to avoid confusion with the above
     this.t = a.t;
     this.x = a.x;
   }

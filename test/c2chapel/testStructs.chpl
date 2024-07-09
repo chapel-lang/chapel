@@ -18,8 +18,8 @@ proc main() {
   intStruct_print(x);
 
   var y : stringStruct;
-  y.a = c"Hello";
-  y.b = c"World";
+  y.a = "Hello".c_str();
+  y.b = "World".c_str();
   stringStruct_print(y);
 
   var z : fnStruct;
@@ -28,4 +28,12 @@ proc main() {
 
   z.fn = c_ptrTo(bar);
   fnStruct_call(z);
+
+  var fds1: forwardDeclStruct1;
+  fds1.x = 8;
+  printForwardDeclStruct1(fds1);
+
+  var fds2: forwardDeclStruct2;
+  fds2.x = 16;
+  printForwardDeclStruct2(fds2);
 }

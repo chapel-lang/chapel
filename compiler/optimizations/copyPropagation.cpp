@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -496,6 +496,17 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
   for_vector(SymExpr, se, symExprs)
   {
     if (se->isRef()) continue;
+
+    // We want to carry information about `in` intent variables lowered from
+    // iterators on `foreach` loops to gpuTransforms so we wrap a variable
+    // representing the "captured" version of the `in` intent variable in a
+    // special primitive. We don't want copy propagation modifying this
+    // variable.
+    if (CallExpr *call = toCallExpr(se->parentExpr)) {
+      if (call->isPrimitive(PRIM_TASK_PRIVATE_SVAR_CAPTURE)) {
+        continue;
+      }
+    }
 
     // Replace an alias with its definition, using the current set of
     // available pairs.

@@ -38,6 +38,7 @@
 
 #if SHM_HAVE_DSA
 
+#include <dlfcn.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,7 +50,7 @@
 #include <accel-config/libaccel_config.h>
 #include <linux/idxd.h>
 #include <numa.h>
-#include "ofi_shm.h"
+#include "smr_util.h"
 #include "smr_dsa.h"
 
 #define MAX_WQS_PER_EP 4
@@ -97,6 +98,40 @@ struct smr_dsa_context {
 	unsigned long page_fault_stats[2];
 };
 
+struct dsa_ops {
+	struct accfg_device *(*accfg_wq_get_device)(struct accfg_wq *wq);
+	int (*accfg_device_get_cdev_major)(struct accfg_device *dev);
+	int (*accfg_wq_get_cdev_minor)(struct accfg_wq *wq);
+	int (*accfg_new)(struct accfg_ctx **ctx);
+	enum accfg_device_state (*accfg_device_get_state)(struct accfg_device *device);
+	uint64_t (*accfg_device_get_gen_cap)(struct accfg_device *device);
+	int (*accfg_device_get_numa_node)(struct accfg_device *device);
+	enum accfg_wq_state (*accfg_wq_get_state)(struct accfg_wq *wq);
+	uint64_t (*accfg_wq_get_max_transfer_size)(struct accfg_wq *wq);
+	enum accfg_wq_type (*accfg_wq_get_type)(struct accfg_wq *wq);
+	enum accfg_wq_mode (*accfg_wq_get_mode)(struct accfg_wq *wq);
+	const char *(*accfg_wq_get_devname)(struct accfg_wq *wq);
+	struct accfg_ctx *(*accfg_unref)(struct accfg_ctx *ctx);
+
+	struct accfg_device *(*accfg_device_get_first)(struct accfg_ctx *ctx);
+	struct accfg_device *(*accfg_device_get_next)(struct accfg_device *device);
+	struct accfg_wq *(*accfg_wq_get_first)(struct accfg_device *device);
+	struct accfg_wq *(*accfg_wq_get_next)(struct accfg_wq *wq);
+};
+
+#define dsa_foreach_device(ctx, device) \
+	for (device = dsa_ops.accfg_device_get_first(ctx); \
+	     device != NULL; \
+	     device = dsa_ops.accfg_device_get_next(device))
+
+
+#define dsa_foreach_wq(device, wq) \
+	for (wq = dsa_ops.accfg_wq_get_first(device); \
+	     wq != NULL; \
+	     wq = dsa_ops.accfg_wq_get_next(wq))
+
+static void *libdsa_handle = NULL;
+static struct dsa_ops dsa_ops;
 
 static inline unsigned char dsa_enqcmd(struct dsa_hw_desc *desc,
 				       volatile void *reg)
@@ -132,11 +167,11 @@ static int dsa_open_wq(struct accfg_wq *wq)
 	int major, minor, fd;
 	char path[1024];
 
-	dev = accfg_wq_get_device(wq);
-	major = accfg_device_get_cdev_major(dev);
+	dev = (*dsa_ops.accfg_wq_get_device)(wq);
+	major = (*dsa_ops.accfg_device_get_cdev_major)(dev);
 	if (major < 0)
 		return -1;
-	minor = accfg_wq_get_cdev_minor(wq);
+	minor = (*dsa_ops.accfg_wq_get_cdev_minor)(wq);
 	if (minor < 0)
 		return -1;
 
@@ -187,42 +222,42 @@ static int dsa_idxd_init_wq_array(int shared, int numa_node,
 	int wq_count = 0;
 	struct accfg_device *device;
 
-	if (accfg_new(&ctx) < 0)
+	if ((*dsa_ops.accfg_new)(&ctx) < 0)
 		return 0;
 
-	accfg_device_foreach(ctx, device) {
+	dsa_foreach_device(ctx, device) {
 		/* Make sure that the device is enabled */
-		dstate = accfg_device_get_state(device);
+		dstate = (*dsa_ops.accfg_device_get_state)(device);
 		if (dstate != ACCFG_DEVICE_ENABLED)
 			continue;
 
 		/* Make sure cache control is supported for memory operations */
-		if ((accfg_device_get_gen_cap(device) &
+		if (((*dsa_ops.accfg_device_get_gen_cap)(device) &
 		    GENCAP_CACHE_CTRL_MEM) == 0)
 			continue;
 
 		/* Match the device to the id requested */
 		if (numa_node != -1 &&
-		    accfg_device_get_numa_node(device) != numa_node)
+		    (*dsa_ops.accfg_device_get_numa_node)(device) != numa_node)
 			continue;
 
-		accfg_wq_foreach(device, wq)
+		dsa_foreach_wq(device, wq)
 		{
 			/* Get a workqueue that's enabled */
-			wstate = accfg_wq_get_state(wq);
+			wstate = (*dsa_ops.accfg_wq_get_state)(wq);
 			if (wstate != ACCFG_WQ_ENABLED)
 				continue;
 
-			if (accfg_wq_get_max_transfer_size(wq) < SMR_SAR_SIZE)
+			if ((*dsa_ops.accfg_wq_get_max_transfer_size)(wq) < SMR_SAR_SIZE)
 				continue;
 
 			/* The wq type should be user */
-			type = accfg_wq_get_type(wq);
+			type = (*dsa_ops.accfg_wq_get_type)(wq);
 			if (type != ACCFG_WQT_USER)
 				continue;
 
 			/* Make sure the mode is correct */
-			mode = accfg_wq_get_mode(wq);
+			mode = (*dsa_ops.accfg_wq_get_mode)(wq);
 			if ((mode == ACCFG_WQ_SHARED && !shared) ||
 			    (mode == ACCFG_WQ_DEDICATED && shared))
 				continue;
@@ -230,7 +265,7 @@ static int dsa_idxd_init_wq_array(int shared, int numa_node,
 			/* This is a candidate wq */
 			FI_DBG(&smr_prov, FI_LOG_EP_CTRL,
 					"DSA WQ: %s\n",
-					accfg_wq_get_devname(wq));
+					(*dsa_ops.accfg_wq_get_devname)(wq));
 
 			wq_reg = dsa_idxd_wq_mmap(wq);
 			if (wq_reg == NULL)
@@ -244,7 +279,7 @@ static int dsa_idxd_init_wq_array(int shared, int numa_node,
 			break;
 	}
 
-	accfg_unref(ctx);
+	(*dsa_ops.accfg_unref)(ctx);
 	return wq_count;
 }
 
@@ -477,8 +512,6 @@ static void smr_dsa_copy_sar(struct smr_freestack *sar_pool,
 	dsa_cmd_context->bytes_in_progress = dsa_bytes_pending;
 	dsa_context->copy_type_stats[dsa_cmd_context->dir]++;
 	dsa_cmd_context->op = cmd->msg.hdr.op;
-
-	smr_signal(region);
 }
 
 static void dsa_handle_page_fault(struct dsa_completion_record *comp)
@@ -538,26 +571,23 @@ dsa_process_partially_completed_desc(struct smr_dsa_context *dsa_context,
 static void dsa_update_tx_entry(struct smr_region *smr,
 				struct dsa_cmd_context *dsa_cmd_context)
 {
-	struct smr_region *peer_smr;
 	struct smr_resp *resp;
 	struct smr_cmd *cmd;
 	struct smr_tx_entry *tx_entry = dsa_cmd_context->entry_ptr;
 
 	tx_entry->bytes_done += dsa_cmd_context->bytes_in_progress;
 	cmd = &tx_entry->cmd;
-	peer_smr = smr_peer_region(smr, tx_entry->peer_id);
 	resp = smr_get_ptr(smr, cmd->msg.hdr.src_data);
 
 	assert(resp->status == SMR_STATUS_BUSY);
 	resp->status = (dsa_cmd_context->dir == OFI_COPY_IOV_TO_BUF ?
-			SMR_STATUS_SAR_READY : SMR_STATUS_SAR_FREE);
-	smr_signal(peer_smr);
+			SMR_STATUS_SAR_FULL : SMR_STATUS_SAR_EMPTY);
 }
 
 static void dsa_update_sar_entry(struct smr_region *smr,
 				 struct dsa_cmd_context *dsa_cmd_context)
 {
-	struct smr_sar_entry *sar_entry = dsa_cmd_context->entry_ptr;
+	struct smr_pend_entry *sar_entry = dsa_cmd_context->entry_ptr;
 	struct smr_region *peer_smr;
 	struct smr_resp *resp;
 	struct smr_cmd *cmd;
@@ -569,9 +599,7 @@ static void dsa_update_sar_entry(struct smr_region *smr,
 
 	assert(resp->status == SMR_STATUS_BUSY);
 	resp->status = (dsa_cmd_context->dir == OFI_COPY_IOV_TO_BUF ?
-			SMR_STATUS_SAR_READY : SMR_STATUS_SAR_FREE);
-
-	smr_signal(peer_smr);
+			SMR_STATUS_SAR_FULL : SMR_STATUS_SAR_EMPTY);
 }
 
 static void dsa_process_complete_work(struct smr_region *smr,
@@ -649,6 +677,157 @@ static bool dsa_check_cmd_status(struct smr_dsa_context *dsa_context,
 }
 
 /* SMR functions */
+
+void smr_dsa_init(void)
+{
+	libdsa_handle = dlopen("libaccel-config.so", RTLD_NOW);
+	if (!libdsa_handle) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to dlopen libaccel-config.so\n");
+		return;
+	}
+
+	dsa_ops.accfg_wq_get_device = dlsym(libdsa_handle,
+					    "accfg_wq_get_device");
+	if (!dsa_ops.accfg_wq_get_device) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find accfg_wq_get_device\n");
+		goto err_dlclose;
+	}
+
+	dsa_ops.accfg_device_get_cdev_major = dlsym(libdsa_handle,
+					      "accfg_device_get_cdev_major");
+	if (!dsa_ops.accfg_device_get_cdev_major) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find accfg_device_get_cdev_major\n");
+		goto err_dlclose;
+	}
+
+	dsa_ops.accfg_wq_get_cdev_minor = dlsym(libdsa_handle,
+					  "accfg_wq_get_cdev_minor");
+	if (!dsa_ops.accfg_wq_get_cdev_minor) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find accfg_wq_get_cdev_minor\n");
+		goto err_dlclose;
+	}
+
+	dsa_ops.accfg_new = dlsym(libdsa_handle, "accfg_new");
+	if (!dsa_ops.accfg_new) {
+		FI_WARN(&core_prov, FI_LOG_CORE, "Failed to find accfg_new\n");
+		goto err_dlclose;
+	}
+
+
+	dsa_ops.accfg_device_get_state = dlsym(libdsa_handle,
+					       "accfg_device_get_state");
+	if (!dsa_ops.accfg_device_get_state) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find accfg_device_get_state\n");
+		goto err_dlclose;
+	}
+
+	dsa_ops.accfg_device_get_gen_cap = dlsym(libdsa_handle,
+						 "accfg_device_get_gen_cap");
+	if (!dsa_ops.accfg_device_get_gen_cap) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find accfg_device_get_gen_cap\n");
+		goto err_dlclose;
+	}
+
+	dsa_ops.accfg_device_get_numa_node = dlsym(libdsa_handle,
+						   "accfg_device_get_numa_node");
+	if (!dsa_ops.accfg_device_get_numa_node) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find accfg_device_get_numa_node\n");
+		goto err_dlclose;
+	}
+
+	dsa_ops.accfg_wq_get_state = dlsym(libdsa_handle, "accfg_wq_get_state");
+	if (!dsa_ops.accfg_wq_get_state) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find accfg_wq_get_state\n");
+		goto err_dlclose;
+	}
+
+	dsa_ops.accfg_wq_get_max_transfer_size = dlsym(libdsa_handle,
+					"accfg_wq_get_max_transfer_size");
+	if (!dsa_ops.accfg_wq_get_max_transfer_size) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find accfg_wq_get_max_transfer_size\n");
+		goto err_dlclose;
+	}
+
+	dsa_ops.accfg_wq_get_type = dlsym(libdsa_handle, "accfg_wq_get_type");
+	if (!dsa_ops.accfg_wq_get_type) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find accfg_wq_get_type\n");
+		goto err_dlclose;
+	}
+
+	dsa_ops.accfg_wq_get_mode = dlsym(libdsa_handle, "accfg_wq_get_mode");
+	if (!dsa_ops.accfg_wq_get_mode) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find accfg_wq_get_mode\n");
+		goto err_dlclose;
+	}
+
+	dsa_ops.accfg_wq_get_devname = dlsym(libdsa_handle,
+					     "accfg_wq_get_devname");
+	if (!dsa_ops.accfg_wq_get_devname) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find accfg_wq_get_devname\n");
+		goto err_dlclose;
+	}
+
+	dsa_ops.accfg_unref = dlsym(libdsa_handle, "accfg_unref");
+	if (!dsa_ops.accfg_unref) {
+		FI_WARN(&core_prov, FI_LOG_CORE, "Failed to find accfg_unref\n");
+		goto err_dlclose;
+	}
+
+	dsa_ops.accfg_wq_get_first = dlsym(libdsa_handle, "accfg_wq_get_first");
+	if (!dsa_ops.accfg_wq_get_first) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find accfg_wq_get_first\n");
+		goto err_dlclose;
+	}
+
+	dsa_ops.accfg_wq_get_next = dlsym(libdsa_handle, "accfg_wq_get_next");
+	if (!dsa_ops.accfg_wq_get_next) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find accfg_wq_get_next\n");
+		goto err_dlclose;
+	}
+
+	dsa_ops.accfg_device_get_first = dlsym(libdsa_handle,
+					       "accfg_device_get_first");
+	if (!dsa_ops.accfg_device_get_first) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find accfg_device_get_first\n");
+		goto err_dlclose;
+	}
+
+	dsa_ops.accfg_device_get_next = dlsym(libdsa_handle,
+					      "accfg_device_get_next");
+	if (!dsa_ops.accfg_device_get_next) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Failed to find accfg_device_get_next\n");
+		goto err_dlclose;
+	}
+
+	return;
+
+err_dlclose:
+	dlclose(libdsa_handle);
+	libdsa_handle = NULL;
+}
+
+void smr_dsa_cleanup(void)
+{
+	if (libdsa_handle)
+		dlclose(libdsa_handle);
+}
+
 void smr_dsa_context_init(struct smr_ep *ep)
 {
 	int i, cpu;
@@ -754,8 +933,6 @@ void smr_dsa_progress(struct smr_ep *ep)
 			dsa_process_complete_work(ep->region, dsa_cmd_context,
 					      dsa_context);
 	}
-	// Always signal the self to complete dsa, tx or rx.
-	smr_signal(ep->region);
 	pthread_spin_unlock(&ep->region->lock);
 }
 
@@ -768,7 +945,7 @@ size_t smr_dsa_copy_to_sar(struct smr_ep *ep, struct smr_freestack *sar_pool,
 
 	assert(smr_env.use_dsa_sar);
 
-	if (resp->status != SMR_STATUS_SAR_FREE)
+	if (resp->status != SMR_STATUS_SAR_EMPTY)
 		return -FI_EAGAIN;
 
 	dsa_cmd_context = dsa_allocate_cmd_context(ep->dsa_context);
@@ -792,7 +969,7 @@ size_t smr_dsa_copy_from_sar(struct smr_ep *ep, struct smr_freestack *sar_pool,
 
 	assert(smr_env.use_dsa_sar);
 
-	if (resp->status != SMR_STATUS_SAR_READY)
+	if (resp->status != SMR_STATUS_SAR_FULL)
 		return FI_EAGAIN;
 
 	dsa_cmd_context = dsa_allocate_cmd_context(ep->dsa_context);
@@ -808,6 +985,9 @@ size_t smr_dsa_copy_from_sar(struct smr_ep *ep, struct smr_freestack *sar_pool,
 }
 
 #else
+
+void smr_dsa_init(void) {}
+void smr_dsa_cleanup(void) {}
 
 size_t smr_dsa_copy_to_sar(struct smr_ep *ep, struct smr_freestack *sar_pool,
 		struct smr_resp *resp, struct smr_cmd *cmd,

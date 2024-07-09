@@ -9,5 +9,5 @@ class Foo {
   }
 }
 
-var foo = (new owned Foo([1, 2, 3, 4])).borrow();
+var foo = new Foo([1, 2, 3, 4]);
 writeln(foo);

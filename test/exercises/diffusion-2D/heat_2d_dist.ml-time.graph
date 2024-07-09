@@ -1,0 +1,5 @@
+perfkeys: time:, time:, time:, time:, time: 
+files: heat_2d_dist_block.dat, heat_2d_dist_stencil.dat, heat_2d_dist_stencil_local_access.dat, heat_2d_dist_buffers.dat, heat_2d_dist_exchanges.dat
+graphkeys: BlockDist, StencilDist, StencilDist_localAccess, SPMD_buffered_halos, SPMD_direct_halo_exchange
+ylabel: Time (seconds)
+graphtitle: 2D Heat Solvers (5 point stencil)

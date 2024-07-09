@@ -14,8 +14,7 @@ To initialize a new mason package, run ``mason new``. The same can also be done 
     cd newPackage
     mason init
 
-
-This starts an interactive session which walks a user through the process of creating a project using Mason. This is highly recommended for new users.
+This sets up a folder to have the structure of a mason package. Particularly, it creates a `Mason.toml` file and the `src` folder with the package main module.
 
 A more advanced user may use the ``mason new [ options ] <project name>`` command, for example::
 

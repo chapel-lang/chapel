@@ -3,13 +3,14 @@
  * - getting CUDA and OpenCL attributes
  * - displaying the locality of the GPU
  *
- * Copyright © 2009-2018 Inria.  All rights reserved.
+ * Copyright © 2009-2019 Inria.  All rights reserved.
  * Copyright © 2009-2011,2017 Université Bordeaux
  * Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
-#include <hwloc.h>
+#include "hwloc.h"
+
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -24,7 +25,7 @@ int main(void)
 
     /* Allocate, initialize and load topology object. */
     hwloc_topology_init(&topology);
-    hwloc_topology_set_flags(topology, HWLOC_TOPOLOGY_FLAG_IO_DEVICES);
+    hwloc_topology_set_io_types_filter(topology, HWLOC_TYPE_FILTER_KEEP_IMPORTANT);
     hwloc_topology_load(topology);
 
     /* Find CUDA devices through the corresponding OS devices */
@@ -38,7 +39,6 @@ int main(void)
       /* obj->attr->osdev.type is HWLOC_OBJ_OSDEV_COPROC */
 
       s = hwloc_obj_get_info_by_name(obj, "Backend");
-      /* CoProcType also contains CUDA or OpenCL in v1.x */
       /* obj->subtype also contains CUDA or OpenCL since v2.0 */
 
       if (s && !strcmp(s, "CUDA")) {
@@ -98,7 +98,7 @@ int main(void)
         char name[16];
         hwloc_obj_type_snprintf(name, sizeof(name), obj, 0);
         hwloc_bitmap_asprintf(&cpuset_string, obj->cpuset);
-        printf("Location: %s P#%d\n", name, obj->os_index);
+        printf("Location: %s P#%u\n", name, obj->os_index);
         printf("Cpuset: %s\n", cpuset_string);
       }
       printf("\n");

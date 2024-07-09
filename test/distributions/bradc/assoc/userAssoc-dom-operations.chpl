@@ -2,7 +2,7 @@ use HashedDist;
 
 config const verbose = false;
 
-var newDist = new dmap(new Hashed(idxType=real));
+var newDist = new hashedDist(idxType=real);
 
 var D: domain(real) dmapped newDist;
 

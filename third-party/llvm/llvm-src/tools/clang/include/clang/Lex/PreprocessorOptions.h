@@ -18,6 +18,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <utility>
@@ -68,9 +69,15 @@ public:
   std::vector<std::string> Includes;
   std::vector<std::string> MacroIncludes;
 
+  /// Perform extra checks when loading PCM files for mutable file systems.
+  bool ModulesCheckRelocated = true;
+
   /// Initialize the preprocessor with the compiler and target specific
   /// predefines.
   bool UsePredefines = true;
+
+  /// Indicates whether to predefine target OS macros.
+  bool DefineTargetOSMacros = false;
 
   /// Whether we should maintain a detailed record of all macro
   /// definitions and expansions.
@@ -210,7 +217,7 @@ public:
   /// Enables a client to cache the directives for a file and provide them
   /// across multiple compiler invocations.
   /// FIXME: Allow returning an error.
-  std::function<Optional<ArrayRef<dependency_directives_scan::Directive>>(
+  std::function<std::optional<ArrayRef<dependency_directives_scan::Directive>>(
       FileEntryRef)>
       DependencyDirectivesForFile;
 
@@ -219,6 +226,9 @@ public:
 
   /// Prevents intended crashes when using #pragma clang __debug. For testing.
   bool DisablePragmaDebugCrash = false;
+
+  /// If set, the UNIX timestamp specified by SOURCE_DATE_EPOCH.
+  std::optional<uint64_t> SourceDateEpoch;
 
 public:
   PreprocessorOptions() : PrecompiledPreambleBytes(0, false) {}

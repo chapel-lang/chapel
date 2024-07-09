@@ -3,6 +3,9 @@ use Time;
 class C {
   type t;
   var x: t;
+  proc init(type t) {
+    this.t = t;
+  }
 }
 
 type t = sync int;

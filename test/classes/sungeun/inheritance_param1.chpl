@@ -6,5 +6,6 @@ class B: A {
   var y = x;
 }
 
-var a = (new owned A()).borrow();
+var ownA = new owned A();
+var a = ownA.borrow();
 var b: borrowed B?;

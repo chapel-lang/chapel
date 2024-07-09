@@ -3,7 +3,7 @@ class ThisPhase2 {
 
   proc init(val: complex) {
     someField = val;
-    this.complete();
+    init this;
     myMethod(); // Verifies that we can call methods in Phase 2
   }
 
@@ -13,5 +13,6 @@ class ThisPhase2 {
 }
 
 proc main() {
-  var c: borrowed ThisPhase2 = (new owned ThisPhase2(2.5 + 1.3i)).borrow();
+  var ownC = new owned ThisPhase2(2.5 + 1.3i);
+  var c: borrowed ThisPhase2 = ownC.borrow();
 }

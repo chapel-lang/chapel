@@ -56,12 +56,14 @@ var x3010 = 3010;
 var x3011 = 3011;
 @deprecated(notes="Lorem ipsum :enum:`test` dolor sit amet")
 var x3012 = 3012;
-@deprecated(notes="Lorem :mod:`abc` ipsum :proc:`def` dolor :iter:`ghi` sit :data:`jkl` amet")
+@deprecated(notes="Lorem ipsum :enumconstant:`test.constant` dolor sit amet")
 var x3013 = 3013;
-@deprecated(notes="Lorem :const:`abc` ipsum :var:`def` dolor :param:`ghi` sit :type:`jkl` amet")
+@deprecated(notes="Lorem :mod:`abc` ipsum :proc:`def` dolor :iter:`ghi` sit :data:`jkl` amet")
 var x3014 = 3014;
-@deprecated(notes="Lorem :class:`abc` ipsum :record:`def` dolor :attr:`ghi` sit amet")
+@deprecated(notes="Lorem :const:`abc` ipsum :var:`def` dolor :param:`ghi` sit :type:`jkl` amet")
 var x3015 = 3015;
+@deprecated(notes="Lorem :class:`abc` ipsum :record:`def` dolor :attr:`ghi` sit amet")
+var x3016 = 3016;
 
 // Test different text in ::s (all should not filter)
 @deprecated(notes="--- Test different text in ::s (all should not filter) ---")
@@ -228,6 +230,7 @@ writeln(x3012);
 writeln(x3013);
 writeln(x3014);
 writeln(x3015);
+writeln(x3016);
 
 writeln(x4000);
 writeln(x4001);

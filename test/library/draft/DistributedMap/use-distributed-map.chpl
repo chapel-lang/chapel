@@ -43,7 +43,7 @@ do
   agg.add(s);
 
 // independent of the above: test updateManager by itself
-reference.addOrSet("1234", 1_000_000);
+reference.addOrReplace("1234", 1_000_000);
 manage dm2.updateManager("1234") as element do
   element = 1_000_000;
 assert(dm2.contains("1234"));
@@ -54,19 +54,19 @@ verify(dm2, "check2");
 // randomStrings: generate random strings from "-32768" to "32767"
 
 record randomStrings {
-  const dom    = Block.createDomain({0..#numStrings});
+  const dom    = blockDist.createDomain({0..#numStrings});
   const seed   = defaultSeed;
-  const stream = createRandomStream(stringsType, seed, parSafe=false);
+  const stream = new randomStream(stringsType, seed);
 
   proc init() {} // ensure the default values are used consistently
 
   iter these() {
-    for rnd in stream.iterate(dom) do
+    for rnd in stream.next(dom) do
       yield rnd:string;
   }
 
   iter these(param tag) where tag == iterKind.standalone {
-    forall rnd in stream.iterate(dom) do
+    forall rnd in stream.next(dom) do
       yield rnd:string;
   }
 }

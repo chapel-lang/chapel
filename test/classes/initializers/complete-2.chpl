@@ -12,7 +12,7 @@ class MyClass1 : MyClass0 {
     writeln('MyClass1.init');
     y = val;
 
-    complete();
+    init this;
   }
 }
 

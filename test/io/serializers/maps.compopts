@@ -1,0 +1,4 @@
+-sformat=FormatKind.default # maps.default.good
+-sformat=FormatKind.json # maps.json.good
+-sformat=FormatKind.object # maps.object.good
+-sformat=FormatKind.syntax # maps.syntax.good

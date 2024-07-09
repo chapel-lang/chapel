@@ -3,10 +3,11 @@ class C {
   var x: t;
 }
 
-var c1 = (new owned C(int)).borrow();
+var ownC1 = new owned C(int);
+var c1 = ownC1.borrow();
 var c2 = new unmanaged C(int);
 
-proc foo(c1: borrowed C, c2: borrowed C) {
+proc foo(c1: borrowed C(?), c2: borrowed C(?)) {
   writeln(c1, c2);
 }
 

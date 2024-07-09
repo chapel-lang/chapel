@@ -14,15 +14,14 @@
 #ifndef LLVM_CLANG_ANALYSIS_CFG_H
 #define LLVM_CLANG_ANALYSIS_CFG_H
 
-#include "clang/Analysis/Support/BumpVector.h"
-#include "clang/Analysis/ConstructionContext.h"
+#include "clang/AST/Attr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
+#include "clang/Analysis/ConstructionContext.h"
+#include "clang/Analysis/Support/BumpVector.h"
 #include "clang/Basic/LLVM.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/GraphTraits.h"
-#include "llvm/ADT/None.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/PointerIntPair.h"
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/Support/Allocator.h"
@@ -32,6 +31,7 @@
 #include <cstddef>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace clang {
@@ -75,7 +75,8 @@ public:
     MemberDtor,
     TemporaryDtor,
     DTOR_BEGIN = AutomaticObjectDtor,
-    DTOR_END = TemporaryDtor
+    DTOR_END = TemporaryDtor,
+    CleanupFunction,
   };
 
 protected:
@@ -103,12 +104,11 @@ public:
     return t;
   }
 
-  /// Convert to the specified CFGElement type, returning None if this
+  /// Convert to the specified CFGElement type, returning std::nullopt if this
   /// CFGElement is not of the desired type.
-  template<typename T>
-  Optional<T> getAs() const {
+  template <typename T> std::optional<T> getAs() const {
     if (!T::isKind(*this))
-      return None;
+      return std::nullopt;
     T t;
     CFGElement& e = t;
     e = *this;
@@ -131,7 +131,7 @@ public:
 
 class CFGStmt : public CFGElement {
 public:
-  explicit CFGStmt(Stmt *S, Kind K = Statement) : CFGElement(K, S) {
+  explicit CFGStmt(const Stmt *S, Kind K = Statement) : CFGElement(K, S) {
     assert(isKind(*this));
   }
 
@@ -155,7 +155,8 @@ protected:
 /// this is only used by the analyzer's CFG.
 class CFGConstructor : public CFGStmt {
 public:
-  explicit CFGConstructor(CXXConstructExpr *CE, const ConstructionContext *C)
+  explicit CFGConstructor(const CXXConstructExpr *CE,
+                          const ConstructionContext *C)
       : CFGStmt(CE, Constructor) {
     assert(C);
     Data2.setPointer(const_cast<ConstructionContext *>(C));
@@ -185,7 +186,7 @@ class CFGCXXRecordTypedCall : public CFGStmt {
 public:
   /// Returns true when call expression \p CE needs to be represented
   /// by CFGCXXRecordTypedCall, as opposed to a regular CFGStmt.
-  static bool isCXXRecordTypedCall(Expr *E) {
+  static bool isCXXRecordTypedCall(const Expr *E) {
     assert(isa<CallExpr>(E) || isa<ObjCMessageExpr>(E));
     // There is no such thing as reference-type expression. If the function
     // returns a reference, it'll return the respective lvalue or xvalue
@@ -194,7 +195,7 @@ public:
            E->getType().getCanonicalType()->getAsCXXRecordDecl();
   }
 
-  explicit CFGCXXRecordTypedCall(Expr *E, const ConstructionContext *C)
+  explicit CFGCXXRecordTypedCall(const Expr *E, const ConstructionContext *C)
       : CFGStmt(E, CXXRecordTypedCall) {
     assert(isCXXRecordTypedCall(E));
     assert(C && (isa<TemporaryObjectConstructionContext>(C) ||
@@ -225,7 +226,7 @@ private:
 /// list.
 class CFGInitializer : public CFGElement {
 public:
-  explicit CFGInitializer(CXXCtorInitializer *initializer)
+  explicit CFGInitializer(const CXXCtorInitializer *initializer)
       : CFGElement(Initializer, initializer) {}
 
   CXXCtorInitializer* getInitializer() const {
@@ -264,7 +265,7 @@ private:
 };
 
 /// Represents the point where a loop ends.
-/// This element is is only produced when building the CFG for the static
+/// This element is only produced when building the CFG for the static
 /// analyzer and hidden behind the 'cfg-loopexit' analyzer config flag.
 ///
 /// Note: a loop exit element can be reached even when the loop body was never
@@ -384,6 +385,32 @@ private:
   }
 };
 
+class CFGCleanupFunction final : public CFGElement {
+public:
+  CFGCleanupFunction() = default;
+  CFGCleanupFunction(const VarDecl *VD)
+      : CFGElement(Kind::CleanupFunction, VD) {
+    assert(VD->hasAttr<CleanupAttr>());
+  }
+
+  const VarDecl *getVarDecl() const {
+    return static_cast<VarDecl *>(Data1.getPointer());
+  }
+
+  /// Returns the function to be called when cleaning up the var decl.
+  const FunctionDecl *getFunctionDecl() const {
+    const CleanupAttr *A = getVarDecl()->getAttr<CleanupAttr>();
+    return A->getFunctionDecl();
+  }
+
+private:
+  friend class CFGElement;
+
+  static bool isKind(const CFGElement E) {
+    return E.getKind() == Kind::CleanupFunction;
+  }
+};
+
 /// Represents C++ object destructor implicitly generated for automatic object
 /// or temporary bound to const reference at the point of leaving its local
 /// scope.
@@ -482,7 +509,7 @@ private:
 /// expression for temporary object.
 class CFGTemporaryDtor : public CFGImplicitDtor {
 public:
-  CFGTemporaryDtor(CXXBindTemporaryExpr *expr)
+  CFGTemporaryDtor(const CXXBindTemporaryExpr *expr)
       : CFGImplicitDtor(TemporaryDtor, expr, nullptr) {}
 
   const CXXBindTemporaryExpr *getBindTemporaryExpr() const {
@@ -1123,17 +1150,8 @@ public:
     Elements.push_back(CFGScopeBegin(VD, S), C);
   }
 
-  void prependScopeBegin(const VarDecl *VD, const Stmt *S,
-                         BumpVectorContext &C) {
-    Elements.insert(Elements.rbegin(), 1, CFGScopeBegin(VD, S), C);
-  }
-
   void appendScopeEnd(const VarDecl *VD, const Stmt *S, BumpVectorContext &C) {
     Elements.push_back(CFGScopeEnd(VD, S), C);
-  }
-
-  void prependScopeEnd(const VarDecl *VD, const Stmt *S, BumpVectorContext &C) {
-    Elements.insert(Elements.rbegin(), 1, CFGScopeEnd(VD, S), C);
   }
 
   void appendBaseDtor(const CXXBaseSpecifier *BS, BumpVectorContext &C) {
@@ -1152,6 +1170,10 @@ public:
     Elements.push_back(CFGAutomaticObjDtor(VD, S), C);
   }
 
+  void appendCleanupFunction(const VarDecl *VD, BumpVectorContext &C) {
+    Elements.push_back(CFGCleanupFunction(VD), C);
+  }
+
   void appendLifetimeEnds(VarDecl *VD, Stmt *S, BumpVectorContext &C) {
     Elements.push_back(CFGLifetimeEnds(VD, S), C);
   }
@@ -1163,44 +1185,6 @@ public:
   void appendDeleteDtor(CXXRecordDecl *RD, CXXDeleteExpr *DE, BumpVectorContext &C) {
     Elements.push_back(CFGDeleteDtor(RD, DE), C);
   }
-
-  // Destructors must be inserted in reversed order. So insertion is in two
-  // steps. First we prepare space for some number of elements, then we insert
-  // the elements beginning at the last position in prepared space.
-  iterator beginAutomaticObjDtorsInsert(iterator I, size_t Cnt,
-      BumpVectorContext &C) {
-    return iterator(Elements.insert(I.base(), Cnt,
-                                    CFGAutomaticObjDtor(nullptr, nullptr), C));
-  }
-  iterator insertAutomaticObjDtor(iterator I, VarDecl *VD, Stmt *S) {
-    *I = CFGAutomaticObjDtor(VD, S);
-    return ++I;
-  }
-
-  // Scope leaving must be performed in reversed order. So insertion is in two
-  // steps. First we prepare space for some number of elements, then we insert
-  // the elements beginning at the last position in prepared space.
-  iterator beginLifetimeEndsInsert(iterator I, size_t Cnt,
-                                   BumpVectorContext &C) {
-    return iterator(
-        Elements.insert(I.base(), Cnt, CFGLifetimeEnds(nullptr, nullptr), C));
-  }
-  iterator insertLifetimeEnds(iterator I, VarDecl *VD, Stmt *S) {
-    *I = CFGLifetimeEnds(VD, S);
-    return ++I;
-  }
-
-  // Scope leaving must be performed in reversed order. So insertion is in two
-  // steps. First we prepare space for some number of elements, then we insert
-  // the elements beginning at the last position in prepared space.
-  iterator beginScopeEndInsert(iterator I, size_t Cnt, BumpVectorContext &C) {
-    return iterator(
-        Elements.insert(I.base(), Cnt, CFGScopeEnd(nullptr, nullptr), C));
-  }
-  iterator insertScopeEnd(iterator I, VarDecl *VD, Stmt *S) {
-    *I = CFGScopeEnd(VD, S);
-    return ++I;
-  }
 };
 
 /// CFGCallback defines methods that should be called when a logical
@@ -1210,6 +1194,7 @@ public:
   CFGCallback() = default;
   virtual ~CFGCallback() = default;
 
+  virtual void logicAlwaysTrue(const BinaryOperator *B, bool isAlwaysTrue) {}
   virtual void compareAlwaysTrue(const BinaryOperator *B, bool isAlwaysTrue) {}
   virtual void compareBitwiseEquality(const BinaryOperator *B,
                                       bool isAlwaysTrue) {}
@@ -1230,7 +1215,9 @@ public:
   //===--------------------------------------------------------------------===//
 
   class BuildOptions {
-    std::bitset<Stmt::lastStmtConstant> alwaysAddMask;
+    // Stmt::lastStmtConstant has the same value as the last Stmt kind,
+    // so make sure we add one to account for this!
+    std::bitset<Stmt::lastStmtConstant + 1> alwaysAddMask;
 
   public:
     using ForcedBlkExprs = llvm::DenseMap<const Stmt *, const CFGBlock *>;
@@ -1399,7 +1386,7 @@ public:
     for (const_iterator I = begin(), E = end(); I != E; ++I)
       for (CFGBlock::const_iterator BI = (*I)->begin(), BE = (*I)->end();
            BI != BE; ++BI) {
-        if (Optional<CFGStmt> stmt = BI->getAs<CFGStmt>())
+        if (std::optional<CFGStmt> stmt = BI->getAs<CFGStmt>())
           O(const_cast<Stmt *>(stmt->getStmt()));
       }
   }
@@ -1465,6 +1452,8 @@ private:
   /// source DeclStmt.
   llvm::DenseMap<const DeclStmt *, const DeclStmt *> SyntheticDeclStmts;
 };
+
+Expr *extractElementInitializerFromNestedAILE(const ArrayInitLoopExpr *AILE);
 
 } // namespace clang
 

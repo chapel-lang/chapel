@@ -1,0 +1,5 @@
+a is {x = 1, y = 2, z = 3}
+writing {z=6,y=5,x=4}
+uncaught BadFormatError: bad format: missing expected literal (while reading string literal "x" with path "test.txt" offset 1)
+  read-class-reorder.chpl:31: thrown here
+  read-class-reorder.chpl:31: uncaught here

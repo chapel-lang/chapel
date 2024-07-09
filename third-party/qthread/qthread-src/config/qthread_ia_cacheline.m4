@@ -16,6 +16,10 @@ AC_CACHE_CHECK([for x86 cache line size],
 #define QTHREAD_POWERPC64   7
 #define QTHREAD_SPARCV9_32  8
 #define QTHREAD_SPARCV9_64  9
+#define QTHREAD_TILEPRO	    10
+#define QTHREAD_TILEGX	    11
+#define QTHREAD_ARM         12
+#define QTHREAD_ARMV8_A64   13
 ],[
 int op = 1, eax, ebx, ecx, edx, cachelinesize;
 FILE *f;

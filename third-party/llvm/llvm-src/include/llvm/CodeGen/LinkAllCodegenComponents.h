@@ -14,7 +14,6 @@
 #ifndef LLVM_CODEGEN_LINKALLCODEGENCOMPONENTS_H
 #define LLVM_CODEGEN_LINKALLCODEGENCOMPONENTS_H
 
-#include "llvm/IR/BuiltinGCs.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/SchedulerRegistry.h"
 #include "llvm/Target/TargetMachine.h"
@@ -38,18 +37,18 @@ namespace {
       (void) llvm::createGreedyRegisterAllocator();
       (void) llvm::createDefaultPBQPRegisterAllocator();
 
-      llvm::linkAllBuiltinGCs();
-
-      (void) llvm::createBURRListDAGScheduler(nullptr,
-                                              llvm::CodeGenOpt::Default);
-      (void) llvm::createSourceListDAGScheduler(nullptr,
-                                                llvm::CodeGenOpt::Default);
-      (void) llvm::createHybridListDAGScheduler(nullptr,
-                                                llvm::CodeGenOpt::Default);
-      (void) llvm::createFastDAGScheduler(nullptr, llvm::CodeGenOpt::Default);
-      (void) llvm::createDefaultScheduler(nullptr, llvm::CodeGenOpt::Default);
-      (void) llvm::createVLIWDAGScheduler(nullptr, llvm::CodeGenOpt::Default);
-
+      (void)llvm::createBURRListDAGScheduler(nullptr,
+                                             llvm::CodeGenOptLevel::Default);
+      (void)llvm::createSourceListDAGScheduler(nullptr,
+                                               llvm::CodeGenOptLevel::Default);
+      (void)llvm::createHybridListDAGScheduler(nullptr,
+                                               llvm::CodeGenOptLevel::Default);
+      (void)llvm::createFastDAGScheduler(nullptr,
+                                         llvm::CodeGenOptLevel::Default);
+      (void)llvm::createDefaultScheduler(nullptr,
+                                         llvm::CodeGenOptLevel::Default);
+      (void)llvm::createVLIWDAGScheduler(nullptr,
+                                         llvm::CodeGenOptLevel::Default);
     }
   } ForceCodegenLinking; // Force link by creating a global definition.
 }

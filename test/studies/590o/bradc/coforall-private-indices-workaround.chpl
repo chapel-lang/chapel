@@ -25,8 +25,8 @@ proc main {
   }
 
   var A: [AllPairs] real;
-  coforall x in StartIndices do {
-    coforall y in EndIndices do {
+  coforall x in StartIndices with (ref A) do {
+    coforall y in EndIndices with (ref A) do {
       if (x <= y) {
         A[x, y] = (x+1) + (y+1)/10.0;
       }  

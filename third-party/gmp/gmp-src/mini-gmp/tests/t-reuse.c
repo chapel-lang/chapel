@@ -197,7 +197,7 @@ testmain (int argc, char **argv)
       if ((bsi & 4) != 0)
 	mpz_neg (in3, in3);
 
-      for (i = 0; i < sizeof (dss_funcs) / sizeof (dss_func); i++)
+      for (i = 0; i < numberof (dss_funcs); i++)
 	{
 	  if (dss_funcs[i] == 0)
 	    continue;
@@ -220,7 +220,7 @@ testmain (int argc, char **argv)
 	    FAIL (dss, i, in1, in2, NULL);
 	}
 
-      for (i = 0; i < sizeof (ddss_div_funcs) / sizeof (ddss_div_func); i++)
+      for (i = 0; i < numberof (ddss_div_funcs); i++)
 	{
 	  if (ddss_div_funcs[i] == 0)
 	    continue;
@@ -260,7 +260,7 @@ testmain (int argc, char **argv)
 	    FAIL (ddss_div, i, in1, in2, NULL);
 	}
 
-      for (i = 0; i < sizeof (ds_funcs) / sizeof (ds_func); i++)
+      for (i = 0; i < numberof (ds_funcs); i++)
 	{
 	  if (ds_funcs[i] == 0)
 	    continue;
@@ -280,7 +280,7 @@ testmain (int argc, char **argv)
 
       in2i = mpz_get_ui (in2);
 
-      for (i = 0; i < sizeof (dsi_funcs) / sizeof (dsi_func); i++)
+      for (i = 0; i < numberof (dsi_funcs); i++)
 	{
 	  if (dsi_funcs[i] == 0)
 	    continue;
@@ -308,7 +308,7 @@ testmain (int argc, char **argv)
 
       if (in2i != 0)	  /* Don't divide by 0.  */
 	{
-	  for (i = 0; i < sizeof (dsi_div_funcs) / sizeof (dsi_div_funcs); i++)
+	  for (i = 0; i < numberof (dsi_div_funcs); i++)
 	    {
 	      r1 = (dsi_div_funcs[i]) (ref1, in1, in2i);
 	      mpz_check_format (ref1);
@@ -320,7 +320,7 @@ testmain (int argc, char **argv)
 		FAIL (dsi_div, i, in1, in2, NULL);
 	    }
 
-	  for (i = 0; i < sizeof (ddsi_div_funcs) / sizeof (ddsi_div_funcs); i++)
+	  for (i = 0; i < numberof (ddsi_div_funcs); i++)
 	    {
 	      r1 = (ddsi_div_funcs[i]) (ref1, ref2, in1, in2i);
 	      mpz_check_format (ref1);

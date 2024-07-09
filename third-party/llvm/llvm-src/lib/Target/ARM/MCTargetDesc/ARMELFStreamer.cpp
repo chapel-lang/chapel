@@ -12,8 +12,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "ARMRegisterInfo.h"
+#include "ARMMCTargetDesc.h"
 #include "ARMUnwindOpAsm.h"
+#include "Utils/ARMBaseInfo.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SmallVector.h"
@@ -46,7 +47,6 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FormattedStream.h"
-#include "llvm/Support/TargetParser.h"
 #include "llvm/Support/raw_ostream.h"
 #include <algorithm>
 #include <cassert>
@@ -94,7 +94,7 @@ class ARMTargetAsmStreamer : public ARMTargetStreamer {
   void emitArch(ARM::ArchKind Arch) override;
   void emitArchExtension(uint64_t ArchExt) override;
   void emitObjectArch(ARM::ArchKind Arch) override;
-  void emitFPU(unsigned FPU) override;
+  void emitFPU(ARM::FPUKind FPU) override;
   void emitInst(uint32_t Inst, char Suffix = '\0') override;
   void finishAttributeSection() override;
 
@@ -202,7 +202,12 @@ void ARMTargetAsmStreamer::emitTextAttribute(unsigned Attribute,
     OS << "\t.cpu\t" << String.lower();
     break;
   default:
-    OS << "\t.eabi_attribute\t" << Attribute << ", \"" << String << "\"";
+    OS << "\t.eabi_attribute\t" << Attribute << ", \"";
+    if (Attribute == ARMBuildAttrs::also_compatible_with)
+      OS.write_escaped(String);
+    else
+      OS << String;
+    OS << "\"";
     if (IsVerboseAsm) {
       StringRef Name = ELFAttrs::attrTypeAsString(
           Attribute, ARMBuildAttrs::getARMAttributeTags());
@@ -244,7 +249,7 @@ void ARMTargetAsmStreamer::emitObjectArch(ARM::ArchKind Arch) {
   OS << "\t.object_arch\t" << ARM::getArchName(Arch) << '\n';
 }
 
-void ARMTargetAsmStreamer::emitFPU(unsigned FPU) {
+void ARMTargetAsmStreamer::emitFPU(ARM::FPUKind FPU) {
   OS << "\t.fpu\t" << ARM::getFPUName(FPU) << "\n";
 }
 
@@ -378,7 +383,7 @@ void ARMTargetAsmStreamer::emitARMWinCFICustom(unsigned Opcode) {
 class ARMTargetELFStreamer : public ARMTargetStreamer {
 private:
   StringRef CurrentVendor;
-  unsigned FPU = ARM::FK_INVALID;
+  ARM::FPUKind FPU = ARM::FK_INVALID;
   ARM::ArchKind Arch = ARM::ArchKind::INVALID;
   ARM::ArchKind EmittedArch = ARM::ArchKind::INVALID;
 
@@ -410,7 +415,7 @@ private:
                             StringRef StringValue) override;
   void emitArch(ARM::ArchKind Arch) override;
   void emitObjectArch(ARM::ArchKind Arch) override;
-  void emitFPU(unsigned FPU) override;
+  void emitFPU(ARM::FPUKind FPU) override;
   void emitInst(uint32_t Inst, char Suffix = '\0') override;
   void finishAttributeSection() override;
   void emitLabel(MCSymbol *Symbol) override;
@@ -831,10 +836,6 @@ void ARMTargetELFStreamer::emitArchDefaultAttributes() {
     S.setAttributeItem(CPU_arch, ARM::getArchAttr(EmittedArch), false);
 
   switch (Arch) {
-  case ARM::ArchKind::ARMV2:
-  case ARM::ArchKind::ARMV2A:
-  case ARM::ArchKind::ARMV3:
-  case ARM::ArchKind::ARMV3M:
   case ARM::ArchKind::ARMV4:
     S.setAttributeItem(ARM_ISA_use, Allowed, false);
     break;
@@ -889,10 +890,15 @@ void ARMTargetELFStreamer::emitArchDefaultAttributes() {
   case ARM::ArchKind::ARMV8_4A:
   case ARM::ArchKind::ARMV8_5A:
   case ARM::ArchKind::ARMV8_6A:
+  case ARM::ArchKind::ARMV8_7A:
+  case ARM::ArchKind::ARMV8_8A:
+  case ARM::ArchKind::ARMV8_9A:
   case ARM::ArchKind::ARMV9A:
   case ARM::ArchKind::ARMV9_1A:
   case ARM::ArchKind::ARMV9_2A:
   case ARM::ArchKind::ARMV9_3A:
+  case ARM::ArchKind::ARMV9_4A:
+  case ARM::ArchKind::ARMV9_5A:
     S.setAttributeItem(CPU_arch_profile, ApplicationProfile, false);
     S.setAttributeItem(ARM_ISA_use, Allowed, false);
     S.setAttributeItem(THUMB_ISA_use, AllowThumb32, false);
@@ -924,9 +930,7 @@ void ARMTargetELFStreamer::emitArchDefaultAttributes() {
   }
 }
 
-void ARMTargetELFStreamer::emitFPU(unsigned Value) {
-  FPU = Value;
-}
+void ARMTargetELFStreamer::emitFPU(ARM::FPUKind Value) { FPU = Value; }
 
 void ARMTargetELFStreamer::emitFPUDefaultAttributes() {
   ARMELFStreamer &S = getStreamer();
@@ -1164,7 +1168,7 @@ inline void ARMELFStreamer::SwitchToEHSection(StringRef Prefix,
 
   // Switch to .ARM.extab or .ARM.exidx section
   switchSection(EHSection);
-  emitValueToAlignment(4, 0, 1, 0);
+  emitValueToAlignment(Align(4), 0, 1, 0);
 }
 
 inline void ARMELFStreamer::SwitchToExTabSection(const MCSymbol &FnStart) {

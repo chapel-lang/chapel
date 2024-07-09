@@ -1,0 +1,15 @@
+Back on locale 0
+Hello from locale 0!
+Hello from locale 0!
+Hello from locale 1!
+Hello from locale 2!
+Hello from task 1
+Hello from task 1 running on locale 1
+Hello from task 2
+Hello from task 2 running on locale 2
+Hello from task 3
+Hello from task 3 running on locale 0
+Hello from task 4
+Hello from task 4 running on locale 1
+Hello from task 5
+Hello from task 5 running on locale 2

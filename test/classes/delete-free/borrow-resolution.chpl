@@ -26,5 +26,3 @@ writeln(uq.type:string);
 
 var buq = uq.borrow();
 writeln(buq.type:string);
-
-

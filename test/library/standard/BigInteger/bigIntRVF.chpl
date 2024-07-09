@@ -3,7 +3,7 @@ use BlockDist;
 use CommDiagnostics;
 
 proc main() {
-  var D = Block.createDomain({0..#10});
+  var D = blockDist.createDomain({0..#10});
   var A: [D] bigint = 10:bigint;
   var B: [D] bigint = 20:bigint;
   var C: [D] bigint;

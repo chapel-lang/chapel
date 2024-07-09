@@ -11,8 +11,8 @@ const D = [1..n];
 var A = new C();
 var B: [D] real;
 
-var randStr1 = new RandomStream(314159265);
-var randStr2 = new RandomStream(314159265);
+var randStr1 = new randomStream(314159265);
+var randStr2 = new randomStream(314159265);
 
 forall (a,r) in (A, randStr1) do
   a = r;

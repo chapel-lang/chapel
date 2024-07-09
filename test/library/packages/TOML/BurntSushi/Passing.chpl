@@ -9,11 +9,11 @@ use TOML, IO;
 config const f = 'bool.toml';
 
 proc main() {
-  var tomlChannel = openReader(f);
+  var tomlChannel = openReader(f, locking=false);
   var tomlData = parseToml(tomlChannel);
 
   const j = f.replace('.toml', '.json.out');
-  var jsonChannel = openWriter(j);
+  var jsonChannel = openWriter(j, locking=false);
 
   tomlData.writeJSON(jsonChannel);
 

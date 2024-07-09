@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,7 @@
 
 #ifdef HAVE_LLVM
 #include "clang/Basic/TargetInfo.h"
+#include "clang/Basic/Diagnostic.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Job.h"
@@ -35,6 +36,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/CompilerInvocation.h"
 #include "clang/Frontend/FrontendActions.h"
+#include "clang/Frontend/TextDiagnosticBuffer.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Serialization/ASTReader.h"
 
@@ -198,6 +200,26 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
   return QUERY_END(result);
 }
 
+#ifdef HAVE_LLVM
+// Helper method to store a diagnostic message from Clang compilation into a
+// form we can use for error reporting.
+static void saveClangDiagnostic(
+    const std::pair<clang::SourceLocation, std::string>& diagnostic,
+    std::string kind, const clang::SourceManager& sm, Context* context,
+    std::vector<std::pair<Location, std::string>>& errorInfo) {
+  // Use "presumed" location to report correct line number within .chpl file
+  // using #line directives.
+  const clang::PresumedLoc presumedLoc = sm.getPresumedLoc(diagnostic.first);
+  assert(presumedLoc.isValid());
+  const Location externErrorLoc =
+      Location(UniqueString::get(context, presumedLoc.getFilename()),
+               presumedLoc.getLine(), presumedLoc.getColumn());
+  const std::string externErrorMsg = kind + ": " + diagnostic.second;
+  // TODO: also output diagnostic options after message ([-Werror] etc)
+  errorInfo.emplace_back(externErrorLoc, externErrorMsg);
+}
+#endif
+
 /* returns the precompiled header file data
    args are the clang driver arguments
    externBlockId is the ID of the extern block containing code to precompile */
@@ -258,9 +280,7 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     }
 
     auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
-    auto diagClient =
-        new clang::TextDiagnosticPrinter(llvm::errs(), &*diagOptions);
-
+    auto diagClient = new clang::TextDiagnosticBuffer();
     auto clangDiags =
       clang::CompilerInstance::createDiagnostics(diagOptions.release(),
                                                  diagClient,
@@ -274,11 +294,28 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
 
     CHPL_ASSERT(Clang->getFrontendOpts().IncludeTimestamps == false);
 
+    // Disables "# errors generated" message to stderr from ExecuteAction.
+    // (as well as carets for error locations, which we are excluding anyways)
+    Clang->getDiagnosticOpts().ShowCarets = false;
+
     // create GeneratePCHAction
     clang::GeneratePCHAction* genPchAction = new clang::GeneratePCHAction();
     // run action and capture results
     if (!Clang->ExecuteAction(*genPchAction)) {
-      context->error(externBlockId, "error running clang on extern block");
+      // Report Clang errors and warnings to the Context.
+      std::vector<std::pair<Location, std::string>> errorInfo;
+      const clang::SourceManager& sm = Clang->getSourceManager();
+      for (auto it = diagClient->err_begin(); it != diagClient->err_end();
+           it++) {
+        saveClangDiagnostic((*it), "error", sm, context, errorInfo);
+      }
+      for (auto it = diagClient->warn_begin(); it != diagClient->warn_end();
+           it++) {
+        saveClangDiagnostic((*it), "warning", sm, context, errorInfo);
+      }
+      // could also gather notes and remarks from the TextDiagnosticBuffer here
+      // (using note_begin, remark_begin iterators)
+      CHPL_REPORT(context, ExternCCompilation, externBlockId, errorInfo);
       ok = false;
     }
 

@@ -2,10 +2,10 @@
 Qthreads README for Chapel
 ==========================
 
-This copy of Qthreads 1.17 is being released with Chapel for
+This copy of Qthreads 1.19 is being released with Chapel for
 convenience and was obtained from:
 
-  https://github.com/qthreads/qthreads
+  https://github.com/sandialabs/qthreads
 
 Any Chapel issues that seem to be related to Qthreads should be directed
 to the Chapel team at https://chapel-lang.org/bugs.html.
@@ -17,23 +17,5 @@ Chapel modifications to Qthreads
 The modifications that we have made to the official Qthreads release are
 as follows:
 
-* We force tasks being woken from sync vars to run on their original
-  shepherd. This is to work around a task serialization bug that stems
-  from us using schedulers that don't support work stealing (nemesis)
-  or running with work stealing disabled (distrib w/ QT_STEAL_RATIO=0)
-
-* We added a simple mechanism to reset the automatic task spawning
-  order for better affinity between consecutive parallel loops.
-
-* Pulled in an upstream fix for build errors on Alpine linux
-  https://github.com/Qthreads/qthreads/pull/105
-
-* We modified the configuration to support the
-  --with-hwloc-get-topology-function argument that specifies a function that
-  qthreads should call to get the hwloc topology, and several files to
-  support this behavior including the Makefile to pass this argument to
-  configure, and binders.c and hwloc.c to call the function.
-
-* We added --disable-hwloc-configure-checks to disable hwloc link checks,
-  and --disable-hwloc-has-distance to specify whether or not hwloc supports
-  distance information.
+* Pulled in an upstream fix for build issues on Alpine linux
+  https://github.com/sandialabs/qthreads/pull/179

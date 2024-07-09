@@ -1,0 +1,1 @@
+missingNewNoParen.chpl:14: error: cannot use a type in a 'manage' statement

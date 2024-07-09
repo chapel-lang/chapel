@@ -1,0 +1,19 @@
+range-iteration-unsigned-param.chpl:3: warning: the idxType of this range literal 0..2 with the low bound of the type int(64) and the high bound of the type uint(8) is currently uint(8). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+range-iteration-unsigned-param.chpl:9: warning: the idxType of this range literal 0..2 with the low bound of the type int(64) and the high bound of the type uint(16) is currently uint(16). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+range-iteration-unsigned-param.chpl:15: warning: the idxType of this range literal 0..2 with the low bound of the type int(64) and the high bound of the type uint(32) is currently uint(32). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+iterating over 0..u8
+0:uint(8)
+1:uint(8)
+2:uint(8)
+iterating over 0..u16
+0:uint(16)
+1:uint(16)
+2:uint(16)
+iterating over 0..u32
+0:uint(32)
+1:uint(32)
+2:uint(32)
+iterating over 0..u64
+0:uint(64)
+1:uint(64)
+2:uint(64)

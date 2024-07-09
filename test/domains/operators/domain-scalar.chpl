@@ -1,0 +1,76 @@
+
+use boundKind;
+
+var i = 35;
+var b = true;
+var e = both;
+var t = (1, 2);
+var r = (1..4);
+
+var di = {1..2, 1..2} : domain(2, int(64));
+var d8 = {1..2, 1..2} : domain(2, int(8));
+var db = {false..true, false..true} : domain(2, bool);
+var de = {both..low, both..low}     : domain(2, boundKind);
+
+writeln(di + i);
+writeln(di + b);
+writeln(di + e);
+writeln(di + t);
+writeln(di + r);
+writeln(d8 + i);
+writeln(d8 + b);
+writeln(d8 + e);
+writeln(d8 + t);
+writeln(d8 + r);
+writeln(db + i);
+writeln(db + b);
+writeln(db + e);
+writeln(db + t);
+writeln(db + r);
+writeln(de + i);
+writeln(de + b);
+writeln(de + e);
+writeln(de + t);
+writeln(de + r);
+
+writeln(i + di);
+writeln(b + di);
+writeln(e + di);
+writeln(t + di);
+writeln(r + di);
+writeln(i + d8);
+writeln(b + d8);
+writeln(e + d8);
+writeln(t + d8);
+writeln(r + d8);
+writeln(i + db);
+writeln(b + db);
+writeln(e + db);
+writeln(t + db);
+writeln(r + db);
+writeln(i + de);
+writeln(b + de);
+writeln(e + de);
+writeln(t + de);
+writeln(r + de);
+
+writeln(di - i);
+writeln(di - b);
+writeln(di - e);
+writeln(di - t);
+writeln(di - r);
+writeln(d8 - i);
+writeln(d8 - b);
+writeln(d8 - e);
+writeln(d8 - t);
+writeln(d8 - r);
+writeln(db - i);
+writeln(db - b);
+writeln(db - e);
+writeln(db - t);
+writeln(db - r);
+writeln(de - i);
+writeln(de - b);
+writeln(de - e);
+writeln(de - t);
+writeln(de - r);

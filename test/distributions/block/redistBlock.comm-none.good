@@ -1,5 +1,8 @@
-redistBlock.chpl:15: warning: 'Block.redistribute()' is currently unstable due to lack of design review and is being made available as a prototype
-redistBlock.chpl:34: warning: 'Block.redistribute()' is currently unstable due to lack of design review and is being made available as a prototype
+redistBlock.chpl:5: warning: 'dmapped' keyword is unstable, instead please use factory functions when available
+redistBlock.chpl:15: warning: 'blockDist.redistribute()' is currently unstable due to lack of design review and is being made available as a prototype
+redistBlock.chpl:15: warning: 'blockDist.redistribute()' is currently unstable due to lack of design review and is being made available as a prototype
+redistBlock.chpl:34: warning: 'blockDist.redistribute()' is currently unstable due to lack of design review and is being made available as a prototype
+redistBlock.chpl:34: warning: 'blockDist.redistribute()' is currently unstable due to lack of design review and is being made available as a prototype
 redistBlock.chpl:41: warning: assignment between distributions is currently unstable due to lack of testing
 -------------
 0: {1..10} from {1..10}

@@ -12,6 +12,7 @@
 
 #include "MipsLegalizerInfo.h"
 #include "MipsTargetMachine.h"
+#include "llvm/CodeGen/GlobalISel/GenericMachineInstrs.h"
 #include "llvm/CodeGen/GlobalISel/LegalizerHelper.h"
 #include "llvm/CodeGen/GlobalISel/MachineIRBuilder.h"
 #include "llvm/IR/IntrinsicsMips.h"
@@ -329,8 +330,9 @@ MipsLegalizerInfo::MipsLegalizerInfo(const MipsSubtarget &ST) {
   verify(*ST.getInstrInfo());
 }
 
-bool MipsLegalizerInfo::legalizeCustom(LegalizerHelper &Helper,
-                                       MachineInstr &MI) const {
+bool MipsLegalizerInfo::legalizeCustom(
+    LegalizerHelper &Helper, MachineInstr &MI,
+    LostDebugLocObserver &LocObserver) const {
   using namespace TargetOpcode;
 
   MachineIRBuilder &MIRBuilder = Helper.MIRBuilder;
@@ -411,9 +413,10 @@ bool MipsLegalizerInfo::legalizeCustom(LegalizerHelper &Helper,
         auto Load_Rem = MIRBuilder.buildLoad(s32, Addr, *RemMemOp);
 
         if (Size == 64)
-          MIRBuilder.buildMerge(Val, {Load_P2Half, Load_Rem});
+          MIRBuilder.buildMergeLikeInstr(Val, {Load_P2Half, Load_Rem});
         else {
-          auto Merge = MIRBuilder.buildMerge(s64, {Load_P2Half, Load_Rem});
+          auto Merge =
+              MIRBuilder.buildMergeLikeInstr(s64, {Load_P2Half, Load_Rem});
           MIRBuilder.buildTrunc(Val, Merge);
         }
       }
@@ -440,10 +443,11 @@ bool MipsLegalizerInfo::legalizeCustom(LegalizerHelper &Helper,
     // Done. Trunc double to float if needed.
 
     auto C_HiMask = MIRBuilder.buildConstant(s32, UINT32_C(0x43300000));
-    auto Bitcast = MIRBuilder.buildMerge(s64, {Src, C_HiMask.getReg(0)});
+    auto Bitcast =
+        MIRBuilder.buildMergeLikeInstr(s64, {Src, C_HiMask.getReg(0)});
 
     MachineInstrBuilder TwoP52FP = MIRBuilder.buildFConstant(
-        s64, BitsToDouble(UINT64_C(0x4330000000000000)));
+        s64, llvm::bit_cast<double>(UINT64_C(0x4330000000000000)));
 
     if (DstTy == s64)
       MIRBuilder.buildFSub(Dst, Bitcast, TwoP52FP);
@@ -508,7 +512,7 @@ bool MipsLegalizerInfo::legalizeIntrinsic(LegalizerHelper &Helper,
   const MipsRegisterInfo &TRI = *ST.getRegisterInfo();
   const RegisterBankInfo &RBI = *ST.getRegBankInfo();
 
-  switch (MI.getIntrinsicID()) {
+  switch (cast<GIntrinsic>(MI).getIntrinsicID()) {
   case Intrinsic::trap: {
     MachineInstr *Trap = MIRBuilder.buildInstr(Mips::TRAP);
     MI.eraseFromParent();

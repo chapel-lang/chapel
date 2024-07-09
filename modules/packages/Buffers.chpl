@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -63,7 +63,7 @@ module Buffers {
   private extern proc qbytes_retain(qb:qbytes_ptr_t);
   private extern proc qbytes_release(qb:qbytes_ptr_t);
   private extern proc qbytes_len(qb:qbytes_ptr_t):int(64);
-  private extern proc qbytes_data(qb:qbytes_ptr_t):c_void_ptr;
+  private extern proc qbytes_data(qb:qbytes_ptr_t):c_ptr(void);
 
   private extern proc qbytes_create_iobuf(ref ret:qbytes_ptr_t):errorCode;
   private extern proc qbytes_create_calloc(ref ret:qbytes_ptr_t, len:int(64)):errorCode;
@@ -80,10 +80,10 @@ module Buffers {
   private extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref bytes_out):errorCode;
   private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):errorCode;
   private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr, size):errorCode;
-  private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_void_ptr, size):errorCode;
+  private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr(void), size):errorCode;
   private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):errorCode;
   private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr, size):errorCode;
-  private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_void_ptr, size):errorCode;
+  private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr(void), size):errorCode;
 
   private extern proc qbuffer_begin(buf:qbuffer_ptr_t):qbuffer_iter_t;
   private extern proc qbuffer_end(buf:qbuffer_ptr_t):qbuffer_iter_t;
@@ -108,7 +108,7 @@ module Buffers {
 
   private extern proc bulk_get_bytes(src_locale:int, src_addr:qbytes_ptr_t):qbytes_ptr_t;
 
-  private extern proc bulk_put_buffer(dst_locale:int, dst_addr:c_void_ptr, dst_len:int(64), buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t):errorCode;
+  private extern proc bulk_put_buffer(dst_locale:int, dst_addr:c_ptr(void), dst_len:int(64), buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t):errorCode;
 
   // Now define the Chapel types using the originals..
 
@@ -141,14 +141,14 @@ module Buffers {
    */
   proc byteBuffer.init(len:int(64), out error:errorCode) {
     this.home = here;
-    this.complete();
+    init this;
     error = qbytes_create_calloc(this._bytes_internal, len);
     // The buffer is "retained" internally on creation, but only on success.
   }
   @chpldoc.nodoc
   proc byteBuffer.init(len:int(64)) {
     this.home = here;
-    this.complete();
+    init this;
     var error:errorCode = qbytes_create_calloc(this._bytes_internal, len);
     if error then try! ioerror(error, "in bytes initializer");
     // The buffer is retained internally on initialization, but only on success.
@@ -203,7 +203,7 @@ module Buffers {
   }
 
   @chpldoc.nodoc
-  proc byteBuffer.deinit() {
+  proc ref byteBuffer.deinit() {
     on this.home {
       qbytes_release(this._bytes_internal);
       this._bytes_internal = QBYTES_PTR_NULL;
@@ -216,9 +216,9 @@ module Buffers {
        The pointer returned by this method is only valid for the lifetime of
        the `byteBuffer` object and will be invalid if this memory is freed.
 
-    :returns: a `c_void_ptr` to the internal byte array
+    :returns: a `c_ptr(void)` to the internal byte array
    */
-  proc byteBuffer.ptr(): c_void_ptr {
+  proc byteBuffer.ptr(): c_ptr(void) {
     return qbytes_data(this._bytes_internal);
   }
 
@@ -296,14 +296,14 @@ module Buffers {
    */
   proc buffer.init(out error:errorCode) {
     this.home = here;
-    this.complete();
+    init this;
     error = qbuffer_create(this._buf_internal);
   }
   @chpldoc.nodoc
   proc buffer.init() /*throws*/ {
     var error:errorCode = 0;
     this.home = here;
-    this.complete();
+    init this;
     error = qbuffer_create(this._buf_internal);
     // TODO: really want the following to be `try` once we can throw from
     // initializers
@@ -315,7 +315,7 @@ module Buffers {
       qbuffer_retain(x._buf_internal);
       this.home = here;
       this._buf_internal = x._buf_internal;
-      this.complete();
+      init this;
     } else {
       var error: errorCode = 0;
       this.init(error);
@@ -358,18 +358,18 @@ module Buffers {
      the buffer into it. This function should work even if buffer is
      remote.
 
-     :arg range: the region of the buffer to copy, for example buffer.all()
+     :arg bufRange: the region of the buffer to copy, for example buffer.all()
      :returns: a newly initialized bytes object on the current locale
    */
-  proc buffer.flatten(range:buffer_range) throws {
+  proc buffer.flatten(bufRange:buffer_range) throws {
     var ret: byteBuffer  = new byteBuffer();
     var err: errorCode = 0;
 
     if this.home == here {
-      err = qbuffer_flatten(this._buf_internal, range.start._bufit_internal, range.end._bufit_internal, ret._bytes_internal);
+      err = qbuffer_flatten(this._buf_internal, bufRange.start._bufit_internal, bufRange.end._bufit_internal, ret._bytes_internal);
     } else {
       var dst_locale = here;
-      var dst_len:int(64) = range.len;
+      var dst_len:int(64) = bufRange.len;
       ret = new byteBuffer(dst_len, error=err);
       if err then try ioerror(err, "in buffer.flatten");
 
@@ -378,8 +378,8 @@ module Buffers {
         // Copy the buffer to the bytes...
         err = bulk_put_buffer(dst_locale.id, dst_addr, dst_len,
                                 this._buf_internal,
-                                range.start._bufit_internal,
-                                range.end._bufit_internal);
+                                bufRange.start._bufit_internal,
+                                bufRange.end._bufit_internal);
       }
     }
     if err then try ioerror(err, "in buffer.flatten");
@@ -438,7 +438,7 @@ module Buffers {
 
 
   @chpldoc.nodoc
-  proc buffer.deinit() {
+  proc ref buffer.deinit() {
     on this.home {
       qbuffer_release(this._buf_internal);
       this._buf_internal = QBUFFER_PTR_NULL;
@@ -700,7 +700,7 @@ module Buffers {
         this.advance(end, len);
         err = qbuffer_copyin(this._buf_internal,
                              start._bufit_internal, end._bufit_internal,
-                             tmp.c_str():c_void_ptr, len);
+                             tmp.c_str():c_ptr(void), len);
         ret = end;
       }
     }

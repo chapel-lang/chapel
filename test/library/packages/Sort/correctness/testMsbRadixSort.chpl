@@ -4,9 +4,12 @@ use BitOps;
  use Random;
  use Time;
  use CTypes;
+ use IO, ChplFormat;
 
  config const printStats = false;
  config const size = 10000;
+
+ var chplout = stdout.withSerializer(chplSerializer);
 
  record uintCriterion8 {
    inline
@@ -101,16 +104,16 @@ use BitOps;
                                alwaysSerial=false));
 
    writeln(comparator.type:string);
-   writef("Sorting    %ht\n", input);
+   chplout.writef("Sorting    %?\n", input);
 
    var A = input;
    ShellSort.shellSort(A, comparator);
-   writef("shellSort  %ht\n", A);
+   chplout.writef("shellSort  %?\n", A);
    testSorted(A, comparator);
 
    var Ar = input;
    ShellSort.shellSort(Ar, new ReverseComparator(comparator));
-   writef("shellSort- %ht\n", Ar);
+   chplout.writef("shellSort- %?\n", Ar);
    testReverseSorted(Ar, comparator);
 
    for param i in 0..settingsTuple.size-1 {
@@ -119,7 +122,7 @@ use BitOps;
      MSBRadixSort.msbRadixSort(B, start, end, comparator,
                                0, max(int), s);
      if i == 1 then
-       writef("radixSort  %ht\n", B);
+      chplout.writef("radixSort  %?\n", B);
      testSorted(B, comparator);
 
      var Br = input;
@@ -127,7 +130,7 @@ use BitOps;
                                new ReverseComparator(comparator),
                                0, max(int), s);
      if i == 1 then
-       writef("radixSort- %ht\n", Br);
+      chplout.writef("radixSort- %?\n", Br);
      testReverseSorted(Br, comparator);
    }
  }
@@ -162,7 +165,7 @@ proc testSortsUnsigned(input) {
 
 
  proc main() {
-  
+
    assert(chpl_compare(9,3, new uintCriterion8()) > 0);
    assert(chpl_compare(2,3, new uintCriterion8()) < 0);
    assert(chpl_compare(0,0, new uintCriterion8()) == 0);
@@ -179,7 +182,7 @@ proc testSortsUnsigned(input) {
    {
      var A:[1..64] uint;
      for i in 0..63 {
-       A[64-i] = 1:uint << i; 
+       A[64-i] = 1:uint << i;
      }
      testSortsUnsigned(A);
    }
@@ -194,9 +197,9 @@ proc testSortsUnsigned(input) {
 
    testStringSorts([ "hi", "hii", "hiii", "a", "b", "boo", "", "x", "zoo" ]);
 
-   var array:[1..size] int; 
+   var array:[1..size] int;
    fillRandom(array);
-   
+
    for i in array.domain {
      array[i] = abs(array[i]);
    }
@@ -208,7 +211,7 @@ proc testSortsUnsigned(input) {
                              0, max(int), new MSBRadixSortSettings());
 
    t.stop();
- 
+
    if printStats {
      writeln("Time: ", t.elapsed());
    }

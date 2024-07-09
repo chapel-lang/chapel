@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,7 @@
 #include "chpl/util/string-escapes.h"
 
 #include <cstring>
+#include <arpa/inet.h> // just for htonl / ntohl
 
 namespace chpl {
 namespace detail {
@@ -183,6 +184,25 @@ UniqueString UniqueString::get(Context* context,
   }
 }
 
+int UniqueString::compare(const UniqueString other) const {
+  if (*this == other) return 0;
+  size_t lenThis = this->length();
+  size_t lenOther = other.length();
+  size_t minsize = (lenThis < lenOther) ? lenThis : lenOther;
+  int cmp = memcmp(this->c_str(), other.c_str(), minsize);
+  if (cmp == 0) {
+    if (lenThis == lenOther) return 0;
+    return (lenThis < lenOther) ? -1 : 1;
+  }
+  return (cmp < 0) ? -1 : 1;
+}
+
+int UniqueString::compare(const char* other) const {
+  int cmp = strcmp(this->c_str(), other);
+  if (cmp == 0) return 0;
+  return (cmp < 0) ? -1 : 1;
+}
+
 bool UniqueString::update(UniqueString& keep, UniqueString& addin) {
   return defaultUpdate(keep, addin);
 }
@@ -200,24 +220,50 @@ std::ostream& operator<<(std::ostream& os, const chpl::UniqueString& uStr) {
   return os;
 }
 
-//
-// Represent UniqueString occurrences as integer IDs in a table that the
-// Serializer builds up while serializing various entities. This reduces
-// the file size of generated serialized AST and helps with performance.
-//
 void UniqueString::serialize(Serializer& ser) const {
-  auto id = ser.cacheString(c_str(), length());
-  ser.write(id);
+  auto len = length();
+  if (len < ser.LONG_STRING_SIZE) {
+    // store the string inline here
+    uint8_t byte = len;
+    ser.writeByte(byte);
+    ser.writeData(c_str(), len);
+  } else {
+    // store the string through the long strings table
+    uint32_t uid = ser.saveLongString(c_str(), len);
+    // won't work if the high bit is set
+    CHPL_ASSERT((uid >> 31) == 0);
+    // compute the uid in big-endian order with high bit set
+    uint32_t num = htonl(uid);
+    uint8_t bytes[4];
+    memcpy(&bytes[0], &num, sizeof(num));
+    bytes[0] |= 0x80; // set the high bit
+    ser.writeData(&bytes[0], 4);
+  }
 }
 
-//
-// Deserialize a UniqueString by reading the integer ID and fetching the
-// relevant pointer and length from the Deserializer.
-//
 UniqueString UniqueString::deserialize(Deserializer& des) {
-  int uid = des.read<int>();
-  const auto& strlen = des.getString(uid);
-  return get(des.context(), strlen.second, strlen.first);
+  uint8_t byte = des.readByte();
+  if ((byte & 0x80) == 0) {
+    // string is inline here, byte is the length
+    uint64_t len = byte;
+    char buf[128]; // max size is 127, plus room for null terminating
+    des.readData(buf, len);
+    buf[len] = '\0';
+    return get(des.context(), buf, len);
+  } else {
+    // compute the index to look up in the strings table
+    uint8_t bytes[4];
+    // unset the high bit
+    bytes[0] = byte & 0x7f;
+    des.readData(&bytes[1], 3); // read the other 3 bytes
+    uint32_t num = 0;
+    memcpy(&num, &bytes[0], sizeof(num));
+    // convert from big-endian order to host byte order
+    uint32_t uid = ntohl(num);
+    const auto& pair = des.getString(uid);
+    return get(des.context(), pair.second, pair.first);
+  }
 }
+
 
 } // end namespace chpl

@@ -4,7 +4,7 @@
 module Verify
 {
 
-proc verify_bfs_tree (root : int, ParentTree, Edges): int
+proc verify_bfs_tree (root : int, ParentTree, ref Edges): int
 {
 
    use Graph500_defs;
@@ -30,13 +30,13 @@ proc verify_bfs_tree (root : int, ParentTree, Edges): int
 
    error = compute_levels ( ParentTree, Level);
 
-//   writeln(" Level array", Level); 
+//   writeln(" Level array", Level);
 
    if (error < 0) then return error;
 
    var Seen_Edge: [vertex_domain] int=0;
 
-// Note: having all threads monitor error to see when this gets set could 
+// Note: having all threads monitor error to see when this gets set could
 // create a significant hotspot if run in parallel
 
    for e in Edges do {
@@ -46,22 +46,22 @@ proc verify_bfs_tree (root : int, ParentTree, Edges): int
        var u = e.start;
        var v = e.end;
 
-      // If both the starting vertex or end vertex are in the tree 
+      // If both the starting vertex or end vertex are in the tree
       // this counts as a travered edge. Self edges and duplicates are also
       // counted
 
        if (ParentTree[u] >  0 && ParentTree[v] > 0){
          n_edges_traversed += 1;
        }
-       else 
+       else
        {
- 
+
          if (ParentTree[u] >  0 && ParentTree[v] < 0)
-         {  
+         {
            error = -12;
          }
          if (ParentTree[u] <  0 && ParentTree[v] > 0)
-         {  
+         {
            error = -13;
          }
        }
@@ -91,7 +91,7 @@ proc verify_bfs_tree (root : int, ParentTree, Edges): int
            {
              error = -15;
            }
-           else 
+           else
            {
              if ( ParentTree[k] == k) then error = -16;
            }
@@ -99,14 +99,14 @@ proc verify_bfs_tree (root : int, ParentTree, Edges): int
        }
      }
    }
-      
+
 
 //   writeln("error = ", error);
 //   writeln("number of edges traversed = ", n_edges_traversed);
 
 
    if (error < 0){
-     return error; 
+     return error;
    }
    else {
      return n_edges_traversed;
@@ -115,7 +115,7 @@ proc verify_bfs_tree (root : int, ParentTree, Edges): int
 
 }
 
-proc compute_levels (ParentTree, Level): int
+proc compute_levels (ParentTree, ref Level): int
 {
    use Graph500_defs;
 
@@ -131,7 +131,7 @@ proc compute_levels (ParentTree, Level): int
        var parent: int = k;
        var nhop: int = 0;
 
-       // Run up the tree until we encounter an already-leved vertex 
+       // Run up the tree until we encounter an already-leved vertex
 
        while (parent >= 0 && Level[parent] < 0 && nhop < N_VERTICES) {
         nhop += 1; parent = ParentTree[parent];
@@ -142,19 +142,19 @@ proc compute_levels (ParentTree, Level): int
        if (error >= 0 && parent < 0) then error = -2;
 
        // Assign levels until we meet an already-leveled vertex
-   
+
        if ( error == 0 ) {
          nhop += Level[parent];
          parent = k;
 
          while ( Level[parent] < 0) {
            Level[parent] = nhop;
-           nhop -= 1; 
+           nhop -= 1;
            parent = ParentTree[parent];
          }
        }
 
-     } 
+     }
 
    }
    return error;

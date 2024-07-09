@@ -1,0 +1,2 @@
+# AtomicObjects fails with non-llvm
+CHPL_LLVM==none

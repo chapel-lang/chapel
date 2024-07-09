@@ -26,6 +26,9 @@ struct AddressSanitizerOptions {
   bool UseAfterScope = false;
   AsanDetectStackUseAfterReturnMode UseAfterReturn =
       AsanDetectStackUseAfterReturnMode::Runtime;
+  int InstrumentationWithCallsThreshold = 7000;
+  uint32_t MaxInlinePoisoningSize = 64;
+  bool InsertVersionCheck = true;
 };
 
 /// Public interface to the address sanitizer module pass for instrumenting code
@@ -33,13 +36,12 @@ struct AddressSanitizerOptions {
 ///
 /// This adds 'asan.module_ctor' to 'llvm.global_ctors'. This pass may also
 /// run intependently of the function address sanitizer.
-class ModuleAddressSanitizerPass
-    : public PassInfoMixin<ModuleAddressSanitizerPass> {
+class AddressSanitizerPass : public PassInfoMixin<AddressSanitizerPass> {
 public:
-  ModuleAddressSanitizerPass(
-      const AddressSanitizerOptions &Options, bool UseGlobalGC = true,
-      bool UseOdrIndicator = false,
-      AsanDtorKind DestructorKind = AsanDtorKind::Global);
+  AddressSanitizerPass(const AddressSanitizerOptions &Options,
+                       bool UseGlobalGC = true, bool UseOdrIndicator = true,
+                       AsanDtorKind DestructorKind = AsanDtorKind::Global,
+                       AsanCtorKind ConstructorKind = AsanCtorKind::Global);
   PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM);
   void printPipeline(raw_ostream &OS,
                      function_ref<StringRef(StringRef)> MapClassName2PassName);
@@ -50,6 +52,7 @@ private:
   bool UseGlobalGC;
   bool UseOdrIndicator;
   AsanDtorKind DestructorKind;
+  AsanCtorKind ConstructorKind;
 };
 
 struct ASanAccessInfo {

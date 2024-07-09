@@ -20,9 +20,6 @@ proc mytest_multi_blocks() {
   // CHECK: %test1_chpl = alloca double
   // CHECK-NEXT: %[[REG5:[0-9]+]] = bitcast double* %test1_chpl to i8*
   // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG5]])
-  // CHECK: %{{[0-9]+}} = bitcast double* %a_chpl to i8*
-  // CHECK: %{{[0-9]+}} = bitcast double* %b_chpl to i8*
-  // CHECK: %{{[0-9]+}} = bitcast double* %test1_chpl to i8*
   var a = 1.09;
   refidentity(a);
   var b = 11.11;

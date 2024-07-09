@@ -25,7 +25,7 @@ enum NodeType : unsigned {
   FIRST_NUMBER = ISD::BUILTIN_OP_END,
   Wrapper,
   CALL,
-  RET_FLAG,
+  RET_GLUE,
   LOAD_PARAM,
   DeclareParam,
   DeclareScalarParam,
@@ -57,6 +57,10 @@ enum NodeType : unsigned {
   MUL_WIDE_UNSIGNED,
   IMAD,
   SETP_F16X2,
+  SETP_BF16X2,
+  BFE,
+  BFI,
+  PRMT,
   Dummy,
 
   LoadV2 = ISD::FIRST_TARGET_MEMORY_OPCODE,
@@ -236,6 +240,12 @@ enum NodeType : unsigned {
   TexUnifiedCubeArrayS32FloatLevel,
   TexUnifiedCubeArrayU32Float,
   TexUnifiedCubeArrayU32FloatLevel,
+  TexUnifiedCubeFloatFloatGrad,
+  TexUnifiedCubeS32FloatGrad,
+  TexUnifiedCubeU32FloatGrad,
+  TexUnifiedCubeArrayFloatFloatGrad,
+  TexUnifiedCubeArrayS32FloatGrad,
+  TexUnifiedCubeArrayU32FloatGrad,
   Tld4UnifiedR2DFloatFloat,
   Tld4UnifiedG2DFloatFloat,
   Tld4UnifiedB2DFloatFloat,
@@ -461,6 +471,16 @@ public:
   Align getFunctionParamOptimizedAlign(const Function *F, Type *ArgTy,
                                        const DataLayout &DL) const;
 
+  /// Helper for computing alignment of a device function byval parameter.
+  Align getFunctionByValParamAlign(const Function *F, Type *ArgTy,
+                                   Align InitialAlign,
+                                   const DataLayout &DL) const;
+
+  // Helper for getting a function parameter name. Name is composed from
+  // its index and the function name. Negative index corresponds to special
+  // parameter (unsized array) used for passing variable arguments.
+  std::string getParamName(const Function *F, int Idx) const;
+
   /// isLegalAddressingMode - Return true if the addressing mode represented
   /// by AM is legal for this target, for a load/store of the specified type
   /// Used to guide target specific optimizations, like loop strength
@@ -499,17 +519,20 @@ public:
   SDValue LowerCall(CallLoweringInfo &CLI,
                     SmallVectorImpl<SDValue> &InVals) const override;
 
-  std::string getPrototype(const DataLayout &DL, Type *, const ArgListTy &,
-                           const SmallVectorImpl<ISD::OutputArg> &,
-                           MaybeAlign retAlignment, const CallBase &CB,
-                           unsigned UniqueCallSite) const;
+  SDValue LowerDYNAMIC_STACKALLOC(SDValue Op, SelectionDAG &DAG) const;
+
+  std::string
+  getPrototype(const DataLayout &DL, Type *, const ArgListTy &,
+               const SmallVectorImpl<ISD::OutputArg> &, MaybeAlign retAlignment,
+               std::optional<std::pair<unsigned, const APInt &>> VAInfo,
+               const CallBase &CB, unsigned UniqueCallSite) const;
 
   SDValue LowerReturn(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
                       const SmallVectorImpl<ISD::OutputArg> &Outs,
                       const SmallVectorImpl<SDValue> &OutVals, const SDLoc &dl,
                       SelectionDAG &DAG) const override;
 
-  void LowerAsmOperandForConstraint(SDValue Op, std::string &Constraint,
+  void LowerAsmOperandForConstraint(SDValue Op, StringRef Constraint,
                                     std::vector<SDValue> &Ops,
                                     SelectionDAG &DAG) const override;
 
@@ -545,7 +568,7 @@ public:
 
   unsigned combineRepeatedFPDivisors() const override { return 2; }
 
-  bool allowFMA(MachineFunction &MF, CodeGenOpt::Level OptLevel) const;
+  bool allowFMA(MachineFunction &MF, CodeGenOptLevel OptLevel) const;
   bool allowUnsafeFPMath(MachineFunction &MF) const;
 
   bool isFMAFasterThanFMulAndFAdd(const MachineFunction &MF,
@@ -559,7 +582,7 @@ public:
   // x == 0 is not undefined behavior) into a branch that checks whether x is 0
   // and avoids calling ctlz in that case.  We have a dedicated ctlz
   // instruction, so we say that ctlz is cheap to speculate.
-  bool isCheapToSpeculateCtlz() const override { return true; }
+  bool isCheapToSpeculateCtlz(Type *Ty) const override { return true; }
 
   AtomicExpansionKind shouldCastAtomicLoadInIR(LoadInst *LI) const override {
     return AtomicExpansionKind::None;
@@ -572,6 +595,12 @@ public:
   AtomicExpansionKind
   shouldExpandAtomicRMWInIR(AtomicRMWInst *AI) const override;
 
+  bool aggressivelyPreferBuildVectorSources(EVT VecVT) const override {
+    // There's rarely any point of packing something into a vector type if we
+    // already have the source data.
+    return true;
+  }
+
 private:
   const NVPTXSubtarget &STI; // cache the subtarget here
   SDValue getParamSymbol(SelectionDAG &DAG, int idx, EVT) const;
@@ -579,10 +608,15 @@ private:
   SDValue LowerBUILD_VECTOR(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerCONCAT_VECTORS(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerEXTRACT_VECTOR_ELT(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerINSERT_VECTOR_ELT(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerVECTOR_SHUFFLE(SDValue Op, SelectionDAG &DAG) const;
 
   SDValue LowerFROUND(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerFROUND32(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerFROUND64(SDValue Op, SelectionDAG &DAG) const;
+
+  SDValue LowerINT_TO_FP(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerFP_TO_INT(SDValue Op, SelectionDAG &DAG) const;
 
   SDValue LowerLOAD(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerLOADi1(SDValue Op, SelectionDAG &DAG) const;
@@ -596,13 +630,17 @@ private:
 
   SDValue LowerSelect(SDValue Op, SelectionDAG &DAG) const;
 
+  SDValue LowerVAARG(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerVASTART(SDValue Op, SelectionDAG &DAG) const;
+
   void ReplaceNodeResults(SDNode *N, SmallVectorImpl<SDValue> &Results,
                           SelectionDAG &DAG) const override;
   SDValue PerformDAGCombine(SDNode *N, DAGCombinerInfo &DCI) const override;
 
-  Align getArgumentAlignment(SDValue Callee, const CallBase *CB, Type *Ty,
-                             unsigned Idx, const DataLayout &DL) const;
+  Align getArgumentAlignment(const CallBase *CB, Type *Ty, unsigned Idx,
+                             const DataLayout &DL) const;
 };
+
 } // namespace llvm
 
 #endif

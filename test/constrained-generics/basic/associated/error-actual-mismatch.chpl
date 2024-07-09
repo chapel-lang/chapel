@@ -23,7 +23,7 @@ record RR {
 }
 
 // RR implements IFC implicitly, thanks to this fn.
-proc reqFunS(formal: RR) {
+proc reqFunS(formal: RR(?)) {
   writeln("reqFunS(", formal, ": ", formal.type:string, ")");
 }
 

@@ -10,7 +10,6 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/ScopeExit.h"
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/BinaryFormat/Magic.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/Support/Compiler.h"
@@ -20,9 +19,10 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/FileUtilities.h"
-#include "llvm/Support/Host.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/TargetParser/Host.h"
+#include "llvm/TargetParser/Triple.h"
 #include "llvm/Testing/Support/Error.h"
 #include "llvm/Testing/Support/SupportHelpers.h"
 #include "gmock/gmock.h"
@@ -190,6 +190,7 @@ TEST(Support, Path) {
   paths.push_back("c:\\foo\\");
   paths.push_back("c:\\foo/");
   paths.push_back("c:/foo\\bar");
+  paths.push_back(":");
 
   for (SmallVector<StringRef, 40>::const_iterator i = paths.begin(),
                                                   e = paths.end();
@@ -454,7 +455,7 @@ std::string getEnvWin(const wchar_t *Var) {
 // RAII helper to set and restore an environment variable.
 class WithEnv {
   const char *Var;
-  llvm::Optional<std::string> OriginalValue;
+  std::optional<std::string> OriginalValue;
 
 public:
   WithEnv(const char *Var, const char *Value) : Var(Var) {
@@ -499,7 +500,8 @@ TEST(Support, HomeDirectoryWithNoEnv) {
 
   // Don't run the test if we have nothing to compare against.
   struct passwd *pw = getpwuid(getuid());
-  if (!pw || !pw->pw_dir) return;
+  if (!pw || !pw->pw_dir)
+    GTEST_SKIP();
   std::string PwDir = pw->pw_dir;
 
   SmallString<128> HomeDir;
@@ -707,12 +709,16 @@ TEST_F(FileSystemTest, Unique) {
 
   ASSERT_NO_ERROR(fs::remove(Twine(TempPath2)));
 
+#ifndef _WIN32
   // Two paths representing the same file on disk should still provide the
   // same unique id.  We can test this by making a hard link.
+  // FIXME: Our implementation of getUniqueID on Windows doesn't consider hard
+  // links to be the same file.
   ASSERT_NO_ERROR(fs::create_link(Twine(TempPath), Twine(TempPath2)));
   fs::UniqueID D2;
   ASSERT_NO_ERROR(fs::getUniqueID(Twine(TempPath2), D2));
   ASSERT_EQ(D2, F1);
+#endif
 
   ::close(FileDescriptor);
 
@@ -816,6 +822,27 @@ TEST_F(FileSystemTest, RealPathNoReadPerm) {
 
   ASSERT_NO_ERROR(fs::remove_directories(Twine(TestDirectory) + "/noreadperm"));
 }
+TEST_F(FileSystemTest, RemoveDirectoriesNoExePerm) {
+  SmallString<64> Expanded;
+
+  ASSERT_NO_ERROR(
+      fs::create_directories(Twine(TestDirectory) + "/noexeperm/foo"));
+  ASSERT_TRUE(fs::exists(Twine(TestDirectory) + "/noexeperm/foo"));
+
+  fs::setPermissions(Twine(TestDirectory) + "/noexeperm",
+                     fs::all_read | fs::all_write);
+
+  ASSERT_NO_ERROR(fs::remove_directories(Twine(TestDirectory) + "/noexeperm",
+                                         /*IgnoreErrors=*/true));
+
+  // It's expected that the directory exists, but some environments appear to
+  // allow the removal despite missing the 'x' permission, so be flexible.
+  if (fs::exists(Twine(TestDirectory) + "/noexeperm")) {
+    fs::setPermissions(Twine(TestDirectory) + "/noexeperm", fs::all_perms);
+    ASSERT_NO_ERROR(fs::remove_directories(Twine(TestDirectory) + "/noexeperm",
+                                           /*IgnoreErrors=*/false));
+  }
+}
 #endif
 
 
@@ -856,7 +883,7 @@ TEST_F(FileSystemTest, TempFiles) {
   int FD2;
   SmallString<64> TempPath2;
   ASSERT_NO_ERROR(fs::createTemporaryFile("prefix", "temp", FD2, TempPath2));
-  ASSERT_TRUE(TempPath2.endswith(".temp"));
+  ASSERT_TRUE(TempPath2.ends_with(".temp"));
   ASSERT_NE(TempPath.str(), TempPath2.str());
 
   fs::file_status A, B;
@@ -882,17 +909,21 @@ TEST_F(FileSystemTest, TempFiles) {
 
   SmallString<64> TempPath3;
   ASSERT_NO_ERROR(fs::createTemporaryFile("prefix", "", TempPath3));
-  ASSERT_FALSE(TempPath3.endswith("."));
+  ASSERT_FALSE(TempPath3.ends_with("."));
   FileRemover Cleanup3(TempPath3);
 
   // Create a hard link to Temp1.
   ASSERT_NO_ERROR(fs::create_link(Twine(TempPath), Twine(TempPath2)));
+#ifndef _WIN32
+  // FIXME: Our implementation of equivalent() on Windows doesn't consider hard
+  // links to be the same file.
   bool equal;
   ASSERT_NO_ERROR(fs::equivalent(Twine(TempPath), Twine(TempPath2), equal));
   EXPECT_TRUE(equal);
   ASSERT_NO_ERROR(fs::status(Twine(TempPath), A));
   ASSERT_NO_ERROR(fs::status(Twine(TempPath2), B));
   EXPECT_TRUE(fs::equivalent(A, B));
+#endif
 
   // Remove Temp1.
   ::close(FileDescriptor);
@@ -1485,13 +1516,13 @@ TEST(Support, NormalizePath) {
   const char *Path7a = "~/aaa";
   SmallString<64> Path7(Path7a);
   path::native(Path7, path::Style::windows_backslash);
-  EXPECT_TRUE(Path7.endswith("\\aaa"));
-  EXPECT_TRUE(Path7.startswith(PathHome));
+  EXPECT_TRUE(Path7.ends_with("\\aaa"));
+  EXPECT_TRUE(Path7.starts_with(PathHome));
   EXPECT_EQ(Path7.size(), PathHome.size() + strlen(Path7a + 1));
   Path7 = Path7a;
   path::native(Path7, path::Style::windows_slash);
-  EXPECT_TRUE(Path7.endswith("/aaa"));
-  EXPECT_TRUE(Path7.startswith(PathHome));
+  EXPECT_TRUE(Path7.ends_with("/aaa"));
+  EXPECT_TRUE(Path7.starts_with(PathHome));
   EXPECT_EQ(Path7.size(), PathHome.size() + strlen(Path7a + 1));
 
   const char *Path8a = "~";
@@ -1746,7 +1777,7 @@ static void verifyFileContents(const Twine &Path, StringRef Contents) {
 
 TEST_F(FileSystemTest, CreateNew) {
   int FD;
-  Optional<FileDescriptorCloser> Closer;
+  std::optional<FileDescriptorCloser> Closer;
 
   // Succeeds if the file does not exist.
   ASSERT_FALSE(fs::exists(NonExistantFile));
@@ -1770,7 +1801,7 @@ TEST_F(FileSystemTest, CreateNew) {
 
 TEST_F(FileSystemTest, CreateAlways) {
   int FD;
-  Optional<FileDescriptorCloser> Closer;
+  std::optional<FileDescriptorCloser> Closer;
 
   // Succeeds if the file does not exist.
   ASSERT_FALSE(fs::exists(NonExistantFile));
@@ -1848,7 +1879,7 @@ TEST_F(FileSystemTest, AppendSetsCorrectFileOffset) {
   // the specified disposition.
   for (fs::CreationDisposition Disp : Disps) {
     int FD;
-    Optional<FileDescriptorCloser> Closer;
+    std::optional<FileDescriptorCloser> Closer;
 
     createFileWithData(NonExistantFile, false, fs::CD_CreateNew, "Fizz");
 
@@ -1939,7 +1970,7 @@ TEST_F(FileSystemTest, readNativeFile) {
       return FD.takeError();
     auto Close = make_scope_exit([&] { fs::closeFile(*FD); });
     if (Expected<size_t> BytesRead = fs::readNativeFile(
-            *FD, makeMutableArrayRef(&*Buf.begin(), Buf.size())))
+            *FD, MutableArrayRef(&*Buf.begin(), Buf.size())))
       return Buf.substr(0, *BytesRead);
     else
       return BytesRead.takeError();
@@ -1954,7 +1985,7 @@ TEST_F(FileSystemTest, readNativeFileToEOF) {
   createFileWithData(NonExistantFile, false, fs::CD_CreateNew, Content);
   FileRemover Cleanup(NonExistantFile);
   const auto &Read = [&](SmallVectorImpl<char> &V,
-                         Optional<ssize_t> ChunkSize) {
+                         std::optional<ssize_t> ChunkSize) {
     Expected<fs::file_t> FD = fs::openNativeFileForRead(NonExistantFile);
     if (!FD)
       return FD.takeError();
@@ -1973,7 +2004,7 @@ TEST_F(FileSystemTest, readNativeFileToEOF) {
         static_cast<SmallVectorImpl<char> *>(&StaysSmall),
     };
     for (SmallVectorImpl<char> *V : Vectors) {
-      ASSERT_THAT_ERROR(Read(*V, None), Succeeded());
+      ASSERT_THAT_ERROR(Read(*V, std::nullopt), Succeeded());
       ASSERT_EQ(Content, StringRef(V->begin(), V->size()));
     }
     ASSERT_EQ(fs::DefaultReadChunkSize + Content.size(), StaysSmall.capacity());
@@ -1983,7 +2014,7 @@ TEST_F(FileSystemTest, readNativeFileToEOF) {
       constexpr StringLiteral Prefix = "prefix-";
       for (SmallVectorImpl<char> *V : Vectors) {
         V->assign(Prefix.begin(), Prefix.end());
-        ASSERT_THAT_ERROR(Read(*V, None), Succeeded());
+        ASSERT_THAT_ERROR(Read(*V, std::nullopt), Succeeded());
         ASSERT_EQ((Prefix + Content).str(), StringRef(V->begin(), V->size()));
       }
     }
@@ -2006,7 +2037,7 @@ TEST_F(FileSystemTest, readNativeFileSlice) {
                          size_t ToRead) -> Expected<std::string> {
     std::string Buf(ToRead, '?');
     if (Expected<size_t> BytesRead = fs::readNativeFileSlice(
-            *FD, makeMutableArrayRef(&*Buf.begin(), Buf.size()), Offset))
+            *FD, MutableArrayRef(&*Buf.begin(), Buf.size()), Offset))
       return Buf.substr(0, *BytesRead);
     else
       return BytesRead.takeError();

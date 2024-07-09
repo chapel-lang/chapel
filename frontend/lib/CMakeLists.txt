@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -68,6 +68,7 @@ target_compile_options(ChplFrontend-obj PUBLIC
                        SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
 
 add_subdirectory(immediates)
+add_subdirectory(libraries)
 add_subdirectory(parsing)
 add_subdirectory(framework)
 add_subdirectory(resolution)
@@ -89,9 +90,13 @@ else()
               $<TARGET_OBJECTS:git-sha-obj>)
 endif()
 
-target_include_directories(ChplFrontend PUBLIC
-                           ${CHPL_MAIN_INCLUDE_DIR}
-                           ${CHPL_INCLUDE_DIR})
+add_library(ChplFrontendShared SHARED
+            $<TARGET_OBJECTS:ChplFrontend-obj>
+            $<TARGET_OBJECTS:git-sha-obj>)
+
+set(CHPL_FRONTEND_INCLUDES ${CHPL_MAIN_INCLUDE_DIR} ${CHPL_INCLUDE_DIR})
+target_include_directories(ChplFrontend PUBLIC ${CHPL_FRONTEND_INCLUDES})
+target_include_directories(ChplFrontendShared PUBLIC ${CHPL_FRONTEND_INCLUDES})
 
 if (CHPL_LLVM_STATIC_DYNAMIC STREQUAL "static")
   if(APPLE)
@@ -124,14 +129,18 @@ else()
     target_link_libraries(ChplFrontend PUBLIC ${CHPL_LLVM_LINK_ARGS})
 endif()
 
+target_link_libraries(ChplFrontendShared PUBLIC ${CHPL_LLVM_LINK_ARGS})
+
 # TODO: Get printchplenv output proper so that we don't need to SHELL here
 target_compile_options(ChplFrontend PUBLIC
+                       SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
+target_compile_options(ChplFrontendShared PUBLIC
                        SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
 
 
 # TODO: ADDITIONAL_CLEAN_FILES requires cmake v3.15 ...
 #       Can we find another way to mark these files for cleanup?
-set_target_properties(ChplFrontend PROPERTIES
+set_target_properties(ChplFrontend ChplFrontendShared PROPERTIES
                       ADDITIONAL_CLEAN_FILES
                       ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
 
@@ -139,11 +148,15 @@ set_target_properties(ChplFrontend PROPERTIES
 # install ChplFrontend
 # TODO: also install headers with PUBLIC_HEADER DESTINATION <dir>
 if (INSTALLATION_MODE STREQUAL "prefix")
-  install(TARGETS ChplFrontend
+  install(TARGETS ChplFrontend ChplFrontendShared
           LIBRARY DESTINATION
+          "lib/chapel/${CHPL_MAJOR_VERSION}.${CHPL_MINOR_VERSION}/compiler"
+          ARCHIVE DESTINATION
           "lib/chapel/${CHPL_MAJOR_VERSION}.${CHPL_MINOR_VERSION}/compiler")
 else()
-  install(TARGETS ChplFrontend
+  install(TARGETS ChplFrontend ChplFrontendShared
           LIBRARY DESTINATION
+          "lib/compiler/${CHPL_HOST_BIN_SUBDIR}"
+          ARCHIVE DESTINATION
           "lib/compiler/${CHPL_HOST_BIN_SUBDIR}")
 endif()

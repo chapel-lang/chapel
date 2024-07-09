@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -58,7 +58,7 @@ class TemporaryFileResult final {
 
   /** Create a TemporaryFileResult that represents a file
       with a name like
-         <context->tmpDir()>/<prefix><stuff><suffix>
+         [context->tmpDir()]/[prefix][stuff][suffix]
       Clients should not be sensitive to what 'stuff' consists of,
       but in needs to be present in order to unique-ify such files.
    */ 

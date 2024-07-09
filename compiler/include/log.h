@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,6 +30,8 @@ struct ArgumentDescription;
 #define LOG_NO_SHORT ' '
 #define LOG_NEVER    '\0'
 
+enum class LogFormat { DEFAULT, NPRINT };
+
 // runpasses uses this to configure the logger
 void logMakePassAvailable(const char* name, char shortname);
 
@@ -37,6 +39,8 @@ void logMakePassAvailable(const char* name, char shortname);
 // arg might be a pass name or a 1-character short name (e.g. 'R')
 void logSelectPass(const char* arg);
 
+// Also used by driver to configure the logger.
+void logSelectFormat(const char* arg);
 
 void  setupLogfiles();
 void  teardownLogfiles();
@@ -46,13 +50,13 @@ void  logWriteLog(const char* passName, int passNum, char logTag);
 bool  deletedIdON();
 
 extern char  log_dir   [FILENAME_MAX + 1];
-extern char  log_module[FILENAME_MAX + 1];
+extern std::set<std::string> log_modules;
 
 extern bool  fLogDir; // was --log-dir passed?
 
 extern bool  fLog;
-extern bool  fLogNode;
 extern bool  fLogIds;
+extern LogFormat fLogFormat;
 
 extern int   fdump_html;
 extern char  fdump_html_chpl_home[FILENAME_MAX + 1];

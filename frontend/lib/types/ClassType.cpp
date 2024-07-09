@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,7 +28,7 @@ void ClassType::stringify(std::ostream& ss,
                           chpl::StringifyKind stringKind) const {
 
   // compute the prefix to use
-  const char* prefix = "";
+  std::string prefix = "";
   switch (decorator_.val()) {
     case ClassTypeDecorator::BORROWED:
     case ClassTypeDecorator::BORROWED_NONNIL:
@@ -48,7 +48,7 @@ void ClassType::stringify(std::ostream& ss,
     case ClassTypeDecorator::GENERIC:
     case ClassTypeDecorator::GENERIC_NONNIL:
     case ClassTypeDecorator::GENERIC_NILABLE:
-      prefix = "<any-management>";
+      prefix = stringKind == StringifyKind::CHPL_SYNTAX ? "" : "<any-management>";
       break;
   }
 
@@ -73,43 +73,46 @@ void ClassType::stringify(std::ostream& ss,
   // emit manager
   ss << manager;
   // emit a space
-  ss << " ";
+  if (!prefix.empty() || !manager.empty()) {
+    ss << " ";
+  }
 
-  // emit basic class name
-  CHPL_ASSERT(basicType_);
-  basicType_->stringify(ss, stringKind);
+  // emit manageable type name
+  CHPL_ASSERT(manageableType_);
+  manageableType_->stringify(ss, stringKind);
 
   // emit ? if nilable
   if (decorator_.isNilable()) {
     ss << "?";
-  } else if (decorator_.isUnknownNilability()) {
+  } else if (decorator_.isUnknownNilability() &&
+             stringKind != StringifyKind::CHPL_SYNTAX) {
     ss << " <unknown-nilability>";
   }
 }
 
 const owned<ClassType>&
 ClassType::getClassType(Context* context,
-                        const BasicClassType* basicType,
+                        const ManageableType* manageableType,
                         const Type* manager,
                         ClassTypeDecorator decorator) {
-  QUERY_BEGIN(getClassType, context, basicType, manager, decorator);
+  QUERY_BEGIN(getClassType, context, manageableType, manager, decorator);
 
-  auto result = toOwned(new ClassType(basicType, manager, decorator));
+  auto result = toOwned(new ClassType(manageableType, manager, decorator));
 
   return QUERY_END(result);
 }
 
 const ClassType* ClassType::get(Context* context,
-                                const BasicClassType* basicType,
+                                const ManageableType* manageableType,
                                 const Type* manager,
                                 ClassTypeDecorator decorator) {
-  return getClassType(context, basicType, manager, decorator).get();
+  return getClassType(context, manageableType, manager, decorator).get();
 }
 
 
 const ClassType* ClassType::withDecorator(Context* context,
                                           ClassTypeDecorator decorator) const {
-  return ClassType::get(context, basicClassType(), manager(), decorator);
+  return ClassType::get(context, manageableType(), manager(), decorator);
 }
 
 

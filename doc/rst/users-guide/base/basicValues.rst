@@ -22,9 +22,11 @@ values:
   :language: chapel
   :lines: 1,4,6
 
+.. _Integral literal values:
+
 Integral Values
 ---------------
-            
+
 Literal values for ``int`` types are typically written as a sequence
 of decimal digits:
 
@@ -67,7 +69,7 @@ To represent a smaller integral value as a ``uint``, type conversions
 (:ref:`casts <ug-casts>` or coercions) must be used.
 
 .. TODO: hyperlink coercions above once that text is written
-   
+
 
 Floating Point Values
 ---------------------
@@ -85,7 +87,7 @@ where these literals correspond to the values:
 .. literalinclude:: examples/users-guide/base/floatValues.good
   :language: text
   :lines: 3-4
-          
+
 In the decimal form, a ``.`` must be used to distinguish the value
 from an integral literal.  Note that ``10.`` is not a valid floating
 point literal value in Chapel due to a syntactic ambiguity with making
@@ -123,7 +125,7 @@ assignments demonstrate imaginary literals:
 .. literalinclude:: examples/users-guide/base/floatValues.chpl
   :language: chapel
   :lines: 26,29,31,33,35
-     
+
 Note that whether using the ``int`` or ``real`` form, imaginary values
 are stored using a floating point representation.  Thus, these
 expressions correspond to the values:
@@ -169,4 +171,4 @@ Subsequent sections will cover strings in more detail.
 .. TODO: write such a section and hyperlink it
 
 
-   
+

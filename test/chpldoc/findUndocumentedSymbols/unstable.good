@@ -1,0 +1,31 @@
+─── warning in (unknown location) [ImplicitFileModule] ───
+  An implicit module named 'unstable' is being introduced to contain file-scope code.
+  The following is the first file-scope statement:
+  The implicit module 'unstable' is being created because the above code is outside of any module declarations (e.g., 'module M').
+  Note that all of the file's contents -- including module 'M' -- will be placed into the new 'unstable' module.
+
+warning: 'foo' at unstable.chpl:2 is undocumented
+warning: 'a' at unstable.chpl:5 is undocumented
+warning: 'R' at unstable.chpl:8 is undocumented
+warning: 'R.myMethod' at unstable.chpl:9 is undocumented
+warning: 'R.myMethod2' at unstable.chpl:12 is undocumented
+warning: 'C' at unstable.chpl:15 is undocumented
+warning: 'C.a' at unstable.chpl:16 is undocumented
+warning: 'C.b' at unstable.chpl:16 is undocumented
+warning: 'C.c' at unstable.chpl:18 is undocumented
+warning: 'C.these' at unstable.chpl:20 is undocumented
+warning: 'C.+' at unstable.chpl:25 is undocumented
+warning: 'U' at unstable.chpl:28 is undocumented
+warning: 'U.a' at unstable.chpl:29 is undocumented
+warning: 'U.b' at unstable.chpl:30 is undocumented
+warning: 'E' at unstable.chpl:34 is undocumented
+warning: 'A' at unstable.chpl:35 is undocumented
+warning: 'B' at unstable.chpl:36 is undocumented
+warning: 'C' at unstable.chpl:37 is undocumented
+warning: 'M' at unstable.chpl:48 is undocumented
+warning: 'M.foo' at unstable.chpl:50 is undocumented
+warning: 'M.R' at unstable.chpl:51 is undocumented
+warning: 'M.a' at unstable.chpl:52 is undocumented
+warning: 'M.E' at unstable.chpl:53 is undocumented
+warning: 'M.A' at unstable.chpl:53 is undocumented
+warning: 'chpl_bar' at unstable.chpl:59 is undocumented

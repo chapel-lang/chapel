@@ -1,0 +1,33 @@
+unstableLogs.chpl:4: warning: The version of 'log2' that takes an int argument is unstable
+unstableLogs.chpl:7: warning: The version of 'log2' that takes an uint argument is unstable
+unstableLogs.chpl:12: warning: The version of 'ln' that takes an int argument is unstable and may change its return type in the future
+unstableLogs.chpl:15: warning: The version of 'ln' that takes an uint argument is unstable and may change its return type in the future
+unstableLogs.chpl:21: warning: The version of 'log' that takes an int argument is unstable and may change its return type in the future
+unstableLogs.chpl:24: warning: The version of 'log' that takes an uint argument is unstable and may change its return type in the future
+unstableLogs.chpl:29: warning: The version of 'log10' that takes an int argument is unstable and may change its return type in the future
+unstableLogs.chpl:32: warning: The version of 'log10' that takes an uint argument is unstable and may change its return type in the future
+unstableLogs.chpl:37: warning: The version of 'log1p' that takes an int argument is unstable and may change its return type in the future
+unstableLogs.chpl:40: warning: The version of 'log1p' that takes an uint argument is unstable and may change its return type in the future
+int(64)
+2
+int(64)
+2
+real(64)
+0.693147
+real(64)
+0.693147
+-- log --
+real(32)
+0.693147
+real(32)
+0.693147
+-- log10 --
+real(64)
+2.0
+real(64)
+3.0
+-- log1p --
+real(32)
+1.09861
+real(32)
+1.09861

@@ -14,17 +14,14 @@
 #include "MCTargetDesc/X86MCTargetDesc.h"
 #include "TargetInfo/X86TargetInfo.h"
 #include "X86.h"
-#include "X86CallLowering.h"
-#include "X86LegalizerInfo.h"
+#include "X86MachineFunctionInfo.h"
 #include "X86MacroFusion.h"
 #include "X86Subtarget.h"
 #include "X86TargetObjectFile.h"
 #include "X86TargetTransformInfo.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/CodeGen/ExecutionDomainFix.h"
 #include "llvm/CodeGen/GlobalISel/CSEInfo.h"
@@ -49,8 +46,10 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Target/TargetLoweringObjectFile.h"
 #include "llvm/Target/TargetOptions.h"
+#include "llvm/TargetParser/Triple.h"
 #include "llvm/Transforms/CFGuard.h"
 #include <memory>
+#include <optional>
 #include <string>
 
 using namespace llvm;
@@ -72,12 +71,11 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeX86Target() {
   PassRegistry &PR = *PassRegistry::getPassRegistry();
   initializeX86LowerAMXIntrinsicsLegacyPassPass(PR);
   initializeX86LowerAMXTypeLegacyPassPass(PR);
-  initializeX86PreAMXConfigPassPass(PR);
   initializeX86PreTileConfigPass(PR);
   initializeGlobalISel(PR);
   initializeWinEHStatePassPass(PR);
   initializeFixupBWInstPassPass(PR);
-  initializeEvexToVexInstPassPass(PR);
+  initializeCompressEVEXPassPass(PR);
   initializeFixupLEAPassPass(PR);
   initializeFPSPass(PR);
   initializeX86FixupSetCCPassPass(PR);
@@ -86,6 +84,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeX86Target() {
   initializeX86TileConfigPass(PR);
   initializeX86FastPreTileConfigPass(PR);
   initializeX86FastTileConfigPass(PR);
+  initializeKCFIPass(PR);
   initializeX86LowerTileCopyPass(PR);
   initializeX86ExpandPseudoPass(PR);
   initializeX86ExecutionDomainFixPass(PR);
@@ -101,6 +100,8 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeX86Target() {
   initializeX86PartialReductionPass(PR);
   initializePseudoProbeInserterPass(PR);
   initializeX86ReturnThunksPass(PR);
+  initializeX86DAGToDAGISelPass(PR);
+  initializeX86ArgumentStackSlotPassPass(PR);
 }
 
 static std::unique_ptr<TargetLoweringObjectFile> createTLOF(const Triple &TT) {
@@ -112,6 +113,9 @@ static std::unique_ptr<TargetLoweringObjectFile> createTLOF(const Triple &TT) {
 
   if (TT.isOSBinFormatCOFF())
     return std::make_unique<TargetLoweringObjectFileCOFF>();
+
+  if (TT.getArch() == Triple::x86_64)
+    return std::make_unique<X86_64ELFTargetObjectFile>();
   return std::make_unique<X86ELFTargetObjectFile>();
 }
 
@@ -128,12 +132,14 @@ static std::string computeDataLayout(const Triple &TT) {
   Ret += "-p270:32:32-p271:32:32-p272:64:64";
 
   // Some ABIs align 64 bit integers and doubles to 64 bits, others to 32.
+  // 128 bit integers are not specified in the 32-bit ABIs but are used
+  // internally for lowering f128, so we match the alignment to that.
   if (TT.isArch64Bit() || TT.isOSWindows() || TT.isOSNaCl())
-    Ret += "-i64:64";
+    Ret += "-i64:64-i128:128";
   else if (TT.isOSIAMCU())
     Ret += "-i64:32-f64:32";
   else
-    Ret += "-f64:32:64";
+    Ret += "-i128:128-f64:32:64";
 
   // Some ABIs align long double to 128 bits, others to 32.
   if (TT.isOSNaCl() || TT.isOSIAMCU())
@@ -161,9 +167,8 @@ static std::string computeDataLayout(const Triple &TT) {
   return Ret;
 }
 
-static Reloc::Model getEffectiveRelocModel(const Triple &TT,
-                                           bool JIT,
-                                           Optional<Reloc::Model> RM) {
+static Reloc::Model getEffectiveRelocModel(const Triple &TT, bool JIT,
+                                           std::optional<Reloc::Model> RM) {
   bool is64Bit = TT.getArch() == Triple::x86_64;
   if (!RM) {
     // JIT codegen should use static relocations by default, since it's
@@ -203,8 +208,9 @@ static Reloc::Model getEffectiveRelocModel(const Triple &TT,
   return *RM;
 }
 
-static CodeModel::Model getEffectiveX86CodeModel(Optional<CodeModel::Model> CM,
-                                                 bool JIT, bool Is64Bit) {
+static CodeModel::Model
+getEffectiveX86CodeModel(std::optional<CodeModel::Model> CM, bool JIT,
+                         bool Is64Bit) {
   if (CM) {
     if (*CM == CodeModel::Tiny)
       report_fatal_error("Target does not support the tiny CodeModel", false);
@@ -220,9 +226,9 @@ static CodeModel::Model getEffectiveX86CodeModel(Optional<CodeModel::Model> CM,
 X86TargetMachine::X86TargetMachine(const Target &T, const Triple &TT,
                                    StringRef CPU, StringRef FS,
                                    const TargetOptions &Options,
-                                   Optional<Reloc::Model> RM,
-                                   Optional<CodeModel::Model> CM,
-                                   CodeGenOpt::Level OL, bool JIT)
+                                   std::optional<Reloc::Model> RM,
+                                   std::optional<CodeModel::Model> CM,
+                                   CodeGenOptLevel OL, bool JIT)
     : LLVMTargetMachine(
           T, computeDataLayout(TT), TT, CPU, FS, Options,
           getEffectiveRelocModel(TT, JIT, RM),
@@ -424,6 +430,13 @@ TargetPassConfig *X86TargetMachine::createPassConfig(PassManagerBase &PM) {
   return new X86PassConfig(*this, PM);
 }
 
+MachineFunctionInfo *X86TargetMachine::createMachineFunctionInfo(
+    BumpPtrAllocator &Allocator, const Function &F,
+    const TargetSubtargetInfo *STI) const {
+  return X86MachineFunctionInfo::create<X86MachineFunctionInfo>(Allocator, F,
+                                                                STI);
+}
+
 void X86PassConfig::addIRPasses() {
   addPass(createAtomicExpandPass());
 
@@ -434,7 +447,7 @@ void X86PassConfig::addIRPasses() {
 
   TargetPassConfig::addIRPasses();
 
-  if (TM->getOptLevel() != CodeGenOpt::None) {
+  if (TM->getOptLevel() != CodeGenOptLevel::None) {
     addPass(createInterleavedAccessPass());
     addPass(createX86PartialReductionPass());
   }
@@ -464,10 +477,11 @@ bool X86PassConfig::addInstSelector() {
 
   // For ELF, cleanup any local-dynamic TLS accesses.
   if (TM->getTargetTriple().isOSBinFormatELF() &&
-      getOptLevel() != CodeGenOpt::None)
+      getOptLevel() != CodeGenOptLevel::None)
     addPass(createCleanupLocalDynamicTLSPass());
 
   addPass(createX86GlobalBaseRegPass());
+  addPass(createX86ArgumentStackSlotPass());
   return false;
 }
 
@@ -508,7 +522,7 @@ bool X86PassConfig::addPreISel() {
 }
 
 void X86PassConfig::addPreRegAlloc() {
-  if (getOptLevel() != CodeGenOpt::None) {
+  if (getOptLevel() != CodeGenOptLevel::None) {
     addPass(&LiveRangeShrinkID);
     addPass(createX86FixupSetCC());
     addPass(createX86OptimizeLEAs());
@@ -520,7 +534,7 @@ void X86PassConfig::addPreRegAlloc() {
   addPass(createX86FlagsCopyLoweringPass());
   addPass(createX86DynAllocaExpander());
 
-  if (getOptLevel() != CodeGenOpt::None)
+  if (getOptLevel() != CodeGenOptLevel::None)
     addPass(createX86PreTileConfigPass());
   else
     addPass(createX86FastPreTileConfigPass());
@@ -538,14 +552,17 @@ void X86PassConfig::addPostRegAlloc() {
   // to using the Speculative Execution Side Effect Suppression pass for
   // mitigation. This is to prevent slow downs due to
   // analyses needed by the LVIHardening pass when compiling at -O0.
-  if (getOptLevel() != CodeGenOpt::None)
+  if (getOptLevel() != CodeGenOptLevel::None)
     addPass(createX86LoadValueInjectionLoadHardeningPass());
 }
 
-void X86PassConfig::addPreSched2() { addPass(createX86ExpandPseudoPass()); }
+void X86PassConfig::addPreSched2() {
+  addPass(createX86ExpandPseudoPass());
+  addPass(createKCFIPass());
+}
 
 void X86PassConfig::addPreEmitPass() {
-  if (getOptLevel() != CodeGenOpt::None) {
+  if (getOptLevel() != CodeGenOptLevel::None) {
     addPass(new X86ExecutionDomainFix());
     addPass(createBreakFalseDeps());
   }
@@ -554,12 +571,14 @@ void X86PassConfig::addPreEmitPass() {
 
   addPass(createX86IssueVZeroUpperPass());
 
-  if (getOptLevel() != CodeGenOpt::None) {
+  if (getOptLevel() != CodeGenOptLevel::None) {
     addPass(createX86FixupBWInsts());
     addPass(createX86PadShortFunctions());
     addPass(createX86FixupLEAs());
+    addPass(createX86FixupInstTuning());
+    addPass(createX86FixupVectorConstants());
   }
-  addPass(createX86EvexToVexInsts());
+  addPass(createX86CompressEVEXPass());
   addPass(createX86DiscriminateMemOpsPass());
   addPass(createX86InsertPrefetchPass());
   addPass(createX86InsertX87waitPass());
@@ -606,17 +625,18 @@ void X86PassConfig::addPreEmitPass2() {
   // Insert pseudo probe annotation for callsite profiling
   addPass(createPseudoProbeInserter());
 
-  // On Darwin platforms, BLR_RVMARKER pseudo instructions are lowered to
-  // bundles.
-  if (TT.isOSDarwin())
-    addPass(createUnpackMachineBundles([](const MachineFunction &MF) {
-      // Only run bundle expansion if there are relevant ObjC runtime functions
-      // present in the module.
-      const Function &F = MF.getFunction();
-      const Module *M = F.getParent();
-      return M->getFunction("objc_retainAutoreleasedReturnValue") ||
-             M->getFunction("objc_unsafeClaimAutoreleasedReturnValue");
-    }));
+  // KCFI indirect call checks are lowered to a bundle, and on Darwin platforms,
+  // also CALL_RVMARKER.
+  addPass(createUnpackMachineBundles([&TT](const MachineFunction &MF) {
+    // Only run bundle expansion if the module uses kcfi, or there are relevant
+    // ObjC runtime functions present in the module.
+    const Function &F = MF.getFunction();
+    const Module *M = F.getParent();
+    return M->getModuleFlag("kcfi") ||
+           (TT.isOSDarwin() &&
+            (M->getFunction("objc_retainAutoreleasedReturnValue") ||
+             M->getFunction("objc_unsafeClaimAutoreleasedReturnValue")));
+  }));
 }
 
 bool X86PassConfig::addPostFastRegAllocRewrite() {

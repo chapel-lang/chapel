@@ -1,4 +1,4 @@
-class trio {
+class trio : writeSerializable {
   type elt_type;
 
   var x1 : elt_type;
@@ -9,8 +9,8 @@ class trio {
     return x1 + x2 + x3;
 }
 
-override proc trio.writeThis(f) throws {
-  f.write("(", x1, " & ", x2, " & ", x3, ")");
+override proc trio.serialize(writer, ref serializer) throws {
+  writer.write("(", x1, " & ", x2, " & ", x3, ")");
 }
 
 var t1 : unmanaged trio(int)  = new unmanaged trio(int, 1, 2, 3);

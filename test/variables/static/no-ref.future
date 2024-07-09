@@ -1,0 +1,4 @@
+unimplemented feature: static variables with 'var' intent.
+
+Static variables should be able to use the var keyword instead of being forced to use `ref.
+https://github.com/chapel-lang/chapel/issues/25265

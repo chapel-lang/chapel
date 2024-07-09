@@ -12,7 +12,7 @@ record R {
       this.y = 1.0;
     }
     this.x *= 2;
-    this.complete();
+    init this;
   }
 }
 

@@ -15,7 +15,7 @@ proc testPUT(type copyType) {
   var A: [1..size] copyType;
 
   on Locales[numLocales-1] {
-    forall i in 1..size do
+    forall i in 1..size with (ref A) do
       unorderedCopy(A[i], toCopyType(i%2, copyType));
   }
 
@@ -34,10 +34,10 @@ proc testPUTArr(type copyType) {
 
   on Locales[numLocales-1] {
     var B: [1..size] copyType;
-    forall i in 1..size do
+    forall i in 1..size with (ref B) do
       B[i] = toCopyType(i%2, copyType);
 
-    forall i in 1..size do
+    forall i in 1..size with (ref A) do
       unorderedCopy(A[i], B[i]);
   }
 
@@ -53,12 +53,12 @@ proc testPUTArr(type copyType) {
 // Test unordered GET 
 proc testGET(type copyType) {
   var A: [1..size] copyType;
-  forall i in 1..size do
+  forall i in 1..size with (ref A) do
     A[i] = toCopyType(i%2, copyType);
 
   on Locales[numLocales-1] {
     var B: [1..size] copyType;
-    forall i in 1..size do
+    forall i in 1..size with (ref B) do
       unorderedCopy(B[i], A[i]);
 
     forall i in 1..size do
@@ -82,7 +82,7 @@ proc testPUTComb() {
   var ARi: [1..size] R;
 
   on Locales[numLocales-1] {
-    forall i in 1..size {
+    forall i in 1..size with (ref AB, ref AC, ref AI, ref AI8, ref AR, ref ARi, ref AT) {
       unorderedCopy(AB[i]  , (i%2):bool);
       unorderedCopy(AI8[i] , (i%max(int(8))):int(8));
       unorderedCopy(AI[i]  , i);
@@ -125,7 +125,7 @@ proc testGETComb() {
   var AT:  [1..size] 2*int; 
   var ARi: [1..size] R;
 
-  forall i in 1..size {
+  forall i in 1..size with (ref AB, ref AC, ref AI, ref AI8, ref AR, ref ARi, ref AT) {
     AB[i]  = (i%2):bool;
     AI8[i] = (i%max(int(8))):int(8);
     AI[i]  = i;
@@ -144,7 +144,7 @@ proc testGETComb() {
     var BT:  [1..size] 2*int;
     var BRi: [1..size] R;
 
-    forall i in 1..size {
+    forall i in 1..size with (ref BB, ref BC, ref BI, ref BI8, ref BR, ref BRi, ref BT) {
       unorderedCopy(BB[i]  , AB[i]);
       unorderedCopy(BI8[i] , AI8[i]);
       unorderedCopy(BI[i]  , AI[i]);

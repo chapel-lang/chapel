@@ -1,0 +1,11 @@
+specialMethodKeywords.chpl:29: error: explicit calls to init() on anything other than 'this' or 'super' are not allowed
+specialMethodKeywords.chpl:31: error: explicit calls to deinit() are not allowed
+specialMethodKeywords.chpl:34: error: attempt to redefine reserved word 'init'
+specialMethodKeywords.chpl:35: error: attempt to redefine reserved word 'deinit'
+specialMethodKeywords.chpl:36: error: attempt to redefine reserved word 'postinit'
+specialMethodKeywords.chpl:39: error: attempt to redefine reserved word 'init'
+specialMethodKeywords.chpl:40: error: attempt to redefine reserved word 'postinit'
+specialMethodKeywords.chpl:69: In method 'deinit':
+specialMethodKeywords.chpl:69: error: 'return' statements with values are not allowed in deinit
+specialMethodKeywords.chpl:70: In method 'postinit':
+specialMethodKeywords.chpl:70: error: 'return' statements with values are not allowed in postinit

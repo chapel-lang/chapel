@@ -1,1 +1,0 @@
-const clc = here.getChildCount();

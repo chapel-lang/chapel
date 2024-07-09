@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -91,7 +91,7 @@ module ISO_Fortran_binding {
   }
 
   @chpldoc.nodoc
-  extern proc for_CFI_address(ref dv : CFI_cdesc_t, subscripts : c_ptr(CFI_index_t)) : c_void_ptr;
+  extern proc for_CFI_address(ref dv : CFI_cdesc_t, subscripts : c_ptr(CFI_index_t)) : c_ptr(void);
 
   inline proc CFI_allocate(ref dv: CFI_cdesc_t, lower_bounds: c_ptr(CFI_index_t), upper_bounds: c_ptr(CFI_index_t), elem_len: c_size_t): c_int {
     return for_CFI_allocate(dv, lower_bounds, upper_bounds, elem_len);
@@ -107,12 +107,12 @@ module ISO_Fortran_binding {
   @chpldoc.nodoc
   extern proc for_CFI_deallocate(ref dv : CFI_cdesc_t) : c_int;
 
-  inline proc CFI_establish(ref dv: CFI_cdesc_t, base_addr: c_void_ptr, attribute: CFI_attribute_t, type_arg: CFI_type_t, elem_len: c_size_t, rank: CFI_rank_t, extents: c_ptr(CFI_index_t)): c_int {
+  inline proc CFI_establish(ref dv: CFI_cdesc_t, base_addr: c_ptr(void), attribute: CFI_attribute_t, type_arg: CFI_type_t, elem_len: c_size_t, rank: CFI_rank_t, extents: c_ptr(CFI_index_t)): c_int {
     return for_CFI_establish(dv, base_addr, attribute, type_arg, elem_len, rank, extents, CFI_VERSION);
   }
 
   @chpldoc.nodoc
-  extern proc for_CFI_establish(ref dv : CFI_cdesc_t, base_addr : c_void_ptr, attribute : CFI_attribute_t, type_arg : CFI_type_t, elem_len : c_size_t, rank : CFI_rank_t, extents : c_ptr(CFI_index_t), version : c_int) : c_int;
+  extern proc for_CFI_establish(ref dv : CFI_cdesc_t, base_addr : c_ptr(void), attribute : CFI_attribute_t, type_arg : CFI_type_t, elem_len : c_size_t, rank : CFI_rank_t, extents : c_ptr(CFI_index_t), version : c_int) : c_int;
 
   inline proc CFI_is_contiguous(ref dv: CFI_cdesc_t): c_int {
     return for_CFI_is_contiguous(dv);
@@ -147,7 +147,7 @@ module ISO_Fortran_binding {
   extern type CFI_attribute_t = c_ptrdiff;
 
   extern record CFI_cdesc_t {
-    var base_addr: c_void_ptr;
+    var base_addr: c_ptr(void);
     var elem_len: c_size_t;
     var version: c_int;
     var attribute: CFI_attribute_t;
@@ -158,7 +158,7 @@ module ISO_Fortran_binding {
 /*
   extern record CFI_CDESC_T {
     param r: int;
-    var base_addr: c_void_ptr;
+    var base_addr: c_ptr(void);
     var elem_len: c_size_t;
     var version: c_int;
     var attribute: CFI_attribute_t;

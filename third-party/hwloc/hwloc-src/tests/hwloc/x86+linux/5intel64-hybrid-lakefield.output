@@ -1,0 +1,44 @@
+Machine (P#0 total=3857124KB DMIProductName="LakeField Client Platform" DMIProductVersion=0.1 DMIProductSerial=fzlf933000en DMIBoardVendor="Intel Corporation" DMIBoardName="Lakefield LPDDR4x T4 RVP2" DMIBoardVersion=1 DMIBoardSerial=fzlf933000en DMIBoardAssetTag="Base Board Asset Tag" DMIChassisVendor="Intel Corporation" DMIChassisType=9 DMIChassisVersion=0.1 DMIChassisSerial="Chassis Serial Number" DMIChassisAssetTag="Chassis Asset Tag" DMIBIOSVendor="Intel Corporation" DMIBIOSVersion=LKFSFWR1.R00.4082.A00.2002190224 DMIBIOSDate=02/19/2020 DMISysVendor="Intel Corporation" Backend=Linux LinuxCgroup=/ OSName=Linux OSRelease=5.3.0-28-generic OSVersion="#30~18.04.1-Ubuntu SMP Fri Jan 17 06:14:09 UTC 2020" HostName=jf1lkf Architecture=x86_64)
+  Package L#0 (P#0 total=3857124KB CPUVendor=GenuineIntel CPUFamilyNumber=6 CPUModelNumber=138 CPUModel="Intel(R) Core(TM) i5-L16G7 CPU @ 1.40GHz" CPUStepping=1)
+    NUMANode L#0 (P#0 local=3857124KB total=3857124KB)
+    L3Cache L#0 (P#0 size=4096KB linesize=64 ways=16 Inclusive=1)
+      L2Cache L#0 (P#0 size=1536KB linesize=64 ways=12 Inclusive=0)
+        L1dCache L#0 (P#0 size=32KB linesize=64 ways=8 Inclusive=0)
+          L1iCache L#0 (P#0 size=32KB linesize=64 ways=8 Inclusive=0)
+            Core L#0 (P#0)
+              PU L#0 (P#0)
+        L1dCache L#1 (P#2 size=32KB linesize=64 ways=8 Inclusive=0)
+          L1iCache L#1 (P#2 size=32KB linesize=64 ways=8 Inclusive=0)
+            Core L#1 (P#1)
+              PU L#1 (P#1)
+        L1dCache L#2 (P#4 size=32KB linesize=64 ways=8 Inclusive=0)
+          L1iCache L#2 (P#4 size=32KB linesize=64 ways=8 Inclusive=0)
+            Core L#2 (P#2)
+              PU L#2 (P#2)
+        L1dCache L#3 (P#6 size=32KB linesize=64 ways=8 Inclusive=0)
+          L1iCache L#3 (P#6 size=32KB linesize=64 ways=8 Inclusive=0)
+            Core L#3 (P#3)
+              PU L#3 (P#3)
+      L2Cache L#1 (P#4 size=512KB linesize=64 ways=8 Inclusive=0)
+        L1dCache L#4 (P#4 size=48KB linesize=64 ways=12 Inclusive=0)
+          L1iCache L#4 (P#4 size=32KB linesize=64 ways=8 Inclusive=0)
+            Core L#4 (P#4)
+              PU L#4 (P#4)
+depth 0:           1 Machine (type #0)
+ depth 1:          1 Package (type #1)
+  depth 2:         1 L3Cache (type #6)
+   depth 3:        2 L2Cache (type #5)
+    depth 4:       5 L1dCache (type #4)
+     depth 5:      5 L1iCache (type #9)
+      depth 6:     5 Core (type #2)
+       depth 7:    5 PU (type #3)
+Special depth -3:  1 NUMANode (type #13)
+CPU kind #0 efficiency 0 cpuset 0x0000000f
+  FrequencyMaxMHz = 2800
+  FrequencyBaseMHz = 1400
+  CoreType = IntelAtom
+CPU kind #1 efficiency 1 cpuset 0x00000010
+  FrequencyMaxMHz = 3000
+  FrequencyBaseMHz = 2000
+  CoreType = IntelCore
+Topology not from this system

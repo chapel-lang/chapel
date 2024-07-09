@@ -7,7 +7,7 @@ proc main() {
 
   
   const toml = open("Mason.toml", ioMode.cw);
-  var s      = toml.writer();
+  var s      = toml.writer(locking=false);
 
   s.writeln();
   s.writeln("[brick]");
@@ -20,7 +20,7 @@ proc main() {
   toml.close();
 
   const lock = open("Mason.lock", ioMode.cw);
-  var w      = lock.writer();
+  var w      = lock.writer(locking=false);
 
   w.writeln();
   w.writeln("[root]");

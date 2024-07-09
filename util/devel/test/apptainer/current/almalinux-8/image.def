@@ -9,4 +9,4 @@ From: almalinux:8
     /provision-scripts/dnf-llvm.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

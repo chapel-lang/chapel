@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -90,7 +90,7 @@ void printStatistics(const char* pass) {
   static int last_nasts = -1;
   static int maxK = -1, maxN = -1;
 
-  if (!strcmp(pass, "makeBinary")) {
+  if (strcmp(pass, "codegen") == 0) {
     if (strstr(fPrintStatistics, "m")) {
       fprintf(stderr, "Maximum # of ASTS: %d\n", maxN);
       fprintf(stderr, "Maximum Size (KB): %d\n", maxK);
@@ -276,7 +276,7 @@ void cleanAst() {
 
       //
       // If an internal aggregate type is being deleted, set its global
-      // handle to NULL. See #15169.
+      // handle to NULL. See #15619.
       //
       if (!isAlive(at)) {
         if (at == dtBytes) dtBytes = NULL;
@@ -409,11 +409,6 @@ ModuleSymbol* BaseAST::getModule() {
   }
 
   return retval;
-}
-
-Type* BaseAST::typeInfo() {
-  QualifiedType qt = this->qualType();
-  return qt.type();
 }
 
 bool BaseAST::isRef() {
@@ -552,24 +547,41 @@ void registerModule(ModuleSymbol* mod) {
   }
 }
 
+static Symbol* lookupTransitively(SymbolMap* map, Symbol* sym) {
+  Symbol* x = map->get(sym);
+  if (!x) return x;
+
+  // If the symbol is re-maped again (e.g., x was y and y was z),
+  // we need to keep looking until we find the final symbol.
+  while (Symbol* y = map->get(x)) {
+    // Detect naive cycles. Note that this will not find multi-step cycles,
+    // but they shouldn't come up. If they do, might need to switch this
+    // to a tortoise-and-hare algorithm (Floyd's?)
+    if (y == x) break;
+    x = y;
+  }
+
+  return x;
+}
+
 #define SUB_SYMBOL(x)                                   \
   do {                                                  \
     if (x)                                              \
-      if (Symbol* y = map->get(x))                      \
+      if (Symbol* y = lookupTransitively(map, x))       \
         x = y;                                          \
   } while (0)
 
-#define SUB_TYPE(x)                                     \
-  do {                                                  \
-    if (x)                                              \
-      if (Symbol* y = map->get(x->symbol))              \
-        x = y->type;                                    \
+#define SUB_TYPE(x)                                       \
+  do {                                                    \
+    if (x)                                                \
+      if (Symbol* y = lookupTransitively(map, x->symbol)) \
+        x = y->type;                                      \
   } while (0)
 
 void update_symbols(BaseAST* ast, SymbolMap* map) {
   if (SymExpr* sym_expr = toSymExpr(ast)) {
     if (sym_expr->symbol()) {
-      if (Symbol* y = map->get(sym_expr->symbol())) {
+      if (Symbol* y = lookupTransitively(map, sym_expr->symbol())) {
         bool skip = false;
 
         // Do not replace symbols for type constructor calls
@@ -577,12 +589,14 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
         // BENHARSH TODO 2019-06-20: I think we need to do this because in
         // some cases the SymbolMap contains a mapping from the generic 'T' to
         // an instantiation of 'T'. Is that mapping necessary?
-        CallExpr* call = toCallExpr(sym_expr->parentExpr);
-        if (call != NULL && call->baseExpr == sym_expr) {
-          if (y->getValType()->symbol->hasFlag(FLAG_TUPLE) == false &&
-              y->getValType() != dtUnknown &&
-              sym_expr->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-            skip = true;
+        if (isTypeSymbol(sym_expr->parentSymbol)) {
+          CallExpr* call = toCallExpr(sym_expr->parentExpr);
+          if (call != NULL && call->baseExpr == sym_expr) {
+            if (y->getValType()->symbol->hasFlag(FLAG_TUPLE) == false &&
+                y->getValType() != dtUnknown &&
+                sym_expr->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+              skip = true;
+            }
           }
         }
 
@@ -614,10 +628,10 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
 
   } else if (ForallStmt* forall = toForallStmt(ast)) {
     if (forall->fContinueLabel) {
-      if (LabelSymbol* y = toLabelSymbol(map->get(forall->fContinueLabel)))
+      if (LabelSymbol* y = toLabelSymbol(lookupTransitively(map, forall->fContinueLabel)))
           forall->fContinueLabel = y;
     } else if (forall->fErrorHandlerLabel) {
-      if (LabelSymbol* y = toLabelSymbol(map->get(forall->fErrorHandlerLabel)))
+      if (LabelSymbol* y = toLabelSymbol(lookupTransitively(map, forall->fErrorHandlerLabel)))
           forall->fErrorHandlerLabel = y;
     }
   } else if (VarSymbol* ps = toVarSymbol(ast)) {

@@ -1,0 +1,2 @@
+generic-type.chpl:9: In function 'main':
+generic-type.chpl:15: error: reading generic types is not supported: 'R'

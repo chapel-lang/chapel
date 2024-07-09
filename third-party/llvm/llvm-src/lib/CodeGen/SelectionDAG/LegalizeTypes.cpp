@@ -235,7 +235,7 @@ bool DAGTypeLegalizer::run() {
     assert(N->getNodeId() == ReadyToProcess &&
            "Node should be ready if on worklist!");
 
-    LLVM_DEBUG(dbgs() << "Legalizing node: "; N->dump(&DAG));
+    LLVM_DEBUG(dbgs() << "\nLegalizing node: "; N->dump(&DAG));
     if (IgnoreNodeResults(N)) {
       LLVM_DEBUG(dbgs() << "Ignoring node results\n");
       goto ScanOperands;
@@ -245,8 +245,7 @@ bool DAGTypeLegalizer::run() {
     // types are illegal.
     for (unsigned i = 0, NumResults = N->getNumValues(); i < NumResults; ++i) {
       EVT ResultVT = N->getValueType(i);
-      LLVM_DEBUG(dbgs() << "Analyzing result type: " << ResultVT.getEVTString()
-                        << "\n");
+      LLVM_DEBUG(dbgs() << "Analyzing result type: " << ResultVT << "\n");
       switch (getTypeAction(ResultVT)) {
       case TargetLowering::TypeLegal:
         LLVM_DEBUG(dbgs() << "Legal result type\n");
@@ -391,8 +390,7 @@ ScanOperands:
     }
 
     if (i == NumOperands) {
-      LLVM_DEBUG(dbgs() << "Legally typed node: "; N->dump(&DAG);
-                 dbgs() << "\n");
+      LLVM_DEBUG(dbgs() << "Legally typed node: "; N->dump(&DAG));
     }
     }
 NodeDone:
@@ -716,15 +714,18 @@ void DAGTypeLegalizer::SetPromotedInteger(SDValue Op, SDValue Result) {
   auto &OpIdEntry = PromotedIntegers[getTableId(Op)];
   assert((OpIdEntry == 0) && "Node is already promoted!");
   OpIdEntry = getTableId(Result);
-  Result->setFlags(Op->getFlags());
 
   DAG.transferDbgValues(Op, Result);
 }
 
 void DAGTypeLegalizer::SetSoftenedFloat(SDValue Op, SDValue Result) {
-  assert(Result.getValueType() ==
-         TLI.getTypeToTransformTo(*DAG.getContext(), Op.getValueType()) &&
+#ifndef NDEBUG
+  EVT VT = Result.getValueType();
+  LLVMContext &Ctx = *DAG.getContext();
+  assert((VT == EVT::getIntegerVT(Ctx, 80) ||
+          VT == TLI.getTypeToTransformTo(Ctx, Op.getValueType())) &&
          "Invalid type for softened float");
+#endif
   AnalyzeNewValue(Result);
 
   auto &OpIdEntry = SoftenedFloats[getTableId(Op)];
@@ -759,7 +760,7 @@ void DAGTypeLegalizer::SetScalarizedVector(SDValue Op, SDValue Result) {
   // a constant i8 operand.
 
   // We don't currently support the scalarization of scalable vector types.
-  assert(Result.getValueSizeInBits().getFixedSize() >=
+  assert(Result.getValueSizeInBits().getFixedValue() >=
              Op.getScalarValueSizeInBits() &&
          "Invalid type for scalarized vector");
   AnalyzeNewValue(Result);
@@ -985,10 +986,7 @@ void DAGTypeLegalizer::GetPairElements(SDValue Pair,
                                        SDValue &Lo, SDValue &Hi) {
   SDLoc dl(Pair);
   EVT NVT = TLI.getTypeToTransformTo(*DAG.getContext(), Pair.getValueType());
-  Lo = DAG.getNode(ISD::EXTRACT_ELEMENT, dl, NVT, Pair,
-                   DAG.getIntPtrConstant(0, dl));
-  Hi = DAG.getNode(ISD::EXTRACT_ELEMENT, dl, NVT, Pair,
-                   DAG.getIntPtrConstant(1, dl));
+  std::tie(Lo, Hi) = DAG.SplitScalar(Pair, dl, NVT, NVT);
 }
 
 /// Build an integer with low bits Lo and high bits Hi.
@@ -1001,7 +999,7 @@ SDValue DAGTypeLegalizer::JoinIntegers(SDValue Lo, SDValue Hi) {
   EVT NVT = EVT::getIntegerVT(*DAG.getContext(),
                               LVT.getSizeInBits() + HVT.getSizeInBits());
 
-  EVT ShiftAmtVT = TLI.getShiftAmountTy(NVT, DAG.getDataLayout(), false);
+  EVT ShiftAmtVT = TLI.getShiftAmountTy(NVT, DAG.getDataLayout());
   Lo = DAG.getNode(ISD::ZERO_EXTEND, dlLo, NVT, Lo);
   Hi = DAG.getNode(ISD::ANY_EXTEND, dlHi, NVT, Hi);
   Hi = DAG.getNode(ISD::SHL, dlHi, NVT, Hi,

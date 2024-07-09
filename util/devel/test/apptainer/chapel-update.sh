@@ -3,4 +3,4 @@
 # Updates the chapel checkout to be 'main' (makes sure it exists)
 # Prints a summary at the end.
 
-./tryit.sh ../../provision-scripts/chapel-update.sh
+./tryit.py ../../provision-scripts/chapel-update.sh

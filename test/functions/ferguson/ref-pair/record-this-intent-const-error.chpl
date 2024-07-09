@@ -3,7 +3,7 @@
 record R {
   var field:int;
 
-  proc setsField() {
+  proc ref setsField() {
     field = 1;
   }
 }

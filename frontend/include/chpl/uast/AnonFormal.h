@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -63,6 +63,8 @@ namespace uast {
   They also do not carry an initialization expression.
 */
 class AnonFormal final : public AstNode {
+ friend class AstNode;
+
  public:
   using Intent = Formal::Intent;
 
@@ -77,10 +79,16 @@ class AnonFormal final : public AstNode {
       typeExpressionChildNum_(typeExpressionChildNum) {
   }
 
-  AnonFormal(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    ser.write(intent_);
+    ser.write(typeExpressionChildNum_);
+  }
+
+  explicit AnonFormal(Deserializer& des)
     : AstNode(asttags::AnonFormal, des) {
-      intent_ = des.read<Formal::Intent>();
-    }
+    intent_ = des.read<Formal::Intent>();
+    typeExpressionChildNum_ = des.read<int8_t>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const AnonFormal* lhs = this;
@@ -89,7 +97,7 @@ class AnonFormal final : public AstNode {
            lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {}
+  void markUniqueStringsInner(Context* context) const override { }
 
   void dumpInner(const DumpSettings& s) const;
 
@@ -120,14 +128,6 @@ class AnonFormal final : public AstNode {
   static std::string intentToString(Intent intent) {
     return Formal::intentToString(intent);
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(intent_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(AnonFormal);
-
 };
 
 

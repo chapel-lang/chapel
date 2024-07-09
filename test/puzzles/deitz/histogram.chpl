@@ -3,7 +3,8 @@ var A: [1..n] int = (1,7,2,9,6,7,1,3,7,5,7,9);
 
 var H: [0..9] int;
 
-H(A) += 1;
+// H(A) += 1;
+forall a in A with (+ reduce H) do H(a) += 1;
 
 for i in 0..9 {
   write(i, " ");

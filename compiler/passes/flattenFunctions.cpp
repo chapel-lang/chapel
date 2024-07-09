@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -122,6 +122,11 @@ shouldPropagateOuterArg(Symbol* sym, FnSymbol* parentFn, FnSymbol* calledFn) {
 
   // e.g. sym is a formal for the called function
   if (calledFn && symDefParent == calledFn)
+    return false;
+
+  if (sym->hasFlag(FLAG_TYPE_VARIABLE) &&
+      !sym->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+    // don't propagate type variables
     return false;
 
   if (shouldAddArgForAlwaysRvf(sym, parentFn))
@@ -304,6 +309,8 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
           arg->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       if (sym->hasFlag(FLAG_COFORALL_INDEX_VAR))
           arg->addFlag(FLAG_COFORALL_INDEX_VAR);
+      if (sym->hasFlag(FLAG_NO_RVF))
+          arg->addFlag(FLAG_NO_RVF);
       arg->addFlag(FLAG_OUTER_VARIABLE);
 
       fn->insertFormalAtTail(new DefExpr(arg));

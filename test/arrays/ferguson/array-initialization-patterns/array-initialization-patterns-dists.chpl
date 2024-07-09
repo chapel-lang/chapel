@@ -32,7 +32,7 @@ record R {
   }
   proc deinit() {
 
-    // Replicated is the only distribution where a 1 element array will print
+    // replicatedDist is the only distribution where a 1 element array will print
     // out more than one deinit call for the element (on a multilocale run
     // with N locales, there are N elements, one for each replicand). Deinit
     // order in such a situation is nondeterministic, so don't bother.
@@ -61,19 +61,19 @@ proc makeInitialArray() {
     var ret: [1..1] int;
     return ret;
   } else if distType == DistType.block {
-    return Block.createArray(1..1, int);
+    return blockDist.createArray(1..1, int);
   } else if distType == DistType.cyclic {
-    return Cyclic.createArray(1..1, int);
+    return cyclicDist.createArray(1..1, int);
   } else if distType == DistType.blockcyclic {
-    var D = {1..1} dmapped BlockCyclic(startIdx=(1,), (3,));
+    var D = {1..1} dmapped new blockCycDist(startIdx=(1,), (3,));
     var ret: [D] int;
     return ret;
   } else if distType == DistType.replicated {
-    var D = {1..1} dmapped Replicated();
+    var D = {1..1} dmapped new replicatedDist();
     var ret: [D] int;
     return ret;
   } else if distType == DistType.stencil {
-    var D = {1..1} dmapped Stencil(rank=1, boundingBox={1..1});
+    var D = {1..1} dmapped new stencilDist(rank=1, boundingBox={1..1});
     var ret: [D] int;
     return ret;
   } else {

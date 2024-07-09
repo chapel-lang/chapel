@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -102,9 +102,11 @@ char* chpl_mli_pull_connection(void) {
 //
 int chpl_mli_client_launch(int argc, char** argv) {
   int32_t execNumLocales;
+  int32_t execNumLocalesPerNode;
   pid_t pid;
 
-  if (chpl_launch_prep(&argc, argv, &execNumLocales)) {
+  if (chpl_launch_prep(&argc, argv, &execNumLocales,
+                       &execNumLocalesPerNode)) {
     return -1;
   }
 
@@ -114,7 +116,7 @@ int chpl_mli_client_launch(int argc, char** argv) {
     // TODO: Should parent wait here, or in `chpl_library_finalize`?
     if (pid == -1) { return - 1; }
   } else {
-    chpl_launch(argc, argv, execNumLocales);
+    chpl_launch(argc, argv, execNumLocales, execNumLocalesPerNode);
     chpl_mli_exit(0);
   }
 

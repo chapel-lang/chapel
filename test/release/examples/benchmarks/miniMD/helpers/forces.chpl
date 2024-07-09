@@ -50,7 +50,7 @@ class ForceEAM : Force  {
   var funcfl = new Funcfl();
 
   proc init(cf : real) {
-    this.complete();
+    init this;
     // use the fluff domain already calculated for communication
     cutforcesq = cf*cf;
     coeff("Cu_u6.eam");
@@ -60,7 +60,7 @@ class ForceEAM : Force  {
   proc coeff(fname : string) {
     funcfl.eamFile = fname;
     var fchan = open(fname, ioMode.r);
-    var rd = fchan.reader();
+    var rd = fchan.reader(locking=false);
 
     rd.readln(); // skip header info
     rd.read(int); // skip atomic number
@@ -174,7 +174,7 @@ class ForceEAM : Force  {
   }
 
   // copied straight from c++, not entirely sure what it does
-  proc interp(n : int, delta : real, arr : [] real, spline : [] real) {
+  proc interp(n : int, delta : real, arr : [] real, ref spline : [] real) {
     for (f,m) in zip(arr[2..],1..) {
       spline[m*7 + 6] = f;
     }
@@ -206,7 +206,7 @@ class ForceEAM : Force  {
     }
   }
 
-  proc grab(rd,list : [] real) {
+  proc grab(rd,ref list : [] real) {
     for a in list[2..list.domain.high] {
       a = rd.read(real);
     }
@@ -312,7 +312,7 @@ class ForceEAM : Force  {
 // Lennard-Jones potential
 class ForceLJ : Force {
   proc init(cf : real) {
-    this.complete();
+    init this;
     cutforcesq = cf * cf;
   }
 

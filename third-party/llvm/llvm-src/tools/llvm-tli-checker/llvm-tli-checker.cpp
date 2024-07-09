@@ -8,7 +8,6 @@
 
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringMap.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/Demangle/Demangle.h"
@@ -20,6 +19,7 @@
 #include "llvm/Support/InitLLVM.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/WithColor.h"
+#include "llvm/TargetParser/Triple.h"
 
 using namespace llvm;
 using namespace llvm::object;
@@ -28,32 +28,28 @@ using namespace llvm::object;
 namespace {
 enum ID {
   OPT_INVALID = 0, // This is not an option ID.
-#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM,  \
-               HELPTEXT, METAVAR, VALUES)                                      \
-  OPT_##ID,
+#define OPTION(...) LLVM_MAKE_OPT_ID(__VA_ARGS__),
 #include "Opts.inc"
 #undef OPTION
 };
 
-#define PREFIX(NAME, VALUE) const char *const NAME[] = VALUE;
+#define PREFIX(NAME, VALUE)                                                    \
+  static constexpr StringLiteral NAME##_init[] = VALUE;                        \
+  static constexpr ArrayRef<StringLiteral> NAME(NAME##_init,                   \
+                                                std::size(NAME##_init) - 1);
 #include "Opts.inc"
 #undef PREFIX
 
-static const opt::OptTable::Info InfoTable[] = {
-#define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM,  \
-               HELPTEXT, METAVAR, VALUES)                                      \
-  {                                                                            \
-      PREFIX,      NAME,      HELPTEXT,                                        \
-      METAVAR,     OPT_##ID,  opt::Option::KIND##Class,                        \
-      PARAM,       FLAGS,     OPT_##GROUP,                                     \
-      OPT_##ALIAS, ALIASARGS, VALUES},
+using namespace llvm::opt;
+static constexpr opt::OptTable::Info InfoTable[] = {
+#define OPTION(...) LLVM_CONSTRUCT_OPT_INFO(__VA_ARGS__),
 #include "Opts.inc"
 #undef OPTION
 };
 
-class TLICheckerOptTable : public opt::OptTable {
+class TLICheckerOptTable : public opt::GenericOptTable {
 public:
-  TLICheckerOptTable() : OptTable(InfoTable) {}
+  TLICheckerOptTable() : GenericOptTable(InfoTable) {}
 };
 } // end anonymous namespace
 
@@ -104,7 +100,7 @@ static std::string getPrintableName(StringRef Name) {
   std::string OutputName = "'";
   OutputName += Name;
   OutputName += "'";
-  std::string DemangledName(demangle(Name.str()));
+  std::string DemangledName(demangle(Name));
   if (Name != DemangledName) {
     OutputName += " aka ";
     OutputName += DemangledName;
@@ -155,6 +151,7 @@ void TLINameList::dump() {
 // Store all the exported symbol names we found in the input libraries.
 // We use a map to get hashed lookup speed; the bool is meaningless.
 class SDKNameMap : public StringMap<bool> {
+  void maybeInsertSymbol(const SymbolRef &S, const ObjectFile &O);
   void populateFromObject(ObjectFile *O);
   void populateFromArchive(Archive *A);
 
@@ -162,6 +159,19 @@ public:
   void populateFromFile(StringRef LibDir, StringRef LibName);
 };
 static SDKNameMap SDKNames;
+
+// Insert defined global function symbols into the map if valid.
+void SDKNameMap::maybeInsertSymbol(const SymbolRef &S, const ObjectFile &O) {
+  SymbolRef::Type Type = unwrapIgnoreError(S.getType());
+  uint32_t Flags = unwrapIgnoreError(S.getFlags());
+  section_iterator Section = unwrapIgnoreError(S.getSection(),
+                                               /*Default=*/O.section_end());
+  if (Type == SymbolRef::ST_Function && (Flags & SymbolRef::SF_Global) &&
+      Section != O.section_end()) {
+    StringRef Name = unwrapIgnoreError(S.getName());
+    insert({ Name, true });
+  }
+}
 
 // Given an ObjectFile, extract the global function symbols.
 void SDKNameMap::populateFromObject(ObjectFile *O) {
@@ -173,16 +183,12 @@ void SDKNameMap::populateFromObject(ObjectFile *O) {
   }
   const auto *ELF = cast<ELFObjectFileBase>(O);
 
-  for (auto &S : ELF->getDynamicSymbolIterators()) {
-    // We want only defined global function symbols.
-    SymbolRef::Type Type = unwrapIgnoreError(S.getType());
-    uint32_t Flags = unwrapIgnoreError(S.getFlags());
-    section_iterator Section = unwrapIgnoreError(S.getSection(),
-                                                 /*Default=*/O->section_end());
-    StringRef Name = unwrapIgnoreError(S.getName());
-    if (Type == SymbolRef::ST_Function && (Flags & SymbolRef::SF_Global) &&
-        Section != O->section_end())
-      insert({Name, true});
+  if (ELF->getEType() == ELF::ET_REL) {
+    for (const auto &S : ELF->symbols())
+      maybeInsertSymbol(S, *O);
+  } else {
+    for (const auto &S : ELF->getDynamicSymbolIterators())
+      maybeInsertSymbol(S, *O);
   }
 }
 
@@ -191,7 +197,7 @@ void SDKNameMap::populateFromObject(ObjectFile *O) {
 void SDKNameMap::populateFromArchive(Archive *A) {
   Error Err = Error::success();
   int Index = -1;
-  for (auto &C : A->children(Err)) {
+  for (const auto &C : A->children(Err)) {
     ++Index;
     Expected<std::unique_ptr<object::Binary>> ChildOrErr = C.getAsBinary();
     if (!ChildOrErr) {

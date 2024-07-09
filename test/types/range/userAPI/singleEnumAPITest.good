@@ -2,7 +2,7 @@ trivial enum range
 ------------
 red..red
 idxType          = color
-stridable        = false
+strides          = one
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -25,8 +25,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(red) = true
 contains(red..red) = true
-boundsCheck(red) = true
-boundsCheck(red..red) = true
 indexOrder(red) = 0
 orderToIndex(0)  = red
 interior(1)      = red..red
@@ -46,7 +44,7 @@ default trivial enum range
 ------------
 red..<red
 idxType          = color
-stridable        = false
+strides          = one
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -69,8 +67,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(red) = false
 contains(red..<red) = true
-boundsCheck(red) = false
-boundsCheck(red..<red) = true
 indexOrder(red) = -1
 interior(0)      = red..<red
 interior(0)     = red..<red
@@ -87,7 +83,7 @@ trivial strided enum range
 ------------
 red..red
 idxType          = color
-stridable        = true
+strides          = any
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -110,8 +106,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(red) = true
 contains(red..red) = true
-boundsCheck(red) = true
-boundsCheck(red..red) = true
 indexOrder(red) = 0
 orderToIndex(0)  = red
 interior(1)      = red..red
@@ -131,7 +125,7 @@ default trivial strided enum range
 ------------
 red..<red
 idxType          = color
-stridable        = true
+strides          = any
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -154,8 +148,6 @@ isNat.Algned()   = true
 isAmbiguous      = false
 contains(red) = false
 contains(red..<red) = true
-boundsCheck(red) = false
-boundsCheck(red..<red) = true
 indexOrder(red) = -1
 interior(0)      = red..<red
 interior(0)     = red..<red

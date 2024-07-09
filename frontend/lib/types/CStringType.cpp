@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +34,10 @@ const owned<CStringType>& CStringType::getCStringType(Context* context) {
 
 const CStringType* CStringType::get(Context* context) {
   return getCStringType(context).get();
+}
+
+void CStringType::stringify(std::ostream& ss, StringifyKind stringKind) const {
+  ss << "c_string";
 }
 
 

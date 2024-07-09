@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,12 +25,15 @@
 // The required methods are marked with 'REQ' followed by a brief description.
 //
 
+@unstable("ReplicatedDim is intended for use with DimensionalDist2D, which is unstable")
+prototype module ReplicatedDim {
+
 private use DimensionalDist2D;
 import RangeChunk;
 
 /*
 This Replicated dimension specifier is for use with the
-:class:`DimensionalDist2D` distribution.
+:mod:`dimensionalDist2D <DimensionalDist2D>` distribution.
 
 The dimension of a domain or array for which this specifier is used
 has a *replicand* for each element of ``targetLocales``
@@ -64,14 +67,13 @@ record ReplicatedDim {
 record Replicated1dom {
   // REQ the parameters of our dimension of the domain being created
   type idxType;
-  param stridable: bool;
+  param strides: strideKind;
 
   // convenience
-  proc rangeT type do  return range(idxType, boundKind.both, stridable);
-//todo-remove?  proc domainT type return domain(1, idxType, stridable);
+  proc rangeT type do  return range(idxType, boundKind.both, strides);
 
   // our range
-  var wholeR: range(idxType, boundKind.both, stridable);
+  var wholeR: range(idxType, boundKind.both, strides);
 
   // locale ID in our dimension of the locale this instance is on
   var localLocID = invalidLocID;
@@ -83,9 +85,9 @@ record Replicated1dom {
 
 record Replicated1locdom {
   type stoIndexT;
-  param stridable;
+  param strides;
   // our copy of wholeR
-  var locWholeR: range(stoIndexT, stridable=stridable);
+  var locWholeR: range(stoIndexT, strides=strides);
 }
 
 
@@ -108,7 +110,7 @@ proc ReplicatedDim.dsiUsesLocalLocID1d() param do return true;
 // REQ if dsiUsesLocalLocID1d: store the localLocID
 // If 'legit' is false, this is a privatized copy on a locale
 // that's not among our Dimensional distribution's target locales.
-proc ReplicatedDim.dsiStoreLocalLocID1d(localLocID: locIdT, legit: bool) {
+proc ref ReplicatedDim.dsiStoreLocalLocID1d(localLocID: locIdT, legit: bool) {
   // This will get invoked multiple times if this ReplicatedDim object
   // is reused in another DimensionalDist object.
   // In which case the cache better be the same for both uses.
@@ -142,7 +144,7 @@ proc Replicated1dom.dsiGetPrivatizeData1d() {
 proc type Replicated1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
   return new Replicated1dom(idxType   = this.idxType,
-                            stridable = this.stridable,
+                            strides   = this.strides,
                             wholeR    = privatizeData(0));
 }
 
@@ -152,7 +154,7 @@ proc Replicated1dom.dsiGetReprivatizeData1d() {
 }
 
 // REQ - same purpose as dsiReprivatize()
-proc Replicated1dom.dsiReprivatize1d(reprivatizeData) {
+proc ref Replicated1dom.dsiReprivatize1d(reprivatizeData) {
   this.wholeR = reprivatizeData(0);
 }
 
@@ -163,7 +165,7 @@ proc Replicated1dom.dsiUsesLocalLocID1d() param do return true;
 // REQ if dsiUsesLocalLocID1d: store the localLocID
 // This is invoked when a DimensionalDom is created, including
 // from DimensionalDom.dsiPrivatize(), but not DimensionalDom.dsiReprivatize()
-proc Replicated1dom.dsiStoreLocalLocID1d((localLocID, legit): (locIdT, bool)) {
+proc ref Replicated1dom.dsiStoreLocalLocID1d((localLocID, legit): (locIdT, bool)) {
   // no big deal, but currently we intend to update this just once
   assert(this.localLocID == invalidLocID);
   this.localLocID = localLocID;
@@ -197,13 +199,13 @@ proc Replicated1locdom.dsiStoreLocalDescToPrivatizedGlobalDesc1d(privGlobDesc) {
 
 
 // REQ create a 1-d global domain descriptor for dsiNewRectangularDom()
-// where our dimension is a range(idxType, bounded, stridable)
+// where our dimension is a range(idxType, bounded, strides)
 // stoIndexT is the same as in Replicated1dom.dsiNewLocalDom1d.
-proc ReplicatedDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
+proc ReplicatedDim.dsiNewRectangularDom1d(type idxType, param strides,
                                           type stoIndexT)
 {
   // ignore stoIndexT - all we need is for other places to work out
-  return new Replicated1dom(idxType, stridable);
+  return new Replicated1dom(idxType, strides);
 }
 
 // A nicety: produce a string showing the parameters.
@@ -221,7 +223,7 @@ proc Replicated1dom.dsiIsReplicated1d() param do return true;
 // stoIndexT must be the index type of the range returned by
 // dsiSetLocalIndices1d().
 proc Replicated1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  return new Replicated1locdom(stoIndexT, wholeR.stridable);
+  return new Replicated1locdom(stoIndexT, wholeR.strides);
 }
 
 // REQ given our dimension of the array index, on which locale is it located?
@@ -231,7 +233,7 @@ proc ReplicatedDim.dsiIndexToLocale1d(indexx): locIdT {
 }
 
 // REQ update our data structures as needed upon dsiSetIndices()
-proc Replicated1dom.dsiSetIndices1d(rangeArg: rangeT): void {
+proc ref Replicated1dom.dsiSetIndices1d(rangeArg: rangeT): void {
   wholeR = rangeArg;
 }
 
@@ -252,7 +254,7 @@ proc Replicated1dom.dsiSetIndices1d(rangeArg: rangeT): void {
 // The return type must be range(stoIndexT, stridable= true or false)
 // where 'stoIndexT' is the arg of dsiNewLocalDom1d() that created 'this'.
 //
-proc Replicated1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
+proc ref Replicated1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
   locWholeR = globDD.wholeR;
   return locWholeR;
 }
@@ -338,4 +340,6 @@ iter Replicated1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
   assert(localLocIDlegit);
   foreach i in undensRange do
     yield (localLocID, i);
+}
+
 }

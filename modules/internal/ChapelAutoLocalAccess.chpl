@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -67,7 +67,7 @@ module ChapelAutoLocalAccess {
         return true;
 
       // or at least if they were distributed the same way
-      if accessBase.domain.dist == loopDomain.dist then return true;
+      if accessBase.domain.distribution == loopDomain.distribution then return true;
 
       // if we are iterating over a rectangular that's:
       // 1. not remote

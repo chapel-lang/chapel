@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,6 +32,8 @@ namespace uast {
   This class represents a { } block.
  */
 class Block final : public SimpleBlockLike {
+ friend class AstNode;
+
  private:
   Block(AstList stmts, int bodyChildNum, int numBodyStmts)
     : SimpleBlockLike(asttags::Block, std::move(stmts),
@@ -42,8 +44,11 @@ class Block final : public SimpleBlockLike {
     CHPL_ASSERT(bodyChildNum_ >= 0);
   }
 
-  Block(Deserializer& des)
-    : SimpleBlockLike(asttags::Block, des) { }
+  void serializeInner(Serializer& ser) const override {
+    simpleBlockLikeSerializeInner(ser);
+  }
+
+  explicit Block(Deserializer& des) : SimpleBlockLike(asttags::Block, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);
@@ -60,13 +65,6 @@ class Block final : public SimpleBlockLike {
    Create and return a Block containing the passed stmts.
    */
   static owned<Block> build(Builder* builder, Location loc, AstList stmts);
-
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Block);
-
 };
 
 

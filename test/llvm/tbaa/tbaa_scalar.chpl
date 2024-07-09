@@ -46,7 +46,7 @@ delete got;
 // CHECK-DAG: ![[CVOIDPTR:[0-9]+]] = !{!"C void ptr", ![[UNIONS]], i64 0}
 //
 // Note that class pointers are scalars.
-// CHECK-DAG: ![[OBJECT:[0-9]+]] = !{!"object_chpl{{[0-9]*}}", ![[CVOIDPTR]], i64 0}
+// CHECK-DAG: ![[OBJECT:[0-9]+]] = !{!"RootClass_chpl{{[0-9]*}}", ![[CVOIDPTR]], i64 0}
 // CHECK-DAG: ![[CLSPTR:[0-9]+]] = !{!"MyClass_chpl{{[0-9]*}}", ![[OBJECT]], i64 0}
 //
 // Now validate those access tags.

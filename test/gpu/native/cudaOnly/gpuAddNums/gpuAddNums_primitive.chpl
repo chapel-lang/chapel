@@ -16,7 +16,7 @@ extern {
 
     srand(0);
     X = rand() % 100;
-    
+
     checkCudaErrors(cuMemcpyHtoD(devBufferX, &X, sizeof(double)));
 
     return devBufferX;
@@ -47,16 +47,30 @@ proc main() {
 
 var output: real(64);
 
-
 on here.gpus[0] {
 
   var dummy = [1,2,3]; // to ensure that the CUDA context is attached to the
                        // thread
 
   var deviceBuffer = getDeviceBufferPointer();
-  // arguments are: fatbin path, function name, grid size, block size, arguments
-  __primitive("gpu kernel launch flat", c"add_nums", 1, 1, deviceBuffer);
+
+  var cfg = __primitive("gpu init kernel cfg",
+                        /*fn*/ "add_nums":chpl_c_string,
+                        /*numThreads*/ 1,
+                        /*blockSize*/ 1,
+                        /*args*/1,
+                        /*pids*/0,
+                        /*reductions*/0);
+
+  // 1 is an enum value that says: "pass the address of this to the
+  //   kernel_params, while not offloading anything". I am not entirely sure why
+  //   we need to do that for C pointers
+  __primitive("gpu arg", cfg, deviceBuffer, 1);
+
+  __primitive("gpu kernel launch", cfg);
   output = getDataFromDevice(deviceBuffer);
+
+  chpl_gpu_deinit_kernel_cfg(cfg);
 }
 
 writeln(output);

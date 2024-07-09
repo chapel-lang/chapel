@@ -1,7 +1,7 @@
 use IO;
 
-testAdvanceUpTo(openReader("multiByteInput.txt"), ">>>>abc>>>>");
-testAdvanceUpTo(openReader("multiByteInput.txt"), b">>>>abc>>>>");
+testAdvanceUpTo(openReader("multiByteInput.txt", locking=false), ">>>>abc>>>>");
+testAdvanceUpTo(openReader("multiByteInput.txt", locking=false), b">>>>abc>>>>");
 
 proc testAdvanceUpTo(r, sep) {
   // advance past the delimiter

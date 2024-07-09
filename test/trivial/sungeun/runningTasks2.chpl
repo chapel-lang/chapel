@@ -3,7 +3,7 @@ config const n = 77;
 var t: [1..n-1] sync bool;
 var q: [2..n] sync bool;
 var c: sync int = n;
-var s: single bool;
+var s: sync bool;
 
 coforall i in 1..n {
   var myc:int = c.readFE()-1;

@@ -63,13 +63,10 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/PassManager.h"
-#include "llvm/InitializePasses.h"
-#include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/Transforms/Utils.h"
 #include "llvm/Transforms/Utils/SampleProfileLoaderBaseUtil.h"
 #include <utility>
 
@@ -84,33 +81,6 @@ using namespace sampleprofutil;
 static cl::opt<bool> NoDiscriminators(
     "no-discriminators", cl::init(false),
     cl::desc("Disable generation of discriminator information."));
-
-namespace {
-
-// The legacy pass of AddDiscriminators.
-struct AddDiscriminatorsLegacyPass : public FunctionPass {
-  static char ID; // Pass identification, replacement for typeid
-
-  AddDiscriminatorsLegacyPass() : FunctionPass(ID) {
-    initializeAddDiscriminatorsLegacyPassPass(*PassRegistry::getPassRegistry());
-  }
-
-  bool runOnFunction(Function &F) override;
-};
-
-} // end anonymous namespace
-
-char AddDiscriminatorsLegacyPass::ID = 0;
-
-INITIALIZE_PASS_BEGIN(AddDiscriminatorsLegacyPass, "add-discriminators",
-                      "Add DWARF path discriminators", false, false)
-INITIALIZE_PASS_END(AddDiscriminatorsLegacyPass, "add-discriminators",
-                    "Add DWARF path discriminators", false, false)
-
-// Create the legacy AddDiscriminatorsPass.
-FunctionPass *llvm::createAddDiscriminatorsPass() {
-  return new AddDiscriminatorsLegacyPass();
-}
 
 static bool shouldHaveDiscriminator(const Instruction *I) {
   return !isa<IntrinsicInst>(I) || isa<MemIntrinsic>(I);
@@ -193,7 +163,7 @@ static bool addDiscriminators(Function &F) {
   // of the instruction appears in other basic block, assign a new
   // discriminator for this instruction.
   for (BasicBlock &B : F) {
-    for (auto &I : B.getInstList()) {
+    for (auto &I : B) {
       // Not all intrinsic calls should have a discriminator.
       // We want to avoid a non-deterministic assignment of discriminators at
       // different debug levels. We still allow discriminators on memory
@@ -237,7 +207,7 @@ static bool addDiscriminators(Function &F) {
   // a same source line for correct profile annotation.
   for (BasicBlock &B : F) {
     LocationSet CallLocations;
-    for (auto &I : B.getInstList()) {
+    for (auto &I : B) {
       // We bypass intrinsic calls for the following two reasons:
       //  1) We want to avoid a non-deterministic assignment of
       //     discriminators.
@@ -267,10 +237,6 @@ static bool addDiscriminators(Function &F) {
     }
   }
   return Changed;
-}
-
-bool AddDiscriminatorsLegacyPass::runOnFunction(Function &F) {
-  return addDiscriminators(F);
 }
 
 PreservedAnalyses AddDiscriminatorsPass::run(Function &F,

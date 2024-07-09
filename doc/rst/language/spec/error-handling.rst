@@ -1,5 +1,9 @@
 .. default-domain:: chpl
 
+.. index::
+   single: error handling
+   seealso: error handling; errors
+   single: errors
 .. _Chapter-Error_Handling:
 
 ==============
@@ -18,6 +22,10 @@ a less-permissive mode intended for production code.
    defined here, is available in the
    :ref:`errorHandling technical note <readme-errorHandling>`
 
+.. index::
+   single: errors; throwing
+   single: throw
+   single: throws
 .. _Throwing_Errors:
 
 Throwing Errors
@@ -30,17 +38,6 @@ and before any ``where`` clauses.
 
 The statements following a throw statement in the same block
 are ignored by the compiler because they cannot be executed.
-
-..
-
-   *Open issue*.
-
-   The current implementation makes an exception to this rule: it does
-   consider the statements following a throw statement or a call to
-   `halt()` in the case these statements include a return
-   statement. This is done to support legacy codes that use return
-   statement(s) to establish the return type implicitly.
-   Should we remove this exception?
 
 Only ``owned`` instances of a type inheriting from ``Error`` can be
 thrown.
@@ -64,6 +61,10 @@ thrown.
         return 1;
       }
 
+.. index::
+   single: errors; handling
+   pair: statements; try
+   pair: statements; try!
 .. _Handling_Errors:
 
 Handling Errors
@@ -77,6 +78,9 @@ There are three ways to handle an error:
 
 -  Propagate the error out of the current function with ``throws``.
 
+.. index::
+   single: try!
+   single: errors; try!
 .. _Halting_on_error_with_try_bang:
 
 Halting on error with try!
@@ -104,6 +108,11 @@ block or a ``try!`` expression prefix, the program halts.
         }
       }
 
+.. index::
+   single: catch
+   single: errors; catch
+   single: errors; try
+   pair: catch; statements
 .. _Handling_an_error_with_catch:
 
 Handling an error with catch
@@ -230,6 +239,11 @@ enclosing ``try`` block, when present.
         return 1;
       }
 
+.. index::
+   single: throws
+   single: errors; throws
+   single: errors; propagating
+
 .. _Propagating_an_error_with_throws:
 
 Propagating an error with throws
@@ -264,6 +278,8 @@ error raised in a ``try`` block.
         // errors other than FileNotFoundError propagate
       }
 
+.. index::
+   single: try; without catch
 .. _catch_less_try:
 
 catch-less try
@@ -296,6 +312,9 @@ calls to clarify control flow.
         return try canThrow(0);
       }
 
+.. index::
+   pair: try; expressions
+   pair: try!; expressions
 .. _try_expressions:
 
 try expressions
@@ -318,6 +337,8 @@ flow at expression granularity. The expression form may not be used with
         return try canThrow(0);
       }
 
+.. index::
+   single: catch; complete handling
 .. _Complete_handling:
 
 Complete handling
@@ -362,6 +383,8 @@ ways:
            }
          }
 
+.. index::
+   pair: statements; defer
 .. _Errors_defer:
 
 Defer statement
@@ -398,10 +421,12 @@ handling context would be unclear.
 
 Errors also cannot be thrown by ``deinit()`` for similar reasons.
 
+.. index::
+   single: errors; and methods
 .. _Errors_Methods:
 
-Methods
--------
+Errors and Methods
+------------------
 
 Errors can be thrown by methods, just as with any other function. An
 overriding method must throw if the overridden method throws, or not
@@ -426,10 +451,12 @@ throw if the overridden method does not throw.
         }
       }
 
+.. index::
+   single: errors; and multilocale
 .. _Errors_Multilocale:
 
-Multilocale
------------
+Errors and Multilocale
+----------------------
 
 Errors can be thrown within ``on`` statements. In that event, the error
 will be propagated out of the ``on`` statement.
@@ -450,11 +477,16 @@ will be propagated out of the ``on`` statement.
         }
       }
 
+.. index::
+   single: errors; and parallelism
 .. _Errors_Parallelism:
 
-Parallelism
------------
+Errors and Parallelism
+----------------------
 
+.. index::
+   single: TaskErrors
+   single: errors; TaskErrors
 .. _TaskErrors:
 
 TaskErrors
@@ -469,10 +501,12 @@ Nested ``coforall`` statements do not produce nested ``TaskErrors``.
 Instead, the nested errors are flattened into the ``TaskErrors`` error
 thrown by the outer loop.
 
+.. index::
+   single: errors; and begin
 .. _Errors_begin:
 
-begin
-~~~~~
+Errors and begin
+~~~~~~~~~~~~~~~~
 
 Errors can be thrown within a ``begin`` statement. In that event, the
 error will be propagated to the ``sync`` statement that waits for that
@@ -495,10 +529,12 @@ task.
         }
       }
 
+.. index::
+   single: errors; and cobegin
 .. _Errors_coforall_and_cobegin:
 
-coforall and cobegin
-~~~~~~~~~~~~~~~~~~~~
+Errors and coforall and cobegin
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Errors can be thrown from ``coforall`` and ``cobegin`` statements and
 handled as ``TaskErrors``. The nested ``coforall`` loops will emit a
@@ -555,10 +591,12 @@ flattened ``TaskErrors`` error.
         }
       }
 
+.. index::
+   single: errors; and forall
 .. _Errors_forall:
 
-forall
-~~~~~~
+Errors and forall
+~~~~~~~~~~~~~~~~~
 
 Errors can be thrown from ``forall`` loops, too. Although the ``forall``
 may execute serially within a single task, it will always throw a
@@ -586,6 +624,9 @@ may execute serially within a single task, it will always throw a
         }
       }
 
+.. index::
+   single: errors; Error subclasses
+   single: Error
 .. _Creating_New_Error_Types:
 
 Creating New Error Types
@@ -612,6 +653,8 @@ the module documentation for :mod:`OS`.
 
       class DemoSysError : SystemError { }
 
+.. index::
+   single: errors; error handling modes
 .. _Error_Handling_Modes:
 
 Error Handling Modes
@@ -628,6 +671,9 @@ Certain error handling details depend on the *error handling mode*:
 Code that is legal in the production mode is always legal in the
 prototype mode.
 
+.. index::
+   single: errors; prototype mode
+   single: prototype
 .. _Errors_Prototype_Mode:
 
 Prototype Mode
@@ -702,6 +748,8 @@ prototype mode applies here, too.
         }
       }
 
+.. index::
+   single: errors; production mode
 .. _Production_Mode_for_Explicit_Modules:
 
 Production Mode

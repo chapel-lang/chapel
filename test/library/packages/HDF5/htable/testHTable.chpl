@@ -10,7 +10,7 @@ record Particle {
   proc init() {};
 
   proc init(i : int) {
-    this.complete();
+    init this;
     forall ip in 0..2 do this.pos[ip] = (3.14*i+ip):real(32);
     ndx[0] = 1;
     ndx[1] = i;

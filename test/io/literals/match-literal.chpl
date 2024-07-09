@@ -1,6 +1,7 @@
 
 use IO;
 use OS;
+use JSON;
 
 //
 // Test cases:
@@ -25,10 +26,10 @@ var RBR = if useStrings then "]" else b"]";
 proc testBasic() throws {
   var f = openMemFile();
   {
-    var w = f.writer();
+    var w = f.writer(locking=false);
     w.write(fiveSquare);
   }
-  var r = f.reader();
+  var r = f.reader(locking=false);
   r.matchLiteral(LBR);
   writeln(r.read(int));
   r.matchLiteral(RBR);
@@ -38,11 +39,11 @@ proc testBasic() throws {
 proc testFailure() {
   var f = openMemFile();
   {
-    var w = f.writer();
+    var w = f.writer(locking=false);
     w.write(fiveSquare);
   }
 
-  var r = f.reader();
+  var r = f.reader(locking=false);
   {
     param paren = if useStrings then "(" else b"(";
     const res = r.matchLiteral(paren);
@@ -63,16 +64,13 @@ proc testJSON() {
   var f = openMemFile();
   param quote = if useStrings then '"' else b"\"";
   {
-    var w = f.writer();
+    var w = f.writer(locking=false);
     w.write(quote);
     w.write(fiveSquare);
     w.write(quote);
   }
 
-  var r = f.reader(locking=false);
-  var st = r._styleInternal();
-  st.string_format = iostringformat.json:uint(8);
-  r._set_styleInternal(st);
+  var r = f.reader(locking=false, deserializer=new jsonDeserializer());
 
   try {
     var x = "[";
@@ -97,7 +95,7 @@ proc testJSON() {
 proc testWhitespace() {
   var f = openMemFile();
   {
-    var w = f.writer();
+    var w = f.writer(locking=false);
     const str = "   [5   ]";
     const spaced = if useStrings then str else str.encode();
     w.write(spaced);
@@ -118,7 +116,7 @@ proc testSpeculative() {
   param comma = if useStrings then "," else b",";
   var f = openMemFile();
   {
-    var w = f.writer();
+    var w = f.writer(locking=false);
     w.write(LBR);
     for i in 1..9 do w.write(i, comma);
     w.write(10);
@@ -127,7 +125,7 @@ proc testSpeculative() {
 
   // Use 'readLiteral' here as an example of mixed usage
   var A : [1..10] bool;
-  var r = f.reader();
+  var r = f.reader(locking=false);
   r.readLiteral(LBR);
   do {
     const i = r.read(int);
@@ -144,7 +142,7 @@ proc testNewline() {
   const numSpaces = 5;
   const start = "start";
   {
-    var w = f.writer();
+    var w = f.writer(locking=false);
     w.write(start);
     // by default matchNewline should read past contiguous whitespace
     w.write(" " * numSpaces);
@@ -153,17 +151,17 @@ proc testNewline() {
   }
   {
     // try to read a newline with 'start' in the way
-    var r = f.reader();
+    var r = f.reader(locking=false);
     assert(!r.matchNewline());
   }
   {
-    var r = f.reader();
+    var r = f.reader(locking=false);
     assert(r.matchLiteral(start));
     assert(r.matchNewline());
     assert(r.offset() == start.size + numSpaces + 1);
   }
   {
-    var r = f.reader();
+    var r = f.reader(locking=false);
     assert(r.matchLiteral(start));
     while r.matchNewline() {};
     var x = r.read(string);

@@ -35,17 +35,17 @@ module HPCC_PTRANS {
     // declare distribution rules for matrix and transpose
 
     const Matrix_Block_Dist 
-      = new unmanaged Block ( boundingBox = { 1..n_rows, 1..n_cols } );
+      = new blockDist ( boundingBox = { 1..n_rows, 1..n_cols } );
 
     const Transpose_Block_Dist 
-      = new unmanaged Block ( boundingBox = { 1..n_cols, 1..n_rows } );
+      = new blockDist ( boundingBox = { 1..n_cols, 1..n_rows } );
 
     // declare domains (index sets) for matrix and transpose
 
-    const matrix_domain     : domain (2) dmapped new dmap (
-                              Matrix_Block_Dist) = { 1..n_rows, 1..n_cols },
-          transpose_domain  : domain (2) dmapped new dmap (
-                              Transpose_Block_Dist) = { 1..n_cols, 1..n_rows };
+    const matrix_domain     : domain (2) dmapped
+                              Matrix_Block_Dist = { 1..n_rows, 1..n_cols },
+          transpose_domain  : domain (2) dmapped
+                              Transpose_Block_Dist = { 1..n_cols, 1..n_rows };
 
     var A                  : [matrix_domain   ] real, 
         C                  : [transpose_domain] real,
@@ -74,14 +74,14 @@ module HPCC_PTRANS {
    // detect any addressing errors.
    // -------------------------------------------------------------------------
 
-    forall (i,j) in matrix_domain do {
+    forall (i,j) in matrix_domain with (ref A, ref C) do {
       A [i,j] = erf (i) * cos (j);
       C [j,i] = sin (i) * cbrt (j);
     }
 
     C_save = C;
 
-    forall (i,j) in transpose_domain do
+    forall (i,j) in transpose_domain with (ref C_plus_A_transpose) do
       C_plus_A_transpose [i,j] = beta * sin (j) * cbrt (i) + erf(j) * cos (i);
 
     // norm_A = norm (A);
@@ -162,7 +162,7 @@ module HPCC_PTRANS {
   //  =====================================================
 
   proc Chapel_PTRANS ( A : [?A_domain] real, 
-                       C : [?C_domain] real, 
+                       ref C : [?C_domain] real, 
                        beta : real ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
@@ -181,17 +181,17 @@ module HPCC_PTRANS {
 
         if ( beta == 1.0 ) then
 
-          forall (i,j) in C_domain do
+          forall (i,j) in C_domain with (ref C) do
             C [i,j] += A [j,i];
     
         else if ( beta == 0.0 ) then
       
-          forall (i,j) in C_domain do
+          forall (i,j) in C_domain with (ref C) do
             C [i,j] = A [j,i];
     
         else
       
-          forall (i,j) in C_domain do
+          forall (i,j) in C_domain with (ref C) do
             C [i,j] = beta * C [i,j]  +  A [j,i];
         return true;
       }
@@ -203,7 +203,7 @@ module HPCC_PTRANS {
   //  =====================================================
 
   proc Chapel_blocked_PTRANS_v1 ( A : [?A_domain] real, 
-                                  C : [?C_domain] real, 
+                                  ref C : [?C_domain] real, 
                                   beta : real           ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
@@ -223,7 +223,7 @@ module HPCC_PTRANS {
 
           for c_rows in block_partitioning (C_domain, 0) do
             for c_cols in block_partitioning (C_domain, 1) do
-              forall i in c_rows do
+              forall i in c_rows with (ref C) do
                 for j in c_cols do
                   C [i,j] += A [j,i];
     
@@ -231,7 +231,7 @@ module HPCC_PTRANS {
       
           for c_rows in block_partitioning (C_domain, 0) do
             for c_cols in block_partitioning (C_domain, 1) do
-              forall i in c_rows do
+              forall i in c_rows with (ref C) do
                 for j in c_cols do
                   C [i,j] = A [j,i];
     
@@ -239,7 +239,7 @@ module HPCC_PTRANS {
       
           for c_rows in block_partitioning (C_domain, 0) do
             for c_cols in block_partitioning (C_domain, 1) do 
-              forall i in c_rows do
+              forall i in c_rows with (ref C) do
                 for j in c_cols do
                   C [i,j] = beta * C [i,j]  +  A [j,i];
         return true;
@@ -252,7 +252,7 @@ module HPCC_PTRANS {
   //  =====================================================
 
   proc Chapel_blocked_PTRANS_v2 ( A : [?A_domain] real, 
-                                  C : [?C_domain] real, 
+                                  ref C : [?C_domain] real, 
                                   beta : real           ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
@@ -273,7 +273,7 @@ module HPCC_PTRANS {
     // processor grid from A's distribution
     // --------------------------------------------
 
-    const C_locale_grid = C.domain.dist.targetLocales(); // block version
+    const C_locale_grid = C.domain.distribution.targetLocales(); // block version
     const C_grid_domain = C_locale_grid.domain,
           n_processors  = C_grid_domain.size;
 
@@ -295,7 +295,7 @@ module HPCC_PTRANS {
                                                  C_grid_domain,0) do
             for c_cols in SPMD_block_partitioning (C_domain, processor,
                                                    C_grid_domain,1) do 
-              forall i in c_rows do
+              forall i in c_rows with (ref C) do
                 for j in c_cols do
                   C [i,j] += A [j,i];
     
@@ -305,7 +305,7 @@ module HPCC_PTRANS {
                                                  C_grid_domain,0) do
             for c_cols in SPMD_block_partitioning (C_domain, processor, 
                                                    C_grid_domain,1) do 
-              forall i in c_rows do
+              forall i in c_rows with (ref C) do
                 for j in c_cols do
                   C [i,j] = A [j,i];
     
@@ -315,7 +315,7 @@ module HPCC_PTRANS {
                                                  C_grid_domain,0) do
             for c_cols in SPMD_block_partitioning (C_domain, processor,
                                                    C_grid_domain,1) do 
-              forall i in c_cols do
+              forall i in c_cols with (ref C) do
                 for j in c_cols do
                   C [i,j] = beta * C [i,j]  +  A [j,i];
       }

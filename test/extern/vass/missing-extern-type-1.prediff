@@ -1,0 +1,4 @@
+#!/bin/bash
+
+grep -w 'error\|warning' $2 | sed 's@:[0-9]*:@:nnn:@' > $2.tmp
+mv $2.tmp $2

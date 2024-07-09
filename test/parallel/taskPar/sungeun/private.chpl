@@ -7,14 +7,21 @@
 use BlockDist, PrivateDist;
 use Time;
 
-record taskPrivateData {
-  var tid$: sync chpl_taskID_t = chpl_nullTaskID;
+record taskPrivateData : writeSerializable {
+  var tid: sync chpl_taskID_t = chpl_nullTaskID;
   var x: int;
   var y: [0..#numLocales] real;
 
+  proc init() {}
+  proc init=(other: taskPrivateData) {
+    this.tid =other.tid.readXX();
+    this.x = other.x;
+    this.y = other.y;
+  }
+
   // need our version of writeThis so we can print the sync field
-  proc writeThis(f) throws {
-    f.write("(", tid$.readXX(), ": ", x, "  ", y, ")");
+  proc serialize(writer, ref serializer) throws {
+    writer.write("(", tid.readXX(), ": ", x, "  ", y, ")");
   }
 };
 
@@ -26,18 +33,23 @@ class localePrivateData {
   var slot: sync bool;
   var r = {0..#numTasks};
   var temps: [r] myStuff;
+
+  proc init(type myStuff) {
+    this.myStuff = myStuff;
+  }
+
   proc gettid() {
     extern proc chpl_task_getId(): chpl_taskID_t;
     var mytid = chpl_task_getId();
     var slot = (mytid:uint % (numTasks:uint)):int;
     // Would be nice to have CAS
-    var tid: chpl_taskID_t = temps[slot].tid$.readFE(); // lock
+    var tid: chpl_taskID_t = temps[slot].tid.readFE(); // lock
     while ((tid != chpl_nullTaskID) && (tid != mytid)) {
-      temps[slot].tid$.writeEF(tid);                   // unlock
+      temps[slot].tid.writeEF(tid);                   // unlock
       slot = (slot+1)%numTasks;
-      tid = temps[slot].tid$.readFE();                 // lock
+      tid = temps[slot].tid.readFE();                 // lock
     }
-    temps[slot].tid$.writeEF(mytid);                   // unlock
+    temps[slot].tid.writeEF(mytid);                   // unlock
     return slot;
   }
 }
@@ -48,7 +60,7 @@ forall l in localePrivate do l = new unmanaged localePrivateData(taskPrivateData
 // an example use
 config param nPerLocale = 113;
 config const printTemps = false;
-const D = {0..#nPerLocale*numLocales} dmapped Block(boundingBox={0..#nPerLocale*numLocales});
+const D = {0..#nPerLocale*numLocales} dmapped new blockDist(boundingBox={0..#nPerLocale*numLocales});
 forall d in D {
   // my copy of the task private vars
   var lp = localePrivate[here.id]!;

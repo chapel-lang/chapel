@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,13 @@
 #include "llvmUtil.h"
 #include "symbol.h"
 
+namespace llvm {
+  class Loop;
+  class LPMUpdater;
+}
+
+#include "llvm/Analysis/LoopAnalysisManager.h"
+#include "llvm/Analysis/CGSCCPassManager.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Pass.h"
 
@@ -49,6 +56,14 @@ struct DumpIRPass : public llvm::PassInfoMixin<DumpIRPass> {
   explicit DumpIRPass(llvmStageNum_t stage) : pass(stage) { }
   llvm::PreservedAnalyses run(llvm::Function& function,
                               llvm::FunctionAnalysisManager& analysisManager);
+  llvm::PreservedAnalyses run(llvm::Loop& L,
+                              llvm::LoopAnalysisManager& AM,
+                              llvm::LoopStandardAnalysisResults& AR,
+                              llvm::LPMUpdater& U);
+  llvm::PreservedAnalyses run(llvm::LazyCallGraph::SCC &C,
+                              llvm::CGSCCAnalysisManager &AM,
+                              llvm::LazyCallGraph &CG,
+                              llvm::CGSCCUpdateResult &);
 };
 // old pass manager version
 struct LegacyDumpIRPass : public llvm::FunctionPass {

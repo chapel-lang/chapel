@@ -22,6 +22,7 @@
 #include "llvm/CodeGen/MachineOptimizationRemarkEmitter.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/TargetLowering.h"
+#include "llvm/CodeGen/TargetOpcodes.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/Config/config.h"
@@ -30,11 +31,15 @@
 #include "llvm/Support/CodeGenCoverage.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
+#include "llvm/Support/DebugCounter.h"
 #include "llvm/Target/TargetMachine.h"
 
 #define DEBUG_TYPE "instruction-select"
 
 using namespace llvm;
+
+DEBUG_COUNTER(GlobalISelCounter, "globalisel",
+              "Controls whether to select function with GlobalISel");
 
 #ifdef LLVM_GISEL_COV_PREFIX
 static cl::opt<std::string>
@@ -57,21 +62,21 @@ INITIALIZE_PASS_END(InstructionSelect, DEBUG_TYPE,
                     "Select target instructions out of generic instructions",
                     false, false)
 
-InstructionSelect::InstructionSelect(CodeGenOpt::Level OL)
+InstructionSelect::InstructionSelect(CodeGenOptLevel OL)
     : MachineFunctionPass(ID), OptLevel(OL) {}
 
 // In order not to crash when calling getAnalysis during testing with -run-pass
 // we use the default opt level here instead of None, so that the addRequired()
 // calls are made in getAnalysisUsage().
 InstructionSelect::InstructionSelect()
-    : MachineFunctionPass(ID), OptLevel(CodeGenOpt::Default) {}
+    : MachineFunctionPass(ID), OptLevel(CodeGenOptLevel::Default) {}
 
 void InstructionSelect::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<TargetPassConfig>();
   AU.addRequired<GISelKnownBitsAnalysis>();
   AU.addPreserved<GISelKnownBitsAnalysis>();
 
-  if (OptLevel != CodeGenOpt::None) {
+  if (OptLevel != CodeGenOptLevel::None) {
     AU.addRequired<ProfileSummaryInfoWrapperPass>();
     LazyBlockFrequencyInfoPass::getLazyBFIAnalysisUsage(AU);
   }
@@ -89,14 +94,15 @@ bool InstructionSelect::runOnMachineFunction(MachineFunction &MF) {
 
   const TargetPassConfig &TPC = getAnalysis<TargetPassConfig>();
   InstructionSelector *ISel = MF.getSubtarget().getInstructionSelector();
+  ISel->setTargetPassConfig(&TPC);
 
-  CodeGenOpt::Level OldOptLevel = OptLevel;
+  CodeGenOptLevel OldOptLevel = OptLevel;
   auto RestoreOptLevel = make_scope_exit([=]() { OptLevel = OldOptLevel; });
-  OptLevel = MF.getFunction().hasOptNone() ? CodeGenOpt::None
+  OptLevel = MF.getFunction().hasOptNone() ? CodeGenOptLevel::None
                                            : MF.getTarget().getOptLevel();
 
   GISelKnownBits *KB = &getAnalysis<GISelKnownBitsAnalysis>().get(MF);
-  if (OptLevel != CodeGenOpt::None) {
+  if (OptLevel != CodeGenOptLevel::None) {
     PSI = &getAnalysis<ProfileSummaryInfoWrapperPass>().getPSI();
     if (PSI && PSI->hasProfileSummary())
       BFI = &getAnalysis<LazyBlockFrequencyInfoPass>().getBFI();
@@ -104,10 +110,11 @@ bool InstructionSelect::runOnMachineFunction(MachineFunction &MF) {
 
   CodeGenCoverage CoverageInfo;
   assert(ISel && "Cannot work without InstructionSelector");
-  ISel->setupMF(MF, KB, CoverageInfo, PSI, BFI);
+  ISel->setupMF(MF, KB, &CoverageInfo, PSI, BFI);
 
   // An optimization remark emitter. Used to report failures.
   MachineOptimizationRemarkEmitter MORE(MF, /*MBFI=*/nullptr);
+  ISel->setRemarkEmitter(&MORE);
 
   // FIXME: There are many other MF/MFI fields we need to initialize.
 
@@ -160,16 +167,17 @@ bool InstructionSelect::runOnMachineFunction(MachineFunction &MF) {
       // If so, erase it.
       if (isTriviallyDead(MI, MRI)) {
         LLVM_DEBUG(dbgs() << "Is dead; erasing.\n");
+        salvageDebugInfo(MRI, MI);
         MI.eraseFromParent();
         continue;
       }
 
-      // Eliminate hints.
-      if (isPreISelGenericOptimizationHint(MI.getOpcode())) {
-        Register DstReg = MI.getOperand(0).getReg();
-        Register SrcReg = MI.getOperand(1).getReg();
+      // Eliminate hints or G_CONSTANT_FOLD_BARRIER.
+      if (isPreISelGenericOptimizationHint(MI.getOpcode()) ||
+          MI.getOpcode() == TargetOpcode::G_CONSTANT_FOLD_BARRIER) {
+        auto [DstReg, SrcReg] = MI.getFirst2Regs();
 
-        // At this point, the destination register class of the hint may have
+        // At this point, the destination register class of the op may have
         // been decided.
         //
         // Propagate that through to the source register.
@@ -180,6 +188,11 @@ bool InstructionSelect::runOnMachineFunction(MachineFunction &MF) {
                "Must be able to replace dst with src!");
         MI.eraseFromParent();
         MRI.replaceRegWith(DstReg, SrcReg);
+        continue;
+      }
+
+      if (MI.getOpcode() == TargetOpcode::G_INVOKE_REGION_START) {
+        MI.eraseFromParent();
         continue;
       }
 
@@ -229,8 +242,7 @@ bool InstructionSelect::runOnMachineFunction(MachineFunction &MF) {
         continue;
       Register SrcReg = MI.getOperand(1).getReg();
       Register DstReg = MI.getOperand(0).getReg();
-      if (Register::isVirtualRegister(SrcReg) &&
-          Register::isVirtualRegister(DstReg)) {
+      if (SrcReg.isVirtual() && DstReg.isVirtual()) {
         auto SrcRC = MRI.getRegClass(SrcReg);
         auto DstRC = MRI.getRegClass(DstReg);
         if (SrcRC == DstRC) {
@@ -247,7 +259,7 @@ bool InstructionSelect::runOnMachineFunction(MachineFunction &MF) {
   // that the size of the now-constrained vreg is unchanged and that it has a
   // register class.
   for (unsigned I = 0, E = MRI.getNumVirtRegs(); I != E; ++I) {
-    unsigned VReg = Register::index2VirtReg(I);
+    Register VReg = Register::index2VirtReg(I);
 
     MachineInstr *MI = nullptr;
     if (!MRI.def_empty(VReg))
@@ -286,6 +298,13 @@ bool InstructionSelect::runOnMachineFunction(MachineFunction &MF) {
     return false;
   }
 #endif
+
+  if (!DebugCounter::shouldExecute(GlobalISelCounter)) {
+    dbgs() << "Falling back for function " << MF.getName() << "\n";
+    MF.getProperties().set(MachineFunctionProperties::Property::FailedISel);
+    return false;
+  }
+
   // Determine if there are any calls in this machine function. Ported from
   // SelectionDAG.
   MachineFrameInfo &MFI = MF.getFrameInfo();

@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: 'deserialize' methods are not compiler-generated when a type has a user-defined 'serialize' method.

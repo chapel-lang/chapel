@@ -24,10 +24,10 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/ilist.h"
 #include "llvm/ADT/iterator.h"
-#include "llvm/Analysis/EHPersonalities.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/MachineMemOperand.h"
+#include "llvm/IR/EHPersonalities.h"
 #include "llvm/Support/Allocator.h"
 #include "llvm/Support/ArrayRecycler.h"
 #include "llvm/Support/AtomicOrdering.h"
@@ -38,6 +38,7 @@
 #include <cstdint>
 #include <memory>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace llvm {
@@ -99,9 +100,10 @@ struct MachineFunctionInfo {
   /// supplied allocator.
   ///
   /// This function can be overridden in a derive class.
-  template<typename Ty>
-  static Ty *create(BumpPtrAllocator &Allocator, MachineFunction &MF) {
-    return new (Allocator.Allocate<Ty>()) Ty(MF);
+  template <typename FuncInfoTy, typename SubtargetTy = TargetSubtargetInfo>
+  static FuncInfoTy *create(BumpPtrAllocator &Allocator, const Function &F,
+                            const SubtargetTy *STI) {
+    return new (Allocator.Allocate<FuncInfoTy>()) FuncInfoTy(F, STI);
   }
 
   template <typename Ty>
@@ -264,7 +266,7 @@ class LLVM_EXTERNAL_VISIBILITY MachineFunction {
   // RegInfo - Information about each register in use in the function.
   MachineRegisterInfo *RegInfo;
 
-  // Used to keep track of target-specific per-machine function information for
+  // Used to keep track of target-specific per-machine-function information for
   // the target implementation.
   MachineFunctionInfo *MFInfo;
 
@@ -280,6 +282,7 @@ class LLVM_EXTERNAL_VISIBILITY MachineFunction {
   // Keep track of the function section.
   MCSection *Section = nullptr;
 
+  // Catchpad unwind destination info for wasm EH.
   // Keeps track of Wasm exception handling related data. This will be null for
   // functions that aren't using a wasm EH personality.
   WasmEHFuncInfo *WasmEHInfo = nullptr;
@@ -372,6 +375,10 @@ class LLVM_EXTERNAL_VISIBILITY MachineFunction {
   bool HasEHCatchret = false;
   bool HasEHScopes = false;
   bool HasEHFunclets = false;
+  bool IsOutlined = false;
+
+  /// BBID to assign to the next basic block of this function.
+  unsigned NextBBID = 0;
 
   /// Section Type for basic blocks, only relevant with basic block sections.
   BasicBlockSection BBSectionsType = BasicBlockSection::None;
@@ -401,16 +408,50 @@ class LLVM_EXTERNAL_VISIBILITY MachineFunction {
   void init();
 
 public:
-  struct VariableDbgInfo {
+  /// Description of the location of a variable whose Address is valid and
+  /// unchanging during function execution. The Address may be:
+  /// * A stack index, which can be negative for fixed stack objects.
+  /// * A MCRegister, whose entry value contains the address of the variable.
+  class VariableDbgInfo {
+    std::variant<int, MCRegister> Address;
+
+  public:
     const DILocalVariable *Var;
     const DIExpression *Expr;
-    // The Slot can be negative for fixed stack objects.
-    int Slot;
     const DILocation *Loc;
 
     VariableDbgInfo(const DILocalVariable *Var, const DIExpression *Expr,
                     int Slot, const DILocation *Loc)
-        : Var(Var), Expr(Expr), Slot(Slot), Loc(Loc) {}
+        : Address(Slot), Var(Var), Expr(Expr), Loc(Loc) {}
+
+    VariableDbgInfo(const DILocalVariable *Var, const DIExpression *Expr,
+                    MCRegister EntryValReg, const DILocation *Loc)
+        : Address(EntryValReg), Var(Var), Expr(Expr), Loc(Loc) {}
+
+    /// Return true if this variable is in a stack slot.
+    bool inStackSlot() const { return std::holds_alternative<int>(Address); }
+
+    /// Return true if this variable is in the entry value of a register.
+    bool inEntryValueRegister() const {
+      return std::holds_alternative<MCRegister>(Address);
+    }
+
+    /// Returns the stack slot of this variable, assuming `inStackSlot()` is
+    /// true.
+    int getStackSlot() const { return std::get<int>(Address); }
+
+    /// Returns the MCRegister of this variable, assuming
+    /// `inEntryValueRegister()` is true.
+    MCRegister getEntryValueRegister() const {
+      return std::get<MCRegister>(Address);
+    }
+
+    /// Updates the stack slot of this variable, assuming `inStackSlot()` is
+    /// true.
+    void updateStackSlot(int NewSlot) {
+      assert(inStackSlot());
+      Address = NewSlot;
+    }
   };
 
   class Delegate {
@@ -422,6 +463,11 @@ public:
     virtual void MF_HandleInsertion(MachineInstr &MI) = 0;
     /// Callback before a removal. This should not modify the MI directly.
     virtual void MF_HandleRemoval(MachineInstr &MI) = 0;
+    /// Callback before changing MCInstrDesc. This should not modify the MI
+    /// directly.
+    virtual void MF_HandleChangeDesc(MachineInstr &MI, const MCInstrDesc &TID) {
+      return;
+    }
   };
 
   /// Structure used to represent pair of argument number after call lowering
@@ -457,6 +503,9 @@ private:
   friend struct ilist_traits<MachineInstr>;
 
 public:
+  // Need to be accessed from MachineInstr::setDesc.
+  void handleChangeDesc(MachineInstr &MI, const MCInstrDesc &TID);
+
   using VariableDbgInfoMapTy = SmallVector<VariableDbgInfo, 4>;
   VariableDbgInfoMapTy VariableDbgInfos;
 
@@ -522,6 +571,10 @@ public:
   /// during register allocation. See DebugPHIRegallocPos.
   DenseMap<unsigned, DebugPHIRegallocPos> DebugPHIPositions;
 
+  /// Flag for whether this function contains DBG_VALUEs (false) or
+  /// DBG_INSTR_REF (true).
+  bool UseDebugInstrRef = false;
+
   /// Create a substitution between one <instr,operand> value to a different,
   /// new value.
   void makeDebugValueSubstitution(DebugInstrOperandPair, DebugInstrOperandPair,
@@ -562,9 +615,16 @@ public:
   /// (or DBG_PHI).
   void finalizeDebugInstrRefs();
 
-  /// Returns true if the function's variable locations should be tracked with
+  /// Determine whether, in the current machine configuration, we should use
+  /// instruction referencing or not.
+  bool shouldUseDebugInstrRef() const;
+
+  /// Returns true if the function's variable locations are tracked with
   /// instruction referencing.
   bool useDebugInstrRef() const;
+
+  /// Set whether this function will use instruction referencing or not.
+  void setUseDebugInstrRef(bool UseInstrRef);
 
   /// A reserved operand number representing the instructions memory operand,
   /// for instructions that have a stack spill fused into them.
@@ -752,14 +812,12 @@ public:
   ///
   template<typename Ty>
   Ty *getInfo() {
-    if (!MFInfo)
-      MFInfo = Ty::template create<Ty>(Allocator, *this);
     return static_cast<Ty*>(MFInfo);
   }
 
   template<typename Ty>
   const Ty *getInfo() const {
-     return const_cast<MachineFunction*>(this)->getInfo<Ty>();
+    return static_cast<const Ty *>(MFInfo);
   }
 
   template <typename Ty> Ty *cloneInfo(const Ty &Old) {
@@ -767,6 +825,9 @@ public:
     MFInfo = Ty::template create<Ty>(Allocator, Old);
     return static_cast<Ty *>(MFInfo);
   }
+
+  /// Initialize the target specific MachineFunctionInfo
+  void initTargetMachineFunctionInfo(const TargetSubtargetInfo &STI);
 
   MachineFunctionInfo *cloneInfoFrom(
       const MachineFunction &OrigMF,
@@ -830,6 +891,12 @@ public:
   /// \returns true if no problems were found.
   bool verify(Pass *p = nullptr, const char *Banner = nullptr,
               bool AbortOnError = true) const;
+
+  /// Run the current MachineFunction through the machine code verifier, useful
+  /// for debugger use.
+  /// \returns true if no problems were found.
+  bool verify(LiveIntervals *LiveInts, SlotIndexes *Indexes,
+              const char *Banner = nullptr, bool AbortOnError = true) const;
 
   // Provide accessors for the MachineBasicBlock list...
   using iterator = BasicBlockListType::iterator;
@@ -946,8 +1013,11 @@ public:
   void deleteMachineInstr(MachineInstr *MI);
 
   /// CreateMachineBasicBlock - Allocate a new MachineBasicBlock. Use this
-  /// instead of `new MachineBasicBlock'.
-  MachineBasicBlock *CreateMachineBasicBlock(const BasicBlock *bb = nullptr);
+  /// instead of `new MachineBasicBlock'. Sets `MachineBasicBlock::BBID` if
+  /// basic-block-sections is enabled for the function.
+  MachineBasicBlock *
+  CreateMachineBasicBlock(const BasicBlock *BB = nullptr,
+                          std::optional<UniqueBBID> BBID = std::nullopt);
 
   /// DeleteMachineBasicBlock - Delete the given MachineBasicBlock.
   void deleteMachineBasicBlock(MachineBasicBlock *MBB);
@@ -1030,7 +1100,8 @@ public:
   /// the function.
   MachineInstr::ExtraInfo *createMIExtraInfo(
       ArrayRef<MachineMemOperand *> MMOs, MCSymbol *PreInstrSymbol = nullptr,
-      MCSymbol *PostInstrSymbol = nullptr, MDNode *HeapAllocMarker = nullptr);
+      MCSymbol *PostInstrSymbol = nullptr, MDNode *HeapAllocMarker = nullptr,
+      MDNode *PCSections = nullptr, uint32_t CFIType = 0);
 
   /// Allocate a string and populate it with the given external symbol name.
   const char *createExternalSymbolName(StringRef Name);
@@ -1055,7 +1126,7 @@ public:
     return FrameInstructions;
   }
 
-  LLVM_NODISCARD unsigned addFrameInst(const MCCFIInstruction &Inst);
+  [[nodiscard]] unsigned addFrameInst(const MCCFIInstruction &Inst);
 
   /// Returns a reference to a list of symbols immediately following calls to
   /// _setjmp in the function. Used to construct the longjmp target table used
@@ -1098,12 +1169,11 @@ public:
   bool hasEHFunclets() const { return HasEHFunclets; }
   void setHasEHFunclets(bool V) { HasEHFunclets = V; }
 
+  bool isOutlined() const { return IsOutlined; }
+  void setIsOutlined(bool V) { IsOutlined = V; }
+
   /// Find or create an LandingPadInfo for the specified MachineBasicBlock.
   LandingPadInfo &getOrCreateLandingPadInfo(MachineBasicBlock *LandingPad);
-
-  /// Remap landing pad labels and remove any deleted landing pads.
-  void tidyLandingPads(DenseMap<MCSymbol *, uintptr_t> *LPMap = nullptr,
-                       bool TidyIfNoBeginLabels = true);
 
   /// Return a reference to the landing pad info for the current function.
   const std::vector<LandingPadInfo> &getLandingPads() const {
@@ -1120,22 +1190,11 @@ public:
   /// entry.
   MCSymbol *addLandingPad(MachineBasicBlock *LandingPad);
 
-  /// Provide the catch typeinfo for a landing pad.
-  void addCatchTypeInfo(MachineBasicBlock *LandingPad,
-                        ArrayRef<const GlobalValue *> TyInfo);
-
-  /// Provide the filter typeinfo for a landing pad.
-  void addFilterTypeInfo(MachineBasicBlock *LandingPad,
-                         ArrayRef<const GlobalValue *> TyInfo);
-
-  /// Add a cleanup action for a landing pad.
-  void addCleanup(MachineBasicBlock *LandingPad);
-
   /// Return the type id for the specified typeinfo.  This is function wide.
   unsigned getTypeIDFor(const GlobalValue *TI);
 
   /// Return the id of the filter encoded by TyIds.  This is function wide.
-  int getFilterIDFor(std::vector<unsigned> &TyIds);
+  int getFilterIDFor(ArrayRef<unsigned> TyIds);
 
   /// Map the landing pad's EH symbol to the call site indexes.
   void setCallSiteLandingPad(MCSymbol *Sym, ArrayRef<unsigned> Sites);
@@ -1220,15 +1279,47 @@ public:
 
   /// \}
 
-  /// Collect information used to emit debugging information of a variable.
+  /// Collect information used to emit debugging information of a variable in a
+  /// stack slot.
   void setVariableDbgInfo(const DILocalVariable *Var, const DIExpression *Expr,
                           int Slot, const DILocation *Loc) {
     VariableDbgInfos.emplace_back(Var, Expr, Slot, Loc);
   }
 
+  /// Collect information used to emit debugging information of a variable in
+  /// the entry value of a register.
+  void setVariableDbgInfo(const DILocalVariable *Var, const DIExpression *Expr,
+                          MCRegister Reg, const DILocation *Loc) {
+    VariableDbgInfos.emplace_back(Var, Expr, Reg, Loc);
+  }
+
   VariableDbgInfoMapTy &getVariableDbgInfo() { return VariableDbgInfos; }
   const VariableDbgInfoMapTy &getVariableDbgInfo() const {
     return VariableDbgInfos;
+  }
+
+  /// Returns the collection of variables for which we have debug info and that
+  /// have been assigned a stack slot.
+  auto getInStackSlotVariableDbgInfo() {
+    return make_filter_range(getVariableDbgInfo(), [](auto &VarInfo) {
+      return VarInfo.inStackSlot();
+    });
+  }
+
+  /// Returns the collection of variables for which we have debug info and that
+  /// have been assigned a stack slot.
+  auto getInStackSlotVariableDbgInfo() const {
+    return make_filter_range(getVariableDbgInfo(), [](const auto &VarInfo) {
+      return VarInfo.inStackSlot();
+    });
+  }
+
+  /// Returns the collection of variables for which we have debug info and that
+  /// have been assigned an entry value register.
+  auto getEntryValueVariableDbgInfo() const {
+    return make_filter_range(getVariableDbgInfo(), [](const auto &VarInfo) {
+      return VarInfo.inEntryValueRegister();
+    });
   }
 
   /// Start tracking the arguments passed to the call \p CallI.

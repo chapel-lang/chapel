@@ -157,7 +157,7 @@ bool TruncInstCombine::buildTruncExpressionGraph() {
       getRelevantOperands(I, Operands);
       // Add only operands not in Stack to prevent cycle
       for (auto *Op : Operands)
-        if (all_of(Stack, [Op](Value *V) { return Op != V; }))
+        if (!llvm::is_contained(Stack, Op))
           Worklist.push_back(Op);
       break;
     }
@@ -366,7 +366,7 @@ static Type *getReducedType(Value *V, Type *Ty) {
 Value *TruncInstCombine::getReducedOperand(Value *V, Type *SclTy) {
   Type *Ty = getReducedType(V, SclTy);
   if (auto *C = dyn_cast<Constant>(V)) {
-    C = ConstantExpr::getIntegerCast(C, Ty, false);
+    C = ConstantExpr::getTrunc(C, Ty);
     // If we got a constantexpr back, try to simplify it with DL info.
     return ConstantFoldConstant(C, DL, &TLI);
   }

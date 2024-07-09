@@ -1,0 +1,1 @@
+incompatibleArraySize.chpl:12: error: halt reached - Domain size mismatch in 'cyclicDist.createArray' dimension 0

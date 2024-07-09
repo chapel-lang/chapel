@@ -1,7 +1,7 @@
-use FileSystem, HDF5;
+use FileSystem, HDF5, CTypes;
 use Hdf5PathHelp;
 
-type inputTypes = (int, real, c_string);
+type inputTypes = (int, real, c_ptrConst(c_char));
 
 config const inputDir = "HDF5files";
 
@@ -9,7 +9,7 @@ config const printFileInfo = false;
 config const printTiming = false;
 
 proc main {
-  use HDF5, Time;
+  use Time;
 
   const pathPrefix = readPrefixEnv();
   if pathPrefix != "" {

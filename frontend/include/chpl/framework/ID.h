@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -72,6 +72,12 @@ class ID final {
   }
 
   /**
+    Construct an ID with specified symbol path, and default postorder traversal
+    number.
+   */
+  explicit ID(UniqueString symbolPath) : symbolPath_(symbolPath) {}
+
+  /**
     Return a path to the ID symbol scope. For example, a function 'foo'
     declared in a module M would have symbolPath M.foo.
 
@@ -81,11 +87,28 @@ class ID final {
   UniqueString symbolPath() const { return symbolPath_; }
 
   /**
+    Return a path to the ID symbol scope, but without taking into account
+    repeated names within a symbol. In particular, M.f#0 and M.f#1 would
+    both return M.f.
+
+    This is useful for exposing a "user-facing" path, such as one that a user
+    can specify from the command line.
+   */
+  UniqueString symbolPathWithoutRepeats(Context* context) const;
+
+  /**
     Returns the numbering of this node in a postorder traversal
     of a symbol's nodes. When the AST node defines a new ID symbol scope,
     (as with Function or Module) this will return -1.
    */
   int postOrderId() const { return postOrderId_; }
+
+  /**
+    Returns 'true' if this symbol has a 'postOrderId()' value of == -1,
+    which means this is an ID for something that defines a new symbol
+    scope.
+   */
+   inline bool isSymbolDefiningScope() const { return postOrderId_ == -1; }
 
   /**
     Some IDs are introduced during compilation and don't represent
@@ -217,6 +240,8 @@ class ID final {
     return symbolPath_.isEmpty();
   }
 
+  inline explicit operator bool() const { return !isEmpty(); }
+
   size_t hash() const {
     (void)numChildIds_; // this field is intentionally not hashed
     std::hash<int> hasher;
@@ -249,13 +274,13 @@ class ID final {
 
   void serialize(Serializer& ser) const {
     ser.write(symbolPath_);
-    ser.write(postOrderId_);
-    ser.write(numChildIds_);
+    ser.writeVInt(postOrderId_);
+    ser.writeVInt(numChildIds_);
   }
   static ID deserialize(Deserializer& des) {
     auto path = des.read<UniqueString>();
-    auto poi = des.read<int>();
-    auto nci = des.read<int>();
+    auto poi = des.readVInt();
+    auto nci = des.readVInt();
     return ID(path, poi, nci);
   }
 };

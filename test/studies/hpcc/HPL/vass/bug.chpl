@@ -25,7 +25,7 @@ var tld: bool;  // whether our targetLocales are all distinct
 var tla: [0..#tl1, 0..#tl2] locale = setupTargetLocales();
 
 config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 31415;
+             seed = if useRandomSeed then NPBRandom.oddTimeSeed() else 31415;
 
 //
 // Configuration constants indicating the problem size (n) and the
@@ -56,9 +56,9 @@ const
   rdim2 = new ReplicatedDim(tl2);
 
 const AbD: domain(2, indexType)
-   dmapped BlockCyclic(startIdx=(st1,st2), blocksize=(blkSize,blkSize), targetLocales=tla) //MBC
-// dmapped Block(boundingBox=[1..nbb1, 1..nbb2], targetLocales=tla) //MBD
-// dmapped DimensionalDist2D(tla, bdim1, bdim2, "dim") //DIM
+   dmapped new blockCycDist(startIdx=(st1,st2), blocksize=(blkSize,blkSize), targetLocales=tla) //MBC
+// dmapped new blockDist(boundingBox=[1..nbb1, 1..nbb2], targetLocales=tla) //MBD
+// dmapped dimensionalDist2D(tla, bdim1, bdim2, "dim") //DIM
   = MatVectSpace;
 
 var Ab: [AbD] elemType;  // the matrix A and vector b
@@ -71,9 +71,9 @@ var refsuccess = true;
 // the domains for the arrays used for replication
 const
   replAD = {1..n, 1..blkSize} dmapped
-    DimensionalDist2D(tla, bdim1, rdim2, "distBR"), //DIM
+    new dimensionalDist2D(tla, bdim1, rdim2, "distBR"), //DIM
   replBD = {1..blkSize, 1..n+1} dmapped
-    DimensionalDist2D(tla, rdim1, bdim2, "distRB"); //DIM
+    new dimensionalDist2D(tla, rdim1, bdim2, "distRB"); //DIM
 
 var replA: [replAD] elemType,
     replB: [replBD] elemType;
@@ -145,18 +145,18 @@ vwln("  replB", replB.domain, " = Ab", BD, "  ", [BD.dim(0), 1..n+1]);
   // a multiple of blkSize (but are always non-empty if Rest is non-empty).
 
   // replicating into replA, replB
-  coforall dest in tla[tla.domain.dim(0).high, tla.domain.dim(1)] do
+  coforall dest in tla[tla.domain.dim(0).high, tla.domain.dim(1)] with (ref replA) do
     on dest do
       { vwln("copying to replA on ", here.id);
       replA = Ab[1..n, AD.dim(1)];
       }
-  coforall dest in tla[tla.domain.dim(0), tla.domain.dim(1).high] do
+  coforall dest in tla[tla.domain.dim(0), tla.domain.dim(1).high] with (ref replB) do
     on dest do
       { vwln("copying to replB on ", here.id);
       replB = Ab[BD.dim(0), 1..n+1];
       }
 
-  forall (row,col) in Rest by (blkSize, blkSize) {
+  forall (row,col) in Rest by (blkSize, blkSize) with (ref Ab) {
 
     vwln("  dgemm(", (Rest.dim(0))(row..#blkSize), ",",
                      (Rest.dim(1))(col..#blkSize), ")  on ", here.id);
@@ -236,7 +236,7 @@ proc schurComplementRefWrapper(blk:int):void {
     // throw it off: Abref[Abref.domain.low] = 0;
 }
 
-proc schurComplementRef(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
+proc schurComplementRef(Ab: [?AbD] elemType, AD: domain(?), BD: domain(?), Rest: domain(?)) {
   const replAD: domain(2, indexType) = AD,
         replBD: domain(2, indexType) = BD;
     
@@ -266,7 +266,7 @@ proc schurComplementRef(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domai
 //
 proc dgemmNativeInds(A: [] elemType,
                     B: [] elemType,
-                    C: [] elemType) {
+                    ref C: [] elemType) {
   for (iA, iC) in zip(A.domain.dim(0), C.domain.dim(0)) do
     for (jA, iB) in zip(A.domain.dim(1), B.domain.dim(0)) do
       for (jB, jC) in zip(B.domain.dim(1), C.domain.dim(1)) do

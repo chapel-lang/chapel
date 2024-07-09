@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -41,17 +41,25 @@ namespace uast {
   \endrst
 */
 class Break : public AstNode {
+ friend class AstNode;
+
  private:
+  int8_t targetChildNum_;
+
   Break(AstList children, int8_t targetChildNum)
     : AstNode(asttags::Break, std::move(children)),
       targetChildNum_(targetChildNum) {
     CHPL_ASSERT(numChildren() <= 1);
   }
 
-  Break(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    ser.write(targetChildNum_);
+  }
+
+  explicit Break(Deserializer& des)
    : AstNode(asttags::Break, des) {
     targetChildNum_ = des.read<int8_t>();
-    }
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Break* lhs = this;
@@ -67,8 +75,6 @@ class Break : public AstNode {
   }
 
   std::string dumpChildLabelInner(int i) const override;
-
-  int8_t targetChildNum_;
 
  public:
 
@@ -88,14 +94,6 @@ class Break : public AstNode {
     CHPL_ASSERT(ret->isIdentifier());
     return (const Identifier*)ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(targetChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Break);
-
 };
 
 

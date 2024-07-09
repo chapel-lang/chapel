@@ -471,7 +471,7 @@ proc test_cudotc_helper(type t) {
     var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*N:c_size_t);
     var gpu_ptr_Y = cpu_to_gpu(c_ptrTo(Y), c_sizeof(t)*N:c_size_t);
 
-    var prod = conjg(X)*Y;
+    var prod = conj(X)*Y;
     var red = + reduce prod;
 
     //Create cublas handle

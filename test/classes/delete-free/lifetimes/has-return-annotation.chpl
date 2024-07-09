@@ -20,8 +20,8 @@ proc ok0() {
   writeln(b!.x);
 }
 ok0();
-
-var globalValue = (new owned C(1)).borrow();
+var globalValueOwn = new owned C(1);
+var globalValue = globalValueOwn.borrow();
 proc getGlobalHashtableElement (key: C) lifetime return globalValue {
   return globalValue;
 }

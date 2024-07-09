@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -362,22 +362,22 @@ extern record qio_regex_options_t {
 @chpldoc.nodoc
 extern proc qio_regex_null():qio_regex_t;
 private extern proc qio_regex_init_default_options(ref options:qio_regex_options_t);
-private extern proc qio_regex_create_compile(str:c_string, strlen:int(64), const ref options:qio_regex_options_t, ref compiled:qio_regex_t);
-private extern proc qio_regex_create_compile_flags(str:c_string, strlen:int(64), flags:c_string, flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
+private extern proc qio_regex_create_compile(str:c_ptrConst(c_char), strlen:int(64), const ref options:qio_regex_options_t, ref compiled:qio_regex_t);
+private extern proc qio_regex_create_compile_flags(str:c_ptrConst(c_char), strlen:int(64), flags:c_ptrConst(c_char), flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
 @chpldoc.nodoc
-extern proc qio_regex_create_compile_flags_2(str:c_void_ptr, strlen:int(64), flags:c_void_ptr, flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
+extern proc qio_regex_create_compile_flags_2(str:c_ptr(void), strlen:int(64), flags:c_ptr(void), flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
 private extern proc qio_regex_retain(const ref compiled:qio_regex_t);
 @chpldoc.nodoc
 extern proc qio_regex_release(ref compiled:qio_regex_t);
 @chpldoc.nodoc
 
 private extern proc qio_regex_get_options(const ref regex:qio_regex_t, ref options: qio_regex_options_t);
-private extern proc qio_regex_borrow_pattern(const ref regex:qio_regex_t, ref pattern: c_string, ref len_out:int(64));
+private extern proc qio_regex_borrow_pattern(const ref regex:qio_regex_t, ref pattern: c_ptrConst(c_char), ref len_out:int(64));
 @chpldoc.nodoc
 extern proc qio_regex_get_ncaptures(const ref regex:qio_regex_t):int(64);
 @chpldoc.nodoc
 extern proc qio_regex_ok(const ref regex:qio_regex_t):bool;
-private extern proc qio_regex_error(const ref regex:qio_regex_t):c_string;
+private extern proc qio_regex_error(const ref regex:qio_regex_t):c_ptrConst(c_char);
 
 @chpldoc.nodoc
 extern const QIO_REGEX_ANCHOR_UNANCHORED:c_int;
@@ -394,79 +394,26 @@ extern record qio_regex_string_piece_t {
 
 private extern proc qio_regex_string_piece_isnull(ref sp:qio_regex_string_piece_t):bool;
 
-private extern proc qio_regex_match(const ref re:qio_regex_t, text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, ref submatch:qio_regex_string_piece_t, nsubmatch:int(64)):bool;
-private extern proc qio_regex_replace(const ref re:qio_regex_t, repl:c_string, repllen:int(64), text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_string, ref replaced_len:int(64)):int(64);
+private extern proc qio_regex_match(const ref re:qio_regex_t, text:c_ptrConst(c_char), textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, ref submatch:qio_regex_string_piece_t, nsubmatch:int(64)):bool;
+private extern proc qio_regex_replace(const ref re:qio_regex_t, repl:c_ptrConst(c_char), repllen:int(64), text:c_ptrConst(c_char), textlen:int(64), maxreplace:int(64), ref replaced:c_ptrConst(c_char), ref replaced_len:int(64)):int(64);
 
 // These two could be folded together if we had a way
 // to check if a default argument was supplied
 // (or any way to use 'nil' in pass-by-ref)
 // This one is documented below.
 
+/* Error thrown if a regular expression fails to compile */
 class BadRegexError : Error {
+  @chpldoc.nodoc
   var msg:string;
+  @chpldoc.nodoc
   proc init(msg: string) {
     this.msg = msg;
   }
+  @chpldoc.nodoc
   override proc message() {
     return msg;
   }
-}
-
-/*
-   Compile a regular expression. This routine will throw a
-   class:`BadRegexError` if compilation failed.
-
-   .. warning::
-
-     This procedure is deprecated. Please use :proc:`regex.init` via ``new
-     regex()``.
-
-
-   :arg pattern: the regular expression to compile. This argument can be string
-                 or bytes. See :ref:`regular-expression-syntax` for details.
-                 Note that you may have to escape backslashes. For example, to
-                 get the regular expression ``\s``, you'd have to write
-                 ``"\\s"`` because the ``\`` is the escape character within
-                 Chapel string/bytes literals. Note that, Chapel supports
-                 triple-quoted raw string/bytes literals, which do not require
-                 escaping backslashes. For example ``"""\s"""`` or ``b"""\s"""``
-                 can be used.
-   :arg posix: (optional) set to true to disable non-POSIX regular expression
-               syntax
-   :arg literal: (optional) set to true to treat the regular expression as a
-                 literal (ie, create a regex matching ``pattern`` as a string
-                 rather than as a regular expression).
-   :arg noCapture: (optional) set to true in order to disable all capture groups
-                   in the regular expression
-   :arg ignoreCase: (optional) set to true in order to ignore case when
-                    matching. Note that this can be set inside the regular
-                    expression with ``(?i)``.
-   :arg multiLine: (optional) set to true in order to activate multiline mode
-                   (meaning that ``^`` and ``$`` match the beginning and end
-                   of a line instead of just the beginning and end of the text.
-                   Note that this can be set inside a regular expression
-                   with ``(?m)``.
-   :arg dotAll: (optional) set to true in order to allow ``.``
-               to match a newline. Note that this can be set inside the
-               regular expression with ``(?s)``.
-   :arg nonGreedy: (optional) set to true in order to prefer shorter matches for
-                   repetitions; for example, normally x* will match as many x
-                   characters as possible and x*? will match as few as possible.
-                   This flag swaps the two, so that x* will match as few as
-                   possible and x*? will match as many as possible. Note that
-                   this flag can be set inside the regular expression with
-                   ``(?U)``.
-
-   :throws BadRegexError: If the argument 'pattern' has syntactical errors.
-                          Refer to https://github.com/google/re2/blob/master/re2/re2.h
-                          for more details about error codes.
- */
-@deprecated(notes="'Regex.compile' is deprecated. Please use 'new regex()' instead.")
-proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
-             /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
-             /*U*/ nonGreedy=false): regex(t) throws where t==string || t==bytes {
-  return new regex(pattern, posix, literal, noCapture, ignoreCase, multiLine,
-                   dotAll, nonGreedy);
 }
 
 /*  The regexMatch record records a regular expression search match
@@ -492,6 +439,7 @@ record regexMatch {
   var numBytes:int;
 }
 
+pragma "do not resolve unless called"
 @chpldoc.nodoc
 proc reMatch type
 {
@@ -511,7 +459,6 @@ proc _to_regexMatch(ref p:qio_regex_string_piece_t):regexMatch {
 @chpldoc.nodoc
 inline operator regexMatch.!(m: regexMatch) do return !m.matched;
 
-@chpldoc.nodoc
 inline proc regexMatch.chpl_cond_test_method() do return this.matched;
 
 /*  This function extracts the part of a string matching a regular
@@ -548,7 +495,6 @@ private proc serializedType(type exprType) type {
 /* We hold a copy of pattern string/bytes in its serialized form inside
  * this record.
  */
-@chpldoc.nodoc
 record chpl_serializeHelper {
   type exprType;
   var pattern:serializedType(exprType);
@@ -559,14 +505,13 @@ record chpl_serializeHelper {
 
 /*  This record represents a compiled regular expression. Regular expressions
     are currently cached on a per-thread basis and are reference counted.
-    To create a compiled regular expression, use the proc:`compile` function.
 
     A string-based regex can be cast to a string (resulting in the pattern that
     was compiled). A string can be cast to a string-based regex (resulting in a
     compiled regex). Same applies for bytes.
   */
 pragma "ignore noinit"
-record regex {
+record regex : serializable {
 
   @chpldoc.nodoc
   type exprType;
@@ -574,10 +519,6 @@ record regex {
   var home: locale = here;
   @chpldoc.nodoc
   var _regex:qio_regex_t = qio_regex_null();
-
-  proc init(type exprType) {
-    this.exprType = exprType;
-  }
 
   /*
      Initializer for a compiled regular expression. ``new regex()`` throws a
@@ -593,10 +534,13 @@ record regex {
                    not require escaping backslashes. For example ``"""\s"""`` or
                    ``b"""\s"""`` can be used.
      :arg posix: (optional) set to true to disable non-POSIX regular expression
-                 syntax
+                 syntax and to prefer the left-most longest match, instead of
+                 the first match in the pattern. This mode is intended to match
+                 egrep regular expression syntax.
      :arg literal: (optional) set to true to treat the regular expression as a
                    literal (ie, create a regex matching ``pattern`` as a string
-                   rather than as a regular expression).
+                   rather than as a regular expression). If ``literal=true``,
+                   all other optional flags are ignored.
      :arg noCapture: (optional) set to true in order to disable all capture
                      groups in the regular expression
      :arg ignoreCase: (optional) set to true in order to ignore case when
@@ -605,8 +549,10 @@ record regex {
      :arg multiLine: (optional) set to true in order to activate multiline mode
                      (meaning that ``^`` and ``$`` match the beginning and end
                      of a line instead of just the beginning and end of the
-                     text.  Note that this can be set inside a regular
-                     expression with ``(?m)``.
+                     text).  Note that this can be set inside a regular
+                     expression with ``(?m)``. The default is ``false`` for
+                     non-``posix`` regular expressions; and ``true`` for
+                     ``posix`` regular expressions.
      :arg dotAll: (optional) set to true in order to allow ``.``
                  to match a newline. Note that this can be set inside the
                  regular expression with ``(?s)``.
@@ -615,20 +561,21 @@ record regex {
                      many x characters as possible and x*? will match as few as
                      possible.  This flag swaps the two, so that x* will match
                      as few as possible and x*? will match as many as possible.
-                     Note that this flag can be set inside the regular
-                     expression with ``(?U)``.
+                     Note that this flag has no effect when ``posix=true``.
+                     For non-posix regular expressions, it can alternatively
+                     be activated within a regular expression with ``(?U)``.
 
      :throws BadRegexError: If the argument 'pattern' has syntactical errors.
                             Refer to https://github.com/google/re2/blob/master/re2/re2.h
                             for more details about error codes.
    */
   proc init(pattern: ?t, posix=false, literal=false, noCapture=false,
-            /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
+            /*i*/ ignoreCase=false, /*m*/ multiLine=posix, /*s*/ dotAll=false,
             /*U*/ nonGreedy=false) throws where t==string || t==bytes {
     use ChplConfig;
 
     this.exprType = t;
-    this.complete();
+    init this;
 
     if CHPL_RE2 == "none" {
       compilerError("Cannot use Regex with CHPL_RE2=none");
@@ -668,6 +615,7 @@ record regex {
     }
   }
 
+  /* Creates a new :type:`regex` with the same pattern as ``x``. */
   proc init=(x: regex(?)) {
     this.exprType = x.exprType;
     /* always bring the regex local */
@@ -675,14 +623,29 @@ record regex {
     /* if it's local, retain and avoid the recompile (thread safe) */
     if (x.home == here) {
       this._regex = x._regex;
-      this.complete();
+      init this;
       qio_regex_retain(x._regex);
     } else {
       /* otherwise recompile locally */
-      this.complete();
+      init this;
       var serialized = x._serialize();
       this._deserialize(serialized);
     }
+  }
+
+  /*
+    Default type initializer for a compiled regular expression. This does not
+    initialize any fields and the resulting :type:`regex` may produce erroneous
+    results when used. The behavior may differ based on values of
+    :param:`~ChplConfig.CHPL_COMM`.
+
+    .. note::
+       If you are looking to default initialize a :type:`regex`, you might be
+       looking for ``new regex("")``, which will create a regular expression
+       matching the empty string.
+  */
+  proc init(type exprType) {
+    this.exprType = exprType;
   }
 
   @chpldoc.nodoc
@@ -698,7 +661,7 @@ record regex {
        * long as the regex itself (and eg. doesn't get freed at the end of this
        * function)
        */
-      var patternTemp: c_string;
+      var patternTemp: c_ptrConst(c_char);
       var len:int;
       qio_regex_borrow_pattern(_regexCopy, patternTemp, len);
       try! pattern = exprType.createBorrowingBuffer(patternTemp, len).chpl__serialize();
@@ -711,7 +674,7 @@ record regex {
   }
 
   @chpldoc.nodoc
-  proc _deserialize(data) {
+  proc ref _deserialize(data) {
     const pattern = exprType.chpl__deserialize(data.pattern);
     qio_regex_create_compile(pattern.c_str(),
                              pattern.numBytes,
@@ -719,12 +682,10 @@ record regex {
                              this._regex);
   }
 
-  @chpldoc.nodoc
   proc chpl__serialize() {
     return _serialize();
   }
 
-  @chpldoc.nodoc
   proc type chpl__deserialize(data) {
     var ret:regex(exprType);
     ret._deserialize(data);
@@ -739,7 +700,8 @@ record regex {
   }
 
   @chpldoc.nodoc
-  proc _handle_captures(text: exprType, matches:c_array(qio_regex_string_piece_t, ?nmatches),
+  proc _handle_captures(text: exprType,
+                        ref matches:c_array(qio_regex_string_piece_t, ?nmatches),
                         ref captures) {
     assert(nmatches >= captures.size);
     for param i in 0..captures.size-1 {
@@ -916,7 +878,8 @@ record regex {
     var last:byteIndex;
     var localText = text.localize();
 
-    var matches = allocate(qio_regex_string_piece_t, nmatches);
+    var matches = allocate(qio_regex_string_piece_t,
+                           nmatches.safeCast(c_size_t));
     defer deallocate(matches);
 
     pos = 0;
@@ -968,8 +931,8 @@ record regex {
      the text or ``maxMatches`` is reached.
 
      :arg text: the string or bytes to search
-     :arg captures: (compile-time constant) the size of the captures to return
-     :arg maxmatches: the maximum number of matches to return
+     :arg numCaptures: (compile-time constant) the size of the captures to return
+     :arg maxMatches: the maximum number of matches to return
      :yields: tuples of :record:`regexMatch` objects, the 1st is always
               the match for the whole pattern and the rest are the capture groups.
    */
@@ -1001,85 +964,29 @@ record regex {
     }
   }
 
-  pragma "last resort"
-  @deprecated(notes="regex.matches arguments 'captures' and 'maxmatches' are deprecated. Use 'numCaptures' and/or 'maxMatches instead.")
-  iter matches(text: exprType, param captures=0, maxmatches: int = max(int))
-  {
-    for m in matches(text, numCaptures=captures, maxMatches=maxmatches) {
-      yield m;
-    }
-  }
-
-  /* Perform the same operation as :proc:`regex.sub` but return a tuple
-     containing the new text and the number of substitutions made.
-
-     .. warning::
-
-       This method is deprecated. Please use :proc:`string.replaceAndCount`.
-
-     :arg repl: replace matches with this string or bytes
-     :arg text: the text to search and replace within
-     :type text: `string` or `bytes`
-     :arg global: if true, replace multiple matches
-     :returns: a tuple containing (new text, number of substitutions made)
-   */
-  @deprecated(notes="regex.subn is deprecated. Please use string.replaceAndCount.")
-  proc subn(repl: exprType, text: exprType, global = true ):(exprType, int)
-  {
-    if global then
-      return text.replaceAndCount(this, repl);
-    else
-      return text.replaceAndCount(this, repl, 1);
-  }
-
-  /*
-     Find matches to this regular expression and create a new string or bytes in
-     which those matches are replaced by repl.
-
-     .. warning::
-
-       This method is deprecated. Please use :proc:`string.replace` with `regex`
-       argument.
-
-     :arg repl: replace matches with this string or bytes
-     :arg text: the text to search and replace within
-     :type text: `string` or `bytes`
-     :arg global: if true, replace multiple matches
-     :returns: the new string or bytes
-   */
-  @deprecated(notes="regex.sub is deprecated. Please use string.replace.")
-  proc sub(repl: exprType, text: exprType, global = true )
-  {
-    if global then
-      return text.replace(this, repl);
-    else
-      return text.replace(this, repl, count=1);
-  }
-
   // TODO this could use _serialize to get the pattern and options
   @chpldoc.nodoc
-  proc writeThis(f) throws {
+  proc serialize(writer, ref serializer) throws {
     var pattern:exprType;
     on this.home {
-      var patternTemp:c_string;
+      var patternTemp:c_ptrConst(c_char);
       var len:int;
       qio_regex_borrow_pattern(this._regex, patternTemp, len);
       try! pattern = exprType.createCopyingBuffer(patternTemp, len);
     }
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
-    f.write("new regex(\"", pattern, "\")");
+    writer.write("new regex(\"", pattern, "\")");
   }
 
   @chpldoc.nodoc
-  proc readThis(f) throws {
+  proc ref deserialize(reader, ref deserializer) throws {
     var pattern:exprType;
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
-    var litOne = new ioLiteral("new regex(\"");
-    var litTwo = new ioLiteral("\")");
-
-    if (f.read(litOne, pattern, litTwo)) then
+    if reader.matchLiteral("new regex(\"") &&
+       reader.read(pattern) &&
+       reader.matchLiteral("\")") then
       on this.home {
         var localPattern = pattern.localize();
         var opts: qio_regex_options_t;
@@ -1093,9 +1000,9 @@ record regex {
   }
 
   @chpldoc.nodoc
-  proc init(type exprType, f: fileReader) {
+  proc init(type exprType, reader: fileReader, ref deserializer) throws {
     this.init(exprType);
-    readThis(f);
+    this.deserialize(reader, deserializer);
   }
 }
 
@@ -1118,30 +1025,16 @@ operator regex.=(ref ret:regex(?t), x:regex(t))
   }
 }
 
+/* Returns the pattern of the :type:`regex`. */
 inline operator :(x: regex(?exprType), type t: exprType) {
   var pattern: t;
   on x.home {
-    var cs: c_string;
+    var cs: c_ptrConst(c_char);
     var len:int;
     qio_regex_borrow_pattern(x._regex, cs, len);
     try! pattern = t.createCopyingBuffer(cs, len);
   }
   return pattern;
-}
-
-
-// Cast string to regex
-@chpldoc.nodoc
-@deprecated(notes="Casting strings to regex is deprecated. Use new regex(string) from the Regex module instead.")
-inline operator :(x: string, type t: regex(string)) throws {
-  return new regex(x);
-}
-
-// Cast bytes to regex
-@chpldoc.nodoc
-@deprecated(notes="Casting bytes to regex is deprecated. Use new regex(bytes) from the Regex module instead.")
-inline operator :(x: bytes, type t: regex(bytes)) throws {
-  return new regex(x);
 }
 
 /* Search the receiving string for the result of a compiled regular
@@ -1171,6 +1064,10 @@ proc bytes.find(pattern: regex(bytes)):byteIndex
 /* Search the receiving string for the pattern. Returns a new string where the
    match(es) to the pattern is replaced with a replacement.
 
+   The replacement string can include the sequences ``\1`` to ``\9`` to include
+   text matching the corresponding parenthesized capture group from the pattern,
+   and ``\0`` to refer to the entire matching text.
+
    :arg pattern: the compiled regular expression to search for
    :arg replacement: string to replace with
    :arg count: number of maximum replacements to make, values less than zero
@@ -1184,6 +1081,10 @@ proc string.replace(pattern: regex(string), replacement:string,
 
 /* Search the receiving bytes for the pattern. Returns a new bytes where the
    match(es) to the pattern is replaced with a replacement.
+
+   The replacement bytes can include the sequences ``\1`` to ``\9`` to include
+   text matching the corresponding parenthesized capture group from the pattern,
+   and ``\0`` to refer to the entire matching text.
 
    :arg pattern: the compiled regular expression to search for
    :arg replacement: bytes to replace with
@@ -1199,6 +1100,10 @@ proc bytes.replace(pattern: regex(bytes), replacement:bytes, count=-1): bytes {
    match(es) to the pattern is replaced with a replacement and number of
    replacements.
 
+   The replacement string can include the sequences ``\1`` to ``\9`` to include
+   text matching the corresponding parenthesized capture group from the pattern,
+   and ``\0`` to refer to the entire matching text.
+
    :arg pattern: the compiled regular expression to search for
    :arg replacement: string to replace with
    :arg count: number of maximum replacements to make, values less than zero
@@ -1213,6 +1118,10 @@ proc string.replaceAndCount(pattern: regex(string), replacement:string,
    match(es) to the pattern is replaced with a replacement and number of
    replacements.
 
+   The replacement bytes can include the sequences ``\1`` to ``\9`` to include
+   text matching the corresponding parenthesized capture group from the pattern,
+   and ``\0`` to refer to the entire matching text.
+
    :arg pattern: the compiled regular expression to search for
    :arg replacement: bytes to replace with
    :arg count: number of maximum replacements to make, values less than zero
@@ -1226,85 +1135,6 @@ proc bytes.replaceAndCount(pattern: regex(bytes), replacement:bytes,
 
 private inline proc doReplaceAndCount(x: ?t, pattern: regex(t), replacement: t,
                                       count=-1) where (t==string || t==bytes) {
-  if count<0 || count==1 then
-    return doReplaceAndCountFast(x, pattern, replacement, global=(count!=1));
-  else
-    return doReplaceAndCountSlow(x, pattern, replacement, count);
-
-}
-
-private proc doReplaceAndCountSlow(x: ?t, pattern: regex(t), replacement: t,
-                                   count=-1) where (t==string || t==bytes) {
-  use ByteBufferHelpers;
-
-  var regexCopy:regex(t);
-  if pattern.home != here then regexCopy = pattern;
-  const localRegex = if pattern.home != here then regexCopy._regex
-                                             else pattern._regex;
-
-  const localX = x.localize();
-
-  var matchesDom = {0..#initBufferSizeForSlowReplaceAndCount};
-  var matches: [matchesDom] qio_regex_string_piece_t;
-
-  var curIdx = 0;
-  var totalBytesToRemove = 0;
-  var totalChunksToRemove = 0;
-  for i in 0..<count {
-    if i == matchesDom.size then matchesDom = {0..#matchesDom.size*2};
-
-    var got = qio_regex_match(localRegex, localX.c_str(), x.numBytes,
-                              startpos=curIdx, endpos=x.numBytes,
-                              QIO_REGEX_ANCHOR_UNANCHORED, matches[i], 1);
-    if !got then break;
-
-    curIdx = matches[i].offset + matches[i].len;
-    totalBytesToRemove += matches[i].len;
-    totalChunksToRemove += 1;
-  }
-  if totalChunksToRemove == 0 then return (x,0);
-
-  const numBytesInResult = x.numBytes-totalBytesToRemove+
-                           (totalChunksToRemove*replacement.numBytes);
-
-  var (newBuff, buffSize) = bufferAlloc(numBytesInResult+1);
-  newBuff[numBytesInResult] = 0;
-
-  const localRepl = replacement.localize();
-  var readIdx = 0;
-  var writeIdx = 0;
-  for i in 0..#totalChunksToRemove {
-    var readOffset = matches[i].offset;
-
-    // copy from the original string
-    const copyLen = readOffset-readIdx;
-    bufferMemcpyLocal(dst=newBuff, src=localX.buff, len=copyLen,
-                      dst_off=writeIdx, src_off=readIdx);
-    writeIdx += copyLen;
-
-    // copy the replacement
-    bufferMemcpyLocal(dst=newBuff, src=localRepl.buff, len=localRepl.numBytes,
-                      dst_off=writeIdx);
-    writeIdx += localRepl.numBytes;
-
-    readIdx = (readOffset+matches[i].len);
-  }
-
-  // handle the last part
-  if readIdx < localX.numBytes {
-    const copyLen = localX.numBytes-readIdx;
-    bufferMemcpyLocal(dst=newBuff, src=localX.buff, len=copyLen,
-                      dst_off=writeIdx, src_off=readIdx);
-  }
-
-  var ret = try! t.createAdoptingBuffer(newBuff, length=numBytesInResult,
-                                         size=buffSize);
-
-  return (ret, totalChunksToRemove);
-}
-
-private proc doReplaceAndCountFast(x: ?t, pattern: regex(t), replacement: t,
-                                   global:bool) where (t==string || t==bytes) {
   var regexCopy:regex(t);
   if pattern.home != here then regexCopy = pattern;
   const localRegex = if pattern.home != here then regexCopy._regex
@@ -1315,12 +1145,13 @@ private proc doReplaceAndCountFast(x: ?t, pattern: regex(t), replacement: t,
   pos = 0;
   endpos = pos + x.numBytes;
 
-  var replaced:c_string;
+  var replaced:c_ptrConst(c_char);
   var replaced_len:int(64);
-  var nreplaced: int = qio_regex_replace(localRegex, replacement.localize().c_str(),
-                                    replacement.numBytes, x.localize().c_str(),
-                                    x.numBytes, pos:int, endpos:int, global,
-                                    replaced, replaced_len);
+  var nreplaced: int =
+    qio_regex_replace(localRegex, replacement.localize().c_str(),
+                      replacement.numBytes, x.localize().c_str(),
+                      x.numBytes, count,
+                      replaced, replaced_len);
 
   var ret = try! t.createAdoptingBuffer(replaced, replaced_len);
 
@@ -1401,11 +1232,11 @@ iter bytes.split(sep: regex(bytes), maxsplit: int = 0)
   :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
     up to (and possibly including) the match.
 
-  :throws EofError: Thrown if nothing could be read because the ``fileReader``
+  :throws EofError: If nothing could be read because the ``fileReader``
     was already at EOF.
-  :throws BadFormatError: Thrown if the separator was not found in the next ``maxSize``
+  :throws BadFormatError: If the separator was not found in the next ``maxSize``
     bytes. The ``fileReader`` position is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws SystemError: If data could not be read from the ``fileReader``.
 */
 proc fileReader.readThrough(separator: regex(?t), maxSize=-1, stripSeparator=false): t throws
   where t==string || t==bytes
@@ -1432,9 +1263,9 @@ proc fileReader.readThrough(separator: regex(?t), maxSize=-1, stripSeparator=fal
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
     ``fileReader`` was already at EOF).
 
-  :throws BadFormatError: Thrown if the separator was not found in the next ``maxSize``
+  :throws BadFormatError: If the separator was not found in the next ``maxSize``
     bytes. The ``fileReader`` position is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws SystemError: If data could not be read from the ``fileReader``.
 */
 proc fileReader.readThrough(separator: regex(string), ref s: string, maxSize=-1, stripSeparator=false): bool throws {
   use Regex.RegexIoSupport;
@@ -1473,7 +1304,7 @@ proc fileReader.readThrough(separator: regex(string), ref s: string, maxSize=-1,
   more details.
 
   :arg separator: The :type:`~Regex.regex` separator to match with.
-  :arg s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
+  :arg b: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of bytes to read. For the default value of
     ``-1``, this method can read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned
@@ -1481,9 +1312,9 @@ proc fileReader.readThrough(separator: regex(string), ref s: string, maxSize=-1,
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
     ``fileReader`` was already at EOF).
 
-  :throws BadFormatError: Thrown if the separator was not found in the next ``maxSize``
+  :throws BadFormatError: If the separator was not found in the next ``maxSize``
     bytes. The ``fileReader`` position is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws SystemError: If data could not be read from the ``fileReader``.
 */
 proc fileReader.readThrough(separator: regex(bytes), ref b: bytes, maxSize=-1, stripSeparator=false): bool throws {
   use Regex.RegexIoSupport;
@@ -1518,11 +1349,11 @@ proc fileReader.readThrough(separator: regex(bytes), ref b: bytes, maxSize=-1, s
   :returns: A ``string`` or ``bytes`` with the contents of the channel up to
     the ``separator``.
 
-  :throws EofError: Thrown if nothing could be read because the ``fileReader``
+  :throws EofError: If nothing could be read because the ``fileReader``
     was already at EOF.
-  :throws BadFormatError: Thrown if the separator was not found in the next
+  :throws BadFormatError: If the separator was not found in the next
     `maxSize` bytes. The ``fileReader`` position is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws SystemError: If data could not be read from the ``fileReader``.
 */
 proc fileReader.readTo(separator: regex(?t), maxSize=-1): t throws
   where t == string || t == bytes
@@ -1547,9 +1378,9 @@ proc fileReader.readTo(separator: regex(?t), maxSize=-1): t throws
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
     ``fileReader`` was already at EOF).
 
-  :throws BadFormatError: Thrown if the separator was not found in the next
+  :throws BadFormatError: If the separator was not found in the next
     `maxSize` codepoints. The ``fileReader`` position is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws SystemError: If data could not be read from the ``fileReader``.
 */
 proc fileReader.readTo(separator: regex(string), ref s: string, maxSize=-1): bool throws {
   use Regex.RegexIoSupport;
@@ -1593,9 +1424,9 @@ proc fileReader.readTo(separator: regex(string), ref s: string, maxSize=-1): boo
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
     ``fileReader`` was already at EOF).
 
-  :throws BadFormatError: Thrown if the separator was not found in the next
+  :throws BadFormatError: If the separator was not found in the next
     `maxSize` bytes. The ``fileReader`` position is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws SystemError: If data could not be read from the ``fileReader``.
 */
 proc fileReader.readTo(separator: regex(bytes), ref b: bytes, maxSize=-1): bool throws {
   use Regex.RegexIoSupport;
@@ -1658,9 +1489,9 @@ private proc _findSeparator(separator: regex(?t), maxBytes=-1, ch) : (errorCode,
   }
 
   // move back to the starting offset and compute the total number of bytes read
-  const endOffset = ch.chpl_offset();
+  const endOffset = ch.offset();
   ch.revert(); // A
-  const numBytesRead: int = endOffset - ch.chpl_offset();
+  const numBytesRead: int = endOffset - ch.offset();
 
   _ddata_free(matches, nm);
 

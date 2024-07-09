@@ -42,7 +42,7 @@ static constexpr TypeInfo TypeInfos[] = {
 #include "clang/Driver/Types.def"
 #undef TYPE
 };
-static const unsigned numTypes = llvm::array_lengthof(TypeInfos);
+static const unsigned numTypes = std::size(TypeInfos);
 
 static const TypeInfo &getInfo(unsigned id) {
   assert(id > 0 && id - 1 < numTypes && "Invalid Type ID.");
@@ -80,8 +80,8 @@ types::ID types::getPrecompiledType(ID Id) {
   return TY_INVALID;
 }
 
-const char *types::getTypeTempSuffix(ID Id, bool CLMode) {
-  if (CLMode) {
+const char *types::getTypeTempSuffix(ID Id, bool CLStyle) {
+  if (CLStyle) {
     switch (Id) {
     case TY_Object:
     case TY_LTO_BC:
@@ -133,7 +133,7 @@ bool types::isAcceptedByClang(ID Id) {
 
   case TY_Asm:
   case TY_C: case TY_PP_C:
-  case TY_CL: case TY_CLCXX:
+  case TY_CL: case TY_PP_CL: case TY_CLCXX: case TY_PP_CLCXX:
   case TY_CUDA: case TY_PP_CUDA:
   case TY_CUDA_DEVICE:
   case TY_HIP:
@@ -181,7 +181,9 @@ bool types::isDerivedFromC(ID Id) {
   case TY_PP_C:
   case TY_C:
   case TY_CL:
+  case TY_PP_CL:
   case TY_CLCXX:
+  case TY_PP_CLCXX:
   case TY_PP_CUDA:
   case TY_CUDA:
   case TY_CUDA_DEVICE:
@@ -241,6 +243,7 @@ bool types::isCXX(ID Id) {
   case TY_PP_CXXHeaderUnit:
   case TY_ObjCXXHeader: case TY_PP_ObjCXXHeader:
   case TY_CXXModule: case TY_PP_CXXModule:
+  case TY_PP_CLCXX:
   case TY_CUDA: case TY_PP_CUDA: case TY_CUDA_DEVICE:
   case TY_HIP:
   case TY_PP_HIP:
@@ -286,74 +289,83 @@ bool types::isHIP(ID Id) {
   }
 }
 
+bool types::isHLSL(ID Id) { return Id == TY_HLSL; }
+
 bool types::isSrcFile(ID Id) {
   return Id != TY_Object && getPreprocessedType(Id) != TY_INVALID;
 }
 
 types::ID types::lookupTypeForExtension(llvm::StringRef Ext) {
   return llvm::StringSwitch<types::ID>(Ext)
-           .Case("c", TY_C)
-           .Case("C", TY_CXX)
-           .Case("F", TY_Fortran)
-           .Case("f", TY_PP_Fortran)
-           .Case("h", TY_CHeader)
-           .Case("H", TY_CXXHeader)
-           .Case("i", TY_PP_C)
-           .Case("m", TY_ObjC)
-           .Case("M", TY_ObjCXX)
-           .Case("o", TY_Object)
-           .Case("S", TY_Asm)
-           .Case("s", TY_PP_Asm)
-           .Case("bc", TY_LLVM_BC)
-           .Case("cc", TY_CXX)
-           .Case("CC", TY_CXX)
-           .Case("cl", TY_CL)
-           .Case("clcpp", TY_CLCXX)
-           .Case("cp", TY_CXX)
-           .Case("cu", TY_CUDA)
-           .Case("hh", TY_CXXHeader)
-           .Case("ii", TY_PP_CXX)
-           .Case("ll", TY_LLVM_IR)
-           .Case("mi", TY_PP_ObjC)
-           .Case("mm", TY_ObjCXX)
-           .Case("rs", TY_RenderScript)
-           .Case("adb", TY_Ada)
-           .Case("ads", TY_Ada)
-           .Case("asm", TY_PP_Asm)
-           .Case("ast", TY_AST)
-           .Case("ccm", TY_CXXModule)
-           .Case("cpp", TY_CXX)
-           .Case("CPP", TY_CXX)
-           .Case("c++", TY_CXX)
-           .Case("C++", TY_CXX)
-           .Case("cui", TY_PP_CUDA)
-           .Case("cxx", TY_CXX)
-           .Case("CXX", TY_CXX)
-           .Case("F90", TY_Fortran)
-           .Case("f90", TY_PP_Fortran)
-           .Case("F95", TY_Fortran)
-           .Case("f95", TY_PP_Fortran)
-           .Case("for", TY_PP_Fortran)
-           .Case("FOR", TY_PP_Fortran)
-           .Case("fpp", TY_Fortran)
-           .Case("FPP", TY_Fortran)
-           .Case("gch", TY_PCH)
-           .Case("hip", TY_HIP)
-           .Case("hpp", TY_CXXHeader)
-           .Case("hxx", TY_CXXHeader)
-           .Case("iim", TY_PP_CXXModule)
-           .Case("iih", TY_PP_CXXHeaderUnit)
-           .Case("lib", TY_Object)
-           .Case("mii", TY_PP_ObjCXX)
-           .Case("obj", TY_Object)
-           .Case("ifs", TY_IFS)
-           .Case("pch", TY_PCH)
-           .Case("pcm", TY_ModuleFile)
-           .Case("c++m", TY_CXXModule)
-           .Case("cppm", TY_CXXModule)
-           .Case("cxxm", TY_CXXModule)
-           .Case("hlsl", TY_HLSL)
-           .Default(TY_INVALID);
+      .Case("c", TY_C)
+      .Case("C", TY_CXX)
+      .Case("F", TY_Fortran)
+      .Case("f", TY_PP_Fortran)
+      .Case("h", TY_CHeader)
+      .Case("H", TY_CXXHeader)
+      .Case("i", TY_PP_C)
+      .Case("m", TY_ObjC)
+      .Case("M", TY_ObjCXX)
+      .Case("o", TY_Object)
+      .Case("S", TY_Asm)
+      .Case("s", TY_PP_Asm)
+      .Case("bc", TY_LLVM_BC)
+      .Case("cc", TY_CXX)
+      .Case("CC", TY_CXX)
+      .Case("cl", TY_CL)
+      .Case("cli", TY_PP_CL)
+      .Case("clcpp", TY_CLCXX)
+      .Case("clii", TY_PP_CLCXX)
+      .Case("cp", TY_CXX)
+      .Case("cu", TY_CUDA)
+      .Case("hh", TY_CXXHeader)
+      .Case("ii", TY_PP_CXX)
+      .Case("ll", TY_LLVM_IR)
+      .Case("mi", TY_PP_ObjC)
+      .Case("mm", TY_ObjCXX)
+      .Case("rs", TY_RenderScript)
+      .Case("adb", TY_Ada)
+      .Case("ads", TY_Ada)
+      .Case("asm", TY_PP_Asm)
+      .Case("ast", TY_AST)
+      .Case("ccm", TY_CXXModule)
+      .Case("cpp", TY_CXX)
+      .Case("CPP", TY_CXX)
+      .Case("c++", TY_CXX)
+      .Case("C++", TY_CXX)
+      .Case("cui", TY_PP_CUDA)
+      .Case("cxx", TY_CXX)
+      .Case("CXX", TY_CXX)
+      .Case("F03", TY_Fortran)
+      .Case("f03", TY_PP_Fortran)
+      .Case("F08", TY_Fortran)
+      .Case("f08", TY_PP_Fortran)
+      .Case("F90", TY_Fortran)
+      .Case("f90", TY_PP_Fortran)
+      .Case("F95", TY_Fortran)
+      .Case("f95", TY_PP_Fortran)
+      .Case("for", TY_PP_Fortran)
+      .Case("FOR", TY_PP_Fortran)
+      .Case("fpp", TY_Fortran)
+      .Case("FPP", TY_Fortran)
+      .Case("gch", TY_PCH)
+      .Case("hip", TY_HIP)
+      .Case("hipi", TY_PP_HIP)
+      .Case("hpp", TY_CXXHeader)
+      .Case("hxx", TY_CXXHeader)
+      .Case("iim", TY_PP_CXXModule)
+      .Case("iih", TY_PP_CXXHeaderUnit)
+      .Case("lib", TY_Object)
+      .Case("mii", TY_PP_ObjCXX)
+      .Case("obj", TY_Object)
+      .Case("ifs", TY_IFS)
+      .Case("pch", TY_PCH)
+      .Case("pcm", TY_ModuleFile)
+      .Case("c++m", TY_CXXModule)
+      .Case("cppm", TY_CXXModule)
+      .Case("cxxm", TY_CXXModule)
+      .Case("hlsl", TY_HLSL)
+      .Default(TY_INVALID);
 }
 
 types::ID types::lookupTypeForTypeSpecifier(const char *Name) {

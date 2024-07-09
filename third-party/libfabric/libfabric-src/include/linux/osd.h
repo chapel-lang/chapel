@@ -62,6 +62,7 @@ static inline int ofi_shm_remap(struct util_shm *shm,
 	return shm->ptr == MAP_FAILED ? -FI_EINVAL : FI_SUCCESS;
 }
 
+ssize_t ofi_get_addr_page_size(const void *addr);
 ssize_t ofi_get_hugepage_size(void);
 
 static inline int ofi_alloc_hugepage_buf(void **memptr, size_t size)

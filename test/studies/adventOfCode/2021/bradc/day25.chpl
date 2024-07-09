@@ -27,7 +27,7 @@ do {
   var someoneMoved = false;
 
   var B = A;
-  forall ij in D with (ref someoneMoved) {
+  forall ij in D with (ref someoneMoved, ref B) {
     if A[ij] == east {
       const target = (ij + (0,1))%(numrows, numcols);
       if A[target] == empty {
@@ -40,7 +40,7 @@ do {
 
   A = B;
 
-  forall ij in D with (ref someoneMoved) {
+  forall ij in D with (ref someoneMoved, ref A) {
     if B[ij] == south {
       const target = (ij + (1,0))%(numrows, numcols);
       if B[target] == empty {

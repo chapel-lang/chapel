@@ -1,0 +1,5 @@
+global start/stop
+gpuDiagnosticsWarnings.chpl:7: warning: verbose gpu was already started
+gpuDiagnosticsWarnings.chpl:9: warning: verbose gpu was never started
+gpuDiagnosticsWarnings.chpl:12: warning: gpu diagnostics was already started
+gpuDiagnosticsWarnings.chpl:14: warning: gpu diagnostics was never started

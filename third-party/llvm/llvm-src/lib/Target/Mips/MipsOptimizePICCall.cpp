@@ -26,6 +26,7 @@
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineOperand.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/CodeGen/MachineValueType.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
 #include "llvm/CodeGen/TargetOpcodes.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"
@@ -33,11 +34,9 @@
 #include "llvm/Support/Allocator.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/MachineValueType.h"
 #include "llvm/Support/RecyclingAllocator.h"
 #include <cassert>
 #include <utility>
-#include <vector>
 
 using namespace llvm;
 
@@ -127,7 +126,7 @@ static MachineOperand *getCallTargetRegOpnd(MachineInstr &MI) {
 
   MachineOperand &MO = MI.getOperand(0);
 
-  if (!MO.isReg() || !MO.isUse() || !Register::isVirtualRegister(MO.getReg()))
+  if (!MO.isReg() || !MO.isUse() || !MO.getReg().isVirtual())
     return nullptr;
 
   return &MO;

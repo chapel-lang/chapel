@@ -1,0 +1,6 @@
+DuplicateTypeQueryComponent.chpl:2: In function 'foo':
+DuplicateTypeQueryComponent.chpl:2: error: 'w' has multiple definitions
+DuplicateTypeQueryComponent.chpl:2: note: redefined here
+DuplicateTypeQueryComponent.chpl:5: In function 'foo':
+DuplicateTypeQueryComponent.chpl:5: error: 'w' has multiple definitions
+DuplicateTypeQueryComponent.chpl:5: note: redefined here

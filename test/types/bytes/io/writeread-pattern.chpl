@@ -7,7 +7,7 @@ proc test(byteRange) {
   const byteRange = 0..255;
   const reverseRange = byteRange by -byteRange.stride;
   const nBytes = (byteRange.size + reverseRange.size)*nRepeat;
-  var buf = allocate(uint(8), nBytes+1);
+  var buf = allocate(uint(8), (nBytes+1).safeCast(c_size_t));
 
   var i = 0;
   for r in 0..#nRepeat {
@@ -33,16 +33,15 @@ proc test(byteRange) {
 
   {
     // write them to a channel
-    var bytesWriter = bytesChannel.writer();
-    bytesWriter.writef("%ht", randomBytes);
+    var bytesWriter = bytesChannel.writer(locking=false);
+    bytesWriter.write(randomBytes);
     bytesWriter.close();
   }
 
   {
     // read them into a different object
-    var bytesReader = bytesChannel.reader();
-    var readBytes = b"";
-    bytesReader.readf("%ht", readBytes);
+    var bytesReader = bytesChannel.reader(locking=false);
+    var readBytes = bytesReader.readAll(bytes);
     bytesReader.close();
     // compare
     if readBytes == randomBytes {
@@ -55,17 +54,17 @@ proc test(byteRange) {
 
   {
     // write them to a channel
-    var bytesWriter = bytesChannel.writer();
-    bytesWriter.writef("%|*s", randomBytes.size, randomBytes);
+    var bytesWriter = bytesChannel.writer(locking=false);
+    bytesWriter.writeBinary(randomBytes, randomBytes.size);
     bytesWriter.close();
   }
 
   {
     // read them into a different object
-    var bytesReader = bytesChannel.reader();
+    var bytesReader = bytesChannel.reader(locking=false);
     var readBytes = b"";
     var readLen = randomBytes.size;
-    bytesReader.readf("%|*s", readLen, readBytes);
+    bytesReader.readBinary(readBytes, readLen);
     bytesReader.close();
     // compare
     if readBytes == randomBytes {

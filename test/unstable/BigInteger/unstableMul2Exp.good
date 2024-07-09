@@ -1,0 +1,2 @@
+unstableMul2Exp.chpl:5: warning: mul2Exp is unstable and may change in the future
+192

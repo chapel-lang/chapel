@@ -1,0 +1,77 @@
+diff --git a/src/chapel/Bude.chpl b/src/chapel/Bude.chpl
+index f8c2dff..d20c6ef 100644
+--- a/src/chapel/Bude.chpl
++++ b/src/chapel/Bude.chpl
+@@ -7,6 +7,7 @@ module Bude {
+   use ArgumentParser;
+   use Path;
+   use ChplConfig;
++  use Math;
+ 
+   config param VERSION_STRING = "2.0";
+   config param MINIBUDE_COMPILE_COMMANDS = "";
+@@ -17,7 +18,10 @@ module Bude {
+   param DEFAULT_NPOSES = 65536;
+   param DEFAULT_WGSIZE = 1;
+   param REF_NPOSES = 65536;
+-  param DATA_DIR = "../../data/bm1";
++  // PATCH:
++  // in the base implementation, the following is not a `config`. I am changing
++  // that to `config` to be able to use it in our nightly config.
++  config param DATA_DIR = "../data/bm1";
+   param FILE_LIGAND = "/ligand.in";
+   param FILE_PROTEIN = "/protein.in";
+   param FILE_FORCEFIELD = "/forcefield.in";
+@@ -42,6 +46,13 @@ module Bude {
+   config param PPWI: int(32) = 4; // "poses per work item" = work per Chapel task
+   // TODO allow multiple choices for PPWI
+ 
++  // PATCH:
++  // set this to true for nightly correctness testing in Chapel's testing suite
++  config const correctness = false;
++  // in nightly correctness testing, we want deterministic output. So, we just
++  // compare the diff against this threshold instead of printing it
++  param threshold = 0.02;
++
+   record atom {
+     var x, y, z: real(32);
+     var aType: int(32);
+@@ -234,7 +245,8 @@ module Bude {
+ 
+     writeln("~");
+     const now = timeSinceEpoch().totalSeconds();
+-    writef("time: { epoch_s: %i, formatted: \"%s\" }\n", now, dateTime.createFromTimestamp(now):string);
++    if !correctness then // < PATCH
++      writef("time: { epoch_s: %i, formatted: \"%s\" }\n", now, dateTime.createFromTimestamp(now):string);
+ 
+     writeln("deck:");
+     writeln("  path:         \"", context.deckDir, "\"");
+@@ -293,7 +305,16 @@ module Bude {
+         maxdiff = diff;
+       }
+     }
+-    writef("\nLargest difference was %{.###}%%.\n\n", 100 * maxdiff);
++
++    // PATCH:
++    //writef("\nLargest difference was %{.###}%%.\n\n", 100 * maxdiff);
++    if correctness && (100*maxdiff < threshold) {
++      writef("\nLargest difference was less than %{.###}%%.\n\n", threshold);
++    }
++    else {
++      writef("\nLargest difference was %{.###}%%.\n\n", 100 * maxdiff);
++    }
++
+   } // main
+ 
+   proc compute(ref results: [] real(32)) {
+@@ -338,7 +359,9 @@ module Bude {
+       times[gpuID] = timestampMS() - times[gpuID];
+     }
+ 
+-    printTimings(max reduce times);
++    // PATCH:
++    //printTimings(max reduce times);
++    if !correctness then printTimings(max reduce times);
+   }
+ 
+   proc cpukernel(ref context: params, ref results: [] real(32)) {

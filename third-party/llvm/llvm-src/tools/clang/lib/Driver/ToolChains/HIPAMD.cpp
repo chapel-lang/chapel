@@ -21,7 +21,7 @@
 #include "llvm/Support/Alignment.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
-#include "llvm/Support/TargetParser.h"
+#include "llvm/TargetParser/TargetParser.h"
 
 using namespace clang::driver;
 using namespace clang::driver::toolchains;
@@ -91,9 +91,7 @@ void AMDGCN::Linker::constructLlvmLinkCommand(Compilation &C,
   // for the extracted archive of bitcode to inputs.
   auto TargetID = Args.getLastArgValue(options::OPT_mcpu_EQ);
   AddStaticDeviceLibsLinking(C, *this, JA, Inputs, Args, LlvmLinkArgs, "amdgcn",
-                             TargetID,
-                             /*IsBitCodeSDL=*/true,
-                             /*PostClangLink=*/false);
+                             TargetID, /*IsBitCodeSDL=*/true);
 
   const char *LlvmLink =
     Args.MakeArgString(getToolChain().GetProgramPath("llvm-link"));
@@ -108,8 +106,15 @@ void AMDGCN::Linker::constructLldCommand(Compilation &C, const JobAction &JA,
                                          const llvm::opt::ArgList &Args) const {
   // Construct lld command.
   // The output from ld.lld is an HSA code object file.
-  ArgStringList LldArgs{"-flavor", "gnu", "--no-undefined", "-shared",
+  ArgStringList LldArgs{"-flavor",
+                        "gnu",
+                        "-m",
+                        "elf64_amdgpu",
+                        "--no-undefined",
+                        "-shared",
                         "-plugin-opt=-amdgpu-internalize-symbols"};
+  if (Args.hasArg(options::OPT_hipstdpar))
+    LldArgs.push_back("-plugin-opt=-amdgpu-enable-hipstdpar");
 
   auto &TC = getToolChain();
   auto &D = TC.getDriver();
@@ -137,18 +142,34 @@ void AMDGCN::Linker::constructLldCommand(Compilation &C, const JobAction &JA,
   if (IsThinLTO)
     LldArgs.push_back(Args.MakeArgString("-plugin-opt=-force-import-all"));
 
-  for (const Arg *A : Args.filtered(options::OPT_mllvm)) {
-    LldArgs.push_back(
-        Args.MakeArgString(Twine("-plugin-opt=") + A->getValue(0)));
-  }
-
   if (C.getDriver().isSaveTempsEnabled())
     LldArgs.push_back("-save-temps");
 
   addLinkerCompressDebugSectionsOption(TC, Args, LldArgs);
 
-  for (auto *Arg : Args.filtered(options::OPT_Xoffload_linker))
-    LldArgs.push_back(Arg->getValue(1));
+  // Given that host and device linking happen in separate processes, the device
+  // linker doesn't always have the visibility as to which device symbols are
+  // needed by a program, especially for the device symbol dependencies that are
+  // introduced through the host symbol resolution.
+  // For example: host_A() (A.obj) --> host_B(B.obj) --> device_kernel_B()
+  // (B.obj) In this case, the device linker doesn't know that A.obj actually
+  // depends on the kernel functions in B.obj.  When linking to static device
+  // library, the device linker may drop some of the device global symbols if
+  // they aren't referenced.  As a workaround, we are adding to the
+  // --whole-archive flag such that all global symbols would be linked in.
+  LldArgs.push_back("--whole-archive");
+
+  for (auto *Arg : Args.filtered(options::OPT_Xoffload_linker)) {
+    StringRef ArgVal = Arg->getValue(1);
+    auto SplitArg = ArgVal.split("-mllvm=");
+    if (!SplitArg.second.empty()) {
+      LldArgs.push_back(
+          Args.MakeArgString(Twine("-plugin-opt=") + SplitArg.second));
+    } else {
+      LldArgs.push_back(Args.MakeArgString(ArgVal));
+    }
+    Arg->claim();
+  }
 
   LldArgs.append({"-o", Output.getFilename()});
   for (auto Input : Inputs)
@@ -158,9 +179,9 @@ void AMDGCN::Linker::constructLldCommand(Compilation &C, const JobAction &JA,
   // for the extracted archive of bitcode to inputs.
   auto TargetID = Args.getLastArgValue(options::OPT_mcpu_EQ);
   AddStaticDeviceLibsLinking(C, *this, JA, Inputs, Args, LldArgs, "amdgcn",
-                             TargetID,
-                             /*IsBitCodeSDL=*/true,
-                             /*PostClangLink=*/false);
+                             TargetID, /*IsBitCodeSDL=*/true);
+
+  LldArgs.push_back("--no-whole-archive");
 
   const char *Lld = Args.MakeArgString(getToolChain().GetProgramPath("lld"));
   C.addCommand(std::make_unique<Command>(JA, *this, ResponseFileSupport::None(),
@@ -202,7 +223,7 @@ HIPAMDToolChain::HIPAMDToolChain(const Driver &D, const llvm::Triple &Triple,
   if (!Args.hasFlag(options::OPT_fgpu_sanitize, options::OPT_fno_gpu_sanitize,
                     true))
     return;
-  for (auto A : Args.filtered(options::OPT_fsanitize_EQ)) {
+  for (auto *A : Args.filtered(options::OPT_fsanitize_EQ)) {
     SanitizerMask K = parseSanitizerValue(A->getValue(), /*AllowGroups=*/false);
     if (K != SanitizerKind::Address)
       D.getDiags().Report(clang::diag::warn_drv_unsupported_option_for_target)
@@ -220,19 +241,17 @@ void HIPAMDToolChain::addClangTargetOptions(
 
   CC1Args.push_back("-fcuda-is-device");
 
-  if (DriverArgs.hasFlag(options::OPT_fcuda_approx_transcendentals,
-                         options::OPT_fno_cuda_approx_transcendentals, false))
-    CC1Args.push_back("-fcuda-approx-transcendentals");
-
   if (!DriverArgs.hasFlag(options::OPT_fgpu_rdc, options::OPT_fno_gpu_rdc,
                           false))
     CC1Args.append({"-mllvm", "-amdgpu-internalize-symbols"});
+  if (DriverArgs.hasArgNoClaim(options::OPT_hipstdpar))
+    CC1Args.append({"-mllvm", "-amdgpu-enable-hipstdpar"});
 
   StringRef MaxThreadsPerBlock =
       DriverArgs.getLastArgValue(options::OPT_gpu_max_threads_per_block_EQ);
   if (!MaxThreadsPerBlock.empty()) {
     std::string ArgStr =
-        std::string("--gpu-max-threads-per-block=") + MaxThreadsPerBlock.str();
+        (Twine("--gpu-max-threads-per-block=") + MaxThreadsPerBlock).str();
     CC1Args.push_back(DriverArgs.MakeArgStringRef(ArgStr));
   }
 
@@ -242,11 +261,11 @@ void HIPAMDToolChain::addClangTargetOptions(
   // supported for the foreseeable future.
   if (!DriverArgs.hasArg(options::OPT_fvisibility_EQ,
                          options::OPT_fvisibility_ms_compat)) {
-    CC1Args.append({"-fvisibility", "hidden"});
+    CC1Args.append({"-fvisibility=hidden"});
     CC1Args.push_back("-fapply-global-visibility-to-externs");
   }
 
-  for (auto BCFile : getHIPDeviceLibs(DriverArgs)) {
+  for (auto BCFile : getDeviceLibs(DriverArgs)) {
     CC1Args.push_back(BCFile.ShouldInternalize ? "-mlink-builtin-bitcode"
                                                : "-mlink-bitcode-file");
     CC1Args.push_back(DriverArgs.MakeArgString(BCFile.Path));
@@ -265,8 +284,7 @@ HIPAMDToolChain::TranslateArgs(const llvm::opt::DerivedArgList &Args,
   const OptTable &Opts = getDriver().getOpts();
 
   for (Arg *A : Args) {
-    if (!shouldSkipArgument(A) &&
-        !shouldSkipSanitizeOption(*this, Args, BoundArch, A))
+    if (!shouldSkipSanitizeOption(*this, Args, BoundArch, A))
       DAL->append(A);
   }
 
@@ -310,7 +328,7 @@ void HIPAMDToolChain::AddIAMCUIncludeArgs(const ArgList &Args,
 
 void HIPAMDToolChain::AddHIPIncludeArgs(const ArgList &DriverArgs,
                                         ArgStringList &CC1Args) const {
-  RocmInstallation.AddHIPIncludeArgs(DriverArgs, CC1Args);
+  RocmInstallation->AddHIPIncludeArgs(DriverArgs, CC1Args);
 }
 
 SanitizerMask HIPAMDToolChain::getSupportedSanitizers() const {
@@ -332,14 +350,14 @@ VersionTuple HIPAMDToolChain::computeMSVCVersion(const Driver *D,
 }
 
 llvm::SmallVector<ToolChain::BitCodeLibraryInfo, 12>
-HIPAMDToolChain::getHIPDeviceLibs(const llvm::opt::ArgList &DriverArgs) const {
+HIPAMDToolChain::getDeviceLibs(const llvm::opt::ArgList &DriverArgs) const {
   llvm::SmallVector<BitCodeLibraryInfo, 12> BCLibs;
   if (DriverArgs.hasArg(options::OPT_nogpulib))
     return {};
   ArgStringList LibraryPaths;
 
   // Find in --hip-device-lib-path and HIP_LIBRARY_PATH.
-  for (auto Path : RocmInstallation.getRocmDeviceLibPathArg())
+  for (StringRef Path : RocmInstallation->getRocmDeviceLibPathArg())
     LibraryPaths.push_back(DriverArgs.MakeArgString(Path));
 
   addDirectoryList(DriverArgs, LibraryPaths, "", "HIP_DEVICE_LIB_PATH");
@@ -349,7 +367,7 @@ HIPAMDToolChain::getHIPDeviceLibs(const llvm::opt::ArgList &DriverArgs) const {
   if (!BCLibArgs.empty()) {
     llvm::for_each(BCLibArgs, [&](StringRef BCName) {
       StringRef FullName;
-      for (std::string LibraryPath : LibraryPaths) {
+      for (StringRef LibraryPath : LibraryPaths) {
         SmallString<128> Path(LibraryPath);
         llvm::sys::path::append(Path, BCName);
         FullName = Path;
@@ -361,7 +379,7 @@ HIPAMDToolChain::getHIPDeviceLibs(const llvm::opt::ArgList &DriverArgs) const {
       getDriver().Diag(diag::err_drv_no_such_file) << BCName;
     });
   } else {
-    if (!RocmInstallation.hasDeviceLibrary()) {
+    if (!RocmInstallation->hasDeviceLibrary()) {
       getDriver().Diag(diag::err_drv_no_rocm_device_lib) << 0;
       return {};
     }
@@ -372,7 +390,7 @@ HIPAMDToolChain::getHIPDeviceLibs(const llvm::opt::ArgList &DriverArgs) const {
     if (DriverArgs.hasFlag(options::OPT_fgpu_sanitize,
                            options::OPT_fno_gpu_sanitize, true) &&
         getSanitizerArgs(DriverArgs).needsAsanRt()) {
-      auto AsanRTL = RocmInstallation.getAsanRTLPath();
+      auto AsanRTL = RocmInstallation->getAsanRTLPath();
       if (AsanRTL.empty()) {
         unsigned DiagID = getDriver().getDiags().getCustomDiagID(
             DiagnosticsEngine::Error,
@@ -382,15 +400,15 @@ HIPAMDToolChain::getHIPDeviceLibs(const llvm::opt::ArgList &DriverArgs) const {
         getDriver().Diag(DiagID);
         return {};
       } else
-        BCLibs.push_back({AsanRTL.str(), /*ShouldInternalize=*/false});
+        BCLibs.emplace_back(AsanRTL, /*ShouldInternalize=*/false);
     }
 
     // Add the HIP specific bitcode library.
-    BCLibs.push_back(RocmInstallation.getHIPPath());
+    BCLibs.push_back(RocmInstallation->getHIPPath());
 
     // Add common device libraries like ocml etc.
-    for (auto N : getCommonDeviceLibNames(DriverArgs, GpuArch.str()))
-      BCLibs.push_back(StringRef(N));
+    for (StringRef N : getCommonDeviceLibNames(DriverArgs, GpuArch.str()))
+      BCLibs.emplace_back(N);
 
     // Add instrument lib.
     auto InstLib =

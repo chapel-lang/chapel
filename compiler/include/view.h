@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -70,8 +70,6 @@ void list_view_noline(const BaseAST* ast);
 
 void astDump_view(int id);
 void astDump_view(BaseAST* ast);
-void astDumpToNode_view(int id);
-void astDumpToNode_view(BaseAST* ast);
 
 void viewFlags(int id);
 

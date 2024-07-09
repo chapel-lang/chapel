@@ -41,7 +41,7 @@ forall_testiter();
 proc forall_testiterz() {
   var A:[1..n] real;
   // should not be vectorized because of loop carried dependency in testiter
-  forall (x,i) in zip(testiter(), 1..n) {
+  forall (x,i) in zip(testiter(), 1..n) with (ref A) {
     A[i] = x;
   }
 }
@@ -96,7 +96,7 @@ forall_testveciter();
 proc forall_testveciterz() {
   var A:[1..n] real;
   // vectorization OK because testveciter has no loop carried dependency
-  forall (x,i) in zip(testveciter(), 1..n) {
+  forall (x,i) in zip(testveciter(), 1..n) with (ref A) {
     A[i] = x;
   }
 }

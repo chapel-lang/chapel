@@ -1,0 +1,36 @@
+unnecessary-type-construction.chpl:3: warning: unnecessary type construction call
+unnecessary-type-construction.chpl:1: note: 'R' has no generic fields
+unnecessary-type-construction.chpl:3: note: remove the '()'
+note: this warning will become an error in the future
+unnecessary-type-construction.chpl:6: warning: unnecessary type construction call
+$CHPL_HOME/modules/internal/String.chpl:nnnn: note: 'string' has no generic fields
+unnecessary-type-construction.chpl:6: note: remove the '()'
+note: this warning will become an error in the future
+unnecessary-type-construction.chpl:9: warning: unnecessary type construction call
+unnecessary-type-construction.chpl:1: note: 'R' has no generic fields
+unnecessary-type-construction.chpl:9: note: remove the '()'
+note: this warning will become an error in the future
+unnecessary-type-construction.chpl:13: warning: unnecessary type construction call
+unnecessary-type-construction.chpl:1: note: 'R' has no generic fields
+unnecessary-type-construction.chpl:13: note: remove the '()'
+note: this warning will become an error in the future
+unnecessary-type-construction.chpl:17: warning: unnecessary type construction call
+unnecessary-type-construction.chpl:16: note: 'C' has no generic fields
+unnecessary-type-construction.chpl:17: note: remove the '()'
+note: this warning will become an error in the future
+unnecessary-type-construction.chpl:19: warning: unnecessary type construction call
+unnecessary-type-construction.chpl:16: note: 'C' has no generic fields
+unnecessary-type-construction.chpl:19: note: remove the '()'
+note: this warning will become an error in the future
+unnecessary-type-construction.chpl:20: warning: unnecessary type construction call
+unnecessary-type-construction.chpl:16: note: 'C' has no generic fields
+unnecessary-type-construction.chpl:20: note: remove the '()'
+note: this warning will become an error in the future
+unnecessary-type-construction.chpl:23: warning: unnecessary type construction call
+unnecessary-type-construction.chpl:16: note: 'C' has no generic fields
+unnecessary-type-construction.chpl:23: note: remove the '()'
+note: this warning will become an error in the future
+unnecessary-type-construction.chpl:26: warning: unnecessary type construction call
+unnecessary-type-construction.chpl:16: note: 'C' has no generic fields
+unnecessary-type-construction.chpl:26: note: remove the '()'
+note: this warning will become an error in the future

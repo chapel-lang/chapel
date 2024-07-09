@@ -4,13 +4,13 @@ use BlockDist;
 
 config var n = 10000;
 
-const ProblemSpace = {1..n} dmapped Block(boundingBox={1..n});
+const ProblemSpace = {1..n} dmapped new blockDist(boundingBox={1..n});
 
 var A: [ProblemSpace] real;
 var B: [ProblemSpace] real;
 
-var randStr1 = new owned RandomStream(real, 314159265);
-var randStr2 = new owned RandomStream(real, 314159265);
+var randStr1 = new randomStream(real, 314159265);
+var randStr2 = new randomStream(real, 314159265);
 
 forall (i,r) in zip(A.domain, randStr1) {
   writeln("Doing iteration ##### on locale %i\n", i, here.id);
@@ -26,4 +26,3 @@ for (i,a,b) in zip(ProblemSpace,A,B) {
   else
     writef("#%{#####} = %r\n", i, a);
 }
-

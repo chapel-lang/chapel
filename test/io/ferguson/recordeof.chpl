@@ -1,11 +1,11 @@
 use IO;
 
-record MyRecord {
+record MyRecord : serializable {
   var i: int;
   proc init(i: int = 0) { this.i = i; }
-  proc init(f: fileReader) throws {
+  proc init(reader, ref deserializer) throws {
     this.init();
-    this.i = f.readln(int);
+    deserialize(reader, deserializer);
   }
 }
 
@@ -16,23 +16,18 @@ config const debug = true;
 // Note that fileName not exist or have no contents
 var f = open(fileName, ioMode.cwr);
 
-proc MyRecord.readThis(f) throws {
-  readWriteHelper(f);
+proc ref MyRecord.deserialize(reader, ref deserializer) throws {
+  i = reader.read(int);
+  reader.readNewline();
 }
 
-proc MyRecord.writeThis(f) throws {
-  readWriteHelper(f);
-}
-
-proc MyRecord.readWriteHelper(f) throws {
-  if f.writing then f.write(i); else i = f.read(int);
-  if f.writing then f.writeNewline(); else f.readNewline();
+proc MyRecord.serialize(writer, ref serializer) throws {
+  writer.write(i);
+  writer.writeNewline();
 }
 
 {
-  // create a reader but specify that we'd like to use single-quoted strings.
-  // 0x27 is ascii for '
-  var reader = f.reader(style=new iostyleInternal(string_format=iostringformat.basic:uint(8), string_start = 0x27, string_end = 0x27));
+  var reader = f.reader(locking=false);
 
   var rec:MyRecord;
   var i = 1;
@@ -47,5 +42,3 @@ proc MyRecord.readWriteHelper(f) throws {
 
   reader.close();
 }
-
-

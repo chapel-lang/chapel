@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -41,7 +41,7 @@ struct PassInfo {
 
 // These entries should be kept in the same order as those in the pass list
 #define LOG_parseAndConvertUast                'p'
-#define LOG_checkUast                          LOG_NEVER
+#define LOG_checkGeneratedAst                  LOG_NEVER
 #define LOG_readExternC                        LOG_NO_SHORT
 #define LOG_cleanup                            LOG_NO_SHORT
 #define LOG_scopeResolve                       's'
@@ -89,8 +89,8 @@ struct PassInfo {
 //
 static PassInfo sPassList[] = {
   // Chapel to AST
-  RUN(parseAndConvertUast),     // parse files and create AST
-  RUN(checkUast),               // checks semantics of parsed AST
+  RUN(parseAndConvertUast),     // parse files and generate AST
+  RUN(checkGeneratedAst),       // checks semantics of generated AST
 
   // Read in runtime and included C header file types/prototypes
   RUN(readExternC),
@@ -147,8 +147,8 @@ static PassInfo sPassList[] = {
   // AST to C or LLVM
   RUN(insertLineNumbers),       // insert line numbers for error messages
   RUN(denormalize),             // denormalize -- remove local temps
-  RUN(codegen),                 // generate C code
-  RUN(makeBinary)               // invoke underlying C compiler
+  RUN(codegen),                 // generate C or LLVM code
+  RUN(makeBinary)               // invoke underlying C or LLVM compiler
 };
 
 static const size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
@@ -162,7 +162,7 @@ static void setupStopAfterPass() {
     if (stopAfterPass[0]) {
       USR_FATAL("cannot provide both parse-only and stop after pass flags");
     }
-    strcpy(stopAfterPass, "checkUast");
+    strcpy(stopAfterPass, "checkGeneratedAst");
   }
 
   // ensure pass to stop after exists
@@ -186,25 +186,43 @@ void runPasses(PhaseTracker& tracker) {
   setupLogfiles();
 
   if (printPasses == true || printPassesFile != 0) {
+    if (fDriverCompilationPhase) {
+      Phase::ReportText(
+          "Timing for driver compilation phase\n--------------\n");
+    } else if (fDriverMakeBinaryPhase) {
+      Phase::ReportText(
+          "\n\nTiming for driver makeBinary phase\n--------------\n");
+    }
     tracker.ReportPass();
   }
 
   setupStopAfterPass();
 
   for (size_t i = 0; i < passListSize; i++) {
+    // skip until makeBinary if in makeBinary phase invocation
+    if (fDriverMakeBinaryPhase && strcmp(sPassList[i].name, "makeBinary") != 0) {
+      continue;
+    }
+
     runPass(tracker, i);
 
     USR_STOP(); // quit if fatal errors were encountered in pass
 
     currentPassNo++;
 
+    // quit before makeBinary in compilation phase invocation
+    if (fDriverCompilationPhase && strcmp(sPassList[i].name, "codegen") == 0) {
+      break;
+    }
+
     // Break early if this is a parse-only run
-    if (fParseOnly ==  true && strcmp(sPassList[i].name, "checkParsed") == 0) {
+    if (fParseOnly && strcmp(sPassList[i].name, "checkParsed") == 0) {
       break;
     }
 
     // Breaks early if the user specified to stop after this pass
-    if (stopAfterPass[0] != '\0' && strcmp(sPassList[i].name, stopAfterPass) == 0) {
+    if (stopAfterPass[0] != '\0' &&
+        strcmp(sPassList[i].name, stopAfterPass) == 0) {
       break;
     }
   }
@@ -246,9 +264,13 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
 
   //
   // Clean up the global pointers to AST.
+  // Skip if we're on the backend invocation of the compiler, in which case
+  // there is no AST.
   //
-  tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
-  cleanAst();
+  if (!fDriverMakeBinaryPhase) {
+    tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
+    cleanAst();
+  }
 
   if (printPasses == true || printPassesFile != 0) {
     tracker.ReportPass();

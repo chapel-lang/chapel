@@ -113,11 +113,24 @@
 /// LLVM_EXTERNAL_VISIBILITY - classes, functions, and variables marked with
 /// this attribute will be made public and visible outside of any shared library
 /// they are linked in to.
-#if __has_attribute(visibility) && !defined(__MINGW32__) &&                    \
-    !defined(__CYGWIN__) && !defined(_WIN32)
-#define LLVM_LIBRARY_VISIBILITY __attribute__ ((visibility("hidden")))
+
+#if LLVM_HAS_CPP_ATTRIBUTE(gnu::visibility)
+#define LLVM_ATTRIBUTE_VISIBILITY_HIDDEN [[gnu::visibility("hidden")]]
+#define LLVM_ATTRIBUTE_VISIBILITY_DEFAULT [[gnu::visibility("default")]]
+#elif __has_attribute(visibility)
+#define LLVM_ATTRIBUTE_VISIBILITY_HIDDEN __attribute__((visibility("hidden")))
+#define LLVM_ATTRIBUTE_VISIBILITY_DEFAULT __attribute__((visibility("default")))
+#else
+#define LLVM_ATTRIBUTE_VISIBILITY_HIDDEN
+#define LLVM_ATTRIBUTE_VISIBILITY_DEFAULT
+#endif
+
+
+#if (!(defined(_WIN32) || defined(__CYGWIN__)) ||                              \
+     (defined(__MINGW32__) && defined(__clang__)))
+#define LLVM_LIBRARY_VISIBILITY LLVM_ATTRIBUTE_VISIBILITY_HIDDEN
 #if defined(LLVM_BUILD_LLVM_DYLIB) || defined(LLVM_BUILD_SHARED_LIBS)
-#define LLVM_EXTERNAL_VISIBILITY __attribute__((visibility("default")))
+#define LLVM_EXTERNAL_VISIBILITY LLVM_ATTRIBUTE_VISIBILITY_DEFAULT
 #else
 #define LLVM_EXTERNAL_VISIBILITY
 #endif
@@ -138,22 +151,30 @@
 #define LLVM_ATTRIBUTE_USED
 #endif
 
-/// LLVM_NODISCARD - Warn if a type or return value is discarded.
-
-// Use the 'nodiscard' attribute in C++17 or newer mode.
-#if defined(__cplusplus) && __cplusplus > 201402L && LLVM_HAS_CPP_ATTRIBUTE(nodiscard)
-#define LLVM_NODISCARD [[nodiscard]]
-#elif LLVM_HAS_CPP_ATTRIBUTE(clang::warn_unused_result)
-#define LLVM_NODISCARD [[clang::warn_unused_result]]
-// Clang in C++14 mode claims that it has the 'nodiscard' attribute, but also
-// warns in the pedantic mode that 'nodiscard' is a C++17 extension (PR33518).
-// Use the 'nodiscard' attribute in C++14 mode only with GCC.
-// TODO: remove this workaround when PR33518 is resolved.
-#elif defined(__GNUC__) && LLVM_HAS_CPP_ATTRIBUTE(nodiscard)
-#define LLVM_NODISCARD [[nodiscard]]
+#if defined(__clang__)
+#define LLVM_DEPRECATED(MSG, FIX) __attribute__((deprecated(MSG, FIX)))
 #else
-#define LLVM_NODISCARD
+#define LLVM_DEPRECATED(MSG, FIX) [[deprecated(MSG)]]
 #endif
+
+// clang-format off
+#if defined(__clang__) || defined(__GNUC__)
+#define LLVM_SUPPRESS_DEPRECATED_DECLARATIONS_PUSH                             \
+  _Pragma("GCC diagnostic push")                                               \
+  _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
+#define LLVM_SUPPRESS_DEPRECATED_DECLARATIONS_POP                              \
+  _Pragma("GCC diagnostic pop")
+#elif defined(_MSC_VER)
+#define LLVM_SUPPRESS_DEPRECATED_DECLARATIONS_PUSH                             \
+  _Pragma("warning(push)")                                                     \
+  _Pragma("warning(disable : 4996)")
+#define LLVM_SUPPRESS_DEPRECATED_DECLARATIONS_POP                              \
+  _Pragma("warning(pop)")
+#else
+#define LLVM_SUPPRESS_DEPRECATED_DECLARATIONS_PUSH
+#define LLVM_SUPPRESS_DEPRECATED_DECLARATIONS_POP
+#endif
+// clang-format on
 
 // Indicate that a non-static, non-const C++ member function reinitializes
 // the entire object to a known state, independent of the previous state of
@@ -305,6 +326,12 @@
 #define LLVM_GSL_POINTER
 #endif
 
+#if LLVM_HAS_CPP_ATTRIBUTE(nodiscard) >= 201907L
+#define LLVM_CTOR_NODISCARD [[nodiscard]]
+#else
+#define LLVM_CTOR_NODISCARD
+#endif
+
 /// LLVM_EXTENSION - Support compilers where we have a keyword to suppress
 /// pedantic diagnostics.
 #ifdef __GNUC__
@@ -433,6 +460,14 @@ void __asan_unpoison_memory_region(void const volatile *addr, size_t size);
 # define __asan_unpoison_memory_region(p, size)
 #endif
 
+/// \macro LLVM_HWADDRESS_SANITIZER_BUILD
+/// Whether LLVM itself is built with HWAddressSanitizer instrumentation.
+#if __has_feature(hwaddress_sanitizer)
+#define LLVM_HWADDRESS_SANITIZER_BUILD 1
+#else
+#define LLVM_HWADDRESS_SANITIZER_BUILD 0
+#endif
+
 /// \macro LLVM_THREAD_SANITIZER_BUILD
 /// Whether LLVM itself is built with ThreadSanitizer instrumentation.
 #if __has_feature(thread_sanitizer) || defined(__SANITIZE_THREAD__)
@@ -551,6 +586,14 @@ void AnnotateIgnoreWritesEnd(const char *file, int line);
   __attribute__((no_profile_instrument_function))
 #else
 #define LLVM_NO_PROFILE_INSTRUMENT_FUNCTION
+#endif
+
+/// \macro LLVM_PREFERRED_TYPE
+/// Adjust type of bit-field in debug info.
+#if __has_attribute(preferred_type)
+#define LLVM_PREFERRED_TYPE(T) __attribute__((preferred_type(T)))
+#else
+#define LLVM_PREFERRED_TYPE(T)
 #endif
 
 #endif

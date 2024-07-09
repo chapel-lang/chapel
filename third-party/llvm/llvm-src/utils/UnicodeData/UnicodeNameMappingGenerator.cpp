@@ -8,10 +8,9 @@
 //
 // This file is used to generate lib/Support/UnicodeNameToCodepointGenerated.cpp
 // using UnicodeData.txt and NameAliases.txt available at
-// https://unicode.org/Public/14.0.0/ucd/
+// https://unicode.org/Public/15.1.0/ucd/
 //===----------------------------------------------------------------------===//
 
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/StringRef.h"
@@ -20,6 +19,7 @@
 #include <deque>
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -43,7 +43,7 @@ loadDataFiles(const std::string &NamesFile, const std::string &AliasesFile) {
       if (FirstSemiPos == std::string::npos)
         continue;
       auto SecondSemiPos = Line.find(';', FirstSemiPos + 1);
-      if (FirstSemiPos == std::string::npos)
+      if (SecondSemiPos == std::string::npos)
         continue;
       unsigned long long CodePoint;
       if (llvm::getAsUnsignedInteger(
@@ -95,10 +95,25 @@ public:
   // Once all  characters are inserted, the tree is compacted
   void insert(llvm::StringRef Name, char32_t Codepoint) {
     Node *N = Root.get();
-    for (auto Ch : Name) {
+    bool IsBeforeMedial = false;
+    for (auto ChIt = Name.begin(); ChIt != Name.end();
+         ChIt += (IsBeforeMedial ? 3 : 1)) {
+      char Ch = *ChIt;
+      assert(Letters.contains(Ch) && "Unexpected symbol in Unicode name");
+
       std::string Label(1, Ch);
-      auto It = std::find_if(N->Children.begin(), N->Children.end(),
-                             [&](const auto &C) { return C->Name == Label; });
+
+      // We need to ensure a node never ends or starts by
+      // a medial hyphen as this would break the
+      // loose matching algorithm.
+      IsBeforeMedial = llvm::isAlnum(Ch) && ChIt + 1 != Name.end() &&
+                       *(ChIt + 1) == '-' && ChIt + 2 != Name.end() &&
+                       llvm::isAlnum(*(ChIt + 2));
+      if (IsBeforeMedial)
+        Label.assign(ChIt, ChIt + 3);
+
+      auto It = llvm::find_if(N->Children,
+                              [&](const auto &C) { return C->Name == Label; });
       if (It == N->Children.end()) {
         It = N->Children.insert(It, std::make_unique<Node>(Label, N));
       }
@@ -247,7 +262,7 @@ public:
       } else {
         // When there is no value (that's most intermediate nodes)
         // Dispense of the 3 values bytes, and only store
-        // 1 byte to track whether the node has sibling and chidren
+        // 1 byte to track whether the node has sibling and children
         // + 2 bytes for the index of the first children if necessary.
         // That index also uses bytes 0-6 of the previous byte.
         uint8_t Byte =
@@ -327,7 +342,7 @@ private:
     std::vector<std::unique_ptr<Node>> Children;
     std::string Name;
     Node *Parent = nullptr;
-    llvm::Optional<char32_t> Value;
+    std::optional<char32_t> Value;
   };
 
   std::unique_ptr<Node> Root = std::make_unique<Node>("");
@@ -340,9 +355,9 @@ int main(int argc, char **argv) {
          "Usage: %s UnicodeData.txt NameAliases.txt output\n\n",
          argv[0]);
   printf("NameAliases.txt can be found at "
-         "https://unicode.org/Public/14.0.0/ucd/NameAliases.txt\n"
+         "https://unicode.org/Public/15.1.0/ucd/NameAliases.txt\n"
          "UnicodeData.txt can be found at "
-         "https://unicode.org/Public/14.0.0/ucd/UnicodeData.txt\n\n");
+         "https://unicode.org/Public/15.1.0/ucd/UnicodeData.txt\n\n");
 
   if (argc != 4)
     return EXIT_FAILURE;
@@ -361,9 +376,8 @@ int main(int argc, char **argv) {
     char32_t Codepoint = Entry.first;
     const std::string &Name = Entry.second;
     // Ignore names which are not valid.
-    if (Name.empty() || !std::all_of(Name.begin(), Name.end(), [](char C) {
-          return llvm::is_contained(Letters, C);
-        })) {
+    if (Name.empty() ||
+        !llvm::all_of(Name, [](char C) { return Letters.contains(C); })) {
       continue;
     }
     printf("%06x: %s\n", static_cast<unsigned int>(Codepoint), Name.c_str());

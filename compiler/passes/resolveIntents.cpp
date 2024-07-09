@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,6 +20,7 @@
 
 #include "resolveIntents.h"
 
+#include "DeferStmt.h"
 #include "passes.h"
 #include "resolution.h"
 
@@ -253,12 +254,84 @@ IntentTag blankIntentForExternFnArg(Type* type) {
     return INTENT_CONST_IN;
 }
 
+// Add calls to some runtime functions used to determine if a `const` or blank
+// intent argument that would be transformed into `const ref` is implicitly
+// modified over the course of the function.  We may decide to change this
+// behavior in the future, so want to generate a warning if it occurs (and one
+// of the primitives will handle generating that warning).
+static void warnForInferredConstRef(ArgSymbol* arg) {
+  // Exit early if the argument is a _RuntimeTypeInfo, that should only be used
+  // to replace type arguments and types are never changed after they are
+  // created (so wouldn't cause problems)
+  if (strcmp(arg->type->symbol->name, astr("_RuntimeTypeInfo")) == 0) {
+    return;
+  }
+
+  SET_LINENO(arg);
+
+  FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
+  if (fn->body->length() == 0) {
+    // Exit early if the body is empty - this can happen when
+    // concreteIntentForArg is called during function instantiation, as the
+    // function body won't have been populated yet.  Such functions will have
+    // resolveIntents called on them later
+    return;
+  }
+
+  // Want this to be an unstable warning, and not trigger for internal or
+  // standard modules unless the appropriate flag is used
+  auto mod = fn->getModule();
+  bool shouldWarnInternal = (mod->modTag == MOD_INTERNAL &&
+                             fWarnUnstableInternal);
+  bool shouldWarnStandard = (mod->modTag == MOD_STANDARD &&
+                             fWarnUnstableStandard);
+  if (fWarnUnstable && (shouldWarnInternal || shouldWarnStandard ||
+                        mod->modTag == MOD_USER) &&
+      !fNoConstArgChecks) {
+
+    // Hash the argument at the start of the function
+    CallExpr* getStartHash = new CallExpr(PRIM_CONST_ARG_HASH,
+                                          new SymExpr(arg));
+
+    VarSymbol* startHash = newTemp(dtUInt[INT_SIZE_64]);
+    DefExpr* startDef = new DefExpr(startHash);
+
+    CallExpr* outerStart = new CallExpr(PRIM_MOVE, new SymExpr(startHash),
+                                        getStartHash);
+
+    fn->insertAtHead(outerStart);
+    outerStart->insertBefore(startDef);
+
+    // Hash the argument at the end of the function
+    CallExpr* getEndHash = new CallExpr(PRIM_CONST_ARG_HASH, new SymExpr(arg));
+
+    VarSymbol* endHash = newTemp(dtUInt[INT_SIZE_64]);
+    DefExpr* endDef = new DefExpr(endHash);
+
+    CallExpr* outerEnd = new CallExpr(PRIM_MOVE, new SymExpr(endHash),
+                                      getEndHash);
+
+    // Create defer block to ensure we will always check the end hash
+    DeferStmt* finishCheck = new DeferStmt(outerEnd);
+    outerEnd->insertBefore(endDef);
+
+    // Ensure the two hashes match.  If not, will generate a runtime error
+    CallExpr* checkHash = new CallExpr(PRIM_CHECK_CONST_ARG_HASH,
+                                       new SymExpr(startHash),
+                                       new SymExpr(endHash),
+                                       new_CStringSymbol(arg->name));
+    outerEnd->insertAfter(checkHash);
+    outerStart->insertAfter(finishCheck);
+  }
+}
+
 IntentTag concreteIntentForArg(ArgSymbol* arg) {
 
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
 
   if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK)
     return blankIntentForThisArg(arg->type);
+  // TODO: warn for const this args too?
   else if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_CONST)
     return constIntentForThisArg(arg->type);
   else if (fn->hasFlag(FLAG_EXTERN) && arg->intent == INTENT_BLANK)
@@ -272,8 +345,25 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
     // to correctly mark const / not const / maybe const.
     return INTENT_REF;
 
-  else
+  else {
+    // Lydia 11/29/23 TODO: use `ArgSymbol->originalIntent` and check this
+    // in a later pass that does more AST transformation.  Potentially
+    // callDestructors?
+    if (arg->intent == INTENT_CONST) {
+      // No need to warn if the argument intent was going to be converted to
+      // `const in`
+      if (constIntentForType(arg->type) == INTENT_CONST_REF) {
+        warnForInferredConstRef(arg);
+      }
+    } else if (arg->intent == INTENT_BLANK) {
+      // Only warn if the argument intent was going to be converted to `const
+      // ref`
+      if (blankIntentForType(arg->type) == INTENT_CONST_REF) {
+        warnForInferredConstRef(arg);
+      }
+    }
     return concreteIntent(arg->intent, arg->type);
+  }
 
 }
 

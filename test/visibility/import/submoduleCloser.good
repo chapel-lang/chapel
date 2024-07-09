@@ -1,2 +1,6 @@
-whatev
-whatev
+submoduleCloser.chpl:11: In function 'main':
+submoduleCloser.chpl:14: warning: potentially surprising shadowing for 'Details'
+submoduleCloser.chpl:13: note: it refers to a symbol found through the 'use' of 'ExternalLib1' here
+submoduleCloser.chpl:2: note: leading to 'Details' defined here
+submoduleCloser.chpl:6: note: but, there is a shadowed symbol 'Details' defined here
+submoduleCloser.chpl:15: error: cannot find 'do_my_impl' in module 'Details'

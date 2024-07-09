@@ -220,16 +220,6 @@ int gasneti_MK_Create_cuda_uva(
     gasneti_fatalerror("gex_MK_Create called with negative CUdevice=%i", dev);
   }
 
-#if PLATFORM_OS_LINUX && GASNET_CONDUIT_IBV
-  // Look for GDR support.
-  // Adapted from the GDR checking logic in Open MPI.
-  if (access("/sys/kernel/mm/memory_peers/nv_mem/version", F_OK)) {
-    // TODO: gracefully fall back to cuMemcpy() "reference implementation",
-    // once one is available, rather than failing.
-    GASNETI_RETURN_ERRR(BAD_ARG,"GEX_MK_CLASS_CUDA_UVA: kernel lacks GPUDirect RDMA support");
-  }
-#endif
-
   // Obtain the primary context for the given device, initializing if needed
   CUcontext ctx;
   CUresult res = cuDevicePrimaryCtxRetain(&ctx, dev);

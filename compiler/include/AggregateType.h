@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -80,7 +80,10 @@ public:
   // and false for
   //    class C { type t; }
   bool                        isGenericWithDefaults()                    const;
+  // similar, but some (not all) generic fields have defaults
+  bool                        isGenericWithSomeDefaults()                const;
   void                        markAsGenericWithDefaults();
+  void                        markAsGenericWithSomeDefaults();
 
   const char*                 classStructName(bool standalone);
 
@@ -119,7 +122,8 @@ public:
   AggregateType*              getInstantiationParent(AggregateType* pt);
 
   AggregateType*              generateType(CallExpr* call,
-                                           const char* callString);
+                                           const char* callString,
+                                           bool allowAllNamedArgs=false);
   AggregateType*              generateType(SymbolMap& subs,
                                            CallExpr* call,
                                            const char* callString,
@@ -173,6 +177,8 @@ public:
 
   Type*                       cArrayElementType()                        const;
   int64_t                     cArrayLength()                             const;
+  Type*                       arrayElementType()                         const;
+  Type*                       finalArrayElementType()                    const;
 
   //
   // Public fields
@@ -201,6 +207,9 @@ public:
 
   // Attached only to iterator class/records
   IteratorInfo*               iteratorInfo;
+
+  // Attached only to thunk records
+  FnSymbol*                   thunkInvoke;
 
   // What to delegate to with 'forwarding'
   AList                       forwardingTo;
@@ -252,7 +261,9 @@ private:
 
   AggregateType*              getNewInstantiation(Symbol* sym, Type* symType, Expr* insnPoint = NULL);
 
-  AggregateType*              discoverParentAndCheck(Expr* storesName);
+  void                        discoverParentAndCheck(Expr* storesName,
+                                                     AggregateType* &outParent,
+                                                     InterfaceSymbol* &outIfc);
 
   bool                        isFieldInThisClass(const char* name)       const;
 
@@ -263,16 +274,17 @@ private:
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,
                                          SymbolMap&             fieldArgMap,
-                                         ArgSymbol*             fileReader,
-                                         VarSymbol*             formatter);
+                                         Symbol*             formatter);
 
   void                        fieldToArgType(DefExpr*   fieldDef,
                                              ArgSymbol* arg);
 
-  bool                        handleSuperFields(FnSymbol*                    fn,
+  bool                        badParentInit();
+  void                        handleSuperFields(FnSymbol*                    fn,
                                                 const std::set<const char*>& names,
                                                 SymbolMap&                   fieldArgMap,
-                                                ArgSymbol* fileReader = nullptr);
+                                                Symbol* fileReader,
+                                                Symbol* desHelper);
 
   std::vector<AggregateType*> instantiations;
 
@@ -287,14 +299,7 @@ private:
 
   bool                        mIsGeneric;
   bool                        mIsGenericWithDefaults;
+  bool                        mIsGenericWithSomeDefaults;
 };
-
-extern AggregateType* dtObject;
-
-extern AggregateType* dtBytes;
-extern AggregateType* dtString;
-extern AggregateType* dtLocale;
-extern AggregateType* dtOwned;
-extern AggregateType* dtShared;
 
 #endif
