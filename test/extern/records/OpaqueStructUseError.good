@@ -1,1 +1,1 @@
-OpaqueStructUseError.chpl:9: error: using an incomplete type 'mydata'
+OpaqueStructUseError.chpl:9: error: cannot default initialize incomplete 'extern' type 'mydata'

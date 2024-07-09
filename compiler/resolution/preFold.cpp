@@ -2290,6 +2290,26 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_DEFAULT_INIT_VAR: {
+    // While visiting the primitive, reject calls to default init on
+    // incomplete types.
+    auto secondArg = toSymExpr(call->get(2))->symbol();
+    Symbol* checkForIncomplete = nullptr;
+    if (auto ts = toTypeSymbol(secondArg)) {
+      checkForIncomplete = ts;
+    } else if (auto vs = toVarSymbol(secondArg)) {
+      checkForIncomplete = vs->typeInfo()->symbol;
+    }
+    if (checkForIncomplete && checkForIncomplete->hasFlag(FLAG_INCOMPLETE)) {
+      USR_FATAL(call, "cannot default initialize incomplete 'extern' type '%s'",
+                checkForIncomplete->cname);
+    }
+
+    // All is well, proceed.
+    retval = call;
+    break;
+  }
+
   default:
     break;
 
