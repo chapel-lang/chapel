@@ -1,0 +1,1 @@
+bad-cast-to-type.chpl:3: error: can't cast from an abstract enum ('E') to bool
