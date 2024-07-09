@@ -3044,7 +3044,7 @@ sub_type_level_expr:
   { $$ = context->buildTypeConstructor(@$, $1, $3); }
 | TSUBDOMAIN TLP opt_actual_ls TRP
   { $$ = context->buildTypeConstructor(@$, $1, $3); }
-| TSPARSE TSUBDOMAIN TLP actual_expr TRP
+| TSPARSE TSUBDOMAIN TLP opt_actual_ls TRP
   {
     auto locInner = context->makeSpannedLocation(@2, @5);
     auto inner = context->buildTypeConstructor(locInner, $2, $4);
