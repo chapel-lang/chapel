@@ -311,6 +311,7 @@ PRAGMA(IF_EXPR_RESULT, npr, "if-expr result", ncm)
 PRAGMA(IMPLICIT_ALIAS_FIELD, npr, "implicit alias field", ncm)
 PRAGMA(IMPLICIT_MODULE, npr, "implicit top-level module", ncm)
 PRAGMA(INCLUDED_MODULE, npr, "included sub-module", ncm)
+PRAGMA(INCOMPLETE, npr, "incomplete", "an extern type that is incomplete in the C/C++ sense")
 PRAGMA(INDEX_VAR, npr, "index var", ncm)
 PRAGMA(INFER_CUSTOM_TYPE, ypr, "infer custom type", ncm)
 
