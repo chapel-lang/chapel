@@ -99,6 +99,10 @@ module DefaultAssociative {
       // set the rehash helpers
       this.table.rehashHelpers =
         new DefaultAssociativeDomRehashHelper(this:unmanaged);
+
+      if isOwnedClassType(idxType) {
+        compilerError("Associative domains do not currently work with 'owned' classes as the index type");
+      }
     }
     proc deinit() {
       // chpl__hashtable.deinit does all we need here
