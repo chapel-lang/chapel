@@ -5600,6 +5600,11 @@ This function is equivalent to calling :proc:`open` and then
 :arg deserializer: deserializer to use when reading.
 :returns: an open fileReader to the requested resource.
 
+.. Note::
+
+  ``locking=true`` should only be used when a fileReader will be used by
+  multiple tasks concurrently.
+
 .. warning::
 
    The region argument will ignore any specified stride other than 1.
@@ -5708,6 +5713,10 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 :arg serializer: serializer to use when writing.
 :returns: an open fileWriter to the requested resource.
 
+.. Note::
+
+  ``locking=true`` should only be used when a fileWriter will be used by
+  multiple tasks concurrently.
 
 :throws FileNotFoundError: If part of the provided path did not exist
 :throws PermissionError: If part of the provided path had inappropriate
@@ -5727,7 +5736,6 @@ proc openWriter(path:string, param locking = false,
   return try fl.writerHelper(locking, 0..max(int(64)), hints, defaultIOStyleInternal(),
                              serializer=serializer);
 }
-
 
 /*
    Create a :record:`fileReader` that supports reading from a file. See
