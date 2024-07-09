@@ -1,6 +1,7 @@
 use CommDiagnostics;
 use Time;
 
+config const verboseComm = false;
 config var printCounts = false;
 config var printAllCounts = false;
 
@@ -12,12 +13,14 @@ var timer:stopwatch;
 proc start() {
   resetCommDiagnostics();
   startCommDiagnostics();
+  if verboseComm then startVerboseComm();
   timer.clear();
   timer.start();
 }
 
 proc stop() {
   timer.stop();
+  if verboseComm then stopVerboseComm();
   stopCommDiagnostics();
 }
 
