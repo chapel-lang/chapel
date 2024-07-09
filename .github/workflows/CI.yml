@@ -48,7 +48,7 @@ jobs:
       run: |
         ./util/buildRelease/smokeTest quickstart docs
     - name: upload docs
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: documentation
         path: doc/html
