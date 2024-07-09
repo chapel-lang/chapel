@@ -2236,10 +2236,11 @@ module ChapelBase {
 
   proc chpl_checkCastAbstractEnumError(type enumType, type dstType) param do
     if isAbstractEnumType(enumType) then
-      compilerError("can't cast from an abstract enum ('" +
+      compilerError("cannot cast abstract enum type '" +
                     enumType:string +
-                    "') to " +
-                    dstType:string);
+                    "' to '" +
+                    dstType:string +
+                    "'");
 
   @unstable("enum-to-bool casts are likely to be deprecated in the future")
   inline operator :(x: enum, type t:bool) throws {

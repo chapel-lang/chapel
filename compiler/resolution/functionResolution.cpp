@@ -4753,12 +4753,12 @@ void printResolutionErrorUnresolved(CallInfo&       info,
         EnumType* srcEnumType = toEnumType(srcType);
         if (srcEnumType && srcEnumType->isAbstract()) {
           USR_FATAL_CONT(call,
-                         "can't cast from an abstract enum ('%s') to %s",
+                         "cannot cast abstract enum type '%s' to '%s'",
                          toString(srcType),
                          toString(dstType));
         } else if (dstEnumType && dstEnumType->isAbstract()) {
           USR_FATAL_CONT(call,
-                         "can't cast from %s to an abstract enum type ('%s')",
+                         "cannot cast '%s' to abstract enum type '%s'",
                          toString(srcType),
                          toString(dstType));
         } else {
