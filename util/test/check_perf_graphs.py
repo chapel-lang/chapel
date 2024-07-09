@@ -109,8 +109,6 @@ def check_for_duplicates(
             else:
                 graph_set[filename] = g
 
-    exit()
-
 
 def main():
 
