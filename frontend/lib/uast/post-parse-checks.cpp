@@ -747,7 +747,6 @@ void Visitor::checkSparseKeyword(const FnCall* node) {
 
 void Visitor::checkSparseDomainArgCount(const FnCall* node) {
   if (isCallWithName(node, USTR("sparse"))) {
-    debuggerBreakHere();
     if (node->numActuals() == 1)
       if (auto childCall = node->actual(0)->toFnCall())
         if (isCallWithName(childCall, USTR("subdomain")))
