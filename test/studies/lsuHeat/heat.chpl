@@ -11,8 +11,8 @@ const NX : int = nx + 1;
 
 var data1, data2: [0..NX] real;
 
-proc update(d : [] real, d2 : []real) {
-  forall i in 1..NX-1 do
+proc update(const ref d : [] real, ref d2 : []real) {
+  forall i in 1..NX-1 with (ref d2) do
     d2[i] = d[i] + dt*k/(dx*dx)*(d[i+1] + d[i-1] - 2*d[i]);
   d2[0] = d2[NX-1];
   d2[NX] = d2[1];
