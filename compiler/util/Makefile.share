@@ -23,8 +23,7 @@ UTIL_SRCS = \
 	misc.cpp \
 	mysystem.cpp \
 	stringutil.cpp \
-	timer.cpp \
-	tmpdirname.cpp
+	timer.cpp
 
 SRCS = $(UTIL_SRCS)
 

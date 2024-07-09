@@ -22,6 +22,5 @@ set(SRCS
     mysystem.cpp
     stringutil.cpp
     timer.cpp
-    tmpdirname.cpp
    )
 add_compiler_sources("${SRCS}" "${CMAKE_CURRENT_SOURCE_DIR}")
