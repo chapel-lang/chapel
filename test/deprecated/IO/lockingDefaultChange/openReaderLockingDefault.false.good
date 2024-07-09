@@ -1,2 +1,4 @@
+warning: OpenReaderLockingDefault is deprecated and no longer controls openReader's behavior
+note: 'OpenReaderLockingDefault' was set via a compiler flag
 use IO;
 use IO;

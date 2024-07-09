@@ -1,3 +1,0 @@
-fileDotWriterLockingDefault.chpl:5: warning: in a future release, the default value for 'locking' will be removed from 'file.writer' and this warning will become an error; please specify the value explicitly (e.g., 'f.writer(locking=false)').
-Hello, World!
-Hello, World!
