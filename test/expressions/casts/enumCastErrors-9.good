@@ -1,1 +1,1 @@
-enumCastErrors.chpl:45: error: cannot cast abstract enum type 'int(64)' to abstract enum type 'color3'
+enumCastErrors.chpl:45: error: cannot cast 'int(64)' to abstract enum type 'color3'
