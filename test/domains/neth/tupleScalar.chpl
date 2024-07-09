@@ -1,6 +1,6 @@
-var scalarToTuple1 = 0..(10,);
-var scalarToTuple2 = 0..(10,10);
-var scalarToTuple3 = 3..<(10,10,10);
+var scalarToTuple1 = makeRectangularDomain(0,(10,));
+var scalarToTuple2 = makeRectangularDomain(0,(10,10));
+var scalarToTuple3 = makeRectangularDomain(3,(10,10,10),inclusive=false);
 
 var s2t1Correct = {0..10};
 var s2t2Correct = {0..10,0..10};
@@ -16,9 +16,9 @@ if (scalarToTuple3 != s2t3Correct) {
     writeln("scalar to tuple domain failed for 3 dimensional tuple");
 }
 
-var tupleToScalar1 = (0,)..10;
-var tupleToScalar2 = (0,0)..10;
-var tupleToScalar3 = (3,3,3)..<10;
+var tupleToScalar1 = makeRectangularDomain((0,),10);
+var tupleToScalar2 = makeRectangularDomain((0,0),10);
+var tupleToScalar3 = makeRectangularDomain((3,3,3),10,inclusive=false);
 
 var t2s1Correct = {0..10};
 var t2s2Correct = {0..10,0..10};
