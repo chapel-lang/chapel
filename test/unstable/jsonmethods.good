@@ -1,0 +1,4 @@
+jsonmethods.chpl:9: warning: toJson is unstable
+jsonmethods.chpl:12: warning: fromJson is unstable
+{"x":1, "y":"hello"}
+(x = 1, y = hello)
