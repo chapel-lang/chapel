@@ -5619,7 +5619,7 @@ proc openReader(path:string, param locking = false,
     : fileReader(locking, dt) throws {
 
   var fl:file = try open(path, ioMode.r);
-  return try fl.readerHelper(locking, 0.., hints, defaultIOStyleInternal(),
+  return try fl.readerHelper(locking, region, hints, defaultIOStyleInternal(),
                              deserializer=deserializer);
 }
 
