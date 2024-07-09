@@ -1,0 +1,1 @@
+sparse-subdomain-zeroargs.chpl:1: error: the 'sparse subdomain' expression expects exactly one argument (the parent domain)
