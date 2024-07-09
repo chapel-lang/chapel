@@ -8,7 +8,7 @@
  */
 use IO;  // enable access to the features in this primer
 
-record MyRecord : writeSerializable, readDeserializable {
+record MyRecord : serializable {
   var i: int;
   var r: real;
   var s: string;
@@ -88,8 +88,8 @@ var B: [0..#3] MyRecord;
 
    - reader is a fileReader, writer is a fileWriter
 
-   - the compiler will generate serialize/deserialize for you if you don't
-     provide one
+   - the compiler will generate default serialize/deserialize methods for you if
+     you don't provide one
 
  */
 proc ref MyRecord.deserialize(reader, ref deserializer) throws {
@@ -116,9 +116,9 @@ proc MyRecord.init(i: int = 0, r: real = 0.0, s: string = "") {
   this.s = s;
 }
 
-proc MyRecord.init(r: fileReader(?)) throws {
+proc MyRecord.init(r: fileReader(?), ref deserializer: ?dt) throws {
   this.init();
-  deserialize(r, r.deserializer);
+  deserialize(r, deserializer);
 }
 
 {
