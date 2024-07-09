@@ -1,6 +1,0 @@
-illegalArgumentErrorInit.chpl:1: warning: `new IllegalArgumentError(info=)` is deprecated; please use the initializer that takes a formal `msg` instead.
-illegalArgumentErrorInit.chpl:9: warning: IllegalArgumentError's two-argument initializer is deprecated; please use the single-arg initializer instead.
-IllegalArgumentError: bad argument!
-IllegalArgumentError: bad argument!
-IllegalArgumentError: bad argument!
-IllegalArgumentError: illegal argument 'formal_name': bad!
