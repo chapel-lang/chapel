@@ -4656,7 +4656,7 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
     flags |= FI_FENCE | FI_DELIVERY_COMPLETE;
   }
   ctx = TX_CTX_INIT(tcip, blocking, &txnDone);
-  (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip); 
+  (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
   if (blocking) {
     waitForTxnComplete(tcip, ctx);
     txCtxCleanup(ctx);
