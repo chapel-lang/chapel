@@ -1040,9 +1040,9 @@ module Subprocess {
     :throws PermissionError: If the program did not have permission to send that
                              signal to the target subprocess, or if there were
                              permission issues when setting up the subprocess.
-    :throws SystemError: If an invalid signal was specified or if there were
-                         other problems when initially setting up the
-                         subprocess.
+    :throws IllegalArgumentError: If an invalid signal was specified.
+    :throws SystemError: If there were other problems when initially setting up
+                         the subprocess.
     :throws ProcessLookupError: If the subprocess's pid or process group does
                                 not exist.  This can also happen if the
                                 subprocess is a zombie (a process that has
@@ -1056,7 +1056,13 @@ module Subprocess {
     on home {
       err = qio_send_signal(pid, signal:c_int);
     }
-    if err then try ioerror(err, "in subprocess.sendPosixSignal, with signal " + signal:string);
+    if (err == EINVAL) {
+      throw new IllegalArgumentError("Signal " + signal: string +
+                                     " is not a valid POSIX signal");
+    } else if err {
+      try ioerror(err, "in subprocess.sendPosixSignal, with signal " +
+                  signal:string);
+    }
   }
 
   /*
