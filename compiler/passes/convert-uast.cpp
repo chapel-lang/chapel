@@ -4139,8 +4139,9 @@ struct Converter {
       inheritMarkedGeneric |= thisInheritMarkedGeneric;
 
       // Don't convert the expression literally if we have a `toId`.
-      // get the resolution results. Thus, instead of doing (. 'M' 'C')
-      // just refer to 'C'.
+      // The production scope resolver doesnt't support M.C as a class
+      // inheritance expression, but we already know what it refers to.
+      // Thus, instead of doing (. 'M' 'C') we can just refer to 'C'.
       if (auto results = currentResolutionResult()) {
         if (auto result = results->byAstOrNull(ident)) {
           auto toId = result->toId();
