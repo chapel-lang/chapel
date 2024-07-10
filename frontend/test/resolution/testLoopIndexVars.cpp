@@ -483,14 +483,9 @@ static void testIndexScope1() {
   Context* context = &ctx;
   ErrorGuard guard(context);
 
-  //
-  // Ensure that the loop iterand is scope-resolved 'outside' of the loop,
-  // such that the argument 'i' doesn't refer to the loop index variable 'i'.
-  //
-
+  // Ensure that each mention of 'i' refers to the correct index variable.
   auto iterText = R""""(
                   iter foo() { yield 0; }
-
                   for i in zip(foo(), for i in zip(foo(), foo()) do i) do i;
                   )"""";
 

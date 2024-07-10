@@ -4567,8 +4567,8 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
     }
   }
 
-  // This 'TupleType' builder preserves references for index types.
   if (!ret.isErroneousType()) {
+    // This 'TupleType' builder preserves references for index types.
     auto type = TupleType::getQualifiedTuple(context, std::move(eltTypes));
     ret = { kind, type };
   }
