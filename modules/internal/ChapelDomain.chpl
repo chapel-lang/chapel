@@ -21,6 +21,7 @@
 // ChapelDomain.chpl
 //
 module ChapelDomain {
+
   public use ChapelBase;
   use ArrayViewRankChange, ChapelTuple;
 
@@ -333,7 +334,6 @@ module ChapelDomain {
       const d: domain(size, eltType) = ranges;
       return d;
   }
-
 
   //
   // Support for domain expressions within array types, e.g. [1..n], [D]
