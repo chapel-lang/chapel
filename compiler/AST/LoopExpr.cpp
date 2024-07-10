@@ -404,6 +404,7 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
   sifn->addFlag(FLAG_DONT_UNREF_FOR_YIELDS);
+  sifn->addFlag(FLAG_COMPILER_GENERATED);
   sifn->setGeneric(true);
 
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
@@ -453,6 +454,7 @@ static FnSymbol* buildLeaderIteratorFn(const char* iteratorName,
 {
   FnSymbol* lifn = new FnSymbol(iteratorName);
   lifn->addFlag(FLAG_FN_RETURNS_ITERATOR);
+  lifn->addFlag(FLAG_COMPILER_GENERATED);
   lifn->setGeneric(true);
 
   Expr* tag = new SymExpr(gLeaderTag);
@@ -489,6 +491,7 @@ static FnSymbol* buildFollowerIteratorFn(const char* iteratorName,
   FnSymbol* fifn = new FnSymbol(iteratorName);
   fifn->addFlag(FLAG_ITERATOR_FN);
   fifn->addFlag(FLAG_DONT_UNREF_FOR_YIELDS);
+  fifn->addFlag(FLAG_COMPILER_GENERATED);
   fifn->setGeneric(true);
 
   Expr* tag = new SymExpr(gFollowerTag);
