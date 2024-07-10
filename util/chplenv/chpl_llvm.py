@@ -476,7 +476,8 @@ def get_overriden_llvm_clang(lang):
     # or, if CHPL_TARGET_COMPILER=llvm, CHPL_TARGET_CC/CXX.
     # These use split in order to separate the command out from
     # any arguments passed to it.
-    tgt_llvm = overrides.get('CHPL_TARGET_COMPILER', 'llvm') == 'llvm'
+
+    tgt_llvm = chpl_compiler.get('target') == 'llvm'
     res = None
     if lang_upper == 'C':
         llvm_clang_c = overrides.get('CHPL_LLVM_CLANG_C')
