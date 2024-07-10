@@ -81,9 +81,9 @@ on the system and specified with the following compilation flags:
 .. code-block:: bash
 
   # Building with LAPACK dependency
-  chpl -I$PATH_TO_LAPACKE_INCLUDE_DIR \
-       -L$PATH_TO_LIBGFORTRAN -lgfortran \
-       -L$PATH_TO_LAPACK_BINARIES -llapacke -llapack -lrefblas \
+  chpl -I/path/to/lapack/header/file \
+       -L/path/to/gfortran/library/file -lgfortran \
+       -L/path/to/lapack/library/files  -llapacke -llapack -lrefblas \
        example2.chpl
 
 **Building programs with optional dependencies**
