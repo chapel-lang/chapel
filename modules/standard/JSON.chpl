@@ -1172,6 +1172,15 @@ module JSON {
     }
   }
 
+  /* Given a JSON string, use the :type:`jsonDeserializer` to deserialize it
+     into a value of type ``loadAs``. The type must support deserialization
+     using the ``readDeserializable`` interface.
+
+     :arg jsonString: The JSON string to parse into a Chapel value
+     :arg loadAs: The type to deserialize the JSON string into
+
+     :returns: A value of type ``loadAs``.
+   */
   @unstable
   proc fromJson(jsonString: string, type loadAs): loadAs throws {
     var fileReader = openStringReader(jsonString,
@@ -1179,6 +1188,14 @@ module JSON {
     return fileReader.read(loadAs);
   }
 
+  /* Given a Chapel value, serialize it into a JSON string using the
+     :type:`jsonSerializer`. The type must support serialization using the
+     ``writeSerializable`` interface.
+
+     :arg arg: The value to serialize into a JSON string
+
+     :returns: A JSON string representing the Chapel value
+   */
   @unstable
   proc toJson(arg): string throws {
     var memWriter = openMemFile();
