@@ -2,4 +2,5 @@
 -sformat=FormatKind.json # arrays.json.good
 -sformat=FormatKind.little # arrays.little.good
 -sformat=FormatKind.object # arrays.object.good
+-sformat=FormatKind.precision # arrays.precision.good
 -sformat=FormatKind.syntax # arrays.syntax.good

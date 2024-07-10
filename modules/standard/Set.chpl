@@ -604,7 +604,7 @@ module Set {
       :arg serializer: The serializer to use when writing.
     */
     proc const serialize(writer:fileWriter(?), ref serializer) throws {
-      if serializer.type == IO.defaultSerializer {
+      if isDefaultSerializerType(serializer.type) {
         _defaultWriteHelper(writer);
       } else {
         on this {

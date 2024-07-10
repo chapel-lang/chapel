@@ -2311,6 +2311,14 @@ private proc defaultSerializeType(param writing : bool) type {
   else return defaultDeserializer;
 }
 
+@chpldoc.nodoc
+proc isDefaultSerializerType(type t) param : bool {
+  import PrecisionSerializer;
+  // the precisionSerializer should receive the same special-casing as the
+  // defaultSerializer throughout the standard modules (e.g., dsiSerialWrite for assoc. domains)
+  return t == defaultSerializer || t == PrecisionSerializer.precisionSerializer;
+}
+
 private proc defaultSerializeVal(param writing : bool) {
   if !useIOSerializers then return none;
 

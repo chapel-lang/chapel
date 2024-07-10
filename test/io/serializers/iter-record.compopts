@@ -1,2 +1,3 @@
 -sformat=FormatKind.default # iter-record.default.good
 -sformat=FormatKind.json # iter-record.json.good
+-sformat=FormatKind.precision # iter-record.precision.good

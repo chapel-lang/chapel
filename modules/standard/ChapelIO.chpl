@@ -628,7 +628,7 @@ module ChapelIO {
 
   @chpldoc.nodoc
   proc _iteratorRecord.serialize(writer, ref serializer) throws {
-    if serializer.type == IO.defaultSerializer {
+    if isDefaultSerializerType(serializer.type) {
       _defaultWriteHelper(writer);
     } else {
       if chpl_warnUnstable then
@@ -646,35 +646,35 @@ module ChapelIO {
   proc range._defaultWriteHelper(f) throws
   {
     if hasLowBound() then
-      f.write(lowBound);
+      f.writef("%i",lowBound);
 
     f.writeLiteral("..");
 
     if hasHighBound() {
       if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
         f.writeLiteral("<");
-        f.write(lowBound);
+        f.writef("%i",lowBound);
       } else {
-        f.write(highBound);
+        f.writef("%i",highBound);
       }
     }
 
     if stride != 1 {
       f.writeLiteral(" by ");
-      f.write(stride);
+      f.writef("%i",stride);
 
       if stride != -1 && isAligned() && ! chpl_isNaturallyAligned() {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
       f.writeLiteral(" align ");
-      f.write(alignment);
+      f.writef("%i",alignment);
       }
     }
   }
 
   @chpldoc.nodoc
   proc range.serialize(writer, ref serializer) throws {
-    if serializer.type == defaultSerializer {
+    if isDefaultSerializerType(serializer.type) {
       _defaultWriteHelper(writer);
     } else {
       if chpl_warnUnstable then
