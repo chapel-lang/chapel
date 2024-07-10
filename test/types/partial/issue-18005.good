@@ -1,0 +1,11 @@
+issue-18005.chpl:8: warning: partial instantiation without '?' argument
+issue-18005.chpl:8: note: opt in to partial instantiation explicitly with a trailing '?' argument
+issue-18005.chpl:8: note: or, add arguments to instantiate the following fields in generic type 'map(string,B,false)':
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: note:   generic type field 'valType'
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: note:   generic field 'resizeThreshold'
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: note:   generic field '_lock'
+issue-18005.chpl:8: warning: unstable type construction with some generic defaults
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: note: this type construction might ignore field defaults in the type declared here but that may change
+issue-18005.chpl:8: warning: unstable type construction with some generic defaults
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: note: this type construction might ignore field defaults in the type declared here but that may change
+issue-18005.chpl:11: error: initialization requires an argument for bar
