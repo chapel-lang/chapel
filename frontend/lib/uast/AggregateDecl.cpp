@@ -92,11 +92,6 @@ const AstNode* AggregateDecl::getUnwrappedInheritExpr(const AstNode* ast,
   return nullptr;
 }
 
-bool AggregateDecl::isAcceptableInheritExpr(const AstNode* ast) {
-  bool ignoredMarkedGeneric = false;
-  return getUnwrappedInheritExpr(ast, ignoredMarkedGeneric) != nullptr;
-}
-
 
 } // namespace uast
 } // namespace chpl
