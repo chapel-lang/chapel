@@ -4539,6 +4539,8 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
     } else if (dt.succeededAt == IterDetails::SERIAL) {
       followerPolicy = IterDetails::SERIAL;
     } else {
+      // TODO: Emit an error here informing the user that a usable leader
+      // iterator wasn't found. Might be some test failure(s) to fix.
       ret = { QualifiedType::UNKNOWN, ErroneousType::get(context) };
     }
   }
