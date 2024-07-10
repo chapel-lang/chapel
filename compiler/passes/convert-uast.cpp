@@ -4142,7 +4142,7 @@ struct Converter {
       // get the resolution results. Thus, instead of doing (. 'M' 'C')
       // just refer to 'C'.
       if (auto results = currentResolutionResult()) {
-        if (auto result = results->byAstOrNull(inheritExpr)) {
+        if (auto result = results->byAstOrNull(ident)) {
           auto toId = result->toId();
           if (!toId.isEmpty()) {
             if (auto converted = findConvertedSym(toId)) {
