@@ -5129,7 +5129,6 @@ proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes
                        In that event, the fileReader's offset will be
                        left near the position where the error occurred.
 */
-@unstable
 proc fileReader.advanceThroughNewline() throws {
   on this._home {
     param nl = "\n".toByte():c_int;
