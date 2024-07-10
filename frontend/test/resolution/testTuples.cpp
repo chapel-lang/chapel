@@ -1050,9 +1050,9 @@ static void test26() {
 
   auto m = resolveTypesOfVariables(context, program, { "x", "y" });
   assert(!guard.realizeErrors());
-  assert(m["x"].kind() == QualifiedType::INDEX);
+  assert(m["x"].kind() == QualifiedType::CONST_VAR);
   assert(m["x"].type()->isIntType());
-  assert(m["y"].kind() == QualifiedType::INDEX);
+  assert(m["y"].kind() == QualifiedType::CONST_VAR);
   assert(m["y"].type()->isRecordType());
 }
 
@@ -1071,7 +1071,7 @@ static void test27() {
 
   auto qt = resolveTypeOfVariable(context, program, "x");
   assert(!guard.realizeErrors());
-  assert(qt.kind() == QualifiedType::INDEX);
+  assert(qt.kind() == QualifiedType::CONST_VAR);
   assert(qt.type()->isIntType());
 }
 
@@ -1096,9 +1096,9 @@ static void test28() {
 
   auto m = resolveTypesOfVariables(context, program, { "i", "j", "z" });
   assert(!guard.realizeErrors());
-  assert(m["i"].kind() == QualifiedType::INDEX);
+  assert(m["i"].kind() == QualifiedType::CONST_VAR);
   assert(m["i"].type()->isIntType());
-  assert(m["j"].kind() == QualifiedType::INDEX);
+  assert(m["j"].kind() == QualifiedType::CONST_VAR);
   assert(m["j"].type()->isIntType());
   assert(m["z"].kind() == QualifiedType::VAR);
   assert(m["z"].type()->isIntType());
