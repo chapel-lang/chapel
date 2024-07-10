@@ -1,6 +1,6 @@
 // This tests just checks that the following iterators have the anonymous range
 // iteration applied to them.
-//   "for i in chpl_build_bounded_sequence(1,2)"
+//   "for i in chpl_build_bounded_range(1,2)"
 // is expected to be replaced with
 //   "for i in chpl_direct_range_iterator(1,2)"
 // and generate clean C for loops without range constructors

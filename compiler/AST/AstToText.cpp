@@ -1039,7 +1039,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
       else if (strcmp(fnName, "range")                       == 0)
         appendExpr(expr, "range", printingType);
 
-      else if (strcmp(fnName, "chpl_build_bounded_sequence") == 0)
+      else if (strcmp(fnName, "chpl_build_bounded_range") == 0)
       {
         appendExpr(expr->get(1), printingType);
         mText += "..";

@@ -72,7 +72,7 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
     if(count == NULL)
     {
       // high..low
-      if (call->isNamed("chpl_build_bounded_sequence"))
+      if (call->isNamed("chpl_build_bounded_range"))
       {
         low    = call->get(1)->remove();
         high   = call->get(1)->remove();
@@ -81,7 +81,7 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
     else
     {
       // high..low#count
-      if(call->isNamed("chpl_build_bounded_sequence"))
+      if(call->isNamed("chpl_build_bounded_range"))
       {
         Expr* temp_low  = call->get(1)->remove();
         Expr* temp_high = call->get(1)->remove();
@@ -660,7 +660,7 @@ Type* ParamForLoop::indexType()
 {
   SymExpr*  lse     = lowExprGet();
   SymExpr*  hse     = highExprGet();
-  CallExpr* range    = new CallExpr("chpl_build_bounded_sequence",
+  CallExpr* range    = new CallExpr("chpl_build_bounded_range",
                                     lse->copy(),
                                     hse->copy());
   Type*     idxType = 0;

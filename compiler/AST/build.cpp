@@ -2456,7 +2456,7 @@ CallExpr* buildBoundedRange(Expr* low, Expr* high,
   if (openhigh) {
     high = new CallExpr("chpl__nudgeHighBound", high);
   }
-  return new CallExpr("chpl_build_bounded_sequence",low, high);
+  return new CallExpr("chpl_build_bounded_range",low, high);
 }
 
 CallExpr* buildLowBoundedRange(Expr* low, bool open) {

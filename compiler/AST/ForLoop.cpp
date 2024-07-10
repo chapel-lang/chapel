@@ -113,7 +113,7 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
       return;
     }
 
-    bool fullyBounded = range->isNamed("chpl_build_bounded_sequence");
+    bool fullyBounded = range->isNamed("chpl_build_bounded_range");
     bool lowBounded = range->isNamed("chpl_build_low_bounded_range");
 
     if (!fullyBounded && !lowBounded) {

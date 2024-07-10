@@ -526,7 +526,7 @@ void CallExpr::prettyPrint(std::ostream* o) {
         argList.last()->prettyPrint(o);
         *o << ")";
 
-      } else if (strcmp(expr->unresolved, "chpl_build_bounded_sequence") == 0) {
+      } else if (strcmp(expr->unresolved, "chpl_build_bounded_range") == 0) {
         // Note that this code path is only used by chpldoc to create function
         // return signatures and the only place a range will show up is in a
         // fully specified array, in which case the range must be fully bounded
