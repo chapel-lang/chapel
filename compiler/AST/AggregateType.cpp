@@ -3041,7 +3041,10 @@ void AggregateType::discoverParentAndCheck(Expr* storesName,
 
   ts->maybeGenerateDeprecationWarning(storesName);
 
-  AggregateType* pt = toAggregateType(ts->type);
+  // When Dyno is handling the conversion, it automatically inserts
+  // 'anymanaged' into class references. What we want for inheritance is
+  // not 'anymanaged C' but 'C', so use `canonicalClassType`.
+  AggregateType* pt = toAggregateType(canonicalClassType(ts->type));
 
   if (pt == NULL) {
     USR_FATAL(storesName, "Illegal super class %s", ts->name);
