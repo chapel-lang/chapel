@@ -398,7 +398,7 @@ module ChapelRange {
           " compile with -snewRangeLiteralType.");
     return oldRule;
   }
-  private proc isValidRangeIdxType(type t) param {
+  proc isValidRangeIdxType(type t) param {
     return isIntegralType(t) || isEnumType(t) || isBoolType(t);
   }
 

@@ -25,6 +25,7 @@ module ChapelDomain {
   public use ChapelBase;
   use ArrayViewRankChange, ChapelTuple;
 
+  private use ChapelRange only isValidRangeIdxType;
   /*
      Fractional value that specifies how full this domain can be
      before requesting additional memory. The default value of
@@ -245,94 +246,6 @@ module ChapelDomain {
       D += keys(i);
 
     return D;
-  }
-
-  //
-  // Support for creating domains using tuples of bounds
-  //
-  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
-    where !isTuple(t1) && !isTuple(t2)
-  {
-    return if inclusive then {low..high} else {low..<high};
-  }
-
-  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
-    where isTuple(t1) && isTuple(t2) &&
-          !(isHomogeneousTuple(low) && isHomogeneousTuple(high))
-  {
-    compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" +
-                  low.type:string + "' and '" + high.type:string + "'");
-  }
-
-  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
-    where isTuple(low) && isTuple(high) &&
-          isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
-          low.size != high.size {
-    compilerError("Domains defined using tuple bounds must use tuples of the same length, " +
-                  "but got '" + low.type:string + "' and '" + high.type:string + "'");
-  }
-
-  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
-    where isTuple(low) && isTuple(high) &&
-          isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
-          low.size == high.size &&
-          !(isCoercible(low(0).type, high(0).type) ||
-            isCoercible(high(0).type, low(0).type)) {
-    compilerError("Domains defined using tuple bounds must use tuples of coercible types. " +
-                  "Cannot coerce between '" + low(0).type:string + "' and '" +
-                  high(0).type:string + "'");
-  }
-
-  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
-    where isTuple(low) && isTuple(high) &&
-          isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
-          low.size == high.size &&
-          (isCoercible(low(0).type, high(0).type) ||
-           isCoercible(high(0).type, low(0).type))
-  {
-    param size = low.size;
-    type eltType;
-    if (low(0).type == high(0).type) {
-      eltType = low(0).type;
-    } else {
-      eltType = (low(0) + high(0)).type;
-    }
-    var ranges:  size*range(eltType);
-    for param i in 0..<size {
-        if inclusive then
-          ranges[i] = low[i]..high[i];
-        else
-          ranges[i] = low[i]..<high[i];
-    }
-    const d: domain(size, eltType) = ranges;
-    return d;
-  }
-
-  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
-    where isTuple(low) != isTuple(high) {
-      param size = if isTuple(low) then low.size else high.size;
-      type eltType = if isTuple(low) then
-                       (if low(0).type == high.type then low(0).type else (low(0) + high).type)
-                     else
-                       (if high(0).type == low.type then high(0).type else (low + high(0)).type);
-      var ranges: size*range(eltType);
-      if isTuple(low) {
-        for param i in 0..<size {
-          if inclusive then
-            ranges[i] = low[i]..high;
-          else
-            ranges[i] = low[i]..<high;
-        }
-      } else {
-        for param i in 0..<size {
-          if inclusive then
-            ranges[i] = low..high[i];
-          else
-            ranges[i] = low..<high[i];
-        }
-      }
-      const d: domain(size, eltType) = ranges;
-      return d;
   }
 
   //
@@ -3076,4 +2989,116 @@ module ChapelDomain {
 
   }  // record _domain
 
+  //
+  // Support for creating domains using tuples of bounds
+  //
+
+  /* Creates a rectangular domain with bounds defined by the scalar values `low`
+      and `high`. If `inclusive` is true, the domain includes the `high` value.
+      Otherwise, the domain excludes the `high` value.
+   */
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
+    where isValidRangeIdxType(t1) && isValidRangeIdxType(t2)
+  {
+    return if inclusive then {low..high} else {low..<high};
+  }
+
+  @chpldoc.nodoc
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
+    where isTuple(t1) && isTuple(t2) &&
+          !(isHomogeneousTuple(low) && isHomogeneousTuple(high))
+  {
+    compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" +
+                  low.type:string + "' and '" + high.type:string + "'");
+  }
+
+  @chpldoc.nodoc
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
+    where isTuple(low) && isTuple(high) &&
+          isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
+          low.size != high.size {
+    compilerError("Domains defined using tuple bounds must use tuples of the same length, " +
+                  "but got '" + low.type:string + "' and '" + high.type:string + "'");
+  }
+
+  @chpldoc.nodoc
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
+    where isTuple(low) && isTuple(high) &&
+          isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
+          low.size == high.size &&
+          !(isCoercible(low(0).type, high(0).type) ||
+            isCoercible(high(0).type, low(0).type)) {
+    compilerError("Domains defined using tuple bounds must use tuples of coercible types. " +
+                  "Cannot coerce between '" + low(0).type:string + "' and '" +
+                  high(0).type:string + "'");
+  }
+
+  /* Creates a multidimensional rectangular domain with bounds defined by the
+     pairwise elements of `low` and `high`. If `inclusive` is true, the domain
+     includes the `high` values. Otherwise, the domain excludes the `high`
+     values. For example, `makeRectangularDomain((1, 2), (10,11))` is
+     equivalent to `{1..10, 2..11}`.
+   */
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
+    where isTuple(low) && isTuple(high) &&
+          isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
+          low.size == high.size &&
+          (isCoercible(low(0).type, high(0).type) ||
+           isCoercible(high(0).type, low(0).type))
+  {
+    param size = low.size;
+    type eltType;
+    if (low(0).type == high(0).type) {
+      eltType = low(0).type;
+    } else {
+      eltType = (low(0) + high(0)).type;
+    }
+    var ranges:  size*range(eltType);
+    for param i in 0..<size {
+        if inclusive then
+          ranges[i] = low[i]..high[i];
+        else
+          ranges[i] = low[i]..<high[i];
+    }
+    const d: domain(size, eltType) = ranges;
+    return d;
+  }
+
+  /* Creates a rectangular domain with bounds defined by one tuple and one
+     scalar value. The scalar argument is used in each dimension of the domain,
+     while the 'n'-th tuple element is used to define the 'n'-th dimension of
+     the domain. If `inclusive` is true, the domain includes the `high` value.
+     Otherwise, the domain excludes the `high` value. For example, 
+     `makeRectangularDomain((1, 2), 10)` is equivalent to `{1..10, 2..10}`
+     and `makeRectangularDomain(1, (10, 11), inclusive=false)` is equivalent
+     to `{1..<10, 1..<11}`.
+    */
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
+    where isTuple(low) != isTuple(high) {
+      param size = if isTuple(low) then low.size else high.size;
+      type eltType = if isTuple(low) then
+                       (if low(0).type == high.type then low(0).type else (low(0) + high).type)
+                     else
+                       (if high(0).type == low.type then high(0).type else (low + high(0)).type);
+      var ranges: size*range(eltType);
+      if isTuple(low) {
+        if !isHomogeneousTuple(low) then compilerError("Tuple bounds must be homogenous. Got ", low.type:string);
+        for param i in 0..<size {
+          if inclusive then
+            ranges[i] = low[i]..high;
+          else
+            ranges[i] = low[i]..<high;
+        }
+      } else {
+        if !isHomogeneousTuple(high) then compilerError("Tuple bounds must be homogenous. Got ", high.type:string);
+        for param i in 0..<size {
+          if inclusive then
+            ranges[i] = low..high[i];
+          else
+            ranges[i] = low..<high[i];
+        }
+      }
+      const d: domain(size, eltType) = ranges;
+      return d;
+  }
 }

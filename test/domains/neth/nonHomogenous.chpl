@@ -1,1 +1,1 @@
-var shouldBreak = makeRectangularDomain((1,1.0)..<(2,5));
+var shouldBreak = makeRectangularDomain((1,1.0),(2,5));
