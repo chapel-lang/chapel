@@ -219,7 +219,7 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
       snprintf(buf, sizeof(buf), "Unable to run '%s' (no bytes read)",
                command);
       chpl_warning(buf, 0, 0);
-      return -1;
+      return 0;
     }
 
     // NOTE: We don't do a waitpid() here, so the program may keep running.
