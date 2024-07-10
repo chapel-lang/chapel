@@ -924,6 +924,8 @@ extern Symbol *gDummyWitness;
 extern Symbol *gDummyRef;
 // used in convert-uast to mark a SymExpr needing future adjustment
 extern Symbol *gFixupRequiredToken;
+extern Symbol *gIgnoredPromotionToken;
+
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 extern VarSymbol *gIteratorBreakToken;

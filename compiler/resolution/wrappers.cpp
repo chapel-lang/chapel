@@ -2512,6 +2512,14 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
     }
   }
 
+  // Ensure that the substitutions for ignored promoted functions are different
+  // from used promoted functions. This is needed because promoted functions
+  // whose results are ignored may not yield (see insertAndSaveWrapCall),
+  // but those that are not ignored do. We don't want them to be confused
+  // when consulting the promotion cache.
+  if (!resultIsUsed) {
+    this->subs.put(gIgnoredPromotionToken, gIgnoredPromotionToken);
+  }
 
   for_formals(formal, fn) {
     TypeSymbol* promotedType = NULL;
