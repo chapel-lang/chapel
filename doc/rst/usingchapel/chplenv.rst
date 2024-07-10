@@ -593,6 +593,10 @@ CHPL_ATOMICS
    operations in Chapel or :ref:`readme-atomics` for more information about the
    runtime implementation.
 
+   .. warning::
+
+     Using ``CHPL_ATOMICS=intrinsics`` is a known performance issue. Please consider using ``CHPL_ATOMICS=cstdlib`` or ``CHPL_ATOMICS=locks`` for better performance, if possible. If not, please open an issue on GitHub.
+
 .. _readme-chplenv.CHPL_TIMERS:
 
 CHPL_TIMERS
