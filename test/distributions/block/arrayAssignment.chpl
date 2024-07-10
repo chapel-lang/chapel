@@ -1,5 +1,6 @@
 // test from https://github.com/chapel-lang/chapel/issues/18747
 module Spam {
+    config param testVersion: int = 1;
     use BlockDist;
     use CTypes;
     use IO;
@@ -31,7 +32,12 @@ module Spam {
         try! stderr.writeln("%s %i".format(getRoutineName(), getLineNumber()));
         var region = new shared Region(regionName, size);
         try! stderr.writeln("%s %i".format(getRoutineName(), getLineNumber()));
-        region.regionDescs = regionDescs;
+        if testVersion == 1 {
+          region.regionDescs = regionDescs;
+        } else {
+          forall (d, s) in zip(region.regionDescs, regionDescs) do
+            d = s;
+        }
         try! stderr.writeln("%s %i".format(getRoutineName(), getLineNumber()));
         return region;
     }
