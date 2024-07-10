@@ -4509,6 +4509,7 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
   Context* context = rv.context;
   bool loopRequiresParallel = loop->isForall();
   bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
+  QualifiedType ret;
 
   // We build up tuple element types by resolving all the zip actuals.
   std::vector<QualifiedType> eltTypes;
@@ -4529,22 +4530,25 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
     // Resolve the leader iterator.
     auto dt = resolveIterDetails(rv, leader, leader, {}, m);
 
+    eltTypes.push_back(dt.idxType);
+
     // Configure what followers should do using the iterator details.
     if (dt.succeededAt == IterDetails::LEADER_FOLLOWER) {
       followerPolicy = IterDetails::FOLLOWER;
       leaderYieldType = dt.leaderYieldType;
-      eltTypes.push_back(dt.idxType);
     } else if (dt.succeededAt == IterDetails::SERIAL) {
       followerPolicy = IterDetails::SERIAL;
-      eltTypes.push_back(dt.idxType);
     } else {
-      return { QualifiedType::UNKNOWN, ErroneousType::get(context) };
+      // TODO: Emit an error here informing the user that a usable leader
+      // iterator wasn't found. Might be some test failure(s) to fix.
+      ret = { QualifiedType::UNKNOWN, ErroneousType::get(context) };
     }
   }
 
-  CHPL_ASSERT(followerPolicy != IterDetails::NONE);
-
   // Resolve the follower iterator or serial iterator for all followers.
+  // It is possible for the follower policy to be 'NONE', in which case
+  // no iterators will be resolved, but the follower iterands will be
+  // resolved.
   for (int i = 1; i < zip->numActuals(); i++) {
     auto actual = zip->actual(i);
     auto dt = resolveIterDetails(rv, actual, actual, leaderYieldType,
@@ -4563,9 +4567,11 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
     }
   }
 
-  // This 'TupleType' builder preserves references for index types.
-  auto type = TupleType::getQualifiedTuple(context, std::move(eltTypes));
-  QualifiedType ret = { kind, type };
+  if (!ret.isErroneousType()) {
+    // This 'TupleType' builder preserves references for index types.
+    auto type = TupleType::getQualifiedTuple(context, std::move(eltTypes));
+    ret = { kind, type };
+  }
 
   auto& reZip = rv.byPostorder.byAst(zip);
   reZip.setType(ret);

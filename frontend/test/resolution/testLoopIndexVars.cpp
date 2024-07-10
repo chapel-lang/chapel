@@ -446,8 +446,8 @@ static void testNestedParamFor() {
   assert(resolvedVals == pc.resolvedVals);
 }
 
-static void testIndexScope() {
-  printf("testIndexScope\n");
+static void testIndexScope0() {
+  printf("testIndexScope0\n");
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -475,6 +475,31 @@ static void testIndexScope() {
   auto argRes = rr.byAst(arg);
   assert(argRes.toId() == m->stmt(1)->id());
   assert(!guard.realizeErrors());
+}
+
+static void testIndexScope1() {
+  printf("testIndexScope1\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  // Ensure that each mention of 'i' refers to the correct index variable.
+  auto iterText = R""""(
+                  iter foo() { yield 0; }
+                  for i in zip(foo(), for i in zip(foo(), foo()) do i) do i;
+                  )"""";
+
+  const Module* m = parseModule(context, iterText);
+  auto loop = m->stmt(1)->toFor();
+
+  const ResolutionResultByPostorderID& rr = scopeResolveModule(context, m->id());
+  assert(!guard.realizeErrors());
+  auto idx1 = loop->index();
+  auto use1 = loop->body()->stmt(0);
+  auto idx2 = loop->iterand()->toZip()->actual(1)->toFor()->index();
+  auto use2 = loop->iterand()->toZip()->actual(1)->toFor()->body()->stmt(0);
+  assert(rr.byAst(use1).toId() == idx1->id());
+  assert(rr.byAst(use2).toId() == idx2->id());
 }
 
 static void testIterSigDetection(Context* context) {
@@ -824,7 +849,8 @@ int main() {
   testCForLoop();
   testParamFor();
   testNestedParamFor();
-  testIndexScope();
+  testIndexScope0();
+  testIndexScope1();
 
   // Use a single context instance to avoid re-resolving internal modules.
   auto ctx = buildStdContext();
