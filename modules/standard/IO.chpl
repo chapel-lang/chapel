@@ -5116,8 +5116,20 @@ proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes
 }
 
 /*
+  Read until a newline is found, leaving the :record:`fileReader` offset just
+  after it.
 
+  If a newline cannot be found, the ``fileReader`` offset is left at EOF and
+  an ``UnexpectedEofError`` is thrown.
+
+  :throws EofError: If the ``fileReader`` offset was already at EOF.
+  :throws UnexpectedEofError: A newline couldn't be found before the end of the
+                              file.
+  :throws SystemError: If data could not be read from the ``file``.
+                       In that event, the fileReader's offset will be
+                       left near the position where the error occurred.
 */
+@unstable
 proc fileReader.advanceThroughNewline() throws {
   on this._home {
     param nl = "\n".toByte():c_int;
