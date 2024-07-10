@@ -16,6 +16,11 @@ foreach _ in 1..10 {}
 forall _ in 1..10 with (var _ = 42, + reduce _) {}
 coforall _ in 1..10 {}
 
+// can't capture into _ in a when
+select (8, 9) {
+ when (8, _) { writeln("Got 8"); }
+}
+
 // Imports can't rename to '_'
 module A { var dummy: int; }
 import this.A as _;
