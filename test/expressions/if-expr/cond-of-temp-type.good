@@ -1,1 +1,1 @@
-cond-of-temp.chpl:3: warning: isBorrowedClass(tuple) is false
+cond-of-temp-type.chpl:3: warning: isBorrowedClass(tuple) is false
