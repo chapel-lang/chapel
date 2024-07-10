@@ -1,0 +1,2 @@
+bug: using a type alias for an array as a field type causes undefined behavior
+#25502
