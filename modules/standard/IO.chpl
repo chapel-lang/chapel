@@ -5141,7 +5141,7 @@ proc fileReader.advanceThroughNewline() throws {
       if err == EEOF {
         try this._ch_ioerror(err, "in advanceThroughNewline)");
       } else if err == ESHORT {
-        throw new UnexpectedEofError("separator not found in advanceThroughNewline");
+        throw new UnexpectedEofError("newline not found in advanceThroughNewline");
       } else {
         try this._ch_ioerror(err, "in advanceThroughNewline");
       }

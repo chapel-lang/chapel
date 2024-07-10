@@ -1,2 +1,2 @@
-1234
-abcdefg
+var r = openReader("advanceThroughNewline.chpl");
+write(r.readLine()); // 🐍

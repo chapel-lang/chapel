@@ -1,8 +1,6 @@
 use IO;
-
-var r = openReader("advanceThroughNewlineInput.txt");
-
+var r = openReader("advanceThroughNewline.chpl");
 r.advanceThroughNewline();
-write(r.readLine());
+write(r.readLine()); // 🐍
 r.advanceThroughNewline();
 write(r.readLine());
