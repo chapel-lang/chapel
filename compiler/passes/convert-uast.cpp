@@ -4129,12 +4129,31 @@ struct Converter {
                             bool& inheritMarkedGeneric) {
     for (auto inheritExpr : iterable) {
       bool thisInheritMarkedGeneric = false;
-      const uast::Identifier* ident =
-        uast::Class::getInheritExprIdent(inheritExpr, thisInheritMarkedGeneric);
+      auto* ident =
+        uast::Class::getUnwrappedInheritExpr(inheritExpr, thisInheritMarkedGeneric);
+
+      inheritMarkedGeneric |= thisInheritMarkedGeneric;
+
+      // Don't convert the expression literally if we have a `toId`.
+      // get the resolution results. Thus, instead of doing (. 'M' 'C')
+      // just refer to 'C'.
+      if (auto results = currentResolutionResult()) {
+        debuggerBreakHere();
+        if (auto result = results->byAstOrNull(inheritExpr)) {
+          auto toId = result->toId();
+          if (!toId.isEmpty()) {
+            if (auto converted = findConvertedSym(toId)) {
+              inherits.push_back(new SymExpr(converted));
+              continue;
+            }
+          }
+        }
+      }
+
+      // Couldn't find the target, so translate it literally.
       if (auto converted = convertExprOrNull(ident)) {
         inherits.push_back(converted);
       }
-      inheritMarkedGeneric |= thisInheritMarkedGeneric;
     }
   }
 

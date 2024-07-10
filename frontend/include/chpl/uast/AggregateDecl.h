@@ -191,10 +191,10 @@ class AggregateDecl : public TypeDecl {
               children_.begin() + inheritExprChildNum_ + numInheritExprs_);
   }
 
-  /** Returns the inherited Identifier, including considering
+  /** Returns the inherited Identifier or Dot, including considering
       one marked generic with Superclass(?) */
-  static const Identifier* getInheritExprIdent(const AstNode* ast,
-                                               bool& markedGeneric);
+  static const AstNode* getUnwrappedInheritExpr(const AstNode* ast,
+                                            bool& markedGeneric);
   /** Returns true if the passed inherit expression is legal */
   static bool isAcceptableInheritExpr(const AstNode* ast);
 };

@@ -161,6 +161,7 @@ struct Visitor {
   bool checkUnderscoreInVariableOrFormal(const VarLikeDecl* node);
   void checkImplicitModuleSameName(const Module* node);
   void checkModuleNotInModule(const Module* node);
+  void checkInheritExprValid(const AstNode* node);
 
   /*
   TODO
@@ -190,6 +191,7 @@ struct Visitor {
   // Visitors.
   inline void visit(const AstNode* node) {} // Do nothing by default.
 
+  void visit(const AggregateDecl* node);
   void visit(const Array* node);
   void visit(const Attribute* node);
   void visit(const AttributeGroup* node);
@@ -1528,6 +1530,12 @@ void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
   }
 }
 
+void Visitor::visit(const AggregateDecl* node) {
+  for (auto inheritExpr : node->inheritExprs()) {
+    checkInheritExprValid(inheritExpr);
+  }
+}
+
 void Visitor::visit(const Array* node) {
   checkForArraysOfRanges(node);
 }
@@ -1890,7 +1898,35 @@ void Visitor::checkModuleNotInModule(const Module* mod) {
     error(mod, "Modules must be declared at module- or file-scope");
   }
 }
- 
+
+void Visitor::checkInheritExprValid(const AstNode* node) {
+  // If it's a called expression, it could me something like M.Class(?),
+  // so strip the outer call. Re-use the existing logic in AggregateDecl.
+  bool markedGeneric;
+  auto identOrDot = AggregateDecl::getUnwrappedInheritExpr(node, markedGeneric);
+
+  bool success = false;
+  if (identOrDot) {
+    success = true;
+
+    // It's an identifier or a (...).something. Need to make sure that
+    // (...) is also just an identifier or a dot.
+    auto step = identOrDot;
+    while (!step->isIdentifier()) {
+      if (auto dot = step->toDot()) {
+        step = dot->receiver();
+      } else {
+        success = false;
+        break;
+      }
+    }
+  }
+
+  if (!success) {
+    error(node, "invalid parent class or interface; please specify a single (possibly qualified) class or interface name");
+  }
+}
+
 void Visitor::visit(const Module* node){
   checkImplicitModuleSameName(node);
   checkModuleNotInModule(node);
