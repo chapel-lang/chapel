@@ -3068,7 +3068,7 @@ module ChapelDomain {
      scalar value. The scalar argument is used in each dimension of the domain,
      while the 'n'-th tuple element is used to define the 'n'-th dimension of
      the domain. If `inclusive` is true, the domain includes the `high` value.
-     Otherwise, the domain excludes the `high` value. For example, 
+     Otherwise, the domain excludes the `high` value. For example,
      `makeRectangularDomain((1, 2), 10)` is equivalent to `{1..10, 2..10}`
      and `makeRectangularDomain(1, (10, 11), inclusive=false)` is equivalent
      to `{1..<10, 1..<11}`.
