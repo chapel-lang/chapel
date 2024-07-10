@@ -234,6 +234,9 @@ class KindProperties {
   /* Set the paramness property to the given one. */
   void setParam(bool isParam);
 
+  /* Set the constness property to the given one. */
+  void setConst(bool isConst);
+
   /* Combine two sets of kind properties into this one. The resulting
      set of properties is compatible with both arguments (e.g. ref + val = val,
      since values can't be made into references).

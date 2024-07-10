@@ -1116,6 +1116,10 @@ void KindProperties::setParam(bool isParam) {
   this->isParam = isParam;
 }
 
+void KindProperties::setConst(bool isConst) {
+  this->isConst = isConst;
+}
+
 bool KindProperties::checkValidCombine(const KindProperties& other) const {
   if (!isValid || !other.isValid) {
     return false;

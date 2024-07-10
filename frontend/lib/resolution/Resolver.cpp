@@ -1968,6 +1968,23 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
       resolveTupleUnpackDecl(innerTuple, rhsEltType);
     } else if (auto namedDecl = actual->toNamedDecl()) {
       resolveNamedDecl(namedDecl, rhsEltType.type());
+
+      // If the element is an index variable, then use the RHS's intent.
+      if (auto var = namedDecl->toVarLikeDecl()) {
+        if (var->storageKind() == uast::Qualifier::INDEX) {
+          auto& rr = byPostorder.byAst(var);
+          auto kind = rhsEltType.kind();
+
+          // If the kind is a value, set it to 'const'.
+          if (!rhsEltType.isRef() && !rhsEltType.isParam() &&
+              !rhsEltType.isType()) {
+            auto combiner = KindProperties::fromKind(kind);
+            combiner.setConst(true);
+            kind = combiner.toKind();
+          }
+          rr.setType({ kind, rr.type().type() });
+        }
+      }
     } else {
       CHPL_ASSERT(false && "case not handled");
     }
