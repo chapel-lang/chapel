@@ -4132,6 +4132,10 @@ struct Converter {
       auto* ident =
         uast::Class::getUnwrappedInheritExpr(inheritExpr, thisInheritMarkedGeneric);
 
+      // Always convert the taraget expression so that we note used modules
+      // as needed. We won't necessarily use the resulting expression;
+      // see the comment below.
+      auto converted = convertExprOrNull(ident);
       inheritMarkedGeneric |= thisInheritMarkedGeneric;
 
       // Don't convert the expression literally if we have a `toId`.
@@ -4157,7 +4161,7 @@ struct Converter {
       }
 
       // Couldn't find the target, so translate it literally.
-      if (auto converted = convertExprOrNull(ident)) {
+      if (converted) {
         inherits.push_back(converted);
       }
     }
