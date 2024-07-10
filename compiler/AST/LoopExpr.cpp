@@ -305,6 +305,7 @@ handleArrayTypeCase(LoopExpr* loopExpr, FnSymbol* fn, Expr* indices,
   // removed
   //
   FnSymbol* isArrayTypeFn = new FnSymbol("_isArrayTypeFn");
+  isArrayTypeFn->addFlag(FLAG_COMPILER_GENERATED);
   isArrayTypeFn->addFlag(FLAG_INLINE);
   isArrayTypeFn->setGeneric(false);
   fn->insertAtTail(new DefExpr(isArrayTypeFn));
