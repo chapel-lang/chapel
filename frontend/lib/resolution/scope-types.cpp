@@ -278,10 +278,6 @@ Scope::Scope(Context* context,
   if (isMethodScope) {         flags |= METHOD_SCOPE; }
   if (containsExternBlock) {   flags |= CONTAINS_EXTERN_BLOCK; }
   flags_ = flags;
-
-  // Remove the 'throwaway' variable '_' from any scope that contains it.
-  auto it = declared_.find(USTR("_"));
-  if (it != declared_.end()) declared_.erase(it);
 }
 
 void Scope::addBuiltin(UniqueString name) {
