@@ -4138,11 +4138,17 @@ struct Converter {
       // get the resolution results. Thus, instead of doing (. 'M' 'C')
       // just refer to 'C'.
       if (auto results = currentResolutionResult()) {
-        debuggerBreakHere();
         if (auto result = results->byAstOrNull(inheritExpr)) {
           auto toId = result->toId();
           if (!toId.isEmpty()) {
             if (auto converted = findConvertedSym(toId)) {
+              // Normally, findConvertedSym wraps classes in anymanaged.
+              // We don't want that for inherit exprs; instead, we want
+              // the canonical representation.
+              if (auto ts = toTypeSymbol(converted)) {
+                converted = canonicalClassType(ts->type)->symbol;
+              }
+
               inherits.push_back(new SymExpr(converted));
               continue;
             }

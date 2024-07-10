@@ -2613,6 +2613,12 @@ const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
   ResolutionResultByPostorderID result;
 
   if (ad) {
+    // These are children, but are skipped by the is*Decl conditions below.
+    for (auto inheritExpr : ad->inheritExprs()) {
+      auto res = Resolver::createForScopeResolvingField(context, ad, inheritExpr, result);
+      inheritExpr->traverse(res);
+    }
+
     // TODO: Use some kind of "ad->fields()" iterator
     for (auto child : ad->children()) {
       if (child->isVarLikeDecl() ||
