@@ -147,8 +147,8 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
       // not exist.
       char msg[2048];
       snprintf(msg, sizeof(msg),
-               "\"sinfo\" produced no output. Verify that partition "
-               "\"%s\" exists.", partition);
+               "'sinfo' produced no output. Verify that partition "
+               "'%s' exists.", partition);
 
       chpl_error(msg, 0, 0);
     } else if (rc <= 0) {
