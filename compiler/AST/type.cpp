@@ -1288,6 +1288,8 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL(dtUninstantiated, gUninstantiated, "?");
   gUninstantiated->addFlag(FLAG_PARAM);
 
+  CREATE_DEFAULT_SYMBOL(dtVoid, gIgnoredPromotionToken, "_ignoredPromotionToken");
+
   // set up the well-known types, including setting up dummy types
   // for dtString / _string and a few others
   initializeWellKnown();
