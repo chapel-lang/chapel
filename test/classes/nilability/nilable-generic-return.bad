@@ -1,0 +1,2 @@
+nilable-generic-return.chpl:3: In function 'f':
+nilable-generic-return.chpl:5: error: could not coerce a value of type 'nil' to type 'C?'
