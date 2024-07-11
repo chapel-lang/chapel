@@ -1,4 +1,0 @@
-bug: fielderator has problems with generic records
-
-Something about the fielderator code is choking while trying to
-process this generic record.
