@@ -1118,8 +1118,8 @@ module Random {
       :arg r: A fully bounded range whose ``idxType`` must be coercible from
               this stream's ``eltType``.
 
-      :return: An array (defined over ``{r}``) containing each of the values
-               from ``r`` in a pseudo-random order.
+      :return: An array (defined over the domain ``{r}``) containing each of
+               the values from ``r`` in a pseudo-random order.
     */
     proc ref permute(r: range(bounds=boundKind.both, ?)): [] r.idxType
       where isCoercible(this.eltType, r.idxType)
@@ -2871,8 +2871,9 @@ module Random {
       {
         // Fisher-Yates shuffle
         for i in 0..#D.sizeAs(D.idxType) by -1 {
-          const k = D.orderToIndex(PCGRandomStreamPrivate_getNext_noLock(this.eltType, 0:this.eltType, i:this.eltType));
-          const j = D.orderToIndex(i);
+          const ki = PCGRandomStreamPrivate_getNext_noLock(this.eltType, 0:this.eltType, i:this.eltType),
+                k = D.orderToIndex(ki),
+                j = D.orderToIndex(i);
 
           arr[k] <=> arr[j];
         }
