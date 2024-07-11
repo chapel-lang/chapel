@@ -1,1 +1,4 @@
+exitWithNoCall.chpl:1: In function 'main':
+exitWithNoCall.chpl:3: warning: function 'exit' is mentioned but not called, so it is being captured as a first-class function
+exitWithNoCall.chpl:3: note: 'exit' is a parenful function, so it needs '(...)' to be called
 Compiling this shouldn't give an internal error

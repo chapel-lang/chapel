@@ -1,0 +1,6 @@
+standalone-capture-late.chpl:13: In function 'main':
+standalone-capture-late.chpl:14: warning: function 'myFun' is mentioned but not called, so it is being captured as a first-class function
+standalone-capture-late.chpl:14: note: 'myFun' is a parenful function, so it needs '(...)' to be called
+standalone-capture-late.chpl:14: error: cannot capture routine with name 'myFun' because it is overloaded
+standalone-capture-late.chpl:9: note: declared here
+standalone-capture-late.chpl:3: note: declared here
