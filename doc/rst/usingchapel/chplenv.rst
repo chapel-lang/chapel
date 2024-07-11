@@ -580,28 +580,6 @@ CHPL_HOST_JEMALLOC
     If unset, ``CHPL_HOST_JEMALLOC`` defaults to one of the above support combinations,
     or ``none`` if :ref:`readme-chplenv.CHPL_HOST_MEM` is ``cstdlib``.
 
-.. _readme-chplenv.CHPL_TARGET_JEMALLOC:
-
-CHPL_TARGET_JEMALLOC
-~~~~~~~~~~~~~~~~~~~~
-
-   Optionally, the ``CHPL_TARGET_JEMALLOC`` environment variable can select
-   between no jemalloc, using the jemalloc distributed with Chapel in
-   third-party, or using a system jemalloc. This setting is intended to
-   elaborate upon ``CHPL_MEM=jemalloc``.
-
-       ======== ==============================================================
-       Value    Description
-       ======== ==============================================================
-       none     do not build or use jemalloc
-       bundled  use the jemalloc distribution bundled with Chapel in third-party
-       system   use the jemalloc found on the system
-       ======== ==============================================================
-
-   If unset, ``CHPL_TARGET_JEMALLOC`` defaults to ``bundled`` if
-   :ref:`readme-chplenv.CHPL_MEM` is ``jemalloc``.  In all other cases it
-   defaults to ``none``.
-
 .. _readme-chplenv.CHPL_LAUNCHER:
 
 CHPL_LAUNCHER
