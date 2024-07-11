@@ -254,6 +254,12 @@ proc getFieldRef(ref x:?t, param s:string) ref {
   param i = __primitive("field name to num", t, s);
   if i == 0 then
     compilerError("field ", s, " not found in ", t:string);
+  if isType(__primitive("field by num", x, i)) then
+    compilerError("cannot return a reference to 'type' field '",
+                  getFieldName(x.type, i), "'");
+  if isParam(__primitive("field by num", x, i)) then
+    compilerError("cannot return a reference to 'param' field '",
+                  getFieldName(x.type, i), "'");
   return __primitive("field by num", x, i);
 }
 
