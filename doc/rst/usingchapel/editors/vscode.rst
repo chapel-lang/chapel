@@ -28,10 +28,3 @@ Specifying the path to the executables:
 """""""""""""""""""""""""""""""""""""""
 
 Open the settings for the Chapel extension and set ``chapel.chpl-language-server.path`` and ``chapel.chplcheck.path`` to the path of the Chapel language server and chplcheck executables, respectively.
-
-.. _vscode-debugging:
-
-GUI Debugging
-~~~~~~~~~~~~~
-
-TODO: Add instructions for setting up Chapel GUI debugging in VSCode.

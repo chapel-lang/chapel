@@ -8,7 +8,7 @@ Neovim
 Syntax Highlighting
 ~~~~~~~~~~~~~~~~~~~
 
-TODO: Add instructions for setting up Chapel syntax highlighting in Neovim.
+See the :ref:`Vim Syntax Highlighting <vim-syntax>` section for how to setup syntax highlighting in Neovim.
 
 .. _neovim-lsp:
 
