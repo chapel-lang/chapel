@@ -4709,9 +4709,21 @@ static void stripPtxDebugDirective(const std::string& artifactFilename) {
 
 }
 
+static void setPATH(const std::string& PATH) {
+  setenv("PATH", PATH.c_str(), /*override*/ 1);
+}
+static std::string addToPATH(const std::string& newPathElm) {
+  std::string curPath = std::getenv("PATH");
+  std::string adjPath = curPath + std::string(":") + newPathElm;
+  setPATH(adjPath);
+  return curPath;
+}
+
 static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
                                   const std::string& gpuObjectFilenamePrefix,
                                   const std::string& fatbinFilename) {
+  // make sure CHPL_CUDA_PATH is in PATH
+  addToPATH(gGpuSdkPath + std::string("/bin"));
   if (myshell("which ptxas > /dev/null 2>&1", "Check to see if ptxas command can be found", true)) {
     USR_FATAL("Command 'ptxas' not found\n");
   }
@@ -5026,11 +5038,7 @@ void makeBinaryLLVM(void) {
         gpuArgs += " -Wno-unknown-cuda-version";
       }
       else if (getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
-        curPath = std::getenv("PATH");
-        std::string adjPath = curPath + std::string(":") + gGpuSdkPath +
-                              std::string("/llvm/bin");
-
-        setenv("PATH", adjPath.c_str(), /*override*/ 1);
+        curPath = addToPATH(gGpuSdkPath + std::string("/llvm/bin"));
       }
     }
 
@@ -5050,7 +5058,7 @@ void makeBinaryLLVM(void) {
 
     if (usingGpuLocaleModel() &&
         getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
-      setenv("PATH", curPath.c_str(), /*override*/ 1);
+      setPATH(curPath);
     }
 
     // Note: we used to start 'options' with 'cargs' so that
