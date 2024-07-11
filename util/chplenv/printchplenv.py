@@ -365,7 +365,7 @@ def filter_tidy(chpl_env):
         return gpu == 'amd'
     elif chpl_env.name == '  CHPL_GPU_ARCH':
         return gpu == 'nvidia' or gpu == 'amd'
-    elif chpl_env.name == '  CHPL_HOST_MEM':
+    elif chpl_env.name == '  CHPL_HOST_JEMALLOC':
         return host_mem == 'jemalloc'
     elif chpl_env.name == '  CHPL_TARGET_JEMALLOC':
         return tgt_mem == 'jemalloc'
