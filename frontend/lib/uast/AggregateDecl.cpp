@@ -60,23 +60,27 @@ std::string AggregateDecl::aggregateDeclDumpChildLabelInner(int i) const {
 AggregateDecl::~AggregateDecl() {
 }
 
-const Identifier* AggregateDecl::getInheritExprIdent(const AstNode* ast,
-                                                     bool& markedGeneric) {
+const AstNode* AggregateDecl::getUnwrappedInheritExpr(const AstNode* ast,
+                                                      bool& markedGeneric) {
+  // This doesn't do a deep check that e.g., the Dot expression is well-formed.
+  // This is expected to be done once during post-parse checks.
+
   if (ast != nullptr) {
-    if (ast->isIdentifier()) {
-      // inheriting from e.g. Parent is OK
+    if (ast->isIdentifier() || ast->isDot()) {
+      // inheriting from e.g. Parent or M.Parent is OK
       markedGeneric = false;
-      return ast->toIdentifier();
+      return ast;
     } else if (auto call = ast->toFnCall()) {
       const AstNode* calledExpr = call->calledExpression();
-      if (calledExpr != nullptr && calledExpr->isIdentifier() &&
+      if (calledExpr != nullptr &&
+          (calledExpr->isIdentifier() || calledExpr->isDot()) &&
           call->numActuals() == 1) {
         if (const AstNode* actual = call->actual(0)) {
           if (auto id = actual->toIdentifier()) {
             if (id->name() == USTR("?")) {
               // inheriting from e.g. Parent(?) is OK
               markedGeneric = true;
-              return calledExpr->toIdentifier();
+              return calledExpr;
             }
           }
         }
@@ -86,11 +90,6 @@ const Identifier* AggregateDecl::getInheritExprIdent(const AstNode* ast,
 
   markedGeneric = false;
   return nullptr;
-}
-
-bool AggregateDecl::isAcceptableInheritExpr(const AstNode* ast) {
-  bool ignoredMarkedGeneric = false;
-  return getInheritExprIdent(ast, ignoredMarkedGeneric) != nullptr;
 }
 
 

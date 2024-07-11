@@ -1,0 +1,12 @@
+─── error in bad-superclass.chpl:11 ───
+  Invalid parent class or interface; please specify a single (possibly qualified) class or interface name
+
+─── error in bad-superclass.chpl:12 ───
+  Invalid parent class or interface; please specify a single (possibly qualified) class or interface name
+
+─── error in bad-superclass.chpl:13 ───
+  Invalid parent class or interface; please specify a single (possibly qualified) class or interface name
+
+─── error in bad-superclass.chpl:14 ───
+  Invalid parent class or interface; please specify a single (possibly qualified) class or interface name
+
