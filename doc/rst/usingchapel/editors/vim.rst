@@ -67,7 +67,7 @@ must be somewhere under the home directory.
 
 .. _vim-plug: https://github.com/junegunn/vim-plug
 
-.. _vim-lsp:
+.. _vim-lsp-chpl:
 
 Language Server Support
 ~~~~~~~~~~~~~~~~~~~~~~~
