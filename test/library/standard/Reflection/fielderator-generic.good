@@ -1,3 +1,4 @@
-fielderator-generic.chpl:3: In function 'parse':
-fielderator-generic.chpl:10: error: cannot return a reference to 'type' field 'B'
-  fielderator-generic.chpl:26: called as parse(data: GenericThing(Thing2))
+B
+a
+b
+c
