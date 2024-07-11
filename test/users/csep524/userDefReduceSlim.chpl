@@ -17,7 +17,7 @@ class mostFrequent: ReduceScanOp {
     mySet += inputval;
   }
 
-  proc combine(partner: mostFrequent) {
+  proc combine(partner: mostFrequent(?)) {
     // This is a user-submitted bug where 'mostFrequent' was mistakenly used
     // and caused an internal compiler error.
     forall i in mostFrequent.mySet {
