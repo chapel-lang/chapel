@@ -1,0 +1,2 @@
+standalone-capture.chpl:5: warning: function 'myFun' is mentioned but not called, so it is being captured as a first-class function
+standalone-capture.chpl:5: note: 'myFun' is a parenful function, so it needs '(...)' to be called
