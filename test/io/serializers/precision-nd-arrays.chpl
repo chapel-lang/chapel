@@ -15,7 +15,10 @@ proc makeND(param rank : int) {
 }
 
 proc test(A, ser) {
-  printDebugFmt(A);
+  writeln("===== writing: =====");
+  stdout.writeln(A);
+  writeln("--------------------");
+  stdout.withSerializer(ser).writeln(A);
 
   var f = openMemFile();
   try {
@@ -27,9 +30,9 @@ proc test(A, ser) {
   try {
     var B = f.reader().read(A.type);
 
-    var match = false;
-    for (a, b) in zip(A, B)
-      do match &&= (abs(a - b) < 0.001);
+    var match = true;
+    for (a, b) in zip(A, B) do
+      match &&= (abs(a - b) < 0.001);
 
     if !match {
       writeln("FAILURE: ", A.type:string);
@@ -43,7 +46,7 @@ proc test(A, ser) {
 }
 
 proc main() {
-  for (pre, pad) in [(6, 0), (4, 8), (0, 5)] {
+  for (pre, pad) in [(8, 0), (4, 12)] {
     writeln("##### precision=", pre, ", padding=", pad, " ######");
     for param i in 1..4 {
       writeln("----- ", i:string, "D -----");

@@ -5,7 +5,7 @@ module PrecisionSerializer {
   /*
     Default precision to be used by the ``precisionSerializer``
   */
-  config const defaultPrecisionSerializerPrecision = 8;
+  config const defaultPrecisionSerializerPrecision = 12;
 
   /*
     Default padding to be used by the ``precisionSerializer``
@@ -13,7 +13,7 @@ module PrecisionSerializer {
   config const defaultPrecisionSerializerPadding = 0;
 
   /*
-    An alteration of the :record:`~IO.defaultSerializer` that allows for
+    A variation of the :record:`~IO.defaultSerializer` that allows for
     finer control over formatting of numerical values.
 
     See :ref:`the serializers technote<ioSerializers>` for a general overview
@@ -105,9 +105,9 @@ module PrecisionSerializer {
         t == string || t == bytes {
         if isRealType(t) {
           if this.padding > 0 {
-            writer.writef("%*.*r", this.padding, this.precision, val);
+            writer.writef("%*.*dr", this.padding, this.precision, val);
           } else {
-            writer.writef("%.*r", this.precision, val);
+            writer.writef("%.*dr", this.precision, val);
           }
         } else if isIntegralType(t) {
           if this.padding > 0 {
