@@ -219,6 +219,9 @@ inline proc getFieldRef(ref x:?t, param i:int) ref {
   if isType(__primitive("field by num", x, i+1)) then
     compilerError("cannot return a reference to 'type' field '",
                   getFieldName(t, i), "'");
+  if isParam(__primitive("field by num", x, i+1)) then
+    compilerError("cannot return a reference to 'param' field '",
+                  getFieldName(t, i), "'");
   return __primitive("field by num", x, i+1);
 }
 
@@ -229,6 +232,9 @@ inline proc getFieldRef(x: borrowed, param i:int) ref {
   checkValidQueryT(x.type);
   if isType(__primitive("field by num", x, i+1)) then
     compilerError("cannot return a reference to 'type' field '",
+                  getFieldName(x.type, i), "'");
+  if isParam(__primitive("field by num", x, i+1)) then
+    compilerError("cannot return a reference to 'param' field '",
                   getFieldName(x.type, i), "'");
   return __primitive("field by num", x, i+1);
 }
