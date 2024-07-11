@@ -21,7 +21,7 @@ emacs/ and vim/ subdirectories for details.
 Other Highlighting Options
 --------------------------
 
-* highlight/ : used by the Computer Lanugage Benchmarks Game
+* highlight/ : used by the Computer Language Benchmarks Game
 * latex/ : support for Chapel in the lstlistings package in LaTeX
 * source-highlight/ : support for GNU source-highlight
 
