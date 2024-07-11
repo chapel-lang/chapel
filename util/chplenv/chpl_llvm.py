@@ -476,7 +476,19 @@ def get_overriden_llvm_clang(lang):
     # or, if CHPL_TARGET_COMPILER=llvm, CHPL_TARGET_CC/CXX.
     # These use split in order to separate the command out from
     # any arguments passed to it.
-    tgt_llvm = overrides.get('CHPL_TARGET_COMPILER', 'llvm') == 'llvm'
+
+    # The proper check here is `chpl_compiler.get('target') == 'llvm'`.
+    # However, that will not work when trying to infer `CHPL_LLVM`, because
+    # `chpl_compiler.get('target')` will call this code and infinite recursion
+    # will occur.
+    # Instead we will check the target compiler solely based on the
+    # values of `CHPL_TARGET_COMPILER` and `CHPL_LLVM`
+    llvm_val = overrides.get('CHPL_LLVM', 'unset')
+    tgt_llvm = (
+        overrides.get("CHPL_TARGET_COMPILER", "llvm") == "llvm"
+        and llvm_val != "unset"
+        and llvm_val != "none"
+    )
     res = None
     if lang_upper == 'C':
         llvm_clang_c = overrides.get('CHPL_LLVM_CLANG_C')
