@@ -1779,7 +1779,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
           //  type if the symbol represents a field, and taking the address of
           //  a type does not make sense.
 
-        } else if (argSym && argSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        } else if ((argSym && argSym->hasFlag(FLAG_TYPE_VARIABLE)) ||
+                   (varSym && varSym->hasFlag(FLAG_TYPE_VARIABLE))) {
           // No need to take address of a type arg. The flag is used here
           // because the intent is unreliable, and may be INTENT_BLANK.
 
