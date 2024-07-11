@@ -435,7 +435,7 @@ static void test4() {
 
 
 int main(int argc, char** argv) {
-  const char* inputFile = "moby.txt";
+  const char* inputFile = nullptr;
   std::string timingArg = "--timing";
   bool printTiming = false;
   for (int i = 1; i < argc; i++) {
@@ -455,6 +455,12 @@ int main(int argc, char** argv) {
   Context* ctx = &context;
 
   // Next, measure performance
-  testPerformance(ctx, inputFile, printTiming);
+  if (inputFile) {
+    testPerformance(ctx, inputFile, printTiming);
+  } else if (printTiming) {
+    std::cout << "Performance timing requested, but no input file specified" << std::endl;
+    return 1;
+  }
+
   return 0;
 }

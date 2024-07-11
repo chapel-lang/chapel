@@ -189,6 +189,11 @@ void BuilderResult::mark(Context* context) const {
   BuilderResult::updateFilePaths(context, *this);
 }
 
+void BuilderResult::stringify(std::ostream& ss,
+                              chpl::StringifyKind stringKind) const {
+  ss << "BuilderResult(...)";
+}
+
 void BuilderResult::updateFilePaths(Context* context,
                                     const BuilderResult& keep) {
   UniqueString path = keep.filePath_;

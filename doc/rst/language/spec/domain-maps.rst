@@ -81,27 +81,6 @@ where ``distribution-record`` is an instance of a distribution or layout type.
 
 .. warning::
 
-   In previous versions of Chapel, it was legal to insert a distribution
-   initialization-expression on the right side of a ``dmapped`` expression,
-   where the ``new`` keyword was essentially implied. For example, the following
-   was legal:
-
-      .. code-block:: chapel
-
-         var d = {1..n} dmapped blockDist({1..n});
-
-   but should now be replaced by:
-
-      .. code-block:: chapel
-
-         var d = {1..n} dmapped new blockDist({1..n});
-
-   Omitting the ``new`` keyword is deprecated and will become an error in a
-   future release.
-
-
-.. warning::
-
    The ``dmapped`` keyword and the ``dmapped`` clause
    are currently unstable and may change in the future.
    Factory functions provided by the desired distribution,
@@ -122,6 +101,13 @@ where ``distribution-record`` is an instance of a distribution or layout type.
    for two-dimensional domains and arrays
    with a bounding box of ``{1..5, 1..6}`` over all of the locales.
 
+   This can also be achieved as follows:
+
+   .. code-block:: chapel
+
+      use BlockDist;
+      var myBlockDist = blockDist.createDomain({1..5,1..6});
+
    *Example*.
 
    The code 
@@ -135,26 +121,25 @@ where ``distribution-record`` is an instance of a distribution or layout type.
    defines the type of two-dimensional rectangular domains
    that are mapped using a Block distribution.
 
-The following syntactic sugar is provided within the ``dmapped`` clause.
-If a ``dmapped`` clause starts with the name of a distribution record, it
-is considered to be an initialization expression as if preceded by
-``new``.
+.. warning::
 
-   *Example*.
+   In previous versions of Chapel, it was legal to insert a distribution
+   initialization-expression on the right side of a ``dmapped`` expression,
+   where the ``new`` keyword was essentially implied. For example, the following
+   was legal:
 
-   The code 
+      .. code-block:: chapel
 
-   .. code-block:: chapel
+         var d = {1..n} dmapped blockDist({1..n});
 
-      use BlockDist;
-      type BlockDom = domain(2) dmapped blockDist({1..5,1..6});
+   but should now be replaced by:
 
-   is equivalent to 
+      .. code-block:: chapel
 
-   .. code-block:: chapel
+         var d = {1..n} dmapped new blockDist({1..n});
 
-      use BlockDist;
-      type BlockDom = domain(2) dmapped new blockDist({1..5,1..6});
+   Omitting the ``new`` keyword is deprecated and will become an error in a
+   future release.
 
 .. index::
    single: domain maps; for domain values
@@ -198,11 +183,9 @@ clause, in the same way as a domain type's distribution.
    .. code-block:: chapel
 
       use BlockDist;
-      var MyBlockedDomLiteral1 = {1..2,1..3} dmapped new blockDist({1..5,1..6});
-      var MyBlockedDomLiteral2 = {1..2,1..3} dmapped blockDist({1..5,1..6});
+      var MyBlockedDomLiteral = {1..2,1..3} dmapped new blockDist({1..5,1..6});
 
-   both ``MyBlockedDomLiteral1`` and ``MyBlockedDomLiteral2`` will be
-   mapped using a Block distribution.
+   ``MyBlockedDomLiteral`` is mapped using the Block distribution.
 
 .. index::
    single: domain maps; for arrays
@@ -227,6 +210,14 @@ array was declared.
 
    the distribution used for ``MyArray`` is the Block distribution from
    the type of ``Dom``.
+
+   A block distributed array can also be created using the ``createArray``
+   type method
+
+   .. code-block:: chapel
+
+      use BlockDist;
+      var MyArray = blockDist.createArray({1..5,1..6}, real);
 
 .. index::
    single: domain maps; domain assignment
@@ -254,6 +245,15 @@ determined by its type and so does not change upon a domain assignment.
 
    ``Dom2`` is mapped using a default distribution, despite ``Dom1``
    having a Block distribution.
+
+   Note that the same semantics apply when creating a domain via the
+   distribution factory methods as follows
+
+   .. code-block:: chapel
+
+      use BlockDist:
+      var Dom1 = blockDist.createDomain({1..5,1..6});
+      var Dom2: domain(2) = Dom1;
 
 ..
 

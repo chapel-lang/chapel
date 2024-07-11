@@ -1,1 +1,1 @@
-captureEmpty.chpl:5: error: cannot initialize array with element type 'nothing'
+captureEmpty.chpl:5: error: array element type cannot be 'nothing'

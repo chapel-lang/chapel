@@ -8,4 +8,5 @@ cat $TMPFILE | grep aligned16test | grep alloca | \
                grep -ve 'struct.aligned16test[*]' | \
                sed 's/%.* = /%r = /' |
                sort -u > $OUTFILE
+grep ^arg $TMPFILE >> $OUTFILE
 rm $TMPFILE

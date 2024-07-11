@@ -98,6 +98,8 @@ ArrayViewReindex
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ArrayViewReindex
 ChapelPrivatization
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelPrivatization
+ChapelArrayViewElision
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelArrayViewElision
 ChapelIO
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDomain.FormattedIO.IO.ChapelIO
 Types
@@ -134,6 +136,8 @@ QuickSort
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.QuickSort
 Sort
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort
+ChapelShortArrayTransfer
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelShortArrayTransfer
 ChapelArray
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray
 ChapelHashtable

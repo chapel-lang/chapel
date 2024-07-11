@@ -241,7 +241,7 @@ static void buildVisibleFunctionMap() {
     FnSymbol* fn = gFnSymbols.v[i];
     if (!fn->hasFlag(FLAG_INVISIBLE_FN) && fn->inTree() && !isArgSymbol(fn->defPoint->parentSymbol)) {
       BlockStmt* block = NULL;
-      if (fn->hasFlag(FLAG_AUTO_II)) {
+      if (fn->hasFlag(FLAG_AUTO_II) || fn->hasFlag(FLAG_THUNK_INVOKE)) {
         block = theProgram->block;
       } else {
         block = getVisibilityScope(fn->defPoint);

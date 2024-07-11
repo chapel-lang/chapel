@@ -1,10 +1,10 @@
 #!/bin/bash
 
-grep "Parsed file:\|^MYPREFIX" $2 > $2.tmp
+cat $2 | \
+  grep "Parsed file:\|^MYPREFIX" | \
+  sed "s|${CHPL_HOME}|\$CHPL_HOME|g" | \
+  sed s/modules\\/standard\\/gen\\/[a-z0-9_\-]*/modules\\/standard\\/gen\\/\.\.\./ | \
+  grep -e 'error\|warning\|MYPREFIX\|OtherMod\|MyMod\|testGenLib\|buildAll.chpl\|ChapelStandard' > \
+  $2.tmp
 
-cat $2.tmp | sed "s|${CHPL_HOME}|\$CHPL_HOME|g" > $2
-
-mv $2 $2.tmp
-cat $2.tmp | sed s/modules\\/standard\\/gen\\/[a-z0-9_\-]*/modules\\/standard\\/gen\\/\.\.\./ > $2
-
-rm $2.tmp
+mv $2.tmp $2

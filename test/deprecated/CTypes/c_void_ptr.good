@@ -1,2 +1,0 @@
-c_void_ptr.chpl:7: warning: c_void_ptr is deprecated, use 'c_ptr(void)' instead.
-c_void_ptr.chpl:7: warning: c_void_ptr is deprecated, use 'c_ptr(void)' instead.

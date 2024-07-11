@@ -1,4 +1,3 @@
-warning: Ambiguous module source file -- using ./ChapelIO.chpl over $CHPL_HOME/modules/standard/ChapelIO.chpl
-ChapelIO.chpl:11: In function 'serializeDefaultImpl':
-ChapelIO.chpl:11: warning: need '(?)' on the type 'fileWriter' of the formal 'writer' because this type is generic
-foo2.chpl:9: error: done
+ChapelIO.chpl:55: In function 'testchapelio':
+ChapelIO.chpl:56: warning: test warning
+foo2.chpl:1: error: done

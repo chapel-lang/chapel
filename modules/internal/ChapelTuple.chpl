@@ -148,6 +148,7 @@ module ChapelTuple {
   //
   pragma "compiler generated"
   pragma "last resort"
+  pragma "no array view elision"
   @chpldoc.nodoc
   inline operator =(ref x: _tuple,
                     pragma "intent ref maybe const formal" y: _tuple)

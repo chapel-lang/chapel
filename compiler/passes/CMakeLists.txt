@@ -19,7 +19,7 @@ set(SRCS
     buildDefaultFunctions.cpp
     checkNormalized.cpp
     checkResolved.cpp
-    checkUast.cpp
+    checkGeneratedAst.cpp
     cleanup.cpp
     convert-uast.cpp
     createTaskFunctions.cpp

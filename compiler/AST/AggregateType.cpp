@@ -44,14 +44,6 @@
 
 #include <queue>
 
-AggregateType* dtObject = NULL;
-AggregateType* dtBytes  = NULL;
-AggregateType* dtString = NULL;
-AggregateType* dtLocale = NULL;
-AggregateType* dtRange  = NULL;
-AggregateType* dtOwned  = NULL;
-AggregateType* dtShared = NULL;
-
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
 
@@ -63,6 +55,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
   builtReaderInit     = false;
   initializerResolved = false;
   iteratorInfo        = NULL;
+  thunkInvoke         = NULL;
   doc                 = NULL;
 
   instantiatedFrom    = NULL;

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+grep -v "\.chpl:.*" < $2 >$2.predifftmp
+mv $2.predifftmp $2

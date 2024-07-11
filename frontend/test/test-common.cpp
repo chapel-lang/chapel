@@ -29,6 +29,10 @@ parseAndReportErrors(Context* context, UniqueString path) {
   auto& ret = parsing::parseFileToBuilderResultAndCheck(context, path, {});
   return ret;
 }
+const uast::BuilderResult&
+parseAndReportErrors(Context* context, const char* path) {
+  return parseAndReportErrors(context, UniqueString::get(context, path));
+}
 
 uast::BuilderResult
 parseStringAndReportErrors(parsing::Parser* parser, const char* filename,

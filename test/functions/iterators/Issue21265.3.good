@@ -1,2 +1,2 @@
 Issue21265.chpl:14: In function 'test3':
-Issue21265.chpl:15: error: cannot initialize array with element type 'nothing'
+Issue21265.chpl:15: error: array element type cannot be 'nothing'

@@ -44,7 +44,7 @@ void bulkCopyRecords();
 void callDestructors();
 void checkNormalized();
 void checkResolved();
-void checkUast();
+void checkGeneratedAst();
 void cleanup();
 void codegen();
 void copyPropagation();
@@ -106,6 +106,9 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
 void initForTaskIntents();
 void removeTiMarks();
 bool isTiMark(Symbol* sym);
+
+// callDestructors.cpp
+void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor);
 
 // deadCodeElimination.cpp
 void deadBlockElimination();

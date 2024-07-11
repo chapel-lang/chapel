@@ -5,7 +5,9 @@ Available rules (default rules marked with *):
   * CamelCaseRecords             Warn for records that are not 'camelCase'.
     CamelOrPascalCaseVariables   Warn for variables that are not 'camelCase' or 'PascalCase'.
   * ChplPrefixReserved           Warn for user-defined names that start with the 'chpl_' reserved prefix.
+  * ComplexLiteralOrder          Warn for complex literals that are not in a consistent order.
     ConsecutiveDecls             Warn for consecutive variable declarations that can be combined.
+  * ControlFlowParentheses       Warn for unnecessary parentheses in conditional statements and loops.
   * DoKeywordAndBlock            Warn for redundant 'do' keyword before a curly brace '{'.
   * EmptyStmts                   Warn for empty statements (i.e., unnecessary semicolons).
   * IncorrectIndentation         Warn for inconsistent or missing indentation
@@ -14,7 +16,6 @@ Available rules (default rules marked with *):
     NestedCoforalls              Warn for nested 'coforall' loops, which could lead to performance hits.
   * PascalCaseClasses            Warn for classes that are not 'PascalCase'.
   * PascalCaseModules            Warn for modules that are not 'PascalCase'.
-  * RedundantParentheses         Warn for unnecessary parentheses in conditional statements and loops.
   * SimpleDomainAsRange          Warn for simple domains in loops that can be ranges.
     UnusedFormal                 Warn for unused formals in functions.
   * UnusedLoopIndex              Warn for unused index variables in loops.

@@ -20,6 +20,7 @@
 
 #include "preFold.h"
 
+#include "arrayViewElision.h"
 #include "astutil.h"
 #include "buildDefaultFunctions.h"
 #include "fcf-support.h"
@@ -913,6 +914,24 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     retval = new CallExpr(PRIM_NOOP);
     call->replace(retval);
+    break;
+  }
+
+  case PRIM_PROTO_SLICE_ASSIGN: {
+    ArrayViewElisionPrefolder assignment(call);
+
+    if (assignment.supported()) {
+      retval = assignment.getReplacement();
+      call->replace(retval);
+    }
+    else {
+      retval = new CallExpr(PRIM_NOOP);
+      assignment.condStmt()->insertBefore(retval);
+    }
+
+    assignment.report();
+    assignment.updateAndFoldConditional();
+
     break;
   }
 
@@ -2028,6 +2047,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_STATIC_TYPEOF:
   case PRIM_STATIC_FIELD_TYPE:
+  case PRIM_THUNK_RESULT_TYPE:
   case PRIM_SCALAR_PROMOTION_TYPE: {
 
     // Replace the type query call with a SymExpr of the type symbol
@@ -2256,6 +2276,38 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       retval = new CallExpr(PRIM_NOOP);
       call->replace(retval);
     }
+    break;
+  }
+
+  case PRIM_FORCE_THUNK: {
+    auto sizeSym = toSymExpr(call->get(1));
+    auto sizeType = sizeSym->symbol()->typeInfo()->getValType();
+    auto aggrT = toAggregateType(sizeType);
+
+    // call the invoke method of the thunk stored in aggrT->thunkInvoke
+    retval = new CallExpr(aggrT->thunkInvoke, gMethodToken, sizeSym->remove());
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_DEFAULT_INIT_VAR: {
+    // While visiting the primitive, reject calls to default init on
+    // incomplete types.
+    auto secondArg = toSymExpr(call->get(2))->symbol();
+    Symbol* checkForIncomplete = nullptr;
+    if (auto ts = toTypeSymbol(secondArg)) {
+      checkForIncomplete = ts;
+    } else if (auto vs = toVarSymbol(secondArg)) {
+      checkForIncomplete = vs->typeInfo()->symbol;
+    }
+    if (checkForIncomplete && checkForIncomplete->hasFlag(FLAG_INCOMPLETE)) {
+      USR_FATAL(call, "cannot default initialize incomplete 'extern' type '%s'",
+                checkForIncomplete->cname);
+    }
+
+    // All is well, proceed.
+    retval = call;
+    break;
   }
 
   default:

@@ -1,0 +1,3 @@
+This directory is locking down that we currently have a memory leak for
+ConcurrentMap.  These tests symlink to equivalent correctness tests and can be
+removed once this leak is fixed.

@@ -1,2 +1,1 @@
-owned-to-shared-cast-nilable-to-nilable.chpl:6: warning: casting from an 'owned' to 'shared' has been deprecated - please use the 'adopt'/'release' interface instead
-{x = 0} : shared MyClass?
+owned-to-shared-cast-nilable-to-nilable.chpl:6: error: illegal cast from owned MyClass? to shared MyClass?

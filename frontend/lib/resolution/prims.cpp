@@ -1696,6 +1696,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_MAYBE_LOCAL_THIS:
     case PRIM_MAYBE_LOCAL_ARR_ELEM:
     case PRIM_MAYBE_AGGREGATE_ASSIGN:
+    case PRIM_PROTO_SLICE_ASSIGN:
     case PRIM_BLOCK_PARAM_LOOP:
     case PRIM_BLOCK_WHILEDO_LOOP:
     case PRIM_BLOCK_DOWHILE_LOOP:
@@ -1730,6 +1731,10 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_NO_ALIAS_SET:
     case PRIM_COPIES_NO_ALIAS_SET:
     case PRIM_OPTIMIZATION_INFO:
+    case PRIM_CREATE_THUNK:
+    case PRIM_THUNK_RESULT:
+    case PRIM_FORCE_THUNK:
+    case PRIM_THUNK_RESULT_TYPE:
       CHPL_UNIMPL("misc primitives");
       break;
 

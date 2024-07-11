@@ -44,6 +44,14 @@ for using Chapel:
     use the bundled LLVM or disable LLVM support (see
     :ref:`readme-chplenv.CHPL_LLVM`).
 
+  * When using the LLVM installation bundled with Chapel
+    (``CHPL_LLVM=bundled``), make sure your machine has at least 4GB of memory
+    available before building Chapel. If you are using your system's LLVM
+    (``CHPL_LLVM=system``), Chapel can be built with at least 2GB of memory.
+    See :ref:`readme-chplenv.CHPL_LLVM` for more information about these
+    settings. Note that the memory requirements for building Chapel may vary
+    in other configurations or for parallel builds.
+
 In addition, several optional components have additional requirements:
 
   * Python 3.9 or newer is required if you want to use chpldoc, c2chapel,

@@ -209,6 +209,9 @@ class GeneralError : public BasicError {
   static owned<GeneralError> vbuild(ErrorBase::Kind kind, Location loc,
                                     const char* fmt,
                                     va_list vl);
+  static owned<GeneralError> vbuild(ErrorBase::Kind kind, IdOrLocation loc,
+                                    const char* fmt,
+                                    va_list vl);
 
   static owned<GeneralError> get(ErrorBase::Kind kind,
                                  Location loc,
@@ -254,7 +257,7 @@ class GeneralError : public BasicError {
       return owned<ErrorBase>(new Error##NAME__(*this));\
     }\
 \
-    ErrorInfo info() const { return info_; }\
+    const ErrorInfo& info() const { return info_; }\
   };
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS

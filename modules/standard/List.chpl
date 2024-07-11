@@ -109,15 +109,18 @@ module List {
   proc _checkType(type eltType) param {
     if isGenericType(eltType) {
       compilerWarning("creating a list with element type " +
-                      eltType:string);
+                      eltType:string, 2);
       if isClassType(eltType) && !isGenericType(eltType:borrowed) {
-        compilerWarning("which is a class type with generic management");
+        compilerWarning("which is a class type with generic management", 2);
       }
-      compilerError("list element type cannot currently be generic");
+      compilerError("list element type cannot currently be generic", 2);
       // In the future we might support it if the list is not default-inited
     }
+    if eltType == void {
+      compilerError("list element type cannot be 'void'", 2);
+    }
     if eltType == nothing {
-      compilerError("cannot initialize list with element type 'nothing'");
+      compilerError("list element type cannot be 'nothing'", 2);
     }
   }
 

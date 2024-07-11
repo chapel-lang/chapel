@@ -208,6 +208,9 @@ public:
   // Attached only to iterator class/records
   IteratorInfo*               iteratorInfo;
 
+  // Attached only to thunk records
+  FnSymbol*                   thunkInvoke;
+
   // What to delegate to with 'forwarding'
   AList                       forwardingTo;
 
@@ -298,13 +301,5 @@ private:
   bool                        mIsGenericWithDefaults;
   bool                        mIsGenericWithSomeDefaults;
 };
-
-extern AggregateType* dtObject;
-extern AggregateType* dtBytes;
-extern AggregateType* dtString;
-extern AggregateType* dtLocale;
-extern AggregateType* dtRange;
-extern AggregateType* dtOwned;
-extern AggregateType* dtShared;
 
 #endif

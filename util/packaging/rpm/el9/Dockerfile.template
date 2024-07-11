@@ -1,4 +1,4 @@
-FROM rockylinux/rockylinux:9 as build
+FROM rockylinux/rockylinux:9 AS build
 
 @@{ARGUMENTS}
 

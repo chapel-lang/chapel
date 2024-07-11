@@ -1,0 +1,3 @@
+<command line>: warning: ambiguous module source file -- using foo.chpl over subdir/foo.chpl
+In foo's init
+In require-and-use-foo-ambig-mpath's init

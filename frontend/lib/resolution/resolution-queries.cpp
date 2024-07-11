@@ -4305,7 +4305,9 @@ CallResolutionResult resolveFnCall(Context* context,
     CHPL_ASSERT(isTfsForInitializer(candidateFn));
 
     // TODO: Can we move this into the 'InitVisitor'?
-    if (!candidateFn->untyped()->isCompilerGenerated()) {
+    // Note: resolveInitializer is already called during instantiation
+    if (!candidateFn->untyped()->isCompilerGenerated() &&
+        candidateFn->instantiatedFrom() == nullptr) {
       std::ignore = resolveInitializer(context, candidateFn, inScopes.poiScope());
     }
   }

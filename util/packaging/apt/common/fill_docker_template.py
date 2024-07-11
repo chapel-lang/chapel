@@ -108,10 +108,10 @@ substitutions[
 WORKDIR /home/user
 RUN dpkg-deb --build $(python3 package_name.py $BASENAME $CHAPEL_VERSION $PACKAGE_VERSION $OS_NAME $TARGETARCH)
 
-FROM scratch as artifact
+FROM scratch AS artifact
 COPY --from=build /home/user/*.deb /
 
-FROM build as release
+FROM build AS release
 """
 
 

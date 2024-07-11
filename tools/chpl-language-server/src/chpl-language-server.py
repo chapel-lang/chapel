@@ -206,59 +206,6 @@ class ChplcheckProxy:
 
 chplcheck = ChplcheckProxy.get()
 
-REAL_NUMBERIC = (chapel.RealLiteral, chapel.IntLiteral, chapel.UintLiteral)
-NUMERIC = REAL_NUMBERIC + (chapel.ImagLiteral,)
-
-
-def is_basic_literal_like(node: chapel.AstNode) -> Optional[chapel.Literal]:
-    """
-    Check for "basic" literals: basically, 1, "hello", -42, etc.
-    Returns the "underlying" literal removing surrounding AST (1, "hello", 42).
-    This helps do type comparisons in more complex checks. If the node is
-    not a basic literal, returns None.
-    """
-    if isinstance(node, chapel.Literal):
-        return node
-
-    if (
-        isinstance(node, chapel.OpCall)
-        and node.op() == "-"
-        and node.num_actuals() == 1
-    ):
-        # Do not recurse; do not consider --42 as a basic literal.
-        act = node.actual(0)
-        if isinstance(act, NUMERIC):
-            return act
-
-    return None
-
-
-def is_literal_like(node: chapel.AstNode) -> bool:
-    if is_basic_literal_like(node):
-        return True
-
-    if isinstance(node, chapel.OpCall):
-        # A complex number is far from a literal in the AST; in fact, it
-        # potentially has as many as 4 AST nodes: -1 + 2i has a unary negation,
-        # an addition, and two "pure" literals.
-        op = node.op()
-        if (op == "+" or op == "-") and node.num_actuals() == 2:
-            # The left element can be a 'basic literal-like', like 1 or -42i.
-            # But the right element shouldn't have any operators, otherwise
-            # we'd get somethig that looks like 1 - -42i. So we just
-            # use the right argument directly.
-            left = is_basic_literal_like(node.actual(0))
-            right = node.actual(1)
-
-            real_number = REAL_NUMBERIC
-            imag_number = chapel.ImagLiteral
-            if isinstance(left, real_number) and isinstance(right, imag_number):
-                return True
-            if isinstance(left, imag_number) and isinstance(right, real_number):
-                return True
-
-    return False
-
 
 def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
     if isinstance(decl, chapel.Module) and decl.kind() != "implicit":
@@ -1372,7 +1319,7 @@ class ChapelLanguageServer(LanguageServer):
                 # tuples. We don't need hints for those.
                 continue
 
-            if not is_literal_like(act):
+            if not chapel.is_literal_like(act):
                 # Only show named arguments for literals.
                 continue
 

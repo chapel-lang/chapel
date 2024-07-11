@@ -1,0 +1,19 @@
+ArrayViewElision not supported negativeStrideSlice.chpl:5
+	lhsBaseType: [domain(1,int(64),one)] int(64)
+	lhsIndexingExprs: 
+		range(int(64),both,positive)
+	rhsBaseType: [domain(1,int(64),one)] int(64)
+	rhsIndexingExprs: 
+		range(int(64),both,negative)
+
+ArrayViewElision not supported negativeStrideSlice.chpl:9
+	lhsBaseType: [domain(1,int(64),one)] int(64)
+	lhsIndexingExprs: 
+		range(int(64),both,negative)
+	rhsBaseType: 
+	rhsIndexingExprs: 
+
+1 0 1 0 1 0 1 0 1 0
+1 1 1 1 1 1 1 1 1 1
+negativeStrideSlice.chpl:5: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (1..10 by -2,)
+negativeStrideSlice.chpl:9: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (1..10 by -2,)

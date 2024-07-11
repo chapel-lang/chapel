@@ -918,11 +918,6 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
       CHPL_ASSERT(false && "unhandled compiler-generated array method");
     }
       return true;
-  } else if (untyped->isMethod() && sig->formalType(0).type()->isTupleType() &&
-               untyped->name() == "size") {
-      auto tup = sig->formalType(0).type()->toTupleType();
-      result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0), IntParam::get(context, tup->numElements()));
-      return true;
   } else if (untyped->isMethod() && sig->formalType(0).type()->isCPtrType() && untyped->name() == "eltType") {
       auto cpt = sig->formalType(0).type()->toCPtrType();
       result = QualifiedType(QualifiedType::TYPE, cpt->eltType());
@@ -1003,8 +998,17 @@ static bool helpComputeReturnType(Context* context,
     result = QualifiedType(QualifiedType::TYPE, t);
     return true;
 
-  // if method call and the receiver points to a composite type definition,
-  // then it's some sort of compiler-generated method
+    // special case to set param value of tuple size, which is set late by
+    // production compiler
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isTupleType() &&
+             untyped->name() == "size") {
+    auto tup = sig->formalType(0).type()->toTupleType();
+    result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
+                           IntParam::get(context, tup->numElements()));
+    return true;
+
+    // if method call and the receiver points to a composite type definition,
+    // then it's some sort of compiler-generated method
   } else if (untyped->isCompilerGenerated()) {
     return helpComputeCompilerGeneratedReturnType(context, sig, poiScope,
                                                   result, untyped);

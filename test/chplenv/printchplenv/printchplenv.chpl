@@ -12,6 +12,7 @@ if CHPL_COMM == 'gasnet' then {
   writeln('  CHPL_GASNET_SEGMENT: ', CHPL_GASNET_SEGMENT);
 } else if CHPL_COMM == 'ofi' then {
   writeln('  CHPL_LIBFABRIC: ', CHPL_LIBFABRIC);
+  writeln('  CHPL_COMM_OFI_OOB: ', CHPL_COMM_OFI_OOB);
 }
 writeln('CHPL_TASKS: ', CHPL_TASKS);
 writeln('CHPL_LAUNCHER: ', CHPL_LAUNCHER);

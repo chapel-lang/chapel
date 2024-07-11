@@ -314,20 +314,10 @@ BlockStmt* buildDeprecated(BlockStmt* block, const char* msg) {
   return block;
 }
 
-static void addModuleToSearchList(VisibilityStmt* newStmt, BaseAST* module) {
-  UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
-  if (modNameExpr) {
-    addModuleToParseList(modNameExpr->unresolved, newStmt);
-  } else if (CallExpr* callExpr = toCallExpr(module)) {
-    addModuleToSearchList(newStmt, callExpr->argList.first());
-  }
-}
-
 
 static BlockStmt* buildUseList(BaseAST* module, const char* newName,
                                BlockStmt* list, bool privateUse) {
   UseStmt* newUse = new UseStmt(module, newName, privateUse);
-  addModuleToSearchList(newUse, module);
   if (list == NULL) {
     return buildChapelStmt(newUse);
   } else {
@@ -345,6 +335,7 @@ static BlockStmt* buildUseList(BaseAST* module, const char* newName,
 // (i.e., function resolution time) then we add the string to our list
 // of library information or to our list of source files.
 //
+// returns 'true' if the string was handled.
 bool processStringInRequireStmt(Expr* expr,
                                 bool atModuleScope,
                                 const char* str,
@@ -361,7 +352,8 @@ bool processStringInRequireStmt(Expr* expr,
         if (!atModuleScope) {
           USR_WARN(expr, "using 'require' on a Chapel source file not at module scope is deprecated");
         }
-        addSourceFile(str, NULL);
+        // no need to add the source file since that is handled
+        // within resolveVisibilityStmtsQuery.
         return true;
       } else {
         USR_FATAL("'require' cannot handle non-literal '.chpl' files");
@@ -432,7 +424,6 @@ BlockStmt* buildUseStmt(Expr* mod, const char * rename,
 
   UseStmt* newUse = new UseStmt(mod, rename, &namesList, except, &renameMap,
                                 privateUse);
-  addModuleToSearchList(newUse, mod);
 
   delete names;
 
@@ -508,7 +499,6 @@ ImportStmt* buildImportStmt(Expr* mod) {
   // Leave the privacy a dummy value until we know what it should be (which
   // happens when we are done determining how many subexpressions there are)
   ImportStmt* newImport = new ImportStmt(mod);
-  addModuleToSearchList(newImport, mod);
 
   return newImport;
 }
@@ -520,7 +510,6 @@ ImportStmt* buildImportStmt(Expr* mod, const char* rename) {
   // Leave the privacy a dummy value until we know what it should be (which
   // happens when we are done determining how many subexpressions there are)
   ImportStmt* newImport = new ImportStmt(mod, rename);
-  addModuleToSearchList(newImport, mod);
 
   return newImport;
 }
@@ -569,7 +558,6 @@ ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
   // Leave the privacy a dummy value until we know what it should be (which
   // happens when we are done determining how many subexpressions there are)
   ImportStmt* newImport = new ImportStmt(mod, &namesList, &renameMap);
-  addModuleToSearchList(newImport, mod);
 
   delete names;
 
@@ -1582,38 +1570,24 @@ DefExpr* buildClassDefExpr(const char*               name,
                            AggregateTag              tag,
                            const std::vector<Expr*>& inherits,
                            BlockStmt*                decls,
-                           Flag                      externFlag) {
+                           Flag                      externFlag,
+                           ModTag                    modTag) {
   bool isExtern = externFlag == FLAG_EXTERN;
-  AggregateType* ct = NULL;
-  TypeSymbol* ts = NULL;
+  AggregateType* ct = nullptr;
+  TypeSymbol* ts = nullptr;
 
   ct = new AggregateType(tag);
 
-  // Hook the string type in the modules
-  // to avoid duplication with dtString created in initPrimitiveTypes().
-  // gatherWellKnownTypes runs too late to help.
-  if (strcmp("_string", name) == 0) {
-    ct = installInternalType(ct, dtString);
-    ts = ct->symbol;
-  } else if (strcmp("_bytes", name) == 0) {
-    ct = installInternalType(ct, dtBytes);
-    ts = ct->symbol;
-  } else if (strcmp("_locale", name) == 0) {
-    ct = installInternalType(ct, dtLocale);
-    ts = ct->symbol;
-  } else if (strcmp("_range", name) == 0) {
-    ct = installInternalType(ct, dtRange);
-    ts = ct->symbol;
-  } else if (strcmp("_object", name) == 0) {
-    ct = installInternalType(ct, dtObject);
-    ts = ct->symbol;
-  } else if (strcmp("_owned", name) == 0) {
-    ct = installInternalType(ct, dtOwned);
-    ts = ct->symbol;
-  } else if (strcmp("_shared", name) == 0) {
-    ct = installInternalType(ct, dtShared);
-    ts = ct->symbol;
-  } else {
+  // For certain internal types (e.g. dtString / _string), hook
+  // up the global variable type to the type we are now creating
+  if (modTag == MOD_INTERNAL || modTag == MOD_STANDARD) {
+    if (AggregateType* dt = shouldWireWellKnownType(name)) {
+      ct = installInternalType(ct, dt);
+      ts = ct->symbol;
+    }
+  }
+
+  if (ts == nullptr) {
     ts = new TypeSymbol(name, ct);
   }
 
@@ -2074,10 +2048,11 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   its try block if we detect exception handling is not needed (e.g. we're
   not in a throwing function, and not in a try).
 */
-BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block) {
+BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block, ModTag modTag)
+{
   auto ret = new BlockStmt();
 
-  if (fWarnUnstable && currentModuleType == MOD_USER) {
+  if (fWarnUnstable && modTag == MOD_USER) {
     USR_WARN(managers, "manage statements are not stable and may change");
   }
 

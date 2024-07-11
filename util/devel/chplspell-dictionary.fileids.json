@@ -176,9 +176,6 @@
   "7e01f6c6-4110-11e8-af7e-10ddb1d4c3d5": [
     "compiler/include/symbol.h"
   ],
-  "9ae97fd6-f560-11eb-bb15-35b7469d4b43": [
-    "compiler/include/tmpdirname.h"
-  ],
   "34addaee-9f76-11ec-866d-111c8d7a1817": [
     "compiler/include/vec.h"
   ],
@@ -363,9 +360,6 @@
   ],
   "9627af8c-e581-11e8-954d-10ddb1d4c3d5": [
     "compiler/util/stringutil.cpp"
-  ],
-  "bfdd8b4e-f55f-11eb-bb15-35b7469d4b43": [
-    "compiler/util/tmpdirname.cpp"
   ],
   "97641a68-1e44-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/CompilerDebugging.rst"

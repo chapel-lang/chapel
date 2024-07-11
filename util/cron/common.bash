@@ -83,7 +83,7 @@ export CHPL_TARGET_CPU=none
 
 explicit_prefix=${CHPL_NIGHTLY_LOG_PREFIX}
 default_prefix=${TMPDIR:-/tmp}/chapel_logs
-css_prefix=/cray/css/users/chapelu
+css_prefix=/hpcdc/project/chapel
 if [ -n "$explicit_prefix" ]; then
     LOGDIR_PREFIX=$explicit_prefix
 elif [ -d $css_prefix ] ; then
@@ -97,7 +97,7 @@ else
 fi
 export LOGDIR_PREFIX
 
-default_perf_prefix=/cray/css/users/chapelu
+default_perf_prefix=/hpcdc/project/chapel
 if [ ! -d $default_perf_prefix ] ; then
   default_perf_prefix=/cy/users/chapelu
 fi

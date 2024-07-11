@@ -219,6 +219,14 @@ inline proc getFieldRef(ref x:?t, param i:int) ref {
   return __primitive("field by num", x, i+1);
 }
 
+pragma "unsafe"
+@chpldoc.nodoc
+@unstable(reason="'getFieldRef' is unstable")
+inline proc getFieldRef(x: borrowed, param i:int) ref {
+  checkValidQueryT(x.type);
+  return __primitive("field by num", x, i+1);
+}
+
 /* Get a mutable ref to a field in a class or record by name.
    Will generate a compilation error if a field with that name
    is not found or if the class or record is not mutable.

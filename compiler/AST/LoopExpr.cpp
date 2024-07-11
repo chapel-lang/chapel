@@ -623,7 +623,7 @@ static void findOuterVars(LoopExpr* loopExpr,
   }
 }
 
-static ArgSymbol* newOuterVarArg(Symbol* ovar) {
+ArgSymbol* newOuterVarArg(Symbol* ovar) {
   Type* argType = ovar->type;
   if (argType == dtUnknown)
     argType = dtAny;
@@ -715,7 +715,7 @@ static void adjustIndexDefPoints(FnSymbol* xifn, AList* indexDefs) {
     forLoop->insertAtHead(expr->remove());
 }*/
 
-static void scopeResolveAndNormalize(FnSymbol* fn) {
+void scopeResolveAndNormalizeGeneratedLoweringFn(FnSymbol* fn) {
   TransformLogicalShortCircuit vis;
   addToSymbolTable(fn);
   fn->accept(&vis);
@@ -887,20 +887,20 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
       fn->insertAtHead(new DefExpr(fifn));
     }
 
-    scopeResolveAndNormalize(fn);
+    scopeResolveAndNormalizeGeneratedLoweringFn(fn);
   } else {
     fn->defPoint->insertBefore(new DefExpr(sifn));
-    scopeResolveAndNormalize(sifn);
+    scopeResolveAndNormalizeGeneratedLoweringFn(sifn);
 
     if (forall) {
       fn->defPoint->insertBefore(new DefExpr(lifn));
-      scopeResolveAndNormalize(lifn);
+      scopeResolveAndNormalizeGeneratedLoweringFn(lifn);
 
       fn->defPoint->insertBefore(new DefExpr(fifn));
-      scopeResolveAndNormalize(fifn);
+      scopeResolveAndNormalizeGeneratedLoweringFn(fifn);
     }
 
-    scopeResolveAndNormalize(fn);
+    scopeResolveAndNormalizeGeneratedLoweringFn(fn);
   }
 
 

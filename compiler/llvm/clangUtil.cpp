@@ -3498,8 +3498,7 @@ void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type, bool isU
   store.u.type = type;
   store.isUnsigned = isUnsigned;
   /*fprintf(stderr, "Adding global type %s ", name.str().c_str());
-  type->dump();
-  fprintf(stderr, "\n");
+  print_llvm(type);
   */
   (layers.back())[name] = store;
 }
@@ -4089,14 +4088,8 @@ getSingleCGArgInfo(::Type* type) {
   return argInfo;
 }
 
-static unsigned helpGetCTypeAlignment(const clang::QualType& qType) {
-  GenInfo* info = gGenInfo;
-  INT_ASSERT(info);
-  ClangInfo* clangInfo = info->clangInfo;
-  INT_ASSERT(clangInfo);
-
-  unsigned alignInBits = clangInfo->Ctx->getTypeAlignIfKnown(qType);
-
+int getCTypeAlignment(const clang::QualType& qType) {
+  unsigned alignInBits = gGenInfo->clangInfo->Ctx->getTypeAlignIfKnown(qType);
   unsigned alignInBytes = alignInBits / 8;
   // round it up to a power of 2
   unsigned rounded = 1;
@@ -4105,49 +4098,30 @@ static unsigned helpGetCTypeAlignment(const clang::QualType& qType) {
   return rounded;
 }
 
-static unsigned helpGetCTypeAlignment(const clang::TypeDecl* td) {
-  QualType qType;
+int getCTypeAlignment(::Type* type) {
+  // find the TypeDecl
+  clang::TypeDecl* cType = NULL;
+  clang::ValueDecl* cVal = NULL;
+  gGenInfo->lvt->getCDecl(type->symbol->cname, &cType, &cVal);
+  const clang::TypeDecl* td = cType;
 
+  // find the QualType
+  QualType qType;
   if (const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td)) {
     qType = tnd->getCanonicalDecl()->getUnderlyingType();
   } else if (const EnumDecl* ed = dyn_cast<EnumDecl>(td)) {
     qType = ed->getCanonicalDecl()->getIntegerType();
   } else if (const RecordDecl* rd = dyn_cast<RecordDecl>(td)) {
     RecordDecl *def = rd->getDefinition();
-    INT_ASSERT(def);
+    if (def == nullptr)
+      // ex. opaque pointer in test/extern/records/OpaqueStructNoField.chpl
+      return ALIGNMENT_DEFER;
     qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
   } else {
     INT_FATAL("Unknown clang type declaration");
   }
 
-  return helpGetCTypeAlignment(qType);
-}
-static unsigned helpGetAlignment(::Type* type) {
-  GenInfo* info = gGenInfo;
-  INT_ASSERT(info);
-
-  if (type->symbol->hasFlag(FLAG_EXTERN)) {
-    clang::TypeDecl* cType = NULL;
-    clang::ValueDecl* cVal = NULL;
-    info->lvt->getCDecl(type->symbol->cname, &cType, &cVal);
-    if (cType) {
-      return helpGetCTypeAlignment(cType);
-    }
-  }
-
-  // use the maximum alignment of all the fields
-  unsigned maxAlign = 1;
-
-  if (isRecord(type) || isUnion(type)) {
-    AggregateType* at = toAggregateType(type);
-    for_fields(field, at) {
-      unsigned fieldAlign = helpGetAlignment(field->type);
-      if (maxAlign < fieldAlign)
-        maxAlign = fieldAlign;
-    }
-  }
-
-  return maxAlign;
+  return getCTypeAlignment(qType);
 }
 
 bool isCTypeUnion(const char* name) {
@@ -4172,45 +4146,24 @@ bool isCTypeUnion(const char* name) {
   return false;
 }
 
-llvm::MaybeAlign getPointerAlign(int addrSpace) {
+// pointer alignment from clang, in the default address space
+// unless given explicitly
+#if HAVE_LLVM_VER >= 160
+llvm::MaybeAlign getPointerAlign(clang::LangAS AS)
+#else
+llvm::MaybeAlign getPointerAlign(int AS)
+#endif
+{
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
-#if HAVE_LLVM_VER >= 160
-  auto AS = LangAS::Default;
-#else
-  auto AS = 0;
-#endif
   uint64_t align = clangInfo->Clang->getTarget().getPointerAlign(AS);
   return llvm::MaybeAlign(align);
 }
-llvm::MaybeAlign getCTypeAlignment(const clang::TypeDecl* td) {
-  unsigned rounded = helpGetCTypeAlignment(td);
-  if (rounded > 1) {
-    return llvm::MaybeAlign(rounded);
-  } else {
-    return llvm::MaybeAlign();
-  }
-}
-llvm::MaybeAlign getCTypeAlignment(const clang::QualType& qt) {
-  unsigned rounded = helpGetCTypeAlignment(qt);
-  if (rounded > 1) {
-    return llvm::MaybeAlign(rounded);
-  } else {
-    return llvm::MaybeAlign();
-  }
-}
-llvm::MaybeAlign getAlignment(::Type* type) {
-  unsigned rounded = helpGetAlignment(type);
-  if (rounded > 1) {
-    return llvm::MaybeAlign(rounded);
-  } else {
-    return llvm::MaybeAlign();
-  }
-}
 
+// Can we invoke 'cname' when it does not have a declaration?
 bool isBuiltinExternCFunction(const char* cname)
 {
   if( 0 == strcmp(cname, "sizeof") ) return true;

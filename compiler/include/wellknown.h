@@ -27,6 +27,15 @@ class AggregateType;
 class Type;
 class FnSymbol;
 
+void initializeWellKnown();
+
+// for use in build.cpp when processing a class/record declaration.
+// If the name matches a well-known type that is needed early,
+// this function returns the AggregateType* which should have its
+// fields replaced with the type that is being created.
+// Otherwise, this function returns nullptr.
+AggregateType* shouldWireWellKnownType(const char* name);
+
 void gatherIteratorTags();
 void gatherWellKnownTypes();
 void gatherWellKnownFns();
@@ -40,20 +49,27 @@ void clearGenericWellKnownFunctions();
 
 // The well-known types
 extern AggregateType* dtArray;
-extern AggregateType* dtDomain;
 extern AggregateType* dtBaseArr;
 extern AggregateType* dtBaseDom;
+extern AggregateType* dtBytes;
 extern AggregateType* dtCFI_cdesc_t;
 extern AggregateType* dtDist;
+extern AggregateType* dtDomain;
 extern AggregateType* dtError;
 extern AggregateType* dtExternalArray;
+extern AggregateType* dtLocale;
 extern AggregateType* dtLocaleID;
 extern AggregateType* dtMainArgument;
+extern AggregateType* dtObject;
 extern AggregateType* dtOnBundleRecord;
 extern AggregateType* dtOpaqueArray;
+extern AggregateType* dtOwned;
+extern AggregateType* dtRange;
+extern AggregateType* dtRef;
+extern AggregateType* dtShared;
+extern AggregateType* dtString;
 extern AggregateType* dtTaskBundleRecord;
 extern AggregateType* dtTuple;
-extern AggregateType* dtRef;
 
 extern Type* dt_c_int;
 extern Type* dt_c_uint;

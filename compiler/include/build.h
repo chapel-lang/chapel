@@ -173,7 +173,8 @@ DefExpr*  buildClassDefExpr(const char*               name,
                             AggregateTag              tag,
                             const std::vector<Expr*>& inherits,
                             BlockStmt*                decls,
-                            Flag                      isExtern);
+                            Flag                      isExtern,
+                            ModTag                    modTag);
 
 void setupTypeIntentArg(ArgSymbol* arg);
 
@@ -210,7 +211,8 @@ BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
                              const char* resourceName);
-BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block);
+BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block,
+                           ModTag modTag);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);
 BlockStmt* buildSyncStmt(Expr* stmt);

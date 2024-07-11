@@ -1,0 +1,4 @@
+bug: strings in ternary expressions will sometimes segfault
+#25032
+
+When this future is resolved, please remove the .skipif file

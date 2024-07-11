@@ -194,7 +194,7 @@ include $(THIRD_PARTY_DIR)/jemalloc/Makefile.common.include
 ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--host)
 include $(THIRD_PARTY_DIR)/jemalloc/Makefile.host.include-$(CHPL_MAKE_HOST_JEMALLOC)
 else
-include $(THIRD_PARTY_DIR)/jemalloc/Makefile.target.include
+include $(THIRD_PARTY_DIR)/jemalloc/Makefile.target.include-$(CHPL_MAKE_TARGET_JEMALLOC)
 endif
 include $(THIRD_PARTY_DIR)/gmp/Makefile.include
 include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
@@ -277,7 +277,6 @@ CHPL_OLD_BIN_DIR = $(CHPL_MAKE_HOME)/bin/$(CHPL_MAKE_HOST_PLATFORM)
 CHPL = $(CHPL_BIN_DIR)/chpl$(EXE_SUFFIX)
 CHPL_OLD = $(CHPL_OLD_BIN_DIR)/chpl
 CHPLDOC = $(CHPL_BIN_DIR)/chpldoc$(EXE_SUFFIX)
-CHPLDEF = $(CHPL_BIN_DIR)/chpldef$(EXE_SUFFIX)
 
 
 #
