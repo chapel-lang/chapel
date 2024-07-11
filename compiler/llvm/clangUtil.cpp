@@ -4709,10 +4709,10 @@ static void stripPtxDebugDirective(const std::string& artifactFilename) {
 
 }
 
-static void setPATH(std::string PATH) {
+static void setPATH(const std::string& PATH) {
   setenv("PATH", PATH.c_str(), /*override*/ 1);
 }
-static std::string addToPATH(std::string newPathElm) {
+static std::string addToPATH(const std::string& newPathElm) {
   std::string curPath = std::getenv("PATH");
   std::string adjPath = curPath + std::string(":") + newPathElm;
   setPATH(adjPath);
