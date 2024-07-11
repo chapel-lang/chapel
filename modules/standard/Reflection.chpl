@@ -217,8 +217,8 @@ pragma "unsafe"
 inline proc getFieldRef(ref x:?t, param i:int) ref {
   checkValidQueryT(t);
   if isType(__primitive("field by num", x, i+1)) then
-    compilerError("cannot return a reference to 'type' field",
-                  getFieldName(t, i));
+    compilerError("cannot return a reference to 'type' field '",
+                  getFieldName(t, i), "'");
   return __primitive("field by num", x, i+1);
 }
 
