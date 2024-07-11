@@ -429,11 +429,6 @@ checkFunction(FnSymbol* fn) {
 
   if (numVoidReturns != 0 && numNonVoidReturns != 0)
     USR_FATAL_CONT(fn, "Not all returns in this function return a value");
-  if (!isIterator && !fn->hasFlag(FLAG_NO_FN_BODY) &&
-      fn->returnsRefOrConstRef() &&
-      numNonVoidReturns == 0) {
-    USR_FATAL_CONT(fn, "function declared 'ref' but does not return anything");
-  }
 
   if (isIterator) {
     for_formals(formal, fn) {
