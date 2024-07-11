@@ -474,7 +474,7 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
 
 // See if the user is trying to access the enum constant of a type, but it
 // wasn't resolved during scope resolution, which means that type resolution
-// was required to figure out the receiver. 
+// was required to figure out the receiver.
 static Expr* preFoldLateEnumConstantAccess(CallExpr* call) {
   UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
   if (!urse) return call;
