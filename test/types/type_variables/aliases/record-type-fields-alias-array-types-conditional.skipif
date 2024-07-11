@@ -1,1 +1,1 @@
-CHPL_SANITIZE_EXE != address
+CHPL_SANITIZE != address
