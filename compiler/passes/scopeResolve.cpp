@@ -1194,15 +1194,9 @@ static void insertFieldAccess(FnSymbol*          method,
 static int computeNestedDepth(const char* name, Type* type) {
   int retval = 0;
 
-  // enums can be nested within classes and they should not be allowed
-  // to access outer fields.
-  AggregateType* ct = toAggregateType(type);
-  if (auto et = toEnumType(type)) {
-    retval += 1;
-    ct = toAggregateType(et->symbol->defPoint->parentSymbol->type);
-  }
-
   if (isMethodName(name, type) == true) {
+    AggregateType* ct = toAggregateType(type);
+
     // count how many classes out from current depth that
     // this method is first defined in
     while (ct != NULL && isMethodNameLocal(name, ct) == false) {
@@ -1213,6 +1207,7 @@ static int computeNestedDepth(const char* name, Type* type) {
   } else {
     // count how many classes out from current depth that
     // this symbol is first defined in
+    AggregateType* ct = toAggregateType(type);
 
     while (ct != NULL) {
       if (ct->getField(name, false) != nullptr ||
