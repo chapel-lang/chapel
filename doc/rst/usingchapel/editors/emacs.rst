@@ -8,9 +8,15 @@ Emacs
 Syntax Highlighting
 ~~~~~~~~~~~~~~~~~~~
 
-To get syntax highlighting for Chapel in Emacs, you can use the files in the top-level ``highlight/emacs`` directory of the Chapel source tree.  These files are licensed under the GPL, see ``highlight/emacs/LICENSE``.  To use them, take the following steps:
+To get syntax highlighting for Chapel in Emacs, you can use the files in the
+top-level ``highlight/emacs`` directory of the Chapel source tree.  These files
+are licensed under the GPL, see ``highlight/emacs/LICENSE``.  To use them, take
+the following steps:
 
-1. Copy/move the ``highlight/emacs`` directory to your ``CHPL_HOME`` directory. If you installed Chapel from a package manager, you may need to download the Chapel source code to get these files. To query the correct value of ``CHPL_HOME``, run ``chpl --print-chpl-home``.
+1. Copy/move the ``highlight/emacs`` directory to your ``CHPL_HOME`` directory.
+   If you installed Chapel from a package manager, you may need to download the
+   Chapel source code to get these files. To query the correct value of
+   ``CHPL_HOME``, run ``chpl --print-chpl-home``.
 
 2. Add the following lines to your standard ``.emacs`` or ``.emacs.d/init.el`` file:
 
