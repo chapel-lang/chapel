@@ -1173,4 +1173,17 @@ VarSymbol* errorSink(FunctionType::Kind kind) {
   return ret;
 }
 
+void emitWarningForStandaloneCapture(Expr* expr, const char* name) {
+  // The mention is literally:
+  //
+  //   fn;
+  //
+  // This is likely wrong; the user probably meant to call it.
+  if (expr->getStmtExpr() == expr) {
+    USR_WARN(expr, "function '%s' is mentioned but not called, so it is being "
+             "captured as a first-class function", name);
+    USR_PRINT(expr, "'%s' is a parenful function, so it needs '(...)' to be called", name);
+  }
+}
+
 } // end namespace 'fcfs'

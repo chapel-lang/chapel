@@ -125,6 +125,9 @@ const ClosureEnv& computeOuterVariables(FnSymbol* fn);
 /*** Use to ensure a clean error for failed capture without other context. */
 VarSymbol* errorSink(FunctionType::Kind);
 
+/*** When a function is being captured but it's a statement in and of itself, warn. */
+void emitWarningForStandaloneCapture(Expr* expr, const char* name);
+
 } // end namespace 'fcfs'
 
 #endif

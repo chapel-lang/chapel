@@ -33,6 +33,7 @@
 #include "ForLoop.h"
 #include "IfExpr.h"
 #include "ImportStmt.h"
+#include "fcf-support.h"
 #include "initializerRules.h"
 #include "LoopExpr.h"
 #include "LoopStmt.h"
@@ -1038,6 +1039,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
       // not reporting the correct number of lookups for overloaded
       // function symbols.
       prim = new CallExpr(PRIM_CAPTURE_FN, usymExpr->copy());
+      fcfs::emitWarningForStandaloneCapture(usymExpr, usymExpr->unresolved);
 
       // This business is necessary because of normalizing. If we are the
       // child of a "c_ptrTo" call, we need to know to do some pattern
