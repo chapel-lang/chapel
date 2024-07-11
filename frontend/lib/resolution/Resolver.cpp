@@ -3278,7 +3278,11 @@ bool Resolver::enter(const NamedDecl* decl) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
-  emitMultipleDefinedSymbolErrors(context, scope);
+  // Silence redefinition warnings for enum elements because we have
+  // a special error (DuplicateEnumElement) for those.
+  if (!decl->isEnumElement()) {
+    emitMultipleDefinedSymbolErrors(context, scope);
+  }
 
   enterScope(decl);
 
