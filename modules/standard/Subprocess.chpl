@@ -476,6 +476,19 @@ module Subprocess {
                arguments.
 
      :throws IllegalArgumentError: Thrown when ``args`` is an empty array.
+
+     Some errors at process creation may be deferred until later method calls
+     are made.  These include:
+
+     - :class:`~OS.BlockingIoError`: If there weren't enough system resources
+       when the subprocess was created to create it.
+
+     - :class:`~OS.PermissionError`: If there were permission issues when
+       setting up the subprocess.
+
+     - :class:`~OS.SystemError`: If there were other problems when initially
+       setting up the subprocess.
+
      */
   proc spawn(args:[] string, env:[] string=Subprocess.empty_env, executable="",
              stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
@@ -711,6 +724,9 @@ module Subprocess {
      :returns: a :record:`subprocess` locking set according to the arguments.
 
      :throws IllegalArgumentError: Thrown when ``command`` is an empty string.
+
+     Some errors at process creation may be deferred until later method calls
+     are made, see :proc:`spawn` for these errors.
   */
   proc spawnshell(command:string, env:[] string=Subprocess.empty_env,
                   stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
@@ -1035,19 +1051,17 @@ module Subprocess {
 
     :arg signal: the signal to send
 
-    :throws BlockingIoError: If there weren't enough system resources when the
-                             subprocess was created to create it.
     :throws PermissionError: If the program did not have permission to send that
-                             signal to the target subprocess, or if there were
-                             permission issues when setting up the subprocess.
+                             signal to the target subprocess.
     :throws IllegalArgumentError: If an invalid signal was specified.
-    :throws SystemError: If there were other problems when initially setting up
-                         the subprocess.
     :throws ProcessLookupError: If the subprocess's pid or process group does
                                 not exist.  This can also happen if the
                                 subprocess is a zombie (a process that has
                                 already committed termination but has not yet
                                 been waited for).
+
+    In addition, some errors that occurred when the process was created may be
+    thrown when this method is called, see the documentation for :proc:`spawn`.
    */
   proc subprocess.sendPosixSignal(signal:int) throws {
     try _throw_on_launch_error();
@@ -1069,19 +1083,6 @@ module Subprocess {
     Request an abnormal termination of the child process.  The
     associated signal, `SIGABRT`, may be caught and handled by
     the child process. See :proc:`subprocess.sendPosixSignal`.
-
-    :throws BlockingIoError: If there weren't enough system resources when the
-                             subprocess was created to create it.
-    :throws PermissionError: If the program did not have permission to send that
-                             signal to the target subprocess, or if there were
-                             permission issues when setting up the subprocess.
-    :throws SystemError: If there were other problems when initially setting up
-                         the subprocess.
-    :throws ProcessLookupError: If the subprocess's pid or process group does
-                                not exist.  This can also happen if the
-                                subprocess is a zombie (a process that has
-                                already committed termination but has not yet
-                                been waited for).
    */
   proc subprocess.abort() throws {
     try _throw_on_launch_error();
@@ -1091,19 +1092,6 @@ module Subprocess {
   /* Send the child process an alarm signal. The associated signal,
      `SIGALRM`, may be caught and handled by the child process. See
      :proc:`subprocess.sendPosixSignal`.
-
-    :throws BlockingIoError: If there weren't enough system resources when the
-                             subprocess was created to create it.
-    :throws PermissionError: If the program did not have permission to send that
-                             signal to the target subprocess, or if there were
-                             permission issues when setting up the subprocess.
-    :throws SystemError: If there were other problems when initially setting up
-                         the subprocess.
-    :throws ProcessLookupError: If the subprocess's pid or process group does
-                                not exist.  This can also happen if the
-                                subprocess is a zombie (a process that has
-                                already committed termination but has not yet
-                                been waited for).
    */
   proc subprocess.alarm() throws {
     try _throw_on_launch_error();
@@ -1114,19 +1102,6 @@ module Subprocess {
     Unconditionally kill the child process.  The associated signal,
     `SIGKILL`, cannot be caught by the child process. See
     :proc:`subprocess.sendPosixSignal`.
-
-    :throws BlockingIoError: If there weren't enough system resources when the
-                             subprocess was created to create it.
-    :throws PermissionError: If the program did not have permission to send that
-                             signal to the target subprocess, or if there were
-                             permission issues when setting up the subprocess.
-    :throws SystemError: If there were other problems when initially setting up
-                         the subprocess.
-    :throws ProcessLookupError: If the subprocess's pid or process group does
-                                not exist.  This can also happen if the
-                                subprocess is a zombie (a process that has
-                                already committed termination but has not yet
-                                been waited for).
    */
   proc subprocess.kill() throws {
     try _throw_on_launch_error();
@@ -1137,19 +1112,6 @@ module Subprocess {
     Request termination of the child process.  The associated signal,
     `SIGTERM`, may be caught and handled by the child process. See
     :proc:`subprocess.sendPosixSignal`.
-
-    :throws BlockingIoError: If there weren't enough system resources when the
-                             subprocess was created to create it.
-    :throws PermissionError: If the program did not have permission to send that
-                             signal to the target subprocess, or if there were
-                             permission issues when setting up the subprocess.
-    :throws SystemError: If there were other problems when initially setting up
-                         the subprocess.
-    :throws ProcessLookupError: If the subprocess's pid or process group does
-                                not exist.  This can also happen if the
-                                subprocess is a zombie (a process that has
-                                already committed termination but has not yet
-                                been waited for).
    */
   proc subprocess.terminate() throws {
     try _throw_on_launch_error();
