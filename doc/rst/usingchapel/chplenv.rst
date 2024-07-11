@@ -595,7 +595,7 @@ CHPL_ATOMICS
 
    .. warning::
 
-     Using ``CHPL_ATOMICS=intrinsics`` is a known performance issue. Please consider using ``CHPL_ATOMICS=cstdlib`` or ``CHPL_ATOMICS=locks`` for better performance, if possible. If not, please open an issue on GitHub.
+     Using ``CHPL_ATOMICS=intrinsics`` is a known performance issue. Please consider using ``CHPL_ATOMICS=cstdlib`` for better performance, if possible. If not, please open an issue on GitHub.
 
 .. _readme-chplenv.CHPL_TIMERS:
 
