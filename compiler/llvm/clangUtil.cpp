@@ -5008,7 +5008,8 @@ void makeBinaryLLVM(void) {
     if (fMultiLocaleInterop) {
       std::string cmd = std::string(CHPL_HOME);
       cmd += "/util/config/compileline --multilocale-lib-deps";
-      std::string libs = runCommand(cmd);
+      std::string libs = runCommand(cmd,
+                                    "Get multilocale-specific dependencies");
       // Erase trailing newline.
       libs.erase(libs.size() - 1);
       clangLDArgs.push_back(libs);
