@@ -192,6 +192,11 @@ struct Resolver {
                                          const uast::AstNode* fieldStmt,
                                          ResolutionResultByPostorderID& byPostorder);
 
+  static Resolver createForScopeResolvingEnumConstant(Context* context,
+                                         const uast::Enum* ed,
+                                         const uast::AstNode* fieldStmt,
+                                         ResolutionResultByPostorderID& byPostorder);
+
   // set up Resolver to initially resolve field declaration types
   static Resolver
   createForInitialFieldStmt(Context* context,

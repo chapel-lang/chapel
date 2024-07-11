@@ -2628,6 +2628,23 @@ const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
   return QUERY_END(result);
 }
 
+const ResolutionResultByPostorderID& scopeResolveEnum(Context* context,
+                                                      ID id) {
+  QUERY_BEGIN(scopeResolveEnum, context, id);
+
+  auto ed = parsing::idToAst(context, id)->toEnum();
+  ResolutionResultByPostorderID result;
+
+  if (ed) {
+    for (auto child : ed->enumElements()) {
+      auto res = Resolver::createForScopeResolvingEnumConstant(context, ed, child, result);
+      child->traverse(res);
+    }
+  }
+
+  return QUERY_END(result);
+}
+
 
 const ResolvedFunction* resolveOnlyCandidate(Context* context,
                                              const ResolvedExpression& r) {

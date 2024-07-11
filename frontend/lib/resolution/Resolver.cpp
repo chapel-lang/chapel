@@ -377,6 +377,19 @@ Resolver::createForScopeResolvingField(Context* context,
   return ret;
 }
 
+Resolver
+Resolver::createForScopeResolvingEnumConstant(Context* context,
+                                       const uast::Enum* ed,
+                                       const uast::AstNode* fieldStmt,
+                                       ResolutionResultByPostorderID& byPostorder) {
+  auto ret = Resolver(context, ed, byPostorder, nullptr);
+  ret.scopeResolveOnly = true;
+  ret.curStmt = fieldStmt;
+  ret.byPostorder.setupForSymbol(ed);
+
+  return ret;
+}
+
 
 // set up Resolver to initially resolve field declaration types
 Resolver
