@@ -2,4 +2,6 @@ stability.chpl:21: In module 'U':
 stability.chpl:22: warning: this module is unstable
 stability.chpl:23: In function 'main':
 stability.chpl:24: warning: the API is not finalized
+stability.chpl:6: warning: declaring en enumeration inside of a class or record is unstable
+stability.chpl:8: warning: declaring en enumeration inside of a class or record is unstable
 stability.chpl:25: warning: does not support new enum
