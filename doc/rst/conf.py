@@ -117,6 +117,7 @@ exclude_patterns = ['Makefile',
                     'developer/implementation',
                     'util',
                     'meta',
+                    'usingchapel/editors/',
 
                     # These don't need to be processed separately
                     # since they are included in the spec with .. include::
@@ -133,7 +134,6 @@ exclude_patterns = ['Makefile',
                     'builtins/String.rst',
                     'modules/standard/AutoMath.rst',
                     'modules/standard/ChapelIO.rst',
-                    'usingchapel/editors/*.rst',
                    ]
 
 # The reST default role (used for this markup: `text`) to use for all
