@@ -2803,12 +2803,12 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
         // We found the aggregate type in which the to-ID is declared,
         // so there's no nested class issues.
         break;
-      } else if (asttags::isAggregateDecl(parsing::idToTag(context, searchId))) {
+      } else if (asttags::isTypeDecl(parsing::idToTag(context, searchId))) {
         auto parentAst = parsing::idToAst(context, parentId);
         auto searchAst = parsing::idToAst(context, searchId);
-        auto searchAD = searchAst->toAggregateDecl();
+        auto searchAD = searchAst->toTypeDecl();
         // It's an error!
-        CHPL_REPORT(context, NestedClassFieldRef, parentAst->toAggregateDecl(),
+        CHPL_REPORT(context, NestedClassFieldRef, parentAst->toTypeDecl(),
                     searchAD, node, toId);
         break;
       }
