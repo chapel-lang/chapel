@@ -1180,6 +1180,16 @@ void emitWarningForStandaloneCapture(Expr* expr, const char* name) {
   //
   // This is likely wrong; the user probably meant to call it.
   if (expr->getStmtExpr() == expr) {
+    if (auto parent = expr->parentExpr) {
+      if (auto block = toBlockStmt(parent)) {
+        if (block->blockTag == BLOCK_TYPE) {
+          // When used in a type expression, it's not really standalone.
+          return;
+        }
+      }
+    }
+
+
     USR_WARN(expr, "function '%s' is mentioned but not called, so it is being "
              "captured as a first-class function", name);
     USR_PRINT(expr, "'%s' is a parenful function, so it needs '(...)' to be called", name);
