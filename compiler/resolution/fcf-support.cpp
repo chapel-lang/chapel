@@ -1180,12 +1180,10 @@ void emitWarningForStandaloneCapture(Expr* expr, const char* name) {
   //
   // This is likely wrong; the user probably meant to call it.
   if (expr->getStmtExpr() == expr) {
-    if (auto parent = expr->parentExpr) {
-      if (auto block = toBlockStmt(parent)) {
-        if (block->blockTag == BLOCK_TYPE) {
-          // When used in a type expression, it's not really standalone.
-          return;
-        }
+    if (auto block = toBlockStmt(expr->parentExpr)) {
+      if (block->blockTag == BLOCK_TYPE) {
+        // When used in a type expression, it's not really standalone.
+        return;
       }
     }
 
