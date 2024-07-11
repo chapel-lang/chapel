@@ -115,10 +115,10 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TIMERS', RUNTIME | LAUNCHER | DEFAULT, 'tmr'),
     ChapelEnv('CHPL_UNWIND', RUNTIME | LAUNCHER | DEFAULT, 'unwind'),
     ChapelEnv('CHPL_HOST_MEM', COMPILER, 'hostmem'),
-    ChapelEnv('  CHPL_HOST_JEMALLOC', RUNTIME, 'hostjemalloc'),
+    ChapelEnv('  CHPL_HOST_JEMALLOC', RUNTIME | NOPATH, 'hostjemalloc'),
     ChapelEnv('CHPL_MEM', RUNTIME | LAUNCHER | DEFAULT, 'mem'),
     ChapelEnv('CHPL_TARGET_MEM', INTERNAL, 'mem'),
-    ChapelEnv('  CHPL_TARGET_JEMALLOC', RUNTIME, 'tgtjemalloc'),
+    ChapelEnv('  CHPL_TARGET_JEMALLOC', RUNTIME | NOPATH, 'tgtjemalloc'),
     ChapelEnv('CHPL_MAKE', INTERNAL, 'make'),
     ChapelEnv('CHPL_ATOMICS', RUNTIME | LAUNCHER | DEFAULT, 'atomics'),
     ChapelEnv('  CHPL_NETWORK_ATOMICS', INTERNAL | DEFAULT),
@@ -365,7 +365,7 @@ def filter_tidy(chpl_env):
         return gpu == 'amd'
     elif chpl_env.name == '  CHPL_GPU_ARCH':
         return gpu == 'nvidia' or gpu == 'amd'
-    elif chpl_env.name == '  CHPL_HOST_MEM':
+    elif chpl_env.name == '  CHPL_HOST_JEMALLOC':
         return host_mem == 'jemalloc'
     elif chpl_env.name == '  CHPL_TARGET_JEMALLOC':
         return tgt_mem == 'jemalloc'
