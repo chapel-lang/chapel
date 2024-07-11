@@ -1,0 +1,1 @@
+getFieldRef-type.chpl:14: error: cannot return a reference to 'type' field 'x'
