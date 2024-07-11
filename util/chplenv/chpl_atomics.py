@@ -61,7 +61,10 @@ def get(flag='target'):
             elif compiler_val in ['allinea', 'cray-prgenv-allinea']:
                 atomics_val = 'cstdlib'
             elif compiler_val == 'clang':
-                if has_std_atomics():
+                # if using bundled LLVM, we can use cstdlib atomics
+                import chpl_llvm
+                has_llvm = chpl_llvm.get()
+                if has_llvm == "bundled" or has_std_atomics():
                     atomics_val = 'cstdlib'
                 else:
                     atomics_val = 'intrinsics'
