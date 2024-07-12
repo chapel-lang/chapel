@@ -12,7 +12,7 @@ Syntax Highlighting
 ~~~~~~~~~~~~~~~~~~~
 
 To get syntax highlighting for Chapel in Vim, either manually copy the files
-top-level ``highlight/vim`` directory of the Chapel source tree. into your
+top-level ``highlight/vim`` directory of the Chapel source tree into your
 ``$HOME/.vim`` directory or use a plugin manager like `vim-plug`_ to install an unmanaged plugin.
 
 Manual Installation:
@@ -85,7 +85,9 @@ Note that these instructions assume you have already setup Vim with Chapel synta
 
       Plug 'prabirshrestha/vim-lsp'
 
-2. After the ``call plug#end()`` line, add the following configuration:
+2. After the ``call plug#end()`` line, add the following configuration. This
+   configuration registers the Chapel language server with the `vim-lsp`
+   extension and sets up some example keybindings for common LSP operations:
 
    .. code-block:: vim
 
@@ -97,6 +99,8 @@ Note that these instructions assume you have already setup Vim with Chapel synta
               \ })
       endif
 
+      " Configure the lsp plugin for Chapel
+      " This function sets up a few example keybindings
       function! s:on_lsp_buffer_enabled() abort
           setlocal omnifunc=lsp#complete
           setlocal signcolumn=yes
@@ -116,6 +120,7 @@ Note that these instructions assume you have already setup Vim with Chapel synta
           autocmd User lsp_buffer_enabled call s:on_lsp_buffer_enabled()
       augroup END
 
+      " Enables lsp inlay hints and adds some styling
       let g:lsp_inlay_hints_enabled = 1
       highlight lspInlayHintsType ctermfg=grey guifg=grey
 

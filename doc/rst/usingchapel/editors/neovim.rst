@@ -15,7 +15,11 @@ See the :ref:`Vim Syntax Highlighting <vim-syntax>` section for how to setup syn
 Language Server Support
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The built-in LSP API can be used to configure :ref:`Chapel language server <readme-chpl-language-server>` and :ref:`readme-chplcheck` as follows:
+The built-in LSP API can be used to configure :ref:`Chapel language server
+<readme-chpl-language-server>` and :ref:`readme-chplcheck` by adding the
+following to your Neovim configuration file. Note that this assumes you have
+already installed :ref:`lspconfig
+<https://github.com/neovim/nvim-lspconfig?tab=readme-ov-file#quickstart>`_:
 
 .. code-block:: lua
 
