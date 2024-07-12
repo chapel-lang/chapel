@@ -1,0 +1,6 @@
+lib/*
+lib
+cmakeBuild/*
+cmakeBuild
+test_udf2_compileline
+test_udf2_make
