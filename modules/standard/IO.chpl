@@ -2559,7 +2559,6 @@ record defaultSerializer {
     }
   }
 
-  // TODO: add ":ref:" for return type, currently can't refer to it.
   /*
     Start serializing a class by writing the character ``{``.
 
@@ -2567,7 +2566,7 @@ record defaultSerializer {
     :arg name: The name of the class type.
     :arg size: The number of fields in the class.
 
-    :returns: A new :type:`AggregateSerializer`
+    :returns: A new :record:`~IO.defaultSerializer.AggregateSerializer`
   */
   proc startClass(writer: fileWriter, name: string, size: int) throws {
     writer.writeLiteral("{");

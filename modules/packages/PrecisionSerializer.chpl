@@ -18,6 +18,11 @@
  * limitations under the License.
  */
 
+/*
+  This module contains the ``precisionSerializer`` type which provides
+  formatting like the :record:`~IO.defaultSerializer`, but with finer control
+  over the precision and padding of numerical values.
+*/
 module PrecisionSerializer {
   use IO;
   use CTypes;
@@ -72,10 +77,10 @@ module PrecisionSerializer {
 
       :arg precision: The number of digits to display after the decimal point
                       when serializing real values.
-      :arg padding: The number of columns to pad the number with when
+      :arg padding: The number of columns to left-pad the number with when
                     serializing real values, or the minimum column width when
-                    serializing integral values. If zero, no padding/width is
-                    enforced.
+                    serializing integral values (left padding used). If zero,
+                    no padding/width is enforced.
     */
     proc init(precision: int, padding: int = 0) {
       this.precision = precision;
@@ -97,10 +102,10 @@ module PrecisionSerializer {
       Serialize ``val`` with ``writer``.
 
       Real values are serialized with either ``%*.*dr`` or ``%.*dr`` depending on
-      whether a non-zero padding was specified.
+      whether a non-zero padding was specified. Left padding is used if specified.
 
       Integral values are serialized with either ``%*i`` or ``%i`` depending on
-      whether a non-zero padding was specified.
+      whether a non-zero padding was specified. Left padding is used if specified.
 
       Complex numbers are serialized as ``%z``.
 
@@ -128,23 +133,21 @@ module PrecisionSerializer {
       :arg val: The value to be serialized.
     */
     proc ref serializeValue(writer: fileWriter, const val: ?t) : void throws {
-      if isNumericType(t) || isBoolType(t) || isEnumType(t) ||
-        t == string || t == bytes {
-        if isRealType(t) {
-          if this.padding > 0 {
-            writer.writef("%*.*dr", this.padding, this.precision, val);
-          } else {
-            writer.writef("%.*dr", this.precision, val);
-          }
-        } else if isIntegralType(t) {
-          if this.padding > 0 {
-            writer.writef("%*i", this.padding, val);
-          } else {
-            writer._writeOne(_iokind.dynamic, val, writer.getLocaleOfIoRequest());
-          }
+      if isRealType(t) {
+        if this.padding > 0 {
+          writer.writef("%*.*dr", this.padding, this.precision, val);
+        } else {
+          writer.writef("%.*dr", this.precision, val);
+        }
+      } else if isIntegralType(t) {
+        if this.padding > 0 {
+          writer.writef("%*i", this.padding, val);
         } else {
           writer._writeOne(_iokind.dynamic, val, writer.getLocaleOfIoRequest());
         }
+      } else if isNumericType(t) || isBoolType(t) || isEnumType(t) ||
+                t == string || t == bytes {
+        writer._writeOne(_iokind.dynamic, val, writer.getLocaleOfIoRequest());
       } else if t == _nilType {
         writer.writeLiteral("nil");
       } else if isClassType(t) || isAnyCPtr(t) || chpl_isDdata(t) {
@@ -158,7 +161,6 @@ module PrecisionSerializer {
       }
     }
 
-    // TODO: add ":ref:" for return type, currently can't refer to it.
     /*
       Start serializing a class by writing the character ``{``.
 
@@ -166,7 +168,7 @@ module PrecisionSerializer {
       :arg name: The name of the class type.
       :arg size: The number of fields in the class.
 
-      :returns: A new :type:`AggregateSerializer`
+      :returns: A new :record:`~PrecisionSerializer.precisionSerializer.AggregateSerializer`
     */
     proc startClass(writer: fileWriter, name: string, size: int) throws {
       writer.writeLiteral("{");
@@ -188,8 +190,9 @@ module PrecisionSerializer {
     }
 
     /*
-      Returned by ``startClass`` or ``startRecord`` to provide the API for
-      serializing classes or records.
+      Returned by :proc:`~PrecisionSerializer.precisionSerializer.startClass`
+      or :proc:`~PrecisionSerializer.precisionSerializer.startRecord` to provide
+      the API for serializing classes or records.
 
       A ``class`` with integer fields 'x' and 'y' with values '0' and '5' would
       be serialized as:
@@ -254,7 +257,7 @@ module PrecisionSerializer {
           {x = 5, y = 2.000000000000000}
 
         :arg writer: The :record:`~IO.fileWriter` to be used when serializing. Must match
-                    the writer used to create current AggregateSerializer.
+                    the writer used to create the current ``AggregateSerializer``.
         :arg name: The name of the class type.
         :arg size: The number of fields in the class.
 
@@ -283,8 +286,8 @@ module PrecisionSerializer {
       /*
         Ends serialization of the current record by writing the character ``)``
 
-        .. note:: It is an error to call methods on an AggregateSerializer after
-                  invoking 'endRecord'.
+        .. note:: It is an error to call methods on an ``AggregateSerializer`` after
+                  invoking ``endRecord``.
       */
       proc endRecord() throws {
         writer.writeLiteral(_ending);
@@ -305,7 +308,8 @@ module PrecisionSerializer {
     }
 
     /*
-      Returned by ``startTuple`` to provide the API for serializing tuples.
+      Returned by :proc:`~PrecisionSerializer.precisionSerializer.startTuple`
+      to provide the API for serializing tuples.
 
       A tuple will be serialized as a comma-separated list between two
       parentheses. For example, the tuple literal ``(1, 2, 3)`` would be
@@ -345,6 +349,9 @@ module PrecisionSerializer {
 
         Adds a comma between the last value and ``)`` if there was only one
         element.
+
+        .. note:: It is an error to call methods on an ``TupleSerializer`` after
+                  invoking ``endTuple``.
       */
       proc endTuple() throws {
         if size == 1 then
@@ -368,7 +375,8 @@ module PrecisionSerializer {
     }
 
     /*
-      Returned by ``startList`` to provide the API for serializing lists.
+      Returned by :proc:`PrecisionSerializer.precisionSerializer.startList`
+      to provide the API for serializing lists.
 
       A list will be serialized as a comma-separated series of serialized
       elements between two square brackets. For example, serializing a list
@@ -401,6 +409,9 @@ module PrecisionSerializer {
 
       /*
         Ends serialization of the current list by writing the character ``]``.
+
+        .. note:: It is an error to call methods on an ``ListSerializer`` after
+                  invoking ``endList``.
       */
       proc endList() throws {
         writer.writeLiteral("]");
@@ -506,6 +517,9 @@ module PrecisionSerializer {
 
       /*
         Ends serialization of the current array.
+
+        .. note:: It is an error to call methods on an ``ArraySerializer`` after
+                  invoking ``endArray``.
       */
       proc endArray() throws { }
     }
@@ -566,6 +580,9 @@ module PrecisionSerializer {
 
       /*
         Ends serialization of the current map by writing the character ``}``
+
+        .. note:: It is an error to call methods on an ``MapSerializer`` after
+                  invoking ``endMap``.
       */
       proc endMap() throws {
         writer.writeLiteral("}");
