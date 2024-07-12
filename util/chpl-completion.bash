@@ -128,6 +128,7 @@ _chpl ()
 --launcher \
 --ldflags \
 --lib-linkage \
+--lib-pic \
 --lib-search-path \
 --library \
 --library-cmakelists \
@@ -482,6 +483,7 @@ _chpl ()
 --launcher \
 --ldflags \
 --lib-linkage \
+--lib-pic \
 --lib-search-path \
 --license \
 --live-analysis \

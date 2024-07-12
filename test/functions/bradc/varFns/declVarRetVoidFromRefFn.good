@@ -1,0 +1,1 @@
+declVarRetVoidFromRefFn.chpl:1: error: function declared 'ref' but does not return anything

@@ -1,0 +1,3 @@
+fielderator-generic-error-typeref.chpl:3: In function 'parse':
+fielderator-generic-error-typeref.chpl:10: error: cannot return a reference to 'type' field 'B'
+  fielderator-generic-error-typeref.chpl:26: called as parse(data: GenericThing(Thing2))

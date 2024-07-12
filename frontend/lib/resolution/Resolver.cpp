@@ -377,6 +377,19 @@ Resolver::createForScopeResolvingField(Context* context,
   return ret;
 }
 
+Resolver
+Resolver::createForScopeResolvingEnumConstant(Context* context,
+                                       const uast::Enum* ed,
+                                       const uast::AstNode* fieldStmt,
+                                       ResolutionResultByPostorderID& byPostorder) {
+  auto ret = Resolver(context, ed, byPostorder, nullptr);
+  ret.scopeResolveOnly = true;
+  ret.curStmt = fieldStmt;
+  ret.byPostorder.setupForSymbol(ed);
+
+  return ret;
+}
+
 
 // set up Resolver to initially resolve field declaration types
 Resolver
@@ -597,12 +610,12 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
     // Uses the empty 'savecReceiverScopes' because the class expression
     // can't be a method anyways.
     bool ignoredMarkedGeneric = false;
-    auto ident = Class::getInheritExprIdent(inheritExpr,
-                                            ignoredMarkedGeneric);
-    visitor.resolveIdentifier(ident, visitor.savedReceiverScopes);
+    auto inherit = Class::getUnwrappedInheritExpr(inheritExpr,
+                                                ignoredMarkedGeneric);
+    inherit->traverse(visitor);
 
 
-    ResolvedExpression& re = r.byAst(ident);
+    ResolvedExpression& re = r.byAst(inherit);
     if (re.toId().isEmpty()) {
       context->error(inheritExpr, "invalid parent class expression");
       encounteredError = true;
@@ -2803,12 +2816,12 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
         // We found the aggregate type in which the to-ID is declared,
         // so there's no nested class issues.
         break;
-      } else if (asttags::isAggregateDecl(parsing::idToTag(context, searchId))) {
+      } else if (asttags::isTypeDecl(parsing::idToTag(context, searchId))) {
         auto parentAst = parsing::idToAst(context, parentId);
         auto searchAst = parsing::idToAst(context, searchId);
-        auto searchAD = searchAst->toAggregateDecl();
+        auto searchAD = searchAst->toTypeDecl();
         // It's an error!
-        CHPL_REPORT(context, NestedClassFieldRef, parentAst->toAggregateDecl(),
+        CHPL_REPORT(context, NestedClassFieldRef, parentAst->toTypeDecl(),
                     searchAD, node, toId);
         break;
       }
@@ -3265,7 +3278,11 @@ bool Resolver::enter(const NamedDecl* decl) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
-  emitMultipleDefinedSymbolErrors(context, scope);
+  // Silence redefinition warnings for enum elements because we have
+  // a special error (DuplicateEnumElement) for those.
+  if (!decl->isEnumElement()) {
+    emitMultipleDefinedSymbolErrors(context, scope);
+  }
 
   enterScope(decl);
 
@@ -4509,6 +4526,7 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
   Context* context = rv.context;
   bool loopRequiresParallel = loop->isForall();
   bool loopPrefersParallel = loopRequiresParallel || loop->isBracketLoop();
+  QualifiedType ret;
 
   // We build up tuple element types by resolving all the zip actuals.
   std::vector<QualifiedType> eltTypes;
@@ -4529,22 +4547,25 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
     // Resolve the leader iterator.
     auto dt = resolveIterDetails(rv, leader, leader, {}, m);
 
+    eltTypes.push_back(dt.idxType);
+
     // Configure what followers should do using the iterator details.
     if (dt.succeededAt == IterDetails::LEADER_FOLLOWER) {
       followerPolicy = IterDetails::FOLLOWER;
       leaderYieldType = dt.leaderYieldType;
-      eltTypes.push_back(dt.idxType);
     } else if (dt.succeededAt == IterDetails::SERIAL) {
       followerPolicy = IterDetails::SERIAL;
-      eltTypes.push_back(dt.idxType);
     } else {
-      return { QualifiedType::UNKNOWN, ErroneousType::get(context) };
+      // TODO: Emit an error here informing the user that a usable leader
+      // iterator wasn't found. Might be some test failure(s) to fix.
+      ret = { QualifiedType::UNKNOWN, ErroneousType::get(context) };
     }
   }
 
-  CHPL_ASSERT(followerPolicy != IterDetails::NONE);
-
   // Resolve the follower iterator or serial iterator for all followers.
+  // It is possible for the follower policy to be 'NONE', in which case
+  // no iterators will be resolved, but the follower iterands will be
+  // resolved.
   for (int i = 1; i < zip->numActuals(); i++) {
     auto actual = zip->actual(i);
     auto dt = resolveIterDetails(rv, actual, actual, leaderYieldType,
@@ -4563,9 +4584,11 @@ resolveZipExpression(Resolver& rv, const IndexableLoop* loop, const Zip* zip) {
     }
   }
 
-  // This 'TupleType' builder preserves references for index types.
-  auto type = TupleType::getQualifiedTuple(context, std::move(eltTypes));
-  QualifiedType ret = { kind, type };
+  if (!ret.isErroneousType()) {
+    // This 'TupleType' builder preserves references for index types.
+    auto type = TupleType::getQualifiedTuple(context, std::move(eltTypes));
+    ret = { kind, type };
+  }
 
   auto& reZip = rv.byPostorder.byAst(zip);
   reZip.setType(ret);

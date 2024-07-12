@@ -184,4 +184,9 @@ module ChplConfig {
   @unstable("'ChplConfig.CHPL_GPU' is unstable and may be replaced with a different way to access this information in the future")
   param CHPL_GPU:string;
   CHPL_GPU = __primitive("get compiler variable", "CHPL_GPU");
+
+  @chpldoc.nodoc
+  @unstable("'ChplConfig.CHPL_LIB_PIC' is unstable and may be replaced with a different way to access this information in the future")
+  param CHPL_LIB_PIC: string;
+  CHPL_LIB_PIC = __primitive("get compiler variable", "CHPL_LIB_PIC");
 }

@@ -836,7 +836,7 @@ module CTypes {
   */
   @chpldoc.nodoc
   inline proc c_ptrTo(ref arr: []): c_ptr(arr.eltType) {
-    if (!isSubtype(arr.domain._instance.type, DefaultRectangularDom)) then
+    if (!chpl__isDROrDRView(arr)) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
     if boundsChecking {
@@ -925,7 +925,7 @@ module CTypes {
    */
   @chpldoc.nodoc
   inline proc c_ptrToConst(const arr: []): c_ptrConst(arr.eltType) {
-    if (!isSubtype(arr.domain._instance.type, DefaultRectangularDom)) then
+    if (!chpl__isDROrDRView(arr)) then
       compilerError("Only single-locale rectangular arrays support c_ptrToConst() at present");
 
     if boundsChecking {
@@ -996,7 +996,7 @@ module CTypes {
   */
   @chpldoc.nodoc
   inline proc c_addrOf(ref arr: []) {
-    if (!isSubtype(arr.domain._instance.type, DefaultRectangularDom)) then
+    if (!chpl__isDROrDRView(arr)) then
       compilerError("Only single-locale rectangular arrays support c_addrOf() at present");
 
     if (boundsChecking && arr._value.locale != here) then
@@ -1014,7 +1014,7 @@ module CTypes {
   */
   @chpldoc.nodoc
   inline proc c_addrOfConst(const arr: []) {
-    if (!isSubtype(arr.domain._instance.type, DefaultRectangularDom)) then
+    if (!chpl__isDROrDRView(arr)) then
       compilerError("Only single-locale rectangular arrays support c_addrOfConst() at present");
 
     if (boundsChecking && arr._value.locale != here) then

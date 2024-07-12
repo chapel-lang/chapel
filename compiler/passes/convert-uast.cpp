@@ -4082,6 +4082,12 @@ struct Converter {
   }
 
   Expr* visit(const uast::Enum* node) {
+    const resolution::ResolutionResultByPostorderID* resolved = nullptr;
+    if (shouldScopeResolve(node)) {
+      resolved = &resolution::scopeResolveEnum(context, node->id());
+    }
+    pushToSymStack(node, resolved);
+
     auto enumType = new EnumType();
 
     for (auto elem : node->enumElements()) {
@@ -4107,6 +4113,8 @@ struct Converter {
     // Note the enum type is converted so we can wire up SymExprs later
     noteConvertedSym(node, enumTypeSym);
 
+    popFromSymStack(node, enumTypeSym);
+
     return ret;
   }
 
@@ -4129,12 +4137,35 @@ struct Converter {
                             bool& inheritMarkedGeneric) {
     for (auto inheritExpr : iterable) {
       bool thisInheritMarkedGeneric = false;
-      const uast::Identifier* ident =
-        uast::Class::getInheritExprIdent(inheritExpr, thisInheritMarkedGeneric);
-      if (auto converted = convertExprOrNull(ident)) {
+      auto* ident =
+        uast::Class::getUnwrappedInheritExpr(inheritExpr, thisInheritMarkedGeneric);
+
+      // Always convert the taraget expression so that we note used modules
+      // as needed. We won't necessarily use the resulting expression;
+      // see the comment below.
+      auto converted = convertExprOrNull(ident);
+      inheritMarkedGeneric |= thisInheritMarkedGeneric;
+
+      // Don't convert the expression literally if we have a `toId`.
+      // The production scope resolver doesnt't support M.C as a class
+      // inheritance expression, but we already know what it refers to.
+      // Thus, instead of doing (. 'M' 'C') we can just refer to 'C'.
+      if (auto results = currentResolutionResult()) {
+        if (auto result = results->byAstOrNull(ident)) {
+          auto toId = result->toId();
+          if (!toId.isEmpty()) {
+            if (auto converted = findConvertedSym(toId)) {
+              inherits.push_back(new SymExpr(converted));
+              continue;
+            }
+          }
+        }
+      }
+
+      // Couldn't find the target, so translate it literally.
+      if (converted) {
         inherits.push_back(converted);
       }
-      inheritMarkedGeneric |= thisInheritMarkedGeneric;
     }
   }
 

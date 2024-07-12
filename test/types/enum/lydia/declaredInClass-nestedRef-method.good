@@ -1,0 +1,4 @@
+declaredInClass-nestedRef-method.chpl:16: error: unresolved call 'doSomething()'
+declaredInClass-nestedRef-method.chpl:13: note: this candidate did not match: Sample.doSomething()
+declaredInClass-nestedRef-method.chpl:16: note: because call is not written as a method call
+declaredInClass-nestedRef-method.chpl:13: note: but candidate function is a method

@@ -1,0 +1,1 @@
+castToNonType.chpl:3: error: illegal cast from int(64) to R

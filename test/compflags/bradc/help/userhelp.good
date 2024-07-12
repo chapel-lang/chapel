@@ -196,6 +196,9 @@ Compiler Configuration Options:
       --gmp <gmp-version>             Specify GMP library
       --hwloc <hwloc-impl>            Specify whether to use hwloc
       --launcher <launcher-system>    Specify how to launch programs
+      --lib-pic <pic>                 Specify whether to use
+                                      position-dependent or
+                                      position-independent code
       --locale-model <locale-model>   Specify locale model to use
       --make <make utility>           Make utility for generated code
       --mem <mem-impl>                Specify the memory manager

@@ -1,0 +1,2 @@
+enumInClass.chpl:13: warning: declaring en enumeration inside of a class or record is unstable
+field2

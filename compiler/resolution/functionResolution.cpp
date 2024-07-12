@@ -10911,6 +10911,7 @@ Expr* resolveExpr(Expr* expr) {
       }
       retval = resolveExprPhase2(expr, fn, expr);
     } else if (isMentionOfFnTriggeringCapture(se)) {
+      fcfs::emitWarningForStandaloneCapture(se, se->symbol()->name);
       auto fn = toFnSymbol(se->symbol());
       INT_ASSERT(fn);
 

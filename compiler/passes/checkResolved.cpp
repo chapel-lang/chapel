@@ -551,13 +551,19 @@ checkReturnPaths(FnSymbol* fn) {
       fn->hasFlag(FLAG_THUNK_BUILDER) ||
       !strcmp(fn->name, "=") || // TODO: Remove this to enforce new signature.
       !strcmp(fn->name, "chpl__buildArrayRuntimeType") ||
-      fn->retType == dtVoid ||
       fn->retTag == RET_TYPE ||
       fn->hasFlag(FLAG_EXTERN) ||
       fn->hasFlag(FLAG_INIT_TUPLE) ||
       fn->hasFlag(FLAG_AUTO_II) ||
       fn->hasFlag(FLAG_THUNK_INVOKE))
     return; // No.
+
+  if (fn->retType == dtVoid) {
+    if (fn->returnsRefOrConstRef()) {
+      USR_FATAL_CONT(fn, "function declared 'ref' but does not return anything");
+    }
+    return; // Doesn't return a value, no need to look for returns.
+  }
 
   // Check to see if the returned value is initialized.
   Symbol* ret = fn->getReturnSymbol();

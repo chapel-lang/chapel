@@ -82,7 +82,6 @@ Library Utilities
    :maxdepth: 1
 
    File I/O <fileIO>
-   I/O with records <recordio>
    List <listOps>
    Timers <timers>
 

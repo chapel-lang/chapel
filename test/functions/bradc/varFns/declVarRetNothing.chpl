@@ -2,7 +2,7 @@ proc testit(i) ref {
   writeln("I'm in testit, but not returning anything");
 }
 
-proc testit(i) ref {
+proc testit2(i) ref {
   writeln("I'm in testit, but not returning anything");
   return;
 }

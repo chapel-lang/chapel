@@ -2773,16 +2773,9 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
     if (optInherit->size() > 0) {
       for (size_t i = 0; i < optInherit->size(); i++) {
         AstNode* ast = (*optInherit)[i];
-        bool inheritOk =
-          chpl::uast::AggregateDecl::isAcceptableInheritExpr(ast);
 
-        if (inheritOk) {
-          inheritExprs.push_back(toOwned(ast));
-          (*optInherit)[i] = nullptr;
-        } else {
-          syntax(inheritLoc,
-                 "invalid parent class or interface; please specify a single class or interface name");
-        }
+        inheritExprs.push_back(toOwned(ast));
+        (*optInherit)[i] = nullptr;
       }
     }
     consumeList(optInherit); // just to delete it

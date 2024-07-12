@@ -27,8 +27,14 @@
 
 void FlattenClasses::process(TypeSymbol* ts) {
   Type* t = ts->type;
-  if (isAggregateType(t) || isDecoratedClassType(t)) {
+  if (isAggregateType(t) || isDecoratedClassType(t) || isEnumType(t)) {
     if (toAggregateType(t->symbol->defPoint->parentSymbol->type)) {
+      if (isEnumType(t)) {
+        if (shouldWarnUnstableFor(t)) {
+          USR_WARN(t, "declaring en enumeration inside of a class or record is unstable");
+        }
+      }
+
       ModuleSymbol* mod = t->getModule();
       DefExpr* def = t->symbol->defPoint;
 

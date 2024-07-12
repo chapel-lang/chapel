@@ -936,6 +936,17 @@ OPTIONS
     (defaults to a best guess based on $CHPL\_COMM and
     $CHPL\_TARGET\_PLATFORM).
 
+.. _man-lib-pic:
+
+**\--lib-pic <pic>**
+
+    Specify whether to use position-dependent or position-independent code.
+    Position-independent code is suitable for shared libraries and this flag is
+    intended to be used when calling Chapel code from other languages,
+    especially Python or when building with '--dynamic'.  This flag corresponds
+    with and overrides the $CHPL\_LIB\_PIC environment variable (defaults to
+    'none').
+
 .. _man-locale-model:
 
 **\--locale-model <locale-model>**

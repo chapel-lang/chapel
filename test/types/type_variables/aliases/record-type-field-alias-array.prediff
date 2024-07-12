@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Sample output:
+# SUMMARY: AddressSanitizer: global-buffer-overflow (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x3dbc0) in __asan_memcpy+0x1a4
+if (grep 'SUMMARY' $2 | sed -e 's/SUMMARY: AddressSanitizer:..*/Found ASAN error/' > $2.tmp); then
+  mv $2.tmp $2
+fi
