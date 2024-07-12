@@ -83,6 +83,10 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
       }
       // Maybe need something here to support LLVM extern blocks?
 
+      if (usingGpuLocaleModel()) {
+        fprintf(libhdrfile.fptr, "#ifdef __cplusplus\nextern \"C\" {\n#endif\n");
+      }
+
       // Print out the module initialization function headers and the exported
       // functions
       for_vector(FnSymbol, fn, functions) {
@@ -90,6 +94,10 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
             isUserRoutine(fn)) {
           fn->codegenPrototype();
         }
+      }
+
+      if (usingGpuLocaleModel()) {
+        fprintf(libhdrfile.fptr, "#ifdef __cplusplus\n}\n#endif\n");
       }
 
       gGenInfo->cfile = save_cfile;

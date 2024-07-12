@@ -96,7 +96,8 @@ printcompileline:
 	@echo $(CC) \
 	      $(SANITIZER_CFLAGS) $(CHPL_MAKE_BASE_CFLAGS) $(COMP_GEN_CFLAGS) \
 	      $(CHPL_MAKE_TARGET_BUNDLED_COMPILE_ARGS) \
-	      -I.
+	      -I. \
+				$(CHPL_MAKE_TARGET_SYSTEM_COMPILE_ARGS)
 
 printcxxcompileline:
 	@echo $(CXX) $(SANITIZER_CFLAGS) $(CHPL_MAKE_BASE_CXXFLAGS) $(GEN_CXXFLAGS) $(COMP_GEN_CXXFLAGS) $(CHPL_RT_INC_DIR)

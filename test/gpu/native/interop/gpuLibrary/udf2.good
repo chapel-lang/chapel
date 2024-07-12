@@ -1,0 +1,18 @@
+Running test_udf2_compileline
+before on
+subloc : 0
+result[0] = 10
+result[1] = 8
+result[2] = 12
+Running test_udf2_cmake
+before on
+subloc : 0
+result[0] = 10
+result[1] = 8
+result[2] = 12
+Running test_udf2_make
+before on
+subloc : 0
+result[0] = 10
+result[1] = 8
+result[2] = 12

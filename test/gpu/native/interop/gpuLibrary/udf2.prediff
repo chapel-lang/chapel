@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+CHPL=$3
+OUTFILE=$2
+chpl_home=`$CHPL --print-chpl-home`
+chpl_gpu=$(CHPL_HOME=$chpl_home $chpl_home/util/printchplenv --all --simple | grep 'CHPL_GPU=' | sed 's/CHPL_GPU=//')
+
+# build with compileline
+cxx=`$chpl_home/util/config/compileline --compile-c++`
+libs=`$chpl_home/util/config/compileline --libraries`
+gpu_flags=""
+if [[ "$chpl_gpu" == "nvidia" ]]; then
+  gpu_flags="-x cuda"
+elif [[ "$chpl_gpu" == "amd" ]]; then
+  gpu_flags="-x hip"
+fi
+$cxx $gpu_flags test_udf2.cpp -Ilib -Llib/ -ludf2 $libs -o test_udf2_compileline
+echo "Running test_udf2_compileline" >> $OUTFILE
+./test_udf2_compileline >> $OUTFILE
+
+# build with cmake
+mkdir cmakeBuild
+cmake -B cmakeBuild -S .
+cmake --build cmakeBuild --target test_udf2_cmake
+echo "Running test_udf2_cmake" >> $OUTFILE
+./cmakeBuild/test_udf2_cmake >> $OUTFILE
+
+# build with makefile
+make test_udf2_make_$CHPL_GPU
+echo "Running test_udf2_make" >> $OUTFILE
+./test_udf2_make >> $OUTFILE
+
