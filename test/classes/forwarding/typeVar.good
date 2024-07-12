@@ -1,0 +1,9 @@
+typeVar.chpl:11: In function 'main':
+typeVar.chpl:12: warning: please add '(?)' to type 'B' because it is generic
+typeVar.chpl:9: warning: field is declared with generic memory management
+note: consider adding 'owned', 'shared', or 'borrowed'
+note: if generic memory management is desired, use a 'type' field to store the class type
+typeVar.chpl:9: warning: please use '?' when declaring a field with generic type
+typeVar.chpl:9: note: for example with 'A(?)'
+hi, from A
+End
