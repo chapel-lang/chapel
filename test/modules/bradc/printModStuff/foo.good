@@ -29,6 +29,7 @@ Parsing module files:
   $CHPL_HOME/modules/dists/DSIUtil.chpl
   $CHPL_HOME/modules/standard/ChapelIO.chpl
   $CHPL_HOME/modules/standard/Regex.chpl
+  $CHPL_HOME/modules/packages/PrecisionSerializer.chpl
   $CHPL_HOME/modules/standard/Types.chpl
   $CHPL_HOME/modules/standard/IO.chpl
   $CHPL_HOME/modules/standard/MemMove.chpl
