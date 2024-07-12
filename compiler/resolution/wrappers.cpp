@@ -1053,7 +1053,7 @@ static void defaultedFormalApplyDefault(ArgSymbol* formal,
                                         VarSymbol* temp,
                                         Expr* fromExpr) {
   Symbol* typeTmp = NULL;
-  if (formal->typeExpr != NULL) {
+  if (formal->typeExpr != NULL && !formal->typeExprFromDefaultExpr) {
     typeTmp = newTemp("_formal_type");
     typeTmp->addFlag(FLAG_TYPE_VARIABLE);
     body->insertAtTail(new DefExpr(typeTmp));
