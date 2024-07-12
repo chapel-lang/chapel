@@ -3,7 +3,7 @@
 CHPL=$3
 OUTFILE=$2
 chpl_home=`$CHPL --print-chpl-home`
-chpl_gpu=$(CHPL_HOME=$chpl_home $chpl_home/util/printchplenv --all --simple | grep CHPL_GPU | sed 's/CHPL_GPU=//')
+chpl_gpu=$(CHPL_HOME=$chpl_home $chpl_home/util/printchplenv --all --simple | grep 'CHPL_GPU=' | sed 's/CHPL_GPU=//')
 
 # build with compileline
 cxx=`$chpl_home/util/config/compileline --compile-c++`
