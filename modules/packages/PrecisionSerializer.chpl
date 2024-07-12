@@ -3,23 +3,33 @@ module PrecisionSerializer {
   use CTypes;
 
   /*
-    Default precision to be used by the ``precisionSerializer``
-  */
-  config const defaultPrecisionSerializerPrecision = 12;
-
-  /*
-    Default padding to be used by the ``precisionSerializer``
-  */
-  config const defaultPrecisionSerializerPadding = 0;
-
-  /*
-    A variation of the :record:`~IO.defaultSerializer` that allows for
+    A variation of the :record:`~IO.defaultSerializer` that provides
     finer control over formatting of numerical values.
+
+    For example, the following code snippet:
+
+    .. code-block:: chapel
+
+      use PrecisionSerializer;
+      var x = [i in 1..5] i + 0.123456789;
+      stdout.withSerializer(new precisionSerializer(precision=7, padding=12)).write(x);
+
+    would produce the output:
+
+    .. code-block:: text
+
+      1.1234568    2.1234568    3.1234568    4.1234568    5.1234568
+
+    whereas the default serializer would output:
+
+    .. code-block:: text
+
+      1.12346 2.12346 3.12346 4.12346 5.12346
 
     See :ref:`the serializers technote<ioSerializers>` for a general overview
     of Serializers and their usage.
   */
-  @unstable("'precisionSerializer' is an experimental feature and may change in the future.")
+  @unstable("'precisionSerializer' is an experimental feature. Its behavior and/or API may change in future releases.")
   record precisionSerializer {
 
     @chpldoc.nodoc
@@ -28,26 +38,24 @@ module PrecisionSerializer {
     var padding: int;
 
     /*
-      Create a ``precisionSerializer`` with the default precision and padding
-      settings for formatting numeric values.
+      Create a default ``precisionSerializer`` with a precision of ``15`` and no
+      padding.
     */
     proc init() {
-      this.precision = defaultPrecisionSerializerPrecision;
-      this.padding = defaultPrecisionSerializerPadding;
+      this.precision = 15;
+      this.padding = 0;
     }
 
     /*
       Create a ``precisionSerializer`` with particular precision and padding
       settings for formatting numeric values.
 
-      For example, with a precision of 3 and padding of 5, the number 3.14159
-      would be serialized as `` 3.141``.
-
       :arg precision: The number of digits to display after the decimal point
                       when serializing real values.
-      :arg padding: The number of columns to pad the number with when serialzing
-                    real values, or the minimum column width when serializing
-                    integral values. If zero, no padding/width is enforced.
+      :arg padding: The number of columns to pad the number with when
+                    serializing real values, or the minimum column width when
+                    serializing integral values. If zero, no padding/width is
+                    enforced.
     */
     proc init(precision: int, padding: int = 0) {
       this.precision = precision;
@@ -68,14 +76,13 @@ module PrecisionSerializer {
     /*
       Serialize ``val`` with ``writer``.
 
-      Real values are serialized with either ``%*.*r`` or ``%.*r`` depending on
+      Real values are serialized with either ``%*.*dr`` or ``%.*dr`` depending on
       whether a non-zero padding was specified.
 
       Integral values are serialized with either ``%*i`` or ``%i`` depending on
       whether a non-zero padding was specified.
 
-      Complex numbers are serialized as ``%z``. Please refer to :ref:`the section
-      on Formatted IO<about-io-formatted-io>` for more information.
+      Complex numbers are serialized as ``%z``.
 
       Booleans are serialized as the literal strings ``true`` or ``false``.
 
@@ -97,7 +104,7 @@ module PrecisionSerializer {
       Classes and records are expected to implement the ``writeSerializable``
       or ``serializable`` interface.
 
-      :arg writer: The ``fileWriter`` used to write serialized output.
+      :arg writer: The :record:`~IO.fileWriter` used to write serialized output.
       :arg val: The value to be serialized.
     */
     proc ref serializeValue(writer: fileWriter, const val: ?t) : void throws {
@@ -135,7 +142,7 @@ module PrecisionSerializer {
     /*
       Start serializing a class by writing the character ``{``.
 
-      :arg writer: The ``fileWriter`` to be used when serializing.
+      :arg writer: The :record:`~IO.fileWriter` to be used when serializing.
       :arg name: The name of the class type.
       :arg size: The number of fields in the class.
 
@@ -149,11 +156,11 @@ module PrecisionSerializer {
     /*
       Start serializing a record by writing the character ``(``.
 
-      :arg writer: The ``fileWriter`` to be used when serializing.
+      :arg writer: The :record:`~IO.fileWriter` to be used when serializing.
       :arg name: The name of the record type.
       :arg size: The number of fields in the record.
 
-      :returns: A new :type:`AggregateSerializer`
+      :returns: A new :record:`AggregateSerializer`
     */
     proc startRecord(writer: fileWriter, name: string, size: int) throws {
       writer.writeLiteral("(");
@@ -224,14 +231,14 @@ module PrecisionSerializer {
 
         .. code-block:: text
 
-          {x = 5, y = 2.0}
+          {x = 5, y = 2.000000000000000}
 
-        :arg writer: The ``fileWriter`` to be used when serializing. Must match
+        :arg writer: The :record:`~IO.fileWriter` to be used when serializing. Must match
                     the writer used to create current AggregateSerializer.
         :arg name: The name of the class type.
         :arg size: The number of fields in the class.
 
-        :returns: A new :record:`~IO.defaultSerializer.AggregateSerializer`
+        :returns: A new :record:`~PrecisionSerializer.precisionSerializer.AggregateSerializer`
       */
       proc ref startClass(writer: fileWriter, name: string, size: int) throws {
         // Note: 'size' of parent might be zero, but 'size' of grandparent might
@@ -267,7 +274,7 @@ module PrecisionSerializer {
     /*
       Start serializing a tuple by writing the character ``(``.
 
-      :arg writer: The ``fileWriter`` to be used when serializing.
+      :arg writer: The :record:`~IO.fileWriter` to be used when serializing.
       :arg size: The number of elements in the tuple.
 
       :returns: A new :record:`TupleSerializer`
@@ -330,7 +337,7 @@ module PrecisionSerializer {
     /*
       Start serializing a list by writing the character ``[``.
 
-      :arg writer: The ``fileWriter`` to be used when serializing.
+      :arg writer: The :record:`~IO.fileWriter` to be used when serializing.
       :arg size: The number of elements in the list.
 
       :returns: A new :record:`ListSerializer`
@@ -383,7 +390,7 @@ module PrecisionSerializer {
     /*
       Start serializing an array.
 
-      :arg writer: The ``fileWriter`` to be used when serializing.
+      :arg writer: The :record:`~IO.fileWriter` to be used when serializing.
       :arg size: The number of elements in the array.
 
       :returns: A new :record:`ArraySerializer`
@@ -393,45 +400,46 @@ module PrecisionSerializer {
     }
 
     /*
-      Returned by :proc:`~IO.defaultSerializer.startArray` to provide the API for
-      serializing arrays.
+      Returned by :proc:`~PrecisionSerializer.precisionSerializer.startArray`
+      to provide the API for serializing arrays.
 
       In the default format, an array will be serialized as a
-      whitespace-separated series of serialized elements.
+      whitespace-separated series of serialized elements. This serializer can
+      add additional whitespace between elements if padding is specified.
 
-      A 1D array is serialized simply using spaces:
+      A 1D array is serialized simply using spaces plus any additional padding:
 
       ::
 
-        1 2 3 4
+        1.123   2.123   3.123   4.123
 
       A 2D array is serialized using spaces between elements in a row, and
       prints newlines for new rows:
 
       ::
 
-        1 2 3
-        4 5 6
-        7 8 9
+        1.123   2.123   3.123
+        4.123   5.123   6.123
+        7.123   8.123   9.123
 
       Arrays with three or more dimensions will be serialized as a series of
       2D "panes", with multiple newlines separating new dimensions:
 
       ::
 
-        1 2 3
-        4 5 6
-        7 8 9
+        1.123   2.123   3.123
+        4.123   5.123   6.123
+        7.123   8.123   9.123
 
-        10 11 12
-        13 14 15
-        16 17 18
+        10.12   11.12   12.12
+        13.12   14.12   15.12
+        16.12   17.12   18.12
 
-        19 20 21
-        22 23 24
-        25 26 27
+        19.12   20.12   21.12
+        22.12   23.12   24.12
+        25.12   26.12   27.12
 
-      Empty arrays result in no output to the :record:`fileWriter`.
+      Empty arrays result in no output to the :record:`~IO.fileWriter`.
     */
     record ArraySerializer {
       @chpldoc.nodoc
@@ -444,8 +452,8 @@ module PrecisionSerializer {
       var _first : bool = true;
 
       /*
-        Inform the :record:`~IO.defaultSerializer.ArraySerializer` to start
-        serializing a new dimension of size ``size``.
+        Inform the :record:`~PrecisionSerializer.precisionSerializer.ArraySerializer`
+        to start serializing a new dimension of size ``size``.
       */
       proc ref startDim(size: int) throws {
         _arrayDim += 1;
@@ -485,7 +493,7 @@ module PrecisionSerializer {
     /*
       Start serializing a map by writing the character ``{``.
 
-      :arg writer: The ``fileWriter`` to be used when serializing.
+      :arg writer: The :record:`~IO.fileWriter` to be used when serializing.
       :arg size: The number of entries in the map.
 
       :returns: A new :record:`MapSerializer`
@@ -496,8 +504,8 @@ module PrecisionSerializer {
     }
 
     /*
-      Returned by :proc:`~IO.defaultSerializer.startMap` to provide the API for
-      serializing maps.
+      Returned by :proc:`~PrecisionSerializer.precisionSerializer.startMap`
+      to provide the API for serializing maps.
 
       Maps are serialized as a comma-separated series of pairs between curly
       braces. Pairs are serialized with a ``:`` separating the key and value. For
