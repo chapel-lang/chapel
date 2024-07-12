@@ -10,13 +10,12 @@ proc main() {
 
 class Sample {
 
-  enum classTag { field1,
-                  field2};
+  proc doSomething() do return 10;
+
+  enum inner {
+    red = doSomething(), green, blue
+  }
 
   // give it a value.. still error
-  var tag: classTag;
-
-  proc init() {
-    tag = classTag.field2;
-  }
+  var tag: inner = inner.red;
 }
