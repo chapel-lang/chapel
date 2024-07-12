@@ -1,0 +1,2 @@
+feature: ability to query generic fields of array element types
+https://github.com/chapel-lang/chapel/issues/13262
