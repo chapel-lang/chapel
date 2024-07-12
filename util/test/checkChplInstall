@@ -151,10 +151,17 @@ else
 fi
 
 TEST_JOB=${TEST_JOB_BASENAME}
+if [ ${CHPL_LOCALE_MODEL} == "gpu" ]; then
+  TEST_JOB="hello-gpu"
+fi
 
 if [ "${CHPL_CHECK_DEBUG}" == 1 ] ; then
     log_debug "printchplenv, because \$CHPL_CHECK_DEBUG == 1"
     $CHPL_HOME/util/printchplenv --all --no-tidy
+fi
+
+if [[ -e ${TEST_DIR}/${TEST_JOB}.compopts ]]; then
+  COMP_FLAGS="$(cat ${TEST_DIR}/${TEST_JOB}.compopts)"
 fi
 
 # Compute python interperet to use for helpers
@@ -231,7 +238,9 @@ TEST_EXEC_OUT=${TEST_JOB}.exec.out
 (
     cd ${TMP_TEST_DIR} || { log_error "failed cd ${TMP_TEST_DIR}" ; exit 1 ; }
 
-    EXEC_OPTS="$(cat ${TEST_DIR}/${TEST_JOB}.execopts)"
+    if [[ -e ${TEST_DIR}/${TEST_JOB}.execopts ]]; then
+      EXEC_OPTS="$(cat ${TEST_DIR}/${TEST_JOB}.execopts)"
+    fi
 
     log_info "Running test job."
     ./${TEST_JOB} -nl${NUMLOCALES} ${EXEC_OPTS} 2>&1 | sort > ${TEST_EXEC_OUT}
