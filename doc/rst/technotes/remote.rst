@@ -8,7 +8,7 @@ Remote Variable Declarations
 .. warning::
 
   This work is under active development. As such, the interface and behavior
-  of tremote variables is unstable and expected to change.
+  of remote variables is unstable and expected to change.
 
 .. contents::
 
