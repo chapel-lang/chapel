@@ -1,0 +1,2 @@
+bug: internal error when using `owned MyRecord` or `shared MyRecord`
+#25549
