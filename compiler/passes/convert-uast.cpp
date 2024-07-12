@@ -4082,6 +4082,12 @@ struct Converter {
   }
 
   Expr* visit(const uast::Enum* node) {
+    const resolution::ResolutionResultByPostorderID* resolved = nullptr;
+    if (shouldScopeResolve(node)) {
+      resolved = &resolution::scopeResolveEnum(context, node->id());
+    }
+    pushToSymStack(node, resolved);
+
     auto enumType = new EnumType();
 
     for (auto elem : node->enumElements()) {
@@ -4106,6 +4112,8 @@ struct Converter {
 
     // Note the enum type is converted so we can wire up SymExprs later
     noteConvertedSym(node, enumTypeSym);
+
+    popFromSymStack(node, enumTypeSym);
 
     return ret;
   }
