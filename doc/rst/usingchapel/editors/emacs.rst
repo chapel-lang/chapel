@@ -13,25 +13,19 @@ top-level ``highlight/emacs`` directory of the Chapel source tree.  These files
 are licensed under the GPL, see ``highlight/emacs/LICENSE``.  To use them, take
 the following steps:
 
-1. Copy/move the ``highlight/emacs`` directory to your ``CHPL_HOME`` directory.
+1. Copy/move the ``highlight/emacs`` directory to a known directory.
    If you installed Chapel from a package manager, you may need to download the
-   Chapel source code to get these files. To query the correct value of
-   ``CHPL_HOME``, run ``chpl --print-chpl-home``.
+   Chapel source code to get these files.
 
 2. Add the following lines to your standard ``.emacs`` or ``.emacs.d/init.el`` file:
 
 .. code-block:: emacs-lisp
 
-    ; query the environment variable CHPL_HOME
-    (setq chpl-home (getenv "CHPL_HOME"))
 
-    ; prepend $CHPL_HOME/highlight/emacs to your emacs load-path
+    ; prepend the path to 'highlight/emacs' to your emacs load-path
     (if (string= chpl-home nil)
         nil
-      (add-to-list 'load-path (concat chpl-home
-                                      "/highlight/emacs/"
-                                      )
-                   )
+      (add-to-list 'load-path "/path/to/chapel/highlight/emacs")
       )
 
     ; make sure that when chpl-mode is entered, (our modified) cc-mode is
