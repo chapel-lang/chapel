@@ -846,7 +846,7 @@ static void testTupleGeneric() {
 }
 
 static void test21() {
-  printf("test21\n");
+  printf("%s\n", __FUNCTION__);
   Context ctx;
   auto context = &ctx;
   ErrorGuard guard(context);
@@ -860,14 +860,23 @@ static void test21() {
     (x, _) = foo();
     )"""";
 
-  auto qt = resolveQualifiedTypeOfX(context, program);
+  auto xQt = resolveQualifiedTypeOfX(context, program);
   assert(!guard.realizeErrors());
-  assert(qt.kind() == QualifiedType::VAR);
-  assert(qt.type()->isRealType());
+  assert(xQt.kind() == QualifiedType::VAR);
+  assert(xQt.type()->isRealType());
+
+  // Get the type of the '(x, _)' tuple itself.
+  auto mod = parseModule(context, program);
+  auto& rr = resolveModule(context, mod->id());
+  auto astTup = mod->stmt(4)->toCall()->actual(0);
+  assert(astTup->isTuple());
+  auto& qtTup = rr.byAst(astTup).type();
+  assert(qtTup.kind() == QualifiedType::CONST_VAR);
+  assert(qtTup.type()->isTupleType());
 }
 
 static void test22() {
-  printf("test22\n");
+  printf("%s\n", __FUNCTION__);
   Context ctx;
   auto context = &ctx;
   ErrorGuard guard(context);
@@ -886,7 +895,7 @@ static void test22() {
 }
 
 static void test23() {
-  printf("test23\n");
+  printf("%s\n", __FUNCTION__);
   Context ctx;
   auto context = &ctx;
   ErrorGuard guard(context);
@@ -904,10 +913,18 @@ static void test23() {
   assert(m["x"].type()->isIntType());
   assert(m["y"].kind() == QualifiedType::CONST_VAR);
   assert(m["y"].type()->isRecordType());
+
+  auto mod = parseModule(context, program);
+  auto& rr = resolveModule(context, mod->id());
+  auto astTup = mod->stmt(2)->toIndexableLoop()->index();
+  assert(astTup->isTupleDecl());
+  auto& qtTup = rr.byAst(astTup).type();
+  assert(qtTup.kind() == QualifiedType::CONST_VAR);
+  assert(qtTup.type()->isTupleType());
 }
 
 static void test24() {
-  printf("test24\n");
+  printf("%s\n", __FUNCTION__);
   Context ctx;
   auto context = &ctx;
   ErrorGuard guard(context);
@@ -927,7 +944,7 @@ static void test24() {
 
 // This is private issue #6382.
 static void test25() {
-  printf("test25\n");
+  printf("%s\n", __FUNCTION__);
   Context ctx;
   auto context = &ctx;
   ErrorGuard guard(context);
@@ -952,6 +969,136 @@ static void test25() {
   assert(m["j"].type()->isIntType());
   assert(m["z"].kind() == QualifiedType::VAR);
   assert(m["z"].type()->isIntType());
+}
+
+static void test26() {
+  printf("%s\n", __FUNCTION__);
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    var g: (int, int);
+    iter myIter() ref: (int, int) { yield g; }
+
+    for (i, j) in myIter() {
+      var z = i;
+    }
+    )"""";
+
+  // The entire tuple (i, j) is itself a 'REF' tuple.
+  auto mod = parseModule(context, program);
+  auto& rr = resolveModule(context, mod->id());
+  auto astTup = mod->stmt(2)->toIndexableLoop()->index();
+  assert(astTup->isTupleDecl());
+  auto& qtTup = rr.byAst(astTup).type();
+  assert(qtTup.kind() == QualifiedType::REF);
+  assert(qtTup.type()->isTupleType());
+
+  // The de-tupled components still maintain their 'REF'ness.
+  auto m = resolveTypesOfVariables(context, program, { "i", "j", "z" });
+  assert(!guard.realizeErrors());
+  assert(m["i"].kind() == QualifiedType::REF);
+  assert(m["i"].type()->isIntType());
+  assert(m["j"].kind() == QualifiedType::REF);
+  assert(m["j"].type()->isIntType());
+  assert(m["z"].kind() == QualifiedType::VAR);
+  assert(m["z"].type()->isIntType());
+}
+
+static void test27() {
+  printf("%s\n", __FUNCTION__);
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    var g: (int, int);
+    iter myIter() const ref: (int, int) { yield g; }
+
+    for (i, j) in myIter() {
+      var z = i;
+    }
+    )"""";
+
+  // The entire tuple (i, j) is itself a 'REF' tuple.
+  auto mod = parseModule(context, program);
+  auto& rr = resolveModule(context, mod->id());
+  auto astTup = mod->stmt(2)->toIndexableLoop()->index();
+  assert(astTup->isTupleDecl());
+  auto& qtTup = rr.byAst(astTup).type();
+  assert(qtTup.kind() == QualifiedType::CONST_REF);
+  assert(qtTup.type()->isTupleType());
+
+  // The de-tupled components still maintain their 'REF'ness.
+  auto m = resolveTypesOfVariables(context, program, { "i", "j", "z" });
+  assert(!guard.realizeErrors());
+  assert(m["i"].kind() == QualifiedType::CONST_REF);
+  assert(m["i"].type()->isIntType());
+  assert(m["j"].kind() == QualifiedType::CONST_REF);
+  assert(m["j"].type()->isIntType());
+  assert(m["z"].kind() == QualifiedType::VAR);
+  assert(m["z"].type()->isIntType());
+}
+
+static void test28() {
+  printf("%s\n", __FUNCTION__);
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    var g: (int, int);
+    ref (a, b) = g;
+    )"""";
+
+  // The entire tuple (i, j) is itself a 'REF' tuple.
+  auto mod = parseModule(context, program);
+  auto& rr = resolveModule(context, mod->id());
+  auto astTup = mod->stmt(1);
+  assert(astTup->isTupleDecl());
+  auto& qtTup = rr.byAst(astTup).type();
+  assert(qtTup.kind() == QualifiedType::REF);
+  assert(qtTup.type()->isTupleType());
+
+  // The de-tupled components still maintain their 'REF'ness.
+  auto m = resolveTypesOfVariables(context, program, { "a", "b" });
+  assert(!guard.realizeErrors());
+  assert(m["a"].kind() == QualifiedType::REF);
+  assert(m["a"].type()->isIntType());
+  assert(m["b"].kind() == QualifiedType::REF);
+  assert(m["b"].type()->isIntType());
+}
+
+static void test29() {
+  printf("%s\n", __FUNCTION__);
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+    var g: (int, int);
+    const ref (a, b) = g;
+    )"""";
+
+  auto mod = parseModule(context, program);
+  auto& rr = resolveModule(context, mod->id());
+  auto astTup = mod->stmt(1);
+  assert(astTup->isTupleDecl());
+  auto& qtTup = rr.byAst(astTup).type();
+  assert(qtTup.kind() == QualifiedType::CONST_REF);
+  assert(qtTup.type()->isTupleType());
+
+  auto m = resolveTypesOfVariables(context, program, { "a", "b" });
+  assert(!guard.realizeErrors());
+  assert(m["a"].kind() == QualifiedType::CONST_REF);
+  assert(m["a"].type()->isIntType());
+  assert(m["b"].kind() == QualifiedType::CONST_REF);
+  assert(m["b"].type()->isIntType());
 }
 
 int main() {
@@ -982,6 +1129,10 @@ int main() {
   test23();
   test24();
   test25();
+  test26();
+  test27();
+  test28();
+  test29();
 
   return 0;
 }
