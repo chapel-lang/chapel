@@ -8,10 +8,13 @@ module Foo {
     printf("before on\n");
     sync begin on here.gpus[0] { // `sync begin on` is needed
       printf("subloc : %d\n", chpl_task_getRequestedSubloc()); // prints -2 without `sync begin on`
+      const a_gpu = a, b_gpu = b;
+      var result_gpu: result.type;
       @assertOnGpu
       foreach i in 0..2 {
-        result[i] = a[i] + b[i];
+        result_gpu[i] = a_gpu[i] + b_gpu[i];
       }
+      result = result_gpu;
     }
   }
 } // Foo
