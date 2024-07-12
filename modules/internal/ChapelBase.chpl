@@ -338,15 +338,34 @@ module ChapelBase {
     return false;
   }
 
-  inline operator <(a: int(8), b: int(8)) do return __primitive("<", a, b);
-  inline operator <(a: int(16), b: int(16)) do return __primitive("<", a, b);
-  inline operator <(a: int(32), b: int(32)) do return __primitive("<", a, b);
-  inline operator <(a: int(64), b: int(64)) do return __primitive("<", a, b);
+  // operator <(integral, integral)
 
-  inline operator <(a: uint(8), b: uint(8)) do return __primitive("<", a, b);
-  inline operator <(a: uint(16), b: uint(16)) do return __primitive("<", a, b);
-  inline operator <(a: uint(32), b: uint(32)) do return __primitive("<", a, b);
-  inline operator <(a: uint(64), b: uint(64)) do return __primitive("<", a, b);
+  // cast an int(?w) to uint(w)
+  private inline proc asUint(a: integral) do return a: uint(numBits(a.type));
+
+  inline operator <(a: integral, b: integral) do return
+    // prim("<") works correctly for same signed-ness even with diff. sizes
+    if isInt(a) then
+      if isInt(b) then __primitive("<", a, b)
+      else __primitive("<", a, 0) || __primitive("<", asUint(a), b)
+    else
+      if isUint(b) then __primitive("<", a, b)
+      else ! __primitive("<", b, 0) && __primitive("<", a, asUint(b));
+
+  inline operator <(a: integral, param b: integral) param
+    where isUint(a) && __primitive("<=", b, 0)
+    do return false;
+
+  inline operator <(param a: integral, b: integral) param
+    where isUint(b) && __primitive("<", a, 0)
+    do return true;
+
+  inline operator <(param a: integral, param b: integral) param do return
+    // prim("<") may be wrong with mixed int*uint ex. prim("<", 1, (-5):uint)
+    if a >= 0 then
+      if b >= 0 then __primitive("<", a, b) else false
+    else
+      if b >= 0 then true else __primitive("<", a, b);
 
   inline operator <(a: real(32), b: real(32)) do return __primitive("<", a, b);
   inline operator <(a: real(64), b: real(64)) do return __primitive("<", a, b);
@@ -408,13 +427,6 @@ module ChapelBase {
 
   inline operator >=(param a: real(32), param b: real(32)) param do return __primitive(">=", a, b);
   inline operator >=(param a: real(64), param b: real(64)) param do return __primitive(">=", a, b);
-
-  inline operator <(param a: integral, param b: integral) param do return
-    // adjust for incorrect result of: __primitive("<", 1, (-5):uint)
-    if a >= 0 then
-      if b >= 0 then __primitive("<", a, b) else false
-    else
-      if b >= 0 then true else __primitive("<", a, b);
 
   inline operator <(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
@@ -3157,50 +3169,6 @@ module ChapelBase {
   inline operator >(param a: int(16), b: int(16)) do return __primitive(">", a, b);
   inline operator >(param a: int(32), b: int(32)) do return __primitive(">", a, b);
   inline operator >(param a: int(64), b: int(64)) do return __primitive(">", a, b);
-
-
-  // non-param/non-param
-  inline operator <(a: uint(8), b: int(8)) do return !(b < 0) && a < b : uint(8);
-  inline operator <(a: uint(16), b: int(16)) do return !(b < 0) && a < b : uint(16);
-  inline operator <(a: uint(32), b: int(32)) do return !(b < 0) && a < b : uint(32);
-  inline operator <(a: uint(64), b: int(64)) do return !(b < 0) && a < b : uint(64);
-
-  inline operator <(a: int(8), b: uint(8)) do return a < 0 || a : uint(8) < b;
-  inline operator <(a: int(16), b: uint(16)) do return a < 0 || a : uint(16) < b;
-  inline operator <(a: int(32), b: uint(32)) do return a < 0 || a : uint(32) < b;
-  inline operator <(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) < b;
-
-  // non-param/param and param/non-param
-  inline operator <(a: uint(64), param b: integral) param
-    where __primitive("<=", b, 0)
-    do return false;
-  inline operator <(a: uint(32), param b: integral) param
-    where __primitive("<=", b, 0)
-    do return false;
-  inline operator <(a: uint(16), param b: integral) param
-    where __primitive("<=", b, 0)
-    do return false;
-  inline operator <(a: uint(8), param b: integral) param
-    where __primitive("<=", b, 0)
-    do return false;
-
-  inline operator <(param a: integral, b: uint(64)) param
-    where __primitive("<", a, 0)
-    do return true;
-  inline operator <(param a: integral, b: uint(32)) param
-    where __primitive("<", a, 0)
-    do return true;
-  inline operator <(param a: integral, b: uint(16)) param
-    where __primitive("<", a, 0)
-    do return true;
-  inline operator <(param a: integral, b: uint(8)) param
-    where __primitive("<", a, 0)
-    do return true;
-
-  inline operator <(a: int(8), param b: int(8)) do return __primitive("<", a, b);
-  inline operator <(a: int(16), param b: int(16)) do return __primitive("<", a, b);
-  inline operator <(a: int(32), param b: int(32)) do return __primitive("<", a, b);
-  inline operator <(a: int(64), param b: int(64)) do return __primitive("<", a, b);
 
   // non-param/non-param
   inline operator >=(a: uint(8), b: int(8)) do return b < 0 || a >= b : uint(8);
