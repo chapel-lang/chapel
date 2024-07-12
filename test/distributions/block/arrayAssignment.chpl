@@ -61,7 +61,7 @@ module Spam {
     }
 
     proc main() : int {
-        try! lookup("a");
+        var a = try! lookup("a");
 
         return 0;
     }
