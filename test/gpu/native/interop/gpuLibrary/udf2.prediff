@@ -2,16 +2,16 @@
 
 CHPL=$3
 OUTFILE=$2
-CHPL_HOME=`$CHPL --print-chpl-home`
-CHPL_GPU=$($chpl_home/util/printchplenv --all --simple | grep CHPL_GPU | sed 's/CHPL_GPU=//')
+chpl_home=`$CHPL --print-chpl-home`
+chpl_gpu=$(CHPL_HOME=$chpl_home $chpl_home/util/printchplenv --all --simple | grep CHPL_GPU | sed 's/CHPL_GPU=//')
 
 # build with compileline
-cxx=`$CHPL_HOME/util/config/compileline --compile-c++`
-libs=`$CHPL_HOME/util/config/compileline --libraries`
+cxx=`$chpl_home/util/config/compileline --compile-c++`
+libs=`$chpl_home/util/config/compileline --libraries`
 gpu_flags=""
-if [[ "$CHPL_GPU" == "nvidia" ]]; then
+if [[ "$chpl_gpu" == "nvidia" ]]; then
   gpu_flags="-x cuda"
-elif [[ "$CHPL_GPU" == "opencl" ]]; then
+elif [[ "$chpl_gpu" == "amd" ]]; then
   gpu_flags="-x hip"
 fi
 $cxx $gpu_flags test_udf2.cpp -Ilib -Llib/ -ludf2 $libs -o test_udf2_compileline
