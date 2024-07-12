@@ -896,7 +896,7 @@ static void launch_kernel(const char* name,
 
   // deinit them before synch as a (premature?) optimization
   // Engin: note that we are not using stream-ordered allocators yet. So, I
-  // expect the following to serve as a synchornization unfortunately
+  // expect the following to serve as a synchronization unfortunately
   cfg_deinit_params(cfg);
 
   CHPL_GPU_STOP_TIMER(teardown_time);
