@@ -18,7 +18,7 @@ Language Server Support
 The built-in LSP API can be used to configure :ref:`Chapel language server
 <readme-chpl-language-server>` and :ref:`readme-chplcheck` by adding the
 following to your Neovim configuration file. Note that this assumes you have
-already installed :ref:`lspconfig
+already installed `lspconfig
 <https://github.com/neovim/nvim-lspconfig?tab=readme-ov-file#quickstart>`_:
 
 .. code-block:: lua
