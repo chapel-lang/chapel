@@ -367,6 +367,13 @@ module ChapelBase {
     else
       if b >= 0 then true else __primitive("<", a, b);
 
+  // operator < involving bool
+  inline operator <(a: bool, b: bool)     do return a:int < b:int;
+  inline operator <(a: bool, b: integral) do return a:int < b;
+  inline operator <(a: integral, b: bool) do return a     < b:int;
+  inline operator <(param a: bool, param b: bool) param
+    do return __primitive("<", a, b);
+
   inline operator <(a: real(32), b: real(32)) do return __primitive("<", a, b);
   inline operator <(a: real(64), b: real(64)) do return __primitive("<", a, b);
 

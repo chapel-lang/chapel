@@ -1,8 +1,8 @@
 exceptLessThan.chpl:5: In function 'main':
 exceptLessThan.chpl:8: error: unresolved call '<(owned Foo, owned Foo)'
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: this candidate did not match: <(a: int(8), b: int(8))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: this candidate did not match: <(a: integral, b: integral)
 exceptLessThan.chpl:8: note: because actual argument #1 with type 'owned Foo'
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: is passed to formal 'a: int(8)'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: is passed to formal 'a: integral'
 exceptLessThan.chpl:8: note: other candidates are:
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   <(a: int(16), b: int(16))
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   <(a: int(32), b: int(32))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   <(a: integral, param b: integral)
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   <(a: bool, b: bool)
