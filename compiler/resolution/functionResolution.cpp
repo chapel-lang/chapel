@@ -960,7 +960,7 @@ bool canInstantiate(Type* actualType, Type* formalType) {
         // We may have a 'DecoratedClassType' as one of the arguments
         // (e.g. anymanaged x1) and a regular class (e.g. shared(x2)) as another.
         // This would've failed the check above, since anymanaged x1 is not
-        // an aggregate typem and x1 is not an instantiation of shared(x2), either.
+        // an aggregate type and x1 is not an instantiation of shared(x2), either.
         //
         // By the above condition, x1 != x2, but instantiation is still possible
         // if one of the xs instantiates another. Strip the 'owned' etc.
