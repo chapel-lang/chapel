@@ -552,7 +552,7 @@ static Symbol* lookupTransitively(SymbolMap* map, Symbol* sym) {
   Symbol* x = map->get(sym);
   if (!x) return x;
 
-  // If the symbol is re-maped again (e.g., x was y and y was z),
+  // If the symbol is re-mapped again (e.g., x was y and y was z),
   // we need to keep looking until we find the final symbol.
   while (Symbol* y = map->get(x)) {
     // Detect naive cycles. Note that this will not find multi-step cycles,
