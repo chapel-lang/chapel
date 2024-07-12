@@ -22,10 +22,6 @@ use lib "$FindBin::Bin";
 
 use nightlysubs;
 use nightly_email;
-# Mailing lists.
-$failuremail = "chapel+tests\@discoursemail.com";
-$allmail = "chapel-test-results-all\@lists.sourceforge.net";
-$replymail = "";
 
 $valgrind = 0;
 $valgrindexe = 0;
