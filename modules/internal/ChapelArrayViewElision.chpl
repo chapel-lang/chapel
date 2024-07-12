@@ -331,7 +331,7 @@ module ChapelArrayViewElision {
     // we have to compare types. Otherwise, comparing ranges fields can result
     // in confusing errors if one was a range and the other was a domain as that
     // comparison would be a promoted comparison.
-    return lhs.type == rhs.type && 
+    return lhs.type == rhs.type &&
            lhs.rank == rhs.rank &&
            lhs.ptrToArr == rhs.ptrToArr &&
            lhs.ranges == rhs.ranges;
