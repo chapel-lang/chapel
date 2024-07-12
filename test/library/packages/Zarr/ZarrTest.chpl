@@ -132,6 +132,21 @@ proc localIOTest(type dtype) {
     forall i in D do
       assert(A[i] == viewB[i], "Mismatch on indices %?. Written: %?.\n Read: %?.\nFailure on locale %?\n".format(i, A[i], viewB[i], loc.id));
   }
+
+  // 4 dimensional test from Scott's temperature dataset
+  coforall loc in Locales do on loc {
+    const storeName = "LocalIOStore_%?".format(loc.id);
+    const fullDomain = {0..<1, 0..<100, 0..<1082, 0..<361};
+    const chunkSize = (1,100,136,23);
+    var A: [fullDomain] dtype;
+    fillRandom(A);
+    if exists(storeName) then rmTree(storeName);
+    writeZarrArrayLocal(storeName, A, chunkSize);
+    var B = readZarrArrayLocal(storeName, dtype, 4);
+    ref viewB = B.reindex(fullDomain);
+    forall i in fullDomain do
+      assert(A[i] == viewB[i], "Mismatch on indices %?. Written: %?.\n Read: %?.\nFailure on locale %?\n".format(i, A[i], viewB[i], loc.id));
+  }
 }
 
 proc updateChunkTest(type dtype) {
@@ -140,7 +155,7 @@ proc updateChunkTest(type dtype) {
   const D1: domain(1) dmapped new blockDist({0..<N1}) = {0..<N1};
   var A1: [D1] dtype;
   for i in D1 do A1[i] = (i + 3):dtype;
-  if (isDir("Test1D")) then rmTree("Test1D");
+  if isDir("Test1D") then rmTree("Test1D");
   writeZarrArray("Test1D", A1, (7,));
 
   A1[10] = -1;
@@ -156,7 +171,7 @@ proc updateChunkTest(type dtype) {
   const D2: domain(2) dmapped new blockDist({0..<N2,0..<N2}) = {0..<N2,0..<N2};
   var A2: [D2] dtype;
   fillRandom(A2);
-  if (exists("Test2D")) then rmTree("Test2D");
+  if exists("Test2D") then rmTree("Test2D");
   writeZarrArray("Test2D", A2, (7,18));
 
   A2[10,10] *= 3;
