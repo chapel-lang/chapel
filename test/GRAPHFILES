@@ -91,6 +91,7 @@ studies/hpcc/STREAM_study.graph
 studies/hpcc/STREAM_study_promote.graph
 studies/hpcc/FFT/fft.graph
 studies/hpcc/PTRANS/ptrans.graph
+studies/lsuHeat/heat.graph
 # suite: Performance Graphs (TEPS, GB/s, etc.)
 release/examples/benchmarks/hpcc/stream_performance.graph
 release/examples/benchmarks/hpcc/ra_performance.graph
