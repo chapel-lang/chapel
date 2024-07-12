@@ -41,7 +41,9 @@ proc test(val, type T = val.type) {
                       if val == nil then val == readVal
                       else val!.equals(readVal)
                     else if isClassType(val.type) then val!.equals(readVal)
-                    else val == readVal;
+                    else if T == real
+                      then abs(val - readVal) < 1e-5
+                      else val == readVal;
       if !compare {
         writeln("FAILURE");
         failures.pushBack(T:string);

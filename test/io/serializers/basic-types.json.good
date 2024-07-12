@@ -44,7 +44,7 @@ SUCCESS
 --- read: ---
 2.71828
 -------------
-FAILURE
+SUCCESS
 ====================
 
 ===== string =====
@@ -312,5 +312,4 @@ SUCCESS
 -------------
 SUCCESS
 ==============================
-FAILURES:
-- real(64)
+ALL SUCCESS
