@@ -851,6 +851,11 @@ OPTIONS
 
 *Compiler Configuration Options*
 
+Note that the flags in this section all have corresponding environment
+variables.  Details on those environment variables, including potential values
+for them, can be found at
+https://chapel-lang.org/docs/latest/usingchapel/chplenv.html .
+
 .. _man-home:
 
 **\--home <path>**
