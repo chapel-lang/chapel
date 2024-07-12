@@ -646,28 +646,28 @@ module ChapelIO {
   proc range._defaultWriteHelper(f) throws
   {
     if hasLowBound() then
-      f.writef("%i",lowBound);
+      f.write(lowBound);
 
     f.writeLiteral("..");
 
     if hasHighBound() {
       if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
         f.writeLiteral("<");
-        f.writef("%i",lowBound);
+        f.write(lowBound);
       } else {
-        f.writef("%i",highBound);
+        f.write(highBound);
       }
     }
 
     if stride != 1 {
       f.writeLiteral(" by ");
-      f.writef("%i",stride);
+      f.write(stride);
 
       if stride != -1 && isAligned() && ! chpl_isNaturallyAligned() {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
       f.writeLiteral(" align ");
-      f.writef("%i",alignment);
+      f.write(alignment);
       }
     }
   }
