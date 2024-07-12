@@ -86,7 +86,7 @@ Note that these instructions assume you have already setup Vim with Chapel synta
       Plug 'prabirshrestha/vim-lsp'
 
 2. After the ``call plug#end()`` line, add the following configuration. This
-   configuration registers the Chapel language server with the `vim-lsp`
+   configuration registers the Chapel language server with the vim-lsp
    extension and sets up some example keybindings for common LSP operations:
 
    .. code-block:: vim
