@@ -1,0 +1,2 @@
+arraysInKernel.chpl:6: error: Loop is marked with @assertOnGpu but is not eligible for execution on a GPU
+arraysInKernel.chpl:7: note: use of ineligible standard library function 'chpl__ensureDomainExpr' in loop body

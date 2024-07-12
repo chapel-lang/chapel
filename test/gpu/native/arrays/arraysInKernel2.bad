@@ -1,0 +1,2 @@
+arraysInKernel2.chpl:9: error: Loop is marked with @assertOnGpu but is not eligible for execution on a GPU
+arraysInKernel2.chpl:10: note: use of ineligible standard library function 'chpl__convertRuntimeTypeToValue' in loop body
