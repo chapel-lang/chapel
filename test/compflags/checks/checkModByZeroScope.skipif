@@ -1,0 +1,3 @@
+# Currently this fails under gcc, see ./checkModByZeroScope-llvm-none.future
+CHPL_LLVM==none
+CHPL_TARGET_COMPILER==gnu
