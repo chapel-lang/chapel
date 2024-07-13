@@ -1,0 +1,4 @@
+# Chapel's library support does not work for comm!=none and launcher!=none
+CHPL_COMM != none
+COMPOPTS <= --no-local
+CHPL_LAUNCHER != none
