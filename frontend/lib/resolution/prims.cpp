@@ -340,6 +340,18 @@ static QualifiedType primGpuSetBlockSize(Context* context, const CallInfo& ci) {
   return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
 }
 
+// currently this is a copy of primGpuSetBlockSize
+static QualifiedType primGpuSetItersPerThread(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto firstActualType = ci.actual(0).type();
+  if (!firstActualType.type() || !firstActualType.type()->isIntegralType()) {
+    return QualifiedType();
+  }
+
+  return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+}
+
 static QualifiedType primAssertOnGpu(Context* context, const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
 
@@ -1630,6 +1642,10 @@ CallResolutionResult resolvePrimCall(Context* context,
 
     case PRIM_GPU_SET_BLOCKSIZE:
       type = primGpuSetBlockSize(context, ci);
+      break;
+
+    case PRIM_GPU_SET_ITERS_PER_THREAD:
+      type = primGpuSetItersPerThread(context, ci);
       break;
 
     case PRIM_ASSERT_ON_GPU:

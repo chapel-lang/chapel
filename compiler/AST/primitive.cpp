@@ -970,6 +970,10 @@ initPrimitive() {
   // for that loop launches.
   prim_def(PRIM_GPU_SET_BLOCKSIZE, "gpu set blockSize", returnInfoVoid, true);
 
+  // If embedded inside a gpuizable loop, perform this many loop iterations
+  // within a single thread of the kernel.
+  prim_def(PRIM_GPU_SET_ITERS_PER_THREAD, "gpu set itersPerThread", returnInfoVoid, true);
+
   // Generates call that produces runtime error when not run by a GPU
   prim_def(PRIM_ASSERT_ON_GPU, "chpl_assert_on_gpu", returnInfoVoid, true, true);
   prim_def(PRIM_ASSERT_GPU_ELIGIBLE, "assert gpu eligible", returnInfoVoid, true, true);

@@ -131,6 +131,8 @@ struct LoopAttributeInfo {
   const uast::Attribute* assertEligibleAttr = nullptr;
   // The @gpu.blockSize attribute, if one is provided by the user.
   const uast::Attribute* blockSizeAttr = nullptr;
+  // The @gpu.itersPerThread attribute, if one is provided by the user.
+  const uast::Attribute* itersPerThreadAttr = nullptr;
 
  private:
   LLVMMetadataPtr tupleToLLVMMetadata(Context* context,
@@ -212,6 +214,7 @@ struct LoopAttributeInfo {
     this->assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
     this->assertEligibleAttr = attrs->getAttributeNamed(USTR("gpu.assertEligible"));
     this->blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
+    this->itersPerThreadAttr = attrs->getAttributeNamed(USTR("gpu.itersPerThread"));
   }
 
  public:
@@ -243,6 +246,7 @@ struct LoopAttributeInfo {
     return llvmMetadata.size() == 0 &&
            assertOnGpuAttr == nullptr &&
            assertEligibleAttr == nullptr &&
+           itersPerThreadAttr == nullptr &&
            blockSizeAttr == nullptr;
   }
 
@@ -252,6 +256,7 @@ struct LoopAttributeInfo {
 
   bool insertGpuEligibilityAssertion(BlockStmt* body);
   bool insertBlockSizeCall(Converter& converter, BlockStmt* body);
+  bool insertItersPerThreadCall(Converter& converter, BlockStmt* body);
   BlockStmt* createPrimitivesBlock(Converter& converter);
   void insertPrimitivesBlockAtHead(Converter& converter, BlockStmt* body);
 };
@@ -4400,6 +4405,20 @@ bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* bod
   return false;
 }
 
+bool LoopAttributeInfo::insertItersPerThreadCall(Converter& converter, BlockStmt* body) {
+  static int counter = 0;   // see comment in insertBlockSizeCall()
+
+  if (itersPerThreadAttr) {
+    auto newCall = new CallExpr("chpl__gpuItersPerThreadAttr", new_IntSymbol(counter++));
+    for (auto actual : itersPerThreadAttr->actuals()) {
+      newCall->insertAtTail(converter.convertAST(actual));
+    }
+    body->insertAtTail(newCall);
+    return true;
+  }
+  return false;
+}
+
 BlockStmt* LoopAttributeInfo::createPrimitivesBlock(Converter& converter) {
   auto primBlock = new BlockStmt(BLOCK_SCOPELESS);
   primBlock->insertAtTail(new CallExpr(PRIM_GPU_PRIMITIVE_BLOCK));
@@ -4407,6 +4426,7 @@ BlockStmt* LoopAttributeInfo::createPrimitivesBlock(Converter& converter) {
   bool insertedAny = false;
   insertedAny |= insertGpuEligibilityAssertion(primBlock);
   insertedAny |= insertBlockSizeCall(converter, primBlock);
+  insertedAny |= insertItersPerThreadCall(converter, primBlock);
 
   return insertedAny ? primBlock : nullptr;
 }
