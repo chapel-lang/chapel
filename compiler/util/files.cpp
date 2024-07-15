@@ -620,7 +620,7 @@ std::string getChplDepsApp() {
   std::string command = "CHPLENV_SUPPRESS_WARNINGS=true CHPL_HOME=" + std::string(CHPL_HOME) + " python3 ";
   command += std::string(CHPL_HOME) + "/util/chplenv/chpl_home_utils.py --chpldeps";
 
-  std::string venvDir = runCommand(command);
+  std::string venvDir = runCommand(command, "Get dependencies");
   venvDir.erase(venvDir.find_last_not_of("\n\r")+1);
 
   return venvDir;
@@ -630,7 +630,13 @@ bool compilingWithPrgEnv() {
   return 0 != strcmp(CHPL_TARGET_COMPILER_PRGENV, "none");
 }
 
-std::string runCommand(const std::string& command) {
+std::string runCommand(const std::string& command,
+                       const std::string& description) {
+  if (printSystemCommands) {
+    printf("\n# %s\n", description.c_str());
+    printf("%s\n", command.c_str());
+  }
+
   auto commandOutput = chpl::getCommandOutput(command);
   if (auto err = commandOutput.getError()) {
     USR_FATAL("failed to run '%s', error: %s",

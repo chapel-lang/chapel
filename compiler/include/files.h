@@ -129,7 +129,8 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
 
 std::string getChplDepsApp();
 bool compilingWithPrgEnv();
-std::string runCommand(const std::string& command);
+std::string runCommand(const std::string& command,
+                       const std::string& description);
 
 const char* filenameToModulename(const char* filename);
 
