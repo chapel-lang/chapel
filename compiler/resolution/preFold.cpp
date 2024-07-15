@@ -2520,14 +2520,16 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
     VarSymbol* tmp = newTemp(astr("tupleTemp"));
     tmp->addFlag(FLAG_REF_VAR);
 
+    auto field = tupType->getField(i);
+    auto prim = field->isRef() ? PRIM_GET_MEMBER_VALUE : PRIM_GET_MEMBER;
     // create the AST for 'tupleTemp = tuple.field'
     //
-    VarSymbol* field = new_CStringSymbol(tupType->getField(i)->name);
+    VarSymbol* fieldName = new_CStringSymbol(field->name);
     noop->insertBefore(new DefExpr(tmp));
     noop->insertBefore(new CallExpr(PRIM_MOVE, tmp,
-                                    new CallExpr(PRIM_GET_MEMBER,
+                                    new CallExpr(prim,
                                                  tupExpr->copy(),
-                                                 field)));
+                                                 fieldName)));
 
     // clone the body; subtract 2 from i to number unrollings from 0
     //
