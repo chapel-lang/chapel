@@ -55,6 +55,10 @@ module OwnedObject {
   pragma "leaves this nil"
   @chpldoc.nodoc // hide init/record impl details
   proc _owned.init(type chpl_t) {
+    // TODO: today (06/15/2024), the compiler has a special check for a non-class type
+    // being used to instnatiate _owned, so this check is likely redundant and
+    // should be removed. See other _shared.init methods for similar checks that
+    // are likely also redundant.
     if !isClass(chpl_t) then
       compilerError("owned only works with classes");
 

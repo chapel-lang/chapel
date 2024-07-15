@@ -1,2 +1,1 @@
-owned-class-instance.chpl:1: error: 'owned' can only be applied to class types
-owned-class-instance.chpl:1: note: here it is applied to type 'int'
+owned-int-type.chpl:1: error: cannot use non-class type 'int(64)' with memory management specifiers

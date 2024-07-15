@@ -1,0 +1,1 @@
+owned-shared-on-record.chpl:3: error: cannot use non-class type 'C' with memory management specifiers

@@ -1,0 +1,2 @@
+error-owned-record-in-operator.chpl:8: In function '<=>':
+error-owned-record-in-operator.chpl:8: error: cannot use non-class type 'R' with memory management specifiers
