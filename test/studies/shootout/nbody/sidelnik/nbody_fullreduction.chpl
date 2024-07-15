@@ -95,11 +95,11 @@ proc main() {
   var bodies : [NBODIES] unmanaged Planet = temp!;
   
   offset_momentum(bodies);
-  writef("%.9dr\n", energy(bodies));
+  writef("%{#.#########}\n", energy(bodies));
   for 1..n {
     advance(bodies, 0.01);
   }
-  writef("%.9dr\n", energy(bodies));
+  writef("%{#.#########}\n", energy(bodies));
 
   for b in bodies do delete b;
 }
