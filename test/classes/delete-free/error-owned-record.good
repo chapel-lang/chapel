@@ -1,1 +1,1 @@
-error-owned-record.chpl:4: error: cannot use type non-class type 'R' with memory management specifiers
+error-owned-record.chpl:4: error: cannot use non-class type 'R' with memory management specifiers

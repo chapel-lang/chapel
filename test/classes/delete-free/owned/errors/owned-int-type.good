@@ -1,1 +1,1 @@
-owned-int-type.chpl:1: error: cannot use type non-class type 'int(64)' with memory management specifiers
+owned-int-type.chpl:1: error: cannot use non-class type 'int(64)' with memory management specifiers

@@ -995,7 +995,7 @@ AggregateType* AggregateType::generateType(CallExpr* call,
 
     if (auto sub = toTypeSymbol(map.get(field))) {
       if (!isClassLike(sub->typeInfo())) {
-        USR_FATAL(call, "cannot use type non-class type '%s' with memory management specifiers",
+        USR_FATAL(call, "cannot use non-class type '%s' with memory management specifiers",
                   sub->name);
       }
     }
