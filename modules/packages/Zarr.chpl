@@ -164,8 +164,15 @@ module Zarr {
   }
 
 
-  /* Returns the domain of the `chunkIndex`-th chunk for chunks of size `chunkShape` */
-  private proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndex: dimCount*int) {
+  /* Returns the domain of a chunk for a store with a given chunk shape.
+
+     :arg chunkShape: A tuple of the extents of the dimensions of each chunk in the store.
+
+     :arg chunkIndex: A tuple of the indices of the chunk to get the domain for.
+
+     :returns: The domain of the chunk.
+  */
+  proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndex: dimCount*int) {
     var thisChunkRange: dimCount*range(int);
     for i in 0..<dimCount {
       const start = chunkIndex[i] * chunkShape[i];
@@ -174,7 +181,8 @@ module Zarr {
     const thisChunkDomain: domain(dimCount) = thisChunkRange;
     return thisChunkDomain;
   }
-  private proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndex: int) {
+  @chpldoc.nodoc
+  proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndex: int) {
     return getChunkDomain(chunkShape, (chunkIndex,));
   }
 
@@ -187,9 +195,13 @@ module Zarr {
 
     :arg chunkPath: Relative or absolute path to the chunk being read.
 
-    :arg chunkDomain: Array subdomain the chunk contains.
+    :arg chunkDomain: Domain of the chunk being read. Because boundary chunks
+      are padded with zeros, the chunk's domain may be larger in some
+      dimensions than the array's.
 
-    :arg arraySlice: Reference to the portion of the array the calling locale stores.
+    :arg arraySlice: Reference to the portion of the calling locale's section
+      of the array that this chunk will update. The domain of this slice
+      should be a subset of the chunk's.
 
     :throws Error: If the decompression fails
   */
@@ -239,7 +251,9 @@ module Zarr {
 
     :arg chunkPath: Relative or absolute path to the chunk being written.
 
-    :arg chunkDomain: Array subdomain that the chunk contains.
+    :arg chunkDomain: Domain of the chunk being updated. Because boundary
+      chunks are padded with zeros, the chunk's domain may be larger in
+      some dimensions than the array's.
 
     :arg arraySlice: The portion of the array that the calling locale
       contributes to this chunk.
@@ -261,7 +275,7 @@ module Zarr {
     // it with the partial data before writing
     if zarrProfiling then s.restart();
     var copyOut: [chunkDomain] t;
-    if (chunkDomain != arraySlice.domain) {
+    if chunkDomain != arraySlice.domain {
       readChunk(dimCount, chunkPath, chunkDomain, copyOut);
     }
     copyOut[arraySlice.domain] = arraySlice;
@@ -472,9 +486,10 @@ module Zarr {
     blosc_set_nthreads(bloscThreads);
     forall chunkIndex in fullChunkDomain {
       const chunkPath = buildChunkPath(directoryPath, ".", chunkIndex);
-      const thisChunkDomain = D[getChunkDomain(chunkShape, chunkIndex)];
-      ref thisChunkSlice = A[thisChunkDomain];
-      readChunk(dimCount, chunkPath, thisChunkDomain, thisChunkSlice);
+      const fullChunkDomain = getChunkDomain(chunkShape, chunkIndex);
+      const chunkDomainWithinArray = D[fullChunkDomain];
+      ref thisChunkSlice = A[chunkDomainWithinArray];
+      readChunk(dimCount, chunkPath, fullChunkDomain, thisChunkSlice);
     }
     blosc_destroy();
     return A;
@@ -523,19 +538,17 @@ module Zarr {
     const D: domain(dimCount) = normalizedRanges;
     ref normA = A.reindex(D);
 
-
     blosc_init();
     blosc_set_nthreads(bloscThreads);
 
     const localChunks = getLocalChunks(D, D, chunkShape);
-
     forall chunkIndex in localChunks {
       // Get the part of the array that contributes to this chunk
       const chunkBounds = getChunkDomain(chunkShape, chunkIndex);
       const chunkForDomain = D[chunkBounds];
       ref chunkData = normA[chunkForDomain];
       const chunkPath = buildChunkPath(directoryPath, ".", chunkIndex);
-      writeChunk(dimCount, chunkPath, chunkData.domain, chunkData, bloscLevel=bloscLevel);
+      writeChunk(dimCount, chunkPath, chunkBounds, chunkData, bloscLevel=bloscLevel);
     }
 
     blosc_destroy();
