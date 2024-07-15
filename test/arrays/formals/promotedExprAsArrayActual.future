@@ -1,0 +1,2 @@
+feature: passing promoted expressions to array formals
+https://github.com/chapel-lang/chapel/issues/7936
