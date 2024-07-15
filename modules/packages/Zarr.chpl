@@ -245,7 +245,7 @@ module Zarr {
 
     :arg chunkDomain: Domain of the chunk being updated. Because boundary
       chunks are padded with zeros, the chunk's domain may be larger in
-      some dimensions than the array's. 
+      some dimensions than the array's.
 
     :arg arraySlice: The portion of the array that the calling locale
       contributes to this chunk.
