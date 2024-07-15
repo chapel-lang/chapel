@@ -534,7 +534,7 @@ module Zarr {
     blosc_set_nthreads(bloscThreads);
 
     const localChunks = getLocalChunks(D, D, chunkShape);
-    for chunkIndex in localChunks {
+    forall chunkIndex in localChunks {
       // Get the part of the array that contributes to this chunk
       const chunkBounds = getChunkDomain(chunkShape, chunkIndex);
       const chunkForDomain = D[chunkBounds];
