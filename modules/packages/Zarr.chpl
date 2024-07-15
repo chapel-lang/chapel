@@ -170,7 +170,7 @@ module Zarr {
 
      :arg chunkIndex: A tuple of the indices of the chunk to get the domain for.
 
-      :returns: The domain of the chunk.
+     :returns: The domain of the chunk.
   */
   proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndex: dimCount*int) {
     var thisChunkRange: dimCount*range(int);
