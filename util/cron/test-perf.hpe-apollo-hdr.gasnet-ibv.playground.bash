@@ -25,6 +25,8 @@ export GASNET_PHYSMEM_MAX="0.90"
 #
 # When the multi-local playground is not used, set `SKIP_ML_PLAYGROUND=1
 #
+# Currently tests https://github.com/chapel-lang/chapel/pull/25517. We'll
+# determine whether to turn that optimization on-by-default.
 
 SKIP_ML_PLAYGROUND=0
 if [[ "$SKIP_ML_PLAYGROUND" == "1" ]]; then
@@ -32,12 +34,10 @@ if [[ "$SKIP_ML_PLAYGROUND" == "1" ]]; then
   exit
 fi
 
-GITHUB_USER=jhh67
-GITHUB_BRANCH=no-op
-SHORT_NAME=no-op
-START_DATE=07/08/24
-
-export CHPL_NIGHTLY_TEST_DIRS="performance/elliot"
+GITHUB_USER=bradcray
+GITHUB_BRANCH=enable-localize-domain-opt
+SHORT_NAME=localize-domain
+START_DATE=07/15/24
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
