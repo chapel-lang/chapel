@@ -88,9 +88,10 @@ module Image {
   //
   // how far to shift a color component when packing into a pixelType
   //
-  private inline proc colorOffset(param color) param {
+  private inline proc colorOffset(param color) param do
     return color:int * bitsPerColor;
-  }
+  private inline proc colorOffset(color) do
+    return color:int * bitsPerColor;
 
   /* Defines what kind of image to output */
   enum imageType {
@@ -174,6 +175,41 @@ module Image {
       const nbits = bitsPerColor * (rgbColor.size) * cols;
       outfile.writeBits(0:uint, (rowSizeBits-nbits):int(8));
     }
+  }
+
+  /*
+    Takes a 2D array of color values and turns them into pixels. The order of
+    the colors is determined by the ``format`` formal. The default format is
+    ``(red, green, blue)``.
+
+    :arg colors: the 2D array of colors
+    :arg format: the order of the colors in the array. it must be a permutation
+                 of ``(red, green, blue)``
+    :returns: a new array of pixels with the same domain as ``colors``
+  */
+  proc colorToPixel(colors: [?d] 3*pixelType, format: 3*rgbColor = (rgbColor.red, rgbColor.green, rgbColor.blue)): [d] pixelType
+    where d.isRectangular() && d.rank == 2 {
+
+    // check format
+    if boundsChecking {
+      if !(format[0] != format[1] &&
+           format[1] != format[2] &&
+           format[0] != format[2]) then
+        halt("colorToPixel: format must be a permutation of (red, green, blue)");
+    }
+
+    proc getColorAsPixel(color: pixelType, offset: rgbColor) {
+      return (color & colorMask) << colorOffset(offset);
+    }
+
+    var outPixels: [d] pixelType;
+    forall (c, outPixel) in zip(colors, outPixels) {
+      outPixel = getColorAsPixel(c[0], format[0]) |
+                 getColorAsPixel(c[1], format[1]) |
+                 getColorAsPixel(c[2], format[2]);
+    }
+
+    return outPixels;
   }
 
   /*
