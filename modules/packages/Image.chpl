@@ -28,11 +28,14 @@ and written to a second BMP file.
 
    use Image;
 
-   var arr: [1..3, 1..3] int;
+   var color: [1..3, 1..3] 3*int;
 
-   arr[1, ..] = [0xFF0000, 0x00FF00, 0x0000FF];
-   arr[2, ..] = [0x00FF00, 0x0000FF, 0xFF0000];
-   arr[3, ..] = [0x0000FF, 0xFF0000, 0x00FF00];
+   colors[1, ..] = [(0xFF,0,0), (0,0xFF,0), (0,0,0xFF)];
+   colors[2, ..] = [(0,0xFF,0), (0,0,0xFF), (0xFF,0,0)];
+   colors[3, ..] = [(0,0,0xFF), (0xFF,0,0), (0,0xFF,0)];
+
+   var format = (rgbColor.blue, rgbColor.green, rgbColor.red);
+   var arr = colorToPixel(color, format=format);
 
    writeImage("pixels.bmp", imageType.bmp, arr);
    writeImage("pixels2.bmp", imageType.bmp, scale(arr, 2));
