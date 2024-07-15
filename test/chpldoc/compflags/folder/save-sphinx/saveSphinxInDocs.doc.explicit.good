@@ -1,4 +1,4 @@
-error: using same directory for '--save-sphinx' as default output directory, please either use a different directory for '--save-sphinx' or override the default output directory with '--output-dir'
+error: using same directory for '--save-sphinx' and '--output-dir' causes issues, please use a different location for one of these flags
 cat: docs/source/modules/saveSphinxInDocs.doc.rst: No such file or directory
 cat: docs/_sources/modules/saveSphinxInDocs.doc.rst.txt: No such file or directory
 cat: someOtherFolder/_sources/modules/saveSphinxInDocs.doc.rst.txt: No such file or directory

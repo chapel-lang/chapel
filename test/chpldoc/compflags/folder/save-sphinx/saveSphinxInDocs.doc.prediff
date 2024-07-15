@@ -11,4 +11,9 @@ regex='s/Running Sphinx v[0-9]*.[0-9]*.[0-9]*/Running Sphinx vN.N.N/'
 
 sed -e "$regex" $tmpfile > $tmptmp
 
+# Hide the "writing output..." and "reading sources..." lines from the expected
+# output, they behave unpredictably
+sed '/writing output/d' $tmptmp > $tmpfile
+sed '/reading sources/d' $tmpfile > $tmptmp
+
 mv $tmptmp $tmpfile
