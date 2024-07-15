@@ -164,7 +164,14 @@ module Zarr {
   }
 
 
-  /* Returns the domain of the `chunkIndex`-th chunk for chunks of size `chunkShape` */
+  /* Returns the domain of a chunk for a store with a given chunk shape.
+
+     :arg chunkShape: A tuple of the extents of the dimensions of each chunk in the store.
+
+     :arg chunkIndex: A tuple of the indices of the chunk to get the domain for.
+
+      :returns: The domain of the chunk.
+  */
   proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndex: dimCount*int) {
     var thisChunkRange: dimCount*range(int);
     for i in 0..<dimCount {
@@ -174,6 +181,7 @@ module Zarr {
     const thisChunkDomain: domain(dimCount) = thisChunkRange;
     return thisChunkDomain;
   }
+  @chpldoc.nodoc
   proc getChunkDomain(chunkShape: ?dimCount*int, chunkIndex: int) {
     return getChunkDomain(chunkShape, (chunkIndex,));
   }
