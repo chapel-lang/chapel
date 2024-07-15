@@ -328,7 +328,11 @@ module ChapelArrayViewElision {
   // typically cases where the optimization is not supported in the first place.
   operator ==(const ref lhs: chpl__protoSlice(?),
               const ref rhs: chpl__protoSlice(?)) {
-    return lhs.rank == rhs.rank &&
+    // we have to compare types. Otherwise, comparing ranges fields can result
+    // in confusing errors if one was a range and the other was a domain as that
+    // comparison would be a promoted comparison.
+    return lhs.type == rhs.type &&
+           lhs.rank == rhs.rank &&
            lhs.ptrToArr == rhs.ptrToArr &&
            lhs.ranges == rhs.ranges;
   }
