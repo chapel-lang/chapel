@@ -1,0 +1,4 @@
+promotedExprAsArrayActual.chpl:3: error: unresolved call 'doSomething(promoted expression)'
+promotedExprAsArrayActual.chpl:1: note: this candidate did not match: doSomething(arg: [] int)
+promotedExprAsArrayActual.chpl:3: note: because actual argument #1 with type 'iterator'
+promotedExprAsArrayActual.chpl:1: note: is passed to formal 'arg: []'
