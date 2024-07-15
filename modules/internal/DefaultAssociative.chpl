@@ -40,7 +40,7 @@ module DefaultAssociative {
   }
 
   private proc _isDefaultDeser(f) param : bool {
-    if f._writing then return f.serializerType == IO.defaultSerializer;
+    if f._writing then return isDefaultSerializerType(f.serializerType);
     else return f.deserializerType == IO.defaultDeserializer;
   }
 

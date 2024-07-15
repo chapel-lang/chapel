@@ -2311,6 +2311,14 @@ private proc defaultSerializeType(param writing : bool) type {
   else return defaultDeserializer;
 }
 
+@chpldoc.nodoc
+proc isDefaultSerializerType(type t) param : bool {
+  import PrecisionSerializer;
+  // the precisionSerializer should receive the same special-casing as the
+  // defaultSerializer throughout the standard modules (e.g., dsiSerialWrite for assoc. domains)
+  return t == defaultSerializer || t == PrecisionSerializer.precisionSerializer;
+}
+
 private proc defaultSerializeVal(param writing : bool) {
   if !useIOSerializers then return none;
 
@@ -2551,7 +2559,6 @@ record defaultSerializer {
     }
   }
 
-  // TODO: add ":ref:" for return type, currently can't refer to it.
   /*
     Start serializing a class by writing the character ``{``.
 
@@ -2559,7 +2566,7 @@ record defaultSerializer {
     :arg name: The name of the class type.
     :arg size: The number of fields in the class.
 
-    :returns: A new :type:`AggregateSerializer`
+    :returns: A new :record:`~IO.defaultSerializer.AggregateSerializer`
   */
   proc startClass(writer: fileWriter, name: string, size: int) throws {
     writer.writeLiteral("{");

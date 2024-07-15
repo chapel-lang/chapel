@@ -628,7 +628,7 @@ module ChapelIO {
 
   @chpldoc.nodoc
   proc _iteratorRecord.serialize(writer, ref serializer) throws {
-    if serializer.type == IO.defaultSerializer {
+    if isDefaultSerializerType(serializer.type) {
       _defaultWriteHelper(writer);
     } else {
       if chpl_warnUnstable then
@@ -674,7 +674,7 @@ module ChapelIO {
 
   @chpldoc.nodoc
   proc range.serialize(writer, ref serializer) throws {
-    if serializer.type == defaultSerializer {
+    if isDefaultSerializerType(serializer.type) {
       _defaultWriteHelper(writer);
     } else {
       if chpl_warnUnstable then

@@ -1009,7 +1009,7 @@ class UserMapAssocArr: AbsBaseArr(?) {
 
   proc dsiSerialWrite(f) throws where f.serializerType != nothing {
     use IO;
-    if f.serializerType == IO.defaultSerializer {
+    if isDefaultSerializerType(f.serializerType) {
       var ser = f.serializer.startArray(f, dom.dsiNumIndices:int);
       ser.startDim(dom.dsiNumIndices);
 

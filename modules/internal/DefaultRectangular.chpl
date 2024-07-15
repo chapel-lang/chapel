@@ -1722,7 +1722,7 @@ module DefaultRectangular {
   }
 
   proc DefaultRectangularDom.dsiSerialWrite(f) throws
-  where _supportsSerializers(f) && f.serializerType != IO.defaultSerializer {
+  where _supportsSerializers(f) && !isDefaultSerializerType(f.serializerType) {
     if chpl_warnUnstable then
       compilerWarning("Serialization of rectangular domains with non-default Serializer is unstable, and may change in the future");
     var ser = f.serializer.startList(f, rank);

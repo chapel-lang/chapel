@@ -363,11 +363,11 @@ SUCCESS: [domain(4,int(64),one)] int(64)
 SUCCESS: [domain(5,int(64),one)] int(64)
 --- array of arrays ---
 ===== writing: =====
-1 2 3 2 4 6 3 6 9
+1.11235 1.21235 1.31235 2.11235 2.21235 2.31235 3.11235 3.21235 3.31235
 --------------------
-1 2 3 2 4 6 3 6 9
+1.11235 1.21235 1.31235 2.11235 2.21235 2.31235 3.11235 3.21235 3.31235
 ====================
-SUCCESS: [domain(1,int(64),one)] [domain(1,int(64),one)] int(64)
+SUCCESS: [domain(1,int(64),one)] [domain(1,int(64),one)] real(64)
 --- record with array field ---
 ===== writing: =====
 (x = 1 2 3 4)

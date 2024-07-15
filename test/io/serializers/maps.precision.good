@@ -1,0 +1,26 @@
+===== writing: =====
+{east: west, hello: goodbye, north: south, day: night}
+--------------------
+{east: west, hello: goodbye, north: south, day: night}
+====================
+===== writing: =====
+{713: Houston, 212: NYC, 206: Seattle}
+--------------------
+{     713: Houston,      212: NYC,      206: Seattle}
+====================
+===== writing: =====
+{Banana: (x = 1, y = -10.0), Apple: (x = 5, y = 42.0), Orange: (x = 13, y = 106.7)}
+--------------------
+{Banana: (x =        1, y = -10.0000), Apple: (x =        5, y =  42.0000), Orange: (x =       13, y = 106.7000)}
+====================
+===== writing: =====
+{(x = 1, y = -10.0): Banana, (x = 5, y = 42.0): Apple, (x = 13, y = 106.7): Orange}
+--------------------
+{(x =        1, y = -10.0000): Banana, (x =        5, y =  42.0000): Apple, (x =       13, y = 106.7000): Orange}
+====================
+===== writing: =====
+{5: 25, 1: 1, 4: 16, 2: 4, 3: 9}
+--------------------
+{       5:       25,        1:        1,        4:       16,        2:        4,        3:        9}
+====================
+SUCCESS: map(int(64),int(64),false)

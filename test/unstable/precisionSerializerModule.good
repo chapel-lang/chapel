@@ -1,0 +1,3 @@
+precisionSerializerModule.chpl:1: warning: PrecisionSerializer is unstable
+precisionSerializerModule.chpl:5: warning: 'precisionSerializer' is an experimental feature. Its behavior and/or API may change in future releases.
+   3.1415900

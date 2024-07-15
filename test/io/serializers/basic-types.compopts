@@ -3,4 +3,5 @@
 -sformat=FormatKind.little -swarnBinaryStructured=false # basic-types.little.good
 -sformat=FormatKind.big -swarnBinaryStructured=false # basic-types.big.good
 -sformat=FormatKind.object # basic-types.object.good
+-sformat=FormatKind.precision # basic-types.precision.good
 -sformat=FormatKind.syntax # basic-types.syntax.good
