@@ -1,0 +1,1 @@
+error: using same directory for '--save-sphinx' and '--output-dir' causes issues, please use a different location for one of these flags
