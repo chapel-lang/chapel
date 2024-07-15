@@ -1,0 +1,6 @@
+explicit-generic-nilable-suffix.chpl:7: warning: please use '?' when declaring a variable with generic type
+explicit-generic-nilable-suffix.chpl:7: note: for example with 'C(?)'
+explicit-generic-nilable-suffix.chpl:8: warning: please use '?' when declaring a variable with generic type
+explicit-generic-nilable-suffix.chpl:8: note: for example with 'C(?)'
+owned C(int(64))?
+borrowed C(int(64))?
