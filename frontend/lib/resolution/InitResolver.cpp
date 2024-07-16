@@ -341,15 +341,13 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
   }
 
   if (subs.size() == 0) {
-    ctx_->error(ctInitial->id(), "unable to instantiate generic type from initializer");
     return currentRecvType_;
+  } else {
+    const Type* ret = ctFromSubs(ctx_, initialRecvType_, ctInitial, subs);
+    CHPL_ASSERT(ret);
+    return ret;
   }
 
-  const Type* ret = ctFromSubs(ctx_, initialRecvType_, ctInitial, subs);
-
-  CHPL_ASSERT(ret);
-
-  return ret;
 }
 
 QualifiedType::Kind InitResolver::determineReceiverIntent(void) {
