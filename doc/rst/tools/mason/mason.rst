@@ -17,8 +17,8 @@ When to Leverage Mason for Chapel Builds
 ----------------------------------------
 
 Mason simplifies the build process for Chapel applications, but it's
-not a one-size-fits-all solution. Here's a breakdown of when Mason
-shines and when alternative approaches might be better suited.
+not currently a one-size-fits-all solution. Here's a breakdown of
+when Mason shines and when alternative approaches might be better suited.
 
 **Ideal Use Cases for Mason:**
 
