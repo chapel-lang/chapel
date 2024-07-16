@@ -48,7 +48,7 @@ FROM $DOCKER_IMAGE_NAME_FULL AS build
         echo "CHPL_TASKS=qthreads" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_RE2=bundled" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_GMP=system" >> $CHPL_HOME/chplconfig && \\
-        echo "CHPL_MEM=jemalloc" >> $CHPL_HOME/chplconfig && \\
+        echo "CHPL_TARGET_MEM=jemalloc" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_TARGET_JEMALLOC=system" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_HWLOC=system" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_LLVM=system" >> $CHPL_HOME/chplconfig && \\
@@ -63,13 +63,15 @@ FROM $DOCKER_IMAGE_NAME_FULL AS build
         rm -f $CHPL_HOME/chplconfig && touch $CHPL_HOME/chplconfig && \\
         echo "CHPL_COMM=gasnet" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_HOST_PLATFORM=linux64" >> $CHPL_HOME/chplconfig && \\
+        echo "CHPL_HOST_MEM=jemalloc" >> $CHPL_HOME/chplconfig && \\
+        echo "CHPL_HOST_JEMALLOC=system" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_TARGET_PLATFORM=linux64" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_TARGET_COMPILER=llvm" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_TARGET_CPU=none" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_TASKS=qthreads" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_RE2=bundled" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_GMP=system" >> $CHPL_HOME/chplconfig && \\
-        echo "CHPL_MEM=jemalloc" >> $CHPL_HOME/chplconfig && \\
+        echo "CHPL_TARGET_MEM=jemalloc" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_TARGET_JEMALLOC=system" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_HWLOC=system" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_LLVM=system" >> $CHPL_HOME/chplconfig && \\
@@ -87,13 +89,15 @@ FROM $DOCKER_IMAGE_NAME_FULL AS build
         echo "CHPL_LIBFABRIC=bundled" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_COMM_OFI_OOB=pmi2" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_HOST_PLATFORM=linux64" >> $CHPL_HOME/chplconfig && \\
+        echo "CHPL_HOST_MEM=jemalloc" >> $CHPL_HOME/chplconfig && \\
+        echo "CHPL_HOST_JEMALLOC=system" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_TARGET_PLATFORM=linux64" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_TARGET_COMPILER=llvm" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_TARGET_CPU=none" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_TASKS=qthreads" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_RE2=bundled" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_GMP=system" >> $CHPL_HOME/chplconfig && \\
-        echo "CHPL_MEM=jemalloc" >> $CHPL_HOME/chplconfig && \\
+        echo "CHPL_TARGET_MEM=jemalloc" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_TARGET_JEMALLOC=system" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_HWLOC=system" >> $CHPL_HOME/chplconfig && \\
         echo "CHPL_LLVM=system" >> $CHPL_HOME/chplconfig && \\
