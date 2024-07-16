@@ -22,25 +22,23 @@ when Mason shines and when alternative approaches might be better suited.
 
 **Ideal Use Cases for Mason:**
 
-1. Pure Chapel Projects
-   a. Mason excels at managing the build process for applications written
-      entirely in Chapel.
-   b. If your program relies solely on Chapel
-      dependencies and compiles directly from Chapel modules, Mason is the
-      perfect tool.
-2. External Dependencies with `Spack` or `pkg-config`
-   a. Mason integrates seamlessly with external dependencies managed by
-      `Spack` or `pkg-config`. If your project uses such dependencies,
-      Mason can handle them efficiently.
+1. Pure Chapel Projects: Mason excels at managing the build process for
+   applications written entirely in Chapel. If your program relies solely
+   on Chapel dependencies and compiles directly from Chapel modules, Mason
+   is the perfect tool.
+2. External Dependencies with `Spack` or `pkg-config`: Mason integrates
+   seamlessly with external dependencies managed by `Spack` or
+   `pkg-config`. If your project uses such dependencies, Mason can handle
+   them efficiently.
 
 **Considering Alternatives:**
 
-1. Complex Compilation Needs Beyond `chpl`
-   a. For Chapel programs requiring compilation steps beyond what the Chapel
-     compiler offers, Mason might not be the most suitable choice. Consider
-     alternatives like `Make` for greater flexibility in crafting intricate build commands.
-   b. Example: The Arkouda project, a prominent open-source Chapel application,
-     utilizes Make to run preparatory Python scripts before the final binary compilation.
+1. Complex Compilation Needs Beyond `chpl`: For Chapel programs requiring
+   compilation steps beyond what the Chapel compiler offers, Mason might not
+   be the most suitable choice. Consider alternatives like `Make` for greater
+   flexibility in crafting intricate build commands. As an example, the
+   Arkouda project, a prominent open-source Chapel application, utilizes
+   `Make` to run preparatory Python scripts before the final binary compilation.
 
 **Combining Mason with Make:**
 
