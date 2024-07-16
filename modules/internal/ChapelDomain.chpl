@@ -3004,8 +3004,6 @@ module ChapelDomain {
     return if inclusive then {low..high} else {low..<high};
   }
 
-  
-
   /* Creates a multidimensional rectangular domain with bounds defined by the
      pairwise elements of `low` and `high`. If `inclusive` is true, the domain
      includes the `high` values. Otherwise, the domain excludes the `high`
@@ -3079,8 +3077,8 @@ module ChapelDomain {
 
   pragma "last resort"
   @chpldoc.nodoc
-  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true) 
-    where isTuple(low) && isTuple(high) 
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
+    where isTuple(low) && isTuple(high)
   {
     if !isHomogeneousTuple(low) || !isHomogeneousTuple(high) then
       compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" +
