@@ -8,4 +8,4 @@
 Sort
 ====
 
-The Sort module documentation has been moved to the :mod:`standard library documentation <standard>`.
+The Sort module documentation has been moved to the :ref:`standard library documentation <standard>`.
