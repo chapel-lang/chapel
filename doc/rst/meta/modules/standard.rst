@@ -22,6 +22,13 @@ default:
    A subset of the Math symbols <standard/Math>
 
 
+Algorithms
+----------
+.. toctree::
+   :maxdepth: 1
+
+   Sort <standard/Sort>
+
 Data Structures
 ---------------
 

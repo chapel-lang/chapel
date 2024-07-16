@@ -99,6 +99,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Reflection.chpl \
 	standard/Regex.chpl \
 	standard/Set.chpl \
+	standard/Sort.chpl \
 	standard/Subprocess.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
@@ -146,7 +147,6 @@ PACKAGES_TO_DOCUMENT = \
 	packages/ReplicatedVar.chpl \
 	packages/Search.chpl \
 	packages/Socket.chpl \
-	packages/Sort.chpl \
 	packages/SortedMap.chpl \
 	packages/SortedSet.chpl \
 	packages/TOML.chpl \
