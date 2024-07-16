@@ -5549,7 +5549,7 @@ DEFINE_PRIM(GPU_ARG) {
   Immediate* imm = getSymbolImmediate(kindSE->symbol());
   int8_t kind = imm->v_int8;
 
-  if ((kind & 1<<0) == GpuArgKind::ADDROF) {
+  if (kind & GpuArgKind::ADDROF) {
     args.push_back(codegenAddrOf(codegenValuePtr(call->get(2))));
   }
   else {
@@ -5557,7 +5557,7 @@ DEFINE_PRIM(GPU_ARG) {
   }
 
   const char* fnName;
-  if ((kind & 1<<1) == GpuArgKind::OFFLOAD) {
+  if (kind & GpuArgKind::OFFLOAD) {
     fnName = "chpl_gpu_arg_offload";
     args.push_back(codegenSizeof(call->get(2)->typeInfo()->getValType()));
 
@@ -5569,8 +5569,11 @@ DEFINE_PRIM(GPU_ARG) {
     args.push_back(codegenSizeof(call->get(2)->typeInfo()->getValType()));
     args.push_back(call->get(4)->codegen());
 
-  }
-  else {
+  } else if (kind & GpuArgKind::HOST_REGISTER) {
+    fnName = "chpl_gpu_arg_host_register";
+    args.push_back(codegenSizeof(call->get(2)->typeInfo()->getValType()));
+
+  } else {
     fnName = "chpl_gpu_arg_pass";
   }
 
