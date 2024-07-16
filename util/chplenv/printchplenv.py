@@ -28,6 +28,7 @@ Options:
   --overrides      Omit variables that have not been user supplied via environment
                     or chplconfig
   --only-path      Omit variables that do not contibute to the build path
+  --only=VARS      Print only the variables listed in VARS, separated by commas.
 
   [format]
   --pretty         (default) Print variables in format: CHPL_KEY: VALUE
@@ -42,6 +43,7 @@ Options:
                     this flag always excludes CHPL_HOME and CHPL_MAKE
   --bash           Print variables in format: export CHPL_KEY=VALUE
   --csh            Print variables in format: setenv CHPL_KEY VALUE
+  --plain          Print only the values of the variables
 
   [misc]
   --ignore-errors  Continue processing even if an error occurs
@@ -372,6 +374,10 @@ def filter_tidy(chpl_env):
     return True
 
 
+"""Filter out all variables except the one requested"""
+def _filter_only(chpl_env, only):
+    return chpl_env.name.strip() in only
+
 """Filter variables that are not selected in contents
 Requires a content argument via functools.partial
 """
@@ -420,16 +426,18 @@ def _print_var(key, value, print_format=None, shortname=None):
         return "export {0}={1}\n".format(key_stripped, forShell(value))
     elif print_format == 'csh':
         return "setenv {0} {1}\n".format(key_stripped, forShell(value))
+    elif print_format == 'plain':
+        return "{0}\n".format(value)
     else:
         raise ValueError("Invalid format '{0}'".format(print_format))
 
 
 """Return a string that contains the Chapel configuration variable info"""
-def printchplenv(contents, print_filters=None, print_format='pretty'):
+def printchplenv(contents, print_filters=None, print_format='pretty', only=None):
     global CHPL_ENVS
 
     if print_filters is None:
-        print_filters = ['tidy']
+        print_filters = set(['tidy'])
 
     # Error checking for external python codes calling printchplenv function
     if not ENV_VALS.items:
@@ -441,17 +449,20 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
 
     envs = filter(filter_content, CHPL_ENVS)
 
-    # --path or --only-path -- skip variables marked NOPATH
-    if print_format == 'path' or 'only-path' in print_filters:
-        envs = filter(filter_path, envs)
+    if only:
+        envs = filter(partial(_filter_only, only=only), envs)
+    else:
+        # --path or --only-path -- skip variables marked NOPATH
+        if print_format == 'path' or 'only-path' in print_filters:
+            envs = filter(filter_path, envs)
 
-    # --overrides
-    if 'overrides' in print_filters:
-        envs = filter(filter_overrides, envs)
+        # --overrides
+        if 'overrides' in print_filters:
+            envs = filter(filter_overrides, envs)
 
-    # --tidy
-    if 'tidy' in print_filters:
-        envs = filter(filter_tidy, envs)
+        # --tidy
+        if 'tidy' in print_filters:
+            envs = filter(filter_tidy, envs)
 
     # Specialize _print_var to use print_format as default arg
     print_var = partial(_print_var, print_format=print_format)
@@ -520,6 +531,7 @@ def parse_args():
     parser.add_option('--anonymize', action='append_const', dest='filter', const='anonymize')
     parser.add_option('--overrides', action='append_const', dest='filter', const='overrides')
     parser.add_option('--only-path', action='append_const', dest='filter', const='only-path')
+    parser.add_option('--only', type=str, nargs=1, default=None, dest='only')
 
     #[format]
     parser.set_defaults(format='pretty')
@@ -530,6 +542,7 @@ def parse_args():
     parser.add_option('--path',   action='store_const', dest='format', const='path')
     parser.add_option('--bash',   action='store_const', dest='format', const='bash')
     parser.add_option('--csh',    action='store_const', dest='format', const='csh')
+    parser.add_option('--plain',  action='store_const', dest='format', const='plain')
 
     #[misc]
     parser.add_option('--ignore-errors', action='store_true', dest='ignore_errors')
@@ -558,12 +571,20 @@ def main():
       exit(1)
 
     # Handle --all flag
+    all_content = ['runtime', 'launcher', 'compiler', 'default']
     if options.all:
-        options.content.extend(['runtime', 'launcher', 'compiler', 'default'])
+        options.content.extend(all_content)
 
     # Handle --tidy / --no-tidy flags
     if options.tidy:
         options.filter.append('tidy')
+
+    # Handle --only
+    only = None
+    if options.only:
+        only = set([o.strip() for o in options.only.split(",")])
+        options.content.extend(all_content + ['internal'])
+        options.filter.extend(['only', 'anonymize'])
 
     # Set default [content]
     if not options.content:
@@ -577,6 +598,10 @@ def main():
     if options.format == 'path' and 'internal' in contents:
         stdout.write('--path and --internal are incompatible flags\n')
         exit(1)
+    # Prevent --only --path, because it's useless
+    if options.format == 'path' and options.only:
+        stdout.write('--path and --only are incompatible flags\n')
+        exit(1)
 
     if options.ignore_errors:
         utils.ignore_errors = True
@@ -588,7 +613,7 @@ def main():
     if 'internal' in contents:
         compute_internal_values()
 
-    ret = printchplenv(contents, filters, options.format)
+    ret = printchplenv(contents, filters, options.format, only=only)
     stdout.write(ret)
 
 
