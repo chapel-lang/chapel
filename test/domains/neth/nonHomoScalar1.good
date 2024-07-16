@@ -1,0 +1,1 @@
+nonHomoScalar1.chpl:1: error: Domains defined using tuple bounds must use homogenous tuples, but got '(int(64),real(64))'

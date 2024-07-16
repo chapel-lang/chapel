@@ -1,0 +1,1 @@
+enumToInt.chpl:2: error: Domains defined using tuple bounds must use tuples of coercible types. Cannot coerce between 'e' and 'int(64)'
