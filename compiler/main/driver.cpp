@@ -1030,6 +1030,7 @@ static void setBaselineFlag(const ArgumentDescription* desc, const char* unused)
   //fReplaceArrayAccessesWithRefTemps = false; // don't tie this to --baseline yet
   fDenormalize = false;               // --no-denormalize
   fNoOptimizeForallUnordered = true;  // --no-optimize-forall-unordered-ops
+  fArrayViewElision = false;          // --no-array-view-elision
 }
 
 static void setUseColorTerminalFlag(const ArgumentDescription* desc, const char* unused) {
