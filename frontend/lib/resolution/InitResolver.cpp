@@ -242,7 +242,8 @@ bool InitResolver::isFinalReceiverStateValid(void) {
     }
 
     if (state->qt.genericity() == Type::GENERIC) {
-      CHPL_UNIMPL("Unhandled generic initializer state");
+      ctx_->error(ctInitial->id(),
+                  "unable to instantiate generic type from initializer");
       ret = false;
     }
   }
