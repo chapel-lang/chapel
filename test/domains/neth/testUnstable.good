@@ -1,0 +1,3 @@
+testUnstable.chpl:1: warning: makeRectangularDomain() is subject to change in the future.
+testUnstable.chpl:2: warning: makeRectangularDomain() is subject to change in the future.
+testUnstable.chpl:3: warning: makeRectangularDomain() is subject to change in the future.

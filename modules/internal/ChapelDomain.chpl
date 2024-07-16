@@ -25,7 +25,7 @@ module ChapelDomain {
   public use ChapelBase;
   use ArrayViewRankChange, ChapelTuple;
 
-  private use ChapelRange only isValidRangeIdxType;
+  private use ChapelRange only chpl_isValidRangeIdxType;
   /*
      Fractional value that specifies how full this domain can be
      before requesting additional memory. The default value of
@@ -2997,41 +2997,14 @@ module ChapelDomain {
       and `high`. If `inclusive` is true, the domain includes the `high` value.
       Otherwise, the domain excludes the `high` value.
    */
+  @unstable("makeRectangularDomain() is subject to change in the future.")
   proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
-    where isValidRangeIdxType(t1) && isValidRangeIdxType(t2)
+    where chpl_isValidRangeIdxType(t1) && chpl_isValidRangeIdxType(t2)
   {
     return if inclusive then {low..high} else {low..<high};
   }
 
-  @chpldoc.nodoc
-  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
-    where isTuple(t1) && isTuple(t2) &&
-          !(isHomogeneousTuple(low) && isHomogeneousTuple(high))
-  {
-    compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" +
-                  low.type:string + "' and '" + high.type:string + "'");
-  }
-
-  @chpldoc.nodoc
-  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
-    where isTuple(low) && isTuple(high) &&
-          isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
-          low.size != high.size {
-    compilerError("Domains defined using tuple bounds must use tuples of the same length, " +
-                  "but got '" + low.type:string + "' and '" + high.type:string + "'");
-  }
-
-  @chpldoc.nodoc
-  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
-    where isTuple(low) && isTuple(high) &&
-          isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
-          low.size == high.size &&
-          !(isCoercible(low(0).type, high(0).type) ||
-            isCoercible(high(0).type, low(0).type)) {
-    compilerError("Domains defined using tuple bounds must use tuples of coercible types. " +
-                  "Cannot coerce between '" + low(0).type:string + "' and '" +
-                  high(0).type:string + "'");
-  }
+  
 
   /* Creates a multidimensional rectangular domain with bounds defined by the
      pairwise elements of `low` and `high`. If `inclusive` is true, the domain
@@ -3039,6 +3012,7 @@ module ChapelDomain {
      values. For example, `makeRectangularDomain((1, 2), (10,11))` is
      equivalent to `{1..10, 2..11}`.
    */
+  @unstable("makeRectangularDomain() is subject to change in the future.")
   proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
     where isTuple(low) && isTuple(high) &&
           isHomogeneousTuple(low) && isHomogeneousTuple(high) &&
@@ -3073,6 +3047,7 @@ module ChapelDomain {
      and `makeRectangularDomain(1, (10, 11), inclusive=false)` is equivalent
      to `{1..<10, 1..<11}`.
     */
+  @unstable("makeRectangularDomain() is subject to change in the future.")
   proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true)
     where isTuple(low) != isTuple(high) {
       param size = if isTuple(low) then low.size else high.size;
@@ -3100,5 +3075,23 @@ module ChapelDomain {
       }
       const d: domain(size, eltType) = ranges;
       return d;
+  }
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  proc makeRectangularDomain(low: ?t1, high: ?t2, param inclusive: bool = true) 
+    where isTuple(low) && isTuple(high) 
+  {
+    if !isHomogeneousTuple(low) || !isHomogeneousTuple(high) then
+      compilerError("Domains defined using tuple bounds must use homogenous tuples, but got '" +
+                    low.type:string + "' and '" + high.type:string + "'");
+    else if low.size != high.size then
+      compilerError("Domains defined using tuple bounds must use tuples of the same length, " +
+                    "but got '" + low.type:string + "' and '" + high.type:string + "'");
+    else if !(isCoercible(low(0).type, high(0).type) ||
+              isCoercible(high(0).type, low(0).type)) then
+      compilerError("Domains defined using tuple bounds must use tuples of coercible types. " +
+                    "Cannot coerce between '" + low(0).type:string + "' and '" +
+                    high(0).type:string + "'");
   }
 }
