@@ -69,12 +69,12 @@
 */
 module Random {
 
-  public use PCGRandom;
   private use IO;
   private use Math;
 
   // still needed ???
   public import NPBRandom;
+  private use PCGRandomLib;
 
   private proc isNumericOrBoolType(type t) param do
     return isNumericType(t) || isBoolType(t);
@@ -890,7 +890,10 @@ module Random {
     const seed: int;
 
     @chpldoc.nodoc
-    var pcg: PCGImpl(eltType);
+    var PCGRandomStreamPrivate_rngs: numGenerators(eltType) * pcg_setseq_64_xsh_rr_32_rng;
+
+    @chpldoc.nodoc
+    var PCGRandomStreamPrivate_count: int(64) = 1;
 
     /*
       Create a new ``randomStream`` using the specified seed.
@@ -898,7 +901,13 @@ module Random {
     proc init(type eltType, seed: int) where isNumericOrBoolType(eltType) {
       this.eltType = eltType;
       this.seed = seed;
-      this.pcg = new PCGImpl(eltType, seed);
+
+      init this;
+      for param i in 0..<numGenerators(eltType) {
+        param inc = pcg_getvalid_inc(i+1);
+        PCGRandomStreamPrivate_rngs[i].srandom(seed:uint(64), inc);
+      }
+      PCGRandomStreamPrivate_count = 1;
     }
 
     /*
@@ -909,9 +918,7 @@ module Random {
       initializer will produce the same seed.
     */
     proc init(type eltType) where isNumericOrBoolType(eltType) {
-      this.eltType = eltType;
-      this.seed = randomishSeed();
-      this.pcg = new PCGImpl(eltType, this.seed);
+      this.init(eltType, randomishSeed());
     }
 
     @chpldoc.nodoc
@@ -932,8 +939,10 @@ module Random {
 
       :arg arr: The rectangular array to be filled
     */
-    proc ref fill(ref arr: []) where arr.isRectangular() do
-      this.pcg.fillRandom(arr);
+    proc ref fill(ref arr: [?d]) where arr.isRectangular() {
+      forall (x, r) in zip(arr, this.next(d)) do
+        x = r;
+    }
 
     /*
       Fill the array with pseudorandom values within a particular range in
@@ -944,8 +953,10 @@ module Random {
       :arg min: The minimum value to sample
       :arg max: The maximum value to sample
     */
-    proc ref fill(ref arr: [] ?t, min: t, max: t) where arr.isRectangular() do
-      this.pcg.fillRandom(arr, min, max);
+    proc ref fill(ref arr: [?d] ?t, min: t, max: t) where arr.isRectangular() {
+      forall (x, r) in zip(arr, this.next(d, min, max)) do
+        x = r;
+    }
 
     /*
       Randomly rearrange an array using values from this random stream.
@@ -953,8 +964,16 @@ module Random {
       :arg arr: The array to shuffle. Its domain's ``idxType`` should be
                 coercible from this stream's :type:`eltType`.
     */
-    proc ref shuffle(ref arr: [?d]) where d.isRectangular() && isCoercible(this.eltType, d.idxType)
-      do this.pcg.shuffle(arr);
+    proc ref shuffle(ref arr: [?d]) where d.isRectangular() && isCoercible(this.eltType, d.idxType) {
+      // Fisher-Yates shuffle
+      for i in 0..#d.size by -1 {
+        const ki = this.next(0:this.eltType, i:this.eltType),
+              k = d.orderToIndex(ki),
+              j = d.orderToIndex(i);
+
+        arr[k] <=> arr[j];
+      }
+    }
 
     /*
       Produce a random permutation of an array's elements
@@ -968,7 +987,7 @@ module Random {
     proc ref permute(const ref arr: [?d] ?t): [] t
       where d.isRectangular() && isCoercible(this.eltType, d.idxType)
     {
-      const dp = this.pcg.domPermutation(d);
+      const dp = this.permute(d);
       var res: [d] t;
       forall (i, ip) in zip(d, dp) do res[i] = arr[ip];
       return res;
@@ -985,7 +1004,19 @@ module Random {
     */
     proc ref permute(d: domain(?)): [] d.fullIdxType
       where d.isRectangular() && isCoercible(this.eltType, d.idxType)
-        do return this.pcg.domPermutation(d);
+    {
+      var indices: [d] d.fullIdxType,
+          count: d.idxType = 0;
+
+      for i in d {
+        const j = d.orderToIndex(this.next(0, count));
+        count += 1;
+        indices[i] = indices[j];
+        indices[j] = i;
+      }
+
+      return indices;
+    }
 
     /*
       Produce a random permutation of the values in a range.
@@ -998,7 +1029,7 @@ module Random {
     */
     proc ref permute(r: range(bounds=boundKind.both, ?)): [] r.idxType
       where isCoercible(this.eltType, r.idxType)
-        do return this.pcg.domPermutation({r});
+        do return this.permute({r});
 
     /*
       Choose a random element from an array.
@@ -1320,9 +1351,17 @@ module Random {
 
     /*
       Get the next value in the random stream and advance its position by one.
+
+      Generated ``real`` values are in the range ``[0,1]``. Analogously, ``imag``
+      and ``complex`` numbers are in the range ``[0i,1i]`` and ``[0+0i,1+1i]``
+      respectively.
+
+      Generated integers cover the full range of the type.
     */
-    proc ref next(): eltType do
-      return this.pcg.getNext();
+    proc ref next(): eltType {
+      PCGRandomStreamPrivate_count += 1;
+      return randlc(this.eltType, this.PCGRandomStreamPrivate_rngs);
+    }
 
     /*
       Get the next random value from the stream within a given range. Returns
@@ -1344,8 +1383,15 @@ module Random {
       :arg min: The minimum value to sample
       :arg max: The maximum value to sample
     */
-    proc ref next(min: eltType, max: eltType): eltType do
-      return this.pcg.getNext(min, max);
+    proc ref next(min: eltType, max: eltType): eltType {
+      use HaltWrappers;
+      if boundsChecking && min > max then
+        HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min:string + ", " + max:string +  "]");
+
+      PCGRandomStreamPrivate_count += 1;
+      return randlc_bounded(this.eltType, this.PCGRandomStreamPrivate_rngs,
+                            this.seed, this.PCGRandomStreamPrivate_count-1, min, max);
+    }
 
     /*
       Return an iterable object yielding values from the random stream.
@@ -1367,14 +1413,24 @@ module Random {
               its parallelization strategy will be used.
     */
     pragma "fn returns iterator"
-    proc ref next(d: domain) do
-      return this.pcg.iterate(d);
+    proc ref next(d: domain) {
+      const start = this.PCGRandomStreamPrivate_count;
+      this.PCGRandomStreamPrivate_count += d.sizeAs(int);
+      this.skipTo(this.PCGRandomStreamPrivate_count-1);
+      return PCGRandomPrivate_iterate(this.eltType, d, this.seed, start);
+    }
 
     pragma "fn returns iterator"
     @chpldoc.nodoc
     proc next(d: domain, param tag: iterKind)
       where tag == iterKind.leader
-        do return this.pcg.iterate(d, tag);
+    {
+      // Note that proc iterate() for the serial case (i.e. the one above)
+      // is going to be invoked as well, so we should not be taking
+      // any actions here other than the forwarding.
+      const start = this.PCGRandomStreamPrivate_count;
+      return PCGRandomPrivate_iterate(this.eltType, d, this.seed, start, tag);
+    }
 
     /*
       Return an iterable object yielding values from the random stream within
@@ -1387,14 +1443,27 @@ module Random {
       :arg max: The maximum value to sample
     */
     pragma "fn returns iterator"
-    proc ref next(d: domain, min: eltType, max: eltType) do
-      return this.pcg.iterate(d, min, max);
+    proc ref next(d: domain, min: eltType, max: eltType) {
+      const start = this.PCGRandomStreamPrivate_count;
+      this.PCGRandomStreamPrivate_count += d.sizeAs(int);
+      this.skipTo(this.PCGRandomStreamPrivate_count-1);
+
+      return PCGRandomPrivate_iterate_bounded(this.eltType, d, this.seed, start,
+                                              min, max);
+    }
 
     pragma "fn returns iterator"
     @chpldoc.nodoc
     proc next(d: domain, min: eltType, max: eltType, param tag: iterKind)
       where tag == iterKind.leader
-        do return this.pcg.iterate(d, min, max, tag);
+    {
+      // Note that proc iterate() for the serial case (i.e. the one above)
+      // is going to be invoked as well, so we should not be taking
+      // any actions here other than the forwarding.
+      const start = this.PCGRandomStreamPrivate_count;
+      return PCGRandomPrivate_iterate_bounded(this.eltType, d, this.seed, start,
+                                              min, max, tag);
+    }
 
     /*
       Advance or rewind the random stream to the ``n``-th position in the
@@ -1408,7 +1477,8 @@ module Random {
       if boundsChecking then
         if n < 0 then halt("cannot skip to a negative position: " + n:string + " in the random stream");
 
-      try! this.pcg.skipToNth(n);
+      this.PCGRandomStreamPrivate_count = n+1;
+      this.PCGRandomStreamPrivate_rngs = randlc_skipto(this.eltType, this.seed, n+1);
     }
 
     /*
@@ -1423,7 +1493,7 @@ module Random {
   }
 
   // Do a binary search of 'a' for the first occurrence of 'x'
-  // returns the index of the first occurrence of 'x' in 'a' between 'start' and 'stop'
+  // returns the indexPCGRandomStreamPrivate_skipToNth_noLock of the first occurrence of 'x' in 'a' between 'start' and 'stop'
   // or the index where 'x' should be inserted to maintain sorted order
   // TODO: consider adding this functionality to the Search module
   private proc binarySearchFirst(
@@ -1448,717 +1518,352 @@ module Random {
     return i;
   }
 
-  /*
-     Permuted Linear Congruential Random Number Generator.
+  // how many generators are needed to support a given element type
+  private proc numGenerators(type t) param {
+    if isBoolType(t) then return 1;
+    else return (numBits(t)+31) / 32;
+  }
 
-     This module provides PCG random number generation routines.
-     See http://www.pcg-random.org/
-     and the paper, `PCG: A Family of Simple Fast Space-Efficient Statistically
-     Good Algorithms for Random Number Generation` by M.E. O'Neill.
+  //
+  // Return a value for the cursor so that the next call to randlc will
+  // return the same value as the nth call to randlc
+  //
+  // resultType is used to compute the size required.
+  private proc randlc_skipto(type resultType, seed: int(64), n: integral) {
+    var states: numGenerators(resultType) * pcg_setseq_64_xsh_rr_32_rng;
 
-     It also includes some Chapel-specific features, such as generating real,
-     imag, and complex numbers; and generating numbers in a range in parallel.
-     These features are not available in the reference implementations of PCG.
-
-     The related module :mod:`PCGRandomLib` provides a lower-level interface to
-     many PCG functions.
-
-     .. note::
-
-       The interface provided by this module is expected to change.
-
-  */
-  @unstable("the 'PCGRandom' module is unstable and may be removed in the future")
-  module PCGRandom {
-
-    private use Random, IO;
-    private use Math only ldExp;
-    private use PCGRandomLib;
-
-    // How many generators do we need for this type?
-    private
-    proc numGenerators(type t) param {
-      if isBoolType(t) then return 1;
-      else return (numBits(t)+31) / 32;
+    for param i in 0..states.size-1 {
+      param inc = pcg_getvalid_inc(i+1);
+      states[i].srandom(seed:uint(64), inc);
+      states[i].advance(inc, (n - 1):uint(64));
     }
+    return states;
+  }
 
-    /*
+  // Generate a random number of the given type using the provided states
+  private inline
+  proc randlc(type resultType, ref states) {
 
-      Models a stream of pseudorandom numbers generated by the PCG random number
-      generator.  See http://www.pcg-random.org/ and the paper, `PCG: A Family
-      of Simple Fast Space-Efficient Statistically Good Algorithms for Random
-      Number Generation` by M.E. O'Neill.
+    checkSufficientBitsAndAdvanceOthers(resultType, states);
 
-      This class builds upon the :record:`~PCGRandomLib.pcg_setseq_64_xsh_rr_32_rng` PCG RNG
-      which has 64 bits of state and 32 bits of output.
+    if resultType == complex(128) {
+      return (randToReal64(rand64_1(states)),
+              randToReal64(rand64_2(states))):complex(128);
+    } else if resultType == complex(64) {
+      return (randToReal32(rand32_1(states)),
+              randToReal32(rand32_2(states))):complex(64);
+    } else if resultType == imag(64) {
+      return _r2i(randToReal64(rand64_1(states)));
+    } else if resultType == imag(32) {
+      return _r2i(randToReal32(rand32_1(states)));
+    } else if resultType == real(64) {
+      return randToReal64(rand64_1(states));
+    } else if resultType == real(32) {
+      return randToReal32(rand32_1(states));
+    } else if resultType == uint(64) || resultType == int(64) {
+      return rand64_1(states):resultType;
+    } else if resultType == uint(32) || resultType == int(32) {
+      return rand32_1(states):resultType;
+    } else if(resultType == uint(16) ||
+              resultType == int(16)) {
+      return (rand32_1(states) >> 16):resultType;
+    } else if(resultType == uint(8) ||
+              resultType == int(8)) {
+      return (rand32_1(states) >> 24):resultType;
+    } else if isBoolType(resultType) {
+      return (rand32_1(states) >> 31) != 0;
+    }
+  }
 
-      While the PCG RNG used here is believed to have good statistical
-      properties, it is not suitable for generating key material for encryption
-      since the output of this RNG may be predictable.
-      Additionally, if statistical properties of the random numbers are very
-      important, another strategy may be required.
+  // returns x with min <= x <= max (for integers)
+  // and min <= x < max (for real/complex/imag)
+  // seed should be the initial seed of the RNG
+  // count should be the current count value
+  private inline
+  proc randlc_bounded(type resultType,
+                      ref states, seed:int(64), count:int(64),
+                      min, max) {
 
-      We have good confidence that the random numbers generated by this class
-      match the C PCG reference implementation and have specifically verified
-      equal output given the same seed. However, this implementation differs
-      from the C PCG reference implementation in how it produces random integers
-      within particular bounds (with ``PCGRandomStream.getNext`` using ``min``
-      and ``max`` arguments). In addition, this implementation directly supports
-      the generation of random `real` values, unlike the C PCG implementation.
+    checkSufficientBitsAndAdvanceOthers(resultType, states);
 
-      Smaller numbers, such as `uint(8)` or `uint(16)`, are generated from
-      the high-order bits of the 32-bit output.
+    if resultType == complex(128) {
+      return (randToReal64(rand64_1(states), min.re, max.re),
+              randToReal64(rand64_2(states), min.im, max.im)):complex(128);
+    } else if resultType == complex(64) {
+      return (randToReal32(rand32_1(states), min.re, max.re),
+              randToReal32(rand32_2(states), min.im, max.im)):complex(64);
+    } else if resultType == imag(64) {
+      return _r2i(randToReal64(rand64_1(states), _i2r(min), _i2r(max)));
+    } else if resultType == imag(32) {
+      return _r2i(randToReal32(rand32_1(states), _i2r(min), _i2r(max)));
+    } else if resultType == real(64) {
+      return randToReal64(rand64_1(states), min, max);
+    } else if resultType == real(32) {
+      return randToReal32(rand32_1(states), min, max);
+    } else if resultType == uint(64) || resultType == int(64) {
+      return (boundedrand64_1(states, seed, count, (max-min):uint(64)) + min:uint(64)):resultType;
+    } else if resultType == uint(32) || resultType == int(32) {
+      return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
+    } else if(resultType == uint(16) ||
+              resultType == int(16)) {
+      return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
+    } else if(resultType == uint(8) ||
+              resultType == int(8)) {
+      return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
+    } else if isBoolType(resultType) {
+      compilerError("bounded rand with boolean type");
+      return false;
+    }
+  }
 
-      To generate larger numbers, several 32-bit-output RNGs are ganged
-      together.  This strategy is recommended by the author of PCG (and
-      demonstrated in the file `pcg32x2-demo.c`. Each of these 32-bit RNGs has a
-      different sequence constant and so will be independent and uncorrelated.
-      For example, to generate 128-bit complex numbers, this RNG will use
-      4 ganged 32-bit PCG RNGs with different sequence constants. One impact of
-      this approach is that this implementation will only generate 2**64
-      different complex numbers with a given seed (for example).
+  // returns a random number in [0, 1]
+  // where the number is a multiple of 2**-64
+  private inline
+  proc randToReal64(x: uint(64)):real(64)
+  {
+    return ldExp(x:real(64), -64);
+  }
+  // returns a random number in [min, max]
+  // by scaling a multiple of 2**-64 by (max-min)
+  private inline
+  proc randToReal64(x: uint(64), min:real(64), max:real(64)):real(64)
+  {
+    var normalized = randToReal64(x);
+    return (max-min)*normalized + min;
+  }
 
-      This class also supports generating integers within particular bounds.
-      When that is required, this class uses a strategy different from the PCG
-      reference implementation in order to work better in a parallel setting. In
-      particular, when more than 1 random value is required as part of
-      generating a value in a range, conceptually it uses more ganged-together
-      RNGs (as with the 32x2 strategy). Each new value beyond the first that
-      is computed will be computed with a different ganged-together RNG.
-      This strategy is meant to avoid statistical bias. While we have tested
-      this strategy to our satisfaction, it has not been subject to rigorous
-      analysis and may have undesirable statistical properties.
+  // returns a random number in [0, 1]
+  // where the number is a rounded multiple of 2**-24
+  private inline
+  proc randToReal32(x: uint(32))
+  {
+    return ldExp(x:real(32), -32);
+  }
 
-      When generating a real, imaginary, or complex number, this implementation
-      uses the strategy of generating a 64-bit unsigned integer and then
-      multiplying it by 2.0**-64 in order to convert it to a floating point
-      number. While this does construct a uniform distribution on rounded
-      floating point values, it leaves out many possible real values (for
-      example, 2**-128). We believe that this strategy has reasonable
-      statistical properties. One side effect of this strategy is that the real
-      number 1.0 can be generated because of rounding. The real number 0.0 can
-      be generated because PCG can produce the value 0 as a random integer.
+  // returns a random number in [min, max)
+  // where the number is a multiple of 2**-24
+  private inline
+  proc randToReal32(x: uint(32), min:real(32), max:real(32)):real(32)
+  {
+    var normalized = randToReal32(x);
+    return (max-min)*normalized + min;
+  }
 
 
-      We have tested this implementation with TestU01 (available at
-      http://simul.iro.umontreal.ca/testu01/tu01.html ).  We measured our
-      implementation with TestU01 1.2.3 and the Crush suite, which consists of
-      144 statistical tests. The results were:
+  // These would form the RNG interface.
+  private inline
+  proc rand32_1(ref states):uint(32) {
+    return states[0].random(pcg_getvalid_inc(1));
+  }
+  private inline
+  proc rand32_2(ref states):uint(32) {
+    return states[1].random(pcg_getvalid_inc(2));
+  }
+  // returns x with 0 <= x <= bound
+  // count is 1-based
+  private inline
+  proc boundedrand32_1(ref states, seed:int(64), count:int(64),
+                        bound:uint(32)):uint(32) {
+    // just get 32 random bits if bound+1 is not representable.
+    if bound == max(uint(32)) then return rand32_1(states);
+    else return states[0].bounded_random_vary_inc(
+        pcg_getvalid_inc(1), bound + 1,
+        seed:uint(64), (count - 1):uint(64),
+        101, 4);
+  }
+  // returns x with 0 <= x <= bound
+  // count is 1-based
+  private inline
+  proc boundedrand32_2(ref states, seed:int(64), count:int(64),
+                        bound:uint(32)):uint(32) {
+    // just get 32 random bits if bound+1 is not representable.
+    if bound == max(uint(32)) then return rand32_2(states);
+    else return states[1].bounded_random_vary_inc(
+        pcg_getvalid_inc(2), bound + 1,
+        seed:uint(64), (count - 1):uint(64),
+        102, 4);
+  }
 
-       * no failures for generating uniform reals
-       * 1 failure for generating 32-bit values (which is also true for the
-         reference version of PCG with the same configuration)
-       * 0 failures for generating 64-bit values (which we provided to TestU01
-         as 2 different 32-bit values since it only accepts 32 bits at a time)
-       * 0 failures for generating bounded integers (which we provided to
-         TestU01 by requesting values in [0..,2**31+2**30+1) until we
-         had two values < 2**31, removing the top 0 bit, and then combining
-         the top 16 bits into the value provided to TestU01).
+  private inline
+  proc rand64_1(ref states):uint(64) {
+    var ret:uint(64) = 0;
+    ret |= states[0].random(pcg_getvalid_inc(1));
+    ret <<= 32;
+    ret |= states[1].random(pcg_getvalid_inc(2));
+    return ret;
+  }
+  private inline
+  proc rand64_2(ref states):uint(64) {
+    var ret:uint(64) = 0;
+    ret |= states[2].random(pcg_getvalid_inc(3));
+    ret <<= 32;
+    ret |= states[3].random(pcg_getvalid_inc(4));
+    return ret;
+  }
 
-    */
-    @chpldoc.nodoc
-    record PCGImpl: writeSerializable {
-      type eltType;
-      var seed: int(64);
+  // Returns an unsigned integer x with 0 <= x <= bound
+  // count is 1-based
+  private proc boundedrand64_1(ref states, seed:int(64), count:int(64),
+                                bound:uint):uint
+  {
+    if bound > max(uint(32)):uint {
+      var toprand = 0:uint;
+      var botrand = 0:uint;
 
-      // state
-      var PCGRandomStreamPrivate_rngs: numGenerators(eltType) * pcg_setseq_64_xsh_rr_32_rng;
-      var PCGRandomStreamPrivate_count: int(64) = 1;
+      // compute the bounded number in two calls to a 32-bit RNG
+      toprand = boundedrand32_1(states, seed, count, (bound >> 32):uint(32));
+      botrand = boundedrand32_2(states, seed, count, (bound & max(uint(32))):uint(32));
+      return (toprand << 32) | botrand;
+    } else {
+      // Generate a # with RNG 1 but ignore it, to keep the
+      // stepping consistent.
+      rand32_1(states);
+      return boundedrand32_2(states, seed, count, bound:uint(32));
+    }
+  }
 
-      proc init(type eltType,
-                seed: int(64) = randomishSeed()) {
-        this.eltType = eltType;
-        this.seed = seed;
-        init this;
-        for param i in 0..<numGenerators(eltType) {
-          param inc = pcg_getvalid_inc(i+1);
-          PCGRandomStreamPrivate_rngs[i].srandom(seed:uint(64), inc);
+  private
+  proc checkSufficientBitsAndAdvanceOthers(type resultType, ref states) {
+    // Note - this error could be eliminated if we used
+    // the same strategy as bounded_rand_vary_inc and
+    // just computed the RNGs at the later incs
+    param numGenForResultType = numGenerators(resultType);
+    param numGen = states.size;
+    if numGenForResultType > numGen then
+      compilerError("PCGRandomStream cannot produce " +
+                    resultType:string +
+                    " (requiring " +
+                    (32*numGenForResultType):string +
+                    " bits) from a stream configured for " +
+                    (32*numGen):string +
+                    " bits of output");
+
+    // Step each RNG that is not involved in the output.
+    for i in numGenForResultType+1..numGen {
+      states[i-1].random(pcg_getvalid_inc(i:uint));
+    }
+  }
+
+  //
+  // iterate over outer ranges in tuple of ranges
+  //
+  private iter outer(ranges, param dim: int = 0) {
+    if dim + 2 == ranges.size {
+      foreach i in ranges(dim) do
+        yield (i,);
+    } else if dim + 2 < ranges.size {
+      foreach i in ranges(dim) do
+        foreach j in outer(ranges, dim+1) do
+          yield (i, (...j));
+    } else {
+      yield 0; // 1D case is a noop
+    }
+  }
+
+  //
+  // PCGRandomStream iterator implementation
+  //
+  @chpldoc.nodoc
+  iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+                                start: int(64)) {
+    var cursor = randlc_skipto(resultType, seed, start);
+    for D do
+      yield randlc(resultType, cursor);
+  }
+
+  @chpldoc.nodoc
+  iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+                                start: int(64), param tag: iterKind)
+        where tag == iterKind.leader {
+    for block in D.these(tag=iterKind.leader) do
+      yield block;
+  }
+
+  @chpldoc.nodoc
+  iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
+                                start: int(64), param tag: iterKind,
+                                followThis)
+        where tag == iterKind.follower {
+    use DSIUtil;
+    param multiplier = 1;
+    const ZD = computeZeroBasedDomain(D);
+    const innerRange = followThis(ZD.rank-1);
+    for outer in outer(followThis) {
+      var myStart = start;
+      if ZD.rank > 1 then
+        myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
+      else
+        myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
+      if innerRange.hasUnitStride() {
+        var cursor = randlc_skipto(resultType, seed, myStart);
+        for innerRange do
+          yield randlc(resultType, cursor);
+      } else {
+        myStart -= innerRange.lowBound.safeCast(int(64));
+        for i in innerRange {
+          var cursor = randlc_skipto(resultType, seed, myStart + i.safeCast(int(64)) * multiplier);
+          yield randlc(resultType, cursor);
         }
-        PCGRandomStreamPrivate_count = 1;
       }
+    }
+  }
 
-      proc ref PCGRandomStreamPrivate_skipToNth_noLock(in n: integral) {
-        PCGRandomStreamPrivate_count = n+1;
-        PCGRandomStreamPrivate_rngs = randlc_skipto(eltType, seed, n+1);
-      }
+  @chpldoc.nodoc
+  iter PCGRandomPrivate_iterate_bounded(type resultType, D: domain,
+                                        seed: int(64), start: int(64),
+                                        min: resultType, max: resultType) {
+    var cursor = randlc_skipto(resultType, seed, start);
+    var count = start;
+    for D {
+      yield randlc_bounded(resultType, cursor, seed, count, min, max);
+      count += 1;
+    }
+  }
 
-      /*
-        Returns the next value in the random stream.
+  @chpldoc.nodoc
+  iter PCGRandomPrivate_iterate_bounded(type resultType, D: domain,
+                                        seed: int(64),
+                                        start: int(64),
+                                        min: resultType, max: resultType,
+                                        param tag: iterKind)
+        where tag == iterKind.leader {
+    for block in D.these(tag=iterKind.leader) do
+      yield block;
+  }
 
-        Generated reals are in [0,1] - both 0.0 and 1.0 are possible values.
-        Imaginary numbers are analogously in [0i, 1i]. Complex numbers will
-        consist of a generated real and imaginary part, so 0.0+0.0i and 1.0+1.0i
-        are possible.
-
-        Generated integers cover the full value range of the integer.
-
-        :arg resultType: the type of the result. Defaults to :type:`eltType`.
-          `resultType` must be the same or a smaller size number.
-        :returns: The next value in the random stream as type `resultType`.
-       */
-      proc ref getNext(): eltType {
-        PCGRandomStreamPrivate_count += 1;
-        return randlc(this.eltType, PCGRandomStreamPrivate_rngs);
-      }
-      /*
-        Return the next random value but within a particular range.
-        Returns a number in [`min`, `max`] (inclusive). Halts if checks are enabled and ``min > max``.
-
-        .. note::
-
-           For integers, this class uses a strategy for generating a value
-           in a particular range that has not been subject to rigorous
-           study and may have statistical problems.
-
-           For real numbers, this class generates a random value in [max, min]
-           by computing a random value in [0,1] and scaling and shifting that
-           value. Note that not all possible floating point values in
-           the interval [`min`, `max`] can be constructed in this way.
-
-       */
-      proc ref getNext(min: eltType, max:eltType): eltType {
-        use HaltWrappers;
-        if boundsChecking && min > max then
-          HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min:string + ", " + max:string +  "]");
-
-        PCGRandomStreamPrivate_count += 1;
-        return randlc_bounded(this.eltType, PCGRandomStreamPrivate_rngs,
-                              seed, PCGRandomStreamPrivate_count-1, min, max);
-      }
-
-      /*
-        Advances/rewinds the stream to the `n`-th value in the sequence.
-        The first value corresponds to n=0.  n must be >= 0, otherwise an
-        IllegalArgumentError is thrown.
-
-        :arg n: The position in the stream to skip to.  Must be >= 0.
-        :type n: `integral`
-
-        :throws IllegalArgumentError: When called with negative `n` value.
-       */
-      proc ref skipToNth(n: integral) {
-        PCGRandomStreamPrivate_skipToNth_noLock(n);
-      }
-
-      /*
-        Fill the argument array with pseudorandom values.  This method is
-        identical to the standalone :proc:`~Random.fillRandom` procedure,
-        except that it consumes random values from the
-        :class:`PCGRandomStream` object on which it's invoked rather
-        than creating a new stream for the purpose of the call.
-
-        :arg arr: The array to be filled
-        :type arr: `[] T`
-      */
-      proc ref fillRandom(ref arr: []) {
-        if(!arr.isRectangular()) then
-          compilerError("fillRandom does not support non-rectangular arrays");
-
-        forall (x, r) in zip(arr, iterate(arr.domain)) do
-          x = r;
-      }
-
-      /*
-        Fill the argument array with pseudorandom values within a particular
-        range. Sets each element to a number in [`min`, `max`] (inclusive).
-
-        See also the caveats in the :proc:`PCGRandomStream.getNext` accepting
-        min and max arguments..
-
-        :arg arr: The array to be filled
-        :type arr: `[] T`
-      */
-      proc ref fillRandom(ref arr: [], min: arr.eltType, max:arr.eltType) {
-        if(!arr.isRectangular()) then
-          compilerError("fillRandom does not support non-rectangular arrays");
-
-        forall (x, r) in zip(arr, iterate(arr.domain, min, max)) do
-          x = r;
-      }
-
-      /* Randomly shuffle a 1-D array. */
-      proc ref shuffle(ref arr: [?D] )
-        where D.isRectangular() && D.rank == 1
-      {
-        const low = D.low: this.eltType,
-              stride = abs(D.stride): this.eltType;
-
-        // Fisher-Yates shuffle
-        for i in 0..#D.sizeAs(D.idxType) by -1 {
-          var k = this.getNext(0:this.eltType, i:this.eltType);
-          var j = i;
-
-          // Strided case
-          if stride > 1 {
-            k *= stride;
-            j *= stride;
-          }
-
-          // Alignment offsets
-          k += low;
-          j += low;
-
-          arr[k] <=> arr[j];
-        }
-      }
-
-      /* Randomly shuffle an ND array. */
-      proc ref shuffle(ref arr: [?D] )
-        where D.isRectangular() && D.rank > 1
-      {
-        // Fisher-Yates shuffle
-        for i in 0..#D.sizeAs(D.idxType) by -1 {
-          const ki = this.getNext(0:this.eltType, i:this.eltType),
-                k = D.orderToIndex(ki),
-                j = D.orderToIndex(i);
-
-          arr[k] <=> arr[j];
-        }
-      }
-
-      proc ref domPermutation(d: domain): [d] d.fullIdxType
-        where d.isRectangular()
-      {
-        var indices: [d] d.fullIdxType,
-            count: d.idxType = 0;
-
-        for i in d {
-          const j = d.orderToIndex(this.getNext(0, count));
+  @chpldoc.nodoc
+  iter PCGRandomPrivate_iterate_bounded(type resultType, D: domain,
+                                        seed: int(64), start: int(64),
+                                        min: resultType, max: resultType,
+                                        param tag: iterKind, followThis)
+        where tag == iterKind.follower {
+    use DSIUtil;
+    param multiplier = 1;
+    const ZD = computeZeroBasedDomain(D);
+    const innerRange = followThis(ZD.rank-1);
+    for outer in outer(followThis) {
+      var myStart = start;
+      if ZD.rank > 1 then
+        myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
+      else
+        myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
+      if innerRange.hasUnitStride() {
+        var cursor = randlc_skipto(resultType, seed, myStart);
+        var count = myStart;
+        for innerRange {
+          yield randlc_bounded(resultType, cursor, seed, count, min, max);
           count += 1;
-          indices[i] = indices[j];
-          indices[j] = i;
         }
-
-        return indices;
-      }
-
-      /*
-        Returns an iterable expression for generating `D.size` random
-        numbers. The RNG state will be immediately advanced by `D.size`
-        before the iterable expression yields any values.
-
-        The returned iterable expression is useful in parallel contexts,
-        including standalone and zippered iteration. The domain will determine
-        the parallelization strategy.
-
-        :arg D: a domain
-        :return: an iterable expression yielding random `eltType` values
-      */
-      pragma "fn returns iterator"
-      proc ref iterate(D: domain) {
-        const start = PCGRandomStreamPrivate_count;
-        PCGRandomStreamPrivate_count += D.sizeAs(int);
-        PCGRandomStreamPrivate_skipToNth_noLock(PCGRandomStreamPrivate_count-1);
-        return PCGRandomPrivate_iterate(this.eltType, D, seed, start);
-      }
-
-      /*
-
-         Returns an iterable expression for generating `D.size` random
-         numbers within the range [`min`, `max`] (inclusive).
-
-         See also the caveats in the :proc:`PCGRandomStream.getNext` accepting
-         min and max arguments.
-
-         The RNG state will be immediately advanced by `D.size`
-         before the iterable expression yields any values.
-
-         The returned iterable expression is useful in parallel contexts,
-         including standalone and zippered iteration. The domain will determine
-         the parallelization strategy.
-
-         :arg D: a domain
-         :arg resultType: the type of number to yield
-         :return: an iterable expression yielding random `resultType` values
-
-       */
-      pragma "fn returns iterator"
-      proc ref iterate(D: domain, min: eltType, max: eltType) {
-        const start = PCGRandomStreamPrivate_count;
-        PCGRandomStreamPrivate_count += D.sizeAs(int);
-        PCGRandomStreamPrivate_skipToNth_noLock(PCGRandomStreamPrivate_count-1);
-        return PCGRandomPrivate_iterate_bounded(this.eltType, D, seed, start,
-                                                min, max);
-      }
-
-      // Forward the leader iterator as well.
-      pragma "fn returns iterator"
-      @chpldoc.nodoc
-      proc iterate(D: domain, param tag)
-        where tag == iterKind.leader
-      {
-        // Note that proc iterate() for the serial case (i.e. the one above)
-        // is going to be invoked as well, so we should not be taking
-        // any actions here other than the forwarding.
-        const start = PCGRandomStreamPrivate_count;
-        return PCGRandomPrivate_iterate(this.eltType, D, seed, start, tag);
-      }
-      pragma "fn returns iterator"
-      @chpldoc.nodoc
-      proc iterate(D: domain, min: eltType, max: eltType, param tag)
-        where tag == iterKind.leader
-      {
-        // Note that proc iterate() for the serial case (i.e. the one above)
-        // is going to be invoked as well, so we should not be taking
-        // any actions here other than the forwarding.
-        const start = PCGRandomStreamPrivate_count;
-        return PCGRandomPrivate_iterate_bounded(this.eltType, D, seed, start,
-                                                min, max, tag);
-      }
-
-      @chpldoc.nodoc
-      proc serialize(writer, ref serializer) throws {
-        var ser = serializer.startRecord(writer, "PCGRandomStream", 2);
-        ser.writeField("eltType", eltType:string);
-        ser.writeField("seed", seed);
-        ser.endRecord();
-      }
-    }
-
-
-    // returns a random number in [0, 1]
-    // where the number is a multiple of 2**-64
-    private inline
-    proc randToReal64(x: uint(64)):real(64)
-    {
-      return ldExp(x:real(64), -64);
-    }
-    // returns a random number in [min, max]
-    // by scaling a multiple of 2**-64 by (max-min)
-    private inline
-    proc randToReal64(x: uint(64), min:real(64), max:real(64)):real(64)
-    {
-      var normalized = randToReal64(x);
-      return (max-min)*normalized + min;
-    }
-
-    // returns a random number in [0, 1]
-    // where the number is a rounded multiple of 2**-24
-    private inline
-    proc randToReal32(x: uint(32))
-    {
-      return ldExp(x:real(32), -32);
-    }
-
-    // returns a random number in [min, max)
-    // where the number is a multiple of 2**-24
-    private inline
-    proc randToReal32(x: uint(32), min:real(32), max:real(32)):real(32)
-    {
-      var normalized = randToReal32(x);
-      return (max-min)*normalized + min;
-    }
-
-
-    // These would form the RNG interface.
-    private inline
-    proc rand32_1(ref states):uint(32) {
-      return states[0].random(pcg_getvalid_inc(1));
-    }
-    private inline
-    proc rand32_2(ref states):uint(32) {
-      return states[1].random(pcg_getvalid_inc(2));
-    }
-    // returns x with 0 <= x <= bound
-    // count is 1-based
-    private inline
-    proc boundedrand32_1(ref states, seed:int(64), count:int(64),
-                         bound:uint(32)):uint(32) {
-      // just get 32 random bits if bound+1 is not representable.
-      if bound == max(uint(32)) then return rand32_1(states);
-      else return states[0].bounded_random_vary_inc(
-          pcg_getvalid_inc(1), bound + 1,
-          seed:uint(64), (count - 1):uint(64),
-          101, 4);
-    }
-    // returns x with 0 <= x <= bound
-    // count is 1-based
-    private inline
-    proc boundedrand32_2(ref states, seed:int(64), count:int(64),
-                         bound:uint(32)):uint(32) {
-      // just get 32 random bits if bound+1 is not representable.
-      if bound == max(uint(32)) then return rand32_2(states);
-      else return states[1].bounded_random_vary_inc(
-          pcg_getvalid_inc(2), bound + 1,
-          seed:uint(64), (count - 1):uint(64),
-          102, 4);
-    }
-
-    private inline
-    proc rand64_1(ref states):uint(64) {
-      var ret:uint(64) = 0;
-      ret |= states[0].random(pcg_getvalid_inc(1));
-      ret <<= 32;
-      ret |= states[1].random(pcg_getvalid_inc(2));
-      return ret;
-    }
-    private inline
-    proc rand64_2(ref states):uint(64) {
-      var ret:uint(64) = 0;
-      ret |= states[2].random(pcg_getvalid_inc(3));
-      ret <<= 32;
-      ret |= states[3].random(pcg_getvalid_inc(4));
-      return ret;
-    }
-
-    // Returns an unsigned integer x with 0 <= x <= bound
-    // count is 1-based
-    private proc boundedrand64_1(ref states, seed:int(64), count:int(64),
-                                 bound:uint):uint
-    {
-      if bound > max(uint(32)):uint {
-        var toprand = 0:uint;
-        var botrand = 0:uint;
-
-        // compute the bounded number in two calls to a 32-bit RNG
-        toprand = boundedrand32_1(states, seed, count, (bound >> 32):uint(32));
-        botrand = boundedrand32_2(states, seed, count, (bound & max(uint(32))):uint(32));
-        return (toprand << 32) | botrand;
       } else {
-        // Generate a # with RNG 1 but ignore it, to keep the
-        // stepping consistent.
-        rand32_1(states);
-        return boundedrand32_2(states, seed, count, bound:uint(32));
-      }
-    }
-
-    private
-    proc checkSufficientBitsAndAdvanceOthers(type resultType, ref states) {
-      // Note - this error could be eliminated if we used
-      // the same strategy as bounded_rand_vary_inc and
-      // just computed the RNGs at the later incs
-      param numGenForResultType = numGenerators(resultType);
-      param numGen = states.size;
-      if numGenForResultType > numGen then
-        compilerError("PCGRandomStream cannot produce " +
-                      resultType:string +
-                      " (requiring " +
-                      (32*numGenForResultType):string +
-                      " bits) from a stream configured for " +
-                      (32*numGen):string +
-                      " bits of output");
-
-      // Step each RNG that is not involved in the output.
-      for i in numGenForResultType+1..numGen {
-        states[i-1].random(pcg_getvalid_inc(i:uint));
-      }
-    }
-
-    // Wrapper that takes a result type
-    private inline
-    proc randlc(type resultType, ref states) {
-
-      checkSufficientBitsAndAdvanceOthers(resultType, states);
-
-      if resultType == complex(128) {
-        return (randToReal64(rand64_1(states)),
-                randToReal64(rand64_2(states))):complex(128);
-      } else if resultType == complex(64) {
-        return (randToReal32(rand32_1(states)),
-                randToReal32(rand32_2(states))):complex(64);
-      } else if resultType == imag(64) {
-        return _r2i(randToReal64(rand64_1(states)));
-      } else if resultType == imag(32) {
-        return _r2i(randToReal32(rand32_1(states)));
-      } else if resultType == real(64) {
-        return randToReal64(rand64_1(states));
-      } else if resultType == real(32) {
-        return randToReal32(rand32_1(states));
-      } else if resultType == uint(64) || resultType == int(64) {
-        return rand64_1(states):resultType;
-      } else if resultType == uint(32) || resultType == int(32) {
-        return rand32_1(states):resultType;
-      } else if(resultType == uint(16) ||
-                resultType == int(16)) {
-        return (rand32_1(states) >> 16):resultType;
-      } else if(resultType == uint(8) ||
-                resultType == int(8)) {
-        return (rand32_1(states) >> 24):resultType;
-      } else if isBoolType(resultType) {
-        return (rand32_1(states) >> 31) != 0;
-      }
-    }
-
-    // returns x with min <= x <= max (for integers)
-    // and min <= x < max (for real/complex/imag)
-    // seed should be the initial seed of the RNG
-    // count should be the current count value
-    private inline
-    proc randlc_bounded(type resultType,
-                        ref states, seed:int(64), count:int(64),
-                        min, max) {
-
-      checkSufficientBitsAndAdvanceOthers(resultType, states);
-
-      if resultType == complex(128) {
-        return (randToReal64(rand64_1(states), min.re, max.re),
-                randToReal64(rand64_2(states), min.im, max.im)):complex(128);
-      } else if resultType == complex(64) {
-        return (randToReal32(rand32_1(states), min.re, max.re),
-                randToReal32(rand32_2(states), min.im, max.im)):complex(64);
-      } else if resultType == imag(64) {
-        return _r2i(randToReal64(rand64_1(states), _i2r(min), _i2r(max)));
-      } else if resultType == imag(32) {
-        return _r2i(randToReal32(rand32_1(states), _i2r(min), _i2r(max)));
-      } else if resultType == real(64) {
-        return randToReal64(rand64_1(states), min, max);
-      } else if resultType == real(32) {
-        return randToReal32(rand32_1(states), min, max);
-      } else if resultType == uint(64) || resultType == int(64) {
-        return (boundedrand64_1(states, seed, count, (max-min):uint(64)) + min:uint(64)):resultType;
-      } else if resultType == uint(32) || resultType == int(32) {
-        return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
-      } else if(resultType == uint(16) ||
-                resultType == int(16)) {
-        return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
-      } else if(resultType == uint(8) ||
-                resultType == int(8)) {
-        return (boundedrand32_1(states, seed, count, (max-min):uint(32)) + min:uint(32)):resultType;
-      } else if isBoolType(resultType) {
-        compilerError("bounded rand with boolean type");
-        return false;
-      }
-    }
-
-    //
-    // Return a value for the cursor so that the next call to randlc will
-    // return the same value as the nth call to randlc
-    //
-    // resultType is used to compute the size required.
-    private proc randlc_skipto(type resultType, seed: int(64), n: integral) {
-      var states: numGenerators(resultType) * pcg_setseq_64_xsh_rr_32_rng;
-
-      for param i in 0..states.size-1 {
-        param inc = pcg_getvalid_inc(i+1);
-        states[i].srandom(seed:uint(64), inc);
-        states[i].advance(inc, (n - 1):uint(64));
-      }
-      return states;
-    }
-
-    //
-    // iterate over outer ranges in tuple of ranges
-    //
-    private iter outer(ranges, param dim: int = 0) {
-      if dim + 2 == ranges.size {
-        foreach i in ranges(dim) do
-          yield (i,);
-      } else if dim + 2 < ranges.size {
-        foreach i in ranges(dim) do
-          foreach j in outer(ranges, dim+1) do
-            yield (i, (...j));
-      } else {
-        yield 0; // 1D case is a noop
-      }
-    }
-
-    //
-    // PCGRandomStream iterator implementation
-    //
-    @chpldoc.nodoc
-    iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                                  start: int(64)) {
-      var cursor = randlc_skipto(resultType, seed, start);
-      for D do
-        yield randlc(resultType, cursor);
-    }
-
-    @chpldoc.nodoc
-    iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                                  start: int(64), param tag: iterKind)
-          where tag == iterKind.leader {
-      for block in D.these(tag=iterKind.leader) do
-        yield block;
-    }
-
-    @chpldoc.nodoc
-    iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                                 start: int(64), param tag: iterKind,
-                                 followThis)
-          where tag == iterKind.follower {
-      use DSIUtil;
-      param multiplier = 1;
-      const ZD = computeZeroBasedDomain(D);
-      const innerRange = followThis(ZD.rank-1);
-      for outer in outer(followThis) {
-        var myStart = start;
-        if ZD.rank > 1 then
-          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
-        else
-          myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
-        if innerRange.hasUnitStride() {
-          var cursor = randlc_skipto(resultType, seed, myStart);
-          for innerRange do
-            yield randlc(resultType, cursor);
-        } else {
-          myStart -= innerRange.lowBound.safeCast(int(64));
-          for i in innerRange {
-            var cursor = randlc_skipto(resultType, seed, myStart + i.safeCast(int(64)) * multiplier);
-            yield randlc(resultType, cursor);
-          }
+        myStart -= innerRange.lowBound.safeCast(int(64));
+        for i in innerRange {
+          var count = myStart + i.safeCast(int(64)) * multiplier;
+          var cursor = randlc_skipto(resultType, seed, count);
+          yield randlc_bounded(resultType, cursor, seed, count, min, max);
         }
       }
     }
-
-    @chpldoc.nodoc
-    iter PCGRandomPrivate_iterate_bounded(type resultType, D: domain,
-                                          seed: int(64), start: int(64),
-                                          min: resultType, max: resultType) {
-      var cursor = randlc_skipto(resultType, seed, start);
-      var count = start;
-      for D {
-        yield randlc_bounded(resultType, cursor, seed, count, min, max);
-        count += 1;
-      }
-    }
-
-    @chpldoc.nodoc
-    iter PCGRandomPrivate_iterate_bounded(type resultType, D: domain,
-                                          seed: int(64),
-                                          start: int(64),
-                                          min: resultType, max: resultType,
-                                          param tag: iterKind)
-          where tag == iterKind.leader {
-      for block in D.these(tag=iterKind.leader) do
-        yield block;
-    }
-
-    @chpldoc.nodoc
-    iter PCGRandomPrivate_iterate_bounded(type resultType, D: domain,
-                                          seed: int(64), start: int(64),
-                                          min: resultType, max: resultType,
-                                          param tag: iterKind, followThis)
-          where tag == iterKind.follower {
-      use DSIUtil;
-      param multiplier = 1;
-      const ZD = computeZeroBasedDomain(D);
-      const innerRange = followThis(ZD.rank-1);
-      for outer in outer(followThis) {
-        var myStart = start;
-        if ZD.rank > 1 then
-          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
-        else
-          myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
-        if innerRange.hasUnitStride() {
-          var cursor = randlc_skipto(resultType, seed, myStart);
-          var count = myStart;
-          for innerRange {
-            yield randlc_bounded(resultType, cursor, seed, count, min, max);
-            count += 1;
-          }
-        } else {
-          myStart -= innerRange.lowBound.safeCast(int(64));
-          for i in innerRange {
-            var count = myStart + i.safeCast(int(64)) * multiplier;
-            var cursor = randlc_skipto(resultType, seed, count);
-            yield randlc_bounded(resultType, cursor, seed, count, min, max);
-          }
-        }
-      }
-    }
-
-
-  } // close module PCGRandom
+  }
 
   /*
 
