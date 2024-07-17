@@ -45,7 +45,7 @@ def infer_docker_os(package):
         "fc38": "fedora:38",
         "fc39": "fedora:39",
         "fc40": "fedora:40",
-        "ubuntu22": "ubuntu:20.04",
+        "ubuntu22": "ubuntu:22.04",
         "ubuntu24": "ubuntu:24.04",
         "debian11": "debian:bullseye",
         "debian12": "debian:bookworm",
