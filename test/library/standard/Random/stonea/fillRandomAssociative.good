@@ -1,1 +1,1 @@
-fillRandomAssociative.chpl:5: error: 'fillRandom' does not support non-rectangular arrays
+fillRandomAssociative.chpl:5: error: 'fillRandom' does not support non-rectangular arrays or arrays of non-numeric values
