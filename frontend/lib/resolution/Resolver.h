@@ -442,18 +442,18 @@ struct Resolver {
 
   // e.g. (a, b) = mytuple
   // checks that tuple size matches and that the elements are assignable
-  // saves any '=' called into r.associatedFns
-  void resolveTupleUnpackAssign(ResolvedExpression& r,
+  // saves any '=' called for tuple components as associated actions in
+  // their respective resolved expressions
+  void resolveTupleUnpackAssign(const uast::Tuple* lhsTuple,
                                 const uast::AstNode* astForErr,
-                                const uast::Tuple* lhsTuple,
-                                types::QualifiedType lhsType,
-                                types::QualifiedType rhsType);
+                                const types::QualifiedType& lhsType,
+                                const types::QualifiedType& rhsType);
 
   // helper for resolveTupleDecl
   // e.g. var (a, b) = mytuple
   // checks that tuple size matches and establishes types for a and b
   void resolveTupleUnpackDecl(const uast::TupleDecl* lhsTuple,
-                              types::QualifiedType rhsType);
+                              const types::QualifiedType& rhsType);
 
   // e.g. var (a, b) = mytuple
   void resolveTupleDecl(const uast::TupleDecl* td);

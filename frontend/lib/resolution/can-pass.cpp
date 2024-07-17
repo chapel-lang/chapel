@@ -1174,6 +1174,20 @@ types::QualifiedType::Kind KindProperties::combineKindsMeet(
   return kp1.toKind();
 }
 
+QualifiedType::Kind
+KindProperties::addConstness(QualifiedType::Kind kind) {
+  auto kp = KindProperties::fromKind(kind);
+  kp.setConst(true);
+  return kp.toKind();
+}
+
+QualifiedType::Kind
+KindProperties::addRefness(QualifiedType::Kind kind) {
+  auto kp = KindProperties::fromKind(kind);
+  kp.setRef(true);
+  return kp.toKind();
+}
+
 QualifiedType::Kind KindProperties::toKind() const {
   if (!isValid) return QualifiedType::UNKNOWN;
   if (isType) return QualifiedType::TYPE;

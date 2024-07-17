@@ -2087,8 +2087,13 @@ class ResolvedExpression {
   /** set the toId */
   void setToId(ID toId) { toId_ = toId; }
 
-  /** set the type */
+  /** set the qualified type */
   void setType(const types::QualifiedType& type) { type_ = type; }
+
+  /** set the kind of the qualified type */
+  void setKind(types::QualifiedType::Kind kind) {
+    type_ = { kind, type_.type(), type_.param() };
+  }
 
   /** set the most specific */
   void setMostSpecific(const MostSpecificCandidates& mostSpecific) {

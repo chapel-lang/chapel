@@ -853,8 +853,8 @@ static void test21() {
 
   std::string program =
     R""""(
-    operator=(ref lhs: real, ref rhs: real) {}
-    operator=(ref lhs: int, ref rhs: int) {}
+    operator=(ref lhs: real, rhs: real) {}
+    operator=(ref lhs: int, rhs: int) {}
     proc foo() { return (1.0, 2); }
     var x: real;
     (x, _) = foo();
@@ -865,14 +865,36 @@ static void test21() {
   assert(xQt.kind() == QualifiedType::VAR);
   assert(xQt.type()->isRealType());
 
-  // Get the type of the '(x, _)' tuple itself.
+
   auto mod = parseModule(context, program);
   auto& rr = resolveModule(context, mod->id());
-  auto astTup = mod->stmt(4)->toCall()->actual(0);
-  assert(astTup->isTuple());
+  assert(!guard.realizeErrors());
+
+  // Get the type of the '(x, _)' tuple itself.
+  auto astTup = mod->stmt(4)->toCall()->actual(0)->toTuple();
+  assert(astTup);
   auto& qtTup = rr.byAst(astTup).type();
-  assert(qtTup.kind() == QualifiedType::CONST_VAR);
+
+  // The tuple itself is 'VAR' because its components will be assigned to.
+  assert(qtTup.kind() == QualifiedType::VAR);
   assert(qtTup.type()->isTupleType());
+  auto tpTup = qtTup.type()->toTupleType();
+
+  // Its components are 'ref real(64)' and 'var nothing'.
+  for (int i = 0; i < tpTup->numElements(); i++) {
+    auto qt = tpTup->elementType(i);
+    assert(i != 0 || (qt.type()->isRealType() && qt.kind() == QualifiedType::REF));
+    assert(i != 1 || (qt.type()->isNothingType() && qt.kind() == QualifiedType::VAR));
+  }
+
+  // Finally confirm that there is an assignment for 'x' but not for '_'.
+  for (int i = 0; i < astTup->numActuals(); i++) {
+    auto actual = astTup->actual(i);
+    auto& actions = rr.byAst(actual).associatedActions();
+    assert(i != 0 || actions.size() == 1 &&
+                     actions[0].action() == AssociatedAction::ASSIGN);
+    assert(i != 1 || actions.size() == 0);
+  }
 }
 
 static void test22() {
@@ -963,12 +985,12 @@ static void test25() {
 
   auto m = resolveTypesOfVariables(context, program, { "i", "j", "z" });
   assert(!guard.realizeErrors());
-  assert(m["i"].kind() == QualifiedType::CONST_VAR);
-  assert(m["i"].type()->isIntType());
-  assert(m["j"].kind() == QualifiedType::CONST_VAR);
-  assert(m["j"].type()->isIntType());
-  assert(m["z"].kind() == QualifiedType::VAR);
-  assert(m["z"].type()->isIntType());
+  auto& i = m["i"];
+  assert(i.kind() == QualifiedType::CONST_VAR && i.type()->isIntType());
+  auto& j = m["j"];
+  assert(j.kind() == QualifiedType::CONST_VAR && j.type()->isIntType());
+  auto& z = m["z"];
+  assert(z.kind() == QualifiedType::VAR && z.type()->isIntType());
 }
 
 static void test26() {
@@ -995,16 +1017,23 @@ static void test26() {
   auto& qtTup = rr.byAst(astTup).type();
   assert(qtTup.kind() == QualifiedType::REF);
   assert(qtTup.type()->isTupleType());
+  auto tpTup = qtTup.type()->toTupleType();
+  for (int i = 0; i < tpTup->numElements(); i++) {
+    auto qt = tpTup->elementType(i);
+    // But its elements are 'VAR'.
+    assert(qt.kind() == QualifiedType::VAR);
+    assert(qt.type()->isIntType());
+  }
 
   // The de-tupled components still maintain their 'REF'ness.
   auto m = resolveTypesOfVariables(context, program, { "i", "j", "z" });
   assert(!guard.realizeErrors());
-  assert(m["i"].kind() == QualifiedType::REF);
-  assert(m["i"].type()->isIntType());
-  assert(m["j"].kind() == QualifiedType::REF);
-  assert(m["j"].type()->isIntType());
-  assert(m["z"].kind() == QualifiedType::VAR);
-  assert(m["z"].type()->isIntType());
+  auto& i = m["i"];
+  assert(i.kind() == QualifiedType::REF && i.type()->isIntType());
+  auto& j = m["j"];
+  assert(j.kind() == QualifiedType::REF && j.type()->isIntType());
+  auto& z = m["z"];
+  assert(z.kind() == QualifiedType::VAR && z.type()->isIntType());
 }
 
 static void test27() {
@@ -1035,12 +1064,12 @@ static void test27() {
   // The de-tupled components still maintain their 'REF'ness.
   auto m = resolveTypesOfVariables(context, program, { "i", "j", "z" });
   assert(!guard.realizeErrors());
-  assert(m["i"].kind() == QualifiedType::CONST_REF);
-  assert(m["i"].type()->isIntType());
-  assert(m["j"].kind() == QualifiedType::CONST_REF);
-  assert(m["j"].type()->isIntType());
-  assert(m["z"].kind() == QualifiedType::VAR);
-  assert(m["z"].type()->isIntType());
+  auto& i = m["i"];
+  assert(i.kind() == QualifiedType::CONST_REF && i.type()->isIntType());
+  auto& j = m["j"];
+  assert(j.kind() == QualifiedType::CONST_REF && j.type()->isIntType());
+  auto& z = m["z"];
+  assert(z.kind() == QualifiedType::VAR && z.type()->isIntType());
 }
 
 static void test28() {
