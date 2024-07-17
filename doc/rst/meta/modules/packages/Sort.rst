@@ -1,4 +1,4 @@
-.. TODO: remove this stub file
+.. TODO: remove this stub file after Chapel 2.3
 
 .. default-domain:: chpl
 
