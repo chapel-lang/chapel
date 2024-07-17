@@ -1,9 +1,0 @@
-testRandomSeed.chpl:4: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRandom package module
-testRandomSeed.chpl:4: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRandom package module
-testRandomSeed.chpl:8: In function 'getNextSeed':
-testRandomSeed.chpl:9: warning: 'SeedGenerator' is deprecated
-testRandomSeed.chpl:11: warning: 'SeedGenerator' is deprecated
-testRandomSeed.chpl:16: In function 'main':
-testRandomSeed.chpl:18: warning: 'SeedGenerator' is deprecated
-testRandomSeed.chpl:21: warning: The overload of `fillRandom` that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument
-testRandomSeed.chpl:26: warning: The overload of `fillRandom` that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument
