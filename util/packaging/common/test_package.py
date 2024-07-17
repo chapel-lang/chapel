@@ -16,32 +16,13 @@ class MyTemplate(Template):
 global verbose
 verbose = False
 
+global chpl_home
+chpl_home = os.environ.get("CHPL_HOME", "")
 
 def run_command(cmd, **kwargs):
     if verbose:
         print(f"Running command: \"{' '.join(cmd)}\"")
     return sp.check_call(cmd, **kwargs)
-
-
-def build_docker(test_dir, package_path, package_name, docker_os):
-    template = ""
-    template_file = os.path.join(test_dir, "Dockerfile.template")
-    with open(template_file, "r") as f:
-        template = f.read()
-
-    substitutions = {
-        "OS_BASE_IMAGE": docker_os,
-        "HOST_PACKAGE_PATH": package_path,
-        "PACKAGE_NAME": package_name,
-    }
-
-    src = MyTemplate(template)
-    result = src.substitute(substitutions)
-
-    output_file = os.path.join(test_dir, "Dockerfile")
-    with open(output_file, "w") as f:
-        f.write(result)
-
 
 def determine_arch(package):
     # if the arch is aarch64 or arm64, return arm64
@@ -57,10 +38,77 @@ def determine_arch(package):
         return arch
 
 
+def infer_docker_os(package):
+    os_tag_to_docker = {
+        "el9": "rockylinux/rockylinux:9",
+        "fc37": "fedora:37",
+        "fc38": "fedora:38",
+        "fc39": "fedora:39",
+        "fc40": "fedora:40",
+        "ubuntu22": "ubuntu:20.04",
+        "ubuntu24": "ubuntu:24.04",
+        "debian11": "debian:bullseye",
+        "debian12": "debian:bookworm",
+    }
+    for tag, docker in os_tag_to_docker.items():
+        if ".{}.".format(tag) in package:
+            return docker
+    return ValueError(f"Could not infer docker image from package {package}")
+
+def infer_env_vars(package):
+    if "gasnet-udp" in package:
+        return """
+ENV GASNET_SPAWNFN=L
+ENV GASNET_ROUTE_OUTPUT=0
+ENV GASNET_QUIET=Y
+ENV GASNET_MASTERIP=127.0.0.1
+ENV GASNET_WORKERIP=127.0.0.0
+ENV CHPL_RT_OVERSUBSCRIBED=yes
+"""
+
+    return ""
+
+def infer_pkg_type(package):
+    if package.endswith(".deb"):
+        return "apt"
+    elif package.endswith(".rpm"):
+        return "rpm"
+    else:
+        raise ValueError(f"Package {package} is not a .deb or .rpm file")
+
+
+def build_docker(test_dir, package_path, package_name, docker_os):
+    template = ""
+    template_file = os.path.join(test_dir, "Dockerfile.template")
+    with open(template_file, "r") as f:
+        template = f.read()
+
+    substitutions = {
+        "OS_BASE_IMAGE": docker_os,
+        "HOST_PACKAGE_PATH": package_path,
+        "PACKAGE_NAME": package_name,
+        "TEST_ENV": infer_env_vars(package_name),
+    }
+
+
+    src = MyTemplate(template)
+    result = src.safe_substitute(substitutions)
+
+    output_file = os.path.join(test_dir, "Dockerfile")
+    with open(output_file, "w") as f:
+        f.write(result)
+
+
+    # now invoke the proper script to fill in the rest of the Dockerfile
+    pkg_type = infer_pkg_type(package_name)
+    fill_script = "{}/util/packaging/{}/common/fill_docker_template.py".format(chpl_home, pkg_type)
+    run_command(["python3", fill_script, output_file])
+
+
 def docker_build_image(
     test_dir, package, docker_os, imagetag="chapel-test-image"
 ):
-    context = os.path.join(test_dir, "..")
+    context = os.path.join(test_dir, "..", "..")
     context = os.path.abspath(context)
     dockerfile = os.path.join(test_dir, "Dockerfile")
 
@@ -107,7 +155,9 @@ def cleanup(test_dir, imagetag):
 def main():
     parser = argparse.ArgumentParser(description="Run tests on build packages")
     parser.add_argument("package", type=str, help="The package to test")
-    parser.add_argument("dockeros", type=str, help="The docker image to use")
+    parser.add_argument(
+        "--dockeros", type=str, default=None, help="The docker image to use"
+    )
     parser.add_argument(
         "--run",
         action="store_true",
@@ -120,19 +170,14 @@ def main():
     global verbose
     verbose = args.verbose
 
-    chpl_home = os.environ.get("CHPL_HOME", "")
     package = os.path.abspath(os.path.expanduser(args.package))
-    test_dir = os.path.join(chpl_home, "util", "packaging")
-    if package.endswith(".deb"):
-        test_dir = os.path.join(test_dir, "apt")
-    elif package.endswith(".rpm"):
-        test_dir = os.path.join(test_dir, "rpm")
-    else:
-        print(f"Package {package} is not a .deb or .rpm file")
-        sys.exit(1)
-    test_dir = os.path.join(test_dir, "test")
+    pkg_type = infer_pkg_type(package)
+    test_dir = os.path.join(chpl_home, "util", "packaging", pkg_type, "test")
     test_dir = os.path.abspath(test_dir)
+
     docker_os = args.dockeros
+    if docker_os is None:
+        docker_os = infer_docker_os(package)
 
     imagetag = docker_build_image(test_dir, package, docker_os)
     if args.run:

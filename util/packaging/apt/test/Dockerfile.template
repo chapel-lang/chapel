@@ -1,15 +1,14 @@
 FROM @@{OS_BASE_IMAGE}
 
+@@{INJECT_BEFORE_DEPS}
+
+@@{TEST_ENV}
+
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y vim sudo
 
-RUN useradd -ms /bin/bash user && \
-    usermod -aG sudo user && \
-    echo "user:password" | chpasswd
-
-USER user
-WORKDIR /home/user
+@@{USER_CREATION}
 
 COPY --chown=user @@{HOST_PACKAGE_PATH}/@@{PACKAGE_NAME} /home/user/@@{PACKAGE_NAME}
 
