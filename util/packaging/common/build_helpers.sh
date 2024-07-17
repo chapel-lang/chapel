@@ -125,7 +125,7 @@ __run_container() {
 }
 
 __test_package() {
-  python3 $chpl_home/util/packaging/common/test_package.py $1
+  python3 $chpl_home/util/packaging/common/test_package.py $@
 }
 __test_all_packages() {
   for deb in util/packaging/apt/build/*/*/*.deb; do
