@@ -1293,7 +1293,7 @@ FnSymbol* KernelArg::generateFinalReductionWrapper() {
   return ret;
 }
 
-KernelArg::KernelArg(Symbol* symInLoop, GpuKernel* kernel, bool isCompilerGeneratedArgcheckIntent) :
+KernelArg::KernelArg(Symbol* symInLoop, GpuKernel* kernel, bool isCompilerGeneratedArg) :
   actual_(symInLoop), kernel_(kernel) {
 
   Type* symType = symInLoop->typeInfo();
@@ -1302,7 +1302,7 @@ KernelArg::KernelArg(Symbol* symInLoop, GpuKernel* kernel, bool isCompilerGenera
   IntentTag intent = symInLoop->isRef() ? INTENT_REF : INTENT_IN;
   this->formal_ = new ArgSymbol(intent, symInLoop->name, symType);
 
-  if (!isCompilerGeneratedArgcheckIntent &&
+  if (!isCompilerGeneratedArg &&
       !isAggregateType(symInLoop->getValType()) &&
       !symInLoop->hasFlag(FLAG_TASK_PRIVATE_VARIABLE) &&
       !symInLoop->isConstValWillNotChange())
