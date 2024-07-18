@@ -94,7 +94,7 @@ bool considerForOuter(Symbol* sym);
   for an example of the sort of transformations this supports.
  */
 ArgSymbol* newOuterVarArg(Symbol* sym);
-void scopeResolveAndNormalizeGeneratedLoweringFn(FnSymbol* fn);
+void normalizeGeneratedLoweringFn(FnSymbol* fn);
 
 void lowerLoopExprs(BaseAST* ast);
 

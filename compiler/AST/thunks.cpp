@@ -91,7 +91,7 @@ static CallExpr* buildThunkPrimFunctions(CallExpr* node) {
   }
   update_symbols(thunkFn, &map);
 
-  scopeResolveAndNormalizeGeneratedLoweringFn(thunkFn);
+  normalizeGeneratedLoweringFn(thunkFn);
 
   return thunkCall;
 }
