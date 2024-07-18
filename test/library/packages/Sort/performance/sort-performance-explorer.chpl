@@ -17,7 +17,7 @@ config const parallel = true;
 config param reverse = false;
 config type eltType = int;
 
-config const seed = NPBRandom.oddTimeSeed();
+config const seed = (new randomStream(int(32))).seed;
 
 var methods = ["default", "msbRadixSort", "quickSort", "mergeSort",
                "twoArraySample", "twoArrayRadix", "timSort"];

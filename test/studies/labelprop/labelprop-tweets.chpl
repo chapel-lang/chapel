@@ -426,7 +426,7 @@ proc create_and_analyze_graph(ref Pairs)
 
   // re-seed the RNG if seed is 0.
   if seed == 0 {
-    seed = NPBRandom.oddTimeSeed();
+    seed = (new randomStream(int(32))).seed;
   }
 
 

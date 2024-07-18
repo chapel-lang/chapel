@@ -16,7 +16,7 @@ use Random;
 use IO;
 
 config const printTime: bool = true; // print timer
-config const globalSeed = NPBRandom.oddTimeSeed();
+config const globalSeed = (new randomStream(int(32))).seed;
 config const problemSize = 100000;
 config const T = 1000; // number of time steps
 config const verify: bool;
