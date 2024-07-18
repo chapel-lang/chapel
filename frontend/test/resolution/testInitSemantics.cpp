@@ -1299,6 +1299,29 @@ static void testInheritance() {
 
 }
 
+static void testInitGenericAfterConcrete() {
+  std::string program = R"""(
+      record Foo {
+        var a:int;
+        var b;
+        proc init() {
+          this.a = 1;
+          this.b = 2;
+        }
+      }
+
+      var myFoo = new Foo();
+      var x = myFoo.b;
+    )""";
+
+  Context ctx;
+  Context* context = &ctx;
+  auto t = resolveTypeOfX(context, program);
+
+  assert(t);
+  assert(t->isIntType());
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -1338,6 +1361,8 @@ int main() {
   testInitEqOther();
 
   testInheritance();
+
+  testInitGenericAfterConcrete();
 
   return 0;
 }
