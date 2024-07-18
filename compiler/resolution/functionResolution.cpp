@@ -9483,11 +9483,11 @@ static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
   }
 
   bool shouldCheckMoveToRef =
-    lhsSym->hasFlag(FLAG_REF_VAR) ||
+    (lhsSym->hasFlag(FLAG_REF_VAR) &&
+     ! lhsSym->hasEitherFlag(FLAG_TEMP, FLAG_EXPR_TEMP)) ||
     (lhsSym->hasFlag(FLAG_RVV) &&
      lhsSym->typeInfo() && lhsSym->typeInfo()->isRef());
   if (shouldCheckMoveToRef                                &&
-      ! lhsSym->hasEitherFlag(FLAG_TEMP, FLAG_EXPR_TEMP)  &&
       call->isPrimitive(PRIM_MOVE)                         )  {
     checkAndAdjustLhsRefType(call, lhsSym, rhsSym->type);
   }
