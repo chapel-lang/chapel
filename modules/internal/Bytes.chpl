@@ -71,7 +71,8 @@ module Bytes {
     :type x: `c_ptr(int(8))` or `c_ptr(uint(8))`
 
     :arg length: Length of `x`, excluding the optional terminating null byte.
-                 Defaults to the number of bytes in `x` before the terminating null byte.
+                 Defaults to the number of bytes in `x` before the terminating
+                 null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
@@ -92,7 +93,8 @@ module Bytes {
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
     :arg length: Length of `x`, excluding the optional terminating null byte.
-                 Defaults to the number of bytes in `x` before the terminating null byte.
+                 Defaults to the number of bytes in `x` before the terminating
+                 null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
@@ -130,7 +132,8 @@ module Bytes {
      :arg x: Buffer to borrow
      :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-     :arg length: Length of the buffer `x`, excluding the optional terminating null byte.
+     :arg length: Length of the buffer `x`, excluding the optional terminating
+                  null byte.
 
      :arg size: Size of memory allocated for `x` in bytes
 
@@ -155,8 +158,9 @@ module Bytes {
     :arg x: The `c_ptr` to take ownership of
     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-    :arg length: Length of buffer `x`, excluding the optional terminating null byte.
-                 Defaults to the number of bytes in `x` before the terminating null byte.
+    :arg length: Length of buffer `x`, excluding the optional terminating null
+                 byte. Defaults to the number of bytes in `x` before the
+                 terminating null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
@@ -184,8 +188,9 @@ module Bytes {
     :arg x: The `c_ptrConst` to take ownership of
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
-    :arg length: Length of `x`'s buffer, excluding the optional terminating null byte.
-                 Defaults to the number of bytes in `x` before the terminating null byte.
+    :arg length: Length of `x`'s buffer, excluding the optional terminating null
+                 byte. Defaults to the number of bytes in `x` before the
+                 terminating null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
@@ -204,7 +209,8 @@ module Bytes {
      :arg x: The buffer to take ownership of
      :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-     :arg length: Length of the buffer `x`, excluding the optional terminating null byte.
+     :arg length: Length of the buffer `x`, excluding the optional terminating
+                  null byte.
 
      :arg size: Size of memory allocated for `x` in bytes
 
@@ -227,8 +233,9 @@ module Bytes {
     :arg x: The :class:`~CTypes.c_ptrConst` to copy
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
-    :arg length: Length of buffer `x`, excluding the optional terminating null byte.
-                 Defaults to the number of bytes in `x` before the terminating null byte.
+    :arg length: Length of buffer `x`, excluding the optional terminating null
+                 byte. Defaults to the number of bytes in `x` before the
+                 terminating null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
@@ -254,8 +261,9 @@ module Bytes {
      :arg x: The buffer to copy
      :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-     :arg length: Length of buffer `x`, excluding the optional terminating null byte.
-                  Defaults to the number of bytes in `x` before the terminating null byte.
+     :arg length: Length of buffer `x`, excluding the optional terminating null
+                  byte. Defaults to the number of bytes in `x` before the
+                  terminating null byte.
 
      :arg size: Size of memory allocated for `x` in bytes
 
