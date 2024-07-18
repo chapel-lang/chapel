@@ -51,7 +51,7 @@ static void collectThunkOuterVars(Expr* expr, std::set<Symbol*>& outerVars) {
   collectSymExprs(expr, uses);
   for (auto use : uses) {
     Symbol* sym = use->symbol();
-    if (considerForOuter(sym))
+    if (considerForOuter(sym) && isOuterVarLoop(sym, expr))
       outerVars.insert(sym);
   }
 }
