@@ -66,14 +66,13 @@
     random number generator that can be used as a "global" random number
     generator.
 
+    Random Procedures and Types
+    ---------------------------
 */
 module Random {
 
   private use IO;
   private use Math;
-
-  // still needed ???
-  public import NPBRandom;
   private use PCGRandomLib;
 
   private proc isNumericOrBoolType(type t) param do
