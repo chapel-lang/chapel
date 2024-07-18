@@ -44,6 +44,9 @@ if [ -f "$SETUP_PYTHON" ]; then
   source $SETUP_PYTHON
 fi
 
+# install frontend python bindings
+(cd $CHPL_HOME/tools/chapel-py && python -m pip install .)
+
 export CHPL_WHICH_RELEASE_FOR_ARKOUDA="2.1.0"
 # test against Chapel release (checking out current test/cron directories)
 function test_release() {
