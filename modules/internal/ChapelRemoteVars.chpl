@@ -51,13 +51,22 @@ module ChapelRemoteVars {
 
   @unstable("remote variables are unstable")
   inline proc chpl__buildRemoteWrapper(loc: locale, in tr: _thunkRecord) {
-    return chpl__buildRemoteWrapper(loc, thunkToReturnType(tr.type), tr);
+    type inType = thunkToReturnType(tr.type);
+    var c: owned _remoteVarContainer(inType)?;
+    on loc do c = new _remoteVarContainer(__primitive("force thunk", tr));
+    return new _remoteVarWrapper(try! c : owned _remoteVarContainer(inType));
   }
 
   @unstable("remote variables are unstable")
   inline proc chpl__buildRemoteWrapper(loc: locale, type inType, in tr: _thunkRecord) {
     var c: owned _remoteVarContainer(inType)?;
-    on loc do c = new _remoteVarContainer(__primitive("force thunk", tr));
+    on loc {
+      // If a type was explicitly specified, perform assignment to a variable
+      // with that type. This supports cases in which we use init= across
+      // different types, such as var A: [1..10] int = 5;
+      var forced: inType = __primitive("force thunk", tr);
+      c = new _remoteVarContainer(forced);
+    }
     return new _remoteVarWrapper(try! c : owned _remoteVarContainer(inType));
   }
 
