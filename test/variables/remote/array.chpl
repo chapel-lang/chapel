@@ -35,6 +35,11 @@ iter myIter() {
   writeln(F.locale == Locales.last);
   on F do writeln(here == Locales.last);
 
+  on Locales.last var G: [1..10] int = 2;
+  writeln(G);
+  writeln(G.locale == Locales.last);
+  on G do writeln(here == Locales.last);
+
   /* Write to them to ensure they're mutable. */
   A[1] = 42;
   writeln(A);
@@ -48,6 +53,8 @@ iter myIter() {
   writeln(E);
   F[1] = 47;
   writeln(F);
+  G[1] = 48;
+  writeln(G);
 }
 {
   on Locales.last const A: [1..10] int;
@@ -69,6 +76,11 @@ iter myIter() {
   writeln(D);
   writeln(D.locale == Locales.last);
   on D do writeln(here == Locales.last);
+
+  on Locales.last const E: [1..10] int = 2;
+  writeln(E);
+  writeln(E.locale == Locales.last);
+  on E do writeln(here == Locales.last);
 
   /* Const-ness errors tested separately to avoid compile-time errors. */
 }
