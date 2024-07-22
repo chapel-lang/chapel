@@ -304,6 +304,14 @@ struct ParserContext {
 
   Location convertLocation(YYLTYPE location);
 
+  AstNode* buildTaskIntent(YYLTYPE loc,
+                           YYLTYPE nameLoc,
+                           AttributeGroup* attributeGroup,
+                           AstNode* identNode,
+                           MaybeIntent intent,
+                           AstNode* typeExpression,
+                           AstNode* initExpression);
+
   WithClause* buildWithClause(YYLTYPE location, YYLTYPE locWith,
                               YYLTYPE locLeftParen,
                               YYLTYPE locTaskIntentList,

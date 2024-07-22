@@ -218,6 +218,25 @@
     TextLocation locName;
   };
 
+  struct MaybeIntent {
+    Qualifier intent;
+    bool isValid;
+  };
+  static inline
+  MaybeIntent makeIntent(Qualifier intent) {
+    MaybeIntent ret = {intent, true};
+    return ret;
+  }
+  static inline
+  MaybeIntent makeIntent(TaskVar::Intent intent) {
+    return makeIntent((Qualifier)intent);
+  }
+  static inline
+  MaybeIntent makeInvalidIntent(Qualifier intent) {
+    MaybeIntent ret = {intent, false};
+    return ret;
+  }
+
   static inline MaybeNamedActual
   makeMaybeNamedActual(AstNode* expr, PODUniqueString name,
                        TextLocation locName=TextLocation::create()) {
@@ -254,7 +273,7 @@
     Decl::Linkage linkageTag;
     Module::Kind moduleKind;
     New::Management newManagement;
-    TaskVar::Intent taskIntent;
+    MaybeIntent taskIntent;
     Decl::Visibility visibilityTag;
     ThrowsTag throwsTag;
     Variable::Kind variableKind;
@@ -3234,18 +3253,7 @@ task_intent_ls:
 intent_expr:
   task_var_prefix ident_expr opt_type opt_init_expr
   {
-    if (auto ident = $2->toIdentifier()) {
-      auto name = ident->name();
-      auto node = TaskVar::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
-                                 name,
-                                 /*intent*/ $1,
-                                 toOwned($3),
-                                 toOwned($4));
-      BUILDER->noteDeclNameLocation(node.get(), LOC(@2));
-      $$ = node.release();
-    } else {
-      $$ = context->syntax(@$, "expected identifier for task variable name.");
-    }
+    $$ = context->buildTaskIntent(@4, @2, nullptr, $2, $1, $3, $4);
   }
 | reduce_scan_op_expr TREDUCE ident_expr
   {
@@ -3258,12 +3266,16 @@ intent_expr:
 ;
 
 task_var_prefix:
-  TCONST       { $$ = TaskVar::CONST;     }
-| TIN          { $$ = TaskVar::IN;        }
-| TCONST TIN   { $$ = TaskVar::CONST_IN;  }
-| TREF         { $$ = TaskVar::REF;       }
-| TCONST TREF  { $$ = TaskVar::CONST_REF; }
-| TVAR         { $$ = TaskVar::VAR;       }
+  TCONST       { $$ = makeIntent(TaskVar::CONST);          }
+| TIN          { $$ = makeIntent(TaskVar::IN);             }
+| TCONST TIN   { $$ = makeIntent(TaskVar::CONST_IN);       }
+| TREF         { $$ = makeIntent(TaskVar::REF);            }
+| TCONST TREF  { $$ = makeIntent(TaskVar::CONST_REF);      }
+| TVAR         { $$ = makeIntent(TaskVar::VAR);            }
+| TOUT         { $$ = makeInvalidIntent(Qualifier::OUT);   }
+| TINOUT       { $$ = makeInvalidIntent(Qualifier::INOUT); }
+| TPARAM       { $$ = makeInvalidIntent(Qualifier::PARAM); }
+| TTYPE        { $$ = makeInvalidIntent(Qualifier::TYPE);  }
 ;
 
 new_maybe_decorated:
