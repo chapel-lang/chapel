@@ -1,1 +1,2 @@
 with-bool.chpl:3: error: cannot apply a forall or task intent to a type or a param, here 'bool'
+with-false.chpl:3: syntax error: invalid intent expression in 'with' clause
