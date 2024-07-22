@@ -250,6 +250,7 @@ comparator to the initializer of the module-defined
   writeln(Array);
 
  */
+@unstable("The Sort module interface is unstable")
 module Sort {
 
   private use List;
