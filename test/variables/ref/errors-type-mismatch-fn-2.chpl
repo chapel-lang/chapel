@@ -1,4 +1,3 @@
-var global: int;
 var A: [1..10] int;
 
 record rec {
