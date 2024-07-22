@@ -25,9 +25,9 @@ def create_parser():
 def get_pattern(mode):
     ''' Get regex pattern used to extract (test/dir, time) data '''
     if mode =='directory':
-        pattern = re.compile('\[Finished subtest "(.*)" - (.*) seconds')
+        pattern = re.compile(r'\[Finished subtest "(.*)" - (.*) seconds')
     else:
-        pattern = re.compile('\[Elapsed {} time for "(.*)" - (.*) seconds'.format(mode))
+        pattern = re.compile(r'\[Elapsed {} time for "(.*)" - (.*) seconds'.format(mode))
     return pattern
 
 
