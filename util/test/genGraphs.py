@@ -1093,7 +1093,8 @@ def main():
         except (CouldNotReadGraphFile):
             pass  # do not increment numGraphfiles
         except (ValueError, IOError, OSError):
-            return -1
+            print("Error generating graph", graph)
+            raise
 
 
     # Copy the index.html and support css and js files
