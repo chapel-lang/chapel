@@ -129,6 +129,16 @@ static void test2(Parser* parser) {
   assert(begin->stmt(2)->isFnCall());
 }
 
+static void test3(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
+      "begin with ref A { }");
+  auto numErrors = 2;
+  assert(guard.errors().size() == numErrors);
+  assert("missing parentheses after 'with' clause" == guard.error(1)->message());
+  assert(guard.realizeErrors() == numErrors);
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -139,6 +149,7 @@ int main() {
   test0(p);
   test1(p);
   test2(p);
+  test3(p);
 
   return 0;
 }

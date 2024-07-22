@@ -106,6 +106,16 @@ static void test1(Parser* parser) {
   assert(cobegin->taskBody(2)->isComment());
 }
 
+static void test2(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
+      "cobegin with ref A { ; ; }");
+  auto numErrors = 2;
+  assert(guard.errors().size() == numErrors);
+  assert("missing parentheses after 'with' clause" == guard.error(1)->message());
+  assert(guard.realizeErrors() == numErrors);
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -115,6 +125,7 @@ int main() {
 
   test0(p);
   test1(p);
+  test2(p);
 
   return 0;
 }
