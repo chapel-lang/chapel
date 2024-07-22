@@ -25,6 +25,8 @@ iter myIter() {
   writeln(D.locale == Locales.last);
   on D do writeln(here == Locales.last);
 
+  // This variable is referenced by name in ChapelRemoteVars.chpl when
+  // explaining a failure. Do not rename it without updating that file.
   on Locales.last var E = for i in 1..10 do i * i;
   writeln(E);
   writeln(E.locale == Locales.last);

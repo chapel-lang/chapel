@@ -51,11 +51,18 @@ module ChapelRemoteVars {
 
   @unstable("remote variables are unstable")
   inline proc chpl__buildRemoteWrapper(loc: locale, in tr: _thunkRecord) {
-    // Does not call the type + thunk version of this function, because
-    // the thunkToReturnType function could return an uninitialized runtime
-    // type (same as chpl_buildStandInRTT), which will cause memory issues
+    // Does not call the (locale, type, thunk) version of this function, because
+    // `thunkToReturnType` could return an uninitialized runtime type
+    // (same as chpl_buildStandInRTT), which will cause memory issues
     // if used in an explicit `var x: t = ...` statement. So instead, avoid
     // explicitly using the type that way.
+    //
+    // In test/variables/remote/array.chpl, the 'var E' case would fail if
+    // the type was explicitly used. This is because the thunk's return type
+    // would boil down to `chpl_buildStandInRTT(iterator_record_for_forexpr)`,
+    // which is an array type with a runtime component, and it would be
+    // uninitialized. Using that type in `var x: t = ...` would cause an
+    // invalid memory access.
     //
     // Note: the _remoteVarContainer(..) type does not have a runtime component,
     // so it is safe to use it with the result of thunkToReturnType.
