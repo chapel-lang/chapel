@@ -3203,6 +3203,20 @@ task_intent_clause:
   {
     $$ = context->buildWithClause(@$, @1, @2, @3, @4, $3);
   }
+| TWITH TLP TRP
+  {
+    auto err = context->syntax(@$, "'with' clause cannot be empty.");
+    auto exprs = context->makeList(err);
+    auto dummyLoc = TextLocation::create();
+    $$ = context->buildWithClause(@$, @1, dummyLoc, dummyLoc, dummyLoc, exprs);
+}
+| TWITH TLP error TRP
+  {
+    auto err = context->syntax(@2, "invalid intent expression in 'with' clause.");
+    auto exprs = context->makeList(err);
+    auto dummyLoc = TextLocation::create();
+    $$ = context->buildWithClause(@$, @1, dummyLoc, dummyLoc, dummyLoc, exprs);
+}
 | TWITH error
   {
     auto err = context->syntax(@2, "missing parentheses after 'with' clause.");
