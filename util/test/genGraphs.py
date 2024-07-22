@@ -1027,10 +1027,7 @@ def main():
     graphInfo = GraphStuff(options.name, options.testdir, perfdir, outdir,
         startdate, enddate, options.g_reduce, options.g_display_bounds,
         alttitle, annotation_file)
-    try:
-        graphInfo.init()
-    except (IOError, OSError):
-        return -1
+    graphInfo.init()
 
     # get the list of .graph files
     lines = list()
