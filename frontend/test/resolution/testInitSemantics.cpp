@@ -1299,6 +1299,61 @@ static void testInheritance() {
 
 }
 
+static void testInitGenericAfterConcrete() {
+  // With generic var initialized properly
+  {
+    std::string program = R"""(
+      record Foo {
+        var a:int;
+        var b;
+        proc init() {
+          this.a = 1;
+          this.b = 2;
+        }
+      }
+
+      var myFoo = new Foo();
+      var x = myFoo.b;
+    )""";
+
+    Context ctx;
+    Context* context = &ctx;
+    auto t = resolveTypeOfX(context, program);
+
+    assert(t);
+    assert(t->isIntType());
+  }
+
+  // With generic var not initialized, so not enough info
+  {
+    std::string program = R"""(
+      record Foo {
+        var a:int;
+        var b;
+        proc init() {
+          this.a = 1;
+        }
+      }
+
+      var myFoo = new Foo();
+      var x = myFoo.b;
+    )""";
+
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+    auto t = resolveTypeOfX(context, program);
+
+    assert(t);
+    assert(t->isAnyType());
+
+    assert(guard.errors().size() == 2);
+    assert(guard.error(0)->message() ==
+           "unable to instantiate generic type from initializer");
+    assert(guard.realizeErrors());
+  }
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -1338,6 +1393,8 @@ int main() {
   testInitEqOther();
 
   testInheritance();
+
+  testInitGenericAfterConcrete();
 
   return 0;
 }
