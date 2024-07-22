@@ -52,7 +52,7 @@ module ChapelRemoteVars {
   @unstable("remote variables are unstable")
   inline proc chpl__buildRemoteWrapper(loc: locale, in tr: _thunkRecord) {
     // Does not call the type + thunk version of this function, because
-    // the thunkToReturnType function could return an initialized runtime
+    // the thunkToReturnType function could return an uninitialized runtime
     // type (same as chpl_buildStandInRTT), which will cause memory issues
     // if used in an explicit `var x: t = ...` statement. So instead, avoid
     // explicitly using the type that way.
