@@ -9775,7 +9775,7 @@ yyreduce:
   case 592: /* intent_expr: task_var_prefix ident_expr opt_type opt_init_expr  */
 #line 3255 "chpl.ypp"
   {
-    (yyval.expr) = context->buildTaskIntent((yylsp[0]), (yylsp[-2]), nullptr, (yyvsp[-2].expr), (yyvsp[-3].taskIntent), (yyvsp[-1].expr), (yyvsp[0].expr));
+    (yyval.expr) = context->buildTaskIntent((yyloc), (yylsp[-2]), nullptr, (yyvsp[-2].expr), (yyvsp[-3].taskIntent), (yyvsp[-1].expr), (yyvsp[0].expr));
   }
 #line 9781 "bison-chpl-lib.cpp"
     break;
