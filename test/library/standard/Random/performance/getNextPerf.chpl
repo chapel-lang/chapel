@@ -1,26 +1,18 @@
-use Random.PCGRandom, Time;
+use Random, Time;
 
 config const perf = false;
 config const trials = if perf then 50_000_000 else 100;
 
-proc test(parallel, param parSafe) {
-  var rndStream = new PCGRandomStream(uint(8), seed=314159265, parSafe=parSafe);
+proc main() {
+  var rndStream = new randomStream(uint(8), seed=314159265);
   var t: stopwatch; t.start();
   var a: uint;
-  if parallel then
-    forall 1..trials with (+reduce a) do
-      a += rndStream.getNext();
-  else
-    for 1..trials do
-      a += rndStream.getNext();
+  for 1..trials do
+    a += rndStream.next();
   t.stop();
 
   if perf then
-    writef("parallel=%?-parSafe=%?-time=%dr\n", parallel, parSafe, t.elapsed());
+    writef("parallel=false-parSafe=false-time=%dr\n", t.elapsed());
   else
     writeln(a);
 }
-
-test(parallel=false, parSafe=false);
-test(parallel=false, parSafe=true);
-test(parallel=true , parSafe=true);

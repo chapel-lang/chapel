@@ -1,5 +1,0 @@
-choiceTestLowbounded.chpl:6: In function 'main':
-choiceTestLowbounded.chpl:12: warning: randomStream.choice is deprecated; please use choose or sample instead
-$CHPL_HOME/modules/standard/Random.chpl:nnnn: In method 'choice':
-$CHPL_HOME/modules/standard/Random.chpl:nnnn: error: one of domain's dimensions is not a bounded range
-  choiceTestLowbounded.chpl:12: called as (randomStream(int(64))).choice(x: range(int(64),low,one), size: nothing, replace: bool, prob: nothing)

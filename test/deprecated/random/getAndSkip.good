@@ -1,5 +1,0 @@
-getAndSkip.chpl:5: warning: skipToNth is deprecated; please use skipTo instead
-getAndSkip.chpl:6: warning: randomStream.getNext is deprecated; please use next instead
-getAndSkip.chpl:7: warning: getNth is deprecated; please use skipTo followed by next instead
-3761627295390318101
-5455474720887105970

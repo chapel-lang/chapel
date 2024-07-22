@@ -1,5 +1,0 @@
-fillrandom-bounded.chpl:9: In function 'testit':
-fillrandom-bounded.chpl:15: warning: the RandomStream class is deprecated; please use the randomStream record instead
-fillrandom-bounded.chpl:134: In function 'testitb':
-fillrandom-bounded.chpl:138: warning: the RandomStream class is deprecated; please use the randomStream record instead
-OK

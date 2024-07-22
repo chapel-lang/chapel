@@ -1,3 +1,0 @@
-# This creates many short lived tasks, which is slow under cygwin. See
-# https://github.com/Cray/chapel-private/issues/2473
-CHPL_TARGET_PLATFORM <= cygwin

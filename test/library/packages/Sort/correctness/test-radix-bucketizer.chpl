@@ -4,7 +4,7 @@ use Random;
 use Time;
 
 config const debug = false;
-config var seed = NPBRandom.oddTimeSeed();
+config var seed = (new randomStream(int(32))).seed;
 
 proc testBucketizer() {
   var A = [0x1234567800000000,

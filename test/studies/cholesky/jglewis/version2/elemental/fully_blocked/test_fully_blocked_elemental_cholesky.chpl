@@ -17,7 +17,7 @@ module test_fully_blocked_elemental_cholesky {
 
   proc main {
 
-    var Rand = new RandomStream ( real, seed = 314159);
+    var Rand = new randomStream ( real, seed = 314159);
 
     const MatIdx = { index_base .. #n, index_base .. #n };
 
@@ -51,7 +51,7 @@ module test_fully_blocked_elemental_cholesky {
     // create a test problem, starting with a random general matrix B.
     // ---------------------------------------------------------------
 
-    Rand.fillRandom (B);
+    Rand.fill (B);
 
     // -------------------------------------------------------------
     // create a positive definite matrix A by setting A equal to the

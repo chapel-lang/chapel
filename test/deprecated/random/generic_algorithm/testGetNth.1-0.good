@@ -1,5 +1,0 @@
-testGetNth.chpl:6: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRandom package module
-testGetNth.chpl:6: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRandom package module
-testGetNth.chpl:8: warning: 'createRandomStream' is deprecated; please use 'new randomStream' instead
-testGetNth.chpl:9: warning: 'createRandomStream' is deprecated; please use 'new randomStream' instead
-testGetNth.chpl:10: warning: 'createRandomStream' is deprecated; please use 'new randomStream' instead
