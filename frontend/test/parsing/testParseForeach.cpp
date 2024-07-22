@@ -242,10 +242,14 @@ static void test5(Parser* parser) {
 static void test6(Parser* parser) {
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test6.chpl",
-      "foreach i in 1..10 with ref A { }");
-  auto numErrors = 2;
+      "foreach i in 1..10 with (re A) { }\n"
+      "foreach i in 1..10 with () { }\n"
+      "foreach i in 1..10 with ref A { }\n");
+  auto numErrors = 5;
   assert(guard.errors().size() == numErrors);
-  assert("missing parentheses after 'with' clause" == guard.error(1)->message());
+  assert("invalid intent expression in 'with' clause" == guard.error(1)->message());
+  assert("'with' clause cannot be empty" == guard.error(2)->message());
+  assert("missing parentheses after 'with' clause" == guard.error(4)->message());
   assert(guard.realizeErrors() == numErrors);
 }
 

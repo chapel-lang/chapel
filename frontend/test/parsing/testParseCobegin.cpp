@@ -109,10 +109,15 @@ static void test1(Parser* parser) {
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
-      "cobegin with ref A { ; ; }");
-  auto numErrors = 2;
+      "cobegin with (re A) {;;}\n"
+      "cobegin with () {;;}\n"
+      "cobegin with ref A {;;}\n"
+);
+  auto numErrors = 5;
   assert(guard.errors().size() == numErrors);
-  assert("missing parentheses after 'with' clause" == guard.error(1)->message());
+  assert("invalid intent expression in 'with' clause" == guard.error(1)->message());
+  assert("'with' clause cannot be empty" == guard.error(2)->message());
+  assert("missing parentheses after 'with' clause" == guard.error(4)->message());
   assert(guard.realizeErrors() == numErrors);
 }
 
