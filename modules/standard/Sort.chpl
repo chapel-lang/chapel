@@ -551,7 +551,7 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
 }
 
 @chpldoc.nodoc
-iter sorted(x : domain, comparator:?rec=defaultComparator) {
+iter sorted(x : domain, comparator:? = new DefaultComparator()) {
   for i in x._value.dsiSorted(comparator) {
     yield i;
   }
@@ -588,7 +588,7 @@ iter sorted(x : domain, comparator:?rec=defaultComparator) {
    :ytype: x's element type
 
  */
-iter sorted(x, comparator:?rec=defaultComparator) {
+iter sorted(x, comparator:? = new DefaultComparator()) {
   if isArrayValue(x) && Reflection.canResolveMethod(x._value, "dsiSorted", comparator)
   {
     // As far as I know this branch is only encountered for associative arrays
