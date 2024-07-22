@@ -1492,7 +1492,7 @@ module Random {
   }
 
   // Do a binary search of 'a' for the first occurrence of 'x'
-  // returns the indexPCGRandomStreamPrivate_skipToNth_noLock of the first occurrence of 'x' in 'a' between 'start' and 'stop'
+  // returns the index of the first occurrence of 'x' in 'a' between 'start' and 'stop'
   // or the index where 'x' should be inserted to maintain sorted order
   // TODO: consider adding this functionality to the Search module
   private proc binarySearchFirst(
