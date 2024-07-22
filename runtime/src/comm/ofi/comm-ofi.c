@@ -4647,6 +4647,8 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
       && reqSize <= ofi_info->tx_attr->inject_size
       && envInjectAM) {
     flags = FI_INJECT;
+  } else {
+    blocking = true;
   }
   if (havePutsOut || haveAmosOut) {
     //
@@ -4721,6 +4723,8 @@ void amReqFn_msgOrd(c_nodeid_t node,
     // wait for it to get done on the target anyway.)
     //
     flags = FI_INJECT;
+  } else {
+    blocking = true;
   }
   ctx = TX_CTX_INIT(tcip, blocking, &txnDone);
   (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
@@ -4758,6 +4762,8 @@ void amReqFn_dlvrCmplt(c_nodeid_t node,
     anyway.)
     */
     flags = FI_INJECT;
+  } else {
+    blocking = true;
   }
 
   ctx = TX_CTX_INIT(tcip, blocking, &txnDone);
@@ -6029,6 +6035,8 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
     // memory visibility until later.
     //
     flags = FI_INJECT;
+  } else {
+    blocking = true;
   }
   if (bitmapTest(tcip->amoVisBitmap, node)) {
     //
@@ -6093,6 +6101,8 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrd(void* myAddr, void* mrDesc,
     // and we have a bound tx context so we can delay forcing the
     // memory visibility until later.
     flags = FI_INJECT;
+  } else {
+    blocking = true;
   }
   ctx = TX_CTX_INIT(tcip, blocking, &txnDone);
   (void) wrap_fi_writemsg(myAddr, mrDesc, node, mrRaddr, mrKey, size,
@@ -6914,6 +6924,8 @@ chpl_comm_nb_handle_t amoFn_msgOrd(struct amoBundle_t *ab,
       && ab->size <= ofi_info->tx_attr->inject_size
       && envInjectAMO) {
     flags = FI_INJECT;
+  } else {
+    famo = true;
   }
 
   //
