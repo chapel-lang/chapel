@@ -1,0 +1,3 @@
+# the C comparison requires `nvcc`
+# TODO: what would it take to also test hip/amd?
+CHPL_GPU != nvidia
