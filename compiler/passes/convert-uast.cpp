@@ -3984,7 +3984,7 @@ struct Converter {
       auto wrapperCall = new CallExpr("chpl__buildRemoteWrapper");
       wrapperCall->insertAtTail(destinationExpr);
       if (typeExpr) wrapperCall->insertAtTail(typeExpr);
-      if (initExpr) wrapperCall->insertAtTail(initExpr);
+      if (initExpr) wrapperCall->insertAtTail(new CallExpr(PRIM_CREATE_THUNK, initExpr));
       auto wrapperDef = new DefExpr(wrapper, wrapperCall);
 
       auto wrapperGet = new CallExpr(".", new SymExpr(wrapper), new_CStringSymbol("get"));

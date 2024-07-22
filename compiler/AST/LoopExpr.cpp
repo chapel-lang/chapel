@@ -719,9 +719,8 @@ static void adjustIndexDefPoints(FnSymbol* xifn, AList* indexDefs) {
     forLoop->insertAtHead(expr->remove());
 }*/
 
-void scopeResolveAndNormalizeGeneratedLoweringFn(FnSymbol* fn) {
+void normalizeGeneratedLoweringFn(FnSymbol* fn) {
   TransformLogicalShortCircuit vis;
-  addToSymbolTable(fn);
   fn->accept(&vis);
   resolveUnresolvedSymExprs(fn);
   normalize(fn);
@@ -891,20 +890,20 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
       fn->insertAtHead(new DefExpr(fifn));
     }
 
-    scopeResolveAndNormalizeGeneratedLoweringFn(fn);
+    normalizeGeneratedLoweringFn(fn);
   } else {
     fn->defPoint->insertBefore(new DefExpr(sifn));
-    scopeResolveAndNormalizeGeneratedLoweringFn(sifn);
+    normalizeGeneratedLoweringFn(sifn);
 
     if (forall) {
       fn->defPoint->insertBefore(new DefExpr(lifn));
-      scopeResolveAndNormalizeGeneratedLoweringFn(lifn);
+      normalizeGeneratedLoweringFn(lifn);
 
       fn->defPoint->insertBefore(new DefExpr(fifn));
-      scopeResolveAndNormalizeGeneratedLoweringFn(fifn);
+      normalizeGeneratedLoweringFn(fifn);
     }
 
-    scopeResolveAndNormalizeGeneratedLoweringFn(fn);
+    normalizeGeneratedLoweringFn(fn);
   }
 
 
