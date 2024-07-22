@@ -1023,7 +1023,7 @@ class KernelArg {
     ReductionInfo redInfo_;
 
   public:
-    KernelArg(Symbol* symInLoop, GpuKernel* kernel);
+    KernelArg(Symbol* symInLoop, GpuKernel* kernel, bool isCompilerGeneratedArg);
     int8_t kind() const { return kind_; }
     ArgSymbol* formal() const { return formal_; }
     Type* getType() const { return actual_->typeInfo(); }
@@ -1070,6 +1070,7 @@ class GpuKernel {
   std::string name_;
 
   int nReductionBufs_ = 0;
+  int nHostRegisteredVars_ = 0;
 
   BlockStmt* userBody_; // where the loop's body goes
   BlockStmt* postBody_; // executed by all GPU threads (even if oob) at the end
@@ -1085,6 +1086,8 @@ class GpuKernel {
   BlockStmt* gpuPrimitivesBlock() const { return gpuPrimitivesBlock_; }
   Symbol* blockSize() const {return blockSize_; }
   int nReductionBufs() const {return nReductionBufs_; }
+  int nHostRegisteredVars() const {return nHostRegisteredVars_; }
+  void incNumHostRegisteredVars() { nHostRegisteredVars_ += 1; }
 
   private:
   void buildStubOutlinedFunction(DefExpr* insertionPoint);
@@ -1098,7 +1101,9 @@ class GpuKernel {
   void generateOobCond();
   void generatePostBody();
   void markGPUSubCalls(FnSymbol* fn);
-  Symbol* addKernelArgument(Symbol* symInLoop);
+  Symbol* addUserVarKernelArgument(Symbol* symInLoop);
+  Symbol* addCompilerGeneratedKernelArgument(Symbol* symInLoop);
+  Symbol* addKernelArgument(Symbol* symInLoop, bool isCompilerGenerated);
   Symbol* addLocalVariable(Symbol* symInLoop);
 
   void incReductionBufs() { nReductionBufs_ += 1; }
@@ -1288,7 +1293,7 @@ FnSymbol* KernelArg::generateFinalReductionWrapper() {
   return ret;
 }
 
-KernelArg::KernelArg(Symbol* symInLoop, GpuKernel* kernel) :
+KernelArg::KernelArg(Symbol* symInLoop, GpuKernel* kernel, bool isCompilerGeneratedArg) :
   actual_(symInLoop), kernel_(kernel) {
 
   Type* symType = symInLoop->typeInfo();
@@ -1297,8 +1302,14 @@ KernelArg::KernelArg(Symbol* symInLoop, GpuKernel* kernel) :
   IntentTag intent = symInLoop->isRef() ? INTENT_REF : INTENT_IN;
   this->formal_ = new ArgSymbol(intent, symInLoop->name, symType);
 
-
-  if (isClass(symValType) ||
+  if (!isCompilerGeneratedArg &&
+      !isAggregateType(symInLoop->getValType()) &&
+      !symInLoop->hasFlag(FLAG_TASK_PRIVATE_VARIABLE) &&
+      !symInLoop->isConstValWillNotChange())
+  {
+    this->kind_ = GpuArgKind::ADDROF | GpuArgKind::HOST_REGISTER;
+    kernel->incNumHostRegisteredVars();
+  } else if (isClass(symValType) ||
       (!symInLoop->isRef() && !isAggregateType(symValType))) {
     // class: must be on GPU memory
     // scalar: can be passed as an argument directly
@@ -1404,8 +1415,16 @@ CallExpr* KernelArg::generatePrimGpuBlockReduce(Symbol* blockSize) const {
   return nullptr;
 }
 
-Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
-  KernelArg arg(symInLoop, this);
+Symbol* GpuKernel::addUserVarKernelArgument(Symbol* symInLoop) {
+  return addKernelArgument(symInLoop, false);
+}
+
+Symbol* GpuKernel::addCompilerGeneratedKernelArgument(Symbol* symInLoop) {
+  return addKernelArgument(symInLoop, true);
+}
+
+Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop, bool isCompilerGenerated) {
+  KernelArg arg(symInLoop, this, isCompilerGenerated);
 
   if (!arg.isEligible()) {
     this->gpuLoop.reportNotGpuizable(symInLoop, "unsupported reduction");
@@ -1489,7 +1508,7 @@ void GpuKernel::generateIndexComputation() {
       PRIM_ADD, tempVar, varThreadIdxX));
     fn_->insertAtTail(c2);
 
-    Symbol* startOffset = addKernelArgument(lowerBound);
+    Symbol* startOffset = addCompilerGeneratedKernelArgument(lowerBound);
     VarSymbol* index = insertNewVarAndDef(fn_->body, "chpl_simt_index",
                                           dtInt[INT_SIZE_64]);
     fn_->insertAtTail(new CallExpr(PRIM_MOVE, index, new CallExpr(
@@ -1513,7 +1532,7 @@ void GpuKernel::generateIndexComputation() {
  *
  */
 void GpuKernel::generateOobCond() {
-  Symbol* localUpperBound = addKernelArgument(gpuLoop.upperBound());
+  Symbol* localUpperBound = addCompilerGeneratedKernelArgument(gpuLoop.upperBound());
 
   VarSymbol* isInBounds = new VarSymbol("chpl_is_in_bounds", dtBool);
   fn_->insertAtTail(new DefExpr(isInBounds));
@@ -1669,18 +1688,18 @@ void GpuKernel::populateBody() {
               else if (symExpr == parent->get(1) ||
                 (parent->numActuals() >= 3 && symExpr == parent->get(3)))
               {
-                addKernelArgument(sym);
+                addUserVarKernelArgument(sym);
               }
               else {
                 this->setLateGpuizationFailure(true);
               }
             }
             else if (parent->isPrimitive()) {
-              addKernelArgument(sym);
+              addUserVarKernelArgument(sym);
             }
             else if (FnSymbol* calledFn = parent->resolvedFunction()) {
               if (!toFnSymbol(sym)) {
-                addKernelArgument(sym);
+                addUserVarKernelArgument(sym);
               }
 
               if (!calledFn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
@@ -1693,7 +1712,7 @@ void GpuKernel::populateBody() {
           } else if (CondStmt* cond = toCondStmt(symExpr->parentExpr)) {
             // Parent is a conditional statement.
             if (symExpr == cond->condExpr) {
-              addKernelArgument(sym);
+              addUserVarKernelArgument(sym);
             }
           } else {
             this->setLateGpuizationFailure(true);
@@ -1960,6 +1979,7 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
   initCfgCall->insertAtTail(new_IntSymbol(kernel.kernelActuals().size()));
   initCfgCall->insertAtTail(new_IntSymbol(gpuLoop.pidGets().size()));
   initCfgCall->insertAtTail(new_IntSymbol(kernel.nReductionBufs()));
+  initCfgCall->insertAtTail(new_IntSymbol(kernel.nHostRegisteredVars()));
   gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, cfg, initCfgCall));
 
   // first, add pids

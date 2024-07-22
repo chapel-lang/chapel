@@ -100,6 +100,7 @@ enum GpuArgKind {
                   // using the previous bit)
                   // otherwise, the variable is passed directly
   REDUCE = 1<<2,  // this is a reduction temp
+  HOST_REGISTER = 1<<3
 };
 
 

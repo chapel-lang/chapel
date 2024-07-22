@@ -60,7 +60,8 @@ on here.gpus[0] {
                         /*blockSize*/ 1,
                         /*args*/1,
                         /*pids*/0,
-                        /*reductions*/0);
+                        /*reductions*/0,
+                        /*hostRegVars*/0);
 
   // 1 is an enum value that says: "pass the address of this to the
   //   kernel_params, while not offloading anything". I am not entirely sure why
