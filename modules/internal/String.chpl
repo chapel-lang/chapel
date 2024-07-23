@@ -392,7 +392,7 @@ module String {
     :arg x: The buffer to borrow from
     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-    :arg length: Length of the string stored in `x` in bytes, excluding the
+    :arg length: Length of the string stored in `x` in bytes, excluding the optional
                  terminating null byte.
     :type length: `int`
 
@@ -417,7 +417,7 @@ module String {
     :arg x: The buffer to borrow from
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
-    :arg length: Length of the string stored in `x` in bytes, excluding the
+    :arg length: Length of the string stored in `x` in bytes, excluding the optional
                  terminating null byte.
     :type length: `int`
 
@@ -466,7 +466,7 @@ module String {
      :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
-                  terminating null byte.
+                  optional terminating null byte.
      :type length: `int`
 
      :arg size: Size of memory allocated for `x` in bytes
@@ -506,7 +506,7 @@ module String {
     :arg x: The buffer to take ownership of
     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-    :arg length: Length of the string stored in `x` in bytes, excluding the
+    :arg length: Length of the string stored in `x` in bytes, excluding the optional
                  terminating null byte.
     :type length: `int`
 
@@ -540,7 +540,7 @@ module String {
     :arg x: The buffer to take ownership of
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
-    :arg length: Length of the string stored in `x` in bytes, excluding the
+    :arg length: Length of the string stored in `x` in bytes, excluding the optional
                  terminating null byte.
     :type length: `int`
 
@@ -565,7 +565,7 @@ module String {
      :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
-                  terminating null byte.
+                  optional terminating null byte.
      :type length: `int`
 
      :arg size: Size of memory allocated for `x` in bytes
@@ -595,7 +595,7 @@ module String {
     :arg x: The buffer to copy
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
-    :arg length: Length of `x` in bytes, excluding the terminating null byte.
+    :arg length: Length of `x` in bytes, excluding the optional terminating null byte.
     :type length: `int`
 
     :arg policy: - `decodePolicy.strict` raises an error
@@ -627,7 +627,7 @@ module String {
      :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
-                  terminating null byte.
+                  optional terminating null byte.
      :type length: `int`
 
      :arg size: Size of memory allocated for `x` in bytes. This argument is
