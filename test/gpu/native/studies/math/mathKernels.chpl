@@ -8,6 +8,12 @@ config const printTime = true;
 config const correctness = false;
 config param function = "tanhf";
 
+/*
+For whatever reason, adding an inner loop to the Chapel kernel causes the Chapel code to get better performance.
+So an inner loop with a trip count of 1 is faster than an inner loop with no trip count. I would consider this a bug in the Chapel implementation
+*/
+config param useInnerLoop = true;
+
 extern ("cu_nvcc_" + function + "_main")
 proc cu_nvcc_main(printTime: int, correctness: int, iterations: int): void;
 extern ("cu_clang_" + function + "_main")
@@ -44,10 +50,14 @@ inline proc kernel(param function: string, const D, ref A, iters) {
   @assertOnGpu
   @gpu.blockSize(256)
   foreach i in D {
-    var s: real(32) = 0;
-    for i in 0..<iters do
-      s += callFunc(function, i);
-    A[i] = s;
+    if useInnerLoop {
+      var s: real(32) = 0;
+      for i in 0..<iters do
+        s += callFunc(function, i);
+      A[i] = s;
+    } else {
+      A[i] = callFunc(function, i);
+    }
   }
 }
 inline proc callFunc(param function: string, v) {
