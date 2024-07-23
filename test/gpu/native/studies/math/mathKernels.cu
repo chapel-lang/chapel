@@ -24,9 +24,6 @@
 #define mk_SIZE 100'000'000
 #endif
 
-#define TO_STR_inner(x) #x
-#define TO_STR(x) TO_STR_inner(x)
-
 #define mk_FUNC_NAME_inner2(a, b) a ## b
 #define mk_FUNC_NAME_inner1(a, b) mk_FUNC_NAME_inner2(a, b)
 #define mk_FUNC_NAME(a) mk_FUNC_NAME_inner1(mk_PREFIX, a)
@@ -34,10 +31,13 @@
 int mk_FUNC_NAME(ceil_div)(int dividend, int divisor) {
     return (dividend + divisor - 1) / divisor;
 }
-__global__ void mk_FUNC_NAME(kernel)(float* arr, int N) {
+__global__ void mk_FUNC_NAME(kernel)(float* arr, int N, int iterations) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < N) {
-    arr[i] = mk_MATH_FUNC(i);
+    float s = 0;
+    for (int j = 0; j < iterations; j++)
+      s += mk_MATH_FUNC(i);
+    arr[i] = s;
   }
 }
 
@@ -52,7 +52,7 @@ __global__ void mk_FUNC_NAME(fillRand)(curandState *state, float *arr, int N) {
   }
 }
 
-void mk_FUNC_NAME(main)(int printTime, int correctness) {
+void mk_FUNC_NAME(main)(int printTime, int correctness, int iterations) {
   int deviceIdx = 0;
   cudaSetDevice(deviceIdx);
   int N = mk_SIZE;
@@ -72,7 +72,7 @@ void mk_FUNC_NAME(main)(int printTime, int correctness) {
   cudaEventCreate(&stop);
 
   cudaEventRecord(start, nullptr);
-  mk_FUNC_NAME(kernel)<<<grid_size, block_size>>>(arr, N);
+  mk_FUNC_NAME(kernel)<<<grid_size, block_size>>>(arr, N, iterations);
   cudaDeviceSynchronize(); // Wait for the GPU to finish
   cudaEventRecord(stop, nullptr);
   cudaEventSynchronize(start);

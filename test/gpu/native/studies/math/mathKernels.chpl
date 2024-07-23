@@ -3,14 +3,15 @@ import Time.stopwatch;
 use Random;
 
 config const size:uint(32) = 100_000_000;
+config const iterations:int(32) = 1;
 config const printTime = true;
 config const correctness = false;
 config param function = "tanhf";
 
 extern ("cu_nvcc_" + function + "_main")
-proc cu_nvcc_main(printTime: int, correctness: int): void;
+proc cu_nvcc_main(printTime: int, correctness: int, iterations: int): void;
 extern ("cu_clang_" + function + "_main")
-proc cu_clang_main(printTime: int, correctness: int): void;
+proc cu_clang_main(printTime: int, correctness: int, iterations: int): void;
 
 
 var D = {0..size};
@@ -25,7 +26,7 @@ proc main() {
 
     var s : stopwatch;
     s.start();
-    kernel(function, D, A);
+    kernel(function, D, A, iterations);
     s.stop();
     if printTime then
       writeln("Chapel Time: ", s.elapsed()* 1e3, " ms");
@@ -33,17 +34,20 @@ proc main() {
       writeln("Chapel Sum: ", + reduce A);
   }
 
-  cu_nvcc_main(printTime, correctness);
-  cu_clang_main(printTime, correctness);
+  cu_nvcc_main(printTime, correctness, iterations);
+  cu_clang_main(printTime, correctness, iterations);
 
 
 }
 
-inline proc kernel(param function: string, const D, ref A) {
+inline proc kernel(param function: string, const D, ref A, iters) {
   @assertOnGpu
   @gpu.blockSize(256)
   foreach i in D {
-    A[i] = callFunc(function, i);
+    var s: real(32) = 0;
+    for i in 0..<iters do
+      s += callFunc(function, i);
+    A[i] = s;
   }
 }
 inline proc callFunc(param function: string, v) {
