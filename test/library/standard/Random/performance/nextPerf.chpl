@@ -12,7 +12,7 @@ proc main() {
   t.stop();
 
   if perf then
-    writef("parallel=false-parSafe=false-time=%dr\n", t.elapsed());
+    writef("time=%dr\n", t.elapsed());
   else
     writeln(a);
 }

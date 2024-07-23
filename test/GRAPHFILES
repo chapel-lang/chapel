@@ -274,7 +274,7 @@ reductions/vass/reductions-perf.graph
 parallel/forall/reduce-intents/ri-a2-AoA.graph
 studies/paracr/asenjo/PARACR-BC.graph
 library/standard/BitOps/c-tests/performance/bitops.graph
-library/standard/Random/performance/getNextPerf.graph
+library/standard/Random/performance/nextPerf.graph
 studies/rbc/tvandoren/RBC.graph
 exercises/c-ray/old/c-ray.graph
 scan/scanPerf.graph
