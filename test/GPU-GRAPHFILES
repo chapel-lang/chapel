@@ -28,3 +28,5 @@ gpu/native/studies/compiler-performance/end-to-end.graph
 gpu/native/studies/sort/radixSortGpu.graph
 gpu/native/studies/sort/radixSortGpuHistorical.graph
 gpu/native/studies/sort/scanTest.graph
+
+gpu/native/studies/math/mathKernels.graph
