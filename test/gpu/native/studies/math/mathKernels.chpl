@@ -8,12 +8,12 @@ config const printTime = true;
 config const correctness = false;
 config param function = "tanh";
 
+extern proc cu_nvcc_main(printTime: int, correctness: int): void;
+extern proc cu_clang_main(printTime: int, correctness: int): void;
+
 
 var D = {0..size};
 var CpuA : [D] real(32);
-
-extern cu_nvcc_main(printTime: int, correctness: int): void;
-extern cu_clang_main(printTime: int, correctness: int): void;
 
 proc main() {
   fillRandom(CpuA);
@@ -38,7 +38,7 @@ proc main() {
 
 }
 
-inline kernel(param function: string, const D, ref A) {
+inline proc kernel(param function: string, const D, ref A) {
   @assertOnGpu
   @gpu.blockSize(256)
   foreach i in D {

@@ -1,9 +1,8 @@
-
 #!/bin/bash
 
 chpl=$3
 chpl_home=$($chpl --print-chpl-home)
-compiler=$($chpl_home/util/printchplenv --all --simple | grep CHPL_TARGET_CXX= | sed 's/CHPL_TARGET_CC=//')
+compiler=$($chpl_home/util/printchplenv --all --simple | grep CHPL_TARGET_CXX= | sed 's/CHPL_TARGET_CXX=//')
 llvm_version=$($chpl_home/util/printchplenv --all --simple | grep CHPL_LLVM_VERSION= | sed 's/CHPL_LLVM_VERSION=//')
 cuda_path=$($chpl_home/util/printchplenv --all --internal --simple | grep CHPL_CUDA_PATH= | sed 's/CHPL_CUDA_PATH=//')
 nvcc_compiler=$cuda_path/bin/nvcc
@@ -16,14 +15,14 @@ if [[ "$llvm_version" -ge 15 ]]; then
 fi
 
 
-COMMON_DEFINES="-DMATH_FUNC=tanh -DSIZE=100'000'000 -DITERATION=1"
+COMMON_DEFINES="-Dmk_MATH_FUNC=tanhf -Dmk_SIZE=100'000'000 -Dmk_ITERATION=1"
 
 # build the nvcc version
-DEFINES="$COMMON_DEFINES -DPREFIX=cu_nvcc_ -DLABEL=\"nvcc\""
+DEFINES="$COMMON_DEFINES -Dmk_PREFIX=cu_nvcc_ -Dmk_LABEL=\"nvcc\""
 $nvcc_compiler $DEFINES -O3 --use_fast_math $NVCC_FLAGS -c mathKernels.cu -o mathKernels_cu.o
 $nvcc_compiler -O3 --use_fast_math mathKernels_cu.o -o mathKernelsDlinked.o -dlink
 
-DEFINES="$COMMON_DEFINES -DPREFIX=cu_clang_ -DLABEL=\"clang\""
+DEFINES="$COMMON_DEFINES -Dmk_PREFIX=cu_clang_ -Dmk_LABEL=\"clang\""
 # build the clang version
 $compiler $DEFINES -I$cuda_path/include -O3 -ffast-math $CLANG_FLAGS -c mathKernels.cu -o mathKernels_clang.o
 
