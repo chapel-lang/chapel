@@ -2756,7 +2756,11 @@ static bool shouldInsertCallTemps(CallExpr* call) {
       call->isPrimitive(PRIM_TUPLE_EXPAND)               ||
       call->isPrimitive(PRIM_IF_VAR)                     ||
       (parentCall && parentCall->isPrimitive(PRIM_MOVE)) ||
-      (parentCall && parentCall->isPrimitive(PRIM_NEW)) )
+
+      // Avoid normalizing the type expression in a new call, because
+      // this gets handled later by fixPrimNew.
+      (parentCall && parentCall->isPrimitive(PRIM_NEW)
+                  && parentCall->get(1) == call) )
     return false;
 
   // Don't normalize lifetime constraint clauses
