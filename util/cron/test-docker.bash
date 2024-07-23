@@ -36,14 +36,14 @@ build_image() {
 
 # Patch the Dockerfile to build FROM the nightly image instead of latest
 dockerfile_nightly_patch() {
-  local patch="
+  local nightlypatch="
 1c1
 < FROM chapel/chapel:latest
 ---
 > FROM chapel/chapel:nightly
 "
   patch Dockerfile << EOF
-$dockerfile_nightly_patch
+$nightlypatch
 EOF
 }
 
