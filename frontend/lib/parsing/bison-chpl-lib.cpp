@@ -9752,7 +9752,7 @@ yyreduce:
   case 589: /* task_intent_clause: TWITH error  */
 #line 3240 "chpl.ypp"
   {
-    auto err = context->syntax((yylsp[0]), "missing parentheses after 'with' clause.");
+    auto err = context->syntax((yylsp[0]), "missing parentheses around 'with' clause intents.");
     auto exprs = context->makeList(err);
     auto dummyLoc = TextLocation::create();
     (yyval.withClause) = context->buildWithClause((yyloc), (yylsp[-1]), dummyLoc, dummyLoc, dummyLoc, exprs);
