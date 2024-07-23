@@ -1717,7 +1717,7 @@ static QINLINE void *qthread_cas_ptr_(void **addr,
 
 Q_ENDCXX /* */
 
-#if !defined __cplusplus || defined CHPL_AVOID_CPP_CODE
+#ifndef __cplusplus
 
 # if defined(QTHREAD_ATOMIC_INCR) && !defined(QTHREAD_MUTEX_INCREMENT)
 #  define qthread_incr(ADDR, INCVAL) \
