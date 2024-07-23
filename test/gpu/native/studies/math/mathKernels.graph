@@ -1,5 +1,0 @@
-perfkeys: Chapel Time (tanhf):, nvcc Time (tanhf):, clang Time (tanhf):, Chapel Time (sqrtf):, nvcc Time (sqrtf):, clang Time (sqrtf):, Chapel Time (fabsf):, nvcc Time (fabsf):, clang Time (fabsf):
-files: mathKernels_tanhf.dat, mathKernels_tanhf.dat, mathKernels_tanhf.dat, mathKernels_sqrtf.dat, mathKernels_sqrtf.dat, mathKernels_sqrtf.dat, mathKernels_fabsf.dat, mathKernels_fabsf.dat, mathKernels_fabsf.dat
-graphkeys: Chapel tanhf, nvcc tanhf, clang tanhf, Chapel sqrtf, nvcc sqrtf, clang sqrtf, Chapel fabsf, nvcc fabsf, clang fabsf
-ylabel: Time (ms)
-graphtitle: GPU Math Functions

@@ -29,4 +29,6 @@ gpu/native/studies/sort/radixSortGpu.graph
 gpu/native/studies/sort/radixSortGpuHistorical.graph
 gpu/native/studies/sort/scanTest.graph
 
-gpu/native/studies/math/mathKernels.graph
+gpu/native/studies/math/mathKernels-tanhf.graph
+gpu/native/studies/math/mathKernels-sqrtf.graph
+gpu/native/studies/math/mathKernels-fabsf.graph
