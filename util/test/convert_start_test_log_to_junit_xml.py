@@ -268,7 +268,7 @@ def _get_test_name(test_case_lines):
     :rtype: (str, str)
     :returns: tuple with classname and test name
     """
-    pattern = re.compile('\[test: (?P<test_name>[^\]]+)\]')
+    pattern = re.compile(r'\[test: (?P<test_name>[^\]]+)\]')
     match = pattern.search(test_case_lines[0])
     if match is None:
         raise ValueError('Could not find test name in: {0}'.format(
@@ -304,7 +304,7 @@ def _get_test_time(test_case_lines):
             raise ValueError(msg)
     time_line = test_case_lines[time_line_idx]
 
-    pattern = re.compile(' - (?P<time>-?\d+\.\d+) seconds\]$')
+    pattern = re.compile(r' - (?P<time>-?\d+\.\d+) seconds\]$')
     match = pattern.search(time_line)
     if match:
         time = match.group('time')
@@ -327,8 +327,8 @@ def _get_test_error(test_case_lines):
     :rtype: dict
     :returns: error dict with 'message' and 'content' keys, None if no errors
     """
-    error_pattern = re.compile('^\[Error.*$', re.IGNORECASE | re.MULTILINE)
-    warn_pattern = re.compile('^\[Warning.*$', re.IGNORECASE | re.MULTILINE)
+    error_pattern = re.compile(r'^\[Error.*$', re.IGNORECASE | re.MULTILINE)
+    warn_pattern = re.compile(r'^\[Warning.*$', re.IGNORECASE | re.MULTILINE)
 
     whole_test = ''.join(test_case_lines)
     errors = error_pattern.findall(whole_test)
