@@ -17,28 +17,26 @@
 #endif
 
 #ifndef mk_MATH_FUNC
-#define mk_MATH_FUNC tanh
+#define mk_MATH_FUNC tanhf
 #endif
 
 #ifndef mk_SIZE
 #define mk_SIZE 100'000'000
 #endif
 
-#ifndef mk_ITERATIONS
-#define mk_ITERATIONS 1
-#endif
-
+#define TO_STR_inner(x) #x
+#define TO_STR(x) TO_STR_inner(x)
 
 #define mk_FUNC_NAME_inner2(a, b) a ## b
 #define mk_FUNC_NAME_inner1(a, b) mk_FUNC_NAME_inner2(a, b)
 #define mk_FUNC_NAME(a) mk_FUNC_NAME_inner1(mk_PREFIX, a)
 
 int mk_FUNC_NAME(ceil_div)(int dividend, int divisor) {
-    return (dividend + divisor-1) / divisor;
+    return (dividend + divisor - 1) / divisor;
 }
 __global__ void mk_FUNC_NAME(kernel)(float* arr, int N) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i < N){
+  if (i < N) {
     arr[i] = mk_MATH_FUNC(i);
   }
 }
@@ -54,18 +52,17 @@ __global__ void mk_FUNC_NAME(fillRand)(curandState *state, float *arr, int N) {
   }
 }
 
-// extern "C"
 void mk_FUNC_NAME(main)(int printTime, int correctness) {
   int deviceIdx = 0;
   cudaSetDevice(deviceIdx);
-  int N = mk_SIZE; // 100M elements
+  int N = mk_SIZE;
   int block_size = 256;
   float* arr;
   cudaMalloc(&arr, N * sizeof(float));
   float grid_size = mk_FUNC_NAME(ceil_div)(N, block_size);
 
   curandState *d_state;
-  cudaMalloc(&d_state, (N* sizeof(curandState)));
+  cudaMalloc(&d_state, (N * sizeof(curandState)));
   mk_FUNC_NAME(init_seed)<<<grid_size, block_size>>>(d_state, time(NULL));
   mk_FUNC_NAME(fillRand)<<<grid_size, block_size>>>(d_state, arr, N);
 
@@ -84,7 +81,7 @@ void mk_FUNC_NAME(main)(int printTime, int correctness) {
   float elapsed;
   cudaEventElapsedTime(&elapsed, start, stop);
   if (printTime)
-    printf(mk_LABEL"Time: %f ms\n", elapsed);
+    printf(mk_LABEL" Time (" TO_STR(mk_MATH_FUNC)"): %f ms\n", elapsed);
 
   if (correctness) {
     float* sum;
@@ -96,6 +93,6 @@ void mk_FUNC_NAME(main)(int printTime, int correctness) {
     cub::DeviceReduce::Sum(temp_storage, n_temp_storage, arr, sum, N);
     float sum_host;
     cudaMemcpy(&sum_host, sum, sizeof(float), cudaMemcpyDeviceToHost);
-    printf(mk_LABEL"Sum: %f\n", sum_host);
+    printf(mk_LABEL" Sum (" TO_STR(mk_MATH_FUNC)"): %f\n", sum_host);
   }
 }

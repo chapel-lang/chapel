@@ -1,0 +1,1 @@
+--no-ieee-float -sfunction=\"tanhf\" mathKernels.h mathKernels_cu.o mathKernelsDlinked.o mathKernels_clang.o # mathKernels_tanhf

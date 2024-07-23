@@ -15,7 +15,7 @@ if [[ "$llvm_version" -ge 15 ]]; then
 fi
 
 
-COMMON_DEFINES="-Dmk_MATH_FUNC=tanhf -Dmk_SIZE=100'000'000 -Dmk_ITERATION=1"
+COMMON_DEFINES="-Dmk_MATH_FUNC=tanhf"
 
 # build the nvcc version
 DEFINES="$COMMON_DEFINES -Dmk_PREFIX=cu_nvcc_ -Dmk_LABEL=\"nvcc\""
@@ -24,5 +24,5 @@ $nvcc_compiler -O3 --use_fast_math mathKernels_cu.o -o mathKernelsDlinked.o -dli
 
 DEFINES="$COMMON_DEFINES -Dmk_PREFIX=cu_clang_ -Dmk_LABEL=\"clang\""
 # build the clang version
-$compiler $DEFINES -I$cuda_path/include -O3 -ffast-math $CLANG_FLAGS -c mathKernels.cu -o mathKernels_clang.o
+$compiler $DEFINES -I$cuda_path/include -O3 -ffast-math $CLANG_FLAGS -c mathKernels.cu -S -emit-llvm
 
