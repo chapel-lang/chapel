@@ -34,7 +34,8 @@ build_image() {
   fi
 }
 
-# Patch the Dockerfile to build FROM the nightly image instead of latest
+# Patch the Dockerfile to build FROM the nightly image instead of latest.
+# Assumes the Dockerfile is available at ./Dockerfile.
 dockerfile_nightly_patch() {
   local nightlypatch="
 1c1
@@ -42,7 +43,7 @@ dockerfile_nightly_patch() {
 ---
 > FROM chapel/chapel:nightly
 "
-  patch Dockerfile << EOF
+  patch ./Dockerfile << EOF
 $nightlypatch
 EOF
 }
