@@ -1,4 +1,4 @@
-perfkeys: Chapel Time (fabsf):, nvcc Time (fabsf):, clang Time (fabsf):
+perfkeys: Chapel Time:, nvcc Time:, clang Time:
 files: mathKernels_fabsf.dat, mathKernels_fabsf.dat, mathKernels_fabsf.dat
 graphkeys: Chapel, nvcc, clang
 ylabel: Time (ms)

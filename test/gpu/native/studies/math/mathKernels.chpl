@@ -28,9 +28,9 @@ proc main() {
     kernel(function, D, A);
     s.stop();
     if printTime then
-      writeln("Chapel Time (", function, "): ", s.elapsed()* 1e3, " ms");
+      writeln("Chapel Time: ", s.elapsed()* 1e3, " ms");
     if correctness then
-      writeln("Chapel Sum (", function, "): ", + reduce A);
+      writeln("Chapel Sum: ", + reduce A);
   }
 
   cu_nvcc_main(printTime, correctness);

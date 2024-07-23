@@ -1,4 +1,4 @@
-perfkeys: Chapel Time (sqrtf):, nvcc Time (sqrtf):, clang Time (sqrtf):
+perfkeys: Chapel Time:, nvcc Time:, clang Time:
 files: mathKernels_sqrtf.dat, mathKernels_sqrtf.dat, mathKernels_sqrtf.dat
 graphkeys: Chapel, nvcc, clang
 ylabel: Time (ms)

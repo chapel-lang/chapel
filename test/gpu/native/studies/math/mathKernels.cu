@@ -81,7 +81,7 @@ void mk_FUNC_NAME(main)(int printTime, int correctness) {
   float elapsed;
   cudaEventElapsedTime(&elapsed, start, stop);
   if (printTime)
-    printf(mk_LABEL" Time (" TO_STR(mk_MATH_FUNC)"): %f ms\n", elapsed);
+    printf(mk_LABEL" Time: %f ms\n", elapsed);
 
   if (correctness) {
     float* sum;
@@ -93,6 +93,6 @@ void mk_FUNC_NAME(main)(int printTime, int correctness) {
     cub::DeviceReduce::Sum(temp_storage, n_temp_storage, arr, sum, N);
     float sum_host;
     cudaMemcpy(&sum_host, sum, sizeof(float), cudaMemcpyDeviceToHost);
-    printf(mk_LABEL" Sum (" TO_STR(mk_MATH_FUNC)"): %f\n", sum_host);
+    printf(mk_LABEL" Sum: %f\n", sum_host);
   }
 }
