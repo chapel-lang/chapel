@@ -3238,7 +3238,7 @@ task_intent_clause:
 }
 | TWITH error
   {
-    auto err = context->syntax(@2, "missing parentheses after 'with' clause.");
+    auto err = context->syntax(@2, "missing parentheses around 'with' clause intents.");
     auto exprs = context->makeList(err);
     auto dummyLoc = TextLocation::create();
     $$ = context->buildWithClause(@$, @1, dummyLoc, dummyLoc, dummyLoc, exprs);
