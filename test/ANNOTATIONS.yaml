@@ -2152,10 +2152,6 @@ distAdaptativeWSv2:
   03/04/17:
     - Use Time.sleep so that these tests play nice with qthreads (#5483)
 
-getNextPerf:
-  05/16/19:
-    - Improve the speed of parallel safe random streams (#13013)
-
 guided:
   02/28/17:
     - Bring in upstream fixes for qthreads sleep interception bug (#5446)
