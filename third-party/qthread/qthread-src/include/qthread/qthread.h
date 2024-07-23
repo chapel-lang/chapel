@@ -16,7 +16,7 @@ using std::memory_order_relaxed;
 #include <limits.h>                    /* for UINT_MAX (C89) */
 #include "qthread-int.h"               /* for uint32_t and uint64_t */
 #include "common.h"                    /* important configuration options */
-#include <stdbool.h> 
+#include <stdbool.h>
 
 #include <string.h>                    /* for memcpy() */
 
@@ -84,7 +84,7 @@ using std::memory_order_relaxed;
  *    BETA (b)  = 1 (ABT_RELEASE_TYPE_BETA)
  *    RC (rc)   = 2 (ABT_RELEASE_TYPE_RC)
  *    PATCH (p) = 3 (ABT_RELEASE_TYPE_PATCH)
- 
+
  *
  * QTHREAD_NUMVERSION has 2 digit for MAJ, 2 digits for MIN, 2 digits for REV, 1
  * digit for EXT, and 2 digits for EXT_NUMBER.  For example, 1.17.1rc1 is
@@ -628,7 +628,7 @@ int qthread_spinlock_lock(qthread_spinlock_t *a);
 int qthread_spinlock_unlock(qthread_spinlock_t *a);
 int qthread_spinlock_trylock(qthread_spinlock_t *a);
 
-int qthread_spinlocks_init(qthread_spinlock_t *a, const bool is_recursive); 
+int qthread_spinlocks_init(qthread_spinlock_t *a, const bool is_recursive);
 int qthread_spinlocks_destroy(qthread_spinlock_t *a);
 
 #define QTHREAD_SPINLOCK_IS_RECURSIVE (-1)
@@ -637,11 +637,11 @@ int qthread_spinlocks_destroy(qthread_spinlock_t *a);
 #define QTHREAD_MUTEX_INITIALIZER  {{.s={0,0}},{QTHREAD_SPINLOCK_IS_NOT_RECURSIVE,0}}
 #define QTHREAD_RECURSIVE_MUTEX_INITIALIZER {{.s={0,0}},{QTHREAD_SPINLOCK_IS_RECURSIVE,0}}
 
-/* functions to implement spinlock-based locking/unlocking 
- * if qthread_lock_init(adr) is called, subsequent locking over adr 
+/* functions to implement spinlock-based locking/unlocking
+ * if qthread_lock_init(adr) is called, subsequent locking over adr
  * uses spin locking instead of FEBs. Support recursive locking.
  */
-int qthread_lock_init(const aligned_t *a, const bool is_recursive); 
+int qthread_lock_init(const aligned_t *a, const bool is_recursive);
 int qthread_lock_destroy(aligned_t *a);
 
 #if defined(QTHREAD_MUTEX_INCREMENT) ||             \
@@ -1717,7 +1717,7 @@ static QINLINE void *qthread_cas_ptr_(void **addr,
 
 Q_ENDCXX /* */
 
-#ifndef __cplusplus
+if !defined __cplusplus || defined CHPL_AVOID_CPP_CODE
 
 # if defined(QTHREAD_ATOMIC_INCR) && !defined(QTHREAD_MUTEX_INCREMENT)
 #  define qthread_incr(ADDR, INCVAL) \

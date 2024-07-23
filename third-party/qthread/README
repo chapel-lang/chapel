@@ -35,3 +35,19 @@ as follows:
 
 * Do not #include "qthread.hpp" ifdef CHPL_AVOID_CPP_CODE
   https://github.com/chapel-lang/chapel/pull/25507
+
+```
+diff --git a/third-party/qthread/qthread-src/include/qthread/qthread.h b/third-party/qthread/qthread-src/include/qthread/qthread.h
+index 4fc99a6fd1..a51d191348 100644
+--- a/third-party/qthread/qthread-src/include/qthread/qthread.h
++++ b/third-party/qthread/qthread-src/include/qthread/qthread.h
+@@ -1717,7 +1717,7 @@ static QINLINE void *qthread_cas_ptr_(void **addr,
+ 
+ Q_ENDCXX /* */
+ 
+-#ifndef __cplusplus
++#if !defined __cplusplus || defined CHPL_AVOID_CPP_CODE
+ 
+ # if defined(QTHREAD_ATOMIC_INCR) && !defined(QTHREAD_MUTEX_INCREMENT)
+ #  define qthread_incr(ADDR, INCVAL) \
+```
