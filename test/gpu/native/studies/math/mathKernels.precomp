@@ -23,7 +23,7 @@ build_for_func() {
   $nvcc_compiler $DEFINES_nvcc -O3 --use_fast_math $NVCC_FLAGS -c mathKernels.cu -o mathKernels_cu_$func.o
   $nvcc_compiler -O3 --use_fast_math mathKernels_cu_$func.o -o mathKernelsDlinked_$func.o -dlink
 
-  local DEFINES_clang="$COMMON_DEFINES -Dmk_PREFIX=cu_clang_${func}_ -Dmk_LABEL=\"clang\""
+  local DEFINES_clang="$COMMON_DEFINES -Dmk_PREFIX=cu_clang_${func}_ -Dmk_LABEL=\"clang\" -D__STRICT_ANSI__=1"
   # build the clang version
   $compiler $DEFINES_clang -I$cuda_path/include -O3 -ffast-math $CLANG_FLAGS -c mathKernels.cu -o mathKernels_clang_$func.o
 }
