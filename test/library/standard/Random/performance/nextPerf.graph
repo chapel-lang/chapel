@@ -1,0 +1,5 @@
+perfkeys: time=
+graphkeys: next
+files: nextPerf.dat
+ylabel: Time(seconds)
+graphtitle: randomStream.next (50M trials)
