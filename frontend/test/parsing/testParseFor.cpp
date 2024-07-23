@@ -193,7 +193,7 @@ static void test6(Parser* parser) {
   assert("'with' clauses are not supported on 'for' loops" == guard.error(2)->message());
   assert("'with' clause cannot be empty" == guard.error(3)->message());
   assert("'with' clauses are not supported on 'for' loops" == guard.error(4)->message());
-  assert("missing parentheses after 'with' clause" == guard.error(6)->message());
+  assert("missing parentheses around 'with' clause intents" == guard.error(6)->message());
   // The other errors are from the parser as "near ...".
   // It would be really nice to not have those be emitted at all.
   assert(guard.realizeErrors() == numErrors);

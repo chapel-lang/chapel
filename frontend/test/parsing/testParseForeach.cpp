@@ -249,7 +249,7 @@ static void test6(Parser* parser) {
   assert(guard.errors().size() == numErrors);
   assert("invalid intent expression in 'with' clause" == guard.error(1)->message());
   assert("'with' clause cannot be empty" == guard.error(2)->message());
-  assert("missing parentheses after 'with' clause" == guard.error(4)->message());
+  assert("missing parentheses around 'with' clause intents" == guard.error(4)->message());
   // The other errors are from the parser as "near ...".
   // It would be really nice to not have those be emitted at all.
   assert(guard.realizeErrors() == numErrors);
