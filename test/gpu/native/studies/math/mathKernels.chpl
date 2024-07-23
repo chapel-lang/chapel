@@ -7,8 +7,10 @@ config const printTime = true;
 config const correctness = false;
 config param function = "tanhf";
 
-extern proc cu_nvcc_main(printTime: int, correctness: int): void;
-extern proc cu_clang_main(printTime: int, correctness: int): void;
+extern ("cu_nvcc_" + function + "_main")
+proc cu_nvcc_main(printTime: int, correctness: int): void;
+extern ("cu_clang_" + function + "_main")
+proc cu_clang_main(printTime: int, correctness: int): void;
 
 
 var D = {0..size};
@@ -47,6 +49,8 @@ inline proc kernel(param function: string, const D, ref A) {
 inline proc callFunc(param function: string, v) {
   select function {
     when "tanhf" do return tanh(v:real(32));
+    when "sqrtf" do return sqrt(v:real(32));
+    when "fabsf" do return abs(v:real(32));
     otherwise compilerError("Unknown function: " + function);
   }
 }

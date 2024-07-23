@@ -1,3 +1,9 @@
 Chapel Time (tanhf):
 nvcc Time (tanhf):
 clang Time (tanhf):
+Chapel Time (sqrtf):
+nvcc Time (sqrtf):
+clang Time (sqrtf):
+Chapel Time (fabsf):
+nvcc Time (fabsf):
+clang Time (fabsf):

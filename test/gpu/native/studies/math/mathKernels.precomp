@@ -14,15 +14,19 @@ if [[ "$llvm_version" -ge 15 ]]; then
   NVCC_FLAGS="--compiler-options -fPIE"
 fi
 
+build_for_func() {
+  local func=$1
+  local COMMON_DEFINES="-Dmk_MATH_FUNC=$func"
 
-COMMON_DEFINES="-Dmk_MATH_FUNC=tanhf"
+  # build the nvcc version
+  local DEFINES_nvcc="$COMMON_DEFINES -Dmk_PREFIX=cu_nvcc_${func}_ -Dmk_LABEL=\"nvcc\""
+  $nvcc_compiler $DEFINES_nvcc -O3 --use_fast_math $NVCC_FLAGS -c mathKernels.cu -o mathKernels_cu_$func.o
+  $nvcc_compiler -O3 --use_fast_math mathKernels_cu_$func.o -o mathKernelsDlinked_$func.o -dlink
 
-# build the nvcc version
-DEFINES="$COMMON_DEFINES -Dmk_PREFIX=cu_nvcc_ -Dmk_LABEL=\"nvcc\""
-$nvcc_compiler $DEFINES -O3 --use_fast_math $NVCC_FLAGS -c mathKernels.cu -o mathKernels_cu.o
-$nvcc_compiler -O3 --use_fast_math mathKernels_cu.o -o mathKernelsDlinked.o -dlink
-
-DEFINES="$COMMON_DEFINES -Dmk_PREFIX=cu_clang_ -Dmk_LABEL=\"clang\""
-# build the clang version
-$compiler $DEFINES -I$cuda_path/include -O3 -ffast-math $CLANG_FLAGS -c mathKernels.cu -S -emit-llvm
-
+  local DEFINES_clang="$COMMON_DEFINES -Dmk_PREFIX=cu_clang_${func}_ -Dmk_LABEL=\"clang\""
+  # build the clang version
+  $compiler $DEFINES_clang -I$cuda_path/include -O3 -ffast-math $CLANG_FLAGS -c mathKernels.cu -o mathKernels_clang_$func.o
+}
+build_for_func tanhf
+build_for_func sqrtf
+build_for_func fabsf
