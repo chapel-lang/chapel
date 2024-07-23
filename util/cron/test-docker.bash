@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# This script will build, run, and verify chapel, gasnet, and gasnet-smp docker images. 
+# This script will build, run, and verify chapel, gasnet, and gasnet-smp docker images.
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
@@ -9,31 +9,29 @@ export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
 start_docker
- 
+
 # build_image function takes image name and docker script location as arguments.
 # Builds the image with the name from arg$1, runs the container and execute the install and verify script located in the location $2.
-build_image(){
+build_image() {
+  local imageName="$1"
+  local script="$2"
+  # Remove any existing image with the tag before building docker image
+  docker image rm --force $imageName
+  docker build --push . -t $imageName
+  containerid= docker image ls | grep $imageName | awk '{print$3}'
+  cd ${CHPL_HOME}/util/cron
+  echo 'writeln("Hello, world!");' > hello.chpl
 
-local imageName="$1"
-local script="$2" 
-# Remove any existing image with the tag before building docker image
-docker image rm --force $imageName
-docker build --push . -t $imageName
-containerid= docker image ls | grep $imageName | awk '{print$3}'
-cd ${CHPL_HOME}/util/cron
-echo 'writeln("Hello, world!");' > hello.chpl
+  docker run --rm -i $imageName  <  $script
 
-docker run --rm -i $imageName  <  $script
- 
-CONTAINER_RUN=$?
-if [ $CONTAINER_RUN -ne 0 ]
-then
-      echo "docker commands failed inside chapel $imageName container" 
-      exit 1
-else
-      echo "docker commands succeeded inside chapel $imageName container"
-fi   
-
+  CONTAINER_RUN=$?
+  if [ $CONTAINER_RUN -ne 0 ]
+  then
+        echo "docker commands failed inside chapel $imageName container"
+        exit 1
+  else
+        echo "docker commands succeeded inside chapel $imageName container"
+  fi
 }
 
 # Patch the Dockerfile to build FROM the nightly image instead of latest
