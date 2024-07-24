@@ -17,7 +17,15 @@ build_image() {
   local script="$2"
   # Remove any existing image with the tag before building docker image
   docker image rm --force $imageName
+
   docker build --push . -t $imageName
+  BUILD_RESULT=$?
+  if [ $BUILD_RESULT -ne 0 ]
+  then
+        echo "docker build failed for $imageName image"
+        exit 1
+  fi
+
   containerid= docker image ls | grep $imageName | awk '{print$3}'
   cd ${CHPL_HOME}/util/cron
   echo 'writeln("Hello, world!");' > hello.chpl
