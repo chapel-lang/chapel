@@ -600,6 +600,36 @@ proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
     compilerError("sort() is currently only supported for 1D rectangular arrays");
 }
 
+/*
+   Check if array `x` is in sorted order
+
+   :arg x: The array to verify
+   :type x: an array
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
+   :returns: ``true`` if array is sorted
+   :rtype: `bool`
+ */
+proc isSorted(x: [], comparator:? = new DefaultComparator()): bool {
+  chpl_check_comparator(comparator, x.eltType);
+
+  const stride = abs(x.domain.stride): x.domain.idxType;
+  var sorted = true;
+  forall (element, i) in zip(x, x.domain) with (&& reduce sorted) {
+    if i > x.domain.low {
+      sorted &&= (chpl_compare(x[i-stride], element, comparator) <= 0);
+    }
+  }
+  return sorted;
+}
+
+
+@chpldoc.nodoc
+/* Error message for multi-dimension arrays */
+proc isSorted(x: [], comparator:? =new DefaultComparator())
+  where x.domain.rank != 1 {
+    compilerError("isSorted() requires 1-D array");
+}
 
 /*
    Check if array `Data` is in sorted order
@@ -611,22 +641,17 @@ proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
    :returns: ``true`` if array is sorted
    :rtype: `bool`
  */
+pragma "last resort"
+@deprecated("'isSorted' with the argument name 'Data' is deprecated, please use the version with the argument name 'x' instead")
 proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
-  chpl_check_comparator(comparator, eltType);
-
-  const stride = abs(Dom.stride): Dom.idxType;
-  var sorted = true;
-  forall (element, i) in zip(Data, Dom) with (&& reduce sorted) {
-    if i > Dom.low {
-      sorted &&= (chpl_compare(Data[i-stride], element, comparator) <= 0);
-    }
-  }
-  return sorted;
+  return isSorted(x=Data, comparator);
 }
 
 
+pragma "last resort"
 @chpldoc.nodoc
 /* Error message for multi-dimension arrays */
+@deprecated("'isSorted' with the argument name 'Data' is deprecated, please use the version with the argument name 'x' instead")
 proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
   where Dom.rank != 1 {
     compilerError("isSorted() requires 1-D array");
