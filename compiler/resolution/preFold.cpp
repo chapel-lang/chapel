@@ -2085,6 +2085,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_STATIC_FIELD_TYPE:
   case PRIM_STATIC_TYPEOF: {
     auto exprToResolve = call->get(1);
 
@@ -2117,7 +2118,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
 
-  case PRIM_STATIC_FIELD_TYPE:
   case PRIM_THUNK_RESULT_TYPE:
   case PRIM_SCALAR_PROMOTION_TYPE: {
 
