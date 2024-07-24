@@ -76,6 +76,8 @@ executable. This can be done in two steps.
    .. code-block:: bash
 
         CHPL_TARGET_COMPILER=gnu make
+        # On MacOS
+        # CHPL_TARGET_COMPILER=clang make
 
 2) Build the executable from Chapel source code:
 
