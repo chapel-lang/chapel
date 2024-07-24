@@ -22,10 +22,6 @@ ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-cle-linux-gnu
 else ifneq (, $(filter cray-cs hpe-cray-ex,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-unknown-linux-gnu
-else ifeq ($(CHPL_MAKE_TARGET_ARCH),arm64)
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
-CHPL_QTHREAD_CFG_OPTIONS += --host=aarch64-unknown-darwin-gnu
-endif
 endif
 
 ifneq ($(CHPL_MAKE_HWLOC),none)
