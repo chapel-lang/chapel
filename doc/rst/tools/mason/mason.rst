@@ -16,9 +16,9 @@ Chapel programs.
 When to Leverage Mason for Chapel Builds
 ----------------------------------------
 
-Mason simplifies the build process for Chapel applications, but it's
-not currently a one-size-fits-all solution. Here's a breakdown of
-when Mason shines and when alternative approaches might be better suited.
+Mason simplifies the build process for Chapel applications. Here's a
+breakdown of when Mason shines and when alternative approaches might
+be better suited.
 
 **Ideal Use Cases for Mason:**
 
@@ -37,7 +37,7 @@ when Mason shines and when alternative approaches might be better suited.
    compilation steps beyond what the Chapel compiler offers, Mason might not
    be the most suitable choice. Consider alternatives like `Make` for greater
    flexibility in crafting intricate build commands. As an example, the
-   Arkouda project, a prominent open-source Chapel application, utilizes
+   Arkouda project, a prominent open-source Chapel application, uses
    `Make` to run preparatory Python scripts before the final binary compilation.
 
 **Combining Mason with Make:**
