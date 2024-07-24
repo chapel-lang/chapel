@@ -305,10 +305,10 @@ proc compareByPart(a:?t, b:t, comparator:?rec) {
 /*
    Base compare method of all sort functions.
 
-   By default, it returns the value of defaultComparator.compare(a, b).
+   By default, it returns the value of DefaultComparator.compare(a, b).
 
    If a comparator with a key method is passed, it will return the value of
-   defaultComparator(comparator.key(a), comparator.key(b)).
+   DefaultComparator(comparator.key(a), comparator.key(b)).
 
    If a comparator with a compare method is passed, it will return the value of
    comparator.compare(a, b).
@@ -729,7 +729,7 @@ iter sorted(x, comparator:? = new DefaultComparator()) {
 // but, it is stable and in-place
 @chpldoc.nodoc
 module BubbleSort {
-  import Sort.{defaultComparator, chpl_check_comparator, chpl_compare};
+  import Sort.{DefaultComparator, chpl_check_comparator, chpl_compare};
 
   /*
    Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
@@ -740,7 +740,8 @@ module BubbleSort {
       data is sorted.
 
    */
-  proc bubbleSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  proc bubbleSort(ref Data: [?Dom] ?eltType,
+                  comparator:?rec = new DefaultComparator()) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -769,7 +770,7 @@ module BubbleSort {
 // it is in-place but not stable.
 @chpldoc.nodoc
 module HeapSort {
-  import Sort.{defaultComparator, chpl_check_comparator, chpl_compare};
+  import Sort.{DefaultComparator, chpl_check_comparator, chpl_compare};
   /*
 
    Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
@@ -780,7 +781,8 @@ module HeapSort {
       data is sorted.
 
    */
-  proc heapSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  proc heapSort(ref Data: [?Dom] ?eltType,
+                comparator:?rec = new DefaultComparator()) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -810,7 +812,7 @@ module HeapSort {
       SiftDown(low, end, comparator);
     }
 
-    proc SiftDown(start, end, comparator:?rec=defaultComparator) {
+    proc SiftDown(start, end, comparator:?rec = new DefaultComparator()) {
       var root = start;
       while ((2*root - low + stride) <= end) {
         const child = 2*root - low + stride;
@@ -929,7 +931,8 @@ module BinaryInsertionSort {
     :arg comparator: :ref:`Comparator <comparators>` record that defines how the
        data is sorted.
    */
-  proc binaryInsertionSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  proc binaryInsertionSort(ref Data: [?Dom] ?eltType,
+                           comparator:?rec = new DefaultComparator()) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -962,7 +965,10 @@ module BinaryInsertionSort {
     If `val` is not in `Data`, the index that it should be inserted at is returned.
     Does not check for a valid comparator.
   */
-  private proc _binarySearchForLastOccurrence(Data: [?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) {
+  private
+  proc _binarySearchForLastOccurrence(Data: [?Dom], val,
+                                      comparator:?rec = new DefaultComparator(),
+                                      in lo=Dom.low, in hi=Dom.high) {
     const stride = abs(Dom.stride): Dom.idxType;
 
     var loc = -1;                                        // index of the last occurrence of val in Data
@@ -1005,7 +1011,8 @@ module TimSort {
 
    */
 
-  proc timSort(ref Data: [?Dom] ?eltType, blockSize=16, comparator:?rec=defaultComparator) {
+  proc timSort(ref Data: [?Dom] ?eltType, blockSize=16,
+               comparator:?rec = new DefaultComparator()) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -1015,7 +1022,8 @@ module TimSort {
     _TimSort(Data, Dom.low, Dom.high, blockSize, comparator);
   }
 
-  private proc _TimSort(ref Data: [?Dom], lo:int, hi:int, blockSize=16, comparator:?rec=defaultComparator) {
+  private proc _TimSort(ref Data: [?Dom], lo:int, hi:int, blockSize=16,
+                        comparator:?rec = new DefaultComparator()) {
     import Sort.InsertionSort;
 
     /*Parallelly apply insertionSort on each block of size `blockSize`
@@ -1056,7 +1064,8 @@ module TimSort {
    TimSort._Merge() creates a copy of the segments to be merged and
    stores the results back into the original memory.
   */
-  private proc _Merge(ref Dst: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+  private proc _Merge(ref Dst: [?Dom] ?eltType, lo:int, mid:int, hi:int,
+                      comparator:?rec = new DefaultComparator()) {
     /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
      * Dom is unstrided.  So specify the latter explicitly when possible. */
     if mid >= hi {
@@ -1121,7 +1130,8 @@ module MergeSort {
        data is sorted.
 
    */
-  proc mergeSort(ref Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
+  proc mergeSort(ref Data: [?Dom] ?eltType, minlen=16,
+                 comparator:?rec = new DefaultComparator()) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -1147,7 +1157,9 @@ module MergeSort {
    * The data stays in Data "all they way down" until the first
    * _Merge(), then is moved back and forth as we return up the chain.
    */
-  private proc _MergeSort(ref Data: [?Dom], ref Scratch: [], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator, depth: int)
+  private proc _MergeSort(ref Data: [?Dom], ref Scratch: [], lo:int, hi:int,
+                          minlen=16, comparator:?rec = new DefaultComparator(),
+                          depth: int)
     where Dom.rank == 1 {
     import Sort.InsertionSort;
 
@@ -1198,7 +1210,8 @@ module MergeSort {
     }
   }
 
-  private proc _Merge(ref Dst: [?Dom] ?eltType, Src: [], lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+  private proc _Merge(ref Dst: [?Dom] ?eltType, Src: [], lo:int, mid:int,
+                      hi:int, comparator:?rec = new DefaultComparator()) {
     /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
      * Dom is unstrided.  So specify the latter explicitly when possible. */
     const stride = abs(Dom.stride): Dom.idxType;
@@ -1509,7 +1522,8 @@ module SelectionSort {
        data is sorted.
 
    */
-  proc selectionSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  proc selectionSort(ref Data: [?Dom] ?eltType,
+                     comparator:?rec = new DefaultComparator()) {
     // note: selection sort is not a stable sort
 
     if Dom.rank != 1 {
@@ -3588,13 +3602,13 @@ module TwoArrayRadixSort {
 
 @chpldoc.nodoc
 module TwoArrayDistributedRadixSort {
-  import Sort.defaultComparator;
+  import Sort.DefaultComparator;
   private use super.TwoArrayDistributedPartitioning;
   private use super.RadixSortHelp;
   private use super.TwoArrayRadixSort;
 
   proc twoArrayDistributedRadixSort(ref Data:[],
-                                    comparator:?rec=defaultComparator) {
+                                    comparator:?rec = new DefaultComparator()) {
 
     // just run the local version if Data isn't distributed
     if Data._instance.isDefaultRectangular() {
@@ -3645,14 +3659,15 @@ module TwoArrayDistributedRadixSort {
 
 @chpldoc.nodoc
 module TwoArraySampleSort {
-  import Sort.defaultComparator;
+  import Sort.DefaultComparator;
   private use super.TwoArrayPartitioning;
   private use super.SampleSortHelp;
   private use super.RadixSortHelp;
 
   private use CTypes;
 
-  proc twoArraySampleSort(ref Data:[], comparator:?rec=defaultComparator) {
+  proc twoArraySampleSort(ref Data:[],
+                          comparator:?rec = new DefaultComparator()) {
 
     var baseCaseSize=16;
     var distributedBaseCaseSize=1024;
@@ -3681,7 +3696,7 @@ module TwoArraySampleSort {
 
 @chpldoc.nodoc
 module TwoArrayDistributedSampleSort {
-  import Sort.defaultComparator;
+  import Sort.DefaultComparator;
   private use super.TwoArrayPartitioning;
   private use super.SampleSortHelp;
   private use super.RadixSortHelp;
@@ -3690,7 +3705,7 @@ module TwoArrayDistributedSampleSort {
   private use CTypes;
 
   proc twoArrayDistributedSampleSort(ref Data:[],
-                                     comparator:?rec=defaultComparator) {
+                                     comparator:?rec = new DefaultComparator()) {
 
     // just run the local version if Data isn't distributed
     if Data._instance.isDefaultRectangular() {
