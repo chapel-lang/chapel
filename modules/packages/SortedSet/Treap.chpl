@@ -193,7 +193,8 @@ module Treap {
       :arg parSafe: If `true`, this sortedSet will use parallel safe operations.
       :arg comparator: The comparator used to compare elements.
     */
-    proc init(type eltType, param parSafe = false, comparator: record = defaultComparator) {
+    proc init(type eltType, param parSafe = false,
+              comparator: record = new DefaultComparator()) {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
@@ -210,7 +211,8 @@ module Treap {
       :arg parSafe: If `true`, this sortedSet will use parallel safe operations.
       :arg comparator: The comparator used to compare elements.
     */
-    proc init(type eltType, iterable, param parSafe = false, comparator: record = defaultComparator)
+    proc init(type eltType, iterable, param parSafe = false,
+              comparator: record = new DefaultComparator())
     where canResolveMethod(iterable, "these") lifetime this < iterable {
       _checkType(eltType);
 

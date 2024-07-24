@@ -32,7 +32,10 @@ module SortedMap {
   private use HaltWrappers;
   private use SortedSet;
   private use IO;
-  public use Sort only defaultComparator;
+  public use Sort only DefaultComparator;
+
+  @deprecated("The variable 'defaultComparator' is deprecated, please use a new instance of the :record:`DefaultComparator` type instead.")
+  var defaultComparator = new DefaultComparator();
 
   // Lock code lifted from modules/standard/List.chpl.
   @chpldoc.nodoc
@@ -96,7 +99,7 @@ module SortedMap {
     param parSafe = false;
 
     /* The comparator used to compare keys */
-    var comparator: record = defaultComparator;
+    var comparator: record = new DefaultComparator();
 
     // TODO: Maybe we want something like record optional for this?
     @chpldoc.nodoc
@@ -141,7 +144,7 @@ module SortedMap {
       :arg comparator: The comparator used to compare keys.
     */
     proc init(type keyType, type valType, param parSafe = false,
-              comparator: record = defaultComparator) {
+              comparator: record = new DefaultComparator()) {
       _checkKeyType(keyType);
       _checkValType(valType);
 
