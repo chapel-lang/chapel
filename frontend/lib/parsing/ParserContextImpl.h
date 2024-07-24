@@ -914,6 +914,35 @@ Identifier* ParserContext::buildAttributeIdent(YYLTYPE location,
   return Identifier::build(builder, convertLocation(location), n).release();
 }
 
+AstNode*
+ParserContext::buildTaskIntent(YYLTYPE loc,
+                               YYLTYPE nameLoc,
+                               AttributeGroup* attributeGroup,
+                               AstNode* identNode,
+                               MaybeIntent intent,
+                               AstNode* typeExpression,
+                               AstNode* initExpression) {
+  if (!intent.isValid) {
+    return syntax(loc, "'%s' intent is not supported in a 'with' clause", qualifierToString((Qualifier)intent.intent));
+  }
+
+  if (auto ident = identNode->toIdentifier()) {
+    auto name = ident->name();
+    auto node = TaskVar::build(builder,
+                               convertLocation(loc),
+                               toOwned(attributeGroup),
+                               name,
+                               (TaskVar::Intent)intent.intent,
+                               toOwned(typeExpression),
+                               toOwned(initExpression));
+    builder->noteDeclNameLocation(node.get(), convertLocation(nameLoc));
+    return node.release();
+  } else {
+    return syntax(loc, "expected identifier for task variable name.");
+  }
+
+}
+
 
 WithClause*
 ParserContext::buildWithClause(YYLTYPE location, YYLTYPE locWith,

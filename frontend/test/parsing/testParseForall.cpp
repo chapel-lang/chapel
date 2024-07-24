@@ -245,6 +245,22 @@ static void test5(Parser* parser) {
   assert(forall->stmt(0)->isFnCall());
 }
 
+static void test6(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test6.chpl",
+      "forall i in 1..10 with (re A) { }\n"
+      "forall i in 1..10 with () { }\n"
+      "forall i in 1..10 with ref A { }\n");
+  auto numErrors = 5;
+  assert(guard.errors().size() == numErrors);
+  assert("invalid intent expression in 'with' clause" == guard.error(1)->message());
+  assert("'with' clause cannot be empty" == guard.error(2)->message());
+  assert("missing parentheses around 'with' clause intents" == guard.error(4)->message());
+  // The other errors are from the parser as "near ...".
+  // It would be really nice to not have those be emitted at all.
+  assert(guard.realizeErrors() == numErrors);
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -258,6 +274,7 @@ int main() {
   test3(p);
   test4(p);
   test5(p);
+  test6(p);
 
   return 0;
 }

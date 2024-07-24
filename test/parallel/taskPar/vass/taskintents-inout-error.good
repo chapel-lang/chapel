@@ -1,1 +1,1 @@
-taskintents-inout-error.chpl:3: syntax error: near 'inout'
+taskintents-inout-error.chpl:3: syntax error: 'inout' intent is not supported in a 'with' clause

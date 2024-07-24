@@ -1,1 +1,2 @@
 with-false.chpl:3: syntax error: near 'false'
+with-false.chpl:3: syntax error: invalid intent expression in 'with' clause
