@@ -26,6 +26,7 @@
 #include "chpl/uast/all-uast.h"
 #include "./ErrorGuard.h"
 
+#include <algorithm>
 #include <cstdarg>
 
 #define TEST_NAME(ctx__)\
@@ -68,6 +69,46 @@ checkMentionedModules(Context* ctx, ID idMod, std::vector<const char*> expect) {
 
     i++;
   }
+}
+
+static void testModulesNamedInUseOrImport(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents =
+    R""""(
+    module M1 {
+
+    }
+    module M2 {
+      enum someEnum { red, green, blue }
+    }
+    module M3 {
+      use M1;
+      use M2;
+      use someEnum;
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 3);
+  auto M3 = br.topLevelExpression(2)->toModule();
+  auto scope = scopeForId(ctx, M3->id());
+  auto visStmts = resolveVisibilityStmts(ctx, scope);
+
+  std::vector<ID> modulesMentioned;
+  auto modulesMentionedIt = visStmts->modulesNamedInUseOrImport();
+  std::copy(modulesMentionedIt.begin(), modulesMentionedIt.end(),
+            std::back_inserter(modulesMentioned));
+  assert(modulesMentioned.size() == 2);
+  assert(modulesMentioned[0].str() == "M1");
+  assert(modulesMentioned[1].str() == "M2");
 }
 
 
@@ -858,6 +899,9 @@ static void testBundled(void) {
 
 
 int main() {
+  // test of the lower-level modulesNamedInUseOrImport
+  testModulesNamedInUseOrImport();
+
   // tests of findMentionedModules
   testFindUse();
   testFindImport();
