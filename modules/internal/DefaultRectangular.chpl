@@ -2190,16 +2190,22 @@ module DefaultRectangular {
     const ref srcRef = Bdata[offset];
     ref dstRef = Adata[offset];
 
+    inline proc _isLocSublocSameAsHere(locid, sublocid) {
+      use ChplConfig;
+      return locid == here.id &&
+             (CHPL_LOCALE_MODEL != "gpu" || sublocid == chpl_task_getRequestedSubloc());
+    }
+
     // NOTE: This does not work with --heterogeneous, but heterogeneous
     // compilation does not work right now.  The calls to chpl_comm_get
     // and chpl_comm_put should be changed once that is fixed.
-    if Alocid==here.id {
+    if _isLocSublocSameAsHere(Alocid, Asublocid) {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal get() from ", Blocid);
 
       __primitive("chpl_comm_array_get", dstRef, Blocid, Bsublocid,
                   srcRef, len);
-    } else if Blocid==here.id {
+    } else if _isLocSublocSameAsHere(Blocid, Bsublocid) {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal put() to ", Alocid);
 
