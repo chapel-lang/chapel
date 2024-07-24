@@ -1548,7 +1548,7 @@ module List {
       :arg comparator: A comparator used to sort this list.
     */
     @unstable("'list.sort' is unstable and may be replaced or modified in a future release")
-    proc ref sort(comparator: ?rec=Sort.defaultComparator) {
+    proc ref sort(comparator: ?rec= new Sort.DefaultComparator()) {
       on this {
         _enter();
 

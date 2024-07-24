@@ -264,8 +264,7 @@ module Sort {
   argument when no comparator is passed to a sort function
 */
 @deprecated("The variable 'defaultComparator' is now deprecated, please create a new instance of the :record:`DefaultComparator` type instead.")
-const defaultComparator: DefaultComparator;
-defaultComparator = new DefaultComparator();
+const defaultComparator: DefaultComparator = new DefaultComparator();
 
 
 /*
@@ -329,7 +328,8 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
   // Compare results of comparator.key(a) if is defined by user
   if canResolveMethod(comparator, "key", a) {
     // Use the default comparator to compare the integer keys
-    return defaultComparator.compare(comparator.key(a), comparator.key(b));
+    return (new DefaultComparator()).compare(comparator.key(a),
+                                             comparator.key(b));
   // Use comparator.compare(a, b) if is defined by user
   } else if canResolveMethod(comparator, "compare", a, b) {
     return comparator.compare(a ,b);
@@ -417,7 +417,7 @@ proc radixSortOkAndStrideOne(Data: [] ?eltType,
     } else if canResolveMethod(comparator, "key", tmp) {
       var key:comparator.key(tmp).type;
       // Does the defaultComparator have a keyPart for this?
-      if canResolveMethod(defaultComparator, "keyPart", key, 0) then
+      if canResolveMethod(new DefaultComparator(), "keyPart", key, 0) then
         return true;
     }
   }
@@ -3536,11 +3536,12 @@ module TwoArrayDistributedPartitioning {
 
 @chpldoc.nodoc
 module TwoArrayRadixSort {
-  import Sort.defaultComparator;
+  import Sort.DefaultComparator;
   private use super.TwoArrayPartitioning;
   private use super.RadixSortHelp;
 
-  proc twoArrayRadixSort(ref Data:[], comparator:?rec=defaultComparator,
+  proc twoArrayRadixSort(ref Data:[],
+                         comparator:?rec = new DefaultComparator(),
                          region:range(?) = Data.domain.dim(0)) {
 
     if !chpl_domainDistIsLayout(Data.domain) {
@@ -3736,7 +3737,7 @@ module InPlacePartitioning {
 // it is not stable and not fully parallel
 @chpldoc.nodoc
 module MSBRadixSort {
-  import Sort.{defaultComparator, ShellSort};
+  import Sort.{DefaultComparator, ShellSort};
   private use super.RadixSortHelp;
   private use OS.POSIX;
 
@@ -3751,7 +3752,7 @@ module MSBRadixSort {
     const maxTasks = here.maxTaskPar;//;here.numPUs(logical=true); // maximum number of tasks to make
   }
 
-  proc msbRadixSort(ref Data:[], comparator:?rec=defaultComparator,
+  proc msbRadixSort(ref Data:[], comparator:?rec = new DefaultComparator(),
                     region:range(?)=Data.domain.dim(0)) {
 
     var endbit:int;

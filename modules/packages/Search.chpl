@@ -21,7 +21,7 @@
 /* Support for standard search routines on 1D arrays.
  */
 module Search {
-  public use Sort only defaultComparator, DefaultComparator,
+  public use Sort only DefaultComparator,
                        reverseComparator, ReverseComparator;
   private use Sort;
 
@@ -64,7 +64,8 @@ module Search {
       been if it was not found.
    :rtype: (`bool`, `Dom.idxType`)
  */
-proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high, sorted=false) {
+proc search(Data:[?Dom], val, comparator:?rec= new DefaultComparator(),
+            lo=Dom.low, hi=Dom.high, sorted=false) {
   if sorted then
     return binarySearch(Data, val, comparator, lo, hi);
   else
@@ -74,7 +75,8 @@ proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=
 
 @chpldoc.nodoc
 /* Error message for multi-dimension arrays */
-proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high, sorted=false)
+proc search(Data:[?Dom], val, comparator:?rec= new DefaultComparator(),
+            lo=Dom.low, hi=Dom.high, sorted=false)
   where Dom.rank != 1 {
     compilerError("search() requires 1-D array");
 }
