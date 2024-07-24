@@ -1974,15 +1974,19 @@ static const bool& isNameBuiltinType(Context* context, UniqueString name) {
   return QUERY_END(toReturn);
 }
 
-// if it's the first time encountering a particular module, add
+// if it's the first time encountering a particular module (and if it is
+// indeed a module, and not an enum or other type of declaration), add
 // it to the ResolvedVisibilityScope as a module named in a use/import
-static void addNamedModule(ResolvedVisibilityScope* r,
-                           std::set<ID>& namedModulesSet,
-                           const ID& moduleId) {
-  auto p = namedModulesSet.insert(moduleId);
-  if (p.second) {
-    // insertion took place, so also add it to the vector
-    r->addModuleNamedInUseOrImport(moduleId);
+static void addNamedIdIfModule(Context* context,
+                               ResolvedVisibilityScope* r,
+                               std::set<ID>& namedModulesSet,
+                               const ID& moduleId) {
+  if (parsing::idIsModule(context, moduleId)) {
+    auto p = namedModulesSet.insert(moduleId);
+    if (p.second) {
+      // insertion took place, so also add it to the vector
+      r->addModuleNamedInUseOrImport(moduleId);
+    }
   }
 }
 
@@ -2014,9 +2018,7 @@ static void checkNameInScope(Context* context,
   if (got && namedModulesSet != nullptr) {
     for (const auto& bid : result) {
       for (const auto& id : bid) {
-        if (parsing::idIsModule(context, id)) {
-          addNamedModule(resolving, *namedModulesSet, id);
-        }
+        addNamedIdIfModule(context, resolving, *namedModulesSet, id);
       }
     }
   }
@@ -2356,7 +2358,7 @@ static const Scope* handleSuperMaybeError(Context* context,
 // e.g. M.N.S is represented as
 //   Dot( Dot(M, N), S)
 // Returns in foundName the final name in a Dot expression, e.g. S in the above
-// Also gathers modules named in the use/import with addNamedModule
+// Also gathers modules named in the use/import with addNamedIdIfModule
 static const Scope*
 findUseImportTarget(Context* context,
                     const Scope* scope,
@@ -2379,7 +2381,7 @@ findUseImportTarget(Context* context,
       const Scope* s = findScopeViz(context, scope, ident->name(), resolving,
                                     expr->id(), useOrImport,
                                     /* isFirstPart */ true);
-      if (s) addNamedModule(resolving, namedModulesSet, s->id());
+      if (s) addNamedIdIfModule(context, resolving, namedModulesSet, s->id());
       return s;
     }
   } else if (auto dot = expr->toDot()) {
@@ -2411,7 +2413,7 @@ findUseImportTarget(Context* context,
       const Scope* s = findScopeViz(context, innerScope, nameInScope, resolving,
                                     expr->id(), useOrImport,
                                     /* isFirstPart */ false, previousPartName);
-      if (s) addNamedModule(resolving, namedModulesSet, s->id());
+      if (s) addNamedIdIfModule(context, resolving, namedModulesSet, s->id());
       return s;
     }
   } else {
@@ -2511,7 +2513,7 @@ doResolveUseStmt(Context* context, const Use* use,
           kind = VisibilitySymbols::ONLY_CONTENTS;
 
           // note that this module is named in 'use'
-          addNamedModule(r, namedModulesSet, foundScope->id());
+          addNamedIdIfModule(context, r, namedModulesSet, foundScope->id());
 
           // check that symbols named with 'only' actually exist
           checkLimitationsInScope(context, clause, foundScope, r, VIS_USE,
@@ -2595,7 +2597,7 @@ doResolveImportStmt(Context* context, const Import* imp,
       bool isModPrivate = parsing::idIsPrivateDecl(context, foundScope->id());
 
       // note that this module is named in 'import'
-      addNamedModule(r, namedModulesSet, foundScope->id());
+      addNamedIdIfModule(context, r, namedModulesSet, foundScope->id());
 
       maybeEmitWarningsForId(context, expr->id(), foundScope->id());
 
