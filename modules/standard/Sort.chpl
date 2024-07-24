@@ -471,7 +471,9 @@ proc sort(ref x: [], comparator:? = new DefaultComparator(),
           param stable:bool = false) {
   chpl_check_comparator(comparator, x.eltType);
 
-  if x.domain.low >= x.domain.high then
+  const D = x.domain;
+
+  if D.low >= D.high then
     return;
 
   if stable {
@@ -485,7 +487,7 @@ proc sort(ref x: [], comparator:? = new DefaultComparator(),
       // randomness, according to some heuristic
 
       var simplerSortSize=50_000;
-      if x.domain.size < simplerSortSize {
+      if D.size < simplerSortSize {
         // TODO: use quicksort instead in these small cases
         MSBRadixSort.msbRadixSort(x, comparator=comparator);
         return;
@@ -613,10 +615,12 @@ proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
 proc isSorted(x: [], comparator:? = new DefaultComparator()): bool {
   chpl_check_comparator(comparator, x.eltType);
 
-  const stride = abs(x.domain.stride): x.domain.idxType;
+  const D = x.domain;
+
+  const stride = abs(D.stride): D.idxType;
   var sorted = true;
-  forall (element, i) in zip(x, x.domain) with (&& reduce sorted) {
-    if i > x.domain.low {
+  forall (element, i) in zip(x, D) with (&& reduce sorted) {
+    if i > D.low {
       sorted &&= (chpl_compare(x[i-stride], element, comparator) <= 0);
     }
   }
@@ -626,7 +630,7 @@ proc isSorted(x: [], comparator:? = new DefaultComparator()): bool {
 
 @chpldoc.nodoc
 /* Error message for multi-dimension arrays */
-proc isSorted(x: [], comparator:? =new DefaultComparator())
+proc isSorted(x: [], comparator:? = new DefaultComparator())
   where x.domain.rank != 1 {
     compilerError("isSorted() requires 1-D array");
 }
@@ -645,16 +649,6 @@ pragma "last resort"
 @deprecated("'isSorted' with the argument name 'Data' is deprecated, please use the version with the argument name 'x' instead")
 proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
   return isSorted(x=Data, comparator);
-}
-
-
-pragma "last resort"
-@chpldoc.nodoc
-/* Error message for multi-dimension arrays */
-@deprecated("'isSorted' with the argument name 'Data' is deprecated, please use the version with the argument name 'x' instead")
-proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
-  where Dom.rank != 1 {
-    compilerError("isSorted() requires 1-D array");
 }
 
 @chpldoc.nodoc
