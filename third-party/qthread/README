@@ -47,7 +47,7 @@ index 4fc99a6fd1..a51d191348 100644
  
 -#ifndef __cplusplus
 +#if !defined __cplusplus || defined CHPL_AVOID_CPP_CODE
- 
+
  # if defined(QTHREAD_ATOMIC_INCR) && !defined(QTHREAD_MUTEX_INCREMENT)
  #  define qthread_incr(ADDR, INCVAL) \
 ```
