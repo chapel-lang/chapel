@@ -597,8 +597,8 @@ proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
 
 @chpldoc.nodoc
 /* Error message for multi-dimension arrays */
-proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
-  where Dom.rank != 1 || !Data.isRectangular() {
+proc sort(ref x: [?Dom] , comparator:? = new DefaultComparator())
+  where Dom.rank != 1 || !x.isRectangular() {
     compilerError("sort() is currently only supported for 1D rectangular arrays");
 }
 
