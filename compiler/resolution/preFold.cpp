@@ -2121,7 +2121,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_THUNK_RESULT_TYPE:
   case PRIM_SCALAR_PROMOTION_TYPE: {
 
-    // Replace the type query call with a SymExpr of the type symbol
+    // Replace the type query call with a SymExpr of the type symbol.
     // call->typeInfo() will request the type from the primitive
     Type* type = call->typeInfo();
     retval = new SymExpr(type->symbol);
