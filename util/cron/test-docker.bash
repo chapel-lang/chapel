@@ -54,10 +54,10 @@ build_image chapel/chapel:nightly  ${CHPL_HOME}/util/cron/docker-chapel.bash
 
 cd $CHPL_HOME/util/packaging/docker/gasnet
 dockerfile_nightly_patch
-build_image chapel/chapel_gasnet:nightly ${CHPL_HOME}/util/cron/docker-gasnet.bash
+build_image chapel/chapel-gasnet:nightly ${CHPL_HOME}/util/cron/docker-gasnet.bash
 
 cd $CHPL_HOME/util/packaging/docker/gasnet-smp
 dockerfile_nightly_patch
-build_image chapel/chapel_gasnet_smp:nightly ${CHPL_HOME}/util/cron/docker-gasnet.bash
+build_image chapel/chapel-gasnet-smp:nightly ${CHPL_HOME}/util/cron/docker-gasnet.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="docker"
