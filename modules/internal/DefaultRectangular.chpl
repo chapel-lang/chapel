@@ -34,7 +34,7 @@ module DefaultRectangular {
 
   use DSIUtil;
   public use ChapelArray;
-  use ChapelDistribution, ChapelRange, OS, CTypes, CTypes;
+  use ChapelDistribution, ChapelRange, OS, CTypes;
   use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
   use DefaultSparse, DefaultAssociative;
   public use ExternalArray; // OK: currently expected to be available by
@@ -2197,20 +2197,20 @@ module DefaultRectangular {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal get() from ", Blocid);
 
-      __primitive("chpl_comm_array_get", dstRef, Blocid, Bsublocid,
-                  srcRef, len);
+      __primitive("chpl_comm_get", dstRef, Blocid, Bsublocid,
+                  srcRef, len * c_sizeof(A.eltType));
     } else if Blocid==here.id {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal put() to ", Alocid);
 
-      __primitive("chpl_comm_array_put", srcRef, Alocid, Asublocid,
-                  dstRef, len);
+      __primitive("chpl_comm_put", srcRef, Alocid, Asublocid,
+                  dstRef, len * c_sizeof(A.eltType));
     } else on Adata.locale {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tremote get() on ", here.id, " from ", Blocid);
 
-      __primitive("chpl_comm_array_get", dstRef, Blocid, Bsublocid,
-                  srcRef, len);
+      __primitive("chpl_comm_get", dstRef, Blocid, Bsublocid,
+                  srcRef, len * c_sizeof(A.eltType));
     }
   }
 

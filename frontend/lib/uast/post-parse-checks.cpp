@@ -757,8 +757,8 @@ void Visitor::checkSparseDomainArgCount(const FnCall* node) {
   }
 }
 
-// TODO: remove this check and warning after 2.0?
 void Visitor::checkPrimCallInUserCode(const PrimCall* node) {
+  // TODO: remove this check and warning after 2.0?
   // suppress this warning from chpldoc
   if (isUserCode())
     if ((node->prim() == PrimitiveTag::PRIM_CHPL_COMM_GET ||
@@ -767,6 +767,12 @@ void Visitor::checkPrimCallInUserCode(const PrimCall* node) {
           warn(node, "the primitives 'chpl_comm_get' and 'chpl_comm_put',"
                " have changed behavior in Chapel 1.32. Please use"
                " the 'Communication' module's 'get' and 'put' procedures"
+               " as replacements for calling the primitives directly");
+  if (node->prim() == PrimitiveTag::PRIM_CHPL_COMM_ARRAY_GET ||
+      node->prim() == PrimitiveTag::PRIM_CHPL_COMM_ARRAY_PUT)
+    warn(node, "the primitives 'chpl_comm_array_get' and"
+               " 'chpl_comm_array_put' are deprecated. Please use the"
+               " 'Communication' module's 'get' and 'put' procedures"
                " as replacements for calling the primitives directly");
 }
 

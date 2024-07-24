@@ -5767,7 +5767,7 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
     curArg = call->get(curArgIdx++);
     INT_ASSERT(curArg, LOCALE_ID_TYPE);
 
-    GenRet locale = codegenValueMaybeDeref(curArg);;
+    GenRet locale = codegenValueMaybeDeref(curArg);
     args.push_back(locale);
 
 

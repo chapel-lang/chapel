@@ -5,13 +5,13 @@ var A: [1..n] int = 777;
 var B: [1..n] int = -1;
 var Ad = A._value.theData;
 var Bd = B._value.theData;
-__primitive("chpl_comm_array_put",
+__primitive("chpl_comm_put",
             __primitive("array_get", Ad,
                         A._value.getDataIndex(1)),
             0,
             __primitive("array_get", Bd,
                         B._value.getDataIndex(1)),
-            n);
+            n * numBytes(A.eltType));
 if printOutput then writeln(B);
 for i in B.domain do
   if A(i) != B(i) then
@@ -21,13 +21,13 @@ on Locales(numLocales-1) {
   var C: [1..n] int = -1;
   var Cd = C._value.theData;
   on Locales(0) {
-    __primitive("chpl_comm_array_put",
+    __primitive("chpl_comm_put",
                 __primitive("array_get", Ad,
                             A._value.getDataIndex(1)),
                 numLocales-1,
                 __primitive("array_get", Cd,
                             C._value.getDataIndex(1)),
-                n);
+                n * numBytes(C.eltType));
   }
   if printOutput then writeln(C);
   for i in C.domain do
@@ -43,13 +43,13 @@ on Locales(numLocales-1) {
     var E: [1..n] int = -1;
     var Ed = E._value.theData;
     on Locales(numLocales-1) {
-      __primitive("chpl_comm_array_put",
+      __primitive("chpl_comm_put",
                   __primitive("array_get", Dd,
                               D._value.getDataIndex(1)),
                   0,
                   __primitive("array_get", Ed,
                               E._value.getDataIndex(1)),
-                  n);
+                  n * numBytes(D.eltType));
     }
     if printOutput then writeln(E);
     for i in E.domain do
