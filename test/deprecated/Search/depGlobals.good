@@ -1,0 +1,2 @@
+depGlobals.chpl:4: warning: The variable 'defaultComparator' is deprecated, please use a new instance of the DefaultComparator type instead.
+(true, 5)
