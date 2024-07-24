@@ -84,6 +84,8 @@ executable. This can be done in two steps.
    .. code-block:: bash
 
         chpl -g --target-compiler=gnu --savec <dir> --preserve-inlined-line-numbers --no-munge-user-idents --no-return-by-ref --no-inline <source_file>
+        # On MacOS
+        # chpl -g --target-compiler=clang --savec <dir> --preserve-inlined-line-numbers --no-munge-user-idents --no-return-by-ref --no-inline <source_file>
 
 For more details on these settings, read the rest of this section.
 
