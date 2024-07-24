@@ -1765,6 +1765,13 @@ Expr* partOfNonNormalizableExpr(Expr* expr) {
     if (CallExpr* call = toCallExpr(node)) {
       Expr* root = nullptr;
       if (call->isPrimitive(PRIM_RESOLVES) ||
+
+          // Static resolution calls are not normalizeable so that they
+          // don't "spill" their call temps outside of the primitive call.
+          // If they are "spilled", replacing the primitive with its result
+          // will still leave behind the temps; normally these would be
+          // cleaned up (via dead code elimination), but under --baseline
+          // or --no-dead-code-elimination they would not be.
           call->isPrimitive(PRIM_STATIC_TYPEOF) ||
           call->isPrimitive(PRIM_STATIC_FIELD_TYPE)) root = call;
       if (root) return root;
