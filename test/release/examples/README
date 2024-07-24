@@ -42,7 +42,7 @@ The gpu directory tests
 -----------------------
 
 The tests in the gpu directory require that Chapel be built to use the GPU
-locale model. To do this set CHPL_LOCALE_MODEL=gpu and rebuild Chapel.  For
+locale model. To do this, set CHPL_LOCALE_MODEL=gpu and rebuild Chapel.  For
 more information about installing and using Chapel with gpu support see the
 following technical note: https://chapel-lang.org/docs/technotes/gpu.html
 
