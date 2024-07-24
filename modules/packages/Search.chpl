@@ -25,6 +25,8 @@ module Search {
                        reverseComparator, ReverseComparator;
   private use Sort;
 
+  @deprecated("The variable 'defaultComparator' is deprecated, please use a new instance of the :record:`DefaultComparator` type instead.")
+  var defaultComparator = new DefaultComparator();
 
 /*
   A note about lo/hi arguments:
