@@ -2085,7 +2085,33 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
-  case PRIM_STATIC_TYPEOF:
+  case PRIM_STATIC_TYPEOF: {
+    auto exprToResolve = call->get(1);
+
+    // Insert a temporary block into the AST to use as a workspace.
+    auto tmpBlock = new BlockStmt(BLOCK_SCOPELESS);
+    call->getStmtExpr()->insertAfter(tmpBlock);
+
+    exprToResolve->remove();
+    tmpBlock->insertAtTail(exprToResolve);
+
+    // Resolution depends on normalized AST (and the expression is not).
+    normalize(tmpBlock);
+    resolveBlockStmt(tmpBlock);
+
+    // Replace the PRIM_STATIC_TYPEOF with the resolved expression.
+    Type* type = tmpBlock->body.last()->typeInfo();
+    retval = new SymExpr(type->symbol);
+    call->replace(retval);
+
+    // Remove the code we used for resolution; this is a static typeof
+    // primitive, so it should not have any side effects.
+    tmpBlock->remove();
+
+    break;
+  }
+
+
   case PRIM_STATIC_FIELD_TYPE:
   case PRIM_THUNK_RESULT_TYPE:
   case PRIM_SCALAR_PROMOTION_TYPE: {

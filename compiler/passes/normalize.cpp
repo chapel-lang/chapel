@@ -1764,7 +1764,7 @@ Expr* partOfNonNormalizableExpr(Expr* expr) {
   for (Expr* node = expr; node; node = node->parentExpr) {
     if (CallExpr* call = toCallExpr(node)) {
       Expr* root = nullptr;
-      if (call->isPrimitive(PRIM_RESOLVES)) root = call;
+      if (call->isPrimitive(PRIM_RESOLVES) || call->isPrimitive(PRIM_STATIC_TYPEOF)) root = call;
       if (root) return root;
     }
   }

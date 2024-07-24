@@ -10372,7 +10372,7 @@ static Expr* handleNonNormalizableExpr(Expr* expr) {
 
       // Prefolding will completely replace PRIM_RESOLVES calls, so
       // further action is not needed here.
-      if (call->isPrimitive(PRIM_RESOLVES)) {
+      if (call->isPrimitive(PRIM_RESOLVES) || call->isPrimitive(PRIM_STATIC_TYPEOF)) {
         ret = preFold(call);
       } else {
         INT_FATAL("Not handled!");
