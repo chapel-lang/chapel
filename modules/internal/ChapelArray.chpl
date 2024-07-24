@@ -739,6 +739,13 @@ module ChapelArray {
     return true;
   }
 
+  // This alternative usage of Sort.DefaultComparator
+  // prevents transitive use of module Sort.
+  proc chpl_defaultComparator() {
+    use Sort;
+    return new DefaultComparator();
+  }
+
   @chpldoc.nodoc
   proc shouldReturnRvalueByValue(type t) param {
     if !PODValAccess then return false;
