@@ -263,6 +263,7 @@ module Sort {
   Instance of :record:`DefaultComparator` used as default ``comparator=``
   argument when no comparator is passed to a sort function
 */
+@deprecated("The variable 'defaultComparator' is now deprecated, please create a new instance of the :record:`DefaultComparator` type instead.")
 const defaultComparator: DefaultComparator;
 defaultComparator = new DefaultComparator();
 
