@@ -460,7 +460,7 @@ The choice of sorting algorithm used is made by the implementation.
     * ``c_string``
 
 :arg x: The array to be sorted
-:type x: an array
+:type x: `array`
 :arg comparator: :ref:`Comparator <comparators>` record that defines how the
   data is sorted.
 :arg stable: Defaults to ``false``. If it is ``false``, the implementation
@@ -604,7 +604,7 @@ proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
    Check if array `x` is in sorted order
 
    :arg x: The array to verify
-   :type x: an array
+   :type x: `array`
    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
       data is sorted.
    :returns: ``true`` if array is sorted
