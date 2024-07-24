@@ -106,7 +106,8 @@ proc search(Data:[?Dom], val, comparator:?rec= new DefaultComparator(),
    :rtype: (`bool`, `Dom.idxType`)
 
  */
-proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high) {
+proc linearSearch(Data:[?Dom], val, comparator:?rec = new DefaultComparator(),
+                   lo = Dom.low, hi = Dom.high) {
 
  chpl_check_comparator(comparator, Data.eltType);
 
@@ -153,7 +154,8 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.lo
    :rtype: (`bool`, `Dom.idxType`)
 
  */
-proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) {
+proc binarySearch(Data:[?Dom], val, comparator:?rec = new DefaultComparator(),
+                  in lo=Dom.low, in hi=Dom.high) {
   chpl_check_comparator(comparator, Data.eltType);
   if Dom.rank != 1 then compilerError("binarySearch() requires 1-D array");
 
@@ -178,7 +180,8 @@ proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom
 
 @chpldoc.nodoc
 /* Non-stridable binarySearch */
-proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high)
+proc binarySearch(Data:[?Dom], val, comparator:?rec = new DefaultComparator(),
+                  in lo = Dom.low, in hi = Dom.high)
   where Dom.hasUnitStride()
 {
   chpl_check_comparator(comparator, Data.eltType);

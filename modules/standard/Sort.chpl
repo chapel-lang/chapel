@@ -848,7 +848,9 @@ module InsertionSort {
       data is sorted.
 
    */
-  proc insertionSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
+  proc insertionSort(ref Data: [?Dom] ?eltType,
+                     comparator:?rec= new DefaultComparator(), lo:int=Dom.low,
+                     hi:int=Dom.high) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -877,7 +879,9 @@ module InsertionSort {
     }
   }
 
-  proc insertionSortMoveElts(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
+  proc insertionSortMoveElts(ref Data: [?Dom] ?eltType,
+                             comparator:?rec= new DefaultComparator(),
+                             lo:int=Dom.low, hi:int=Dom.high) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -1399,9 +1403,9 @@ module QuickSort {
 
  /* Use quickSort to sort Data */
  proc quickSort(ref Data: [?Dom] ?eltType,
-                minlen=16,
-                comparator:?rec=defaultComparator,
-                region:range(?)=Data.domain.dim(0)) {
+                minlen = 16,
+                comparator:?rec = new DefaultComparator(),
+                region:range(?) = Data.domain.dim(0)) {
 
     chpl_check_comparator(comparator, eltType);
 
@@ -1425,7 +1429,7 @@ module QuickSort {
   /* Non-stridable quickSort to sort Data[start..end] */
   proc quickSortImpl(ref Data: [?Dom] ?eltType,
                      minlen=16,
-                     comparator:?rec=defaultComparator,
+                     comparator:?rec = new DefaultComparator(),
                      start:int = Dom.low, end:int = Dom.high) {
     import Sort.InsertionSort;
 
@@ -1532,8 +1536,9 @@ module SelectionSort {
 @chpldoc.nodoc
 module ShellSort {
   private use Sort;
-  proc shellSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
-                 start=Dom.low, end=Dom.high)
+  proc shellSort(ref Data: [?Dom] ?eltType,
+                 comparator:?rec = new DefaultComparator(), start = Dom.low,
+                 end = Dom.high)
   {
     chpl_check_comparator(comparator, eltType);
 
@@ -1575,7 +1580,7 @@ module ShellSort {
   // Like the shell sort above, but this version uses
   // ShallowCopy to move elements instead of assigning them.
   proc shellSortMoveElts(ref Data: [?Dom] ?eltType,
-                         comparator:?rec = defaultComparator,
+                         comparator:?rec = new DefaultComparator(),
                          start: Data.idxType = Dom.low,
                          end: Data.idxType = Dom.high)
   {
@@ -1623,7 +1628,7 @@ module ShellSort {
   // this version takes int start and end and casts to Data.idxType
   // to make it more convenient to call from the radix sorting code
   proc shellSortMoveEltsIntIdx(ref Data: [?Dom] ?eltType,
-                               comparator:?rec = defaultComparator,
+                               comparator:?rec = new DefaultComparator(),
                                start:int = Dom.low,
                                end:int = Dom.high)
   {
@@ -1967,7 +1972,7 @@ module RadixSortHelp {
     } else if canResolveMethod(criterion, "key", a) {
       // Try to use the default comparator to get a keyPart.
       return binForRecordKeyPart(criterion.key(a),
-                                 defaultComparator,
+                                 new DefaultComparator(),
                                  startbit);
     } else {
       compilerError("Bad comparator for radix sort ", criterion.type:string,
@@ -4158,7 +4163,7 @@ record ReverseComparator {
    reverses the sort order of the default comparator.
    */
   proc init() {
-    this.comparator = defaultComparator;
+    this.comparator = new DefaultComparator();
   }
 
   /*
@@ -4223,7 +4228,7 @@ record ReverseComparator {
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
       // Does the defaultComparator have a keyPart for this?
-      return canResolveMethod(defaultComparator, "keyPart", key, 0);
+      return canResolveMethod(new DefaultComparator(), "keyPart", key, 0);
     }
     return false;
   }
@@ -4237,7 +4242,7 @@ record ReverseComparator {
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
       // Does the defaultComparator have a compare for this?
-      return canResolveMethod(defaultComparator, "compare", key, key);
+      return canResolveMethod(new DefaultComparator(), "compare", key, key);
     }
     return false;
   }
@@ -4263,7 +4268,7 @@ record ReverseComparator {
     chpl_check_comparator(this.comparator, a.type);
 
     if hasKeyPartFromKey(a) {
-      return getKeyPart(defaultComparator, this.comparator.key(a), i);
+      return getKeyPart(new DefaultComparator(), this.comparator.key(a), i);
     } else {
       return getKeyPart(this.comparator, a, i);
     }
@@ -4285,7 +4290,7 @@ record ReverseComparator {
     chpl_check_comparator(this.comparator, a.type);
 
     if hasCompareFromKey(a) {
-      return doCompare(defaultComparator,
+      return doCompare(new DefaultComparator(),
                        this.comparator.key(a),
                        this.comparator.key(b));
     } else {
