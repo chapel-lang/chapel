@@ -36,7 +36,7 @@ proc checkSorted(arr: [] uint) {
 
 
 var cpuArr: [low..#arrSize] uint;
-config const seed = (new randomStream(int(32))).seed;
+config const seed = (new Random.randomStream(int(32))).seed;
 Random.fillRandom(cpuArr, seed);
 var cpuArr2 = cpuArr;
 
