@@ -70,7 +70,8 @@ The current best practice for debugging Chapel source code is to use the C
 backend and use a series of flags to improve the debuggability of the generated
 executable. This can be done in two steps.
 
-1) Build the compiler with ``CHPL_TARGET_COMPILER`` set to ``gnu``:
+1) Build the compiler with ``CHPL_TARGET_COMPILER`` set to ``gnu``
+   (or ``clang`` if on Mac):
 
    .. code-block:: bash
 
