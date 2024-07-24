@@ -2099,14 +2099,19 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     normalize(tmpBlock);
     resolveBlockStmt(tmpBlock);
 
-    // Replace the PRIM_STATIC_TYPEOF with the resolved expression.
-    Type* type = tmpBlock->body.last()->typeInfo();
-    retval = new SymExpr(type->symbol);
-    call->replace(retval);
-
     // Remove the code we used for resolution; this is a static typeof
     // primitive, so it should not have any side effects.
     tmpBlock->remove();
+
+    // Now, put the resolve expression back into the call so that ->typeInfo()
+    // can invoke the normal primitive type resolution process.
+    call->insertAtHead(tmpBlock->body.last()->remove());
+
+    // Replace the type query call with a SymExpr of the type symbol.
+    // call->typeInfo() will request the type from the primitive
+    Type* type = call->typeInfo();
+    retval = new SymExpr(type->symbol);
+    call->replace(retval);
 
     break;
   }
