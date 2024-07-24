@@ -423,6 +423,86 @@ proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
 
 /*
 
+Sort the elements in the 1D rectangular array ``x``.
+After the call, ``x`` will store elements in sorted order.
+
+The choice of sorting algorithm used is made by the implementation.
+
+.. note::
+
+  When reordering elements, the sort implementation might use assignment, memory
+  moves, or the swap operator. Additionally, the sort might
+  copy-initialize some elements, for example, to create a pivot in quicksort.
+
+.. note::
+
+  This function currently either uses a parallel radix sort or a parallel
+  improved quick sort.  The algorithms used will change over time.
+
+  It currently uses parallel radix sort if the following conditions are met:
+
+    * the array being sorted is over a non-strided domain
+    * ``comparator`` includes a ``keyPart`` method for ``eltType``
+      or includes a ``key`` returning a value for which the default comparator
+      includes a ``keyPart`` method
+
+  Note that the default comparator includes ``keyPart`` methods for:
+
+    * ``int``
+    * tuples of ``int``
+    * ``uint``
+    * tuples of ``uint``
+    * ``real``
+    * tuples of ``real``
+    * ``imag``
+    * tuples of ``imag``
+    * ``string``
+    * ``c_string``
+
+:arg x: The array to be sorted
+:type x: an array
+:arg comparator: :ref:`Comparator <comparators>` record that defines how the
+  data is sorted.
+:arg stable: Defaults to ``false``. If it is ``false``, the implementation
+  can sort in a way that reorders equal keys. If it is ``true``, it will use a
+  stable algorithm in order to preserve the order of equal keys.
+ */
+proc sort(ref x: [], comparator:? = new DefaultComparator(),
+          param stable:bool = false) {
+  chpl_check_comparator(comparator, x.eltType);
+
+  if x.domain.low >= x.domain.high then
+    return;
+
+  if stable {
+    // TODO: implement a stable merge sort with parallel merge
+    // TODO: create an in-place merge sort for the stable+minimizeMemory case
+    // TODO: create a stable variant of the radix sort
+    compilerError("stable sort not yet implemented");
+  } else {
+    if radixSortOk(x, comparator) {
+      // TODO: use a sample sort if the input does not have enough
+      // randomness, according to some heuristic
+
+      var simplerSortSize=50_000;
+      if x.domain.size < simplerSortSize {
+        // TODO: use quicksort instead in these small cases
+        MSBRadixSort.msbRadixSort(x, comparator=comparator);
+        return;
+      }
+
+      // use the two-array radix sort which is more parallel / faster
+      TwoArrayRadixSort.twoArrayRadixSort(x, comparator=comparator);
+    } else {
+      // use quick sort, which is currently in-place
+      // TODO: use a parallel sample sort instead
+      QuickSort.quickSort(x, comparator=comparator);
+    }
+  }
+}
+
+/*
+
 Sort the elements in the 1D rectangular array ``Data``.
 After the call, ``Data`` will store elements in sorted order.
 
@@ -471,6 +551,8 @@ The choice of sorting algorithm used is made by the implementation.
   sort. If it is ``true``, it will use an in-place algorithm in order to use
   less memory.
  */
+pragma "last resort"
+@deprecated("The 'sort' function with 'Data' and 'inPlaceAlgorithm' arguments has been deprecated, please use the 'sort' function with an 'x' argument instead")
 proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
           param stable:bool = false, param inPlaceAlgorithm:bool = false) {
   chpl_check_comparator(comparator, eltType);
