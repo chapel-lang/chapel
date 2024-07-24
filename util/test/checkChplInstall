@@ -138,7 +138,6 @@ trap cleanup_tmp_dir EXIT
 
 # Location of test job
 if [ -d ${CHPL_HOME}/test/release/examples ] ; then
-    # Install from source repo.
     TEST_DIR=${CHPL_HOME}/test/release/examples
     REL_TEST_DIR=test/release/examples
 elif [ -d ${CHPL_HOME}/examples ] ; then
@@ -152,6 +151,8 @@ fi
 
 TEST_JOB=${TEST_JOB_BASENAME}
 if [ ${CHPL_LOCALE_MODEL} == "gpu" ]; then
+  TEST_DIR="${TEST_DIR}/gpu"
+  REL_TEST_DIR="${REL_TEST_DIR}/gpu"
   TEST_JOB="hello-gpu"
 fi
 
