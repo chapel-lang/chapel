@@ -20,7 +20,8 @@ proc simpletestcore(input:[]) {
     writef("input %xt\n", input);
   }
 
- TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort(A, defaultComparator);
+  TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort(A,
+                                     new DefaultComparator());
 
   if debug {
     writef("output %xt\n", A);
@@ -80,7 +81,8 @@ proc randomtest(n:int) {
 
   var timer:stopwatch;
   timer.start();
-  TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort(A, defaultComparator);
+  TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort(A,
+                                              new DefaultComparator());
   timer.stop();
 
   if comms {

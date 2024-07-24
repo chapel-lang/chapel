@@ -19,7 +19,7 @@ record UselessKeyPartComparator {
         return (-1, 0:tt);
 
     } else if x.type == string {
-      return defaultComparator.keyPart(x, i);
+      return (new DefaultComparator()).keyPart(x, i);
     } else if isNumericType(x.type) {
       if i == 0 then
         return (0, x);
