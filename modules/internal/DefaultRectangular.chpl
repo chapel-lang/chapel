@@ -2075,6 +2075,39 @@ module DefaultRectangular {
     return true;
   }
 
+  /**
+    Check if the given locale and sublocale are the same as the current locale.
+    This is relevant for figuring out what sort of communication to do;
+    if the source is on the current locale, we can perform a 'put' call
+    (transferring data to the destination). On the other hand, if the
+    destination is on the current locale, we can perform a 'get' call
+    (receiving data from the source).
+
+    To decide on communication, we need to know that both the locale and
+    sublocale matches. Sublocales are only in play with the GPU locale model,
+    so avoid the check if we're using a different locale model.
+   */
+  inline proc _isLocSublocSameAsHere(locid, sublocid) {
+    use ChplConfig;
+    return locid == here.id &&
+           (CHPL_LOCALE_MODEL != "gpu" || sublocid == chpl_task_getRequestedSubloc());
+  }
+
+  // Same as above, but need to compute sublocale id
+  inline proc _isLocSublocSameAsHere(loc: locale) {
+    use ChplConfig;
+
+    if loc.id != here.id then return false;
+
+    // Sublocales are only needed for the GPU locale model. So if we're
+    // not using the GPU locale, and we know loc.id == here.id, we're done.
+    if CHPL_LOCALE_MODEL != "gpu" then return true;
+
+    var sublocid = chpl_sublocFromLocaleID(loc.chpl_localeid());
+    return sublocid == chpl_task_getRequestedSubloc();
+  }
+
+
   private proc _simpleTransfer(A, aView, B, bView) {
     use ChplConfig;
 
@@ -2143,10 +2176,10 @@ module DefaultRectangular {
 
     if enableParallelGetsInAssignment || enableParallelPutsInAssignment {
       if isSizeAboveThreshold && !isFullyLocal {
-        if enableParallelPutsInAssignment && Blocid == here.id {
+        if enableParallelPutsInAssignment && _isLocSulocSameAsHere(Blocid, Bsublocid) {
           doParallelAssign = true;
         }
-        else if enableParallelGetsInAssignment && Blocid != here.id {
+        else if enableParallelGetsInAssignment && !_isLocSulocSameAsHere(Blocid, Bsublocid) {
           doParallelAssign = true;
         }
       }
@@ -2189,12 +2222,6 @@ module DefaultRectangular {
     // the primitive will copy data using these references
     const ref srcRef = Bdata[offset];
     ref dstRef = Adata[offset];
-
-    inline proc _isLocSublocSameAsHere(locid, sublocid) {
-      use ChplConfig;
-      return locid == here.id &&
-             (CHPL_LOCALE_MODEL != "gpu" || sublocid == chpl_task_getRequestedSubloc());
-    }
 
     // NOTE: This does not work with --heterogeneous, but heterogeneous
     // compilation does not work right now.  The calls to chpl_comm_get
@@ -2243,8 +2270,8 @@ module DefaultRectangular {
   TODO: Pull simple runtime implementation up into module code
   */
   private proc complexTransfer(A, aView, B, bView) {
-    if (A.data.locale.id != here.id &&
-        B.data.locale.id != here.id) {
+    if !_isLocSublocSameAsHere(A.data.locale) &&
+       !_isLocSublocSameAsHere(B.data.locale) {
       if debugDefaultDistBulkTransfer {
         chpl_debug_writeln("BulkTransferStride: Both arrays on different locale, moving to locale of destination: LOCALE", A.data.locale.id);
       }
@@ -2407,7 +2434,7 @@ module DefaultRectangular {
     const srcstr = srcStride._value.data;
     const cnt    = count._value.data;
 
-    if dest.locale.id == here.id {
+    if _isLocSublocSameAsHere(dest.locale) {
       const srclocale = src.locale.id;
       const src_subloc = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
                          chpl_sublocFromLocaleID(src.locale.chpl_localeid());
