@@ -114,7 +114,7 @@ static void test2(Parser* parser) {
       "cobegin with ref A {;;}\n"
 );
   auto numErrors = 5;
-  assert(guard.errors().size() == numErrors);
+  assert(guard.errors().size() == (size_t) numErrors);
   assert("invalid intent expression in 'with' clause" == guard.error(1)->message());
   assert("'with' clause cannot be empty" == guard.error(2)->message());
   assert("missing parentheses around 'with' clause intents" == guard.error(4)->message());
