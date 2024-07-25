@@ -1,4 +1,4 @@
--senableParallelPutsInAssignment=true -senableParallelGetsInAssignment=true
--senableParallelPutsInAssignment=true -senableParallelGetsInAssignment=false
--senableParallelPutsInAssignment=false -senableParallelGetsInAssignment=true
--senableParallelPutsInAssignment=false -senableParallelGetsInAssignment=false
+--fast -senableParallelPutsInAssignment=true -senableParallelGetsInAssignment=true
+--fast -senableParallelPutsInAssignment=true -senableParallelGetsInAssignment=false
+--fast -senableParallelPutsInAssignment=false -senableParallelGetsInAssignment=true
+--fast -senableParallelPutsInAssignment=false -senableParallelGetsInAssignment=false
