@@ -381,9 +381,7 @@ bool chpl_gpu_impl_can_sort(void){
 
 void* chpl_gpu_impl_host_register(void* var, size_t size) {
   cuMemHostRegister(var, size, CU_MEMHOSTREGISTER_PORTABLE);
-  void **dev_var = chpl_malloc(sizeof(void*));
-  *dev_var = var;
-  return dev_var;
+  return var;
 }
 
 void chpl_gpu_impl_host_unregister(void* var) {
