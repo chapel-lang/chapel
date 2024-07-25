@@ -2093,21 +2093,6 @@ module DefaultRectangular {
            (CHPL_LOCALE_MODEL != "gpu" || sublocid == chpl_task_getRequestedSubloc());
   }
 
-  // Same as above, but need to compute sublocale id
-  inline proc _isLocSublocSameAsHere(loc: locale) {
-    use ChplConfig;
-
-    if loc.id != here.id then return false;
-
-    // Sublocales are only needed for the GPU locale model. So if we're
-    // not using the GPU locale, and we know loc.id == here.id, we're done.
-    if CHPL_LOCALE_MODEL != "gpu" then return true;
-
-    var sublocid = chpl_sublocFromLocaleID(loc.chpl_localeid());
-    return sublocid == chpl_task_getRequestedSubloc();
-  }
-
-
   private proc _simpleTransfer(A, aView, B, bView) {
     use ChplConfig;
 
@@ -2270,20 +2255,27 @@ module DefaultRectangular {
   TODO: Pull simple runtime implementation up into module code
   */
   private proc complexTransfer(A, aView, B, bView) {
-    if !_isLocSublocSameAsHere(A.data.locale) &&
-       !_isLocSublocSameAsHere(B.data.locale) {
+    const Alocid = A.data.locale.id;
+    const Asublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+                          chpl_sublocFromLocaleID(A.data.locale.chpl_localeid());
+    const Blocid = B.data.locale.id;
+    const Bsublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+                          chpl_sublocFromLocaleID(B.data.locale.chpl_localeid());
+
+    if !_isLocSublocSameAsHere(Alocid, Asublocid) &&
+       !_isLocSublocSameAsHere(Blocid, Bsublocid) {
       if debugDefaultDistBulkTransfer {
         chpl_debug_writeln("BulkTransferStride: Both arrays on different locale, moving to locale of destination: LOCALE", A.data.locale.id);
       }
       on A.data do
-        complexTransferCore(A, aView, B, bView);
+        complexTransferCore(A, Alocid, Asublocid, aView, B, Blocid, Bsublocid, bView);
     } else {
-      complexTransferCore(A, aView, B, bView);
+      complexTransferCore(A, Alocid, Asublocid, aView, B, Blocid, Bsublocid, bView);
     }
   }
 
 
-  private proc complexTransferCore(LHS, LViewDom, RHS, RViewDom) {
+  private proc complexTransferCore(LHS, LHSlocid, LHSsublocid, LViewDom, RHS, RHSlocid, RHSsublocid, RViewDom) {
     param minRank = min(LHS.rank, RHS.rank);
     type  idxType = LHS.idxType;
     type  chpl_integralIdxType = LHS.chpl_integralIdxType;
@@ -2406,14 +2398,14 @@ module DefaultRectangular {
     const LFirst = getFirstIdx(LeftDims);
     const RFirst = getFirstIdx(RightDims);
 
-    complexTransferComm(LHS, RHS, stridelevels:int(32), dstStride, srcStride, count, LFirst, RFirst);
+    complexTransferComm(LHS, LHSlocid, LHSsublocid, RHS, RHSlocid, RHSsublocid, stridelevels:int(32), dstStride, srcStride, count, LFirst, RFirst);
   }
 
   //
   // Invoke the primitives chpl_comm_get_strd/puts, depending on what locale we
   // are on vs. where the source and destination are.
   //
-  private proc complexTransferComm(A, B, stridelevels:int(32), dstStride, srcStride, count, AFirst, BFirst) {
+  private proc complexTransferComm(A, Alocid, Asublocid, B, Blocid, Bsublocid, stridelevels:int(32), dstStride, srcStride, count, AFirst, BFirst) {
     use ChplConfig;
     if debugDefaultDistBulkTransfer {
       chpl_debug_writeln("BulkTransferStride with values:\n",
@@ -2434,10 +2426,9 @@ module DefaultRectangular {
     const srcstr = srcStride._value.data;
     const cnt    = count._value.data;
 
-    if _isLocSublocSameAsHere(dest.locale) {
-      const srclocale = src.locale.id;
-      const src_subloc = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
-                         chpl_sublocFromLocaleID(src.locale.chpl_localeid());
+    if _isLocSublocSameAsHere(Alocid, Asublocid) {
+      const srclocale = Blocid;
+      const src_subloc = Bsublocid;
 
       if debugBulkTransfer {
         chpl_debug_writeln("BulkTransferStride: On LHS - GET from ", srclocale);
@@ -2454,9 +2445,8 @@ module DefaultRectangular {
                   stridelevels);
     }
     else {
-      const destlocale = dest.locale.id;
-      const dest_subloc = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
-                          chpl_sublocFromLocaleID(dest.locale.chpl_localeid());
+      const destlocale = Alocid;
+      const dest_subloc = Asublocid;
 
       if debugDefaultDistBulkTransfer {
         assert(src.locale.id == here.id,
