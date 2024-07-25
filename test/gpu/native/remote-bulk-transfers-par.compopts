@@ -1,0 +1,4 @@
+-senableParallelPutsInAssignment=true -senableParallelGetsInAssignment=true
+-senableParallelPutsInAssignment=true -senableParallelGetsInAssignment=false
+-senableParallelPutsInAssignment=false -senableParallelGetsInAssignment=true
+-senableParallelPutsInAssignment=false -senableParallelGetsInAssignment=false
