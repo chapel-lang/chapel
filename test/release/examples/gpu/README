@@ -7,3 +7,5 @@ these examples, Chapel must be built with GPU support enabled, which can be
 done by setting CHPL_LOCALE_MODEL=gpu and rebuilding Chapel.  For more
 information about installing and using Chapel with gpu support see the
 following technical note: https://chapel-lang.org/docs/technotes/gpu.html
+
+hello-gpu.chpl : performs an example computation on use every gpu in system
