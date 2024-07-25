@@ -176,7 +176,7 @@ static void test5(Parser* parser) {
   auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
       "for i in 1..10 with (ref A) { }");
   auto numErrors = 1;
-  assert(guard.errors().size() == numErrors);
+  assert(guard.errors().size() == (size_t) numErrors);
   assert("'with' clauses are not supported on 'for' loops" == guard.error(0)->message());
   assert(guard.realizeErrors() == numErrors);
 }
@@ -188,7 +188,7 @@ static void test6(Parser* parser) {
       "for i in 1..10 with () { }\n"
       "for i in 1..10 with ref A { }\n");
   auto numErrors = 7;
-  assert(guard.errors().size() == numErrors);
+  assert(guard.errors().size() == (size_t)numErrors);
   assert("invalid intent expression in 'with' clause" == guard.error(1)->message());
   assert("'with' clauses are not supported on 'for' loops" == guard.error(2)->message());
   assert("'with' clause cannot be empty" == guard.error(3)->message());

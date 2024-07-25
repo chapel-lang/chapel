@@ -640,12 +640,12 @@ assertLoopMatches(Context* context, const std::string& program,
   auto& rr = resolveModule(context, m->id());
   auto& reIterand = rr.byAst(iterand);
 
-  if (auto zip = iterand->toZip()) {
+  if (iterand->toZip()) {
     assert(false && "Zip iterands not handled in this test yet!");
     return;
   } else {
     int numExpectedActions = (needLeader || needFollower) ? 2 : 1;
-    assert(reIterand.associatedActions().size() == numExpectedActions);
+    assert(reIterand.associatedActions().size() == (size_t) numExpectedActions);
 
     auto& aa1 = reIterand.associatedActions()[0];
     assertIterIsCorrect(context, aa1, iterKindStr);
