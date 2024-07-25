@@ -2255,6 +2255,8 @@ module DefaultRectangular {
   TODO: Pull simple runtime implementation up into module code
   */
   private proc complexTransfer(A, aView, B, bView) {
+    use ChplConfig;
+
     const Alocid = A.data.locale.id;
     const Asublocid = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
                           chpl_sublocFromLocaleID(A.data.locale.chpl_localeid());
