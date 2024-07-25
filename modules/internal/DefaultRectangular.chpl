@@ -2171,10 +2171,10 @@ module DefaultRectangular {
 
     if enableParallelGetsInAssignment || enableParallelPutsInAssignment {
       if isSizeAboveThreshold && !isFullyLocal {
-        if enableParallelPutsInAssignment && _isLocSulocSameAsHere(Blocid, Bsublocid) {
+        if enableParallelPutsInAssignment && _isLocSublocSameAsHere(Blocid, Bsublocid) {
           doParallelAssign = true;
         }
-        else if enableParallelGetsInAssignment && !_isLocSulocSameAsHere(Blocid, Bsublocid) {
+        else if enableParallelGetsInAssignment && !_isLocSublocSameAsHere(Blocid, Bsublocid) {
           doParallelAssign = true;
         }
       }
