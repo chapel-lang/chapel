@@ -25,7 +25,9 @@ fi
 export CHPL_NIGHTLY_TEST_DIRS=studies/arkouda/
 export CHPL_TEST_ARKOUDA=true
 
-ARKOUDA_DEP_DIR=$COMMON_DIR/arkouda-deps
+# Temporary bandaid, revert after hpcdc issues resolved
+# ARKOUDA_DEP_DIR=$COMMON_DIR/arkouda-deps
+ARKOUDA_DEP_DIR=/cray/css/users/chapelu/arkouda-deps
 if [ -d "$ARKOUDA_DEP_DIR" ]; then
   export ARKOUDA_ARROW_PATH=${ARKOUDA_ARROW_PATH:-$ARKOUDA_DEP_DIR/arrow-install}
   export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install}
