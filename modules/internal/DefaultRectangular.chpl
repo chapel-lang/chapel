@@ -2096,8 +2096,11 @@ module DefaultRectangular {
     if CHPL_LOCALE_MODEL != "gpu" then
         return true;
 
-    const heresublocid = chpl_sublocFromLocaleID(here.chpl_localeid());
-    return sublocid == heresublocid;
+    const heresublocid = chpl_task_getRequestedSubloc();
+
+    // for the time being, consider all sublocale IDs less than zero to refer to
+    // the parent locale (e.g. host).
+    return (sublocid < 0 && heresublocid < 0) || sublocid == heresublocid;
   }
 
   private proc _simpleTransfer(A, aView, B, bView) {
