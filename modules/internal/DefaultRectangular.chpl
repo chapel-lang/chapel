@@ -2089,8 +2089,15 @@ module DefaultRectangular {
    */
   inline proc _isLocSublocSameAsHere(locid, sublocid) {
     use ChplConfig;
-    return locid == here.id &&
-           (CHPL_LOCALE_MODEL != "gpu" || sublocid == chpl_task_getRequestedSubloc());
+
+    if locid != here.id then
+        return false;
+
+    if CHPL_LOCALE_MODEL != "gpu" then
+        return true;
+
+    const heresublocid = chpl_sublocFromLocaleID(here.chpl_localeid());
+    return sublocid == heresublocid;
   }
 
   private proc _simpleTransfer(A, aView, B, bView) {
