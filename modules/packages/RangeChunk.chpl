@@ -166,7 +166,7 @@ module RangeChunk {
       }
     }
 
-    foreach i in 0..#nChunks {
+    foreach i in 0..<nChunks {
       var chunk: 2*RT;
       select (remPol) {
         when Thru do chunk = chunkOrderThru(nElems, nChunks, i);
