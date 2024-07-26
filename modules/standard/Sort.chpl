@@ -522,8 +522,8 @@ See the :proc:`sort` declared just above for details.
 .. note::
 
   Due to uncertainty about the usefulness of this routine, it is unstable.
-  Please comment on issue NUMBER TODO if you find this routine important in your
-  work.
+  Please comment on https://github.com/chapel-lang/chapel/issues/25648 if
+  you find this routine important in your work.
 
  */
 @unstable("sort with a region argument is unstable")
