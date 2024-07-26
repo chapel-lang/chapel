@@ -394,12 +394,12 @@ bool chpl_gpu_impl_can_sort(void){
 void* chpl_gpu_impl_host_register(void* var, size_t size) {
   hipHostRegister(var, size, hipHostRegisterPortable);
   void *dev_var;
-  hipHostGetDevicePointer(&dev_var, var, 0);
+  ROCM_CALL(hipHostGetDevicePointer(&dev_var, var, 0));
   return dev_var;
 }
 
 void chpl_gpu_impl_host_unregister(void* var) {
-  hipHostUnregister(var);
+  ROCM_CALL(hipHostUnregister(var));
 }
 
 

@@ -380,12 +380,12 @@ bool chpl_gpu_impl_can_sort(void){
 }
 
 void* chpl_gpu_impl_host_register(void* var, size_t size) {
-  cuMemHostRegister(var, size, CU_MEMHOSTREGISTER_PORTABLE);
+  CUDA_CALL(cuMemHostRegister(var, size, CU_MEMHOSTREGISTER_PORTABLE));
   return var;
 }
 
 void chpl_gpu_impl_host_unregister(void* var) {
-  cuMemHostUnregister(var);
+  CUDA_CALL(cuMemHostUnregister(var));
 }
 
 #endif // HAS_GPU_LOCALE
