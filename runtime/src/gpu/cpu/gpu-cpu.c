@@ -197,7 +197,7 @@ void chpl_gpu_impl_sort_##chpl_kind##_##data_type(data_type* data_in, \
 
 GPU_DEV_CUB_WRAP(DEF_ONE_SORT, SortKeys, keys)
 
-void chpl_gpu_impl_host_register(void* var, size_t size) { }
+void* chpl_gpu_impl_host_register(void* var, size_t size) { return var; }
 void chpl_gpu_impl_host_unregister(void* var) { }
 
 #undef DEF_ONE_SORT
