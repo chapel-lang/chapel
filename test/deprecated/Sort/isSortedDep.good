@@ -1,0 +1,2 @@
+isSortedDep.chpl:4: warning: 'isSorted' with the argument name 'Data' is deprecated, please use the version with the argument name 'x' instead
+true

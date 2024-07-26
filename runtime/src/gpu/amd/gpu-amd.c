@@ -391,15 +391,15 @@ bool chpl_gpu_impl_can_sort(void){
   return chpl_gpu_impl_can_reduce();
 }
 
-void chpl_gpu_impl_host_register(void* var, size_t size) {
-  // To do this we also need to get a device pointer using
-  // `hipHostGetDevicePointer` and pass the launched kernel
-
-  // hipHostRegister(var, size, hipHostRegisterPortable);
+void* chpl_gpu_impl_host_register(void* var, size_t size) {
+  hipHostRegister(var, size, hipHostRegisterPortable);
+  void *dev_var;
+  ROCM_CALL(hipHostGetDevicePointer(&dev_var, var, 0));
+  return dev_var;
 }
 
 void chpl_gpu_impl_host_unregister(void* var) {
-  // hipHostUnregister(var);
+  ROCM_CALL(hipHostUnregister(var));
 }
 
 

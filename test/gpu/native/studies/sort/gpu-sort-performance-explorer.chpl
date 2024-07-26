@@ -17,7 +17,7 @@ config const bitsAtATime = 8;
 config const inputDataScheme = 1;
 config type eltType = uint(32);
 
-config const seed = NPBRandom.oddTimeSeed();
+config const seed = (new randomStream(int(32))).seed;
 
 var methods = ["default", "gpuCub", "gpuRadix"];
 

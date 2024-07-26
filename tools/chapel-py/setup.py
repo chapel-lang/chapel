@@ -42,6 +42,8 @@ for line in chpl_variables_lines:
 
 have_llvm = str(chpl_variables.get("CHPL_LLVM"))
 llvm_config = str(chpl_variables.get("CHPL_LLVM_CONFIG"))
+host_cc = str(chpl_variables.get("CHPL_HOST_CC"))
+host_cxx = str(chpl_variables.get("CHPL_HOST_CXX"))
 
 host_bin_subdir = str(chpl_variables.get("CHPL_HOST_BIN_SUBDIR"))
 chpl_lib_path = os.path.join(chpl_home, "lib", "compiler", host_bin_subdir)
@@ -67,6 +69,8 @@ LDFLAGS += [
     chpl_lib_path,
 ]
 
+os.environ["CC"] = host_cc
+os.environ["CXX"] = host_cxx
 setup(
     name="chapel",
     version="0.1",
