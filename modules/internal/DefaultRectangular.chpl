@@ -2087,7 +2087,7 @@ module DefaultRectangular {
     sublocale matches. Sublocales are only in play with the GPU locale model,
     so avoid the check if we're using a different locale model.
    */
-  inline proc _isLocSublocSameAsHere(locid, sublocid) {
+  private inline proc _isLocSublocSameAsHere(locid, sublocid) {
     use ChplConfig;
 
     if locid != here.id then
