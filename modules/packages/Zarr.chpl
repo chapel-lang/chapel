@@ -33,7 +33,6 @@ module Zarr {
   use CTypes;
   use BlockDist;
   use Time;
-  use DynamicIters;
 
   require "blosc.h";
   require "-lblosc";
@@ -71,6 +70,10 @@ module Zarr {
     for key in timerDomain do if times[key].read() != 0 then yield (key, times[key].read());
   }
 
+  /*
+    Resets the profiling timer for Zarr IO operations. Should only be
+    used when compiled with zarrProfiling set to true.
+  */
   proc resetZarrProfiling() {
     for key in timerDomain do times[key].write(0);
   }
@@ -236,6 +239,7 @@ module Zarr {
     if zarrProfiling then s.restart();
     var copyIn: [chunkDomain] t = noinit;
     if zarrProfiling then times["Initializing copyIn"].add(s.elapsed());
+
     if zarrProfiling then s.restart();
     var numRead = blosc_decompress_ctx(compressedChunk.c_str(), c_ptrTo(copyIn), copyIn.size*c_sizeof(t), 1);
     if numRead <= 0 {
