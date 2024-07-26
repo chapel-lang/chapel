@@ -47,6 +47,9 @@ module Image {
 
   private use IO, Math;
 
+  private import this.PNGHelper;
+  private import this.JPGHelper;
+
 
   //
   // Configuration params/types
@@ -99,7 +102,11 @@ module Image {
   /* Defines what kind of image to output */
   enum imageType {
     /* A BMP image is written from a 2D array of pixels */
-    bmp
+    bmp,
+    /* a PNG image is written from a 2D array of pixels */
+    png,
+    /* a JPG image is written from a 2D array of pixels */
+    jpg,
   }
 
   /*
@@ -116,6 +123,8 @@ module Image {
                       else open(image, ioMode.cw).writer(locking=true);
     select format {
       when imageType.bmp do writeImageBMP(outfile, pixels);
+      when imageType.png do PNGHelper.writePng(outfile, pixels);
+      when imageType.jpg do JPGHelper.writeJpg(outfile, pixels);
       otherwise
         halt("Don't know how to write images of type: ", format);
     }
@@ -355,6 +364,120 @@ module Image {
         finished = true;
       }
     }
+  }
+
+  @chpldoc.nodoc
+  module PNGHelper {
+    enum PNGImpl {
+      stb_image,
+      libpng
+    }
+    config param pngImpl = PNGImpl.stb_image;
+    proc writePng(outfile, pixels: [?d]) {
+      if pngImpl == PNGImpl.stb_image {
+        import super.STBImageHelper;
+        STBImageHelper.writePng(outfile, pixels);
+      } else if pngImpl == PNGImpl.libpng {
+        compilerError("libpng is not yet supported");
+      } else {
+        compilerError("Unknown PNG implementation");
+      }
+    }
+  }
+
+  @chpldoc.nodoc
+  module JPGHelper {
+    enum JPGImpl {
+      stb_image
+    }
+    config param jpgImpl = JPGImpl.stb_image;
+    proc writeJpg(outfile, pixels: [?d]) {
+      if jpgImpl == JPGImpl.stb_image {
+        import super.STBImageHelper;
+        STBImageHelper.writeJpg(outfile, pixels);
+      } else {
+        compilerError("Unknown JPG implementation");
+      }
+    }
+  }
+
+  @chpldoc.nodoc
+  module STBImageHelper {
+    require "ImageHelper/stb_image_write_helper.h";
+
+    private use CTypes;
+    private use IO;
+    private use Image;
+
+    /*private*/ type stbi_write_func = c_fn_ptr;
+    private extern proc stbi_write_png_to_func(func: stbi_write_func,
+                               context: c_ptr(void),
+                               w: c_int,
+                               h: c_int,
+                               comp: c_int,
+                               data: c_ptrConst(void),
+                               stride_in_bytes: c_int): c_int;
+
+    private extern proc stbi_write_jpg_to_func(func: stbi_write_func,
+                               context: c_ptr(void),
+                               w: c_int,
+                               h: c_int,
+                               comp: c_int,
+                               data: c_ptrConst(void),
+                               quality: c_int): c_int;
+
+    private proc stbi_writeFuncLocking(context: c_ptr(void),
+                             data: c_ptrConst(void),
+                             size: c_int) {
+      const outfile = (context:c_ptr(fileWriter(locking=true))).deref();
+      try! outfile.writeBinary(data:c_ptrConst(uint(8)):c_ptr(uint(8)), size);
+    }
+    private proc stbi_writeFunc(context: c_ptr(void),
+                             data: c_ptrConst(void),
+                             size: c_int) {
+      const outfile = context:c_ptr(fileWriter(locking=false));
+      try! outfile.writeBinary(data:c_ptrConst(uint(8)), size);
+    }
+
+    // rewrite pixels into the right format for stb_image
+    private proc writeCommon(outfile, pixels: [?dom]) {
+      const rows = dom.dim(0).size, cols = dom.dim(1).size;
+
+      // 1=Y, 2=YA, 3=RGB, 4=RGBA
+      const mode: c_int = 3;
+      const width = cols;
+      const height = rows;
+      const nBytes = width * height * mode;
+      var data = allocate(uint(8), nBytes);
+      forall idx in 0..<(rows*cols) {
+        const (i,j) = dom.orderToIndex(idx);
+        const offset = idx * mode;
+        const p = pixels[i, j];
+        data[offset] = ((p >> colorOffset(rgbColor.red)) & colorMask):uint(8);
+        data[offset + 1] = ((p >> colorOffset(rgbColor.green)) & colorMask):uint(8);
+        data[offset + 2] = ((p >> colorOffset(rgbColor.blue)) & colorMask):uint(8);
+      }
+
+      const writeFunc = if outfile.locking
+                          then c_ptrTo(stbi_writeFuncLocking)
+                          else c_ptrTo(stbi_writeFunc);
+
+      const context = c_ptrToConst(outfile);
+      return (writeFunc, context, width.safeCast(c_int), height.safeCast(c_int), mode, data);
+    }
+
+    proc writePng(outfile, pixels: [?dom]) {
+      const (writeFunc, context, width, height, mode, data) = writeCommon(outfile, pixels);
+      const stride = width * mode;
+      stbi_write_png_to_func(writeFunc, context, width, height, mode, data, stride);
+    }
+
+    proc writeJpg(outfile, pixels: [?dom]) {
+      const (writeFunc, context, width, height, mode, data) = writeCommon(outfile, pixels);
+      const quality: c_int = 100;
+      stbi_write_jpg_to_func(writeFunc, context, width, height, mode, data, quality);
+    }
+
   }
 
 }
