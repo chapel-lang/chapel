@@ -502,6 +502,8 @@ proc sort(ref x: [], comparator:? = new DefaultComparator(),
     // TODO: implement a stable merge sort with parallel merge
     // TODO: create an in-place merge sort for the stable+minimizeMemory case
     // TODO: create a stable variant of the radix sort
+    // TODO: make sure that a new stableSort function has an early
+    //       return when the region is empty
     compilerError("stable sort not yet implemented");
   } else {
     unstableSort(x, comparator, x.domain.dim(0));
@@ -515,7 +517,7 @@ Sort the elements in the range 'region' within in the 1D rectangular array
 This function accepts a 'region' range as an optimized alternative to using an
 array view.
 
-See the ``proc sort`` declared just above for details.
+See the :proc:`sort` declared just above for details.
 
 .. note::
 
