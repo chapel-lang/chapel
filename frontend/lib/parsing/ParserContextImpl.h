@@ -2249,6 +2249,16 @@ CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locLoop,
                            std::move(body),
                            /*isExpressionLevel*/ false,
                            this->popLoopAttributeGroup()).release();
+  } else if (loopTypeUstr == USTR("coforall")) {
+    result = Coforall::build(builder, convertLocation(locLoop),
+                             std::move(index),
+                             toOwned(iterandExpr),
+                             toOwned(withClause),
+                             blockStyle,
+                             std::move(body),
+                             this->popLoopAttributeGroup()).release();
+  } else {
+    CHPL_ASSERT(false); // unhandled loop stmt
   }
 
   if (error) {
