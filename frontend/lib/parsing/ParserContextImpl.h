@@ -1482,11 +1482,6 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   bool parenless = (fp.formals == parenlessMarker);
   if (parenless) fp.formals = nullptr; // Don't free the marker.
 
-  // if there is no receiver built yet but we have a bad this-intent, error
-  if (!fp.thisIntent.isValid && fp.receiver == nullptr) {
-    syntax(fp.thisIntentLoc, "'%s' intent is not supported as a this-intent", qualifierToString((Qualifier)fp.thisIntent.intent));
-  }
-
   // Detect primary methods and create a receiver for them
   bool primaryMethod = false;
   if (currentScopeIsAggregate()) {
@@ -1544,9 +1539,8 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   // TODO: I think we should redundantly store the receiver intent
   // in the function as well as the receiver formal.
   if (!f->isMethod() &&
-      fp.thisIntent.isValid &&
       (Formal::Intent)fp.thisIntent.intent != Formal::DEFAULT_INTENT) {
-    if ((Formal::Intent)fp.thisIntent.intent == Formal::TYPE) {
+    if (fp.thisIntent.isValid && (Formal::Intent)fp.thisIntent.intent == Formal::TYPE) {
       error(location, "missing type for secondary type method '%s'.",
             identName->name().c_str());
     } else {
