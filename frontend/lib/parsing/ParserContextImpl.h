@@ -2314,6 +2314,10 @@ AstNode* ParserContext::buildGeneralLoopExpr(YYLTYPE locWhole,
                            std::move(body),
                            /*isExpressionLevel*/ true,
                            this->popLoopAttributeGroup()).release();
+  } else if (loopTypeUstr == USTR("coforall")) {
+    error = syntax(locWhole, "expression level 'coforall' loops are not supported.");
+  } else {
+    CHPL_ASSERT(false); // unhandled loop expr
   }
 
   if (error) return error;
