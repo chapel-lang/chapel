@@ -240,7 +240,7 @@ static void test6(Parser* parser) {
   assert(mod->stmt(0)->isCoforall());
   assert(mod->stmt(1)->isCoforall());
   assert(mod->stmt(2)->isErroneousExpression());
-  assert(mod->stmt(2)->isErroneousExpression());
+  assert(mod->stmt(3)->isErroneousExpression());
 
   auto coforall1 = mod->stmt(0)->toCoforall();
   assert(coforall1 != nullptr);
