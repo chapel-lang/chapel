@@ -115,6 +115,9 @@ studies/lcals/LCALS-raw-long.graph
 studies/lcals/LCALS-parallel-short.graph
 studies/lcals/LCALS-parallel-medium.graph
 studies/lcals/LCALS-parallel-long.graph
+studies/lcals/LCALS-raw-vector-only-short.graph
+studies/lcals/LCALS-raw-vector-only-medium.graph
+studies/lcals/LCALS-raw-vector-only-long.graph
 # suite: Shootout benchmarks
 studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
