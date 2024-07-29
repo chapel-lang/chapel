@@ -228,8 +228,8 @@ static void test6(Parser* parser) {
   auto parseResult = parseStringAndReportErrors(parser, "test6.chpl",
       "coforall a { }\n"
       "coforall zip(a,b) { }\n"
-      "var c1 = coforall a do ;\n"
-      "var c2 = coforall zip(a,b) do ;\n");
+      "var c1 = coforall a do 1;\n"
+      "var c2 = coforall zip(a,b) do 1;\n");
   auto numErrors = 2;
   assert(guard.errors().size() == (size_t) numErrors);
   assert("expression level 'coforall' loops are not supported" == guard.error(0)->message());
