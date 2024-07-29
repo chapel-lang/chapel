@@ -1630,6 +1630,7 @@ for_loop_kw :
   TFOR
 | TFORALL
 | TFOREACH
+| TCOFORALL
 ;
 
 loop_stmt_base:
@@ -1693,21 +1694,6 @@ loop_stmt_base:
     }
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
-  }
-| TCOFORALL expr TIN expr opt_task_intent_ls do_stmt
-  {
-    auto locHeader = context->makeSpannedLocation(@1, @4);
-    $$ = context->buildCoforallLoopStmt(@$, locHeader, @2, @6, $2, $4, $5, $6);
-  }
-| TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt
-  {
-    auto locHeader = context->makeSpannedLocation(@1, @4);
-    $$ = context->buildCoforallLoopStmt(@$, locHeader, @2, @6, $2, $4, $5, $6);
-  }
-| TCOFORALL expr opt_task_intent_ls do_stmt
-  {
-    auto locHeader = context->makeSpannedLocation(@1, @2);
-    $$ = context->buildCoforallLoopStmt(@$, locHeader, @1, @4, nullptr, $2, $3, $4);
   }
 | TFOR TPARAM ident_def TIN expr do_stmt
   {
