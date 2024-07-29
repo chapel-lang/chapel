@@ -233,14 +233,14 @@ static void test6(Parser* parser) {
   auto numErrors = 2;
   assert(guard.errors().size() == (size_t) numErrors);
   assert("expression level 'coforall' loops are not supported" == guard.error(0)->message());
-  assert("expression level 'coforall' loops are not supported" == guard.error(1)->message());
+  assert("expression level loops with 'zip' must have an index" == guard.error(1)->message());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 4);
   assert(mod->stmt(0)->isCoforall());
   assert(mod->stmt(1)->isCoforall());
-  assert(mod->stmt(2)->isErroneousExpression());
-  assert(mod->stmt(3)->isErroneousExpression());
+  assert(mod->stmt(2)->isVariable());
+  assert(mod->stmt(3)->isVariable());
 
   auto coforall1 = mod->stmt(0)->toCoforall();
   assert(coforall1 != nullptr);
@@ -256,6 +256,16 @@ static void test6(Parser* parser) {
   assert(coforall2->iterand()->isZip());
   assert(coforall2->numStmts() == 0);
   assert(guard.realizeErrors() == numErrors);
+
+  auto var1 = mod->stmt(2)->toVariable();
+  assert(var1 != nullptr);
+  assert(var1->initExpression() != nullptr);
+  assert(var1->initExpression()->isErroneousExpression());
+
+  auto var2 = mod->stmt(3)->toVariable();
+  assert(var2 != nullptr);
+  assert(var2->initExpression() != nullptr);
+  assert(var2->initExpression()->isErroneousExpression());
 }
 
 
