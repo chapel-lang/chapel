@@ -3121,6 +3121,10 @@ for_expr_base:
   {
     $$ = context->buildGeneralLoopExpr(@$, @2, @4, $1, nullptr, $2, $4);
   }
+| for_loop_kw zippered_iterator TDO expr %prec TFOR
+  {
+    $$ = context->buildGeneralLoopExpr(@$, @2, @4, $1, nullptr, $2, $4);
+  }
 | for_loop_kw expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
   {
     auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
