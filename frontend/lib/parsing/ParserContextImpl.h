@@ -1369,7 +1369,7 @@ ParserContext::buildThisFormal(YYLTYPE location,
   // its simpler to report the error and then return a default rather than error
   Formal::Intent formalIntent = Formal::DEFAULT_INTENT;
   if (!intent.isValid) {
-    syntax(locIntent, "'%s' intent is not supported as a this-intent", qualifierToString((Qualifier)intent.intent));
+    syntax(locIntent, "'%s' intent is not supported for method receiver", qualifierToString((Qualifier)intent.intent));
   } else {
     formalIntent = (Formal::Intent)intent.intent;
   }

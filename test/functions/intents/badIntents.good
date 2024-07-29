@@ -1,33 +1,33 @@
-badIntents.chpl:5: syntax error: 'in' intent is not supported as a this-intent
-badIntents.chpl:6: syntax error: 'const in' intent is not supported as a this-intent
-badIntents.chpl:7: syntax error: 'inout' intent is not supported as a this-intent
-badIntents.chpl:8: syntax error: 'out' intent is not supported as a this-intent
-badIntents.chpl:11: syntax error: 'var' intent is not supported as a this-intent
-badIntents.chpl:16: syntax error: 'in' intent is not supported as a this-intent
-badIntents.chpl:17: syntax error: 'const in' intent is not supported as a this-intent
-badIntents.chpl:18: syntax error: 'inout' intent is not supported as a this-intent
-badIntents.chpl:19: syntax error: 'out' intent is not supported as a this-intent
-badIntents.chpl:22: syntax error: 'var' intent is not supported as a this-intent
-badIntents.chpl:27: syntax error: 'in' intent is not supported as a this-intent
-badIntents.chpl:28: syntax error: 'const in' intent is not supported as a this-intent
-badIntents.chpl:29: syntax error: 'inout' intent is not supported as a this-intent
-badIntents.chpl:30: syntax error: 'out' intent is not supported as a this-intent
-badIntents.chpl:33: syntax error: 'var' intent is not supported as a this-intent
-badIntents.chpl:40: syntax error: 'in' intent is not supported as a this-intent
-badIntents.chpl:41: syntax error: 'const in' intent is not supported as a this-intent
-badIntents.chpl:42: syntax error: 'inout' intent is not supported as a this-intent
-badIntents.chpl:43: syntax error: 'out' intent is not supported as a this-intent
-badIntents.chpl:46: syntax error: 'var' intent is not supported as a this-intent
-badIntents.chpl:51: syntax error: 'in' intent is not supported as a this-intent
-badIntents.chpl:52: syntax error: 'const in' intent is not supported as a this-intent
-badIntents.chpl:53: syntax error: 'inout' intent is not supported as a this-intent
-badIntents.chpl:54: syntax error: 'out' intent is not supported as a this-intent
-badIntents.chpl:57: syntax error: 'var' intent is not supported as a this-intent
-badIntents.chpl:62: syntax error: 'in' intent is not supported as a this-intent
-badIntents.chpl:63: syntax error: 'const in' intent is not supported as a this-intent
-badIntents.chpl:64: syntax error: 'inout' intent is not supported as a this-intent
-badIntents.chpl:65: syntax error: 'out' intent is not supported as a this-intent
-badIntents.chpl:68: syntax error: 'var' intent is not supported as a this-intent
+badIntents.chpl:5: syntax error: 'in' intent is not supported for method receiver
+badIntents.chpl:6: syntax error: 'const in' intent is not supported for method receiver
+badIntents.chpl:7: syntax error: 'inout' intent is not supported for method receiver
+badIntents.chpl:8: syntax error: 'out' intent is not supported for method receiver
+badIntents.chpl:11: syntax error: 'var' intent is not supported for method receiver
+badIntents.chpl:16: syntax error: 'in' intent is not supported for method receiver
+badIntents.chpl:17: syntax error: 'const in' intent is not supported for method receiver
+badIntents.chpl:18: syntax error: 'inout' intent is not supported for method receiver
+badIntents.chpl:19: syntax error: 'out' intent is not supported for method receiver
+badIntents.chpl:22: syntax error: 'var' intent is not supported for method receiver
+badIntents.chpl:27: syntax error: 'in' intent is not supported for method receiver
+badIntents.chpl:28: syntax error: 'const in' intent is not supported for method receiver
+badIntents.chpl:29: syntax error: 'inout' intent is not supported for method receiver
+badIntents.chpl:30: syntax error: 'out' intent is not supported for method receiver
+badIntents.chpl:33: syntax error: 'var' intent is not supported for method receiver
+badIntents.chpl:40: syntax error: 'in' intent is not supported for method receiver
+badIntents.chpl:41: syntax error: 'const in' intent is not supported for method receiver
+badIntents.chpl:42: syntax error: 'inout' intent is not supported for method receiver
+badIntents.chpl:43: syntax error: 'out' intent is not supported for method receiver
+badIntents.chpl:46: syntax error: 'var' intent is not supported for method receiver
+badIntents.chpl:51: syntax error: 'in' intent is not supported for method receiver
+badIntents.chpl:52: syntax error: 'const in' intent is not supported for method receiver
+badIntents.chpl:53: syntax error: 'inout' intent is not supported for method receiver
+badIntents.chpl:54: syntax error: 'out' intent is not supported for method receiver
+badIntents.chpl:57: syntax error: 'var' intent is not supported for method receiver
+badIntents.chpl:62: syntax error: 'in' intent is not supported for method receiver
+badIntents.chpl:63: syntax error: 'const in' intent is not supported for method receiver
+badIntents.chpl:64: syntax error: 'inout' intent is not supported for method receiver
+badIntents.chpl:65: syntax error: 'out' intent is not supported for method receiver
+badIntents.chpl:68: syntax error: 'var' intent is not supported for method receiver
 badIntents.chpl:76: syntax error: 'in' intent is not a supported return intent
 badIntents.chpl:77: syntax error: 'const in' intent is not a supported return intent
 badIntents.chpl:78: syntax error: 'inout' intent is not a supported return intent
