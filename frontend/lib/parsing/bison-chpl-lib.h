@@ -122,6 +122,33 @@ extern int yychpl_debug;
     return makeCommentsAndStmt(comments, stmt.release());
   }
 
+  struct MaybeIntent {
+    Qualifier intent;
+    bool isValid;
+  };
+  static inline
+  MaybeIntent makeIntent(Qualifier intent) {
+    MaybeIntent ret = {intent, true};
+    return ret;
+  }
+  static inline
+  MaybeIntent makeIntent(TaskVar::Intent intent) {
+    return makeIntent((Qualifier)intent);
+  }
+  static inline
+  MaybeIntent makeIntent(Function::ReturnIntent intent) {
+    return makeIntent((Qualifier)intent);
+  }
+  static inline
+  MaybeIntent makeIntent(Formal::Intent intent) {
+    return makeIntent((Qualifier)intent);
+  }
+  static inline
+  MaybeIntent makeInvalidIntent(Qualifier intent) {
+    MaybeIntent ret = {intent, false};
+    return ret;
+  }
+
   // A struct for storing a partially constructed function prototype
   // during parsing for linkage_spec/fn_decl_stmt/etc
   // It is just saving some components of a function to be used
@@ -137,10 +164,12 @@ extern int yychpl_debug;
     bool isInline;
     bool isOverride;
     Function::Kind kind;
-    Formal::Intent thisIntent;
+    MaybeIntent thisIntent;
+    TextLocation thisIntentLoc;
     Formal* receiver;
     Identifier* name;
-    Function::ReturnIntent returnIntent;
+    MaybeIntent returnIntent;
+    TextLocation returnIntentLoc;
     bool throws;
     ParserExprList* formals;
     AstNode* returnType;
@@ -191,25 +220,6 @@ extern int yychpl_debug;
     TextLocation locName;
   };
 
-  struct MaybeIntent {
-    Qualifier intent;
-    bool isValid;
-  };
-  static inline
-  MaybeIntent makeIntent(Qualifier intent) {
-    MaybeIntent ret = {intent, true};
-    return ret;
-  }
-  static inline
-  MaybeIntent makeIntent(TaskVar::Intent intent) {
-    return makeIntent((Qualifier)intent);
-  }
-  static inline
-  MaybeIntent makeInvalidIntent(Qualifier intent) {
-    MaybeIntent ret = {intent, false};
-    return ret;
-  }
-
   static inline MaybeNamedActual
   makeMaybeNamedActual(AstNode* expr, PODUniqueString name,
                        TextLocation locName=TextLocation::create()) {
@@ -240,9 +250,9 @@ extern int yychpl_debug;
     // integer/enum values
 
     asttags::AstTag astTag;
-    Formal::Intent intentTag;
+    MaybeIntent intentTag;
     Function::Kind functionKind;
-    Function::ReturnIntent returnTag;
+    MaybeIntent returnTag;
     Decl::Linkage linkageTag;
     Module::Kind moduleKind;
     New::Management newManagement;
@@ -284,12 +294,12 @@ extern int yychpl_debug;
   #define YYSTYPE_IS_TRIVIAL 1
 
   #endif
-#line 320 "chpl.ypp"
+#line 330 "chpl.ypp"
 
   // forward declare ParserContext
   struct ParserContext;
 
-#line 293 "bison-chpl-lib.h"
+#line 303 "bison-chpl-lib.h"
 
 /* Token kinds.  */
 #ifndef YYCHPL_TOKENTYPE
@@ -517,14 +527,14 @@ yychpl_pstate *yychpl_pstate_new (void);
 void yychpl_pstate_delete (yychpl_pstate *ps);
 
 /* "%code provides" blocks.  */
-#line 328 "chpl.ypp"
+#line 338 "chpl.ypp"
 
   extern int yychpl_debug;
 
   void yychpl_error(YYLTYPE*       loc,
                     ParserContext* context,
                     const char*    errorMessage);
-#line 336 "chpl.ypp"
+#line 346 "chpl.ypp"
 
   // include ParserContext.h here because it depends
   // upon YYLTYPE and other types defined by the generated parser
@@ -533,6 +543,6 @@ void yychpl_pstate_delete (yychpl_pstate *ps);
   // include override of macro used to compute locations
   #include "parser-yylloc-default.h"
 
-#line 537 "bison-chpl-lib.h"
+#line 547 "bison-chpl-lib.h"
 
 #endif /* !YY_YYCHPL_BISON_CHPL_LIB_H_INCLUDED  */

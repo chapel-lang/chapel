@@ -362,14 +362,17 @@ struct ParserContext {
   AstNode*
   buildFormal(YYLTYPE location,
               YYLTYPE locName,
-              Formal::Intent intent,
+              YYLTYPE locIntent,
+              MaybeIntent intent,
               PODUniqueString name,
               AstNode* typeExpr,
               AstNode* initExpr,
               bool consumeAttributeGroup=false);
 
   AstNode*
-  buildVarArgFormal(YYLTYPE location, Formal::Intent intent,
+  buildVarArgFormal(YYLTYPE location,
+                    YYLTYPE locIntent,
+                    MaybeIntent intent,
                     PODUniqueString name,
                     YYLTYPE nameLocation,
                     AstNode* typeExpr,
@@ -377,7 +380,9 @@ struct ParserContext {
                     bool consumeAttributeGroup=false);
 
   AstNode*
-  buildTupleFormal(YYLTYPE location, Formal::Intent intent,
+  buildTupleFormal(YYLTYPE location,
+                   YYLTYPE locIntent,
+                   MaybeIntent intent,
                    ParserExprList* components,
                    AstNode* typeExpr,
                    AstNode* initExpr);
@@ -393,7 +398,7 @@ struct ParserContext {
 
   AstNode*
   buildAnonFormal(YYLTYPE location, YYLTYPE locIntent,
-                  Formal::Intent intent,
+                  MaybeIntent intent,
                   AstNode* formalType);
 
   AstNode*
@@ -401,6 +406,13 @@ struct ParserContext {
 
   AstNode*
   buildAnonFormal(YYLTYPE location, AstNode* formalType);
+
+  Formal*
+  buildThisFormal(YYLTYPE location,
+                  YYLTYPE locIntent,
+                  MaybeIntent intent,
+                  AstNode* typeExpression,
+                  AstNode* initExpression);
 
   CommentsAndStmt
   buildExternExportFunctionDecl(YYLTYPE location, FunctionParts& fp);
