@@ -1315,7 +1315,6 @@ KernelArg::KernelArg(Symbol* symInLoop, GpuKernel* kernel, bool isCompilerGenera
 
   if (isRefIntentScalarArg)
   {
-    printf("Host registsred var: %s\n", symInLoop->name);
     this->kind_ = GpuArgKind::ADDROF | GpuArgKind::HOST_REGISTER;
     kernel->incNumHostRegisteredVars();
   } else if (isClass(symValType) ||
