@@ -223,6 +223,42 @@ static void test5(Parser* parser) {
   assert(guard.realizeErrors() == numErrors);
 }
 
+static void test6(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test6.chpl",
+      "coforall a { }\n"
+      "coforall zip(a,b) { }\n"
+      "var c1 = coforall a do ;\n"
+      "var c2 = coforall zip(a,b) do ;\n");
+  auto numErrors = 2;
+  assert(guard.errors().size() == (size_t) numErrors);
+  assert("expression level 'coforall' loops are not supported" == guard.error(0)->message());
+  assert("expression level 'coforall' loops are not supported" == guard.error(1)->message());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 4);
+  assert(mod->stmt(0)->isCoforall());
+  assert(mod->stmt(1)->isCoforall());
+  assert(mod->stmt(2)->isErroneousExpression());
+  assert(mod->stmt(2)->isErroneousExpression());
+
+  auto coforall1 = mod->stmt(0)->toCoforall();
+  assert(coforall1 != nullptr);
+  assert(coforall1->index() == nullptr);
+  assert(coforall1->iterand() != nullptr);
+  assert(coforall1->iterand()->isIdentifier());
+  assert(coforall1->numStmts() == 0);
+
+  auto coforall2 = mod->stmt(1)->toCoforall();
+  assert(coforall2 != nullptr);
+  assert(coforall2->index() == nullptr);
+  assert(coforall2->iterand() != nullptr);
+  assert(coforall2->iterand()->isZip());
+  assert(coforall2->numStmts() == 0);
+  assert(guard.realizeErrors() == numErrors);
+}
+
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -236,6 +272,7 @@ int main() {
   test3(p);
   test4(p);
   test5(p);
+  test6(p);
 
   return 0;
 }
