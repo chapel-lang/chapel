@@ -347,7 +347,7 @@ static void cfg_init(kernel_cfg* cfg, const char* fn_name,
   cfg->host_registered_vars = chpl_mem_alloc(
     cfg->n_host_registered * sizeof(void**), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF,
     ln, fn);
-  for(int i = 0; i < n_host_registered_vars; i++) {
+  for(int i = 0; i < cfg->n_host_registered; i++) {
     cfg->host_registered_vars[i] = &cfg->host_registered_var_boxes[i];
   }
 }
@@ -636,7 +636,7 @@ void chpl_gpu_deinit_kernel_cfg(void* _cfg) {
   }
   chpl_mem_free(cfg->reduce_vars, cfg->ln, cfg->fn);
 
-  for (int i=0 ; i<cfg->n_reduce_vars ; i++) {
+  for (int i=0 ; i<cfg->n_host_registered; i++) {
     chpl_gpu_impl_host_unregister(cfg->host_registered_vars[i]);
   }
   chpl_mem_free(cfg->host_registered_var_boxes, cfg->ln, cfg->fn);
