@@ -1193,10 +1193,12 @@ findErrorInFnSignatureParts(ParserContext* context, YYLTYPE location,
 }
 
 static inline
-Function::ReturnIntent checkReturnIntent(YYLTYPE location, MaybeIntent intent) {
+Function::ReturnIntent checkReturnIntent(ParserContext* context,
+                                         YYLTYPE location,
+                                         MaybeIntent intent) {
   auto returnIntent = Function::ReturnIntent::DEFAULT_RETURN_INTENT;
   if (!intent.isValid) {
-    syntax(location, "'%s' intent is not a supported return intent", qualifierToString((Qualifier)intent.intent));
+    context->syntax(location, "'%s' intent is not a supported return intent", qualifierToString((Qualifier)intent.intent));
   } else {
     returnIntent = (Function::ReturnIntent)intent.intent;
   }
@@ -1225,7 +1227,7 @@ ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
   auto identNameLoc = builder->getLocation(identName.get());
   CHPL_ASSERT(!identNameLoc.isEmpty());
 
-  auto returnIntent = checkReturnIntent(fp.returnIntentLoc, fp.returnIntent);
+  auto returnIntent = checkReturnIntent(this, fp.returnIntentLoc, fp.returnIntent);
 
   auto f = Function::build(builder, identNameLoc,
                            toOwned(fp.attributeGroup),
@@ -1426,7 +1428,7 @@ ParserContext::buildFunctionType(YYLTYPE location, FunctionParts& fp) {
   auto kind = (FunctionSignature::Kind) fp.kind;
   owned<Formal> receiver = nullptr;
   auto returnIntent = (FunctionSignature::ReturnIntent)
-                        checkReturnIntent(fp.returnIntentLoc, fp.returnIntent);
+                        checkReturnIntent(this, fp.returnIntentLoc, fp.returnIntent);
   const bool parenless = false;
   auto formals = consumeList(fp.formals);
 
@@ -1505,7 +1507,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   auto identNameLoc = builder->getLocation(identName.get());
   CHPL_ASSERT(!identNameLoc.isEmpty());
 
-  auto returnIntent = checkReturnIntent(fp.returnIntentLoc, fp.returnIntent);
+  auto returnIntent = checkReturnIntent(this, fp.returnIntentLoc, fp.returnIntent);
 
   auto f = Function::build(builder, convertLocation(location),
                            toOwned(fp.attributeGroup),
@@ -1603,7 +1605,7 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
     auto identNameLoc = builder->getLocation(identName.get());
     CHPL_ASSERT(!identNameLoc.isEmpty());
 
-    auto returnIntent = checkReturnIntent(fp.returnIntentLoc, fp.returnIntent);
+    auto returnIntent = checkReturnIntent(this, fp.returnIntentLoc, fp.returnIntent);
 
     auto f = Function::build(builder, identNameLoc,
                              toOwned(fp.attributeGroup),
