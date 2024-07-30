@@ -3,4 +3,4 @@
 sort $2 > $2.tmp
 
 # ignore launches from internal modules and data movement
-grep -v 'modules/internal\|copy from' $2.tmp >$2
+grep -v 'copy from' $2.tmp >$2
