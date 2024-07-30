@@ -32,10 +32,7 @@ module SortedMap {
   private use HaltWrappers;
   private use SortedSet;
   private use IO;
-  public use Sort only DefaultComparator;
-
-  @deprecated("The variable 'defaultComparator' is deprecated, please use a new instance of the :record:`DefaultComparator` type instead.")
-  var defaultComparator = new DefaultComparator();
+  public use Sort;
 
   // Lock code lifted from modules/standard/List.chpl.
   @chpldoc.nodoc

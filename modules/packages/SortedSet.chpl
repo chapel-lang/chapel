@@ -41,10 +41,7 @@ module SortedSet {
   private use Treap;
   private use Reflection;
   private use IO;
-  public use Sort only DefaultComparator;
-
-  @deprecated("The variable 'defaultComparator' is deprecated, please use a new instance of the :record:`DefaultComparator` type instead.")
-  var defaultComparator = new DefaultComparator();
+  public use Sort;
 
   record sortedSet : writeSerializable {
     /* The type of the elements contained in this sortedSet. */
