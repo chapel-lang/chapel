@@ -595,6 +595,25 @@ static void test8() {
   r = canPass(context, anEnum, anyEnumType); assert(passesInstantiates(r));
 }
 
+static void test9() {
+  printf("test9\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      record Bar {
+        var x;
+      }
+
+      var a : Bar(int);
+      var b = new Bar(3);
+      )""", {"a", "b"});
+
+  CanPassResult r;
+  r = canPass(context, vars.at("b"), vars.at("a")); assert(passesAsIs(r));
+}
+
 int main() {
   test1();
   test2();
@@ -604,6 +623,7 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
 
   return 0;
 }
