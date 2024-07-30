@@ -188,7 +188,7 @@ proc main {
   }
 
   writeln("\n freeLoopSuiteRunInfo...");
-  writeln("\n DONE!!! ");
+  writeln("\n DONE!!!");
 }
 
 proc computeStats(ilv: LoopVariantID, loop_stats: [] shared LoopStat, do_fom: bool) {

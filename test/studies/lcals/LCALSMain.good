@@ -8,9 +8,10 @@
  run suite: pass = 0
 	 run loop variant ---> RAW
 	 run loop variant ---> RAW_OMP
+	 run loop variant ---> RAW_VECTOR_ONLY
 
  generate reports....
 
  freeLoopSuiteRunInfo...
 
- DONE!!! 
+ DONE!!!
