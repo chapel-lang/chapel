@@ -35,13 +35,12 @@ float kernel() {
 }
 
 void c_version(int initArray, int printTime, int printCorrectness) {
-
   if (initArray) {
     #ifdef seed
     srand(seed);
     #endif
     // init backwards to preseve cache
-    for (long i = N-1; i >= N; i--) {
+    for (long i = N-1; i >= 0; i--) {
       nums[i] = rand();
     }
   }
@@ -61,5 +60,17 @@ void c_version(int initArray, int printTime, int printCorrectness) {
   for (int i = 0; i < iters; i++) {
     sum += dest[i];
   }
-  if (printCorrectness) printf("%f\n", sum);
+  if (printCorrectness) printf("%6.2f\n", sum);
+}
+
+int main(int argc, char **argv) {
+  if (argc != 4) {
+    printf("Usage: %s <initArray> <printTime> <printCorrectness>\n", argv[0]);
+    return 1;
+  }
+  int initArray = atoi(argv[1]);
+  int printTime = atoi(argv[2]);
+  int printCorrectness = atoi(argv[3]);
+  c_version(initArray, printTime, printCorrectness);
+  return 0;
 }

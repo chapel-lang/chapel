@@ -1,1 +1,1 @@
---no-ieee-float loopDivision_c.h loopDivision_c.o -sinitArray=false
+--no-ieee-float

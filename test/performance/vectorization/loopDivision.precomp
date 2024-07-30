@@ -1,8 +1,0 @@
-#!/bin/bash
-
-chpl=$3
-chpl_home=$($chpl --print-chpl-home)
-compiler=$($chpl_home/util/printchplenv --all --simple | grep CHPL_TARGET_CC | sed 's/CHPL_TARGET_CC=//')
-
-$compiler -O3 -ffast-math -c loopDivision_c.c -o loopDivision_c.o
-

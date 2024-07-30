@@ -1,1 +1,1 @@
--sN=100 loopDivision_c.h loopDivision_c.o
+-sseed=17 -sN=100

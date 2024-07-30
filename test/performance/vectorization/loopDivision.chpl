@@ -53,7 +53,7 @@ proc main() {
     var rs = if seed == 0
               then new randomStream(nums.eltType)
               else new randomStream(nums.eltType, seed);
-    // init backwards to preseve cache
+    // init backwards to preserve cache
     for i in 0..<N by -1 {
       nums[i] = rs.next();
     }
@@ -74,9 +74,6 @@ proc main() {
   for i in 0..<iters {
     sum += dest[i];
   }
-  if printCorrectness then writeln(sum);
-
-  extern proc c_version(initArray: c_int, printTime: c_int, printCorrectness: c_int);
-  c_version(initArray:c_int, printTime:c_int, printCorrectness:c_int);
+  if printCorrectness then writef("%6.2dr\n", sum);
 
 }
