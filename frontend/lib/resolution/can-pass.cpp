@@ -982,10 +982,6 @@ CanPassResult CanPassResult::canPass(Context* context,
     return fail(FAIL_UNKNOWN_FORMAL_TYPE); // unknown formal type, can't resolve
   }
 
-  // gdbShouldBreakHere();
-  auto asdf = canInstantiate(context, actualQT, formalQT);
-  (void)asdf;
-
   if (isTypeGeneric(context, formalQT)) {
     // Check to see if we should proceed with instantiation.
     // Further checking will occur after the instantiation occurs,
@@ -1015,17 +1011,6 @@ CanPassResult CanPassResult::canPass(Context* context,
       //
       // Fall through to the checks below.
     } else {
-      return got;
-    }
-  }
-
-  // Try instantiating if the formal is a (partially or fully) instantiated
-  // generic type.
-  if (actualQT.type()->isCompositeType() &&
-      formalQT.type()->isCompositeType() &&
-      formalQT.type()->toCompositeType()->instantiatedFromCompositeType()) {
-    auto got = canInstantiate(context, actualQT, formalQT);
-    if (got.instantiates()) {
       return got;
     }
   }

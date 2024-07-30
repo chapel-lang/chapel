@@ -57,24 +57,12 @@ CompositeType::areSubsInstantiationOf(Context* context,
     if (pSearch != pSubs.end()) {
       QualifiedType pSubType = pSearch->second;
       // check the types
-      if (pSubType.kind() == QualifiedType::TYPE &&
-          mySubType.kind() != QualifiedType::TYPE) {
-        auto r =
-            canPass(context, mySubType,
-                    QualifiedType(QualifiedType::CONST_REF, pSubType.type()));
-        if (r.passes()) {
-          // the partial sub is a type, and my sub can be passed to that type
-        } else {
-          return false;
-        }
+      auto r = canPass(context, mySubType, pSubType);
+      if (r.passes() && !r.promotes() && !r.converts()) {
+        // instantiation and same-type passing are allowed here
       } else {
-        auto r = canPass(context, mySubType, pSubType);
-        if (r.passes() && !r.promotes() && !r.converts()) {
-          // instantiation and same-type passing are allowed here
-        } else {
-          // it was not an instantiation
-          return false;
-        }
+        // it was not an instantiation
+        return false;
       }
     } else {
       // If the ID isn't found, then that means the generic component doesn't
