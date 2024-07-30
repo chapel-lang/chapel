@@ -257,8 +257,10 @@ typedef struct kernel_cfg_s {
   void*** kernel_params;
   int n_host_registered;
   int cur_host_registered_var;
-  void** host_registered_var_boxes;
-  void*** host_registered_vars;
+  void** host_registered_var_boxes; // array of device pointers
+  void*** host_registered_vars;     // array of pointers to device pointer
+                                    // (stored in host_registered_var_boxes)
+  void** host_registered_vars_host_ptrs; // array of host pointers
 
   // Keep track of kernel parameters we dynamically allocate memory for so
   // later on we know what we need to free.
@@ -345,6 +347,9 @@ static void cfg_init(kernel_cfg* cfg, const char* fn_name,
     cfg->n_host_registered * sizeof(void*), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF,
     ln, fn);
   cfg->host_registered_vars = chpl_mem_alloc(
+    cfg->n_host_registered * sizeof(void**), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF,
+    ln, fn);
+  cfg->host_registered_vars_host_ptrs = chpl_mem_alloc(
     cfg->n_host_registered * sizeof(void**), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF,
     ln, fn);
   for(int i = 0; i < cfg->n_host_registered; i++) {
@@ -637,10 +642,11 @@ void chpl_gpu_deinit_kernel_cfg(void* _cfg) {
   chpl_mem_free(cfg->reduce_vars, cfg->ln, cfg->fn);
 
   for (int i=0 ; i<cfg->n_host_registered; i++) {
-    chpl_gpu_impl_host_unregister(*(cfg->host_registered_vars[i]));
+    chpl_gpu_impl_host_unregister(cfg->host_registered_vars_host_ptrs[i]);
   }
   chpl_mem_free(cfg->host_registered_var_boxes, cfg->ln, cfg->fn);
   chpl_mem_free(cfg->host_registered_vars, cfg->ln, cfg->fn);
+  chpl_mem_free(cfg->host_registered_vars_host_ptrs, cfg->ln, cfg->fn);
 
   chpl_mem_free(cfg, ((kernel_cfg*)cfg)->ln, ((kernel_cfg*)cfg)->fn);
   CHPL_GPU_DEBUG("Deinitialized kernel config\n");
@@ -712,6 +718,7 @@ void chpl_gpu_arg_host_register(void* _cfg, void* arg, size_t size) {
   void *dev_arg = chpl_gpu_impl_host_register(*((void**)arg), size);
   *(cfg->host_registered_vars[cfg->cur_host_registered_var]) = dev_arg;
   cfg_add_direct_param(cfg, cfg->host_registered_vars[cfg->cur_host_registered_var]);
+  cfg->host_registered_vars_host_ptrs[cfg->cur_host_registered_var] = *((void**)arg);
   cfg->cur_host_registered_var += 1;
   CHPL_GPU_DEBUG("\tAdded ref intent param (at %d): %p\n", cfg->cur_param,  dev_arg);
 }
