@@ -406,9 +406,11 @@ proc chpl_check_comparator(comparator, type eltType) param {
 
 pragma "unsafe" // due to 'tmp' default-initialized to nil for class types
 private
-proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
-  if Dom.hasUnitStride(){
-    var tmp:Data[Dom.low].type;
+proc radixSortOkAndStrideOne(Data: [] ?eltType,
+                             comparator,
+                             region: range(?)) param {
+  if region.strides == strideKind.one {
+    var tmp:Data[Data.domain.low].type;
     if canResolveMethod(comparator, "keyPart", tmp, 0) {
       return true;
     } else if canResolveMethod(comparator, "key", tmp) {
@@ -419,6 +421,31 @@ proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
     }
   }
   return false;
+}
+
+private proc unstableSort(ref x: [], comparator, region: range(?)) {
+  if region.low >= region.high then
+    return;
+
+  if radixSortOkAndStrideOne(x, comparator, region) {
+    // TODO: use a sample sort if the input does not have enough
+    // randomness, according to some heuristic
+
+    var simplerSortSize=50_000;
+    if region.size < simplerSortSize {
+      // TODO: use quicksort instead in these small cases
+      MSBRadixSort.msbRadixSort(x, comparator=comparator, region=region);
+      return;
+    }
+
+    // use the two-array radix sort which is more parallel / faster
+    TwoArrayRadixSort.twoArrayRadixSort(x, comparator=comparator,
+                                        region=region);
+  } else {
+    // use quick sort, which is currently in-place
+    // TODO: use a parallel sample sort instead
+    QuickSort.quickSort(x, comparator=comparator, region=region);
+  }
 }
 
 /*
@@ -471,10 +498,37 @@ proc sort(ref x: [], comparator:? = new DefaultComparator(),
           param stable:bool = false) {
   chpl_check_comparator(comparator, x.eltType);
 
-  const D = x.domain;
+  if stable {
+    // TODO: implement a stable merge sort with parallel merge
+    // TODO: create an in-place merge sort for the stable+minimizeMemory case
+    // TODO: create a stable variant of the radix sort
+    // TODO: make sure that a new stableSort function has an early
+    //       return when the region is empty
+    compilerError("stable sort not yet implemented");
+  } else {
+    unstableSort(x, comparator, x.domain.dim(0));
+  }
+}
 
-  if D.low >= D.high then
-    return;
+/*
+
+Sort the elements in the range 'region' within in the 1D rectangular array
+``x``.  After the call, ``x[region]`` will store elements in sorted order.
+This function accepts a 'region' range as an optimized alternative to using an
+array view.
+
+See the :proc:`sort` declared just above for details.
+
+.. note::
+
+  Due to uncertainty about the usefulness of this routine, it is unstable.
+  Please comment on https://github.com/chapel-lang/chapel/issues/25648 if
+  you find this routine important in your work.
+
+ */
+@unstable("sort with a region argument is unstable")
+proc sort(ref x: [], comparator, region: range(?), param stable:bool = false) {
+  chpl_check_comparator(comparator, x.eltType);
 
   if stable {
     // TODO: implement a stable merge sort with parallel merge
@@ -482,26 +536,10 @@ proc sort(ref x: [], comparator:? = new DefaultComparator(),
     // TODO: create a stable variant of the radix sort
     compilerError("stable sort not yet implemented");
   } else {
-    if radixSortOk(x, comparator) {
-      // TODO: use a sample sort if the input does not have enough
-      // randomness, according to some heuristic
-
-      var simplerSortSize=50_000;
-      if D.size < simplerSortSize {
-        // TODO: use quicksort instead in these small cases
-        MSBRadixSort.msbRadixSort(x, comparator=comparator);
-        return;
-      }
-
-      // use the two-array radix sort which is more parallel / faster
-      TwoArrayRadixSort.twoArrayRadixSort(x, comparator=comparator);
-    } else {
-      // use quick sort, which is currently in-place
-      // TODO: use a parallel sample sort instead
-      QuickSort.quickSort(x, comparator=comparator);
-    }
+    unstableSort(x, comparator, region);
   }
 }
+
 
 /*
 
@@ -559,38 +597,13 @@ proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
           param stable:bool = false, param inPlaceAlgorithm:bool = false) {
   chpl_check_comparator(comparator, eltType);
 
-  if Dom.low >= Dom.high then
-    return;
-
   if stable {
     // TODO: implement a stable merge sort with parallel merge
     // TODO: create an in-place merge sort for the stable+minimizeMemory case
     // TODO: create a stable variant of the radix sort
     compilerError("stable sort not yet implemented");
   } else {
-    if radixSortOk(Data, comparator) {
-      // TODO: use a sample sort if the input does not have enough
-      // randomness, according to some heuristic
-
-      var simplerSortSize=50_000;
-      if Data.domain.size < simplerSortSize {
-        // TODO: use quicksort instead in these small cases
-        MSBRadixSort.msbRadixSort(Data, comparator=comparator);
-        return;
-      }
-
-      if inPlaceAlgorithm {
-        // use an in-place algorithm
-        MSBRadixSort.msbRadixSort(Data, comparator=comparator);
-      } else {
-        // use the two-array radix sort which is more parallel / faster
-        TwoArrayRadixSort.twoArrayRadixSort(Data, comparator=comparator);
-      }
-    } else {
-      // use quick sort, which is currently in-place
-      // TODO: use a parallel sample sort instead
-      QuickSort.quickSort(Data, comparator=comparator);
-    }
+    unstableSort(Data, comparator, Data.domain.dim(0));
   }
 }
 
@@ -1386,7 +1399,8 @@ module QuickSort {
  /* Use quickSort to sort Data */
  proc quickSort(ref Data: [?Dom] ?eltType,
                 minlen=16,
-                comparator:?rec=defaultComparator) {
+                comparator:?rec=defaultComparator,
+                region:range(?)=Data.domain.dim(0)) {
 
     chpl_check_comparator(comparator, eltType);
 
@@ -1394,15 +1408,16 @@ module QuickSort {
       compilerError("quickSort() requires 1-D array");
     }
 
-    if Dom.stride != 1 {
-      ref reindexed = Data.reindex(Dom.low..#Dom.size);
+    if region.strides != strideKind.one && region.stride != 1 {
+      ref reindexed = Data.reindex(region.low..#region.size);
       assert(reindexed.domain.stride == 1);
       quickSortImpl(reindexed, minlen, comparator);
       return;
     }
 
     assert(Dom.stride == 1);
-    quickSortImpl(Data, minlen, comparator);
+    quickSortImpl(Data, minlen, comparator,
+                  start=region.low, end=region.high);
   }
 
 
@@ -3524,7 +3539,8 @@ module TwoArrayRadixSort {
   private use super.TwoArrayPartitioning;
   private use super.RadixSortHelp;
 
-  proc twoArrayRadixSort(ref Data:[], comparator:?rec=defaultComparator) {
+  proc twoArrayRadixSort(ref Data:[], comparator:?rec=defaultComparator,
+                         region:range(?) = Data.domain.dim(0)) {
 
     if !chpl_domainDistIsLayout(Data.domain) {
       compilerWarning("twoArrayRadix sort no longer handles distributed arrays. Please use TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort instead (but note that it is not stable)");
@@ -3538,9 +3554,10 @@ module TwoArrayRadixSort {
       endbit = max(int);
 
     // Allocate the Scratch array.
+    var ScratchDom = {region};
     pragma "no auto destroy"
-    var Scratch: Data.type =
-      Data.domain.buildArray(Data.eltType, initElts=false);
+    var Scratch: [ScratchDom] Data.eltType =
+      ScratchDom.buildArray(Data.eltType, initElts=false);
 
     // It would make sense to touch the memory first here, but early experiments
     // suggest that it doesn't help with CHPL_COMM=none.
@@ -3553,8 +3570,8 @@ module TwoArrayRadixSort {
       endbit=endbit);
 
 
-    partitioningSortWithScratchSpace(Data.domain.low.safeCast(int),
-                                     Data.domain.high.safeCast(int),
+    partitioningSortWithScratchSpace(region.low.safeCast(int),
+                                     region.high.safeCast(int),
                                      Data, Scratch,
                                      state, comparator, 0);
 
@@ -3733,14 +3750,15 @@ module MSBRadixSort {
     const maxTasks = here.maxTaskPar;//;here.numPUs(logical=true); // maximum number of tasks to make
   }
 
-  proc msbRadixSort(ref Data:[], comparator:?rec=defaultComparator) {
+  proc msbRadixSort(ref Data:[], comparator:?rec=defaultComparator,
+                    region:range(?)=Data.domain.dim(0)) {
 
     var endbit:int;
     endbit = msbRadixSortParamLastStartBit(Data, comparator);
     if endbit < 0 then
       endbit = max(int);
 
-    msbRadixSort(Data, start_n=Data.domain.low, end_n=Data.domain.high,
+    msbRadixSort(Data, start_n=region.low, end_n=region.high,
                  comparator,
                  startbit=0, endbit=endbit,
                  settings=new MSBRadixSortSettings());
