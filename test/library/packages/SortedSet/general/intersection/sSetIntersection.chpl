@@ -5,10 +5,10 @@ use OsetTest;
 config const testIters = 8;
 
 proc doTest(type eltType) {
-  var s1 = new sortedSet(eltType, false, defaultComparator);
-  var s2 = new sortedSet(eltType, false, defaultComparator);
-  var s3 = new sortedSet(eltType, false, defaultComparator);
-  var s4 = new sortedSet(eltType, false, defaultComparator);
+  var s1 = new sortedSet(eltType, false, new DefaultComparator());
+  var s2 = new sortedSet(eltType, false, new DefaultComparator());
+  var s3 = new sortedSet(eltType, false, new DefaultComparator());
+  var s4 = new sortedSet(eltType, false, new DefaultComparator());
 
   assert(s1.size == s2.size && s2.size == s3.size && s3.size == 0);
 
