@@ -715,10 +715,10 @@ void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size,
 void chpl_gpu_arg_host_register(void* _cfg, void* arg, size_t size) {
   kernel_cfg* cfg = (kernel_cfg*)_cfg;
 
-  void *dev_arg = chpl_gpu_impl_host_register(*((void**)arg), size);
+  void *dev_arg = chpl_gpu_impl_host_register(arg, size);
   *(cfg->host_registered_vars[cfg->cur_host_registered_var]) = dev_arg;
   cfg_add_direct_param(cfg, cfg->host_registered_vars[cfg->cur_host_registered_var]);
-  cfg->host_registered_vars_host_ptrs[cfg->cur_host_registered_var] = *((void**)arg);
+  cfg->host_registered_vars_host_ptrs[cfg->cur_host_registered_var] = arg;
   cfg->cur_host_registered_var += 1;
   CHPL_GPU_DEBUG("\tAdded ref intent param (at %d): %p\n", cfg->cur_param,  dev_arg);
 }

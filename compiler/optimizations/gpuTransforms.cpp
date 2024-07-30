@@ -1319,7 +1319,10 @@ KernelArg::KernelArg(Symbol* symInLoop, GpuKernel* kernel, bool isCompilerGenera
 
   if (isRefIntentScalarArg)
   {
-    this->kind_ = GpuArgKind::ADDROF | GpuArgKind::HOST_REGISTER;
+    this->kind_ = GpuArgKind::HOST_REGISTER;
+    if(!symInLoop->isRef()) {
+      this->kind_ |= GpuArgKind::ADDROF;
+    }
     kernel->incNumHostRegisteredVars();
   } else if (isClass(symValType) ||
       (!symInLoop->isRef() && !isAggregateType(symValType))) {

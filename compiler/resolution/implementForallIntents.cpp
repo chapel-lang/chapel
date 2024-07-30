@@ -778,7 +778,7 @@ static void resolveShadowVarTypeIntent(LoopWithShadowVarsInterface* fs,
   }
 
   // Prune, as discussed in the above comment.
-  if (intent == TFI_REF)
+  if (intent == TFI_REF && fs->isForallStmt())
     prune = true;
 }
 
