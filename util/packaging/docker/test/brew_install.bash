@@ -41,10 +41,10 @@ brew update
 # fi
 
 # This is the bulk of the testing and the same command that Homebrew CI runs
-brew test-bot --only-formulae --junit --only-json-tab --skip-dependents --testing-formulae="chapel" --added-formulae="" --deleted-formulae=""
+brew test-bot  --skip-online-checks --only-formulae --junit --only-json-tab --skip-dependents --testing-formulae="chapel" --added-formulae="" --deleted-formulae=""
 if [ $? -ne 0 ]; then
-      echo "brew test-bot --only-formulae --junit --only-json-tab --skip-dependents --testing-formulae="chapel" --added-formulae="" --deleted-formulae="" failed"
+      echo "brew test-bot --skip-online-checks --only-formulae --junit --only-json-tab --skip-dependents --testing-formulae="chapel" --added-formulae="" --deleted-formulae="" failed"
       exit 1
 else
-      echo "brew test-bot --only-formulae --junit --only-json-tab --skip-dependents --testing-formulae="chapel" --added-formulae="" --deleted-formulae="" succeeded"
+      echo "brew test-bot --skip-online-checks --only-formulae --junit --only-json-tab --skip-dependents --testing-formulae="chapel" --added-formulae="" --deleted-formulae="" succeeded"
 fi
