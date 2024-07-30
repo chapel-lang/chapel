@@ -655,7 +655,7 @@ returnTypeForTypeCtorQuery(Context* context,
         bool hasInitExpression = false;
         if (auto vd = formalDecl->toVarLikeDecl()) {
           // Substitute with the kind of the underlying field corresponding to
-          // the formal; for example, if we substitute in a type for a generic
+          // the formal. For example, if we substitute in a type for a generic
           // VAR decl, the type we construct will need to be inited with a VAR
           // of that corresponding type.
           useKind = vd->storageKind();
