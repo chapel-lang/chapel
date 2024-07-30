@@ -191,6 +191,13 @@ while (@ARGV) {
 
 print localtime() . "  host: " . hostname . "\n";
 
+# If we're being told to not do anything, just exit. This is useful for
+# "dry-running" test configurations that figure out some environment
+# variables then exit.
+if (exists($ENV{"CHPL_NIGHTLY_DO_NOTHING"})) {
+  exit 0;
+}
+
 # If this is running in jenkins, link to the job in the email.
 $crontab = "Unknown origin for this job...";
 if (exists($ENV{"BUILD_URL"})) {
