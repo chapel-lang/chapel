@@ -43,7 +43,7 @@ Options:
                     this flag always excludes CHPL_HOME and CHPL_MAKE
   --bash           Print variables in format: export CHPL_KEY=VALUE
   --csh            Print variables in format: setenv CHPL_KEY VALUE
-  --plain          Print only the values of the variables
+  --value          Print only the values of the variables
 
   [misc]
   --ignore-errors  Continue processing even if an error occurs
@@ -426,7 +426,7 @@ def _print_var(key, value, print_format=None, shortname=None):
         return "export {0}={1}\n".format(key_stripped, forShell(value))
     elif print_format == 'csh':
         return "setenv {0} {1}\n".format(key_stripped, forShell(value))
-    elif print_format == 'plain':
+    elif print_format == 'value':
         return "{0}\n".format(value)
     else:
         raise ValueError("Invalid format '{0}'".format(print_format))
@@ -542,7 +542,7 @@ def parse_args():
     parser.add_option('--path',   action='store_const', dest='format', const='path')
     parser.add_option('--bash',   action='store_const', dest='format', const='bash')
     parser.add_option('--csh',    action='store_const', dest='format', const='csh')
-    parser.add_option('--plain',  action='store_const', dest='format', const='plain')
+    parser.add_option('--value',  action='store_const', dest='format', const='value')
 
     #[misc]
     parser.add_option('--ignore-errors', action='store_true', dest='ignore_errors')
