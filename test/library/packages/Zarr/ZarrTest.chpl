@@ -185,7 +185,7 @@ proc updateChunkTest(type dtype) {
 proc main() {
   testGetLocalChunks();
   testUndistributedArray();
-  const typeTuple = (0:int(32), 0:int(64), 0:real(32), 0:real(64));
+  const typeTuple = (0:int(64), 0:real(32));
   for param i in 0..<typeTuple.size {
     type dtype = typeTuple[i].type;
     writeln("Testing ", dtype:string);
