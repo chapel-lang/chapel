@@ -27,15 +27,15 @@ export CHPL_TEST_ARKOUDA=true
 
 # Temporary bandaid, revert after hpcdc issues resolved
 # HPCDC doesn't seem to be accessible to compute nodes at the moment
-# ARKOUDA_DEP_DIR=$COMMON_DIR/arkouda-deps
-# if [ -d "$ARKOUDA_DEP_DIR" ]; then
-#   export ARKOUDA_ARROW_PATH=${ARKOUDA_ARROW_PATH:-$ARKOUDA_DEP_DIR/arrow-install}
-#   export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install}
-#   export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install}
-#   export ARKOUDA_ICONV_PATH=${ARKOUDA_ICONV_PATH:-$ARKOUDA_DEP_DIR/iconv-install}
-#   export ARKOUDA_IDN2_PATH=${ARKOUDA_IDN2_PATH:-$ARKOUDA_DEP_DIR/idn2-install}
-#   export PATH="$ARKOUDA_HDF5_PATH/bin:$PATH"
-# fi
+ARKOUDA_DEP_DIR=$COMMON_DIR/arkouda-deps
+if [ -d "$ARKOUDA_DEP_DIR" ]; then
+  export ARKOUDA_ARROW_PATH=${ARKOUDA_ARROW_PATH:-$ARKOUDA_DEP_DIR/arrow-install}
+  export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install}
+  export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install}
+  export ARKOUDA_ICONV_PATH=${ARKOUDA_ICONV_PATH:-$ARKOUDA_DEP_DIR/iconv-install}
+  export ARKOUDA_IDN2_PATH=${ARKOUDA_IDN2_PATH:-$ARKOUDA_DEP_DIR/idn2-install}
+  export PATH="$ARKOUDA_HDF5_PATH/bin:$PATH"
+fi
 
 # enable arrow/parquet support
 export ARKOUDA_SERVER_PARQUET_SUPPORT=true
