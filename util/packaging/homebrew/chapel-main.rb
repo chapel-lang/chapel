@@ -75,7 +75,7 @@ class Chapel < Formula
       rm_r("third-party/fltk/fltk-1.3.8-source.tar.gz")
       rm_r("third-party/libunwind/libunwind-src")
       rm_r("third-party/gmp/gmp-src/")
-      rm_r("third-party/qthread/qthread-src/installed")
+      rm_r("third-party/qthread/qthread-src/")
     end
 
     # Install chpl and other binaries (e.g. chpldoc) into bin/ as exec scripts.
