@@ -1,7 +1,7 @@
 #!/bin/sh
 
 if $CHPL_HOME/util/printchplenv --simple | grep -q "CHPL_GPU=amd"; then
-  if hipcc --version | head -n1 | grep -q "HIP version: 4"; then
+  if hipcc --version | grep -q "HIP version: 4"; then
     echo 1
   else
     echo 0
