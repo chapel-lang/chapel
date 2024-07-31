@@ -5511,9 +5511,6 @@ static GenRet codegenGPUInitKernelCfg(CallExpr* call, const char* fnName) {
     args.push_back(call->get(curArg)->codegen());
   }
 
-  args.push_back(new_IntSymbol(call->astloc.lineno()));
-  args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
-
   return codegenCallExprWithArgs(fnName, args);
 }
 
