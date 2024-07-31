@@ -161,12 +161,11 @@ const CompositeType* helpGetTypeForDecl(Context* context,
                               insnFromBct, std::move(filteredSubs));
 
   } else if (auto r = ad->toRecord()) {
-    if (r->id().symbolPath() == "ChapelDomain._domain") {
+    if (r->id() == DomainType::getGenericDomainType(context)->id()) {
       ret = DomainType::getGenericDomainType(context);
-      // TODO: update this to call a method on ArrayType to get the id or path
-    } else if (r->id().symbolPath() == "ChapelArray._array") {
+    } else if (r->id() == ArrayType::getGenericArrayType(context)->id()) {
       ret = ArrayType::getGenericArrayType(context);
-    } else if (r->id().symbolPath() == "ChapelLocale._locale") {
+    } else if (r->id() == CompositeType::getLocaleType(context)->id()) {
       ret = CompositeType::getLocaleType(context);
     } else {
       const RecordType* insnFromRec = nullptr;
