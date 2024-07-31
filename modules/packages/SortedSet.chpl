@@ -34,14 +34,22 @@
   constructor. When constructed from another ``sortedSet``, the new
   ``sortedSet`` will inherit the parallel safety mode of its originating
   ``sortedSet``.
-
 */
 module SortedSet {
   include module Treap;
   private use Treap;
   private use Reflection;
   private use IO;
-  public use Sort only defaultComparator;
+  public use Sort only DefaultComparator;
+
+  // TODO: remove this module and its public use when the deprecations have been
+  // removed
+  pragma "ignore deprecated use"
+  private module HideDeprecatedReexport {
+    public use Sort only defaultComparator;
+  }
+
+  public use HideDeprecatedReexport;
 
   record sortedSet : writeSerializable {
     /* The type of the elements contained in this sortedSet. */
@@ -50,7 +58,7 @@ module SortedSet {
     /* If `true`, this sortedSet will perform parallel safe operations. */
     param parSafe = false;
 
-    type comparatorType = defaultComparator.type;
+    type comparatorType = DefaultComparator;
 
     /* The underlying implementation */
     @chpldoc.nodoc
@@ -64,7 +72,7 @@ module SortedSet {
       :arg comparatorType: The comparator type
     */
     proc init(type eltType, param parSafe = false,
-              type comparatorType = defaultComparator.type) {
+              type comparatorType = DefaultComparator) {
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.comparatorType = comparatorType;
@@ -100,7 +108,7 @@ module SortedSet {
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type eltType, iterable, param parSafe=false,
-              comparator: record = defaultComparator)
+              comparator: record = new DefaultComparator())
     where canResolveMethod(iterable, "these") lifetime this < iterable {
       this.eltType = eltType;
       this.parSafe = parSafe;

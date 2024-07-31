@@ -739,11 +739,11 @@ module ChapelArray {
     return true;
   }
 
-  // This alternative declaration of Sort.defaultComparator
+  // This alternative usage of Sort.DefaultComparator
   // prevents transitive use of module Sort.
   proc chpl_defaultComparator() {
     use Sort;
-    return defaultComparator;
+    return new DefaultComparator();
   }
 
   @chpldoc.nodoc

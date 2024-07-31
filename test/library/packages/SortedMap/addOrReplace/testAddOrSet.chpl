@@ -2,7 +2,7 @@ use SortedMap;
 
 
 
-var m = new sortedMap(int, int, false, defaultComparator);
+var m = new sortedMap(int, int, false, new DefaultComparator());
 for i in 1..10 {
   m.addOrReplace(i, i);
 }

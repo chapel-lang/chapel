@@ -148,6 +148,8 @@ ChapelDistribution
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelDistribution
 RangeChunk
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.DefaultSparse.RangeChunk
+HideDeprecatedReexport
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.DefaultSparse.Search.HideDeprecatedReexport
 Search
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.DefaultSparse.Search
 DefaultSparse

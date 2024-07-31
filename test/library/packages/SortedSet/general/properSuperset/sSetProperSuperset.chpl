@@ -7,8 +7,8 @@ config const testIters = 8;
 
 
 proc doTest(type eltType) {
-  var s1 = new sortedSet(eltType, false, defaultComparator);
-  var s2 = new sortedSet(eltType, false, defaultComparator);
+  var s1 = new sortedSet(eltType, false, new DefaultComparator());
+  var s2 = new sortedSet(eltType, false, new DefaultComparator());
 
   assert(!(s1 > s2));
   assert(!(s2 > s1));

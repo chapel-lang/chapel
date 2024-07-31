@@ -45,13 +45,13 @@ proc main() {
   // Pre-sorted arrays paired with comparators to test
   var tests = (
                 // Testing A.eltType
-                ([-4, -1, 2, 3], defaultComparator),
-                (['Brad', 'anthony', 'ben', 'david'], defaultComparator),
+                ([-4, -1, 2, 3], new DefaultComparator()),
+                (['Brad', 'anthony', 'ben', 'david'], new DefaultComparator()),
 
                 // Testing D.idxType / D.dims()
-                (largeA, defaultComparator),
-                (strideA, defaultComparator),
-                (strideAlignA, defaultComparator),
+                (largeA, new DefaultComparator()),
+                (strideA, new DefaultComparator()),
+                (strideAlignA, new DefaultComparator()),
                 (strideRevA, reverseComparator),
 
                 // Testing comparators

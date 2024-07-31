@@ -2,7 +2,7 @@ use SortedMap;
 
 
 
-var m = new sortedMap(int, int, false, defaultComparator);
+var m = new sortedMap(int, int, false, new DefaultComparator());
 
 var ret:bool = m.add(1, -1);
 assert(ret);

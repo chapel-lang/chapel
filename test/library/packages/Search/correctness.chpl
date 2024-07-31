@@ -92,7 +92,8 @@ proc main() {
 
 
 /* Checks array and resets values -- any output results in failure */
-proc checkSearch(result, expected, arr, searchProc:string, cmp=defaultComparator) {
+proc checkSearch(result, expected, arr, searchProc:string,
+                 cmp = new DefaultComparator()) {
   if result != expected {
     writeln(searchProc, '() function failed');
     writeln('eltType:    ', arr.eltType:string);
