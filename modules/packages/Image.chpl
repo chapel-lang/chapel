@@ -505,7 +505,7 @@ module Image {
   }
 
   private module STBImageHelper {
-    require "ImageHelper/stb_image_write_helper.h";
+    require "ImageHelper/stb_image_helper.h";
 
     private use CTypes;
     private use IO;
