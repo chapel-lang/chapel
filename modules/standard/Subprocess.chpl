@@ -211,7 +211,8 @@ module Subprocess {
      subprocess record is automatically destroyed.
    */
   record subprocess {
-    /* used to create the types for any channels that are necessary. */
+    /* used to create the types for any fileReaders/fileWriters that are
+       necessary. */
     param locking:bool;
 
     @chpldoc.nodoc
