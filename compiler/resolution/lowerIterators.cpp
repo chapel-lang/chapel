@@ -1517,7 +1517,8 @@ static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody,
 
   for_vector(CallExpr, call, callExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
-      if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
+      LoopStmt* loop = LoopStmt::findEnclosingLoop(call);
+      while (loop) {
         if (loop->isCoforallLoop() == false) {
           // If the for loop is not order independent, neither
           // should be the one we are replacing it with.
@@ -1532,6 +1533,9 @@ static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody,
 
           loop->setAdditionalLLVMMetadata(llvmAttrs);
         }
+        loop = LoopStmt::findEnclosingLoop(loop->prev);
+        if (loop && !ibody->contains(loop))
+          loop = nullptr;
       }
     }
   }
