@@ -8,37 +8,43 @@ use nightlysubs;
 sub writeFile{
     $num_args = @_;
 
-    if ($num_args != 17) {
+    if ($num_args != 18) {
         print "usage: nightly_email.pm \$status \$rawsummary \$sortedsummary \n";
-        print "         \$prevsummary \$mysystemlog \$mailer \$nochangerecipient \$recipient \n";
+        print "         \$prevsummary \$mysystemlog \$prevmysystemlog \$mailer \$nochangerecipient \$recipient \n";
         print "         \$subjectid \$config_name \$revision \$rawlog \$starttime \n";
         print "         \$endtime \$crontab \$testdirs \$debug\n";
         exit 1;
     }
-    my ($status, $rawsummary, $sortedsummary, ,$prevsummary, $mysystemlog, $mailer, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug)=@_;
+    my ($status, $rawsummary, $sortedsummary, ,$prevsummary, $mysystemlog, $prevmysystemlog, $mailer, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug)=@_;
 
     $status = $_[0];
     $rawsummary = $_[1];
     $sortedsummary = $_[2];
     $prevsummary = $_[3];
     $mysystemlog = $_[4];
-    $mailer = $_[5];
-    $nochangerecipient = $_[6];
-    $recipient = $_[7];
-    $subjectid = $_[8];
-    $config_name = $_[9];
-    $revision = $_[10];
-    $rawlog = $_[11];
-    $starttime = $_[12];
-    $endtime = $_[13];
-    $crontab = $_[14];
-    $testdirs = $_[15];
-    $debug = $_[16];
+    $prevmysystemlog = $_[5];
+    $mailer = $_[6];
+    $nochangerecipient = $_[7];
+    $recipient = $_[8];
+    $subjectid = $_[9];
+    $config_name = $_[10];
+    $revision = $_[11];
+    $rawlog = $_[12];
+    $starttime = $_[13];
+    $endtime = $_[14];
+    $crontab = $_[15];
+    $testdirs = $_[16];
+    $debug = $_[17];
 
+    # Nothing sorts the system log for us; do that now, so that 'comm' is
+    # given a lexically sorted input as it expects.
+    $sortedmysystemlog = $mysystemlog . ".sorted";
+    `LC_ALL=C sort $mysystemlog > $sortedmysystemlog`;
 
     # Ensure the "previous" summary exists, e.g. if this is the first run of the
     # configuration they won't.
     ensureSummaryExists($prevsummary);
+    ensureMysystemlogExists($prevmysystemlog);
 
 
     #
@@ -104,11 +110,12 @@ sub writeFile{
         $newpassingsuppress = `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success" | wc -l`; chomp($newpassingsuppresss);
         $passingsuppresss = `grep "$suppressmarker" $sortedsummary | grep "\\[Success" | wc -l`; chomp($passingsuppresss);
         $newfailures += 0;
+
+        $newsystemerrors = `LC_ALL=C comm -13 $prevmysystemlog $sortedmysystemlog | wc -l`; chomp($newsystemerrors);
+        $resolvedsystemerrors = `LC_ALL=C comm -23 $prevmysystemlog $sortedmysystemlog | wc -l`; chomp($resolvedsystemerrors);
     }
 
-    if (-f $mysystemlog && -s $mysystemlog) {
-        # Even if no errors occurred etc., the build failed, so send an email.
-    } elsif ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0) {
+    if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0 && $newsystemerrors == 0 && $resolvedsystemerrors == 0) {
         $email=0;
         $recipient = $nochangerecipient;
     }
@@ -128,7 +135,8 @@ sub writeFile{
              $summary ,
              $prevsummary ,
              $sortedsummary ,
-             $mysystemlog);
+             $sortedmysystemlog ,
+             $prevmysystemlog);
         }
     } else {
         print "CHPL_TEST_NOMAIL: No $mailcommand\n";
@@ -140,6 +148,7 @@ sub writeFile{
     if ($debug == 0) {
         if ($status == 0) {
             system("cp -pv $sortedsummary $prevsummary");
+            system("cp -pv $sortedmysystemlog $prevmysystemlog");
         }
     }
 

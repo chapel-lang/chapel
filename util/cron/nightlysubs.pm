@@ -90,6 +90,14 @@ sub ensureSummaryExists {
     }
 }
 
+sub ensureMysystemlogExists {
+    $mysystemlog = $_[0];
+    if (! -r $mysystemlog) {
+        print "Creating $mysystemlog\n";
+        `touch $mysystemlog`
+    }
+}
+
 sub startMailHeader {
     my $revision = $_[0];
     my $logfile = $_[1];
@@ -145,7 +153,8 @@ sub writeEmail {
     my $summary = $_[6];
     my $prevsummary = $_[7];
     my $sortedsummary = $_[8];
-    my $mysystemlog = $_[9];
+    my $sortedmysystemlog = $_[9];
+    my $prevmysystemlog = $_[10];
 
     #Create a file "email.txt" in the chapel homedir. This file will be used by Jenkins to attach the test results in the email body
     my $filename = "$chplhomedir/email.txt";
@@ -188,11 +197,17 @@ sub writeEmail {
         print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
         print $SF "\n";
 
-        if (-f $mysystemlog && -s $mysystemlog) {
-            print $SF "--- Errors in Bash Commands ------------------\n";
-            print $SF `cat $mysystemlog`;
-            print $SF "\n";
-        }
+        print $SF "--- New Errors in Bash Commands ------------------\n";
+        print $SF `LC_ALL=C comm -13 $prevmysystemlog $sortedmysystemlog`;
+        print $SF "\n";
+
+        print $SF "--- Unresolved Errors in Bash Commands ------------------\n";
+        print $SF `LC_ALL=C comm -12 $prevmysystemlog $sortedmysystemlog`;
+        print $SF "\n";
+
+        print $SF "--- Resolved Errors in Bash Commands ------------------\n";
+        print $SF `LC_ALL=C comm -23 $prevmysystemlog $sortedmysystemlog`;
+        print $SF "\n";
     print $SF;
     print $SF endMailChplenv();
     close($SF);
