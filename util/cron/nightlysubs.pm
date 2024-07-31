@@ -153,7 +153,7 @@ sub writeEmail {
     my $summary = $_[6];
     my $prevsummary = $_[7];
     my $sortedsummary = $_[8];
-    my $mysystemlog = $_[9];
+    my $sortedmysystemlog = $_[9];
     my $prevmysystemlog = $_[10];
 
     #Create a file "email.txt" in the chapel homedir. This file will be used by Jenkins to attach the test results in the email body
@@ -198,15 +198,15 @@ sub writeEmail {
         print $SF "\n";
 
         print $SF "--- New Errors in Bash Commands ------------------\n";
-        print $SF `LC_ALL=C comm -13 $prevmysystemlog $mysystemlog`;
+        print $SF `LC_ALL=C comm -13 $prevmysystemlog $sortedmysystemlog`;
         print $SF "\n";
 
         print $SF "--- Unresolved Errors in Bash Commands ------------------\n";
-        print $SF `LC_ALL=C comm -12 $prevmysystemlog $mysystemlog`;
+        print $SF `LC_ALL=C comm -12 $prevmysystemlog $sortedmysystemlog`;
         print $SF "\n";
 
         print $SF "--- Resolved Errors in Bash Commands ------------------\n";
-        print $SF `LC_ALL=C comm -23 $prevmysystemlog $mysystemlog`;
+        print $SF `LC_ALL=C comm -23 $prevmysystemlog $sortedmysystemlog`;
         print $SF "\n";
     print $SF;
     print $SF endMailChplenv();

@@ -36,6 +36,10 @@ sub writeFile{
     $testdirs = $_[16];
     $debug = $_[17];
 
+    # Nothing sorts the system log for us; do that now, so that 'comm' is
+    # given a lexically sorted input as it expects.
+    $sortedmysystemlog = $mysystemlog . ".sorted";
+    `LC_ALL=C sort $mysystemlog > $sortedmysystemlog`;
 
     # Ensure the "previous" summary exists, e.g. if this is the first run of the
     # configuration they won't.
@@ -107,8 +111,8 @@ sub writeFile{
         $passingsuppresss = `grep "$suppressmarker" $sortedsummary | grep "\\[Success" | wc -l`; chomp($passingsuppresss);
         $newfailures += 0;
 
-        $newsystemerrors = `LC_ALL=C comm -13 $prevmysystemlog $mysystemlog | wc -l`; chomp($newsystemerrors);
-        $resolvedsystemerrors = `LC_ALL=C comm -23 $prevmysystemlog $mysystemlog | wc -l`; chomp($resolvedsystemerrors);
+        $newsystemerrors = `LC_ALL=C comm -13 $prevmysystemlog $sortedmysystemlog | wc -l`; chomp($newsystemerrors);
+        $resolvedsystemerrors = `LC_ALL=C comm -23 $prevmysystemlog $sortedmysystemlog | wc -l`; chomp($resolvedsystemerrors);
     }
 
     if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpassingsuppress == 0 && $newsystemerrors == 0 && $resolvedsystemerrors == 0) {
@@ -131,7 +135,7 @@ sub writeFile{
              $summary ,
              $prevsummary ,
              $sortedsummary ,
-             $mysystemlog ,
+             $sortedmysystemlog ,
              $prevmysystemlog);
         }
     } else {
@@ -144,7 +148,7 @@ sub writeFile{
     if ($debug == 0) {
         if ($status == 0) {
             system("cp -pv $sortedsummary $prevsummary");
-            system("cp -pv $mysystemlog $prevmysystemlog");
+            system("cp -pv $sortedmysystemlog $prevmysystemlog");
         }
     }
 
