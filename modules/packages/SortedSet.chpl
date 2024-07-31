@@ -34,21 +34,22 @@
   constructor. When constructed from another ``sortedSet``, the new
   ``sortedSet`` will inherit the parallel safety mode of its originating
   ``sortedSet``.
-
-   .. note::
-
-      Due to implementation constraints, this module currently exposes symbols
-      from the Sort module.  Please only rely on the re-exported version of
-      :record:`~Sort.DefaultComparator`, all other re-exported symbols should be
-      considered unstable when obtained from SortedSet and will be removed in
-      the future.
 */
 module SortedSet {
   include module Treap;
   private use Treap;
   private use Reflection;
   private use IO;
-  public use Sort;
+  public use Sort only DefaultComparator;
+
+  // TODO: remove this module and its public use when the deprecations have been
+  // removed
+  pragma "ignore deprecated use"
+  private module HideDeprecatedReexport {
+    public use Sort only defaultComparator;
+  }
+
+  public use HideDeprecatedReexport;
 
   record sortedSet : writeSerializable {
     /* The type of the elements contained in this sortedSet. */

@@ -19,17 +19,19 @@
  */
 
 /* Support for standard search routines on 1D arrays.
-
-   .. note::
-
-      Due to implementation constraints, this module currently exposes symbols
-      from the Sort module.  Please only rely on the re-exported versions of
-      :record:`~Sort.DefaultComparator` and :record:`~Sort.ReverseComparator`,
-      all other re-exported symbols should be considered unstable when obtained
-      from Search and will be removed in the future.
  */
 module Search {
-  public use Sort;
+  public use Sort only DefaultComparator, reverseComparator, ReverseComparator;
+
+  // TODO: remove this module and its public use when the deprecations have been
+  // removed
+  pragma "ignore deprecated use"
+  private module HideDeprecatedReexport {
+    public use Sort only defaultComparator;
+  }
+
+  public use HideDeprecatedReexport;
+  private use Sort;
 
 /*
   A note about lo/hi arguments:
