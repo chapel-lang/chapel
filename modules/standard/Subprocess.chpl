@@ -210,9 +210,9 @@ module Subprocess {
      generally not needed since the channels will be closed when the
      subprocess record is automatically destroyed.
    */
-  pragma "ignore deprecated use"
   record subprocess {
-    /* used to create the types for any channels that are necessary. */
+    /* used to create the types for any fileReaders/fileWriters that are
+       necessary. */
     param locking:bool;
 
     @chpldoc.nodoc
