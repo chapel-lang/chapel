@@ -69,8 +69,8 @@ DomainType::getDomainType(Context* context, ID id, UniqueString name,
 
 const DomainType*
 DomainType::getGenericDomainType(Context* context) {
-  auto name = UniqueString::get(context, "_domain");
   auto id = getDomainID(context);
+  auto name = id.symbolName(context);
   SubstitutionsMap subs;
   const DomainType* instantiatedFrom = nullptr;
   return getDomainType(context, id, name, instantiatedFrom, subs).get();
