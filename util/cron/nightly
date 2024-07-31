@@ -441,7 +441,7 @@ if (exists($ENV{'CHPL_NIGHTLY_TEST_CONFIG_NAME'})) {
 $mysystemlog = "$basetmpdir/mysystemerrs-$config_name.txt";
 $emailOnError = $mysystemlog;
 unlink($mysystemlog); # the file gets appended to, so clear it first.
-`touch $mysystemlog`; # now create an empty file (to make it easier to compare with another file)
+ensureMysystemlogExists($mysystemlog); # empty (vs nonexistent) file is easier to compare against
 $prevmysystemlog = "$cronlogdir/last-mysystemerrs-$config_name.txt";
 
 #
