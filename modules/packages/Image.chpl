@@ -47,6 +47,7 @@ module Image {
 
   private use IO, Math;
 
+  private import this.BMPHelper;
   private import this.PNGHelper;
   private import this.JPGHelper;
 
@@ -111,6 +112,11 @@ module Image {
     jpg,
   }
 
+  pragma "last resort"
+  @chpldoc.nodoc
+  proc writeImage(image, format: imageType, pixels: [] pixelType) throws do
+    compilerError("pixels must be a 2D array of colors");
+
   /*
     Write an array of pixels as an image
 
@@ -118,15 +124,16 @@ module Image {
     :arg format: the image format
     :arg pixels: an array of pixel values
   */
-  proc writeImage(image, format: imageType, pixels: [] pixelType) throws {
+  proc writeImage(image, format: imageType, pixels: [] pixelType) throws
+    where pixels.isRectangular() && pixels.rank == 2 {
     // the output file channel
     const outfile = if isSubtype(image.type, fileWriter)
                       then image
                       else open(image, ioMode.cw).writer(locking=true);
     select format {
-      when imageType.bmp do writeImageBMP(outfile, pixels);
-      when imageType.png do PNGHelper.writePng(outfile, pixels);
-      when imageType.jpg do JPGHelper.writeJpg(outfile, pixels);
+      when imageType.bmp do BMPHelper.write(outfile, pixels);
+      when imageType.png do PNGHelper.write(outfile, pixels);
+      when imageType.jpg do JPGHelper.write(outfile, pixels);
       otherwise
         halt("Don't know how to write images of type: ", format);
     }
@@ -144,69 +151,10 @@ module Image {
                      then image
                      else open(image, ioMode.r).reader(locking=true);
     select format {
-      when imageType.png do return PNGHelper.readPng(infile);
-      when imageType.jpg do return JPGHelper.readJpg(infile);
+      when imageType.png do return PNGHelper.read(infile);
+      when imageType.jpg do return JPGHelper.read(infile);
       otherwise
         halt("Don't know how to read images of type: ", format);
-    }
-  }
-
-  pragma "last resort"
-  private proc writeImageBMP(outfile, pixels) do
-    compilerError("pixels must be a 2D array of colors");
-
-  private proc writeImageBMP(outfile, pixels: [?d]) throws
-    where d.isRectangular() && d.rank == 2 {
-    const rows = d.dim(0).size,
-          cols = d.dim(1).size,
-          headerSize = 14,
-          dibHeaderSize = 40,  // always use old BITMAPINFOHEADER
-          bitsPerPixel = (rgbColor.size)*bitsPerColor,
-          // row size in bytes. Pad each row out to 4 bytes.
-          rowQuads = divCeil(bitsPerPixel * cols, 32),
-          rowSize = 4 * rowQuads,
-          rowSizeBits = 8 * rowSize,
-          pixelsSize = rowSize * rows,
-          size = headerSize + dibHeaderSize + pixelsSize,
-          offsetToPixelData = headerSize + dibHeaderSize;
-
-    // Write the BMP image header
-    outfile.writef("BM");
-    outfile.writeBinary(size:uint(32), endianness.little);
-    outfile.writeBinary(0:uint(16), endianness.little); /* reserved1 */
-    outfile.writeBinary(0:uint(16), endianness.little); /* reserved2 */
-    outfile.writeBinary(offsetToPixelData:uint(32), endianness.little);
-
-    // Write the DIB header BITMAPINFOHEADER
-    outfile.writeBinary(dibHeaderSize:uint(32), endianness.little);
-    outfile.writeBinary(cols:int(32), endianness.little);
-    outfile.writeBinary(-rows:int(32), endianness.little); /*neg for swap*/
-    outfile.writeBinary(1:uint(16), endianness.little); /* 1 color plane */
-    outfile.writeBinary(bitsPerPixel:uint(16), endianness.little);
-    outfile.writeBinary(0:uint(32), endianness.little); /* no compression */
-    outfile.writeBinary(pixelsSize:uint(32), endianness.little);
-    outfile.writeBinary(2835:uint(32), endianness.little); /*pixels/meter print resolution=72dpi*/
-    outfile.writeBinary(2835:uint(32), endianness.little); /*pixels/meter print resolution=72dpi*/
-    outfile.writeBinary(0:uint(32), endianness.little); /* colors in palette */
-    outfile.writeBinary(0:uint(32), endianness.little); /* "important" colors */
-
-    for i in d.dim(0) {
-      for j in d.dim(1) {
-        var p = pixels[i,j];
-        var redv = (p >> colorOffset(rgbColor.red)) & colorMask;
-        var greenv = (p >> colorOffset(rgbColor.green)) & colorMask;
-        var bluev = (p >> colorOffset(rgbColor.blue)) & colorMask;
-
-        // write 24-bit color value
-        outfile.writeBits(bluev, bitsPerColor);
-        outfile.writeBits(greenv, bitsPerColor);
-        outfile.writeBits(redv, bitsPerColor);
-      }
-      // write the padding.
-      // The padding is only rounding up to 4 bytes so
-      // can be written in a single writeBits call.
-      const nbits = bitsPerColor * (rgbColor.size) * cols;
-      outfile.writeBits(0:uint, (rowSizeBits-nbits):int(8));
     }
   }
 
@@ -388,27 +336,111 @@ module Image {
   }
 
   @chpldoc.nodoc
+  module BMPHelper {
+
+    enum Implementation {
+      native,
+      stb_image
+    }
+    config param impl = Implementation.native;
+    proc write(outfile, pixels: [?d]) throws {
+      if impl == Implementation.native {
+        writeNative(outfile, pixels);
+      } else if impl == Implementation.stb_image {
+        compilerError("std_image is not yet supported for BMP");
+      } else {
+        compilerError("Unknown BMP implementation");
+      }
+    }
+    proc read(infile) throws {
+      if impl == Implementation.native {
+        compilerError("Native BMP reading is not yet supported");
+      } else if impl == Implementation.stb_image {
+        compilerError("std_image is not yet supported for BMP");
+      } else {
+        compilerError("Unknown BMP implementation");
+      }
+    }
+
+    private proc writeNative(outfile, pixels: [?d]) throws {
+      private use Image;
+      private use IO;
+      const rows = d.dim(0).size,
+            cols = d.dim(1).size,
+            headerSize = 14,
+            dibHeaderSize = 40,  // always use old BITMAPINFOHEADER
+            bitsPerPixel = (rgbColor.size)*bitsPerColor,
+            // row size in bytes. Pad each row out to 4 bytes.
+            rowQuads = divCeil(bitsPerPixel * cols, 32),
+            rowSize = 4 * rowQuads,
+            rowSizeBits = 8 * rowSize,
+            pixelsSize = rowSize * rows,
+            size = headerSize + dibHeaderSize + pixelsSize,
+            offsetToPixelData = headerSize + dibHeaderSize;
+
+      // Write the BMP image header
+      outfile.writef("BM");
+      outfile.writeBinary(size:uint(32), endianness.little);
+      outfile.writeBinary(0:uint(16), endianness.little); /* reserved1 */
+      outfile.writeBinary(0:uint(16), endianness.little); /* reserved2 */
+      outfile.writeBinary(offsetToPixelData:uint(32), endianness.little);
+
+      // Write the DIB header BITMAPINFOHEADER
+      outfile.writeBinary(dibHeaderSize:uint(32), endianness.little);
+      outfile.writeBinary(cols:int(32), endianness.little);
+      outfile.writeBinary(-rows:int(32), endianness.little); /*neg for swap*/
+      outfile.writeBinary(1:uint(16), endianness.little); /* 1 color plane */
+      outfile.writeBinary(bitsPerPixel:uint(16), endianness.little);
+      outfile.writeBinary(0:uint(32), endianness.little); /* no compression */
+      outfile.writeBinary(pixelsSize:uint(32), endianness.little);
+      outfile.writeBinary(2835:uint(32), endianness.little); /*pixels/meter print resolution=72dpi*/
+      outfile.writeBinary(2835:uint(32), endianness.little); /*pixels/meter print resolution=72dpi*/
+      outfile.writeBinary(0:uint(32), endianness.little); /* colors in palette */
+      outfile.writeBinary(0:uint(32), endianness.little); /* "important" colors */
+
+      for i in d.dim(0) {
+        for j in d.dim(1) {
+          var p = pixels[i,j];
+          var redv = (p >> colorOffset(rgbColor.red)) & colorMask;
+          var greenv = (p >> colorOffset(rgbColor.green)) & colorMask;
+          var bluev = (p >> colorOffset(rgbColor.blue)) & colorMask;
+
+          // write 24-bit color value
+          outfile.writeBits(bluev, bitsPerColor);
+          outfile.writeBits(greenv, bitsPerColor);
+          outfile.writeBits(redv, bitsPerColor);
+        }
+        // write the padding.
+        // The padding is only rounding up to 4 bytes so
+        // can be written in a single writeBits call.
+        const nbits = bitsPerColor * (rgbColor.size) * cols;
+        outfile.writeBits(0:uint, (rowSizeBits-nbits):int(8));
+      }
+    }
+  }
+
+  @chpldoc.nodoc
   module PNGHelper {
-    enum PNGImpl {
+    enum Implementation {
       stb_image,
       libpng
     }
-    config param pngImpl = PNGImpl.stb_image;
-    proc writePng(outfile, pixels: [?d]) throws {
-      if pngImpl == PNGImpl.stb_image {
+    config param impl = Implementation.stb_image;
+    proc write(outfile, pixels: [?d]) throws {
+      if impl == Implementation.stb_image {
         import super.STBImageHelper;
         STBImageHelper.writePng(outfile, pixels);
-      } else if pngImpl == PNGImpl.libpng {
+      } else if impl == Implementation.libpng {
         compilerError("libpng is not yet supported");
       } else {
         compilerError("Unknown PNG implementation");
       }
     }
-    proc readPng(infile) throws {
-      if pngImpl == PNGImpl.stb_image {
+    proc read(infile) throws {
+      if impl == Implementation.stb_image {
         import super.STBImageHelper;
         return STBImageHelper.readPng(infile);
-      } else if pngImpl == PNGImpl.libpng {
+      } else if impl == Implementation.libpng {
         compilerError("libpng is not yet supported");
       } else {
         compilerError("Unknown PNG implementation");
@@ -418,20 +450,20 @@ module Image {
 
   @chpldoc.nodoc
   module JPGHelper {
-    enum JPGImpl {
+    enum Implementation {
       stb_image
     }
-    config param jpgImpl = JPGImpl.stb_image;
-    proc writeJpg(outfile, pixels: [?d]) throws {
-      if jpgImpl == JPGImpl.stb_image {
+    config param impl = Implementation.stb_image;
+    proc write(outfile, pixels: [?d]) throws {
+      if impl == Implementation.stb_image {
         import super.STBImageHelper;
         STBImageHelper.writeJpg(outfile, pixels);
       } else {
         compilerError("Unknown JPG implementation");
       }
     }
-    proc readJpg(infile) throws {
-      if jpgImpl == JPGImpl.stb_image {
+    proc read(infile) throws {
+      if impl == Implementation.stb_image {
         import super.STBImageHelper;
         return STBImageHelper.readJpg(infile);
       } else {
@@ -518,27 +550,22 @@ module Image {
     }
 
 
-    //    int x,y,n;
-//    unsigned char *data = stbi_load(filename, &x, &y, &n, 0);
-//    // ... process data if not NULL ...
-//    // ... x = width, y = height, n = # 8-bit components per pixel ...
-//    // ... replace '0' with '1'..'4' to force that many components per pixel
-//    // ... but 'n' will always be the number that it would have been if you said 0
-//    stbi_image_free(data);
-
-    extern proc stbi_info_from_memory(data: c_ptrConst(void),
+    private extern proc stbi_info_from_memory(data: c_ptrConst(void),
                                       size: c_int,
                                       x: c_ptr(c_int),
                                       y: c_ptr(c_int),
                                       comp: c_ptr(c_int)): c_int;
-    extern proc stbi_is_16_bit_from_memory(data: c_ptrConst(void), size: c_int): c_int;
-    extern proc stbi_load_from_memory(data: c_ptrConst(void),
+    private extern proc stbi_is_16_bit_from_memory(data: c_ptrConst(void),
+                                                   size: c_int): c_int;
+    private extern proc stbi_load_from_memory(data: c_ptrConst(void),
                                       size: c_int,
                                       x: c_ptr(c_int),
                                       y: c_ptr(c_int),
                                       comp: c_ptr(c_int),
                                       req_comp: c_int): c_ptr(uint(8));
-    proc readCommon(infile) throws {
+    private extern proc stbi_image_free(data: c_ptr(void)): void;
+
+    private proc readCommon(infile) throws {
       // read bytes in
       const bytes_ = infile.readAll();
       const nBytes = bytes_.size.safeCast(c_int);
