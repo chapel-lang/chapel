@@ -256,6 +256,22 @@ void InsertLineNumbers::precondition(FnSymbol* fn) {
   }
 }
 
+static VarSymbol* getOrCreateField(AggregateType* aggType,
+                                   const char* fieldName, Type* fieldType) {
+  VarSymbol* field = toVarSymbol(aggType->getField(fieldName, /*fatal*/ false));
+  if (field) {
+    // if needed, we can turn this assertion into a check
+    INT_ASSERT(field->typeInfo() == fieldType);
+    return field;
+  }
+  else {
+    // Engin: temp field doesn't make much sense, but I am keeping the logic
+    field = newTemp(fieldName, fieldType);
+    aggType->fields.insertAtTail(new DefExpr(field));
+    return field;
+  }
+}
+
 //
 // Get the line/file symbols for a function, creating them if necessary
 // The fn is either
@@ -287,9 +303,8 @@ LineAndFile InsertLineNumbers::getLineAndFileForFn(FnSymbol *fn) {
     DefExpr* bundleArg = toDefExpr(fn->formals.tail);
     AggregateType* bundleType = toAggregateType(bundleArg->sym->typeInfo());
 
-    VarSymbol* lineField = newTemp("_ln", dtInt[INT_SIZE_DEFAULT]);
-    bundleType->fields.insertAtTail(new DefExpr(lineField));
-
+    VarSymbol* lineField = getOrCreateField(bundleType, "_ln",
+                                            dtInt[INT_SIZE_DEFAULT]);
     VarSymbol* lineLocal = newTemp("_ln", dtInt[INT_SIZE_DEFAULT]);
 
     fn->insertAtHead("'move'(%S, '.v'(%S, %S))", lineLocal, bundleArg->sym,
@@ -298,9 +313,8 @@ LineAndFile InsertLineNumbers::getLineAndFileForFn(FnSymbol *fn) {
 
     // Same thing, just for the filename index now.
 
-    VarSymbol* fileField = newTemp("_fn", dtInt[INT_SIZE_32]);
-    bundleType->fields.insertAtTail(new DefExpr(fileField));
-
+    VarSymbol* fileField = getOrCreateField(bundleType, "_fn",
+                                            dtInt[INT_SIZE_32]);
     VarSymbol* fileLocal = newTemp("_fn", dtInt[INT_SIZE_32]);
 
     fn->insertAtHead("'move'(%S, '.v'(%S, %S))", fileLocal, bundleArg->sym,
