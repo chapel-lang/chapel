@@ -303,6 +303,9 @@ LineAndFile InsertLineNumbers::getLineAndFileForFn(FnSymbol *fn) {
     DefExpr* bundleArg = toDefExpr(fn->formals.tail);
     AggregateType* bundleType = toAggregateType(bundleArg->sym->typeInfo());
 
+    // lineField could have been created already. Today we see this only with
+    // --gpu-specialization, which can clone `coforall_fn`s while using the same
+    // arg bundle for both clones. We want to create lineField only once.
     VarSymbol* lineField = getOrCreateField(bundleType, "_ln",
                                             dtInt[INT_SIZE_DEFAULT]);
     VarSymbol* lineLocal = newTemp("_ln", dtInt[INT_SIZE_DEFAULT]);
@@ -313,6 +316,7 @@ LineAndFile InsertLineNumbers::getLineAndFileForFn(FnSymbol *fn) {
 
     // Same thing, just for the filename index now.
 
+    // See the comment above lineField.
     VarSymbol* fileField = getOrCreateField(bundleType, "_fn",
                                             dtInt[INT_SIZE_32]);
     VarSymbol* fileLocal = newTemp("_fn", dtInt[INT_SIZE_32]);
