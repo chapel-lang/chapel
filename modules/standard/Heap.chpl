@@ -417,7 +417,7 @@ module Heap {
     :rtype: heap(t, comparator)
   */
   proc createHeap(const ref x: list(?t), param parSafe: bool = false,
-                  comparator = new DefaultComparator()) {
+                  comparator: ? = new DefaultComparator()) {
     var h = new heap(t, parSafe, comparator);
     h._commonInitFromIterable(x);
     return h;
