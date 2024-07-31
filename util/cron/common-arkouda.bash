@@ -25,9 +25,12 @@ fi
 export CHPL_NIGHTLY_TEST_DIRS=studies/arkouda/
 export CHPL_TEST_ARKOUDA=true
 
-# Temporary bandaid, revert after hpcdc issues resolved
 # HPCDC doesn't seem to be accessible to compute nodes at the moment
-ARKOUDA_DEP_DIR=$COMMON_DIR/arkouda-deps
+# so we made a mirror on lustre where compute nodes can access
+ARKOUDA_DEP_DIR=/lus/scratch/chapelu/arkouda-deps
+if [ ! -d "$ARKOUDA_DEP_DIR" ]; then
+  ARKOUDA_DEP_DIR=$COMMON_DIR/arkouda-deps
+fi
 if [ -d "$ARKOUDA_DEP_DIR" ]; then
   export ARKOUDA_ARROW_PATH=${ARKOUDA_ARROW_PATH:-$ARKOUDA_DEP_DIR/arrow-install}
   export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install}
