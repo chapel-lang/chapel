@@ -26,6 +26,14 @@
   the parallel safety mode of its originating sortedMap.
 
   SortedMap supports searching for a certain key, insertion and deletion in O(logN).
+
+   .. note::
+
+      Due to implementation constraints, this module currently exposes symbols
+      from the Sort module.  Please only rely on the re-exported version of
+      :record:`~Sort.DefaultComparator`, all other re-exported symbols should be
+      considered unstable when obtained from SortedMap and will be removed in
+      the future.
 */
 module SortedMap {
   import ChapelLocks;

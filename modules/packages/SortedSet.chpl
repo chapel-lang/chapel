@@ -35,6 +35,13 @@
   ``sortedSet`` will inherit the parallel safety mode of its originating
   ``sortedSet``.
 
+   .. note::
+
+      Due to implementation constraints, this module currently exposes symbols
+      from the Sort module.  Please only rely on the re-exported version of
+      :record:`~Sort.DefaultComparator`, all other re-exported symbols should be
+      considered unstable when obtained from SortedSet and will be removed in
+      the future.
 */
 module SortedSet {
   include module Treap;
