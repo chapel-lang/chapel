@@ -29,9 +29,9 @@
   * Initialization from an array is O(N).
 
   The heap accepts a :ref:`comparator <comparators>` to determine how elements
-  are compared. The default comparator is an instance of `DefaultComparator` and
-  makes a max-heap. In this case, ``top`` will return the greatest element in
-  the heap.
+  are compared. The default comparator is an instance of
+  :record:`~Sort.DefaultComparator` and makes a max-heap. In this case, ``top``
+  will return the greatest element in the heap.
 
   If a ``reverseComparator`` is passed to ``init``,
   ``top`` will return the minimal element.
