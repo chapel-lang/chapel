@@ -370,8 +370,7 @@ module Image {
     }
   }
 
-  @chpldoc.nodoc
-  module BMPHelper {
+  private module BMPHelper {
 
     enum Implementation {
       native,
@@ -454,8 +453,7 @@ module Image {
     }
   }
 
-  @chpldoc.nodoc
-  module PNGHelper {
+  private module PNGHelper {
     enum Implementation {
       stb_image,
       libpng
@@ -483,8 +481,7 @@ module Image {
     }
   }
 
-  @chpldoc.nodoc
-  module JPGHelper {
+  private module JPGHelper {
     enum Implementation {
       stb_image
     }
@@ -507,8 +504,7 @@ module Image {
     }
   }
 
-  @chpldoc.nodoc
-  module STBImageHelper {
+  private module STBImageHelper {
     require "ImageHelper/stb_image_write_helper.h";
 
     private use CTypes;
