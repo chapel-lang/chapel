@@ -94,9 +94,11 @@ module Image {
   //
   // how far to shift a color component when packing into a pixelType
   //
-  private inline proc colorOffset(param color) param do
+  @chpldoc.nodoc
+  inline proc colorOffset(param color) param do
     return color:int * bitsPerColor;
-  private inline proc colorOffset(color) do
+  @chpldoc.nodoc
+  inline proc colorOffset(color) do
     return color:int * bitsPerColor;
 
   /* Defines what kind of image to output */
@@ -127,6 +129,25 @@ module Image {
       when imageType.jpg do JPGHelper.writeJpg(outfile, pixels);
       otherwise
         halt("Don't know how to write images of type: ", format);
+    }
+  }
+
+  /*
+    Read an image file into an array of pixels
+
+    :arg image: the input filename or an open fileReader
+    :arg format: the image format
+    :returns: an array of pixel values
+  */
+  proc readImage(image, format: imageType): [] pixelType throws{
+    const infile = if isSubtype(image.type, fileReader)
+                     then image
+                     else open(image, ioMode.r).reader(locking=true);
+    select format {
+      when imageType.png do return PNGHelper.readPng(infile);
+      when imageType.jpg do return JPGHelper.readJpg(infile);
+      otherwise
+        halt("Don't know how to read images of type: ", format);
     }
   }
 
@@ -373,10 +394,20 @@ module Image {
       libpng
     }
     config param pngImpl = PNGImpl.stb_image;
-    proc writePng(outfile, pixels: [?d]) {
+    proc writePng(outfile, pixels: [?d]) throws {
       if pngImpl == PNGImpl.stb_image {
         import super.STBImageHelper;
         STBImageHelper.writePng(outfile, pixels);
+      } else if pngImpl == PNGImpl.libpng {
+        compilerError("libpng is not yet supported");
+      } else {
+        compilerError("Unknown PNG implementation");
+      }
+    }
+    proc readPng(infile) throws {
+      if pngImpl == PNGImpl.stb_image {
+        import super.STBImageHelper;
+        return STBImageHelper.readPng(infile);
       } else if pngImpl == PNGImpl.libpng {
         compilerError("libpng is not yet supported");
       } else {
@@ -391,10 +422,18 @@ module Image {
       stb_image
     }
     config param jpgImpl = JPGImpl.stb_image;
-    proc writeJpg(outfile, pixels: [?d]) {
+    proc writeJpg(outfile, pixels: [?d]) throws {
       if jpgImpl == JPGImpl.stb_image {
         import super.STBImageHelper;
         STBImageHelper.writeJpg(outfile, pixels);
+      } else {
+        compilerError("Unknown JPG implementation");
+      }
+    }
+    proc readJpg(infile) throws {
+      if jpgImpl == JPGImpl.stb_image {
+        import super.STBImageHelper;
+        return STBImageHelper.readJpg(infile);
       } else {
         compilerError("Unknown JPG implementation");
       }
@@ -440,7 +479,7 @@ module Image {
     }
 
     // rewrite pixels into the right format for stb_image
-    private proc writeCommon(outfile, pixels: [?dom]) {
+    private proc writeCommon(outfile, pixels: [?dom]) throws {
       const rows = dom.dim(0).size, cols = dom.dim(1).size;
 
       // 1=Y, 2=YA, 3=RGB, 4=RGBA
@@ -466,16 +505,89 @@ module Image {
       return (writeFunc, context, width.safeCast(c_int), height.safeCast(c_int), mode, data);
     }
 
-    proc writePng(outfile, pixels: [?dom]) {
+    proc writePng(outfile, pixels: [?dom]) throws {
       const (writeFunc, context, width, height, mode, data) = writeCommon(outfile, pixels);
       const stride = width * mode;
       stbi_write_png_to_func(writeFunc, context, width, height, mode, data, stride);
     }
 
-    proc writeJpg(outfile, pixels: [?dom]) {
+    proc writeJpg(outfile, pixels: [?dom]) throws {
       const (writeFunc, context, width, height, mode, data) = writeCommon(outfile, pixels);
       const quality: c_int = 100;
       stbi_write_jpg_to_func(writeFunc, context, width, height, mode, data, quality);
+    }
+
+
+    //    int x,y,n;
+//    unsigned char *data = stbi_load(filename, &x, &y, &n, 0);
+//    // ... process data if not NULL ...
+//    // ... x = width, y = height, n = # 8-bit components per pixel ...
+//    // ... replace '0' with '1'..'4' to force that many components per pixel
+//    // ... but 'n' will always be the number that it would have been if you said 0
+//    stbi_image_free(data);
+
+    extern proc stbi_info_from_memory(data: c_ptrConst(void),
+                                      size: c_int,
+                                      x: c_ptr(c_int),
+                                      y: c_ptr(c_int),
+                                      comp: c_ptr(c_int)): c_int;
+    extern proc stbi_is_16_bit_from_memory(data: c_ptrConst(void), size: c_int): c_int;
+    extern proc stbi_load_from_memory(data: c_ptrConst(void),
+                                      size: c_int,
+                                      x: c_ptr(c_int),
+                                      y: c_ptr(c_int),
+                                      comp: c_ptr(c_int),
+                                      req_comp: c_int): c_ptr(uint(8));
+    proc readCommon(infile) throws {
+      // read bytes in
+      const bytes_ = infile.readAll();
+      const nBytes = bytes_.size.safeCast(c_int);
+      const buffer = bytes_.c_str():c_ptrConst(void);
+
+      // check image
+      var x, y, comp: c_int;
+      const ok = stbi_info_from_memory(buffer, nBytes, c_ptrTo(x), c_ptrTo(y), c_ptrTo(comp));
+      if ok == 0 then
+        halt("Failed to read image info");
+
+      // check that the image is 3 channels and 8 bits per channel
+      if comp != 3 then
+        halt("Image must have 3 channels");
+
+      const is_16 = stbi_is_16_bit_from_memory(buffer, nBytes);
+      if is_16 then
+        halt("Image must have 8 bits per channel");
+
+
+      // read image
+      var x_, y_, comp_: c_int;
+      var data = stbi_load_from_memory(buffer, nBytes, c_ptrTo(x_), c_ptrTo(y_), c_ptrTo(comp_), 3);
+      if data == nil then
+        halt("Failed to read image");
+      assert(x_ == x && y_ == y && comp_ == comp);
+
+      // convert to Chapel array
+      const pixelDom = {0..<y, 0..<x};
+      var pixels: [pixelDom] pixelType;
+      forall order in 0..<(x*y) {
+        const idx = pixelDom.orderToIndex(order);
+        const offset = order * comp;
+        const r = data[offset]: pixelType;
+        const g = data[offset + 1]: pixelType;
+        const b = data[offset + 2]: pixelType;
+        pixels[idx] = r << colorOffset(rgbColor.red) |
+                      g << colorOffset(rgbColor.green) |
+                      b << colorOffset(rgbColor.blue);
+      }
+
+      return pixels;
+    }
+
+    proc readPng(infile) throws {
+      return readCommon(infile);
+    }
+    proc readJpg(infile) throws {
+      return readCommon(infile);
     }
 
   }
