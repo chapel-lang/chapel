@@ -28,7 +28,7 @@ export CHPL_TEST_ARKOUDA=true
 # HPCDC doesn't seem to be accessible to compute nodes at the moment
 # so we made a mirror on lustre where compute nodes can access
 ARKOUDA_DEP_DIR=/lus/scratch/chapelu/arkouda-deps
-if [ ! -d "$COMMON_DIR" ]; then
+if [ ! -d "$ARKOUDA_DEP_DIR" ]; then
   ARKOUDA_DEP_DIR=$COMMON_DIR/arkouda-deps
 fi
 if [ -d "$ARKOUDA_DEP_DIR" ]; then
