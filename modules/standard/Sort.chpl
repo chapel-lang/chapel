@@ -851,7 +851,7 @@ module InsertionSort {
 
    */
   proc insertionSort(ref Data: [?Dom] ?eltType,
-                     comparator:?rec= new DefaultComparator(), lo:int=Dom.low,
+                     comparator:?rec = new DefaultComparator(), lo:int=Dom.low,
                      hi:int=Dom.high) {
     chpl_check_comparator(comparator, eltType);
 
@@ -882,7 +882,7 @@ module InsertionSort {
   }
 
   proc insertionSortMoveElts(ref Data: [?Dom] ?eltType,
-                             comparator:?rec= new DefaultComparator(),
+                             comparator:?rec = new DefaultComparator(),
                              lo:int=Dom.low, hi:int=Dom.high) {
     chpl_check_comparator(comparator, eltType);
 

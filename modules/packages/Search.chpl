@@ -69,8 +69,8 @@ module Search {
       been if it was not found.
    :rtype: (`bool`, `Dom.idxType`)
  */
-proc search(Data:[?Dom], val, comparator:?rec= new DefaultComparator(),
-            lo=Dom.low, hi=Dom.high, sorted=false) {
+proc search(Data:[?Dom], val, comparator:?rec = new DefaultComparator(),
+            lo = Dom.low, hi = Dom.high, sorted = false) {
   if sorted then
     return binarySearch(Data, val, comparator, lo, hi);
   else
@@ -80,8 +80,8 @@ proc search(Data:[?Dom], val, comparator:?rec= new DefaultComparator(),
 
 @chpldoc.nodoc
 /* Error message for multi-dimension arrays */
-proc search(Data:[?Dom], val, comparator:?rec= new DefaultComparator(),
-            lo=Dom.low, hi=Dom.high, sorted=false)
+proc search(Data:[?Dom], val, comparator:?rec = new DefaultComparator(),
+            lo = Dom.low, hi = Dom.high, sorted = false)
   where Dom.rank != 1 {
     compilerError("search() requires 1-D array");
 }
@@ -128,8 +128,8 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec = new DefaultComparator(),
 
 @chpldoc.nodoc
 /* Error message for multi-dimension arrays */
-proc linearSearch(Data:[?Dom], val, comparator:?rec= new DefaultComparator(),
-                  lo=Dom.low, hi=Dom.high)
+proc linearSearch(Data:[?Dom], val, comparator:?rec = new DefaultComparator(),
+                  lo = Dom.low, hi = Dom.high)
   where Dom.rank != 1 {
     compilerError("linearSearch() requires 1-D array");
 }
