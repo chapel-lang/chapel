@@ -25,7 +25,7 @@
   constructed from another sortedMap, the new sortedMap will inherit
   the parallel safety mode of its originating sortedMap.
 
-  SortedSet supports searching for a certain key, insertion and deletion in O(logN).
+  SortedMap supports searching for a certain key, insertion and deletion in O(logN).
 */
 module SortedMap {
   import ChapelLocks;
