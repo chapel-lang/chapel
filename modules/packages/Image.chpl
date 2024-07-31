@@ -194,6 +194,41 @@ module Image {
   }
 
   /*
+    Takes a 2D array of pixels and turns them into color values. The order of
+    the colors is determined by the ``format`` formal. The default format is
+    ``(red, green, blue)``.
+
+    :arg pixels: the 2D array of pixels
+    :arg format: the order of the colors in the array. it must be a permutation
+                 of ``(red, green, blue)``
+    :returns: a new array of colors with the same domain as ``pixels``
+  */
+  proc pixelToColor(pixels: [?d] pixelType, format: 3*rgbColor = (rgbColor.red, rgbColor.green, rgbColor.blue)): [d] 3*pixelType
+    where d.isRectangular() && d.rank == 2 {
+
+    // check format
+    if boundsChecking {
+      if !(format[0] != format[1] &&
+           format[1] != format[2] &&
+           format[0] != format[2]) then
+        halt("pixelToColor: format must be a permutation of (red, green, blue)");
+    }
+
+    proc getColorFromPixel(pixel: pixelType, offset: rgbColor) {
+      return (pixel >> colorOffset(offset)) & colorMask;
+    }
+
+    var outColors: [d] 3*pixelType;
+    forall (p, outColor) in zip(pixels, outColors) {
+      outColor = (getColorFromPixel(p, format[0]),
+                  getColorFromPixel(p, format[1]),
+                  getColorFromPixel(p, format[2]));
+    }
+
+    return outColors;
+  }
+
+  /*
     Takes a 2D array of some element type and computes an integer color
     gradient between the newMin/Max. This is a simple interpolation of the
     values in the array to the new range.
