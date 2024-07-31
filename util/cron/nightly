@@ -188,6 +188,12 @@ while (@ARGV) {
     }
 }
 
+# If we're being told to not do anything, just exit. This is useful for
+# "dry-running" test configurations that figure out some environment
+# variables then exit.
+if (exists($ENV{"CHPL_NIGHTLY_DO_NOTHING"})) {
+  exit 0;
+}
 
 print localtime() . "  host: " . hostname . "\n";
 
