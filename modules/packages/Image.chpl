@@ -609,8 +609,8 @@ module Image {
         halt("Failed to read image info");
 
       // check that the image is 3 channels and 8 bits per channel
-      if comp != 3 then
-        halt("Image must have 3 channels");
+      if comp != 3 && comp != 4 then
+        halt("Image must have 3 or 4 channels");
 
       const is_16 = stbi_is_16_bit_from_memory(buffer, nBytes);
       if is_16 then
@@ -619,7 +619,7 @@ module Image {
 
       // read image
       var x_, y_, comp_: c_int;
-      var data = stbi_load_from_memory(buffer, nBytes, c_ptrTo(x_), c_ptrTo(y_), c_ptrTo(comp_), 3);
+      var data = stbi_load_from_memory(buffer, nBytes, c_ptrTo(x_), c_ptrTo(y_), c_ptrTo(comp_), 0);
       if data == nil then
         halt("Failed to read image");
       assert(x_ == x && y_ == y && comp_ == comp);
@@ -633,6 +633,7 @@ module Image {
         const r = data[offset]: pixelType;
         const g = data[offset + 1]: pixelType;
         const b = data[offset + 2]: pixelType;
+        // drop alpha on the floor if it exists
         pixels[idx] = r << colorOffset(rgbColor.red) |
                       g << colorOffset(rgbColor.green) |
                       b << colorOffset(rgbColor.blue);
