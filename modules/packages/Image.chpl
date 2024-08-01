@@ -625,7 +625,7 @@ module Image {
       assert(x_ == x && y_ == y && comp_ == comp);
 
       // convert to Chapel array
-      const pixelDom = {0..<y, 0..<x};
+      const pixelDom = {0..<y:int, 0..<x:int};
       var pixels: [pixelDom] pixelType;
       forall order in 0..<(x*y) {
         const idx = pixelDom.orderToIndex(order);
