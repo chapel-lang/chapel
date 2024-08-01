@@ -1,1 +1,43 @@
+
+Start analyzing forall (basic2D.chpl:19)
+| Found loop domain (basic2D.chpl:11)
+| Will attempt static and dynamic optimizations (basic2D.chpl:19)
+|
+|  Start analyzing call (basic2D.chpl:20)
+|   Found the domain of the access base (basic2D.chpl:10)
+|  This call is a dynamic optimization candidate (basic2D.chpl:20)
+|
+|  Start analyzing call (basic2D.chpl:21)
+|   Found the domain of the access base (basic2D.chpl:10)
+|  This call is a dynamic optimization candidate (basic2D.chpl:21)
+|
+|  Start analyzing call (basic2D.chpl:22)
+|   Found the domain of the access base (basic2D.chpl:10)
+|  This call is a dynamic optimization candidate (basic2D.chpl:22)
+|
+|  Start analyzing call (basic2D.chpl:23)
+|   Found the domain of the access base (basic2D.chpl:10)
+|  This call is a dynamic optimization candidate (basic2D.chpl:23)
+|
+|  Start analyzing call (basic2D.chpl:24)
+|   Found the domain of the access base (basic2D.chpl:10)
+|  This call is a dynamic optimization candidate (basic2D.chpl:24)
+|
+|  Start analyzing call (basic2D.chpl:25)
+|   Found the domain of the access base (basic2D.chpl:10)
+|  This call is a dynamic optimization candidate (basic2D.chpl:25)
+|
+|  Start analyzing call (basic2D.chpl:26)
+|   Found the domain of the access base (basic2D.chpl:10)
+|  This call is a dynamic optimization candidate (basic2D.chpl:26)
+|
+End analyzing forall (basic2D.chpl:19)
+
+Static check successful. Using localAccess with dynamic check (basic2D.chpl:20)
+Static check successful. Using localAccess with dynamic check (basic2D.chpl:21)
+Static check successful. Using localAccess with dynamic check (basic2D.chpl:22)
+Static check successful. Using localAccess with dynamic check (basic2D.chpl:23)
+Static check successful. Using localAccess with dynamic check (basic2D.chpl:24)
+Static check successful. Using localAccess with dynamic check (basic2D.chpl:25)
+Static check successful. Using localAccess with dynamic check (basic2D.chpl:26)
 2.10058e+06
