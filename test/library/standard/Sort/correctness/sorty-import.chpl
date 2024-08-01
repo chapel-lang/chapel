@@ -12,8 +12,8 @@ if debug then writeln("n=", n);
 
 use Time;
 use Random;
-import Sort.{InsertionSort, MergeSort, SelectionSort, QuickSort};
-import BubbleSort, HeapSort;
+import Sort.{InsertionSort, MergeSort, QuickSort};
+import BubbleSort, HeapSort, SelectionSort;
 config const seed = 13579;
 
 enum SortType { BUBBLE=0, INSERTION, MERGE, SELECTION, QUICK, HEAP }
