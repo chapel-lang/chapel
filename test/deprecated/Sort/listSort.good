@@ -1,0 +1,1 @@
+listSort.chpl:4: warning: 'list.sort' is deprecated - please use the Sort.sort procedure from the Sort module instead
