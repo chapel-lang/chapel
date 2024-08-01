@@ -1994,11 +1994,11 @@ proc StencilArr._packedUpdate() {
             const recvBufIdx = translateIdx(sendBufIdx);
 
             // Pack the buffer
-            ref src = privArr.locArr[i].myElems;
+            ref src = privArr.locArr[i].myElems[S];
             ref buf = privArr.locArr[i].sendBufs[sendBufIdx];
 
             // TODO: parallelize for larger buffers? Other forms for this loop?
-            local do for (si, i) in zip(S, buf.domain.first..#src.sizeAs(int)) do buf[i] = src[si];
+            local do for (s, i) in zip(src, buf.domain.first..#src.sizeAs(int)) do buf[i] = s;
 
             if debugStencilDist then
               writeln("Filled ", here, ".", S, " for ", dom.dist.targetLocales(recvIdx), "::", recvBufIdx);
@@ -2028,10 +2028,10 @@ proc StencilArr._packedUpdate() {
           privArr.locArr[i].recvBufs[recvBufIdx][1..D.sizeAs(int)] = privArr.locArr[srcIdx].sendBufs[srcBufIdx][1..D.sizeAs(int)];
 
           // unpack buffer
-          ref dest = privArr.locArr[i].myElems;
+          ref dest = privArr.locArr[i].myElems[D];
           ref buf = privArr.locArr[i].recvBufs[recvBufIdx];
 
-          local do for (di, i) in zip(D, buf.domain.first..#dest.sizeAs(int)) do dest[di] = buf[i];
+          local do for (d, i) in zip(dest, buf.domain.first..#dest.sizeAs(int)) do d = buf[i];
         }
       }
     }
