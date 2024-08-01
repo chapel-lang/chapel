@@ -47,9 +47,7 @@ enum CallRejectReason {
 class ALACandidate {
   public:
     ALACandidate() = delete;
-    ALACandidate(CallExpr *call);
-    ALACandidate(CallExpr *call, int iterandIdx);
-
+    ALACandidate(CallExpr *call, ForallStmt *forall, bool checkArgs=false);
     inline CallExpr* getCall() const { return call_; }
 
     inline int getIterandIdx() const { return iterandIdx_; }
@@ -66,12 +64,21 @@ class ALACandidate {
     }
     inline bool isRejected() const { return reason_ != CRR_ACCEPT; }
 
+    inline std::vector<Expr*>& offsetExprs() { return offsetExprs_; }
+
     Symbol* getCallBase() const;
 
   private:
     CallExpr *call_;
     int iterandIdx_;
     CallRejectReason reason_;
+    std::vector<Expr*> offsetExprs_;
+
+    bool argsSupported(const std::vector<Symbol *> &syms);
+    bool extractAlignedIdxAndOffsetFromPlusMinus(CallExpr* call,
+                                                 Symbol* loopIdx,
+                                                 SymExpr*& accIdxExpr,
+                                                 Expr*& offsetExpr);
 };
 
 class ForallOptimizationInfo {
