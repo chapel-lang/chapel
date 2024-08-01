@@ -449,6 +449,16 @@ private proc unstableSort(ref x: [], comparator, region: range(?)) {
   }
 }
 
+private proc stableSort(ref x: [], comparator, region: range(?)) {
+  if region.low >= region.high then
+    return;
+
+  // TODO: implement a stable merge sort with parallel merge
+  // TODO: create an in-place merge sort for the stable+minimizeMemory case
+  // TODO: create a stable variant of the radix sort
+  TimSort.timSort(x, comparator=comparator, region=region);
+}
+
 /*
 
 Sort the elements in the 1D rectangular array ``x``.
@@ -500,12 +510,7 @@ proc sort(ref x: [], comparator:? = new DefaultComparator(),
   chpl_check_comparator(comparator, x.eltType);
 
   if stable {
-    // TODO: implement a stable merge sort with parallel merge
-    // TODO: create an in-place merge sort for the stable+minimizeMemory case
-    // TODO: create a stable variant of the radix sort
-    // TODO: make sure that a new stableSort function has an early
-    //       return when the region is empty
-    compilerError("stable sort not yet implemented");
+    stableSort(x, comparator, x.domain.dim(0));
   } else {
     unstableSort(x, comparator, x.domain.dim(0));
   }
@@ -532,10 +537,7 @@ proc sort(ref x: [], comparator, region: range(?), param stable:bool = false) {
   chpl_check_comparator(comparator, x.eltType);
 
   if stable {
-    // TODO: implement a stable merge sort with parallel merge
-    // TODO: create an in-place merge sort for the stable+minimizeMemory case
-    // TODO: create a stable variant of the radix sort
-    compilerError("stable sort not yet implemented");
+    stableSort(x, comparator, region);
   } else {
     unstableSort(x, comparator, region);
   }
@@ -998,12 +1000,12 @@ module TimSort {
   private use Sort;
 
     /*
-    Sort the 1D array `Data` using a parallel timSort algorithm.
+    Sort the 1D array `x` using a parallel timSort algorithm.
     For more information on timSort, follow the link.
       https://github.com/python/cpython/blob/master/Objects/listsort.txt
 
-    :arg Data: The array to be sorted
-    :type Data: [] `eltType`
+    :arg x: The array to be sorted
+    :type x: [] `eltType`
     :arg blockSize: use :proc: `insertionSort` on blocks of `blockSize`
     :type blockSize: `integral`
     :arg comparator: :ref:`Comparator <comparators>` record that defines how the
@@ -1011,15 +1013,18 @@ module TimSort {
 
    */
 
-  proc timSort(ref Data: [?Dom] ?eltType, blockSize=16,
-               comparator:?rec = new DefaultComparator()) {
-    chpl_check_comparator(comparator, eltType);
+  proc timSort(ref x: [],
+               blockSize = 16,
+               comparator: ? = new DefaultComparator(),
+               region: range(?) = x.dim(0))
+  {
+    chpl_check_comparator(comparator, x.eltType);
 
-    if Dom.rank != 1 {
+    if x.rank != 1 {
       compilerError("timSort() requires 1-D array");
     }
 
-    _TimSort(Data, Dom.low, Dom.high, blockSize, comparator);
+    _TimSort(x, region.low, region.high, blockSize, comparator);
   }
 
   private proc _TimSort(ref Data: [?Dom], lo:int, hi:int, blockSize=16,
