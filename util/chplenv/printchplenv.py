@@ -482,17 +482,20 @@ def printchplenv(contents, print_filters=None, print_format='pretty', only=None)
 
     # Print environment variables and their values
     for env in envs:
-        value = ENV_VALS[env.name]
+        name = env.name
+        value = ENV_VALS[name]
         if print_format == 'path':
-            if env.name == 'CHPL_TARGET_CPU':
+            if name == 'CHPL_TARGET_CPU':
                 value = ENV_VALS['CHPL_RUNTIME_CPU']
-            elif env.name == 'CHPL_COMM' and chpl_comm_debug.get() == 'debug':
+            elif name == 'CHPL_COMM' and chpl_comm_debug.get() == 'debug':
                 value += '-debug'
-            elif env.name == 'CHPL_HWLOC' and chpl_hwloc_debug.get() == 'debug':
+            elif name == 'CHPL_HWLOC' and chpl_hwloc_debug.get() == 'debug':
                 value += '-debug'
-            elif env.name == 'CHPL_TASKS' and chpl_tasks_debug.get() == 'debug':
+            elif name == 'CHPL_TASKS' and chpl_tasks_debug.get() == 'debug':
                 value += '-debug'
-        ret.append(print_var(env.name, value, shortname=env.shortname))
+        if only:
+            name = name.strip()
+        ret.append(print_var(name, value, shortname=env.shortname))
 
     # Handle special formatting case for --path
     if print_format == 'path':
