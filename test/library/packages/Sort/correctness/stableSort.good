@@ -1,0 +1,11 @@
+orig array:
+isSorted: false
+inCreationOrder: true
+
+unstable sort:
+isSorted: true
+inCreationOrder: false
+
+stable sort:
+isSorted: true
+inCreationOrder: true
