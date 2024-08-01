@@ -71,8 +71,8 @@ proc localIOTest(type dtype) {
   // 4 dimensional test from Scott's temperature dataset
   coforall loc in Locales do on loc {
     const storeName = "LocalIOStore_%?".format(loc.id);
-    const fullDomain = {0..<1, 0..<100, 0..<1082, 0..<361};
-    const chunkSize = (1,100,136,23);
+    const fullDomain = {0..<1, 0..<10, 0..<108, 0..<36};
+    const chunkSize = (1,10,13,2);
     var A: [fullDomain] dtype;
     fillRandom(A);
     if exists(storeName) then rmTree(storeName);
