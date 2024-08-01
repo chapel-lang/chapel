@@ -4,7 +4,7 @@
 
 use Sort;
 use Random;
-import BubbleSort, HeapSort, BinaryInsertionSort, SelectionSort;
+import BubbleSort, HeapSort, BinaryInsertionSort, SelectionSort, MergeSort;
 
 proc main() {
 
