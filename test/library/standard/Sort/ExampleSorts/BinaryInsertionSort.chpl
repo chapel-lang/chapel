@@ -1,6 +1,5 @@
 // binary insertion sort is similar to insertion sort (stable, in-place)
 // and still O(n**2) but it can reduce the number of comparisons
-@chpldoc.nodoc
 module BinaryInsertionSort {
   private use Sort;
   /*

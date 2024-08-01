@@ -1,6 +1,5 @@
 
 // this selection sort is in-place but not stable
-@chpldoc.nodoc
 module SelectionSort {
   private use Sort;
   /*

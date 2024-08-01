@@ -1,6 +1,5 @@
 // heap sort has good n*log(n) worst case performance
 // it is in-place but not stable.
-@chpldoc.nodoc
 module HeapSort {
   import Sort.{DefaultComparator, chpl_check_comparator, chpl_compare};
   /*
