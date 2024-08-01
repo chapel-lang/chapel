@@ -321,6 +321,8 @@ module Zarr {
     if zarrProfiling then s.restart();
     w.writeBinary(compressedBuffer: c_ptr(void),bytesCompressed);
     if zarrProfiling then times["Writing File"].add(s.elapsed());
+
+    deallocate(compressedBuffer);
   }
 
   /*
@@ -403,7 +405,7 @@ module Zarr {
     :arg bloscLevel: Compression level to use. 0 indicates no compression,
       9 (default) indicates maximum compression.
   */
-  proc writeZarrArray(directoryPath: string, ref A: [?domainType] ?dtype, chunkShape: ?dimCount*int, bloscLevel: int(32) = 9) throws {
+  proc writeZarrArray(directoryPath: string, const ref A: [?domainType] ?dtype, chunkShape: ?dimCount*int, bloscLevel: int(32) = 9) throws {
 
     // Create the metadata record that is written before the chunks
     var shape, chunks: list(int);
