@@ -4,6 +4,7 @@
 
 use Sort;
 use Random;
+import BubbleSort;
 
 proc main() {
 

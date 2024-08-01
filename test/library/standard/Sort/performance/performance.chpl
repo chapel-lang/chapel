@@ -8,6 +8,7 @@
 use Sort;
 use Random;
 use Time;
+import BubbleSort;
 
 config const M: int = 6,                    // 2**M bytes
              correctness: bool = true,      // Disables output
