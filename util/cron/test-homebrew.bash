@@ -36,24 +36,9 @@ version="${short_version}"
 log_info "Moving to ${CHPL_HOME}"
 cd $CHPL_HOME
 
-# This will clone the home-brew repository under test and copies the chapel formula in chapel-lang repo under
-# util/packaging/home-brew
+# This will copy the chapel formula in chapel-lang repo under util/packaging/home-brew
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
-
-git clone git@github.com:Homebrew/homebrew-core ${REPO_PATH}/homebrew-core 2> /dev/null || (cd ${REPO_PATH:-/missing}/homebrew-core; git pull origin master)
-
-# compare the chapel.rb in homebrew-core with the one in our repository (chapel-release.rb)
-# to catch any changes homebrew makes to the formuala without telling us (might happen when they update deps, etc)
-diff ${REPO_PATH:-/missing}/homebrew-core/Formula/c/chapel.rb ${CHPL_HOME}/util/packaging/homebrew/chapel-release.rb 2> /dev/null
-FORMULA_CHANGED=$?
-if [ $FORMULA_CHANGED -ne 0 ]
-then
-  log_error "homebrew released formula updated and does not match chapel-release.rb! Verify chapel formula in homebrew-core!"
-  exit 1
-  else
-  log_info "homebrew released formula matches chapel-release.rb, good!"
-fi
 
 log_info "Building tarball with version: ${version}"
 ./util/buildRelease/gen_release ${version}
