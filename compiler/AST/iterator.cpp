@@ -1745,7 +1745,7 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
       }
 
       // it's possible for that this candidate is not local to the function
-      // (e.g. a module level variable). If it is locale add it to our list
+      // (e.g. a module level variable). If it is local add it to our list
       // of symbols.
       if (candidateToAdd != nullptr) {
         if (candidateToAdd->defPoint->parentSymbol == fn) {
