@@ -43,7 +43,7 @@ class ForallOptimizationInfo {
     std::vector<CallExpr *> iterCall;  // refers to the original CallExpr
     std::vector<Symbol *> iterCallTmp; // this is the symbol to use for checks
 
-    // even if there are multiple indices we store them in a vector
+    // even if there is a single index we store them in a vector
     std::vector< std::vector<Symbol *> > multiDIndices;
 
     // calls in the loop that are candidates for optimization

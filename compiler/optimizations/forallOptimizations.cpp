@@ -614,6 +614,19 @@ static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms)
         return false;
       }
     }
+    else if (ce->getModule()->modTag == MOD_USER) { // TODO remove this check
+      if (CallExpr *argCall = toCallExpr(ce->get(i+1))) {
+        if (!argCall->isNamed("+") && !argCall->isNamed("-")) return false;
+        if (SymExpr *offsetFrom = toSymExpr(argCall->get(1))) {
+          if (offsetFrom->symbol() != syms[i]) {
+            return false;
+          }
+        }
+        else {
+          return false;
+        }
+      }
+    }
     else {
       return false;
     }
@@ -1218,10 +1231,7 @@ static CallExpr* replaceCandidate(CallExpr *candidate,
   Symbol *callBase = getCallBase(candidate);
   CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS, new SymExpr(callBase));
   for (int i = 1 ; i <= candidate->argList.length ; i++) {
-    Symbol *argSym = toSymExpr(candidate->get(i))->symbol();
-    INT_ASSERT(argSym);
-
-    repl->insertAtTail(new SymExpr(argSym));
+    repl->insertAtTail(candidate->get(i)->copy());
   }
   repl->insertAtTail(new SymExpr(staticCheckSym));
 
