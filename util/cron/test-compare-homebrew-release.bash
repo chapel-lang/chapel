@@ -3,11 +3,11 @@
 # This script is to test that the current homebrew formula on homebrew-core master
 # matches with the copy we keep in chapel-release.rb.
 
-# This script will clone the home-brew repository and do a diff with the our version.
+# This script will clone the homebrew-core repository and do a diff with the our version
+# and the published version of the chapel formula.
 
-# !IMPORTANT! Make sure BREW_CORE_REPO_PATH is set to where the homebrew-core repository should go
-# before running this script, or it will fail on the step where it diffs the current
-# formula with the copy we store in chapel-release.rb
+# !IMPORTANT! Make sure BREW_CORE_REPO_PATH is set to where the homebrew-core
+# repository should go before running this script
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/functions.bash
