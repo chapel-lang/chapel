@@ -518,6 +518,51 @@ proc sort(ref x: [], comparator:? = new DefaultComparator(),
 
 /*
 
+Sort the elements in the list ``x``. After the call, ``x`` will store elements
+in sorted order.
+
+See the :proc:`sort` declared just above for details.
+
+.. warning::
+
+  Sorting the elements of a list may invalidate existing references
+  to the elements contained in the list.
+
+:arg x: The list to be sorted
+:type x: :type:`~List.list`
+:arg comparator: :ref:`Comparator <comparators>` record that defines how the
+  data is sorted.
+:arg stable: Defaults to ``false``. If it is ``false``, the implementation
+  can sort in a way that reorders equal keys. If it is ``true``, it will use a
+  stable algorithm in order to preserve the order of equal keys.
+ */
+proc sort(ref x: list(?), comparator:? = new DefaultComparator(),
+          param stable:bool = false) {
+  chpl_check_comparator(comparator, x.eltType);
+  // NOTE: this uses very low-level and non-public list methods to avoid overheads
+  on x {
+    x._enter();
+    // TODO: This is not ideal, how do we communicate the internals of List to Sort?
+    if x._size > 1 {
+      // Copy current list contents into an array.
+      var arr: [0..#x._size] x.eltType;
+      for i in 0..#x._size do
+        arr[i] = x._getRef(i);
+      Sort.sort(arr, comparator=comparator, stable=stable);
+      // This is equivalent to the clear routine.
+      x._fireAllDestructors();
+      x._freeAllArrays();
+      x._firstTimeInitializeArrays();
+      x._appendGeneric(arr);
+    }
+    x._leave();
+  }
+}
+
+  // TODO: proc isSorted and iter sorted!!!!!!!!
+
+/*
+
 Sort the elements in the range 'region' within in the 1D rectangular array
 ``x``.  After the call, ``x[region]`` will store elements in sorted order.
 This function accepts a 'region' range as an optimized alternative to using an
