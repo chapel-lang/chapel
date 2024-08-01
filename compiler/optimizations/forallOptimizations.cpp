@@ -97,16 +97,13 @@ static Symbol *canDetermineLoopDomainStatically(ForallStmt *forall);
 static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
                                         bool checkArgs, int *argIdx,
                                         CallRejectReason *reason=NULL);
-static Symbol *getCallBase(CallExpr *call);
-static void generateDynamicCheckForAccess(CallExpr *access,
+static void generateDynamicCheckForAccess(ALACandidate& access,
                                           ForallStmt *forall,
-                                          int iterandIdx,
                                           CallExpr *&allChecks);
-static Symbol *generateStaticCheckForAccess(CallExpr *access,
+static Symbol *generateStaticCheckForAccess(ALACandidate& candidate,
                                             ForallStmt *forall,
-                                            int iterandIdx,
                                             Expr *&allChecks);
-static CallExpr *replaceCandidate(CallExpr *candidate,
+static CallExpr *replaceCandidate(ALACandidate& candidate,
                                   Symbol *staticCheckSym,
                                   bool doStatic);
 static void optimizeLoop(ForallStmt *forall,
@@ -1100,19 +1097,6 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
   return NULL;
 }
 
-static Symbol *getCallBase(CallExpr *call) {
-  SymExpr *baseSE = toSymExpr(call->baseExpr);
-  if (baseSE != NULL) {
-    if (ShadowVarSymbol *svar = toShadowVarSymbol(baseSE->symbol())) {
-      return svar->outerVarSym();
-    }
-    else {
-      return baseSE->symbol();
-    }
-  }
-  return NULL;
-}
-
 // for a call like `A[i]`, this will create something like
 //
 // chpl_dynamicAutoLocalCheck(A, loopDomain)
@@ -1120,13 +1104,13 @@ static Symbol *getCallBase(CallExpr *call) {
 // right before the `forall`. Multiple dynamic checks are &&'ed. `allChecks` is
 // that "&&" call, or NULL if this was the first time we are adding a
 // dynamic check
-static void generateDynamicCheckForAccess(CallExpr *access,
+static void generateDynamicCheckForAccess(ALACandidate& candidate,
                                           ForallStmt *forall,
-                                          int iterandIdx,
                                           CallExpr *&allChecks) {
   ForallOptimizationInfo &optInfo = forall->optInfo;
-  Symbol *baseSym = getCallBase(access);
+  Symbol *baseSym = candidate.getCallBase();
   INT_ASSERT(baseSym);
+  const int iterandIdx = candidate.getIterandIdx();
 
   SET_LINENO(forall);
 
@@ -1171,13 +1155,13 @@ static void generateDynamicCheckForAccess(CallExpr *access,
 //
 // right before the `forall` and will return the symbol declared. If a check was
 // added for `A` before, it'll just return the symbol (that was created before)
-static Symbol *generateStaticCheckForAccess(CallExpr *access,
+static Symbol *generateStaticCheckForAccess(ALACandidate& candidate,
                                             ForallStmt *forall,
-                                            int iterandIdx,
                                             Expr *&allChecks) {
 
   ForallOptimizationInfo &optInfo = forall->optInfo;
-  Symbol *baseSym = getCallBase(access);
+  Symbol *baseSym = candidate.getCallBase();
+  const int iterandIdx = candidate.getIterandIdx();
   INT_ASSERT(baseSym);
 
   if (optInfo.staticCheckSymForSymMap.count(baseSym) == 0) {
@@ -1223,15 +1207,16 @@ static Symbol *generateStaticCheckForAccess(CallExpr *access,
 }
 
 // replace a candidate CallExpr with the corresponding PRIM_MAYBE_LOCAL_THIS
-static CallExpr* replaceCandidate(CallExpr *candidate,
+static CallExpr* replaceCandidate(ALACandidate& candidate,
                                   Symbol *staticCheckSym,
                                   bool doStatic) {
-  SET_LINENO(candidate);
+  CallExpr* call = candidate.getCall();
+  SET_LINENO(call);
 
-  Symbol *callBase = getCallBase(candidate);
+  Symbol *callBase = candidate.getCallBase();
   CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS, new SymExpr(callBase));
-  for (int i = 1 ; i <= candidate->argList.length ; i++) {
-    repl->insertAtTail(candidate->get(i)->copy());
+  for (int i = 1 ; i <= call->argList.length ; i++) {
+    repl->insertAtTail(call->get(i)->copy());
   }
   repl->insertAtTail(new SymExpr(staticCheckSym));
 
@@ -1239,7 +1224,7 @@ static CallExpr* replaceCandidate(CallExpr *candidate,
   // accurate logging
   repl->insertAtTail(new SymExpr(doStatic?gTrue:gFalse));
 
-  candidate->replace(repl);
+  call->replace(repl);
 
   return repl;
 }
@@ -1250,25 +1235,24 @@ static void optimizeLoop(ForallStmt *forall,
                          Expr *&staticCond, CallExpr *&dynamicCond,
                          bool doStatic) {
 
-  std::vector< std::pair<CallExpr *, int> > candidates = doStatic ?
+  std::vector<ALACandidate>& candidates = doStatic ?
       forall->optInfo.staticCandidates :
       forall->optInfo.dynamicCandidates;
 
-  std::vector< std::pair<CallExpr *, int> >::iterator it;
+  std::vector<ALACandidate>::iterator it;
   for(it = candidates.begin() ; it != candidates.end() ; it++) {
-    CallExpr *candidate = it->first;
-    int iterandIdx = it->second;
+    ALACandidate& candidate = *it;
+    //CallExpr *candidate = it->first;
+    //int iterandIdx = it->second;
 
     Symbol *checkSym = generateStaticCheckForAccess(candidate,
                                                     forall,
-                                                    iterandIdx,
                                                     staticCond);
     if (!doStatic) {
       forall->optInfo.staticCheckSymsForDynamicCandidates.push_back(checkSym);
 
       generateDynamicCheckForAccess(candidate,
                                     forall,
-                                    iterandIdx,
                                     dynamicCond);
     }
 
@@ -1381,8 +1365,8 @@ static void constructCondStmtFromLoops(Expr *condExpr,
 // be duplicate loops at the end of normalize, but after resolution we expect
 // them to go away.
 static void generateOptimizedLoops(ForallStmt *forall) {
-  std::vector< std::pair<CallExpr *, int> > &sOptCandidates = forall->optInfo.staticCandidates;
-  std::vector< std::pair<CallExpr *, int> > &dOptCandidates = forall->optInfo.dynamicCandidates;
+  std::vector<ALACandidate> &sOptCandidates = forall->optInfo.staticCandidates;
+  std::vector<ALACandidate> &dOptCandidates = forall->optInfo.dynamicCandidates;
 
   const int totalNumCandidates = sOptCandidates.size() + dOptCandidates.size();
   if (totalNumCandidates == 0) return;
@@ -1534,9 +1518,10 @@ static void autoLocalAccess(ForallStmt *forall) {
           primMaybeLocalThisLocations.insert(call->astloc);
         }
 
-        std::pair<CallExpr *, int> candidate;
-        candidate.first = call;
-        candidate.second = iterandIdx;
+        //std::pair<CallExpr *, int> candidate;
+        //candidate.first = call;
+        //candidate.second = iterandIdx;
+        ALACandidate candidate(call, iterandIdx);
         forall->optInfo.staticCandidates.push_back(candidate);
       }
     }
@@ -1561,9 +1546,10 @@ static void autoLocalAccess(ForallStmt *forall) {
         primMaybeLocalThisLocations.insert(call->astloc);
       }
 
-      std::pair<CallExpr *, int> candidate;
-      candidate.first = call;
-      candidate.second = iterandIdx;
+      //std::pair<CallExpr *, int> candidate;
+      //candidate.first = call;
+      //candidate.second = iterandIdx;
+      ALACandidate candidate(call, iterandIdx);
       forall->optInfo.dynamicCandidates.push_back(candidate);
     }
   }
@@ -2462,4 +2448,22 @@ static bool isLocalAccess(CallExpr *call) {
   }
 
   return false;
+}
+
+ALACandidate::ALACandidate(CallExpr *call, int iterandIdx):
+    call_(call), iterandIdx_(iterandIdx) {
+
+}
+
+Symbol* ALACandidate::getCallBase() const {
+  SymExpr *baseSE = toSymExpr(call_->baseExpr);
+  if (baseSE != NULL) {
+    if (ShadowVarSymbol *svar = toShadowVarSymbol(baseSE->symbol())) {
+      return svar->outerVarSym();
+    }
+    else {
+      return baseSE->symbol();
+    }
+  }
+  return NULL;
 }

@@ -31,6 +31,22 @@ enum ForallAutoLocalAccessCloneType {
   STATIC_AND_DYNAMIC
 };
 
+class ALACandidate {
+  public:
+    ALACandidate() = delete;
+    ALACandidate(CallExpr *call, int iterandIdx);
+
+    inline CallExpr* getCall() const { return call_; }
+    inline int getIterandIdx() const { return iterandIdx_; }
+
+    Symbol* getCallBase() const;
+
+  private:
+    CallExpr *call_;
+    int iterandIdx_;
+    Symbol* staticCheckSym_;
+};
+
 class ForallOptimizationInfo {
   public:
     bool infoGathered;
@@ -46,9 +62,9 @@ class ForallOptimizationInfo {
     // even if there is a single index we store them in a vector
     std::vector< std::vector<Symbol *> > multiDIndices;
 
-    // calls in the loop that are candidates for optimization
-    std::vector< std::pair<CallExpr *, int> > staticCandidates;
-    std::vector< std::pair<CallExpr *, int> > dynamicCandidates;
+    // calls in the loop that are candidates for ALA optimization
+    std::vector<ALACandidate> staticCandidates;
+    std::vector<ALACandidate> dynamicCandidates;
 
     // the static check control symbol added for symbol
     std::map<Symbol *, Symbol *> staticCheckSymForSymMap;
