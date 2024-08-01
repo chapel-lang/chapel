@@ -1,1 +1,2 @@
 listSort.chpl:4: warning: 'list.sort' is deprecated - please use the Sort.sort procedure from the Sort module instead
+[1, 2, 3, 4, 5, 6, 7, 8, 9]
