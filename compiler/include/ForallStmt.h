@@ -30,21 +30,48 @@ enum ForallAutoLocalAccessCloneType {
   STATIC_ONLY,
   STATIC_AND_DYNAMIC
 };
+//
+// Support for reporting calls that are not optimized for different reasons
+enum CallRejectReason {
+  CRR_ACCEPT,
+  CRR_NOT_ARRAY_ACCESS_LIKE,
+  CRR_NO_CLEAN_INDEX_MATCH,
+  CRR_ACCESS_BASE_IS_LOOP_INDEX,
+  CRR_ACCESS_BASE_IS_NOT_OUTER_VAR,
+  CRR_ACCESS_BASE_IS_COMPLEX_SHADOW_VAR,
+  CRR_ACCESS_BASE_IS_REDUCE_SHADOW_VAR,
+  CRR_TIGHTER_LOCALITY_DOMINATOR,
+  CRR_UNKNOWN,
+};
 
 class ALACandidate {
   public:
     ALACandidate() = delete;
+    ALACandidate(CallExpr *call);
     ALACandidate(CallExpr *call, int iterandIdx);
 
     inline CallExpr* getCall() const { return call_; }
+
     inline int getIterandIdx() const { return iterandIdx_; }
+    inline void setIterandIdx(int iterandIdx) { iterandIdx_ = iterandIdx; }
+
+    inline CallRejectReason getReason() const { return reason_; }
+    inline void setReasonIfNeeded(CallRejectReason reason) {
+      if (!hasReason()) reason_ = reason;
+    }
+
+    inline bool hasReason() const { return reason_ != CRR_UNKNOWN; }
+    inline bool shouldReport() const {
+      return reason_ != CRR_UNKNOWN && reason_ != CRR_NOT_ARRAY_ACCESS_LIKE;
+    }
+    inline bool isRejected() const { return reason_ != CRR_ACCEPT; }
 
     Symbol* getCallBase() const;
 
   private:
     CallExpr *call_;
     int iterandIdx_;
-    Symbol* staticCheckSym_;
+    CallRejectReason reason_;
 };
 
 class ForallOptimizationInfo {

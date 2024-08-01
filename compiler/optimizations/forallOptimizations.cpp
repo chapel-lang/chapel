@@ -56,19 +56,6 @@ static void LOGLN_ALA(BaseAST *node);
 static bool LOG_AA(int depth, const char *msg, BaseAST *node);
 static void LOGLN_AA(BaseAST *node);
 
-// Support for reporting calls that are not optimized for different reasons
-enum CallRejectReason {
-  CRR_ACCEPT,
-  CRR_NOT_ARRAY_ACCESS_LIKE,
-  CRR_NO_CLEAN_INDEX_MATCH,
-  CRR_ACCESS_BASE_IS_LOOP_INDEX,
-  CRR_ACCESS_BASE_IS_NOT_OUTER_VAR,
-  CRR_ACCESS_BASE_IS_COMPLEX_SHADOW_VAR,
-  CRR_ACCESS_BASE_IS_REDUCE_SHADOW_VAR,
-  CRR_TIGHTER_LOCALITY_DOMINATOR,
-  CRR_UNKNOWN,
-};
-
 // we store all the locations where we have added these primitives. When we
 // report finalizing an optimization (either positively or negatively) we remove
 // those locations from the set. Towards the end of resolution, if there are
@@ -94,9 +81,8 @@ static void gatherForallInfo(ForallStmt *forall);
 static bool loopHasValidInductionVariables(ForallStmt *forall);
 static bool loopHasValidOptInfo(ForallStmt *forall);
 static Symbol *canDetermineLoopDomainStatically(ForallStmt *forall);
-static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
-                                        bool checkArgs, int *argIdx,
-                                        CallRejectReason *reason=NULL);
+static ALACandidate getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
+                                             bool checkArgs=false);
 static void generateDynamicCheckForAccess(ALACandidate& access,
                                           ForallStmt *forall,
                                           CallExpr *&allChecks);
@@ -1009,9 +995,9 @@ static const char *getCallRejectReasonStr(CallRejectReason reason) {
 // Bunch of checks to see if `call` is a candidate for optimization within
 // `forall`. Returns the symbol of the `baseExpr` of the `call` if it is
 // suitable. NULL otherwise
-static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
-                                        bool checkArgs, int *argIdx,
-                                        CallRejectReason *reason) {
+static ALACandidate getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
+                                             bool checkArgs) {
+  ALACandidate candidate(call);
 
   // TODO see if you can use getCallBase
   SymExpr *baseSE = toSymExpr(call->baseExpr);
@@ -1021,15 +1007,15 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
 
     // Prevent making changes to `new C[i]`
     if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
-      if (parentCall->isPrimitive(PRIM_NEW)) { return NULL; }
+      if (parentCall->isPrimitive(PRIM_NEW)) { return candidate; }
     }
 
     // don't analyze further if the call base is a yielded symbol
     if (accBaseSym->hasFlag(FLAG_INDEX_VAR)) {
-      if (!accBaseSym->hasFlag(FLAG_TEMP) && reason != NULL) {
-        *reason = CRR_ACCESS_BASE_IS_LOOP_INDEX;
+      if (!accBaseSym->hasFlag(FLAG_TEMP)) {
+        candidate.setReasonIfNeeded(CRR_ACCESS_BASE_IS_LOOP_INDEX);
       }
-      return NULL;
+      return candidate;
     }
 
     // give up if the access uses a different symbol than the symbols yielded by
@@ -1044,57 +1030,61 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
            it++) {
         idx++;
         if (callHasSymArguments(call, *it)) {
-          *argIdx = idx;
+          candidate.setIterandIdx(idx);
+          //*argIdx = idx;
           found = true;
         }
       }
 
       if (!found) {
-        if (reason != NULL) *reason = CRR_NO_CLEAN_INDEX_MATCH;
-        return NULL;
+        candidate.setReasonIfNeeded(CRR_NO_CLEAN_INDEX_MATCH);
+        return candidate;
       }
     }
 
     // this call has another tighter-enclosing stmt that may change locality,
     // don't optimize
     if (forall != getLocalityDominator(call)) {
-      if (reason != NULL) *reason = CRR_TIGHTER_LOCALITY_DOMINATOR;
-      return NULL;
+      candidate.setReasonIfNeeded(CRR_TIGHTER_LOCALITY_DOMINATOR);
+      return candidate;
     }
 
     // (i,j) in forall (i,j) in bla is a tuple that is index-by-index accessed
     // in loop body that throw off this analysis
-    if (accBaseSym->hasFlag(FLAG_INDEX_OF_INTEREST)) { return NULL; }
+    if (accBaseSym->hasFlag(FLAG_INDEX_OF_INTEREST)) { return candidate; }
 
     // give up if the symbol we are looking to optimize is defined inside the
     // loop itself
     if (forall->loopBody()->contains(accBaseSym->defPoint)) {
-      if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_NOT_OUTER_VAR;
-      return NULL;
+      candidate.setReasonIfNeeded(CRR_ACCESS_BASE_IS_NOT_OUTER_VAR);
+      return candidate;
     }
 
     if (ShadowVarSymbol *svar = toShadowVarSymbol(accBaseSym)) {
       if (svar->isReduce()) {
-        if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_REDUCE_SHADOW_VAR;
-        return NULL;
+        candidate.setReasonIfNeeded(CRR_ACCESS_BASE_IS_REDUCE_SHADOW_VAR);
+        return candidate;
       }
 
       Symbol* outerVar = svar->outerVarSym();
 
       if (outerVar == NULL) {
-        if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_COMPLEX_SHADOW_VAR;
-        return NULL;
+        candidate.setReasonIfNeeded(CRR_ACCESS_BASE_IS_COMPLEX_SHADOW_VAR);
+        return candidate;
       }
 
-      return outerVar;
+      candidate.setReasonIfNeeded(CRR_ACCEPT);
+      return candidate;
     }
     else {
-      return accBaseSym;
+      candidate.setReasonIfNeeded(CRR_ACCEPT);
+      return candidate;
     }
   }
 
-  if (reason != NULL) *reason = CRR_NOT_ARRAY_ACCESS_LIKE;
-  return NULL;
+  candidate.setReasonIfNeeded(CRR_NOT_ARRAY_ACCESS_LIKE);
+
+  return candidate;
 }
 
 // for a call like `A[i]`, this will create something like
@@ -1448,21 +1438,16 @@ static void autoLocalAccess(ForallStmt *forall) {
   collectCallExprs(forall->loopBody(), allCallExprs);
 
   for_vector(CallExpr, call, allCallExprs) {
-    int iterandIdx = -1;
-    CallRejectReason reason = CRR_UNKNOWN;
-    Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall,
-                                                  /*checkArgs=*/true,
-                                                  &iterandIdx,
-                                                  &reason);
+    ALACandidate candidate = getCallBaseSymIfSuitable(call, forall,
+                                                  /*checkArgs=*/true);
 
-    if (accBaseSym == NULL) {
-      if (reason != CRR_UNKNOWN &&
-          reason != CRR_NOT_ARRAY_ACCESS_LIKE) {
+    if (candidate.isRejected()) {
+      if (candidate.shouldReport()) {
         LOG_ALA(2, "Start analyzing call", call);
 
         std::stringstream message;
         message << "Cannot optimize: ";
-        message << getCallRejectReasonStr(reason);
+        message << getCallRejectReasonStr(candidate.getReason());
 
         LOG_ALA(3, message.str().c_str(), call);
       }
@@ -1470,6 +1455,9 @@ static void autoLocalAccess(ForallStmt *forall) {
     }
 
     LOG_ALA(2, "Start analyzing call", call);
+
+    Symbol* accBaseSym = candidate.getCallBase();
+    const int iterandIdx = candidate.getIterandIdx();
 
     INT_ASSERT(iterandIdx >= 0);
 
@@ -1518,10 +1506,6 @@ static void autoLocalAccess(ForallStmt *forall) {
           primMaybeLocalThisLocations.insert(call->astloc);
         }
 
-        //std::pair<CallExpr *, int> candidate;
-        //candidate.first = call;
-        //candidate.second = iterandIdx;
-        ALACandidate candidate(call, iterandIdx);
         forall->optInfo.staticCandidates.push_back(candidate);
       }
     }
@@ -1546,10 +1530,6 @@ static void autoLocalAccess(ForallStmt *forall) {
         primMaybeLocalThisLocations.insert(call->astloc);
       }
 
-      //std::pair<CallExpr *, int> candidate;
-      //candidate.first = call;
-      //candidate.second = iterandIdx;
-      ALACandidate candidate(call, iterandIdx);
       forall->optInfo.dynamicCandidates.push_back(candidate);
     }
   }
@@ -1887,14 +1867,10 @@ static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall)
         // we want the side that's not to have a baseExpr that's a SymExpr
         // this avoid function calls
         if (!canBeLocalAccess(leftCall)) {
-          return getCallBaseSymIfSuitable(leftCall, forall,
-                                          /*checkArgs=*/false,
-                                          NULL) != NULL;
+          return !getCallBaseSymIfSuitable(leftCall, forall).isRejected();
         }
         else if (!canBeLocalAccess(rightCall)) {
-          return getCallBaseSymIfSuitable(rightCall, forall,
-                                          /*checkArgs=*/false,
-                                          NULL) != NULL;
+          return !getCallBaseSymIfSuitable(rightCall, forall).isRejected();
         }
       }
     }
@@ -1902,9 +1878,7 @@ static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall)
       if (rightSymExpr->symbol()->isImmediate() ||
           rightSymExpr->symbol()->isParameter()) {
         if (!canBeLocalAccess(leftCall)) {
-          return getCallBaseSymIfSuitable(leftCall, forall,
-                                          /*checkArgs=*/false,
-                                          NULL) != NULL;
+          return !getCallBaseSymIfSuitable(leftCall, forall).isRejected();
         }
       }
     }
@@ -2187,10 +2161,8 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
       otherChildIsSuitable = true;
     }
     else {
-      otherChildIsSuitable = (getCallBaseSymIfSuitable(otherCall,
-                                                       forall,
-                                                       /*checkArgs=*/false,
-                                                       NULL) != NULL);
+      otherChildIsSuitable = !getCallBaseSymIfSuitable(otherCall,
+                                                       forall).isRejected();
     }
   }
 
@@ -2449,11 +2421,11 @@ static bool isLocalAccess(CallExpr *call) {
 
   return false;
 }
+ALACandidate::ALACandidate(CallExpr *call):
+    call_(call), iterandIdx_(-1), reason_(CRR_UNKNOWN) { }
 
 ALACandidate::ALACandidate(CallExpr *call, int iterandIdx):
-    call_(call), iterandIdx_(iterandIdx) {
-
-}
+    call_(call), iterandIdx_(iterandIdx), reason_(CRR_UNKNOWN) { }
 
 Symbol* ALACandidate::getCallBase() const {
   SymExpr *baseSE = toSymExpr(call_->baseExpr);
