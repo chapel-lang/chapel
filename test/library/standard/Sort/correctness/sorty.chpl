@@ -13,7 +13,7 @@ if debug then writeln("n=", n);
 use Time;
 use Random;
 use Sort;
-import BubbleSort;
+import BubbleSort, HeapSort;
 config const seed = 13579;
 
 enum SortType { BUBBLE=0, INSERTION, MERGE, SELECTION, QUICK, HEAP }
