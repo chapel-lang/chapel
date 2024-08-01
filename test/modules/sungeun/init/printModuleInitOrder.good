@@ -38,6 +38,7 @@ Initializing Modules:
            TwoArrayPartitioning
           QuickSort
            InsertionSort
+          TimSort
         ChapelDistribution
          ChapelHashtable
         ExternalArray
