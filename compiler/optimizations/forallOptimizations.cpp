@@ -621,7 +621,7 @@ bool ALACandidate::argsSupported(const std::vector<Symbol *> &syms) {
     if (SymExpr *arg = toSymExpr(call_->get(i+1))) {
       if (arg->symbol() != syms[i])  return false;
 
-      offsetExprs_.push_back(nullptr);
+      addOffset(nullptr);
     }
     else if (call_->getModule()->modTag == MOD_USER) { // TODO remove this check
       if (CallExpr *argCall = toCallExpr(call_->get(i+1))) {
@@ -630,7 +630,7 @@ bool ALACandidate::argsSupported(const std::vector<Symbol *> &syms) {
         Expr* offsetExpr = nullptr;
         if (extractAlignedIdxAndOffsetFromPlusMinus(argCall, syms[i],
                                                     accIdxExpr, offsetExpr)) {
-          offsetExprs_.push_back(offsetExpr);
+          addOffset(offsetExpr);
         }
         else {
           return false;
@@ -638,7 +638,7 @@ bool ALACandidate::argsSupported(const std::vector<Symbol *> &syms) {
       }
     }
     else {
-      offsetExprs_.push_back(nullptr);
+      addOffset(nullptr);
       return false;
     }
   }
@@ -1024,7 +1024,7 @@ static const char *getCallRejectReasonStr(CallRejectReason reason) {
 // `forall`. Returns the symbol of the `baseExpr` of the `call` if it is
 // suitable. NULL otherwise
 ALACandidate::ALACandidate(CallExpr *call, ForallStmt *forall, bool checkArgs):
-  call_(call), iterandIdx_(-1), reason_(CRR_UNKNOWN) {
+  call_(call), iterandIdx_(-1), reason_(CRR_UNKNOWN), hasOffset_(false) {
 
   SymExpr *baseSE = toSymExpr(call->baseExpr);
 
@@ -1122,6 +1122,18 @@ Symbol* ALACandidate::getCallBase() const {
     }
   }
   return NULL;
+}
+
+void ALACandidate::addOffset(Expr* e) {
+  if (e) {
+    hasOffset_ = true;
+    offsetExprs_.push_back(e);
+  }
+  else {
+    SET_LINENO(call_);
+    SymExpr* zero = new SymExpr(new_IntSymbol(0, INT_SIZE_DEFAULT));
+    offsetExprs_.push_back(zero);
+  }
 }
 
 // for a call like `A[i]`, this will create something like
@@ -1495,11 +1507,13 @@ static void autoLocalAccess(ForallStmt *forall) {
     Symbol* accBaseSym = candidate.getCallBase();
     const int iterandIdx = candidate.getIterandIdx();
 
-    //std::cout << "offsets\n";
+    if (candidate.hasOffset()) {
+      std::cout << "offsets " << candidate.getCall()->stringLoc() << std::endl;
 
-    //for (auto offsetExpr: candidate.offsetExprs()) {
-      //nprint_view(offsetExpr);
-    //}
+      for (auto offsetExpr: candidate.offsetExprs()) {
+        nprint_view(offsetExpr);
+      }
+    }
     INT_ASSERT(iterandIdx >= 0);
 
     bool canOptimizeStatically = false;

@@ -65,6 +65,9 @@ class ALACandidate {
     inline bool isRejected() const { return reason_ != CRR_ACCEPT; }
 
     inline std::vector<Expr*>& offsetExprs() { return offsetExprs_; }
+    void addOffset(Expr* e);
+
+    inline bool hasOffset() const { return hasOffset_; }
 
     Symbol* getCallBase() const;
 
@@ -73,6 +76,7 @@ class ALACandidate {
     int iterandIdx_;
     CallRejectReason reason_;
     std::vector<Expr*> offsetExprs_;
+    bool hasOffset_;
 
     bool argsSupported(const std::vector<Symbol *> &syms);
     bool extractAlignedIdxAndOffsetFromPlusMinus(CallExpr* call,
