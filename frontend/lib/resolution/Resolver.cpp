@@ -2147,6 +2147,16 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   auto newExpr = call->calledExpression()->toNew();
   auto& re = byPostorder.byAst(call);
   auto& reNewExpr = byPostorder.byAst(newExpr);
+
+  // Rewrite 'new dmap' to 'new _distribution'
+  if (auto rt = reNewExpr.type().type()->toRecordType()) {
+    if (rt->id().symbolPath() == "ChapelArray.dmap") {
+      reNewExpr.setType(QualifiedType(
+          reNewExpr.type().kind(), CompositeType::getDistributionType(context),
+          reNewExpr.type().param()));
+    }
+  }
+
   auto qtNewExpr = reNewExpr.type();
 
 

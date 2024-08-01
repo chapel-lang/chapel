@@ -225,6 +225,9 @@ class CompositeType : public Type {
   /** Get the chpl_localeID_t type */
   static const RecordType* getLocaleIDType(Context* context);
 
+  /** Get the _distribution type */
+  static const RecordType* getDistributionType(Context* context);
+
   /** Get the record _owned implementing owned */
   static const RecordType* getOwnedRecordType(Context* context, const BasicClassType* bct);
 
