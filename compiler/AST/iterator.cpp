@@ -1676,6 +1676,10 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
     if (isArgSymbol(sym) || yldSymSet.set_in(sym))
       continue;
 
+    // There are several different sorts of assignments the ref can be
+    // involved in. We pattern match these and extract the symbol on
+    // the RHS if available.
+    Symbol *candidateToAdd = nullptr;
     if (sym->type->symbol->hasFlag(FLAG_REF)) {
       CallExpr* move = NULL;
       if (!sym->isDefined()) {
@@ -1701,10 +1705,7 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
       {
         // The symbol is defined through a bitwise (pointer) copy.
         INT_ASSERT(se->symbol()->type->symbol->hasFlag(FLAG_REF));
-
-        if (se->symbol()->defPoint->parentSymbol == fn) {
-          syms.add_exclusive(se->symbol());
-        }
+        candidateToAdd = se->symbol();
       }
       else if (CallExpr* call = toCallExpr(move->get(2)))
       {
@@ -1714,7 +1715,7 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
             SymExpr* se = toSymExpr(actual);
 
             if (se->symbol()->defPoint->parentSymbol == fn) {
-              syms.add_exclusive(se->symbol());
+              candidateToAdd = se->symbol();
             }
           }
         }
@@ -1728,8 +1729,7 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
               // ref lies outside the struct that contains the ref.)
               call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
             SymExpr* rhs = toSymExpr(call->get(1));
-
-            syms.add_exclusive(rhs->symbol());
+            candidateToAdd = rhs->symbol();
           }
           else
           {
@@ -1742,6 +1742,15 @@ static void insertLocalsForRefs(Vec<Symbol*>& syms,
       else
       {
         INT_FATAL(move, "RHS of a move is neither a SymExpr nor a CallExpr.");
+      }
+
+      // it's possible for that this candidate is not local to the function
+      // (e.g. a module level variable). If it is local add it to our list
+      // of symbols.
+      if (candidateToAdd != nullptr) {
+        if (candidateToAdd->defPoint->parentSymbol == fn) {
+          syms.add_exclusive(candidateToAdd);
+        }
       }
     }
   }
