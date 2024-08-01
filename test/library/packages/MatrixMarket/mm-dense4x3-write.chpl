@@ -34,7 +34,7 @@ for l in r.lines() {
     lines.pushBack(l);
   i += 1;
 }
-lines.sort();
+sort(lines);
 for l in lines {
   write(l);
 }

@@ -1,4 +1,4 @@
-private use List;
+private use List, Sort;
 
 config const testIters = 137;
 
@@ -15,7 +15,7 @@ forall x in lst1 do
 forall x in lst1 with (ref lst2) do
   lst2.pushBack(x);
 
-lst2.sort();
+sort(lst2);
 
 for (x, y) in zip(lst1, lst2) do
   assert(x == y);
