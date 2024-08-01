@@ -630,13 +630,26 @@ module Image {
       forall order in 0..<(x*y) {
         const idx = pixelDom.orderToIndex(order);
         const offset = order * comp;
-        const r = data[offset]: pixelType;
-        const g = data[offset + 1]: pixelType;
-        const b = data[offset + 2]: pixelType;
-        // drop alpha on the floor if it exists
+
+        var r = data[offset]: pixelType;
+        var g = data[offset + 1]: pixelType;
+        var b = data[offset + 2]: pixelType;
+
+        if comp == 4 {
+          // merge alpha into the RGB, this assumes 8 bits-per-channel
+          const a = data[offset + 3]: pixelType;
+          const rNorm = r / 255.0;
+          const gNorm = g / 255.0;
+          const bNorm = b / 255.0;
+          const aNorm = a / 255.0;
+          r = ((rNorm * aNorm + (1.0 - aNorm)) * 255):int;
+          g = ((gNorm * aNorm + (1.0 - aNorm)) * 255):int;
+          b = ((bNorm * aNorm + (1.0 - aNorm)) * 255):int;
+        }
         pixels[idx] = r << colorOffset(rgbColor.red) |
                       g << colorOffset(rgbColor.green) |
                       b << colorOffset(rgbColor.blue);
+
       }
 
       return pixels;
