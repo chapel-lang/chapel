@@ -153,6 +153,7 @@ Start analyzing forall (basic1D.chpl:69)
 |  This call is a dynamic optimization candidate (basic1D.chpl:74)
 |
 |  Start analyzing call (basic1D.chpl:75)
+|   Call has offset(s), this will require dynamic check (basic1D.chpl:75)
 |   Found the domain of the access base (basic1D.chpl:5)
 |  This call is a dynamic optimization candidate (basic1D.chpl:75)
 |
