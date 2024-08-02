@@ -250,7 +250,7 @@ module ChapelSyncvar {
 
     :arg val: New value of the ``sync`` variable.
   */
-  proc _syncvar.writeEF(in val : valType) {
+  proc ref _syncvar.writeEF(in val : valType) {
     wrapped.writeEF(val);
   }
 
@@ -262,7 +262,7 @@ module ChapelSyncvar {
     :arg val: New value of the ``sync`` variable.
   */
   @unstable("'writeFF' is unstable")
-  proc _syncvar.writeFF(in val : valType) {
+  proc ref _syncvar.writeFF(in val : valType) {
     wrapped.writeFF(val);
   }
 
@@ -274,7 +274,7 @@ module ChapelSyncvar {
     :arg val: New value of the ``sync`` variable.
   */
   @unstable("'writeXF' is unstable")
-  proc _syncvar.writeXF(in val : valType) {
+  proc ref _syncvar.writeXF(in val : valType) {
     wrapped.writeXF(val);
   }
 
@@ -284,7 +284,7 @@ module ChapelSyncvar {
     variable is set to empty when this method completes.
   */
   @unstable("'reset' is unstable")
-  proc _syncvar.reset() {
+  proc ref _syncvar.reset() {
     wrapped.reset();
   }
 
