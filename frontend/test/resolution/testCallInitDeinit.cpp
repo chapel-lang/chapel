@@ -1667,6 +1667,46 @@ static void test21() {
       )""", {} );
 }
 
+static void test22() {
+  // Make sure that call-init-deinit doesn't try to process an initialization
+  // by mistakenly passing 'R' to 'helper' instead of passing the forwarded
+  // value 'R.c'
+  testActions("test22",
+      R"""(
+      module M {
+        // call-init-deinit wants this to transmute R.c into the reciever of C.helper
+        operator =(ref lhs: borrowed C, rhs: unmanaged C) {
+        }
+
+        class C {
+          var x : int;
+
+          proc helper() {
+            return x;
+          }
+        }
+
+        record R {
+          var c = new unmanaged C(5);
+
+          forwarding c;
+
+          proc wrapper() {
+            return this.helper();
+          }
+        }
+
+        proc test() {
+          var r : R;
+          var x = r.wrapper();
+        }
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "r",          ""},
+        {AssociatedAction::DEINIT,       "M.test@6",   "r"}
+      });
+}
+
 // calling function with 'out' intent formal
 
 // calling functions with 'inout' intent formal
@@ -1755,6 +1795,8 @@ int main() {
   test20c();
 
   test21();
+
+  test22();
 
   return 0;
 }
