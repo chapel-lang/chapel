@@ -62,3 +62,18 @@ forall i in DomInner {
 }
 writeln(OutArrInner);
 writeln("End second loop");
+
+// Everything is the same as above, but this time, we're doing '1+i's
+
+writeln("Starting loop 4, expecting all local accesses (total 36)");
+forall i in DomInner {
+  OutArr[i] =
+    InArr[-1+i] +
+    InArr[-0+i] +
+    InArr[i  ] +
+    InArr[+0+i] +
+    InArr[1+i];
+}
+writeln(OutArr);
+writeln("End first loop");
+

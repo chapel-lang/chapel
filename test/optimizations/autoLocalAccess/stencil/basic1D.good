@@ -124,6 +124,40 @@ Start analyzing forall (basic1D.chpl:53)
 |
 End analyzing forall (basic1D.chpl:53)
 
+
+Start analyzing forall (basic1D.chpl:69)
+| Found loop domain (basic1D.chpl:6)
+| Will attempt static and dynamic optimizations (basic1D.chpl:69)
+|
+|  Start analyzing call (basic1D.chpl:70)
+|   Found the domain of the access base (basic1D.chpl:5)
+|  This call is a dynamic optimization candidate (basic1D.chpl:70)
+|
+|  Start analyzing call (basic1D.chpl:71)
+|   Call has offset(s), this will require dynamic check (basic1D.chpl:71)
+|   Found the domain of the access base (basic1D.chpl:5)
+|  This call is a dynamic optimization candidate (basic1D.chpl:71)
+|
+|  Start analyzing call (basic1D.chpl:72)
+|   Call has offset(s), this will require dynamic check (basic1D.chpl:72)
+|   Found the domain of the access base (basic1D.chpl:5)
+|  This call is a dynamic optimization candidate (basic1D.chpl:72)
+|
+|  Start analyzing call (basic1D.chpl:73)
+|   Found the domain of the access base (basic1D.chpl:5)
+|  This call is a dynamic optimization candidate (basic1D.chpl:73)
+|
+|  Start analyzing call (basic1D.chpl:74)
+|   Call has offset(s), this will require dynamic check (basic1D.chpl:74)
+|   Found the domain of the access base (basic1D.chpl:5)
+|  This call is a dynamic optimization candidate (basic1D.chpl:74)
+|
+|  Start analyzing call (basic1D.chpl:75)
+|   Found the domain of the access base (basic1D.chpl:5)
+|  This call is a dynamic optimization candidate (basic1D.chpl:75)
+|
+End analyzing forall (basic1D.chpl:69)
+
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:15)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:16)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:17)
@@ -147,6 +181,12 @@ Static check successful. Using localAccess with dynamic check (basic1D.chpl:59)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:60)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:61)
 Static check successful. Using localAccess [static only ALA clone]  (basic1D.chpl:54)
+Static check successful. Using localAccess with dynamic check (basic1D.chpl:70)
+Static check successful. Using localAccess with dynamic check (basic1D.chpl:71)
+Static check successful. Using localAccess with dynamic check (basic1D.chpl:72)
+Static check successful. Using localAccess with dynamic check (basic1D.chpl:73)
+Static check successful. Using localAccess with dynamic check (basic1D.chpl:74)
+Static check successful. Using localAccess with dynamic check (basic1D.chpl:75)
 Starting loop 1, expecting all local accesses (total 36)
 0 0 5 5 5 5 5 5 0 0
 End first loop
@@ -156,7 +196,10 @@ End second loop
 Starting loop 3, expecting local access on the output (total 6) expecting default access on the input (total 42)
 7 7 7 7 7 7
 End second loop
+Starting loop 4, expecting all local accesses (total 36)
+0 0 5 5 5 5 5 5 0 0
+End first loop
 
 Numbers collected by prediff:
-	localAccess was called 42 times
+	localAccess was called 78 times
 	this was called 90 times

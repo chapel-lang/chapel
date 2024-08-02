@@ -585,10 +585,32 @@ static void LOGLN_ALA(BaseAST *node) {
 //
 // Normalize support for --auto-local-access
 //
+
+// TODO should probably be a static function
+Expr* ALACandidate::getSymFromValidUnaryOp(Expr* e) {
+  if (CallExpr* call = toCallExpr(e)) {
+    // At this point, we don't have `PRIM_UNARY_*`. All we have are unresolved
+    // calls to "-" / "+" with single argument
+    if ((call->isNamed("-") || call->isNamed("+")) && // TODO helper
+        call->numActuals() == 1) {
+      if (isSymExpr(call->get(1))) {
+        // note that we ignore whether this is - or +. Currently, stencil
+        // distribution is symmetric and whether we are subtracting or adding
+        // for offsetting shouldn't matter. See also `chpl__ala_offsetCheck`
+        // where the absolute value of the offsets are used.
+        return call->get(1);
+      }
+    }
+  }
+  return nullptr;
+}
+
+// TODO should probably be a static function
 bool ALACandidate::extractAlignedIdxAndOffsetFromPlusMinus(CallExpr* call,
                                                            Symbol* loopIdx,
                                                            SymExpr*& accIdxExpr,
                                                            Expr*& offsetExpr) {
+  // TODO I want to refactor this function
   accIdxExpr = nullptr;
   offsetExpr = nullptr;
 
@@ -598,7 +620,12 @@ bool ALACandidate::extractAlignedIdxAndOffsetFromPlusMinus(CallExpr* call,
     if (first->symbol() == loopIdx) {
       // whoops it was i+1
       offsetArg = 2;
+      offsetExpr = call->get(offsetArg);
     }
+  }
+  else if (Expr* e = getSymFromValidUnaryOp(call->get(1))) {
+    offsetArg = 1;
+    offsetExpr = e;
   }
   else {
     return false;
@@ -612,11 +639,14 @@ bool ALACandidate::extractAlignedIdxAndOffsetFromPlusMinus(CallExpr* call,
       }
     }
   }
+  else if (Expr* e = getSymFromValidUnaryOp(call->get(2))) {
+    offsetArg = 2;
+    offsetExpr = e;
+  }
   else {
     return false;
   }
 
-  offsetExpr = call->get(offsetArg);
   accIdxExpr = toSymExpr(offsetArg==1 ? call->get(2) : call->get(1));
   return true;
 }
