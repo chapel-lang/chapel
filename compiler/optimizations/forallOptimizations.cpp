@@ -1151,6 +1151,10 @@ static void generateDynamicCheckForAccess(ALACandidate& candidate,
   INT_ASSERT(baseSym);
   const int iterandIdx = candidate.getIterandIdx();
 
+  auto& staticCheckSymMap = candidate.hasOffset() ?
+                                optInfo.staticCheckWOffSymForSymMap :
+                                optInfo.staticCheckSymForSymMap;
+
   SET_LINENO(forall);
 
   if (optInfo.dynamicCheckForSymMap.count(baseSym) == 0) {
@@ -1173,7 +1177,7 @@ static void generateDynamicCheckForAccess(ALACandidate& candidate,
     }
 
     CallExpr *staticOverride = new CallExpr(PRIM_UNARY_LNOT,
-        new SymExpr(forall->optInfo.staticCheckSymForSymMap[baseSym]));
+        new SymExpr(staticCheckSymMap[baseSym]));
     check = new CallExpr("||", staticOverride, check);
 
     if (allChecks == NULL) {
@@ -1522,18 +1526,16 @@ static void autoLocalAccess(ForallStmt *forall) {
       continue;
     }
 
+
+
     LOG_ALA(2, "Start analyzing call", call);
+    if (candidate.hasOffset()) {
+      LOG_ALA(3, "Call has offset(s), this will require dynamic check", call);
+    }
 
     Symbol* accBaseSym = candidate.getCallBase();
     const int iterandIdx = candidate.getIterandIdx();
 
-    if (candidate.hasOffset()) {
-      std::cout << "offsets " << candidate.getCall()->stringLoc() << std::endl;
-
-      for (auto offsetExpr: candidate.offsetExprs()) {
-        nprint_view(offsetExpr);
-      }
-    }
     INT_ASSERT(iterandIdx >= 0);
 
     bool canOptimizeStatically = false;
