@@ -424,16 +424,24 @@ module ChapelSyncvar {
 
   @chpldoc.nodoc
   operator <=>(ref lhs : _syncvar, ref rhs) {
-    const tmp = lhs.readFE();
-    lhs.writeEF(rhs);
+    // TODO: what to do here???
+    // const tmp = lhs.readFE();
+    // lhs.writeEF(rhs);
+    // rhs = tmp;
+    const tmp = lhs;
+    lhs = rhs;
     rhs = tmp;
   }
 
   @chpldoc.nodoc
   operator <=>(ref lhs, ref rhs : _syncvar) {
+    // TODO: what to do here???
+    // const tmp = lhs;
+    // lhs = rhs.readFE();
+    // rhs.writeEF(tmp);
     const tmp = lhs;
-    lhs = rhs.readFE();
-    rhs.writeEF(tmp);
+    lhs = rhs;
+    rhs = tmp;
   }
 
   @chpldoc.nodoc

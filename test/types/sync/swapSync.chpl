@@ -1,3 +1,4 @@
+// TODO: should this work???????
 // Test that we can swap sync with non-sync variables.
 {
   var a: int = 1;
