@@ -975,6 +975,7 @@ proc type blockDist.createDomain(rng: range(?)...) {
 }
 
 // create an array over a blockDist Distribution, default initialized
+pragma "no copy return"
 proc type blockDist.createArray(
   dom: domain(?),
   type eltType,
@@ -986,6 +987,7 @@ proc type blockDist.createArray(
 }
 
 // create an array over a blockDist Distribution, initialized with the given value or iterator
+pragma "no copy return"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   dom: domain(?),
@@ -1001,6 +1003,7 @@ proc type blockDist.createArray(
 }
 
 // create an array over a blockDist Distribution, initialized from the given array
+pragma "no copy return"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   dom: domain(?),
@@ -1020,6 +1023,7 @@ proc type blockDist.createArray(
 }
 
 // create an array over a blockDist Distribution constructed from a series of ranges, default initialized
+pragma "no copy return"
 proc type blockDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1028,11 +1032,13 @@ proc type blockDist.createArray(
   return createArray({(...rng)}, eltType, targetLocales);
 }
 
+pragma "no copy return"
 proc type blockDist.createArray(rng: range(?)..., type eltType) {
   return createArray({(...rng)}, eltType);
 }
 
 // create an array over a blockDist Distribution constructed from a series of ranges, initialized with the given value or iterator
+pragma "no copy return"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   rng: range(?)...,
@@ -1043,6 +1049,7 @@ proc type blockDist.createArray(
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
+pragma "no copy return"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
   where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
@@ -1052,6 +1059,7 @@ proc type blockDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
 
 
 // create an array over a blockDist Distribution constructed from a series of ranges, initialized from the given array
+pragma "no copy return"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   rng: range(?)...,
@@ -1063,6 +1071,7 @@ proc type blockDist.createArray(
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
+pragma "no copy return"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   rng: range(?)...,
