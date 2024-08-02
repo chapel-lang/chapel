@@ -1016,7 +1016,7 @@ module DistributedBag
       Perform simultaneously two compareAndSwap operations. This ensures that
       both atomic variables are accessed at the same time.
     */
-    inline proc simCAS(A: atomic int, B: atomic int, expA: int, expB: int,
+    inline proc ref simCAS(A: atomic int, B: atomic int, expA: int, expB: int,
       desA: int, desB: int): bool
     {
       var casA, casB: bool;
