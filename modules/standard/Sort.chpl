@@ -274,8 +274,14 @@ const defaultComparator: DefaultComparator = new DefaultComparator();
    default sort order.
 
  */
-const reverseComparator: ReverseComparator(DefaultComparator);
-reverseComparator = new ReverseComparator();
+@deprecated("The variable 'reverseComparator' is now deprecated, please create a new instance of the :type:`reverseDefaultComparator` type instead.")
+const reverseComparator: ReverseComparator(DefaultComparator) =
+  new ReverseComparator();
+
+/* An instantiation of :record:`ReverseComparator` for reversing the default
+   comparator.
+*/
+type reverseDefaultComparator = ReverseComparator(DefaultComparator);
 
 /* Private methods */
 
