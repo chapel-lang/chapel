@@ -688,6 +688,23 @@ proc isSorted(x: [], comparator:? = new DefaultComparator()): bool {
   return sorted;
 }
 
+proc isSorted(x: list(?), comparator:? = new DefaultComparator()): bool {
+  chpl_check_comparator(comparator, x.eltType);
+  var sorted = true;
+
+  // NOTE: this uses very low-level and non-public list methods to avoid overheads
+  on x {
+    x._enter();
+    var sortedLocal = true;
+    forall i in 1..#x._size with (&& reduce sorted) do
+      sorted &&= (chpl_compare(x._getRef(i-1), x._getRef(i), comparator) <= 0);
+    sorted = sortedLocal;
+    x._leave();
+  }
+
+  return sorted;
+}
+
 
 @chpldoc.nodoc
 /* Error message for multi-dimension arrays */
