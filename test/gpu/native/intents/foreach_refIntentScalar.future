@@ -1,2 +1,0 @@
-bug
-ref intent'd scalars should be host registered and passed to gpu kernel by ref

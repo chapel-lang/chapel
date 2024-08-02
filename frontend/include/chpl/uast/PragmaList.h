@@ -654,6 +654,7 @@ PRAGMA(COMPUTE_UNIFIED_TYPE_HELP, ypr, "compute unified type helper", "identify 
 PRAGMA(DO_NOT_RESOLVE_UNLESS_CALLED, npr, "do not resolve unless called", "do not resolve this function unless it is called (e.g. if it contains only compilerError)")
 PRAGMA(TASK_PRIVATE_VARIABLE, npr, "task private variable", ncm)
 PRAGMA(TFI_BORROW_TEMP, npr, "temporary for storing borrow of a shadow var", ncm)
+PRAGMA(EXEMPT_REF_PROPAGATION, npr, "exempt variable from ref propagation", ncm)
 
 #undef ypr
 #undef npr

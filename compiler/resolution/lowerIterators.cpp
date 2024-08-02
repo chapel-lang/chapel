@@ -1654,9 +1654,23 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
         }break;
 
       case TFI_IN_PARENT:
+        map->put(svar, svar->outerVarSym());
+        continue;
+
       case TFI_REF:
       case TFI_CONST_REF:
-        map->put(svar, svar->outerVarSym());
+        if(svar->outerVarSym()->isRef()) {
+          map->put(svar, svar->outerVarSym());
+        } else {
+          VarSymbol* refVar = new VarSymbol(
+            astr("ref_", svar->name), svar->type->getRefType());
+          refVar->addFlag(FLAG_EXEMPT_REF_PROPAGATION);
+          forLoop->insertBefore(new DefExpr(refVar));
+          forLoop->insertBefore(new CallExpr(
+            PRIM_MOVE, refVar, new CallExpr(
+              PRIM_ADDR_OF, svar->outerVarSym())));
+          map->put(svar, refVar);
+        }
         continue;
 
      case TFI_REDUCE_OP:
