@@ -587,22 +587,34 @@ static void LOGLN_ALA(BaseAST *node) {
 //
 
 // TODO should probably be a static function
-Expr* ALACandidate::getSymFromValidUnaryOp(Expr* e) {
+SymExpr* ALACandidate::getSymFromValidUnaryOp(Expr* e) {
   if (CallExpr* call = toCallExpr(e)) {
     // At this point, we don't have `PRIM_UNARY_*`. All we have are unresolved
     // calls to "-" / "+" with single argument
     if ((call->isNamed("-") || call->isNamed("+")) && // TODO helper
         call->numActuals() == 1) {
-      if (isSymExpr(call->get(1))) {
+      if (SymExpr* ret = toSymExpr(call->get(1))) {
         // note that we ignore whether this is - or +. Currently, stencil
         // distribution is symmetric and whether we are subtracting or adding
         // for offsetting shouldn't matter. See also `chpl__ala_offsetCheck`
         // where the absolute value of the offsets are used.
-        return call->get(1);
+        return ret;
       }
     }
   }
   return nullptr;
+}
+
+int ALACandidate::findLoopIdxInPlusMinus(CallExpr* call, Symbol* loopIdx) {
+  INT_ASSERT(call->numActuals() == 2);
+  for (int i=1 ; i<=call->numActuals() ; i++) {
+    if (SymExpr* cur = toSymExpr(call->get(i))) {
+      if (cur->symbol() == loopIdx) {
+        return i;
+      }
+    }
+  }
+  return -1;
 }
 
 // TODO should probably be a static function
@@ -610,44 +622,27 @@ bool ALACandidate::extractAlignedIdxAndOffsetFromPlusMinus(CallExpr* call,
                                                            Symbol* loopIdx,
                                                            SymExpr*& accIdxExpr,
                                                            Expr*& offsetExpr) {
-  // TODO I want to refactor this function
   accIdxExpr = nullptr;
   offsetExpr = nullptr;
 
-  int offsetArg = 1; // assume 1+i
+  const int loopIdxArgIdx = findLoopIdxInPlusMinus(call, loopIdx);
+  if (loopIdxArgIdx != 1 && loopIdxArgIdx != 2) return false;
 
-  if (SymExpr* first = toSymExpr(call->get(1))) {
-    if (first->symbol() == loopIdx) {
-      // whoops it was i+1
-      offsetArg = 2;
-      offsetExpr = call->get(offsetArg);
-    }
+  const int offsetArgIdx = loopIdxArgIdx==1 ? 2 : 1;
+
+  Expr* offsetArg = call->get(offsetArgIdx);
+  if (SymExpr* offsetSymExpr = toSymExpr(offsetArg)) {
+    offsetExpr = offsetSymExpr;
   }
-  else if (Expr* e = getSymFromValidUnaryOp(call->get(1))) {
-    offsetArg = 1;
-    offsetExpr = e;
+  else if (SymExpr* offsetSymExpr = getSymFromValidUnaryOp(offsetArg)) {
+    offsetExpr = offsetSymExpr;
   }
   else {
     return false;
   }
 
-  if (SymExpr* second = toSymExpr(call->get(2))) {
-    if (second->symbol() == loopIdx) {
-      // this can only be true if we have offsetArg == 1
-      if (offsetArg != 1) {
-        return false;
-      }
-    }
-  }
-  else if (Expr* e = getSymFromValidUnaryOp(call->get(2))) {
-    offsetArg = 2;
-    offsetExpr = e;
-  }
-  else {
-    return false;
-  }
-
-  accIdxExpr = toSymExpr(offsetArg==1 ? call->get(2) : call->get(1));
+  INT_ASSERT(offsetExpr);
+  accIdxExpr = toSymExpr(call->get(loopIdxArgIdx));
   return true;
 }
 
@@ -677,6 +672,7 @@ bool ALACandidate::argsSupported(const std::vector<Symbol *> &syms) {
             }
           }
 
+          INT_ASSERT(offsetExpr);
           addOffset(offsetExpr);
         }
         else {

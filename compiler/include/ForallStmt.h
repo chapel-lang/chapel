@@ -79,11 +79,12 @@ class ALACandidate {
     bool hasOffset_;
 
     bool argsSupported(const std::vector<Symbol *> &syms);
-    Expr* getSymFromValidUnaryOp(Expr* e);
+    SymExpr* getSymFromValidUnaryOp(Expr* e);
     bool extractAlignedIdxAndOffsetFromPlusMinus(CallExpr* call,
                                                  Symbol* loopIdx,
                                                  SymExpr*& accIdxExpr,
                                                  Expr*& offsetExpr);
+    int findLoopIdxInPlusMinus(CallExpr* call, Symbol* loopIdx);
 };
 
 class ForallOptimizationInfo {
