@@ -106,6 +106,7 @@ class ForallOptimizationInfo {
 
     // the static check control symbol added for symbol
     std::map<Symbol *, Symbol *> staticCheckSymForSymMap;
+    std::map<Symbol *, Symbol *> staticCheckWOffSymForSymMap;
 
     // the dynamic check call added for symbol
     std::map<Symbol *, CallExpr *> dynamicCheckForSymMap;

@@ -1153,38 +1153,50 @@ static void generateDynamicCheckForAccess(ALACandidate& candidate,
 
   SET_LINENO(forall);
 
-  CallExpr *currentCheck = NULL;
   if (optInfo.dynamicCheckForSymMap.count(baseSym) == 0) {
-    currentCheck = new CallExpr("chpl__dynamicAutoLocalCheck");
-    optInfo.dynamicCheckForSymMap[baseSym] = currentCheck;
-  }
-  else {
-    return;
-  }
-  currentCheck->insertAtTail(baseSym);
+    CallExpr* check = new CallExpr("chpl__dynamicAutoLocalCheck");
+    optInfo.dynamicCheckForSymMap[baseSym] = check;
 
-  if (optInfo.iterSym[iterandIdx] != NULL) {
-    currentCheck->insertAtTail(new SymExpr(optInfo.iterSym[iterandIdx]));
-  }
-  else if (optInfo.dotDomIterExpr[iterandIdx] != NULL) {
-    currentCheck->insertAtTail(optInfo.dotDomIterExpr[iterandIdx]->copy());
-  }
-  else if (optInfo.iterCallTmp[iterandIdx] != NULL) {
-    currentCheck->insertAtTail(new SymExpr(optInfo.iterCallTmp[iterandIdx]));
-  }
-  else {
-    INT_FATAL("optInfo didn't have enough information");
+    check->insertAtTail(baseSym);
+
+    if (optInfo.iterSym[iterandIdx] != NULL) {
+      check->insertAtTail(new SymExpr(optInfo.iterSym[iterandIdx]));
+    }
+    else if (optInfo.dotDomIterExpr[iterandIdx] != NULL) {
+      check->insertAtTail(optInfo.dotDomIterExpr[iterandIdx]->copy());
+    }
+    else if (optInfo.iterCallTmp[iterandIdx] != NULL) {
+      check->insertAtTail(new SymExpr(optInfo.iterCallTmp[iterandIdx]));
+    }
+    else {
+      INT_FATAL("optInfo didn't have enough information");
+    }
+
+    CallExpr *staticOverride = new CallExpr(PRIM_UNARY_LNOT,
+        new SymExpr(forall->optInfo.staticCheckSymForSymMap[baseSym]));
+    check = new CallExpr("||", staticOverride, check);
+
+    if (allChecks == NULL) {
+      allChecks = check;
+    }
+    else {
+      allChecks = new CallExpr("&&", check, allChecks);
+    }
   }
 
-  CallExpr *staticOverride = new CallExpr(PRIM_UNARY_LNOT,
-      new SymExpr(forall->optInfo.staticCheckSymForSymMap[baseSym]));
-  currentCheck = new CallExpr("||", staticOverride, currentCheck);
+  if (candidate.hasOffset()) {
+    CallExpr* curCheck = optInfo.dynamicCheckForSymMap[baseSym];
 
-  if (allChecks == NULL) {
-    allChecks = currentCheck;
-  }
-  else {
-    allChecks = new CallExpr("&&", currentCheck, allChecks);
+    CallExpr* offsetCheck = new CallExpr("chpl__ala_offsetCheck");
+    offsetCheck->insertAtTail(baseSym);
+    for (auto e: candidate.offsetExprs()) {
+      offsetCheck->insertAtTail(e->copy());
+    }
+
+    CallExpr* newCheck = new CallExpr("&&", offsetCheck); // we'll add curCheck
+    curCheck->replace(newCheck);
+    newCheck->insertAtTail(curCheck);
+    optInfo.dynamicCheckForSymMap[baseSym] = newCheck;
   }
 }
 
@@ -1203,7 +1215,11 @@ static Symbol *generateStaticCheckForAccess(ALACandidate& candidate,
   const int iterandIdx = candidate.getIterandIdx();
   INT_ASSERT(baseSym);
 
-  if (optInfo.staticCheckSymForSymMap.count(baseSym) == 0) {
+  auto& staticCheckSymMap = candidate.hasOffset() ?
+                                optInfo.staticCheckWOffSymForSymMap :
+                                optInfo.staticCheckSymForSymMap;
+
+  if (staticCheckSymMap.count(baseSym) == 0) {
     SET_LINENO(forall);
 
     VarSymbol *checkSym = new VarSymbol("chpl__staticAutoLocalCheckSym");
@@ -1211,7 +1227,7 @@ static Symbol *generateStaticCheckForAccess(ALACandidate& candidate,
     // mark it with FLAG_TEMP to prevent the normalizer from adding
     // PRIM_END_OF_STATEMENT in the wrong places for loops.
     checkSym->addFlag(FLAG_TEMP);
-    optInfo.staticCheckSymForSymMap[baseSym] = checkSym;
+    staticCheckSymMap[baseSym] = checkSym;
 
     CallExpr *checkCall = new CallExpr("chpl__staticAutoLocalCheck");
     checkCall->insertAtTail(baseSym);
@@ -1229,6 +1245,10 @@ static Symbol *generateStaticCheckForAccess(ALACandidate& candidate,
       INT_FATAL("optInfo didn't have enough information");
     }
 
+    if (candidate.hasOffset()) {
+      checkCall->insertAtTail(new SymExpr(gTrue));
+    }
+
     if (allChecks == NULL) {
       allChecks = new SymExpr(checkSym);
     }
@@ -1241,7 +1261,7 @@ static Symbol *generateStaticCheckForAccess(ALACandidate& candidate,
     return checkSym;
   }
   else {
-    return optInfo.staticCheckSymForSymMap[baseSym];
+    return staticCheckSymMap[baseSym];
   }
 }
 
