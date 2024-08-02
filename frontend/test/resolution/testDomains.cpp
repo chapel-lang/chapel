@@ -91,6 +91,7 @@ module M {
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
   QualifiedType dType = findVarType(m, rr, "d");
+  assert(dType.type()->isDomainType());
 
   QualifiedType fullIndexType = findVarType(m, rr, "fullIndex");
 
@@ -190,6 +191,7 @@ module M {
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
   QualifiedType dType = findVarType(m, rr, "d");
+  assert(dType.type()->isDomainType());
 
   auto fullIndexType = findVarType(m, rr, "i");
   assert(findVarType(m, rr, "ig") == fullIndexType);
