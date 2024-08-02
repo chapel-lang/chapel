@@ -655,7 +655,8 @@ bool ALACandidate::argsSupported(const std::vector<Symbol *> &syms) {
 
       addOffset(nullptr);
     }
-    else if (call_->getModule()->modTag == MOD_USER) { // TODO remove this check
+    else if (fOffsetAutoLocalAccess &&
+             call_->getModule()->modTag == MOD_USER) { // TODO remove this check
       if (CallExpr *argCall = toCallExpr(call_->get(i+1))) {
         if (!argCall->isNamed("+") && !argCall->isNamed("-")) return false;
         SymExpr* accIdxExpr = nullptr;
@@ -1992,6 +1993,9 @@ static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall)
         else if (!canBeLocalAccess(rightCall)) {
           return !ALACandidate(rightCall, forall).isRejected();
         }
+        else {
+          return true;
+        }
       }
     }
     else if (SymExpr *rightSymExpr = toSymExpr(call->get(2)))  {
@@ -2468,8 +2472,11 @@ static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed) {
           SymExpr *controlFlag = new SymExpr(confirmed ? gTrue : gFalse);
           maybeAggAssign->get(flagIndex)->replace(controlFlag);
 
-          int aggToRemoveIndex = lhsOfMaybeAggAssign ? 3 : 4;
-          removeAggregatorFromMaybeAggAssign(maybeAggAssign, aggToRemoveIndex);
+          if (confirmed) {
+            int aggToRemoveIndex = lhsOfMaybeAggAssign ? 3 : 4;
+            removeAggregatorFromMaybeAggAssign(maybeAggAssign,
+                                               aggToRemoveIndex);
+          }
         }
       }
     }
