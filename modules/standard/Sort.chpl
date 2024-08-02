@@ -690,14 +690,14 @@ proc isSorted(x: [], comparator:? = new DefaultComparator()): bool {
 
 proc isSorted(x: list(?), comparator:? = new DefaultComparator()): bool {
   chpl_check_comparator(comparator, x.eltType);
-  var sorted = true;
 
   // NOTE: this uses very low-level and non-public list methods to avoid overheads
+  var sorted = true;
   on x {
     x._enter();
     var sortedLocal = true;
-    forall i in 1..#x._size with (&& reduce sorted) do
-      sorted &&= (chpl_compare(x._getRef(i-1), x._getRef(i), comparator) <= 0);
+    forall i in 1..<x._size with (&& reduce sortedLocal) do
+      sortedLocal &&= (chpl_compare(x._getRef(i-1), x._getRef(i), comparator) <= 0);
     sorted = sortedLocal;
     x._leave();
   }
