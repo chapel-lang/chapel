@@ -1,0 +1,2 @@
+constSync.chpl:n: error: const actual is passed to 'ref' formal 'this' of METHOD()
+note: to formal of type sync int(64)
