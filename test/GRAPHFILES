@@ -264,13 +264,13 @@ types/string/psahabu/perf/search.graph
 types/string/psahabu/perf/search-throughput.graph
 types/string/psahabu/perf/substring.graph
 # suite: Standard Library
-library/packages/Sort/performance/sorts-linearithmic.graph
-library/packages/Sort/performance/sorts-quadratic.graph
+library/standard/Sort/performance/sorts-linearithmic.graph
+library/standard/Sort/performance/sorts-quadratic.graph
 library/packages/LinearAlgebra/performance/dot-perf.graph
 library/packages/LinearAlgebra/performance/linearalgebra-perf.graph
 sparse/CS/multiplication/cs-multiplication.graph
 sparse/CS/resize/cs-resize.graph
-library/packages/Sort/RadixSort/radixsortMSB.graph
+library/standard/Sort/RadixSort/radixsortMSB.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph
