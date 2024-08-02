@@ -183,7 +183,7 @@ module SampleSortHelp {
   }
 
   proc createSplittersFromSample(A,
-                                 ref splitterBucketizer:SampleBucketizer,
+                                 ref splitterBucketizer:SampleBucketizer(?),
                                  criterion,
                                  start_n: int,
                                  sampleSize: int,

@@ -4,6 +4,7 @@ module TwoArrayDistributedSampleSort {
   private use SampleSortHelp;
   private use RadixSortHelp;
   private use TwoArraySampleSort;
+  private use TwoArrayDistributedPartitioning;
 
   private use CTypes;
 
@@ -32,7 +33,13 @@ module TwoArrayDistributedSampleSort {
     // TODO: do some first-touch, which should matter for comm=ugni
     Scratch.dsiElementInitializationComplete();
 
-    var state = new TwoArrayDistributedBucketizerSharedState(
+    var state1 = new TwoArrayDistributedBucketizerSharedState(
+      bucketizerType=SampleBucketizer(Data.eltType),
+      numLocales=Data.targetLocales().size,
+      baseCaseSize=baseCaseSize,
+      distributedBaseCaseSize=distributedBaseCaseSize,
+      endbit=endbit);
+    var state2 = new TwoArrayDistributedBucketizerSharedState(
       bucketizerType=SampleBucketizer(Data.eltType),
       numLocales=Data.targetLocales().size,
       baseCaseSize=baseCaseSize,
@@ -43,7 +50,7 @@ module TwoArrayDistributedSampleSort {
                                      Data.domain.low.safeCast(int),
                                      Data.domain.high.safeCast(int),
                                      Data, Scratch,
-                                     state, comparator, 0);
+                                     state1, state2, comparator, 0);
 
     _do_destroy_array(Scratch, deinitElts=false);
   }
