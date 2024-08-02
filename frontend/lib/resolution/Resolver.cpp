@@ -1442,7 +1442,9 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       if (!isVarArgs && typeExprT.hasTypePtr() &&
           (isFormal || (signatureOnly && isField))) {
         // update qtKind with the result of resolving the intent
-        computeFormalIntent(decl, qtKind, typeExprT.type(), typeExprT.param());
+        if (!typeExprT.type()->isTupleType()) {
+          computeFormalIntent(decl, qtKind, typeExprT.type(), typeExprT.param());  
+        }
       }
       // Check that the initExpr type is compatible with declared type
       // Check kinds are OK

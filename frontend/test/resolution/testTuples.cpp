@@ -846,6 +846,114 @@ static void testTupleGeneric() {
   argHelper("(numeric, numeric)", "(5, 'hi')", false);
 }
 
+static const TypedFnSignature* test20Helper(Context* context, std::string program) {
+  auto M = parseModule(context, program);
+  auto rr = resolveModule(context, M->id());
+  auto x = M->stmt(M->numStmts()-1)->toVarLikeDecl();
+  auto call = x->initExpression()->toFnCall();
+
+  auto r = rr.byAstOrNull(call);
+  auto candidate = r->mostSpecific().only();
+  auto sig = candidate.fn();
+  sig = resolveFunction(context, sig, r->poiScope())->signature();
+  return sig;
+}
+static void test20() {
+  printf("test20\n");
+  {
+    Context ctx;
+    Context* context = &ctx;
+    auto program = R"""(
+      proc foo(v: ?t) do return v;
+      var x = foo((1, "hello"));
+    )""";
+    auto sig = test20Helper(context, program);
+    assert(sig->numFormals() == 1);
+    assert(sig->formalType(0).type()->isTupleType());
+    assert(sig->formalType(0).kind() == QualifiedType::CONST_REF);
+    auto tt = sig->formalType(0).type()->toTupleType();
+    assert(tt->numElements() == 2);
+    assert(tt->elementType(0).type()->isIntType());
+    assert(tt->elementType(1).type()->isStringType());
+    assert(tt->elementType(0).kind() == QualifiedType::VAR);
+    assert(tt->elementType(1).kind() == QualifiedType::REF);
+  }
+  {
+    Context ctx;
+    Context* context = &ctx;
+    auto program = R"""(
+      proc foo(const v: ?t) do return v;
+      var x = foo((1, "hello"));
+    )""";
+    auto sig = test20Helper(context, program);
+    assert(sig->numFormals() == 1);
+    assert(sig->formalType(0).type()->isTupleType());
+    assert(sig->formalType(0).kind() == QualifiedType::CONST_REF);
+    auto tt = sig->formalType(0).type()->toTupleType();
+    assert(tt->numElements() == 2);
+    assert(tt->elementType(0).type()->isIntType());
+    assert(tt->elementType(1).type()->isStringType());
+    assert(tt->elementType(0).kind() == QualifiedType::CONST_VAR);
+    assert(tt->elementType(1).kind() == QualifiedType::CONST_REF);
+  }
+  {
+    Context ctx;
+    Context* context = &ctx;
+    auto program = R"""(
+      proc foo(in v: ?t) do return v;
+      var x = foo((1, "hello"));
+    )""";
+    auto sig = test20Helper(context, program);
+    assert(sig->numFormals() == 1);
+    assert(sig->formalType(0).type()->isTupleType());
+    assert(sig->formalType(0).kind() == QualifiedType::IN);
+    auto tt = sig->formalType(0).type()->toTupleType();
+    assert(tt->numElements() == 2);
+    assert(tt->elementType(0).type()->isIntType());
+    assert(tt->elementType(1).type()->isStringType());
+    assert(tt->elementType(0).kind() == QualifiedType::VAR);
+    assert(tt->elementType(1).kind() == QualifiedType::VAR);
+  }
+  {
+    Context ctx;
+    Context* context = &ctx;
+    auto program = R"""(
+      proc foo(const in v: ?t) do return v;
+      var x = foo((1, "hello"));
+    )""";
+    auto sig = test20Helper(context, program);
+    assert(sig->numFormals() == 1);
+    assert(sig->formalType(0).type()->isTupleType());
+    assert(sig->formalType(0).kind() == QualifiedType::CONST_IN);
+    auto tt = sig->formalType(0).type()->toTupleType();
+    assert(tt->numElements() == 2);
+    assert(tt->elementType(0).type()->isIntType());
+    assert(tt->elementType(1).type()->isStringType());
+    assert(tt->elementType(0).kind() == QualifiedType::CONST_VAR);
+    assert(tt->elementType(1).kind() == QualifiedType::CONST_VAR);
+  }
+  {
+    Context ctx;
+    Context* context = &ctx;
+    auto program = R"""(
+      proc foo(ref v: ?t) do return v;
+      var t = (1,"hello");
+      var x = foo(t);
+    )""";
+    auto sig = test20Helper(context, program);
+    assert(sig->numFormals() == 1);
+    assert(sig->formalType(0).type()->isTupleType());
+    assert(sig->formalType(0).kind() == QualifiedType::REF);
+    auto tt = sig->formalType(0).type()->toTupleType();
+    assert(tt->numElements() == 2);
+    assert(tt->elementType(0).type()->isIntType());
+    assert(tt->elementType(1).type()->isStringType());
+    assert(tt->elementType(0).kind() == QualifiedType::VAR);
+    assert(tt->elementType(1).kind() == QualifiedType::VAR);
+  }
+}
+
+
 int main() {
   test1();
   test2();
@@ -871,5 +979,6 @@ int main() {
 
   testTupleGeneric();
 
+  test20();
   return 0;
 }
