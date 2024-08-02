@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+# set the element type of the loop to be 'eltType'
+cat $2 | sed -E 's/(^\[.*Dom\(.*\)\]) (.*)$/\1 eltType/' > $2.tmp
+mv $2.tmp $2
