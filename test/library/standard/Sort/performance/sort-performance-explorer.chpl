@@ -2,6 +2,7 @@
 // for differing algorithms, input data distributions, and input sizes.
 
 use Sort;
+use TwoArraySampleSort;
 use Random;
 use Time;
 use CTypes;
