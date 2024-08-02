@@ -589,6 +589,9 @@ bool ALACandidate::extractAlignedIdxAndOffsetFromPlusMinus(CallExpr* call,
                                                            Symbol* loopIdx,
                                                            SymExpr*& accIdxExpr,
                                                            Expr*& offsetExpr) {
+  accIdxExpr = nullptr;
+  offsetExpr = nullptr;
+
   int offsetArg = 1; // assume 1+i
 
   if (SymExpr* first = toSymExpr(call->get(1))) {
@@ -597,16 +600,20 @@ bool ALACandidate::extractAlignedIdxAndOffsetFromPlusMinus(CallExpr* call,
       offsetArg = 2;
     }
   }
+  else {
+    return false;
+  }
 
   if (SymExpr* second = toSymExpr(call->get(2))) {
     if (second->symbol() == loopIdx) {
       // this can only be true if we have offsetArg == 1
       if (offsetArg != 1) {
-        accIdxExpr = nullptr;
-        offsetExpr = nullptr;
         return false;
       }
     }
+  }
+  else {
+    return false;
   }
 
   offsetExpr = call->get(offsetArg);
