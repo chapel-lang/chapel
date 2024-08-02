@@ -8,6 +8,8 @@ const DomInner = Dom.expand(-2);
 var InArr: [Dom] int = 1;
 var OutArr: [Dom] int;
 
+InArr.updateFluff();
+
 writeln("Starting loop 1, expecting all local accesses (total 36)");
 forall i in DomInner {
   OutArr[i] =
@@ -17,6 +19,7 @@ forall i in DomInner {
     InArr[i+0] +
     InArr[i+1];
 }
+writeln(OutArr);
 writeln("End first loop");
 
 
@@ -36,6 +39,7 @@ forall i in DomInner {
     InArr[i+1] +
     InArr[i+2];
 }
+writeln(OutArr);
 writeln("End second loop");
 
 var OutArrInner: [DomInner] int;
@@ -56,4 +60,5 @@ forall i in DomInner {
     InArr[i+1] +
     InArr[i+2];
 }
+writeln(OutArrInner);
 writeln("End second loop");

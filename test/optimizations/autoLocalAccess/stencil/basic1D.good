@@ -1,23 +1,14 @@
 
-Start analyzing forall (basic1D.chpl:12)
+Start analyzing forall (basic1D.chpl:14)
 | Found loop domain (basic1D.chpl:6)
-| Will attempt static and dynamic optimizations (basic1D.chpl:12)
-|
-|  Start analyzing call (basic1D.chpl:13)
-|   Found the domain of the access base (basic1D.chpl:5)
-|  This call is a dynamic optimization candidate (basic1D.chpl:13)
-|
-|  Start analyzing call (basic1D.chpl:14)
-|   Call has offset(s), this will require dynamic check (basic1D.chpl:14)
-|   Found the domain of the access base (basic1D.chpl:5)
-|  This call is a dynamic optimization candidate (basic1D.chpl:14)
+| Will attempt static and dynamic optimizations (basic1D.chpl:14)
 |
 |  Start analyzing call (basic1D.chpl:15)
-|   Call has offset(s), this will require dynamic check (basic1D.chpl:15)
 |   Found the domain of the access base (basic1D.chpl:5)
 |  This call is a dynamic optimization candidate (basic1D.chpl:15)
 |
 |  Start analyzing call (basic1D.chpl:16)
+|   Call has offset(s), this will require dynamic check (basic1D.chpl:16)
 |   Found the domain of the access base (basic1D.chpl:5)
 |  This call is a dynamic optimization candidate (basic1D.chpl:16)
 |
@@ -27,37 +18,32 @@ Start analyzing forall (basic1D.chpl:12)
 |  This call is a dynamic optimization candidate (basic1D.chpl:17)
 |
 |  Start analyzing call (basic1D.chpl:18)
-|   Call has offset(s), this will require dynamic check (basic1D.chpl:18)
 |   Found the domain of the access base (basic1D.chpl:5)
 |  This call is a dynamic optimization candidate (basic1D.chpl:18)
 |
-End analyzing forall (basic1D.chpl:12)
+|  Start analyzing call (basic1D.chpl:19)
+|   Call has offset(s), this will require dynamic check (basic1D.chpl:19)
+|   Found the domain of the access base (basic1D.chpl:5)
+|  This call is a dynamic optimization candidate (basic1D.chpl:19)
+|
+|  Start analyzing call (basic1D.chpl:20)
+|   Call has offset(s), this will require dynamic check (basic1D.chpl:20)
+|   Found the domain of the access base (basic1D.chpl:5)
+|  This call is a dynamic optimization candidate (basic1D.chpl:20)
+|
+End analyzing forall (basic1D.chpl:14)
 
 
-Start analyzing forall (basic1D.chpl:29)
+Start analyzing forall (basic1D.chpl:32)
 | Found loop domain (basic1D.chpl:6)
-| Will attempt static and dynamic optimizations (basic1D.chpl:29)
-|
-|  Start analyzing call (basic1D.chpl:30)
-|   Found the domain of the access base (basic1D.chpl:5)
-|  This call is a dynamic optimization candidate (basic1D.chpl:30)
-|
-|  Start analyzing call (basic1D.chpl:31)
-|   Call has offset(s), this will require dynamic check (basic1D.chpl:31)
-|   Found the domain of the access base (basic1D.chpl:5)
-|  This call is a dynamic optimization candidate (basic1D.chpl:31)
-|
-|  Start analyzing call (basic1D.chpl:32)
-|   Call has offset(s), this will require dynamic check (basic1D.chpl:32)
-|   Found the domain of the access base (basic1D.chpl:5)
-|  This call is a dynamic optimization candidate (basic1D.chpl:32)
+| Will attempt static and dynamic optimizations (basic1D.chpl:32)
 |
 |  Start analyzing call (basic1D.chpl:33)
-|   Call has offset(s), this will require dynamic check (basic1D.chpl:33)
 |   Found the domain of the access base (basic1D.chpl:5)
 |  This call is a dynamic optimization candidate (basic1D.chpl:33)
 |
 |  Start analyzing call (basic1D.chpl:34)
+|   Call has offset(s), this will require dynamic check (basic1D.chpl:34)
 |   Found the domain of the access base (basic1D.chpl:5)
 |  This call is a dynamic optimization candidate (basic1D.chpl:34)
 |
@@ -72,40 +58,35 @@ Start analyzing forall (basic1D.chpl:29)
 |  This call is a dynamic optimization candidate (basic1D.chpl:36)
 |
 |  Start analyzing call (basic1D.chpl:37)
-|   Call has offset(s), this will require dynamic check (basic1D.chpl:37)
 |   Found the domain of the access base (basic1D.chpl:5)
 |  This call is a dynamic optimization candidate (basic1D.chpl:37)
 |
-End analyzing forall (basic1D.chpl:29)
+|  Start analyzing call (basic1D.chpl:38)
+|   Call has offset(s), this will require dynamic check (basic1D.chpl:38)
+|   Found the domain of the access base (basic1D.chpl:5)
+|  This call is a dynamic optimization candidate (basic1D.chpl:38)
+|
+|  Start analyzing call (basic1D.chpl:39)
+|   Call has offset(s), this will require dynamic check (basic1D.chpl:39)
+|   Found the domain of the access base (basic1D.chpl:5)
+|  This call is a dynamic optimization candidate (basic1D.chpl:39)
+|
+|  Start analyzing call (basic1D.chpl:40)
+|   Call has offset(s), this will require dynamic check (basic1D.chpl:40)
+|   Found the domain of the access base (basic1D.chpl:5)
+|  This call is a dynamic optimization candidate (basic1D.chpl:40)
+|
+End analyzing forall (basic1D.chpl:32)
 
 
-Start analyzing forall (basic1D.chpl:49)
+Start analyzing forall (basic1D.chpl:53)
 | Found loop domain (basic1D.chpl:6)
-| Will attempt static and dynamic optimizations (basic1D.chpl:49)
-|
-|  Start analyzing call (basic1D.chpl:50)
-|   Found the domain of the access base (basic1D.chpl:6)
-|   Can optimize: Access base's domain is the iterator (basic1D.chpl:50)
-|  This call is a static optimization candidate (basic1D.chpl:50)
-|
-|  Start analyzing call (basic1D.chpl:51)
-|   Call has offset(s), this will require dynamic check (basic1D.chpl:51)
-|   Found the domain of the access base (basic1D.chpl:5)
-|  This call is a dynamic optimization candidate (basic1D.chpl:51)
-|
-|  Start analyzing call (basic1D.chpl:52)
-|   Call has offset(s), this will require dynamic check (basic1D.chpl:52)
-|   Found the domain of the access base (basic1D.chpl:5)
-|  This call is a dynamic optimization candidate (basic1D.chpl:52)
-|
-|  Start analyzing call (basic1D.chpl:53)
-|   Call has offset(s), this will require dynamic check (basic1D.chpl:53)
-|   Found the domain of the access base (basic1D.chpl:5)
-|  This call is a dynamic optimization candidate (basic1D.chpl:53)
+| Will attempt static and dynamic optimizations (basic1D.chpl:53)
 |
 |  Start analyzing call (basic1D.chpl:54)
-|   Found the domain of the access base (basic1D.chpl:5)
-|  This call is a dynamic optimization candidate (basic1D.chpl:54)
+|   Found the domain of the access base (basic1D.chpl:6)
+|   Can optimize: Access base's domain is the iterator (basic1D.chpl:54)
+|  This call is a static optimization candidate (basic1D.chpl:54)
 |
 |  Start analyzing call (basic1D.chpl:55)
 |   Call has offset(s), this will require dynamic check (basic1D.chpl:55)
@@ -122,36 +103,58 @@ Start analyzing forall (basic1D.chpl:49)
 |   Found the domain of the access base (basic1D.chpl:5)
 |  This call is a dynamic optimization candidate (basic1D.chpl:57)
 |
-End analyzing forall (basic1D.chpl:49)
+|  Start analyzing call (basic1D.chpl:58)
+|   Found the domain of the access base (basic1D.chpl:5)
+|  This call is a dynamic optimization candidate (basic1D.chpl:58)
+|
+|  Start analyzing call (basic1D.chpl:59)
+|   Call has offset(s), this will require dynamic check (basic1D.chpl:59)
+|   Found the domain of the access base (basic1D.chpl:5)
+|  This call is a dynamic optimization candidate (basic1D.chpl:59)
+|
+|  Start analyzing call (basic1D.chpl:60)
+|   Call has offset(s), this will require dynamic check (basic1D.chpl:60)
+|   Found the domain of the access base (basic1D.chpl:5)
+|  This call is a dynamic optimization candidate (basic1D.chpl:60)
+|
+|  Start analyzing call (basic1D.chpl:61)
+|   Call has offset(s), this will require dynamic check (basic1D.chpl:61)
+|   Found the domain of the access base (basic1D.chpl:5)
+|  This call is a dynamic optimization candidate (basic1D.chpl:61)
+|
+End analyzing forall (basic1D.chpl:53)
 
-Static check successful. Using localAccess with dynamic check (basic1D.chpl:13)
-Static check successful. Using localAccess with dynamic check (basic1D.chpl:14)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:15)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:16)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:17)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:18)
-Static check successful. Using localAccess with dynamic check (basic1D.chpl:30)
-Static check successful. Using localAccess with dynamic check (basic1D.chpl:31)
-Static check successful. Using localAccess with dynamic check (basic1D.chpl:32)
+Static check successful. Using localAccess with dynamic check (basic1D.chpl:19)
+Static check successful. Using localAccess with dynamic check (basic1D.chpl:20)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:33)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:34)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:35)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:36)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:37)
-Static check successful. Using localAccess [static and dynamic ALA clone]  (basic1D.chpl:50)
-Static check successful. Using localAccess with dynamic check (basic1D.chpl:51)
-Static check successful. Using localAccess with dynamic check (basic1D.chpl:52)
-Static check successful. Using localAccess with dynamic check (basic1D.chpl:53)
-Static check successful. Using localAccess with dynamic check (basic1D.chpl:54)
+Static check successful. Using localAccess with dynamic check (basic1D.chpl:38)
+Static check successful. Using localAccess with dynamic check (basic1D.chpl:39)
+Static check successful. Using localAccess with dynamic check (basic1D.chpl:40)
+Static check successful. Using localAccess [static and dynamic ALA clone]  (basic1D.chpl:54)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:55)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:56)
 Static check successful. Using localAccess with dynamic check (basic1D.chpl:57)
-Static check successful. Using localAccess [static only ALA clone]  (basic1D.chpl:50)
+Static check successful. Using localAccess with dynamic check (basic1D.chpl:58)
+Static check successful. Using localAccess with dynamic check (basic1D.chpl:59)
+Static check successful. Using localAccess with dynamic check (basic1D.chpl:60)
+Static check successful. Using localAccess with dynamic check (basic1D.chpl:61)
+Static check successful. Using localAccess [static only ALA clone]  (basic1D.chpl:54)
 Starting loop 1, expecting all local accesses (total 36)
+0 0 5 5 5 5 5 5 0 0
 End first loop
 Starting loop 2, expecting all default accesses (total 48)
+0 0 7 7 7 7 7 7 0 0
 End second loop
 Starting loop 3, expecting local access on the output (total 6) expecting default access on the input (total 42)
+7 7 7 7 7 7
 End second loop
 
 Numbers collected by prediff:
