@@ -664,7 +664,7 @@ bool ALACandidate::argsSupported(const std::vector<Symbol *> &syms) {
         if (extractAlignedIdxAndOffsetFromPlusMinus(argCall, syms[i],
                                                     accIdxExpr, offsetExpr)) {
 
-          // the offset expression must be a constant, parameter or immediate 
+          // the offset expression must be a constant, parameter or immediate
           if (SymExpr* offsetSymExpr = toSymExpr(offsetExpr)) {
             Symbol* offsetSym = offsetSymExpr->symbol();
             if (!offsetSym->isConstant() && !offsetSym->isParameter() &&
