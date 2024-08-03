@@ -1,4 +1,7 @@
 Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (basicDestAgg.chpl:13)
+| Found an aggregation candidate (basicDestAgg.chpl:14)
+|  Potential source aggregation (basicDestAgg.chpl:14)
+|  Potential destination aggregation (basicDestAgg.chpl:14)
 End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (basicDestAgg.chpl:13)
 
 Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (basicDestAgg.chpl:23)

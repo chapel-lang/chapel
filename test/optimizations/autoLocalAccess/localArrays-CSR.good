@@ -17,4 +17,7 @@ Testing CSR
 
 End testing CSR
 
-localAccess was called 2 times
+
+Numbers collected by prediff:
+	localAccess was called 2 times
+	this was called 99 times

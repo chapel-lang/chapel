@@ -16,18 +16,22 @@ Start analyzing forall (basic2D.chpl:19)
 |  This call is a dynamic optimization candidate (basic2D.chpl:22)
 |
 |  Start analyzing call (basic2D.chpl:23)
+|   Call has offset(s), this will require dynamic check (basic2D.chpl:23)
 |   Found the domain of the access base (basic2D.chpl:10)
 |  This call is a dynamic optimization candidate (basic2D.chpl:23)
 |
 |  Start analyzing call (basic2D.chpl:24)
+|   Call has offset(s), this will require dynamic check (basic2D.chpl:24)
 |   Found the domain of the access base (basic2D.chpl:10)
 |  This call is a dynamic optimization candidate (basic2D.chpl:24)
 |
 |  Start analyzing call (basic2D.chpl:25)
+|   Call has offset(s), this will require dynamic check (basic2D.chpl:25)
 |   Found the domain of the access base (basic2D.chpl:10)
 |  This call is a dynamic optimization candidate (basic2D.chpl:25)
 |
 |  Start analyzing call (basic2D.chpl:26)
+|   Call has offset(s), this will require dynamic check (basic2D.chpl:26)
 |   Found the domain of the access base (basic2D.chpl:10)
 |  This call is a dynamic optimization candidate (basic2D.chpl:26)
 |

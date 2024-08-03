@@ -15,4 +15,7 @@ Testing associative domain with string keys
 102 98
 End testing associative domain with string keys
 
-localAccess was called 2 times
+
+Numbers collected by prediff:
+	localAccess was called 2 times
+	this was called 23 times
