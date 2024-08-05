@@ -3,10 +3,11 @@
 use driver_real_arrays;
 use Random;
 use Sort;
+use BubbleSort, MergeSort, SelectionSort, HeapSort;
 
 var rng = new randomStream(real, 314159265);
 
-enum SortType { BUBBLE=0, INSERTION, MERGE, SELECTION, QUICK, HEAP };
+enum SortType { BUBBLE=0, INSERTION, MERGE, SELECTION, QUICK, HEAP }
 
 
 writeln("Sort array");
