@@ -30,7 +30,7 @@ enum ForallAutoLocalAccessCloneType {
   STATIC_ONLY,
   STATIC_AND_DYNAMIC
 };
-//
+
 // Support for reporting calls that are not optimized for different reasons
 enum CallRejectReason {
   CRR_ACCEPT,

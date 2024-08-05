@@ -31,7 +31,6 @@ enum LocalityInfo {
   UNAGGREGATABLE  // neither local, nor aggregatable
 };
 
-
 // we use this during normalize when transforming an assignment for potential
 // aggregation
 class AggregationCandidateInfo {

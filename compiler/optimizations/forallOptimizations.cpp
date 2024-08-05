@@ -65,7 +65,6 @@ std::set<astlocT> primMaybeLocalThisLocations;
 std::set<astlocT> primMaybeAggregateAssignLocations;
 
 
-//static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms);
 static Symbol *getDotDomBaseSym(Expr *expr);
 static Expr *getDomExprFromTypeExprOrQuery(Expr *e);
 static Symbol *getDomSym(Symbol *arrSym);
@@ -1349,18 +1348,13 @@ static void optimizeLoop(ForallStmt *forall,
   std::vector<ALACandidate>::iterator it;
   for(it = candidates.begin() ; it != candidates.end() ; it++) {
     ALACandidate& candidate = *it;
-    //CallExpr *candidate = it->first;
-    //int iterandIdx = it->second;
 
-    Symbol *checkSym = generateStaticCheckForAccess(candidate,
-                                                    forall,
+    Symbol *checkSym = generateStaticCheckForAccess(candidate, forall,
                                                     staticCond);
     if (!doStatic) {
       forall->optInfo.staticCheckSymsForDynamicCandidates.push_back(checkSym);
 
-      generateDynamicCheckForAccess(candidate,
-                                    forall,
-                                    dynamicCond);
+      generateDynamicCheckForAccess(candidate, forall, dynamicCond);
     }
 
     replaceCandidate(candidate, checkSym, doStatic);
@@ -2547,4 +2541,3 @@ static bool isLocalAccess(CallExpr *call) {
 
   return false;
 }
-

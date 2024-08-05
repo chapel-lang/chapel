@@ -117,9 +117,7 @@ module ChapelAutoLocalAccess {
       compilerError("Automatic local access optimization failure: ",
                     "Number of offsets doesn't match rank");
     }
-
     return accessBase.domain.autoLocalAccessOffsetCheck(offsets);
-
   }
 
   proc chpl__isArrayViewWithDifferentDist(arr: []) param {
