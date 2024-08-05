@@ -3564,8 +3564,8 @@ module TwoArrayDistributedPartitioning {
       }
 
       // Update distTasks based on nextDistTaskElts
-      nextDistTaskElts.sort(
-          comparator=new TwoArrayDistSortPerBucketTaskStartComparator());
+      sort(nextDistTaskElts,
+           comparator=new TwoArrayDistSortPerBucketTaskStartComparator());
 
       // For each of those tasks, decide if they should use
       // counts1 or counts2
