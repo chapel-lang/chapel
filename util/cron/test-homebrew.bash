@@ -6,10 +6,6 @@
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
-# !IMPORTANT! Make sure REPO_PATH is set to where the homebrew-core repository should go
-# before running this script, or it will fail on the step where it diffs the current
-# formula with the copy we store in chapel-release.rb
-
 # Create a tarball from current repo.
 # The tarball is left in root of repo in tar/ directory.
 CWD=$(cd $(dirname $0) ; pwd)
