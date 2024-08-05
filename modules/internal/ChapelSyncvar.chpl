@@ -423,25 +423,19 @@ module ChapelSyncvar {
   proc chpl__readXX(const ref x : _syncvar(?)) do return x.readXX();
 
   @chpldoc.nodoc
+  @deprecated(notes="Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods")
   operator <=>(ref lhs : _syncvar, ref rhs) {
-    // TODO: what to do here???
-    // const tmp = lhs.readFE();
-    // lhs.writeEF(rhs);
-    // rhs = tmp;
-    const tmp = lhs;
-    lhs = rhs;
+    const tmp = lhs.readFE();
+    lhs.writeEF(rhs);
     rhs = tmp;
   }
 
   @chpldoc.nodoc
+  @deprecated(notes="Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods")
   operator <=>(ref lhs, ref rhs : _syncvar) {
-    // TODO: what to do here???
-    // const tmp = lhs;
-    // lhs = rhs.readFE();
-    // rhs.writeEF(tmp);
     const tmp = lhs;
-    lhs = rhs;
-    rhs = tmp;
+    lhs = rhs.readFE();
+    rhs.writeEF(tmp);
   }
 
   @chpldoc.nodoc

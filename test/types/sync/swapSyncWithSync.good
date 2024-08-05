@@ -1,2 +1,0 @@
-swapSyncWithSync.chpl:6: warning: Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods
-(2, 1)
