@@ -120,6 +120,13 @@ module ChapelAutoLocalAccess {
     return accessBase.domain.autoLocalAccessOffsetCheck(offsets);
   }
 
+  // what if the user had `MyArr[i+"1"]` in their code? We don't want to see
+  // resolution errors coming from this function. That code should error out
+  // later in compilation with a proper error message
+  inline proc chpl__ala_offsetCheck(accessBase, offsets...) {
+    return false;
+  }
+
   proc chpl__isArrayViewWithDifferentDist(arr: []) param {
     // Slices can have different distributions than the original array which can
     // cause false optimizations
