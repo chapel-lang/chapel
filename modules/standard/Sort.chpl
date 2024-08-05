@@ -688,6 +688,16 @@ proc isSorted(x: [], comparator:? = new DefaultComparator()): bool {
   return sorted;
 }
 
+/*
+   Check if list `x` is in sorted order
+
+   :arg x: The list to verify
+   :type x: :type:`~List.list`
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
+   :returns: ``true`` if list is sorted
+   :rtype: `bool`
+ */
 proc isSorted(x: list(?), comparator:? = new DefaultComparator()): bool {
   chpl_check_comparator(comparator, x.eltType);
 
