@@ -52,14 +52,14 @@ proc main() {
                 (largeA, new DefaultComparator()),
                 (strideA, new DefaultComparator()),
                 (strideAlignA, new DefaultComparator()),
-                (strideRevA, reverseComparator),
+                (strideRevA, new ReverseComparator()),
 
                 // Testing comparators
                 ([-1, 2, 3, -4, 5, 6, -7, 8, 9, -10, 11, 12, -13, 14, 15, -16, 17, 18, -19, 20], absKey),
                 ([-1, 2, 3, -4, 5, 6, -7, 8, 9, -10, 11, 12, -13, 14, 15, -16, 17, 18, -19, 20], absKeyClass.borrow()),
                 ([-1, 2, 3, -4, 5, 6, -7, 8, 9, -10, 11, 12, -13, 14, 15, -16, 17, 18, -19, 20], absComp),
                 ([-1, 2, 3, -4, 5, 6, -7, 8, 9, -10, 11, 12, -13, 14, 15, -16, 17, 18, -19, 20], absCompClass.borrow()),
-                ([20, 18, 17, 15, 14, 12, 11, 9, 8, 6, 5, 3, 2, -1, -4, -7, -10, -13, -16, -19], reverseComparator),
+                ([20, 18, 17, 15, 14, 12, 11, 9, 8, 6, 5, 3, 2, -1, -4, -7, -10, -13, -16, -19], new ReverseComparator()),
                 ([20, -19, 18, 17, -16, 15, 14, -13, 12, 11, -10, 9, 8, -7, 6, 5, -4, 3, 2, -1], revAbsKey),
                 ([20, -19, 18, 17, -16, 15, 14, -13, 12, 11, -10, 9, 8, -7, 6, 5, -4, 3, 2, -1], revAbsKeyClass),
                 ([20, -19, 18, 17, -16, 15, 14, -13, 12, 11, -10, 9, 8, -7, 6, 5, -4, 3, 2, -1], revAbsComp),

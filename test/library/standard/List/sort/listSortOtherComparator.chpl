@@ -13,7 +13,7 @@ lst1.clear();
 
 // Try sorting the list in reverse.
 var lst2: list(int) = [8, 7, 6, 5, 1, 2, 3, 4];
-lst2.sort(Sort.reverseComparator);
+lst2.sort(new Sort.ReverseComparator());
 writeln(lst2);
 lst2.clear();
 

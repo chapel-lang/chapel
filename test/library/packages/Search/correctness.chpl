@@ -56,7 +56,7 @@ proc main() {
 
   /* Comparators */
 
-  result = search(revA, 2, comparator=reverseComparator, sorted=true);
+  result = search(revA, 2, comparator=new ReverseComparator(), sorted=true);
   checkSearch(result, (true, 1), revA, 'search');
 
   result = search(absA, 2, comparator=absKey, sorted=true);
