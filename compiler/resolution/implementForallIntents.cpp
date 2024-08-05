@@ -779,13 +779,14 @@ static void resolveShadowVarTypeIntent(LoopWithShadowVarsInterface* fs,
 
   // Prune, as discussed in the above comment.
   //
-  // However, for foreach, we do not want to prune (replace a ref intent'd
-  // shadow variable with its definition outside the loop) because if the loop
-  // is gpuized we need to pass that variable by pointer. We do special
-  // processing to handle this case in iterator lowering and gpu transforms and
-  // as such do not want to prematurely prune it.
-  if (intent == TFI_REF && fs->isForallStmt())
+  // However, for scalars passed to foreach, we do not want to prune (replace a
+  // ref intent'd shadow variable with its definition outside the loop) because
+  // if the loop is gpuized we need to pass that variable by pointer. We do
+  // special processing to handle this case in iterator lowering and gpu
+  // transforms and as such do not want to prematurely prune it.
+  if (intent == TFI_REF && (fs->isForallStmt() || !isPrimitiveScalar(type))) {
     prune = true;
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////
