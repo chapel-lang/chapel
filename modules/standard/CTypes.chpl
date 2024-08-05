@@ -996,9 +996,6 @@ module CTypes {
   */
   @chpldoc.nodoc
   inline proc c_addrOf(ref arr: []) {
-    if (!chpl__isDROrDRView(arr)) then
-      compilerError("Only single-locale rectangular arrays support c_addrOf() at present");
-
     if (boundsChecking && arr._value.locale != here) then
       halt(
           "c_addrOf() can only be applied to an array from the locale on " +
@@ -1014,9 +1011,6 @@ module CTypes {
   */
   @chpldoc.nodoc
   inline proc c_addrOfConst(const arr: []) {
-    if (!chpl__isDROrDRView(arr)) then
-      compilerError("Only single-locale rectangular arrays support c_addrOfConst() at present");
-
     if (boundsChecking && arr._value.locale != here) then
       halt(
           "c_addrOfConst() can only be applied to an array from the locale on " +
