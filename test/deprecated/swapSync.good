@@ -1,6 +1,0 @@
-swapSync.chpl:4: warning: Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods
-swapSync.chpl:10: warning: Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods
-swapSync.chpl:16: warning: Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods
-(2, 1)
-(2, 1)
-(2, 1)
