@@ -944,6 +944,12 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
   // check for use of deinited variables
   processMentions(actual, rv);
 
+  if (auto t = formalType.type()) {
+    if (auto ct = t->toClassType()) {
+      if (ct->decorator().isBorrowed()) return;
+    }
+  }
+
   // compute the actual type
   QualifiedType actualType = rv.byAst(actual).type();
 
