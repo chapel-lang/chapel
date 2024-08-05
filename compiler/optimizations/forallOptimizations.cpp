@@ -585,13 +585,16 @@ static void LOGLN_ALA(BaseAST *node) {
 // Normalize support for --auto-local-access
 //
 
-// TODO should probably be a static function
+bool ALACandidate::isCallPlusOrMinus(CallExpr* call) {
+  // note that the call could also be unary plus or minus
+  return call->isNamed("-") || call->isNamed("+");
+}
+
 SymExpr* ALACandidate::getSymFromValidUnaryOp(Expr* e) {
   if (CallExpr* call = toCallExpr(e)) {
     // At this point, we don't have `PRIM_UNARY_*`. All we have are unresolved
     // calls to "-" / "+" with single argument
-    if ((call->isNamed("-") || call->isNamed("+")) && // TODO helper
-        call->numActuals() == 1) {
+    if (isCallPlusOrMinus(call) && call->numActuals() == 1) {
       if (SymExpr* ret = toSymExpr(call->get(1))) {
         // note that we ignore whether this is - or +. Currently, stencil
         // distribution is symmetric and whether we are subtracting or adding
@@ -604,7 +607,8 @@ SymExpr* ALACandidate::getSymFromValidUnaryOp(Expr* e) {
   return nullptr;
 }
 
-int ALACandidate::findLoopIdxInPlusMinus(CallExpr* call, Symbol* loopIdx) {
+int ALACandidate::findLoopIdxInPlusMinus(CallExpr* call,
+                                                Symbol* loopIdx) {
   INT_ASSERT(call->numActuals() == 2);
   for (int i=1 ; i<=call->numActuals() ; i++) {
     if (SymExpr* cur = toSymExpr(call->get(i))) {
@@ -616,11 +620,10 @@ int ALACandidate::findLoopIdxInPlusMinus(CallExpr* call, Symbol* loopIdx) {
   return -1;
 }
 
-// TODO should probably be a static function
-bool ALACandidate::extractAlignedIdxAndOffsetFromPlusMinus(CallExpr* call,
-                                                           Symbol* loopIdx,
-                                                           SymExpr*& accIdxExpr,
-                                                           Expr*& offsetExpr) {
+bool ALACandidate::getIdxAndOffsetFromPlusMinus(CallExpr* call,
+                                                       Symbol* loopIdx,
+                                                       SymExpr*& accIdxExpr,
+                                                       Expr*& offsetExpr) {
   accIdxExpr = nullptr;
   offsetExpr = nullptr;
 
@@ -651,17 +654,15 @@ bool ALACandidate::argsSupported(const std::vector<Symbol *> &syms) {
   for (int i = 0 ; i < call_->argList.length ; i++) {
     if (SymExpr *arg = toSymExpr(call_->get(i+1))) {
       if (arg->symbol() != syms[i])  return false;
-
       addOffset(nullptr);
     }
-    else if (fOffsetAutoLocalAccess &&
-             call_->getModule()->modTag == MOD_USER) { // TODO remove this check
+    else if (fOffsetAutoLocalAccess) {
       if (CallExpr *argCall = toCallExpr(call_->get(i+1))) {
-        if (!argCall->isNamed("+") && !argCall->isNamed("-")) return false;
+        if (!isCallPlusOrMinus(argCall)) return false;
         SymExpr* accIdxExpr = nullptr;
         Expr* offsetExpr = nullptr;
-        if (extractAlignedIdxAndOffsetFromPlusMinus(argCall, syms[i],
-                                                    accIdxExpr, offsetExpr)) {
+        if (getIdxAndOffsetFromPlusMinus(argCall, syms[i], accIdxExpr,
+                                         offsetExpr)) {
 
           // the offset expression must be a constant, parameter or immediate
           if (SymExpr* offsetSymExpr = toSymExpr(offsetExpr)) {

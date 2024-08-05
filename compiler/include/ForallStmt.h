@@ -79,12 +79,17 @@ class ALACandidate {
     bool hasOffset_;
 
     bool argsSupported(const std::vector<Symbol *> &syms);
-    SymExpr* getSymFromValidUnaryOp(Expr* e);
-    bool extractAlignedIdxAndOffsetFromPlusMinus(CallExpr* call,
-                                                 Symbol* loopIdx,
-                                                 SymExpr*& accIdxExpr,
-                                                 Expr*& offsetExpr);
-    int findLoopIdxInPlusMinus(CallExpr* call, Symbol* loopIdx);
+
+    // the following are helpers to extract information from +/- operators
+    // (unary or binary) in the context of ALA. They don't read or modify
+    // ALACandidate instances.
+    static bool isCallPlusOrMinus(CallExpr* call);
+    static SymExpr* getSymFromValidUnaryOp(Expr* e);
+    static bool getIdxAndOffsetFromPlusMinus(CallExpr* call,
+                                             Symbol* loopIdx,
+                                             SymExpr*& accIdxExpr,
+                                             Expr*& offsetExpr);
+    static int findLoopIdxInPlusMinus(CallExpr* call, Symbol* loopIdx);
 };
 
 class ForallOptimizationInfo {
