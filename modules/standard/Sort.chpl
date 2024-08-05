@@ -559,8 +559,6 @@ proc sort(ref x: list(?), comparator:? = new DefaultComparator(),
   }
 }
 
-  // TODO: proc isSorted and iter sorted!!!!!!!!
-
 /*
 
 Sort the elements in the range 'region' within in the 1D rectangular array
@@ -788,12 +786,13 @@ iter sorted(x, comparator:? = new DefaultComparator()) {
     compilerError(x._value.type:string + " does not support dsiSorted(comparator)");
   } else {
     var y = x; // need to do before isArrayValue test in case x is an iterable
-    if !isArrayValue(y) then {
-      compilerError("Sort.sorted called on non-iterable type. Type is: " + x.type : string);
-    } else {
+    param iterable = isArrayValue(y) || isSubtype(y.type, List.list(?));
+    if iterable {
       sort(y, comparator=comparator);
       for i in y do
         yield i;
+    } else {
+      compilerError("Sort.sorted called on non-iterable type. Type is: " + x.type : string);
     }
   }
 }
