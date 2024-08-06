@@ -4383,6 +4383,11 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
   llvm::SMDiagnostic err;
   auto bcLib = llvm::parseIRFile(bitCodeFilePath, err,
                                  gContext->llvmContext());
+  if (!bcLib) {
+    USR_FATAL("IR parsing failed on '%s': %s",
+              bitCodeFilePath,
+              err.getMessage().str().c_str());
+  }
 
   // adjust it
   const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
