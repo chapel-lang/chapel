@@ -2193,10 +2193,8 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   actuals.push_back(std::move(receiverInfo));
 
   // Remaining actuals.
-  if (call->numActuals()) {
-    prepareCallInfoActuals(call, actuals, questionArg);
-    CHPL_ASSERT(!questionArg);
-  }
+  prepareCallInfoActuals(call, actuals, questionArg);
+  CHPL_ASSERT(!questionArg);
 
   // The 'new' will produce an 'init' call as a side effect.
   auto ci = CallInfo(USTR("init"), calledType, isMethodCall,
@@ -2341,25 +2339,35 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
     }
     return true;
   } else if (fnName == "domain") {
+    auto& rCalledExp = byPostorder.byAst(fnCall->calledExpression());
+    CHPL_ASSERT(rCalledExp.type().hasTypePtr());
     // Try resolving 'domain(?)' as a special case.
     if (call->numActuals() == 1 && call->actual(0)->isIdentifier() &&
         call->actual(0)->toIdentifier()->name() == "?") {
       // 'domain(?)' is equivalent to just 'domain', the generic domain
       // type.
       // Copy the result of resolving 'domain' as the called identifier.
-      auto& rCalledExp = byPostorder.byAst(fnCall->calledExpression());
-      CHPL_ASSERT(rCalledExp.type().hasTypePtr());
       r.setType(rCalledExp.type());
     } else {
       auto runResult = context->runAndTrackErrors([&](Context* ctx) {
-        // TODO: modify call to be correct (pass implicit dist actual)
-        auto ci = CallInfo::create(
-            context, call, byPostorder,
-            /* raiseErrors */ true,
-            /* actualAsts */ nullptr,
-            /* moduleScopeId */ nullptr,
-            /* rename */
-            UniqueString::get(context, "chpl__buildDomainRuntimeType"));
+        const AstNode* questionArg = nullptr;
+        std::vector<CallInfoActual> actuals;
+        // Set up 'dist' arg
+        // TODO: get and use real type of defaultDist here
+        auto defaultDistArg =
+            CallInfoActual(QualifiedType(), UniqueString::get(context, "dist"));
+        actuals.push_back(std::move(defaultDistArg));
+        // Remaining given args from domain() call as written
+        prepareCallInfoActuals(call, actuals, questionArg);
+        CHPL_ASSERT(!questionArg);
+        auto ci =
+            CallInfo(UniqueString::get(context, "chpl__buildDomainRuntimeType"),
+                     rCalledExp.type(),
+                     /* isMethodCall */ false,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     actuals);
+
         auto scope = scopeStack.back();
         auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
         auto result = resolveGeneratedCall(context, call, ci, inScopes);
