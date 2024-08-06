@@ -91,7 +91,8 @@ def determine_gpu_type():
 
 def get_llvm_override():
     if get() == 'amd':
-        if get_sdk_version().split('.')[0] == '5':
+        major_version = get_sdk_version().split('.')[0]
+        if major_version == '5':
             return '{}/llvm/bin/llvm-config'.format(get_sdk_path('amd'))
         pass
     return 'none'
@@ -237,7 +238,9 @@ def _validate_cuda_llvm_version_impl(gpu: gpu_type):
         )
 
 def _validate_rocm_llvm_version_impl(gpu: gpu_type):
-    if chpl_llvm.get() == 'bundled':
+    major_version = get_sdk_version().split('.')[0]
+
+    if major_version in ('4', '5') and chpl_llvm.get() == 'bundled':
         error("Cannot target AMD GPUs with CHPL_LLVM=bundled")
     elif not validateLlvmBuiltForTgt(gpu.llvm_target):
         _reportMissingGpuReq(
@@ -339,6 +342,8 @@ def _validate_rocm_version_impl():
        MAX_REQ_VERSION"""
     MIN_REQ_VERSION = "4"
     MAX_REQ_VERSION = "5.5"
+    MIN_ROCM6_REQ_VERSION = "6"
+    MAX_ROCM6_REQ_VERSION = "6.2"
 
     rocm_version = get_sdk_version()
 
@@ -346,11 +351,11 @@ def _validate_rocm_version_impl():
         _reportMissingGpuReq("Unable to determine ROCm version.")
         return False
 
-    if not is_ver_in_range(rocm_version, MIN_REQ_VERSION, MAX_REQ_VERSION):
+    if not is_ver_in_range(rocm_version, MIN_REQ_VERSION, MAX_REQ_VERSION) and not is_ver_in_range(rocm_version, MIN_ROCM6_REQ_VERSION, MAX_ROCM6_REQ_VERSION):
         _reportMissingGpuReq(
-            "Chapel requires ROCm to be a version between %s and %s, "
+            "Chapel requires ROCm to be a version between %s and %s or between %s and %s, "
             "detected version %s on system." %
-            (MIN_REQ_VERSION, MAX_REQ_VERSION, rocm_version))
+            (MIN_REQ_VERSION, MAX_REQ_VERSION, MIN_ROCM6_REQ_VERSION, MAX_ROCM6_REQ_VERSION, rocm_version))
         return False
 
     return True
