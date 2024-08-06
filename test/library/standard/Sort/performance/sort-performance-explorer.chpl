@@ -2,11 +2,10 @@
 // for differing algorithms, input data distributions, and input sizes.
 
 use Sort;
-use TwoArraySampleSort;
 use Random;
 use Time;
 use CTypes;
-import MergeSort;
+import MergeSort, TwoArraySampleSort; // from ../ExampleSorts
 
 config const printStats = true;
 config const minSize = 1;
