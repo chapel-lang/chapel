@@ -164,12 +164,6 @@ void* chpl_memcpy(void* dest, const void* src, size_t num)
   return memcpy(dest, src, num);
 }
 
-static inline
-void* chpl_memmove(void* dest, const void* src, size_t num)
-{
-  return memmove(dest, src, num);
-}
-
 // Query the allocator to ask for a good size to allocate that is at least
 // minSize. One example where this is useful is to grow a vector while
 // minimizing memory wasted by overallocation.

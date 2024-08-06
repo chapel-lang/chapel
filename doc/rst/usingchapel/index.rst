@@ -14,6 +14,7 @@ Contents:
    chplenv
    building
    compiling
+   Editor Support <editor-support>
    Chapel Man Page <man>
    executing
    multilocale

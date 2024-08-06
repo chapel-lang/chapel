@@ -43,6 +43,11 @@ PRIMITIVE_R(INNERMOST_CONTEXT, "innermost context")
 PRIMITIVE_R(OUTER_CONTEXT, "outer context")
 PRIMITIVE_R(HOIST_TO_CONTEXT, "hoist to context")
 
+PRIMITIVE_R(CREATE_THUNK, "create thunk")
+PRIMITIVE_R(THUNK_RESULT, "thunk result")
+PRIMITIVE_R(FORCE_THUNK, "force thunk")
+PRIMITIVE_R(THUNK_RESULT_TYPE, "thunk result type")
+
 PRIMITIVE_R(ACTUALS_LIST, "actuals list")
 PRIMITIVE_G(NOOP, "noop")
 PRIMITIVE_G(MOVE, "move")
@@ -224,6 +229,8 @@ PRIMITIVE_G(ARRAY_SET_FIRST, "array_set_first")
 PRIMITIVE_R(MAYBE_LOCAL_THIS, "may be local access")
 PRIMITIVE_R(MAYBE_LOCAL_ARR_ELEM, "may be local array element")
 PRIMITIVE_R(MAYBE_AGGREGATE_ASSIGN, "may be aggregated assignment")
+
+PRIMITIVE_R(PROTO_SLICE_ASSIGN, "assign proto slices")
 
 PRIMITIVE_R(ERROR, "error")
 PRIMITIVE_R(WARNING, "warning")

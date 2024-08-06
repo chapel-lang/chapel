@@ -1,0 +1,4 @@
+# we are skipping this test with specialization because it requires a hack where
+# we do `chpl_task_setSubloc` instead of an `on` statement. Without an `on`
+# statement the specialization code is thrown off.
+CHPL_GPU_SPECIALIZATION==y

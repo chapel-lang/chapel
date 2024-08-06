@@ -211,7 +211,7 @@ Executing Chapel programs:   :ref:`executing.rst <readme-executing>`
 Debugging Chapel programs:   :ref:`debugging.rst <readme-debugging>`
 Reporting bugs:              :ref:`bugs.rst <readme-bugs>`
 Performance:                 https://chapel-lang.org/performance.html
-Chapel modes for emacs/vim:  ``$CHPL_HOME/highlight/README.md``
+Chapel Editor Support:       :ref:`editor-support.rst <readme-editor-support>`
 Chapel's file/dir structure: ``$CHPL_HOME/README.files``
 Changes since last release:  ``$CHPL_HOME/CHANGES.md``
 ============================ ==================================================

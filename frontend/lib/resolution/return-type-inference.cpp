@@ -651,10 +651,18 @@ returnTypeForTypeCtorQuery(Context* context,
         const QualifiedType& formalType = sig->formalType(i);
         // Note that the formalDecl should already be a fieldDecl
         // based on typeConstructorInitialQuery.
+        auto useKind = formalType.kind();
         bool hasInitExpression = false;
-        if (auto vd = formalDecl->toVarLikeDecl())
-          if (vd->initExpression() != nullptr)
+        if (auto vd = formalDecl->toVarLikeDecl()) {
+          // Substitute with the kind of the underlying field corresponding to
+          // the formal. For example, if we substitute in a type for a generic
+          // VAR decl, the type we construct will need to be inited with a VAR
+          // of that corresponding type.
+          useKind = vd->storageKind();
+          if (vd->initExpression() != nullptr) {
             hasInitExpression = true;
+          }
+        }
 
         if (formalType.type()->isAnyType() && !hasInitExpression) {
           // Ignore this substitution - easier to just leave it out
@@ -669,7 +677,9 @@ returnTypeForTypeCtorQuery(Context* context,
           // represent that RR is a version of R where it's not behaving
           // as generic-with-default and substituting in AnyType does that.
         } else {
-          subs.insert({formalDecl->id(), formalType});
+          auto useQt =
+              QualifiedType(useKind, formalType.type(), formalType.param());
+          subs.insert({formalDecl->id(), useQt});
         }
       }
     }
@@ -918,11 +928,6 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
       CHPL_ASSERT(false && "unhandled compiler-generated array method");
     }
       return true;
-  } else if (untyped->isMethod() && sig->formalType(0).type()->isTupleType() &&
-               untyped->name() == "size") {
-      auto tup = sig->formalType(0).type()->toTupleType();
-      result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0), IntParam::get(context, tup->numElements()));
-      return true;
   } else if (untyped->isMethod() && sig->formalType(0).type()->isCPtrType() && untyped->name() == "eltType") {
       auto cpt = sig->formalType(0).type()->toCPtrType();
       result = QualifiedType(QualifiedType::TYPE, cpt->eltType());
@@ -1003,8 +1008,17 @@ static bool helpComputeReturnType(Context* context,
     result = QualifiedType(QualifiedType::TYPE, t);
     return true;
 
-  // if method call and the receiver points to a composite type definition,
-  // then it's some sort of compiler-generated method
+    // special case to set param value of tuple size, which is set late by
+    // production compiler
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isTupleType() &&
+             untyped->name() == "size") {
+    auto tup = sig->formalType(0).type()->toTupleType();
+    result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
+                           IntParam::get(context, tup->numElements()));
+    return true;
+
+    // if method call and the receiver points to a composite type definition,
+    // then it's some sort of compiler-generated method
   } else if (untyped->isCompilerGenerated()) {
     return helpComputeCompilerGeneratedReturnType(context, sig, poiScope,
                                                   result, untyped);

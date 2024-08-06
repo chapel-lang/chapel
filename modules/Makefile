@@ -99,10 +99,10 @@ MODULES_TO_DOCUMENT = \
 	standard/Reflection.chpl \
 	standard/Regex.chpl \
 	standard/Set.chpl \
+	standard/Sort.chpl \
 	standard/Subprocess.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
-	standard/VectorizingIterator.chpl \
 	standard/Version.chpl \
 	standard/WeakPointer.chpl \
 
@@ -142,12 +142,12 @@ PACKAGES_TO_DOCUMENT = \
 	packages/ProtobufProtocolSupport.chpl \
 	packages/ParallelIO.chpl \
 	packages/PeekPoke.chpl \
+	packages/PrecisionSerializer.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/ReplicatedVar.chpl \
 	packages/Search.chpl \
 	packages/Socket.chpl \
-	packages/Sort.chpl \
 	packages/SortedMap.chpl \
 	packages/SortedSet.chpl \
 	packages/TOML.chpl \

@@ -149,6 +149,33 @@
     return makeCommentsAndStmt(comments, stmt.release());
   }
 
+  struct MaybeIntent {
+    Qualifier intent;
+    bool isValid;
+  };
+  static inline
+  MaybeIntent makeIntent(Qualifier intent) {
+    MaybeIntent ret = {intent, true};
+    return ret;
+  }
+  static inline
+  MaybeIntent makeIntent(TaskVar::Intent intent) {
+    return makeIntent((Qualifier)intent);
+  }
+  static inline
+  MaybeIntent makeIntent(Function::ReturnIntent intent) {
+    return makeIntent((Qualifier)intent);
+  }
+  static inline
+  MaybeIntent makeIntent(Formal::Intent intent) {
+    return makeIntent((Qualifier)intent);
+  }
+  static inline
+  MaybeIntent makeInvalidIntent(Qualifier intent) {
+    MaybeIntent ret = {intent, false};
+    return ret;
+  }
+
   // A struct for storing a partially constructed function prototype
   // during parsing for linkage_spec/fn_decl_stmt/etc
   // It is just saving some components of a function to be used
@@ -164,10 +191,12 @@
     bool isInline;
     bool isOverride;
     Function::Kind kind;
-    Formal::Intent thisIntent;
+    MaybeIntent thisIntent;
+    TextLocation thisIntentLoc;
     Formal* receiver;
     Identifier* name;
-    Function::ReturnIntent returnIntent;
+    MaybeIntent returnIntent;
+    TextLocation returnIntentLoc;
     bool throws;
     ParserExprList* formals;
     AstNode* returnType;
@@ -248,13 +277,13 @@
     // integer/enum values
 
     asttags::AstTag astTag;
-    Formal::Intent intentTag;
+    MaybeIntent intentTag;
     Function::Kind functionKind;
-    Function::ReturnIntent returnTag;
+    MaybeIntent returnTag;
     Decl::Linkage linkageTag;
     Module::Kind moduleKind;
     New::Management newManagement;
-    TaskVar::Intent taskIntent;
+    MaybeIntent taskIntent;
     Decl::Visibility visibilityTag;
     ThrowsTag throwsTag;
     Variable::Kind variableKind;
@@ -615,8 +644,7 @@
 %type <exprList> opt_inherit expr_ls assoc_expr_ls tuple_expr_ls
 %type <maybeNamedActualList> opt_actual_ls actual_ls
 %type <exprList> task_intent_ls
-%type <exprList> forall_intent_ls
-%type <withClause> opt_task_intent_ls task_intent_clause forall_intent_clause
+%type <withClause> opt_task_intent_ls task_intent_clause
 
 %type <functionParts> fn_decl_stmt_start fn_decl_stmt_inner
 %type <functionParts> fn_type fn_expr
@@ -1711,7 +1739,7 @@ loop_stmt_base:
     auto locHeader = context->makeSpannedLocation(@1, @4);
     $$ = context->buildGeneralLoopStmt(@$, @2, locHeader, @5, $1, $2, $4, nullptr, $5);
   }
-| for_loop_kw expr TIN expr              forall_intent_clause do_stmt
+| for_loop_kw expr TIN expr              task_intent_clause do_stmt
   {
     auto locHeader = context->makeSpannedLocation(@1, @4);
     $$ = context->buildGeneralLoopStmt(@$, @2, locHeader, @6, $1, $2, $4, $5, $6);
@@ -1721,7 +1749,7 @@ loop_stmt_base:
     auto locHeader = context->makeSpannedLocation(@1, @4);
     $$ = context->buildGeneralLoopStmt(@$, @2, locHeader, @5, $1, $2, $4, nullptr, $5);
   }
-| for_loop_kw expr TIN zippered_iterator forall_intent_clause do_stmt
+| for_loop_kw expr TIN zippered_iterator task_intent_clause do_stmt
   {
     auto locHeader = context->makeSpannedLocation(@1, @4);
     $$ = context->buildGeneralLoopStmt(@$, @2, locHeader, @6, $1, $2, $4, $5, $6);
@@ -1731,7 +1759,7 @@ loop_stmt_base:
     auto locHeader = context->makeSpannedLocation(@1, @2);
     $$ = context->buildGeneralLoopStmt(@$, @1, locHeader, @3, $1, nullptr, $2, nullptr, $3);
   }
-| for_loop_kw          expr              forall_intent_clause do_stmt
+| for_loop_kw          expr              task_intent_clause do_stmt
   {
     auto locHeader = context->makeSpannedLocation(@1, @2);
     $$ = context->buildGeneralLoopStmt(@$, @1, locHeader, @4, $1, nullptr, $2, $3, $4);
@@ -1741,7 +1769,7 @@ loop_stmt_base:
     auto locHeader = context->makeSpannedLocation(@1, @2);
     $$ = context->buildGeneralLoopStmt(@$, @1, locHeader, @3, $1, nullptr, $2, nullptr, $3);
   }
-| for_loop_kw          zippered_iterator forall_intent_clause do_stmt
+| for_loop_kw          zippered_iterator task_intent_clause do_stmt
   {
     auto locHeader = context->makeSpannedLocation(@1, @2);
     $$ = context->buildGeneralLoopStmt(@$, @1, locHeader, @4, $1, nullptr, $2, $3, $4);
@@ -1751,7 +1779,7 @@ loop_stmt_base:
     auto locHeader = context->makeSpannedLocation(@2, @4);
     $$ = context->buildBracketLoopStmt(@$, locHeader, @2, @5, $2, $4, nullptr, $6);
   }
-| TLSBR expr_ls TIN expr forall_intent_clause TRSBR stmt
+| TLSBR expr_ls TIN expr task_intent_clause TRSBR stmt
   {
     auto locHeader = context->makeSpannedLocation(@2, @4);
     $$ = context->buildBracketLoopStmt(@$, locHeader, @2, @6, $2, $4, $5, $7);
@@ -1761,7 +1789,7 @@ loop_stmt_base:
     auto locHeader = context->makeSpannedLocation(@2, @4);
     $$ = context->buildBracketLoopStmt(@$, locHeader, @2, @5, $2, $4, nullptr, $6);
   }
-| TLSBR expr_ls TIN zippered_iterator forall_intent_clause TRSBR stmt
+| TLSBR expr_ls TIN zippered_iterator task_intent_clause TRSBR stmt
   {
     auto locHeader = context->makeSpannedLocation(@2, @4);
     $$ = context->buildBracketLoopStmt(@$, locHeader, @2, @6, $2, $4, $5, $7);
@@ -1771,7 +1799,7 @@ loop_stmt_base:
     auto locHeader = context->makeSpannedLocation(@2, @2);
     $$ = context->buildBracketLoopStmt(@$, locHeader, @2, @3, $2, nullptr, $4);
   }
-| TLSBR expr_ls forall_intent_clause TRSBR stmt
+| TLSBR expr_ls task_intent_clause TRSBR stmt
   {
     auto locHeader = context->makeSpannedLocation(@2, @2);
     $$ = context->buildBracketLoopStmt(@$, locHeader, @2, @4, $2, $3, $5);
@@ -1782,7 +1810,7 @@ loop_stmt_base:
     auto iterExprs = context->makeList($2);
     $$ = context->buildBracketLoopStmt(@$, locHeader, @2, @3, iterExprs, nullptr, $4);
   }
-| TLSBR zippered_iterator forall_intent_clause TRSBR stmt
+| TLSBR zippered_iterator task_intent_clause TRSBR stmt
   {
     auto locHeader = context->makeSpannedLocation(@2, @2);
     auto iterExprs = context->makeList($2);
@@ -2315,6 +2343,7 @@ lambda_decl_expr:
       fp.name = context->buildIdent(@1, STR("lambda"));
       fp.formals = $2;
       fp.returnIntent = $3;
+      fp.returnIntentLoc = @3;
       fp.returnType = $4;
       fp.throws = ($5 == ThrowsTag_THROWS);
       WhereAndLifetime wl = $6;
@@ -2381,6 +2410,7 @@ fn_type:
     fp.name = context->buildIdent(@1, STR("proc"));
     fp.formals = $2;
     fp.returnIntent = $4;
+    fp.returnIntentLoc = @4;
     fp.returnType = $5;
     fp.throws = ($6 == ThrowsTag_THROWS);
     fp.body = nullptr;
@@ -2442,6 +2472,7 @@ fn_decl_stmt:
   {
     FunctionParts fp = $1;
     fp.returnIntent = $2;
+    fp.returnIntentLoc = @2;
     fp.returnType = $3;
     fp.throws = ($4 == ThrowsTag_THROWS);
     WhereAndLifetime wl = $5;
@@ -2452,7 +2483,7 @@ fn_decl_stmt:
     fp.headerLoc = context->makeSpannedLocation(@1,
       $4 != ThrowsTag_DEFAULT ? @4 :
         ($3 != nullptr ? @3 :
-          ($2 != Function::DEFAULT_RETURN_INTENT ? @2 : @1)));
+          ($2.isValid && (Function::ReturnIntent)$2.intent != Function::DEFAULT_RETURN_INTENT ? @2 : @1)));
     context->exitScopeForFunctionDecl(fp);
     $$ = fp;
   }
@@ -2463,6 +2494,7 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
+      fp.thisIntentLoc = @2;
       fp.name = context->buildIdent(@3, $3);
       fp.formals = $4;
       $$ = fp;
@@ -2471,6 +2503,7 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
+      fp.thisIntentLoc = @2;
       fp.name = context->buildIdent(@3, $3);
       fp.formals = $4;
       $$ = fp;
@@ -2479,9 +2512,8 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
-      fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributeGroup*/ nullptr,
-                                  STR("this"), $2, toOwned($3),
-                                  nullptr).release();
+      fp.thisIntentLoc = @2;
+      fp.receiver = context->buildThisFormal(@3, @2, $2, $3, /*initExpr*/ nullptr);
       fp.name = context->buildIdent(@5, $5);
       fp.formals = $6;
       $$ = fp;
@@ -2490,9 +2522,8 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
-      fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributeGroup*/ nullptr,
-                                  STR("this"), $2, toOwned($3),
-                                  nullptr).release();
+      fp.thisIntentLoc = @2;
+      fp.receiver = context->buildThisFormal(@3, @2, $2, $3, /*initExpr*/ nullptr);
       fp.name = context->buildIdent(@5, $5);
       fp.formals = $6;
       $$ = fp;
@@ -2617,27 +2648,27 @@ formal:
 named_formal:
   opt_formal_intent_tag ident_def opt_colon_formal_type opt_init_expr
   {
-    $$ = context->buildFormal(@$, @2, $1, $2, $3, $4);
+    $$ = context->buildFormal(@$, @2, @1, $1, $2, $3, $4);
   }
 | pragma_ls opt_formal_intent_tag ident_def opt_colon_formal_type
   opt_init_expr
   {
-    $$ = context->buildFormal(@$, @3, $2, $3, $4, $5, true);
+    $$ = context->buildFormal(@$, @3, @2, $2, $3, $4, $5, true);
   }
 | opt_formal_intent_tag ident_def opt_colon_formal_type
   formal_var_arg_expr
   {
-    $$ = context->buildVarArgFormal(@$, $1, $2, @2, $3, $4);
+    $$ = context->buildVarArgFormal(@$, @1, $1, $2, @2, $3, $4);
   }
 | pragma_ls opt_formal_intent_tag ident_def opt_colon_formal_type
   formal_var_arg_expr
   {
-    $$ = context->buildVarArgFormal(@$, $2, $3, @3, $4, $5, true);
+    $$ = context->buildVarArgFormal(@$, @2, $2, $3, @3, $4, $5, true);
   }
 | opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP
   opt_colon_formal_type opt_init_expr
   {
-    $$ = context->buildTupleFormal(@$, $1, $3, $5, $6);
+    $$ = context->buildTupleFormal(@$, @1, $1, $3, $5, $6);
   }
 | opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP
   opt_colon_formal_type formal_var_arg_expr
@@ -2649,7 +2680,7 @@ named_formal:
 opt_formal_intent_tag:
   %prec TFOR {
     context->noteIsBuildingFormal(true);
-    $$ = Formal::DEFAULT_INTENT;
+    $$ = makeIntent(Formal::DEFAULT_INTENT);
   }
 | required_intent_tag
   {
@@ -2659,24 +2690,30 @@ opt_formal_intent_tag:
 ;
 
 required_intent_tag:
-  TIN         { $$ = Formal::IN; }
-| TINOUT      { $$ = Formal::INOUT; }
-| TOUT        { $$ = Formal::OUT; }
-| TCONST TIN  { $$ = Formal::CONST_IN; }
-| TCONST TREF { $$ = Formal::CONST_REF; }
-| TCONST      { $$ = Formal::CONST; }
-| TPARAM      { $$ = Formal::PARAM; }
-| TREF        { $$ = Formal::REF; }
-| TTYPE       { $$ = Formal::TYPE; }
+  TIN         { $$ = makeIntent(Formal::IN);            }
+| TINOUT      { $$ = makeIntent(Formal::INOUT);         }
+| TOUT        { $$ = makeIntent(Formal::OUT);           }
+| TCONST TIN  { $$ = makeIntent(Formal::CONST_IN);      }
+| TCONST TREF { $$ = makeIntent(Formal::CONST_REF);     }
+| TCONST      { $$ = makeIntent(Formal::CONST);         }
+| TPARAM      { $$ = makeIntent(Formal::PARAM);         }
+| TREF        { $$ = makeIntent(Formal::REF);           }
+| TTYPE       { $$ = makeIntent(Formal::TYPE);          }
+| TVAR        { $$ = makeInvalidIntent(Qualifier::VAR); }
 ;
 
 opt_this_intent_tag:
-                { $$ = Formal::DEFAULT_INTENT; }
-| TPARAM        { $$ = Formal::PARAM; }
-| TREF          { $$ = Formal::REF; }
-| TCONST TREF   { $$ = Formal::CONST_REF; }
-| TCONST        { $$ = Formal::CONST; }
-| TTYPE         { $$ = Formal::TYPE; }
+              { $$ = makeIntent(Formal::DEFAULT_INTENT);     }
+| TPARAM      { $$ = makeIntent(Formal::PARAM);              }
+| TREF        { $$ = makeIntent(Formal::REF);                }
+| TCONST TREF { $$ = makeIntent(Formal::CONST_REF);          }
+| TCONST      { $$ = makeIntent(Formal::CONST);              }
+| TTYPE       { $$ = makeIntent(Formal::TYPE);               }
+| TIN         { $$ = makeInvalidIntent(Qualifier::IN);       }
+| TCONST TIN  { $$ = makeInvalidIntent(Qualifier::CONST_IN); }
+| TVAR        { $$ = makeInvalidIntent(Qualifier::VAR);      }
+| TOUT        { $$ = makeInvalidIntent(Qualifier::OUT);      }
+| TINOUT      { $$ = makeInvalidIntent(Qualifier::INOUT);    }
 ;
 
 proc_iter_or_op:
@@ -2686,13 +2723,17 @@ proc_iter_or_op:
 ;
 
 opt_ret_tag:
-    %prec TNOELSE   { $$ = Function::DEFAULT_RETURN_INTENT; }
-| TOUT              { $$ = Function::OUT; }
-| TCONST            { $$ = Function::CONST; }
-| TCONST TREF       { $$ = Function::CONST_REF; }
-| TREF              { $$ = Function::REF; }
-| TPARAM            { $$ = Function::PARAM; }
-| TTYPE             { $$ = Function::TYPE; }
+    %prec TNOELSE { $$ = makeIntent(Function::DEFAULT_RETURN_INTENT); }
+| TOUT            { $$ = makeIntent(Function::OUT);                   }
+| TCONST          { $$ = makeIntent(Function::CONST);                 }
+| TCONST TREF     { $$ = makeIntent(Function::CONST_REF);             }
+| TREF            { $$ = makeIntent(Function::REF);                   }
+| TPARAM          { $$ = makeIntent(Function::PARAM);                 }
+| TTYPE           { $$ = makeIntent(Function::TYPE);                  }
+| TIN             { $$ = makeInvalidIntent(Qualifier::IN);            }
+| TCONST TIN      { $$ = makeInvalidIntent(Qualifier::CONST_IN);      }
+| TVAR            { $$ = makeInvalidIntent(Qualifier::VAR);           }
+| TINOUT          { $$ = makeInvalidIntent(Qualifier::INOUT);         }
 ;
 
 opt_throws_error:
@@ -3044,7 +3085,7 @@ sub_type_level_expr:
   { $$ = context->buildTypeConstructor(@$, $1, $3); }
 | TSUBDOMAIN TLP opt_actual_ls TRP
   { $$ = context->buildTypeConstructor(@$, $1, $3); }
-| TSPARSE TSUBDOMAIN TLP actual_expr TRP
+| TSPARSE TSUBDOMAIN TLP opt_actual_ls TRP
   {
     auto locInner = context->makeSpannedLocation(@2, @5);
     auto inner = context->buildTypeConstructor(locInner, $2, $4);
@@ -3204,6 +3245,27 @@ task_intent_clause:
   {
     $$ = context->buildWithClause(@$, @1, @2, @3, @4, $3);
   }
+| TWITH TLP TRP
+  {
+    auto err = context->syntax(@$, "'with' clause cannot be empty.");
+    auto exprs = context->makeList(err);
+    auto dummyLoc = TextLocation::create();
+    $$ = context->buildWithClause(@$, @1, dummyLoc, dummyLoc, dummyLoc, exprs);
+}
+| TWITH TLP error TRP
+  {
+    auto err = context->syntax(@2, "invalid intent expression in 'with' clause.");
+    auto exprs = context->makeList(err);
+    auto dummyLoc = TextLocation::create();
+    $$ = context->buildWithClause(@$, @1, dummyLoc, dummyLoc, dummyLoc, exprs);
+}
+| TWITH error
+  {
+    auto err = context->syntax(@2, "missing parentheses around 'with' clause intents.");
+    auto exprs = context->makeList(err);
+    auto dummyLoc = TextLocation::create();
+    $$ = context->buildWithClause(@$, @1, dummyLoc, dummyLoc, dummyLoc, exprs);
+  }
 ;
 
 task_intent_ls:
@@ -3211,35 +3273,10 @@ task_intent_ls:
 | task_intent_ls TCOMMA intent_expr   { $$ = context->appendList($1, $3); }
 ;
 
-forall_intent_clause:
-  TWITH TLP forall_intent_ls TRP
-  {
-    auto exprs = context->consumeList($3);
-    auto node = WithClause::build(BUILDER, LOC(@$), std::move(exprs));
-    $$ = node.release();
-  }
-;
-
-forall_intent_ls:
-  intent_expr                          { $$ = context->makeList($1); }
-| forall_intent_ls TCOMMA intent_expr  { $$ = context->appendList($1, $3); }
-;
-
 intent_expr:
   task_var_prefix ident_expr opt_type opt_init_expr
   {
-    if (auto ident = $2->toIdentifier()) {
-      auto name = ident->name();
-      auto node = TaskVar::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
-                                 name,
-                                 /*intent*/ $1,
-                                 toOwned($3),
-                                 toOwned($4));
-      BUILDER->noteDeclNameLocation(node.get(), LOC(@2));
-      $$ = node.release();
-    } else {
-      $$ = context->syntax(@$, "expected identifier for task variable name.");
-    }
+    $$ = context->buildTaskIntent(@$, @2, nullptr, $2, $1, $3, $4);
   }
 | reduce_scan_op_expr TREDUCE ident_expr
   {
@@ -3252,12 +3289,16 @@ intent_expr:
 ;
 
 task_var_prefix:
-  TCONST       { $$ = TaskVar::CONST;     }
-| TIN          { $$ = TaskVar::IN;        }
-| TCONST TIN   { $$ = TaskVar::CONST_IN;  }
-| TREF         { $$ = TaskVar::REF;       }
-| TCONST TREF  { $$ = TaskVar::CONST_REF; }
-| TVAR         { $$ = TaskVar::VAR;       }
+  TCONST       { $$ = makeIntent(TaskVar::CONST);          }
+| TIN          { $$ = makeIntent(TaskVar::IN);             }
+| TCONST TIN   { $$ = makeIntent(TaskVar::CONST_IN);       }
+| TREF         { $$ = makeIntent(TaskVar::REF);            }
+| TCONST TREF  { $$ = makeIntent(TaskVar::CONST_REF);      }
+| TVAR         { $$ = makeIntent(TaskVar::VAR);            }
+| TOUT         { $$ = makeInvalidIntent(Qualifier::OUT);   }
+| TINOUT       { $$ = makeInvalidIntent(Qualifier::INOUT); }
+| TPARAM       { $$ = makeInvalidIntent(Qualifier::PARAM); }
+| TTYPE        { $$ = makeInvalidIntent(Qualifier::TYPE);  }
 ;
 
 new_maybe_decorated:

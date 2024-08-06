@@ -21,6 +21,7 @@
 #define CHPL_TYPES_ENUM_TYPE_H
 
 #include "chpl/types/Type.h"
+#include "chpl/types/QualifiedType.h"
 
 namespace chpl{
 namespace types {
@@ -63,6 +64,19 @@ class EnumType final : public Type {
 
   /** Get the type for a range's boundKind */
   static const EnumType* getBoundKindType(Context* context);
+
+  /** Get the type representing an iterator's "iteration kind". */
+  static const EnumType* getIterKindType(Context* context);
+
+  /** Given an enum type 'et', get a map from the name of each constant
+      in 'et' to each constant represented as a param value.
+      If there are multiple enum constants with the same name (which
+      means the AST is semantically incorrect), then only the first
+      constant is added to the map. Returns 'nullptr' if 'et' is
+      'nullptr' or has an empty ID, or if it does not have any AST
+      representing it. */
+  static const std::map<UniqueString, QualifiedType>*
+  getParamConstantsMapOrNull(Context* context, const EnumType* et);
 
   ~EnumType() = default;
 

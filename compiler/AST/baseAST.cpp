@@ -411,11 +411,6 @@ ModuleSymbol* BaseAST::getModule() {
   return retval;
 }
 
-Type* BaseAST::typeInfo() {
-  QualifiedType qt = this->qualType();
-  return qt.type();
-}
-
 bool BaseAST::isRef() {
   return this->qualType().isRef();
 }

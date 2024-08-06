@@ -810,8 +810,24 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
   auto reference = std::get<2>(info_);
   auto id = std::get<3>(info_);
 
-  const char* outerName = outerDecl->isClass() ? "class" : "record";
-  const char* innerName = innerDecl->isClass() ? "class" : "record";
+  auto getType = [](const uast::TypeDecl* typeDecl) {
+    if (typeDecl->isEnum()) {
+      return "enum";
+    } else if (typeDecl->isClass()) {
+      return "class";
+    } else {
+      return "record";
+    }
+  };
+
+  auto getName = [](const uast::TypeDecl* typeDecl) {
+    if (auto enumDecl = typeDecl->toEnum()) return enumDecl->name();
+    CHPL_ASSERT(typeDecl->isAggregateDecl());
+    return typeDecl->toAggregateDecl()->name();
+  };
+
+  const char* outerName = getType(outerDecl);
+  const char* innerName = getType(innerDecl);
   // Shouldn't even be possible to trigger this with unions.
   CHPL_ASSERT(!outerDecl->isUnion());
   CHPL_ASSERT(!innerDecl->isUnion());
@@ -825,10 +841,10 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
   }
   wr.code(reference, { reference });
   wr.note(innerDecl, "the identifier is used within ", innerName, " '",
-          innerDecl->name(), "', declared here:");
+          getName(innerDecl), "', declared here:");
   wr.codeForLocation(innerDecl);
   wr.note(outerDecl, "however, the identifier refers to a field of an enclosing ",
-          outerName, " '", outerDecl->name(), "', declared here:");
+          outerName, " '", getName(outerDecl), "', declared here:");
   wr.codeForLocation(outerDecl);
   wr.note(id, "field declared here:");
   wr.codeForDef(id);

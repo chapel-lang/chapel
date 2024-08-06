@@ -1053,7 +1053,7 @@ static void defaultedFormalApplyDefault(ArgSymbol* formal,
                                         VarSymbol* temp,
                                         Expr* fromExpr) {
   Symbol* typeTmp = NULL;
-  if (formal->typeExpr != NULL) {
+  if (formal->typeExpr != NULL && !formal->typeExprFromDefaultExpr) {
     typeTmp = newTemp("_formal_type");
     typeTmp->addFlag(FLAG_TYPE_VARIABLE);
     body->insertAtTail(new DefExpr(typeTmp));
@@ -1483,6 +1483,20 @@ static bool argumentCanModifyActual(IntentTag intent) {
   return false;
 }
 
+static void printCoercionNote(CallExpr* call, ArgSymbol* formal,
+                              Expr* actualRef, Symbol* actualSym) {
+  if (actualSym->hasFlag(FLAG_TEMP))
+    USR_PRINT(actualRef, "while coercing an actual");
+  else
+    USR_PRINT(actualRef, "while coercing actual '%s'", actualSym->name);
+
+  // follow 'formalDetails' in lvalueCheckActual()
+  if (developer || formal->getModule()->modTag != MOD_INTERNAL)
+    USR_PRINT(formal, "to formal '%s'", formal->name);
+  else
+    USR_PRINT(formal, "to a formal");
+}
+
 static void errorIfValueCoercionToRef(CallExpr* call, Symbol* actual,
                                       ArgSymbol* formal) {
   IntentTag intent = getIntent(formal);
@@ -1712,6 +1726,8 @@ static void addArgCoercion(FnSymbol*  fn,
   }
 
   if (castCall) {
+    NewErrorRecorder trackingNewErrors;
+
     // move the result to the temp
     CallExpr* castMove = new CallExpr(PRIM_MOVE, castTemp, castCall);
 
@@ -1734,6 +1750,9 @@ static void addArgCoercion(FnSymbol*  fn,
         USR_STOP();
       }
     }
+
+    if (seenNewCompilationError())
+      printCoercionNote(call, formal, actual, prevActual);
 
     resolveCall(castMove);
   }
@@ -2493,6 +2512,14 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
     }
   }
 
+  // Ensure that the substitutions for ignored promoted functions are different
+  // from used promoted functions. This is needed because promoted functions
+  // whose results are ignored may not yield (see insertAndSaveWrapCall),
+  // but those that are not ignored do. We don't want them to be confused
+  // when consulting the promotion cache.
+  if (!resultIsUsed) {
+    this->subs.put(gIgnoredPromotionToken, gIgnoredPromotionToken);
+  }
 
   for_formals(formal, fn) {
     TypeSymbol* promotedType = NULL;

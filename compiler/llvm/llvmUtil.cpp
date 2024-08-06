@@ -507,6 +507,7 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
         useTy = curType;
 
       tmp_alloc = createAllocaInFunctionEntry(irBuilder, useTy, "");
+      // todo: setValueAlignment(tmp_alloc, ???, ???);
       *alloca = tmp_alloc;
       // Now cast the allocation to both fromType and toType.
       llvm::Type* curPtrType = curType->getPointerTo();

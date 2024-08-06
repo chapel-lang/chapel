@@ -498,6 +498,8 @@ private proc asap1(arg) {
   if isSubtype(arg.type, BaseDom) then return asapTuple(arg.dsiDims());
   if isSubtype(arg.type, BaseArr) then return asapTuple(arg.dom.dsiDims());
   compilerError("asap1: unsupported argument type ", arg.type:string);
+  return false; // otherwise we get resolution errors before the compilerError
+                // above
 }
 
 // asapP1 = All Strides Are Positive - Param - 1 arg

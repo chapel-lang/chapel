@@ -2613,6 +2613,12 @@ const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
   ResolutionResultByPostorderID result;
 
   if (ad) {
+    // These are children, but are skipped by the is*Decl conditions below.
+    for (auto inheritExpr : ad->inheritExprs()) {
+      auto res = Resolver::createForScopeResolvingField(context, ad, inheritExpr, result);
+      inheritExpr->traverse(res);
+    }
+
     // TODO: Use some kind of "ad->fields()" iterator
     for (auto child : ad->children()) {
       if (child->isVarLikeDecl() ||
@@ -2622,6 +2628,23 @@ const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
         auto res = Resolver::createForScopeResolvingField(context, ad, child, result);
         child->traverse(res);
       }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+const ResolutionResultByPostorderID& scopeResolveEnum(Context* context,
+                                                      ID id) {
+  QUERY_BEGIN(scopeResolveEnum, context, id);
+
+  auto ed = parsing::idToAst(context, id)->toEnum();
+  ResolutionResultByPostorderID result;
+
+  if (ed) {
+    for (auto child : ed->enumElements()) {
+      auto res = Resolver::createForScopeResolvingEnumConstant(context, ed, child, result);
+      child->traverse(res);
     }
   }
 
@@ -4305,7 +4328,9 @@ CallResolutionResult resolveFnCall(Context* context,
     CHPL_ASSERT(isTfsForInitializer(candidateFn));
 
     // TODO: Can we move this into the 'InitVisitor'?
-    if (!candidateFn->untyped()->isCompilerGenerated()) {
+    // Note: resolveInitializer is already called during instantiation
+    if (!candidateFn->untyped()->isCompilerGenerated() &&
+        candidateFn->instantiatedFrom() == nullptr) {
       std::ignore = resolveInitializer(context, candidateFn, inScopes.poiScope());
     }
   }

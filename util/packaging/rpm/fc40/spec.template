@@ -7,7 +7,7 @@ Summary: Chapel
 License: Apache-2.0
 Source0: chapel-%{version}.tar.gz
 
-Requires: bash perl git llvm17-devel clang17 clang17-devel python3 python3-devel make
+Requires: bash perl git llvm-devel clang clang-devel python3 python3-devel make
 
 %description
 Chapel Programming Language

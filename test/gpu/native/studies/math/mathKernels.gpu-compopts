@@ -1,0 +1,3 @@
+--no-ieee-float -sfunction=\"tanhf\" mathKernels.h mathKernels_cu_tanhf.o mathKernelsDlinked_tanhf.o mathKernels_clang_tanhf.o # mathKernels_tanhf
+--no-ieee-float -sfunction=\"sqrtf\" mathKernels.h mathKernels_cu_sqrtf.o mathKernelsDlinked_sqrtf.o mathKernels_clang_sqrtf.o # mathKernels_sqrtf
+--no-ieee-float -sfunction=\"fabsf\" mathKernels.h mathKernels_cu_fabsf.o mathKernelsDlinked_fabsf.o mathKernels_clang_fabsf.o # mathKernels_fabsf

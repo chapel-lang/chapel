@@ -1,2 +1,1 @@
-1
-2
+for_var_ref.chpl:6: error: const actual is passed to 'ref' formal 'x' of doit()

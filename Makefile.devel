@@ -81,9 +81,6 @@ run-frontend-linters: FORCE
 
 run-dyno-linters: run-frontend-linters FORCE
 
-test-chpldef: FORCE
-	@cd compiler && $(MAKE) test-chpldef
-
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE
 	rm -rf $(SPECTEST_DIR)

@@ -1,0 +1,2 @@
+sortRegion.chpl:1: warning: The Sort module interface is unstable
+sortRegion.chpl:5: warning: sort with a region argument is unstable

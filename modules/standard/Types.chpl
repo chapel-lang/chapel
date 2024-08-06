@@ -25,9 +25,11 @@ pragma "module included by default"
 module Types {
   import HaltWrappers;
 
+pragma "suppress generic actual warning"
 @chpldoc.nodoc // joint documentation with the next one
 proc isType(type t) param do return true;
 /* Returns ``true`` if the argument is a type. */
+pragma "suppress generic actual warning"
 proc isType(e) param do return false;
 
 @chpldoc.nodoc // joint documentation with the next one

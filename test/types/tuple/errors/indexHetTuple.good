@@ -1,5 +1,5 @@
 $CHPL_HOME/modules/internal/ChapelTuple.chpl:nnnn: In method 'this':
 $CHPL_HOME/modules/internal/ChapelTuple.chpl:nnnn: error: invalid access of non-homogeneous tuple by runtime value
-  $CHPL_HOME/modules/packages/Sort.chpl:nnnn: called as ((real(64),int(64))).this(i: int(64)) from function 'msbRadixSortParamLastStartBit'
-  $CHPL_HOME/modules/packages/Sort.chpl:nnnn: called as msbRadixSortParamLastStartBit(Data: [domain(1,int(64),one)] (real(64),int(64)), comparator: ContrivedComparator) from function 'twoArrayRadixSort'
-  indexHetTuple.chpl:35: called as twoArrayRadixSort(Data: [domain(1,int(64),one)] (real(64),int(64)), comparator: ContrivedComparator)
+  $CHPL_HOME/modules/standard/Sort.chpl:nnnn: called as ((real(64),int(64))).this(i: int(64)) from function 'msbRadixSortParamLastStartBit'
+  $CHPL_HOME/modules/standard/Sort.chpl:nnnn: called as msbRadixSortParamLastStartBit(Data: [domain(1,int(64),one)] (real(64),int(64)), comparator: ContrivedComparator) from function 'twoArrayRadixSort'
+  indexHetTuple.chpl:35: called as twoArrayRadixSort(Data: [domain(1,int(64),one)] (real(64),int(64)), comparator: ContrivedComparator, region: range(int(64),both,one))

@@ -148,11 +148,11 @@ prunedocs: FORCE
 	fi
 
 
-clean: clean-source clean-build clean-build-dir clean-doxygen FORCE
+clean: clean-source clean-build clean-build-dir clean-doxygen clean-pycache FORCE
 
-cleanall: clean-source clean-build clean-build-dir clean-doxygen FORCE
+cleanall: clean-source clean-build clean-build-dir clean-doxygen clean-pycache FORCE
 
-clobber: clean-source clean-build clean-build-dir clean-doxygen FORCE
+clobber: clean-source clean-build clean-build-dir clean-doxygen clean-pycache FORCE
 
 clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax clean-compiler-internals FORCE
 
@@ -177,12 +177,12 @@ clean-module-docs: FORCE
 
 clean-primers: FORCE
 	@echo
-	@echo "Removing primers generated into $(CHPL_DOC_HELLO_DIR)"
+	@echo "Removing primers generated into $(SOURCEDIR)/primers/"
 	rm -rf $(SOURCEDIR)/primers/
 
 clean-examples: FORCE
 	@echo
-	@echo "Removing hellos generated into $(CHPL_DOC_HELLO_DIR)"
+	@echo "Removing hellos generated into $(SOURCEDIR)/examples/"
 	rm -rf $(SOURCEDIR)/examples/
 
 clean-symlinks: FORCE
@@ -192,6 +192,10 @@ clean-symlinks: FORCE
 
 clean-doxygen: FORCE
 	rm -rf $(CHPL_MAKE_HOME)/build/doc/doxygen
+
+clean-pycache: FORCE
+	rm -rf util/__pycache__
+	rm -rf $(SOURCEDIR)/__pycache__
 
 FORCE:
 

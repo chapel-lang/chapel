@@ -248,6 +248,7 @@ void ResolveScope::addBuiltIns() {
 
   extend(dtIteratorRecord->symbol);
   extend(dtIteratorClass->symbol);
+  extend(dtThunkRecord->symbol);
   extend(dtBorrowed->symbol);
   extend(dtBorrowedNonNilable->symbol);
   extend(dtBorrowedNilable->symbol);

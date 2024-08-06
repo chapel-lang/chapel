@@ -48,7 +48,7 @@ jobs:
       run: |
         ./util/buildRelease/smokeTest quickstart docs
     - name: upload docs
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: documentation
         path: doc/html
@@ -129,6 +129,9 @@ jobs:
       run: |
         CHPL_LLVM=none make test-venv
         CHPL_LLVM=none CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
+    - name: check perf graphs
+      run: |
+        python3 ./util/test/check_perf_graphs.py
     - name: smokeTest lint
       run: |
         ./util/buildRelease/smokeTest lint

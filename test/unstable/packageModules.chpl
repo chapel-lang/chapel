@@ -38,7 +38,6 @@ import RecordParser;
 import ReplicatedVar;
 import Search;
 import Socket;
-import Sort;
 import SortedMap;
 import SortedSet;
 import TOML;

@@ -1,6 +1,7 @@
 use BlockDist;
 use LayoutCS;
 use List;
+use Sort;
 
 var parentDom1D = {1..100};
 var parentDom2D = {1..100, 1..100};
@@ -37,7 +38,7 @@ proc printDomain(d) {
   var indexList: list(if d.rank==1 then d.idxType else d.rank*d.idxType);
   for i in d do
     indexList.pushBack(i);
-  indexList.sort();
+  sort(indexList);
   writeln(indexList);
 }
 

@@ -158,6 +158,10 @@ class QualifiedType final {
     return isUnknown() || (genericity() != Type::CONCRETE);
   }
 
+  bool isUnknownOrErroneous() const {
+    return isUnknown() || isErroneousType();
+  }
+
   /** Returns true if kind is TYPE */
   bool isType() const { return kind_ == Kind::TYPE; }
 

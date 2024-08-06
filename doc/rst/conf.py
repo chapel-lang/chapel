@@ -117,6 +117,7 @@ exclude_patterns = ['Makefile',
                     'developer/implementation',
                     'util',
                     'meta',
+                    'usingchapel/editors',
 
                     # These don't need to be processed separately
                     # since they are included in the spec with .. include::

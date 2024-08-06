@@ -200,10 +200,11 @@ def get_cuda_libdevice_path():
         # sure how realistic that is, nor I see multiple instances in the systems I
         # have access to. They are always named `libdevice.10.bc`, but I just want
         # to be sure here.
-        libdevices = glob.glob(chpl_cuda_path+"/nvvm/libdevice/libdevice*.bc")
+        path_part = "/nvvm/libdevice/libdevice*.bc"
+        libdevices = glob.glob(chpl_cuda_path+path_part)
         if len(libdevices) == 0:
             _reportMissingGpuReq("Can't find libdevice. Please make sure your CHPL_CUDA_PATH is "
-                  "set such that CHPL_CUDA_PATH/nvmm/libdevice/libdevice*.bc exists.")
+                  "set such that CHPL_CUDA_PATH{} exists.".format(path_part))
             return 'error'
         else:
             return libdevices[0]

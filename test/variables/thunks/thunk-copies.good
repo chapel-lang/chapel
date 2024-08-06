@@ -1,0 +1,9 @@
+(x = 42)
+deinitializing R with value 42
+(x = 43)
+deinitializing R with value 43
+deinitializing R with value 43
+{x = 42}
+deinitializing C with value 42
+{x = 43}
+deinitializing C with value 43

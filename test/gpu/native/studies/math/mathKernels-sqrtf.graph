@@ -1,0 +1,5 @@
+perfkeys: Chapel Time:, nvcc Time:, clang Time:
+files: mathKernels_sqrtf.dat, mathKernels_sqrtf.dat, mathKernels_sqrtf.dat
+graphkeys: Chapel, nvcc, clang
+ylabel: Time (ms)
+graphtitle: GPU Math Functions (sqrtf)

@@ -111,6 +111,7 @@ Optimization Control Options:
                                       automatically (dynamic only)
       --[no-]auto-aggregation         Enable [disable] automatically
                                       aggregating remote accesses in foralls
+      --[no-]array-view-elision       Enable [disable] array view elision
 
 Run-time Semantic Check Options:
       --[no-]checks                   Enable [disable] all following run-time
@@ -165,10 +166,11 @@ Compilation Trace Options:
 Miscellaneous Options:
       --[no-]detailed-errors          Enable [disable] detailed error messages
       --[no-]devel                    Compile as a developer [user]
-      --explain-call <call>[:<module>][:<line>]
+      --explain-call <function or operator name>[:<module>][:<line>]
                                       Explain resolution of call
       --explain-instantiation <function|type>[:<module>][:<line>]
-                                      Explain instantiation of type
+                                      Explain instantiation of function or
+                                      type
       --[no-]explain-verbose          Enable [disable] tracing of
                                       disambiguation with 'explain' options
       --instantiate-max <max>         Limit number of instantiations
@@ -194,6 +196,9 @@ Compiler Configuration Options:
       --gmp <gmp-version>             Specify GMP library
       --hwloc <hwloc-impl>            Specify whether to use hwloc
       --launcher <launcher-system>    Specify how to launch programs
+      --lib-pic <pic>                 Specify whether to use
+                                      position-dependent or
+                                      position-independent code
       --locale-model <locale-model>   Specify locale model to use
       --make <make utility>           Make utility for generated code
       --mem <mem-impl>                Specify the memory manager

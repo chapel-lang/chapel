@@ -135,10 +135,6 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
     }
   }
 
-  if (type->isTupleType() && name == "size") {
-    return true;
-  }
-
   // Some basic getter methods for domain properties
   //
   // TODO: We can eventually replace these for calls on a domain *value* by

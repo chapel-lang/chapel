@@ -47,3 +47,16 @@ use Random;
 
   writeln(A);
 }
+
+{
+  var D = {1..3, 0..6 by 2},
+        A : [D] real;
+
+  for (i, j) in D {
+    A[i, j] = i + j / 10.0;
+  }
+
+  shuffle(A, seed=21);
+
+  writeln(A);
+}

@@ -137,77 +137,10 @@ Setting Up In Your Editor
 -------------------------
 
 ``chplcheck`` uses the Language Server Protocol (LSP) to integrate with compatible
-clients. Thus, if your editor supports LSP, you can configure it to display
-linting warnings via ``chplcheck``. The following sections describe how to set
-up ``chplcheck`` in various editors, and will be updated as the Chapel team
-tests more editors. If your preferred editor is not listed, consider opening an
-`issue <https://github.com/chapel-lang/chapel/issues/new>`_ or `pull request
-<https://github.com/chapel-lang/chapel/pull/new>`_ to add it.
-
-Neovim
-~~~~~~
-
-The built-in LSP API can be used to configure ``chplcheck`` as follows:
-
-.. code-block:: lua
-
-   local lspconfig = require 'lspconfig'
-   local configs = require 'lspconfig.configs'
-   local util = require 'lspconfig.util'
-
-   configs.chplcheck = {
-     default_config = {
-       cmd = {"chplcheck", "--lsp"},
-       filetypes = {'chpl'},
-       autostart = true,
-       single_file_support = true,
-       root_dir = util.find_git_ancestor,
-       settings = {},
-     },
-   }
-
-   lspconfig.chplcheck.setup{}
-   vim.cmd("autocmd BufRead,BufNewFile *.chpl set filetype=chpl")
-
-VSCode
-~~~~~~
-
-Install the ``chapel`` extension from the `Visual Studio Code marketplace
-<https://marketplace.visualstudio.com/items?itemName=chpl-hpe.chapel-vscode>`_.
-
-Emacs
-~~~~~
-
-With Emacs 29.1, support has been added for language server protocols via `Eglot
-<https://www.gnu.org/software/emacs/manual/html_mono/eglot.html>`_
-
-To utilize the linter via Eglot, add the following to your ``.emacs`` file (note
-that this assumes you have already followed the instructions in
-``$CHPL_HOME/highlight/emacs/README.rst`` to install Chapel syntax highlighting
-in Emacs):
-
-.. code-block:: lisp
-
-   (with-eval-after-load 'eglot
-     (add-to-list 'eglot-server-programs
-                  '(chpl-mode . ("chplcheck" "--lsp"))))
-
-This will enable using the linter with a particular ``.chpl`` file by calling
-``M-x eglot``.
-
-To automatically use Eglot and the linter with every ``.chpl`` file,
-additionally add the following to your ``.emacs`` file:
-
-.. code-block:: lisp
-
-   (add-hook 'chpl-mode-hook 'eglot-ensure)
-
-.. note::
-
-   There is currently a limitation with Eglot that only one language server can
-   be registered per language. To use ``chplcheck`` and ``chapel-language-server``
-   at the same time, see the
-   :ref:`Emacs documentation for chapel-language-server <chpl-language-server-emacs>`.
+clients. If your editor supports LSP, you can configure it to display
+linting warnings via ``chplcheck``. See the
+:ref:`Editor Support page <readme-editor-support>` for details on a specific
+editor.
 
 Writing New Rules
 -----------------

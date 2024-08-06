@@ -1,0 +1,8 @@
+enum-aliasing.chpl:4: In function 'foo':
+enum-aliasing.chpl:7: warning: accessing enum constants via a type alias is unstable
+  enum-aliasing.chpl:11: called as foo(param one = true)
+enum-aliasing.chpl:4: In function 'foo':
+enum-aliasing.chpl:7: warning: accessing enum constants via a type alias is unstable
+  enum-aliasing.chpl:12: called as foo(param one = false)
+10
+11

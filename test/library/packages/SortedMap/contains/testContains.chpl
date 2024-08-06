@@ -3,7 +3,7 @@ use utilFunctions;
 
 
 
-var m = new sortedMap(string, string, false, defaultComparator);
+var m = new sortedMap(string, string, false, new DefaultComparator());
 
 for i in 1..99 by 3 {
   var number = intToEnglish(i);

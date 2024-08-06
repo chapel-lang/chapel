@@ -434,7 +434,8 @@ class CSDom: BaseSparseDomImpl(?) {
     }
 
     if this.compressRows then
-      bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp=Sort.defaultComparator);
+      bulkAdd_prepareInds(inds, dataSorted, isUnique,
+                          cmp = new Sort.DefaultComparator());
     else
       bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp=_columnComparator);
 

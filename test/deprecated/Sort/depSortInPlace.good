@@ -1,0 +1,6 @@
+depSortInPlace.chpl:5: warning: The 'sort' function with 'Data' and 'inPlaceAlgorithm' arguments has been deprecated, please use the 'sort' function with an 'x' argument instead
+depSortInPlace.chpl:10: warning: The 'sort' function with 'Data' and 'inPlaceAlgorithm' arguments has been deprecated, please use the 'sort' function with an 'x' argument instead
+depSortInPlace.chpl:15: warning: The 'sort' function with 'Data' and 'inPlaceAlgorithm' arguments has been deprecated, please use the 'sort' function with an 'x' argument instead
+-2 -1 0 2 2 3 3 5 8 9 15 23 26 34 61 100000
+-2 -1 0 2 2 3 3 5 8 9 15 23 26 34 61 100000
+-2 -1 0 2 2 3 3 5 8 9 15 23 26 34 61 100000

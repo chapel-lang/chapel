@@ -63,6 +63,7 @@ File Formats and I/O
    NetCDF <packages/NetCDF>
    ObjectSerialization <packages/ObjectSerialization>
    ParallelIO <packages/ParallelIO>
+   PrecisionSerializer <packages/PrecisionSerializer>
    RecordParser <packages/RecordParser>
    TOML <packages/TOML>
    YAML <packages/YAML>

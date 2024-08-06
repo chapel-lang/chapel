@@ -1,0 +1,3 @@
+arrayOfGenericRecordQuery.chpl:5: In function 'g':
+arrayOfGenericRecordQuery.chpl:6: error: Query expressions are not currently supported in this context
+  arrayOfGenericRecordQuery.chpl:12: called as g(arr: [domain(1,int(64),one)] R(10))

@@ -28,6 +28,10 @@
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Module.h"
 
+// when converting, only convert modules in this set
+// TODO: switch to converting a module-at-a-time (including submodules)
+extern std::set<chpl::ID> gConvertFilterModuleIds;
+
 ModuleSymbol*
 convertToplevelModule(chpl::Context* context,
                       const chpl::uast::Module* mod,

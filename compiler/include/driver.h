@@ -68,6 +68,9 @@ extern bool fReportAutoLocalAccess;
 extern bool fAutoAggregation;
 extern bool fReportAutoAggregation;
 
+extern bool fArrayViewElision;
+extern bool fReportArrayViewElision;
+
 extern bool fNoRemoteValueForwarding;
 extern bool fNoInferConstRefs;
 extern bool fNoRemoteSerialization;
@@ -120,6 +123,7 @@ extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
 extern const char* CHPL_GASNET_SEGMENT;
 extern const char* CHPL_LIBFABRIC;
+extern const char* CHPL_COMM_OFI_OOB;
 extern const char* CHPL_TASKS;
 extern const char* CHPL_LAUNCHER;
 extern const char* CHPL_TIMERS;
@@ -352,6 +356,8 @@ extern std::vector<std::string> gDynoPrependStandardModulePaths;
 extern std::string gDynoGenLibOutput;
 extern std::vector<UniqueString> gDynoGenLibSourcePaths;
 extern std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
+
+extern std::string gMainModuleName;
 
 extern bool fForeachIntents;
 

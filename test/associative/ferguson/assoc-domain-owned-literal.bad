@@ -1,0 +1,2 @@
+assoc-domain-owned-literal.chpl:3: In function 'main':
+assoc-domain-owned-literal.chpl:4: error: Associative domains do not currently work with 'owned' classes as the index type

@@ -68,6 +68,10 @@
 
 using namespace chpl;
 
+// TODO: replace this global by adjusting things to convert one module
+// at a time
+std::set<chpl::ID> gConvertFilterModuleIds;
+
 namespace {
 
 struct ConvertedSymbolsMap {
@@ -289,6 +293,7 @@ struct Converter {
   int delegateCounter = 0;
 
   ModTag topLevelModTag;
+
   std::vector<ModStackEntry> modStack;
   std::vector<SymStackEntry> symStack;
 
@@ -310,9 +315,11 @@ struct Converter {
   std::vector<BlockStmt*> blockStack;
 
 
-  Converter(chpl::Context* context, ModTag topLevelModTag)
+  Converter(chpl::Context* context,
+            ModTag topLevelModTag)
     : context(context),
-      topLevelModTag(topLevelModTag) { }
+      topLevelModTag(topLevelModTag)
+  { }
 
   // general functions for converting
   Expr* convertAST(const uast::AstNode* node);
@@ -766,7 +773,7 @@ struct Converter {
       }
     } else {
       if (name == USTR("single")) {
-        if (currentModuleType == MOD_USER) {
+        if (topLevelModTag == MOD_USER) {
           USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
         }
       }
@@ -975,7 +982,7 @@ struct Converter {
 
     auto block = createBlockWithStmts(node->stmts(), node->blockStyle());
 
-    auto ret = buildManageStmt(managers, block);
+    auto ret = buildManageStmt(managers, block, topLevelModTag);
     INT_ASSERT(ret);
 
     return ret;
@@ -1131,6 +1138,11 @@ struct Converter {
     const uast::Module* umod =
       parsing::getIncludedSubmodule(context, node->id());
     if (umod == nullptr) {
+      return nullptr;
+    }
+
+    // skip any submodules that are dead
+    if (gConvertFilterModuleIds.count(umod->id()) == 0) {
       return nullptr;
     }
 
@@ -2254,7 +2266,7 @@ struct Converter {
       if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
       } else if (name == USTR("single")) {
-        if (currentModuleType == MOD_USER) {
+        if (topLevelModTag == MOD_USER) {
           USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
         }
         ret = new UnresolvedSymExpr("_singlevar");
@@ -3517,6 +3529,11 @@ struct Converter {
     return mod;
   }
   DefExpr* visit(const uast::Module* node) {
+    // skip any submodules that are dead
+    if (gConvertFilterModuleIds.count(node->id()) == 0) {
+      return nullptr;
+    }
+
     ModuleSymbol* mod = convertModule(node);
     return new DefExpr(mod);
   }
@@ -3967,7 +3984,7 @@ struct Converter {
       auto wrapperCall = new CallExpr("chpl__buildRemoteWrapper");
       wrapperCall->insertAtTail(destinationExpr);
       if (typeExpr) wrapperCall->insertAtTail(typeExpr);
-      if (initExpr) wrapperCall->insertAtTail(initExpr);
+      if (initExpr) wrapperCall->insertAtTail(new CallExpr(PRIM_CREATE_THUNK, initExpr));
       auto wrapperDef = new DefExpr(wrapper, wrapperCall);
 
       auto wrapperGet = new CallExpr(".", new SymExpr(wrapper), new_CStringSymbol("get"));
@@ -4065,6 +4082,12 @@ struct Converter {
   }
 
   Expr* visit(const uast::Enum* node) {
+    const resolution::ResolutionResultByPostorderID* resolved = nullptr;
+    if (shouldScopeResolve(node)) {
+      resolved = &resolution::scopeResolveEnum(context, node->id());
+    }
+    pushToSymStack(node, resolved);
+
     auto enumType = new EnumType();
 
     for (auto elem : node->enumElements()) {
@@ -4090,6 +4113,8 @@ struct Converter {
     // Note the enum type is converted so we can wire up SymExprs later
     noteConvertedSym(node, enumTypeSym);
 
+    popFromSymStack(node, enumTypeSym);
+
     return ret;
   }
 
@@ -4112,12 +4137,35 @@ struct Converter {
                             bool& inheritMarkedGeneric) {
     for (auto inheritExpr : iterable) {
       bool thisInheritMarkedGeneric = false;
-      const uast::Identifier* ident =
-        uast::Class::getInheritExprIdent(inheritExpr, thisInheritMarkedGeneric);
-      if (auto converted = convertExprOrNull(ident)) {
+      auto* ident =
+        uast::Class::getUnwrappedInheritExpr(inheritExpr, thisInheritMarkedGeneric);
+
+      // Always convert the taraget expression so that we note used modules
+      // as needed. We won't necessarily use the resulting expression;
+      // see the comment below.
+      auto converted = convertExprOrNull(ident);
+      inheritMarkedGeneric |= thisInheritMarkedGeneric;
+
+      // Don't convert the expression literally if we have a `toId`.
+      // The production scope resolver doesnt't support M.C as a class
+      // inheritance expression, but we already know what it refers to.
+      // Thus, instead of doing (. 'M' 'C') we can just refer to 'C'.
+      if (auto results = currentResolutionResult()) {
+        if (auto result = results->byAstOrNull(ident)) {
+          auto toId = result->toId();
+          if (!toId.isEmpty()) {
+            if (auto converted = findConvertedSym(toId)) {
+              inherits.push_back(new SymExpr(converted));
+              continue;
+            }
+          }
+        }
+      }
+
+      // Couldn't find the target, so translate it literally.
+      if (converted) {
         inherits.push_back(converted);
       }
-      inheritMarkedGeneric |= thisInheritMarkedGeneric;
     }
   }
 
@@ -4156,7 +4204,8 @@ struct Converter {
     auto ret = buildClassDefExpr(name, cname, tag,
                                  inherits,
                                  decls,
-                                 externFlag);
+                                 externFlag,
+                                 topLevelModTag);
     INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
@@ -4356,6 +4405,7 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::AnyIntegralType:              return dtIntegral;
     case typetags::AnyIteratorClassType:         return dtIteratorClass;
     case typetags::AnyIteratorRecordType:        return dtIteratorRecord;
+    case typetags::AnyThunkRecordType:           return dtThunkRecord;
     case typetags::AnyNumericType:               return dtNumeric;
     case typetags::AnyOwnedType:                 return dtOwned;
     case typetags::AnyPodType:                   return dtAnyPOD;

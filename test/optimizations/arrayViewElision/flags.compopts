@@ -1,0 +1,2 @@
+--array-view-elision -sdebugBulkTransfer=true     # flags.opt
+--no-array-view-elision -sdebugBulkTransfer=true  # flags.no-opt

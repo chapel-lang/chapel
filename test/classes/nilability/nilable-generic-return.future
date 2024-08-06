@@ -1,0 +1,2 @@
+bug: can't return 'nil' from nilable-anymanaged-returning function
+https://github.com/chapel-lang/chapel/issues/25468

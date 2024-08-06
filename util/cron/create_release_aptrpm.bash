@@ -36,7 +36,7 @@ source $CHPL_HOME/util/packaging/common/build_helpers.sh
 # if using a local tarball, copy it to the expected location
 if [ -n "$CHPL_TARBALL" ]; then
   log_info "Using local tarball: $CHPL_TARBALL"
-  cp $CHPL_TARBALL $CHPL_HOME/util/packaging/common/chapel-${CHPL_VERSION}.tar.gz
+  cp $CHPL_TARBALL $CHPL_HOME/util/packaging/tarballs/chapel-${CHPL_VERSION}.tar.gz
 fi
 
 log_info "Building $PACKAGE_NAME $PACKAGE_TYPE package on $OS"

@@ -1,7 +1,0 @@
-warning: Ambiguous module source file -- using ./Search.chpl over $CHPL_HOME/modules/packages/Search.chpl
-internal error: UTI-MIS-nnnn chpl version mmmm
-
-Internal errors indicate a bug in the Chapel compiler,
-and we're sorry for the hassle.  We would appreciate your reporting this bug --
-please see https://chapel-lang.org/bugs.html for instructions.
-

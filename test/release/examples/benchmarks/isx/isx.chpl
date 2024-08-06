@@ -339,7 +339,6 @@ proc verifyResults(taskID, myBucketSize, myLocalKeyCounts) {
 
 
 proc makeInput(taskID, ref myKeys) {
-  use Random.PCGRandom;
   use Random.PCGRandomLib;
 
   //

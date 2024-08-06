@@ -1,0 +1,3 @@
+ErrorArray.chpl:2: error: anonymous proc is generic and cannot be captured
+ErrorArray.chpl:2: note: the formal 'x' is generic because it is an array with runtime type information
+ErrorArray.chpl:5: warning: proc

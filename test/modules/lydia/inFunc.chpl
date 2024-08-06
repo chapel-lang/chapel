@@ -6,5 +6,6 @@ module OuterModule {
     }
   }
 
+  use M;
   uhoh();
 }

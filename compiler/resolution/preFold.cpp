@@ -20,6 +20,7 @@
 
 #include "preFold.h"
 
+#include "arrayViewElision.h"
 #include "astutil.h"
 #include "buildDefaultFunctions.h"
 #include "fcf-support.h"
@@ -65,6 +66,8 @@ static std::vector<Expr* >                                 testCaptureVector;
 // lookup table for test function names and their index in testCaptureVector
 static std::map<std::string,int>                           testNameIndex;
 
+static Expr*          preFoldLateEnumConstantAccess(CallExpr* call);
+
 static Expr*          preFoldPrimInitVarForManagerResource(CallExpr* call);
 
 static Expr*          preFoldPrimResolves(CallExpr* call);
@@ -102,8 +105,9 @@ Expr* preFold(CallExpr* call) {
   } else if (isUnresolvedSymExpr(baseExpr) == true) {
     if (Expr* tmp = preFoldNamed(call)) {
       retval = tmp;
+    } else if (Expr* enumConstant = preFoldLateEnumConstantAccess(call)) {
+      retval = enumConstant;
     }
-
   } else if (SymExpr* symExpr = toSymExpr(baseExpr)) {
     // Primitive typeSpecifier -> SymExpr
     if (Type* type = typeForTypeSpecifier(call, true)) {
@@ -466,6 +470,42 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
       }
     }
   }
+}
+
+// See if the user is trying to access the enum constant of a type, but it
+// wasn't resolved during scope resolution, which means that type resolution
+// was required to figure out the receiver.
+static Expr* preFoldLateEnumConstantAccess(CallExpr* call) {
+  UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
+  if (!urse) return call;
+
+  if (call->numActuals() != 2) return call;
+  auto firstSym = toSymExpr(call->get(1));
+  if (!firstSym || firstSym->symbol() != gMethodToken) return call;
+
+  auto secondSym = toSymExpr(call->get(2));
+  if (!secondSym || !secondSym->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) return call;
+  auto enumType = toEnumType(secondSym->symbol()->type);
+  if (!enumType) return call;
+
+  if (shouldWarnUnstableFor(call)) {
+    USR_WARN(call, "accessing enum constants via a type alias is unstable");
+  }
+
+  // Now we have a type method call on a type variable that's an enum.
+  // We might be trying to access an element late / indirectly.
+  for_enums(constant, enumType) {
+    if (!strcmp(constant->sym->name, urse->unresolved)) {
+      constant->sym->maybeGenerateDeprecationWarning(call);
+      constant->sym->maybeGenerateUnstableWarning(call);
+
+      auto replaceWith = new SymExpr(constant->sym);
+      call->replace(replaceWith);
+      return replaceWith;
+    }
+  }
+
+  return call;
 }
 
 //
@@ -913,6 +953,24 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     retval = new CallExpr(PRIM_NOOP);
     call->replace(retval);
+    break;
+  }
+
+  case PRIM_PROTO_SLICE_ASSIGN: {
+    ArrayViewElisionPrefolder assignment(call);
+
+    if (assignment.supported()) {
+      retval = assignment.getReplacement();
+      call->replace(retval);
+    }
+    else {
+      retval = new CallExpr(PRIM_NOOP);
+      assignment.condStmt()->insertBefore(retval);
+    }
+
+    assignment.report();
+    assignment.updateAndFoldConditional();
+
     break;
   }
 
@@ -1760,7 +1818,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
           //  type if the symbol represents a field, and taking the address of
           //  a type does not make sense.
 
-        } else if (argSym && argSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        } else if ((argSym && argSym->hasFlag(FLAG_TYPE_VARIABLE)) ||
+                   (varSym && varSym->hasFlag(FLAG_TYPE_VARIABLE))) {
           // No need to take address of a type arg. The flag is used here
           // because the intent is unreliable, and may be INTENT_BLANK.
 
@@ -2026,11 +2085,43 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
-  case PRIM_STATIC_TYPEOF:
   case PRIM_STATIC_FIELD_TYPE:
+  case PRIM_STATIC_TYPEOF: {
+    auto exprToResolve = call->get(1);
+
+    // Insert a temporary block into the AST to use as a workspace.
+    auto tmpBlock = new BlockStmt(BLOCK_SCOPELESS);
+    call->getStmtExpr()->insertAfter(tmpBlock);
+
+    exprToResolve->remove();
+    tmpBlock->insertAtTail(exprToResolve);
+
+    // Resolution depends on normalized AST (and the expression is not).
+    normalize(tmpBlock);
+    resolveBlockStmt(tmpBlock);
+
+    // Remove the code we used for resolution; this is a static typeof
+    // primitive, so it should not have any side effects.
+    tmpBlock->remove();
+
+    // Now, put the resolve expression back into the call so that ->typeInfo()
+    // can invoke the normal primitive type resolution process.
+    call->insertAtHead(tmpBlock->body.last()->remove());
+
+    // Replace the type query call with a SymExpr of the type symbol.
+    // call->typeInfo() will request the type from the primitive
+    Type* type = call->typeInfo();
+    retval = new SymExpr(type->symbol);
+    call->replace(retval);
+
+    break;
+  }
+
+
+  case PRIM_THUNK_RESULT_TYPE:
   case PRIM_SCALAR_PROMOTION_TYPE: {
 
-    // Replace the type query call with a SymExpr of the type symbol
+    // Replace the type query call with a SymExpr of the type symbol.
     // call->typeInfo() will request the type from the primitive
     Type* type = call->typeInfo();
     retval = new SymExpr(type->symbol);
@@ -2256,6 +2347,38 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       retval = new CallExpr(PRIM_NOOP);
       call->replace(retval);
     }
+    break;
+  }
+
+  case PRIM_FORCE_THUNK: {
+    auto sizeSym = toSymExpr(call->get(1));
+    auto sizeType = sizeSym->symbol()->typeInfo()->getValType();
+    auto aggrT = toAggregateType(sizeType);
+
+    // call the invoke method of the thunk stored in aggrT->thunkInvoke
+    retval = new CallExpr(aggrT->thunkInvoke, gMethodToken, sizeSym->remove());
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_DEFAULT_INIT_VAR: {
+    // While visiting the primitive, reject calls to default init on
+    // incomplete types.
+    auto secondArg = toSymExpr(call->get(2))->symbol();
+    Symbol* checkForIncomplete = nullptr;
+    if (auto ts = toTypeSymbol(secondArg)) {
+      checkForIncomplete = ts;
+    } else if (auto vs = toVarSymbol(secondArg)) {
+      checkForIncomplete = vs->typeInfo()->symbol;
+    }
+    if (checkForIncomplete && checkForIncomplete->hasFlag(FLAG_INCOMPLETE)) {
+      USR_FATAL(call, "cannot default initialize incomplete 'extern' type '%s'",
+                checkForIncomplete->cname);
+    }
+
+    // All is well, proceed.
+    retval = call;
+    break;
   }
 
   default:
@@ -2428,14 +2551,16 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
     VarSymbol* tmp = newTemp(astr("tupleTemp"));
     tmp->addFlag(FLAG_REF_VAR);
 
+    auto field = tupType->getField(i);
+    auto prim = field->isRef() ? PRIM_GET_MEMBER_VALUE : PRIM_GET_MEMBER;
     // create the AST for 'tupleTemp = tuple.field'
     //
-    VarSymbol* field = new_CStringSymbol(tupType->getField(i)->name);
+    VarSymbol* fieldName = new_CStringSymbol(field->name);
     noop->insertBefore(new DefExpr(tmp));
     noop->insertBefore(new CallExpr(PRIM_MOVE, tmp,
-                                    new CallExpr(PRIM_GET_MEMBER,
+                                    new CallExpr(prim,
                                                  tupExpr->copy(),
-                                                 field)));
+                                                 fieldName)));
 
     // clone the body; subtract 2 from i to number unrollings from 0
     //

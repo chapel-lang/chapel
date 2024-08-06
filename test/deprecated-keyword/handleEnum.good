@@ -1,8 +1,8 @@
 handleEnum.chpl:5: In function 'main':
+handleEnum.chpl:12: warning: Enum e is deprecated, use enum f
 handleEnum.chpl:6: warning: Enum e is deprecated, use enum f
 handleEnum.chpl:7: warning: Enum e is deprecated, use enum f
 handleEnum.chpl:8: warning: Enum e is deprecated, use enum f
-handleEnum.chpl:12: warning: Enum e is deprecated, use enum f
 handleEnum.chpl:14: warning: potentially surprising shadowing for 'a'
 handleEnum.chpl:12: note: it refers to a symbol found through the 'use' of 'e' here
 handleEnum.chpl:2: note: leading to 'a' defined here

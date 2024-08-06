@@ -255,6 +255,12 @@ typedef struct kernel_cfg_s {
   int n_params;
   int cur_param;
   void*** kernel_params;
+  int n_host_registered;
+  int cur_host_registered_var;
+  void** host_registered_var_boxes; // array of device pointers
+  void*** host_registered_vars;     // array of pointers to device pointer
+                                    // (stored in host_registered_var_boxes)
+  void** host_registered_vars_host_ptrs; // array of host pointers
 
   // Keep track of kernel parameters we dynamically allocate memory for so
   // later on we know what we need to free.
@@ -283,7 +289,7 @@ typedef struct kernel_cfg_s {
 
 static void cfg_init(kernel_cfg* cfg, const char* fn_name,
                      int n_params, int n_pids, int n_reduce_vars,
-                     int ln, int32_t fn) {
+                     int n_host_registered_vars, int ln, int32_t fn) {
 
   cfg->fn_name = fn_name;
 
@@ -301,7 +307,6 @@ static void cfg_init(kernel_cfg* cfg, const char* fn_name,
   cfg->kernel_params = chpl_mem_alloc(cfg->n_params * sizeof(void **),
                                       CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
   assert(cfg->kernel_params);
-
 
   cfg->param_dyn_allocated = chpl_mem_alloc(cfg->n_params * sizeof(bool),
                                             CHPL_RT_MD_GPU_KERNEL_PARAM_META,
@@ -335,6 +340,21 @@ static void cfg_init(kernel_cfg* cfg, const char* fn_name,
 
   cfg->reduce_vars = chpl_mem_alloc(cfg->n_reduce_vars * sizeof(reduce_var),
                                     CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
+
+  cfg->n_host_registered = n_host_registered_vars;
+  cfg->cur_host_registered_var = 0;
+  cfg->host_registered_var_boxes = chpl_mem_alloc(
+    cfg->n_host_registered * sizeof(void*), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF,
+    ln, fn);
+  cfg->host_registered_vars = chpl_mem_alloc(
+    cfg->n_host_registered * sizeof(void**), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF,
+    ln, fn);
+  cfg->host_registered_vars_host_ptrs = chpl_mem_alloc(
+    cfg->n_host_registered * sizeof(void**), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF,
+    ln, fn);
+  for(int i = 0; i < cfg->n_host_registered; i++) {
+    cfg->host_registered_vars[i] = &cfg->host_registered_var_boxes[i];
+  }
 }
 
 static void cfg_init_dims_1d(kernel_cfg* cfg, int64_t num_threads,
@@ -551,11 +571,13 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg) {
 
 void* chpl_gpu_init_kernel_cfg(const char* fn_name, int64_t num_threads,
                                int blk_dim, int n_params, int n_pids,
-                               int n_reduce_vars, int ln, int32_t fn) {
+                               int n_reduce_vars, int n_host_registered_vars,
+                               int ln, int32_t fn) {
   void* ret = chpl_mem_alloc(sizeof(kernel_cfg),
                              CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
 
-  cfg_init((kernel_cfg*)ret, fn_name, n_params, n_pids, n_reduce_vars, ln, fn);
+  cfg_init((kernel_cfg*)ret, fn_name, n_params, n_pids, n_reduce_vars,
+           n_host_registered_vars, ln, fn);
   cfg_init_dims_1d((kernel_cfg*)ret, num_threads, blk_dim);
 
   CHPL_GPU_DEBUG("Initialized kernel config for %s. num_threads=%"PRId64" blk_dim=%d"
@@ -570,12 +592,14 @@ void* chpl_gpu_init_kernel_cfg_3d(const char* fn_name,
                                   int grd_dim_x, int grd_dim_y, int grd_dim_z,
                                   int blk_dim_x, int blk_dim_y, int blk_dim_z,
                                   int n_params, int n_pids, int n_reduce_vars,
-                                  int ln, int32_t fn) {
+                                  int n_host_registered_vars, int ln,
+                                  int32_t fn) {
 
   void* ret = chpl_mem_alloc(sizeof(kernel_cfg),
                              CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
 
-  cfg_init((kernel_cfg*)ret, fn_name, n_params, n_pids, n_reduce_vars, ln, fn);
+  cfg_init((kernel_cfg*)ret, fn_name, n_params, n_pids, n_reduce_vars,
+           n_host_registered_vars, ln, fn);
   cfg_init_dims_3d((kernel_cfg*)ret,
                    grd_dim_x, grd_dim_y, grd_dim_z,
                    blk_dim_x, blk_dim_y, blk_dim_z);
@@ -616,6 +640,13 @@ void chpl_gpu_deinit_kernel_cfg(void* _cfg) {
     chpl_gpu_mem_free(cfg->reduce_vars[i].buffer, cfg->ln, cfg->fn);
   }
   chpl_mem_free(cfg->reduce_vars, cfg->ln, cfg->fn);
+
+  for (int i=0 ; i<cfg->n_host_registered; i++) {
+    chpl_gpu_impl_host_unregister(cfg->host_registered_vars_host_ptrs[i]);
+  }
+  chpl_mem_free(cfg->host_registered_var_boxes, cfg->ln, cfg->fn);
+  chpl_mem_free(cfg->host_registered_vars, cfg->ln, cfg->fn);
+  chpl_mem_free(cfg->host_registered_vars_host_ptrs, cfg->ln, cfg->fn);
 
   chpl_mem_free(cfg, ((kernel_cfg*)cfg)->ln, ((kernel_cfg*)cfg)->fn);
   CHPL_GPU_DEBUG("Deinitialized kernel config\n");
@@ -679,6 +710,17 @@ void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size,
     chpl_internal_error("The runtime is not ready to do reductions with this"
                         " kernel configuration. Using multidimensional launch?\n");
   }
+}
+
+void chpl_gpu_arg_host_register(void* _cfg, void* arg, size_t size) {
+  kernel_cfg* cfg = (kernel_cfg*)_cfg;
+
+  void *dev_arg = chpl_gpu_impl_host_register(arg, size);
+  *(cfg->host_registered_vars[cfg->cur_host_registered_var]) = dev_arg;
+  cfg_add_direct_param(cfg, cfg->host_registered_vars[cfg->cur_host_registered_var]);
+  cfg->host_registered_vars_host_ptrs[cfg->cur_host_registered_var] = arg;
+  cfg->cur_host_registered_var += 1;
+  CHPL_GPU_DEBUG("\tAdded ref intent param (at %d): %p\n", cfg->cur_param,  dev_arg);
 }
 
 static void cfg_finalize_reductions(kernel_cfg* cfg) {
@@ -1160,7 +1202,7 @@ void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
                      int32_t commID, int ln, int32_t fn) {
   #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   if (dst_subloc < 0 && src_subloc < 0) {
-    chpl_memmove(dst, src, n);
+    memmove(dst, src, n);
   }
   else {
     bool dst_on_host = chpl_gpu_impl_is_host_ptr(dst);

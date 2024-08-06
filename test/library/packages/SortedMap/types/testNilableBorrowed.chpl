@@ -6,7 +6,7 @@ class T {
   var value = 0;
 }
 
-var m = new sortedMap(int, borrowed T?, false, defaultComparator);
+var m = new sortedMap(int, borrowed T?, false, new DefaultComparator());
 
 var a = new T(1);
 var b: borrowed T? = a.borrow();

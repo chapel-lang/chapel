@@ -2,5 +2,3 @@ fnModNameConflict.chpl:1: In module 'OuterModule':
 fnModNameConflict.chpl:14: error: 'M1' is ambiguous
 fnModNameConflict.chpl:3: note: it could refer to this 'M1'
 fnModNameConflict.chpl:9: note: or it could refer to this 'M1'
-fnModNameConflict.chpl:3: error: 'M1' has multiple definitions
-fnModNameConflict.chpl:9: note: redefined here

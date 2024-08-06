@@ -146,6 +146,7 @@ void doPreNormalizeArrayOptimizations() {
   const bool anyAnalysisNeeded = fAutoLocalAccess ||
                                  fAutoAggregation ||
                                  !fNoFastFollowers;
+
   if (anyAnalysisNeeded) {
     forv_expanding_Vec(ForallStmt, forall, gForallStmts) {
       if (!fNoFastFollowers) {

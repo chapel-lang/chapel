@@ -185,6 +185,7 @@ bool CompositeType::isMissingBundledRecordType(Context* context, ID id) {
     auto path = id.symbolPath();
     return path == "String._string" ||
            path == "ChapelRange._range" ||
+           path == "ChapelTuple._tuple" ||
            path == "Bytes._bytes";
   }
 

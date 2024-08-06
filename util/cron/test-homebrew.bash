@@ -6,6 +6,10 @@
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
+# !IMPORTANT! Make sure REPO_PATH is set to where the homebrew-core repository should go
+# before running this script, or it will fail on the step where it diffs the current
+# formula with the copy we store in chapel-release.rb
+
 # Create a tarball from current repo.
 # The tarball is left in root of repo in tar/ directory.
 CWD=$(cd $(dirname $0) ; pwd)
@@ -32,18 +36,13 @@ version="${short_version}"
 log_info "Moving to ${CHPL_HOME}"
 cd $CHPL_HOME
 
-log_info "Building tarball with version: ${version}"
-./util/buildRelease/gen_release ${version}
-
-# This will clone the home-brew repository under test and copies the chapel formula in chapel-lang repo under
-# util/packaging/home-brew
+# This will copy the chapel formula in chapel-lang repo under util/packaging/home-brew
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
-mkdir -p $HOME/test
-git clone --reference-if-able "${REPO_CACHE_PATH:-/missing}/homebrew-core.git" git@github.com:Homebrew/homebrew-core.git 2> /dev/null || (cd $HOME/test/homebrew-core; git pull)
-#cp $HOME/test/homebrew-core/Formula/c/chapel.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
-# fix to make the home-brew working. After 1.32 release uncomment the above line
+log_info "Building tarball with version: ${version}"
+./util/buildRelease/gen_release ${version}
+
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 cd ${CHPL_HOME}/util/packaging/homebrew
 # Get the tarball from the root tar/ directory and replace the url in chapel.rb with the tarball location

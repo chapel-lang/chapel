@@ -26,6 +26,7 @@
 #include "chpl/framework/update-functions.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/types/EnumType.h"
 #include "chpl/types/TupleType.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"
@@ -34,6 +35,8 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/For.h"
 #include "chpl/uast/VarArgFormal.h"
+
+#include <iomanip>
 
 namespace chpl {
 namespace resolution {
@@ -843,6 +846,48 @@ void TypedFnSignature::stringify(std::ostream& ss,
   ss << ")";
 }
 
+bool TypedFnSignature::
+fetchIterKindStr(Context* context, UniqueString& outIterKindStr) const {
+  if (!isIterator()) return false;
+
+  // Has to just be a serial iterator.
+  if (numFormals() == 0 || (isMethod() && numFormals() == 1)) return true;
+
+  auto ik = types::EnumType::getIterKindType(context);
+  auto m = types::EnumType::getParamConstantsMapOrNull(context, ik);
+  if (m == nullptr) return false;
+
+  QualifiedType tagFormalType;
+  bool foundTagFormal = false;
+  UniqueString iterKindStr;
+
+  // Loop over the formals since they could be in any position.
+  for (int i = 0; i < numFormals(); i++) {
+    if (formalName(i) == USTR("tag")) {
+      foundTagFormal = true;
+      tagFormalType = formalType(i);
+      if (m != nullptr) {
+        for (auto& p : *m) {
+          if (formalType(i) != p.second) continue;
+          iterKindStr = p.first;
+          break;
+        }
+      }
+    }
+    if (foundTagFormal) break;
+  }
+
+  bool tagFormalMatches = tagFormalType.type() == ik &&
+                          tagFormalType.param();
+  if (tagFormalMatches) {
+    CHPL_ASSERT(!iterKindStr.isEmpty());
+    outIterKindStr = iterKindStr;
+  }
+
+  bool ret = !foundTagFormal || tagFormalMatches;
+  return ret;
+}
+
 void CandidatesAndForwardingInfo::stringify(
     std::ostream& ss, chpl::StringifyKind stringKind) const {
   ss << "CandidatesAndForwardingInfo: ";
@@ -1062,11 +1107,45 @@ void ResolvedExpression::stringify(std::ostream& ss,
   }
 }
 
+void
+ResolutionResultByPostorderID::stringify(std::ostream& ss,
+                                         chpl::StringifyKind stringKind) const {
+  std::vector<int> keys;
+  for (const auto& pair : map) {
+    keys.push_back(pair.first);
+  }
+
+  std::sort(keys.begin(), keys.end());
+
+  size_t maxIdWidth = 0;
+  for (auto key : keys) {
+    auto id = ID(symbolId.symbolPath(), key, -1);
+    if (id.str().size() > maxIdWidth)
+      maxIdWidth = id.str().size();
+  }
+
+  for (auto key : keys) {
+    auto id = ID(symbolId.symbolPath(), key, -1);
+
+    // output the ID
+    std::cout << std::setw(maxIdWidth) << std::left << id.str();
+    // restore format to default
+    std::cout.copyfmt(std::ios(NULL));
+
+    if (const ResolvedExpression* re = byIdOrNull(id)) {
+      re->stringify(std::cout, chpl::StringifyKind::CHPL_SYNTAX);
+    }
+    std::cout << "\n";
+  }
+}
+
+
 IMPLEMENT_DUMP(PoiInfo);
 IMPLEMENT_DUMP(UntypedFnSignature);
 IMPLEMENT_DUMP(UntypedFnSignature::FormalDetail);
 IMPLEMENT_DUMP(TypedFnSignature);
 IMPLEMENT_DUMP(ResolvedExpression);
+IMPLEMENT_DUMP(ResolutionResultByPostorderID);
 IMPLEMENT_DUMP(CallInfoActual);
 IMPLEMENT_DUMP(CallInfo);
 IMPLEMENT_DUMP(MostSpecificCandidates);

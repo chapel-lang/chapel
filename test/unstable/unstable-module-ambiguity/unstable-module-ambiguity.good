@@ -1,0 +1,3 @@
+<command line>: warning: ambiguous module source file -- using search1/MyModule.chpl over search2/MyModule.chpl
+<command line>: note: which module is chosen in this case is unstable
+In search1/MyModule.chpl

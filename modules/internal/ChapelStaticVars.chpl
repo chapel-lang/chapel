@@ -21,6 +21,7 @@
 module ChapelStaticVars {
   use OwnedObject;
   use Atomics;
+  use ChapelLocale;
 
   pragma "sharing kind enum"
   enum sharingKind {
@@ -73,8 +74,17 @@ module ChapelStaticVars {
       var expected = 0;
       return this.inited.compareExchange(expected, 1);
     }
+
+    proc ref reset() do {
+      this.container = nil;
+    }
   }
 
   proc chpl__functionStaticVariableWrapperType(type valueType) type
     do return _staticWrapper(valueType);
+
+  proc chpl__executeStaticWrapperCleanupEverywhere(fn: proc(): void) {
+    for loc in Locales do on loc do fn();
+  }
+
 }

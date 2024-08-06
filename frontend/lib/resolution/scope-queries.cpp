@@ -34,6 +34,7 @@
 #include "llvm/ADT/SmallPtrSet.h"
 
 #include <cstdio>
+#include <cstring>
 #include <set>
 #include <string>
 #include <tuple>
@@ -47,6 +48,8 @@ namespace resolution {
 
 using namespace uast;
 using namespace types;
+
+static bool isReservedIdentifier(UniqueString name);
 
 // Mimics helper in Resolver but without corresponding target constraints.
 static void maybeEmitWarningsForId(Context* context, ID idMention,
@@ -137,14 +140,18 @@ struct GatherQueryDecls {
 };
 
 struct GatherDecls {
+  Context* context = nullptr;
   DeclMap declared;
   bool containsUseImport = false;
+  bool containsRequire = false;
   bool containsFunctionDecls = false;
   bool containsExternBlock = false;
   bool atFieldLevel = false;
   uast::AstTag tagParent;
 
-  GatherDecls(const AstNode* parentAst) {
+  GatherDecls(Context* context, const AstNode* parentAst)
+    : context(context)
+  {
     if (parentAst) {
       atFieldLevel = parentAst->isAggregateDecl() || parentAst->isInterface();
       tagParent = parentAst->tag();
@@ -159,6 +166,9 @@ struct GatherDecls {
       // skip gathering _tuple from the standard library
       // since dyno handles tuple types directly rather
       // than through a record.
+
+      // TODO: can we remove this at some point when TupleType becomes close
+      // enough to the _tuple record?
       skip = true;
     } else if (d->name() == "eltType" &&
                atFieldLevel && tagParent == asttags::Class &&
@@ -235,7 +245,12 @@ struct GatherDecls {
 
   // consider 'include module' something that defines a name
   bool enter(const Include* d) {
-    gather(declared, d->name(), d, d->visibility(), atFieldLevel);
+    // parse the included module and use that instead of the include
+    // statement itself
+    const uast::Module* mod = parsing::getIncludedSubmodule(context, d->id());
+    if (mod != nullptr) {
+      gather(declared, mod->name(), mod, d->visibility(), atFieldLevel);
+    }
     return false;
   }
   void exit(const Include* d) { }
@@ -259,6 +274,12 @@ struct GatherDecls {
   }
   void exit(const Module* m) { }
 
+  bool enter(const Require* r) {
+    containsRequire = true;
+    return false;
+  }
+  void exit(const Require* m) { }
+
   // ignore other AST nodes
   bool enter(const AstNode* ast) {
     return false;
@@ -266,12 +287,14 @@ struct GatherDecls {
   void exit(const AstNode* ast) { }
 };
 
-void gatherDeclsWithin(const uast::AstNode* ast,
+void gatherDeclsWithin(Context* context,
+                       const uast::AstNode* ast,
                        DeclMap& declared,
                        bool& containsUseImport,
                        bool& containsFunctionDecls,
-                       bool& containsExternBlock) {
-  auto visitor = GatherDecls(ast);
+                       bool& containsExternBlock,
+                       bool& containsRequire) {
+  auto visitor = GatherDecls(context, ast);
 
   // Visit child nodes to e.g. look inside a Function
   // rather than collecting it as a NamedDecl
@@ -422,7 +445,7 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
         }
       }
 
-      result = new Scope(ast, parentScope, autoUsesModules);
+      result = new Scope(context, ast, parentScope, autoUsesModules);
     }
   }
 
@@ -444,6 +467,7 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
     bool newScope = false;
 
     ID id = idIn;
+    // TODO: would it be beneficial to use idToTag in most cases here?
     const uast::AstNode* ast = parsing::idToAst(context, id);
     if (ast == nullptr) {
       if (CompositeType::isMissingBundledType(context, id)) {
@@ -457,7 +481,6 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
 
     } else {
       // found ast
-
       if (ast->isInclude()) {
         // parse 'module include' and use the result of parsing instead
         // of the 'module include' itself.
@@ -474,15 +497,18 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
           bool containsUseImport = false;
           bool containsFns = false;
           bool containsExternBlock = false;
-          gatherDeclsWithin(ast, declared,
+          bool containsRequire = false;
+          gatherDeclsWithin(context, ast, declared,
                             containsUseImport,
                             containsFns,
-                            containsExternBlock);
+                            containsExternBlock,
+                            containsRequire);
 
           // create a new scope if we found any decls/uses immediately in it
           newScope = !(declared.empty() &&
                        containsUseImport == false &&
-                       containsExternBlock == false);
+                       containsExternBlock == false &&
+                       containsRequire == false);
         }
       }
 
@@ -564,6 +590,8 @@ struct LookupHelper {
                              bool skipPrivateVisibilities,
                              bool onlyMethodsFields,
                              bool includeMethods);
+
+  bool doLookupEnclosingModuleName(const Scope* scope, UniqueString name);
 
   bool doLookupInToplevelModules(const Scope* scope, UniqueString name);
 
@@ -846,6 +874,53 @@ bool LookupHelper::doLookupInAutoModules(const Scope* scope,
   return found;
 }
 
+bool LookupHelper::doLookupEnclosingModuleName(const Scope* scope,
+                                               UniqueString name) {
+  // this code assumes that 'scope' is a module scope
+  CHPL_ASSERT(scope && scope->moduleScope() == scope);
+
+  if (name != scope->name())
+    return false;
+
+  // Ignore this match for enclosing module names that aren't valid
+  // Chapel file names. This avoids compilation failures for
+  // implicit modules created from a filename of the form <keyword>.chpl
+  // e.g. domain.chpl
+  if (isReservedIdentifier(name))
+    return false;
+
+  // the name matches! record the match
+  auto vis = uast::Decl::Visibility::PRIVATE;
+  bool isField = false;
+  bool isMethod = false;
+  bool isParenfulFn = false;
+  IdAndFlags::Flags filterFlags = 0;
+  IdAndFlags::FlagSet excludeFlagSet;
+
+  auto foundIds =
+    BorrowedIdsWithName::createWithSingleId(scope->id(), vis,
+                                            isField, isMethod, isParenfulFn,
+                                            filterFlags,
+                                            std::move(excludeFlagSet));
+
+  if (foundIds) {
+    if (traceCurPath && traceResult) {
+      ResultVisibilityTrace t;
+      t.visibleThrough = *traceCurPath;
+      VisibilityTraceElt elt;
+      elt.containingModule = true;
+      t.visibleThrough.push_back(std::move(elt));
+      traceResult->push_back(std::move(t));
+    }
+
+    result.push_back(std::move(*foundIds));
+  } else {
+    CHPL_ASSERT(false && "problem creating match for enclosing module");
+  }
+
+  return true;
+}
+
 bool LookupHelper::doLookupInToplevelModules(const Scope* scope,
                                              UniqueString name) {
   const Module* mod = parsing::getToplevelModule(context, name);
@@ -1061,16 +1136,23 @@ static const Scope* nextHigherScope(Context* context, const Scope* scope) {
 // my performance benchmarks they didn't occur frequently so were not
 // worth the additional checking by this function. This list is not intended
 // to be complete; rather, it is intended to cover the most common cases.
+//
+// *also* this list is consulted to avoid finding a parent module when
+// that would potentially cause a problem.
 static bool isReservedIdentifier(UniqueString name) {
   static std::unordered_set<UniqueString> reserved = {
+    USTR("atomic"),
     USTR("bool"),
     USTR("complex"),
     USTR("domain"),
     USTR("int"),
+    USTR("locale"),
     USTR("nil"),
-    USTR("uint"),
     USTR("real"),
+    USTR("sparse"),
     USTR("string"),
+    USTR("subdomain"),
+    USTR("uint"),
     USTR("void"),
   };
   return reserved.count(name);
@@ -1335,7 +1417,6 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
 
     if (reachedModule) {
       // check the containing module scope
-
       if (trace) {
         VisibilityTraceElt elt;
         elt.parentScope = cur;
@@ -1343,6 +1424,30 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
       }
 
       bool got = doLookupInScope(cur, {}, name, newConfig);
+
+      if (trace) {
+        traceCurPath->pop_back();
+      }
+
+      if (onlyInnermost && got) return true;
+    }
+
+    if (!goPastModules && (reachedModule || asttags::isModule(scope->tag()))) {
+      // If we reached a module or we already were in a module,
+      // check for a match with the containing module's name for e.g.
+      //   module M { ...M.xyz... }
+      //
+      // Don't do this when goPastModules is used, because we will find
+      // the enclosing module when visiting its parent.
+      const Scope* modScope = asttags::isModule(scope->tag()) ? scope : cur;
+      CHPL_ASSERT(modScope && asttags::isModule(modScope->tag()));
+      if (trace) {
+        VisibilityTraceElt elt;
+        elt.parentScope = cur;
+        traceCurPath->push_back(std::move(elt));
+      }
+
+      bool got = doLookupEnclosingModuleName(modScope, name);
 
       if (trace) {
         traceCurPath->pop_back();
@@ -1869,15 +1974,19 @@ static const bool& isNameBuiltinType(Context* context, UniqueString name) {
   return QUERY_END(toReturn);
 }
 
-// if it's the first time encountering a particular module, add
+// if it's the first time encountering a particular module (and if it is
+// indeed a module, and not an enum or other type of declaration), add
 // it to the ResolvedVisibilityScope as a module named in a use/import
-static void addNamedModule(ResolvedVisibilityScope* r,
-                           std::set<ID>& namedModulesSet,
-                           const ID& moduleId) {
-  auto p = namedModulesSet.insert(moduleId);
-  if (p.second) {
-    // insertion took place, so also add it to the vector
-    r->addModulesNamedInUseOrImport(moduleId);
+static void addNamedIdIfModule(Context* context,
+                               ResolvedVisibilityScope* r,
+                               std::set<ID>& namedModulesSet,
+                               const ID& moduleId) {
+  if (parsing::idIsModule(context, moduleId)) {
+    auto p = namedModulesSet.insert(moduleId);
+    if (p.second) {
+      // insertion took place, so also add it to the vector
+      r->addModuleNamedInUseOrImport(moduleId);
+    }
   }
 }
 
@@ -1909,9 +2018,7 @@ static void checkNameInScope(Context* context,
   if (got && namedModulesSet != nullptr) {
     for (const auto& bid : result) {
       for (const auto& id : bid) {
-        if (parsing::idIsModule(context, id)) {
-          addNamedModule(resolving, *namedModulesSet, id);
-        }
+        addNamedIdIfModule(context, resolving, *namedModulesSet, id);
       }
     }
   }
@@ -2251,7 +2358,7 @@ static const Scope* handleSuperMaybeError(Context* context,
 // e.g. M.N.S is represented as
 //   Dot( Dot(M, N), S)
 // Returns in foundName the final name in a Dot expression, e.g. S in the above
-// Also gathers modules named in the use/import with addNamedModule
+// Also gathers modules named in the use/import with addNamedIdIfModule
 static const Scope*
 findUseImportTarget(Context* context,
                     const Scope* scope,
@@ -2274,7 +2381,7 @@ findUseImportTarget(Context* context,
       const Scope* s = findScopeViz(context, scope, ident->name(), resolving,
                                     expr->id(), useOrImport,
                                     /* isFirstPart */ true);
-      if (s) addNamedModule(resolving, namedModulesSet, s->id());
+      if (s) addNamedIdIfModule(context, resolving, namedModulesSet, s->id());
       return s;
     }
   } else if (auto dot = expr->toDot()) {
@@ -2306,7 +2413,7 @@ findUseImportTarget(Context* context,
       const Scope* s = findScopeViz(context, innerScope, nameInScope, resolving,
                                     expr->id(), useOrImport,
                                     /* isFirstPart */ false, previousPartName);
-      if (s) addNamedModule(resolving, namedModulesSet, s->id());
+      if (s) addNamedIdIfModule(context, resolving, namedModulesSet, s->id());
       return s;
     }
   } else {
@@ -2406,7 +2513,7 @@ doResolveUseStmt(Context* context, const Use* use,
           kind = VisibilitySymbols::ONLY_CONTENTS;
 
           // note that this module is named in 'use'
-          addNamedModule(r, namedModulesSet, foundScope->id());
+          addNamedIdIfModule(context, r, namedModulesSet, foundScope->id());
 
           // check that symbols named with 'only' actually exist
           checkLimitationsInScope(context, clause, foundScope, r, VIS_USE,
@@ -2490,7 +2597,7 @@ doResolveImportStmt(Context* context, const Import* imp,
       bool isModPrivate = parsing::idIsPrivateDecl(context, foundScope->id());
 
       // note that this module is named in 'import'
-      addNamedModule(r, namedModulesSet, foundScope->id());
+      addNamedIdIfModule(context, r, namedModulesSet, foundScope->id());
 
       maybeEmitWarningsForId(context, expr->id(), foundScope->id());
 
@@ -2635,19 +2742,47 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
       }
     }
 
-    // Process 'require' statements before uses/imports so that the modules
-    // are available.
+    // Process 'require' statements bringing in .chpl files
+    // before uses/imports so that the modules are available.
     //
-    // TODO: Handle 'require' statements with param expressions
+    // Other 'require' statements will be handled later.
     for (auto req : requireNodes) {
       for (const AstNode* child : req->children()) {
         if (const StringLiteral* str = child->toStringLiteral()) {
-          const auto path = str->value();
-          if (path.endsWith(".chpl")) {
-            parsing::parseFileToBuilderResult(context, path, UniqueString());
-          } else if (path.endsWith(".h")) {
-          } else {
-            // TODO: Unacceptable require...
+          const auto v = str->value();
+          if (v.endsWith(".chpl")) {
+            bool useSearchPath = (memchr(v.c_str(), '/', v.length())==nullptr);
+            std::string f;
+
+            if (useSearchPath) {
+              // look in the module search path
+              f = parsing::getExistingFileInModuleSearchPath(context, v.str());
+            } else {
+              // just check the current directory
+              f = parsing::getExistingFileAtPath(context, v.str());
+            }
+
+            if (!f.empty()) {
+              auto u = UniqueString::get(context, f);
+              UniqueString empty;
+              const auto& r =
+                parsing::parseFileToBuilderResultAndCheck(context, u, empty);
+              for (auto expr : r.topLevelExpressions()) {
+                if (auto mod = expr->toModule()) {
+                  // if it's a module, recurse to compute its visibility scope
+                  auto requiredModScope = scopeForModule(context, mod->id());
+                  // run resolveVisibilityStmtsQuery for side-effects
+                  // (namely, to process any nested 'require' statements)
+                  resolveVisibilityStmts(context, requiredModScope,
+                                         /*skipPrivate*/ false);
+                }
+              }
+            } else {
+              context->error(req,
+                             "could not find source file '%s' "
+                             "for 'require' statement",
+                             f.c_str());
+            }
           }
         }
       }
@@ -2663,7 +2798,7 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
 
 const ResolvedVisibilityScope*
 resolveVisibilityStmts(Context* context, const Scope* scope, bool skipPrivate) {
-  if (!scope->containsUseImport()) {
+  if (!scope->containsUseImport() && !scope->containsRequire()) {
     // stop early if this scope has no use/import statements
     return nullptr;
   }
@@ -3017,7 +3152,11 @@ const std::vector<ID>& findMentionedModules(Context* context, ID modId) {
 static void moduleInitVisitModules(Context* context, ID modId,
                                    std::set<ID>& seen,
                                    std::vector<ID>& out) {
-  CHPL_ASSERT(!modId.isEmpty() && parsing::idIsModule(context, modId));
+  // ignore these cases; expect that errors along the lines
+  // of --main-module DoesNotExist or use DoesNotExist
+  // will be generated elsewhere.
+  if (modId.isEmpty() || !parsing::idIsModule(context, modId))
+    return;
 
   // avoid cycles with modules already visited
   auto p = seen.insert(modId);

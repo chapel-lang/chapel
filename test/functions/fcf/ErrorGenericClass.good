@@ -1,0 +1,5 @@
+ErrorGenericClass.chpl:5: warning: need '(?)' on the type 'R' of the formal 'r' because this type is generic
+ErrorGenericClass.chpl:5: error: anonymous proc is generic and cannot be captured
+ErrorGenericClass.chpl:5: note: the formal 'r' is generic because 'RootClass' is a class with unknown management
+ErrorGenericClass.chpl:5: note: the formal 'x' is generic because 'RootClass' is a class with unknown management
+ErrorGenericClass.chpl:6: warning: proc

@@ -2311,6 +2311,14 @@ private proc defaultSerializeType(param writing : bool) type {
   else return defaultDeserializer;
 }
 
+@chpldoc.nodoc
+proc isDefaultSerializerType(type t) param : bool {
+  import PrecisionSerializer;
+  // the precisionSerializer should receive the same special-casing as the
+  // defaultSerializer throughout the standard modules (e.g., dsiSerialWrite for assoc. domains)
+  return t == defaultSerializer || t == PrecisionSerializer.precisionSerializer;
+}
+
 private proc defaultSerializeVal(param writing : bool) {
   if !useIOSerializers then return none;
 
@@ -2551,7 +2559,6 @@ record defaultSerializer {
     }
   }
 
-  // TODO: add ":ref:" for return type, currently can't refer to it.
   /*
     Start serializing a class by writing the character ``{``.
 
@@ -2559,7 +2566,7 @@ record defaultSerializer {
     :arg name: The name of the class type.
     :arg size: The number of fields in the class.
 
-    :returns: A new :type:`AggregateSerializer`
+    :returns: A new :record:`~IO.defaultSerializer.AggregateSerializer`
   */
   proc startClass(writer: fileWriter, name: string, size: int) throws {
     writer.writeLiteral("{");
@@ -5116,6 +5123,40 @@ proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes
 }
 
 /*
+  Read until a newline is found, leaving the :record:`fileReader` offset just
+  after it.
+
+  If a newline cannot be found, the ``fileReader`` offset is left at EOF and
+  an ``UnexpectedEofError`` is thrown.
+
+  :throws EofError: If the ``fileReader`` offset was already at EOF.
+  :throws UnexpectedEofError: A newline couldn't be found before the end of the
+                              file.
+  :throws SystemError: If data could not be read from the ``file``.
+                       In that event, the fileReader's offset will be
+                       left near the position where the error occurred.
+*/
+proc fileReader.advanceThroughNewline() throws {
+  on this._home {
+    param nl = "\n".toByte():c_int;
+
+    try this.lock(); defer { this.unlock(); }
+    var err: errorCode = 0;
+
+    err = qio_channel_advance_past_byte(false, this._channel_internal, nl, max(int(64)), true);
+    if err {
+      if err == EEOF {
+        try this._ch_ioerror(err, "in advanceThroughNewline)");
+      } else if err == ESHORT {
+        throw new UnexpectedEofError("newline not found in advanceThroughNewline");
+      } else {
+        try this._ch_ioerror(err, "in advanceThroughNewline");
+      }
+    }
+  }
+}
+
+/*
    Read until a separator is found, leaving the :record:`fileReader` offset just
    before it.
 
@@ -5577,12 +5618,7 @@ proc fileWriter.filePlugin() : borrowed QioPluginFile? {
 // case, since we only will have one reference, will be right after we close
 // this fileReader presumably).
 
-/*
-  Controls the default value of the ``locking`` parameter for :proc:`openReader`.
-
-  When ``true``, a warning will be issued if ``locking`` is not set explicitly.
-  When ``false``, the new default value of ``false`` will be used.
-*/
+@deprecated("OpenReaderLockingDefault is deprecated and no longer controls openReader's behavior")
 config param OpenReaderLockingDefault = true;
 
 /*
@@ -5595,7 +5631,7 @@ This function is equivalent to calling :proc:`open` and then
 :arg locking: compile-time argument to determine whether or not the
               fileReader should use locking; sets the
               corresponding parameter of the :record:`fileReader` type.
-              Defaults to ``true`` (*default deprecated, see warning below*).
+              Defaults to ``false``
 :arg region: zero-based byte offset indicating where in the file the
             fileReader should start and stop reading. Defaults to
             ``0..``, meaning from the start of the file to no specified end
@@ -5605,19 +5641,14 @@ This function is equivalent to calling :proc:`open` and then
 :arg deserializer: deserializer to use when reading.
 :returns: an open fileReader to the requested resource.
 
+.. Note::
+
+  ``locking=true`` should only be used when a fileReader will be used by
+  multiple tasks concurrently.
+
 .. warning::
 
    The region argument will ignore any specified stride other than 1.
-
-.. warning::
-
-   The default value for ``locking`` will change from ``true`` to ``false``
-   in an upcoming release. To avoid the warning, specify the value
-   of ``locking`` explicitly, or compile with ``-sOpenReaderLockingDefault=false``
-   to use the new default.
-
-   Note that ``locking=true`` should only be used when a fileReader will be
-   used by multiple tasks concurrently.
 
 :throws FileNotFoundError: If part of the provided path did not exist
 :throws PermissionError: If part of the provided path had inappropriate
@@ -5628,35 +5659,10 @@ This function is equivalent to calling :proc:`open` and then
 :throws IllegalArgumentError: If trying to read explicitly prior to byte
                               0.
  */
-proc openReader(path:string, param locking /* = false (post deprecation) */,
+proc openReader(path:string, param locking = false,
                 region: range(?) = 0.., hints=ioHintSet.empty,
                 in deserializer: ?dt = defaultSerializeVal(false))
     : fileReader(locking, dt) throws {
-  return openReaderHelper(path, locking, region, hints, deserializer=deserializer);
-}
-
-// TODO: remove this overload after the locking-default-change deprecation
-pragma "last resort"
-@chpldoc.nodoc
-proc openReader(path:string,
-                region: range(?) = 0.., hints=ioHintSet.empty,
-                in deserializer: ?dt = defaultSerializeVal(false))
-    : fileReader(OpenReaderLockingDefault, dt) throws {
-  if OpenReaderLockingDefault then
-    compilerWarning("the default value of 'locking' for 'openReader' will change ",
-                    "from true to false in a future release; ",
-                    "please specify the value of 'locking' explicitly, or compile",
-                    "with '-sOpenReaderLockingDefault=false' to use the new default");
-
-  return openReaderHelper(path, OpenReaderLockingDefault, region, hints, deserializer=deserializer);
-}
-
-private proc openReaderHelper(path:string,
-                              param locking=true,
-                              region: range(?) = 0..,
-                              hints=ioHintSet.empty,
-                              in deserializer: ?dt = defaultSerializeVal(false))
-  : fileReader(locking, dt) throws {
 
   var fl:file = try open(path, ioMode.r);
   return try fl.readerHelper(locking, region, hints, defaultIOStyleInternal(),
@@ -5729,12 +5735,7 @@ proc openBytesReader(const b: bytes, in deserializer: ?dt = defaultSerializeVal(
   return fr;
 }
 
-/*
-  Controls the default value of the ``locking`` parameter for :proc:`openWriter`.
-
-  When ``true``, a warning will be issued if ``locking`` is not set explicitly.
-  When ``false``, the new default value of ``false`` will be used.
-*/
+@deprecated("OpenWriterLockingDefault is deprecated and no longer controls openWriter's behavior")
 config param OpenWriterLockingDefault = true;
 
 /*
@@ -5747,22 +5748,16 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 :arg locking: compile-time argument to determine whether or not the
               fileWriter should use locking; sets the
               corresponding parameter of the :record:`fileWriter` type.
-              Defaults to ``true`` (*default deprecated, see warning below*).
+              Defaults to ``false``
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
 :arg serializer: serializer to use when writing.
 :returns: an open fileWriter to the requested resource.
 
-.. warning::
+.. Note::
 
-   The default value for ``locking`` will change from ``true`` to ``false``
-   in an upcoming release. To avoid the warning, specify the value
-   of ``locking`` explicitly, or compile with ``-sOpenWriterLockingDefault=false``
-   to use the new default.
-
-   Note that ``locking=true`` should only be used when a fileWriter will be
-   used by multiple tasks concurrently.
-
+  ``locking=true`` should only be used when a fileWriter will be used by
+  multiple tasks concurrently.
 
 :throws FileNotFoundError: If part of the provided path did not exist
 :throws PermissionError: If part of the provided path had inappropriate
@@ -5773,38 +5768,13 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 :throws IllegalArgumentError: If trying to write explicitly prior to byte
                               0.
 */
-proc openWriter(path:string, param locking /* = false (post deprecation) */,
+proc openWriter(path:string, param locking = false,
                 hints = ioHintSet.empty,
                 in serializer: ?st = defaultSerializeVal(true))
     : fileWriter(locking, st) throws {
-  return openWriterHelper(path, locking, hints=hints, serializer=serializer);
-}
-
-// TODO: remove this overload after the locking-default-change deprecation
-pragma "last resort"
-@chpldoc.nodoc
-proc openWriter(path:string,
-                hints = ioHintSet.empty,
-                in serializer: ?st = defaultSerializeVal(true))
-    : fileWriter(OpenWriterLockingDefault, st) throws {
-  if OpenWriterLockingDefault then
-    compilerWarning("the default value of 'locking' for 'openWriter' will change ",
-                    "from true to false in a future release; ",
-                    "please specify the value of 'locking' explicitly, or compile",
-                    "with '-sOpenWriterLockingDefault=false' to use the new default");
-
-  return openWriterHelper(path, OpenWriterLockingDefault, hints=hints, serializer=serializer);
-}
-
-private proc openWriterHelper(path:string,
-                              param locking=true,
-                              start:int(64) = 0, end:int(64) = max(int(64)),
-                              hints = ioHintSet.empty,
-                              in serializer: ?st = defaultSerializeVal(true))
-  : fileWriter(locking, st) throws {
 
   var fl:file = try open(path, ioMode.cw);
-  return try fl.writerHelper(locking, start..end, hints, defaultIOStyleInternal(),
+  return try fl.writerHelper(locking, 0..max(int(64)), hints, defaultIOStyleInternal(),
                              serializer=serializer);
 }
 
@@ -5854,23 +5824,11 @@ private proc openWriterHelper(path:string,
    :throws IllegalArgumentError: If trying to read explicitly prior to
                                  byte 0.
  */
-proc file.reader(param locking,
+proc file.reader(param locking = false,
                  region: range(?) = 0.., hints = ioHintSet.empty,
                  in deserializer: ?dt = defaultSerializeVal(false))
   : fileReader(locking, dt) throws {
   return this.readerHelper(locking, region, hints,
-                           deserializer=deserializer);
-}
-
-@chpldoc.nodoc
-proc file.reader(region: range(?) = 0.., hints = ioHintSet.empty,
-                 in deserializer: ?dt = defaultSerializeVal(false))
-    : fileReader(true, dt) throws {
-  compilerWarning("in a future release, the default value for 'locking' will be ",
-                  "removed from 'file.reader' and this warning will become an error; ",
-                  "please specify the value explicitly (e.g., 'f.reader(locking=false)').");
-
-  return this.readerHelper(true, region, hints,
                            deserializer=deserializer);
 }
 
@@ -5970,7 +5928,7 @@ proc file.readerHelper(param locking=true,
    :throws IllegalArgumentError: If trying to write explicitly prior to
                                  byte 0.
  */
-proc file.writer(param locking,
+proc file.writer(param locking = false,
                  region: range(?) = 0.., hints = ioHintSet.empty,
                  in serializer:?st = defaultSerializeVal(true))
     : fileWriter(locking, st) throws {
@@ -5978,18 +5936,7 @@ proc file.writer(param locking,
 }
 
 @chpldoc.nodoc
-proc file.writer(region: range(?) = 0.., hints = ioHintSet.empty,
-                 in serializer:?st = defaultSerializeVal(true))
-    : fileWriter(true, st) throws {
-  compilerWarning("in a future release, the default value for 'locking' will be ",
-                  "removed from 'file.writer' and this warning will become an error; ",
-                  "please specify the value explicitly (e.g., 'f.writer(locking=false)').");
-
-  return this.writerHelper(true, region, hints, serializer=serializer);
-}
-
-@chpldoc.nodoc
-proc file.writerHelper(param locking=true,
+proc file.writerHelper(param locking=false,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
                        in serializer:?st = defaultSerializeVal(true)):

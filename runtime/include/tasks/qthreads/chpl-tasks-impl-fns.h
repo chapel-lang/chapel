@@ -97,6 +97,7 @@ static inline chpl_qthread_tls_t* chpl_qthread_get_tasklocal(void)
                 tls = &chpl_qthread_process_tls;
             } else {
                 for (int i = 0; i < chpl_qthread_comm_num_pthreads; i++) {
+                    assert(chpl_qthread_comm_pthreads != NULL);
                     if (pthread_equal(me, chpl_qthread_comm_pthreads[i])) {
                         tls = &chpl_qthread_comm_task_tls[i];
                         break;

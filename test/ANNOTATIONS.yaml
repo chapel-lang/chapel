@@ -573,6 +573,12 @@ all:
   06/03/24:
     - text: Stop setting CHPL_TARGET_CPU (#25161)
       config: chapcs
+  06/12/24:
+    - text: Add support for GASNet PSHM and send progress thread (#25140)
+      config: 16-node-apollo-hdr
+  06/17/24:
+    - text: Revert to default GASNET_SND_THREAD=0 (#25307)
+      config: 16-node-apollo-hdr
 
 # End all
 
@@ -2146,10 +2152,6 @@ distAdaptativeWSv2:
   03/04/17:
     - Use Time.sleep so that these tests play nice with qthreads (#5483)
 
-getNextPerf:
-  05/16/19:
-    - Improve the speed of parallel safe random streams (#13013)
-
 guided:
   02/28/17:
     - Bring in upstream fixes for qthreads sleep interception bug (#5446)
@@ -2455,6 +2457,13 @@ arkouda: &arkouda-base
     - Closes 3089 Avoid OOM Crashes caused due to in intents on makeDistArray (Bears-R-Us/arkouda#3163)
   05/14/24:
     - Dataframe Indexing (Bears-R-Us/arkouda#3109)
+  06/14/24:
+    - Reverts DataFrame Indexing Changes (Bears-R-Us/arkouda#3323)
+  6/25/24:
+    - Closes 3334, 3351 Simplify server side string code and added fixed length (Bears-R-Us/arkouda#3335)
+  6/27/24:
+    - Remove number of files multiplication for IO benchmark (Bears-R-Us/arkouda#3368)
+
 
 arkouda-string:
   <<: *arkouda-base

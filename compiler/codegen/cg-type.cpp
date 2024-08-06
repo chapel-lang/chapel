@@ -56,11 +56,37 @@ void Type::codegenDef() {
   INT_FATAL(this, "Unexpected call to Type::codegenDef");
 }
 
-
 void Type::codegenPrototype() { }
 
-
 void PrimitiveType::codegenDef() {
+  GenInfo* info = gGenInfo;
+  if (info->cfile) {
+    // no action required.
+  } else {
+#ifdef HAVE_LLVM
+    llvm::Type* llvmType = info->lvt->getType(this->symbol->cname);
+    if (llvmType == nullptr) {
+      if (this == dtVoid || this == dtNothing) {
+        llvmType = llvm::Type::getVoidTy(gContext->llvmContext());
+      } else {
+        USR_FATAL_CONT(this, "could not find C type for %s",
+                       this->symbol->cname);
+        // fake it so we can continue and report more errors, if present
+        llvmType = llvm::Type::getInt8Ty(gContext->llvmContext());
+      }
+      // cf. int64_t is added to lvt in addGlobalCDecl()
+      info->lvt->addGlobalType(this->symbol->cname, llvmType, false);
+    }
+    INT_ASSERT(llvmType);
+    // Assert that we have not set these yet.
+    // Otherwise use this: if (this->symbol->hasLLVMType()) return;
+    INT_ASSERT(this->symbol->llvmImplType == nullptr);
+    INT_ASSERT(this->symbol->llvmAlignment == ALIGNMENT_UNINIT);
+    // set them now
+    this->symbol->llvmImplType = llvmType;
+    this->symbol->llvmAlignment = ALIGNMENT_DEFER;
+#endif
+  }
 }
 
 void ConstrainedType::codegenDef() {
@@ -78,14 +104,6 @@ void FunctionType::codegenDef() {
     #ifdef HAVE_LLVM
     llvm::Type* returnTy = this->returnType()->symbol->getLLVMType();
     std::vector<llvm::Type*> argTys;
-    auto& ctx = gContext->llvmContext();
-
-    // Handle the void type specifically.
-    if (this->returnType() == dtVoid || this->returnType() == dtNothing) {
-      returnTy = llvm::Type::getVoidTy(ctx);
-    }
-
-    INT_ASSERT(returnTy);
 
     for (int i = 0; i < numFormals(); i++) {
       auto formal = this->formal(i);
@@ -117,9 +135,10 @@ void FunctionType::codegenDef() {
     auto addrSpace = layout.getAllocaAddrSpace();
     auto type = llvm::PointerType::get(baseType, addrSpace);
 
-    if (!this->symbol->getLLVMType()) {
+    if (! this->symbol->hasLLVMType()) {
       info->lvt->addGlobalType(this->symbol->cname, type, false);
       this->symbol->llvmImplType = type;
+      this->symbol->llvmAlignment = ALIGNMENT_DEFER;
     }
     #endif
   }
@@ -149,12 +168,18 @@ void EnumType::codegenDef() {
   } else {
 #ifdef HAVE_LLVM
     // Make sure that we've computed all of the enum values..
-    PrimitiveType* ty = getIntegerType();
-    llvm::Type *type;
+    llvm::Type *type = info->lvt->getType(symbol->cname);
 
-    if(!(type = info->lvt->getType(symbol->cname))) {
+    if (type) {
+      INT_ASSERT(symbol->llvmImplType == type);
+      INT_ASSERT(symbol->llvmAlignment != ALIGNMENT_UNINIT);
+    } else {
+      PrimitiveType* ty = getIntegerType();
       type = ty->codegen().type;
+
       info->lvt->addGlobalType(symbol->cname, type, !is_signed(ty));
+      symbol->llvmImplType = type;
+      symbol->llvmAlignment = ALIGNMENT_DEFER;
 
       // Convert enums to constants with the user-specified immediate,
       // sized appropriately, when it exists.  When it doesn't, give
@@ -186,6 +211,230 @@ void EnumType::codegenDef() {
   }
   return;
 }
+
+#ifdef HAVE_LLVM
+
+static Type* baseForLLVMPointer(TypeSymbol* origBase) {
+  Type* result = origBase->type;
+#ifdef HAVE_LLVM_TYPED_POINTERS
+  if (result == dtVoid || result == dtNothing)
+    // LLVM does not allow void*, see StructType::isValidElementType()
+    // ==> use i8* instead, for typed pointers
+    // cf. for opaque pointers the base type does not matter
+    result = dtInt[INT_SIZE_8];
+#endif
+  return result;
+}
+
+//
+// layout / alignment helpers: buildStructFields(), checkStructFields()
+//
+
+// If we end up relying on LLVM for the layout, which is a common case,
+// we set 'structSize' to 0, 'structAlignment' to ALIGNMENT_DEFER,
+// and do not fill 'aligns'.
+static void buildStructFields(const llvm::DataLayout& DL,
+                              AggregateType* ag, bool explicitPadding,
+                              std::map<std::string, int>& GEPMap,
+                              std::vector<llvm::Type*>& params,
+                              std::vector<unsigned>& aligns,
+                              uint64_t& structSize, int& structAlignment)
+{
+  GenInfo* info = gGenInfo;
+  int      paramID = 0;
+  uint64_t currSize = 0;
+  int      currAlignment = ALIGNMENT_DEFER;
+  INT_ASSERT(GEPMap.empty());  // we clear it if explicit padding is needed
+  llvm::Type* padTy =
+    explicitPadding ? llvm::Type::getInt8Ty(gContext->llvmContext()) : nullptr;
+
+  // Performs updates when explicitPadding==false.
+  // This avoids the need to compute fieldSize and fieldAlign.
+  auto addFieldWhenNotEP = [&](const char* fieldName, llvm::Type* fieldType) {
+    GEPMap.insert(std::pair<std::string, int>(fieldName, paramID));
+    paramID++;
+    params.push_back(fieldType);
+  };
+
+  // Performs updates when explicitPadding==true.
+  // Assumes that padding has already been inserted as needed.
+  auto addFieldWhenEP = [&](const char* fieldName, llvm::Type* fieldType,
+                            uint64_t fieldSize, int fieldAlign) {
+    GEPMap.insert(std::pair<std::string, int>(fieldName, paramID));
+    paramID++;
+    params.push_back(fieldType);
+    aligns.push_back(fieldAlign);
+    currSize += fieldSize;
+    currAlignment = std::max(currAlignment, fieldAlign);
+    if (fieldAlign > 16 && ag->aggregateTag == AGGREGATE_CLASS) {
+      USR_FATAL_CONT(ag, "alignments > 16 are currently not implemented"
+                         " for classes");
+      USR_PRINT(ag, "alignment %d is requested by field '%s' of class '%s'",
+                fieldAlign, fieldName, ag->symbol->name);
+    }
+  };
+
+  // Inserts 'numBytes' of padding when explicitPadding==true.
+  auto insertPadding = [&](int numBytes) {
+    // GEPMap is unaffected
+    paramID++;
+    params.push_back(llvm::ArrayType::get(padTy, numBytes));
+    aligns.push_back(1);
+    currSize += numBytes;
+    // currAlignment is unaffected
+  };
+
+
+  if (ag->aggregateTag == AGGREGATE_UNION) {
+    //// a union ////
+    const char* uidName = "_uid";
+    llvm::Type* uidType = llvm::Type::getInt64Ty(info->module->getContext());
+    if (explicitPadding)
+      addFieldWhenEP(uidName, uidType, 8,
+                     (int)DL.getABITypeAlign(uidType).value());
+    else
+      addFieldWhenNotEP(uidName, uidType);
+
+    llvm::Type *largestType = NULL;
+    uint64_t largestSize = 0;
+
+    for_fields(field, ag) {
+      llvm::Type* fieldType = field->type->symbol->getLLVMType();
+      INT_ASSERT(fieldType);
+      uint64_t fieldSize = DL.getTypeStoreSize(fieldType);
+
+      if (fieldSize > largestSize) {
+        largestType = fieldType;
+        largestSize = fieldSize;
+      }
+
+      GEPMap.insert(std::pair<std::string, int>(field->cname, paramID));
+      GEPMap.insert(std::pair<std::string, int>(
+            std::string("_u.") + field->cname, paramID));
+
+      // TODO account for field's alignment in case it is >8
+    }
+
+    llvm::StructType * st;
+    // handle an empty union.
+    if (largestType != nullptr) {
+      st = llvm::StructType::get(largestType);
+    } else {
+      st = llvm::StructType::get(info->module->getContext());
+    }
+
+    const char* unionName = "_u";
+    if (explicitPadding)
+      addFieldWhenEP(unionName, st, largestSize,
+                     (int)DL.getABITypeAlign(st).value());
+    else
+      addFieldWhenNotEP(unionName, st);
+
+  } else if (ag->symbol->hasFlag(FLAG_OBJECT_CLASS)) {
+    //// the RootClass ////
+    llvm::Type* cidType = info->lvt->getType("chpl__class_id");
+    INT_ASSERT(cidType);
+    const char* cidName = "chpl__cid";
+    if (explicitPadding)
+      addFieldWhenEP(cidName, cidType, DL.getTypeStoreSize(cidType),
+                     (int)DL.getABITypeAlign(cidType).value());
+    else
+      addFieldWhenNotEP(cidName, cidType);
+
+  } else {
+    //// a record or class ////
+
+    for_fields(field, ag) {
+      if (field->type == dtNothing || field->type == dtVoid) continue;
+
+      TypeSymbol* fieldSym = field->type->symbol;
+
+      llvm::Type* fieldType = field->hasFlag(FLAG_SUPER_CLASS) ?
+        fieldSym->getLLVMStructureType() : fieldSym->getLLVMType();
+
+      int fieldAlign = field->hasFlag(FLAG_SUPER_CLASS) ?
+        fieldSym->getLLVMStructureAlignment() : fieldSym->getLLVMAlignment();
+
+      if (! explicitPadding &&
+          // skip getABITypeAlign() in the common case of deferred fieldAlign
+          ! isDeferredAlignment(fieldAlign) &&
+          fieldAlign > (int)DL.getABITypeAlign(fieldType).value())
+      {
+        // We had relied on LLVM to align our fields up until this field,
+        // which LLVM may not align correctly. Restart with explicit padding.
+        params.clear(); aligns.clear(); GEPMap.clear();
+        buildStructFields(DL, ag, true, GEPMap, params, aligns,
+                          structSize, structAlignment);
+        return;
+      }
+
+      if (explicitPadding) {
+        fieldAlign = fieldSym->getABIAlignment(fieldType);
+        // add padding before the field if needed
+        if (currSize % fieldAlign > 0)
+          insertPadding(fieldAlign - currSize % fieldAlign);
+      }
+
+      if (explicitPadding)
+        addFieldWhenEP(field->cname, fieldType,
+                       DL.getTypeStoreSize(fieldType), fieldAlign);
+      else
+        addFieldWhenNotEP(field->cname, fieldType);
+
+    } // for_fields
+
+    if (params.empty()) {
+      // add dummyFieldToAvoidWarning which also
+      // stops us from doing 0-byte memory allocation
+      // (comes up with ioNewline and --no-local RA)
+      // TODO - don't ever allocate 0-byte structures
+      // example: DefaultComparator
+      if (explicitPadding)
+        addFieldWhenEP("_dummyFieldToAvoidWarning", padTy, 1, 1);
+      else
+        addFieldWhenNotEP("_dummyFieldToAvoidWarning",
+          llvm::Type::getInt32Ty(gContext->llvmContext())); // here padTy==0
+    }
+  } // if 'ag' is a class or record
+
+  // add padding at end if needed
+  if (explicitPadding) {
+    if (currSize % currAlignment > 0)
+      insertPadding(currAlignment - currSize % currAlignment);
+  }
+
+  structSize = currSize;
+  structAlignment = currAlignment;
+}
+
+// Now that we have an llvm::StructType, we can check its layout:
+// what we think vs. what LLVM thinks.
+static void checkStructFields(const llvm::DataLayout& DL,
+                              AggregateType* ag, llvm::StructType* stype,
+                              std::vector<llvm::Type*>& params,
+                              std::vector<unsigned>& aligns,
+                              uint64_t structSize, int structAlignment)
+{
+  // For the release we should hide these behind 'if (fVerify)'
+  // to reduce codegen time and to reduce the chance of a false alarm
+  // on an architecture that we have not tested.
+  if (structSize == 0) {
+    INT_ASSERT(aligns.size() == 0);                   // we did not populate it
+    INT_ASSERT(isDeferredAlignment(structAlignment)); // delegated to LLVM
+  } else {
+    INT_ASSERT(params.size() == aligns.size());  // we populated them together
+    const llvm::StructLayout* layout = DL.getStructLayout(stype);
+    // These are other ways to query the struct size - any of them useful?
+    //  DL.getTypeAllocSize(stype) and layout->getSizeInBytes()
+    INT_ASSERT(structSize == DL.getTypeStoreSize(stype));
+    // verify that our alignment makes sense
+    INT_ASSERT(structAlignment >= (int)DL.getABITypeAlign(stype).value());
+    // check that all fields are sufficiently aligned
+    for (size_t paramID = 0; paramID < params.size(); paramID++)
+      INT_ASSERT(layout->getElementOffset(paramID) % aligns[paramID] == 0);
+  }
+}
+#endif
 
 #define CLASS_STRUCT_PREFIX "chpl_"
 
@@ -256,7 +505,9 @@ void AggregateType::codegenDef() {
 
 #ifdef HAVE_LLVM
   llvm::Type *type = NULL;
+  int structAlignment = ALIGNMENT_UNINIT;
 #endif
+  if (id == breakOnCodegenID) gdbShouldBreakHere();
 
   if (symbol->hasFlag(FLAG_STAR_TUPLE)) {
     if( outfile ) {
@@ -269,6 +520,7 @@ void AggregateType::codegenDef() {
 #ifdef HAVE_LLVM
       llvm::Type *elementType = getField("x0")->type->codegen().type;
       type = llvm::ArrayType::get(elementType, fields.length);
+      structAlignment = getField("x0")->type->getLLVMAlignment();
 #endif
     }
   } else if (symbol->hasFlag(FLAG_C_ARRAY)) {
@@ -286,6 +538,7 @@ void AggregateType::codegenDef() {
 #ifdef HAVE_LLVM
       llvm::Type *elementType = eltTS->type->codegen().type;
       type = llvm::ArrayType::get(elementType, sizeInt);
+      structAlignment = ALIGNMENT_DEFER; // or pointer alignment
 #endif
     }
 
@@ -299,14 +552,9 @@ void AggregateType::codegenDef() {
       return;
     } else {
 #ifdef HAVE_LLVM
-      llvm::Type* llBaseType;
-      if( base->typeInfo() == dtNothing || base->typeInfo() == dtVoid ) {
-        llBaseType = llvm::IntegerType::getInt8Ty(info->module->getContext());
-      } else {
-        llBaseType = base->codegen().type;
-      }
-      INT_ASSERT(llBaseType);
+      llvm::Type* llBaseType = baseForLLVMPointer(base)->getLLVMType();
       type = llvm::PointerType::getUnqual(llBaseType);
+      structAlignment = ALIGNMENT_DEFER; // or pointer alignment
 #endif
     }
   } else if (symbol->hasFlag(FLAG_DATA_CLASS)) {
@@ -319,14 +567,9 @@ void AggregateType::codegenDef() {
               symbol->cname);
     } else {
 #ifdef HAVE_LLVM
-      llvm::Type* llBaseType;
-      if( base->typeInfo() == dtNothing || base->typeInfo() == dtVoid ) {
-        llBaseType = llvm::IntegerType::getInt8Ty(info->module->getContext());
-      } else {
-        llBaseType = base->codegen().type;
-      }
-      INT_ASSERT(llBaseType);
+      llvm::Type* llBaseType = baseForLLVMPointer(base)->getLLVMType();
       type = llvm::PointerType::getUnqual(llBaseType);
+      structAlignment = ALIGNMENT_DEFER; // or pointer alignment
 #endif
     }
   } else {
@@ -374,82 +617,15 @@ void AggregateType::codegenDef() {
       fprintf(outfile, "} %s;\n\n", this->classStructName(true));
     } else {
 #ifdef HAVE_LLVM
-      int paramID = 0;
+      const llvm::DataLayout& DL = info->module->getDataLayout();
       std::vector<llvm::Type*> params;
-      std::vector<llvm::MaybeAlign> aligns;
+      std::vector<unsigned> aligns; // only for assertions
+      uint64_t structSize = 0;
 
-      if ((symbol->hasFlag(FLAG_OBJECT_CLASS) && aggregateTag == AGGREGATE_CLASS)) {
-        llvm::Type* cidType = info->lvt->getType("chpl__class_id");
-        INT_ASSERT(cidType);
-        params.push_back(cidType);
-        GEPMap.insert(std::pair<std::string, int>("chpl__cid", paramID++));
-      } else if(aggregateTag == AGGREGATE_UNION) {
-        params.push_back(llvm::Type::getInt64Ty(info->module->getContext()));
-        GEPMap.insert(std::pair<std::string, int>("_uid", paramID++));
-      }
+      // this updates params, aligns, structSize, structAlignment
+      buildStructFields(DL, this, false, GEPMap, params, aligns,
+                        structSize, structAlignment);
 
-      if(aggregateTag == AGGREGATE_UNION) {
-
-        llvm::Type *largestType = NULL;
-        uint64_t largestSize = 0;
-
-        for_fields(field, this) {
-          llvm::Type* fieldType = field->type->symbol->codegen().type;
-          INT_ASSERT(fieldType);
-          uint64_t fieldSize = info->module->getDataLayout().getTypeStoreSize(fieldType);
-
-          if(fieldSize > largestSize) {
-            largestType = fieldType;
-            largestSize = fieldSize;
-          }
-
-          GEPMap.insert(std::pair<std::string, int>(field->cname, paramID));
-          GEPMap.insert(std::pair<std::string, int>(
-                std::string("_u.") + field->cname, paramID));
-        }
-
-        llvm::StructType * st;
-        // handle an empty union.
-        if( largestType ) {
-          st = llvm::StructType::get(largestType);
-        } else {
-          st = llvm::StructType::get(info->module->getContext());
-        }
-        params.push_back(st);
-        GEPMap.insert(std::pair<std::string, int>("_u", paramID++));
-      } else {
-        int nonVoidFields = 0;
-        for_fields(field, this) {
-          if (field->type != dtNothing && field->type != dtVoid) {
-            nonVoidFields++;
-            break;
-          }
-        }
-
-        if (nonVoidFields == 0) {
-          // add dummyFieldToAvoidWarning which also
-          // stops us from doing 0-byte memory allocation
-          // (comes up with ioNewline and --no-local RA)
-          // TODO - don't ever allocate 0-byte structures
-          params.push_back(llvm::Type::getInt32Ty(gContext->llvmContext()));
-        }
-        for_fields(field, this) {
-          if (field->type != dtNothing && field->type != dtVoid) {
-            llvm::Type* fieldType = field->type->symbol->codegen().type;
-            AggregateType* ct = toAggregateType(field->type);
-            if(ct && field->hasFlag(FLAG_SUPER_CLASS))
-              fieldType = info->lvt->getType(ct->classStructName(true));
-            INT_ASSERT(fieldType);
-            params.push_back(fieldType);
-            aligns.push_back(getAlignment(field->type));
-            GEPMap.insert(std::pair<std::string, int>(field->cname, paramID++));
-          }
-        }
-      }
-
-      // Is it a class or a record?
-      // if it's a record, we make the new type now.
-      // if it's a class, we update the existing type.
       if( this->isWidePtrType() && fLLVMWideOpt ) {
         // Reach this branch when generating a wide/wide class as a
         // global pointer!
@@ -496,8 +672,10 @@ void AggregateType::codegenDef() {
         }
       } else {
         // Normal (wide or struct) code path.
-        //
-        // need to define _cname (for AGGREGATE_CLASS) or cname
+
+        // Is it a class or a record?
+        // if it's a class, we update the existing type.
+        // if it's a record, we make the new type now.
         if(aggregateTag == AGGREGATE_CLASS) {
           const char* struct_name = this->classStructName(true);
           type = info->lvt->getType(struct_name);
@@ -509,34 +687,30 @@ void AggregateType::codegenDef() {
 
         llvm::StructType* stype = llvm::cast<llvm::StructType>(type);
         stype->setBody(params);
-
-        if (aligns.size() == params.size()) {
-          for (size_t i = 0; i < params.size(); i++) {
-            unsigned offset = info->module->getDataLayout().getStructLayout(stype)->getElementOffset(i);
-            unsigned align = 1 << Log2(aligns[i].valueOrOne());
-            if ((offset % align) != 0) {
-              // Not aligned. Issue an error. In the future, we expect to add
-              // padding to make it aligned.
-              USR_FATAL(this->symbol->defPoint, "unhandled misaligned record member");
-            }
-          }
-        }
-
-        if (aggregateTag == AGGREGATE_CLASS) {
-          type = stype;
-        }
+        // TODO: for the release, hide this check behind 'if (fVerify)'
+        checkStructFields(DL, this, stype, params, aligns,
+                          structSize, structAlignment);
       }
-
 #endif
     }
   }
 
   if( !outfile ) {
 #ifdef HAVE_LLVM
-    if( ! this->symbol->getLLVMType() ) {
+    if(! this->symbol->hasLLVMType()) {
       info->lvt->addGlobalType(this->symbol->cname, type, false);
       this->symbol->llvmImplType = type;
+    } else {
+      INT_ASSERT(this->symbol->llvmImplType == type);
     }
+    INT_ASSERT(this->symbol->llvmAlignment == ALIGNMENT_UNINIT);
+    INT_ASSERT(structAlignment != ALIGNMENT_UNINIT);
+    this->symbol->llvmAlignment = llvmAlignmentOrDefer(structAlignment, type);
+    // double-check, in case we missed this in buildStructFields
+    if (structAlignment > 16 && aggregateTag == AGGREGATE_CLASS &&
+        ! fatalErrorsEncountered())
+      USR_FATAL_CONT(this,
+        "alignment > 16 is currently not implemented for classes");
 #endif
   }
 }

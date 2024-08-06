@@ -1,8 +1,8 @@
 import SortedMap.sortedMap;
-import SortedMap.defaultComparator;
+import SortedMap.DefaultComparator;
 
 proc testMap(type t) where isTupleType(t) {
-  var m = new sortedMap(int, t, false, defaultComparator);
+  var m = new sortedMap(int, t, false, new DefaultComparator());
 
   var x: t = (new t[0](1), new t[1](2));
 
@@ -22,7 +22,7 @@ proc testMap(type t) where isTupleType(t) {
 }
 
 proc testMap(type t) where isBorrowedClass(t) {
-  var m = new sortedMap(int, t, false, defaultComparator);
+  var m = new sortedMap(int, t, false, new DefaultComparator());
 
   // create values with 'owned' if t is a borrowed class type
   // (the map will still store borrowed)
@@ -46,7 +46,7 @@ proc testMap(type t) where isBorrowedClass(t) {
 }
 
 proc testMap(type t) {
-  var m = new sortedMap(int, t, false, defaultComparator);
+  var m = new sortedMap(int, t, false, new DefaultComparator());
 
   var x: t = new t(1);
 

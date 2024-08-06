@@ -1,0 +1,4 @@
+--gpuDest=true --gpuSource=true
+--gpuDest=true --gpuSource=false
+--gpuDest=false --gpuSource=true
+--gpuDest=false --gpuSource=false

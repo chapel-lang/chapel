@@ -65,11 +65,11 @@ namespace llvm {
     }
 
     static const chpl::ID getEmptyKey() {
-      return chpl::ID(USTR("<empty>"), -1, 0);
+      return chpl::ID(USTR("<empty>"));
     }
 
     static const chpl::ID getTombstoneKey() {
-      return chpl::ID(USTR("<tombstone>"), -1, 0);
+      return chpl::ID(USTR("<tombstone>"));
     }
   };
 }
@@ -232,6 +232,7 @@ class BuilderResult final {
 
   static bool update(BuilderResult& keep, BuilderResult& addin);
   void mark(Context* context) const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   // these two should only be called by the parser
   static void updateFilePaths(Context* context, const BuilderResult& keep);

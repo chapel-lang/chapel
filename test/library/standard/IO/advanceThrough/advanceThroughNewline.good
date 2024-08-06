@@ -1,0 +1,2 @@
+var r = openReader("advanceThroughNewline.chpl");
+write(r.readLine()); // 🐍

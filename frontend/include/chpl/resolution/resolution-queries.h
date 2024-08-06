@@ -295,6 +295,12 @@ const OuterVariables* computeOuterVariables(Context* context, ID id);
 const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
                                                           ID id);
 
+/*
+ * Scope-resolve an EnumDecl's constants
+ */
+const ResolutionResultByPostorderID& scopeResolveEnum(Context* context,
+                                                      ID id);
+
 /**
   Returns the ResolvedFunction called by a particular
   ResolvedExpression, if there was exactly one candidate.

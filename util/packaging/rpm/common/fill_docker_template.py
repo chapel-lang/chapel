@@ -123,10 +123,10 @@ substitutions[
 RUN rpmbuild -ba $BASENAME.spec && \\
     cp $(rpm --eval '%{_rpmdir}')/$(rpm --eval '%{_arch}')/*.rpm .
 
-FROM scratch as artifact
+FROM scratch AS artifact
 COPY --from=build /home/user/*.rpm /
 
-FROM build as release
+FROM build AS release
 """
 
 

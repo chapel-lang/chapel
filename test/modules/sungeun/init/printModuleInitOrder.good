@@ -38,10 +38,13 @@ Initializing Modules:
            TwoArrayPartitioning
           QuickSort
            InsertionSort
+          TimSort
         ChapelDistribution
          ChapelHashtable
         ExternalArray
         RangeChunk
+        Search
+         HideDeprecatedReexport
        ChapelNumLocales
       LocaleModelHelpRuntime
      LocaleModelHelpMem

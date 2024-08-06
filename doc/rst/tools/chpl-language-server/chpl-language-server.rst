@@ -24,77 +24,9 @@ frontend and the Python bindings for Dyno if needed, and place
    make chpl-language-server
    chpl-language-server --help
 
-``CLS`` can be used with any editor that supports the LSP. Listed below are
-setup instructions for some popular editors. If your preferred editor is not
-listed, consider opening an `issue
-<https://github.com/chapel-lang/chapel/issues/new>`_ or `pull request
-<https://github.com/chapel-lang/chapel/pull/new>`_ to add it.
-
-Neovim
-^^^^^^
-
-The built-in LSP API can be used to configure ``CLS`` as follows:
-
-.. code-block:: lua
-
-   local lspconfig = require 'lspconfig'
-   local configs = require 'lspconfig.configs'
-   local util = require 'lspconfig.util'
-
-   configs.cls = {
-     default_config = {
-       cmd = {"chpl-language-server"},
-       filetypes = {'chpl'},
-       autostart = true,
-       single_file_support = true,
-       root_dir = util.find_git_ancestor,
-       settings = {},
-     },
-   }
-   
-   lspconfig.cls.setup{}
-   vim.cmd("autocmd BufRead,BufNewFile *.chpl set filetype=chpl")
-
-
-VSCode
-^^^^^^
-
-Install the ``chapel`` extension from the `Visual Studio Code marketplace
-<https://marketplace.visualstudio.com/items?itemName=chpl-hpe.chapel-vscode>`_.
-
-.. _chpl-language-server-emacs:
-
-Emacs
-^^^^^
-
-With Emacs 29.1, support has been added for language server protocols via `Eglot
-<https://www.gnu.org/software/emacs/manual/html_mono/eglot.html>`_
-
-To utilize the Chapel language server with Eglot, add the following to your
-``.emacs`` file (note that this assumes you have already followed the
-instructions in ``$CHPL_HOME/highlight/emacs/README.rst`` to install Chapel
-syntax highlighting in Emacs):
-
-.. code-block:: lisp
-
-  (with-eval-after-load 'eglot
-    (add-to-list 'eglot-server-programs
-                 '(chpl-mode . ("chpl-language-server" "--chplcheck"))))
-
-This will enable using the language server with a particular ``.chpl`` file by
-calling ``M-x eglot``.
-
-To automatically use Eglot and the language server with every ``.chpl`` file,
-additionally add the following to your ``.emacs`` file:
-
-.. code-block:: lisp
-
-   (add-hook 'chpl-mode-hook 'eglot-ensure)
-
-.. note::
-
-   The above uses the ``--chplcheck`` flag to enable additional diagnostics from
-   ``chplcheck``. If you do not want to use ``chplcheck``, you can remove this.
+``CLS`` can be used with any editor that supports the LSP. See the
+:ref:`Editor Support page <readme-editor-support>` for details on a specific
+editor.
 
 Supported Features
 ------------------

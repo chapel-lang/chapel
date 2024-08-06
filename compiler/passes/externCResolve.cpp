@@ -183,6 +183,8 @@ Expr* convertStructToChplType(ModuleSymbol* module,
   TypeSymbol* ts = new TypeSymbol(chpl_name, ct);
   ts->cname = cname;
   ts->addFlag(FLAG_EXTERN);
+  if (structType->isIncompleteType())
+    ts->addFlag(FLAG_INCOMPLETE);
   DefExpr* def = new DefExpr(ts);
 
   addCDef(module, def);

@@ -20,7 +20,7 @@ writeln("X is:\n", X);
 writeln("X.domain is: ", X.domain);
 writeln();
 
-var Y = [i in [0..n**2]] B(i/n, i%n);
+var Y = [i in {0..#n**2}] B(i/n, i%n);
 
 writeln("Y is:\n", Y);
 writeln("Y.domain is: ", Y.domain);

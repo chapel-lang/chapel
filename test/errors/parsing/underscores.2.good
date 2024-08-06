@@ -154,33 +154,42 @@
   Throwaway variable '_' is not allowed in this context.
   The throwaway variable is used here:
        |
-    21 | import this.A as _;
+    21 |  when (8, _) { writeln("Got 8"); }
+       |           ⎺
+       |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:26 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+       |
+    26 | import this.A as _;
        |                  ⎺
        |
   Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
 
-─── error in underscores.chpl:22 [InvalidThrowaway] ───
+─── error in underscores.chpl:27 [InvalidThrowaway] ───
   Throwaway variable '_' is not allowed in this context.
   The throwaway variable is used here:
        |
-    22 | import this.A.{dummy as _};
+    27 | import this.A.{dummy as _};
        |                         ⎺
        |
   Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
 
-─── error in underscores.chpl:25 [InvalidThrowaway] ───
+─── error in underscores.chpl:30 [InvalidThrowaway] ───
   Throwaway variable '_' is not allowed in this context.
   The throwaway variable is used here:
        |
-    25 | use A only dummy as _;
+    30 | use A only dummy as _;
        |                     ⎺
        |
   Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
 
-─── error in underscores.chpl:32 [ProcDefExplicitAnonFormal] ───
+─── error in underscores.chpl:37 [ProcDefExplicitAnonFormal] ───
   Formals in a procedure definition must be named
        |
-    32 | proc f(_: int) {}
+    37 | proc f(_: int) {}
        |        ⎺⎺⎺⎺⎺⎺⎺
        |
 

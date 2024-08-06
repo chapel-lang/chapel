@@ -21,10 +21,12 @@
 
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/global-strings.h"
-#include "chpl/parsing/parsing-queries.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parser-error.h"
-#include "chpl/uast/chpl-syntax-printer.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/uast/all-uast.h"
+#include "chpl/uast/chpl-syntax-printer.h"
+
 #include <vector>
 #include <string.h>
 
@@ -120,6 +122,7 @@ struct Visitor {
   void checkNewBorrowed(const FnCall* node);
   void checkBorrowFromNew(const FnCall* node);
   void checkSparseKeyword(const FnCall* node);
+  void checkSparseDomainArgCount(const FnCall* node);
   void checkPrimCallInUserCode(const PrimCall* node);
   void checkDmappedKeyword(const OpCall* node);
   void checkNonAssociativeComparisons(const OpCall* node);
@@ -156,6 +159,9 @@ struct Visitor {
   void checkLocalBlock(const Local* node);
   bool checkUnderscoreInIdentifier(const Identifier* node);
   bool checkUnderscoreInVariableOrFormal(const VarLikeDecl* node);
+  void checkImplicitModuleSameName(const Module* node);
+  void checkModuleNotInModule(const Module* node);
+  void checkInheritExprValid(const AstNode* node);
 
   /*
   TODO
@@ -163,7 +169,6 @@ struct Visitor {
   void checkFunctionReturnsYields(const Function* node);
   void checkReturnHelper(const Return* node);
   void checkYieldHelper(const Yield* node);
-  void checkImplicitModuleSameName(const Module* node);
   void checkIncludeModuleStrictName(const Module* node);
   void checkModuleReturnsYields(const Module* node);
   void checkPointlessUse(const Use* node);
@@ -186,6 +191,7 @@ struct Visitor {
   // Visitors.
   inline void visit(const AstNode* node) {} // Do nothing by default.
 
+  void visit(const AggregateDecl* node);
   void visit(const Array* node);
   void visit(const Attribute* node);
   void visit(const AttributeGroup* node);
@@ -202,6 +208,7 @@ struct Visitor {
   void visit(const Implements* node);
   void visit(const Import* node);
   void visit(const Local* node);
+  void visit(const Module* node);
   void visit(const OpCall* node);
   void visit(const PrimCall* node);
   void visit(const Return* node);
@@ -722,13 +729,32 @@ void Visitor::checkBorrowFromNew(const FnCall* node) {
                "variable to store the new class");
 }
 
+static bool isCallWithName(const FnCall* call, UniqueString checkName) {
+  auto calledExpr = call->calledExpression();
+  if (!calledExpr) return false;
+
+  if (auto ident = calledExpr->toIdentifier()) {
+    if (ident->name() == checkName) return true;
+  }
+
+  return false;
+}
+
 void Visitor::checkSparseKeyword(const FnCall* node) {
   if (shouldEmitUnstableWarning(node)) // start with a cheap check
-    if (auto calledExpr = node->calledExpression())
-      if (auto ident = calledExpr->toIdentifier())
-        if (ident->name() == USTR("sparse"))
-          warn(node, "sparse domains are unstable,"
-               " their behavior is likely to change in the future.");
+    if (isCallWithName(node, USTR("sparse")))
+      warn(node, "sparse domains are unstable,"
+           " their behavior is likely to change in the future.");
+}
+
+void Visitor::checkSparseDomainArgCount(const FnCall* node) {
+  if (isCallWithName(node, USTR("sparse"))) {
+    if (node->numActuals() == 1)
+      if (auto childCall = node->actual(0)->toFnCall())
+        if (isCallWithName(childCall, USTR("subdomain")))
+          if (childCall->numActuals() != 1)
+            error(childCall, "the 'sparse subdomain' expression expects exactly one argument (the parent domain)");
+  }
 }
 
 // TODO: remove this check and warning after 2.0?
@@ -1504,6 +1530,12 @@ void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
   }
 }
 
+void Visitor::visit(const AggregateDecl* node) {
+  for (auto inheritExpr : node->inheritExprs()) {
+    checkInheritExprValid(inheritExpr);
+  }
+}
+
 void Visitor::visit(const Array* node) {
   checkForArraysOfRanges(node);
 }
@@ -1661,6 +1693,7 @@ void Visitor::visit(const FnCall* node) {
   checkNewBorrowed(node);
   checkBorrowFromNew(node);
   checkSparseKeyword(node);
+  checkSparseDomainArgCount(node);
 
 }
 
@@ -1847,6 +1880,58 @@ void Visitor::visit(const Local* node){
   checkLocalBlock(node);
 }
 
+void Visitor::checkImplicitModuleSameName(const Module* mod) {
+  const AstNode* unused = nullptr;
+  if (const AstNode* parentModAst = searchParents(asttags::Module, &unused)) {
+    if (auto parentMod = parentModAst->toModule()) {
+      if (parentMod->kind() == Module::IMPLICIT &&
+          parentMod->name() == mod->name()) {
+        CHPL_REPORT(context_, ImplicitModuleSameName, mod);
+      }
+    }
+  }
+}
+
+void Visitor::checkModuleNotInModule(const Module* mod) {
+  const AstNode* p = parent();
+  if (p != nullptr && !p->isModule()) {
+    error(mod, "Modules must be declared at module- or file-scope");
+  }
+}
+
+void Visitor::checkInheritExprValid(const AstNode* node) {
+  // If it's a called expression, it could me something like M.Class(?),
+  // so strip the outer call. Re-use the existing logic in AggregateDecl.
+  bool markedGeneric;
+  auto identOrDot = AggregateDecl::getUnwrappedInheritExpr(node, markedGeneric);
+
+  bool success = false;
+  if (identOrDot) {
+    success = true;
+
+    // It's an identifier or a (...).something. Need to make sure that
+    // (...) is also just an identifier or a dot.
+    auto step = identOrDot;
+    while (!step->isIdentifier()) {
+      if (auto dot = step->toDot()) {
+        step = dot->receiver();
+      } else {
+        success = false;
+        break;
+      }
+    }
+  }
+
+  if (!success) {
+    error(node, "invalid parent class or interface; please specify a single (possibly qualified) class or interface name");
+  }
+}
+
+void Visitor::visit(const Module* node){
+  checkImplicitModuleSameName(node);
+  checkModuleNotInModule(node);
+}
+
 void Visitor::visit(const Yield* node) {
   const AstNode* blockingNode;
   const AstNode* allowingNode;
@@ -1877,7 +1962,7 @@ void Visitor::checkExternBlockAtModuleScope(const ExternBlock* node) {
 }
 
 void Visitor::checkCStringLiteral(const CStringLiteral* node) {
-   warn(node, "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'string.c_str()' from the 'CTypes' module instead");
+  warn(node, "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'string.c_str()' from the 'CTypes' module instead");
 }
 
 void Visitor::visit(const ExternBlock* node) {
@@ -1894,18 +1979,31 @@ void Visitor::visit(const CStringLiteral* node) {
 namespace chpl {
 namespace uast {
 
-void
-checkBuilderResult(Context* context, UniqueString path,
-                   const BuilderResult& result) {
+// this just returns a bool to keep the query system happy
+// in practice the relevant result is an error/warning being generated
+static
+const bool& checkBuilderResultQuery(Context* context, UniqueString path,
+                                    const BuilderResult* builderResult) {
+  QUERY_BEGIN(checkBuilderResultQuery, context, path, builderResult);
+
   bool warnUnstable = parsing::shouldWarnUnstableForPath(context, path);
   bool isUserCode  = !parsing::filePathIsInBundledModule(context, path);
   auto v = Visitor(context, warnUnstable, isUserCode);
 
-  for (auto ast : result.topLevelExpressions()) {
+  for (auto ast : builderResult->topLevelExpressions()) {
     if (ast->isComment()) continue;
     v.check(ast);
   }
+
+  bool result = false;
+  return QUERY_END(result);
 }
+
+void checkBuilderResult(Context* context, UniqueString path,
+                        const BuilderResult& builderResult) {
+  checkBuilderResultQuery(context, path, &builderResult);
+}
+
 
 } // end namespace uast
 } // end namespace chpl

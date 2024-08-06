@@ -15,3 +15,4 @@ CHPL_GMP=bad
 CHPL_HWLOC=bad
 CHPL_RE2=bad
 CHPL_HOME=bad
+CHPL_LIB_PIC=bad

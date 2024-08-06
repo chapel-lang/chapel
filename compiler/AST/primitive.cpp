@@ -216,6 +216,17 @@ returnInfoScalarPromotionType(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoThunkResultType(CallExpr* call) {
+  QualifiedType tmp = call->get(1)->qualType();
+  AggregateType* type = toAggregateType(tmp.type()->getValType());
+
+  INT_ASSERT(type);
+  INT_ASSERT(type->thunkInvoke);
+
+  return QualifiedType(type->thunkInvoke->retType, QUAL_VAL);
+}
+
+static QualifiedType
 returnInfoStaticFieldType(CallExpr* call) {
   // The code below is not very general. It can be extended as needed.
   // The first argument is the variable or the type whose field is queried.
@@ -730,6 +741,11 @@ initPrimitive() {
   prim_def(PRIM_OUTER_CONTEXT, "outer context", returnInfoFirst);
   prim_def(PRIM_HOIST_TO_CONTEXT, "hoist to context", returnInfoVoid);
 
+  prim_def(PRIM_CREATE_THUNK, "create thunk", returnInfoUnknown);
+  prim_def(PRIM_THUNK_RESULT, "thunk result", returnInfoFirst);
+  prim_def(PRIM_FORCE_THUNK, "force thunk", returnInfoUnknown);
+  prim_def(PRIM_THUNK_RESULT_TYPE, "thunk result type", returnInfoThunkResultType);
+
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);
   // dst, src. PRIM_MOVE can set a reference.
@@ -916,8 +932,8 @@ initPrimitive() {
   prim_def(PRIM_GPU_GRIDDIM_Y, "gpu gridDim y", returnInfoInt32, true);
   prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
 
-  prim_def(PRIM_GPU_INIT_KERNEL_CFG, "gpu init kernel cfg", returnInfoCVoidPtr, true);
-  prim_def(PRIM_GPU_INIT_KERNEL_CFG_3D, "gpu init kernel cfg 3d", returnInfoCVoidPtr, true);
+  prim_def(PRIM_GPU_INIT_KERNEL_CFG, "gpu init kernel cfg", returnInfoCVoidPtr, true, true);
+  prim_def(PRIM_GPU_INIT_KERNEL_CFG_3D, "gpu init kernel cfg 3d", returnInfoCVoidPtr, true, true);
   prim_def(PRIM_GPU_DEINIT_KERNEL_CFG, "gpu deinit kernel cfg", returnInfoVoid, true);
   prim_def(PRIM_GPU_ARG, "gpu arg", returnInfoVoid, true);
   prim_def(PRIM_GPU_PID_OFFLOAD, "gpu pid offload", returnInfoVoid, true);
@@ -1053,6 +1069,8 @@ initPrimitive() {
   prim_def(PRIM_MAYBE_LOCAL_THIS, "may be local access", returnInfoUnknown);
   prim_def(PRIM_MAYBE_LOCAL_ARR_ELEM, "may be local array element", returnInfoUnknown);
   prim_def(PRIM_MAYBE_AGGREGATE_ASSIGN, "may be aggregated assignment", returnInfoUnknown);
+
+  prim_def(PRIM_PROTO_SLICE_ASSIGN, "assign proto slices", returnInfoVoid);
 
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);

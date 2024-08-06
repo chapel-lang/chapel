@@ -91,11 +91,7 @@ class AggregateDecl : public TypeDecl {
                   elementsChildNum);
     }
 
-    if (inheritExprChildNum_ != NO_CHILD) {
-      for (int i = 0; i < numInheritExprs_; i++) {
-        CHPL_ASSERT(isAcceptableInheritExpr(child(inheritExprChildNum_ + i)));
-      }
-    }
+    // Don't validate inherit expressions here, they're checked post-parse.
 
     CHPL_ASSERT(validAggregateChildren(declOrComments()));
   }
@@ -191,12 +187,10 @@ class AggregateDecl : public TypeDecl {
               children_.begin() + inheritExprChildNum_ + numInheritExprs_);
   }
 
-  /** Returns the inherited Identifier, including considering
+  /** Returns the inherited Identifier or Dot, including considering
       one marked generic with Superclass(?) */
-  static const Identifier* getInheritExprIdent(const AstNode* ast,
-                                               bool& markedGeneric);
-  /** Returns true if the passed inherit expression is legal */
-  static bool isAcceptableInheritExpr(const AstNode* ast);
+  static const AstNode* getUnwrappedInheritExpr(const AstNode* ast,
+                                            bool& markedGeneric);
 };
 
 

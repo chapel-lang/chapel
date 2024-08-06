@@ -1922,7 +1922,7 @@ static void codegen_header(std::set<const char*> & cnames,
     forv_Vec(TypeSymbol, typeSymbol, gTypeSymbols) {
       if (typeSymbol->defPoint->parentExpr == rootModule->block &&
           isPrimitiveType(typeSymbol->type) &&
-          typeSymbol->getLLVMType()) {
+          typeSymbol->hasLLVMType()) {
         typeSymbol->codegenMetadata();
       }
     }
@@ -3225,10 +3225,6 @@ static void codegenPartTwo() {
   {
     fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
-
-
-
-
 }
 
 void codegen() {
@@ -3350,9 +3346,11 @@ GenInfo::GenInfo()
              globalToWideInfo()
 #endif
 {
-#ifdef LLVM_NO_OPAQUE_POINTERS
 #if HAVE_LLVM_VER >= 150 && HAVE_LLVM_VER < 160
-  llvmContext.setOpaquePointers(false);
+#ifdef LLVM_NO_OPAQUE_POINTERS
+  gContext->llvmContext().setOpaquePointers(false);
+#else
+  gContext->llvmContext().setOpaquePointers(true);
 #endif
 #endif
 }

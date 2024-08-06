@@ -1,0 +1,2 @@
+design: should generic records in procs be allowed? If not, this needs a better error
+#25485

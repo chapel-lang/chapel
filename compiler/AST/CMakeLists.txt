@@ -57,6 +57,7 @@ set(SRCS
     stmt.cpp
     symbol.cpp
     TemporaryConversionThunk.cpp
+    thunks.cpp
     TransformLogicalShortCircuit.cpp
     TryStmt.cpp
     type.cpp

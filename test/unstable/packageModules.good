@@ -38,7 +38,6 @@ packageModules.chpl:XX: warning: RecordParser is unstable
 packageModules.chpl:XX: warning: ReplicatedVar is unstable
 packageModules.chpl:XX: warning: Search is unstable
 packageModules.chpl:XX: warning: Socket is unstable
-packageModules.chpl:XX: warning: Sort is unstable
 packageModules.chpl:XX: warning: SortedMap is unstable
 packageModules.chpl:XX: warning: SortedSet is unstable
 packageModules.chpl:XX: warning: TOML is unstable

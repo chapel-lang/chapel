@@ -1,0 +1,4 @@
+CastCArrayToCPtr-multiple.chpl:37: error: unresolved call 'qrc(c_array(int(64),9))'
+CastCArrayToCPtr-multiple.chpl:30: note: this candidate did not match: qrc(arg: c_ptrConst(real))
+CastCArrayToCPtr-multiple.chpl:37: note: because actual argument #1 with type 'c_array(int(64),9)'
+CastCArrayToCPtr-multiple.chpl:30: note: is passed to formal 'arg: c_ptrConst(real(64))'

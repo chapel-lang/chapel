@@ -83,6 +83,10 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
       }
       // Maybe need something here to support LLVM extern blocks?
 
+      if (usingGpuLocaleModel()) {
+        fprintf(libhdrfile.fptr, "#ifdef __cplusplus\nextern \"C\" {\n#endif\n");
+      }
+
       // Print out the module initialization function headers and the exported
       // functions
       for_vector(FnSymbol, fn, functions) {
@@ -90,6 +94,10 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
             isUserRoutine(fn)) {
           fn->codegenPrototype();
         }
+      }
+
+      if (usingGpuLocaleModel()) {
+        fprintf(libhdrfile.fptr, "#ifdef __cplusplus\n}\n#endif\n");
       }
 
       gGenInfo->cfile = save_cfile;
@@ -109,7 +117,9 @@ static std::string getCompilelineOption(std::string option) {
   }
   fullCommand += "$CHPL_HOME/util/config/compileline --" + option;
   fullCommand += "> cmd.out.tmp";
-  runCommand(fullCommand);
+
+  std::string description = "Get compileline option " + option;
+  runCommand(fullCommand, description);
 
   std::string replace = "$CHPL_HOME/util/config/replace-paths.py ";
 
@@ -118,9 +128,10 @@ static std::string getCompilelineOption(std::string option) {
   replace += "--fixpath '$(CHPL_THIRD_PARTY)' $CHPL_THIRD_PARTY ";
   replace += "--fixpath '$(CHPL_HOME)' $CHPL_HOME < cmd.out.tmp";
 
-  std::string res = runCommand(replace);
+  std::string replaceDesc = "Replace paths in compileline option " + option;
+  std::string res = runCommand(replace, replaceDesc);
   std::string cleanup = "rm cmd.out.tmp";
-  runCommand(cleanup);
+  runCommand(cleanup, "Cleanup output file");
   return res;
 }
 
@@ -964,28 +975,28 @@ void codegen_make_python_module() {
                " source files");
     }
     std::string getCrayComp = "$CHPL_HOME/util/config/compileline --compiler";
-    crayCompiler = runCommand(getCrayComp);
+    crayCompiler = runCommand(getCrayComp, "Get Cray compiler");
     // Erase the trailing \n from getting the cFlags
     crayCompiler.erase(crayCompiler.length() - 1);
     std::string getCLink = "$CHPL_HOME/util/config/compileline --linkershared";
-    crayLinker = runCommand(getCLink);
+    crayLinker = runCommand(getCLink, "Get Cray linker information");
     crayLinker.erase(crayLinker.length() - 1);
   }
 
   std::string getCFlags = "$CHPL_HOME/util/config/compileline --cflags";
-  std::string cFlags = runCommand(getCFlags);
+  std::string cFlags = runCommand(getCFlags, "Get C flags");
   // Erase the trailing \n from getting the cFlags
   cFlags.erase(cFlags.length() - 1);
   std::string requireIncludes = getRequireIncludes();
   std::string getIncludes =
     "$CHPL_HOME/util/config/compileline --includes-and-defines";
-  std::string includes = runCommand(getIncludes);
+  std::string includes = runCommand(getIncludes, "Get includes and defines");
   // Erase the trailing \n from getting the includes
   includes.erase(includes.length() - 1);
 
   std::string requireLibraries = getRequireLibraries();
   std::string getLibraries = "$CHPL_HOME/util/config/compileline --libraries";
-  std::string libraries = runCommand(getLibraries);
+  std::string libraries = runCommand(getLibraries, "Get libraries");
   // Erase the trailing \n from getting the libraries
   libraries.erase(libraries.length() - 1);
 
@@ -994,7 +1005,7 @@ void codegen_make_python_module() {
     std::string cmd = "$CHPL_HOME/util/config/compileline";
     cmd += " --multilocale-lib-deps";
     libraries += " ";
-    libraries += runCommand(cmd);
+    libraries += runCommand(cmd, "Get multilocale-specific dependencies");
     libraries.erase(libraries.length() - 1);
   }
 
@@ -1029,7 +1040,7 @@ void codegen_make_python_module() {
   chdirIn += libDir;
   chdirIn += "; ";
   std::string fullCommand = chdirIn + fullCythonCall;
-  runCommand(fullCommand);
+  runCommand(fullCommand, "Run Cython");
 }
 
 // Skip this function if it is defined in an internal module, or if it is

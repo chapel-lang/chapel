@@ -61,13 +61,14 @@ coforall tid in 0..3 with (ref lst2) {
   order. The contents of ``lst2`` might be out of order even though our loop
   size is small (only 4 tasks).
 
-  We can call :proc:`~List.list.sort()` on our list to be on the safe side.
+  We can call :proc:`~Sort.sort()` on our list to be on the safe side.
 */
 
 if !quiet then
   writeln("List 2 before sort: ", lst2);
 
-lst2.sort();
+import Sort;
+Sort.sort(lst2);
 
 writeln("List 2 sorted: ", lst2);
 
@@ -183,7 +184,7 @@ writeln("List 1 after appends: ", lst1);
 
 /*
    You'll notice that the contents of ``lst1`` are backwards. We could call
-   ``list.sort()`` to fix this problem...or we can fix the contents of the
+   ``sort()`` to fix this problem...or we can fix the contents of the
    list ourselves!
 
    .. warning::

@@ -57,7 +57,7 @@ WORKDIR $CHPL_HOME
 # Build stage: build Chapel from sources
 # ======================================
 
-FROM chapel-base as chapel-build
+FROM chapel-base AS chapel-build
 
 # acquire sources
 COPY . .
@@ -85,7 +85,7 @@ RUN rm -rf third-party/llvm/llvm-src
 # Final stage: copy build results, but omit large files.
 # ======================================
 
-FROM chapel-base as chapel
+FROM chapel-base AS chapel
 COPY --from=chapel-build $CHPL_HOME $CHPL_HOME
 
 ENV PATH="${PATH}:${CHPL_HOME}/bin:${CHPL_HOME}/util"

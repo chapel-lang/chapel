@@ -501,7 +501,10 @@ module GPU
         res = doCpuReduceHelp(op, A): res.type;
       }
       else {
-        // I want to do on here.parent but that doesn't work
+        // I want to do on here.parent but that doesn't work. Note that this
+        // caused some issues with `--gpu-specialization`.
+        // test/gpu/native/reduction/basic.skipif is a skipif that's added
+        // because of this hack.
         extern proc chpl_task_getRequestedSubloc(): int(32);
         const curSubloc = chpl_task_getRequestedSubloc();
         chpl_task_setSubloc(-2);
@@ -820,7 +823,7 @@ module GPU
 
   // This function requires that startIdx and endIdx are within the bounds of the array
   // it checks that only if boundsChecking is true (i.e. NOT with --fast or --no-checks)
-  private inline proc serialScan(ref arr : [] ?t, startIdx = arr.domain.low, endIdx = arr.domain.high) {
+  private proc serialScan(ref arr : [] ?t, startIdx = arr.domain.low, endIdx = arr.domain.high) {
     // Convert this count array into a prefix sum
     // This is the same as the count array, but each element is the sum of all previous elements
     // This is an exclusive scan

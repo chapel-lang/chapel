@@ -105,8 +105,8 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     fi
 
     # Load a more recent cmake version. Required for building LLVM 12 or newer.
-    if [ -f /cray/css/users/chapelu/setup_cmake_nightly.bash ] ; then
-      source /cray/css/users/chapelu/setup_cmake_nightly.bash
+    if [ -f /hpcdc/project/chapel/setup_cmake_nightly.bash ] ; then
+      source /hpcdc/project/chapel/setup_cmake_nightly.bash
     fi
 
     # NOTE: The --target-compiler values used in this setenv project will never be

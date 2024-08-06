@@ -467,6 +467,12 @@ OPTIONS
     Enable [disable] optimization of the last statement in forall statements to
     use aggregated communication. This optimization is disabled by default.
 
+.. _man-array-view-elision:
+
+**\--[no-]array-view-elision**
+
+    Enable [disable] an optimization eliding array views in some statements.
+
 *Run-time Semantic Check Options*
 
 .. _man-checks:
@@ -845,6 +851,12 @@ OPTIONS
 
 *Compiler Configuration Options*
 
+Note that the flags in this section all have corresponding environment
+variables.  Details on those environment variables, including potential values
+for them, can be found at
+https://chapel-lang.org/docs/latest/usingchapel/chplenv.html or at
+doc/rst/usingchapel/chplenv.rst in your Chapel installation.
+
 .. _man-home:
 
 **\--home <path>**
@@ -929,6 +941,17 @@ OPTIONS
     corresponds with and overrides the $CHPL\_LAUNCHER environment variable
     (defaults to a best guess based on $CHPL\_COMM and
     $CHPL\_TARGET\_PLATFORM).
+
+.. _man-lib-pic:
+
+**\--lib-pic <pic>**
+
+    Specify whether to use position-dependent or position-independent code.
+    Position-independent code is suitable for shared libraries and this flag is
+    intended to be used when calling Chapel code from other languages,
+    especially Python or when building with '--dynamic'.  This flag corresponds
+    with and overrides the $CHPL\_LIB\_PIC environment variable (defaults to
+    'none').
 
 .. _man-locale-model:
 

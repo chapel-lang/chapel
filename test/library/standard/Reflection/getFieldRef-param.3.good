@@ -1,0 +1,1 @@
+getFieldRef-param.chpl:20: error: cannot return a reference to 'param' field 'x'

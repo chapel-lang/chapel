@@ -1064,9 +1064,9 @@ proc bytes.find(pattern: regex(bytes)):byteIndex
 /* Search the receiving string for the pattern. Returns a new string where the
    match(es) to the pattern is replaced with a replacement.
 
-   The replacement string can include the sequences `\\1` to `\\9` to include
+   The replacement string can include the sequences ``\1`` to ``\9`` to include
    text matching the corresponding parenthesized capture group from the pattern,
-   and `\\0` to refer to the entire matching text.
+   and ``\0`` to refer to the entire matching text.
 
    :arg pattern: the compiled regular expression to search for
    :arg replacement: string to replace with
@@ -1082,9 +1082,9 @@ proc string.replace(pattern: regex(string), replacement:string,
 /* Search the receiving bytes for the pattern. Returns a new bytes where the
    match(es) to the pattern is replaced with a replacement.
 
-   The replacement bytes can include the sequences `\\1` to `\\9` to include
+   The replacement bytes can include the sequences ``\1`` to ``\9`` to include
    text matching the corresponding parenthesized capture group from the pattern,
-   and `\\0` to refer to the entire matching text.
+   and ``\0`` to refer to the entire matching text.
 
    :arg pattern: the compiled regular expression to search for
    :arg replacement: bytes to replace with
@@ -1100,9 +1100,9 @@ proc bytes.replace(pattern: regex(bytes), replacement:bytes, count=-1): bytes {
    match(es) to the pattern is replaced with a replacement and number of
    replacements.
 
-   The replacement string can include the sequences `\\1` to `\\9` to include
+   The replacement string can include the sequences ``\1`` to ``\9`` to include
    text matching the corresponding parenthesized capture group from the pattern,
-   and `\\0` to refer to the entire matching text.
+   and ``\0`` to refer to the entire matching text.
 
    :arg pattern: the compiled regular expression to search for
    :arg replacement: string to replace with
@@ -1118,9 +1118,9 @@ proc string.replaceAndCount(pattern: regex(string), replacement:string,
    match(es) to the pattern is replaced with a replacement and number of
    replacements.
 
-   The replacement bytes can include the sequences `\\1` to `\\9` to include
+   The replacement bytes can include the sequences ``\1`` to ``\9`` to include
    text matching the corresponding parenthesized capture group from the pattern,
-   and `\\0` to refer to the entire matching text.
+   and ``\0`` to refer to the entire matching text.
 
    :arg pattern: the compiled regular expression to search for
    :arg replacement: bytes to replace with

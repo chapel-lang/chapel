@@ -171,6 +171,34 @@ static void test4(Parser* parser) {
   assert(forLoop->stmt(2)->isComment());
 }
 
+static void test5(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
+      "for i in 1..10 with (ref A) { }");
+  auto numErrors = 1;
+  assert(guard.errors().size() == (size_t) numErrors);
+  assert("'with' clauses are not supported on 'for' loops" == guard.error(0)->message());
+  assert(guard.realizeErrors() == numErrors);
+}
+
+static void test6(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test6.chpl",
+      "for i in 1..10 with (re A) { }\n"
+      "for i in 1..10 with () { }\n"
+      "for i in 1..10 with ref A { }\n");
+  auto numErrors = 7;
+  assert(guard.errors().size() == (size_t)numErrors);
+  assert("invalid intent expression in 'with' clause" == guard.error(1)->message());
+  assert("'with' clauses are not supported on 'for' loops" == guard.error(2)->message());
+  assert("'with' clause cannot be empty" == guard.error(3)->message());
+  assert("'with' clauses are not supported on 'for' loops" == guard.error(4)->message());
+  assert("missing parentheses around 'with' clause intents" == guard.error(6)->message());
+  // The other errors are from the parser as "near ...".
+  // It would be really nice to not have those be emitted at all.
+  assert(guard.realizeErrors() == numErrors);
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -183,6 +211,8 @@ int main() {
   test2(p);
   test3(p);
   test4(p);
+  test5(p);
+  test6(p);
 
   return 0;
 }

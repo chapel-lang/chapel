@@ -83,6 +83,8 @@ static void checkScopeContentsViaLookup(Context* context, const Module* mod,
   for (auto name : allNames) {
     // 'int' is visible from all scopes, but we don't list it in allSyms.
     if (name == USTR("int")) continue;
+    // ditto for the module's name
+    if (name == mod->name()) continue;
 
     auto result = lookupNameInScope(context, scope, {}, name, IDENTIFIER_LOOKUP_CONFIG);
 
