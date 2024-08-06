@@ -361,7 +361,7 @@ module ChapelArrayViewElision {
   private proc chpl__ave_baseTypeSupports(base) param: bool {
     import Reflection;
     return isArray(base) && // also could be a view?
-           isSubtype(base._instance.type, DefaultRectangularArr) &&
+           base.domain.supportsArrayViewElision() &&
            Reflection.canResolve("c_addrOf", base);
   }
 

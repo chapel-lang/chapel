@@ -2865,6 +2865,10 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc autoLocalAccessOffsetCheck(offsets) {
       return _value.dsiAutoLocalAccessOffsetCheck(offsets);
+
+    @chpldoc.nodoc
+    proc supportsArrayViewElision() param {
+      return _value.dsiSupportsArrayViewElision();
     }
 
     @chpldoc.nodoc
