@@ -100,6 +100,9 @@ class DomainType final : public CompositeType {
                                               const QualifiedType& idxType,
                                               const QualifiedType& parSafe);
 
+  /** Get the default distribution type */
+  static const RecordType* getDefaultDistType(Context* context);
+
   Kind kind() const {
     return kind_;
   }

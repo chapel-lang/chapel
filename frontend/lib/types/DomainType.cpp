@@ -106,6 +106,16 @@ DomainType::getAssociativeType(Context* context,
                        DomainType::Kind::Associative).get();
 }
 
+const RecordType* DomainType::getDefaultDistType(Context* context) {
+  auto id = parsing::getSymbolFromTopLevelModule(context, "DefaultRectangular",
+                                                 "defaultDist");
+  auto name = id.symbolName(context);
+
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr,
+                         /* subs */ SubstitutionsMap());
+}
+
 int DomainType::rankInt() const {
   if (kind_ == Kind::Rectangular) {
     return rank().param()->toIntParam()->value();

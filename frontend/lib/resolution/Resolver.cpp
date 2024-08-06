@@ -2353,9 +2353,10 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
         const AstNode* questionArg = nullptr;
         std::vector<CallInfoActual> actuals;
         // Set up 'dist' arg
-        // TODO: get and use real type of defaultDist here
-        auto defaultDistArg =
-            CallInfoActual(QualifiedType(), UniqueString::get(context, "dist"));
+        auto defaultDistArg = CallInfoActual(
+            QualifiedType(QualifiedType::CONST_REF,
+                          DomainType::getDefaultDistType(context)),
+            UniqueString::get(context, "dist"));
         actuals.push_back(std::move(defaultDistArg));
         // Remaining given args from domain() call as written
         prepareCallInfoActuals(call, actuals, questionArg);
