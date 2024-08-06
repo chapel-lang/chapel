@@ -1,2 +1,3 @@
 #!/bin/bash
 echo MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion)
+
