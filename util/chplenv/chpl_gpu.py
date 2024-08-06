@@ -247,7 +247,11 @@ def _validate_rocm_llvm_version_impl(gpu: gpu_type):
         # ths branch check can removed
         # assert(int(chpl_llvm.get_llvm_version()) >= 18)
         error("Cannot target AMD GPUs with ROCm 6.x without CHPL_LLVM=bundled")
-    elif major_version == '6' and int(chpl_llvm.get_llvm_version()) < 18:
+    elif (
+        major_version == "6"
+        and chpl_llvm.get() == "system"
+        and int(chpl_llvm.get_llvm_version()) < 18
+    ):
         # this branch will never be hit, because we only allow
         # CHPL_LLVM=bundled which is 18+
         # but this will be the correct check once the above issue is resolved
