@@ -163,7 +163,7 @@ void chpl_gpu_impl_init(int* num_devices) {
 
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
   hipPointerAttribute_t res;
-  hipError_t ret_val = hipPointerGetAttributes(&res, (hipDeviceptr_t)ptr);
+  hipError_t ret_val = hipPointerGetAttributes(&res, ptr);
 
   if (ret_val != hipSuccess) {
     if (ret_val == hipErrorInvalidValue ||
@@ -176,12 +176,22 @@ bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
     }
   }
 
+#if ROCM_VERSION_MAJOR >= 6
+  // TODO: whats the correct expression here?
+  // https://rocm.docs.amd.com/projects/HIP/en/docs-6.0.0/doxygen/html/group___memory.html#ga7c3e8663feebb7be9fd3a1e5139bcefc
+  return res.type != hipMemoryTypeUnregistered;
+   //res.type == hipMemoryTypeDevice ||
+         //res.type == hipMemoryTypeArray ;
+         //res.type == hipMemoryTypeUnified ||
+         //res.type == hipMemoryTypeManaged;
+#else
   return true;
+#endif
 }
 
 bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
   hipPointerAttribute_t res;
-  hipError_t ret_val = hipPointerGetAttributes(&res, (hipDeviceptr_t)ptr);
+  hipError_t ret_val = hipPointerGetAttributes(&res, ptr);
 
   if (ret_val != hipSuccess) {
     if (ret_val == hipErrorInvalidValue ||
@@ -194,7 +204,11 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
     }
   }
   else {
+#if ROCM_VERSION_MAJOR >= 6
+    return res.type == hipMemoryTypeHost;
+#else
     return res.memoryType == hipMemoryTypeHost;
+#endif
   }
 
   return true;
@@ -314,7 +328,7 @@ void chpl_gpu_impl_hostmem_register(void *memAlloc, size_t size) {
   // buffer, which degrades performance. So in the array_on_device mode we
   // choose to page-lock such memory even if it's on the host-side.
   #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-  hipHostRegister(memAlloc, size, hipHostRegisterPortable);
+  ROCM_CALL(hipHostRegister(memAlloc, size, hipHostRegisterPortable));
   #endif
 }
 
@@ -392,7 +406,7 @@ bool chpl_gpu_impl_can_sort(void){
 }
 
 void* chpl_gpu_impl_host_register(void* var, size_t size) {
-  hipHostRegister(var, size, hipHostRegisterPortable);
+  ROCM_CALL(hipHostRegister(var, size, hipHostRegisterPortable));
   void *dev_var;
   ROCM_CALL(hipHostGetDevicePointer(&dev_var, var, 0));
   return dev_var;
