@@ -615,6 +615,14 @@ void ErrorInvalidClassCast::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorInvalidDomainCall::write(ErrorWriterBase& wr) const {
+  auto fnCall = std::get<const uast::FnCall*>(info_);
+
+  wr.heading(kind_, type_, fnCall, "invalid use of the 'domain' keyword.");
+  wr.codeForLocation(fnCall);
+  // TODO: flesh out
+}
+
 void ErrorInvalidIndexCall::write(ErrorWriterBase& wr) const {
   auto fnCall = std::get<const uast::FnCall*>(info_);
   auto& type = std::get<types::QualifiedType>(info_);

@@ -512,7 +512,7 @@ struct Resolver {
   // own logic for traversing actuals etc.
   bool resolveSpecialPrimitiveCall(const uast::Call* call);
 
-  // resolve a keyword call like index(D)
+  // resolve a keyword call like index(D) or domain(1)
   bool resolveSpecialKeywordCall(const uast::Call* call);
 
   // Resolve a || or && operation.

@@ -2339,6 +2339,27 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       CHPL_REPORT(context, InvalidIndexCall, fnCall, firstActual);
     }
     return true;
+  } else if (fnName == "domain") {
+    auto runResult = context->runAndTrackErrors([&](Context* ctx) {
+      // TODO: modify call to be correct (pass implicit dist actual)
+      auto ci = CallInfo::create(context, call, byPostorder,
+                                 /* raiseErrors */ true,
+                                 /* actualAsts */ nullptr,
+                                 /* moduleScopeId */ nullptr,
+                                 /* rename */ UniqueString::get(context, "chpl__buildDomainRuntimeType"));
+      auto scope = scopeStack.back();
+      auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+      auto result = resolveGeneratedCall(context, call, ci, inScopes);
+
+      auto& r = byPostorder.byAst(call);
+      handleResolvedCall(r, call, ci, result);
+      return result;
+    });
+
+    if (!runResult.ranWithoutErrors()) {
+      CHPL_REPORT(context, InvalidDomainCall, fnCall);
+    }
+    return true;
   }
 
   return false;
