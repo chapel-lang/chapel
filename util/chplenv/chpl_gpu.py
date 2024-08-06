@@ -163,6 +163,7 @@ def get_sdk_path(for_gpu):
         # Walk up from directories from the one containing the gpu compiler
         # (e.g.  `nvcc` or `hipcc`) until we find a directory that starts with
         # `runtime_impl` (e.g `cuda` or `rocm`)
+        # TODO: this logic does not seem to work for spack
         real_path = os.path.realpath(my_stdout.strip()).strip()
         path_parts = real_path.split("/")
         chpl_sdk_path = "/"
@@ -173,6 +174,14 @@ def get_sdk_path(for_gpu):
                 chpl_sdk_path += "/"
             else:
                 break
+        
+        # validate the SDK path found
+        if not (os.path.exists(chpl_sdk_path) and os.path.isdir(chpl_sdk_path)):
+            _reportMissingGpuReq(
+                "Can't infer {} toolkit from '{}'. Try setting {}."
+                .format(get(), real_path, gpu.sdk_path_env)
+            )
+            return 'error'
 
         return chpl_sdk_path
     elif gpu_type == for_gpu:
