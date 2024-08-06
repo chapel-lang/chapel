@@ -1817,7 +1817,7 @@ static void setChapelEnvs() {
         gGpuSdkPath = envMap["CHPL_CUDA_PATH"];
         break;
       case GpuCodegenType::GPU_CG_AMD_HIP:
-        gGpuSdkPath = envMap["CHPL_ROCM_PATH"];
+        gGpuSdkPath = envMap["CHPL_ROCM_BITCODE_PATH"];
         break;
       case GpuCodegenType::GPU_CG_CPU:
         gGpuSdkPath = "";
