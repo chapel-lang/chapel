@@ -22,6 +22,7 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/resolution/intents.h"
 #include "chpl/types/Param.h"
+#include "chpl/resolution/can-pass.h"
 
 namespace chpl {
 namespace types {
@@ -107,8 +108,8 @@ TupleType::getTupleType(Context* context, ID id, UniqueString name,
 }
 
 const TupleType*
-TupleType::getValueTuple(Context* context, std::vector<const Type*> eltTypes) {
-  auto kind = QualifiedType::VAR;
+TupleType::getValueTuple(Context* context, std::vector<const Type*> eltTypes, bool makeConst) {
+  auto kind = makeConst ? QualifiedType::CONST_VAR : QualifiedType::VAR;
   SubstitutionsMap subs;
   int i = 0;
   for (auto t : eltTypes) {
@@ -125,7 +126,7 @@ TupleType::getValueTuple(Context* context, std::vector<const Type*> eltTypes) {
 
 const TupleType*
 TupleType::getReferentialTuple(Context* context,
-                               std::vector<const Type*> eltTypes) {
+                               std::vector<const Type*> eltTypes, bool makeConst) {
   SubstitutionsMap subs;
   int i = 0;
   for (auto t : eltTypes) {
@@ -139,7 +140,9 @@ TupleType::getReferentialTuple(Context* context,
     } else {
       kind = QualifiedType::VAR;
     }
-
+    if (makeConst) {
+      kind = resolution::KindProperties::makeConst(kind);
+    }
     subs.emplace(idForTupElt(i), QualifiedType(kind, t));
     i++;
   }
@@ -218,24 +221,26 @@ QualifiedType TupleType::starType() const {
   return subs_.begin()->second;
 }
 
-const TupleType* TupleType::toValueTuple(Context* context) const {
+const TupleType* TupleType::toValueTuple(Context* context, bool makeConst) const {
   // Is it already a value tuple? If so, return that
   bool allValue = true;
+  bool allConst = true;
   int n = numElements();
   for (int i = 0; i < n; i++) {
     const auto& eltType = elementType(i);
     auto kind = eltType.kind();
     if (kind != QualifiedType::VAR)
       allValue = false;
-
+    allConst &= elementType(i).isConst();
     if (eltType.type() && eltType.type()->isTupleType()) {
       // Conservatively throw off 'allValue' because the nested tuple might
       // have a reference inside it.
       allValue = false;
+      allConst = false;
     }
   }
 
-  if (numElements() == 0 || allValue)
+  if (numElements() == 0 || (allValue && allConst >= makeConst))
     return this;
 
   // Otherwise, compute a new value tuple
@@ -243,18 +248,19 @@ const TupleType* TupleType::toValueTuple(Context* context) const {
   for (int i = 0; i < n; i++) {
     auto eltType = elementType(i).type();
     if (auto eltTup = eltType->toTupleType()) {
-      eltType = eltTup->toValueTuple(context);
+      eltType = eltTup->toValueTuple(context, makeConst);
     }
     eltTypes.push_back(eltType);
   }
 
-  return getValueTuple(context, std::move(eltTypes));
+  return getValueTuple(context, std::move(eltTypes), makeConst);
 }
 
 
-const TupleType* TupleType::toReferentialTuple(Context* context) const {
+const TupleType* TupleType::toReferentialTuple(Context* context, bool makeConst) const {
   // Is it already a referential tuple? If so, return that
   bool allRef = true;
+  bool allConst = true;
   int n = numElements();
   for (int i = 0; i < n; i++) {
     const auto& eltType = elementType(i);
@@ -262,15 +268,17 @@ const TupleType* TupleType::toReferentialTuple(Context* context) const {
     if (kind != QualifiedType::CONST_REF &&
         kind != QualifiedType::REF)
       allRef = false;
+    allConst &= elementType(i).isConst();
 
     if (eltType.type() && eltType.type()->isTupleType()) {
       // Conservatively throw off 'allRef' because the nested tuple might
       // have a reference inside it.
       allRef = false;
+      allConst = false;
     }
   }
 
-  if (numElements() == 0 || allRef)
+  if (numElements() == 0 || (allRef && allConst >= makeConst))
     return this;
 
   // Otherwise, compute a new referential tuple
@@ -278,12 +286,12 @@ const TupleType* TupleType::toReferentialTuple(Context* context) const {
   for (int i = 0; i < n; i++) {
     auto eltType = elementType(i).type();
     if (auto eltTup = eltType->toTupleType()) {
-      eltType = eltTup->toReferentialTuple(context);
+      eltType = eltTup->toReferentialTuple(context, makeConst);
     }
     eltTypes.push_back(eltType);
   }
 
-  return getReferentialTuple(context, std::move(eltTypes));
+  return getReferentialTuple(context, std::move(eltTypes), makeConst);
 }
 
 

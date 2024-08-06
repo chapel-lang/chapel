@@ -1443,6 +1443,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
           (isFormal || (signatureOnly && isField))) {
         // update qtKind with the result of resolving the intent
         if (!typeExprT.type()->isTupleType()) {
+          // skip for tuple types, which are handled along with ref/value below
           computeFormalIntent(decl, qtKind, typeExprT.type(), typeExprT.param());  
         }
       }
@@ -1480,16 +1481,19 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   // adjust tuple declarations for value / referential tuples
   if (typePtr != nullptr && decl->isVarArgFormal() == false) {
     if (auto tupleType = typePtr->toTupleType()) {
-      if (declaredKind == QualifiedType::DEFAULT_INTENT ||
-          declaredKind == QualifiedType::CONST_INTENT) {
+      if (declaredKind == QualifiedType::DEFAULT_INTENT) {
         typePtr = tupleType->toReferentialTuple(context);
         qtKind = QualifiedType::CONST_REF;
+      } else if (declaredKind == QualifiedType::CONST_INTENT) {
+        typePtr = tupleType->toReferentialTuple(context, true);
+        qtKind = QualifiedType::CONST_REF;
+      } else if (qtKind == QualifiedType::CONST_IN ||
+                 qtKind == QualifiedType::CONST_REF) {
+        typePtr = tupleType->toValueTuple(context, true);
       } else if (qtKind == QualifiedType::VAR ||
                  qtKind == QualifiedType::CONST_VAR ||
-                 qtKind == QualifiedType::CONST_REF ||
                  qtKind == QualifiedType::REF ||
                  qtKind == QualifiedType::IN ||
-                 qtKind == QualifiedType::CONST_IN ||
                  qtKind == QualifiedType::OUT ||
                  qtKind == QualifiedType::INOUT ||
                  qtKind == QualifiedType::TYPE) {

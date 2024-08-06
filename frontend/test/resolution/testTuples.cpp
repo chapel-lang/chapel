@@ -951,6 +951,24 @@ static void test20() {
     assert(tt->elementType(0).kind() == QualifiedType::VAR);
     assert(tt->elementType(1).kind() == QualifiedType::VAR);
   }
+  {
+    Context ctx;
+    Context* context = &ctx;
+    auto program = R"""(
+      proc foo(const ref v: ?t) do return v;
+      var x = foo((1,"hello"));
+    )""";
+    auto sig = test20Helper(context, program);
+    assert(sig->numFormals() == 1);
+    assert(sig->formalType(0).type()->isTupleType());
+    assert(sig->formalType(0).kind() == QualifiedType::CONST_REF);
+    auto tt = sig->formalType(0).type()->toTupleType();
+    assert(tt->numElements() == 2);
+    assert(tt->elementType(0).type()->isIntType());
+    assert(tt->elementType(1).type()->isStringType());
+    assert(tt->elementType(0).kind() == QualifiedType::CONST_VAR);
+    assert(tt->elementType(1).kind() == QualifiedType::CONST_VAR);
+  }
 }
 
 
