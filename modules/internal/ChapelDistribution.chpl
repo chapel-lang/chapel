@@ -510,6 +510,10 @@ module ChapelDistribution {
       return false;
     }
 
+    proc dsiSupportsShortArrayTransfer() param {
+      return false;
+    }
+
     proc dsiIteratorYieldsLocalElements() param {
       return false;
     }

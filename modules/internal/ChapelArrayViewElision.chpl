@@ -319,6 +319,10 @@ module ChapelArrayViewElision {
         yield arr[i];
       }
     }
+
+    proc supportsShortArrayTransfer() param {
+      return ptrToArr.deref().domain.supportsShortArrayTransfer();
+    }
   }
 
   // we need this as otherwise compiler-generated equality operator requires

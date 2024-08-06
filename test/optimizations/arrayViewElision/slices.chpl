@@ -1,5 +1,5 @@
 config param useDomain = true, rank = 1;
-config param dist = "block";
+config param dist = "stencil";
 
 proc multuplify(param rank, x) {
   var ret: rank*x.type;

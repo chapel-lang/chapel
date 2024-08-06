@@ -1764,6 +1764,10 @@ module DefaultRectangular {
     return true;
   }
 
+  override proc DefaultRectangularDom.dsiSupportsShortArrayTransfer() param {
+    return true;
+  }
+
   // Why can the following two functions not be collapsed into one
   // where 'dom = arr.dom'?  Because this puts a type constraint on
   // what 'dom' can be passed that is too strict in some callchains

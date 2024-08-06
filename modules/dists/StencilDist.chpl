@@ -883,6 +883,36 @@ iter StencilImpl.activeTargetLocales(const space : domain = boundingBox) {
   }
 }
 
+iter StencilImpl.activeTargetLocales(const space : range(?)) {
+  compilerAssert(rank==1);
+  const low = chpl__tuplify(targetLocsIdx(space.first));
+  const high = chpl__tuplify(targetLocsIdx(space.last));
+  var dims : rank*range(low(0).type);
+  for param i in 0..rank-1 {
+    dims(i) = low(i)..high(i);
+  }
+
+  // In case 'locSpace' is a strided domain we need to check that the locales
+  // in 'dims' actually contain indices in 'locSpace'.
+  //
+  // Note that we cannot use a simple stride here because it is not guaranteed
+  // that each locale contains the same number of indices. For example, the
+  // domain {1..10} over four locales will split like:
+  //   L0: -max(int)..3
+  //   L1: 4..5
+  //   L2: 6..8
+  //   L3: 9..max(int)
+  //
+  // The subset {1..10 by 4} will involve locales 0, 1, and 3.
+  foreach i in dims {
+    const chunk = chpl__computeBlock(i, targetLocDom, boundingBox);
+    // TODO: Want 'contains' for a domain. Slicing is a workaround.
+    if locSpace[chunk].sizeAs(int) > 0 then
+      yield i;
+  }
+
+}
+
 // create a domain over an existing Stencil Distribution
 proc stencilDist.createDomain(dom: domain(?)) {
   return dom dmapped this;
