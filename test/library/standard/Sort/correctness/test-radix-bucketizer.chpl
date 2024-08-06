@@ -1,4 +1,5 @@
 use Sort;
+use SequentialInPlacePartitioning;
 use RadixSortHelp;
 use Random;
 use Time;

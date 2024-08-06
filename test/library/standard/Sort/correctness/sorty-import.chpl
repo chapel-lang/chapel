@@ -12,11 +12,11 @@ if debug then writeln("n=", n);
 
 use Time;
 use Random;
-import Sort.{BubbleSort, InsertionSort, MergeSort, SelectionSort, QuickSort,
-    HeapSort};
+import Sort.{InsertionSort, QuickSort};
+import BubbleSort, HeapSort, SelectionSort, MergeSort;
 config const seed = 13579;
 
-enum SortType { BUBBLE=0, INSERTION, MERGE, SELECTION, QUICK, HEAP };
+enum SortType { BUBBLE=0, INSERTION, MERGE, SELECTION, QUICK, HEAP }
 
 proc main() {
   for param st in 0..5 /* this is annoying */ do

@@ -5,6 +5,7 @@ use Sort;
 use Random;
 use Time;
 use CTypes;
+import MergeSort, TwoArraySampleSort; // from ../ExampleSorts
 
 config const printStats = true;
 config const minSize = 1;
