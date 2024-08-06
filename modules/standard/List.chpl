@@ -57,8 +57,12 @@
 module List {
   import ChapelLocks;
   private use HaltWrappers;
-  private use Sort;
   private use Math;
+
+  //
+  // TODO: remove me when `list.sort` is removed
+  //
+  private use Sort;
 
   @chpldoc.nodoc
   private const _initialCapacity = 8;
@@ -1536,6 +1540,7 @@ module List {
       return result;
     }
 
+    //TODO: When this is removed make sure to remove the `use Sort` from this module
     /*
       Sort the items of this list in place using a comparator. If no comparator
       is provided, sort this list using the default sort order of its elements.
@@ -1547,35 +1552,9 @@ module List {
 
       :arg comparator: A comparator used to sort this list.
     */
-    @unstable("'list.sort' is unstable and may be replaced or modified in a future release")
-    proc ref sort(comparator: ?rec= new Sort.DefaultComparator()) {
-      on this {
-        _enter();
-
-        //
-        // TODO: This is not ideal, but the Sort API needs to be adjusted
-        // before we can sort over lists directly.
-        //
-        if _size > 1 {
-
-          // Copy current list contents into an array.
-          var arr: [0..#_size] eltType;
-          for i in 0..#_size do
-            arr[i] = _getRef(i);
-
-          Sort.sort(arr, comparator);
-
-          // This is equivalent to the clear routine.
-          _fireAllDestructors();
-          _freeAllArrays();
-          _firstTimeInitializeArrays();
-          _appendGeneric(arr);
-        }
-
-        _leave();
-      }
-      return;
-    }
+    @deprecated("'list.sort' is deprecated - please use the :proc:`sort(x: list)<Sort.sort>` procedure from the :mod:`Sort` module instead")
+    proc ref sort(comparator: ?rec= new Sort.DefaultComparator()) do
+      Sort.sort(this, comparator);
 
     /*
       Return a copy of the element at a given index in this list.

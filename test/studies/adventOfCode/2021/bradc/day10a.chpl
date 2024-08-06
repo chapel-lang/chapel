@@ -1,4 +1,4 @@
-use IO, List, Map;
+use IO, List, Map, Sort;
 
 config const debug = false;
 
@@ -42,7 +42,7 @@ forall (command, lineno) in zip(navSubSys, 1..) with (ref scores) {
   }
 }
 if debug then writeln(scores);
-scores.sort();
+sort(scores);
 writeln(scores);
 var middle = scores.getValue(scores.size/2);
 writeln(middle);
