@@ -1,2 +1,2 @@
 -seltType=int
--seltType='atomic int' -seltType2='atomic int'
+-seltType='atomic int' -seltType2='atomic int' # typeMethods-atomic
