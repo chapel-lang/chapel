@@ -2314,6 +2314,8 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
   auto fnCall = call->toFnCall();
   if (!fnCall->calledExpression()->isIdentifier()) return false;
 
+  auto& r = byPostorder.byAst(call);
+
   auto fnName = fnCall->calledExpression()->toIdentifier()->name();
   if (fnName == "index") {
     auto runResult = context->runAndTrackErrors([&](Context* ctx) {
@@ -2326,7 +2328,6 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
       auto result = resolveGeneratedCall(context, call, ci, inScopes);
 
-      auto& r = byPostorder.byAst(call);
       handleResolvedCall(r, call, ci, result);
       return result;
     });
@@ -2340,24 +2341,36 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
     }
     return true;
   } else if (fnName == "domain") {
-    auto runResult = context->runAndTrackErrors([&](Context* ctx) {
-      // TODO: modify call to be correct (pass implicit dist actual)
-      auto ci = CallInfo::create(context, call, byPostorder,
-                                 /* raiseErrors */ true,
-                                 /* actualAsts */ nullptr,
-                                 /* moduleScopeId */ nullptr,
-                                 /* rename */ UniqueString::get(context, "chpl__buildDomainRuntimeType"));
-      auto scope = scopeStack.back();
-      auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
-      auto result = resolveGeneratedCall(context, call, ci, inScopes);
+    // Try resolving 'domain(?)' as a special case.
+    if (call->numActuals() == 1 && call->actual(0)->isIdentifier() &&
+        call->actual(0)->toIdentifier()->name() == "?") {
+      // 'domain(?)' is equivalent to just 'domain', the generic domain
+      // type.
+      // Copy the result of resolving 'domain' as the called identifier.
+      auto& rCalledExp = byPostorder.byAst(fnCall->calledExpression());
+      CHPL_ASSERT(rCalledExp.type().hasTypePtr());
+      r.setType(rCalledExp.type());
+    } else {
+      auto runResult = context->runAndTrackErrors([&](Context* ctx) {
+        // TODO: modify call to be correct (pass implicit dist actual)
+        auto ci = CallInfo::create(
+            context, call, byPostorder,
+            /* raiseErrors */ true,
+            /* actualAsts */ nullptr,
+            /* moduleScopeId */ nullptr,
+            /* rename */
+            UniqueString::get(context, "chpl__buildDomainRuntimeType"));
+        auto scope = scopeStack.back();
+        auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+        auto result = resolveGeneratedCall(context, call, ci, inScopes);
 
-      auto& r = byPostorder.byAst(call);
-      handleResolvedCall(r, call, ci, result);
-      return result;
-    });
+        handleResolvedCall(r, call, ci, result);
+        return result;
+      });
 
-    if (!runResult.ranWithoutErrors()) {
-      CHPL_REPORT(context, InvalidDomainCall, fnCall);
+      if (!runResult.ranWithoutErrors()) {
+        CHPL_REPORT(context, InvalidDomainCall, fnCall);
+      }
     }
     return true;
   }
