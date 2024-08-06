@@ -67,6 +67,7 @@ config param debugBlockDistBulkTransfer = false;
 config const disableAliasedBulkTransfer = true;
 
 config param disableBlockDistBulkTransfer = false;
+config param disableBlockDistArrayViewElision = false;
 
 config param sanityCheckDistribution = false;
 
@@ -1728,6 +1729,10 @@ inline proc LocBlockArr.this(i) ref {
 
 override proc BlockDom.dsiSupportsAutoLocalAccess() param {
   return true;
+}
+
+override proc BlockDom.dsiSupportsArrayViewElision() param {
+  return !disableBlockDistArrayViewElision;
 }
 
 ///// Privatization and serialization ///////////////////////////////////////

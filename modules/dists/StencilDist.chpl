@@ -60,6 +60,7 @@ config param debugStencilDistBulkTransfer = false;
 config param stencilDistAllowPackedUpdateFluff = true;
 
 config param disableStencilDistBulkTransfer = false;
+config param disableStencilDistArrayViewElision = false;
 
 private config param allowDuplicateTargetLocales = false;
 // Instructs the _packedUpdate method to only perform the optimized buffer
@@ -2123,6 +2124,10 @@ override proc StencilDom.dsiAutoLocalAccessOffsetCheck(offsets) {
     ret &&= fluff[i] >= abs(offsets[i]);
   }
   return ret;
+}
+
+override proc StencilDom.dsiSupportsArrayViewElision() param {
+  return !disableStencilDistArrayViewElision;
 }
 
 //
