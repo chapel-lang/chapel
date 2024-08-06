@@ -75,4 +75,4 @@ cp $location ${CHPL_HOME}/util/packaging/docker/test
 #This will start a docker container that is similar to the one used by homebrew-ci and test the homebrew installation inside it.
 source ${CHPL_HOME}/util/packaging/docker/test/homebrew_ci.bash
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="homebrew"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="homebrew-linux"
