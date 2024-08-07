@@ -52,8 +52,8 @@ module Allocators {
   }
 
 
-  @chpldoc.nodoc
   /* See docs for :proc:`~Allocators.newWithAllocator` */
+  @chpldoc.nodoc
   inline proc newWithAllocator(ref alloc, type T): T {
     checkInterfaceHelper(alloc);
     newTypeCheckHelper(T);
