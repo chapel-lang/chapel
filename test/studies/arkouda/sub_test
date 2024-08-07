@@ -96,19 +96,11 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
   test_end
 
   # Run Python unit tests
-  test_start "make test-python"
-  if make test-python ; then
-    log_success "make test-python output"
-  else
-    log_error "running make test-python"
-  fi
-  test_end
-
-  test_start "make test-proto"
+  test_start "make test-python-proto"
   if make test-proto ; then
-    log_success "make test-proto output"
+    log_success "make test-python-proto output"
   else
-    log_error "running make test-proto"
+    log_error "running make test-python-proto"
   fi
   test_end
 
