@@ -9682,7 +9682,7 @@ yyreduce:
   case 572: /* for_expr_base: for_loop_kw zippered_iterator TDO expr  */
 #line 3125 "chpl.ypp"
   {
-    (yyval.expr) = context->syntax((yyloc), "expression level loops with 'zip' must have an index.");
+    (yyval.expr) = context->syntax((yyloc), "expression-level loops with 'zip' must have an index.");
   }
 #line 9688 "bison-chpl-lib.cpp"
     break;
