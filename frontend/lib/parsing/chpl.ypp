@@ -3123,7 +3123,7 @@ for_expr_base:
   }
 | for_loop_kw zippered_iterator TDO expr %prec TFOR
   {
-    $$ = context->syntax(@$, "expression level loops with 'zip' must have an index.");
+    $$ = context->syntax(@$, "expression-level loops with 'zip' must have an index.");
   }
 | for_loop_kw expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
   {

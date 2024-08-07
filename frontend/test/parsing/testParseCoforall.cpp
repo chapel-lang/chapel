@@ -232,8 +232,8 @@ static void test6(Parser* parser) {
       "var c2 = coforall zip(a,b) do 1;\n");
   auto numErrors = 2;
   assert(guard.errors().size() == (size_t) numErrors);
-  assert("expression level 'coforall' loops are not supported" == guard.error(0)->message());
-  assert("expression level loops with 'zip' must have an index" == guard.error(1)->message());
+  assert("expression-level 'coforall' loops are not supported" == guard.error(0)->message());
+  assert("expression-level loops with 'zip' must have an index" == guard.error(1)->message());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 4);
