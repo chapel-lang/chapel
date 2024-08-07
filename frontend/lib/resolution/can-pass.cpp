@@ -1116,6 +1116,10 @@ void KindProperties::setParam(bool isParam) {
   this->isParam = isParam;
 }
 
+void KindProperties::setConst(bool isConst) {
+  this->isConst = isConst;
+}
+
 bool KindProperties::checkValidCombine(const KindProperties& other) const {
   if (!isValid || !other.isValid) {
     return false;
@@ -1168,6 +1172,20 @@ types::QualifiedType::Kind KindProperties::combineKindsMeet(
   auto kp2 = KindProperties::fromKind(kind2);
   kp1.combineWithMeet(kp2);
   return kp1.toKind();
+}
+
+QualifiedType::Kind
+KindProperties::addConstness(QualifiedType::Kind kind) {
+  auto kp = KindProperties::fromKind(kind);
+  kp.setConst(true);
+  return kp.toKind();
+}
+
+QualifiedType::Kind
+KindProperties::addRefness(QualifiedType::Kind kind) {
+  auto kp = KindProperties::fromKind(kind);
+  kp.setRef(true);
+  return kp.toKind();
 }
 
 QualifiedType::Kind KindProperties::toKind() const {
