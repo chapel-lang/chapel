@@ -1486,6 +1486,7 @@ proc type cyclicDist.createDomain(rng: range(?)...) {
 
 
 // create an array over a Cyclic Distribution, default initialized
+pragma "no copy return"
 proc type cyclicDist.createArray(
   dom: domain(?),
   type eltType,
@@ -1497,6 +1498,7 @@ proc type cyclicDist.createArray(
 }
 
 // create an array over a Cyclic Distribution, initialized with the given value or iterator
+pragma "no copy return"
 proc type cyclicDist.createArray(
   dom: domain(?),
   type eltType,
@@ -1511,6 +1513,7 @@ proc type cyclicDist.createArray(
 }
 
 // create an array over a Cyclic Distribution, initialized from the given array
+pragma "no copy return"
 proc type cyclicDist.createArray(
   dom: domain(?),
   type eltType,
@@ -1528,6 +1531,7 @@ proc type cyclicDist.createArray(
 }
 
 // create an array over a Cyclic Distribution constructed from a series of ranges, default initialized
+pragma "no copy return"
 proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1536,11 +1540,13 @@ proc type cyclicDist.createArray(
   return createArray({(...rng)}, eltType, targetLocales);
 }
 
+pragma "no copy return"
 proc type cyclicDist.createArray(rng: range(?)..., type eltType) {
   return createArray({(...rng)}, eltType);
 }
 
 // create an array over a Cyclic Distribution constructed from a series of ranges, initialized with the given value or iterator
+pragma "no copy return"
 proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1551,6 +1557,7 @@ proc type cyclicDist.createArray(
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
+pragma "no copy return"
 proc type cyclicDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
   where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
@@ -1558,6 +1565,7 @@ proc type cyclicDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
 }
 
 // create an array over a Cyclic Distribution constructed from a series of ranges, initialized from the given array
+pragma "no copy return"
 proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1568,6 +1576,7 @@ proc type cyclicDist.createArray(
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
+pragma "no copy return"
 proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,

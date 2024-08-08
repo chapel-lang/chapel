@@ -1,5 +1,6 @@
 use Sort;
 use SampleSortHelp;
+use TwoArraySampleSort;
 use Random;
 
 config const debug = false;

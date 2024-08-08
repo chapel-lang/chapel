@@ -2,13 +2,14 @@
 
 chpl=$3
 chpl_home=$($chpl --print-chpl-home)
-compiler=$($chpl_home/util/printchplenv --all --simple | grep CHPL_TARGET_CXX= | sed 's/CHPL_TARGET_CXX=//')
-llvm_version=$($chpl_home/util/printchplenv --all --simple | grep CHPL_LLVM_VERSION= | sed 's/CHPL_LLVM_VERSION=//')
-cuda_path=$($chpl_home/util/printchplenv --all --internal --simple | grep CHPL_CUDA_PATH= | sed 's/CHPL_CUDA_PATH=//')
+compiler=$($chpl_home/util/printchplenv --value --only CHPL_TARGET_CXX)
+llvm_version=$($chpl_home/util/printchplenv --value --only CHPL_LLVM_VERSION)
+gpu_arch=$($chpl_home/util/printchplenv --value --only CHPL_GPU_ARCH)
+cuda_path=$($chpl_home/util/printchplenv --value --only CHPL_CUDA_PATH)
 nvcc_compiler=$cuda_path/bin/nvcc
 
 NVCC_FLAGS=""
-CLANG_FLAGS=""
+CLANG_FLAGS="--offload-arch=${gpu_arch}"
 if [[ "$llvm_version" -ge 15 ]]; then
   # LLVM 15 and later require default to -fPIE, so streamKernel.cu needs to be compiled with -fPIE
   NVCC_FLAGS="--compiler-options -fPIE"

@@ -8,6 +8,7 @@ use LinearAlgebra;
 use LinearAlgebra.Sparse;
 private use List;
 use Time;
+private use Sort;
 
 config const n = 1000,
              nnz = 100,
@@ -187,7 +188,7 @@ record _SPA {
   proc ref gather(ref C: [?Cdom], i) {
     const nzcur = C.IR[i];
     var nzi = 0;
-    this.ls.sort();
+    sort(this.ls);
 
     for idx in this.ls {
       if nzcur + nzi  >= C.JC.size then break;

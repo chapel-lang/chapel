@@ -1,5 +1,6 @@
 module ResultDB {
     private use List;
+    import Sort;
     private use SortedMap;
     use IO.FormattedIO;
 
@@ -55,7 +56,7 @@ module ResultDB {
                         // Calc median
                         var median: real;
                         var resultSorted = this.results[blockSize];
-                        resultSorted.sort();
+                        Sort.sort(resultSorted);
                         // writeln(resultSorted.indices);
                         if(resultSorted.size % 2 == 0){
                             median = resultSorted[(resultSorted.size-1)/2]; // -1 to get the actual last index
@@ -129,7 +130,7 @@ module ResultDB {
                         // Calc median
                         var median: real;
                         var resultSorted = this.results[blockSize];
-                        resultSorted.sort();
+                        Sort.sort(resultSorted);
                         // writeln(resultSorted.indices);
                         if(resultSorted.size % 2 == 0){
                             median = resultSorted[(resultSorted.size-1)/2]; // -1 to get the actual last index

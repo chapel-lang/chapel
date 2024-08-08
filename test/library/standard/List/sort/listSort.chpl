@@ -1,4 +1,4 @@
-use List;
+use List, Sort;
 
 config type listType = int;
 config param listLock = true;
@@ -12,6 +12,6 @@ for i in 1..testIters by -1 do
 writeln(lst);
 
 // Sort using default comparator.
-lst.sort();
+sort(lst);
 
 writeln(lst);
