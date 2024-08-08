@@ -84,9 +84,12 @@ module ParallelIO {
     :arg lineType: which type to return for each line — either ``string`` or ``bytes``
     :arg header: how to handle the file header (see :record:`headerPolicy`)
     :arg nTasks: the number of tasks used to read the file
+    :arg targetLocales: the locales to use for reading the file. If empty,
+                        only read from the calling locale (default: [])
   */
   iter readLines(filePath: string, type lineType = string,
-                 header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar
+                 header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar,
+                 targetLocales: [] locale = chpl_emptyLocales
   ): lineType
     where lineType == string || lineType == bytes
   {
@@ -105,7 +108,8 @@ module ParallelIO {
 
   @chpldoc.nodoc
   iter readLines(param tag: iterKind, filePath: string, type lineType = string,
-                 header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar
+                 header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar,
+                 targetLocales: [?tld] locale = chpl_emptyLocales
   ): lineType
     where tag == iterKind.standalone && (lineType == string || lineType == bytes)
   {
@@ -113,15 +117,32 @@ module ParallelIO {
 
     const fMeta = try! open(filePath, ioMode.r),
           fileBounds = 0..<(try! fMeta.size),
-          byteOffsets = try! findDelimChunks(fMeta, delim, nTasks, fileBounds, header);
+          byteOffsets = try! findDelimChunks(fMeta, delim, if tld.size > 0 then tld.size else nTasks, fileBounds, header);
 
-    coforall tid in 0..<nTasks {
-      const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1],
-            r = try! fMeta.reader(locking=false, region=taskBounds);
+    if tld.size == 0 {
+      coforall tid in 0..<nTasks {
+        const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1],
+              r = try! fMeta.reader(locking=false, region=taskBounds);
 
-      var line: lineType;
-      while (try! r.readLine(line, stripNewline=true)) do
-        yield line;
+        var line: lineType;
+        while (try! r.readLine(line, stripNewline=true)) do
+          yield line;
+      }
+    } else {
+      coforall (loc, id) in zip(targetLocales, 0..) do on loc {
+        const locBounds = byteOffsets[id]..byteOffsets[id+1],
+              locFile = try! open(filePath, ioMode.r),
+              locByteOffsets = try! findDelimChunks(locFile, delim, nTasks, locBounds, headerPolicy.noHeader);
+
+        coforall tid in 0..<nTasks {
+          const taskBounds = locByteOffsets[tid]..<locByteOffsets[tid+1],
+                r = try! locFile.reader(locking=false, region=taskBounds);
+
+          var line: lineType;
+          while (try! r.readLine(line, stripNewline=true)) do
+            yield line;
+        }
+      }
     }
   }
 
@@ -148,10 +169,13 @@ module ParallelIO {
     :arg header: how to handle the file header (see :record:`headerPolicy`)
     :arg nTasks: the number of tasks used to read the file
     :arg deserializerType: the type of deserializer to use when reading values
+    :arg targetLocales: the locales to use for reading the file. If empty,
+                        only read from the calling locale (default: [])
   */
   iter readDelimited(filePath: string, type t, in delim: ?dt = b"\n",
                      header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar,
-                     type deserializerType = defaultDeserializer
+                     type deserializerType = defaultDeserializer,
+                     targetLocales: [] locale = chpl_emptyLocales
   ): t
     where dt == string || dt == bytes
   {
@@ -173,23 +197,44 @@ module ParallelIO {
   iter readDelimited(param tag: iterKind,
                      filePath: string, type t, in delim: ?dt = b"\n",
                      header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar,
-                     type deserializerType = defaultDeserializer
+                     type deserializerType = defaultDeserializer,
+                     targetLocales: [?tld] locale = chpl_emptyLocales
   ): t
     where tag == iterKind.standalone && (dt == string || dt == bytes)
   {
     const fMeta = try! open(filePath, ioMode.r),
           fileBounds = 0..<(try! fMeta.size),
-          byteOffsets = try! findDelimChunks(fMeta, delim, nTasks, fileBounds, header);
+          byteOffsets = try! findDelimChunks(fMeta, delim, if tld.size > 0 then tld.size else nTasks, fileBounds, header);
 
-    coforall tid in 0..<nTasks {
-      var des: deserializerType;
-      const taskBounds = byteOffsets[tid]..byteOffsets[tid+1],
-            r = try! fMeta.reader(locking=false, region=taskBounds, deserializer=des);
+    if tld.size == 0 {
+      coforall tid in 0..<nTasks {
+        var des: deserializerType;
+        const taskBounds = byteOffsets[tid]..byteOffsets[tid+1],
+              r = try! fMeta.reader(locking=false, region=taskBounds, deserializer=des);
 
-      var item: t;
-      while (try! r.read(item)) {
-        yield item;
-        try! r.advanceThrough(delim);
+        var item: t;
+        while (try! r.read(item)) {
+          yield item;
+          try! r.advanceThrough(delim);
+        }
+      }
+    } else {
+      coforall (loc, id) in zip(targetLocales, 0..) do on loc {
+        const locBounds = byteOffsets[id]..<byteOffsets[id+1],
+              locFile = try! open(filePath, ioMode.r),
+              locByteOffsets = try! findDelimChunks(locFile, delim, nTasks, locBounds, headerPolicy.noHeader);
+
+        coforall tid in 0..<nTasks {
+          var des: deserializerType;
+          const taskBounds = locByteOffsets[tid]..locByteOffsets[tid+1],
+                r = try! locFile.reader(locking=false, region=taskBounds, deserializer=des);
+
+          var item: t;
+          while (try! r.read(item)) {
+            yield item;
+            try! r.advanceThrough(delim);
+          }
+        }
       }
     }
   }

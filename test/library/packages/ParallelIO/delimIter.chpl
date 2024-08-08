@@ -8,14 +8,24 @@ config const n = 1000,
 proc main() {
     const thingsActual = makeThingsFile(fileName, n);
 
+    // single-locale read
     var things = new map(int, int, parSafe=true);
     forall t in readDelimited(fileName, t=thing, delim=",", nTasks=nTasks)
         with (ref things) do
             mapAddOrSet(things, t.k, t.v);
 
+    // multi-locale read
+    var things2 = new map(int, int, parSafe=true);
+    forall t in readDelimited(fileName, t=thing, delim=",", nTasks=nTasks, targetLocales=Locales)
+        with (ref things2) do
+            mapAddOrSet(things2, t.k, t.v);
+
     // ensure the file was read correctly
     for (k, v) in zip(things.keys(), things.values()) do
-        assert(thingsActual[k] == v);
+        assert(thingsActual[k] == v, "single-locale mismatch");
+
+    for (k, v) in zip(things2.keys(), things2.values()) do
+        assert(thingsActual[k] == v, "multi-locale mismatch");
 }
 
 record thing: serializable {
