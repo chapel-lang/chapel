@@ -1360,8 +1360,6 @@ void loopInvariantCodeMotion(void) {
   // optimize certain statements in foralls to unordered
   optimizeForallUnorderedOps();
 
-  earlyGpuTransforms();
-
   loopInvariantCodeMotionImpl();
 
   // We run gpuTransforms after LICM since we can benefit from invariant
@@ -1370,7 +1368,7 @@ void loopInvariantCodeMotion(void) {
   // rather than in its own pass in order to avoid disruption/overhead of
   // adding a new pass (though we may wish to change this at some point in the
   // future).
-  lateGpuTransforms();
+  gpuTransforms();
 
   // Compute array element alias sets.
   //

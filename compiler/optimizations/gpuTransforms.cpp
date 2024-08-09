@@ -150,26 +150,9 @@ static VarSymbol* generateAssignmentToPrimitive(FnSymbol* fn,
   return var;
 }
 
-template <size_t Size>
-bool isEqualToAnyOfTheLoops(LoopStmt* loop, CForLoop* const (&loops)[Size]) {
-  for (size_t i = 0; i < Size; i++) {
-    if (loops[i] == loop) return true;
-  }
-  return false;
-}
 
-template <size_t Size>
-static bool isDefinedInTheLoops(Symbol* sym, CForLoop* const (&loops)[Size]) {
-  LoopStmt* curLoop = LoopStmt::findEnclosingLoop(sym->defPoint);
-
-  while (curLoop != nullptr) {
-    if (isEqualToAnyOfTheLoops(curLoop, loops)) {
-      return true;
-    }
-    curLoop = LoopStmt::findEnclosingLoop(curLoop->parentExpr);
-  }
-
-  return false;
+static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
+  return loop == LoopStmt::findEnclosingLoop(sym->defPoint);
 }
 
 // This is primarily to handle the indexOfInterest generated for promoted
@@ -181,9 +164,8 @@ static bool isDefinedInTheLoops(Symbol* sym, CForLoop* const (&loops)[Size]) {
 // passing that as an argument to the GPU kernel.  TODO: investigate whether
 // that def is removed later in the compilation.  Ideally move GPU transforms
 // after that pass
-template <size_t Size>
-static bool isDegenerateOuterRef(Symbol* sym, CForLoop* const (&loops)[Size]) {
-  if (isDefinedInTheLoops(sym, loops) ||
+static bool isDegenerateOuterRef(Symbol* sym, CForLoop* loop) {
+  if (isDefinedInTheLoop(sym, loop) ||
       !sym->hasFlag(FLAG_TEMP)        ||
       !sym->isRef()                   ||
       !isVarSymbol(sym)) {
@@ -191,13 +173,13 @@ static bool isDegenerateOuterRef(Symbol* sym, CForLoop* const (&loops)[Size]) {
   }
 
   for_SymbolUses(use, sym) {
-    if (!isEqualToAnyOfTheLoops(LoopStmt::findEnclosingLoop(use), loops)) {
+    if (LoopStmt::findEnclosingLoop(use) != loop) {
       return false;
     }
   }
 
   for_SymbolDefs(def, sym) {
-    if (!isEqualToAnyOfTheLoops(LoopStmt::findEnclosingLoop(def), loops)) {
+    if (LoopStmt::findEnclosingLoop(def) != loop) {
       return false;
     }
   }
@@ -532,11 +514,6 @@ class GpuizableLoop {
 
   GpuAssertionReporter assertionReporter_;
 
-  //CondStmt* gpuCond_ = nullptr;
-  //BlockStmt* cpuBlock_ = nullptr;
-  //BlockStmt* gpuBlock_ = nullptr;
-  //CForLoop* gpuLoop_ = nullptr;
-
   std::vector<CallExpr*> pidGets_;
 
   // To allow move constructor
@@ -546,32 +523,9 @@ public:
   GpuizableLoop(GpuizableLoop&&) = default;
   GpuizableLoop(const GpuizableLoop&) = default;
 
-  //static GpuizableLoop fromEligibleClone(BlockStmt* blk) {
-    //GpuizableLoop loop{blk};
-    //std::swap(loop.gpuLoop_, loop.loop_);
-
-    //// Try to recover some fields from existing AST structure.
-    //loop.gpuBlock_ = toBlockStmt(loop.gpuLoop_->parentExpr);
-    //INT_ASSERT(loop.gpuBlock_ != nullptr);
-    //loop.gpuCond_ = toCondStmt(loop.gpuBlock_->parentExpr);
-    //INT_ASSERT(loop.gpuCond_);
-    //loop.cpuBlock_ = loop.gpuCond_->elseStmt;
-    //INT_ASSERT(loop.cpuBlock_);
-
-    //// LICM might've moved a few things outside of the loop.
-    //for_alist(expr, loop.cpuBlock_->body) {
-      //loop.loop_ = toCForLoop(expr);
-      //if (loop.loop_) break;
-    //}
-    //INT_ASSERT(loop.loop_);
-
-    //return loop;
-  //}
 
   bool isReportWorthy();
 
-  //CForLoop* cpuLoop() const { return loop_; }
-  //CForLoop* gpuLoop() const { return gpuLoop_; }
   CForLoop* loop() const { return loop_; }
 
   bool isEligible() const { return isEligible_; }
@@ -582,10 +536,6 @@ public:
     return std::find(loopIndices_.begin(), loopIndices_.end(), sym) !=
       loopIndices_.end();
   }
-
-  //void makeCpuOnly() const;
-  //void makeGpuOnly() const;
-  //void fixupNonGpuPath() const;
 
   const std::vector<CallExpr*>& pidGets() const { return pidGets_; }
 
@@ -748,7 +698,7 @@ static bool symbolIsAField(SymExpr* expr) {
 
 Symbol* GpuizableLoop::getPidFieldForPrivatizationOffload(SymExpr* symExpr) {
   Symbol* sym = symExpr->symbol();
-  if (!isDefinedInTheLoops(sym, {this->loop_}) &&
+  if (!isDefinedInTheLoop(sym, this->loop_) &&
       !symbolIsAField(symExpr) &&
       isRecordWrappedType(sym->type)) {
     AggregateType* aggType = toAggregateType(sym->type);
@@ -780,7 +730,7 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
     // gotos that jump outside the loop cannot be gpuized
     if (GotoStmt* gotostmt = toGotoStmt(symExpr->parentExpr)) {
       if (auto label = toSymExpr(gotostmt->label)) {
-        if (!isDefinedInTheLoops(label->symbol(), {this->loop_}))
+        if (!isDefinedInTheLoop(label->symbol(), this->loop_))
           return false;
       }
     }
@@ -1624,12 +1574,7 @@ bool isCallToPrimitiveWithHostRuntimeEffect(CallExpr *call) {
 void GpuKernel::populateBody() {
   std::set<Symbol*> handledSymbols;
 
-  // Some of the conditions below are intended to check for "things that
-  // only happen in the loop body". However, the pre-LICM cloning means
-  // there are actually two loop bodies. Use both for these checks to avoid
-  // throwing off various checks.
   CForLoop* loopForBody = gpuLoop.loop();
-  //CForLoop* cloneOfLoop = gpuLoop.cpuLoop();
 
   for_alist(node, loopForBody->body) {
     bool copyNode = true;
@@ -1674,14 +1619,14 @@ void GpuKernel::populateBody() {
         }
         handledSymbols.insert(sym);
 
-        if (isDefinedInTheLoops(sym, {loopForBody})) {
+        if (isDefinedInTheLoop(sym, loopForBody)) {
           // looks like this symbol was declared within the loop body,
           // so do nothing. TODO: I am hoping that we don't need to
           // check the type of the variable here, and we'll know that it
           // is a valid variable to declare on the gpu via the loop body
           // analysis
         }
-        else if (isDegenerateOuterRef(sym, {loopForBody})) {
+        else if (isDegenerateOuterRef(sym, loopForBody)) {
           addLocalVariable(sym);
         }
         else if (sym->isImmediate()) {
@@ -2029,22 +1974,6 @@ static BlockStmt* generateGPUKernelCall(const GpuizableLoop &gpuLoop,
 
   gpuBlock->insertAtTail(gpuCall);
   gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_DEINIT_KERNEL_CFG, cfg));
-  //gpuLoop.loop()->replace(gpuBlock);
-
-  //FnSymbol *fnContainingLoop = gpuBlock->getFunction();
-  //bool canAssumeFnWillRunOnGpu =
-    //fGpuSpecialization && (assumeNonGpuSpecFnsAreOnCpu || isFnGpuSpecialized(fnContainingLoop));
-
-  //if(canAssumeFnWillRunOnGpu) {
-    //// If we are creating GPU specializations then we already know we're on a GPU
-    //// sublocale and can just generate the kernel launch call (or, in the case
-    //// of CPU-as-device, a kernel launch followed by the CPU loop).
-    //gpuLoop.makeGpuOnly();
-  //} else {
-    //// we don't know if we're in a specialization, so we need to keep
-    //// the conditional.
-    //gpuLoop.fixupNonGpuPath();
-  //}
 
   return gpuBlock;
 }
@@ -2073,10 +2002,8 @@ static void outlineEligibleLoop(FnSymbol *fn, GpuizableLoop &gpuLoop) {
   GpuKernel kernel(gpuLoop, fn->defPoint);
   if(!kernel.lateGpuizationFailure()) {
     kernel.generateGpuAndNonGpuPaths();
-    //generateGPUKernelCall(gpuLoop, kernel);
   } else {
     kernel.fn()->defPoint->remove();
-    //gpuLoop.makeCpuOnly();
   }
 }
 
@@ -2094,27 +2021,9 @@ static void outlineGpuKernelsInFn(FnSymbol *fn) {
 
     GpuizableLoop gpuLoop(loop);
 
-    //auto foundLoop = eligibleLoops.find(loop);
-    //if (foundLoop != eligibleLoops.end()) {
-      //// Even though the original eligible loops are not in the GPU specialized
-      //// copies, they need to be outlined to account for virtual dispatch.
-      //auto& eligibleLoop = foundLoop->second;
-      //outlineEligibleLoop(fn, eligibleLoop);
-    //} else if (fGpuSpecialization && getGpuEligibleMarker(loop)) {
-      //// Even if this wasn't a loop originally marked eligible, it could
-      //// be a copy of one. If that's the case, we inserted a primitive
-      //// into its body.
-
-      //// TODO: sometimes, this loop can be made no longer eligible by
-      //// other transformations. Is that okay?
-      //auto gpuLoop = GpuizableLoop::fromEligibleClone(loop);
-      if (gpuLoop.isEligible()) {
-        outlineEligibleLoop(fn, gpuLoop);
-      }
-      //else {
-        //gpuLoop.makeCpuOnly();
-      //}
-    //}
+    if (gpuLoop.isEligible()) {
+      outlineEligibleLoop(fn, gpuLoop);
+    }
   }
 }
 
@@ -2260,7 +2169,7 @@ static void reportErrorsForBadBlockSizeCalls() {
 
 // ----------------------------------------------------------------------------
 
-void lateGpuTransforms() {
+void gpuTransforms() {
   if (fReportGpu) {
     logGpuizableLoops();
   }
@@ -2286,24 +2195,6 @@ void lateGpuTransforms() {
 bool isLoopGpuBound(CForLoop* loop) {
   return eligibleLoops.find(loop) != eligibleLoops.end();
 }
-
-// TODO: is LICM required for some loops to be eligible? thonk.
-
-/* Eligible loops are immediately placed into a conditional with a copy of
-   the loop, like:
-
-       if runningOnGpuLocale() {
-          // loop
-       } else {
-          // loop
-       }
-
-   This way, the GPU-bound loop can be LICM'ed differently. Normally, LICM
-   is not a fan of reference variables, etc. However, we relax these
-   restrictions for GPU-bound loops to make it possible to save on
-   shiftedData access etc.
-
- */
 
 void GpuKernel::generateGpuAndNonGpuPaths() {
   SET_LINENO(gpuLoop.loop());
@@ -2349,10 +2240,6 @@ void GpuKernel::generateGpuAndNonGpuPaths() {
                                     new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
                                     new_IntSymbol(0));
 
-  // Create a copy of the CPU loop for LICM purposes
-  //CForLoop* gpuLoop = cpuLoop()->copy();
-  //gpuBlock->insertAtTail(gpuLoop);
-
   CondStmt* cond = new CondStmt(condExpr, gpuBlock, isFullGpuCodegen() ?
                                                     cpuBlock : nullptr);
   gpuBranches.insert(cond);
@@ -2366,74 +2253,5 @@ void GpuKernel::generateGpuAndNonGpuPaths() {
   if (!isFullGpuCodegen()) {
     cond->insertAfter(cpuBlock);
   }
-
-  // Save the new AST nodes we created so we can operate on them later.
-  //gpuLoop.cpuBlock_ = cpuBlock;
-  //gpuLoop.gpuBlock_ = gpuBlock;
-  //gpuLoop_ = gpuLoop;
-  //gpuLoop.gpuCond_ = cond;
 }
 
-//void GpuizableLoop::makeCpuOnly() const {
-  //cpuBlock_->remove();
-  //gpuCond_->replace(cpuBlock_);
-  //cpuBlock_->flattenAndRemove();
-//}
-
-//void GpuizableLoop::makeGpuOnly() const {
-  //cpuBlock_->remove();
-  //gpuBlock_->remove();
-  //gpuCond_->replace(gpuBlock_);
-
-  //if (!isFullGpuCodegen()) {
-    //// put the CPU loop right after where the kernel launch would
-    //// be to make CPU-as-device work.
-    //gpuBlock_->insertAfter(cpuBlock_);
-    //cpuBlock_->flattenAndRemove();
-  //}
-
-  //gpuBlock_->flattenAndRemove();
-//}
-
-//void GpuizableLoop::fixupNonGpuPath() const {
-  // In the CPU-as-device mode, instead of the plain loop being in an "else",
-  // it's always executed. This will make sure that we call the runtime support
-  // as if there's a GPU, yet still executing the loop always.
-  //
-  // So, take it from its else branch and put it after the conditional.
-
-  //if (!isFullGpuCodegen()) {
-    //cpuBlock_->remove();
-    //gpuCond_->insertAfter(cpuBlock_);
-  //}
-//}
-
-//static void duplicateEligibleLoopsForAdjustedLICM(FnSymbol* fn) {
-  //std::vector<CForLoop*> asts;
-  //collectCForLoopStmtsPreorder(fn, asts);
-
-  //for_vector(CForLoop, loop, asts) {
-    //// In the case of a nested foreach loop we may end up replacing the
-    //// outer loop with a kernel call and in doing so making the loop no
-    //// longer in the tree.
-    //if (!loop->inTree()) {
-      //continue;
-    //}
-
-    //GpuizableLoop gpuLoop(loop);
-    //if (gpuLoop.isEligible()) {
-      //SET_LINENO(loop);
-      //auto gpuCopy = gpuLoop.generateGpuAndNonGpuPaths();
-      //eligibleLoops.insert({ gpuCopy, std::move(gpuLoop) });
-      //gpuCopy->body.insertAtHead(new CallExpr(PRIM_GPU_ELIGIBLE));
-    //}
-  //}
-//}
-
-void earlyGpuTransforms() {
-  //if (usingGpuLocaleModel()) {
-    //forv_Vec(FnSymbol*, fn, gFnSymbols) {
-      //duplicateEligibleLoopsForAdjustedLICM(fn);
-    //}
-  //}
-}
