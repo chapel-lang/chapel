@@ -169,7 +169,7 @@ module ParallelIO {
 
     .. code-block:: chapel
 
-      use IO, ParallelIO, List;
+      use IO, ParallelIO;
 
       record color {
         var r, g, b: uint(8);
@@ -183,9 +183,8 @@ module ParallelIO {
         }
       }
 
-      var colors = new list(color, parSafe=true);
       forall c in readDelimited("colors.csv", color, header=headerPolicy.skipLines(1)) do
-        colors.pushBack(c);
+        processColor(c);
 
     .. warning::
 
@@ -407,24 +406,32 @@ module ParallelIO {
     ``t`` value. For CSV, the commas between ``t``'s fields must be parsed by
     it's ``deserialize`` method. This can be accomplished in one of two ways:
     (1) by using a custom deserialize method that parses the comma values
-    manually, e.g.,
+    manually (like in the example below), or (2) by using a deserializer that
+    will handle commas appropriately with ``t``'s default ``deserialize`` method.
+
+    **Example:**
 
     .. code-block:: chapel
 
-        record color {
-          var r, g, b: uint(8);
-        }
+      use IO, ParallelIO;
 
-        proc ref color.deserialize(reader, ref deserializer) throws {
-          reader.read(this.r);
-          reader.readLiteral(b",");
-          reader.read(this.g);
-          reader.readLiteral(b",");
-          reader.read(this.b);
-        }
+      record color {
+        var r, g, b: uint(8);
+      }
 
-    or (2) by using a deserializer that will handle commas appropriately
-    with ``t``'s default ``deserialize`` method.
+      proc ref color.deserialize(reader, ref deserializer) throws {
+        reader.read(this.r);
+        reader.readLiteral(b",");
+        reader.read(this.g);
+        reader.readLiteral(b",");
+        reader.read(this.b);
+      }
+
+      var colors = readDelimitedAsBlockArray(
+        "colors.csv",
+        t=color,
+        header=headerPolicy.skipLines(1)
+      );
 
     :arg filePath: the file to read
     :arg t: the type of value to read from the file
