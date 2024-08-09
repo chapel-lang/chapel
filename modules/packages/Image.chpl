@@ -434,7 +434,7 @@ module Image {
           (idx[1]-radius1)..#(d1.dim(1).size)
         };
       }
-      otherwise do halt("unsupported corner type");
+      otherwise do halt("unsupported cornerType");
     }
 
     select merge {
@@ -444,7 +444,7 @@ module Image {
       when mergeMethod.add {
         base[pasteDom] = other | base[pasteDom];
       }
-      otherwise do halt("unsupported merge method");
+      otherwise do halt("unknown mergeMethod");
     }
 
   }
