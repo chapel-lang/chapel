@@ -241,7 +241,7 @@ module Zarr {
     if zarrProfiling then times["Initializing copyIn"].add(s.elapsed());
 
     if zarrProfiling then s.restart();
-    var numRead = blosc_decompress_ctx(compressedChunk.c_str(), c_ptrTo(copyIn), copyIn.size*c_sizeof(t) : c_size_t, 1: c_int);
+    var numRead = blosc_decompress_ctx(compressedChunk.c_str(), c_ptrTo(copyIn), (copyIn.size*c_sizeof(t)) : c_size_t, 1: c_int);
     if numRead <= 0 {
       throw new Error("Failed to decompress data from %?. Blosc error code: %?".format(chunkPath, numRead));
     }
@@ -304,7 +304,7 @@ module Zarr {
     if zarrProfiling then s.restart();
     var bytesCompressed = blosc_compress_ctx(_bloscLevel, 0, c_sizeof(t),
                                              copyOut.size*c_sizeof(t), c_ptrTo(copyOut),
-                                             compressedBuffer, (copyOut.size + 16) * c_sizeof(t) : c_size_t,
+                                             compressedBuffer, ((copyOut.size + 16) * c_sizeof(t)) : c_size_t,
                                              "blosclz", 0 : c_size_t, 1 : c_size_t);
     if bytesCompressed == 0 then
       throw new Error("Failed to compress bytes");
