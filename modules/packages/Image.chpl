@@ -335,6 +335,59 @@ module Image {
   }
 
   /**/
+  enum direction {
+    /**/
+    horizontal,
+    /**/
+    vertical
+  }
+  proc concatImage(pixels1: [] ?et,
+                   pixels2: [] et,
+                   dir: direction = direction.horizontal): [] et
+    where pixels1.isRectangular() && pixels1.rank == 2 &&
+          pixels2.isRectangular() && pixels2.rank == 2
+    {
+    const d1 = pixels1.domain, d2 = pixels2.domain;
+    const newDom, d2Offset;
+    select dir {
+      when direction.vertical {
+        if boundsChecking then
+          if d1.dim(1).size != d2.dim(1).size then
+            halt("pixels1 and pixels2 must have the same number of columns");
+
+        newDom = {
+          d1.dim(0).lowBound..#(d1.dim(0).size + d2.dim(0).size),
+          d1.dim(1)
+          };
+        d2Offset = {
+          (d1.dim(0).highBound+1)..#(d2.dim(0).size),
+          d1.dim(1)
+        };
+      }
+      when direction.horizontal {
+        if boundsChecking then
+          if d1.dim(0).size != d2.dim(0).size then
+            halt("pixels1 and pixels2 must have the same number of rows");
+
+        newDom = {
+          d1.dim(0),
+          d1.dim(1).lowBound..#(d1.dim(1).size + d2.dim(1).size)
+        };
+        d2Offset = {
+          d1.dim(0),
+          (d1.dim(1).highBound+1)..#(d2.dim(1).size)
+        };
+      }
+      otherwise do halt("unknown direction");
+    }
+
+    var pixels: [newDom] et;
+    pixels[d1] = pixels1;
+    pixels[d2Offset] = pixels2;
+    return pixels;
+  }
+
+  /**/
   enum cornerType {
     /**/
     topLeft,
