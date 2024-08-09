@@ -303,6 +303,9 @@ module Image {
   }
 
 
+  // TODO: this is a simple nearest neighbor scaling. It would be nice to have
+  // an enum to control the scaling algorithm. It would also be nice to be able
+  // to scale down an image and use a non-integer factor.
   /*
     Scale a 2D array of pixels by a given factor
 
@@ -312,6 +315,11 @@ module Image {
   */
   proc scale(arr: [?d], factor: int): []
     where d.isRectangular() && d.rank == 2 {
+
+    if boundsChecking then
+      if factor <= 0 then
+        halt("factor must be greater than 0");
+
     var rows = d.dim(0).size,
         cols = d.dim(1).size;
 
