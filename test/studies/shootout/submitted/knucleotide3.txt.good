@@ -1,5 +1,5 @@
 knucleotide3.chpl:57: In function 'writeFreqs':
-knucleotide3.chpl:64: warning: The variable 'reverseComparator' is now deprecated, please create a new instance of the reverseDefaultComparator type instead.
+knucleotide3.chpl:64: warning: The variable 'reverseComparator' is now deprecated, please create a new instance of the ReverseComparator type reversing the DefaultComparator instead.
 T 31.520
 A 29.600
 C 19.480

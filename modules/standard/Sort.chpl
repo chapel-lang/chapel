@@ -274,7 +274,7 @@ const defaultComparator: DefaultComparator = new DefaultComparator();
    default sort order.
 
  */
-@deprecated("The variable 'reverseComparator' is now deprecated, please create a new instance of the :type:`reverseDefaultComparator` type instead.")
+@deprecated("The variable 'reverseComparator' is now deprecated, please create a new instance of the :type:`ReverseComparator` type reversing the :type:`DefaultComparator` instead.")
 const reverseComparator: ReverseComparator(DefaultComparator) =
   new ReverseComparator();
 
