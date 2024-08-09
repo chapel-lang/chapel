@@ -41,6 +41,14 @@ and written to a second BMP file.
    writeImage("pixels2.bmp", imageType.bmp, scale(arr, 2));
 
 
+A common convention taken by this module is to distinguish between arrays of
+colors and arrays of pixels. An array of colors is a 2D array where each
+element is a tuple of color values. An array of pixels is a 2D array where each
+element is a single color value. The module provides functions
+(:proc:`colorToPixel` and :proc:`pixelToColor`) to convert between these two
+representations. Many functions, like :proc:`concatImage`, can work with either
+representation.
+
 */
 @unstable("Image is unstable")
 module Image {
@@ -180,6 +188,12 @@ module Image {
     }
   }
 
+  private inline proc checkFormat(format: 3*rgbColor) do
+    if !(format[0] != format[1] &&
+          format[1] != format[2] &&
+          format[0] != format[2]) then
+      halt("format must be a permutation of (red, green, blue)");
+
   /*
     Takes a 2D array of color values and turns them into pixels. The order of
     the colors is determined by the ``format`` formal. The default format is
@@ -193,13 +207,7 @@ module Image {
   proc colorToPixel(colors: [?d] 3*pixelType, format: 3*rgbColor = (rgbColor.red, rgbColor.green, rgbColor.blue)): [d] pixelType
     where d.isRectangular() && d.rank == 2 {
 
-    // check format
-    if boundsChecking {
-      if !(format[0] != format[1] &&
-           format[1] != format[2] &&
-           format[0] != format[2]) then
-        halt("colorToPixel: format must be a permutation of (red, green, blue)");
-    }
+    if boundsChecking then checkFormat(format);
 
     proc getColorAsPixel(color: pixelType, offset: rgbColor) {
       return (color & colorMask) << colorOffset(offset);
@@ -214,6 +222,30 @@ module Image {
 
     return outPixels;
   }
+
+  /*
+  */
+  proc shuffleColors(colors: [] 3*pixelType, inFormat: 3*rgbColor, outFormat: 3*rgbColor = (rgbColor.red, rgbColor.green, rgbColor.blue)): colors.type
+    where colors.isRectangular() && colors.rank == 2 {
+
+    if boundsChecking {
+      checkFormat(inFormat);
+      checkFormat(outFormat);
+    }
+
+    var outColors: colors.type;
+    forall (c, outC) in zip(colors, outColors) {
+      const c0 = c[inFormat[0]:int];
+      const c1 = c[inFormat[1]:int];
+      const c2 = c[inFormat[2]:int];
+      outC[outFormat[0]:int] = c0;
+      outC[outFormat[1]:int] = c1;
+      outC[outFormat[2]:int] = c2;
+    }
+
+    return outColors;
+  }
+
 
   /*
     Takes a 2D array of some element type and computes an integer color
