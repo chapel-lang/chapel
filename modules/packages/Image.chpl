@@ -623,6 +623,7 @@ module Image {
       if data == nil then
         halt("Failed to read image");
       assert(x_ == x && y_ == y && comp_ == comp);
+      defer stbi_image_free(data);
 
       // convert to Chapel array
       const pixelDom = {0..<y:int, 0..<x:int};
