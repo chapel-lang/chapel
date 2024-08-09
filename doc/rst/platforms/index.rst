@@ -22,10 +22,21 @@ Networks
 .. toctree::
    :maxdepth: 1
 
-   infiniband
-   libfabric
-   omnipath
-   udp
+   networks/infiniband
+   networks/omnipath
+   networks/ethernet
+
+
+
+Communication layers
+--------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   comm-layers/gasnet
+   comm-layers/libfabric
+   comm-layers/ugni
 
 
 Older Platforms
