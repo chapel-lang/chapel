@@ -1623,8 +1623,9 @@ void GpuKernel::populateBody() {
 
     CallExpr* call = toCallExpr(node);
     if(isCallToPrimitiveWeShouldNotCopyIntoKernel(call)) {
-      // TODO do we ever hit this branch? See the branch where we find GPU
-      // primitives block
+      // with the GpuPrimitivesBlock check below this can only be hit with a
+      // bare __primitive("gpu set blocksize"). That should be seen as illegal
+      // code and this branch should be removed
       copyNode = false;
     }
     else if (DefExpr* def = toDefExpr(node)) {
@@ -1953,8 +1954,8 @@ static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
   return numThreads;
 }
 
-static BlockStmt* generateGPUKernelCall(const GpuizableLoop &gpuLoop,
-                                        GpuKernel &kernel) {
+static BlockStmt* generateGpuBlock(const GpuizableLoop &gpuLoop,
+                                   GpuKernel &kernel) {
   BlockStmt* gpuBlock = new BlockStmt();
 
   VarSymbol* cfg = insertNewVarAndDef(gpuBlock, "kernel_cfg", dtCVoidPtr);
@@ -1969,13 +1970,10 @@ static BlockStmt* generateGPUKernelCall(const GpuizableLoop &gpuLoop,
   if (auto primitivesBlock = kernel.gpuPrimitivesBlock()) {
     INT_ASSERT(primitivesBlock->isGpuPrimitivesBlock());
     for_alist(expr, primitivesBlock->body) {
-      if (isCallToPrimitiveWeShouldNotCopyIntoKernel(toCallExpr(expr))) {
-        expr->remove();
+      if (!isCallToPrimitiveWeShouldNotCopyIntoKernel(toCallExpr(expr))) {
+        gpuBlock->insertAtTail(expr->copy());
       }
     }
-
-    gpuBlock->insertAtTail(primitivesBlock->remove());
-    primitivesBlock->flattenAndRemove();
   }
 
   CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG);
@@ -2265,14 +2263,13 @@ void GpuKernel::generateGpuAndNonGpuPaths() {
   // one of its branches; this doesn't work if there might be more code after
   // the conditional).
 
+  BlockStmt* gpuBlock = generateGpuBlock(this->gpuLoop, *this);
+
   FnSymbol *fnContainingLoop = gpuLoop.loop()->getFunction();
   bool canAssumeFnWillRunOnGpu = !isFullGpuCodegen() &&
                                  fGpuSpecialization &&
                                  (assumeNonGpuSpecFnsAreOnCpu ||
                                   isFnGpuSpecialized(fnContainingLoop));
-
-  BlockStmt* gpuBlock = generateGPUKernelCall(this->gpuLoop, *this);
-
   if (canAssumeFnWillRunOnGpu) {
     gpuLoop.loop()->replace(gpuBlock);
     return;
