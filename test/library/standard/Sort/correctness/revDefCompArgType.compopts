@@ -1,0 +1,2 @@
+-suseCorrectType=true # revDefCompArgType.works.good
+-suseCorrectType=false # revDefCompArgType.doesNotWork.good
