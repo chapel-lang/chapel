@@ -93,6 +93,8 @@ Building Chapel with the ofi Communication Layer
 
      brew install open-mpi
 
+.. _set-comm-ofi-oob:
+
 #. If you are not on a Cray XC or HPE Cray EX system and you are not using the ``mpirun4ofi`` launcher, you may need to set ``CHPL_COMM_OFI_OOB``.
 
        =======  ====================================================
@@ -132,6 +134,8 @@ Building Chapel with the ofi Communication Layer
 
 Execution Environment
 *********************
+
+.. _readme-libfabric-providers:
 
 Libfabric Providers
 ___________________

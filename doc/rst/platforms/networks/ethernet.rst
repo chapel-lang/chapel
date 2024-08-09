@@ -1,8 +1,19 @@
 .. _using-ethernet:
 
-==============================
+==========================
+Using Chapel with Ethernet
+==========================
+
+There are two ways to use Ethernet
+
+* Using `CHPL_COMM=gasnet` with :ref:`UDP conduit <using-udp>`
+* Using `CHPL_COMM=ofi` with the :ref:`tcp provider <using-ofi-tcp>`
+
+.. _using-udp:
+
+------------------------------
 Using the Portable UDP Conduit
-==============================
+------------------------------
 
 This document describes how to run Chapel across multiple machines in a
 portable manner using UDP for communication. This strategy is appropriate
@@ -182,3 +193,10 @@ the local machine, use:
   export CHPL_RT_WORKERIP=127.0.0.0  # may be optional
 
 
+.. _using-ofi-tcp:
+
+------------------------------------
+Using the libfabric ``tcp`` provider
+------------------------------------
+
+TODO
