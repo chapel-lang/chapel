@@ -16,8 +16,14 @@ Major Platforms
    raspberrypi
 
 
+.. _platforms-networks:
+
 Networks
 --------
+
+Chapel is portable across many different networks. The following sections
+provide information on the different networks available in Chapel and how to
+target them.
 
 .. toctree::
    :maxdepth: 1
@@ -30,10 +36,15 @@ Networks
    networks/omnipath
 
 
+.. _platforms-comm-layers:
 
-
-Communication layers
+Communication Layers
 --------------------
+
+The Chapel runtime can be built with different communication layers, controlled
+with ``CHPL_COMM``. Different layers are preferred depending on the
+platform/network. The following sections provide information on the different
+communication layers available in Chapel.
 
 .. toctree::
    :maxdepth: 1
