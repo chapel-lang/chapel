@@ -412,8 +412,7 @@ may want to make the heap smaller than the default.  Programs start more
 quickly with a smaller heap, and in the unfortunate event that you need
 to produce core files, those will be written more quickly if the heap is
 smaller.  Specify the heap size using the ``CHPL_RT_MAX_HEAP_SIZE``
-environment variable, as discussed above in `ugni Communication Layer
-and the Heap`_.  But be aware that just as in the ``CHPL_COMM=ugni``
+environment variable, as discussed in :ref:`ugni-and-the-heap`.  But be aware that just as in the ``CHPL_COMM=ugni``
 case, if you reduce the heap size to less than the amount your program
 actually needs and then run it, it will terminate prematurely due to not
 having enough memory.

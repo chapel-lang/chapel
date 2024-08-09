@@ -103,6 +103,7 @@ All of the operations shown above are done natively by the network
 hardware except 64-bit real add, which is disabled in hardware and thus
 done using ``on`` statements.
 
+.. _ugni-and-the-heap:
 
 ugni Communication Layer and the Heap
 _____________________________________
