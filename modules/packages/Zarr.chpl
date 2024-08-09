@@ -303,7 +303,7 @@ module Zarr {
     // Compress the chunk's data
     if zarrProfiling then s.restart();
     var bytesCompressed = blosc_compress_ctx(_bloscLevel, 0, c_sizeof(t),
-                                             copyOut.size*c_sizeof(t), c_ptrTo(copyOut),
+                                             (copyOut.size*c_sizeof(t)) : c_size_t, c_ptrTo(copyOut),
                                              compressedBuffer, ((copyOut.size + 16) * c_sizeof(t)) : c_size_t,
                                              "blosclz", 0 : c_size_t, 1 : c_size_t);
     if bytesCompressed == 0 then
