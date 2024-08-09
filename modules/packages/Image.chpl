@@ -334,6 +334,21 @@ module Image {
     return outArr;
   }
 
+  private proc concatArrays(arrays:[?dom]?elmType...?nArrays): [] elmType
+    where dom.isRectangular() && dom.rank == 1 {
+    var n: int;
+    for param i in 0..#nArrays do
+      n += arrays[i].domain.size;
+
+    var outArr: [0..#n] elmType;
+
+    var idx = 0;
+    for param i in 0..#nArrays {
+      outArr[idx..#arrays[i].domain.size] = arrays[i];
+      idx += arrays[i].domain.size;
+    }
+    return outArr;
+  }
 
   private import Subprocess as sp;
   /*
@@ -349,7 +364,11 @@ module Image {
     @chpldoc.nodoc
     var process: sp.subprocess(true);
 
-    proc init(image: string, imgType: imageType, framerate: int = 30, rateFactor: int = 1) throws {
+    proc init(image: string,
+              imgType: imageType,
+              framerate: int = 30,
+              rateFactor: int = 1,
+              verbose: bool = false) throws {
       this.imageName = image;
       this.imgType = imgType;
       init this;
@@ -371,13 +390,18 @@ module Image {
                          "-crf", rateFactor:string,
                          "-pix_fmt", "yuv420p",
                          this.imageName];
-      const nArgs = ffmpegStart.domain.size + pixelFmtArgs.domain.size + ffmpegEnd.domain.size;
-      var args: [0..#nArgs] string;
-      args[0..#ffmpegStart.domain.size] = ffmpegStart;
-      args[ffmpegStart.domain.size..#pixelFmtArgs.domain.size] = pixelFmtArgs;
-      args[(ffmpegStart.domain.size + pixelFmtArgs.domain.size)..#ffmpegEnd.size] = ffmpegEnd;
+      const verboseArgs = if verbose
+                            then ["-hide_banner"]
+                            else ["-hide_banner", "-loglevel", "error"];
+      var args = concatArrays(ffmpegStart, pixelFmtArgs, ffmpegEnd, verboseArgs);
 
-      this.process = sp.spawn(args, stdin=sp.pipeStyle.pipe);
+      try {
+        this.process = sp.spawn(args, stdin=sp.pipeStyle.pipe);
+      } catch e: FileNotFoundError {
+        halt("ffmpeg not found. Please install ffmpeg to use the mediaPipe");
+      } catch e {
+        throw e;
+      }
     }
     proc ref deinit() {
       try! finish();
