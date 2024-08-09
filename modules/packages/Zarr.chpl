@@ -297,7 +297,7 @@ module Zarr {
 
     // Create buffer for compressed bytes
     if zarrProfiling then s.restart();
-    var compressedBuffer = allocate(t, copyOut.size + 16);
+    var compressedBuffer = allocate(t, (copyOut.size + 16): c_size_t );
     if zarrProfiling then times["Creating Compressed Buffer"].add(s.elapsed());
 
     // Compress the chunk's data
