@@ -22,9 +22,13 @@ Networks
 .. toctree::
    :maxdepth: 1
 
+   networks/slingshot
    networks/infiniband
-   networks/omnipath
+   networks/efa
    networks/ethernet
+   networks/aries
+   networks/omnipath
+
 
 
 
