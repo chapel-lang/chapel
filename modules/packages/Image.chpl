@@ -334,6 +334,69 @@ module Image {
     return outArr;
   }
 
+  /**/
+  enum cornerType {
+    /**/
+    topLeft,
+    /**/
+    topRight,
+    /**/
+    bottomLeft,
+    /**/
+    bottomRight,
+    /**/
+    center
+  }
+  /**/
+  enum mergeMethod {
+    /**/
+    overwrite,
+    /**/
+    add
+  }
+  /*paste into base with left hand corner*/
+  proc pasteInto(ref base: [?d1] ?et,
+                 other: [?d2] et,
+                 idx: 2*integral,
+                 corner = cornerType.topLeft,
+                 merge = mergeMethod.overwrite): [] et
+    where base.isRectangular() && base.rank == 2 &&
+          other.isRectangular() && other.rank == 2 {
+
+    var pasteDom: domain(2);
+    select corner {
+      when cornerType.topLeft {
+        pasteDom = {
+          idx[0]..#(d2.dim(0).size),
+          idx[1]..#(d2.dim(1).size)
+        };
+      }
+      when cornerType.center {
+        // TODO: this can result in incorrect bounds. why?
+        private use Math;
+        const radius0 = divFloor(d2.dim(0).size, 2);
+        const radius1 = divFloor(d2.dim(1).size, 2);
+        pasteDom = {
+          (idx[0]-radius0)..#(d1.dim(0).size),
+          (idx[1]-radius1)..#(d1.dim(1).size)
+        };
+      }
+      otherwise do halt("unsupported corner type");
+    }
+
+    select merge {
+      when mergeMethod.overwrite {
+        base[pasteDom] = other;
+      }
+      when mergeMethod.add {
+        base[pasteDom] = other | base[pasteDom];
+      }
+      otherwise do halt("unsupported merge method");
+    }
+
+  }
+
+
   private proc concatArrays(arrays:[?dom]?elmType...?nArrays): [] elmType
     where dom.isRectangular() && dom.rank == 1 {
     var n: int;
