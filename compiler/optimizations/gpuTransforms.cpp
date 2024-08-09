@@ -1049,6 +1049,8 @@ class GpuKernel {
   void setLateGpuizationFailure(bool flag);
   void finalize();
 
+  void processGpuPrimitivesBlock(BlockStmt* block);
+
   void generateIndexComputation();
   void generateOobCond();
   void generatePostBody();
@@ -1372,6 +1374,7 @@ CallExpr* KernelArg::generatePrimGpuArg(Symbol* cfg) const {
 
 CallExpr* KernelArg::generatePrimGpuBlockReduce(Symbol* blockSize) const {
   if (this->isReduce()) {
+    INT_ASSERT(blockSize);
     std::string devFnName = this->generateDevFnName();
     return new CallExpr(PRIM_GPU_BLOCK_REDUCE,
                         new_CStringSymbol(devFnName.c_str()),
@@ -1520,39 +1523,68 @@ void GpuKernel::generatePostBody() {
   fn_->insertAtTail(this->postBody_);
 }
 
-void GpuKernel::findGpuPrimitives() {
-  std::vector<CallExpr*> callExprsInBody;
-  collectCallExprs(fn_->body, callExprsInBody);
+void GpuKernel::processGpuPrimitivesBlock(BlockStmt* block) {
+  gpuPrimitivesBlock_ = block;
 
-  for_vector(CallExpr, callExpr, callExprsInBody) {
-    if (callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
+  std::vector<CallExpr*> callExprsInBody;
+  collectCallExprs(block, callExprsInBody);
+
+  for_vector (CallExpr, call, callExprsInBody) {
+    if (call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
       if (blockSizeCall_ != nullptr) {
         // Check if the blockSize calls are clones of each other by comparing
         // their unique identifier actuals. blockSize calls created for
         // attributes get unique number as a second actual, and for clones,
         // that number should match.
         if (blockSizeCall_->numActuals() == 2 &&
-            callExpr->numActuals() == 2) {
+            call->numActuals() == 2) {
           auto sym1 = toSymExpr(blockSizeCall_->get(2))->symbol();
-          auto sym2 = toSymExpr(callExpr->get(2))->symbol();
+          auto sym2 = toSymExpr(call->get(2))->symbol();
 
           if (sym1 == sym2) continue;
         }
 
-        USR_FATAL(callExpr, "Can only set GPU block size once per GPU-eligible loop.");
+        USR_FATAL(call, "Can only set GPU block size once per GPU-eligible loop.");
       }
-      blockSizeCall_ = callExpr;
-      blockSize_ = toSymExpr(callExpr->get(1))->symbol();
-    } else if (callExpr->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK)) {
-      gpuPrimitivesBlock_ = toBlockStmt(callExpr->parentExpr);
+      blockSizeCall_ = call;
+      blockSize_ = toSymExpr(call->get(1))->symbol();
     }
   }
+}
 
-  if (blockSize_ == nullptr) {
-    blockSize_ = new_IntSymbol(fGPUBlockSize != 0 ? fGPUBlockSize : 512);
-  }
+void GpuKernel::findGpuPrimitives() {
+  //std::vector<CallExpr*> callExprsInBody;
+  //collectCallExprs(fn_->body, callExprsInBody);
 
-  INT_ASSERT(blockSize_ != nullptr);
+  //for_vector(CallExpr, callExpr, callExprsInBody) {
+    //if (callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
+      //if (blockSizeCall_ != nullptr) {
+        //// Check if the blockSize calls are clones of each other by comparing
+        //// their unique identifier actuals. blockSize calls created for
+        //// attributes get unique number as a second actual, and for clones,
+        //// that number should match.
+        //if (blockSizeCall_->numActuals() == 2 &&
+            //callExpr->numActuals() == 2) {
+          //auto sym1 = toSymExpr(blockSizeCall_->get(2))->symbol();
+          //auto sym2 = toSymExpr(callExpr->get(2))->symbol();
+
+          //if (sym1 == sym2) continue;
+        //}
+
+        //USR_FATAL(callExpr, "Can only set GPU block size once per GPU-eligible loop.");
+      //}
+      //blockSizeCall_ = callExpr;
+      //blockSize_ = toSymExpr(callExpr->get(1))->symbol();
+    //} else if (callExpr->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK)) {
+      //gpuPrimitivesBlock_ = toBlockStmt(callExpr->parentExpr);
+    //}
+  //}
+
+  //if (blockSize_ == nullptr) {
+    //blockSize_ = new_IntSymbol(fGPUBlockSize != 0 ? fGPUBlockSize : 512);
+  //}
+
+  //INT_ASSERT(blockSize_ != nullptr);
 }
 
 bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
@@ -1584,6 +1616,8 @@ void GpuKernel::populateBody() {
 
     CallExpr* call = toCallExpr(node);
     if(isCallToPrimitiveWeShouldNotCopyIntoKernel(call)) {
+      // TODO do we ever hit this branch? See the branch where we find GPU
+      // primitives block
       copyNode = false;
     }
     else if (DefExpr* def = toDefExpr(node)) {
@@ -1595,6 +1629,8 @@ void GpuKernel::populateBody() {
       this->userBody_->insertAtTail(newDef);
     }
     else if (isBlockStmt(node) && toBlockStmt(node)->isGpuPrimitivesBlock()) {
+      processGpuPrimitivesBlock(toBlockStmt(node));
+      //
       // GPU primitives blocks need not be in the kernel, since they
       // set launch-time properties of a kernel.
       copyNode = false;
@@ -1686,6 +1722,9 @@ void GpuKernel::populateBody() {
     }
   }
 
+  if (blockSize_ == nullptr) {
+    blockSize_ = new_IntSymbol(fGPUBlockSize != 0 ? fGPUBlockSize : 512);
+  }
 
   for (auto actual: this->kernelActuals()) {
     if (CallExpr* reduceCall = actual.generatePrimGpuBlockReduce(blockSize())) {
