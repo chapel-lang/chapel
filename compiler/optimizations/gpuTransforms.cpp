@@ -1071,8 +1071,8 @@ GpuKernel::GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
 {
   buildStubOutlinedFunction(insertionPoint);
   normalizeOutlinedFunction();
-  findGpuPrimitives();
   populateBody();
+  findGpuPrimitives();
   if(!lateGpuizationFailure_) {
     finalize();
   }
@@ -1522,9 +1522,7 @@ void GpuKernel::generatePostBody() {
 
 void GpuKernel::findGpuPrimitives() {
   std::vector<CallExpr*> callExprsInBody;
-  for_alist(node, gpuLoop.loop()->body) {
-    collectCallExprs(node, callExprsInBody);
-  }
+  collectCallExprs(fn_->body, callExprsInBody);
 
   for_vector(CallExpr, callExpr, callExprsInBody) {
     if (callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
