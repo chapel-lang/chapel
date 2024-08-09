@@ -152,7 +152,14 @@ static VarSymbol* generateAssignmentToPrimitive(FnSymbol* fn,
 
 
 static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
-  return loop == LoopStmt::findEnclosingLoop(sym->defPoint);
+  LoopStmt* curLoop = LoopStmt::findEnclosingLoop(sym->defPoint);
+  while (curLoop) {
+    if (curLoop == loop) {
+      return true;
+    }
+    curLoop = LoopStmt::findEnclosingLoop(curLoop->parentExpr);
+  }
+  return false;
 }
 
 // This is primarily to handle the indexOfInterest generated for promoted
