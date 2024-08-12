@@ -1,4 +1,0 @@
-revDefCompArgType.chpl:16: error: unresolved call 'doSort([domain(1,int(64),one)] int(64), DefaultComparator)'
-revDefCompArgType.chpl:5: note: this candidate did not match: doSort(ref x: [] int, comp: reverseDefaultComparator)
-revDefCompArgType.chpl:16: note: because actual argument #2 with type 'DefaultComparator'
-revDefCompArgType.chpl:5: note: is passed to formal 'comp: ReverseComparator(DefaultComparator)'
