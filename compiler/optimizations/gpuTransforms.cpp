@@ -1017,6 +1017,7 @@ static bool isCallToPrimitiveWithHostRuntimeEffect(CallExpr *call);
 class GpuKernel {
   GpuizableLoop &gpuLoop;
   FnSymbol* fn_;
+  BlockStmt* launchBlock_;
   std::vector<Symbol*> kernelIndices_;
   std::vector<KernelArg> kernelActuals_;
   SymbolMap copyMap_;
@@ -1050,7 +1051,8 @@ class GpuKernel {
 
   private:
   void buildStubOutlinedFunction(DefExpr* insertionPoint);
-  void findGpuPrimitives();
+  void buildStubKernelLaunchBlock();
+  void generateKernelLaunch();
   void populateBody();
   void normalizeOutlinedFunction();
   void setLateGpuizationFailure(bool flag);
@@ -1079,9 +1081,9 @@ GpuKernel::GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   , name_("")
 {
   buildStubOutlinedFunction(insertionPoint);
+  buildStubKernelLaunchBlock();
   normalizeOutlinedFunction();
   populateBody();
-  findGpuPrimitives();
   if(!lateGpuizationFailure_) {
     finalize();
   }
@@ -1531,67 +1533,43 @@ void GpuKernel::generatePostBody() {
 }
 
 void GpuKernel::processGpuPrimitivesBlock(BlockStmt* block) {
-  gpuPrimitivesBlock_ = block;
+  INT_ASSERT(block);
+  INT_ASSERT(block->isGpuPrimitivesBlock());
 
-  std::vector<CallExpr*> callExprsInBody;
-  collectCallExprs(block, callExprsInBody);
+  // to make sure that DefExprs are also properly copied
+  BlockStmt* newGpuPrimBlock = block->copy();
+  launchBlock_->insertAtTail(newGpuPrimBlock);
+  for_alist(expr, newGpuPrimBlock->body) {
+    // process any important primitives before we remove them from this new
+    // block
+    if (CallExpr* call = toCallExpr(expr)) {
+      if (call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
+        if (blockSizeCall_ != nullptr) {
+          // Check if the blockSize calls are clones of each other by comparing
+          // their unique identifier actuals. blockSize calls created for
+          // attributes get unique number as a second actual, and for clones,
+          // that number should match.
+          if (blockSizeCall_->numActuals() == 2 &&
+              call->numActuals() == 2) {
+            auto sym1 = toSymExpr(blockSizeCall_->get(2))->symbol();
+            auto sym2 = toSymExpr(call->get(2))->symbol();
 
-  for_vector (CallExpr, call, callExprsInBody) {
-    if (call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
-      if (blockSizeCall_ != nullptr) {
-        // Check if the blockSize calls are clones of each other by comparing
-        // their unique identifier actuals. blockSize calls created for
-        // attributes get unique number as a second actual, and for clones,
-        // that number should match.
-        if (blockSizeCall_->numActuals() == 2 &&
-            call->numActuals() == 2) {
-          auto sym1 = toSymExpr(blockSizeCall_->get(2))->symbol();
-          auto sym2 = toSymExpr(call->get(2))->symbol();
+            if (sym1 == sym2) continue;
+          }
 
-          if (sym1 == sym2) continue;
+          USR_FATAL(call, "Can only set GPU block size once per GPU-eligible loop.");
         }
-
-        USR_FATAL(call, "Can only set GPU block size once per GPU-eligible loop.");
+        blockSizeCall_ = call;
+        blockSize_ = toSymExpr(call->get(1))->symbol();
       }
-      blockSizeCall_ = call;
-      blockSize_ = toSymExpr(call->get(1))->symbol();
+    }
+
+    if (isCallToPrimitiveWeShouldNotCopyIntoKernel(toCallExpr(expr))) {
+      expr->remove();
     }
   }
-}
 
-void GpuKernel::findGpuPrimitives() {
-  //std::vector<CallExpr*> callExprsInBody;
-  //collectCallExprs(fn_->body, callExprsInBody);
-
-  //for_vector(CallExpr, callExpr, callExprsInBody) {
-    //if (callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
-      //if (blockSizeCall_ != nullptr) {
-        //// Check if the blockSize calls are clones of each other by comparing
-        //// their unique identifier actuals. blockSize calls created for
-        //// attributes get unique number as a second actual, and for clones,
-        //// that number should match.
-        //if (blockSizeCall_->numActuals() == 2 &&
-            //callExpr->numActuals() == 2) {
-          //auto sym1 = toSymExpr(blockSizeCall_->get(2))->symbol();
-          //auto sym2 = toSymExpr(callExpr->get(2))->symbol();
-
-          //if (sym1 == sym2) continue;
-        //}
-
-        //USR_FATAL(callExpr, "Can only set GPU block size once per GPU-eligible loop.");
-      //}
-      //blockSizeCall_ = callExpr;
-      //blockSize_ = toSymExpr(callExpr->get(1))->symbol();
-    //} else if (callExpr->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK)) {
-      //gpuPrimitivesBlock_ = toBlockStmt(callExpr->parentExpr);
-    //}
-  //}
-
-  //if (blockSize_ == nullptr) {
-    //blockSize_ = new_IntSymbol(fGPUBlockSize != 0 ? fGPUBlockSize : 512);
-  //}
-
-  //INT_ASSERT(blockSize_ != nullptr);
+  newGpuPrimBlock->flattenAndRemove();
 }
 
 bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
@@ -1637,8 +1615,6 @@ void GpuKernel::populateBody() {
       this->userBody_->insertAtTail(newDef);
     }
     else if (isBlockStmt(node) && toBlockStmt(node)->isGpuPrimitivesBlock()) {
-      processGpuPrimitivesBlock(toBlockStmt(node));
-      //
       // GPU primitives blocks need not be in the kernel, since they
       // set launch-time properties of a kernel.
       copyNode = false;
@@ -1954,70 +1930,62 @@ static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
   return numThreads;
 }
 
-static BlockStmt* generateGpuBlock(const GpuizableLoop &gpuLoop,
-                                   GpuKernel &kernel) {
-  BlockStmt* gpuBlock = new BlockStmt();
+void GpuKernel::buildStubKernelLaunchBlock() {
+  launchBlock_ = new BlockStmt();
 
-  VarSymbol* cfg = insertNewVarAndDef(gpuBlock, "kernel_cfg", dtCVoidPtr);
+  std::vector<BlockStmt*> blocksInBody;
+  collectBlockStmts(gpuLoop.loop(), blocksInBody);
 
-  VarSymbol* numThreads = generateNumThreads(gpuBlock, gpuLoop);
-
-  // If the parent of the call is 'gpu primitives' block, it was constructed
-  // specifically to 'fence off' GPU primitives. There may be
-  // some additional temps etc. that are used for computing block size.
-  // We need to lift them, too. Since we're "consuming" the GPU loop,
-  // just modify the parent block in place.
-  if (auto primitivesBlock = kernel.gpuPrimitivesBlock()) {
-    INT_ASSERT(primitivesBlock->isGpuPrimitivesBlock());
-    for_alist(expr, primitivesBlock->body) {
-      if (!isCallToPrimitiveWeShouldNotCopyIntoKernel(toCallExpr(expr))) {
-        gpuBlock->insertAtTail(expr->copy());
-      }
+  for (auto block : blocksInBody) {
+    if (block->isGpuPrimitivesBlock()) {
+      processGpuPrimitivesBlock(block);
     }
   }
+}
+
+void GpuKernel::generateKernelLaunch() {
+  VarSymbol* cfg = insertNewVarAndDef(launchBlock_, "kernel_cfg", dtCVoidPtr);
+
+  VarSymbol* numThreads = generateNumThreads(launchBlock_, gpuLoop);
+
 
   CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG);
-  initCfgCall->insertAtTail(kernel.fn());
+  initCfgCall->insertAtTail(fn());
   initCfgCall->insertAtTail(numThreads);
-  initCfgCall->insertAtTail(kernel.blockSize());
-  initCfgCall->insertAtTail(new_IntSymbol(kernel.kernelActuals().size()));
+  initCfgCall->insertAtTail(blockSize());
+  initCfgCall->insertAtTail(new_IntSymbol(kernelActuals().size()));
   initCfgCall->insertAtTail(new_IntSymbol(gpuLoop.pidGets().size()));
-  initCfgCall->insertAtTail(new_IntSymbol(kernel.nReductionBufs()));
-  initCfgCall->insertAtTail(new_IntSymbol(kernel.nHostRegisteredVars()));
-  gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, cfg, initCfgCall));
+  initCfgCall->insertAtTail(new_IntSymbol(nReductionBufs()));
+  initCfgCall->insertAtTail(new_IntSymbol(nHostRegisteredVars()));
+  launchBlock_->insertAtTail(new CallExpr(PRIM_MOVE, cfg, initCfgCall));
 
   // first, add pids
   for (auto pidGet: gpuLoop.pidGets()) {
     Type* pidType = pidGet->get(2)->typeInfo();
     Symbol* pid = new VarSymbol("pid_tmp", pidType);
-    gpuBlock->insertAtTail(new DefExpr(pid));
-    gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, pid, pidGet->copy()));
+    launchBlock_->insertAtTail(new DefExpr(pid));
+    launchBlock_->insertAtTail(new CallExpr(PRIM_MOVE, pid, pidGet->copy()));
 
     AggregateType* privUserType = toAggregateType(pidGet->get(1)->typeInfo());
     Symbol* instanceSym = privUserType->getField("_instance");
     Symbol* instanceSize = new VarSymbol("instance_size", dtInt[INT_SIZE_64]);
 
-    gpuBlock->insertAtTail(new DefExpr(instanceSize));
-    gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, instanceSize,
+    launchBlock_->insertAtTail(new DefExpr(instanceSize));
+    launchBlock_->insertAtTail(new CallExpr(PRIM_MOVE, instanceSize,
                                         new CallExpr(PRIM_SIZEOF_BUNDLE,
                                                      instanceSym)));
 
-    gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_PID_OFFLOAD, cfg, pid,
+    launchBlock_->insertAtTail(new CallExpr(PRIM_GPU_PID_OFFLOAD, cfg, pid,
                                         instanceSize));
   }
 
   // now, add kernel actuals
-  for (auto actual: kernel.kernelActuals()) {
-    gpuBlock->insertAtTail(actual.generatePrimGpuArg(cfg));
+  for (auto actual: kernelActuals()) {
+    launchBlock_->insertAtTail(actual.generatePrimGpuArg(cfg));
   }
 
-  // populate the gpu block
-  CallExpr* gpuCall = new CallExpr(PRIM_GPU_KERNEL_LAUNCH, cfg);
-
-  gpuBlock->insertAtTail(gpuCall);
-  gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_DEINIT_KERNEL_CFG, cfg));
-
-  return gpuBlock;
+  launchBlock_->insertAtTail(new CallExpr(PRIM_GPU_KERNEL_LAUNCH, cfg));
+  launchBlock_->insertAtTail(new CallExpr(PRIM_GPU_DEINIT_KERNEL_CFG, cfg));
 }
 
 static CallExpr* getGpuEligibleMarker(CForLoop* loop) {
@@ -2263,7 +2231,8 @@ void GpuKernel::generateGpuAndNonGpuPaths() {
   // one of its branches; this doesn't work if there might be more code after
   // the conditional).
 
-  BlockStmt* gpuBlock = generateGpuBlock(this->gpuLoop, *this);
+  // this will finalize the launchBlock_
+  generateKernelLaunch();
 
   FnSymbol *fnContainingLoop = gpuLoop.loop()->getFunction();
   bool canAssumeFnWillRunOnGpu = !isFullGpuCodegen() &&
@@ -2271,7 +2240,7 @@ void GpuKernel::generateGpuAndNonGpuPaths() {
                                  (assumeNonGpuSpecFnsAreOnCpu ||
                                   isFnGpuSpecialized(fnContainingLoop));
   if (canAssumeFnWillRunOnGpu) {
-    gpuLoop.loop()->replace(gpuBlock);
+    gpuLoop.loop()->replace(launchBlock_);
     return;
   }
 
@@ -2281,8 +2250,8 @@ void GpuKernel::generateGpuAndNonGpuPaths() {
                                     new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
                                     new_IntSymbol(0));
 
-  CondStmt* cond = new CondStmt(condExpr, gpuBlock, isFullGpuCodegen() ?
-                                                    cpuBlock : nullptr);
+  CondStmt* cond = new CondStmt(condExpr, launchBlock_,
+                                isFullGpuCodegen() ? cpuBlock : nullptr);
   gpuBranches.insert(cond);
 
   // first, make sure the conditional is in place
