@@ -1052,6 +1052,10 @@ CanPassResult CanPassResult::canPass(Context* context,
                 actualTup->toValueTuple(context) == formalT) {
             return passAsIs();
           }
+          auto got = canConvert(context, actualQT, formalQT);
+          if (got.passes()) {
+            return got;
+          }
         }
         // TODO: promotion
 
