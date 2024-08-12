@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-
-
-# prediff the line numbers
-cat $2 | sed -e 's/.chpl:[0-9]*:/.chpl:n:/' > $2.prediff
-# prediff the method name
-cat $2.prediff | sed -e "s/formal 'this' of .*()/formal 'this' of METHOD()/" > $2
-rm $2.prediff

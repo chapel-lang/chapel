@@ -1,18 +1,7 @@
-config param testNum = 1;
+// this this is just to make sure that `const` `sync` variables are actually `const`
 const foo: sync int = 1;
 
-select testNum {
-  when 1 {
-    foo.writeEF(2);
-  }
-  when 2 {
-    foo.writeFF(2);
-  }
-  when 3 {
-    foo.writeXF(2);
-  }
-  when 4 {
-    foo.reset();
-  }
-  otherwise halt("Invalid test number");
-}
+foo.writeEF(2);
+foo.writeFF(2);
+foo.writeXF(2);
+foo.reset();
