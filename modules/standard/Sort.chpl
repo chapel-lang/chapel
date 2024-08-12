@@ -278,11 +278,6 @@ const defaultComparator: DefaultComparator = new DefaultComparator();
 const reverseComparator: ReverseComparator(DefaultComparator) =
   new ReverseComparator();
 
-/* An instantiation of :record:`ReverseComparator` for reversing the default
-   comparator.
-*/
-type reverseDefaultComparator = ReverseComparator(DefaultComparator);
-
 /* Private methods */
 
 private inline
