@@ -58,17 +58,22 @@ static void printout(int *restrict * restrict out)
 
 #endif /* if 0 */
 
-static void mult(const int *inta,
-                 const int *intb,
-                 int *restrict out)
+static void mult(void const *inta_void,
+                 void const *intb_void,
+                 void *restrict out_void)
 {
+    int *const inta = (int *const) inta_void;
+    int *const intb = (int *const) intb_void;
+    int *restrict out = out_void;
     assert(*out == -1);
     *out = (*inta) * (*intb);
 }
 
-static void hammingdist(const int *inta,
-                        const int *intb)
+static void hammingdist(const void *inta_void,
+                        const void *intb_void)
 {
+    const int *inta = (const int *)inta_void;
+    const int *intb = (const int *)intb_void;
     unsigned int ham = *inta ^ *intb;
     aligned_t hamdist = 0;
 

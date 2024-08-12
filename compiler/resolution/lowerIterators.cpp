@@ -1665,6 +1665,7 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
           VarSymbol* refVar = new VarSymbol(
             astr("ref_", svar->name), svar->type->getRefType());
           refVar->addFlag(FLAG_EXEMPT_REF_PROPAGATION);
+          refVar->addFlag(FLAG_REF_VAR);
           forLoop->insertBefore(new DefExpr(refVar));
           forLoop->insertBefore(new CallExpr(
             PRIM_MOVE, refVar, new CallExpr(

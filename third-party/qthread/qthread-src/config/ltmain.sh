@@ -7496,6 +7496,11 @@ func_mode_link ()
 	arg=$func_stripname_result
 	;;
 
+      -Wl,--as-needed)
+	deplibs="$deplibs $arg"
+	continue
+	;;
+
       -Wl,*)
 	func_stripname '-Wl,' '' "$arg"
 	args=$func_stripname_result
@@ -7810,6 +7815,7 @@ func_mode_link ()
 
     case $linkmode in
     lib)
+	as_needed_flag=
 	passes="conv dlpreopen link"
 	for file in $dlfiles $dlprefiles; do
 	  case $file in
@@ -7821,6 +7827,7 @@ func_mode_link ()
 	done
 	;;
     prog)
+	as_needed_flag=
 	compile_deplibs=
 	finalize_deplibs=
 	alldeplibs=false
@@ -7890,6 +7897,15 @@ func_mode_link ()
 	lib=
 	found=false
 	case $deplib in
+	-Wl,--as-needed)
+	  if test prog,link = "$linkmode,$pass" ||
+	     test lib,link = "$linkmode,$pass"; then
+	    as_needed_flag="$deplib "
+	  else
+	    deplibs="$deplib $deplibs"
+	  fi
+	  continue
+	  ;;
 	-mt|-mthreads|-kthread|-Kthread|-pthread|-pthreads|--thread-safe \
         |-threads|-fopenmp|-openmp|-mp|-xopenmp|-omp|-qsmp=*)
 	  if test prog,link = "$linkmode,$pass"; then
@@ -10307,6 +10323,13 @@ EOF
 	  test "X$libobjs" = "X " && libobjs=
 	fi
 
+	# A bit hacky. I had wanted to add \$as_needed_flag to archive_cmds instead, but that
+	# comes from libtool.m4 which is part of the project being built. This should put it
+	# in the right place though.
+	if test lib,link = "$linkmode,$pass" && test -n "$as_needed_flag"; then
+	  libobjs=$as_needed_flag$libobjs
+	fi
+
 	save_ifs=$IFS; IFS='~'
 	for cmd in $cmds; do
 	  IFS=$sp$nl
@@ -10539,8 +10562,8 @@ EOF
       compile_deplibs=$new_libs
 
 
-      func_append compile_command " $compile_deplibs"
-      func_append finalize_command " $finalize_deplibs"
+      func_append compile_command " $as_needed_flag $compile_deplibs"
+      func_append finalize_command " $as_needed_flag $finalize_deplibs"
 
       if test -n "$rpath$xrpath"; then
 	# If the user specified any rpath flags, then add them.

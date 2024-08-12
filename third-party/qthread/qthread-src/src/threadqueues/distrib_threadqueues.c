@@ -3,6 +3,7 @@
 #endif
 
 /* System Headers */
+#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -20,6 +21,7 @@
 #include "qt_asserts.h"
 #include "qt_prefetch.h"
 #include "qt_threadqueues.h"
+#include "qt_threadqueue_scheduler.h"
 #include "qt_envariables.h"
 #include "qt_debug.h"
 #ifdef QTHREAD_USE_EUREKAS
@@ -39,21 +41,21 @@ int steal_ratio;
 
 /* Data Structures */
 struct _qt_threadqueue_node {
-  struct _qt_threadqueue_node *next;
-  struct _qt_threadqueue_node *prev;
+  struct _qt_threadqueue_node *_Atomic next__;
+  struct _qt_threadqueue_node *_Atomic prev__;
   qthread_t                   *value;
 };
 
 typedef struct {
-  qt_threadqueue_node_t *head;
-  qt_threadqueue_node_t *tail;
-  long                 qlength;
+  qt_threadqueue_node_t *_Atomic head__;
+  qt_threadqueue_node_t *_Atomic tail__;
+  _Atomic uint64_t    qlength;
   QTHREAD_TRYLOCK_TYPE qlock;
   cacheline buf; // ensure internal nodes are a cacheline apart
 } qt_threadqueue_internal;
 
 typedef struct {
-  size_t n;
+  _Atomic size_t n__;
   cacheline buf; //ensure
 } w_ind;
 
@@ -62,21 +64,21 @@ struct _qt_threadqueue {
   size_t num_queues;
   w_ind* w_inds;
   QTHREAD_COND_DECL(cond);
-  long                 numwaiters;
+  _Atomic uint64_t numwaiters;
 }; 
 
 // global cond pool
-int finalizing;
+_Atomic int finalizing;
 
-qthread_t *mccoy = NULL;
+qthread_t *_Atomic mccoy = NULL;
 
 /* Memory Management and Initialization/Shutdown */
 qt_threadqueue_pools_t generic_threadqueue_pools;
 
-#define mycounter(q) (q->w_inds[qthread_worker(NULL) % (qlib->nshepherds * qlib->nworkerspershep)].n)
-#define myqueue(q) (q->t + mycounter(q))
+#define mycounter__(q) (q->w_inds[qthread_worker(NULL) % (qlib->nshepherds * qlib->nworkerspershep)].n__)
+#define myqueue(q) (q->t + atomic_load_explicit(&mycounter__(q), memory_order_relaxed))
 
-static qt_threadqueue_t* alloc_threadqueue(){
+static qt_threadqueue_t* alloc_threadqueue(void){
   qt_threadqueue_t* t = (qt_threadqueue_t *)qt_mpool_alloc(generic_threadqueue_pools.queues);
   t->num_queues = qlib->nworkerspershep; // Assumption built into api of constant number of workers per shepherd
   t->t = qt_malloc(sizeof(qt_threadqueue_internal) * t->num_queues);
@@ -101,9 +103,6 @@ static QINLINE void free_tqnode(qt_threadqueue_node_t* t){
 
 extern qt_mpool generic_qthread_pool;
 
-static QINLINE qthread_t* alloc_qthread() {
-  return (qthread_t*) qt_mpool_alloc(generic_qthread_pool);
-}
 static QINLINE void free_qthread(qthread_t* t){
   return qt_mpool_free(generic_qthread_pool, t);
 }
@@ -113,14 +112,14 @@ qt_threadqueue_t INTERNAL *qt_threadqueue_new(void){
   for(int i=0; i<qe->num_queues; i++){
     qt_threadqueue_internal* q = qe->t + i; 
     if (q != NULL) {
-      q->head              = NULL;
-      q->tail              = NULL;
-      q->qlength           = 0;
+      atomic_store_explicit(&q->head__, NULL, memory_order_relaxed);
+      atomic_store_explicit(&q->tail__, NULL, memory_order_relaxed);
+      atomic_store_explicit(&q->qlength, 0ull, memory_order_relaxed);
       QTHREAD_TRYLOCK_INIT(q->qlock);
     }
   }
   for(size_t i=0; i<qlib->nshepherds * qlib->nworkerspershep; i++){
-    qe->w_inds[i].n = i % qe->num_queues;
+    atomic_store_explicit(&qe->w_inds[i].n__, i % qe->num_queues, memory_order_relaxed);
   }
   QTHREAD_COND_INIT(qe->cond);
   return qe;
@@ -129,44 +128,44 @@ qt_threadqueue_t INTERNAL *qt_threadqueue_new(void){
 void INTERNAL qt_threadqueue_free(qt_threadqueue_t *qe){   
   for(int i=0; i<qe->num_queues; i++){
     qt_threadqueue_internal* q = qe->t + i;
-    if (q->head != q->tail) {
+    if (atomic_load_explicit(&q->head__, memory_order_relaxed) != atomic_load_explicit(&q->tail__, memory_order_relaxed)) {
       qthread_t *t;
       QTHREAD_TRYLOCK_LOCK(&q->qlock);
-      while (q->head != q->tail) {
-        qt_threadqueue_node_t *node = q->tail;
+      while (atomic_load_explicit(&q->head__, memory_order_relaxed) != atomic_load_explicit(&q->tail__, memory_order_relaxed)) {
+        qt_threadqueue_node_t *node = atomic_load_explicit(&q->tail__, memory_order_relaxed);
         if (node != NULL) {
-          q->tail = node->prev;
-          if (q->tail == NULL) {
-              q->head = NULL;
+          atomic_store_explicit(&q->tail__, atomic_load_explicit(&node->prev__, memory_order_relaxed), memory_order_relaxed);
+          if (atomic_load_explicit(&q->tail__, memory_order_relaxed) == NULL) {
+              atomic_store_explicit(&q->head__, NULL, memory_order_relaxed);
           } else {
-              q->tail->next = NULL;
+              atomic_store_explicit(&atomic_load_explicit(&q->tail__, memory_order_relaxed)->next__, NULL, memory_order_relaxed);
           }
           t = node->value;
           free_tqnode(node);
           free_qthread(t);
         }
       }
-      assert(q->head == NULL);
-      assert(q->tail == NULL);
-      q->qlength           = 0;
+      assert(atomic_load_explicit(&q->head__, memory_order_relaxed) == NULL);
+      assert(atomic_load_explicit(&q->tail__, memory_order_relaxed) == NULL);
+      atomic_store_explicit(&q->qlength, 0ull, memory_order_relaxed);
       QTHREAD_TRYLOCK_UNLOCK(&q->qlock);
     }
-    assert(q->head == q->tail);
+    assert(atomic_load_explicit(&q->head__, memory_order_relaxed) == atomic_load_explicit(&q->tail__, memory_order_relaxed));
     QTHREAD_TRYLOCK_DESTROY(q->qlock);
   }
   QTHREAD_COND_DESTROY(qe->cond);
   free_threadqueue(qe);
 } 
 
-static void qt_threadqueue_subsystem_shutdown(){   
+static void qt_threadqueue_subsystem_shutdown(void){   
   qt_mpool_destroy(generic_threadqueue_pools.nodes);
   qt_mpool_destroy(generic_threadqueue_pools.queues);
 } 
 
-void INTERNAL qt_threadqueue_subsystem_init(){   
+void INTERNAL qt_threadqueue_subsystem_init(void){   
   steal_ratio = qt_internal_get_env_num("STEAL_RATIO", 8, 0);
   condwait_backoff = qt_internal_get_env_num("CONDWAIT_BACKOFF", 2048, 0);
-  finalizing = 0;
+  atomic_store_explicit(&finalizing, 0, memory_order_relaxed);
   generic_threadqueue_pools.queues = qt_mpool_create_aligned(sizeof(qt_threadqueue_t),
                                                              qthread_cacheline());
   generic_threadqueue_pools.nodes = qt_mpool_create_aligned(sizeof(qt_threadqueue_node_t),
@@ -175,130 +174,130 @@ void INTERNAL qt_threadqueue_subsystem_init(){
 }
 
 ssize_t INTERNAL qt_threadqueue_advisory_queuelen(qt_threadqueue_t *q){   
-  return myqueue(q)->qlength;
+  return atomic_load_explicit(&myqueue(q)->qlength, memory_order_relaxed);
 } 
 
 /* Threadqueue operations 
  * We have 4 basic queue operations, enqueue and dequeue for head and tail */
-void INTERNAL qt_threadqueue_enqueue_tail(qt_threadqueue_t *restrict qe,
-                                          qthread_t *restrict        t){ 
-  if (t->thread_state == QTHREAD_STATE_TERM_SHEP) {
-    finalizing = 1;
+static void qt_threadqueue_enqueue_tail(qt_threadqueue_t *restrict qe,
+                                        qthread_t *restrict        t){ 
+  if (atomic_load_explicit(&t->thread_state, memory_order_relaxed) == QTHREAD_STATE_TERM_SHEP) {
+    atomic_store_explicit(&finalizing, 1, memory_order_relaxed);
   }
-  if (t->flags & QTHREAD_REAL_MCCOY) { // only needs to be on worker 0 for termination
-    if(mccoy) {
+  if (atomic_load_explicit(&t->flags__, memory_order_relaxed) & QTHREAD_REAL_MCCOY) { // only needs to be on worker 0 for termination
+    if(atomic_load_explicit(&mccoy, memory_order_relaxed)) {
       printf("mccoy thread non-null and trying to set!\n");
       exit(-1);
     }
-    mccoy = t;
+    atomic_store_explicit(&mccoy, t, memory_order_relaxed);
   } else {
     qt_threadqueue_internal* q = myqueue(qe);
-    mycounter(qe) = (mycounter(qe) + 1) % qe->num_queues;
+    atomic_store_explicit(&mycounter__(qe), (atomic_load_explicit(&mycounter__(qe), memory_order_relaxed) + 1) % qe->num_queues, memory_order_relaxed);
     qt_threadqueue_node_t *node = alloc_tqnode();
     node->value = t;
-    node->next = NULL;
+    atomic_store_explicit(&node->next__, NULL, memory_order_relaxed);
 
     QTHREAD_TRYLOCK_LOCK(&q->qlock);
-    node->prev = q->tail;
-    q->tail    = node;
-    if (q->head == NULL) {
-      q->head = node;
+    atomic_store_explicit(&node->prev__, atomic_load_explicit(&q->tail__, memory_order_relaxed), memory_order_relaxed);
+    atomic_store_explicit(&q->tail__, node, memory_order_relaxed);
+    if (atomic_load_explicit(&q->head__, memory_order_relaxed) == NULL) {
+      atomic_store_explicit(&q->head__, node, memory_order_relaxed);
     } else {
-      node->prev->next = node;
+      atomic_store_explicit(&atomic_load_explicit(&node->prev__, memory_order_relaxed)->next__, node, memory_order_relaxed);
     }
-    q->qlength++;
+    atomic_fetch_add_explicit(&q->qlength, 1ull, memory_order_relaxed);
     QTHREAD_TRYLOCK_UNLOCK(&q->qlock);
   }
   // we need to wake up all threads when finalizing and if pushing the mccoy
   // thread to make sure we get worker 0
-  if(finalizing || t->flags & QTHREAD_REAL_MCCOY){
+  if(atomic_load_explicit(&finalizing, memory_order_relaxed) || atomic_load_explicit(&t->flags__, memory_order_relaxed) & QTHREAD_REAL_MCCOY){
     QTHREAD_COND_LOCK(qe->cond);
     QTHREAD_COND_BCAST(qe->cond);
     QTHREAD_COND_UNLOCK(qe->cond);
-  } else if(qe->numwaiters){
+  } else if(atomic_load_explicit(&qe->numwaiters, memory_order_relaxed)){
     QTHREAD_COND_LOCK(qe->cond);
-    if(qe->numwaiters) QTHREAD_COND_SIGNAL(qe->cond);
+    if(atomic_load_explicit(&qe->numwaiters, memory_order_relaxed)) QTHREAD_COND_SIGNAL(qe->cond);
     QTHREAD_COND_UNLOCK(qe->cond);
   }
 } 
 
-void INTERNAL qt_threadqueue_enqueue_head(qt_threadqueue_t *restrict qe,
-                                          qthread_t *restrict        t){   
-  if (t->flags & QTHREAD_REAL_MCCOY) { // only needs to be on worker 0 for termination
-    if(mccoy) {
+static void qt_threadqueue_enqueue_head(qt_threadqueue_t *restrict qe,
+                                        qthread_t *restrict        t){   
+  if (atomic_load_explicit(&t->flags__, memory_order_relaxed) & QTHREAD_REAL_MCCOY) { // only needs to be on worker 0 for termination
+    if(atomic_load_explicit(&mccoy, memory_order_relaxed)) {
       printf("mccoy thread non-null and trying to set!\n");
       exit(-1);
     }
-    mccoy = t;
+    atomic_store_explicit(&mccoy, t, memory_order_relaxed);
     return;
   }
 
   qt_threadqueue_internal* q = myqueue(qe);
-  mycounter(qe) = (mycounter(qe) + 1) % qe->num_queues;
+  atomic_store_explicit(&mycounter__(qe), (atomic_load_explicit(&mycounter__(qe), memory_order_relaxed) + 1) % qe->num_queues, memory_order_relaxed);
   qt_threadqueue_node_t *node = alloc_tqnode();
   node->value     = t;
-  node->prev = NULL;
+  atomic_store_explicit(&node->prev__, NULL, memory_order_relaxed);
 
   QTHREAD_TRYLOCK_LOCK(&q->qlock);
-  node->next = q->head;
-  q->head    = node;
-  if (q->tail == NULL) {
-      q->tail = node;
+  atomic_store_explicit(&node->next__, atomic_load_explicit(&q->head__, memory_order_relaxed), memory_order_relaxed);
+  atomic_store_explicit(&q->head__, node, memory_order_relaxed);
+  if (atomic_load_explicit(&q->tail__, memory_order_relaxed) == NULL) {
+      atomic_store_explicit(&q->tail__, node, memory_order_relaxed);
   } else {
-      node->next->prev = node;
+      atomic_store_explicit(&atomic_load_explicit(&node->next__, memory_order_relaxed)->prev__, node, memory_order_relaxed);
   }
-  q->qlength++;
+  atomic_fetch_add_explicit(&q->qlength, 1ull, memory_order_relaxed);
   QTHREAD_TRYLOCK_UNLOCK(&q->qlock);
-  if(qe->numwaiters){
+  if(atomic_load_explicit(&qe->numwaiters, memory_order_relaxed)){
     QTHREAD_COND_LOCK(qe->cond);
-    if(qe->numwaiters) {
+    if(atomic_load_explicit(&qe->numwaiters, memory_order_relaxed)) {
       QTHREAD_COND_SIGNAL(qe->cond);
     }
     QTHREAD_COND_UNLOCK(qe->cond);
   }
 } 
 
-qt_threadqueue_node_t INTERNAL *qt_threadqueue_dequeue_tail(qt_threadqueue_t *qe){                                     
+static qt_threadqueue_node_t *qt_threadqueue_dequeue_tail(qt_threadqueue_t *qe){                                     
   qt_threadqueue_internal* q = myqueue(qe);
-  mycounter(qe) = (mycounter(qe) + 1) % qe->num_queues;
+  atomic_store_explicit(&mycounter__(qe), (atomic_load_explicit(&mycounter__(qe), memory_order_relaxed) + 1) % qe->num_queues, memory_order_relaxed);
   qt_threadqueue_node_t *node;
   
   // If there is no work or we can't get the lock, fail
-  if (q->qlength == 0) return NULL;
+  if (atomic_load_explicit(&q->qlength, memory_order_relaxed) == 0) return NULL;
   if (!QTHREAD_TRYLOCK_TRY(&q->qlock)) return NULL;
-  if (q->qlength == 0){
+  if (atomic_load_explicit(&q->qlength, memory_order_relaxed) == 0){
     QTHREAD_TRYLOCK_UNLOCK(&q->qlock);
     return NULL;
   }
   
-  node = (qt_threadqueue_node_t *)q->tail;
-  q->tail = node->prev;
-  if(q->tail) q->tail->next = NULL;
-  if(q->head == node) q->head = NULL;
-  q->qlength--;
+  node = (qt_threadqueue_node_t *)atomic_load_explicit(&q->tail__, memory_order_relaxed);
+  atomic_store_explicit(&q->tail__, atomic_load_explicit(&node->prev__, memory_order_relaxed), memory_order_relaxed);
+  if(atomic_load_explicit(&q->tail__, memory_order_relaxed)) atomic_store_explicit(&atomic_load_explicit(&q->tail__, memory_order_relaxed)->next__, NULL, memory_order_relaxed);
+  if(atomic_load_explicit(&q->head__, memory_order_relaxed) == node) atomic_store_explicit(&q->head__, NULL, memory_order_relaxed);
+  atomic_fetch_sub_explicit(&q->qlength, 1ull, memory_order_relaxed);
   QTHREAD_TRYLOCK_UNLOCK(&q->qlock);
 
   return node;
 }                                   
 
-qt_threadqueue_node_t INTERNAL *qt_threadqueue_dequeue_head(qt_threadqueue_t *qe){                                     
+static qt_threadqueue_node_t *qt_threadqueue_dequeue_head(qt_threadqueue_t *qe){                                     
   qt_threadqueue_internal* q = myqueue(qe);
-  mycounter(qe) = (mycounter(qe) + 1) % qe->num_queues;
+  atomic_store_explicit(&mycounter__(qe), (atomic_load_explicit(&mycounter__(qe), memory_order_relaxed) + 1) % qe->num_queues, memory_order_relaxed);
   qt_threadqueue_node_t *node;
   
   // If there is no work or we can't get the lock, fail
-  if (q->qlength == 0) return NULL;
+  if (atomic_load_explicit(&q->qlength, memory_order_relaxed) == 0) return NULL;
   if (!QTHREAD_TRYLOCK_TRY(&q->qlock)) return NULL;
-  if (q->qlength == 0){
+  if (atomic_load_explicit(&q->qlength, memory_order_relaxed) == 0){
     QTHREAD_TRYLOCK_UNLOCK(&q->qlock);
     return NULL;
   }
   
-  node = (qt_threadqueue_node_t *)q->head;
-  q->head = node->next;
-  if(q->head) q->head->prev = NULL;
-  if(q->tail == node) q->tail = NULL;
-  q->qlength--;
+  node = (qt_threadqueue_node_t *)atomic_load_explicit(&q->head__, memory_order_relaxed);
+  atomic_store_explicit(&q->head__, atomic_load_explicit(&node->next__, memory_order_relaxed), memory_order_relaxed);
+  if(atomic_load_explicit(&q->head__, memory_order_relaxed)) atomic_store_explicit(&atomic_load_explicit(&q->head__, memory_order_relaxed)->prev__, NULL, memory_order_relaxed);
+  if(atomic_load_explicit(&q->tail__, memory_order_relaxed) == node) atomic_store_explicit(&q->tail__, NULL, memory_order_relaxed);
+  atomic_fetch_sub_explicit(&q->qlength, 1ull, memory_order_relaxed);
   QTHREAD_TRYLOCK_UNLOCK(&q->qlock);
 
   return node;
@@ -347,10 +346,8 @@ int INTERNAL qt_threadqueue_private_enqueue_yielded(qt_threadqueue_private_t *re
 qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *qe,
                                             qt_threadqueue_private_t *qc,
                                             uint_fast8_t              active){   
-  qt_threadqueue_internal * q= myqueue(qe);
   qt_threadqueue_node_t *node = NULL;
   qthread_t* t;
-  qthread_shepherd_t *my_shepherd = qthread_internal_getshep();
 
   for(int numwaits = 0; !node; numwaits ++){
     node = qt_threadqueue_dequeue_tail(qe);
@@ -368,17 +365,17 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *qe,
       }
     }
 
-    if(!node && qthread_worker(NULL) == 0 && mccoy){
-      qthread_t *t = mccoy;
-      mccoy = NULL;
+    if(!node && qthread_worker(NULL) == 0 && atomic_load_explicit(&mccoy, memory_order_relaxed)){
+      qthread_t *t = atomic_load_explicit(&mccoy, memory_order_relaxed);
+      atomic_store_explicit(&mccoy, NULL, memory_order_relaxed);
       return t; 
     } else if(!node){
-      if(numwaits > condwait_backoff && !finalizing){
+      if(numwaits > condwait_backoff && !atomic_load_explicit(&finalizing, memory_order_relaxed)){
         QTHREAD_COND_LOCK(qe->cond);
-        qe->numwaiters++;
+        atomic_fetch_add_explicit(&qe->numwaiters, 1ull, memory_order_relaxed);
         MACHINE_FENCE;
-        if(!finalizing) QTHREAD_COND_WAIT(qe->cond);
-        qe->numwaiters--;
+        if(!atomic_load_explicit(&finalizing, memory_order_relaxed)) QTHREAD_COND_WAIT(qe->cond);
+        atomic_fetch_sub_explicit(&qe->numwaiters, 1ull, memory_order_relaxed);
         QTHREAD_COND_UNLOCK(qe->cond);
         numwaits = 0;
       } else {
@@ -391,10 +388,10 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *qe,
   return t;
 } 
 
-void INTERNAL qthread_steal_enable(){     
+void INTERNAL qthread_steal_enable(void){     
 }   
 
-void INTERNAL qthread_steal_disable(){     
+void INTERNAL qthread_steal_disable(void){     
 }     
 
 qthread_shepherd_id_t INTERNAL qt_threadqueue_choose_dest(qthread_shepherd_t * curr_shep){

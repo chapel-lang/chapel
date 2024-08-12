@@ -11,6 +11,7 @@ AC_CACHE_CHECK(
  [qt_cv_aligned_attr],
  [AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 int foo __attribute__((aligned(64)));
+int f(int i);
 int f(int i) { foo = 1; return foo; }]])],
  [qt_cv_aligned_attr=yes],
  [qt_cv_aligned_attr=no])])
@@ -25,8 +26,10 @@ AC_CACHE_CHECK(
  [support for __attribute__((malloc))],
  [qt_cv_malloc_attr],
  [AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-__attribute__((malloc))
-void * f(int i) { return malloc(i); }]])],
+#include <stdlib.h>
+__attribute__((malloc)) void * f(int i);
+__attribute__((malloc)) void * f(int i)
+{ return malloc(i); }]])],
  [qt_cv_malloc_attr=yes],
  [qt_cv_malloc_attr=no])])
  AS_IF([test "x$qt_cv_malloc_attr" = xyes],
@@ -42,7 +45,7 @@ AC_CACHE_CHECK(
  [support for __attribute__((unused))],
  [qt_cv_unused_attr],
  [AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-__attribute__((unused))
+static __attribute__((unused))
 int f(int i) { return i; }]])],
  [qt_cv_unused_attr=yes],
  [qt_cv_unused_attr=no])])
@@ -60,8 +63,10 @@ AC_CACHE_CHECK(
  [support for __attribute__((noinline))],
  [qt_cv_noinline_attr],
  [AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-__attribute__((noinline))
-void * f(int i) { return malloc(i); }]])],
+#include <stdlib.h>
+__attribute__((noinline)) void * f(int i);
+__attribute__((noinline)) void * f(int i)
+{ return malloc(i); }]])],
  [qt_cv_noinline_attr=yes],
  [qt_cv_noinline_attr=no])])
  AS_IF([test "x$qt_cv_noinline_attr" = xyes],
@@ -77,6 +82,8 @@ AC_CACHE_CHECK(
  [support for __attribute__((deprecated))],
  [qt_cv_deprecated_attr],
  [AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+#include <stdlib.h>
+void * __attribute__((deprecated)) f (int i);
 void * __attribute__((deprecated)) f (int i)
 { return malloc(i); }]])],
  [qt_cv_deprecated_attr=yes],

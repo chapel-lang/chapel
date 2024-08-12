@@ -21,17 +21,30 @@ __wget_chpl_release() {
   fi
 }
 
+__build_all_packages() {
+  __build_packages $1 $2 $3 $4 $5 $6 '--platform=linux/amd64,linux/arm64' $7
+}
+__build_x8664_package() {
+  __build_packages $1 $2 $3 $4 $5 $6 '--platform=linux/amd64' $7
+}
+__build_arm64_package() {
+  __build_packages $1 $2 $3 $4 $5 $6 '--platform=linux/arm64' $7
+}
+__build_native_package() {
+  __build_packages $1 $2 $3 $4 $5 $6 '' $7
+}
+
 __build_packages() {
-  # use this to build the package for linux/amd64 and linux/arm64
   local pkg_type=$1
   local os=$2
   local package_name=$3
   local chapel_version=$4
   local package_version=$5
   local docker_dir_name=$6
+  local architecture_string=$7
 
   # default to 1 core
-  local para=${7:-1}
+  local para=${8:-1}
 
   __wget_chpl_release $chapel_version
 
@@ -45,9 +58,10 @@ __build_packages() {
   if [ -f Dockerfile.template ]; then
     ${fill_script} Dockerfile.template
   fi
+  set -x
 
   DOCKER_BUILDKIT=1 docker buildx build \
-    --platform linux/amd64,linux/arm64 \
+    $architecture_string \
     --output=type=local,dest=../build/$os-$package_name-$chapel_version-$package_version \
     --target=artifact \
     --build-arg "BASENAME=$package_name" \

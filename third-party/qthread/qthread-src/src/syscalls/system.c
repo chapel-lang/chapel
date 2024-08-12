@@ -33,7 +33,7 @@ int qt_system(const char *command)
     assert(me->rdata);
 
     me->rdata->blockedon.io = job;
-    me->thread_state        = QTHREAD_STATE_SYSCALL;
+    atomic_store_explicit(&me->thread_state, QTHREAD_STATE_SYSCALL, memory_order_relaxed);
     qthread_back_to_master(me);
     ret = job->ret;
     errno = job->err;
