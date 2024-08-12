@@ -53,7 +53,7 @@ module Aggregator {
     }
 
     // TODO: document
-    proc update(key: client.keyType) {
+    proc ref update(key: client.keyType) {
       var loc: int = client.getLocaleForKey(key);
 
       var idx = 0;
