@@ -212,15 +212,15 @@ Reverse Comparator
 Sort functions in Chapel do not have a ``reverse`` argument. Instead, reverse
 sorting is handled through the comparator interface.
 
-A module-defined :const:`reverseComparator` can be passed to a sort function to
-reverse the default sorting order.
+An instance of the type :record:`ReverseComparator` can be passed to a sort
+function to reverse the default sorting order.
 
 .. code-block:: chapel
 
   var Array = [-1, -4, 2, 3];
 
-  // Using module-defined 'reverseComparator'
-  sort(Array, comparator=reverseComparator)
+  // Using module-defined 'ReverseComparator'
+  sort(Array, comparator = new ReverseComparator())
 
   // This will output: 3, 2, -1, -4
   writeln(Array);
@@ -274,8 +274,9 @@ const defaultComparator: DefaultComparator = new DefaultComparator();
    default sort order.
 
  */
-const reverseComparator: ReverseComparator(DefaultComparator);
-reverseComparator = new ReverseComparator();
+@deprecated("The variable 'reverseComparator' is now deprecated, please create a new instance of the :type:`ReverseComparator` type reversing the :type:`DefaultComparator` instead.")
+const reverseComparator: ReverseComparator(DefaultComparator) =
+  new ReverseComparator();
 
 /* Private methods */
 

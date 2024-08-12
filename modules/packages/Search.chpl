@@ -21,13 +21,13 @@
 /* Support for standard search routines on 1D arrays.
  */
 module Search {
-  public use Sort only DefaultComparator, reverseComparator, ReverseComparator;
+  public use Sort only DefaultComparator, ReverseComparator;
 
   // TODO: remove this module and its public use when the deprecations have been
   // removed
   pragma "ignore deprecated use"
   private module HideDeprecatedReexport {
-    public use Sort only defaultComparator;
+    public use Sort only defaultComparator, reverseComparator;
   }
 
   public use HideDeprecatedReexport;

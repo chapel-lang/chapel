@@ -194,7 +194,7 @@ proc testsize(size:int) {
   }
 
   for m in methods {
-    const ref cmp = if reverse then reverseComparator else
+    const ref cmp = if reverse then new ReverseComparator() else
                                       new DefaultComparator();
     var t: stopwatch;
     for i in 1..ntrials {
