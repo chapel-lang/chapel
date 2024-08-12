@@ -3286,7 +3286,7 @@ record DefaultComparator {
     return compare(x=a, y=b);
   }
 
-    /*
+  /*
    Default compare method used in sort functions.
    Uses the `<` operator to compute the ordering between ``x`` and ``y``.
    See also `The .compare method`_.
