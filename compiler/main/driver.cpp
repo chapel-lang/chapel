@@ -650,14 +650,10 @@ static void verifyStageAndSetStageNum(const ArgumentDescription* desc,
 }
 
 static void setPrintIrFile(const ArgumentDescription* desc, const char* arg) {
-  if (llvmPrintIrFile) {
+  if (shouldLlvmPrintIrToFile()) {
     USR_FATAL("Cannot specify --llvm-print-ir-file more than once");
   }
-  std::error_code error;
-  llvmPrintIrFile = std::make_unique<llvm::raw_fd_ostream>(arg, error);
-  if (llvmPrintIrFile == NULL) {
-    USR_FATAL("Could not open file '%s'", arg);
-  }
+  llvmPrintIrFileName = std::string(arg);
 }
 
 /*
