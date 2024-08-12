@@ -377,7 +377,7 @@ module Image {
       stb_image
     }
     config param impl = Implementation.native;
-    proc write(outfile, pixels: [?d]) throws {
+    proc write(const ref outfile: fileWriter(?), pixels: [?d]) throws {
       if impl == Implementation.native {
         writeNative(outfile, pixels);
       } else if impl == Implementation.stb_image {
@@ -386,7 +386,7 @@ module Image {
         compilerError("Unknown BMP implementation");
       }
     }
-    proc read(infile) throws {
+    proc read(const ref infile: fileReader(?)) throws {
       if impl == Implementation.native {
         compilerError("Native BMP reading is not yet supported");
       } else if impl == Implementation.stb_image {
@@ -396,7 +396,7 @@ module Image {
       }
     }
 
-    private proc writeNative(outfile, pixels: [?d]) throws {
+    private proc writeNative(const ref outfile: fileWriter(?), pixels: [?d]) throws {
       private use Image;
       private use IO;
       const rows = d.dim(0).size,
@@ -459,7 +459,7 @@ module Image {
       libpng
     }
     config param impl = Implementation.stb_image;
-    proc write(outfile, pixels: [?d]) throws {
+    proc write(const ref outfile: fileWriter(?), pixels: [?d]) throws {
       if impl == Implementation.stb_image {
         import super.STBImageHelper;
         STBImageHelper.writePng(outfile, pixels);
@@ -469,7 +469,7 @@ module Image {
         compilerError("Unknown PNG implementation");
       }
     }
-    proc read(infile) throws {
+    proc read(const ref infile: fileReader(?)) throws {
       if impl == Implementation.stb_image {
         import super.STBImageHelper;
         return STBImageHelper.readPng(infile);
@@ -486,7 +486,7 @@ module Image {
       stb_image
     }
     config param impl = Implementation.stb_image;
-    proc write(outfile, pixels: [?d]) throws {
+    proc write(const ref outfile: fileWriter(?), pixels: [?d]) throws {
       if impl == Implementation.stb_image {
         import super.STBImageHelper;
         STBImageHelper.writeJpg(outfile, pixels);
@@ -494,7 +494,7 @@ module Image {
         compilerError("Unknown JPG implementation");
       }
     }
-    proc read(infile) throws {
+    proc read(const ref infile: fileReader(?)) throws {
       if impl == Implementation.stb_image {
         import super.STBImageHelper;
         return STBImageHelper.readJpg(infile);
@@ -537,12 +537,13 @@ module Image {
     private proc stbi_writeFunc(context: c_ptr(void),
                              data: c_ptrConst(void),
                              size: c_int) {
-      const outfile = context:c_ptr(fileWriter(locking=false));
+      const outfile = (context:c_ptr(fileWriter(locking=false))).deref();
       try! outfile.writeBinary(data:c_ptrConst(uint(8)), size);
     }
 
     // rewrite pixels into the right format for stb_image
-    private proc writeCommon(outfile, pixels: [?dom]) throws {
+    private proc writeCommon(const ref outfile: fileWriter(?), pixels: [?dom]):
+      (c_ptr(void), c_ptr(void), c_int, c_int, c_int, c_ptr(uint(8))) throws {
       const rows = dom.dim(0).size, cols = dom.dim(1).size;
 
       // 1=Y, 2=YA, 3=RGB, 4=RGBA
@@ -564,17 +565,17 @@ module Image {
                           then c_ptrTo(stbi_writeFuncLocking)
                           else c_ptrTo(stbi_writeFunc);
 
-      const context = c_ptrToConst(outfile);
+      const context = c_ptrTo(outfile);
       return (writeFunc, context, width.safeCast(c_int), height.safeCast(c_int), mode, data);
     }
 
-    proc writePng(outfile, pixels: [?dom]) throws {
+    proc writePng(const ref outfile: fileWriter(?), pixels: [?dom]) throws {
       const (writeFunc, context, width, height, mode, data) = writeCommon(outfile, pixels);
       const stride = width * mode;
       stbi_write_png_to_func(writeFunc, context, width, height, mode, data, stride);
     }
 
-    proc writeJpg(outfile, pixels: [?dom]) throws {
+    proc writeJpg(const ref outfile: fileWriter(?), pixels: [?dom]) throws {
       const (writeFunc, context, width, height, mode, data) = writeCommon(outfile, pixels);
       const quality: c_int = 100;
       stbi_write_jpg_to_func(writeFunc, context, width, height, mode, data, quality);
@@ -596,7 +597,7 @@ module Image {
                                       req_comp: c_int): c_ptr(uint(8));
     private extern proc stbi_image_free(data: c_ptr(void)): void;
 
-    private proc readCommon(infile) throws {
+    private proc readCommon(const ref infile: fileReader(?)) throws {
       // read bytes in
       const bytes_ = infile.readAll();
       const nBytes = bytes_.size.safeCast(c_int);
@@ -656,10 +657,10 @@ module Image {
       return pixels;
     }
 
-    proc readPng(infile) throws {
+    proc readPng(const ref infile: fileReader(?)) throws {
       return readCommon(infile);
     }
-    proc readJpg(infile) throws {
+    proc readJpg(const ref infile: fileReader(?)) throws {
       return readCommon(infile);
     }
 
