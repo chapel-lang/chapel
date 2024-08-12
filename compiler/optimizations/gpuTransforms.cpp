@@ -1941,6 +1941,13 @@ void GpuKernel::buildStubKernelLaunchBlock() {
       processGpuPrimitivesBlock(block);
     }
   }
+
+  // we are done with the call, now remove it.
+  if (blockSizeCall()) {
+    if (blockSizeCall()->inTree()) {
+      blockSizeCall()->remove();
+    }
+  }
 }
 
 void GpuKernel::generateKernelLaunch() {
@@ -2123,58 +2130,25 @@ static void cleanupTaskIndependentCapturePrimitive(CallExpr *call) {
   call->replace(snippedChild);
 }
 
-// iterator lowering inserts AST like this in order to carry information about 'in'
-// intent variables to gpu lowering.
-//
-//   (given an 'in' intent for a variable 'x'):
-//     var taskIndX = PRIM_TASK_IND_CAPTURE_OF(copy-of(x));
-//
-// For gpuized loops GPU lowering rewrites this as needed to ensure each thread
-// has an indpendent copy-of x, loops that are not gpuized will have remaining
-// uses of the primitive, which we process by removing the primitive but keeping
-// the copy.
-static void cleanupTaskIndependentCapturePrimitives() {
-  for_alive_in_Vec(CallExpr, callExpr, gCallExprs)
-    if(callExpr->isPrimitive(PRIM_TASK_PRIVATE_SVAR_CAPTURE))
-      cleanupTaskIndependentCapturePrimitive(callExpr);
-}
-
-static void reportErrorsForBadBlockSizeCalls() {
-  CallExpr* explainAnchor = nullptr;
+static void cleanupPrimitives() {
   for_alive_in_Vec(CallExpr, callExpr, gCallExprs) {
-    if(callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
-      if (callExpr->getFunction()->hasFlag(FLAG_GPU_SPECIALIZATION)) {
-        // Assume that this primitive got here by being copied, and that the
-        // other location will error about it. Since both copies of the primitive
-        // will have the same location, erroring here would lead to duplicates.
-        continue;
-      }
-
-      USR_FATAL_CONT(callExpr, "'setBlockSize' can only be used in bodies of GPU-eligible loops");
-      explainAnchor = callExpr;
-
-      // Search forward to try find the CForLoop corresponding to the GPU loop.
-      // This is just a heuristic to detect common erroneous uses for setBlockSize.
-      auto search = callExpr->next;
-      while (search) {
-        // Try recognizing a GPU-eligible loop that the blockSize call could've
-        // applied to by detecting the loop's dynamic launch check (i.e.,
-        // the "if runningOnGpuLocale()" conditional).
-
-        auto condStmt = toCondStmt(search);
-        if (gpuBranches.count(condStmt) > 0) {
-          USR_PRINT(condStmt, "if you meant to set the block size of this GPU "
-                              "loop, move the 'setBlockSize' call into the loop "
-                              "body");
-          break;
-        }
-
-        search = search->next;
-      }
+    if(callExpr->isPrimitive(PRIM_TASK_PRIVATE_SVAR_CAPTURE)) {
+      // iterator lowering inserts AST like this in order to carry information about 'in'
+      // intent variables to gpu lowering.
+      //
+      //   (given an 'in' intent for a variable 'x'):
+      //     var taskIndX = PRIM_TASK_IND_CAPTURE_OF(copy-of(x));
+      //
+      // For gpuized loops GPU lowering rewrites this as needed to ensure each thread
+      // has an indpendent copy-of x, loops that are not gpuized will have remaining
+      // uses of the primitive, which we process by removing the primitive but keeping
+      // the copy.
+      cleanupTaskIndependentCapturePrimitive(callExpr);
+    }
+    else if(callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
+      callExpr->remove();
     }
   }
-  if (explainAnchor) {}
-  USR_STOP();
 }
 
 // ----------------------------------------------------------------------------
@@ -2198,8 +2172,7 @@ void gpuTransforms() {
     }
   }
 
-  cleanupTaskIndependentCapturePrimitives();
-  reportErrorsForBadBlockSizeCalls();
+  cleanupPrimitives();
 }
 
 bool isLoopGpuBound(CForLoop* loop) {
