@@ -2774,7 +2774,11 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
     }
     auto destination = consumeVarDestinationExpr();
     if (destination) {
-      lastDecl->attachDestination(std::move(destination));
+      if (auto var = lastDecl->toVariable()) {
+        var->attachDestination(std::move(destination));
+      } else {
+        error(locEverything, "can only apply 'on' to (multi)variable declarations");
+      }
     }
   } else {
 
@@ -2788,11 +2792,6 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
 
       if (!isTypeVar) {
         CHPL_PARSER_REPORT(this, MultipleExternalRenaming, locEverything);
-      }
-    }
-    if (auto var = firstDecl->toVariable()) {
-      if (var->destination()) {
-        error(locEverything, "cannot apply 'on' to multi-variable declaration");
       }
     }
     auto attributeGroup = buildAttributeGroup(locEverything);
