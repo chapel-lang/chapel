@@ -3279,10 +3279,26 @@ record DefaultComparator {
    :returns: 0 if ``a == b``
    :returns: -1 if ``a < b``
    */
+  pragma "last resort"
+  @deprecated("compare with 'a' and 'b' arguments is deprecated, please use compare with 'x' and 'y' arguments instead")
   inline
   proc compare(a, b) {
-    if a < b { return -1; }
-    else if b < a { return 1; }
+    return compare(x=a, y=b);
+  }
+
+    /*
+   Default compare method used in sort functions.
+   Uses the `<` operator to compute the ordering between ``x`` and ``y``.
+   See also `The .compare method`_.
+
+   :returns: 1 if ``y < x``
+   :returns: 0 if ``x == y``
+   :returns: -1 if ``x < y``
+   */
+  inline
+  proc compare(x, y: x.type) {
+    if x < y { return -1; }
+    else if y < x { return 1; }
     else return 0;
   }
 
@@ -3548,17 +3564,27 @@ record ReverseComparator {
   /*
    Reverses ``comparator.compare``. See also `The .compare method`_.
    */
+  pragma "last resort"
+  @deprecated("compare with 'a' and 'b' arguments is deprecated, please use compare with 'x' and 'y' arguments instead")
   inline
   proc compare(a, b) where hasCompare(a, b) || hasCompareFromKey(a) {
+    return compare(x=a, y=b);
+  }
 
-    chpl_check_comparator(this.comparator, a.type);
+  /*
+   Reverses ``comparator.compare``. See also `The .compare method`_.
+   */
+  inline
+  proc compare(x, y: x.type) where hasCompare(x, y) || hasCompareFromKey(x) {
 
-    if hasCompareFromKey(a) {
+    chpl_check_comparator(this.comparator, x.type);
+
+    if hasCompareFromKey(x) {
       return doCompare(new DefaultComparator(),
-                       this.comparator.key(a),
-                       this.comparator.key(b));
+                       this.comparator.key(x),
+                       this.comparator.key(y));
     } else {
-      return doCompare(this.comparator, a, b);
+      return doCompare(this.comparator, x, y);
     }
   }
 }
