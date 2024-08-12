@@ -115,7 +115,7 @@ module Image {
   pragma "last resort"
   @chpldoc.nodoc
   proc writeImage(image, format: imageType, pixels: [] pixelType) throws do
-    compilerError("pixels must be a 2D array of colors");
+    compilerError("'pixels' must be a 2D array of colors");
 
   /*
     Write an array of pixels as an image
@@ -381,7 +381,7 @@ module Image {
       if impl == Implementation.native {
         writeNative(outfile, pixels);
       } else if impl == Implementation.stb_image {
-        compilerError("std_image is not yet supported for BMP");
+        compilerError("stb_image is not yet supported for BMP");
       } else {
         compilerError("Unknown BMP implementation");
       }
@@ -390,7 +390,7 @@ module Image {
       if impl == Implementation.native {
         compilerError("Native BMP reading is not yet supported");
       } else if impl == Implementation.stb_image {
-        compilerError("std_image is not yet supported for BMP");
+        compilerError("stb_image is not yet supported for BMP");
       } else {
         compilerError("Unknown BMP implementation");
       }
