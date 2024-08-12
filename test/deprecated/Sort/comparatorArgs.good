@@ -1,0 +1,4 @@
+comparatorArgs.chpl:4: warning: compare with 'a' and 'b' arguments is deprecated, please use compare with 'x' and 'y' arguments instead
+comparatorArgs.chpl:7: warning: compare with 'a' and 'b' arguments is deprecated, please use compare with 'x' and 'y' arguments instead
+-1
+-1
