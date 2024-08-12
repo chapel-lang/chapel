@@ -1,23 +1,14 @@
 #ifndef QT_ATOMICS_H
 #define QT_ATOMICS_H
 
+#include <stdatomic.h>
 #include <sys/time.h>
 
 #include <qthread/common.h>
 #include <qthread/qthread.h>
 
-#if (__STDC_VERSION__ >= 201112L) && (!defined(__STDC_NO_ATOMICS__))
-#define USE_C11_MEMORY_FENCE
-#include <stdatomic.h>
-#endif
-
-#ifdef USE_C11_MEMORY_FENCE
 #define THREAD_FENCE_MEM_ACQUIRE_IMPL atomic_thread_fence(memory_order_acquire)
 #define THREAD_FENCE_MEM_RELEASE_IMPL atomic_thread_fence(memory_order_release)
-#else
-#define THREAD_FENCE_MEM_ACQUIRE_IMPL MACHINE_FENCE
-#define THREAD_FENCE_MEM_RELEASE_IMPL MACHINE_FENCE
-#endif
 
 #if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA32) || \
     (QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64)
@@ -68,20 +59,16 @@
 # define QTHREAD_FASTLOCK_SETUP() do { } while (0)
 # define QTHREAD_FASTLOCK_ATTRVAR
 typedef struct qt_spin_exclusive_s { /* added to allow fast critical section ordering */
-    aligned_t enter;                 /* and not call pthreads spin_lock -- hard to debug */
-    aligned_t exit;                  /* near the lock under gdb -- 4/1/11 akp */
+    aligned_t _Atomic enter;                 /* and not call pthreads spin_lock -- hard to debug */
+    aligned_t _Atomic exit;                  /* near the lock under gdb -- 4/1/11 akp */
 } qt_spin_exclusive_t;
 void qt_spin_exclusive_lock(qt_spin_exclusive_t *);
 void qt_spin_exclusive_unlock(qt_spin_exclusive_t *);
-# define QTHREAD_FASTLOCK_INIT(x)     { (x).enter = 0; (x).exit = 0; }
-# define QTHREAD_FASTLOCK_INIT_PTR(x) { (x)->enter = 0; (x)->exit = 0; }
-# define QTHREAD_FASTLOCK_LOCK(x)     { aligned_t val = qthread_incr(&(x)->enter, 1); \
-                                        while (val != (x)->exit) SPINLOCK_BODY(); \
-                                           THREAD_FENCE_MEM_ACQUIRE; /* spin waiting for my turn */ }
-# define QTHREAD_FASTLOCK_UNLOCK(x)   do { COMPILER_FENCE; \
-					                       THREAD_FENCE_MEM_RELEASE; \
-                                           (x)->exit++; /* allow next guy's turn */ \
-                                        } while (0)
+# define QTHREAD_FASTLOCK_INIT(x)     { atomic_store_explicit(&(x).enter, 0u, memory_order_release); atomic_store_explicit(&(x).exit, 0u, memory_order_release); }
+# define QTHREAD_FASTLOCK_INIT_PTR(x) { atomic_store_explicit(&(x)->enter, 0u, memory_order_release); atomic_store_explicit(&(x)->exit, 0u, memory_order_release); }
+# define QTHREAD_FASTLOCK_LOCK(x)     { aligned_t val = atomic_fetch_add_explicit(&(x)->enter, 1u, memory_order_relaxed); \
+                                        while (val != atomic_load_explicit(&(x)->exit, memory_order_acquire)) SPINLOCK_BODY(); /* spin waiting for turn */ }
+# define QTHREAD_FASTLOCK_UNLOCK(x)   do { atomic_fetch_add_explicit(&(x)->exit, 1u, memory_order_release); /* notify next waiting thread */} while (0)
 # define QTHREAD_FASTLOCK_DESTROY(x)
 # define QTHREAD_FASTLOCK_DESTROY_PTR(x)
 # define QTHREAD_FASTLOCK_TYPE        qt_spin_exclusive_t
@@ -149,10 +136,9 @@ extern pthread_mutexattr_t _fastlock_attr;
 # define QTHREAD_TRYLOCK_INIT(x)     { (x).u = 0; }
 # define QTHREAD_TRYLOCK_INIT_PTR(x) { (x)->u = 0; }
 # define QTHREAD_TRYLOCK_LOCK(x)     { uint32_t val = qthread_incr(&(x)->s.users, 1); \
-                                       while (val != (x)->s.ticket) SPINLOCK_BODY(); \
-                                          THREAD_FENCE_MEM_ACQUIRE; /* spin waiting for my turn */ }
+                                       while (val != atomic_load_explicit((_Atomic uint32_t *)&(x)->s.ticket, memory_order_acquire)) SPINLOCK_BODY();}
 # define QTHREAD_TRYLOCK_UNLOCK(x)   do { COMPILER_FENCE; \
-					                      THREAD_FENCE_MEM_RELEASE; \
+					  THREAD_FENCE_MEM_RELEASE; \
                                           qthread_incr(&(x)->s.ticket, 1); /* allow next guy's turn */ \
                                         } while (0)
 # define QTHREAD_TRYLOCK_DESTROY(x)
@@ -160,7 +146,9 @@ extern pthread_mutexattr_t _fastlock_attr;
 
 static inline int QTHREAD_TRYLOCK_TRY(qt_spin_trylock_t *x)
 {
-    qt_spin_trylock_t newcmp, cmp = *(x);
+    qt_spin_trylock_t newcmp, cmp;
+    uint64_t tmp = atomic_load_explicit((_Atomic uint64_t*)x, memory_order_relaxed);
+    cmp = *(qt_spin_trylock_t*)&tmp;
 
     if (cmp.s.users != cmp.s.ticket) {
         return 0;
@@ -170,7 +158,6 @@ static inline int QTHREAD_TRYLOCK_TRY(qt_spin_trylock_t *x)
     newcmp.s.users = newcmp.s.ticket + 1;
 
     if(qthread_cas(&(x->u), cmp.u, newcmp.u) == cmp.u) { 
-        THREAD_FENCE_MEM_ACQUIRE; 
         return 1;
     }
     return 0;
@@ -750,7 +737,7 @@ static QINLINE aligned_t qthread_internal_incr_mod_(aligned_t             *opera
 static QINLINE void *qt_internal_atomic_swap_ptr(void **addr,
                                                  void  *newval)
 {   /*{{{*/
-    void *oldval = *addr;
+    void *oldval = atomic_load_explicit((void *_Atomic *)addr, memory_order_relaxed);
     void *tmp;
 
     while ((tmp = qthread_cas_ptr(addr, oldval, newval)) != oldval) {

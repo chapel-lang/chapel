@@ -622,8 +622,9 @@ struct qarray_constfunc_wrapper_args {
     const size_t  startat, stopat;
 };
 
-static aligned_t qarray_strider(const struct qarray_func_wrapper_args *arg)
+static aligned_t qarray_strider(void *arg_void)
 {                                      /*{{{ */
+    struct qarray_func_wrapper_args const *arg = (struct qarray_func_wrapper_args const *)arg_void;
     const size_t                segment_size = arg->a->segment_size;
     const distribution_t        dist_type    = arg->a->dist_type;
     const qthread_shepherd_id_t shep         = qthread_shep();
@@ -739,8 +740,9 @@ qarray_strider_exit:
     return 0;
 }                                      /*}}} */
 
-static aligned_t qarray_loop_strider(const struct qarray_func_wrapper_args *arg)
+static aligned_t qarray_loop_strider(void *arg_void)
 {                                      /*{{{ */
+    struct qarray_func_wrapper_args const *arg = (struct qarray_func_wrapper_args const *)arg_void;
     const size_t                segment_size = arg->a->segment_size;
     const distribution_t        dist_type    = arg->a->dist_type;
     const qthread_shepherd_id_t shep         = qthread_shep();
@@ -849,8 +851,9 @@ qarray_loop_strider_exit:
     return 0;
 }                                      /*}}} */
 
-static aligned_t qarray_loopaccum_strider(const struct qarray_accumfunc_wrapper_args *arg)
+static aligned_t qarray_loopaccum_strider(void *arg_void)
 {                                      /*{{{ */
+    struct qarray_accumfunc_wrapper_args const *arg = (struct qarray_accumfunc_wrapper_args const *)arg_void;
     const size_t                segment_size = arg->a->segment_size;
     const distribution_t        dist_type    = arg->a->dist_type;
     const qthread_shepherd_id_t shep         = qthread_shep();

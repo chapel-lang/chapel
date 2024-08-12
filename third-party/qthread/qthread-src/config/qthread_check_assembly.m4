@@ -133,7 +133,7 @@ AC_DEFUN([QTHREAD_CHECK_INLINE_C_GCC],[
   asm_result="unknown"
   AS_IF([test ! "$assembly" = ""],
         [AC_RUN_IFELSE([AC_LANG_SOURCE([[
-int main() {
+int main(void) {
 int ret = 1;
 __asm__ __volatile__ ($assembly);
 return ret;
@@ -145,7 +145,7 @@ return ret;
   # if we're cross compiling, just try to compile and figure good enough
   AS_IF([test "$asm_result" = "unknown"],
     [AC_LINK_IFELSE([AC_LANG_SOURCE([[
-int main()
+int main(void)
 {
 int ret = 1;
 __asm__ __volatile__ ($assembly);
