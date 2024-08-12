@@ -52,6 +52,7 @@ class Decl : public AstNode {
   Visibility visibility_;
   Linkage linkage_;
   int linkageNameChildNum_;
+  int destinationChildNum_;
 
  protected:
   Decl(AstTag tag, Visibility visibility,
@@ -69,7 +70,8 @@ class Decl : public AstNode {
     : AstNode(tag, std::move(children), attributeGroupChildNum),
       visibility_(visibility),
       linkage_(linkage),
-      linkageNameChildNum_(linkageNameChildNum) {
+      linkageNameChildNum_(linkageNameChildNum),
+      destinationChildNum_(NO_CHILD) {
 
 
     if (linkageNameChildNum_ >= 0) {
@@ -78,12 +80,15 @@ class Decl : public AstNode {
 
     CHPL_ASSERT(NO_CHILD <= linkageNameChildNum_ &&
                  linkageNameChildNum_ < (ssize_t)children_.size());
+    CHPL_ASSERT(NO_CHILD <= destinationChildNum_ &&
+                 destinationChildNum_ < (ssize_t)children_.size());
   }
 
   void declSerializeInner(Serializer& ser) const {
     ser.write(visibility_);
     ser.write(linkage_);
     ser.writeVInt(linkageNameChildNum_);
+    ser.writeVInt(destinationChildNum_);
   }
 
   Decl(AstTag tag, Deserializer& des)
@@ -91,12 +96,14 @@ class Decl : public AstNode {
       visibility_ = des.read<Decl::Visibility>();
       linkage_ = des.read<Decl::Linkage>();
       linkageNameChildNum_ = des.readVInt();
+      destinationChildNum_ = des.readVInt();
   }
 
   bool declContentsMatchInner(const Decl* other) const {
     return this->visibility_ == other->visibility_ &&
            this->linkage_ == other->linkage_ &&
-           this->linkageNameChildNum_ == other->linkageNameChildNum_;
+           this->linkageNameChildNum_ == other->linkageNameChildNum_ &&
+           this->destinationChildNum_ == other->destinationChildNum_;
   }
 
   void declMarkUniqueStringsInner(Context* context) const { }
@@ -135,6 +142,25 @@ class Decl : public AstNode {
     if (linkageNameChildNum_ < 0) return nullptr;
     auto ret = child(linkageNameChildNum_);
     return ret;
+  }
+
+  /**
+    Returns the destination expression, like 'loc' from 'on loc var x = 1'.
+  */
+  const AstNode* destination() const {
+    if (destinationChildNum_ < 0) return nullptr;
+    return child(destinationChildNum_);
+  }
+
+  /**
+    See also AstNode::attachAttributeGroup. Add a destination node
+    (like 'loc' in 'on loc var x = 1') to this AST after it was initially
+    built.
+   */
+  void attachDestination(owned<AstNode> destination) {
+    CHPL_ASSERT(destinationChildNum_ == NO_CHILD);
+    destinationChildNum_ = children_.size();
+    children_.push_back(std::move(destination));
   }
 
   /**

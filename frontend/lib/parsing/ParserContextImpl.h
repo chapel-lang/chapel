@@ -1097,7 +1097,6 @@ AstNode* ParserContext::buildManagerExpr(YYLTYPE location,
                              Decl::DEFAULT_VISIBILITY,
                              Decl::DEFAULT_LINKAGE,
                              nullptr,
-                             nullptr,
                              resourceName,
                              kind,
                              false,
@@ -1811,7 +1810,6 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
                                 visibility,
                                 linkage,
                                 consumeVarDeclLinkageName(),
-                                consumeVarDestinationExpr(),
                                 name,
                                 varDeclKind,
                                 isVarDeclConfig,
@@ -1848,7 +1846,6 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            Decl::DEFAULT_VISIBILITY,
                            Decl::DEFAULT_LINKAGE,
                            /*linkageName*/ nullptr,
-                           /*destinationExpr*/ nullptr,
                            ident->name(),
                            Variable::INDEX,
                            /*isConfig*/ false,
@@ -2775,6 +2772,10 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
     if (attributeGroup) {
       lastDecl->attachAttributeGroup(std::move(attributeGroup));
     }
+    auto destination = consumeVarDestinationExpr();
+    if (destination) {
+      lastDecl->attachDestination(std::move(destination));
+    }
   } else {
 
     // TODO: Just embed and catch this in a tree-walk instead.
@@ -2800,6 +2801,10 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
                                   visibility,
                                   linkage,
                                   consumeList(vars));
+    auto destination = consumeVarDestinationExpr();
+    if (destination) {
+      multi->attachDestination(std::move(destination));
+    }
     cs.stmt = multi.release();
   }
 
