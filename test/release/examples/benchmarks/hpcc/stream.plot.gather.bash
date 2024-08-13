@@ -31,7 +31,12 @@ done
 # -----------------------------------------------------------------------------
 data=$(cat $runLog | sed -r -n 's/Performance \(GB\/s\) = //p')
 set +x
+
+# data is reported in GB/s convert to MB/s
+i=0; for x in ${data[@]}; do
+    scaled_data[i++]=$((x*1000))
+done
 echo -e "\t$experimentName" > $datFile
 paste \
   <(printf "%s\n" "${locales[@]}") \
-  <(printf "%s\n" "${data[@]}") >> "$datFile"
+  <(printf "%s\n" "${scaled_data[@]}") >> "$datFile"

@@ -5,4 +5,4 @@ for var in $chpl_vars; do
   unset "$var"
 done
 
-export CHPL_COMM=none  # use 'gasnet' feature if you wish to override this
+export CHPL_COMM=none  # use 'comm' feature if you wish to override this
