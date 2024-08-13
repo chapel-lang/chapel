@@ -1,3 +1,36 @@
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (lastStmtIsConditional.chpl:17)
+| Found an aggregation candidate (lastStmtIsConditional.chpl:19)
+|  Potential source aggregation (lastStmtIsConditional.chpl:19)
+|  Potential destination aggregation (lastStmtIsConditional.chpl:19)
+| Found an aggregation candidate (lastStmtIsConditional.chpl:22)
+|  Potential source aggregation (lastStmtIsConditional.chpl:22)
+|  Potential destination aggregation (lastStmtIsConditional.chpl:22)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (lastStmtIsConditional.chpl:17)
+
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (lastStmtIsConditional.chpl:31)
+| Found an aggregation candidate (lastStmtIsConditional.chpl:33)
+|  Potential source aggregation (lastStmtIsConditional.chpl:33)
+|  Potential destination aggregation (lastStmtIsConditional.chpl:33)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (lastStmtIsConditional.chpl:31)
+
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (lastStmtIsConditional.chpl:42)
+| Found an aggregation candidate (lastStmtIsConditional.chpl:44)
+|  Potential source aggregation (lastStmtIsConditional.chpl:44)
+|  Potential destination aggregation (lastStmtIsConditional.chpl:44)
+| Found an aggregation candidate (lastStmtIsConditional.chpl:47)
+|  Potential source aggregation (lastStmtIsConditional.chpl:47)
+|  Potential destination aggregation (lastStmtIsConditional.chpl:47)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (lastStmtIsConditional.chpl:42)
+
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (lastStmtIsConditional.chpl:56)
+| Found an aggregation candidate (lastStmtIsConditional.chpl:58)
+|  Potential source aggregation (lastStmtIsConditional.chpl:58)
+|  Potential destination aggregation (lastStmtIsConditional.chpl:58)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (lastStmtIsConditional.chpl:56)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:17)
+End analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:17)
+
 Start analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:17)
 | Found an aggregation candidate (lastStmtIsConditional.chpl:19)
 |  Potential source aggregation (lastStmtIsConditional.chpl:19)
@@ -5,10 +38,16 @@ Start analyzing forall for automatic aggregation [static only ALA clone]  (lastS
 |  Potential source aggregation (lastStmtIsConditional.chpl:22)
 End analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:17)
 
+Start analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:31)
+End analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:31)
+
 Start analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:31)
 | Found an aggregation candidate (lastStmtIsConditional.chpl:33)
 |  Potential source aggregation (lastStmtIsConditional.chpl:33)
 End analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:31)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:42)
+End analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:42)
 
 Start analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:42)
 | Found an aggregation candidate (lastStmtIsConditional.chpl:44)
@@ -17,22 +56,13 @@ Start analyzing forall for automatic aggregation [static only ALA clone]  (lastS
 |  Potential destination aggregation (lastStmtIsConditional.chpl:47)
 End analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:42)
 
+Start analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:56)
+End analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:56)
+
 Start analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:56)
 | Found an aggregation candidate (lastStmtIsConditional.chpl:58)
 |  Potential destination aggregation (lastStmtIsConditional.chpl:58)
 End analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:56)
-
-Start analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:17)
-End analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:17)
-
-Start analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:31)
-End analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:31)
-
-Start analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:42)
-End analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:42)
-
-Start analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:56)
-End analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:56)
 
 Aggregation candidate has confirmed local child [static only ALA clone] (lastStmtIsConditional.chpl:19)
 LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (lastStmtIsConditional.chpl:19)
