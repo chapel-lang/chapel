@@ -1854,7 +1854,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            /*initExpression*/ nullptr);
     builder->noteDeclNameLocation(var.get(), convLoc);
     builder->copyExprParenthLocation(e, var.get());
-    builder->deleteExprParenthLocation(e);
+    builder->deleteAllLocations(e);
     // Delete the location of 'e' because it's about to be deallocated;
     // we don't want a new allocation of an AST node to have the same pointer
     // and still be in the map, since that would pollute location information.
@@ -2218,6 +2218,11 @@ CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locLoop,
     if (withClause) {
       error = syntax(locLoop,
                      "'with' clauses are not supported on 'for' loops.");
+
+      // Since these are about to get deallocated, clear their location
+      // maps to ensure the OS re-using memory won't bring in stale locations
+      builder->deleteAllLocations(index.get());
+      builder->deleteAllLocations(body.get());
     } else {
       result = For::build(builder, convertLocation(locLoop),
                           std::move(index),

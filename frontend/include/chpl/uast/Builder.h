@@ -151,6 +151,12 @@ class Builder final {
   #include "all-location-maps.h"
   #undef LOCATION_MAP
 
+  /** Delete all the locations storedfor the current AST. This is useful if the
+      AST is being deallocated, which means future uses of this pointer
+      (the memory could be re-used) must not have locations out of the box.
+    */
+  void deleteAllLocations(const AstNode* ast);
+
   /** Note the symbol table symbols so that the resulting
       BuilderResult will have a working 'isSymbolTableSymbol' function. */
   void noteSymbolTableSymbols(SymbolTableVec vec);
