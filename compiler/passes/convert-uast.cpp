@@ -2640,7 +2640,7 @@ struct Converter {
     RemoteVarDesugaringState* desugaringState = nullptr;
     if (node->destination()) {
       desugaringState = &st;
-      st.localeTemp = new VarSymbol("chpl__localeTemp");;
+      st.localeTemp = newTemp("chpl__localeTemp");;
     }
 
     // Iterate in reverse just in case this is a remote variable declaration
