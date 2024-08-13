@@ -18,8 +18,11 @@
  * limitations under the License.
  */
 
-/*
-  The Debugger module provides a collection of useful debugging utilities
+/* Provides a collection of useful debugging utilities.
+
+The Debugger module currently only provides a single function,
+:proc:`breakpoint`. This function can be used to set a breakpoint in the code
+that will be hit when the program is run under a debugger.
 */
 @unstable(category="experimental", reason="The Debugger module is unstable due to its experimental behavior")
 module Debugger {
