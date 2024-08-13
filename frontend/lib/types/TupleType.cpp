@@ -230,7 +230,7 @@ const TupleType* TupleType::toValueTuple(Context* context, bool makeConst) const
     }
   }
 
-  if (numElements() == 0 || (allValue && allConst >= makeConst))
+  if (numElements() == 0 || (allValue && (!makeConst || allConst)))
     return this;
 
   // Otherwise, compute a new value tuple
@@ -268,7 +268,7 @@ const TupleType* TupleType::toReferentialTuple(Context* context, bool makeConst)
     }
   }
 
-  if (numElements() == 0 || (allRef && allConst >= makeConst))
+  if (numElements() == 0 || (allRef && (!makeConst || allConst)))
     return this;
 
   // Otherwise, compute a new referential tuple

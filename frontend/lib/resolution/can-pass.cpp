@@ -1051,10 +1051,11 @@ CanPassResult CanPassResult::canPass(Context* context,
           } else if (formalQT.kind() == QualifiedType::TYPE &&
                 actualTup->toValueTuple(context) == formalT) {
             return passAsIs();
-          }
-          auto got = canConvert(context, actualQT, formalQT);
-          if (got.passes()) {
-            return got;
+          } else if (formalQT.kind() != QualifiedType::TYPE) {
+            auto got = canConvert(context, actualQT, formalQT);
+            if (got.passes()) {
+              return got;
+            }
           }
         }
         // TODO: promotion

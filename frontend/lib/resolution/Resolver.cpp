@@ -1563,11 +1563,11 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         typePtr = tupleType->toReferentialTuple(context);
         qtKind = QualifiedType::CONST_REF;
       } else if (declaredKind == QualifiedType::CONST_INTENT) {
-        typePtr = tupleType->toReferentialTuple(context, true);
+        typePtr = tupleType->toReferentialTuple(context, /* makeConst */ true);
         qtKind = QualifiedType::CONST_REF;
       } else if (qtKind == QualifiedType::CONST_IN ||
                  qtKind == QualifiedType::CONST_REF) {
-        typePtr = tupleType->toValueTuple(context, true);
+        typePtr = tupleType->toValueTuple(context, /* makeConst */ true);
       } else if (qtKind == QualifiedType::VAR ||
                  qtKind == QualifiedType::CONST_VAR ||
                  qtKind == QualifiedType::REF ||
