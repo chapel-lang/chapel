@@ -1180,6 +1180,22 @@ void ALACandidate::addOffset(Expr* e) {
   }
 }
 
+Expr* ForallOptimizationInfo::getLoopDomainExpr() {
+  // loop domain is the 0th iterand
+  if (auto &s = iterSym[0]) {
+    return new SymExpr(s);
+  }
+  else if (auto &e = dotDomIterExpr[0]) {
+    return e->copy();
+  }
+  else if (auto &s = iterCallTmp[0]) {
+    return new SymExpr(s);
+  }
+  else {
+    return nullptr;
+  }
+}
+
 // for a call like `A[i]`, this will create something like
 //
 // chpl_dynamicAutoLocalCheck(A, loopDomain)
@@ -1193,7 +1209,6 @@ static void generateDynamicCheckForAccess(ALACandidate& candidate,
   ForallOptimizationInfo &optInfo = forall->optInfo;
   Symbol *baseSym = candidate.getCallBase();
   INT_ASSERT(baseSym);
-  const int iterandIdx = candidate.getIterandIdx();
 
   auto& staticCheckSymMap = candidate.hasOffset() ?
                                 optInfo.staticCheckWOffSymForSymMap :
@@ -1207,14 +1222,8 @@ static void generateDynamicCheckForAccess(ALACandidate& candidate,
 
     check->insertAtTail(baseSym);
 
-    if (optInfo.iterSym[iterandIdx] != NULL) {
-      check->insertAtTail(new SymExpr(optInfo.iterSym[iterandIdx]));
-    }
-    else if (optInfo.dotDomIterExpr[iterandIdx] != NULL) {
-      check->insertAtTail(optInfo.dotDomIterExpr[iterandIdx]->copy());
-    }
-    else if (optInfo.iterCallTmp[iterandIdx] != NULL) {
-      check->insertAtTail(new SymExpr(optInfo.iterCallTmp[iterandIdx]));
+    if (Expr* e = optInfo.getLoopDomainExpr()) {
+      check->insertAtTail(e);
     }
     else {
       INT_FATAL("optInfo didn't have enough information");
@@ -1260,7 +1269,6 @@ static Symbol *generateStaticCheckForAccess(ALACandidate& candidate,
 
   ForallOptimizationInfo &optInfo = forall->optInfo;
   Symbol *baseSym = candidate.getCallBase();
-  const int iterandIdx = candidate.getIterandIdx();
   INT_ASSERT(baseSym);
 
   auto& staticCheckSymMap = candidate.hasOffset() ?
@@ -1280,14 +1288,8 @@ static Symbol *generateStaticCheckForAccess(ALACandidate& candidate,
     CallExpr *checkCall = new CallExpr("chpl__staticAutoLocalCheck");
     checkCall->insertAtTail(baseSym);
 
-    if (optInfo.iterSym[iterandIdx] != NULL) {
-      checkCall->insertAtTail(new SymExpr(optInfo.iterSym[iterandIdx]));
-    }
-    else if (optInfo.dotDomIterExpr[iterandIdx] != NULL) {
-      checkCall->insertAtTail(optInfo.dotDomIterExpr[iterandIdx]->copy());
-    }
-    else if (optInfo.iterCallTmp[iterandIdx] != NULL) {
-      checkCall->insertAtTail(new SymExpr(optInfo.iterCallTmp[iterandIdx]));
+    if (Expr* e = optInfo.getLoopDomainExpr()) {
+      checkCall->insertAtTail(e);
     }
     else {
       INT_FATAL("optInfo didn't have enough information");
