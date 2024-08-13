@@ -55,7 +55,7 @@ class ALACandidate {
 
     inline CallRejectReason getReason() const { return reason_; }
     inline void setReasonIfNeeded(CallRejectReason reason) {
-      if (!hasReason()) reason_ = reason;
+      if (!hasReason() || reason_ == CRR_ACCEPT) reason_ = reason;
     }
 
     inline bool hasReason() const { return reason_ != CRR_UNKNOWN; }
