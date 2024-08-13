@@ -46,17 +46,17 @@ module ChapelRemoteVars {
   }
 
   @unstable("remote variables are unstable")
-  inline proc chpl__buildRemoteWrapper(loc: locale) {
+  inline proc chpl__buildRemoteWrapper(const ref loc) {
     compilerError("remote variables must have an initializer or type expression");
   }
 
   @unstable("remote variables are unstable")
-  inline proc chpl__buildRemoteWrapper(loc: locale, type inType) {
+  inline proc chpl__buildRemoteWrapper(const ref loc, type inType) {
     return chpl__buildRemoteWrapper(loc, inType, __primitive("create thunk", __defaultValueForType(inType)));
   }
 
   @unstable("remote variables are unstable")
-  inline proc chpl__buildRemoteWrapper(loc: locale, in tr: _thunkRecord) {
+  inline proc chpl__buildRemoteWrapper(const ref loc, in tr: _thunkRecord) {
     // Does not call the (locale, type, thunk) version of this function, because
     // `thunkToReturnType` could return an uninitialized runtime type
     // (same as chpl_buildStandInRTT), which will cause memory issues
@@ -79,7 +79,7 @@ module ChapelRemoteVars {
   }
 
   @unstable("remote variables are unstable")
-  inline proc chpl__buildRemoteWrapper(loc: locale, type inType, in tr: _thunkRecord) {
+  inline proc chpl__buildRemoteWrapper(const ref loc, type inType, in tr: _thunkRecord) {
     var c: owned _remoteVarContainer(inType)?;
     on loc {
       // If a type was explicitly specified, perform assignment to a variable
