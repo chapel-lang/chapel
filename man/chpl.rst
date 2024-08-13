@@ -460,6 +460,14 @@ OPTIONS
     duplication that increases executable size and compilation time. There
     may also be execution time overheads independent of loop domain size.
 
+.. _man-offset-auto-local-access:
+
+**\--[no-]offset-auto-local-access**
+
+    Enable [disable] automatic local access optimization for array accesses with
+    simple offsets like `A[i+1]`. This optimization only applies to
+    stencil-distributed arrays.
+
 .. _man-auto-aggregation:
 
 **\--[no-]auto-aggregation**
