@@ -9,8 +9,7 @@
 # Create a tarball from current repo.
 # The tarball is left in root of repo in tar/ directory.
 CWD=$(cd $(dirname $0) ; pwd)
-source $CWD/functions.bash
-
+source $CWD/common-tarball.bash
 
 # Tell gen_release to use existing repo instead of creating a new one with
 # git-archive.
@@ -21,14 +20,6 @@ log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
 export CHPL_LLVM=none
 
-source ${CHPL_HOME}/util/build_configs/functions.bash
-major=$(get_src_major_version ${CHPL_HOME})
-minor=$(get_src_minor_version ${CHPL_HOME})
-sha=$(git rev-parse --short HEAD)
-
-short_version="${major}.${minor}"
-version="${short_version}"
-
 log_info "Moving to ${CHPL_HOME}"
 cd $CHPL_HOME
 
@@ -36,13 +27,13 @@ cd $CHPL_HOME
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
-log_info "Building tarball with version: ${version}"
-./util/buildRelease/gen_release ${version}
+gen_release $short_version
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 cd ${CHPL_HOME}/util/packaging/homebrew
+
 # Get the tarball from the root tar/ directory and replace the url in chapel.rb with the tarball location
-location="${CHPL_HOME}/tar/chapel-${version}.tar.gz"
+location="${CHPL_HOME}/tar/chapel-${short_version}.tar.gz"
 log_info $location
 
 # Replace the url and sha256 in chapel.rb with the location of the tarball and sha256 of the tarball generated.
@@ -58,7 +49,7 @@ $sed_command  "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$s
 brew upgrade
 brew uninstall --force chapel
 # Remove the cached chapel tar file before running brew install --build-from-source chapel.rb
-rm $HOME/Library/Caches/Homebrew/downloads/*--chapel-${version}.tar.gz
+rm $HOME/Library/Caches/Homebrew/downloads/*--chapel-${short_version}.tar.gz
 HOMEBREW_NO_INSTALL_FROM_API=1 brew install -v --build-from-source chapel.rb
 INSTALL_STATUS=$?
     if [ $INSTALL_STATUS -ne 0 ]
