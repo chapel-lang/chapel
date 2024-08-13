@@ -267,14 +267,6 @@ module GPU
     return arrayPtr.deref();
   }
 
-  /*
-    Set the block size for kernels launched on the GPU.
-   */
-  @deprecated(notes="the functional form of setBlockSize(size) is deprecated. Please use the @gpu.blockSize(size) loop attribute instead.")
-  inline proc setBlockSize(blockSize: integral) {
-    __primitive("gpu set blockSize", blockSize);
-  }
-
   @chpldoc.nodoc
   proc canAccessPeer(loc1 : locale, loc2 : locale) : bool {
     return chpl_canAccessPeer(loc1, loc2);
