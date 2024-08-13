@@ -146,31 +146,29 @@ implemented with a compare method:
 The .keyPart method
 ~~~~~~~~~~~~~~~~~~~
 
-A ``keyPart(a, i)`` method returns *parts* of key value at a time. This
+A ``keyPart(elt, i)`` method returns *parts* of key value at a time. This
 interface supports radix sorting for variable length data types, such as
 strings. It accepts two arguments:
 
- * ``a`` is the element being sorted
+ * ``elt`` is the element being sorted
  * ``i`` is the part number of the key requested, starting from 0
 
 A ``keyPart`` method should return a tuple consisting of *section* and a *part*.
 
- * The *section* can be any signed integral type and should have the value `-1`,
-   `0`, or `1`. It indicates when the end of the ``a`` has been reached
-   and in that event how it should be sorted relative to other array elements.
+ * The *section* must be of type ``keyPartStatus``. It indicates when the end of ``elt`` has been reached and in that event how it should be sorted relative to other array elements.
 
-   ================ ====================================
-   Returned section Interpretation
-   ================ ====================================
-   ``-1``           no more key parts for ``a``,
-                    sort it before those with more parts
+   ============================= ===========================================
+   Returned section              Interpretation
+   ============================= ===========================================
+   ``keyPartStatus.pre``          no more key parts for ``elt``,
+                                  sort it before those with more parts
 
-   ``0``            a key part for ``a`` is returned in
-                    the second tuple element
+   ``keyPartStatus.returned``     a key part for ``elt`` is returned in
+                                  the second tuple element
 
-   ``1``            no more key parts for ``a``,
-                    sort it after those with more parts
-   ================ ====================================
+   ``keyPartStatus.post``         no more key parts for ``elt``,
+                                  sort it after those with more parts
+   ============================= ===========================================
 
  * The *part* can be any signed or unsigned integral type and can contain any
    value. The *part* will be ignored unless the *section* returned is ``0``.
@@ -184,11 +182,11 @@ This ``keyPart`` method supports sorting tuples of 2 integers:
 
 .. code-block:: chapel
 
-  proc keyPart(x:2*int, i:int) {
+  proc keyPart(elt: 2*int, i: int) {
     if i > 1 then
       return (-1, 0);
 
-    return (0, x(i));
+    return (keyPartStatus.returned, elt(i));
   }
 
 
@@ -196,10 +194,10 @@ Here is a ``keyPart`` to support sorting of strings:
 
 .. code-block:: chapel
 
-  proc keyPart(x:string, i:int):(int(8), uint(8)) {
+  proc keyPart(x: string, i: int): (keyPartStatus, uint(8)) {
     var len = x.numBytes;
-    var section = if i < len then 0:int(8)  else -1:int(8);
-    var part =    if i < len then x.byte(i) else  0:uint(8);
+    var section = if i < len then keyPartStatus.returned  else keyPartStatus.pre;
+    var part =    if i < len then x.byte(i)               else 0:uint(8);
     return (section, part);
   }
 
@@ -3267,6 +3265,28 @@ module MSBRadixSort {
 
 /* Comparators */
 
+
+// This is documented in the blurb at the top of the file
+/*
+  Indicates when the end of an element has been reached and in that event how
+  it should be sorted relative to other array elements.
+*/
+@chpldoc.nodoc
+enum keyPartStatus {
+  /* No more key parts for element, sort it before those with more parts */
+  pre = -1,
+  /* A key part for element is being returned */
+  returned = 0,
+  /* No more key parts for element, sort it after those with more parts */
+  post = 1
+}
+private inline proc reverseKeyPartStatus(status: keyPartStatus): keyPartStatus do
+  return (status:int * -1): keyPartStatus;
+
+
+@chpldoc.nodoc
+config param useKeyPartStatus = false;
+
 /* Default comparator used in sort functions.*/
 record DefaultComparator {
 
@@ -3303,34 +3323,85 @@ record DefaultComparator {
   }
 
   /*
-   Default ``keyPart`` method for integral values.
-   See also `The .keyPart method`_.
+    Default ``keyPart`` method for integral values.
+    See also `The .keyPart method`_.
 
-   :arg x: the `int` or `uint` of any size to sort
-   :arg i: the part number requested
-
-   :returns: ``(0, x)`` if ``i==0``, or ``(-1, x)`` otherwise
+    :arg elt: the `int` or `uint` of any size to sort
+    :arg i: the part number requested
+ 
+    :returns: ``(keyPartStatus.pre, x)`` if ``i==0``, or ``(keyPartStatus.returned, x)`` otherwise
    */
-  inline
-  proc keyPart(x: integral, i:int):(int(8), x.type) {
+  inline proc keyPart(elt: integral, i: int): (keyPartStatus, elt.type)
+    where useKeyPartStatus {
+    var section = if i > 0 then keyPartStatus.pre else keyPartStatus.returned;
+    return (section, elt);
+  }
+  /*
+    Default ``keyPart`` method for integral values.
+    See also `The .keyPart method`_.
+
+    :arg x: the `int` or `uint` of any size to sort
+    :arg i: the part number requested
+ 
+    :returns: ``(0, x)`` if ``i==0``, or ``(-1, x)`` otherwise
+   */
+  @deprecated("Using :proc:`keyPart` without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary")
+  inline proc keyPart(x: integral, i: int): (int(8), x.type)
+    where !useKeyPartStatus {
     var section:int(8) = if i > 0 then -1:int(8) else 0:int(8);
     return (section, x);
   }
 
   /*
-   Default ``keyPart`` method for `real` values.
-   See also `The .keyPart method`_.
+    Default ``keyPart`` method for `real` values.
+    See also `The .keyPart method`_.
 
-   :arg x: the `real` of any width to sort
-   :arg i: the part number requested
+    :arg elt: the `real` of any width to sort
+    :arg i: the part number requested
 
-   :returns: ``(0, u)`` if ``i==0``, or ``(-1, u)`` otherwise,
-             where `u` is a `uint` storing the bits of the `real`
-             but with some transformations applied to produce the
-             correct sort order.
-   */
-  inline
-  proc keyPart(x: chpl_anyreal, i:int):(int(8), uint(numBits(x.type))) {
+    :returns: ``(keyPartStatus.returned, u)`` if ``i==0``, or
+              ``(keyPartStatus.pre, u)`` otherwise,
+              where `u` is a `uint` storing the bits of the `real`
+              but with some transformations applied to produce the
+              correct sort order.
+  */
+  inline proc keyPart(elt: real(?), i:int): (keyPartStatus, uint(numBits(elt.type)))
+    where useKeyPartStatus {
+    import OS.POSIX.memcpy;
+    var section = if i > 0 then keyPartStatus.pre else keyPartStatus.returned;
+
+    param nbits = numBits(elt.type);
+    // Convert the real bits to a uint
+    var src = elt;
+    var dst: uint(nbits);
+    memcpy(c_ptrTo(dst), c_ptrTo(src), c_sizeof(src.type));
+
+    if (dst >> (nbits-1)) == 1 {
+      // negative bit is set, flip all bits
+      dst = ~dst;
+    } else {
+      const one: uint(nbits) = 1;
+      // negative bit is not set, flip only top bit
+      dst = dst ^ (one << (nbits-1));
+    }
+    return (section, dst);
+  }
+
+  /*
+    Default ``keyPart`` method for `real` values.
+    See also `The .keyPart method`_.
+
+    :arg x: the `real` of any width to sort
+    :arg i: the part number requested
+
+    :returns: ``(0, u)`` if ``i==0``, or ``(-1, u)`` otherwise,
+              where `u` is a `uint` storing the bits of the `real`
+              but with some transformations applied to produce the
+              correct sort order.
+  */
+  @deprecated("Using :proc:`keyPart` without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary")
+  inline proc keyPart(x: chpl_anyreal, i:int): (int(8), uint(numBits(x.type)))
+    where !useKeyPartStatus {
     import OS.POSIX.memcpy;
     var section:int(8) = if i > 0 then -1:int(8) else 0:int(8);
 
@@ -3350,33 +3421,72 @@ record DefaultComparator {
     }
     return (section, dst);
   }
+
   /*
-   Default ``keyPart`` method for `imag` values.
-   See also `The .keyPart method`_.
+    Default ``keyPart`` method for `imag` values.
+    See also `The .keyPart method`_.
 
-   This method works by calling keyPart with the corresponding `real` value.
-   */
+    This method works by calling keyPart with the corresponding `real` value.
+  */
+  inline proc keyPart(elt: imag(?), i: int): (keyPartStatus, uint(numBits(elt.type)))
+    where useKeyPartStatus {
+    return keyPart(elt:real(numBits(elt.type)), i);
+  }
 
-  inline
-  proc keyPart(x: chpl_anyimag, i:int):(int(8), uint(numBits(x.type))) {
+  /*
+    Default ``keyPart`` method for `imag` values.
+    See also `The .keyPart method`_.
+
+    This method works by calling keyPart with the corresponding `real` value.
+  */
+  @deprecated("Using :proc:`keyPart` without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary")
+  inline proc keyPart(x: chpl_anyimag, i:int):(int(8), uint(numBits(x.type)))
+    where !useKeyPartStatus {
     return keyPart(x:real(numBits(x.type)), i);
   }
 
   /*
-   Default ``keyPart`` method for tuples of `int`, `uint`, `real`, or `imag`
-   values.
-   See also `The .keyPart method`_.
+    Default ``keyPart`` method for tuples of `int`, `uint`, `real`, or `imag`
+    values.
+    See also `The .keyPart method`_.
 
-   :arg x: homogeneous tuple of the numeric type (of any bit width) to sort
-   :arg i: the part number requested
+    :arg elt: homogeneous tuple of the numeric type (of any bit width) to sort
+    :arg i: the part number requested
 
-   :returns: For `int` and `uint`, returns
-             ``(0, x(i))`` if ``i < x.size``, or ``(-1, 0)`` otherwise.
-             For `real` and `imag`, uses ``keyPart`` to find the `uint`
-             to provide the sorting order.
-   */
-  inline
-  proc keyPart(x: _tuple, i:int) where isHomogeneousTuple(x) &&
+    :returns: For `int` and `uint`, returns
+              ``(keyPartStatus.pre, elt(i))`` if ``i < elt.size``,
+              or ``(keyPartStatus.returned, 0)`` otherwise.
+              For `real` and `imag`, uses ``keyPart`` to find the `uint`
+              to provide the sorting order.
+  */
+  inline proc keyPart(elt: _tuple, i: int) where useKeyPartStatus &&
+                                        isHomogeneousTuple(elt) &&
+                                       (isInt(elt(0)) || isUint(elt(0)) ||
+                                        isReal(elt(0)) || isImag(elt(0))) {
+    // Re-use the keyPart for imag, real
+    const (_,part) = this.keyPart(elt(i), 1);
+    if i >= elt.size then
+      return (keyPartStatus.pre, 0:part.type);
+    else
+      return (keyPartStatus.returned, part);
+  }
+
+  /*
+    Default ``keyPart`` method for tuples of `int`, `uint`, `real`, or `imag`
+    values.
+    See also `The .keyPart method`_.
+
+    :arg x: homogeneous tuple of the numeric type (of any bit width) to sort
+    :arg i: the part number requested
+
+    :returns: For `int` and `uint`, returns
+              ``(0, x(i))`` if ``i < x.size``, or ``(-1, 0)`` otherwise.
+              For `real` and `imag`, uses ``keyPart`` to find the `uint`
+              to provide the sorting order.
+  */
+  @deprecated("Using :proc:`keyPart` without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary")
+  inline proc keyPart(x: _tuple, i:int) where !useKeyPartStatus &&
+                                        isHomogeneousTuple(x) &&
                                        (isInt(x(0)) || isUint(x(0)) ||
                                         isReal(x(0)) || isImag(x(0))) {
     // Re-use the keyPart for imag, real
@@ -3388,19 +3498,49 @@ record DefaultComparator {
   }
 
   /*
-   Default ``keyPart`` method for sorting strings.
-   See also `The .keyPart method`_.
+    Default ``keyPart`` method for sorting strings.
+    See also `The .keyPart method`_.
 
-   .. note::
-     Currently assumes that the string is local.
+    .. note::
+      Currently assumes that the string is local.
 
-   :arg x: the string to sort
-   :arg i: the part number requested
+    :arg elt: the string to sort
+    :arg i: the part number requested
 
-   :returns: ``(0, byte i of string)`` or ``(-1, 0)`` if ``i > x.size``
-   */
-  inline
-  proc keyPart(x:string, i:int):(int(8), uint(8)) {
+    :returns: ``(keyPartStatus.returned, byte i of string)`` or
+              ``(keyPartStatus.pre, 0)`` if ``i > elt.size``
+  */
+  inline proc keyPart(elt: string, i: int): (keyPartStatus, uint(8))
+    where useKeyPartStatus {
+    // This assumes that the string is local, which should
+    // be OK for the sort module (because the array containing
+    // the string must currently be local).
+    // In the future it should use bytes access into the string.
+    if boundsChecking then
+      assert(elt.locale_id == here.id);
+
+    var ptr = elt.c_str():c_ptr(uint(8));
+    var len = elt.numBytes;
+    var section = if i < len then keyPartStatus.returned else keyPartStatus.pre;
+    var part =    if i < len then ptr[i]                 else 0:uint(8);
+    return (section, part);
+  }
+
+  /*
+    Default ``keyPart`` method for sorting strings.
+    See also `The .keyPart method`_.
+
+    .. note::
+      Currently assumes that the string is local.
+
+    :arg x: the string to sort
+    :arg i: the part number requested
+
+    :returns: ``(0, byte i of string)`` or ``(-1, 0)`` if ``i > x.size``
+  */
+  @deprecated("Using :proc:`keyPart` without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary")
+  inline proc keyPart(x:string, i:int): (int(8), uint(8))
+    where !useKeyPartStatus {
     // This assumes that the string is local, which should
     // be OK for the sort module (because the array containing
     // the string must currently be local).
@@ -3416,14 +3556,34 @@ record DefaultComparator {
   }
 
   /*
-   Default ``keyPart`` method for sorting `c_ptrConst(c_char)`.
-   See also `The .keyPart method`_.
-   :arg x: the `c_ptrConst(c_char)` to sort
-   :arg i: the part number requested
-   :returns: ``(0, byte i of string)`` or ``(-1, 0)`` if byte ``i`` is ``0``
-   */
-  inline
-  proc keyPart(x:c_ptrConst(c_char), i:int):(int(8), uint(8)) {
+    Default ``keyPart`` method for sorting `c_ptrConst(c_char)`.
+    See also `The .keyPart method`_.
+
+    :arg elt: the `c_ptrConst(c_char)` to sort
+    :arg i: the part number requested
+
+    :returns: ``(keyPartStatus.returned, byte i of string)`` or
+              ``(keyPartStatus.pre, 0)`` if byte ``i`` is ``0``
+  */
+  inline proc keyPart(elt: c_ptrConst(c_char), i: int): (keyPartStatus, uint(8))
+    where useKeyPartStatus {
+    var ptr = elt:c_ptr(uint(8));
+    var byte = ptr[i];
+    var section = if byte != 0 then keyPartStatus.returned else keyPartStatus.pre;
+    var part = byte;
+    return (section, part);
+  }
+
+  /*
+    Default ``keyPart`` method for sorting `c_ptrConst(c_char)`.
+    See also `The .keyPart method`_.
+    :arg x: the `c_ptrConst(c_char)` to sort
+    :arg i: the part number requested
+    :returns: ``(0, byte i of string)`` or ``(-1, 0)`` if byte ``i`` is ``0``
+  */
+  @deprecated("Using :proc:`keyPart` without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary")
+  inline proc keyPart(x:c_ptrConst(c_char), i:int):(int(8), uint(8))
+    where !useKeyPartStatus {
     var ptr = x:c_ptr(uint(8));
     var byte = ptr[i];
     var section = if byte != 0 then 0:int(8) else -1:int(8);
@@ -3528,8 +3688,20 @@ record ReverseComparator {
   }
 
   @chpldoc.nodoc
-  inline
-  proc getKeyPart(cmp, a, i) {
+  inline proc getKeyPart(cmp, elt, i) where useKeyPartStatus {
+    var (section, part) = cmp.keyPart(elt, i);
+    if typeIsBitReversible(part.type) {
+      return (reverseKeyPartStatus(section), ~part);
+    } else if typeIsNegateReversible(part.type) {
+      return (reverseKeyPartStatus(section), -part);
+    } else {
+      compilerError("keyPart must return int or uint");
+    }
+  }
+
+
+  @chpldoc.nodoc
+  inline proc getKeyPart(cmp, a, i) where !useKeyPartStatus {
     var (section, part) = cmp.keyPart(a, i);
     if typeIsBitReversible(part.type) {
       return (-section, ~part);
@@ -3541,10 +3713,26 @@ record ReverseComparator {
   }
 
   /*
-   Reverses ``comparator.keyPart``. See also `The .keyPart method`_.
-   */
-  inline
-  proc keyPart(a, i) where hasKeyPart(a) || hasKeyPartFromKey(a) {
+    Reverses ``comparator.keyPart``. See also `The .keyPart method`_.
+  */
+  inline proc keyPart(elt, i) where useKeyPartStatus &&
+                                    (hasKeyPart(elt) ||
+                                     hasKeyPartFromKey(elt)) {
+    chpl_check_comparator(this.comparator, elt.type);
+
+    if hasKeyPartFromKey(elt) {
+      return getKeyPart(new DefaultComparator(), this.comparator.key(elt), i);
+    } else {
+      return getKeyPart(this.comparator, elt, i);
+    }
+
+  }
+  /*
+    Reverses ``comparator.keyPart``. See also `The .keyPart method`_.
+  */
+  @deprecated("Using :proc:`keyPart` without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary")
+  inline proc keyPart(a, i) where !useKeyPartStatus &&
+                                  (hasKeyPart(a) || hasKeyPartFromKey(a)) {
     chpl_check_comparator(this.comparator, a.type);
 
     if hasKeyPartFromKey(a) {
