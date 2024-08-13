@@ -50,7 +50,7 @@ typedef std::atomic<qb_refcnt_base_t> qbytes_refcnt_t;
 #define ATOMIC_DEST(a)
 #else
 #include "chpl-atomics.h"
-typedef atomic_uint_least64_t qbytes_refcnt_t;
+typedef chpl_atomic_uint_least64_t qbytes_refcnt_t;
 #define ATOMIC_INIT(a, val) atomic_init_uint_least64_t(&a, val)
 #define ATOMIC_LOAD(a) atomic_load_uint_least64_t(&a)
 #define ATOMIC_INCR(a) atomic_fetch_add_uint_least64_t(&a, 1)

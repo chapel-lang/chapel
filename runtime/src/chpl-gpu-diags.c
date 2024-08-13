@@ -41,7 +41,7 @@ int chpl_verbose_gpu_stacktrace = 0;
 int chpl_gpu_diagnostics = 0;
 int chpl_gpu_diags_print_unstable = 0;
 
-atomic_int_least16_t chpl_gpu_diags_disable_flag;
+chpl_atomic_int_least16_t chpl_gpu_diags_disable_flag;
 chpl_atomic_gpuDiagnostics chpl_gpu_diags_counters;
 
 static pthread_once_t bcastPrintUnstable_once = PTHREAD_ONCE_INIT;

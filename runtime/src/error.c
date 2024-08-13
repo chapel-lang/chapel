@@ -330,7 +330,7 @@ void chpl_warning_explicit(const char *message, int32_t lineno,
 }
 
 #ifndef LAUNCHER
-static atomic_bool thisLocaleAlreadyExiting;
+static chpl_atomic_bool thisLocaleAlreadyExiting;
 void chpl_error_init(void) {
   atomic_init_bool(&thisLocaleAlreadyExiting, false);
 }

@@ -423,7 +423,7 @@ static inline void chpl_comm_barrier(const char *msg) {
     return;
   }
 
-  chpl_rmem_consist_fence(memory_order_seq_cst, 0, 0);
+  chpl_rmem_consist_fence(chpl_memory_order_seq_cst, 0, 0);
   chpl_comm_impl_barrier(msg);
 }
 

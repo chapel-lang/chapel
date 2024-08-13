@@ -190,7 +190,7 @@ static int numTxCtxs;
 static int numRxCtxs;
 
 struct perTxCtxInfo_t {
-  atomic_bool allocated;        // true: in use; false: available
+  chpl_atomic_bool allocated;        // true: in use; false: available
   chpl_bool bound;              // true: bound to an owner (usually a thread)
   struct fid_av* av;            // address vector
   fi_addr_t* addrs;             // addresses in address vector
@@ -485,7 +485,7 @@ static __thread chpl_bool isAmHandler = false;
 //
 // Flag used to tell AM handler(s) to exit.
 //
-static atomic_bool amHandlersExit;
+static chpl_atomic_bool amHandlersExit;
 
 
 //
@@ -3938,7 +3938,7 @@ static void retireDelayedAmDone(chpl_bool);
 // to indicate that they all completed.
 
 static inline
-void *txCtxInit(struct perTxCtxInfo_t* tcip, int line, atomic_bool *done) {
+void *txCtxInit(struct perTxCtxInfo_t* tcip, int line, chpl_atomic_bool *done) {
   void *ctx;
   if (tcip->txCntr == NULL) {
     atomic_init_bool(done, false);
@@ -3958,7 +3958,7 @@ static inline
 void txCtxCleanup(void *ctx) {
   const txnTrkCtx_t trk = txnTrkDecode(ctx);
   if (trk.typ == txnTrkDone) {
-    atomic_destroy_bool((atomic_bool*) trk.ptr);
+    atomic_destroy_bool((chpl_atomic_bool*) trk.ptr);
   }
 }
 
@@ -3970,7 +3970,7 @@ void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
              (int) node, dbgOrderStr);
   uint64_t flags = (mcmMode == mcmm_msgOrdFence) ?
                       (FI_FENCE | FI_DELIVERY_COMPLETE) : 0;
-  atomic_bool txnDone;
+  chpl_atomic_bool txnDone;
   void *ctx = TX_CTX_INIT(tcip, true /*blocking*/, &txnDone);
   ofi_get_lowLevel(orderDummy, orderDummyMRDesc, node,
                    orderDummyMap[node].mrRaddr, orderDummyMap[node].mrKey,
@@ -4405,7 +4405,7 @@ void amRequestAMO(c_nodeid_t node, void* object,
         //
         prvData->amDonePending = true;
         prvData->amDone = 0;
-        chpl_atomic_thread_fence(memory_order_release);
+        chpl_atomic_thread_fence(chpl_memory_order_release);
         pAmDone = &prvData->amDone;
       }
     }
@@ -4533,7 +4533,7 @@ void amRequestCommon(c_nodeid_t node,
       req->b.pAmDone = pAmDone;
     }
     *pAmDone = 0;
-    chpl_atomic_thread_fence(memory_order_release);
+    chpl_atomic_thread_fence(chpl_memory_order_release);
   }
 
 #ifdef CHPL_COMM_DEBUG
@@ -4603,7 +4603,7 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
                          chpl_bool blocking, struct perTxCtxInfo_t* tcip) {
 
   uint64_t    flags = 0;
-  atomic_bool txnDone;
+  chpl_atomic_bool txnDone;
   void        *ctx;
 
   //
@@ -4681,7 +4681,7 @@ void amReqFn_msgOrd(c_nodeid_t node,
                     chpl_bool blocking, struct perTxCtxInfo_t* tcip) {
 
   uint64_t    flags = 0;
-  atomic_bool txnDone;
+  chpl_atomic_bool txnDone;
   void        *ctx;
 
   //
@@ -4744,7 +4744,7 @@ void amReqFn_dlvrCmplt(c_nodeid_t node,
                        chpl_bool blocking, struct perTxCtxInfo_t* tcip) {
 
   uint64_t    flags = 0;
-  atomic_bool txnDone;
+  chpl_atomic_bool txnDone;
   void        *ctx;
 
   if (!blocking
@@ -5349,7 +5349,7 @@ void amPutDone(c_nodeid_t node, amDone_t* pAmDone) {
   uint64_t mrKey = 0;
   uint64_t mrRaddr = 0;
   uint64_t flags = 0;
-  atomic_bool txnDone;
+  chpl_atomic_bool txnDone;
   void *ctx = TX_CTX_INIT(tcip, true /*blocking*/, &txnDone);
 
 
@@ -5380,7 +5380,7 @@ void amHandleFAMOResult(struct amRequest_FAMO_result_t* famo) {
   memcpy(famo->res, &famo->result, famo->size);
   assert(famo->b.pAmDone != NULL);
   // make sure the object is written before pAmDone is set
-  chpl_atomic_thread_fence(memory_order_release);
+  chpl_atomic_thread_fence(chpl_memory_order_release);
   *(famo->b.pAmDone) = 1;
 }
 
@@ -6022,7 +6022,7 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
                                            chpl_bool blocking,
                                            struct perTxCtxInfo_t* tcip) {
   uint64_t    flags = 0;
-  atomic_bool txnDone;
+  chpl_atomic_bool txnDone;
   void        *ctx;
 
   if (tcip->bound
@@ -6082,7 +6082,7 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrd(void* myAddr, void* mrDesc,
                                       struct perTxCtxInfo_t* tcip) {
 
   uint64_t    flags = 0;
-  atomic_bool txnDone;
+  chpl_atomic_bool txnDone;
   void        *ctx;
   //
   // When using message ordering we have to do something after the PUT
@@ -6133,7 +6133,7 @@ chpl_comm_nb_handle_t rmaPutFn_dlvrCmplt(void* myAddr, void* mrDesc,
                                          size_t size,
                                          chpl_bool blocking,
                                          struct perTxCtxInfo_t* tcip) {
-  atomic_bool txnDone;
+  chpl_atomic_bool txnDone;
   void *ctx = TX_CTX_INIT(tcip, true /*blocking*/, &txnDone);
   (void) wrap_fi_write(myAddr, mrDesc, node, mrRaddr, mrKey,
                        size, ctx, tcip);
@@ -6375,7 +6375,7 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
     void* mrDesc;
     void* myAddr = mrLocalizeTarget(&mrDesc, addr, size, "GET tgt");
 
-    atomic_bool txnDone;
+    chpl_atomic_bool txnDone;
     void *ctx = TX_CTX_INIT(tcip, true /*blocking*/, &txnDone);
     ret = rmaGetFn_selector(myAddr, mrDesc, node, mrRaddr, mrKey, size,
                             ctx, tcip);
@@ -6853,7 +6853,7 @@ chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
   // If we need a result wait for it; otherwise, we can collect the completion
   // later and message ordering will ensure MCM conformance.
   //
-  atomic_bool txnDone;
+  chpl_atomic_bool txnDone;
   ab->m.context = TX_CTX_INIT(tcip, famo /*blocking*/, &txnDone);
 
   if (tcip->bound) {
@@ -6917,7 +6917,7 @@ chpl_comm_nb_handle_t amoFn_msgOrd(struct amoBundle_t *ab,
 
   chpl_bool famo = (ab->iovRes.addr != NULL);
   uint64_t flags = 0;
-  atomic_bool txnDone;
+  chpl_atomic_bool txnDone;
 
   if (tcip->bound
       && ab->iovRes.addr == NULL
@@ -6965,7 +6965,7 @@ chpl_comm_nb_handle_t amoFn_msgOrd(struct amoBundle_t *ab,
 static
 chpl_comm_nb_handle_t amoFn_dlvrCmplt(struct amoBundle_t *ab,
                                       struct perTxCtxInfo_t* tcip) {
-  atomic_bool txnDone;
+  chpl_atomic_bool txnDone;
   ab->m.context = TX_CTX_INIT(tcip, true /*blocking*/, &txnDone);
   (void) wrap_fi_atomicmsg(ab, 0, tcip);
   waitForTxnComplete(tcip, ab->m.context);
@@ -7197,8 +7197,8 @@ void checkTxCmplsCQ(struct perTxCtxInfo_t* tcip) {
     DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64 ", ctx %d:%p",
                cqe->flags, trk.typ, trk.ptr);
     if (trk.typ == txnTrkDone) {
-      atomic_store_explicit_bool((atomic_bool*) trk.ptr, true,
-                                 memory_order_release);
+      atomic_store_explicit_bool((chpl_atomic_bool*) trk.ptr, true,
+                                 chpl_memory_order_release);
     } else if (trk.typ != txnTrkId) {
       INTERNAL_ERROR_V("unexpected trk.typ %d", trk.typ);
     }
@@ -7278,8 +7278,8 @@ void waitForTxnComplete(struct perTxCtxInfo_t* tcip, void* ctx) {
   const txnTrkCtx_t trk = txnTrkDecode(ctx);
   if (trk.typ == txnTrkDone) {
     // wait for the individual transmission to complete
-    while (!atomic_load_explicit_bool((atomic_bool*) trk.ptr,
-                                      memory_order_acquire)) {
+    while (!atomic_load_explicit_bool((chpl_atomic_bool*) trk.ptr,
+                                      chpl_memory_order_acquire)) {
       sched_yield();
       (*tcip->ensureProgressFn)(tcip);
     }
@@ -7419,7 +7419,7 @@ static void doAMO(c_nodeid_t, void*, const void*, const void*, void*,
 #define DEFN_CHPL_COMM_ATOMIC_WRITE(fnType, ofiType, Type)              \
   void chpl_comm_atomic_write_##fnType                                  \
          (void* desired, c_nodeid_t node, void* object,                 \
-          memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO_WRITE,                                     \
                "%s(%p, %d, %p, %d, %s)", __func__,                      \
                desired, (int) node, object,                             \
@@ -7444,7 +7444,7 @@ DEFN_CHPL_COMM_ATOMIC_WRITE(real64, FI_DOUBLE, _real64)
 #define DEFN_CHPL_COMM_ATOMIC_READ(fnType, ofiType, Type)               \
   void chpl_comm_atomic_read_##fnType                                   \
          (void* result, c_nodeid_t node, void* object,                  \
-          memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO_READ,                                      \
                "%s(%p, %d, %p, %d, %s)", __func__,                      \
                result, (int) node, object,                              \
@@ -7466,7 +7466,7 @@ DEFN_CHPL_COMM_ATOMIC_READ(real64, FI_DOUBLE, _real64)
 #define DEFN_CHPL_COMM_ATOMIC_XCHG(fnType, ofiType, Type)               \
   void chpl_comm_atomic_xchg_##fnType                                   \
          (void* desired, c_nodeid_t node, void* object, void* result,   \
-          memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(%p, %d, %p, %p, %d, %s)", __func__,                  \
                desired, (int) node, object, result,                     \
@@ -7488,7 +7488,7 @@ DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, _real64)
 #define DEFN_CHPL_COMM_ATOMIC_CMPXCHG(fnType, ofiType, Type)            \
   void chpl_comm_atomic_cmpxchg_##fnType                                \
          (void* expected, void* desired, c_nodeid_t node, void* object, \
-          chpl_bool32* result, memory_order succ, memory_order fail,    \
+          chpl_bool32* result, chpl_memory_order succ, chpl_memory_order fail,    \
           int ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(%p, %p, %d, %p, %p, %d, %s)", __func__,              \
@@ -7516,7 +7516,7 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, _real64)
 #define DEFN_IFACE_AMO_SIMPLE_OP(fnOp, ofiOp, fnType, ofiType, Type)    \
   void chpl_comm_atomic_##fnOp##_##fnType                               \
          (void* opnd, c_nodeid_t node, void* object,                    \
-          memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
                DBG_VAL(opnd, ofiType), (int) node,                      \
@@ -7542,7 +7542,7 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, _real64)
                                                                         \
   void chpl_comm_atomic_fetch_##fnOp##_##fnType                         \
          (void* opnd, c_nodeid_t node, void* object, void* result,      \
-          memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %p, %d, %s)", __func__,                \
                DBG_VAL(opnd, ofiType), (int) node,                      \
@@ -7579,7 +7579,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, _real64)
 #define DEFN_IFACE_AMO_SUB(fnType, ofiType, Type, negate)               \
   void chpl_comm_atomic_sub_##fnType                                    \
          (void* opnd, c_nodeid_t node, void* object,                    \
-          memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
                DBG_VAL(opnd, ofiType), (int) node, object,              \
@@ -7607,7 +7607,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(add, FI_SUM, real64, FI_DOUBLE, _real64)
                                                                         \
   void chpl_comm_atomic_fetch_sub_##fnType                              \
          (void* opnd, c_nodeid_t node, void* object, void* result,      \
-          memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %p, %d, %s)", __func__,                \
                DBG_VAL(opnd, ofiType), (int) node, object,              \
@@ -8638,7 +8638,7 @@ void am_debugPrep(amRequest_t* req) {
   if (DBG_TEST_MASK(DBG_AM | DBG_AM_SEND | DBG_AM_RECV)
       || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
     static chpl_bool seqInited = false;
-    static atomic_uint_least64_t seqNext;
+    static chpl_atomic_uint_least64_t seqNext;
     if (!seqInited) {
       static pthread_mutex_t seqLock = PTHREAD_MUTEX_INITIALIZER;
       PTHREAD_CHK(pthread_mutex_lock(&seqLock));

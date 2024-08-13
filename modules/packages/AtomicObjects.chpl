@@ -248,7 +248,7 @@ prototype module AtomicObjects {
   }
 
   @chpldoc.nodoc
-  extern type atomic_uint_least64_t;
+  extern "chpl_atomic_uint_least64_t" type atomic_uint_least64_t;
 
   @chpldoc.nodoc
   extern type wide_ptr_t;
