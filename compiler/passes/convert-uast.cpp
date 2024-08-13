@@ -3902,10 +3902,6 @@ struct Converter {
     }
 
     bool isRemote = node->destination() != nullptr || remoteState != nullptr;
-    if (isRemote) {
-      // post-parse checks rule this out.
-      CHPL_ASSERT((node->initExpression() || node->typeExpression()) || remoteState);
-    }
 
     auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str()));
     const bool isTypeVar = node->kind() == uast::Variable::TYPE;
@@ -4022,9 +4018,8 @@ struct Converter {
       auto wrapperCall = new CallExpr("chpl__buildRemoteWrapper");
       wrapperCall->insertAtTail(destinationExpr ? destinationExpr : new SymExpr(remoteState->localeTemp));
 
-      if (!typeExpr && !initExpr) {
+      if ((!typeExpr && !initExpr) && remoteState) {
         // Need to draw type expr and init expr from previous variable.
-        INT_ASSERT(remoteState);
 
         if (!remoteState->typeTemp && remoteState->prevTypeExpr) {
           auto newTypeTemp = newTemp("type_tmp");

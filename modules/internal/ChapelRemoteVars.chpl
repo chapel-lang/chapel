@@ -20,6 +20,7 @@
 module ChapelRemoteVars {
   use OwnedObject;
   use ChapelIteratorSupport;
+  use Errors;
 
   class _remoteVarContainer {
     var containedValue;
@@ -42,6 +43,11 @@ module ChapelRemoteVars {
   inline proc __defaultValueForType(type inType) {
     var default: inType;
     return default;
+  }
+
+  @unstable("remote variables are unstable")
+  inline proc chpl__buildRemoteWrapper(loc: locale) {
+    compilerError("remote variables must have an initializer or type expression");
   }
 
   @unstable("remote variables are unstable")

@@ -915,10 +915,6 @@ void Visitor::checkRemoteVar(const Variable* node) {
   if (node->kind() != Variable::VAR && node->kind() != Variable::CONST) {
     error(node, "unsupported intent for remote variable.");
   }
-
-  if (!node->initExpression() && !node->typeExpression()) {
-    error(node, "remote variables must have an initializer or type expression.");
-  }
 }
 
 void Visitor::checkOperatorNameValidity(const Function* node) {
