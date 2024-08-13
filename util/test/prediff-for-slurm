@@ -29,6 +29,8 @@ msgs = (
 """,
 """diff: .*/[.]module/PrgEnv-.*: No such file or directory
 """,
+"""\*\*\* WARNING \(proc 0\): Running with multiple processes per host without shared-memory communication support \(PSHM\).  This can significantly reduce performance.  Please re-configure GASNet using `--enable-pshm` to enable fast intra-host comms.
+""",
 )
 
 outfname = sys.argv[2]
