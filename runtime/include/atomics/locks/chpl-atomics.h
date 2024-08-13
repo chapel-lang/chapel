@@ -313,25 +313,25 @@ DECLARE_REAL_ATOMICS(_real64);
 #undef DECLARE_ATOMICS
 #undef MAYBE_INLINE
 
-static inline void atomic_init_spinlock_t(atomic_spinlock_t* lock) {
+static inline void atomic_init_spinlock_t(chpl_atomic_spinlock_t* lock) {
   pthread_spin_init(lock, PTHREAD_PROCESS_PRIVATE);
 }
 
-static inline void atomic_destroy_spinlock_t(atomic_spinlock_t* lock) {
+static inline void atomic_destroy_spinlock_t(chpl_atomic_spinlock_t* lock) {
   pthread_spin_destroy(lock);
 }
 
-static inline chpl_bool atomic_try_lock_spinlock_t(atomic_spinlock_t* lock) {
+static inline chpl_bool atomic_try_lock_spinlock_t(chpl_atomic_spinlock_t* lock) {
   return pthread_spin_trylock(lock) == 0;
 }
 
-static inline void atomic_lock_spinlock_t(atomic_spinlock_t* lock) {
+static inline void atomic_lock_spinlock_t(chpl_atomic_spinlock_t* lock) {
   while(!atomic_try_lock_spinlock_t(lock)) {
     chpl_task_yield();
   }
 }
 
-static inline void atomic_unlock_spinlock_t(atomic_spinlock_t* lock) {
+static inline void atomic_unlock_spinlock_t(chpl_atomic_spinlock_t* lock) {
   pthread_spin_unlock(lock);
 }
 
