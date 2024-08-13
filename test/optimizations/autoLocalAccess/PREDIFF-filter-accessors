@@ -3,6 +3,11 @@ import sys, re, shutil
 
 test_name = sys.argv[1]
 out_file = sys.argv[2]
+
+print_this = True
+if len(sys.argv) == 4:
+    print_this = not sys.argv[3]=="--no-this"
+
 tmp_file = out_file+'.prediff.tmp'
 
 defStr="default _array accessor was called\n"
@@ -17,6 +22,7 @@ with open(tmp_file, 'w') as tf:
         tf.write(clean)
         tf.write("\nNumbers collected by prediff:\n")
         tf.write("\tlocalAccess was called %d times\n" % numLocal)
-        tf.write("\tthis was called %d times\n" % numDef)
+        if print_this:
+            tf.write("\tthis was called %d times\n" % numDef)
 
 shutil.move(tmp_file, out_file)
