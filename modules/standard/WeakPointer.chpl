@@ -18,17 +18,14 @@
  * limitations under the License.
  */
 
-
-
 /*
-This module contains the ``weak`` type, which is a smart pointer type designed
-to be used in tandem with :type:`~SharedObject.shared` objects.
+Contains the ``weak`` smart-pointer type for use with ``shared`` objects.
 
-A ``weak`` provides a reference to a ``shared`` class object without
-requiring it to stay allocated. Such a pattern is useful for implementing graph
-or tree structures with bidirectional references, or for implementing cache-like
-data structures that maintain a list of objects but don't require them to stay
-allocated.
+A ``weak`` provides a reference to a :type:`~SharedObject.shared` class object
+without requiring it to stay allocated. Such a pattern is useful for
+implementing graph or tree structures with bidirectional references, or for
+implementing cache-like data structures that maintain a list of objects but
+don't require them to stay allocated.
 
 A "strong" shared reference to the relevant class object can be obtained via
 the :proc:`~WeakPointer.weak.upgrade` method, or by casting the
