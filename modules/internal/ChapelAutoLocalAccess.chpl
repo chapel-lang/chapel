@@ -24,8 +24,8 @@ module ChapelAutoLocalAccess {
   // note that the compiler can pass an iterator to `loopDomain` argument. Make
   // sure that we don't do anything with iterators as we cannot optimize such
   // forall's and we don't want to mess up the iterator
-  proc chpl__staticAutoLocalCheck(accessBase: [], loopDomain: domain,
-                                  param hasOffsets=false) param {
+  proc chpl__ala_staticCheck(accessBase: [], loopDomain: domain,
+                             param hasOffsets=false) param {
     if hasOffsets && !accessBase.domain.supportsOffsetAutoLocalAccess() {
       return false;
     }
@@ -47,35 +47,34 @@ module ChapelAutoLocalAccess {
     return false;
   }
 
-  proc chpl__staticAutoLocalCheck(accessBase: [], loopDomain: [],
-                                  param hasOffsets=false) param {
-    return chpl__staticAutoLocalCheck(accessBase, loopDomain.domain,
-                                      hasOffsets);
+  proc chpl__ala_staticCheck(accessBase: [], loopDomain: [],
+                             param hasOffsets=false) param {
+    return chpl__ala_staticCheck(accessBase, loopDomain.domain, hasOffsets);
   }
 
-  proc chpl__staticAutoLocalCheck(accessBase, loopDomain,
-                                  param hasOffsets=false) param {
+  proc chpl__ala_staticCheck(accessBase, loopDomain,
+                             param hasOffsets=false) param {
     return false;
   }
 
   // these type overloads are for degenerate cases where the optimization can
   // break a meaningful error message without these
-  proc chpl__staticAutoLocalCheck(type accessBase, type loopDomain,
-                                  param hasOffsets=false) param {
+  proc chpl__ala_staticCheck(type accessBase, type loopDomain,
+                             param hasOffsets=false) param {
     return false;
   }
-  proc chpl__staticAutoLocalCheck(accessBase, type loopDomain,
-                                  param hasOffsets=false) param {
+  proc chpl__ala_staticCheck(accessBase, type loopDomain,
+                             param hasOffsets=false) param {
     return false;
   }
-  proc chpl__staticAutoLocalCheck(type accessBase, loopDomain,
-                                  param hasOffsets=false) param {
+  proc chpl__ala_staticCheck(type accessBase, loopDomain,
+                             param hasOffsets=false) param {
     return false;
   }
 
-  proc chpl__dynamicAutoLocalCheck(accessBase: [], loopDomain: domain,
-                                  param hasOffsets=false) {
-    if chpl__staticAutoLocalCheck(accessBase, loopDomain, hasOffsets) {
+  proc chpl__ala_dynamicCheck(accessBase: [], loopDomain: domain,
+                              param hasOffsets=false) {
+    if chpl__ala_staticCheck(accessBase, loopDomain, hasOffsets) {
       // if they're the same domain...
       if chpl_sameDomainKind(accessBase.domain, loopDomain) &&
          accessBase.domain == loopDomain                    &&
@@ -103,24 +102,23 @@ module ChapelAutoLocalAccess {
     return false;
   }
 
-  inline proc chpl__dynamicAutoLocalCheck(accessBase: [], loopDomain: [],
-                                          param hasOffsets=false) {
-    return chpl__dynamicAutoLocalCheck(accessBase, loopDomain.domain,
-                                       hasOffsets);
+  inline proc chpl__ala_dynamicCheck(accessBase: [], loopDomain: [],
+                                     param hasOffsets=false) {
+    return chpl__ala_dynamicCheck(accessBase, loopDomain.domain, hasOffsets);
   }
 
   // these type overloads are for degenerate cases where the optimization can
   // break a meaningful error message without these
-  proc chpl__dynamicAutoLocalCheck(type accessBase, type loopDomain,
-                                   param hasOffsets=false) {
+  proc chpl__ala_dynamicCheck(type accessBase, type loopDomain,
+                              param hasOffsets=false) {
     return false;
   }
-  proc chpl__dynamicAutoLocalCheck(accessBase, type loopDomain,
-                                   param hasOffsets=false) {
+  proc chpl__ala_dynamicCheck(accessBase, type loopDomain,
+                              param hasOffsets=false) {
     return false;
   }
-  proc chpl__dynamicAutoLocalCheck(type accessBase, loopDomain,
-                                   param hasOffsets=false) {
+  proc chpl__ala_dynamicCheck(type accessBase, loopDomain,
+                              param hasOffsets=false) {
     return false;
   }
 

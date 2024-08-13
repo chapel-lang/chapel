@@ -1217,7 +1217,7 @@ static void generateDynamicCheckForAccess(ALACandidate& candidate,
   SET_LINENO(forall);
 
   if (optInfo.dynamicCheckForSymMap.count(baseSym) == 0) {
-    CallExpr* check = new CallExpr("chpl__dynamicAutoLocalCheck");
+    CallExpr* check = new CallExpr("chpl__ala_dynamicCheck");
     optInfo.dynamicCheckForSymMap[baseSym] = check;
 
     check->insertAtTail(baseSym);
@@ -1278,14 +1278,14 @@ static Symbol *generateStaticCheckForAccess(ALACandidate& candidate,
   if (staticCheckSymMap.count(baseSym) == 0) {
     SET_LINENO(forall);
 
-    VarSymbol *checkSym = new VarSymbol("chpl__staticAutoLocalCheckSym");
+    VarSymbol *checkSym = new VarSymbol("chpl__ala_staticCheckSym");
     checkSym->addFlag(FLAG_PARAM);
     // mark it with FLAG_TEMP to prevent the normalizer from adding
     // PRIM_END_OF_STATEMENT in the wrong places for loops.
     checkSym->addFlag(FLAG_TEMP);
     staticCheckSymMap[baseSym] = checkSym;
 
-    CallExpr *checkCall = new CallExpr("chpl__staticAutoLocalCheck");
+    CallExpr *checkCall = new CallExpr("chpl__ala_staticCheck");
     checkCall->insertAtTail(baseSym);
 
     if (Expr* e = optInfo.getLoopDomainExpr()) {
