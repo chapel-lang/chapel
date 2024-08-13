@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 
-/*
-The Image module provides a way to write arrays of pixels to an output image format.
+/* Provides a way to write arrays of pixels to an output image format.
 
 For example, the following code creates a 3x3 array of pixels and writes it to
 a BMP file. The array is then scaled by a factor of 2 (creating a 9x9 image)
