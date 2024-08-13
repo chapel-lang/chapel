@@ -1943,9 +1943,9 @@ void GpuKernel::buildStubKernelLaunchBlock() {
   }
 
   // we are done with the call, now remove it.
-  if (blockSizeCall()) {
-    if (blockSizeCall()->inTree()) {
-      blockSizeCall()->remove();
+  if (auto bsc = blockSizeCall()) {
+    if (bsc->inTree()) {
+      bsc->remove();
     }
   }
 }
