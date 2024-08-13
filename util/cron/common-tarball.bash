@@ -2,10 +2,10 @@
 #
 source $CWD/common.bash
 
-source ${CHPL_HOME}/util/build_configs/functions.bash
-
 export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
+
+source ${CHPL_HOME}/util/build_configs/functions.bash
 
 major=$(get_src_major_version ${CHPL_HOME})
 minor=$(get_src_minor_version ${CHPL_HOME})

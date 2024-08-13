@@ -12,25 +12,16 @@
 # Create a tarball from current repo.
 # The tarball is left in root of repo in tar/ directory.
 CWD=$(cd $(dirname $0) ; pwd)
-source $CWD/functions.bash
+
+# common-tarball sets CHPL_HOME
+source $CWD/common-tarball.bash
 
 
 # Tell gen_release to use existing repo instead of creating a new one with
 # git-archive.
 export CHPL_GEN_RELEASE_NO_CLONE=true
 
-export CHPL_HOME=$(cd $CWD/../.. ; pwd)
-log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
-
 export CHPL_LLVM=none
-
-source ${CHPL_HOME}/util/build_configs/functions.bash
-major=$(get_src_major_version ${CHPL_HOME})
-minor=$(get_src_minor_version ${CHPL_HOME})
-sha=$(git rev-parse --short HEAD)
-
-short_version="${major}.${minor}"
-version="${short_version}"
 
 log_info "Moving to ${CHPL_HOME}"
 cd $CHPL_HOME
@@ -39,13 +30,12 @@ cd $CHPL_HOME
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
-log_info "Building tarball with version: ${version}"
-./util/buildRelease/gen_release ${version}
+# gen_release $short_version
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 cd ${CHPL_HOME}/util/packaging/homebrew
 # Get the tarball from the root tar/ directory and replace the url in chapel.rb with the tarball location
-location="${CHPL_HOME}/tar/chapel-${version}.tar.gz"
+location="${CHPL_HOME}/tar/chapel-${short_version}.tar.gz"
 log_info $location
 
 # Replace the url and sha256 in chapel.rb with the location of the tarball and sha256 of the tarball generated.
@@ -67,7 +57,7 @@ start_docker
 cd ${CHPL_HOME}/util/packaging/homebrew
 
 # Replace the tarball location in the container where the tarball is copied over
-$sed_command "s#url.*#url \"file\:////home/linuxbrew/chapel-${version}.tar.gz\"#" chapel.rb
+$sed_command "s#url.*#url \"file\:////home/linuxbrew/chapel-${short_version}.tar.gz\"#" chapel.rb
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel.rb  ${CHPL_HOME}/util/packaging/docker/test
 cp $location ${CHPL_HOME}/util/packaging/docker/test
