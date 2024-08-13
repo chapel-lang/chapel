@@ -1,10 +1,11 @@
-Start analyzing forall for automatic aggregation (arrElemFromAlignedFollower.chpl:16)
+Start analyzing forall for automatic aggregation [static only ALA clone]  (arrElemFromAlignedFollower.chpl:16)
 | Found an aggregation candidate (arrElemFromAlignedFollower.chpl:17)
+|  Potential source aggregation (arrElemFromAlignedFollower.chpl:17)
 |  Potential destination aggregation (arrElemFromAlignedFollower.chpl:17)
-End analyzing forall for automatic aggregation (arrElemFromAlignedFollower.chpl:16)
+End analyzing forall for automatic aggregation [static only ALA clone]  (arrElemFromAlignedFollower.chpl:16)
 
-Start analyzing forall for automatic aggregation (arrElemFromAlignedFollower.chpl:28)
-End analyzing forall for automatic aggregation (arrElemFromAlignedFollower.chpl:28)
+Start analyzing forall for automatic aggregation [static only ALA clone]  (arrElemFromAlignedFollower.chpl:28)
+End analyzing forall for automatic aggregation [static only ALA clone]  (arrElemFromAlignedFollower.chpl:28)
 
 Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (arrElemFromAlignedFollower.chpl:40)
 | Found an aggregation candidate (arrElemFromAlignedFollower.chpl:41)
@@ -21,6 +22,14 @@ Start analyzing forall for automatic aggregation [static and dynamic ALA clone] 
 |  Potential source aggregation (arrElemFromAlignedFollower.chpl:63)
 |  Potential destination aggregation (arrElemFromAlignedFollower.chpl:63)
 End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (arrElemFromAlignedFollower.chpl:62)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (arrElemFromAlignedFollower.chpl:16)
+| Found an aggregation candidate (arrElemFromAlignedFollower.chpl:17)
+|  Potential destination aggregation (arrElemFromAlignedFollower.chpl:17)
+End analyzing forall for automatic aggregation [no ALA clone]  (arrElemFromAlignedFollower.chpl:16)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (arrElemFromAlignedFollower.chpl:28)
+End analyzing forall for automatic aggregation [no ALA clone]  (arrElemFromAlignedFollower.chpl:28)
 
 Start analyzing forall for automatic aggregation [no ALA clone]  (arrElemFromAlignedFollower.chpl:40)
 | Found an aggregation candidate (arrElemFromAlignedFollower.chpl:41)

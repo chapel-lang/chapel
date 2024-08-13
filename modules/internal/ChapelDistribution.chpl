@@ -498,6 +498,14 @@ module ChapelDistribution {
       return false;
     }
 
+    proc dsiSupportsOffsetAutoLocalAccess() param {
+      return false;
+    }
+
+    proc dsiAutoLocalAccessOffsetCheck(offsets) {
+      return false;
+    }
+
     proc dsiIteratorYieldsLocalElements() param {
       return false;
     }

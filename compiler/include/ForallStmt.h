@@ -31,6 +31,67 @@ enum ForallAutoLocalAccessCloneType {
   STATIC_AND_DYNAMIC
 };
 
+// Support for reporting calls that are not optimized for different reasons
+enum CallRejectReason {
+  CRR_ACCEPT,
+  CRR_NOT_ARRAY_ACCESS_LIKE,
+  CRR_NO_CLEAN_INDEX_MATCH,
+  CRR_ACCESS_BASE_IS_LOOP_INDEX,
+  CRR_ACCESS_BASE_IS_NOT_OUTER_VAR,
+  CRR_ACCESS_BASE_IS_COMPLEX_SHADOW_VAR,
+  CRR_ACCESS_BASE_IS_REDUCE_SHADOW_VAR,
+  CRR_TIGHTER_LOCALITY_DOMINATOR,
+  CRR_UNKNOWN,
+};
+
+class ALACandidate {
+  public:
+    ALACandidate() = delete;
+    ALACandidate(CallExpr *call, ForallStmt *forall, bool checkArgs=false);
+    inline CallExpr* getCall() const { return call_; }
+
+    inline int getIterandIdx() const { return iterandIdx_; }
+    inline void setIterandIdx(int iterandIdx) { iterandIdx_ = iterandIdx; }
+
+    inline CallRejectReason getReason() const { return reason_; }
+    inline void setReasonIfNeeded(CallRejectReason reason) {
+      if (!hasReason() || reason_ == CRR_ACCEPT) reason_ = reason;
+    }
+
+    inline bool hasReason() const { return reason_ != CRR_UNKNOWN; }
+    inline bool shouldReport() const {
+      return reason_ != CRR_UNKNOWN && reason_ != CRR_NOT_ARRAY_ACCESS_LIKE;
+    }
+    inline bool isRejected() const { return reason_ != CRR_ACCEPT; }
+
+    inline std::vector<Expr*>& offsetExprs() { return offsetExprs_; }
+    void addOffset(Expr* e);
+
+    inline bool hasOffset() const { return hasOffset_; }
+
+    Symbol* getCallBase() const;
+
+  private:
+    CallExpr *call_;
+    int iterandIdx_;
+    CallRejectReason reason_;
+    std::vector<Expr*> offsetExprs_;
+    bool hasOffset_;
+
+    bool argsSupported(const std::vector<Symbol *> &syms);
+
+    // the following are helpers to extract information from +/- operators
+    // (unary or binary) in the context of ALA. They don't read or modify
+    // ALACandidate instances.
+    static bool isCallPlusOrMinus(CallExpr* call);
+    static SymExpr* getSymFromValidUnaryOp(Expr* e);
+    static bool getIdxAndOffsetFromPlusMinus(CallExpr* call,
+                                             Symbol* loopIdx,
+                                             SymExpr*& accIdxExpr,
+                                             Expr*& offsetExpr);
+    static int findLoopIdxInPlusMinus(CallExpr* call, Symbol* loopIdx);
+};
+
 class ForallOptimizationInfo {
   public:
     bool infoGathered;
@@ -43,15 +104,16 @@ class ForallOptimizationInfo {
     std::vector<CallExpr *> iterCall;  // refers to the original CallExpr
     std::vector<Symbol *> iterCallTmp; // this is the symbol to use for checks
 
-    // even if there are multiple indices we store them in a vector
+    // even if there is a single index we store them in a vector
     std::vector< std::vector<Symbol *> > multiDIndices;
 
-    // calls in the loop that are candidates for optimization
-    std::vector< std::pair<CallExpr *, int> > staticCandidates;
-    std::vector< std::pair<CallExpr *, int> > dynamicCandidates;
+    // calls in the loop that are candidates for ALA optimization
+    std::vector<ALACandidate> staticCandidates;
+    std::vector<ALACandidate> dynamicCandidates;
 
     // the static check control symbol added for symbol
     std::map<Symbol *, Symbol *> staticCheckSymForSymMap;
+    std::map<Symbol *, Symbol *> staticCheckWOffSymForSymMap;
 
     // the dynamic check call added for symbol
     std::map<Symbol *, CallExpr *> dynamicCheckForSymMap;

@@ -2110,6 +2110,17 @@ inline proc LocStencilArr.this(i) ref {
 }
 
 override proc StencilDom.dsiSupportsAutoLocalAccess() param { return true; }
+override proc StencilDom.dsiSupportsOffsetAutoLocalAccess() param {
+  return true;
+}
+// offsets is always a tuple
+override proc StencilDom.dsiAutoLocalAccessOffsetCheck(offsets) {
+  var ret = true;
+  for param i in 0..<rank {
+    ret &&= fluff[i] >= abs(offsets[i]);
+  }
+  return ret;
+}
 
 //
 // Privatization

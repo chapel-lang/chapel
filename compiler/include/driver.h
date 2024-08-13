@@ -63,6 +63,7 @@ extern bool fLLVMWideOpt;
 
 extern bool fAutoLocalAccess;
 extern bool fDynamicAutoLocalAccess;
+extern bool fOffsetAutoLocalAccess;
 extern bool fReportAutoLocalAccess;
 
 extern bool fAutoAggregation;

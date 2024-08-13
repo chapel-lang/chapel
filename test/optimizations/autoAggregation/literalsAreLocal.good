@@ -1,7 +1,5 @@
-Start analyzing forall for automatic aggregation (literalsAreLocal.chpl:11)
-| Found an aggregation candidate (literalsAreLocal.chpl:12)
-|  Potential destination aggregation (literalsAreLocal.chpl:12)
-End analyzing forall for automatic aggregation (literalsAreLocal.chpl:11)
+Start analyzing forall for automatic aggregation [static only ALA clone]  (literalsAreLocal.chpl:11)
+End analyzing forall for automatic aggregation [static only ALA clone]  (literalsAreLocal.chpl:11)
 
 Start analyzing forall for automatic aggregation [static only ALA clone]  (literalsAreLocal.chpl:20)
 End analyzing forall for automatic aggregation [static only ALA clone]  (literalsAreLocal.chpl:20)
@@ -11,6 +9,11 @@ End analyzing forall for automatic aggregation [static only ALA clone]  (literal
 
 Start analyzing forall for automatic aggregation [static only ALA clone]  (literalsAreLocal.chpl:41)
 End analyzing forall for automatic aggregation [static only ALA clone]  (literalsAreLocal.chpl:41)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (literalsAreLocal.chpl:11)
+| Found an aggregation candidate (literalsAreLocal.chpl:12)
+|  Potential destination aggregation (literalsAreLocal.chpl:12)
+End analyzing forall for automatic aggregation [no ALA clone]  (literalsAreLocal.chpl:11)
 
 Start analyzing forall for automatic aggregation [no ALA clone]  (literalsAreLocal.chpl:20)
 | Found an aggregation candidate (literalsAreLocal.chpl:21)

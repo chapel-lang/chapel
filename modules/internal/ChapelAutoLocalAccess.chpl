@@ -24,7 +24,12 @@ module ChapelAutoLocalAccess {
   // note that the compiler can pass an iterator to `loopDomain` argument. Make
   // sure that we don't do anything with iterators as we cannot optimize such
   // forall's and we don't want to mess up the iterator
-  proc chpl__staticAutoLocalCheck(accessBase: [], loopDomain: domain) param {
+  proc chpl__staticAutoLocalCheck(accessBase: [], loopDomain: domain,
+                                  param hasOffsets=false) param {
+    if hasOffsets && !accessBase.domain.supportsOffsetAutoLocalAccess() {
+      return false;
+    }
+
     if accessBase.domain.type == loopDomain.type {
       if chpl__isArrayViewWithDifferentDist(accessBase) {
         return false;
@@ -42,24 +47,29 @@ module ChapelAutoLocalAccess {
     return false;
   }
 
-  proc chpl__staticAutoLocalCheck(accessBase, loopDomain) param {
+  proc chpl__staticAutoLocalCheck(accessBase, loopDomain,
+                                  param hasOffsets=false) param {
     return false;
   }
 
   // these type overloads are for degenerate cases where the optimization can
   // break a meaningful error message without these
-  proc chpl__staticAutoLocalCheck(type accessBase, type loopDomain) param {
+  proc chpl__staticAutoLocalCheck(type accessBase, type loopDomain,
+                                  param hasOffsets=false) param {
     return false;
   }
-  proc chpl__staticAutoLocalCheck(accessBase, type loopDomain) param {
+  proc chpl__staticAutoLocalCheck(accessBase, type loopDomain,
+                                  param hasOffsets=false) param {
     return false;
   }
-  proc chpl__staticAutoLocalCheck(type accessBase, loopDomain) param {
+  proc chpl__staticAutoLocalCheck(type accessBase, loopDomain,
+                                  param hasOffsets=false) param {
     return false;
   }
 
-  proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain) {
-    if chpl__staticAutoLocalCheck(accessBase, loopDomain) {
+  proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain,
+                                  param hasOffsets=false) {
+    if chpl__staticAutoLocalCheck(accessBase, loopDomain, hasOffsets) {
       // if they're the same domain...
       if chpl_sameDomainKind(accessBase.domain, loopDomain) &&
          accessBase.domain == loopDomain                    &&
@@ -89,13 +99,31 @@ module ChapelAutoLocalAccess {
 
   // these type overloads are for degenerate cases where the optimization can
   // break a meaningful error message without these
-  proc chpl__dynamicAutoLocalCheck(type accessBase, type loopDomain) {
+  proc chpl__dynamicAutoLocalCheck(type accessBase, type loopDomain,
+                                   param hasOffsets=false) {
     return false;
   }
-  proc chpl__dynamicAutoLocalCheck(accessBase, type loopDomain) {
+  proc chpl__dynamicAutoLocalCheck(accessBase, type loopDomain,
+                                   param hasOffsets=false) {
     return false;
   }
-  proc chpl__dynamicAutoLocalCheck(type accessBase, loopDomain) {
+  proc chpl__dynamicAutoLocalCheck(type accessBase, loopDomain,
+                                   param hasOffsets=false) {
+    return false;
+  }
+
+  inline proc chpl__ala_offsetCheck(accessBase: [], offsets:integral...) {
+    if (offsets.size != accessBase.rank) {
+      compilerError("Automatic local access optimization failure: ",
+                    "Number of offsets doesn't match rank");
+    }
+    return accessBase.domain.autoLocalAccessOffsetCheck(offsets);
+  }
+
+  // what if the user had `MyArr[i+"1"]` in their code? We don't want to see
+  // resolution errors coming from this function. That code should error out
+  // later in compilation with a proper error message
+  inline proc chpl__ala_offsetCheck(accessBase, offsets...) {
     return false;
   }
 

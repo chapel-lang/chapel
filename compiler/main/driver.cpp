@@ -210,6 +210,7 @@ bool fEnableMemInterleaving = false;
 
 bool fAutoLocalAccess = true;
 bool fDynamicAutoLocalAccess = true;
+bool fOffsetAutoLocalAccess = true;
 bool fReportAutoLocalAccess= false;
 
 bool fAutoAggregation = false;
@@ -1275,6 +1276,7 @@ static ArgumentDescription arg_desc[] = {
 
  {"auto-local-access", ' ', NULL, "Enable [disable] using local access automatically", "N", &fAutoLocalAccess, "CHPL_DISABLE_AUTO_LOCAL_ACCESS", NULL},
  {"dynamic-auto-local-access", ' ', NULL, "Enable [disable] using local access automatically (dynamic only)", "N", &fDynamicAutoLocalAccess, "CHPL_DISABLE_DYNAMIC_AUTO_LOCAL_ACCESS", NULL},
+ {"offset-auto-local-access", ' ', NULL, "Enable [disable] using local access automatically with offset indices", "N", &fOffsetAutoLocalAccess, "CHPL_DISABLE_OFFSET_AUTO_LOCAL_ACCESS", NULL},
 
  {"auto-aggregation", ' ', NULL, "Enable [disable] automatically aggregating remote accesses in foralls", "N", &fAutoAggregation, "CHPL_AUTO_AGGREGATION", NULL},
 
