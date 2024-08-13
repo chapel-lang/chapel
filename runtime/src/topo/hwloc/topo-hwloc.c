@@ -1393,12 +1393,10 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
         // share NICs, so mark all NICs as unassigned and repeat the
         // process.
 
-        hwloc_obj_t locales[numLocales];
         hwloc_obj_t assigned[numLocales]; // NIC assigned to the locale
         int numAssigned = 0;
 
         for (int i = 0; i < numLocales; i++) {
-          locales[i] = NULL;
           assigned[i] = NULL;
         }
 
