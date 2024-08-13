@@ -47,6 +47,12 @@ module ChapelAutoLocalAccess {
     return false;
   }
 
+  proc chpl__staticAutoLocalCheck(accessBase: [], loopDomain: [],
+                                  param hasOffsets=false) param {
+    return chpl__staticAutoLocalCheck(accessBase, loopDomain.domain,
+                                      hasOffsets);
+  }
+
   proc chpl__staticAutoLocalCheck(accessBase, loopDomain,
                                   param hasOffsets=false) param {
     return false;
@@ -67,7 +73,7 @@ module ChapelAutoLocalAccess {
     return false;
   }
 
-  proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain,
+  proc chpl__dynamicAutoLocalCheck(accessBase: [], loopDomain: domain,
                                   param hasOffsets=false) {
     if chpl__staticAutoLocalCheck(accessBase, loopDomain, hasOffsets) {
       // if they're the same domain...
@@ -95,6 +101,12 @@ module ChapelAutoLocalAccess {
     }
 
     return false;
+  }
+
+  inline proc chpl__dynamicAutoLocalCheck(accessBase: [], loopDomain: [],
+                                          param hasOffsets=false) {
+    return chpl__dynamicAutoLocalCheck(accessBase, loopDomain.domain,
+                                       hasOffsets);
   }
 
   // these type overloads are for degenerate cases where the optimization can
