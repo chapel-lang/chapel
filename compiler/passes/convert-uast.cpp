@@ -2637,8 +2637,17 @@ struct Converter {
     BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
 
 
-    MultiDeclState desugaringState ;
+    MultiDeclState desugaringState;
     if (node->destination()) desugaringState.localeTemp = newTemp("chpl__localeTemp");
+
+    // Field multi-decl desugaring happens later in build.cpp and produces
+    // different code; don't do redundant work here.
+    bool isField = false;
+    if (auto parent = parsing::parentAst(context, node)) {
+      // post-parse checks should rule this out
+      CHPL_ASSERT(!node->destination());
+      isField = parent->isAggregateDecl();
+    }
 
     // Iterate in reverse just in case this is a remote variable declaration
     // and we need to mimic the desugaring of multi-decls.
@@ -2656,7 +2665,8 @@ struct Converter {
 
         // Do not use the linkage name since multi-decls cannot be renamed.
         const bool useLinkageName = false;
-        auto convAll = convertVariable(var, useLinkageName, &desugaringState);
+        auto convAll = convertVariable(var, useLinkageName,
+                                       isField ? nullptr : &desugaringState);
         conv = convAll.entireExpr;
 
         DefExpr* defExpr = convAll.variableDef;
