@@ -85,6 +85,11 @@ def get(flag='target'):
             msg += ": please consider using CHPL_ATOMICS=cstdlib"
         warning(msg)
 
+    if flag == 'target' and atomics_val == 'locks':
+        platform_val = chpl_platform.get('target')
+        if platform_val == 'darwin':
+            error("CHPL_ATOMICS=locks is not supported on MacOS")
+
     return atomics_val
 
 
