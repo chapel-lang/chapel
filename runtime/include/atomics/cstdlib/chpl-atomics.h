@@ -84,12 +84,12 @@ typedef Atomic(_real32) chpl_atomic__real32;
 typedef chpl_atomic_bool chpl_atomic_spinlock_t;
 
 typedef memory_order chpl_memory_order;
-chpl_memory_order chpl_memory_order_relaxed = memory_order_relaxed;
-chpl_memory_order chpl_memory_order_consume = memory_order_consume;
-chpl_memory_order chpl_memory_order_acquire = memory_order_acquire;
-chpl_memory_order chpl_memory_order_release = memory_order_release;
-chpl_memory_order chpl_memory_order_acq_rel = memory_order_acq_rel;
-chpl_memory_order chpl_memory_order_seq_cst = memory_order_seq_cst;
+#define chpl_memory_order_relaxed memory_order_relaxed
+#define chpl_memory_order_consume memory_order_consume
+#define chpl_memory_order_acquire memory_order_acquire
+#define chpl_memory_order_release memory_order_release
+#define chpl_memory_order_acq_rel memory_order_acq_rel
+#define chpl_memory_order_seq_cst memory_order_seq_cst
 
 
 static inline chpl_memory_order _defaultOfMemoryOrder(void) {
