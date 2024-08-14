@@ -102,13 +102,17 @@ module ChapelAutoLocalAccess {
     return false;
   }
 
-  inline proc chpl__ala_dynamicCheck(accessBase: [], loopDomain: [],
-                                     param hasOffsets=false) {
-    return chpl__ala_dynamicCheck(accessBase, loopDomain.domain, hasOffsets);
-  }
+  /*inline proc chpl__ala_dynamicCheck(accessBase: [], loopDomain: [],*/
+                                     /*param hasOffsets=false) {*/
+    /*return chpl__ala_dynamicCheck(accessBase, loopDomain.domain, hasOffsets);*/
+  /*}*/
 
   // these type overloads are for degenerate cases where the optimization can
   // break a meaningful error message without these
+  proc chpl__ala_dynamicCheck(accessBase, loopDomain,
+                              param hasOffsets=false) {
+    return false;
+  }
   proc chpl__ala_dynamicCheck(type accessBase, type loopDomain,
                               param hasOffsets=false) {
     return false;
