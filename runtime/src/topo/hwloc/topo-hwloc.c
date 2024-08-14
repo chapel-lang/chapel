@@ -1477,7 +1477,7 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
 // repeats until all co-locales have been assigned the proper number of
 // devices.
 //
-// Note that cores are assigned to co-llocales during initialization of the
+// Note that cores are assigned to co-locales during initialization of the
 // topology layer before this function is called. As a result, the assignment
 // of cores and devices to co-locales may not be optimal, especially if the
 // machine topology is asymmetric. For example, if there are two co-locales
