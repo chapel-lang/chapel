@@ -42,13 +42,13 @@ proc testUnsupportedCompressor() {
     writeZarrArrayLocal("TestUnsupportedCompressor", A, (7,), compressor="unsupported");
     assert(false, "Expected an error for unsupported compressor");
   } catch e {
-    assert(e.message() == "Unsupported compressor: unsupported");
+    assert(e.message() == "Unsupported compressor: unsupported. Supported compressors are: blosclz, lz4, lz4hc, zlib, and zstd.", e.message());
   }
   try {
     writeZarrArray("TestUnsupportedCompressor", A, (7,), compressor="unsupported");
     assert(false, "Expected an error for unsupported compressor");
   } catch e {
-    assert(e.message() == "Unsupported compressor: unsupported");
+    assert(e.message() == "Unsupported compressor: unsupported. Supported compressors are: blosclz, lz4, lz4hc, zlib, and zstd.", e.message());
   }
   
 }

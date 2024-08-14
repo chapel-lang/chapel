@@ -144,7 +144,11 @@ module Zarr {
 
   private proc validateCompressor(compressor) throws {
     const supportedCompressors = ["blosclz", "lz4", "lz4hc", "zlib", "zstd"];
-    if supportedCompressors.find(compressor) == -1 then throw new Error("Unsupported compressor: %s".format(compressor));
+    if supportedCompressors.find(compressor) == -1 {
+      throw new IllegalArgumentError("Unsupported compressor: %s.".format(compressor) +
+                                     " Supported compressors are: blosclz, lz4, lz4hc, zlib, and zstd.");
+    }
+      
   }
 
   private proc buildChunkPath(directoryPath: string, delimiter: string, const chunkIndex: ?dimCount * int) {
