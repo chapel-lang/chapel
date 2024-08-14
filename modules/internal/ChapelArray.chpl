@@ -1021,7 +1021,6 @@ module ChapelArray {
     inline proc const this(const i: _value.dom.idxType ...rank) const ref do
       return this(i);
 
-
     pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "alias scope from this"
@@ -1036,9 +1035,10 @@ module ChapelArray {
         (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
         chpl_debug_writeln("local _array accessor was called");
 
-      if chpl_isNonDistributedArray() then
+      if chpl_isNonDistributedArray() {
+        if boundsChecking then ensureLocalAccess(value);
         return this(i);
-      else
+      } else
         if this.isRectangular() || this.isSparse() then
           return value.dsiLocalAccess(i);
         else
@@ -1057,9 +1057,10 @@ module ChapelArray {
         (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
         chpl_debug_writeln("local _array accessor was called");
 
-      if chpl_isNonDistributedArray() then
+      if chpl_isNonDistributedArray() {
+        if boundsChecking then ensureLocalAccess(value);
         return this(i);
-      else
+      } else
         if this.isRectangular() || this.isSparse() then
           return value.dsiLocalAccess(i);
         else
@@ -1077,9 +1078,10 @@ module ChapelArray {
         (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
         chpl_debug_writeln("local _array accessor was called");
 
-      if chpl_isNonDistributedArray() then
+      if chpl_isNonDistributedArray() {
+        if boundsChecking then ensureLocalAccess(value);
         return this(i);
-      else
+      } else
         if this.isRectangular() || this.isSparse() then
           return value.dsiLocalAccess(i);
         else
@@ -1939,6 +1941,12 @@ module ChapelArray {
     } else {
       return && reduce (this == that);
     }
+  }
+
+  private proc ensureLocalAccess(arrClass) {
+    if arrClass.locale != here then
+      halt("Cannot use .localAccess from locale ", here.id,
+           " on a remote array stored on locale ", arrClass.locale.id);
   }
 
   // The same as the built-in _cast, except accepts a param arg.
