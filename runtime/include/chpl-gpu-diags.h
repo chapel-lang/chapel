@@ -73,13 +73,13 @@ void chpl_gpu_getDiagnosticsHere(chpl_gpuDiagnostics *cd);
 // Private
 //
 typedef struct _chpl_atomic_gpuDiagnostics {
-#define _GPU_DIAGS_DECL_ATOMIC(cdv) atomic_uint_least64_t cdv;
+#define _GPU_DIAGS_DECL_ATOMIC(cdv) chpl_atomic_uint_least64_t cdv;
   CHPL_GPU_DIAGS_VARS_ALL(_GPU_DIAGS_DECL_ATOMIC)
 #undef _GPU_DIAGS_DECL_ATOMIC
 } chpl_atomic_gpuDiagnostics;
 
 extern chpl_atomic_gpuDiagnostics chpl_gpu_diags_counters;
-extern atomic_int_least16_t chpl_gpu_diags_disable_flag;
+extern chpl_atomic_int_least16_t chpl_gpu_diags_disable_flag;
 
 static inline
 void chpl_gpu_diags_init(void) {
@@ -168,9 +168,9 @@ int chpl_gpu_diags_is_enabled(void) {
 #define chpl_gpu_diags_incr(_ctr)                                           \
   do {                                                                       \
     if (chpl_gpu_diagnostics && chpl_gpu_diags_is_enabled()) {             \
-      atomic_uint_least64_t* ctrAddr = &chpl_gpu_diags_counters._ctr;       \
+      chpl_atomic_uint_least64_t* ctrAddr = &chpl_gpu_diags_counters._ctr;       \
       (void) atomic_fetch_add_explicit_uint_least64_t(ctrAddr, 1,            \
-                                                      memory_order_relaxed); \
+                                                      chpl_memory_order_relaxed); \
     }                                                                        \
   } while(0)
 

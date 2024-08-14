@@ -138,9 +138,9 @@ void* get_ptr_from_args(gasnet_handlerarg_t a0, gasnet_handlerarg_t a1 )
 // of an AM handler.)
 //
 typedef struct {
-  atomic_uint_least32_t count;
-  uint_least32_t        target;
-  volatile int          flag;
+  chpl_atomic_uint_least32_t count;
+  uint_least32_t             target;
+  volatile int               flag;
 } done_t;
 
 //
@@ -493,7 +493,7 @@ static void AM_signal(gasnet_token_t token, gasnet_handlerarg_t a0, gasnet_handl
   done_t* done = (done_t*) get_ptr_from_args(a0, a1);
   uint_least32_t prev;
   prev = atomic_fetch_add_explicit_uint_least32_t(&done->count, 1,
-                                                  memory_order_seq_cst);
+                                                  chpl_memory_order_seq_cst);
   if (prev + 1 == done->target)
     done->flag = 1;
 }
@@ -503,7 +503,7 @@ static void AM_signal_long(gasnet_token_t token, void *buf, size_t nbytes,
   done_t* done = (done_t*) get_ptr_from_args(a0, a1);
   uint_least32_t prev;
   prev = atomic_fetch_add_explicit_uint_least32_t(&done->count, 1,
-                                                  memory_order_seq_cst);
+                                                  chpl_memory_order_seq_cst);
   if (prev + 1 == done->target)
     done->flag = 1;
 }
@@ -728,7 +728,7 @@ int32_t chpl_comm_getMaxThreads(void) {
 static volatile int pollingRunning;
 static volatile int pollingQuit;
 static chpl_bool pollingRequired;
-static atomic_spinlock_t pollingLock;
+static chpl_atomic_spinlock_t pollingLock;
 
 static inline void am_poll_try(void) {
   // Serialize polling for IBV, UCX, Aries, and OFI. Concurrent polling causes

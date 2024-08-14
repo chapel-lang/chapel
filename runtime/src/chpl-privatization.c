@@ -24,7 +24,7 @@
 #include "chpl-atomics.h"
 
 static int64_t chpl_capPrivateObjects = 0;
-static atomic_spinlock_t lock;
+static chpl_atomic_spinlock_t lock;
 
 chpl_privateObject_t* chpl_privateObjects = NULL;
 

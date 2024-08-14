@@ -99,7 +99,7 @@ typedef qio_fdflag_t fdflag_t;
 
 // make a re-entrant lock.
 typedef struct {
-  atomic_spinlock_t lock;
+  chpl_atomic_spinlock_t lock;
   chpl_taskID_t owner; // task ID of owner.
   uint64_t count; // how many times owner has locked.
 } qio_lock_t;

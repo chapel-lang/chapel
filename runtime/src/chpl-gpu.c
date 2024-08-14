@@ -50,7 +50,7 @@ bool chpl_gpu_use_stream_per_task = true;
 
 #include <inttypes.h>
 
-static atomic_spinlock_t* priv_table_lock = NULL;
+static chpl_atomic_spinlock_t* priv_table_lock = NULL;
 
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init(&chpl_gpu_num_devices);
@@ -92,7 +92,7 @@ void chpl_gpu_init(void) {
 
   // TODO these should be freed
   priv_table_lock = chpl_mem_alloc(chpl_gpu_num_devices *
-                                   sizeof(atomic_spinlock_t),
+                                   sizeof(chpl_atomic_spinlock_t),
                                    CHPL_RT_MD_GPU_UTIL, 0, 0);
 
   for (int i=0 ; i<chpl_gpu_num_devices ; i++) {
@@ -548,7 +548,7 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg) {
 
   CHPL_GPU_DEBUG("Global for the device table: %p\n", dev_global);
 
-  atomic_spinlock_t* lock = &(priv_table_lock[cfg->dev]);
+  chpl_atomic_spinlock_t* lock = &(priv_table_lock[cfg->dev]);
   while(!atomic_try_lock_spinlock_t(lock)) {
     chpl_task_yield();
   }

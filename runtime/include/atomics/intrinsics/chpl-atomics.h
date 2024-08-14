@@ -42,41 +42,41 @@ extern "C" {
 //
 #define SIZE_ALIGN_TYPE(t) __attribute__ ((aligned (sizeof(t)))) t
 
-typedef int_least8_t atomic_int_least8_t;
-typedef int_least16_t atomic_int_least16_t;
-typedef int_least32_t atomic_int_least32_t;
-typedef SIZE_ALIGN_TYPE(int_least64_t) atomic_int_least64_t;
-typedef uint_least8_t atomic_uint_least8_t;
-typedef uint_least16_t atomic_uint_least16_t;
-typedef uint_least32_t atomic_uint_least32_t;
-typedef SIZE_ALIGN_TYPE(uint_least64_t) atomic_uint_least64_t;
-typedef uintptr_t atomic_uintptr_t;
-typedef chpl_bool atomic_bool;
-typedef SIZE_ALIGN_TYPE(uint64_t) atomic__real64;
-typedef uint32_t atomic__real32;
+typedef int_least8_t chpl_atomic_int_least8_t;
+typedef int_least16_t chpl_atomic_int_least16_t;
+typedef int_least32_t chpl_atomic_int_least32_t;
+typedef SIZE_ALIGN_TYPE(int_least64_t) chpl_atomic_int_least64_t;
+typedef uint_least8_t chpl_atomic_uint_least8_t;
+typedef uint_least16_t chpl_atomic_uint_least16_t;
+typedef uint_least32_t chpl_atomic_uint_least32_t;
+typedef SIZE_ALIGN_TYPE(uint_least64_t) chpl_atomic_uint_least64_t;
+typedef uintptr_t chpl_atomic_uintptr_t;
+typedef chpl_bool chpl_atomic_bool;
+typedef SIZE_ALIGN_TYPE(uint64_t) chpl_atomic__real64;
+typedef uint32_t chpl_atomic__real32;
 
-typedef volatile uint8_t atomic_spinlock_t;
+typedef volatile uint8_t chpl_atomic_spinlock_t;
 
 #undef SIZE_ALIGN_TYPE
 
 typedef enum {
- memory_order_relaxed,
- memory_order_consume,
- memory_order_acquire,
- memory_order_release,
- memory_order_acq_rel,
- memory_order_seq_cst
-} memory_order;
+ chpl_memory_order_relaxed,
+ chpl_memory_order_consume,
+ chpl_memory_order_acquire,
+ chpl_memory_order_release,
+ chpl_memory_order_acq_rel,
+ chpl_memory_order_seq_cst
+} chpl_memory_order;
 
-static inline memory_order _defaultOfMemoryOrder(void) {
-  return memory_order_seq_cst;
+static inline chpl_memory_order _defaultOfMemoryOrder(void) {
+  return chpl_memory_order_seq_cst;
 }
 
-static inline void chpl_atomic_thread_fence(memory_order order)
+static inline void chpl_atomic_thread_fence(chpl_memory_order order)
 {
   __sync_synchronize();
 }
-static inline void chpl_atomic_signal_fence(memory_order order)
+static inline void chpl_atomic_signal_fence(chpl_memory_order order)
 {
   __sync_synchronize();
 }
@@ -90,15 +90,15 @@ static inline void chpl_atomic_signal_fence(memory_order order)
 // They must be implemented with atomic primitives to ensure consistent
 // visibility of the results.
 #define DECLARE_ATOMICS_BASE(type, basetype) \
-static inline chpl_bool atomic_is_lock_free_ ## type(atomic_ ## type * obj) { \
+static inline chpl_bool atomic_is_lock_free_ ## type(chpl_atomic_ ## type * obj) { \
   return true; \
 } \
-static inline void atomic_init_ ## type(atomic_ ## type * obj, basetype value) { \
+static inline void atomic_init_ ## type(chpl_atomic_ ## type * obj, basetype value) { \
   *obj = value; \
 } \
-static inline void atomic_destroy_ ## type(atomic_ ## type * obj) { \
+static inline void atomic_destroy_ ## type(chpl_atomic_ ## type * obj) { \
 } \
-static inline void atomic_store_explicit_ ## type(atomic_ ## type * obj, basetype value, memory_order order) { \
+static inline void atomic_store_explicit_ ## type(chpl_atomic_ ## type * obj, basetype value, chpl_memory_order order) { \
   basetype ret = *obj; \
   basetype old_val; \
   do { \
@@ -106,14 +106,14 @@ static inline void atomic_store_explicit_ ## type(atomic_ ## type * obj, basetyp
     ret = __sync_val_compare_and_swap(obj, old_val, value); \
   } while (ret != old_val); \
 } \
-static inline void atomic_store_ ## type(atomic_ ## type * obj, basetype value) { \
-  atomic_store_explicit_ ## type(obj, value, memory_order_seq_cst); \
+static inline void atomic_store_ ## type(chpl_atomic_ ## type * obj, basetype value) { \
+  atomic_store_explicit_ ## type(obj, value, chpl_memory_order_seq_cst); \
 } \
-static inline basetype atomic_load_explicit_ ## type(atomic_ ## type * obj, memory_order order) { \
+static inline basetype atomic_load_explicit_ ## type(chpl_atomic_ ## type * obj, chpl_memory_order order) { \
   return __sync_val_compare_and_swap(obj, (basetype)0, (basetype)0); \
 } \
-static inline basetype atomic_load_ ## type(atomic_ ## type * obj) { \
-  return atomic_load_explicit_ ## type(obj, memory_order_seq_cst); \
+static inline basetype atomic_load_ ## type(chpl_atomic_ ## type * obj) { \
+  return atomic_load_explicit_ ## type(obj, chpl_memory_order_seq_cst); \
 }
 
 
@@ -121,7 +121,7 @@ static inline basetype atomic_load_ ## type(atomic_ ## type * obj) { \
 ////                 START OF INTEGER ATOMIC EXCHANGE OPS                 ////
 //////////////////////////////////////////////////////////////////////////////
 #define DECLARE_ATOMICS_EXCHANGE_OPS(type, basetype) \
-static inline basetype atomic_exchange_explicit_ ## type(atomic_ ## type * obj, basetype value, memory_order order) { \
+static inline basetype atomic_exchange_explicit_ ## type(chpl_atomic_ ## type * obj, basetype value, chpl_memory_order order) { \
   basetype ret = *obj; \
   basetype old_val; \
   do { \
@@ -130,10 +130,10 @@ static inline basetype atomic_exchange_explicit_ ## type(atomic_ ## type * obj, 
   } while(ret != old_val); \
   return ret; \
 } \
-static inline basetype atomic_exchange_ ## type(atomic_ ## type * obj, basetype value) { \
-  return atomic_exchange_explicit_ ## type(obj, value, memory_order_seq_cst); \
+static inline basetype atomic_exchange_ ## type(chpl_atomic_ ## type * obj, basetype value) { \
+  return atomic_exchange_explicit_ ## type(obj, value, chpl_memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succ, memory_order fail) { \
+static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(chpl_atomic_ ## type * obj, basetype * expected, basetype desired, chpl_memory_order succ, chpl_memory_order fail) { \
   basetype old_value; \
   basetype old_expected = *expected; \
   chpl_bool ret; \
@@ -142,14 +142,14 @@ static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_
   if (!ret) *expected = old_value; \
   return ret; \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
-  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
+static inline chpl_bool atomic_compare_exchange_strong_ ## type(chpl_atomic_ ## type * obj, basetype * expected, basetype desired) { \
+  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, chpl_memory_order_seq_cst, chpl_memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succ, memory_order fail) { \
+static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(chpl_atomic_ ## type * obj, basetype * expected, basetype desired, chpl_memory_order succ, chpl_memory_order fail) { \
   return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, succ, fail); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
-  return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
+static inline chpl_bool atomic_compare_exchange_weak_ ## type(chpl_atomic_ ## type * obj, basetype * expected, basetype desired) { \
+  return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, chpl_memory_order_seq_cst, chpl_memory_order_seq_cst); \
 }
 
 
@@ -157,35 +157,35 @@ static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * 
 ////              START OF INTEGER ATOMIC FETCH OPERATIONS                ////
 //////////////////////////////////////////////////////////////////////////////
 #define DECLARE_ATOMICS_FETCH_OPS(type) \
-static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
+static inline type atomic_fetch_add_explicit_ ## type(chpl_atomic_ ## type * obj, type operand, chpl_memory_order order) { \
   return __sync_fetch_and_add(obj, operand); \
 } \
-static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand) { \
-  return atomic_fetch_add_explicit_ ## type(obj, operand, memory_order_seq_cst); \
+static inline type atomic_fetch_add_ ## type(chpl_atomic_ ## type * obj, type operand) { \
+  return atomic_fetch_add_explicit_ ## type(obj, operand, chpl_memory_order_seq_cst); \
 } \
-static inline type atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
+static inline type atomic_fetch_sub_explicit_ ## type(chpl_atomic_ ## type * obj, type operand, chpl_memory_order order) { \
   return __sync_fetch_and_sub(obj, operand); \
 } \
-static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand) { \
-  return atomic_fetch_sub_explicit_ ## type(obj, operand, memory_order_seq_cst); \
+static inline type atomic_fetch_sub_ ## type(chpl_atomic_ ## type * obj, type operand) { \
+  return atomic_fetch_sub_explicit_ ## type(obj, operand, chpl_memory_order_seq_cst); \
 } \
-static inline type atomic_fetch_or_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
+static inline type atomic_fetch_or_explicit_ ## type(chpl_atomic_ ## type * obj, type operand, chpl_memory_order order) { \
   return __sync_fetch_and_or(obj, operand); \
 } \
-static inline type atomic_fetch_or_ ## type(atomic_ ## type * obj, type operand) { \
-  return atomic_fetch_or_explicit_ ## type(obj, operand, memory_order_seq_cst); \
+static inline type atomic_fetch_or_ ## type(chpl_atomic_ ## type * obj, type operand) { \
+  return atomic_fetch_or_explicit_ ## type(obj, operand, chpl_memory_order_seq_cst); \
 } \
-static inline type atomic_fetch_and_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
+static inline type atomic_fetch_and_explicit_ ## type(chpl_atomic_ ## type * obj, type operand, chpl_memory_order order) { \
   return __sync_fetch_and_and(obj, operand); \
 } \
-static inline type atomic_fetch_and_ ## type(atomic_ ## type * obj, type operand) { \
-  return atomic_fetch_and_explicit_ ## type(obj, operand, memory_order_seq_cst); \
+static inline type atomic_fetch_and_ ## type(chpl_atomic_ ## type * obj, type operand) { \
+  return atomic_fetch_and_explicit_ ## type(obj, operand, chpl_memory_order_seq_cst); \
 } \
-static inline type atomic_fetch_xor_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
+static inline type atomic_fetch_xor_explicit_ ## type(chpl_atomic_ ## type * obj, type operand, chpl_memory_order order) { \
   return __sync_fetch_and_xor(obj, operand); \
 } \
-static inline type atomic_fetch_xor_ ## type(atomic_ ## type * obj, type operand) { \
-  return atomic_fetch_xor_explicit_ ## type(obj, operand, memory_order_seq_cst); \
+static inline type atomic_fetch_xor_ ## type(chpl_atomic_ ## type * obj, type operand) { \
+  return atomic_fetch_xor_explicit_ ## type(obj, operand, chpl_memory_order_seq_cst); \
 }
 
 
@@ -197,16 +197,16 @@ static inline type atomic_fetch_xor_ ## type(atomic_ ## type * obj, type operand
 // They must be implemented with atomic primitives to ensure consistent
 // visibility of the results.
 #define DECLARE_REAL_ATOMICS_BASE(type, uinttype) \
-static inline chpl_bool atomic_is_lock_free_ ## type(atomic_ ## type * obj) { \
+static inline chpl_bool atomic_is_lock_free_ ## type(chpl_atomic_ ## type * obj) { \
   return true; \
 } \
-static inline void atomic_init_ ## type(atomic_ ## type * obj, type value) { \
+static inline void atomic_init_ ## type(chpl_atomic_ ## type * obj, type value) { \
   assert(sizeof(type) == sizeof(uinttype)); \
   memcpy(obj, &value, sizeof(*obj)); \
 } \
-static inline void atomic_destroy_ ## type(atomic_ ## type * obj) { \
+static inline void atomic_destroy_ ## type(chpl_atomic_ ## type * obj) { \
 } \
-static inline void atomic_store_explicit_ ## type(atomic_ ## type * obj, type value, memory_order order) { \
+static inline void atomic_store_explicit_ ## type(chpl_atomic_ ## type * obj, type value, chpl_memory_order order) { \
   uinttype ret_uint = *obj; \
   uinttype val_uint; \
   uinttype old_uint; \
@@ -216,17 +216,17 @@ static inline void atomic_store_explicit_ ## type(atomic_ ## type * obj, type va
     ret_uint = __sync_val_compare_and_swap(obj, old_uint, val_uint); \
   } while (ret_uint != old_uint); \
 } \
-static inline void atomic_store_ ## type(atomic_ ## type * obj, type value) { \
-  atomic_store_explicit_ ## type(obj, value, memory_order_seq_cst); \
+static inline void atomic_store_ ## type(chpl_atomic_ ## type * obj, type value) { \
+  atomic_store_explicit_ ## type(obj, value, chpl_memory_order_seq_cst); \
 } \
-static inline type atomic_load_explicit_ ## type(atomic_ ## type * obj, memory_order order) { \
+static inline type atomic_load_explicit_ ## type(chpl_atomic_ ## type * obj, chpl_memory_order order) { \
   type ret; \
   uinttype ret_uint = __sync_val_compare_and_swap(obj, (uinttype)0, (uinttype)0); \
   memcpy(&ret, &ret_uint, sizeof(ret)); \
   return ret; \
 } \
-static inline type atomic_load_ ## type(atomic_ ## type * obj) { \
-  return atomic_load_explicit_ ## type(obj, memory_order_seq_cst); \
+static inline type atomic_load_ ## type(chpl_atomic_ ## type * obj) { \
+  return atomic_load_explicit_ ## type(obj, chpl_memory_order_seq_cst); \
 }
 
 
@@ -234,7 +234,7 @@ static inline type atomic_load_ ## type(atomic_ ## type * obj) { \
 ////                START OF REAL ATOMICS EXCHANGE OPS                    ////
 //////////////////////////////////////////////////////////////////////////////
 #define DECLARE_REAL_ATOMICS_EXCHANGE_OPS(type, uinttype) \
-static inline type atomic_exchange_explicit_ ## type(atomic_ ## type * obj, type value, memory_order order) { \
+static inline type atomic_exchange_explicit_ ## type(chpl_atomic_ ## type * obj, type value, chpl_memory_order order) { \
   type ret; \
   uinttype value_as_uint; \
   uinttype ret_as_uint = *obj; \
@@ -247,10 +247,10 @@ static inline type atomic_exchange_explicit_ ## type(atomic_ ## type * obj, type
   memcpy(&ret, &ret_as_uint, sizeof(ret)); \
   return ret; \
 } \
-static inline type atomic_exchange_ ## type(atomic_ ## type * obj, type value) { \
-  return atomic_exchange_explicit_ ## type(obj, value, memory_order_seq_cst); \
+static inline type atomic_exchange_ ## type(chpl_atomic_ ## type * obj, type value) { \
+  return atomic_exchange_explicit_ ## type(obj, value, chpl_memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, type * expected, type desired, memory_order succ, memory_order fail) { \
+static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(chpl_atomic_ ## type * obj, type * expected, type desired, chpl_memory_order succ, chpl_memory_order fail) { \
   uinttype old_value_as_uint; \
   uinttype old_expected_as_uint; \
   uinttype desired_as_uint; \
@@ -262,14 +262,14 @@ static inline chpl_bool atomic_compare_exchange_strong_explicit_ ## type(atomic_
   if (!ret) memcpy(expected, &old_value_as_uint, sizeof(old_value_as_uint)); \
   return ret; \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, type * expected, type desired) { \
-  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
+static inline chpl_bool atomic_compare_exchange_strong_ ## type(chpl_atomic_ ## type * obj, type * expected, type desired) { \
+  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, chpl_memory_order_seq_cst, chpl_memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, type * expected, type desired, memory_order succ, memory_order fail) { \
+static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(chpl_atomic_ ## type * obj, type * expected, type desired, chpl_memory_order succ, chpl_memory_order fail) { \
   return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, succ, fail); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, type * expected, type desired) { \
-  return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
+static inline chpl_bool atomic_compare_exchange_weak_ ## type(chpl_atomic_ ## type * obj, type * expected, type desired) { \
+  return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, chpl_memory_order_seq_cst, chpl_memory_order_seq_cst); \
 }
 
 
@@ -277,7 +277,7 @@ static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * 
 ////                   START OF REAL ATOMICS FETCH OPS                    ////
 //////////////////////////////////////////////////////////////////////////////
 #define DECLARE_REAL_ATOMICS_FETCH_OPS(type, uinttype) \
-static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
+static inline type atomic_fetch_add_explicit_ ## type(chpl_atomic_ ## type * obj, type operand, chpl_memory_order order) { \
   type ret; \
   type old; \
   type desired; \
@@ -294,10 +294,10 @@ static inline type atomic_fetch_add_explicit_ ## type(atomic_ ## type * obj, typ
   memcpy(&ret, &ret_as_uint, sizeof(ret)); \
   return ret; \
 } \
-static inline type atomic_fetch_add_ ## type(atomic_ ## type * obj, type operand) { \
-  return atomic_fetch_add_explicit_ ## type(obj, operand, memory_order_seq_cst); \
+static inline type atomic_fetch_add_ ## type(chpl_atomic_ ## type * obj, type operand) { \
+  return atomic_fetch_add_explicit_ ## type(obj, operand, chpl_memory_order_seq_cst); \
 } \
-static inline type atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, type operand, memory_order order) { \
+static inline type atomic_fetch_sub_explicit_ ## type(chpl_atomic_ ## type * obj, type operand, chpl_memory_order order) { \
   type ret; \
   type old; \
   type desired; \
@@ -314,8 +314,8 @@ static inline type atomic_fetch_sub_explicit_ ## type(atomic_ ## type * obj, typ
   memcpy(&ret, &ret_as_uint, sizeof(ret)); \
   return ret; \
 } \
-static inline type atomic_fetch_sub_ ## type(atomic_ ## type * obj, type operand) { \
-  return atomic_fetch_sub_explicit_ ## type(obj, operand, memory_order_seq_cst); \
+static inline type atomic_fetch_sub_ ## type(chpl_atomic_ ## type * obj, type operand) { \
+  return atomic_fetch_sub_explicit_ ## type(obj, operand, chpl_memory_order_seq_cst); \
 } \
 
 
@@ -363,23 +363,23 @@ DECLARE_REAL_ATOMICS(_real64, uint64_t);
 #undef DECLARE_REAL_ATOMICS
 
 
-static inline void atomic_init_spinlock_t(atomic_spinlock_t* lock) {
+static inline void atomic_init_spinlock_t(chpl_atomic_spinlock_t* lock) {
   *lock = 0;
 }
 
-static inline void atomic_destroy_spinlock_t(atomic_spinlock_t* lock) { }
+static inline void atomic_destroy_spinlock_t(chpl_atomic_spinlock_t* lock) { }
 
-static inline chpl_bool atomic_try_lock_spinlock_t(atomic_spinlock_t* lock) {
+static inline chpl_bool atomic_try_lock_spinlock_t(chpl_atomic_spinlock_t* lock) {
   return !*lock && !__sync_lock_test_and_set(lock, 1);
 }
 
-static inline void atomic_lock_spinlock_t(atomic_spinlock_t* lock) {
+static inline void atomic_lock_spinlock_t(chpl_atomic_spinlock_t* lock) {
   while(!atomic_try_lock_spinlock_t(lock)) {
     chpl_task_yield();
   }
 }
 
-static inline void atomic_unlock_spinlock_t(atomic_spinlock_t* lock) {
+static inline void atomic_unlock_spinlock_t(chpl_atomic_spinlock_t* lock) {
   __sync_lock_release(lock);
 }
 

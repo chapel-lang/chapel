@@ -30,6 +30,7 @@
       - The implementation relies on using either ``GCC`` style inline assembly
         (for x86-64) or a GCC/clang builtin, and so is restricted to a
         ``CHPL_TARGET_COMPILER`` value of ``gnu``, ``clang``, or ``llvm``.
+      - The implementation does not work with ``CHPL_ATOMICS=locks``.
 
   This module was
   inspired by the Interlocked Hash Table [#]_. It allows large critical

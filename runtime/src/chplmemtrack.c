@@ -185,9 +185,9 @@ void chpl_setMemFlags(void) {
     hashSizeIndex = 0;
     hashSize = hashSizes[hashSizeIndex];
     memTable = sys_calloc(hashSize, sizeof(memTableEntry*));
-    chpl_atomic_thread_fence(memory_order_release);
+    chpl_atomic_thread_fence(chpl_memory_order_release);
     chpl_memTrack = local_memTrack;
-    chpl_atomic_thread_fence(memory_order_release);
+    chpl_atomic_thread_fence(chpl_memory_order_release);
   }
 }
 
