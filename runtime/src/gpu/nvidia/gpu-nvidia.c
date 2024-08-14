@@ -90,7 +90,7 @@ static void switch_context(int dev_id) {
   }
 }
 
-static int get_module(void) {
+static CUmodule get_module(void) {
   CUdevice device;
   CUmodule module;
 
@@ -172,6 +172,9 @@ void chpl_gpu_impl_init(int* num_devices) {
   if (rc) {
     chpl_warning("unable to select GPUs for this locale, using them all",
                  0, 0);
+    for (int i = 0; i < numAllDevices; i++) {
+        addrs[i] = allAddrs[i];
+    }
     numAddrs = numAllDevices;
   }
 
