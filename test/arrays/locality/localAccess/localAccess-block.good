@@ -1,0 +1,1 @@
+localAccess-block.chpl:8: error: halt reached - Call to .localAccess() from locale 1 is illegal because it has no local array elements

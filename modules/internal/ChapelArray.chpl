@@ -847,7 +847,7 @@ module ChapelArray {
     pragma "insert line file info"
     pragma "always propagate line file info"
     @chpldoc.nodoc
-    proc checkAccess(indices, value) {
+    proc checkAccess(indices, value, ensureLocal=false) {
       if this.isRectangular() {
         if !value.dsiBoundsCheck(indices) {
           if rank == 1 {
@@ -879,6 +879,24 @@ module ChapelArray {
                  "note: index was (", istr, ") ",
                  "but array bounds are (", bstr, ")\n",
                  "note: ", dimstr);
+          }
+        }
+        if ensureLocal {
+          const locInds = this.localSubdomain();
+          if !locInds.contains(indices) {
+            if chpl_isNonDistributedArray() {
+              halt("Cannot use .localAccess() from locale ", here.id,
+                   " on a remote array stored on locale ", value.locale.id);
+            } else {
+              if locInds.size == 0 {
+                halt("Call to .localAccess() from locale ", here.id,
+                     " is illegal because it has no local array elements");
+              } else {
+                halt("Call to .localAccess(", indices, ") from locale ",
+                     here.id, " refers to remote data (local indices are: ",
+                     locInds, ")");
+              }
+            }
           }
         }
       }
@@ -1029,14 +1047,13 @@ module ChapelArray {
     {
       const value = _value;
       if boundsChecking then
-        checkAccess(i, value=value);
+        checkAccess(i, value=value, ensureLocal=true);
 
       if logAllArrEltAccess ||
         (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
         chpl_debug_writeln("local _array accessor was called");
 
       if chpl_isNonDistributedArray() {
-        if boundsChecking then ensureLocalAccess(value);
         return this(i);
       } else
         if this.isRectangular() || this.isSparse() then
@@ -1051,14 +1068,13 @@ module ChapelArray {
     {
       const value = _value;
       if boundsChecking then
-        checkAccess(i, value=value);
+        checkAccess(i, value=value, ensureLocal=true);
 
       if logAllArrEltAccess ||
         (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
         chpl_debug_writeln("local _array accessor was called");
 
       if chpl_isNonDistributedArray() {
-        if boundsChecking then ensureLocalAccess(value);
         return this(i);
       } else
         if this.isRectangular() || this.isSparse() then
@@ -1072,14 +1088,13 @@ module ChapelArray {
     {
       const value = _value;
       if boundsChecking then
-        checkAccess(i, value=value);
+        checkAccess(i, value=value, ensureLocal=true);
 
       if logAllArrEltAccess ||
         (logDistArrEltAccess && !chpl_isNonDistributedArray()) then
         chpl_debug_writeln("local _array accessor was called");
 
       if chpl_isNonDistributedArray() {
-        if boundsChecking then ensureLocalAccess(value);
         return this(i);
       } else
         if this.isRectangular() || this.isSparse() then
@@ -1941,12 +1956,6 @@ module ChapelArray {
     } else {
       return && reduce (this == that);
     }
-  }
-
-  private proc ensureLocalAccess(arrClass) {
-    if arrClass.locale != here then
-      halt("Cannot use .localAccess from locale ", here.id,
-           " on a remote array stored on locale ", arrClass.locale.id);
   }
 
   // The same as the built-in _cast, except accepts a param arg.

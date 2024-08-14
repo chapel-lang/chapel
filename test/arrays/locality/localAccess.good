@@ -1,1 +1,0 @@
-localAccess.chpl:8: error: halt reached - Cannot use .localAccess from locale 1 on a remote array stored on locale 0
