@@ -90,6 +90,18 @@ static void switch_context(int dev_id) {
   }
 }
 
+static int get_module(void) {
+  CUdevice device;
+  CUmodule module;
+
+  CUDA_CALL(cuCtxGetDevice(&device));
+  assert((((int) device) >= 0) && (((int) device) < numAllDevices));
+  int index = deviceIDToIndex[(int)device];
+  assert((index >= 0) && (index < numDevices));
+  module = chpl_gpu_cuda_modules[index];
+  return module;
+}
+
 extern c_nodeid_t chpl_nodeID;
 
 // we can put this logic in chpl-gpu.c. However, it needs to execute
@@ -106,33 +118,18 @@ static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
 
 void chpl_gpu_impl_load_global(const char* global_name, void** ptr,
                                size_t* size) {
-  CUdevice device;
-  CUmodule module;
-
-  CUDA_CALL(cuCtxGetDevice(&device));
-  assert((((int) device) >= 0) && (((int) device) < numAllDevices));
-  int index = deviceIDToIndex[(int)device];
-  assert((index >= 0) && (index < numDevices));
-  module = chpl_gpu_cuda_modules[index];
+  CUmodule module = get_module();
   CUDA_CALL(cuModuleGetGlobal((CUdeviceptr*)ptr, size, module, global_name));
 }
 
 void* chpl_gpu_impl_load_function(const char* kernel_name) {
   CUfunction function;
-  CUdevice device;
-  CUmodule module;
-
-  CUDA_CALL(cuCtxGetDevice(&device));
-  assert((((int) device) >= 0) && (((int) device) < numAllDevices));
-  int index = deviceIDToIndex[(int)device];
-  assert((index >= 0) && (index < numDevices));
-  module = chpl_gpu_cuda_modules[index];
+  CUmodule module = get_module();
   CUDA_CALL(cuModuleGetFunction(&function, module, kernel_name));
   assert(function);
 
   return (void*)function;
 }
-
 
 void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
   switch_context(dev_id);
