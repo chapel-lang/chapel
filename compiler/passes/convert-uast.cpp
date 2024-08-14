@@ -4029,11 +4029,18 @@ struct Converter {
           auto prevTypeExpr = remoteState->prevTypeExpr;
           prevTypeExpr->replace(new SymExpr(newTypeTemp));
 
-          DefExpr* tmpDef = new DefExpr(newTypeTemp, prevTypeExpr);
-          block->insertAtTail(tmpDef); // TODO: _not_ the right place for this
+          // Create the 'def point' (constructor adds it to newTypeTemp->defPoint)
+          std::ignore = new DefExpr(newTypeTemp, prevTypeExpr);
         }
-        if (remoteState->typeTemp) {
-          typeExpr = new SymExpr(remoteState->typeTemp);
+        if (auto typeTemp = remoteState->typeTemp) {
+          // If the type symbol was defined by a previously-visited variable,
+          // and since we visit in reverse, its current definition will be
+          // after us, which is not good. Move it up to before this symbol.
+          auto typeDefPoint = typeTemp->defPoint;
+          if (typeDefPoint->list) typeDefPoint->remove();
+          block->insertAtHead(typeDefPoint);
+
+          typeExpr = new SymExpr(typeTemp);
         }
         if (remoteState->prevInitExpr) {
           auto prevInitExpr = remoteState->prevInitExpr;
