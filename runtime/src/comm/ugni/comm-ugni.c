@@ -4372,12 +4372,12 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
 #define CPU_INT_ARITH_AMO(_o, _t)                                       \
         do {                                                            \
           if (res == NULL) {                                            \
-            (void) atomic_fetch_##_o##_##_t((atomic_##_t*) obj,         \
+            (void) atomic_fetch_##_o##_##_t((chpl_atomic_##_t*) obj,         \
                                             *(_t*) opnd1);              \
           }                                                             \
           else {                                                        \
             _t my_res;                                                  \
-            my_res = atomic_fetch_##_o##_##_t((atomic_##_t*) obj,       \
+            my_res = atomic_fetch_##_o##_##_t((chpl_atomic_##_t*) obj,       \
                                               *(_t*) opnd1);            \
             memcpy(res, &my_res, sizeof(my_res));                       \
             res_size = sizeof(my_res);                                  \

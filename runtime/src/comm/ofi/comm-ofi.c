@@ -7766,10 +7766,10 @@ void doCpuAMO(void* obj,
 #define CPU_INT_ARITH_AMO(_o, _t, _m)                                   \
   do {                                                                  \
     if (result == NULL) {                                               \
-      (void) atomic_fetch_##_o##_##_t((atomic_##_t*) obj,               \
+      (void) atomic_fetch_##_o##_##_t((chpl_atomic_##_t*) obj,               \
                                       myOpnd->_m);                      \
     } else {                                                            \
-      *(_t*) result = atomic_fetch_##_o##_##_t((atomic_##_t*) obj,      \
+      *(_t*) result = atomic_fetch_##_o##_##_t((chpl_atomic_##_t*) obj,      \
                                                myOpnd->_m);             \
     }                                                                   \
   } while (0)
