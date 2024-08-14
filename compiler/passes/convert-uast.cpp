@@ -59,6 +59,7 @@
 #include "chpl/util/string-escapes.h"
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/util/assertions.h"
+#include "stmt.h"
 
 #include "llvm/ADT/SmallPtrSet.h"
 
@@ -2636,12 +2637,8 @@ struct Converter {
     BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
 
 
-    RemoteVarDesugaringState st;
-    RemoteVarDesugaringState* desugaringState = nullptr;
-    if (node->destination()) {
-      desugaringState = &st;
-      st.localeTemp = newTemp("chpl__localeTemp");;
-    }
+    MultiDeclState desugaringState ;
+    if (node->destination()) desugaringState.localeTemp = newTemp("chpl__localeTemp");
 
     // Iterate in reverse just in case this is a remote variable declaration
     // and we need to mimic the desugaring of multi-decls.
@@ -2659,7 +2656,7 @@ struct Converter {
 
         // Do not use the linkage name since multi-decls cannot be renamed.
         const bool useLinkageName = false;
-        auto convAll = convertVariable(var, useLinkageName, desugaringState);
+        auto convAll = convertVariable(var, useLinkageName, &desugaringState);
         conv = convAll.entireExpr;
 
         DefExpr* defExpr = convAll.variableDef;
@@ -2669,7 +2666,8 @@ struct Converter {
 
       // Otherwise convert in a generic fashion.
       } else {
-        INT_ASSERT(!desugaringState && "only variables are allowed in remote multi-declarations");
+        INT_ASSERT(!desugaringState.localeTemp &&
+                   "only variables are allowed in remote multi-declarations");
         conv = convertAST(decl);
       }
 
@@ -2679,7 +2677,7 @@ struct Converter {
 
     if (auto dest = node->destination()) {
       auto destExpr = convertAST(dest);
-      ret->insertAtHead(new DefExpr(desugaringState->localeTemp, destExpr));
+      ret->insertAtHead(new DefExpr(desugaringState.localeTemp, destExpr));
     }
 
     INT_ASSERT(!inTupleDecl);
@@ -3865,15 +3863,43 @@ struct Converter {
     }
   };
 
-  // State required to mimic the desugaring of regular multi-decls when lowering
-  // remote variables. See cleanup.cpp's backPropagateInFunction.
-  struct RemoteVarDesugaringState {
-    // The result of computing the target locale, stored in a temp.
-    Symbol* localeTemp;
+  // State required to mimic the desugaring of multi-declarations into
+  // regular ones.
+  struct MultiDeclState {
+    // The result of computing the target locale, stored in a temp, used
+    // for remote variables.
+    Symbol* localeTemp = nullptr;
 
     Symbol* typeTemp = nullptr;
+    Symbol* prev = nullptr;
     Expr* prevTypeExpr = nullptr;
     Expr* prevInitExpr = nullptr;
+
+    void reset() {
+      typeTemp = nullptr;
+      prev = nullptr;
+      prevTypeExpr = nullptr;
+      prevInitExpr = nullptr;
+    }
+
+    // For remote variables, these helpers don't modify the def point, since
+    // def point is quite different.
+
+    void replaceTypeExpr(Expr* newExpr) {
+      if (localeTemp) {
+        prevTypeExpr->replace(newExpr);
+      } else {
+        prev->defPoint->exprType = newExpr;
+      }
+    }
+
+    void replaceInitExpr(Expr* newExpr) {
+      if (localeTemp) {
+        prevInitExpr->replace(newExpr);
+      } else {
+        prev->defPoint->init = newExpr;
+      }
+    }
   };
 
   // Returns a DefExpr that has not yet been inserted into the tree.
@@ -3881,7 +3907,7 @@ struct Converter {
   // of the outer multiDecl.
   VariableDefInfo convertVariable(const uast::Variable* node,
                            bool useLinkageName,
-                           RemoteVarDesugaringState* remoteState = nullptr) {
+                           MultiDeclState* multiState = nullptr) {
     astlocMarker markAstLoc(node->id());
 
     bool isStatic = false;
@@ -3901,7 +3927,9 @@ struct Converter {
       }
     }
 
-    bool isRemote = node->destination() != nullptr || remoteState != nullptr;
+    bool isRemote = node->destination() != nullptr ||
+                    (multiState != nullptr && multiState->localeTemp != nullptr);
+    auto block = (isRemote || multiState) ? new BlockStmt(BLOCK_SCOPELESS) : nullptr;
 
     auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str()));
     const bool isTypeVar = node->kind() == uast::Variable::TYPE;
@@ -4010,48 +4038,53 @@ struct Converter {
       initExpr = convertExprOrNull(node->initExpression());
     }
 
+    if ((!typeExpr && !initExpr) && multiState) {
+      // Need to draw type expr and init expr from previous variable.
+      CHPL_ASSERT(block);
+
+      if (!multiState->typeTemp && multiState->prevTypeExpr) {
+        auto newTypeTemp = newTemp("type_tmp");
+        newTypeTemp->addFlag(FLAG_TYPE_VARIABLE);
+        multiState->typeTemp = newTypeTemp;
+
+        auto prevTypeExpr = multiState->prevTypeExpr;
+        multiState->replaceTypeExpr(new SymExpr(newTypeTemp));
+
+        // Create the 'def point' (constructor adds it to newTypeTemp->defPoint)
+        std::ignore = new DefExpr(newTypeTemp, prevTypeExpr);
+      }
+      if (auto typeTemp = multiState->typeTemp) {
+        // If the type symbol was defined by a previously-visited variable,
+        // and since we visit in reverse, its current definition will be
+        // after us, which is not good. Move it up to before this symbol.
+        auto typeDefPoint = typeTemp->defPoint;
+        if (typeDefPoint->list) typeDefPoint->remove();
+        block->insertAtHead(typeDefPoint);
+
+        typeExpr = new SymExpr(typeTemp);
+      }
+      if (multiState->prevInitExpr) {
+        auto prevInitExpr = multiState->prevInitExpr;
+        multiState->replaceInitExpr(new CallExpr("chpl__readXX", new SymExpr(varSym)));
+        initExpr = prevInitExpr;
+      }
+    }
+
+    if (multiState) {
+      CHPL_ASSERT(block);
+      multiState->prev = varSym;
+      multiState->prevTypeExpr = typeExpr;
+      multiState->prevInitExpr = initExpr;
+      multiState->typeTemp = nullptr;
+    }
+
     DefExpr* def = nullptr;
     VariableDefInfo ret;
     if (isRemote) {
-      auto block = new BlockStmt(BLOCK_SCOPELESS);
+      CHPL_ASSERT(block);
       auto wrapper = new VarSymbol(astr("chpl_wrapper_", varSym->name));
       auto wrapperCall = new CallExpr("chpl__buildRemoteWrapper");
-      wrapperCall->insertAtTail(destinationExpr ? destinationExpr : new SymExpr(remoteState->localeTemp));
-
-      if ((!typeExpr && !initExpr) && remoteState) {
-        // Need to draw type expr and init expr from previous variable.
-
-        if (!remoteState->typeTemp && remoteState->prevTypeExpr) {
-          auto newTypeTemp = newTemp("type_tmp");
-          newTypeTemp->addFlag(FLAG_TYPE_VARIABLE);
-          remoteState->typeTemp = newTypeTemp;
-
-          auto prevTypeExpr = remoteState->prevTypeExpr;
-          prevTypeExpr->replace(new SymExpr(newTypeTemp));
-
-          // Create the 'def point' (constructor adds it to newTypeTemp->defPoint)
-          std::ignore = new DefExpr(newTypeTemp, prevTypeExpr);
-        }
-        if (auto typeTemp = remoteState->typeTemp) {
-          // If the type symbol was defined by a previously-visited variable,
-          // and since we visit in reverse, its current definition will be
-          // after us, which is not good. Move it up to before this symbol.
-          auto typeDefPoint = typeTemp->defPoint;
-          if (typeDefPoint->list) typeDefPoint->remove();
-          block->insertAtHead(typeDefPoint);
-
-          typeExpr = new SymExpr(typeTemp);
-        }
-        if (remoteState->prevInitExpr) {
-          auto prevInitExpr = remoteState->prevInitExpr;
-          prevInitExpr->replace(new CallExpr("chpl__readXX", new SymExpr(varSym)));
-          initExpr = prevInitExpr;
-        }
-      } else if (remoteState) {
-        remoteState->prevTypeExpr = typeExpr;
-        remoteState->prevInitExpr = initExpr;
-        remoteState->typeTemp = nullptr;
-      }
+      wrapperCall->insertAtTail(destinationExpr ? destinationExpr : new SymExpr(multiState->localeTemp));
 
       if (typeExpr) wrapperCall->insertAtTail(typeExpr);
       if (initExpr) wrapperCall->insertAtTail(new CallExpr(PRIM_CREATE_THUNK, initExpr));
@@ -4066,7 +4099,13 @@ struct Converter {
       ret = VariableDefInfo { def, block };
     } else {
       def = new DefExpr(varSym, initExpr, typeExpr);
-      ret = VariableDefInfo { def, /* entireExpr */ def };
+      Expr* entireExpr = def;
+      if (block) {
+        entireExpr = block;
+        block->insertAtTail(def);
+      }
+
+      ret = VariableDefInfo { def, entireExpr };
     }
 
     auto loopFlags = LoopAttributeInfo::fromVariableDeclaration(context, node);
