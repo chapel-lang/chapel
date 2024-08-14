@@ -148,7 +148,6 @@ module Zarr {
       throw new IllegalArgumentError("Unsupported compressor: %s.".format(compressor) +
                                      " Supported compressors are: blosclz, lz4, lz4hc, zlib, and zstd.");
     }
-      
   }
 
   private proc buildChunkPath(directoryPath: string, delimiter: string, const chunkIndex: ?dimCount * int) {
