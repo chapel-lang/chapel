@@ -33,15 +33,13 @@
 #include "../common/cuda-utils.h"
 #include "../common/cuda-shared.h"
 #include "chpl-env-gen.h"
+#include "chpl-topo.h"
 
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <assert.h>
 #include <stdbool.h>
 
-#include "hwloc.h"
-#include "hwloc/cuda.h"
-#include "chpl-topo.h"
 
 // this is compiler-generated
 extern const char* chpl_gpuBinary;
@@ -151,28 +149,21 @@ void chpl_gpu_impl_init(int* num_devices) {
   CUdevice *allDevices = chpl_malloc(sizeof(*allDevices) * numAllDevices);
   chpl_topo_pci_addr_t *allAddrs = chpl_malloc(sizeof(*allAddrs) * numAllDevices);
 
-  hwloc_topology_t topology = chpl_topo_getHwlocTopology();
-
   // Find all the GPUs and get their PCI bus addresses.
 
-  int rc;
   for (int i=0 ; i < numAllDevices; i++) {
     CUDA_CALL(cuDeviceGet(&allDevices[i], i));
     int domain, bus, device;
-    rc = hwloc_cuda_get_device_pci_ids(topology, allDevices[i], &domain,
-                                           &bus, &device);
-    if (rc == 0) {
-      allAddrs[i].domain = (uint8_t) domain;
-      allAddrs[i].bus = (uint8_t) bus;
-      allAddrs[i].device = (uint8_t) device;
-      allAddrs[i].function = 0;
-    } else {
-      char msg[200];
-      snprintf(msg, sizeof(msg),
-          "hwloc_cuda_get_device_pci_ids on device %d failed: %d\n", i, rc);
-      chpl_warning(msg, 0, 0);
-      break;
-    }
+    CUDA_CALL(cuDeviceGetAttribute(&domain, CU_DEVICE_ATTRIBUTE_PCI_DOMAIN_ID,
+                                   allDevices[i]));
+    CUDA_CALL(cuDeviceGetAttribute(&bus, CU_DEVICE_ATTRIBUTE_PCI_BUS_ID,
+                                   allDevices[i]));
+    CUDA_CALL(cuDeviceGetAttribute(&device, CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID,
+                                   allDevices[i]));
+    allAddrs[i].domain = (uint8_t) domain;
+    allAddrs[i].bus = (uint8_t) bus;
+    allAddrs[i].device = (uint8_t) device;
+    allAddrs[i].function = 0;
   }
 
   // Call the topo module to determine which GPUs we should use.
@@ -180,9 +171,7 @@ void chpl_gpu_impl_init(int* num_devices) {
   int numAddrs = numAllDevices;
   chpl_topo_pci_addr_t *addrs = chpl_malloc(sizeof(*addrs) * numAddrs);
 
-  if (rc == 0) {
-    rc = chpl_topo_selectMyDevices(allAddrs, addrs, &numAddrs);
-  }
+  int rc = chpl_topo_selectMyDevices(allAddrs, addrs, &numAddrs);
   if (rc) {
     chpl_warning("unable to select GPUs for this locale, using them all",
                  0, 0);
