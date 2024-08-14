@@ -41,14 +41,19 @@ record myCmp {
 }
 use Random;
 var arr: [1..1000] int;
+
+// there should be 9 deprecations here
 fillRandom(arr);
-
-// there should be 6 deprecations here
+writeln("isSorted before ", isSorted(arr, comparator=new myCmp()));
 sort(arr, comparator=new myCmp());
-writeln("isSorted ", isSorted(arr, comparator=new myCmp()));
+writeln("isSorted after ", isSorted(arr, comparator=new myCmp()));
 
+fillRandom(arr);
+writeln("isSorted before ", isSorted(arr, comparator=new ReverseComparator(new myCmp())));
 sort(arr, comparator=new ReverseComparator(new myCmp()));
-writeln("isSorted ", isSorted(arr, comparator=new ReverseComparator(new myCmp())));
+writeln("isSorted after ", isSorted(arr, comparator=new ReverseComparator(new myCmp())));
 
-var temp = sorted(arr, comparator=new MyCmp());
-writeln("isSorted ", isSorted(temp, comparator=new myCmp()));
+fillRandom(arr);
+writeln("isSorted before ", isSorted(arr, comparator=new myCmp()));
+var temp = sorted(arr, comparator=new myCmp());
+writeln("isSorted after ", isSorted(temp, comparator=new myCmp()));

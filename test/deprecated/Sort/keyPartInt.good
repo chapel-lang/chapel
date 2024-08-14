@@ -1,0 +1,44 @@
+keyPartInt.chpl:15: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:16: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:18: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:20: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:22: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:23: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:25: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:27: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:15: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:16: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:18: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:20: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:22: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:23: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:25: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:27: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:47: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
+keyPartInt.chpl:49: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
+keyPartInt.chpl:57: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
+keyPartInt.chpl:59: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
+Comparing with DefaultComparator
+(0, 1)
+(0, 2)
+(0, 13835058055282163712)
+(0, 13835058055282163712)
+(0, 4)
+(0, 13835058055282163712)
+(0, 102)
+(0, 98)
+Comparing with ReverseComparator
+(0, -2)
+(0, 18446744073709551613)
+(0, 4611686018427387903)
+(0, 4611686018427387903)
+(0, -5)
+(0, 4611686018427387903)
+(0, 153)
+(0, 157)
+isSorted before false
+isSorted after true
+isSorted before false
+isSorted after true
+isSorted before false
+isSorted after true
