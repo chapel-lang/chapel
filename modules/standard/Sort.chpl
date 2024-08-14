@@ -2233,8 +2233,8 @@ module TwoArrayDistributedPartitioning {
   private param debugDist = false;
 
   record TwoArrayDistSortPerBucketTaskStartComparator {
-    proc key(arg: TwoArrayDistSortPerBucketTask) {
-      return arg.start;
+    proc key(elt: TwoArrayDistSortPerBucketTask) {
+      return elt.start;
     }
   }
 
