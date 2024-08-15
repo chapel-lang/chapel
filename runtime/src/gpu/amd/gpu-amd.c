@@ -177,7 +177,12 @@ bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
     }
   }
 
+#if ROCM_VERSION_MAJOR >= 6
+  // TODO: is this right?
+  return res.type != hipMemoryTypeUnregistered;
+#else
   return true;
+#endif
 }
 
 bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
