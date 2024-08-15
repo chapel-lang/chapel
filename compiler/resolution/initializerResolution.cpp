@@ -156,7 +156,7 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
   SymbolMap initToNewMap;
   ArgSymbol* allocatorFormal = nullptr;
   if (isClass(type) && allocator != nullptr) {
-    allocatorFormal = new ArgSymbol(INTENT_REF, "allocator_formal", allocator->typeInfo());
+    allocatorFormal = new ArgSymbol(INTENT_BLANK, "allocator_formal", allocator->typeInfo());
     fn->insertFormalAtTail(allocatorFormal);
   }
   for_formals(formal, initFn) {

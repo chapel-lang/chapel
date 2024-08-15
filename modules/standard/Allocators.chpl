@@ -54,10 +54,15 @@ module Allocators {
 
   /* See docs for :proc:`~Allocators.newWithAllocator` */
   @chpldoc.nodoc
-  inline proc newWithAllocator(ref alloc, type T): T {
+  inline proc newWithAllocator(ref alloc: record, type T): T {
     checkInterfaceHelper(alloc);
     newTypeCheckHelper(T);
-
+    return __primitive("new with allocator", alloc, T);
+  }
+  @chpldoc.nodoc
+  inline proc newWithAllocator(const ref alloc: class, type T): T {
+    checkInterfaceHelper(alloc);
+    newTypeCheckHelper(T);
     return __primitive("new with allocator", alloc, T);
   }
 
@@ -74,7 +79,14 @@ module Allocators {
        var x = new unmanaged MyClass(1);
        var x = newWithAllocator(allocator, unmanaged MyClass, 1);
   */
-  inline proc newWithAllocator(ref alloc, type T, args...): T {
+  inline proc newWithAllocator(ref alloc: record, type T, args...): T {
+    checkInterfaceHelper(alloc);
+    newTypeCheckHelper(T);
+
+    return __primitive("new with allocator", alloc, T, (...args));
+  }
+
+  inline proc newWithAllocator(const ref alloc: class, type T, args...): T {
     checkInterfaceHelper(alloc);
     newTypeCheckHelper(T);
 
@@ -84,7 +96,22 @@ module Allocators {
   /*
     Delete the ``objects`` by invoking the ``deallocate`` method of the given ``allocator``. This is a drop-in replacement for ``delete``.
   */
-  inline proc deleteWithAllocator(ref alloc, objects...?k) {
+  inline proc deleteWithAllocator(ref alloc: record, objects...?k) {
+    checkInterfaceHelper(alloc);
+    for param i in 0..#k {
+      newTypeCheckHelper(objects(i).type);
+      if compiledForSingleLocale() {
+        var p = c_ptrTo(objects(i));
+        alloc.deallocate(p);
+      } else {
+        on objects(i) {
+          var p = c_ptrTo(objects(i));
+          alloc.deallocate(p);
+        }
+      }
+    }
+  }
+  inline proc deleteWithAllocator(const ref alloc: class, objects...?k) {
     checkInterfaceHelper(alloc);
     for param i in 0..#k {
       newTypeCheckHelper(objects(i).type);
@@ -112,34 +139,35 @@ module Allocators {
     }
   }
 
-  // todo rename me
-  record malloc: allocator {
-    proc ref allocate(n: int): c_ptr(void) {
+  /*
+    A simple allocator that acts as a wrapper around the CTypes allocator.
+  */
+  class mallocWrapper: allocator {
+    proc allocate(n: int): c_ptr(void) {
       return CTypes.allocate(int(8), n.safeCast(c_size_t));
     }
-    proc ref deallocate(p: c_ptr(void)) {
+    proc deallocate(p: c_ptr(void)) {
       CTypes.deallocate(p);
     }
   }
 
-  record bumpPtrMemPool: allocator {
+  class bumpPtrMemPool: allocator {
     param parSafe: bool = false;
+    param alignment: int = 16;
     var size: int(64);
     var basePtr: c_ptr(int(8));
     var ptr: c_ptr(int(8));
     var lock_ = if parSafe then new _LockWrapper() else none;
 
-    @chpldoc.nodoc
-    proc init(param parSafe: bool = false) {
+    proc init(size: int(64), param parSafe: bool = false, param alignment: int = 16) {
       this.parSafe = parSafe;
-    }
+      this.alignment = alignment;
+      if this.alignment < 0 then compilerError("alignment must be non-negative");
 
-    proc init(size: int(64), param parSafe: bool = false) {
-      this.parSafe = parSafe;
       this.size = size;
       if boundsChecking {
         if this.size <= 0 {
-          halt("bumpPtrMemPool: size must be positive");
+          halt("size must be positive");
         }
       }
       basePtr = CTypes.allocate(int(8), this.size.safeCast(c_size_t));
@@ -159,19 +187,20 @@ module Allocators {
     inline proc _unlock()
       do if parSafe then lock_.unlock();
 
-    proc ref allocate(n: int): c_ptr(void) {
+    proc allocate(n: int): c_ptr(void) {
       _lock();
       if boundsChecking {
         if n <= 0 {
-          halt("bumpPtrMemPool.allocate: n must be positive");
+          halt("n must be positive");
         }
       }
 
-      // TODO: should this be uncommented? Maybe it should be a separate allocator
-      // ptr = alignup(ptr, 16): c_ptr(int(8));
+      if alignment > 0 then
+        ptr = alignup(ptr, 16): c_ptr(int(8));
+
       if boundsChecking {
         if (ptr + n):c_intptr > (basePtr + size):c_intptr {
-          halt("bumpPtrMemPool.allocate: out of memory");
+          halt("out of memory");
         }
       }
 
@@ -181,7 +210,7 @@ module Allocators {
       _unlock();
       return p;
     }
-    proc ref deallocate(p: c_ptr(void)) {
+    proc deallocate(p: c_ptr(void)) {
       // there is currently no API to call this method
       // no-op
     }
