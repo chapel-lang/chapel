@@ -2782,7 +2782,7 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
       if (auto var = lastDecl->toVariable()) {
         var->attachDestination(std::move(destination));
       } else {
-        error(locEverything, "can only apply 'on' to (multi)variable declarations");
+        error(locEverything, "only (multi)variable declarations can target a specific locale");
       }
     }
   } else {
