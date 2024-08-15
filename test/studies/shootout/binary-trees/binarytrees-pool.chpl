@@ -11,7 +11,7 @@ config const n = 10;         // the maximum tree depth
 config const globalPoolSize = 2 ** 32;
 config const localPoolSize = 2 ** 32;
 
-var globalPool = new bumpPtrMemPool(globalPoolSize, parSafe=false);
+var globalPool = new bumpPtrMemPool(globalPoolSize, parSafe=false, alignment=0);
 
 proc main() {
   const minDepth = 4,                      // the shallowest tree
@@ -24,14 +24,14 @@ proc main() {
   // Create the short-lived "stretch" tree, checksum it, and print its stats.
   //
   {
-    const strTree = __primitive("new with allocator", globalPool, unmanaged Tree, strDepth, globalPool);
+    const strTree = newWithAllocator(globalPool, unmanaged Tree, strDepth, globalPool);
     writeln("stretch tree of depth ", strDepth, "\t check: ", strTree.sum());
   }
 
   //
   // Build the long-lived tree.
   //
-  const llTree = __primitive("new with allocator", globalPool, unmanaged Tree, maxDepth, globalPool);
+  const llTree = newWithAllocator(globalPool, unmanaged Tree, maxDepth, globalPool);
 
   //
   // Iterate over the depths. At each depth, create the required trees in
@@ -43,8 +43,10 @@ proc main() {
 
     forall i in 1..iterations
       with (+ reduce sum,
-            var localPool = new bumpPtrMemPool(localPoolSize, parSafe=false)) {
-      const t = __primitive("new with allocator", localPool, unmanaged Tree, depth, localPool);
+            var localPool = new bumpPtrMemPool(localPoolSize,
+                                               parSafe=false,
+                                               alignment=0)) {
+      const t = newWithAllocator(localPool, unmanaged Tree, depth, localPool);
       sum += t.sum();
     }
     stats[depth] = (iterations, sum);
@@ -72,11 +74,11 @@ class Tree {
   //
   // A Tree-building initializer
   //
-  proc init(depth, ref pool) {
+  proc init(depth, pool) {
     if depth > 0 {
       const d = depth - 1;
-      left  = __primitive("new with allocator", pool, unmanaged Tree, d, pool);
-      right = __primitive("new with allocator", pool, unmanaged Tree, d, pool);
+      left  = newWithAllocator(pool, unmanaged Tree, d, pool);
+      right = newWithAllocator(pool, unmanaged Tree, d, pool);
     }
   }
 
