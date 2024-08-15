@@ -284,19 +284,17 @@ def _validate_rocm_llvm_version_impl(gpu: gpu_type):
 
     if major_version in ('4', '5') and chpl_llvm.get() == 'bundled':
         error("Cannot target AMD GPUs with CHPL_LLVM=bundled")
-    elif major_version == '6' and chpl_llvm.get() != 'bundled':
+    elif major_version == '6' and chpl_llvm.get() != 'bundled' and os.environ.get("CHPL_LLVM_65188_PATCH", "0") != "1":
         # once https://github.com/llvm/llvm-project/issues/65188 is resolved,
-        # ths branch check can removed
-        # assert(int(chpl_llvm.get_llvm_version()) >= 18)
+        # this check can removed
+        # 'CHPL_LLVM_65188_PATCH' is a temporary escape hatch to enable system
+        # llvm with rocm 6.x if the user knows what they are doing
         error("Cannot target AMD GPUs with ROCm 6.x without CHPL_LLVM=bundled")
     elif (
         major_version == "6"
         and chpl_llvm.get() == "system"
         and int(chpl_llvm.get_llvm_version()) < 18
     ):
-        # this branch will never be hit, because we only allow
-        # CHPL_LLVM=bundled which is 18+
-        # but this will be the correct check once the above issue is resolved
         error("Cannot target AMD GPUs with ROCm 6.x without LLVM 18+")
     elif not validateLlvmBuiltForTgt(gpu.llvm_target):
         _reportMissingGpuReq(
