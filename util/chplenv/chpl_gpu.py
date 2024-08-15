@@ -397,7 +397,7 @@ def _validate_rocm_version_impl():
     MIN_REQ_VERSION = "4"
     MAX_REQ_VERSION = "5.5"
     MIN_ROCM6_REQ_VERSION = "6"
-    MAX_ROCM6_REQ_VERSION = "6.2"
+    MAX_ROCM6_REQ_VERSION = "6.3"
 
     rocm_version = get_sdk_version()
 
