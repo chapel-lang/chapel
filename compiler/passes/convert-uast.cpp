@@ -2644,9 +2644,12 @@ struct Converter {
     // different code; don't do redundant work here.
     bool isField = false;
     if (auto parent = parsing::parentAst(context, node)) {
-      // post-parse checks should rule this out
-      CHPL_ASSERT(!node->destination());
-      isField = parent->isAggregateDecl();
+      if (parent->isAggregateDecl()) {
+        isField = parent->isAggregateDecl();
+
+        // post-parse checks should rule this out
+        CHPL_ASSERT(!node->destination());
+      }
     }
 
     // Iterate in reverse just in case this is a remote variable declaration
@@ -3893,7 +3896,8 @@ struct Converter {
     }
 
     // For remote variables, these helpers don't modify the def point, since
-    // def point is quite different.
+    // def point is quite different (it's an invocation of a remote variable
+    // wrapper builder with extra arguments).
 
     void replaceTypeExpr(Expr* newExpr) {
       if (localeTemp) {
@@ -3901,6 +3905,7 @@ struct Converter {
       } else {
         prev->defPoint->exprType = newExpr;
       }
+      prevTypeExpr = nullptr;
     }
 
     void replaceInitExpr(Expr* newExpr) {
@@ -4064,6 +4069,10 @@ struct Converter {
         std::ignore = new DefExpr(newTypeTemp, prevTypeExpr);
       }
       if (auto typeTemp = multiState->typeTemp) {
+        // Once we create the type temp we clear the type expressions so that
+        // there's no risk of copying it.
+        CHPL_ASSERT(multiState->prevTypeExpr == nullptr);
+
         // If the type symbol was defined by a previously-visited variable,
         // and since we visit in reverse, its current definition will be
         // after us, which is not good. Move it up to before this symbol.
@@ -4073,19 +4082,26 @@ struct Converter {
 
         typeExpr = new SymExpr(typeTemp);
       }
-      if (multiState->prevInitExpr) {
-        auto prevInitExpr = multiState->prevInitExpr;
-        multiState->replaceInitExpr(new CallExpr("chpl__readXX", new SymExpr(varSym)));
+      if (auto prevInitExpr = multiState->prevInitExpr) {
+        Expr* replaceWith;
+        if (prevInitExpr->isNoInitExpr()) {
+          replaceWith = prevInitExpr->copy();
+        } else if (typeExpr) {
+          replaceWith = new CallExpr("chpl__readXX", new SymExpr(varSym));
+        } else {
+          replaceWith = new SymExpr(varSym);
+        }
+        multiState->replaceInitExpr(replaceWith);
         initExpr = prevInitExpr;
       }
-    }
 
-    if (multiState) {
-      CHPL_ASSERT(block);
       multiState->prev = varSym;
+    } else if (multiState) {
+      CHPL_ASSERT(block);
       multiState->prevTypeExpr = typeExpr;
       multiState->prevInitExpr = initExpr;
       multiState->typeTemp = nullptr;
+      multiState->prev = varSym;
     }
 
     DefExpr* def = nullptr;
