@@ -37,9 +37,8 @@ Chapel Documentation
 
 
 
-Index
------
+Indexes
+-------
 
+* :ref:`Chapel Module Index <chpl-modindex>`
 * :ref:`Chapel Online Documentation Index <genindex>`
-
-.. COMMENT: clean this up before exposing:: * :chpl:chplref:`chplmodindex`
