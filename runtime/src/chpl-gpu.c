@@ -1205,17 +1205,17 @@ void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
     memmove(dst, src, n);
   }
   else {
-    bool dst_on_device = chpl_gpu_impl_is_device_ptr(dst);
-    bool src_on_device = chpl_gpu_impl_is_device_ptr(src);
+    bool dst_on_host = chpl_gpu_impl_is_host_ptr(dst);
+    bool src_on_host = chpl_gpu_impl_is_host_ptr(src);
 
-    if (dst_on_device && src_on_device) {
+    if (!dst_on_host && !src_on_host) {
       chpl_gpu_copy_device_to_device(dst_subloc, dst, src_subloc, src, n,
                                      commID, ln, fn);
     }
-    else if (dst_on_device) {
+    else if (!dst_on_host) {
       chpl_gpu_copy_host_to_device(dst_subloc, dst, src, n, commID, ln, fn);
     }
-    else if (src_on_device) {
+    else if (!src_on_host) {
       chpl_gpu_copy_device_to_host(dst, src_subloc, src, n, commID, ln, fn);
     }
     else {
@@ -1224,7 +1224,7 @@ void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
       // them have non-negative sublocale. However, not everything created on a
       // GPU sublocale is allocated on the GPU memory. Think of this as a copy
       // between two ints that happen to hav been created on a GPU sublocale.
-      assert(!dst_on_device && !src_on_device);
+      assert(dst_on_host && src_on_host);
       memmove(dst, src, n);
     }
   }

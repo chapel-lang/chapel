@@ -162,8 +162,9 @@ void chpl_gpu_impl_init(int* num_devices) {
 }
 
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
+  if (!ptr) return false;
   hipPointerAttribute_t res;
-  hipError_t ret_val = hipPointerGetAttributes(&res, ptr);
+  hipError_t ret_val = hipPointerGetAttributes(&res, (hipDeviceptr_t)ptr);
 
   if (ret_val != hipSuccess) {
     if (ret_val == hipErrorInvalidValue ||
@@ -176,22 +177,13 @@ bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
     }
   }
 
-#if ROCM_VERSION_MAJOR >= 6
-  // TODO: whats the correct expression here?
-  // https://rocm.docs.amd.com/projects/HIP/en/docs-6.0.0/doxygen/html/group___memory.html#ga7c3e8663feebb7be9fd3a1e5139bcefc
-  return res.type != hipMemoryTypeUnregistered;
-   //res.type == hipMemoryTypeDevice ||
-         //res.type == hipMemoryTypeArray ;
-         //res.type == hipMemoryTypeUnified ||
-         //res.type == hipMemoryTypeManaged;
-#else
   return true;
-#endif
 }
 
 bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
+  if (!ptr) return false;
   hipPointerAttribute_t res;
-  hipError_t ret_val = hipPointerGetAttributes(&res, ptr);
+  hipError_t ret_val = hipPointerGetAttributes(&res, (hipDeviceptr_t)ptr);
 
   if (ret_val != hipSuccess) {
     if (ret_val == hipErrorInvalidValue ||
@@ -205,7 +197,7 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
   }
   else {
 #if ROCM_VERSION_MAJOR >= 6
-    return res.type == hipMemoryTypeHost;
+    return res.type == hipMemoryTypeHost || res.type == hipMemoryTypeUnregistered;
 #else
     return res.memoryType == hipMemoryTypeHost;
 #endif
