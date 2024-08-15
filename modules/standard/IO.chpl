@@ -1351,6 +1351,8 @@ private extern proc qio_channel_get_style(ch:qio_channel_ptr_t, ref style:iostyl
 private extern proc qio_channel_set_style(ch:qio_channel_ptr_t, const ref style:iostyleInternal);
 
 private extern proc qio_channel_get_size(ch: qio_channel_ptr_t):int(64);
+private extern proc qio_channel_get_start_pos(ch: qio_channel_ptr_t):int(64);
+private extern proc qio_channel_get_end_pos(ch: qio_channel_ptr_t):int(64);
 
 private extern proc qio_channel_binary(ch:qio_channel_ptr_t):uint(8);
 private extern proc qio_channel_byteorder(ch:qio_channel_ptr_t):uint(8);
@@ -9471,6 +9473,122 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
   this._readInner((...tupleVal));
   return tupleVal;
+}
+
+/*
+  iterate over the lines in a ``fileReader`` in parallel.
+
+  .. note::
+
+    this procedure does not support multi-locale iteration for memory-files
+    (e.g. files opened with :proc:`openMemFile`)
+
+  :arg t: the type of the line to yield (must be either :type:`~String.string`
+          or :type:`~Bytes.bytes`) — defaults to :type:`~String.string`
+  :arg targetLocales: the locales on which to read the lines — defaults to
+                      read only from the ``fileReader``'s home locale
+*/
+iter fileReader.lines(type t = string, targetLocales: [] locale = [this._home,]): t
+  where t == string || t == bytes
+{
+  var line: t;
+  while (try! this.readLine(line, stripNewline=true)) do
+    yield line;
+}
+
+@chpldoc.nodoc
+iter fileReader.lines(
+  param tag: iterKind,
+  type t = string,
+  targetLocales: [?tld] locale = [this._home,]
+): t
+  where tag == iterKind.standalone && (t == string || t == bytes)
+{
+  on this._home {
+    var f = chpl_fileFromReaderOrWriter(this);
+
+    const myStart = qio_channel_get_start_pos(this._channel_internal),
+          myEnd = qio_channel_get_end_pos(this._channel_internal),
+          myBounds = myStart..<(try! min(myEnd, f.size));
+
+    if targetLocales.size == 1 && targetLocales.first == this._home {
+      // single locale case on this fileReader's home locale
+      const nTasks = here.maxTaskPar,
+            byteOffsets = try! findFileChunks(f, nTasks, myBounds);
+
+      coforall tid in 0..<nTasks {
+        const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1],
+              r = try! f.reader(region=taskBounds);
+
+        var line: t;
+        while (try! r.readLine(line, stripNewline=true)) do
+          yield line;
+      }
+    } else {
+      // multi-locale (or non-local) case
+      const fpath = try! f.path,
+            byteOffsets = try! findFileChunks(f, targetLocales.size, myBounds);
+
+      coforall lid in 0..<targetLocales.size do on targetLocales[tld.orderToIndex(lid)] {
+        const locBounds = byteOffsets[lid]..byteOffsets[lid+1],
+              locFile = try! open(fpath, ioMode.r),
+              nTasks = here.maxTaskPar,
+              locByteOffsets = try! findFileChunks(locFile, nTasks, locBounds);
+
+        coforall tid in 0..<nTasks {
+          const taskBounds = locByteOffsets[tid]..<locByteOffsets[tid+1],
+                r = try! locFile.reader(region=taskBounds);
+
+          var line: t;
+          while (try! r.readLine(line, stripNewline=true)) do
+            yield line;
+        }
+      }
+    }
+  }
+}
+
+/*
+  Get an array of ``n+1`` byte offsets that divide the file ``f`` into ``n``
+  roughly equally sized chunks, where each byte offset comes immidiately after
+  a newline.
+
+  :arg f: the file to search
+  :arg n: the number of chunks to find
+  :arg bounds: a range of byte offsets to break into chunks
+
+  :returns: a length ``n+1`` array of byte offsets (the last offset is
+            ``bounds.high``)
+
+  :throws: :class:`OffsetNotFoundError` if a valid byte offset cannot be found
+            in any of the chunks
+*/
+@chpldoc.nodoc
+private proc findFileChunks(const ref f: file, n: int, bounds: range): [] int throws {
+  const nDataBytes = bounds.high - bounds.low,
+        approxBytesPerChunk = nDataBytes / n;
+
+  var chunkOffsets: [0..n] int;
+  chunkOffsets[0] = bounds.low;
+  chunkOffsets[n] = bounds.high;
+
+  forall i in 1..<n with (ref chunkOffsets) {
+    const estOffset = bounds.low + i * approxBytesPerChunk,
+          r = f.reader(region=estOffset..);
+
+    try {
+      r.advanceThroughNewline(); // advance past the next newline
+    } catch e {
+      // there wasn't an offset in this chunk
+      throw new Error(
+        "Failed to find byte offset in the range (" + bounds.low:string + ".." + bounds.high:string +
+        ") for chunk " + i:string + " of " + n:string + ". Try using fewer tasks."
+      );
+    }
+    chunkOffsets[i] = r.offset(); // record the offset for this chunk
+  }
+
+  return chunkOffsets;
 }
 
 /*

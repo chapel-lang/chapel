@@ -990,6 +990,14 @@ int64_t qio_channel_get_size(qio_channel_t* ch) {
   }
 }
 static inline
+int64_t qio_channel_get_start_pos(qio_channel_t* ch) {
+  return ch->start_pos;
+}
+static inline
+int64_t qio_channel_get_end_pos(qio_channel_t* ch) {
+  return ch->end_pos;
+}
+static inline
 uint8_t qio_channel_binary(qio_channel_t* ch)
 {
   return ch->style.binary;
