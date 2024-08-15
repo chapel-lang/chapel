@@ -14,10 +14,15 @@ keyPartInt.chpl:22: warning: Using keyPart without 'keyPartStatus' is deprecated
 keyPartInt.chpl:23: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
 keyPartInt.chpl:25: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
 keyPartInt.chpl:27: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-keyPartInt.chpl:47: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
-keyPartInt.chpl:49: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
-keyPartInt.chpl:57: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
-keyPartInt.chpl:59: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
+keyPartInt.chpl:75: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
+keyPartInt.chpl:76: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
+keyPartInt.chpl:77: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
+keyPartInt.chpl:80: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
+keyPartInt.chpl:81: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
+keyPartInt.chpl:82: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
+keyPartInt.chpl:85: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
+keyPartInt.chpl:86: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
+keyPartInt.chpl:87: warning: Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'
 Comparing with DefaultComparator
 (0, 1)
 (0, 2)
