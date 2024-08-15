@@ -5445,10 +5445,15 @@ static void llvmRunOptimizations(void) {
 
 // Output assembly dump to file if it was requested.
 static void handlePrintAsm(std::string dotOFile) {
-  // TODO: llvm-print-ir-file is not handled here, since 'llvm-objdump' does't
-  //  have a --output flag, that would require some fd management in `mysystem`
   if (llvmPrintIrStageNum == llvmStageNum::ASM ||
       llvmPrintIrStageNum == llvmStageNum::EVERY) {
+    // TODO: llvm-print-ir-file is not handled here, since 'llvm-objdump' does't
+    // have a --output flag, that would require some fd management in `mysystem`
+    if (shouldLlvmPrintIrToFile()) {
+      USR_WARN("llvm-print-ir-file is not supported for %s output",
+               llvmStageNameFromLlvmStageNum(llvmPrintIrStageNum));
+    }
+
 
     std::string llvmObjDump = findSiblingClangToolPath("llvm-objdump");
 

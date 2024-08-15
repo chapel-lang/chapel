@@ -113,7 +113,7 @@ llvm::raw_fd_ostream* getLlvmPrintIrFile() {
     }
   }
 
-  return shouldLlvmPrintIrToFile() ? llvmPrintIrFile.get() : nullptr;
+  return shouldLlvmPrintIrToFile() ? llvmPrintIrFile.get() : &llvm::outs();
 }
 
 const char* llvmStageName[llvmStageNum::LAST] = {
@@ -208,16 +208,11 @@ static llvmStageNum_t partlyPrintedStage = llvmStageNum::NOPRINT;
 
 void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage) {
   if(func) {
-    if (auto fd = getLlvmPrintIrFile()) {
-      *fd << "; " << "LLVM IR representation of " << name
-                << " function after " << llvmStageNameFromLlvmStageNum(numStage)
-                << " optimization stage\n";
-      fd->flush();
-    } else {
-      std::cout << "; " << "LLVM IR representation of " << name
-                << " function after " << llvmStageNameFromLlvmStageNum(numStage)
-                << " optimization stage\n" << std::flush;
-    }
+    auto fd = getLlvmPrintIrFile();
+    *fd << "; " << "LLVM IR representation of " << name
+              << " function after " << llvmStageNameFromLlvmStageNum(numStage)
+              << " optimization stage\n";
+    fd->flush();
     if (!(numStage == llvmStageNum::BASIC ||
           numStage == llvmStageNum::FULL)) {
       // Basic and full can happen module-at-a-time due to current
