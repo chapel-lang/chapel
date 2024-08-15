@@ -1,0 +1,5 @@
+allocated n=16
+allocated n=16
+{x = 1} {x = 2}
+deallocated
+deallocated
