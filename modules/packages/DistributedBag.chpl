@@ -76,8 +76,8 @@
 */
 
 /*
-  Implements a highly parallel segmented multi-pool specialized for depth-first
-  search (DFS), sometimes referenced as ``DistBag_DFS``.
+  Implements a parallel segmented multi-pool for depth-first tree-search.
+  The data structure is sometimes referred to as ``DistBag_DFS``.
 
   Summary
   _______
