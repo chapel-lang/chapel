@@ -2679,8 +2679,15 @@ struct Converter {
 
       // Otherwise convert in a generic fashion.
       } else {
-        INT_ASSERT(!desugaringState.localeTemp &&
-                   "only variables are allowed in remote multi-declarations");
+        // post-parse checks should rule this out
+        INT_ASSERT(!desugaringState.localeTemp);
+
+        // tuple decls between variable decls interrupt multi-decl desugaring:
+        //
+        //    var x, (y,z) = ..., w: int;
+        //
+        // the 'x' does not get type 'int'.
+        desugaringState.reset();
         conv = convertAST(decl);
       }
 

@@ -60,7 +60,8 @@ class Decl : public AstNode {
     : AstNode(tag),
       visibility_(visibility),
       linkage_(linkage),
-      linkageNameChildNum_(NO_CHILD) {
+      linkageNameChildNum_(NO_CHILD),
+      destinationChildNum_(NO_CHILD) {
   }
 
   Decl(AstTag tag, AstList children, int attributeGroupChildNum,
