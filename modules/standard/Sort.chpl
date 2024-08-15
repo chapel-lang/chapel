@@ -369,14 +369,15 @@ pragma "unsafe" // due to 'data' default-initialized to nil for class types
       data is sorted.
 
  */
-proc chpl_check_comparator(comparator, type eltType) param {
+proc chpl_check_comparator(comparator, type eltType, param errorDepth = 2) param {
   // Dummy data for checking method resolution
   // This may need updating when constructors support non-default args
   const data: eltType;
 
-  param errorDepth = 2;
-
   if comparator.type == DefaultComparator {}
+  else if isSubtype(comparator.type, ReverseComparator) {
+    return chpl_check_comparator(comparator.comparator, eltType, errorDepth+1);
+  }
   // Check for valid comparator methods
   else if canResolveMethod(comparator, "key", data) {
     // Check return type of key
@@ -413,7 +414,7 @@ proc chpl_check_comparator(comparator, type eltType) param {
     var expectIntUint = tmp(1);
     if isInt(keyPartStatusType) then
       compilerWarning(errorDepth=errorDepth, "Returning an int(?) as the first element of the tuple from `keyPart` is deprecated, please use 'keyPartStatus'");
-    else if keyPartStatusType != keyPartStatus then
+    else if keyPartStatusType.type != keyPartStatus then
       compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with element 0 of type keyPartStatus when used with ", eltType:string, " elements");
     if !(isInt(expectIntUint) || isUint(expectIntUint)) then
       compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with element 1 of type  int(?) or uint(?) when used with ", eltType:string, " elements");
@@ -3401,7 +3402,7 @@ record DefaultComparator {
 
     :arg elt: the `int` or `uint` of any size to sort
     :arg i: the part number requested
- 
+
     :returns: ``(keyPartStatus.pre, x)`` if ``i==0``, or ``(keyPartStatus.returned, x)`` otherwise
    */
   inline proc keyPart(elt: integral, i: int): (keyPartStatus, elt.type)
@@ -3414,7 +3415,7 @@ record DefaultComparator {
 
     :arg x: the `int` or `uint` of any size to sort
     :arg i: the part number requested
- 
+
     :returns: ``(0, x)`` if ``i==0``, or ``(-1, x)`` otherwise
    */
   @deprecated("Using :proc:`keyPart` without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary")
@@ -3791,8 +3792,8 @@ record ReverseComparator {
   @chpldoc.nodoc
   inline proc chpl_keyPartInternal(elt, i)
     where (hasKeyPart(elt) || hasKeyPartFromKey(elt)) {
-    chpl_check_comparator(this.comparator, elt.type);
-
+    // TODO: this should be restored when deprecation is removed
+    // chpl_check_comparator(this.comparator, elt.type);
     if hasKeyPartFromKey(elt) {
       return getKeyPart(new DefaultComparator(), this.comparator.key(elt), i);
     } else {
