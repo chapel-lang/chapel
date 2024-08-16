@@ -9505,6 +9505,8 @@ static void resolveMoveForRhsCallExpr(CallExpr* call, Type* rhsType) {
 
   moveSetConstFlagsAndCheck(call, rhs);
 
+  // TODO: the check for chpl_here_alloc_with_allocator is a workaround
+  // since allocators are not fully integrated with gChplHereAlloc
   if ((gChplHereAlloc != NULL && rhs->resolvedFunction() == gChplHereAlloc) ||
       (rhs->resolvedFunction() &&
        0 == strcmp("chpl_here_alloc_with_allocator", rhs->resolvedFunction()->name))) {

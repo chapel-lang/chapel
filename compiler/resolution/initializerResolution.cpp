@@ -181,8 +181,6 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
 
   body->insertAtTail(new DefExpr(initTemp));
   if (isClass(type)) {
-    // auto usePool = initFn->hasFlag(FLAG_USE_BUMP_ALLOCATOR) ? gTrue : gFalse;
-    // body->insertAtTail(new CallExpr(PRIM_MOVE, initTemp, callChplHereAlloc(type, NULL, usePool)));
     if (allocatorFormal != nullptr) {
       body->insertAtTail(new CallExpr(PRIM_MOVE, initTemp, callChplHereAllocWithAllocator(type, new SymExpr(allocatorFormal))));
     } else {
