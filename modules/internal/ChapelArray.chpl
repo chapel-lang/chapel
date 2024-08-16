@@ -847,7 +847,7 @@ module ChapelArray {
     pragma "insert line file info"
     pragma "always propagate line file info"
     @chpldoc.nodoc
-    proc checkAccess(indices, value, ensureLocal=false) {
+    proc checkAccess(indices, value, param ensureLocal=false) {
       if this.isRectangular() {
         if !value.dsiBoundsCheck(indices) {
           if rank == 1 {
