@@ -882,13 +882,15 @@ module ChapelArray {
           }
         }
         if ensureLocal {
-          const locInds = this.localSubdomain();
-          if !locInds.contains(indices) {
+          const locInds = this.localSubdomains(),
+                locIdx = || reduce for blk in locInds do blk.contains(indices);
+          
+          if !locIdx {
             if chpl_isNonDistributedArray() {
               halt("Cannot use .localAccess() from locale ", here.id,
                    " on a remote array stored on locale ", value.locale.id);
             } else {
-              if locInds.size == 0 {
+              if locInds.size == 1 && locInds[0].size == 0 {
                 halt("Call to .localAccess() from locale ", here.id,
                      " is illegal because it has no local array elements");
               } else {
