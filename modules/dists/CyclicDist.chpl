@@ -18,6 +18,10 @@
  * limitations under the License.
  */
 
+/* Support for round-robin distribution of domains/arrays to target locales. */
+
+module CyclicDist {
+
 private use DSIUtil;
 private use ChapelLocks;
 
@@ -1674,3 +1678,5 @@ proc CyclicArr.doiOptimizedSwap(other) where debugOptimizedSwap {
   writeln("CyclicArr doing unoptimized swap. Type mismatch");
   return false;
 }
+
+}  // module CyclicDist

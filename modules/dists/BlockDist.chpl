@@ -39,6 +39,10 @@
 // 1. refactor pid fields from distribution, domain, and array classes
 //
 
+/* Support for block-distributing arrays and domains to target locales. */
+
+module BlockDist {
+
 private use DSIUtil;
 private use ChapelUtil;
 private use CommDiagnostics;
@@ -2298,3 +2302,5 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   delete op;
   return res;
 }
+
+} // module BlockDist
