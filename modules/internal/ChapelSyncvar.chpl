@@ -52,8 +52,7 @@ module ChapelSyncvar {
   //
 
   private proc isSupported(type t) param do
-    return isNothingType(t)       ||
-           isBoolType(t)          ||
+    return isBoolType(t)          ||
            isIntegralType(t)      ||
            isRealType(t)          ||
            isImagType(t)          ||
