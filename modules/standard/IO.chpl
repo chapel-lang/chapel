@@ -6976,13 +6976,24 @@ proc fileWriter.styleElement(element:int):int {
 
   This iterator will halt on internal system errors.
 
+  **Example:**
+
+  .. code-block:: chapel
+
+    var r = openReader("ints.txt"),
+        sum = 0;
+
+    forall line r.lines(targetLocales=Locales) with (+ reduce sum) {
+      sum += line:int
+    }
+
   .. warning::
 
-    For serial iteartion, this iterator executes on the current locale. This
+    For serial iteration, this iterator executes on the current locale. This
     may impact multilocale performance if the current locale is not the same
     locale on which the fileReader was created.
 
-  .. note::
+  .. warning::
 
     For parallel iteration, this procedure does not support specifying multiple
     locales when reading from a memory-file (e.g. files opened with
@@ -6998,7 +7009,7 @@ proc fileWriter.styleElement(element:int):int {
 */
 iter fileReader.lines(
   stripNewline = false,
-  targetLocales: [] locale = [this._home,]
+  targetLocales: [] locale = [here,]
 ) {
 
   try! this.lock();
@@ -7031,7 +7042,6 @@ iter fileReader.lines(
 
   this.unlock();
 }
-
 
 @chpldoc.nodoc
 iter fileReader.lines(
