@@ -12,10 +12,10 @@ proc createDataFile() {
     }
 }
 
-proc dataFileSum(region, tls): int {
+proc dataFileSum(region, snl, tls): int {
     var sum = 0;
     var r = openReader(fileName, region=region);
-    forall line in r.lines(targetLocales=tls) with (+ reduce sum) {
+    forall line in r.lines(stripNewline=snl, targetLocales=tls) with (+ reduce sum) {
         sum += line:int;
     }
     return sum;
@@ -24,13 +24,22 @@ proc dataFileSum(region, tls): int {
 createDataFile();
 
 // whole file
-assert(dataFileSum(0.., Locales) == nsum);
-assert(dataFileSum(0.., [Locales.first,]) == nsum);
-assert(dataFileSum(0.., [Locales.last,]) == nsum);
+assert(dataFileSum(0.., true, Locales) == nsum);
+assert(dataFileSum(0.., true, [Locales.first,]) == nsum);
+assert(dataFileSum(0.., true, [Locales.last,]) == nsum);
+
+assert(dataFileSum(0.., false, Locales) == nsum);
+assert(dataFileSum(0.., false, [Locales.first,]) == nsum);
+assert(dataFileSum(0.., false, [Locales.last,]) == nsum);
 
 // skipping first 9 lines
-assert(dataFileSum(18.., Locales) == nsum - 45);
-assert(dataFileSum(18.., [Locales.first,]) == nsum - 45);
-assert(dataFileSum(18.., [Locales.last,]) == nsum - 45);
+assert(dataFileSum(18.., true, Locales) == nsum - 45);
+assert(dataFileSum(18.., true, [Locales.first,]) == nsum - 45);
+assert(dataFileSum(18.., true, [Locales.last,]) == nsum - 45);
+
+assert(dataFileSum(18.., false, Locales) == nsum - 45);
+assert(dataFileSum(18.., false, [Locales.first,]) == nsum - 45);
+assert(dataFileSum(18.., false, [Locales.last,]) == nsum - 45);
+
 
 remove(fileName);
