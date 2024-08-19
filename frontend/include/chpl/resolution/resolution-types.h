@@ -161,6 +161,9 @@ class UntypedFnSignature {
   // this will not be present for compiler-generated functions
   const uast::AstNode* whereClause_;
 
+  // The ID that this compiler-generated function is based on
+  ID compilerGeneratedOrigin_;
+
   UntypedFnSignature(ID id,
                      UniqueString name,
                      bool isMethod,
@@ -170,7 +173,8 @@ class UntypedFnSignature {
                      uast::asttags::AstTag idTag,
                      uast::Function::Kind kind,
                      std::vector<FormalDetail> formals,
-                     const uast::AstNode* whereClause)
+                     const uast::AstNode* whereClause,
+                     ID compilerGeneratedOrigin = ID())
     : id_(id),
       name_(name),
       isMethod_(isMethod),
@@ -180,7 +184,8 @@ class UntypedFnSignature {
       idTag_(idTag),
       kind_(kind),
       formals_(std::move(formals)),
-      whereClause_(whereClause) {
+      whereClause_(whereClause),
+      compilerGeneratedOrigin_(compilerGeneratedOrigin) {
     CHPL_ASSERT(idTag == uast::asttags::Function ||
            idTag == uast::asttags::Class    ||
            idTag == uast::asttags::Record   ||
@@ -200,7 +205,8 @@ class UntypedFnSignature {
                         uast::asttags::AstTag idTag,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
-                        const uast::AstNode* whereClause);
+                        const uast::AstNode* whereClause,
+                        ID compilerGeneratedOrigin = ID());
 
  public:
   /** Get the unique UntypedFnSignature containing these components */
@@ -213,7 +219,8 @@ class UntypedFnSignature {
                                        uast::asttags::AstTag idTag,
                                        uast::Function::Kind kind,
                                        std::vector<FormalDetail> formals,
-                                       const uast::AstNode* whereClause);
+                                       const uast::AstNode* whereClause,
+                                       ID compilerGeneratedOrigin = ID());
 
   /** Get the unique UntypedFnSignature representing a Function's
       signature from a Function uAST pointer. */
@@ -234,7 +241,8 @@ class UntypedFnSignature {
            idTag_ == other.idTag_ &&
            kind_ == other.kind_ &&
            formals_ == other.formals_ &&
-           whereClause_ == other.whereClause_;
+           whereClause_ == other.whereClause_ &&
+           compilerGeneratedOrigin_ == other.compilerGeneratedOrigin_;
   }
   bool operator!=(const UntypedFnSignature& other) const {
     return !(*this == other);
@@ -251,6 +259,7 @@ class UntypedFnSignature {
       context->markPointer(elt.decl);
     }
     context->markPointer(whereClause_);
+    compilerGeneratedOrigin_.mark(context);
   }
 
 
@@ -273,6 +282,10 @@ class UntypedFnSignature {
   /** Returns true if this compiler generated */
   bool isCompilerGenerated() const {
     return isCompilerGenerated_;
+  }
+
+  ID compilerGeneratedOrigin() const {
+    return compilerGeneratedOrigin_;
   }
 
   /** Returns true if id() refers to a Function */
