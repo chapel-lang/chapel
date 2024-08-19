@@ -144,14 +144,19 @@ void chpl_gpu_impl_init(int* num_devices) {
 
   int i;
   for (i=0 ; i<loc_num_devices ; i++) {
+#if ROCM_VERSION_MAJOR >= 6
+    hipDevice_t device = i;
+    ROCM_CALL(hipSetDevice(device));
+    ROCM_CALL(hipSetDeviceFlags(hipDeviceScheduleBlockingSync))
+#else
     hipDevice_t device;
     hipCtx_t context;
-
     ROCM_CALL(hipDeviceGet(&device, i));
     ROCM_CALL(hipDevicePrimaryCtxSetFlags(device, hipDeviceScheduleBlockingSync));
     ROCM_CALL(hipDevicePrimaryCtxRetain(&context, device));
 
     ROCM_CALL(hipSetDevice(device));
+#endif
     hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary);
     chpl_gpu_rocm_modules[i] = module;
 
