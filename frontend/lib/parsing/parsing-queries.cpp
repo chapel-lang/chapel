@@ -192,6 +192,15 @@ introspectParsedFiles(Context* context) {
   return toReturn;
 }
 
+static const BuilderResult&
+compilerGeneratedBuilderQuery(Context* context, UniqueString symbolPath) {
+  QUERY_BEGIN(compilerGeneratedBuilderQuery, context, symbolPath);
+
+  BuilderResult ret;
+
+  return QUERY_END(ret);
+}
+
 // parses whatever file exists that contains the passed ID and returns it
 const BuilderResult*
 parseFileContainingIdToBuilderResult(Context* context, ID id) {
@@ -205,6 +214,16 @@ parseFileContainingIdToBuilderResult(Context* context, ID id) {
   }
 
   return nullptr;
+}
+
+const BuilderResult&
+getCompilerGeneratedBuilder(Context* context, UniqueString symbolPath) {
+  return compilerGeneratedBuilderQuery(context, symbolPath);
+}
+
+void setCompilerGeneratedBuilder(Context* context, UniqueString symbolPath,
+                                 BuilderResult result) {
+  QUERY_STORE_RESULT(compilerGeneratedBuilderQuery, context, result, symbolPath);
 }
 
 void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
