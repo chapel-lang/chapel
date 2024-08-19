@@ -1400,6 +1400,44 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
   return false;
 }
 
+static void buildTypeCtorArgs(Context* context, const CompositeType* ct,
+                              std::vector<QualifiedType>& formalTypes,
+                              std::vector<const AstNode*>& args) {
+
+  // Build up parent class args first
+  if (auto bct = ct->toBasicClassType()) {
+    if (auto parent = bct->parentClassType()) {
+      buildTypeCtorArgs(context, parent->getCompositeType(),
+                        formalTypes, args);
+    }
+  }
+
+  // attempt to resolve the fields
+  DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
+  const ResolvedFields& f = fieldsForTypeDecl(context, ct,
+                                              defaultsPolicy,
+                                              /* syntaxOnly */ true);
+
+  // find the generic fields from the type and add
+  // these as type constructor arguments.
+  int nFields = f.numFields();
+  for (int i = 0; i < nFields; i++) {
+    auto declId = f.fieldDeclId(i);
+    auto declAst = parsing::idToAst(context, declId);
+    CHPL_ASSERT(declAst);
+    const Decl* fieldDecl = declAst->toDecl();
+    CHPL_ASSERT(fieldDecl);
+    QualifiedType formalType;
+    if (isFieldSyntacticallyGeneric(context, declId, &formalType)) {
+
+      CHPL_ASSERT(formalType.kind() != QualifiedType::UNKNOWN);
+      formalTypes.push_back(formalType);
+
+      args.push_back(declAst);
+    }
+  }
+}
+
 static const TypedFnSignature* const&
 typeConstructorInitialQuery(Context* context, const Type* t)
 {
@@ -1413,41 +1451,13 @@ typeConstructorInitialQuery(Context* context, const Type* t)
   std::vector<types::QualifiedType> formalTypes;
   auto idTag = uast::asttags::AST_TAG_UNKNOWN;
 
+  std::vector<const AstNode*> fieldAsts;
+
   if (auto ct = t->getCompositeType()) {
     id = ct->id();
     name = ct->name();
 
-    // attempt to resolve the fields
-    DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
-    const ResolvedFields& f = fieldsForTypeDecl(context, ct,
-                                                defaultsPolicy,
-                                                /* syntaxOnly */ true);
-
-    // find the generic fields from the type and add
-    // these as type constructor arguments.
-    int nFields = f.numFields();
-    for (int i = 0; i < nFields; i++) {
-      auto declId = f.fieldDeclId(i);
-      auto declAst = parsing::idToAst(context, declId);
-      CHPL_ASSERT(declAst);
-      const Decl* fieldDecl = declAst->toDecl();
-      CHPL_ASSERT(fieldDecl);
-      QualifiedType formalType;
-      if (isFieldSyntacticallyGeneric(context, declId, &formalType)) {
-
-        auto defaultKind = f.fieldHasDefaultValue(i) ?
-                           UntypedFnSignature::DK_DEFAULT :
-                           UntypedFnSignature::DK_NO_DEFAULT;
-        auto d = UntypedFnSignature::FormalDetail(f.fieldName(i),
-                                                  defaultKind,
-                                                  fieldDecl,
-                                                  fieldDecl->isVarArgFormal());
-        formals.push_back(d);
-        // formalType should have been set above
-        CHPL_ASSERT(formalType.kind() != QualifiedType::UNKNOWN);
-        formalTypes.push_back(formalType);
-      }
-    }
+    buildTypeCtorArgs(context, ct, formalTypes, fieldAsts);
 
     if (t->isBasicClassType() || t->isClassType()) {
       idTag = uast::asttags::Class;
@@ -1460,8 +1470,103 @@ typeConstructorInitialQuery(Context* context, const Type* t)
     CHPL_ASSERT(false && "case not handled");
   }
 
+  // If we're actually running the body of this current query, then the
+  // BuilderResult from any past revision needs to be overwritten.
+
+  auto parentMod = parsing::idToParentModule(context, id);
+  auto modName = "chpl__internal_" + parentMod.symbolName(context).str() + "_" + name.str();
+  auto builder = Builder::createForGeneratedCode(context, modName.c_str(), parentMod.symbolPath());
+  auto dummyLoc = parsing::locateId(context, id);
+
+  // Add a top-level 'use' of the module containing the type being constructed.
+  // This exists to support fields that reference other types in that module.
+  {
+    auto useName = parentMod.symbolName(context);
+    auto ident = Identifier::build(builder.get(), dummyLoc, useName);
+    auto vis = VisibilityClause::build(builder.get(), dummyLoc, std::move(ident));
+
+    AstList alist;
+    alist.push_back(std::move(vis));
+    auto useStmt = Use::build(builder.get(), dummyLoc,
+                              Decl::DEFAULT_VISIBILITY, std::move(alist));
+    builder->addToplevelExpression(std::move(useStmt));
+  }
+
+  // Build formals of type constructor
+  AstList formalAst;
+  for(auto& arg : fieldAsts) {
+    auto var = arg->toVariable();
+    owned<AttributeGroup> attr;
+    if (var->attributeGroup()) {
+      auto attrCopy = var->attributeGroup()->copy();
+      AttributeGroup* asdf = attrCopy.release()->toAttributeGroup();
+      attr = std::make_unique<AttributeGroup>(*asdf);
+    }
+    auto typeExpr = var->typeExpression();
+    auto initExpr = var->initExpression();
+    auto kind = var->kind() == Variable::PARAM ? Variable::PARAM : Variable::TYPE;
+    owned<AstNode> formal = Formal::build(builder.get(), dummyLoc,
+                                std::move(attr),
+                                var->name(),
+                                (Formal::Intent)kind,
+                                typeExpr ? typeExpr->copy() : nullptr,
+                                initExpr ? initExpr->copy() : nullptr);
+    formalAst.push_back(std::move(formal));
+  }
+
+  auto genFn = Function::build(builder.get(), dummyLoc, {},
+                               Decl::Visibility::PUBLIC,
+                               Decl::Linkage::DEFAULT_LINKAGE,
+                               {},
+                               name,
+                               false, false, Function::Kind::PROC,
+                               {},
+                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                               false, false, false,
+                               std::move(formalAst), {}, {}, {}, {});
+
+  builder->noteChildrenLocations(genFn.get(), dummyLoc);
+  builder->addToplevelExpression(std::move(genFn));
+
+  // Finalize the uAST and obtain the BuilderResult
+  auto res = builder->result();
+
+  // Store the BuilderResult for later, using the module's path as the
+  // query key.
+  auto modPath = res.topLevelExpression(0)->id().symbolPath();
+  parsing::setCompilerGeneratedBuilder(context, modPath, std::move(res));
+
+  //
+  // Re-acquire the BuilderResult
+  //
+  // We need this because in the case of multiple revisions, we might encounter
+  // a situation where we have a BuilderResult from a previous iteration that
+  // is equivalent to the BuilderResult we just made. In this situation the old
+  // BuilderResult will not be changed from the query system's point of view.
+  // This means that the BuilderResult we just created will be destroyed,
+  // along with all its uAST. To work around this (for now), we simply run the
+  // corresponding 'getter' query and use that BuilderResult.
+  //
+  // TODO: Find a way to integrate all this into the query system more cleanly.
+  //
+  auto& br = parsing::getCompilerGeneratedBuilder(context, modPath);
+
+  const Module* genMod = br.topLevelExpression(0)->toModule();
+  auto typeCtor = genMod->child(genMod->numChildren()-1)->toFunction();
+
+  // Build the UntypedFnSignature formals
+  for (auto decl : typeCtor->formals()) {
+    auto formal = decl->toFormal();
+    bool hasDefault = formal->initExpression() != nullptr;
+    auto defaultKind = hasDefault ? UntypedFnSignature::DK_DEFAULT
+                                  : UntypedFnSignature::DK_NO_DEFAULT;
+
+    auto d = UntypedFnSignature::FormalDetail(formal->name(), defaultKind, decl, decl->isVarArgFormal());
+    formals.push_back(d);
+  }
+
   auto untyped = UntypedFnSignature::get(context,
-                                         id, name,
+                                         typeCtor->id(), name,
                                          /* isMethod */ false,
                                          /* isTypeConstructor */ true,
                                          /* isCompilerGenerated */ true,
@@ -1469,7 +1574,8 @@ typeConstructorInitialQuery(Context* context, const Type* t)
                                          idTag,
                                          Function::PROC,
                                          std::move(formals),
-                                         /* whereClause */ nullptr);
+                                         /* whereClause */ nullptr,
+                                         id);
 
   result = TypedFnSignature::get(context,
                                  untyped,
