@@ -3,6 +3,7 @@
 #--paint-with ./stream.plot.paint.py
 
 set -x -e
+export CHPLEXP_MAX_LOCALES=64
 "$CHPL_HOME/util/test/chplExperiment" \
    --skip-if-config-error  \
    \

@@ -10,14 +10,31 @@ datFile="${1:-`pwd`/logs/experiment.dat}"
 logDir="${2:-`pwd`/logs}"
 experimentName="${3:-experiment}"
 
+capLocales() {
+  local max="$1"
+
+  if [ ! -z "$max" ]; then
+    filtered_arr=()
+    for value in "${locales[@]}"; do
+      ((value <= $max)) && filtered_arr+=("$value")
+    done
+    locales=("${filtered_arr[@]}")
+  fi
+}
+
 function runAndLog () {
-  exec $@ | tee -a $runLog
+  exec $@ 2>&1 | tee -a $runLog
 }
 
 function runAndSubLog () {
   sublog=$1
   shift
-  exec $@ | tee -a $runLog.$sublog
+  exec $@ 2>&1 | tee -a $runLog.$sublog
+}
+
+function runAndLog_launch () {
+  local constraintsSanitized=$(echo "$CHPL_LAUNCHER_CONSTRAINT" | sed -n 's/,/&/g')
+  runAndLog srun --nodes $1 --constraint="$CHPL_LAUNCHER_CONSTRAINT"  "${@:2}"
 }
 
 function extractFromPerfKeys () {

@@ -3,16 +3,8 @@
 # sets 'datFile', 'logDir', 'experimentName', and 'runLog'
 source $CHPL_HOME/util/test/chplExperimentGatherUtils/prelude.bash $@
 
-CHPLEXP_MAX_LOCALES=32
 locales=( 2 4 8 16 32 64 128 256 512 1024)
-if [ ! -z "$CHPLEXP_MAX_LOCALES" ]; then
-  filtered_locales=()
-  for value in "${locales[@]}"; do
-    ((value <= $CHPLEXP_MAX_LOCALES)) && filtered_locales+=("$value")
-  done
-  locales=("${filtered_locales[@]}")
-fi
-echo "LOCALES TO CHECK: ${locales[@]}"
+capLocales "$CHPLEXP_MAX_LOCALES"
 
 # -----------------------------------------------------------------------------
 # Build Chapel code
@@ -34,7 +26,7 @@ set +x
 
 # data is reported in GB/s convert to MB/s
 i=0; for x in ${data[@]}; do
-    scaled_data[i++]=$((x*1000))
+    scaled_data[i++]=$(echo "$x*1000" | bc -l)
 done
 echo -e "\t$experimentName" > $datFile
 paste \
