@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-$CHPL_HOME/util/test/sub_test $1
