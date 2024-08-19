@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+/* Distributed associative arrays. */
 @unstable("HashedDist is unstable and may change in the future")
 prototype module HashedDist {
 
