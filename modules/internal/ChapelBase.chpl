@@ -1365,9 +1365,6 @@ module ChapelBase {
     if isSubtype(t, sync(?)) {
       compilerWarning("direct reads of sync variables are deprecated; please apply a 'read??' method");
       return _cond_test(x.readFE());
-    } else if isSubtype(t, single(?)) {
-      compilerWarning("direct reads of single variables are deprecated; please use 'readFF'");
-      return _cond_test(x.readFF());
     } else if isCoercible(t, borrowed RootClass?) {
       return x != nil;
     } else if isCoercible(t, bool) {
