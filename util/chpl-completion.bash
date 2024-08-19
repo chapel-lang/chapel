@@ -145,6 +145,7 @@ _chpl ()
 --live-analysis \
 --lldb \
 --llvm-print-ir \
+--llvm-print-ir-file \
 --llvm-print-ir-stage \
 --llvm-print-passes \
 --llvm-remarks \
