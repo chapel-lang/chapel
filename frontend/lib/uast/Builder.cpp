@@ -194,6 +194,14 @@ void Builder::deleteAdditionalLocation(AstLocMap& m, const AstNode* ast) {
 #include "chpl/uast/all-location-maps.h"
 #undef LOCATION_MAP
 
+void Builder::deleteAllLocations(const AstNode* ast) {
+  notedLocations_.erase(ast);
+  #define LOCATION_MAP(ast__, location__) \
+    CHPL_AST_LOC_MAP(ast__, location__).erase(ast);
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
+}
+
 void Builder::noteSymbolTableSymbols(SymbolTableVec vec) {
   symbolTableVec_ = std::move(vec);
   expectSymbolTableVec_ = false;

@@ -1,0 +1,2 @@
+backPropagateOverTuple.chpl:1: error: 'x' is not initialized and has no type
+backPropagateOverTuple.chpl:1: note: cannot find initialization point to split-init this variable

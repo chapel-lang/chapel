@@ -1097,7 +1097,6 @@ AstNode* ParserContext::buildManagerExpr(YYLTYPE location,
                              Decl::DEFAULT_VISIBILITY,
                              Decl::DEFAULT_LINKAGE,
                              nullptr,
-                             nullptr,
                              resourceName,
                              kind,
                              false,
@@ -1811,7 +1810,6 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
                                 visibility,
                                 linkage,
                                 consumeVarDeclLinkageName(),
-                                consumeVarDestinationExpr(),
                                 name,
                                 varDeclKind,
                                 isVarDeclConfig,
@@ -1848,7 +1846,6 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            Decl::DEFAULT_VISIBILITY,
                            Decl::DEFAULT_LINKAGE,
                            /*linkageName*/ nullptr,
-                           /*destinationExpr*/ nullptr,
                            ident->name(),
                            Variable::INDEX,
                            /*isConfig*/ false,
@@ -1857,7 +1854,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            /*initExpression*/ nullptr);
     builder->noteDeclNameLocation(var.get(), convLoc);
     builder->copyExprParenthLocation(e, var.get());
-    builder->deleteExprParenthLocation(e);
+    builder->deleteAllLocations(e);
     // Delete the location of 'e' because it's about to be deallocated;
     // we don't want a new allocation of an AST node to have the same pointer
     // and still be in the map, since that would pollute location information.
@@ -2221,6 +2218,11 @@ CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locLoop,
     if (withClause) {
       error = syntax(locLoop,
                      "'with' clauses are not supported on 'for' loops.");
+
+      // Since these are about to get deallocated, clear their location
+      // maps to ensure the OS re-using memory won't bring in stale locations
+      builder->deleteAllLocations(index.get());
+      builder->deleteAllLocations(body.get());
     } else {
       result = For::build(builder, convertLocation(locLoop),
                           std::move(index),
@@ -2775,6 +2777,14 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
     if (attributeGroup) {
       lastDecl->attachAttributeGroup(std::move(attributeGroup));
     }
+    auto destination = consumeVarDestinationExpr();
+    if (destination) {
+      if (auto var = lastDecl->toVariable()) {
+        var->attachDestination(std::move(destination));
+      } else {
+        error(locEverything, "only (multi)variable declarations can target a specific locale");
+      }
+    }
   } else {
 
     // TODO: Just embed and catch this in a tree-walk instead.
@@ -2789,17 +2799,16 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
         CHPL_PARSER_REPORT(this, MultipleExternalRenaming, locEverything);
       }
     }
-    if (auto var = firstDecl->toVariable()) {
-      if (var->destination()) {
-        error(locEverything, "cannot apply 'on' to multi-variable declaration");
-      }
-    }
     auto attributeGroup = buildAttributeGroup(locEverything);
     auto multi = MultiDecl::build(builder, convertLocation(locEverything),
                                   std::move(attributeGroup),
                                   visibility,
                                   linkage,
                                   consumeList(vars));
+    auto destination = consumeVarDestinationExpr();
+    if (destination) {
+      multi->attachDestination(std::move(destination));
+    }
     cs.stmt = multi.release();
   }
 
