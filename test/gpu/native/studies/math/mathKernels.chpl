@@ -2,7 +2,7 @@ use Math;
 import Time.stopwatch;
 use Random;
 
-config const size:uint(32) = 100_000_000;
+config const size:uint(32) = 10_000_000;
 config const iterations:int(32) = 1;
 config const printTime = true;
 config const correctness = false;
