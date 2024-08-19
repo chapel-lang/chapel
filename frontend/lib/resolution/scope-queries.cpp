@@ -1262,6 +1262,10 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     } else {
       r = resolveVisibilityStmts(context, scope);
     }
+
+    // don't check use/import if there is no ResolvedVisibilityScope
+    if (r == nullptr && !scope->autoUsesModules())
+      checkUseImport = false;
   }
 
   bool canCheckMoreForWarning = onlyInnermost && !skipShadowScopes &&
