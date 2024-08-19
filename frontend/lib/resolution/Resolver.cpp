@@ -3770,8 +3770,15 @@ void Resolver::handleCallExpr(const uast::Call* call) {
           }
         }
       }
+
       // Don't skip for type constructors, except due to unknown params.
       if (skip != UNKNOWN_PARAM && ci.calledType().isType()) {
+        skip = NONE;
+      }
+
+      // Do not skip primitive calls that accept a generic type, since they
+      // may be valid.
+      if (skip == GENERIC_TYPE && call->toPrimCall()) {
         skip = NONE;
       }
 
@@ -3784,12 +3791,6 @@ void Resolver::handleCallExpr(const uast::Call* call) {
   // Don't try to resolve calls to '=' until later
   if (ci.isOpCall() && ci.name() == USTR("=")) {
     skip = OTHER_REASON;
-  }
-
-  if (skip == GENERIC_TYPE && call->toPrimCall()) {
-    // Do not skip primitive calls that accept a generic type, since they
-    // may be valid.
-    skip = NONE;
   }
 
   if (!skip) {
