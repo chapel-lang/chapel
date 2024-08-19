@@ -769,7 +769,6 @@ static bool isCalleReservedWord(const AstNode* callee) {
        || callee->toIdentifier()->name() == USTR("unmanaged")
        || callee->toIdentifier()->name() == USTR("shared")
        || callee->toIdentifier()->name() == USTR("sync")
-       || callee->toIdentifier()->name() == USTR("single")
        || callee->toIdentifier()->name() == USTR("atomic")))
       return true;
     return false;

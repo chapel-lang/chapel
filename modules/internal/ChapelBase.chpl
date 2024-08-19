@@ -1324,10 +1324,6 @@ module ChapelBase {
     compilerWarning("implicitly reading from a sync is deprecated; apply a '.read??()' method");
     a.readFE();
   }
-  inline proc chpl_statementLevelSymbol(a: single) {
-    compilerWarning("implicitly reading from a single is deprecated; apply a '.read??()' method");
-    a.readFF();
-  }
   // param and type args are handled in the compiler
 
   //

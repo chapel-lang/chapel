@@ -121,7 +121,7 @@ chapelKeywords = set(["align","as","atomic","begin","break","by","class",
     "in","index","inline","inout","iter","label","lambda","let","local","module","new",
     "nil","noinit","on","only","otherwise","out","param","private","proc",
     "public","record","reduce","ref","require","return","scan","select",
-    "serial","single","sparse","subdomain","sync","then","type","union","use",
+    "serial","sparse","subdomain","sync","then","type","union","use",
     "var","when","where","while","with","yield","zip", "string", "bytes", "locale"])
 
 

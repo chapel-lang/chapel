@@ -585,7 +585,6 @@ PRAGMA(CG_REPRESENTATIVE, npr, "cg representative", ncm)
 // this instantiation does not need to be resolved
 PRAGMA(CG_INTERIM_INST, npr, "cg interim instantiation", ncm)
 
-PRAGMA(SINGLE, ypr, "single", ncm)
 PRAGMA(SYNC, ypr, "sync", ncm)
 
 PRAGMA(SYNTACTIC_DISTRIBUTION, ypr, "syntactic distribution", ncm)
