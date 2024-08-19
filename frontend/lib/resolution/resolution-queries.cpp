@@ -5266,6 +5266,50 @@ reportInvalidMultipleInheritance(Context* context,
                                                      firstParent, secondParent);
 }
 
+const Decl* findFieldIDByName(Context* context,
+                              const AggregateDecl* ad,
+                              const CompositeType* ct,
+                              UniqueString name) {
+  const Decl* ret = nullptr;
+
+  for (auto decl : ad->children()) {
+    if (auto named = decl->toNamedDecl()) {
+      if (named->name() == name) {
+        ret = named;
+        break;
+      }
+    } else if (auto named = decl->toMultiDecl()) {
+      for (auto md : named->children()) {
+        auto nmd = md->toNamedDecl();
+        if (nmd->name() == name) {
+          ret = nmd;
+          break;
+        }
+      }
+    } else if (auto fwd = decl->toForwardingDecl()) {
+      if (auto var = fwd->expr()) {
+        auto n = var->toNamedDecl();
+        if (n->name() == name) {
+          ret = n;
+          break;
+        }
+      }
+    }
+  }
+
+  if (ret == nullptr && ct != nullptr) {
+    if (auto bct = ct->toBasicClassType()) {
+      if (auto parent = bct->parentClassType()) {
+        auto parentAD = parsing::idToAst(context, parent->id())->toAggregateDecl();
+        ret = findFieldIDByName(context, parentAD, parent, name);
+      }
+    }
+  }
+
+  return ret;
+}
+
+
 
 } // end namespace resolution
 } // end namespace chpl
