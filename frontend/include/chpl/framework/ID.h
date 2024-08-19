@@ -101,7 +101,13 @@ class ID final {
     of a symbol's nodes. When the AST node defines a new ID symbol scope,
     (as with Function or Module) this will return -1.
    */
-  int postOrderId() const { return postOrderId_; }
+  int postOrderId() const {
+    if (postOrderId_ < -1) {
+      return (postOrderId_ * -1) - 2;
+    } else {
+      return postOrderId_;
+    }
+  }
 
   /**
     Returns 'true' if this symbol has a 'postOrderId()' value of == -1,
