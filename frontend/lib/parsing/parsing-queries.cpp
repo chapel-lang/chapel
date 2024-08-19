@@ -204,6 +204,20 @@ compilerGeneratedBuilderQuery(Context* context, UniqueString symbolPath) {
 // parses whatever file exists that contains the passed ID and returns it
 const BuilderResult*
 parseFileContainingIdToBuilderResult(Context* context, ID id) {
+  {
+    UniqueString symbolPath = id.symbolPath();
+
+    while (!symbolPath.isEmpty()) {
+      auto tupleOfArgs = std::make_tuple(symbolPath);
+      auto got = context->hasCurrentResultForQuery(compilerGeneratedBuilderQuery, tupleOfArgs);
+      if (got) {
+        const BuilderResult& p = getCompilerGeneratedBuilder(context, symbolPath);
+        return &p;
+      }
+      symbolPath = ID::parentSymbolPath(context, symbolPath);
+    }
+  }
+
   UniqueString path;
   UniqueString parentSymbolPath;
   bool found = context->filePathForId(id, path, parentSymbolPath);
