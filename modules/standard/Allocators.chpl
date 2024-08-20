@@ -20,7 +20,37 @@
  */
 
 
-/*
+/* Provides custom allocators for Chapel objects on the heap.
+
+  This module provides an interface to customize how Chapel objects are
+  allocated on the heap. This is opted into by changing calls to
+  ``new``/``delete`` into :proc:`newWithAllocator`/:proc:`deleteWithAllocator`. This
+  new functions allow Chapel code to customize how objects are allocated and
+  deallocated.
+
+  For example, the following code demonstrates how the :type:`mallocWrapper`
+  allocator can be used to allocate a Chapel class.
+
+  .. code-block:: chapel
+
+     class MyClass { var x: int; }
+     var alloc = new mallocWrapper(1024);
+     var x = newWithAllocator(alloc, unmanaged MyClass, 1);
+     writeln(x);
+     deleteWithAllocator(alloc, x);
+
+  Custom allocators can be defined as classes or records that implement the
+  ``allocator`` interface. The interface has two methods: ``allocate`` and
+  ``deallocate``. The ``allocate`` method accepts an integer ``n`` and returns
+  a :type:`~CTypes.c_ptr` to the allocated memory. The ``deallocate``
+  method accepts a :type:`~CTypes.c_ptr` to the allocated memory. Allocators are
+  free to implement their own memory management strategies.
+
+  Limitations:
+    * This module currently only supports allocating Chapel classes. In the
+      future we hope to support other heap objects like arrays.
+    * Allocating managed (:type:`~OwnedObject.owned`/:type:`~SharedObject.shared`)
+      Chapel classes is not supported, only ``unmanaged`` classes are supported.
 
 */
 @unstable(category="experimental", reason="The Allocators module is under development and does not have a stable interface yet")
@@ -39,8 +69,28 @@ module Allocators {
     return alignedPtr:c_ptr(void);
   }
 
+  // TODO: interfaces are not supported by chpldoc yet: https://github.com/chapel-lang/chapel/issues/17383
+  /*
+    All allocators must implement this interface. The interface has two
+    methods: ``allocate`` and ``deallocate``. The ``allocate`` method accepts
+    an integer size and returns a pointer to the allocated memory. The
+    ``deallocate`` method accepts a pointer to the allocated memory.
+
+    Allocators may either be classes or records.
+  */
   interface allocator {
+    /*
+      Allocate memory for ``n`` bytes.
+
+      :arg n: The number of bytes to allocate.
+      :returns: A ``c_ptr(void)`` to the allocated memory.
+    */
     proc ref Self.allocate(n: int): c_ptr(void);
+    /*
+      Deallocate memory at ``p``.
+
+      :arg p: The pointer to the allocated memory.
+    */
     proc ref Self.deallocate(p: c_ptr(void));
   }
 
@@ -56,8 +106,25 @@ module Allocators {
     }
   }
 
+  /*
+    Allocate a new unmanaged class with type ``T`` by invoking the ``allocate``
+    method of the given ``alloc``. This is a drop-in replacement for ``new``.
 
-  /* See docs for :proc:`~Allocators.newWithAllocator` */
+    Example:
+
+    .. code-block:: chapel
+
+       class MyClass { var x: int; }
+       var allocator = new bumpPtrMemPool(1024);
+       // The following two lines are equivalent, but the second one uses the allocator
+       var x = new unmanaged MyClass(1);
+       var x = newWithAllocator(allocator, unmanaged MyClass, 1);
+  */
+  pragma "docs only"
+  inline proc newWithAllocator(alloc: allocator, type T, args...): T {
+    compilerError("");
+  }
+
   @chpldoc.nodoc
   inline proc newWithAllocator(ref alloc: record, type T): T {
     checkInterfaceHelper(alloc);
@@ -71,19 +138,7 @@ module Allocators {
     return __primitive("new with allocator", alloc, T);
   }
 
-  /*
-    Allocate a new class with type ``T`` by invoking the ``allocate`` method of the given ``alloc``. This is a drop-in replacement for ``new``.
-
-    Example:
-
-    .. code-block:: chapel
-
-       class MyClass { var x: int; }
-       var allocator = new bumpPtrMemPool(1024);
-       // The following two lines are equivalent, but the second one uses the allocator
-       var x = new unmanaged MyClass(1);
-       var x = newWithAllocator(allocator, unmanaged MyClass, 1);
-  */
+  @chpldoc.nodoc
   inline proc newWithAllocator(ref alloc: record, type T, args...): T {
     checkInterfaceHelper(alloc);
     newTypeCheckHelper(T);
@@ -91,6 +146,7 @@ module Allocators {
     return __primitive("new with allocator", alloc, T, (...args));
   }
 
+  @chpldoc.nodoc
   inline proc newWithAllocator(const ref alloc: class, type T, args...): T {
     checkInterfaceHelper(alloc);
     newTypeCheckHelper(T);
@@ -99,8 +155,15 @@ module Allocators {
   }
 
   /*
-    Delete the ``objects`` by invoking the ``deallocate`` method of the given ``allocator``. This is a drop-in replacement for ``delete``.
+    Delete the ``objects`` by invoking the ``deallocate`` method of the given
+    ``allocator``. This is a drop-in replacement for ``delete``.
   */
+  pragma "docs only"
+  inline proc deleteWithAllocator(alloc: allocator, objects...) {
+    compilerError("");
+  }
+
+  @chpldoc.nodoc
   inline proc deleteWithAllocator(ref alloc: record, objects...?k) {
     checkInterfaceHelper(alloc);
     for param i in 0..#k {
@@ -116,6 +179,7 @@ module Allocators {
       }
     }
   }
+  @chpldoc.nodoc
   inline proc deleteWithAllocator(const ref alloc: class, objects...?k) {
     checkInterfaceHelper(alloc);
     for param i in 0..#k {
@@ -136,34 +200,93 @@ module Allocators {
   class _LockWrapper {
     type lockType = ChapelLocks.chpl_LocalSpinlock;
     var lockVar = new lockType();
-    inline proc lock() {
-      lockVar.lock();
-    }
-    inline proc unlock() {
-      lockVar.unlock();
-    }
+    inline proc lock() do lockVar.lock();
+    inline proc unlock() do lockVar.unlock();
   }
 
   /*
-    A simple allocator that acts as a wrapper around the CTypes allocator.
+    A simple allocator that acts as a wrapper around :proc:`CTypes.allocate`
+    and :proc:`CTypes.deallocate`.
   */
   class mallocWrapper: allocator {
+    /*
+      Allocate memory for ``n`` bytes.
+
+      :arg n: The number of bytes to allocate.
+      :returns: A ``c_ptr(void)`` to the allocated memory.
+    */
     proc allocate(n: int): c_ptr(void) {
       return CTypes.allocate(int(8), n.safeCast(c_size_t));
     }
+    /*
+      Deallocate memory at ``p``.
+
+      :arg p: The pointer to the allocated memory.
+    */
     proc deallocate(p: c_ptr(void)) {
       CTypes.deallocate(p);
     }
   }
 
+
+  /*
+    The is a simple bump pointer allocator that is useful for allocating many
+    small objects.
+
+    This allocator makes a single memory allocation in a contiguous block,
+    calls to :proc:`~bumpPtrMemPool.allocate` will return the next available
+    address. This allocator is not thread-safe by default, but can be made
+    thread-safe by setting the :proc:`~bumpPtrMemPool.parSafe` parameter to
+    ``true``. By default, all memory allocated by :type:`bumpPtrMemPool` is aligned
+    to 16 bytes. This can be changed by setting the
+    :param:`~bumpPtrMemPool.alignment` parameter. An alignment of 0 will disable
+    alignment.
+
+    The :type:`bumpPtrMemPool` is initialized with a fixed size and allocates
+    memory from that fixed size. Attempting to allocate more memory than the
+    fixed size will result in an error. With checks enabled the program will
+    halt, otherwise memory errors will occur.
+
+    All memory allocated by :type:`bumpPtrMemPool` is deallocated when the
+    :type:`bumpPtrMemPool` instance is destroyed. The
+    :proc:`~bumpPtrMemPool.deallocate` method is a no-op.
+  */
   class bumpPtrMemPool: allocator {
+    /*
+      Whether or not this allocator is thread-safe. if ``true``, this allocator
+      will use a lock to ensure that only one thread can allocate memory at a
+      time.
+    */
     param parSafe: bool = false;
+    /*
+      The alignment of memory allocated by this allocator. If ``alignment`` is
+      greater than 0, the pointers returned by :proc:`~bumpPtrMemPool.allocate`
+      will be aligned to that alignment. ``alignment`` must be a power of 2.
+    */
     param alignment: int = 16;
+    /*
+      The size of the memory block allocated by this allocator.
+    */
     var size: int(64);
+    @chpldoc.nodoc
     var basePtr: c_ptr(int(8));
+    @chpldoc.nodoc
     var ptr: c_ptr(int(8));
+    @chpldoc.nodoc
     var lock_ = if parSafe then new _LockWrapper() else none;
 
+
+    /*
+      Initializes the allocator with a fixed size. The allocator will allocate
+      memory from this fixed size.
+
+      Memory is allocated eagerly, so the entire size is allocated when the
+      allocator is created.
+
+      :arg size: The size of the memory block allocated by this allocator.
+      :param parSafe: Whether or not this allocator is thread-safe.
+      :param alignment: The alignment of memory allocated by this allocator.
+    */
     proc init(size: int(64), param parSafe: bool = false, param alignment: int = 16) {
       this.parSafe = parSafe;
 
@@ -184,19 +307,30 @@ module Allocators {
       ptr = basePtr;
       init this;
     }
+
+    /*
+      Deallocates all memory owned by this allocator. Attempting to use an
+      object allocated by this allocator after calling this method will result
+      in a use-after-free error.
+    */
     proc deinit() {
       if basePtr then
         CTypes.deallocate(basePtr);
     }
 
+    // TODO: not using `do if ...` due to chpldoc bug: https://github.com/chapel-lang/chapel/issues/25790
     @chpldoc.nodoc
-    inline proc _lock()
-      do if parSafe then lock_.lock();
-
+    proc _lock() { if parSafe then lock_.lock(); }
     @chpldoc.nodoc
-    inline proc _unlock()
-      do if parSafe then lock_.unlock();
+    inline proc _unlock() { if parSafe then lock_.unlock(); }
 
+    /*
+      Allocate memory for ``n`` bytes. If :param:`~bumpPtrMemPool.alignment` is
+      greater than 0, the memory will be aligned to that alignment.
+
+      :arg n: The number of bytes to allocate.
+      :returns: A ``c_ptr(void)`` to the allocated memory.
+    */
     proc allocate(n: int): c_ptr(void) {
       _lock();
       if boundsChecking {
@@ -220,8 +354,14 @@ module Allocators {
       _unlock();
       return p;
     }
+
+    /*
+      This is a stub method that does nothing. All memory owned by this
+      allocator is deallocated when the allocator is destroyed.
+
+      :arg p: The pointer to the allocated memory.
+    */
     proc deallocate(p: c_ptr(void)) {
-      // there is currently no API to call this method
       // no-op
     }
   }
