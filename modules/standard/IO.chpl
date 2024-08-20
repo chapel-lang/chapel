@@ -1326,6 +1326,7 @@ private extern proc qio_file_isopen(f:qio_file_ptr_t):bool;
 private extern proc qio_file_sync(f:qio_file_ptr_t):errorCode;
 
 private extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
+private extern proc qio_channel_start_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 private extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyleInternal);
 private extern proc qio_file_get_plugin(f:qio_file_ptr_t):c_ptr(void);
 private extern proc qio_channel_get_plugin(ch:qio_channel_ptr_t):c_ptr(void);
@@ -1351,8 +1352,6 @@ private extern proc qio_channel_get_style(ch:qio_channel_ptr_t, ref style:iostyl
 private extern proc qio_channel_set_style(ch:qio_channel_ptr_t, const ref style:iostyleInternal);
 
 private extern proc qio_channel_get_size(ch: qio_channel_ptr_t):int(64);
-private extern proc qio_channel_get_start_pos(ch: qio_channel_ptr_t):int(64);
-private extern proc qio_channel_get_end_pos(ch: qio_channel_ptr_t):int(64);
 
 private extern proc qio_channel_binary(ch:qio_channel_ptr_t):uint(8);
 private extern proc qio_channel_byteorder(ch:qio_channel_ptr_t):uint(8);
@@ -6997,7 +6996,14 @@ proc fileWriter.styleElement(element:int):int {
 
     For parallel iteration, this procedure does not support specifying multiple
     locales when reading from a memory-file (e.g. files opened with
-    :proc:`openMemFile`)
+    :proc:`openMemFile`), socket, pipe, or other non-file-based sources. An attempt
+    to do so will cause the routine to halt.
+
+  .. note::
+
+    Zippered parallel iteration is not yet supported for this iterator.
+
+  
 
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line —
                      defaults to false
@@ -7009,8 +7015,11 @@ proc fileWriter.styleElement(element:int):int {
 */
 iter fileReader.lines(
   stripNewline = false,
-  targetLocales: [] locale = [here,]
-) {
+  targetLocales: [] locale = [here,],
+  type t = string
+): t
+  where t == string || t == bytes
+{
 
   try! this.lock();
 
@@ -7026,7 +7035,7 @@ iter fileReader.lines(
   this._set_styleInternal(newline_style);
 
   // Iterate over lines
-  var itemReader = new itemReaderInternal(string, locking, deserializerType, this);
+  var itemReader = new itemReaderInternal(t, locking, deserializerType, this);
   for line in itemReader {
     if !stripNewline then yield line;
     else {
@@ -7047,29 +7056,31 @@ iter fileReader.lines(
 iter fileReader.lines(
   param tag: iterKind,
   stripNewline = false,
-  targetLocales: [?tld] locale = [this._home,]
-): string
-  where tag == iterKind.standalone
+  targetLocales: [?tld] locale = [this._home,],
+  type t = string
+): t
+  where tag == iterKind.standalone && (t == string || t == bytes)
 {
   on this._home {
     try! this.lock();
 
     var f = chpl_fileFromReaderOrWriter(this);
 
-    const myStart = qio_channel_get_start_pos(this._channel_internal),
-          myEnd = qio_channel_get_end_pos(this._channel_internal),
-          myBounds = myStart..<(try! min(myEnd, f.size));
+    const myStart = qio_channel_start_offset_unlocked(this._channel_internal),
+          myEnd = qio_channel_end_offset_unlocked(this._channel_internal),
+          myBounds = myStart..<min(myEnd, try! f.size);
 
     if targetLocales.size == 1 && targetLocales.first == this._home {
       // single locale case on this fileReader's home locale
-      const nTasks = here.maxTaskPar,
+      const nTasks = if dataParTasksPerLocale>0 then dataParTasksPerLocale
+                                                else here.maxTaskPar,
             byteOffsets = try! findFileChunks(f, nTasks, myBounds);
 
       coforall tid in 0..<nTasks {
         const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1],
               r = try! f.reader(region=taskBounds);
 
-        var line: string;
+        var line: t;
         while (try! r.readLine(line, stripNewline=stripNewline)) do
           yield line;
       }
@@ -7081,14 +7092,15 @@ iter fileReader.lines(
       coforall lid in 0..<targetLocales.size do on targetLocales[tld.orderToIndex(lid)] {
         const locBounds = byteOffsets[lid]..byteOffsets[lid+1],
               locFile = try! open(fpath, ioMode.r),
-              nTasks = here.maxTaskPar,
+              nTasks = if dataParTasksPerLocale>0 then dataParTasksPerLocale
+                                                  else here.maxTaskPar,
               locByteOffsets = try! findFileChunks(locFile, nTasks, locBounds);
 
         coforall tid in 0..<nTasks {
           const taskBounds = locByteOffsets[tid]..<locByteOffsets[tid+1],
                 r = try! locFile.reader(region=taskBounds);
 
-          var line: string;
+          var line: t;
           while (try! r.readLine(line, stripNewline=stripNewline)) do
             yield line;
         }
