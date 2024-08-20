@@ -30,8 +30,13 @@ module Allocators {
   import ChapelLocks;
   private use ChplConfig;
 
-  private inline proc alignup(ptr: c_ptr(void), param alignment): c_ptr(void) {
-    return ((ptr:c_intptr + (alignment-1)) & ~(alignment-1)):c_intptr:c_ptr(void);
+  private inline proc alignup(ptr: c_ptr(void), param alignment): c_ptr(void)
+    where alignment > 0 && (alignment & (alignment - 1)) == 0 {
+
+    param mask = alignment - 1;
+    const iptr = ptr:c_intptr;
+    const alignedPtr = (iptr + mask) & ~mask;
+    return alignedPtr:c_ptr(void);
   }
 
   interface allocator {
@@ -161,8 +166,12 @@ module Allocators {
 
     proc init(size: int(64), param parSafe: bool = false, param alignment: int = 16) {
       this.parSafe = parSafe;
+
       this.alignment = alignment;
-      if this.alignment < 0 then compilerError("alignment must be non-negative");
+      if this.alignment < 0 then
+        compilerError("alignment must be non-negative");
+      if (this.alignment & (this.alignment - 1)) != 0 then
+        compilerError("alignment must be a power of 2");
 
       this.size = size;
       if boundsChecking {
@@ -170,6 +179,7 @@ module Allocators {
           halt("size must be positive");
         }
       }
+
       basePtr = CTypes.allocate(int(8), this.size.safeCast(c_size_t));
       ptr = basePtr;
       init this;
@@ -196,7 +206,7 @@ module Allocators {
       }
 
       if alignment > 0 then
-        ptr = alignup(ptr, 16): c_ptr(int(8));
+        ptr = alignup(ptr, this.alignment): c_ptr(int(8));
 
       if boundsChecking {
         if (ptr + n):c_intptr > (basePtr + size):c_intptr {
