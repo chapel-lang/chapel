@@ -6973,7 +6973,7 @@ proc fileWriter.styleElement(element:int):int {
   Iterate over all of the lines ending in ``\n`` in a :record:`fileReader` - the
   fileReader lock will be held while iterating over the lines.
 
-  This iterator will halt on internal system errors.
+  This iterator will halt on internal :ref:`system errors<io-general-sys-error>.
 
   **Example:**
 
@@ -7003,8 +7003,6 @@ proc fileWriter.styleElement(element:int):int {
 
     Zippered parallel iteration is not yet supported for this iterator.
 
-  
-
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line —
                      defaults to false
   :arg targetLocales: The locales on which to read the lines (parallel
@@ -7020,9 +7018,18 @@ iter fileReader.lines(
 ): t
   where t == string || t == bytes
 {
-
   try! this.lock();
+  for line in this._lines_serial(stripNewline, t) do yield line;
+  this.unlock();
+}
 
+@chpldoc.nodoc
+iter fileReader._lines_serial(
+  stripNewline = false,
+  type t = string
+): t
+  where t == string || t == bytes
+{
   // Save iostyleInternal
   const saved_style: iostyleInternal = this._styleInternal();
   // Update iostyleInternal
@@ -7048,8 +7055,6 @@ iter fileReader.lines(
 
   // Set the iostyle back to original state
   this._set_styleInternal(saved_style);
-
-  this.unlock();
 }
 
 @chpldoc.nodoc
@@ -7073,37 +7078,58 @@ iter fileReader.lines(
     if targetLocales.size == 1 && targetLocales.first == this._home {
       // single locale case on this fileReader's home locale
       const nTasks = if dataParTasksPerLocale>0 then dataParTasksPerLocale
-                                                else here.maxTaskPar,
-            byteOffsets = try! findFileChunks(f, nTasks, myBounds);
-
-      coforall tid in 0..<nTasks {
-        const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1],
-              r = try! f.reader(region=taskBounds);
-
-        var line: t;
-        while (try! r.readLine(line, stripNewline=stripNewline)) do
-          yield line;
-      }
-    } else {
-      // multi-locale (or non-local) case
-      const fpath = try! f.path,
-            byteOffsets = try! findFileChunks(f, targetLocales.size, myBounds);
-
-      coforall lid in 0..<targetLocales.size do on targetLocales[tld.orderToIndex(lid)] {
-        const locBounds = byteOffsets[lid]..byteOffsets[lid+1],
-              locFile = try! open(fpath, ioMode.r),
-              nTasks = if dataParTasksPerLocale>0 then dataParTasksPerLocale
-                                                  else here.maxTaskPar,
-              locByteOffsets = try! findFileChunks(locFile, nTasks, locBounds);
+                                                else here.maxTaskPar;
+      try {
+        // try to break the file into chunks and read the lines in parallel
+        // typically fails if the file is too small to break into 'nTasks' chunks
+        const byteOffsets = findFileChunks(f, nTasks, myBounds);
 
         coforall tid in 0..<nTasks {
-          const taskBounds = locByteOffsets[tid]..<locByteOffsets[tid+1],
-                r = try! locFile.reader(region=taskBounds);
+          const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1],
+                r = try! f.reader(region=taskBounds);
 
           var line: t;
           while (try! r.readLine(line, stripNewline=stripNewline)) do
             yield line;
         }
+      } catch {
+        // fall back to serial iteration if 'findFileChunks' fails
+        for line in this._lines_serial(stripNewline, t) do yield line;
+      }
+    } else {
+      // multi-locale (or non-local) case
+      const fpath = try! f.path;
+
+      try {
+        // try to break the file into chunks and read the lines in parallel
+        // typically fails if the file is too small to break into 'targetLocales.size' chunks
+        const byteOffsets = findFileChunks(f, targetLocales.size, myBounds);
+
+        coforall lid in 0..<targetLocales.size do on targetLocales[tld.orderToIndex(lid)] {
+          const locBounds = byteOffsets[lid]..byteOffsets[lid+1],
+                locFile = try! open(fpath, ioMode.r),
+                nTasks = if dataParTasksPerLocale>0 then dataParTasksPerLocale
+                                                    else here.maxTaskPar;
+
+          try {
+            // try to break this locale's chunk into 'nTasks' chunks and read the lines in parallel
+            const locByteOffsets = findFileChunks(locFile, nTasks, locBounds);
+            coforall tid in 0..<nTasks {
+              const taskBounds = locByteOffsets[tid]..<locByteOffsets[tid+1],
+                    r = try! locFile.reader(region=taskBounds);
+
+              var line: t;
+              while (try! r.readLine(line, stripNewline=stripNewline)) do
+                yield line;
+            }
+          } catch {
+            // fall back to serial iteration for this locale if 'findFileChunks' fails
+            for line in locFile.reader(region=locBounds)._lines_serial(stripNewline, t) do yield line;
+          }
+        }
+      } catch {
+        // fall back to serial iteration if 'findFileChunks' fails
+        for line in this._lines_serial(stripNewline, t) do yield line;
       }
     }
 
