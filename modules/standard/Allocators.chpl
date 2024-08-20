@@ -47,6 +47,8 @@
   free to implement their own memory management strategies.
 
   Limitations:
+    * The ``newWithAllocator`` and ``deleteWithAllocator`` procedures are meant
+      to be stand-ins pending a more elegant syntax to use custom allocators.
     * This module currently only supports allocating Chapel classes. In the
       future we hope to support other heap objects like arrays.
     * Allocating managed (:type:`~OwnedObject.owned`/:type:`~SharedObject.shared`)
