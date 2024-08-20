@@ -6973,7 +6973,7 @@ proc fileWriter.styleElement(element:int):int {
   Iterate over all of the lines ending in ``\n`` in a :record:`fileReader` - the
   fileReader lock will be held while iterating over the lines.
 
-  This iterator will halt on internal :ref:`system errors<io-general-sys-error>.
+  This iterator will halt on internal :ref:`system errors<io-general-sys-error>`.
 
   **Example:**
 
@@ -6999,7 +6999,7 @@ proc fileWriter.styleElement(element:int):int {
     :proc:`openMemFile`), socket, pipe, or other non-file-based sources. An attempt
     to do so will cause the routine to halt.
 
-  .. note::
+  .. warning::
 
     Zippered parallel iteration is not yet supported for this iterator.
 
@@ -7008,6 +7008,8 @@ proc fileWriter.styleElement(element:int):int {
   :arg targetLocales: The locales on which to read the lines (parallel
                       iteration only) — defaults to the fileReader's home
                       locale
+  :arg t: The type of the lines to read (either :type:`~String.string` or
+          :type:`~Bytes.bytes`)  — defaults to ``string``
   :yields: lines from the fileReader, by default with a trailing ``\n``
 
 */
@@ -7081,7 +7083,7 @@ iter fileReader.lines(
                                                 else here.maxTaskPar;
       try {
         // try to break the file into chunks and read the lines in parallel
-        // typically fails if the file is too small to break into 'nTasks' chunks
+        // can fail if the file is too small to break into 'nTasks' chunks
         const byteOffsets = findFileChunks(f, nTasks, myBounds);
 
         coforall tid in 0..<nTasks {
@@ -7102,7 +7104,7 @@ iter fileReader.lines(
 
       try {
         // try to break the file into chunks and read the lines in parallel
-        // typically fails if the file is too small to break into 'targetLocales.size' chunks
+        // can fail if the file is too small to break into 'targetLocales.size' chunks
         const byteOffsets = findFileChunks(f, targetLocales.size, myBounds);
 
         coforall lid in 0..<targetLocales.size do on targetLocales[tld.orderToIndex(lid)] {
@@ -7146,11 +7148,10 @@ iter fileReader.lines(
   :arg n: the number of chunks to find
   :arg bounds: a range of byte offsets to break into chunks
 
-  :returns: a length ``n+1`` array of byte offsets (the last offset is
-            ``bounds.high``)
+  :returns: a length ``n+1`` array of byte offsets (the first offset is
+            ``bounds.low`` and the last is ``bounds.high``)
 
-  :throws: :class:`OffsetNotFoundError` if a valid byte offset cannot be found
-            in any of the chunks
+  :throws: if a valid byte offset cannot be found for one or more chunks
 */
 @chpldoc.nodoc
 private proc findFileChunks(const ref f: file, n: int, bounds: range): [] int throws {
