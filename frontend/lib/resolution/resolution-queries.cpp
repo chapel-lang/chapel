@@ -3596,6 +3596,27 @@ considerCompilerGeneratedOperators(Context* context,
   return tfs;
 }
 
+static std::vector<std::tuple<const Decl*, QualifiedType>>
+collectGenericFormals(Context* context, const TypedFnSignature* tfs) {
+  std::vector<std::tuple<const Decl*, QualifiedType>> ret;
+
+  // Skip the 'this' formal since it will always be generic if one of the
+  // "real" formals is generic.
+  int formalIdx = 0;
+  if (tfs->untyped()->formalName(0) == USTR("this")) {
+    formalIdx++;
+  }
+
+  for (; formalIdx < tfs->numFormals(); formalIdx++) {
+    auto formalType = tfs->formalType(formalIdx);
+    auto formalDecl = tfs->untyped()->formalDecl(formalIdx);
+    if (formalNeedsInstantiation(context, formalType, formalDecl, /* substitutions */ nullptr)) {
+      ret.push_back(std::make_tuple(formalDecl, formalType));
+    }
+  }
+  return ret;
+}
+
 static void
 considerCompilerGeneratedCandidates(Context* context,
                                    const AstNode* astForErr,
@@ -3638,7 +3659,9 @@ considerCompilerGeneratedCandidates(Context* context,
   }
 
   if (instantiated.candidate()->needsInstantiation()) {
-    context->error(tfs->id(), "invalid instantiation of compiler-generated method");
+    CHPL_REPORT(context, MissingFormalInstantiation,
+                astForErr,
+                collectGenericFormals(context, instantiated.candidate()));
     return; // do not push invalid candidate into list
   }
 

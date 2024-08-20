@@ -60,6 +60,7 @@ ERROR_CLASS(InvalidParamCast, const uast::AstNode*, types::QualifiedType, types:
 ERROR_CLASS(InvalidSuper, const uast::Identifier*, types::QualifiedType)
 ERROR_CLASS(MemManagementNonClass, const uast::New*, const types::Type*)
 ERROR_CLASS(MissingInclude, const uast::Include*, std::string)
+ERROR_CLASS(MissingFormalInstantiation, const uast::AstNode*, std::vector<std::tuple<const uast::Decl*, types::QualifiedType>>)
 ERROR_CLASS(ModuleAsVariable, const uast::AstNode*, const uast::AstNode*, const uast::Module*)
 ERROR_CLASS(MultipleEnumElems, const uast::AstNode*, chpl::UniqueString, const uast::Enum*, std::vector<ID>)
 ERROR_CLASS(MultipleInheritance, const uast::Class*, const uast::AstNode*, const uast::AstNode*)

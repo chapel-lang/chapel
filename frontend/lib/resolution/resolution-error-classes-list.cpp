@@ -741,6 +741,27 @@ void ErrorMissingInclude::write(ErrorWriterBase& wr) const {
   wr.note(moduleInclude, "expected file at path '", filePath, "'");
 }
 
+void ErrorMissingFormalInstantiation::write(ErrorWriterBase& wr) const {
+  // ERROR_CLASS(MissingFormalInstantiation, const uast::AstNode*, std::vector<std::tuple<const uast::Decl*, types::QualifiedType>>)
+  auto call = std::get<0>(info_);
+  auto& genericFormals = std::get<1>(info_);
+
+  wr.heading(kind_, type_, call, "call does not provide enough type information for a complete instantiation.");
+  wr.code(call, {call});
+  for (auto& formal : genericFormals) {
+    auto decl = std::get<0>(formal);
+    auto qt = std::get<1>(formal);
+
+    if (auto named = decl->toNamedDecl()) {
+      wr.note(call, "formal '", named->name(), "' has generic type '", qt.type(), "', but is expected to have a concrete type.");
+    } else {
+      wr.note(call, "formal has generic type '", qt.type(), "', but is expected to have a concrete type.");
+    }
+    wr.codeForDef(decl);
+    wr.message("");
+  }
+}
+
 void ErrorModuleAsVariable::write(ErrorWriterBase& wr) const {
   auto node = std::get<0>(info_);
   auto parent = std::get<1>(info_);
