@@ -2157,8 +2157,16 @@ ApplicabilityResult instantiateSignature(Context* context,
     if (!sig->untyped()->isTypeConstructor()) {
       // We've visited the rest of the formals and figured out their types.
       // Time to backfill the 'this' formal.
-      auto newType = helpGetTypeForDecl(context, ad, newSubstitutions,
-                                        poiScope, sig->formalType(0).type());
+      const Type* newType = helpGetTypeForDecl(context, ad, newSubstitutions,
+                                               poiScope, sig->formalType(0).type());
+
+      // If the original formal is a class type (with management etc.), ensure
+      // that the management etc. is preserved.
+      if (auto sigCt = sig->formalType(0).type()->toClassType()) {
+        if (auto mt = newType->toManageableType()) {
+          newType = ClassType::get(context, mt, sigCt->manager(), sigCt->decorator());
+        }
+      }
 
       formalTypes[0] = QualifiedType(sig->formalType(0).kind(), newType);
     }
