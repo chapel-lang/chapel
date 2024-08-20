@@ -403,6 +403,34 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
 /////// function resolution
 
 static bool
+formalNeedsInstantiation(Context* context,
+                         const QualifiedType& formalType,
+                         const Decl* formalDecl,
+                         const SubstitutionsMap* substitutions) {
+  if (formalType.isUnknown()) {
+    return true;
+  }
+
+  bool considerGenericity = true;
+  if (substitutions != nullptr) {
+    if (formalDecl && substitutions->count(formalDecl->id())) {
+      // don't consider it needing a substitution - e.g. when passing
+      // a generic type into a type argument.
+      considerGenericity = false;
+    }
+  }
+
+  if (considerGenericity) {
+    auto g = getTypeGenericity(context, formalType);
+    if (g != Type::CONCRETE) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+static bool
 anyFormalNeedsInstantiation(Context* context,
                             const std::vector<types::QualifiedType>& formalTs,
                             const UntypedFnSignature* untypedSig,
@@ -410,29 +438,11 @@ anyFormalNeedsInstantiation(Context* context,
   bool genericOrUnknown = false;
   int i = 0;
   for (const auto& qt : formalTs) {
-    if (qt.isUnknown()) {
+    if (formalNeedsInstantiation(context, qt, untypedSig->formalDecl(i),
+                                 substitutions)) {
       genericOrUnknown = true;
       break;
     }
-
-    bool considerGenericity = true;
-    if (substitutions != nullptr) {
-      auto formalDecl = untypedSig->formalDecl(i);
-      if (formalDecl && substitutions->count(formalDecl->id())) {
-        // don't consider it needing a substitution - e.g. when passing
-        // a generic type into a type argument.
-        considerGenericity = false;
-      }
-    }
-
-    if (considerGenericity) {
-      auto g = getTypeGenericity(context, qt);
-      if (g != Type::CONCRETE) {
-        genericOrUnknown = true;
-        break;
-      }
-    }
-
     i++;
   }
   return genericOrUnknown;
