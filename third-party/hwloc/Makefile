@@ -26,6 +26,13 @@ CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-gl \
                           --disable-rsmi
 
+# TODO: this is also needed for colocales with GPUs
+# PCI support is needed for NIC selection, which currently is only supported
+# with the ofi comm layer
+ifneq ($(CHPL_MAKE_COMM), ofi)
+	CHPL_HWLOC_CFG_OPTIONS += --disable-pci
+endif
+
 ifdef CHPL_HWLOC_PREFIX
    CHPL_HWLOC_CFG_OPTIONS += --with-hwloc-symbol-prefix=$(CHPL_HWLOC_PREFIX)
 endif
