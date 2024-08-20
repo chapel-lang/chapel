@@ -14,7 +14,7 @@ class C4 {
   }
 }
 
-var pool = new malloc();
+var pool = new mallocWrapper();
 
 
 {
