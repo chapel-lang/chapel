@@ -1176,7 +1176,8 @@ static void insertFieldAccess(FnSymbol*          method,
   checkIdInsideWithClause(expr, usymExpr);
 
   if (nestDepth > 0) {
-    USR_FATAL_CONT("Illegal use of identifier '%s' from enclosing type", name);
+    USR_FATAL_CONT(usymExpr,
+                   "Illegal use of identifier '%s' from enclosing type", name);
   }
 
   if (isTypeSymbol(sym) == true) {
