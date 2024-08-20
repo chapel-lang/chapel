@@ -40,6 +40,14 @@ and written to a second BMP file.
    writeImage("pixels2.bmp", imageType.bmp, scale(arr, 2));
 
 
+A common convention taken by this module is to distinguish between arrays of
+colors and arrays of pixels. An array of colors is a 2D array where each
+element is a tuple of color values. An array of pixels is a 2D array where each
+element is a single color value. The module provides functions
+(:proc:`colorToPixel` and :proc:`pixelToColor`) to convert between these two
+representations. Many functions, like :proc:`concatImage`, can work with either
+representation.
+
 */
 @unstable("Image is unstable")
 module Image {
@@ -179,6 +187,12 @@ module Image {
     }
   }
 
+  private inline proc checkFormat(format: 3*rgbColor) do
+    if !(format[0] != format[1] &&
+          format[1] != format[2] &&
+          format[0] != format[2]) then
+      halt("format must be a permutation of (red, green, blue)");
+
   /*
     Takes a 2D array of color values and turns them into pixels. The order of
     the colors is determined by the ``format`` formal. The default format is
@@ -192,13 +206,7 @@ module Image {
   proc colorToPixel(colors: [?d] 3*pixelType, format: 3*rgbColor = (rgbColor.red, rgbColor.green, rgbColor.blue)): [d] pixelType
     where d.isRectangular() && d.rank == 2 {
 
-    // check format
-    if boundsChecking {
-      if !(format[0] != format[1] &&
-           format[1] != format[2] &&
-           format[0] != format[2]) then
-        halt("colorToPixel: format must be a permutation of (red, green, blue)");
-    }
+    if boundsChecking then checkFormat(format);
 
     proc getColorAsPixel(color: pixelType, offset: rgbColor) {
       return (color & colorMask) << colorOffset(offset);
@@ -213,6 +221,30 @@ module Image {
 
     return outPixels;
   }
+
+  /*
+  */
+  proc shuffleColors(colors: [] 3*pixelType, inFormat: 3*rgbColor, outFormat: 3*rgbColor = (rgbColor.red, rgbColor.green, rgbColor.blue)): colors.type
+    where colors.isRectangular() && colors.rank == 2 {
+
+    if boundsChecking {
+      checkFormat(inFormat);
+      checkFormat(outFormat);
+    }
+
+    var outColors: colors.type;
+    forall (c, outC) in zip(colors, outColors) {
+      const c0 = c[inFormat[0]:int];
+      const c1 = c[inFormat[1]:int];
+      const c2 = c[inFormat[2]:int];
+      outC[outFormat[0]:int] = c0;
+      outC[outFormat[1]:int] = c1;
+      outC[outFormat[2]:int] = c2;
+    }
+
+    return outColors;
+  }
+
 
   /*
     Takes a 2D array of some element type and computes an integer color
@@ -270,6 +302,9 @@ module Image {
   }
 
 
+  // TODO: this is a simple nearest neighbor scaling. It would be nice to have
+  // an enum to control the scaling algorithm. It would also be nice to be able
+  // to scale down an image and use a non-integer factor.
   /*
     Scale a 2D array of pixels by a given factor
 
@@ -279,6 +314,11 @@ module Image {
   */
   proc scale(arr: [?d], factor: int): []
     where d.isRectangular() && d.rank == 2 {
+
+    if boundsChecking then
+      if factor <= 0 then
+        halt("factor must be greater than 0");
+
     var rows = d.dim(0).size,
         cols = d.dim(1).size;
 
@@ -293,6 +333,137 @@ module Image {
     return outArr;
   }
 
+  /**/
+  enum direction {
+    /**/
+    horizontal,
+    /**/
+    vertical
+  }
+  proc concatImage(pixels1: [] ?et,
+                   pixels2: [] et,
+                   dir: direction = direction.horizontal): [] et
+    where pixels1.isRectangular() && pixels1.rank == 2 &&
+          pixels2.isRectangular() && pixels2.rank == 2
+    {
+    const d1 = pixels1.domain, d2 = pixels2.domain;
+    const newDom, d2Offset;
+    select dir {
+      when direction.vertical {
+        if boundsChecking then
+          if d1.dim(1).size != d2.dim(1).size then
+            halt("pixels1 and pixels2 must have the same number of columns");
+
+        newDom = {
+          d1.dim(0).lowBound..#(d1.dim(0).size + d2.dim(0).size),
+          d1.dim(1)
+          };
+        d2Offset = {
+          (d1.dim(0).highBound+1)..#(d2.dim(0).size),
+          d1.dim(1)
+        };
+      }
+      when direction.horizontal {
+        if boundsChecking then
+          if d1.dim(0).size != d2.dim(0).size then
+            halt("pixels1 and pixels2 must have the same number of rows");
+
+        newDom = {
+          d1.dim(0),
+          d1.dim(1).lowBound..#(d1.dim(1).size + d2.dim(1).size)
+        };
+        d2Offset = {
+          d1.dim(0),
+          (d1.dim(1).highBound+1)..#(d2.dim(1).size)
+        };
+      }
+      otherwise do halt("unknown direction");
+    }
+
+    var pixels: [newDom] et;
+    pixels[d1] = pixels1;
+    pixels[d2Offset] = pixels2;
+    return pixels;
+  }
+
+  /**/
+  enum cornerType {
+    /**/
+    topLeft,
+    /**/
+    topRight,
+    /**/
+    bottomLeft,
+    /**/
+    bottomRight,
+    /**/
+    center
+  }
+  /**/
+  enum mergeMethod {
+    /**/
+    overwrite,
+    /**/
+    add
+  }
+  /*paste into base with left hand corner*/
+  proc pasteInto(ref base: [?d1] ?et,
+                 other: [?d2] et,
+                 idx: 2*integral,
+                 corner = cornerType.topLeft,
+                 merge = mergeMethod.overwrite): [] et
+    where base.isRectangular() && base.rank == 2 &&
+          other.isRectangular() && other.rank == 2 {
+
+    var pasteDom: domain(2);
+    select corner {
+      when cornerType.topLeft {
+        pasteDom = {
+          idx[0]..#(d2.dim(0).size),
+          idx[1]..#(d2.dim(1).size)
+        };
+      }
+      when cornerType.center {
+        // TODO: this can result in incorrect bounds. why?
+        private use Math;
+        const radius0 = divFloor(d2.dim(0).size, 2);
+        const radius1 = divFloor(d2.dim(1).size, 2);
+        pasteDom = {
+          (idx[0]-radius0)..#(d1.dim(0).size),
+          (idx[1]-radius1)..#(d1.dim(1).size)
+        };
+      }
+      otherwise do halt("unsupported cornerType");
+    }
+
+    select merge {
+      when mergeMethod.overwrite {
+        base[pasteDom] = other;
+      }
+      when mergeMethod.add {
+        base[pasteDom] = other | base[pasteDom];
+      }
+      otherwise do halt("unknown mergeMethod");
+    }
+
+  }
+
+
+  private proc concatArrays(arrays:[?dom]?elmType...?nArrays): [] elmType
+    where dom.isRectangular() && dom.rank == 1 {
+    var n: int;
+    for param i in 0..#nArrays do
+      n += arrays[i].domain.size;
+
+    var outArr: [0..#n] elmType;
+
+    var idx = 0;
+    for param i in 0..#nArrays {
+      outArr[idx..#arrays[i].domain.size] = arrays[i];
+      idx += arrays[i].domain.size;
+    }
+    return outArr;
+  }
 
   private import Subprocess as sp;
   /*
@@ -308,7 +479,11 @@ module Image {
     @chpldoc.nodoc
     var process: sp.subprocess(true);
 
-    proc init(image: string, imgType: imageType, framerate: int = 30, rateFactor: int = 1) throws {
+    proc init(image: string,
+              imgType: imageType,
+              framerate: int = 30,
+              rateFactor: int = 1,
+              verbose: bool = false) throws {
       this.imageName = image;
       this.imgType = imgType;
       init this;
@@ -330,13 +505,18 @@ module Image {
                          "-crf", rateFactor:string,
                          "-pix_fmt", "yuv420p",
                          this.imageName];
-      const nArgs = ffmpegStart.domain.size + pixelFmtArgs.domain.size + ffmpegEnd.domain.size;
-      var args: [0..#nArgs] string;
-      args[0..#ffmpegStart.domain.size] = ffmpegStart;
-      args[ffmpegStart.domain.size..#pixelFmtArgs.domain.size] = pixelFmtArgs;
-      args[(ffmpegStart.domain.size + pixelFmtArgs.domain.size)..#ffmpegEnd.size] = ffmpegEnd;
+      const verboseArgs = if verbose
+                            then ["-hide_banner"]
+                            else ["-hide_banner", "-loglevel", "error"];
+      var args = concatArrays(ffmpegStart, pixelFmtArgs, ffmpegEnd, verboseArgs);
 
-      this.process = sp.spawn(args, stdin=sp.pipeStyle.pipe);
+      try {
+        this.process = sp.spawn(args, stdin=sp.pipeStyle.pipe);
+      } catch e: FileNotFoundError {
+        halt("ffmpeg not found. Please install ffmpeg to use the mediaPipe");
+      } catch e {
+        throw e;
+      }
     }
     proc ref deinit() {
       try! finish();
