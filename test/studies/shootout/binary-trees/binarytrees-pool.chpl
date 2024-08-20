@@ -1,17 +1,18 @@
 /* The Computer Language Benchmarks Game
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
-   contributed by Casey Battaglino, Ben Harshbarger, Brad Chamberlain, and Jade Abraham
-   derived from the GNU C version by Jeremy Zerfas
+   contributed by Jade Abraham
+   based on the Chapel #3 version by Casey Battaglino, Ben Harshbarger, and
+     Brad Chamberlain
 */
 
 use Allocators;
 
-config const n = 10;         // the maximum tree depth
-config const globalPoolSize = 2 ** 32;
-config const localPoolSize = 2 ** 32;
+config const n = 10,         // the maximum tree depth
+             globalPoolSize = 2 ** 32,
+             localPoolSize = globalPoolSize;
 
-var globalPool = new bumpPtrMemPool(globalPoolSize, parSafe=false, alignment=0);
+var globalPool = new bumpPtrMemPool(globalPoolSize, alignment=0);
 
 proc main() {
   const minDepth = 4,                      // the shallowest tree
@@ -43,9 +44,7 @@ proc main() {
 
     forall i in 1..iterations
       with (+ reduce sum,
-            var localPool = new bumpPtrMemPool(localPoolSize,
-                                               parSafe=false,
-                                               alignment=0)) {
+            var localPool = new bumpPtrMemPool(localPoolSize, alignment=0)) {
       const t = newWithAllocator(localPool, unmanaged Tree, depth, localPool);
       sum += t.sum();
     }
