@@ -56,4 +56,5 @@ class Tree {
   tree!.insert(8);
   tree!.insert(2);
   tree!.print();
+  deleteWithAllocator(pool, tree);
 }
