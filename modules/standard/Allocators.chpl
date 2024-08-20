@@ -169,15 +169,9 @@ module Allocators {
     for param i in 0..#k {
       newTypeCheckHelper(objects(i).type);
       if compiledForSingleLocale() {
-        chpl__delete(objects(i), false);
-        var p = c_ptrTo(objects(i));
-        alloc.deallocate(p);
+                         chpl__deleteWithAllocator(alloc, objects(i));
       } else {
-        on objects(i) {
-          chpl__delete(objects(i), false);
-          var p = c_ptrTo(objects(i));
-          alloc.deallocate(p);
-        }
+        on objects(i) do chpl__deleteWithAllocator(alloc, objects(i));
       }
     }
   }
@@ -187,17 +181,26 @@ module Allocators {
     for param i in 0..#k {
       newTypeCheckHelper(objects(i).type);
       if compiledForSingleLocale() {
-        chpl__delete(objects(i), false);
-        var p = c_ptrTo(objects(i));
-        alloc.deallocate(p);
+                         chpl__deleteWithAllocator(alloc, objects(i));
       } else {
-        on objects(i) {
-          chpl__delete(objects(i), false);
-          var p = c_ptrTo(objects(i));
-          alloc.deallocate(p);
-        }
+        on objects(i) do chpl__deleteWithAllocator(alloc, objects(i));
       }
     }
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl__deleteWithAllocator(const ref alloc: class, const obj) {
+    var p = c_ptrTo(obj);
+    if obj != nil then
+      obj!.deinit();
+    alloc.deallocate(p);
+  }
+  @chpldoc.nodoc
+  inline proc chpl__deleteWithAllocator(ref alloc: record, const obj) {
+    var p = c_ptrTo(obj);
+    if obj != nil then
+      obj!.deinit();
+    alloc.deallocate(p);
   }
 
   @chpldoc.nodoc

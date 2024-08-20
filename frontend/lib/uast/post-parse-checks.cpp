@@ -687,6 +687,7 @@ void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
   if (auto foundFn = searchParents(asttags::Function, nullptr)) {
     auto fn = foundFn->toFunction();
     if (fn->name() == "chpl__delete") return;
+    if (fn->name() == "chpl__deleteWithAllocator") return;
   }
 
   error(node, "explicit calls to deinit() are not allowed.");
