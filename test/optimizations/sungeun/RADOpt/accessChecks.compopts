@@ -1,1 +1,1 @@
---checks -srank=3
+--checks -srank=3 -o accessChecks
