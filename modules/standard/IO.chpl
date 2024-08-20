@@ -7120,9 +7120,11 @@ iter fileReader.lines(
               const taskBounds = locByteOffsets[tid]..<locByteOffsets[tid+1],
                     r = try! locFile.reader(region=taskBounds);
 
-              var line: t;
-              while (try! r.readLine(line, stripNewline=stripNewline)) do
-                yield line;
+              if taskBounds.size > 0 {
+                var line: t;
+                while (try! r.readLine(line, stripNewline=stripNewline)) do
+                  yield line;
+              }
             }
           } catch {
             // fall back to serial iteration for this locale if 'findFileChunks' fails
