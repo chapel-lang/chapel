@@ -3588,6 +3588,7 @@ considerCompilerGeneratedOperators(Context* context,
 
 static void
 considerCompilerGeneratedCandidates(Context* context,
+                                   const AstNode* astForErr,
                                    const CallInfo& ci,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope,
@@ -3801,6 +3802,7 @@ static void filterCandidatesLastResort(
 // when using forwarding.
 static void
 gatherAndFilterCandidatesForwarding(Context* context,
+                                    const AstNode* astForErr,
                                     const Call* call,
                                     const CallInfo& ci,
                                     const CallScopeInfo& inScopes,
@@ -3901,7 +3903,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
     for (const auto& fci : forwardingCis) {
       size_t start = nonPoiCandidates.size();
       // consider compiler-generated candidates
-      considerCompilerGeneratedCandidates(context, fci,
+      considerCompilerGeneratedCandidates(context, astForErr, fci,
                                           inScopes.callScope(), inScopes.poiScope(),
                                           nonPoiCandidates,
                                           rejected);
@@ -3999,7 +4001,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
         if (fci.isMethodCall() && fci.numActuals() >= 1) {
           const Type* receiverType = fci.actual(0).type().type();
           if (typeUsesForwarding(context, receiverType)) {
-            gatherAndFilterCandidatesForwarding(context, call, fci,
+            gatherAndFilterCandidatesForwarding(context,
+                                                astForErr, call, fci,
                                                 inScopes,
                                                 nonPoiCandidates,
                                                 poiCandidates,
@@ -4053,6 +4056,7 @@ static bool isInsideForwarding(Context* context, const Call* call) {
 // to the 'this' receiver formal.
 static CandidatesAndForwardingInfo
 gatherAndFilterCandidates(Context* context,
+                          const AstNode* astForErr,
                           const Call* call,
                           const CallInfo& ci,
                           const CallScopeInfo& inScopes,
@@ -4068,7 +4072,7 @@ gatherAndFilterCandidates(Context* context,
   //  the poiInfo from these is not gathered, because such methods should
   //  always be available in any scope that can refer to the type & are
   //  considered part of the custom type)
-  considerCompilerGeneratedCandidates(context, ci,
+  considerCompilerGeneratedCandidates(context, astForErr, ci,
                                       inScopes.callScope(),
                                       inScopes.poiScope(),
                                       candidates,
@@ -4182,7 +4186,7 @@ gatherAndFilterCandidates(Context* context,
       CandidatesAndForwardingInfo poiCandidates;
 
       gatherAndFilterCandidatesForwarding(
-          context, call, ci, inScopes, nonPoiCandidates,
+          context, astForErr, call, ci, inScopes, nonPoiCandidates,
           poiCandidates, lrcGroups.getForwardingGroups(),
           rejected);
 
@@ -4244,6 +4248,7 @@ findMostSpecificAndCheck(Context* context,
 
 static MostSpecificCandidates
 resolveFnCallFilterAndFindMostSpecific(Context* context,
+                                       const AstNode* astForErr,
                                        const Call* call,
                                        const CallInfo& ci,
                                        const CallScopeInfo& inScopes,
@@ -4253,7 +4258,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   // search for candidates at each POI until we have found candidate(s)
   size_t firstPoiCandidate = 0;
   CandidatesAndForwardingInfo candidates = gatherAndFilterCandidates(
-      context, call, ci, inScopes, firstPoiCandidate, rejected);
+      context, astForErr, call, ci, inScopes, firstPoiCandidate, rejected);
 
   // * find most specific candidates / disambiguate
   // * check signatures
@@ -4271,6 +4276,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
 // what is called.
 static
 CallResolutionResult resolveFnCall(Context* context,
+                                   const AstNode* astForErr,
                                    const Call* call,
                                    const CallInfo& ci,
                                    const CallScopeInfo& inScopes,
@@ -4292,7 +4298,7 @@ CallResolutionResult resolveFnCall(Context* context,
     // * filter and instantiate
     // * disambiguate
     // * note any most specific candidates from POI in poiInfo.
-    mostSpecific = resolveFnCallFilterAndFindMostSpecific(context, call, ci,
+    mostSpecific = resolveFnCallFilterAndFindMostSpecific(context, astForErr, call, ci,
                                                           inScopes,
                                                           poiInfo, rejected);
   }
@@ -4463,7 +4469,7 @@ CallResolutionResult resolveCall(Context* context,
     }
 
     // otherwise do regular call resolution
-    return resolveFnCall(context, call, ci, inScopes, rejected);
+    return resolveFnCall(context, call, call, ci, inScopes, rejected);
   } else if (auto prim = call->toPrimCall()) {
     return resolvePrimCall(context, prim, ci, inScopes.callScope(), inScopes.poiScope());
   } else if (auto tuple = call->toTuple()) {
@@ -4516,7 +4522,7 @@ CallResolutionResult resolveGeneratedCall(Context* context,
     return CallResolutionResult(std::move(tmpRetType));
   }
   // otherwise do regular call resolution
-  return resolveFnCall(context, /* call */ nullptr, ci, inScopes, rejected);
+  return resolveFnCall(context, astForErr, /* call */ nullptr, ci, inScopes, rejected);
 }
 
 CallResolutionResult
