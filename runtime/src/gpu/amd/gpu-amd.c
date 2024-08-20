@@ -105,7 +105,7 @@ static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, hipModule_t module) {
     // The validation only happens when built with assertions (commonly
     // enabled by CHPL_DEVELOPER), and chpl_gpu_impl_copy_host_to_device
     // only causes issues in that case.
-    ROCM_CALL(hipMemcpyDtoD(ptr, (void*)&chpl_nodeID, glob_size));
+    ROCM_CALL(hipMemcpyHtoD(ptr, (void*)&chpl_nodeID, glob_size));
   }
 }
 
