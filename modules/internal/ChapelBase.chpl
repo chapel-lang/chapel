@@ -2619,7 +2619,7 @@ module ChapelBase {
 
   // implements 'delete' statement
   pragma "no borrow convert"
-  proc chpl__delete(const arg) {
+  proc chpl__delete(const arg, param noFree: bool = false) {
 
     if chpl_isDdata(arg.type) then
       compilerError("cannot delete data class");
@@ -2641,8 +2641,9 @@ module ChapelBase {
     if (arg != nil) {
       arg!.deinit();
 
-      on arg do
-        chpl_here_free(__primitive("_wide_get_addr", arg));
+      if !noFree then
+        on arg do
+          chpl_here_free(__primitive("_wide_get_addr", arg));
     }
   }
 

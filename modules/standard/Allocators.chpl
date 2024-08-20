@@ -169,10 +169,12 @@ module Allocators {
     for param i in 0..#k {
       newTypeCheckHelper(objects(i).type);
       if compiledForSingleLocale() {
+        chpl__delete(objects(i), false);
         var p = c_ptrTo(objects(i));
         alloc.deallocate(p);
       } else {
         on objects(i) {
+          chpl__delete(objects(i), false);
           var p = c_ptrTo(objects(i));
           alloc.deallocate(p);
         }
@@ -185,10 +187,12 @@ module Allocators {
     for param i in 0..#k {
       newTypeCheckHelper(objects(i).type);
       if compiledForSingleLocale() {
+        chpl__delete(objects(i), false);
         var p = c_ptrTo(objects(i));
         alloc.deallocate(p);
       } else {
         on objects(i) {
+          chpl__delete(objects(i), false);
           var p = c_ptrTo(objects(i));
           alloc.deallocate(p);
         }
