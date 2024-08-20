@@ -1,0 +1,3 @@
+feature request: pass type/param arguments to `newWithAllocator`
+
+This fails because we can't mix types and values in tuples
