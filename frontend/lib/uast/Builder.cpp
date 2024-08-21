@@ -488,7 +488,8 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     }
 
     int numContainedIds = freshId;
-    ast->setID(ID(newSymbolPath, -1, numContainedIds));
+    int postOrderId = this->generatedCode_ ? -3 : -1;
+    ast->setID(ID(newSymbolPath, postOrderId, numContainedIds));
 
     // Note: when creating a new symbol (e.g. fn), we're not incrementing i.
     // The new symbol ID has the updated path (e.g. function name)
@@ -509,7 +510,7 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     }
 
     int afterChildID = i;
-    int myID = this->generatedCode_ ? -2 - afterChildID : afterChildID;
+    int myID = this->generatedCode_ ? -4 - afterChildID : afterChildID;
     i++; // count the ID for the node we are currently visiting
     int numContainedIDs = afterChildID - firstChildID;
     ast->setID(ID(symbolPath, myID, numContainedIDs));

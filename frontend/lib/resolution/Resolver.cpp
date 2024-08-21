@@ -2390,11 +2390,13 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
 
   if (id.isFabricatedId()) {
     switch (id.fabricatedIdKind()) {
-      case ID::ExternBlockElement:
-      // TODO: resolve types for extern block
-      // (will need the Identifier name for that)
-      auto unknownType = UnknownType::get(context);
-      return QualifiedType(QualifiedType::UNKNOWN, unknownType);
+      case ID::ExternBlockElement: {
+        // TODO: resolve types for extern block
+        // (will need the Identifier name for that)
+        auto unknownType = UnknownType::get(context);
+        return QualifiedType(QualifiedType::UNKNOWN, unknownType);
+      }
+      case ID::Generated: break;
     }
   }
 

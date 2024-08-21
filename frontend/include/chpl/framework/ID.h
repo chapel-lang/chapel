@@ -26,6 +26,7 @@
 namespace chpl {
 class Context;
 
+#define ID_GEN_START -3
 
 /**
   This class represents an ID for an AST node.
@@ -38,6 +39,7 @@ class ID final {
   enum FabricatedIdKind {
     // all of these need to be <= -2
     ExternBlockElement = -2,
+    Generated = ID_GEN_START,
   };
 
  private:
@@ -102,8 +104,14 @@ class ID final {
     (as with Function or Module) this will return -1.
    */
   int postOrderId() const {
-    if (postOrderId_ < -1) {
-      return (postOrderId_ * -1) - 2;
+    if (postOrderId_ < -2) {
+      if (postOrderId_ == ID_GEN_START) {
+        // generated symbol
+        return -1;
+      } else {
+        // generated uAST nodes
+        return (postOrderId_ * -1) - ID_GEN_START - 1;
+      }
     } else {
       return postOrderId_;
     }
@@ -114,7 +122,8 @@ class ID final {
     which means this is an ID for something that defines a new symbol
     scope.
    */
-   inline bool isSymbolDefiningScope() const { return postOrderId_ == -1; }
+   inline bool isSymbolDefiningScope() const { return postOrderId_ == -1 ||
+                                                      postOrderId_ == ID_GEN_START; }
 
   /**
     Some IDs are introduced during compilation and don't represent
@@ -125,7 +134,11 @@ class ID final {
 
   FabricatedIdKind fabricatedIdKind() const {
     CHPL_ASSERT(isFabricatedId());
-    return (FabricatedIdKind) postOrderId_;
+    if (postOrderId_ <= ID_GEN_START) {
+      return FabricatedIdKind::Generated;
+    } else {
+      return (FabricatedIdKind) postOrderId_;
+    }
   }
 
   /**
