@@ -7,7 +7,7 @@ use LayoutCS;
 const rr = 4, cc = 5;
 
 var dd = {1..rr, 1..cc};
-var sd: sparse subdomain(dd) dmapped new dmap(new CS());
+var sd: sparse subdomain(dd) dmapped new cs();
 
 var cnt = 0;
 proc show(msg...) {
