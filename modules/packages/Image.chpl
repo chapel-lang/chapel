@@ -370,6 +370,7 @@ module Image {
   }
 
   private module BMPHelper {
+    private use IO;
 
     enum Implementation {
       native,
@@ -453,6 +454,7 @@ module Image {
   }
 
   private module PNGHelper {
+    private use IO;
     enum Implementation {
       stb_image,
       libpng
@@ -481,6 +483,7 @@ module Image {
   }
 
   private module JPGHelper {
+    private use IO;
     enum Implementation {
       stb_image
     }
@@ -542,7 +545,7 @@ module Image {
 
     // rewrite pixels into the right format for stb_image
     private proc writeCommon(const ref outfile: fileWriter(?), pixels: [?dom]):
-      (c_ptr(void), c_ptr(void), c_int, c_int, c_int, c_ptr(uint(8))) throws {
+      (c_fn_ptr, c_ptr(void), c_int, c_int, c_int, c_ptr(uint(8))) throws {
       const rows = dom.dim(0).size, cols = dom.dim(1).size;
 
       // 1=Y, 2=YA, 3=RGB, 4=RGBA
@@ -564,7 +567,7 @@ module Image {
                           then c_ptrTo(stbi_writeFuncLocking)
                           else c_ptrTo(stbi_writeFunc);
 
-      const context = c_ptrTo(outfile);
+      const context = c_ptrToConst(outfile):c_ptrConst(void):c_ptr(void);
       return (writeFunc, context, width.safeCast(c_int), height.safeCast(c_int), mode, data);
     }
 
