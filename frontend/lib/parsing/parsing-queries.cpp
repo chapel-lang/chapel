@@ -204,30 +204,34 @@ compilerGeneratedBuilderQuery(Context* context, UniqueString symbolPath) {
 // parses whatever file exists that contains the passed ID and returns it
 const BuilderResult*
 parseFileContainingIdToBuilderResult(Context* context, ID id) {
-  {
-    UniqueString symbolPath = id.symbolPath();
+  if (id.isFabricatedId() &&
+      id.fabricatedIdKind() == ID::FabricatedIdKind::Generated) {
+    // Find the generated module's symbol path
+    UniqueString symbolPath;
+    if (id.symbolName(context).startsWith("chpl__generated")) {
+      symbolPath = id.symbolPath();
+    } else {
+      symbolPath = ID::parentSymbolPath(context, id.symbolPath());
 
-    while (!symbolPath.isEmpty()) {
-      auto tupleOfArgs = std::make_tuple(symbolPath);
-      auto got = context->hasCurrentResultForQuery(compilerGeneratedBuilderQuery, tupleOfArgs);
-      if (got) {
-        const BuilderResult& p = getCompilerGeneratedBuilder(context, symbolPath);
-        return &p;
-      }
-      symbolPath = ID::parentSymbolPath(context, symbolPath);
+      // Assumption: The generated module goes only one symbol deep.
+      CHPL_ASSERT(ID::innermostSymbolName(context, symbolPath).startsWith("chpl__generated"));
     }
-  }
 
-  UniqueString path;
-  UniqueString parentSymbolPath;
-  bool found = context->filePathForId(id, path, parentSymbolPath);
-  if (found) {
-    const BuilderResult& p = parseFileToBuilderResult(context, path,
-                                                      parentSymbolPath);
-    return &p;
-  }
+    const BuilderResult& br = getCompilerGeneratedBuilder(context, symbolPath);
+    assert(br.numTopLevelExpressions() != 0);
+    return &br;
+  } else  {
+    UniqueString path;
+    UniqueString parentSymbolPath;
+    bool found = context->filePathForId(id, path, parentSymbolPath);
+    if (found) {
+      const BuilderResult& p = parseFileToBuilderResult(context, path,
+                                                        parentSymbolPath);
+      return &p;
+    }
 
-  return nullptr;
+    return nullptr;
+  }
 }
 
 const BuilderResult&
