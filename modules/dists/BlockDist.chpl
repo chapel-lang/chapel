@@ -1340,7 +1340,7 @@ proc BlockDom.dsiDims() do        return whole.dims();
 proc BlockDom.dsiGetIndices() do  return whole.getIndices();
 proc BlockDom.dsiMember(i) do     return whole.contains(i);
 proc BlockDom.doiToString() do    return whole:string;
-proc BlockDom.dsiSerialWrite(x) { x.write(whole); }
+proc BlockDom.dsiSerialWrite(x) throws { x.write(whole); }
 proc BlockDom.dsiLocalSlice(param strides, ranges) do return whole((...ranges));
 override proc BlockDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
 override proc BlockDom.dsiMyDist() do                   return dist;
