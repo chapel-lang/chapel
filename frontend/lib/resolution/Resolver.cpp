@@ -2352,6 +2352,9 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       auto runResult = context->runAndTrackErrors([&](Context* ctx) {
         const AstNode* questionArg = nullptr;
         std::vector<CallInfoActual> actuals;
+        // Set up receiver
+        auto receiverArg = CallInfoActual(rCalledExp.type(), USTR("this"));
+        actuals.push_back(std::move(receiverArg));
         // Set up 'dist' arg
         auto defaultDistArg = CallInfoActual(
             QualifiedType(QualifiedType::CONST_REF,
@@ -2362,7 +2365,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
         prepareCallInfoActuals(call, actuals, questionArg);
         CHPL_ASSERT(!questionArg);
         auto ci =
-            CallInfo(UniqueString::get(context, "chpl__buildDomainRuntimeType"),
+            CallInfo(USTR("init"),
                      rCalledExp.type(),
                      /* isMethodCall */ false,
                      /* hasQuestionArg */ false,
