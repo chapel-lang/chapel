@@ -3,7 +3,7 @@ use LayoutCS;
 config param compressRows = true, checkError = false;
 
 var D = {1..9, 1..9};
-var SD: sparse subdomain(D) dmapped new dmap(new CS(compressRows=compressRows));
+var SD: sparse subdomain(D) dmapped new cs(compressRows=compressRows);
 
 for i in 1..9 do
   for j in -1..1 do
