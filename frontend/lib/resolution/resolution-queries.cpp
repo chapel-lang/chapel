@@ -659,8 +659,9 @@ const Type* initialTypeForTypeDecl(Context* context, ID declId) {
 const ResolvedFields& resolveFieldDecl(Context* context,
                                        const CompositeType* ct,
                                        ID fieldId,
-                                       DefaultsPolicy defaultsPolicy) {
-  QUERY_BEGIN(resolveFieldDecl, context, ct, fieldId, defaultsPolicy);
+                                       DefaultsPolicy defaultsPolicy,
+                                       bool ignoreTypes) {
+  QUERY_BEGIN(resolveFieldDecl, context, ct, fieldId, defaultsPolicy, ignoreTypes);
 
   ResolvedFields result;
   bool isObjectType = false;
@@ -692,27 +693,34 @@ const ResolvedFields& resolveFieldDecl(Context* context,
     if (ct->instantiatedFromCompositeType() == nullptr) {
       // handle resolving a not-yet-instantiated type
       ResolutionResultByPostorderID r;
-      auto visitor =
-        Resolver::createForInitialFieldStmt(context, ad, fieldAst,
-                                            ct, r, defaultsPolicy);
 
-      // resolve the field types and set them in 'result'
-      fieldAst->traverse(visitor);
+      if (!ignoreTypes) {
+        auto visitor =
+          Resolver::createForInitialFieldStmt(context, ad, fieldAst,
+                                              ct, r, defaultsPolicy);
+
+        // resolve the field types and set them in 'result'
+        fieldAst->traverse(visitor);
+      }
+
       helpSetFieldTypes(fieldAst, r, /* initedInParent */ false, result);
     } else {
       // handle resolving an instantiated type
-
-      // use nullptr for POI scope because POI is not considered
-      // when resolving the fields when constructing a type..
-      const PoiScope* poiScope = nullptr;
       ResolutionResultByPostorderID r;
-      auto visitor =
-        Resolver::createForInstantiatedFieldStmt(context, ad, fieldAst, ct,
-                                                 poiScope, r,
-                                                 defaultsPolicy);
 
-      // resolve the field types and set them in 'result'
-      fieldAst->traverse(visitor);
+      if (!ignoreTypes) {
+        // use nullptr for POI scope because POI is not considered
+        // when resolving the fields when constructing a type..
+        const PoiScope* poiScope = nullptr;
+        auto visitor =
+          Resolver::createForInstantiatedFieldStmt(context, ad, fieldAst, ct,
+                                                   poiScope, r,
+                                                   defaultsPolicy);
+
+        // resolve the field types and set them in 'result'
+        fieldAst->traverse(visitor);
+      }
+
       helpSetFieldTypes(fieldAst, r, /* initedInParent */ false, result);
     }
   }
@@ -724,8 +732,9 @@ const ResolvedFields& resolveFieldDecl(Context* context,
 static
 const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
                                              const CompositeType* ct,
-                                             DefaultsPolicy defaultsPolicy) {
-  QUERY_BEGIN(fieldsForTypeDeclQuery, context, ct, defaultsPolicy);
+                                             DefaultsPolicy defaultsPolicy,
+                                             bool ignoreTypes) {
+  QUERY_BEGIN(fieldsForTypeDeclQuery, context, ct, defaultsPolicy, ignoreTypes);
 
   QUERY_REGISTER_TRACER(
     auto& id = std::get<0>(args)->id();
@@ -767,7 +776,7 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
           child->isTupleDecl() ||
           isForwardingField) {
         const ResolvedFields& resolvedFields =
-          resolveFieldDecl(context, ct, child->id(), defaultsPolicy);
+          resolveFieldDecl(context, ct, child->id(), defaultsPolicy, ignoreTypes);
         // Copy resolvedFields into result
         int n = resolvedFields.numFields();
         for (int i = 0; i < n; i++) {
@@ -794,14 +803,25 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
 
 const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         const CompositeType* ct,
-                                        DefaultsPolicy defaultsPolicy) {
+                                        DefaultsPolicy defaultsPolicy,
+                                        bool ignoreTypes) {
+  // The defaults policy only matters if type resolution is in play. If it
+  // isn't, always set defaults policy to IGNORE_DEFAULTS to avoid memoizing
+  // the same result multiple times.
+  if (ignoreTypes) {
+    return fieldsForTypeDeclQuery(context, ct, DefaultsPolicy::IGNORE_DEFAULTS,
+                                  /* ignoreTypes */ true);
+  }
+
   if (defaultsPolicy == DefaultsPolicy::IGNORE_DEFAULTS){
-    return fieldsForTypeDeclQuery(context, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+    return fieldsForTypeDeclQuery(context, ct, DefaultsPolicy::IGNORE_DEFAULTS,
+                                  /* ignoreTypes */ false);
   }
 
   // try first with defaultsPolicy=FOR_OTHER_FIELDS
   const auto& f = fieldsForTypeDeclQuery(context, ct,
-                                         DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS);
+                                         DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS,
+                                         /* ignoreTypes */ false);
 
   // If defaultsPolicy=USE was requested and the type
   // is generic with defaults, compute the type again.
@@ -814,7 +834,8 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
     auto finalDefaultsPolicy = f.isGenericWithDefaults() ?
       DefaultsPolicy::USE_DEFAULTS :
       DefaultsPolicy::IGNORE_DEFAULTS;
-    return fieldsForTypeDeclQuery(context, ct, finalDefaultsPolicy);
+    return fieldsForTypeDeclQuery(context, ct, finalDefaultsPolicy,
+                                  /* ignoreTypes */ false);
   }
 
   // Otherwise, use the value we just computed.
@@ -1084,11 +1105,11 @@ static Type::Genericity getFieldsGenericity(Context* context,
   }
 
   if (context->isQueryRunning(fieldsForTypeDeclQuery,
-                              std::make_tuple(ct, DefaultsPolicy::IGNORE_DEFAULTS)) ||
+                              std::make_tuple(ct, DefaultsPolicy::IGNORE_DEFAULTS, false)) ||
       context->isQueryRunning(fieldsForTypeDeclQuery,
-                              std::make_tuple(ct, DefaultsPolicy::USE_DEFAULTS)) ||
+                              std::make_tuple(ct, DefaultsPolicy::USE_DEFAULTS, false)) ||
       context->isQueryRunning(fieldsForTypeDeclQuery,
-                              std::make_tuple(ct, DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS))) {
+                              std::make_tuple(ct, DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS, false))) {
     // TODO: is there a better way to avoid problems with recursion here?
     return Type::CONCRETE;
   }
@@ -1381,7 +1402,8 @@ typeConstructorInitialQuery(Context* context, const Type* t)
     // attempt to resolve the fields
     DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
     const ResolvedFields& f = fieldsForTypeDecl(context, ct,
-                                                defaultsPolicy);
+                                                defaultsPolicy,
+                                                /* ignoreTypes */ true);
 
     // find the generic fields from the type and add
     // these as type constructor arguments.

@@ -128,14 +128,18 @@ const types::Type* initialTypeForTypeDecl(Context* context, ID declId);
   The result will not have summary information computed.
   fieldsForTypeDecl should be used instead unless there
   is a reason that one-at-a-time resolution is important.
+
+  If ignoreTypes is set, computes basic information (field order, IDs)
+  but does not compute types.
  */
 const ResolvedFields& resolveFieldDecl(Context* context,
                                        const types::CompositeType* ct,
                                        ID fieldId,
-                                       DefaultsPolicy defaultsPolicy);
+                                       DefaultsPolicy defaultsPolicy,
+                                       bool ignoreTypes = false);
 
 /**
-  Compute the types of the fields for a CompositeType
+  Compute the fields and their types for a CompositeType
   (such as one returned by initialTypeForTypeDecl).
 
   If useGenericFormalDefaults is true, a generic field like
@@ -149,10 +153,14 @@ const ResolvedFields& resolveFieldDecl(Context* context,
   the field already has a substitution in the CompositeType.
 
   The returned fields do not include any parent class fields.
+
+  If ignoreTypes is set, computes basic information (field order, IDs)
+  but does not compute types.
  */
 const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         const types::CompositeType* ct,
-                                        DefaultsPolicy defaultsPolicy);
+                                        DefaultsPolicy defaultsPolicy,
+                                        bool ignoreTypes = false);
 
 /**
   If 'name' is the name of a field for type 't', returns a non-null pointer;
