@@ -152,6 +152,14 @@ record cs {
     this.sortedIndices = value.sortedIndices;
     this.chpl_layoutHelp = new chpl_layoutHelper(value);
   }
+
+  operator ==(l: cs(?), r: cs(?)) param {
+    return l.type == r.type;
+  }
+
+  operator !=(l: cs(?), r: cs(?)) param {
+    return l.type != r.type;
+  }
 }
 
 

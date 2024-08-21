@@ -35,7 +35,7 @@ proc main() {
 proc testGrow() {
   const D = {1..n, 1..n};
   for 1..iters {
-    var subD: sparse subdomain(D) dmapped new dmap(new CS());
+    var subD: sparse subdomain(D) dmapped new cs();
     t.start();
     for i in 1..n {
       subD += (i, i);
@@ -62,7 +62,7 @@ proc testBulkGrow() {
   [i in 1..n with (ref Diag)] Diag[i] = (i,i);
 
   for 1..iters {
-    var subD: sparse subdomain(D) dmapped new dmap(new CS());
+    var subD: sparse subdomain(D) dmapped new cs();
     t.start();
     subD += Diag;
     t.stop();

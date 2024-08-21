@@ -28,8 +28,8 @@ proc main() {
         D2 = {1..n, 1..m};
 
   // Domains
-  var ADom: sparse subdomain(D1) dmapped new dmap(new CS(compressRows=true)),
-      BDom: sparse subdomain(D2) dmapped new dmap(new CS(compressRows=false));
+  var ADom: sparse subdomain(D1) dmapped new cs(compressRows=true),
+      BDom: sparse subdomain(D2) dmapped new cs(compressRows=false);
 
   // Arrays
   var A: [ADom] real,
