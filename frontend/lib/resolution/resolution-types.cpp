@@ -737,7 +737,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   return true;
 }
 
-void ResolvedFields::finalizeFields(Context* context) {
+void ResolvedFields::finalizeFields(Context* context, bool syntaxOnly) {
   bool anyGeneric = false ;
   bool allGenHaveDefault = true; // all generic fields have default init
                                  // -- vacuously true if there are no generic
@@ -747,7 +747,15 @@ void ResolvedFields::finalizeFields(Context* context) {
 
   // look at the fields and compute the summary information
   for (const auto& field : fields_) {
-    auto g = getTypeGenericityIgnoring(context, field.type, ignore);
+    Type::Genericity g;
+
+    if (syntaxOnly) {
+      g = isFieldSyntacticallyGeneric(context, field.declId, nullptr) ?
+          Type::GENERIC : Type::CONCRETE;
+    } else {
+      g = getTypeGenericityIgnoring(context, field.type, ignore);
+    }
+
     if (g != Type::CONCRETE) {
       if (!field.hasDefaultValue) {
         allGenHaveDefault = false;

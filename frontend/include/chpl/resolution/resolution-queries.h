@@ -129,14 +129,14 @@ const types::Type* initialTypeForTypeDecl(Context* context, ID declId);
   fieldsForTypeDecl should be used instead unless there
   is a reason that one-at-a-time resolution is important.
 
-  If ignoreTypes is set, computes basic information (field order, IDs)
+  If syntaxOnly is set, computes basic information (field order, IDs)
   but does not compute types.
  */
 const ResolvedFields& resolveFieldDecl(Context* context,
                                        const types::CompositeType* ct,
                                        ID fieldId,
                                        DefaultsPolicy defaultsPolicy,
-                                       bool ignoreTypes = false);
+                                       bool syntaxOnly = false);
 
 /**
   Compute the fields and their types for a CompositeType
@@ -154,13 +154,13 @@ const ResolvedFields& resolveFieldDecl(Context* context,
 
   The returned fields do not include any parent class fields.
 
-  If ignoreTypes is set, computes basic information (field order, IDs)
+  If syntaxOnly is set, computes basic information (field order, IDs)
   but does not compute types.
  */
 const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         const types::CompositeType* ct,
                                         DefaultsPolicy defaultsPolicy,
-                                        bool ignoreTypes = false);
+                                        bool syntaxOnly = false);
 
 /**
   If 'name' is the name of a field for type 't', returns a non-null pointer;

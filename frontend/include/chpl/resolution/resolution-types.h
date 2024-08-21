@@ -2426,7 +2426,7 @@ class ResolvedFields {
     }
   }
 
-  void finalizeFields(Context* context);
+  void finalizeFields(Context* context, bool syntaxOnly);
 
   /** Returns true if this is a generic type */
   bool isGeneric() const { return isGeneric_; }
