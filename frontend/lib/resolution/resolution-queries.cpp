@@ -2246,15 +2246,9 @@ ApplicabilityResult instantiateSignature(Context* context,
       }
     }
 
-    // visit the field declarations
-    for (auto child: ad->children()) {
-      if (child->isVariable() ||
-          child->isMultiDecl() ||
-          child->isTupleDecl() ||
-          child->isForwardingDecl()) {
-        child->traverse(visitor);
-      }
-    }
+    // do not visit the field declarations directly; only visit those
+    // that are relevant for computing the types of the formals. This
+    // happens below.
 
     // add formals according to the parent class type
 
@@ -2277,6 +2271,7 @@ ApplicabilityResult instantiateSignature(Context* context,
 
     for (; formalIdx < nFormals; formalIdx++) {
       const Decl* fieldDecl = untypedSignature->formalDecl(formalIdx);
+      fieldDecl->traverse(visitor);
       const ResolvedExpression& e = r.byAst(fieldDecl);
       QualifiedType fieldType = e.type();
       QualifiedType sigType = sig->formalType(formalIdx);
