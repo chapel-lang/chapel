@@ -2367,7 +2367,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
                      /* isMethodCall */ false,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
-                     actuals);
+                     std::move(actuals));
 
         auto scope = scopeStack.back();
         auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
