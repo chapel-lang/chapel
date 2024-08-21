@@ -752,12 +752,27 @@ void ErrorMissingFormalInstantiation::write(ErrorWriterBase& wr) const {
     auto decl = std::get<0>(formal);
     auto qt = std::get<1>(formal);
 
-    if (auto named = decl->toNamedDecl()) {
-      wr.note(call, "formal '", named->name(), "' has generic type '", qt.type(), "', but is expected to have a concrete type.");
-    } else {
-      wr.note(call, "formal has generic type '", qt.type(), "', but is expected to have a concrete type.");
+    std::string formalName = "formal";
+    if (auto fieldDecl = decl->toVariable(); fieldDecl && fieldDecl->isField()) {
+      formalName = std::string("field '") + fieldDecl->name().c_str() + "'";
+    } else if (auto formalDecl = decl->toNamedDecl()) {
+      formalName = formalName + " '" + formalDecl->name().c_str() + "'";
     }
+
+    wr.note(decl, formalName, " has generic type '", qt.type(), "', but is expected to have a concrete type.");
     wr.codeForDef(decl);
+
+    if (qt.type()) {
+      if (auto ct = qt.type()->toClassType()) {
+        if (auto bt = ct->basicClassType()) {
+          if (ct->decorator().isUnknownManagement()) {
+            wr.note(decl, "one reason that ", formalName, " is generic is that it doesn't have a specified memory management strategy like 'owned', 'shared' or 'unmanaged'.");
+            wr.message("Consider explicitly specifying a memory management strategy, or adding a new type parameter to explicitly make the formal generic.");
+          }
+        }
+      }
+    }
+
     wr.message("");
   }
 }
