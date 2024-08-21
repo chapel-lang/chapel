@@ -1019,7 +1019,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
         auto formal = fa->formal()->toNamedDecl();
         const SubstitutionsMap& subs = actualCt->substitutions();
         auto ad = parsing::idToAst(context, actualCt->id())->toAggregateDecl();
-        auto field = findFieldIDByName(context, ad, actualCt, formal->name());
+        auto field = findFieldByName(context, ad, actualCt, formal->name());
         auto search = subs.find(field->id());
         if (search != subs.end()) {
           QualifiedType fieldType = search->second;

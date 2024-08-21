@@ -646,7 +646,7 @@ returnTypeForTypeCtorQuery(Context* context,
     if (instantiatedFrom != nullptr) {
       int nFormals = sig->numFormals();
       for (int i = 0; i < nFormals; i++) {
-        auto field = findFieldIDByName(context, ad, instantiatedFrom, untyped->formalName(i));
+        auto field = findFieldByName(context, ad, instantiatedFrom, untyped->formalName(i));
         const QualifiedType& formalType = sig->formalType(i);
         // Note that the formalDecl should already be a fieldDecl
         // based on typeConstructorInitialQuery.

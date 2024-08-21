@@ -1402,7 +1402,7 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
 
 static void buildTypeCtorArgs(Context* context, const CompositeType* ct,
                               std::vector<QualifiedType>& formalTypes,
-                              std::vector<const AstNode*>& args) {
+                              std::vector<const Variable*>& args) {
 
   // Build up parent class args first
   if (auto bct = ct->toBasicClassType()) {
@@ -1433,48 +1433,19 @@ static void buildTypeCtorArgs(Context* context, const CompositeType* ct,
       CHPL_ASSERT(formalType.kind() != QualifiedType::UNKNOWN);
       formalTypes.push_back(formalType);
 
-      args.push_back(declAst);
+      auto var = declAst->toVariable();
+      CHPL_ASSERT(var);
+      args.push_back(var);
     }
   }
 }
 
-static const TypedFnSignature* const&
-typeConstructorInitialQuery(Context* context, const Type* t)
-{
-  QUERY_BEGIN(typeConstructorInitialQuery, context, t);
-
-  const TypedFnSignature* result = nullptr;
-
-  ID id;
-  UniqueString name;
-  std::vector<UntypedFnSignature::FormalDetail> formals;
-  std::vector<types::QualifiedType> formalTypes;
-  auto idTag = uast::asttags::AST_TAG_UNKNOWN;
-
-  std::vector<const AstNode*> fieldAsts;
-
-  if (auto ct = t->getCompositeType()) {
-    id = ct->id();
-    name = ct->name();
-
-    buildTypeCtorArgs(context, ct, formalTypes, fieldAsts);
-
-    if (t->isBasicClassType() || t->isClassType()) {
-      idTag = uast::asttags::Class;
-    } else if (t->isRecordType()) {
-      idTag = uast::asttags::Record;
-    } else if (t->isUnionType()) {
-      idTag = uast::asttags::Union;
-    }
-  } else {
-    CHPL_ASSERT(false && "case not handled");
-  }
-
-  // If we're actually running the body of this current query, then the
-  // BuilderResult from any past revision needs to be overwritten.
-
+static const BuilderResult&
+buildTypeConstructor(Context* context, const CompositeType* t,
+                     ID id, UniqueString name,
+                     std::vector<const Variable*>& fieldAsts) {
   auto parentMod = parsing::idToParentModule(context, id);
-  auto modName = "chpl__internal_" + parentMod.symbolName(context).str() + "_" + name.str();
+  auto modName = "chpl__generated_" + parentMod.symbolName(context).str() + "_" + name.str();
   auto builder = Builder::createForGeneratedCode(context, modName.c_str(), parentMod.symbolPath());
   auto dummyLoc = parsing::locateId(context, id);
 
@@ -1494,19 +1465,12 @@ typeConstructorInitialQuery(Context* context, const Type* t)
 
   // Build formals of type constructor
   AstList formalAst;
-  for(auto& arg : fieldAsts) {
-    auto var = arg->toVariable();
-    owned<AttributeGroup> attr;
-    if (var->attributeGroup()) {
-      auto attrCopy = var->attributeGroup()->copy();
-      AttributeGroup* asdf = attrCopy.release()->toAttributeGroup();
-      attr = std::make_unique<AttributeGroup>(*asdf);
-    }
+  for(auto& var : fieldAsts) {
     auto typeExpr = var->typeExpression();
     auto initExpr = var->initExpression();
     auto kind = var->kind() == Variable::PARAM ? Variable::PARAM : Variable::TYPE;
     owned<AstNode> formal = Formal::build(builder.get(), dummyLoc,
-                                std::move(attr),
+                                /*attributeGroup=*/nullptr,
                                 var->name(),
                                 (Formal::Intent)kind,
                                 typeExpr ? typeExpr->copy() : nullptr,
@@ -1517,13 +1481,17 @@ typeConstructorInitialQuery(Context* context, const Type* t)
   auto genFn = Function::build(builder.get(), dummyLoc, {},
                                Decl::Visibility::PUBLIC,
                                Decl::Linkage::DEFAULT_LINKAGE,
-                               {},
+                               /*linkageName=*/{},
                                name,
-                               false, false, Function::Kind::PROC,
-                               {},
+                               /*inline=*/false, /*override=*/false,
+                               Function::Kind::PROC,
+                               /*receiver=*/{},
                                Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                               // throws, primaryMethod, parenless
                                false, false, false,
-                               std::move(formalAst), {}, {}, {}, {});
+                               std::move(formalAst),
+                               // returnType, where, lifetime, body
+                               {}, {}, {}, {});
 
   builder->noteChildrenLocations(genFn.get(), dummyLoc);
   builder->addToplevelExpression(std::move(genFn));
@@ -1549,42 +1517,79 @@ typeConstructorInitialQuery(Context* context, const Type* t)
   //
   // TODO: Find a way to integrate all this into the query system more cleanly.
   //
-  auto& br = parsing::getCompilerGeneratedBuilder(context, modPath);
+  return parsing::getCompilerGeneratedBuilder(context, modPath);
+}
 
-  const Module* genMod = br.topLevelExpression(0)->toModule();
-  auto typeCtor = genMod->child(genMod->numChildren()-1)->toFunction();
+static const TypedFnSignature* const&
+typeConstructorInitialQuery(Context* context, const Type* t)
+{
+  QUERY_BEGIN(typeConstructorInitialQuery, context, t);
 
-  // Build the UntypedFnSignature formals
-  for (auto decl : typeCtor->formals()) {
-    auto formal = decl->toFormal();
-    bool hasDefault = formal->initExpression() != nullptr;
-    auto defaultKind = hasDefault ? UntypedFnSignature::DK_DEFAULT
-                                  : UntypedFnSignature::DK_NO_DEFAULT;
+  const TypedFnSignature* result = nullptr;
 
-    auto d = UntypedFnSignature::FormalDetail(formal->name(), defaultKind, decl, decl->isVarArgFormal());
-    formals.push_back(d);
+  ID id;
+  UniqueString name;
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+  std::vector<types::QualifiedType> formalTypes;
+  auto idTag = uast::asttags::AST_TAG_UNKNOWN;
+  std::vector<const Variable*> fieldAsts;
+
+  auto ct = t->getCompositeType();
+  if (ct != nullptr) {
+    id = ct->id();
+    name = ct->name();
+
+    buildTypeCtorArgs(context, ct, formalTypes, fieldAsts);
+
+    if (t->isBasicClassType() || t->isClassType()) {
+      idTag = uast::asttags::Class;
+    } else if (t->isRecordType()) {
+      idTag = uast::asttags::Record;
+    } else if (t->isUnionType()) {
+      idTag = uast::asttags::Union;
+    }
+  } else {
+    CHPL_ASSERT(false && "case not handled");
   }
 
-  auto untyped = UntypedFnSignature::get(context,
-                                         typeCtor->id(), name,
-                                         /* isMethod */ false,
-                                         /* isTypeConstructor */ true,
-                                         /* isCompilerGenerated */ true,
-                                         /* throws */ false,
-                                         idTag,
-                                         Function::PROC,
-                                         std::move(formals),
-                                         /* whereClause */ nullptr,
-                                         id);
+  auto& br = buildTypeConstructor(context, ct, id, name, fieldAsts);
 
-  result = TypedFnSignature::get(context,
-                                 untyped,
-                                 std::move(formalTypes),
-                                 TypedFnSignature::WHERE_NONE,
-                                 /* needsInstantiation */ true,
-                                 /* instantiatedFrom */ nullptr,
-                                 /* parentFn */ nullptr,
-                                 /* formalsInstantiated */ Bitmap());
+  if (br.numTopLevelExpressions() != 0) {
+    const Module* genMod = br.topLevelExpression(0)->toModule();
+    auto typeCtor = genMod->child(genMod->numChildren()-1)->toFunction();
+
+    // Build the UntypedFnSignature formals
+    for (auto decl : typeCtor->formals()) {
+      auto formal = decl->toFormal();
+      bool hasDefault = formal->initExpression() != nullptr;
+      auto defaultKind = hasDefault ? UntypedFnSignature::DK_DEFAULT
+                                    : UntypedFnSignature::DK_NO_DEFAULT;
+
+      auto d = UntypedFnSignature::FormalDetail(formal->name(), defaultKind, decl, decl->isVarArgFormal());
+      formals.push_back(d);
+    }
+
+    auto untyped = UntypedFnSignature::get(context,
+                                           typeCtor->id(), name,
+                                           /* isMethod */ false,
+                                           /* isTypeConstructor */ true,
+                                           /* isCompilerGenerated */ true,
+                                           /* throws */ false,
+                                           idTag,
+                                           Function::PROC,
+                                           std::move(formals),
+                                           /* whereClause */ nullptr,
+                                           id);
+
+    result = TypedFnSignature::get(context,
+                                   untyped,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   /* needsInstantiation */ true,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap());
+  }
 
   return QUERY_END(result);
 }
@@ -5266,10 +5271,10 @@ reportInvalidMultipleInheritance(Context* context,
                                                      firstParent, secondParent);
 }
 
-const Decl* findFieldIDByName(Context* context,
-                              const AggregateDecl* ad,
-                              const CompositeType* ct,
-                              UniqueString name) {
+const Decl* findFieldByName(Context* context,
+                            const AggregateDecl* ad,
+                            const CompositeType* ct,
+                            UniqueString name) {
   const Decl* ret = nullptr;
 
   for (auto decl : ad->children()) {
@@ -5301,7 +5306,7 @@ const Decl* findFieldIDByName(Context* context,
     if (auto bct = ct->toBasicClassType()) {
       if (auto parent = bct->parentClassType()) {
         auto parentAD = parsing::idToAst(context, parent->id())->toAggregateDecl();
-        ret = findFieldIDByName(context, parentAD, parent, name);
+        ret = findFieldByName(context, parentAD, parent, name);
       }
     }
   }

@@ -508,10 +508,10 @@ const std::vector<const uast::Function*>& getTestsGatheredViaPrimitive(Context* 
 /**
   Returns the field in 'ad' (or its parent) that matches 'name'.
 */
-const uast::Decl* findFieldIDByName(Context* context,
-                              const uast::AggregateDecl* ad,
-                              const types::CompositeType* ct,
-                              UniqueString name);
+const uast::Decl* findFieldByName(Context* context,
+                                  const uast::AggregateDecl* ad,
+                                  const types::CompositeType* ct,
+                                  UniqueString name);
 
 
 
