@@ -1362,6 +1362,102 @@ static void testRecursiveTypeConstructorAlias() {
   assert(fields->fieldType(2).type()->toClassType()->basicClassType() == ct->basicClassType());
 }
 
+static void testRecursiveTypeConstructorGeneric() {
+  printf("testRecursiveTypeConstructorGeneric\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::ignore = resolveTypeOfXInit(context,
+      R"""(
+      class Node {
+          type eltType = int;
+          var data: eltType;
+          var next: Node(eltType)?;
+      }
+      var x = new unmanaged Node(int, 314);
+      )""", /* requireTypeKnown */ false);
+
+  bool foundError = false;
+  for (auto& err : guard.errors()) {
+    if (err->type() == ErrorType::MissingFormalInstantiation) {
+      foundError = true;
+      break;
+    }
+  }
+  assert(foundError);
+  assert(guard.realizeErrors() > 0);
+}
+
+static void testRecursiveTypeConstructorMutual() {
+  printf("testRecursiveTypeConstructor\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto p = parseTypeAndFieldsOfX(context,
+      R"""(
+      class MutA {
+        type eltType;
+        var data: eltType;
+        var next: owned MutB(eltType)?;
+      }
+
+      class MutB {
+        type eltType;
+        var data: eltType;
+        var next: owned MutA(eltType)?;
+      }
+
+      var x = new MutA(real, 3.14, new MutB(real, 2.71));
+      )""");
+
+  auto ctA = p.first->toClassType();
+  assert(ctA);
+  assert(ctA->basicClassType());
+  assert(ctA->basicClassType()->instantiatedFrom());
+
+  auto fieldsA = p.second;
+  assert(fieldsA);
+  assert(fieldsA->numFields() == 3);
+  assert(fieldsA->fieldName(0) == "eltType");
+  assert(fieldsA->fieldHasDefaultValue(0) == false);
+  assert(fieldsA->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(fieldsA->fieldType(0).type() == RealType::get(context, 0));
+  assert(fieldsA->fieldName(1) == "data");
+  assert(fieldsA->fieldHasDefaultValue(1) == false);
+  assert(fieldsA->fieldType(1).kind() == QualifiedType::VAR);
+  assert(fieldsA->fieldType(1).type() == RealType::get(context, 0));
+  assert(fieldsA->fieldName(2) == "next");
+  assert(fieldsA->fieldHasDefaultValue(2) == false);
+  assert(fieldsA->fieldType(2).kind() == QualifiedType::VAR);
+  assert(fieldsA->fieldType(2).type()->toClassType());
+
+  auto ctB = fieldsA->fieldType(2).type()->toClassType();
+  assert(ctB);
+  assert(ctB->basicClassType());
+  assert(ctB->basicClassType()->instantiatedFrom());
+
+  auto defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
+  const ResolvedFields& fieldsB = fieldsForTypeDecl(context, ctB->basicClassType(),
+                                                    defaultsPolicy);
+
+  assert(fieldsB.numFields() == 3);
+  assert(fieldsB.fieldName(0) == "eltType");
+  assert(fieldsB.fieldHasDefaultValue(0) == false);
+  assert(fieldsB.fieldType(0).kind() == QualifiedType::TYPE);
+  assert(fieldsB.fieldType(0).type() == RealType::get(context, 0));
+  assert(fieldsB.fieldName(1) == "data");
+  assert(fieldsB.fieldHasDefaultValue(1) == false);
+  assert(fieldsB.fieldType(1).kind() == QualifiedType::VAR);
+  assert(fieldsB.fieldType(1).type() == RealType::get(context, 0));
+  assert(fieldsB.fieldName(2) == "next");
+  assert(fieldsB.fieldHasDefaultValue(2) == false);
+  assert(fieldsB.fieldType(2).kind() == QualifiedType::VAR);
+  assert(fieldsB.fieldType(2).type()->toClassType());
+  assert(fieldsB.fieldType(2).type()->toClassType()->basicClassType() == ctA->basicClassType());
+}
+
 
 int main() {
   test1();
@@ -1411,6 +1507,8 @@ int main() {
   test42();
   testRecursiveTypeConstructor();
   testRecursiveTypeConstructorAlias();
+  testRecursiveTypeConstructorGeneric();
+  testRecursiveTypeConstructorMutual();
 
   return 0;
 }
