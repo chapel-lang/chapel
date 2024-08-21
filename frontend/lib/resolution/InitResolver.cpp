@@ -311,7 +311,7 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
 
     if (isInitiallyConcrete) continue;
 
-    if (!shouldIncludeFieldInTypeConstructor(ctx_, id, qtInitial)) continue;
+    if (!isFieldSyntacticallyGeneric(ctx_, id)) continue;
 
     // TODO: Will need to relax this as we go.
     if (isValidQtForSubstitutions(state->qt)) {

@@ -1195,6 +1195,114 @@ Type::Genericity getTypeGenericity(Context* context, QualifiedType qt) {
   return getTypeGenericityIgnoring(context, qt, ignore);
 }
 
+/**
+  Written primarily to support multi-decls, though the logic is the same
+  as for single declarations. Sets 'outIsGeneric' with the genericity of the
+  variable; however, if the genericity might be affected by the neighbors
+  of this variable in a MultiDecl, returns 'false'. Thus, calling this function
+  on the neighbors of the variable until it returns 'true' should help determine
+  the genericity in a multi-decl.
+ */
+static bool isVariableDeclWithClearGenericity(Context* context,
+                                              const VarLikeDecl* var,
+                                              bool &outIsGeneric,
+                                              types::QualifiedType* outFormalType) {
+  // fields that are 'type' or 'param' are generic
+  // and we can use the same type/param intent for the type constructor
+  if (var->storageKind() == QualifiedType::TYPE ||
+      var->storageKind() == QualifiedType::PARAM) {
+    if (outFormalType)
+      *outFormalType = QualifiedType(var->storageKind(), AnyType::get(context));
+    outIsGeneric = true;
+    return true;
+  }
+
+  // non-type/param fields with an init expression aren't generic
+  if (var->initExpression() != nullptr) {
+    outIsGeneric = false;
+    return true;
+  }
+
+  // non-type/param fields that have no declared type and no initializer
+  // are generic and these need a type variable for the argument with AnyType.
+  // Except if they are part of a multi-decl, in which case they can
+  // be inheriting their value or type from their neighbor.
+  if (var->typeExpression() == nullptr) {
+    if (outFormalType)
+      *outFormalType = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+    outIsGeneric = true;
+    return false;
+  }
+
+  // Otherwise, it has a type expression and no init expression. The form
+  // of the type expression determines if we guess it to be generic or
+  // concrete. The only "generic" form is a call with a "(?)" actual.
+
+  if (auto call = var->typeExpression()->toFnCall()) {
+    for (auto actual : call->actuals()) {
+      if (auto ident = actual->toIdentifier()) {
+        if (ident->name() == "?") {
+          outIsGeneric = true;
+          return true;
+        }
+      }
+    }
+  }
+
+  outIsGeneric = false;
+  return true;
+}
+
+bool isFieldSyntacticallyGeneric(Context* context,
+                                 const ID& fieldId,
+                                 types::QualifiedType* formalType) {
+  // compare with AggregateType::fieldIsGeneric
+
+  if (asttags::isVarLikeDecl(parsing::idToTag(context, fieldId))) {
+    auto var = parsing::idToAst(context, fieldId)->toVarLikeDecl();
+
+    bool isGeneric;
+    if (isVariableDeclWithClearGenericity(context, var, isGeneric, formalType)) {
+      return isGeneric;
+    }
+
+    // Genericity isn't clear; if we're in a multi-decl, try searching
+    // to the right.
+    auto parentId = parsing::idToParentId(context, fieldId);
+    if (parsing::idToTag(context, parentId) == asttags::MultiDecl) {
+      auto md = parsing::idToAst(context, parentId)->toMultiDecl();
+
+      // First, seek to the right until we find the field we're looking for.
+      auto declIterPair = md->decls();
+      auto declIter = declIterPair.begin();
+      for(; declIter != declIterPair.end(); declIter++) {
+        if (*declIter == var) {
+          break;
+        }
+      }
+
+      // Then, go through and look for a neighbor with a clear genericity.
+      for (declIter++; declIter != declIterPair.end(); declIter++) {
+        auto neighborVar = declIter->toVarLikeDecl();
+        if (!neighborVar) {
+          // Only VarLikeDecls neighbors share genericity; TupleDecls, for instance,
+          // interrupt the sharing of types and initializers in a multi-decl.
+          break;
+        }
+
+        if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType)) {
+          break;
+        }
+      }
+    }
+
+    return isGeneric;
+  }
+
+  // otherwise it does not need to go into the type constructor
+  return false;
+}
+
 bool shouldIncludeFieldInTypeConstructor(Context* context,
                                          const ID& fieldId,
                                          const QualifiedType& fieldType,
@@ -1284,10 +1392,8 @@ typeConstructorInitialQuery(Context* context, const Type* t)
       CHPL_ASSERT(declAst);
       const Decl* fieldDecl = declAst->toDecl();
       CHPL_ASSERT(fieldDecl);
-      QualifiedType fieldType = f.fieldType(i);
       QualifiedType formalType;
-      if (shouldIncludeFieldInTypeConstructor(context, declId, fieldType,
-                                              &formalType)) {
+      if (isFieldSyntacticallyGeneric(context, declId, &formalType)) {
 
         auto defaultKind = f.fieldHasDefaultValue(i) ?
                            UntypedFnSignature::DK_DEFAULT :
@@ -2159,7 +2265,8 @@ ApplicabilityResult instantiateSignature(Context* context,
                                           fieldType.type(),
                                           fieldType.param()));
 
-      if (shouldIncludeFieldInTypeConstructor(context, fieldDecl->id(), sigType)){
+      if (isFieldSyntacticallyGeneric(context, fieldDecl->id())){
+        // TODO
         newSubstitutions.insert({fieldDecl->id(), fieldType});
       }
     }

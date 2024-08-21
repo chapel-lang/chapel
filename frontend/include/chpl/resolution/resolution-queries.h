@@ -217,6 +217,10 @@ types::Type::Genericity getTypeGenericity(Context* context,
                                           types::QualifiedType qt);
 
 
+bool isFieldSyntacticallyGeneric(Context* context,
+                                 const ID& field,
+                                 types::QualifiedType* formalType = nullptr);
+
 /**
   Returns true if the field should be included in the type constructor.
   In that event, also sets formalType to the type the formal should use.
