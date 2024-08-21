@@ -1634,6 +1634,8 @@ typeConstructorInitialQuery(Context* context, const Type* t)
       idTag = uast::asttags::Class;
     } else if (t->isRecordType()) {
       idTag = uast::asttags::Record;
+    } else if (t->isDomainType()) {
+      idTag = uast::asttags::Record;
     } else if (t->isUnionType()) {
       idTag = uast::asttags::Union;
     }
@@ -3972,22 +3974,22 @@ static bool resolveFnCallSpecialType(Context* context,
   //
   // TODO: sync, single
   if (ci.name() == "domain") {
-    // TODO: a compiler-generated type constructor would be simpler, but we
-    // don't support default values on compiler-generated methods because the
-    // default values require existing AST.
+    // // TODO: a compiler-generated type constructor would be simpler, but we
+    // // don't support default values on compiler-generated methods because the
+    // // default values require existing AST.
 
-    // Note: 'dmapped' is treated like a binary operator at the moment, so
-    // we don't need to worry about distribution type for 'domain(...)' exprs.
+    // // Note: 'dmapped' is treated like a binary operator at the moment, so
+    // // we don't need to worry about distribution type for 'domain(...)' exprs.
 
-    // Transform domain type expressions like `domain(arg1, ...)` into:
-    //   _domain.static_type(arg1, ...)
-    auto genericDom = DomainType::getGenericDomainType(context);
-    auto recv = QualifiedType(QualifiedType::TYPE, genericDom);
-    auto typeCtorName = UniqueString::get(context, "static_type");
-    auto ctorCall = CallInfo::createWithReceiver(ci, recv, typeCtorName);
+    // // Transform domain type expressions like `domain(arg1, ...)` into:
+    // //   _domain.static_type(arg1, ...)
+    // auto genericDom = DomainType::getGenericDomainType(context);
+    // auto recv = QualifiedType(QualifiedType::TYPE, genericDom);
+    // auto typeCtorName = UniqueString::get(context, "static_type");
+    // auto ctorCall = CallInfo::createWithReceiver(ci, recv, typeCtorName);
 
-    result = resolveCall(rc, call, ctorCall, inScopes);
-    return true;
+    // result = resolveCall(rc, call, ctorCall, inScopes);
+    // return true;
   } else if (ci.name() == "atomic") {
     auto newName = UniqueString::get(context, "chpl__atomicType");
     auto ctorCall = CallInfo::copyAndRename(ci, newName);
@@ -4817,6 +4819,7 @@ resolveFnCall(ResolutionContext* rc,
       ci.isMethodCall() == false) {
     // handle invocation of a type constructor from a type
     // (note that we might have the type through a type alias)
+    if (ci.name() == "domain" || ci.name() == "_domain") gdbShouldBreakHere();
     mostSpecific = resolveFnCallForTypeCtor(context, ci,
                                             inScopes.callScope(),
                                             inScopes.poiScope(),

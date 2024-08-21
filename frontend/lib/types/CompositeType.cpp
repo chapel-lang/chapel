@@ -26,7 +26,9 @@
 #include "chpl/types/BasicClassType.h"
 #include "chpl/types/ClassType.h"
 #include "chpl/types/ClassTypeDecorator.h"
+#include "chpl/types/CPtrType.h"
 #include "chpl/types/RecordType.h"
+#include "chpl/types/TupleType.h"
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/NamedDecl.h"
 
@@ -256,7 +258,6 @@ bool CompositeType::isMissingBundledRecordType(Context* context, ID id) {
            id == TupleType::getGenericTupleType(context)->id() ||
            id == CompositeType::getBytesType(context)->id() ||
            id == CompositeType::getDistributionType(context)->id() ||
-           id == DomainType::getDefaultDistType(context)->id() ||
            path == "OwnedObject._owned" ||
            path == "SharedObject._shared";
   }

@@ -2349,25 +2349,28 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
       // Copy the result of resolving 'domain' as the called identifier.
       r.setType(rCalledExp.type());
     } else {
-      auto runResult = context->runAndTrackErrors([&](Context* ctx) {
+      // Get type by resolving the type of corresponding '_domain' init call
+      // TODO: prohibit associative domain with idxType 'domain'
+      // auto runResult = context->runAndTrackErrors([&](Context* ctx) {
         const AstNode* questionArg = nullptr;
         std::vector<CallInfoActual> actuals;
         // Set up receiver
-        auto receiverArg = CallInfoActual(rCalledExp.type(), USTR("this"));
+        auto receiverType =
+            QualifiedType(QualifiedType::VAR, rCalledExp.type().type());
+        auto receiverArg = CallInfoActual(receiverType, USTR("this"));
         actuals.push_back(std::move(receiverArg));
-        // Set up 'dist' arg
+        // Set up distribution arg
         auto defaultDistArg = CallInfoActual(
-            QualifiedType(QualifiedType::CONST_REF,
-                          DomainType::getDefaultDistType(context)),
-            UniqueString::get(context, "dist"));
+            DomainType::getDefaultDistType(context), UniqueString());
         actuals.push_back(std::move(defaultDistArg));
         // Remaining given args from domain() call as written
         prepareCallInfoActuals(call, actuals, questionArg);
         CHPL_ASSERT(!questionArg);
+
         auto ci =
             CallInfo(USTR("init"),
-                     rCalledExp.type(),
-                     /* isMethodCall */ false,
+                     /* calledType */ receiverType,
+                     /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
                      std::move(actuals));
@@ -2377,12 +2380,12 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
         auto result = resolveGeneratedCall(context, call, ci, inScopes);
 
         handleResolvedCall(r, call, ci, result);
-        return result;
-      });
+        // return result;
+      // });
 
-      if (!runResult.ranWithoutErrors()) {
-        CHPL_REPORT(context, InvalidDomainCall, fnCall);
-      }
+      // if (!runResult.ranWithoutErrors()) {
+      //   CHPL_REPORT(context, InvalidDomainCall, fnCall);
+      // }
     }
     return true;
   }

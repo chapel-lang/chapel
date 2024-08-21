@@ -128,6 +128,7 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "Error", CompositeType::getErrorType(context));
 
   gatherType(context, map, "domain", DomainType::getGenericDomainType(context));
+  gatherType(context, map, "_domain", DomainType::getGenericDomainType(context));
 
   gatherType(context, map, "class", AnyClassType::get(context));
   auto genericBorrowed = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::BORROWED));

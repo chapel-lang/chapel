@@ -21,6 +21,7 @@
 
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/intents.h"
 #include "chpl/types/Param.h"
 #include "chpl/types/TupleType.h"
@@ -106,14 +107,27 @@ DomainType::getAssociativeType(Context* context,
                        DomainType::Kind::Associative).get();
 }
 
-const RecordType* DomainType::getDefaultDistType(Context* context) {
+const QualifiedType& DomainType::getDefaultDistType(Context* context) {
+  QUERY_BEGIN(getDefaultDistType, context);
+
+  QualifiedType result;
+
   auto id = parsing::getSymbolFromTopLevelModule(context, "DefaultRectangular",
                                                  "defaultDist");
   auto name = id.symbolName(context);
+  auto modName = ID::parentSymbolPath(context, id.symbolPath());
 
-  return RecordType::get(context, id, name,
-                         /* instantiatedFrom */ nullptr,
-                         /* subs */ SubstitutionsMap());
+  if (auto mod = parsing::getToplevelModule(context, modName)) {
+    for (auto stmt : mod->children()) {
+      auto decl = stmt->toNamedDecl();
+      if (decl && decl->name() == name) {
+        auto res = resolution::resolveModuleStmt(context, stmt->id());
+        result = res.byId(stmt->id()).type();
+      }
+    }
+  }
+
+  return QUERY_END(result);
 }
 
 int DomainType::rankInt() const {
