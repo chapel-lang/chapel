@@ -742,7 +742,6 @@ void ErrorMissingInclude::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorMissingFormalInstantiation::write(ErrorWriterBase& wr) const {
-  // ERROR_CLASS(MissingFormalInstantiation, const uast::AstNode*, std::vector<std::tuple<const uast::Decl*, types::QualifiedType>>)
   auto call = std::get<0>(info_);
   auto& genericFormals = std::get<1>(info_);
 

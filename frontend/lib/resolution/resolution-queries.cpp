@@ -1279,49 +1279,45 @@ bool isFieldSyntacticallyGeneric(Context* context,
                                  types::QualifiedType* formalType) {
   // compare with AggregateType::fieldIsGeneric
 
-  if (asttags::isVarLikeDecl(parsing::idToTag(context, fieldId))) {
-    auto var = parsing::idToAst(context, fieldId)->toVarLikeDecl();
+  auto var = parsing::idToAst(context, fieldId)->toVariable();
+  CHPL_ASSERT(var);
 
-    bool isGeneric;
-    if (isVariableDeclWithClearGenericity(context, var, isGeneric, formalType)) {
-      return isGeneric;
-    }
-
-    // Genericity isn't clear; if we're in a multi-decl, try searching
-    // to the right.
-    auto parentId = parsing::idToParentId(context, fieldId);
-    if (parsing::idToTag(context, parentId) == asttags::MultiDecl) {
-      auto md = parsing::idToAst(context, parentId)->toMultiDecl();
-
-      // First, seek to the right until we find the field we're looking for.
-      auto declIterPair = md->decls();
-      auto declIter = declIterPair.begin();
-      for(; declIter != declIterPair.end(); declIter++) {
-        if (*declIter == var) {
-          break;
-        }
-      }
-
-      // Then, go through and look for a neighbor with a clear genericity.
-      for (declIter++; declIter != declIterPair.end(); declIter++) {
-        auto neighborVar = declIter->toVarLikeDecl();
-        if (!neighborVar) {
-          // Only VarLikeDecls neighbors share genericity; TupleDecls, for instance,
-          // interrupt the sharing of types and initializers in a multi-decl.
-          break;
-        }
-
-        if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType)) {
-          break;
-        }
-      }
-    }
-
+  bool isGeneric;
+  if (isVariableDeclWithClearGenericity(context, var, isGeneric, formalType)) {
     return isGeneric;
   }
 
-  // otherwise it does not need to go into the type constructor
-  return false;
+  // Genericity isn't clear; if we're in a multi-decl, try searching
+  // to the right.
+  auto parentId = parsing::idToParentId(context, fieldId);
+  if (parsing::idToTag(context, parentId) == asttags::MultiDecl) {
+    auto md = parsing::idToAst(context, parentId)->toMultiDecl();
+
+    // First, seek to the right until we find the field we're looking for.
+    auto declIterPair = md->decls();
+    auto declIter = declIterPair.begin();
+    for(; declIter != declIterPair.end(); declIter++) {
+      if (*declIter == var) {
+        break;
+      }
+    }
+
+    // Then, go through and look for a neighbor with a clear genericity.
+    for (declIter++; declIter != declIterPair.end(); declIter++) {
+      auto neighborVar = declIter->toVarLikeDecl();
+      if (!neighborVar) {
+        // Only VarLikeDecls neighbors share genericity; TupleDecls, for instance,
+        // interrupt the sharing of types and initializers in a multi-decl.
+        break;
+      }
+
+      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType)) {
+        break;
+      }
+    }
+  }
+
+  return isGeneric;
 }
 
 bool shouldIncludeFieldInTypeConstructor(Context* context,
