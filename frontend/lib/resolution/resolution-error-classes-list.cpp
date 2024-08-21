@@ -764,11 +764,9 @@ void ErrorMissingFormalInstantiation::write(ErrorWriterBase& wr) const {
 
     if (qt.type()) {
       if (auto ct = qt.type()->toClassType()) {
-        if (auto bt = ct->basicClassType()) {
-          if (ct->decorator().isUnknownManagement()) {
-            wr.note(decl, "one reason that ", formalName, " is generic is that it doesn't have a specified memory management strategy like 'owned', 'shared' or 'unmanaged'.");
-            wr.message("Consider explicitly specifying a memory management strategy, or adding a new type parameter to explicitly make the formal generic.");
-          }
+        if (ct->decorator().isUnknownManagement() && ct->basicClassType()) {
+          wr.note(decl, "one reason that ", formalName, " is generic is that it doesn't have a specified memory management strategy like 'owned', 'shared' or 'unmanaged'.");
+          wr.message("Consider explicitly specifying a memory management strategy, or adding a new type parameter to explicitly make the formal generic.");
         }
       }
     }
