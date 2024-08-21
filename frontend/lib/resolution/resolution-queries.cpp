@@ -1282,10 +1282,14 @@ bool isFieldSyntacticallyGeneric(Context* context,
   auto var = parsing::idToAst(context, fieldId)->toVariable();
   CHPL_ASSERT(var);
 
-  bool isGeneric;
+  bool isGeneric = false;
   if (isVariableDeclWithClearGenericity(context, var, isGeneric, formalType)) {
     return isGeneric;
   }
+
+  // Today, in situations when the genericity is not clear, without further
+  // information we assume the field is generic.
+  CHPL_ASSERT(isGeneric == true);
 
   // Genericity isn't clear; if we're in a multi-decl, try searching
   // to the right.
@@ -2279,7 +2283,6 @@ ApplicabilityResult instantiateSignature(Context* context,
                                           fieldType.param()));
 
       if (isFieldSyntacticallyGeneric(context, fieldDecl->id())){
-        // TODO
         newSubstitutions.insert({fieldDecl->id(), fieldType});
       }
     }
