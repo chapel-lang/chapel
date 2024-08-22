@@ -1602,6 +1602,7 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
              node->name() == USTR("assertOnGpu") ||
              node->name() == USTR("gpu.blockSize") ||
              node->name().startsWith(USTR("chpldoc.")) ||
+             node->name().startsWith(USTR("chplcheck.")) ||
              node->name().startsWith(USTR("llvm."))) {
     // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
     return;
