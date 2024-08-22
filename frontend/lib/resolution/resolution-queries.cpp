@@ -1231,6 +1231,25 @@ Type::Genericity getTypeGenericity(Context* context, QualifiedType qt) {
   return getTypeGenericityViaQualifiedTypeQuery(context, qt);
 }
 
+static bool isBuiltinGenericIdentifier(UniqueString id) {
+  static const std::unordered_set<std::string> builtinGenericTypeNames = {
+    /* "complex", "imag", "real", */
+
+    /* the above are listed in the production compiler's list, but they have
+       default values (imag == imag(64)), so they are not considered generic. */
+
+    "enum",
+    "numeric", "integral",
+    "_iteratorRecord", "_iteratorClass",
+    "_thunkRecord",
+    "POD",
+    "owned", "_owned", "shared", "_shared",
+    "_anyRecord", "_tuple",
+    "_singlevar", "_syncvar"
+  };
+  return builtinGenericTypeNames.count(id.c_str()) > 0;
+}
+
 /**
   Written primarily to support multi-decls, though the logic is the same
   as for single declarations. Sets 'outIsGeneric' with the genericity of the
@@ -1274,7 +1293,10 @@ static bool isVariableDeclWithClearGenericity(Context* context,
   // of the type expression determines if we guess it to be generic or
   // concrete. The only "generic" form is a call with a "(?)" actual.
 
-  if (auto call = var->typeExpression()->toFnCall()) {
+  if (auto ident = var->typeExpression()->toIdentifier()) {
+    outIsGeneric = isBuiltinGenericIdentifier(ident->name());
+    return true;
+  } else if (auto call = var->typeExpression()->toFnCall()) {
     for (auto actual : call->actuals()) {
       if (auto ident = actual->toIdentifier()) {
         if (ident->name() == "?") {
