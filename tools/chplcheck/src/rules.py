@@ -813,7 +813,7 @@ def register_rules(driver: LintDriver):
             #   var x: int;
             #   }
             elif parent_depth and depth == parent_depth:
-                yield child
+                yield AdvancedRuleResult(child, anchor=parent_for_indentation)
 
             prev_depth = depth
             prev = child

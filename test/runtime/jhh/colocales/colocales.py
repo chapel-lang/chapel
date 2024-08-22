@@ -326,6 +326,7 @@ class Ex2Tests(TestCases.TestCase):
         output = self.runCmd("./colocales -r 0 -n 17")
         self.assertIn("warning: 9 cores are unused\n", output);
 
+@unittest.skip("requires --enable-pci")
 class Ex3Tests(TestCases.TestCase):
     """
     HPE Cray EX. One sockets, four NUMA domains per socket, 64 cores per

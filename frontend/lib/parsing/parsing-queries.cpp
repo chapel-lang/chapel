@@ -1369,7 +1369,17 @@ UniqueString fieldIdToName(Context* context, ID id) {
 
 bool idIsField(Context* context, ID id) {
   UniqueString name = fieldIdToName(context, id);
-  return !name.isEmpty();
+  if (!name.isEmpty()) return true;
+
+  // Multi-decls don't have names but their elements can be fields
+  if (idToTag(context, id) == asttags::MultiDecl) {
+    auto md = parsing::idToAst(context, id)->toMultiDecl();
+    for (auto decl : md->decls()) {
+      if (idIsField(context, decl->id())) return true;
+    }
+  }
+
+  return false;
 }
 
 const ID& idToParentId(Context* context, ID id) {

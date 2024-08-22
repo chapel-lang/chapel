@@ -1660,9 +1660,6 @@ def main():
 
             if test_is_chpldoc:
                 args += globalChpldocOpts + shlex.split(compopts)
-            elif 'CHPL_TEST_NO_USE_O' not in os.environ or \
-                 os.environ.get('CHPL_TEST_NO_USE_O') != "true":
-                args += ['-o', execname] + envCompopts + shlex.split(compopts)
             else:
                 args += envCompopts + shlex.split(compopts)
             args += [testname]

@@ -1423,11 +1423,34 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       // for 'this' formals of class type, adjust them to be borrowed, so
       // e.g. proc C.foo() { } has 'this' of type 'borrowed C'.
       // This should not apply to parenthesized expressions.
+      //
+      // An exception to this is when we are looking at a type method or
+      // a parenless, type- or param returning method. In that case, the
+      // decorator is 'anymanaged any-nilable', not borrowed nonnil.
       bool identOrNoTypeExpr = !typeExpr || typeExpr->isIdentifier();
       bool isClassType = typeExprT.type() && typeExprT.type()->isClassType();
       if (isFormalThis && isClassType && identOrNoTypeExpr) {
-        auto ct = typeExprT.type()->toClassType();
         auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+        bool useFullyGenericDecorator = false;
+
+        if (auto varLikeDecl = decl->toVarLikeDecl()) {
+          useFullyGenericDecorator |=
+            varLikeDecl->storageKind() == QualifiedType::TYPE;
+        }
+
+        if (symbol && symbol->isFunction()) {
+          auto fn = symbol->toFunction();
+          useFullyGenericDecorator |=
+            (fn->returnIntent() == Function::TYPE ||
+             fn->returnIntent() == Function::PARAM) &&
+            fn->isParenless();
+        }
+
+        if (useFullyGenericDecorator) {
+          dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC);
+        }
+
+        auto ct = typeExprT.type()->toClassType();
         typeExprT = QualifiedType(typeExprT.kind(),
                                   ct->withDecorator(context, dec),
                                   typeExprT.param());

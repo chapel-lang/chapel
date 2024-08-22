@@ -129,7 +129,6 @@ struct Visitor {
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
   void checkExportVar(const Variable* node);
-  void checkRemoteVar(const Variable* node);
   void checkOperatorNameValidity(const Function* node);
   void checkEmptyProcedureBody(const Function* node);
   void checkExternProcedure(const Function* node);
@@ -180,6 +179,7 @@ struct Visitor {
   void checkExportedName(const NamedDecl* node);
   void checkReservedSymbolName(const NamedDecl* node);
   void checkLinkageName(const NamedDecl* node);
+  void checkRemoteVar(const Decl* node);
 
   void checkTupleDeclFormalIntent(const TupleDecl* node);
 
@@ -428,7 +428,10 @@ Visitor::searchParentsForDecl(const AstNode* start, const AstNode** last,
 void Visitor::check(const AstNode* node) {
 
   // First run blanket checks over superclass node types.
-  if (auto decl = node->toDecl()) checkPrivateDecl(decl);
+  if (auto decl = node->toDecl()) {
+    checkPrivateDecl(decl);
+    checkRemoteVar(decl);
+  }
   if (auto named = node->toNamedDecl()) {
     checkUnderscoreName(named);
     checkExportedName(named);
@@ -902,7 +905,7 @@ void Visitor::checkExportVar(const Variable* node) {
   }
 }
 
-void Visitor::checkRemoteVar(const Variable* node) {
+void Visitor::checkRemoteVar(const Decl* node) {
   // These checks only apply to remote variables.
   if (!node->destination()) return;
 
@@ -912,12 +915,28 @@ void Visitor::checkRemoteVar(const Variable* node) {
     }
   }
 
-  if (node->kind() != Variable::VAR && node->kind() != Variable::CONST) {
-    error(node, "unsupported intent for remote variable.");
+  optional<uast::Variable::Kind> kind;
+  bool isField = false;
+  if (auto var = node->toVariable()) {
+    kind = var->kind();
+    isField = var->isField();
+  } else if (auto multivar = node->toMultiDecl()) {
+    for (auto child : multivar->decls()) {
+      if (auto var = child->toVariable()) {
+        kind = var->kind();
+        isField = var->isField();
+      } else {
+        error(child, "only (multi)variable declarations can target a specific locale.");
+      }
+    }
   }
 
-  if (!node->initExpression() && !node->typeExpression()) {
-    error(node, "remote variables must have an initializer or type expression.");
+  if (isField) {
+    error(node, "fields cannot be declared as remote variables");
+  }
+
+  if (kind && kind != Variable::VAR && kind != Variable::CONST) {
+    error(node, "unsupported intent for remote variable.");
   }
 }
 
@@ -1602,6 +1621,7 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
              node->name() == USTR("assertOnGpu") ||
              node->name() == USTR("gpu.blockSize") ||
              node->name().startsWith(USTR("chpldoc.")) ||
+             node->name().startsWith(USTR("chplcheck.")) ||
              node->name().startsWith(USTR("llvm."))) {
     // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
     return;
@@ -1711,7 +1731,6 @@ void Visitor::visit(const Variable* node) {
   checkConstVarNoInit(node);
   checkConfigVar(node);
   checkExportVar(node);
-  checkRemoteVar(node);
 }
 
 void Visitor::visit(const TypeQuery* node) {

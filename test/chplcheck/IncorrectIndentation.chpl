@@ -324,4 +324,38 @@ module IncorrectIndentation {
     private use super.M2;
       private use super.M2;
   }
+
+
+  @chplcheck.ignore("IncorrectIndentation")
+  module DirectChildrenNotIndented {
+  proc f1()
+  {
+    writeln("hi");
+    writeln("??");
+  }
+
+  proc f2()
+  {
+  writeln("hi");
+  }
+
+  @chplcheck.ignore("IncorrectIndentation")
+  proc f3() {
+  writeln("hi");
+  }
+
+  proc f4() {
+    writeln("hi");
+      writeln("hi");
+  }
+
+  proc f5() {
+    writeln("hi"); writeln("hi");
+  }
+
+  proc f6() {
+    for 1..10 do
+    writeln("hi");
+  }
+  }
 }

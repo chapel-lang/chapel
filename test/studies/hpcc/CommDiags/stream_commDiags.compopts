@@ -1,2 +1,2 @@
---main-module stream --no-warnings
+--main-module stream --no-warnings -o stream_commDiags
 # --no-warnings for Ambiguous module source file

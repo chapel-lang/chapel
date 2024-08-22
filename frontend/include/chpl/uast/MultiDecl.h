@@ -111,7 +111,10 @@ class MultiDecl final : public Decl {
    Return the number of VariableDecls and Comments contained.
    */
   int numDeclOrComments() const {
-    return attributeGroup() ? numChildren() - 1 : numChildren();
+    int numNonChildren = 0;
+    if (attributeGroup()) numNonChildren++;
+    if (destination()) numNonChildren++;
+    return numChildren() - numNonChildren;
   }
 
   /**

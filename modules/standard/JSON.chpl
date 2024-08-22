@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-/*
- The Json module provides a ``jsonSerializer`` and ``jsonDeserializer`` that
- allow for reading and writing data in the JSON format.
+/* Provides serialization in the JSON format.
+
+Intended for use with :ref:`IO support for serializers and deserializers <serialize-deserialize>`.
  */
 module JSON {
   private use IO;

@@ -105,7 +105,7 @@ static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, hipModule_t module) {
     // The validation only happens when built with assertions (commonly
     // enabled by CHPL_DEVELOPER), and chpl_gpu_impl_copy_host_to_device
     // only causes issues in that case.
-    ROCM_CALL(hipMemcpyDtoD(ptr, (void*)&chpl_nodeID, glob_size));
+    ROCM_CALL(hipMemcpyHtoD(ptr, (void*)&chpl_nodeID, glob_size));
   }
 }
 
@@ -144,14 +144,19 @@ void chpl_gpu_impl_init(int* num_devices) {
 
   int i;
   for (i=0 ; i<loc_num_devices ; i++) {
+#if ROCM_VERSION_MAJOR >= 6
+    hipDevice_t device = i;
+    ROCM_CALL(hipSetDevice(device));
+    ROCM_CALL(hipSetDeviceFlags(hipDeviceScheduleBlockingSync))
+#else
     hipDevice_t device;
     hipCtx_t context;
-
     ROCM_CALL(hipDeviceGet(&device, i));
     ROCM_CALL(hipDevicePrimaryCtxSetFlags(device, hipDeviceScheduleBlockingSync));
     ROCM_CALL(hipDevicePrimaryCtxRetain(&context, device));
 
     ROCM_CALL(hipSetDevice(device));
+#endif
     hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary);
     chpl_gpu_rocm_modules[i] = module;
 
@@ -162,6 +167,7 @@ void chpl_gpu_impl_init(int* num_devices) {
 }
 
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
+  if (!ptr) return false;
   hipPointerAttribute_t res;
   hipError_t ret_val = hipPointerGetAttributes(&res, (hipDeviceptr_t)ptr);
 
@@ -176,10 +182,16 @@ bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
     }
   }
 
+#if ROCM_VERSION_MAJOR >= 6
+  // TODO: is this right?
+  return res.type != hipMemoryTypeUnregistered;
+#else
   return true;
+#endif
 }
 
 bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
+  if (!ptr) return false;
   hipPointerAttribute_t res;
   hipError_t ret_val = hipPointerGetAttributes(&res, (hipDeviceptr_t)ptr);
 
@@ -194,7 +206,11 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
     }
   }
   else {
+#if ROCM_VERSION_MAJOR >= 6
+    return res.type == hipMemoryTypeHost || res.type == hipMemoryTypeUnregistered;
+#else
     return res.memoryType == hipMemoryTypeHost;
+#endif
   }
 
   return true;
@@ -314,7 +330,7 @@ void chpl_gpu_impl_hostmem_register(void *memAlloc, size_t size) {
   // buffer, which degrades performance. So in the array_on_device mode we
   // choose to page-lock such memory even if it's on the host-side.
   #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-  hipHostRegister(memAlloc, size, hipHostRegisterPortable);
+  ROCM_CALL(hipHostRegister(memAlloc, size, hipHostRegisterPortable));
   #endif
 }
 
@@ -392,7 +408,7 @@ bool chpl_gpu_impl_can_sort(void){
 }
 
 void* chpl_gpu_impl_host_register(void* var, size_t size) {
-  hipHostRegister(var, size, hipHostRegisterPortable);
+  ROCM_CALL(hipHostRegister(var, size, hipHostRegisterPortable));
   void *dev_var;
   ROCM_CALL(hipHostGetDevicePointer(&dev_var, var, 0));
   return dev_var;

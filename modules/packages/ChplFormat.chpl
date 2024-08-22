@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-/*
- The ChplFormat module provides a chplSerializer and chplDeserializer that
- aim to read and write data in a format similar to that of Chapel's syntax.
+/* Provides serialization in a format similar to Chapel's syntax.
+
+Intended for use with :ref:`IO support for serializers and deserializers <serialize-deserialize>`.
  */
 @unstable("ChplFormat module is considered unstable pending naming changes")
 module ChplFormat {
