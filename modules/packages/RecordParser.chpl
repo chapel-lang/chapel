@@ -164,9 +164,15 @@ class RecordReader {
     // This is a VERY loose regex, and therefore could lead to errors unless the
     // data is very nice... (but hey, the programmer wasn't willing to give us a
     // regex..)
-    var accum: string = "\\s*";
+    var accum: string = "";
     for param n in 0..<num_fields {
-      accum = accum + getFieldName(t, n) + "\\s*(.*?)" + "\\s*";
+      if n == 0 then
+        accum += "\\s*"; // consume spaces at the start, but don't require any
+      else
+        accum += "\\s+"; // require and consume spaces between fields
+      accum += getFieldName(t, n); // match the field name
+      accum += "\\s+"; // match some spaces
+      accum += "(.*\\b)"; // match the value & end at a word boundary
     }
     return accum;
   }

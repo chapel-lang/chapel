@@ -4,6 +4,7 @@
 
 /* System Headers */
 #include <qthread/qthread-int.h>       /* for uint64_t */
+#include <stdatomic.h>
 #include <stdio.h>                     /* for fprintf() */
 #include <stdlib.h>                    /* for abort() */
 #include <sys/time.h>                  /* for gettimeofday() */
@@ -49,20 +50,20 @@ typedef struct {
 } qt_blocking_queue_t;
 
 static qt_blocking_queue_t theQueue;
-static saligned_t          io_worker_count = -1;
+static saligned_t _Atomic  io_worker_count = -1;
 static saligned_t          io_worker_max   = 10;
 #if !defined(UNPOOLED)
 qt_mpool syscall_job_pool = NULL;
 #endif
-static unsigned long timeout    = 100; // in microseconds
-static int           proxy_exit = 0;
+static unsigned long timeout  = 100; // in microseconds
+static int _Atomic proxy_exit = 0;
 TLS_DECL_INIT(qthread_t *, IO_task_struct);
 
 static void qt_blocking_subsystem_internal_stopwork(void)
 {   /*{{{*/
-    proxy_exit = 1;
+    atomic_store_explicit(&proxy_exit, 1, memory_order_relaxed);
     MACHINE_FENCE;
-    while (io_worker_count != 0) SPINLOCK_BODY();
+    while (atomic_load_explicit(&io_worker_count, memory_order_relaxed)) SPINLOCK_BODY();
     QTHREAD_LOCK(&theQueue.lock);
     QTHREAD_UNLOCK(&theQueue.lock);
 } /*}}}*/
@@ -78,18 +79,18 @@ static void qt_blocking_subsystem_internal_freemem(void)
 
 static void *qt_blocking_subsystem_proxy_thread(void *QUNUSED(arg))
 {   /*{{{*/
-    while (proxy_exit == 0) {
+    while (!atomic_load_explicit(&proxy_exit, memory_order_relaxed)) {
         if (qt_process_blocking_call()) {
             break;
         }
         COMPILER_FENCE;
     }
-    qthread_debug(IO_DETAILS, "proxy_exit = %i, exiting\n", proxy_exit);
+    qthread_debug(IO_DETAILS, "proxy_exit = %i, exiting\n", atomic_load_explicit(&proxy_exit, memory_order_relaxed));
 #ifdef QTHREAD_DEBUG
-    unsigned ct = qthread_incr(&io_worker_count, -1);
+    unsigned ct = atomic_fetch_sub_explicit(&io_worker_count, 1, memory_order_relaxed);
     qthread_debug(IO_BEHAVIOR, "worker_count post exit is %u\n", (unsigned)ct - 1);
 #else
-    (void)qthread_incr(&io_worker_count, -1);
+    atomic_fetch_sub_explicit(&io_worker_count, 1, memory_order_relaxed);
 #endif
     pthread_exit(NULL);
     return 0;
@@ -105,7 +106,7 @@ static void qt_blocking_subsystem_spawnworker(void)
         perror("qt_blocking_subsystem_init spawning proxy thread");
         abort();
     }
-    (void)qthread_incr(&io_worker_count, 1);
+    atomic_fetch_add_explicit(&io_worker_count, 1, memory_order_relaxed);
     pthread_detach(thr);
 } /*}}}*/
 
@@ -116,7 +117,7 @@ void INTERNAL qt_blocking_subsystem_init(void)
 #endif
     theQueue.head   = NULL;
     theQueue.tail   = NULL;
-    io_worker_count = 0;
+    atomic_store_explicit(&io_worker_count, 0, memory_order_relaxed);
     io_worker_max   = qt_internal_get_env_num("MAX_IO_WORKERS", 10, 1);
     timeout         = qt_internal_get_env_num("IO_TIMEOUT", 100, 100);
     TLS_INIT(IO_task_struct);
@@ -383,13 +384,13 @@ void INTERNAL qt_blocking_subsystem_enqueue(qt_blocking_queue_node_t *job)
     }
     theQueue.length++;
     qthread_debug(IO_DETAILS, "2) theQueue.head = %p, .tail = %p, job = %p\n", theQueue.head, theQueue.tail, job);
-    if (io_worker_count < theQueue.length) {
-        if (io_worker_count < io_worker_max) {
+    if (atomic_load_explicit(&io_worker_count, memory_order_relaxed) < theQueue.length) {
+        if (atomic_load_explicit(&io_worker_count, memory_order_relaxed) < io_worker_max) {
             qthread_debug(IO_DETAILS, "++++++++++++++++++++ I think I oughta spawn a worker\n");
             qt_blocking_subsystem_spawnworker();
         }
     } else {
-        qthread_debug(IO_DETAILS, "Queue is %u long, there are %u workers\n", (unsigned)theQueue.length, (unsigned)io_worker_count);
+        qthread_debug(IO_DETAILS, "Queue is %u long, there are %u workers\n", (unsigned)theQueue.length, (unsigned)atomic_load_explicit(&io_worker_count, memory_order_relaxed));
         QTHREAD_COND_SIGNAL(theQueue.notempty);
     }
     QTHREAD_UNLOCK(&theQueue.lock);

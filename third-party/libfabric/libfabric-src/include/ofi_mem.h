@@ -152,6 +152,9 @@ struct name {							\
 typedef void (*name ## _entry_init_func)(entrytype *buf,	\
 					 void *arg);		\
 								\
+typedef void (*name ## _entry_destroy_func)(entrytype *buf,	\
+					 void *arg);		\
+								\
 static inline void						\
 name ## _init(struct name *fs, size_t size,			\
 	      name ## _entry_init_func init, void *arg)		\
@@ -194,13 +197,23 @@ static inline void name ## _free(struct name *fs)		\
 {								\
 	free(fs);						\
 }								\
+static inline void name ## _destroy(struct name *fs,		\
+	size_t size, name ## _entry_destroy_func destroy,	\
+	void *arg)						\
+{								\
+	ssize_t i;						\
+	for (i = size - 1; i >= 0; i--) {			\
+		if (destroy)					\
+			destroy(&fs->entry[i].buf, arg);	\
+	}							\
+	free(fs);						\
+}								\
 void dummy ## name (void) /* work-around global ; scope */
-
 
 /*
  * Buffer pool (free stack) template for shared memory regions
  */
-#define SMR_ALIGN_BOUNDARY	64
+#define SMR_ALIGN_BOUNDARY	4096
 #define SMR_FREESTACK_EMPTY	(-1)
 
 struct smr_freestack {
@@ -213,6 +226,7 @@ struct smr_freestack {
 };
 
 #define smr_freestack_isempty(fs)	((fs)->top == SMR_FREESTACK_EMPTY)
+#define smr_freestack_isfull(fs)	((fs)->free == (fs)->size)
 
 static inline void* smr_freestack_get_entry_from_index(struct smr_freestack *fs,
 		int16_t index)
@@ -258,6 +272,7 @@ static inline void smr_freestack_init(struct smr_freestack *fs, size_t elem_coun
 	ssize_t i, next_aligned_addr;
 	assert(elem_count == roundup_power_of_two(elem_count));
 	fs->size = elem_count;
+	fs->free = 0;
 	fs->object_size = fs_object_size;
 	fs->top = SMR_FREESTACK_EMPTY;
 	fs->entry_base_offset =
@@ -368,6 +383,7 @@ struct ofi_bufpool_hdr {
 	struct ofi_bufpool_region	*region;
 	size_t 				index;
 
+	OFI_DBG_VAR(bool, allocated)
 	OFI_DBG_VAR(struct ofi_bufpool_ftr *, ftr)
 	OFI_DBG_VAR(size_t,		magic)
 };
@@ -423,6 +439,9 @@ static inline void ofi_buf_free(void *buf)
 	assert(!(ofi_buf_pool(buf)->attr.flags & OFI_BUFPOOL_INDEXED));
 	assert(ofi_buf_hdr(buf)->magic == OFI_MAGIC_SIZE_T);
 	assert(ofi_buf_hdr(buf)->ftr->magic == OFI_MAGIC_SIZE_T);
+	assert(ofi_buf_hdr(buf)->allocated == true);
+
+	OFI_DBG_SET(ofi_buf_hdr(buf)->allocated, false);
 
 	slist_insert_head(&ofi_buf_hdr(buf)->entry.slist,
 			  &ofi_buf_pool(buf)->free_list.entries);
@@ -441,6 +460,9 @@ static inline void ofi_ibuf_free(void *buf)
 	assert(ofi_buf_pool(buf)->attr.flags & OFI_BUFPOOL_INDEXED);
 	assert(buf_hdr->magic == OFI_MAGIC_SIZE_T);
 	assert(buf_hdr->ftr->magic == OFI_MAGIC_SIZE_T);
+	assert(buf_hdr->allocated == true);
+
+	OFI_DBG_SET(buf_hdr->allocated, false);
 
 	dlist_insert_order(&buf_hdr->region->free_list,
 			   ofi_ibuf_is_lower, &buf_hdr->entry.dlist);
@@ -459,11 +481,15 @@ static inline size_t ofi_buf_index(void *buf)
 static inline void *ofi_bufpool_get_ibuf(struct ofi_bufpool *pool, size_t index)
 {
 	void *buf;
+	size_t region_index = index / pool->attr.chunk_cnt;
 
-	buf = pool->region_table[(size_t)(index / pool->attr.chunk_cnt)]->
-		mem_region + (index % pool->attr.chunk_cnt) * pool->entry_size;
+	assert(region_index < pool->region_cnt);
 
-	assert(ofi_atomic_get32(&ofi_buf_region(buf)->use_cnt));
+	buf = pool->region_table[region_index]->mem_region +
+		(index % pool->attr.chunk_cnt) * pool->entry_size;
+
+	assert(ofi_buf_hdr(buf)->allocated);
+
 	return buf;
 }
 
@@ -490,6 +516,10 @@ static inline void *ofi_buf_alloc(struct ofi_bufpool *pool)
 	slist_remove_head_container(&pool->free_list.entries,
 				struct ofi_bufpool_hdr, buf_hdr, entry.slist);
 	assert(ofi_atomic_inc32(&buf_hdr->region->use_cnt));
+	assert(buf_hdr->allocated == false);
+
+	OFI_DBG_SET(buf_hdr->allocated, true);
+
 	return ofi_buf_data(buf_hdr);
 }
 
@@ -522,6 +552,9 @@ static inline void *ofi_ibuf_alloc(struct ofi_bufpool *pool)
 	dlist_pop_front(&buf_region->free_list, struct ofi_bufpool_hdr,
 			buf_hdr, entry.dlist);
 	assert(ofi_atomic_inc32(&buf_hdr->region->use_cnt));
+	assert(buf_hdr->allocated == false);
+
+	OFI_DBG_SET(buf_hdr->allocated, true);
 
 	if (dlist_empty(&buf_region->free_list))
 		dlist_remove_init(&buf_region->entry);

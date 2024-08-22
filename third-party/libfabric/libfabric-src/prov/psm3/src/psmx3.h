@@ -71,6 +71,7 @@ extern "C" {
 #include "ofi_list.h"
 #include "ofi_util.h"
 #include "ofi_mem.h"
+#include "ofi_hmem.h"
 #include "rbtree.h"
 #include "version.h"
 #include "psm_config.h"
@@ -82,6 +83,24 @@ extern "C" {
 #define DIRECT_FN
 #define STATIC static
 #endif
+
+/* wrapper for logging macros so we can add our process label */
+#define PSMX3_INFO(prov, subsys, format, ...) \
+		FI_INFO(prov, subsys, "%s: " format, psm3_get_mylabel(), ##__VA_ARGS__)
+#define PSMX3_DBG_TRACE(prov, subsys, format, ...) \
+		FI_DBG_TRACE(prov, subsys, "%s: " format, psm3_get_mylabel(), ##__VA_ARGS__)
+#define PSMX3_TRACE(prov, subsys, format, ...) \
+		FI_TRACE(prov, subsys, "%s: " format, psm3_get_mylabel(), ##__VA_ARGS__)
+#define PSMX3_WARN(prov, subsys, format, ...) \
+		FI_WARN(prov, subsys, "%s: " format, psm3_get_mylabel(), ##__VA_ARGS__)
+#define PSMX3_WARN_SPARSE(prov, subsys, format, ...) \
+		FI_WARN_SPARSE(prov, subsys, "%s: " format, psm3_get_mylabel(), ##__VA_ARGS__)
+#define PSMX3_WARN_ONCE(prov, subsys, format, ...) \
+		FI_WARN_ONCE(prov, subsys, "%s: " format, psm3_get_mylabel(), ##__VA_ARGS__)
+#define PSMX3_DBG(prov, subsys, func, line, format, ...) \
+		FI_DBG(prov, subsys, "%s: " format, psm3_get_mylabel(), ##__VA_ARGS__)
+#define psmx3_log(prov, level, subsys, func, line, format, ...) \
+		fi_log(prov, level, subsys, func, line, "%s: " format, psm3_get_mylabel(), ##__VA_ARGS__)
 
 extern struct fi_provider psmx3_prov;
 
@@ -834,6 +853,7 @@ struct psmx3_env {
 #if (PSMX3_TAG_LAYOUT == PSMX3_TAG_LAYOUT_RUNTIME)
 	char	*tag_layout;
 #endif
+	int	yield_mode;
 };
 
 #define PSMX3_MAX_UNITS	PSMI_MAX_RAILS /* from psm_config.h */
@@ -879,6 +899,16 @@ extern struct fi_ops_atomic	psmx3_atomic_ops;
 extern struct psmx3_env		psmx3_env;
 extern struct psmx3_domain_info	psmx3_domain_info;
 extern struct psmx3_fid_fabric	*psmx3_active_fabric;
+
+int psmx3_param_get_bool(struct fi_provider *provider, const char *env_var_name,
+					const char *descr, int visible, int *value);
+int psmx3_param_get_int(struct fi_provider *provider, const char *env_var_name,
+					const char *descr, int visible, int *value);
+int psmx3_param_get_str(struct fi_provider *provider, const char *env_var_name,
+					const char *descr, int visible, char **value);
+
+/* indicate if lock_level variable was set (1 if set, 0 if defaulted) */
+int psmx3_check_lock_level(void);
 
 /*
  * Lock levels:
@@ -1018,7 +1048,6 @@ char	*psmx3_uuid_to_string(psm2_uuid_t uuid);
 void	*psmx3_ep_name_to_string(const struct psmx3_ep_name *name, size_t *len);
 struct	psmx3_ep_name *psmx3_string_to_ep_name(const void *s);
 int	psmx3_errno(int err);
-void	psmx3_query_mpi(void);
 
 void	psmx3_cq_enqueue_event(struct psmx3_fid_cq *cq, struct psmx3_cq_event *event);
 struct	psmx3_cq_event *psmx3_cq_create_event(struct psmx3_fid_cq *cq,

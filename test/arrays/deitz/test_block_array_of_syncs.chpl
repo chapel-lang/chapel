@@ -1,6 +1,6 @@
 use BlockDist;
 
-const D = {1..4} dmapped blockDist({1..4});
+const D = {1..4} dmapped new blockDist({1..4});
 
 var S: [D] sync int = -1;
 

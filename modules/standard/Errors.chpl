@@ -133,26 +133,6 @@ module Errors {
     proc init(msg: string) {
       super.init(msg);
     }
-
-    /*
-      .. warning::
-        ``new IllegalArgumentError(info=)`` is deprecated; please use the initializer that takes a formal ``msg`` instead.
-    */
-    pragma "last resort"
-    proc init(info: string) {
-      compilerWarning("`new IllegalArgumentError(info=)` is deprecated; please use the initializer that takes a formal `msg` instead.");
-      super.init(info);
-    }
-
-    /*
-      .. warning::
-        IllegalArgumentError's two-argument initializer is deprecated; please use the single-arg initializer instead.
-    */
-    proc init(formal: string, info: string) {
-      compilerWarning("IllegalArgumentError's two-argument initializer is deprecated; please use the single-arg initializer instead.");
-      var msg = "illegal argument '" + formal + "': " + info;
-      super.init(msg);
-    }
   }
 
 
@@ -248,7 +228,7 @@ module Errors {
         var curnext = curr._next;
         if const asTaskErr = curr: unmanaged TaskErrors? {
           on asTaskErr do
-            for e in asTaskErr do
+            for asTaskErr do
               n += 1;
         } else {
           n += 1;
@@ -433,7 +413,7 @@ module Errors {
     /* Returns `true` if this :class:`TaskErrors` contains an error
        of the given type or a subclass of that type. */
     proc contains(type t) {
-      for e in filter(t) {
+      for filter(t) {
         return true;
       }
       return false;

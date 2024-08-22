@@ -1,6 +1,3 @@
-fasta6.chpl:42: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
-fasta6.chpl:42: warning: writer with a 'kind' argument is deprecated, please use Serializers instead
-fasta6.chpl:42: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
 >ONE Homo sapiens alu
 GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGGGAGGCCGAGGCGGGCGGA
 TCACCTGAGGTCAGGAGTTCGAGACCAGCCTGGCCAACATGGTGAAACCCCGTCTCTACT

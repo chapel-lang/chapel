@@ -1,36 +1,7 @@
-/*
- * Copyright (c) 2004, 2005 Topspin Communications.  All rights reserved.
- * Copyright (c) 2006, 2007 Cisco Systems, Inc.  All rights reserved.
- * Copyright (c) 2017-2020 Amazon.com, Inc. or its affiliates. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+/* SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only */
+/* SPDX-FileCopyrightText: Copyright (c) 2004, 2005 Topspin Communications.  All rights reserved. */
+/* SPDX-FileCopyrightText: Copyright (c) 2006, 2007 Cisco Systems, Inc.  All rights reserved. */
+/* SPDX-FileCopyrightText: Copyright Amazon.com, Inc. or its affiliates. All rights reserved. */
 
 #if HAVE_CONFIG_H
 #  include <config.h>
@@ -121,7 +92,7 @@ int efa_device_construct(struct efa_device *efa_device,
 		goto err_close;
 	}
 
-#ifdef HAVE_RDMA_SIZE
+#if HAVE_RDMA_SIZE
 	efa_device->max_rdma_size = efa_device->efa_attr.max_rdma_size;
 	efa_device->device_caps = efa_device->efa_attr.device_caps;
 #else
@@ -265,9 +236,9 @@ void efa_device_list_finalize(void)
 }
 
 /**
- * @brief check whether efa device support rdma read
+ * @brief Check whether EFA device supports rdma read
  *
- * @return a boolean indicating rdma read status
+ * @return a boolean indicating rdma read support
  */
 bool efa_device_support_rdma_read(void)
 {
@@ -276,6 +247,26 @@ bool efa_device_support_rdma_read(void)
 
 	return g_device_list[0].device_caps & EFADV_DEVICE_ATTR_CAPS_RDMA_READ;
 }
+
+/**
+ * @brief check whether efa device support rdma write
+ *
+ * @return a boolean indicating rdma write status
+ */
+#if HAVE_CAPS_RDMA_WRITE
+bool efa_device_support_rdma_write(void)
+{
+	if (g_device_cnt <=0)
+		return false;
+
+	return g_device_list[0].device_caps & EFADV_DEVICE_ATTR_CAPS_RDMA_WRITE;
+}
+#else
+bool efa_device_support_rdma_write(void)
+{
+	return false;
+}
+#endif
 
 #ifndef _WIN32
 

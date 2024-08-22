@@ -99,7 +99,7 @@ Chapel:
 ---
 
 ```
-chpl ig.chpl --fast
+chpl ig.chpl --fast -suseBlockArr=false
 
 ./ig -nl 16 --N=10000000
        AGP:     6.987 seconds   0.824 GB/s/node
@@ -110,7 +110,7 @@ chpl ig.chpl --fast
        AGG:     4.138 seconds   1.392 GB/s/node
 
 
-chpl ig.chpl --fast -suseBlockArr -o ig-block
+chpl ig.chpl --fast -o ig-block
 
 ./ig-block -nl 16 --N=10000000
        AGP:     6.823 seconds   0.844 GB/s/node
@@ -121,7 +121,7 @@ chpl ig.chpl --fast -suseBlockArr -o ig-block
        AGG:     3.003 seconds   1.918 GB/s/node
 
 
-chpl ig.chpl --fast -suseBlockArr -sdefaultDisableLazyRADOpt -o ig-block-rad
+chpl ig.chpl --fast -sdefaultDisableLazyRADOpt -o ig-block-rad
 
 ./ig-block-rad -nl 16 --N=10000000
        AGP:     6.820 seconds   0.845 GB/s/node

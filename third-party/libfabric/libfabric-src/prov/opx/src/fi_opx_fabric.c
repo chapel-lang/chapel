@@ -60,7 +60,7 @@ static int fi_opx_close_fabric(struct fid *fid)
 	if (ret)
 		return ret;
 
-	fi_opx_close_tid_fabric(opx_fabric->tid_fabric);
+	opx_close_tid_fabric(opx_fabric->tid_fabric);
 
 	free(opx_fabric);
 	opx_fabric = NULL;
@@ -115,14 +115,14 @@ int fi_opx_fabric(struct fi_fabric_attr *attr,
 	FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_FABRIC, "open fabric\n");
 
 	int ret;
-	struct fi_opx_fabric *opx_fabric;
+	struct fi_opx_fabric *opx_fabric = NULL;
 
 	if (attr) {
 		if (attr->fabric) {
 			FI_WARN(fi_opx_global.prov, FI_LOG_FABRIC,
 				"attr->fabric only valid on getinfo\n");
 			errno = FI_EINVAL;
-			return -errno;
+			goto err;
 		}
 
 		ret = fi_opx_check_fabric_attr(attr);
@@ -131,8 +131,10 @@ int fi_opx_fabric(struct fi_fabric_attr *attr,
 	}
 
 	opx_fabric = calloc(1, sizeof(*opx_fabric));
-	if (!opx_fabric)
+	if (!opx_fabric) {
+		errno = FI_ENOMEM;
 		goto err;
+	}
 
 	opx_fabric->fabric_fid.fid.fclass = FI_CLASS_FABRIC;
 	opx_fabric->fabric_fid.fid.context = context;
@@ -140,12 +142,12 @@ int fi_opx_fabric(struct fi_fabric_attr *attr,
 	opx_fabric->fabric_fid.ops = &fi_opx_ops_fabric;
 	opx_fabric->fabric_fid.api_version = attr->api_version;
 
-	struct fi_opx_tid_fabric * opx_tid_fabric;
-	if(fi_opx_tid_fabric(&opx_tid_fabric)) {
+	struct opx_tid_fabric * opx_tid_fabric;
+	if(opx_open_tid_fabric(&opx_tid_fabric)) {
 		FI_WARN(fi_opx_global.prov, FI_LOG_FABRIC,
 			"Couldn't create tid fabric\n");
 		errno = FI_EINVAL;
-		return -errno;
+		goto err;
 	}
 	opx_fabric->tid_fabric = opx_tid_fabric;
 
@@ -161,6 +163,7 @@ int fi_opx_fabric(struct fi_fabric_attr *attr,
 	FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_FABRIC, "fabric opened\n");
 	return 0;
 err:
-	errno = FI_ENOMEM;
+	free(opx_fabric);
+	opx_fabric = NULL;
 	return -errno;
 }

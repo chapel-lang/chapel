@@ -6,4 +6,14 @@
 FNS=`cat export-vs-c.chpl | grep --only-matching -e '[a-zA-Z0-9_]*_\(c_____\|chapel\)(' | sed 's/(//g' | sort -u`
 FNS=`echo $FNS | sed 's/ /,/g'`
 
-echo --ccflags -fdiscard-value-names --llvm-print-ir-stage basic --llvm-print-ir $FNS
+# if there is a llvm version specific file in the difrectory, use that as the good file
+CHPL_LLVM_VERSION=`$CHPL_HOME/util/printchplenv --all --simple | grep CHPL_LLVM_VERSION | sed 's/CHPL_LLVM_VERSION=//'`
+goodfile_basename="export-vs-c"
+llvm_goodfile="$goodfile_basename-llvm$CHPL_LLVM_VERSION.good"
+GOODFILE=""
+if [ -f "$llvm_goodfile" ]; then
+  GOODFILE="# $llvm_goodfile"
+fi  
+
+
+echo "--ccflags -fdiscard-value-names --llvm-print-ir-stage basic --llvm-print-ir $FNS $GOODFILE"

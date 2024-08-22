@@ -42,7 +42,7 @@ module analyze_torus_graphs {
     
     const vertex_domain = 
       if DISTRIBUTION_TYPE == "BLOCK" then
-        [ Torus_Base_Index..#d ] dmapped blockDist ( [Torus_Base_Index..#d] )
+        [ Torus_Base_Index..#d ] dmapped new blockDist ( [Torus_Base_Index..#d] )
       else
         [ Torus_Base_Index..#d ];
 
@@ -91,7 +91,7 @@ module analyze_torus_graphs {
      if DISTRIBUTION_TYPE == "BLOCK" then
        [ Torus_Base_Index..#d1,
 	 Torus_Base_Index..#d2 ] 
-	 dmapped blockDist ( [ Torus_Base_Index..#d1,
+	 dmapped new blockDist ( [ Torus_Base_Index..#d1,
 			   Torus_Base_Index..#d2 ] )
      else
        [ Torus_Base_Index..#d1,
@@ -152,7 +152,7 @@ module analyze_torus_graphs {
        [ Torus_Base_Index..#d1, 
 	 Torus_Base_Index..#d2, 
 	 Torus_Base_Index..#d3 ]
-	 dmapped blockDist ( [ Torus_Base_Index..#d1,
+	 dmapped new blockDist ( [ Torus_Base_Index..#d1,
 			   Torus_Base_Index..#d2, 
 			   Torus_Base_Index..#d3 ] )
      else
@@ -204,7 +204,7 @@ module analyze_torus_graphs {
 	 Torus_Base_Index..#d2, 
 	 Torus_Base_Index..#d3, 
 	 Torus_Base_Index..#d4 ]
-	 dmapped blockDist ( [ Torus_Base_Index..#d1,
+	 dmapped new blockDist ( [ Torus_Base_Index..#d1,
 			   Torus_Base_Index..#d2, 
 			   Torus_Base_Index..#d3, 
 			   Torus_Base_Index..#d4 ])

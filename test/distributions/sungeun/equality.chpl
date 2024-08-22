@@ -12,7 +12,7 @@ const d4 = new blockDist({1..10});
 writeln(d3==d4);
 writeln(d3!=d4);
 
-var dom = {1..1} dmapped blockDist({1..10});
+var dom = {1..1} dmapped new blockDist({1..10});
 writeln(d3==dom.distribution);
 writeln(d3!=dom.distribution);
 

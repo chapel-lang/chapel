@@ -7,8 +7,8 @@ const FullDom = {0..#N, 0..#N};
 enum layoutTypes {coo, csr, csc};
 config param layoutType = layoutTypes.coo;
 
-var csrDom: sparse subdomain(FullDom) dmapped CS(compressRows=true);
-var cscDom: sparse subdomain(FullDom) dmapped CS(compressRows=false);
+var csrDom: sparse subdomain(FullDom) dmapped new dmap(new CS(compressRows=true));
+var cscDom: sparse subdomain(FullDom) dmapped new dmap(new CS(compressRows=false));
 var cooDom: sparse subdomain(FullDom);
 
 var FullSparseDom = if layoutType == layoutTypes.csr then 
@@ -35,7 +35,7 @@ SparseSQ += diagIndArr1;
 
 //define a hardcoded CSR subdomain for second quadrant
 const FourthQuadrant = {N/2..N-1, N/2..N-1};
-var SparseFQ: sparse subdomain(FourthQuadrant) dmapped CS();
+var SparseFQ: sparse subdomain(FourthQuadrant) dmapped new dmap(new CS());
 
 //create diagonal indices
 var diagIndArr2 : [{0..#N}] 2*int;
@@ -65,4 +65,3 @@ for i in FullDom.dim(0) {
   }
   writeln();
 }
-

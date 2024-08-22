@@ -120,9 +120,6 @@ psm3_mq_req_gpu_copy(uint64_t gpu_buf_start, uint32_t gpu_buf_len,
 	uint32_t len = pkt_len;
 	uint32_t rem;
 	uint64_t start, buf_start, buf_end;
-#ifdef PSM_ONEAPI
-	uint32_t map_size;
-#endif
 
 	/* Sanity check */
 	if (pkt_start < gpu_buf_start ||
@@ -160,18 +157,10 @@ psm3_mq_req_gpu_copy(uint64_t gpu_buf_start, uint32_t gpu_buf_len,
 			 * Check if the packet crosses the mmap
 			 * window boundary
 			 */
-#ifdef PSM_ONEAPI
-			/* Keep the map size for munmap */
-			map_size = rem;
-#endif
 			rem = (start + rem - pkt_start);
 			if (pkt_len > rem)
 				pkt_len = rem;
 			psm3_mq_mtucpy_host_mem(ubuf, host_buf, pkt_len);
-#ifdef PSM_ONEAPI
-			psmi_hal_gdr_munmap_gpu_to_host_addr(start, map_size,
-							     1, ep);
-#endif
 		}
 
 		/* Advance to next fragment if any */
@@ -210,11 +199,13 @@ psm3_mq_req_copy(psm2_mq_req_t req,
 	}
 	if (msgptr != buf) {
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+		// for loopback HAL, invalid to call psm3_mq_get_window_rv()
+		// however, for loopback HAL, gdr copy is disabled
 		if (use_gdrcopy)
 			psm3_mq_req_gpu_copy((uint64_t)req->req_data.buf,
 					     req->req_data.recv_msglen,
 					     (uint64_t)msgptr, msglen_this,
-					     req->mq->hfi_base_window_rv, buf,
+					     psm3_mq_get_window_rv(req), buf,
 					     ep);
 		else
 #endif
@@ -288,84 +279,105 @@ static
 void mq_add_to_unexpected_hashes(psm2_mq_t mq, psm2_mq_req_t req)
 {
 	int table;
+
 	mq_qq_append(&mq->unexpected_q, req);
-	req->q[PSM2_ANYTAG_ANYSRC] = &mq->unexpected_q;
 	mq->unexpected_list_len++;
+	UPDATE_UNEXP_LIST_COUNT(mq);
 	if_pt (mq->nohash_fastpath) {
-		if_pf (mq->unexpected_list_len >= HASH_THRESHOLD)
+		if_pf (mq->unexpected_list_len > mq->hash_thresh)
 			psm3_mq_fastpath_disable(mq);
 		return;
 	}
 
-	for (table = PSM2_TAG_SRC; table < PSM2_ANYTAG_ANYSRC; table++)
-		mq_qq_append_which(mq->unexpected_htab,
-				   table, mq->hashvals[table], req);
-	mq->unexpected_hash_len++;
+#ifdef LEARN_HASH_SELECTOR
+	if (mq->min_table < NUM_HASH_CONFIGS) {
+#endif
+		for (table = mq->min_table; table < NUM_HASH_CONFIGS; table++) {
+			mq_qq_append_which(mq->unexpected_htab,
+								table, mq->hashvals[table], req);
+		}
+		mq->unexpected_hash_len++;
+		psmi_assert(mq->unexpected_list_len == mq->unexpected_hash_len);
+		UPDATE_UNEXP_HASH_COUNT(mq);
+#ifdef LEARN_HASH_SELECTOR
+	}
+#endif
 }
 
 
-psm2_mq_req_t
-psm3_mq_list_scan(struct mqq *q, psm2_epaddr_t src, psm2_mq_tag_t *tag, int which, uint64_t *time_threshold)
+void
+psm3_mq_list_scan(psm2_mq_t mq, struct mqq *q, psm2_epaddr_t src,
+					psm2_mq_tag_t *tag, int which, uint64_t *time_threshold,
+					psm2_mq_req_t *match, int *match_which)
 {
-	psm2_mq_req_t *curp, cur;
+	psm2_mq_req_t cur;
+	int k = 0;
 
-	for (curp = &q->first;
-	     ((cur = *curp) != NULL) && (cur->timestamp < *time_threshold);
-	     curp = &cur->next[which]) {
-		if ((cur->req_data.peer == PSM2_MQ_ANY_ADDR || src == cur->req_data.peer) &&
-		    !((tag->tag[0] ^ cur->req_data.tag.tag[0]) & cur->req_data.tagsel.tag[0]) &&
-		    !((tag->tag[1] ^ cur->req_data.tag.tag[1]) & cur->req_data.tagsel.tag[1]) &&
-		    !((tag->tag[2] ^ cur->req_data.tag.tag[2]) & cur->req_data.tagsel.tag[2])) {
+	for (cur = q->first; (cur != NULL) && (cur->timestamp < *time_threshold);
+	     cur = cur->next[which], k++) {
+		if (tag_cmp_req(cur, cur->req_data.peer != PSM2_MQ_ANY_ADDR,
+					src, &cur->req_data.tagsel, tag)) {
 			*time_threshold = cur->timestamp;
-			return cur;
+			*match = cur;
+			*match_which = which;
+			break;
 		}
 	}
-	return NULL;
+	UPDATE_EXP_SEARCH_LEN(mq, k);
 }
 
 psm2_mq_req_t
 psm3_mq_req_match(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag, int remove)
 {
-	psm2_mq_req_t match[4];
+	psm2_mq_req_t match = NULL;
 	int table;
+	int match_table = NUM_HASH_CONFIGS;
 	uint64_t best_ts = -1;
 
+	mq->stats.num_exp_search++;
 	if (mq->nohash_fastpath) {
-		table = PSM2_ANYTAG_ANYSRC;
-		match[table] =
-			psm3_mq_list_scan(&mq->expected_q,
-				     src, tag, PSM2_ANYTAG_ANYSRC, &best_ts);
-		if (match[table] && remove) {
+		psm3_mq_list_scan(mq, &mq->expected_q, src, tag, NUM_HASH_CONFIGS,
+							&best_ts, &match, &match_table);
+		if (match && remove) {
 			mq->expected_list_len--;
-			mq_qq_remove_which(match[table], table);
+			mq_qq_remove_which(match, NUM_HASH_CONFIGS);
 		}
-		return match[table];
+		return match;
 	}
 
+	// if we don't find in expected table, mq->hashvals[] will be used to
+	// add to unepxected_htab
+#ifdef LEARN_HASH_SELECTOR
+	// search in the order the tables got created, 1st created may be used more
+	for (table = NUM_HASH_CONFIGS-1; table >= mq->min_table; table--) {
+		mq->hashvals[table] = hash_src_tag_sel(&mq->table_sel[table], src, tag)
+									% NUM_HASH_BUCKETS;
+#else
 	mq->hashvals[PSM2_TAG_SRC] = hash_64(tag->tag64) % NUM_HASH_BUCKETS;
 	mq->hashvals[PSM2_TAG_ANYSRC] = hash_32(tag->tag[0]) % NUM_HASH_BUCKETS;
 	mq->hashvals[PSM2_ANYTAG_SRC] = hash_32(tag->tag[1]) % NUM_HASH_BUCKETS;
+	for (table = PSM2_TAG_SRC; table < PSM2_ANYTAG_ANYSRC; table++) {
+#endif
+		psm3_mq_list_scan(mq, &mq->expected_htab[table][mq->hashvals[table]],
+							src, tag, table, &best_ts, &match, &match_table);
+	}
 
-	for (table = PSM2_TAG_SRC; table < PSM2_ANYTAG_ANYSRC; table++)
-		match[table] =
-			psm3_mq_list_scan(&mq->expected_htab[table][mq->hashvals[table]],
-				     src, tag, table, &best_ts);
-	table = PSM2_ANYTAG_ANYSRC;
-	match[table] = psm3_mq_list_scan(&mq->expected_q, src, tag, table, &best_ts);
+#ifdef LEARN_HASH_SELECTOR
+	// no value in check, when !search_linear_expected, list will be empty
+	//if (mq->search_linear_expected)
+#endif
+		psm3_mq_list_scan(mq, &mq->expected_q, src, tag, NUM_HASH_CONFIGS,
+								&best_ts, &match, &match_table);
 
-	table = min_timestamp_4(match);
-	if (table == -1)
-		return NULL;
-
-	if (remove) {
-		if_pt (table == PSM2_ANYTAG_ANYSRC)
+	if (match && remove) {
+		if_pt (match_table == NUM_HASH_CONFIGS)
 			mq->expected_list_len--;
 		else
 			mq->expected_hash_len--;
-		mq_qq_remove_which(match[table], table);
+		mq_qq_remove_which(match, match_table);
 		psm3_mq_fastpath_try_reenable(mq);
 	}
-	return match[table];
+	return match;
 }
 /*
  * This handles the rendezvous MPI envelopes, the packet might have the whole
@@ -543,10 +555,6 @@ psm3_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 								(unsigned long)req->req_data.buf,
 								msglen, 1, mq->ep))) {
 				mq_copy_tiny_host_mem((uint32_t *) user_buffer, (uint32_t *) payload, msglen);
-#ifdef PSM_ONEAPI
-				psmi_hal_gdr_munmap_gpu_to_host_addr((unsigned long)req->req_data.buf,
-								     msglen, 1, mq->ep);
-#endif
 				stats->tiny_gdrcopy_recv++;
 				stats->tiny_gdrcopy_recv_bytes += msglen;
 			} else {
@@ -614,12 +622,6 @@ psm3_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 				mq_copy_tiny((uint32_t *)((uint8_t *)user_buffer + paylen),
 					(uint32_t *)off, msglen & 0x3);
 			}
-#ifdef PSM_ONEAPI
-			if (use_gdrcopy)
-				psmi_hal_gdr_munmap_gpu_to_host_addr(
-					(unsigned long)req->req_data.buf,
-					msglen, 1, mq->ep);
-#endif
 			req->state = MQ_STATE_COMPLETE;
 			ips_barrier();
 			mq_qq_append(&mq->completed_q, req);
@@ -818,9 +820,6 @@ void psm3_mq_recv_copy(psm2_mq_t mq, psm2_mq_req_t req, uint8_t is_buf_gpu_mem,
 {
 	psmi_mtucpy_fn_t psmi_mtucpy_fn = psm3_mq_mtucpy;
 	void *ubuf = buf;
-#ifdef PSM_ONEAPI
-	int use_gdrcopy = 0;
-#endif
 
 	if (! copysz) {
 		mq->stats.rx_sysbuf_cpu_num++; // zero length
@@ -839,9 +838,6 @@ void psm3_mq_recv_copy(psm2_mq_t mq, psm2_mq_req_t req, uint8_t is_buf_gpu_mem,
 						    mq->ep))) {
 		psmi_assert(! PSMI_IS_GPU_ENABLED || PSMI_IS_GPU_MEM(buf));
 		psmi_mtucpy_fn = psm3_mq_mtucpy_host_mem;
-#ifdef PSM_ONEAPI
-		use_gdrcopy = 1;
-#endif
 		mq->stats.rx_sysbuf_gdrcopy_num++;
 		mq->stats.rx_sysbuf_gdrcopy_bytes += copysz;
 	} else {
@@ -852,12 +848,6 @@ void psm3_mq_recv_copy(psm2_mq_t mq, psm2_mq_req_t req, uint8_t is_buf_gpu_mem,
 	}
 	if (copysz)
 		psmi_mtucpy_fn(ubuf, (const void *)req->req_data.buf, copysz);
-#ifdef PSM_ONEAPI
-	if (use_gdrcopy)
-		psmi_hal_gdr_munmap_gpu_to_host_addr(
-				(unsigned long)buf,
-				min(gdr_copy_limit_recv, len), 1, mq->ep);
-#endif
 }
 #endif // defined(PSM_CUDA) || defined(PSM_ONEAPI)
 

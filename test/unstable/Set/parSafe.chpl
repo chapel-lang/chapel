@@ -24,3 +24,10 @@ var v = new Values();
 var s7 = new set(int, v, parSafe=true);
 var s8 = new set(int, v, parSafe=false);
 writeln(s7.parSafe == true);
+
+var s9: set(int);
+var s10: set(int, parSafe=true);
+var s11: set(int, false);
+
+type a = set(int);
+type b = set(int, parSafe=true);

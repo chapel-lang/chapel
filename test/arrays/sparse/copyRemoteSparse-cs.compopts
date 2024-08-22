@@ -1,0 +1,2 @@
+-slocalizeConstDomains=true -sdebugLocalizedConstDomains=true --no-cache-remote -scompressRows=true
+-slocalizeConstDomains=true -sdebugLocalizedConstDomains=true --no-cache-remote -scompressRows=false

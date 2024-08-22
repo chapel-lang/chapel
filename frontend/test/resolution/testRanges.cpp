@@ -21,15 +21,10 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
-#include "chpl/resolution/scope-queries.h"
-#include "chpl/types/all-types.h"
-#include "chpl/uast/Identifier.h"
-#include "chpl/uast/Module.h"
-#include "chpl/uast/Record.h"
-#include "chpl/uast/Variable.h"
 
-static QualifiedType getRangeIndexType(Context* context, const RecordType* r, const std::string& ensureBoundedType) {
-  assert(r->name() == "range");
+static std::tuple<QualifiedType, std::string, std::string>
+getRangeInfo(Context* context, const RecordType* r) {
+  assert(r->name() == "_range");
   auto fields = fieldsForTypeDecl(context, r, DefaultsPolicy::IGNORE_DEFAULTS);
 
   assert(fields.fieldName(0) == "idxType");
@@ -44,7 +39,7 @@ static QualifiedType getRangeIndexType(Context* context, const RecordType* r, co
   auto id = boundedValue->value();
   auto astNode = idToAst(context, id)->toNamedDecl();
   assert(astNode != nullptr);
-  assert(astNode->name().str() == ensureBoundedType);
+  std::string boundTypeStr = astNode->name().str();
 
   auto stridable = fields.fieldType(2);
   assert(stridable.kind() == QualifiedType::PARAM);
@@ -54,9 +49,16 @@ static QualifiedType getRangeIndexType(Context* context, const RecordType* r, co
   auto idS = stridableValue->value();
   auto astNodeS = idToAst(context, idS)->toNamedDecl();
   assert(astNodeS != nullptr);
-  assert(astNodeS->name().str() == "one");
+  std::string stridesStr = astNodeS->name().str();
 
-  return fields.fieldType(0);
+  return std::make_tuple(fields.fieldType(0), boundTypeStr, stridesStr);
+}
+
+static QualifiedType getRangeIndexType(Context* context, const RecordType* r, const std::string& ensureBoundedType) {
+  auto info = getRangeInfo(context, r);
+  assert(std::get<1>(info) == ensureBoundedType);
+  assert(std::get<2>(info) == "one");
+  return std::get<0>(info);
 }
 
 static void test1() {
@@ -165,6 +167,161 @@ static void test6(Context* context) {
   assert(idxTypeInt->bitwidth() == 64);
 }
 
+static void test7(Context* context) {
+  // test range without bound
+  ErrorGuard guard(context);
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                         proc f(r: range(?)) do return 42;
+                         var x = f(1..10);
+                         )"""", true);
+  assert(qt.type() != nullptr);
+  assert(qt.type()->isIntType());
+  assert(qt.type()->toIntType()->isDefaultWidth());
+}
+
+static void test8(Context* context) {
+  // test range without bound
+  ErrorGuard guard(context);
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                         var x = new range(int, 0, 10);
+                         )"""", true);
+  auto rangeType = qt.type()->toRecordType();
+  assert(rangeType != nullptr);
+  auto idxType = getRangeIndexType(context, rangeType, "both");
+  assert(idxType.type() != nullptr);
+  auto idxTypeInt = idxType.type()->toIntType();
+  assert(idxTypeInt->bitwidth() == 64);
+}
+
+static void test9(Context* context) {
+  // test the count operator on a bounded range
+  ErrorGuard guard(context);
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  auto qts =  resolveTypesOfVariables(context,
+      R""""(
+      var y : int;
+      var lower: int(32);
+      var x1 = lower..;
+      var x2 = lower..#10;
+      )"""", {"x1", "x2"});
+
+  {
+    // Check the first range
+    auto qt = qts.at("x1");
+    assert(qt.type() != nullptr);
+    auto rangeType = qt.type()->toRecordType();
+    assert(rangeType != nullptr);
+    auto idxType = getRangeIndexType(context, rangeType, "low");
+    assert(idxType.type() != nullptr);
+    auto idxTypeInt = idxType.type()->toIntType();
+    assert(idxTypeInt->bitwidth() == 32);
+  }
+  {
+    // Check the counted range
+    auto qt = qts.at("x2");
+    assert(qt.type() != nullptr);
+    auto rangeType = qt.type()->toRecordType();
+    assert(rangeType != nullptr);
+    auto idxType = getRangeIndexType(context, rangeType, "both");
+    assert(idxType.type() != nullptr);
+    auto idxTypeInt = idxType.type()->toIntType();
+    assert(idxTypeInt->bitwidth() == 32);
+  }
+}
+
+static void test10(Context* context) {
+  // test the count operator on a bounded range
+  ErrorGuard guard(context);
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  auto qts =  resolveTypesOfVariables(context,
+      R""""(
+      var y : int;
+      var higher: int(32);
+      var x1 = ..higher;
+      var x2 = ..higher#10;
+      )"""", {"x1", "x2"});
+
+  {
+    // Check the first range
+    auto qt = qts.at("x1");
+    assert(qt.type() != nullptr);
+    auto rangeType = qt.type()->toRecordType();
+    assert(rangeType != nullptr);
+    auto idxType = getRangeIndexType(context, rangeType, "high");
+    assert(idxType.type() != nullptr);
+    auto idxTypeInt = idxType.type()->toIntType();
+    assert(idxTypeInt->bitwidth() == 32);
+  }
+  {
+    // Check the counted range
+    auto qt = qts.at("x2");
+    assert(qt.type() != nullptr);
+    auto rangeType = qt.type()->toRecordType();
+    assert(rangeType != nullptr);
+    auto idxType = getRangeIndexType(context, rangeType, "both");
+    assert(idxType.type() != nullptr);
+    auto idxTypeInt = idxType.type()->toIntType();
+    assert(idxTypeInt->bitwidth() == 32);
+  }
+}
+
+static void test11(Context* context) {
+  // test the by operator on a bounded range
+  ErrorGuard guard(context);
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
+  auto qts =  resolveTypesOfVariables(context,
+      R""""(
+      var x1 = 1..10;
+      var x2 = x1 by 2;
+      var x3 = x1 by -1;
+      var x4 = x1 by -2;
+
+      var newStride = 10;
+      var x5 = x1 by newStride;
+
+      var y1 = 1..10;
+      var y2 = y1 by -1;
+      var y3 = y2 by -1;
+      var y4 = y2 by 5;
+      var y5 = y2 by -5;
+      )"""", {"x1", "x2", "x3", "x4", "x5", "y1", "y2", "y3", "y4", "y5"});
+
+
+  auto check = [&](const std::string& var, const std::string& stride) {
+    auto qt = qts.at(var);
+    assert(qt.type() != nullptr);
+    auto rangeType = qt.type()->toRecordType();
+    assert(rangeType != nullptr);
+    auto info = getRangeInfo(context, rangeType);
+
+    assert(std::get<0>(info).type() != nullptr);
+    assert(std::get<0>(info).type()->isIntType());
+    assert(std::get<1>(info) == "both");
+    assert(std::get<2>(info) == stride);
+  };
+
+  check("x1", "one");
+  check("x2", "positive");
+  check("x3", "negOne");
+  check("x4", "negative");
+  check("x5", "any");
+
+  check("y1", "one");
+  check("y2", "negOne");
+  check("y3", "one");
+  check("y4", "negative");
+  check("y5", "positive");
+}
+
 int main() {
   // first test runs without environment and stdlib.
   test1();
@@ -178,5 +335,10 @@ int main() {
   test4(ctx);
   test5(ctx);
   test6(ctx);
+  test7(ctx);
+  test8(ctx);
+  test9(ctx);
+  test10(ctx);
+  test11(ctx);
   return 0;
 }

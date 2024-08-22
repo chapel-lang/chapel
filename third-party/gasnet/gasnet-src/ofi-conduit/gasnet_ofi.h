@@ -194,6 +194,24 @@ int gasnetc_ofi_am_send_long(gex_Rank_t dest, gex_AM_Index_t handler,
         int numargs, va_list argptr, int isreq, gex_Flags_t flags
         GASNETI_THREAD_FARG);
 
+// Active Message Prepare/Commit
+extern gasneti_AM_SrcDesc_t gasnetc_ofi_PrepareMedium(
+                gasneti_AM_SrcDesc_t  sd,
+                int                   isreq,
+                gex_Rank_t            jobrank,
+                const void           *client_buf,
+                size_t                size,
+                gex_Flags_t           flags,
+                unsigned int          numargs
+                GASNETI_THREAD_FARG);
+void gasnetc_ofi_CommitMedium(
+                gasneti_AM_SrcDesc_t   sd,
+                int                    isreq,
+                gex_AM_Index_t         handler,
+                size_t                 nbytes,
+                va_list                argptr
+                GASNETI_THREAD_FARG);
+
 // One-sided PUT/GET Functions
 int gasnetc_rdma_put(gex_TM_t tm, gex_Rank_t rank, void *dest, void * src, size_t nbytes,
                      gasnetc_ofi_nb_op_ctxt_t *ctxt_ptr, int alc, gex_Flags_t flags

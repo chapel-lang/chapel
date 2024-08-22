@@ -1,7 +1,7 @@
 use BlockDist;
 
 const Dom = {1..10};
-const Space = Dom dmapped blockDist(Dom);
+const Space = Dom dmapped new blockDist(Dom);
 var A : [Space] int;
 
 ref B = A;

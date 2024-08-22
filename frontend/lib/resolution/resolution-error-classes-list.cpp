@@ -274,6 +274,21 @@ void ErrorAsWithUseExcept::write(ErrorWriterBase& wr) const {
   wr.code(use, { as });
 }
 
+void ErrorAssignFieldBeforeInit::write(ErrorWriterBase& wr) const {
+  auto initCall = std::get<const uast::FnCall*>(info_);
+  auto& initializations = std::get<1>(info_);
+
+  wr.heading(kind_, type_, initCall,
+             "field initialization not allowed before 'super.init()' or 'this.init()'");
+
+  for (auto& initPair : initializations) {
+    auto decl = initPair.first;
+    auto id = initPair.second;
+    wr.note(id, "field '", decl->name(), "' is initialized before the 'init' call here:");
+    wr.code<ID, ID>(id, { id });
+  }
+}
+
 void ErrorConstRefCoercion::write(ErrorWriterBase& wr) const {
   auto ast = std::get<const uast::AstNode*>(info_);
   auto& c = std::get<resolution::MostSpecificCandidate>(info_);
@@ -649,6 +664,18 @@ void ErrorInvalidNewTarget::write(ErrorWriterBase& wr) const {
   wr.message("The 'new' expression can only be used with records or classes.");
 }
 
+void ErrorInvalidParamCast::write(ErrorWriterBase& wr) const {
+  auto astForErr = std::get<0>(info_);
+  auto& fromQt = std::get<1>(info_);
+  auto& toQt = std::get<2>(info_);
+
+  wr.heading(kind_, type_, astForErr,
+             "cannot cast param value "
+             "of type '", fromQt.type(), "' to type '", toQt.type(), "'.");
+  wr.message("In the following expression:");
+  wr.code(astForErr, { astForErr });
+}
+
 void ErrorInvalidSuper::write(ErrorWriterBase& wr) const {
   auto superExpr = std::get<const uast::Identifier*>(info_);
   auto qt = std::get<types::QualifiedType>(info_);
@@ -783,8 +810,24 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
   auto reference = std::get<2>(info_);
   auto id = std::get<3>(info_);
 
-  const char* outerName = outerDecl->isClass() ? "class" : "record";
-  const char* innerName = innerDecl->isClass() ? "class" : "record";
+  auto getType = [](const uast::TypeDecl* typeDecl) {
+    if (typeDecl->isEnum()) {
+      return "enum";
+    } else if (typeDecl->isClass()) {
+      return "class";
+    } else {
+      return "record";
+    }
+  };
+
+  auto getName = [](const uast::TypeDecl* typeDecl) {
+    if (auto enumDecl = typeDecl->toEnum()) return enumDecl->name();
+    CHPL_ASSERT(typeDecl->isAggregateDecl());
+    return typeDecl->toAggregateDecl()->name();
+  };
+
+  const char* outerName = getType(outerDecl);
+  const char* innerName = getType(innerDecl);
   // Shouldn't even be possible to trigger this with unions.
   CHPL_ASSERT(!outerDecl->isUnion());
   CHPL_ASSERT(!innerDecl->isUnion());
@@ -798,13 +841,38 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
   }
   wr.code(reference, { reference });
   wr.note(innerDecl, "the identifier is used within ", innerName, " '",
-          innerDecl->name(), "', declared here:");
+          getName(innerDecl), "', declared here:");
   wr.codeForLocation(innerDecl);
   wr.note(outerDecl, "however, the identifier refers to a field of an enclosing ",
-          outerName, " '", outerDecl->name(), "', declared here:");
+          outerName, " '", getName(outerDecl), "', declared here:");
   wr.codeForLocation(outerDecl);
   wr.note(id, "field declared here:");
   wr.codeForDef(id);
+}
+
+static std::string buildTupleDeclName(const uast::TupleDecl* tup) {
+  std::string ret = "(";
+  int count = 0;
+  for (auto decl : tup->decls()) {
+    if (count != 0) {
+      ret += ",";
+    }
+    count += 1;
+
+    if (decl->isTupleDecl()) {
+      ret += buildTupleDeclName(decl->toTupleDecl());
+    } else {
+      ret += decl->toFormal()->name().str();
+    }
+  }
+
+  if (count == 1) {
+    ret += ",";
+  }
+
+  ret += ")";
+
+  return ret;
 }
 
 void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
@@ -831,7 +899,7 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       auto fn = candidate.initialForErr();
       resolution::FormalActualMap fa(fn, ci);
       auto badPass = fa.byFormalIdx(candidate.formalIdx());
-      auto formalDecl = badPass.formal()->toNamedDecl();
+      auto formalDecl = badPass.formal();
       const uast::AstNode* actualExpr = nullptr;
       if (call && 0 <= badPass.actualIdx() && badPass.actualIdx() < call->numActuals()) {
         actualExpr = call->actual(badPass.actualIdx());
@@ -840,7 +908,24 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       wr.note(fn->id(), "the following candidate didn't match because an actual couldn't be passed to a formal:");
       wr.code(fn->id(), { formalDecl });
 
-      wr.message("The formal '", formalDecl->name(), "' expects ", badPass.formalType(), ", but the actual was ", badPass.actualType(), ".");
+      std::string formalName;
+      if (auto named = formalDecl->toNamedDecl()) {
+        formalName = "'" + named->name().str() + "'";
+      } else if (formalDecl->isTupleDecl()) {
+        formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";
+      }
+
+      if (badPass.formalType().isUnknown()) {
+        // The formal type can be unknown in an initial instantiation if it
+        // depends on the previous formals' types. In that case, don't print it
+        // and say something nicer.
+        wr.message("The instantiated type of formal ", formalName,
+                   " does not allow actuals of type '", badPass.actualType().type(), "'.");
+      } else {
+        wr.message("The formal ", formalName, " expects ", badPass.formalType(),
+                   ", but the actual was ", badPass.actualType(), ".");
+      }
+
       if (actualExpr) {
         wr.code(actualExpr, { actualExpr });
       }
@@ -1417,6 +1502,18 @@ void ErrorTupleExpansionNonTuple::write(ErrorWriterBase& wr) const {
   wr.code(call, { expansion });
   wr.message("the expanded element has non-tuple type '", type.type(), "', "
              "but expansion can only be used on tuples.");
+}
+
+void ErrorTupleIndexOOB::write(ErrorWriterBase& wr) const {
+  auto call = std::get<const uast::Call*>(info_);
+  auto type = std::get<const types::TupleType*>(info_);
+  auto index = std::get<const int>(info_);
+
+  wr.heading(kind_, type_, call, "tuple index ", index, " is out of bounds");
+  wr.message("In the following expression:");
+  wr.code(call, { call });
+  wr.message("the index value is '", index, "' but the valid indices for this",
+             " tuple are in the range 0..", type->numElements()-1, " (inclusive)");
 }
 
 void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {

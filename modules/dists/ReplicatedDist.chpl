@@ -77,7 +77,7 @@ referring to the domain or array.
   .. code-block:: chapel
 
     const Dbase = {1..5};  // A default-distributed domain
-    const Drepl = Dbase dmapped replicatedDist();
+    const Drepl = Dbase dmapped new replicatedDist();
     var Abase: [Dbase] int;
     var Arepl: [Drepl] int;
 

@@ -13,11 +13,12 @@ config const M = 10000; // number of entries in the table per task
 const numUpdates = N * numTasks;
 const tableSize = M * numTasks;
 
-// Block array access is faster than Cyclic currently. We hadn't optimized
-// these before because the comm overhead dominated, but that's no longer true
-// with aggregation. `-suseBlockArr` and/or `-sdefaultDisableLazyRADOpt` will
-// help indexing speed until we optimize them.
-config param useBlockArr = false;
+// Block array access is faster than Cyclic currently. We hadn't
+// optimized these before because the comm overhead dominated, but
+// that's no longer true with aggregation. `-suseBlockArr` (the
+// default) and/or `-sdefaultDisableLazyRADOpt` will help indexing
+// speed until we optimize them.
+config param useBlockArr = true;
 
 var t: stopwatch;
 proc startTimer() {

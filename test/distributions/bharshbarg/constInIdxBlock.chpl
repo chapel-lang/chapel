@@ -2,7 +2,7 @@ use BlockDist;
 
 proc main() {
   var D = {1..10, 1..10};
-  var Space = D dmapped blockDist(D);
+  var Space = D dmapped new blockDist(D);
   var A : [Space] int;
 
   var idx = A.localSubdomain().first;

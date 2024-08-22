@@ -181,15 +181,15 @@ static void superTest6() {
               }
 
               class Child : Parent {
-                proc foo(super: owned Other) {
+                proc foo() {
                   return super.bar();
                 }
               }
             }
          )"""",
          "M.Child.foo",
-         "M.Child.foo@7",
-         "M.Other.bar");
+         "M.Child.foo@3",
+         "M.Parent.bar");
 }
 
 int main() {

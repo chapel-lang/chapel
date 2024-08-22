@@ -1183,6 +1183,7 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
       // Initializer work-around: Skip 'this' for generic initializers
       continue;
     }
+    if (!fa1->actualType().hasTypePtr()) continue;
 
     // if (fa1->formalType().kind() == uast::Qualifier::OUT) {
       // continue; // type comes from call site so ignore it here
@@ -1433,6 +1434,8 @@ static int testArgMapping(const DisambiguationContext& dctx,
   QualifiedType f2Type = fa2->formalType();
   QualifiedType actualType = fa1->actualType();
   CHPL_ASSERT(actualType == fa2->actualType());
+
+  if (!actualType.hasTypePtr()) return -1;
 
   // Give up early for out intent arguments
   // (these don't impact candidate selection)

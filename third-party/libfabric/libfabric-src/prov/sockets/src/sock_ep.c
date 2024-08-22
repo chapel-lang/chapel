@@ -1417,7 +1417,10 @@ static void sock_set_fabric_attr(void *src_addr, const struct fi_fabric_attr *hi
 	if (!attr->name)
 		attr->name = strdup(sock_fab_name);
 
-	attr->prov_name = NULL;
+	if (hint_attr) {
+		attr->prov_name = strdup(hint_attr->prov_name);
+		attr->api_version = hint_attr->api_version;
+	}
 }
 
 static void sock_set_domain_attr(uint32_t api_version, void *src_addr,
@@ -1498,24 +1501,23 @@ struct fi_info *sock_fi_info(uint32_t version, enum fi_ep_type ep_type,
 {
 	struct fi_info *info;
 
-	info = fi_allocinfo();
+	info = fi_dupinfo(hints);
 	if (!info)
 		return NULL;
+	free(info->src_addr);
+	free(info->dest_addr);
+	info->src_addr = NULL;
+	info->dest_addr = NULL;
+	info->src_addrlen = 0;
+	info->dest_addrlen = 0;
 
-	info->src_addr = calloc(1, sizeof(union ofi_sock_ip));
+	assert(src_addr);
+	info->src_addr = calloc(1, ofi_sizeofaddr(src_addr));
 	if (!info->src_addr)
 		goto err;
 
 	info->mode = SOCK_MODE;
-
-	if (src_addr) {
-		memcpy(info->src_addr, src_addr, ofi_sizeofaddr(src_addr));
-	} else {
-		sock_get_src_addr_from_hostname(info->src_addr, NULL,
-			dest_addr ? ((struct sockaddr *) dest_addr)->sa_family :
-			ofi_get_sa_family(hints));
-	}
-
+	memcpy(info->src_addr, src_addr, ofi_sizeofaddr(src_addr));
 	info->src_addrlen = ofi_sizeofaddr(info->src_addr);
 	if (info->src_addrlen == sizeof(struct sockaddr_in6))
 		info->addr_format = FI_SOCKADDR_IN6;
@@ -1523,7 +1525,7 @@ struct fi_info *sock_fi_info(uint32_t version, enum fi_ep_type ep_type,
 		info->addr_format = FI_SOCKADDR_IN;
 
 	if (dest_addr) {
-		info->dest_addr = calloc(1, sizeof(union ofi_sock_ip));
+		info->dest_addr = calloc(1, ofi_sizeofaddr(dest_addr));
 		if (!info->dest_addr)
 			goto err;
 		info->dest_addrlen = ofi_sizeofaddr(dest_addr);
@@ -1531,21 +1533,6 @@ struct fi_info *sock_fi_info(uint32_t version, enum fi_ep_type ep_type,
 	}
 
 	if (hints) {
-		if (hints->caps)
-			info->caps = hints->caps;
-
-		if (hints->ep_attr)
-			*(info->ep_attr) = *(hints->ep_attr);
-
-		if (hints->tx_attr)
-			*(info->tx_attr) = *(hints->tx_attr);
-
-		if (hints->rx_attr)
-			*(info->rx_attr) = *(hints->rx_attr);
-
-		if (hints->handle)
-			info->handle = hints->handle;
-
 		sock_set_domain_attr(version, info->src_addr, hints->domain_attr,
 				     info->domain_attr);
 		sock_set_fabric_attr(info->src_addr, hints->fabric_attr, info->fabric_attr);

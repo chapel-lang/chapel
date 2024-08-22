@@ -1,5 +1,5 @@
 use BlockDist;
-const D = {1..5} dmapped blockDist({1..5});
+const D = {1..5} dmapped new blockDist({1..5});
 var arr1: [0..3] int;
 var arr2: [D] int;
 

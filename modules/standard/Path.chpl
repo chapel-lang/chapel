@@ -215,7 +215,7 @@ proc commonPath(paths: string ...?n): string {
   var pos = prefixList.size;   // rightmost index of common prefix
   var minPathLength = prefixList.size;
 
-  for i in 1..n-1 do {
+  for i in 1..n-1 {
 
     var tempList = new list(string);
     for x in paths(i).split(pathSep, -1, false) do
@@ -296,7 +296,7 @@ proc commonPath(paths: []): string {
   var pos = prefixList.size;   // rightmost index of common prefix
   var minPathLength = prefixList.size;
 
-  for i in (start+1)..end do {
+  for i in (start+1)..end {
 
     var tempList = new list(string);
     for x in paths[i].split(delimiter, -1, false) do
@@ -681,7 +681,7 @@ proc relPath(path: string, start:string=curDir): string throws {
 
   // Append up-levels until we reach the point where the paths diverge.
   var outComps = new list(string);
-  for i in 1..(startComps.size - prefixLen) do
+  for 1..(startComps.size - prefixLen) do
     outComps.pushBack(parentDir);
 
   // Append the portion of path following the common prefix.

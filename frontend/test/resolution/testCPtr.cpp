@@ -32,14 +32,23 @@
 
 #include <sstream>
 
+static Context* context;
+
+// Use a single context with revisions to get this test running faster.
+static void setupContext() {
+  auto config = getConfigWithHome();
+  context = new Context(config);
+}
+
 template <typename F>
 void testCPtrArg(const char* formalType, const char* actualType, F&& test) {
-  Context ctx;
-  Context* context = &ctx;
+  context->advanceToNextRevision(false);
+  setupModuleSearchPaths(context, false, false, {}, {});
   ErrorGuard guard(context);
 
   std::stringstream ss;
 
+  ss << "use CTypes;" << std::endl;
   ss << "record rec { type someType; }" << std::endl;
   ss << "proc f(x: " << formalType << ") {}" << std::endl;
   ss << "var arg: " << actualType << ";" << std::endl;
@@ -53,20 +62,19 @@ void testCPtrArg(const char* formalType, const char* actualType, F&& test) {
 
   assert(modules.size() == 1);
   auto mainMod = modules[0];
-  assert(mainMod->numStmts() == 4);
+  assert(mainMod->numStmts() == 5);
 
-  auto fChild = mainMod->child(1);
+  auto fChild = mainMod->child(2);
   assert(fChild->isFunction());
   auto fFn = fChild->toFunction();
   assert(fFn->name() == "f");
 
-  auto fCallVar = mainMod->child(3);
+  auto fCallVar = mainMod->child(4);
   assert(fCallVar->isVariable());
 
   auto& modResResult = resolveModule(context, mainMod->id());
   auto& rr = modResResult.byAst(fCallVar->toVariable()->initExpression());
 
-  debuggerBreakHere();
   auto fn = rr.mostSpecific().only().fn();
 
   const types::CPtrType* formalTypePtr = nullptr;
@@ -293,7 +301,35 @@ static void test22() {
   });
 }
 
+static void test23() {
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+  module M{
+    module X {
+      proc foo() {
+        use CTypes;
+
+        var ret : c_ptr(int);
+        return ret;
+      }
+    }
+
+    use X;
+
+    var ptr = foo();
+    var x = ptr[0];
+  }
+  )""";
+
+  auto vars = resolveTypesOfVariables(context, program, {"ptr", "x"});
+  assert(vars["ptr"].type()->isCPtrType());
+  assert(vars["x"].type()->isIntType());
+}
+
 int main() {
+  setupContext();
+
   test1();
   test2();
   test3();
@@ -316,6 +352,10 @@ int main() {
   test20();
   test21();
   test22();
+
+  test23();
+
+  delete context;
 
   return 0;
 }

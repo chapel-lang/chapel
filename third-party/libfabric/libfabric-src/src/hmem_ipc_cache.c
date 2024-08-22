@@ -38,8 +38,9 @@ static int ipc_cache_add_region(struct ofi_mr_cache *cache, struct ofi_mr_entry 
 {
 	int ret;
 
-	ret = ofi_hmem_open_handle(entry->info.iface, (void **)&entry->info.ipc_handle,
-				   entry->info.device, &entry->info.ipc_mapped_addr);
+	ret = ofi_hmem_open_handle(entry->info.iface, (void **)&entry->info.handle,
+				   entry->info.iov.iov_len, entry->info.device,
+				   &entry->info.mapped_addr);
 	if (ret == -FI_EALREADY) {
 		/*
 		 * There is a chance we can get the -FI_EALREADY from the
@@ -58,8 +59,9 @@ static int ipc_cache_add_region(struct ofi_mr_cache *cache, struct ofi_mr_entry 
 		 * and close the handles.
 		 */
 		ofi_mr_cache_flush(cache, false);
-		ret = ofi_hmem_open_handle(entry->info.iface, (void **)&entry->info.ipc_handle,
-						entry->info.device, &entry->info.ipc_mapped_addr);
+		ret = ofi_hmem_open_handle(entry->info.iface, (void **)&entry->info.handle,
+						entry->info.iov.iov_len, entry->info.device,
+						&entry->info.mapped_addr);
 	}
 	if (ret) {
 		FI_WARN(&core_prov, FI_LOG_CORE,
@@ -73,7 +75,7 @@ static void ipc_cache_delete_region(struct ofi_mr_cache *cache,
 				     struct ofi_mr_entry *entry)
 {
 	ofi_hmem_close_handle(entry->info.iface,
-			      entry->info.ipc_mapped_addr);
+			      entry->info.mapped_addr);
 }
 
 /**
@@ -90,11 +92,12 @@ int ofi_ipc_cache_open(struct ofi_mr_cache **cache,
 	struct ofi_mem_monitor *memory_monitors[OFI_HMEM_MAX] = {0};
 	int ret;
 
-	/* no-op when cuda ipc is not enabled */
-	if (!ofi_hmem_is_ipc_enabled(FI_HMEM_CUDA))
+	if (!ofi_hmem_is_ipc_enabled(FI_HMEM_CUDA) &&
+		!ofi_hmem_is_ipc_enabled(FI_HMEM_ROCR))
 		return FI_SUCCESS;
 
 	memory_monitors[FI_HMEM_CUDA] = cuda_ipc_monitor;
+	memory_monitors[FI_HMEM_ROCR] = rocr_ipc_monitor;
 
 	*cache = calloc(1, sizeof(*(*cache)));
 	if (!*cache) {
@@ -133,9 +136,9 @@ void ofi_ipc_cache_destroy(struct ofi_mr_cache *cache)
 }
 
 /**
- * @brief Given ipc_info (with ipc_handle and the iov of the device allocation),
- * assign the mapped_addr the mapped address of the ipc_handle.
- * Each (ipc_handle, mapped_addr) pair is stored in ofi_mr_entry.info.ipc_info as
+ * @brief Given ipc_info (with handle and the iov of the device allocation),
+ * assign the mapped_addr the mapped address of the handle.
+ * Each (handle, mapped_addr) pair is stored in ofi_mr_entry.info.ipc_info as
  * part of each mr entry.
  * In a cache hit, the mapped_addr is retrieved from the matched mr entry. Otherwise,
  * the mapped_addr is obtained by opening the ipc handle.
@@ -145,10 +148,11 @@ void ofi_ipc_cache_destroy(struct ofi_mr_cache *cache)
  * @param[out] mr_entry the matched mr_entry of the ipc_info and mapped_addr.
  * @return int 0 on success, negative value otherwise.
  */
-int ofi_ipc_cache_search(struct ofi_mr_cache *cache, struct ipc_info *ipc_info,
-			  struct ofi_mr_entry **mr_entry)
+int ofi_ipc_cache_search(struct ofi_mr_cache *cache, uint64_t peer_id,
+			 struct ipc_info *ipc_info,
+			 struct ofi_mr_entry **mr_entry)
 {
-	struct ofi_mr_info info;
+	struct ofi_mr_info info = {0};
 	struct ofi_mr_entry *entry;
 	int ret;
 	size_t ipc_handle_size;
@@ -156,11 +160,12 @@ int ofi_ipc_cache_search(struct ofi_mr_cache *cache, struct ipc_info *ipc_info,
 	info.iov.iov_base = (void *) (uintptr_t) ipc_info->base_addr;
 	info.iov.iov_len = ipc_info->base_length;
 	info.iface = ipc_info->iface;
+	info.peer_id = peer_id;
 
 	ipc_handle_size = ofi_hmem_get_ipc_handle_size(info.iface);
 	assert(ipc_handle_size);
 
-	memcpy(&info.ipc_handle, &ipc_info->ipc_handle, ipc_handle_size);
+	memcpy(&info.handle, &ipc_info->ipc_handle, ipc_handle_size);
 
 	ret = ofi_mr_cache_search(cache, &info, &entry);
 	if (ret)

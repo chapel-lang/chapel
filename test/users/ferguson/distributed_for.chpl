@@ -2,7 +2,7 @@ use BlockDist;
 
 var Space = {1..10};
 
-var BlockSpace = Space dmapped blockDist(boundingBox=Space);
+var BlockSpace = Space dmapped new blockDist(boundingBox=Space);
 
 var BA: [BlockSpace] int;
 

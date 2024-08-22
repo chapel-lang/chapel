@@ -24,4 +24,6 @@ Testing 2D DR
 10 10 10 10 10 10 10 10 10 10
 End testing 2D DR
 
-localAccess was called 100 times
+
+Numbers collected by prediff:
+	localAccess was called 100 times

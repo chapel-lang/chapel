@@ -5,7 +5,7 @@ require "../../domains/userAPI/domainAPItest.chpl";
 use domainAPItest only testDomainAPI2D as doTestDomainAPI2D;
 
 proc testDomainAPI2D(param lbl, DR: domain(?), idx, OOBidx1, OOBidx2, intDom) {
-  doTestDomainAPI2D(lbl, DR dmapped replicatedDist(), idx, OOBidx1, OOBidx2, intDom);
+  doTestDomainAPI2D(lbl, DR dmapped new replicatedDist(), idx, OOBidx1, OOBidx2, intDom);
 }
 
 proc main {

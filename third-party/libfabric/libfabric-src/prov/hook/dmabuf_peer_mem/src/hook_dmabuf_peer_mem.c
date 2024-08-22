@@ -114,14 +114,14 @@ static int dmabuf_reg_query(int reg_fd, uint64_t addr, uint64_t size, int *fd)
  */
 static bool ze_ipc_handle_is_cached = true;
 
-static inline int get_dmabuf_fd(void *buf)
+static inline int get_dmabuf_fd(void *buf, size_t len)
 {
 	static bool first = true;
 	void *handle;
 	int fd, fd2;
 	int err;
 
-	err = ze_hmem_get_handle(buf, &handle);
+	err = ze_hmem_get_handle(buf, len, &handle);
 	if (err)
 		return err;
 
@@ -131,7 +131,7 @@ static inline int get_dmabuf_fd(void *buf)
 	if (!first)
 		goto end;
 
-	err = ze_hmem_get_handle(buf, &handle);
+	err = ze_hmem_get_handle(buf, len, &handle);
 	if (err)
 		goto end;
 
@@ -167,7 +167,7 @@ static inline void put_dmabuf_fd(int fd)
 static void get_mr_fd(struct dmabuf_peer_mem_mr *mr,
 		      size_t iov_count, const struct iovec *iov)
 {
-	int fd;
+	int fd = -1;
 	int err;
 	struct dmabuf_peer_mem_fabric *fab;
 
@@ -184,8 +184,8 @@ static void get_mr_fd(struct dmabuf_peer_mem_mr *mr,
 	if (!iov_count)
 		goto out;
 
-	err = ze_hmem_get_base_addr(iov->iov_base, (void **)&mr->base,
-				    &mr->size);
+	err = ze_hmem_get_base_addr(iov->iov_base, iov->iov_len,
+				    (void **)&mr->base, &mr->size);
 	if (err)
 		goto out;
 
@@ -198,7 +198,7 @@ static void get_mr_fd(struct dmabuf_peer_mem_mr *mr,
 		 * The region is not covered by any entry in the registry, add a
 		 * new entry to the registry now.
 		 */
-		fd = get_dmabuf_fd(iov->iov_base);
+		fd = get_dmabuf_fd(iov->iov_base, iov->iov_len);
 		if (fd < 0)
 			goto out_unlock;
 

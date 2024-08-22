@@ -122,7 +122,7 @@ proc Gen_RMAT_graph ( a : real,
 
     const edge_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
-        {edge_range} dmapped blockDist ( {edge_range} )
+        {edge_range} dmapped new blockDist ( {edge_range} )
       else
         {edge_range} ;
 

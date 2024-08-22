@@ -539,7 +539,7 @@ int psmx3_process_trigger(struct psmx3_trx_ctxt *trx_ctxt,
 				trigger->atomic_compwrite.flags);
 		break;
 	default:
-		FI_INFO(&psmx3_prov, FI_LOG_CQ,
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CQ,
 			"%d unsupported op\n", trigger->op);
 		break;
 	}

@@ -32,7 +32,7 @@
  */
 
 #include "config.h"
-#include "fi_verbs.h"
+#include "verbs_ofi.h"
 
 void vrb_next_xrc_conn_state(struct vrb_xrc_ep *ep)
 {
@@ -167,7 +167,7 @@ static void vrb_log_ep_conn(struct vrb_xrc_ep *ep, char *desc)
 
 void vrb_free_xrc_conn_setup(struct vrb_xrc_ep *ep, int disconnect)
 {
-	assert(ofi_mutex_held(&ep->base_ep.eq->lock));
+	assert(ofi_mutex_held(&ep->base_ep.eq->event_lock));
 	assert(ep->conn_setup);
 
 	/* If a disconnect is requested then the XRC bidirectional connection
@@ -204,10 +204,10 @@ void vrb_free_xrc_conn_setup(struct vrb_xrc_ep *ep, int disconnect)
 int vrb_connect_xrc(struct vrb_xrc_ep *ep, struct sockaddr *addr,
 		       int reciprocal, void *param, size_t paramlen)
 {
-	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
+	struct vrb_domain *domain = vrb_ep2_domain(&ep->base_ep);
 	int ret;
 
-	assert(ofi_mutex_held(&ep->base_ep.eq->lock));
+	assert(ofi_mutex_held(&ep->base_ep.eq->event_lock));
 	assert(!ep->base_ep.id && !ep->base_ep.ibv_qp && !ep->ini_conn);
 
 	domain->xrc.lock_acquire(&domain->xrc.ini_lock);
@@ -233,9 +233,9 @@ int vrb_connect_xrc(struct vrb_xrc_ep *ep, struct sockaddr *addr,
 
 void vrb_ep_ini_conn_done(struct vrb_xrc_ep *ep, uint32_t tgt_qpn)
 {
-	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
+	struct vrb_domain *domain = vrb_ep2_domain(&ep->base_ep);
 
-	assert(ofi_mutex_held(&ep->base_ep.eq->lock));
+	assert(ofi_mutex_held(&ep->base_ep.eq->event_lock));
 	assert(ep->base_ep.id && ep->ini_conn);
 
 	domain->xrc.lock_acquire(&domain->xrc.ini_lock);
@@ -263,7 +263,7 @@ void vrb_ep_ini_conn_done(struct vrb_xrc_ep *ep, uint32_t tgt_qpn)
 
 void vrb_ep_ini_conn_rejected(struct vrb_xrc_ep *ep)
 {
-	assert(ofi_mutex_held(&ep->base_ep.eq->lock));
+	assert(ofi_mutex_held(&ep->base_ep.eq->event_lock));
 	assert(ep->base_ep.id && ep->ini_conn);
 
 	vrb_log_ep_conn(ep, "INI Connection Rejected");
@@ -288,7 +288,7 @@ int vrb_resend_shared_accept_xrc(struct vrb_xrc_ep *ep,
 	struct rdma_conn_param conn_param = { 0 };
 	struct vrb_xrc_cm_data *cm_data = ep->accept_param_data;
 
-	assert(ofi_mutex_held(&ep->base_ep.eq->lock));
+	assert(ofi_mutex_held(&ep->base_ep.eq->event_lock));
 	assert(cm_data && ep->tgt_ibv_qp);
 	assert(ep->tgt_ibv_qp->qp_num == connreq->xrc.tgt_qpn);
 	assert(ep->peer_srqn == connreq->xrc.peer_srqn);
@@ -303,7 +303,7 @@ int vrb_resend_shared_accept_xrc(struct vrb_xrc_ep *ep,
 	conn_param.initiator_depth = RDMA_MAX_INIT_DEPTH;
 	conn_param.flow_control = 1;
 	conn_param.rnr_retry_count = 7;
-	if (ep->base_ep.srq_ep)
+	if (ep->base_ep.srx)
 		conn_param.srq = 1;
 	conn_param.qp_num = ep->tgt_ibv_qp->qp_num;
 
@@ -320,7 +320,7 @@ int vrb_accept_xrc(struct vrb_xrc_ep *ep, int reciprocal,
 	struct vrb_xrc_cm_data connect_cm_data = { 0 };
 	int ret;
 
-	assert(ofi_mutex_held(&ep->base_ep.eq->lock));
+	assert(ofi_mutex_held(&ep->base_ep.eq->event_lock));
 	addr = rdma_get_local_addr(ep->tgt_id);
 	if (addr)
 		ofi_straddr_dbg(&vrb_prov, FI_LOG_CORE, "src_addr", addr);
@@ -347,7 +347,7 @@ int vrb_accept_xrc(struct vrb_xrc_ep *ep, int reciprocal,
 	conn_param.initiator_depth = RDMA_MAX_INIT_DEPTH;
 	conn_param.flow_control = 1;
 	conn_param.rnr_retry_count = 7;
-	if (ep->base_ep.srq_ep)
+	if (ep->base_ep.srx)
 		conn_param.srq = 1;
 
 	if (!ep->tgt_id->qp)

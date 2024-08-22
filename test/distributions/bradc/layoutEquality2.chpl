@@ -6,8 +6,8 @@ var D2: domain(2) = {1..3, 1..3};
 var DS1: sparse subdomain(D1);
 var DS2: sparse subdomain(D2);
 
-var DS_CSR1: sparse subdomain(D1) dmapped CS();
-var DS_CSR2: sparse subdomain(D2) dmapped CS();
+var DS_CSR1: sparse subdomain(D1) dmapped new dmap(new CS());
+var DS_CSR2: sparse subdomain(D2) dmapped new dmap(new CS());
 
 writeln(DS1.distribution == DS1.distribution);
 writeln(DS1.distribution == DS2.distribution);

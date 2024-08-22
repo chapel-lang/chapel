@@ -1023,7 +1023,13 @@ AC_DEFUN([GASNET_START_CONFIGURE],[
   SYSTEM_TUPLE="$target"
   AC_SUBST(SYSTEM_TUPLE)
   AC_MSG_RESULT( system info:      $SYSTEM_NAME $SYSTEM_TUPLE)
-  BUILD_USER=`whoami 2> /dev/null || id -un 2> /dev/null || echo $USER`
+  BUILD_USER=`whoami 2> /dev/null`
+  if test $? -ne 0 || test -z "$BUILD_USER"; then
+    BUILD_USER=`id -un 2> /dev/null`
+    if test $? -ne 0 || test -z "$BUILD_USER"; then
+      BUILD_USER="$USER"
+    fi
+  fi
   BUILD_ID="`date` $BUILD_USER"
   AC_MSG_RESULT( build id:       $BUILD_ID)
   AC_SUBST(BUILD_ID)

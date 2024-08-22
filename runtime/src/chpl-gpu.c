@@ -50,7 +50,7 @@ bool chpl_gpu_use_stream_per_task = true;
 
 #include <inttypes.h>
 
-static atomic_spinlock_t* priv_table_lock = NULL;
+static chpl_atomic_spinlock_t* priv_table_lock = NULL;
 
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init(&chpl_gpu_num_devices);
@@ -92,7 +92,7 @@ void chpl_gpu_init(void) {
 
   // TODO these should be freed
   priv_table_lock = chpl_mem_alloc(chpl_gpu_num_devices *
-                                   sizeof(atomic_spinlock_t),
+                                   sizeof(chpl_atomic_spinlock_t),
                                    CHPL_RT_MD_GPU_UTIL, 0, 0);
 
   for (int i=0 ; i<chpl_gpu_num_devices ; i++) {
@@ -224,12 +224,29 @@ void chpl_gpu_support_module_finished_initializing(void) {
                  chpl_gpu_sync_with_host ? "enabled" : "disabled");
 }
 
-typedef struct priv_inst {
+typedef struct priv_inst_s {
   int64_t pid;
   void* dev_instance;
 } priv_inst;
 
+typedef struct reduce_var_s {
+  void* outer_var;
+  size_t elem_size;
+  void* buffer;
+  reduce_wrapper_fn_t wrapper;
+} reduce_var;
+
 typedef struct kernel_cfg_s {
+  const char* fn_name;
+  int64_t num_threads;
+
+  int grd_dim_x;
+  int grd_dim_y;
+  int grd_dim_z;
+  int blk_dim_x;
+  int blk_dim_y;
+  int blk_dim_z;
+
   int dev;
 
   int ln;
@@ -238,6 +255,12 @@ typedef struct kernel_cfg_s {
   int n_params;
   int cur_param;
   void*** kernel_params;
+  int n_host_registered;
+  int cur_host_registered_var;
+  void** host_registered_var_boxes; // array of device pointers
+  void*** host_registered_vars;     // array of pointers to device pointer
+                                    // (stored in host_registered_var_boxes)
+  void** host_registered_vars_host_ptrs; // array of host pointers
 
   // Keep track of kernel parameters we dynamically allocate memory for so
   // later on we know what we need to free.
@@ -254,27 +277,36 @@ typedef struct kernel_cfg_s {
 
   bool has_priv_table_lock;
 
+  int n_reduce_vars;
+  int cur_reduce_var;
+
+  reduce_var* reduce_vars;
+
   // we need this in the config so that we can offload data using this stream,
   // and in the future allocate/deallocate on this stream, too
   void* stream;
 } kernel_cfg;
 
-static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids, int ln,
-                     int32_t fn) {
+static void cfg_init(kernel_cfg* cfg, const char* fn_name,
+                     int n_params, int n_pids, int n_reduce_vars,
+                     int n_host_registered_vars, int ln, int32_t fn) {
+
+  cfg->fn_name = fn_name;
+
   cfg->dev = chpl_task_getRequestedSubloc();
   cfg->stream = get_stream(cfg->dev);
 
   cfg->ln = ln;
   cfg->fn = fn;
 
-  //+2 for the ln and fn arguments that we add to the end of the array
-  cfg->n_params = n_params+2;
+  // +2 for the ln and fn arguments that we add to the end of the array
+  // we pass an additional reduce buffer per reduce variable
+  cfg->n_params = n_params+n_reduce_vars+2;
   cfg->cur_param = 0;
 
   cfg->kernel_params = chpl_mem_alloc(cfg->n_params * sizeof(void **),
                                       CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
   assert(cfg->kernel_params);
-
 
   cfg->param_dyn_allocated = chpl_mem_alloc(cfg->n_params * sizeof(bool),
                                             CHPL_RT_MD_GPU_KERNEL_PARAM_META,
@@ -302,6 +334,61 @@ static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids, int ln,
   cfg->priv_table_dev = NULL;
 
   cfg->has_priv_table_lock = false;
+
+  cfg->n_reduce_vars = n_reduce_vars;
+  cfg->cur_reduce_var = 0;
+
+  cfg->reduce_vars = chpl_mem_alloc(cfg->n_reduce_vars * sizeof(reduce_var),
+                                    CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
+
+  cfg->n_host_registered = n_host_registered_vars;
+  cfg->cur_host_registered_var = 0;
+  cfg->host_registered_var_boxes = chpl_mem_alloc(
+    cfg->n_host_registered * sizeof(void*), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF,
+    ln, fn);
+  cfg->host_registered_vars = chpl_mem_alloc(
+    cfg->n_host_registered * sizeof(void**), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF,
+    ln, fn);
+  cfg->host_registered_vars_host_ptrs = chpl_mem_alloc(
+    cfg->n_host_registered * sizeof(void**), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF,
+    ln, fn);
+  for(int i = 0; i < cfg->n_host_registered; i++) {
+    cfg->host_registered_vars[i] = &cfg->host_registered_var_boxes[i];
+  }
+}
+
+static void cfg_init_dims_1d(kernel_cfg* cfg, int64_t num_threads,
+                             int blk_dim) {
+  cfg->num_threads = num_threads;
+  if (cfg->num_threads > 0){
+    cfg->grd_dim_x = (cfg->num_threads+blk_dim-1)/blk_dim;
+    cfg->grd_dim_y = 1;
+    cfg->grd_dim_z = 1;
+    cfg->blk_dim_x = blk_dim;
+    cfg->blk_dim_y = 1;
+    cfg->blk_dim_z = 1;
+  }
+  else {
+    cfg->grd_dim_x = 0;
+    cfg->grd_dim_y = 0;
+    cfg->grd_dim_z = 0;
+    cfg->blk_dim_x = 0;
+    cfg->blk_dim_y = 0;
+    cfg->blk_dim_z = 0;
+  }
+}
+
+static void cfg_init_dims_3d(kernel_cfg* cfg,
+                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                             int blk_dim_x, int blk_dim_y, int blk_dim_z) {
+  cfg->num_threads = grd_dim_x*grd_dim_y*grd_dim_z*
+                     blk_dim_x*blk_dim_y*blk_dim_z;
+  cfg->grd_dim_x = grd_dim_x;
+  cfg->grd_dim_y = grd_dim_y;
+  cfg->grd_dim_z = grd_dim_z;
+  cfg->blk_dim_x = blk_dim_x;
+  cfg->blk_dim_y = blk_dim_y;
+  cfg->blk_dim_z = blk_dim_z;
 }
 
 static void cfg_deinit_params(kernel_cfg* cfg) {
@@ -389,6 +476,13 @@ static void cfg_add_pid(kernel_cfg* cfg, int64_t pid, size_t size) {
   cfg->cur_pid++;
 }
 
+static bool cfg_can_reduce(kernel_cfg* cfg) {
+  // reductions are not supported with multi-dimensional kernels, yet
+  return (cfg->blk_dim_x > 0 &&
+          cfg->blk_dim_y == 1 &&
+          cfg->blk_dim_z == 1);
+}
+
 static void cfg_finalize_priv_table(kernel_cfg *cfg) {
   // n_pids is what the compiler asks for. There can be some arrays
   // with pid=-1 and n_pids will include those. But we don't need to offload
@@ -454,7 +548,7 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg) {
 
   CHPL_GPU_DEBUG("Global for the device table: %p\n", dev_global);
 
-  atomic_spinlock_t* lock = &(priv_table_lock[cfg->dev]);
+  chpl_atomic_spinlock_t* lock = &(priv_table_lock[cfg->dev]);
   while(!atomic_try_lock_spinlock_t(lock)) {
     chpl_task_yield();
   }
@@ -475,15 +569,45 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg) {
   CHPL_GPU_DEBUG("Offloaded the new privatization table\n");
 }
 
-void* chpl_gpu_init_kernel_cfg(int n_params, int n_pids, int ln, int32_t fn) {
+void* chpl_gpu_init_kernel_cfg(const char* fn_name, int64_t num_threads,
+                               int blk_dim, int n_params, int n_pids,
+                               int n_reduce_vars, int n_host_registered_vars,
+                               int ln, int32_t fn) {
   void* ret = chpl_mem_alloc(sizeof(kernel_cfg),
                              CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
-  cfg_init((kernel_cfg*)ret, n_params, n_pids, ln, fn);
 
-  CHPL_GPU_DEBUG("Initialized kernel config for %d params and %d pids\n",
-                 n_params, n_pids);
+  cfg_init((kernel_cfg*)ret, fn_name, n_params, n_pids, n_reduce_vars,
+           n_host_registered_vars, ln, fn);
+  cfg_init_dims_1d((kernel_cfg*)ret, num_threads, blk_dim);
+
+  CHPL_GPU_DEBUG("Initialized kernel config for %s. num_threads=%"PRId64" blk_dim=%d"
+                 " %d params, %d pids and %d reduction buffers\n", fn_name,
+                 num_threads, blk_dim, n_params, n_pids, n_reduce_vars);
+  CHPL_GPU_DEBUG("%s:%d\n", chpl_lookupFilename(fn), ln);
 
   return ret;
+}
+
+void* chpl_gpu_init_kernel_cfg_3d(const char* fn_name,
+                                  int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                                  int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                                  int n_params, int n_pids, int n_reduce_vars,
+                                  int n_host_registered_vars, int ln,
+                                  int32_t fn) {
+
+  void* ret = chpl_mem_alloc(sizeof(kernel_cfg),
+                             CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
+
+  cfg_init((kernel_cfg*)ret, fn_name, n_params, n_pids, n_reduce_vars,
+           n_host_registered_vars, ln, fn);
+  cfg_init_dims_3d((kernel_cfg*)ret,
+                   grd_dim_x, grd_dim_y, grd_dim_z,
+                   blk_dim_x, blk_dim_y, blk_dim_z);
+
+  CHPL_GPU_DEBUG("%s:%d\n", chpl_lookupFilename(fn), ln);
+
+  return ret;
+
 }
 
 void chpl_gpu_deinit_kernel_cfg(void* _cfg) {
@@ -512,6 +636,18 @@ void chpl_gpu_deinit_kernel_cfg(void* _cfg) {
     chpl_gpu_mem_free(cfg->priv_table_dev, cfg->ln, cfg->fn);
   }
 
+  for (int i=0 ; i<cfg->n_reduce_vars ; i++) {
+    chpl_gpu_mem_free(cfg->reduce_vars[i].buffer, cfg->ln, cfg->fn);
+  }
+  chpl_mem_free(cfg->reduce_vars, cfg->ln, cfg->fn);
+
+  for (int i=0 ; i<cfg->n_host_registered; i++) {
+    chpl_gpu_impl_host_unregister(cfg->host_registered_vars_host_ptrs[i]);
+  }
+  chpl_mem_free(cfg->host_registered_var_boxes, cfg->ln, cfg->fn);
+  chpl_mem_free(cfg->host_registered_vars, cfg->ln, cfg->fn);
+  chpl_mem_free(cfg->host_registered_vars_host_ptrs, cfg->ln, cfg->fn);
+
   chpl_mem_free(cfg, ((kernel_cfg*)cfg)->ln, ((kernel_cfg*)cfg)->fn);
   CHPL_GPU_DEBUG("Deinitialized kernel config\n");
 }
@@ -522,14 +658,90 @@ void chpl_gpu_pid_offload(void* cfg, int64_t pid, size_t size) {
   CHPL_GPU_DEBUG("\tAdded pid: %" PRId64 " with size %zu\n", pid, size);
 }
 
-void chpl_gpu_arg_offload(void* cfg, void* arg, size_t size) {
-  cfg_add_offload_param((kernel_cfg*)cfg, arg, size);
-  CHPL_GPU_DEBUG("\tAdded by-offload param: %p\n", arg);
+void chpl_gpu_arg_offload(void* _cfg, void* arg, size_t size) {
+  kernel_cfg* cfg = (kernel_cfg*)_cfg;
+  cfg_add_offload_param(cfg, arg, size);
+  CHPL_GPU_DEBUG("\tAdded by-offload param (at %d): %p\n", cfg->cur_param, arg);
 }
 
-void chpl_gpu_arg_pass(void* cfg, void* arg) {
-  cfg_add_direct_param((kernel_cfg*)cfg, arg);
-  CHPL_GPU_DEBUG("\tAdded by-val param: %p\n", arg);
+void chpl_gpu_arg_pass(void* _cfg, void* arg) {
+  kernel_cfg* cfg = (kernel_cfg*)_cfg;
+  cfg_add_direct_param(cfg, arg);
+  CHPL_GPU_DEBUG("\tAdded by-val param (at %d): %p\n", cfg->cur_param,  arg);
+}
+
+void chpl_gpu_arg_reduce(void* _cfg, void* arg, size_t elem_size,
+                         reduce_wrapper_fn_t wrapper) {
+#ifndef GPU_RUNTIME_CPU
+  if (!chpl_gpu_can_reduce()) {
+    chpl_internal_error("The runtime is built with a software stack that does "
+                        "not support reductions (e.g. ROCm 4.x). `reduce` "
+                        "expressions and intents are not supported");
+  }
+#endif
+  kernel_cfg* cfg = (kernel_cfg*)_cfg;
+  if (cfg_can_reduce(cfg)) {
+    // pass the argument normally
+    cfg_add_direct_param(cfg, arg);
+
+    // create the reduction buffer
+    const int i = cfg->cur_reduce_var;
+    assert(i < cfg->n_reduce_vars);
+
+    void* buf = chpl_gpu_mem_array_alloc((cfg->grd_dim_x)*elem_size,
+                                         CHPL_RT_MD_GPU_KERNEL_ARG,
+                                         cfg->ln, cfg->fn);
+    CHPL_GPU_DEBUG("Allocated reduction buffer: %p num elems:%d elem_size:%zu\n",
+                   buf, cfg->grd_dim_x, elem_size);
+
+    cfg->reduce_vars[i].buffer = buf;
+    cfg->reduce_vars[i].outer_var = arg;
+    cfg->reduce_vars[i].elem_size = elem_size;
+    cfg->reduce_vars[i].wrapper = wrapper;
+
+    // pass the reduction buffer normally
+    cfg_add_direct_param((kernel_cfg*)cfg, &(cfg->reduce_vars[i].buffer));
+
+    cfg->cur_reduce_var++;
+
+    CHPL_GPU_DEBUG("\tAdded by-reduce param (at %d): %p\n", cfg->cur_param, arg);
+  }
+  else {
+    chpl_internal_error("The runtime is not ready to do reductions with this"
+                        " kernel configuration. Using multidimensional launch?\n");
+  }
+}
+
+void chpl_gpu_arg_host_register(void* _cfg, void* arg, size_t size) {
+  kernel_cfg* cfg = (kernel_cfg*)_cfg;
+
+  void *dev_arg = chpl_gpu_impl_host_register(arg, size);
+  *(cfg->host_registered_vars[cfg->cur_host_registered_var]) = dev_arg;
+  cfg_add_direct_param(cfg, cfg->host_registered_vars[cfg->cur_host_registered_var]);
+  cfg->host_registered_vars_host_ptrs[cfg->cur_host_registered_var] = arg;
+  cfg->cur_host_registered_var += 1;
+  CHPL_GPU_DEBUG("\tAdded ref intent param (at %d): %p\n", cfg->cur_param,  dev_arg);
+}
+
+static void cfg_finalize_reductions(kernel_cfg* cfg) {
+  if (chpl_gpu_can_reduce()) {
+    for (int i=0 ; i<cfg->n_reduce_vars ; i++) {
+      CHPL_GPU_DEBUG("Reduce %p into %p. Wrapper: %p\n",
+                     cfg->reduce_vars[i].buffer,
+                     cfg->reduce_vars[i].outer_var,
+                     cfg->reduce_vars[i].wrapper);
+
+      cfg->reduce_vars[i].wrapper(cfg->reduce_vars[i].buffer,
+                                  cfg->grd_dim_x,
+                                  cfg->reduce_vars[i].outer_var,
+                                  NULL); // no minloc/maxloc, yet
+    }
+  }
+  else {
+    // we can hit this only with cpu-as-device today, where this function will
+    // be called, but the reduction is actually handled by the loop as normal
+    // so, we don't do anything
+  }
 }
 
 static void launch_kernel(const char* name,
@@ -559,7 +771,7 @@ static void launch_kernel(const char* name,
       blk_dim_x, blk_dim_y, blk_dim_z);
 
   for (int i = 0; i < cfg->n_params ; i++) {
-    CHPL_GPU_DEBUG("\tArg: %p\n", cfg->kernel_params[i]);
+    CHPL_GPU_DEBUG("\tArg[%d]: %p\n", i, cfg->kernel_params[i]);
     CHPL_GPU_DEBUG("\t\tVal: %p\n", *(cfg->kernel_params[i]));
   }
 
@@ -574,6 +786,7 @@ static void launch_kernel(const char* name,
                               cfg->stream, (void**)(cfg->kernel_params));
   CHPL_GPU_DEBUG("\tLauncher returned %s\n", name);
 
+  cfg_finalize_reductions(cfg);
 
 #ifdef CHPL_GPU_ENABLE_PROFILE
   chpl_gpu_impl_stream_synchronize(cfg->stream);
@@ -585,6 +798,8 @@ static void launch_kernel(const char* name,
   CHPL_GPU_START_TIMER(teardown_time);
 
   // deinit them before synch as a (premature?) optimization
+  // Engin: note that we are not using stream-ordered allocators yet. So, I
+  // expect the following to serve as a synchornization unfortunately
   cfg_deinit_params(cfg);
 
   CHPL_GPU_STOP_TIMER(teardown_time);
@@ -607,46 +822,7 @@ static void launch_kernel(const char* name,
 }
 
 
-inline void chpl_gpu_launch_kernel(const char* name,
-                                   int grd_dim_x, int grd_dim_y, int grd_dim_z,
-                                   int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                                   void* _cfg) {
-
-  kernel_cfg* cfg = (kernel_cfg*)_cfg;
-
-  chpl_gpu_impl_use_device(cfg->dev);
-
-  CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
-                 "\tLocation: %s:%d\n"
-                 "\tKernel: %s\n"
-                 "\tNumArgs: %d\n",
-                 cfg->dev,
-                 chpl_lookupFilename(cfg->fn),
-                 cfg->ln,
-                 name,
-                 cfg->n_params);
-
-  launch_kernel(name,
-                grd_dim_x, grd_dim_y, grd_dim_z,
-                blk_dim_x, blk_dim_y, blk_dim_z,
-                cfg);
-
-#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-  if (chpl_gpu_sync_with_host) {
-    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", cfg->stream);
-    wait_stream(cfg->stream);
-  }
-#else
-  chpl_gpu_impl_synchronize();
-#endif
-
-  CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
-                 "\tKernel: %s\n", cfg->dev, name);
-}
-
-inline void chpl_gpu_launch_kernel_flat(const char* name,
-                                        int64_t num_threads, int blk_dim,
-                                        void* _cfg) {
+inline void chpl_gpu_launch_kernel(void* _cfg) {
   kernel_cfg* cfg = (kernel_cfg*)_cfg;
 
   chpl_gpu_impl_use_device(cfg->dev);
@@ -660,22 +836,15 @@ inline void chpl_gpu_launch_kernel_flat(const char* name,
                  cfg->dev,
                  chpl_lookupFilename(cfg->fn),
                  cfg->ln,
-                 name,
+                 cfg->fn_name,
                  cfg->stream,
                  cfg->n_params,
-                 num_threads);
+                 cfg->num_threads);
 
-  if (num_threads > 0){
-    int grd_dim_x = (num_threads+blk_dim-1)/blk_dim;
-    int grd_dim_y = 1;
-    int grd_dim_z = 1;
-    int blk_dim_x = blk_dim;
-    int blk_dim_y = 1;
-    int blk_dim_z = 1;
-
-    launch_kernel(name,
-                  grd_dim_x, grd_dim_y, grd_dim_z,
-                  blk_dim_x, blk_dim_y, blk_dim_z,
+  if (cfg->num_threads > 0){
+    launch_kernel(cfg->fn_name,
+                  cfg->grd_dim_x, cfg->grd_dim_y, cfg->grd_dim_z,
+                  cfg->blk_dim_x, cfg->blk_dim_y, cfg->blk_dim_z,
                   cfg);
 
   } else {
@@ -683,7 +852,7 @@ inline void chpl_gpu_launch_kernel_flat(const char* name,
   }
 
   CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
-                 "\tKernel: %s\n", cfg->dev, name);
+                 "\tKernel: %s\n", cfg->dev, cfg->fn_name);
 }
 
 extern void chpl_gpu_comm_on_put(c_sublocid_t dst_subloc, void *addr,
@@ -1033,7 +1202,7 @@ void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
                      int32_t commID, int ln, int32_t fn) {
   #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   if (dst_subloc < 0 && src_subloc < 0) {
-    chpl_memmove(dst, src, n);
+    memmove(dst, src, n);
   }
   else {
     bool dst_on_host = chpl_gpu_impl_is_host_ptr(dst);
@@ -1275,16 +1444,16 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
                            chpl_mem_descInt_t description,
                            int32_t lineno, int32_t filename) {
 
-  CHPL_GPU_DEBUG("chpl_gpu_mem_realloc called. Size:%zu\n", size);
-
-  assert(chpl_gpu_is_device_ptr(memAlloc));
+  CHPL_GPU_DEBUG("chpl_gpu_mem_realloc called. Size:%zu Alloc:%p\n", size,
+                 memAlloc);
 
   c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
   chpl_gpu_impl_use_device(dev_id);
 
 #ifdef GPU_RUNTIME_CPU
-    return chpl_mem_realloc(memAlloc, size, description, lineno, filename);
+  return chpl_mem_realloc(memAlloc, size, description, lineno, filename);
 #else
+  assert(chpl_gpu_is_device_ptr(memAlloc));
   size_t cur_size = chpl_gpu_get_alloc_size(memAlloc);
   assert(cur_size >= 0);
 
@@ -1349,15 +1518,16 @@ bool chpl_gpu_can_sort(void) {
 }
 
 #define DEF_ONE_REDUCE(kind, data_type)\
-void chpl_gpu_##kind##_reduce_##data_type(data_type *data, int n, \
-                                          data_type* val, int* idx) { \
+void chpl_gpu_##kind##_reduce_##data_type(void *data, int n, \
+                                          void* val, int* idx) { \
   CHPL_GPU_DEBUG("chpl_gpu_" #kind "_reduce_" #data_type " called\n"); \
   \
   int dev = chpl_task_getRequestedSubloc(); \
   chpl_gpu_impl_use_device(dev); \
   void* stream = get_stream(dev); \
   \
-  chpl_gpu_impl_##kind##_reduce_##data_type(data, n, val, idx, stream); \
+  chpl_gpu_impl_##kind##_reduce_##data_type((data_type*)data, n, \
+                                            (data_type*)val, idx, stream); \
   \
   if (chpl_gpu_sync_with_host) { \
     CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream); \

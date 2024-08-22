@@ -1,46 +1,12 @@
-/*
- * Copyright (c) 2022 Amazon.com, Inc. or its affiliates. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+/* SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only */
+/* SPDX-FileCopyrightText: Copyright Amazon.com, Inc. or its affiliates. All rights reserved. */
 
 #include "ofi_prov.h"
 #include <ofi_util.h>
 
 #include "efa.h"
-#if HAVE_EFA_DL
-#include <ofi_shm.h>
-#endif
+#include "rdm/efa_rdm_cq.h"
+#include "rdm/efa_rdm_pkt_type.h"
 
 #define EFA_FABRIC_PREFIX "EFA-"
 #define EFA_FABRIC_NAME "efa"
@@ -212,12 +178,10 @@ void efa_prov_info_set_ep_attr(struct fi_info *prov_info,
 	} else {
 		assert(prov_info->ep_attr->type == FI_EP_DGRAM);
                 /*
-                 * Currently, there is no mechanism for EFA layer (lower layer)
-                 * to discard completions internally and FI_INJECT is not optional,
-                 * it can only be disabled by setting inject_size to 0. RXR
-                 * layer does not have this issue as completions can be read from
-                 * the EFA layer and discarded in the RXR layer. For dgram
-                 * endpoint, inject size needs to be set to 0
+		 * Currently, there is no mechanism for device to discard
+		 * a completion, therefore there is no way for dgram endpoint
+		 * to implement FI_INJECT. Because FI_INJECT is not an optional
+		 * feature, we had to set inject_size to 0.
                  */
 		prov_info->tx_attr->inject_size = 0;
 	}
@@ -414,7 +378,7 @@ static int efa_prov_info_set_nic_attr(struct fi_info *prov_info, struct efa_devi
 		goto err_free;
 	}
 
-	link_attr->mtu = device->ibv_port_attr.max_msg_sz - rxr_pkt_max_hdr_size();
+	link_attr->mtu = device->ibv_port_attr.max_msg_sz - efa_rdm_pkt_type_get_max_hdr_size();
 	link_attr->speed = ofi_vrb_speed(device->ibv_port_attr.active_speed,
 	                                 device->ibv_port_attr.active_width);
 
@@ -542,150 +506,147 @@ err_free:
 }
 
 /**
- * @brief allocate an prov_info object that matches the functionality of RxR
+ * @brief allocate an prov_info object that matches the functionality of EFA RDM endpoint
  *
- * RxR (RDM over RDM) is a software layer that implemented mulitple
- * additional functionalities for an RDM endpoint. The added functionalities
+ * EFA RDM endpoint implemented mulitple additional functionalities over rdma-core
+ * SRD QP. The added functionalities
  * include:
  *
  * tag matching, orderred send/receive, message segmentation,
  * emulated RMA/atomic emulation, multi recv.
  *
- * This function allocates a prov_info object the matches RxR's functionality.
+ * This function allocates a prov_info object the matches EFA RDM endpoint's functionality.
  *
- * @param[out]		prov_info_rxr_ptr	pointer to pointer of prov_info_rxr
+ * Note that this info object is not to be confused the with rdm_info in struct efa_device.
+ * That info object translates the rdma-core QP's capability to libfabric's info object.
+ *
+ * @param[out]		prov_info_rdm_ptr	pointer to pointer of prov_info_rdm
  * @param[in]		device			efa_device information
  * @return		0 on success
  * 			-FI_ENOMEM if memory allocation failed.
  */
-int efa_prov_info_alloc_for_rxr(struct fi_info **prov_info_rxr_ptr,
+int efa_prov_info_alloc_for_rdm(struct fi_info **prov_info_rdm_ptr,
 				struct efa_device *device)
 {
-	uint64_t rxr_added_tx_caps = FI_TAGGED | OFI_TX_RMA_CAPS | FI_ATOMIC;
+	uint64_t efa_rdm_added_tx_caps = FI_TAGGED | OFI_TX_RMA_CAPS | FI_ATOMIC;
 
-	uint64_t rxr_added_rx_caps = FI_TAGGED | OFI_RX_RMA_CAPS | FI_ATOMIC |
+	uint64_t efa_rdm_added_rx_caps = FI_TAGGED | OFI_RX_RMA_CAPS | FI_ATOMIC |
 				     FI_SOURCE | FI_MULTI_RECV | FI_DIRECTED_RECV;
 
-	uint64_t rxr_domain_caps = FI_LOCAL_COMM | FI_REMOTE_COMM;
+	uint64_t efa_domain_caps = FI_LOCAL_COMM | FI_REMOTE_COMM;
 
-	struct fi_info *prov_info_rxr;
+	struct fi_info *prov_info_rdm;
 
 	assert(device->rdm_info);
 
-	prov_info_rxr  = fi_dupinfo(device->rdm_info);
-	if (!prov_info_rxr)
+	prov_info_rdm  = fi_dupinfo(device->rdm_info);
+	if (!prov_info_rdm)
 		return -FI_ENOMEM;
 
-	prov_info_rxr->caps |= rxr_added_tx_caps | rxr_added_rx_caps | rxr_domain_caps;
+	prov_info_rdm->caps |= efa_rdm_added_tx_caps | efa_rdm_added_rx_caps | efa_domain_caps;
 
 	/* update domain_attr */
 	{
-		/* RxR ensure thread safety by pthread lock */
-		prov_info_rxr->domain_attr->threading = FI_THREAD_SAFE;
-		/* RxR handles Receiver Not Ready (RNR) events by queuing the send,
+		/* EFA RDM endpoint ensure thread safety by pthread lock */
+		prov_info_rdm->domain_attr->threading = FI_THREAD_SAFE;
+		/* EFA RDM endpoint handles Receiver Not Ready (RNR) events by queuing the send,
 		 * hence resource_mgmt is enabled.
 		 */
-		prov_info_rxr->domain_attr->resource_mgmt = FI_RM_ENABLED;
+		prov_info_rdm->domain_attr->resource_mgmt = FI_RM_ENABLED;
 		/*
 		 * The device endpoint requires a memory descriptor for any send/receive.
 		 * Therefore it set the FI_MR_LOCAL mode.
-		 * buffer. RxR does not have this requirement, hence unset the flag
+		 * buffer. EFA RDM endpoint does not have this requirement, hence unset the flag
 		 */
-		prov_info_rxr->domain_attr->mr_mode &= ~FI_MR_LOCAL;
+		prov_info_rdm->domain_attr->mr_mode &= ~FI_MR_LOCAL;
 
-		/* RxR support writing CQ data by put it in packet header
+		/* EFA RDM endpoint support writing CQ data by put it in packet header
 		 */
-		prov_info_rxr->domain_attr->cq_data_size = RXR_CQ_DATA_SIZE;
+		prov_info_rdm->domain_attr->cq_data_size = EFA_RDM_CQ_DATA_SIZE;
 	}
 
 	/* update ep_attr */
 	{
 		int max_atomic_size;
 
-		prov_info_rxr->ep_attr->protocol = FI_PROTO_EFA;
-		prov_info_rxr->ep_attr->mem_tag_format = FI_TAG_GENERIC;
-		prov_info_rxr->ep_attr->protocol_version = RXR_PROTOCOL_VERSION;
+		prov_info_rdm->ep_attr->protocol = FI_PROTO_EFA;
+		prov_info_rdm->ep_attr->mem_tag_format = FI_TAG_GENERIC;
+		prov_info_rdm->ep_attr->protocol_version = EFA_RDM_PROTOCOL_VERSION;
 		/*
-		 * RxR support message segmentation, hence increase the max_msg_size
+		 * EFA RDM endpoint support message segmentation, hence increase the max_msg_size
 		 */
-		prov_info_rxr->ep_attr->max_msg_size = UINT64_MAX;
+		prov_info_rdm->ep_attr->max_msg_size = UINT64_MAX;
 
 		/*
-		 * RxR implemented emulated atomic, hence set atomic size
+		 * EFA RDM endpoint implemented emulated atomic, hence set atomic size
 		 */
 		max_atomic_size = device->rdm_info->ep_attr->max_msg_size
-					- sizeof(struct rxr_rta_hdr)
+					- sizeof(struct efa_rdm_rta_hdr)
 					- device->rdm_info->src_addrlen
-					- RXR_IOV_LIMIT * sizeof(struct fi_rma_iov);
-		prov_info_rxr->ep_attr->max_order_raw_size = max_atomic_size;
+					- EFA_RDM_IOV_LIMIT * sizeof(struct fi_rma_iov);
+		prov_info_rdm->ep_attr->max_order_raw_size = max_atomic_size;
 	}
 
 	/* update tx_attr */
 	{
 		int min_pkt_size;
 		/*
-		 * RxR supports ordered two-sided/atomic by putting messages by
+		 * EFA RDM endpoint supports ordered two-sided/atomic by putting messages by
 		 * software reorder buffer, hence set tx_attr->message order accordingly.
 		 */
-		prov_info_rxr->tx_attr->caps |= rxr_added_tx_caps;
-		prov_info_rxr->tx_attr->msg_order = FI_ORDER_SAS | FI_ORDER_ATOMIC_RAR | FI_ORDER_ATOMIC_RAW |
+		prov_info_rdm->tx_attr->caps |= efa_rdm_added_tx_caps;
+		prov_info_rdm->tx_attr->msg_order = FI_ORDER_SAS | FI_ORDER_ATOMIC_RAR | FI_ORDER_ATOMIC_RAW |
 						    FI_ORDER_ATOMIC_WAR | FI_ORDER_ATOMIC_WAW;
 
 		/*
-		 * RxR supports injection by software emulation.
-		 * RxR supports delivery complete by using DC capable protocols.
+		 * EFA RDM endpoint supports injection by software emulation.
+		 * EFA RDM endpoint supports delivery complete by using DC capable protocols.
 		 * Therefore changing the default op_flags
 		 */
-		prov_info_rxr->tx_attr->op_flags = FI_INJECT | FI_COMPLETION | FI_TRANSMIT_COMPLETE |
+		prov_info_rdm->tx_attr->op_flags = FI_INJECT | FI_COMPLETION | FI_TRANSMIT_COMPLETE |
 						   FI_DELIVERY_COMPLETE;
 
-		/* Here we calculate the max msg size for emulated injection of RxR.
+		/* Here we calculate the max msg size for emulated injection of EFA RDM endpoint.
 		 * The requirement for inject is: upon return, the user buffer can be reused immediately.
 		 *
 		 * For EFA, inject is implement as: construct a packet entry, copy user data to packet entry
 		 * then send the packet entry. Therefore the maximum inject size is
 		 *    pkt_entry_size - maximum_header_size.
 		 */
-		if (rxr_env.enable_shm_transfer)
-			min_pkt_size = MIN(device->rdm_info->ep_attr->max_msg_size, rxr_env.shm_max_medium_size);
+		if (efa_env.enable_shm_transfer)
+			min_pkt_size = MIN(device->rdm_info->ep_attr->max_msg_size - efa_rdm_pkt_type_get_max_hdr_size(),
+					   SHM_MAX_INJECT_SIZE);
 		else
-			min_pkt_size = device->rdm_info->ep_attr->max_msg_size;
+			min_pkt_size = device->rdm_info->ep_attr->max_msg_size - efa_rdm_pkt_type_get_max_hdr_size();
 
-		if (min_pkt_size < rxr_pkt_max_hdr_size()) {
-			prov_info_rxr->tx_attr->inject_size = 0;
+		if (min_pkt_size < efa_rdm_pkt_type_get_max_hdr_size()) {
+			prov_info_rdm->tx_attr->inject_size = 0;
 		} else {
-			prov_info_rxr->tx_attr->inject_size = min_pkt_size - rxr_pkt_max_hdr_size();
+			prov_info_rdm->tx_attr->inject_size = min_pkt_size;
 		}
 
 		/*
-		 * RxR support multiple IOV by segmentation.
+		 * EFA RDM endpoint support multiple IOV by segmentation.
 		 */
-		prov_info_rxr->tx_attr->iov_limit = RXR_IOV_LIMIT;
-		if (rxr_env.tx_iov_limit > 0)
-			prov_info_rxr->tx_attr->iov_limit = rxr_env.tx_iov_limit;
+		prov_info_rdm->tx_attr->iov_limit = EFA_RDM_IOV_LIMIT;
 
-		if (rxr_env.tx_size > 0)
-			prov_info_rxr->tx_attr->size = rxr_env.tx_size;
+		if (efa_env.tx_size > 0)
+			prov_info_rdm->tx_attr->size = efa_env.tx_size;
 
 	}
 
-	/*
-	 * Set RX attributes for RxR info
-	 */
 	{
-		prov_info_rxr->rx_attr->caps |= rxr_added_rx_caps;
-		prov_info_rxr->rx_attr->msg_order = FI_ORDER_SAS | FI_ORDER_ATOMIC_RAR | FI_ORDER_ATOMIC_RAW |
+		prov_info_rdm->rx_attr->caps |= efa_rdm_added_rx_caps;
+		prov_info_rdm->rx_attr->msg_order = FI_ORDER_SAS | FI_ORDER_ATOMIC_RAR | FI_ORDER_ATOMIC_RAW |
 						    FI_ORDER_ATOMIC_WAR | FI_ORDER_ATOMIC_WAW;
-		prov_info_rxr->rx_attr->op_flags = FI_COMPLETION | FI_MULTI_RECV;
-		prov_info_rxr->rx_attr->iov_limit = RXR_IOV_LIMIT;
-		if (rxr_env.rx_iov_limit > 0)
-			prov_info_rxr->rx_attr->iov_limit = rxr_env.rx_iov_limit;
+		prov_info_rdm->rx_attr->op_flags = FI_COMPLETION | FI_MULTI_RECV;
+		prov_info_rdm->rx_attr->iov_limit = EFA_RDM_IOV_LIMIT;
 
-		if (rxr_env.rx_size > 0)
-			prov_info_rxr->rx_attr->size = rxr_env.rx_size;
+		if (efa_env.rx_size > 0)
+			prov_info_rdm->rx_attr->size = efa_env.rx_size;
 	}
 
-	*prov_info_rxr_ptr = prov_info_rxr;
+	*prov_info_rdm_ptr = prov_info_rdm;
 	return 0;
 }
 

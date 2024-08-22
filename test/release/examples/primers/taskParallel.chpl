@@ -6,12 +6,17 @@
 
 config const n = 10; // Used for the coforall loop
 
-// .. _primers-taskparallel-begin:
-//
-// Begin Statements
-// ----------------
-// The ``begin`` statement spawns a thread of execution that is independent
-// of the current (main) thread of execution.
+/*
+.. index::
+    single: begin
+
+.. _primers-taskparallel-begin:
+
+Begin Statements
+----------------
+The ``begin`` statement spawns a thread of execution that is independent
+of the current (main) thread of execution.
+*/
 writeln("1: ### The begin statement ###");
 
 begin writeln("1: output from spawned task");
@@ -21,15 +26,18 @@ begin writeln("1: output from spawned task");
 writeln("1: output from main task");
 
 
+/*
+.. index::
+   single: cobegin
+.. _primers-taskparallel-cobegin:
 
-// .. _primers-taskparallel-cobegin:
-//
-// Cobegin Statements
-// ------------------
-// For more structured behavior, the ``cobegin`` statement can be used to
-// spawn a block of tasks, one for each statement.  Control continues
-// after the ``cobegin`` block, but only after all the tasks within the
-// ``cobegin`` block have completed.
+Cobegin Statements
+------------------
+For more structured behavior, the ``cobegin`` statement can be used to
+spawn a block of tasks, one for each statement.  Control continues
+after the ``cobegin`` block, but only after all the tasks within the
+``cobegin`` block have completed.
+*/
 writeln("2: ### The cobegin statement ###");
 
 cobegin {
@@ -59,16 +67,19 @@ cobegin {
 writeln("3: output from main task");
 
 
+/*
+.. index::
+   single: coforall
+.. _primers-taskparallel-coforall:
 
-// .. _primers-taskparallel-coforall:
-//
-// Coforall Loops
-// --------------
-// Another more structured form of task parallelism is the
-// ``coforall`` loop.  This loop form is like a ``for`` loop in which
-// each iteration of the loop is executed by a distinct task.  Similar
-// to the ``cobegin`` statement, the main thread of execution does not
-// continue until the tasks created for each iteration have completed.
+Coforall Loops
+--------------
+Another more structured form of task parallelism is the
+``coforall`` loop.  This loop form is like a ``for`` loop in which
+each iteration of the loop is executed by a distinct task.  Similar
+to the ``cobegin`` statement, the main thread of execution does not
+continue until the tasks created for each iteration have completed.
+*/
 writeln("4: ### The coforall loop ###");
 
 coforall i in 1..n {
@@ -97,6 +108,8 @@ coforall i in 1..n {
 writeln("5: output from main task");
 
 /*
+.. index::
+   single: with; task intent
 .. _primers-taskparallel-task-intents:
 
 Task Intents

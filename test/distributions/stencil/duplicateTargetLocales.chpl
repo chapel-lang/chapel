@@ -6,7 +6,7 @@ const targetLocales = [loc in 0..<numLocales*2] Locales[loc%numLocales];
 
 config const n = 10;
 const space = {1..n};
-const Dom = space dmapped stencilDist(space, targetLocales=targetLocales);
+const Dom = space dmapped new stencilDist(space, targetLocales=targetLocales);
 var A: [Dom] int;
 
 A = 0;

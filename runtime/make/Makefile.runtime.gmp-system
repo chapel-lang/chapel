@@ -16,6 +16,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-RUNTIME_DEFS += -DCHPL_HAS_GMP
-# assumes gmp.h is in system path.
-
+RUNTIME_DEFS += -DCHPL_HAS_GMP $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_gmp.py --compile)

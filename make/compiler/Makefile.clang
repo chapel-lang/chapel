@@ -175,6 +175,22 @@ CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes -Wno-missing-prototypes -Wno-un
 CLANG_VER := $(shell echo __clang_major__ | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//')
 CHPL_GASNET_MORE_CFLAGS += $(shell test $(CLANG_VER) -gt 15 && echo -Wno-cast-function-type-strict)
 
+#
+# Don't warn for deprecated declarations with LLVM 11 and 12
+#
+ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -eq 11; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-deprecated-declarations
+endif
+ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -eq 12; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-deprecated-declarations
+endif
+
+#
+# Don't warn for deprecated declarations with clang 18
+# https://github.com/llvm/llvm-project/issues/76515
+#
+COMP_CXXFLAGS += $(shell test $(CLANG_VER) -eq 18 && echo -Wno-deprecated-declarations)
+
 endif
 
 ifdef CHPL_COMM_DEBUG

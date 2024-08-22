@@ -1,4 +1,3 @@
-warning: Ambiguous module source file -- using std/Path.chpl over $CHPL_HOME/modules/standard/Path.chpl
 warnUnstableBoth.chpl:1: In module 'M':
 warnUnstableBoth.chpl:7: warning: testNumLocalsUnstableProc is unstable
 warnUnstableBoth.chpl:8: warning: testPathUnstableProc is unstable

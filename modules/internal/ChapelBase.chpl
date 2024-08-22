@@ -338,18 +338,45 @@ module ChapelBase {
     return false;
   }
 
-  inline operator <(a: int(8), b: int(8)) do return __primitive("<", a, b);
-  inline operator <(a: int(16), b: int(16)) do return __primitive("<", a, b);
-  inline operator <(a: int(32), b: int(32)) do return __primitive("<", a, b);
-  inline operator <(a: int(64), b: int(64)) do return __primitive("<", a, b);
+  // operator <(integral, integral)
 
-  inline operator <(a: uint(8), b: uint(8)) do return __primitive("<", a, b);
-  inline operator <(a: uint(16), b: uint(16)) do return __primitive("<", a, b);
-  inline operator <(a: uint(32), b: uint(32)) do return __primitive("<", a, b);
-  inline operator <(a: uint(64), b: uint(64)) do return __primitive("<", a, b);
+  // cast an int(?w) to uint(w)
+  private inline proc asUint(a: integral) do return a: uint(numBits(a.type));
+
+  inline operator <(a: integral, b: integral) do return
+    // prim("<") works correctly for same signed-ness even with diff. sizes
+    if isInt(a) then
+      if isInt(b) then __primitive("<", a, b)
+      else __primitive("<", a, 0) || __primitive("<", asUint(a), b)
+    else
+      if isUint(b) then __primitive("<", a, b)
+      else ! __primitive("<", b, 0) && __primitive("<", a, asUint(b));
+
+  inline operator <(a: integral, param b: integral) param
+    where isUint(a) && __primitive("<=", b, 0)
+    do return false;
+
+  inline operator <(param a: integral, b: integral) param
+    where isUint(b) && __primitive("<", a, 0)
+    do return true;
+
+  inline operator <(param a: integral, param b: integral) param do return
+    // prim("<") may be wrong with mixed int*uint ex. prim("<", 1, (-5):uint)
+    if a >= 0 then
+      if b >= 0 then __primitive("<", a, b) else false
+    else
+      if b >= 0 then true else __primitive("<", a, b);
+
+  // operator < involving bool
+  inline operator <(a: bool, b: bool)     do return a:int < b:int;
+  inline operator <(a: bool, b: integral) do return a:int < b;
+  inline operator <(a: integral, b: bool) do return a     < b:int;
+  inline operator <(param a: bool, param b: bool) param
+    do return __primitive("<", a, b);
 
   inline operator <(a: real(32), b: real(32)) do return __primitive("<", a, b);
   inline operator <(a: real(64), b: real(64)) do return __primitive("<", a, b);
+
   operator <(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -408,15 +435,6 @@ module ChapelBase {
   inline operator >=(param a: real(32), param b: real(32)) param do return __primitive(">=", a, b);
   inline operator >=(param a: real(64), param b: real(64)) param do return __primitive(">=", a, b);
 
-  inline operator <(param a: int(8), param b: int(8)) param do return __primitive("<", a, b);
-  inline operator <(param a: int(16), param b: int(16)) param do return __primitive("<", a, b);
-  inline operator <(param a: int(32), param b: int(32)) param do return __primitive("<", a, b);
-  inline operator <(param a: int(64), param b: int(64)) param do return __primitive("<", a, b);
-
-  inline operator <(param a: uint(8), param b: uint(8)) param do return __primitive("<", a, b);
-  inline operator <(param a: uint(16), param b: uint(16)) param do return __primitive("<", a, b);
-  inline operator <(param a: uint(32), param b: uint(32)) param do return __primitive("<", a, b);
-  inline operator <(param a: uint(64), param b: uint(64)) param do return __primitive("<", a, b);
   inline operator <(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
   inline operator <(param a: real(32), param b: real(32)) param do return __primitive("<", a, b);
@@ -1403,12 +1421,14 @@ module ChapelBase {
   inline proc chpl_anycomplex.re {
     if this.type == complex(128) {
       pragma "fn synchronization free"
-      extern proc creal(x:complex(128)): real(64);
-      return creal(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_creal(x:complex(128)): real(64);
+      return chpl_creal(this);
     } else {
       pragma "fn synchronization free"
-      extern proc crealf(x:complex(64)): real(32);
-      return crealf(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_crealf(x:complex(64)): real(32);
+      return chpl_crealf(this);
     }
   }
   inline proc ref chpl_anycomplex.im ref {
@@ -1420,12 +1440,14 @@ module ChapelBase {
   inline proc chpl_anycomplex.im {
     if this.type == complex(128) {
       pragma "fn synchronization free"
-      extern proc cimag(x:complex(128)): real(64);
-      return cimag(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_cimag(x:complex(128)): real(64);
+      return chpl_cimag(this);
     } else {
       pragma "fn synchronization free"
-      extern proc cimagf(x:complex(64)): real(32);
-      return cimagf(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_cimagf(x:complex(64)): real(32);
+      return chpl_cimagf(this);
     }
   }
 
@@ -2230,8 +2252,17 @@ module ChapelBase {
   inline operator :(x:chpl_anyreal, type t:chpl_anyreal) do
     return __primitive("cast", t, x);
 
+  proc chpl_checkCastAbstractEnumError(type enumType, type dstType) param do
+    if isAbstractEnumType(enumType) then
+      compilerError("cannot cast abstract enum type '" +
+                    enumType:string +
+                    "' to '" +
+                    dstType:string +
+                    "'");
+
   @unstable("enum-to-bool casts are likely to be deprecated in the future")
   inline operator :(x: enum, type t:bool) throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return x: int: bool;
   }
   // operator :(x: enum, type t:integral)
@@ -2241,6 +2272,7 @@ module ChapelBase {
 
   @unstable("enum-to-float casts are likely to be deprecated in the future")
   inline operator :(x: enum, type t:chpl_anyreal) throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return x: int: real;
   }
 
@@ -2427,8 +2459,10 @@ module ChapelBase {
     return (x.re, x.im):t;
 
   @unstable("enum-to-float casts are likely to be deprecated in the future")
-  inline operator :(x: enum, type t:chpl_anycomplex) throws do
+  inline operator :(x: enum, type t:chpl_anycomplex) throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return (x:real, 0):t;
+  }
 
   //
   // casts to imag
@@ -2449,8 +2483,10 @@ module ChapelBase {
     return __primitive("cast", t, x.im);
 
   @unstable("enum-to-float casts are likely to be deprecated in the future")
-  inline operator :(x: enum, type t:chpl_anyimag)  throws do
+  inline operator :(x: enum, type t:chpl_anyimag)  throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return x:real:imag;
+  }
 
   //
   // casts from complex
@@ -3141,56 +3177,6 @@ module ChapelBase {
   inline operator >(param a: int(32), b: int(32)) do return __primitive(">", a, b);
   inline operator >(param a: int(64), b: int(64)) do return __primitive(">", a, b);
 
-
-  // non-param/non-param
-  inline operator <(a: uint(8), b: int(8)) do return !(b < 0) && a < b : uint(8);
-  inline operator <(a: uint(16), b: int(16)) do return !(b < 0) && a < b : uint(16);
-  inline operator <(a: uint(32), b: int(32)) do return !(b < 0) && a < b : uint(32);
-  inline operator <(a: uint(64), b: int(64)) do return !(b < 0) && a < b : uint(64);
-
-  inline operator <(a: int(8), b: uint(8)) do return a < 0 || a : uint(8) < b;
-  inline operator <(a: int(16), b: uint(16)) do return a < 0 || a : uint(16) < b;
-  inline operator <(a: int(32), b: uint(32)) do return a < 0 || a : uint(32) < b;
-  inline operator <(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) < b;
-
-  // non-param/param and param/non-param
-  // param/non-param version not necessary since < above works fine for that
-  inline operator <(a: uint(8), param b: uint(8)) {
-    if __primitive("==", b, 0) {
-      return false;
-    } else {
-      return __primitive("<", a, b);
-    }
-  }
-  inline operator <(a: uint(16), param b: uint(16)) {
-    if __primitive("==", b, 0) {
-      return false;
-    } else {
-      return __primitive("<", a, b);
-    }
-  }
-  inline operator <(a: uint(32), param b: uint(32)) {
-    if __primitive("==", b, 0) {
-      return false;
-    } else {
-      return __primitive("<", a, b);
-    }
-  }
-  inline operator <(a: uint(64), param b: uint(64)) {
-    if __primitive("==", b, 0) {
-      return false;
-    } else {
-      return __primitive("<", a, b);
-    }
-  }
-
-  inline operator <(a: int(8), param b: int(8)) do return __primitive("<", a, b);
-  inline operator <(a: int(16), param b: int(16)) do return __primitive("<", a, b);
-  inline operator <(a: int(32), param b: int(32)) do return __primitive("<", a, b);
-  inline operator <(a: int(64), param b: int(64)) do return __primitive("<", a, b);
-
-
-
   // non-param/non-param
   inline operator >=(a: uint(8), b: int(8)) do return b < 0 || a >= b : uint(8);
   inline operator >=(a: uint(16), b: int(16)) do return b < 0 || a >= b : uint(16);
@@ -3480,5 +3466,16 @@ module ChapelBase {
 
   inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
     return a > b;
+  }
+
+  // check if both arguments are local without `.locale` or `here`
+  proc chpl__bothLocal(const ref a, const ref b) {
+    extern proc chpl_equals_localeID(const ref x, const ref y): bool;
+
+    const aLoc = __primitive("_wide_get_locale", a._value);
+    const bLoc = __primitive("_wide_get_locale", b._value);
+
+    return chpl_equals_localeID(aLoc, bLoc) &&
+           chpl_equals_localeID(aLoc, here_id);
   }
 }

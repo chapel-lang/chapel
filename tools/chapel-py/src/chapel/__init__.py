@@ -27,6 +27,11 @@ from . import visitor
 
 QualifiedType = typing.Tuple[str, Optional[ChapelType], Optional[Param]]
 
+
+REAL_NUMBERIC = (RealLiteral, IntLiteral, UintLiteral)
+NUMERIC = REAL_NUMBERIC + (ImagLiteral,)
+
+
 def preorder(node):
     """
     Recursively visit the given AST node, going in pre-order (parent-then-children)
@@ -329,12 +334,16 @@ def each_matching(node, pattern, iterator=preorder):
             yield (child, variables)
 
 
-def files_with_contexts(files):
+def files_with_contexts(
+    files, setup: Optional[typing.Callable[[Context], None]] = None
+):
     """
     Some files might have the same name, which Dyno really doesn't like.
     Stratify files into "buckets"; within each bucket, all filenames are
     unique. Between each bucket, re-create the Dyno context to avoid giving
     it conflicting files.
+
+    For each newly-created context, call the setup function with it.
 
     Yields files from the argument, as well as the context created for them.
     """
@@ -353,5 +362,176 @@ def files_with_contexts(files):
         ctx = Context()
         to_yield = buckets[bucket]
 
+        if setup:
+            setup(ctx)
+
         for filename in to_yield:
             yield (filename, ctx)
+
+
+def files_with_stdlib_contexts(
+    files, setup: Optional[typing.Callable[[Context], None]] = None
+):
+    """
+    Like files_with_contexts, but also includes the standard library in the
+    context.
+    """
+
+    def setup_with_stdlib(ctx):
+        ctx.set_module_paths([], [])
+        if setup:
+            setup(ctx)
+
+    yield from files_with_contexts(files, setup_with_stdlib)
+
+
+def range_to_tokens(
+    rng: Location, lines: List[str]
+) -> List[typing.Tuple[int, int, int]]:
+    """
+    Convert a Chapel location to a list of token-compatible ranges. If a location
+    spans multiple lines, it gets split into multiple tokens. The lines
+    and columns are zero-indexed.
+
+    Returns a list of (line, column, length).
+    """
+
+    line_start, char_start = rng.start()
+    line_end, char_end = rng.end()
+
+    if line_start == line_end:
+        return [(line_start - 1, char_start - 1, char_end - char_start)]
+
+    tokens = [
+        (
+            line_start - 1,
+            char_start - 1,
+            len(lines[line_start - 1]) - char_start + 1,
+        )
+    ]
+    for line in range(line_start + 1, line_end):
+        tokens.append((line - 1, 0, len(lines[line - 1])))
+    tokens.append((line_end - 1, 0, char_end - 1))
+
+    return tokens
+
+
+def range_to_lines(rng: Location, lines: List[str]) -> List[str]:
+    """
+    Convert a Chapel location to a list of strings
+    """
+    text = []
+    for line, column, length in range_to_tokens(rng, lines):
+        text.append(lines[line][column : column + length])
+    return text
+
+
+def range_to_text(rng: Location, lines: List[str]) -> str:
+    """
+    Convert a Chapel location to a single string
+    """
+    return "\n".join(range_to_lines(rng, lines))
+
+
+def get_file_lines(context: Context, node: AstNode) -> typing.List[str]:
+    """
+    Get the lines of the file containing the given node
+    """
+    path = node.location().path()
+    return context.get_file_text(path).splitlines()
+
+
+def is_basic_literal_like(node: AstNode) -> Optional[Literal]:
+    """
+    Check for "basic" literals: basically, 1, "hello", -42, etc.
+    Returns the "underlying" literal removing surrounding AST (1, "hello", 42).
+    This helps do type comparisons in more complex checks. If the node is
+    not a basic literal, returns None.
+    """
+    if isinstance(node, Literal):
+        return node
+
+    if (
+        isinstance(node, OpCall)
+        and node.op() == "-"
+        and node.num_actuals() == 1
+    ):
+        # Do not recurse; do not consider --42 as a basic literal.
+        act = node.actual(0)
+        if isinstance(act, NUMERIC):
+            return act
+
+    return None
+
+
+def is_complex_literal(
+    node: AstNode,
+) -> Optional[typing.Tuple[Literal, Literal]]:
+    """
+    Check for complex number literals: 1+2i, -42-3i, etc.
+    Returns a tuple of the "underlying" literals, removing surrounding AST
+    ((1, 2i), (42, 3i), etc.). This helps do type comparisons in more complex
+    checks. If the node is not a complex literal, returns None.
+    """
+
+    if not isinstance(node, OpCall):
+        return None
+
+    # A complex number is far from a literal in the AST; in fact, it
+    # potentially has as many as 4 AST nodes: -1 + 2i has a unary negation,
+    # an addition, and two "pure" literals.
+    op = node.op()
+    if (op == "+" or op == "-") and node.num_actuals() == 2:
+        # The left element can be a 'basic literal-like', like 1 or -42i.
+        # But the right element shouldn't have any operators, otherwise
+        # we'd get somethig that looks like 1 - -42i. So we just
+        # use the right argument directly.
+        left = is_basic_literal_like(node.actual(0))
+        right = node.actual(1)
+
+        real_number = REAL_NUMBERIC
+        imag_number = ImagLiteral
+        if isinstance(left, real_number) and isinstance(right, imag_number):
+            return (left, right)
+        if isinstance(left, imag_number) and isinstance(right, real_number):
+            return (left, right)
+
+    return None
+
+
+def is_literal_like(node: AstNode) -> bool:
+    """
+    Returns true if the node is a literal-like node: either a "true" literal
+    (1, "hello", etc.) or something that isn't a literal in the AST,
+    but is a literal mathematically (-10, 10 + 2i).
+    """
+
+    if is_basic_literal_like(node):
+        return True
+
+    if is_complex_literal(node):
+        return True
+
+
+def is_unstable_module(node: AstNode):
+    """
+    Returns true if the given AST node is a module, and if it's explicitly
+    marked unstable.
+    """
+    if isinstance(node, Module):
+        attrs = node.attribute_group()
+        if attrs and attrs.is_unstable():
+            return True
+    return False
+
+
+def in_unstable_module(node: AstNode):
+    """
+    Returns true if the given AST node is inside a module marked as unstable.
+    """
+    n = node
+    while n is not None:
+        if is_unstable_module(n):
+            return True
+        n = n.parent()
+    return False

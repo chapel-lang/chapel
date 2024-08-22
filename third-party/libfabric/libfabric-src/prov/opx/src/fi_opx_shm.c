@@ -37,6 +37,9 @@
 #include "rdma/opx/fi_opx_internal.h"
 #include "opx_shm.h"
 
+OPX_COMPILE_TIME_ASSERT(OPX_SHM_MAX_CONN_NUM >= (16 * 256),
+			"OPX_SHM_MAX_CONN_NUM must be at least 4096 (FI_OPX_MAX_HFIS per node * 256 contexts per HFI)") ;
+
 /*
  * Used by signal handler to free shared memory files.
  */

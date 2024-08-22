@@ -82,9 +82,9 @@ psm2_mq_req_t MOCKABLE(psm3_mq_req_alloc)(psm2_mq_t mq, uint32_t type)
 		return req;
 	} else {	/* we're out of reqs */
 		int issend = (type == MQE_TYPE_SEND);
-		uint32_t reqmax, reqchunk;
+		uint32_t reqmax;
 		psm3_mpool_get_obj_info(issend ? mq->sreq_pool : mq->rreq_pool,
-					&reqchunk, &reqmax);
+					NULL, &reqmax);
 
 		psm3_handle_error(PSMI_EP_NORETURN, PSM2_PARAM_ERR,
 				  "Exhausted %d MQ %s request descriptors, which usually indicates "

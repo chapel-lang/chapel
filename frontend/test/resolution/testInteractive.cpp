@@ -113,7 +113,8 @@ computeAndPrintStuff(Context* context,
                      const ResolvedFunction* inFn,
                      std::set<const ResolvedFunction*>& calledFns,
                      bool scopeResolveOnly,
-                     int maxIdWidth) {
+                     int maxIdWidth,
+                     bool quiet) {
   // Scope resolve / resolve concrete functions before printing
   if (auto fn = ast->toFunction()) {
     if (scopeResolveOnly) {
@@ -129,9 +130,11 @@ computeAndPrintStuff(Context* context,
 
   for (const AstNode* child : ast->children()) {
     computeAndPrintStuff(context, child, inFn, calledFns,
-                         scopeResolveOnly, maxIdWidth);
-    if (child->isModule() || child->isFunction()) {
-      std::cout << "\n";
+                         scopeResolveOnly, maxIdWidth, quiet);
+    if (!quiet) {
+      if (child->isModule() || child->isFunction()) {
+        std::cout << "\n";
+      }
     }
   }
 
@@ -159,30 +162,31 @@ computeAndPrintStuff(Context* context,
       }
     }
 
-    std::string idStr = ast->id().str();
-    std::string tagStr = tagToString(ast);
-    std::string nameStr = nameForAst(ast);
+    if (!quiet) {
+      std::string idStr = ast->id().str();
+      std::string tagStr = tagToString(ast);
+      std::string nameStr = nameForAst(ast);
 
-    // output the ID
-    std::cout << std::setw(maxIdWidth) << std::left << idStr;
-    // restore format to default
-    std::cout.copyfmt(std::ios(NULL));
+      // output the ID
+      std::cout << std::setw(maxIdWidth) << std::left << idStr;
+      // restore format to default
+      std::cout.copyfmt(std::ios(NULL));
 
-    // output the tag and name (if any name)
-    std::string tagNameStr = " " + tagStr;
-    if (!nameStr.empty()) {
-      tagNameStr += " " + nameStr;
+      // output the tag and name (if any name)
+      std::string tagNameStr = " " + tagStr;
+      if (!nameStr.empty()) {
+        tagNameStr += " " + nameStr;
+      }
+      std::cout << std::setw(16) << tagNameStr << std::setw(0);
+
+      // output the resolution result
+      r->stringify(std::cout, chpl::StringifyKind::CHPL_SYNTAX);
+
+      if (afterCount > beforeCount) {
+        std::cout << " (ran " << (afterCount - beforeCount) << " queries)";
+      }
+      std::cout << "\n";
     }
-    std::cout << std::setw(16) << tagNameStr << std::setw(0);
-
-    // output the resolution result
-    r->stringify(std::cout, chpl::StringifyKind::CHPL_SYNTAX);
-
-    if (afterCount > beforeCount) {
-      std::cout << " (ran " << (afterCount - beforeCount) << " queries)";
-    }
-    std::cout << "\n";
-
   }
 }
 
@@ -216,6 +220,8 @@ int main(int argc, char** argv) {
   bool trace = false;
   bool scopeResolveOnly = false;
   bool brief = false;
+  bool once = false;
+  bool quiet = false;
   std::string chpl_home;
   std::vector<std::string> cmdLinePaths;
   std::vector<std::string> files;
@@ -236,6 +242,10 @@ int main(int argc, char** argv) {
       trace = true;
     } else if (0 == strcmp(argv[i], "--scope")) {
       scopeResolveOnly = true;
+    } else if (0 == strcmp(argv[i], "--once")) {
+      once = true;
+    } else if (0 == strcmp(argv[i], "--quiet")) {
+      quiet = true;
     } else if (0 == strcmp(argv[i], "--time")) {
       if (i+1 >= argc) {
         usage(argc, argv);
@@ -280,6 +290,7 @@ int main(int argc, char** argv) {
 
     // Run this query first to make the other output more understandable
     ctx->setDebugTraceFlag(false);
+    setupSearchPaths(ctx, enableStdLib, cmdLinePaths, files);
     typeForBuiltin(ctx, UniqueString::get(ctx, "int"));
     ctx->setDebugTraceFlag(trace);
     if (timing) ctx->beginQueryTimingTrace(timing);
@@ -288,8 +299,6 @@ int main(int argc, char** argv) {
     flags.set(CompilerFlags::WARN_UNSTABLE, warnUnstable);
     setCompilerFlags(ctx, std::move(flags));
 
-    setupSearchPaths(ctx, enableStdLib, cmdLinePaths, files);
-
     std::set<const ResolvedFunction*> calledFns;
 
     for (auto p: files) {
@@ -297,17 +306,23 @@ int main(int argc, char** argv) {
 
       const ModuleVec& mods = parseToplevel(ctx, filepath);
       for (const auto mod : mods) {
-        mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
-        printf("\n");
+        if (!quiet) {
+          mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
+          printf("\n");
+        }
 
         int maxIdWidth = mod->computeMaxIdStringWidth();
         computeAndPrintStuff(ctx, mod, nullptr, calledFns,
-                             scopeResolveOnly, maxIdWidth);
-        printf("\n");
+                             scopeResolveOnly, maxIdWidth, quiet);
+        if (!quiet) {
+          printf("\n");
+        }
       }
     }
 
-    printf("Instantiations:\n");
+    if (!quiet) {
+      printf("Instantiations:\n");
+    }
 
     std::set<const ResolvedFunction*> printed;
 
@@ -328,16 +343,21 @@ int main(int argc, char** argv) {
             auto fn = ast->toFunction();
             auto uSig = UntypedFnSignature::get(ctx, fn);
             auto initialType = typedSignatureInitial(ctx, uSig);
-            printf("Instantiation of ");
-            initialType->stringify(std::cout, chpl::StringifyKind::CHPL_SYNTAX);
-            printf("\n");
-            printf("Instantiation is ");
-            sig->stringify(std::cout, chpl::StringifyKind::CHPL_SYNTAX);
-            printf("\n");
-            int maxIdWidth = ast->computeMaxIdStringWidth();
+            int maxIdWidth = 0;
+            if (!quiet) {
+              printf("Instantiation of ");
+              initialType->stringify(std::cout, chpl::StringifyKind::CHPL_SYNTAX);
+              printf("\n");
+              printf("Instantiation is ");
+              sig->stringify(std::cout, chpl::StringifyKind::CHPL_SYNTAX);
+              printf("\n");
+              maxIdWidth = ast->computeMaxIdStringWidth();
+            }
             computeAndPrintStuff(ctx, ast, calledFn, calledFns,
-                                 scopeResolveOnly, maxIdWidth);
-            printf("\n");
+                                 scopeResolveOnly, maxIdWidth, quiet);
+            if (!quiet) {
+              printf("\n");
+            }
           }
         }
       }
@@ -354,6 +374,10 @@ int main(int argc, char** argv) {
     if (gc) {
       ctx->collectGarbage();
       gc = false;
+    }
+
+    if (once) {
+      break;
     }
 
     // ask the user if they want to run it again

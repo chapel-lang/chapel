@@ -478,7 +478,7 @@ class BorrowedIdsWithName {
     IdAndFlags::FlagSet excludeFlagSet;
     auto maybeIds = createWithSingleId(std::move(id), vis,
                                        isField, isMethod, isParenfulFunction,
-                                       filterFlags, excludeFlagSet);
+                                       filterFlags, std::move(excludeFlagSet));
     CHPL_ASSERT((bool) maybeIds);
     return *maybeIds;
   }
@@ -585,9 +585,10 @@ class Scope {
   enum {
     CONTAINS_FUNCTION_DECLS = 1,
     CONTAINS_USE_IMPORT = 2,
-    AUTO_USES_MODULES = 4,
-    METHOD_SCOPE = 8,
-    CONTAINS_EXTERN_BLOCK = 16,
+    CONTAINS_REQUIRE = 4,
+    AUTO_USES_MODULES = 8,
+    METHOD_SCOPE = 16,
+    CONTAINS_EXTERN_BLOCK = 32,
   };
   /// \endcond
 
@@ -610,7 +611,7 @@ class Scope {
 
   /** Construct a Scope for a particular AST node
       and with a particular parent. */
-  Scope(const uast::AstNode* ast, const Scope* parentScope,
+  Scope(Context* context, const uast::AstNode* ast, const Scope* parentScope,
         bool autoUsesModules);
 
   /** Add a builtin type with the provided name. This needs to
@@ -640,10 +641,17 @@ class Scope {
 
   UniqueString name() const { return name_; }
 
+  const DeclMap& declared() const { return declared_; }
+
   /** Returns 'true' if this Scope directly contains use or import statements
       including the automatic 'use' for the standard library. */
   bool containsUseImport() const {
     return (flags_ & (CONTAINS_USE_IMPORT|AUTO_USES_MODULES)) != 0;
+  }
+
+  /** Returns 'true' if this Scope directly contains 'require' statements */
+  bool containsRequire() const {
+    return (flags_ & CONTAINS_REQUIRE) != 0;
   }
 
   /** Returns 'true' if this Scope directly contains an 'extern' block
@@ -745,7 +753,7 @@ class VisibilitySymbols {
     /**
       all the contents of the scope, e.g.:
 
-          import Foo;
+          use Foo;
 
       The names field will be empty.
 
@@ -924,9 +932,11 @@ class ResolvedVisibilityScope {
  private:
   const Scope* scope_;
   std::vector<VisibilitySymbols> visibilityClauses_;
+  std::vector<ID> modulesNamedInUseOrImport_;
 
  public:
   using VisibilitySymbolsIterable = Iterable<std::vector<VisibilitySymbols>>;
+  using ModuleIdsIterator = Iterable<std::vector<ID>>;
 
   ResolvedVisibilityScope(const Scope* scope)
     : scope_(scope)
@@ -938,6 +948,11 @@ class ResolvedVisibilityScope {
   /** Return an iterator over the visibility clauses */
   VisibilitySymbolsIterable visibilityClauses() const {
     return VisibilitySymbolsIterable(visibilityClauses_);
+  }
+
+  /** Return an iterator over the modules named in use/import */
+  ModuleIdsIterator modulesNamedInUseOrImport() const {
+    return ModuleIdsIterator(modulesNamedInUseOrImport_);
   }
 
   /** Add a visibility clause */
@@ -954,9 +969,15 @@ class ResolvedVisibilityScope {
     visibilityClauses_.push_back(std::move(elt));
   }
 
+  /** Add a module ID for a module named in use/import */
+  void addModuleNamedInUseOrImport(ID id) {
+    modulesNamedInUseOrImport_.push_back(std::move(id));
+  }
+
   bool operator==(const ResolvedVisibilityScope& other) const {
     return scope_ == other.scope_ &&
-           visibilityClauses_ == other.visibilityClauses_;
+           visibilityClauses_ == other.visibilityClauses_ &&
+           modulesNamedInUseOrImport_ == other.modulesNamedInUseOrImport_;
   }
   bool operator!=(const ResolvedVisibilityScope& other) const {
     return !(*this == other);
@@ -969,6 +990,9 @@ class ResolvedVisibilityScope {
     context->markPointer(scope_);
     for (const auto& sym : visibilityClauses_) {
       sym.mark(context);
+    }
+    for (const auto& id: modulesNamedInUseOrImport_) {
+      id.mark(context);
     }
   }
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -1202,6 +1226,7 @@ struct ResultVisibilityTrace {
     // these cover other cases
     bool automaticModule = false;
     bool toplevelModule = false;
+    bool containingModule = false;
     bool externBlock = false;
     bool rootScope = false;
 
@@ -1218,6 +1243,7 @@ struct ResultVisibilityTrace {
              parentScope == other.parentScope &&
              automaticModule == other.automaticModule &&
              toplevelModule == other.toplevelModule &&
+             containingModule == other.containingModule &&
              externBlock == other.externBlock &&
              rootScope == other.rootScope;
     }

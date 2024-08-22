@@ -273,7 +273,8 @@ module DefaultSparse {
         }
       }
 
-      bulkAdd_prepareInds(inds, dataSorted, isUnique, Sort.defaultComparator);
+      bulkAdd_prepareInds(inds, dataSorted, isUnique,
+                          new Sort.DefaultComparator());
 
       if _nnz == 0 {
 
@@ -525,6 +526,24 @@ module DefaultSparse {
         return _getDomain(dom);
       } else {
         return dom.dsiLocalSubdomain(loc);
+      }
+    }
+
+    proc doiBulkTransferToKnown(srcDom, destClass: this.type, destDom) {
+      if !boundsChecking || srcDom == destDom {
+        destClass.data = this.data;
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    proc doiBulkTransferFromKnown(destDom, srcClass: this.type, srcDom): bool {
+      if !boundsChecking || srcDom == destDom {
+        this.data = srcClass.data;
+        return true;
+      } else {
+        return false;
       }
     }
   }

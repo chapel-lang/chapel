@@ -64,6 +64,8 @@ typedef enum bt {
 } blocker_type;
 typedef struct {
     pthread_mutex_t lock;
+    pthread_cond_t condition;
+    uint32_t completed;
     void           *a;
     void           *b;
     blocker_type    type;
@@ -84,13 +86,13 @@ extern unsigned int QTHREAD_LOCKING_STRIPES;
 #define BUILD_UNLOCKED_SYNCVAR(data, state) (((data) << 4) | ((state) << 1))
 #define QTHREAD_CHOOSE_STRIPE(addr)         (((size_t)addr >> 4) & (QTHREAD_LOCKING_STRIPES - 1))
 
-#if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64)
+#if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64 || QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARM || QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64)
 # define UNLOCK_THIS_UNMODIFIED_SYNCVAR(addr, unlocked) do { \
-        (addr)->u.s.lock = 0;                                \
+        atomic_store_explicit((_Atomic uint64_t*)&(addr)->u.w, (unlocked), memory_order_relaxed);\
 } while (0)
 # define UNLOCK_THIS_MODIFIED_SYNCVAR(addr, val, state) do { \
         MACHINE_FENCE;                                       \
-        (addr)->u.w = BUILD_UNLOCKED_SYNCVAR(val, state);    \
+        atomic_store_explicit((_Atomic uint64_t*)&(addr)->u.w, BUILD_UNLOCKED_SYNCVAR(val, state), memory_order_relaxed);    \
 } while (0)
 #elif ((QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC32) || \
     (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64) ||    \
@@ -99,13 +101,13 @@ extern unsigned int QTHREAD_LOCKING_STRIPES;
     (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64) ||   \
     (QTHREAD_ASSEMBLY_ARCH == QTHREAD_TILEPRO))
 # define UNLOCK_THIS_UNMODIFIED_SYNCVAR(addr, unlocked) do { \
-        (addr)->u.w = (unlocked);                            \
+        atomic_store_explicit((_Atomic uint64_t*)&(addr)->u.w, (unlocked), memory_order_relaxed);                            \
 } while (0)
 # define UNLOCK_THIS_MODIFIED_SYNCVAR(addr, val, state) do { \
         MACHINE_FENCE;                                       \
-        (addr)->u.w = BUILD_UNLOCKED_SYNCVAR(val, state);    \
+        atomic_store_explicit((_Atomic uint64_t*)&(addr)->u.w, BUILD_UNLOCKED_SYNCVAR(val, state), memory_order_relaxed);    \
 } while (0)
-#else /* if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64) */
+#else /* if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64 || QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARM || QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64) */
 # define UNLOCK_THIS_UNMODIFIED_SYNCVAR(addr, unlocked) do {                \
         /* this has its own pthread mutex, so does not need memory synch */ \
         qthread_cas64(&((addr)->u.w), (addr)->u.w, (unlocked));             \
@@ -114,7 +116,7 @@ extern unsigned int QTHREAD_LOCKING_STRIPES;
         /* this has its own pthread mutex, so does not need memory synch */             \
         qthread_cas64(&((addr)->u.w), (addr)->u.w, BUILD_UNLOCKED_SYNCVAR(val, state)); \
 } while (0)
-#endif /* if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64) */
+#endif /* if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64 || QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARM || QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64) */
 
 static uint64_t qthread_mwaitc(syncvar_t *const restrict addr,
                                unsigned char const       statemask,
@@ -172,7 +174,7 @@ loop_start:
         {
             syncvar_t tmp;
 loop_start:
-            tmp = *addr;
+            tmp.u.w = atomic_load_explicit((_Atomic uint64_t*)addr, memory_order_relaxed);
             do {
                 unlocked = tmp;          // may be locked or unlocked, we don't know
                 if (unlocked.u.s.lock == 1) {
@@ -246,38 +248,22 @@ int qthread_syncvar_status(syncvar_t *const v)
     eflags_t     e = { 0, 0, 0, 0, 0 };
     unsigned int realret;
 
-#if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_TILEPRO)
-    uint64_t ret = qthread_mwaitc(v, 0xff, INT_MAX, &e);
-    qassert_ret(e.cf == 0, QTHREAD_TIMEOUT); /* there better not have been a timeout */
-    realret = (e.of << 2) | (e.pf << 1) | e.sf;
-    MACHINE_FENCE;
-    v->u.w = BUILD_UNLOCKED_SYNCVAR(ret, realret);
-    return (realret & 0x2) ? 0 : 1;
-
-#else
-# if ((QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64) ||   \
-    (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA64) ||      \
-    (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64) || \
-    (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64))
-    {
-        /* I'm being optimistic here; this only works if a basic 64-bit load is
-         * atomic (on most platforms it is). Thus, if I've done an atomic read
-         * and the syncvar is unlocked, then I figure I can trust
-         * that state and do not need to do a locked atomic operation of any
-         * kind (e.g. cas) */
-        syncvar_t local_copy_of_v = *v;
-        if (local_copy_of_v.u.s.lock == 0) {
-            /* short-circuit */
-            return (local_copy_of_v.u.s.state & 0x2) ? 0 : 1;
-        }
+    /* If I've done an atomic read
+     * and the syncvar is unlocked, then I figure I can trust
+     * that state and do not need to do a locked atomic operation of any
+     * kind (e.g. cas) */
+    syncvar_t local_copy_of_v;
+    local_copy_of_v.u.w = atomic_load_explicit((_Atomic uint64_t*)v, memory_order_relaxed);
+    if (local_copy_of_v.u.s.lock == 0) {
+        /* short-circuit */
+        return (local_copy_of_v.u.s.state & 0x2) ? 0 : 1;
     }
-# endif /* if ((QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64)) */
     (void)qthread_mwaitc(v, 0xff, INT_MAX, &e);
     qassert_ret(e.cf == 0, QTHREAD_TIMEOUT); /* there better not have been a timeout */
-    realret = v->u.s.state;
-    UNLOCK_THIS_UNMODIFIED_SYNCVAR(v, BUILD_UNLOCKED_SYNCVAR(v->u.s.data, v->u.s.state));
+    local_copy_of_v.u.w = atomic_load_explicit((_Atomic uint64_t*)v, memory_order_relaxed);
+    realret = local_copy_of_v.u.s.state;
+    UNLOCK_THIS_UNMODIFIED_SYNCVAR(v, BUILD_UNLOCKED_SYNCVAR(local_copy_of_v.u.s.data, local_copy_of_v.u.s.state));
     return (realret & 0x2) ? 0 : 1;
-#endif /* if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_TILEPRO) */
 }                                      /*}}} */
 
 static aligned_t qthread_syncvar_nonblocker_thread(void *arg)
@@ -309,7 +295,10 @@ static aligned_t qthread_syncvar_blocker_thread(void *arg)
         case EMPTY: a->retval      = qthread_syncvar_empty(a->a); break;
         case INCR: a->retval       = qthread_syncvar_incrF(a->a, *(int64_t *)a->b); break;
     }
-    pthread_mutex_unlock(&(a->lock));
+    pthread_mutex_lock(&a->lock);
+    a->completed = 1u;
+    pthread_cond_signal(&a->condition);
+    pthread_mutex_unlock(&a->lock);
     return 0;
 }                                      /*}}} */
 
@@ -317,7 +306,7 @@ static int qthread_syncvar_nonblocker_func(void        *dest,
                                         void        *src,
                                         blocker_type t)
 {   /*{{{*/
-    qthread_syncvar_blocker_t args = { PTHREAD_MUTEX_INITIALIZER, dest, src, t, QTHREAD_SUCCESS };
+    qthread_syncvar_blocker_t args = { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 0u, dest, src, t, QTHREAD_SUCCESS };
 
     qthread_fork(qthread_syncvar_nonblocker_thread, &args, NULL);
     return args.retval;
@@ -327,12 +316,13 @@ static int qthread_syncvar_blocker_func(void        *dest,
                                         void        *src,
                                         blocker_type t)
 {   /*{{{*/
-    qthread_syncvar_blocker_t args = { PTHREAD_MUTEX_INITIALIZER, dest, src, t, QTHREAD_SUCCESS };
+    qthread_syncvar_blocker_t args = { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 0u, dest, src, t, QTHREAD_SUCCESS };
 
     pthread_mutex_lock(&args.lock);
     qthread_fork(qthread_syncvar_blocker_thread, &args, NULL);
-    pthread_mutex_lock(&args.lock);
+    while (!args.completed) pthread_cond_wait(&args.condition, &args.lock);
     pthread_mutex_unlock(&args.lock);
+    pthread_cond_destroy(&args.condition);
     pthread_mutex_destroy(&args.lock);
     return args.retval;
 } /*}}}*/
@@ -379,14 +369,17 @@ int API_FUNC qthread_syncvar_readFF(uint64_t *restrict  dest,
 #if ((QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64) ||    \
     (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA64) ||      \
     (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64) || \
-    (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64))
+    (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64)) || \
+    (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARM) || \
+    (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64)
     {
         /* I'm being optimistic here; this only works if a basic 64-bit load is
          * atomic (on most platforms it is). Thus, if I've done an atomic read
          * and the syncvar is both unlocked and full, then I figure I can trust
          * that state and do not need to do a locked atomic operation of any
          * kind (e.g. cas) */
-        syncvar_t local_copy_of_src = *src;
+        syncvar_t local_copy_of_src;
+        local_copy_of_src.u.w = atomic_load_explicit((_Atomic uint64_t*)src, memory_order_relaxed);
         if ((local_copy_of_src.u.s.lock == 0) && ((local_copy_of_src.u.s.state & 2) == 0)) {        /* full and unlocked */
             /* short-circuit */
             if (dest) {
@@ -395,7 +388,7 @@ int API_FUNC qthread_syncvar_readFF(uint64_t *restrict  dest,
             return QTHREAD_SUCCESS;
         }
     }
-#endif /* if ((QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64)) */
+#endif /* if ((QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARM) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64)) */
     ret = qthread_mwaitc(src, SYNCFEB_FULL, INITIAL_TIMEOUT, &e);
     qthread_debug(SYNCVAR_DETAILS, "2 src(%p) = %x, ret = %x\n", src,
                   (uintptr_t)src->u.w, ret);
@@ -464,7 +457,7 @@ got_m:
         X->next   = m->FFQ;
         m->FFQ    = X;
         qthread_debug(SYNCVAR_DETAILS, "back to parent\n");
-        me->thread_state          = QTHREAD_STATE_FEB_BLOCKED;
+        atomic_store_explicit(&me->thread_state, QTHREAD_STATE_FEB_BLOCKED, memory_order_relaxed);
         QTPERF_QTHREAD_ENTER_STATE(me->rdata->performance_data, QTHREAD_STATE_FEB_BLOCKED);
         me->rdata->blockedon.addr = m;
         QTHREAD_WAIT_TIMER_START();
@@ -503,7 +496,9 @@ int API_FUNC qthread_syncvar_readFF_nb(uint64_t *restrict  dest,
 #if ((QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64) ||    \
     (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA64) ||      \
     (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64) || \
-    (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64))
+    (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64) || \
+    (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARM) || \
+    (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64))
     {
         /* I'm being optimistic here; this only works if a basic 64-bit load is
          * atomic (on most platforms it is). Thus, if I've done an atomic read
@@ -519,7 +514,7 @@ int API_FUNC qthread_syncvar_readFF_nb(uint64_t *restrict  dest,
             return QTHREAD_SUCCESS;
         }
     }
-#endif /* if ((QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64)) */
+#endif /* if ((QTHREAD_ASSEMBLY_ARCH == QTHREAD_AMD64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_IA64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_POWERPC64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_SPARCV9_64) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARM) || (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARMV8_A64)) */
     ret = qthread_mwaitc(src, SYNCFEB_FULL, 1, &e);
     qthread_debug(SYNCVAR_DETAILS, "2 src(%p) = %x, ret = %x\n", src,
                   (uintptr_t)src->u.w, ret);
@@ -793,7 +788,7 @@ got_m:
         X->next   = m->FEQ;
         m->FEQ    = X;
         qthread_debug(SYNCVAR_DETAILS, "back to parent\n");
-        me->thread_state          = QTHREAD_STATE_FEB_BLOCKED;
+        atomic_store_explicit(&me->thread_state, QTHREAD_STATE_FEB_BLOCKED, memory_order_relaxed);
         QTPERF_QTHREAD_ENTER_STATE(me->rdata->performance_data, QTHREAD_STATE_FEB_BLOCKED);
         me->rdata->blockedon.addr = m;
         QTHREAD_WAIT_TIMER_START();
@@ -959,9 +954,9 @@ static QINLINE void qthread_syncvar_schedule(qthread_t          *waiter,
 {   /*{{{*/
     assert(waiter);
     assert(shep);
-    waiter->thread_state = QTHREAD_STATE_RUNNING;
+    atomic_store_explicit(&waiter->thread_state, QTHREAD_STATE_RUNNING, memory_order_relaxed);
     QTPERF_QTHREAD_ENTER_STATE(waiter->rdata->performance_data, QTHREAD_STATE_RUNNING);
-    if (waiter->flags & QTHREAD_UNSTEALABLE) {
+    if (atomic_load_explicit(&waiter->flags__, memory_order_relaxed) & QTHREAD_UNSTEALABLE) {
         qt_threadqueue_enqueue(waiter->rdata->shepherd_ptr->ready, waiter);
     } else {
 #ifdef QTHREAD_USE_SPAWNCACHE
@@ -1283,7 +1278,7 @@ got_m:
         X->next   = m->EFQ;
         m->EFQ    = X;
         qthread_debug(SYNCVAR_DETAILS, ": back to parent\n");
-        me->thread_state          = QTHREAD_STATE_FEB_BLOCKED;
+        atomic_store_explicit(&me->thread_state, QTHREAD_STATE_FEB_BLOCKED, memory_order_relaxed);
         QTPERF_QTHREAD_ENTER_STATE(me->rdata->performance_data, QTHREAD_STATE_FEB_BLOCKED);
         me->rdata->blockedon.addr = m;
         QTHREAD_WAIT_TIMER_START();
@@ -1546,13 +1541,13 @@ static filter_code qt_syncvar_tf_call_cb(const qt_key_t            addr,
     void                 *tls;
 
     if (waiter->rdata->tasklocal_size <= qlib->qthread_tasklocal_size) {
-        if (waiter->flags & QTHREAD_BIG_STRUCT) {
+        if (atomic_load_explicit(&waiter->flags__, memory_order_relaxed) & QTHREAD_BIG_STRUCT) {
             tls = &waiter->data[qlib->qthread_argcopy_size];
         } else {
             tls = waiter->data;
         }
     } else {
-        if (waiter->flags & QTHREAD_BIG_STRUCT) {
+        if (atomic_load_explicit(&waiter->flags__, memory_order_relaxed) & QTHREAD_BIG_STRUCT) {
             tls = *(void **)&waiter->data[qlib->qthread_argcopy_size];
         } else {
             tls = *(void **)&waiter->data[0];
@@ -1582,7 +1577,6 @@ static void qt_syncvar_call_tf(const qt_key_t      addr,
         }
         for (; curs != NULL; curs = curs->next) {
             qthread_t *waiter = curs->waiter;
-            void      *tls;
             switch(tf(addr, waiter, f_arg)) {
                 case 0: // ignore, move to the next one
                     base = &curs->next;

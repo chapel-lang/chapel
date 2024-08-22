@@ -32,7 +32,7 @@
     default to dynamic linking.
  */
 module UgniPerfStats {
-
+  private use ChplConfig only CHPL_COMM;
   /* Zero performance counters on the current locale */
   inline proc resetStatsHere() {
     if CHPL_COMM == "ugni" {

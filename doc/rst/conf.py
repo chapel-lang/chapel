@@ -22,6 +22,7 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath('./'))
 
 # -- General configuration ------------------------------------------------
 
@@ -33,13 +34,18 @@ needs_sphinx = '1.3'
 # ones.
 extensions = [
     'sphinx.ext.todo',
+    'sphinxcontrib.jquery',
     'sphinxcontrib.chapeldomain',
     'sphinx.ext.mathjax',
     'util.disguise',
     'breathe',
+    'search_index_entries',
 ]
 
 breathe_default_project = "dyno"
+# don't generate #include suggestions in docs because
+# it tries to link to the source code which we're not setup for
+breathe_show_include = False
 
 nitpick_ignore_regex = [('cpp:identifier', r'llvm(:.*)?')]
 nitpick_ignore = []
@@ -76,13 +82,13 @@ master_doc = 'index'
 # 'version' adds a redundant version number onto the top of the sidebar
 # automatically (rtd-theme). We also don't use |version| anywhere in rst
 
-chplversion = '2.1'                  # TODO -- parse from `chpl --version`
+chplversion = '2.2'                  # TODO -- parse from `chpl --version`
 shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen, if any
 html_context = {"chplversion":chplversion}
 
 # The full version, including alpha/beta/rc tags.
-release = '2.1.0 (pre-release)'
-#release = '2.1.0'
+release = '2.2.0 (pre-release)'
+#release = '2.2.0'
 
 # General information about the project.
 project = u'Chapel Documentation'
@@ -111,6 +117,7 @@ exclude_patterns = ['Makefile',
                     'developer/implementation',
                     'util',
                     'meta',
+                    'usingchapel/editors',
 
                     # These don't need to be processed separately
                     # since they are included in the spec with .. include::

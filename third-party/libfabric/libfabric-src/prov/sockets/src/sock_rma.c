@@ -68,7 +68,9 @@ ssize_t sock_ep_rma_readmsg(struct fid_ep *ep, const struct fi_msg_rma *msg,
 	union sock_iov tx_iov;
 	struct sock_conn *conn;
 	struct sock_tx_ctx *tx_ctx;
-	uint64_t total_len, src_len, dst_len, op_flags;
+	uint64_t total_len, op_flags;
+	OFI_DBG_VAR(uint64_t, src_len);
+	OFI_DBG_VAR(uint64_t, dst_len);
 	struct sock_ep *sock_ep;
 	struct sock_ep_attr *ep_attr;
 
@@ -135,21 +137,21 @@ ssize_t sock_ep_rma_readmsg(struct fid_ep *ep, const struct fi_msg_rma *msg,
 			(uintptr_t) msg->msg_iov[0].iov_base,
 			ep_attr, conn);
 
-	src_len = 0;
+	OFI_DBG_SET(src_len, 0);
 	for (i = 0; i < msg->rma_iov_count; i++) {
 		tx_iov.iov.addr = msg->rma_iov[i].addr;
 		tx_iov.iov.key = msg->rma_iov[i].key;
 		tx_iov.iov.len = msg->rma_iov[i].len;
 		sock_tx_ctx_write(tx_ctx, &tx_iov, sizeof(tx_iov));
-		src_len += tx_iov.iov.len;
+		OFI_DBG_ADD(src_len, tx_iov.iov.len);
 	}
 
-	dst_len = 0;
+	OFI_DBG_SET(dst_len, 0);
 	for (i = 0; i < msg->iov_count; i++) {
 		tx_iov.iov.addr = (uintptr_t) msg->msg_iov[i].iov_base;
 		tx_iov.iov.len = msg->msg_iov[i].iov_len;
 		sock_tx_ctx_write(tx_ctx, &tx_iov, sizeof(tx_iov));
-		dst_len += tx_iov.iov.len;
+		OFI_DBG_ADD(dst_len, tx_iov.iov.len);
 	}
 
 #if ENABLE_DEBUG
@@ -228,7 +230,9 @@ ssize_t sock_ep_rma_writemsg(struct fid_ep *ep, const struct fi_msg_rma *msg,
 	union sock_iov tx_iov;
 	struct sock_conn *conn;
 	struct sock_tx_ctx *tx_ctx;
-	uint64_t total_len, src_len, dst_len, op_flags;
+	uint64_t total_len, op_flags;
+	OFI_DBG_VAR(uint64_t, src_len);
+	OFI_DBG_VAR(uint64_t, dst_len);
 	struct sock_ep *sock_ep;
 	struct sock_ep_attr *ep_attr;
 
@@ -309,29 +313,29 @@ ssize_t sock_ep_rma_writemsg(struct fid_ep *ep, const struct fi_msg_rma *msg,
 	if (flags & FI_REMOTE_CQ_DATA)
 		sock_tx_ctx_write(tx_ctx, &msg->data, sizeof(msg->data));
 
-	src_len = 0;
+	OFI_DBG_SET(src_len, 0);
 	if (flags & FI_INJECT) {
 		for (i = 0; i < msg->iov_count; i++) {
 			sock_tx_ctx_write(tx_ctx, msg->msg_iov[i].iov_base,
 					  msg->msg_iov[i].iov_len);
-			src_len += msg->msg_iov[i].iov_len;
+			OFI_DBG_ADD(src_len, msg->msg_iov[i].iov_len);
 		}
 	} else {
 		for (i = 0; i < msg->iov_count; i++) {
 			tx_iov.iov.addr = (uintptr_t) msg->msg_iov[i].iov_base;
 			tx_iov.iov.len = msg->msg_iov[i].iov_len;
 			sock_tx_ctx_write(tx_ctx, &tx_iov, sizeof(tx_iov));
-			src_len += tx_iov.iov.len;
+			OFI_DBG_ADD(src_len, tx_iov.iov.len);
 		}
 	}
 
-	dst_len = 0;
+	OFI_DBG_SET(dst_len, 0);
 	for (i = 0; i < msg->rma_iov_count; i++) {
 		tx_iov.iov.addr = msg->rma_iov[i].addr;
 		tx_iov.iov.key = msg->rma_iov[i].key;
 		tx_iov.iov.len = msg->rma_iov[i].len;
 		sock_tx_ctx_write(tx_ctx, &tx_iov, sizeof(tx_iov));
-		dst_len += tx_iov.iov.len;
+		OFI_DBG_ADD(dst_len, tx_iov.iov.len);
 	}
 
 #if ENABLE_DEBUG

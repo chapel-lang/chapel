@@ -21,7 +21,7 @@ function set_python_version() {
   local minor_ver=${ver_str:2}
 
   # override `python`
-  export PATH=/cray/css/users/chapelu/no-python:$PATH
+  export PATH=/hpcdc/project/chapel/no-python:$PATH
 
   if [[ $major_ver -eq 2 ]]; then
     # Do some special casing for python2:
@@ -29,10 +29,10 @@ function set_python_version() {
     # 2. Override `python3`
 
     export CHPL_NIGHTLY_MAKE=gmake
-    export PATH=/cray/css/users/chapelu/no-python3:$PATH
+    export PATH=/hpcdc/project/chapel/no-python3:$PATH
   fi
 
-  local setup_script="/cray/css/users/chapelu/setup_python$major_ver$minor_ver.bash"
+  local setup_script="/hpcdc/project/chapel/setup_python$major_ver$minor_ver.bash"
 
   if [[ -f "${setup_script}" ]] ; then
     source ${setup_script}

@@ -611,7 +611,7 @@ module Curl {
       var offset:c_size_t;       // offset that we want to skip to
                                // (in the case where we cannot request byteranges)
       var curr:c_int;          // the index of the current buffer
-    };
+    }
 
     // userdata, is a curl_iovec_t. This is set to be passed into this function,
     // when we

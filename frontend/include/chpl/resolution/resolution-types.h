@@ -23,6 +23,7 @@
 #include "chpl/framework/UniqueString.h"
 #include "chpl/resolution/scope-types.h"
 #include "chpl/types/CompositeType.h"
+#include "chpl/types/EnumType.h"
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/Type.h"
 #include "chpl/uast/AstNode.h"
@@ -84,25 +85,40 @@ enum struct DefaultsPolicy {
  */
 class UntypedFnSignature {
  public:
+  enum DefaultKind {
+    /** Formals that have default values, like `in x = 10` */
+    DK_DEFAULT,
+    /** Formals that do not have default values, like `ref x` */
+    DK_NO_DEFAULT,
+    /** Formals that might have a default value. This comes up when working
+        with generic initializers; whether an initializer's formal has
+        a default depends on if its type has a default value. But if
+        the type is unknown -- as in a generic initializer's type signature --
+        then we don't know if the formal has a default. */
+    DK_MAYBE_DEFAULT,
+  };
+
   struct FormalDetail {
     UniqueString name;
-    bool hasDefaultValue = false;
+    DefaultKind defaultKind = DK_NO_DEFAULT;
     const uast::Decl* decl = nullptr;
     bool isVarArgs = false;
 
     FormalDetail(UniqueString name,
-                 bool hasDefaultValue,
+                 DefaultKind defaultKind,
                  const uast::Decl* decl,
                  bool isVarArgs = false)
       : name(name),
-        hasDefaultValue(hasDefaultValue),
+        defaultKind(defaultKind),
         decl(decl),
         isVarArgs(isVarArgs)
-    { }
+    {
+      CHPL_ASSERT(name != USTR("this") || defaultKind == DK_NO_DEFAULT);
+    }
 
     bool operator==(const FormalDetail& other) const {
       return name == other.name &&
-             hasDefaultValue == other.hasDefaultValue &&
+             defaultKind == other.defaultKind &&
              decl == other.decl &&
              isVarArgs == other.isVarArgs;
     }
@@ -111,7 +127,7 @@ class UntypedFnSignature {
     }
 
     size_t hash() const {
-      return chpl::hash(name, hasDefaultValue, decl, isVarArgs);
+      return chpl::hash(name, defaultKind, decl, isVarArgs);
     }
 
     void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
@@ -294,6 +310,11 @@ class UntypedFnSignature {
     return isMethod_;
   }
 
+  /** Returns true if this is an iterator */
+  bool isIterator() const {
+    return kind_ == uast::Function::ITER;
+  }
+
   /** Returns true if this function throws */
   bool throws() const {
     return throws_;
@@ -309,10 +330,10 @@ class UntypedFnSignature {
     return formals_[i].name;
   }
 
-  /** Return whether the i'th formal has a default value. */
-  bool formalHasDefault(int i) const {
+  /** Return whether the i'th formal might have a default value. */
+  bool formalMightHaveDefault(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < formals_.size());
-    return formals_[i].hasDefaultValue;
+    return formals_[i].defaultKind != DK_NO_DEFAULT;
   }
 
   /** Returns the Decl for the i'th formal / field.
@@ -611,12 +632,18 @@ class CallInfo {
 
       If actualAsts is provided and not 'nullptr', it will be updated
       to contain the uAST pointers for each actual.
+
+      If moduleScopeId is provided and not 'nullptr', it will be updated
+      with the ID of the scope that should be searched for candidates.
+      That is, if the call expression is 'M.f(...)' for a module 'M', then
+      'moduleScopeId' will be set to the ID of the module 'M'.
    */
   static CallInfo create(Context* context,
                          const uast::Call* call,
                          const ResolutionResultByPostorderID& byPostorder,
                          bool raiseErrors = true,
                          std::vector<const uast::AstNode*>* actualAsts=nullptr,
+                         ID* moduleScopeId=nullptr,
                          UniqueString rename = UniqueString());
 
   /** Construct a CallInfo by adding a method receiver argument to
@@ -928,6 +955,11 @@ class TypedFnSignature {
                       const TypedFnSignature* parentFn,
                       Bitmap formalsInstantiated);
 
+  /** If this is an iterator, set 'found' to a string representing its
+      'iterKind', or "" if it is a serial iterator. Returns 'true' only
+      if this is an iterator and a valid 'iterKind' formal was found. */
+  bool fetchIterKindStr(Context* context, UniqueString& outIterKindStr) const;
+
  public:
   /** Get the unique TypedFnSignature containing these components */
   static
@@ -1073,6 +1105,38 @@ class TypedFnSignature {
     return formalTypes_[i];
   }
 
+  bool isMethod() const {
+    return untypedSignature_->isMethod();
+  }
+
+  bool isIterator() const {
+    return untypedSignature_->isIterator();
+  }
+
+  /** Returns 'true' if this signature is for a standalone parallel iterator. */
+  bool isParallelStandaloneIterator(Context* context) const {
+    UniqueString str;
+    return fetchIterKindStr(context, str) && str == USTR("standalone");
+  }
+
+  /** Returns 'true' if this signature is for a parallel leader iterator. */
+  bool isParallelLeaderIterator(Context* context) const {
+    UniqueString str;
+    return fetchIterKindStr(context, str) && str == USTR("leader");
+  }
+
+  /** Returns 'true' if this signature is for a parallel follower iterator. */
+  bool isParallelFollowerIterator(Context* context) const {
+    UniqueString str;
+    return fetchIterKindStr(context, str) && str == USTR("follower");
+  }
+
+  /** Returns 'true' if this signature is for a serial iterator. */
+  bool isSerialIterator(Context* context) const {
+    UniqueString str;
+    return fetchIterKindStr(context, str) && str.isEmpty();
+  }
+
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
@@ -1204,6 +1268,9 @@ enum PassingFailureReason {
   FAIL_CANNOT_CONVERT,
   /* An instantiation was needed but is not possible. */
   FAIL_CANNOT_INSTANTIATE,
+  /* We had a generic formal, but the actual did not instantiate it; actual
+     might be generic. */
+  FAIL_DID_NOT_INSTANTIATE,
   /* A type was used as an argument to a value, or the other way around. */
   FAIL_TYPE_VS_NONTYPE,
   /* A param value was expected, but a non-param value was given. */
@@ -1857,6 +1924,43 @@ class CallResolutionResult {
   /// \endcond DO_NOT_DOCUMENT
 };
 
+/**
+
+  When resolving calls like f(), we need three scopes to search.
+  * The 'call scope', which becomes relevant if we're resolving a generic function.
+    When we resolve a generic function, and come across other calls,
+    this 'call scope' becomes the 'poi scope' for resolving those dependent calls.
+  * The 'lookup scope', which is used to restrict where we search for candidates.
+    For instance, when resolving `M.f()`, we don't want to look for `f` in
+    the current scope, only in the scope of `M`. The call scope is not
+    always the same as the 'lookup scope' because while resolving `M.f`,
+    we still want to use the 'call scope' for POI.
+  * The 'POI scope', which is used when resolving calls in generic functions
+    as described in the first bullet.
+
+  This data structure bundles all three scopes for convenient threading through
+  the call resolution process.
+ */
+class CallScopeInfo {
+ private:
+  const Scope* callScope_;
+  const Scope* lookupScope_;
+  const PoiScope* poiScope_;
+
+  CallScopeInfo(const Scope* callScope, const Scope* lookupScope, const PoiScope* poiScope)
+    : callScope_(callScope), lookupScope_(lookupScope), poiScope_(poiScope) {
+  }
+
+ public:
+  static CallScopeInfo forNormalCall(const Scope* scope, const PoiScope* poiScope);
+  static CallScopeInfo forQualifiedCall(Context* context, const ID& moduleId,
+                                        const Scope* scope, const PoiScope* poiScope);
+
+  const Scope* callScope() const { return callScope_; }
+  const Scope* lookupScope() const { return lookupScope_; }
+  const PoiScope* poiScope() const { return poiScope_; }
+};
+
 class ResolvedParamLoop;
 
 /**
@@ -2129,6 +2233,12 @@ class ResolutionResultByPostorderID {
       elt.second.mark(context);
     }
   }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /**

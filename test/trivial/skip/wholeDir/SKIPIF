@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# Previously, we would fail .skipif files that contained any output other than
+# "True" or "False". This test demonstrates that now we allow other output and
+# only consider the final line of output.
+
+echo "Logging output on top"
+echo "Should not cause any failures"
+echo "True"

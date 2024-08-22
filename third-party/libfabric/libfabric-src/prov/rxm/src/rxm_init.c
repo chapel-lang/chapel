@@ -38,7 +38,6 @@
 
 #include <ofi_prov.h>
 #include "rxm.h"
-#include "ofi_coll.h"
 
 #define RXM_ATOMIC_UNSUPPORTED_MSG_ORDER (FI_ORDER_RAW | FI_ORDER_RAR |  \
 					  FI_ORDER_WAW | FI_ORDER_WAR |  \
@@ -59,6 +58,7 @@ size_t rxm_packet_size;
 int rxm_passthru = 0; /* disable by default, need to analyze performance */
 int force_auto_progress;
 int rxm_use_write_rndv;
+int rxm_detect_hmem_iface;
 enum fi_wait_obj def_wait_obj = FI_WAIT_FD, def_tcp_wait_obj = FI_WAIT_UNSPEC;
 
 char *rxm_proto_state_str[] = {
@@ -461,10 +461,6 @@ static void rxm_alter_info(const struct fi_info *hints, struct fi_info *info)
 				cur->caps &= ~FI_DIRECTED_RECV;
 				cur->rx_attr->caps &= ~FI_DIRECTED_RECV;
 			}
-			if (!(hints->caps & FI_SOURCE)) {
-				cur->caps &= ~FI_SOURCE;
-				cur->rx_attr->caps &= ~FI_SOURCE;
-			}
 
 			if (hints->mode & FI_BUFFERED_RECV)
 				cur->mode |= FI_BUFFERED_RECV;
@@ -630,17 +626,6 @@ RXM_INI
 			"typically used as the eager message size. "
 			"(default %zu)", rxm_buffer_size);
 
-	fi_param_define(&rxm_prov, "eager_limit", FI_PARAM_SIZE_T,
-			"Specifies the maximum size transfer that the eager "
-			"protocol will be used.  For transfers smaller than "
-			"this limit, data may be copied into a bounce "
-			"buffer on the transmit side and received into "
-			"bounce buffer at the receiver.  The eager_limit must "
-			"be equal to the buffer_size when using rxm over "
-			"verbs, but may differ in the case of tcp."
-			"(default: %zu)", rxm_buffer_size);
-			/* rxm_buffer_size is correct here */
-
 	fi_param_define(&rxm_prov, "comp_per_progress", FI_PARAM_INT,
 			"Defines the maximum number of MSG provider CQ entries "
 			"(default: 1) that would be read per progress "
@@ -700,14 +685,6 @@ RXM_INI
 			"RMA writes rather than RMA reads during Rendezvous "
 			"transactions. (default: false/no).");
 
-	fi_param_define(&rxm_prov, "enable_dyn_rbuf", FI_PARAM_BOOL,
-			"Enable support for dynamic receive buffering, if "
-			"available by the message endpoint provider. "
-			"This allows direct placement of received messages "
-			"into application buffers, bypassing RxM bounce "
-			"buffers.  This feature targets using tcp sockets "
-			"for the message transport.  (default: true)");
-
 	fi_param_define(&rxm_prov, "enable_direct_send", FI_PARAM_BOOL,
 			"Enable support to pass application buffers directly "
 			"to the core provider when possible.  This avoids "
@@ -723,6 +700,11 @@ RXM_INI
 			"related overhead.  Pass thru is an optimized path "
 			"to the tcp provider, depending on the capabilities "
 			"requested by the application.");
+
+	fi_param_define(&rxm_prov, "detect_hmem_iface", FI_PARAM_BOOL,
+			"Detect iface for user buffers with NULL desc passed "
+			"in. This allows such buffers be copied or registered "
+			"internally by RxM. (default: false).");
 
 	/* passthru supported disabled - to re-enable would need to fix call to
 	 * fi_cq_read to pass in the correct data structure.  However, passthru
@@ -748,6 +730,8 @@ RXM_INI
 		FI_INFO(&rxm_prov, FI_LOG_CORE, "auto-progress for data requested "
 			"(FI_OFI_RXM_DATA_AUTO_PROGRESS = 1), domain threading "
 			"level would be set to FI_THREAD_SAFE\n");
+
+	fi_param_get_bool(&rxm_prov, "detect_hmem_iface", &rxm_detect_hmem_iface);
 
 #if HAVE_RXM_DL
 	ofi_mem_init();

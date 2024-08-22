@@ -51,7 +51,7 @@ static MostSpecificCandidate const& mscQuery(Context* context) {
       /* kind */ uast::Function::Kind::PROC,
       /* formals */ { UntypedFnSignature::FormalDetail {
         UniqueString::get(context, "x"),
-        /* hasDefaultValue */ false,
+        UntypedFnSignature::DK_NO_DEFAULT,
         /* decl */ nullptr,
       }},
       /* whereClause */ nullptr

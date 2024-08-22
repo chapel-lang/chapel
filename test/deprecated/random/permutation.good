@@ -1,5 +1,0 @@
-permutation.chpl:7: warning: 'randomStream.permutation(arr)' is deprecated; please use 'arr = randomStream.permutation(arr.domain)' instead
-permutation.chpl:10: warning: 'permutation(arr, seed)' is deprecated; please use 'arr = permutation(arr.domain, seed)' instead
-permutation.chpl:13: warning: 'permutation(arr)' is deprecated; please use 'arr = permutation(arr.domain)' instead
-1 7 2 6 8 9 4 0 5 3
-7 9 0 3 8 2 6 5 1 4

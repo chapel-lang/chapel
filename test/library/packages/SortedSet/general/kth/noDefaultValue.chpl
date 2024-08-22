@@ -18,7 +18,7 @@ class Foo {
   }
 }
 
-var s1 = new sortedSet(shared Foo, false, defaultComparator);
+var s1 = new sortedSet(shared Foo, false, new DefaultComparator());
 s1.add(new shared Foo(11));
 s1.add(new shared Foo(5));
 s1.add(new shared Foo(16));

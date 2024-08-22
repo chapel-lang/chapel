@@ -929,7 +929,7 @@ module Vector {
 
       :arg comparator: A comparator used to sort this vector.
     */
-    proc ref sort(comparator: ?rec=Sort.defaultComparator) {
+    proc ref sort(comparator: ?rec = new Sort.DefaultComparator()) {
       on this {
         _enter();
 

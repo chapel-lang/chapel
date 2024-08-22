@@ -64,7 +64,7 @@
 #endif
 
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-#define SOCKET_CUDA_THRESH_RNDV (~(uint32_t)0)
+#define SOCKET_GPU_THRESH_RNDV (~(uint32_t)0)
 #endif
 
 static int psm3_hfp_sockets_initialize(psmi_hal_instance_t *phi,
@@ -73,7 +73,7 @@ static int psm3_hfp_sockets_initialize(psmi_hal_instance_t *phi,
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	// testing on HED-2629 suggests turning off RNDV can help
 	// latency for messages in size 8-256 KB
-	cuda_thresh_rndv = SOCKET_CUDA_THRESH_RNDV;
+	gpu_thresh_rndv = SOCKET_GPU_THRESH_RNDV;
 #endif
 	/* we initialize a few HAL software specific capabilities which
 	 * are known before context_open can open RV or parse HAL specific
@@ -109,7 +109,7 @@ static const char* psm3_hfp_sockets_identify(void)
 #ifdef NVIDIA_GPU_DIRECT
 	snprintf(buf, sizeof(buf), "HAL: %s (%s) built against rv interface v%d.%d gpu v%d.%d cuda",
 #else
-	snprintf(buf, sizeof(buf), "HAL: %s (%s) built against rv interface v%d.%d gpu v%d.%d oneapi",
+	snprintf(buf, sizeof(buf), "HAL: %s (%s) built against rv interface v%d.%d gpu v%d.%d oneapi-ze",
 #endif
 			psmi_hal_get_hal_instance_name(),
 			psmi_hal_get_hal_instance_description(),
@@ -175,15 +175,15 @@ static void psm3_hfp_sockets_mq_init_defaults(struct psm2_mq *mq)
 	 * corresponding PSM3_* env variables.
 	 * Otherwise these defaults are used.
 	 */
-	mq->hfi_thresh_rv = 64000;
-	mq->hfi_base_window_rv = 131072;
+	mq->hfi_thresh_rv = PSM_MQ_NIC_RNDV_THRESH;
+	mq->ips_cpu_window_rv_str = PSM_CPU_NIC_RNDV_WINDOW_STR;
 	// Even without RDMA do we want to disable rendezvous?
 	// even without RDMA, the receiver controlled pacing helps scalability
 	mq->hfi_thresh_rv = (~(uint32_t)0); // disable rendezvous
 	mq->hfi_thresh_tiny = PSM_MQ_NIC_MAX_TINY;
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	if (PSMI_IS_GPU_ENABLED)
-		mq->hfi_base_window_rv = 2097152;
+		mq->ips_gpu_window_rv_str = PSM_GPU_NIC_RNDV_WINDOW_STR;
 #endif
 	// we parse inet and rv_gpu_cache_size here so we can cache it
 	// once per EP open, even if multi-rail or multi-QP
@@ -203,7 +203,7 @@ static void psm3_hfp_sockets_ep_open_opts_get_defaults(struct psm3_ep_open_opts 
 	opts->imm_size = 128;
 }
 
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 static void psm3_hfp_sockets_gdr_open(void)
 {
 }
@@ -296,7 +296,7 @@ static hfp_sockets_t psm3_sockets_hi = {
 		.hfp_mq_init_defaults			  = psm3_hfp_sockets_mq_init_defaults,
 		.hfp_ep_open_opts_get_defaults		  = psm3_hfp_sockets_ep_open_opts_get_defaults,
 		.hfp_context_initstats			  = psm3_hfp_sockets_context_initstats,
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 		.hfp_gdr_open				  = psm3_hfp_sockets_gdr_open,
 #endif
 
@@ -343,9 +343,6 @@ static hfp_sockets_t psm3_sockets_hi = {
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 		.hfp_gdr_close				  = psm3_hfp_sockets_gdr_close,
 		.hfp_gdr_convert_gpu_to_host_addr	  = psm3_hfp_sockets_gdr_convert_gpu_to_host_addr,
-#ifdef PSM_ONEAPI
-		.hfp_gdr_munmap_gpu_to_host_addr	  = psm3_hfp_sockets_gdr_munmap_gpu_to_host_addr,
-#endif
 #endif /* PSM_CUDA || PSM_ONEAPI */
 		.hfp_get_port_index2pkey		  = psm3_hfp_sockets_get_port_index2pkey,
 		.hfp_poll_type				  = psm3_hfp_sockets_poll_type,
@@ -361,4 +358,7 @@ static void __attribute__ ((constructor)) __psmi_hal_sockets_constructor(void)
 {
 	psm3_hal_register_instance((psmi_hal_instance_t*)&psm3_sockets_hi);
 }
+/* Dummy var used to force Static compilation to include HAL objects when linking */
+int sockets_hal_called = -1;
+
 #endif /* PSM_SOCKETS */

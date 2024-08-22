@@ -428,36 +428,36 @@ record blockDist : writeSerializable {
               dataParTasksPerLocale=getDataParTasksPerLocale());
   }
 
-    proc init(_pid : int, _instance, _unowned : bool) {
-      this.rank = _instance.rank;
-      this.idxType = _instance.idxType;
-      this.sparseLayoutType = _instance.sparseLayoutType;
-      this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
-                                                         _instance,
-                                                         _unowned);
-    }
+  proc init(_pid : int, _instance, _unowned : bool) {
+    this.rank = _instance.rank;
+    this.idxType = _instance.idxType;
+    this.sparseLayoutType = _instance.sparseLayoutType;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
+                                                       _instance,
+                                                       _unowned);
+  }
 
-    proc init(value) {
-      this.rank = value.rank;
-      this.idxType = value.idxType;
-      this.sparseLayoutType = value.sparseLayoutType;
-      this.chpl_distHelp = new chpl_PrivatizedDistHelper(
-                             if _isPrivatized(value)
-                               then _newPrivatizedClass(value)
-                               else nullPid,
-                             _to_unmanaged(value));
-    }
+  proc init(value) {
+    this.rank = value.rank;
+    this.idxType = value.idxType;
+    this.sparseLayoutType = value.sparseLayoutType;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                           if _isPrivatized(value)
+                             then _newPrivatizedClass(value)
+                             else nullPid,
+                           _to_unmanaged(value));
+  }
 
-    // Note: This does not handle the case where the desired type of 'this'
-    // does not match the type of 'other'. That case is handled by the compiler
-    // via coercions.
-    proc init=(const ref other : blockDist(?)) {
-      this.init(other._value.dsiClone());
-    }
+  // Note: This does not handle the case where the desired type of 'this'
+  // does not match the type of 'other'. That case is handled by the compiler
+  // via coercions.
+  proc init=(const ref other : blockDist(?)) {
+    this.init(other._value.dsiClone());
+  }
 
-    proc clone() {
-      return new blockDist(this._value.dsiClone());
-    }
+  proc clone() {
+    return new blockDist(this._value.dsiClone());
+  }
 
   @chpldoc.nodoc
   inline operator ==(d1: blockDist(?), d2: blockDist(?)) {
@@ -962,7 +962,7 @@ proc blockDist.createDomain(rng: range(?)...) {
 
 // create a domain over a blockDist Distribution
 proc type blockDist.createDomain(dom: domain(?), targetLocales: [] locale = Locales) {
-  return dom dmapped blockDist(dom, targetLocales);
+  return dom dmapped new blockDist(dom, targetLocales);
 }
 
 // create a domain over a blockDist Distribution constructed from a series of ranges
@@ -975,6 +975,7 @@ proc type blockDist.createDomain(rng: range(?)...) {
 }
 
 // create an array over a blockDist Distribution, default initialized
+pragma "no copy return"
 proc type blockDist.createArray(
   dom: domain(?),
   type eltType,
@@ -986,6 +987,7 @@ proc type blockDist.createArray(
 }
 
 // create an array over a blockDist Distribution, initialized with the given value or iterator
+pragma "no copy return"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   dom: domain(?),
@@ -1001,6 +1003,7 @@ proc type blockDist.createArray(
 }
 
 // create an array over a blockDist Distribution, initialized from the given array
+pragma "no copy return"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   dom: domain(?),
@@ -1010,8 +1013,8 @@ proc type blockDist.createArray(
 ) where dom.rank == arrayDom.rank && isCoercible(arrayEltType, eltType)
 {
   if boundsChecking then
-  for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
-    if d.size != ad.size then halt("Domain size mismatch in 'blockDist.createArray' dimension " + i:string);
+    for (d, ad, i) in zip(dom.dims(), arrayDom.dims(), 0..) do
+      if d.size != ad.size then halt("Domain size mismatch in 'blockDist.createArray' dimension " + i:string);
 
   var D = createDomain(dom, targetLocales);
   var A: [D] eltType;
@@ -1020,6 +1023,7 @@ proc type blockDist.createArray(
 }
 
 // create an array over a blockDist Distribution constructed from a series of ranges, default initialized
+pragma "no copy return"
 proc type blockDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1028,11 +1032,13 @@ proc type blockDist.createArray(
   return createArray({(...rng)}, eltType, targetLocales);
 }
 
+pragma "no copy return"
 proc type blockDist.createArray(rng: range(?)..., type eltType) {
   return createArray({(...rng)}, eltType);
 }
 
 // create an array over a blockDist Distribution constructed from a series of ranges, initialized with the given value or iterator
+pragma "no copy return"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   rng: range(?)...,
@@ -1043,6 +1049,7 @@ proc type blockDist.createArray(
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
+pragma "no copy return"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
   where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
@@ -1052,6 +1059,7 @@ proc type blockDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
 
 
 // create an array over a blockDist Distribution constructed from a series of ranges, initialized from the given array
+pragma "no copy return"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   rng: range(?)...,
@@ -1063,6 +1071,7 @@ proc type blockDist.createArray(
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
+pragma "no copy return"
 @unstable("'blockDist.createArray' with an 'initExpr' formal is unstable and may change in a future release")
 proc type blockDist.createArray(
   rng: range(?)...,

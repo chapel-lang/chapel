@@ -1,36 +1,78 @@
-/*
- * Copyright (c) 2022 Amazon.com, Inc. or its affiliates. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+/* SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only */
+/* SPDX-FileCopyrightText: Copyright Amazon.com, Inc. or its affiliates. All rights reserved. */
 
 #include "efa.h"
+
+enum ibv_cq_ex_type {
+	IBV_CQ,
+	EFADV_CQ
+};
+
+struct efa_ibv_cq {
+	struct ibv_cq_ex *ibv_cq_ex;
+	enum ibv_cq_ex_type ibv_cq_ex_type;
+};
+
+struct efa_ibv_cq_poll_list_entry {
+	struct dlist_entry	entry;
+	struct efa_ibv_cq	*cq;
+};
+
+void efa_rdm_cq_poll_ibv_cq(ssize_t cqe_to_process, struct efa_ibv_cq *ibv_cq);
+
+static inline
+int efa_ibv_cq_poll_list_match(struct dlist_entry *entry, const void *cq)
+{
+	struct efa_ibv_cq_poll_list_entry *item;
+	item = container_of(entry, struct efa_ibv_cq_poll_list_entry, entry);
+	return (item->cq == cq);
+}
+
+
+static inline
+int efa_ibv_cq_poll_list_insert(struct dlist_entry *poll_list, struct ofi_genlock *lock, struct efa_ibv_cq *cq)
+{
+	int ret = 0;
+	struct dlist_entry *entry;
+	struct efa_ibv_cq_poll_list_entry *item;
+
+	ofi_genlock_lock(lock);
+	entry = dlist_find_first_match(poll_list, efa_ibv_cq_poll_list_match, cq);
+	if (entry) {
+		ret = -FI_EALREADY;
+		goto out;
+	}
+
+	item = calloc(1, sizeof(*item));
+	if (!item) {
+		ret = -FI_ENOMEM;
+		goto out;
+	}
+
+	item->cq = cq;
+	dlist_insert_tail(&item->entry, poll_list);
+
+out:
+	ofi_genlock_unlock(lock);
+	return (!ret || (ret == -FI_EALREADY)) ? 0 : ret;
+}
+
+static inline
+void efa_ibv_cq_poll_list_remove(struct dlist_entry *poll_list, struct ofi_genlock *lock,
+		      struct efa_ibv_cq *cq)
+{
+	struct efa_ibv_cq_poll_list_entry *item;
+	struct dlist_entry *entry;
+
+	ofi_genlock_lock(lock);
+	entry = dlist_remove_first_match(poll_list, efa_ibv_cq_poll_list_match, cq);
+	ofi_genlock_unlock(lock);
+
+	if (entry) {
+		item = container_of(entry, struct efa_ibv_cq_poll_list_entry, entry);
+		free(item);
+	}
+}
 
 /**
  * @brief Create ibv_cq_ex by calling ibv_create_cq_ex
@@ -50,7 +92,7 @@ static inline int efa_cq_ibv_cq_ex_open_with_ibv_create_cq_ex(
 
 	if (!*ibv_cq_ex) {
 		EFA_WARN(FI_LOG_CQ, "Unable to create extended CQ: %s\n", strerror(errno));
-		return -FI_ENOCQ;
+		return -FI_EINVAL;
 	}
 
 	*ibv_cq_ex_type = IBV_CQ;

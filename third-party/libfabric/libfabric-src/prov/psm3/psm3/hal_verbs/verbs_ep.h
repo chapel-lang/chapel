@@ -161,12 +161,14 @@ struct verbs_rbuf {
 typedef struct verbs_rbuf *rbuf_t;
 #define rbuf_to_buffer(buf)	((buf)->buffer)
 #define rbuf_addition(buf) ((buf)->pool->addition)
-#define rbuf_qp(ep, buf) ((buf)->pool->qp)
+#define rbuf_qp_context(ep, buf) ((buf)->pool->for_srq?NULL:(buf)->pool->qp->qp_context)
+#define rbuf_qp_type_str(ep, buf) ((buf)->pool->for_srq?"SRQ":qp_type_str((buf)->pool->qp))
 #else
 typedef uint8_t *rbuf_t;
 #define rbuf_to_buffer(buf)	(buf)
 #define rbuf_addition(buf) (UD_ADDITION)
-#define rbuf_qp(ep, buf) ((ep)->verbs_ep.recv_pool.qp)
+#define rbuf_qp_context(ep, buf) ((ep)->verbs_ep.recv_pool.qp->qp_context)
+#define rbuf_qp_type_str(ep, buf) (qp_type_str((ep)->verbs_ep.recv_pool.qp))
 #endif
 
 static inline const char*qp_type_str(struct ibv_qp *qp) {
@@ -255,7 +257,12 @@ typedef struct psm3_verbs_send_allocator *psm3_verbs_send_allocator_t;
 // but sizes may differ
 // when USE_RC, we need a separate recv pool per QP so we can prepost bufs.
 struct psm3_verbs_recv_pool {
-	struct ibv_qp *qp;	// secondary reference to QP these buffers are for
+	union { // secondary reference to QP or SRQ these buffers are for
+		struct ibv_qp *qp;	// when ! for_srq
+#ifdef USE_RC
+		struct ibv_srq *srq;	// when for_srq
+#endif
+	};
 	psm2_ep_t ep;
 	// our preregistered recv buffers
 	uint32_t recv_buffer_size;
@@ -264,6 +271,7 @@ struct psm3_verbs_recv_pool {
 	struct ibv_mr *recv_buffer_mr;
 #ifdef USE_RC
 	uint32_t addition;	// UD_ADDITION for UD QP, 0 for RC QP
+	uint32_t for_srq;	// if this for an SRQ or QP?
 #endif
 #if VERBS_RECV_QP_COALLESCE > 1
 			// list of ready to post WQEs and SGEs
@@ -296,6 +304,9 @@ struct psm3_verbs_ep {
 	struct ibv_cq	*recv_cq;
 	struct ibv_qp	*qp;
 	struct ibv_qp_cap qp_cap;   // capabilities of QP we got
+#ifdef USE_RC
+	struct ibv_srq	*srq;
+#endif
 	uint32_t qkey;
 	//uint8_t link_layer;         // IBV_LINK_LAYER_ETHERNET or other
 	uint8_t active_rate;
@@ -309,6 +320,9 @@ struct psm3_verbs_ep {
 	int recv_wc_count;	// number left in recv_wc_list
 	int recv_wc_next;	// next index
 #else
+#ifdef USE_RC
+	struct psm3_verbs_recv_pool srq_recv_pool;
+#endif
 	// if asked to revisit a packet we save it here
 	rbuf_t revisit_buf;
 	uint32_t revisit_payload_size;
@@ -317,9 +331,6 @@ struct psm3_verbs_ep {
 	uint32_t rv_index;
 	struct psm3_rv_conn_stats rv_conn_stats;
 	struct psm3_rv_event_stats rv_event_stats;
-#endif
-#ifdef UMR_CACHE
-	struct psm2_umrc umrc;
 #endif
 	// various parameters
 	uint32_t hfi_num_send_wqes;/** Number of allocated SQ WQEs for send*/
@@ -333,6 +344,7 @@ struct psm3_verbs_ep {
 	uint32_t rv_q_depth; /** PSM3_RV_Q_DEPTH */
 	uint32_t rv_reconnect_timeout; /* PSM3_RV_RECONNECT_TIMEOUT */
 	uint32_t rv_hb_interval; /* PSM3_RV_HEARTBEAT_INTERVAL */
+	uint64_t max_fmr_size; /* Max fast-registration mr size in bytes */
 #endif
 };
 
@@ -387,8 +399,8 @@ extern psm2_error_t psm_verbs_alloc_send_pool(psm2_ep_t ep, struct ibv_pd *pd,
 extern psm2_error_t psm_verbs_init_send_allocator(
             psm3_verbs_send_allocator_t allocator,
             psm3_verbs_send_pool_t pool);
-extern psm2_error_t psm_verbs_alloc_recv_pool(psm2_ep_t ep, struct ibv_qp *qp,
-            psm3_verbs_recv_pool_t pool,
+extern psm2_error_t psm_verbs_alloc_recv_pool(psm2_ep_t ep, uint32_t for_srq,
+            void *qp_srq, psm3_verbs_recv_pool_t pool,
             uint32_t recv_total, uint32_t recv_buffer_size);
 extern void psm_verbs_free_send_pool(psm3_verbs_send_pool_t pool);
 extern void psm_verbs_free_recv_pool(psm3_verbs_recv_pool_t pool);

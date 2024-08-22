@@ -36,6 +36,10 @@ const CStringType* CStringType::get(Context* context) {
   return getCStringType(context).get();
 }
 
+void CStringType::stringify(std::ostream& ss, StringifyKind stringKind) const {
+  ss << "c_string";
+}
+
 
 } // end namespace types
 } // end namespace chpl

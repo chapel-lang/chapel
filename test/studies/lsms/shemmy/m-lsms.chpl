@@ -30,9 +30,9 @@ param nExtent = 13;
 type  AtomMatrix = nExtent*real;
 
 const GridDom  = {0..#span_x, 0..#span_y, 0..#span_z};
-const GridDist = GridDom dmapped blockDist(GridDom);
+const GridDist = GridDom dmapped new blockDist(GridDom);
 
-const LocalesDist = {0..#numLocales} dmapped blockDist({0..#numLocales});
+const LocalesDist = {0..#numLocales} dmapped new blockDist({0..#numLocales});
 
 class Cache {
 	var space: sparse subdomain(GridDom);

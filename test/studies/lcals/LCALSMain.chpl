@@ -12,7 +12,7 @@ use RunBRawLoops;
 use RunCRawLoops;
 use RunParallelRawLoops;
 use RunSPMDRawLoops;
-use RunVectorizeOnlyRawLoops;
+use RunVectorRawLoops;
 
 use IO;
 
@@ -118,7 +118,7 @@ proc main {
     }
     run_variants[LoopVariantID.RAW_SPMD] = true;
   }
-  if run_variantRawVectorizeOnly then
+  if run_variantRawVector then
     run_variants[LoopVariantID.RAW_VECTOR_ONLY] = true;
 
 
@@ -188,7 +188,7 @@ proc main {
   }
 
   writeln("\n freeLoopSuiteRunInfo...");
-  writeln("\n DONE!!! ");
+  writeln("\n DONE!!!");
 }
 
 proc computeStats(ilv: LoopVariantID, loop_stats: [] shared LoopStat, do_fom: bool) {
@@ -617,7 +617,7 @@ proc runLoopVariant(lvid: LoopVariantID, run_loop:[] bool, ilength: LoopLength) 
       runSPMDRawLoops(loop_stats, run_loop, ilength);
     }
     when LoopVariantID.RAW_VECTOR_ONLY {
-      runVectorizeOnlyRawLoops(loop_stats, run_loop, ilength);
+      runVectorRawLoops(loop_stats, run_loop, ilength);
     }
 /*
     when LoopVariantID.FORALL_LAMBDA {

@@ -109,8 +109,14 @@ export proc transposeMatrix(odata: c_ptr(dataType), idata: c_ptr(dataType), widt
 }
 
 inline proc transposeLowLevel(original, ref output) {
-  // arguments are: number of parameters, line no, file no
-  var cfg = __primitive("gpu init kernel cfg", 4, 0, 0);
+  var cfg = __primitive("gpu init kernel cfg 3d",
+                        /*fn*/ "transposeMatrix":chpl_c_string,
+                        /*grd_dims*/ sizeX / blockSize, sizeY / blockSize, 1,
+                        /*blk_dims*/ blockSize, blockSize, 1,
+                        /*args*/4,
+                        /*pids*/0,
+                        /*reductions*/0,
+                        /*host_reg_vars*/0);
 
   // 1 is an enum value that says: "pass the address of this to the
   //   kernel_params, while not offloading anything".
@@ -120,10 +126,7 @@ inline proc transposeLowLevel(original, ref output) {
   __primitive("gpu arg", cfg, sizeY, 1);
 
   __primitive("gpu kernel launch",
-          "transposeMatrix":chpl_c_string,
-          /* grid size */  sizeX / blockSize, sizeY / blockSize, 1,
-          /* block size */ blockSize, blockSize, 1,
-          /* kernel config */ cfg);
+              /* kernel config */ cfg);
 }
 
 var originalHost: [0..#sizeX, 0..#sizeY] dataType;

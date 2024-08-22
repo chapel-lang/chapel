@@ -1,0 +1,8 @@
+UnusedTupleUnpack.chpl:1: node violates rule UseExplicitModules
+UnusedTupleUnpack.chpl:3: node violates rule UnusedTupleUnpack
+UnusedTupleUnpack.chpl:4: node violates rule UnusedTupleUnpack
+UnusedTupleUnpack.chpl:5: node violates rule UnusedTupleUnpack
+UnusedTupleUnpack.chpl:5: node violates rule UnusedTupleUnpack
+UnusedTupleUnpack.chpl:6: node violates rule UnusedTupleUnpack
+UnusedTupleUnpack.chpl:6: node violates rule UnusedTupleUnpack
+[Success matching fixit for UnusedTupleUnpack]

@@ -35,12 +35,12 @@
 
 #include "ofi_iov.h"
 
-#include "fi_verbs.h"
+#include "verbs_ofi.h"
 #include <malloc.h>
 
 
 static void vrb_set_credit_handler(struct fid_domain *domain_fid,
-		ssize_t (*credit_handler)(struct fid_ep *ep, size_t credits))
+		ssize_t (*credit_handler)(struct fid_ep *ep, uint64_t credits))
 {
 	struct vrb_domain *domain;
 
@@ -54,20 +54,19 @@ static bool vrb_flow_ctrl_available(struct fid_ep *ep_fid)
 	struct vrb_ep *ep = container_of(ep_fid, struct vrb_ep, util_ep.ep_fid);
 
 	// only enable if we are not using SRQ
-	return (!ep->srq_ep && ep->ibv_qp && ep->ibv_qp->qp_type == IBV_QPT_RC);
+	return (!ep->srx && ep->ibv_qp && ep->ibv_qp->qp_type == IBV_QPT_RC);
 }
 
 static int vrb_enable_ep_flow_ctrl(struct fid_ep *ep_fid, uint64_t threshold)
 {
-	struct vrb_ep *ep = container_of(ep_fid, struct vrb_ep, util_ep.ep_fid);
-	struct vrb_cq *cq = container_of(ep->util_ep.rx_cq, struct vrb_cq, util_cq);
-	struct vrb_domain *domain = vrb_ep_to_domain(ep);
+	struct vrb_ep *ep;
 	uint64_t credits_to_give;
 
 	if (!vrb_flow_ctrl_available(ep_fid))
 		return -FI_ENOSYS;
 
-	ofi_genlock_lock(&cq->util_cq.cq_lock);
+	ep = container_of(ep_fid, struct vrb_ep, util_ep.ep_fid);
+	ofi_genlock_lock(&vrb_ep2_progress(ep)->ep_lock);
 	ep->threshold = threshold;
 
 	/*
@@ -87,14 +86,13 @@ static int vrb_enable_ep_flow_ctrl(struct fid_ep *ep_fid, uint64_t threshold)
 	} else {
 		credits_to_give = 0;
 	}
-	ofi_genlock_unlock(&cq->util_cq.cq_lock);
 
 	if (credits_to_give &&
-	    domain->send_credits(&ep->util_ep.ep_fid, credits_to_give)) {
-		ofi_genlock_lock(&cq->util_cq.cq_lock);
+	    vrb_ep2_domain(ep)->send_credits(&ep->util_ep.ep_fid,
+					     credits_to_give)) {
 		ep->rq_credits_avail += credits_to_give;
-		ofi_genlock_unlock(&cq->util_cq.cq_lock);
 	}
+	ofi_genlock_unlock(&vrb_ep2_progress(ep)->ep_lock);
 
 	return FI_SUCCESS;
 }
@@ -187,6 +185,8 @@ static int vrb_domain_close(fid_t fid)
 	struct vrb_domain *domain =
 		container_of(fid, struct vrb_domain,
 			     util_domain.domain_fid.fid);
+
+	vrb_close_progress(&domain->progress);
 
 	switch (domain->ep_type) {
 	case FI_EP_DGRAM:
@@ -415,6 +415,10 @@ vrb_domain(struct fid_fabric *fabric, struct fi_info *info,
 		ret = -FI_EINVAL;
 		goto err4;
 	}
+
+	ret = vrb_init_progress(&_domain->progress, _domain->info);
+	if (ret)
+		goto err4;
 
 	*domain = &_domain->util_domain.domain_fid;
 	return FI_SUCCESS;

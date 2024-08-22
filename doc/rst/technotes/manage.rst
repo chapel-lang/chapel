@@ -13,7 +13,7 @@ keyword to open the statement instead of ``with``:
 
 .. code-block:: chapel
 
-    manage myManager() as myResource do
+    manage new myManager() as myResource do
       myResource.doSomething();
 
 The ``manage`` statement accepts a `manager` (the `myManager()` call
@@ -37,13 +37,13 @@ called ``enterContext()`` and ``exitContext()``:
    record myManager : contextManager {
      var x: int = 0;
 
-     proc enterContext() ref: int {
+     proc ref enterContext() ref: int {
        writeln('x is: ', x);
        return x;
      }
 
      proc exitContext(in err: owned Error?) {
-       if err then halt(err:string);
+       if err then halt(err!.message());
        writeln('x is: ', x);
      }
    }

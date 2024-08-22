@@ -129,7 +129,7 @@ static ssize_t rxd_generic_atomic(struct rxd_ep *rxd_ep,
 	ofi_ioc_to_iov(compare_ioc, comp_iov, compare_count, ofi_datatype_size(datatype));
 	ofi_rma_ioc_to_iov(rma_ioc, rma_iov, rma_count, ofi_datatype_size(datatype));
 
-	ofi_mutex_lock(&rxd_ep->util_ep.lock);
+	ofi_genlock_lock(&rxd_ep->util_ep.lock);
 
 	if (ofi_cirque_isfull(rxd_ep->util_ep.tx_cq->cirq))
 		goto out;
@@ -152,7 +152,7 @@ static ssize_t rxd_generic_atomic(struct rxd_ep *rxd_ep,
 		(void) rxd_start_xfer(rxd_ep, tx_entry);
 
 out:
-	ofi_mutex_unlock(&rxd_ep->util_ep.lock);
+	ofi_genlock_unlock(&rxd_ep->util_ep.lock);
 	return ret;
 }
 
@@ -233,7 +233,7 @@ static ssize_t rxd_atomic_inject(struct fid_ep *ep_fid, const void *buf,
 	rma_iov.len = count * ofi_datatype_size(datatype);
 	rma_iov.key = key;
 
-	ofi_mutex_lock(&rxd_ep->util_ep.lock);
+	ofi_genlock_lock(&rxd_ep->util_ep.lock);
 
 	if (ofi_cirque_isfull(rxd_ep->util_ep.tx_cq->cirq))
 		goto out;
@@ -257,7 +257,7 @@ static ssize_t rxd_atomic_inject(struct fid_ep *ep_fid, const void *buf,
 
 	(void) rxd_start_xfer(rxd_ep, tx_entry);
 out:
-	ofi_mutex_unlock(&rxd_ep->util_ep.lock);
+	ofi_genlock_unlock(&rxd_ep->util_ep.lock);
 	return ret;
 }
 

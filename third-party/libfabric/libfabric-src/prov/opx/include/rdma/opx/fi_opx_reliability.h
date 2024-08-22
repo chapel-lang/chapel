@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2016 by Argonne National Laboratory.
- * Copyright (C) 2022 Cornelis Networks.
+ * Copyright (C) 2021-2023 Cornelis Networks.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -188,8 +188,7 @@ struct fi_opx_reliability_service {
 	/* == CACHE LINE == */
 	int				is_backoff_enabled;
 	enum ofi_reliability_kind	reliability_kind;	/* 4 bytes */
-	uint16_t			nack_threshold;
-	uint16_t			unused[2];
+	uint16_t			unused[3];
 	uint8_t				fifo_max;
 	uint8_t				hfi1_max;
 	RbtHandle			handshake_init;		/*  1 qw  =   8 bytes */
@@ -258,10 +257,12 @@ struct fi_opx_reliability_tx_replay {
 	/* == CACHE LINE 1 == */
 	void						*sdma_we;
 	uint32_t					sdma_we_use_count;
-	uint32_t					unused2;
-	uint64_t					unused3[6];
+	enum fi_hmem_iface				hmem_iface;
+	uint64_t					hmem_device;
+	uint64_t					unused3[5];
 
 #ifndef NDEBUG
+	/* == CACHE LINE == */
 	uint64_t					orig_payload[8];
 #endif
 
@@ -272,6 +273,10 @@ struct fi_opx_reliability_tx_replay {
 	uint8_t						data[];
 } __attribute__((__aligned__(64)));
 
+OPX_COMPILE_TIME_ASSERT(offsetof(struct fi_opx_reliability_tx_replay, sdma_we) == FI_OPX_CACHE_LINE_SIZE,
+			"Reliability Replay sdma_we should start on first cacheline!");
+OPX_COMPILE_TIME_ASSERT((offsetof(struct fi_opx_reliability_tx_replay, scb) & (FI_OPX_CACHE_LINE_SIZE - 1)) == 0,
+			"Reliability Replay scb must be 64-byte aligned!");
 
 struct fi_opx_reliability_resynch_flow {
 	bool client_ep;
@@ -421,9 +426,14 @@ union fi_opx_reliability_tx_psn {
 #define OPX_RELIABILITY_TX_REPLAY_SIZE		(OPX_REPLAY_BASE_SIZE + OPX_REPLAY_PAYLOAD_SIZE)
 #define OPX_RELIABILITY_TX_REPLAY_IOV_SIZE	(OPX_REPLAY_BASE_SIZE + OPX_REPLAY_IOV_SIZE)
 
-// Maximum PSNs to NACK when receiving an out of order packet or responding to a ping
+// Maximum PSNs to NACK when responding to a ping
 #ifndef OPX_RELIABILITY_RX_MAX_NACK
-#define OPX_RELIABILITY_RX_MAX_NACK		(1)
+#define OPX_RELIABILITY_RX_MAX_NACK		(32)
+#endif
+
+// Maximum PSNs to NACK when receiving an out of order packet
+#ifndef OPX_RELIABILITY_RX_MAX_PRE_NACK
+#define OPX_RELIABILITY_RX_MAX_PRE_NACK		(1)
 #endif
 
 /*
@@ -549,8 +559,7 @@ void fi_opx_reliability_client_fini (struct fi_opx_reliability_client_state * st
 __OPX_FORCE_INLINE__
 unsigned fi_opx_reliability_client_active (struct fi_opx_reliability_client_state * state)
 {
-	return (state->service->reliability_kind != OFI_RELIABILITY_KIND_NONE) &&
-		((state->replay_pool && !ofi_bufpool_empty(state->replay_pool)) ||
+	return ((state->replay_pool && !ofi_bufpool_empty(state->replay_pool)) ||
 		 (state->replay_iov_pool && !ofi_bufpool_empty(state->replay_iov_pool)));
 }
 
@@ -665,7 +674,7 @@ uint16_t fi_opx_reliability_rx_drop_packet (struct fi_opx_reliability_client_sta
 }
 #endif
 
-#ifdef OPX_PING_DEBUG
+#ifdef OPX_DEBUG_COUNTERS_RELIABILITY_PING
 void dump_ping_counts();
 #endif
 
@@ -878,9 +887,9 @@ int32_t fi_opx_reliability_tx_max_nacks () {
 	return 0;
 }
 
-void fi_opx_reliability_inc_throttle_count();
-void fi_opx_reliability_inc_throttle_nacks();
-void fi_opx_reliability_inc_throttle_maxo();
+void fi_opx_reliability_inc_throttle_count(struct fid_ep *ep);
+void fi_opx_reliability_inc_throttle_nacks(struct fid_ep *ep);
+void fi_opx_reliability_inc_throttle_maxo(struct fid_ep *ep);
 
 __OPX_FORCE_INLINE__
 bool opx_reliability_ready(struct fid_ep *ep,
@@ -892,7 +901,7 @@ bool opx_reliability_ready(struct fid_ep *ep,
 {
 
 	/* Not using reliability, or it's Intranode */
-	if (reliability == OFI_RELIABILITY_KIND_NONE || state->lid_be == dlid)
+	if (fi_opx_hfi_is_intranode(dlid))
 		return true;
 
 	union fi_opx_reliability_service_flow_key key = {
@@ -943,7 +952,7 @@ int32_t fi_opx_reliability_tx_available_psns (struct fid_ep *ep,
 	*psn_ptr = (union fi_opx_reliability_tx_psn *)fi_opx_rbt_value_ptr(state->tx_flow_rbtree, itr);
 
 	/*
-	 * We can leverage the fact athat every packet needs a packet sequence
+	 * We can leverage the fact that every packet needs a packet sequence
 	 * number before it can be sent to implement some simply throttling.
 	 *
 	 * If the throttle is on, or if the # of bytes outstanding exceeds
@@ -954,15 +963,15 @@ int32_t fi_opx_reliability_tx_available_psns (struct fid_ep *ep,
 	}
 	if(OFI_UNLIKELY((*psn_ptr)->psn.nack_count > fi_opx_reliability_tx_max_nacks())) {
 		(*psn_ptr)->psn.throttle = 1;
-		fi_opx_reliability_inc_throttle_count();
-		fi_opx_reliability_inc_throttle_nacks();
+		fi_opx_reliability_inc_throttle_count(ep);
+		fi_opx_reliability_inc_throttle_nacks(ep);
 		return -1;
 	}
 	uint32_t max_outstanding = fi_opx_reliability_tx_max_outstanding();
 	if(OFI_UNLIKELY((*psn_ptr)->psn.bytes_outstanding > max_outstanding)) {
 		(*psn_ptr)->psn.throttle = 1;
-		fi_opx_reliability_inc_throttle_count();
-		fi_opx_reliability_inc_throttle_maxo();
+		fi_opx_reliability_inc_throttle_count(ep);
+		fi_opx_reliability_inc_throttle_maxo(ep);
 		return -1;
 	}
 
@@ -1012,13 +1021,15 @@ int32_t fi_opx_reliability_tx_next_psn (struct fid_ep *ep,
 		}
 		if(OFI_UNLIKELY((*psn_ptr)->psn.nack_count > fi_opx_reliability_tx_max_nacks())) {
 			(*psn_ptr)->psn.throttle = 1;
-			fi_opx_reliability_inc_throttle_count();
+			fi_opx_reliability_inc_throttle_count(ep);
+			fi_opx_reliability_inc_throttle_nacks(ep);
 			return -1;
 		}
 		if(OFI_UNLIKELY((*psn_ptr)->psn.bytes_outstanding >
 			fi_opx_reliability_tx_max_outstanding())) {
 			(*psn_ptr)->psn.throttle = 1;
-			fi_opx_reliability_inc_throttle_count();
+			fi_opx_reliability_inc_throttle_count(ep);
+			fi_opx_reliability_inc_throttle_maxo(ep);
 			return -1;
 		}
 
@@ -1047,12 +1058,84 @@ fi_opx_reliability_client_replay_allocate(struct fi_opx_reliability_client_state
 			return_value->use_sdma = false;
 			return_value->use_iov = use_iov;
 			return_value->sdma_we = NULL;
+#ifndef NDEBUG
+			memset(return_value->orig_payload, 0x2B, 64);
+#endif
+			return_value->hmem_iface = FI_HMEM_SYSTEM;
+			return_value->hmem_device = 0;
 
 			// This will implicitly set return_value->iov correctly
 			return_value->payload = (uint64_t *) &return_value->data;
 	}
 
 	return return_value;
+}
+
+__OPX_FORCE_INLINE__
+int32_t fi_opx_reliability_get_replay (struct fid_ep *ep,
+					struct fi_opx_reliability_client_state * state,
+					const uint64_t lid,
+					const uint64_t rx,
+					const uint64_t target_reliability_rx,
+					union fi_opx_reliability_tx_psn **psn_ptr,
+					struct fi_opx_reliability_tx_replay **replay,
+					const enum ofi_reliability_kind reliability
+					)
+{
+	
+	union fi_opx_reliability_service_flow_key key = {
+		.slid = (uint32_t) state->lid_be,
+		.tx = (uint32_t) state->tx,
+		.dlid = (uint32_t) lid,
+		.rx = (uint32_t) rx,
+	};
+
+	void * itr = fi_opx_rbt_find(state->tx_flow_rbtree, (void*)key.value);
+	if (OFI_UNLIKELY(!itr)) {
+		/* We've never sent to this receiver, so initiate a reliability handshake
+		   with them. Once they create the receive flow on their end, and we receive
+		   their ack, we'll create the flow on our end and be able to send. */
+		opx_reliability_handshake_init(ep, key, target_reliability_rx);
+		return -1;
+	}
+		
+	*psn_ptr = (union fi_opx_reliability_tx_psn *)fi_opx_rbt_value_ptr(state->tx_flow_rbtree, itr);
+	union fi_opx_reliability_tx_psn  psn_value = **psn_ptr;
+
+	/*
+	 * We can leverage the fact athat every packet needs a packet sequence
+	 * number before it can be sent to implement some simply throttling.
+	 *
+	 * If the throttle is on, or if the # of bytes outstanding exceeds
+	 * a threshold, return an error.
+	 */
+	if(OFI_UNLIKELY((*psn_ptr)->psn.throttle != 0)) {
+		return -1;
+	}
+	if(OFI_UNLIKELY((*psn_ptr)->psn.nack_count > fi_opx_reliability_tx_max_nacks())) {
+		(*psn_ptr)->psn.throttle = 1;
+		fi_opx_reliability_inc_throttle_count(ep);
+		fi_opx_reliability_inc_throttle_nacks(ep);
+		return -1;
+	}
+	if(OFI_UNLIKELY((*psn_ptr)->psn.bytes_outstanding >
+		fi_opx_reliability_tx_max_outstanding())) {
+		(*psn_ptr)->psn.throttle = 1;
+		fi_opx_reliability_inc_throttle_count(ep);
+		fi_opx_reliability_inc_throttle_maxo(ep);
+		return -1;
+	}
+	
+	*replay = fi_opx_reliability_client_replay_allocate(state, false);
+	if (*replay == NULL) {
+		return -1;
+	}
+
+	uint32_t psn;
+	psn = psn_value.psn.psn;
+	(*psn_ptr)->psn.psn = (psn_value.psn.psn + 1) & MAX_PSN;
+
+	return psn;
 }
 
 static inline
@@ -1123,7 +1206,7 @@ void fi_opx_reliability_client_replay_register_with_update (struct fi_opx_reliab
 	replay->cc_dec = value;
 
 #ifndef NDEBUG
-	if (replay->use_iov) {
+	if (replay->use_iov && replay->hmem_iface == FI_HMEM_SYSTEM) {
 		/* Copy up to 64 bytes of the current payload value for
 		 * later comparison as a sanity check to make sure the
 		 * user didn't alter the buffer */

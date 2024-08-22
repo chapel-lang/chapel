@@ -99,9 +99,15 @@ module ChplConfig {
 
   @chpldoc.nodoc
   @unstable("'ChplConfig.CHPL_LIBFABRIC' is unstable and may be replaced with a different way to access this information in the future")
-  /* See :ref:`readme-chplenv.CHPL_LIBFABRIC` for more information. */
+  /* See :ref:`readme-libfabric` for more information. */
   param CHPL_LIBFABRIC:string;
   CHPL_LIBFABRIC = __primitive("get compiler variable", "CHPL_LIBFABRIC");
+
+  @chpldoc.nodoc
+  @unstable("'ChplConfig.CHPL_COMM_OFI_OOB' is unstable and may be replaced with a different way to access this information in the future")
+  /* See :ref:`readme-libfabric` for more information. */
+  param CHPL_COMM_OFI_OOB:string;
+  CHPL_COMM_OFI_OOB = __primitive("get compiler variable", "CHPL_COMM_OFI_OOB");
 
   /* See :ref:`readme-chplenv.CHPL_TASKS` for more information. */
   @unstable("'ChplConfig.CHPL_TASKS' is unstable and may be replaced with a different way to access this information in the future")
@@ -129,7 +135,7 @@ module ChplConfig {
   CHPL_MEM = __primitive("get compiler variable", "CHPL_MEM");
 
   /* See :ref:`readme-chplenv.CHPL_MAKE` for more information. */
-  @unstable("'ChplConfig.CHPL_MAKE' is unstable and may be replaced with a different way to access this information in the future");
+  @unstable("'ChplConfig.CHPL_MAKE' is unstable and may be replaced with a different way to access this information in the future")
   param CHPL_MAKE:string;
   CHPL_MAKE = __primitive("get compiler variable", "CHPL_MAKE");
 
@@ -178,4 +184,9 @@ module ChplConfig {
   @unstable("'ChplConfig.CHPL_GPU' is unstable and may be replaced with a different way to access this information in the future")
   param CHPL_GPU:string;
   CHPL_GPU = __primitive("get compiler variable", "CHPL_GPU");
+
+  @chpldoc.nodoc
+  @unstable("'ChplConfig.CHPL_LIB_PIC' is unstable and may be replaced with a different way to access this information in the future")
+  param CHPL_LIB_PIC: string;
+  CHPL_LIB_PIC = __primitive("get compiler variable", "CHPL_LIB_PIC");
 }

@@ -1,7 +1,5 @@
-Start analyzing forall for automatic aggregation (paramsAreLocal.chpl:13)
-| Found an aggregation candidate (paramsAreLocal.chpl:14)
-|  Potential destination aggregation (paramsAreLocal.chpl:14)
-End analyzing forall for automatic aggregation (paramsAreLocal.chpl:13)
+Start analyzing forall for automatic aggregation [static only ALA clone]  (paramsAreLocal.chpl:13)
+End analyzing forall for automatic aggregation [static only ALA clone]  (paramsAreLocal.chpl:13)
 
 Start analyzing forall for automatic aggregation [static only ALA clone]  (paramsAreLocal.chpl:22)
 End analyzing forall for automatic aggregation [static only ALA clone]  (paramsAreLocal.chpl:22)
@@ -11,6 +9,11 @@ End analyzing forall for automatic aggregation [static only ALA clone]  (paramsA
 
 Start analyzing forall for automatic aggregation [static only ALA clone]  (paramsAreLocal.chpl:43)
 End analyzing forall for automatic aggregation [static only ALA clone]  (paramsAreLocal.chpl:43)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (paramsAreLocal.chpl:13)
+| Found an aggregation candidate (paramsAreLocal.chpl:14)
+|  Potential destination aggregation (paramsAreLocal.chpl:14)
+End analyzing forall for automatic aggregation [no ALA clone]  (paramsAreLocal.chpl:13)
 
 Start analyzing forall for automatic aggregation [no ALA clone]  (paramsAreLocal.chpl:22)
 | Found an aggregation candidate (paramsAreLocal.chpl:23)

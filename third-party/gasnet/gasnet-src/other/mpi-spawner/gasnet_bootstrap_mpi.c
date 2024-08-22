@@ -69,6 +69,32 @@ static const char *threadint2str(int id) {
   }
 }
 
+// check whether MPI_Finalize has already occurred and we should bail out
+GASNETI_INLINE(check_early_finalize)
+void check_early_finalize(void) {
+#if (MPI_VERSION > 1)
+  int isfini = 0;
+  int err = MPI_Finalized(&isfini);
+  gasneti_assert_always(err == MPI_SUCCESS);
+  if (isfini) {
+    // MPI specifies a very narrow range of guaranteed functionality after finalize, 
+    // which notably does NOT include MPI_Abort. 
+    // We cannot complete this client request, so just warn and hard-exit the process
+    static char message[] = 
+      "GASNet mpi-spawner noticed that MPI has been finalized by the client. The process will now exit.";
+    if (gasneti_spawn_verbose) gasneti_console_message("EXIT STATE","%s",message);
+    if (gasneti_getenv_yesno_withdefault("GASNET_QUIET",0))
+      GASNETI_TRACE_PRINTF(I,("*** WARNING: %s",message));
+    else
+      gasneti_console0_message("WARNING","%s",message);
+
+    gasneti_flush_streams();
+    int exitcode = (int)gasneti_atomic_read(&gasneti_exit_code, 0);
+    gasneti_killmyprocess(exitcode);
+  }
+#endif
+}
+
 extern gasneti_spawnerfn_t const *gasneti_bootstrapInit_mpi(int *argc, char ***argv, gex_Rank_t *nodes, gex_Rank_t *mynode) {
   MPI_Group world;
 
@@ -186,7 +212,7 @@ static void bootstrapFini(void) {
    * However, as seen w/ mpich-1.2.5, the alternative is to
    * hang on exit, which is no alternative at all.
    */
-  if (!gasnetc_mpi_preinitialized) {
+  if (gasneti_getenv_yesno_withdefault("GASNET_MPI_FINALIZE", 1)) {
     if (is_verbose) gasneti_console_message("MPI-SPAWNER","MPI_Finalize()");
     (void) MPI_Finalize();
   }
@@ -194,6 +220,7 @@ static void bootstrapFini(void) {
 
 static void bootstrapAbort(int exitcode) {
   if (is_verbose) gasneti_console_message("MPI-SPAWNER","MPI_Abort(%i)",exitcode);
+  check_early_finalize();
   (void) MPI_Abort(gasnetc_mpi_comm, exitcode);
 
   gasneti_reghandler(SIGABRT, SIG_DFL);
@@ -202,13 +229,13 @@ static void bootstrapAbort(int exitcode) {
 }
 
 static void bootstrapBarrier(void) {
-  int err;
-
-  err = MPI_Barrier(gasnetc_mpi_comm);
+  check_early_finalize();
+  int err = MPI_Barrier(gasnetc_mpi_comm);
   gasneti_assert_always(err == MPI_SUCCESS);
 }
 
 static void bootstrapExchange(void *src, size_t len, void *dest) {
+  check_early_finalize();
   const int inplace = ((uint8_t *)src == (uint8_t *)dest + len * gasnetc_mpi_rank);
   int err;
 
@@ -231,6 +258,7 @@ static void bootstrapExchange(void *src, size_t len, void *dest) {
 }
 
 static void bootstrapAlltoall(void *src, size_t len, void *dest) {
+  check_early_finalize();
   const int inplace = (src == dest);
   int err;
 
@@ -254,6 +282,7 @@ static void bootstrapAlltoall(void *src, size_t len, void *dest) {
 }
 
 static void bootstrapBroadcast(void *src, size_t len, void *dest, int rootnode) {
+  check_early_finalize();
   int err;
   
   if (gasnetc_mpi_rank == rootnode) {
@@ -264,6 +293,7 @@ static void bootstrapBroadcast(void *src, size_t len, void *dest, int rootnode) 
 }
 
 static void bootstrapSNodeBroadcast(void *src, size_t len, void *dest, int rootnode) {
+  check_early_finalize();
   int err;
 
   if (gasnetc_mpi_rank == rootnode) {

@@ -69,6 +69,33 @@ public:
   Expr*   getFirstExpr()                              override;
 };
 
+/**
+
+ Check if a given symbol needs to be converted into a formal when its
+ containing expression is lifted into a function. For instance,
+ in the following loop expression:
+
+     foreach i in 1..10 do f(x, y, z)
+
+ If we are trying to create an iterator proc to implement that loop, we may
+ need to capture 'x', 'y', 'z' and potentially even 'f' (if 'f' were an
+ object with a call operator, and not an actual function) as outer variables.
+
+     iter foreachLoop(x, y, z, f) { ... }
+
+ There are some exceptions for what gets captured (global variables, modules,
+ etc.) that are encoded by this function.
+
+*/
+bool considerForOuter(Symbol* sym);
+/**
+  Create a new function ArgSymbol from a given outer variable when lifting
+  an expression into a function. See the comment on considerForOuter
+  for an example of the sort of transformations this supports.
+ */
+ArgSymbol* newOuterVarArg(Symbol* sym);
+void normalizeGeneratedLoweringFn(FnSymbol* fn);
+
 void lowerLoopExprs(BaseAST* ast);
 
 #endif

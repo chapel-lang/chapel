@@ -96,11 +96,14 @@ void CompositeType::stringify(std::ostream& ss,
 
   auto sorted = sortedSubstitutions();
 
-  if (superType || !sorted.empty()) {
+  bool printSupertype =
+    superType != nullptr && stringKind != StringifyKind::CHPL_SYNTAX;
+
+  if (printSupertype || !sorted.empty()) {
     bool emittedField = false;
     ss << "(";
 
-    if (superType != nullptr && stringKind != StringifyKind::CHPL_SYNTAX) {
+    if (printSupertype) {
       ss << "super:";
       superType->stringify(ss, stringKind);
       emittedField = true;
@@ -108,9 +111,23 @@ void CompositeType::stringify(std::ostream& ss,
 
     for (const auto& sub : sorted) {
       if (emittedField) ss << ", ";
-      sub.first.stringify(ss, stringKind);
-      ss << ":";
-      sub.second.stringify(ss, stringKind);
+
+      if (stringKind != StringifyKind::CHPL_SYNTAX) {
+        sub.first.stringify(ss, stringKind);
+        ss << ":";
+        sub.second.stringify(ss, stringKind);
+      } else {
+        if (sub.second.isType() || (sub.second.isParam() && sub.second.param() == nullptr)) {
+          sub.second.type()->stringify(ss, stringKind);
+        } else if (sub.second.isParam()) {
+          sub.second.param()->stringify(ss, stringKind);
+        } else {
+          // Some odd configuration; fall back to printing the qualified type.
+          CHPL_UNIMPL("attempting to stringify odd type representation as Chapel syntax");
+          sub.second.stringify(ss, stringKind);
+        }
+      }
+
       emittedField = true;
     }
     ss << ")";
@@ -118,36 +135,32 @@ void CompositeType::stringify(std::ostream& ss,
 }
 
 const RecordType* CompositeType::getStringType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "String._string");
   auto name = UniqueString::get(context, "string");
-  auto id = ID(symbolPath, -1, 0);
+  auto id = parsing::getSymbolFromTopLevelModule(context, "String", "_string");
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getRangeType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "ChapelRange._range");
-  auto name = UniqueString::get(context, "range");
-  auto id = ID(symbolPath, -1, 0);
+  auto name = UniqueString::get(context, "_range");
+  auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelRange", "_range");
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getBytesType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "Bytes._bytes");
   auto name = UniqueString::get(context, "bytes");
-  auto id = ID(symbolPath, -1, 0);
+  auto id = parsing::getSymbolFromTopLevelModule(context, "Bytes", "_bytes");
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getLocaleType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "ChapelLocale._locale");
   auto name = UniqueString::get(context, "locale");
-  auto id = ID(symbolPath, -1, 0);
+  auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelLocale", "_locale");
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());
@@ -171,7 +184,8 @@ bool CompositeType::isMissingBundledRecordType(Context* context, ID id) {
   if (noLibrary) {
     auto path = id.symbolPath();
     return path == "String._string" ||
-           path == "ChapelRange.range" ||
+           path == "ChapelRange._range" ||
+           path == "ChapelTuple._tuple" ||
            path == "Bytes._bytes";
   }
 
@@ -184,16 +198,16 @@ bool CompositeType::isMissingBundledClassType(Context* context, ID id) {
     auto path = id.symbolPath();
     return path == "ChapelReduce.ReduceScanOp" ||
            path == "Errors.Error" || 
-           path == "CTypes.c_ptr";
+           path == "CTypes.c_ptr" ||
+           path == "CTypes.c_ptrConst";
   }
 
   return false;
 }
 
 const ClassType* CompositeType::getErrorType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "Errors.Error");
   auto name = UniqueString::get(context, "Error");
-  auto id = ID(symbolPath, -1, 0);
+  auto id = parsing::getSymbolFromTopLevelModule(context, "Errors", "Error");
   auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
   auto bct = BasicClassType::get(context, id,
                                 name,

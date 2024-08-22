@@ -4453,6 +4453,133 @@ qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t*
   return err;
 }
 
+static qioerr qio_channel_read_chars_impl(qio_channel_t* restrict ch, char* restrict buf, ssize_t maxBytes, ssize_t maxCodepoints, ssize_t* readBytes, ssize_t* readCodepoints) {
+  qioerr err = 0;
+  ssize_t nBytes = 0;
+  ssize_t nCodepoints = 0;
+  uint32_t codepoint = 0;
+  uint32_t state = 0;
+  uint8_t byte = 0;
+  ssize_t amt_read = 0;
+  int32_t chr = 0;
+  ssize_t codepoint_sz = 0;
+
+  while (nBytes < maxBytes && nCodepoints < maxCodepoints) {
+    // decode as many full codepoints as are present in ch->cached
+    while (nBytes+4 <= maxBytes && nCodepoints < maxCodepoints &&
+           qio_space_in_ptr_diff(4, ch->cached_end, ch->cached_cur)) {
+      // read, save, and decode one byte
+      byte = *(unsigned char*)ch->cached_cur;
+      buf[nBytes++] = byte;
+      chpl_enc_utf8_decode(&state, &codepoint, byte);
+      ch->cached_cur = qio_ptr_add(ch->cached_cur,1);
+      if (state == UTF8_ACCEPT) {
+        // reset state and codepoint
+        state = 0;
+        codepoint = 0;
+        nCodepoints++;
+        // keep going
+      } else if (state == UTF8_REJECT) {
+        err = QIO_EILSEQ;
+        goto done;
+      }
+    }
+
+    if (nCodepoints >= maxCodepoints) {
+      // stop if we have read the requested number of codepoints
+      break;
+    }
+
+    // read the rest of the codepoint if we are partway through one
+    while (state > 1 && nBytes < maxBytes) {
+      amt_read = 0;
+      byte = 0;
+      err = qio_channel_read(false, ch, &byte, 1, &amt_read);
+      if (err) {
+        goto done;
+      } else if (amt_read != 1) {
+        err = QIO_ESHORT;
+        goto done;
+      }
+      // save and decode that byte
+      buf[nBytes++] = byte;
+      chpl_enc_utf8_decode(&state, &codepoint, byte);
+      if (state == UTF8_ACCEPT) {
+        // reset state and codepoint and stop
+        state = 0;
+        codepoint = 0;
+        nCodepoints++;
+        break;
+      } else if (state == UTF8_REJECT) {
+        err = QIO_EILSEQ;
+        goto done;
+      }
+    }
+
+    if (nCodepoints >= maxCodepoints) {
+      // stop if we have read the requested number of codepoints
+      break;
+    }
+
+    // mark, and then try to read a whole codepoint
+    err = qio_channel_mark(false, ch);
+    if (err) {
+      return err;
+    }
+
+    chr = 0;
+    err = qio_channel_read_char(false, ch, &chr);
+    if (err) {
+      // commit so we advance the channel position as normal for
+      // invalid UTF-8
+      qio_channel_commit_unlocked(ch);
+      goto done;
+    }
+    codepoint_sz = qio_nbytes_char(chr);
+    if (nBytes + codepoint_sz > maxBytes) {
+      // time to stop, no more room for the next codepoint sequence
+      qio_channel_revert_unlocked(ch);
+      err = 0;
+      goto done;
+    }
+
+    // otherwise, store the codepoint and continue
+    qio_encode_char_buf(buf + nBytes, chr);
+    nBytes += codepoint_sz;
+    nCodepoints++;
+    qio_channel_commit_unlocked(ch);
+  }
+
+  if (state != UTF8_ACCEPT) {
+    err = QIO_EILSEQ;
+  }
+
+done:
+  *readBytes = nBytes;
+  *readCodepoints = nCodepoints;
+  return err;
+}
+
+qioerr qio_channel_read_chars(const int threadsafe, qio_channel_t* restrict ch, char* restrict buf, ssize_t maxBytes, ssize_t maxCodepoints, ssize_t* readBytes, ssize_t* readCodepoints) {
+  qioerr err;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) return err;
+  }
+
+  err = qio_channel_read_chars_impl(ch, buf, maxBytes, maxCodepoints,
+                                    readBytes, readCodepoints);
+
+  _qio_channel_set_error_unlocked(ch, err);
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+}
+
+
 c_string qio_encode_to_string(int32_t chr)
 {
   int nbytes;

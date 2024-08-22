@@ -20,6 +20,7 @@
 #include "chpl/types/CPtrType.h"
 
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/intents.h"
 #include "chpl/types/Param.h"
 #include "chpl/types/VoidType.h"
@@ -81,8 +82,7 @@ const CPtrType* CPtrType::getCVoidPtrType(Context* context) {
 
 const ID& CPtrType::getId(Context* context) {
   QUERY_BEGIN(getId, context);
-  UniqueString path = UniqueString::get(context, "CTypes.c_ptr");
-  ID result { path, -1, 0 };
+  ID result = parsing::getSymbolFromTopLevelModule(context, "CTypes", "c_ptr");
   return QUERY_END(result);
 }
 
@@ -97,8 +97,7 @@ const CPtrType* CPtrType::withoutConst(Context* context) const {
 
 const ID& CPtrType::getConstId(Context* context) {
   QUERY_BEGIN(getConstId, context);
-  UniqueString path = UniqueString::get(context, "CTypes.c_ptrConst");
-  ID result { path, -1, 0 };
+  ID result = parsing::getSymbolFromTopLevelModule(context, "CTypes", "c_ptrConst");
   return QUERY_END(result);
 }
 

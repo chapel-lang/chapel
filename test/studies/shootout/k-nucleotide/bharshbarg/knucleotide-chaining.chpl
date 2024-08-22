@@ -1,7 +1,7 @@
 use IO;
 use Sort;
 
-extern proc memcpy(x : [], b:c_ptrConst(c_char), len:int);
+extern proc memcpy(ref x : [], b:c_ptrConst(c_char), len:int);
 
 config const tableSize = 1 << 16;
 config const lineSize = 61;
@@ -118,7 +118,7 @@ proc write_frequencies(data : [] uint(8), size : int) {
   var arr : [1..freqs.size] (int, uint);
   for (a, (k,v)) in zip(arr, freqs) do
     a = (v,k);
-  sort(arr, comparator=reverseComparator);
+  sort(arr, comparator=new ReverseComparator());
 
   for (f, s) in arr do
     writef("%s %.3dr\n", decode(s, size), (100.0 * f) / sum);

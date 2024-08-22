@@ -127,17 +127,18 @@ struct ips_protoexp {
 	struct psmi_timer timer_getreqs;
 
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-	STAILQ_HEAD(ips_tid_get_cudapend, /* pending cuda transfers */
-		    ips_tid_get_request) cudapend_getreqsq;
-	struct ips_gpu_hostbuf_mpool_cb_context cuda_hostbuf_recv_cfg;
-	struct ips_gpu_hostbuf_mpool_cb_context cuda_hostbuf_small_recv_cfg;
-	mpool_t cuda_hostbuf_pool_recv;
-	mpool_t cuda_hostbuf_pool_small_recv;
+	STAILQ_HEAD(ips_tid_get_gpupend, /* pending GPU transfers */
+		    ips_tid_get_request) gpupend_getreqsq;
+	struct ips_gpu_hostbuf_mpool_cb_context gpu_hostbuf_recv_cfg;
+	struct ips_gpu_hostbuf_mpool_cb_context gpu_hostbuf_small_recv_cfg;
+	mpool_t gpu_hostbuf_pool_recv;
+	mpool_t gpu_hostbuf_pool_small_recv;
 #endif
 #ifdef PSM_CUDA
 	CUstream cudastream_recv;
 #elif defined(PSM_ONEAPI)
-	ze_command_queue_handle_t cq_recv;
+	/* Will not be usd if psm3_oneapi_immed_async_copy */
+	ze_command_queue_handle_t cq_recvs[MAX_ZE_DEVICES];
 #endif
 };
 
@@ -196,13 +197,14 @@ struct ips_tid_send_desc {
 #endif
 
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-	/* As size of cuda_hostbuf is less than equal to window size,
+	/* As size of gpu_hostbuf is less than equal to window size,
 	 * there is a guarantee that the maximum number of host bufs we
 	 * would need to attach to a tidsendc would be 2
 	 */
-	struct ips_gpu_hostbuf *cuda_hostbuf[2];
+	struct ips_gpu_hostbuf *gpu_hostbuf[2];
+	struct ips_gpu_hostbuf *gpu_split_buf;
 	/* Number of hostbufs attached */
-	uint8_t cuda_num_buf;
+	uint8_t gpu_num_buf;
 #endif
 	// ips_tid_session_list is fixed sized for UD
 	// N/A to UDP
@@ -240,7 +242,7 @@ struct ips_tid_recv_desc {
 	psmi_seqnum_t tidflow_genseq;
 
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-	struct ips_gpu_hostbuf *cuda_hostbuf;
+	struct ips_gpu_hostbuf *gpu_hostbuf;
 	uint8_t is_ptr_gpu_backed;
 #endif
 
@@ -284,9 +286,9 @@ struct ips_tid_get_request {
 
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	int gpu_hostbuf_used;
-	uint32_t tidgr_cuda_bytesdone;
-	STAILQ_HEAD(ips_tid_getreq_cuda_hostbuf_pend,	/* pending exp. sends */
-		    ips_gpu_hostbuf) pend_cudabuf;
+	uint32_t tidgr_gpu_bytesdone;
+	STAILQ_HEAD(ips_tid_getreq_gpu_hostbuf_pend,	/* pending exp. sends */
+		    ips_gpu_hostbuf) pend_gpubuf;
 #endif
 };
 
@@ -362,4 +364,11 @@ psm3_ips_tid_send_handle_tidreq(struct ips_protoexp *protoexp,
 			    ptl_arg_t rdescid, uint32_t tidflow_genseq,
 			    ips_tid_session_list *tid_list,
 			    uint32_t tid_list_size);
+
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+// buffers for GPU send copy pipeline
+struct ips_gpu_hostbuf* psm3_ips_allocate_send_chb(struct ips_proto *proto,
+				uint32_t nbytes, int allow_temp);
+void psm3_ips_deallocate_send_chb(struct ips_gpu_hostbuf* chb, int reset);
+#endif
 #endif /* #ifndef __IPS_EXPECTED_PROTO_H__ */

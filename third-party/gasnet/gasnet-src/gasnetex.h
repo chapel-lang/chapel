@@ -65,8 +65,10 @@
 #ifdef GASNET_DEBUG
   #undef GASNET_DEBUG
   #define GASNET_DEBUG 1
+  #define GASNETI_DEBUG_P 1
   #define GASNETI_DEBUG_CONFIG debug
 #else
+  #define GASNETI_DEBUG_P 0
   #define GASNETI_DEBUG_CONFIG nodebug
 #endif
 
@@ -180,10 +182,24 @@ GASNETI_BEGIN_NOWARN
 #include <gasnet_ratomic_fwd.h>
 
 /* GASNET_PSHM = GASNet conduit is using PSHM */
-#if defined(GASNET_PSHM) && (GASNET_PSHM != 1)
-  #error bad defn of GASNET_PSHM
-#elif !defined(GASNET_PSHM)
-  #define GASNET_PSHM 0
+#ifdef GASNET_PSHM
+  #undef GASNET_PSHM
+  #define GASNET_PSHM 1
+  #define GASNETI_PSHM_P 1
+#else
+  #define GASNETI_PSHM_P 0
+#endif
+
+// GASNET_RCV_THREAD = conduit is built with support for a "receive progress thread"
+#ifdef GASNET_RCV_THREAD
+  #undef GASNET_RCV_THREAD
+  #define GASNET_RCV_THREAD 1
+#endif
+
+// GASNET_SND_THREAD = conduit is built with support for a "send progress thread"
+#ifdef GASNET_SND_THREAD
+  #undef GASNET_SND_THREAD
+  #define GASNET_SND_THREAD 1
 #endif
 
 /* GASNETI_CONDUIT_THREADS = GASNet conduit has one or more private threads
@@ -857,6 +873,30 @@ typedef struct gasneti_srcdesc_s *gex_AM_SrcDesc_t;
 
 
 /* ------------------------------------------------------------------------------------ */
+/* progress threads */
+
+// default trivial implementation
+#ifndef gex_System_QueryProgressThreads
+  #define gex_System_QueryProgressThreads gasneti_query_progress_threads
+#endif
+
+typedef struct {
+  const char *     gex_device_list;
+  unsigned int     gex_thread_roles;
+  void *           (*gex_progress_fn) (void *);
+  void *           gex_progress_arg;
+} gex_ProgressThreadInfo_t;
+
+#define GEX_THREAD_ROLE_RCV             (1U << 0)
+#define GEX_THREAD_ROLE_SND             (1U << 1)
+
+extern int gex_System_QueryProgressThreads(
+            gex_Client_t                     _client,
+            unsigned int                    *_count_p,
+            const gex_ProgressThreadInfo_t **_info_p,
+            gex_Flags_t                      _flags);
+
+/* ------------------------------------------------------------------------------------ */
 /* conditional and internal flags (others in gasnet_fwd.h) */
 
 #define GEX_FLAG_PEER_NEVER_NBRHD       (1U << 14)
@@ -873,6 +913,12 @@ typedef struct gasneti_srcdesc_s *gex_AM_SrcDesc_t;
 #endif
 
 #define GASNETI_FLAG_INIT_LEGACY           (1U << 31)
+
+#if GASNET_DEBUG
+  #define GASNETI_FLAG_G2EX_DEBUG             (1U << 30)
+#else
+  #define GASNETI_FLAG_G2EX_DEBUG             0
+#endif
 
 /* ------------------------------------------------------------------------------------ */
 // GASNETC_MAX_{ARGS,MEDIUM,LONG}_NBRHD
@@ -1028,6 +1074,7 @@ extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC64_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_CUDA_UVA_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_HIP_CONFIG);
+extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_ZE_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN));
@@ -1067,6 +1114,7 @@ static int *gasneti_linkconfig_idiotcheck(void) {
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_CUDA_UVA_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_HIP_CONFIG)
+        + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_ZE_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN))

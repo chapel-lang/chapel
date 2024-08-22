@@ -67,6 +67,7 @@ class QualifiedType final {
   static const Kind FUNCTION = uast::Qualifier::FUNCTION;
   static const Kind PARENLESS_FUNCTION = uast::Qualifier::PARENLESS_FUNCTION;
   static const Kind MODULE = uast::Qualifier::MODULE;
+  static const Kind INIT_RECEIVER = uast::Qualifier::INIT_RECEIVER;
 
   static const char* kindToString(Kind k);
 
@@ -155,6 +156,10 @@ class QualifiedType final {
 
   bool isGenericOrUnknown() const {
     return isUnknown() || (genericity() != Type::CONCRETE);
+  }
+
+  bool isUnknownOrErroneous() const {
+    return isUnknown() || isErroneousType();
   }
 
   /** Returns true if kind is TYPE */

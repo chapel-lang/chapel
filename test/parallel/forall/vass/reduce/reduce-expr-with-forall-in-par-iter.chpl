@@ -3,7 +3,7 @@
 use StencilDist;
 
 var Dom = {1..10, 1..10};
-var Space = Dom dmapped stencilDist(Dom, fluff=(1,1,), periodic=true);
+var Space = Dom dmapped new stencilDist(Dom, fluff=(1,1,), periodic=true);
 var AAA : [Space] int;
 [a in AAA] a = 10;
 

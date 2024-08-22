@@ -288,24 +288,29 @@ class UniqueString final {
     return !(*this == other);
   }
 
+  inline bool operator<(const UniqueString other) const {
+    return this->compare(other) < 0;
+  }
+  inline bool operator<=(const UniqueString other) const {
+    return this->compare(other) <= 0;
+  }
+   inline bool operator>(const UniqueString other) const {
+    return this->compare(other) > 0;
+  }
+  inline bool operator>=(const UniqueString other) const {
+    return this->compare(other) >= 0;
+  }
+
   /**
    Returns:
      * -1 if this string is less than the passed string
      * 0 if they are the same
      * 1 if this string is greater
-
-    \rst
-    .. note::
-
-      will only compare up to the first null byte.
-    \endrst
    */
-  int compare(const UniqueString other) const {
-    return *this == other ? 0 : compare(other.c_str());
-  }
-  int compare(const char* other) const {
-    return strcmp(this->c_str(), other);
-  }
+  int compare(const UniqueString other) const;
+
+  int compare(const char* other) const;
+
   size_t hash() const {
     std::hash<size_t> hasher;
     return hasher((size_t) s.i.v);

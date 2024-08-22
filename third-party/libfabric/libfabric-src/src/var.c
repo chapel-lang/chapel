@@ -42,8 +42,16 @@
 #include "ofi.h"
 #include "ofi_list.h"
 
+#ifdef SYSCONFDIR
+#define DEFAULT_CONF_FILE_PATH SYSCONFDIR "/libfabric.conf"
+#else
+#define DEFAULT_CONF_FILE_PATH "libfabric.conf"
+#endif
+
+#define MAX_CONF_LINE_LENGTH 2048
 
 extern void fi_ini(void);
+int ofi_prefer_sysconfig = 0;
 
 struct fi_param_entry {
 	const struct fi_provider *provider;
@@ -54,8 +62,15 @@ struct fi_param_entry {
 	struct dlist_entry entry;
 };
 
+struct ofi_conf_entry {
+	char *name;
+	char *value;
+	struct dlist_entry entry;
+};
+
 /* TODO: Add locking around param_list when adding dynamic removal */
 static DEFINE_LIST(param_list);
+static DEFINE_LIST(conf_list);
 
 
 static struct fi_param_entry *
@@ -143,6 +158,13 @@ static void fi_free_param(struct fi_param_entry *param)
 	free(param->help_string);
 	free(param->env_var_name);
 	free(param);
+}
+
+static void free_conf(struct ofi_conf_entry *conf)
+{
+	free(conf->name);
+	free(conf->value);
+	free(conf);
 }
 
 void fi_param_undefine(const struct fi_provider *provider)
@@ -250,11 +272,79 @@ static int fi_parse_bool(const char *str_value)
 	return -1;
 }
 
+static void load_conf(void)
+{
+	char *tmp;
+	struct ofi_conf_entry *conf;
+	size_t line_len = 0;
+	char line[MAX_CONF_LINE_LENGTH];
+
+	dlist_init(&conf_list);
+
+	FILE *fptr = fopen(DEFAULT_CONF_FILE_PATH, "r");
+	if (!fptr)
+		return;
+
+	while (fgets(line, MAX_CONF_LINE_LENGTH, fptr) != NULL) {
+		tmp = strchr(line, '=');
+		if (!tmp)
+			continue;
+
+		line_len = strlen(line);
+		tmp[0] = '\0';
+		if (line[line_len-1] == '\n')
+			line[line_len-1] = '\0';
+
+		conf = calloc(1, sizeof(*conf));
+		if (!conf)
+			break;
+
+		conf->name = strdup(line);
+		if (!conf->name) {
+			free_conf(conf);
+			break;
+		}
+
+		conf->value = strdup(&tmp[1]);
+		if (!conf->value) {
+			free_conf(conf);
+			break;
+		}
+
+		dlist_insert_tail(&conf->entry, &conf_list);
+	}
+
+	fclose(fptr);
+}
+
+static struct ofi_conf_entry *
+find_conf_entry(const char *param_name)
+{
+	struct ofi_conf_entry *conf;
+
+	dlist_foreach_container(&conf_list, struct ofi_conf_entry, conf, entry) {
+		if (strcmp(conf->name, param_name) == 0)
+			return conf;
+	}
+
+	return NULL;
+}
+
+void ofi_dump_sysconfig(void)
+{
+	struct ofi_conf_entry *conf;
+	dlist_foreach_container(&conf_list, struct ofi_conf_entry, conf, entry) {
+		FI_INFO(&core_prov, FI_LOG_CORE,
+                        "Read config variable: %s=%s\n",conf->name, conf->value);
+	}
+}
+
 __attribute__((visibility ("default"),EXTERNALLY_VISIBLE))
 int DEFAULT_SYMVER_PRE(fi_param_get)(struct fi_provider *provider,
 		const char *param_name, void *value)
 {
 	struct fi_param_entry *param;
+	struct ofi_conf_entry *conf;
 	char *str_value;
 	int parsed_boolean;
 	int ret = FI_SUCCESS;
@@ -273,7 +363,11 @@ int DEFAULT_SYMVER_PRE(fi_param_get)(struct fi_provider *provider,
 	if (!param)
 		return -FI_ENOENT;
 
+	conf = find_conf_entry(param->env_var_name);
 	str_value = getenv(param->env_var_name);
+	if ((!str_value || ofi_prefer_sysconfig) && conf)
+		str_value = conf->value;
+
 	if (!str_value) {
 		FI_INFO(provider, FI_LOG_CORE,
 			"variable %s=<not set>\n", param_name);
@@ -321,11 +415,20 @@ DEFAULT_SYMVER(fi_param_get_, fi_param_get, FABRIC_1.0);
 void fi_param_init(void)
 {
 	dlist_init(&param_list);
+	load_conf();
+
+	fi_param_define(NULL, "prefer_sysconfig", FI_PARAM_BOOL,
+			"Prefer system configured variables when loading the "
+			"environment and variables are defined in both the "
+			"system config (libfabric.conf) and in runtime "
+			"environment. (default: false)");
+	fi_param_get_bool(NULL, "prefer_sysconfig", &ofi_prefer_sysconfig);
 }
 
 void fi_param_fini(void)
 {
 	struct fi_param_entry *param;
+	struct ofi_conf_entry *conf;
 	struct dlist_entry *entry;
 
 	while (!dlist_empty(&param_list)) {
@@ -333,5 +436,12 @@ void fi_param_fini(void)
 		param = container_of(entry, struct fi_param_entry, entry);
 		dlist_remove(entry);
 		fi_free_param(param);
+	}
+
+	while (!dlist_empty(&conf_list)) {
+		entry = conf_list.next;
+		conf = container_of(entry, struct ofi_conf_entry, entry);
+		dlist_remove(entry);
+		free_conf(conf);
 	}
 }

@@ -1,0 +1,11 @@
+ArrayViewElision supported rangeVsDomain.chpl:4
+	lhsBaseType: [domain(1,int(64),one)] int(64)
+	lhsIndexingExprs: 
+		range(int(64),both,one)
+	rhsBaseType: [domain(1,int(64),one)] int(64)
+	rhsIndexingExprs: 
+		domain(1,int(64),one)
+
+<ShortArrayTransfer> Size: 9 Threshold: 60
+<ShortArrayTransfer> size qualifies
+1 1 1 1 1 1 1 1 1 0

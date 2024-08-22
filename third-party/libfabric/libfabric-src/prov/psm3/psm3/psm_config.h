@@ -99,6 +99,11 @@
 /* #define PSM_PROFILE */
 #endif
 
+// If defined, for FI_INJECT Send DMA will be avoided
+#ifndef PSM_INJECT_NOSDMA
+/* #define PSM_INJECT_NOSDMA */
+#endif
+
 #define PSMI_MIN_EP_CONNECT_TIMEOUT	(2 * SEC_ULL)
 #define PSMI_MIN_EP_CLOSE_TIMEOUT	(1 * SEC_ULL)
 #define PSMI_MAX_EP_CLOSE_TIMEOUT	(2 * SEC_ULL)
@@ -156,14 +161,14 @@
 #endif // PSM_CUDA
 
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-#define CUDA_WINDOW_PREFETCH_DEFAULT	2
-#define CUDA_SMALLHOSTBUF_SZ	(256*1024)
+#define GPU_WINDOW_PREFETCH_DEFAULT	2
+#define GPU_SMALLHOSTBUF_SZ	(256*1024)
 #define GPU_PAGE_OFFSET_MASK (PSMI_GPU_PAGESIZE -1)
 #define GPU_PAGE_MASK ~GPU_PAGE_OFFSET_MASK
 /* All GPU transfers beyond this threshold use
  * RNDV protocol. It is mostly a send side knob.
  */
-#define CUDA_THRESH_RNDV 8000
+#define GPU_THRESH_RNDV 8000
 
 #define GPUDIRECT_THRESH_RV 3
 
@@ -174,14 +179,40 @@
 
 
 #define PSM_MQ_NIC_MAX_TINY		8	/* max TINY payload allowed */
+#define PSM_MQ_NIC_RNDV_THRESH	 	64000
+#define PSM_CPU_NIC_RNDV_WINDOW_STR "131072"
+#ifdef PSM_CUDA
+#define PSM_GPU_NIC_RNDV_WINDOW_STR "2097152"
+#elif defined(PSM_ONEAPI)
+#define PSM_GPU_NIC_RNDV_WINDOW_STR "131072:524287,262144:1048575,524288"
+#endif
 #define PSM_MQ_NIC_MAX_RNDV_WINDOW	(4 * 1024 * 1024) /* max rndv window */
 
 #define MQ_SHM_THRESH_RNDV 16000
+#if defined(PSM_CUDA)
+#define MQ_SHM_GPU_THRESH_RNDV 127
+#elif defined(PSM_ONEAPI)
+#define MQ_SHM_GPU_THRESH_RNDV 127
+#endif
 
-#define NUM_HASH_BUCKETS 64
-#define HASH_THRESHOLD 65
+// LEARN_HASH_SELECTOR has PSM3 dynamically learn the combinations
+// of src_addr presence and tagsel used by a given middleware.  This
+// allows PSM3 to self-optimize for use with varied middleware uses
+// of tagsel bits.  The alternative is some hardcoded combinations of bits
+// which run the risk of most tags landing on the linear list
+#define LEARN_HASH_SELECTOR
+#define NUM_HASH_BUCKETS 128
+#define DEFAULT_HASH_THRESH 64	// queue depth thresh for transition to hashing
+	// max hash tables for tag matching
+	// in addition a simple linear list is kept as one more subqueue
+#ifdef LEARN_HASH_SELECTOR
+	// this can be configurable.  <= 4 should be good for most apps
+	// so use 5 for some headroom
+#define NUM_HASH_CONFIGS 5
+#else
+	// must be 3 when ! LEARN_HASH_SELECTOR
 #define NUM_HASH_CONFIGS 3
-#define NUM_MQ_SUBLISTS (NUM_HASH_CONFIGS + 1)
+#endif
 
 #define REMOVE_ENTRY 1
 
@@ -213,5 +244,6 @@
 #define	PSMI_EP_HOSTNAME_LEN	64	/* hostname only */
 
 #define PSM3_FAULTINJ_SPEC_NAMELEN	32
+#define PSM3_FAULTINJ_HELPLEN	80
 
 #endif /* PSM_CONFIG_H */

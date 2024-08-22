@@ -1,0 +1,3 @@
+setSplitInit.chpl:3: In function 'test1':
+setSplitInit.chpl:8: warning: initializing between two sets with different parSafe settings
+Note: this warning can be silenced with '-swarnForSetParsafeMismatch=false'

@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-static void printarr(int* x, int n) {
+static void printarr(const int* x, int n) {
   int i;
   printf("printme[0..%i] = ", n-1);
   for( i = 0; i < n; i++ ) {
@@ -9,7 +9,7 @@ static void printarr(int* x, int n) {
   printf("\n");
 }
 
-static int sumarr(int* x, int n) {
+static int sumarr(const int* x, int n) {
   int i;
   int acc = 0;
   printf("sumarr[0..%i] = ", n-1);

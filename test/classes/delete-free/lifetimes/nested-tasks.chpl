@@ -73,7 +73,7 @@ test3();
 proc test4() {
 
   const Space = {0..10};
-  const D     = Space dmapped blockDist(Space);
+  const D     = Space dmapped new blockDist(Space);
   var A : [D] int;
 
   coforall loc in Locales do on loc {

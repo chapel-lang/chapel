@@ -21,6 +21,11 @@
 // This file is used in LLVM backend compiles to compile the header
 // declarations for the Chapel runtime into an LLVM module.
 
+// Reduce our exposure to overloads of symbols with the same name
+// when parsing runtime headers in C++ mode during our LLVM codegen.
+// https://github.com/chapel-lang/chapel/issues/25506
+#define CHPL_AVOID_CPP_CODE 1
+
 #include "stdchpl.h"
 
 #include "chpl-gen-includes.h"

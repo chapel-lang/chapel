@@ -58,7 +58,6 @@
 #include <stdio.h>
 #include <sys/mman.h>
 #include <sys/fcntl.h>
-#include <linux/perf_event.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <asm/unistd.h>
@@ -77,8 +76,8 @@ u64 global_rdpmc_number[RDPMC_PERF_MAX_SLOT_NUMBER];
 
 char global_rdpmc_slot_name[RDPMC_PERF_MAX_SLOT_NUMBER][RDPMC_PERF_MAX_SLOT_NAME];
 
-__thread unsigned int global_rdpmc_type   = RDPMC_PERF_DEFAULT_TYPE;
-__thread unsigned int global_rdpmc_config = RDPMC_PERF_DEFAULT_CONFIG;
+unsigned int global_rdpmc_type   = RDPMC_PERF_DEFAULT_TYPE;
+unsigned int global_rdpmc_config = RDPMC_PERF_DEFAULT_CONFIG;
 
 struct rdpmc_ctx {
 	int fd;
@@ -169,40 +168,22 @@ PSMI_ALWAYS_INLINE(void rdpmc_close(struct rdpmc_ctx *ctx))
 static void psmi_rdpmc_perf_framework_init()
 {
     int rdpmc_retval;
-
     struct rdpmc_ctx *leader = NULL;
+    union psmi_envvar_val envval;
 
-    int env_result    = 1;
-    char * env_type = NULL;
-    char * env_config = NULL;
+    psm3_getenv("PSM3_RDPMC_PERF_TYPE",
+               "Type of performance info to tabulate (0=HW,1=OS software, ...)"
+               " see <linux/perf_event.h> perf_type_id for full list",
+               PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_INT,
+               (union psmi_envvar_val)RDPMC_PERF_DEFAULT_TYPE, &envval);
+    global_rdpmc_type = envval.e_int;
 
-    env_type = getenv("RDPMC_PERF_TYPE");
-
-    if (env_type)
-    {
-        global_rdpmc_type = (int)strtoll(env_type, NULL, 16);
-    }
-    else
-    {
-        env_result = 0;
-    }
-
-    env_config = getenv("RDPMC_PERF_CONFIG");
-
-    if (env_config)
-    {
-        global_rdpmc_config = (int)strtoll(env_config, NULL, 16);
-    }
-    else
-    {
-        env_result = 0;
-    }
-
-    if (env_result != 1)
-    {
-        global_rdpmc_type   = RDPMC_PERF_DEFAULT_TYPE;
-        global_rdpmc_config = RDPMC_PERF_DEFAULT_CONFIG;
-    }
+    psm3_getenv("PSM3_RDPMC_PERF_CONFIG",
+               "Performance statistic to tabulate within selected type (for HW 0=CPU cycles, ..)"
+               " see <linux/perf_event.h> (such as perf_hw_id) for full list",
+               PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_INT,
+               (union psmi_envvar_val)RDPMC_PERF_DEFAULT_CONFIG, &envval);
+    global_rdpmc_config = envval.e_int;
 
     struct perf_event_attr attr = {
         .type = global_rdpmc_type,
@@ -226,7 +207,7 @@ static void psmi_rdpmc_perf_framework_init()
  *
  * Read the current value of a running performance counter.
  */
-unsigned long long rdpmc_read(struct rdpmc_ctx *ctx)
+unsigned long long psm3_rdpmc_read(struct rdpmc_ctx *ctx)
 {
 	static __thread int rdpmc_perf_initialized = 0;
 

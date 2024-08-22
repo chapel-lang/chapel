@@ -34,6 +34,7 @@ module ChapelArray {
   use CTypes;
   use ChapelPrivatization;
   use ChplConfig only compiledForSingleLocale, CHPL_LOCALE_MODEL;
+  use ChapelArrayViewElision;
   public use ChapelDomain;
 
   // Explicitly use a processor atomic, as most calls to this function are
@@ -511,7 +512,7 @@ module ChapelArray {
       param isDRView = chpl__isArrayView(value) && chpl__getActualArray(value).isDefaultRectangular();
       return isDR || isDRView;
     } else {
-      compilerError("Invalid argument for chpl__isDROrDRView");
+      return false;
     }
   }
 
@@ -738,11 +739,11 @@ module ChapelArray {
     return true;
   }
 
-  // This alternative declaration of Sort.defaultComparator
+  // This alternative usage of Sort.DefaultComparator
   // prevents transitive use of module Sort.
   proc chpl_defaultComparator() {
     use Sort;
-    return defaultComparator;
+    return new DefaultComparator();
   }
 
   @chpldoc.nodoc
@@ -795,13 +796,6 @@ module ChapelArray {
     forwarding _value except doiBulkTransferFromKnown, doiBulkTransferToKnown,
                              doiBulkTransferFromAny,  doiBulkTransferToAny,
                              chpl__serialize, chpl__deserialize;
-
-    // Hook into 'postinit' since arrays do not seem to offer 'init'.
-    proc postinit() {
-      if eltType == nothing {
-        compilerError("cannot initialize array with element type 'nothing'");
-      }
-    }
 
     @chpldoc.nodoc
     proc deinit() {
@@ -2073,7 +2067,7 @@ module ChapelArray {
     }
   }
 
-  proc chpl__serializeAssignment(a: [], b) param {
+  proc chpl__serializeAssignment(a, b) param {
     if a.rank != 1 && isRange(b) then
       return true;
 
@@ -2098,7 +2092,7 @@ module ChapelArray {
   }
 
   // This must be a param function
-  proc chpl__compatibleForBulkTransfer(a:[], b:[], param kind:_tElt) param {
+  proc chpl__compatibleForBulkTransfer(a, b, param kind:_tElt) param {
     if !useBulkTransfer then return false;
     if a.eltType != b.eltType then return false;
     if kind==_tElt.move then return true;
@@ -2148,10 +2142,12 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x) param do return true;
 
   @chpldoc.nodoc
-  proc checkArrayShapesUponAssignment(a: [], b: [], forSwap = false) {
+  proc checkArrayShapesUponAssignment(a, b, forSwap = false) {
     if a.isRectangular() && b.isRectangular() {
-      const aDims = a._value.dom.dsiDims(),
-            bDims = b._value.dom.dsiDims();
+      const aDims = if isProtoSlice(a) then a.dims()
+                                       else a._value.dom.dsiDims();
+      const bDims = if isProtoSlice(b) then b.dims()
+                                       else b._value.dom.dsiDims();
       compilerAssert(aDims.size == bDims.size);
       for param i in 0..aDims.size-1 {
         if aDims(i).sizeAs(uint) != bDims(i).sizeAs(uint) then
@@ -2166,8 +2162,7 @@ module ChapelArray {
   }
 
   pragma "find user line"
-  @chpldoc.nodoc
-  inline operator =(ref a: [], b:[]) {
+  private inline proc arrayOrProtoSliceAssign(ref a, b) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
 
@@ -2176,7 +2171,18 @@ module ChapelArray {
       // default initializer is a forall expr. E.g. arrayInClassRecord.chpl.
       return;
 
-    if a._value == b._value {
+    var eqVals: bool;
+    if isArray(a) && isArray(b) {
+      eqVals = (a._value == b._value);
+    }
+    else if isProtoSlice(a) && isProtoSlice(b) {
+      eqVals = (a == b); // default record comparison should cover it
+    }
+    else {
+      compilerError("Internal error: cross-type assignments are not supported");
+    }
+
+    if eqVals then {
       // Do nothing for A = A but we could generate a warning here
       // since it is probably unintended. We need this check here in order
       // to avoid memcpy(x,x) which happens inside doiBulkTransfer.
@@ -2191,6 +2197,19 @@ module ChapelArray {
       checkArrayShapesUponAssignment(a, b);
 
     chpl__uncheckedArrayTransfer(a, b, kind=_tElt.assign);
+  }
+
+
+  pragma "find user line"
+  @chpldoc.nodoc
+  inline operator =(ref a: [], b: []) {
+    arrayOrProtoSliceAssign(a, b);
+  }
+
+  pragma "find user line"
+  @chpldoc.nodoc
+  inline operator =(ref a: chpl__protoSlice, b: chpl__protoSlice) {
+    arrayOrProtoSliceAssign(a, b);
   }
 
   // what kind of transfer to do for each element?
@@ -2300,29 +2319,43 @@ module ChapelArray {
   }
 
   pragma "find user line"
-  inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[], param kind) {
+  inline proc chpl__uncheckedArrayTransfer(ref a, b, param kind) {
+    use ChapelShortArrayTransfer;
 
-    var done = false;
-    if !chpl__serializeAssignment(a, b) {
-      if chpl__compatibleForBulkTransfer(a, b, kind) {
-        done = chpl__bulkTransferArray(a, b);
+    if chpl__serializeAssignment(a, b) {
+      chpl__transferArray(a, b, kind);
+    }
+    else if chpl__staticCheckShortArrayTransfer(a, b) &&
+            chpl__dynamicCheckShortArrayTransfer(a, b) {
+      chpl__transferArray(a, b, kind, alwaysSerialize=true);
+    }
+    else if chpl__compatibleForBulkTransfer(a, b, kind) {
+      if chpl__bulkTransferArray(a, b) {
+        chpl__initAfterBulkTransfer(a, kind);
       }
-      else if chpl__compatibleForWidePtrBulkTransfer(a, b, kind) {
-        done = chpl__bulkTransferPtrArray(a, b);
-      }
-      // If we did a bulk transfer, it just bit copied, so need to
-      // run copy initializer still
-      if done {
-        if kind==_tElt.initCopy && !isPODType(a.eltType) {
-          initCopyAfterTransfer(a);
-        } else if kind==_tElt.move && (isSubtype(a.eltType, _array) ||
-                                       isSubtype(a.eltType, _domain)) {
-          fixEltRuntimeTypesAfterTransfer(a);
-        }
+      else {
+        chpl__transferArray(a, b, kind);
       }
     }
-    if !done {
+    else if chpl__compatibleForWidePtrBulkTransfer(a, b, kind) {
+      if chpl__bulkTransferPtrArray(a, b) {
+        chpl__initAfterBulkTransfer(a, kind);
+      }
+      else {
+        chpl__transferArray(a, b, kind);
+      }
+    }
+    else {
       chpl__transferArray(a, b, kind);
+    }
+  }
+
+  inline proc chpl__initAfterBulkTransfer(ref a, param kind) {
+    if kind==_tElt.initCopy && !isPODType(a.eltType) {
+      initCopyAfterTransfer(a);
+    } else if kind==_tElt.move && (isSubtype(a.eltType, _array) ||
+        isSubtype(a.eltType, _domain)) {
+      fixEltRuntimeTypesAfterTransfer(a);
     }
   }
 
@@ -2366,11 +2399,21 @@ module ChapelArray {
   inline proc chpl__bulkTransferArray(ref a: [?AD], b : [?BD]) {
     return chpl__bulkTransferArray(a, AD, b, BD);
   }
-  inline proc chpl__bulkTransferArray(ref a: [], AD : domain, const ref b: [], BD : domain) {
+
+  inline proc chpl__bulkTransferArray(ref a: chpl__protoSlice,
+                                      b: chpl__protoSlice) {
+    if debugBulkTransfer {
+      chpl_debug_writeln("Performing protoSlice bulk transfer");
+    }
+    return chpl__bulkTransferArray(a.ptrToArr.deref(), a.domOrRange,
+                                   b.ptrToArr.deref(), b.domOrRange);
+  }
+  inline proc chpl__bulkTransferArray(ref a: [], AD, const ref b: [], BD) {
     return chpl__bulkTransferArray(a._value, AD, b._value, BD);
   }
 
-  inline proc chpl__bulkTransferArray(destClass, destDom : domain, srcClass, srcDom : domain) {
+
+  inline proc chpl__bulkTransferArray(destClass, destView, srcClass, srcView) {
     var success = false;
 
     inline proc bulkTransferDebug(msg:string) {
@@ -2387,21 +2430,21 @@ module ChapelArray {
     // TODO: should we attempt other bulk transfer methods if one fails?
     //
     if Reflection.canResolveMethod(destClass, "doiBulkTransferFromKnown",
-                                   destDom, srcClass, srcDom) {
+                                   destView, srcClass, srcView) {
       bulkTransferDebug("attempting doiBulkTransferFromKnown");
-      success = destClass.doiBulkTransferFromKnown(destDom, srcClass, srcDom);
+      success = destClass.doiBulkTransferFromKnown(destView, srcClass, srcView);
     } else if Reflection.canResolveMethod(srcClass, "doiBulkTransferToKnown",
-                                          srcDom, destClass, destDom) {
+                                          srcView, destClass, destView) {
       bulkTransferDebug("attempting doiBulkTransferToKnown");
-      success = srcClass.doiBulkTransferToKnown(srcDom, destClass, destDom);
+      success = srcClass.doiBulkTransferToKnown(srcView, destClass, destView);
     } else if Reflection.canResolveMethod(destClass, "doiBulkTransferFromAny",
-                                          destDom, srcClass, srcDom) {
+                                          destView, srcClass, srcView) {
       bulkTransferDebug("attempting doiBulkTransferFromAny");
-      success = destClass.doiBulkTransferFromAny(destDom, srcClass, srcDom);
+      success = destClass.doiBulkTransferFromAny(destView, srcClass, srcView);
     } else if Reflection.canResolveMethod(srcClass, "doiBulkTransferToAny",
-                                          srcDom, destClass, destDom) {
+                                          srcView, destClass, destView) {
       bulkTransferDebug("attempting doiBulkTransferToAny");
-      success = srcClass.doiBulkTransferToAny(srcDom, destClass, destDom);
+      success = srcClass.doiBulkTransferToAny(srcView, destClass, destView);
     }
 
     if success then
@@ -2414,8 +2457,9 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "ignore transfer errors"
-  inline proc chpl__transferArray(ref a: [], const ref b,
-                           param kind=_tElt.assign) lifetime a <= b {
+  inline proc chpl__transferArray(ref a, const ref b,
+                           param kind=_tElt.assign,
+                           param alwaysSerialize=false) lifetime a <= b {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
 
@@ -2443,7 +2487,7 @@ module ChapelArray {
           aa = b;
         }
       }
-    } else if chpl__serializeAssignment(a, b) {
+    } else if alwaysSerialize || chpl__serializeAssignment(a, b) {
       if kind==_tElt.move {
         if needsInitWorkaround(a.eltType) {
           for (ai, bb) in zip(a.domain, b) {
@@ -3010,11 +3054,48 @@ module ChapelArray {
     return b;
   }
 
+  //
+  // These control an optimization in which copying an array from one
+  // locale to another will also copy the array's domain if we believe
+  // it's safe to do so.  This optimization is currently off by
+  // default because it was completed close to Chapel 2.1 and we
+  // wanted more time to live with it before having it on by default.
+  //
+  config param localizeConstDomains = false,
+               debugLocalizedConstDomains = false;
+
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: [], definedConst: bool) {
-    pragma "no copy"
-    var lhs = chpl__coerceCopy(rhs.type, rhs, definedConst);
-    return lhs;
+    //
+    // create a local copy of a remote array's domain if...
+    // - the optimization is enabled
+    // - we're running using multiple locales
+    // - the array copy we're declaring is 'const' (implying that
+    //   its domain can't be re-assigned while it's alive) or the
+    //   original domain is 'const' (implying that it can never
+    //   be re-assigned)
+    // - the domain is on a remote locale
+    //
+    const localize = (localizeConstDomains &&
+                      numLocales > 1 &&
+                      (definedConst || rhs.domain.definedConst) &&
+                      rhs.domain._value.locale != here);
+    if debugLocalizedConstDomains then
+      writeln("In initCopy(definedConst=", definedConst,
+              "), domain definedConst: ", rhs.domain.definedConst, "; ",
+              if localize then "localizing" else "taking normal path");
+    if localize {
+      // localize domain for efficiency since it's OK to do so
+      const lhsDom = rhs.domain;
+      pragma "no copy"
+      var lhs: [lhsDom] rhs.eltType = rhs;
+      return lhs;
+    } else {
+      // otherwise, do what we traditionally have done
+      pragma "no copy"
+      var lhs = chpl__coerceCopy(rhs.type, rhs, definedConst);
+      return lhs;
+    }
   }
 
   // TODO: why is the compiler calling chpl__autoCopy on an array at all?

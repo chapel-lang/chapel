@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 
-cd ../ && ./c_cublas.compile.sh
+chpl=$3
+cd ../ && ./c_cublas.compile.sh $chpl

@@ -62,6 +62,7 @@ POSTPARSE_ERROR_CLASS(CantApplyPrivate, std::string)
 POSTPARSE_ERROR_CLASS(WhenAfterOtherwise, const uast::When*, const uast::When*)
 ERROR_CLASS(DisallowedControlFlow, const uast::AstNode*, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(IllegalUseImport, const uast::AstNode*, const uast::AstNode*)
+ERROR_CLASS(InvalidThrowaway, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(InvalidGpuAssertion, const uast::AstNode*, const uast::Attribute*)
 ERROR_CLASS(InvalidBlockSize, const uast::AstNode*, const uast::Attribute*)
 ERROR_CLASS(InvalidImplementsIdent, const uast::Implements*, const uast::Identifier*)
@@ -72,3 +73,10 @@ POSTPARSE_ERROR_CLASS(PostParseErr, std::string)
 POSTPARSE_WARNING_CLASS(PostParseWarn, std::string)
 ERROR_CLASS(UnsupportedAsIdent, const uast::As*, const uast::AstNode*)
 /* end post-parse-checks errors */
+
+// errors to do with finding the main module / command line invocation
+WARNING_CLASS(AmbiguousSourceFile, IdOrLocation, std::string, std::string, bool)
+ERROR_CLASS(AmbiguousMain, IdOrLocation, std::vector<const uast::Function*>, std::vector<ID>, std::vector<UniqueString>)
+ERROR_CLASS(AmbiguousMainModule, IdOrLocation, std::vector<const uast::Module*>)
+ERROR_CLASS(UnknownMainModule, IdOrLocation, UniqueString)
+WARNING_CLASS(ImplicitModuleSameName, const uast::Module*)

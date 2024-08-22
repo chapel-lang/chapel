@@ -24,10 +24,10 @@ if dist=='NONE' {
   //totalcomm2=volume;
   dobench(mydist, mydom);  
 } */else if dist=='C' {
-  const mydist = mydom dmapped cyclicDist(startIdx=mydom.low);
+  const mydist = mydom dmapped new cyclicDist(startIdx=mydom.low);
   dobench(mydist, mydom);  
 } else if dist=='B' {
-  const mydist = mydom dmapped blockDist(boundingBox=mydom);
+  const mydist = mydom dmapped new blockDist(boundingBox=mydom);
   dobench(mydist, mydom);
 } 
 

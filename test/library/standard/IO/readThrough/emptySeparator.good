@@ -1,2 +1,4 @@
-BadFormatError: bad format (in readThrough(string) with path "maxSizeInput.txt" offset 0)
+IllegalArgumentError: readThrough(string) called with empty separator
+123456xABCDEF
+IllegalArgumentError: readThrough(bytes) called with empty separator
 123456xABCDEF

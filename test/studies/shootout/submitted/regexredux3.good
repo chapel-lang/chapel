@@ -1,10 +1,3 @@
-regexredux3.chpl:11: In function 'main':
-regexredux3.chpl:30: warning: 'readbytes' is deprecated; please use 'readBytes' instead
-regexredux3.chpl:34: warning: 'Regex.compile' is deprecated. Please use 'new regex()' instead.
-regexredux3.chpl:34: warning: regex.sub is deprecated. Please use string.replace.
-regexredux3.chpl:44: warning: 'Regex.compile' is deprecated. Please use 'new regex()' instead.
-regexredux3.chpl:44: warning: regex.sub is deprecated. Please use string.replace.
-regexredux3.chpl:49: warning: 'Regex.compile' is deprecated. Please use 'new regex()' instead.
 agggtaaa|tttaccct 1
 [cgt]gggtaaa|tttaccc[acg] 0
 a[act]ggtaaa|tttacc[agt]t 0

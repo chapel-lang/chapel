@@ -14,7 +14,7 @@ config const n = 8;
 // The block-distributed dense domain that will serve as the parent
 // domain for the sparse one.
 //
-const Elems = {0..#n, 0..#n} dmapped blockDist({0..#n, 0..#n},
+const Elems = {0..#n, 0..#n} dmapped new blockDist({0..#n, 0..#n},
     sparseLayoutType=unmanaged CS);
 
 //

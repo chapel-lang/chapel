@@ -1,1 +1,2 @@
 -L $CRAY_LD_LIBRARY_PATH -g -lgfortran -lsci_gnu
+# -I /opt/homebrew/Cellar/openblas/0.3.27/include/ -L /opt/homebrew/Cellar/openblas/0.3.27/lib/ -lopenblas

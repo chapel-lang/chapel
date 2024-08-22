@@ -6,26 +6,32 @@
 require 5.004;
 use strict;
 
-# NOTE: The value of $ENV{'MPIRUN_CMD'} may be set in the shell wrapper
-my $orig_spawncmd = $ENV{'MPIRUN_CMD'} || 'mpirun -np %N %P %A';
+# NOTE: The shell wrapper must set values for GASNET_SPAWN_CONDUIT and either
+# MPIRUN_CMD or PMIRUN_CMD (as appropriate).
+
+my $spawner_var = 'GASNET_' . $ENV{'GASNET_SPAWN_CONDUIT'} . '_SPAWNER';
+my $cmd_var = uc($ENV{$spawner_var}) . 'RUN_CMD';
+
+my $orig_spawncmd = $ENV{$cmd_var} || 'mpirun -np %N %P %A';
 $orig_spawncmd = stripouterquotes($orig_spawncmd);
 (my $spawncmd = $orig_spawncmd) =~ s/%C/%P %A/;	# deal with common alias
 
 # Validate the spawncmd
-my $cmd_ok = exists($ENV{'MPIRUN_CMD_OK'});
-if ($spawncmd =~ m/MPIRUN_CMD_OK/) {
-  $spawncmd =~ s/\s*MPIRUN_CMD_OK//g;
+my $cmd_ok_var = $cmd_var . '_OK';
+my $cmd_ok = exists($ENV{$cmd_ok_var});
+if ($spawncmd =~ m/$cmd_ok_var/) {
+  $spawncmd =~ s/\s*$cmd_ok_var//g;
   $cmd_ok = 1;
 }
 unless ($cmd_ok ||
         (($spawncmd =~ m/%P/) && ($spawncmd =~ m/%[AQ]/) && ($spawncmd =~ m/%N/))) {
-	die("gasnetrun: ERROR: MPIRUN_CMD='$orig_spawncmd'\n"
-          . "The environment variable MPIRUN_CMD must contain the strings '%P' and '%A'\n"
+	die("gasnetrun: ERROR: $cmd_var='$orig_spawncmd'\n"
+          . "The environment variable $cmd_var must contain the strings '%P' and '%A'\n"
           . "for expansion into the program and its arguments; and '%N' for expansion\n"
           . "into the number of processes ('%C' is acceptible as an alias for '%P %A'\n"
           . "and '%Q' may be substituted for '%A' to request extra quoting.)\n"
-          . "To disable this check, set MPIRUN_CMD_OK in your environment, \n"
-          . "or append the string MPIRUN_CMD_OK to the command.\n");
+          . "To disable this check, set $cmd_ok_var in your environment, \n"
+          . "or append the string $cmd_ok_var to the command.\n");
 }
 
 # Globals
@@ -380,7 +386,7 @@ sub expand {
 	shift;
     }
 
-    print "gasnetrun: identified MPI spawner as: $spawner_desc\n" if ($verbose);
+    print "gasnetrun: identified spawner as: $spawner_desc\n" if ($verbose);
 
 # Validate -n as needed
     if (!defined($numproc) && $spawncmd =~ /%N/) {
@@ -804,7 +810,7 @@ if (!$numnode) {
 			  } elsif ($_ eq '%M') {
 			    $numnode || $numproc;
 			  } elsif ($_ eq '%H') {
-                              $nodefile or die "gasnetrun: %H appears in MPIRUN_CMD, but GASNET_NODEFILE is not set in the environment\n";
+                              $nodefile or die "gasnetrun: %H appears in $cmd_var, but GASNET_NODEFILE is not set in the environment\n";
 			  } elsif ($_ eq '%P') {
 			      ( $env_before_exe ? (@envargs, $exename) : ($exename, @envargs) );
 		              #my @tmp = @envargs;

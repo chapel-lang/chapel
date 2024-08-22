@@ -4,7 +4,7 @@ config const b = 3;
 config const n = 5;
 
 const dataLocalDom = {1..n};
-const dataDom = dataLocalDom dmapped blockDist(dataLocalDom); // problem
+const dataDom = dataLocalDom dmapped new blockDist(dataLocalDom); // problem
 //const dataDom = dataLocalDom; // this works
 
 var dataM: [dataDom] int = [i in 1..n] i % b + 1;

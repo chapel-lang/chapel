@@ -57,8 +57,12 @@
 module List {
   import ChapelLocks;
   private use HaltWrappers;
-  private use Sort;
   private use Math;
+
+  //
+  // TODO: remove me when `list.sort` is removed
+  //
+  private use Sort;
 
   @chpldoc.nodoc
   private const _initialCapacity = 8;
@@ -109,15 +113,18 @@ module List {
   proc _checkType(type eltType) param {
     if isGenericType(eltType) {
       compilerWarning("creating a list with element type " +
-                      eltType:string);
+                      eltType:string, 2);
       if isClassType(eltType) && !isGenericType(eltType:borrowed) {
-        compilerWarning("which is a class type with generic management");
+        compilerWarning("which is a class type with generic management", 2);
       }
-      compilerError("list element type cannot currently be generic");
+      compilerError("list element type cannot currently be generic", 2);
       // In the future we might support it if the list is not default-inited
     }
+    if eltType == void {
+      compilerError("list element type cannot be 'void'", 2);
+    }
     if eltType == nothing {
-      compilerError("cannot initialize list with element type 'nothing'");
+      compilerError("list element type cannot be 'nothing'", 2);
     }
   }
 
@@ -131,6 +138,15 @@ module List {
   }
 
   private use IO;
+
+  /* Impacts whether the copy initializer that takes a list will generate a
+     warning when the other list has a different ``parSafe`` setting than the
+     destination.  Compile with ``-swarnForListParsafeMismatch=false`` to turn
+     off this warning.
+
+     Defaults to ``true``
+  */
+  config param warnForListParsafeMismatch = true;
 
   /*
     A list is a lightweight container suitable for building up and iterating
@@ -151,7 +167,7 @@ module List {
     type eltType;
 
     /*If `true`, this list will perform parallel safe operations.*/
-    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future");
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
     param parSafe = false;
 
     @chpldoc.nodoc
@@ -410,8 +426,6 @@ module List {
       Initializes a list containing elements that are copy initialized from
       the elements contained in another list.
 
-      ``this.parSafe`` will default to ``false`` if it is not yet set.
-
       :arg other: The list to initialize from.
     */
     proc init=(other: list) {
@@ -423,11 +437,16 @@ module List {
       this.eltType = if this.type.eltType != ?
                      then this.type.eltType
                      else other.eltType;
-      // set parSafe to false if it was not already provided in lhs type
+      // set parSafe to other.parSafe if it was not already provided in lhs type
       this.parSafe = if this.type.parSafe != ?
                      then this.type.parSafe
-                     else false;
+                     else other.parSafe;
 
+      if (this.parSafe != other.parSafe && warnForListParsafeMismatch) {
+        compilerWarning("initializing between two lists with different " +
+                        "parSafe settings\n" + "Note: this warning can be " +
+                        "silenced with '-swarnForListParsafeMismatch=false'");
+      }
       init this;
       _commonInitFromIterable(other);
     }
@@ -1521,6 +1540,7 @@ module List {
       return result;
     }
 
+    //TODO: When this is removed make sure to remove the `use Sort` from this module
     /*
       Sort the items of this list in place using a comparator. If no comparator
       is provided, sort this list using the default sort order of its elements.
@@ -1532,35 +1552,9 @@ module List {
 
       :arg comparator: A comparator used to sort this list.
     */
-    @unstable("'list.sort' is unstable and may be replaced or modified in a future release")
-    proc ref sort(comparator: ?rec=Sort.defaultComparator) {
-      on this {
-        _enter();
-
-        //
-        // TODO: This is not ideal, but the Sort API needs to be adjusted
-        // before we can sort over lists directly.
-        //
-        if _size > 1 {
-
-          // Copy current list contents into an array.
-          var arr: [0..#_size] eltType;
-          for i in 0..#_size do
-            arr[i] = _getRef(i);
-
-          Sort.sort(arr, comparator);
-
-          // This is equivalent to the clear routine.
-          _fireAllDestructors();
-          _freeAllArrays();
-          _firstTimeInitializeArrays();
-          _appendGeneric(arr);
-        }
-
-        _leave();
-      }
-      return;
-    }
+    @deprecated("'list.sort' is deprecated - please use the :proc:`sort(x: list)<Sort.sort>` procedure from the :mod:`Sort` module instead")
+    proc ref sort(comparator: ?rec= new Sort.DefaultComparator()) do
+      Sort.sort(this, comparator);
 
     /*
       Return a copy of the element at a given index in this list.

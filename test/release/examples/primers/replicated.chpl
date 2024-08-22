@@ -70,7 +70,7 @@ const Space = {1..n, 1..n};
 //
 // Here's a declaration of a replicated domain and array:
 //
-const ReplicatedSpace = Space dmapped replicatedDist();
+const ReplicatedSpace = Space dmapped new replicatedDist();
 var RA: [ReplicatedSpace] int;
 
 // Queries about the size of a replicated domain or array will return

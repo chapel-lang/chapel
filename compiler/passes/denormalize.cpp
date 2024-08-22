@@ -118,8 +118,7 @@ void denormalize(void) {
       } while(deferredSyms.size() > 0);
     }
 
-    if (!fReturnByRef)
-      collapseTrivialMoves();
+    collapseTrivialMoves();
   }
 }
 
@@ -446,7 +445,7 @@ bool isDenormalizable(Symbol* sym,
 
                   // We want to pass symbols to kernel launches for now. This
                   // simplifies its codegen.
-                  ce->isPrimitive(PRIM_GPU_KERNEL_LAUNCH_FLAT) ||
+                  ce->isPrimitive(PRIM_GPU_KERNEL_LAUNCH) ||
 
                   isBadMove(ce) ||
                   isValPassedByRef(ce, se) ||

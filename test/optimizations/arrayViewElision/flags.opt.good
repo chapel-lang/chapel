@@ -1,0 +1,6 @@
+Performing protoSlice bulk transfer
+operator =(a:[],b:[]): in chpl__bulkTransferArray
+operator =(a:[],b:[]): attempting doiBulkTransferFromKnown
+In DefaultRectangular._simpleTransfer(): Alo=(1,), Blo=(1,), len=1000, elemSize=8
+operator =(a:[],b:[]): successfully completed bulk transfer
+0

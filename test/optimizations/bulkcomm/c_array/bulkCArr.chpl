@@ -8,7 +8,7 @@ config const arrSize = 10;
 const space = 1..arrSize;
 
 const drDom = {space};
-const blockDom = {space} dmapped blockDist({space});
+const blockDom = {space} dmapped new blockDist({space});
 
 testBulkComm(drDom, drDom);
 testBulkComm(drDom, blockDom);

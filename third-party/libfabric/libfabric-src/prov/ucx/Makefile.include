@@ -1,0 +1,39 @@
+if HAVE_UCX
+_ucx_files = \
+	prov/ucx/src/ucx.h \
+	prov/ucx/src/ucx_core.h \
+	prov/ucx/src/ucx_core.c \
+	prov/ucx/src/ucx_av.c \
+	prov/ucx/src/ucx_cm.c \
+	prov/ucx/src/ucx_cq.c \
+	prov/ucx/src/ucx_cntr.c \
+	prov/ucx/src/ucx_rma.c \
+	prov/ucx/src/ucx_domain.c \
+	prov/ucx/src/ucx_ep.c \
+	prov/ucx/src/ucx_init.c \
+	prov/ucx/src/ucx_tagged.c \
+	prov/ucx/src/ucx_msg.c \
+	prov/ucx/src/ucx_fabric.c \
+	prov/ucx/src/ucx_callbacks.c
+
+if HAVE_UCX_DL
+pkglib_LTLIBRARIES += libucx-fi.la
+libucx_fi_la_CPPFLAGS = $(AM_CPPFLAGS) $(ucx_CPPFLAGS)
+libucx_fi_la_SOURCES = $(_ucx_files) $(common_srcs)
+libucx_fi_la_LDFLAGS = \
+	$(ucx_LDFLAGS) \
+	-module -avoid-version -shared -export-dynamic
+libucx_fi_la_LIBADD = $(linkback) $(ucx_LIBS)
+libucx_fi_la_DEPENDENCIES = $(linkback)
+else
+src_libfabric_la_SOURCES += $(_ucx_files)
+src_libfabric_la_CPPFLAGS += $(ucx_CPPFLAGS)
+src_libfabric_la_LDFLAGS += $(ucx_LDFLAGS)
+src_libfabric_la_LIBADD += $(ucx_LIBS)
+endif
+
+prov_install_man_pages += man/man7/fi_ucx.7
+
+endif #HAVE_UCX
+
+prov_dist_man_pages += man/man7/fi_ucx.7

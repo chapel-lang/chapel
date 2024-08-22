@@ -9,14 +9,185 @@ GASNet-EX ChangeLog
 
   GASNet-EX currently implements the following conduits:
   - InfiniBand Verbs (ibv-conduit)
-  - Cray uGNI (aries-conduits)
   - Libfabric (ofi-conduit)
   - Shared-memory (smp-conduit)
   - Portable UDP (udp-conduit)
   - Portable MPI (mpi-conduit)
+  - Cray uGNI (aries-conduits) [DEPRECATED]
   - Unified Communication X (ucx-conduit) [EXPERIMENTAL]
   Users wishing to use other retired conduits may need to download 
   the GASNet v1.x distribution from https://gasnet.lbl.gov.
+
+----------------------------------------------------------------------
+2024-05-23: GASNet-EX 2024.5.0
+
+* Memory Kinds (support for non-host memory)
+  - Memory Kinds support for AMD GPUs extended to ROCm-6 (bug 4686)
+  - Use of new option `--enable-memory-kinds=force` makes it an error if
+    `configure` cannot detect at least one supported memory kind.
+  See docs/memory_kinds_implementation.md for more info on the status of Memory Kinds.
+
+* Libfabric (details in ofi-conduit README)
+  - Negotiated-Payload Active Message (NPAM) Mediums are implemented natively
+    for ofi-conduit, replacing use of a portable reference implementation.
+    This was measured to improve bandwidth on the HPE Slingshot network when
+    using NPAM interfaces with a GASNet-allocated buffer.
+
+* InfiniBand Verbs (details in ibv-conduit README)
+  - A new send progress thread can be enabled to process completion events
+    related to communication injection, potentially reducing the cost of
+    `gasnet_AMPoll()` calls by application threads.  See the ibv-conduit README
+    for information on the `GASNET_SND_THREAD*` family of environment variables.
+  - The receive and send progress threads can now be kept active for some period
+    of time while their completion queues test as empty.  See the ibv-conduit
+    README for information on the `GASNET_RCV_THREAD_IDLE` and
+    `GASNET_SND_THREAD_IDLE` environment variables.
+  - Previously, setting environment variable `GASNET_RCV_THREAD` to a true
+    value with a library build configured using `--disable-ibv-rcv-thread`
+    was a fatal error.  It now produces a suppressible warning.
+
+* Portable UDP support (details in udp-conduit README)
+  - Correct the behavior of the `dest_addr` of Long AMs when `nbytes==0`
+
+* Portable MPI support (details in mpi-conduit README)
+  - Correct the behavior of the `dest_addr` of Long AMs when `nbytes==0`
+
+* GASNet-EX Spec v0.18: (details in docs/GASNet-EX.txt)
+  - Specification for AM Longs has been clarified to explicitly permit
+    `nbytes==0` even when the destination EP lacks a bound segment.
+  - Preprocessor identifiers `GASNET_RCV_THREAD` and `GASNET_SND_THREAD`
+    are now available to indicate library builds with the respective
+    capabilities.
+  - New `GEX_FLAG_DEFER_THREADS` and `gex_System_QueryProgressThreads()`
+    provide a mechanism for a client to control launch of a conduit's
+    progress thread(s), enabling client control over CPU affinity, among
+    other properties.
+  - The 'VIS Put Peer Completion' feature is now DEPRECATED and may be
+    removed in a future release.
+  - The following functions, constants and type are no longer considered EXPERIMENTAL:
+    + gex_System_QueryNbrhdInfo()
+    + gex_System_QueryHostInfo()
+    + gex_System_QueryMyPosition()
+    + GEX_FLAG_AM_PREPARE_LEAST_CLIENT
+    + GEX_FLAG_AM_PREPARE_LEAST_ALLOC
+    + gex_Addr_t
+
+* General and Misc.
+  - Off-node algorithms for non-contiguous vector RMA (i.e. `gex_VIS_Vector{Put,Get}*()`
+    AKA `gasnet_{putv,getv}_*()`) have been re-designed to leverage piecewise
+    RMA (now respecting GASNET_VIS_MAXCHUNK) and streamline transfer throughput.
+  - Disable "threadinfo-opt" by default on aarch64 (Linux and macOS)
+  - Install a script implementation of the `ident` utility in $prefix/bin
+  - Avoid an assertion regarding an unpublished segment when it would mask a more
+    informative bounds-checking failure.
+  - Reorganization of GASNet-EX and implementation documentation (docs directory):
+    + Added new file `memory_kinds.pdf`
+      Provides the memory kinds API documentation which was previously available
+      only upon request
+    + Added new file `implementation_defined.md`
+      Describes behaviors of this implemention which are outside the specification
+    + Renamed `memory_kinds.md` to `memory_kinds_implementation.md`
+      Describes the implemention status of the memory kinds (and related) APIs
+    + Updates to `GASNet-EX.txt` provide references to the documents above, and
+      remove a section which provided a summary of `memory_kinds.pdf`.
+    + Moved list of public header files from `README` to `GASNet-EX.txt`.
+
+* Notable bugs fixed in this release: (details at https://gasnet-bugs.lbl.gov)
+  - bug3421: putv/getv should respect GASNET_VIS_MAXCHUNK
+  - bug3559: Fix GASNET_PSHM feature definition (predicate #defines)
+  - bug4617: SEGV in remote firehose, NDEBUG and clang-16.0.0+
+  - bug4682: ibv: rare failure of bogus assertion
+  - bug4683: GASNET_FREEZE ignored by udp-conduit with ssh spawn
+  - bug4686: Configure failure with ROCm 6
+  - bug4688: Incorrect CPU mask computation on 64-bit systems
+  - bug4689: GASNET_GET_THREADINFO() assumed non-NULL in `test{gasnet,legacy}.c`
+  - bug4690: no actual multi-threaded coverage in PAR builds of `test{gasnet,legacy}.c`
+  - bug4709: Incorrect behavior with zero-byte Longs (udp and mpi conduits)
+  - bug4712: gasneti_mutex operations crash in pthread_equal() on NetBSD + PAR/DEBUG
+  - bug4716: Poor error behavior when hugetlbfs is requested, but unavailable
+
+----------------------------------------------------------------------
+2023-12-15: GASNet-EX 2023.9.0
+
+* Memory Kinds (support for non-host memory)
+  - This release adds *experimental* memory kinds support for the oneAPI Level
+    Zero API of Intel GPUs to ofi-conduit with the cxi libfabric provider (for
+    the Slingshot-11 network on HPE Cray EX systems).
+  See docs/memory_kinds_implementation.md for more info on the status of Memory Kinds.
+
+* Libfabric (details in ofi-conduit README)
+  - Add initial/experimental support for the AWS Elastic Fabric Adapter via
+    "efa" provider. Operation with this provider remains untuned and is not
+    yet officially supported.
+  - Add `GASNET_OFI_SET_UNIVERSE_SIZE` environment variable to opt-in to
+    automatic setting of `FI_UNIVERSE_SIZE` to the job size.
+    This partially addresses Bug 4413.
+  - The recommendations regarding running MPI hybrid applications on the HPE
+    Slingshot-11 network have changed.  Please see the conduit README for details.
+  - ofi-conduit now defaults to setting envvars FI_MR_CACHE_MAX_COUNT and
+    FI_MR_CACHE_MAX_SIZE for cxi and verbs providers, partially addressing bug 4676.
+  - Active message injections now use tx_addr flag FI_INJECT_COMPLETE
+  - Transmit CQs now use cq_attr FI_CQ_FORMAT_CONTEXT instead of FI_CQ_FORMAT_DATA
+
+* InfiniBand Verbs (details in ibv-conduit README)
+  - Calls to `gex_MK_Create()` for CUDA UVA or HIP memory kinds will no longer
+    fail if the necessary kernel support cannot be positively identified, and
+    a subsequent `gex_Segment_Create()` will fail instead if the driver support
+    is absent.
+  - Will now attempt to maximize the `RLIMIT_MEMLOCK` limit of processes by
+    default. Set `GASNET_MAXIMIZE_MEMLOCK=0` to disable the new behavior.
+
+* Unified Communication X framework (details in ucx-conduit README) [EXPERIMENTAL]
+  - `GEX_FLAG_AD_FAVOR_*` flags passed to `gex_AD_Create()` now guide
+    algorithmic selection of atomic operations.
+  - Support for optional `GEX_TI_{ENTRY,IS_REQ,IS_LONG}` in `gex_Token_Info()`
+  - Use of `GASNET_UCX_` or `UCX_GASNET_` to prefix UCX (non-GASNet) environment
+    variables has been removed.  It had never functioned as documented.
+  - Fix a packaging error that omitted the conduit license file in previous releases.
+
+* Portable UDP support (details in udp-conduit README)
+  - Support for optional `GEX_TI_{ENTRY,IS_REQ,IS_LONG}` in `gex_Token_Info()`
+  - Improve warning messages about environment variables to more uniformly
+    reference the GASNET_-prefixed variable name.
+
+* Portable MPI support (details in mpi-conduit README)
+  - Support for optional `GEX_TI_{ENTRY,IS_REQ,IS_LONG}` in `gex_Token_Info()`
+  - Finalize MPI more cautiously at exit, in case the client has already done so.
+
+* Cray XC uGNI (details in aries-conduit README)
+  - This conduit is now DEPRECATED and will be removed in a future release
+    (see aries-conduit/README).
+
+* Platform support/portability
+  - configure no longer requires the `cray-pmi` module to be loaded on HPE
+    Cray EX systems, although the underlying dependency on Cray PMI remains.
+  - Configure will no longer add `-multiply_defined,suppress` to `LDFLAGS` on
+    macOS Ventura and newer (bug 4677).  Users may reintroduce it via
+    `--with-ldflags=`, if necessary.
+  - mpi-spawner: Finalize MPI more cautiously at exit, in case the client has already done so.
+
+* GASNet-EX Spec v0.17: (details in docs/GASNet-EX.txt)
+  - Add new `GASNET_SUPPORTS_TI_*` feature macros
+  - Add constants and data type for experimental oneAPI Level Zero "ZE" memory kind.
+
+* General and Misc.
+  - New options to `testlarge` and `testsmall` enable testing a wider
+    range of conditions.
+
+* Notable bugs fixed in this release: (details at https://gasnet-bugs.lbl.gov)
+  - bug4172: crash in ucx-conduit atexit handlers when mpi interop is enabled
+  - bug4363: ibv-conduit assertion failures regarding incorrect opcode
+  - bug4413: (partial fix) set FI_UNIVERSE_SIZE (conflicting provider requirements)
+  - bug4594: UCX should not enable native atomics unconditionally
+  - bug4598: ucx-conduit + ssh-spawner GASNET_FREEZE support is unusable
+  - bug4654: RFE: feature macros for optional GET_TI_* queries
+  - bug4655: ucx: bad exits on Summit
+  - bug4663: failure compiling pmi-spawner with PMIx 4.2.0 and higher
+  - bug4665: Cray PMI configure detection logic should be smarter 
+  - bug4669: Some GASNET_OFI_DEVICE_* and GASNET_IBV_PORTS_* settings ignored
+  - bug4670: UCX environment personalized prefix not working as we document
+  - bug4676: (partial fix) ofi-conduit RMA performance issues (cxi & verbs providers)
+  - bug4677: Linker warnings from Xcode 15
 
 ----------------------------------------------------------------------
 2023-03-31: GASNet-EX 2023.3.0
@@ -109,7 +280,7 @@ have our sincere thanks for making this milestone possible.
   - This release adds Memory Kinds support to ofi-conduit with certain
     libfabric providers, for both Nvidia and AMD GPUs.  Support includes the
     Slingshot-10 and Slingshot-11 networks on HPE Cray EX systems.
-  See docs/memory_kinds.md for more information on the status of Memory Kinds.
+  See docs/memory_kinds_implementation.md for more info on the status of Memory Kinds.
 
 * Libfabric (details in ofi-conduit README)
   - The ofi-conduit is no longer "experimental", with caveats:
@@ -252,7 +423,7 @@ have our sincere thanks for making this milestone possible.
     `GEX_MK_CLASS_HIP` on supported hardware and software.
   - Fixed bugs 4148 and 4150, which had significant impact on the usability
     of RMA Put operations involving device memory.
-  See docs/memory_kinds.md for more information on the status of Memory Kinds.
+  See docs/memory_kinds_implementation.md for more info on the status of Memory Kinds.
 
 * InfiniBand Verbs (details in ibv-conduit README)
   - Performance improvement for RMA Put and AM Long utilizing asynchronous
@@ -292,6 +463,7 @@ have our sincere thanks for making this milestone possible.
   - Allow mixing of root and leaf events in array-based NB event APIs.
   - Add GEX_FLAG_PEER_NEVER_{SELF,NBRHD}
   - Add gex_System_QueryHiddenAMConcurrencyLevel()
+  - Add constants and data type for "HIP" memory kind
 
 * GASNet tools (spec v1.18): (details in README-tools)
   - Add gasnett_assume, for exposing annotations to guide optimization
@@ -358,7 +530,7 @@ have our sincere thanks for making this milestone possible.
 * Memory Kinds (support for non-host memory)
   - This is the first production release to include "Memory Kinds", the GASNet
     feature supporting communication using non-host memory (such as GPU memory).
-    See docs/memory_kinds.md for more information.
+    See docs/memory_kinds_implementation.md for more information.
   - Users of the "GASNet-2020.11.0-memory_kinds_prototype" release should be
     aware that the behavior of configure in this release differs in that one
     must enable memory kinds explicitly using `--enable-memory-kinds` or an
@@ -456,8 +628,8 @@ have our sincere thanks for making this milestone possible.
   - Initial implementation of "Memory Kinds": support for GASNet-EX remote
     segments comprised of non-host memory.  This initial version supports only
     UVA-based CUDA device memory and the GASNet-EX RMA APIs.  The file
-    docs/memory_kinds.txt provides an up-to-date summary of the status of the
-    memory kinds implementation.
+    docs/memory_kinds_implementation.md provides an up-to-date summary of the
+    status of the memory kinds implementation.
   - New GASNet trace/stats tracemask categories:
     + O - Object creation, modification and destruction
     + X - AMPoll
@@ -486,6 +658,7 @@ have our sincere thanks for making this milestone possible.
     + GEX_CLIENT_INVALID
     + GEX_EP_INVALID
     + GEX_MK_INVALID
+  - Add constants and data type for "CUDA UVA" memory kind
 
 ----------------------------------------------------------------------
 2020-10-30: GASNet-EX 2020.10.0 Release

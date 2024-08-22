@@ -89,6 +89,7 @@
   #include <hugetlbfs.h>
   static int _gasneti_use_hugetlbfs = -1;
   static uintptr_t _gasneti_hugepagesize = 0;
+  static const char *gasneti_hugetlbfs_tmpdir;
   static void _gasneti_hugepage_init(void) {
     static int is_init = 0;
 
@@ -102,6 +103,19 @@
         _gasneti_hugepagesize = gethugepagesize();
         gasneti_assert_always(_gasneti_hugepagesize != 0);
         gasneti_assert_always_uint(_gasneti_hugepagesize % GASNETI_PAGESIZE ,==, 0);
+        static const char *recommendation =
+                "Please consult your sysadmin to determine if hugetlbfs mount points are configured on your system.  "
+                "You might also set environment variable HUGETLB_DEFAULT_PAGE_SIZE to try a different page size, "
+                "or GASNET_USE_HUGEPAGES=0 to disable use of huge pages in GASNet.";
+        gasneti_hugetlbfs_tmpdir = hugetlbfs_find_path();
+        if (!gasneti_hugetlbfs_tmpdir) {
+          gasneti_fatalerror("libhugetlbfs could not find a mount point for %"PRIuPTR"-byte pages.  %s",
+                             _gasneti_hugepagesize, recommendation);
+        }
+        if (access(gasneti_hugetlbfs_tmpdir, R_OK|W_OK|X_OK)) {
+          gasneti_fatalerror("The libhugetlbfs mount point for %"PRIuPTR"-byte pages is not accessible.  %s",
+                             _gasneti_hugepagesize, recommendation);
+        }
         GASNETI_TRACE_PRINTF(I, ("gethugepagesize() yields %s",
                                  gasnett_format_number(_gasneti_hugepagesize, valstr, sizeof(valstr), 1)));
       } else {
@@ -360,10 +374,8 @@ static const char *gasneti_pshm_makeunique(const char *unique) {
 
 #if defined(GASNETI_PSHM_FILE) && defined(GASNETI_USE_HUGETLBFS)
   if (gasneti_use_hugetlbfs()) {
-    const char *hugedir = hugetlbfs_find_path();
-    if (hugedir && !access(hugedir, R_OK|W_OK|X_OK)) {
-      tmpdir = hugedir;
-    }
+    gasneti_assert(gasneti_hugetlbfs_tmpdir);
+    tmpdir = gasneti_hugetlbfs_tmpdir;
   }
 #endif
 #if defined(GASNETI_PSHM_FILE) || defined(GASNETI_PSHM_SYSV)
@@ -1832,7 +1844,7 @@ int gasneti_segment_map(
       segbase = segment_p->addr;
     #endif
       gasneti_assert_uint(segsize ,<=, segment_p->size);
-      if (GASNET_PSHM || (segment_p->size != segsize) || (segment_p->addr != segbase)) {
+      if (GASNETI_PSHM_P || (segment_p->size != segsize) || (segment_p->addr != segbase)) {
         munmap_fn(segment_p->addr, segment_p->size);
         gasneti_bug3480_fence();
 #if GASNETI_PSHM_MAP_FIXED_IGNORED

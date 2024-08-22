@@ -35,7 +35,7 @@ proc initGrid(latticeConstant: real, const ref force: unmanaged Force) {
           for l in Locales[0..#locDom.size] do l;
 
   const boxSpace = {1..numBoxes(0), 1..numBoxes(1), 1..numBoxes(2)};
-  const distSpace = boxSpace dmapped blockDist(boundingBox=boxSpace, targetLocales=targetLocales);
+  const distSpace = boxSpace dmapped new blockDist(boundingBox=boxSpace, targetLocales=targetLocales);
   // assert(locDom == distSpace._value.dist.targetLocDom);
 
   locGrid = distSpace.targetLocales();
@@ -543,8 +543,8 @@ tArray[timerEnum.F1].stop();
 
   writeln();
 
-  var yyyymmdd = getCurrentDate();
-  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentHour(), " Initialization Finished");
+  var yyyymmdd = date.today();
+  writeln(yyyymmdd.year, "-", yyyymmdd.month, "-", yyyymmdd.day, ", ", getCurrentHour(), " Initialization Finished");
 }
 
 // TODO: const ref these...
@@ -743,8 +743,8 @@ if useChplVis then pauseVdebug();
   writeln("Mini-Application Name: ", "CoMD-Chapel");
   writeln("Mini-Application Version: ", 1.0);
 
-  var yyyymmdd = getCurrentDate();
-  writeln("Run Date/Time: ", yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentHour(), "(number of hours since midnight)");
+  var yyyymmdd = date.today();
+  writeln("Run Date/Time: ", yyyymmdd.year, "-", yyyymmdd.month, "-", yyyymmdd.day, ", ", getCurrentHour(), "(number of hours since midnight)");
 
   writeln("Command Line Parameters:");
   writeln("   doeam               : ", doeam);
@@ -780,8 +780,8 @@ tArray[timerEnum.INIT].stop();
 
   writeln();
 
-  yyyymmdd = getCurrentDate();
-  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentHour(), " Starting simulation");
+  yyyymmdd = date.today();
+  writeln(yyyymmdd.year, "-", yyyymmdd.month, "-", yyyymmdd.day, ", ", getCurrentHour(), " Starting simulation");
   writeln();
   writeln("#                                                                                         Performance");
   writeln("#  Loop   Time(fs)       Total Energy   Potential Energy     Kinetic Energy  Temperature   (us/atom)     # Atoms");
@@ -808,9 +808,9 @@ tArray[timerEnum.LOOP].stop();
 if useChplVis then stopVdebug();
 tArray[timerEnum.TOTAL].stop();
 
-  yyyymmdd = getCurrentDate();
+  yyyymmdd = date.today();
   writeln();
-  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentHour(), " Ending simulation");
+  writeln(yyyymmdd.year, "-", yyyymmdd.month, "-", yyyymmdd.day, ", ", getCurrentHour(), " Ending simulation");
   writeln();
 
   const eInitial = vSim.eInit/vSim.nAtomsInit;
@@ -849,8 +849,8 @@ tArray[timerEnum.TOTAL].stop();
   }
 
   writeln();
-  yyyymmdd = getCurrentDate();
-  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentHour(), " CoMD Ending");
+  yyyymmdd = date.today();
+  writeln(yyyymmdd.year, "-", yyyymmdd.month, "-", yyyymmdd.day, ", ", getCurrentHour(), " CoMD Ending");
 
   // Cleanup
   for g in Grid do delete g;

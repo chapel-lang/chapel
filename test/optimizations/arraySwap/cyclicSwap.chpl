@@ -23,8 +23,8 @@ proc test(d1, d2) {
 writeln("*** Cyclic ***");
 {
   writeln("simple case: everything should be optimized");
-  var d1 = {1..10} dmapped cyclicDist(1);
-  var d2 = {1..10} dmapped cyclicDist(1);
+  var d1 = {1..10} dmapped new cyclicDist(1);
+  var d2 = {1..10} dmapped new cyclicDist(1);
 
   test(d1, d2);
   
@@ -33,8 +33,8 @@ writeln("*** Cyclic ***");
 
 {
   writeln("shapes match and domains are aligned with their distribions but are different. We decided not to optimized this for now");
-  var d1 = {1..10} dmapped cyclicDist(1);
-  var d2 = {0..9} dmapped cyclicDist(0);
+  var d1 = {1..10} dmapped new cyclicDist(1);
+  var d2 = {0..9} dmapped new cyclicDist(0);
 
   test(d1, d2);
   
@@ -44,8 +44,8 @@ writeln("*** Cyclic ***");
 
 {
   writeln("arrays are not distributed the same across locales; shouldn't optimize");
-  var d1 = {0..9} dmapped cyclicDist(1);
-  var d2 = {1..10} dmapped cyclicDist(1);
+  var d1 = {0..9} dmapped new cyclicDist(1);
+  var d2 = {1..10} dmapped new cyclicDist(1);
 
   test(d1, d2);
 
@@ -54,8 +54,8 @@ writeln("*** Cyclic ***");
 
 {
   writeln("both are offset from startIdx, but they align with each other");
-  var d1 = {0..9} dmapped cyclicDist(1);
-  var d2 = {0..9} dmapped cyclicDist(1);
+  var d1 = {0..9} dmapped new cyclicDist(1);
+  var d2 = {0..9} dmapped new cyclicDist(1);
 
   test(d1, d2);
 
@@ -66,8 +66,8 @@ writeln("*** Cyclic ***");
   // this case can technically be optimized but it isn't today, mostly because
   // abundance of caution
   writeln("Alignment is circumstantial / non-obvious / specific to two locales");
-  var d1 = {0..9} dmapped cyclicDist(1);
-  var d2 = {2..11} dmapped cyclicDist(1);
+  var d1 = {0..9} dmapped new cyclicDist(1);
+  var d2 = {2..11} dmapped new cyclicDist(1);
 
   test(d1, d2);
 
@@ -76,8 +76,8 @@ writeln("*** Cyclic ***");
 
 {
   writeln("both are strided and aligned");
-  var d1 = {0..9 by 2} dmapped cyclicDist(1);
-  var d2 = {0..9 by 2} dmapped cyclicDist(1);
+  var d1 = {0..9 by 2} dmapped new cyclicDist(1);
+  var d2 = {0..9 by 2} dmapped new cyclicDist(1);
 
   test(d1, d2);
 
@@ -86,8 +86,8 @@ writeln("*** Cyclic ***");
 
 {
   writeln("both are strided, have same number of elements but not aligned, shouldn't optimize");
-  var d1 = {0..9 by 2} dmapped cyclicDist(1);
-  var d2 = {1..10 by 2} dmapped cyclicDist(1);
+  var d1 = {0..9 by 2} dmapped new cyclicDist(1);
+  var d2 = {1..10 by 2} dmapped new cyclicDist(1);
 
   test(d1, d2);
 
@@ -98,8 +98,8 @@ writeln("*** Cyclic ***");
   // this case can technically be optimized but it isn't today, mostly because
   // abundance of caution
   writeln("both are strided and misaligned");
-  var d1 = {0..9 by 2 align 0} dmapped cyclicDist(0);
-  var d2 = {0..9 by 2 align 1} dmapped cyclicDist(1);
+  var d1 = {0..9 by 2 align 0} dmapped new cyclicDist(0);
+  var d2 = {0..9 by 2 align 1} dmapped new cyclicDist(1);
 
   test(d1, d2);
 
@@ -110,7 +110,7 @@ writeln();
 writeln("*** Cross type ***");
 {
   writeln("Cross type swaps shouldn't be optimized");
-  var d1 = {1..10} dmapped cyclicDist(1);
+  var d1 = {1..10} dmapped new cyclicDist(1);
   var d2 = {1..10};
 
   test(d1, d2);
@@ -121,7 +121,7 @@ writeln("*** Cross type ***");
 
 {
   writeln("Cross type swaps shouldn't be optimized");
-  var d1 = {0..9} dmapped cyclicDist(1);
+  var d1 = {0..9} dmapped new cyclicDist(1);
   var d2 = {1..10};
 
   test(d1, d2);
@@ -131,7 +131,7 @@ writeln("*** Cross type ***");
 
 {
   writeln("Cross type swaps shouldn't be optimized");
-  var d1 = {0..9} dmapped cyclicDist(1);
+  var d1 = {0..9} dmapped new cyclicDist(1);
   var d2 = {0..9};
 
   test(d1, d2);
@@ -141,7 +141,7 @@ writeln("*** Cross type ***");
 
 {
   writeln("Cross type swaps shouldn't be optimized");
-  var d1 = {0..9 by 2} dmapped cyclicDist(1);
+  var d1 = {0..9 by 2} dmapped new cyclicDist(1);
   var d2 = {0..4};
 
   test(d1, d2);
@@ -151,7 +151,7 @@ writeln("*** Cross type ***");
 
 {
   writeln("Cross type swaps shouldn't be optimized");
-  var d1 = {0..9 by 2} dmapped cyclicDist(1);
+  var d1 = {0..9 by 2} dmapped new cyclicDist(1);
   var d2 = {0..9 by 2};
 
   test(d1, d2);
@@ -161,7 +161,7 @@ writeln("*** Cross type ***");
 
 {
   writeln("both are strided, have same number of elements but not aligned, shouldn't optimize");
-  var d1 = {0..9 by 2} dmapped cyclicDist(1);
+  var d1 = {0..9 by 2} dmapped new cyclicDist(1);
   var d2 = {1..10 by 2};
 
   test(d1, d2);
@@ -173,7 +173,7 @@ writeln("*** Cross type ***");
   // this case can technically be optimized but it isn't today, mostly because
   // abundance of caution
   writeln("both are strided and misaligned");
-  var d1 = {0..9 by 2 align 1} dmapped cyclicDist(1);
+  var d1 = {0..9 by 2 align 1} dmapped new cyclicDist(1);
   var d2 = {0..9 by 2 align 1};
 
   test(d1, d2);

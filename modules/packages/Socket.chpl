@@ -332,9 +332,9 @@ proc tcpConn.serialize(writer, ref serializer) throws {
 private extern proc sizeof(e): c_size_t;
 
 @chpldoc.nodoc
-extern "struct event_base" record event_base {};
+extern "struct event_base" record event_base {}
 @chpldoc.nodoc
-extern "struct event" record event {};
+extern "struct event" record event {}
 @chpldoc.nodoc
 extern type pthread_t;
 @chpldoc.nodoc

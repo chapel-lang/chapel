@@ -47,8 +47,8 @@ writeln();
 writeln("*** Block ***");
 {
   writeln("simple case: everything should be optimized");
-  var d1 = {1..10} dmapped blockDist({1..10});
-  var d2 = {1..10} dmapped blockDist({1..10});
+  var d1 = {1..10} dmapped new blockDist({1..10});
+  var d2 = {1..10} dmapped new blockDist({1..10});
 
   test(d1, d2);
   
@@ -57,8 +57,8 @@ writeln("*** Block ***");
 
 {
   writeln("shapes match and domains are aligned with their distribions but are different. We decided not to optimized this for now");
-  var d1 = {1..10} dmapped blockDist({1..10});
-  var d2 = {0..9} dmapped blockDist({0..9});
+  var d1 = {1..10} dmapped new blockDist({1..10});
+  var d2 = {0..9} dmapped new blockDist({0..9});
 
   test(d1, d2);
   
@@ -68,8 +68,8 @@ writeln("*** Block ***");
 
 {
   writeln("one array is unevenly distributed. block shouldn't optimize");
-  var d1 = {0..9} dmapped blockDist({1..10});
-  var d2 = {1..10} dmapped blockDist({1..10});
+  var d1 = {0..9} dmapped new blockDist({1..10});
+  var d2 = {1..10} dmapped new blockDist({1..10});
 
   test(d1, d2);
 
@@ -78,8 +78,8 @@ writeln("*** Block ***");
 
 {
   writeln("both are unevenly distributed, but they align with each other");
-  var d1 = {0..9} dmapped blockDist({1..10});
-  var d2 = {0..9} dmapped blockDist({1..10});
+  var d1 = {0..9} dmapped new blockDist({1..10});
+  var d2 = {0..9} dmapped new blockDist({1..10});
 
   test(d1, d2);
 
@@ -90,8 +90,8 @@ writeln("*** Block ***");
   // this case can technically be optimized but it isn't today, mostly because
   // abundance of caution
   writeln("One of the domains are strided");
-  var d1 = {0..9 by 2} dmapped blockDist({1..10});
-  var d2 = {0..4} dmapped blockDist({1..10});
+  var d1 = {0..9 by 2} dmapped new blockDist({1..10});
+  var d2 = {0..4} dmapped new blockDist({1..10});
 
   test(d1, d2);
 
@@ -100,8 +100,8 @@ writeln("*** Block ***");
 
 {
   writeln("both are strided and aligned");
-  var d1 = {0..9 by 2} dmapped blockDist({1..10});
-  var d2 = {0..9 by 2} dmapped blockDist({1..10});
+  var d1 = {0..9 by 2} dmapped new blockDist({1..10});
+  var d2 = {0..9 by 2} dmapped new blockDist({1..10});
 
   test(d1, d2);
 
@@ -110,8 +110,8 @@ writeln("*** Block ***");
 
 {
   writeln("both are strided, have same number of elements but not aligned, block shouldn't optimize");
-  var d1 = {0..9 by 2} dmapped blockDist({1..10});
-  var d2 = {1..10 by 2} dmapped blockDist({1..10});
+  var d1 = {0..9 by 2} dmapped new blockDist({1..10});
+  var d2 = {1..10 by 2} dmapped new blockDist({1..10});
 
   test(d1, d2);
 
@@ -122,8 +122,8 @@ writeln("*** Block ***");
   // this case can technically be optimized but it isn't today, mostly because
   // abundance of caution
   writeln("both are strided and misaligned");
-  var d1 = {0..9 by 2 align 0} dmapped blockDist({1..10});
-  var d2 = {0..9 by 2 align 1} dmapped blockDist({1..10});
+  var d1 = {0..9 by 2 align 0} dmapped new blockDist({1..10});
+  var d2 = {0..9 by 2 align 1} dmapped new blockDist({1..10});
 
   test(d1, d2);
 
@@ -134,7 +134,7 @@ writeln();
 writeln("*** Cross type ***");
 {
   writeln("Cross type swaps shouldn't be optimized");
-  var d1 = {1..10} dmapped blockDist({1..10});
+  var d1 = {1..10} dmapped new blockDist({1..10});
   var d2 = {1..10};
 
   test(d1, d2);
@@ -145,7 +145,7 @@ writeln("*** Cross type ***");
 
 {
   writeln("Cross type swaps shouldn't be optimized");
-  var d1 = {0..9} dmapped blockDist({1..10});
+  var d1 = {0..9} dmapped new blockDist({1..10});
   var d2 = {1..10};
 
   test(d1, d2);
@@ -155,7 +155,7 @@ writeln("*** Cross type ***");
 
 {
   writeln("Cross type swaps shouldn't be optimized");
-  var d1 = {0..9} dmapped blockDist({1..10});
+  var d1 = {0..9} dmapped new blockDist({1..10});
   var d2 = {0..9};
 
   test(d1, d2);
@@ -165,7 +165,7 @@ writeln("*** Cross type ***");
 
 {
   writeln("Cross type swaps shouldn't be optimized");
-  var d1 = {0..9 by 2} dmapped blockDist({1..10});
+  var d1 = {0..9 by 2} dmapped new blockDist({1..10});
   var d2 = {0..4};
 
   test(d1, d2);
@@ -175,7 +175,7 @@ writeln("*** Cross type ***");
 
 {
   writeln("Cross type swaps shouldn't be optimized");
-  var d1 = {0..9 by 2} dmapped blockDist({1..10});
+  var d1 = {0..9 by 2} dmapped new blockDist({1..10});
   var d2 = {0..9 by 2};
 
   test(d1, d2);
@@ -185,7 +185,7 @@ writeln("*** Cross type ***");
 
 {
   writeln("both are strided, have same number of elements but not aligned, block shouldn't optimize");
-  var d1 = {0..9 by 2} dmapped blockDist({1..10});
+  var d1 = {0..9 by 2} dmapped new blockDist({1..10});
   var d2 = {1..10 by 2};
 
   test(d1, d2);
@@ -197,7 +197,7 @@ writeln("*** Cross type ***");
   // this case can technically be optimized but it isn't today, mostly because
   // abundance of caution
   writeln("both are strided and misaligned");
-  var d1 = {0..9 by 2 align 0} dmapped blockDist({1..10});
+  var d1 = {0..9 by 2 align 0} dmapped new blockDist({1..10});
   var d2 = {0..9 by 2 align 1};
 
   test(d1, d2);

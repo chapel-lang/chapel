@@ -95,6 +95,9 @@ c2chapel-venv: FORCE
 chapel-py-venv: FORCE
 	cd chpl-venv && $(MAKE) chapel-py-venv
 
+cls-test-venv: FORCE
+	cd chpl-venv && $(MAKE) cls-test-venv
+
 chplcheck-venv: FORCE
 	cd chpl-venv && $(MAKE) chplcheck-venv
 

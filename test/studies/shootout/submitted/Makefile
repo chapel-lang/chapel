@@ -1,10 +1,12 @@
 SRCS := $(wildcard *.chpl)
 BINS = $(SRCS:%.chpl=%)
 
+CHPL_FLAGS=--warn-unstable
+
 all: $(BINS)
-	echo $(SRCS)
+
+clean:
+	rm -f $(BINS)
 
 %: %.chpl
-	chpl $<
-
-.PHONY: Compat
+	chpl $(CHPL_FLAGS) $<

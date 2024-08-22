@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "limits.h"
+
 #include "test-resolution.h"
 
 #include "chpl/resolution/can-pass.h"
@@ -77,7 +79,14 @@ static bool passesInstantiates(CanPassResult r) {
          r.conversionKind() == CanPassResult::NONE;
 }
 
-/*
+static bool passesInstantiatesBorrowing(CanPassResult r) {
+  return r.passes() &&
+         r.instantiates() &&
+         !r.promotes() &&
+         r.converts() &&
+         r.conversionKind() == CanPassResult::BORROWS;
+}
+
 static bool passesOther(CanPassResult r) {
   return r.passes() &&
          !r.instantiates() &&
@@ -85,7 +94,6 @@ static bool passesOther(CanPassResult r) {
          r.converts() &&
          r.conversionKind() == CanPassResult::OTHER;
 }
-*/
 
 static bool doesNotPass(CanPassResult r) {
   return !r.passes();
@@ -344,11 +352,13 @@ static void test5() {
 
 static void test6() {
   printf("test6\n");
-  Context ctx;
+  auto config = getConfigWithHome();
+  Context ctx(config);
   Context* context = &ctx;
   Context* c = context;
+  setupModuleSearchPaths(context, false, false, {}, {});
 
-  // test that we can pass param string c_string
+  // test that we can pass param string c_string or c_ptrConst(c_char)
   // but we can't pass param string to bytes
 
   auto s = UniqueString::get(context, "hello");
@@ -363,10 +373,20 @@ static void test6() {
                                  CStringType::get(context));
   auto bytesQT = QualifiedType(QualifiedType::VAR,
                                CompositeType::getBytesType(context));
+
+  const chpl::types::Type* eltType = nullptr;
+  if (CHAR_MAX == SCHAR_MAX) {
+    eltType = IntType::get(context, 8);
+  } else {
+    eltType = UintType::get(context, 8);
+  }
+  auto cptrQT = QualifiedType(QualifiedType::VAR,
+                              CPtrType::getConst(context, eltType));
   CanPassResult r;
   r = canPass(c, paramString, stringQT); assert(passesAsIs(r));
   r = canPass(c, paramString, cStringQT); assert(passesParamNarrowing(r));
   r = canPass(c, paramString, bytesQT); assert(doesNotPass(r));
+  r = canPass(c, paramString, cptrQT); assert(passesOther(r));
 }
 
 static void test7() {
@@ -407,6 +427,13 @@ static void test7() {
     return QualifiedType(QualifiedType::VAR,
                          ClassType::get(context, bctArg, mgmtArg, decArg));
   };
+
+  auto borrowedGenericRefQt = QualifiedType(
+      QualifiedType::REF,
+      ClassType::get(context, AnyClassType::get(context), nullptr, borrowedQ));
+  auto unmanagedGenericRefQt = QualifiedType(
+      QualifiedType::REF,
+      ClassType::get(context, AnyClassType::get(context), nullptr, unmanagedQ));
 
   auto ownedMgmt = AnyOwnedType::get(context);
 
@@ -544,6 +571,11 @@ static void test7() {
   r = canPass(c, ownedChild,       unmanagedParentQ); assert(doesNotPass(r));
   r = canPass(c, ownedChildQ,      unmanagedParent);  assert(doesNotPass(r));
   r = canPass(c, ownedChildQ,      unmanagedParentQ); assert(doesNotPass(r));
+
+
+  // check passing to generic class type
+  r = canPass(c, unmanagedChildQ, unmanagedGenericRefQt); assert(passesInstantiates(r));
+  r = canPass(c, unmanagedChildQ, borrowedGenericRefQt); assert(passesInstantiatesBorrowing(r));
 }
 
 static void test8() {
@@ -555,12 +587,31 @@ static void test8() {
   auto anyEnumType = QualifiedType(QualifiedType::VAR, AnyEnumType::get(c));
   auto anEnum = QualifiedType(QualifiedType::VAR,
       EnumType::get(context,
-                   ID(UniqueString::get(c, "someModule"), -1, 0),
+                   ID(UniqueString::get(c, "someModule")),
                    UniqueString::get(c, "someEnum")));
 
   // test passing an enum type to `enum` works fine
   CanPassResult r;
   r = canPass(context, anEnum, anyEnumType); assert(passesInstantiates(r));
+}
+
+static void test9() {
+  printf("test9\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      record Bar {
+        var x;
+      }
+
+      var a : Bar(int);
+      var b = new Bar(3);
+      )""", {"a", "b"});
+
+  CanPassResult r;
+  r = canPass(context, vars.at("b"), vars.at("a")); assert(passesAsIs(r));
 }
 
 int main() {
@@ -572,6 +623,7 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
 
   return 0;
 }

@@ -44,6 +44,10 @@ GASNETI_MK_CLASS_DECL(cuda_uva)
 GASNETI_MK_CLASS_DECL(hip)
 #endif
 
+#if GASNET_HAVE_MK_CLASS_ZE
+GASNETI_MK_CLASS_DECL(ze)
+#endif
+
 
 /*---------------------------------------------------------------------------------*/
 //

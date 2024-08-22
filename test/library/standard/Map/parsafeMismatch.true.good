@@ -1,0 +1,19 @@
+parsafeMismatch.chpl:13: warning: initializing between two maps with different parSafe settings
+Note: this warning can be silenced with '-swarnForMapParsafeMismatch=false'
+parsafeMismatch.chpl:22: warning: initializing between two maps with different parSafe settings
+Note: this warning can be silenced with '-swarnForMapParsafeMismatch=false'
+parsafeMismatch.chpl:29: warning: initializing between two maps with different parSafe settings
+Note: this warning can be silenced with '-swarnForMapParsafeMismatch=false'
+parsafeMismatch.chpl:31: warning: initializing between two maps with different parSafe settings
+Note: this warning can be silenced with '-swarnForMapParsafeMismatch=false'
+x: map(int(64),int(64),false)
+a: map(int(64),int(64),false)
+b: map(int(64),int(64),false)
+c: map(int(64),int(64),true)
+y: map(int(64),int(64),true)
+d: map(int(64),int(64),true)
+e: map(int(64),int(64),false)
+f: map(int(64),int(64),true)
+g: map(int(64),int(64),true)
+h: map(int(64),int(64),false)
+i: map(int(64),int(64),false)

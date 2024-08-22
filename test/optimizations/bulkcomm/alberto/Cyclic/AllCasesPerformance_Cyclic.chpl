@@ -15,9 +15,9 @@ var e=false;
 //writeln(" N:",n," P:",p," Q:",q);
 //EXAMPLES 2d Block with and without stride
 const Space = {1..n,1..n};
-const d2DomB1: domain(2) dmapped cyclicDist(startIdx=Space.low)=Space;
+const d2DomB1: domain(2) dmapped new cyclicDist(startIdx=Space.low)=Space;
 const Space2 = {1..2*n,1..2*n};
-const d2DomB2: domain(2) dmapped cyclicDist(startIdx=Space2.low)=Space2;
+const d2DomB2: domain(2) dmapped new cyclicDist(startIdx=Space2.low)=Space2;
 
 var d2A:[d2DomB1] real;
 var d2C:[d2DomB1] real;
@@ -229,9 +229,9 @@ writeln();
  // ==============================================================================
 //EXAMPLES 3d Block with and stride
 const Space3 = {1..p,1..p,1..p};
-const d3DomB1: domain(3) dmapped cyclicDist(startIdx=Space3.low)=Space3;
+const d3DomB1: domain(3) dmapped new cyclicDist(startIdx=Space3.low)=Space3;
 const Space4 = {1..2*p,1..2*p,1..2*p};
-const d3DomB2: domain(3) dmapped cyclicDist(startIdx=Space4.low)=Space4;
+const d3DomB2: domain(3) dmapped new cyclicDist(startIdx=Space4.low)=Space4;
 
 //Block Dist. Examples 3D
 var d3A:[d3DomB1] int(64)=1;
@@ -385,9 +385,9 @@ writeln();
 //***********************************************************************
 //Example 4d Block with stride
 const Space5 = {1..q,1..q,1..q,1..q};
-const d4DomB1: domain(4) dmapped cyclicDist(startIdx=Space5.low)=Space5;
+const d4DomB1: domain(4) dmapped new cyclicDist(startIdx=Space5.low)=Space5;
 const Space6 = {1..2*q,1..2*q,1..2*q,1..2*q};
-const d4DomB2: domain(4) dmapped cyclicDist(startIdx=Space6.low)=Space6;
+const d4DomB2: domain(4) dmapped new cyclicDist(startIdx=Space6.low)=Space6;
 
 //Block Dist. Examples 4D
 var d4C:[d4DomB1] int(64)=1;

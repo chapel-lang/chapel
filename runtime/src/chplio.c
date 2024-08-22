@@ -28,7 +28,7 @@
 #include <inttypes.h>
 
 // These should be moved to chpl-string.c and eventually go away.
-chpl_string chpl_refToString(void* ref) {
+chpl_string chpl_refToString(const void* ref) {
   char buff[32];
   (void) snprintf(buff, sizeof(buff), "%p", ref);
   return string_copy(buff, 0, 0);

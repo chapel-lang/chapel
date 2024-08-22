@@ -229,7 +229,7 @@ module analyze_RMAT_graph_associative_array {
 
     const vertex_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
-        {1..N_VERTICES} dmapped blockDist ( {1..N_VERTICES} )
+        {1..N_VERTICES} dmapped new blockDist ( {1..N_VERTICES} )
       else
     {1..N_VERTICES} ;
 

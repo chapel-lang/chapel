@@ -47,12 +47,6 @@
 /* Set to 1 to use c11 atomic `least` types */
 #undef HAVE_ATOMICS_LEAST_TYPES
 
-/* bgq provider is built */
-#undef HAVE_BGQ
-
-/* bgq provider is built as DSO */
-#undef HAVE_BGQ_DL
-
 /* Set to 1 to use built-in intrincics atomics */
 #undef HAVE_BUILTIN_ATOMICS
 
@@ -63,7 +57,10 @@
    atomics */
 #undef HAVE_BUILTIN_MM_INT128_ATOMICS
 
-/* EFADV_DEVICE_ATTR_CAPS_RNR_RETRY is defined */
+/* Indicates if EFADV_DEVICE_ATTR_CAPS_RDMA_WRITE is defined */
+#undef HAVE_CAPS_RDMA_WRITE
+
+/* Indicates if EFADV_DEVICE_ATTR_CAPS_RNR_RETRY is defined */
 #undef HAVE_CAPS_RNR_RETRY
 
 /* Define to 1 if clock_gettime is available. */
@@ -75,22 +72,43 @@
 /* Set to 1 to use cpuid */
 #undef HAVE_CPUID
 
-/* Define to 1 if criterion requested and available */
-#undef HAVE_CRITERION
-
 /* CUDA support */
 #undef HAVE_CUDA
 
+/* CUDA dmabuf support */
+#undef HAVE_CUDA_DMABUF
+
 /* Define to 1 if you have the <cuda_runtime.h> header file. */
 #undef HAVE_CUDA_RUNTIME_H
+
+/* Define to 1 if you have the <curl/curl.h> header file. */
+#undef HAVE_CURL_CURL_H
+
+/* cxi provider is built */
+#undef HAVE_CXI
+
+/* cxi provider is built as DSO */
+#undef HAVE_CXI_DL
 
 /* Define to 1 if you have the declaration of `ethtool_cmd_speed', and to 0 if
    you don't. */
 #undef HAVE_DECL_ETHTOOL_CMD_SPEED
 
+/* Define to 1 if you have the declaration of `IORING_CQE_F_MORE', and to 0 if
+   you don't. */
+#undef HAVE_DECL_IORING_CQE_F_MORE
+
+/* Define to 1 if you have the declaration of `io_uring_prep_poll_multishot',
+   and to 0 if you don't. */
+#undef HAVE_DECL_IO_URING_PREP_POLL_MULTISHOT
+
 /* Define to 1 if you have the declaration of `SPEED_UNKNOWN', and to 0 if you
    don't. */
 #undef HAVE_DECL_SPEED_UNKNOWN
+
+/* Define to 1 if you have the declaration of
+   `UCP_WORKER_FLAG_IGNORE_REQUEST_LEAK', and to 0 if you don't. */
+#undef HAVE_DECL_UCP_WORKER_FLAG_IGNORE_REQUEST_LEAK
 
 /* Define to 1 if you have the declaration of `__syscall', and to 0 if you
    don't. */
@@ -111,11 +129,20 @@
 /* efa provider is built */
 #undef HAVE_EFA
 
-/* EFA device does not support extensible CQ */
+/* Indicates EFA supports extensible CQ */
 #undef HAVE_EFADV_CQ_EX
+
+/* Indicates if efadv_query_mr verbs is available */
+#undef HAVE_EFADV_QUERY_MR
+
+/* Indicates if EFA supports 128 bytes in-order in writing. */
+#undef HAVE_EFA_DATA_IN_ORDER_ALIGNED_128_BYTES
 
 /* efa provider is built as DSO */
 #undef HAVE_EFA_DL
+
+/* Indicates if ibv_reg_dmabuf_mr verbs is available */
+#undef HAVE_EFA_DMABUF_MR
 
 /* Define to 1 if you have the <elf.h> header file. */
 #undef HAVE_ELF_H
@@ -129,6 +156,10 @@
 /* Set to 1 to use ethtool */
 #undef HAVE_ETHTOOL
 
+/* defined to 1 if libfabric was configured with --enable-profile, 0 otherwise
+   */
+#undef HAVE_FABRIC_PROFILE
+
 /* Define to 1 if you have the <gdrapi.h> header file. */
 #undef HAVE_GDRAPI_H
 
@@ -137,15 +168,6 @@
 
 /* Define to 1 if you have the `getifaddrs' function. */
 #undef HAVE_GETIFADDRS
-
-/* gni provider is built */
-#undef HAVE_GNI
-
-/* Define to 1 if the system has the type `gni_ct_cqw_post_descriptor_t'. */
-#undef HAVE_GNI_CT_CQW_POST_DESCRIPTOR_T
-
-/* gni provider is built as DSO */
-#undef HAVE_GNI_DL
 
 /* Define to 1 if you have the <habanalabs/synapse_api.h> header file. */
 #undef HAVE_HABANALABS_SYNAPSE_API_H
@@ -162,10 +184,16 @@
 /* hook_hmem provider is built as DSO */
 #undef HAVE_HOOK_HMEM_DL
 
+/* dmabuf handle support */
+#undef HAVE_HSA_AMD_PORTABLE_EXPORT_DMABUF
+
 /* Define to 1 if you have the <hsa/hsa_ext_amd.h> header file. */
 #undef HAVE_HSA_HSA_EXT_AMD_H
 
-/* Define to 1 if libibverbs has ibv_is_fork_initialized */
+/* Define to 1 if you have the <hwloc.h> header file. */
+#undef HAVE_HWLOC_H
+
+/* Indicates if libibverbs has ibv_is_fork_initialized */
 #undef HAVE_IBV_IS_FORK_INITIALIZED
 
 /* Define to 1 if you have the <infiniband/efadv.h> header file. */
@@ -177,11 +205,14 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if kdreg available */
-#undef HAVE_KDREG
+/* Define to 1 if you have the <json-c/json.h> header file. */
+#undef HAVE_JSON_C_JSON_H
 
 /* Define to 1 if you have the <level_zero/ze_api.h> header file. */
 #undef HAVE_LEVEL_ZERO_ZE_API_H
+
+/* Define to 1 if you have the <libcxi/libcxi.h> header file. */
+#undef HAVE_LIBCXI_LIBCXI_H
 
 /* Define to 1 if you have the `dl' library (-ldl). */
 #undef HAVE_LIBDL
@@ -201,6 +232,9 @@
 /* Define to 1 if you have the <liburing.h> header file. */
 #undef HAVE_LIBURING_H
 
+/* Define to 1 if you have the <linux/idxd.h> header file. */
+#undef HAVE_LINUX_IDXD_H
+
 /* Define to 1 if you have the <linux/mman.h> header file. */
 #undef HAVE_LINUX_MMAN_H
 
@@ -211,7 +245,7 @@
 /* Define to 1 if you have the <linux/userfaultfd.h> header file. */
 #undef HAVE_LINUX_USERFAULTFD_H
 
-/* Build with LTTNG tracing */
+/* Build with LTTng userspace tracepoints */
 #undef HAVE_LTTNG
 
 /* Define to 1 if you have the <lttng/tracepoint.h> header file. */
@@ -226,17 +260,11 @@
 /* mrail provider is built as DSO */
 #undef HAVE_MRAIL_DL
 
-/* net provider is built */
-#undef HAVE_NET
-
 /* Define to 1 if you have the <netlink/netlink.h> header file. */
 #undef HAVE_NETLINK_NETLINK_H
 
 /* Define to 1 if you have the <netlink/version.h> header file. */
 #undef HAVE_NETLINK_VERSION_H
-
-/* net provider is built as DSO */
-#undef HAVE_NET_DL
 
 /* Build with Neuron support */
 #undef HAVE_NEURON
@@ -259,8 +287,11 @@
 /* perf provider is built as DSO */
 #undef HAVE_PERF_DL
 
-/* psm provider is built */
-#undef HAVE_PSM
+/* profile provider is built */
+#undef HAVE_PROFILE
+
+/* profile provider is built as DSO */
+#undef HAVE_PROFILE_DL
 
 /* psm2 provider is built */
 #undef HAVE_PSM2
@@ -295,12 +326,6 @@
 /* PSM3 source is built-in */
 #undef HAVE_PSM3_SRC
 
-/* psm provider is built as DSO */
-#undef HAVE_PSM_DL
-
-/* Define to 1 if you have the <psm.h> header file. */
-#undef HAVE_PSM_H
-
 /* Define to 1 if you have the <rdma/hfi/hfi1_user.h> header file. */
 #undef HAVE_RDMA_HFI_HFI1_USER_H
 
@@ -310,17 +335,15 @@
 /* Define to 1 if you have the <rdma/rv_user_ioctls.h> header file. */
 #undef HAVE_RDMA_RV_USER_IOCTLS_H
 
-/* efadv_device_attr has max_rdma_size */
+/* Indicates if efadv_device_attr has max_rdma_size */
 #undef HAVE_RDMA_SIZE
+
+/* Define to 1 to only look for dl providers under default location if
+   FI_PROVIDER_PATH is not set */
+#undef HAVE_RESTRICTED_DL
 
 /* ROCR support */
 #undef HAVE_ROCR
-
-/* rstream provider is built */
-#undef HAVE_RSTREAM
-
-/* rstream provider is built as DSO */
-#undef HAVE_RSTREAM_DL
 
 /* rxd provider is built */
 #undef HAVE_RXD
@@ -339,6 +362,12 @@
 
 /* shm provider is built as DSO */
 #undef HAVE_SHM_DL
+
+/* sm2 provider is built */
+#undef HAVE_SM2
+
+/* sm2 provider is built as DSO */
+#undef HAVE_SM2_DL
 
 /* sockets provider is built */
 #undef HAVE_SOCKETS
@@ -385,8 +414,23 @@
 /* tcp provider is built as DSO */
 #undef HAVE_TCP_DL
 
+/* trace provider is built */
+#undef HAVE_TRACE
+
+/* trace provider is built as DSO */
+#undef HAVE_TRACE_DL
+
 /* Define to 1 if typeof works with your compiler. */
 #undef HAVE_TYPEOF
+
+/* Define to 1 if you have the <ucp/api/ucp.h> header file. */
+#undef HAVE_UCP_API_UCP_H
+
+/* ucx provider is built */
+#undef HAVE_UCX
+
+/* ucx provider is built as DSO */
+#undef HAVE_UCX_DL
 
 /* udp provider is built */
 #undef HAVE_UDP
@@ -415,8 +459,11 @@
 /* verbs provider is built as DSO */
 #undef HAVE_VERBS_DL
 
-/* Define to 1 if xpmem available */
+/* XPMEM support availability */
 #undef HAVE_XPMEM
+
+/* Define to 1 if you have the <xpmem.h> header file. */
+#undef HAVE_XPMEM_H
 
 /* ZE support */
 #undef HAVE_ZE
@@ -478,6 +525,12 @@
 /* Whether we have CUDA runtime or not */
 #undef PSM3_CUDA
 
+/* PSM3 built with instruction set */
+#undef PSM3_MARCH
+
+/* Whether we have oneAPI Level-Zero runtime or not */
+#undef PSM3_ONEAPI
+
 /* Define to 1 if pthread_spin_init is available. */
 #undef PT_LOCK_SPIN
 
@@ -512,7 +565,7 @@
 #undef typeof
 
 
-#if defined(__linux__) && (defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__)) && ENABLE_MEMHOOKS_MONITOR
+#if defined(__linux__) && (defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__) || (defined(__riscv) && __riscv_xlen == 64)) && ENABLE_MEMHOOKS_MONITOR
 #define HAVE_MEMHOOKS_MONITOR 1
 #else
 #define HAVE_MEMHOOKS_MONITOR 0

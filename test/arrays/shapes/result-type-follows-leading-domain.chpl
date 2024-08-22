@@ -1,7 +1,7 @@
 use BlockDist;
 
 var D = { 1..2, 1..3 };
-var BD = D dmapped blockDist(D);
+var BD = D dmapped new blockDist(D);
 
 {
   var B: [D] int = 1;

@@ -7,7 +7,7 @@ use BlockDist;
 config const N = 4;
 
 const space = {0..#N, 0..#N, 0..#N};
-const ParentDom = space dmapped blockDist(space);
+const ParentDom = space dmapped new blockDist(space);
 var arr: [ParentDom] int;
 
 for (i,j,k) in ParentDom {

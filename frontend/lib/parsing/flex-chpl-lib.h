@@ -727,7 +727,7 @@ extern int yylex \
 #undef yyTABLES_NAME
 #endif
 
-#line 330 "chpl.lex"
+#line 331 "chpl.lex"
 
 
 #line 733 "flex-chpl-lib.h"

@@ -1,5 +1,4 @@
 depBlockType.chpl:3: warning: 'Block' is deprecated, please use 'blockDist' instead
 depBlockType.chpl:5: warning: 'Block' is deprecated, please use 'blockDist' instead
 depBlockType.chpl:7: warning: 'Block' is deprecated, please use 'blockDist' instead
-depBlockType.chpl:8: warning: 'Block' is deprecated, please use 'blockDist' instead
-depBlockType.chpl:10: warning: 'Block' is deprecated, please use 'blockDist' instead
+depBlockType.chpl:9: warning: 'Block' is deprecated, please use 'blockDist' instead

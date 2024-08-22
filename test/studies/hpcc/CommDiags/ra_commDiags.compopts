@@ -1,2 +1,2 @@
--suseOn=true --main-module ra --no-warnings
+-suseOn=true --main-module ra --no-warnings -o ra_commDiags
 # --no-warnings for ambiguous module source file

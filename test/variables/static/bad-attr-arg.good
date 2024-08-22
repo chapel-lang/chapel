@@ -1,0 +1,2 @@
+bad-attr-arg.chpl:1: In function 'f':
+bad-attr-arg.chpl:3: error: invalid argument to @functionStatic attribute

@@ -16,9 +16,20 @@ def _validate_rocm_version():
     return _validate_rocm_version_impl()
 
 class gpu_type:
-    def __init__(self, sdk_path_env, compiler, default_arch, llvm_target,
-                 runtime_impl, version_validator, llvm_validator):
+    def __init__(self, sdk_path_env,
+                        sdk_path_env_bitcode,
+                        sdk_path_env_include,
+                        sdk_path_env_runtime,
+                        compiler,
+                        default_arch,
+                        llvm_target,
+                        runtime_impl,
+                        version_validator,
+                        llvm_validator):
         self.sdk_path_env = sdk_path_env
+        self.sdk_path_env_bitcode = sdk_path_env_bitcode
+        self.sdk_path_env_include = sdk_path_env_include
+        self.sdk_path_env_runtime = sdk_path_env_runtime
         self.compiler = compiler
         self.default_arch = default_arch
         self.llvm_target = llvm_target
@@ -41,6 +52,9 @@ def _validate_rocm_llvm_version(gpu: gpu_type):
 
 GPU_TYPES = {
     "nvidia": gpu_type(sdk_path_env="CHPL_CUDA_PATH",
+                       sdk_path_env_bitcode="CHPL_CUDA_PATH",
+                       sdk_path_env_include="CHPL_CUDA_PATH",
+                       sdk_path_env_runtime="CHPL_CUDA_PATH",
                        compiler="nvcc",
                        default_arch="sm_60",
                        llvm_target="NVPTX",
@@ -48,6 +62,9 @@ GPU_TYPES = {
                        version_validator=_validate_cuda_version,
                        llvm_validator=_validate_cuda_llvm_version),
     "amd": gpu_type(sdk_path_env="CHPL_ROCM_PATH",
+                    sdk_path_env_bitcode="CHPL_ROCM_BITCODE_PATH",
+                    sdk_path_env_include="CHPL_ROCM_INCLUDE_PATH",
+                    sdk_path_env_runtime="CHPL_ROCM_RUNTIME_PATH",
                     compiler="hipcc",
                     default_arch="",
                     llvm_target="AMDGPU",
@@ -55,6 +72,9 @@ GPU_TYPES = {
                     version_validator=_validate_rocm_version,
                     llvm_validator=_validate_rocm_llvm_version),
     "cpu": gpu_type(sdk_path_env="",
+                    sdk_path_env_bitcode="",
+                    sdk_path_env_include="",
+                    sdk_path_env_runtime="",
                     compiler="",
                     default_arch="",
                     llvm_target="",
@@ -91,7 +111,8 @@ def determine_gpu_type():
 
 def get_llvm_override():
     if get() == 'amd':
-        if get_sdk_version().split('.')[0] == '5':
+        major_version = get_sdk_version().split('.')[0]
+        if major_version == '5':
             return '{}/llvm/bin/llvm-config'.format(get_sdk_path('amd'))
         pass
     return 'none'
@@ -125,6 +146,7 @@ def get_arch():
         # on nvidia.
         if len(arch.split(",")) > 1 and gpu_type != "nvidia":
             error("Multi-target builds are only supported for the 'nvidia' GPU type.")
+            arch = 'error'
 
         return arch
 
@@ -137,9 +159,10 @@ def get_arch():
               "Please check the GPU programming technote "
               "<https://chapel-lang.org/docs/technotes/gpu.html> "
               "for more information.".format(gpu_type))
+        return 'error'
 
 @memoize
-def get_sdk_path(for_gpu):
+def get_sdk_path(for_gpu, sdk_type='bitcode'):
     gpu_type = get()
 
     # No SDK path if GPU is not being used.
@@ -148,6 +171,19 @@ def get_sdk_path(for_gpu):
 
     # Check vendor-specific environment variable for SDK path
     gpu = GPU_TYPES[for_gpu]
+    sub_env_names = {
+        "bitcode": gpu.sdk_path_env_bitcode,
+        "include": gpu.sdk_path_env_include,
+        "runtime": gpu.sdk_path_env_runtime
+    }
+    assert sdk_type in sub_env_names
+
+    # get the sub env if it exists
+    chpl_sdk_path = os.environ.get(sub_env_names[sdk_type])
+    if chpl_sdk_path:
+        return chpl_sdk_path
+    
+    # otherwise use the basic one
     chpl_sdk_path = os.environ.get(gpu.sdk_path_env)
     if chpl_sdk_path:
         return chpl_sdk_path
@@ -160,6 +196,7 @@ def get_sdk_path(for_gpu):
         # Walk up from directories from the one containing the gpu compiler
         # (e.g.  `nvcc` or `hipcc`) until we find a directory that starts with
         # `runtime_impl` (e.g `cuda` or `rocm`)
+        # TODO: this logic does not seem to work for spack
         real_path = os.path.realpath(my_stdout.strip()).strip()
         path_parts = real_path.split("/")
         chpl_sdk_path = "/"
@@ -170,10 +207,19 @@ def get_sdk_path(for_gpu):
                 chpl_sdk_path += "/"
             else:
                 break
+        
+        # validate the SDK path found
+        if not (os.path.exists(chpl_sdk_path) and os.path.isdir(chpl_sdk_path)):
+            _reportMissingGpuReq(
+                "Can't infer {} toolkit from '{}'. Try setting {}."
+                .format(get(), real_path, gpu.sdk_path_env)
+            )
+            return 'error'
 
         return chpl_sdk_path
     elif gpu_type == for_gpu:
         _reportMissingGpuReq("Can't find {} toolkit.".format(get()))
+        return 'error'
     else:
         return ''
 
@@ -183,7 +229,7 @@ def get_gpu_mem_strategy():
         valid_options = ["array_on_device", "unified_memory"]
         if memtype not in valid_options:
             error("CHPL_GPU_MEM_STRATEGY must be set to one of: %s" %
-                 ", ".join(valid_options));
+                 ", ".join(valid_options))
         return memtype
     return "array_on_device"
 
@@ -197,10 +243,12 @@ def get_cuda_libdevice_path():
         # sure how realistic that is, nor I see multiple instances in the systems I
         # have access to. They are always named `libdevice.10.bc`, but I just want
         # to be sure here.
-        libdevices = glob.glob(chpl_cuda_path+"/nvvm/libdevice/libdevice*.bc")
+        path_part = "/nvvm/libdevice/libdevice*.bc"
+        libdevices = glob.glob(chpl_cuda_path+path_part)
         if len(libdevices) == 0:
             _reportMissingGpuReq("Can't find libdevice. Please make sure your CHPL_CUDA_PATH is "
-                  "set such that CHPL_CUDA_PATH/nvmm/libdevice/libdevice*.bc exists.")
+                  "set such that CHPL_CUDA_PATH{} exists.".format(path_part))
+            return 'error'
         else:
             return libdevices[0]
 
@@ -232,9 +280,23 @@ def _validate_cuda_llvm_version_impl(gpu: gpu_type):
         )
 
 def _validate_rocm_llvm_version_impl(gpu: gpu_type):
-    if chpl_llvm.get() == 'bundled':
+    major_version = get_sdk_version().split('.')[0]
+
+    if major_version in ('4', '5') and chpl_llvm.get() == 'bundled':
         error("Cannot target AMD GPUs with CHPL_LLVM=bundled")
-    if not validateLlvmBuiltForTgt(gpu.llvm_target):
+    elif major_version == '6' and chpl_llvm.get() != 'bundled' and os.environ.get("CHPL_LLVM_65188_PATCH", "0") != "1":
+        # once https://github.com/llvm/llvm-project/issues/65188 is resolved,
+        # this check can removed
+        # 'CHPL_LLVM_65188_PATCH' is a temporary escape hatch to enable system
+        # llvm with rocm 6.x if the user knows what they are doing
+        error("Cannot target AMD GPUs with ROCm 6.x without CHPL_LLVM=bundled")
+    elif (
+        major_version == "6"
+        and chpl_llvm.get() == "system"
+        and int(chpl_llvm.get_llvm_version()) < 18
+    ):
+        error("Cannot target AMD GPUs with ROCm 6.x without LLVM 18+")
+    elif not validateLlvmBuiltForTgt(gpu.llvm_target):
         _reportMissingGpuReq(
             "LLVM not built for %s." % gpu.llvm_target, allowExempt=False
         )
@@ -277,7 +339,7 @@ def _validate_cuda_version_impl():
 
 def get_sdk_version():
     if get() == 'amd':
-        chpl_rocm_path = get_sdk_path('amd')
+        chpl_rocm_path = get_sdk_path('amd', sdk_type='include')
         files_to_try = ['%s/.info/version-hiprt' % chpl_rocm_path,
             '%s/.info/version-libs' % chpl_rocm_path]
 
@@ -334,6 +396,8 @@ def _validate_rocm_version_impl():
        MAX_REQ_VERSION"""
     MIN_REQ_VERSION = "4"
     MAX_REQ_VERSION = "5.5"
+    MIN_ROCM6_REQ_VERSION = "6"
+    MAX_ROCM6_REQ_VERSION = "6.3"
 
     rocm_version = get_sdk_version()
 
@@ -341,11 +405,11 @@ def _validate_rocm_version_impl():
         _reportMissingGpuReq("Unable to determine ROCm version.")
         return False
 
-    if not is_ver_in_range(rocm_version, MIN_REQ_VERSION, MAX_REQ_VERSION):
+    if not is_ver_in_range(rocm_version, MIN_REQ_VERSION, MAX_REQ_VERSION) and not is_ver_in_range(rocm_version, MIN_ROCM6_REQ_VERSION, MAX_ROCM6_REQ_VERSION):
         _reportMissingGpuReq(
-            "Chapel requires ROCm to be a version between %s and %s, "
+            "Chapel requires ROCm to be a version between %s and %s or between %s and %s, "
             "detected version %s on system." %
-            (MIN_REQ_VERSION, MAX_REQ_VERSION, rocm_version))
+            (MIN_REQ_VERSION, MAX_REQ_VERSION, MIN_ROCM6_REQ_VERSION, MAX_ROCM6_REQ_VERSION, rocm_version))
         return False
 
     return True
@@ -361,9 +425,10 @@ def validate(chplLocaleModel):
     # (e.g. CUDA or ROCm)
     gpu.validate_sdk_version()
 
+    if chpl_tasks.get() == 'fifo':
+        error("The 'fifo' tasking model is not supported with GPU support")
+
     if get() == 'cpu':
-        if chpl_tasks.get() == 'fifo':
-            error("The 'fifo' tasking model is not supported with CPU-as-device mode")
         return True
 
     if chpl_compiler.get('target') != 'llvm':

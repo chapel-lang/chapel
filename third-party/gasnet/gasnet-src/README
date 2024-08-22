@@ -7,8 +7,6 @@ GASNet-EX is the next generation of the GASNet-1 communication system.
 The GASNet interfaces are being redesigned to accommodate the emerging
 needs of exascale supercomputing, providing communication services to a
 variety of PGAS programming models on current and future HPC architectures.
-This upgrade is being done over the next several years as part of the DOE
-Exascale Computing Program (ECP).
 
 GASNet-EX is a work-in-progress.
 Many features remain to be specified, implemented, and/or tuned.
@@ -28,19 +26,6 @@ For details, see docs/gasnet1_differences.md.
 Feedback or questions on any matters related to the GASNet-EX project are
 welcomed at: gasnet-devel@lbl.gov
 
-EX-Specific Implementation Notes:
-
-* gasnet_fwd.h provides a dependency-free useful subset of the API
-  declarations, suitable for inclusion into application-level code.
-
-* The following public headers may be included in any order:
-  - gasnetex.h       : GASNet-EX API + Tools
-  - gasnet.h         : GASNet-1 API (also includes gasnetex.h)
-  - gasnet_fwd.h     : Forward declaration subset for app inclusion
-  - gasnet_ratomic.h : Remote Atomics API
-  - gasnet_vis.h     : Non-contiguous RMA (VIS) API
-  - gasnet_coll.h    : Collectives API
-
 =======================================================================
 =======================================================================
 
@@ -56,6 +41,9 @@ Other documentation:
  * For GASNet licensing and usage terms, see license.txt.
  * For documentation on a particular GASNet conduit, see the README file in the
    conduit directory (also installed as README-<conduit> in the docs directory).
+ * For documentation on job spawning mechanisms, see the README file in the
+   corresponding other/*-spawner directory (also installed as README-*-spawner
+   in the docs directory).
  * For documentation on the communication-independent GASNet-tools library,
    see README-tools.
  * Additional information, including the GASNet specification and our bug
@@ -70,8 +58,10 @@ Other documentation:
 Contents of this file:
  * Introduction
  * Building and Installing GASNet
+ * Manual control over compile and link flags
  * Basic Usage Information
  * Conduit Status
+ * Launching/Running GASNet Applications
  * Single-node Development Options
  * Supported Platforms
  * Recognized Environment Variables
@@ -216,8 +206,9 @@ normal distribution.  If you think you need it, contact us at gasnet-devel@lbl.g
     * HPE Cray EX with Slingshot-11 (200Gbps) NICs: --with-ofi-provider=cxi
     * HPE Cray EX with BOTH NIC types: --with-ofi-provider=generic
 
-  On Linux clusters with Intel Omni-Path networks, we recommend the following
-  configure arguments to avoid using ibv-conduit over an emulated libibverbs:
+  On Linux clusters with Omni-Path networks from Intel or Cornelis Networks, we
+  recommend the following configure arguments to avoid using ibv-conduit over
+  an emulated libibverbs:
     --disable-ibv --enable-ofi --with-ofi-provider=psm2
 
   On Linux InfiniBand clusters with InfiniPath HCAs from PathScale/QLogic or
@@ -444,21 +435,22 @@ mpi-conduit: MPI (Message Passing Interface)
 ucx-conduit: Unified Communication X framework [EXPERIMENTAL]
  GASNet over the Unified Communication X framework (UCX).
  This conduit is currently experimental, and is not yet carefully tuned for performance.
- It has only been validated on Mellanox InfiniBand devices starting from ConnectX-5.
+ It has only been validated on NVIDIA/Mellanox InfiniBand devices starting from ConnectX-5.
 
 ofi-conduit: Open Fabrics Interfaces (most providers)
  GASNet over the Open Fabrics Interface framework (libfabric).
  This conduit is functionally complete but not yet carefully tuned for performance.
- With the exception of HPE Slingshot and Intel Omni-Path networks (where ofi-conduit
+ With the exception of Slingshot and Omni-Path networks (where ofi-conduit
  is either the best or only option and considered "native"), users are advised to
  use other conduits compatible with their hardware.
 
 Native, high-performance conduits:
 ---------------------------------
 
-aries-conduit:  Cray XC Aries
+aries-conduit:  Cray XC Aries [DEPRECATED]
  The conduit of choice for GASNet on the Aries networks in Cray XC systems.
- Rigorously tested and supported.
+ This conduit is currently deprecated due to lack of machine access that
+ prevents testing. It is slated for removal in a future release.
 
 ibv-conduit: InfiniBand Verbs
  GASNet over the OpenFabrics Verbs API.
@@ -468,9 +460,48 @@ ibv-conduit: InfiniBand Verbs
 ofi-conduit: Open Fabrics Interfaces (select providers/networks)
  GASNet over the Open Fabrics Interface framework (libfabric).
  This conduit is functionally complete but not yet carefully tuned for performance.
- On HPE Slingshot and Intel Omni-Path networks, ofi-conduit is either the best
+ On Slingshot and Omni-Path networks, ofi-conduit is either the best
  or only option available.  On only those systems, ofi-conduit is categorized as a
  native, high-performance conduit.
+
+Launching/Running GASNet Applications
+=====================================
+
+This section provides pointers to information regarding the configuration
+and use of the job spawning mechanisms provided in GASNet.
+
+Often, runtimes or frameworks which are clients of GASNet provide their own
+utilities for application launch (aka spawning).  Users of such utilities should
+refer to their respective documentation for advice which is specific to the
+client.  However, the information referenced in this section most often remains
+relevant to configuration.
+
+smp-conduit:
+ This conduit uses a conduit-specific spawning mechanism.
+ See smp-conduit/README for documentation.
+
+udp-conduit:
+ This conduit offers a choice among several conduit-specific spawning mechanisms.
+ See udp-conduit/README for documentation.
+
+mpi-conduit:
+ This conduit uses MPI for job spawning.
+ In addition to the documentation for the `mpirun` (or equivalent) specific to
+ your MPI implementation, see mpi-conduit/README and other/mpi-spawner/README
+ for documentation.
+
+aries-conduit:
+ By default, this conduit uses PMI for spawning, though MPI is also an option.
+ See aries-conduit/README and other/pmi-spawner/README for documentation.
+
+ibv-conduit, ofi-conduit and ucx-conduit:
+ These conduits can use ssh, MPI or PMI for spawning.
+ For documentation, see the individual *-conduit/README files, as well as the files
+ other/ssh-spawner/README, other/mpi-spawner/README and other/pmi-spawner/README
+
+In the text above, document locations are given as those in the GASNet sources.
+When installed, they are located in $prefix/share/doc/GASNet as README-[topic],
+where [topic] may be a conduit such as "ibv" or a spawner such as "ssh-spawner".
 
 Single-node Development Options
 ===============================
@@ -516,11 +547,11 @@ Platforms where GASNet and Berkeley UPC have been successfully tested include:
       OS/Architecture/compiler/ABI: network conduits
       ----------------------------------------------
     * Linux/x86-Ethernet/{gcc,clang}32: smp, mpi, udp
-    * Linux/x86-Mellanox/gcc/32:     smp, mpi, udp, ibv
+    * Linux/x86-InfiniBand/gcc/32:     smp, mpi, udp, ibv
     * Linux/x86/IntelC/32:           smp, mpi, udp
     * Linux/x86/PortlandGroupC/32:   smp, mpi, udp
     * Linux/x86_64-Ethernet/{gcc,clang,PGI}/{32,64}: smp, mpi, udp, ofi
-    * Linux/x86_64-Mellanox/{gcc,clang,PathScale,NVHPC,IntelC,Intel oneAPI}/64: smp, mpi, udp, ibv
+    * Linux/x86_64-InfiniBand/{gcc,clang,PathScale,NVHPC,IntelC,Intel oneAPI}/64: smp, mpi, udp, ibv
     * Linux/x86_64-Omni-Path/gcc/64: smp, mpi, udp, ofi
     * Linux/x86_64/x86-Open64/64:   smp, udp, #
 
@@ -811,7 +842,7 @@ these aliases.
  which case we skip packing). The default is conduit-dependent.
 
 * GASNET_VIS_{PUT,GET}_MAXCHUNK - limits the max size of a contiguous chunk which
- will be packed by AM pipelining in a strided put/get or indexed put/get, respectively.
+ will be packed by AM pipelining in a strided/indexed/vector put or get, respectively.
  The chunk size may additionally be limited based on the size that will fit in one MaxMedium.
  The default value is conduit-specific.
 

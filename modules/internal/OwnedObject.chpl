@@ -55,6 +55,10 @@ module OwnedObject {
   pragma "leaves this nil"
   @chpldoc.nodoc // hide init/record impl details
   proc _owned.init(type chpl_t) {
+    // TODO: today (06/15/2024), the compiler has a special check for a non-class type
+    // being used to instnatiate _owned, so this check is likely redundant and
+    // should be removed. See other _shared.init methods for similar checks that
+    // are likely also redundant.
     if !isClass(chpl_t) then
       compilerError("owned only works with classes");
 
@@ -186,38 +190,6 @@ module OwnedObject {
               else _to_unmanaged(oldPtr!);
   }
 
-  // Issue a compiler error for illegal uses.
-  @chpldoc.nodoc
-  proc type _owned.create(source) {
-    compilerError("cannot create an 'owned' from ", source.type:string);
-  }
-
-  /*
-    Creates a new `owned` class reference, taking over the ownership
-    of the argument. The result has the same type as the argument.
-    If the argument is non-nilable, it must be recognized by the compiler
-    as an expiring value.
-  */
-  @deprecated(notes="owned.create from an owned is deprecated - please use assignment instead")
-  inline proc type _owned.create(pragma "nil from arg" in take: owned) {
-    return take;
-  }
-
-  /* Starts managing the argument class instance `p`
-      using the `owned` memory management strategy.
-      The result type preserves nilability of the argument type.
-
-      It is an error to directly delete the class instance
-      after passing it to `owned.create()`. */
-  pragma "unsafe"
-  @deprecated(notes="owned.create from an unmanaged is deprecated - please use :proc:`owned.adopt` instead")
-  inline proc type _owned.create(pragma "nil from arg" p : unmanaged) {
-    // 'result' may have a non-nilable type
-    var result: (p.type : owned);
-    result.retain(p);
-    return result;
-  }
-
   /*
     The deinitializer for :type:`owned` will destroy the class
     instance it manages when the :type:`owned` goes out of scope.
@@ -226,54 +198,6 @@ module OwnedObject {
     if isClass(chpl_p) { // otherwise, let error happen on init call
       if chpl_p != nil then
         delete _to_unmanaged(chpl_p);
-    }
-  }
-
-  /*
-    Empty this :type:`owned` so that it stores `nil`.
-    Deletes the previously managed object, if any.
-  */
-  pragma "leaves this nil"
-  @deprecated(notes="owned.clear is deprecated - please assign `nil` to the owned object instead")
-  proc ref _owned.clear() {
-    if chpl_p != nil {
-      delete _to_unmanaged(chpl_p);
-      chpl_p = nil;
-    }
-  }
-
-
-  /*
-    Change the instance managed by this class to `newPtr`. If this record was
-    already managing a non-nil instance, that instance will be deleted.
-  */
-  @deprecated(notes="owned.retain is deprecated - please use :proc:`owned.adopt` instead")
-  proc ref _owned.retain(pragma "nil from arg" newPtr:unmanaged) {
-    if !isCoercible(newPtr.type, chpl_t) then
-      compilerError("cannot retain '" + newPtr.type:string + "' " +
-                    "(expected '" + _to_unmanaged(chpl_t):string + "')");
-
-    var oldPtr = chpl_p;
-    chpl_p = newPtr;
-    if oldPtr then
-      delete _to_unmanaged(oldPtr);
-  }
-
-  /*
-    Empty this :type:`owned` so that it manages `nil`.
-    Returns the instance previously managed by this :type:`owned`.
-  */
-  pragma "leaves this nil"
-  pragma "nil from this"
-  @deprecated(notes="owned.release is deprecated - please use the :proc:`owned.release` type method instead")
-  proc ref _owned.release() {
-    var oldPtr = chpl_p;
-    chpl_p = nil;
-
-    if _to_nilable(chpl_t) == chpl_t {
-      return _to_unmanaged(oldPtr);
-    } else {
-      return _to_unmanaged(oldPtr!);
     }
   }
 

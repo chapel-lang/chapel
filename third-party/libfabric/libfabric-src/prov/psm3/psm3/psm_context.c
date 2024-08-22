@@ -58,10 +58,10 @@
 #include "psm_user.h"
 #include "psm2_hal.h"
 
-static int psmi_parse_nic_selection_algorithm(void);
 static psm2_error_t
 psm3_ep_verify_pkey(psm2_ep_t ep, uint16_t pkey, uint16_t *opkey, uint16_t* oindex);
 
+// enable or disable interrupts for urgent PSM protocol packets
 psm2_error_t psm3_context_interrupt_set(psm2_ep_t ep, int enable)
 {
 	int poll_type;
@@ -73,7 +73,7 @@ psm2_error_t psm3_context_interrupt_set(psm2_ep_t ep, int enable)
 	if (enable)
 		poll_type = PSMI_HAL_POLL_TYPE_URGENT;
 	else
-		poll_type = 0;
+		poll_type = PSMI_HAL_POLL_TYPE_NONE;
 
 	ret = psmi_hal_poll_type(poll_type, ep);
 
@@ -91,396 +91,6 @@ int psm3_context_interrupt_isenabled(psm2_ep_t ep)
 	return psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_INTR_ENABLED);
 }
 
-
-/* returns the 8-bit hash value of an uuid. */
-static inline
-uint8_t
-psm3_get_uuid_hash(psm2_uuid_t const uuid)
-{
-	int i;
-	uint8_t hashed_uuid = 0;
-
-	for (i=0; i < sizeof(psm2_uuid_t); ++i)
-		hashed_uuid ^= *((uint8_t const *)uuid + i);
-
-	return hashed_uuid;
-}
-
-int psm3_get_current_proc_location()
-{
-        int core_id, node_id;
-
-	core_id = sched_getcpu();
-	if (core_id < 0)
-		return -EINVAL;
-
-	node_id = numa_node_of_cpu(core_id);
-	if (node_id < 0)
-		return -EINVAL;
-
-	return node_id;
-}
-
-/* search the list of all units for those which are active
- * and optionally match the given NUMA node_id (when node_id >= 0)
- * returns the number of active units found.
- * Note get_unit_active tests for active ports, valid addresses and
- * performs filtering as done in get_port_subnets
- */
-static int
-hfi_find_active_hfis(int nunits, int node_id, int *saved_hfis)
-{
-	int found = 0, unit_id;
-
-	for (unit_id = 0; unit_id < nunits; unit_id++) {
-		int node_id_i;
-
-		if (psmi_hal_get_unit_active(unit_id) <= 0)
-			continue;
-
-		if (node_id < 0) {
-			saved_hfis[found++] = unit_id;
-			_HFI_DBG("RoundRobinAll Found NIC unit= %d, local rank=%d.\n",
-				unit_id, psm3_get_mylocalrank());
-		} else if (!psmi_hal_get_node_id(unit_id, &node_id_i)
-				&& node_id_i == node_id) {
-			saved_hfis[found++] = unit_id;
-			_HFI_DBG("RoundRobin Found NIC unit= %d, node = %d, local rank=%d.\n",
-				unit_id, node_id, psm3_get_mylocalrank());
-		}
-	}
-	return found;
-}
-
-static void
-psmi_spread_nic_selection(psm2_uuid_t const job_key, long *unit_start,
-			     long *unit_end, int nunits)
-{
-	{
-		int found, saved_hfis[nunits];
-
-		/* else, we are going to look at:
-		   (a hash of the job key plus the local rank id) mod nunits. */
-		found = hfi_find_active_hfis(nunits, -1, saved_hfis);
-		if (found)
-			*unit_start = saved_hfis[((psm3_get_mylocalrank()+1) +
-				psm3_get_uuid_hash(job_key)) % found];
-		else
-			*unit_start = 0; // caller will fail
-		/* just in case, caller will check all other units, with wrap */
-		if (*unit_start > 0)
-			*unit_end = *unit_start - 1;
-		else
-			*unit_end = nunits-1;
-	}
-	_HFI_DBG("RoundRobinAll Will select 1st viable NIC unit= %ld to %ld.\n",
-		*unit_start, *unit_end);
-}
-
-static int
-psm3_create_and_open_affinity_shm(psm2_uuid_t const job_key)
-{
-	int shm_fd, ret;
-	int first_to_create = 0;
-	size_t shm_name_len = 256;
-
-	psmi_assert_always(psm3_affinity_semaphore_open);
-	if (psm3_affinity_shared_file_opened) {
-		/* opened and have our reference counted in shm */
-		psmi_assert_always(psm3_affinity_shm_name != NULL);
-		psmi_assert_always(psm3_shared_affinity_ptr != NULL);
-		return 0;
-	}
-
-	psm3_shared_affinity_ptr = NULL;
-	psm3_affinity_shm_name = (char *) psmi_malloc(PSMI_EP_NONE, UNDEFINED, shm_name_len);
-
-	psmi_assert_always(psm3_affinity_shm_name != NULL);
-	snprintf(psm3_affinity_shm_name, shm_name_len,
-		 AFFINITY_SHM_BASENAME".%d",
-		 psm3_get_uuid_hash(job_key));
-	shm_fd = shm_open(psm3_affinity_shm_name, O_RDWR | O_CREAT | O_EXCL,
-			  S_IRUSR | S_IWUSR);
-	if ((shm_fd < 0) && (errno == EEXIST)) {
-		shm_fd = shm_open(psm3_affinity_shm_name, O_RDWR, S_IRUSR | S_IWUSR);
-		if (shm_fd < 0) {
-			_HFI_VDBG("Cannot open affinity shared mem fd:%s, errno=%d\n",
-				  psm3_affinity_shm_name, errno);
-			goto free_name;
-		}
-	} else if (shm_fd >= 0) {
-		first_to_create = 1;
-	} else {
-		_HFI_VDBG("Cannot create affinity shared mem fd:%s, errno=%d\n",
-			  psm3_affinity_shm_name, errno);
-		goto free_name;
-	}
-
-	ret = ftruncate(shm_fd, PSMI_PAGESIZE);
-	if ( ret < 0 ) {
-		_HFI_VDBG("Cannot truncate affinity shared mem fd:%s, errno=%d\n",
-			psm3_affinity_shm_name, errno);
-		goto close_shm;
-	}
-
-	psm3_shared_affinity_ptr = (uint64_t *) mmap(NULL, PSMI_PAGESIZE, PROT_READ | PROT_WRITE,
-					MAP_SHARED, shm_fd, 0);
-	if (psm3_shared_affinity_ptr == MAP_FAILED) {
-		_HFI_VDBG("Cannot mmap affinity shared memory: %s, errno=%d\n",
-			  psm3_affinity_shm_name, errno);
-		goto close_shm;
-	}
-	close(shm_fd);
-	shm_fd = -1;
-
-	if (first_to_create) {
-		_HFI_VDBG("Initializing shm to store NIC affinity per socket: %s\n", psm3_affinity_shm_name);
-
-		memset(psm3_shared_affinity_ptr, 0, PSMI_PAGESIZE);
-
-		/*
-		 * Once shm object is initialized, unlock others to be able to
-		 * use it.
-		 */
-		psmi_sem_post(psm3_sem_affinity_shm_rw, psm3_sem_affinity_shm_rw_name);
-	} else {
-		_HFI_VDBG("Opened shm object to read/write NIC affinity per socket: %s\n", psm3_affinity_shm_name);
-	}
-
-	/*
-	 * Start critical section to increment reference count when creating
-	 * or opening shm object. Decrement of ref count will be done before
-	 * closing the shm.
-	 */
-	if (psmi_sem_timedwait(psm3_sem_affinity_shm_rw, psm3_sem_affinity_shm_rw_name)) {
-		_HFI_VDBG("Could not enter critical section to update shm refcount\n");
-		goto unmap_shm;
-	}
-
-	psm3_shared_affinity_ptr[AFFINITY_SHM_REF_COUNT_LOCATION] += 1;
-	_HFI_VDBG("shm refcount = %"PRId64"\n",  psm3_shared_affinity_ptr[AFFINITY_SHM_REF_COUNT_LOCATION]);
-
-	/* End critical section */
-	psmi_sem_post(psm3_sem_affinity_shm_rw, psm3_sem_affinity_shm_rw_name);
-
-	psm3_affinity_shared_file_opened = 1;
-
-	return 0;
-
-unmap_shm:
-	munmap(psm3_shared_affinity_ptr, PSMI_PAGESIZE);
-	psm3_shared_affinity_ptr = NULL;
-close_shm:
-	if (shm_fd >= 0) close(shm_fd);
-free_name:
-	psmi_free(psm3_affinity_shm_name);
-	psm3_affinity_shm_name = NULL;
-	return -1;
-}
-
-/*
- * Spread HFI selection between units if we find more than one within a socket.
- */
-static void
-psmi_spread_hfi_within_socket(long *unit_start, long *unit_end, int node_id,
-			      int *saved_hfis, int found, psm2_uuid_t const job_key)
-{
-	int ret, shm_location;
-
-	/*
-	 * Take affinity lock and open shared memory region to be able to
-	 * accurately determine which HFI to pick for this process. If any
-	 * issues, bail by picking first known HFI.
-	 */
-	if (!psm3_affinity_semaphore_open)
-		goto spread_hfi_fallback;
-
-	ret = psm3_create_and_open_affinity_shm(job_key);
-	if (ret < 0)
-		goto spread_hfi_fallback;
-
-	shm_location = AFFINITY_SHM_HFI_INDEX_LOCATION + node_id;
-	if (shm_location > PSMI_PAGESIZE)
-		goto spread_hfi_fallback;
-
-	/* Start critical section to read/write shm object */
-	if (psmi_sem_timedwait(psm3_sem_affinity_shm_rw, psm3_sem_affinity_shm_rw_name)) {
-		_HFI_VDBG("Could not enter critical section to update NIC index\n");
-		goto spread_hfi_fallback;
-	}
-
-	*unit_start = *unit_end = saved_hfis[psm3_shared_affinity_ptr[shm_location]];
-	psm3_shared_affinity_ptr[shm_location] =
-		(psm3_shared_affinity_ptr[shm_location] + 1) % found;
-	_HFI_DBG("RoundRobin Selected NIC unit= %ld, Next NIC=%ld, node = %d, local rank=%d, found=%d.\n",
-		  *unit_start, psm3_shared_affinity_ptr[shm_location], node_id,
-		  psm3_get_mylocalrank(), found);
-
-	/* End Critical Section */
-	psmi_sem_post(psm3_sem_affinity_shm_rw, psm3_sem_affinity_shm_rw_name);
-
-	return;
-
-spread_hfi_fallback:
-	*unit_start = *unit_end = saved_hfis[0];
-}
-
-static void
-psm3_create_affinity_semaphores(psm2_uuid_t const job_key)
-{
-	int ret;
-	size_t sem_len = 256;
-
-	/*
-	 * If already opened, no need to do anything else.
-	 * This could be true for Multi-EP cases where a different thread has
-	 * already created the semaphores. We don't need separate locks here as
-	 * we are protected by the overall "psm3_creation_lock" which each
-	 * thread will take in psm3_ep_open()
-	 */
-	if (psm3_affinity_semaphore_open)
-		return;
-
-	psm3_sem_affinity_shm_rw_name = (char *) psmi_malloc(PSMI_EP_NONE, UNDEFINED, sem_len);
-	psmi_assert_always(psm3_sem_affinity_shm_rw_name != NULL);
-	snprintf(psm3_sem_affinity_shm_rw_name, sem_len,
-		 SEM_AFFINITY_SHM_RW_BASENAME".%d",
-		 psm3_get_uuid_hash(job_key));
-
-	ret = psmi_init_semaphore(&psm3_sem_affinity_shm_rw, psm3_sem_affinity_shm_rw_name,
-				  S_IRUSR | S_IWUSR, 0);
-	if (ret) {
-		_HFI_VDBG("Cannot initialize semaphore: %s for read-write access to shm object.\n",
-			  psm3_sem_affinity_shm_rw_name);
-		if (psm3_sem_affinity_shm_rw)
-			sem_close(psm3_sem_affinity_shm_rw);
-		psmi_free(psm3_sem_affinity_shm_rw_name);
-		psm3_sem_affinity_shm_rw_name = NULL;
-		return;
-	}
-
-	_HFI_VDBG("Semaphore: %s created for read-write access to shm object.\n",
-		  psm3_sem_affinity_shm_rw_name);
-
-	psm3_affinity_semaphore_open = 1;
-
-	return;
-}
-
-// return set of units to consider and which to start at.
-// caller will use 1st active unit which can be opened.
-// caller will wrap around so it's valid for start > end
-// Note: When using multiple rails per PSM process, higher level code will
-// walk through desired units and unit_param will specify a specific unit
-static
-psm2_error_t
-psmi_compute_start_and_end_unit(long unit_param, long addr_index,
-				int nunitsactive,int nunits,
-				psm2_uuid_t const job_key,
-				long *unit_start,long *unit_end)
-{
-	unsigned short nic_sel_alg = PSMI_UNIT_SEL_ALG_ACROSS;
-	int node_id, found = 0;
-	int saved_hfis[nunits];
-
-	/* if the user did not set PSM3_NIC then ... */
-	if (unit_param == PSM3_NIC_ANY)
-	{
-		if (nunitsactive > 1) {
-			// if NICs are on different planes (non-routed subnets)
-			// we need to have all ranks default to the same plane
-			// so force 1st active NIC in that case
-			int have_subnet = 0, unit_id;
-			psmi_subnet128_t got_subnet = { };
-			for (unit_id = 0; unit_id < nunits; unit_id++) {
-				psmi_subnet128_t subnet;
-				if (psmi_hal_get_unit_active(unit_id) <= 0)
-					continue;
-				if (0 != psmi_hal_get_port_subnet(unit_id, 1 /* VERBS_PORT*/,
-								addr_index>0?addr_index:0,
-								&subnet, NULL, NULL, NULL))
-					continue; // can't access NIC
-				if (! have_subnet) {
-					have_subnet = 1;
-					got_subnet = subnet;
-				} else if (! psm3_subnets_match(got_subnet,
-								subnet)) {
-					// active units have different tech
-					// (IB/OPA vs Eth) or different subnets
-					// caller will pick 1st active unit
-					*unit_start = 0;
-					*unit_end = nunits - 1;
-					_HFI_DBG("Multi-Plane config: Will select 1st viable NIC unit= %ld to %ld.\n",
-						*unit_start, *unit_end);
-					return PSM2_OK;
-				}
-			}
-		}
-
-		/* Get the actual selection algorithm from the environment: */
-		nic_sel_alg = psmi_parse_nic_selection_algorithm();
-		/* If round-robin is selection algorithm and ... */
-		if ((nic_sel_alg == PSMI_UNIT_SEL_ALG_ACROSS) &&
-		    /* there are more than 1 active units then ... */
-		    (nunitsactive > 1))
-		{
-			/*
-			 * Pick first HFI we find on same root complex
-			 * as current task. If none found, fall back to
-			 * RoundRobinAll load-balancing algorithm.
-			 */
-			node_id = psm3_get_current_proc_location();
-			if (node_id >= 0) {
-				found = hfi_find_active_hfis(nunits, node_id,
-								saved_hfis);
-				if (found > 1) {
-					psm3_create_affinity_semaphores(job_key);
-					psmi_spread_hfi_within_socket(unit_start, unit_end,
-								      node_id, saved_hfis,
-								      found, job_key);
-				} else if (found == 1) {
-					*unit_start = *unit_end = saved_hfis[0];
-					_HFI_DBG("RoundRobin Selected NIC unit= %ld, node = %d, local rank=%d, found=%d.\n",
-						*unit_start, node_id,
-						psm3_get_mylocalrank(), found);
-				}
-			}
-
-			if (node_id < 0 || !found) {
-				_HFI_DBG("RoundRobin No local NIC found, using RoundRobinAll, node = %d, local rank=%d, found=%d.\n",
-						node_id,
-						psm3_get_mylocalrank(), found);
-				psmi_spread_nic_selection(job_key, unit_start,
-							  unit_end, nunits);
-			}
-		} else if ((nic_sel_alg == PSMI_UNIT_SEL_ALG_ACROSS_ALL) &&
-			 (nunitsactive > 1)) {
-				psmi_spread_nic_selection(job_key, unit_start,
-							  unit_end, nunits);
-		}
-		else { // PSMI_UNIT_SEL_ALG_WITHIN or only 1 active unit
-			// caller will pick 1st active unit
-			*unit_start = 0;
-			*unit_end = nunits - 1;
-			_HFI_DBG("%s: Will select 1st viable NIC unit= %ld to %ld.\n",
-				(nic_sel_alg == PSMI_UNIT_SEL_ALG_WITHIN)
-					?"Packed":"Only 1 viable NIC",
-				*unit_start, *unit_end);
-		}
-	} else if (unit_param >= 0) {
-		/* the user specified PSM3_NIC, we use it. */
-		*unit_start = *unit_end = unit_param;
-		_HFI_DBG("Caller selected NIC %ld.\n", *unit_start);
-	} else {
-		psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-				 "PSM3 can't open unit: %ld for reading and writing",
-				 unit_param);
-		return PSM2_EP_DEVICE_FAILURE;
-	}
-
-	return PSM2_OK;
-}
-
 static int psmi_hash_addr_index(long unit, long port, long addr_index)
 {
 	/* if the user did not set addr_index, then use a hash */
@@ -492,6 +102,9 @@ static int psmi_hash_addr_index(long unit, long port, long addr_index)
 	return addr_index;
 }
 
+// Open a single NIC.
+// if unit_param is PSM3_NIC_ANY, the chosen PSM3_NIC_SELECTION_ALG will be
+// used to pick a single active NIC
 psm2_error_t
 psm3_context_open(const psm2_ep_t ep, long unit_param, long port, long addr_index,
 		  psm2_uuid_t const job_key, uint16_t network_pkey,
@@ -534,15 +147,15 @@ psm3_context_open(const psm2_ep_t ep, long unit_param, long port, long addr_inde
 
 
 	unit_start = 0; unit_end = nunits - 1;
-	err = psmi_compute_start_and_end_unit(unit_param, addr_index,
+	err = psm3_compute_start_and_end_unit(unit_param, addr_index,
 					      nunitsactive, nunits, job_key,
 					      &unit_start, &unit_end);
 	if (err != PSM2_OK)
 		goto ret;
 
-	/* this is the start of a loop that starts at unit_start and goes to unit_end.
-	   but note that the way the loop computes the loop control variable is by
-	   an expression involving the mod operator. */
+	/* Loop from unit_start to unit_end inclusive and pick 1st active found
+	 * As needed wrap, so it's valid for unit_start >= unit_end
+	 */
 	int success = 0;
 	unit_id_prev = unit_id = unit_start;
 	do
@@ -559,6 +172,10 @@ psm3_context_open(const psm2_ep_t ep, long unit_param, long port, long addr_inde
 				psmi_hash_addr_index(unit_id, port, addr_index),
 				open_timeout,
 				ep, job_key, HAL_CONTEXT_OPEN_RETRY_MAX)) {
+			// in modes where we refcount NIC use,
+			// psm3_compute_start_and_end_unit will have returned exactly
+			// 1 NIC and refcount'ed it, so we dec refcount here
+			psm3_dec_nic_refcount(unit_id);
 			/* go to next unit if failed to open. */
 			unit_id_prev = unit_id;
 			unit_id = (unit_id + 1) % nunits;
@@ -623,6 +240,7 @@ psm3_context_open(const psm2_ep_t ep, long unit_param, long port, long addr_inde
 
 close:
 	psmi_hal_close_context(ep);
+	psm3_dec_nic_refcount(ep->unit_id);
 bail:
 	_HFI_PRDBG("open failed: unit_id: %ld, err: %d (%s)\n", unit_id, err, strerror(errno));
 ret:
@@ -634,16 +252,21 @@ ret:
 psm2_error_t psm3_context_close(psm2_ep_t ep)
 {
 	psmi_hal_close_context(ep);
+	psm3_dec_nic_refcount(ep->unit_id);
 
 	return PSM2_OK;
 }
 
+// up to 4 digits per CPU number, plus a coma or dash
+#define MAX_CPU_AFFINITY_STRING (CPU_SETSIZE * 5)
+
 static inline char * _dump_cpu_affinity(char *buf, size_t buf_size, cpu_set_t * cpuset) {
 	int i;
-	int isfirst = 1;
-	char tmp[25]; //%d = 10 :: 10 + '-' + 10 + ',' + '\0' = 23
+	char tmp[25]; //%d, = 10+','+\0 or %d-%d, = 10 + '-' + 10 + ',' + '\0' = 23
 	int first = -1, last = -1;
+	int len = 0;
 
+	*buf = '\0';
 	for (i = 0; i < CPU_SETSIZE; i++) {
 		if (CPU_ISSET(i, cpuset)) {
 			if (first == -1) {
@@ -659,13 +282,8 @@ static inline char * _dump_cpu_affinity(char *buf, size_t buf_size, cpu_set_t * 
 			}
 			first = last = -1;
 
-			if (isfirst) {
-				strncpy(buf, tmp, buf_size-1);
-				isfirst=0;
-			} else {
-				strncat(buf, tmp, buf_size-1);
-			}
-			buf[buf_size-1] = '\0';
+			snprintf(&buf[len], buf_size-len,"%s", tmp);
+			len = strlen(buf);
 		}
 	}
 
@@ -675,24 +293,50 @@ static inline char * _dump_cpu_affinity(char *buf, size_t buf_size, cpu_set_t * 
 		} else {
 			snprintf(tmp, sizeof(tmp), "%d-%d,", first, last);
 		}
-		if (isfirst) {
-			strncpy(buf, tmp, buf_size-1);
-		} else {
-			strncat(buf, tmp, buf_size-1);
-		}
-		buf[buf_size-1] = '\0';
+		snprintf(&buf[len], buf_size-len,"%s", tmp);
+		len = strlen(buf);
 	}
-	char *comma = strrchr(buf, ',');
-	if (comma) comma[0] = '\0';
+	if (len)
+		buf[len-1] = '\0';	// elimate trailing coma
 
 	return buf;
 }
 
-// called by HAL context_open to set affinity consistent with
-// NIC NUMA location when NIC NUMA location is a superset of thread CPU set
-// TBD unclear when this provides value.
+// called by HAL context_open to set CPU affinity narrower consistent with
+// NIC NUMA location
+// Intel MPI sets PSM3_NO_CPUAFFINITY to disable this function
+// Suspect this is not effective or has bugs.  For Omni-Path the NIC
+// driver set affinity before this was called, and this was thus likely a noop.
+// This is a noop if:
+//     - if NIC is not NUMA local to any of CPUs in existing affinity
+//     - if existing affinity selects more cores than those local to NIC
+//		even if that set incompletely overlaps the NIC local core set
+//		suspect this is a bug and test should be opposity or just test
+//		for overlap.
+// if NIC is NUMA local to CPU, and NIC core list is larger than existing
+// affinity, will limit scope of affinity to cores NUMA local to NIC
+//  - does not consider the full set of selected NICs when multirail enabled
+//  - may only provide value if CPU set from caller is small but > 1 CPU NUMA
+//    domain in which case this will reduce it to a single CPU NUMA domain
+//    matching the NIC's NUMA location.
+//
+// By default this is enabled, but two undocumented variables
+// PSM3_FORCE_CPUAFFINITY and PSM3_NO_CPUAFFINITY can control this
+// as well as the ep_open skip_affinity flag.
+//
+// May be better if we analyzed NIC NUMA location and various other
+// process and thread locations when NIC NUMA is a subset of CPU affinity
+// and guide a good choice for CPU affinity, but that would require
+// intra-node process coordination to avoid duplicate CPU selections
+//
+// TBD for GPU affinity this may not make sense.  Also PSM3 can't force a GPU
+// selection for an app.
+//
+// TBD when PSM3 is using multiple NICs (PSM3_MULTIRAIL > 0) this should
+// be enhanced to attempt to select a CPU based on location of all NICs being
+// used, not just a single NIC.
 int
-psm3_context_set_affinity(psm2_ep_t ep, cpu_set_t nic_cpuset)
+psm3_context_set_affinity(psm2_ep_t ep, int unit)
 {
 	pthread_t mythread = pthread_self();
 	cpu_set_t cpuset;
@@ -706,8 +350,9 @@ psm3_context_set_affinity(psm2_ep_t ep, cpu_set_t nic_cpuset)
 	}
 
 	if (_HFI_DBG_ON) {
-		char cpu_buf[128] = {0};
-		_HFI_DBG_ALWAYS( "CPU affinity Before set: %s\n", _dump_cpu_affinity(cpu_buf, 128, &cpuset));
+		char cpu_buf[MAX_CPU_AFFINITY_STRING] = {0};
+		_HFI_DBG_ALWAYS( "CPU affinity Before set: %s\n",
+				_dump_cpu_affinity(cpu_buf, MAX_CPU_AFFINITY_STRING, &cpuset));
 	}
 
 	/*
@@ -717,10 +362,19 @@ psm3_context_set_affinity(psm2_ep_t ep, cpu_set_t nic_cpuset)
 	 * 2. User doesn't set affinity in environment and PSM is opened with
 	 *    option affinity skip.
 	 */
-	if (getenv("PSM3_FORCE_CPUAFFINITY") ||
-		!(getenv("PSM3_NO_CPUAFFINITY") || ep->skip_affinity))
+	//if (psm3_env_get("PSM3_FORCE_CPUAFFINITY") ||
+	//	!(psm3_env_get("PSM3_NO_CPUAFFINITY") || ep->skip_affinity))
+	if (psm3_env_psm_sets_cpuaffinity(ep->skip_affinity))
 	{
+		cpu_set_t nic_cpuset;
 		cpu_set_t andcpuset;
+
+		if (psm3_sysfs_get_unit_cpumask(unit, &nic_cpuset)) {
+			//_HFI_INFO( "Failed to get %s (unit %d) cpu set\n", ep->dev_name, unit);
+			////err = -PSM_HAL_ERROR_GENERAL_ERROR;
+			//goto bail;
+			goto skip_affinity;
+		}
 
 		int cpu_count = CPU_COUNT(&cpuset);
 		int nic_count = CPU_COUNT(&nic_cpuset);
@@ -732,18 +386,20 @@ psm3_context_set_affinity(psm2_ep_t ep, cpu_set_t nic_cpuset)
 		int cpu_and_count = CPU_COUNT(&andcpuset);
 
 		if (cpu_and_count > 0 && pthread_setaffinity_np(mythread, sizeof(andcpuset), &andcpuset)) {
-			// bug on OPA, dev_name, unit_id not yet initialized
+			// bug on OPA, dev_name not yet initialized
 			// ok on UD and UDP
-			_HFI_ERROR( "Failed to set %s (unit %d) cpu set: %s\n", ep->dev_name,  ep->unit_id, strerror(errno));
+			_HFI_ERROR( "Failed to set %s (unit %d) cpu set: %s\n", ep->dev_name,  unit, strerror(errno));
 			//err = -PSM_HAL_ERROR_GENERAL_ERROR;
 			goto bail;
 		} else if (cpu_and_count == 0 && _HFI_DBG_ON) {
-			char buf1[128] = {0};
-			char buf2[128] = {0};
+			char buf1[MAX_CPU_AFFINITY_STRING] = {0};
+			char buf2[MAX_CPU_AFFINITY_STRING] = {0};
 			_HFI_DBG_ALWAYS( "CPU affinity not set, NIC selected is not on the same socket as thread (\"%s\" & \"%s\" == 0).\n",
-				_dump_cpu_affinity(buf1, 128, &nic_cpuset), _dump_cpu_affinity(buf2, 128, &cpuset));
+				_dump_cpu_affinity(buf1, MAX_CPU_AFFINITY_STRING, &nic_cpuset),
+				_dump_cpu_affinity(buf2, MAX_CPU_AFFINITY_STRING, &cpuset));
 		}
 	}
+skip_affinity:
 	if (_HFI_DBG_ON) {
 		CPU_ZERO(&cpuset);
 		int s = pthread_getaffinity_np(mythread, sizeof(cpu_set_t), &cpuset);
@@ -752,8 +408,9 @@ psm3_context_set_affinity(psm2_ep_t ep, cpu_set_t nic_cpuset)
 				"Can't get CPU affinity: %s\n", strerror(errno));
 			goto bail;
 		}
-		char cpu_buf[128] = {0};
-		_HFI_DBG_ALWAYS( "CPU affinity After set: %s\n", _dump_cpu_affinity(cpu_buf, 128, &cpuset));
+		char cpu_buf[MAX_CPU_AFFINITY_STRING] = {0};
+		_HFI_DBG_ALWAYS( "CPU affinity After set: %s\n",
+				_dump_cpu_affinity(cpu_buf, MAX_CPU_AFFINITY_STRING, &cpuset));
 	}
 	return 0;
 
@@ -803,38 +460,4 @@ psm3_ep_verify_pkey(psm2_ep_t ep, uint16_t pkey, uint16_t *opkey, uint16_t* oind
 	*oindex = (uint16_t)i;
 
 	return PSM2_OK;
-}
-
-static
-int psmi_parse_nic_selection_algorithm(void)
-{
-	union psmi_envvar_val env_nic_alg;
-	int nic_alg = PSMI_UNIT_SEL_ALG_ACROSS;
-
-	/* If a specific unit is set in the environment, use that one. */
-	psm3_getenv("PSM3_NIC_SELECTION_ALG",
-		    "NIC Device Selection Algorithm to use. Round Robin[RoundRobin or rr] (Default) "
-		    ", Packed[p] or Round Robin All[RoundRobinAll or rra].",
-		    PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_STR,
-		    (union psmi_envvar_val)"rr", &env_nic_alg);
-
-	if (!strcasecmp(env_nic_alg.e_str, "Round Robin")
-		|| !strcasecmp(env_nic_alg.e_str, "RoundRobin")
-		|| !strcasecmp(env_nic_alg.e_str, "rr"))
-		nic_alg = PSMI_UNIT_SEL_ALG_ACROSS;
-	else if (!strcasecmp(env_nic_alg.e_str, "Packed")
-			 || !strcasecmp(env_nic_alg.e_str, "p"))
-		nic_alg = PSMI_UNIT_SEL_ALG_WITHIN;
-	else if (!strcasecmp(env_nic_alg.e_str, "Round Robin All")
-			 || !strcasecmp(env_nic_alg.e_str, "RoundRobinAll")
-			 || !strcasecmp(env_nic_alg.e_str, "rra"))
-		nic_alg = PSMI_UNIT_SEL_ALG_ACROSS_ALL;
-	else {
-		_HFI_ERROR
-		    ("Unknown NIC selection algorithm %s. Defaulting to Round Robin "
-		     "allocation of NICs.\n", env_nic_alg.e_str);
-		nic_alg = PSMI_UNIT_SEL_ALG_ACROSS;
-	}
-
-	return nic_alg;
 }

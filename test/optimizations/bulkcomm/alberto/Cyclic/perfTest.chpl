@@ -12,12 +12,12 @@ config  const n: int=100;
 
 const Space = {1..n,1..n,1..n};
 const Space2 = {1..2*n,1..2*n,1..2*n};
-const Dom1: domain(3) dmapped cyclicDist(startIdx=Space.low)=Space;
-const Dom2: domain(3) dmapped cyclicDist(startIdx=Space2.low)=Space2;
+const Dom1: domain(3) dmapped new cyclicDist(startIdx=Space.low)=Space;
+const Dom2: domain(3) dmapped new cyclicDist(startIdx=Space2.low)=Space2;
 const Space3 = {1..n,1..n};
 const Space4 = {1..2*n,1..2*n};
-const Dom3: domain(2) dmapped cyclicDist(startIdx=Space3.low)=Space3;
-const Dom4: domain(2) dmapped cyclicDist(startIdx=Space4.low)=Space4;
+const Dom3: domain(2) dmapped new cyclicDist(startIdx=Space3.low)=Space3;
+const Dom4: domain(2) dmapped new cyclicDist(startIdx=Space4.low)=Space4;
 
 
 //var Dist1 = new blockDist({1..n,1..n,1..n});

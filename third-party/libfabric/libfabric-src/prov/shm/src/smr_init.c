@@ -44,6 +44,8 @@ struct smr_env smr_env = {
 	.sar_threshold = SIZE_MAX,
 	.disable_cma = false,
 	.use_dsa_sar = false,
+	.max_gdrcopy_size = 3072,
+	.use_xpmem = false,
 };
 
 static void smr_init_env(void)
@@ -53,6 +55,7 @@ static void smr_init_env(void)
 	fi_param_get_size_t(&smr_prov, "rx_size", &smr_info.rx_attr->size);
 	fi_param_get_bool(&smr_prov, "disable_cma", &smr_env.disable_cma);
 	fi_param_get_bool(&smr_prov, "use_dsa_sar", &smr_env.use_dsa_sar);
+	fi_param_get_bool(&smr_prov, "use_xpmem", &smr_env.use_xpmem);
 }
 
 static void smr_resolve_addr(const char *node, const char *service,
@@ -177,6 +180,7 @@ static void smr_fini(void)
 #if HAVE_SHM_DL
 	ofi_hmem_cleanup();
 #endif
+	smr_dsa_cleanup();
 	smr_cleanup();
 	free(old_action);
 }
@@ -219,8 +223,14 @@ SHM_INI
 			"Enable CPU touching of memory pages in DSA command \
 			 descriptor when page fault is reported. \
 			 Default: false");
+	fi_param_define(&smr_prov, "use_xpmem", FI_PARAM_BOOL,
+			"Enable XPMEM over CMA when possible "
+			"(default: false)");
 
 	smr_init_env();
+
+	if (smr_env.use_dsa_sar)
+		smr_dsa_init();
 
 	old_action = calloc(SIGRTMIN, sizeof(*old_action));
 	if (!old_action)

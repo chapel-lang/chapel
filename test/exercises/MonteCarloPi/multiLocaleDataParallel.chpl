@@ -14,7 +14,7 @@ var rs = new randomStream(real, seed);
 // Distribute the domain representing the random points in a 
 // Blocked manner over the target locale set.
 //
-var D = {1..n} dmapped blockDist({1..n});
+var D = {1..n} dmapped new blockDist({1..n});
 
 //
 // The computation is identical to the non-distributed case.

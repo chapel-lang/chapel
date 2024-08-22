@@ -32,7 +32,7 @@
  */
 
 #include "config.h"
-#include "fi_verbs.h"
+#include "verbs_ofi.h"
 #include <sys/stat.h>
 
 
@@ -49,7 +49,7 @@ static int vrb_create_ini_qp(struct vrb_xrc_ep *ep)
 {
 #if VERBS_HAVE_XRC
 	struct ibv_qp_init_attr_ex attr_ex;
-	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
+	struct vrb_domain *domain = vrb_ep2_domain(&ep->base_ep);
 	int ret;
 
 	vrb_msg_ep_get_qp_attr(&ep->base_ep,
@@ -83,7 +83,7 @@ static inline void vrb_set_ini_conn_key(struct vrb_xrc_ep *ep,
 
 int vrb_get_shared_ini_conn(struct vrb_xrc_ep *ep,
 			    struct vrb_ini_shared_conn **ini_conn) {
-	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
+	struct vrb_domain *domain = vrb_ep2_domain(&ep->base_ep);
 	struct vrb_ini_conn_key key;
 	struct vrb_ini_shared_conn *conn;
 	struct ofi_rbnode *node;
@@ -139,7 +139,7 @@ insert_err:
 
 void _vrb_put_shared_ini_conn(struct vrb_xrc_ep *ep)
 {
-	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
+	struct vrb_domain *domain = vrb_ep2_domain(&ep->base_ep);
 	struct vrb_ini_shared_conn *ini_conn;
 	struct vrb_ini_conn_key key;
 
@@ -184,7 +184,7 @@ void _vrb_put_shared_ini_conn(struct vrb_xrc_ep *ep)
 
 void vrb_put_shared_ini_conn(struct vrb_xrc_ep *ep)
 {
-	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
+	struct vrb_domain *domain = vrb_ep2_domain(&ep->base_ep);
 
 	domain->xrc.lock_acquire(&domain->xrc.ini_lock);
 	_vrb_put_shared_ini_conn(ep);
@@ -194,7 +194,7 @@ void vrb_put_shared_ini_conn(struct vrb_xrc_ep *ep)
 void vrb_add_pending_ini_conn(struct vrb_xrc_ep *ep, int reciprocal,
 			      void *conn_param, size_t conn_paramlen)
 {
-	assert(ofi_mutex_held(&vrb_ep_to_domain(&ep->base_ep)->xrc.ini_lock));
+	assert(ofi_mutex_held(&vrb_ep2_domain(&ep->base_ep)->xrc.ini_lock));
 
 	ep->conn_setup->pending_recip = reciprocal;
 	ep->conn_setup->pending_paramlen = MIN(conn_paramlen,
@@ -355,7 +355,7 @@ int vrb_ep_create_tgt_qp(struct vrb_xrc_ep *ep, uint32_t tgt_qpn)
 #if VERBS_HAVE_XRC
 	struct ibv_qp_open_attr open_attr;
 	struct ibv_qp_init_attr_ex attr_ex;
-	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
+	struct vrb_domain *domain = vrb_ep2_domain(&ep->base_ep);
 	int ret;
 
 	assert(ep->tgt_id && !ep->tgt_id->qp);
@@ -432,7 +432,7 @@ static int vrb_put_tgt_qp(struct vrb_xrc_ep *ep)
 
 int vrb_ep_destroy_xrc_qp(struct vrb_xrc_ep *ep)
 {
-	assert(ofi_mutex_held(&ep->base_ep.eq->lock));
+	assert(ofi_mutex_held(&ep->base_ep.eq->event_lock));
 	vrb_put_shared_ini_conn(ep);
 
 	if (ep->base_ep.id) {

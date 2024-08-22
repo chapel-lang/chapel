@@ -142,7 +142,12 @@ class TestFramework(unittest.TestCase):
         self.assertIn("Physical CPUs: %s\n" % cpus, output)
         cpus = stringify(self.getSocketThreads(socket))
         self.assertIn("Logical CPUs: %s\n" % cpus, output)
-        self.assertIn("NIC: " + self.nicForSocket[socket], output)
+        found = False
+        for s in self.nicsForSocket[socket]:
+            if "NIC: " + s in output:
+                found = True
+                break
+        self.assertTrue(found, "assigned NIC is in the same socket")
 
     def in_numa_test(self, numa, nic):
         """
@@ -219,29 +224,29 @@ class TestCases(object):
             """
             Locale should use NIC in its socket when that is suggested.
             """
-            if not hasattr(self, 'nicForSocket'):
+            if not hasattr(self, 'nicsForSocket'):
                 self.skipTest("NICs are not in sockets")
             for i in range(0, self.sockets):
-                with self.subTest(i=i):
-                    self.in_socket_test(i, self.nicForSocket[i])
+                for n in self.nicsForSocket[i]:
+                    with self.subTest(i=i, n=n):
+                        self.in_socket_test(i, n)
 
         def test_03_suggest_nic_in_other_socket(self):
             """
-            Locale should use NIC in its socket when a different NIC is
-            suggested.
+            Locale should use NIC in its socket when it isn't suggested.
             """
-            if not hasattr(self, 'nicForSocket'):
+            if not hasattr(self, 'nicsForSocket'):
                 self.skipTest("NICs are not in sockets")
             if (len(self.nics) == 1):
                 self.skipTest("only one NIC")
             for i in range(0, self.sockets):
-                with self.subTest(i=i):
-                    self.in_socket_test(i,
-                                   self.nicForSocket[(i+1)%self.sockets])
+                for n in self.nicsForSocket[(i+1)%self.sockets]:
+                    with self.subTest(i=i, n=n):
+                        self.in_socket_test(i, n)
 
         def test_04_suggest_nic_in_numa(self):
             """
-            Locale should use NIC in its NUMA when that is suggested.
+            Locale should use NIC in its NUMA when it is suggested.
             """
             if not hasattr(self, 'nicForNuma'):
                 self.skipTest("NICs are not in NUMAs")
@@ -251,8 +256,7 @@ class TestCases(object):
 
         def test_05_suggest_nic_in_other_numa(self):
             """
-            Locale should use NIC in its NUMA when a different NIC is
-            suggested.
+            Locale should use NIC in its NUMA when it isn't suggested.
             """
             if not hasattr(self, 'nicForNuma'):
                 self.skipTest("NICs are not in NUMAs")
@@ -278,7 +282,7 @@ def setupEx2(obj):
         obj.cores = 64
         obj.threads = 2
         obj.nics= ['0000:21:00.0', '0000:a1:00.0']
-        obj.nicForSocket = ['0000:21:00.0', '0000:a1:00.0']
+        obj.nicsForSocket = [['0000:21:00.0'], ['0000:a1:00.0']]
         obj.nicForNuma = ['0000:21:00.0', '0000:21:00.0', '0000:21:00.0',
                            '0000:21:00.0', '0000:a1:00.0', '0000:a1:00.0',
                            '0000:a1:00.0', '0000:a1:00.0']
@@ -322,6 +326,59 @@ class Ex2Tests(TestCases.TestCase):
         output = self.runCmd("./colocales -r 0 -n 17")
         self.assertIn("warning: 9 cores are unused\n", output);
 
+@unittest.skip("requires --enable-pci")
+class Ex3Tests(TestCases.TestCase):
+    """
+    HPE Cray EX. One sockets, four NUMA domains per socket, 64 cores per
+    socket, two threads per core, one NIC per NUMA domain, and one GPU
+    per NUMA domain.
+    """
+    def setUp(self):
+        super().setUp()
+        self.env['HWLOC_XMLFILE'] = 'ex3.xml'
+        self.sockets = 1
+        self.numas = 4
+        self.caches = 8
+        self.cores = 64
+        self.threads = 2
+        self.nics= ['0000:c2:00.0', '0000:81:00.0', '0000:42:00.0',
+                   '0000:01:00.0']
+        self.nicsForSocket = [self.nics]
+        self.nicForNuma = self.nics
+        self.nicForCache = [self.nics[int(i/self.caches)]
+                            for i in range(0, self.sockets * self.caches)]
+        self.nicForCore = [self.nics[int(i/self.cores)]
+                            for i in range(0, self.sockets * self.cores)]
+
+        self.gpus = ['0000:c1:00.0', '0000:82:00.0', '0000:41:00.0',
+                     '0000:03:00.0']
+        self.gpusForSocket = [self.gpus]
+        self.gpuForNuma = self.gpus
+
+    def test_10_one_colocale(self):
+        """
+        Single locale gets all the GPUs
+        """
+        output = self.runCmd("./colocales -r 0 -n 1");
+        self.assertIn("GPUS: " + ' '.join(self.gpus), output)
+
+    def test_11_two_colocales(self):
+        """
+        Each co-locale gets the two GPUs closest to it
+        """
+        for i in range(0, 2):
+            output = self.runCmd("./colocales -r %d -n 2" % i);
+            x = i * 2
+            self.assertIn("GPUS: " + ' '.join(self.gpus[x:x+1]), output)
+
+    def test_12_four_colocales(self):
+        """
+        Each co-locale gets the GPU closest to it
+        """
+        for i in range(0, 4):
+            output = self.runCmd("./colocales -r %d -n 4" % i);
+            self.assertIn("GPUS: " + self.gpus[i], output)
+
 class Hpc6aTests(TestCases.TestCase):
     """
     AWS hpc6a.48xlarge instance. Two sockets, two NUMA domains per socket, 48
@@ -336,9 +393,28 @@ class Hpc6aTests(TestCases.TestCase):
         self.cores = 48
         self.threads = 1
         self.nics= ['0000:00:06.0']
-        self.nicForSocket = ['0000:00:06.0', '0000:00:06.0']
+        self.nicsForSocket = [['0000:00:06.0'], ['0000:00:06.0']]
         self.nicForNuma = ['0000:00:06.0', '0000:00:06.0', '0000:00:06.0',
                            '0000:00:06.0']
+
+class Hpc6aTests(TestCases.TestCase):
+    """
+    AWS hpc6a.48xlarge instance. Two sockets, two NUMA domains per socket, 48
+    cores per socket, one thread per core, and one NIC not in a socket.
+    domains.
+    """
+    def setUp(self):
+        super().setUp()
+        self.env['HWLOC_XMLFILE'] = 'hpc6a.48xlarge.xml'
+        self.sockets = 2
+        self.numas = 2
+        self.cores = 48
+        self.threads = 1
+        self.nics= ['0000:00:06.0']
+        self.nicsForSocket = [['0000:00:06.0'], ['0000:00:06.0']]
+        self.nicForNuma = ['0000:00:06.0', '0000:00:06.0', '0000:00:06.0',
+                           '0000:00:06.0']
+
 
 class M6inTests(TestCases.TestCase):
     """
@@ -402,8 +478,9 @@ class SuffixTests(TestFramework):
     def test_00_socket_basic(self):
         self.env["CHPL_RT_COLOCALE_OBJ_TYPE"] = "socket"
         for i in range(0, self.sockets):
-            with self.subTest(i=i):
-                self.in_socket_test(i, self.nicForSocket[i])
+            for n in self.nicsForSocket[i]:
+                with self.subTest(i=i, n=n):
+                    self.in_socket_test(i, n)
 
     def test_01_socket_too_many_colocales(self):
         self.env["CHPL_RT_COLOCALE_OBJ_TYPE"] = "socket"

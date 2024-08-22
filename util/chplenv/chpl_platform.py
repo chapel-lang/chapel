@@ -18,7 +18,7 @@ def get(flag='host'):
         if not platform_val:
             platform_val = get('host')
     else:
-        raise error("Invalid flag: '{0}'".format(flag), ValueError)
+        error("Invalid flag: '{0}'".format(flag), ValueError)
 
     if not platform_val:
         # Check for cray platform. It is a cray platform if there is a
@@ -91,19 +91,6 @@ def get_mac_os_version():
 def is_arch_linux():
     arch_file = "/etc/arch-release"
     return os.path.exists(arch_file)
-
-# if running on a system with homebrew, return the homebrew prefix
-# if not, return None
-@memoize
-def get_homebrew_prefix():
-    # Check to see if Homebrew is installed. If it is, return the prefix.
-    exists, retcode, my_out, my_err = try_run_command(['brew', '--prefix'])
-    if exists and retcode == 0:
-        # Make sure to include homebrew search path
-        homebrew_prefix = my_out.strip()
-        return homebrew_prefix
-
-    return None
 
 def _main():
     parser = optparse.OptionParser(usage='usage: %prog [--host|target])')

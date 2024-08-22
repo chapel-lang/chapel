@@ -190,6 +190,11 @@ void attach_test_mpi(void) {
     MPI_SAFE(MPI_Barrier(MPI_COMM_WORLD));
 }
 
+// Used solely for corner-case exit testing
+void finalize_test_mpi(void) {
+    MPI_SAFE(MPI_Finalize());
+}
+
 void mpi_barrier(threaddata_t *tdata) {
 #if GASNET_PAR
   static gasnett_mutex_t  barrier_mutex = GASNETT_MUTEX_INITIALIZER;

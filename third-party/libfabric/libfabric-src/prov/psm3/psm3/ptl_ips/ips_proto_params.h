@@ -177,10 +177,6 @@
 #define IPS_SEND_FLAG_TCP_REMAINDER	0x2000	/* TCP data was partially sent out */
 #endif
 
-#ifdef PSM_ONEAPI
-#define IPS_SEND_FLAG_USE_GDRCOPY	0x4000
-#endif
-
 /* 0x10000000, interrupt when done */
 #define IPS_SEND_FLAG_INTR		(1<<HFI_KHDR_INTR_SHIFT)
 

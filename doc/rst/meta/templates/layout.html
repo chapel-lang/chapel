@@ -30,3 +30,12 @@ include "{{ pathto('',1) }}/versionButton.php";
     <li class="toctree-11"><a class="reference internal" href="{{pathto('genindex.html', 1)}}">Complete Docs Index</a></li>
   </ul>
 {% endblock %}
+
+{% block extrahead %}
+  {{ super() }}
+  {% if "Where can I use Chapel?" == title %}
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <link rel="stylesheet" href="../_static/portability-viz.css">
+    <script src="../_static/portability-viz.js"></script>
+  {% endif %}
+{% endblock %}

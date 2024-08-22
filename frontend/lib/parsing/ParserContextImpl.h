@@ -498,6 +498,16 @@ bool ParserContext::noteIsVarDeclConfig(bool isConfig) {
   return this->isVarDeclConfig;
 }
 
+void ParserContext::noteVarDestinationExpr(AstNode* targetExpr) {
+  this->varDestinationExpr = targetExpr;
+}
+
+owned<AstNode> ParserContext::consumeVarDestinationExpr() {
+  auto toReturn = toOwned(this->varDestinationExpr);
+  this->varDestinationExpr = nullptr;
+  return toReturn;
+}
+
 YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
   if (this->declStartLocation.first_line == 0)
     return curLoc;
@@ -508,6 +518,7 @@ YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
 void ParserContext::resetDeclStateOnError() {
   // Consume the linkage name just to clean it up.
   std::ignore = consumeVarDeclLinkageName();
+  std::ignore = consumeVarDestinationExpr();
   this->resetDeclState();
 }
 
@@ -545,6 +556,20 @@ void ParserContext::exitScope(asttags::AstTag tag, UniqueString name) {
   CHPL_ASSERT(scopeStack.back().tag == tag);
   CHPL_ASSERT(scopeStack.back().name == name);
   scopeStack.pop_back();
+}
+
+
+void ParserContext::noteCurlyBraces(YYLTYPE left, YYLTYPE right) {
+  this->curlyBraceLocation = makeSpannedLocation(left, right);
+}
+bool ParserContext::hasCurlyBracesLoc() {
+  return this->curlyBraceLocation.first_line > 0;
+}
+YYLTYPE ParserContext::curlyBracesLoc() {
+  return this->curlyBraceLocation;
+}
+void ParserContext::resetCurlyBracesLoc() {
+  this->curlyBraceLocation = {0};
 }
 
 
@@ -876,6 +901,48 @@ Identifier* ParserContext::buildEmptyIdent(YYLTYPE location) {
 Identifier* ParserContext::buildIdent(YYLTYPE location, PODUniqueString name) {
   return Identifier::build(builder, convertLocation(location), name).release();
 }
+Identifier* ParserContext::buildAttributeIdent(YYLTYPE location,
+                                               PODUniqueString name) {
+  // remove the leading '@' from the name
+  UniqueString n = name;
+  if (n.startsWith("@")) {
+    // remove the @ sign
+    n = UniqueString::get(context(), n.c_str()+1);
+  } else {
+    CHPL_ASSERT(false && "expect attributes to start with @");
+  }
+  return Identifier::build(builder, convertLocation(location), n).release();
+}
+
+AstNode*
+ParserContext::buildTaskIntent(YYLTYPE loc,
+                               YYLTYPE nameLoc,
+                               AttributeGroup* attributeGroup,
+                               AstNode* identNode,
+                               MaybeIntent intent,
+                               AstNode* typeExpression,
+                               AstNode* initExpression) {
+  if (!intent.isValid) {
+    return syntax(loc, "'%s' intent is not supported in a 'with' clause", qualifierToString((Qualifier)intent.intent));
+  }
+
+  if (auto ident = identNode->toIdentifier()) {
+    auto name = ident->name();
+    auto node = TaskVar::build(builder,
+                               convertLocation(loc),
+                               toOwned(attributeGroup),
+                               name,
+                               (TaskVar::Intent)intent.intent,
+                               toOwned(typeExpression),
+                               toOwned(initExpression));
+    builder->noteDeclNameLocation(node.get(), convertLocation(nameLoc));
+    return node.release();
+  } else {
+    return syntax(loc, "expected identifier for task variable name.");
+  }
+
+}
+
 
 WithClause*
 ParserContext::buildWithClause(YYLTYPE location, YYLTYPE locWith,
@@ -910,6 +977,10 @@ ParserContext::buildBeginStmt(YYLTYPE location, YYLTYPE locBegin,
                            blockStyle,
                            std::move(stmts));
   builder->noteBlockHeaderLocation(node.get(), convertLocation(locBegin));
+  if (hasCurlyBracesLoc()) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
+    resetCurlyBracesLoc();
+  }
   CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
   return finishStmt(ret);
 }
@@ -1068,6 +1139,10 @@ CommentsAndStmt ParserContext::buildManageStmt(YYLTYPE location,
                             blockStyle,
                             std::move(stmts));
   builder->noteBlockHeaderLocation(node.get(), convertLocation(locHeader));
+  if (hasCurlyBracesLoc()) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
+    resetCurlyBracesLoc();
+  }
 
   CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
 
@@ -1086,13 +1161,16 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
                       isInline,
                       isOverride,
                       Function::PROC,
-                      Formal::DEFAULT_INTENT,
+                      makeIntent(Formal::DEFAULT_INTENT),
+                      YYLTYPE::create(),
                       nullptr,
                       nullptr,
-                      Function::DEFAULT_RETURN_INTENT,
+                      makeIntent(Function::DEFAULT_RETURN_INTENT),
+                      YYLTYPE::create(),
                       false,
                       nullptr, nullptr, nullptr, nullptr,
-                      nullptr};
+                      nullptr,
+                      YYLTYPE::create()};
   return fp;
 }
 
@@ -1111,6 +1189,19 @@ findErrorInFnSignatureParts(ParserContext* context, YYLTYPE location,
   }
 
   return nullptr;
+}
+
+static inline
+Function::ReturnIntent checkReturnIntent(ParserContext* context,
+                                         YYLTYPE location,
+                                         MaybeIntent intent) {
+  auto returnIntent = Function::ReturnIntent::DEFAULT_RETURN_INTENT;
+  if (!intent.isValid) {
+    context->syntax(location, "'%s' intent is not a supported return intent", qualifierToString((Qualifier)intent.intent));
+  } else {
+    returnIntent = (Function::ReturnIntent)intent.intent;
+  }
+  return returnIntent;
 }
 
 AstNode*
@@ -1135,6 +1226,8 @@ ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
   auto identNameLoc = builder->getLocation(identName.get());
   CHPL_ASSERT(!identNameLoc.isEmpty());
 
+  auto returnIntent = checkReturnIntent(this, fp.returnIntentLoc, fp.returnIntent);
+
   auto f = Function::build(builder, identNameLoc,
                            toOwned(fp.attributeGroup),
                            Decl::DEFAULT_VISIBILITY,
@@ -1145,7 +1238,7 @@ ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
                            /*override*/ false,
                            fp.kind,
                            /* receiver */ nullptr,
-                           fp.returnIntent,
+                           returnIntent,
                            fp.throws,
                            /*primaryMethod*/ false,
                            /*parenless*/ false,
@@ -1162,14 +1255,22 @@ ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
 AstNode*
 ParserContext::buildFormal(YYLTYPE location,
                            YYLTYPE locName,
-                           Formal::Intent intent,
+                           YYLTYPE locIntent,
+                           MaybeIntent intent,
                            PODUniqueString name,
                            AstNode* typeExpr,
                            AstNode* initExpr,
                            bool consumeAttributeGroup) {
   auto attr = consumeAttributeGroup ? buildAttributeGroup(location) : nullptr;
+  auto formalIntent = Formal::Intent::DEFAULT_INTENT;
+  if (!intent.isValid) {
+    syntax(locIntent, "'%s' intent is not supported on a formal", qualifierToString((Qualifier)intent.intent));
+  } else {
+    formalIntent = (Formal::Intent)intent.intent;
+  }
   auto loc = convertLocation(location);
-  auto node = Formal::build(builder, loc, std::move(attr), name, intent,
+  auto node = Formal::build(builder, loc, std::move(attr), name,
+                            formalIntent,
                             toOwned(typeExpr),
                             toOwned(initExpr));
   builder->noteDeclNameLocation(node.get(), convertLocation(locName));
@@ -1179,16 +1280,24 @@ ParserContext::buildFormal(YYLTYPE location,
 }
 
 AstNode*
-ParserContext::buildVarArgFormal(YYLTYPE location, Formal::Intent intent,
+ParserContext::buildVarArgFormal(YYLTYPE location,
+                                 YYLTYPE locIntent,
+                                 MaybeIntent intent,
                                  PODUniqueString name,
                                  YYLTYPE nameLocation,
                                  AstNode* typeExpr,
                                  AstNode* initExpr,
                                  bool consumeAttributeGroup) {
+  auto formalIntent = Formal::Intent::DEFAULT_INTENT;
+  if (!intent.isValid) {
+    syntax(locIntent, "'%s' intent is not supported on a formal", qualifierToString((Qualifier)intent.intent));
+  } else {
+    formalIntent = (Formal::Intent)intent.intent;
+  }
   auto attr = consumeAttributeGroup ? buildAttributeGroup(location) : nullptr;
   auto loc = convertLocation(location);
   auto node = VarArgFormal::build(builder, loc, std::move(attr), name,
-                                  intent,
+                                  formalIntent,
                                   toOwned(typeExpr),
                                   toOwned(initExpr));
   this->noteIsBuildingFormal(false);
@@ -1198,15 +1307,23 @@ ParserContext::buildVarArgFormal(YYLTYPE location, Formal::Intent intent,
 }
 
 AstNode*
-ParserContext::buildTupleFormal(YYLTYPE location, Formal::Intent intent,
+ParserContext::buildTupleFormal(YYLTYPE location,
+                                YYLTYPE locIntent,
+                                MaybeIntent intent,
                                 ParserExprList* components,
                                 AstNode* typeExpr,
                                 AstNode* initExpr) {
+  auto formalIntent = Formal::Intent::DEFAULT_INTENT;
+  if (!intent.isValid) {
+    syntax(locIntent, "'%s' intent is not supported on a formal", qualifierToString((Qualifier)intent.intent));
+  } else {
+    formalIntent = (Formal::Intent)intent.intent;
+  }
   auto loc = convertLocation(location);
   auto node = TupleDecl::build(builder, loc, nullptr,
                                this->visibility,
                                this->linkage,
-                               ((TupleDecl::IntentOrKind) intent),
+                               (TupleDecl::IntentOrKind)formalIntent,
                                this->consumeList(components),
                                toOwned(typeExpr),
                                toOwned(initExpr));
@@ -1216,11 +1333,19 @@ ParserContext::buildTupleFormal(YYLTYPE location, Formal::Intent intent,
 
 AstNode*
 ParserContext::buildAnonFormal(YYLTYPE location, YYLTYPE locIntent,
-                               Formal::Intent intent,
+                               MaybeIntent intent,
                                AstNode* formalType) {
-  std::ignore = locIntent;
+  auto formalIntent = Formal::Intent::DEFAULT_INTENT;
+  if (!intent.isValid) {
+    syntax(locIntent, "'%s' intent is not supported on a formal", qualifierToString((Qualifier)intent.intent));
+  } else {
+    formalIntent = (Formal::Intent)intent.intent;
+  }
   auto loc = convertLocation(location);
-  auto node = AnonFormal::build(builder, loc, intent, toOwned(formalType));
+  auto node = AnonFormal::build(builder,
+                                loc,
+                                formalIntent,
+                                toOwned(formalType));
   auto ret = node.release();
   return ret;
 }
@@ -1239,6 +1364,32 @@ ParserContext::buildAnonFormal(YYLTYPE location, AstNode* formalType) {
                                 toOwned(formalType));
   auto ret = node.release();
   return ret;
+}
+
+Formal*
+ParserContext::buildThisFormal(YYLTYPE location,
+                               YYLTYPE locIntent,
+                               MaybeIntent intent,
+                               AstNode* typeExpression,
+                               AstNode* initExpression) {
+
+  // its simpler to report the error and then return a default rather than error
+  Formal::Intent formalIntent = Formal::DEFAULT_INTENT;
+  if (!intent.isValid) {
+    syntax(locIntent, "'%s' intent is not supported for method receiver", qualifierToString((Qualifier)intent.intent));
+  } else {
+    formalIntent = (Formal::Intent)intent.intent;
+  }
+
+  auto loc = convertLocation(location);
+  auto ths = UniqueString::get(context(), "this");
+
+  auto node = Formal::build(builder, loc, /*attributeGroup*/ nullptr,
+                            ths,
+                            formalIntent,
+                            toOwned(typeExpression),
+                            toOwned(initExpression));
+  return node.release();
 }
 
 AstNode*
@@ -1275,7 +1426,8 @@ ParserContext::buildFunctionType(YYLTYPE location, FunctionParts& fp) {
 
   auto kind = (FunctionSignature::Kind) fp.kind;
   owned<Formal> receiver = nullptr;
-  auto returnIntent = (FunctionSignature::ReturnIntent) fp.returnIntent;
+  auto returnIntent = (FunctionSignature::ReturnIntent)
+                        checkReturnIntent(this, fp.returnIntentLoc, fp.returnIntent);
   const bool parenless = false;
   auto formals = consumeList(fp.formals);
 
@@ -1337,13 +1489,8 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   bool primaryMethod = false;
   if (currentScopeIsAggregate()) {
     if (fp.receiver == nullptr) {
-      auto loc = convertLocation(location);
-      auto ths = UniqueString::get(context(), "this");
-      fp.receiver = Formal::build(builder, loc, /*attributeGroup*/ nullptr,
-                                  ths,
-                                  fp.thisIntent,
-                                  nullptr,
-                                  nullptr).release();
+      fp.receiver = buildThisFormal(location, fp.thisIntentLoc, fp.thisIntent,
+                                    nullptr, nullptr);
       primaryMethod = true;
     }
   }
@@ -1359,6 +1506,8 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   auto identNameLoc = builder->getLocation(identName.get());
   CHPL_ASSERT(!identNameLoc.isEmpty());
 
+  auto returnIntent = checkReturnIntent(this, fp.returnIntentLoc, fp.returnIntent);
+
   auto f = Function::build(builder, convertLocation(location),
                            toOwned(fp.attributeGroup),
                            fp.visibility,
@@ -1369,7 +1518,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                            fp.isOverride,
                            fp.kind,
                            toOwned(fp.receiver),
-                           fp.returnIntent,
+                           returnIntent,
                            fp.throws,
                            primaryMethod,
                            parenless,
@@ -1387,8 +1536,9 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   // So do the check now.
   // TODO: I think we should redundantly store the receiver intent
   // in the function as well as the receiver formal.
-  if (!f->isMethod() && fp.thisIntent != Formal::DEFAULT_INTENT) {
-    if (fp.thisIntent == Formal::TYPE) {
+  if (!f->isMethod() &&
+      (Formal::Intent)fp.thisIntent.intent != Formal::DEFAULT_INTENT) {
+    if (fp.thisIntent.isValid && (Formal::Intent)fp.thisIntent.intent == Formal::TYPE) {
       error(location, "missing type for secondary type method '%s'.",
             identName->name().c_str());
     } else {
@@ -1454,6 +1604,8 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
     auto identNameLoc = builder->getLocation(identName.get());
     CHPL_ASSERT(!identNameLoc.isEmpty());
 
+    auto returnIntent = checkReturnIntent(this, fp.returnIntentLoc, fp.returnIntent);
+
     auto f = Function::build(builder, identNameLoc,
                              toOwned(fp.attributeGroup),
                              Decl::DEFAULT_VISIBILITY,
@@ -1464,7 +1616,7 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
                              /* override */ false,
                              Function::LAMBDA,
                              /* receiver */ nullptr,
-                             fp.returnIntent,
+                             returnIntent,
                              fp.throws,
                              /* primaryMethod */ false,
                              /* parenless */ false,
@@ -1701,6 +1853,14 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
     builder->noteDeclNameLocation(var.get(), convLoc);
+    builder->copyExprParenthLocation(e, var.get());
+    builder->deleteAllLocations(e);
+    // Delete the location of 'e' because it's about to be deallocated;
+    // we don't want a new allocation of an AST node to have the same pointer
+    // and still be in the map, since that would pollute location information.
+    //
+    // This is more of a workaround; a more general solution is necessary
+    // to handle pointer-based maps in the presence of AST node deallocation.
     return var;
 
   } else if (const uast::Tuple* tup = e->toTuple()) {
@@ -1716,13 +1876,17 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
       }
     }
 
-    return TupleDecl::build(builder, convLoc, /*attributeGroup*/ nullptr,
-                            Decl::DEFAULT_VISIBILITY,
-                            Decl::DEFAULT_LINKAGE,
-                            (TupleDecl::IntentOrKind) Variable::INDEX,
-                            std::move(elements),
-                            /*typeExpression*/ nullptr,
-                            /*initExpression*/ nullptr);
+    auto td = TupleDecl::build(builder, convLoc, /*attributeGroup*/ nullptr,
+                               Decl::DEFAULT_VISIBILITY,
+                               Decl::DEFAULT_LINKAGE,
+                               (TupleDecl::IntentOrKind) Variable::INDEX,
+                               std::move(elements),
+                               /*typeExpression*/ nullptr,
+                               /*initExpression*/ nullptr);
+    builder->copyExprParenthLocation(e, td.get());
+    builder->deleteExprParenthLocation(e);
+    // See the comment above for why we delete the location of 'e'.
+    return td;
   } else {
     CHPL_PARSER_REPORT(this, InvalidIndexExpr, location);
     return nullptr;
@@ -1969,6 +2133,10 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLoop,
                                  /*isExpressionLevel*/ false,
                                  this->popLoopAttributeGroup());
   builder->noteLoopHeaderLocation(node.get(), convertLocation(locHeader));
+  if (hasCurlyBracesLoc()) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
+    resetCurlyBracesLoc();
+  }
   return { .comments=comments, .stmt=node.release() };
 }
 
@@ -2013,6 +2181,10 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLoop,
                                  /*isExpressionLevel*/ false,
                                  this->popLoopAttributeGroup());
   builder->noteLoopHeaderLocation(node.get(), convertLocation(locHeader));
+  if (hasCurlyBracesLoc()) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
+    resetCurlyBracesLoc();
+  }
   return { .comments=comments, .stmt=node.release() };
 }
 
@@ -2046,6 +2218,11 @@ CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locLoop,
     if (withClause) {
       error = syntax(locLoop,
                      "'with' clauses are not supported on 'for' loops.");
+
+      // Since these are about to get deallocated, clear their location
+      // maps to ensure the OS re-using memory won't bring in stale locations
+      builder->deleteAllLocations(index.get());
+      builder->deleteAllLocations(body.get());
     } else {
       result = For::build(builder, convertLocation(locLoop),
                           std::move(index),
@@ -2074,6 +2251,16 @@ CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locLoop,
                            std::move(body),
                            /*isExpressionLevel*/ false,
                            this->popLoopAttributeGroup()).release();
+  } else if (loopTypeUstr == USTR("coforall")) {
+    result = Coforall::build(builder, convertLocation(locLoop),
+                             std::move(index),
+                             toOwned(iterandExpr),
+                             toOwned(withClause),
+                             blockStyle,
+                             std::move(body),
+                             this->popLoopAttributeGroup()).release();
+  } else {
+    CHPL_ASSERT(false); // unhandled loop stmt
   }
 
   if (error) {
@@ -2082,6 +2269,10 @@ CommentsAndStmt ParserContext::buildGeneralLoopStmt(YYLTYPE locLoop,
   } else {
     CHPL_ASSERT(result);
     builder->noteLoopHeaderLocation(result, convertLocation(locHeader));
+    if (hasCurlyBracesLoc()) {
+      builder->noteCurlyBracesLocation(result, convertLocation(curlyBracesLoc()));
+      resetCurlyBracesLoc();
+    }
     return { .comments=comments, .stmt=result };
   }
 }
@@ -2125,6 +2316,10 @@ AstNode* ParserContext::buildGeneralLoopExpr(YYLTYPE locWhole,
                            std::move(body),
                            /*isExpressionLevel*/ true,
                            this->popLoopAttributeGroup()).release();
+  } else if (loopTypeUstr == USTR("coforall")) {
+    error = syntax(locWhole, "expression-level 'coforall' loops are not supported.");
+  } else {
+    CHPL_ASSERT(false); // unhandled loop expr
   }
 
   if (error) return error;
@@ -2161,13 +2356,18 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
                               std::move(body),
                               this->popLoopAttributeGroup());
   builder->noteLoopHeaderLocation(node.get(), convertLocation(locHeader));
+  if (hasCurlyBracesLoc()) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
+    resetCurlyBracesLoc();
+  }
 
   return { .comments=comments, .stmt=node.release() };
 }
 
 CommentsAndStmt
 ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
-                                    YYLTYPE locThenBodyAnchor,
+                                    YYLTYPE locThenKw,
+                                    YYLTYPE locThenBody,
                                     AstNode* condition,
                                     CommentsAndStmt thenCs) {
 
@@ -2177,10 +2377,10 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
 
   prepareStmtPieces(comments, thenExprLst, thenBlockStyle, locIf,
                     usesThenKeyword,
-                    locThenBodyAnchor,
+                    locThenKw,
                     thenCs);
 
-  auto thenBlock = consumeToBlock(locThenBodyAnchor, thenExprLst);
+  auto thenBlock = consumeToBlock(locThenBody, thenExprLst);
 
   auto node = Conditional::build(builder, convertLocation(locIf),
                                  toOwned(condition),
@@ -2195,8 +2395,10 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
 
 CommentsAndStmt
 ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
-                                    YYLTYPE locThenBodyAnchor,
-                                    YYLTYPE locElse,
+                                    YYLTYPE locThenKw,
+                                    YYLTYPE locThenBody,
+                                    YYLTYPE locElseKw,
+                                    YYLTYPE locElseBody,
                                     AstNode* condition,
                                     CommentsAndStmt thenCs,
                                     CommentsAndStmt elseCs) {
@@ -2208,7 +2410,7 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
   prepareStmtPieces(comments, thenExprLst, thenBlockStyle,
                     locIf,
                     usesThenKeyword,
-                    locThenBodyAnchor,
+                    locThenKw,
                     thenCs);
 
   const bool isElseBodyBlock = elseCs.stmt->isBlock();
@@ -2216,7 +2418,7 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
   auto elseBlockStyle = isElseBodyBlock ? BlockStyle::EXPLICIT
                                         : BlockStyle::IMPLICIT;
 
-  auto thenBlock = consumeToBlock(locThenBodyAnchor, thenExprLst);
+  auto thenBlock = consumeToBlock(locThenBody, thenExprLst);
 
   // If the else body is a block, discard all comments preceding it.
   if (isElseBodyBlock) {
@@ -2227,9 +2429,9 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
   auto elseExprLst = makeList(elseCs);
 
   // If else body is not a block, discard comments preceding the 'else'.
-  if (!isElseBodyBlock) discardCommentsFromList(elseExprLst, locElse);
+  if (!isElseBodyBlock) discardCommentsFromList(elseExprLst, locElseKw);
 
-  auto elseBlock = consumeToBlock(locElse, elseExprLst);
+  auto elseBlock = consumeToBlock(locElseBody, elseExprLst);
 
   auto node = Conditional::build(builder, convertLocation(locIf),
                                  toOwned(condition),
@@ -2575,6 +2777,14 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
     if (attributeGroup) {
       lastDecl->attachAttributeGroup(std::move(attributeGroup));
     }
+    auto destination = consumeVarDestinationExpr();
+    if (destination) {
+      if (auto var = lastDecl->toVariable()) {
+        var->attachDestination(std::move(destination));
+      } else {
+        error(locEverything, "only (multi)variable declarations can target a specific locale");
+      }
+    }
   } else {
 
     // TODO: Just embed and catch this in a tree-walk instead.
@@ -2595,6 +2805,10 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
                                   visibility,
                                   linkage,
                                   consumeList(vars));
+    auto destination = consumeVarDestinationExpr();
+    if (destination) {
+      multi->attachDestination(std::move(destination));
+    }
     cs.stmt = multi.release();
   }
 
@@ -2688,16 +2902,9 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
     if (optInherit->size() > 0) {
       for (size_t i = 0; i < optInherit->size(); i++) {
         AstNode* ast = (*optInherit)[i];
-        bool inheritOk =
-          chpl::uast::AggregateDecl::isAcceptableInheritExpr(ast);
 
-        if (inheritOk) {
-          inheritExprs.push_back(toOwned(ast));
-          (*optInherit)[i] = nullptr;
-        } else {
-          syntax(inheritLoc,
-                 "invalid parent class or interface; please specify a single class or interface name");
-        }
+        inheritExprs.push_back(toOwned(ast));
+        (*optInherit)[i] = nullptr;
       }
     }
     consumeList(optInherit); // just to delete it
@@ -2971,7 +3178,9 @@ AstNode* ParserContext::buildCatch(YYLTYPE location, AstNode* error,
 }
 
 CommentsAndStmt
-ParserContext::buildWhenStmt(YYLTYPE location, ParserExprList* caseExprs,
+ParserContext::buildWhenStmt(YYLTYPE location,
+                             YYLTYPE headerLocation,
+                             ParserExprList* caseExprs,
                              BlockOrDo blockOrDo) {
 
   // No need to gather comments, they'll have been collected here...
@@ -2994,6 +3203,11 @@ ParserContext::buildWhenStmt(YYLTYPE location, ParserExprList* caseExprs,
                           std::move(caseList),
                           blockStyle,
                           std::move(stmtList));
+  builder->noteBlockHeaderLocation(node.get(), convertLocation(headerLocation));
+  if (hasCurlyBracesLoc()) {
+    builder->noteCurlyBracesLocation(node.get(), convertLocation(curlyBracesLoc()));
+    resetCurlyBracesLoc();
+  }
 
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
 
@@ -3001,7 +3215,9 @@ ParserContext::buildWhenStmt(YYLTYPE location, ParserExprList* caseExprs,
 }
 
 CommentsAndStmt
-ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
+ParserContext::buildSelectStmt(YYLTYPE location,
+                               YYLTYPE headerLocation,
+                               owned<AstNode> expr,
                                ParserExprList* whenStmts) {
   auto comments = gatherCommentsFromList(whenStmts, location);
 
@@ -3029,6 +3245,7 @@ ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
   auto node = Select::build(builder, convertLocation(location),
                             std::move(expr),
                             std::move(stmts));
+  builder->noteBlockHeaderLocation(node.get(), convertLocation(headerLocation));
 
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
 
@@ -3038,7 +3255,8 @@ ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
 AstNode* ParserContext::buildInterfaceFormal(YYLTYPE location,
                                              YYLTYPE locName,
                                              PODUniqueString name) {
-  return buildFormal(location, locName, Formal::Intent::TYPE, name,
+  return buildFormal(location, locName, YYLTYPE::create(),
+                    makeIntent(Formal::Intent::TYPE), name,
                     /* typeExpr */ nullptr,
                     /* initExpr */ nullptr,
                     /* consumeAttributeGroup */ false);

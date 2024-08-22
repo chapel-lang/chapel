@@ -48,12 +48,12 @@ extern "C" {
 #define CHPL_COMM_UNKNOWN_ID -1
 
 
-static inline
+static ___always_inline
 void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
                        size_t size, int32_t commID, int ln, int32_t fn)
 {
   if (chpl_nodeID == node) {
-    chpl_memmove(addr, raddr, size);
+    memmove(addr, raddr, size);
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
     chpl_cache_comm_get(addr, node, raddr, size, commID, ln, fn);
@@ -112,12 +112,12 @@ void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
 }
 
 
-static inline
+static ___always_inline
 void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
                        size_t size, int32_t commID, int ln, int32_t fn)
 {
   if (chpl_nodeID == node) {
-    chpl_memmove(raddr, addr, size);
+    memmove(raddr, addr, size);
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
     chpl_cache_comm_put(addr, node, raddr, size, commID, ln, fn);
@@ -277,7 +277,7 @@ void chpl_check_local(c_nodeid_t node, int32_t ln, int32_t file, const char* err
 }
 
 static inline
-void chpl_check_nil(void* ptr, int32_t lineno, int32_t filename)
+void chpl_check_nil(const void* ptr, int32_t lineno, int32_t filename)
 {
   if (ptr == nil)
     chpl_error("attempt to dereference nil", lineno, filename);

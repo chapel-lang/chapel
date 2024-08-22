@@ -1,11 +1,3 @@
-revcomp3.chpl:13: In function 'main':
-revcomp3.chpl:15: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
-revcomp3.chpl:15: warning: reader with a 'kind' argument is deprecated, please use Serializers instead
-revcomp3.chpl:15: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
-revcomp3.chpl:16: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
-revcomp3.chpl:16: warning: writer with a 'kind' argument is deprecated, please use Serializers instead
-revcomp3.chpl:16: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
-revcomp3.chpl:53: warning: inferring a default intent to be 'ref' is deprecated - please use an explicit 'ref' intent for the argument 'buf'
 >ONE Homo sapiens alu
 CGGAGTCTCGCTCTGTCGCCCAGGCTGGAGTGCAGTGGCGCGATCTCGGCTCACTGCAAC
 CTCCGCCTCCCGGGTTCAAGCGATTCTCCTGCCTCAGCCTCCCGAGTAGCTGGGATTACA

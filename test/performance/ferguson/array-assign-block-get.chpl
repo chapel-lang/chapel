@@ -4,7 +4,7 @@ use CommUtil;
 config const n = 100000;
 
 const Space = {1..n};
-const D = Space dmapped blockDist(boundingBox=Space);
+const D = Space dmapped new blockDist(boundingBox=Space);
 var A: [D] int;
 
 var saveB1: int;

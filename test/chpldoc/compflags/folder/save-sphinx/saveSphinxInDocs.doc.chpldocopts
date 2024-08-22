@@ -1,1 +1,4 @@
 --save-sphinx docs
+--save-sphinx docs --output-dir docs # saveSphinxInDocs.doc.explicit.good
+--save-sphinx someOtherFolder --output-dir someOtherFolder # saveSphinxInDocs.doc.explicit.good
+--save-sphinx docs --output-dir anotherGoodFolder # saveSphinxInDocs.doc.allowed.good

@@ -561,7 +561,6 @@ llvm::DISubprogram* debug_data::construct_function(FnSymbol *function)
 
   llvm::DISubroutineType* function_type = get_function_type(function);
 
-#if HAVE_LLVM_VER >= 80
   llvm::DISubprogram::DISPFlags SPFlags = llvm::DISubprogram::SPFlagDefinition;
   if (!function->hasFlag(FLAG_EXPORT))
     SPFlags |= llvm::DISubprogram::SPFlagLocalToUnit;
@@ -577,21 +576,6 @@ llvm::DISubprogram* debug_data::construct_function(FnSymbol *function)
     llvm::DINode::FlagZero, /* flags */
     SPFlags /* subprogram flags */
     );
-#else
-  llvm::DISubprogram* ret = this->dibuilder.createFunction(
-    module, /* scope */
-    name, /* name */
-    cname, /* linkage name */
-    file, line_number, function_type,
-    !function->hasFlag(FLAG_EXPORT), /* is local to unit */
-    true, /* is definition */
-    line_number, /* beginning of scope we start */
-    llvm::DINode::FlagZero, /* flags */
-    optimized /* isOptimized */
-    // TODO - in 3.8, do we need to pass Decl?
-    );
-
-#endif
   return ret;
 }
 

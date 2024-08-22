@@ -1,7 +1,7 @@
 use BlockDist;
 use CTypes;
 
-const OnePerLocale = LocaleSpace dmapped blockDist(LocaleSpace);
+const OnePerLocale = LocaleSpace dmapped new blockDist(LocaleSpace);
 
 class BasisStates {
   var size : int;

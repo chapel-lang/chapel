@@ -23,7 +23,7 @@ const gridBig = {0..gx+1, 0..gy+1};
 
 var gridLocales: [gridDom] locale = setupGridLocales();
 
-const gridDist = gridDom dmapped blockDist(gridDom, gridLocales);
+const gridDist = gridDom dmapped new blockDist(gridDom, gridLocales);
 
 /////////// the computation data and index sets ///////////
 
@@ -177,7 +177,7 @@ proc GlobalData.dsiAccess(ix,iy) ref {
 
 const refAlloc = {0..allx+1, 0..ally+1},
     refCompute = {1..allx, 1..ally},
-  refAllocDist = refAlloc dmapped blockDist(refAlloc, gridLocales);
+  refAllocDist = refAlloc dmapped new blockDist(refAlloc, gridLocales);
 
 // Our reference data arrays, corresponding to WA, WB.
 var RA, RB: [refAllocDist] elType;

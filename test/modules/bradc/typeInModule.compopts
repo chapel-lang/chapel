@@ -1,1 +1,1 @@
-helperModules/typeInModule2.chpl
+helperModules/typeInModule2.chpl -o typeInModule

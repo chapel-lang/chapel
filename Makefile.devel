@@ -72,13 +72,14 @@ frontend-tests:
 
 test-dyno: FORCE test-frontend
 
+test-cls test-chpl-language-server: FORCE
+	@$(MAKE) chpl-language-server
+	@cd tools/chpl-language-server && $(MAKE) test-chpl-language-server
+
 run-frontend-linters: FORCE
 	@cd compiler && $(MAKE) run-frontend-linters
 
 run-dyno-linters: run-frontend-linters FORCE
-
-test-chpldef: FORCE
-	@cd compiler && $(MAKE) test-chpldef
 
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE

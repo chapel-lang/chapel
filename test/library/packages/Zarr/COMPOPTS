@@ -1,1 +1,2 @@
--I./c-blosc/blosc -L./c-blosc/build/blosc  
+-I./c-blosc/blosc -L. --ldflags -Wl,-rpath,.
+

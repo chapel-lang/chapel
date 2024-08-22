@@ -56,19 +56,6 @@ static void LOGLN_ALA(BaseAST *node);
 static bool LOG_AA(int depth, const char *msg, BaseAST *node);
 static void LOGLN_AA(BaseAST *node);
 
-// Support for reporting calls that are not optimized for different reasons
-enum CallRejectReason {
-  CRR_ACCEPT,
-  CRR_NOT_ARRAY_ACCESS_LIKE,
-  CRR_NO_CLEAN_INDEX_MATCH,
-  CRR_ACCESS_BASE_IS_LOOP_INDEX,
-  CRR_ACCESS_BASE_IS_NOT_OUTER_VAR,
-  CRR_ACCESS_BASE_IS_COMPLEX_SHADOW_VAR,
-  CRR_ACCESS_BASE_IS_REDUCE_SHADOW_VAR,
-  CRR_TIGHTER_LOCALITY_DOMINATOR,
-  CRR_UNKNOWN,
-};
-
 // we store all the locations where we have added these primitives. When we
 // report finalizing an optimization (either positively or negatively) we remove
 // those locations from the set. Towards the end of resolution, if there are
@@ -78,7 +65,6 @@ std::set<astlocT> primMaybeLocalThisLocations;
 std::set<astlocT> primMaybeAggregateAssignLocations;
 
 
-static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms);
 static Symbol *getDotDomBaseSym(Expr *expr);
 static Expr *getDomExprFromTypeExprOrQuery(Expr *e);
 static Symbol *getDomSym(Symbol *arrSym);
@@ -94,19 +80,13 @@ static void gatherForallInfo(ForallStmt *forall);
 static bool loopHasValidInductionVariables(ForallStmt *forall);
 static bool loopHasValidOptInfo(ForallStmt *forall);
 static Symbol *canDetermineLoopDomainStatically(ForallStmt *forall);
-static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
-                                        bool checkArgs, int *argIdx,
-                                        CallRejectReason *reason=NULL);
-static Symbol *getCallBase(CallExpr *call);
-static void generateDynamicCheckForAccess(CallExpr *access,
+static void generateDynamicCheckForAccess(ALACandidate& access,
                                           ForallStmt *forall,
-                                          int iterandIdx,
                                           CallExpr *&allChecks);
-static Symbol *generateStaticCheckForAccess(CallExpr *access,
+static Symbol *generateStaticCheckForAccess(ALACandidate& candidate,
                                             ForallStmt *forall,
-                                            int iterandIdx,
                                             Expr *&allChecks);
-static CallExpr *replaceCandidate(CallExpr *candidate,
+static CallExpr *replaceCandidate(ALACandidate& candidate,
                                   Symbol *staticCheckSym,
                                   bool doStatic);
 static void optimizeLoop(ForallStmt *forall,
@@ -146,6 +126,7 @@ void doPreNormalizeArrayOptimizations() {
   const bool anyAnalysisNeeded = fAutoLocalAccess ||
                                  fAutoAggregation ||
                                  !fNoFastFollowers;
+
   if (anyAnalysisNeeded) {
     forv_expanding_Vec(ForallStmt, forall, gForallStmts) {
       if (!fNoFastFollowers) {
@@ -604,16 +585,104 @@ static void LOGLN_ALA(BaseAST *node) {
 // Normalize support for --auto-local-access
 //
 
-// Return true if `ce`'s arguments are exactly identical to `syms`
-static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms) {
-  if (((std::size_t)ce->argList.length) != syms.size()) return false;
-  for (int i = 0 ; i < ce->argList.length ; i++) {
-    if (SymExpr *arg = toSymExpr(ce->get(i+1))) {
-      if (arg->symbol() != syms[i]) {
-        return false;
+bool ALACandidate::isCallPlusOrMinus(CallExpr* call) {
+  // note that the call could also be unary plus or minus
+  return call->isNamed("-") || call->isNamed("+");
+}
+
+SymExpr* ALACandidate::getSymFromValidUnaryOp(Expr* e) {
+  if (CallExpr* call = toCallExpr(e)) {
+    // At this point, we don't have `PRIM_UNARY_*`. All we have are unresolved
+    // calls to "-" / "+" with single argument
+    if (isCallPlusOrMinus(call) && call->numActuals() == 1) {
+      if (SymExpr* ret = toSymExpr(call->get(1))) {
+        // note that we ignore whether this is - or +. Currently, stencil
+        // distribution is symmetric and whether we are subtracting or adding
+        // for offsetting shouldn't matter. See also `chpl__ala_offsetCheck`
+        // where the absolute value of the offsets are used.
+        return ret;
+      }
+    }
+  }
+  return nullptr;
+}
+
+int ALACandidate::findLoopIdxInPlusMinus(CallExpr* call,
+                                                Symbol* loopIdx) {
+  INT_ASSERT(call->numActuals() == 2);
+  for (int i=1 ; i<=call->numActuals() ; i++) {
+    if (SymExpr* cur = toSymExpr(call->get(i))) {
+      if (cur->symbol() == loopIdx) {
+        return i;
+      }
+    }
+  }
+  return -1;
+}
+
+bool ALACandidate::getIdxAndOffsetFromPlusMinus(CallExpr* call,
+                                                       Symbol* loopIdx,
+                                                       SymExpr*& accIdxExpr,
+                                                       Expr*& offsetExpr) {
+  accIdxExpr = nullptr;
+  offsetExpr = nullptr;
+
+  const int loopIdxArgIdx = findLoopIdxInPlusMinus(call, loopIdx);
+  if (loopIdxArgIdx != 1 && loopIdxArgIdx != 2) return false;
+
+  const int offsetArgIdx = loopIdxArgIdx==1 ? 2 : 1;
+
+  Expr* offsetArg = call->get(offsetArgIdx);
+  if (SymExpr* offsetSymExpr = toSymExpr(offsetArg)) {
+    offsetExpr = offsetSymExpr;
+  }
+  else if (SymExpr* offsetSymExpr = getSymFromValidUnaryOp(offsetArg)) {
+    offsetExpr = offsetSymExpr;
+  }
+  else {
+    return false;
+  }
+
+  INT_ASSERT(offsetExpr);
+  accIdxExpr = toSymExpr(call->get(loopIdxArgIdx));
+  return true;
+}
+
+// Return true if call's arguments are exactly identical to `syms`
+bool ALACandidate::argsSupported(const std::vector<Symbol *> &syms) {
+  if (((std::size_t)call_->argList.length) != syms.size()) return false;
+  for (int i = 0 ; i < call_->argList.length ; i++) {
+    if (SymExpr *arg = toSymExpr(call_->get(i+1))) {
+      if (arg->symbol() != syms[i])  return false;
+      addOffset(nullptr);
+    }
+    else if (fOffsetAutoLocalAccess) {
+      if (CallExpr *argCall = toCallExpr(call_->get(i+1))) {
+        if (!isCallPlusOrMinus(argCall)) return false;
+        SymExpr* accIdxExpr = nullptr;
+        Expr* offsetExpr = nullptr;
+        if (getIdxAndOffsetFromPlusMinus(argCall, syms[i], accIdxExpr,
+                                         offsetExpr)) {
+
+          // the offset expression must be a constant, parameter or immediate
+          if (SymExpr* offsetSymExpr = toSymExpr(offsetExpr)) {
+            Symbol* offsetSym = offsetSymExpr->symbol();
+            if (!offsetSym->isConstant() && !offsetSym->isParameter() &&
+                !offsetSym->isImmediate()) {
+              return false;
+            }
+          }
+
+          INT_ASSERT(offsetExpr);
+          addOffset(offsetExpr);
+        }
+        else {
+          return false;
+        }
       }
     }
     else {
+      addOffset(nullptr);
       return false;
     }
   }
@@ -998,11 +1067,9 @@ static const char *getCallRejectReasonStr(CallRejectReason reason) {
 // Bunch of checks to see if `call` is a candidate for optimization within
 // `forall`. Returns the symbol of the `baseExpr` of the `call` if it is
 // suitable. NULL otherwise
-static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
-                                        bool checkArgs, int *argIdx,
-                                        CallRejectReason *reason) {
+ALACandidate::ALACandidate(CallExpr *call, ForallStmt *forall, bool checkArgs):
+  call_(call), iterandIdx_(-1), reason_(CRR_UNKNOWN), hasOffset_(false) {
 
-  // TODO see if you can use getCallBase
   SymExpr *baseSE = toSymExpr(call->baseExpr);
 
   if (baseSE != NULL) {
@@ -1010,15 +1077,15 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
 
     // Prevent making changes to `new C[i]`
     if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
-      if (parentCall->isPrimitive(PRIM_NEW)) { return NULL; }
+      if (parentCall->isPrimitive(PRIM_NEW)) { return; }
     }
 
     // don't analyze further if the call base is a yielded symbol
     if (accBaseSym->hasFlag(FLAG_INDEX_VAR)) {
-      if (!accBaseSym->hasFlag(FLAG_TEMP) && reason != NULL) {
-        *reason = CRR_ACCESS_BASE_IS_LOOP_INDEX;
+      if (!accBaseSym->hasFlag(FLAG_TEMP)) {
+        setReasonIfNeeded(CRR_ACCESS_BASE_IS_LOOP_INDEX);
       }
-      return NULL;
+      return;
     }
 
     // give up if the access uses a different symbol than the symbols yielded by
@@ -1032,62 +1099,64 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
            it != forall->optInfo.multiDIndices.end();
            it++) {
         idx++;
-        if (callHasSymArguments(call, *it)) {
-          *argIdx = idx;
+        if (argsSupported(*it)) {
+          setIterandIdx(idx);
           found = true;
         }
       }
 
       if (!found) {
-        if (reason != NULL) *reason = CRR_NO_CLEAN_INDEX_MATCH;
-        return NULL;
+        setReasonIfNeeded(CRR_NO_CLEAN_INDEX_MATCH);
+        return;
       }
     }
 
     // this call has another tighter-enclosing stmt that may change locality,
     // don't optimize
     if (forall != getLocalityDominator(call)) {
-      if (reason != NULL) *reason = CRR_TIGHTER_LOCALITY_DOMINATOR;
-      return NULL;
+      setReasonIfNeeded(CRR_TIGHTER_LOCALITY_DOMINATOR);
+      return;
     }
 
     // (i,j) in forall (i,j) in bla is a tuple that is index-by-index accessed
     // in loop body that throw off this analysis
-    if (accBaseSym->hasFlag(FLAG_INDEX_OF_INTEREST)) { return NULL; }
+    if (accBaseSym->hasFlag(FLAG_INDEX_OF_INTEREST)) { return; }
 
     // give up if the symbol we are looking to optimize is defined inside the
     // loop itself
     if (forall->loopBody()->contains(accBaseSym->defPoint)) {
-      if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_NOT_OUTER_VAR;
-      return NULL;
+      setReasonIfNeeded(CRR_ACCESS_BASE_IS_NOT_OUTER_VAR);
+      return;
     }
 
     if (ShadowVarSymbol *svar = toShadowVarSymbol(accBaseSym)) {
       if (svar->isReduce()) {
-        if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_REDUCE_SHADOW_VAR;
-        return NULL;
+        setReasonIfNeeded(CRR_ACCESS_BASE_IS_REDUCE_SHADOW_VAR);
+        return;
       }
 
       Symbol* outerVar = svar->outerVarSym();
 
       if (outerVar == NULL) {
-        if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_COMPLEX_SHADOW_VAR;
-        return NULL;
+        setReasonIfNeeded(CRR_ACCESS_BASE_IS_COMPLEX_SHADOW_VAR);
+        return;
       }
 
-      return outerVar;
+      setReasonIfNeeded(CRR_ACCEPT);
+      return;
     }
     else {
-      return accBaseSym;
+      setReasonIfNeeded(CRR_ACCEPT);
+      return;
     }
   }
 
-  if (reason != NULL) *reason = CRR_NOT_ARRAY_ACCESS_LIKE;
-  return NULL;
+  setReasonIfNeeded(CRR_NOT_ARRAY_ACCESS_LIKE);
+  return;
 }
 
-static Symbol *getCallBase(CallExpr *call) {
-  SymExpr *baseSE = toSymExpr(call->baseExpr);
+Symbol* ALACandidate::getCallBase() const {
+  SymExpr *baseSE = toSymExpr(call_->baseExpr);
   if (baseSE != NULL) {
     if (ShadowVarSymbol *svar = toShadowVarSymbol(baseSE->symbol())) {
       return svar->outerVarSym();
@@ -1099,6 +1168,18 @@ static Symbol *getCallBase(CallExpr *call) {
   return NULL;
 }
 
+void ALACandidate::addOffset(Expr* e) {
+  if (e) {
+    hasOffset_ = true;
+    offsetExprs_.push_back(e);
+  }
+  else {
+    SET_LINENO(call_);
+    SymExpr* zero = new SymExpr(new_IntSymbol(0, INT_SIZE_DEFAULT));
+    offsetExprs_.push_back(zero);
+  }
+}
+
 // for a call like `A[i]`, this will create something like
 //
 // chpl_dynamicAutoLocalCheck(A, loopDomain)
@@ -1106,48 +1187,64 @@ static Symbol *getCallBase(CallExpr *call) {
 // right before the `forall`. Multiple dynamic checks are &&'ed. `allChecks` is
 // that "&&" call, or NULL if this was the first time we are adding a
 // dynamic check
-static void generateDynamicCheckForAccess(CallExpr *access,
+static void generateDynamicCheckForAccess(ALACandidate& candidate,
                                           ForallStmt *forall,
-                                          int iterandIdx,
                                           CallExpr *&allChecks) {
   ForallOptimizationInfo &optInfo = forall->optInfo;
-  Symbol *baseSym = getCallBase(access);
+  Symbol *baseSym = candidate.getCallBase();
   INT_ASSERT(baseSym);
+  const int iterandIdx = candidate.getIterandIdx();
+
+  auto& staticCheckSymMap = candidate.hasOffset() ?
+                                optInfo.staticCheckWOffSymForSymMap :
+                                optInfo.staticCheckSymForSymMap;
 
   SET_LINENO(forall);
 
-  CallExpr *currentCheck = NULL;
   if (optInfo.dynamicCheckForSymMap.count(baseSym) == 0) {
-    currentCheck = new CallExpr("chpl__dynamicAutoLocalCheck");
-    optInfo.dynamicCheckForSymMap[baseSym] = currentCheck;
-  }
-  else {
-    return;
-  }
-  currentCheck->insertAtTail(baseSym);
+    CallExpr* check = new CallExpr("chpl__dynamicAutoLocalCheck");
+    optInfo.dynamicCheckForSymMap[baseSym] = check;
 
-  if (optInfo.iterSym[iterandIdx] != NULL) {
-    currentCheck->insertAtTail(new SymExpr(optInfo.iterSym[iterandIdx]));
-  }
-  else if (optInfo.dotDomIterExpr[iterandIdx] != NULL) {
-    currentCheck->insertAtTail(optInfo.dotDomIterExpr[iterandIdx]->copy());
-  }
-  else if (optInfo.iterCallTmp[iterandIdx] != NULL) {
-    currentCheck->insertAtTail(new SymExpr(optInfo.iterCallTmp[iterandIdx]));
-  }
-  else {
-    INT_FATAL("optInfo didn't have enough information");
+    check->insertAtTail(baseSym);
+
+    if (optInfo.iterSym[iterandIdx] != NULL) {
+      check->insertAtTail(new SymExpr(optInfo.iterSym[iterandIdx]));
+    }
+    else if (optInfo.dotDomIterExpr[iterandIdx] != NULL) {
+      check->insertAtTail(optInfo.dotDomIterExpr[iterandIdx]->copy());
+    }
+    else if (optInfo.iterCallTmp[iterandIdx] != NULL) {
+      check->insertAtTail(new SymExpr(optInfo.iterCallTmp[iterandIdx]));
+    }
+    else {
+      INT_FATAL("optInfo didn't have enough information");
+    }
+
+    CallExpr *staticOverride = new CallExpr(PRIM_UNARY_LNOT,
+        new SymExpr(staticCheckSymMap[baseSym]));
+    check = new CallExpr("||", staticOverride, check);
+
+    if (allChecks == NULL) {
+      allChecks = check;
+    }
+    else {
+      allChecks = new CallExpr("&&", check, allChecks);
+    }
   }
 
-  CallExpr *staticOverride = new CallExpr(PRIM_UNARY_LNOT,
-      new SymExpr(forall->optInfo.staticCheckSymForSymMap[baseSym]));
-  currentCheck = new CallExpr("||", staticOverride, currentCheck);
+  if (candidate.hasOffset()) {
+    CallExpr* curCheck = optInfo.dynamicCheckForSymMap[baseSym];
 
-  if (allChecks == NULL) {
-    allChecks = currentCheck;
-  }
-  else {
-    allChecks = new CallExpr("&&", currentCheck, allChecks);
+    CallExpr* offsetCheck = new CallExpr("chpl__ala_offsetCheck");
+    offsetCheck->insertAtTail(baseSym);
+    for (auto e: candidate.offsetExprs()) {
+      offsetCheck->insertAtTail(e->copy());
+    }
+
+    CallExpr* newCheck = new CallExpr("&&", offsetCheck); // we'll add curCheck
+    curCheck->replace(newCheck);
+    newCheck->insertAtTail(curCheck);
+    optInfo.dynamicCheckForSymMap[baseSym] = newCheck;
   }
 }
 
@@ -1157,16 +1254,20 @@ static void generateDynamicCheckForAccess(CallExpr *access,
 //
 // right before the `forall` and will return the symbol declared. If a check was
 // added for `A` before, it'll just return the symbol (that was created before)
-static Symbol *generateStaticCheckForAccess(CallExpr *access,
+static Symbol *generateStaticCheckForAccess(ALACandidate& candidate,
                                             ForallStmt *forall,
-                                            int iterandIdx,
                                             Expr *&allChecks) {
 
   ForallOptimizationInfo &optInfo = forall->optInfo;
-  Symbol *baseSym = getCallBase(access);
+  Symbol *baseSym = candidate.getCallBase();
+  const int iterandIdx = candidate.getIterandIdx();
   INT_ASSERT(baseSym);
 
-  if (optInfo.staticCheckSymForSymMap.count(baseSym) == 0) {
+  auto& staticCheckSymMap = candidate.hasOffset() ?
+                                optInfo.staticCheckWOffSymForSymMap :
+                                optInfo.staticCheckSymForSymMap;
+
+  if (staticCheckSymMap.count(baseSym) == 0) {
     SET_LINENO(forall);
 
     VarSymbol *checkSym = new VarSymbol("chpl__staticAutoLocalCheckSym");
@@ -1174,7 +1275,7 @@ static Symbol *generateStaticCheckForAccess(CallExpr *access,
     // mark it with FLAG_TEMP to prevent the normalizer from adding
     // PRIM_END_OF_STATEMENT in the wrong places for loops.
     checkSym->addFlag(FLAG_TEMP);
-    optInfo.staticCheckSymForSymMap[baseSym] = checkSym;
+    staticCheckSymMap[baseSym] = checkSym;
 
     CallExpr *checkCall = new CallExpr("chpl__staticAutoLocalCheck");
     checkCall->insertAtTail(baseSym);
@@ -1192,6 +1293,10 @@ static Symbol *generateStaticCheckForAccess(CallExpr *access,
       INT_FATAL("optInfo didn't have enough information");
     }
 
+    if (candidate.hasOffset()) {
+      checkCall->insertAtTail(new SymExpr(gTrue));
+    }
+
     if (allChecks == NULL) {
       allChecks = new SymExpr(checkSym);
     }
@@ -1204,23 +1309,21 @@ static Symbol *generateStaticCheckForAccess(CallExpr *access,
     return checkSym;
   }
   else {
-    return optInfo.staticCheckSymForSymMap[baseSym];
+    return staticCheckSymMap[baseSym];
   }
 }
 
 // replace a candidate CallExpr with the corresponding PRIM_MAYBE_LOCAL_THIS
-static CallExpr* replaceCandidate(CallExpr *candidate,
+static CallExpr* replaceCandidate(ALACandidate& candidate,
                                   Symbol *staticCheckSym,
                                   bool doStatic) {
-  SET_LINENO(candidate);
+  CallExpr* call = candidate.getCall();
+  SET_LINENO(call);
 
-  Symbol *callBase = getCallBase(candidate);
+  Symbol *callBase = candidate.getCallBase();
   CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS, new SymExpr(callBase));
-  for (int i = 1 ; i <= candidate->argList.length ; i++) {
-    Symbol *argSym = toSymExpr(candidate->get(i))->symbol();
-    INT_ASSERT(argSym);
-
-    repl->insertAtTail(new SymExpr(argSym));
+  for (int i = 1 ; i <= call->argList.length ; i++) {
+    repl->insertAtTail(call->get(i)->copy());
   }
   repl->insertAtTail(new SymExpr(staticCheckSym));
 
@@ -1228,7 +1331,7 @@ static CallExpr* replaceCandidate(CallExpr *candidate,
   // accurate logging
   repl->insertAtTail(new SymExpr(doStatic?gTrue:gFalse));
 
-  candidate->replace(repl);
+  call->replace(repl);
 
   return repl;
 }
@@ -1239,26 +1342,20 @@ static void optimizeLoop(ForallStmt *forall,
                          Expr *&staticCond, CallExpr *&dynamicCond,
                          bool doStatic) {
 
-  std::vector< std::pair<CallExpr *, int> > candidates = doStatic ?
+  std::vector<ALACandidate>& candidates = doStatic ?
       forall->optInfo.staticCandidates :
       forall->optInfo.dynamicCandidates;
 
-  std::vector< std::pair<CallExpr *, int> >::iterator it;
+  std::vector<ALACandidate>::iterator it;
   for(it = candidates.begin() ; it != candidates.end() ; it++) {
-    CallExpr *candidate = it->first;
-    int iterandIdx = it->second;
+    ALACandidate& candidate = *it;
 
-    Symbol *checkSym = generateStaticCheckForAccess(candidate,
-                                                    forall,
-                                                    iterandIdx,
+    Symbol *checkSym = generateStaticCheckForAccess(candidate, forall,
                                                     staticCond);
     if (!doStatic) {
       forall->optInfo.staticCheckSymsForDynamicCandidates.push_back(checkSym);
 
-      generateDynamicCheckForAccess(candidate,
-                                    forall,
-                                    iterandIdx,
-                                    dynamicCond);
+      generateDynamicCheckForAccess(candidate, forall, dynamicCond);
     }
 
     replaceCandidate(candidate, checkSym, doStatic);
@@ -1370,8 +1467,8 @@ static void constructCondStmtFromLoops(Expr *condExpr,
 // be duplicate loops at the end of normalize, but after resolution we expect
 // them to go away.
 static void generateOptimizedLoops(ForallStmt *forall) {
-  std::vector< std::pair<CallExpr *, int> > &sOptCandidates = forall->optInfo.staticCandidates;
-  std::vector< std::pair<CallExpr *, int> > &dOptCandidates = forall->optInfo.dynamicCandidates;
+  std::vector<ALACandidate> &sOptCandidates = forall->optInfo.staticCandidates;
+  std::vector<ALACandidate> &dOptCandidates = forall->optInfo.dynamicCandidates;
 
   const int totalNumCandidates = sOptCandidates.size() + dOptCandidates.size();
   if (totalNumCandidates == 0) return;
@@ -1453,28 +1550,30 @@ static void autoLocalAccess(ForallStmt *forall) {
   collectCallExprs(forall->loopBody(), allCallExprs);
 
   for_vector(CallExpr, call, allCallExprs) {
-    int iterandIdx = -1;
-    CallRejectReason reason = CRR_UNKNOWN;
-    Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall,
-                                                  /*checkArgs=*/true,
-                                                  &iterandIdx,
-                                                  &reason);
+    ALACandidate candidate(call, forall, /*checkArgs=*/true);
 
-    if (accBaseSym == NULL) {
-      if (reason != CRR_UNKNOWN &&
-          reason != CRR_NOT_ARRAY_ACCESS_LIKE) {
+    if (candidate.isRejected()) {
+      if (candidate.shouldReport()) {
         LOG_ALA(2, "Start analyzing call", call);
 
         std::stringstream message;
         message << "Cannot optimize: ";
-        message << getCallRejectReasonStr(reason);
+        message << getCallRejectReasonStr(candidate.getReason());
 
         LOG_ALA(3, message.str().c_str(), call);
       }
       continue;
     }
 
+
+
     LOG_ALA(2, "Start analyzing call", call);
+    if (candidate.hasOffset()) {
+      LOG_ALA(3, "Call has offset(s), this will require dynamic check", call);
+    }
+
+    Symbol* accBaseSym = candidate.getCallBase();
+    const int iterandIdx = candidate.getIterandIdx();
 
     INT_ASSERT(iterandIdx >= 0);
 
@@ -1523,9 +1622,6 @@ static void autoLocalAccess(ForallStmt *forall) {
           primMaybeLocalThisLocations.insert(call->astloc);
         }
 
-        std::pair<CallExpr *, int> candidate;
-        candidate.first = call;
-        candidate.second = iterandIdx;
         forall->optInfo.staticCandidates.push_back(candidate);
       }
     }
@@ -1550,9 +1646,6 @@ static void autoLocalAccess(ForallStmt *forall) {
         primMaybeLocalThisLocations.insert(call->astloc);
       }
 
-      std::pair<CallExpr *, int> candidate;
-      candidate.first = call;
-      candidate.second = iterandIdx;
       forall->optInfo.dynamicCandidates.push_back(candidate);
     }
   }
@@ -1890,14 +1983,13 @@ static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall)
         // we want the side that's not to have a baseExpr that's a SymExpr
         // this avoid function calls
         if (!canBeLocalAccess(leftCall)) {
-          return getCallBaseSymIfSuitable(leftCall, forall,
-                                          /*checkArgs=*/false,
-                                          NULL) != NULL;
+          return !ALACandidate(leftCall, forall).isRejected();
         }
         else if (!canBeLocalAccess(rightCall)) {
-          return getCallBaseSymIfSuitable(rightCall, forall,
-                                          /*checkArgs=*/false,
-                                          NULL) != NULL;
+          return !ALACandidate(rightCall, forall).isRejected();
+        }
+        else {
+          return true;
         }
       }
     }
@@ -1905,9 +1997,7 @@ static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall)
       if (rightSymExpr->symbol()->isImmediate() ||
           rightSymExpr->symbol()->isParameter()) {
         if (!canBeLocalAccess(leftCall)) {
-          return getCallBaseSymIfSuitable(leftCall, forall,
-                                          /*checkArgs=*/false,
-                                          NULL) != NULL;
+          return !ALACandidate(leftCall, forall).isRejected();
         }
       }
     }
@@ -2190,10 +2280,7 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
       otherChildIsSuitable = true;
     }
     else {
-      otherChildIsSuitable = (getCallBaseSymIfSuitable(otherCall,
-                                                       forall,
-                                                       /*checkArgs=*/false,
-                                                       NULL) != NULL);
+      otherChildIsSuitable = !ALACandidate(otherCall, forall).isRejected();
     }
   }
 
@@ -2380,8 +2467,11 @@ static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed) {
           SymExpr *controlFlag = new SymExpr(confirmed ? gTrue : gFalse);
           maybeAggAssign->get(flagIndex)->replace(controlFlag);
 
-          int aggToRemoveIndex = lhsOfMaybeAggAssign ? 3 : 4;
-          removeAggregatorFromMaybeAggAssign(maybeAggAssign, aggToRemoveIndex);
+          if (confirmed) {
+            int aggToRemoveIndex = lhsOfMaybeAggAssign ? 3 : 4;
+            removeAggregatorFromMaybeAggAssign(maybeAggAssign,
+                                               aggToRemoveIndex);
+          }
         }
       }
     }

@@ -240,6 +240,9 @@ static uint32_t hfi_timebase_from_cpuinfo(uint32_t old_pico_per_cycle)
 	gethostname(hostname, 80);
 	hostname[sizeof(hostname) - 1] = '\0';
 
+	// since called in a constructor, prior to psm3_init, must use getenv
+	// and /etc/psm3.conf can't control this setting
+	// when this is set, additional timebase initialization warnings are enabled
 	if (getenv("PSM3_DEBUG_TIMEBASE"))
 		timebase_debug = 1;
 

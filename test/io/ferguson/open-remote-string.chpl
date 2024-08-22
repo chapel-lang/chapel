@@ -8,7 +8,7 @@ config const verbose = false;
 
 var files = ["open-remote-string-bar", "open-remote-string-baz"];
 
-var Space = files.domain dmapped blockDist(files.domain);
+var Space = files.domain dmapped new blockDist(files.domain);
 var DistFiles:[Space] string = files;
 
 for f in files {

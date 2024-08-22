@@ -4,7 +4,7 @@ use BlockDist;
 
 config var n = 10000:int(32);
 
-const D = {1..n} dmapped blockDist(idxType=int(32), boundingBox={1..n});
+const D = {1..n} dmapped new blockDist(idxType=int(32), boundingBox={1..n});
 
 var A: [D] real;
 var B: [D] real;

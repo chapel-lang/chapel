@@ -4,7 +4,7 @@ config const n = 10;
 
 proc main() {
   var Dom = {1..n,1..n};
-  var Space = Dom dmapped stencilDist(Dom, fluff=(2,3));
+  var Space = Dom dmapped new stencilDist(Dom, fluff=(2,3));
 
   for (a, b) in zip(Dom[1,..], Space[1,..]) {
     assert(a == b);

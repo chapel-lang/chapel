@@ -1,6 +1,6 @@
 GASNet ofi-conduit documentation
 Copyright 2015-2017, Intel Corporation
-Portions copyright 2018-2023, The Regents of the University of California.
+Portions copyright 2018-2024, The Regents of the University of California.
 
 User Information:
 ----------------
@@ -32,7 +32,7 @@ The GASNet OFI conduit can run on any OFI provider that matches its
 requirements. However, at this time, it is recommended *only* for the
 following networks.
 
-  + Intel(R) Omni-Path Fabric, via the "psm2" provider
+  + Intel or Cornelis Networks Omni-Path fabric, via the "psm2" provider
   + HPE Slingshot-10 (100 Gb/s ConnectX-5 NIC), via the "verbs;ofi_rxm" provider
   + HPE Slingshot-11 (200 Gb/s Cassini NIC), via the "cxi" provider
 
@@ -64,6 +64,12 @@ impacting GASNet stability:
 Providers not listed above are accepted from the higher of 1.5 or the first
 libfabric release in which they appear.
 
+The following providers have passed correctness and performance sanity checks
+at some point in time.  However, due to lack of access for periodic testing, we
+cannot consider these to be supported at this time:
+
+  + AWS Elastic Fabric Adapter, via "efa" provider
+
 The ofi-conduit is currently known to lack support for the following providers
 as of libfabric v1.14.0. If these providers are important to you, please
 contact us at gasnet-staff@lbl.gov .
@@ -75,7 +81,7 @@ The fi_info command installed with libfabric can be used to query the available
 OFI providers on your system.  It is worth noting that the available providers
 on a cluster compute node may differ from those on a front-end node.
 
-Users with Mellanox InfiniBand hardware should use the GASNet ibv-conduit,
+Users with NVIDIA/Mellanox InfiniBand hardware should use the GASNet ibv-conduit,
 rather than ofi-conduit with the verbs OFI provider, as the former may provide
 better performance.
 
@@ -97,8 +103,8 @@ provider with ofi-conduit should be considered experimental.
 
 The ofi-conduit includes support for memory kinds (`GEX_MK_CLASS_CUDA_UVA` and
 `GASNET_HAVE_MK_CLASS_HIP`) for certain providers and subject to minimum
-versions of libfabric.  See docs/memory_kinds.md in the GASNet-EX sources for
-details.
+versions of libfabric.  See docs/memory_kinds_implementation.md in the
+GASNet-EX sources for details.
 
 OFI provider requirements to run this conduit:
 -------------------------------------
@@ -416,6 +422,13 @@ Recognized environment variables:
   Unless a different value was set using --with-ofi-max-medium=[value] at
   configure time, the default value is 8192.
 
+* GASNET_OFI_SET_UNIVERSE_SIZE - enable automatic setting of FI_UNIVERSE_SIZE
+  Setting GASNET_OFI_SET_UNIVERSE_SIZE=1 *allows* ofi-conduit to set
+  FI_UNIVERSE_SIZE to the job size *if* it is not already set.
+  Under no circumstances does ofi-conduit overwrite a pre-existing value.
+  The default value is 1, unless using a libfabric version older than 1.15.2.0
+  together with the "cxi" or "generic" provider (due to bug 4413).
+
 * GASNET_OFI_DEVICE
   By default, ofi-conduit will open and use the first device enumerated by
   libfabric as matching the specified provider and required capabilities.
@@ -478,11 +491,21 @@ Recognized environment variables:
   behavior of the underlying providers it relies upon.  Libfabric documentation
   encourages users to set this high enough to prevent internal CQ overruns for
   non-scalable communication patterns, but not so high as to waste
-  provider-internal memory.  Unfortunately at the time of this writing the
-  effect appears to be highly provider-specific, ranging from no apparent
-  effect on some providers (sockets), to the intended scaling effect on others
-  (verbs), and even outright crashes on some versions of other providers (cxi).
-  See "Bug 4413" in the "Known problems" for more information.
+  provider-internal memory.
+  See "GASNET_OFI_SET_UNIVERSE_SIZE" documentation for information on when
+  this value is set automatically by ofi-conduit.  Most notably, ofi-conduit
+  will not overwrite a value set by the user.
+
+* FI_MR_CACHE_MAX_{SIZE,COUNT} - These libfabric variables control the cache
+  of memory registrations used in some providers.  These settings are not
+  directly consumed by GASNet ofi-conduit, but affect the behavior of some
+  underlying providers it relies upon.
+  When using a provider known to experience degraded RMA performance with the
+  defaults, ofi-conduit may set these values to "-1" to remove all limits on
+  the memory registration cache.
+  See Bug 4676 under "Known problems" for information on when these variables
+  are set by ofi-conduit.  Most notably, ofi-conduit will not overwrite a value
+  set by the user.
 
 * FI_PSM2_LOCK_LEVEL - This variable only applies to the psm2 provider where
   it controls the internal locking state of the provider and can be set to the
@@ -549,15 +572,6 @@ Known problems:
   The most up-to-date information on this bug is maintained at:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4267
 
-* Bug 4413
-  At least cxi provider in libfabric 1.15.0.0 is known to crash at
-  initialization if the environment variable "FI_UNIVERSE_SIZE" is set, though
-  1.15.2.0 does not appear to have this problem.  In general, this is a
-  supported variable in multiple providers, and is even *recommended* for use
-  with verbs;ofi_rxm in runs with more than 256 processes.
-  The most up-to-date information on this bug is maintained at:
-    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4413
-
 * Bugs 4420 and 4503
   At least verbs;ofi_rxm and cxi providers are known to fail when using
   read-only memory as the source of an RMA Put and/or AM Long operation.
@@ -567,7 +581,7 @@ Known problems:
 
 * Bug 4422
   By default, multi-threaded applications run on a single core when using psm2
-  provider (for Intel Omni-Path networks).  There are two known work-arounds
+  provider (for Omni-Path networks).  There are two known work-arounds
   available:
   + The undesired pinning to a single core will not take place if the process
     is already pinned to a strict subset of the host's CPU cores.  In many
@@ -638,7 +652,7 @@ Known problems:
     [3] #9  0x0000148e9e82e9c4 in cuda_gdrcopy_from_dev (handle=<optimized out>, hostptr=<optimized out>, devptr=<optimized out>, len=<optimized out>) at src/hmem_cuda_gdrcopy.c:291
     [3] #10 0x0000148e9e82d5dd in cuda_copy_from_dev (device=<optimized out>, dst=<optimized out>, src=<optimized out>, size=<optimized out>) at src/hmem_cuda.c:176
     [3] #11 0x0000148e9e82c1ed in ofi_copy_from_hmem (size=4, src=<optimized out>,
-  If one experiences crashes similar to the backtrace above with Nvida GPUs and
+  If one experiences crashes similar to the backtrace above with NVIDIA GPUs and
   the Slingshot-11 network, check if the command `rpm -qa libfabric` reports a
   version containing "SSHOT2.0.0".  If it does, then this bug is present and the
   only known work-around for a user is to set `FI_HMEM_CUDA_USE_GDRCOPY=no` in
@@ -676,13 +690,56 @@ Known problems:
   is maintained at:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4581
 
-* See docs/memory_kinds.md in the GASNet-EX sources for current information
-  regarding known issues with respect to memory kinds support in ofi-conduit.
+* Bug 4652
+  There exist versions and/or configurations of Slurm on HPE Cray EX systems
+  which prevent the launch of single-node ofi-conduit jobs with the cxi
+  provider.  Failure messages (one per-process) look like the following:
+    *** FATAL ERROR (proc 0): in gasnetc_ofi_init() at
+    [...]/gasnet_ofi.c:1164: fi_domain failed: -38(Function not implemented)
+  For certain versions/configurations, one can work around this issue either
+  by adding `--network=single_node_vni` to one's `srun` command or by setting
+  `SLURM_NETWORK=single_node_vni` in the environment.  However, there are
+  also versions/configurations for which there is no known work-around.
+  The most up-to-date information on this bug, including known work-arounds,
+  is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4652
+
+* Bug 4676
+  It is known that the default values of the FI_MR_CACHE_MAX_COUNT and
+  FI_MR_CACHE_MAX_SIZE environment variables can adversely impact RMA
+  performance when using the cxi or verbs providers.  Therefore, by default
+  when configured to use either of these two providers (or the "generic"
+  provider with FI_PROVIDER set to "cxi" or "verbs") ofi-conduit will set these
+  variables to "-1" in order to remove the limits on the memory registration
+  cache.  However, the conduit will never overwrite a user-provided setting.
+  To request the libfabric default values for either variable, one may set
+  them to an empty string, which instructs ofi-conduit to unset the variable.
+  Note that if libfabric is initialized prior to ofi-conduit, such as by an
+  libfabric-based MPI used for job launch, then neither the automatic behavior
+  nor the use of an empty string to suppress it will occur early enough to
+  have the desired effect.  In such cases, it is recommended to set these two
+  environment variables to "-1" manually (to remove the limits) or to leave them
+  unset (to use libfabric's default values).
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4676
+
+* CXI provider and large procs-per-node (includes bugs 4478 and 4480)
+  There have been observations of multiple failure modes early in startup when
+  using the "cxi" provider with 128 or more processes per node.  These include
+  fatal errors (see bug 4480) and in some cases hangs (see bug 4478).
+  The most up-to-date information on these issues is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4478
+  and
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4480
+
+* See docs/memory_kinds_implementation.md in the GASNet-EX sources for current
+  information regarding known issues with respect to memory kinds support in
+  ofi-conduit.
 
 * See the GASNet Bugzilla server for details on additional known bugs:
   https://gasnet-bugs.lbl.gov/
 
-* Limits to MPI interoperability
+* Limits to MPI interoperability (includes bugs 4455 and 4638)
   Depending on the libfabric provider in use, it may not be possible to have both
   MPI and GASNet using the native network API in the same application.  There
   are known issues with the psm2 and cxi providers, though the latter's issue
@@ -690,22 +747,49 @@ Known problems:
 
   The psm2 provider has the property that each process may only open
   the network adapter once.  If you wish to use MPI and GASNet in the same
-  application on the Intel Omni-Path fabric, then there are two options:
+  application on the Omni-Path (OPA) fabric, then there are two options:
     1. GASNet may be configured to use an alternative transport.
        Options include mpi- and udp-conduits.
     2. MPI may be configured to use an alternative transport (most likely TCP).
   The relative performance implications of these options depends strongly on the
   properties of each application.
 
-  The cxi provider requires use of `FI_` environment variables to configure the
-  provider to reliably handle Active Messages under heavy loads.  It has been
-  observed that HPE Cray MPI uses the same settings, but in a way which is
-  not compatible with ofi-conduit's needs.  As a result, initializing MPI
-  prior to GASNet will yield less reliable Active Messages and possible hangs
-  or crashes as a result.  Therefore, when an ofi-conduit application is
-  launched using `srun`, care is taken to avoid initializing MPI as the spawner.
-  To ensure those automatic measures are sufficient, we have the following
-  recommendations for use of ofi-conduit on the HPE Cray EX platform:
+  The cxi provider requires use of `FI_` environment variables to configure
+  the provider to reliably handle Active Messages under heavy loads.  It has
+  been observed that HPE Cray MPI uses some of the same settings, but with
+  values which differ from ofi-conduit's validated values.  As a result,
+  initializing MPI prior to GASNet *might* yield less reliable Active Messages
+  and possible hangs or crashes.  Therefore, by default, when an ofi-conduit
+  application is launched using `srun`, care is taken to avoid initializing MPI
+  as the spawner.  This is the recommended practice for applications which do
+  not also use MPI.
+  The most up-to-date information on this issue is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4455
+
+  While there is a conflict between the cxi provider settings preferred by HPE
+  Cray MPICH and GASNet-EX's ofi-conduit, it *is* possible to run hybrid
+  applications which use both.  However, if GASNet-EX is initialized before MPI,
+  one may see failures of MPI_init() with messages including text like the
+  following:
+    create_endpoint(1311).......: OFI EP enable failed (ofi_init.c:1311:create_endpoint:Address already in use)
+  This can be resolved by ensuring that MPI initializes first.  That can be
+  accomplished either explicitly in the application source code, or implicitly
+  by setting `GASNET_OFI_SPAWNER=mpi` in the environment at application run
+  time.  Unfortunately, that will lead to lengthy warnings which begin with the
+  following text:
+    *** WARNING: ofi-conduit failed to configure FI_CXI_* environment variables due to prior conflicting settings.
+  The warning message ends with text directing the reader here.
+  The most up-to-date information on this issue, including recommendations
+  regarding the "conflicting settings" warning, is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4638
+
+  With the gni provider, when Cray MPI is initialized prior to GASNet (including
+  via use of MPI for job launch), a fatal error is seen at startup which
+  includes the following text:
+    fi_domain failed: -16(Device or resource busy)
+  Meanwhile, hybrid applications which initialize GASNet before MPI have been
+  observed to run correctly.  Therefore, the following recommendations apply to
+  gni provider:
     + Do not use MPI for job launch:
       Configure using `--with-ofi-spawner=pmi --with-pmi-version=cray` to
       ensure the `gasnetrun_ofi` script defaults to use of PMI-based job
@@ -713,16 +797,6 @@ Known problems:
       cannot be located.  This latter point is important even if one is not
       using the `gasnetrun_ofi` script.
     + Hybrid applications should initialize GASNet before MPI.
-  The most up-to-date information on this issue is maintained at:
-    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4455
-
-  With the gni provider, when Cray MPI is initialized prior to GASNet (including
-  via use of MPI for job launch), a fatal error is seen at startup which
-  includes the following text:
-    fi_domain failed: -16(Device or resource busy)
-  Meanwhile, hybrid applications which initialize GASNet before MPI have been
-  observed to run correctly.
-  The same recommendations given above for cxi provider apply to gni provider.
 
   As noted above, the specific issue with the cxi provider also represents a
   more general concern that an MPI implementation may configure libfabric in
@@ -751,7 +825,10 @@ The OFI community is working on increasing the number of providers that can supp
   `FI_INJECT` could be used to achieve synchronous completion of small Puts
   in the same manner that ibv-conduit utilizes inline sends.
 
-* Implement native support for Negotiated-Payload Active Message (NPAM)
+* Extend native support for Negotiated-Payload Active Message (NPAM) Medium
+  to enable xfers larger than Max Medium.
+
+* Implement native support for Negotiated-Payload Active Message (NPAM) Long?
 
 * Eliminate a buffer copy for AM Medium (and AM Long below the RMA threshold)
   by using (iov_count > 1) on providers which support it, along with the

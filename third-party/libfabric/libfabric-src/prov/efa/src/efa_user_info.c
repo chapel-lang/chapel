@@ -1,38 +1,6 @@
-/*
- * Copyright (c) 2022 Amazon.com, Inc. or its affiliates. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+/* SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only */
+/* SPDX-FileCopyrightText: Copyright Amazon.com, Inc. or its affiliates. All rights reserved. */
+
 #include "efa.h"
 #include "efa_prov_info.h"
 
@@ -269,6 +237,111 @@ err_free:
 	return -FI_ENODATA;
 }
 
+#if HAVE_CUDA || HAVE_NEURON || HAVE_SYNAPSEAI
+/**
+ * @brief determine if EFA provider should claim support of FI_HMEM in info
+ * @param[in]	version		libfabric API version used by user
+ * @return	true, if EFA provider should claim support of FI_HMEM
+ * 		false, otherwise
+ */
+bool efa_user_info_should_support_hmem(int version)
+{
+	bool any_hmem, rdma_allowed;
+	char *extra_info = "";
+	int i;
+
+	/* Note that the default behavior of EFA provider is different between
+	 * libfabric API version when CUDA is used as HMEM system.
+	 *
+	 * For libfabric API version 1.17 and earlier, EFA provider does not
+	 * support FI_HMEM on CUDA unless GPUDirect RDMA is available.
+	 *
+	 * For libfabric API version 1.18 and later, EFA provider will claim support
+	 * of FI_HMEM on CUDA as long as CUDA library is initialized and a CUDA device is
+	 * available. On an system without GPUDirect RDMA, the support of CUDA memory
+	 * is implemented by calling CUDA library. If user does not want EFA provider
+	 * to use CUDA library, the user can call use fi_setopt to set
+	 * FI_OPT_CUDA_API_PERMITTED to false.
+	 * On an system without GPUDirect RDMA, such a call would fail.
+	 *
+	 * For NEURON and SYNAPSEAI HMEM types, use_device_rdma is required no
+	 * matter the API version, as is P2P support.
+	 */
+	if (hmem_ops[FI_HMEM_CUDA].initialized && FI_VERSION_GE(version, FI_VERSION(1, 18))) {
+		EFA_INFO(FI_LOG_CORE,
+			"User is using API version >= 1.18. CUDA library and "
+			"devices are available, claim support of FI_HMEM.\n");
+			/* For this API we can support HMEM regardless of
+			   use_device_rdma and P2P support, because we can use
+			   CUDA api calls.*/
+			return true;
+	}
+
+	if (hmem_ops[FI_HMEM_CUDA].initialized) {
+		extra_info = "For CUDA and libfabric API version <1.18 ";
+	}
+
+	any_hmem = false;
+	EFA_HMEM_IFACE_FOREACH_NON_SYSTEM(i) {
+		enum fi_hmem_iface hmem_iface = efa_hmem_ifaces[i];
+		/* Note that .initialized doesn't necessarily indicate there are
+		   hardware devices available, only that the libraries are
+		   available. */
+		if (hmem_ops[hmem_iface].initialized) {
+			any_hmem = true;
+		}
+	}
+
+	if (!any_hmem) {
+		EFA_WARN(FI_LOG_CORE,
+			"FI_HMEM cannot be supported because no compatible "
+			"libraries were found.\n");
+		return false;
+	}
+
+	/* All HMEM providers require P2P support. */
+	if (ofi_hmem_p2p_disabled()) {
+		EFA_WARN(FI_LOG_CORE,
+			"%sFI_HMEM capability requires peer to peer "
+			"support, which is disabled because "
+			"FI_HMEM_P2P_DISABLED was set to 1/on/true.\n",
+			extra_info);
+		return false;
+	}
+
+	/* all devices require use_device_rdma. */
+	if (!efa_device_support_rdma_read()) {
+		EFA_WARN(FI_LOG_CORE,
+		"%sEFA cannot support FI_HMEM because the EFA device "
+		"does not have RDMA support.\n",
+		extra_info);
+		return false;
+	}
+
+	rdma_allowed = efa_rdm_get_use_device_rdma(version);
+	/* not allowed to use rdma, but device supports it... */
+	if (!rdma_allowed) {
+		EFA_WARN(FI_LOG_CORE,
+		"%sEFA cannot support FI_HMEM because the environment "
+		"variable FI_EFA_USE_DEVICE_RDMA is 0.\n",
+		extra_info);
+		return false;
+	}
+
+	return true;
+}
+
+#else
+
+bool efa_user_info_should_support_hmem(int version)
+{
+	EFA_WARN(FI_LOG_CORE,
+		"EFA cannot support FI_HMEM because it was not compiled "
+		"with any supporting FI_HMEM capabilities\n");
+	return false;
+}
+
+#endif
 /**
  * @brief update an info to match user hints
  *
@@ -276,24 +349,57 @@ err_free:
  * the capability of the EFA device. This function tailor it
  * so it matches user provided hints
  *
+ * @param	version[in]	libfabric API version
  * @param	info[in,out]	info to be updated
  * @param	hints[in]	user provided hints
  * @return	0 on success
  * 		negative libfabric error code on failure
  */
 static
-int efa_user_info_alter_rxr(struct fi_info *info, const struct fi_info *hints)
+int efa_user_info_alter_rdm(int version, struct fi_info *info, const struct fi_info *hints)
 {
 	uint64_t atomic_ordering;
 
-	/*
-	 * Do not advertise FI_HMEM capabilities when the core can not support
-	 * it or when the application passes NULL hints (given this is a primary
-	 * cap). The logic for device-specific checks pertaining to HMEM comes
-	 * further along this path.
-	 */
-	if (!hints) {
+	if (hints && (hints->caps & FI_HMEM)) {
+		/*
+		 * FI_HMEM is a primary capability, therefore only check
+		 * (and cliam) its support when user explicitly requested it.
+		 */
+		if (!efa_user_info_should_support_hmem(version)) {
+			return -FI_ENODATA;
+		}
+
+		info->caps |= FI_HMEM;
+	} else {
 		info->caps &= ~FI_HMEM;
+	}
+
+	if (info->caps & FI_HMEM) {
+		/* Add FI_MR_HMEM to mr_mode when claiming support of FI_HMEM
+		 * because EFA provider's HMEM support rely on
+		 * application to provide descriptor for device buffer.
+		 */
+		if (hints->domain_attr &&
+		    !(hints->domain_attr->mr_mode & FI_MR_HMEM)) {
+			EFA_WARN(FI_LOG_CORE,
+			        "FI_HMEM capability requires device registrations (FI_MR_HMEM)\n");
+			return -FI_ENODATA;
+		}
+
+		info->domain_attr->mr_mode |= FI_MR_HMEM;
+	}
+
+	if (FI_VERSION_LT(version, FI_VERSION(1, 18)) && info->caps & FI_HMEM) {
+		/* our HMEM atomic support rely on calls to CUDA API, which
+		 * is disabled if user are using libfabric API version 1.17 and earlier.
+		 */
+		if (hints->caps & FI_ATOMIC) {
+			EFA_WARN(FI_LOG_CORE,
+			        "FI_ATOMIC capability with FI_HMEM relies on CUDA API, "
+				"which is disable for libfabric API version 1.17 and eariler\n");
+			return -FI_ENODATA;
+		}
+		info->caps &= ~FI_ATOMIC;
 	}
 
 	/*
@@ -315,57 +421,6 @@ int efa_user_info_alter_rxr(struct fi_info *info, const struct fi_info *hints)
 			info->domain_attr->data_progress = FI_PROGRESS_MANUAL;
 		}
 
-
-#if HAVE_CUDA || HAVE_NEURON || HAVE_SYNAPSEAI
-		/* If the application requires HMEM support, we will add
-		 * FI_MR_HMEM to mr_mode, because we need application to
-		 * provide descriptor for device buffer. Note we did
-		 * not add FI_MR_LOCAL here because according to FI_MR man
-		 * page:
-		 *
-		 *     "If FI_MR_HMEM is set, but FI_MR_LOCAL is unset,
-		 *      only device buffers must be registered when used locally.
-		 *      "
-		 * which means FI_MR_HMEM implies FI_MR_LOCAL for device buffer.
-		 */
-		if (hints->caps & FI_HMEM) {
-			if (ofi_hmem_p2p_disabled()) {
-				EFA_WARN(FI_LOG_CORE,
-					"FI_HMEM capability currently requires peer to peer support, which is disabled.\n");
-				return -FI_ENODATA;
-			}
-			//TODO: remove the rdma checks once FI_HMEM w/o p2p is supported
-
-			if (!efa_device_support_rdma_read()) {
-				EFA_WARN(FI_LOG_CORE,
-				        "FI_HMEM capability requires RDMA, which this device does not support.\n");
-				return -FI_ENODATA;
-
-			}
-
-			if (!rxr_env.use_device_rdma) {
-				EFA_WARN(FI_LOG_CORE,
-				        "FI_HMEM capability requires RDMA, which is turned off. You can turn it on by set environment variable FI_EFA_USE_DEVICE_RDMA to 1.\n");
-				return -FI_ENODATA;
-			}
-
-			if (hints->domain_attr &&
-			    !(hints->domain_attr->mr_mode & FI_MR_HMEM)) {
-				EFA_WARN(FI_LOG_CORE,
-				        "FI_HMEM capability requires device registrations (FI_MR_HMEM)\n");
-				return -FI_ENODATA;
-			}
-
-			info->domain_attr->mr_mode |= FI_MR_HMEM;
-
-		} else {
-			/*
-			 * FI_HMEM is a primary capability. Providers should
-			 * only enable it if requested by applications.
-			 */
-			info->caps &= ~FI_HMEM;
-		}
-#endif
 		/*
 		 * The provider does not force applications to register buffers
 		 * with the device, but if an application is able to, reuse
@@ -385,13 +440,13 @@ int efa_user_info_alter_rxr(struct fi_info *info, const struct fi_info *hints)
 		 *	- Guaranteed to send msgs smaller than info->nic->link_attr->mtu
 		 */
 		if (hints->mode & FI_MSG_PREFIX) {
-			FI_INFO(&rxr_prov, FI_LOG_CORE,
+			EFA_INFO(FI_LOG_CORE,
 				"FI_MSG_PREFIX supported by application.\n");
 			info->mode |= FI_MSG_PREFIX;
 			info->tx_attr->mode |= FI_MSG_PREFIX;
 			info->rx_attr->mode |= FI_MSG_PREFIX;
-			info->ep_attr->msg_prefix_size = RXR_MSG_PREFIX_SIZE;
-			FI_INFO(&rxr_prov, FI_LOG_CORE,
+			info->ep_attr->msg_prefix_size = EFA_RDM_MSG_PREFIX_SIZE;
+			EFA_INFO(FI_LOG_CORE,
 				"FI_MSG_PREFIX size = %ld\n", info->ep_attr->msg_prefix_size);
 		}
 	}
@@ -428,7 +483,7 @@ int efa_user_info_get_rdm(uint32_t version, const char *node,
 			  const char *service, uint64_t flags,
 			  const struct fi_info *hints, struct fi_info **info)
 {
-	const struct fi_info *prov_info_rxr;
+	const struct fi_info *prov_info;
 	struct fi_info *dupinfo, *tail;
 	int ret;
 
@@ -439,7 +494,7 @@ int efa_user_info_get_rdm(uint32_t version, const char *node,
 	}
 
 	if (hints) {
-		ret = ofi_prov_check_info(&rxr_util_prov, version, hints);
+		ret = ofi_prov_check_info(&efa_util_prov, version, hints);
 		if (ret) {
 			*info = NULL;
 			return ret;
@@ -447,22 +502,26 @@ int efa_user_info_get_rdm(uint32_t version, const char *node,
 	}
 
 	*info = tail = NULL;
-	for (prov_info_rxr = rxr_util_prov.info;
-	     prov_info_rxr;
-	     prov_info_rxr = prov_info_rxr->next) {
-		ret = efa_prov_info_compare_src_addr(node, flags, hints, prov_info_rxr);
+	for (prov_info = efa_util_prov.info;
+	     prov_info;
+	     prov_info = prov_info->next) {
+
+		if (prov_info->ep_attr->type != FI_EP_RDM)
+			continue;
+
+		ret = efa_prov_info_compare_src_addr(node, flags, hints, prov_info);
 		if (ret)
 			continue;
 
-		ret = efa_prov_info_compare_domain_name(hints, prov_info_rxr);
+		ret = efa_prov_info_compare_domain_name(hints, prov_info);
 		if (ret)
 			continue;
 
-		ret = efa_prov_info_compare_pci_bus_id(hints, prov_info_rxr);
+		ret = efa_prov_info_compare_pci_bus_id(hints, prov_info);
 		if (ret)
 			continue;
 
-		dupinfo = fi_dupinfo(prov_info_rxr);
+		dupinfo = fi_dupinfo(prov_info);
 		if (!dupinfo) {
 			ret = -FI_ENOMEM;
 			goto free_info;
@@ -474,7 +533,7 @@ int efa_user_info_get_rdm(uint32_t version, const char *node,
 
 		dupinfo->fabric_attr->api_version = version;
 
-		ret = efa_user_info_alter_rxr(dupinfo, hints);
+		ret = efa_user_info_alter_rdm(version, dupinfo, hints);
 		if (ret)
 			goto free_info;
 
@@ -482,7 +541,7 @@ int efa_user_info_get_rdm(uint32_t version, const char *node,
 
 		/* If application asked for FI_REMOTE_COMM but not FI_LOCAL_COMM, it
 		 * does not want to use shm. In this case, we honor the request by
-		 * unsetting the FI_LOCAL_COMM flag in info. This way rxr_endpoint()
+		 * unsetting the FI_LOCAL_COMM flag in info. This way efa_rdm_ep_open()
 		 * should disable shm transfer for the endpoint
 		 */
 		if (hints && hints->caps & FI_REMOTE_COMM && !(hints->caps & FI_LOCAL_COMM))
@@ -505,7 +564,7 @@ free_info:
 
 /**
  * @brief get a list of info the fit user's requirements
- * 
+ *
  * This is EFA provider's implemenation of fi_getinfo() API.
  *
  * @param	node[in]	node from user's call to fi_getinfo()
@@ -522,51 +581,28 @@ int efa_getinfo(uint32_t version, const char *node,
 {
 	struct fi_info *dgram_info_list, *rdm_info_list;
 	int err;
-	static bool shm_info_initialized = false;
 
-	/*
-	 * efa_shm_info_initialize() initializes the global variable g_shm_info.
-	 * Ideally it should be called during provider initialization. However,
-	 * At the time of EFA provider initialization, shm provider has not been
-	 * initialized yet, therefore g_shm_info cannot be initialized. As a workaround,
-	 * we initialize g_shm_info when the rxr_getinfo() is called 1st time,
-	 * at this point all the providers have been initialized.
-	 */
-	if (!shm_info_initialized) {
-		efa_shm_info_initialize(hints);
-		shm_info_initialized = true;
-	}
+	if (hints && hints->ep_attr && hints->ep_attr->type == FI_EP_DGRAM)
+		return efa_user_info_get_dgram(version, node, service, flags, hints, info);
 
-	if (hints && hints->ep_attr && hints->ep_attr->type == FI_EP_DGRAM) {
-		err = efa_user_info_get_dgram(version, node, service, flags, hints, info);
-		if (err)
-			goto error;
-		return 0;
-	}
-
-	if (hints && hints->ep_attr && hints->ep_attr->type == FI_EP_RDM) {
-		err = efa_user_info_get_rdm(version, node, service, flags, hints, info);
-		if (err)
-			goto error;
-		return 0;
-	}
+	if (hints && hints->ep_attr && hints->ep_attr->type == FI_EP_RDM)
+		return efa_user_info_get_rdm(version, node, service, flags, hints, info);
 
 	if (hints && hints->ep_attr && hints->ep_attr->type != FI_EP_UNSPEC) {
 		EFA_WARN(FI_LOG_DOMAIN, "unsupported endpoint type: %d\n",
 			 hints->ep_attr->type);
-		err = -FI_ENODATA;
-		goto error;
+		return -FI_ENODATA;
 	}
 
 	err = efa_user_info_get_dgram(version, node, service, flags, hints, &dgram_info_list);
 	if (err && err != -FI_ENODATA) {
-		goto error;
+		return err;
 	}
 
 	err = efa_user_info_get_rdm(version, node, service, flags, hints, &rdm_info_list);
 	if (err && err != -FI_ENODATA) {
 		fi_freeinfo(dgram_info_list);
-		goto error;
+		return err;
 	}
 
 	if (rdm_info_list && dgram_info_list) {
@@ -593,12 +629,6 @@ int efa_getinfo(uint32_t version, const char *node,
 		return 0;
 	}
 
-	err = -FI_ENODATA;
-error:
-	if (shm_info_initialized) {
-		efa_shm_info_finalize();
-		shm_info_initialized = false;
-	}
-	return err;
+	return -FI_ENODATA;
 }
 

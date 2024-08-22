@@ -1,0 +1,13 @@
+diff --git a/modules/queens_prefix_generation.chpl b/modules/queens_prefix_generation.chpl
+index ab4142c..9f1e02a 100644
+--- a/modules/queens_prefix_generation.chpl
++++ b/modules/queens_prefix_generation.chpl
+@@ -24,7 +24,7 @@ module queens_prefix_generation{
+ 
+ 
+ 	proc queens_node_generate_initial_prefixes(const size: uint(16), const initial_depth: int(32),
+-		set_of_nodes: [] queens_node): (uint(64),uint(64)){
++		ref set_of_nodes: [] queens_node): (uint(64),uint(64)){
+ 
+ 
+ 		var bit_test : uint(32) = 0;

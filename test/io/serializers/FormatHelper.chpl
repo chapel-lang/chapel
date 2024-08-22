@@ -5,6 +5,7 @@ module FormatHelper {
   use IO;
   use ChplFormat;
   use ObjectSerialization;
+  use PrecisionSerializer;
 
   enum FormatKind {
     default,
@@ -12,6 +13,7 @@ module FormatHelper {
     little,
     big,
     syntax,
+    precision,
     object
   }
 
@@ -38,6 +40,10 @@ module FormatHelper {
       when FormatKind.syntax {
         if writing then return new chplSerializer();
         else return new chplDeserializer();
+      }
+      when FormatKind.precision {
+        if writing then return new precisionSerializer(4, 8);
+        else return new IO.defaultDeserializer(); // no precision deserializer
       }
       when FormatKind.object {
         if writing then return new objectSerializer(endian=IO.endianness.little);

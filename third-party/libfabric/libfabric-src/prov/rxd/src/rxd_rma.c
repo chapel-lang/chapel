@@ -96,7 +96,7 @@ static ssize_t rxd_generic_write_inject(struct rxd_ep *rxd_ep,
 	assert(iov_count <= RXD_IOV_LIMIT && rma_count <= RXD_IOV_LIMIT);
 	assert(ofi_total_iov_len(iov, iov_count) <= (size_t) rxd_ep_domain(rxd_ep)->max_inline_rma);
 
-	ofi_mutex_lock(&rxd_ep->util_ep.lock);
+	ofi_genlock_lock(&rxd_ep->util_ep.lock);
 
 	if (ofi_cirque_isfull(rxd_ep->util_ep.tx_cq->cirq))
 		goto out;
@@ -126,7 +126,7 @@ static ssize_t rxd_generic_write_inject(struct rxd_ep *rxd_ep,
 	ret = 0;
 
 out:
-	ofi_mutex_unlock(&rxd_ep->util_ep.lock);
+	ofi_genlock_unlock(&rxd_ep->util_ep.lock);
 	return ret;
 }
 
@@ -147,7 +147,7 @@ rxd_generic_rma(struct rxd_ep *rxd_ep, const struct iovec *iov,
 
 	assert(iov_count <= RXD_IOV_LIMIT && rma_count <= RXD_IOV_LIMIT);
 
-	ofi_mutex_lock(&rxd_ep->util_ep.lock);
+	ofi_genlock_lock(&rxd_ep->util_ep.lock);
 
 	if (ofi_cirque_isfull(rxd_ep->util_ep.tx_cq->cirq))
 		goto out;
@@ -177,7 +177,7 @@ rxd_generic_rma(struct rxd_ep *rxd_ep, const struct iovec *iov,
 	ret = 0;
 
 out:
-	ofi_mutex_unlock(&rxd_ep->util_ep.lock);
+	ofi_genlock_unlock(&rxd_ep->util_ep.lock);
 	return ret;
 }
 

@@ -1,0 +1,3 @@
+initnotthis.chpl:6: In initializer:
+initnotthis.chpl:8: error: explicit calls to init() on anything other than 'this' or 'super' are not allowed
+initnotthis.chpl:13: error: explicit calls to init() on anything other than 'this' or 'super' are not allowed

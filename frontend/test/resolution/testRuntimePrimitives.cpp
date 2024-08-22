@@ -244,7 +244,6 @@ static void test23() {
   // by Dyno anyway.
 
   primTypeHelper<VoidType>("gpu kernel launch", {});
-  primTypeHelper<VoidType>("gpu kernel launch flat", {});
   primTypeHelper<VoidType>("gpu eligible", {});
   voidPtrPrimTypeHelper("gpu init kernel cfg", {});
   primTypeHelper<VoidType>("gpu deinit kernel cfg", {});

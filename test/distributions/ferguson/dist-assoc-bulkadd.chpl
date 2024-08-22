@@ -1,6 +1,6 @@
 use HashedDist;
 
-var D: domain(real) dmapped hashedDist(idxType=real);
+var D: domain(real) dmapped new hashedDist(idxType=real);
 
 var inds = [2.1, ];
 

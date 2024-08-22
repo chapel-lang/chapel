@@ -80,6 +80,11 @@ studies/jacobi/jacobi.graph
 library/standard/List/perf/listBenchmark1.graph
 studies/1brc/1brc.graph
 studies/sinLUT/sinlut.graph
+performance/vectorization/unrolling/dotProduct-real64.graph
+performance/vectorization/unrolling/dotProduct-int32.graph
+performance/vectorization/unrolling/dotProduct-real64-big.graph
+performance/vectorization/outerLoopVectorization/clenshaw.graph
+performance/vectorization/loopDivision.graph
 # suite: HPC Challenge
 studies/hpcc/HPL/hpl.graph
 studies/hpcc/STREAM_study_fragmented.graph
@@ -87,6 +92,7 @@ studies/hpcc/STREAM_study.graph
 studies/hpcc/STREAM_study_promote.graph
 studies/hpcc/FFT/fft.graph
 studies/hpcc/PTRANS/ptrans.graph
+studies/lsuHeat/heat.graph
 # suite: Performance Graphs (TEPS, GB/s, etc.)
 release/examples/benchmarks/hpcc/stream_performance.graph
 release/examples/benchmarks/hpcc/ra_performance.graph
@@ -110,6 +116,9 @@ studies/lcals/LCALS-raw-long.graph
 studies/lcals/LCALS-parallel-short.graph
 studies/lcals/LCALS-parallel-medium.graph
 studies/lcals/LCALS-parallel-long.graph
+studies/lcals/LCALS-raw-vector-only-short.graph
+studies/lcals/LCALS-raw-vector-only-medium.graph
+studies/lcals/LCALS-raw-vector-only-long.graph
 # suite: Shootout benchmarks
 studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
@@ -255,13 +264,13 @@ types/string/psahabu/perf/search.graph
 types/string/psahabu/perf/search-throughput.graph
 types/string/psahabu/perf/substring.graph
 # suite: Standard Library
-library/packages/Sort/performance/sorts-linearithmic.graph
-library/packages/Sort/performance/sorts-quadratic.graph
+library/standard/Sort/performance/sorts-linearithmic.graph
+library/standard/Sort/performance/sorts-quadratic.graph
 library/packages/LinearAlgebra/performance/dot-perf.graph
 library/packages/LinearAlgebra/performance/linearalgebra-perf.graph
 sparse/CS/multiplication/cs-multiplication.graph
 sparse/CS/resize/cs-resize.graph
-library/packages/Sort/RadixSort/radixsortMSB.graph
+library/standard/Sort/RadixSort/radixsortMSB.graph
 # suite: Misc
 users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph
@@ -269,7 +278,7 @@ reductions/vass/reductions-perf.graph
 parallel/forall/reduce-intents/ri-a2-AoA.graph
 studies/paracr/asenjo/PARACR-BC.graph
 library/standard/BitOps/c-tests/performance/bitops.graph
-library/standard/Random/performance/getNextPerf.graph
+library/standard/Random/performance/nextPerf.graph
 studies/rbc/tvandoren/RBC.graph
 exercises/c-ray/old/c-ray.graph
 scan/scanPerf.graph
@@ -321,6 +330,9 @@ statements/lydia/ifVersusSelect.alternates.graph
 statements/lydia/moduleVersusFunctionBaseline.graph
 statements/lydia/moduleVersusFunctionDifAccess.graph
 statements/lydia/moduleVersusFunction.graph
+# suite: plb2 benchmarks
+studies/plb2/matmul/matmul.graph
+studies/plb2/nqueen/nqueen.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph
 Samples/Performance/cleanCopy/foobar.graph

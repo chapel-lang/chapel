@@ -173,6 +173,42 @@ const ModuleVec& parse(Context* context, UniqueString path,
 const ModuleVec& parseToplevel(Context* context, UniqueString path);
 
 /**
+  Parse a file (with parentSymbolPath="", so not a submodule)
+  and return the IDs of the top-level modules that it contains.
+ */
+const std::vector<ID>& toplevelModulesInFile(Context* context,
+                                             UniqueString path);
+
+/**
+  Given the modules from files named on the command line,
+  determine which module is the main module, and return it.
+
+  requestedMainModuleName can be "", but if it is not, it should
+  be the name of a module in commandLineModules.
+
+  If libraryMode is set, most errors in determining the main
+  module will be ignored. This mode is useful for library compilation,
+  where the main module concept does not make sense.
+ */
+ID findMainModule(Context* context,
+                  std::vector<ID> commandLineModules,
+                  UniqueString requestedMainModuleName,
+                  bool libraryMode);
+
+/**
+  Convenience function to compute the main module ID and command-line module IDs
+  based upon paths provided at the command line.
+
+  Returns the command-line module IDs and sets mainModule to the main module ID.
+ */
+std::vector<ID>
+findMainAndCommandLineModules(Context* context,
+                              std::vector<UniqueString> paths,
+                              UniqueString requestedMainModuleName,
+                              bool libraryMode,
+                              ID& mainModule);
+
+/**
   Return the current module search path.
  */
 const std::vector<UniqueString>& moduleSearchPath(Context* context);
@@ -306,7 +342,7 @@ bool idIsInBundledModule(Context* context, ID id);
  Returns true if the ID corresponds to something in a standard module.
  A standard module is a bundled module, but it is not a package module
  (which may be contributed by users and are not subject to the same
- constraints as standard modules).
+ constraints as standard modules) and not an internal module.
 
  If the bundled module path is empty, this function returns false.
 
@@ -315,14 +351,83 @@ bool idIsInBundledModule(Context* context, ID id);
 bool idIsInStandardModule(Context* context, ID id);
 
 
+/**
+ Returns true if the file path refers to the internal modules.
+ (Typically, that would be if it begins with $CHPL_HOME/modules/internal).
+ If the internal module path is empty, this function returns false.
+
+ Also considers paths from --prepend-internal-module-dir, if any.
+ */
 bool
 filePathIsInInternalModule(Context* context, UniqueString filePath);
 
+/**
+ Returns true if the file path corresponds to the standard modules.
+ A standard module is a bundled module, but it is not a package module
+ (which may be contributed by users and are not subject to the same
+ constraints as standard modules) and not an internal module.
+ (So, in other words, it would typically be a standard module if
+ it begins with $CHPL_HOME/modules/ but doesn't begin with
+ $CHPL_HOME/modules/internal or $CHPL_HOME/modules/packages;
+ this will include $CHPL_HOME/modules/standard and $CHPL_HOME/modules/dists).
+
+ If the bundled module path is empty, this function returns false.
+
+ Also considers paths from --prepend-standard-module-dir, if any.
+ */
 bool
 filePathIsInStandardModule(Context* context, UniqueString filePath);
 
+/**
+ Returns true if the file path corresponds to the bundled modules.
+ (Typically, that would be if it begins with $CHPL_HOME/modules/).
+ If the bundled module path is empty, this function returns false.
+
+ Also considers paths, if any, from --prepend-internal-module-dir
+ and --prepend-standard-module-dir.
+ */
 bool
 filePathIsInBundledModule(Context* context, UniqueString filePath);
+
+/**
+  Check if a file exists. This is a query, so that duplicate checks
+  can be avoided.
+  Returns true if the file exists, false otherwise.
+
+  requireFileCaseMatches helps with case-insensitive filesystems:
+
+  'requireFileCaseMatches=true' causes this function to work with
+  a directory listing & if the filename component of 'path' isn't
+  found in its parent directory listing, this function returns 'false'.
+
+  'requireFileCaseMatches=false' allows a case-insensitive filesystem
+  to indicate that 'AA' exists if the filesystem has the file 'Aa'.
+ */
+bool checkFileExists(Context* context,
+                     std::string path,
+                     bool requireFileCaseMatches);
+
+/**
+ This helper function checks if a file exists at a particular path.
+ If it does, it returns a normalized form of the path to that file.
+ If not, it returns the empty string.
+ */
+std::string getExistingFileAtPath(Context* context, std::string path);
+
+/**
+ This helper function checks the module search path for
+ an existing file named fname.
+
+ If multiple such files exist in different directories,
+ it will choose the first and emit an ambiguity warning.
+
+ This function uses case-sensitive matching against the directory listings,
+ so 'use Module' refers to 'Module.chpl' even on case-insensitive filesystems.
+
+ If nothing is found, returns the empty string.
+ */
+std::string getExistingFileInModuleSearchPath(Context* context,
+                                              const std::string& fname);
 
 /**
  This query parses a toplevel module by name. Returns nullptr
@@ -331,7 +436,18 @@ filePathIsInBundledModule(Context* context, UniqueString filePath);
 const uast::Module* getToplevelModule(Context* context, UniqueString name);
 
 /**
+ Given a particular (presumably standard) module, return the ID of a symbol
+ with the given name in that module. Beyond creating the ID, this also ensures
+ that the standard module is parsed, and thus, that 'idToAst' on the returned
+ ID will return a non-null value.
+ */
+ID getSymbolFromTopLevelModule(Context* context,
+                               const char* modName,
+                               const char* symName);
+
+/**
  This query parses a submodule for 'include submodule'.
+ The ID passed should be the ID of an Include statement.
  Returns nullptr if no such file can be found.
  */
 const uast::Module* getIncludedSubmodule(Context* context,
@@ -346,6 +462,11 @@ const uast::AstNode* idToAst(Context* context, ID id);
  Returns the tag for the node with the given ID.
  */
 uast::AstTag idToTag(Context* context, ID id);
+
+/**
+  Returns true if the ID is a module.
+ */
+bool idIsModule(Context* context, ID id);
 
 /**
  Returns true if the ID is a parenless function.
@@ -408,6 +529,11 @@ const uast::AstNode* parentAst(Context* context, const uast::AstNode* node);
   or the empty ID when given a toplevel module.
  */
 ID idToParentModule(Context* context, ID id);
+
+/**
+  Returns 'true' if ID refers to a toplevel module.
+ */
+bool idIsToplevelModule(Context* context, ID id);
 
 /**
  Given an ID that represents a Function, get the declared return

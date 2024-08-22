@@ -64,9 +64,15 @@ static bool        err_fn_header_printed = false;
 static bool        handle_erroneous_fns = true;
 
 astlocT            last_error_loc(0, NULL);
+bool               newErrorRecord = false;
 
 static bool forceWidePtrs();
 static const char* cleanCompilerFilename(const char* name);
+
+static void recordNewErrorHelper() {
+  if (err_fatal || (err_user && !err_print && !err_ignore))
+    recordNewCompilationError();
+}
 
 void setupError(const char* subdir, const char* filename, int lineno, int tag) {
   err_subdir        = subdir;
@@ -79,6 +85,7 @@ void setupError(const char* subdir, const char* filename, int lineno, int tag) {
 
   exit_immediately  = tag == 1 || tag == 2;
   exit_eventually  |= tag == 3;
+  recordNewErrorHelper();
 }
 
 void setupDynoError(chpl::ErrorBase::Kind errKind) {
@@ -97,6 +104,7 @@ void setupDynoError(chpl::ErrorBase::Kind errKind) {
 
   exit_immediately = false;
   exit_eventually |= err_fatal;
+  recordNewErrorHelper();
 }
 
 GpuCodegenType getGpuCodegenType() {
@@ -1117,7 +1125,13 @@ void clean_exit(int status) {
 
   cleanup_for_exit();
 
-  delete gContext;
+  if (fExitLeaks) {
+    // The context's destructor takes a while, and we're about to exit anyway,
+    // so deliberately leak it. Still perform file-based cleanup, though.
+    gContext->cleanupTmpDirIfNeeded();
+  } else {
+    delete gContext;
+  }
   gContext = nullptr;
 
   if (gGenInfo) {

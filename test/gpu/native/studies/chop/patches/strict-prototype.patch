@@ -1,0 +1,13 @@
+diff --git a/headers/GPU_aux.h b/headers/GPU_aux.h
+index 02766ed..c972ccc 100644
+--- a/headers/GPU_aux.h
++++ b/headers/GPU_aux.h
+@@ -6,7 +6,7 @@
+ extern "C" {
+ #endif
+ 
+-int GPU_device_count();
++int GPU_device_count(void);
+ int GPU_set_device(int device);
+ 
+ #ifdef __cplusplus

@@ -9,10 +9,6 @@
  * class.
  */
 
-// WARNING: This test exercises one or more EXPERIMENTAL features.
-// One should not clone the logic in this test, since details of such features
-// may change without notice.
-
 #include <gasnetex.h>
 #include <gasnet_mk.h>
 #include <gasnet_coll.h>

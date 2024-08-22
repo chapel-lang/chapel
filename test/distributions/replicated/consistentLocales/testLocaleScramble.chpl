@@ -6,7 +6,7 @@ var Grid: [GridD] locale = for i in 0..#numLocales do Locales[numLocales-1-i];
 
 writeln("Grid is: ", Grid);
 
-const D = {1..3} dmapped replicatedDist(Grid);
+const D = {1..3} dmapped new replicatedDist(Grid);
 var A: [D] real;
 
 coforall loc in Locales with (ref A) do

@@ -1,0 +1,33 @@
+#!/bin/bash
+
+chpl=$3
+chpl_home=$($chpl --print-chpl-home)
+compiler=$($chpl_home/util/printchplenv --value --only CHPL_TARGET_CXX)
+llvm_version=$($chpl_home/util/printchplenv --value --only CHPL_LLVM_VERSION)
+gpu_arch=$($chpl_home/util/printchplenv --value --only CHPL_GPU_ARCH)
+cuda_path=$($chpl_home/util/printchplenv --value --only CHPL_CUDA_PATH)
+nvcc_compiler=$cuda_path/bin/nvcc
+
+NVCC_FLAGS=""
+CLANG_FLAGS="--offload-arch=${gpu_arch}"
+if [[ "$llvm_version" -ge 15 ]]; then
+  # LLVM 15 and later require default to -fPIE, so streamKernel.cu needs to be compiled with -fPIE
+  NVCC_FLAGS="--compiler-options -fPIE"
+fi
+
+build_for_func() {
+  local func=$1
+  local COMMON_DEFINES="-Dmk_MATH_FUNC=$func"
+
+  # build the nvcc version
+  local DEFINES_nvcc="$COMMON_DEFINES -Dmk_PREFIX=cu_nvcc_${func}_ -Dmk_LABEL=\"nvcc\""
+  $nvcc_compiler $DEFINES_nvcc -O3 --use_fast_math $NVCC_FLAGS -c mathKernels.cu -o mathKernels_cu_$func.o
+  $nvcc_compiler -O3 --use_fast_math mathKernels_cu_$func.o -o mathKernelsDlinked_$func.o -dlink
+
+  local DEFINES_clang="$COMMON_DEFINES -Dmk_PREFIX=cu_clang_${func}_ -Dmk_LABEL=\"clang\" -D__STRICT_ANSI__=1"
+  # build the clang version
+  $compiler $DEFINES_clang -I$cuda_path/include -O3 -ffast-math $CLANG_FLAGS -c mathKernels.cu -o mathKernels_clang_$func.o
+}
+build_for_func tanhf
+build_for_func sqrtf
+build_for_func fabsf

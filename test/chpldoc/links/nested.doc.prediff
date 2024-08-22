@@ -24,7 +24,7 @@ reference_pat = re.compile('<a class="reference internal" href="#(.+?)" title="\
 for m in re.finditer(reference_pat, html_output):
     # for each reference, check if the link exists
     link = m.group(1)
-    if not re.search(f'<a class="headerlink" href="#{link}" title="Permalink to this definition">', html_output):
+    if not re.search(f'<a class="headerlink" href="#{link}" title="Link to this definition">', html_output):
         output.append(f"Could not find link for reference '#{link}'")
     else:
         output.append(f"Found link for reference '#{link}'")

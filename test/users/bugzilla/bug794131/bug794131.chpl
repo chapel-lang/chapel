@@ -9,7 +9,7 @@ record things {
 extern record data_set {
 }
 
-extern proc read_stuff(location: c_ptr(data_set), stuff: [] things,
+extern proc read_stuff(location: c_ptr(data_set), ref stuff: [] things,
                     start: uint(64), size: uint(64), count: uint(64)): int(64);
 
 proc get_stuff()

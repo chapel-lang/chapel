@@ -2,7 +2,7 @@
 
 """
 chpldeps
-======
+========
 
 This Python module contains the dependencies used by the Chapel project.
 Dependencies can be invoked as subcommands in the following ways:
@@ -10,6 +10,7 @@ Dependencies can be invoked as subcommands in the following ways:
   python3 path/to/chpldeps sphinx-build <sphinx options>
   python3 path/to/chpldeps rst2man <rst2man options>
   python3 path/to/chpldeps register-python-argcomplete
+  python3 path/to/chpldeps version <package name>
   python3 path/to/chpldeps path/to/something.py <something.py options>
 
 For the last case, this program assumes that something.py has a
@@ -22,6 +23,7 @@ import os
 import re
 import sys
 import importlib.util
+import importlib.metadata
 
 def missing_subcommand():
     print("chpldeps requires a subcommand", file=sys.stderr)
@@ -81,6 +83,11 @@ if __name__ == '__main__':
         subcommand_path = os.path.join(my_bin_dir, subcommand)
 
         exec(open(subcommand_path).read())
+
+    elif subcommand == 'version':
+        arg = sys.argv[1]
+        print(importlib.metadata.version(arg))
+        sys.exit(0)
 
     elif os.path.isfile(subcommand):
         # Run the argument as a python script with the dependencies.

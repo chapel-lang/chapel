@@ -80,6 +80,14 @@ ptl_handle_rtsmatch(psm2_mq_req_t recv_req, int was_posted)
 	psm2_mq_req_t send_req = (psm2_mq_req_t) recv_req->ptl_req_ptr;
 
 	if (recv_req->req_data.recv_msglen > 0) {
+#ifdef PSM_DSA
+		if (psm3_use_dsa(recv_req->req_data.recv_msglen))
+			psm3_dsa_memcpy(recv_req->req_data.buf,
+					send_req->req_data.buf,
+					recv_req->req_data.recv_msglen, 0,
+					&send_req->mq->stats.dsa_stats[0]);
+		else
+#endif
 		psm3_mq_mtucpy(recv_req->req_data.buf, send_req->req_data.buf,
 			       recv_req->req_data.recv_msglen);
 	}
@@ -89,6 +97,7 @@ ptl_handle_rtsmatch(psm2_mq_req_t recv_req, int was_posted)
 	psm3_mq_handle_rts_complete(recv_req);
 
 	send_req->mq->stats.tx_rndv_bytes += send_req->req_data.send_msglen;
+	send_req->mq->stats.tx_self_bytes += send_req->req_data.send_msglen;
 	/* If the send is already marked complete, that's because it was internally
 	 * buffered. */
 	if (send_req->state == MQ_STATE_COMPLETE) {
@@ -150,15 +159,30 @@ self_mq_isend(psm2_mq_t mq, psm2_epaddr_t epaddr, uint32_t flags_user,
 	    return PSM2_NO_MEMORY;
 
 #ifdef PSM_CUDA
+	// we technically don't need to set is_buf_gpu_mem because psm3_mq_mtucpy
+	// will be used to copy the data to the destination or a sysbuf and it will
+	// check if the buffer is GPU memory. But we do need the sync_memops()
 	if (len && PSMI_IS_GPU_ENABLED && PSMI_IS_GPU_MEM(ubuf)) {
 		psmi_cuda_set_attr_sync_memops(ubuf);
 		send_req->is_buf_gpu_mem = 1;
 	} else
 		send_req->is_buf_gpu_mem = 0;
 #endif
+#ifdef PSM_ONEAPI
+	// we don't need to set is_buf_gpu_mem because psm3_mq_mtucpy will be
+	// used to copy the data to the destination or a sysbuf and it will
+	// check if the buffer is a GPU memory
+	//if (len && PSMI_IS_GPU_ENABLED && PSMI_IS_GPU_MEM(ubuf)) {
+	//	send_req->is_buf_gpu_mem = 1;
+	//} else
+	//	send_req->is_buf_gpu_mem = 0;
+#endif
 
 	mq->stats.tx_num++;
 	mq->stats.tx_rndv_num++;
+	// we count tx_rndv_bytes as we transfer data
+	mq->stats.tx_self_num++;
+	// we count tx_self_bytes as we transfer data
 
 	rc = psm3_mq_handle_rts(mq, epaddr, tag->tag, &strat_stats,
 				len, NULL, 0, 1,

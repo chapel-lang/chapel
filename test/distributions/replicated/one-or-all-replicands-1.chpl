@@ -5,7 +5,7 @@
 use ReplicatedDist;
 
 var localDom = {1..3};
-var replDom = localDom dmapped replicatedDist();
+var replDom = localDom dmapped new replicatedDist();
 
 proc useArray(in arr) {
   showArray(arr, "in useArray");

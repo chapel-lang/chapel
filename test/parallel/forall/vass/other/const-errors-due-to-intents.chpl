@@ -16,3 +16,12 @@ forall a in A with (const i2, const in i3, const ref i4) {
   useit(i3);
   useit(i4);
 }
+
+forall a1 in A do
+  forall a2 in A do
+    forall a3 in A with (ref i1) do  // illegal: 'i1' is const in 'forall a2'
+      i1 = 8;
+
+forall a1 in A do
+  forall a2 in A do
+    i2 = 8;  // illegal: 'i2' is const in 'forall a2'

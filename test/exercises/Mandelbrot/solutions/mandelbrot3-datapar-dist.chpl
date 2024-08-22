@@ -21,7 +21,7 @@ proc main() {
   // 0..#n means "a range with n indices starting at 0", i.e., 0..n-1
   //
   var LocImgSpace = {0..#rows, 0..#cols};
-  var ImgSpace = LocImgSpace dmapped blockDist(boundingBox=LocImgSpace);
+  var ImgSpace = LocImgSpace dmapped new blockDist(boundingBox=LocImgSpace);
   //
   // An array to store the resulting Image.
   //

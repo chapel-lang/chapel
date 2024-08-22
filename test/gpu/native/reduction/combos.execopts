@@ -1,0 +1,4 @@
+--useReduceEquals=false --useInitVal=false
+--useReduceEquals=false --useInitVal=true
+--useReduceEquals=true --useInitVal=false
+--useReduceEquals=true --useInitVal=true

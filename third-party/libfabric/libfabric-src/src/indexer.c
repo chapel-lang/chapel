@@ -156,6 +156,26 @@ void ofi_idx_reset(struct indexer *idx)
 	idx->free_list = 0;
 }
 
+
+bool ofi_byte_idx_grow(struct ofi_byte_idx *idx)
+{
+	uint8_t i;
+
+	if (idx->data)
+		return false;
+
+	idx->data = calloc(UINT8_MAX + 1, sizeof(*idx->data));
+	if (!idx->data)
+		return false;
+
+	/* index 0 is reserved/invalid, 0 marks end of list */
+	for (i = 1; i < UINT8_MAX - 1; i++)
+		idx->data[i].next = i + 1;
+	idx->free_list = 1;
+	return true;
+}
+
+
 static int ofi_idm_grow(struct index_map *idm, int index)
 {
 	assert(!ofi_idm_chunk(idm, index));
@@ -257,7 +277,7 @@ nomem:
 	return -1;
 }
 
-void ofi_array_iter(struct ofi_dyn_arr *arr, void *context,
+int ofi_array_iter(struct ofi_dyn_arr *arr, void *context,
 		    int (*callback)(struct ofi_dyn_arr *arr, void *item,
 				    void *context))
 {
@@ -271,9 +291,10 @@ void ofi_array_iter(struct ofi_dyn_arr *arr, void *context,
 			ret = callback(arr, ofi_array_item(arr, arr->chunk[c], i),
 				       context);
 			if (ret)
-				return;
+				return ret;
 		}
 	}
+	return 0;
 }
 
 void ofi_array_destroy(struct ofi_dyn_arr *arr)

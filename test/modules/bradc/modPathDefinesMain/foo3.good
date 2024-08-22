@@ -1,3 +1,4 @@
-error: Ambiguous main() function (use --main-module to disambiguate):
-foo3.chpl:4: note: in module M1
-foo3.chpl:12: note: in module M2
+<command line>: error: unknown main module due to multiple 'main' procedures
+<command line>: note: please use '--main-module' to disambiguate
+foo3.chpl:4: note: found 'proc main' in module 'M1'
+foo3.chpl:12: note: found 'proc main' in module 'M2'

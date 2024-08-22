@@ -1,0 +1,1 @@
+issue-25000-loop.chpl:1: error: Throwaway variable '_' is not allowed in this context

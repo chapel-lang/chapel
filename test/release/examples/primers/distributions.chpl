@@ -220,7 +220,7 @@ coforall L in Locales {
 // it.  For example, we can declare a larger domain than
 // ``BlockSpace`` as follows:
 
-const BigBlockSpace = blockDist.createDomain({0..n+1, 0..n+1});
+const BigBlockSpace = BlkDist.createDomain({0..n+1, 0..n+1});
 
 // In this case, the rows and columns numbered ``0`` and ``n+1`` fall
 // outside of the bounding box.  As a result, indices like ``(0, i)``

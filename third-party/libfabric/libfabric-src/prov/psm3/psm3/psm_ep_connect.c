@@ -154,12 +154,10 @@ psm3_ep_connect(psm2_ep_t ep, int num_of_epid, psm2_epid_t const *array_of_epid,
 		epid_mask_isdupof[j] = -1;
 	}
 
-	psm3_getenv("PSM3_CONNECT_TIMEOUT",
+	if (! psm3_getenv("PSM3_CONNECT_TIMEOUT",
 		    "End-point minimum connection timeout. 0 for no time-out.",
 		    PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT,
-		    (union psmi_envvar_val)(timeout/SEC_ULL), &timeout_intval);
-
-	if (getenv("PSM3_CONNECT_TIMEOUT")) {
+		    (union psmi_envvar_val)(timeout/SEC_ULL), &timeout_intval)){
 		timeout = timeout_intval.e_uint * SEC_ULL;
 	} else if (timeout > 0) {
 		/* The timeout parameter provides the minimum timeout. A heuristic
@@ -427,12 +425,10 @@ psm2_error_t psm3_ep_disconnect2(psm2_ep_t ep, int num_of_epaddr,
 		epaddr_mask_isdupof[j] = -1;
 	}
 
-	psm3_getenv("PSM3_DISCONNECT_TIMEOUT",
+	if (! psm3_getenv("PSM3_DISCONNECT_TIMEOUT",
 		    "End-point disconnection timeout over-ride. 0 for no time-out.",
 		    PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_UINT,
-		    (union psmi_envvar_val)0, &timeout_intval);
-
-	if (getenv("PSM3_DISCONNECT_TIMEOUT")) {
+		    (union psmi_envvar_val)0, &timeout_intval)) {
 		timeout = timeout_intval.e_uint * SEC_ULL;
 	} else if (timeout > 0) {
 		/* The timeout parameter provides the minimum timeout. A heuristic

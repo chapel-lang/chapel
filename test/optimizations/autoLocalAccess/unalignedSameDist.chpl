@@ -1,14 +1,14 @@
 use BlockDist;
 
 proc createNiceArray() {
-  var dom = {1..10} dmapped blockDist({1..10});
+  var dom = {1..10} dmapped new blockDist({1..10});
   var arr: [dom] int;
 
   return arr;
 }
 
 proc createAnnoyingArray() {
-  var dom = {1..10} dmapped blockDist({1..20});
+  var dom = {1..10} dmapped new blockDist({1..20});
   var arr: [dom] int;
 
   return arr;

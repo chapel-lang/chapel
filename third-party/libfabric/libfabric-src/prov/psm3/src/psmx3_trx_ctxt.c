@@ -58,7 +58,7 @@ static void *disconnect_func(void *args)
 	struct psmx3_epaddr_context *epaddr_context;
 	psm2_error_t errors;
 
-	FI_INFO(&psmx3_prov, FI_LOG_CORE,
+	PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 		"psm2_ep: %p, epaddr: %p\n", trx_ctxt->psm2_ep, disconn->epaddr);
 
 	trx_ctxt->domain->peer_lock_fn(&trx_ctxt->peer_lock, 2);
@@ -111,7 +111,7 @@ int psmx3_am_trx_ctxt_handler(psm2_am_token_t token, psm2_amarg_t *args,
 			err2 = pthread_create(&disconnect_thread, NULL,
 			                      disconnect_func, disconn);
 			if (err2)
-				FI_WARN(&psmx3_prov, FI_LOG_CORE,
+				PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 				        "cannot create disconnect thread\n");
 			else
 				pthread_detach(disconnect_thread);
@@ -148,13 +148,13 @@ void psmx3_trx_ctxt_disconnect_peers(struct psmx3_trx_ctxt *trx_ctxt)
 	dlist_foreach_safe(&peer_list, item, tmp) {
 		peer = container_of(item, struct psmx3_epaddr_context, entry);
 		if (psmx3_env.disconnect) {
-			FI_INFO(&psmx3_prov, FI_LOG_CORE, "epaddr: %p\n", peer->epaddr);
+			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "epaddr: %p\n", peer->epaddr);
 			err = psm3_am_request_short(peer->epaddr,
 						    PSMX3_AM_TRX_CTXT_HANDLER,
 						    &arg, 1, NULL, 0, 0, NULL,
 						    NULL);
 			if (err)
-				FI_INFO(&psmx3_prov, FI_LOG_CORE,
+				PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 					"failed to send disconnect, err %d\n",
 					err);
 		}
@@ -183,14 +183,14 @@ void psmx3_trx_ctxt_free(struct psmx3_trx_ctxt *trx_ctxt, int usage_flags)
 	old_flags = trx_ctxt->usage_flags;
 	trx_ctxt->usage_flags &= ~usage_flags;
 	if (trx_ctxt->usage_flags) {
-		FI_INFO(&psmx3_prov, FI_LOG_CORE, "epid: %s (%s -> %s)\n",
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "epid: %s (%s -> %s)\n",
 			psm3_epid_fmt(trx_ctxt->psm2_epid, 0),
 			psmx3_usage_flags_to_string(old_flags),
 			psmx3_usage_flags_to_string(trx_ctxt->usage_flags));
 		return;
 	}
 
-	FI_INFO(&psmx3_prov, FI_LOG_CORE, "epid: %s (%s)\n",
+	PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "epid: %s (%s)\n",
 		psm3_epid_fmt(trx_ctxt->psm2_epid, 0), psmx3_usage_flags_to_string(old_flags));
 
 	trx_ctxt->am_progress = 0;
@@ -262,7 +262,7 @@ struct psmx3_trx_ctxt *psmx3_trx_ctxt_alloc(struct psmx3_fid_domain *domain,
 			    !memcmp(uuid, trx_ctxt->uuid, sizeof(psm2_uuid_t))) {
 				trx_ctxt->usage_flags |= asked_flags;
 				domain->trx_ctxt_unlock_fn(&domain->trx_ctxt_lock, 1);
-				FI_INFO(&psmx3_prov, FI_LOG_CORE,
+				PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 					"use existing context. epid: %s "
 					"(%s -> tx+rx).\n", psm3_epid_fmt(trx_ctxt->psm2_epid, 0),
 					psmx3_usage_flags_to_string(compatible_flags));
@@ -273,7 +273,7 @@ struct psmx3_trx_ctxt *psmx3_trx_ctxt_alloc(struct psmx3_fid_domain *domain,
 	}
 
 	if (psmx3_trx_ctxt_cnt >= psmx3_domain_info.max_trx_ctxt) {
-		FI_WARN(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 			"number of Tx/Rx contexts exceeds limit (%d).\n",
 			psmx3_domain_info.max_trx_ctxt);
 		return NULL;
@@ -281,7 +281,7 @@ struct psmx3_trx_ctxt *psmx3_trx_ctxt_alloc(struct psmx3_fid_domain *domain,
 
 	trx_ctxt = calloc(1, sizeof(*trx_ctxt));
 	if (!trx_ctxt) {
-		FI_WARN(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 			"failed to allocate trx_ctxt.\n");
 		return NULL;
 	}
@@ -290,14 +290,14 @@ struct psmx3_trx_ctxt *psmx3_trx_ctxt_alloc(struct psmx3_fid_domain *domain,
 				 sizeof(struct psmx3_am_request),
 				 sizeof(void *), 0, 64, 0);
 	if (err) {
-		FI_WARN(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 			"failed to allocate am_req_pool.\n");
 		goto err_out;
 	}
 
 	psm3_ep_open_opts_get_defaults(&opts);
 	memcpy(trx_ctxt->uuid, uuid, sizeof(psm2_uuid_t));
-	FI_INFO(&psmx3_prov, FI_LOG_CORE,
+	PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 		"uuid: %s\n", psmx3_uuid_to_string(uuid));
 
 	if (src_addr && src_addr->unit >= 0) {
@@ -311,25 +311,25 @@ struct psmx3_trx_ctxt *psmx3_trx_ctxt_alloc(struct psmx3_fid_domain *domain,
 		opts.addr_index = PSMX3_DEFAULT_ADDR_INDEX;
 	}
 	opts.port = src_addr ? src_addr->port : PSMX3_DEFAULT_PORT;
-	FI_INFO(&psmx3_prov, FI_LOG_CORE,
+	PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 		"ep_open_opts: unit=%d port=%u addr_index=%d\n", opts.unit, opts.port, opts.addr_index);
 
 	err = psm3_ep_open(uuid, &opts,
 			   &trx_ctxt->psm2_ep, &trx_ctxt->psm2_epid);
 	if (err != PSM2_OK) {
-		FI_WARN(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 			"psm3_ep_open returns %d, errno=%d\n", err, errno);
 		goto err_out_destroy_pool;
 	}
 
-	FI_INFO(&psmx3_prov, FI_LOG_CORE,
+	PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 		"epid: %s (%s)\n", psm3_epid_fmt(trx_ctxt->psm2_epid, 0),
 		psmx3_usage_flags_to_string(usage_flags));
 
 	err = psm3_mq_init(trx_ctxt->psm2_ep, PSM2_MQ_ORDERMASK_ALL,
 			   NULL, 0, &trx_ctxt->psm2_mq);
 	if (err != PSM2_OK) {
-		FI_WARN(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 			"psm3_mq_init returns %d, errno=%d\n", err, errno);
 		goto err_out_close_ep;
 	}

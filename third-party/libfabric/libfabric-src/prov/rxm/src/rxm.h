@@ -127,6 +127,8 @@ extern size_t rxm_packet_size;
 
 #define RXM_IOV_LIMIT 4
 
+#define RXM_PEER_XFER_TAG_FLAG	(1ULL << 63)
+
 #define RXM_MR_MODES	(OFI_MR_BASIC_MAP | FI_MR_LOCAL)
 
 #define RXM_PASSTHRU_TX_OP_FLAGS (FI_TRANSMIT_COMPLETE)
@@ -203,6 +205,7 @@ extern size_t rxm_cq_eq_fairness;
 extern int rxm_passthru;
 extern int force_auto_progress;
 extern int rxm_use_write_rndv;
+extern int rxm_detect_hmem_iface;
 extern enum fi_wait_obj def_wait_obj, def_tcp_wait_obj;
 
 struct rxm_ep;
@@ -253,6 +256,10 @@ void rxm_freeall_conns(struct rxm_ep *ep);
 struct rxm_fabric {
 	struct util_fabric util_fabric;
 	struct fid_fabric *msg_fabric;
+	struct fi_info *util_coll_info;
+	struct fi_info *offload_coll_info;
+	struct fid_fabric *util_coll_fabric;
+	struct fid_fabric *offload_coll_fabric;
 };
 
 struct rxm_domain {
@@ -261,13 +268,27 @@ struct rxm_domain {
 	size_t max_atomic_size;
 	size_t rx_post_size;
 	uint64_t mr_key;
-	bool dyn_rbuf;
 	bool passthru;
 	struct ofi_ops_flow_ctrl *flow_ctrl_ops;
 	struct ofi_bufpool *amo_bufpool;
 	ofi_mutex_t amo_bufpool_lock;
+	struct fid_domain *util_coll_domain;
+	struct fid_domain *offload_coll_domain;
+	uint64_t offload_coll_mask;
 };
 
+struct rxm_cq {
+	struct util_cq util_cq;
+	struct fid_peer_cq peer_cq;
+	struct fid_cq *util_coll_cq;
+	struct fid_cq *offload_coll_cq;
+};
+
+struct rxm_eq {
+	struct util_eq util_eq;
+	struct fid_eq *util_coll_eq;
+	struct fid_eq *offload_coll_eq;
+};
 
 struct rxm_cntr {
 	struct util_cntr util_cntr;
@@ -283,15 +304,28 @@ struct rxm_mr {
 	struct rxm_domain *domain;
 	enum fi_hmem_iface iface;
 	uint64_t device;
+	void *hmem_handle;
+	uint64_t hmem_flags;
 	ofi_mutex_t amo_lock;
 };
 
 static inline enum fi_hmem_iface
-rxm_mr_desc_to_hmem_iface_dev(void **desc, size_t count, uint64_t *device)
+rxm_iov_desc_to_hmem_iface_dev(const struct iovec *iov, void **desc,
+			       size_t count, uint64_t *device)
 {
-	if (!count || !desc || !desc[0]) {
+	enum fi_hmem_iface iface = FI_HMEM_SYSTEM;
+
+	if (!count) {
 		*device = 0;
-		return FI_HMEM_SYSTEM;
+		return iface;
+	}
+
+	if (!desc || !desc[0]) {
+		if (rxm_detect_hmem_iface)
+			iface = ofi_get_hmem_iface(iov[0].iov_base, device, NULL);
+		else
+			*device = 0;
+		return iface;
 	}
 
 	*device = ((struct rxm_mr *) desc[0])->device;
@@ -443,7 +477,6 @@ struct rxm_rx_buf {
 	struct fid_ep *rx_ep;
 	struct dlist_entry repost_entry;
 	struct rxm_conn *conn;		/* msg ep data was received on */
-	/* if recv_entry is set, then we matched dyn rbuf */
 	struct rxm_recv_entry *recv_entry;
 	struct rxm_unexp_msg unexp_msg;
 	uint64_t comp_flags;
@@ -492,9 +525,22 @@ struct rxm_tx_buf {
 	struct rxm_pkt pkt;
 };
 
+struct rxm_coll_buf {
+	/* Must stay at top */
+	struct rxm_buf hdr;
+
+	struct rxm_ep *ep;
+	void *app_context;
+	uint64_t flags;
+};
+
 /* Used for application transmits, provides credit check */
 struct rxm_tx_buf *rxm_get_tx_buf(struct rxm_ep *ep);
 void rxm_free_tx_buf(struct rxm_ep *ep, struct rxm_tx_buf *buf);
+
+/* Context for collective operations */
+struct rxm_coll_buf *rxm_get_coll_buf(struct rxm_ep *ep);
+void rxm_free_coll_buf(struct rxm_ep *ep, struct rxm_coll_buf *buf);
 
 enum rxm_deferred_tx_entry_type {
 	RXM_DEFERRED_TX_RNDV_ACK,
@@ -599,13 +645,9 @@ struct rxm_recv_queue {
 	struct rxm_recv_fs	*fs;
 	struct dlist_entry	recv_list;
 	struct dlist_entry	unexp_msg_list;
-	size_t			dyn_rbuf_unexp_cnt;
 	dlist_func_t		*match_recv;
 	dlist_func_t		*match_unexp;
 };
-
-ssize_t rxm_get_dyn_rbuf(struct ofi_cq_rbuf_entry *entry, struct iovec *iov,
-			 size_t *count);
 
 struct rxm_eager_ops {
 	void (*comp_tx)(struct rxm_ep *rxm_ep,
@@ -639,7 +681,12 @@ struct rxm_ep {
 	pthread_t		cm_thread;
 	struct fid_pep 		*msg_pep;
 	struct fid_eq 		*msg_eq;
-	struct fid_ep 		*srx_ctx;
+	struct fid_ep 		*msg_srx;
+	struct fid_ep		*util_coll_ep;
+	struct fid_ep		*offload_coll_ep;
+	struct fi_ops_transfer_peer *util_coll_peer_xfer_ops;
+	struct fi_ops_transfer_peer *offload_coll_peer_xfer_ops;
+	uint64_t		offload_coll_mask;
 
 	struct fid_cq 		*msg_cq;
 	uint64_t		msg_cq_last_poll;
@@ -665,6 +712,7 @@ struct rxm_ep {
 
 	struct ofi_bufpool	*rx_pool;
 	struct ofi_bufpool	*tx_pool;
+	struct ofi_bufpool	*coll_pool;
 	struct rxm_pkt		*inject_pkt;
 
 	struct dlist_entry	deferred_queue;
@@ -697,6 +745,9 @@ int rxm_info_to_core(uint32_t version, const struct fi_info *rxm_info,
 int rxm_info_to_rxm(uint32_t version, const struct fi_info *core_info,
 		     const struct fi_info *base_info, struct fi_info *info);
 bool rxm_passthru_info(const struct fi_info *info);
+
+int rxm_eq_open(struct fid_fabric *fabric_fid, struct fi_eq_attr *attr,
+		struct fid_eq **eq_fid, void *context);
 
 int rxm_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 			     struct fid_domain **dom, void *context);
@@ -736,6 +787,26 @@ void rxm_rndv_hdr_init(struct rxm_ep *rxm_ep, void *buf,
 			      const struct iovec *iov, size_t count,
 			      struct fid_mr **mr);
 
+ssize_t rxm_copy_hmem(void *desc, char *host_buf, void *dev_buf, size_t size,
+		      int dir);
+ssize_t rxm_copy_hmem_iov(void **desc, char *buf, size_t buf_size,
+			  const struct iovec *hmem_iov, int iov_count,
+			  size_t iov_offset, int dir);
+static inline ssize_t rxm_copy_from_hmem_iov(void **desc, char *buf,
+					     size_t buf_size,
+					     const struct iovec *hmem_iov,
+					     int iov_count, size_t iov_offset)
+{
+	return rxm_copy_hmem_iov(desc, buf, buf_size, hmem_iov, iov_count,
+				 iov_offset, OFI_COPY_IOV_TO_BUF);
+}
+static inline ssize_t rxm_copy_to_hmem_iov(void **desc, char *buf, int buf_size,
+					   const struct iovec *hmem_iov,
+					   int iov_count, size_t iov_offset)
+{
+	return rxm_copy_hmem_iov(desc, buf, buf_size, hmem_iov, iov_count,
+				 iov_offset, OFI_COPY_BUF_TO_IOV);
+}
 
 static inline size_t rxm_ep_max_atomic_size(struct fi_info *info)
 {
@@ -909,7 +980,7 @@ rxm_free_rx_buf(struct rxm_rx_buf *rx_buf)
 	}
 
 	/* Discard rx buffer if its msg_ep was closed */
-	if (rx_buf->repost && (rx_buf->ep->srx_ctx || rx_buf->conn->msg_ep)) {
+	if (rx_buf->repost && (rx_buf->ep->msg_srx || rx_buf->conn->msg_ep)) {
 		rxm_post_recv(rx_buf);
 	} else {
 		ofi_buf_free(rx_buf);
@@ -929,6 +1000,17 @@ static inline void
 rxm_cq_write_recv_comp(struct rxm_rx_buf *rx_buf, void *context, uint64_t flags,
 		       size_t len, char *buf)
 {
+	if (rx_buf->ep->util_coll_peer_xfer_ops &&
+	    rx_buf->pkt.hdr.tag & RXM_PEER_XFER_TAG_FLAG) {
+		struct fi_cq_tagged_entry cqe = {
+			.tag = rx_buf->pkt.hdr.tag,
+			.op_context = rx_buf->recv_entry->context,
+		};
+		rx_buf->ep->util_coll_peer_xfer_ops->
+			complete(rx_buf->ep->util_coll_ep, &cqe, 0);
+		return;
+	}
+
 	if (rx_buf->ep->rxm_info->caps & FI_SOURCE)
 		rxm_cq_write_src(rx_buf->ep->util_ep.rx_cq, context,
 				 flags, len, buf, rx_buf->pkt.hdr.data,

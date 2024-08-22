@@ -38,10 +38,20 @@ namespace resolution {
   const Scope* scopeForId(Context* context, ID id);
 
   /**
-    Given an ID for a Module, returns a Scope that represents
-    the Module scope (and what symbols are defined in it).
+    Given an ID for a Module,
+    returns a Scope that represents the Module's scope
+    (and notes the symbols that are defined in it).
    */
   const Scope* scopeForModule(Context* context, ID moduleId);
+
+  /**
+    The configuration used to look up a plain identifier in a scope
+    when resolving expressions.
+   */
+  const LookupConfig IDENTIFIER_LOOKUP_CONFIG = LOOKUP_DECLS |
+                                                LOOKUP_IMPORT_AND_USE |
+                                                LOOKUP_PARENTS |
+                                                LOOKUP_EXTERN_BLOCKS;
 
   /**
     Find what a name might refer to.
@@ -104,6 +114,19 @@ namespace resolution {
                            CheckedScopes& visited);
 
   /**
+    Collect all symbols that are available in this scope, including ones
+    brought in through visibility statements. This function follows the
+    same rules as lookupNameInScope, except it collects all symbols instead
+    of one with a specific name.
+
+    Currently, this is only intended for tool support; the resolver itself
+    should rely on lookupNameInScope.
+   */
+  std::map<UniqueString, BorrowedIdsWithName>
+  getSymbolsAvailableInScope(Context* context,
+                            const Scope* scope);
+
+  /**
     Returns true if all of checkScope is visible from fromScope
     due to scope containment or whole-module use statements.
    */
@@ -131,18 +154,27 @@ namespace resolution {
 
 
   /**
-   * Given a scope, returns a list of IDs for all the modules that were either
-   * used or imported in that scope. May return an empty vector if no modules
-   * were used or imported in the scope.
+   Given a scope, returns a vector of IDs for all the modules and enums that
+   were either used or imported in that scope. May return an empty vector if
+   no modules were used or imported in the scope.
    */
-  const std::vector<ID> findUsedImportedModules(Context* context,
-                                                const Scope* scope);
+  const std::vector<ID> findUsedImportedIds(Context* context,
+                                            const Scope* scope);
+
+  /**
+   Given a ID for a module, returns a vector of IDs for all the modules
+   that are used, imported, or mentioned in that module.
+   */
+  const std::vector<ID>& findMentionedModules(Context* context, ID modId);
 
   /**
     Resolve the uses and imports in a given scope.
+
+    If 'skipPrivate' is set, avoids resolving visibility statements that
+    only expose scope-private symbols. This helps avoid unnecessary work.
   */
   const ResolvedVisibilityScope*
-  resolveVisibilityStmts(Context* context, const Scope* scope);
+  resolveVisibilityStmts(Context* context, const Scope* scope, bool skipPrivate = false);
 
   /**
     Return the scope for the automatically included 'ChapelStandard' module,
@@ -151,18 +183,16 @@ namespace resolution {
   const Scope* scopeForAutoModule(Context* context);
 
   /**
-    Given the ID for a module 'entrypoint', compute the order in which
-    modules should be initialized. Note that this ordering does not consider
-    liveliness, and modules that are never used or have no module level
-    statements will currently still be listed in the result.
+    Given the ID for the main module, compute the order in which
+    modules should be initialized. 'commandLineModules' can be provided
+    with the list of modules that are named on the command line.
 
-    The result is list of ID pairs. The first ID in a pair is the module
-    to be initialized, and the second ID is the module that first triggered
-    initialization. The second ID may be empty if the first ID is the
-    entrypoint module or if initialization was triggered implicitly.
+    The result is vector of IDs indicating the order in which
+    modules with those IDs should be initialized.
   */
-  const std::vector<std::pair<ID, ID>>&
-  moduleInitializationOrder(Context* context, ID entrypoint);
+  const std::vector<ID>&
+  moduleInitializationOrder(Context* context, ID mainModule,
+                            std::vector<ID> commandLineModules);
 
   /**
     Check for symbol names with multiple definitions within a scope.

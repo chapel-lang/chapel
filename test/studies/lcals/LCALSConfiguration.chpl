@@ -80,7 +80,7 @@ module LCALSConfiguration {
   config const run_variantRawSPMD          = false; // off by default because
                                                     // short and medium loops
                                                     // take too long.
-  config const run_variantRawVectorizeOnly = false; // off by default because
+  config const run_variantRawVector = true;         // off by default because
                                                     // it currently behaves
                                                     // identically to the
                                                     // serial variant

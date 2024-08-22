@@ -19,7 +19,7 @@ set(SRCS
     buildDefaultFunctions.cpp
     checkNormalized.cpp
     checkResolved.cpp
-    checkUast.cpp
+    checkGeneratedAst.cpp
     cleanup.cpp
     convert-uast.cpp
     createTaskFunctions.cpp
@@ -37,6 +37,7 @@ set(SRCS
     normalize.cpp
     normalizeErrors.cpp
     parallel.cpp
+    parseAndConvert.cpp
     resolveIntents.cpp
     ResolveScope.cpp
     returnStarTuplesByRefArgs.cpp

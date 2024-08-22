@@ -21,10 +21,12 @@
 
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/global-strings.h"
-#include "chpl/parsing/parsing-queries.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parser-error.h"
-#include "chpl/uast/chpl-syntax-printer.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/uast/all-uast.h"
+#include "chpl/uast/chpl-syntax-printer.h"
+
 #include <vector>
 #include <string.h>
 
@@ -114,10 +116,13 @@ struct Visitor {
   bool handleNestedDecoratorsInNew(const FnCall* node);
   bool handleNestedDecoratorsInTypeConstructors(const FnCall* node);
   void checkForNestedClassDecorators(const FnCall* node);
+  void reportErrorForNonThisSuperCall(const FnCall* node, UniqueString method);
+  void checkExplicitInitCalls(const FnCall* node);
   void checkExplicitDeinitCalls(const FnCall* node);
   void checkNewBorrowed(const FnCall* node);
   void checkBorrowFromNew(const FnCall* node);
   void checkSparseKeyword(const FnCall* node);
+  void checkSparseDomainArgCount(const FnCall* node);
   void checkPrimCallInUserCode(const PrimCall* node);
   void checkDmappedKeyword(const OpCall* node);
   void checkNonAssociativeComparisons(const OpCall* node);
@@ -151,6 +156,11 @@ struct Visitor {
   void checkOtherwiseAfterWhens(const Select* sel);
   void checkUnstableSerial(const Serial* ser);
   void checkLocalBlock(const Local* node);
+  bool checkUnderscoreInIdentifier(const Identifier* node);
+  bool checkUnderscoreInVariableOrFormal(const VarLikeDecl* node);
+  void checkImplicitModuleSameName(const Module* node);
+  void checkModuleNotInModule(const Module* node);
+  void checkInheritExprValid(const AstNode* node);
 
   /*
   TODO
@@ -158,17 +168,20 @@ struct Visitor {
   void checkFunctionReturnsYields(const Function* node);
   void checkReturnHelper(const Return* node);
   void checkYieldHelper(const Yield* node);
-  void checkImplicitModuleSameName(const Module* node);
   void checkIncludeModuleStrictName(const Module* node);
   void checkModuleReturnsYields(const Module* node);
   void checkPointlessUse(const Use* node);
   */
 
   // Called in the visitor loop to check against superclass types.
+  void checkUnderscoreName(const NamedDecl* node);
   void checkPrivateDecl(const Decl* node);
   void checkExportedName(const NamedDecl* node);
   void checkReservedSymbolName(const NamedDecl* node);
   void checkLinkageName(const NamedDecl* node);
+  void checkRemoteVar(const Decl* node);
+
+  void checkTupleDeclFormalIntent(const TupleDecl* node);
 
   // Warnings.
   void warnUnstableUnions(const Union* node);
@@ -178,6 +191,7 @@ struct Visitor {
   // Visitors.
   inline void visit(const AstNode* node) {} // Do nothing by default.
 
+  void visit(const AggregateDecl* node);
   void visit(const Array* node);
   void visit(const Attribute* node);
   void visit(const AttributeGroup* node);
@@ -190,9 +204,11 @@ struct Visitor {
   void visit(const FnCall* node);
   void visit(const Function* node);
   void visit(const FunctionSignature* node);
+  void visit(const Identifier* node);
   void visit(const Implements* node);
   void visit(const Import* node);
   void visit(const Local* node);
+  void visit(const Module* node);
   void visit(const OpCall* node);
   void visit(const PrimCall* node);
   void visit(const Return* node);
@@ -412,12 +428,19 @@ Visitor::searchParentsForDecl(const AstNode* start, const AstNode** last,
 void Visitor::check(const AstNode* node) {
 
   // First run blanket checks over superclass node types.
-  if (auto decl = node->toDecl()) checkPrivateDecl(decl);
+  if (auto decl = node->toDecl()) {
+    checkPrivateDecl(decl);
+    checkRemoteVar(decl);
+  }
   if (auto named = node->toNamedDecl()) {
+    checkUnderscoreName(named);
     checkExportedName(named);
     checkReservedSymbolName(named);
     warnUnstableSymbolNames(named);
     checkLinkageName(named);
+  }
+  if (auto tup = node->toTupleDecl()) {
+    checkTupleDeclFormalIntent(tup);
   }
 
   // Now run checks via visitor and recurse to children.
@@ -617,29 +640,56 @@ void Visitor::checkForNestedClassDecorators(const FnCall* node) {
   }
 }
 
-void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
-  auto calledExpr = node->calledExpression();
-  if (!calledExpr) return;
-
-  bool doEmitError = false;
+static const AstNode* isCallToMethodOrFnWithName(const FnCall* call,
+                                                 UniqueString checkName) {
+  auto calledExpr = call->calledExpression();
+  if (!calledExpr) return nullptr;
 
   if (auto ident = calledExpr->toIdentifier()) {
-    doEmitError = ident->name() == USTR("deinit");
+    if (ident->name() == checkName) return ident;
   } else if (auto dot = calledExpr->toDot()) {
-    doEmitError = dot->field() == USTR("deinit");
+    if (dot->field() == checkName) return dot;
   }
+
+  return nullptr;
+}
+
+void Visitor::reportErrorForNonThisSuperCall(const FnCall* node, UniqueString method) {
+  auto calledExpr = isCallToMethodOrFnWithName(node, method);
+  if (!calledExpr) return;
+
+  if (auto dot = calledExpr->toDot()) {
+    if (auto receiverIdent = dot->receiver()->toIdentifier()) {
+      // this.f(..) and super.f(..) are allowed, by definition of this method.
+      // That is because this method is used for 'init' checking,
+      // where such code is valid.
+      if (receiverIdent->name() == USTR("this") ||
+          receiverIdent->name() == USTR("super"))
+        return;
+    }
+  } else {
+    // Standalone call; this is implicitly applied to 'this', so no problem.
+    return;
+  }
+  error(node, "explicit calls to %s() on anything other than"
+              " 'this' or 'super' are not allowed.", method.c_str());
+}
+
+void Visitor::checkExplicitInitCalls(const FnCall* node) {
+  reportErrorForNonThisSuperCall(node, USTR("init"));
+}
+
+void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
+  auto calledExpr = isCallToMethodOrFnWithName(node, USTR("deinit"));
+  if (!calledExpr) return;
 
   // Check if we are being called from the delete implementation.
-  if (doEmitError) {
-    if (auto foundFn = searchParents(asttags::Function, nullptr)) {
-      auto fn = foundFn->toFunction();
-      if (fn->name() == "chpl__delete") doEmitError = false;
-    }
+  if (auto foundFn = searchParents(asttags::Function, nullptr)) {
+    auto fn = foundFn->toFunction();
+    if (fn->name() == "chpl__delete") return;
   }
 
-  if (doEmitError) {
-    error(node, "direct calls to deinit() are not allowed.");
-  }
+  error(node, "explicit calls to deinit() are not allowed.");
 }
 
 void Visitor::checkNewBorrowed(const FnCall* node) {
@@ -682,13 +732,32 @@ void Visitor::checkBorrowFromNew(const FnCall* node) {
                "variable to store the new class");
 }
 
+static bool isCallWithName(const FnCall* call, UniqueString checkName) {
+  auto calledExpr = call->calledExpression();
+  if (!calledExpr) return false;
+
+  if (auto ident = calledExpr->toIdentifier()) {
+    if (ident->name() == checkName) return true;
+  }
+
+  return false;
+}
+
 void Visitor::checkSparseKeyword(const FnCall* node) {
   if (shouldEmitUnstableWarning(node)) // start with a cheap check
-    if (auto calledExpr = node->calledExpression())
-      if (auto ident = calledExpr->toIdentifier())
-        if (ident->name() == USTR("sparse"))
-          warn(node, "sparse domains are unstable,"
-               " their behavior is likely to change in the future.");
+    if (isCallWithName(node, USTR("sparse")))
+      warn(node, "sparse domains are unstable,"
+           " their behavior is likely to change in the future.");
+}
+
+void Visitor::checkSparseDomainArgCount(const FnCall* node) {
+  if (isCallWithName(node, USTR("sparse"))) {
+    if (node->numActuals() == 1)
+      if (auto childCall = node->actual(0)->toFnCall())
+        if (isCallWithName(childCall, USTR("subdomain")))
+          if (childCall->numActuals() != 1)
+            error(childCall, "the 'sparse subdomain' expression expects exactly one argument (the parent domain)");
+  }
 }
 
 // TODO: remove this check and warning after 2.0?
@@ -833,6 +902,41 @@ void Visitor::checkConfigVar(const Variable* node) {
 void Visitor::checkExportVar(const Variable* node) {
   if (node->linkage() == Decl::EXPORT) {
     error(node, "export variables are not yet supported.");
+  }
+}
+
+void Visitor::checkRemoteVar(const Decl* node) {
+  // These checks only apply to remote variables.
+  if (!node->destination()) return;
+
+  if (auto ag = node->attributeGroup()) {
+    if (ag->getAttributeNamed(USTR("functionStatic"))) {
+      error(node, "cannot create function-static remote variables.");
+    }
+  }
+
+  optional<uast::Variable::Kind> kind;
+  bool isField = false;
+  if (auto var = node->toVariable()) {
+    kind = var->kind();
+    isField = var->isField();
+  } else if (auto multivar = node->toMultiDecl()) {
+    for (auto child : multivar->decls()) {
+      if (auto var = child->toVariable()) {
+        kind = var->kind();
+        isField = var->isField();
+      } else {
+        error(child, "only (multi)variable declarations can target a specific locale.");
+      }
+    }
+  }
+
+  if (isField) {
+    error(node, "fields cannot be declared as remote variables");
+  }
+
+  if (kind && kind != Variable::VAR && kind != Variable::CONST) {
+    error(node, "unsupported intent for remote variable.");
   }
 }
 
@@ -1081,6 +1185,99 @@ void Visitor::checkGenericArrayTypeUsage(const BracketLoop* node) {
   }
 }
 
+bool Visitor::checkUnderscoreInVariableOrFormal(const VarLikeDecl* node) {
+  if (node->name() != USTR("_")) return true;
+  if (!parents_.empty()) {
+    auto directParent = parent(0);
+
+    if (auto td = directParent->toTupleDecl()) {
+      if (node != td->initExpression() && node != td->typeExpression()) {
+        // The variable is part of a tuple, like var (_, ) = x;
+        // This is allowed.
+        return true;
+      }
+    } else if (auto fn = directParent->toFunction()) {
+      for (int i = 0; i < fn->numFormals(); i++) {
+        if (node == fn->formal(i)) {
+          // The variable is a formal parameter, like proc foo(_) { ... };
+          // This is allowed.
+          return true;
+        }
+      }
+    } else if (auto fnSig = directParent->toFunctionSignature()) {
+      for (int i = 0; i < fnSig->numFormals(); i++) {
+        if (node == fnSig->formal(i)) {
+          // The variable is a formal parameter, like proc(_) { ... };
+          // This is allowed.
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+bool Visitor::checkUnderscoreInIdentifier(const Identifier* node) {
+  if (node->name() != USTR("_")) return true;
+
+  // The underscore is only allowed in certain special contexts:
+  // Use lists (use A as _) and tuple-declarations.
+
+  const AstNode* prev = node;
+  bool allTuples = true;
+  bool asVisRename = false;
+  for (size_t revIdx = 0; revIdx < parents_.size(); revIdx++) {
+    auto parent = parents_[parents_.size() - revIdx - 1];
+
+    if (auto op = parent->toOpCall()) {
+      if (revIdx == 0) {
+        // We're a direct child of an assignment operator, like _ = 42;
+        // This is not allowed; we have to be in a tuple.
+        break;
+      }
+
+      if (allTuples && op->actual(0) == prev) {
+        // We're in a variable like var (_, x) = (1, 2), where tuples are
+        // allowed on the left.
+        return true;
+      }
+    } else if (auto vc = parent->toVisibilityClause()) {
+      if (vc->symbol() == prev) {
+        // The '_' is nested inside a 'use A as _' or `import A as _` as the symbol
+        // ('_' are not allowed in limitations). Not clear yet if it's allowed,
+        // since only 'use' statements allow wildcards like this.
+        asVisRename = true;
+      }
+    } else if (parent->isUse()) {
+      if (asVisRename) {
+        // We occurred as a rename of the symbol being imported in a use
+        // statement. This is allowed.
+        return true;
+      }
+    }
+    prev = parent;
+  }
+
+  return false;
+}
+
+void Visitor::checkUnderscoreName(const NamedDecl* node) {
+  if (node->name() != USTR("_")) return;
+
+  // Underscores are only allowed in certain variables and formals;
+  // for all other named declarations, they are not allowed, and this
+  // conditional will fall through to the error below.
+  if (auto var = node->toVariable()) {
+    if (checkUnderscoreInVariableOrFormal(var)) return;
+  } else if (auto formal = node->toFormal()) {
+    if (checkUnderscoreInVariableOrFormal(formal)) return;
+  }
+
+  // Other cases return if no error is needed; so, if we reach here, emit one.
+  auto parentNode = parents_.size() > 0 ? parent(0) : nullptr;
+  CHPL_REPORT(context_, InvalidThrowaway, node, parentNode);
+}
+
 void Visitor::checkPrivateDecl(const Decl* node) {
   if (node->visibility() != Decl::PRIVATE) return;
 
@@ -1261,6 +1458,16 @@ void Visitor::checkLinkageName(const NamedDecl* node) {
   }
 }
 
+void Visitor::checkTupleDeclFormalIntent(const TupleDecl* node) {
+  // 'VAR' might show up in the case of nested tuple decl formals, for example:
+  //     proc foo(((a, b), x, y)) { ... }
+  if (node->isTupleDeclFormal() &&
+      node->intentOrKind() != TupleDecl::IntentOrKind::DEFAULT_INTENT &&
+      node->intentOrKind() != TupleDecl::IntentOrKind::VAR) {
+    error(node, "intents on tuple-grouped arguments are not yet supported");
+  }
+}
+
 void Visitor::checkVisibilityClauseValid(const AstNode* parentNode,
                                          const VisibilityClause* clause) {
   // Check that the used/imported thing is valid
@@ -1339,6 +1546,12 @@ void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
   if (name.startsWith("chpl_")) {
     warn(node,
         "symbol names beginning with 'chpl_' (%s) are unstable.", name.c_str());
+  }
+}
+
+void Visitor::visit(const AggregateDecl* node) {
+  for (auto inheritExpr : node->inheritExprs()) {
+    checkInheritExprValid(inheritExpr);
   }
 }
 
@@ -1494,10 +1707,12 @@ void Visitor::visit(const AttributeGroup* node) {
 void Visitor::visit(const FnCall* node) {
   checkNoDuplicateNamedArguments(node);
   checkForNestedClassDecorators(node);
+  checkExplicitInitCalls(node);
   checkExplicitDeinitCalls(node);
   checkNewBorrowed(node);
   checkBorrowFromNew(node);
   checkSparseKeyword(node);
+  checkSparseDomainArgCount(node);
 
 }
 
@@ -1511,6 +1726,7 @@ void Visitor::visit(const OpCall* node) {
 }
 
 void Visitor::visit(const Variable* node) {
+  checkUnderscoreInVariableOrFormal(node);
   checkConstVarNoInit(node);
   checkConfigVar(node);
   checkExportVar(node);
@@ -1563,6 +1779,13 @@ void Visitor::checkAllowedImplementsTypeIdent(const Implements* impl, const Iden
       typeName == USTR("index")) {
     CHPL_REPORT(context_, InvalidImplementsIdent, impl, node);
   }
+}
+
+void Visitor::visit(const Identifier* node) {
+  if (checkUnderscoreInIdentifier(node)) return;
+
+  auto parentNode = parents_.size() > 0 ? parent(0) : nullptr;
+  CHPL_REPORT(context_, InvalidThrowaway, node, parentNode);
 }
 
 void Visitor::visit(const Implements* node) {
@@ -1675,6 +1898,58 @@ void Visitor::visit(const Local* node){
   checkLocalBlock(node);
 }
 
+void Visitor::checkImplicitModuleSameName(const Module* mod) {
+  const AstNode* unused = nullptr;
+  if (const AstNode* parentModAst = searchParents(asttags::Module, &unused)) {
+    if (auto parentMod = parentModAst->toModule()) {
+      if (parentMod->kind() == Module::IMPLICIT &&
+          parentMod->name() == mod->name()) {
+        CHPL_REPORT(context_, ImplicitModuleSameName, mod);
+      }
+    }
+  }
+}
+
+void Visitor::checkModuleNotInModule(const Module* mod) {
+  const AstNode* p = parent();
+  if (p != nullptr && !p->isModule()) {
+    error(mod, "Modules must be declared at module- or file-scope");
+  }
+}
+
+void Visitor::checkInheritExprValid(const AstNode* node) {
+  // If it's a called expression, it could me something like M.Class(?),
+  // so strip the outer call. Re-use the existing logic in AggregateDecl.
+  bool markedGeneric;
+  auto identOrDot = AggregateDecl::getUnwrappedInheritExpr(node, markedGeneric);
+
+  bool success = false;
+  if (identOrDot) {
+    success = true;
+
+    // It's an identifier or a (...).something. Need to make sure that
+    // (...) is also just an identifier or a dot.
+    auto step = identOrDot;
+    while (!step->isIdentifier()) {
+      if (auto dot = step->toDot()) {
+        step = dot->receiver();
+      } else {
+        success = false;
+        break;
+      }
+    }
+  }
+
+  if (!success) {
+    error(node, "invalid parent class or interface; please specify a single (possibly qualified) class or interface name");
+  }
+}
+
+void Visitor::visit(const Module* node){
+  checkImplicitModuleSameName(node);
+  checkModuleNotInModule(node);
+}
+
 void Visitor::visit(const Yield* node) {
   const AstNode* blockingNode;
   const AstNode* allowingNode;
@@ -1705,7 +1980,7 @@ void Visitor::checkExternBlockAtModuleScope(const ExternBlock* node) {
 }
 
 void Visitor::checkCStringLiteral(const CStringLiteral* node) {
-   warn(node, "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'string.c_str()' from the 'CTypes' module instead");
+  warn(node, "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'string.c_str()' from the 'CTypes' module instead");
 }
 
 void Visitor::visit(const ExternBlock* node) {
@@ -1722,18 +1997,31 @@ void Visitor::visit(const CStringLiteral* node) {
 namespace chpl {
 namespace uast {
 
-void
-checkBuilderResult(Context* context, UniqueString path,
-                   const BuilderResult& result) {
+// this just returns a bool to keep the query system happy
+// in practice the relevant result is an error/warning being generated
+static
+const bool& checkBuilderResultQuery(Context* context, UniqueString path,
+                                    const BuilderResult* builderResult) {
+  QUERY_BEGIN(checkBuilderResultQuery, context, path, builderResult);
+
   bool warnUnstable = parsing::shouldWarnUnstableForPath(context, path);
   bool isUserCode  = !parsing::filePathIsInBundledModule(context, path);
   auto v = Visitor(context, warnUnstable, isUserCode);
 
-  for (auto ast : result.topLevelExpressions()) {
+  for (auto ast : builderResult->topLevelExpressions()) {
     if (ast->isComment()) continue;
     v.check(ast);
   }
+
+  bool result = false;
+  return QUERY_END(result);
 }
+
+void checkBuilderResult(Context* context, UniqueString path,
+                        const BuilderResult& builderResult) {
+  checkBuilderResultQuery(context, path, &builderResult);
+}
+
 
 } // end namespace uast
 } // end namespace chpl

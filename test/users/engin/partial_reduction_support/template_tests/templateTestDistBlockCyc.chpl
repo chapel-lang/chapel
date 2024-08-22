@@ -7,7 +7,7 @@ use BlockCycDist;
 config const N = 4;
 
 const space = {0..#N, 0..#N};
-const ParentDom = space dmapped blockCycDist(space.low, blocksize=(1,1));
+const ParentDom = space dmapped new blockCycDist(space.low, blocksize=(1,1));
 var arr: [ParentDom] int;
 
 for (i,j) in ParentDom {

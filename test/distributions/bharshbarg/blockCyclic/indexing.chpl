@@ -9,7 +9,7 @@ proc test(Dom, bs) {
   if debug then writeln("### Testing ", Dom, " with blocksize ", bs, " ###");
 
   const start = if isTuple(Dom.low) then Dom.low else (Dom.low,);
-  const Space = Dom dmapped blockCycDist(startIdx=start, blocksize=bs);
+  const Space = Dom dmapped new blockCycDist(startIdx=start, blocksize=bs);
   var A : [Space] int;
 
   forall i in Space with (ref A) do A[i] = here.id + 1;

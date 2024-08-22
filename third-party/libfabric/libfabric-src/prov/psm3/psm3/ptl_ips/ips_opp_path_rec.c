@@ -524,10 +524,11 @@ psm2_error_t psm3_ips_opp_init(struct ips_proto *proto)
 	}
 
 	/* If PSM3_IDENTIFY is set display the OPP library location being used. */
-	if (psm3_parse_identify()) {
+	{
 		Dl_info info_opp;
-		printf
-		    ("PSM3 path record queries using OFED Plus Plus (%s) from %s\n",
+		psm3_print_identify
+		    ("%s %s PSM3 path record queries using OFED Plus Plus (%s) from %s\n",
+		     psm3_get_mylabel(), psm3_ident_tag,
 		     DF_OPP_LIBRARY, dladdr(proto->opp_fn.op_path_open,
 					    &info_opp) ? info_opp.
 		     dli_fname :

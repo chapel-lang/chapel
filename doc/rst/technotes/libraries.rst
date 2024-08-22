@@ -185,6 +185,13 @@ module initialization function.  This function will be named
 ``chpl__init_<moduleName>``, and you can find its declaration in your generated
 ``.h`` file.
 
+At present, the generated module initialization function takes two arguments,
+``int64_t _ln`` and ``int32_t _fn``.  These correspond to "line number" and
+"file number", respectively.  The values passed to them are used by the Chapel
+runtime when providing error messages, but do not matter in this context.  In
+the future, they may not be included at all when compiling into a library.  For
+now, feel free to pass any valid number to them.
+
 .. note::
 
    It is recommended that you always call the module initialization function
@@ -578,6 +585,9 @@ this function itself.  The following should work after replacing
       // Initialize the main user module
       chpl__init_MyModuleName();
     }
+
+Note that the module initializer call in this context takes no arguments - that
+is because the arguments will be inserted during Chapel compilation.
 
 A simple Fortran example using a function ``myChapelFunction`` from the
 ``MyModuleName`` library is:

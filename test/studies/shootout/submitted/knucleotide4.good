@@ -1,48 +1,5 @@
-knucleotide4.chpl:13: In function 'main':
-knucleotide4.chpl:17: warning: 'ionative' is deprecated, please use Serializers or Deserializers that support endianness instead
-knucleotide4.chpl:15: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
-knucleotide4.chpl:17: warning: reader with a 'kind' argument is deprecated, please use Serializers instead
-knucleotide4.chpl:17: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
-$CHPL_HOME/modules/standard/Map.chpl:nnnn: In method 'this':
-$CHPL_HOME/modules/standard/Map.chpl:nnnn: warning: 'hashVal' has a hash function that is being used by the standard library. However, 'hashVal' does not implement hashable. In the future, this will result in an error.
-$CHPL_HOME/modules/standard/Map.chpl:nnnn: warning: to make 'hashVal' implement hashable, add the interface to its declaration: 'record hashVal : hashable'
-  knucleotide4.chpl:88: called as (map(hashVal,int(64),false)).this(k: hashVal) from function 'calculate'
-  knucleotide4.chpl:57: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 1) from function 'writeFreqs'
-  knucleotide4.chpl:46: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 1) from function 'main'
-knucleotide4.chpl:79: In function 'calculate':
-knucleotide4.chpl:91: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide4.chpl:57: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 1) from function 'writeFreqs'
-  knucleotide4.chpl:46: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 1) from function 'main'
 knucleotide4.chpl:56: In function 'writeFreqs':
-knucleotide4.chpl:60: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide4.chpl:46: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 1) from function 'main'
-knucleotide4.chpl:79: In function 'calculate':
-knucleotide4.chpl:91: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide4.chpl:57: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 2) from function 'writeFreqs'
-  knucleotide4.chpl:47: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 2) from function 'main'
-knucleotide4.chpl:56: In function 'writeFreqs':
-knucleotide4.chpl:60: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide4.chpl:47: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 2) from function 'main'
-knucleotide4.chpl:79: In function 'calculate':
-knucleotide4.chpl:91: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide4.chpl:72: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 3) from function 'writeCount'
-  knucleotide4.chpl:48: called as writeCount(data: [domain(1,int(64),one)] uint(8), param str = "GGT") from function 'main'
-knucleotide4.chpl:79: In function 'calculate':
-knucleotide4.chpl:91: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide4.chpl:72: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 4) from function 'writeCount'
-  knucleotide4.chpl:49: called as writeCount(data: [domain(1,int(64),one)] uint(8), param str = "GGTA") from function 'main'
-knucleotide4.chpl:79: In function 'calculate':
-knucleotide4.chpl:91: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide4.chpl:72: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 6) from function 'writeCount'
-  knucleotide4.chpl:50: called as writeCount(data: [domain(1,int(64),one)] uint(8), param str = "GGTATT") from function 'main'
-knucleotide4.chpl:79: In function 'calculate':
-knucleotide4.chpl:91: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide4.chpl:72: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 12) from function 'writeCount'
-  knucleotide4.chpl:51: called as writeCount(data: [domain(1,int(64),one)] uint(8), param str = "GGTATTTTAATT") from function 'main'
-knucleotide4.chpl:79: In function 'calculate':
-knucleotide4.chpl:91: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide4.chpl:72: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 18) from function 'writeCount'
-  knucleotide4.chpl:52: called as writeCount(data: [domain(1,int(64),one)] uint(8), param str = "GGTATTTTAATTTATAGT") from function 'main'
+knucleotide4.chpl:63: warning: The variable 'reverseComparator' is now deprecated, please create a new instance of the ReverseComparator type reversing the DefaultComparator instead.
 A 30.279
 T 30.113
 G 19.835

@@ -1,2 +1,0 @@
-bug: failure to compile declaring type of var to conditional choice between aliases of array types
-#14317

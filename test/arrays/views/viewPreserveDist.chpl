@@ -1,9 +1,9 @@
 use BlockDist;
 
-const D1 = {1..8} dmapped blockDist({1..8});
+const D1 = {1..8} dmapped new blockDist({1..8});
 var A1: [D1] real;
 
-const D2 = {1..8, 1..8} dmapped blockDist({1..8, 1..8});
+const D2 = {1..8, 1..8} dmapped new blockDist({1..8, 1..8});
 var A2: [D2] real;
 
 foo(A1);

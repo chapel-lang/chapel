@@ -248,6 +248,7 @@ void ResolveScope::addBuiltIns() {
 
   extend(dtIteratorRecord->symbol);
   extend(dtIteratorClass->symbol);
+  extend(dtThunkRecord->symbol);
   extend(dtBorrowed->symbol);
   extend(dtBorrowedNonNilable->symbol);
   extend(dtBorrowedNilable->symbol);
@@ -696,6 +697,35 @@ void ResolveScope::firstImportedModuleName(Expr* expr,
   }
 }
 
+static void scopeResolveVisibilityStmtsIfNeeded(const ResolveScope* in,
+                                                const ResolveScope* toResolve) {
+  if (toResolve->progress == IUP_NOT_STARTED) {
+    // Don't go into the unprocessed uses and imports now if the scope is in
+    // progress - this should only happen if we're currently in the scope
+    // being processed, or if there's a circular dependency.
+    //
+    // Otherwise, traverse this scope and trigger the resolution of the
+    // uses and imports now
+    for_alist(expr, toResolve->asBlockStmt()->body) {
+      if (UseStmt* useStmt = toUseStmt(expr)) {
+        BaseAST* astScope = getScope(useStmt);
+        ResolveScope* useScope = in->getScopeFor(astScope);
+        useStmt->scopeResolve(useScope);
+
+      } else if (ImportStmt* importStmt = toImportStmt(expr)) {
+        BaseAST* astScope = getScope(importStmt);
+        ResolveScope* importScope = in->getScopeFor(astScope);
+        importStmt->scopeResolve(importScope);
+      }
+      if (toResolve->progress == IUP_COMPLETED) {
+        // Don't bother continuing to traverse the block's stmts if we've
+        // found all the uses or imports we know about.
+        break;
+      }
+    }
+  }
+}
+
 SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
                                                    bool isUse) const {
   Symbol* retval = NULL;
@@ -838,31 +868,7 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
       retval = symbol;
 
     } else {
-      if (scope->progress == IUP_NOT_STARTED) {
-        // Don't go into the unprocessed uses and imports now if the scope is in
-        // progress - this should only happen if we're currently in the scope
-        // being processed, or if there's a circular dependency.
-        //
-        // Otherwise, traverse this scope and trigger the resolution of the
-        // uses and imports now
-        for_alist(expr, scope->asBlockStmt()->body) {
-          if (UseStmt* useStmt = toUseStmt(expr)) {
-            BaseAST* astScope = getScope(useStmt);
-            ResolveScope* useScope = getScopeFor(astScope);
-            useStmt->scopeResolve(useScope);
-
-          } else if (ImportStmt* importStmt = toImportStmt(expr)) {
-            BaseAST* astScope = getScope(importStmt);
-            ResolveScope* importScope = getScopeFor(astScope);
-            importStmt->scopeResolve(importScope);
-          }
-          if (scope->progress == IUP_COMPLETED) {
-            // Don't bother continuing to traverse the block's stmts if we've
-            // found all the uses or imports we know about.
-            break;
-          }
-        }
-      }
+      scopeResolveVisibilityStmtsIfNeeded(this, scope);
       if (Symbol* symbol = scope->lookupPublicVisStmts(rhsName)) {
         retval = symbol;
       } else if (Symbol *symbol =
@@ -1357,6 +1363,8 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
     symbols.push_back(sym);
 
   } else {
+    scopeResolveVisibilityStmtsIfNeeded(this, this);
+
     if (mUseImportList.size() > 0) {
       std::vector<VisibilityStmt*> useImportList = mUseImportList;
 

@@ -657,7 +657,7 @@ void computeNoAliasSets() {
 
   {
     int id = 1;
-    forv_Vec(VarSymbol, var, gVarSymbols) {
+    for_alive_in_Vec(VarSymbol, var, gVarSymbols) {
       if (isGlobal(var) &&
           !var->isRef() &&
           isAddrTaken(var)) {
@@ -675,7 +675,7 @@ void computeNoAliasSets() {
 
   // Compute the starting point for the sets,
   // don't worry about transitivity/propagating yet.
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     if (fnHasRefFormal(fn)) {
       if (fn->hasFlag(FLAG_EXPORT)) {
         // Assume exported functions can have formals aliasing each other
@@ -727,7 +727,7 @@ void computeNoAliasSets() {
 
   std::map<ArgSymbol*, std::set<ArgSymbol*> > bindingGraph;
 
-  forv_Vec(FnSymbol, p, gFnSymbols) {
+  for_alive_in_Vec(FnSymbol, p, gFnSymbols) {
     if (fnHasRefFormal(p)) {
       calls.clear();
       collectVirtualAndFnCalls(p, calls);
@@ -817,7 +817,7 @@ void computeNoAliasSets() {
 
   // Compute the maximum number of formals
   int maxFormals = 1;
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     int nFormals = fn->numFormals();
     if (nFormals > maxFormals) {
       // If there are too many formals, don't do anything
@@ -856,7 +856,7 @@ void computeNoAliasSets() {
 
   // for each alias introduction site, e.g. f(X, X),
   // insert the resulting formal pair in fpairs and worklist
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     if (fnHasRefFormal(fn)) {
       // Consider call sites to the function to propagate alias information
       for_SymbolSymExprs(se, fn) {
@@ -982,7 +982,7 @@ void computeNoAliasSets() {
 
   std::vector<ArgSymbol*> noAliasArgs;
 
-  forv_Vec(FnSymbol, p, gFnSymbols) {
+  for_alive_in_Vec(FnSymbol, p, gFnSymbols) {
     if (fnHasRefFormal(p)) {
       // Are the formals independent? Do they alias each other?
       int formalIdx1 = 1;
@@ -1041,7 +1041,7 @@ void computeNoAliasSets() {
 
 
   // Lastly, construct alias sets for local array variables.
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     addNoAliasSetsInFn(fn);  // map from ArgSymbol -> BitVecs of size nAddrTakenGlobals
   }
 }

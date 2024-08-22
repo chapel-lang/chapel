@@ -40,7 +40,7 @@ void return_c_ptrConstChar_arg_test(const char** str)
 }
 
 static inline
-const char* return_c_ptrUchar_test(void)
+char* return_c_ptrUchar_test(void)
 {
   return strdup("return c_ptr(c_uchar) test");
 }
@@ -52,7 +52,7 @@ void return_c_ptrUchar_arg_test(const char** str)
 }
 
 static inline
-const char* return_c_ptrChar_test(void)
+char* return_c_ptrChar_test(void)
 {
   return strdup("return c_ptr(c_char) test");
 }

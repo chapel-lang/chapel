@@ -24,7 +24,7 @@
  * ----------------------------------------------------------------------------
  */
 
-use Image;    // use helper module related to writing out images
+use CRayImage;    // use helper module related to writing out images
 use List;
 use IO;       // allow use of stderr, stdin, ioMode
 import Math.pi;
@@ -139,7 +139,7 @@ proc main() {
   // A local domain, distributed domain, and array representing the image
   //
   const imageSize = {0..#yres, 0..#xres};
-  const pixelPlane = imageSize dmapped blockDist(imageSize);
+  const pixelPlane = imageSize dmapped new blockDist(imageSize);
   var pixels: [pixelPlane] pixelType;
 
   //

@@ -10,6 +10,10 @@
 //
 // Except where otherwise noted, all definitions in this document
 // are provided by gasnetex.h.
+//
+// See implementation_defined.md, a sibling to this file, for additional
+// features provided by the implementation hosted at https://gasnet.lbl.gov,
+// which are not required by this specification.
 
 // Document Conventions
 //
@@ -22,6 +26,48 @@
 // sufficiently complete to be used.  However, based on feedback received
 // from early use, the design may change in non-trivial ways (to the degree
 // that client code may need to change).
+
+// Public Header Files
+//
+// The following public headers may be included in any order:
+//    gasnetex.h       : GASNet-EX API + Tools
+//    gasnet.h         : GASNet-1 API (also includes gasnetex.h)
+//    gasnet_fwd.h     : See below
+//    gasnet_ratomic.h : Remote Atomics API
+//    gasnet_vis.h     : Non-contiguous RMA (VIS) API
+//    gasnet_coll.h    : Collectives API
+//
+// No other `*.h` files appearing in the source distribution or install tree
+// are intended for direct inclusion by client code.
+
+// The `gasnet_fwd.h` header
+//
+// The gasnet_fwd.h provides a subset of `gasnetex.h`, for convenience of
+// clients who want a minimal header that is safe to include in their own
+// client's code.  It defines only preprocessor `#define` constants and
+// stand-alone `typedefs` for simple data types.  All preprocessor 
+// identifiers are in the `GEX_` or `_GEX_` namespace.
+//
+// `gasnet_fwd.h` contains at least the following type definitions:
+//
+//    `gex_Rank_t`
+//    `gex_EP_Index_t`
+//    `gex_Addr_t`
+//    `gex_Event_t`
+//    `gex_Flags_t`
+//    `gex_DT_t`
+//    `gex_OP_t`
+//    `gex_EP_Capabilities_t`
+//
+// and the following constants:
+//
+//    `GEX_RANK_INVALID`
+//    `GEX_EVENT_*`
+//    `GEX_FLAG_*`
+//    `GEX_DT_*`
+//    `GEX_OP_*`
+//    `GEX_EP_CAPABILITY_*`
+// The semantics of these identifiers are described in subsequent sections.
 
 //
 // Specification and release versioning:
@@ -40,7 +86,7 @@
 //
 // This is currently a version number for *this* document.
 #define GEX_SPEC_VERSION_MAJOR 0
-#define GEX_SPEC_VERSION_MINOR 16
+#define GEX_SPEC_VERSION_MINOR 18
 
 // Major and Minor versions of the GASNet-1 specification.
 //
@@ -53,6 +99,9 @@
 // Major and Minor versions of the GASNet-Tools specification.
 //
 // This is the spec version for the GASNet Tools
+//
+// For GASNet Tools API documentation see README-tools, located
+// at the top level of the GASNet-EX sources.
 #define GASNETT_SPEC_VERSION_MAJOR 1
 #define GASNETT_SPEC_VERSION_MINOR 20
 
@@ -72,27 +121,36 @@
 
 // Hybrid/transitional client support:
 //
+// All clients must initialize GASNet using *either* the legacy
+// gasnet_init()/gasnet_attach() calls *or* the new gex_Client_Init() call
+// described in a subsequent section.
+//
 // Clients who are incrementally adopting GASNet-EX may have a period of time
-// when they are using both GASNet-1 and GASNet-EX APIs in the same process. 
-// Such clients should initialize GASNet using *either* the legacy 
-// gasnet_init()/gasnet_attach() calls, or the new gex_Client_Init() call
-// (described in a subsequent section).
+// when they are using deprecated GASNet-1 calls (see below).  A process using
+// such deprecated calls must enable legacy support, which is done implicitly
+// when a process calls gasnet_init() or explicitly when a caller passes the
+// GEX_FLAG_USES_GASNET1 flag to gex_Client_Init().
+//
+// The following functions from GASNet-1 have been deprecated in favor of new
+// GASNet-EX equivalents. These `gasnet_`-prefixed deprecated functions shall
+// only be invoked if legacy support has been enabled.
+// + gasnet_AMRequest*()
+// + gasnet_get*(), including bulk, non-bulk, value-based and VIS
+// + gasnet_put*(), including bulk, non-bulk, value-based and VIS
+// + gasnet_memset*()
+// NOTE: This list is subject to expansion as new GASNet-EX APIs are
+// implemented which displace less-capable GASNet-1 APIs.
 //
 // Note that gasnet_init()/gasnet_attach() may only be called once per process,
-// and currently only one client per process can use GASNet-1 APIs.
+// and currently only one client per process can use the deprecated GASNet-1
+// functions listed above.
 //
-// Hybrid/transitional clients who initialize using gex_Client_Init() should
-// pass the following flag to that function to request the use of GASNet-1 services.
-// 
 #define GEX_FLAG_USES_GASNET1 ((gex_Flags_t)???)
 
-// The following API allows jobs that initialize GASNet for legacy support to
-// access the key GASNet-EX objects created explicitly by gex_Client_Init(), or
-// implicitly by gasnet_init()/gasnet_attach().  The types and usage of these
-// objects are described below.  Initialization for legacy support is either of
-// the following:
-// + Initialization using the legacy gasnet_init()/gasnet_attach() APIs
-// + Initialization using gex_Client_Init() with GEX_FLAG_USES_GASNET1
+// The following API allows jobs that enable legacy support (as described
+// immediately above) to access the key GASNet-EX objects created explicitly by
+// gex_Client_Init(), or implicitly by gasnet_init()/gasnet_attach().  The types
+// and usage of these objects are described below.
 //
 // This call is defined in gasnet.h (not gasnetex.h).
 //
@@ -229,7 +287,7 @@ int gex_System_GetVerboseErrors();
 // Values other than 0 and 1 are currently reserved.
 void  gex_System_SetVerboseErrors(int enable);
 
-// Threads
+// Client Threads
 
 // The maximum number of live client threads permitted to enter GASNet.
 //
@@ -419,7 +477,7 @@ typedef [some integer type] gex_Flags_t;
 //
 #define GEX_FLAG_RANK_IS_JOBRANK  ((gex_Flags_t)???)
 //
-// AM_PREPARE_LEAST_{CLIENT,ALLOC} [EXPERIMENTAL]
+// AM_PREPARE_LEAST_{CLIENT,ALLOC}
 //
 // This pair of mutually exclusive flags modify the behavior of the
 // gex_AM_Max{Request,Reply}{Medium,Long}() queries to request the largest
@@ -578,7 +636,7 @@ typedef [some unsigned integer type] gex_RMA_Value_t;
 // Synonymous with SIZEOF_GASNET_REGISTER_VALUE_T
 #define SIZEOF_GEX_RMA_VALUE_T ...
 
-// gex_Addr_t [PROPOSED]
+// gex_Addr_t
 // Type which is suitable to hold both addresses and offsets.
 //
 // This is always an alias for `void*`, but is given a distinct type to make
@@ -707,7 +765,11 @@ const char * gex_Client_QueryName(gex_Client_t client);
 // * flags control the creation of the primordial objects. Supported flags:
 //   + GEX_FLAG_USES_GASNET1 - created client requests the use of GASNet-1 APIs
 //     (defined in gasnet.h). Only permitted for use in one client per process.
-//   Otherwise must be 0.
+//   + GEX_FLAG_DEFER_THREADS [Since spec v0.18] [EXPERIMENTAL]
+//     Client requests that the conduit defer launching of internal progress
+//     threads.  See `gex_System_QueryProgressThreads()` for information on the
+//     means for the client to control launch of the progress threads, if any,
+//     after return from `gex_Client_Init()`.
 //   This is a single-valued parameter.
 //
 // There is an implicit barrier synchronization prior to return from this call
@@ -1396,9 +1458,23 @@ extern int gex_EP_PublishBoundSegment(
 // An integer constant, guaranteed to be 128 or less.
 #define GEX_AM_INDEX_BASE ???
 
+//
+// Conduit-internal progress threads
+//
+// A conduit may include one or more threads intended to provide asynchronous
+// progress.
+//
+// If present, a "receive progress thread" (or just "receive thread") is
+// intended to progress the reception of AMs, and consequently may run
+// client-provided handlers.
+//
+// If present, a "send progress thread" (or just "send thread") is intended to
+// perform internal actions to progress various in-flight communication
+// operations.  This thread will never run client-provided AM handler code.
+
 // Implementation-induced concurrency of AM handlers
 // This value (always defined) has a non-zero value iff the implementation
-// may run AM handlers on a thread not owned by the client 
+// may run AM handlers from a receive thread not owned by the client
 // (and in particular, concurrently with the client when no client
 // thread is inside a synchronous call to GASNet). 
 // Note this is orthogonal to SEQ/PAR/PARSYNC mode - in particular, in PAR
@@ -1408,10 +1484,159 @@ extern int gex_EP_PublishBoundSegment(
 
 // Returns the runtime value of AM concurrency level for the calling process
 // which may be more precise than the conservative static value provided by
-// GASNET_HIDDEN_AM_CONCURRENCY_LEVEL
-// Only valid after gex_Client_Init()
+// GASNET_HIDDEN_AM_CONCURRENCY_LEVEL.  In particular, this query is sensitive
+// to whether a conduit's receive thread(s) are enabled or disabled at run time.
+// Only valid after gex_Client_Init().
+// The value is constant across multiple calls, and in particular if the client
+// has passed `GEX_FLAG_DEFER_THREADS` to `gex_Client_Init()` then the result
+// reflects the expected concurrency once the client has started all progress
+// threads.
 // [Since spec v0.14]
 int gex_System_QueryHiddenAMConcurrencyLevel(void);
+
+//
+// Deferred progress thread initialization
+// [Since spec v0.18] [EXPERIMENTAL]
+//
+
+// Query deferred progress threads
+// [Since spec v0.18] [EXPERIMENTAL]
+//
+// The `gex_System_QueryProgressThreads()` query provides information about any
+// progress threads enabled in the library that the client is responsible for
+// starting due to passing `GEX_FLAG_DEFER_THREADS` to `gex_Client_Init()`.  The
+// information provided is intended to allow the client to make decisions about
+// such issues as CPU and memory affinity prior to starting these threads.
+//
+// + A client which passes `GEX_FLAG_DEFER_THREADS` to `gex_Client_Init()` is
+//   required to make exactly one call to this query and to start each of
+//   the threads described in the result.
+// + If a client which passes `GEX_FLAG_DEFER_THREADS` to `gex_Client_Init()`
+//   makes multiple calls to this query, then the behavior is undefined.
+// + If `GEX_FLAG_DEFER_THREADS` was not passed to `gex_Client_Init()`, then
+//   calls to this query are erroneous (returning `GASNET_ERR_RESOURCE` if
+//   there are no other errors).
+// + Each thread must be started by invoking `gex_progress_fn(gex_progress_arg)`
+//   in a POSIX thread, where `gex_progress_*` name fields of the query result
+//   (described below).  This may be accomplished by passing these two field
+//   values as the third and fourth arguments to `pthread_create()`, but a
+//   client is free to invoke the progress function from a thread it has
+//   created by other means.
+// + In the case of a normal `gasnet_exit()`, the library will terminate each
+//   progress thread either by inducing it to call `pthread_exit()` or via
+//   `pthread_cancel()`.  The library assumes responsibility for joining or
+//   detaching the progress thread.  The client is responsible for providing
+//   the progress thread in a joinable state, and should neither join nor
+//   detach the progress thread.
+// + In no case will the progress function return.  A client starting a
+//   progress thread by means other than by calling `pthread_create()` must not
+//   depend on return from the progress function.
+// + The client may start the threads in any order and/or concurrently.
+// + In general, failure to start all threads prior to `gasnet_exit()` or
+//   process termination (whether normal or abnormal) leads to undefined
+//   behavior.  However, a given conduit may relax this restriction (see the
+//   conduit-specific README).
+// + Other than `gasnet_exit()`, there are no restrictions on GASNet calls which
+//   the client may make prior to starting the progress threads.  This means the
+//   client may communicate as necessary to collect information needed to make
+//   decisions regarding CPU and/or memory locality.
+// + The result of this query is the tuple `(*count_p, *info_p)`, where
+//   the expression `*info_p` points to library-owned memory which must not be
+//   modified or freed by the client.
+// + The lifetime of this library-owned memory extends from return from this
+//   call until all the progress threads start.  Consequently, any accesses to
+//   this memory after all progress threads have begun running have undefined
+//   behavior.
+// + The `client` argument is the client created by `gex_Client_Init()`.
+// + The `count_p` argument is a pointer to an `unsigned int` which, upon
+//   successful return, will contain the number of deferred progress threads.
+//   This may be zero.
+// + The `info_p` argument is a pointer to a `const gex_ProgressThreadInfo_t *`
+//   which, upon successful return with non-zero `*count_p`, will contain the
+//   address of an array (of length `*count_p`) of structures each describing a
+//   single progress thread.
+//   See the description of `gex_ProgressThreadInfo_t`, below, for details.
+// + If `*count_p` is zero, then the value of `*info_p` is undefined.
+// + The `flags` argument is reserved for future use and must currently be zero.
+// + If the `count_p` or `info_p` arguments are `NULL`, or if the `flags`
+//   argument is non-zero, `GASNET_ERR_BAD_ARG` is returned in the absence of
+//   other errors.
+// + If the call returns an error (non-zero), then the content of the locations
+//   named by `count_p` and `info_p` are undefined.
+// + If there are multiple reportable errors, the precedence is undefined.
+int gex_System_QueryProgressThreads(
+                gex_Client_t                     client,
+                unsigned int                    *count_p,
+                const gex_ProgressThreadInfo_t **info_p,
+                gex_Flags_t                      flags);
+
+// Type to describe deferred progress threads
+// [Since spec v0.18] [EXPERIMENTAL]
+//
+// The result of the `gex_System_QueryProgressThreads()` query is an array
+// of zero or more of this structure, each describing a single progress thread
+// for which the conduit has deferred launch due to `GEX_FLAG_DEFER_THREADS`
+// in the `flags` passed to `gex_Client_Init()`:
+//
+// + gex_device_list
+//   This field is a non-NULL pointer to a comma-delimited string listing the
+//   "devices" for which this thread will provide progress.  The nature of the
+//   comma-delimited names is conduit-defined (in the respective README).
+// + gex_thread_roles
+//   This field has a non-zero value generated by bitwise-OR of one or more
+//   GEX_THREAD_ROLE_* constants below, or ones added in a later version of this
+//   specification.  This value indicates the role or roles this thread takes in
+//   progressing communications.
+// + gex_progress_fn and gex_progress_arg
+//   This pair are the function and argument which the client should ensure
+//   will run in a joinable POSIX thread (such as by passing them as the third
+//   and fourth arguments to `pthread_create()`).
+typedef struct {
+  const char *     gex_device_list;
+  unsigned int     gex_thread_roles;
+  void *           (*gex_progress_fn) (void *);
+  void *           gex_progress_arg;
+} gex_ProgressThreadInfo_t;
+
+// Thread roles in gex_ProgressThreadInfo_t
+// [Since spec v0.18] [EXPERIMENTAL]
+#define GEX_THREAD_ROLE_RCV ???
+#define GEX_THREAD_ROLE_SND ???
+
+// Preprocessor defines advertising configured progress thread support
+// [Since spec v0.18]
+
+// GASNET_RCV_THREAD is defined to 1 iff the current library build includes
+// support for a receive thread.  Because the user can typically use environment
+// variables to enable or disable launch of this thread, this does not indicate
+// with certainty that the thread will run.
+//
+// If the current conduit does not include any receive thread support, or it was
+// disabled at configure time, then GASNET_RCV_THREAD will be #undef.
+//
+// Clients which may set environment variables to request a receive thread
+// should make such logic conditional on this preprocessor identifier to avoid
+// conduit-specific warnings which may result when requesting a receive thread
+// which is not enabled.
+#define GASNET_RCV_THREAD 1 or #undef
+
+// GASNET_SND_THREAD is defined to 1 iff the current library build includes
+// support for a send thread.  Because the user can typically use environment
+// variables to enable or disable launch of this thread, this does not indicate
+// with certainty that the thread will run.
+//
+// If the current conduit does not include any send thread support, or it was
+// disabled at configure time, then GASNET_SND_THREAD will be #undef.
+//
+// Clients which may set environment variables to request a send thread should
+// make such logic conditional on this preprocessor identifier to avoid
+// conduit-specific warnings which may result when requesting a send thread
+// which is not enabled.
+#define GASNET_SND_THREAD 1 or #undef
+
+//
+// AM handlers
+//
 
 // Client-facing type for describing one AM handler
 // This type is an alternative to (*not* interchangeable with) gasnet_handlerentry_t
@@ -1686,16 +1911,39 @@ typedef struct {
 typedef [some integer type] gex_TI_t;
 
 // REQUIRED: All implementations must support these queries:
-#define GEX_TI_SRCRANK       ((gex_TI_t)???)
-#define GEX_TI_EP            ((gex_TI_t)???)
+#define GEX_TI_SRCRANK       ((gex_TI_t)???)     # required since spec v0.1
+#define GEX_TI_EP            ((gex_TI_t)???)     # required since spec v0.1
 
 // OPTIONAL: Some implementations might not support these queries:
-#define GEX_TI_ENTRY         ((gex_TI_t)???)
-#define GEX_TI_IS_REQ        ((gex_TI_t)???)
-#define GEX_TI_IS_LONG       ((gex_TI_t)???)
+#define GEX_TI_ENTRY         ((gex_TI_t)???)     # optional since spec v0.1
+#define GEX_TI_IS_REQ        ((gex_TI_t)???)     # optional since spec v0.1
+#define GEX_TI_IS_LONG       ((gex_TI_t)???)     # optional since spec v0.1
 
 // Convenience: all defined queries (Required and Optional)
-#define GEX_TI_ALL           ((gex_TI_t)???)
+#define GEX_TI_ALL           ((gex_TI_t)???)     # required since spec v0.1
+
+// Support indicators for Optional token into queries
+// Available since spec v0.17
+//
+// GASNET_SUPPORTS_TI_* preprocessor identifiers are defined to 1 or #undef
+// to indicate whether (or not, respectively) the implementation of
+// gex_Token_Info() supports the corresponding query for all valid tokens.
+//
+// When any of these is defined for an Optional query, it is an indication that
+// the current implementation of the current conduit supports the
+// corresponding query.  However, it is not a guarantee of such support in
+// other conduits or in future releases of the current conduit.
+//
+// When any of these is #undef, the implementation is still permitted to
+// support the query conditionally.  For instance, the shared-memory transport
+// may support an Optional query that is not supported for AMs travelling
+// outside of the shared-memory nbrhd, or vice-versa.
+
+#define GASNET_SUPPORTS_TI_SRCRANK      1
+#define GASNET_SUPPORTS_TI_EP           1
+#define GASNET_SUPPORTS_TI_ENTRY        1 or #undef
+#define GASNET_SUPPORTS_TI_IS_REQ       1 or #undef
+#define GASNET_SUPPORTS_TI_IS_LONG      1 or #undef
 
 // Takes a token, address of client-allocated gex_Token_Info_t, and a mask.
 // The mask is a bit-wise OR of GEX_TI_* constants, which indicates which
@@ -1791,6 +2039,14 @@ extern gex_TI_t gex_Token_Info(
 //   Within a single gex_AM_*Long* operation, if the specified source and destination 
 //   memory regions overlap, behavior is undefined. High-quality implementations
 //   may choose to diagnose such errors.
+//
+// NOTE 5: Longs and Bound Segments
+//
+//   In general, the 'tm' and 'rank' arguments to Long Request/Reply calls must
+//   name a destination EP with a bound segment known to the initiator, where
+//   "known" means the segment was created with gex_Segment_Attach() or was
+//   published to the initiator.  However, for the special case of 'nbytes == 0`,
+//   no bound segment is required.
 //
 // Other arguments behave as in the analogous GASNet-1 functions.
 // Misc semantic strengthening:
@@ -1941,7 +2197,7 @@ size_t gex_AM_SrcDescSize(gex_AM_SrcDesc_t sd);
 
 // Native implementation indicators for negotiated-payload active messages
 // GASNET_NATIVE_NP_ALLOC_{REQ,REP}_{MEDIUM,LONG} symbols are defined to 1 or
-// undefined to indicate whether (or not, respectively) the implementation
+// #undef to indicate whether (or not, respectively) the implementation
 // of negotiated-payload AM Request/Reply Medium/Long (with a GASNet-allocated
 // source buffer, i.e., initiated with client_buf == NULL) for the network
 // transport of the current conduit are "native". This is a performance hint
@@ -1954,10 +2210,10 @@ size_t gex_AM_SrcDescSize(gex_AM_SrcDesc_t sd);
 // these only denote the behavior of the network transport (AM to peers outside
 // the caller's nbrhd). The shared-memory transport for all conduits always 
 // provides native behavior for Medium requests and replies.
-#define GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM  1 or undefined
-#define GASNET_NATIVE_NP_ALLOC_REP_MEDIUM  1 or undefined
-#define GASNET_NATIVE_NP_ALLOC_REQ_LONG    1 or undefined
-#define GASNET_NATIVE_NP_ALLOC_REP_LONG    1 or undefined
+#define GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM  1 or #undef
+#define GASNET_NATIVE_NP_ALLOC_REP_MEDIUM  1 or #undef
+#define GASNET_NATIVE_NP_ALLOC_REQ_LONG    1 or #undef
+#define GASNET_NATIVE_NP_ALLOC_REP_LONG    1 or #undef
 
 //
 // gex_AM_Prepare calls
@@ -2396,7 +2652,7 @@ gex_Event_t gex_Event_QueryLeaf(
 
 
 //
-// Neighborhood and Host: [EXPERIMENTAL]
+// Neighborhood and Host:
 //
 // A "neighborhood" is defined as a set of GEX processes that can share
 // memory via the GASNet PSHM feature, and is abbreviated to Nbrhd.
@@ -3249,7 +3505,7 @@ int gex_AD_OpNBI_[DATATYPE](
         gex_Flags_t flags);
 
 //
-// VIS Put Peer Completion [EXPERIMENTAL]
+// VIS Put Peer Completion [DEPRECATED]
 //
 
 // The following call "arms" a peer completion callback that will 
@@ -3763,113 +4019,26 @@ gex_Event_t gex_Coll_ReduceToAllNB(
 // End of section describing APIs provided by gasnet_coll.h
 //----------------------------------------------------------------------
 
-// [PROPOSED]
-// This section of this document covers APIs described in more detail in
-//   GASNet-EX API Proposal: Memory Kinds, Revision 2022.3.0
 //
-// For functions, only prototypes and supported flags are provided here.
-// For function semantics, one should consult the document cited above.
-// Copies of the most recent revision of that document are available on
-// request from gasnet-staff@lbl.gov.
+// Memory Kinds (Device memory support)
+//
 
-int gex_Segment_Create(
-            gex_Segment_t   *segment_p,  // OUT
-            gex_Client_t    client,
-            gex_Addr_t      address,
-            uintptr_t       length,
-            gex_MK_t        kind,
-            gex_Flags_t     flags);
-      // Valid flags:
-      //   NONE - zero is currently required
+// GASNet-EX features support for communication involving memory segments
+// which are associated with various accellerator devices, e.g. HBM onboard GPUs.
+//
+// The API for this support is currently described in the following document:
+//
+//   GASNet-EX API: Memory Kinds
+//
+// which should be available in memory_kinds.pdf as a sibling to this file.
 
-void gex_Segment_Destroy(
-            gex_Segment_t   segment,
-            gex_Flags_t     flags);
-      // Valid flags:
-      //   NONE - zero is currently required
+// Implementation status of Memory Kinds support is described in the document:
+//
+//   GASNet-EX Memory Kinds: Implementation Status
+//
+// which should be available in memory_kinds_implementation.md as a sibling to this file.
 
-int gex_EP_BindSegment(
-            gex_EP_t        ep,
-            gex_Segment_t   segment,
-            gex_Flags_t     flags);
-      // Valid flags:
-      //   NONE - zero is currently required
-
-typedef [some integer type] gex_EP_Capabilities_t;
-#define GEX_EP_CAPABILITY_{RMA,AM,VIS,COLL,AD,ALL} ???
-
-#define GEX_FLAG_HINT_ACCEL_{AD,COLL,ALL} ???
-
-// NOTE: implemented only by ibv, ofi and ucx conduits,
-// and only for capabilities == GEX_EP_CAPABILITY_RMA
-int gex_EP_Create(
-            gex_EP_t               *ep_p,        // OUT
-            gex_Client_t           client,
-            gex_EP_Capabilities_t  capabilities,
-            gex_Flags_t            flags);
-      // Valid flags:
-      //   NONE - zero is currently required
-
-// gex_MK_t is an opaque scalar handle to a Memory Kind (MK)
-typedef ... gex_MK_t;
-
-// GEX_MK_INVALID is a predefined constant guaranteed to have the value
-// zero and never alias a valid memory kind
-#define GEX_MK_INVALID ((gex_MK_t)0)
-
-// GEX_MK_HOST is a predefined constant for the "kind" for host memory
-#define GEX_MK_HOST ((gex_MK_t)???)
-
-// ****
-// The APIs in the remainder of this section are provided by gasnet_mk.h
-// ****
-
-// gex_MK_Class_t is enum naming available "classes" of memory kinds.
-// It includes at least the following values (in unspecified order):
-typedef enum {
-    GEX_MK_CLASS_HOST,      // "normal" memory (eg GEX_MK_HOST)
-    GEX_MK_CLASS_CUDA_UVA,  // CUDA UVA memory     [since 2020.11.0]
-    GEX_MK_CLASS_HIP,       // HIP device memory   [since 2021.9.0]
-    ???
-} gex_MK_Class_t;
-
-// The gex_MK_Create_args_t struct is passed to gex_MK_Create to create a
-// per-device instance of a memory kind of the given class, and includes
-// at least the following members (in unspecified order):
-typedef struct {
-    uint64_t            gex_flags; // Reserved.  Must be 0 currently.
-    gex_MK_Class_t      gex_class;
-    union {
-        struct {// CUDA UVA memory [since 2020.11.0]
-            int                    gex_CUdevice;
-        }                    gex_class_cuda_uva;
-        struct {// HIP device memory [since 2021.9.0]
-            int                    gex_hipDevice;
-        }                    gex_class_hip;
-    }                    gex_args;
-} gex_MK_Create_args_t;
-
-int gex_MK_Create(
-            gex_MK_t                      *memkind_p, // OUT
-            gex_Client_t                  client,
-            const gex_MK_Create_args_t    *args,      // IN
-            gex_Flags_t                   flags       // Reserved.  Must be 0 currently.
-            );
-      // Valid flags:
-      //   NONE - zero is currently required
-
-void gex_MK_Destroy(
-            gex_MK_t                      memkind,
-            gex_Flags_t                   flags       // Reserved.  Must be 0 currently.
-            );
-      // Valid flags:
-      //   NONE - zero is currently required
-
-// ****
-// End of APIs provided by gasnet_mk.h
-// ****
-
-// End of "GASNet-EX API Proposal: Memory Kinds, Revision 2022.3.0" section
+// End of "Memory Kinds" section
 //----------------------------------------------------------------------
 
 // vim: syntax=c

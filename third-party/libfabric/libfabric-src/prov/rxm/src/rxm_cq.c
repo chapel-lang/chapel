@@ -41,7 +41,6 @@
 #include "ofi.h"
 #include "ofi_iov.h"
 #include "ofi_atomic.h"
-#include <ofi_coll.h>
 
 #include "rxm.h"
 
@@ -77,7 +76,7 @@ rxm_rx_buf_alloc(struct rxm_ep *rxm_ep, struct fid_ep *rx_ep)
 	rx_buf->rx_ep = rx_ep;
 	rx_buf->repost = true;
 
-	if (!rxm_ep->srx_ctx)
+	if (!rxm_ep->msg_srx)
 		rx_buf->conn = rx_ep->fid.context;
 
 	return rx_buf;
@@ -137,7 +136,7 @@ static void rxm_cq_write_error_trunc(struct rxm_rx_buf *rx_buf, size_t done_len)
 	int ret;
 
 	if (rx_buf->ep->util_ep.flags & OFI_CNTR_ENABLED)
-		rxm_cntr_incerr(rx_buf->ep->util_ep.rx_cntr);
+		rxm_cntr_incerr(rx_buf->ep->util_ep.cntrs[CNTR_RX]);
 
 	FI_WARN(&rxm_prov, FI_LOG_CQ, "Message truncated: "
 		"recv buf length: %zu message length: %" PRIu64 "\n",
@@ -175,7 +174,7 @@ static void rxm_finish_recv(struct rxm_rx_buf *rx_buf, size_t done_len)
 				       rx_buf->recv_entry->rxm_iov.
 				       iov[0].iov_base);
 	}
-	ofi_ep_rx_cntr_inc(&rx_buf->ep->util_ep);
+	ofi_ep_cntr_inc(&rx_buf->ep->util_ep, CNTR_RX);
 
 release:
 	rxm_recv_entry_release(recv_entry);
@@ -202,9 +201,9 @@ static void rxm_finish_rma(struct rxm_ep *rxm_ep, struct rxm_tx_buf *rma_buf,
 			     rma_buf->flags);
 
 	if (comp_flags & FI_WRITE)
-		ofi_ep_wr_cntr_inc(&rxm_ep->util_ep);
+		ofi_ep_cntr_inc(&rxm_ep->util_ep, CNTR_WR);
 	else
-		ofi_ep_rd_cntr_inc(&rxm_ep->util_ep);
+		ofi_ep_cntr_inc(&rxm_ep->util_ep, CNTR_RD);
 
 	if (!(rma_buf->flags & FI_INJECT) && !rxm_ep->rdm_mr_local &&
 	    rxm_ep->msg_mr_local) {
@@ -220,7 +219,7 @@ void rxm_finish_eager_send(struct rxm_ep *rxm_ep, struct rxm_tx_buf *tx_buf)
 
 	rxm_cq_write_tx_comp(rxm_ep, ofi_tx_cq_flags(tx_buf->pkt.hdr.op),
 			     tx_buf->app_context, tx_buf->flags);
-	ofi_ep_tx_cntr_inc(&rxm_ep->util_ep);
+	ofi_ep_cntr_inc(&rxm_ep->util_ep, CNTR_TX);
 }
 
 static bool rxm_complete_sar(struct rxm_ep *rxm_ep,
@@ -260,7 +259,7 @@ static void rxm_handle_sar_comp(struct rxm_ep *rxm_ep,
 		return;
 
 	rxm_cq_write_tx_comp(rxm_ep, comp_flags, app_context, tx_flags);
-	ofi_ep_tx_cntr_inc(&rxm_ep->util_ep);
+	ofi_ep_cntr_inc(&rxm_ep->util_ep, CNTR_TX);
 }
 
 static void rxm_rndv_rx_finish(struct rxm_rx_buf *rx_buf)
@@ -296,7 +295,7 @@ static void rxm_rndv_tx_finish(struct rxm_ep *rxm_ep,
 		ofi_buf_free(tx_buf->write_rndv.done_buf);
 		tx_buf->write_rndv.done_buf = NULL;
 	}
-	ofi_ep_tx_cntr_inc(&rxm_ep->util_ep);
+	ofi_ep_cntr_inc(&rxm_ep->util_ep, CNTR_TX);
 	rxm_free_tx_buf(rxm_ep, tx_buf);
 }
 
@@ -379,9 +378,10 @@ static void rxm_process_seg_data(struct rxm_rx_buf *rx_buf, int *done)
 	uint64_t device;
 	ssize_t done_len;
 
-	iface = rxm_mr_desc_to_hmem_iface_dev(rx_buf->recv_entry->rxm_iov.desc,
-					      rx_buf->recv_entry->rxm_iov.count,
-					      &device);
+	iface = rxm_iov_desc_to_hmem_iface_dev(rx_buf->recv_entry->rxm_iov.iov,
+					       rx_buf->recv_entry->rxm_iov.desc,
+					       rx_buf->recv_entry->rxm_iov.count,
+					       &device);
 
 	done_len = ofi_copy_to_hmem_iov(iface, device,
 					rx_buf->recv_entry->rxm_iov.iov,
@@ -519,7 +519,7 @@ ssize_t rxm_rndv_read(struct rxm_rx_buf *rx_buf)
 			    rx_buf);
 	if (ret) {
 		rxm_cq_write_error(rx_buf->ep->util_ep.rx_cq,
-				   rx_buf->ep->util_ep.rx_cntr, rx_buf, (int) ret);
+				   rx_buf->ep->util_ep.cntrs[CNTR_RX], rx_buf, (int) ret);
 	}
 	return ret;
 }
@@ -562,7 +562,7 @@ static ssize_t rxm_rndv_handle_wr_data(struct rxm_rx_buf *rx_buf)
 
 	if (ret)
 		rxm_cq_write_error(rx_buf->ep->util_ep.rx_cq,
-				   rx_buf->ep->util_ep.rx_cntr,
+				   rx_buf->ep->util_ep.cntrs[CNTR_RX],
 				   tx_buf, (int) ret);
 	rxm_free_rx_buf(rx_buf);
 	return ret;
@@ -576,7 +576,7 @@ static ssize_t rxm_handle_rndv(struct rxm_rx_buf *rx_buf)
 	rxm_replace_rx_buf(rx_buf);
 
 	if (!rx_buf->conn) {
-		assert(rx_buf->ep->srx_ctx);
+		assert(rx_buf->ep->msg_srx);
 		rx_buf->conn = ofi_idm_at(&rx_buf->ep->conn_idx_map,
 					  (int) rx_buf->pkt.ctrl_hdr.conn_id);
 		if (!rx_buf->conn)
@@ -614,6 +614,7 @@ static ssize_t rxm_handle_rndv(struct rxm_rx_buf *rx_buf)
 			mr = rx_buf->recv_entry->rxm_iov.desc[i];
 			rx_buf->recv_entry->rxm_iov.desc[i] =
 				fi_mr_desc(mr->msg_mr);
+			rx_buf->mr[i] = mr->msg_mr;
 		}
 	}
 
@@ -625,18 +626,11 @@ static ssize_t rxm_handle_rndv(struct rxm_rx_buf *rx_buf)
 
 void rxm_handle_eager(struct rxm_rx_buf *rx_buf)
 {
-	enum fi_hmem_iface iface;
-	uint64_t device;
-	ssize_t done_len;
+	ssize_t done_len = rxm_copy_to_hmem_iov(
+		rx_buf->recv_entry->rxm_iov.desc, rx_buf->data,
+		rx_buf->pkt.hdr.size, rx_buf->recv_entry->rxm_iov.iov,
+		rx_buf->recv_entry->rxm_iov.count, 0);
 
-	iface = rxm_mr_desc_to_hmem_iface_dev(rx_buf->recv_entry->rxm_iov.desc,
-					      rx_buf->recv_entry->rxm_iov.count,
-					      &device);
-
-	done_len = ofi_copy_to_hmem_iov(iface, device,
-					rx_buf->recv_entry->rxm_iov.iov,
-					rx_buf->recv_entry->rxm_iov.count, 0,
-					rx_buf->data, rx_buf->pkt.hdr.size);
 	assert((size_t) done_len == rx_buf->pkt.hdr.size);
 
 	rxm_finish_recv(rx_buf, done_len);
@@ -648,9 +642,10 @@ void rxm_handle_coll_eager(struct rxm_rx_buf *rx_buf)
 	uint64_t device;
 	ssize_t done_len;
 
-	iface = rxm_mr_desc_to_hmem_iface_dev(rx_buf->recv_entry->rxm_iov.desc,
-					      rx_buf->recv_entry->rxm_iov.count,
-					      &device);
+	iface = rxm_iov_desc_to_hmem_iface_dev(rx_buf->recv_entry->rxm_iov.iov,
+					       rx_buf->recv_entry->rxm_iov.desc,
+					       rx_buf->recv_entry->rxm_iov.count,
+					       &device);
 
 	done_len = ofi_copy_to_hmem_iov(iface, device,
 					rx_buf->recv_entry->rxm_iov.iov,
@@ -658,9 +653,14 @@ void rxm_handle_coll_eager(struct rxm_rx_buf *rx_buf)
 					rx_buf->data, rx_buf->pkt.hdr.size);
 	assert((size_t) done_len == rx_buf->pkt.hdr.size);
 
-	if (rx_buf->pkt.hdr.tag & OFI_COLL_TAG_FLAG) {
-		ofi_coll_handle_xfer_comp(rx_buf->pkt.hdr.tag,
-				rx_buf->recv_entry->context);
+	if (rx_buf->ep->util_coll_peer_xfer_ops &&
+	    rx_buf->pkt.hdr.tag & RXM_PEER_XFER_TAG_FLAG) {
+		struct fi_cq_tagged_entry cqe = {
+			.tag = rx_buf->pkt.hdr.tag,
+			.op_context = rx_buf->recv_entry->context,
+		};
+		rx_buf->ep->util_coll_peer_xfer_ops->
+			complete(rx_buf->ep->util_coll_ep, &cqe, 0);
 		rxm_recv_entry_release(rx_buf->recv_entry);
 		rxm_free_rx_buf(rx_buf);
 	} else {
@@ -725,18 +725,6 @@ rxm_match_rx_buf(struct rxm_rx_buf *rx_buf,
 {
 	struct dlist_entry *entry;
 
-	/* Dynamic receive buffers may have already matched */
-	if (rx_buf->recv_entry) {
-		if (rx_buf->pkt.ctrl_hdr.type == rxm_ctrl_rndv_req)
-			return rxm_handle_rndv(rx_buf);
-
-		rxm_finish_recv(rx_buf, rx_buf->pkt.hdr.size);
-		return 0;
-	}
-
-	if (recv_queue->dyn_rbuf_unexp_cnt)
-		recv_queue->dyn_rbuf_unexp_cnt--;
-
 	entry = dlist_remove_first_match(&recv_queue->recv_list,
 					 recv_queue->match_recv, match_attr);
 	if (entry) {
@@ -767,7 +755,7 @@ static ssize_t rxm_handle_recv_comp(struct rxm_rx_buf *rx_buf)
 	};
 
 	if (rx_buf->ep->rxm_info->caps & (FI_SOURCE | FI_DIRECTED_RECV)) {
-		if (rx_buf->ep->srx_ctx)
+		if (rx_buf->ep->msg_srx)
 			rx_buf->conn = ofi_idm_at(&rx_buf->ep->conn_idx_map,
 					(int) rx_buf->pkt.ctrl_hdr.conn_id);
 		if (!rx_buf->conn)
@@ -998,9 +986,9 @@ err:
 static void rxm_handle_remote_write(struct rxm_ep *rxm_ep,
 				   struct fi_cq_data_entry *comp)
 {
-	rxm_cq_write(rxm_ep->util_ep.rx_cq, NULL, comp->flags, 0, NULL,
+	rxm_cq_write(rxm_ep->util_ep.rx_cq, NULL, comp->flags, comp->len, NULL,
 		     comp->data, 0);
-	ofi_ep_rem_wr_cntr_inc(&rxm_ep->util_ep);
+	ofi_ep_cntr_inc(&rxm_ep->util_ep, CNTR_REM_WR);
 	if (comp->op_context)
 		rxm_free_rx_buf(comp->op_context);
 }
@@ -1169,7 +1157,7 @@ static ssize_t rxm_handle_atomic_req(struct rxm_ep *rxm_ep,
 	assert(op == ofi_op_atomic || op == ofi_op_atomic_fetch ||
 	       op == ofi_op_atomic_compare);
 
-	if (rx_buf->ep->srx_ctx)
+	if (rx_buf->ep->msg_srx)
 		rx_buf->conn = ofi_idm_at(&rx_buf->ep->conn_idx_map,
 					  (int) rx_buf->pkt.ctrl_hdr.conn_id);
 	if (!rx_buf->conn)
@@ -1235,9 +1223,9 @@ static ssize_t rxm_handle_atomic_req(struct rxm_ep *rxm_ep,
 	result_len = op == ofi_op_atomic ? 0 : offset;
 
 	if (op == ofi_op_atomic)
-		ofi_ep_rem_wr_cntr_inc(&rxm_ep->util_ep);
+		ofi_ep_cntr_inc(&rxm_ep->util_ep, CNTR_REM_WR);
 	else
-		ofi_ep_rem_rd_cntr_inc(&rxm_ep->util_ep);
+		ofi_ep_cntr_inc(&rxm_ep->util_ep, CNTR_REM_RD);
 
 	return rxm_atomic_send_resp(rxm_ep, rx_buf, resp_buf,
 				    result_len, FI_SUCCESS);
@@ -1262,9 +1250,10 @@ static ssize_t rxm_handle_atomic_resp(struct rxm_ep *rxm_ep,
 	       " msg_id: 0x%" PRIx64 "\n", rx_buf->pkt.hdr.op,
 	       rx_buf->pkt.ctrl_hdr.msg_id);
 
-	iface = rxm_mr_desc_to_hmem_iface_dev(tx_buf->atomic_result.desc,
-					      tx_buf->atomic_result.count,
-					      &device);
+	iface = rxm_iov_desc_to_hmem_iface_dev(tx_buf->atomic_result.iov,
+					       tx_buf->atomic_result.desc,
+					       tx_buf->atomic_result.count,
+					       &device);
 
 	assert(!(rx_buf->comp_flags & ~(FI_RECV | FI_REMOTE_CQ_DATA)));
 
@@ -1298,10 +1287,10 @@ static ssize_t rxm_handle_atomic_resp(struct rxm_ep *rxm_ep,
 				     tx_buf->app_context, tx_buf->flags);
 
 	if (tx_buf->pkt.hdr.op == ofi_op_atomic) {
-		ofi_ep_wr_cntr_inc(&rxm_ep->util_ep);
+		ofi_ep_cntr_inc(&rxm_ep->util_ep, CNTR_WR);
 	} else if (tx_buf->pkt.hdr.op == ofi_op_atomic_compare ||
 		   tx_buf->pkt.hdr.op == ofi_op_atomic_fetch) {
-		ofi_ep_rd_cntr_inc(&rxm_ep->util_ep);
+		ofi_ep_cntr_inc(&rxm_ep->util_ep, CNTR_RD);
 	} else {
 		ret = -FI_EOPNOTSUPP;
 		goto write_err;
@@ -1313,10 +1302,10 @@ free:
 
 write_err:
 	if (tx_buf->pkt.hdr.op == ofi_op_atomic) {
-		cntr = rxm_ep->util_ep.wr_cntr;
+		cntr = rxm_ep->util_ep.cntrs[CNTR_WR];
 	} else if (tx_buf->pkt.hdr.op == ofi_op_atomic_compare ||
 		   tx_buf->pkt.hdr.op == ofi_op_atomic_fetch) {
-		cntr = rxm_ep->util_ep.rd_cntr;
+		cntr = rxm_ep->util_ep.cntrs[CNTR_RD];
 	} else {
 		FI_WARN(&rxm_prov, FI_LOG_CQ,
 			"unknown atomic request op!\n");
@@ -1343,9 +1332,14 @@ static ssize_t rxm_handle_credit(struct rxm_ep *rxm_ep, struct rxm_rx_buf *rx_bu
 void rxm_finish_coll_eager_send(struct rxm_ep *rxm_ep,
 			        struct rxm_tx_buf *tx_eager_buf)
 {
-	if (tx_eager_buf->pkt.hdr.tag & OFI_COLL_TAG_FLAG) {
-		ofi_coll_handle_xfer_comp(tx_eager_buf->pkt.hdr.tag,
-				tx_eager_buf->app_context);
+	if (rxm_ep->util_coll_ep &&
+	    (tx_eager_buf->pkt.hdr.tag & RXM_PEER_XFER_TAG_FLAG)) {
+		struct fi_cq_tagged_entry cqe = {
+			.tag = tx_eager_buf->pkt.hdr.tag,
+			.op_context = tx_eager_buf->app_context,
+		};
+		rxm_ep->util_coll_peer_xfer_ops->
+			complete(rxm_ep->util_coll_ep, &cqe, 0);
 	} else {
 		rxm_finish_eager_send(rxm_ep, tx_eager_buf);
 	}
@@ -1486,171 +1480,6 @@ ssize_t rxm_handle_comp(struct rxm_ep *rxm_ep, struct fi_cq_data_entry *comp)
 	}
 }
 
-static void rxm_get_recv_entry(struct rxm_rx_buf *rx_buf,
-			       struct ofi_cq_rbuf_entry *cq_entry)
-{
-	struct rxm_recv_match_attr match_attr;
-	struct rxm_conn *conn;
-	struct rxm_recv_queue *recv_queue;
-	struct dlist_entry *entry;
-
-	assert(!rx_buf->recv_entry);
-	if (rx_buf->ep->rxm_info->caps & (FI_SOURCE | FI_DIRECTED_RECV)) {
-		conn = cq_entry->ep_context;
-		match_attr.addr = conn->peer->fi_addr;
-	} else {
-		match_attr.addr = FI_ADDR_UNSPEC;
-	}
-
-	match_attr.ignore = 0;
-	if (rx_buf->pkt.hdr.op == ofi_op_tagged) {
-		match_attr.tag = rx_buf->pkt.hdr.tag;
-		recv_queue = &rx_buf->ep->trecv_queue;
-	} else {
-		match_attr.tag = 0;
-		recv_queue = &rx_buf->ep->recv_queue;
-	}
-
-	/* See comment with rxm_get_dyn_rbuf */
-	if (recv_queue->dyn_rbuf_unexp_cnt == 0) {
-		entry = dlist_remove_first_match(&recv_queue->recv_list,
-						 recv_queue->match_recv,
-						 &match_attr);
-		if (entry) {
-			rx_buf->recv_entry = container_of(entry,
-						struct rxm_recv_entry, entry);
-			if (rx_buf->recv_entry->flags & FI_MULTI_RECV)
-				rxm_adjust_multi_recv(rx_buf);
-		} else {
-			recv_queue->dyn_rbuf_unexp_cnt++;
-		}
-	} else {
-		recv_queue->dyn_rbuf_unexp_cnt++;
-	}
-}
-
-static void rxm_fake_rx_hdr(struct rxm_rx_buf *rx_buf,
-			    struct ofi_cq_rbuf_entry *entry)
-{
-	struct rxm_conn *conn;
-
-	conn = entry->ep_context;
-
-	OFI_DBG_SET(rx_buf->pkt.hdr.version, OFI_OP_VERSION);
-	OFI_DBG_SET(rx_buf->pkt.ctrl_hdr.version, RXM_CTRL_VERSION);
-	rx_buf->pkt.ctrl_hdr.type = rxm_ctrl_eager;
-	rx_buf->pkt.ctrl_hdr.conn_id = conn->peer->index;
-	rx_buf->pkt.hdr.op = ofi_op_tagged;
-	rx_buf->pkt.hdr.tag = entry->tag;
-	rx_buf->pkt.hdr.size = entry->len;
-
-	if (entry->flags & FI_REMOTE_CQ_DATA) {
-		rx_buf->pkt.hdr.data = entry->data;
-		rx_buf->pkt.hdr.flags = FI_REMOTE_CQ_DATA;
-	} else {
-		rx_buf->pkt.hdr.flags = 0;
-	}
-}
-
-static ssize_t
-rxm_get_dyn_unexp(struct rxm_rx_buf *rx_buf, struct iovec *iov, size_t *count)
-{
-	*count = 1;
-
-	if (rx_buf->pkt.hdr.size > rxm_buffer_size) {
-		rx_buf->data = malloc(rx_buf->pkt.hdr.size);
-		if (!rx_buf->data)
-			goto trunc;
-	}
-
-	iov[0].iov_base = rx_buf->data;
-	iov[0].iov_len = rx_buf->pkt.hdr.size;
-	return 0;
-
-trunc:
-	rx_buf->data = &rx_buf->pkt.data;
-	iov[0].iov_base = rx_buf->data;
-	iov[0].iov_len = rxm_buffer_size;
-	return -FI_ETRUNC;
-}
-
-/*
- * Dynamic receive buffer callback from fi_cq_read(msg cq).
- * We're holding the ep lock.
- *
- * There's a subtle race condition handling unexpected messages. If we cannot
- * find a matching receive, the message will be marked as unexpected.
- * However, we can't queue it on the unexpected list until is has been fully
- * received and returned through fi_cq_read().  It's possible for the
- * application to post the matching buffer prior to that occurring.  That is,
- * the matching buffer is posted after we checked for a match, but before the
- * message endpoint is finishes receiving the unexpected data.
- *
- * Once the unexpected message has been received, it's completion may be
- * written to the CQ.  If the message provider continues processing messages
- * it could invoke a callback for a second message.  If we allow the second
- * message to match the posted receive buffer, then the second message would
- * match out of order from the first message.
- *
- * To handle this, we need to track the number of unexpected messages queued
- * within the message provider, so that they can check for matching
- * receives in order.  If there are any unexpected messages outstanding, we
- * need to fail all matches until they have been read from the CQ.
- */
-ssize_t rxm_get_dyn_rbuf(struct ofi_cq_rbuf_entry *entry, struct iovec *iov,
-			 size_t *count)
-{
-	struct rxm_rx_buf *rx_buf;
-
-	rx_buf = entry->op_context;
-	assert(!(rx_buf->ep->rxm_info->mode & FI_BUFFERED_RECV));
-
-	/* Messages tagged at the tcp layer do not carry an rxm header */
-	if (entry->flags & FI_TAGGED)
-		rxm_fake_rx_hdr(rx_buf, entry);
-
-	assert((rx_buf->pkt.hdr.version == OFI_OP_VERSION) &&
-		(rx_buf->pkt.ctrl_hdr.version == RXM_CTRL_VERSION));
-
-	switch (rx_buf->pkt.ctrl_hdr.type) {
-	case rxm_ctrl_eager:
-		rxm_get_recv_entry(rx_buf, entry);
-		if (rx_buf->recv_entry) {
-			*count = rx_buf->recv_entry->rxm_iov.count;
-			memcpy(iov, rx_buf->recv_entry->rxm_iov.iov, *count *
-			       sizeof(*iov));
-		} else {
-			rxm_get_dyn_unexp(rx_buf, iov, count);
-		}
-		break;
-	case rxm_ctrl_rndv_req:
-		/* Find matching receive to maintain message ordering. */
-		rxm_get_recv_entry(rx_buf, entry);
-
-		/* fall through */
-	case rxm_ctrl_atomic:
-	case rxm_ctrl_atomic_resp:
-	case rxm_ctrl_rndv_wr_data:
-	case rxm_ctrl_rndv_wr_done:
-	case rxm_ctrl_rndv_rd_done:
-	case rxm_ctrl_credit:
-		*count = 1;
-		iov[0].iov_base = &rx_buf->pkt.data;
-		iov[0].iov_len = rxm_buffer_size;
-		break;
-	case rxm_ctrl_seg:
-	default:
-		FI_WARN(&rxm_prov, FI_LOG_CQ,
-			"Unexpected request for dynamic rbuf\n");
-		*count = 1;
-		iov[0].iov_base = &rx_buf->pkt.data;
-		iov[0].iov_len = rxm_buffer_size;
-		break;
-	}
-
-	return 0;
-}
-
 void rxm_cq_write_error(struct util_cq *cq, struct util_cntr *cntr,
 			void *op_context, int err)
 {
@@ -1691,17 +1520,17 @@ void rxm_cq_write_error_all(struct rxm_ep *rxm_ep, int err)
 			assert(0);
 		}
 	}
-	if (rxm_ep->util_ep.tx_cntr)
-		rxm_cntr_incerr(rxm_ep->util_ep.tx_cntr);
+	if (rxm_ep->util_ep.cntrs[CNTR_TX])
+		rxm_cntr_incerr(rxm_ep->util_ep.cntrs[CNTR_TX]);
 
-	if (rxm_ep->util_ep.rx_cntr)
-		rxm_cntr_incerr(rxm_ep->util_ep.rx_cntr);
+	if (rxm_ep->util_ep.cntrs[CNTR_RX])
+		rxm_cntr_incerr(rxm_ep->util_ep.cntrs[CNTR_RX]);
 
-	if (rxm_ep->util_ep.wr_cntr)
-		rxm_cntr_incerr(rxm_ep->util_ep.wr_cntr);
+	if (rxm_ep->util_ep.cntrs[CNTR_WR])
+		rxm_cntr_incerr(rxm_ep->util_ep.cntrs[CNTR_WR]);
 
-	if (rxm_ep->util_ep.rd_cntr)
-		rxm_cntr_incerr(rxm_ep->util_ep.rd_cntr);
+	if (rxm_ep->util_ep.cntrs[CNTR_RD])
+		rxm_cntr_incerr(rxm_ep->util_ep.cntrs[CNTR_RD]);
 }
 
 void rxm_handle_comp_error(struct rxm_ep *rxm_ep)
@@ -1731,7 +1560,7 @@ void rxm_handle_comp_error(struct rxm_ep *rxm_ep)
 	}
 
 	cq = rxm_ep->util_ep.tx_cq;
-	cntr = rxm_ep->util_ep.tx_cntr;
+	cntr = rxm_ep->util_ep.cntrs[CNTR_TX];
 
 	switch (RXM_GET_PROTO_STATE(err_entry.op_context)) {
 	case RXM_TX:
@@ -1807,7 +1636,7 @@ void rxm_handle_comp_error(struct rxm_ep *rxm_ep)
 		err_entry.flags = rx_buf->recv_entry->comp_flags;
 
 		cq = rx_buf->ep->util_ep.rx_cq;
-		cntr = rx_buf->ep->util_ep.rx_cntr;
+		cntr = rx_buf->ep->util_ep.cntrs[CNTR_RX];
 		break;
 	default:
 		FI_WARN(&rxm_prov, FI_LOG_CQ, "Invalid state!\nmsg cq error info: %s\n",
@@ -1870,12 +1699,67 @@ void rxm_thru_comp_error(struct rxm_ep *ep)
 	}
 }
 
+/*
+ * Right now the peer CQ is only used for collectives. There are two cases:
+ * (1) collective operations initiated by application and completed by
+ *     util_coll or offload_coll, should write the completion to the real
+ *     CQ;
+ * (2) collective operations initiated by offload_coll and completed by
+ *     util_coll (with FI_PEER_TRANSFER flag), should call the callback
+ *     set by offload_coll.
+ */
+ssize_t rxm_cq_owner_write(struct fid_peer_cq *peer_cq, void *context,
+			   uint64_t flags, size_t len, void *buf, uint64_t data,
+			   uint64_t tag, fi_addr_t src)
+{
+	struct rxm_coll_buf *req = context;
+	struct rxm_ep *rxm_ep = req->ep;
+	struct rxm_cq *rxm_cq;
+
+	if (req->flags & FI_PEER_TRANSFER) {
+		struct fi_cq_tagged_entry entry = {
+			.op_context = req->app_context,
+			.flags = req->flags,
+			.len = len,
+			.buf = buf,
+			.data = data,
+			.tag = tag,
+		};
+		return rxm_ep->offload_coll_peer_xfer_ops->
+				complete(rxm_ep->offload_coll_ep, &entry, src);
+	}
+
+	rxm_cq = container_of(peer_cq, struct rxm_cq, peer_cq);
+	return ofi_cq_write(&rxm_cq->util_cq, req->app_context, req->flags, len,
+			    buf, data, tag);
+}
+
+ssize_t rxm_cq_owner_writeerr(struct fid_peer_cq *peer_cq,
+			      const struct fi_cq_err_entry *err_entry)
+{
+	struct rxm_coll_buf *req = err_entry->op_context;
+	struct rxm_ep *rxm_ep = req->ep;
+	struct rxm_cq *rxm_cq;
+	struct fi_cq_err_entry cqe_err = *err_entry;
+
+	cqe_err.op_context = req->app_context;
+	cqe_err.flags = req->flags;
+
+	if (req->flags & FI_PEER_TRANSFER) {
+		return rxm_ep->offload_coll_peer_xfer_ops->
+				comperr(rxm_ep->offload_coll_ep, &cqe_err);
+	}
+
+	rxm_cq = container_of(peer_cq, struct rxm_cq, peer_cq);
+	return ofi_cq_write_error(&rxm_cq->util_cq, &cqe_err);
+}
+
 int rxm_post_recv(struct rxm_rx_buf *rx_buf)
 {
 	struct rxm_domain *domain;
 	int ret;
 
-	if (rx_buf->ep->srx_ctx)
+	if (rx_buf->ep->msg_srx)
 		rx_buf->conn = NULL;
 	rx_buf->hdr.state = RXM_RX;
 	rx_buf->recv_entry = NULL;
@@ -1972,30 +1856,49 @@ void rxm_ep_do_progress(struct util_ep *util_ep)
 
 void rxm_ep_progress(struct util_ep *util_ep)
 {
-	ofi_ep_lock_acquire(util_ep);
+	ofi_genlock_lock(&util_ep->lock);
 	rxm_ep_do_progress(util_ep);
-	ofi_ep_lock_release(util_ep);
+	ofi_genlock_unlock(&util_ep->lock);
 }
 
 void rxm_ep_progress_coll(struct util_ep *util_ep)
 {
+	struct rxm_ep *rxm_ep = container_of(util_ep, struct rxm_ep, util_ep);
+	struct util_ep *coll_ep;
+
 	rxm_ep_progress(util_ep);
 
-	ofi_coll_ep_progress(&util_ep->ep_fid);
+	if (rxm_ep->util_coll_ep) {
+		coll_ep = container_of(rxm_ep->util_coll_ep, struct util_ep,
+				       ep_fid);
+		coll_ep->progress(coll_ep);
+	}
+
+	if (rxm_ep->offload_coll_ep) {
+		coll_ep = container_of(rxm_ep->offload_coll_ep, struct util_ep,
+				       ep_fid);
+		coll_ep->progress(coll_ep);
+	}
 }
 
 static int rxm_cq_close(struct fid *fid)
 {
-	struct util_cq *util_cq;
+	struct rxm_cq *rxm_cq;
 	int ret, retv = 0;
 
-	util_cq = container_of(fid, struct util_cq, cq_fid.fid);
+	rxm_cq = container_of(fid, struct rxm_cq, util_cq.cq_fid.fid);
 
-	ret = ofi_cq_cleanup(util_cq);
+	if (rxm_cq->offload_coll_cq)
+		fi_close(&rxm_cq->offload_coll_cq->fid);
+
+	if (rxm_cq->util_coll_cq)
+		fi_close(&rxm_cq->util_coll_cq->fid);
+
+	ret = ofi_cq_cleanup(&rxm_cq->util_cq);
 	if (ret)
 		retv = ret;
 
-	free(util_cq);
+	free(rxm_cq);
 	return retv;
 }
 
@@ -2004,6 +1907,14 @@ static struct fi_ops rxm_cq_fi_ops = {
 	.close = rxm_cq_close,
 	.bind = fi_no_bind,
 	.control = ofi_cq_control,
+	.ops_open = fi_no_ops_open,
+};
+
+static struct fi_ops rxm_peer_cq_fi_ops = {
+	.size = sizeof(struct fi_ops),
+	.close = fi_no_close,
+	.bind = fi_no_bind,
+	.control = fi_no_control,
 	.ops_open = fi_no_ops_open,
 };
 
@@ -2018,27 +1929,67 @@ static struct fi_ops_cq rxm_cq_ops = {
 	.strerror = rxm_cq_strerror,
 };
 
+static struct fi_ops_cq_owner rxm_cq_owner_ops = {
+	.size = sizeof(struct fi_ops_cq_owner),
+	.write = rxm_cq_owner_write,
+	.writeerr = rxm_cq_owner_writeerr,
+};
+
 int rxm_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
-		 struct fid_cq **cq_fid, void *context)
+		struct fid_cq **cq_fid, void *context)
 {
-	struct util_cq *util_cq;
+	struct rxm_cq *rxm_cq;
+	struct rxm_domain *rxm_domain;
+	struct fi_cq_attr peer_cq_attr = {
+		.flags = FI_PEER,
+	};
+	struct fi_peer_cq_context peer_cq_context = {
+		.size = sizeof(struct fi_peer_cq_context),
+	};
 	int ret;
 
-	util_cq = calloc(1, sizeof(*util_cq));
-	if (!util_cq)
+	rxm_cq = calloc(1, sizeof(*rxm_cq));
+	if (!rxm_cq)
 		return -FI_ENOMEM;
 
-	ret = ofi_cq_init(&rxm_prov, domain, attr, util_cq, &ofi_cq_progress,
-			  context);
+	ret = ofi_cq_init(&rxm_prov, domain, attr, &rxm_cq->util_cq,
+			  &ofi_cq_progress, context);
 	if (ret)
 		goto err1;
 
-	*cq_fid = &util_cq->cq_fid;
+	rxm_domain = container_of(domain, struct rxm_domain,
+				  util_domain.domain_fid);
+
+	rxm_cq->peer_cq.fid.fclass = FI_CLASS_PEER_CQ;
+	rxm_cq->peer_cq.fid.ops = &rxm_peer_cq_fi_ops;
+	rxm_cq->peer_cq.owner_ops = &rxm_cq_owner_ops;
+	peer_cq_context.cq = &rxm_cq->peer_cq;
+
+	if (rxm_domain->util_coll_domain) {
+		ret = fi_cq_open(rxm_domain->util_coll_domain, &peer_cq_attr,
+				 &rxm_cq->util_coll_cq, &peer_cq_context);
+		if (ret)
+			goto err2;
+	}
+
+	if (rxm_domain->offload_coll_domain) {
+		ret = fi_cq_open(rxm_domain->offload_coll_domain, &peer_cq_attr,
+				 &rxm_cq->offload_coll_cq, &peer_cq_context);
+		if (ret)
+			goto err2;
+	}
+
+	*cq_fid = &rxm_cq->util_cq.cq_fid;
 	/* Override util_cq_fi_ops */
 	(*cq_fid)->fid.ops = &rxm_cq_fi_ops;
 	(*cq_fid)->ops = &rxm_cq_ops;
 	return 0;
+
+err2:
+	if (rxm_cq->util_coll_cq)
+		fi_close(&rxm_cq->util_coll_cq->fid);
+	ofi_cq_cleanup(&rxm_cq->util_cq);
 err1:
-	free(util_cq);
+	free(rxm_cq);
 	return ret;
 }

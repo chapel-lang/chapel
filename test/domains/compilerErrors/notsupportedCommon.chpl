@@ -6,7 +6,7 @@ var dfltAssociativeBase = {1, 2, 3};
 
 // Test a distributed domain.
 use BlockDist;
-var DistributedBase = dfltRectangularBase dmapped blockDist({1..3});
+var DistributedBase = dfltRectangularBase dmapped new blockDist({1..3});
 
 // Simple subdomains.
 var dfltRectangularSubdomain: subdomain(dfltRectangularBase) = dfltRectangularBase;

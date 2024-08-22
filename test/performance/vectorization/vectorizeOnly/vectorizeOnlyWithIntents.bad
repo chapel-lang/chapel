@@ -1,3 +1,0 @@
-vectorizeOnlyWithIntents.chpl:5: error: foreach loops do not yet support task intents
-vectorizeOnlyWithIntents.chpl:11: error: foreach loops do not yet support task intents
-vectorizeOnlyWithIntents.chpl:17: error: foreach loops do not yet support task intents

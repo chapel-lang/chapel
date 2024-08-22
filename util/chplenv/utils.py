@@ -20,17 +20,19 @@ def warning(msg):
         sys.stderr.write(msg)
         sys.stderr.write('\n')
 
+ignore_errors = False
 
 def error(msg, exception=Exception):
     """Exception raising wrapper that differentiates developer-mode output"""
     developer = os.environ.get('CHPL_DEVELOPER')
-    if developer and developer != "0":
+    if developer and developer != "0" and not ignore_errors:
         raise exception(msg)
     else:
         sys.stderr.write('\nError: ')
         sys.stderr.write(msg)
         sys.stderr.write('\n')
-        sys.exit(1)
+        if not ignore_errors:
+            sys.exit(1)
 
 
 def memoize(func):
@@ -77,10 +79,12 @@ def run_command(command, stdout=True, stderr=False, cmd_input=None):
                                                                cmd_input)
     if not exists:
         error("command not found: {0}".format(command[0]), OSError)
-    if returncode != 0:
-        error("command failed: {0}\noutput was:\n{1}".format(command,
-                                                             my_stderr),
-              CommandError)
+    elif returncode != 0:
+        error(
+            "command failed: {0}\noutput was:\n{1}".format(command, my_stderr),
+            CommandError,
+        )
+
     if stdout and stderr:
         return my_stdout, my_stderr
     elif stdout:

@@ -2,7 +2,7 @@ const edgeElems = 5;
 const Elems = 0..#edgeElems;
 const ElemSpace = {Elems, Elems, Elems};
 use BlockDist;
-const ElemDist = ElemSpace dmapped blockDist(ElemSpace);
+const ElemDist = ElemSpace dmapped new blockDist(ElemSpace);
 
 var x8n: [ElemDist] 8*real;
 

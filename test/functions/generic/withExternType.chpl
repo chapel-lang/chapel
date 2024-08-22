@@ -4,24 +4,24 @@ module withExternType {
 
   // a generic function - can have multiple instantiations
   proc makeAB(type tt) type {
-    extern type atomic_bool;
-    return atomic_bool;
+    extern type chpl_atomic_bool;
+    return chpl_atomic_bool;
   }
 
   // a concrete function
   proc makeAB() type {
-    extern type atomic_bool;
-    return atomic_bool;
+    extern type chpl_atomic_bool;
+    return chpl_atomic_bool;
   }
 
-  extern type atomic_bool;
+  extern type chpl_atomic_bool;
 
   proc callAB(arg: makeAB(int)) {
     compilerError("success");
   }
 
   module aModule {
-    extern type atomic_bool;
+    extern type chpl_atomic_bool;
   }
 
   proc main {
@@ -30,8 +30,8 @@ module withExternType {
     type t2 = makeAB(int); // another call to the same instantiation
     type t3 = makeAB(bool);
     type t4 = makeAB();
-    type t5 = aModule.atomic_bool;
-    type t6 = atomic_bool;
+    type t5 = aModule.chpl_atomic_bool;
+    type t6 = chpl_atomic_bool;
     compilerWarning("t1==t2 ", (t1==t2):string);
     compilerWarning("t1==t3 ", (t1==t3):string);
     compilerWarning("t1==t4 ", (t1==t4):string);

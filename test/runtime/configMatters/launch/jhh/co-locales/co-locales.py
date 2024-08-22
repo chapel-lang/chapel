@@ -79,41 +79,53 @@ class ColocaleArgs(unittest.TestCase):
     def test_00_base(self):
         """One locale per node"""
         output = self.runCmd("./hello -nl 4 -v --dry-run")
-        self.assertTrue('--nodes=4' in output or '-N 4' in output)
-        self.assertIn('--ntasks=4', output)
+        self.assertTrue('--nodes=4 ' in output or '-N 4 ' in output)
+        self.assertIn('--ntasks=4 ', output)
+        self.assertNotIn("CHPL_RT_LOCALES_PER_NODE", output)
+        self.assertNotIn("CHPL_RT_COLOCALE_OBJ_TYPE", output)
 
     def test_01_1x1(self):
         """Still one locale per node"""
         output = self.runCmd("./hello -nl 1x1 -v --dry-run")
-        self.assertTrue('--nodes=1' in output or '-N 1' in output)
-        self.assertIn('--ntasks=1', output)
+        self.assertTrue('--nodes=1 ' in output or '-N 1 ' in output)
+        self.assertIn('--ntasks=1 ', output)
+        self.assertIn("CHPL_RT_LOCALES_PER_NODE=1 ", output)
+        self.assertNotIn("CHPL_RT_COLOCALE_OBJ_TYPE", output)
 
     def test_02_3x2(self):
         """Three nodes, two locales per node"""
         output = self.runCmd("./hello -nl 3x2 -v --dry-run")
-        self.assertTrue('--nodes=3' in output or '-N 3' in output)
-        self.assertIn('--ntasks=6', output)
+        self.assertTrue('--nodes=3 ' in output or '-N 3 ' in output)
+        self.assertIn('--ntasks=6 ', output)
+        self.assertIn("CHPL_RT_LOCALES_PER_NODE=2 ", output)
+        self.assertNotIn("CHPL_RT_COLOCALE_OBJ_TYPE", output)
 
     def test_03_1xd1(self):
         """One node, locales-per-node defaults to 1"""
         self.env['CHPL_RT_LOCALES_PER_NODE'] = '1'
         output = self.runCmd("./hello -nl 1x -v --dry-run")
-        self.assertTrue('--nodes=1' in output or '-N 1' in output)
-        self.assertIn('--ntasks=1', output)
+        self.assertTrue('--nodes=1 ' in output or '-N 1 ' in output)
+        self.assertIn('--ntasks=1 ', output)
+        self.assertNotIn("CHPL_RT_LOCALES_PER_NODE", output)
+        self.assertNotIn("CHPL_RT_COLOCALE_OBJ_TYPE", output)
 
     def test_04_3xd1(self):
         """Three nodes, locales-per-node defaults to 1"""
         self.env['CHPL_RT_LOCALES_PER_NODE'] = '1'
         output = self.runCmd("./hello -nl 3x -v --dry-run")
-        self.assertTrue('--nodes=3' in output or '-N 3' in output)
-        self.assertIn('--ntasks=3', output)
+        self.assertTrue('--nodes=3 ' in output or '-N 3 ' in output)
+        self.assertIn('--ntasks=3 ', output)
+        self.assertNotIn("CHPL_RT_LOCALES_PER_NODE", output)
+        self.assertNotIn("CHPL_RT_COLOCALE_OBJ_TYPE", output)
 
     def test_05_3xd2(self):
         """Three nodes, locales-per-node defaults to 2"""
         self.env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         output = self.runCmd("./hello -nl 3x -v --dry-run")
-        self.assertTrue('--nodes=3' in output or '-N 3' in output)
-        self.assertIn('--ntasks=6', output)
+        self.assertTrue('--nodes=3 ' in output or '-N 3 ' in output)
+        self.assertIn('--ntasks=6 ', output)
+        self.assertNotIn("CHPL_RT_LOCALES_PER_NODE", output)
+        self.assertNotIn("CHPL_RT_COLOCALE_OBJ_TYPE", output)
 
     def test_06_3xd_1(self):
         """Three nodes, locales-per-node is negative"""
@@ -183,16 +195,22 @@ class ColocaleArgs(unittest.TestCase):
         """Arg overrides CHPL_RT_LOCALES_PER_NODE"""
         self.env['CHPL_RT_LOCALES_PER_NODE'] = '4'
         output = self.runCmd("./hello -nl 3x2 -v --dry-run")
-        self.assertTrue('--nodes=3' in output or '-N 3' in output)
-        self.assertIn('--ntasks=6', output)
+        self.assertTrue('--nodes=3 ' in output or '-N 3 ' in output)
+        self.assertIn('--ntasks=6 ', output)
+        self.assertIn("CHPL_RT_LOCALES_PER_NODE=2 ", output)
+        self.assertNotIn("CHPL_RT_COLOCALE_OBJ_TYPE", output)
 
     def test_16_valid_suffixes(self):
         """Allow valid suffixes"""
-        for s in ['s', 'socket', 'numa', 'llc', 'c', 'core']:
-            with self.subTest(s=s):
+        suffixes = {'s':'socket', 'socket':'socket', 'numa':'numa',
+                    'llc':'cache', 'c':'core', 'core':'core'}
+        for (s, t) in suffixes.items():
+            with self.subTest(s=s, t=t):
                 output=self.runCmd("./hello -nl 3x2%s -v --dry-run" % s)
-                self.assertTrue('--nodes=3' in output or '-N 3' in output)
-                self.assertIn('--ntasks=6', output)
+                self.assertTrue('--nodes=3 ' in output or '-N 3 ' in output)
+                self.assertIn('--ntasks=6 ', output)
+                self.assertIn("CHPL_RT_LOCALES_PER_NODE=2 ", output)
+                self.assertIn('CHPL_RT_COLOCALE_OBJ_TYPE=%s ' % t, output)
 
     def test_17_invalid_suffix(self):
         """Reject invalid suffix"""
@@ -214,6 +232,15 @@ class ColocaleArgs(unittest.TestCase):
             output = self.runCmd("./hello -nl -3xs -v --dry-run")
         self.assertEqual(cm.exception.stdout.strip(),
             '<command-line arg>:1: error: "s" is not a valid number of co-locales.')
+
+    def test_20_env_override(self):
+        """Arg Mx1 overrides CHPL_RT_LOCALES_PER_NODE"""
+        self.env['CHPL_RT_LOCALES_PER_NODE'] = '2'
+        output = self.runCmd("./hello -nl 3x1 -v --dry-run")
+        self.assertTrue('--nodes=3 ' in output or '-N 3 ' in output)
+        self.assertIn('--ntasks=3 ', output)
+        self.assertIn("CHPL_RT_LOCALES_PER_NODE=1 ", output)
+        self.assertNotIn("CHPL_RT_COLOCALE_OBJ_TYPE", output)
 
 # copied from sub_test.py
 # report an error message and exit

@@ -96,6 +96,9 @@ struct AdjustMaybeRefs {
   bool enter(const Call* ast, RV& rv);
   void exit(const Call* ast, RV& rv);
 
+  bool enter(const NamedDecl* ast, RV& rv);
+  void exit(const NamedDecl* ast, RV& rv);
+
   bool enter(const uast::AstNode* node, RV& rv);
   void exit(const uast::AstNode* node, RV& rv);
 };
@@ -302,14 +305,28 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
                                /* raiseErrors */ false,
                                &actualAsts);
 
+    // If this call was inferred to have a receiver, then CallInfo::create will
+    // not have added a 'this' formal. Instead, grab the receiver type from
+    // this visitor's resolver and create a new CallInfo.
+    bool inferredReceiver = false;
+    if (ci.isMethodCall() == false &&
+        fn->untyped()->isMethod()) {
+      ci = CallInfo::createWithReceiver(ci, resolver.methodReceiverType());
+      inferredReceiver = true;
+    }
+
     auto formalActualMap = FormalActualMap(fn, ci);
     int nActuals = ci.numActuals();
-    for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
+    int startingActual = ci.isMethodCall() ? 1 : 0;
+    for (int actualIdx = startingActual; actualIdx < nActuals; actualIdx++) {
       const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
       int formalIdx = fa->formalIdx();
 
       if (fa->hasActual()) {
-        const AstNode* actualAst = actualAsts[actualIdx];
+        // actualAsts might not include an entry for the method receiver if
+        // it was inferred, so we need to offset by one.
+        const AstNode* actualAst = inferredReceiver ? actualAsts[actualIdx-1] :
+                                                      actualAsts[actualIdx];
         Access access = accessForQualifier(fa->formalType().kind());
 
         exprStack.push_back(ExprStackEntry(actualAst, access,
@@ -335,6 +352,18 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   return false;
 }
 void AdjustMaybeRefs::exit(const Call* ast, RV& rv) {
+}
+
+bool AdjustMaybeRefs::enter(const uast::NamedDecl* node, RV& rv) {
+  if (node->id().isSymbolDefiningScope()) {
+    // It's a symbol with a different path, e.g. a Function.
+    // Don't try to resolve it now in this
+    // traversal. Instead, resolve it e.g. when the function is called.
+    return false;
+  }
+  return true;
+}
+void AdjustMaybeRefs::exit(const uast::NamedDecl* node, RV& rv) {
 }
 
 bool AdjustMaybeRefs::enter(const uast::AstNode* node, RV& rv) {

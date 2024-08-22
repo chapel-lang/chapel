@@ -62,6 +62,14 @@ static inline uint64_t fi_opx_timer_get_cycles()
 	cycles = ((uint64_t)a) | (((uint64_t)d) << 32);
 	return cycles;
 }
+#elif defined(__riscv) && defined(__riscv_xlen) && (__riscv_xlen == 64)
+__attribute__((always_inline))
+static inline uint64_t fi_opx_timer_get_cycles()
+{
+        uint64_t dst = 0;
+        asm volatile ("rdcycle %0" : "=r" (dst) );
+        return dst;
+}
 #else
 #error "Cycle timer not defined for this platform"
 #endif

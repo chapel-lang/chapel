@@ -289,36 +289,36 @@ record cyclicDist : writeSerializable {
               dataParTasksPerLocale=getDataParTasksPerLocale());
   }
 
-    proc init(_pid : int, _instance, _unowned : bool) {
-      this.rank = _instance.rank;
-      this.idxType = _instance.idxType;
+  proc init(_pid : int, _instance, _unowned : bool) {
+    this.rank = _instance.rank;
+    this.idxType = _instance.idxType;
 
-      this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
-                                                         _instance,
-                                                         _unowned);
-    }
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
+                                                       _instance,
+                                                       _unowned);
+  }
 
-    proc init(value) {
-      this.rank = value.rank;
-      this.idxType = value.idxType;
+  proc init(value) {
+    this.rank = value.rank;
+    this.idxType = value.idxType;
 
-      this.chpl_distHelp = new chpl_PrivatizedDistHelper(
-                             if _isPrivatized(value)
-                               then _newPrivatizedClass(value)
-                               else nullPid,
-                             _to_unmanaged(value));
-    }
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                           if _isPrivatized(value)
+                             then _newPrivatizedClass(value)
+                             else nullPid,
+                           _to_unmanaged(value));
+  }
 
-    // Note: This does not handle the case where the desired type of 'this'
-    // does not match the type of 'other'. That case is handled by the compiler
-    // via coercions.
-    proc init=(const ref other : cyclicDist(?)) {
-      this.init(other._value.dsiClone());
-    }
+  // Note: This does not handle the case where the desired type of 'this'
+  // does not match the type of 'other'. That case is handled by the compiler
+  // via coercions.
+  proc init=(const ref other : cyclicDist(?)) {
+    this.init(other._value.dsiClone());
+  }
 
-    proc clone() {
-      return new cyclicDist(this._value.dsiClone());
-    }
+  proc clone() {
+    return new cyclicDist(this._value.dsiClone());
+  }
 
   @chpldoc.nodoc
   inline operator ==(d1: cyclicDist(?), d2: cyclicDist(?)) {
@@ -1472,7 +1472,7 @@ proc cyclicDist.createDomain(rng: range(?)...) {
 // create a domain over a Cyclic Distribution
 proc type cyclicDist.createDomain(dom: domain(?), targetLocales: [] locale = Locales)
 {
-  return dom dmapped CyclicImpl(startIdx=dom.lowBound, targetLocales);
+  return dom dmapped new cyclicDist(startIdx=dom.lowBound, targetLocales);
 }
 
 // create a domain over a Cyclic Distribution constructed from a series of ranges
@@ -1486,6 +1486,7 @@ proc type cyclicDist.createDomain(rng: range(?)...) {
 
 
 // create an array over a Cyclic Distribution, default initialized
+pragma "no copy return"
 proc type cyclicDist.createArray(
   dom: domain(?),
   type eltType,
@@ -1497,6 +1498,7 @@ proc type cyclicDist.createArray(
 }
 
 // create an array over a Cyclic Distribution, initialized with the given value or iterator
+pragma "no copy return"
 proc type cyclicDist.createArray(
   dom: domain(?),
   type eltType,
@@ -1511,6 +1513,7 @@ proc type cyclicDist.createArray(
 }
 
 // create an array over a Cyclic Distribution, initialized from the given array
+pragma "no copy return"
 proc type cyclicDist.createArray(
   dom: domain(?),
   type eltType,
@@ -1528,6 +1531,7 @@ proc type cyclicDist.createArray(
 }
 
 // create an array over a Cyclic Distribution constructed from a series of ranges, default initialized
+pragma "no copy return"
 proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1536,11 +1540,13 @@ proc type cyclicDist.createArray(
   return createArray({(...rng)}, eltType, targetLocales);
 }
 
+pragma "no copy return"
 proc type cyclicDist.createArray(rng: range(?)..., type eltType) {
   return createArray({(...rng)}, eltType);
 }
 
 // create an array over a Cyclic Distribution constructed from a series of ranges, initialized with the given value or iterator
+pragma "no copy return"
 proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1551,6 +1557,7 @@ proc type cyclicDist.createArray(
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
+pragma "no copy return"
 proc type cyclicDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
   where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType)
 {
@@ -1558,6 +1565,7 @@ proc type cyclicDist.createArray(rng: range(?)..., type eltType, initExpr: ?t)
 }
 
 // create an array over a Cyclic Distribution constructed from a series of ranges, initialized from the given array
+pragma "no copy return"
 proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,
@@ -1568,6 +1576,7 @@ proc type cyclicDist.createArray(
   return createArray({(...rng)}, eltType, initExpr, targetLocales);
 }
 
+pragma "no copy return"
 proc type cyclicDist.createArray(
   rng: range(?)...,
   type eltType,

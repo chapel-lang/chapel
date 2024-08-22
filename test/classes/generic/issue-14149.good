@@ -1,0 +1,4 @@
+(shared Row, {valid = true, curRow = 0})
+(shared Row, {valid = true, curRow = 1})
+(shared Row, {valid = true, curRow = 2})
+(shared Row, {valid = true, curRow = 3})

@@ -1,1 +1,1 @@
-shuffleAssociative.chpl:5: error: 'shuffle' only supports 1D rectangular arrays
+shuffleAssociative.chpl:5: error: 'shuffle' only supports rectangular arrays

@@ -63,7 +63,7 @@ proc writeFreqs(data, param nclSize) {
 
   // sort by frequencies
 
-  for (f, s) in sorted(arr, comparator=reverseComparator) do
+  for (f, s) in sorted(arr, comparator=new ReverseComparator()) do
    writef("%s %.3dr\n", decode(s, nclSize),
            (100.0 * f) / (data.size - nclSize));
   writeln();

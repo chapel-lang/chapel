@@ -4,7 +4,7 @@ use CyclicDist;
 config const numElements = 1024;
 
 const cyclicSpace = {0..#numElements};
-const cyclicDom = cyclicSpace dmapped cyclicDist(startIdx=0);
+const cyclicDom = cyclicSpace dmapped new cyclicDist(startIdx=0);
 var cyclicArr : [cyclicDom] int;
 
 writeln("Querying via domain distribution...");

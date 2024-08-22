@@ -10,7 +10,7 @@ config const printStats = true,
              verify = true;
 
 config const useRandomSeed = true,
-             seed = if useRandomSeed then NPBRandom.oddTimeSeed() else 314159265;
+             seed = if useRandomSeed then (new randomStream(int(32))).seed else 314159265;
 
 enum Mode {ordered, unordered, aggregated}
 config const mode = Mode.ordered;
@@ -27,12 +27,12 @@ const tableSize = M * numTasks;
 // The intuitive implementation of histogram that uses global atomics
 proc main() {
   const Mspace = {0..tableSize-1};
-  const D = Mspace dmapped cyclicDist(startIdx=Mspace.low);
+  const D = Mspace dmapped new cyclicDist(startIdx=Mspace.low);
   var A: [D] atomic int;
   var AggA: [D] AggregatedAtomic(int);
 
   const Nspace = {0..numUpdates-1};
-  const D2 = Nspace dmapped blockDist(Nspace);
+  const D2 = Nspace dmapped new blockDist(Nspace);
   var rindex: [D2] int;
 
   /* set up loop */

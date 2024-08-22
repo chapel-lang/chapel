@@ -6,7 +6,7 @@
      and the Chapel version by Nelson et al.
 */
 
-use DynamicIters, IO;
+use DynamicIters, IO, Math;
 
 config const n = 200,             // image size in pixels (n x n)
              maxIter = 50,        // max # of iterations per pixel
@@ -18,10 +18,10 @@ type eltType = uint(bitsPerElt);  // element type used to store the image
 
 
 proc main() {
-  const xsize = divceilpos(n, bitsPerElt),  // the compacted x dimension
+  const xsize = divCeilPos(n, bitsPerElt),  // the compacted x dimension
         imgSpace = {0..#n, 0..#xsize};      // the compacted image size
 
-  var image : [imgSpace] eltType,           // the compacted image
+  var image: [imgSpace] eltType,            // the compacted image
       xval, yval: [0..#n] real;             // pre-computed (x,y) values
 
   // precompute (x, y) values from the complex plane
@@ -59,13 +59,10 @@ proc main() {
     image[y, xelt] = pixval;
   }
 
-  // Get a lock-free writer channel on 'stdout'
-  var w = openfd(1).writer(iokind.native, locking=false);
-
   // Write the file header and the image array.
-  w.writef("P4\n");
-  w.writef("%i %i\n", n, n);
-  w.write(image);
+  stdout.writef("P4\n");
+  stdout.writef("%i %i\n", n, n);
+  stdout.writeBinary(image);
 }
 
 //
@@ -77,4 +74,3 @@ inline operator >(xs, y) {
       return false;
   return true;
 }
-use Compat;

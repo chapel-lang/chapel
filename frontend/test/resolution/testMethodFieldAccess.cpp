@@ -708,21 +708,69 @@ static void testExample5() {
 }
 
 static void testExample5a() {
-  testCall("example5a.chpl",
+  const char* program = R""""(
+  module M {
+    record r { }
+    proc r.test() {
+      var foo: int;
+      proc r.foo { }
+      foo; // is this referring to the int or the parenless method?
+           // 1.29 refers to the local variable
+    }
+
+    var myR : r;
+    myR.test();
+  }
+  )"""";
+  const char* methodIdStr = "M.test";
+
+  {
+    testCall("example5a.chpl",
+             program,
+             methodIdStr,
+             "M.test@4",
+             "" /* ambiguity */);
+  }
+
+  // Ensure we get an ambiguity error for this (as opposed to redeclaration)
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    auto path = UniqueString::get(context, "file.chpl");
+    setFileText(context, path, program);
+    std::ignore = parseToplevel(context, path);
+
+    ID methodId = ID::fromString(context, methodIdStr);
+    auto methodAst = parsing::idToAst(context, methodId);
+    assert(methodAst);
+    assert(methodAst->isFunction());
+    std::ignore = resolveConcreteFunction(context, methodId);
+
+    assert(guard.numErrors() == 1);
+    assert(guard.error(0)->type() == ErrorType::AmbiguousIdentifier);
+
+    guard.clearErrors();
+  }
+}
+
+// Like 5a but this.foo instead of foo
+static void testExample5b() {
+  testCall("example5b.chpl",
            R""""(
               module M {
                 record r { }
                 proc r.test() {
                   var foo: int;
                   proc r.foo { }
-                  foo; // is this referring to the int or the parenless method?
-                       // 1.29 refers to the local variable
+                  this.foo;
                 }
               }
            )"""",
            "M.test",
-           "M.test@4",
-           "" /* ambiguity */);
+           "M.test@5",
+           "M.test.foo");
 }
 
 static void testExample6() {
@@ -1057,6 +1105,245 @@ static void testExample20() {
            "" /* ambiguity error */);
 }
 
+static void testExample21() {
+  testCall("example21.chpl",
+           R""""(
+              module M {
+                record r {
+                  proc x where true do return 1;
+                  proc x where false do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "M.r.x");
+}
+
+static void testExample22() {
+  testCall("example22.chpl",
+           R""""(
+              module M {
+                record r {
+                  proc x do return 1;
+                  proc x where false do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "M.r.x");
+}
+
+static void testExample23() {
+  testCall("example23.chpl",
+           R""""(
+              module M {
+                record r {
+                  proc x where true do return 1;
+                  proc x where true do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "" /* ambiguity error */);
+}
+
+static void testExample24() {
+  testCall("example24.chpl",
+           R""""(
+              module M {
+                proc x where false do return 1;
+                record r {
+                  proc x where true do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "M.r.x");
+}
+
+static void testExample25() {
+  testCall("example25.chpl",
+           R""""(
+              module M {
+                proc x where true do return 1;
+                record r {
+                  proc x where false do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "M.x");
+}
+
+static void testExample26() {
+  testCall("example26.chpl",
+           R""""(
+              module M {
+                record r {
+                  proc x where false do return 1;
+                  proc x where false do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "" /* both false; no matches. */);
+}
+
+static void testExample27() {
+  testCall("example27.chpl",
+           R""""(
+              module M {
+                proc x where false do return 1;
+                record r {
+                  proc x where false do return 0;
+                }
+
+                proc r.fn() {
+                  return x;
+                }
+              }
+           )"""",
+           "M.fn",
+           "M.fn@2",
+           "" /* both false; no matches. */);
+}
+
+// Check diambiguation of identifiers in methods, between a
+// field and a proc on a different receiver.
+static void testExample28() {
+  {
+    testCall("example28a.chpl",
+             R""""(
+                module M {
+                  record foo {
+                    var size : int;
+                  }
+                  record bar {
+                  }
+                  proc bar.size do return 3;
+                  proc foo.asdf() {
+                    return size;
+                  }
+                }
+             )"""",
+             "M.asdf",
+             "M.asdf@2",
+             "M.foo@1");
+  }
+
+  // Same as 28a but with primary calling method
+  {
+    testCall("example28b.chpl",
+             R""""(
+                module M {
+                  record foo {
+                    var size : int;
+                    proc asdf() {
+                      return size;
+                    }
+                  }
+                  record bar {
+                  }
+                  proc bar.size do return 3;
+                }
+             )"""",
+             "M.foo.asdf",
+             "M.foo.asdf@1",
+             "M.foo@1");
+  }
+
+  // Same as 28a but with primary called method
+  {
+    testCall("example28c.chpl",
+             R""""(
+                module M {
+                  record foo {
+                    var size : int;
+                    proc asdf() {
+                      return size;
+                    }
+                  }
+                  record bar {
+                    proc size do return 3;
+                  }
+                }
+             )"""",
+             "M.foo.asdf",
+             "M.foo.asdf@1",
+             "M.foo@1");
+  }
+
+  // Same as 28b but with primary called method
+  {
+    testCall("example28d.chpl",
+             R""""(
+                module M {
+                  record foo {
+                    var size : int;
+                    proc asdf() {
+                      return size;
+                    }
+                  }
+                  record bar {
+                    proc size do return 3;
+                  }
+                }
+             )"""",
+             "M.foo.asdf",
+             "M.foo.asdf@1",
+             "M.foo@1");
+  }
+
+  // Sanity check: 2a but with same receiver, clearly ambiguous
+  {
+    testCall("example28e.chpl",
+             R""""(
+                module M {
+                  record foo {
+                    var size : int;
+                  }
+                  proc foo.size do return 3;
+                  proc foo.asdf() {
+                    return size;
+                  }
+                }
+             )"""",
+             "M.asdf",
+             "M.asdf@2",
+             "" /* ambiguous */);
+  }
+}
+
 int main() {
   test1r();
   test1c();
@@ -1097,6 +1384,7 @@ int main() {
   testExample4a();
   testExample5();
   testExample5a();
+  testExample5b();
   testExample6();
   testExample7();
   testExample8();
@@ -1112,6 +1400,14 @@ int main() {
   testExample18();
   testExample19();
   testExample20();
+  testExample21();
+  testExample22();
+  testExample23();
+  testExample24();
+  testExample25();
+  testExample26();
+  testExample27();
+  testExample28();
 
   return 0;
 }

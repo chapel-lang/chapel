@@ -153,7 +153,11 @@ MOCKABLE (psm3_handle_error)(psm2_ep_t ep, psm2_error_t error, const char *buf, 
 
 	/* Unless the user has set PSM3_NO_VERBOSE_ERRORS, always print errors to
 	 * console */
-	c = getenv("PSM3_NO_VERBOSE_ERRORS");
+	// only called on error, so no value in using psm3_getenv since
+	// help text will not be output on a successful run
+	// also psmx3 has no error handler, so typically won't set this
+	// since errors are fatal and will want to see message
+	c = psm3_env_get("PSM3_NO_VERBOSE_ERRORS");
 	console_print = 0;
 	if (ep == PSMI_EP_LOGEVENT)
 		console_print = 1;

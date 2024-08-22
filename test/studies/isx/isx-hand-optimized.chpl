@@ -145,7 +145,7 @@ if printConfig then
 
 
 const LocTaskSpace = {0..#numTasks};
-const DistTaskSpace = LocTaskSpace dmapped blockDist(LocTaskSpace);
+const DistTaskSpace = LocTaskSpace dmapped new blockDist(LocTaskSpace);
 
 var allBucketKeys: [DistTaskSpace] [0..#recvBuffSize] keyType;
 var recvOffset: [DistTaskSpace] atomic int;
@@ -363,7 +363,6 @@ proc verifyResults(taskID, myBucketSize, myLocalKeyCounts) {
 
 
 proc makeInput(taskID, ref myKeys) {
-  use Random.PCGRandom;
   use Random.PCGRandomLib;
 
   //

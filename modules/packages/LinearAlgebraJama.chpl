@@ -1592,7 +1592,7 @@ class Matrix {
       this.aDom = {1..m, 1..n};
       init this;
 
-      for i in 1..m {
+      for 1..m {
          if (this.aDom.high(1) != n) {
             assert((this.aDom.high(1) != n), "All rows must have the same length.");
          }

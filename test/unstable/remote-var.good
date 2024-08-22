@@ -1,0 +1,21 @@
+remote-var.chpl:2: warning: remote variables are unstable
+remote-var.chpl:6: warning: remote variables are unstable
+remote-var.chpl:10: warning: remote variables are unstable
+remote-var.chpl:23: warning: remote variables are unstable
+remote-var.chpl:27: warning: remote variables are unstable
+remote-var.chpl:31: warning: remote variables are unstable
+42
+true
+0
+true
+42
+true
+17
+17
+17
+42
+true
+0
+true
+42
+true

@@ -7,7 +7,7 @@ config param debug = false;
 use CyclicDist;
 use Time;
 
-const Dcyclic: domain(1) dmapped cyclicDist(0) = 0..#numLocales;
+const Dcyclic: domain(1) dmapped new cyclicDist(0) = 0..#numLocales;
 const D = {1..n};
 
 var A: [Dcyclic] [D] int(64);

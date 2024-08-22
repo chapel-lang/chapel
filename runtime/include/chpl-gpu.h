@@ -84,24 +84,31 @@ static inline bool chpl_gpu_running_on_gpu_locale(void) {
   return chpl_task_getRequestedSubloc()>=0;
 }
 
+typedef void(*reduce_wrapper_fn_t)(void*, int, void*, int*);
+
 void chpl_gpu_init(void);
 void chpl_gpu_task_end(void);
 void chpl_gpu_task_fence(void);
 void chpl_gpu_support_module_finished_initializing(void);
 
-void* chpl_gpu_init_kernel_cfg(int n_params, int n_pids, int ln, int32_t fn);
+void* chpl_gpu_init_kernel_cfg(const char* fn_name, int64_t num_threads,
+                               int blk_dim, int n_params, int n_pids,
+                               int n_redbufs, int n_hostreg_vars, int ln,
+                               int32_t fn);
+void* chpl_gpu_init_kernel_cfg_3d(const char* fn_name,
+                                  int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                                  int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                                  int n_params, int n_pids, int n_redbufs,
+                                  int n_hostreg_vars, int ln, int32_t fn);
+
 void chpl_gpu_deinit_kernel_cfg(void* cfg);
 void chpl_gpu_arg_offload(void* cfg, void* arg, size_t size);
 void chpl_gpu_pid_offload(void* cfg, int64_t pid, size_t size);
 void chpl_gpu_arg_pass(void* cfg, void* arg);
-void chpl_gpu_launch_kernel_flat(const char* name,
-                                 int64_t num_threads, int blk_dim,
-                                 void* cfg);
-
-void chpl_gpu_launch_kernel(const char* name,
-                            int grd_dim_x, int grd_dim_y, int grd_dim_z,
-                            int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                            void* cfg);
+void chpl_gpu_arg_reduce(void* cfg, void* arg, size_t elem_size,
+                         reduce_wrapper_fn_t wrapper);
+void chpl_gpu_arg_host_register(void* _cfg, void* arg, size_t size);
+void chpl_gpu_launch_kernel(void* cfg);
 
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
                                    int32_t lineno, int32_t filename);
@@ -174,8 +181,8 @@ bool chpl_gpu_can_reduce(void);
 bool chpl_gpu_can_sort(void);
 
 #define DECL_ONE_REDUCE(chpl_kind, data_type) \
-void chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
-                                               data_type* val, int* idx);
+void chpl_gpu_##chpl_kind##_reduce_##data_type(void* data, int n,\
+                                               void* val, int* idx);
 
 GPU_CUB_WRAP(DECL_ONE_REDUCE, sum);
 GPU_CUB_WRAP(DECL_ONE_REDUCE, min);

@@ -116,6 +116,7 @@ util_domain_init(struct util_domain *domain, const struct fi_info *info,
 	domain->av_type = info->domain_attr->av_type;
 	domain->threading = info->domain_attr->threading;
 	domain->data_progress = info->domain_attr->data_progress;
+	domain->control_progress = info->domain_attr->control_progress;
 	domain->name = strdup(info->domain_attr->name);
 	if (!domain->name) {
 		ofi_genlock_destroy(&domain->lock);

@@ -1,1 +1,3 @@
+exitWithNoParensNoArgs.chpl:2: warning: function 'exit' is mentioned but not called, so it is being captured as a first-class function
+exitWithNoParensNoArgs.chpl:2: note: 'exit' is a parenful function, so it needs '(...)' to be called
 Hello, world

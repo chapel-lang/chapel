@@ -181,7 +181,10 @@ module FFTW {
 
   // Planner functions
   // Complex : 4.3.1
-  // NOTE : We pass in arrays using ref
+  // NOTE : We pass in arrays using ref as the FFTW interface expects it. It
+  // is unclear whether this is actually necessary on FFTW's side. We might
+  // be able to take 'const ref' in our wrappers and manually discard constness
+  // instead, to allow passing in const Chapel data.
 
   // TODO: Can we have the plan_dft() routine below take in native
   // Chapel types without changing the external C constants from
@@ -207,7 +210,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft(input: [?Din] complex(128), ref output: [?Dout] complex(128),
+  proc plan_dft(ref input: [?Din] complex(128), ref output: [?Dout] complex(128),
                  sign: FFTW_Direction, flags: FFTW_Flag) : fftw_plan
   {
     if !noFFTWsizeChecks {
@@ -246,7 +249,7 @@ module FFTW {
   // Though not strictly necessary, this helper routine is to avoid
   // doing the size check for the in-place case.
   //
-  private proc plan_dft_help(input: [] complex(128), ref output: [] complex(128),
+  private proc plan_dft_help(ref input: [] complex(128), ref output: [] complex(128),
                              sign: FFTW_Direction, flags: FFTW_Flag) : fftw_plan
   {
     param rank = input.rank;
@@ -255,7 +258,7 @@ module FFTW {
     for param i in 0..<rank do
       dims(i) = input.domain.dim(i).size: c_int;
 
-    return C_FFTW.fftw_plan_dft(rank, dims, c_ptrToConst(input),
+    return C_FFTW.fftw_plan_dft(rank, dims, c_ptrTo(input),
                                      c_ptrTo(output), sign, flags);
   }
 
@@ -278,7 +281,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft_r2c(input : [?Din] real(64), ref output : [?Dout] complex(128),
+  proc plan_dft_r2c(ref input : [?Din] real(64), ref output : [?Dout] complex(128),
                     flags : FFTW_Flag) : fftw_plan
   {
     param rank = input.rank;
@@ -300,7 +303,7 @@ module FFTW {
       dims(i) = input.domain.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_r2c(rank, dims,
-                                    c_ptrToConst(input),
+                                    c_ptrTo(input),
                                     c_ptrTo(output), flags);
   }
 
@@ -358,7 +361,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
   */
-  proc plan_dft_c2r(input : [?Din] complex(128), ref output : [?Dout] real(64),
+  proc plan_dft_c2r(ref input : [?Din] complex(128), ref output : [?Dout] real(64),
                     flags : FFTW_Flag) : fftw_plan
   {
     param rank = output.rank; // The dimensions are that of the real array
@@ -379,7 +382,7 @@ module FFTW {
     for param i in 0..<rank do
       dims(i) = output.domain.dim(i).size: c_int;
 
-    return C_FFTW.fftw_plan_dft_c2r(rank, dims, c_ptrToConst(input), c_ptrTo(output), flags);
+    return C_FFTW.fftw_plan_dft_c2r(rank, dims, c_ptrTo(input), c_ptrTo(output), flags);
   }
 
   /*
@@ -648,7 +651,7 @@ module FFTW {
   */
   proc init_FFTW_MT() {
     coforall loc in Locales {
-      on loc do {
+      on loc {
         if (C_FFTW.fftw_init_threads() == 0) then
           halt("Failed to properly initialize FFTW threads on locale ",
                here.id);
@@ -673,7 +676,7 @@ module FFTW {
   */
   proc plan_with_nthreads(nthreads: int = 0) {
     coforall loc in Locales {
-      on loc do {
+      on loc {
         const myNThreads = if nthreads < 1 then here.maxTaskPar else nthreads;
         C_FFTW.fftw_plan_with_nthreads(myNThreads.safeCast(c_int));
       }
@@ -686,7 +689,7 @@ module FFTW {
   */
   proc cleanup_threads() {
     coforall loc in Locales {
-      on loc do {
+      on loc {
         C_FFTW.fftw_cleanup_threads();
       }
     }
@@ -700,87 +703,87 @@ module FFTW {
     extern proc fftw_execute(p : fftw_plan) : void;
     import FFTW.fftw_plan;
 
-    extern proc fftw_plan_dft(rank : c_int, n : c_ptr(c_int), in_arg : c_ptrConst(fftw_complex), out_arg : c_ptr(fftw_complex), sign : c_int, flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft(rank : c_int, n : c_ptrConst(c_int), in_arg : c_ptr(fftw_complex), out_arg : c_ptr(fftw_complex), sign : c_int, flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_dft_1d(n : c_int, in_arg : c_ptrConst(fftw_complex), out_arg : c_ptr(fftw_complex), sign : c_int, flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft_1d(n : c_int, in_arg : c_ptr(fftw_complex), out_arg : c_ptr(fftw_complex), sign : c_int, flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_dft_2d(n0 : c_int, n1 : c_int, in_arg : c_ptrConst(fftw_complex), out_arg : c_ptr(fftw_complex), sign : c_int, flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft_2d(n0 : c_int, n1 : c_int, in_arg : c_ptr(fftw_complex), out_arg : c_ptr(fftw_complex), sign : c_int, flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_dft_3d(n0 : c_int, n1 : c_int, n2 : c_int, in_arg : c_ptrConst(fftw_complex), out_arg : c_ptr(fftw_complex), sign : c_int, flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft_3d(n0 : c_int, n1 : c_int, n2 : c_int, in_arg : c_ptr(fftw_complex), out_arg : c_ptr(fftw_complex), sign : c_int, flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_many_dft(rank : c_int, n : c_ptr(c_int), howmany : c_int, in_arg : c_ptrConst(fftw_complex), inembed : c_ptr(c_int), istride : c_int, idist : c_int, out_arg : c_ptr(fftw_complex), onembed : c_ptr(c_int), ostride : c_int, odist : c_int, sign : c_int, flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_many_dft(rank : c_int, n : c_ptr(c_int), howmany : c_int, in_arg : c_ptr(fftw_complex), inembed : c_ptr(c_int), istride : c_int, idist : c_int, out_arg : c_ptr(fftw_complex), onembed : c_ptr(c_int), ostride : c_int, odist : c_int, sign : c_int, flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_guru_dft(rank : c_int, dims : c_ptr(fftw_iodim), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim), in_arg : c_ptrConst(fftw_complex), out_arg : c_ptr(fftw_complex), sign : c_int, flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_guru_dft(rank : c_int, dims : c_ptr(fftw_iodim), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim), in_arg : c_ptr(fftw_complex), out_arg : c_ptr(fftw_complex), sign : c_int, flags : c_uint) : fftw_plan;
 
     extern proc fftw_plan_guru_split_dft(rank : c_int, dims : c_ptr(fftw_iodim), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim), ri : c_ptr(c_double), ii : c_ptr(c_double), ro : c_ptr(c_double), io : c_ptr(c_double), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_guru64_dft(rank : c_int, dims : c_ptr(fftw_iodim64), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim64), in_arg : c_ptrConst(fftw_complex), out_arg : c_ptr(fftw_complex), sign : c_int, flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_guru64_dft(rank : c_int, dims : c_ptr(fftw_iodim64), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim64), in_arg : c_ptr(fftw_complex), out_arg : c_ptr(fftw_complex), sign : c_int, flags : c_uint) : fftw_plan;
 
     extern proc fftw_plan_guru64_split_dft(rank : c_int, dims : c_ptr(fftw_iodim64), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim64), ri : c_ptr(c_double), ii : c_ptr(c_double), ro : c_ptr(c_double), io : c_ptr(c_double), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_execute_dft(p : fftw_plan, in_arg : c_ptrConst(fftw_complex), out_arg : c_ptr(fftw_complex)) : void;
+    extern proc fftw_execute_dft(p : fftw_plan, in_arg : c_ptr(fftw_complex), out_arg : c_ptr(fftw_complex)) : void;
 
     extern proc fftw_execute_split_dft(p : fftw_plan, ri : c_ptr(c_double), ii : c_ptr(c_double), ro : c_ptr(c_double), io : c_ptr(c_double)) : void;
 
-    extern proc fftw_plan_many_dft_r2c(rank : c_int, n : c_ptr(c_int), howmany : c_int, in_arg : c_ptrConst(c_double), inembed : c_ptr(c_int), istride : c_int, idist : c_int, out_arg : c_ptr(fftw_complex), onembed : c_ptr(c_int), ostride : c_int, odist : c_int, flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_many_dft_r2c(rank : c_int, n : c_ptr(c_int), howmany : c_int, in_arg : c_ptr(c_double), inembed : c_ptr(c_int), istride : c_int, idist : c_int, out_arg : c_ptr(fftw_complex), onembed : c_ptr(c_int), ostride : c_int, odist : c_int, flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_dft_r2c(rank : c_int, n : c_ptr(c_int), in_arg : c_ptrConst(c_double), out_arg : c_ptr(fftw_complex), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft_r2c(rank : c_int, n : c_ptr(c_int), in_arg : c_ptr(c_double), out_arg : c_ptr(fftw_complex), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_dft_r2c_1d(n : c_int, in_arg : c_ptrConst(c_double), out_arg : c_ptr(fftw_complex), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft_r2c_1d(n : c_int, in_arg : c_ptr(c_double), out_arg : c_ptr(fftw_complex), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_dft_r2c_2d(n0 : c_int, n1 : c_int, in_arg : c_ptrConst(c_double), out_arg : c_ptr(fftw_complex), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft_r2c_2d(n0 : c_int, n1 : c_int, in_arg : c_ptr(c_double), out_arg : c_ptr(fftw_complex), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_dft_r2c_3d(n0 : c_int, n1 : c_int, n2 : c_int, in_arg : c_ptrConst(c_double), out_arg : c_ptr(fftw_complex), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft_r2c_3d(n0 : c_int, n1 : c_int, n2 : c_int, in_arg : c_ptr(c_double), out_arg : c_ptr(fftw_complex), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_many_dft_c2r(rank : c_int, n : c_ptr(c_int), howmany : c_int, in_arg : c_ptrConst(fftw_complex), inembed : c_ptr(c_int), istride : c_int, idist : c_int, out_arg : c_ptr(c_double), onembed : c_ptr(c_int), ostride : c_int, odist : c_int, flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_many_dft_c2r(rank : c_int, n : c_ptr(c_int), howmany : c_int, in_arg : c_ptr(fftw_complex), inembed : c_ptr(c_int), istride : c_int, idist : c_int, out_arg : c_ptr(c_double), onembed : c_ptr(c_int), ostride : c_int, odist : c_int, flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_dft_c2r(rank : c_int, n : c_ptr(c_int), in_arg : c_ptrConst(fftw_complex), out_arg : c_ptr(c_double), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft_c2r(rank : c_int, n : c_ptr(c_int), in_arg : c_ptr(fftw_complex), out_arg : c_ptr(c_double), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_dft_c2r_1d(n : c_int, in_arg : c_ptrConst(fftw_complex), out_arg : c_ptr(c_double), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft_c2r_1d(n : c_int, in_arg : c_ptr(fftw_complex), out_arg : c_ptr(c_double), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_dft_c2r_2d(n0 : c_int, n1 : c_int, in_arg : c_ptrConst(fftw_complex), out_arg : c_ptr(c_double), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft_c2r_2d(n0 : c_int, n1 : c_int, in_arg : c_ptr(fftw_complex), out_arg : c_ptr(c_double), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_dft_c2r_3d(n0 : c_int, n1 : c_int, n2 : c_int, in_arg : c_ptrConst(fftw_complex), out_arg : c_ptr(c_double), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_dft_c2r_3d(n0 : c_int, n1 : c_int, n2 : c_int, in_arg : c_ptr(fftw_complex), out_arg : c_ptr(c_double), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_guru_dft_r2c(rank : c_int, dims : c_ptr(fftw_iodim), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim), in_arg : c_ptrConst(c_double), out_arg : c_ptr(fftw_complex), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_guru_dft_r2c(rank : c_int, dims : c_ptr(fftw_iodim), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim), in_arg : c_ptr(c_double), out_arg : c_ptr(fftw_complex), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_guru_dft_c2r(rank : c_int, dims : c_ptr(fftw_iodim), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim), in_arg : c_ptrConst(fftw_complex), out_arg : c_ptr(c_double), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_guru_dft_c2r(rank : c_int, dims : c_ptr(fftw_iodim), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim), in_arg : c_ptr(fftw_complex), out_arg : c_ptr(c_double), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_guru_split_dft_r2c(rank : c_int, dims : c_ptr(fftw_iodim), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim), in_arg : c_ptrConst(c_double), ro : c_ptr(c_double), io : c_ptr(c_double), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_guru_split_dft_r2c(rank : c_int, dims : c_ptr(fftw_iodim), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim), in_arg : c_ptr(c_double), ro : c_ptr(c_double), io : c_ptr(c_double), flags : c_uint) : fftw_plan;
 
     extern proc fftw_plan_guru_split_dft_c2r(rank : c_int, dims : c_ptr(fftw_iodim), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim), ri : c_ptr(c_double), ii : c_ptr(c_double), out_arg : c_ptr(c_double), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_guru64_dft_r2c(rank : c_int, dims : c_ptr(fftw_iodim64), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim64), in_arg : c_ptrConst(c_double), out_arg : c_ptr(fftw_complex), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_guru64_dft_r2c(rank : c_int, dims : c_ptr(fftw_iodim64), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim64), in_arg : c_ptr(c_double), out_arg : c_ptr(fftw_complex), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_guru64_dft_c2r(rank : c_int, dims : c_ptr(fftw_iodim64), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim64), in_arg : c_ptrConst(fftw_complex), out_arg : c_ptr(c_double), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_guru64_dft_c2r(rank : c_int, dims : c_ptr(fftw_iodim64), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim64), in_arg : c_ptr(fftw_complex), out_arg : c_ptr(c_double), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_guru64_split_dft_r2c(rank : c_int, dims : c_ptr(fftw_iodim64), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim64), in_arg : c_ptrConst(c_double), ro : c_ptr(c_double), io : c_ptr(c_double), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_guru64_split_dft_r2c(rank : c_int, dims : c_ptr(fftw_iodim64), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim64), in_arg : c_ptr(c_double), ro : c_ptr(c_double), io : c_ptr(c_double), flags : c_uint) : fftw_plan;
 
     extern proc fftw_plan_guru64_split_dft_c2r(rank : c_int, dims : c_ptr(fftw_iodim64), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim64), ri : c_ptr(c_double), ii : c_ptr(c_double), out_arg : c_ptr(c_double), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_execute_dft_r2c(p : fftw_plan, in_arg : c_ptrConst(c_double), out_arg : c_ptr(fftw_complex)) : void;
+    extern proc fftw_execute_dft_r2c(p : fftw_plan, in_arg : c_ptr(c_double), out_arg : c_ptr(fftw_complex)) : void;
 
-    extern proc fftw_execute_dft_c2r(p : fftw_plan, in_arg : c_ptrConst(fftw_complex), out_arg : c_ptr(c_double)) : void;
+    extern proc fftw_execute_dft_c2r(p : fftw_plan, in_arg : c_ptr(fftw_complex), out_arg : c_ptr(c_double)) : void;
 
-    extern proc fftw_execute_split_dft_r2c(p : fftw_plan, in_arg : c_ptrConst(c_double), ro : c_ptr(c_double), io : c_ptr(c_double)) : void;
+    extern proc fftw_execute_split_dft_r2c(p : fftw_plan, in_arg : c_ptr(c_double), ro : c_ptr(c_double), io : c_ptr(c_double)) : void;
 
     extern proc fftw_execute_split_dft_c2r(p : fftw_plan, ri : c_ptr(c_double), ii : c_ptr(c_double), out_arg : c_ptr(c_double)) : void;
 
-    extern proc fftw_plan_many_r2r(rank : c_int, n : c_ptr(c_int), howmany : c_int, in_arg : c_ptrConst(c_double), inembed : c_ptr(c_int), istride : c_int, idist : c_int, out_arg : c_ptr(c_double), onembed : c_ptr(c_int), ostride : c_int, odist : c_int, kind : c_ptr(fftw_r2r_kind), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_many_r2r(rank : c_int, n : c_ptr(c_int), howmany : c_int, in_arg : c_ptr(c_double), inembed : c_ptr(c_int), istride : c_int, idist : c_int, out_arg : c_ptr(c_double), onembed : c_ptr(c_int), ostride : c_int, odist : c_int, kind : c_ptr(fftw_r2r_kind), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_r2r(rank : c_int, n : c_ptr(c_int), in_arg : c_ptrConst(c_double), out_arg : c_ptr(c_double), kind : c_ptr(fftw_r2r_kind), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_r2r(rank : c_int, n : c_ptr(c_int), in_arg : c_ptr(c_double), out_arg : c_ptr(c_double), kind : c_ptr(fftw_r2r_kind), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_r2r_1d(n : c_int, in_arg : c_ptrConst(c_double), out_arg : c_ptr(c_double), kind : fftw_r2r_kind, flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_r2r_1d(n : c_int, in_arg : c_ptr(c_double), out_arg : c_ptr(c_double), kind : fftw_r2r_kind, flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_r2r_2d(n0 : c_int, n1 : c_int, in_arg : c_ptrConst(c_double), out_arg : c_ptr(c_double), kind0 : fftw_r2r_kind, kind1 : fftw_r2r_kind, flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_r2r_2d(n0 : c_int, n1 : c_int, in_arg : c_ptr(c_double), out_arg : c_ptr(c_double), kind0 : fftw_r2r_kind, kind1 : fftw_r2r_kind, flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_r2r_3d(n0 : c_int, n1 : c_int, n2 : c_int, in_arg : c_ptrConst(c_double), out_arg : c_ptr(c_double), kind0 : fftw_r2r_kind, kind1 : fftw_r2r_kind, kind2 : fftw_r2r_kind, flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_r2r_3d(n0 : c_int, n1 : c_int, n2 : c_int, in_arg : c_ptr(c_double), out_arg : c_ptr(c_double), kind0 : fftw_r2r_kind, kind1 : fftw_r2r_kind, kind2 : fftw_r2r_kind, flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_guru_r2r(rank : c_int, dims : c_ptr(fftw_iodim), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim), in_arg : c_ptrConst(c_double), out_arg : c_ptr(c_double), kind : c_ptr(fftw_r2r_kind), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_guru_r2r(rank : c_int, dims : c_ptr(fftw_iodim), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim), in_arg : c_ptr(c_double), out_arg : c_ptr(c_double), kind : c_ptr(fftw_r2r_kind), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_plan_guru64_r2r(rank : c_int, dims : c_ptr(fftw_iodim64), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim64), in_arg : c_ptrConst(c_double), out_arg : c_ptr(c_double), kind : c_ptr(fftw_r2r_kind), flags : c_uint) : fftw_plan;
+    extern proc fftw_plan_guru64_r2r(rank : c_int, dims : c_ptr(fftw_iodim64), howmany_rank : c_int, howmany_dims : c_ptr(fftw_iodim64), in_arg : c_ptr(c_double), out_arg : c_ptr(c_double), kind : c_ptr(fftw_r2r_kind), flags : c_uint) : fftw_plan;
 
-    extern proc fftw_execute_r2r(p : fftw_plan, in_arg : c_ptrConst(c_double), out_arg : c_ptr(c_double)) : void;
+    extern proc fftw_execute_r2r(p : fftw_plan, in_arg : c_ptr(c_double), out_arg : c_ptr(c_double)) : void;
 
     extern proc fftw_destroy_plan(p : fftw_plan) : void;
 

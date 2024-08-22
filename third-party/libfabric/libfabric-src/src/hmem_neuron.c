@@ -51,6 +51,8 @@ struct neuron_ops {
 	void (*nrt_tensor_free)(nrt_tensor_t **tensor);
 	void *(*nrt_tensor_get_va)(const nrt_tensor_t *tensor);
 	NRT_STATUS (*nrt_memcpy_to_device)(void *dest, const void *src, size_t size);
+	NRT_STATUS (*nrt_get_dmabuf_fd)(uint64_t va, uint64_t size, int* fd);
+	NRT_STATUS (*nrt_get_total_nc_count)(uint32_t *nc_count);
 };
 
 static void *neuron_handle;
@@ -89,6 +91,19 @@ static int neuron_dl_init(void)
 		goto err;
 	}
 
+	neuron_ops.nrt_get_dmabuf_fd = dlsym(neuron_handle, "nrt_get_dmabuf_fd");
+	if (!neuron_ops.nrt_get_dmabuf_fd) {
+		FI_INFO(&core_prov, FI_LOG_CORE,
+			"Failed to find nrt_get_dmabuf_fd, "
+			"dmabuf feature will not be used for Neuron devices\n");
+	}
+
+	neuron_ops.nrt_get_total_nc_count = dlsym(neuron_handle, "nrt_get_total_nc_count");
+	if (!neuron_ops.nrt_get_total_nc_count) {
+		FI_WARN(&core_prov, FI_LOG_CORE, "Failed to find nrt_get_total_nc_count");
+		goto err;
+	}
+
 	return FI_SUCCESS;
 err:
 	dlclose(neuron_handle);
@@ -122,14 +137,37 @@ int neuron_copy_from_dev(uint64_t device, void *host, const void *dev, size_t si
 	return -FI_ENOSYS;
 }
 
+int neuron_host_register(void *ptr, size_t size)
+{
+	return FI_SUCCESS;
+}
+
+int neuron_host_unregister(void *ptr)
+{
+	return FI_SUCCESS;
+}
+
 int neuron_hmem_init(void)
 {
 	int ret;
+	uint32_t total_nc_count;
 
 	ret = neuron_dl_init();
 	if (ret)
 		return ret;
 
+	/* Note that nrt_get_total_nc_count() is one of the few neuron functions
+	 * that can be called before nrt_init()
+	 */
+	if (neuron_ops.nrt_get_total_nc_count(&total_nc_count) != NRT_SUCCESS) {
+		return -FI_ENOSYS;
+	}
+
+	if (total_nc_count == 0) {
+		return -FI_ENOSYS;
+	}
+
+	FI_INFO(&core_prov, FI_LOG_CORE, "number of neuron cores: %d\n", total_nc_count);
 	return FI_SUCCESS;
 }
 
@@ -168,6 +206,49 @@ void neuron_free(void **handle)
 	neuron_ops.nrt_tensor_free((nrt_tensor_t **)handle);
 }
 
+/**
+ * @brief Get the dma-buf fd of Neuron memory region if it was registered for EFA peer direct
+ *
+ * @param addr[in] the device buffer address
+ * @param size[in] the device buffer size (in bytes)
+ * @param fd[out] the dma-buf fd
+ * @param offset[out] the offset within the dma-buf object
+ * @return int On success, return 0. On failure, return a negative error code
+ */
+int neuron_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
+			 uint64_t *offset)
+{
+	NRT_STATUS ret;
+
+	/* nrt_get_dmabuf_fd symbol doesn't exist in Neuron Runtime */
+	if (!neuron_ops.nrt_get_dmabuf_fd) {
+		return -FI_ENOPROTOOPT;
+	}
+
+	ret = neuron_ops.nrt_get_dmabuf_fd((uintptr_t)addr, size, fd);
+
+	if (ret == NRT_SUCCESS) {
+		/*
+		 * The assumption is that nrt_get_dmabuf_fd() would fail for
+		 * any addr that is not the starting address of the dma-buf
+		 * object. Otherwise we need a low level op to get the base
+		 * address of the dma-buf object.
+		 */
+		*offset = 0;
+		return FI_SUCCESS;
+	} else if (ret == NRT_RESOURCE) {
+		/* real error from Neuron */
+		FI_INFO(&core_prov, FI_LOG_CORE,
+			"Failed to retrieve dmabuf_fd: %d\n", ret);
+		return -FI_EINVAL;
+	} else {
+		/* fallback to mem registration using ibv_reg_mr */
+		FI_INFO(&core_prov, FI_LOG_CORE,
+			"Failed to retrieve dmabuf_fd: %d\n", ret);
+		return -FI_ENOPROTOOPT;
+	}
+}
+
 #else
 
 int neuron_copy_to_dev(uint64_t device, void *dev, const void *host, size_t size)
@@ -176,6 +257,16 @@ int neuron_copy_to_dev(uint64_t device, void *dev, const void *host, size_t size
 }
 
 int neuron_copy_from_dev(uint64_t device, void *host, const void *dev, size_t size)
+{
+	return -FI_ENOSYS;
+}
+
+int neuron_host_register(void *ptr, size_t size)
+{
+	return -FI_ENOSYS;
+}
+
+int neuron_host_unregister(void *ptr)
 {
 	return -FI_ENOSYS;
 }
@@ -198,6 +289,12 @@ void *neuron_alloc(void **handle, size_t size)
 void neuron_free(void **handle)
 {
 	return;
+}
+
+int neuron_get_dmabuf_fd(const void *addr, uint64_t size, int *fd,
+			 uint64_t *offset)
+{
+	return -FI_ENOSYS;
 }
 
 #endif /* HAVE_NEURON */

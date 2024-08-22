@@ -116,6 +116,7 @@ QualifiedType::Kind resolveIntent(const QualifiedType& t,
     case QualifiedType::PARENLESS_FUNCTION:
     case QualifiedType::FUNCTION:
     case QualifiedType::MODULE:
+    case QualifiedType::INIT_RECEIVER:
       // these don't really have an intent
       return QualifiedType::UNKNOWN;
 

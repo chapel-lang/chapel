@@ -97,6 +97,13 @@ static inline void chpl_gpu_force_sync(void) {
   }
 }
 
+static inline void chpl_gpu_force_warp_sync(unsigned mask) {
+  if (!chpl_gpu_no_cpu_mode_warning) {
+    chpl_warning("chpl_gpu_force_warp_sync was called", 0, 0);
+  }
+}
+
+
 #endif // HAS_GPU_LOCALE
 
 #endif // _CHPL_GPU_GEN_INCLUDES_H

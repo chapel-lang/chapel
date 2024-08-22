@@ -77,15 +77,21 @@ warns against letting Chapel automatically create the top-level module in a file
    path/to/myfile/myfile.chpl:3: node violates rule DoKeywordAndBlock
    path/to/myfile/myfile.chpl:3: node violates rule UnusedLoopIndex
 
+To get a list of all available rules, use the ``--list-rules`` flag. To see
+which rules are currently enabled, use the ``--list-active-rules`` flag. If you
+have `loaded custom rules <#adding-custom-rules>`_, these will be included
+in the output.
 
-All of the rules present in ``chplcheck`` right now are defined in
-``tools/chplcheck/src/rules.py``. You may reference this file to get a complete
-list of available rules. Rules marked with ``default=False`` are not enabled by
-default, and need to be turned on using the ``--enable-rule`` flag; rules
-without the above setting are enabled by default, and can be turned off using
-``--disable-rule``.
+.. code-block:: bash
 
-Rules can also be ignored on a case-by-case basis by adding a ``@chplcheck.ignore`` attribute with a string argument stating the rule to ignore. For example:
+   > chplcheck --list-rules
+   ...
+   > chplcheck --list-active-rules
+   ...
+
+Rules can also be ignored on a case-by-case basis by adding a
+``@chplcheck.ignore`` attribute with a string argument stating the rule to
+ignore. For example:
 
 .. code-block:: chapel
 
@@ -96,60 +102,50 @@ This will suppress the warning about ``MyRecord`` not being in camelCase.
 
 .. note::
 
-   ``chplcheck.ignore`` is not fully implemented yet. It is currently only
-   available for basic rules and usage of it may cause compile-time warnings.
+   ``chplcheck.ignore`` is a Chapel attribute and is subject to the same
+   limitations as other attributes in the language. This means that it cannot be used to ignore all warnings; for
+   example it currently cannot be used on an ``if`` statement.
+
+.. note::
+
+   There is currently no way to ignore more than one rule at at time for a
+   given statement. Adding multiple ``chplcheck.ignore`` annotations will
+   result in a compilation error.
+
+Fixits
+------
+
+Some rules have fixits associated with them. Fixits are suggestions for how to
+resolve a given issue, either by editing the code or by adding
+``@chplcheck.ignore``. If using ``chplcheck`` as a command line tool, you can
+apply these fixits by using the ``--fixit`` flag. When using ``chplcheck`` from
+an editor, the editor may provide a way to apply fixits directly with a Quick
+Fix.
+
+When using the command line, a few additional flags are available to control how
+fixits are applied:
+
+* ``--fixit``: Apply fixits to the file. By default, this is done in-place,
+  overwriting the original file with the fixed version.
+* ``--fixit-suffix <suffix>``: Apply fixits to a new file with the given suffix
+  appended to the original file name. For example, ``--fixit-suffix .fixed``
+  would create a new file named ``myfile.chpl.fixed`` with the fixits applied.
+* ``--interactive``: Starts an interactive session where you can choose which
+  fixits to apply.
 
 Setting Up In Your Editor
 -------------------------
 
 ``chplcheck`` uses the Language Server Protocol (LSP) to integrate with compatible
-clients. Thus, if your editor supports LSP, you can configure it to display
-linting warnings via ``chplcheck``. The following sections describe how to set
-up ``chplcheck`` in various editors, and will be updated as the Chapel team
-tests more editors. If your preferred editor is not listed, consider opening an
-`issue <https://github.com/chapel-lang/chapel/issues/new>`_ or `pull request
-<https://github.com/chapel-lang/chapel/pull/new>`_ to add it.
-
-Neovim
-~~~~~~
-
-The built-in LSP API can be used to configure ``chplcheck`` as follows:
-
-.. code-block:: lua
-
-   local lspconfig = require 'lspconfig'
-   local configs = require 'lspconfig.configs'
-   local util = require 'lspconfig.util'
-
-   configs.chplcheck = {
-     default_config = {
-       cmd = {"chplcheck", "--lsp"},
-       filetypes = {'chpl'},
-       autostart = true,
-       single_file_support = true,
-       root_dir = util.find_git_ancestor,
-       settings = {},
-     },
-   }
-
-   lspconfig.chplcheck.setup{}
-   vim.cmd("autocmd BufRead,BufNewFile *.chpl set filetype=chpl")
-
-VSCode
-~~~~~~
-
-Install the ``chapel`` extension from the `Visual Studio Code marketplace
-<https://marketplace.visualstudio.com/items?itemName=chpl-hpe.chapel-vscode>`_.
-
-.. note::
-
-   The extension is not yet available at the time of writing and the above link
-   may not work until then. This section will be updated when it is available.
+clients. If your editor supports LSP, you can configure it to display
+linting warnings via ``chplcheck``. See the
+:ref:`Editor Support page <readme-editor-support>` for details on a specific
+editor.
 
 Writing New Rules
 -----------------
 
-Rules are written using the :ref:`Python bindings for Chapel's compiler frontend<readme-chapel-py>`. In
+Rules are written using the :ref:`Python bindings for Chapel's compiler frontend <readme-chapel-py>`. In
 essence, a rule is a Python function that is used to detect issues with the
 AST. When registered with ``chplcheck``, the name of the function becomes the name
 of the rule (which can be used to enable and disable the rule, as per the
@@ -236,6 +232,77 @@ checking for unused formals.
 This function performs _two_ pattern-based searches: one for formals, and one
 for identifiers that might reference the formals. It then emits a warning for
 each formal for which there wasn't a corresponding identifier.
+
+Making Rules Ignorable
+~~~~~~~~~~~~~~~~~~~~~~
+
+The linter has a mechanism for marking a rule as supporting the ``@chplcheck.ignore`` attribute. When rules are marked as such, the linter will automatically
+provide a `fixit <#writing-fixits>`_ to apply the attribute.
+
+Ignorable basic rules should return ``BasicRuleResult`` with ``ignorable`` set
+to ``True`` rather than just a boolean. The ``BasicRuleResult`` constructor
+takes a ``AstNode`` as an argument, which is the node that the rule is being
+applied to. For example, the following defines a basic rule that is ignorable:
+
+.. code-block:: python
+
+   @driver.basic_rule(chapel.Function)
+   def NoFunctionFoo(context, node):
+       if node.name() == "foo":
+           return BasicRuleResult(node, ignorable=True)
+       return True
+
+Ignorable advanced rules should yield a ``AdvancedRuleResult`` with ``anchor``
+set rather than just a ``AstNode``. The ``AdvancedRuleResult`` constructor
+takes an ``AstNode`` as an argument, which is the node that the rule is being
+applied to. The ``anchor`` is the node should have a ``@chplcheck.ignore``
+annotation to suppress the warning. ``anchor`` and ``node`` can be the same
+node. For example, the following defines an advanced rule that is ignorable:
+
+.. code-block:: python
+
+   @driver.advanced_rule
+   def NoLoopIndexI(context, root):
+       for loop, _ in chapel.each_matching(root, IndexableLoop):
+           idx = loop.index()
+           if idx.name() == "i":
+               yield AdvancedRuleResult(idx, anchor=loop)
+
+Since loop indices can't have attributes applied to them directly, the rule above uses the parent loop as an anchor. Applying the attribute to the loop will silence the warning on the index.
+
+.. _writing-fixits:
+
+Fixits
+~~~~~~
+
+Rules can have fixits associated with them. To define a fixit, the rule should
+construct a ``Fixit`` object and add it to the ``fixits`` field of
+``BasicRuleResult`` or ``AdvancedRuleResult`` for basic and advanced rules,
+respectively.
+
+A ``Fixit`` contains a list of ``Edit`` objects to apply to the code and an
+optional description, which is shown to the user when the fixit is applied.
+``Edit`` objects contain a file path, a range defined by start and end
+positions, and the text to replace inside of that range. The recommend way to
+create an ``Edit`` object is to use the ``Edit.build`` class method, which
+takes a ``chapel.Location`` and the text to replace it with.
+
+For example, the following defines a rule that has a fixit associated with it:
+
+.. code-block:: python
+
+   @driver.basic_rule(chapel.Function)
+   def NoFunctionFoo(context, node):
+       if node.name() == "foo":
+           fixit = Fixit.build(Edit.build(node.name_location(), "bar"))
+           fixit.description = "Replace 'foo' with 'bar'"
+           return BasicRuleResult(node, fixits=[fixit])
+       return True
+
+.. note::
+
+   The API for defining fixits is still under development and may change in the
+   future.
 
 Adding Custom Rules
 -------------------

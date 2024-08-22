@@ -106,14 +106,8 @@ static PSMI_HAL_INLINE int psm3_hfp_verbs_context_open(int unit,
 		err = -PSM_HAL_ERROR_CANNOT_OPEN_CONTEXT;
 		goto bail;
 	}
-	cpu_set_t mycpuset;
-	if (psm3_sysfs_get_unit_cpumask(unit, &mycpuset)) {
-		_HFI_ERROR( "Failed to get %s (unit %d) cpu set\n", ep->dev_name, unit);
-		//err = -PSM_HAL_ERROR_GENERAL_ERROR;
-		goto bail;
-	}
 
-	if (psm3_context_set_affinity(ep, mycpuset))
+	if (psm3_context_set_affinity(ep, unit))
 		goto bail;
 
 // TBD - inside psm3_gen1_userinit_internal we would find CPU
@@ -134,13 +128,16 @@ static PSMI_HAL_INLINE int psm3_hfp_verbs_get_port_index2pkey(psm2_ep_t ep, int 
 	return verbs_get_port_index2pkey(ep, index);
 }
 
-/* Tell the driver to change the way packets can generate interrupts.
+/* Tell the driver to change the way packets can generate interrupts
+   which wakeup poll().
 
- HFI1_POLL_TYPE_URGENT: Generate interrupt only when send with
-			IPS_SEND_FLAG_INTR (HFI_KPF_INTR)
- HFI1_POLL_TYPE_ANYRCV: wakeup on any rcv packet (when polled on). [not used]
+ PSMI_HAL_POLL_TYPE_NONE: disable interrupt generation for future packets
+ PSMI_HAL_POLL_TYPE_URGENT: Generate interrupt only when receive pkt sent with
+			IPS_SEND_FLAG_INTR (verbs solicited completions)
+ PSMI_HAL_POLL_TYPE_ANYRCV: interrupt on any rcv packet
 
- PSM: Uses TYPE_URGENT in ips protocol
+ PSM Uses TYPE_URGENT in ips protocol and needs TYPE_ANYRCV for psm3_wait()
+ TYPE_NONE is used during job shutdown
 */
 static PSMI_HAL_INLINE int psm3_hfp_verbs_poll_type(uint16_t poll_type, psm2_ep_t ep)
 {
@@ -290,29 +287,33 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ipsaddr_set_req_params(
 			//ipsaddr->verbs.rc_qp = NULL;
 		} else {
 			// we got a REQ or a REP, we can move to RTR
-			// if we are only doing RDMA, we don't need any buffers, but we need a
-			// pool object for RQ coallesce, so we create a pool with 0 size buffers
-			if (PSM2_OK != psm_verbs_alloc_recv_pool(proto->ep, ipsaddr->verbs.rc_qp, &ipsaddr->verbs.recv_pool,
-					min(proto->ep->verbs_ep.hfi_num_recv_wqes/VERBS_RECV_QP_FRACTION, ipsaddr->verbs.rc_qp_max_recv_wr),
-				  (proto->ep->rdmamode == IPS_PROTOEXP_FLAG_RDMA_USER)? 0
-					// want to end up with multiple of cache line (64)
-					// pr_mtu is negotiated max PSM payload, not including hdrs
-					// pr_mtu+MAX_PSM_HEADERS will be power of 2 verbs MTU
-					// be conservative (+BUFFER_HEADROOM)
-					: ipsaddr->pathgrp->pg_path[0][IPS_PATH_LOW_PRIORITY]->pr_mtu
-							+ MAX_PSM_HEADER + BUFFER_HEADROOM
-			)) {
-				_HFI_ERROR("failed to alloc RC recv buffers\n");
-				return PSM2_INTERNAL_ERR;
+			if (! proto->ep->verbs_ep.srq) {
+				// if we are only doing RDMA, we don't need any buffers, but we need a
+				// pool object for RQ coallesce, so we create a pool with 0 size buffers
+				if (PSM2_OK != psm_verbs_alloc_recv_pool(proto->ep, 0, ipsaddr->verbs.rc_qp, &ipsaddr->verbs.recv_pool,
+						min(proto->ep->verbs_ep.hfi_num_recv_wqes/VERBS_RECV_QP_FRACTION, ipsaddr->verbs.rc_qp_max_recv_wr),
+					  (proto->ep->rdmamode == IPS_PROTOEXP_FLAG_RDMA_USER)? 0
+						// want to end up with multiple of cache line (64)
+						// pr_mtu is negotiated max PSM payload, not including hdrs
+						// pr_mtu+MAX_PSM_HEADERS will be power of 2 verbs MTU
+						// be conservative (+BUFFER_HEADROOM)
+						: ipsaddr->pathgrp->pg_path[0][IPS_PATH_LOW_PRIORITY]->pr_mtu
+								+ MAX_PSM_HEADER + BUFFER_HEADROOM
+				)) {
+					_HFI_ERROR("failed to alloc RC recv buffers\n");
+					return PSM2_INTERNAL_ERR;
+				}
 			}
 
 			if (modify_rc_qp_to_init(proto->ep, ipsaddr->verbs.rc_qp)) {
 				_HFI_ERROR("qp_to_init failed\n");
 				return PSM2_INTERNAL_ERR;
 			}
-			if (PSM2_OK != psm3_ep_verbs_prepost_recv(&ipsaddr->verbs.recv_pool)) {
-				_HFI_ERROR("prepost failed\n");
-				return PSM2_INTERNAL_ERR;
+			if (! proto->ep->verbs_ep.srq) {
+				if (PSM2_OK != psm3_ep_verbs_prepost_recv(&ipsaddr->verbs.recv_pool)) {
+					_HFI_ERROR("prepost failed\n");
+					return PSM2_INTERNAL_ERR;
+				}
 			}
 			// RC QP MTU will be set to min of req->verbs.qp_attr and pr_mtu
 			// TBD - we already factored in req vs pr to update pr no need
@@ -643,10 +644,10 @@ static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_path_rec_init(
 static PSMI_HAL_INLINE psm2_error_t psm3_hfp_verbs_ips_ptl_pollintr(
 		psm2_ep_t ep, struct ips_recvhdrq *recvq,
 		int fd_pipe, int next_timeout,
-		uint64_t *pollok, uint64_t *pollcyc)
+		uint64_t *pollok, uint64_t *pollcyc, uint64_t *pollintr)
 {
 	return psm3_verbs_ips_ptl_pollintr(ep, recvq, fd_pipe,
-					 next_timeout, pollok, pollcyc);
+					 next_timeout, pollok, pollcyc, pollintr);
 }
 
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
@@ -660,15 +661,6 @@ static PSMI_HAL_INLINE void* psm3_hfp_verbs_gdr_convert_gpu_to_host_addr(unsigne
 	return psm3_verbs_gdr_convert_gpu_to_host_addr(buf, size, flags,
                                 ep);
 }
-#ifdef PSM_ONEAPI
-static PSMI_HAL_INLINE void psm3_hfp_verbs_gdr_munmap_gpu_to_host_addr(unsigned long buf,
-                                size_t size, int flags,
-                                psm2_ep_t ep)
-{
-	return psm3_verbs_gdr_munmap_gpu_to_host_addr(buf, size, flags,
-                                ep);
-}
-#endif
 #endif /* PSM_CUDA || PSM_ONEAPI */
 
 #include "verbs_spio.c"

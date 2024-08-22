@@ -36,28 +36,28 @@
 	do {									\
 		if (!send_completion && !recv_completion) {			\
 			ep->ep.tagged = &psmx3_tagged_ops_no_event##suffix;	\
-			FI_INFO(&psmx3_prov, FI_LOG_EP_DATA,			\
+			PSMX3_INFO(&psmx3_prov, FI_LOG_EP_DATA,			\
 				"tagged ops optimized for op_flags=0 "		\
 				"and event suppression "			\
 				msg_suffix					\
 				"\n");						\
 		} else if (!send_completion) {					\
 			ep->ep.tagged = &psmx3_tagged_ops_no_send_event##suffix;\
-			FI_INFO(&psmx3_prov, FI_LOG_EP_DATA,			\
+			PSMX3_INFO(&psmx3_prov, FI_LOG_EP_DATA,			\
 				"tagged ops optimized for op_flags=0 "		\
 				"and send event suppression "			\
 				msg_suffix					\
 				"\n");						\
 		} else if (!recv_completion) {					\
 			ep->ep.tagged = &psmx3_tagged_ops_no_recv_event##suffix;\
-			FI_INFO(&psmx3_prov, FI_LOG_EP_DATA,			\
+			PSMX3_INFO(&psmx3_prov, FI_LOG_EP_DATA,			\
 				"tagged ops optimized for op_flags=0 "		\
 				"and recv event suppression "			\
 				msg_suffix					\
 				"\n");						\
 		} else {							\
 			ep->ep.tagged = &psmx3_tagged_ops_no_flag##suffix;	\
-			FI_INFO(&psmx3_prov, FI_LOG_EP_DATA,			\
+			PSMX3_INFO(&psmx3_prov, FI_LOG_EP_DATA,			\
 				"tagged ops optimized for op_flags=0 "		\
 				msg_suffix					\
 				"\n");						\
@@ -76,7 +76,7 @@ static void psmx3_ep_optimize_ops(struct psmx3_fid_ep *ep)
 	if (ep->ep.tagged) {
 		if (ep->tx_flags & mask & ~FI_COMPLETION || ep->rx_flags & mask & ~FI_COMPLETION) {
 			ep->ep.tagged = &psmx3_tagged_ops;
-			FI_INFO(&psmx3_prov, FI_LOG_EP_DATA,
+			PSMX3_INFO(&psmx3_prov, FI_LOG_EP_DATA,
 				"generic tagged ops.\n");
 		} else {
 			send_completion = !ep->send_selective_completion || ep->tx_flags & FI_COMPLETION;
@@ -631,7 +631,7 @@ int psmx3_ep_open(struct fid_domain *domain, struct fi_info *info,
 	}
 	if (!psmx3_override_uuid() && info && info->domain_attr && info->domain_attr->auth_key) {
 		if (info->domain_attr->auth_key_size != sizeof(psm2_uuid_t)) {
-			FI_WARN(&psmx3_prov, FI_LOG_EP_CTRL,
+			PSMX3_WARN(&psmx3_prov, FI_LOG_EP_CTRL,
 				"Invalid domain auth_key_len %"PRIu64
 				", should be %"PRIu64".\n",
 				info->domain_attr->auth_key_size,
@@ -643,7 +643,7 @@ int psmx3_ep_open(struct fid_domain *domain, struct fi_info *info,
 
 	if (!psmx3_override_uuid() && info && info->ep_attr && info->ep_attr->auth_key) {
 		if (info->ep_attr->auth_key_size != sizeof(psm2_uuid_t)) {
-			FI_WARN(&psmx3_prov, FI_LOG_EP_CTRL,
+			PSMX3_WARN(&psmx3_prov, FI_LOG_EP_CTRL,
 				"Invalid ep auth_key_len %"PRIu64
 				", should be %"PRIu64".\n",
 				info->ep_attr->auth_key_size,
@@ -664,7 +664,7 @@ int psmx3_ep_open(struct fid_domain *domain, struct fi_info *info,
 		if (!trx_ctxt)
 			goto errout;
 	} else {
-		FI_INFO(&psmx3_prov, FI_LOG_EP_CTRL,
+		PSMX3_INFO(&psmx3_prov, FI_LOG_EP_CTRL,
 			"Tx only endpoint with STX context.\n");
 	}
 
@@ -956,7 +956,7 @@ int psmx3_sep_open(struct fid_domain *domain, struct fi_info *info,
 
 	if (!psmx3_override_uuid() && info && info->domain_attr && info->domain_attr->auth_key) {
 		if (info->domain_attr->auth_key_size != sizeof(psm2_uuid_t)) {
-			FI_WARN(&psmx3_prov, FI_LOG_EP_CTRL,
+			PSMX3_WARN(&psmx3_prov, FI_LOG_EP_CTRL,
 				"Invalid domain auth_key_len %"PRIu64
 				", should be %"PRIu64".\n",
 				info->domain_attr->auth_key_size,
@@ -969,7 +969,7 @@ int psmx3_sep_open(struct fid_domain *domain, struct fi_info *info,
 	if (info && info->ep_attr) {
 		if (!psmx3_override_uuid() && info->ep_attr->auth_key) {
 			if (info->ep_attr->auth_key_size != sizeof(psm2_uuid_t)) {
-				FI_WARN(&psmx3_prov, FI_LOG_EP_CTRL,
+				PSMX3_WARN(&psmx3_prov, FI_LOG_EP_CTRL,
 					"Invalid ep auth_key_len %"PRIu64
 					", should be %"PRIu64".\n",
 					info->ep_attr->auth_key_size,
@@ -980,14 +980,14 @@ int psmx3_sep_open(struct fid_domain *domain, struct fi_info *info,
 		}
 
 		if (info->ep_attr->tx_ctx_cnt > psmx3_domain_info.max_trx_ctxt) {
-			FI_WARN(&psmx3_prov, FI_LOG_EP_CTRL,
+			PSMX3_WARN(&psmx3_prov, FI_LOG_EP_CTRL,
 				"tx_ctx_cnt %"PRIu64" exceed limit %d.\n",
 				info->ep_attr->tx_ctx_cnt,
 				psmx3_domain_info.max_trx_ctxt);
 			goto errout;
 		}
 		if (info->ep_attr->rx_ctx_cnt > psmx3_domain_info.max_trx_ctxt) {
-			FI_WARN(&psmx3_prov, FI_LOG_EP_CTRL,
+			PSMX3_WARN(&psmx3_prov, FI_LOG_EP_CTRL,
 				"rx_ctx_cnt %"PRIu64" exceed limit %d.\n",
 				info->ep_attr->rx_ctx_cnt,
 				psmx3_domain_info.max_trx_ctxt);
@@ -997,7 +997,7 @@ int psmx3_sep_open(struct fid_domain *domain, struct fi_info *info,
 		if (ctxt_cnt < info->ep_attr->rx_ctx_cnt)
 			ctxt_cnt = info->ep_attr->rx_ctx_cnt;
 		if (ctxt_cnt == 0) {
-			FI_INFO(&psmx3_prov, FI_LOG_EP_CTRL,
+			PSMX3_INFO(&psmx3_prov, FI_LOG_EP_CTRL,
 				"tx_ctx_cnt and rx_ctx_cnt are 0, use 1.\n");
 			ctxt_cnt = 1;
 		}

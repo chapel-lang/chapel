@@ -26,7 +26,7 @@ re-use the existing value of the variable. This can be useful for re-using
 results of computations that do not change between function invocations. For
 instance, one might compute a lookup table on the first invocation of a function,
 and simply access that lookup table in subsequent runs. The following program
-demonstrates this, precomputing the Fibonacci numbers:
+demonstrates this, pre-computing the Fibonacci numbers:
 
 .. code-block:: chapel
 
@@ -129,6 +129,109 @@ locale to initialize it; support for alternative ways of sharing the data
 (e.g., replicating the precomputed data to all locales) is considered future
 work.
 
+Sharing Kinds
+-------------
+Currently, Chapel's static variables support two sharing kinds: "compute-or-retrieve"
+and "compute-per-locale". The former is the default; under this mode,
+the first locale to reach a function-static variable computes the variable's initial
+value, and the variable is stored on that locale. Other locales that subsequently
+call the function access the variable remotely. For example, the following
+program:
+
+.. code-block:: chapel
+
+   proc computeInitialValue() do return 0;
+
+   proc getAndIncrement(): real {
+       @functionStatic
+       ref myVar = computeInitialValue();
+       myVar += 1;
+       writeln("I'm on locale ", here, ", the variable is on locale ", myVar.locale);
+       return myVar;
+   }
+
+   for loc in Locales do on loc {
+       writeln(getAndIncrement());
+       writeln(getAndIncrement());
+   }
+
+Produces the following output when executed using 4 locales:
+
+.. code-block:: none
+
+   I'm on locale LOCALE0, the variable is on locale LOCALE0
+   1.0
+   I'm on locale LOCALE0, the variable is on locale LOCALE0
+   2.0
+   I'm on locale LOCALE1, the variable is on locale LOCALE0
+   3.0
+   I'm on locale LOCALE1, the variable is on locale LOCALE0
+   4.0
+   I'm on locale LOCALE2, the variable is on locale LOCALE0
+   5.0
+   I'm on locale LOCALE2, the variable is on locale LOCALE0
+   6.0
+   I'm on locale LOCALE3, the variable is on locale LOCALE0
+   7.0
+   I'm on locale LOCALE3, the variable is on locale LOCALE0
+   8.0
+
+The variable ``myVar`` is shared across all locales, and each locale sees
+the effect of incrementing it. On the other hand, because the first
+locale is the one to call ``getAndIncrement``, the variable is stored
+there.
+
+The code would behave the same way if the ``computeOrRetrieve`` sharing kind
+were explicitly specified.
+
+.. code-block:: chapel
+
+       @functionStatic(sharingKind.computeOrRetrieve)
+       ref myVar = computeInitialValue();
+
+The other supported sharing kind is "compute-per-locale". When using this
+sharing kind, each locale gets its own copy of the static variable. When a
+locale reaches the variable's declaration, it independently computes the
+initial value. Subsequent changes to the static variable are only visible to
+the locale. The purpose for this approach is to support the pre-computation of
+values "near" where the computation takes place. This way, each locale can
+reference its own copy of the pre-computed data, without the need for
+any communication. By changing the sharing kind to ``comutePerLocale``:
+
+.. code-block:: chapel
+
+       @functionStatic(sharingKind.computePerLocale)
+       ref myVar = computeInitialValue();
+
+The output of the whole program changes to the following:
+
+.. code-block:: none
+
+   I'm on locale LOCALE0, the variable is on locale LOCALE0
+   1.0
+   I'm on locale LOCALE0, the variable is on locale LOCALE0
+   2.0
+   I'm on locale LOCALE1, the variable is on locale LOCALE1
+   1.0
+   I'm on locale LOCALE1, the variable is on locale LOCALE1
+   2.0
+   I'm on locale LOCALE2, the variable is on locale LOCALE2
+   1.0
+   I'm on locale LOCALE2, the variable is on locale LOCALE2
+   2.0
+   I'm on locale LOCALE3, the variable is on locale LOCALE3
+   1.0
+   I'm on locale LOCALE3, the variable is on locale LOCALE3
+   2.0
+
+.. warning::
+
+  The ``computePerLocale`` sharing kind currently suffers from a memory leak.
+  The copies of static variables that are not on the initial locale
+  are not destroyed when the program exists. As a result, the memory associated
+  with them is leaked, and their destructors are not invoked. This
+  is considered a bug and will be fixed in a future release.
+
 Implementation Details
 ----------------------
 
@@ -174,9 +277,11 @@ The current implementation has the following limitations:
   of the initialization expression can only be fully determined at runtime,
   which makes it impossible to hoist the variable to the module level as
   described in `Implementation Details`_.
-* There are no alternative ways of sharing the data between locales. The
-  current implementation stores the data on the first locale to initialize
-  it, and all other locales access the data remotely.
+* There is limited support for alternative ways of sharing the data between
+  locales. The current implementation supports storing data on a single
+  locale, or re-computing it on all locales. Alternative sharing
+  modes (e.g., computing the value once and replicating it to all locales)
+  are desirable.
 * Split-initialization of static variables is not supported.
 
 Future Work

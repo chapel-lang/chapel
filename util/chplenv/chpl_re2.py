@@ -4,7 +4,7 @@ import sys
 
 import chpl_compiler, chpl_platform, overrides, third_party_utils
 from chpl_home_utils import get_chpl_third_party
-from utils import memoize, warning
+from utils import memoize, warning, error
 
 
 # returns True if CHPL_RE2 was set by the user
@@ -21,7 +21,9 @@ def is_overridden():
 @memoize
 def get():
     re2 = overrides.get('CHPL_RE2')
-    regexp = overrides.get('CHPL_REGEXP')
+    if re2 == "system":
+        error("CHPL_RE2=system is not supported. Please use CHPL_RE2=bundled or CHL_RE2=none instead.")
+
     if not re2:
         re2_header = os.path.join(get_chpl_third_party(), 're2',
                                   'install', get_uniq_cfg_path(),

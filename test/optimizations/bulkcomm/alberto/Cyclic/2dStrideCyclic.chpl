@@ -10,9 +10,9 @@ var e=false;
 //var Dom1: domain(2,int) dmapped Dist1 = {1..n,1..n};
 //var Dom2: domain(2,int) dmapped Dist2 = {1..2*n,1..2*n};
 const Space={1..n,1..n};
-const Dom1: domain(2) dmapped cyclicDist(startIdx=Space.low)=Space;
+const Dom1: domain(2) dmapped new cyclicDist(startIdx=Space.low)=Space;
 const Space2={1..2*n,1..2*n};
-const Dom2: domain(2) dmapped cyclicDist(startIdx=Space2.low)=Space2;
+const Dom2: domain(2) dmapped new cyclicDist(startIdx=Space2.low)=Space2;
 
 var A:[Dom1] int(64); 
 var B:[Dom2] int(64);

@@ -69,7 +69,7 @@ static int fi_opx_close_domain(fid_t fid)
 	if (ret)
 		return ret;
 
-	fi_opx_close_tid_domain(opx_domain->tid_domain);
+	opx_close_tid_domain(opx_domain->tid_domain);
 
 	ret = fi_opx_ref_finalize(&opx_domain->ref_cnt, "domain");
 	if (ret)
@@ -264,8 +264,8 @@ int fi_opx_domain(struct fid_fabric *fabric,
 {
 	FI_DBG_TRACE(fi_opx_global.prov, FI_LOG_DOMAIN, "open domain\n");
 
-	int ret;
-	int get_param_check;
+	int ret = 0;
+	int get_param_check = 0;
 	struct fi_opx_domain 	*opx_domain = NULL;
 	struct fi_opx_fabric 	*opx_fabric =
 		container_of(fabric, struct fi_opx_fabric, fabric_fid);
@@ -295,10 +295,10 @@ int fi_opx_domain(struct fid_fabric *fabric,
 		}
 	}
   
-	struct fi_opx_tid_domain *opx_tid_domain;
-	struct fi_opx_tid_fabric *opx_tid_fabric = opx_fabric->tid_fabric;
+	struct opx_tid_domain *opx_tid_domain;
+	struct opx_tid_fabric *opx_tid_fabric = opx_fabric->tid_fabric;
 
-	if(fi_opx_tid_domain(opx_tid_fabric, info, &opx_tid_domain)){
+	if(opx_open_tid_domain(opx_tid_fabric, info, &opx_tid_domain)){
 		errno = FI_ENOMEM;
 		goto err;
 	}
@@ -404,27 +404,37 @@ skip:
 
 	// Max UUID consists of 32 hex digits.
 	char * env_var_uuid = OPX_DEFAULT_JOB_KEY_STR;
-	fi_param_get_str(fi_opx_global.prov, "uuid", &env_var_uuid);
+	get_param_check = fi_param_get_str(fi_opx_global.prov, "uuid", &env_var_uuid);
+	char * impi_uuid = getenv("I_MPI_HYDRA_UUID");
+	char * slurm_job_id = getenv("SLURM_JOB_ID");
+
+	if (get_param_check == FI_SUCCESS) {
+		FI_INFO(fi_opx_global.prov, FI_LOG_DOMAIN, "Detected user specified FI_OPX_UUID\n");
+	} else if (slurm_job_id) {
+		env_var_uuid = slurm_job_id;
+		FI_INFO(fi_opx_global.prov, FI_LOG_DOMAIN, "Found SLURM_JOB_ID.  Using it for FI_OPX_UUID\n");
+	} else if (impi_uuid) {
+		env_var_uuid = impi_uuid;
+		FI_INFO(fi_opx_global.prov, FI_LOG_DOMAIN, "Found I_MPI_HYDRA_UUID.  Using it for FI_OPX_UUID\n");
+	} else {
+		env_var_uuid = OPX_DEFAULT_JOB_KEY_STR;
+	}
 
 	if (strlen(env_var_uuid) >= OPX_JOB_KEY_STR_SIZE) {
-		env_var_uuid[OPX_JOB_KEY_STR_SIZE-1] = 0;
 		FI_WARN(fi_opx_global.prov, FI_LOG_DOMAIN,
-			"UUID too long. UUID must consist of 1-32 hexadecimal digits.\n");
-		errno=FI_EINVAL;
-		goto err;
+			"UUID too long. UUID must consist of 1-32 hexadecimal digits.  Using default OPX uuid instead\n");
+		env_var_uuid = OPX_DEFAULT_JOB_KEY_STR;
 	} 
 
 	int i;
 	for (i=0; i < OPX_JOB_KEY_STR_SIZE && env_var_uuid[i] != 0; i++) {
 		if (!isxdigit(env_var_uuid[i])) {
 			FI_WARN(fi_opx_global.prov, FI_LOG_DOMAIN,
-				"Invalid UUID. UUID must consist solely of hexadecimal digits.\n");
-			errno=FI_EINVAL;
-			goto err;
+				"Invalid UUID. UUID must consist solely of hexadecimal digits.  Using default OPX uuid instead\n");
+			env_var_uuid = OPX_DEFAULT_JOB_KEY_STR;
 		}
 	}
 	
-
 	// Copy the job key and guarantee null termination.
 	strncpy(opx_domain->unique_job_key_str, env_var_uuid, OPX_JOB_KEY_STR_SIZE-1);
 	opx_domain->unique_job_key_str[OPX_JOB_KEY_STR_SIZE-1] = '\0';
@@ -446,6 +456,9 @@ skip:
 		&opx_domain->unique_job_key[13],
 		&opx_domain->unique_job_key[14],
 		&opx_domain->unique_job_key[15]);
+
+	FI_INFO(fi_opx_global.prov, FI_LOG_DOMAIN, "Domain unique job key set to %s\n", opx_domain->unique_job_key_str);
+	//TODO: Print out a summary of all domain settings wtih FI_INFO
 
 	opx_domain->rx_count = 0;
 	opx_domain->tx_count = 0;

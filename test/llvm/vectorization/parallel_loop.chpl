@@ -10,24 +10,25 @@
 // has no loop carried dependency, and adding
 // parallel_loop_access metadata is necessary
 
-proc loop (A, B, C, D) {
-  // CHECK: <4 x i32>
-  var sum : int(32) = 0;
-  foreach i in 0..511 with (ref sum) {
-     if(C[i] < D[i]) {
-       sum += C[i]+5;
-     }
-     A[A[i]] = B[i];
-     A[i] = B[i+1];
+config const N = 512;
+proc loop (ref A, B, n) {
+  // there is a load of a ptr, a load of an i32, and a store of an i32
+  // all of them should get the same parallel access
+  // CHECK: @loop_chpl
+  // CHECK: !llvm.access.group ![[GROUP:[0-9]+]]
+  // CHECK: !llvm.access.group ![[GROUP]]
+  // CHECK: !llvm.access.group ![[GROUP]]
+  foreach i in 0..<n {
+    A[A[i]] = B[i];
+    A[i] = B[i+1];
   }
-  return sum;
+  // CHECK: !llvm.loop ![[LOOP_ID:[0-9]+]]
+  // CHECK: ![[LOOP_ID]] = distinct !{![[LOOP_ID]], ![[ACCESS:[0-9]+]]
+  // CHECK: ![[ACCESS]] = !{!"llvm.loop.parallel_accesses", ![[GROUP]]}
 }
 
-var A : [0..511] int(32);
-var B : [0..511] int(32);
-var C : [0..511] int(32);
-var D : [0..511] int(32);
+var A : [0..<N] int(32);
+var B : [0..<N] int(32);
 
-var res = loop(A, B, C, D);
+loop(A, B, N);
 writeln("Sum of A is ", + reduce A);
-writeln("Res is ", res);

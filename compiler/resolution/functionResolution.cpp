@@ -919,6 +919,11 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  if (formalType                                     == dtThunkRecord &&
+      actualType->symbol->hasFlag(FLAG_THUNK_RECORD) == true) {
+    return true;
+  }
+
   if (formalType == dtAnyRecord && isUserRecord(actualType)) {
     return true;
   }
@@ -2909,7 +2914,7 @@ void resolveCall(CallExpr* call) {
     if (resolveFunctionPointerCall(call))
       return;
 
-    if (call->isNamed("chpl__coerceCopy")) {
+    if (call->isNamedAstr(astr_coerceCopy)) {
       resolveCoerceCopyMove(call);
       return;
     }
@@ -4115,6 +4120,21 @@ static void reportHijackingError(CallExpr* call,
   USR_STOP();
 }
 
+static void explainOne(ResolutionCandidate* best, ResolutionCandidate* cur,
+                       const char* kind) {
+  if (cur != nullptr && cur != best)
+      USR_PRINT(cur->fn,   "%10s overload: %s", kind, toString(cur->fn));
+}
+static void explainCallCandidates(ResolutionCandidate* best,
+                                  ResolutionCandidate* bestRef,
+                                  ResolutionCandidate* bestValue,
+                                  ResolutionCandidate* bestConstRef) {
+    USR_PRINT(best->fn, "best candidates are: %s", toString(best->fn));
+    explainOne(best, bestRef,      "ref");
+    explainOne(best, bestValue,    "value");
+    explainOne(best, bestConstRef, "const ref");
+}
+
 static bool overloadSetsOK(CallExpr* call,
                            BlockStmt* searchScope,
                            check_state_t checkState,
@@ -4396,7 +4416,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
   }
 
   if (explainCallLine != 0 && explainCallMatch(call) == true) {
-    USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
+    explainCallCandidates(best, bestRef, bestValue, bestConstRef);
   }
 
   if (call->partialTag                  == true &&
@@ -4738,12 +4758,12 @@ void printResolutionErrorUnresolved(CallInfo&       info,
         EnumType* srcEnumType = toEnumType(srcType);
         if (srcEnumType && srcEnumType->isAbstract()) {
           USR_FATAL_CONT(call,
-                         "can't cast from an abstract enum ('%s') to %s",
+                         "cannot cast abstract enum type '%s' to '%s'",
                          toString(srcType),
                          toString(dstType));
         } else if (dstEnumType && dstEnumType->isAbstract()) {
           USR_FATAL_CONT(call,
-                         "can't cast from %s to an abstract enum type ('%s')",
+                         "cannot cast '%s' to abstract enum type '%s'",
                          toString(srcType),
                          toString(dstType));
         } else {
@@ -7681,32 +7701,26 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
       }
 
     } else if (isInitParam == false) {
-      ModuleSymbol* mod          = calleeFn->getModule();
-      char          cn1          = calleeFn->name[0];
-      const char*   calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
-
-      const char* kind = "non-lvalue actual";
-      if (constnessError)
-        kind = "const actual";
+      const char* kind =
+        constnessError ? "const actual" : "non-lvalue actual";
 
       // Should this be the same condition as in insertLineNumber() ?
-      if (developer || mod->modTag == MOD_USER) {
-        USR_FATAL_CONT(actual,
-                       "%s is passed to %s formal '%s' of %s%s",
-                       kind,
-                       formal->intentDescrString(),
-                       formal->name,
-                       calleeFn->name,
-                       calleeParens);
+      bool formalDetails =
+        developer || calleeFn->getModule()->modTag != MOD_INTERNAL;
+      const char* formalName =
+        formalDetails ? astr(" '", formal->name, "'") : "";
 
-      } else {
-        USR_FATAL_CONT(actual,
-                       "%s is passed to a %s formal of %s%s",
+      const char* calleeParens =
+        calleeFn->hasEitherFlag(FLAG_OPERATOR, FLAG_NO_PARENS) ? "" : "()";
+
+      USR_FATAL_CONT(actual, "%s is passed to %s%s formal%s of %s%s%s",
                        kind,
+                       formalDetails ? "" : "a ",
                        formal->intentDescrString(),
+                       formalName,
+                       calleeFn->hasFlag(FLAG_OPERATOR) ? "operator " : "",
                        calleeFn->name,
                        calleeParens);
-      }
     }
 
     if (SymExpr* aSE = toSymExpr(actual)) {
@@ -7739,6 +7753,17 @@ static Symbol* maybeGetBaseSymHelper(SymExpr* def) {
             auto baseSym = baseExpr->symbol();
             // if the baseSym is still a temp, try and for a nested method call.
             // typically happens in the `r.A[i]` field access case (`A` is an array).
+            if (baseSym->hasFlag(FLAG_TEMP)) {
+              if(auto sym = maybeGetBaseSym(baseSym)) {
+                return sym;
+              }
+            }
+            return baseSym;
+          }
+        } else if (maybeMethodCall->isPrimitive(PRIM_GET_MEMBER)) {
+          // handle tuples
+          if (auto baseExpr = toSymExpr(maybeMethodCall->get(1))) {
+            auto baseSym = baseExpr->symbol();
             if (baseSym->hasFlag(FLAG_TEMP)) {
               if(auto sym = maybeGetBaseSym(baseSym)) {
                 return sym;
@@ -9457,8 +9482,12 @@ static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
     if (lhsSym->qual == QUAL_CONST_REF) checkMoveSymToCRefYVV(call, rhsSym);
   }
 
-  if (lhsSym->hasFlag(FLAG_REF_VAR)                       &&
-      ! lhsSym->hasEitherFlag(FLAG_TEMP, FLAG_EXPR_TEMP)  &&
+  bool shouldCheckMoveToRef =
+    (lhsSym->hasFlag(FLAG_REF_VAR) &&
+     ! lhsSym->hasEitherFlag(FLAG_TEMP, FLAG_EXPR_TEMP)) ||
+    (lhsSym->hasFlag(FLAG_RVV) &&
+     lhsSym->typeInfo() && lhsSym->typeInfo()->isRef());
+  if (shouldCheckMoveToRef                                &&
       call->isPrimitive(PRIM_MOVE)                         )  {
     checkAndAdjustLhsRefType(call, lhsSym, rhsSym->type);
   }
@@ -10343,7 +10372,9 @@ static Expr* handleNonNormalizableExpr(Expr* expr) {
 
       // Prefolding will completely replace PRIM_RESOLVES calls, so
       // further action is not needed here.
-      if (call->isPrimitive(PRIM_RESOLVES)) {
+      if (call->isPrimitive(PRIM_RESOLVES) ||
+          call->isPrimitive(PRIM_STATIC_TYPEOF) ||
+          call->isPrimitive(PRIM_STATIC_FIELD_TYPE)) {
         ret = preFold(call);
       } else {
         INT_FATAL("Not handled!");
@@ -10637,6 +10668,21 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
                      fn->name);
     }
 
+    for(auto i = 0; i < ft->numFormals(); i++) {
+      auto formal = ft->formal(i);
+      if (formal->isGeneric()) {
+        std::string reason;
+        auto reasons = explainGeneric(formal->type);
+        if (reasons.empty()) {
+          USR_PRINT(use, "the formal '%s' is generic", formal->name);
+        } else {
+          for (auto& r : reasons) {
+            USR_PRINT(use, "the formal '%s' is generic because %s", formal->name, r.c_str());
+          }
+        }
+      }
+    }
+
     // Return a "sink" to handle any "illegal access" errors later.
     return swapInErrorSinkForCapture(ft->kind(), use);
   }
@@ -10871,6 +10917,7 @@ Expr* resolveExpr(Expr* expr) {
       }
       retval = resolveExprPhase2(expr, fn, expr);
     } else if (isMentionOfFnTriggeringCapture(se)) {
+      fcfs::emitWarningForStandaloneCapture(se, se->symbol()->name);
       auto fn = toFnSymbol(se->symbol());
       INT_ASSERT(fn);
 
@@ -11393,6 +11440,8 @@ parseExplainFlag(char* flag, int* line, ModuleSymbol** module) {
     char *token, *str1 = NULL, *str2 = NULL;
     token = strstr(flag, ":");
     if (token) {
+      if (*(token+1) == ':')  // allow ":" as the call name
+        token += 1;
       *token = '\0';
       str1 = token+1;
       token = strstr(str1, ":");
@@ -11701,39 +11750,9 @@ static void applyGpuAttributesToIterableExprs() {
 
     int numUsers = primCall->numActuals();
 
-    // Currently, we can't apply attributes from attribute blocks to promoted
-    // expressions directly. So, for the time being, warn about it if we
-    // see any promotions.
-    int numPromotions = 0;
-
-    std::vector<CallExpr*> calls;
-    collectCallExprs(block, calls);
-    for (auto call : calls) {
-      if (call->resolvedFunction() && call->resolvedFunction()->hasFlag(FLAG_PROMOTION_WRAPPER)) {
-        numPromotions++;
-      }
-    }
-
-    // Check if any of the attributes were 'assertOnGpu', in order to give
-    // a helpful note about 'GpuDiagnostics'.
-    bool hasGpuAssertions = false;
-    for_alist(node, primitivesBlock->body) {
-      if (auto call = toCallExpr(node)) {
-        if (call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
-          hasGpuAssertions = true;
-          break;
-        }
-      }
-    }
-
-    if (numPromotions > 0) {
-      USR_WARN(block, "GPU attributes on variable declarations are not currently applied to promoted expressions in the variables' initializers");
-      if (hasGpuAssertions) {
-        USR_PRINT(block, "consider using the 'GpuDiagnostics' module to ensure that promoted expressions ran on GPU at runtime");
-      }
-    } else if (numUsers == 0 && numPromotions == 0) {
-      USR_FATAL(block, "Found GPU attributes on a variable declaration, but no subexpression to apply them to");
-      USR_PRINT(block, "GPU attributes on variable declarations are applied to loop expressions in the variable's initializer");
+    if (numUsers == 0) {
+      USR_FATAL_CONT(block, "Found GPU attributes on a variable declaration, but no subexpression to apply them to");
+      USR_PRINT(block, "GPU attributes on variable declarations are applied to loop expressions and promoted function calls in the variable's initializer");
       USR_STOP();
     }
 
@@ -11749,6 +11768,7 @@ static void postResolveLiftStaticVars() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_STATIC_FUNCTION_VAR_WRAPPER)) {
       if (!call->inTree()) continue;
+      auto targetMod = call->getModule();
 
       auto wrapperSym = toSymExpr(call->get(1))->symbol();
       auto initDummySym = toSymExpr(call->get(2))->symbol();
@@ -11761,14 +11781,54 @@ static void postResolveLiftStaticVars() {
       // Move the definition point of the wrapper into the module scope.
       // But first, keep a handle on the block to be able to move it later.
       auto wrapperBlock = toBlockStmt(wrapperSym->defPoint->parentExpr);
-      INT_ASSERT(wrapperBlock);
-      call->getModule()->block->insertAtHead(wrapperSym->defPoint->remove());
+      targetMod->block->insertAtHead(wrapperSym->defPoint->remove());
+
+      // If we created some cleanup code to run in the per-locale case,
+      // retrieve it now. See the comment in normalize.cpp's
+      // preNormalizeHandleStaticVars for the structure of the cleanup block,
+      // as well as why it's needed.
+      BlockStmt* cleanupBlock = nullptr;
+      if (wrapperSym->hasFlag(FLAG_LOCALE_PRIVATE)) {
+        cleanupBlock = toBlockStmt(wrapperBlock->body.tail->remove());
+        INT_ASSERT(wrapperBlock);
+      }
 
       // Now move the initialization code into the module init function.
       // The last statement is the 'return void', which we keep.
-      call->getModule()->initFn->body->insertAtHead(wrapperBlock->remove());
+      targetMod->initFn->body->insertAtHead(wrapperBlock->remove());
       wrapperBlock->flattenAndRemove();
       call->remove();
+
+      // In some cases, we need to do cleanup.
+      if (!cleanupBlock) continue;
+      SET_LINENO(wrapperSym);
+
+      auto cleanupFnDefBlock = toBlockStmt(cleanupBlock->body.head->remove());
+      INT_ASSERT(cleanupFnDefBlock);
+      auto cleanupCall = toBlockStmt(cleanupBlock->body.tail->remove());
+      INT_ASSERT(cleanupCall);
+
+      auto cleanupFnDef = toDefExpr(cleanupFnDefBlock->body.tail);
+      INT_ASSERT(cleanupFnDef);
+      auto cleanupFn = toFnSymbol(cleanupFnDef->sym);
+      INT_ASSERT(cleanupFn);
+
+      // Relocate the .reset() call into the function; it's no longer
+      // a captured variable, but a global one.
+      cleanupFn->body->insertAtHead(cleanupBlock);
+      cleanupBlock->flattenAndRemove();
+
+      // Relocate the definition of the cleanup function for the new
+      // global static wrapper into the same module where the variable
+      // itself lives.
+      targetMod->block->insertAtHead(cleanupFnDefBlock);
+      cleanupFnDefBlock->flattenAndRemove();
+
+      // Insert a call to the cleanup code in the module's deinit function.
+      Expr* deinitAnchor = nullptr;
+      ensureModuleDeinitFnAnchor(targetMod, deinitAnchor);
+      deinitAnchor->insertAfter(cleanupCall);
+      cleanupCall->flattenAndRemove();
     }
   }
 }
@@ -12572,8 +12632,9 @@ static void resolveAutoCopyEtc(AggregateType* at) {
   if (at->hasDestructor() == false) {
     if (at->symbol->hasFlag(FLAG_REF)             == false &&
         isTupleContainingOnlyReferences(at)       == false &&
-        // autoDestroy for iterator record filled in callDestructors
-        at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
+        // autoDestroy for iterator record, thunk record filled in callDestructors
+        at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false &&
+        at->symbol->hasFlag(FLAG_THUNK_RECORD)    == false) {
 
       // Resolve a call to deinit
       VarSymbol* tmp   = newTemp(at);
@@ -12867,7 +12928,8 @@ static void insertReturnTemps() {
       if (call->list == NULL && isForallRecIterHelper(call))
         continue;
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
-        if (fn->retType != dtVoid && fn->retTag != RET_TYPE) {
+        if (fn->retType != dtVoid && fn->retType != dtUnknown &&
+            fn->retTag != RET_TYPE) {
           ContextCallExpr* contextCall = toContextCallExpr(call->parentExpr);
           Expr*            contextCallOrCall; // insert before, remove it
 
@@ -14187,6 +14249,27 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
 
     Expr* appendExpr = NULL;
     if (field->isParameter()) {
+
+      /*
+        For 'map' and 'set', if the type has parSafe=false, don't include the
+        'parSafe' argument in the initializer call. This way, if user code
+        initializes map or set by specifying the type without 'parSafe', ex:
+        - var m: map(int, int);
+        - var s: set(int);
+        an unstable warning won't be generated (this is necessary because the
+        initializer with a parSafe formal is marked unstable).
+
+        This conditional can be removed if/when the unstable warning is removed
+        from map and set's 'parSafe' fields.
+      */
+      if (
+        root->getModule()->modTag == MOD_STANDARD && field->hasFlag(FLAG_UNSTABLE) &&
+        strcmp(field->name, "parSafe") == 0 && value == gFalse &&
+        (strcmp(root->name(), "map") == 0 || strcmp(root->name(), "set") == 0)
+      ) {
+        continue;
+      }
+
       appendExpr = new SymExpr(value);
     } else if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
 

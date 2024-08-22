@@ -101,6 +101,9 @@ enum struct Qualifier {
 
   /** A module */
   MODULE,
+
+  /** An 'imaginary' actual to 'init''s this to represent the type being constructed. */
+  INIT_RECEIVER,
 };
 
 /** Returns 'true' for qualifiers that are generic such as DEFAULT_INTENT */

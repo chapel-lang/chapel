@@ -1,0 +1,2 @@
+-sgpuAlwaysFallBackToCpuReduce=false
+-sgpuAlwaysFallBackToCpuReduce=true

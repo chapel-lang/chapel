@@ -1,0 +1,213 @@
+# SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only
+#
+# Copyright 2018,2020-2023 Hewlett Packard Enterprise Development LP
+
+if HAVE_CXI
+
+AM_CPPFLAGS += \
+	-I$(top_srcdir)/prov/cxi/include
+
+_cxi_files = \
+	prov/cxi/src/cxip_if.c \
+	prov/cxi/src/cxip_fabric.c \
+	prov/cxi/src/cxip_repsum.c \
+	prov/cxi/src/cxip_coll.c \
+	prov/cxi/src/cxip_zbcoll.c \
+	prov/cxi/src/cxip_curl.c \
+	prov/cxi/src/cxip_dom.c \
+	prov/cxi/src/cxip_ep.c \
+	prov/cxi/src/cxip_txc.c \
+	prov/cxi/src/cxip_rxc.c \
+	prov/cxi/src/cxip_av.c \
+	prov/cxi/src/cxip_avset.c \
+	prov/cxi/src/cxip_eq.c \
+	prov/cxi/src/cxip_cq.c \
+	prov/cxi/src/cxip_cntr.c \
+	prov/cxi/src/cxip_rma.c \
+	prov/cxi/src/cxip_mr.c \
+	prov/cxi/src/cxip_msg.c \
+	prov/cxi/src/cxip_msg_rnr.c \
+	prov/cxi/src/cxip_msg_hpc.c \
+	prov/cxi/src/cxip_atomic.c \
+	prov/cxi/src/cxip_iomm.c \
+	prov/cxi/src/cxip_faults.c \
+	prov/cxi/src/cxip_info.c \
+	prov/cxi/src/cxip_ctrl.c \
+	prov/cxi/src/cxip_req_buf.c \
+	prov/cxi/src/cxip_rdzv_pte.c \
+	prov/cxi/src/cxip_coll_trace.c \
+	prov/cxi/src/cxip_telemetry.c \
+	prov/cxi/src/cxip_ptelist_buf.c \
+	prov/cxi/src/cxip_evtq.c \
+	prov/cxi/src/cxip_nic.c \
+	prov/cxi/src/cxip_portals_table.c \
+	prov/cxi/src/cxip_pte.c \
+	prov/cxi/src/cxip_cmdq.c
+
+_cxi_headers = \
+	prov/cxi/include/cxip.h \
+	prov/cxi/include/cxip_faults.h \
+	prov/cxi/include/fi_cxi_ext.h
+
+rdmainclude_HEADERS += \
+	prov/cxi/include/fi_cxi_ext.h
+
+# Stand-alone srun tests for hardware testing environment
+noinst_PROGRAMS += prov/cxi/test/multinode/test_frmwk
+prov_cxi_test_multinode_test_frmwk_SOURCES = \
+	prov/cxi/test/multinode/multinode_frmwk.h \
+	prov/cxi/test/multinode/multinode_frmwk.c \
+	prov/cxi/test/multinode/test_frmwk.c
+prov_cxi_test_multinode_test_frmwk_CPPFLAGS = \
+	$(AM_CPPFLAGS) $(cxi_CPPFLAGS) $(PTHREAD_FLAGS)
+prov_cxi_test_multinode_test_frmwk_LDFLAGS = -static
+prov_cxi_test_multinode_test_frmwk_LDADD = $(linkback) $(PTHREAD_LIBS)
+
+noinst_PROGRAMS += prov/cxi/test/multinode/test_zbcoll
+prov_cxi_test_multinode_test_zbcoll_SOURCES = \
+	prov/cxi/test/multinode/multinode_frmwk.h \
+	prov/cxi/test/multinode/multinode_frmwk.c \
+	prov/cxi/test/multinode/test_zbcoll.c
+prov_cxi_test_multinode_test_zbcoll_CPPFLAGS = \
+	$(AM_CPPFLAGS) $(cxi_CPPFLAGS) $(PTHREAD_FLAGS)
+prov_cxi_test_multinode_test_zbcoll_LDFLAGS = -static
+prov_cxi_test_multinode_test_zbcoll_LDADD = $(linkback) $(PTHREAD_LIBS)
+
+noinst_PROGRAMS += prov/cxi/test/multinode/test_coll
+prov_cxi_test_multinode_test_coll_SOURCES = \
+	prov/cxi/test/multinode/multinode_frmwk.h \
+	prov/cxi/test/multinode/multinode_frmwk.c \
+	prov/cxi/test/multinode/test_coll.c
+prov_cxi_test_multinode_test_coll_CPPFLAGS = \
+	$(AM_CPPFLAGS) $(cxi_CPPFLAGS) $(PTHREAD_FLAGS)
+prov_cxi_test_multinode_test_coll_LDFLAGS = -static
+prov_cxi_test_multinode_test_coll_LDADD = $(linkback) $(PTHREAD_LIBS)
+
+noinst_PROGRAMS += prov/cxi/test/multinode/test_barrier
+prov_cxi_test_multinode_test_barrier_SOURCES = \
+	prov/cxi/test/multinode/multinode_frmwk.h \
+	prov/cxi/test/multinode/multinode_frmwk.c \
+	prov/cxi/test/multinode/test_barrier.c
+prov_cxi_test_multinode_test_barrier_CPPFLAGS = \
+	$(AM_CPPFLAGS) $(cxi_CPPFLAGS) $(PTHREAD_FLAGS)
+prov_cxi_test_multinode_test_barrier_LDFLAGS = -static
+prov_cxi_test_multinode_test_barrier_LDADD = $(linkback) $(PTHREAD_LIBS)
+
+if HAVE_CRITERION
+
+# curltest is not expected to exist outside devel env
+noinst_PROGRAMS += prov/cxi/test/curltest
+prov_cxi_test_curltest_SOURCES = \
+	prov/cxi/test/curl.c
+prov_cxi_test_curltest_CPPFLAGS = $(AM_CPPFLAGS) $(cxi_CPPFLAGS) \
+	$(cxitest_CPPFLAGS) $(PTHREAD_CFLAGS)
+prov_cxi_test_curltest_LDFLAGS = $(cxitest_LDFLAGS) -static
+prov_cxi_test_curltest_LDADD =  $(cxitest_LIBS) $(linkback) $(PTHREAD_LIBS)
+
+bin_PROGRAMS += prov/cxi/test/cxitest
+nodist_prov_cxi_test_cxitest_SOURCES = \
+	prov/cxi/test/cxip_test_common.c \
+	prov/cxi/test/fabric.c \
+	prov/cxi/test/domain.c \
+	prov/cxi/test/ep.c \
+	prov/cxi/test/eq.c \
+	prov/cxi/test/cq.c \
+	prov/cxi/test/av.c \
+	prov/cxi/test/avset.c \
+	prov/cxi/test/rma.c \
+	prov/cxi/test/tagged.c \
+	prov/cxi/test/msg.c \
+	prov/cxi/test/atomic.c \
+	prov/cxi/test/cntr.c \
+	prov/cxi/test/tagged_stress.c \
+	prov/cxi/test/mr.c \
+	prov/cxi/test/deferred_work.c \
+	prov/cxi/test/coll.c \
+	prov/cxi/test/ctrl.c \
+	prov/cxi/test/lat.c \
+	prov/cxi/test/repsum.c \
+	prov/cxi/test/auth_key.c \
+	prov/cxi/test/fork.c \
+	prov/cxi/test/mem_reg.c \
+	prov/cxi/test/nic.c
+
+prov_cxi_test_cxitest_CPPFLAGS = $(AM_CPPFLAGS) $(cxi_CPPFLAGS) \
+	$(cxitest_CPPFLAGS) $(PTHREAD_CFLAGS)
+prov_cxi_test_cxitest_LDFLAGS = $(cxitest_LDFLAGS) -static
+prov_cxi_test_cxitest_LDADD =  $(cxitest_LIBS) $(linkback) $(PTHREAD_LIBS)
+
+TESTS += prov/cxi/test/cxitest
+
+# ZE test suite is its own binary
+if HAVE_ZE
+
+bin_PROGRAMS += prov/cxi/test/cxitestze
+nodist_prov_cxi_test_cxitestze_SOURCES = \
+	prov/cxi/test/cxip_test_common.c \
+	prov/cxi/test/ze.c
+
+prov_cxi_test_cxitestze_CPPFLAGS = $(AM_CPPFLAGS) $(cxi_CPPFLAGS) \
+	$(cxitest_CPPFLAGS) $(PTHREAD_CFLAGS)
+prov_cxi_test_cxitestze_LDFLAGS = $(cxitest_LDFLAGS) -static
+prov_cxi_test_cxitestze_LDADD =  $(cxitest_LIBS) $(linkback) $(PTHREAD_LIBS) -lze_loader
+
+TESTS += prov/cxi/test/cxitestze
+
+endif HAVE_ZE
+
+# CUDA test suite is its own binary
+if HAVE_CUDA
+
+bin_PROGRAMS += prov/cxi/test/cxitestcuda
+nodist_prov_cxi_test_cxitestcuda_SOURCES = \
+	prov/cxi/test/cxip_test_common.c \
+	prov/cxi/test/cuda.c
+
+prov_cxi_test_cxitestcuda_CPPFLAGS = $(AM_CPPFLAGS) $(cxi_CPPFLAGS) \
+	$(cxitest_CPPFLAGS) $(PTHREAD_CFLAGS)
+prov_cxi_test_cxitestcuda_LDFLAGS = $(cxitest_LDFLAGS) -static
+prov_cxi_test_cxitestcuda_LDADD =  $(cxitest_LIBS) $(linkback) $(PTHREAD_LIBS) -lcudart -lcuda
+
+TESTS += prov/cxi/test/cxitestcuda
+
+endif HAVE_CUDA
+
+# ROCR test suite is its own binary
+if HAVE_ROCR
+
+bin_PROGRAMS += prov/cxi/test/cxitestrocr
+nodist_prov_cxi_test_cxitestrocr_SOURCES = \
+	prov/cxi/test/cxip_test_common.c \
+	prov/cxi/test/rocr.c
+
+prov_cxi_test_cxitestrocr_CPPFLAGS = $(AM_CPPFLAGS) $(cxi_CPPFLAGS) \
+	$(cxitest_CPPFLAGS) $(PTHREAD_CFLAGS)
+prov_cxi_test_cxitestrocr_LDFLAGS = $(cxitest_LDFLAGS) -static
+prov_cxi_test_cxitestrocr_LDADD =  $(cxitest_LIBS) $(linkback) $(PTHREAD_LIBS) -lhsa-runtime64
+
+TESTS += prov/cxi/test/cxitestrocr
+
+endif HAVE_ROCR
+
+endif HAVE_CRITERION
+
+if HAVE_CXI_DL
+pkglib_LTLIBRARIES += libcxi-fi.la
+libcxi_fi_la_SOURCES = $(_cxi_files) $(_cxi_headers) $(common_srcs)
+libcxi_fi_la_CPPFLAGS = $(cxi_CPPFLAGS)
+libcxi_fi_la_LIBADD = $(linkback) $(cxi_LIBS)
+libcxi_fi_la_LDFLAGS = $(cxi_LDFLAGS) \
+	-module -avoid-version -shared -export-dynamic
+libcxi_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_CXI_DL
+src_libfabric_la_SOURCES += $(_cxi_files) $(_cxi_headers)
+src_libfabric_la_CPPFLAGS += $(cxi_CPPFLAGS)
+src_libfabric_la_LIBADD += $(cxi_LIBS)
+src_libfabric_la_LDFLAGS += $(cxi_LDFLAGS)
+endif !HAVE_CXI_DL
+
+prov_install_man_pages += man/man7/fi_cxi.7
+
+endif HAVE_CXI
+
+prov_dist_man_pages += man/man7/fi_cxi.7

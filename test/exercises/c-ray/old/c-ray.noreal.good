@@ -1,1 +1,1 @@
-../Image.chpl:37: error: pixelType must be an integral type
+../CRayImage.chpl:37: error: pixelType must be an integral type

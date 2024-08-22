@@ -2950,6 +2950,64 @@ extern uint64_t gasneti_getenv_memsize_withdefault(const char *key, const char *
   return (uint64_t) val;
 }
 
+// Check for presence of any env vars in local or GASNet global env with a given prefix.
+// Returns an arbitrary "VAR=VAL" match if any, or NULL otherwise.
+
+// spawner- or conduit-specific hook:
+gasneti_check_env_prefix_fn_t *gasneti_check_env_prefix_hook = NULL;
+
+// helper for scanning a serialized envrironment:
+extern const char* gasneti_check_env_prefix_helper(const char *environ, const char *prefix) {
+  const char *p = environ;
+
+  gasneti_assert(environ);
+  gasneti_assert(prefix && !strchr(prefix,'='));
+
+  const size_t len = strlen(prefix);
+  while (*p) {
+    if (!strncmp(prefix, p, len)) return p;
+    p += strlen(p) + 1;
+  }
+  return NULL;
+}
+
+extern char** environ;
+
+extern const char* gasneti_check_env_prefix(const char *prefix) {
+  gasneti_assert(prefix);
+  gasneti_assert(NULL == strchr(prefix, '='));
+  const char *result = NULL;
+
+  // First, look for matches via conduit-specific getenv (if any)
+  if (gasneti_check_env_prefix_hook) {
+    result = gasneti_check_env_prefix_hook(prefix);
+  }
+
+  // Next, look for matches in gasneti_globalEnv (if any)
+  if (!result && gasneti_globalEnv) {
+    result = gasneti_check_env_prefix_helper(gasneti_globalEnv, prefix);
+  }
+
+  // Finally, look for matches in the local environment (if any)
+  if (!result && environ) {
+    size_t len = strlen(prefix);
+    for (char **p = environ; *p; ++p) {
+      if (!strncmp(prefix, *p, len)) {
+        result = *p;
+        break;
+      }
+    }
+  }
+
+  if (result) {
+    GASNETT_TRACE_PRINTF("gasnett_check_env_prefix(%s) found '%s'", prefix, result);
+  } else {
+    GASNETT_TRACE_PRINTF("gasnett_check_env_prefix(%s) found no matches", prefix);
+  }
+
+  return result;
+}
+
 static int _gasneti_tmpdir_valid(const char *dir) {
   struct stat s;
   /* non-empty */

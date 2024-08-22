@@ -1027,10 +1027,7 @@ def main():
     graphInfo = GraphStuff(options.name, options.testdir, perfdir, outdir,
         startdate, enddate, options.g_reduce, options.g_display_bounds,
         alttitle, annotation_file)
-    try:
-        graphInfo.init()
-    except (IOError, OSError):
-        return -1
+    graphInfo.init()
 
     # get the list of .graph files
     lines = list()
@@ -1093,7 +1090,8 @@ def main():
         except (CouldNotReadGraphFile):
             pass  # do not increment numGraphfiles
         except (ValueError, IOError, OSError):
-            return -1
+            print("Error generating graph", graph)
+            raise
 
 
     # Copy the index.html and support css and js files

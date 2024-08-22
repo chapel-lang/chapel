@@ -108,7 +108,7 @@ module UnrolledLinkedList {
       data[size] = x;
       size += 1;
     }
-  };
+  }
 
   record unrolledLinkedList : writeSerializable {
 

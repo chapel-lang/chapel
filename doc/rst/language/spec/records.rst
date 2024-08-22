@@ -23,6 +23,10 @@ contains all and only the fields defined by that type
 (:ref:`Record_Types`). Value semantics imply that the type of a
 record variable is known at compile time (i.e. it is statically typed).
 
+
+.. index::
+   pair: keywords; new
+
 A record can be created using the ``new`` operator, which allocates
 storage, initializes it via a call to a record initializer, and returns
 it. A record is also created upon a variable declaration of a record

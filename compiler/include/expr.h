@@ -23,9 +23,9 @@
 
 #include "baseAST.h"
 #include "driver.h"
-
 #include "primitive.h"
 #include "symbol.h"
+#include "wellknown.h"
 
 #include <ostream>
 
@@ -270,6 +270,11 @@ inline bool Expr::inTree() {
   return parentSymbol != nullptr;
 }
 
+inline Type* Expr::typeInfo() {
+  QualifiedType qt = this->qualType();
+  return qt.type();
+}
+
 // Determines whether a node is in the AST (vs. has been removed
 // from the AST). Used e.g. by cleanAst().
 //
@@ -386,17 +391,30 @@ bool hasOptimizationFlag(Expr* anchor, Flag flag);
 
 
 #ifdef HAVE_LLVM
-llvm::AllocaInst* createVarLLVM(llvm::Type* type, const char* name);
-llvm::AllocaInst* createVarLLVM(llvm::Type* type);
+llvm::AllocaInst* createVarLLVM(llvm::Type* type, Type* astType,
+                                Symbol* astSymbol, const char* name);
+
+llvm::AllocaInst* createVarLLVM(llvm::Type* type, Type* astType,
+                                Symbol* astSymbol);
+
+llvm::AllocaInst* createVarLLVM(llvm::Type* type, const char* name,
+                                int alignment);
 
 llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType,
                                 bool isSigned = false, bool force = false);
+
+// 'alignment' is expected to follow 'AlignmentStatus'
+void setValueAlignment(llvm::Value* value, int alignment);
+
+// sets the alignment requested by 'astType' and 'astSymbol', if any
+void setValueAlignment(llvm::Value* value, Type* astType, Symbol* astSymbol);
+
 #endif
 
 GenRet codegenValue(GenRet r);
 GenRet codegenValuePtr(GenRet r);
 
-GenRet createTempVar(const char* ctype);
+GenRet createTempVar(const char* ctype, int alignment);
 GenRet createTempVar(Type* t);
 GenRet createTempVarWith(GenRet v);
 

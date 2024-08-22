@@ -41,6 +41,7 @@ from chplenv import *
 # these are in the test/ directory with us
 import py3_compat
 import re2_supports_valgrind
+import check_perf_graphs
 
 import argparse
 try:
@@ -117,7 +118,7 @@ def run_tests(tests):
                 .format(" ".join(dirs)))
 
     # check for duplicate .graph and .dat files
-    check_for_duplicates()
+    check_perf_graphs.check_for_duplicates(logger, finish, test_dir, args.perflabel, args.performance, args.gen_graphs or args.comp_performance)
 
     # print out Chapel environment
     print_chapel_environment()
@@ -276,7 +277,7 @@ def test_directory(test, test_type):
                 skip_file_name = os.path.normpath(skip_file_name)
                 if os.path.isfile(skip_file_name):
                     try:
-                        prune_if = run_command([test_env, skip_file_name]).strip()
+                        prune_if = process_skipif_output(run_command([test_env, skip_file_name]).strip())
                         # check output and skip if true
                         if prune_if == "1" or prune_if == "True":
                             logger.write("[Skipping directory and children bas"
@@ -292,7 +293,7 @@ def test_directory(test, test_type):
                 skip_test = False
                 if os.path.isfile("SKIPIF"):
                     try:
-                        skip_test = run_command([test_env, "SKIPIF"]).strip()
+                        skip_test = process_skipif_output(run_command([test_env, "SKIPIF"]).strip())
                         # check output and skip if true
                         if skip_test == "1" or skip_test == "True":
                             logger.write("[Skipping directory based on SKIPIF "
@@ -598,6 +599,9 @@ def check_environment():
     if "CHPL_DEVELOPER" in os.environ: # unset CHPL_DEVELOPER
         del os.environ["CHPL_DEVELOPER"]
 
+    if "CHPL_EXE_NAME" in os.environ:  # unset CHPL_EXE_NAME
+        del os.environ["CHPL_EXE_NAME"]
+        
     if "CHPL_UNWIND" in os.environ:    # squash CHPL_UNWIND output
         os.environ["CHPL_RT_UNWIND"] = "0"
 
@@ -1197,78 +1201,6 @@ def print_chapel_environment():
         pass
     logger.write("##########################")
 
-
-def check_for_duplicates():
-    # check for .dat duplicates
-    if args.performance:
-        logger.write("[Checking for duplicate performance data filenames]")
-
-        dat_files = []
-        error = False
-        for root, dirnames, filenames in os.walk(test_dir):
-            for filename in fnmatch.filter(filenames, "*." + args.perflabel):
-                if filename in dat_files: # duplicate
-                    logger.write("[Error: Duplicate performance data filenames"
-                            " ({0})".format(filename))
-                    error = True
-                else:
-                    dat_files.append(filename)
-
-        if error:
-            finish()
-
-    # check for .graph files, and GRAPHFILES
-    if args.gen_graphs or args.comp_performance:
-        logger.write("[Checking for duplicate .graph files and that all .graph"
-                " files appear in {0}/*GRAPHFILES]".format(test_dir))
-
-        # find GRAPHFILES
-        graph_files = [f for f in os.listdir(test_dir) if
-                f.endswith("GRAPHFILES")]
-
-        # read .graph files from GRAPHFILES
-        GRAPHFILES_graph_files = []
-        for file in graph_files:
-            with open(os.path.join(test_dir, file), "r") as f:
-                for line in f:
-                    if line == "":
-                        continue
-                    if line.strip() == "" or line.strip()[0] == "#":
-                        continue
-                    GRAPHFILES_graph_files.append(line.rstrip())
-
-        # get absolute paths of actual .graph files
-        actual_graph_files = []
-        for root, dirnames, filenames in os.walk(test_dir):
-            for filename in fnmatch.filter(filenames, "*.graph"):
-                actual_graph_files.append(os.path.relpath(
-                    os.path.join(root, filename), test_dir))
-
-        # check that actual .graph files are listed in GRAPHFILES
-        for g in actual_graph_files:
-            filename = g
-            if filename not in GRAPHFILES_graph_files:
-                logger.write("[Warning: {0} is missing from GRAPHFILES]"
-                        .format(filename))
-
-        # check that all .graph files in GRAPHFILES actually exist
-        for g in GRAPHFILES_graph_files:
-            filename = g
-            if filename not in actual_graph_files:
-                logger.write("[Warning: {0} listed in GRAPHFILES does not "
-                        "exist]".format(filename))
-
-        # check for duplicates
-        graph_set = {}
-        for g in actual_graph_files:
-            filename = os.path.basename(g).lower()
-            if filename in graph_set:
-                logger.write("[Warning: graph files must have unique, case "
-                        "insensitive names: {0} and {1} do not]"
-                        .format(g, graph_set[filename]))
-            else:
-                graph_set[filename] = g
-
 # END STUFF
 
 # Execute 'cmd' and return its exit code.
@@ -1605,6 +1537,15 @@ def run_command(cmd, stderr=None):
     if sys.version_info[0] >= 3 and not isinstance(output, str):
         output = str(output, 'utf-8')
 
+    return output
+
+def process_skipif_output(output):
+    lines = output.splitlines()
+    if len(lines) == 0:
+      return output
+    elif len(lines) > 1:
+      print("\n".join(lines[:-1]))
+    output = lines[-1]
     return output
 
 def run_git_command(command):

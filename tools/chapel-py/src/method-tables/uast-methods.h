@@ -82,16 +82,31 @@ CLASS_BEGIN(AstNode)
 
                auto r = resolveResultsForNode(context, node);
                return ResolvedExpressionObject::tryCreate(contextObject, r))
+  PLAIN_GETTER(AstNode, scope_resolve, "Perform scope resolution on code surrounding this node to retrieve its to-ID and collect errors.",
+               std::optional<ResolvedExpressionObject*>,
+
+               auto r = scopeResolveResultsForNode(context, node);
+               return ResolvedExpressionObject::tryCreate(contextObject, r))
   METHOD(AstNode, resolve_via, "Use a given function's type information to determine the information of this node.",
          std::optional<ResolvedExpressionObject*>(TypedSignatureObject*),
 
          auto sigObj = std::get<0>(args);
          auto resolvedFn = resolution::resolveFunction(context, sigObj->value_.signature, sigObj->value_.poiScope);
+         if (!resolvedFn) return {};
+
          auto r = resolvedFn->byAstOrNull(node);
          return ResolvedExpressionObject::tryCreate(contextObject, r))
   PLAIN_GETTER(AstNode, block_header, "Get the header Location of this block-like AstNode node",
                std::optional<chpl::Location>,
                auto loc = chpl::parsing::locateBlockHeaderWithAst(context, node);
+               return getValidLocation(loc))
+  PLAIN_GETTER(AstNode, curly_braces_location, "Get the Location of the curly braces of this AstNode node",
+               std::optional<chpl::Location>,
+               auto loc = chpl::parsing::locateCurlyBracesWithAst(context, node);
+               return getValidLocation(loc))
+  PLAIN_GETTER(AstNode, parenth_location, "Get the Location of the parentheses of this AstNode node",
+               std::optional<chpl::Location>,
+               auto loc = chpl::parsing::locateExprParenthWithAst(context, node);
                return getValidLocation(loc))
 CLASS_END(AstNode)
 
@@ -125,6 +140,9 @@ CLASS_BEGIN(Attribute)
 CLASS_END(Attribute)
 
 CLASS_BEGIN(AttributeGroup)
+  METHOD(AttributeGroup, get_attribute_named, "Get the attribute with a particular name, if any",
+         Nilable<const chpl::uast::AstNode*>(chpl::UniqueString),
+         return node->getAttributeNamed(std::get<0>(args)))
   PLAIN_GETTER(AttributeGroup, is_unstable, "Check if this AttributeGroup contains the 'unstable' attribute",
                bool, return node->isUnstable())
   PLAIN_GETTER(AttributeGroup, is_deprecated, "Check if this AttributeGroup contains the 'deprecated' attribute",
@@ -338,6 +356,8 @@ CLASS_END(Yield)
 CLASS_BEGIN(SimpleBlockLike)
   PLAIN_GETTER(SimpleBlockLike, block_style, "Get the block style of this SimpleBlockLike node",
                const char*, return blockStyleToString(node->blockStyle()))
+  PLAIN_GETTER(SimpleBlockLike, stmts, "Get the statements contained in this SimpleBlockLike.",
+               IterAdapterBase*, return mkIterPair(node->stmts()))
 CLASS_END(SimpleBlockLike)
 
 CLASS_BEGIN(Begin)
@@ -381,7 +401,7 @@ CLASS_BEGIN(Loop)
                const char*, return blockStyleToString(node->blockStyle()))
   PLAIN_GETTER(Loop, body, "Get the body of this Loop node",
                const chpl::uast::AstNode*, return node->body())
-  PLAIN_GETTER(IndexableLoop, header_location, "Get the Location of this Loop node's header",
+  PLAIN_GETTER(Loop, header_location, "Get the Location of this Loop node's header",
                std::optional<chpl::Location>,
                auto loc = chpl::parsing::locateLoopHeaderWithAst(context, node);
                return getValidLocation(loc))
@@ -420,7 +440,7 @@ CLASS_END(For)
 
 CLASS_BEGIN(BoolLiteral)
   PLAIN_GETTER(BoolLiteral, value, "Get the value of this BoolLiteral node",
-               const char*, return (node->value() ? "true" : "false"))
+               bool, return node->value())
 CLASS_END(BoolLiteral)
 
 CLASS_BEGIN(ImagLiteral)
@@ -451,6 +471,11 @@ CLASS_END(StringLikeLiteral)
 CLASS_BEGIN(Call)
   PLAIN_GETTER(Call, actuals, "Get the arguments to this Call node",
                IterAdapterBase*, return mkIterPair(node->actuals()))
+  PLAIN_GETTER(Call, num_actuals, "Get the number of actuals for this Call node",
+               int, return node->numActuals())
+  METHOD(Call, actual, "Get the n'th actual of this Call node",
+         const chpl::uast::AstNode*(int),
+         return node->actual(std::get<0>(args)))
   PLAIN_GETTER(Call, called_expression, "Get the expression invoked by this Call node",
                const chpl::uast::AstNode*, return node->calledExpression())
   PLAIN_GETTER(Call, formal_actual_mapping, "Get the index of the function's formal for each of the call's actuals.",

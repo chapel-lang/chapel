@@ -72,6 +72,12 @@ typedef struct {
   // DO NOT PUT ANYTHING HERE
 } gasneti_strided_op_t;
 
+typedef struct {
+  void *lptr;
+  void *rptr;
+  size_t sz;
+} gasneti_vector_pair_t;
+
 /* per-EP state for VIS */
 typedef struct {
   gasneti_mutex_t _poll_lock;
@@ -88,6 +94,11 @@ typedef struct {
   gasneti_vis_op_t *active_ops;
   gasneti_vis_op_t *free_ops;
   int progressfn_active;
+
+  // deferment queue for incremental packing
+  gasneti_vector_pair_t *defer_buf;
+  size_t                 defer_sz;
+
   #ifdef GASNETE_VIS_THREADDATA_EXTRA
     GASNETE_VIS_THREADDATA_EXTRA
   #endif
@@ -104,6 +115,7 @@ static void gasnete_vis_cleanup_threaddata(void *_td) {
     td->free_ops = op->next;
     gasneti_free(op);
   }
+  gasneti_free(td->defer_buf);
   gasneti_free(td);
 }
 
@@ -118,7 +130,7 @@ gasnete_vis_threaddata_t *gasnete_vis_new_threaddata(void) {
 }
 
 #define _GASNETE_VIS_MYTHREAD(mythread)     \
-        (mythread->gasnete_vis_threaddata ? \
+        (GASNETT_PREDICT_TRUE(mythread->gasnete_vis_threaddata) ? \
          mythread->gasnete_vis_threaddata : \
         (mythread->gasnete_vis_threaddata = gasnete_vis_new_threaddata()))
 #define GASNETE_VIS_MYTHREAD        _GASNETE_VIS_MYTHREAD(GASNETI_MYTHREAD)

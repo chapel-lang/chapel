@@ -7,7 +7,7 @@ use BlockDist;
 config const N = 16;
 
 const space = {0..#N, 0..#N, 0..#N};
-const ParentDom = space dmapped blockDist(space);
+const ParentDom = space dmapped new blockDist(space);
 var SparseDom: sparse subdomain(ParentDom);
 var arr: [SparseDom] int;
 

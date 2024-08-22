@@ -66,6 +66,7 @@ void Context::Configuration::swap(Context::Configuration& other) {
   std::swap(keepTmpDir, other.keepTmpDir);
   std::swap(toolName, other.toolName);
   std::swap(includeComments, other.includeComments);
+  std::swap(disableErrorBreakpoints, other.disableErrorBreakpoints);
 }
 
 void Context::setupGlobalStrings() {
@@ -875,7 +876,9 @@ void Context::collectGarbage() {
 }
 
 void Context::report(owned<ErrorBase> error) {
-  gdbShouldBreakHere();
+  if (!config_.disableErrorBreakpoints) {
+    gdbShouldBreakHere();
+  }
 
   // If errorCollectionStack is not empty, errors are being collected, and
   // thus not reported to the handler. Stash the error in the top (back) of the
@@ -921,12 +924,22 @@ static void logErrorInContext(Context* context,
 
 static void logErrorInContext(Context* context,
                               ErrorBase::Kind kind,
+                              const IdOrLocation& loc,
+                              const char* fmt,
+                              va_list vl) {
+  auto err = GeneralError::vbuild(kind, loc, fmt, vl);
+  context->report(std::move(err));
+}
+
+static void logErrorInContext(Context* context,
+                              ErrorBase::Kind kind,
                               const uast::AstNode* ast,
                               const char* fmt,
                               va_list vl) {
   auto err = GeneralError::vbuild(kind, ast->id(), fmt, vl);
   context->report(std::move(err));
 }
+
 
 #define CHPL_CONTEXT_LOG_ERROR_HELPER(context__, kind__, pin__, fmt__) \
   do { \
@@ -943,6 +956,10 @@ void Context::error(Location loc, const char* fmt, ...) {
 
 void Context::error(ID id, const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, id, fmt);
+}
+
+void Context::error(const IdOrLocation& loc, const char* fmt, ...) {
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, loc, fmt);
 }
 
 void Context::error(const uast::AstNode* ast, const char* fmt, ...) {

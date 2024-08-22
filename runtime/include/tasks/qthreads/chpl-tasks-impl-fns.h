@@ -76,10 +76,11 @@ typedef struct chpl_qthread_tls_s {
 } chpl_qthread_tls_t;
 
 extern pthread_t chpl_qthread_process_pthread;
-extern pthread_t chpl_qthread_comm_pthread;
+extern int chpl_qthread_comm_num_pthreads;
+extern pthread_t *chpl_qthread_comm_pthreads;
 
 extern chpl_qthread_tls_t chpl_qthread_process_tls;
-extern chpl_qthread_tls_t chpl_qthread_comm_task_tls;
+extern chpl_qthread_tls_t *chpl_qthread_comm_task_tls;
 
 // Wrap qthread_get_tasklocal().
 static inline chpl_qthread_tls_t* chpl_qthread_get_tasklocal(void)
@@ -91,10 +92,18 @@ static inline chpl_qthread_tls_t* chpl_qthread_get_tasklocal(void)
                qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
         if (tls == NULL) {
             pthread_t me = pthread_self();
-            if (pthread_equal(me, chpl_qthread_comm_pthread))
-                tls = &chpl_qthread_comm_task_tls;
-            else if (pthread_equal(me, chpl_qthread_process_pthread))
+            // if not process or comm thread, ok to return NULL
+            if (pthread_equal(me, chpl_qthread_process_pthread)) {
                 tls = &chpl_qthread_process_tls;
+            } else {
+                for (int i = 0; i < chpl_qthread_comm_num_pthreads; i++) {
+                    assert(chpl_qthread_comm_pthreads != NULL);
+                    if (pthread_equal(me, chpl_qthread_comm_pthreads[i])) {
+                        tls = &chpl_qthread_comm_task_tls[i];
+                        break;
+                    }
+                }
+            }
         }
     }
     else

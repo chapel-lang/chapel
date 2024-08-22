@@ -1,1 +1,1 @@
-duplicateModules.chpl
+duplicateModules.chpl --main-module M

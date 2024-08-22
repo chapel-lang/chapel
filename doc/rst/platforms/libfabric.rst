@@ -45,20 +45,25 @@ Building Chapel with the ofi Communication Layer
    environment variable is set to 'bundled' or the default search fails
    to find a libfabric on such systems, a warning will result.
 
-#. Select a launcher.  On Cray XC and HPE Cray EX systems you can skip this step,
+#. Select a launcher. On Cray XC and HPE Cray EX systems you can skip this step,
    because on those systems the automatically-selected ``aprun`` or
    ``srun`` launcher settings will work with the ofi communication
-   layer.  But on other systems, select the Chapel ``mpirun4ofi``
-   launcher.  For more information see `The mpirun4ofi Launcher`_,
-   below.
+   layer. But on other systems, select the appropriate launcher. If using a
+   slurm-based cluster, use the Chapel ``slurm-srun`` launcher.
 
+   .. code-block:: bash
+
+     export CHPL_LAUNCHER=slurm-srun
+
+   Otherwise, use the Chapel ``mpirun4ofi`` launcher. For more information see
+   `The mpirun4ofi Launcher`_.
 
    .. code-block:: bash
 
      export CHPL_LAUNCHER=mpirun4ofi
 
 
-#. If you are using the mpirun4ofi launcher, set the variable indicating
+#. If you are using the ``mpirun4ofi`` launcher, set the variable indicating
    the path to an OpenMPI installation.  It may be possible to skip this
    step, if your system has OpenMPI already installed and your target
    compiler can find its include and library files itself.  But this is
@@ -87,6 +92,18 @@ Building Chapel with the ofi Communication Layer
    .. code-block:: bash
 
      brew install open-mpi
+
+#. If you are not on a Cray XC or HPE Cray EX system and you are not using the ``mpirun4ofi`` launcher, you may need to set ``CHPL_COMM_OFI_OOB``.
+
+       =======  ====================================================
+       Value     Description
+       =======  ====================================================
+       pmi2     use the PMI2 (Process Management Interface) out-of-band (OOB) mechanism
+       mpi      use the MPI out-of-band (OOB) mechanism
+       sockets  use the sockets out-of-band (OOB) mechanism
+       =======  ====================================================
+
+   On Cray XC and HPE Cray EX systems, the default is ``pmi2``. If the launcher is ``mpirun4ofi``, the default is ``mpi``. Otherwise, Chapel will fallback to ``sockets``, which is not recommended. If you are using a slurm-based launcher, you should set ``CHPL_COMM_OFI_OOB=pmi2``.
 
 #. Re-make the compiler and runtime from ``CHPL_HOME`` (see
    :ref:`readme-building`).
@@ -123,7 +140,7 @@ ___________________
 Libfabric defines an abstract network and operations on it, and
 so-called *providers* within libfabric define the concrete instances of
 the network and operations.  The provider used by a program is selected
-at execution time.  The ofi communication layer has been tested with 3
+at execution time.  The ofi communication layer has been tested with 4
 different providers:
 
   gni
@@ -143,6 +160,11 @@ different providers:
     functional, indeed to the extent libfabric has a reference provider
     the tcp provider is it, but its emphasis is definitely
     functionality rather than performance.
+
+  efa
+    The ``efa`` provider works on AWS EC2 instances with Elastic Fabric
+    Adapter (EFA) support. This is the default provider on AWS EC2 instances
+    with EFA support.
 
   verbs
     The ``verbs`` provider works on any system with verbs-based network
@@ -217,6 +239,12 @@ Alternatively, you can prevent creation of a fixed heap entirely by
 setting ``CHPL_RT_MAX_HEAP_SIZE=0``.  This may cause the selection of a
 different provider than the highest-performing one, however.
 
+``CHPL_RT_MAX_HEAP_SIZE`` sets the heap size per compute node. If the
+application is run with multiple locales per node (co-locales), the heap size
+will be divided equally among the co-locales. For example, setting
+``CHPL_RT_MAX_HEAP_SIZE=100G`` and running with 4 co-locales (i.e., ``-nl Nx4``) will
+result in a 25 GiB heap per co-locale.
+
 .. note::
   In the future we hope to be able to reduce the user impact of memory
   registration and fixed heaps when using the ofi communication layer.
@@ -249,6 +277,17 @@ fixed heap during initialization; as a result, it will create a heap of
 size ``CHPL_RT_MAX_HEAP_SIZE`` even if there is insufficient physical
 memory, which may lead to out-of-memory errors during program
 execution.
+
+
+Transparent Hugepages
+_____________________
+
+With some providers, the use of transparent hugepages is required to register
+more memory. This is default when using the EFA provider on AWS. To explicitly
+enable transparent hugepages, set the ``CHPL_RT_COMM_OFI_THP_HINT`` environment
+variable to true. This will enable transparent hugepages for the duration of
+the program. Note that this requires the kernel to have transparent hugepages
+enabled and enough free hugepages to be available.
 
 .. _mpirun4ofi-launcher:
 

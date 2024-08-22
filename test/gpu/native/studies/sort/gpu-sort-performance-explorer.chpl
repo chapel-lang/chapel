@@ -17,7 +17,7 @@ config const bitsAtATime = 8;
 config const inputDataScheme = 1;
 config type eltType = uint(32);
 
-config const seed = NPBRandom.oddTimeSeed();
+config const seed = (new randomStream(int(32))).seed;
 
 var methods = ["default", "gpuCub", "gpuRadix"];
 
@@ -112,7 +112,7 @@ proc testsize(size:int) {
 
   var array = generateArray(size);
 
-  var nBytes = size*8;
+  var nBytes = size*numBytes(eltType);
   var kibibytes = nBytes/1024.0;
   var mibibytes = kibibytes/1024.0;
   var sizestr = nBytes:string + " bytes";

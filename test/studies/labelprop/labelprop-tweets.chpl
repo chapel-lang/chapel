@@ -84,7 +84,7 @@ proc main(args:[] string) {
   // domain assignment in Hashed
   // Pairs is for collecting twitter  user ID to user ID mentions
   if distributed {
-    var Pairs: domain( (int, int), parSafe=false) dmapped hashedDist(idxType=(int, int));
+    var Pairs: domain( (int, int), parSafe=false) dmapped new hashedDist(idxType=(int, int));
     run(todo, Pairs);
   } else {
     var Pairs: domain( (int, int), parSafe=false);
@@ -100,7 +100,7 @@ proc run(ref todo:LinkedList(string), ref Pairs) {
 
   const FilesSpace = {1..todo.size};
   const BlockSpace = if distributed then
-                       FilesSpace dmapped blockDist(boundingBox=FilesSpace)
+                       FilesSpace dmapped new blockDist(boundingBox=FilesSpace)
                      else
                        FilesSpace;
   var allfiles:[BlockSpace] string;
@@ -426,7 +426,7 @@ proc create_and_analyze_graph(ref Pairs)
 
   // re-seed the RNG if seed is 0.
   if seed == 0 {
-    seed = NPBRandom.oddTimeSeed();
+    seed = (new randomStream(int(32))).seed;
   }
 
 

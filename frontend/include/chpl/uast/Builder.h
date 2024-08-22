@@ -104,6 +104,8 @@ class Builder final {
 
   void noteAdditionalLocation(AstLocMap& m, AstNode* ast, Location loc);
   void tryNoteAdditionalLocation(AstLocMap& m, AstNode* ast, Location loc);
+  void copyAdditionalLocation(AstLocMap& m, const AstNode* from, const AstNode* to);
+  void deleteAdditionalLocation(AstLocMap& m, const AstNode* ast);
 
  public:
   /** Construct a Builder for parsing a top-level module */
@@ -143,9 +145,17 @@ class Builder final {
       For a list of all locations see "./all-location-maps.h". */
   #define LOCATION_MAP(ast__, location__) \
     void note##location__##Location(ast__* ast, Location loc); \
-    void tryNote##location__##Location(ast__* ast, Location loc);
+    void tryNote##location__##Location(ast__* ast, Location loc); \
+    void copy##location__##Location(const ast__* from, const ast__* to); \
+    void delete##location__##Location(const ast__* ast);
   #include "all-location-maps.h"
   #undef LOCATION_MAP
+
+  /** Delete all the locations storedfor the current AST. This is useful if the
+      AST is being deallocated, which means future uses of this pointer
+      (the memory could be re-used) must not have locations out of the box.
+    */
+  void deleteAllLocations(const AstNode* ast);
 
   /** Note the symbol table symbols so that the resulting
       BuilderResult will have a working 'isSymbolTableSymbol' function. */

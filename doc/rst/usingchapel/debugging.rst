@@ -70,17 +70,22 @@ The current best practice for debugging Chapel source code is to use the C
 backend and use a series of flags to improve the debuggability of the generated
 executable. This can be done in two steps.
 
-1) Build the compiler with ``CHPL_TARGET_COMPILER`` set to ``gnu``:
+1) Build the compiler with ``CHPL_TARGET_COMPILER`` set to ``gnu``
+   (or ``clang`` if on Mac):
 
    .. code-block:: bash
 
         CHPL_TARGET_COMPILER=gnu make
+        # On MacOS
+        # CHPL_TARGET_COMPILER=clang make
 
 2) Build the executable from Chapel source code:
 
    .. code-block:: bash
 
         chpl -g --target-compiler=gnu --savec <dir> --preserve-inlined-line-numbers --no-munge-user-idents --no-return-by-ref --no-inline <source_file>
+        # On MacOS
+        # chpl -g --target-compiler=clang --savec <dir> --preserve-inlined-line-numbers --no-munge-user-idents --no-return-by-ref --no-inline <source_file>
 
 For more details on these settings, read the rest of this section.
 
@@ -181,9 +186,7 @@ Configuration Constants for Tracking Memory
 Chapel supports a number of configuration constants related to dynamic
 memory allocation for the compiler-generated executable, currently
 designed for use primarily by the development team to track memory
-usage in tests.  Please note that our generated code currently
-contains memory leaks, so you should not be surprised if your program
-requires more memory than it seems it should.
+usage in tests.
 
 For full information on these configuration constants consult
 :chpl:mod:`MemDiagnostics`.

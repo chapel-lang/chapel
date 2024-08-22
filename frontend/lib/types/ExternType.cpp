@@ -24,20 +24,23 @@ namespace chpl {
 namespace types {
 
 const owned<ExternType>& ExternType::getExternType(Context* context,
-                                                   UniqueString name) {
-  QUERY_BEGIN(getExternType, context, name);
-  auto result = toOwned(new ExternType(name));
+                                                   UniqueString name,
+                                                   ID id) {
+  QUERY_BEGIN(getExternType, context, name, id);
+  auto result = toOwned(new ExternType(name, id));
   return QUERY_END(result);
 }
 
 void ExternType::stringify(std::ostream& ss,
                            chpl::StringifyKind stringKind) const {
-  ss << "extern type ";
+  if (stringKind != StringifyKind::CHPL_SYNTAX) {
+    ss << "extern type ";
+  }
   linkageName().stringify(ss, stringKind);
 }
 
-const ExternType* ExternType::get(Context* context, UniqueString linkageName) {
-  return getExternType(context, linkageName).get();
+const ExternType* ExternType::get(Context* context, UniqueString linkageName, ID id) {
+  return getExternType(context, linkageName, std::move(id)).get();
 }
 
 } // end namespace types

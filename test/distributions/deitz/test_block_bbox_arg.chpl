@@ -2,6 +2,6 @@ use BlockDist;
 
 config var n: int = 8;
 
-var A: [{1..n} dmapped blockDist({1..n})] int;
+var A: [{1..n} dmapped new blockDist({1..n})] int;
 
 writeln(for i in 1..n do (i, A(i), A(i).locale.id));

@@ -13,7 +13,7 @@
  * A conduit may select which portions of the code are built using
  * either fine-grained or coarse-grained controls.
  *
- * The coarse-grained controls just define the fine-grained ones:
+ * The coarse-grained controls primarily just define the fine-grained ones:
  *
  *    #define GASNETE_USING_REF_EXTENDED_GET 1
  *      Is equivalent to
@@ -24,6 +24,10 @@
  *      Is equivalent to
  *         #define GASNETE_BUILD_AMREF_PUT_HANDLERS 1
  *         #define GASNETE_BUILD_AMREF_PUT 1
+ *
+ * Additionally, GASNETE_USING_REF_EXTENDED_{PUT,GET} is a performance 
+ * advisory to subsystems including collectives and VIS that RMA is AM-based
+ * and not using native RDMA.
  *
  * The fine-grained controls:
  *

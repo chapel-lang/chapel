@@ -54,18 +54,21 @@ on here.gpus[0] {
 
   var deviceBuffer = getDeviceBufferPointer();
 
-  // arguments are: number of parameters, line no, file no
-  var cfg = __primitive("gpu init kernel cfg", 1, 0, 0);
+  var cfg = __primitive("gpu init kernel cfg",
+                        /*fn*/ "add_nums":chpl_c_string,
+                        /*numThreads*/ 1,
+                        /*blockSize*/ 1,
+                        /*args*/1,
+                        /*pids*/0,
+                        /*reductions*/0,
+                        /*hostRegVars*/0);
 
   // 1 is an enum value that says: "pass the address of this to the
   //   kernel_params, while not offloading anything". I am not entirely sure why
   //   we need to do that for C pointers
   __primitive("gpu arg", cfg, deviceBuffer, 1);
 
-  // arguments are: fatbin path, function name, grid size, block size, arguments
-  __primitive("gpu kernel launch flat",
-               "add_nums":chpl_c_string,
-               1, 1, cfg);
+  __primitive("gpu kernel launch", cfg);
   output = getDataFromDevice(deviceBuffer);
 
   chpl_gpu_deinit_kernel_cfg(cfg);

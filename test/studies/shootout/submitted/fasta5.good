@@ -1,7 +1,3 @@
-fasta5.chpl:78: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
-fasta5.chpl:78: warning: writer with a 'kind' argument is deprecated, please use Serializers instead
-fasta5.chpl:78: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
-fasta5.chpl:170: warning: inferring a default intent to be 'ref' is deprecated - please use an explicit 'ref' intent for the argument 'arr'
 >ONE Homo sapiens alu
 GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGGGAGGCCGAGGCGGGCGGA
 TCACCTGAGGTCAGGAGTTCGAGACCAGCCTGGCCAACATGGTGAAACCCCGTCTCTACT

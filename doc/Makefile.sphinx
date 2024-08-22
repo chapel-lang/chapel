@@ -8,7 +8,7 @@ CHPLDEPS = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_home_
 COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --copy
 
 # You can set these variables from the command line.
-SPHINXOPTS    = -W --keep-going
+SPHINXOPTS    = -n -W --keep-going
 SPHINXBUILD = $(CHPL_MAKE_PYTHON) $(CHPLDEPS) sphinx-build
 PAPER         =
 SOURCEDIR     = rst
@@ -87,6 +87,8 @@ html-release: check-sphinxbuild source
 	@chmod -R ugo+rX $(BUILDDIR)
 	@$(COPY_IF_DIFFERENT) util/versionButton.php $(BUILDDIR)/html/versionButton.php
 	@echo "ErrorDocument 404 https://chapel-lang.org/docs/$(WEB_DOC_VERSION)/index.html" > $(BUILDDIR)/html/.htaccess
+	@echo copying searchtools.js
+	@cp $(CHPL_MAKE_HOME)/doc/rst/meta/static/searchtools.js $(BUILDDIR)/html/_static
 	@rm -Rf html
 	@cp -R $(BUILDDIR)/html html
 	@echo

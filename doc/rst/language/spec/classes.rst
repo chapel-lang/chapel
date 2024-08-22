@@ -722,6 +722,7 @@ Methods without parentheses are not candidates for dynamic dispatch.
 .. index::
    pair: new; classes
    single: new
+   pair: keywords; new
 .. _Class_New:
 
 Class New

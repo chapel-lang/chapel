@@ -1,0 +1,16 @@
+readLine
+  got expected error and offset
+readThrough
+  got expected error and offset
+readTo
+  got expected error and offset
+advanceThrough
+  no error, as expected
+advanceTo
+  no error, as expected
+readString
+  got expected error and offset
+readAll(string)
+  got expected error and offset
+readBinary(string)
+  got expected error and offset

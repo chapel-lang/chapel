@@ -1,0 +1,25 @@
+svg.tree {
+  height: 80vh;
+  min-height: 100%;
+  min-width: 100%;
+}
+div.tooltip {
+  position: absolute;
+  text-align: left;
+  padding: 0.4rem;
+  background: #FFFFFF;
+  color: #313639;
+  border: 1px solid #313639;
+  border-radius: 8px;
+  font-size: 1.3rem;
+  width: 30vw;
+}
+div.tooltip.hidden {
+  display: none;
+  pointer-events: none;
+}
+
+div g.highlight {
+  text-decoration: underline;
+  font-weight: bold;
+}

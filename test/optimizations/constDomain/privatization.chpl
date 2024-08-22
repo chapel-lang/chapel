@@ -1,7 +1,7 @@
 use BlockDist;
 use CommDiagnostics;
 
-const dom = {1..10} dmapped blockDist({1..10});
+const dom = {1..10} dmapped new blockDist({1..10});
 
 
 for l in Locales do on l {

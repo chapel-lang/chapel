@@ -9,4 +9,5 @@ module Lib2 {
 module T1 {
   public use Lib1;
   public use Lib2 only b as a;
+  proc main() { }
 }

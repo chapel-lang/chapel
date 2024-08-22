@@ -42,7 +42,7 @@
 /* While the CQ is full, we continue to add new entries to the auxiliary
  * queue.
  */
-static void ofi_cq_insert_aux(struct util_cq *cq,
+static void util_cq_insert_aux(struct util_cq *cq,
 			      struct util_cq_aux_entry *entry)
 {
 	assert(ofi_genlock_held(&cq->cq_lock));
@@ -77,14 +77,15 @@ int ofi_cq_write_overflow(struct util_cq *cq, void *context, uint64_t flags,
 	entry->comp.err = 0;
 	entry->src = src;
 
-	ofi_cq_insert_aux(cq, entry);
+	util_cq_insert_aux(cq, entry);
 	return 0;
 }
 
-int ofi_cq_insert_error(struct util_cq *cq,
-			const struct fi_cq_err_entry *err_entry)
+static int util_cq_insert_error(struct util_cq *cq,
+				const struct fi_cq_err_entry *err_entry)
 {
 	struct util_cq_aux_entry *entry;
+	void *err_data;
 
 	assert(ofi_genlock_held(&cq->cq_lock));
 	assert(err_entry->err);
@@ -93,20 +94,34 @@ int ofi_cq_insert_error(struct util_cq *cq,
 		return -FI_ENOMEM;
 
 	entry->comp = *err_entry;
-	ofi_cq_insert_aux(cq, entry);
+
+	if (err_entry->err_data_size) {
+		err_data = mem_dup(err_entry->err_data,
+				   err_entry->err_data_size);
+		if (!err_data) {
+			free(entry);
+			return -FI_ENOMEM;
+		}
+
+		entry->comp.err_data = err_data;
+	}
+
+	util_cq_insert_aux(cq, entry);
 	return 0;
 }
 
 int ofi_cq_write_error(struct util_cq *cq,
 		       const struct fi_cq_err_entry *err_entry)
 {
+	int ret;
+
 	ofi_genlock_lock(&cq->cq_lock);
-	ofi_cq_insert_error(cq, err_entry);
+	ret = util_cq_insert_error(cq, err_entry);
 	ofi_genlock_unlock(&cq->cq_lock);
 
 	if (cq->wait)
 		cq->wait->signal(cq->wait);
-	return 0;
+	return ret;
 }
 
 int ofi_cq_write_error_peek(struct util_cq *cq, uint64_t tag, void *context)
@@ -138,6 +153,38 @@ int ofi_cq_write_error_trunc(struct util_cq *cq, void *context, uint64_t flags,
 	};
 	return ofi_cq_write_error(cq, &err_entry);
 }
+
+int ofi_peer_cq_write_error_peek(struct util_cq *cq, uint64_t tag,
+				 void *context)
+{
+	struct fi_cq_err_entry err_entry = {
+		.op_context	= context,
+		.flags		= FI_TAGGED | FI_RECV,
+		.tag		= tag,
+		.err		= FI_ENOMSG,
+		.prov_errno	= -FI_ENOMSG,
+	};
+	return ofi_peer_cq_write_error(cq, &err_entry);
+}
+
+int ofi_peer_cq_write_error_trunc(struct util_cq *cq, void *context,
+				  uint64_t flags, size_t len, void *buf,
+				  uint64_t data, uint64_t tag, size_t olen)
+{
+	struct fi_cq_err_entry err_entry = {
+		.op_context	= context,
+		.flags		= flags,
+		.len		= len,
+		.buf		= buf,
+		.data		= data,
+		.tag		= tag,
+		.olen		= olen,
+		.err		= FI_ETRUNC,
+		.prov_errno	= -FI_ETRUNC,
+	};
+	return ofi_peer_cq_write_error(cq, &err_entry);
+}
+
 
 int ofi_check_cq_attr(const struct fi_provider *prov,
 		      const struct fi_cq_attr *attr)
@@ -181,7 +228,7 @@ int ofi_check_cq_attr(const struct fi_provider *prov,
 		return -FI_EINVAL;
 	}
 
-	if (attr->flags & ~(FI_AFFINITY)) {
+	if (attr->flags & ~(FI_AFFINITY | FI_PEER)) {
 		FI_WARN(prov, FI_LOG_CQ, "invalid flags\n");
 		return -FI_EINVAL;
 	}
@@ -216,62 +263,13 @@ static void util_cq_read_tagged(void **dst, void *src)
 ssize_t ofi_cq_readfrom(struct fid_cq *cq_fid, void *buf, size_t count,
 			fi_addr_t *src_addr)
 {
-	struct fi_cq_tagged_entry *entry;
-	struct util_cq_aux_entry *aux_entry;
 	struct util_cq *cq;
-	ssize_t i;
 
 	cq = container_of(cq_fid, struct util_cq, cq_fid);
 
 	cq->progress(cq);
-	ofi_genlock_lock(&cq->cq_lock);
-	if (ofi_cirque_isempty(cq->cirq)) {
-		i = -FI_EAGAIN;
-		goto out;
-	}
 
-	if (count > ofi_cirque_usedcnt(cq->cirq))
-		count = ofi_cirque_usedcnt(cq->cirq);
-
-	for (i = 0; i < (ssize_t) count; i++) {
-		entry = ofi_cirque_head(cq->cirq);
-		if (!(entry->flags & UTIL_FLAG_AUX)) {
-			if (src_addr && cq->src)
-				src_addr[i] = cq->src[ofi_cirque_rindex(cq->cirq)];
-			cq->read_entry(&buf, entry);
-			ofi_cirque_discard(cq->cirq);
-		} else {
-			assert(!slist_empty(&cq->aux_queue));
-			aux_entry = container_of(cq->aux_queue.head,
-						 struct util_cq_aux_entry,
-						 list_entry);
-			assert(aux_entry->cq_slot == entry);
-			if (aux_entry->comp.err) {
-				if (!i)
-					i = -FI_EAVAIL;
-				break;
-			}
-
-			if (src_addr && cq->src)
-				src_addr[i] = aux_entry->src;
-			cq->read_entry(&buf, &aux_entry->comp);
-			slist_remove_head(&cq->aux_queue);
-			free(aux_entry);
-
-			if (slist_empty(&cq->aux_queue)) {
-				ofi_cirque_discard(cq->cirq);
-			} else {
-				aux_entry = container_of(cq->aux_queue.head,
-							struct util_cq_aux_entry,
-							list_entry);
-				if (aux_entry->cq_slot != ofi_cirque_head(cq->cirq))
-					ofi_cirque_discard(cq->cirq);
-			}
-		}
-	}
-out:
-	ofi_genlock_unlock(&cq->cq_lock);
-	return i;
+	return ofi_cq_read_entries(cq, buf, count, src_addr);
 }
 
 ssize_t ofi_cq_read(struct fid_cq *cq_fid, void *buf, size_t count)
@@ -284,15 +282,20 @@ ssize_t ofi_cq_readerr(struct fid_cq *cq_fid, struct fi_cq_err_entry *buf,
 {
 	struct util_cq_aux_entry *aux_entry;
 	struct util_cq *cq;
-	char *err_buf_save;
-	size_t err_data_size;
 	uint32_t api_version;
 	ssize_t ret;
+	size_t err_data_size = buf->err_data_size;
 
 	cq = container_of(cq_fid, struct util_cq, cq_fid);
 	api_version = cq->domain->fabric->fabric_fid.api_version;
 
 	ofi_genlock_lock(&cq->cq_lock);
+
+	if (cq->err_data) {
+		free(cq->err_data);
+		cq->err_data = NULL;
+	}
+
 	if (ofi_cirque_isempty(cq->cirq) ||
 	    !(ofi_cirque_head(cq->cirq)->flags & UTIL_FLAG_AUX)) {
 		ret = -FI_EAGAIN;
@@ -309,22 +312,27 @@ ssize_t ofi_cq_readerr(struct fid_cq *cq_fid, struct fi_cq_err_entry *buf,
 		goto unlock;
 	}
 
-	if ((FI_VERSION_GE(api_version, FI_VERSION(1, 5))) &&
-	    buf->err_data_size) {
-		err_buf_save = buf->err_data;
-		err_data_size = MIN(buf->err_data_size,
-				    aux_entry->comp.err_data_size);
+	ofi_cq_err_memcpy(api_version, buf, &aux_entry->comp);
 
-		*buf = aux_entry->comp;
-		memcpy(err_buf_save, aux_entry->comp.err_data, err_data_size);
-		buf->err_data = err_buf_save;
-		buf->err_data_size = err_data_size;
-	} else {
-		memcpy(buf, &aux_entry->comp,
-		       sizeof(struct fi_cq_err_entry_1_0));
+	/* For compatibility purposes, if err_data_size is 0 on input,
+	 * output err_data will be set to a data buffer owned by the provider.
+	 */
+	if (aux_entry->comp.err_data_size &&
+	    (err_data_size == 0 || FI_VERSION_LT(api_version, FI_VERSION(1, 5)))) {
+		cq->err_data = mem_dup(aux_entry->comp.err_data,
+				       aux_entry->comp.err_data_size);
+		if (!cq->err_data) {
+			ret = -FI_ENOMEM;
+			goto unlock;
+		}
+
+		buf->err_data = cq->err_data;
+		buf->err_data_size = aux_entry->comp.err_data_size;
 	}
 
 	slist_remove_head(&cq->aux_queue);
+	if (aux_entry->comp.err_data_size)
+		free(aux_entry->comp.err_data);
 	free(aux_entry);
 	if (slist_empty(&cq->aux_queue)) {
 		ofi_cirque_discard(cq->cirq);
@@ -404,19 +412,29 @@ static struct fi_ops_cq util_cq_ops = {
 	.strerror = ofi_cq_strerror,
 };
 
-int ofi_cq_cleanup(struct util_cq *cq)
+static void util_peer_cq_cleanup(struct util_cq *cq)
 {
 	struct util_cq_aux_entry *err;
 	struct slist_entry *entry;
-
-	if (ofi_atomic_get32(&cq->ref))
-		return -FI_EBUSY;
 
 	while (!slist_empty(&cq->aux_queue)) {
 		entry = slist_remove_head(&cq->aux_queue);
 		err = container_of(entry, struct util_cq_aux_entry, list_entry);
 		free(err);
 	}
+
+	util_comp_cirq_free(cq->cirq);
+	free(cq->src);
+	fi_close(&cq->peer_cq->fid);
+}
+
+int ofi_cq_cleanup(struct util_cq *cq)
+{
+	if (ofi_atomic_get32(&cq->ref))
+		return -FI_EBUSY;
+
+	if (!(cq->flags & FI_PEER))
+		util_peer_cq_cleanup(cq);
 
 	if (cq->wait) {
 		fi_poll_del(&cq->wait->pollset->poll_fid,
@@ -425,11 +443,14 @@ int ofi_cq_cleanup(struct util_cq *cq)
 			fi_close(&cq->wait->wait_fid.fid);
 	}
 
-	ofi_atomic_dec32(&cq->domain->ref);
-	util_comp_cirq_free(cq->cirq);
+	if (cq->err_data) {
+		free(cq->err_data);
+		cq->err_data = NULL;
+	}
+
 	ofi_genlock_destroy(&cq->cq_lock);
-	ofi_mutex_destroy(&cq->ep_list_lock);
-	free(cq->src);
+	ofi_genlock_destroy(&cq->ep_list_lock);
+	ofi_atomic_dec32(&cq->domain->ref);
 	return 0;
 }
 
@@ -471,68 +492,6 @@ static struct fi_ops util_cq_fi_ops = {
 	.ops_open = fi_no_ops_open,
 };
 
-static int fi_cq_init(struct fid_domain *domain, struct fi_cq_attr *attr,
-		      fi_cq_read_func read_entry, struct util_cq *cq,
-		      void *context)
-{
-	struct fi_wait_attr wait_attr;
-	enum ofi_lock_type lock_type;
-	struct fid_wait *wait;
-	int ret;
-
-	cq->domain = container_of(domain, struct util_domain, domain_fid);
-	ofi_atomic_initialize32(&cq->ref, 0);
-	ofi_atomic_initialize32(&cq->wakeup, 0);
-	dlist_init(&cq->ep_list);
-	ofi_mutex_init(&cq->ep_list_lock);
-
-	if (cq->domain->threading == FI_THREAD_COMPLETION ||
-	    cq->domain->threading == FI_THREAD_DOMAIN)
-		lock_type = OFI_LOCK_NOOP;
-	else
-		lock_type = cq->domain->lock.lock_type;
-	ret = ofi_genlock_init(&cq->cq_lock, lock_type);
-	slist_init(&cq->aux_queue);
-	if (ret)
-		return ret;
-
-	cq->flags = attr->flags;
-	cq->read_entry = read_entry;
-	cq->cq_fid.fid.fclass = FI_CLASS_CQ;
-	cq->cq_fid.fid.context = context;
-
-	switch (attr->wait_obj) {
-	case FI_WAIT_NONE:
-		wait = NULL;
-		break;
-	case FI_WAIT_UNSPEC:
-	case FI_WAIT_FD:
-	case FI_WAIT_POLLFD:
-	case FI_WAIT_MUTEX_COND:
-	case FI_WAIT_YIELD:
-		memset(&wait_attr, 0, sizeof wait_attr);
-		wait_attr.wait_obj = attr->wait_obj;
-		cq->internal_wait = 1;
-		ret = fi_wait_open(&cq->domain->fabric->fabric_fid,
-				   &wait_attr, &wait);
-		if (ret)
-			return ret;
-		break;
-	case FI_WAIT_SET:
-		wait = attr->wait_set;
-		break;
-	default:
-		assert(0);
-		return -FI_EINVAL;
-	}
-
-	if (wait)
-		cq->wait = container_of(wait, struct util_wait, wait_fid);
-
-	ofi_atomic_inc32(&cq->domain->ref);
-	return 0;
-}
-
 int ofi_check_bind_cq_flags(struct util_ep *ep, struct util_cq *cq,
 			    uint64_t flags)
 {
@@ -560,21 +519,197 @@ void ofi_cq_progress(struct util_cq *cq)
 	struct fid_list_entry *fid_entry;
 	struct dlist_entry *item;
 
-	ofi_mutex_lock(&cq->ep_list_lock);
+	ofi_genlock_lock(&cq->ep_list_lock);
 	dlist_foreach(&cq->ep_list, item) {
 		fid_entry = container_of(item, struct fid_list_entry, entry);
 		ep = container_of(fid_entry->fid, struct util_ep, ep_fid.fid);
 		ep->progress(ep);
 
 	}
-	ofi_mutex_unlock(&cq->ep_list_lock);
+	ofi_genlock_unlock(&cq->ep_list_lock);
+}
+
+static ssize_t util_peer_cq_write(struct fid_peer_cq *cq, void *context,
+		uint64_t flags, size_t len, void *buf, uint64_t data,
+		uint64_t tag, fi_addr_t src)
+{
+	struct util_cq *util_cq = cq->fid.context;
+	int ret;
+
+	util_cq = cq->fid.context;
+
+	ofi_genlock_lock(&util_cq->cq_lock);
+	if (ofi_cirque_freecnt(util_cq->cirq) > 1) {
+		ofi_cq_write_entry(util_cq, context, flags, len, buf, data,
+				     tag);
+		ret = 0;
+	} else {
+		ret = ofi_cq_write_overflow(util_cq, context, flags, len, buf,
+					      data, tag, FI_ADDR_NOTAVAIL);
+	}
+	ofi_genlock_unlock(&util_cq->cq_lock);
+
+	if (util_cq->wait)
+		util_cq->wait->signal(util_cq->wait);
+
+	return ret;
+}
+
+static ssize_t util_peer_cq_write_src(struct fid_peer_cq *cq, void *context,
+		uint64_t flags, size_t len, void *buf, uint64_t data,
+		uint64_t tag, fi_addr_t src)
+{
+	struct util_cq *util_cq = cq->fid.context;
+	int ret;
+
+	ofi_genlock_lock(&util_cq->cq_lock);
+	if (ofi_cirque_freecnt(util_cq->cirq) > 1) {
+		ofi_cq_write_src_entry(util_cq, context, flags, len, buf, data,
+				       tag, src);
+		ret = 0;
+	} else {
+		ret = ofi_cq_write_overflow(util_cq, context, flags, len, buf,
+					      data, tag, src);
+	}
+	ofi_genlock_unlock(&util_cq->cq_lock);
+
+	if (util_cq->wait)
+		util_cq->wait->signal(util_cq->wait);
+
+	return ret;
+}
+
+static ssize_t util_peer_cq_writeerr(struct fid_peer_cq *cq,
+				     const struct fi_cq_err_entry *err_entry)
+{
+	struct util_cq *util_cq = cq->fid.context;
+	int ret;
+
+	ofi_genlock_lock(&util_cq->cq_lock);
+	ret = util_cq_insert_error(util_cq, err_entry);
+	ofi_genlock_unlock(&util_cq->cq_lock);
+
+	if (util_cq->wait)
+		util_cq->wait->signal(util_cq->wait);
+
+	return ret;
+}
+
+static struct fi_ops_cq_owner util_peer_cq_owner_ops = {
+	.size = sizeof(struct fi_ops_cq_owner),
+	.write = &util_peer_cq_write,
+	.writeerr = &util_peer_cq_writeerr,
+};
+
+static struct fi_ops_cq_owner util_peer_cq_src_owner_ops = {
+	.size = sizeof(struct fi_ops_cq_owner),
+	.write = &util_peer_cq_write_src,
+	.writeerr = &util_peer_cq_writeerr,
+};
+
+/* For peer cq, just do progress */
+static ssize_t ofi_peer_cq_read(struct fid_cq *cq_fid, void *buf, size_t count)
+{
+	struct util_cq *cq;
+
+	cq = container_of(cq_fid, struct util_cq, cq_fid);
+
+	cq->progress(cq);
+
+	return 0;
+}
+
+static struct fi_ops_cq util_peer_cq_ops = {
+       .size = sizeof(struct fi_ops_cq),
+       .read = ofi_peer_cq_read,
+       .readfrom = fi_no_cq_readfrom,
+       .readerr = fi_no_cq_readerr,
+       .sread = fi_no_cq_sread,
+       .sreadfrom = fi_no_cq_sreadfrom,
+       .signal = fi_no_cq_signal,
+       .strerror = fi_no_cq_strerror,
+};
+
+static int util_peer_cq_close(struct fid *fid)
+{
+       free(container_of(fid, struct fid_peer_cq, fid));
+       return 0;
+}
+
+static struct fi_ops util_peer_cq_fi_ops = {
+	.size = sizeof(struct fi_ops),
+	.close = util_peer_cq_close,
+	.bind = fi_no_bind,
+	.control = fi_no_control,
+	.ops_open = fi_no_ops_open,
+};
+
+static int util_init_peer_cq(struct util_cq *cq, struct fi_cq_attr *attr)
+{
+	int ret;
+
+	cq->peer_cq = calloc(1, sizeof(*cq->peer_cq));
+	if (!cq->peer_cq)
+		return -FI_ENOMEM;
+
+	slist_init(&cq->aux_queue);
+
+	switch (attr->format) {
+	case FI_CQ_FORMAT_UNSPEC:
+	case FI_CQ_FORMAT_CONTEXT:
+		cq->read_entry = util_cq_read_ctx;
+		break;
+	case FI_CQ_FORMAT_MSG:
+		cq->read_entry = util_cq_read_msg;
+		break;
+	case FI_CQ_FORMAT_DATA:
+		cq->read_entry = util_cq_read_data;
+		break;
+	case FI_CQ_FORMAT_TAGGED:
+		cq->read_entry = util_cq_read_tagged;
+		break;
+	default:
+		assert(0);
+		ret = -FI_EINVAL;
+		goto free;
+	}
+
+	cq->cirq = util_comp_cirq_create(attr->size == 0 ? UTIL_DEF_CQ_SIZE : attr->size);
+	if (!cq->cirq) {
+		ret = -FI_ENOMEM;
+		goto free;
+	}
+
+	if (cq->domain->info_domain_caps & FI_SOURCE) {
+		cq->src = calloc(cq->cirq->size, sizeof(*cq->src));
+		if (!cq->src) {
+			util_comp_cirq_free(cq->cirq);
+			ret = -FI_ENOMEM;
+			goto free;
+		}
+		cq->peer_cq->owner_ops = &util_peer_cq_src_owner_ops;
+	} else {
+		cq->peer_cq->owner_ops = &util_peer_cq_owner_ops;
+	}
+
+	cq->peer_cq->fid.fclass = FI_CLASS_PEER_CQ;
+	cq->peer_cq->fid.context = cq;
+	cq->peer_cq->fid.ops = &util_peer_cq_fi_ops;
+
+	return FI_SUCCESS;
+free:
+	free(cq->peer_cq);
+	return ret;
 }
 
 int ofi_cq_init(const struct fi_provider *prov, struct fid_domain *domain,
 		 struct fi_cq_attr *attr, struct util_cq *cq,
 		 ofi_cq_progress_func progress, void *context)
 {
-	fi_cq_read_func read_func;
+	struct fi_wait_attr wait_attr;
+	struct fid_wait *wait;
+	enum ofi_lock_type cq_lock_type;
+	enum ofi_lock_type ep_list_lock_type;
 	int ret;
 
 	assert(progress);
@@ -585,55 +720,89 @@ int ofi_cq_init(const struct fi_provider *prov, struct fid_domain *domain,
 	cq->cq_fid.fid.ops = &util_cq_fi_ops;
 	cq->cq_fid.ops = &util_cq_ops;
 	cq->progress = progress;
+	cq->err_data = NULL;
 
-	switch (attr->format) {
-	case FI_CQ_FORMAT_UNSPEC:
-	case FI_CQ_FORMAT_CONTEXT:
-		read_func = util_cq_read_ctx;
-		break;
-	case FI_CQ_FORMAT_MSG:
-		read_func = util_cq_read_msg;
-		break;
-	case FI_CQ_FORMAT_DATA:
-		read_func = util_cq_read_data;
-		break;
-	case FI_CQ_FORMAT_TAGGED:
-		read_func = util_cq_read_tagged;
-		break;
-	default:
-		assert(0);
-		return -FI_EINVAL;
-	}
+	cq->domain = container_of(domain, struct util_domain, domain_fid);
+	ofi_atomic_initialize32(&cq->ref, 0);
+	ofi_atomic_initialize32(&cq->wakeup, 0);
+	dlist_init(&cq->ep_list);
 
-	ret = fi_cq_init(domain, attr, read_func, cq, context);
+	if (cq->domain->threading == FI_THREAD_COMPLETION ||
+	    cq->domain->threading == FI_THREAD_DOMAIN)
+		cq_lock_type = OFI_LOCK_NOOP;
+	else
+		cq_lock_type = cq->domain->lock.lock_type;
+
+	ret = ofi_genlock_init(&cq->cq_lock, cq_lock_type);
 	if (ret)
 		return ret;
 
-	/* CQ must be fully operational before adding to wait set */
-	if (cq->wait) {
-		ret = fi_poll_add(&cq->wait->pollset->poll_fid,
-				  &cq->cq_fid.fid, 0);
+	ep_list_lock_type = ofi_progress_lock_type(cq->domain->threading,
+						   cq->domain->control_progress);
+	ret = ofi_genlock_init(&cq->ep_list_lock, ep_list_lock_type);
+	if (ret)
+		goto destroy1;
+
+	cq->flags = attr->flags;
+	cq->cq_fid.fid.fclass = FI_CLASS_CQ;
+	cq->cq_fid.fid.context = context;
+
+	if (attr->flags & FI_PEER) {
+		cq->peer_cq = ((struct fi_peer_cq_context *) context)->cq;
+		cq->cq_fid.ops = &util_peer_cq_ops;
+	} else {
+		ret = util_init_peer_cq(cq, attr);
 		if (ret)
-			goto cleanup;
+			goto destroy2;
 	}
 
-	cq->cirq = util_comp_cirq_create(attr->size == 0 ? UTIL_DEF_CQ_SIZE : attr->size);
-	if (!cq->cirq) {
-		ret = -FI_ENOMEM;
+	switch (attr->wait_obj) {
+	case FI_WAIT_NONE:
+		wait = NULL;
+		break;
+	case FI_WAIT_UNSPEC:
+	case FI_WAIT_FD:
+	case FI_WAIT_POLLFD:
+	case FI_WAIT_MUTEX_COND:
+	case FI_WAIT_YIELD:
+		memset(&wait_attr, 0, sizeof wait_attr);
+		wait_attr.wait_obj = attr->wait_obj;
+		cq->internal_wait = 1;
+		ret = fi_wait_open(&cq->domain->fabric->fabric_fid,
+				   &wait_attr, &wait);
+		if (ret)
+			goto cleanup;
+		break;
+	case FI_WAIT_SET:
+		wait = attr->wait_set;
+		break;
+	default:
+		assert(0);
 		goto cleanup;
 	}
 
-	if (cq->domain->info_domain_caps & FI_SOURCE) {
-		cq->src = calloc(cq->cirq->size, sizeof *cq->src);
-		if (!cq->src) {
-			ret = -FI_ENOMEM;
+	/* CQ must be fully operational before adding to wait set */
+	if (wait) {
+		cq->wait = container_of(wait, struct util_wait, wait_fid);
+		ret = fi_poll_add(&cq->wait->pollset->poll_fid,
+				  &cq->cq_fid.fid, 0);
+		if (ret) {
+			if (cq->internal_wait) {
+				fi_close(&cq->wait->wait_fid.fid);
+				cq->wait = NULL;
+			}
 			goto cleanup;
 		}
 	}
+	ofi_atomic_inc32(&cq->domain->ref);
 	return 0;
 
 cleanup:
-	(void) ofi_cq_cleanup(cq);
+	util_peer_cq_cleanup(cq);
+destroy2:
+	ofi_genlock_destroy(&cq->ep_list_lock);
+destroy1:
+	ofi_genlock_destroy(&cq->cq_lock);
 	return ret;
 }
 

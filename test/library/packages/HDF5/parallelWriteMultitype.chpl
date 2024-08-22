@@ -26,7 +26,7 @@ var hdf5Dir = "hdf5_dir";
 
 proc main {
   var Space = {1..nFiles};
-  var BlockSpace = Space dmapped blockDist(Space, Locales, dataParTasksPerLocale=1);
+  var BlockSpace = Space dmapped new blockDist(Space, Locales, dataParTasksPerLocale=1);
   var data: [BlockSpace] MyRec;
   const pathPrefix = readPrefixEnv();
 

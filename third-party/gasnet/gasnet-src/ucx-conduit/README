@@ -1,6 +1,6 @@
 GASNet ucx-conduit documentation
 Mellanox Technologies LTD Copyright (c) 2019-2021.
-Portions copyright 2021-2023, The Regents of the University of California.
+Portions copyright 2021-2024, The Regents of the University of California.
 
 Boris I. Karasev <boriska@mellanox.com>
 Artem Y. Polyakov <artemp@mellanox.com>
@@ -44,14 +44,14 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   an open-source production-grade communication framework for data-centric and 
   high-performance applications.  The UCX library can be downloaded from repositories
   (e.g., Fedora/RedHat yum repositories). The UCX library is also part of Mellanox OFED 
-  and the NVIDIA Mellanox HPC-X Software Toolkit.
+  (a.k.a "MLNX_OFED") and the NVIDIA/Mellanox HPC-X Software Toolkit.
 
   The conduit is tested and known to work with
-    - Mellanox InfiniBand and RoCE devices starting from ConnectX-5
+    - NVIDIA/Mellanox InfiniBand and RoCE devices starting from ConnectX-5
     - UCX library version 1.6 and above
     - Linux platform
     
-  For Mellanox adapters, UCX conduit supports all transports: RC, UD and DC. For large-scale
+  For NVIDIA/Mellanox adapters, UCX conduit supports all transports: RC, UD and DC. For large-scale
   applications, it is recommended to use DC transport for scalability reasons.
 
 @ Section: Build-time Configuration @
@@ -140,17 +140,13 @@ Additional environment variables:
   For the full list of tuning knobs supported by a particular UCX version,
   see the output of `ucx_info -f`.
   
-  For software stacks allowing concurrent use of the UCX library in its
-  different components or layers, ucx-conduit supports a personalized prefix
-  that allows specifying unique parameters for its use that will not affect
-  or conflict with global parameters (i.e. "UCX_TLS", "UCX_NET_DEVICES") and/or
-  other personalized parameters.
-    + For UCX versions prior to 1.9, the prefix is "UCX_GASNET"
-    + For UCX versions 1.9 and newer, the prefix is "GASNET_UCX"
-  So, using "[PREFIX]" to denote the version-appropriate value, it is
-  recommended that one set variables "[PREFIX]_TLS" and "[PREFIX]_NET_DEVICES"
-  instead of "UCS_TLS" and "UCX_NET_DEVICES".  However, the following text will
-  use the short "UCX_" prefix for brevity and to match UCX documentation.
+  Previous versions of this document described a "personalized prefix" feature
+  of the UCX library which resulted in a recommendation to use "UCX_GASNET_" or
+  "GASNET_UCX_", depending on the UCX version in use.  It has since been
+  determined that this UCX feature is not reliable.  Therfore, that prior
+  recommendation is withdrawn.  One should use such variable names as "UCX_TLS"
+  and *not* variants such as "UCX_GASNET_TLS" or "GASNET_UCX_TLS".
+
 
   The "UCX_TLS" environment variable controls transport selection and is
   one of the most commonly used UCX parameters. Available options are:
@@ -177,7 +173,7 @@ Additional environment variables:
       #  and disables aliasing.
       # 
 
-  In order to ensure ucx-conduit is being used with supported Mellanox
+  In order to ensure ucx-conduit is being used with supported NVIDIA/Mellanox
   devices, the following transport set is recommended to exclude unsupported
   networks: "UCX_TLS=ib,sm,self".  To leverage UCX support for GPU device
   memory for GASNet-EX Memory Kinds, one may append ",cuda" or ",rocm".
@@ -200,7 +196,7 @@ Additional environment variables:
 
 @ Section: Known Problems @
 
-+ This conduit does not support Mellanox ConnectX-4 adapters, or older.
++ This conduit does not support NVIDIA/Mellanox ConnectX-4 adapters, or older.
   This is unlikely to change.
 
 + Support for segment-everything mode is currently disabled due to unbounded
@@ -268,7 +264,7 @@ Additional environment variables:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4393
 
 * Bug 4474
-  When using hugepages together with Mellanox InfiniBand and RoCE devices,
+  When using hugepages together with NVIDIA/Mellanox InfiniBand and RoCE devices,
   it may be necessary to set `RDMAV_HUGEPAGES_SAFE=1` in the environment.
   Failure to do so may result in a self-explanatory error message:
     UCX  ERROR ibv_reg_mr(address=0x7f49c5a02800, length=2048, access=0xf) failed:
@@ -315,26 +311,30 @@ Additional environment variables:
     primitives. In addition, "ucp_ep_flush_nb" is used to implement remote completion
     tracking.
 
-    UCX directly supports a fixed set of atomic operations, unsupported operations
-    are handled by generic GASNet implementation. The status of atomic operation
-    support is described in the table below:
+    UCX directly supports most atomic operations on integer types, while the
+    remaining operations are handled by the generic GASNet implementation.  The
+    following table indicates the pairs of atomic operation and data type that are
+    eligible for execution via UCX.  The UCX atomics will be used when the arguments
+    to gex_AD_Create() express only supported pairs (unless suppressed by use of
+    GEX_FLAG_AD_FAVOR_MY_RANK or GEX_FLAG_AD_FAVOR_MY_NBRHD flags, or in a run
+    spanning a single shared memory nbrhd).
 
-                I32/U32/I64/U64
-    ---         ---------------
-    SET:        Y
-    GET:        Y
-    SWAP:       Y
-    (F)CAS:     Y
-    (F)ADD:     Y
-    (F)SUB:     Y
-    (F)INC:     Y
-    (F)DEC:     Y
-    (F)MULT:    N
-    (F)MIN:     N
-    (F)MAX:     N
-    (F)AND:     Y
-    (F)OR:      Y
-    (F)XOR:     Y
+                I32/U32/I64/U64   FLT/DBL
+    ---         ---------------   ------
+    SET:        Y                 N
+    GET:        Y                 N
+    SWAP:       Y                 N
+    (F)CAS:     Y                 N
+    (F)ADD:     Y                 N
+    (F)SUB:     Y                 N
+    (F)INC:     Y                 N
+    (F)DEC:     Y                 N
+    (F)MULT:    N                 N
+    (F)MIN:     N                 N
+    (F)MAX:     N                 N
+    (F)AND:     Y                 N
+    (F)OR:      Y                 N
+    (F)XOR:     Y                 N
 
     Y = offload is supported
     N = offload is not supported

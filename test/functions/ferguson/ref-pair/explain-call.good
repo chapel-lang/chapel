@@ -1,0 +1,26 @@
+explain-call.chpl:11: note: call: test(5)
+explain-call.chpl:4: note: visible functions are: test(x: int)
+explain-call.chpl:5: note:                        test(x: int)
+explain-call.chpl:6: note:                        test(x: int)
+explain-call.chpl:8: note:                        test()
+explain-call.chpl:9: note:                        test()
+explain-call.chpl:4: note: candidates are: test(x: int)
+explain-call.chpl:5: note:                 test(x: int)
+explain-call.chpl:6: note:                 test(x: int)
+explain-call.chpl:4: note: best candidates are: test(x: int)
+explain-call.chpl:5: note:      value overload: test(x: int)
+explain-call.chpl:6: note:  const ref overload: test(x: int)
+explain-call.chpl:14: note: call: test()
+explain-call.chpl:4: note: visible functions are: test(x: int)
+explain-call.chpl:5: note:                        test(x: int)
+explain-call.chpl:6: note:                        test(x: int)
+explain-call.chpl:8: note:                        test()
+explain-call.chpl:9: note:                        test()
+explain-call.chpl:8: note: candidates are: test()
+explain-call.chpl:9: note:                 test()
+explain-call.chpl:8: note: best candidates are: test()
+explain-call.chpl:9: note:  const ref overload: test()
+val1
+123
+cr2
+1

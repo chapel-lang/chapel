@@ -99,7 +99,7 @@ typedef qio_fdflag_t fdflag_t;
 
 // make a re-entrant lock.
 typedef struct {
-  atomic_spinlock_t lock;
+  chpl_atomic_spinlock_t lock;
   chpl_taskID_t owner; // task ID of owner.
   uint64_t count; // how many times owner has locked.
 } qio_lock_t;
@@ -530,6 +530,13 @@ void* qio_file_get_plugin(qio_file_t* f) {
 // Calls stat for a file descriptor
 // Calls fflush on a FILE* first.
 qioerr qio_file_length(qio_file_t* f, int64_t *len_out);
+
+// Returns a guess for the length of an open file, if available.
+// In some cases the file length is measured when the file is opened.
+// Returns 0 if the file length was not available.
+static inline int64_t qio_file_length_guess(qio_file_t* f) {
+  return f->initial_length;
+}
 
 /* CHANNELS ..... */
 
@@ -1219,7 +1226,12 @@ qioerr qio_channel_end_peek_cached(const int threadsafe, qio_channel_t* ch, void
   return err;
 }
 
-qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte, const int consume_byte);
+// returns EEOF if it started at EOF
+// returns ESHORT if the separator is not found and EOF is reached
+// returns EFORMAT if the separator is not found within max_bytes_to_advance
+// updates the channel position, including possibly to EOF if the
+// separator is not found.
+qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte, int64_t max_bytes_to_advance, const int consume_byte);
 
 qioerr qio_channel_begin_peek_buffer(const int threadsafe, qio_channel_t* ch, int64_t require, int writing, qbuffer_t** buf_out, qbuffer_iter_t* start_out, qbuffer_iter_t* end_out);
 

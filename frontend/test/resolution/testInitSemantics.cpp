@@ -767,10 +767,596 @@ static void testOwnedUserInit(void) {
   std::ignore = resolveModule(ctx, mod->id());
 }
 
+// Replaces a placeholder with possible values to help test more programs.
+// If multuple placeholders are present, tests all combinations.
+static std::vector<std::string> getVersionsWithTypes(const std::string& prog,
+                                                     const std::string& placeholder,
+                                                     const std::vector<std::string> types) {
+  std::vector<std::vector<std::string>> variants;
+
+  std::vector<size_t> occurrences;
+  size_t start = 0;
+  while ((start = prog.find(placeholder, start)) != std::string::npos) {
+    occurrences.push_back(start);
+    start += placeholder.length();
+  }
+
+  std::reverse(occurrences.begin(), occurrences.end());
+  std::vector<std::string> programs = { prog };
+  std::vector<std::string> programsNext;
+
+  for (auto occurrence : occurrences) {
+    for (auto& program : programs) {
+      for (auto& type : types) {
+        std::string newProg = program;
+        newProg.replace(occurrence, placeholder.length(), type);
+        programsNext.push_back(newProg);
+      }
+    }
+    programs = std::move(programsNext);
+  }
+
+  return programs;
+}
+
+static std::vector<std::string> getAllVersions(const std::string& prog) {
+  // Note, const checker currently balks at non-'this' calls to 'init'.
+  std::vector<std::string> initProgs =
+    getVersionsWithTypes(prog, "INIT", { "this.init", "init" });
+
+  std::vector<std::string> allProgs;
+  for (auto initProg : initProgs) {
+    auto versions = getVersionsWithTypes(initProg, "AGGREGATE", { "record", "class" });
+    allProgs.insert(allProgs.end(), versions.begin(), versions.end());
+  }
+
+  return allProgs;
+}
+
+static void testInitFromInit(void) {
+  std::string prog =
+      R"""(
+      AGGREGATE pair {
+        type fst;
+        type snd;
+
+        proc init(type fst, type snd) {
+          this.fst = fst;
+          this.snd = snd;
+        }
+
+        proc init(type both) {
+          INIT(both, (both, both));
+        }
+      }
+
+      var x = new pair(int);
+      )""";
+
+  for (auto version : getAllVersions(prog)) {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+    auto qt = resolveTypeOfXInit(context, version);
+
+    assert(qt.type());
+    auto recType = qt.type()->getCompositeType();
+    assert(recType);
+    assert(recType->name() == "pair");
+
+    auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+
+    assert(fields.fieldName(0) == "fst");
+    assert(fields.fieldName(1) == "snd");
+
+    auto fstType = fields.fieldType(0);
+    assert(fstType.type());
+    assert(fstType.type()->isIntType());
+
+    auto sndType = fields.fieldType(1);
+    assert(sndType.type());
+    auto sndTypeTup = sndType.type()->toTupleType();
+    assert(sndTypeTup);
+
+    auto fstTupEltType = sndTypeTup->elementType(0);
+    assert(fstTupEltType.type());
+    assert(fstTupEltType.type()->isIntType());
+    auto sndTupEltType = sndTypeTup->elementType(1);
+    assert(sndTupEltType.type());
+    assert(sndTupEltType.type()->isIntType());
+  }
+}
+
+static void testInitInParamBranchFromInit(void) {
+  // test calling 'this.init' from another initializer.
+  std::string prog =
+      R"""(
+      AGGREGATE pair {
+        type fst;
+        type snd;
+
+        proc init(type fst, type snd) {
+          this.fst = fst;
+          this.snd = snd;
+        }
+
+        proc init(param cond) {
+          if cond {
+            INIT(int, (int, int));
+          } else {
+            this.fst = bool;
+            this.snd = bool;
+          }
+        }
+      }
+
+      var x = new pair(true);
+      var y = new pair(false);
+      )""";
+
+
+  for (auto version : getAllVersions(prog)) {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    auto qts = resolveTypesOfVariables(context, version, {"x", "y"});
+
+
+    {
+      auto qt = qts.at("x");
+      assert(qt.type());
+      auto recType = qt.type()->getCompositeType();
+      assert(recType);
+      assert(recType->name() == "pair");
+
+      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+
+      assert(fields.fieldName(0) == "fst");
+      assert(fields.fieldName(1) == "snd");
+
+      auto fstType = fields.fieldType(0);
+      assert(fstType.type());
+      assert(fstType.type()->isIntType());
+
+      auto sndType = fields.fieldType(1);
+      assert(sndType.type());
+      auto sndTypeTup = sndType.type()->toTupleType();
+      assert(sndTypeTup);
+
+      auto fstTupEltType = sndTypeTup->elementType(0);
+      assert(fstTupEltType.type());
+      assert(fstTupEltType.type()->isIntType());
+      auto sndTupEltType = sndTypeTup->elementType(1);
+      assert(sndTupEltType.type());
+      assert(sndTupEltType.type()->isIntType());
+    }
+    {
+      auto qt = qts.at("y");
+      assert(qt.type());
+      auto recType = qt.type()->getCompositeType();
+      assert(recType);
+      assert(recType->name() == "pair");
+
+      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+
+      assert(fields.fieldName(0) == "fst");
+      assert(fields.fieldName(1) == "snd");
+
+      auto fstType = fields.fieldType(0);
+      assert(fstType.type());
+      assert(fstType.type()->isBoolType());
+      auto sndType = fields.fieldType(1);
+      assert(sndType.type());
+      assert(sndType.type()->isBoolType());
+    }
+  }
+}
+
+static void testInitInBranchFromInit(void) {
+  std::string prog =
+      R"""(
+      AGGREGATE pair {
+        type fst;
+        type snd;
+
+        proc init(type fst, type snd) {
+          this.fst = fst;
+          this.snd = snd;
+        }
+
+        proc init(cond: bool) {
+          if cond {
+            INIT(int, (int, int));
+          } else {
+            this.fst = int;
+            this.snd = (int, int);
+          }
+        }
+      }
+
+      var x = new pair(true);
+      var y = new pair(false);
+      )""";
+
+  for (auto version : getAllVersions(prog)) {
+    // test calling 'this.init' from another initializer.
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    auto qts = resolveTypesOfVariables(context, version, {"x", "y"});
+
+
+    {
+      auto qt = qts.at("x");
+      assert(qt.type());
+      auto recType = qt.type()->getCompositeType();
+      assert(recType);
+      assert(recType->name() == "pair");
+
+      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+
+      assert(fields.fieldName(0) == "fst");
+      assert(fields.fieldName(1) == "snd");
+
+      auto fstType = fields.fieldType(0);
+      assert(fstType.type());
+      assert(fstType.type()->isIntType());
+
+      auto sndType = fields.fieldType(1);
+      assert(sndType.type());
+      auto sndTypeTup = sndType.type()->toTupleType();
+      assert(sndTypeTup);
+
+      auto fstTupEltType = sndTypeTup->elementType(0);
+      assert(fstTupEltType.type());
+      assert(fstTupEltType.type()->isIntType());
+      auto sndTupEltType = sndTypeTup->elementType(1);
+      assert(sndTupEltType.type());
+      assert(sndTupEltType.type()->isIntType());
+    }
+    {
+      auto qt = qts.at("y");
+      assert(qt.type());
+      auto recType = qt.type()->getCompositeType();
+      assert(recType);
+      assert(recType->name() == "pair");
+
+      auto fields = fieldsForTypeDecl(context, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+
+      assert(fields.fieldName(0) == "fst");
+      assert(fields.fieldName(1) == "snd");
+
+      auto fstType = fields.fieldType(0);
+      assert(fstType.type());
+      assert(fstType.type()->isIntType());
+
+      auto sndType = fields.fieldType(1);
+      assert(sndType.type());
+      auto sndTypeTup = sndType.type()->toTupleType();
+      assert(sndTypeTup);
+
+      auto fstTupEltType = sndTypeTup->elementType(0);
+      assert(fstTupEltType.type());
+      assert(fstTupEltType.type()->isIntType());
+      auto sndTupEltType = sndTypeTup->elementType(1);
+      assert(sndTupEltType.type());
+      assert(sndTupEltType.type()->isIntType());
+    }
+  }
+}
+
+static void testBadInitInBranchFromInit(void) {
+  std::string prog =
+      R"""(
+      AGGREGATE pair {
+        type fst;
+        type snd;
+
+        proc init(type fst, type snd) {
+          this.fst = fst;
+          this.snd = snd;
+        }
+
+        proc init(cond: bool) {
+          if cond {
+            INIT(bool, (bool, bool));
+          } else {
+            this.fst = int;
+            this.snd = (int, int);
+          }
+        }
+      }
+
+      var x = new pair(true);
+      )""";
+
+  for (auto version : getAllVersions(prog)) {
+    // test calling 'this.init' from another initializer.
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::ignore = resolveTypeOfXInit(context, version);
+
+    // The above is invalid, since the two branches result in a different type.
+    assert(guard.realizeErrors() == 1);
+  }
+}
+
+static void testAssignThenInit(void) {
+  std::string prog =
+      R"""(
+      AGGREGATE pair {
+        type fst;
+        type snd;
+
+        proc init(type fst, type snd) {
+          this.fst = fst;
+          this.snd = snd;
+        }
+
+        proc init(type both) {
+          this.fst = both;
+          INIT(both, (both, both));
+        }
+      }
+
+      var x = new pair(int);
+      )""";
+
+  for (auto version : getAllVersions(prog)) {
+    // test calling 'this.init' from another initializer.
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::ignore = resolveTypeOfXInit(context, version);
+
+
+    // Can't initialize 'fst' then call initializer. Due to
+    //
+    //  https://github.com/chapel-lang/chapel/issues/24900
+    //
+    // The errors are currently issued twice.
+    assert(guard.realizeErrors() == 1);
+  }
+}
+
+static void testInitEqOther(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  std::string program = R"""(
+    operator =(ref lhs: numeric, const in rhs: numeric) {
+      __primitive("=", lhs, rhs);
+    }
+    record R {
+      type T;
+      var field : T;
+    }
+    proc R.init(type T, field = 0) {
+      this.T = T;
+      this.field = field;
+    }
+    proc R.init=(other: ?) {
+      this.T = other.type;
+      this.field = other;
+    }
+    var x:R(?) = 4;
+    var y:R(?) = 42.0;
+  )""";
+
+  auto results = resolveTypesOfVariables(ctx, program, {"x", "y"});
+  auto xt = results["x"];
+  assert(xt.type()->isRecordType());
+  std::stringstream ss;
+  xt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(ss.str() == "R(int(64))");
+
+  ss.str(""); ss.clear();
+
+  auto yt = results["y"];
+  assert(yt.type()->isRecordType());
+  yt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+  assert(ss.str() == "R(real(64))");
+}
+
+static void testInheritance() {
+  // TODO: generics
+
+  std::string parentChild = R"""(
+    class Parent {
+      var x : int;
+    }
+
+    class Child : Parent {
+      var y : string;
+    }
+  )""";
+
+  std::string grandparent = R"""(
+    class A {
+      var x : int;
+    }
+    class B : A {
+      var y : real;
+    }
+    class C : B {
+      var z : string;
+    }
+  )""";
+
+  // basic usage
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = parentChild + grandparent + R"""(
+      var a = new Child(1, "hello");
+      var b = new Child(1);
+      var c = new Child();
+
+      var d = new C(1, 42.0, "hello");
+      var e = new C(1, 42.0);
+      var f = new C(1);
+      var g = new C();
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+  }
+
+  // named arguments
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = parentChild + grandparent + R"""(
+      var a = new Child("hello", x=1);
+      var b = new Child(x=1);
+
+      var c = new C("hello", x=1, y=42.0);
+      var d = new C(z="hello", x=1);
+      var e = new C(z="hello", y=42.0);
+      var f = new C(x=1);
+      var g = new C(y=42.0);
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+  }
+
+  // user-defined parent initializer
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = parentChild + R"""(
+    proc Parent.init() { this.x = 1; }
+
+    var a = new Child("hello");
+    var b = new Child();
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+  }
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = grandparent + R"""(
+    proc A.init() { this.x = 1; }
+
+    var a = new C(42.0, "hello");
+    var b = new C(42.0);
+    var c = new C();
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+  }
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = grandparent + R"""(
+    proc B.init() { this.y = 42.0; }
+
+    var a = new C("hello");
+    var b = new C();
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+  }
+
+  // super.init example
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = grandparent + R"""(
+      proc C.init(x: int = 0, y: real = 0.0, z: string = "") {
+        super.init(x, y);
+        this.z = z;
+      }
+      var a = new C(5, 42.0, "test");
+    )""";
+
+    auto m = parseModule(context, std::move(program));
+    std::ignore = resolveModule(context, m->id());
+  }
+
+}
+
+static void testInitGenericAfterConcrete() {
+  // With generic var initialized properly
+  {
+    std::string program = R"""(
+      record Foo {
+        var a:int;
+        var b;
+        proc init() {
+          this.a = 1;
+          this.b = 2;
+        }
+      }
+
+      var myFoo = new Foo();
+      var x = myFoo.b;
+    )""";
+
+    Context ctx;
+    Context* context = &ctx;
+    auto t = resolveTypeOfX(context, program);
+
+    assert(t);
+    assert(t->isIntType());
+  }
+
+  // With generic var not initialized, so not enough info
+  {
+    std::string program = R"""(
+      record Foo {
+        var a:int;
+        var b;
+        proc init() {
+          this.a = 1;
+        }
+      }
+
+      var myFoo = new Foo();
+      var x = myFoo.b;
+    )""";
+
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+    auto t = resolveTypeOfX(context, program);
+
+    assert(t);
+    assert(t->isAnyType());
+
+    assert(guard.errors().size() == 2);
+    assert(guard.error(0)->message() ==
+           "unable to instantiate generic type from initializer");
+    assert(guard.realizeErrors());
+  }
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
-// - test this.init in branches
 // - test super.init in branches
 // - test this.complete in branches
 // - test then-only case (must know to insert 'else' branch eventually)
@@ -797,6 +1383,18 @@ int main() {
 
   testRelevantInit();
   testOwnedUserInit();
+
+  testInitFromInit();
+  testInitInParamBranchFromInit();
+  testInitInBranchFromInit();
+  testBadInitInBranchFromInit();
+  testAssignThenInit();
+
+  testInitEqOther();
+
+  testInheritance();
+
+  testInitGenericAfterConcrete();
 
   return 0;
 }

@@ -119,385 +119,6 @@ psm2_error_t psm3_ep_num_devunits(uint32_t *num_units_o)
 	return PSM2_OK;
 }
 
-struct rail_info {
-	psmi_subnet128_t subnet;
-	unsigned unit;
-	unsigned port;
-	unsigned addr_index;
-};
-
-static int cmpfunc(const void *p1, const void *p2)
-{
-	struct rail_info *a = ((struct rail_info *) p1);
-	struct rail_info *b = ((struct rail_info *) p2);
-	int ret;
-
-	ret = psmi_subnet128_cmp(a->subnet, b->subnet);
-	if (ret == 0) {
-		if (a->addr_index < b->addr_index)
-			return -1;
-		else if (a->addr_index > b->addr_index)
-			return 1;
-	}
-	return ret;
-}
-
-// process PSM3_MULTIRAIL and PSM3_MULTIRAIL_MAP and return the
-// list of unit/port/addr_index in unit[0-(*num_rails-1)],
-// port[0-(*num_rails-1)] and addr_index[0-(*num_rails-1)]
-// When *num_rails is returned as 0, multirail is not enabled and
-// other mechanisms (PSM3_NIC, PSM3_NIC_SELECTION_ALG) must be
-// used by the caller to select a single NIC for the process
-static psm2_error_t
-psm3_ep_multirail(int *num_rails, uint32_t *unit, uint16_t *port, int *addr_index)
-{
-	uint32_t num_units;
-	psmi_subnet128_t subnet;
-	unsigned i, j, k, count = 0;
-	int ret;
-	psm2_error_t err = PSM2_OK;
-	struct rail_info rail_info[PSMI_MAX_RAILS];
-	union psmi_envvar_val env_multirail;
-	union psmi_envvar_val env_multirail_map;
-	int multirail_within_socket_used = 0;
-	int node_id = -1, found = 0;
-
-	psm3_getenv("PSM3_MULTIRAIL",
-			"Use all available NICs in the system for communication.\n"
-			 "-1: No NIC autoselection,\n"
-			 "0: Disabled (default),\n"
-			 "1: Enable multirail across all available NICs,\n"
-			 "2: Enable multirail within socket.\n"
-			 "\t For multirail within a socket, we try to find at\n"
-			 "\t least one NIC on the same socket as current task.\n"
-			 "\t If none found, we continue to use other NICs within\n"
-			 "\t the system.",
-			PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_INT,
-			(union psmi_envvar_val)0,
-			&env_multirail);
-	if (env_multirail.e_int <= 0) {
-		*num_rails = 0;
-		return PSM2_OK;
-	}
-
-	if (env_multirail.e_int == 2)
-		multirail_within_socket_used = 1;
-
-/*
- * map is in format: unit:port-addr_index,unit:port-addr_index,...
- * where :port is optional (default of 1) and unit can be name or number
- * -addr_index is also optionall and defaults to "all"
- * addr_index can be an integer between 0 and PSM3_ADDR_PER_NIC-1
- * or "any" or "all".  "any" selects a single address using the hash and
- * "all" setups a rail for each address.
- */
-#define MAX_MAP_LEN (PSMI_MAX_RAILS*128)
-	if (!psm3_getenv("PSM3_MULTIRAIL_MAP",
-		"NIC selections for each rail in format:\n"
-		"     rail,rail,...\n"
-#if 0
-		"Where rail can be: unit:port-addr_index or unit\n"
-#else
-		"Where rail can be: unit-addr_index or unit\n"
-#endif
-		"unit can be device name or unit number\n"
-#if 0
-		"where :port is optional (default of 1)\n"
-#endif
-		"addr_index can be 0 to PSM3_ADDR_PER_NIC-1, or 'any' or 'all'\n"
-		"When addr_index is omitted, it defaults to 'all'\n"
-		"default autoselects",
-			PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_STR,
-			(union psmi_envvar_val)"", &env_multirail_map)) {
-
-		char temp[MAX_MAP_LEN+1];
-		char *s;
-		char *delim;
-
-		strncpy(temp, env_multirail_map.e_str, MAX_MAP_LEN);
-		if (temp[MAX_MAP_LEN-1] != 0)
-			return psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-					"PSM3_MULTIRAIL_MAP too long: '%s'",
-					env_multirail_map.e_str);
-		s = temp;
-		psmi_assert(*s);
-		do {
-			int u, p = 1;
-			int skip_port = 0;
-			int skip_addr_index = 0;
-			int a_index = PSM3_ADDR_INDEX_ALL;
-
-			if (! *s)	// trailing ',' on 2nd or later loop
-				break;
-			if (count >= PSMI_MAX_RAILS)
-				return psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-						"PSM3_MULTIRAIL_MAP exceeds %u rails: '%s'",
-						PSMI_MAX_RAILS, env_multirail_map.e_str);
-
-			// find end of unit field and put in \0 as needed
-			delim = strpbrk(s, ":-,");
-			if (!delim || *delim == ',') {
-				skip_port = 1; skip_addr_index = 1;
-			} else if (*delim == '-') {
-				skip_port = 1;
-			}
-			if (delim)
-				*delim = '\0';
-			// parse unit
-			u = psm3_sysfs_find_unit(s);
-			if (u < 0)
-				return psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-						"PSM3_MULTIRAIL_MAP invalid unit: '%s'", s);
-			// find next field
-			if (delim)
-				s = delim+1;
-			if (! skip_port) {
-				// find end of port field and put in \0 as needed
-				delim = strpbrk(s, "-,");
-				if (!delim || *delim == ',')
-					skip_addr_index = 1;
-				if (delim)
-					*delim = '\0';
-				// parse port
-				p = psm3_parse_str_long(s);
-				if (p < 0)
-					return psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-						"PSM3_MULTIRAIL_MAP invalid port: '%s'", s);
-				// find next field
-				if (delim)
-					s = delim+1;
-			}
-			if (! skip_addr_index) {
-				// find end of addr_index field and put in \0 as needed
-				delim = strchr(s, ',');
-				if (delim)
-					*delim = '\0';
-				// parse addr_index
-				if (0 == strcmp(s, "all"))
-					a_index = PSM3_ADDR_INDEX_ALL;	// we will loop below
-				else if (0 == strcmp(s, "any"))
-					a_index = PSM3_ADDR_INDEX_ANY;	// caller will pick
-				else {
-					a_index = psm3_parse_str_long(s);
-					if (a_index < 0 || a_index >= psm3_addr_per_nic)
-						return psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-							"PSM3_MULTIRAIL_MAP invalid addr index: '%s'", s);
-				}
-				// find next field
-				if (delim)
-					s = delim+1;
-			}
-
-			if (a_index == PSM3_ADDR_INDEX_ALL) { // all
-				for (a_index = 0; a_index < psm3_addr_per_nic; a_index++) {
-					if (count >= PSMI_MAX_RAILS)
-						return psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-								"PSM3_MULTIRAIL_MAP exceeds %u rails: '%s' due to multi-ip",
-								PSMI_MAX_RAILS, env_multirail_map.e_str);
-					unit[count] = u;
-					port[count] = p;
-					addr_index[count] = a_index;
-					count++;
-				}
-			} else {
-				unit[count] = u;
-				port[count] = p;
-				addr_index[count] = a_index;
-				count++;
-			}
-		} while (delim);
-		*num_rails = count;
-
-/*
- * Check if any of the port is not usable.  Just use addr_index 0 for check
- */
-		for (i = 0; i < count; i++) {
-			_HFI_VDBG("rail %d:  %u(%s) %u\n", i,
-				unit[i], psm3_sysfs_unit_dev_name(unit[i]), port[i]);
-			ret = psmi_hal_get_port_active(unit[i], port[i]);
-			if (ret <= 0)
-				return psm3_handle_error(NULL,
-						PSM2_EP_DEVICE_FAILURE,
-						"PSM3_MULTIRAIL_MAP: Unit/port: %d(%s):%d is not active.",
-						unit[i], psm3_sysfs_unit_dev_name(unit[i]),
-						port[i]);
-			ret = psmi_hal_get_port_lid(unit[i], port[i], 0 /* addr_index*/);
-			if (ret <= 0)
-				return psm3_handle_error(NULL,
-						PSM2_EP_DEVICE_FAILURE,
-						"PSM3_MULTIRAIL_MAP: unit %d(%s):%d was filtered out, unable to use",
-						unit[i], psm3_sysfs_unit_dev_name(unit[i]),
-						port[i]);
-			ret = psmi_hal_get_port_subnet(unit[i], port[i], 0 /* addr_index*/, NULL, NULL, NULL, NULL);
-			if (ret == -1)
-				return psm3_handle_error(NULL,
-						PSM2_EP_DEVICE_FAILURE,
-						"PSM3_MULTIRAIL_MAP: Couldn't get subnet for unit %d(%s):%d",
-						unit[i], psm3_sysfs_unit_dev_name(unit[i]),
-						port[i]);
-		}
-		return PSM2_OK;
-	}
-
-	if ((err = psm3_ep_num_devunits(&num_units))) {
-		return err;
-	}
-	if (num_units > PSMI_MAX_RAILS) {
-		_HFI_INFO
-		    ("Found %d units, max %d units are supported, use %d\n",
-		     num_units, PSMI_MAX_RAILS, PSMI_MAX_RAILS);
-		num_units = PSMI_MAX_RAILS;
-	}
-
-	/*
-	 * PSM3_MULTIRAIL=2 functionality-
-	 *   - Try to find at least find one HFI in the same root
-	 *     complex. If none found, continue to run and
-	 *     use remaining HFIs in the system.
-	 *   - If we do find at least one HFI in same root complex, we
-	 *     go ahead and add to list.
-	 */
-	if (multirail_within_socket_used) {
-		node_id = psm3_get_current_proc_location();
-		for (i = 0; i < num_units; i++) {
-			if (psmi_hal_get_unit_active(i) <= 0)
-				continue;
-			int node_id_i;
-
-			if (!psmi_hal_get_node_id(i, &node_id_i)) {
-				if (node_id_i == node_id) {
-					found = 1;
-					break;
-				}
-			}
-		}
-	}
-/*
- * Get all the ports and addr_index with a valid lid and gid, one port per unit.
- * but up to PSM3_ADDR_PER_NIC addresses
- */
-	for (i = 0; i < num_units; i++) {
-		int node_id_i;
-
-		if (!psmi_hal_get_node_id(i, &node_id_i))
-		{
-			if (multirail_within_socket_used &&
-			    found && (node_id_i != node_id))
-				continue;
-		}
-
-		for (j = PSM3_NIC_MIN_PORT; j <= PSM3_NIC_MAX_PORT; j++) {
-			int got_port = 0;
-			for (k = 0; k < psm3_addr_per_nic; k++) {
-				ret = psmi_hal_get_port_lid(i, j, k);
-				if (ret <= 0)
-					continue;
-				ret = psmi_hal_get_port_subnet(i, j, k, &subnet, NULL, NULL, NULL);
-				if (ret == -1)
-					continue;
-
-				rail_info[count].subnet = subnet;
-				rail_info[count].unit = i;
-				rail_info[count].port = j;
-				rail_info[count].addr_index = k;
-				got_port = 1;
-				count++;
-			}
-			if (got_port)	// one port per unit
-				break;
-		}
-	}
-
-/*
- * Sort all the ports within rail_info from small to big.
- * This is for multiple fabrics, and we use fabric with the
- * smallest subnet to make the master connection.
- */
-	qsort(rail_info, count, sizeof(rail_info[0]), cmpfunc);
-
-	for (i = 0; i < count; i++) {
-		unit[i] = rail_info[i].unit;
-		port[i] = rail_info[i].port;
-		addr_index[i] = rail_info[i].addr_index;
-	}
-	*num_rails = count;
-	return PSM2_OK;
-}
-
-// this is used to find devices with the same address as another process,
-// implying intra-node comms.
-// we poplate hfi_nids and nnids with the set of network ids (NID) for
-// all the local NICs.
-// The caller will see if any of these NIDs match the NID of the remote process.
-// Note that NIDs are globally unique and include both subnet and NIC address
-// information, so we can compare them regardless of their subnet.
-// NIDs which are not on the same subnet will not match.
-// NIDs on the same subnet only match if they are the same NIC.
-// Two local NICs with the same subnet and same address is an unexpected
-// invalid config, and will silently match the two NICs.
-#define MAX_GID_IDX 31
-static psm2_error_t
-psm3_ep_devnids(psm2_nid_t **nids, uint32_t *num_nids_o)
-{
-	uint32_t num_units;
-	int i;
-	psm2_error_t err = PSM2_OK;
-
-	PSMI_ERR_UNLESS_INITIALIZED(NULL);
-
-	if (hfi_nids == NULL) {
-		if ((err = psm3_ep_num_devunits(&num_units)))
-			goto fail;
-		hfi_nids = (psm2_nid_t *)
-		    psmi_calloc(PSMI_EP_NONE, UNDEFINED,
-				num_units * psmi_hal_get_num_ports()*psm3_addr_per_nic, sizeof(*hfi_nids));
-		if (hfi_nids == NULL) {
-			err = psm3_handle_error(NULL, PSM2_NO_MEMORY,
-						"Couldn't allocate memory for dev_nids structure");
-			goto fail;
-		}
-
-		for (i = 0; i < num_units; i++) {
-			int j;
-			for (j = PSM3_NIC_MIN_PORT; j <= PSM3_NIC_MAX_PORT; j++) {
-				int k;
-				for (k = 0; k < psm3_addr_per_nic; k++) {
-					int lid = psmi_hal_get_port_lid(i, j, k);
-					int ret, idx = 0;
-					psmi_subnet128_t subnet = { };
-					psmi_naddr128_t addr = { };
-					psmi_gid128_t gid = { };
-
-					// skip ports which aren't ready for use
-					if (lid <= 0)
-						continue;
-					ret = psmi_hal_get_port_subnet(i, j, k, &subnet, &addr, &idx, &gid);
-					if (ret == -1)
-						continue;
-					hfi_nids[nnids] = psm3_build_nid(i, addr, lid);
-					_HFI_VDBG("NIC unit %d, port %d addr_index %d, found %s "
-						  "GID[%d] %s subnet %s\n",
-						i, j, k,
-						psm3_nid_fmt(hfi_nids[nnids], 0),
-						idx, psm3_gid128_fmt(gid, 1),
-						psm3_subnet128_fmt(subnet, 2));
-					nnids++;
-				}
-			}
-		}
-		if (nnids == 0) {
-			err = psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
-						"Couldn't find any unfiltered units");
-			goto fail;
-		}
-	}
-	*nids = hfi_nids;
-	*num_nids_o = nnids;
-
-fail:
-	return err;
-}
-
 psm2_error_t psm3_ep_query(int *num_of_epinfo, psm2_epinfo_t *array_of_epinfo)
 {
 	psm2_error_t err = PSM2_OK;
@@ -632,6 +253,80 @@ psm2_error_t psm3_epaddr_to_epid(psm2_epaddr_t epaddr, psm2_epid_t *epid)
 	return err;
 }
 
+// this is used to find devices with the same address as another process,
+// implying intra-node comms.
+// we poplate hfi_nids and nnids with the set of network ids (NID) for
+// all the local NICs.
+// The caller will see if any of these NIDs match the NID of the remote process.
+// Note that NIDs are globally unique and include both subnet and NIC address
+// information, so we can compare them regardless of their subnet.
+// NIDs which are not on the same subnet will not match.
+// NIDs on the same subnet only match if they are the same NIC.
+// Two local NICs with the same subnet and same address is an unexpected
+// invalid config, and will silently match the two NICs.
+#define MAX_GID_IDX 31
+static psm2_error_t
+psm3_ep_devnids(psm2_nid_t **nids, uint32_t *num_nids_o)
+{
+	uint32_t num_units = 0;
+	int i;
+	psm2_error_t err = PSM2_OK;
+
+	PSMI_ERR_UNLESS_INITIALIZED(NULL);
+
+	if (hfi_nids == NULL) {
+		if ((err = psm3_ep_num_devunits(&num_units)))
+			goto fail;
+		hfi_nids = (psm2_nid_t *)
+		    psmi_calloc(PSMI_EP_NONE, UNDEFINED,
+				num_units * psmi_hal_get_num_ports()*psm3_addr_per_nic, sizeof(*hfi_nids));
+		if (hfi_nids == NULL) {
+			err = psm3_handle_error(NULL, PSM2_NO_MEMORY,
+						"Couldn't allocate memory for dev_nids structure");
+			goto fail;
+		}
+
+		for (i = 0; i < num_units; i++) {
+			int j;
+			for (j = PSM3_NIC_MIN_PORT; j <= PSM3_NIC_MAX_PORT; j++) {
+				int k;
+				for (k = 0; k < psm3_addr_per_nic; k++) {
+					int lid = psmi_hal_get_port_lid(i, j, k);
+					int ret, idx = 0;
+					psmi_subnet128_t subnet = { };
+					psmi_naddr128_t addr = { };
+					psmi_gid128_t gid = { };
+
+					// skip ports which aren't ready for use
+					if (lid <= 0)
+						continue;
+					ret = psmi_hal_get_port_subnet(i, j, k, &subnet, &addr, &idx, &gid);
+					if (ret == -1)
+						continue;
+					hfi_nids[nnids] = psm3_build_nid(i, addr, lid);
+					_HFI_VDBG("NIC unit %d, port %d addr_index %d, found %s "
+						  "GID[%d] %s subnet %s\n",
+						i, j, k,
+						psm3_nid_fmt(hfi_nids[nnids], 0),
+						idx, psm3_gid128_fmt(gid, 1),
+						psm3_subnet128_fmt(subnet, 2));
+					nnids++;
+				}
+			}
+		}
+		if (nnids == 0) {
+			err = psm3_handle_error(NULL, PSM2_EP_DEVICE_FAILURE,
+						"Couldn't find any unfiltered units");
+			goto fail;
+		}
+	}
+	*nids = hfi_nids;
+	*num_nids_o = nnids;
+
+fail:
+	return err;
+}
+
 // Indicate if the given epid is a local process.
 // In which case we can use intra-node shared memory comms with it.
 psm2_error_t
@@ -714,13 +409,19 @@ psm2_error_t psm3_ep_open_opts_get_defaults(struct psm3_ep_open_opts *opts)
 
 psm2_error_t psm3_poll_noop(ptl_t *ptl, int replyonly, bool force);
 
+// open a single internal EP for a single NIC
+// For 1st internal EP opts may indicate PSM3_NIC_ANY in which case
+// psm3_ep_open_device will let psm3_context_open pick the NIC based on
+// PSM3_NIC_SELECTION_ALG.
+// For multirail and when opening additional QPs for the NIC, opts will
+// select a specific NIC.
 psm2_error_t
 psm3_ep_open_internal(psm2_uuid_t const unique_job_key, int *devid_enabled,
 		       struct psm3_ep_open_opts const *opts_i, psm2_mq_t mq,
 		       psm2_ep_t *epo, psm2_epid_t *epido)
 {
 	psm2_ep_t ep = NULL;
-	uint32_t num_units;
+	uint32_t num_units = 0;
 	size_t len;
 	psm2_error_t err;
 	psm2_epaddr_t epaddr = NULL;
@@ -821,11 +522,13 @@ psm3_ep_open_internal(psm2_uuid_t const unique_job_key, int *devid_enabled,
 	/* Get immediate data size - transfers less than immediate data size do
 	 * not consume a send buffer and require just a send descriptor.
 	 */
-	if (!psm3_getenv("PSM3_SEND_IMMEDIATE_SIZE",
-			 "Immediate data send size not requiring a buffer [128]",
-			 PSMI_ENVVAR_LEVEL_HIDDEN,
-			 PSMI_ENVVAR_TYPE_UINT,
-			 (union psmi_envvar_val)128, &envvar_val)) {
+	if (!psm3_getenv_range("PSM3_SEND_IMMEDIATE_SIZE",
+			 "Immediate data send size not requiring a buffer. Default 128.",
+			 "Actual permitted upper limit is NIC dependent.",
+			 PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_UINT,
+			 (union psmi_envvar_val)128,
+			 (union psmi_envvar_val)0, (union psmi_envvar_val)1024,
+			 NULL, NULL, &envvar_val)) {
 		opts.imm_size = envvar_val.e_uint;
 	}
 
@@ -854,8 +557,7 @@ psm3_ep_open_internal(psm2_uuid_t const unique_job_key, int *devid_enabled,
 	if (psm3_device_is_enabled(devid_enabled, PTL_DEVID_IPS)) {
 		if ((err = psm3_ep_num_devunits(&num_units)) != PSM2_OK)
 			goto fail;
-	} else
-		num_units = 0;
+	}
 
 	/* do some error checking */
 	if (opts.timeout < -1) {
@@ -1037,58 +739,6 @@ psm3_ep_open_internal(psm2_uuid_t const unique_job_key, int *devid_enabled,
 		/* We may have pre-attached as part of getting our rank for enabling
 		 * shared contexts.  */
 	}
-#ifdef PSM_HAVE_REG_MR
-// TBD - needs work, dependency on PSM_VERBS verbs_ep below
-// move into verbs_alloc_mr_cache. As coded, needs to occur after
-// rcvThread started, which is at very end of ptl_ips init after proto_init called
-// implies need a new HAL routine for this, can't rcvthread_init until
-// after ptl_ips fully initialized.
-// mr_cache_mode will be NONE if IPS not enabled
-// HOWEVER, instead could test RUNTIME_RTS_RX_THREAD as a plan to start
-// rcvthread (we will fail open if can't start RX thread anyway)
-// and then this codes only prereq is that the UMR cache which the thread
-// will reference has already been created, in which case this code could
-// be moved into verbs_alloc_mr_cache as part of the UMR create/initialization.
-// Also there is some ifdef UMR_CACHE which is incorrectly in non-verbs HALs
-// and should be reviewed/removed.  The UMR cache create should
-// be called in the HAL or near the mr_cache_create
-// fields in verbs_ep should instead be in MR cache or global.
-// can use a sw_status flag to determine if thread started.  Need to figure out
-// how this will be handled if multiple EPs.  Seems intent is 1 cache
-// thread per system, in which case may have a transfer_ownership situation
-// for UMR cache thread similar to rcvThread
-#ifdef UMR_CACHE
-	if (ep->mr_cache_mode == MR_CACHE_MODE_USER) {
-		// TBD - use a sw_status flag like we do for RX_THREAD instead of testing psm3_opened_endpoint
-		if (psm3_opened_endpoint == NULL) {
-			if (psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED)) {
-			//if (psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RTS_RX_THREAD)) {
-				union psmi_envvar_val env_umrc_thread;
-				// Receiver thread is active and umrc thread can be enabled
-				// using the environment variable
-				psm3_getenv("PSM3_UMR_CACHE_THREAD",
-						"Enable User MR Cache thread (0 disables thread)",
-						PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT_FLAGS,
-						(union psmi_envvar_val)0, &env_umrc_thread);
-				ep->verbs_ep.umrc.thread = env_umrc_thread.e_uint;
-			} else
-				// Receiver thread is not enabled and umrc thread
-				// should be used for handling uffd events
-				ep->verbs_ep.umrc.thread = 1;
-			if (ep->verbs_ep.umrc.thread) {
-				err = psm3_verbs_umrc_init(&ep->verbs_ep.umrc, ep->verbs_ep.umrc.thread);
-				if (err != PSM2_OK) {
-					_HFI_ERROR( "Unable to init MR user cache: %s\n", strerror(err));
-					err = PSM2_INTERNAL_ERR;
-					goto close;
-				}
-			}
-		} else
-			ep->verbs_ep.umrc.thread = psm3_opened_endpoint->verbs_ep.umrc.thread;
-	}
-#endif // UMR_CACHE
-#endif // PSM_HAVE_REG_MR
-
 	_HFI_VDBG("finish ptl device init...\n");
 
 	/*
@@ -1128,12 +778,10 @@ psm3_ep_open(psm2_uuid_t const unique_job_key,
 	psm2_mq_t mq;
 	psm2_epid_t epid;
 	psm2_ep_t ep, tmp;
-	uint32_t units[PSMI_MAX_QPS];
-	uint16_t ports[PSMI_MAX_QPS];
-	int addr_indexes[PSMI_MAX_QPS];
-	int i, num_rails = 0;
+	int i;
 	int devid_enabled[PTL_MAX_INIT];
 	struct psm3_ep_open_opts opts = *opts_i;
+	struct multirail_config multirail_config = { 0 };
 
 	PSM2_LOG_MSG("entering");
 	PSMI_ERR_UNLESS_INITIALIZED(NULL);
@@ -1150,10 +798,10 @@ psm3_ep_open(psm2_uuid_t const unique_job_key,
 	}
 
 #if defined(PSM_ONEAPI)
-	/* Make sure the ze_cq and ze_cl are available.
-	 * Both could be destroyed when there is no more endpoints.
+	/* Make sure ze_context and command queue/list are available.
+	 * They could be destroyed when there is no more endpoints.
 	 * If another endpoint is created after that, the code here can
-	 * recreates the command queue and list.
+	 * recreate the context, command queue and list.
 	 */
 	if (PSMI_IS_GPU_ENABLED && !cur_ze_dev)
 		psmi_oneapi_cmd_create_all();
@@ -1180,18 +828,18 @@ psm3_ep_open(psm2_uuid_t const unique_job_key,
 		goto fail;
 
 	if (psm3_device_is_enabled(devid_enabled, PTL_DEVID_IPS)) {
-		err = psm3_ep_multirail(&num_rails, units, ports, addr_indexes);
+		err = psm3_ep_multirail(&multirail_config);
 		if (err != PSM2_OK)
 			goto fail;
 
 		/* If multi-rail is used, set the first ep unit/port */
-		if (num_rails > 0) {
-			opts.unit = units[0];
-			opts.port = ports[0];
-			opts.addr_index = addr_indexes[0];
+		if (multirail_config.num_rails > 0) {
+			opts.unit = multirail_config.units[0];
+			opts.port = multirail_config.ports[0];
+			opts.addr_index = multirail_config.addr_indexes[0];
 		}
 	}
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	// if HAL doesn't support GDR Copy, it may disable Gdr Copy
 	// by zeroing is_gdr_copy_enabled, gdr_copy_limit_send, and
 	// gdr_copy_limit_recv during gdr_open
@@ -1236,13 +884,13 @@ psm3_ep_open(psm2_uuid_t const unique_job_key,
 		psmi_hal_context_initstats(ep);
 		union psmi_envvar_val envvar_val;
 
-		if (num_rails <= 0) {
+		if (multirail_config.num_rails <= 0) {
 			// the NIC has now been selected for our process
 			// use the same NIC for any additional QPs below
-			num_rails = 1;
-			units[0] = ep->unit_id;
-			ports[0] = ep->portnum;
-			addr_indexes[0] = ep->addr_index;
+			multirail_config.num_rails = 1;
+			multirail_config.units[0] = ep->unit_id;
+			multirail_config.ports[0] = ep->portnum;
+			multirail_config.addr_indexes[0] = ep->addr_index;
 		}
 		// When QP_PER_NIC >1, creates more than 1 QP on each NIC and then
 		// uses the multi-rail algorithms to spread the traffic across QPs
@@ -1257,22 +905,28 @@ psm3_ep_open(psm2_uuid_t const unique_job_key,
 			PSMI_ENVVAR_TYPE_UINT,
 			(union psmi_envvar_val)1, &envvar_val);
 
-		if ((num_rails * envvar_val.e_uint) > PSMI_MAX_QPS) {
+		if ((multirail_config.num_rails * envvar_val.e_uint) > PSMI_MAX_QPS) {
 			err = psm3_handle_error(NULL, PSM2_TOO_MANY_ENDPOINTS,
 				"PSM3_QP_PER_NIC (%u) * num_rails (%d) > Max Support QPs (%u)",
-				envvar_val.e_uint, num_rails, PSMI_MAX_QPS);
+				envvar_val.e_uint, multirail_config.num_rails, PSMI_MAX_QPS);
 			goto fail;
 		}
 
 		for (j= 0; j< envvar_val.e_uint; j++) {
-			for (i = 0; i < num_rails; i++) {
-				_HFI_VDBG("rail %d unit %u port %u addr_index %d\n", i, units[i], ports[i], addr_indexes[i]);
+			// loop will open additional internal EPs for all
+			// the additional QPs on 1st rail and for all the
+			// additional rails and all the QPs on those rails
+			for (i = 0; i < multirail_config.num_rails; i++) {
+				_HFI_VDBG("rail %d unit %u port %u addr_index %d\n", i,
+							multirail_config.units[i],
+							multirail_config.ports[i],
+							multirail_config.addr_indexes[i]);
 				// did 0, 0 already above
 				if (i == 0 && j== 0)
 					continue;
-				opts.unit = units[i];
-				opts.port = ports[i];
-				opts.addr_index = addr_indexes[i];
+				opts.unit = multirail_config.units[i];
+				opts.port = multirail_config.ports[i];
+				opts.addr_index = multirail_config.addr_indexes[i];
 
 				/* Create secondary EP */
 				err = psm3_ep_open_internal(unique_job_key,
@@ -1299,8 +953,10 @@ fail:
 	fflush(stdout);
 	PSMI_UNLOCK(psm3_creation_lock);
 #if defined(PSM_ONEAPI)
-	if (PSMI_IS_GPU_ENABLED && psm3_opened_endpoint_count == 0)
+	if (PSMI_IS_GPU_ENABLED && psm3_opened_endpoint_count == 0) {
+		psmi_oneapi_putqueue_free();
 		psmi_oneapi_cmd_destroy_all();
+	}
 #endif //PSM_ONEAPI
 	PSM2_LOG_MSG("leaving");
 	return err;
@@ -1319,7 +975,7 @@ psm2_error_t psm3_ep_close(psm2_ep_t ep, int mode, int64_t timeout_in)
 	}
 #endif
 
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	/*
 	 * The close on the gdr fd needs to be called before the
 	 * close on the hfi fd as the the gdr device will hold
@@ -1361,12 +1017,10 @@ psm2_error_t psm3_ep_close(psm2_ep_t ep, int mode, int64_t timeout_in)
 		return err;
 	}
 
-	psm3_getenv("PSM3_CLOSE_TIMEOUT",
+	if (! psm3_getenv("PSM3_CLOSE_TIMEOUT",
 		    "End-point close timeout over-ride.",
 		    PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_UINT,
-		    (union psmi_envvar_val)0, &timeout_intval);
-
-	if (getenv("PSM3_CLOSE_TIMEOUT")) {
+		    (union psmi_envvar_val)0, &timeout_intval)) {
 		timeout_in = timeout_intval.e_uint * SEC_ULL;
 	} else if (timeout_in > 0) {
 		/* The timeout parameter provides the minimum timeout. A heuristic
@@ -1520,12 +1174,14 @@ psm2_error_t psm3_ep_close(psm2_ep_t ep, int mode, int64_t timeout_in)
 	}
 #if defined(PSM_ONEAPI)
 	/*
-	 * It would be ideal to destroy the global command list and queue in
-	 * psm3_finalize(). Unfortunately, it will cause segfaults in
-	 * Level-zero library.
+	 * It would be ideal to destroy the global command list, queue, and
+	 * context in psm3_finalize(). Unfortunately, it will cause segfaults
+	 * in Level-zero library.
 	 */
-	if (PSMI_IS_GPU_ENABLED && psm3_opened_endpoint_count == 0)
+	if (PSMI_IS_GPU_ENABLED && psm3_opened_endpoint_count == 0) {
+		psmi_oneapi_putqueue_free();
 		psmi_oneapi_cmd_destroy_all();
+	}
 #endif //PSM_ONEAPI
 	PSM2_LOG_MSG("leaving");
 	return err;
@@ -1593,6 +1249,15 @@ psm3_parse_devices(int devices[PTL_MAX_INIT])
 	int len;
 	int i = 0;
 	union psmi_envvar_val devs;
+	static int have_value = 0;
+	static int saved[PTL_MAX_INIT];
+
+	// only parse once so doesn't appear in PSM3_VERBOSE_ENV multiple times
+	if (have_value) {
+		for (i=0; i < PTL_MAX_INIT; i++)
+			devices[i] = saved[i];
+		return PSM2_OK;
+	}
 
 	/* See which ptl devices we want to use for this ep to be opened */
 	psm3_getenv("PSM3_DEVICES",
@@ -1643,7 +1308,7 @@ psm3_parse_devices(int devices[PTL_MAX_INIT])
 				b_new += 4;
 			} else {
 				err = psm3_handle_error(NULL, PSM2_PARAM_ERR,
-							"%s set in environment variable PSM_PTL_DEVICES=\"%s\" "
+							"'%s' set in environment variable PSM_PTL_DEVICES=\"%s\" "
 							"is not one of the recognized PTL devices (%s)",
 							b, devs.e_str,
 							PSMI_DEVICES_DEFAULT);
@@ -1656,6 +1321,9 @@ psm3_parse_devices(int devices[PTL_MAX_INIT])
 		*(b_new - 1) = '\0';
 
 	_HFI_PRDBG("PSM Device allocation order: %s\n", devstr);
+	for (i=0; i < PTL_MAX_INIT; i++)
+		saved[i] = devices[i];
+	have_value = 1;
 fail:
 	if (devstr != NULL)
 		psmi_free(devstr);

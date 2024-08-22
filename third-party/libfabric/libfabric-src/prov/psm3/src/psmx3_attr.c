@@ -265,39 +265,92 @@ fail:
 #define psmx3_dupinfo fi_dupinfo
 #endif /* HAVE_PSM3_DL */
 
-#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
-/* mimic parsing functionality of psm3_getenv */
-static long get_psm3_env(const char *var, int default_value) {
-	char *ep;
-	long val;
-	char *e = getenv(var);
-
-	if (!e || !*e)
-		return default_value; /* no value supplied */
-
-	val = strtol(e, &ep, 10);
-	if (!ep ||  *ep) { /* parse error - didn't consume all */
-		val = strtol(e, &ep, 16); /* try hex */
-		if (!ep ||  *ep)
-			return default_value;
-	}
-	return val;
-}
-#endif // defined(PSM_CUDA) || defined(PSM_ONEAPI)
-
 static uint64_t psmx3_check_fi_hmem_cap(void) {
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+	/* if parses as empty or invalid use default of 0 */
+	/* psm3 below us will provide warning as needed when it parses it */
+	int gpu = 0;
+	unsigned int gpudirect = 0;
 #ifdef PSM_CUDA
-	if ((get_psm3_env("PSM3_CUDA", 0) || get_psm3_env("PSM3_GPUDIRECT", 0)) &&
-		!ofi_hmem_p2p_disabled())
-		return FI_HMEM;
+	(void)psm3_parse_str_int(psm3_env_get("PSM3_CUDA"), &gpu, INT_MIN, INT_MAX);
+#else /* PSM_ONEAPI */
+	(void)psm3_parse_str_int(psm3_env_get("PSM3_ONEAPI_ZE"), &gpu,
+							INT_MIN, INT_MAX);
 #endif
-#ifdef PSM_ONEAPI
-	if ((get_psm3_env("PSM3_ONEAPI_ZE", 0) || get_psm3_env("PSM3_GPUDIRECT", 0)) &&
-		!ofi_hmem_p2p_disabled()) {
+	(void)psm3_parse_str_uint(psm3_env_get("PSM3_GPUDIRECT"), &gpudirect,
+							0, UINT_MAX);
+	if ((gpu || gpudirect) && !ofi_hmem_p2p_disabled())
 		return FI_HMEM;
+#endif /* PSM_CUDA || PSM_ONEAPI */
+	return 0;
+}
+
+static uint64_t get_max_inject_size(void) {
+	unsigned int thresh_rv;
+	unsigned int temp;
+	int have_shm = 1;
+	int have_nic = 1;
+	int devid_enabled[PTL_MAX_INIT];
+
+	// check PSM3_DEVICES to determine if PSM3 shm enabled
+	if ((PSM2_OK == psm3_parse_devices(devid_enabled))) {
+		have_shm = psm3_device_is_enabled(devid_enabled, PTL_DEVID_AMSH);
+		have_nic = psm3_device_is_enabled(devid_enabled, PTL_DEVID_IPS);
+	}
+
+	// figure out the smallest rendezvous threshold (GPU vs CPU ips vs shm)
+	// If middleware above is not using PSM3 for shm but leaves it in
+	// PSM3_DEVICES, this could be more restrictive than necessary,
+	// but it's safe.  Note that PSM3_DEVICES can't be set per EP open.
+	// Also not yet sure which HAL will be selected so must pick most
+	// conservative ips (NIC) config
+	thresh_rv = 65536;	// default in odd case of PSM3_DEVICES=self
+
+	if (have_nic) {
+		temp = PSM_MQ_NIC_RNDV_THRESH;
+		psm3_parse_str_uint(psm3_env_get("PSM3_MQ_RNDV_NIC_THRESH"), &temp,
+							0, UINT_MAX);
+		if (thresh_rv > temp)
+			thresh_rv = temp;
+	}
+
+	if (have_shm) {
+		temp = MQ_SHM_THRESH_RNDV;
+		psm3_parse_str_uint(psm3_env_get("PSM3_MQ_RNDV_SHM_THRESH"), &temp,
+							0, UINT_MAX);
+		if (thresh_rv > temp)
+			thresh_rv = temp;
+	}
+
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+	if (psmx3_prov_info.caps & FI_HMEM) {
+		if (have_nic) {
+			// GPU ips rendezvous threshold
+			// sockets HAL avoids rendezvous, so this may be overly restrictive
+			temp = GPU_THRESH_RNDV;
+			// PSM3_CUDA_THRESH_RNDV depricated, use PSM3_GPU_THRESH_RNDV if set
+			psm3_parse_str_uint(psm3_env_get("PSM3_CUDA_THRESH_RNDV"), &temp,
+								0, UINT_MAX);
+			psm3_parse_str_uint(psm3_env_get("PSM3_GPU_THRESH_RNDV"), &temp,
+								0, UINT_MAX);
+			if (thresh_rv > temp)
+				thresh_rv = temp;
+		}
+
+		if (have_shm) {
+			// GPU shm rendezvous threshold
+			temp = MQ_SHM_GPU_THRESH_RNDV;
+			psm3_parse_str_uint(psm3_env_get("PSM3_MQ_RNDV_SHM_GPU_THRESH"), &temp,
+								0, UINT_MAX);
+			if (thresh_rv > temp)
+				thresh_rv = temp;
+		}
 	}
 #endif
-	return 0;
+
+	// messages <= thresh_rv guaranteed to use eager, so thresh_rv
+	// is the max allowed inject_size.
+	return thresh_rv;
 }
 
 /*
@@ -335,6 +388,14 @@ int psmx3_init_prov_info(const struct fi_info *hints, struct fi_info **info)
 	int ep_type2 = FI_EP_DGRAM;
 	uint64_t extra_caps = 0;
 
+	/* Check if GPU is enabled */
+	extra_caps |= psmx3_check_fi_hmem_cap();
+
+	prov_info->caps |= extra_caps;
+	prov_info->tx_attr->caps |= extra_caps;
+	prov_info->rx_attr->caps |= extra_caps;
+	prov_info->domain_attr->caps |= extra_caps;
+
 	if (!hints)
 		goto alloc_info;
 
@@ -347,13 +408,13 @@ int psmx3_init_prov_info(const struct fi_info *hints, struct fi_info **info)
 			ep_type = FI_EP_DGRAM;
 			break;
 		default:
-			FI_INFO(&psmx3_prov, FI_LOG_CORE,
+			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 				"Unsupported endpoint type\n");
-			FI_INFO(&psmx3_prov, FI_LOG_CORE, "Supported: %s\n",
+			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "Supported: %s\n",
 				fi_tostr(&ep_type, FI_TYPE_EP_TYPE));
-			FI_INFO(&psmx3_prov, FI_LOG_CORE, "Supported: %s\n",
+			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "Supported: %s\n",
 				fi_tostr(&ep_type2, FI_TYPE_EP_TYPE));
-			FI_INFO(&psmx3_prov, FI_LOG_CORE, "Requested: %s\n",
+			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "Requested: %s\n",
 				fi_tostr(&hints->ep_attr->type, FI_TYPE_EP_TYPE));
 			return -FI_ENODATA;
 		}
@@ -367,27 +428,19 @@ int psmx3_init_prov_info(const struct fi_info *hints, struct fi_info **info)
 			addr_format = FI_ADDR_STR;
 			break;
 		default:
-			FI_INFO(&psmx3_prov, FI_LOG_CORE,
+			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 				"Unsupported address format\n");
-			FI_INFO(&psmx3_prov, FI_LOG_CORE, "Supported: %s\n",
+			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "Supported: %s\n",
 				fi_tostr(&addr_format, FI_TYPE_ADDR_FORMAT));
-			FI_INFO(&psmx3_prov, FI_LOG_CORE, "Supported: %s\n",
+			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "Supported: %s\n",
 				fi_tostr(&addr_format2, FI_TYPE_ADDR_FORMAT));
-			FI_INFO(&psmx3_prov, FI_LOG_CORE, "Requested: %s\n",
+			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "Requested: %s\n",
 				fi_tostr(&hints->addr_format, FI_TYPE_ADDR_FORMAT));
 			return -FI_ENODATA;
 	}
 
-	/* Check if CUDA is enable */
-	extra_caps |= psmx3_check_fi_hmem_cap();
-
-	prov_info->caps |= extra_caps;
-	prov_info->tx_attr->caps |= extra_caps;
-	prov_info->rx_attr->caps |= extra_caps;
-	prov_info->domain_attr->caps |= extra_caps;
-
 	if ((hints->caps & prov_info->caps) != hints->caps) {
-		FI_INFO(&psmx3_prov, FI_LOG_CORE, "caps not supported\n");
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "caps not supported\n");
 		OFI_INFO_CHECK(&psmx3_prov, prov_info, hints, caps, FI_TYPE_CAPS);
 		return -FI_ENODATA;
 	}
@@ -409,7 +462,7 @@ alloc_info:
 			info_new->rx_attr->mode = 0;
 			info_new->domain_attr->cq_data_size = 8;
 			info_out = info_new;
-			FI_INFO(&psmx3_prov, FI_LOG_CORE,
+			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 				"RMA only instance included\n");
 		}
 	}
@@ -423,7 +476,7 @@ alloc_info:
 		info_new->domain_attr->cq_data_size = 4;
 		info_new->next = info_out;
 		info_out = info_new;
-		FI_INFO(&psmx3_prov, FI_LOG_CORE,
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 			"TAG60 instance included\n");
 	}
 
@@ -436,7 +489,7 @@ alloc_info:
 			info_new->ep_attr->type = ep_type;
 			info_new->next = info_out;
 			info_out = info_new;
-			FI_INFO(&psmx3_prov, FI_LOG_CORE,
+			PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 				"TAG64 instance included\n");
 		}
 	}
@@ -488,7 +541,7 @@ static void psmx3_expand_default_unit(struct fi_info *info)
 					}
 					p->next = psmx3_dupinfo(p);
 					if (!p->next) {
-						FI_WARN(&psmx3_prov, FI_LOG_CORE,
+						PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 							"Failed to duplicate info for HFI unit %d\n",
 							psmx3_domain_info.active_units[i]);
 						break;
@@ -513,6 +566,8 @@ void psmx3_update_prov_info(struct fi_info *info,
 			    struct psmx3_ep_name *dest_addr)
 {
 	struct fi_info *p;
+	unsigned int max_inject_size;
+	unsigned int inject_size;
 
 	for (p = info; p; p = p->next) {
 		psmx3_dup_addr(p->addr_format, src_addr,
@@ -522,6 +577,15 @@ void psmx3_update_prov_info(struct fi_info *info,
 	}
 
 	psmx3_expand_default_unit(info);
+
+	max_inject_size = get_max_inject_size();
+	if (psmx3_env.inject_size > max_inject_size)
+		inject_size = max_inject_size;
+	else
+		inject_size = psmx3_env.inject_size;
+	PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
+		"Using inject_size=%u based on FI_PSM3_INJECT_SIZE=%u with max %u\n",
+		inject_size, psmx3_env.inject_size, max_inject_size);
 
 	for (p = info; p; p = p->next) {
 		int unit = ((struct psmx3_ep_name *)p->src_addr)->unit;
@@ -556,22 +620,22 @@ void psmx3_update_prov_info(struct fi_info *info,
 			int addr_index = psmx3_domain_info.addr_index[unit];
 
 			args[0].unit = unit_id;
-			args[1].port = port;
+			args[1].port = port == PSMX3_DEFAULT_PORT ? 1 : port;
 			args[2].addr_index = addr_index;
 			args[3].length = sizeof(unit_name);
 
 			if (PSM2_OK != psm3_info_query(PSM2_INFO_QUERY_UNIT_ADDR_NAME,
 				unit_name, 4, args)) {
-				FI_WARN(&psmx3_prov, FI_LOG_CORE,
+				PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 					"Failed to read domain name for NIC unit %d (id %d, port %d, index %d)\n",
 					unit, unit_id, port, addr_index);
 				if (asprintf(&p->domain_attr->name, "UNKNOWN") < 0) {
-					FI_WARN(&psmx3_prov, FI_LOG_CORE,
+					PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 						"Failed to allocate memory for domain name for NIC unit %d\n", unit);
 				}
 			} else {
 				if (asprintf(&p->domain_attr->name, "%s", unit_name) <0) {
-					FI_WARN(&psmx3_prov, FI_LOG_CORE,
+					PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 						"Failed to allocate memory for domain name for NIC unit %d "
 						"(id %d, port %d, index %d)\n",
 						unit, unit_id, port, addr_index);
@@ -588,27 +652,27 @@ void psmx3_update_prov_info(struct fi_info *info,
 			int addr_index = psmx3_domain_info.addr_index[unit];
 
 			args[0].unit = unit_id;
-			args[1].port = port;
+			args[1].port = port == PSMX3_DEFAULT_PORT ? 1 : port;
 			args[2].addr_index = addr_index;
 			args[3].length = sizeof(fabric_name);
 
 			if (PSM2_OK != psm3_info_query(PSM2_INFO_QUERY_UNIT_SUBNET_NAME,
 				fabric_name, 4, args)) {
-				FI_WARN(&psmx3_prov, FI_LOG_CORE,
+				PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 					"Failed to read unit fabric name for NIC unit_id %d port %d addr %d\n", unit_id, port, addr_index);
 				if (asprintf(&p->fabric_attr->name, "UNKNOWN") < 0) {
-					FI_WARN(&psmx3_prov, FI_LOG_CORE,
+					PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 						"Failed to allocate memory for unit fabric name for NIC unit %d\n", unit);
 				}
 			} else {
 				if (asprintf(&p->fabric_attr->name, "%s", fabric_name) <0) {
-					FI_WARN(&psmx3_prov, FI_LOG_CORE,
+					PSMX3_WARN(&psmx3_prov, FI_LOG_CORE,
 						"Failed to allocate memory for unit fabric name for NIC unit %d port %d addr %d\n", unit, port, addr_index);
 				}
 			}
 		}
 
-		p->tx_attr->inject_size = psmx3_env.inject_size;
+		p->tx_attr->inject_size = inject_size;
 	}
 }
 
@@ -624,13 +688,13 @@ static int psmx3_check_info(const struct util_prov *util_prov,
 	/* some revs of ofi_check_info fail to check names, so do it here */
 	if (hints && hints->domain_attr && hints->domain_attr->name &&
 	    strcasecmp(hints->domain_attr->name, info->domain_attr->name)) {
-		FI_INFO(&psmx3_prov, FI_LOG_CORE, "skipping device %s (want %s)\n",
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "skipping device %s (want %s)\n",
 			info->domain_attr->name, hints->domain_attr->name);
 		return -FI_ENODATA;
 	}
 	if (hints && hints->fabric_attr && hints->fabric_attr->name &&
 	    strcasecmp(hints->fabric_attr->name, info->fabric_attr->name)) {
-		FI_INFO(&psmx3_prov, FI_LOG_CORE, "skipping fabric %s (want %s)\n",
+		PSMX3_INFO(&psmx3_prov, FI_LOG_CORE, "skipping fabric %s (want %s)\n",
 			info->fabric_attr->name, hints->fabric_attr->name);
 		return -FI_ENODATA;
 	}
@@ -706,7 +770,7 @@ void psmx3_alter_prov_info(uint32_t api_version,
 		cnt++;
 	}
 
-	FI_INFO(&psmx3_prov, FI_LOG_CORE,
+	PSMX3_INFO(&psmx3_prov, FI_LOG_CORE,
 		"%d instances available, %d with CQ data flag set\n",
 		cnt, cq_data_cnt);
 }

@@ -83,6 +83,14 @@ int chpl_topo_reserveCPUPhysical(void);
 //
 int chpl_topo_bindCPU(int id);
 
+// Binds the current thread to the accessible logical CPUs (PUs). This
+// restricts the thread to the locale's PUs (i.e., the progress thread should
+// use the same PUs as the locale).
+//
+// Returns 0 on success, 1 otherwise
+//
+int chpl_topo_bindLogAccCPUs(void);
+
 //
 // how many NUMA domains are there?
 //
@@ -157,8 +165,17 @@ typedef struct chpl_topo_pci_addr {
     uint8_t function;
 } chpl_topo_pci_addr_t;
 
+#define CHPL_TOPO_PCI_ADDR_EQUAL(a, b) \
+    (((a)->domain == (b)->domain) && \
+     ((a)->bus == (b)->bus) && \
+     ((a)->device == (b)->device) && \
+     ((a)->function == (b)->function))
+
 chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
                                                 chpl_topo_pci_addr_t *outAddr);
+
+int chpl_topo_selectMyDevices(chpl_topo_pci_addr_t *inAddrs,
+                              chpl_topo_pci_addr_t *outAddrs, int *count);
 //
 // Returns True if the node is oversubscribed (locales are sharing
 // cores).

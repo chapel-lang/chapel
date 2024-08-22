@@ -45,6 +45,8 @@ def generate_subdir_map():
     pkg_aliases['CHPL_GMP-bundled'] = 'gmp'
     pkg_aliases['CHPL_HWLOC-bundled'] = 'hwloc'
     pkg_aliases['CHPL_JEMALLOC-bundled'] = 'jemalloc'
+    pkg_aliases['CHPL_TARGET_JEMALLOC-bundled'] = 'jemalloc'
+    pkg_aliases['CHPL_HOST_JEMALLOC-bundled'] = 'jemalloc'
     pkg_aliases['CHPL_LIBFABRIC-bundled'] = 'libfabric'
     pkg_aliases['CHPL_LLVM-bundled'] = 'llvm'
     pkg_aliases['CHPL_UNWIND-bundled'] = 'libunwind'
@@ -71,7 +73,10 @@ def compute_required_pkgs():
             (var, val) = var.strip(), val.strip()
             # Ignore platform variables
             # Ignore CHPL_MEM (use CHPL_JEMALLOC)
-            if not (var.endswith('_PLATFORM') or var == 'CHPL_MEM'):
+            # Ignore CHPL_HOST_MEM (use CHPL_JEMALLOC)
+            # Ignore CHPL_TARGET_MEM (use CHPL_JEMALLOC)
+            ignore_vars = ['CHPL_MEM', 'CHPL_HOST_MEM', 'CHPL_TARGET_MEM']
+            if not (var.endswith('_PLATFORM') or var in ignore_vars):
                 if val in get_all_pkgs():
                     req_pkgs.add(val)
                 elif var + '-' + val in pkg_aliases:

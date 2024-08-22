@@ -1,6 +1,6 @@
 use BlockDist;
 
-const D = {1..8} dmapped blockDist({1..8});
+const D = {1..8} dmapped new blockDist({1..8});
 var A: [D] real;
 var SD: sparse subdomain(D);
 SD += (1,);

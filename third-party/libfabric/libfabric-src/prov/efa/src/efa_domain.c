@@ -1,61 +1,40 @@
-/*
- * Copyright (c) 2013-2015 Intel Corporation, Inc.  All rights reserved.
- * Copyright (c) 2017-2020 Amazon.com, Inc. or its affiliates. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+/* SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only */
+/* SPDX-FileCopyrightText: Copyright (c) 2013-2015 Intel Corporation, Inc.  All rights reserved. */
+/* SPDX-FileCopyrightText: Copyright Amazon.com, Inc. or its affiliates. All rights reserved. */
+
 #include <assert.h>
 #include <ofi_util.h>
 
 #include "config.h"
 #include "efa.h"
-#include "rxr.h"
-#include "rxr_cntr.h"
-#include "rxr_atomic.h"
+#include "efa_av.h"
+#include "efa_cntr.h"
+#include "rdm/efa_rdm_cq.h"
+#include "rdm/efa_rdm_atomic.h"
+#include "dgram/efa_dgram_ep.h"
+#include "dgram/efa_dgram_cq.h"
+
 
 struct dlist_entry g_efa_domain_list;
 
 static int efa_domain_close(fid_t fid);
+
+static int efa_domain_ops_open(struct fid *fid, const char *ops_name,
+				uint64_t flags, void **ops, void *context);
 
 static struct fi_ops efa_ops_domain_fid = {
 	.size = sizeof(struct fi_ops),
 	.close = efa_domain_close,
 	.bind = fi_no_bind,
 	.control = fi_no_control,
-	.ops_open = fi_no_ops_open,
+	.ops_open = efa_domain_ops_open,
 };
 
 static struct fi_ops_domain efa_ops_domain_dgram = {
 	.size = sizeof(struct fi_ops_domain),
 	.av_open = efa_av_open,
-	.cq_open = efa_cq_open,
-	.endpoint = efa_ep_open,
+	.cq_open = efa_dgram_cq_open,
+	.endpoint = efa_dgram_ep_open,
 	.scalable_ep = fi_no_scalable_ep,
 	.cntr_open = efa_cntr_open,
 	.poll_open = fi_no_poll_open,
@@ -68,14 +47,14 @@ static struct fi_ops_domain efa_ops_domain_dgram = {
 static struct fi_ops_domain efa_ops_domain_rdm = {
 	.size = sizeof(struct fi_ops_domain),
 	.av_open = efa_av_open,
-	.cq_open = rxr_cq_open,
-	.endpoint = rxr_endpoint,
+	.cq_open = efa_rdm_cq_open,
+	.endpoint = efa_rdm_ep_open,
 	.scalable_ep = fi_no_scalable_ep,
 	.cntr_open = efa_cntr_open,
 	.poll_open = fi_poll_create,
 	.stx_ctx = fi_no_stx_context,
 	.srx_ctx = fi_no_srx_context,
-	.query_atomic = rxr_query_atomic,
+	.query_atomic = efa_rdm_atomic_query,
 	.query_collective = fi_no_query_collective,
 };
 
@@ -84,18 +63,28 @@ static struct fi_ops_domain efa_ops_domain_rdm = {
  *
  * @param efa_domain[in,out]	efa domain to be set.
  * @param domain_name		domain name
+ * @param ep_type		endpoint type
  * @return 0 if efa_domain->device and efa_domain->ibv_pd has been set successfully
  *         negative error code if err is encountered
  */
-static int efa_domain_init_device_and_pd(struct efa_domain *efa_domain, const char *domain_name)
+static int efa_domain_init_device_and_pd(struct efa_domain *efa_domain,
+                                         const char *domain_name,
+                                         enum fi_ep_type ep_type)
 {
 	int i;
+	char *device_name = NULL;
+	const char *domain_name_suffix = efa_domain_name_suffix(ep_type);
 
 	if (!domain_name)
 		return -FI_EINVAL;
 
 	for (i = 0; i < g_device_cnt; i++) {
-		if (strstr(domain_name, g_device_list[i].ibv_ctx->device->name) == domain_name) {
+		device_name = g_device_list[i].ibv_ctx->device->name;
+		if (strstr(domain_name, device_name) == domain_name &&
+		    strlen(domain_name) - strlen(device_name) ==
+		            strlen(domain_name_suffix) &&
+		    strcmp((const char *) (domain_name + strlen(device_name)),
+		           domain_name_suffix) == 0) {
 			efa_domain->device = &g_device_list[i];
 			break;
 		}
@@ -104,6 +93,7 @@ static int efa_domain_init_device_and_pd(struct efa_domain *efa_domain, const ch
 	if (i == g_device_cnt)
 		return -FI_ENODEV;
 
+	EFA_INFO(FI_LOG_DOMAIN, "Domain %s selected device %s\n", domain_name, device_name);
 	efa_domain->ibv_pd = efa_domain->device->ibv_pd;
 	return 0;
 }
@@ -124,10 +114,41 @@ static int efa_domain_init_qp_table(struct efa_domain *efa_domain)
 static int efa_domain_init_rdm(struct efa_domain *efa_domain, struct fi_info *info)
 {
 	int err;
+	bool enable_shm = efa_env.enable_shm_transfer;
+
+	/* App provided hints supercede environmental variables.
+	 *
+	 * Using the shm provider comes with some overheads, so avoid
+	 * initializing the provider if the app provides a hint that it does not
+	 * require node-local communication. We can still loopback over the EFA
+	 * device in cases where the app violates the hint and continues
+	 * communicating with node-local peers.
+	 *
+	 */
+	if ((info->caps & FI_REMOTE_COMM)
+	    /* but not local communication */
+	    && !(info->caps & FI_LOCAL_COMM)) {
+		enable_shm = false;
+	}
+
+	efa_domain->shm_info = NULL;
+	if (enable_shm)
+		efa_shm_info_create(info, &efa_domain->shm_info);
+	else
+		EFA_INFO(FI_LOG_CORE, "EFA will not use SHM for intranode communication because FI_EFA_ENABLE_SHM_TRANSFER=0\n");
+
+	if (efa_domain->shm_info) {
+		err = fi_fabric(efa_domain->shm_info->fabric_attr,
+				&efa_domain->fabric->shm_fabric,
+				efa_domain->fabric->util_fabric.fabric_fid.fid.context);
+		if (err)
+			return err;
+	} else {
+		efa_domain->fabric->shm_fabric = NULL;
+	}
 
 	if (efa_domain->fabric->shm_fabric) {
-		assert(!strcmp(g_shm_info->fabric_attr->name, "shm"));
-		err = fi_domain(efa_domain->fabric->shm_fabric, g_shm_info,
+		err = fi_domain(efa_domain->fabric->shm_fabric, efa_domain->shm_info,
 				&efa_domain->shm_domain, NULL);
 		if (err)
 			return err;
@@ -137,7 +158,7 @@ static int efa_domain_init_rdm(struct efa_domain *efa_domain, struct fi_info *in
 	efa_domain->mtu_size = efa_domain->device->ibv_port_attr.max_msg_sz;
 	efa_domain->addrlen = (info->src_addr) ? info->src_addrlen : info->dest_addrlen;
 	efa_domain->rdm_cq_size = MAX(info->rx_attr->size + info->tx_attr->size,
-				  rxr_env.cq_size);
+				  efa_env.cq_size);
 	return 0;
 }
 
@@ -173,6 +194,15 @@ int efa_domain_open(struct fid_fabric *fabric_fid, struct fi_info *info,
 		ret = err;
 		goto err_free;
 	}
+
+	err = ofi_genlock_init(&efa_domain->srx_lock, efa_domain->util_domain.threading != FI_THREAD_SAFE ?
+			       OFI_LOCK_NOOP : OFI_LOCK_MUTEX);
+	if (err) {
+		EFA_WARN(FI_LOG_DOMAIN, "srx lock init failed! err: %d\n", err);
+		ret = err;
+		goto err_free;
+	}
+
 	efa_domain->util_domain.av_type = FI_AV_TABLE;
 	efa_domain->util_domain.mr_map.mode |= FI_MR_VIRT_ADDR;
 	/*
@@ -188,10 +218,9 @@ int efa_domain_open(struct fid_fabric *fabric_fid, struct fi_info *info,
 	efa_domain->util_domain.mr_map.mode &= ~FI_MR_PROV_KEY;
 
 	if (!info->ep_attr || info->ep_attr->type == FI_EP_UNSPEC) {
-		EFA_WARN(FI_LOG_DOMAIN, "ep type not specified when creating domain");
+		EFA_WARN(FI_LOG_DOMAIN, "ep type not specified when creating domain\n");
 		return -FI_EINVAL;
 	}
-
 
 	efa_domain->mr_local = ofi_mr_local(info);
 	if (EFA_EP_TYPE_IS_DGRAM(info) && !efa_domain->mr_local) {
@@ -200,7 +229,7 @@ int efa_domain_open(struct fid_fabric *fabric_fid, struct fi_info *info,
 		goto err_free;
 	}
 
-	err = efa_domain_init_device_and_pd(efa_domain, info->domain_attr->name);
+	err = efa_domain_init_device_and_pd(efa_domain, info->domain_attr->name, info->ep_attr->type);
 	if (err) {
 		ret = err;
 		goto err_free;
@@ -217,7 +246,7 @@ int efa_domain_open(struct fid_fabric *fabric_fid, struct fi_info *info,
 	err = efa_domain_init_qp_table(efa_domain);
 	if (err) {
 		ret = err;
-		EFA_WARN(FI_LOG_DOMAIN, "Failed to init qp table. err: %d", ret);
+		EFA_WARN(FI_LOG_DOMAIN, "Failed to init qp table. err: %d\n", ret);
 		goto err_free;
 	}
 
@@ -255,14 +284,14 @@ int efa_domain_open(struct fid_fabric *fabric_fid, struct fi_info *info,
 	err = efa_fork_support_enable_if_requested(*domain_fid);
 	if (err) {
 		ret = err;
-		EFA_WARN(FI_LOG_DOMAIN, "Failed to initialize fork support. err: %d", ret);
+		EFA_WARN(FI_LOG_DOMAIN, "Failed to initialize fork support. err: %d\n", ret);
 		goto err_free;
 	}
 
-	err = efa_hmem_info_update_all(efa_domain);
+	err = efa_domain_hmem_info_init_all(efa_domain);
 	if (err) {
 		ret = err;
-		EFA_WARN(FI_LOG_DOMAIN, "Failed to check hmem support status. err: %d", ret);
+		EFA_WARN(FI_LOG_DOMAIN, "Failed to check hmem support status. err: %d\n", ret);
 		goto err_free;
 	}
 
@@ -314,10 +343,89 @@ static int efa_domain_close(fid_t fid)
 			return ret;
 	}
 
+	if (efa_domain->shm_info)
+		fi_freeinfo(efa_domain->shm_info);
+
 	if (efa_domain->info)
 		fi_freeinfo(efa_domain->info);
+
+	ofi_genlock_destroy(&efa_domain->srx_lock);
 	free(efa_domain->qp_table);
 	free(efa_domain);
 	return 0;
 }
 
+/**
+ * @brief Query EFA specific Memory Region attributes
+ *
+ * @param mr ptr to fid_mr
+ * @param mr_attr  ptr to fi_efa_mr_attr
+ * @return int 0 on success, negative integer on failure
+ */
+#if HAVE_EFADV_QUERY_MR
+
+static int
+efa_domain_query_mr(struct fid_mr *mr_fid, struct fi_efa_mr_attr *mr_attr)
+{
+	struct efadv_mr_attr attr = {0};
+	struct efa_mr *efa_mr;
+	int ret;
+
+	memset(mr_attr, 0, sizeof(*mr_attr));
+
+	efa_mr = container_of(mr_fid, struct efa_mr, mr_fid);
+	ret = efadv_query_mr(efa_mr->ibv_mr, &attr, sizeof(attr));
+	if (ret) {
+		EFA_WARN(FI_LOG_DOMAIN, "efadv_query_mr failed. err: %d\n", ret);
+		return ret;
+	}
+
+	/* Translate the validity masks and bus_id from efadv_mr_attr to fi_efa_mr_attr */
+	if (attr.ic_id_validity & EFADV_MR_ATTR_VALIDITY_RECV_IC_ID) {
+		mr_attr->recv_ic_id = attr.recv_ic_id;
+		mr_attr->ic_id_validity |= FI_EFA_MR_ATTR_RECV_IC_ID;
+	}
+
+	if (attr.ic_id_validity & EFADV_MR_ATTR_VALIDITY_RDMA_READ_IC_ID) {
+		mr_attr->rdma_read_ic_id = attr.rdma_read_ic_id;
+		mr_attr->ic_id_validity |= FI_EFA_MR_ATTR_RDMA_READ_IC_ID;
+	}
+
+	if (attr.ic_id_validity & EFADV_MR_ATTR_VALIDITY_RDMA_RECV_IC_ID) {
+		mr_attr->rdma_recv_ic_id = attr.rdma_recv_ic_id;
+		mr_attr->ic_id_validity |= FI_EFA_MR_ATTR_RDMA_RECV_IC_ID;
+	}
+
+	return FI_SUCCESS;
+}
+
+#else
+
+static int
+efa_domain_query_mr(struct fid_mr *mr, struct fi_efa_mr_attr *mr_attr)
+{
+	return -FI_ENOSYS;
+}
+
+#endif /* HAVE_EFADV_QUERY_MR */
+
+static struct fi_efa_ops_domain efa_ops_domain = {
+	.query_mr = efa_domain_query_mr,
+};
+
+static int
+efa_domain_ops_open(struct fid *fid, const char *ops_name, uint64_t flags,
+		     void **ops, void *context)
+{
+	int ret = FI_SUCCESS;
+
+	if (strcmp(ops_name, FI_EFA_DOMAIN_OPS) == 0) {
+		*ops = &efa_ops_domain;
+	} else {
+		EFA_WARN(FI_LOG_DOMAIN,
+			"Unknown ops name: %s\n", ops_name);
+		ret = -FI_EINVAL;
+	}
+
+	return ret;
+}

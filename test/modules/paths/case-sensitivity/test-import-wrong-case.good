@@ -1,0 +1,1 @@
+test-import-wrong-case.chpl:1: error: cannot find module named 'Library'

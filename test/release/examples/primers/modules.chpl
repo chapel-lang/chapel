@@ -24,7 +24,7 @@
    keyword, then the file itself is treated as a module with the same name as
    the file (minus the .chpl suffix).  The compiler can be directed to include
    modules in distinct files by naming them on the command line or by relying
-   on the ``-M`` flag (see the :ref:`man page <man-chpl>` for exact details).
+   on the ``-M`` flag (see the :ref:`man page <man-module-dir>` for exact details).
    Here, we declare a module `ModToUse`:
 */
 module ModToUse {

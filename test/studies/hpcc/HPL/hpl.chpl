@@ -74,7 +74,7 @@ proc main() {
   // rows and its low column bound.
   //
   const MatVectSpace: domain(2)
-    dmapped dimensionalDist2D(targetLocales,
+    dmapped new dimensionalDist2D(targetLocales,
                               new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
                               new BlockCyclicDim(gridCols, lowIdx=1, blkSize))
                     = {1..n, 1..n+1},
@@ -213,7 +213,7 @@ proc schurComplement(ref Ab: [?AbD] elemType, AD: domain(?), BD: domain(?), Rest
 //
 proc replicateD1(Ab, BD) {
   const replBD = {1..blkSize, 1..n+1}
-    dmapped dimensionalDist2D(targetLocales,
+    dmapped new dimensionalDist2D(targetLocales,
                               new ReplicatedDim(gridRows),
                               new BlockCyclicDim(gridCols, lowIdx=1, blkSize));
   var replB: [replBD] elemType;
@@ -232,7 +232,7 @@ proc replicateD1(Ab, BD) {
 //
 proc replicateD2(Ab, AD) {
   const replAD = {1..n, 1..blkSize}
-    dmapped dimensionalDist2D(targetLocales,
+    dmapped new dimensionalDist2D(targetLocales,
                               new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
                               new ReplicatedDim(gridCols));
   var replA: [replAD] elemType;

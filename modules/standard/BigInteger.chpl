@@ -1883,7 +1883,7 @@ module BigInteger {
     maybePrime,
     /* Indicates that the number is a prime. */
     isPrime
-  };
+  }
 
   /*
     Determine whether ``this`` is prime.  Returns one of the :enum:`primality`

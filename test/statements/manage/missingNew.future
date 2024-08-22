@@ -1,0 +1,2 @@
+bug: this should either be an error or default initialize 'x'
+#24721

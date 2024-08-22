@@ -1,0 +1,4 @@
+declaredInClass-nestedRef.chpl:16: error: illegal use of identifier 'x' from enclosing type
+declaredInClass-nestedRef.chpl:15: note: the identifier is used within enum 'inner', declared here
+declaredInClass-nestedRef.chpl:11: note: however, the identifier refers to a field of an enclosing class 'Sample', declared here
+declaredInClass-nestedRef.chpl:13: note: field declared here

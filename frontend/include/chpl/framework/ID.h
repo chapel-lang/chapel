@@ -72,6 +72,12 @@ class ID final {
   }
 
   /**
+    Construct an ID with specified symbol path, and default postorder traversal
+    number.
+   */
+  explicit ID(UniqueString symbolPath) : symbolPath_(symbolPath) {}
+
+  /**
     Return a path to the ID symbol scope. For example, a function 'foo'
     declared in a module M would have symbolPath M.foo.
 

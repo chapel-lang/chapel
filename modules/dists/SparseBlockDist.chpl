@@ -98,7 +98,7 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
     var thisid = this.locale.id;
     if locDoms(dist.targetLocDom.lowBound) == nil {
       coforall localeIdx in dist.targetLocDom {
-        on dist.targetLocales(localeIdx) do {
+        on dist.targetLocales(localeIdx) {
           //                    writeln("Setting up on ", here.id);
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
          locDoms(localeIdx) = new unmanaged LocSparseBlockDom(rank, idxType,
@@ -327,6 +327,16 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
       dsiAdd(i);
   }
 
+  proc setLocalSubdomain(locIndices, loc: locale = here) {
+    if loc != here then
+      halt("setLocalSubdomain() doesn't currently support remote updates");
+    ref myBlock = this.myLocDom!.mySparseBlock;
+    if myBlock.type != locIndices.type then
+      compilerError("setLocalSubdomain() expects its argument to be of type ",
+                    myBlock.type:string);
+    else
+      myBlock = locIndices;
+  }
 }
 
 private proc getDefaultSparseDist(type sparseLayoutType) {
@@ -539,6 +549,24 @@ class SparseBlockArr: BaseSparseArr(?) {
     return true;
   }
 
+  proc getLocalSubarray(localeRow, localeCol) const ref {
+    return this.locArr[localeRow, localeCol]!.myElems;
+  }
+
+  proc getLocalSubarray(localeIdx) const ref {
+    return this.locArr[localeIdx]!.myElems;
+  }
+
+  proc setLocalSubarray(locNonzeroes, loc: locale = here) {
+    if loc != here then
+      halt("setLocalSubarray() doesn't currently support remote updates");
+    ref myBlock = this.myLocArr!.myElems;
+    if myBlock.type != locNonzeroes.type then
+      compilerError("setLocalSubarray() expects its argument to be of type ",
+                    myBlock.type:string);
+    else
+      myBlock.data = locNonzeroes.data;
+  }
 }
 
 //
@@ -846,6 +874,10 @@ proc SparseBlockDom.dsiReprivatize(other, reprivatizeData) {
   whole = {(...reprivatizeData)};
 }
 
+proc SparseBlockDom.dsiTargetLocales() const ref {
+  return dist.targetLocales;
+}
+
 override proc SparseBlockArr.dsiSupportsPrivatization() param do return true;
 
 proc SparseBlockArr.dsiGetPrivatizeData() do return dom.pid;
@@ -862,6 +894,12 @@ proc SparseBlockArr.dsiPrivatize(privatizeData) {
   }
   return c;
 }
+
+proc SparseBlockArr.dsiTargetLocales() const ref {
+  return dom.dsiTargetLocales();
+}
+
+
 
 proc SparseBlockDom.numRemoteElems(rlo,rid){
   var blo,bhi:dist.idxType;

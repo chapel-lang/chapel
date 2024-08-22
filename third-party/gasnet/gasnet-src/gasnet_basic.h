@@ -150,6 +150,15 @@
   #endif
 #endif
 
+// As reported in UPC++ issue #601, NVHPC 23.3 has a flawed implementation
+// of the "pure" attribute.
+// TODO: end version once fixed
+#if PLATFORM_COMPILER_NVHPC && PLATFORM_COMPILER_VERSION_GE(23,3,0)
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_PURE
+  #define GASNETT_USE_GCC_ATTRIBUTE_PURE 0
+  #endif
+#endif
+
 // token expansion: expands to configure-detected token GASNETI_<id>_<feature> for the current compiler
 //                  (which MUST NOT be #undef, although it can be #defined to blank)
 //                  or 'otherwise' in the case of a compiler mismatch

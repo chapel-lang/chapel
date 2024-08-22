@@ -69,7 +69,7 @@ proc  generate_and_analyze_associative_array_RMAT_graph_representation {
 
   const vertex_domain =
     if DISTRIBUTION_TYPE == "BLOCK" then
-      {1..N_VERTICES} dmapped blockDist ( {1..N_VERTICES} )
+      {1..N_VERTICES} dmapped new blockDist ( {1..N_VERTICES} )
     else
           {1..N_VERTICES} ;
 

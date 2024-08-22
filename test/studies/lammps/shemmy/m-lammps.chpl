@@ -20,16 +20,16 @@ const dts:3*real = (stepSize, 0.5*stepSize, 0.5*stepSize/mass);
 const bounds:3*real = (33.5919,33.5919,33.5919);
 
 const atomsExt:domain(1) = {0..numAtoms-1};
-const atomsDist:domain(1) dmapped blockDist(atomsExt)=atomsExt;
+const atomsDist:domain(1) dmapped new blockDist(atomsExt)=atomsExt;
 
 const locExt:domain(1) = {0..numLocales-1};
-const locDist:domain(1) dmapped blockDist(locExt) = locExt;
+const locDist:domain(1) dmapped new blockDist(locExt) = locExt;
 
 const locGridExt:domain(2) = {0..numLocales-1,1..1};		
 const locGrid:[locGridExt] locale = reshape(Locales,locGridExt);
 
 const copyExt:domain(2) = {0..numLocales-1, 0..numAtoms-1};
-const copyDist:domain(2) dmapped blockDist(copyExt,locGrid) = copyExt;
+const copyDist:domain(2) dmapped new blockDist(copyExt,locGrid) = copyExt;
 
 
 var   positionsLoc:[copyDist] 3*real;
@@ -42,7 +42,7 @@ var   velocities:[atomsDist] 3*real;
 var   forces:[atomsDist] 3*real;
 
 const neighborExt:domain(2) = {0..numAtoms-1,0..maxSize-1};
-const neighborDist:domain(2) dmapped blockDist(neighborExt,locGrid)=neighborExt;
+const neighborDist:domain(2) dmapped new blockDist(neighborExt,locGrid)=neighborExt;
 var   neighbors:[neighborDist] int;
 var   membcounts:[atomsDist] int;
 

@@ -1,0 +1,33 @@
+if HAVE_SM2
+_sm2_files = \
+	prov/sm2/src/sm2_attr.c		\
+	prov/sm2/src/sm2_cq.c		\
+	prov/sm2/src/sm2_domain.c	\
+	prov/sm2/src/sm2_progress.c	\
+	prov/sm2/src/sm2_comp.c		\
+	prov/sm2/src/sm2_cntr.c		\
+	prov/sm2/src/sm2_msg.c		\
+	prov/sm2/src/sm2_ep.c		\
+	prov/sm2/src/sm2_fabric.c	\
+	prov/sm2/src/sm2_init.c		\
+	prov/sm2/src/sm2_av.c		\
+	prov/sm2/src/sm2.h 		\
+	prov/sm2/src/sm2_atom.h 	\
+	prov/sm2/src/sm2_coordination.c \
+	prov/sm2/src/sm2_coordination.h \
+	prov/sm2/src/sm2_fifo.h		\
+	prov/sm2/src/sm2_atomic.c
+
+
+if HAVE_SM2_DL
+pkglib_LTLIBRARIES += libsm2-fi.la
+libsm2_fi_la_SOURCES = $(_sm2_files) $(common_srcs)
+libsm2_fi_la_LIBADD = $(linkback) $(sm2_LIBS)
+libsm2_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
+libsm2_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_SM2_DL
+src_libfabric_la_SOURCES += $(_sm2_files)
+src_libfabric_la_LIBADD += $(sm2_LIBS)
+endif !HAVE_SM2_DL
+
+endif HAVE_SM2

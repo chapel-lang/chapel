@@ -1,0 +1,4 @@
+throwingHashCallsRef.chpl:11: warning: inferring a default intent to be 'ref' is deprecated - please use an explicit 'ref' this-intent for the method 'hash'
+throwingHashCallsRef.chpl:3: warning: inferring a default intent to be 'ref' is deprecated - please use an explicit 'ref' this-intent for the method 'hash'
+salt too obvious!
+45

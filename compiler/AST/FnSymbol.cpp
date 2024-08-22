@@ -777,7 +777,7 @@ CallExpr* FnSymbol::singleInvocation() const {
     if (se == parent->baseExpr) {
       retval = parent;
     }
-    else if (parent->isPrimitive(PRIM_GPU_KERNEL_LAUNCH_FLAT)) {
+    else if (parent->isPrimitive(PRIM_GPU_KERNEL_LAUNCH)) {
       if (se == parent->get(1)) {
         retval = parent;
       }

@@ -52,8 +52,7 @@ module ChapelSyncvar {
   //
 
   private proc isSupported(type t) param do
-    return isNothingType(t)       ||
-           isBoolType(t)          ||
+    return isBoolType(t)          ||
            isIntegralType(t)      ||
            isRealType(t)          ||
            isImagType(t)          ||
@@ -250,7 +249,7 @@ module ChapelSyncvar {
 
     :arg val: New value of the ``sync`` variable.
   */
-  proc _syncvar.writeEF(in val : valType) {
+  proc ref _syncvar.writeEF(in val : valType) {
     wrapped.writeEF(val);
   }
 
@@ -262,7 +261,7 @@ module ChapelSyncvar {
     :arg val: New value of the ``sync`` variable.
   */
   @unstable("'writeFF' is unstable")
-  proc _syncvar.writeFF(in val : valType) {
+  proc ref _syncvar.writeFF(in val : valType) {
     wrapped.writeFF(val);
   }
 
@@ -274,7 +273,7 @@ module ChapelSyncvar {
     :arg val: New value of the ``sync`` variable.
   */
   @unstable("'writeXF' is unstable")
-  proc _syncvar.writeXF(in val : valType) {
+  proc ref _syncvar.writeXF(in val : valType) {
     wrapped.writeXF(val);
   }
 
@@ -284,7 +283,7 @@ module ChapelSyncvar {
     variable is set to empty when this method completes.
   */
   @unstable("'reset' is unstable")
-  proc _syncvar.reset() {
+  proc ref _syncvar.reset() {
     wrapped.reset();
   }
 
@@ -422,26 +421,26 @@ module ChapelSyncvar {
 
   proc chpl__readXX(const ref x : _syncvar(?)) do return x.readXX();
 
-  @chpldoc.nodoc
-  operator <=>(lhs : _syncvar, ref rhs) {
-    const tmp = lhs;
-
-    lhs = rhs;
-    rhs = tmp;
-  }
 
   @chpldoc.nodoc
-  operator <=>(ref lhs, rhs : _syncvar) {
-    const tmp = lhs;
-
-    lhs = rhs;
+  @deprecated(notes="Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods")
+  operator <=>(ref lhs : _syncvar, ref rhs) {
+    const tmp = lhs.readFE();
+    lhs.writeEF(rhs);
     rhs = tmp;
   }
 
   @chpldoc.nodoc
   @deprecated(notes="Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods")
-  operator <=>(lhs : _syncvar, rhs : _syncvar) {
+  operator <=>(ref lhs, ref rhs : _syncvar) {
+    const tmp = lhs;
+    lhs = rhs.readFE();
+    rhs.writeEF(tmp);
+  }
 
+  @chpldoc.nodoc
+  @deprecated(notes="Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods")
+  operator <=>(ref lhs : _syncvar, ref rhs : _syncvar) {
     const tmp = lhs.readFE();
     lhs.writeEF(rhs.readFE());
     rhs.writeEF(tmp);

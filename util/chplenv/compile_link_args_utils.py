@@ -59,7 +59,7 @@ def get_runtime_includes_and_defines():
 
         # If compiling for GPU locales, add CUDA runtime headers to include path
         gpu_type = chpl_gpu.get()
-        sdk_path = chpl_gpu.get_sdk_path(gpu_type)
+        sdk_path = chpl_gpu.get_sdk_path(gpu_type, sdk_type='include')
 
         bundled.append("-I" + os.path.join(incl, "gpu", chpl_gpu.get()))
         if gpu_type == "nvidia":
@@ -70,10 +70,11 @@ def get_runtime_includes_and_defines():
 
         elif gpu_type == "amd":
             # -isystem instead of -I silences warnings from inside these includes.
+            system.append("-isystem" + os.path.join(sdk_path, "include"))
             system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
             system.append("-isystem" + os.path.join(sdk_path, "hsa", "include"))
 
-    if mem == "jemalloc":
+    if mem == "jemalloc" and chpl_jemalloc.get('target') == "bundled":
         # set -DCHPL_JEMALLOC_PREFIX=chpl_je_
         # this is needed since it affects code inside of headers
         bundled.append("-DCHPL_JEMALLOC_PREFIX=chpl_je_")
@@ -97,7 +98,7 @@ def get_runtime_link_args(runtime_subdir):
         # If compiling for GPU locales, add CUDA to link path,
         # and add cuda libraries
         gpu_type = chpl_gpu.get()
-        sdk_path = chpl_gpu.get_sdk_path(gpu_type)
+        sdk_path = chpl_gpu.get_sdk_path(gpu_type, sdk_type='include')
         if gpu_type == "nvidia":
             system.append("-L" + os.path.join(sdk_path, "lib64"))
             system.append("-lcudart")
@@ -106,9 +107,14 @@ def get_runtime_link_args(runtime_subdir):
                 system.append("-L" + os.path.join("/usr", "lib", "wsl", "lib"))
             system.append("-lcuda")
         elif gpu_type == "amd":
-            lib_path = os.path.join(sdk_path, "lib")
-            system.append("-L" + lib_path)
-            system.append("-Wl,-rpath," + lib_path)
+            paths = [sdk_path]
+            runtime_path = chpl_gpu.get_sdk_path(gpu_type, sdk_type='runtime')
+            if runtime_path not in paths:
+                paths.append(runtime_path)
+            for p in paths:
+                lib_path = os.path.join(p, "lib")
+                system.append("-L" + lib_path)
+                system.append("-Wl,-rpath," + lib_path)
             system.append("-lamdhip64")
             system.append("-lhsa-runtime64")
 

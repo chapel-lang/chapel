@@ -87,7 +87,7 @@ int gasneti_init_done = 0; /*  true after init */
 int gasneti_attach_done = 0; /*  true after attach */
 extern void gasneti_checkinit(void) {
   if (!gasneti_init_done)
-    gasneti_fatalerror("Illegal call to GASNet before gasnet_init() initialization");
+    gasneti_fatalerror("Illegal call to GASNet before library initialization. Please use gex_Client_Init() to initialize GASNet.");
 }
 extern void gasneti_checkattach(void) {
    gasneti_checkinit();
@@ -120,6 +120,7 @@ int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC64_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_CUDA_UVA_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_HIP_CONFIG) = 1;
+int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_ZE_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL)) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES)) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN)) = 1;
@@ -524,6 +525,8 @@ gex_Segment_t gasneti_export_segment(gasneti_Segment_t _real_segment) {
   return GASNETI_EXPORT_POINTER(gex_Segment_t, _real_segment);
 }
 #endif
+
+const gasnet_seginfo_t gasneti_null_segment = {0};
 
 // TODO-EX: probably need to add to a per-client container of some sort
 gasneti_Segment_t gasneti_alloc_segment(
@@ -1482,6 +1485,9 @@ extern double gasneti_get_exittimeout(double dflt_max, double dflt_min, double d
   return result;
 }
 
+// Used in some conduits to coordinate user-provided exit code across layers
+gasneti_atomic_t gasneti_exit_code = gasneti_atomic_init(0);
+
 /* ------------------------------------------------------------------------------------ */
 /* Bits for conduits which want/need to override pthread_create() */
 
@@ -1741,6 +1747,38 @@ static void gasneti_check_architecture(void) { // check for bad build configurat
     if (warning) gasneti_console0_message("WARNING", "%s", warning);
   }
   #endif
+}
+
+/* ------------------------------------------------------------------------------------ */
+/* Trivial handling of defered-start progress threads
+ */
+
+int gasneti_query_progress_threads(
+            gex_Client_t                     e_client,
+            unsigned int                    *count_p,
+            const gex_ProgressThreadInfo_t **info_p,
+            gex_Flags_t                      flags)
+{
+  // TODO: this enforcement will become incorrect for the multi-client case
+  static int have_run = 0;
+  if (have_run) {
+    gasneti_fatalerror("A client may make at most one call to gex_System_QueryProgressFunctions().");
+  } else {
+    have_run = 1;
+  }
+
+  if (! e_client) GASNETI_RETURN_ERRR(BAD_ARG, "client must be non-NULL");
+  gasneti_Client_t i_client = gasneti_import_client(e_client);
+  if (! count_p)  GASNETI_RETURN_ERRR(BAD_ARG, "count_p must be non-NULL");
+  if (! info_p)   GASNETI_RETURN_ERRR(BAD_ARG, "info_p must be non-NULL");
+  if (flags)      GASNETI_RETURN_ERRR(BAD_ARG, "flags argument must be zero");
+  if (!(gex_Client_QueryFlags(e_client) & GEX_FLAG_DEFER_THREADS))
+                  GASNETI_RETURN_ERRR(RESOURCE, "GEX_FLAG_DEFER_THREADS was not passed to gex_Client_Init");
+
+  *count_p = 0;
+  *info_p = NULL;
+
+  return GASNET_OK;
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -2347,25 +2385,41 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
                                   const char *force_spawner,
                                   gex_Rank_t *nodes_p, gex_Rank_t *mynode_p) {
   gasneti_spawnerfn_t const *res = NULL;
-  const char *not_set = "(not set)";
-  const char *spawner;
+  const char *spawner_envvar = "GASNET_" GASNET_CORE_NAME_STR "_SPAWNER";
+  const char *spawner = NULL;
   int enabled = 0;  // non-zero if an enabled spawner is selected explicitly
   int disabled = 0; // non-zero if a known spawner is selected explicitly but is not enabled
+  int spawner_not_set = 0;
   int match;
   if (force_spawner) spawner = force_spawner;
   else { 
-    // Purposely hide this variable from verbose output, since it's only for use as an internal hand-off
-    // from gasnetrun scripts. End users should set GASNET_<conduit>_SPAWNER
-    spawner = gasneti_getenv("GASNET_SPAWN_CONTROL");
-    if (!spawner) spawner = not_set;
+    // Purposely hide this variable from verbose output, since it's only for
+    // use as an internal hand-off from out-dated gasnetrun scripts.
+    // End users should set GASNET_<conduit>_SPAWNER.
+    const char *dflt = gasneti_getenv("GASNET_SPAWN_CONTROL");
+    if (!dflt) {
+    #ifdef GASNETC_DEFAULT_SPAWNER
+      dflt = GASNETC_DEFAULT_SPAWNER;
+      spawner_not_set = !gasneti_getenv(spawner_envvar); // Not traced
+    #else
+      gasneti_unreachable_error(("Call to gasneti_spawnerInit() without any default spawner defined"));
+    #endif
+    }
+    // GASNET_<CONDUIT>_SPAWNER=FOO may be set explicitly by a user, or
+    // implicitly by gasnetrun.  If it was not set by either of those means,
+    // then the default will normally be the configure-time default.  However,
+    // if the legacy GASNET_SPAWN_CONTROL envvar is set, it takes precedence
+    // over the configure-time value.
+    spawner = gasneti_getenv_withdefault(spawner_envvar, dflt);
   }
+  gasneti_assert(spawner != NULL);
 
   match = !gasneti_strcasecmp(spawner, "MPI");
 #if HAVE_MPI_SPAWNER
-  /* bug 3406: Try MPI-based spawn first, EVEN if the var is not set.
-   * This is a requirement for spawning using bare mpirun
-   */
-  if (!res && (spawner == not_set || match)) {
+  // For bug 3406:
+  // Try mpi-spawner first if GASNET_<CONDUIT>_SPAWNER is unset.
+  // This is a requirement for spawning using bare mpirun.
+  if (!res && (spawner_not_set || match)) {
     res = gasneti_bootstrapInit_mpi(argc_p, argv_p, nodes_p, mynode_p);
   }
   enabled += match;
@@ -2375,12 +2429,10 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
 
   match = !gasneti_strcasecmp(spawner, "SSH");
 #if HAVE_SSH_SPAWNER
-  /* GASNET_SPAWN_CONTROL=ssh is set by gasnetrun for the ssh spawn master,
-   * and by the ssh command line for other processes (ie all normal uses).
-   * We no longer claim to support ssh-based launch without gasnetrun.
-   * TODO: should we remove the "spawner == not_set" case?
-   */
-  if (!res && (spawner == not_set || match)) {
+  // We do not attempt ssh-spawner in the absence of a (possibly default)
+  // setting of GASNET_<CONDUIT>_SPAWNER.  Such could never be expected to
+  // work, since a portion of the support logic is in the gasnetrun script.
+  if (!res && match && !spawner_not_set) {
     res = gasneti_bootstrapInit_ssh(argc_p, argv_p, nodes_p, mynode_p);
   }
   enabled += match;
@@ -2390,11 +2442,10 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
 
   match = !gasneti_strcasecmp(spawner, "PMI");
 #if HAVE_PMI_SPAWNER
-  /* GASNET_SPAWN_CONTROL=pmi is set by gasnetrun for the pmi spawn case.
-   * We no longer claim to support direct launch with srun, yod, etc.
-   * TODO: should we remove the "spawner == not_set" case?
-   */
-  if (!res && (spawner == not_set || match)) {
+  // We unofficially support "bare" (no gasnetrun script) PMI-based spawning
+  // if GASNET_<CONDUIT>_SPAWNER is unset (assuming gasneti_bootstrapInit_mpi()
+  // doesn't run first and fail fatally).
+  if (!res && (spawner_not_set || match)) {
     res = gasneti_bootstrapInit_pmi(argc_p, argv_p, nodes_p, mynode_p);
   }
   enabled += match;
@@ -2407,7 +2458,7 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
       gasneti_fatalerror("Requested spawner \"%s\" failed to initialize", spawner);
     } else if (disabled) {
       gasneti_fatalerror("Requested spawner \"%s\" is known, but not enabled in this build", spawner);
-    } else if (spawner != not_set) {
+    } else if (! spawner_not_set) {
       gasneti_fatalerror("Requested spawner \"%s\" is unknown", spawner);
     } else {
       // TODO: enumerate the supported spawners

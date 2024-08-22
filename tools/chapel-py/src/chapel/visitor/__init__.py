@@ -23,6 +23,7 @@ import chapel.core
 from collections import defaultdict
 from inspect import signature
 
+
 def _try_call(dispatch_table, visitor, node, method_type):
     """
     Not every AST node in the dispatch table has an entry, unless the user
@@ -56,6 +57,7 @@ def _try_call(dispatch_table, visitor, node, method_type):
         node_type = node_type.__base__
     return None
 
+
 def _visitor_visit(dispatch_table):
     def _do_visit(self, node):
         if isinstance(node, list):
@@ -67,7 +69,9 @@ def _visitor_visit(dispatch_table):
             for child in node:
                 _do_visit(self, child)
         _try_call(dispatch_table, self, node, "exit")
+
     return _do_visit
+
 
 def enter(method):
     """
@@ -84,6 +88,7 @@ def enter(method):
     method.__chapel_visitor_method__ = "enter"
     return method
 
+
 def exit(method):
     """
     Annotates a class method as being an 'exit' function. An 'exit'
@@ -92,6 +97,7 @@ def exit(method):
     """
     method.__chapel_visitor_method__ = "exit"
     return method
+
 
 def visitor(clazz):
     """
@@ -112,22 +118,26 @@ def visitor(clazz):
 
     # Detect all visitor-like methods.
     for name, var in vars(clazz).items():
-        if not callable(var): continue
-        if not hasattr(var, "__chapel_visitor_method__"): continue
+        if not callable(var):
+            continue
+        if not hasattr(var, "__chapel_visitor_method__"):
+            continue
 
         sig = signature(var)
-        if 'self' not in sig.parameters: continue
-        if len(sig.parameters) != 2: continue
+        if "self" not in sig.parameters:
+            continue
+        if len(sig.parameters) != 2:
+            continue
 
         # Detect the type of the second argument. It's an OrderedDict
         # so we can use numbers.
         arg = list(sig.parameters.values())[1]
 
         # Check if the type is a subtype of AstNode
-        if not issubclass(arg.annotation, chapel.core.AstNode): continue
+        if not issubclass(arg.annotation, chapel.core.AstNode):
+            continue
 
         dispatch_table[arg.annotation][var.__chapel_visitor_method__] = var
 
     clazz.visit = _visitor_visit(dispatch_table)
     return clazz
-

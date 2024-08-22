@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "chpl/types/RecordType.h"
 #include "test-resolution.h"
 #include "chpl/resolution/resolution-queries.h"
 
@@ -27,7 +28,7 @@ static void testHelper(Context* context, std::string program, const Type* expect
   QualifiedType qt = resolveQualifiedTypeOfX(context, program);
 
   assert(qt.hasTypePtr());
-  assert(qt.hasParamPtr());
+  if (expectedParam) assert(qt.hasParamPtr());
   assert(qt.type() == expectedType);
   assert(qt.param() == expectedParam);
 }
@@ -413,6 +414,45 @@ static void test41() {
   assert(guard.realizeErrors() == 1);
 }
 
+// param values should be turned into non-param values if target type is
+// not param-enabled.
+static void test42() {
+  printf("test42\n");
+  Context ctx;
+  ErrorGuard guard(&ctx);
+  std::string program =
+    R"""(
+    record myRec {}
+    operator :(lhs: int, type rhs: myRec) do return new myRec();
+    var x = 42 : myRec;
+    )""";
+
+  auto xInit = resolveTypeOfXInit(&ctx, program);
+
+  assert(xInit.type());
+  assert(xInit.type()->isRecordType());
+  assert(xInit.type()->toRecordType()->name() == "myRec");
+}
+
+// param string to bytes (formely throwing assertions)
+static void test43() {
+  printf("test43\n");
+  Context ctx;
+  Context* context = &ctx;
+  testHelper(context, "param x = \"hello\" : bytes;",
+                      RecordType::getBytesType(context),
+                      StringParam::get(context, UniqueString::get(context, "hello")));
+}
+
+// param bytes to string (formely throwing assertions)
+static void test44() {
+  printf("test44\n");
+  Context ctx;
+  Context* context = &ctx;
+  testHelper(context, "param x = b\"hello\" : string;",
+                      ErroneousType::get(context), nullptr);
+}
+
 int main() {
   test1();
   test2();
@@ -455,6 +495,9 @@ int main() {
   test39();
   test40();
   test41();
+  test42();
+  test43();
+  test44();
 
   return 0;
 }

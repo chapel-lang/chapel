@@ -1,3 +1,5 @@
+// WARNING: this test has some race in it.  Please find it before re-enabling
+// the test!
 use DistributedMap;
 
 const n = 200;

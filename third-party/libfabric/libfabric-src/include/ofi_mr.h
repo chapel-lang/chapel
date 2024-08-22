@@ -48,8 +48,6 @@
 #include <ofi_lock.h>
 #include <ofi_list.h>
 #include <ofi_tree.h>
-#include <ofi_hmem.h>
-
 
 int ofi_open_mr_cache(uint32_t version, void *attr, size_t attr_len,
 		      uint64_t flags, struct fid **fid, void *context);
@@ -58,8 +56,11 @@ struct ofi_mr_info {
 	struct iovec iov;
 	enum fi_hmem_iface iface;
 	uint64_t device;
-	void     *ipc_mapped_addr;
-	uint8_t  ipc_handle[MAX_IPC_HANDLE_SIZE];
+	uint64_t flags;
+
+	uint64_t peer_id;
+	void     *mapped_addr;
+	uint8_t  handle[MAX_MR_HANDLE_SIZE];
 };
 
 
@@ -170,6 +171,7 @@ struct ofi_mem_monitor {
 	 */
 	bool (*valid)(struct ofi_mem_monitor *notifier,
 		      const struct ofi_mr_info *info, struct ofi_mr_entry *entry);
+	const char *name;
 };
 
 void ofi_monitor_init(struct ofi_mem_monitor *monitor);
@@ -229,8 +231,10 @@ extern struct ofi_mem_monitor *memhooks_monitor;
 extern struct ofi_mem_monitor *cuda_monitor;
 extern struct ofi_mem_monitor *cuda_ipc_monitor;
 extern struct ofi_mem_monitor *rocr_monitor;
+extern struct ofi_mem_monitor *rocr_ipc_monitor;
 extern struct ofi_mem_monitor *ze_monitor;
 extern struct ofi_mem_monitor *import_monitor;
+extern struct ofi_mem_monitor *xpmem_monitor;
 
 /*
  * Used to store registered memory regions into a lookup map.  This
@@ -252,7 +256,8 @@ void ofi_mr_map_close(struct ofi_mr_map *map);
 
 int ofi_mr_map_insert(struct ofi_mr_map *map,
 		      const struct fi_mr_attr *attr,
-		      uint64_t *key, void *context);
+		      uint64_t *key, void *context,
+		      uint64_t flags);
 int ofi_mr_map_remove(struct ofi_mr_map *map, uint64_t key);
 void *ofi_mr_map_get(struct ofi_mr_map *map,  uint64_t key);
 
@@ -265,6 +270,13 @@ int ofi_mr_map_verify(struct ofi_mr_map *map, uintptr_t *io_addr,
  * registration.
  */
 
+/* libfabric internal flags starting from 60 to 63 */
+/**
+ * OFI_HMEM_DATA_DEV_REG_HANDLE indicates that hmem_data points to
+ * a dev_reg data structure, e.g. gdrcopy handle in cuda
+ */
+#define OFI_HMEM_DATA_DEV_REG_HANDLE	(1ULL << 60)
+
 struct ofi_mr {
 	struct fid_mr mr_fid;
 	struct util_domain *domain;
@@ -272,11 +284,49 @@ struct ofi_mr {
 	uint64_t flags;
 	enum fi_hmem_iface iface;
 	uint64_t device;
+	void *hmem_data;
 };
+
+static inline bool ofi_mr_all_host(struct ofi_mr **mr, size_t count)
+{
+	int i;
+
+	for (i = 0; i < count; i++) {
+		if (mr[i] && mr[i]->iface != FI_HMEM_SYSTEM)
+			return false;
+	}
+	return true;
+}
+
+static inline
+void ofi_mr_get_iov_from_dmabuf(struct iovec *iov,
+				 const struct fi_mr_dmabuf *dmabuf,
+				 size_t count)
+{
+	int i;
+
+	for (i = 0; i < count; i++) {
+		iov[i].iov_base = (void *) (
+			(uintptr_t) dmabuf[i].base_addr + dmabuf[i].offset);
+		iov[i].iov_len = dmabuf[i].len;
+	}
+}
+
+static inline
+void ofi_mr_info_get_iov_from_mr_attr(struct ofi_mr_info *info,
+				const struct fi_mr_attr *attr,
+				uint64_t flags)
+{
+	if (flags & FI_MR_DMABUF)
+		ofi_mr_get_iov_from_dmabuf(&info->iov, attr->dmabuf, 1);
+	else
+		info->iov = *attr->mr_iov;
+}
 
 void ofi_mr_update_attr(uint32_t user_version, uint64_t caps,
 			const struct fi_mr_attr *user_attr,
-			struct fi_mr_attr *cur_abi_attr);
+			struct fi_mr_attr *cur_abi_attr,
+			uint64_t flags);
 int ofi_mr_close(struct fid *fid);
 int ofi_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 		   uint64_t flags, struct fid_mr **mr_fid);
@@ -309,6 +359,7 @@ extern struct ofi_mr_cache_params	cache_params;
 
 struct ofi_mr_cache {
 	struct util_domain		*domain;
+	const struct fi_provider	*prov;
 	struct ofi_mem_monitor		*monitors[OFI_HMEM_MAX];
 	struct dlist_entry		notify_entries[OFI_HMEM_MAX];
 	size_t				entry_data_size;
@@ -320,6 +371,8 @@ struct ofi_mr_cache {
 
 	size_t				cached_cnt;
 	size_t				cached_size;
+	size_t				cached_max_cnt;
+	size_t				cached_max_size;
 	size_t				uncached_cnt;
 	size_t				uncached_size;
 	size_t				search_cnt;
@@ -344,13 +397,14 @@ void ofi_mr_cache_notify(struct ofi_mr_cache *cache, const void *addr, size_t le
 int ofi_ipc_cache_open(struct ofi_mr_cache **cache,
 			struct util_domain *domain);
 void ofi_ipc_cache_destroy(struct ofi_mr_cache *cache);
-int  ofi_ipc_cache_search(struct ofi_mr_cache *cache, struct ipc_info *ipc_info,
-			   struct ofi_mr_entry **mr_entry);
+int  ofi_ipc_cache_search(struct ofi_mr_cache *cache, uint64_t peer_id,
+			  struct ipc_info *ipc_info,
+			  struct ofi_mr_entry **mr_entry);
 
 static inline bool ofi_mr_cache_full(struct ofi_mr_cache *cache)
 {
-	return (cache->cached_cnt >= cache_params.max_cnt) ||
-	       (cache->cached_size >= cache_params.max_size);
+	return (cache->cached_cnt >= cache->cached_max_cnt) ||
+	       (cache->cached_size >= cache->cached_max_size);
 }
 
 bool ofi_mr_cache_flush(struct ofi_mr_cache *cache, bool flush_lru);
@@ -386,10 +440,13 @@ int ofi_mr_cache_search(struct ofi_mr_cache *cache,
  *				with the cache.
  */
 struct ofi_mr_entry *ofi_mr_cache_find(struct ofi_mr_cache *cache,
-				       const struct fi_mr_attr *attr);
+				       const struct fi_mr_attr *attr,
+				       uint64_t flags);
 int ofi_mr_cache_reg(struct ofi_mr_cache *cache, const struct fi_mr_attr *attr,
-		     struct ofi_mr_entry **entry);
+		     struct ofi_mr_entry **entry, uint64_t flags);
 void ofi_mr_cache_delete(struct ofi_mr_cache *cache, struct ofi_mr_entry *entry);
 
+
+void ofi_memhooks_atfork_handler(void);
 
 #endif /* _OFI_MR_H_ */

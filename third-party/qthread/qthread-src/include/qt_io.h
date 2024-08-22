@@ -31,7 +31,7 @@ static inline int qt_blockable(void)
 {
     qthread_t *t = qthread_internal_self();
 
-    if ((t != NULL) && t->flags & QTHREAD_SIMPLE) {
+    if ((t != NULL) && atomic_load_explicit(&t->flags__, memory_order_relaxed) & QTHREAD_SIMPLE) {
         t = NULL;
     }
     return (t != NULL);

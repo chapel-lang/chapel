@@ -8,7 +8,7 @@ config const debug = false;
 proc test1() {
   writeln("test1");
   const LocTaskSpace = {0..#numTasks};
-  const DistTaskSpace = LocTaskSpace dmapped blockDist(LocTaskSpace);
+  const DistTaskSpace = LocTaskSpace dmapped new blockDist(LocTaskSpace);
 
   if debug {
     writeln("before allocation memoryUsed() == ", memoryUsed() / 1024.0 / 1024.0 / 1024.0, " GiB");

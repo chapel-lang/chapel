@@ -631,6 +631,8 @@ of functions that operate on ranges. They are described in
      sliced-range-expression
 
 .. index::
+   single: by
+   pair: keywords; by
    single: ranges; strided
    single: by; on ranges
    single: operators; by (range)
@@ -823,6 +825,7 @@ use the method :proc:`~ChapelRange.range.offset`.
 
 .. index::
    single: ranges; count operator
+   single: #
    single: ranges; #
    single: operators; # (range)
 .. _Count_Operator:

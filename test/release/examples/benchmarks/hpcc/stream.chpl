@@ -58,7 +58,7 @@ proc main() {
   // the set of locales.  The ProblemSpace domain also contains the
   // indices 1..m.
   //
-  const ProblemSpace: domain(1) dmapped blockDist(boundingBox={1..m}) = {1..m};
+  const ProblemSpace: domain(1) dmapped new blockDist(boundingBox={1..m}) = {1..m};
 
   //
   // A, B, and C are the three distributed vectors, declared to store

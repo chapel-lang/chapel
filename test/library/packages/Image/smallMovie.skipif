@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+if ! command -v ffmpeg &> /dev/null; then
+  echo True;
+else
+  echo False;
+fi

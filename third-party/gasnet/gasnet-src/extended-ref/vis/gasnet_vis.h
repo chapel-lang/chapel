@@ -302,10 +302,12 @@ extern gex_Event_t gasnete_VIS_pcwrapNB      (_GASNETE_VIS_PCWRAP_ARGS) GASNETI_
 #define _GASNETE_VECTOR_COMMON_GET(degencontigop) \
   gasneti_assert(!(_flags & GEX_FLAG_ENABLE_LEAF_LC)); \
   gasneti_assert(!GASNETE_VIS_HAVEPC());               \
+  _GASNETI_CHECK_LEGACY("getv",_tm,_flags);            \
   gasnete_boundscheck_memveclist(_tm, _srcrank, _srccount, _srclist); \
   _GASNETE_VECTOR_COMMON(degencontigop, GETV_DEGENERATE)
 #define _GASNETE_VECTOR_COMMON_PUT(degencontigop) \
   gex_Event_t _lc_dummy;                          \
+  _GASNETI_CHECK_LEGACY("putv",_tm,_flags);       \
   gasnete_boundscheck_memveclist(_tm, _dstrank, _dstcount, _dstlist); \
   _GASNETE_VECTOR_COMMON(degencontigop, PUTV_DEGENERATE)
 #define _GASNETE_VECTOR_COMMON(degencontigop,degentoken)                   \
@@ -434,10 +436,12 @@ int _gex_VIS_VectorGetNBI(
 #define _GASNETE_INDEXED_COMMON_GET(degencontigop) \
   gasneti_assert(!(_flags & GEX_FLAG_ENABLE_LEAF_LC)); \
   gasneti_assert(!GASNETE_VIS_HAVEPC());               \
+  _GASNETI_CHECK_LEGACY("puti",_tm,_flags);            \
   gasnete_boundscheck_addrlist(_tm, _srcrank, _srccount, _srclist, _srclen); \
   _GASNETE_INDEXED_COMMON(degencontigop, GETI_DEGENERATE)
 #define _GASNETE_INDEXED_COMMON_PUT(degencontigop) \
   gex_Event_t _lc_dummy;                           \
+  _GASNETI_CHECK_LEGACY("geti",_tm,_flags);            \
   gasnete_boundscheck_addrlist(_tm, _dstrank, _dstcount, _dstlist, _dstlen); \
   _GASNETE_INDEXED_COMMON(degencontigop, PUTI_DEGENERATE)
 #define _GASNETE_INDEXED_COMMON(degencontigop,degentoken)                  \
@@ -688,7 +692,8 @@ int _gex_VIS_StridedGetNBI(
 // g2ex Strided wrappers
 // These translate the Strided metadata from legacy to EX format
 
-#define _GASNETE_G2EX_STRIDED_COMMON() \
+#define _GASNETE_G2EX_STRIDED_COMMON(op) \
+  _GASNETI_CHECK_LEGACY(op,_tm,GASNETI_FLAG_G2EX_DEBUG); \
   gasneti_assert_uint(sizeof(size_t) ,==, sizeof(ptrdiff_t)); \
   gasnete_check_stridesNT(_dststrides, _srcstrides, _count, _stridelevels)
 
@@ -699,7 +704,7 @@ void _gasnet_puts_bulk(
         void *_srcaddr, const size_t _srcstrides[],
         const size_t _count[], size_t _stridelevels
         GASNETI_THREAD_FARG) {
-  _GASNETE_G2EX_STRIDED_COMMON();
+  _GASNETE_G2EX_STRIDED_COMMON("puts");
   _gex_VIS_StridedPutBlocking(_tm,_dstrank,_dstaddr,(ptrdiff_t*)_dststrides,_srcaddr,(ptrdiff_t*)_srcstrides,_count[0],_count+1,_stridelevels,0 GASNETI_THREAD_PASS);
 }
 GASNETI_INLINE(_gasnet_gets_bulk)
@@ -710,7 +715,7 @@ void _gasnet_gets_bulk(
         void *_srcaddr, const size_t _srcstrides[],
         const size_t _count[], size_t _stridelevels
         GASNETI_THREAD_FARG) {
-  _GASNETE_G2EX_STRIDED_COMMON();
+  _GASNETE_G2EX_STRIDED_COMMON("gets");
   _gex_VIS_StridedGetBlocking(_tm,_dstaddr,(ptrdiff_t*)_dststrides,_srcrank,_srcaddr,(ptrdiff_t*)_srcstrides,_count[0],_count+1,_stridelevels,0 GASNETI_THREAD_PASS);
 }
 GASNETI_INLINE(_gasnet_puts_nb_bulk) GASNETI_WARN_UNUSED_RESULT
@@ -720,7 +725,7 @@ gex_Event_t _gasnet_puts_nb_bulk(
         void *_srcaddr, const size_t _srcstrides[],
         const size_t _count[], size_t _stridelevels
         GASNETI_THREAD_FARG) {
-  _GASNETE_G2EX_STRIDED_COMMON();
+  _GASNETE_G2EX_STRIDED_COMMON("puts");
   return _gex_VIS_StridedPutNB(_tm,_dstrank,_dstaddr,(ptrdiff_t*)_dststrides,_srcaddr,(ptrdiff_t*)_srcstrides,_count[0],_count+1,_stridelevels,0 GASNETI_THREAD_PASS);
 }
 GASNETI_INLINE(_gasnet_gets_nb_bulk) GASNETI_WARN_UNUSED_RESULT
@@ -731,7 +736,7 @@ gex_Event_t _gasnet_gets_nb_bulk(
         void *_srcaddr, const size_t _srcstrides[],
         const size_t _count[], size_t _stridelevels
         GASNETI_THREAD_FARG) {
-  _GASNETE_G2EX_STRIDED_COMMON();
+  _GASNETE_G2EX_STRIDED_COMMON("gets");
   return _gex_VIS_StridedGetNB(_tm,_dstaddr,(ptrdiff_t*)_dststrides,_srcrank,_srcaddr,(ptrdiff_t*)_srcstrides,_count[0],_count+1,_stridelevels,0 GASNETI_THREAD_PASS);
 }
 GASNETI_INLINE(_gasnet_puts_nbi_bulk)
@@ -741,7 +746,7 @@ void _gasnet_puts_nbi_bulk(
         void *_srcaddr, const size_t _srcstrides[],
         const size_t _count[], size_t _stridelevels
         GASNETI_THREAD_FARG) {
-  _GASNETE_G2EX_STRIDED_COMMON();
+  _GASNETE_G2EX_STRIDED_COMMON("puts");
   _gex_VIS_StridedPutNBI(_tm,_dstrank,_dstaddr,(ptrdiff_t*)_dststrides,_srcaddr,(ptrdiff_t*)_srcstrides,_count[0],_count+1,_stridelevels,0 GASNETI_THREAD_PASS);
 }
 GASNETI_INLINE(_gasnet_gets_nbi_bulk)
@@ -752,7 +757,7 @@ void _gasnet_gets_nbi_bulk(
         void *_srcaddr, const size_t _srcstrides[],
         const size_t _count[], size_t _stridelevels
         GASNETI_THREAD_FARG) {
-  _GASNETE_G2EX_STRIDED_COMMON();
+  _GASNETE_G2EX_STRIDED_COMMON("gets");
   _gex_VIS_StridedGetNBI(_tm,_dstaddr,(ptrdiff_t*)_dststrides,_srcrank,_srcaddr,(ptrdiff_t*)_srcstrides,_count[0],_count+1,_stridelevels,0 GASNETI_THREAD_PASS);
 }
 

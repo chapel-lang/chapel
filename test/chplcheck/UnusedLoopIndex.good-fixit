@@ -1,0 +1,11 @@
+module UnusedLoopIndex {
+  for 1..10 {}
+  for (i, _) in zip(1..10, 1..10) {
+    writeln(i);
+  }
+  for (_, j) in zip(1..10, 1..10) {
+    writeln(j);
+  }
+  for (_, _) in zip(1..10, 1..10) {
+  }
+}

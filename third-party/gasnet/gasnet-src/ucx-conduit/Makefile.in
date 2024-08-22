@@ -435,6 +435,10 @@ UCX_LDFLAGS = @UCX_LDFLAGS@
 UCX_LIBS = @UCX_LIBS@
 UCX_guess_prog = @UCX_guess_prog@
 VERSION = @VERSION@
+ZE_CFLAGS = @ZE_CFLAGS@
+ZE_LDFLAGS = @ZE_LDFLAGS@
+ZE_LIBS = @ZE_LIBS@
+ZE_guess_prog = @ZE_guess_prog@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -525,6 +529,7 @@ SUBDIRS = contrib
 # include all headers, documentation, etc. 
 # and any subdirectories not containing Makefile.am's
 CONDUIT_FILELIST = \
+      license.txt            \
       gasnet_core.c          \
       gasnet_core.h          \
       gasnet_core_fwd.h      \

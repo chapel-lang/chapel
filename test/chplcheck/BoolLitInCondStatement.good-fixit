@@ -1,0 +1,28 @@
+module BoolLits {
+  proc myProc () {
+    writeln("true");
+
+    writeln("true");
+
+    while true {
+      writeln("and I loop!");
+      break;
+    }
+
+    {
+      writeln("true");
+    }
+
+    {
+      writeln("true");
+    }
+
+    {
+      writeln("true");
+    }
+
+    {
+      writeln("true");
+    }
+  }
+}

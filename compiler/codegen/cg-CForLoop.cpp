@@ -25,6 +25,7 @@
 #include "build.h"
 #include "codegen.h"
 #include "driver.h"
+#include "llvmTracker.h"
 #include "llvmVer.h"
 #include "ForLoop.h"
 #include "LayeredValueTable.h"
@@ -264,6 +265,9 @@ static void addLoopMetadata(llvm::Instruction* instruction,
 
 GenRet CForLoop::codegen()
 {
+  if (id == breakOnCodegenID)
+    gdbShouldBreakHere();
+
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;
   GenRet   ret;
@@ -329,6 +333,8 @@ GenRet CForLoop::codegen()
 
     blockStmtBody = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
     blockStmtEnd  = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end"));
+    trackLLVMValue(blockStmtBody);
+    trackLLVMValue(blockStmtEnd);
 
     // In order to track more easily with the C backend and because mem2reg should optimize
     // all of these cases, we generate a for loop as the same as
@@ -342,6 +348,7 @@ GenRet CForLoop::codegen()
 
     // Create the init basic block
     blockStmtInit = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_c_for_init"));
+    trackLLVMValue(blockStmtInit);
 
 #if HAVE_LLVM_VER >= 160
     func->insert(func->end(), blockStmtInit);
@@ -350,7 +357,8 @@ GenRet CForLoop::codegen()
 #endif
 
     // Insert an explicit branch from the current block to the init block
-    info->irBuilder->CreateBr(blockStmtInit);
+    llvm::BranchInst* toInit = info->irBuilder->CreateBr(blockStmtInit);
+    trackLLVMValue(toInit);
 
     // Now switch to the init block for code generation
     info->irBuilder->SetInsertPoint(blockStmtInit);
@@ -363,13 +371,16 @@ GenRet CForLoop::codegen()
     llvm::Value* condValue0 = test0.val;
 
     // Normalize it to boolean
-    if (condValue0->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
+    if (condValue0->getType() != llvm::Type::getInt1Ty(info->module->getContext())) {
       condValue0 = info->irBuilder->CreateICmpNE(condValue0,
                                                llvm::ConstantInt::get(condValue0->getType(), 0),
                                                FNAME("condition"));
+      trackLLVMValue(condValue0);
+    }
 
     // Create the conditional branch
-    info->irBuilder->CreateCondBr(condValue0, blockStmtBody, blockStmtEnd);
+    llvm::BranchInst* condBr = info->irBuilder->CreateCondBr(condValue0, blockStmtBody, blockStmtEnd);
+    trackLLVMValue(condBr);
 
     // Now add the body.
 #if HAVE_LLVM_VER >= 160
@@ -405,13 +416,16 @@ GenRet CForLoop::codegen()
     llvm::Value* condValue1 = test1.val;
 
     // Normalize it to boolean
-    if (condValue1->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
+    if (condValue1->getType() != llvm::Type::getInt1Ty(info->module->getContext())) {
       condValue1 = info->irBuilder->CreateICmpNE(condValue1,
                                                  llvm::ConstantInt::get(condValue1->getType(), 0),
                                                  FNAME("condition"));
+      trackLLVMValue(condValue1);
+    }
 
     // Create the conditional branch
     llvm::Instruction* endLoopBranch = info->irBuilder->CreateCondBr(condValue1, blockStmtBody, blockStmtEnd);
+    trackLLVMValue(endLoopBranch);
 
     if(loopMetadata)
       addLoopMetadata(endLoopBranch, loopMetadata, accessGroup);

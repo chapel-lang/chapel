@@ -65,7 +65,7 @@ static const char* errorExactMatch = R"""(
     4 | proc f(ref x: owned Parent) {}
       |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'owned Parent()', but the actual was a value of type 'owned Child()'.
+  The formal 'x' expects a value of type 'owned Parent', but the actual was a value of type 'owned Child'.
       |
     7 | f(x);
       |   ⎺
@@ -120,7 +120,7 @@ static const char* errorIncompatibleMgr = R"""(
     3 | proc f(x: owned C) {}
       |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'owned C()', but the actual was a value of type 'shared C()'.
+  The formal 'x' expects a value of type 'owned C', but the actual was a value of type 'shared C'.
       |
     6 | f(x);
       |   ⎺
@@ -149,7 +149,7 @@ static const char* errorIncompatibleNilability = R"""(
     3 | proc f(x: owned C) {}
       |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'owned C()', but the actual was a value of type 'owned C()?'.
+  The formal 'x' expects a value of type 'owned C', but the actual was a value of type 'owned C?'.
       |
     6 | f(arg);
       |   ⎺⎺⎺

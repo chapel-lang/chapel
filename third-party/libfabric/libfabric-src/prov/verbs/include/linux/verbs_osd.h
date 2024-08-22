@@ -33,6 +33,8 @@
 #ifndef _VERBS_OSD_H_
 #define _VERBS_OSD_H_
 
+#include <stdio.h>
+
 static inline int vrb_os_ini()
 {
     return 0;
@@ -42,13 +44,28 @@ static inline void vrb_os_fini()
 {
 }
 
-static void vrb_set_peer_mem_support();
-static void vrb_set_dmabuf_support();
-
-static inline void vrb_os_mem_support()
+static inline void vrb_os_mem_support(bool *peer_mem, bool *dmabuf)
 {
-	vrb_set_peer_mem_support();
-	vrb_set_dmabuf_support();
+	char *line = NULL;
+	size_t line_size = 0;
+	ssize_t bytes;
+	FILE *kallsyms_fd;
+
+	kallsyms_fd = fopen("/proc/kallsyms", "r");
+	if (!kallsyms_fd)
+		return;
+
+	while ((bytes = getline(&line, &line_size, kallsyms_fd)) != -1) {
+		if (strstr(line, "ib_register_peer_memory_client"))
+			*peer_mem = true;
+		else if (strstr(line, "ib_umem_dmabuf_get"))
+			*dmabuf = true;
+		if (*peer_mem && *dmabuf)
+			break;
+	}
+
+	free(line);
+	fclose(kallsyms_fd);
 }
 
 #endif

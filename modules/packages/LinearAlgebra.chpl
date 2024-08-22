@@ -81,9 +81,9 @@ on the system and specified with the following compilation flags:
 .. code-block:: bash
 
   # Building with LAPACK dependency
-  chpl -I$PATH_TO_LAPACKE_INCLUDE_DIR \
-       -L$PATH_TO_LIBGFORTRAN -lgfortran \
-       -L$PATH_TO_LAPACK_BINARIES -llapacke -llapack -lrefblas \
+  chpl -I/path/to/lapack/header/file \
+       -L/path/to/gfortran/library/file -lgfortran \
+       -L/path/to/lapack/library/files  -llapacke -llapack -lrefblas \
        example2.chpl
 
 **Building programs with optional dependencies**
@@ -664,12 +664,12 @@ proc Matrix(const Arrays ...?n, type eltType) {
   var M: [{dim1, dim2}] eltType;
 
   if (isHomogeneousTuple(Arrays)) {
-    forall i in dim1 with (ref Arrays) do {
+    forall i in dim1 with (ref Arrays) {
       if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
       M[i, ..] = Arrays(i): eltType;
     }
   } else {
-    for param i in 0..<n do {
+    for param i in 0..<n {
       if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
       M[i, ..] = Arrays(i): eltType;
     }
@@ -1750,7 +1750,7 @@ enum normType {
     Frobenius norm
   */
   normFrob
-};
+}
 
 /*
   Compute the norm indicated by `p` on the 1D array `x`.
@@ -2497,7 +2497,7 @@ proc expm(A: [], param useExactOneNorm=true) throws {
   var V = mat[1];
   var X = solvePQ(U, V);
   // According to the paper X = r_13(A)^(2^s): achieved by repeated squaring.
-  for i in 1..s {
+  for 1..s {
     X = dot(X, X);
   }
   return X;
@@ -2788,7 +2788,7 @@ module Sparse {
     nonzeros as ``Dom``
   */
   proc CSRDomain(Dom: domain) where Dom.rank == 2 && isCSDom(Dom) {
-    var csrDom: sparse subdomain(Dom.parentDom) dmapped CS(sortedIndices=false);
+    var csrDom: sparse subdomain(Dom.parentDom) dmapped new dmap(new CS(sortedIndices=false));
     csrDom += Dom;
     return csrDom;
   }
@@ -2796,7 +2796,7 @@ module Sparse {
   @chpldoc.nodoc
   /* Return a CSR domain based on domain: ``Dom`` - Dense case */
   proc CSRDomain(Dom: domain(2)) where Dom.rank == 2 {
-    var csrDom: sparse subdomain(Dom) dmapped CS(sortedIndices=false);
+    var csrDom: sparse subdomain(Dom) dmapped new dmap(new CS(sortedIndices=false));
     return csrDom;
   }
 
@@ -2874,7 +2874,7 @@ module Sparse {
   proc CSRDomain(parentDom: domain(2), indices: [?nnzDom], indptr: [?indDom])
         where indDom.rank == 1 && nnzDom.rank == 1 {
     const rowRange = parentDom.dim(0).lowBound..parentDom.dim(0).highBound;
-    var ADom: sparse subdomain(parentDom) dmapped CS(sortedIndices=false);
+    var ADom: sparse subdomain(parentDom) dmapped new dmap(new CS(sortedIndices=false));
 
     ADom.startIdxDom = {rowRange.lowBound..rowRange.highBound+1};
     ADom.startIdx = indptr;
@@ -3220,7 +3220,7 @@ module Sparse {
   /* Transpose CSR domain */
   proc transpose(D: domain) where isCSDom(D) {
     const parentDT = transpose(D.parentDom);
-    var Dom: sparse subdomain(parentDT) dmapped CS(sortedIndices=false);
+    var Dom: sparse subdomain(parentDT) dmapped new dmap (new CS(sortedIndices=false));
 
     var idxBuffer = Dom.createIndexBuffer(size=D.size);
     for (i,j) in D do idxBuffer.add((j,i));
@@ -3450,7 +3450,7 @@ module Sparse {
         end = D.shape(0);
       }
       var indices : [start..end] (D.idxType, D.idxType);
-      forall ind in {start..end} with (ref indices) {
+      forall ind in start..end with (ref indices) {
         indices[ind] = (ind, ind+k);
       }
       D.bulkAdd(indices, dataSorted=true, isUnique=true, preserveInds=false);

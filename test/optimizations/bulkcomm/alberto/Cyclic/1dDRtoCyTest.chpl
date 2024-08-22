@@ -2,7 +2,7 @@
 use CyclicDist;
 config const n=500;
 var Space = {1..n};
-const Dom1: domain(1) dmapped cyclicDist(startIdx=Space.low)=Space;
+const Dom1: domain(1) dmapped new cyclicDist(startIdx=Space.low)=Space;
 
 var A:[Dom1] real(64);
 var C:[Dom1] real(64);

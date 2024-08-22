@@ -1,0 +1,1 @@
+CastCArrayToCPtr-multiple.chpl:62: error: cast of c_array to c_ptr with a different element type

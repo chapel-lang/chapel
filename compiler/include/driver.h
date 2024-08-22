@@ -63,10 +63,14 @@ extern bool fLLVMWideOpt;
 
 extern bool fAutoLocalAccess;
 extern bool fDynamicAutoLocalAccess;
+extern bool fOffsetAutoLocalAccess;
 extern bool fReportAutoLocalAccess;
 
 extern bool fAutoAggregation;
 extern bool fReportAutoAggregation;
+
+extern bool fArrayViewElision;
+extern bool fReportArrayViewElision;
 
 extern bool fNoRemoteValueForwarding;
 extern bool fNoInferConstRefs;
@@ -120,6 +124,7 @@ extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
 extern const char* CHPL_GASNET_SEGMENT;
 extern const char* CHPL_LIBFABRIC;
+extern const char* CHPL_COMM_OFI_OOB;
 extern const char* CHPL_TASKS;
 extern const char* CHPL_LAUNCHER;
 extern const char* CHPL_TIMERS;
@@ -169,6 +174,7 @@ extern bool fDriverCompilationPhase;
 extern bool fDriverMakeBinaryPhase;
 extern char driverTmpDir[FILENAME_MAX];
 // end compiler driver control flags
+extern bool fExitLeaks;
 extern bool fPrintAllCandidates;
 extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;
@@ -322,6 +328,7 @@ extern bool fDynoScopeResolve;
 extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
 extern bool fDynoDebugTrace;
+extern bool fDynoDebugPrintParsedFiles;
 extern bool fDynoVerifySerialization;
 extern bool fDynoGenLib;
 extern bool fDynoGenStdLib;
@@ -350,6 +357,8 @@ extern std::vector<std::string> gDynoPrependStandardModulePaths;
 extern std::string gDynoGenLibOutput;
 extern std::vector<UniqueString> gDynoGenLibSourcePaths;
 extern std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
+
+extern std::string gMainModuleName;
 
 extern bool fForeachIntents;
 

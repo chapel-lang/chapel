@@ -123,13 +123,16 @@ The following are further requirements for GPU support:
 * For targeting NVIDIA or AMD GPUs, ``LLVM`` must be used as Chapel's backend
   compiler (i.e.  ``CHPL_LLVM`` must be set to ``system`` or ``bundled``).
 
+  * Note that ``CHPL_TARGET_COMPILER`` must be ``llvm``. This is the default
+    when ``CHPL_LLVM`` is set to ``system`` or ``bundled``.
+
+* The environment variable ``CHPL_LOCALE_MODEL`` must be set to ``gpu``.
+
 * Specifically for targeting NVIDIA GPUs:
 
   * CUDA toolkit version 11.x or 12.x must be installed.
 
-  * ``CHPL_LLVM`` must be set to ``system`` or ``bundled``.
-
-  * We test with system LLVM 17. Older versions may work.
+  * We test with system LLVM 18. Older versions may work.
 
     * Note that LLVM versions older than 16 do not support CUDA 12.
 
@@ -139,22 +142,34 @@ The following are further requirements for GPU support:
 
 * Specifically for targeting AMD GPUs:
 
-  * ROCm version 4.x or <5.5 must be installed.
+  * ROCm version between 4.x and 5.4 or between ROCm 6.0 and 6.2 must be installed.
 
     * You can check the current status of ROCm version support `here
       <https://github.com/chapel-lang/chapel/issues/23480>`_.
 
-  * ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm installations come
-    with LLVM. Setting ``CHPL_LLVM=system`` will allow you to use that LLVM.
+  * For ROCm 5.x, ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm
+    installations come with LLVM. Setting ``CHPL_LLVM=system`` will allow you to
+    use that LLVM.
 
-* For using the `CPU-as-Device mode`_, none of the above requirements apply.
+  * For ROCm 6.x, only LLVM 18+ is supported. Currently, only
+    ``CHPL_LLVM=bundled`` is supported due to bugs in LLVM. 
+
+* Specifically for using the `CPU-as-Device mode`_:
+
+  * ``CHPL_GPU=cpu`` must be explicitly set. In other words, Chapel will not
+    automatically fall back to this mode simply because it can't detect GPUs.
+
 
 GPU-Related Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To enable GPU support, set the environment variable ``CHPL_LOCALE_MODEL=gpu``
-before building Chapel. Several other variables affect how Chapel generates
-code for and interacts with GPUs. These variables include:
+
+Several variables affect how Chapel generates code for and interacts with GPUs.
+These variables include:
+
+* ``CHPL_LOCALE_MODEL`` --- must be set to ``gpu`` to enable GPU support.
+  Chapel will need to be rebuilt if this value is changed.  For more information,
+  see :ref:`readme-chplenv.CHPL_LOCALE_MODEL`.
 
 * ``CHPL_GPU`` --- may be set to ``nvidia``, ``amd``, or ``cpu``. If unset, as
   part of its build process, Chapel will attempt to automatically determine what
@@ -237,7 +252,7 @@ architecture to compile for. The default value is ``sm_60`` for
 ``CHPL_GPU=nvidia``. You may also use the ``--gpu-arch`` compiler flag to
 set GPU architecture.  If using AMD, this variable must be set. `This table in
 the ROCm documentation
-<https://rocm.docs.amd.com/en/latest/reference/gpu-arch/gpu-arch-spec-overview.html>`_
+<https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html>`_
 has possible architecture values (see the "LLVM target name" column). For NVIDIA, see
 the `CUDA Compute Capability <https://developer.nvidia.com/cuda-gpus>`_ table.
 
@@ -282,10 +297,6 @@ demonstrates initializing an array ``A`` from a ``foreach`` expression:
    @assertOnGpu
    @gpu.blockSize(128)
    var A = foreach i in 1..1024 do i * i;
-
-Currently, only explicit loop expressions are supported (i.e., GPU
-attributes are not applied to promoted function calls). This is an area of
-active development.
 
 CPU-as-Device Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -406,11 +417,15 @@ For more examples see the tests under |multi_locale_dir|_ available from our
 
 Reductions and Scans
 ~~~~~~~~~~~~~~~~~~~~
-``reduce`` and ``scan`` expressions are not supported on GPU-allocated data,
-yet. However, as an interim solution, the :mod:`GPU` module has standalone
-functions for basic reductions (e.g. :proc:`~GPU.gpuSumReduce`) and scans (e.g.
-:proc:`~GPU.gpuScan`). We expect these functions to be deprecated in favor of
-``reduce`` and ``scan`` expressions in a future release.
+The :mod:`GPU` module has standalone functions for basic reductions (e.g.
+:proc:`~GPU.gpuSumReduce`) and scans (e.g.  :proc:`~GPU.gpuScan`). We expect
+these functions to be deprecated in favor of ``reduce`` and ``scan`` expressions
+in a future release.
+
+As of Chapel 2.1, ``+``, ``min`` and ``max`` reductions are supported via
+``reduce`` expressions and intents. We are working towards expanding this to
+other kinds of reductions and ``scan`` expressions and deprecating the mentioned
+functions in the :mod:`GPU` module.
 
 Device-to-Device Communication Support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -446,7 +461,7 @@ its own.
 
 For AMD
 ^^^^^^^
-The ROCm versions we currently support (<=5.4) do not support enabling
+The ROCm 4.x and 5.x versions we support do not support enabling
 peer-to-peer communication in the way above. However, for optimum bandwidth
 between two devices ``export HSA_ENABLE_SDMA=0`` can be used. This will enable
 using multiple Infinity Fabric links between GPUs/GCDs. However, note that it
@@ -519,8 +534,8 @@ Chapel runtime will use a GPU stream per-task, per-device by default. While
 individual streams are synchronized with the host after each operation (e.g.,
 whole array operations and kernel launches will return only when the operation
 is completed), this allows efficiently oversubscribing GPUs by running multiple
-tasks on them to gain more performance by allowing CUDA to overlap data movement
-with computation.
+tasks on them to gain more performance by allowing the device runtime to overlap
+data movement with computation.
 
 * This behavior is disabled for ``CHPL_GPU_MEM_STRATEGY=unified_memory``.
 
@@ -565,9 +580,6 @@ improvements in the future.
   <../usingchapel/tasks.html#chpl-tasks-fifo>`_ is the
   default in only Cygwin and NetBSD.
 
-* `GPU-Related Attributes`_ on variables are not yet applied to promoted
-  function calls.
-
 Using C Interoperability
 ~~~~~~~~~~~~~~~~~~~~~~~~
 C interoperability on the host side is supported. However, GPU programming
@@ -597,13 +609,13 @@ marked with * are covered in our nightly testing configuration.
 
   * Hardware: RTX A2000, P100*, V100*, A100* and H100
 
-  * Software: CUDA 11.3*, 11.6, 11.8*, 12.0*, 12.2, 12.4
+  * Software: CUDA 11.3*, 11.6, 11.8*, 12.0, 12.2*, 12.4
 
 * AMD
 
   * Hardware: MI60*, MI100 and MI250X*
 
-  * Software:ROCm 4.2*, 4.4, 5.4*
+  * Software:ROCm 4.2*, 4.4, 5.4*, 6.0, 6.1, 6.2
 
 
 GPU Support on Windows Subsystem for Linux

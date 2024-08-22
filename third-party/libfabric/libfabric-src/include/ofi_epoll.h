@@ -182,6 +182,11 @@ static inline void ofi_epoll_close(int ep)
 	close(ep);
 }
 
+static inline int ofi_epoll_fd(int ep)
+{
+	return ep;
+}
+
 #else
 
 #define OFI_EPOLL_IN  POLLIN
@@ -199,6 +204,11 @@ static const bool ofi_have_epoll = false;
 #define ofi_epoll_del ofi_pollfds_del
 #define ofi_epoll_wait ofi_pollfds_wait
 #define ofi_epoll_close ofi_pollfds_close
+
+static inline int ofi_epoll_fd(ofi_epoll_t ep)
+{
+	return INVALID_SOCKET;
+}
 
 #define EPOLL_CTL_ADD POLLFDS_CTL_ADD
 #define EPOLL_CTL_DEL POLLFDS_CTL_DEL

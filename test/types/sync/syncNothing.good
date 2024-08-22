@@ -1,0 +1,1 @@
+syncNothing.chpl:5: error: sync types cannot contain type 'nothing'

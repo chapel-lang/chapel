@@ -1,0 +1,2 @@
+CastCArrayToCPtr-multiple.chpl:63: error: const actual is passed to 'ref' formal 'x' of operator :
+CastCArrayToCPtr-multiple.chpl:63: error: cast of c_array to c_ptr with a different element type

@@ -10,6 +10,7 @@ Options:
     --dry-run                    Check to see if package is ready to be published
     --check                      Runs check to see if package can be published successfully to <registry>
     --ci-check                   Same as --check, except omits git origin checks
-    --[no-]update                [Do not] Prevent registries from being updated when a package is published.
+    --[no-]update                [Do not] Prevent registries from being updated when a package is published
+    --refresh-licenses           Force-update the list of valid license names and immediately exit without publishing
 
 Publishing requires the mason-registry to be forked and the package to have a remote origin.

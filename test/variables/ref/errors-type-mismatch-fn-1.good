@@ -1,0 +1,4 @@
+errors-type-mismatch-fn-1.chpl:6: In method 'this':
+errors-type-mismatch-fn-1.chpl:7: error: Initializing a reference with another type
+errors-type-mismatch-fn-1.chpl:6: note: Reference has type real(64)
+errors-type-mismatch-fn-1.chpl:7: note: Initializing with type int(64)

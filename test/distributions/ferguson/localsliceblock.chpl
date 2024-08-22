@@ -1,7 +1,7 @@
 use BlockDist;
 
 var Space = {1..10};
-const D = Space dmapped blockDist(boundingBox=Space);
+const D = Space dmapped new blockDist(boundingBox=Space);
 var A: [D] real = [i in D] i;
 
 var localD = D.localSubdomain();

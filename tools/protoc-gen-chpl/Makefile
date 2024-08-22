@@ -32,7 +32,7 @@ linkFile=$(bdir)/protoc-gen-chpl
 SOURCES=$(wildcard *.cpp)
 HEADERS=$(wildcard *.h)
 LDFLAGS = $(shell pkg-config --libs protobuf 2>/dev/null) -lprotobuf -lprotoc
-CPPFLAGS = $(shell pkg-config --cflags protobuf 2>/dev/null) -I. -std=c++11
+CPPFLAGS = $(shell pkg-config --cflags protobuf 2>/dev/null) -I. -std=c++17
 
 ifeq ($(CHPL_MAKE_PLATFORM),darwin)
 	PROTOC_LIB_LOC=$(dir $(shell which protoc))../lib

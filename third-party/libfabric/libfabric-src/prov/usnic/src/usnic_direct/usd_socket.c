@@ -79,8 +79,13 @@ usd_get_dev_if_info(
     if (dp->uda_ifindex == 0)
         goto out;
 
+#pragma GCC diagnostic push
+#if defined(__GNUC__) && (__GNUC__ >= 8)
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
     ifr.ifr_addr.sa_family = AF_INET;
     strncpy(ifr.ifr_name, dp->uda_ifname, IFNAMSIZ - 1);
+#pragma GCC diagnostic pop
 
     ret = ioctl(s, SIOCGIFADDR, &ifr);
     if (ret == 0) {

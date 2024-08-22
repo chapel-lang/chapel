@@ -303,9 +303,15 @@ be called without parentheses.
    to use parentheses when calling ``foo`` or omit them when calling
    ``bar``.
 
+Note that non-method functions called without parentheses cannot resolve
+to a function defined in a generic function's point of instantiation (see
+:ref:`Function_Visibility_in_Generic_Functions`).
+
+
 .. index::
    single: formal arguments
    single: functions; formal arguments
+
 .. _Formal_Arguments:
 
 Formal Arguments
@@ -1699,17 +1705,18 @@ doing further candidate selection.
 
 5. Discard any candidates that have more formals that require a negative
    ``param`` value is converted to an unsigned integral type of any width
-   (i.e. a ``uint(?w)``).
+   (e.g., ``uint(64)``).
 
 6. Discard any candidates that have more formals that require ``param``
    narrowing conversions than another candidate. A ``param`` narrowing
-   conversion is when a ``param`` value is implicitly converted to a type
-   that would not normally be allowed. For example, an ``int`` value
-   cannot normally implicitly convert to an ``int(8)`` value. However,
-   the ``param`` value ``1``, which is an ``int``, can implicitly convert to
-   ``int(8)`` because the value is known to fit. See also
-   :ref:`Implicit_Compile_Time_Constant_Conversions`.
-
+   conversion is an implicit conversion that is allowed for a ``param``
+   value according to :ref:`Implicit_Compile_Time_Constant_Conversions`
+   however would not be allowed between the same types for a non-``param``
+   value. For example, a conversion from the ``param`` value ``1``
+   of the type ``int`` to the type ``int(8)`` is a ``param`` narrowing
+   conversion because it is allowed while an implicit conversion from
+   a non-param value of the type ``int`` to the type ``int(8)``
+   is not allowed.
 
 Note that ``where`` clauses are also considered but that happens in a
 later step. See :ref:`Determining_Best_Functions`.
@@ -1762,7 +1769,7 @@ mapping:
 4. If one of the formals requires a param narrowing conversion and the
    other is not, the one not requiring such narrowing is better
 
-5. If the actual and both formals are numeric types and one formals is a
+5. If the actual and both formals are numeric types and one formal is a
    preferred numeric conversion target, that formal is better
 
 6. If one of the formals matches the actual type exactly and the other

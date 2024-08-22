@@ -11,5 +11,5 @@ set tmpfile = $outfile.raw.tmp
 # output, sometimes not. The sed substitution adding a newline and the final
 # grep for non-empty lines ensures there is always exactly one.
 mv $outfile $tmpfile
-cat $tmpfile | grep -ivE "Using host libthread_db library|Breakpoint 1 at|no debugging symbols found|Reading symbols|'tmpdirname' has unknown type" | sed 's/(gdb) quit/(gdb) /;s/(gdb) /(gdb) \n/' | grep . > $outfile
+cat $tmpfile | grep -ivE "Using host libthread_db library|Breakpoint 1 at|no debugging symbols found|Reading symbols" | sed 's/(gdb) quit/(gdb) /;s/(gdb) /(gdb) \n/' | grep . > $outfile
 rm $tmpfile

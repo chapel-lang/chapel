@@ -1,0 +1,6 @@
+perfkeys: dotProdFor time:, dotProdForeach time:, dotProdChapeltastic time:, dotProdParamFor time:, dotProdParamForCArray time:, dotProdMetadataUnrollFor time:, dotProdMetadataUnrollForeach time:
+files: dotProduct-unroll8-i32.dat, dotProduct-unroll8-i32.dat, dotProduct-unroll8-i32.dat, dotProduct-unroll8-i32.dat, dotProduct-unroll8-i32.dat, dotProduct-unroll8-i32.dat, dotProduct-unroll8-i32.dat
+graphkeys: For Loop, Foreach Loop, Chapeltastic, Unrolled 8x Param For, Unrolled 8x Param For (with c_array), Unrolled 8x LLVM Metadata For Loop, Unrolled 8x LLVM Metadata Foreach Loop
+ylabel: Time (seconds)
+graphtitle: Dot Product Vectorization with int(32)
+

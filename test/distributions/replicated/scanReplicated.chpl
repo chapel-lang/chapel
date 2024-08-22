@@ -1,6 +1,6 @@
 use ReplicatedDist;
 
-var D = {1..5} dmapped replicatedDist();
+var D = {1..5} dmapped new replicatedDist();
 var A: [D] int;
 
 for loc in Locales do

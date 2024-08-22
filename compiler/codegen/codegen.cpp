@@ -20,12 +20,14 @@
 
 #include "codegen.h"
 
-#include "LayeredValueTable.h"
 #include "astutil.h"
 #include "baseAST.h"
 #include "chpl/libraries/LibraryFileWriter.h"
 #include "chpl/util/filesystem.h"
+#if defined(HAVE_LLVM) && HAVE_LLVM_VER <= 150
+// this is not needed in newer LLVM versions
 #include "clangBuiltinsWrappedSet.h"
+#endif
 #include "clangUtil.h"
 #include "config.h"
 #include "driver.h"
@@ -33,9 +35,11 @@
 #include "files.h"
 #include "fixupExports.h"
 #include "insertLineNumbers.h"
+#include "LayeredValueTable.h"
 #include "library.h"
 #include "llvmDebug.h"
 #include "llvmExtractIR.h"
+#include "llvmTracker.h"
 #include "llvmUtil.h"
 #include "misc.h"
 #include "mli.h"
@@ -253,7 +257,7 @@ genGlobalString(const char *cname, const char *value) {
     if(gCodegenGPU == false) {
       llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(
           info->module->getOrInsertGlobal(
-            cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
+            cname, getPointerType(info->module->getContext())));
       globalString->setInitializer(llvm::cast<llvm::GlobalVariable>(
             new_CStringSymbol(value)->codegen().val)->getInitializer());
       globalString->setConstant(true);
@@ -274,8 +278,9 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
     if(gCodegenGPU == false) {
       llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(
               info->module->getOrInsertGlobal(
-                      cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
+                      cname, getPointerType(info->module->getContext())));
       auto globalStringIr = info->irBuilder->CreateGlobalString(value);
+      trackLLVMValue(globalStringIr);
       llvm::Type* ty = nullptr;
 #if HAVE_LLVM_VER >= 140
       ty = globalStringIr->getValueType();
@@ -287,6 +292,7 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
 #endif
       auto correctlyTypedValue = info->irBuilder->CreateConstInBoundsGEP2_32(
         ty, globalStringIr, 0, 0);
+      trackLLVMValue(correctlyTypedValue);
       globalString->setInitializer(llvm::cast<llvm::Constant>(correctlyTypedValue));
       globalString->setConstant(true);
       info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true, dtStringC);
@@ -300,8 +306,7 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
 static void
 genGlobalVoidPtr(const char* cname, bool isHeader, bool isConstant=true) {
   GenInfo* info = gGenInfo;
-  llvm::Type* voidPtrTy = llvm::PointerType::get(llvm::Type::getVoidTy(
-                                          info->module->getContext()), 1);
+  llvm::Type* voidPtrTy = getPointerType(info->module->getContext(), 1);
   llvm::GlobalVariable *global = llvm::cast<llvm::GlobalVariable>(
       info->module->getOrInsertGlobal(cname, voidPtrTy));
   global->setInitializer(llvm::Constant::getNullValue(voidPtrTy));
@@ -661,6 +666,7 @@ genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
       INT_ASSERT(funcPtrType.type);
       llvm::Function *func = getFunctionLLVM(fn->cname);
       gen.val = info->irBuilder->CreatePointerCast(func, funcPtrType.type);
+      trackLLVMValue(gen.val);
 #endif
     }
     ftable.push_back(gen);
@@ -830,6 +836,7 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
                 INT_ASSERT(funcPtrType.type);
                 llvm::Function *func = getFunctionLLVM(vfn->cname);
                 fnAddress.val = info->irBuilder->CreatePointerCast(func, funcPtrType.type);
+                trackLLVMValue(fnAddress.val);
 #endif
               }
 
@@ -1263,11 +1270,13 @@ static void genConfigGlobalsAndAbout() {
       programAboutFunc = llvm::Function::Create(
         programAboutType, llvm::Function::ExternalLinkage, "chpl_program_about", info->module
       );
+      trackLLVMValue(programAboutFunc);
     }
 
     llvm::BasicBlock* programAboutBlock = llvm::BasicBlock::Create(
       info->module->getContext(), "entry", programAboutFunc
     );
+    trackLLVMValue(programAboutBlock);
     info->irBuilder->SetInsertPoint(programAboutBlock);
 #endif
   }
@@ -1286,7 +1295,8 @@ static void genConfigGlobalsAndAbout() {
     fprintf(info->cfile, "}\n");
   } else {
 #ifdef HAVE_LLVM
-    info->irBuilder->CreateRetVoid();
+    llvm::ReturnInst* retInst = info->irBuilder->CreateRetVoid();
+    trackLLVMValue(retInst);
 #endif
   }
 }
@@ -1454,7 +1464,7 @@ static void genGlobalSerializeTable(GenInfo* info) {
   } else if (!gCodegenGPU) {
 #ifdef HAVE_LLVM
     llvm::Type *global_serializeTableEntryType =
-      llvm::IntegerType::getInt8PtrTy(info->module->getContext());
+      getPointerType(info->module->getContext());
 
     std::vector<llvm::Constant *> global_serializeTable;
 
@@ -1462,10 +1472,11 @@ static void genGlobalSerializeTable(GenInfo* info) {
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
 
-      global_serializeTable.push_back(llvm::cast<llvm::Constant>(
-            info->irBuilder->CreatePointerCast(
-              info->lvt->getValue(se->symbol()->cname).val,
-              global_serializeTableEntryType)));
+      llvm::Value* ptrCast = info->irBuilder->CreatePointerCast(
+                               info->lvt->getValue(se->symbol()->cname).val,
+                               global_serializeTableEntryType);
+      trackLLVMValue(ptrCast);
+      global_serializeTable.push_back(llvm::cast<llvm::Constant>(ptrCast));
     }
 
     if(llvm::GlobalVariable *GVar = llvm::cast_or_null<llvm::GlobalVariable>(
@@ -1910,7 +1921,7 @@ static void codegen_header(std::set<const char*> & cnames,
     forv_Vec(TypeSymbol, typeSymbol, gTypeSymbols) {
       if (typeSymbol->defPoint->parentExpr == rootModule->block &&
           isPrimitiveType(typeSymbol->type) &&
-          typeSymbol->getLLVMType()) {
+          typeSymbol->hasLLVMType()) {
         typeSymbol->codegenMetadata();
       }
     }
@@ -1990,7 +2001,7 @@ static void codegen_header(std::set<const char*> & cnames,
             new_CStringSymbol(memDesc)->codegen().val)->getInitializer());
     }
     llvm::ArrayType *memDescTableType = llvm::ArrayType::get(
-        llvm::IntegerType::getInt8PtrTy(info->module->getContext()),
+        getPointerType(info->module->getContext()),
         memDescTable.size());
 
     if(llvm::GlobalVariable *GVar =llvm::cast_or_null<llvm::GlobalVariable>(
@@ -2017,7 +2028,7 @@ static void codegen_header(std::set<const char*> & cnames,
   } else if(!gCodegenGPU) {
 #ifdef HAVE_LLVM
     llvm::Type *private_broadcastTableEntryType =
-      llvm::IntegerType::getInt8PtrTy(info->module->getContext());
+      getPointerType(info->module->getContext());
 
     std::vector<llvm::Constant *> private_broadcastTable;
 
@@ -2027,10 +2038,11 @@ static void codegen_header(std::set<const char*> & cnames,
         SymExpr* se = toSymExpr(call->get(1));
         INT_ASSERT(se);
 
-        private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
-              info->irBuilder->CreatePointerCast(
-                info->lvt->getValue(se->symbol()->cname).val,
-                private_broadcastTableEntryType)));
+        llvm::Value* ptrCast = info->irBuilder->CreatePointerCast(
+                                 info->lvt->getValue(se->symbol()->cname).val,
+                                 private_broadcastTableEntryType);
+        trackLLVMValue(ptrCast);
+        private_broadcastTable.push_back(llvm::cast<llvm::Constant>(ptrCast));
         // To preserve operand order, this should be insertAtTail.
         call->insertAtHead(new_IntSymbol(broadcastID++));
       }
@@ -2085,7 +2097,9 @@ static llvm::Value* genStringArg(const char* str) {
   GenRet gen = new_CStringSymbol(str)->codegen();
   llvm::Type* eltType = tryComputingPointerElementType(gen.val);
   INT_ASSERT(eltType); // it should have been a global variable
-  return info->irBuilder->CreateLoad(eltType, gen.val);
+  llvm::LoadInst* loadElt = info->irBuilder->CreateLoad(eltType, gen.val);
+  trackLLVMValue(loadElt);
+  return loadElt;
 }
 #endif
 
@@ -2165,15 +2179,18 @@ codegen_config() {
         llvm::Function::Create(createConfigType,
                                llvm::Function::ExternalLinkage,
                                "CreateConfigVarTable", info->module);
+      trackLLVMValue(createConfigFunc);
     }
 
     llvm::BasicBlock *createConfigBlock =
       llvm::BasicBlock::Create(info->module->getContext(),
                                "entry", createConfigFunc);
+    trackLLVMValue(createConfigBlock);
     info->irBuilder->SetInsertPoint(createConfigBlock);
 
     llvm::Function *initConfigFunc = getFunctionLLVM("initConfigVarTable");
-    info->irBuilder->CreateCall(initConfigFunc, {} );
+    llvm::CallInst* callCfg = info->irBuilder->CreateCall(initConfigFunc, {} );
+    trackLLVMValue(callCfg);
 
     llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
 
@@ -2185,6 +2202,7 @@ codegen_config() {
           llvm::Type* eltType = tryComputingPointerElementType(gen.val);
           INT_ASSERT(eltType); // it should have been a global variable
           args[0] = info->irBuilder->CreateLoad(eltType, gen.val);
+          trackLLVMValue(args[0]);
         }
 
         Type* type = var->type;
@@ -2211,10 +2229,13 @@ codegen_config() {
         args[6] = info->irBuilder->getInt32(var->hasFlag(FLAG_UNSTABLE));
         args[7] = genStringArg(var->getUnstableMsg());
 
-        info->irBuilder->CreateCall(installConfigFunc, args);
+        llvm::CallInst* callICF =
+          info->irBuilder->CreateCall(installConfigFunc, args);
+        trackLLVMValue(callICF);
       }
     }
-    info->irBuilder->CreateRetVoid();
+    llvm::ReturnInst* ret = info->irBuilder->CreateRetVoid();
+    trackLLVMValue(ret);
     //llvm::verifyFunction(*createConfigFunc);
 #endif
   }
@@ -2338,7 +2359,8 @@ debug_data *debug_info=NULL;
 
 
 
-#ifdef HAVE_LLVM
+#if defined(HAVE_LLVM) && HAVE_LLVM_VER <= 150
+// this is not needed in newer LLVM versions
 
 // handle e.g. chpl_clang_builtin_wrapper_cabs
 
@@ -2568,17 +2590,18 @@ static void codegenPartOne() {
 
   convertToRefTypes();
 
+#if defined(HAVE_LLVM) && HAVE_LLVM_VER <= 150
+  // this is not needed in newer LLVM versions
   // Wrap calls to chosen functions from c library
   if (fLlvmCodegen) {
-#ifdef HAVE_LLVM
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_EXTERN)) {
         if(hasWrapper(fn->cname))
           fn->cname = getClangBuiltinWrappedName(fn->cname);
       }
     }
-#endif
   }
+#endif
 
   // Vectors to store different symbol names to be used while uniquifying
   std::set<const char*> cnames;
@@ -3201,10 +3224,6 @@ static void codegenPartTwo() {
   {
     fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
-
-
-
-
 }
 
 void codegen() {
@@ -3326,9 +3345,11 @@ GenInfo::GenInfo()
              globalToWideInfo()
 #endif
 {
-#ifdef LLVM_NO_OPAQUE_POINTERS
 #if HAVE_LLVM_VER >= 150 && HAVE_LLVM_VER < 160
-  llvmContext.setOpaquePointers(false);
+#ifdef LLVM_NO_OPAQUE_POINTERS
+  gContext->llvmContext().setOpaquePointers(false);
+#else
+  gContext->llvmContext().setOpaquePointers(true);
 #endif
 #endif
 }

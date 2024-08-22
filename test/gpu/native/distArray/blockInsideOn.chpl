@@ -7,7 +7,7 @@ config const n = 10;
 startGpuDiagnostics();
 on here.gpus[0] {
   var space = {1..n};
-  var dom = space dmapped blockDist(space, targetLocales=[here,]);
+  var dom = space dmapped new blockDist(space, targetLocales=[here,]);
   var arr: [dom] int;
 
   forall i in dom with (ref arr) do

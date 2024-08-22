@@ -33,5 +33,18 @@ CLASS_END(ChapelType)
 
 CLASS_BEGIN(CompositeType)
   PLAIN_GETTER(CompositeType, decl, "Get the chpl::uast::AstNode that declares this CompositeType",
-               Nilable<const chpl::uast::AstNode*>, return parsing::idToAst(context, node->id()))
+               Nilable<const chpl::uast::AstNode*>,
+
+               // For completely builtin types, the ID could be empty.
+               // They don't have code-level declarations, so return 'None'.
+               auto& id = node->id();
+               if (id.isEmpty()) return nullptr;
+
+               // If running without the standard library, builtin types
+               // that we expect to find in module code could be missing.
+               bool missingId =
+                 chpl::types::CompositeType::isMissingBundledType(context, id);
+               if (missingId) return nullptr;
+
+               return parsing::idToAst(context, id))
 CLASS_END(CompositeType)

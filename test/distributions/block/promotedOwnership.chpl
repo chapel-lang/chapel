@@ -2,7 +2,7 @@ use BlockDist, CommDiagnostics;
 
 config const n = 11;
 
-const D = {1..n, 1..n} dmapped blockDist({1..n, 1..n});
+const D = {1..n, 1..n} dmapped new blockDist({1..n, 1..n});
 var A: [D] real;
 
 startCommDiagnostics();

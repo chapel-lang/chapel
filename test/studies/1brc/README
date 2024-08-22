@@ -6,3 +6,20 @@ Challenge" (https://github.com/gunnarmorling/1brc).
 In these versions we're less focused on getting the absolute best performance
 possible and rather as using it as a benchmark to study (parallel) I/O
 performance.
+
+Versions in this directory includes:
+
+  python_version.py - Naive Python implementation using Python's csv parser and
+                      storing results in separate dictionaries.
+  
+  parSafeMapVer -     Stores results in individual parSafeMaps.  This version
+                      has a config constant that can be used to run in serial
+                      mode as well.
+
+  aggregators -       Accumulate results in per-task map that flushes to
+                      global map.
+
+  concurrentMapVer -  Uses ConcurrentMap package and custom aggregator.
+
+To see the relative speeds of these implementations look at:
+https://chapel-lang.org/perf/chapcs/?graphs=onebillionrowchallengeusing10millionrowinputset

@@ -48,7 +48,7 @@ jobs:
       run: |
         ./util/buildRelease/smokeTest quickstart docs
     - name: upload docs
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: documentation
         path: doc/html
@@ -78,7 +78,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: make test-dyno-with-asserts
+      # 'make modules' so the ChapelSysCTypes module is available
       run: |
+        CHPL_HOME=$PWD make modules
         CHPL_HOME=$PWD make DYNO_ENABLE_ASSERTIONS=1 test-dyno -j`util/buildRelease/chpl-make-cpu_count`
     - name: run dyno linters
       run: |
@@ -127,6 +129,9 @@ jobs:
       run: |
         CHPL_LLVM=none make test-venv
         CHPL_LLVM=none CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
+    - name: check perf graphs
+      run: |
+        python3 ./util/test/check_perf_graphs.py
     - name: smokeTest lint
       run: |
         ./util/buildRelease/smokeTest lint

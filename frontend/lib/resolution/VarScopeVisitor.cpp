@@ -387,7 +387,7 @@ void VarScopeVisitor::exitAst(const uast::AstNode* ast) {
 
 bool VarScopeVisitor::enter(const NamedDecl* ast, RV& rv) {
 
-  if (ast->id().postOrderId() < 0) {
+  if (ast->id().isSymbolDefiningScope()) {
     // It's a symbol with a different path, e.g. a Function.
     // Don't try to resolve it now in this
     // traversal. Instead, resolve it e.g. when the function is called.
@@ -400,7 +400,7 @@ bool VarScopeVisitor::enter(const NamedDecl* ast, RV& rv) {
   return true;
 }
 void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
-  if (ast->id().postOrderId() < 0) {
+  if (ast->id().isSymbolDefiningScope()) {
     // It's a symbol with a different path, e.g. a Function.
     // Don't try to resolve it now in this
     // traversal. Instead, resolve it e.g. when the function is called.
@@ -514,7 +514,10 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
         } else if (kind == Qualifier::OUT) {
           handleOutFormal(callAst, actualAst,
                           actualFormalTypes[actualIdx], rv);
-        } else if (kind == Qualifier::IN || kind == Qualifier::CONST_IN) {
+        } else if ((kind == Qualifier::IN || kind == Qualifier::CONST_IN) &&
+                   !(ci.name() == "init" && actualIdx == 0)) {
+          // don't do this for the 'this' argument to 'init', because it
+          // is not getting copied.
           handleInFormal(callAst, actualAst,
                          actualFormalTypes[actualIdx], rv);
         } else if (kind == Qualifier::INOUT) {

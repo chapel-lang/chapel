@@ -216,6 +216,22 @@ module GPU
   }
 
   /*
+    Causes the executing thread to wait until all warp lanes named in mask
+    have executed a ``syncWarp()`` (with the same mask) before resuming
+    execution.
+    Each calling thread must have its own bit set in the mask and all
+    non-exited threads named in mask must execute a corresponding
+    ``syncWarp()`` with the same mask, or the result is undefined.
+  */
+  inline proc syncWarp(mask : uint(32) = 0xffffffff) {
+    pragma "codegen for GPU"
+    extern "chpl_gpu_force_warp_sync" proc chpl_syncWarp(mask);
+
+    __primitive("chpl_assert_on_gpu", false);
+    chpl_syncWarp(mask);
+  }
+
+  /*
     Allocate block shared memory, enough to store ``size`` elements of
     ``eltType``. Returns a :type:`CTypes.c_ptr` to the allocated array. Note that
     although every thread in a block calls this procedure, the same shared array
@@ -249,14 +265,6 @@ module GPU
     var voidPtr = __primitive("gpu allocShared", numBytes(t) * k);
     var arrayPtr = voidPtr : c_ptr(theType);
     return arrayPtr.deref();
-  }
-
-  /*
-    Set the block size for kernels launched on the GPU.
-   */
-  @deprecated(notes="the functional form of setBlockSize(size) is deprecated. Please use the @gpu.blockSize(size) loop attribute instead.")
-  inline proc setBlockSize(blockSize: integral) {
-    __primitive("gpu set blockSize", blockSize);
   }
 
   @chpldoc.nodoc
@@ -428,6 +436,9 @@ module GPU
   @chpldoc.nodoc
   config param gpuDebugReduce = false;
 
+  @chpldoc.nodoc
+  config param gpuAlwaysFallBackToCpuReduce = false;
+
   private inline proc doGpuReduce(param op: string, const ref A: [] ?t) {
     if op != "sum" && op != "min" && op != "max" &&
        op != "minloc" && op != "maxloc" {
@@ -435,7 +446,8 @@ module GPU
       compilerError("Unexpected reduction kind in doGpuReduce: ", op);
     }
 
-    param cTypeName = if      t==int(8)   then "int8_t"
+    param cTypeName = if      t==bool     then "chpl_bool"
+                      else if t==int(8)   then "int8_t"
                       else if t==int(16)  then "int16_t"
                       else if t==int(32)  then "int32_t"
                       else if t==int(64)  then "int64_t"
@@ -443,8 +455,8 @@ module GPU
                       else if t==uint(16) then "uint16_t"
                       else if t==uint(32) then "uint32_t"
                       else if t==uint(64) then "uint64_t"
-                      else if t==real(32) then "float"
-                      else if t==real(64) then "double"
+                      else if t==real(32) then "_real32"
+                      else if t==real(64) then "_real64"
                       else                     "unknown";
 
     if cTypeName == "unknown" {
@@ -452,9 +464,14 @@ module GPU
                     " elements cannot be reduced with gpu*Reduce functions");
     }
 
+    proc valType(param op: string, const ref A: [] ?t) type {
+      if t==bool && op == "sum" then return int;
+      else return t;
+    }
+
     proc retType(param op: string, const ref A: [] ?t) type {
-      if isValReduce(op) then return A.eltType;
-      if isValIdxReduce(op) then return (A.eltType, int);
+      if isValReduce(op) then return valType(op, A);
+      if isValIdxReduce(op) then return (valType(op, A), int);
       compilerError("Unknown reduction operation: ", op);
     }
 
@@ -471,17 +488,23 @@ module GPU
     }
 
     proc doCpuReduce(param op: string, const ref A: [] ?t) {
+      var res: retType(op, A);
       if CHPL_GPU=="cpu" {
-        return doCpuReduceHelp(op, A);
+        res = doCpuReduceHelp(op, A): res.type;
       }
       else {
-        var res: retType(op, A);
-        on here.parent {
-          var HostArr = A;
-          res = doCpuReduceHelp(op, HostArr);
-        }
-        return res;
+        // I want to do on here.parent but that doesn't work. Note that this
+        // caused some issues with `--gpu-specialization`.
+        // test/gpu/native/reduction/basic.skipif is a skipif that's added
+        // because of this hack.
+        extern proc chpl_task_getRequestedSubloc(): int(32);
+        const curSubloc = chpl_task_getRequestedSubloc();
+        chpl_task_setSubloc(-2);
+        var HostArr = A;
+        res = doCpuReduceHelp(op, HostArr): res.type;
+        chpl_task_setSubloc(curSubloc);
       }
+      return res;
     }
 
     proc getExternFuncName(param op: string, type t) param: string {
@@ -550,7 +573,7 @@ module GPU
 
     use CTypes;
     extern proc chpl_gpu_can_reduce(): bool;
-    if !chpl_gpu_can_reduce() {
+    if gpuAlwaysFallBackToCpuReduce || !chpl_gpu_can_reduce() {
       return doCpuReduce(op, A);
     }
 
@@ -559,18 +582,14 @@ module GPU
     extern externFunc proc reduce_fn(data, size, ref val, ref idx);
 
     // initialize the return value
-    var ret;
+    var ret: retType(op, A);;
     if isValReduce(op) {
-      var retTmp: t;
-      if op == "min" then retTmp = max(t);
-      else if op == "max" then retTmp = min(t);
-      ret = retTmp;
+      if op == "min" then ret = max(t);
+      else if op == "max" then ret = min(t);
     }
     else if isValIdxReduce(op) {
-      var retTmp: (t, int);
-      if op == "minloc" then retTmp[0] = max(t);
-      else if op == "maxloc" then retTmp[0] = min(t);
-      ret = retTmp;
+      if op == "minloc" then ret[0] = max(t);
+      else if op == "maxloc" then ret[0] = min(t);
     }
     else {
       compilerError("Unknown reduction operation: ", op);
@@ -581,11 +600,12 @@ module GPU
     const basePtr = c_ptrToConst(A);
     for (offset,size) in offsetsThatCanFitIn32Bits(A.size) {
       var curIdx: int(32) = -1; // should remain -1 for sum, min, max
-      var curVal: t;
+      var curVal: valType(op, A);
       reduce_fn(basePtr+offset, size, curVal, curIdx);
       subReduceValIdx(op, offset, ret, (curVal, curIdx));
       if gpuDebugReduce then
-        writef(" (curVal=%i curIdx=%i ret=%?)\n", curVal, curIdx, ret);
+        writef(" (%s curVal=%i curIdx=%i ret=%?)\n", externFunc, curVal, curIdx,
+               ret);
     }
 
     if isValIdxReduce(op) then
@@ -795,7 +815,7 @@ module GPU
 
   // This function requires that startIdx and endIdx are within the bounds of the array
   // it checks that only if boundsChecking is true (i.e. NOT with --fast or --no-checks)
-  private inline proc serialScan(ref arr : [] ?t, startIdx = arr.domain.low, endIdx = arr.domain.high) {
+  private proc serialScan(ref arr : [] ?t, startIdx = arr.domain.low, endIdx = arr.domain.high) {
     // Convert this count array into a prefix sum
     // This is the same as the count array, but each element is the sum of all previous elements
     // This is an exclusive scan
@@ -962,6 +982,12 @@ module GPU
   */
   proc gpuSort(ref gpuInputArr : [] ?t) {
     if !here.isGpu() then halt("gpuSort must be run on a gpu locale");
+    // Since we don't have distributed arrays for GPU
+    // targetLocales will only return one locale so we just index into that
+    // Change this when we add support for sorting distributed GPU arrays
+    const loc = gpuInputArr.targetLocales()[0];
+    if loc != here then
+      halt("gpuSort must be run on the gpu where its argument array lives (array is on ",  loc ,", gpuSort was called on " , here, ")");
     if gpuInputArr.size == 0 then return;
 
     if CHPL_GPU=="cpu" {

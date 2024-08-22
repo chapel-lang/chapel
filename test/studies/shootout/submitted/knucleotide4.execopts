@@ -1,1 +1,2 @@
 --n=0 < fasta-knucleotide.small
+--n-0 < knucleotide-input.txt  # knucleotide4.txt.good

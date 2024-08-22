@@ -1,0 +1,7 @@
+default-arg-reduce-distributed.chpl:8: internal error: RES-LOO-ILS-0713 chpl version 2.1.0 pre-release (281481ec66)
+
+Internal errors indicate a bug in the Chapel compiler,
+and we're sorry for the hassle.  We would appreciate your reporting this bug --
+please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
+the filename + line number above may be useful in working around the issue.
+

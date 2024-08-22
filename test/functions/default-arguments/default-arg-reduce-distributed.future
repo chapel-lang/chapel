@@ -1,0 +1,2 @@
+bug: distributed arrays used in default argument reduce expressions should not segfault
+#25045

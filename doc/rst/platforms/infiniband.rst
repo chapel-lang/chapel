@@ -203,7 +203,7 @@ help consider opening a bug as described in :ref:`readme-bugs`.
 Setting Memory Registration Limits
 ----------------------------------
 
-On most high performance networks, including InfiniBand, memory has
+On most high-performance networks, including InfiniBand, memory has
 to be registered with the network in order for Chapel to take
 advantage of fast one-sided communication. On InfiniBand networks
 there may be limits placed on how much memory can be registered so
@@ -230,9 +230,97 @@ an absolute value with something like
 ``GASNET_PHYSMEM_MAX='0.667'``.
 
 Setting ``GASNET_PHYSMEM_MAX`` to a small value can limit
-communication performance so it is highly recommend to use the value
+communication performance so it is highly recommended to use the value
 GASNet suggests.
 
+----------
+Co-locales
+----------
+
+By default, Chapel disables GASNet's PSHM (Process SHared-Memory bypass)
+feature when running on InfiniBand.  This means that by default on-node
+communication between co-locales traverses the loopback IB network interface,
+incurring overheads associated with the IB verbs networking layer that are high
+relative to the latencies one might expect for on-node communication.  Using
+co-locales in this configuration will generate a startup warning from GASNet
+that looks like this:
+
+.. code-block:: printoutput
+
+      *** WARNING (proc 0): Running with multiple processes per host without shared-memory communication support (PSHM).  This can significantly reduce performance.  Please re-configure GASNet using `--enable-pshm` to enable fast intra-host comms.
+
+This (somewhat confusingly worded) message accurately reflects the fact that
+Chapel's co-locale behavior with the InfiniBand backend has not yet been tuned
+and may provide sub-optimal performance for on-node communication.
+
+Users wishing to experiment with enabling the shared-memory bypass support for
+the InfiniBand backend can do so by adding the following environment variable
+setting when building Chapel:
+
+.. code-block:: bash
+
+      export CHPL_GASNET_MORE_CFG_OPTIONS=--enable-pshm
+
+This will enable the PSHM support when co-locales are in-use, such that on-node
+communication between co-locales will occur in memory and not through the
+network.  It's worth noting that Chapel's integration of the PSHM feature
+currently requires an extra "progress" thread that defaults to running on the
+same cores as the Chapel tasks, and will compete with those tasks for cycles.
+For computation-bound applications the overhead incurred by this progress thread
+may outweigh the benefits of PSHM.  You can optionally disable PSHM at
+application run-time by setting ``export GASNET_SUPERNODE_MAXSIZE=1``, although
+this won't exactly match the behavior of building without PSHM support.
+
+Another alternative is to dedicate a core for the progress thread, preventing
+it from running on the same cores as the Chapel tasks. This is accomplished
+by setting ``CHPL_RT_COMM_GASNET_DEDICATED_PROGRESS_CORE=true``. Note that
+this means there will be one fewer core to run Chapel tasks, which may not be
+advantageous on machines with relatively few cores. Also note that this
+variable will dedicate a core whether or not PSHM is in-use, so you should
+probably only set this variable if you are using co-locales and PSHM is enabled.
+
+----------------
+Progress Threads
+----------------
+
+In addition to the "busy" polling-based progress thread described above that
+is enabled when co-locales are combined with GASNet's (default disabled) PSHM
+support, the InfiniBand backend also optionally includes GASNet-level blocking
+progress threads used to help retire incoming and outgoing network communication
+operations (named the blocking "receive" and "send" progress threads, respectively). 
+These threads are "blocking" in that they are awakened on-demand when the network
+adapter reports there is communication work to be done, and otherwise generally
+remain parked in a kernel call where they do not consume any core cycles.
+By default the blocking receive progress thread is enabled and the blocking
+send progress thread is disabled.
+
+The blocking send progress thread may be enabled at application run-time by setting:
+
+.. code-block:: bash
+
+      export GASNET_SND_THREAD=1
+
+This enables a helper thread that has been shown to accelerate injection of
+communication in some cases, but in other cases may degrade communication
+throughput (notably on NUMA systems where the locale straddles the NUMA boundary).
+GASNet also provides additional environment variable settings that can
+optionally be used to control the detailed behavior of these threads, see the
+GASNet documentation referenced in :ref:`ibv-conduit-docs`.
+
+By default, the blocking progress threads are created by GASNet and do not
+have any thread-specific core binding.  An experimental Chapel feature
+allows more control over the behavior of the blocking progress threads:
+
+.. code-block:: bash
+
+      export CHPL_RT_COMM_GASNET_DEFER_PROGRESS_THREADS=true
+
+Specifically, this setting enables the
+``CHPL_RT_COMM_GASNET_DEDICATED_PROGRESS_CORE`` setting described in the
+earlier section to additionally control the placement and binding of GASNet's
+blocking send and receive progress threads.
+
+.. _ibv-conduit-docs:
 
 --------
 See Also

@@ -59,6 +59,7 @@
 #include "chpl/util/string-escapes.h"
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/util/assertions.h"
+#include "stmt.h"
 
 #include "llvm/ADT/SmallPtrSet.h"
 
@@ -67,6 +68,10 @@
 #define ATTACH_QUALIFIED_TYPES_EARLY 0
 
 using namespace chpl;
+
+// TODO: replace this global by adjusting things to convert one module
+// at a time
+std::set<chpl::ID> gConvertFilterModuleIds;
 
 namespace {
 
@@ -240,9 +245,10 @@ struct LoopAttributeInfo {
     return !empty();
   }
 
-  void insertGpuEligibilityAssertion(BlockStmt* body);
-  void insertBlockSizeCall(Converter& converter, BlockStmt* body);
-  void insertPrimitives(Converter& converter, BlockStmt* body);
+  bool insertGpuEligibilityAssertion(BlockStmt* body);
+  bool insertBlockSizeCall(Converter& converter, BlockStmt* body);
+  BlockStmt* createPrimitivesBlock(Converter& converter);
+  void insertPrimitivesBlockAtHead(Converter& converter, BlockStmt* body);
 };
 
 // TODO: replace this global variable with a field in Converter
@@ -288,6 +294,7 @@ struct Converter {
   int delegateCounter = 0;
 
   ModTag topLevelModTag;
+
   std::vector<ModStackEntry> modStack;
   std::vector<SymStackEntry> symStack;
 
@@ -309,9 +316,11 @@ struct Converter {
   std::vector<BlockStmt*> blockStack;
 
 
-  Converter(chpl::Context* context, ModTag topLevelModTag)
+  Converter(chpl::Context* context,
+            ModTag topLevelModTag)
     : context(context),
-      topLevelModTag(topLevelModTag) { }
+      topLevelModTag(topLevelModTag)
+  { }
 
   // general functions for converting
   Expr* convertAST(const uast::AstNode* node);
@@ -736,7 +745,7 @@ struct Converter {
             ret = new CallExpr(se);
           }
           if (isFieldAccess) {
-            INT_FATAL("resolving field access call not yet implemented");
+            CHPL_UNIMPL("resolving field access call not yet implemented");
             // TODO: convert it to a call to the field accessor
             // using the resolved TypedFnSignature from rr
           }
@@ -765,7 +774,7 @@ struct Converter {
       }
     } else {
       if (name == USTR("single")) {
-        if (currentModuleType == MOD_USER) {
+        if (topLevelModTag == MOD_USER) {
           USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
         }
       }
@@ -847,7 +856,7 @@ struct Converter {
       astlocMarker markAstLoc(stmt->id());
       Expr* e = convertAST(stmt);
       if (!e) continue;
-      if (ret) INT_FATAL("implicit block with multiple statements");
+      if (ret) CHPL_UNIMPL("implicit block with multiple statements");
       ret = isBlockStmt(e) ? toBlockStmt(e) : buildChapelStmt(e);
     }
 
@@ -974,7 +983,7 @@ struct Converter {
 
     auto block = createBlockWithStmts(node->stmts(), node->blockStyle());
 
-    auto ret = buildManageStmt(managers, block);
+    auto ret = buildManageStmt(managers, block, topLevelModTag);
     INT_ASSERT(ret);
 
     return ret;
@@ -1133,6 +1142,11 @@ struct Converter {
       return nullptr;
     }
 
+    // skip any submodules that are dead
+    if (gConvertFilterModuleIds.count(umod->id()) == 0) {
+      return nullptr;
+    }
+
     bool isModPrivate = umod->visibility() == uast::Decl::PRIVATE;
     const uast::BuilderResult* builderResult =
       parsing::parseFileContainingIdToBuilderResult(context, umod->id());
@@ -1255,7 +1269,7 @@ struct Converter {
       case uast::New::SHARED: symManager = dtShared->symbol; break;
       case uast::New::UNMANAGED: symManager = dtUnmanaged->symbol; break;
       case uast::New::BORROWED: symManager = dtBorrowed->symbol; break;
-      default: INT_FATAL("Not handled!"); break;
+      default: CHPL_UNIMPL("Unhandled new expression"); break;
     }
 
     INT_ASSERT(symManager);
@@ -1463,7 +1477,7 @@ struct Converter {
         Expr* riExpr = convertScanReduceOp(rd->op());
         svs = ShadowVarSymbol::buildFromReduceIntent(ovar, riExpr);
       } else {
-        INT_FATAL("Not handled!");
+        CHPL_UNIMPL("Unhandled with clause");
       }
 
       INT_ASSERT(svs != nullptr);
@@ -1812,7 +1826,7 @@ struct Converter {
 
     // Else it's something that we haven't seen yet.
     } else {
-      INT_FATAL("Not handled yet!");
+      CHPL_UNIMPL("Unhandled Decl");
       return nullptr;
     }
   }
@@ -1889,7 +1903,7 @@ struct Converter {
       }
 
       auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
-      loopAttributes.insertPrimitives(*this, body);
+      loopAttributes.insertPrimitivesBlockAtHead(*this, body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -2017,7 +2031,7 @@ struct Converter {
       bool serialOK = false;
 
       auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
-      loopAttributes.insertPrimitives(*this, body);
+      loopAttributes.insertPrimitivesBlockAtHead(*this, body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -2043,7 +2057,7 @@ struct Converter {
     } else {
       auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
       auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
-      loopAttributes.insertPrimitives(*this, body);
+      loopAttributes.insertPrimitivesBlockAtHead(*this, body);
       ret = ForLoop::buildForeachLoop(indices, iteratorExpr, intents, body,
                                       zippered,
                                       isForExpr, std::move(loopAttributes.llvmMetadata));
@@ -2071,7 +2085,7 @@ struct Converter {
           actualList->insertAtTail(rhs);
           hasConvertedThisIter = true;
         } else {
-          if (isAssociativeList) INT_FATAL("Not possible!");
+          if (isAssociativeList) CHPL_UNIMPL("Invalid associative list");
         }
       }
 
@@ -2253,7 +2267,7 @@ struct Converter {
       if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
       } else if (name == USTR("single")) {
-        if (currentModuleType == MOD_USER) {
+        if (topLevelModTag == MOD_USER) {
           USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
         }
         ret = new UnresolvedSymExpr("_singlevar");
@@ -2475,7 +2489,8 @@ struct Converter {
         } else if (call->numActuals() == 1) {
           child = call->get(1);
         } else {
-          INT_FATAL(call, "unexpected form for new expression (no actuals)");
+          CHPL_UNIMPL("unexpected form for new expression (no actuals)");
+          return nullptr;
         }
         child->remove();
         auto toNilable = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, child);
@@ -2621,7 +2636,27 @@ struct Converter {
   Expr* visit(const uast::MultiDecl* node) {
     BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
 
-    for (auto decl : node->decls()) {
+
+    MultiDeclState desugaringState;
+    if (node->destination()) desugaringState.localeTemp = newTemp("chpl__localeTemp");
+
+    // Field multi-decl desugaring happens later in build.cpp and produces
+    // different code; don't do redundant work here.
+    bool isField = parsing::idIsField(context, node->id());
+    if (!isField) {
+      // post-parse checks should rule this out
+      CHPL_ASSERT(!node->destination());
+    }
+
+    // Iterate in reverse just in case this is a remote variable declaration
+    // and we need to mimic the desugaring of multi-decls.
+    //
+    // We need to mimic this here because remote variables are desugared early.
+    for (int i = node->numDeclOrComments() - 1; i >= 0; i--) {
+      auto child = node->declOrComment(i);
+      auto decl = child->toDecl();
+      if (!decl) continue;
+
       INT_ASSERT(decl->linkage() == node->linkage());
 
       Expr* conv = nullptr;
@@ -2629,20 +2664,36 @@ struct Converter {
 
         // Do not use the linkage name since multi-decls cannot be renamed.
         const bool useLinkageName = false;
-        conv = convertVariable(var, useLinkageName).entireExpr;
+        auto convAll = convertVariable(var, useLinkageName,
+                                       isField ? nullptr : &desugaringState);
+        conv = convAll.entireExpr;
 
-        DefExpr* defExpr = toDefExpr(conv);
+        DefExpr* defExpr = convAll.variableDef;
         INT_ASSERT(defExpr);
         auto varSym = toVarSymbol(defExpr->sym);
         INT_ASSERT(varSym);
 
       // Otherwise convert in a generic fashion.
       } else {
+        // post-parse checks should rule this out
+        INT_ASSERT(!desugaringState.localeTemp);
+
+        // tuple decls between variable decls interrupt multi-decl desugaring:
+        //
+        //    var x, (y,z) = ..., w: int;
+        //
+        // the 'x' does not get type 'int'.
+        desugaringState.reset();
         conv = convertAST(decl);
       }
 
       INT_ASSERT(conv);
-      ret->insertAtTail(conv);
+      ret->insertAtHead(conv);
+    }
+
+    if (auto dest = node->destination()) {
+      auto destExpr = convertAST(dest);
+      ret->insertAtHead(new DefExpr(desugaringState.localeTemp, destExpr));
     }
 
     INT_ASSERT(!inTupleDecl);
@@ -2875,7 +2926,7 @@ struct Converter {
         return RET_TYPE;
     }
 
-    INT_FATAL("case not handled");
+    CHPL_UNIMPL("return intent case not handled");
     return RET_VALUE;
   }
 
@@ -2973,7 +3024,7 @@ struct Converter {
 
     } else {
       // should not arrive here, or else we missed something
-      INT_FATAL("should not be reached");
+      CHPL_UNIMPL("Unhandled lifetime clause");
       return nullptr;
     }
   }
@@ -3115,7 +3166,7 @@ struct Converter {
           conv = buildTupleArgDefExpr(tag, tuple, type, init);
           INT_ASSERT(conv);
         } else {
-          INT_FATAL("Not handled yet!");
+          CHPL_UNIMPL("Unhandled formal");
         }
 
         // Attaches def to function's formal list.
@@ -3304,7 +3355,7 @@ struct Converter {
           conv = toDefExpr(convertAST(anon));
           INT_ASSERT(conv);
         } else {
-          INT_FATAL("Not handled yet!");
+          CHPL_UNIMPL("Unhandled formal in function signature");
         }
 
         // Attaches def to function's formal list.
@@ -3515,6 +3566,11 @@ struct Converter {
     return mod;
   }
   DefExpr* visit(const uast::Module* node) {
+    // skip any submodules that are dead
+    if (gConvertFilterModuleIds.count(node->id()) == 0) {
+      return nullptr;
+    }
+
     ModuleSymbol* mod = convertModule(node);
     return new DefExpr(mod);
   }
@@ -3545,7 +3601,7 @@ struct Converter {
         return INTENT_TYPE;
     }
 
-    INT_FATAL("case not handled");
+    CHPL_UNIMPL("Unhandled formal intent");
     return INTENT_BLANK;
   }
 
@@ -3823,20 +3879,75 @@ struct Converter {
     }
   };
 
+  // State required to mimic the desugaring of multi-declarations into
+  // regular ones.
+  struct MultiDeclState {
+    // The result of computing the target locale, stored in a temp, used
+    // for remote variables.
+    Symbol* localeTemp = nullptr;
+
+    Symbol* typeTemp = nullptr;
+    Symbol* prev = nullptr;
+    Expr* prevTypeExpr = nullptr;
+    Expr* prevInitExpr = nullptr;
+
+    void reset() {
+      typeTemp = nullptr;
+      prev = nullptr;
+      prevTypeExpr = nullptr;
+      prevInitExpr = nullptr;
+    }
+
+    // For remote variables, these helpers don't modify the def point, since
+    // def point is quite different (it's an invocation of a remote variable
+    // wrapper builder with extra arguments).
+
+    void replaceTypeExpr(Expr* newExpr) {
+      if (localeTemp) {
+        prevTypeExpr->replace(newExpr);
+      } else {
+        prev->defPoint->exprType = newExpr;
+      }
+      prevTypeExpr = nullptr;
+    }
+
+    void replaceInitExpr(Expr* newExpr) {
+      if (localeTemp) {
+        prevInitExpr->replace(newExpr);
+      } else {
+        prev->defPoint->init = newExpr;
+      }
+    }
+  };
+
   // Returns a DefExpr that has not yet been inserted into the tree.
+  // For children of remote multi-decls, parentDestination is the destination
+  // of the outer multiDecl.
   VariableDefInfo convertVariable(const uast::Variable* node,
-                           bool useLinkageName) {
+                           bool useLinkageName,
+                           MultiDeclState* multiState = nullptr) {
     astlocMarker markAstLoc(node->id());
 
     bool isStatic = false;
+    Expr* staticSharingKind = nullptr;
     if (auto ag = node->attributeGroup()) {
-      if (ag->getAttributeNamed(USTR("functionStatic"))) {
+      if (auto attr = ag->getAttributeNamed(USTR("functionStatic"))) {
         if (!node->initExpression()) {
           USR_FATAL(node->id(), "function-static variables must have an initializer.");
         }
+        // post-parse checks rule this out.
+        CHPL_ASSERT(!node->destination());
         isStatic = true;
+
+        if (attr->numActuals() > 0) {
+          staticSharingKind = convertAST(attr->actual(0));
+        }
       }
     }
+
+    bool isRemote = node->destination() != nullptr ||
+                    (multiState != nullptr && multiState->localeTemp != nullptr);
+    auto block = (isRemote || multiState) ? new BlockStmt(BLOCK_SCOPELESS) : nullptr;
 
     auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str()));
     const bool isTypeVar = node->kind() == uast::Variable::TYPE;
@@ -3872,8 +3983,26 @@ struct Converter {
       }
     }
 
+    uast::Variable::Kind symbolKind = node->kind();
+    if (isRemote) {
+      // Remote variables get desugared early (now!), but they get turned
+      // into references to remote memory. So, we need the symbol storage
+      // kind to be REF, not VAR.
+      switch(symbolKind) {
+        case uast::Variable::VAR:
+          symbolKind = uast::Variable::REF;
+          break;
+        case uast::Variable::CONST:
+          symbolKind = uast::Variable::CONST_REF;
+          break;
+        default:
+          // post-parse checks rule this out.
+          CHPL_ASSERT(false && "unsupported remote variable kind");
+      }
+    }
+
     // Adjust the variable according to its kind, e.g. 'const'/'type'.
-    attachSymbolStorage(node->kind(), varSym);
+    attachSymbolStorage(symbolKind, varSym);
 
     attachSymbolAttributes(node, varSym);
 
@@ -3899,6 +4028,7 @@ struct Converter {
       varSym->cname = convertLinkageNameAstr(node);
     }
 
+    Expr* destinationExpr = convertExprOrNull(node->destination());
     Expr* typeExpr = convertTypeExpressionOrNull(node->typeExpression());
     Expr* initExpr = nullptr;
 
@@ -3915,30 +4045,109 @@ struct Converter {
       }
 
       if (isStatic) {
-        initExpr = new CallExpr(PRIM_STATIC_FUNCTION_VAR, initExpr);
+        auto initExprCall = new CallExpr(PRIM_STATIC_FUNCTION_VAR, initExpr);
+        initExpr = initExprCall;
+
+        if (staticSharingKind) {
+          initExprCall->insertAtTail(staticSharingKind);
+        }
       }
     } else {
       initExpr = convertExprOrNull(node->initExpression());
     }
 
-    auto def = new DefExpr(varSym, initExpr, typeExpr);
-    VariableDefInfo ret = { def, /* entireExpr */ nullptr };
-    // Note: entireExpr is set below depending on if there are any attributes.
+    if ((!typeExpr && !initExpr) && multiState) {
+      // Need to draw type expr and init expr from previous variable.
+      CHPL_ASSERT(block);
+
+      if (!multiState->typeTemp && multiState->prevTypeExpr) {
+        auto newTypeTemp = newTemp("type_tmp");
+        newTypeTemp->addFlag(FLAG_TYPE_VARIABLE);
+        multiState->typeTemp = newTypeTemp;
+
+        auto prevTypeExpr = multiState->prevTypeExpr;
+        multiState->replaceTypeExpr(new SymExpr(newTypeTemp));
+
+        // Create the 'def point' (constructor adds it to newTypeTemp->defPoint)
+        std::ignore = new DefExpr(newTypeTemp, prevTypeExpr);
+      }
+      if (auto typeTemp = multiState->typeTemp) {
+        // Once we create the type temp we clear the type expressions so that
+        // there's no risk of copying it.
+        CHPL_ASSERT(multiState->prevTypeExpr == nullptr);
+
+        // If the type symbol was defined by a previously-visited variable,
+        // and since we visit in reverse, its current definition will be
+        // after us, which is not good. Move it up to before this symbol.
+        auto typeDefPoint = typeTemp->defPoint;
+        if (typeDefPoint->list) typeDefPoint->remove();
+        block->insertAtHead(typeDefPoint);
+
+        typeExpr = new SymExpr(typeTemp);
+      }
+      if (auto prevInitExpr = multiState->prevInitExpr) {
+        Expr* replaceWith;
+        if (prevInitExpr->isNoInitExpr()) {
+          replaceWith = prevInitExpr->copy();
+        } else if (typeExpr) {
+          replaceWith = new CallExpr("chpl__readXX", new SymExpr(varSym));
+        } else {
+          replaceWith = new SymExpr(varSym);
+        }
+        multiState->replaceInitExpr(replaceWith);
+        initExpr = prevInitExpr;
+      }
+
+      multiState->prev = varSym;
+    } else if (multiState) {
+      CHPL_ASSERT(block);
+      multiState->prevTypeExpr = typeExpr;
+      multiState->prevInitExpr = initExpr;
+      multiState->typeTemp = nullptr;
+      multiState->prev = varSym;
+    }
+
+    DefExpr* def = nullptr;
+    VariableDefInfo ret;
+    if (isRemote) {
+      CHPL_ASSERT(block);
+      auto wrapper = new VarSymbol(astr("chpl_wrapper_", varSym->name));
+      auto wrapperCall = new CallExpr("chpl__buildRemoteWrapper");
+      wrapperCall->insertAtTail(destinationExpr ? destinationExpr : new SymExpr(multiState->localeTemp));
+
+      if (typeExpr) wrapperCall->insertAtTail(typeExpr);
+      if (initExpr) wrapperCall->insertAtTail(new CallExpr(PRIM_CREATE_THUNK, initExpr));
+      auto wrapperDef = new DefExpr(wrapper, wrapperCall);
+
+      auto wrapperGet = new CallExpr(".", new SymExpr(wrapper), new_CStringSymbol("get"));
+      def = new DefExpr(varSym, new CallExpr(wrapperGet));
+      varSym->addFlag(FLAG_REMOTE_VARIABLE);
+
+      block->insertAtTail(wrapperDef);
+      block->insertAtTail(def);
+      ret = VariableDefInfo { def, block };
+    } else {
+      def = new DefExpr(varSym, initExpr, typeExpr);
+      Expr* entireExpr = def;
+      if (block) {
+        entireExpr = block;
+        block->insertAtTail(def);
+      }
+
+      ret = VariableDefInfo { def, entireExpr };
+    }
 
     auto loopFlags = LoopAttributeInfo::fromVariableDeclaration(context, node);
     if (!loopFlags.empty()) {
       auto block = new BlockStmt(BLOCK_SCOPELESS);
       block->insertAtTail(new CallExpr(PRIM_GPU_ATTRIBUTE_BLOCK));
-      block->insertAtTail(def);
+      block->insertAtTail(ret.entireExpr);
 
-      auto primBlock = new BlockStmt(BLOCK_SCOPELESS);
-      block->insertAtTail(primBlock);
-      primBlock->insertAtTail(new CallExpr(PRIM_GPU_PRIMITIVE_BLOCK));
-      loopFlags.insertPrimitives(*this, primBlock);
+      if (auto primBlock = loopFlags.createPrimitivesBlock(*this)) {
+        block->insertAtTail(primBlock);
+      }
 
       ret.entireExpr = block;
-    } else {
-      ret.entireExpr = def;
     }
 
     // If the init expression of this variable is a domain and this
@@ -4010,6 +4219,12 @@ struct Converter {
   }
 
   Expr* visit(const uast::Enum* node) {
+    const resolution::ResolutionResultByPostorderID* resolved = nullptr;
+    if (shouldScopeResolve(node)) {
+      resolved = &resolution::scopeResolveEnum(context, node->id());
+    }
+    pushToSymStack(node, resolved);
+
     auto enumType = new EnumType();
 
     for (auto elem : node->enumElements()) {
@@ -4035,6 +4250,8 @@ struct Converter {
     // Note the enum type is converted so we can wire up SymExprs later
     noteConvertedSym(node, enumTypeSym);
 
+    popFromSymStack(node, enumTypeSym);
+
     return ret;
   }
 
@@ -4057,12 +4274,35 @@ struct Converter {
                             bool& inheritMarkedGeneric) {
     for (auto inheritExpr : iterable) {
       bool thisInheritMarkedGeneric = false;
-      const uast::Identifier* ident =
-        uast::Class::getInheritExprIdent(inheritExpr, thisInheritMarkedGeneric);
-      if (auto converted = convertExprOrNull(ident)) {
+      auto* ident =
+        uast::Class::getUnwrappedInheritExpr(inheritExpr, thisInheritMarkedGeneric);
+
+      // Always convert the taraget expression so that we note used modules
+      // as needed. We won't necessarily use the resulting expression;
+      // see the comment below.
+      auto converted = convertExprOrNull(ident);
+      inheritMarkedGeneric |= thisInheritMarkedGeneric;
+
+      // Don't convert the expression literally if we have a `toId`.
+      // The production scope resolver doesnt't support M.C as a class
+      // inheritance expression, but we already know what it refers to.
+      // Thus, instead of doing (. 'M' 'C') we can just refer to 'C'.
+      if (auto results = currentResolutionResult()) {
+        if (auto result = results->byAstOrNull(ident)) {
+          auto toId = result->toId();
+          if (!toId.isEmpty()) {
+            if (auto converted = findConvertedSym(toId)) {
+              inherits.push_back(new SymExpr(converted));
+              continue;
+            }
+          }
+        }
+      }
+
+      // Couldn't find the target, so translate it literally.
+      if (converted) {
         inherits.push_back(converted);
       }
-      inheritMarkedGeneric |= thisInheritMarkedGeneric;
     }
   }
 
@@ -4101,7 +4341,8 @@ struct Converter {
     auto ret = buildClassDefExpr(name, cname, tag,
                                  inherits,
                                  decls,
-                                 externFlag);
+                                 externFlag,
+                                 topLevelModTag);
     INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
@@ -4136,14 +4377,24 @@ struct Converter {
 
 };
 
-void LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
+bool LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
   if (assertOnGpuAttr) {
     body->insertAtTail(new CallExpr(PRIM_ASSERT_ON_GPU,
                                     new SymExpr(gTrue)));
+    return true;
   }
+  return false;
 }
 
-void LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
+bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
+  // In cases like compound promotion (A + 1 + 1), we might end up inserting
+  // the GPU blockSize attribute several times, even though there's only
+  // one place in the code where the attribute was created. To work around this,
+  // add a unique identifier integer to each blockSize call. If blockSizes
+  // are included twice, but they have a unique identifier that matches,
+  // we can safely ignore the second one.
+  static int counter = 0;
+
   if (blockSizeAttr) {
     if (blockSizeAttr->numActuals() != 1) {
       USR_FATAL(blockSizeAttr->id(),
@@ -4152,13 +4403,30 @@ void LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* bod
     }
 
     Expr* blockSize = converter.convertAST(blockSizeAttr->actual(0));
-    body->insertAtTail(new CallExpr(PRIM_GPU_SET_BLOCKSIZE, blockSize));
+    body->insertAtTail(new CallExpr(PRIM_GPU_SET_BLOCKSIZE,
+                                    blockSize,
+                                    new_IntSymbol(counter++)));
+    return true;
   }
+  return false;
 }
 
-void LoopAttributeInfo::insertPrimitives(Converter& converter, BlockStmt* body) {
-  insertGpuEligibilityAssertion(body);
-  insertBlockSizeCall(converter, body);
+BlockStmt* LoopAttributeInfo::createPrimitivesBlock(Converter& converter) {
+  auto primBlock = new BlockStmt(BLOCK_SCOPELESS);
+  primBlock->insertAtTail(new CallExpr(PRIM_GPU_PRIMITIVE_BLOCK));
+
+  bool insertedAny = false;
+  insertedAny |= insertGpuEligibilityAssertion(primBlock);
+  insertedAny |= insertBlockSizeCall(converter, primBlock);
+
+  return insertedAny ? primBlock : nullptr;
+}
+
+void LoopAttributeInfo::insertPrimitivesBlockAtHead(Converter& converter,
+                                                    BlockStmt* body) {
+  if (auto primBlock = createPrimitivesBlock(converter)) {
+    body->insertAtHead(primBlock);
+  }
 }
 
 /// Generic conversion calling the above functions ///
@@ -4220,7 +4488,7 @@ void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
       if (nBest == 0) {
         // nothing to do
       } else if (nBest > 1) {
-        INT_FATAL("return intent overloading not yet handled");
+        CHPL_UNIMPL("return intent overloading not yet handled");
       } else if (nBest == 1) {
         const resolution::TypedFnSignature* sig = candidates.only().fn();
         Symbol* fn = findConvertedFn(sig);
@@ -4274,6 +4542,7 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::AnyIntegralType:              return dtIntegral;
     case typetags::AnyIteratorClassType:         return dtIteratorClass;
     case typetags::AnyIteratorRecordType:        return dtIteratorRecord;
+    case typetags::AnyThunkRecordType:           return dtThunkRecord;
     case typetags::AnyNumericType:               return dtNumeric;
     case typetags::AnyOwnedType:                 return dtOwned;
     case typetags::AnyPodType:                   return dtAnyPOD;
@@ -4359,27 +4628,27 @@ Type* Converter::convertClassType(const types::QualifiedType qt) {
     }
   }
 
-  INT_FATAL("not implemented yet");
+  CHPL_UNIMPL("Unhandled class type");
   return nullptr;
 }
 
 Type* Converter::convertEnumType(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
+  CHPL_UNIMPL("Unhandled enum type");
   return nullptr;
 }
 
 Type* Converter::convertExternType(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
+  CHPL_UNIMPL("Unhandled extern type");
   return nullptr;
 }
 
 Type* Converter::convertFunctionType(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
+  CHPL_UNIMPL("Unhandled function type");
   return nullptr;
 }
 
 Type* Converter::convertBasicClassType(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
+  CHPL_UNIMPL("Unhandled basic class type");
   return nullptr;
 }
 
@@ -4391,17 +4660,19 @@ Type* Converter::convertRecordType(const types::QualifiedType qt) {
     return dtBytes;
   }
 
-  INT_FATAL("not implemented yet");
+  std::string msg = "unhandled record type: ";
+  msg += t == nullptr ? "(null)" : t->name().str();
+  CHPL_UNIMPL(msg.c_str());
   return nullptr;
 }
 
 Type* Converter::convertTupleType(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
+  CHPL_UNIMPL("Unhandled tuple type");
   return nullptr;
 }
 
 Type* Converter::convertUnionType(const types::QualifiedType qt) {
-  INT_FATAL("not implemented yet");
+  CHPL_UNIMPL("Unhandled union type");
   return nullptr;
 }
 
@@ -4937,7 +5208,7 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
 
     Symbol* sym = findConvertedSym(target, /* trace */ false);
     if (isTemporaryConversionSymbol(sym)) {
-      INT_FATAL("could not find target symbol for sym fixup for %s within %s",
+      context->error(inAst, "could not find target symbol for sym fixup for %s within %s",
                 target.str().c_str(), inSymbolId.str().c_str());
     }
 
@@ -4966,7 +5237,7 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
     Symbol* sym = findConvertedSym(target, /* trace */ false);
     auto usedM = toModuleSymbol(sym);
     if (!usedM) {
-      INT_FATAL("could not find target symbol for module fixup for %s within %s",
+      context->error(inAst, "could not find target symbol for module fixup for %s within %s",
                 target.str().c_str(), inSymbolId.str().c_str());
     }
 
@@ -4983,7 +5254,8 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
 
     FnSymbol* fn = findConvertedFn(target, /* trace */ false);
     if (fn == nullptr) {
-      INT_FATAL("could not find target function for call fixup %s within %s",
+      auto idForErr = inAst ? inAst->id() : target->id();
+      context->error(idForErr, "could not find target function for call fixup %s within %s",
                  target->untyped()->name().c_str(),
                  inSymbolId.str().c_str());
     }

@@ -27,13 +27,10 @@
 
       - It relies on Chapel ``extern`` code blocks and so requires that
         the Chapel compiler is built with LLVM enabled.
-      - Currently only ``CHPL_TARGET_ARCH=x86_64`` is supported as it uses
-        the x86-64 instruction: CMPXCHG16B_.
-      - The implementation relies on ``GCC`` style inline assembly, and so
-        is restricted to a ``CHPL_TARGET_COMPILER`` value of ``gnu``,
-        ``clang``, or ``llvm``.
-
-    .. _CMPXCHG16B: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+      - The implementation relies on using either ``GCC`` style inline assembly
+        (for x86-64) or a GCC/clang builtin, and so is restricted to a
+        ``CHPL_TARGET_COMPILER`` value of ``gnu``, ``clang``, or ``llvm``.
+      - The implementation does not work with ``CHPL_ATOMICS=locks``.
 
   This module was
   inspired by the Interlocked Hash Table [#]_. It allows large critical
@@ -571,7 +568,7 @@ module ConcurrentMap {
       :yields: A copy of one of the keys contained in this map.
     */
     iter keys() : keyType {
-      for (key, val) in this {
+      for (key, _) in this {
         yield key;
       }
     }
@@ -582,7 +579,7 @@ module ConcurrentMap {
       :yields: A copy of one of the values contained in this map.
     */
     iter values() : valType {
-      for (key, val) in this {
+      for (_, val) in this {
         yield val;
       }
     }
@@ -623,7 +620,7 @@ module ConcurrentMap {
         }
       }
 
-      coforall tid in 1..here.maxTaskPar {
+      coforall 1..here.maxTaskPar {
         var workListTok : owned TokenWrapper = workList.getToken();
         var deferredListTok : owned TokenWrapper = deferredList.getToken();
         while (true) {
@@ -695,7 +692,7 @@ module ConcurrentMap {
       :yields: A copy of one of the keys contained in this map.
     */
     iter keys(param tag:iterKind) where tag == iterKind.standalone {
-      forall (key, val) in this {
+      forall (key, _) in this {
         yield key;
       }
     }
@@ -706,7 +703,7 @@ module ConcurrentMap {
       :yields: A copy of one of the values contained in this map.
     */
     iter values(param tag:iterKind) where tag == iterKind.standalone {
-      forall (key, val) in this {
+      forall (_, val) in this {
         yield val;
       }
     }
@@ -1031,7 +1028,7 @@ module ConcurrentMap {
     */
     proc keysToArray(): [] keyType throws {
       var stack = new Stack(keyType);
-      for (key, val) in this {
+      for (key, _) in this {
         stack.push(key);
       }
 
@@ -1054,7 +1051,7 @@ module ConcurrentMap {
     */
     proc valuesToArray(): [] valType throws {
       var stack = new Stack(valType);
-      for (key, val) in this {
+      for (_, val) in this {
         stack.push(val);
       }
 
@@ -1078,9 +1075,11 @@ module ConcurrentMap {
       compilerWarning("Deserializing a ConcurrentMap is not yet supported");
     }
 
-    proc serialize(writer: fileWriter(?), ref serializer) throws {
-      var ser = serializer.startMap(writer, this.stack.count);
-      for (key, val) in this {
+    override proc serialize(writer: fileWriter(?), ref serializer) throws {
+      const asArray = this.toArray();
+
+      var ser = serializer.startMap(writer, asArray.size);
+      for (key, val) in asArray {
         ser.writeKey(key);
         ser.writeValue(val);
       }

@@ -85,13 +85,75 @@ struct psm2_mq_perf_data
 	int perf_print_stats;
 };
 
+struct psm3_mq_window_rv_entry {
+	uint32_t window_rv;
+	uint32_t limit;
+};
+
+#ifdef LEARN_HASH_SELECTOR
+// When transition back to nohash mode, should the prior
+// learned table_sel be retained for use next time transition to hash mode.
+// This helps save some of the cost of adding back rediscovered table_sel's
+// when the unexpected queue may be deep.
+#define RETAIN_PAST_TABLE_SEL
+
+// represents masking for tag comparison, 0->wildcard, 1->compare
+typedef struct psm2_mq_table_sel {
+	uint8_t srcsel;	// simple 0 or 1 for compare of src_addr
+	psm2_mq_tag_t tagsel;	// bitmask for compare of tag
+} psm2_mq_table_sel_t;
+#else /* LEARN_HASH_SELECTOR */
 enum psm2_mq_tag_pattern {
 	PSM2_TAG_SRC = 0,
 	PSM2_TAG_ANYSRC,
 	PSM2_ANYTAG_SRC,
 	PSM2_ANYTAG_ANYSRC,
 };
+#endif /* LEARN_HASH_SELECTOR */
 
+/* As an optimization, the expected and unexpected queues are
+ * maintained as a set of hash tables, each with a table_sel indicating
+ * an observed middleware pattern for src_addr presence and tagsel.
+ *
+ * A given expected entry appears on exactly 1 hash table (or the linear list).
+ * A given unexpected entry must appear on all active hash tables and the
+ * linear list because PSM3 doesn't known what tagsel and src_addr will be
+ * requested when psm3_mq_* is called in the future.
+ *
+ * PSM3 always keeps 1 extra simple linear list in case more than
+ * NUM_HASH_CONFIGS table_sel are observed.  For the unexpected queue, this
+ * also helps in the creation of new hash tables when new table_sel values are
+ * discovered.
+ *
+ * When the expected and unexpected lists remain below HASH_THRESHOLD, PSM3
+ * doesn't populate any hash tables.  However once the threshold is crossed,
+ * the hash tables get populated and future searches can be up to
+ * NUM_HASH_BUCKETS faster for the unexpected queue and up to
+ * NUM_HASH_CONFIGS*NUM_HASH_BUCKETS faster for the expected queue.
+ *
+ * In various functions, table number NUM_HASH_CONFIGS is used to
+ * indicate the simple linear list, while values 0 to NUM_HASH_CONFIGS-1
+ * indicate an actual hash table.
+ */
+#ifdef LEARN_HASH_SELECTOR
+/*
+ * min_table reflects how many table_sel values have been learned (eg.
+ * min_table to NUM_HASH_CONFIGS-1).  We use the upper entries 1st as
+ * this may provide a CPU cache hit rate advantage.
+ *
+ * Unfortunately, since PSM3 doesn't know how the middleware is using
+ * src_addr and tagsel for tag matching, PSM3 cannot identify which table_sel
+ * corresponds to MPI_recv(..., MPI_ANY_SOURCE, MPI_ANY_TAG, ...) so one
+ * of the hash tables may be used for this pattern.  If this occurs, it's
+ * likely all the entries on that hash table will hash to the exact same
+ * hash bucket and essentially be a linear list.  Fortunately use of pure
+ * wildcards are uncommon in real apps, so it's likely this table_sel will
+ * never be discovered and created.
+ *
+ * Until such time as NUM_HASH_CONFIGS tables are actually needed, the
+ * linear expected queue will remain empty.
+ */
+#endif
 struct psm2_mq {
 	psm2_ep_t ep;		/**> ep back pointer */
 	mpool_t sreq_pool;
@@ -99,6 +161,9 @@ struct psm2_mq {
 
 	struct mqq unexpected_htab[NUM_HASH_CONFIGS][NUM_HASH_BUCKETS];
 	struct mqq expected_htab[NUM_HASH_CONFIGS][NUM_HASH_BUCKETS];
+#ifdef LEARN_HASH_SELECTOR
+	struct psm2_mq_table_sel table_sel[NUM_HASH_CONFIGS];
+#endif
 
 	/* in case the compiler can't figure out how to preserve the hashed values
 	between psm3_mq_req_match() and mq_add_to_unexpected_hashes() ... */
@@ -115,9 +180,16 @@ struct psm2_mq {
 	uint32_t hfi_thresh_tiny;
 	uint32_t hfi_thresh_rv;
 	uint32_t shm_thresh_rv;
-	uint32_t hfi_base_window_rv;	/**> this is a base rndv window size,
-					     will be further trimmed down per-connection based
-					     on the peer's MTU */
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+	uint32_t shm_gpu_thresh_rv;
+#endif
+	const char *ips_cpu_window_rv_str;	// default input to parser
+	struct psm3_mq_window_rv_entry *ips_cpu_window_rv;
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+	const char *ips_gpu_window_rv_str;	// default input to parser
+	struct psm3_mq_window_rv_entry *ips_gpu_window_rv;
+#endif
+	uint32_t hash_thresh;
 	int memmode;
 
 	uint64_t timestamp;
@@ -127,11 +199,20 @@ struct psm2_mq {
 	int print_stats;
 	struct psm2_mq_perf_data mq_perf_data;
 
-	int nohash_fastpath;
-	unsigned unexpected_hash_len;
+	uint8_t nohash_fastpath;
+	uint8_t min_table; // subqueues == NUM_HASH_CONFIGS+1 - min_table
+#if ! defined(LEARN_HASH_SELECTOR) || ! defined(RETAIN_PAST_TABLE_SEL)
+	uint8_t min_min_table;	// lowest min_table + !search_linear_expected
+#endif
+#ifdef LEARN_HASH_SELECTOR
+	uint8_t search_linear_expected;
+#endif
+
 	unsigned unexpected_list_len;
-	unsigned expected_hash_len;
+	unsigned unexpected_hash_len;
+
 	unsigned expected_list_len;
+	unsigned expected_hash_len;
 
 	psmi_mem_ctrl_t handler_index[MM_NUM_OF_POOLS];
 	int mem_ctrl_is_init;
@@ -214,11 +295,12 @@ struct psm2_mq_req {
 	struct psm2_mq_req_user req_data;
 
 	struct {
-		psm2_mq_req_t next[NUM_MQ_SUBLISTS];
-		psm2_mq_req_t prev[NUM_MQ_SUBLISTS];
+		// one extra for the simple linear list
+		psm2_mq_req_t next[NUM_HASH_CONFIGS+1];
+		psm2_mq_req_t prev[NUM_HASH_CONFIGS+1];
 		STAILQ_ENTRY(psm2_mq_req) nextq; /* used for eager only */
 	};
-	struct mqq *q[NUM_MQ_SUBLISTS];
+	struct mqq *q[NUM_HASH_CONFIGS+1];
 	uint64_t timestamp;
 	uint32_t state;
 	uint32_t type;
@@ -242,6 +324,7 @@ struct psm2_mq_req {
 	mq_rts_callback_fn_t rts_callback;
 	psm2_epaddr_t rts_peer;
 	uintptr_t rts_sbuf;
+	uint32_t window_rv;	// window size chosen by receiver or GPU send prefetcher
 
 #ifdef PSM_HAVE_REG_MR
 	psm3_verbs_mr_t	mr;	// local registered memory for app buffer
@@ -258,9 +341,17 @@ struct psm2_mq_req {
 	uint32_t cuda_ipc_offset;
 #endif
 #ifdef PSM_ONEAPI
-	ze_ipc_mem_handle_t ze_ipc_handle;
-	uint8_t ze_ipc_handle_attached;
+	union {
+		ze_ipc_mem_handle_t ipc_handle; // for sender req
+		uint32_t ze_handle;		// receiver req pidfd or gem_handle
+	};
+	uint8_t ze_handle_attached;
+	uint8_t ze_alloc_type;
 	uint32_t ze_ipc_offset;
+#ifndef PSM_HAVE_PIDFD
+	uint32_t ze_device_index;
+#endif
+	uint64_t ze_alloc_id;
 #endif
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	int gpu_hostbuf_used;
@@ -286,6 +377,89 @@ struct psm2_mq_req {
 	};
 };
 
+// return true on match
+// srcsel == 0 or tagsel 0 bits means wildcard that field/bit
+PSMI_ALWAYS_INLINE(
+int tag_cmp(uint8_t srcsel, psm2_epaddr_t src_a, psm2_epaddr_t src_b,
+			psm2_mq_tag_t *tagsel, psm2_mq_tag_t *tag_a, psm2_mq_tag_t *tag_b))
+{
+	return ((! srcsel || src_a == src_b) &&
+		 !((tag_a->tag64 ^ tag_b->tag64) & tagsel->tag64) &&
+		 !((tag_a->rem32 ^ tag_b->rem32) & tagsel->rem32));
+}
+
+PSMI_ALWAYS_INLINE(
+int tag_cmp_req(psm2_mq_req_t req, uint8_t srcsel, psm2_epaddr_t src,
+				psm2_mq_tag_t *tagsel, psm2_mq_tag_t *tag))
+{
+	return tag_cmp(srcsel, src, req->req_data.peer, tagsel, tag, &req->req_data.tag);
+}
+
+#ifdef LEARN_HASH_SELECTOR
+PSMI_ALWAYS_INLINE(
+void build_table_sel(psm2_mq_table_sel_t *dest, uint8_t srcsel,
+			psm2_mq_tag_t *tagsel))
+{
+	dest->srcsel = srcsel;
+	dest->tagsel = *tagsel;
+}
+
+PSMI_ALWAYS_INLINE(
+int table_sel_cmp(psm2_mq_table_sel_t *sel, uint8_t srcsel,
+			psm2_mq_tag_t *tagsel))
+{
+	return (sel->srcsel == srcsel
+			&& sel->tagsel.tag64 == tagsel->tag64
+			&& sel->tagsel.rem32 == tagsel->rem32);
+}
+
+// hash all of src and tagsel portion of tag.  For simplicity
+// we do not attempt to take advantage of the fact PSMx3 only uses
+// 64 or 68 bits of tag and tagsel
+PSMI_ALWAYS_INLINE(
+uint32_t
+hash_src_tag(psm2_epaddr_t src, psm2_mq_tag_t *tagsel, psm2_mq_tag_t *tag))
+{
+	// hash on middle bits of src, these will vary the most
+#if 0
+	//uint32_t res = _mm_crc32_u64(0, (uint64_t)(uintptr_t)src);
+	uint32_t res = _mm_crc32_u32(0, (uint32_t)((uintptr_t)src>>6));
+	res = _mm_crc32_u64(res, tag->tag64 & tagsel->tag64);
+	return _mm_crc32_u32(res, tag->rem32 & tagsel->rem32);
+#else
+	// this computes 2x faster than above
+	uint32_t res = _mm_crc32_u64(0, ((uint32_t)(uintptr_t)src>>6) | ((uint64_t)(tag->rem32 & tagsel->rem32)<<32));
+	return _mm_crc32_u64(res, tag->tag64 & tagsel->tag64);
+#endif
+}
+
+// hash tagsel portion of tag (use when src is wildcarded)
+PSMI_ALWAYS_INLINE(
+uint32_t
+hash_tag(psm2_mq_tag_t *tagsel, psm2_mq_tag_t *tag))
+{
+#if 0
+	uint32_t res = _mm_crc32_u64(0, tag->tag64 & tagsel->tag64);
+	return _mm_crc32_u32(res, tag->rem32 & tagsel->rem32);
+#else
+	// ironically this computes 2x faster than the above
+	return hash_src_tag(NULL, tagsel, tag);
+#endif
+}
+
+// hash src and tag (from ingress packet or posted receive)
+// hash based on table_sel for subqueue being processed
+PSMI_ALWAYS_INLINE(
+uint32_t
+hash_src_tag_sel(psm2_mq_table_sel_t *table_sel, psm2_epaddr_t src,
+				psm2_mq_tag_t *tag))
+{
+	if (table_sel->srcsel)
+		return hash_src_tag(src, &table_sel->tagsel, tag);
+	else
+		return hash_tag(&table_sel->tagsel, tag);
+}
+#else /* LEARN_HASH_SELECTOR */
 PSMI_ALWAYS_INLINE(
 unsigned
 hash_64(uint64_t a))
@@ -298,6 +472,63 @@ hash_32(uint32_t a))
 {
 	return _mm_crc32_u32(0, a);
 }
+#endif /* LEARN_HASH_SELECTOR */
+
+#if ! defined(LEARN_HASH_SELECTOR) || ! defined(RETAIN_PAST_TABLE_SEL)
+#ifdef LEARN_HASH_SELECTOR
+#define UPDATE_SUBQUEUE_COUNT(mq) do {                                       \
+		if_pf (mq->min_table+!mq->search_linear_expected < mq->min_min_table) {\
+			mq->min_min_table = mq->min_table +!mq->search_linear_expected;  \
+		}                                                                    \
+	} while (0)
+#else
+#define UPDATE_SUBQUEUE_COUNT(mq) do {                                       \
+		if_pf (mq->min_table < mq->min_min_table) {                          \
+			mq->min_min_table = mq->min_table;                               \
+		}                                                                    \
+	} while (0)
+#endif
+#else
+#define UPDATE_SUBQUEUE_COUNT(mq) do { } while (0)
+#endif
+
+#define UPDATE_EXP_LIST_COUNT(mq) do {                                       \
+		if_pf (mq->expected_list_len > mq->stats.max_exp_list_len) {         \
+			mq->stats.max_exp_list_len = mq->expected_list_len;              \
+		}                                                                    \
+	} while (0)
+
+#define UPDATE_EXP_HASH_COUNT(mq) do {                                       \
+		if_pf (mq->expected_hash_len > mq->stats.max_exp_hash_len) {         \
+			mq->stats.max_exp_hash_len = mq->expected_hash_len;              \
+		}                                                                    \
+	} while (0)
+
+#define UPDATE_UNEXP_LIST_COUNT(mq) do {                                     \
+		if_pf (mq->unexpected_list_len > mq->stats.max_unexp_list_len) {     \
+			mq->stats.max_unexp_list_len = mq->unexpected_list_len;          \
+		}                                                                    \
+	} while (0)
+
+#define UPDATE_UNEXP_HASH_COUNT(mq) do {                                     \
+		if_pf (mq->unexpected_hash_len > mq->stats.max_unexp_hash_len) {     \
+			mq->stats.max_unexp_hash_len = mq->unexpected_hash_len;          \
+		}                                                                    \
+	} while (0)
+
+#define UPDATE_EXP_SEARCH_LEN(mq, len) do {                                  \
+		mq->stats.tot_exp_search_cmp += len;                                     \
+		if_pf (len > mq->stats.max_exp_search_cmp) {                         \
+			mq->stats.max_exp_search_cmp = len;                              \
+		}                                                                    \
+	} while (0)
+
+#define UPDATE_UNEXP_SEARCH_LEN(mq, len) do {                                \
+		mq->stats.tot_unexp_search_cmp += len;                                   \
+		if_pf (len > mq->stats.max_unexp_search_cmp) {                       \
+			mq->stats.max_unexp_search_cmp = len;                            \
+		}                                                                    \
+	} while (0)
 
 void MOCKABLE(psm3_mq_mtucpy)(void *vdest, const void *vsrc, uint32_t nchars);
 MOCK_DCL_EPILOGUE(psm3_mq_mtucpy);
@@ -449,46 +680,31 @@ mq_set_msglen(psm2_mq_req_t req, uint32_t recvlen, uint32_t sendlen))
 	}
 }
 
-PSMI_ALWAYS_INLINE(
-int
-min_timestamp_4(psm2_mq_req_t *match))
-{
-	uint64_t oldest = -1;
-	int which = -1, i;
-	for (i = 0; i < 4; i++) {
-		if (match[i] && (match[i]->timestamp < oldest)) {
-			oldest = match[i]->timestamp;
-			which = i;
-		}
-	}
-	return which;
-}
-
 #ifndef PSM_DEBUG
 /*! Append to Queue */
 PSMI_ALWAYS_INLINE(void mq_qq_append(struct mqq *q, psm2_mq_req_t req))
 {
-	req->next[PSM2_ANYTAG_ANYSRC] = NULL;
-	req->prev[PSM2_ANYTAG_ANYSRC] = q->last;
+	req->next[NUM_HASH_CONFIGS] = NULL;
+	req->prev[NUM_HASH_CONFIGS] = q->last;
 	if (q->last)
-		q->last->next[PSM2_ANYTAG_ANYSRC] = req;
+		q->last->next[NUM_HASH_CONFIGS] = req;
 	else
 		q->first = req;
 	q->last = req;
-	req->q[PSM2_ANYTAG_ANYSRC] = q;
+	req->q[NUM_HASH_CONFIGS] = q;
 }
 #else
 #define mq_qq_append(qq, req)						\
 	do {								\
 		psmi_assert_req_not_internal(req);			\
-		(req)->next[PSM2_ANYTAG_ANYSRC] = NULL;			\
-		(req)->prev[PSM2_ANYTAG_ANYSRC] = (qq)->last;		\
+		(req)->next[NUM_HASH_CONFIGS] = NULL;			\
+		(req)->prev[NUM_HASH_CONFIGS] = (qq)->last;		\
 		if ((qq)->last)						\
-			(qq)->last->next[PSM2_ANYTAG_ANYSRC] = (req);	\
+			(qq)->last->next[NUM_HASH_CONFIGS] = (req);	\
 		else							\
 			(qq)->first = (req);				\
 		(qq)->last = (req);					\
-		(req)->q[PSM2_ANYTAG_ANYSRC] = (qq);			\
+		(req)->q[NUM_HASH_CONFIGS] = (qq);			\
 		if (qq == &(req)->mq->completed_q)			\
 			_HFI_VDBG("Moving (req)=%p to completed queue on %s, %d\n", \
 				  (req), __FILE__, __LINE__);		\
@@ -509,16 +725,16 @@ void mq_qq_append_which(struct mqq q[NUM_HASH_CONFIGS][NUM_HASH_BUCKETS],
 }
 PSMI_ALWAYS_INLINE(void mq_qq_remove(struct mqq *q, psm2_mq_req_t req))
 {
-	if (req->next[PSM2_ANYTAG_ANYSRC] != NULL)
-		req->next[PSM2_ANYTAG_ANYSRC]->prev[PSM2_ANYTAG_ANYSRC] =
-			req->prev[PSM2_ANYTAG_ANYSRC];
+	if (req->next[NUM_HASH_CONFIGS] != NULL)
+		req->next[NUM_HASH_CONFIGS]->prev[NUM_HASH_CONFIGS] =
+			req->prev[NUM_HASH_CONFIGS];
 	else
-		q->last = req->prev[PSM2_ANYTAG_ANYSRC];
-	if (req->prev[PSM2_ANYTAG_ANYSRC])
-		req->prev[PSM2_ANYTAG_ANYSRC]->next[PSM2_ANYTAG_ANYSRC] =
-			req->next[PSM2_ANYTAG_ANYSRC];
+		q->last = req->prev[NUM_HASH_CONFIGS];
+	if (req->prev[NUM_HASH_CONFIGS])
+		req->prev[NUM_HASH_CONFIGS]->next[NUM_HASH_CONFIGS] =
+			req->next[NUM_HASH_CONFIGS];
 	else
-		q->first = req->next[PSM2_ANYTAG_ANYSRC];
+		q->first = req->next[NUM_HASH_CONFIGS];
 }
 PSMI_ALWAYS_INLINE(void mq_qq_remove_which(psm2_mq_req_t req, int table))
 {
@@ -548,6 +764,9 @@ psm2_mq_req_t psm3_mq_req_match(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *
 psm2_error_t psm3_mq_malloc(psm2_mq_t *mqo);
 psm2_error_t psm3_mq_initialize_params(psm2_mq_t mq);
 psm2_error_t psm3_mq_initstats(psm2_mq_t mq, psm2_epid_t epid);
+extern uint32_t psm3_mq_max_window_rv(psm2_mq_t mq, int gpu);
+uint32_t psm3_mq_get_window_rv(psm2_mq_req_t req);
+
 
 psm2_error_t MOCKABLE(psm3_mq_free)(psm2_mq_t mq);
 MOCK_DCL_EPILOGUE(psm3_mq_free);
@@ -612,7 +831,7 @@ mq_ooo_match(struct mqq *q, void *msgctl, uint16_t msg_seqnum))
 	psm2_mq_req_t *curp;
 	psm2_mq_req_t cur;
 
-	for (curp = &q->first; (cur = *curp) != NULL; curp = &cur->next[PSM2_ANYTAG_ANYSRC]) {
+	for (curp = &q->first; (cur = *curp) != NULL; curp = &cur->next[NUM_HASH_CONFIGS]) {
 		if (cur->ptl_req_ptr == msgctl && cur->msg_seqnum == msg_seqnum) {
 			/* match! */
 			mq_qq_remove(q, cur);

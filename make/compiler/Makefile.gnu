@@ -171,16 +171,6 @@ ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 5; echo "$$?"),0)
 WARN_CXXFLAGS += -Wsuggest-override -Wno-error=suggest-override
 endif
 
-# Don't warn about const qualifiers that are discarded on assignment
-# this is a temporary workaround to the issue that c_ptrConst types don't
-# currently include the const qualifier in generated code
-# see https://github.com/chapel-lang/chapel/pull/22122
-# which removed the const qualifiers
-# maybe added in gcc 4.6.0?
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 5; echo "$$?"),0)
-SQUASH_WARN_GEN_CFLAGS += -Wno-discarded-qualifiers
-endif
-
 #
 # Don't warn for signed pointer issues (ex. c_ptr(c_char) )
 #
@@ -299,8 +289,9 @@ endif
 # (should be fixed in LLVM 15 though).
 # We would like to know when this occurs, though, so don't turn off
 # the warning; just don't let it abort the build.
+# Observed in GCC 13 as well as of May 2024.
 #
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 12; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-error=uninitialized
 endif
 
@@ -364,6 +355,14 @@ endif
 ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -eq 12; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-deprecated-declarations
 endif
+
+#
+# Don't error for -Wnonnull in llvm 17+ due to false positives in llvm headers
+#
+ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -ge 17; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-error=nonnull
+endif
+
 
 ifeq ($(GNU_GPP_SUPPORTS_MISSING_DECLS),1)
 WARN_CXXFLAGS += -Wmissing-declarations

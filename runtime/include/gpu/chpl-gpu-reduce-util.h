@@ -20,6 +20,7 @@
 #ifdef HAS_GPU_LOCALE
 
 #define GPU_DEV_CUB_WRAP(MACRO, impl_kind, chpl_kind) \
+  MACRO(impl_kind, chpl_kind, chpl_bool)  \
   MACRO(impl_kind, chpl_kind, int8_t)  \
   MACRO(impl_kind, chpl_kind, int16_t)  \
   MACRO(impl_kind, chpl_kind, int32_t)  \
@@ -28,10 +29,11 @@
   MACRO(impl_kind, chpl_kind, uint16_t)  \
   MACRO(impl_kind, chpl_kind, uint32_t)  \
   MACRO(impl_kind, chpl_kind, uint64_t)  \
-  MACRO(impl_kind, chpl_kind, float)   \
-  MACRO(impl_kind, chpl_kind, double);
+  MACRO(impl_kind, chpl_kind, _real32)   \
+  MACRO(impl_kind, chpl_kind, _real64);
 
 #define GPU_CUB_WRAP(MACRO, chpl_kind) \
+  MACRO(chpl_kind, chpl_bool)  \
   MACRO(chpl_kind, int8_t)  \
   MACRO(chpl_kind, int16_t)  \
   MACRO(chpl_kind, int32_t)  \
@@ -40,8 +42,8 @@
   MACRO(chpl_kind, uint16_t)  \
   MACRO(chpl_kind, uint32_t)  \
   MACRO(chpl_kind, uint64_t)  \
-  MACRO(chpl_kind, float)   \
-  MACRO(chpl_kind, double);
+  MACRO(chpl_kind, _real32)   \
+  MACRO(chpl_kind, _real64);
 
 #endif // HAS_GPU_LOCALE
 

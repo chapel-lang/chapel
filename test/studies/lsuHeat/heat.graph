@@ -1,0 +1,5 @@
+perfkeys: elapsed:, elapsed:, elapsed:, elapsed:
+files: heat.dat, heat_barrier_sync.dat, heat_ghost_sync.dat, heat_queue_sync.dat
+graphkeys: forall, coforall global array, coforall task-local arrays, coforall task-local arrays (with queues)
+ylabel: Time (seconds)
+graphtitle: LSU 1D heat diffusion codes (n=10,000,000)

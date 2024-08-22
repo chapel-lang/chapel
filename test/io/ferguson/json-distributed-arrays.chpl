@@ -65,7 +65,7 @@ var expectfile = openMemFile();
 {
   writeln("Testing block cyclic array");
   const Space = {1..5};
-  var D = Space dmapped blockCycDist(startIdx=Space.low,blocksize=2);
+  var D = Space dmapped new blockCycDist(startIdx=Space.low,blocksize=2);
   var A:[D] int;
   A = 1..5;
 

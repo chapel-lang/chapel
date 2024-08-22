@@ -1,2 +1,8 @@
 # bug is specific to --baseline
 COMPOPTS >= --baseline
+
+# The output will be different for C codegen.
+# Skip these configurations to avoid .bad mismatches.
+# Once the bag is fixed, the program should work in all configurations.
+CHPL_LLVM == none
+CHPL_TARGET_COMPILER != llvm

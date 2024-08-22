@@ -36,7 +36,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # These values will be written to <build_dir>/frontend/include/chpl/config/config.h
 
 set(CHPL_MAJOR_VERSION 2)
-set(CHPL_MINOR_VERSION 1)
+set(CHPL_MINOR_VERSION 2)
 set(CHPL_PATCH_VERSION 0)
 set(CHPL_BUILD_VERSION 0)
 
@@ -354,14 +354,6 @@ message(STATUS "Using Python: ${CHPL_CMAKE_PYTHON}")
 add_subdirectory(compiler)
 add_subdirectory(frontend)
 add_subdirectory(tools/chpldoc)
-
-# We are not ready to include 'chpldef' in an official release just yet. This
-# check works because the 'chpldef' source files are currently not included
-# in source releases.
-if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tools/chpldef)
-  # Exclude the language server from being included in 'make all'.
-  add_subdirectory(tools/chpldef EXCLUDE_FROM_ALL)
-endif()
 
 # Adjust the install rpath for chpl and chpldoc
 if (INSTALLATION_MODE STREQUAL "prefix")

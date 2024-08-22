@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# remove all output before the seperator
+sep=$(cat SEPARATOR.txt)
+sed "1,/$sep/d" $2 > $2.tmp
+mv $2.tmp $2

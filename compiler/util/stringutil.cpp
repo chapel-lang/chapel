@@ -26,6 +26,7 @@
 
 #include "baseAST.h"
 #include "chpl/framework/Context.h"
+#include "chpl/util/string-utils.h"
 #include "driver.h"
 #include "map.h"
 #include "misc.h"
@@ -96,8 +97,8 @@ const char* asubstr(const char* s, const char* e) {
     }                                                             \
     type##_t val;                                                 \
     int numitems = sscanf(str, format, &val);                     \
-    char checkStr[len+1];                                         \
-    snprintf(checkStr, len+1, format, val);                       \
+    auto checkStr = std::make_unique<char[]>(len+1);              \
+    snprintf(checkStr.get(), len+1, format, val);                 \
     if (numitems != 1) {                                          \
       INT_FATAL("Illegal string passed to strTo_" #type "()");    \
     }                                                             \
@@ -106,7 +107,7 @@ const char* asubstr(const char* s, const char* e) {
     while (str[startPos] == '0' && startPos < len-1) {            \
       startPos++;                                                 \
     }                                                             \
-    if (strcmp(str+startPos, checkStr) != 0) {                    \
+    if (strcmp(str+startPos, checkStr.get()) != 0) {              \
       if (userSupplied) {                                         \
         astlocT astloc(line, filename);                           \
         USR_FATAL(astloc, "Integer literal overflow: '%s' is too" \
@@ -403,5 +404,5 @@ void removeTrailingNewlines(std::string& str) {
 }
 
 bool startsWith(const char* str, const char* prefix) {
-  return (0 == strncmp(str, prefix, strlen(prefix)));
+  return chpl::startsWith(str, prefix);
 }

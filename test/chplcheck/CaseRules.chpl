@@ -42,7 +42,7 @@ module CaseRules {
   var snake_CapVar: real;
   const snake_Var: string;
 
-  record R {};
+  record R {}
 
   var _privateVar: int;
 

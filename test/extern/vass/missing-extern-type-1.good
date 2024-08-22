@@ -1,0 +1,1 @@
+missing-extern-type-1.chpl:4: error: could not find extern type LAPACK_C_SELECT1

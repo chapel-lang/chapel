@@ -20,7 +20,7 @@ proc main {
     use BlockDist;
     writeln("BlockDist:");
 
-    var BlockSpace = Space dmapped blockDist(boundingBox=Space);
+    var BlockSpace = Space dmapped new blockDist(boundingBox=Space);
     var A: [BlockSpace] int;
 
     hdf5ReadDistributedArray(A, pathPrefix+fileName, dsetName);
@@ -30,7 +30,7 @@ proc main {
   if testCyclic {
     use CyclicDist;
     writeln("CyclicDist:");
-    var CyclicSpace = Space dmapped cyclicDist(startIdx=Space.low);
+    var CyclicSpace = Space dmapped new cyclicDist(startIdx=Space.low);
     var A: [CyclicSpace] int;
     hdf5ReadDistributedArray(A, pathPrefix+fileName, dsetName);
     writeln(A);
@@ -39,7 +39,7 @@ proc main {
   if testBlockCyclic {
     use BlockCycDist;
     writeln("BlockCyclicDist:");
-    var BlockCyclicSpace = Space dmapped blockCycDist(startIdx=Space.low,
+    var BlockCyclicSpace = Space dmapped new blockCycDist(startIdx=Space.low,
                                                      blocksize=10);
     var A: [BlockCyclicSpace] int;
     hdf5ReadDistributedArray(A, pathPrefix+fileName, dsetName);

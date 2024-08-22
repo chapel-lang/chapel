@@ -26,13 +26,13 @@ module cholesky_test_unsymmetric_ranges {
 
     const MatIdx = { index_base .. #n, index_base .. #n };
 
-    const mat_dom : domain (2) dmapped cyclicDist ( startIdx = MatIdx.low )
+    const mat_dom : domain (2) dmapped new cyclicDist ( startIdx = MatIdx.low )
       = MatIdx;
 
     const Unsymm_MatIdx = MatIdx.translate (row_offset, col_offset);
 
     const unsymm_mat_dom : domain (2) 
-          dmapped cyclicDist ( startIdx = Unsymm_MatIdx.low ) = Unsymm_MatIdx;
+          dmapped new cyclicDist ( startIdx = Unsymm_MatIdx.low ) = Unsymm_MatIdx;
     const distribution_type = "cyclic";
 
     var A : [mat_dom] real,

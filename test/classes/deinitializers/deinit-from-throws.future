@@ -1,0 +1,4 @@
+bug: throws function prevents deinit from being called
+#25548
+
+When resolving this future, remove the skipif

@@ -52,6 +52,11 @@ PRAGMA(ALIASING_ARRAY, ypr, "aliasing array", ncm)
 // can alias the same scopes as 'this'
 PRAGMA(ALIAS_SCOPE_FROM_THIS, ypr, "alias scope from this", ncm)
 
+// Added to the condExpr of a static ArrayView Elision conditional. Should
+// disappear after resolution
+PRAGMA(ARRAY_VIEW_ELISION_FLAG, npr, "static flag for array view elision", ncm)
+PRAGMA(NO_ARRAY_VIEW_ELISION, ypr, "no array view elision", ncm)
+
 // This flag is used in scalarReplace.cpp to determine if an assignment of a ref
 // has an allocator as the RHS.  If so, then it is not creating an alias, since
 // the allocator function does not retain a reference to the referenced object.
@@ -188,6 +193,8 @@ PRAGMA(DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr,
 PRAGMA(NO_PROMOTION_WHEN_BY_REF, ypr, "no promotion when by ref", ncm)
 
 PRAGMA(CONTEXT_TYPE, ypr, "context type", ncm)
+PRAGMA(REMOTE_VARIABLE, ypr, "remote variable", ncm)
+PRAGMA(SHARING_KIND_ENUM, ypr, "sharing kind enum", ncm)
 
 PRAGMA(COPY_INIT, npr, "copy initializer", ncm)
 PRAGMA(DEFAULT_INIT, npr, "default initializer", ncm)
@@ -304,6 +311,7 @@ PRAGMA(IF_EXPR_RESULT, npr, "if-expr result", ncm)
 PRAGMA(IMPLICIT_ALIAS_FIELD, npr, "implicit alias field", ncm)
 PRAGMA(IMPLICIT_MODULE, npr, "implicit top-level module", ncm)
 PRAGMA(INCLUDED_MODULE, npr, "included sub-module", ncm)
+PRAGMA(INCOMPLETE, npr, "incomplete", "an extern type that is incomplete in the C/C++ sense")
 PRAGMA(INDEX_VAR, npr, "index var", ncm)
 PRAGMA(INFER_CUSTOM_TYPE, ypr, "infer custom type", ncm)
 
@@ -587,6 +595,10 @@ PRAGMA(TASK_COMPLETE_IMPL_FN, ypr, "task complete impl fn", ncm)
 PRAGMA(TASK_JOIN_IMPL_FN, ypr, "task join impl fn", ncm)
 PRAGMA(TEMP, npr, "temp", "compiler-inserted temporary")
 
+PRAGMA(THUNK_BUILDER, npr, "thunk builder", ncm)
+PRAGMA(THUNK_INVOKE, npr, "thunk invoke", ncm)
+PRAGMA(THUNK_RECORD, npr, "thunk record", ncm)
+
 PRAGMA(TUPLE, ypr, "tuple", ncm)
 PRAGMA(TUPLE_CAST_FN, ypr, "tuple cast fn", ncm)
 PRAGMA(TUPLE_WITH_REF, npr, "tuple contains ref", ncm)
@@ -642,6 +654,7 @@ PRAGMA(COMPUTE_UNIFIED_TYPE_HELP, ypr, "compute unified type helper", "identify 
 PRAGMA(DO_NOT_RESOLVE_UNLESS_CALLED, npr, "do not resolve unless called", "do not resolve this function unless it is called (e.g. if it contains only compilerError)")
 PRAGMA(TASK_PRIVATE_VARIABLE, npr, "task private variable", ncm)
 PRAGMA(TFI_BORROW_TEMP, npr, "temporary for storing borrow of a shadow var", ncm)
+PRAGMA(EXEMPT_REF_PROPAGATION, npr, "exempt variable from ref propagation", ncm)
 
 #undef ypr
 #undef npr

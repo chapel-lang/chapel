@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2016 by Argonne National Laboratory.
- * Copyright (C) 2021 by Cornelis Networks.
+ * Copyright (C) 2021-2023 by Cornelis Networks.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -49,15 +49,27 @@ ssize_t fi_opx_sendmsg(struct fid_ep *ep, const struct fi_msg *msg,
 	const enum fi_av_type av_type = opx_ep->av_type;
 	const enum ofi_reliability_kind reliability = opx_ep->reliability->state.kind;
 
-	const uint64_t caps = opx_ep->tx->caps | (FI_LOCAL_COMM | FI_REMOTE_COMM);
+	const uint64_t caps = opx_ep->tx->caps & (FI_LOCAL_COMM | FI_REMOTE_COMM);
 	const int lock_required = fi_opx_threading_lock_required(threading, fi_opx_global.progress);
+
+	if (msg->iov_count == 1) {
+		return fi_opx_ep_tx_send(ep, msg->msg_iov->iov_base, msg->msg_iov->iov_len,
+			msg->desc, msg->addr, 0, msg->context, msg->data,
+			lock_required,
+			av_type,
+			OPX_CONTIG_TRUE,
+			OPX_FLAGS_OVERRIDE_TRUE,
+			flags,
+			caps | FI_MSG,
+			reliability);
+	}
 
 	return fi_opx_ep_tx_send(ep, msg->msg_iov, msg->iov_count,
 		msg->desc, msg->addr, 0, msg->context, msg->data,
 		lock_required,
 		av_type,
-		0	/* is_contiguous */,
-		1	/* override the default tx flags */,
+		OPX_CONTIG_FALSE,
+		OPX_FLAGS_OVERRIDE_TRUE,
 		flags,
 		caps | FI_MSG,
 		reliability);
@@ -74,15 +86,26 @@ ssize_t fi_opx_sendv(struct fid_ep *ep, const struct iovec *iov,
 	const enum fi_av_type av_type = opx_ep->av_type;
 	const enum ofi_reliability_kind reliability = opx_ep->reliability->state.kind;
 
-	const uint64_t caps = opx_ep->tx->caps | (FI_LOCAL_COMM | FI_REMOTE_COMM);
+	const uint64_t caps = opx_ep->tx->caps & (FI_LOCAL_COMM | FI_REMOTE_COMM);
 	const int lock_required = fi_opx_threading_lock_required(threading, fi_opx_global.progress);
 
+	if (count == 1) {
+		return fi_opx_ep_tx_send(ep, iov->iov_base, iov->iov_len,
+			desc, dest_addr, 0, context, 0,
+			lock_required,
+			av_type,
+			OPX_CONTIG_TRUE,
+			OPX_FLAGS_OVERRIDE_FALSE,
+			0,	/* flags */
+			caps | FI_MSG,
+			reliability);
+	}
 	return fi_opx_ep_tx_send(ep, iov, count,
 		desc, dest_addr, 0, context, 0,
 		lock_required,
 		av_type,
-		0	/* is_contiguous */,
-		0	/* do not override flags */,
+		OPX_CONTIG_FALSE,
+		OPX_FLAGS_OVERRIDE_FALSE,
 		0,	/* flags */
 		caps | FI_MSG,
 		reliability);
@@ -318,27 +341,21 @@ int fi_opx_enable_msg_ops(struct fid_ep *ep)
 		if (opx_ep->av->type == FI_AV_TABLE) {
 			if (comm_caps == FI_LOCAL_COMM) {
 
-				if (reliability == OFI_RELIABILITY_KIND_NONE)
-					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_TABLE, 0x0008000000000000ull, OFI_RELIABILITY_KIND_NONE);
-				else if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
+				if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_TABLE, 0x0008000000000000ull, OFI_RELIABILITY_KIND_ONLOAD);
 				else
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_TABLE, 0x0008000000000000ull, OFI_RELIABILITY_KIND_OFFLOAD);
 
 			} else if (comm_caps == FI_REMOTE_COMM) {
 
-				if (reliability == OFI_RELIABILITY_KIND_NONE)
-					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_TABLE, 0x0010000000000000ull, OFI_RELIABILITY_KIND_NONE);
-				else if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
+				if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_TABLE, 0x0010000000000000ull, OFI_RELIABILITY_KIND_ONLOAD);
 				else
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_TABLE, 0x0010000000000000ull, OFI_RELIABILITY_KIND_OFFLOAD);
 
 			} else {	/* comm_caps == (FI_LOCAL_COMM | FI_REMOTE_COMM) */
 
-				if (reliability == OFI_RELIABILITY_KIND_NONE)
-					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_TABLE, 0x0018000000000000ull, OFI_RELIABILITY_KIND_NONE);
-				else if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
+				if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_TABLE, 0x0018000000000000ull, OFI_RELIABILITY_KIND_ONLOAD);
 				else
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_TABLE, 0x0018000000000000ull, OFI_RELIABILITY_KIND_OFFLOAD);
@@ -348,27 +365,21 @@ int fi_opx_enable_msg_ops(struct fid_ep *ep)
 
 			if (comm_caps == FI_LOCAL_COMM) {
 
-				if (reliability == OFI_RELIABILITY_KIND_NONE)
-					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_MAP, 0x0008000000000000ull, OFI_RELIABILITY_KIND_NONE);
-				else if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
+				if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_MAP, 0x0008000000000000ull, OFI_RELIABILITY_KIND_ONLOAD);
 				else
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_MAP, 0x0008000000000000ull, OFI_RELIABILITY_KIND_OFFLOAD);
 
 			} else if (comm_caps == FI_REMOTE_COMM) {
 
-				if (reliability == OFI_RELIABILITY_KIND_NONE)
-					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_MAP, 0x0010000000000000ull, OFI_RELIABILITY_KIND_NONE);
-				else if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
+				if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_MAP, 0x0010000000000000ull, OFI_RELIABILITY_KIND_ONLOAD);
 				else
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_MAP, 0x0010000000000000ull, OFI_RELIABILITY_KIND_OFFLOAD);
 
 			} else {	/* comm_caps == (FI_LOCAL_COMM | FI_REMOTE_COMM) */
 
-				if (reliability == OFI_RELIABILITY_KIND_NONE)
-					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_MAP, 0x0018000000000000ull, OFI_RELIABILITY_KIND_NONE);
-				else if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
+				if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_MAP, 0x0018000000000000ull, OFI_RELIABILITY_KIND_ONLOAD);
 				else
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_NOT_REQUIRED,FI_AV_MAP, 0x0018000000000000ull, OFI_RELIABILITY_KIND_OFFLOAD);
@@ -383,27 +394,21 @@ int fi_opx_enable_msg_ops(struct fid_ep *ep)
 
 			if (comm_caps == FI_LOCAL_COMM) {
 
-				if (reliability == OFI_RELIABILITY_KIND_NONE)
-					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_TABLE, 0x0008000000000000ull, OFI_RELIABILITY_KIND_NONE);
-				else if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
+				if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_TABLE, 0x0008000000000000ull, OFI_RELIABILITY_KIND_ONLOAD);
 				else
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_TABLE, 0x0008000000000000ull, OFI_RELIABILITY_KIND_OFFLOAD);
 
 			} else if (comm_caps == FI_REMOTE_COMM) {
 
-				if (reliability == OFI_RELIABILITY_KIND_NONE)
-					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_TABLE, 0x0010000000000000ull, OFI_RELIABILITY_KIND_NONE);
-				else if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
+				if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_TABLE, 0x0010000000000000ull, OFI_RELIABILITY_KIND_ONLOAD);
 				else
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_TABLE, 0x0010000000000000ull, OFI_RELIABILITY_KIND_OFFLOAD);
 
 			} else {	/* comm_caps == (FI_LOCAL_COMM | FI_REMOTE_COMM) */
 
-				if (reliability == OFI_RELIABILITY_KIND_NONE)
-					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_TABLE, 0x0018000000000000ull, OFI_RELIABILITY_KIND_NONE);
-				else if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
+				if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_TABLE, 0x0018000000000000ull, OFI_RELIABILITY_KIND_ONLOAD);
 				else
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_TABLE, 0x0018000000000000ull, OFI_RELIABILITY_KIND_OFFLOAD);
@@ -412,29 +417,21 @@ int fi_opx_enable_msg_ops(struct fid_ep *ep)
 
 			if (comm_caps == FI_LOCAL_COMM) {
 
-				if (reliability == OFI_RELIABILITY_KIND_NONE)
-					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_MAP, 0x0008000000000000ull, OFI_RELIABILITY_KIND_NONE);
-				else if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
+				if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_MAP, 0x0008000000000000ull, OFI_RELIABILITY_KIND_ONLOAD);
 				else
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_MAP, 0x0008000000000000ull, OFI_RELIABILITY_KIND_OFFLOAD);
 
-
-
 			} else if (comm_caps == FI_REMOTE_COMM) {
 
-				if (reliability == OFI_RELIABILITY_KIND_NONE)
-					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_MAP, 0x0010000000000000ull, OFI_RELIABILITY_KIND_NONE);
-				else if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
+				if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_MAP, 0x0010000000000000ull, OFI_RELIABILITY_KIND_ONLOAD);
 				else
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_MAP, 0x0010000000000000ull, OFI_RELIABILITY_KIND_OFFLOAD);
 
 			} else {	/* comm_caps == (FI_LOCAL_COMM | FI_REMOTE_COMM) */
 
-				if (reliability == OFI_RELIABILITY_KIND_NONE)
-					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_MAP, 0x0018000000000000ull, OFI_RELIABILITY_KIND_NONE);
-				else if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
+				if (reliability == OFI_RELIABILITY_KIND_ONLOAD)
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_MAP, 0x0018000000000000ull, OFI_RELIABILITY_KIND_ONLOAD);
 				else
 					opx_ep->ep_fid.msg = &FI_OPX_MSG_OPS_STRUCT_NAME(FI_OPX_LOCK_REQUIRED,FI_AV_MAP, 0x0018000000000000ull, OFI_RELIABILITY_KIND_OFFLOAD);

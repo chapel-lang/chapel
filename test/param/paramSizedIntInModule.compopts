@@ -1,0 +1,2 @@
+-sSize1=32 -sSize2=32 -sValue1=9 -sValue2=9   # paramSizedIntInModule.1.good
+-sSize1=64 -sSize2=64 -sValue1=10 -sValue2=10 # paramSizedIntInModule.2.good

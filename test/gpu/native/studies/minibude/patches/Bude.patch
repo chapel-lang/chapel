@@ -36,41 +36,6 @@ index f8c2dff..d20c6ef 100644
    record atom {
      var x, y, z: real(32);
      var aType: int(32);
-@@ -162,7 +173,7 @@ module Bude {
-       aFile = openFile(this.deckDir + FILE_LIGAND, length);
-       this.natlig = length / c_sizeof(atom): int;
-       this.ligandDomain = {0..<this.natlig};
--      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer());
-+      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer(), locking=false);
-       reader.read(this.ligand);
-       reader.close(); aFile.close();
- 
-@@ -170,7 +181,7 @@ module Bude {
-       aFile = openFile(this.deckDir + FILE_PROTEIN, length);
-       this.natpro = length / c_sizeof(atom): int;
-       this.proteinDomain = {0..<this.natpro};
--      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer());
-+      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer(), locking=false);
-       reader.read(this.protein);
-       reader.close(); aFile.close();
- 
-@@ -178,14 +189,14 @@ module Bude {
-       aFile = openFile(this.deckDir + FILE_FORCEFIELD, length);
-       this.ntypes = length / c_sizeof(ffParams): int;
-       this.forcefieldDomain = {0..<this.ntypes};
--      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer());
-+      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer(), locking=false);
-       reader.read(this.forcefield);
-       reader.close(); aFile.close();
- 
-       // Read poses
-       this.posesDomain = {0..<6, 0..<this.nposes};
-       aFile = openFile(this.deckDir + FILE_POSES, length);
--      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer());
-+      reader = aFile.reader(region=0.., deserializer=new binaryDeserializer(), locking=false);
-       var available = (length / (6 * c_sizeof(real(32)): int));
-       var current = 0;
-       while (current < this.nposes) {
 @@ -234,7 +245,8 @@ module Bude {
  
      writeln("~");
@@ -81,15 +46,6 @@ index f8c2dff..d20c6ef 100644
  
      writeln("deck:");
      writeln("  path:         \"", context.deckDir, "\"");
-@@ -282,7 +294,7 @@ module Bude {
-       writeln("Only validating the first ", REF_NPOSES, " poses");
-       n_ref_poses = REF_NPOSES;
-     }
--    var reader = try! ref_energies.reader();
-+    var reader = try! ref_energies.reader(locking=false);
-     for i in 0..<n_ref_poses {
-       try! reader.read(e);
-       if (abs(e) < 1.0 && abs(energies(i)) < 1.0) {
 @@ -293,7 +305,16 @@ module Bude {
          maxdiff = diff;
        }

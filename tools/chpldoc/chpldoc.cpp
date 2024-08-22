@@ -202,6 +202,10 @@ ArgumentDescription docs_arg_desc[] = {
  DRIVER_ARG_LAST
 };
 
+static
+std::string runCommand(std::string& command);
+static
+std::string getChplDepsApp();
 
 static void printStuff(const char* argv0, void* mainAddr) {
   bool shouldExit       = false;
@@ -210,6 +214,16 @@ static void printStuff(const char* argv0, void* mainAddr) {
   if (fPrintVersion) {
     std::string version = chpl::getVersion();
     fprintf(stdout, "%s version %s\n", sArgState.program_name, version.c_str());
+
+    std::string getVersion = "python3 " + getChplDepsApp() + " version";
+
+    std::string getVersionSphinx = getVersion + " Sphinx";
+    std::string sphinxVersion = runCommand(getVersionSphinx);
+    fprintf(stdout, "\tSphinx version %s", sphinxVersion.c_str());
+
+    std::string getVersionChplDomain = getVersion + " sphinxcontrib-chapeldomain";
+    std::string chplDomainVersion = runCommand(getVersionChplDomain);
+    fprintf(stdout, "\tsphinxcontrib-chapeldomain version %s", chplDomainVersion.c_str());
 
     fPrintCopyright  = true;
     printedSomething = true;
@@ -1853,16 +1867,19 @@ struct GatherModulesVisitor {
   void handleUseOrImport(const AstNode* node) {
     if (processUsedModules_) {
       auto scope = resolution::scopeForId(context_, node->id());
-      auto used = resolution::findUsedImportedModules(context_, scope);
-      for (auto id: used) {
-        if (idIsInBundledModule(context_, id)) {
-          continue;
-        }
-        // only add it and visit its children if we haven't seen it already
-        if (modules.find(id) == modules.end()) {
-          modules.insert(id);
-          auto ast = idToAst(context_, id);
-          ast->traverse(*this);
+      if (scope != nullptr && scope->containsUseImport()) {
+        if (auto r = resolveVisibilityStmts(context_, scope)) {
+          for (auto id: r->modulesNamedInUseOrImport()) {
+            if (idIsInBundledModule(context_, id)) {
+              continue;
+            }
+            // only add it and visit its children if we haven't seen it already
+            if (modules.find(id) == modules.end()) {
+              modules.insert(id);
+              auto ast = idToAst(context_, id);
+              ast->traverse(*this);
+            }
+          }
         }
       }
     }
@@ -2299,10 +2316,22 @@ int main(int argc, char** argv) {
     }
   }
 
-  // TODO: there is a future for this, asking for a better error message and I
-  // think we can provide it by checking here.
-  // see test/chpldoc/compflags/folder/save-sphinx/saveSphinxInDocs.doc.future
-  // if (args.saveSphinx == "docs") { }
+  if (args.noHTML == false) {
+    if (args.outputDir.length() == 0 && args.saveSphinx == "docs") {
+      std::cerr << "error: using same directory for '--save-sphinx' as default "
+                << "output directory, please either use a different directory "
+                << "for '--save-sphinx' or override the default output "
+                << "directory with '--output-dir'" << std::endl;
+      return 1;
+
+    } else if (args.saveSphinx == args.outputDir &&
+               args.saveSphinx.length() != 0) {
+      std::cerr << "error: using same directory for '--save-sphinx' and "
+                << "'--output-dir' causes issues, please use a different "
+                << "location for one of these flags" << std::endl;
+      return 1;
+    }
+  }
 
   textOnly_ = args.textOnly;
   if (args.commentStyle.substr(0,2) != "/*") {

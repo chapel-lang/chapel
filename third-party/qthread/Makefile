@@ -39,6 +39,9 @@ ifneq ($(CHPL_MAKE_HWLOC),none)
     endif
     # don't bother checking if we can link against hwloc
     CHPL_QTHREAD_CFG_OPTIONS += --disable-hwloc-configure-checks
+  else ifeq ($(CHPL_MAKE_HWLOC),system)
+    CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_hwloc.py --prefix)
+    CHPL_QTHREAD_CFG_OPTIONS += --disable-hwloc-configure-checks
   endif
 endif
 
@@ -73,6 +76,9 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   # seems to cause Chapel programs built with the result to hang during
   # exit when shutting down Qthreads.
   #
+	# We also need to provide paths to system hwloc and jemalloc if they are
+  # enabled, since it might not be in default compiler search paths.
+	#
   # Note that we call compileline with CHPL_MAKE_COMM=none. Under
   # CHPL_MAKE_COMM=gasnet, compileline will fail if gasnet is not built,
   # so in order to avoid ordering/dependencies just ignore the comm
@@ -83,6 +89,13 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   # Throw COMPILELINE_STDERR_REDIRECT= if compileline failure is reported
   # and you want to see the stderr from that.
   #
+ 	ifeq ($(CHPL_MAKE_HWLOC),system)
+		SYSTEM_INCS_DEFS := $(SYSTEM_INCS_DEFS)\|hwloc
+  endif
+	ifeq ($(CHPL_MAKE_TARGET_JEMALLOC),system)
+	SYSTEM_INCS_DEFS := $(SYSTEM_INCS_DEFS)\|jemalloc
+  endif
+
   COMPILELINE_STDERR_REDIRECT=2> /dev/null
   COMM_NONE_CHPLENV_CACHE := $(shell echo "$(CHPL_MAKE_CHPLENV_CACHE)" | sed 's/|CHPL_MAKE_COMM=[^|]*|/|CHPL_MAKE_COMM=none|/')
   INCS_DEFS := \
@@ -95,7 +108,7 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
     INCS_DEFS_PROCESSED := \
       $(shell echo $(INCS_DEFS) \
               | tr ' ' '\n' \
-              | grep '^-DCHPL\|/runtime//*include\|/third-party/.*/install' \
+              | grep '^-DCHPL\|/runtime//*include\|/third-party/.*/install$(SYSTEM_INCS_DEFS)' \
               | grep -v '/third-party/qthread/install' \
               | tr '\n' ' ' \
               | sed 's/ $$//')

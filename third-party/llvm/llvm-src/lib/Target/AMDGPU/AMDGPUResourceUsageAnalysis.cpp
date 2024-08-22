@@ -112,7 +112,7 @@ bool AMDGPUResourceUsageAnalysis::runOnModule(Module &M) {
 
   // By default, for code object v5 and later, track only the minimum scratch
   // size
-  if (AMDGPU::getCodeObjectVersion(M) >= AMDGPU::AMDHSA_COV5 ||
+  if (AMDGPU::getAMDHSACodeObjectVersion(M) >= AMDGPU::AMDHSA_COV5 ||
       STI.getTargetTriple().getOS() == Triple::AMDPAL) {
     if (!AssumedStackSizeForDynamicSizeObjects.getNumOccurrences())
       AssumedStackSizeForDynamicSizeObjects = 0;
@@ -126,14 +126,16 @@ bool AMDGPUResourceUsageAnalysis::runOnModule(Module &M) {
       continue;
 
     MachineFunction *MF = MMI.getMachineFunction(*F);
-    assert(MF && "function must have been generated already");
+    if (MF) {
+      assert(MF && "function must have been generated already");
 
-    auto CI =
-        CallGraphResourceInfo.insert(std::pair(F, SIFunctionResourceInfo()));
-    SIFunctionResourceInfo &Info = CI.first->second;
-    assert(CI.second && "should only be called once per function");
-    Info = analyzeResourceUsage(*MF, TM);
-    HasIndirectCall |= Info.HasIndirectCall;
+      auto CI =
+          CallGraphResourceInfo.insert(std::pair(F, SIFunctionResourceInfo()));
+      SIFunctionResourceInfo &Info = CI.first->second;
+      assert(CI.second && "should only be called once per function");
+      Info = analyzeResourceUsage(*MF, TM);
+      HasIndirectCall |= Info.HasIndirectCall;
+    }
   }
 
   // It's possible we have unreachable functions in the module which weren't
@@ -151,9 +153,11 @@ bool AMDGPUResourceUsageAnalysis::runOnModule(Module &M) {
 
     SIFunctionResourceInfo &Info = CI.first->second;
     MachineFunction *MF = MMI.getMachineFunction(*F);
-    assert(MF && "function must have been generated already");
-    Info = analyzeResourceUsage(*MF, TM);
-    HasIndirectCall |= Info.HasIndirectCall;
+    if (MF) {
+      // assert(MF && "function must have been generated already");
+      Info = analyzeResourceUsage(*MF, TM);
+      HasIndirectCall |= Info.HasIndirectCall;
+    }
   }
 
   if (HasIndirectCall)
@@ -185,7 +189,7 @@ AMDGPUResourceUsageAnalysis::analyzeResourceUsage(
   //
   // If we only have implicit uses of flat_scr on flat instructions, it is not
   // really needed.
-  if (Info.UsesFlatScratch && !MFI->hasFlatScratchInit() &&
+  if (Info.UsesFlatScratch && !MFI->getUserSGPRInfo().hasFlatScratchInit() &&
       (!hasAnyNonFlatUseOfReg(MRI, *TII, AMDGPU::FLAT_SCR) &&
        !hasAnyNonFlatUseOfReg(MRI, *TII, AMDGPU::FLAT_SCR_LO) &&
        !hasAnyNonFlatUseOfReg(MRI, *TII, AMDGPU::FLAT_SCR_HI))) {
@@ -346,8 +350,7 @@ AMDGPUResourceUsageAnalysis::analyzeResourceUsage(
           IsSGPR = true;
           Width = 1;
         } else if (AMDGPU::VGPR_32RegClass.contains(Reg) ||
-                   AMDGPU::VGPR_LO16RegClass.contains(Reg) ||
-                   AMDGPU::VGPR_HI16RegClass.contains(Reg)) {
+                   AMDGPU::VGPR_16RegClass.contains(Reg)) {
           IsSGPR = false;
           Width = 1;
         } else if (AMDGPU::AGPR_32RegClass.contains(Reg) ||

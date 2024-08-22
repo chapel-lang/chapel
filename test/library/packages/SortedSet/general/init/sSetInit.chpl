@@ -3,10 +3,10 @@ use OsetTest;
 
 
 
-var s1 = new sortedSet(int, false, defaultComparator);
-var s2 = new sortedSet(testRecord, false, defaultComparator);
-var s3 = new sortedSet(borrowed testClass, false, defaultComparator);
-var s4 = new sortedSet(int, 1..10, false, defaultComparator);
+var s1 = new sortedSet(int, false, new DefaultComparator());
+var s2 = new sortedSet(testRecord, false, new DefaultComparator());
+var s3 = new sortedSet(borrowed testClass, false, new DefaultComparator());
+var s4 = new sortedSet(int, 1..10, false, new DefaultComparator());
 
 assert(s1.size == 0);
 assert(s2.size == 0);

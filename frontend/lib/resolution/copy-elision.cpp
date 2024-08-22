@@ -136,7 +136,8 @@ bool FindElidedCopies::hasCrossTypeInitAssignWithIn(
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope, poiScope);
+  auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+  auto c = resolveGeneratedCall(context, ast, ci, inScopes);
   const MostSpecificCandidates& fns = c.mostSpecific();
   // return intent overloading should not be possible with an init=
   CHPL_ASSERT(fns.numBest() <= 1);
@@ -177,6 +178,8 @@ FindElidedCopies::copyElisionAllowedForTypes(const QualifiedType& lhsType,
       kindAllowsCopyElision(rhsType.kind())) {
     if (lhsType.type() == rhsType.type()) {
       return true;
+    } else if (lhsType.isUnknown() || rhsType.isUnknown()) {
+      return false;
     } else if (isRecordLike(lhsType.type())) {
       // check to see if an there is an init= to initialize
       // lhsType from rhsType but that uses the 'in' intent on the

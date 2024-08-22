@@ -26,12 +26,11 @@ proc main(args: [] string) {
     (b"a[NSt]|BY", b"<2>"), (b"<[^>]*>", b"|"), (b"\\|[^|][^|]*\\|", b"-")
   ];
 
-  var data: bytes;
-  stdin.readbytes(data); // read in the entire file
+  var data = stdin.readAll(bytes); // read in the entire file
   const initLen = data.size;
 
   // remove newlines
-  data = compile(b">.*\n|\n").sub(b"", data);
+  data = data.replace(new regex(b">.*\n|\n"), b"");
 
   var copy = data; // make a copy so we can perform replacements in parallel
 
@@ -41,12 +40,12 @@ proc main(args: [] string) {
     // fire off a task to perform replacements
     begin with (ref copy) {
       for (f, r) in subst do
-        copy = compile(f).sub(r, copy);
+        copy = copy.replace(new regex(f), r);
     }
 
     // count patterns
     forall (pattern, result) in zip(variants, results) do
-      for m in compile(pattern).matches(data) do
+      for m in (new regex(pattern)).matches(data) do
         result += 1;
   }
 
@@ -59,4 +58,3 @@ proc main(args: [] string) {
   writeln(data.size);
   writeln(copy.size);
 }
-use Compat, CompatRE2;

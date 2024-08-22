@@ -25,7 +25,7 @@ Design documentation for the original AMUDP implementation is available from
 the website above. The current version of AMUDP strictly targets the BSD/POSIX
 sockets layer - it no longer supports UFXP or native MS Windows sockets,
 although Windows support is available via the Cygwin POSIX environment for
-Windows (http://cygwin.com).
+Windows (http://cygwin.com), and the Windows Subsystem for Linux (WSL).
 
 AMUDP includes an extension interface called AMUDP_SPMD that performs job
 spawning and initialization services, using either ssh or a provided
@@ -56,8 +56,8 @@ AMUDP has a few notable departures from the AM-2 specification:
   the call to AM_SetExpectedResources().
 
 * AM_PAR bundle/endpoint access is not implemented - this means AMUDP does
-  not provide thread safety, but can be used in a thread-funnelled mode with
-  locking at the client level.
+  not provide thread safety, but can be used in a thread-funneled or thread-serialized
+  mode with locking at the client level.
 
 * The nbytes argument to Medium and Long AM handlers has type `size_t`
 
@@ -68,6 +68,17 @@ AMUDP has a few notable departures from the AM-2 specification:
 
 Change Log
 ----------
+AMUDP 3.21 (PENDING)
+- Allow zero-byte Long AMs without validation of address against segment bounds,
+  aligning the behavior with the GASNet-EX specification where the AM-2
+  specification leaves the behavior in such cases unspecified.
+
+AMUDP 3.20 (12/2023)
+- Implement new extension AMX_GetTokenInfo()
+- Improve warning messages about environment variables to more uniformly
+  reference the prefixed variable name.
+- Improved error reporting from the default AM handler
+
 AMUDP 3.19 (09/2022)
 - amudprun now supports multiple verbosity levels through repeated -v arguments
 - New envvar AMUDP_SPAWN_VERBOSE now controls spawn-related verbose output,

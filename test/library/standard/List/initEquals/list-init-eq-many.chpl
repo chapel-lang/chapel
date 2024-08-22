@@ -54,7 +54,7 @@ proc initCopyFromList() {
 
   // other forms
   var g = y;
-  writeln("g:", d.type:string, " = ", g);
+  writeln("g:", g.type:string, " = ", g);
   var h:list(int, false) = y;
   writeln("h:", h.type:string, " = ", h);
   var i:list(int) = y;

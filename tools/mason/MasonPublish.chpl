@@ -58,11 +58,15 @@ proc masonPublish(ref args: list(string)) throws {
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var registryArg = parser.addArgument(name="registry", numArgs=0..1);
 
+  var refreshLicenseFlag = parser.addFlag(name="refresh-licenses",
+                                          defaultValue=false);
+
   parser.parseArgs(args.toArray());
 
   try! {
     var dry = dryFlag.valueAsBool();
     var checkFlag = checkArg.valueAsBool();
+    var refreshLicenses = refreshLicenseFlag.valueAsBool();
     var registryPath = "";
     if registryArg.hasValue() then registryPath = registryArg.value();
     var username = getUsername();
@@ -78,7 +82,14 @@ proc masonPublish(ref args: list(string)) throws {
     }
     var createReg = createFlag.valueAsBool();
 
-    const badSyntaxMessage = 'Arguments does not follow "mason publish [options] <registry>" syntax';
+    const badSyntaxMessage = 'Arguments do not follow "mason publish [options] <registry>" syntax';
+
+    if refreshLicenses {
+      writeln("Force updating list of valid license names from SPDX repo...");
+      refreshLicenseList(true);
+      writeln("Done updating license list");
+      exit(0);
+    }
 
     if createReg {
       var pathReg = registryPath;
@@ -344,8 +355,12 @@ proc cloneMasonReg(username: string, safeDir : string, registryPath : string) th
 /* Checks to see if 'git config --get remote.origin.url' exists
  */
 proc doesGitOriginExist() {
-  var urlExists = runCommand("git config --get remote.origin.url", true);
-  return !urlExists.isEmpty();
+  try {
+    var urlExists = runCommand("git config --get remote.origin.url", true);
+    return !urlExists.isEmpty();
+  } catch {
+    return false;
+  }
 }
 
 
@@ -378,8 +393,12 @@ private proc getUsername() {
 /* Procedure that returns the url of the git remote origin
  */
 private proc gitUrl() {
-  var url = runCommand("git config --get remote.origin.url", true);
-  return url;
+  try {
+    var url = runCommand("git config --get remote.origin.url", true);
+    return url;
+  } catch {
+    return "";
+  }
 }
 
 /* Takes the git username and creates a new branch of the mason registry users fork,
@@ -504,10 +523,10 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   if package {
     writeln('Main Module Check:');
     if moduleCheck(projectCheckHome) {
-      writeln('   Your package has only one main module, can be published to a registry. (PASSED)');
+      writeln('   Your package has one main module whose name matches the package name. (PASSED)');
     }
     else {
-      writeln('   Packages with more than one modules cannot be published. (FAILED)');
+      writeln('   Packages must have a single main module whose name matches the package name. (FAILED)');
       moduleTest = false;
     }
     writeln(spacer);
@@ -661,6 +680,34 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   exit(0);
 }
 
+/*
+  update the list of valid licenses or pulls a new copy of the list if one
+  does not already exist. If overwrite is true, delete the list and pull a new
+  copy of the repo.
+*/
+proc refreshLicenseList(overwrite=false) throws {
+  const dest = MASON_HOME + '/spdx';
+  const branch = '--branch main ';
+  const depth = '--depth 1 ';
+  const url = 'https://github.com/spdx/license-list-data.git ';
+  const command = 'git clone -q ' + branch + depth + url + dest;
+  if !isDir(dest) {
+    runCommand(command);
+  } else if overwrite {
+    rmTree(dest);
+    runCommand(command);
+  }
+
+  if !isDir(dest + "/text") {
+    throw new owned MasonError("Expected to find license list data at " + dest +
+                               "/text, but location does not exist. Try running\
+                               'mason publish --refresh-licenses' to update the\
+                               license list.");
+  }
+  const licenseList = listDir(dest + "/text");
+  return licenseList;
+}
+
 /* Validate license with that of SPDX list */
 private proc checkLicense(projectHome: string) throws {
   var foundValidLicense = false;
@@ -671,14 +718,8 @@ private proc checkLicense(projectHome: string) throws {
     if tomlFile.pathExists("brick.license") {
       defaultLicense = tomlFile["brick"]!["license"]!.s;
     }
-    // git clone the SPDX repo and validate license identifier
-    const dest = MASON_HOME + '/spdx';
-    const branch = '--branch master ';
-    const depth = '--depth 1 ';
-    const url = 'https://github.com/spdx/license-list.git ';
-    const command = 'git clone -q ' + branch + depth + url + dest;
-    if !isDir(dest) then runCommand(command);
-    var licenseList = listDir(MASON_HOME + "/spdx");
+    // get the license list and validate license identifier
+    const licenseList = refreshLicenseList();
     for licenses in licenseList {
       const licenseName: string = licenses.strip('.txt', trailing=true);
       if licenseName == defaultLicense || defaultLicense == 'None' {
@@ -697,7 +738,7 @@ private proc attemptToBuild() throws {
   var sub = spawn(['mason','build','--force'], stdout=pipeStyle.pipe);
   sub.wait();
   if sub.exitCode == 1 {
-  writeln('(FAILED) Please make sure your package builds');
+    writeln('(FAILED) Please make sure your package builds');
   }
   else {
     writeln('(PASSED) Package builds successfully.');
@@ -766,12 +807,26 @@ private proc ensureMasonProject(cwd : string, tomlName="Mason.toml") : string {
   return ensureMasonProject(dirname, tomlName);
 }
 
-/* Checks to make sure the package only has one main module
+/*Checks to make sure the package has a main module
+
+  The source file for the main module should have the same name as the package.
+  For example, `foo.chpl` is a valid main module for the following package:
+
+    foo/
+      Mason.toml
+      src/
+        foo.chpl  # module foo { include module bar; use bar; proc main() { ... } }
+        foo/
+          bar.chpl
+      ...
+
  */
 private proc moduleCheck(projectHome : string) throws {
-  const subModules = listDir(projectHome + '/src');
-  if subModules.size > 1 then return false;
-  else return true;
+  const files = listDir(projectHome + '/src', dirs=false),
+        modules = for f in files do if f.endsWith('.chpl') then f;
+  if modules.size != 1 then return false;
+  if modules[0] != getPackageName() + '.chpl' then return false;
+  return true;
 }
 
 /* Checks package for examples */
@@ -798,7 +853,7 @@ private proc returnMasonEnv() {
 
 private proc falseIfRemotePath() {
   var registryInEnv = MASON_REGISTRY;
-  for (name, registry) in registryInEnv {
+  for (_, registry) in registryInEnv {
     if registry.find(':') != -1 {
       return false;
     }

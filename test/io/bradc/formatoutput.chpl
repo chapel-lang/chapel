@@ -1,4 +1,7 @@
+
+use IO;
+
 var x = 10.0/3.0;
 
-writeln(x:string("%20.10e"));
-writeln(x:string("%20.10f"));
+writeln("%20.10er".format(x));
+writeln("%20.10dr".format(x));

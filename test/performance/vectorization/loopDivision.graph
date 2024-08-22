@@ -1,0 +1,5 @@
+perfkeys: chpl Time:, c    Time:
+files: loopDivision.dat, loopDivision_c.dat
+graphkeys: Chapel Version, C Version
+ylabel: Time (seconds)
+graphtitle: Loop Division Scalar Kernel

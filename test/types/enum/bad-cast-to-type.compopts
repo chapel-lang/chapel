@@ -1,0 +1,4 @@
+-sT=real # bad-cast-to-real.good
+-sT=bool # bad-cast-to-bool.good
+-sT=imag # bad-cast-to-imag.good
+-sT=complex # bad-cast-to-complex.good

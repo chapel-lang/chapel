@@ -5,7 +5,7 @@ proc scanArr(X) {
   writeln(Y, ": [", Y.domain, "]");
 }
 
-var A: [{1..10} dmapped blockDist({1..10})] int = [i in 1..10] i;
+var A: [{1..10} dmapped new blockDist({1..10})] int = [i in 1..10] i;
 
 scanArr(A);
 scanArr(A[3..5]);

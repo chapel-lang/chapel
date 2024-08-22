@@ -1,0 +1,3 @@
+ # list-init-eq-many.true.good
+-swarnForListParsafeMismatch=true # list-init-eq-many.true.good
+-swarnForListParsafeMismatch=false # list-init-eq-many.false.good

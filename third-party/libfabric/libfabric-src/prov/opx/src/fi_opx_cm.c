@@ -98,7 +98,7 @@ int fi_opx_getname(fid_t fid, void *addr, size_t *addrlen)
 			struct fi_opx_sep *opx_sep;
 			opx_sep = container_of(fid, struct fi_opx_sep, ep_fid);
 			unsigned i;
-			for (i = 0; (opx_sep->ep[i] == NULL) && (i < FI_OPX_ADDR_SEP_RX_MAX); ++i);
+			for (i = 0; (i < FI_OPX_ADDR_SEP_RX_MAX) && (opx_sep->ep[i] == NULL); ++i);
 			if (i == FI_OPX_ADDR_SEP_RX_MAX) {
 				/* no sep rx ctx were created? */
 				errno = FI_EINVAL;

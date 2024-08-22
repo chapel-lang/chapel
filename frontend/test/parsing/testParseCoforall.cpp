@@ -207,6 +207,68 @@ static void test4(Parser* parser) {
   assert(coforall->stmt(1)->isFnCall());
 }
 
+static void test5(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
+      "coforall i in 1..10 with (re A) { }\n"
+      "coforall i in 1..10 with () { }\n"
+      "coforall i in 1..10 with ref A { }\n");
+  auto numErrors = 5;
+  assert(guard.errors().size() == (size_t) numErrors);
+  assert("invalid intent expression in 'with' clause" == guard.error(1)->message());
+  assert("'with' clause cannot be empty" == guard.error(2)->message());
+  assert("missing parentheses around 'with' clause intents" == guard.error(4)->message());
+  // The other errors are from the parser as "near ...".
+  // It would be really nice to not have those be emitted at all.
+  assert(guard.realizeErrors() == numErrors);
+}
+
+static void test6(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test6.chpl",
+      "coforall a { }\n"
+      "coforall zip(a,b) { }\n"
+      "var c1 = coforall a do 1;\n"
+      "var c2 = coforall zip(a,b) do 1;\n");
+  auto numErrors = 2;
+  assert(guard.errors().size() == (size_t) numErrors);
+  assert("expression-level 'coforall' loops are not supported" == guard.error(0)->message());
+  assert("expression-level loops with 'zip' must have an index" == guard.error(1)->message());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 4);
+  assert(mod->stmt(0)->isCoforall());
+  assert(mod->stmt(1)->isCoforall());
+  assert(mod->stmt(2)->isVariable());
+  assert(mod->stmt(3)->isVariable());
+
+  auto coforall1 = mod->stmt(0)->toCoforall();
+  assert(coforall1 != nullptr);
+  assert(coforall1->index() == nullptr);
+  assert(coforall1->iterand() != nullptr);
+  assert(coforall1->iterand()->isIdentifier());
+  assert(coforall1->numStmts() == 0);
+
+  auto coforall2 = mod->stmt(1)->toCoforall();
+  assert(coforall2 != nullptr);
+  assert(coforall2->index() == nullptr);
+  assert(coforall2->iterand() != nullptr);
+  assert(coforall2->iterand()->isZip());
+  assert(coforall2->numStmts() == 0);
+  assert(guard.realizeErrors() == numErrors);
+
+  auto var1 = mod->stmt(2)->toVariable();
+  assert(var1 != nullptr);
+  assert(var1->initExpression() != nullptr);
+  assert(var1->initExpression()->isErroneousExpression());
+
+  auto var2 = mod->stmt(3)->toVariable();
+  assert(var2 != nullptr);
+  assert(var2->initExpression() != nullptr);
+  assert(var2->initExpression()->isErroneousExpression());
+}
+
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -219,6 +281,8 @@ int main() {
   test2(p);
   test3(p);
   test4(p);
+  test5(p);
+  test6(p);
 
   return 0;
 }

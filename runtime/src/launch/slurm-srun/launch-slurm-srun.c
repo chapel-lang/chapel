@@ -100,6 +100,7 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
   int threadsPerCore = -1;
   const int buflen = 1024;
   char buf[buflen];
+  char orig[buflen];
   char partition_arg[128];
   char* argv[7];
   char reservationBuf[128];
@@ -137,24 +138,37 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
     argv[6] = NULL;
   }
 
-  memset(buf, 0, buflen);
-  if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0) {
-    chpl_error("Error trying to determine number of cores per node", 0, 0);
-  }
+  // We may have to run sinfo twice -- once with %i and once without
+  for (int i = 0; i < 2; i++) {
+    memset(buf, 0, buflen);
+    int rc = chpl_run_utility1K("sinfo", argv, buf, buflen);
+    if ((rc == 0) && partition) {
+      // if sinfo produced no output it might be because the partition does
+      // not exist.
+      char msg[2048];
+      snprintf(msg, sizeof(msg),
+               "'sinfo' produced no output. Verify that partition "
+               "'%s' exists.", partition);
 
-  if (!strncmp("Invalid node format specification: i", buf,
-               strlen("Invalid node format specification: i"))) {
-    // older versions of sinfo don't support the %i format. Try again
-    // without it. We won't be able to exclude reservations, but there's
-    // not much we can do about that.
-    argv[2] = (char *)  "--format=%c %Z";
-    if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0) {
-      chpl_error("Error trying to determine number of cores per node", 0, 0);
+      chpl_error(msg, 0, 0);
+    } else if (rc <= 0) {
+        chpl_error("Error trying to determine number of cores per node", 0, 0);
+    }
+
+    if (strstr(buf, "Invalid node format specification: i")) {
+      // older versions of sinfo don't support the %i format. Try again
+      // without it. We won't be able to exclude reservations, but there's
+      // not much we can do about that.
+      argv[2] = (char *)  "--format=%c %Z";
+    } else {
+      // sinfo produced non-error output
+      break;
     }
   }
 
   char *cursor = buf;
   char *line;
+  strcpy(orig, buf);
   chpl_bool found = false;
   while ((line = strsep(&cursor, "\n")) != NULL) {
     if (*line != '\0') {
@@ -174,8 +188,12 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
     }
   }
   if (!found) {
-    chpl_error("unable to determine number of cores per locale; "
-               "please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
+    char msg[2048];
+    snprintf(msg, sizeof(msg),
+            "unable to determine number of cores per locale; "
+             "please set CHPL_LAUNCHER_CORES_PER_LOCALE\n"
+             "Output of \"sinfo\" was:\n%s", orig);
+    chpl_error(msg, 0, 0);
   }
 
   if (nomultithread) {
@@ -216,6 +234,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* outputfn = getenv("CHPL_LAUNCHER_SLURM_OUTPUT_FILENAME");
   char* errorfn = getenv("CHPL_LAUNCHER_SLURM_ERROR_FILENAME");
   char* nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
+  char* gpusPerNode = getenv("CHPL_LAUNCHER_GPUS_PER_NODE");
   char* memEnv = getenv("CHPL_LAUNCHER_MEM");
   const char* nodeAccessStr = NULL;
   const char* memStr = NULL;
@@ -398,6 +417,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "#SBATCH --account=%s\n", account);
     }
 
+    // set gpus-per-node if one was provided
+    if (gpusPerNode && strlen(gpusPerNode) > 0) {
+      fprintf(slurmFile, "#SBATCH --gpus-per-node=%s\n", gpusPerNode);
+    }
+
     // set the output file name to either the user specified
     // name or to the binaryName.<jobID>.out if none specified
     if (outputfn != NULL) {
@@ -540,6 +564,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // set the account name if one was provided
     if (account && strlen(account) > 0) {
       len += snprintf(iCom+len, sizeof(iCom)-len, "--account=%s ", account);
+    }
+
+    // set gpus-per-node if one was provided
+    if (gpusPerNode && strlen(gpusPerNode) > 0) {
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--gpus-per-node=%s ", gpusPerNode);
     }
 
     // add the (possibly wrapped) binary name

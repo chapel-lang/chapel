@@ -111,7 +111,7 @@ proc Gen_RMAT_graph_1D_array ( a : real, b : real, c : real, d : real,
 
   const edgelist_domain =
     if DISTRIBUTION_TYPE == "BLOCK" then
-      [1..n_raw_edges] dmapped blockDist ( [1..n_raw_edges] )
+      [1..n_raw_edges] dmapped new blockDist ( [1..n_raw_edges] )
     else
       [1..n_raw_edges] ;
 

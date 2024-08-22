@@ -39,6 +39,9 @@ proc main(args: [] string) {
       } catch e:EofError {
         eof = true;
         nextDescOffset = len;
+      } catch e:UnexpectedEofError {
+        eof = true;
+        nextDescOffset = len;
       }
 
       // Go back to the point we marked

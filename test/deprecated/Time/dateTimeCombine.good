@@ -1,2 +1,0 @@
-dateTimeCombine.chpl:6: warning: `dateTime.combine` is deprecated; use `new dateTime` taking a `date` and `time` argument instead
-dateTimeCombine.chpl:12: warning: `dateTime.combine` is deprecated; use `new dateTime` taking a `date` and `time` argument instead

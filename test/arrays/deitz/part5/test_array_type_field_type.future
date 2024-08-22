@@ -1,1 +1,3 @@
-bug: array type alias field fails to resolve
+bug: memory errors for type field of array type
+
+#25502

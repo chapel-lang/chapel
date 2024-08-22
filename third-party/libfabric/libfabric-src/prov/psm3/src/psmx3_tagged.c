@@ -551,7 +551,7 @@ ssize_t psmx3_tagged_send_generic(struct fid_ep *ep,
 			return -FI_EMSGSIZE;
 
 		err = psm3_mq_send2(ep_priv->tx->psm2_mq, psm2_epaddr,
-				    0, &psm2_tag, buf, len);
+				    PSM2_MQ_FLAG_INJECT, &psm2_tag, buf, len);
 
 		if (err != PSM2_OK)
 			return psmx3_errno(err);
@@ -764,8 +764,8 @@ psmx3_tagged_inject_specialized(struct fid_ep *ep, const void *buf,
 	else
 		PSMX3_SET_TAG(psm2_tag, tag, ep_priv->sep_id, PSMX3_TYPE_TAGGED);
 
-	err = psm3_mq_send2(ep_priv->tx->psm2_mq, psm2_epaddr, 0,
-			    &psm2_tag, buf, len);
+	err = psm3_mq_send2(ep_priv->tx->psm2_mq, psm2_epaddr,
+				PSM2_MQ_FLAG_INJECT, &psm2_tag, buf, len);
 
 	if (err != PSM2_OK)
 		return psmx3_errno(err);
@@ -915,7 +915,7 @@ ssize_t psmx3_tagged_sendv_generic(struct fid_ep *ep,
 		}
 
 		err = psm3_mq_send2(ep_priv->tx->psm2_mq, psm2_epaddr,
-				    send_flag, &psm2_tag, req->buf, len);
+				    send_flag|PSM2_MQ_FLAG_INJECT, &psm2_tag, req->buf, len);
 
 		free(req);
 

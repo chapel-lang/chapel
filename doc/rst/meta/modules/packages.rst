@@ -59,9 +59,11 @@ File Formats and I/O
    ChplFormat <packages/ChplFormat>
    HDF5 <packages/HDF5>
    HDFS <packages/HDFS>
+   Image <packages/Image>
    NetCDF <packages/NetCDF>
    ObjectSerialization <packages/ObjectSerialization>
    ParallelIO <packages/ParallelIO>
+   PrecisionSerializer <packages/PrecisionSerializer>
    RecordParser <packages/RecordParser>
    TOML <packages/TOML>
    YAML <packages/YAML>

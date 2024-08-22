@@ -1,0 +1,195 @@
+─── error in underscores.chpl:3 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+      |
+    3 | var _ = 42;
+      |     ⎺⎺⎺⎺⎺⎺
+      |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:4 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+      |
+    4 | var (x, y) = (_, _);
+      |               ⎺
+      |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:4 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+      |
+    4 | var (x, y) = (_, _);
+      |                  ⎺
+      |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:5 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+      |
+    5 | record _ {}
+      | ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:6 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+      |
+    6 | class _ {}
+      | ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:7 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+      |
+    7 | proc _(arg: int(?_)) {}
+      | ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:7 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+      |
+    7 | proc _(arg: int(?_)) {}
+      |                 ⎺⎺
+      |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:8 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+      |
+    8 | interface _ {}
+      | ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:9 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+       |
+     9 | enum _ {
+       | ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+    10 |     _
+       | ⎺⎺⎺⎺⎺⎺
+    11 | }
+       | ⎺
+       |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:10 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+       |
+    10 |     _
+       |     ⎺
+       |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:14 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+       |
+    14 | for _ in 1..10 {}
+       |     ⎺
+       |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+  To avoid naming the loop index, omit the name and 'in' keyword.
+
+─── error in underscores.chpl:15 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+       |
+    15 | foreach _ in 1..10 {}
+       |         ⎺
+       |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+  To avoid naming the loop index, omit the name and 'in' keyword.
+
+─── error in underscores.chpl:16 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+       |
+    16 | forall _ in 1..10 with (var _ = 42, + reduce _) {}
+       |        ⎺
+       |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+  To avoid naming the loop index, omit the name and 'in' keyword.
+
+─── error in underscores.chpl:16 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+       |
+    16 | forall _ in 1..10 with (var _ = 42, + reduce _) {}
+       |                         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:16 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+       |
+    16 | forall _ in 1..10 with (var _ = 42, + reduce _) {}
+       |                                     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:17 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+       |
+    17 | coforall _ in 1..10 {}
+       |          ⎺
+       |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+  To avoid naming the loop index, omit the name and 'in' keyword.
+
+─── error in underscores.chpl:21 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+       |
+    21 |  when (8, _) { writeln("Got 8"); }
+       |           ⎺
+       |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:26 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+       |
+    26 | import this.A as _;
+       |                  ⎺
+       |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:27 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+       |
+    27 | import this.A.{dummy as _};
+       |                         ⎺
+       |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:30 [InvalidThrowaway] ───
+  Throwaway variable '_' is not allowed in this context.
+  The throwaway variable is used here:
+       |
+    30 | use A only dummy as _;
+       |                     ⎺
+       |
+  Throwaway variables are only allowed on the left-hand side of tuple unpacking, in function formal names, and when renaming the target of a 'use' statement.
+
+─── error in underscores.chpl:37 [ProcDefExplicitAnonFormal] ───
+  Formals in a procedure definition must be named
+       |
+    37 | proc f(_: int) {}
+       |        ⎺⎺⎺⎺⎺⎺⎺
+       |
+

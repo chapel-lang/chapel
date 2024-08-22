@@ -200,6 +200,10 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
     else if (fn->hasFlag(FLAG_AUTO_II)      == true)
       retval = false;
 
+    // Same as above, except for thunk "helper"s.
+    else if (fn->hasFlag(FLAG_THUNK_INVOKE) == true)
+      retval = false;
+
     // Can't transform extern functions
     else if (fn->hasFlag(FLAG_EXTERN)       == true)
       retval = false;
@@ -972,7 +976,7 @@ void FixupDestructors::process(FnSymbol* fn) {
   }
 }
 
-static void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor) {
+void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor) {
   if (anchor)
     return;
 

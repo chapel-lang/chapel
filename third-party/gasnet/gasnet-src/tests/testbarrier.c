@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
   mynode = gex_TM_QueryRank(myteam);
   nodes = gex_TM_QuerySize(myteam);
 
-  while (argc-arg >= 2) {
+  while (argc-arg >= 1) {
    if (!strcmp(argv[arg], "-p")) {
 #if GASNET_PAR
     pollers = test_thread_limit(atoi(argv[arg+1])+1)-1;
@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
     do_block = 1;
 	kind = " blocking";
     arg += 1;
-   }
+   } else break;
   }
   if (argc-arg >= 1) iters = atoi(argv[arg]);
   if (!iters) iters = 10000;

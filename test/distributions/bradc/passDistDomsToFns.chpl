@@ -2,7 +2,7 @@ use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist;
 use DimensionalDist2D, ReplicatedDim, BlockCycDim;
 
 const Space = {1..8, 1..8};
-const BlockSpace = Space dmapped blockDist(boundingBox=Space);
+const BlockSpace = Space dmapped new blockDist(boundingBox=Space);
 var BA: [BlockSpace] int;
 fooB(BA);
 proc fooB(X:[BlockSpace] int) {
@@ -10,7 +10,7 @@ proc fooB(X:[BlockSpace] int) {
 }
 
 
-const CyclicSpace = Space dmapped cyclicDist(startIdx=Space.low);
+const CyclicSpace = Space dmapped new cyclicDist(startIdx=Space.low);
 var CA: [CyclicSpace] int;
 fooC(CA);
 proc fooC(X:[CyclicSpace] int) {
@@ -18,7 +18,7 @@ proc fooC(X:[CyclicSpace] int) {
 }
 
 
-const BlkCycSpace = Space dmapped blockCycDist(startIdx=Space.low, 
+const BlkCycSpace = Space dmapped new blockCycDist(startIdx=Space.low, 
                                               blocksize=(2, 3));
 var BCA: [BlkCycSpace] int;
 fooBC(BCA);
@@ -27,7 +27,7 @@ proc fooBC(X:[BlkCycSpace] int) {
 }
 
 
-const ReplicatedSpace = Space dmapped replicatedDist();
+const ReplicatedSpace = Space dmapped new replicatedDist();
 var RA: [ReplicatedSpace] int;
 fooR(RA);
 proc fooR(X:[ReplicatedSpace] int) {
@@ -40,7 +40,7 @@ var MyLocaleView = {0..#nl1, 0..#nl2};
 var MyLocales = reshape(Locales[0..#nl1*nl2], MyLocaleView);
 
 const DimReplicatedBlockcyclicSpace = Space
-  dmapped dimensionalDist2D(MyLocales,
+  dmapped new dimensionalDist2D(MyLocales,
                             new ReplicatedDim(numLocales = nl1),
                             new BlockCyclicDim(numLocales = nl2,
                                                lowIdx = 1, blockSize = 2));

@@ -14,11 +14,11 @@ const numUpdates = N * numTasks;
 const tableSize = M * numTasks;
 
 const Mspace = {0..tableSize-1};
-const D = Mspace dmapped cyclicDist(startIdx=Mspace.low);
+const D = Mspace dmapped new cyclicDist(startIdx=Mspace.low);
 var A: [D] int = 0..tableSize-1;
 
 const Nspace = {0..numUpdates-1};
-const D2 = Nspace dmapped blockDist(Nspace);
+const D2 = Nspace dmapped new blockDist(Nspace);
 var rindex: [D2] int;
 
 fillRandom(rindex, 1);

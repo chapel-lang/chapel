@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Intel Corporation, Inc.  All rights reserved.
+ * Copyright (c) 2019-2022 Intel Corporation, Inc.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -42,7 +42,6 @@
 
 #define OFI_WORLD_GROUP_ID 0
 #define OFI_MAX_GROUP_ID 256
-#define OFI_COLL_TAG_FLAG (1ULL << 63)
 
 enum util_coll_op_type {
 	UTIL_COLL_JOIN_OP,
@@ -160,41 +159,23 @@ struct util_coll_operation {
 		struct broadcast_data	broadcast;
 	} data;
 	util_coll_comp_fn_t		comp_fn;
+	uint64_t			flags;
 };
 
-int ofi_query_collective(struct fid_domain *domain, enum fi_collective_op coll,
-			 struct fi_collective_attr *attr, uint64_t flags);
+struct ofi_coll_cq {
+	struct util_cq util_cq;
+	struct fid_peer_cq *peer_cq;
+};
 
-int ofi_join_collective(struct fid_ep *ep, fi_addr_t coll_addr,
-			const struct fid_av_set *set, uint64_t flags,
-			struct fid_mc **mc, void *context);
+int ofi_coll_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
+		 struct fid_cq **cq_fid, void *context);
 
-int ofi_av_set(struct fid_av *av, struct fi_av_set_attr *attr,
-	       struct fid_av_set **av_set_fid, void *context);
+struct ofi_coll_eq {
+	struct util_eq util_eq;
+	struct fid_eq *peer_eq;
+};
 
-ssize_t ofi_ep_barrier(struct fid_ep *ep, fi_addr_t coll_addr, void *context);
-
-ssize_t ofi_ep_allreduce(struct fid_ep *ep, const void *buf, size_t count, void *desc,
-			 void *result, void *result_desc, fi_addr_t coll_addr,
-			 enum fi_datatype datatype, enum fi_op op, uint64_t flags,
-			 void *context);
-
-ssize_t ofi_ep_allgather(struct fid_ep *ep, const void *buf, size_t count, void *desc,
-			 void *result, void *result_desc, fi_addr_t coll_addr,
-			 enum fi_datatype datatype, uint64_t flags, void *context);
-
-ssize_t ofi_ep_scatter(struct fid_ep *ep, const void *buf, size_t count, void *desc,
-		       void *result, void *result_desc, fi_addr_t coll_addr,
-		       fi_addr_t root_addr, enum fi_datatype datatype, uint64_t flags,
-		       void *context);
-
-ssize_t ofi_ep_broadcast(struct fid_ep *ep, void *buf, size_t count, void *desc,
-			 fi_addr_t coll_addr, fi_addr_t root_addr,
-			 enum fi_datatype datatype, uint64_t flags, void *context);
-
-ssize_t ofi_coll_ep_progress(struct fid_ep *ep);
-
-void ofi_coll_handle_xfer_comp(uint64_t tag, void *ctx);
-
+int ofi_coll_eq_open(struct fid_fabric *fabric, struct fi_eq_attr *attr,
+		 struct fid_eq **eq_fid, void *context);
 
 #endif // _OFI_COLL_H_

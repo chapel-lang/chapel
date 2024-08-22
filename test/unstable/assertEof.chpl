@@ -13,10 +13,10 @@ var infile = open(filename, ioMode.cwr);
 
 {
   var reader = infile.reader(locking=false);
-  var x:int;
-  var y:int;
-  reader.read(x);
-  reader.read(y);
+  var x: string;
+  var y: string;
+  x = reader.readLine();
+  y = reader.readLine();
   reader.assertEOF();
   reader.close();
 }
@@ -25,8 +25,8 @@ writeln("Past First Check");
 
 {
   var reader = infile.reader(locking=false);
-  var x:int;
-  reader.read(x);
+  var x: string;
+  x = reader.readLine();
   reader.assertEOF();
   reader.close();
 }

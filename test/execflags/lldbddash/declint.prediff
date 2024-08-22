@@ -9,6 +9,9 @@ set tmpfile = $outfile.raw.tmp
 #
 mv $outfile $tmpfile
 grep -v "Breakpoint 1: where" $tmpfile | grep -v "target create" | grep -v "Current executable set to" | grep -v "b gdbShouldBreakHere" > $outfile
+# Also filter out line about memleaks arguments to executable
+mv $outfile $tmpfile
+grep -v 'settings set -- target.run-args  "--memLeaks"' $tmpfile > $outfile
 rm $tmpfile
 
 #

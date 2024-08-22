@@ -1113,55 +1113,54 @@ Any required C header files, source code files, object files, or
 library files must be provided to the Chapel compiler by one of
 two mechanisms.
 
- 1) They can be listed at compile-time on the Chapel command line For
-    example, if an external function foo() was defined in foo.h and foo.c,
+ 1) They can be listed at compile-time on the Chapel command line.  For
+    example, if an external function ``foo()`` was defined in ``foo.h`` and ``foo.c``,
     it could be added to the compilation using any of these commands:
 
     .. code-block:: sh
 
        chpl foo.h foo.c myProgram.chpl
-       chpl foo.h foo.o myProgram.chpl #if foo.c had already been compiled)
-       chpl foo.h -lfoo myProgram.chpl #if foo.c had been archived in libfoo.a)
-
-    Note that you can use -I and -L arguments for the Chapel compiler
-    to specify include or library paths as with a C compiler.
+       chpl foo.h foo.o myProgram.chpl  # if foo.c had already been compiled
+       chpl foo.h -lfoo myProgram.chpl  # if foo.c had been archived in libfoo.a or libfoo.so
 
  2) Alternatively, the required C resources can be listed within the
-    Chapel file using the `require` statement. For example:
+    Chapel file using the ``require`` statement. For example:
 
     .. code-block:: chapel
 
        require "foo.h", "foo.c";
 
-    This has an effect similar to adding foo.h and foo.c to the Chapel
-    compiler's command line. Filenames are interpreted as expressing a
-    path relative to the directory in which the source file lives.
-    You can also use the compiler's -I and -L flags to indicate search
-    directories for headers or library files.
+    This is equivalent to adding ``foo.h`` and ``foo.c`` to
+    the Chapel compiler's command line, as in the first
+    approach. Filenames are interpreted as expressing a path relative
+    to the directory in which the source file lives.
 
-    Similarly, the version below uses the require statement to indicate
-    that this module depends on libfoo.a (and has a similar effect as if
-    ``-lfoo`` were added to the command line).
+    Similarly, the version below uses the ``require`` statement to
+    indicate that this module depends on ``libfoo.[a|so]``, and has a
+    similar effect as if ``-lfoo`` had been given on the command line.
 
     .. code-block:: chapel
 
        require "foo.h", "-lfoo";
 
-    Require statements accept general ``param`` string expressions
-    beyond the string literals shown in these examples.  Only
-    ``require`` statements in code that the compiler considers
-    executable will be processed.  Thus, a ``require`` statement
-    guarded by a ``param`` conditional that the compiler folds out, or
-    in a module that does not appear in the program's ``use``
-    statements will not be added to the program's requirements.  For
-    example, the following code either requires ``foo.h`` or whatever
-    requirement is specified by *defaultHeader* (``bar.h`` by default)
-    depending on the value of *requireFoo*:
+    Note that ``require`` statements can specify external file
+    dependencies, but not other general command-line flags.
+       
+    The ``require`` statement accepts general ``param`` string
+    expressions in addition to the string literals shown in these
+    examples.  Only ``require`` statements in code that the compiler
+    considers executable will be processed.  Thus, a ``require``
+    statement guarded by a ``param`` conditional that the compiler
+    folds out, or in a module that does not appear in the program's
+    ``use`` statements will not be added to the program's
+    requirements.  For example, the following code either requires
+    ``foo.h`` or whatever requirement is specified by ``defaultHeader``
+    (``bar.h`` by default) depending on the value of ``requireFoo``:
 
     .. code-block:: chapel
 
-       config param requireFoo=true,
-                    defaultHeader="bar.h";
+       config param requireFoo = true,
+                    defaultHeader = "bar.h";
 
        if requireFoo then
          require "foo.h";
@@ -1169,19 +1168,28 @@ two mechanisms.
          require defaultHeader;
 
 
-Either approach has the following results:
+Any headers or libraries specified using either of the above
+mechanisms must be locatable by the back-end compiler via its search paths.
+If additional directories are required, ``-I`` and ``-L`` flags can be
+added to the ``chpl`` compiler's command-line invocation, as with a
+C/C++ compiler.
+
+
+Either of the two approaches above will result in the following:
 
  * During Chapel's C code generation stage, any header files listed on the
-   compiler's command line or in a require statement will be #include'd by
+   compiler's command line or in a ``require`` statement will be ``#include``'d by
    the generated code in order to ensure that the appropriate prototypes
    are found before making any references to the external symbols.
  * During Chapel's C compilation stage, any C files on the command line or
-   in a require statement will be compiled using the same flags as the
-   Chapel-generated C files (use --print-commands to see these compile
+   in a ``require`` statement will be compiled using the same flags as the
+   Chapel-generated C files (use ``--print-commands`` to see these compile
    commands).
- * During Chapel's link step, any .o and .a files listed on the compiler's
-   command-line or in require statements will be included in the final
+ * During Chapel's link step, any ``.o`` and ``.a``/``.so`` files listed on the compiler's
+   command-line or in ``require`` statements will be linked into the final
    executable.
+ * Any paths specified using the ``-I`` and ``-L`` flags will be passed along
+   to the back-end compiler.
 
 
 Future Directions

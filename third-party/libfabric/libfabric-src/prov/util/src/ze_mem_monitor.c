@@ -112,6 +112,7 @@ static struct ofi_mem_monitor ze_mm = {
 	.subscribe = ze_mm_subscribe,
 	.unsubscribe = ze_mm_unsubscribe,
 	.valid = ze_mm_valid,
+	.name = "ze",
 };
 
 struct ofi_mem_monitor *ze_monitor = &ze_mm;

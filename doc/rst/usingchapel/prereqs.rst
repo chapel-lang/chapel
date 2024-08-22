@@ -16,7 +16,7 @@ for using Chapel:
   * You have a Bourne shell available at ``/bin/sh`` and ``env`` available at
     ``/usr/bin/env``.
 
-  * You have Python 2.7 or newer available as either ``python3`` or
+  * You have Python 3.5 or newer available as either ``python3`` or
     ``python`` and that ``env`` can locate it.
 
   * You have access to ``gmake`` or a GNU-compatible version of ``make``.
@@ -37,16 +37,24 @@ for using Chapel:
   * CMake is available and ``cmake`` runs version 3.20 or later.
 
   * The LLVM backend is now the default and it is easiest to use it with a
-    system-wide installation of LLVM and clang. On Mac OS X, LLVM 14 and
-    15 are supported. On other platforms, LLVM and clang versions 11 through 17
-    are currently supported. If a system-wide installation of
+    system-wide installation of LLVM and clang. On Mac OS X, LLVM 14 through 18
+    are currently supported. On other platforms, LLVM and clang versions 11
+    through 18 are currently supported. If a system-wide installation of
     LLVM and clang with one of those versions is not available, you can
     use the bundled LLVM or disable LLVM support (see
     :ref:`readme-chplenv.CHPL_LLVM`).
 
+  * When using the LLVM installation bundled with Chapel
+    (``CHPL_LLVM=bundled``), make sure your machine has at least 4GB of memory
+    available before building Chapel. If you are using your system's LLVM
+    (``CHPL_LLVM=system``), Chapel can be built with at least 2GB of memory.
+    See :ref:`readme-chplenv.CHPL_LLVM` for more information about these
+    settings. Note that the memory requirements for building Chapel may vary
+    in other configurations or for parallel builds.
+
 In addition, several optional components have additional requirements:
 
-  * Python 3.7 or newer is required if you want to use chpldoc, c2chapel,
+  * Python 3.9 or newer is required if you want to use chpldoc, c2chapel,
     or Chapel's test system. These additionally require ``python3-devel``
     or the equivalent package; ``python3`` and ``pip3`` commands; and the
     ``venv`` Python package.
@@ -216,6 +224,12 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
       sudo apt-get install llvm-17-dev llvm-17 clang-17 libclang-17-dev libclang-cpp17-dev
 
+
+  * Ubuntu 24.04 "Noble Numbat"::
+
+      sudo apt-get update
+      sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
+      sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 Compatibility Notes
 -------------------

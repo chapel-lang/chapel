@@ -1,96 +1,138 @@
-/*
- * Copyright (c) 2022 Amazon.com, Inc. or its affiliates. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+/* SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only */
+/* SPDX-FileCopyrightText: Copyright Amazon.com, Inc. or its affiliates. All rights reserved. */
 
 #ifndef EFA_ERRNO_H
 #define EFA_ERRNO_H
 
+#define EFA_IO_COMP_STATUS_START	0
+
+/**
+ * Status codes 0..4095 are reserved for RDMA Core (undocumented; possibly
+ * arbitrary)
+ */
+#define EFA_IO_COMP_STATUS_RESERVED	4095
+
+#define EFA_PROV_ERRNO_START		(EFA_IO_COMP_STATUS_RESERVED + 1)
+
+#define EFA_ERRNO_IS_IO_COMP_STATUS(e)	(((e) >= EFA_IO_COMP_STATUS_START) && ((e) < EFA_IO_COMP_STATUS_MAX))
+#define EFA_ERRNO_IS_PROV(e)		(((e) >= EFA_PROV_ERRNO_START) && ((e) < EFA_PROV_ERRNO_MAX))
+
+
+/** @defgroup EfaErrnoXMacros EFA error-handling X macros
+ * 
+ * The macros described here are [X
+ * macros](https://en.wikipedia.org/wiki/X_macro) or "higher-order" macros,
+ * which are designed to take a function-like macro as the sole argument to
+ * transform the error code information as needed. This reduces boilerplate code
+ * and overall maintenance overhead by facilitating reliable in-order
+ * enumeration for the various C language constructs used for the EFA provider's
+ * error-handling logic.
+ *
+ * The list items are modeled as a `(code, suffix, ...)` triplet;
+ * described below.
+ *
+ * @param[in] code   Numeric error code
+ * @param[in] suffix Unique suffix for the resulting identifier
+ * @param[in] ...    Everything else is considered part of the error message,
+ *                   accessible via `__VA_ARGS__`
+ *
+ * @note The error message needs to be stringized (i.e. `#__VA_ARGS__`)
+ *
+ * To add a new error code, simply add an entry to the list.
+ *
+ * ```c
+ * _(9999, MY_ERROR, Something went wrong!)
+ * ```
+ *
+ * @{
+ */
+
+/**
+ * @brief `EFA_IO_COMP_STATUS_*` code definitions
+ *
+ * These status codes correspond directly to the `efa_io_comp_status` codes
+ * defined by the RDMA Core EFA provider.
+ */
+#define EFA_IO_COMP_STATUSES(_)									\
+	_(0,	OK,				Success)					\
+	_(1,	FLUSHED,			Flushed during queue pair destroy)		\
+	_(2,	LOCAL_ERROR_QP_INTERNAL_ERROR,	Internal queue pair error)			\
+	_(3,	LOCAL_ERROR_INVALID_OP_TYPE,	Invalid operation type)				\
+	_(4,	LOCAL_ERROR_INVALID_AH,		Invalid address handle)				\
+	_(5,	LOCAL_ERROR_INVALID_LKEY,	Invalid local key (LKEY))			\
+	_(6,	LOCAL_ERROR_BAD_LENGTH,		Message too long)				\
+	_(7,	REMOTE_ERROR_BAD_ADDRESS,	Destination ENI is down or does not run EFA)	\
+	_(8,	REMOTE_ERROR_ABORT,		Receiver connection aborted)			\
+	_(9,	REMOTE_ERROR_BAD_DEST_QPN,	Invalid receiver queue pair number (QPN))	\
+	_(10,	REMOTE_ERROR_RNR,		Receiver not ready)				\
+	_(11,	REMOTE_ERROR_BAD_LENGTH,	Receiver scatter-gather list (SGL) too short)	\
+	_(12,	REMOTE_ERROR_BAD_STATUS,	Unexpected status received from remote)		\
+	_(13,	LOCAL_ERROR_UNRESP_REMOTE,	Unresponsive receiver (connection never established or unknown))
+
+/**
+ * @brief EFA provider proprietary error codes
+ */
+#define EFA_PROV_ERRNOS(_)									\
+	_(4096,	OTHER,				Unknown error)					\
+	_(4097,	DEPRECATED_PKT_TYPE,		Deprecated packet type encountered)		\
+	_(4098,	INVALID_PKT_TYPE,		Invalid packet type encountered)		\
+	_(4099,	UNKNOWN_PKT_TYPE,		Unknown packet type encountered)		\
+	_(4100,	PKT_POST,			Failure to post packet)				\
+	_(4101,	PKT_SEND,			Failure to send packet)				\
+	_(4102,	PKT_PROC_MSGRTM,		Error processing non-tagged RTM)		\
+	_(4103,	PKT_PROC_TAGRTM,		Error processing tagged RTM)			\
+	_(4104,	PKT_ALREADY_PROCESSED,		Packet already processed)			\
+	_(4105,	OOM,				Out of memory)					\
+	_(4106,	MR_DEREG,			MR deregistration error)			\
+	_(4107,	RXE_COPY,			RX entry copy error)				\
+	_(4108,	RXE_POOL_EXHAUSTED,		RX entries exhausted)				\
+	_(4109,	TXE_POOL_EXHAUSTED,		TX entries exhausted)				\
+	_(4110,	AV_INSERT,			Failure inserting address into address vector)	\
+	_(4111,	RMA_ADDR,			RMA address verification failed)		\
+	_(4112,	INTERNAL_RX_BUF_POST,		Failure to post internal receive buffers)	\
+	_(4113,	PEER_HANDSHAKE,			Failure posting handshake to peer)		\
+	_(4114,	WR_POST_SEND,			Failure to post work request(s) to send queue)	\
+	_(4115,	RTM_MISMATCH,			RTM size mismatch)				\
+	_(4116,	READ_POST,			Error posting read request)			\
+	_(4117,	RDMA_READ_POST,			Error posting RDMA read request)		\
+	_(4118,	INVALID_DATATYPE,		Invalid data type encountered)			\
+	_(4119,	WRITE_SEND_COMP,		Failure to write send completion)		\
+	_(4120,	WRITE_RECV_COMP,		Failure to write receive completion)		\
+	_(4121,	DGRAM_CQ_READ,			Error reading from DGRAM CQ)			\
+	_(4122,	SHM_INTERNAL_ERROR,		SHM internal error)				\
+	_(4123,	WRITE_SHM_CQ_ENTRY,		Failure to write CQ entry for SHM operation)	\
+	_(4124, ESTABLISHED_RECV_UNRESP,	Unresponsive receiver (connection previously established))
+
+/** @} */
+
+/* Doxygen's preprocessor will handle expansion(s) in the inline documentation */
+#define EFA_IO_COMP_STATUS_ENUM(code, suffix, ...)	EFA_IO_COMP_STATUS_##suffix = code,	/**< (code) __VA_ARGS__ */
+#define EFA_PROV_ERRNO_ENUM(code, suffix, ...)		FI_EFA_ERR_##suffix = code,		/**< (code) __VA_ARGS__ */
+
+/**
+ * The `EFA_IO_COMP_STATUS_*` codes correspond directly to the
+ * `efa_io_comp_status` codes defined by the RDMA Core EFA provider. These are
+ * included mainly for compatibility and ease-of-debugging. As a rule of thumb,
+ * the EFA provider should only report these as a fallback; preferring
+ * proprietary error codes instead.
+ *
+ * Proprietary error codes begin at 4096 to avoid conflicts with any current or
+ * future RDMA Core error codes.
+ *
+ * @sa #EFA_IO_COMP_STATUSES
+ * @sa #EFA_PROV_ERRNOS
+ */
 enum efa_errno {
-	/*
-	 * Status codes 0..4095 reserved for rdma-core. Any enums here should
-	 * correspond to EFA_IO_COMP_STATUS_xxx codes as defined in
-	 * rdma-core/providers/efa/efa-io-defs.h
-	 */
-	FI_EFA_OK                            = 0,    /* Successful completion */
-	FI_EFA_FLUSHED                       = 1,    /* Flushed during QP destroy */
-	FI_EFA_LOCAL_ERROR_QP_INTERNAL_ERROR = 2,    /* Internal QP error */
-	FI_EFA_LOCAL_ERROR_INVALID_OP_TYPE   = 3,    /* Bad operation type */
-	FI_EFA_LOCAL_ERROR_INVALID_AH        = 4,    /* Bad AH */
-	FI_EFA_LOCAL_ERROR_INVALID_LKEY      = 5,    /* LKEY not registered or does not match IOVA */
-	FI_EFA_LOCAL_ERROR_BAD_LENGTH        = 6,    /* Message too long */
-	FI_EFA_REMOTE_ERROR_BAD_ADDRESS      = 7,    /* Destination ENI is down or does not run EFA */
-	FI_EFA_REMOTE_ERROR_ABORT            = 8,    /* Connection was reset by remote side */
-	FI_EFA_REMOTE_ERROR_BAD_DEST_QPN     = 9,    /* Bad dest QP number (QP does not exist or is in error state) */
-	FI_EFA_REMOTE_ERROR_RNR              = 10,   /* Destination resource not ready (no WQEs posted on RQ) */
-	FI_EFA_REMOTE_ERROR_BAD_LENGTH       = 11,   /* Receiver SGL too short */
-	FI_EFA_REMOTE_ERROR_BAD_STATUS       = 12,   /* Unexpected status returned by responder */
-	FI_EFA_LOCAL_ERROR_UNRESP_REMOTE     = 13,   /* Unresponsive remote - detected locally */
-	/*
-	 * EFA provider specific error codes begin here.
-	 */
-	FI_EFA_ERR_OTHER                     = 4096, /* Unknown/other error */
-	FI_EFA_ERR_DEPRECATED_PKT_TYPE       = 4097, /* Deprecated packet type (e.g. RTS, CONNACK) */
-	FI_EFA_ERR_INVALID_PKT_TYPE          = 4098, /* Invalid packet type */
-	FI_EFA_ERR_UNKNOWN_PKT_TYPE          = 4099, /* Unknown packet type */
-	FI_EFA_ERR_PKT_POST                  = 4100, /* Packet post error */
-	FI_EFA_ERR_PKT_SEND                  = 4101, /* Packet send error */
-	FI_EFA_ERR_PKT_PROC_MSGRTM           = 4102, /* Error processing non-tagged RTM */
-	FI_EFA_ERR_PKT_PROC_TAGRTM           = 4103, /* Error processing tagged RTM */
-	FI_EFA_ERR_PKT_ALREADY_PROCESSED     = 4104, /* Packet already processed */
-	FI_EFA_ERR_OOM                       = 4105, /* Out of memory */
-	FI_EFA_ERR_MR_DEREG                  = 4106, /* MR close/deregistration error */
-	FI_EFA_ERR_RX_ENTRY_COPY             = 4107, /* Error copying RX entry */
-	FI_EFA_ERR_RX_ENTRIES_EXHAUSTED      = 4108, /* RX entries exhausted */
-	FI_EFA_ERR_TX_ENTRIES_EXHAUSTED      = 4109, /* TX entries exhausted */
-	FI_EFA_ERR_AV_INSERT                 = 4110, /* Error inserting into address vector */
-	FI_EFA_ERR_RMA_ADDR                  = 4111, /* RMA address verification error */
-	FI_EFA_ERR_INTERNAL_RX_BUF_POST      = 4112, /* Error posting internal RX buffer */
-	FI_EFA_ERR_PEER_HANDSHAKE            = 4113, /* Error posting handshake to peer */
-	FI_EFA_ERR_WR_POST_SEND              = 4114, /* Error posting work request(s) to send queue */
-	FI_EFA_ERR_RTM_MISMATCH              = 4115, /* RTM size mismatch */
-	FI_EFA_ERR_READ_POST                 = 4116, /* Error posting read request */ 
-	FI_EFA_ERR_RDMA_READ_POST            = 4117, /* Error posting RDMA read request */
-	FI_EFA_ERR_INVALID_DATATYPE          = 4118, /* Invalid datatype encountered */
-	FI_EFA_ERR_WRITE_SEND_COMP           = 4119, /* Error writing SEND completion */
-	FI_EFA_ERR_WRITE_RECV_COMP           = 4120, /* Error writing RECV completion */
-	FI_EFA_ERR_DGRAM_CQ_READ             = 4121, /* Error reading from CQ */
-	FI_EFA_ERR_SHM_INTERNAL_ERROR        = 4122, /* SHM internal error */
-	FI_EFA_ERR_WRITE_SHM_CQ_ENTRY        = 4123, /* Error writing CQ entry for SHM op */
-	FI_EFA_ERRNO_MAX                             /* Dummy errno for upper bound */
+	EFA_IO_COMP_STATUSES(EFA_IO_COMP_STATUS_ENUM)
+	EFA_IO_COMP_STATUS_MAX, /**< Sentinel value for #EFA_IO_COMP_STATUSES */
+	EFA_PROV_ERRNOS(EFA_PROV_ERRNO_ENUM)
+	EFA_PROV_ERRNO_MAX, /**< Sentinel value for EFA provider error codes */
 };
 
+#undef EFA_IO_COMP_STATUS_ENUM
+#undef EFA_PROV_ERRNO_ENUM
+
 const char *efa_strerror(enum efa_errno);
+void efa_show_help(enum efa_errno);
 
 #endif

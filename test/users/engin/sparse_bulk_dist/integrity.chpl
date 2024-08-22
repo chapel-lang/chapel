@@ -4,7 +4,7 @@ use LayoutCS;
 config const N = 8;
 config type sparseLayoutType = DefaultDist;
 
-const ParentDom = {0..#N, 0..#N} dmapped blockDist({0..#N, 0..#N},
+const ParentDom = {0..#N, 0..#N} dmapped new blockDist({0..#N, 0..#N},
     sparseLayoutType=sparseLayoutType);
 
 var SparseDom: sparse subdomain(ParentDom);

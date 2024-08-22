@@ -30,7 +30,7 @@
  * SOFTWARE.
  */
 
-#include "fi_verbs.h"
+#include "verbs_ofi.h"
 
 static inline int
 vrb_dgram_ep_set_addr(struct vrb_ep *ep, fi_addr_t addr,

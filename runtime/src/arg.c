@@ -291,9 +291,9 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
       if (_argNumLocalesPerNode < 1) {
         chpl_error("Number of locales per node must be > 0.",
                    lineno, filename);
-      }
-      if (_argNumLocalesPerNode > 1) {
-        chpl_env_set("CHPL_RT_LOCALES_PER_NODE", lpn, 1);
+      } else {
+        chpl_env_set_uint("CHPL_RT_LOCALES_PER_NODE",
+                          (uint64_t)_argNumLocalesPerNode, 1);
       }
     } else {
 
@@ -307,6 +307,8 @@ void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
       if (_argNumLocalesPerNode < 1) {
         chpl_error("CHPL_RT_LOCALES_PER_NODE must be > 0.", lineno, filename);
       }
+
+      // TODO: allow for a suffix w/out L
     }
 
     int32_t numNodes = c_string_to_int32_t_precise(expr, &invalid,

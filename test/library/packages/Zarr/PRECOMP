@@ -7,3 +7,6 @@ cmake ..
 make -j4
 cd ../..
 cp c-blosc/build/blosc/*.so* .
+cp c-blosc/build/blosc/*.dylib* .
+cp c-blosc/build/blosc/*.dll* .
+

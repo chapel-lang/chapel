@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2016 by Argonne National Laboratory.
- * Copyright (C) 2021-2022 Cornelis Networks.
+ * Copyright (C) 2021-2024 Cornelis Networks.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -76,12 +76,12 @@ extern "C" {
 struct fi_opx_ep;	/* forward declaration */
 
 
-struct fi_opx_tid_fabric;
+struct opx_tid_fabric;
 struct fi_opx_fabric {
 	struct fid_fabric	fabric_fid;
 
 	int64_t		ref_cnt;
-	struct fi_opx_tid_fabric* tid_fabric;
+	struct opx_tid_fabric* tid_fabric;
 };
 
 
@@ -93,10 +93,9 @@ struct fi_opx_node {
 #define OPX_DEFAULT_JOB_KEY_STR "00112233445566778899aabbccddeeff"
 
 #define OPX_DEFAULT_PROG_AFFINITY_STR "0:3:1"
-
-#define OPX_MIN_DCOMP_THRESHOLD FI_OPX_SDMA_MIN_LENGTH
-#define OPX_DEFAULT_DCOMP_THRESHOLD FI_OPX_SDMA_DC_MIN
-#define OPX_MAX_DCOMP_THRESHOLD INT_MAX
+#define OPX_SDMA_BOUNCE_BUF_MIN FI_OPX_SDMA_MIN_LENGTH
+#define OPX_SDMA_BOUNCE_BUF_THRESHOLD FI_OPX_SDMA_DC_MIN
+#define OPX_SDMA_BOUNCE_BUF_MAX (INT_MAX - 1)
 
 struct fi_opx_domain {
 	struct fid_domain	domain_fid;
@@ -125,7 +124,7 @@ struct fi_opx_domain {
 	uint8_t					reliability_rx_offload;		/* OFFLOAD only */
 	enum ofi_reliability_kind		reliability_kind;
 
-	struct fi_opx_tid_domain *tid_domain;
+	struct opx_tid_domain *tid_domain;
 
 	int64_t		ref_cnt;
 };
@@ -156,15 +155,13 @@ struct fi_opx_av {
 struct fi_opx_mr {
 	struct fid_mr		mr_fid;
 	struct fi_opx_domain	*domain;
-	UT_hash_handle	hh;
-	const void		*buf;
-	size_t			len;
-	size_t			offset;
-	uint64_t		access;
+	struct fi_mr_attr	attr;
+	struct iovec		iov;
 	uint64_t		flags;
 	uint64_t		cntr_bflags;
 	struct fi_opx_cntr	*cntr;
 	struct fi_opx_ep	*ep;
+	UT_hash_handle		hh;
 };
 
 static inline uint32_t
@@ -175,6 +172,27 @@ fi_opx_domain_get_tx_max(struct fid_domain *domain) {
 static inline uint32_t
 fi_opx_domain_get_rx_max(struct fid_domain *domain) {
 	return 160;
+}
+
+static inline
+enum fi_hmem_iface fi_opx_mr_get_iface(struct fi_opx_mr *opx_mr, uint64_t *device)
+{
+#ifdef OPX_HMEM
+	switch (opx_mr->attr.iface) {
+		case FI_HMEM_CUDA:
+			*device = (uint64_t) opx_mr->attr.device.cuda;
+			break;
+		case FI_HMEM_ZE:
+			*device = (uint64_t) opx_mr->attr.device.ze;
+			break;
+		default:
+			*device = 0ul;
+	}
+	return opx_mr->attr.iface;
+#else
+	*device = 0ul;
+	return FI_HMEM_SYSTEM;
+#endif
 }
 
 #ifdef __cplusplus

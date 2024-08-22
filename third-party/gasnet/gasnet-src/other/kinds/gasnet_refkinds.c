@@ -122,6 +122,14 @@ int gex_MK_Create(
     #endif
       break;
 
+    case GEX_MK_CLASS_ZE:
+    #if GASNET_HAVE_MK_CLASS_ZE
+      rc = gasneti_MK_Create_ze(&result, client, args, flags);
+    #else
+      GASNETI_RETURN_ERRR(BAD_ARG,"This build lacks support for GEX_MK_CLASS_ZE");
+    #endif
+      break;
+
     default: gasneti_unreachable_error(("Unknown MK class: %i",(int)args->gex_class));
   }
 

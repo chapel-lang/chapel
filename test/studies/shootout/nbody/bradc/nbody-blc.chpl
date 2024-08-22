@@ -91,8 +91,8 @@ proc initSun() {
 // advance the positions and velocities of all the bodies
 //
 proc advance(dt) {
-  for param i in 0..<numBodies {
-    for param j in i+1..<numBodies {
+  foreach i in 0..<numBodies with (ref bodies) {
+    foreach j in i+1..<numBodies with (ref bodies) {
       const dpos = bodies[i].pos - bodies[j].pos,
             mag = dt / sqrt(sumOfSquares(dpos))**3;
 
@@ -101,7 +101,7 @@ proc advance(dt) {
     }
   }
 
-  for param i in 0..<numBodies do
+  foreach i in 0..<numBodies with (ref bodies) do
     bodies[i].pos += dt * bodies[i].vel;
 }
 

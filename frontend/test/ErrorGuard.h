@@ -92,11 +92,17 @@ class ErrorGuard {
 
   /** Print the errors contained in this guard and then clear the guard
       of errors. Returns the number of errors. */
-  int realizeErrors() {
+  int realizeErrors(bool countWarnings = true) {
     assert(handler_);
     if (!handler_->errors().size()) return false;
     this->printErrors();
     int ret = (int) handler_->errors().size();
+
+    if (!countWarnings) {
+      for (auto& err : handler_->errors())
+        if (err->kind() == chpl::ErrorBase::WARNING) --ret;
+    }
+
     handler_->clear();
     return ret;
   }

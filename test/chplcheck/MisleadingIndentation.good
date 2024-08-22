@@ -1,1 +1,6 @@
 MisleadingIndentation.chpl:4: node violates rule MisleadingIndentation
+MisleadingIndentation.chpl:13: node violates rule MisleadingIndentation
+MisleadingIndentation.chpl:18: node violates rule MisleadingIndentation
+MisleadingIndentation.chpl:23: node violates rule IncorrectIndentation
+MisleadingIndentation.chpl:24: node violates rule MisleadingIndentation
+[Success matching fixit for MisleadingIndentation]

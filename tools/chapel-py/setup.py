@@ -24,9 +24,16 @@ import os
 import sys
 import glob
 
-chpl_home = str(os.getenv('CHPL_HOME'))
+chpl_home = str(os.getenv("CHPL_HOME"))
 chpl_printchplenv = os.path.join(chpl_home, "util", "printchplenv")
-chpl_variables_lines = subprocess.check_output([chpl_printchplenv, "--internal", "--all", " --anonymize", "--simple"]).decode(sys.stdout.encoding).strip().splitlines()
+chpl_variables_lines = (
+    subprocess.check_output(
+        [chpl_printchplenv, "--internal", "--all", " --anonymize", "--simple"]
+    )
+    .decode(sys.stdout.encoding)
+    .strip()
+    .splitlines()
+)
 chpl_variables = dict()
 for line in chpl_variables_lines:
     elms = line.split("=", maxsplit=1)
@@ -35,24 +42,47 @@ for line in chpl_variables_lines:
 
 have_llvm = str(chpl_variables.get("CHPL_LLVM"))
 llvm_config = str(chpl_variables.get("CHPL_LLVM_CONFIG"))
+host_cc = str(chpl_variables.get("CHPL_HOST_CC"))
+host_cxx = str(chpl_variables.get("CHPL_HOST_CXX"))
 
 host_bin_subdir = str(chpl_variables.get("CHPL_HOST_BIN_SUBDIR"))
 chpl_lib_path = os.path.join(chpl_home, "lib", "compiler", host_bin_subdir)
 
 CXXFLAGS = []
-if have_llvm:
+if have_llvm and have_llvm != "none":
     CXXFLAGS += ["-DHAVE_LLVM"]
 
 CXXFLAGS += ["-Wno-c99-designator"]
-CXXFLAGS += subprocess.check_output([llvm_config, "--cxxflags"]).decode(sys.stdout.encoding).strip().split()
+CXXFLAGS += (
+    subprocess.check_output([llvm_config, "--cxxflags"])
+    .decode(sys.stdout.encoding)
+    .strip()
+    .split()
+)
 CXXFLAGS += ["-std=c++17", "-I{}/frontend/include".format(chpl_home)]
 
 LDFLAGS = []
-LDFLAGS += ["-L{}".format(chpl_lib_path), "-lChplFrontendShared", "-Wl,-rpath", chpl_lib_path]
+LDFLAGS += [
+    "-L{}".format(chpl_lib_path),
+    "-lChplFrontendShared",
+    "-Wl,-rpath",
+    chpl_lib_path,
+]
 
-setup(name = "chapel",
-      version = "0.1",
-      package_dir = {'': 'src'},
-      packages = ['chapel', 'chapel.replace', 'chapel.visitor', 'chapel.lsp'],
-      ext_modules = [Extension("chapel.core", glob.glob("src/*.cpp"), extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
-      )
+os.environ["CC"] = host_cc
+os.environ["CXX"] = host_cxx
+setup(
+    name="chapel",
+    version="0.1",
+    package_dir={"": "src"},
+    packages=["chapel", "chapel.replace", "chapel.visitor", "chapel.lsp"],
+    ext_modules=[
+        Extension(
+            "chapel.core",
+            glob.glob("src/*.cpp"),
+            depends=glob.glob("src/**/*.h", recursive=True),
+            extra_compile_args=CXXFLAGS,
+            extra_link_args=LDFLAGS,
+        )
+    ],
+)

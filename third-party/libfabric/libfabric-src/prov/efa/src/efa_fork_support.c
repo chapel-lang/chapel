@@ -1,34 +1,5 @@
-/*
- * Copyright (c) 2022 Amazon.com, Inc. or its affiliates. All rights reserved.
- *
- * This software is available to you under a choice of one of two
- * licenses.  You may choose to be licensed under the terms of the GNU
- * General Public License (GPL) Version 2, available from the file
- * COPYING in the main directory of this source tree, or the
- * OpenIB.org BSD license below:
- *
- *     Redistribution and use in source and binary forms, with or
- *     without modification, are permitted provided that the following
- *     conditions are met:
- *
- *      - Redistributions of source code must retain the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer.
- *
- *      - Redistributions in binary form must reproduce the above
- *        copyright notice, this list of conditions and the following
- *        disclaimer in the documentation and/or other materials
- *        provided with the distribution.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
- * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
- * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
+/* SPDX-License-Identifier: BSD-2-Clause OR GPL-2.0-only */
+/* SPDX-FileCopyrightText: Copyright Amazon.com, Inc. or its affiliates. All rights reserved. */
 
 #include "efa.h"
 
@@ -50,15 +21,44 @@ void efa_fork_support_request_initialize()
 #endif
 	int fork_support_requested = 0;
 
-	fi_param_get_bool(&rxr_prov, "fork_safe", &fork_support_requested);
+	fi_param_get_bool(&efa_prov, "fork_safe", &fork_support_requested);
 
 	/*
 	 * Check if any environment variables which would trigger
 	 * libibverbs' fork support are set. These variables are
 	 * defined by ibv_fork_init(3).
 	 */
-	if (fork_support_requested || getenv("RDMAV_FORK_SAFE") || getenv("IBV_FORK_SAFE"))
+	if (fork_support_requested || getenv("RDMAV_FORK_SAFE") || getenv("IBV_FORK_SAFE")) {
 		g_efa_fork_status = EFA_FORK_SUPPORT_ON;
+		/* libibverbs's fork support does not work for huge page.
+		 * libibverbs does have huge page fork support, which can be activated by
+		 * setting environment RDMAV_HUGEPAGE_SAFE to 1. However, huge page fork
+		 * support is extremely expensive, enabling it would defeat the purpose
+		 * of using huge page. Therefore, we simply disable huge page usage
+		 * when libfabric's fork support is enabled.
+		 */
+		if (efa_env.huge_page_setting == EFA_ENV_HUGE_PAGE_ENABLED) {
+			fprintf(stderr,
+				"The envrionment variable FI_EFA_USE_HUGE_PAGE has been\n"
+				"set to 1/on/true, which indicate user want EFA provider\n"
+				"to use huge page. However, rdma-core's fork support is\n"
+				"enabled by environment variable\n"
+				"     FI_EFA_FORK_SAFE/RDMAV_FORK_SAFE/IBV_FORK_SAFE.\n"
+				"The usage of huge page is incompatible with rdma-core's "
+				"fork support.\n"
+				"Use them at the same time will cause memory corruption.\n"
+				"If your application does use fork(), please unset the\n"
+				"environment variable\n"
+				"        FI_EFA_USE_HUGE_PAGE.\n"
+				"Otherwise, please unset the environment variable(s):\n"
+				"        FI_EFA_FORK_SAFE/RDMAV_FORK_SAFE/IBV_FORK_SAFE\n"
+				"Your application will now abort!\n"
+				);
+			abort();
+		}
+
+		efa_env.huge_page_setting = EFA_ENV_HUGE_PAGE_DISABLED;
+	}
 }
 
 /* @brief Check if rdma-core fork support is enabled and prevent fork
@@ -71,26 +71,28 @@ void efa_fork_support_request_initialize()
  * This relies on internal behavior in rdma-core and is a temporary workaround.
  *
  * @param domain_fid domain fid so we can register memory
- * @return 1 if fork support is enabled, 0 otherwise
+ * @return 1 if fork support is enabled
+ *         0 if not enabled
+ *         -FI_EINVAL/-FI_NOMEM on errors.
  */
 static int efa_fork_support_is_enabled(struct fid_domain *domain_fid)
 {
-	struct fid_mr *mr;
-	char *buf;
-	int ret;
-	long page_size;
-
 	/* If ibv_is_fork_initialized is availble, check if the function
 	 * can exit early.
 	 */
 #if HAVE_IBV_IS_FORK_INITIALIZED == 1
 	enum ibv_fork_status fork_status = ibv_is_fork_initialized();
 
-	/* If fork support is enabled or unneeded, return. */
-	if (fork_status != IBV_FORK_DISABLED)
-		return fork_status == IBV_FORK_ENABLED;
+	/* If fork support is ENABLED or UNNEEDED, return 1. */
+	return fork_status != IBV_FORK_DISABLED;
+#else
+	struct efa_domain *efa_domain;
+	struct ibv_mr *mr = NULL;
+	char *buf = NULL;
+	int ret=0, ret_init=0;
+	long page_size;
 
-#endif /* HAVE_IBV_IS_FORK_INITIALIZED */
+	efa_domain = container_of(domain_fid, struct efa_domain, util_domain.domain_fid);
 
 	page_size = ofi_get_page_size();
 	if (page_size <= 0) {
@@ -103,11 +105,11 @@ static int efa_fork_support_is_enabled(struct fid_domain *domain_fid)
 	if (!buf)
 		return -FI_ENOMEM;
 
-	ret = fi_mr_reg(domain_fid, buf, page_size,
-			FI_SEND, 0, 0, 0, &mr, NULL);
-	if (ret) {
-		free(buf);
-		return ret;
+
+	mr = ibv_reg_mr(efa_domain->ibv_pd, buf, page_size, 0);
+	if (mr == NULL) {
+		ret = errno;
+		goto out;
 	}
 
 	/*
@@ -117,15 +119,24 @@ static int efa_fork_support_is_enabled(struct fid_domain *domain_fid)
 	 * ibv_fork_init() was called and returns 0 if fork support is
 	 * initialized already.
 	 */
-	ret = ibv_fork_init();
+	ret_init = ibv_fork_init();
 
-	fi_close(&mr->fid);
-	free(buf);
-
-	if (ret == EINVAL)
-		return 0;
-
-	return 1;
+out:
+	if(buf) free(buf);
+	if(mr) ibv_dereg_mr(mr);
+	if (ret) {
+		EFA_WARN(FI_LOG_DOMAIN,
+			"Unexpected error during ibv_reg_mr in "
+			"efa_fork_support_is_enabled(): %s\n",strerror(ret));
+		return -FI_EINVAL;
+	}
+	if (ret_init == 0) return 0;
+	if (ret_init == EINVAL) return 1;
+	EFA_WARN(FI_LOG_DOMAIN,
+		"Unexpected error during ibv_fork_init in "
+		"efa_fork_support_is_enabled(): %s\n",strerror(ret_init));
+	return -FI_EINVAL;
+#endif /* HAVE_IBV_IS_FORK_INITIALIZED */
 }
 
 /* @brief Fork handler that is installed when EFA is loaded
@@ -217,6 +228,7 @@ int efa_fork_support_enable_if_requested(struct fid_domain* domain_fid)
 {
 	static int fork_handler_installed = 0;
 	int ret;
+	int is_enabled;
 
 	/*
 	 * Call ibv_fork_init if the user asked for fork support.
@@ -237,7 +249,11 @@ int efa_fork_support_enable_if_requested(struct fid_domain* domain_fid)
 	 * this variable was set to ON during provider init.  Huge pages for
 	 * bounce buffers will not be used if fork support is on.
 	 */
-	if (g_efa_fork_status == EFA_FORK_SUPPORT_OFF && efa_fork_support_is_enabled(domain_fid))
+	ret = efa_fork_support_is_enabled(domain_fid);
+	if (ret < 0) return ret;
+	is_enabled = ret;
+
+	if (g_efa_fork_status == EFA_FORK_SUPPORT_OFF && is_enabled)
 		g_efa_fork_status = EFA_FORK_SUPPORT_ON;
 
 	if (g_efa_fork_status == EFA_FORK_SUPPORT_ON && getenv("RDMAV_HUGEPAGES_SAFE")) {

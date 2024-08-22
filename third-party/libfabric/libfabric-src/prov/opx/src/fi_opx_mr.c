@@ -35,6 +35,7 @@
 #include "rdma/opx/fi_opx_domain.h"
 #include "rdma/opx/fi_opx.h"
 #include "rdma/opx/fi_opx_internal.h"
+#include "rdma/opx/fi_opx_hmem.h"
 
 #include <ofi_enosys.h>
 
@@ -92,11 +93,23 @@ static struct fi_ops fi_opx_fi_ops = {
 	.ops_open	= fi_no_ops_open
 };
 
-static int fi_opx_mr_reg(struct fid *fid, const void *buf,
-		size_t len, uint64_t access, uint64_t offset,
-		uint64_t requested_key, uint64_t flags,
-		struct fid_mr **mr, void *context)
+static inline int fi_opx_mr_reg_internal(struct fid *fid,
+			  const struct iovec *iov, size_t count,
+			  uint64_t access, uint64_t offset,
+			  uint64_t requested_key, uint64_t flags,
+			  int hmem_iface, uint64_t hmem_device,
+			  struct fid_mr **mr, void *context)
 {
+	if(!iov) {
+		errno = FI_EINVAL;
+		return -errno;
+	}
+	if(count != FI_OPX_IOV_LIMIT) {
+		FI_WARN(fi_opx_global.prov, FI_LOG_MR, "Unsupported iov count %lu\n", count);
+		errno = FI_EINVAL;
+		return -errno;
+	}
+
 	int ret;
 
 	struct fi_opx_mr *opx_mr;
@@ -112,7 +125,7 @@ static int fi_opx_mr_reg(struct fid *fid, const void *buf,
 
 	FI_LOG(fi_opx_global.prov, FI_LOG_DEBUG, FI_LOG_MR,
 			"buf=%p, len=%lu, access=%lu, offset=%lu, requested_key=%lu, flags=%lu, context=%p\n", 
-			buf, len, access, offset, requested_key, flags, context);
+			iov->iov_base, iov->iov_len, access, offset, requested_key, flags, context);
 
 	opx_domain = (struct fi_opx_domain *) container_of(fid, struct fid_domain, fid);
 
@@ -151,16 +164,35 @@ static int fi_opx_mr_reg(struct fid *fid, const void *buf,
 	opx_mr->mr_fid.fid.context	= context;
 	opx_mr->mr_fid.fid.ops		= &fi_opx_fi_ops;
 	if (opx_domain->mr_mode == FI_MR_SCALABLE) {
-		opx_mr->mr_fid.key		= requested_key;
+		opx_mr->mr_fid.key	= requested_key;
 	}
 
-	opx_mr->buf 	= buf;
-	opx_mr->len 	= len;
-	opx_mr->offset	= offset;
-	opx_mr->access 	= access;
-	opx_mr->flags	= flags;
-	opx_mr->domain  = opx_domain;
+	opx_mr->iov = *iov;
+	opx_mr->attr.mr_iov = &opx_mr->iov;
+	opx_mr->attr.iov_count = FI_OPX_IOV_LIMIT;
+	opx_mr->attr.offset = offset;
+	opx_mr->attr.access = access;
+	opx_mr->flags = flags;
+	opx_mr->domain = opx_domain;
 
+#ifdef OPX_HMEM
+	if (hmem_iface == -1) {
+		hmem_iface = fi_opx_hmem_get_iface(iov->iov_base, NULL, &hmem_device);
+	}
+
+	opx_mr->attr.iface = (enum fi_hmem_iface) hmem_iface;
+	switch (hmem_iface) {
+		case FI_HMEM_CUDA:
+		case FI_HMEM_ZE:
+			opx_mr->attr.device.cuda = (int) hmem_device;
+			break;
+		default:
+			opx_mr->attr.device.reserved = hmem_device;
+	}
+#else
+	opx_mr->attr.iface = FI_HMEM_SYSTEM;
+	opx_mr->attr.device.reserved = 0ul;
+#endif
 	if (opx_domain->mr_mode == FI_MR_SCALABLE) {
 		fi_opx_ref_inc(&opx_domain->ref_cnt, "domain");
 	}
@@ -174,32 +206,46 @@ static int fi_opx_mr_reg(struct fid *fid, const void *buf,
 }
 
 static int fi_opx_mr_regv(struct fid *fid,
-                        const struct iovec *iov, size_t count,
-                        uint64_t access, uint64_t offset,
-                        uint64_t requested_key, uint64_t flags,
-                        struct fid_mr **mr, void *context)
+			  const struct iovec *iov, size_t count,
+			  uint64_t access, uint64_t offset,
+			  uint64_t requested_key, uint64_t flags,
+			  struct fid_mr **mr, void *context)
 {
-	if(iov) {
-		if(count == 1) {
-			const void *buf = iov[0].iov_base;
-			size_t len = iov[0].iov_len;
-			return fi_opx_mr_reg(fid, buf, len, access, offset, requested_key, flags, mr, context);
-		}
-		FI_WARN(fi_opx_global.prov, FI_LOG_MR, "Unsupported iov count %lu\n", count);
-	}
-	errno = FI_EINVAL;
-	return -errno;
+	return fi_opx_mr_reg_internal(fid, iov, count, access, offset,
+				      requested_key, flags, -1, 0ul, mr, context);
+}
+
+static int fi_opx_mr_reg(struct fid *fid, const void *buf,
+		size_t len, uint64_t access, uint64_t offset,
+		uint64_t requested_key, uint64_t flags,
+		struct fid_mr **mr, void *context)
+{
+	const struct iovec iov = { .iov_base = (void *) buf, .iov_len = len };
+	return fi_opx_mr_reg_internal(fid, &iov, FI_OPX_IOV_LIMIT, access, offset,
+				      requested_key, flags, -1, 0ul, mr, context);
 }
 
 static int fi_opx_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
-							uint64_t flags, struct fid_mr **mr)
+				uint64_t flags, struct fid_mr **mr)
 {
 	if (!attr) {
 		errno = FI_EINVAL;
 		return -errno;
 	}
-    return fi_opx_mr_regv(fid, attr->mr_iov, attr->iov_count, attr->access,
-						attr->offset, attr->requested_key, flags, mr, attr->context);
+	uint64_t hmem_device;
+	switch (attr->iface) {
+		case FI_HMEM_CUDA:
+			hmem_device = attr->device.cuda;
+			break;
+		case FI_HMEM_ZE:
+			hmem_device = attr->device.ze;
+			break;
+		default:
+			hmem_device = 0;
+	}
+	return fi_opx_mr_reg_internal(fid, attr->mr_iov, attr->iov_count,
+			attr->access, attr->offset, attr->requested_key,
+			flags, attr->iface, hmem_device, mr, attr->context);
 }
 
 int fi_opx_bind_ep_mr(struct fid_ep *ep,

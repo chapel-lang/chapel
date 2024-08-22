@@ -1,0 +1,1 @@
+no-split-init.chpl:1: error: remote variables must have an initializer or type expression

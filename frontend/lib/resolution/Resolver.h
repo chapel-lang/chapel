@@ -33,6 +33,44 @@ namespace resolution {
 struct Resolver {
   // types used below
   using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
+  using ActionAndId = std::tuple<AssociatedAction::Action, ID>;
+
+  /**
+    When looking up matches for a particular identifier, we might encounter
+    several. This is not always an error: specifically, we might be finding
+    multiple parenless procedures, each with a potentially-false 'where' clause.
+
+    This struct contains additional information to be returned from identifier
+    lookup to help detect this case, and adjust the resolution strategy
+    accordingly.
+   */
+  struct ParenlessOverloadInfo {
+   private:
+    /* Whether some of the parenless procedures were methods. This means the
+       receiver type should be considered when resolving the call. */
+    bool hasMethodCandidates_ = false;
+    /* Whether some of the parenless procedures were not methods. This
+       means non-method resolution should be attempted. */
+    bool hasNonMethodCandidates_ = false;
+
+    ParenlessOverloadInfo(bool hasMethodCandidates, bool hasNonMethodCandidates)
+      : hasMethodCandidates_(hasMethodCandidates),
+        hasNonMethodCandidates_(hasNonMethodCandidates) {}
+   public:
+    ParenlessOverloadInfo() = default;
+
+    static ParenlessOverloadInfo fromBorrowedIds(Context* context,
+                                                 const std::vector<BorrowedIdsWithName>&);
+
+    bool areCandidatesOnlyParenlessProcs() const {
+      // Note: constructor sets both to false when it discovers a single
+      //       non-parenless candidate.
+      return hasMethodCandidates_ || hasNonMethodCandidates_;
+    }
+
+    bool hasMethodCandidates() const { return hasMethodCandidates_; }
+    bool hasNonMethodCandidates() const { return hasNonMethodCandidates_; }
+  };
 
   // inputs to the resolution process
   Context* context = nullptr;
@@ -58,7 +96,8 @@ struct Resolver {
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
   std::set<UniqueString> namesWithErrorsEmitted;
-  const uast::Call* inLeafCall = nullptr;
+  std::vector<const uast::Call*> callNodeStack;
+  std::vector<std::pair<UniqueString, const uast::AstNode*>> genericReceiverOverrideStack;
   bool receiverScopesComputed = false;
   ReceiverScopesVec savedReceiverScopes;
   Resolver* parentResolver = nullptr;
@@ -153,6 +192,11 @@ struct Resolver {
                                          const uast::AstNode* fieldStmt,
                                          ResolutionResultByPostorderID& byPostorder);
 
+  static Resolver createForScopeResolvingEnumConstant(Context* context,
+                                         const uast::Enum* ed,
+                                         const uast::AstNode* fieldStmt,
+                                         ResolutionResultByPostorderID& byPostorder);
+
   // set up Resolver to initially resolve field declaration types
   static Resolver
   createForInitialFieldStmt(Context* context,
@@ -205,6 +249,12 @@ struct Resolver {
   static Resolver paramLoopResolver(Resolver& parent,
                                     const uast::For* loop,
                                     ResolutionResultByPostorderID& bodyResults);
+
+  /**
+    During AST traversal, find the last called expression we entered.
+    e.g., will return 'f' if we just entered 'f()'.
+   */
+  const chpl::uast::AstNode* nearestCalledExpression() const;
 
   // Set the composite type of this Resolver. It is an error to call this
   // method when a composite type is already set.
@@ -336,6 +386,11 @@ struct Resolver {
                                     ID moduleId,
                                     LookupConfig failedConfig);
 
+  // after resolving the child nodes of the call as needed, perform call resolution
+  // if appropriate. This is a helper function because it has some complicated
+  // control flow, and we want to make sure to always keep callNodeStack in sync.
+  void handleCallExpr(const uast::Call* call);
+
   // handle the result of one of the functions to resolve a call. Handles:
   //  * r.setMostSpecific
   //  * r.setPoiScope
@@ -350,28 +405,23 @@ struct Resolver {
   bool handleResolvedCallWithoutError(ResolvedExpression& r,
                                       const uast::AstNode* astForErr,
                                       const CallInfo& ci,
-                                      const CallResolutionResult& c);
+                                      const CallResolutionResult& c,
+                                      optional<ActionAndId> associatedActionAndId = {});
   // Same as handleResolvedCallWithoutError, except actually issues the error.
   void handleResolvedCall(ResolvedExpression& r,
                           const uast::AstNode* astForErr,
                           const CallInfo& ci,
-                          const CallResolutionResult& c);
+                          const CallResolutionResult& c,
+                          optional<ActionAndId> associatedActionAndId = {});
   // like handleResolvedCall, but prints the candidates that were rejected
   // by the error in detail.
   void handleResolvedCallPrintCandidates(ResolvedExpression& r,
                                          const uast::Call* call,
                                          const CallInfo& ci,
-                                         const Scope* scope,
-                                         const PoiScope* poiScope,
+                                         const CallScopeInfo& inScopes,
                                          const types::QualifiedType& receiverType,
-                                         const CallResolutionResult& c);
-  // like handleResolvedCall saves the call in associatedFns.
-  void handleResolvedAssociatedCall(ResolvedExpression& r,
-                                    const uast::AstNode* astForErr,
-                                    const CallInfo& ci,
-                                    const CallResolutionResult& c,
-                                    AssociatedAction::Action action,
-                                    ID id);
+                                         const CallResolutionResult& c,
+                                         optional<ActionAndId> associatedActionAndId = {});
 
   // If the variable with the passed ID has unknown or generic type,
   // and it has not yet been initialized, set its type to rhsType.
@@ -444,8 +494,12 @@ struct Resolver {
   // Given the results of looking up an enum element, construct a QualifiedType.
   types::QualifiedType
   typeForScopeResolvedEnumElement(const types::EnumType* enumType,
-                                            const ID& refersToId,
-                                            bool ambiguous);
+                                  const ID& refersToId,
+                                  bool ambiguous);
+  types::QualifiedType
+  typeForScopeResolvedEnumElement(const ID& enumTypeId,
+                                  const ID& refersToId,
+                                  bool ambiguous);
   // Given a particular enum type, determine the type of a particular element.
   types::QualifiedType typeForEnumElement(const types::EnumType* type,
                                           UniqueString elemName,
@@ -475,9 +529,23 @@ struct Resolver {
 
   bool identHasMoreMentions(const uast::Identifier* ident);
 
+  // When an identifier is ambiguous, try issuing an error, but only if
+  // one hasn't been issued before. In doing so, re-run scope search to
+  // figure out how each candidate was found.
+  void issueAmbiguityErrorIfNeeded(const chpl::uast::Identifier* ident,
+                                   const Scope* scope,
+                                   llvm::ArrayRef<const Scope*> receiverScopes,
+                                   LookupConfig prevConfig);
+
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
-                   llvm::ArrayRef<const Scope*> receiverScopes);
+                   llvm::ArrayRef<const Scope*> receiverScopes,
+                   ParenlessOverloadInfo& outParenlessOverloadInfo);
+
+
+  void tryResolveParenlessCall(const ParenlessOverloadInfo& info,
+                               const uast::Identifier* ident,
+                               llvm::ArrayRef<const Scope*> receiverScopes);
 
   void resolveIdentifier(const uast::Identifier* ident,
                          llvm::ArrayRef<const Scope*> receiverScopes);

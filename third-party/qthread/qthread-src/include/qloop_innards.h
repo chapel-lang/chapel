@@ -4,12 +4,12 @@
 #include "qthread/qtimer.h"
 
 typedef struct qqloop_iteration_queue {
-    saligned_t         start;
+    _Atomic saligned_t start;
     saligned_t         stop;
     saligned_t         step;
     qt_loop_queue_type type;
     union {
-        saligned_t phase;
+        _Atomic saligned_t phase;
         struct {
             qtimer_t   *timers;
             saligned_t *lastblocks;

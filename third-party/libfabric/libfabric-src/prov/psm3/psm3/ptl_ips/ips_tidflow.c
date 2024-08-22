@@ -79,6 +79,7 @@ psm2_error_t psm3_ips_tf_init(struct ips_protoexp *protoexp,
 #if TF_ADD
 	struct psmi_stats_entry entries[] = {
 		PSMI_STATS_DECL("tidflow_update_count",
+				"total tid flow allocate calls",
 				MPSPAWN_STATS_REDUCTION_ALL,
 				NULL, &tfc->tf_num_total),
 	};
@@ -148,6 +149,11 @@ psm2_error_t psm3_ips_tf_init(struct ips_protoexp *protoexp,
 #if TF_ADD
 	/* TF_ADD: Add a new stats type for tid flows in psm_stats.h */
 	return psm3_stats_register_type("TID_Flow_Statistics",
+		"RDMA Transaction Flow statistics for an endpoint in the "
+		"process.\n"
+		"For each inbound RDMA chunk a Transaction ID Flow is "
+		"allocated to identify the transfer and to ensure the "
+		"receiver has sufficient resources to handle the RDMA.",
 					PSMI_STATSTYPE_RDMA,
 					entries,
 					PSMI_HOWMANY(entries),

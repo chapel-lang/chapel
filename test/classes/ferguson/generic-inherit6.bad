@@ -1,1 +1,1 @@
-generic-inherit6.chpl:13: syntax error: invalid parent class or interface; please specify a single class or interface name
+generic-inherit6.chpl:13: error: invalid parent class or interface; please specify a single (possibly qualified) class or interface name

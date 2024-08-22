@@ -1,5 +1,15 @@
 #!/bin/bash
 
-nvcc -O3 -c streamKernel.cu -o streamKernel.o 
+chpl=$3
+chpl_home=$($chpl --print-chpl-home)
+llvm_version=$($chpl_home/util/printchplenv --all --simple | grep CHPL_LLVM_VERSION | sed 's/CHPL_LLVM_VERSION=//')
+
+NVCC_FLAGS=""
+if [[ "$llvm_version" -ge 15 ]]; then
+  # LLVM 15 and later require default to -fPIE, so streamKernel.cu needs to be compiled with -fPIE
+  NVCC_FLAGS="--compiler-options -fPIE"
+fi
+
+nvcc -O3 -c streamKernel.cu -o streamKernel.o $NVCC_FLAGS
 nvcc -O3 streamKernel.o -o streamKernelDlinked.o -dlink
 

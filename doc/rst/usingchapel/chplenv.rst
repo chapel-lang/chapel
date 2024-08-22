@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-2.0.0
+        export CHPL_HOME=~/chapel-2.1.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -276,8 +276,8 @@ CC and Similar
    The compiler family settings ``CHPL_HOST_COMPILER`` and
    ``CHPL_TARGET_COMPILER`` can be inferred from these ``*CC`` ``*CXX``
    variables in some cases as described in
-   :ref:`readme-chplenv.CHPL_COMPILER`. To infer a compiler family from a
-   a path to a compiler, the configuration looks to recognize an
+   :ref:`readme-chplenv.CHPL_COMPILER`. To infer a compiler family from the
+   path to a compiler, the configuration looks to recognize an
    executable name normally used with that compiler. For example,
    the ``gnu`` family normally uses ``gcc`` for C code and ``g++`` for
    C++ code. This inference process ignores the directory as well as any
@@ -415,14 +415,14 @@ CHPL_LOCALE_MODEL
         Value    Description
         ======== =============================================
         flat     top-level locales are not further subdivided
-        numa     top-level locales are further subdivided into
-                 sublocales, each one a NUMA domain
+        gpu      enable gpu sublocales
         ======== =============================================
 
    If unset, ``CHPL_LOCALE_MODEL`` defaults to ``flat``.
 
-   .. warning:: The NUMA locale model is deprecated and will be removed
-      in a future release.
+   To enable GPU support, the value must be set to ``gpu``. See :ref:`readme-gpu` for more information.
+
+   .. warning:: GPU support is under active development and settings may change.
 
 
 .. _readme-chplenv.CHPL_TASKS:
@@ -511,6 +511,27 @@ CHPL_MEM
      that not all allocators provide.  Currently only ``jemalloc`` is capable
      of supporting configurations that require a registered heap.
 
+.. _readme-chplenv.CHPL_TARGET_JEMALLOC:
+
+CHPL_TARGET_JEMALLOC
+~~~~~~~~~~~~~~~~~~~~
+   Optionally, the ``CHPL_TARGET_JEMALLOC`` environment variable can select
+   between no jemalloc, using the jemalloc distributed with Chapel in
+   third-party, or using a system jemalloc. This setting is intended to
+   elaborate upon ``CHPL_MEM=jemalloc``.
+
+        ======== ==============================================================
+        Value    Description
+        ======== ==============================================================
+        none     do not build or use jemalloc
+        bundled  use the jemalloc distribution bundled with Chapel in third-party
+        system   use the jemalloc found on the system
+        ======== ==============================================================
+
+   If unset, ``CHPL_TARGET_JEMALLOC`` defaults to ``bundled`` if
+   :ref:`readme-chplenv.CHPL_MEM` is ``jemalloc``.  In all other cases it
+   defaults to ``none``.
+
 .. _readme-chplenv.CHPL_HOST_MEM:
 
 CHPL_HOST_MEM
@@ -593,6 +614,10 @@ CHPL_ATOMICS
    operations in Chapel or :ref:`readme-atomics` for more information about the
    runtime implementation.
 
+   .. warning::
+
+     Using ``CHPL_ATOMICS=intrinsics`` is a known performance issue. Please consider using ``CHPL_ATOMICS=cstdlib`` for better performance, if possible. If not, please open an issue on GitHub.
+
 .. _readme-chplenv.CHPL_TIMERS:
 
 CHPL_TIMERS
@@ -647,14 +672,15 @@ CHPL_GMP
 CHPL_HWLOC
 ~~~~~~~~~~
    Optionally, the ``CHPL_HWLOC`` environment variable can select between
-   no hwloc support or using the hwloc package distributed with Chapel in
-   third-party.
+   no hwloc support, using the hwloc package distributed with Chapel in
+   third-party, or using a system hwloc.
 
        ======== ==============================================================
        Value    Description
        ======== ==============================================================
        none     do not build hwloc support into the Chapel runtime
        bundled  use the hwloc distribution bundled with Chapel in third-party
+       system   use a system install of hwloc (requires version 2.1+)
        ======== ==============================================================
 
    If unset, ``CHPL_HWLOC`` defaults to ``bundled`` if
@@ -664,42 +690,6 @@ CHPL_HWLOC
    to use qthreads.  To do this, manually set ``CHPL_HWLOC`` to ``none``
    and rebuild (and please file a bug with the Chapel team.) Note that
    building without hwloc will have a negative impact on performance.
-
-   .. (comment) CHPL_HWLOC=system is also available but it is only
-       intended to support packaging.
-       Using CHPL_HWLOC=system is not regularly tested and may not work
-       for you. Chapel depends on hwloc features that are not available in
-       all versions. For best results, we recommend using the bundled hwloc
-       if possible.
-
-..  (comment) CHPL_JEMALLOC is not a user-facing feature
-
-   .. _readme-chplenv.CHPL_JEMALLOC:
-
-   CHPL_JEMALLOC
-   ~~~~~~~~~~~~~
-      Optionally, the ``CHPL_JEMALLOC`` environment variable can select
-      between no jemalloc, or using the jemalloc distributed with Chapel in
-      third-party. This setting is intended to elaborate upon
-      ``CHPL_MEM=jemalloc``.
-
-          ======== ==============================================================
-          Value    Description
-          ======== ==============================================================
-          none     do not build or use jemalloc
-          bundled  use the jemalloc distribution bundled with Chapel in third-party
-          ======== ==============================================================
-
-      If unset, ``CHPL_JEMALLOC`` defaults to ``bundled`` if
-      :ref:`readme-chplenv.CHPL_MEM` is ``jemalloc``.  In all other cases it
-      defaults to ``none``.
-
-   .. (comment) CHPL_JEMALLOC=system is also available but it is only
-       intended to support packaging.
-       Using CHPL_JEMALLOC=system is not regularly tested and may not work
-       for you. Chapel depends on jemalloc features that are not available in
-       all versions. For best results, we recommend using the bundled jemalloc
-       if possible.
 
 ..  (comment) CHPL_LIBFABRIC is not a user-facing feature
 
@@ -723,12 +713,7 @@ CHPL_HWLOC
       :ref:`readme-chplenv.CHPL_COMM` is ``ofi``.  In all other cases it
       defaults to ``none``.
 
-   .. (comment) CHPL_LIBFABRIC=system is also available but it is only
-       intended to support packaging.
-       Using CHPL_LIBFABRIC=system is not regularly tested and may not work
-       for you. Chapel depends on libfabric features that are not available in
-       all versions. For best results, we recommend using the bundled libfabric
-       if possible.
+   .. (comment) CHPL_LIBFABRIC=system is also available but it is only intended to support packaging.
 
 .. _readme-chplenv.CHPL_RE2:
 

@@ -13,7 +13,7 @@
 #  include "alfg.h"
 #  define RNG_TYPE 1
 #elif defined(BRG_RNG)
-#  include "brg_sha1.h"
+#  include "rng_brg.h"
 #  define RNG_TYPE 0
 #elif defined(DEVINE_RNG)
 #  include "devine_sha1.h"

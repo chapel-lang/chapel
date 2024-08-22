@@ -139,118 +139,118 @@ int gasnet_AMGetMsgSource(gasnet_token_t _token, gasnet_node_t *_srcrank) {
 */
 
 #define gasnet_AMRequestShort0(dest, handler) \
-       gex_AM_RequestShort0(gasneti_thunk_tm, dest, handler, 0)
+       gex_AM_RequestShort0(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG)
 #define gasnet_AMRequestShort1(dest, handler, a0) \
-       gex_AM_RequestShort1(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0)
+       gex_AM_RequestShort1(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0)
 #define gasnet_AMRequestShort2(dest, handler, a0, a1) \
-       gex_AM_RequestShort2(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1)
+       gex_AM_RequestShort2(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1)
 #define gasnet_AMRequestShort3(dest, handler, a0, a1, a2) \
-       gex_AM_RequestShort3(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2)
+       gex_AM_RequestShort3(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2)
 #define gasnet_AMRequestShort4(dest, handler, a0, a1, a2, a3) \
-       gex_AM_RequestShort4(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3)
+       gex_AM_RequestShort4(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3)
 
 #define gasnet_AMRequestShort5(dest, handler, a0, a1, a2, a3, a4) \
-       gex_AM_RequestShort5(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4)
+       gex_AM_RequestShort5(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4)
 #define gasnet_AMRequestShort6(dest, handler, a0, a1, a2, a3, a4, a5) \
-       gex_AM_RequestShort6(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5)
+       gex_AM_RequestShort6(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5)
 #define gasnet_AMRequestShort7(dest, handler, a0, a1, a2, a3, a4, a5, a6) \
-       gex_AM_RequestShort7(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6)
+       gex_AM_RequestShort7(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6)
 #define gasnet_AMRequestShort8(dest, handler, a0, a1, a2, a3, a4, a5, a6, a7) \
-       gex_AM_RequestShort8(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7)
+       gex_AM_RequestShort8(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7)
 
 #define gasnet_AMRequestShort9( dest, handler, a0, a1, a2, a3, a4, a5, a6, a7, a8 ) \
-        gex_AM_RequestShort9(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8)
+        gex_AM_RequestShort9(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8)
 #define gasnet_AMRequestShort10(dest, handler, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9) \
-        gex_AM_RequestShort10(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9)
+        gex_AM_RequestShort10(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9)
 #define gasnet_AMRequestShort11(dest, handler, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) \
-        gex_AM_RequestShort11(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10)
+        gex_AM_RequestShort11(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10)
 #define gasnet_AMRequestShort12(dest, handler, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) \
-        gex_AM_RequestShort12(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11)
+        gex_AM_RequestShort12(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11)
 
 #define gasnet_AMRequestShort13(dest, handler, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) \
-        gex_AM_RequestShort13(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12)
+        gex_AM_RequestShort13(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12)
 #define gasnet_AMRequestShort14(dest, handler, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) \
-        gex_AM_RequestShort14(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13)
+        gex_AM_RequestShort14(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13)
 #define gasnet_AMRequestShort15(dest, handler, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) \
-        gex_AM_RequestShort15(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13, (gex_AM_Arg_t)a14)
+        gex_AM_RequestShort15(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13, (gex_AM_Arg_t)a14)
 #define gasnet_AMRequestShort16(dest, handler, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) \
-        gex_AM_RequestShort16(gasneti_thunk_tm, dest, handler, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13, (gex_AM_Arg_t)a14, (gex_AM_Arg_t)a15)
+        gex_AM_RequestShort16(gasneti_thunk_tm, dest, handler, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13, (gex_AM_Arg_t)a14, (gex_AM_Arg_t)a15)
 /* ------------------------------------------------------------------------------------ */
 #define gasnet_AMRequestMedium0(dest, handler, source_addr, nbytes) \
-       gex_AM_RequestMedium0(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0)
+       gex_AM_RequestMedium0(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG)
 #define gasnet_AMRequestMedium1(dest, handler, source_addr, nbytes, a0) \
-       gex_AM_RequestMedium1(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0)
+       gex_AM_RequestMedium1(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0)
 #define gasnet_AMRequestMedium2(dest, handler, source_addr, nbytes, a0, a1) \
-       gex_AM_RequestMedium2(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1)
+       gex_AM_RequestMedium2(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1)
 #define gasnet_AMRequestMedium3(dest, handler, source_addr, nbytes, a0, a1, a2) \
-       gex_AM_RequestMedium3(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2)
+       gex_AM_RequestMedium3(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2)
 #define gasnet_AMRequestMedium4(dest, handler, source_addr, nbytes, a0, a1, a2, a3) \
-       gex_AM_RequestMedium4(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3)
+       gex_AM_RequestMedium4(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3)
 
 #define gasnet_AMRequestMedium5(dest, handler, source_addr, nbytes, a0, a1, a2, a3, a4) \
-       gex_AM_RequestMedium5(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4)
+       gex_AM_RequestMedium5(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4)
 #define gasnet_AMRequestMedium6(dest, handler, source_addr, nbytes, a0, a1, a2, a3, a4, a5) \
-       gex_AM_RequestMedium6(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5)
+       gex_AM_RequestMedium6(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5)
 #define gasnet_AMRequestMedium7(dest, handler, source_addr, nbytes, a0, a1, a2, a3, a4, a5, a6) \
-       gex_AM_RequestMedium7(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6)
+       gex_AM_RequestMedium7(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6)
 #define gasnet_AMRequestMedium8(dest, handler, source_addr, nbytes, a0, a1, a2, a3, a4, a5, a6, a7) \
-       gex_AM_RequestMedium8(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7)
+       gex_AM_RequestMedium8(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7)
 
 #define gasnet_AMRequestMedium9( dest, handler, source_addr, nbytes, a0, a1, a2, a3, a4, a5, a6, a7, a8 ) \
-        gex_AM_RequestMedium9(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8)
+        gex_AM_RequestMedium9(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8)
 #define gasnet_AMRequestMedium10(dest, handler, source_addr, nbytes, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9) \
-        gex_AM_RequestMedium10(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9)
+        gex_AM_RequestMedium10(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9)
 #define gasnet_AMRequestMedium11(dest, handler, source_addr, nbytes, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) \
-        gex_AM_RequestMedium11(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10)
+        gex_AM_RequestMedium11(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10)
 #define gasnet_AMRequestMedium12(dest, handler, source_addr, nbytes, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) \
-        gex_AM_RequestMedium12(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11)
+        gex_AM_RequestMedium12(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11)
 
 #define gasnet_AMRequestMedium13(dest, handler, source_addr, nbytes, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) \
-        gex_AM_RequestMedium13(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12)
+        gex_AM_RequestMedium13(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12)
 #define gasnet_AMRequestMedium14(dest, handler, source_addr, nbytes, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) \
-        gex_AM_RequestMedium14(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13)
+        gex_AM_RequestMedium14(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13)
 #define gasnet_AMRequestMedium15(dest, handler, source_addr, nbytes, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) \
-        gex_AM_RequestMedium15(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13, (gex_AM_Arg_t)a14)
+        gex_AM_RequestMedium15(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13, (gex_AM_Arg_t)a14)
 #define gasnet_AMRequestMedium16(dest, handler, source_addr, nbytes, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) \
-        gex_AM_RequestMedium16(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13, (gex_AM_Arg_t)a14, (gex_AM_Arg_t)a15)
+        gex_AM_RequestMedium16(gasneti_thunk_tm, dest, handler, source_addr, nbytes, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13, (gex_AM_Arg_t)a14, (gex_AM_Arg_t)a15)
 /* ------------------------------------------------------------------------------------ */
 #define gasnet_AMRequestLong0(dest, handler, source_addr, nbytes, dest_addr) \
-       gex_AM_RequestLong0(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0)
+       gex_AM_RequestLong0(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG)
 #define gasnet_AMRequestLong1(dest, handler, source_addr, nbytes, dest_addr, a0) \
-       gex_AM_RequestLong1(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0)
+       gex_AM_RequestLong1(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0)
 #define gasnet_AMRequestLong2(dest, handler, source_addr, nbytes, dest_addr, a0, a1) \
-       gex_AM_RequestLong2(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1)
+       gex_AM_RequestLong2(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1)
 #define gasnet_AMRequestLong3(dest, handler, source_addr, nbytes, dest_addr, a0, a1, a2) \
-       gex_AM_RequestLong3(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2)
+       gex_AM_RequestLong3(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2)
 #define gasnet_AMRequestLong4(dest, handler, source_addr, nbytes, dest_addr, a0, a1, a2, a3) \
-       gex_AM_RequestLong4(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3)
+       gex_AM_RequestLong4(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3)
 
 #define gasnet_AMRequestLong5(dest, handler, source_addr, nbytes, dest_addr, a0, a1, a2, a3, a4) \
-       gex_AM_RequestLong5(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4)
+       gex_AM_RequestLong5(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4)
 #define gasnet_AMRequestLong6(dest, handler, source_addr, nbytes, dest_addr, a0, a1, a2, a3, a4, a5) \
-       gex_AM_RequestLong6(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5)
+       gex_AM_RequestLong6(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5)
 #define gasnet_AMRequestLong7(dest, handler, source_addr, nbytes, dest_addr, a0, a1, a2, a3, a4, a5, a6) \
-       gex_AM_RequestLong7(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6)
+       gex_AM_RequestLong7(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6)
 #define gasnet_AMRequestLong8(dest, handler, source_addr, nbytes, dest_addr, a0, a1, a2, a3, a4, a5, a6, a7) \
-       gex_AM_RequestLong8(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7)
+       gex_AM_RequestLong8(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7)
 
 #define gasnet_AMRequestLong9( dest, handler, source_addr, nbytes, dest_addr, a0, a1, a2, a3, a4, a5, a6, a7, a8 ) \
-        gex_AM_RequestLong9(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8)
+        gex_AM_RequestLong9(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8)
 #define gasnet_AMRequestLong10(dest, handler, source_addr, nbytes, dest_addr, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9) \
-        gex_AM_RequestLong10(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9)
+        gex_AM_RequestLong10(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9)
 #define gasnet_AMRequestLong11(dest, handler, source_addr, nbytes, dest_addr, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) \
-        gex_AM_RequestLong11(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10)
+        gex_AM_RequestLong11(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10)
 #define gasnet_AMRequestLong12(dest, handler, source_addr, nbytes, dest_addr, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) \
-        gex_AM_RequestLong12(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11)
+        gex_AM_RequestLong12(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11)
 
 #define gasnet_AMRequestLong13(dest, handler, source_addr, nbytes, dest_addr, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) \
-        gex_AM_RequestLong13(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12)
+        gex_AM_RequestLong13(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12)
 #define gasnet_AMRequestLong14(dest, handler, source_addr, nbytes, dest_addr, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) \
-        gex_AM_RequestLong14(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13)
+        gex_AM_RequestLong14(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13)
 #define gasnet_AMRequestLong15(dest, handler, source_addr, nbytes, dest_addr, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) \
-        gex_AM_RequestLong15(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13, (gex_AM_Arg_t)a14)
+        gex_AM_RequestLong15(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13, (gex_AM_Arg_t)a14)
 #define gasnet_AMRequestLong16(dest, handler, source_addr, nbytes, dest_addr, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) \
-        gex_AM_RequestLong16(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13, (gex_AM_Arg_t)a14, (gex_AM_Arg_t)a15)
+        gex_AM_RequestLong16(gasneti_thunk_tm, dest, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, GASNETI_FLAG_G2EX_DEBUG, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13, (gex_AM_Arg_t)a14, (gex_AM_Arg_t)a15)
 /* ------------------------------------------------------------------------------------ */
 #define gasnet_AMRequestLongAsync0 gasnet_AMRequestLong0
 #define gasnet_AMRequestLongAsync1 gasnet_AMRequestLong1
@@ -409,22 +409,22 @@ int gasnet_AMGetMsgSource(gasnet_token_t _token, gasnet_node_t *_srcrank) {
   #define gasnet_AMRequestShort(node,hidx,...) ( \
           gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
                                        "Argument count mismatch to gasnet_AMRequestShort()"), \
-          GASNETI_AMVA(RequestShort,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,0&&__VA_ARGS__) )
+          GASNETI_AMVA(RequestShort,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,GASNETI_FLAG_G2EX_DEBUG&&__VA_ARGS__) )
 
   #define gasnet_AMRequestMedium(node,hidx,src_addr,nbytes,...) ( \
           gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
                                        "Argument count mismatch to gasnet_AMRequestMedium()"), \
-          GASNETI_AMVA(RequestMedium,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,src_addr,nbytes,GEX_EVENT_NOW,0&&__VA_ARGS__) )
+          GASNETI_AMVA(RequestMedium,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,src_addr,nbytes,GEX_EVENT_NOW,GASNETI_FLAG_G2EX_DEBUG&&__VA_ARGS__) )
 
   #define gasnet_AMRequestLong(node,hidx,src_addr,nbytes,dst_addr,...) ( \
           gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
                                        "Argument count mismatch to gasnet_AMRequestLong()"), \
-          GASNETI_AMVA(RequestLong,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,src_addr,nbytes,dst_addr,GEX_EVENT_NOW,0&&__VA_ARGS__) )
+          GASNETI_AMVA(RequestLong,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,src_addr,nbytes,dst_addr,GEX_EVENT_NOW,GASNETI_FLAG_G2EX_DEBUG&&__VA_ARGS__) )
 
   #define gasnet_AMRequestLongAsync(node,hidx,src_addr,nbytes,dst_addr,...) ( \
           gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
                                        "Argument count mismatch to gasnet_AMRequestLongAsync()"), \
-          GASNETI_AMVA(RequestLong,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,src_addr,nbytes,dst_addr,GEX_EVENT_NOW,0&&__VA_ARGS__) )
+          GASNETI_AMVA(RequestLong,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,src_addr,nbytes,dst_addr,GEX_EVENT_NOW,GASNETI_FLAG_G2EX_DEBUG&&__VA_ARGS__) )
 
   #define gasnet_AMReplyShort(token,hidx,...) ( \
           gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
@@ -457,9 +457,9 @@ int gasnet_AMGetMsgSource(gasnet_token_t _token, gasnet_node_t *_srcrank) {
 /* Blocking Put and Get */
 
 #define gasnet_put(node,dest,src,nbytes) \
-                ((void)gex_RMA_PutBlocking(gasneti_thunk_tm,node,dest,src,nbytes,0))
+                ((void)gex_RMA_PutBlocking(gasneti_thunk_tm,node,dest,src,nbytes,GASNETI_FLAG_G2EX_DEBUG))
 #define gasnet_get(dest,node,src,nbytes) \
-                ((void)gex_RMA_GetBlocking(gasneti_thunk_tm,dest,node,src,nbytes,0))
+                ((void)gex_RMA_GetBlocking(gasneti_thunk_tm,dest,node,src,nbytes,GASNETI_FLAG_G2EX_DEBUG))
 #define gasnet_put_bulk gasnet_put
 #define gasnet_get_bulk gasnet_get
 
@@ -467,29 +467,29 @@ int gasnet_AMGetMsgSource(gasnet_token_t _token, gasnet_node_t *_srcrank) {
 /* Implicit-handle non-blocking Put and Get */
 
 #define gasnet_put_nbi(node,dest,src,nbytes) \
-                ((void)gex_RMA_PutNBI(gasneti_thunk_tm,node,dest,src,nbytes,GEX_EVENT_NOW,0))
+                ((void)gex_RMA_PutNBI(gasneti_thunk_tm,node,dest,src,nbytes,GEX_EVENT_NOW,GASNETI_FLAG_G2EX_DEBUG))
 #define gasnet_put_nbi_bulk(node,dest,src,nbytes) \
-                ((void)gex_RMA_PutNBI(gasneti_thunk_tm,node,dest,src,nbytes,GEX_EVENT_DEFER,0))
+                ((void)gex_RMA_PutNBI(gasneti_thunk_tm,node,dest,src,nbytes,GEX_EVENT_DEFER,GASNETI_FLAG_G2EX_DEBUG))
 #define gasnet_get_nbi(dest,node,src,nbytes) \
-                ((void)gex_RMA_GetNBI(gasneti_thunk_tm,dest,node,src,nbytes,0))
+                ((void)gex_RMA_GetNBI(gasneti_thunk_tm,dest,node,src,nbytes,GASNETI_FLAG_G2EX_DEBUG))
 #define gasnet_get_nbi_bulk gasnet_get_nbi
 
 /* ------------------------------------------------------------------------------------ */
 /* Explicit-handle non-blocking Put and Get */
 
 #define gasnet_put_nb(node,dest,src,nbytes) \
-                gex_RMA_PutNB(gasneti_thunk_tm,node,dest,src,nbytes,GEX_EVENT_NOW,0)
+                gex_RMA_PutNB(gasneti_thunk_tm,node,dest,src,nbytes,GEX_EVENT_NOW,GASNETI_FLAG_G2EX_DEBUG)
 #define gasnet_put_nb_bulk(node,dest,src,nbytes) \
-                gex_RMA_PutNB(gasneti_thunk_tm,node,dest,src,nbytes,GEX_EVENT_DEFER,0)
+                gex_RMA_PutNB(gasneti_thunk_tm,node,dest,src,nbytes,GEX_EVENT_DEFER,GASNETI_FLAG_G2EX_DEBUG)
 #define gasnet_get_nb(dest,node,src,nbytes) \
-                gex_RMA_GetNB(gasneti_thunk_tm,dest,node,src,nbytes,0)
+                gex_RMA_GetNB(gasneti_thunk_tm,dest,node,src,nbytes,GASNETI_FLAG_G2EX_DEBUG)
 #define gasnet_get_nb_bulk gasnet_get_nb
 
 /* ------------------------------------------------------------------------------------ */
 /* Value Gets - blocking and explicit-handle non-blocking */
 
 #define gasnet_get_val(node,src,nbytes) \
-                gex_RMA_GetBlockingVal(gasneti_thunk_tm,node,src,nbytes,0)
+                gex_RMA_GetBlockingVal(gasneti_thunk_tm,node,src,nbytes,GASNETI_FLAG_G2EX_DEBUG)
 
 typedef struct {
   gex_RMA_Value_t gasneti_valget_value;
@@ -507,7 +507,7 @@ gasnet_valget_handle_t gasnet_get_nb_val(gasnet_node_t _node, void *_src, size_t
 #endif
   _result->gasneti_valget_value = 0;
   //assert(_nbytes > 0 && _nbytes <= sizeof(gex_RMA_Value_t));
-  _result->gasneti_valget_event = gex_RMA_GetNB(gasneti_thunk_tm, _dest, _node, _src, _nbytes, 0);
+  _result->gasneti_valget_event = gex_RMA_GetNB(gasneti_thunk_tm, _dest, _node, _src, _nbytes, GASNETI_FLAG_G2EX_DEBUG);
   return _result;
 }
 
@@ -526,11 +526,11 @@ gasnet_register_value_t gasnet_wait_syncnb_valget(gasnet_valget_handle_t _handle
 /* Value Puts - blocking, and explicit- and implicit-handle non-blocking */
 
 #define gasnet_put_val(node,dest,value,nbytes) \
-         ((void)gex_RMA_PutBlockingVal(gasneti_thunk_tm,node,dest,value,nbytes,0))
+         ((void)gex_RMA_PutBlockingVal(gasneti_thunk_tm,node,dest,value,nbytes,GASNETI_FLAG_G2EX_DEBUG))
 #define gasnet_put_nb_val(node,dest,value,nbytes) \
-                gex_RMA_PutNBVal(gasneti_thunk_tm,node,dest,value,nbytes,0)
+                gex_RMA_PutNBVal(gasneti_thunk_tm,node,dest,value,nbytes,GASNETI_FLAG_G2EX_DEBUG)
 #define gasnet_put_nbi_val(node,dest,value,nbytes) \
-         ((void)gex_RMA_PutNBIVal(gasneti_thunk_tm,node,dest,value,nbytes,0))
+         ((void)gex_RMA_PutNBIVal(gasneti_thunk_tm,node,dest,value,nbytes,GASNETI_FLAG_G2EX_DEBUG))
 
 /* ------------------------------------------------------------------------------------ */
 /* Memset */
@@ -584,29 +584,29 @@ extern int         gasneti_legacy_memset_nbi(gex_Rank_t _node, void *_dest, int 
 /* VIS */
 
 #define gasnet_putv_bulk(dstrank,dstcount,dstlist,srccount,srclist) \
- ((void)gex_VIS_VectorPutBlocking(gasneti_thunk_tm,dstrank,dstcount,(gex_Memvec_t*)(dstlist),srccount,(gex_Memvec_t*)(srclist),0))
+ ((void)gex_VIS_VectorPutBlocking(gasneti_thunk_tm,dstrank,dstcount,(gex_Memvec_t*)(dstlist),srccount,(gex_Memvec_t*)(srclist),GASNETI_FLAG_G2EX_DEBUG))
 #define gasnet_getv_bulk(dstcount,dstlist,srcrank,srccount,srclist) \
- ((void)gex_VIS_VectorGetBlocking(gasneti_thunk_tm,dstcount,(gex_Memvec_t*)(dstlist),srcrank,srccount,(gex_Memvec_t*)(srclist),0))
+ ((void)gex_VIS_VectorGetBlocking(gasneti_thunk_tm,dstcount,(gex_Memvec_t*)(dstlist),srcrank,srccount,(gex_Memvec_t*)(srclist),GASNETI_FLAG_G2EX_DEBUG))
 #define gasnet_putv_nb_bulk(dstrank,dstcount,dstlist,srccount,srclist) \
-       gex_VIS_VectorPutNB(gasneti_thunk_tm,dstrank,dstcount,(gex_Memvec_t*)(dstlist),srccount,(gex_Memvec_t*)(srclist),0)
+       gex_VIS_VectorPutNB(gasneti_thunk_tm,dstrank,dstcount,(gex_Memvec_t*)(dstlist),srccount,(gex_Memvec_t*)(srclist),GASNETI_FLAG_G2EX_DEBUG)
 #define gasnet_getv_nb_bulk(dstcount,dstlist,srcrank,srccount,srclist) \
-       gex_VIS_VectorGetNB(gasneti_thunk_tm,dstcount,(gex_Memvec_t*)(dstlist),srcrank,srccount,(gex_Memvec_t*)(srclist),0)
+       gex_VIS_VectorGetNB(gasneti_thunk_tm,dstcount,(gex_Memvec_t*)(dstlist),srcrank,srccount,(gex_Memvec_t*)(srclist),GASNETI_FLAG_G2EX_DEBUG)
 #define gasnet_putv_nbi_bulk(dstrank,dstcount,dstlist,srccount,srclist) \
- ((void)gex_VIS_VectorPutNBI(gasneti_thunk_tm,dstrank,dstcount,(gex_Memvec_t*)(dstlist),srccount,(gex_Memvec_t*)(srclist),0))
+ ((void)gex_VIS_VectorPutNBI(gasneti_thunk_tm,dstrank,dstcount,(gex_Memvec_t*)(dstlist),srccount,(gex_Memvec_t*)(srclist),GASNETI_FLAG_G2EX_DEBUG))
 #define gasnet_getv_nbi_bulk(dstcount,dstlist,srcrank,srccount,srclist) \
- ((void)gex_VIS_VectorGetNBI(gasneti_thunk_tm,dstcount,(gex_Memvec_t*)(dstlist),srcrank,srccount,(gex_Memvec_t*)(srclist),0))
+ ((void)gex_VIS_VectorGetNBI(gasneti_thunk_tm,dstcount,(gex_Memvec_t*)(dstlist),srcrank,srccount,(gex_Memvec_t*)(srclist),GASNETI_FLAG_G2EX_DEBUG))
 #define gasnet_puti_bulk(dstrank,dstcount,dstlist,dstlen,srccount,srclist,srclen) \
- ((void)gex_VIS_IndexedPutBlocking(gasneti_thunk_tm,dstrank,dstcount,dstlist,dstlen,srccount,srclist,srclen,0))
+ ((void)gex_VIS_IndexedPutBlocking(gasneti_thunk_tm,dstrank,dstcount,dstlist,dstlen,srccount,srclist,srclen,GASNETI_FLAG_G2EX_DEBUG))
 #define gasnet_geti_bulk(dstcount,dstlist,dstlen,srcrank,srccount,srclist,srclen) \
- ((void)gex_VIS_IndexedGetBlocking(gasneti_thunk_tm,dstcount,dstlist,dstlen,srcrank,srccount,srclist,srclen,0))
+ ((void)gex_VIS_IndexedGetBlocking(gasneti_thunk_tm,dstcount,dstlist,dstlen,srcrank,srccount,srclist,srclen,GASNETI_FLAG_G2EX_DEBUG))
 #define gasnet_puti_nb_bulk(dstrank,dstcount,dstlist,dstlen,srccount,srclist,srclen) \
-       gex_VIS_IndexedPutNB(gasneti_thunk_tm,dstrank,dstcount,dstlist,dstlen,srccount,srclist,srclen,0)
+       gex_VIS_IndexedPutNB(gasneti_thunk_tm,dstrank,dstcount,dstlist,dstlen,srccount,srclist,srclen,GASNETI_FLAG_G2EX_DEBUG)
 #define gasnet_geti_nb_bulk(dstcount,dstlist,dstlen,srcrank,srccount,srclist,srclen) \
-       gex_VIS_IndexedGetNB(gasneti_thunk_tm,dstcount,dstlist,dstlen,srcrank,srccount,srclist,srclen,0)
+       gex_VIS_IndexedGetNB(gasneti_thunk_tm,dstcount,dstlist,dstlen,srcrank,srccount,srclist,srclen,GASNETI_FLAG_G2EX_DEBUG)
 #define gasnet_puti_nbi_bulk(dstrank,dstcount,dstlist,dstlen,srccount,srclist,srclen) \
- ((void)gex_VIS_IndexedPutNBI(gasneti_thunk_tm,dstrank,dstcount,dstlist,dstlen,srccount,srclist,srclen,0))
+ ((void)gex_VIS_IndexedPutNBI(gasneti_thunk_tm,dstrank,dstcount,dstlist,dstlen,srccount,srclist,srclen,GASNETI_FLAG_G2EX_DEBUG))
 #define gasnet_geti_nbi_bulk(dstcount,dstlist,dstlen,srcrank,srccount,srclist,srclen) \
- ((void)gex_VIS_IndexedGetNBI(gasneti_thunk_tm,dstcount,dstlist,dstlen,srcrank,srccount,srclist,srclen,0))
+ ((void)gex_VIS_IndexedGetNBI(gasneti_thunk_tm,dstcount,dstlist,dstlen,srcrank,srccount,srclist,srclen,GASNETI_FLAG_G2EX_DEBUG))
 
 // dedicated g2ex wrappers translate the Strided metadata from legacy to EX format
 #define gasnet_puts_bulk(dstrank,dstaddr,dststrides,srcaddr,srcstrides,count,stridelevels) \

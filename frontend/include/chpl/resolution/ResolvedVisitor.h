@@ -41,6 +41,8 @@ static bool resolvedVisitorEnterFor(ResolvedVisitorImpl& v,
       const ResolvedExpression& rr = v.byAst(loop);
       const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
 
+      if (resolvedLoop == nullptr) return false;
+
       const AstNode* iterand = loop->iterand();
       iterand->traverse(v);
 

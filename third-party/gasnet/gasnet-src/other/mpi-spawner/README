@@ -131,3 +131,7 @@ Recognized Environment Variables:
     progress threads.
   + MULTIPLE - Multi-threaded GASNet+MPI process that makes direct calls to MPI.
   See MPI documentation for detailed explanation of the threading levels.
+
+* GASNET_MPI_FINALIZE - a Boolean defaulting to True
+  If and only if the value is true, then mpi-spawner will call MPI_Finalize()
+  during normal gasnet_exit() processing.

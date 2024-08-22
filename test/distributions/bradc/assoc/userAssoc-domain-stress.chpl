@@ -4,7 +4,7 @@ use Random;
 config const requestCapacity = true;
 config const updatesPerLocale = 10000;
 
-var D: domain(int) dmapped hashedDist(idxType=int);
+var D: domain(int) dmapped new hashedDist(idxType=int);
 
 if requestCapacity then
   D.requestCapacity(updatesPerLocale*numLocales);

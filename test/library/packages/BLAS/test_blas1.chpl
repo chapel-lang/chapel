@@ -366,8 +366,8 @@ proc test_scal_helper(type t) {
   {
     const D = {0..2};
 
-    var a = 1.5: t,
-        X: [D] t = [1: t, 2: t, 3: t];
+    const a = 1.5: t;
+    var X: [D] t = [1: t, 2: t, 3: t];
 
     const Xin = X;
 
@@ -417,7 +417,7 @@ proc test_axpy_helper(type t) {
     var X: [D] t = [1: t, 2: t, 3: t],
         Y: [D] t = [3: t, 2: t, 1: t];
 
-    var a = 2: t;
+    const a = 2: t;
 
     const Yin = Y;
 

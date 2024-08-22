@@ -4,7 +4,7 @@ config const n = 100,
              printArray = true;
 
 class C {
-  const D = {1..n} dmapped blockDist({1..n});
+  const D = {1..n} dmapped new blockDist({1..n});
   var A: [D] real;
 }
 

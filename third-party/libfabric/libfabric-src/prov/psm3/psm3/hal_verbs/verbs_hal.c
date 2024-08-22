@@ -166,8 +166,8 @@ static void psm3_hfp_verbs_mq_init_defaults(struct psm2_mq *mq)
 	 * Otherwise these defaults are used.
 	 */
 	unsigned rdmamode = psm3_verbs_parse_rdmamode(1);
-	mq->hfi_thresh_rv = 64000;
-	mq->hfi_base_window_rv = 131072;
+	mq->hfi_thresh_rv = PSM_MQ_NIC_RNDV_THRESH;
+	mq->ips_cpu_window_rv_str = PSM_CPU_NIC_RNDV_WINDOW_STR;
 	if (! (rdmamode & IPS_PROTOEXP_FLAG_ENABLED)) {
 		// TBD - when RDMA is disabled do we want to disable rendezvous?
 		// even without RDMA, the receiver controlled pacing helps scalability
@@ -176,7 +176,7 @@ static void psm3_hfp_verbs_mq_init_defaults(struct psm2_mq *mq)
 	mq->hfi_thresh_tiny = PSM_MQ_NIC_MAX_TINY;
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	if (PSMI_IS_GPU_ENABLED)
-		mq->hfi_base_window_rv = 2097152;
+		mq->ips_gpu_window_rv_str = PSM_GPU_NIC_RNDV_WINDOW_STR;
 #endif
 	// we parse mr_cache_mode and rv_gpu_cache_size here so we can cache it
 	// once per EP open, even if multi-rail or multi-QP
@@ -196,7 +196,7 @@ static void psm3_hfp_verbs_ep_open_opts_get_defaults(struct psm3_ep_open_opts *o
 	opts->imm_size = VERBS_SEND_MAX_INLINE; // PSM header size is 56
 }
 
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 static void psm3_hfp_verbs_gdr_open(void)
 {
 }
@@ -284,7 +284,7 @@ static hfp_verbs_t psm3_verbs_hi = {
 		.hfp_mq_init_defaults			  = psm3_hfp_verbs_mq_init_defaults,
 		.hfp_ep_open_opts_get_defaults		  = psm3_hfp_verbs_ep_open_opts_get_defaults,
 		.hfp_context_initstats			  = psm3_hfp_verbs_context_initstats,
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 		.hfp_gdr_open				  = psm3_hfp_verbs_gdr_open,
 #endif
 
@@ -331,9 +331,6 @@ static hfp_verbs_t psm3_verbs_hi = {
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 		.hfp_gdr_close				  = psm3_hfp_verbs_gdr_close,
 		.hfp_gdr_convert_gpu_to_host_addr	  = psm3_hfp_verbs_gdr_convert_gpu_to_host_addr,
-#ifdef PSM_ONEAPI
-		.hfp_gdr_munmap_gpu_to_host_addr	  = psm3_hfp_verbs_gdr_munmap_gpu_to_host_addr,
-#endif
 #endif /* PSM_CUDA || PSM_ONEAPI */
 		.hfp_get_port_index2pkey		  = psm3_hfp_verbs_get_port_index2pkey,
 		.hfp_poll_type				  = psm3_hfp_verbs_poll_type,
@@ -349,4 +346,7 @@ static void __attribute__ ((constructor)) __psmi_hal_verbs_constructor(void)
 {
 	psm3_hal_register_instance((psmi_hal_instance_t*)&psm3_verbs_hi);
 }
+/* Dummy var used to force Static compilation to include HAL objects when linking */
+int verbs_hal_called = -1;
+
 #endif /* PSM_VERBS */

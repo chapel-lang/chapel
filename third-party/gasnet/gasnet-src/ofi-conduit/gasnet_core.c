@@ -100,9 +100,12 @@ static int gasnetc_init( gex_Client_t            *client_p,
   // by default despite `srun` being the launch utility for both MPI and PMI.
   // So, a little extra logic here overrides the normal precedence of MPI over
   // PMI in gasneti_spawnerInit().
-  const char *spawn_control = gasneti_getenv("GASNET_SPAWN_CONTROL"); // not a user knob.  thus not logged
+  const char *spawn_control = gasneti_getenv("GASNET_OFI_SPAWNER"); // just testing for unset/empty
+  // Following line is a *temporary* fall-back to the legacy variable:
+  if (!spawn_control || !spawn_control[0]) spawn_control = gasneti_getenv("GASNET_SPAWN_CONTROL");
   if (!spawn_control || !spawn_control[0]) {
     force_spawner = "PMI";
+    gasneti_envstr_display("GASNET_OFI_SPAWNER", "PMI", 1);
   }
 #endif
   gasneti_spawner = gasneti_spawnerInit(argc, argv, force_spawner, &gasneti_nodes, &gasneti_mynode);
@@ -345,7 +348,7 @@ extern int gasnetc_ep_bindsegment_hook(
 /* ------------------------------------------------------------------------------------ */
 int gasnetc_exit_in_progress = 0;
 
-static gasneti_atomic_t gasnetc_exit_code = gasneti_atomic_init(0);     /* value to _exit() with */
+/* gasneti_exit_code holds value to _exit() with */
 
 static const char * volatile gasnetc_exit_state = "UNKNOWN STATE";
 
@@ -381,7 +384,7 @@ static int gasnetc_exit_init(void) {
  * DOES NOT RETURN
  */
 static void gasnetc_exit_sighandler(int sig) {
-  int exitcode = (int)gasneti_atomic_read(&gasnetc_exit_code, 0);
+  int exitcode = (int)gasneti_atomic_read(&gasneti_exit_code, 0);
   static gasneti_atomic_t once = gasneti_atomic_init(1);
 
 #if GASNET_DEBUG
@@ -492,7 +495,7 @@ static int gasnetc_exit_coordinate(int exitcode) {
 
 extern void gasnetc_exit(int exitcode) {
   gasnetc_exit_in_progress = 1;
-  gasneti_atomic_set(&gasnetc_exit_code, exitcode, GASNETI_ATOMIC_REL);
+  gasneti_atomic_set(&gasneti_exit_code, exitcode, GASNETI_ATOMIC_REL);
 
   /* once we start a shutdown, ignore all future SIGQUIT signals or we risk reentrancy */
   gasneti_reghandler(SIGQUIT, SIG_IGN);
@@ -654,8 +657,8 @@ extern int gasnetc_AMPoll(GASNETI_THREAD_FARG_ALONE) {
 
 /* ------------------------------------------------------------------------------------ */
 /*
-  Active Message Request Functions
-  ================================
+  Active Message Request Functions (FPAM)
+  =======================================
 */
 
 GASNETI_INLINE(gasnetc_AMRequestShort)
@@ -919,6 +922,145 @@ extern int gasnetc_AMReplyLongM(
   va_end(argptr);
   return retval;
 }
+
+/*
+  Active Message Request Functions (NPAM)
+  =======================================
+*/
+
+#if GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM
+
+extern gex_AM_SrcDesc_t gasnetc_AM_PrepareRequestMedium(
+                       gex_TM_t           tm,
+                       gex_Rank_t         rank,
+                       const void        *client_buf,
+                       size_t             least_payload,
+                       size_t             most_payload,
+                       gex_Event_t       *lc_opt,
+                       gex_Flags_t        flags
+                       GASNETI_THREAD_FARG,
+                       unsigned int       numargs)
+{
+    GASNETI_TRACE_PREP_REQUESTMEDIUM(tm,rank,client_buf,least_payload,most_payload,flags,numargs);
+    GASNETC_IMMEDIATE_MAYBE_POLL(flags); // Ensure at least one poll upon Request injection
+
+    gasneti_AM_SrcDesc_t sd = gasneti_init_request_srcdesc(GASNETI_THREAD_PASS_ALONE);
+    GASNETI_COMMON_PREP_REQ(sd,tm,rank,client_buf,least_payload,most_payload,NULL,lc_opt,flags,numargs,Medium);
+
+    flags &= ~(GEX_FLAG_AM_PREPARE_LEAST_CLIENT | GEX_FLAG_AM_PREPARE_LEAST_ALLOC);
+
+    gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
+
+    if (GASNETI_NBRHD_JOBRANK_IS_LOCAL(jobrank)) {
+        sd = gasnetc_nbrhd_PrepareRequest(sd, gasneti_Medium, jobrank,
+                                          client_buf, least_payload, most_payload,
+                                          NULL, lc_opt, flags, numargs);
+    } else {
+        size_t size = gasnetc_AM_MaxRequestMedium(tm, rank, lc_opt, flags, numargs);
+        size = MIN(size, most_payload);
+        size = MAX(size, least_payload);
+        sd = gasnetc_ofi_PrepareMedium(sd, /*isreq*/1, jobrank, client_buf,
+                                       size, flags, numargs GASNETI_THREAD_PASS);
+        if (lc_opt) gasneti_leaf_finish(lc_opt); // TODO-EX: async LC
+    }
+
+    GASNETI_TRACE_PREP_RETURN(REQUEST_MEDIUM, sd);
+    GASNETI_CHECK_SD(client_buf, least_payload, most_payload, sd);
+    return gasneti_export_srcdesc(sd);
+}
+
+extern void gasnetc_AM_CommitRequestMediumM(
+                       gex_AM_Index_t          handler,
+                       size_t                  nbytes
+                       GASNETI_THREAD_FARG,
+                     #if GASNET_DEBUG
+                       unsigned int            nargs_arg,
+                     #endif
+                       gex_AM_SrcDesc_t        sd_arg, ...)
+{
+    gasneti_AM_SrcDesc_t sd = gasneti_import_srcdesc(sd_arg);
+
+    GASNETI_COMMON_COMMIT_REQ(sd,handler,nbytes,NULL,nargs_arg,Medium);
+
+    va_list argptr;
+    va_start(argptr, sd_arg);
+    if (sd->_is_nbrhd) {
+        gasnetc_nbrhd_CommitRequest(sd, gasneti_Medium, handler, nbytes, NULL, argptr);
+    } else {
+        gasnetc_ofi_CommitMedium(sd, /*isreq*/1, handler, nbytes, argptr GASNETI_THREAD_PASS);
+    }
+    va_end(argptr);
+
+    gasneti_reset_srcdesc(sd);
+}
+
+#endif // GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM
+
+#if GASNET_NATIVE_NP_ALLOC_REP_MEDIUM
+
+extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyMedium(
+                       gex_Token_t        token,
+                       const void        *client_buf,
+                       size_t             least_payload,
+                       size_t             most_payload,
+                       gex_Event_t       *lc_opt,
+                       gex_Flags_t        flags,
+                       unsigned int       numargs)
+{
+    GASNETI_TRACE_PREP_REPLYMEDIUM(token,client_buf,least_payload,most_payload,flags,numargs);
+
+    gasneti_AM_SrcDesc_t sd;
+    flags &= ~(GEX_FLAG_AM_PREPARE_LEAST_CLIENT | GEX_FLAG_AM_PREPARE_LEAST_ALLOC);
+
+    if (gasnetc_token_in_nbrhd(token)) {
+        sd = gasnetc_nbrhd_PrepareReply(gasneti_Medium, token,
+                                        client_buf, least_payload, most_payload,
+                                        NULL, lc_opt, flags, numargs);
+    } else {
+        GASNET_BEGIN_FUNCTION(); // TODO-EX: stash threadinfo in token
+        sd = gasneti_init_reply_srcdesc(GASNETI_THREAD_PASS_ALONE);
+        GASNETI_COMMON_PREP_REP(sd,token,client_buf,least_payload,most_payload,NULL,lc_opt,flags,numargs,Medium);
+
+        size_t size = gasnetc_Token_MaxReplyMedium(token, lc_opt, flags, numargs);
+        size = MIN(size, most_payload);
+        size = MAX(size, least_payload);
+        gex_Rank_t jobrank = ((gasnetc_ofi_am_send_buf_t*)token)->sourceid;
+        sd = gasnetc_ofi_PrepareMedium(sd, /*isreq*/0, jobrank, client_buf,
+                                       size, flags, numargs GASNETI_THREAD_PASS);
+        if (lc_opt) gasneti_leaf_finish(lc_opt); // TODO-EX: async LC
+    }
+
+    GASNETI_TRACE_PREP_RETURN(REPLY_MEDIUM, sd);
+    GASNETI_CHECK_SD(client_buf, least_payload, most_payload, sd);
+    return gasneti_export_srcdesc(sd);
+}
+
+extern void gasnetc_AM_CommitReplyMediumM(
+                       gex_AM_Index_t          handler,
+                       size_t                  nbytes,
+                     #if GASNET_DEBUG
+                       unsigned int            nargs_arg,
+                     #endif
+                       gex_AM_SrcDesc_t        sd_arg, ...)
+{
+    gasneti_AM_SrcDesc_t sd = gasneti_import_srcdesc(sd_arg);
+
+    GASNETI_COMMON_COMMIT_REP(sd,handler,nbytes,NULL,nargs_arg,Medium);
+
+    va_list argptr;
+    va_start(argptr, sd_arg);
+    if (sd->_is_nbrhd) {
+        gasnetc_nbrhd_CommitReply(sd, gasneti_Medium, handler, nbytes, NULL, argptr);
+    } else {
+        GASNET_POST_THREADINFO(sd->_thread);
+        gasnetc_ofi_CommitMedium(sd, /*isreq*/0, handler, nbytes, argptr GASNETI_THREAD_PASS);
+    }
+    va_end(argptr);
+
+    gasneti_reset_srcdesc(sd);
+}
+
+#endif // GASNET_NATIVE_NP_ALLOC_REP_MEDIUM
 
 /* ------------------------------------------------------------------------------------ */
 /*

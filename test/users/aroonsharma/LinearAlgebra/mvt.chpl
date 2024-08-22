@@ -182,10 +182,10 @@ proc main() {
         var user_dist = dom dmapped CyclicZipOpt(startIdx=dom.low);
         kernel_mvt(user_dist, Dim);   */
     } else if dist == "C" {
-        var user_dist = dom dmapped cyclicDist(startIdx=dom.low);
+        var user_dist = dom dmapped new cyclicDist(startIdx=dom.low);
         kernel_mvt(user_dist, Dim); 
     } else if dist == "B" {
-        var user_dist = dom dmapped blockDist(boundingBox=dom);
+        var user_dist = dom dmapped new blockDist(boundingBox=dom);
         kernel_mvt(user_dist, Dim);  
     } 
 }

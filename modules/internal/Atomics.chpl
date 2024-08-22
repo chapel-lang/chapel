@@ -167,20 +167,20 @@ module Atomics {
   // Compute the C/Runtime type from the Chapel type
   // TODO support extern type renaming?
   private proc externT(type valType) type {
-    extern type atomic_bool;
+    extern "chpl_atomic_bool" type atomic_bool;
 
-    extern type atomic_int_least8_t;
-    extern type atomic_int_least16_t;
-    extern type atomic_int_least32_t;
-    extern type atomic_int_least64_t;
+    extern "chpl_atomic_int_least8_t" type atomic_int_least8_t;
+    extern "chpl_atomic_int_least16_t" type atomic_int_least16_t;
+    extern "chpl_atomic_int_least32_t" type atomic_int_least32_t;
+    extern "chpl_atomic_int_least64_t" type atomic_int_least64_t;
 
-    extern type atomic_uint_least8_t;
-    extern type atomic_uint_least16_t;
-    extern type atomic_uint_least32_t;
-    extern type atomic_uint_least64_t;
+    extern "chpl_atomic_uint_least8_t" type atomic_uint_least8_t;
+    extern "chpl_atomic_uint_least16_t" type atomic_uint_least16_t;
+    extern "chpl_atomic_uint_least32_t" type atomic_uint_least32_t;
+    extern "chpl_atomic_uint_least64_t" type atomic_uint_least64_t;
 
-    extern type atomic__real64;
-    extern type atomic__real32;
+    extern "chpl_atomic__real64" type atomic__real64;
+    extern "chpl_atomic__real32" type atomic__real32;
 
     select valType {
       when bool     do return atomic_bool;
@@ -227,6 +227,8 @@ module Atomics {
       return chpl__networkAtomicType(valType);
     }
   }
+
+  extern proc chpl_comm_ensure_progress(): void;
 
   pragma "atomic type"
   pragma "ignore noinit"
@@ -405,6 +407,7 @@ module Atomics {
     inline proc const waitFor(val:bool, param order: memoryOrder = memoryOrder.seqCst): void {
       on this {
         while (this.read(order=memoryOrder.relaxed) != val) {
+          chpl_comm_ensure_progress();
           currentTask.yieldExecution();
         }
         chpl_atomic_thread_fence(c_memory_order(order));
@@ -746,6 +749,7 @@ module Atomics {
     inline proc const waitFor(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
       on this {
         while (this.read(order=memoryOrder.relaxed) != val) {
+          chpl_comm_ensure_progress();
           currentTask.yieldExecution();
         }
         chpl_atomic_thread_fence(c_memory_order(order));

@@ -623,6 +623,8 @@ a parenthesized expression-list, the listed expressions must support
 zippered iteration.
 
 .. index::
+   single: zip
+   pair: keywords; zip
    single: zippered iteration
    single: iteration; zippered
 .. _Zippered_Iteration:
@@ -665,6 +667,7 @@ support iteration over a 2D `m` x `n` space as well.
 
 .. index::
    single: statements; param for
+   single: for param
    single: for loops; param
    pair: for; param
 .. _Parameter_For_Loops:
@@ -780,11 +783,16 @@ The Require Statement
 ---------------------
 
 The require statement provides a means to specify required files from
-within the program. It has an effect similar to adding the specified
-files to the Chapel compiler's command line. The filenames are relative
+within the program. This forms an alternative to listing them on the
+command line.
+
+The filenames are relative
 to the directory from which the Chapel compiler was invoked. Any
 directories specified using the Chapel compiler's -I or -L flags will
-also be searched for matching files.
+also be searched for matching .h or .a files, respectively. Similarly,
+filenames that are .chpl files not containing a slash will
+be searched for in the usual module search path (which can be adjusted
+with the -M flag).
 
 .. code-block:: syntax
 

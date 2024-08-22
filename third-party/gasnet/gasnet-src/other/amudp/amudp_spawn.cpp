@@ -232,7 +232,7 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
 
   ssh_servers = AMUDP_getenv_prefixed_withdefault("SSH_SERVERS","");
   if (!strlen(ssh_servers)) {
-    AMX_Err("Environment variable SSH_SERVERS is missing.");
+    AMX_Err("Environment variable " AMX_ENV_PREFIX_STR "_SSH_SERVERS is missing.");
     return FALSE;
   }
 
@@ -266,7 +266,7 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
     while (*p && strchr(SSH_SERVERS_DELIM_CHARS, *p)) p++;
     end = p + strcspn(p, SSH_SERVERS_DELIM_CHARS);
     if (p == end) {
-      AMX_Err("Not enough machines in environment variable SSH_SERVERS to satisfy request for (%i).\n"
+      AMX_Err("Not enough machines in environment variable " AMX_ENV_PREFIX_STR "_SSH_SERVERS to satisfy request for (%i).\n"
        "Only (%i) machines available: %s", nproc, i, ssh_servers);
       return FALSE;
     }

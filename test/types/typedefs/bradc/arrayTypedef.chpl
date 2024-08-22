@@ -2,7 +2,7 @@ use BlockDist;
 
 type ArrType = [1..8] real;
 type ArrOfArr = [1..2] [1..3] real;
-type DistArr = [{1..10} dmapped blockDist({1..10})] real;
+type DistArr = [{1..10} dmapped new blockDist({1..10})] real;
 
 proc main() {
   var A: ArrType;

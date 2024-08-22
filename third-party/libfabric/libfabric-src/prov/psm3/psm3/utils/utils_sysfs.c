@@ -76,6 +76,7 @@
 #include "psm_config.h"
 
 #include "utils_sysfs.h"
+#include "utils_env.h"
 
 #ifdef free
 #error "heap debugging macros not allowed here, check header inclusion"
@@ -100,14 +101,19 @@ static int filter_dir(const struct dirent *item) {
 int psm3_sysfs_init(const char *nic_class_path, const psm3_port_path_type port_path_fmt)
 {
 	char *sysfs_path_env;
+	union psmi_envvar_val envval;
 
 	// We need explicit HAL selection when explicit device selected.
 	// User may get undefined results if they use wildcards in PSM3_HAL.
 	// This is an undocumented feature for rare use cases with
 	// instruction from an expert.
-	if (getenv("PSM3_HAL")
-			&& NULL != (sysfs_path_env = getenv("PSM3_SYSFS_PATH")))
+	if (psm3_env_get("PSM3_HAL") &&
+		! psm3_getenv("PSM3_SYSFS_PATH",
+				"Directory to use for information on a single NIC to use (instead of /sys/class/....), can use to workaround incomplete or incorrect /sys/class information",
+				PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_STR,
+				(union psmi_envvar_val)"", &envval))
 	{
+		sysfs_path_env = envval.e_str;
 		// exact path to 1 device provided, only consider it
 		snprintf(psm3_sysfs_paths[0], PATH_MAX, "%s", sysfs_path_env);
 		psm3_sysfs_path_count = 1;
@@ -235,6 +241,8 @@ static int psm3_sysfs_unit_open(uint32_t unit, const char *attr, int flags)
 		_HFI_DBG("Failed to open attribute '%s' of unit %d: %s\n", attr,
 			 unit, strerror(errno));
 		_HFI_DBG("Offending file name: %s\n", buf);
+	} else {
+		_HFI_DBG("Opened %s\n", buf);
 	}
 
 	errno = saved_errno;
@@ -249,7 +257,7 @@ static int psm3_sysfs_unit_open_for_node(uint32_t unit, int flags)
 	const char *unitpath = psm3_sysfs_unit_path(unit);
 
 	if (unitpath == NULL) {
-		_HFI_DBG("Failed to open attribute numa_node of unit %d: %s\n",
+		_HFI_DBG("Failed to open attribute 'numa_node' of unit %d: %s\n",
 			 unit, "unit id not valid");
 		return -1;
 	}
@@ -259,9 +267,11 @@ static int psm3_sysfs_unit_open_for_node(uint32_t unit, int flags)
 	saved_errno = errno;
 
 	if (fd == -1) {
-		_HFI_DBG("Failed to open attribute numa_node of unit %d: %s\n",
+		_HFI_DBG("Failed to open attribute 'numa_node' of unit %d: %s\n",
 			 unit, strerror(errno));
 		_HFI_DBG("Offending file name: %s\n", buf);
+	} else {
+		_HFI_DBG("Opened %s\n", buf);
 	}
 
 	errno = saved_errno;
@@ -305,6 +315,8 @@ static int psm3_sysfs_port_open(uint32_t unit, uint32_t port, const char *attr,
 		_HFI_DBG("Failed to open attribute '%s' of unit %d:%d: %s\n",
 			 attr, unit, port, strerror(errno));
 		_HFI_DBG("Offending file name: %s\n", buf);
+	} else {
+		_HFI_DBG("Opened %s\n", buf);
 	}
 
 	errno = saved_errno;
@@ -329,19 +341,20 @@ static int read_page(int fd, char **datap)
 	ret = read(fd, data, psm3_sysfs_page_size);
 	saved_errno = errno;
 
-	if (ret == -1) {
+	if (ret < 0) {
 		_HFI_DBG("Read of attribute failed: %s\n", strerror(errno));
 		goto bail;
 	}
 
 bail:
-	if (ret == -1) {
+	if (ret < 0) {
 		free(data);
 	} else {
 		if (ret < psm3_sysfs_page_size)
 			data[ret] = 0;
 		else
 			data[psm3_sysfs_page_size-1] = 0;
+		_HFI_DBG("Read: %s\n", data);
 		*datap = data;
 	}
 
@@ -375,7 +388,7 @@ int psm3_sysfs_unit_read(uint32_t unit, const char *attr, char **datap)
 	saved_errno = errno;
 
 bail:
-	if (ret == -1)
+	if (ret < 0)
 		*datap = NULL;
 
 	if (fd != -1) {
@@ -386,6 +399,7 @@ bail:
 	return ret;
 }
 
+#if 0
 /* read a string value directly into buff, no more than size bytes.
    returns the number of bytes read */
 size_t psm3_sysfs_unit_port_read(uint32_t unit, uint32_t port, const char *attr,
@@ -403,13 +417,16 @@ size_t psm3_sysfs_unit_port_read(uint32_t unit, uint32_t port, const char *attr,
 
 	close(fd);
 
-	if (rv < size)
+	if (rv < 0)
+		_HFI_DBG("Read of attribute failed: %s\n", strerror(errno));
+	else if (rv < size)
 		buff[rv] = 0;
 	else
 		buff[size-1] = 0;
 
 	return rv;
 }
+#endif
 
 /*
  * On return, caller must free *datap via psm3_sysfs_free
@@ -430,7 +447,7 @@ int psm3_sysfs_port_read(uint32_t unit, uint32_t port, const char *attr,
 	saved_errno = errno;
 
 bail:
-	if (ret == -1)
+	if (ret < 0)
 		*datap = NULL;
 
 	if (fd != -1) {
@@ -487,7 +504,7 @@ static int psm3_sysfs_unit_read_node(uint32_t unit, char **datap)
 		goto bail;
 
 	ret = read_page(fd, datap);
-	if (ret == -1)
+	if (ret < 0)
 		*datap = NULL;
 
 	saved_errno = errno;
@@ -688,9 +705,11 @@ int psm3_sysfs_get_unit_device_version(int unit, char *buf, size_t bufsize)
 
 	int ret = psm3_sysfs_unit_read(unit, "device/revision", &device);
 	if (ret == -1) {
-		_HFI_DBG("Failed to get device version for unit %u: %s\n",
+		// in some virtualized environments the file may not be present
+		_HFI_DBG("Failed to get device version for unit %u: %s: Using 'none'\n",
 			unit, strerror(errno));
-		return ret;
+		ret = snprintf(buf, bufsize, "none");
+		return ret < 0 ? -1 : 0;
 	}
 	char *nl = strchr(device, '\n');
 	if (nl) *nl = '\0';

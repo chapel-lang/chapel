@@ -209,8 +209,10 @@ static int psm3_hfp_loopback_get_port_lid(int unit, int port, int addr_index)
 // also prior to the EP being opened
 static void psm3_hfp_loopback_mq_init_defaults(struct psm2_mq *mq)
 {
-	/* these are only used by ptl_ips */
-	mq->hfi_base_window_rv =  (~(uint32_t)0); // no rendezvous
+	mq->ips_cpu_window_rv_str =  NULL; // no rendezvous
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+	mq->ips_gpu_window_rv_str =  NULL; // no rendezvous
+#endif
 	mq->hfi_thresh_rv = (~(uint32_t)0); // disable rendezvous
 	mq->hfi_thresh_tiny = PSM_MQ_NIC_MAX_TINY;
 	// RDMA and MR cache N/A, leave ep->rdmamode, ep->mr_cache_mode and
@@ -230,7 +232,7 @@ static int psm3_hfp_loopback_get_default_pkey(void)
 	return 0x8001;	// not used (only used in ptl_ips), pick a safe value
 }
 
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 static void psm3_hfp_loopback_gdr_open(void)
 {
 	/* disable GPU Direct copy, no driver to help us */
@@ -265,7 +267,7 @@ hfp_loopback_t psm3_loopback_hi = {
 		.hfp_mq_init_defaults			  = psm3_hfp_loopback_mq_init_defaults,
 		.hfp_ep_open_opts_get_defaults		  = psm3_hfp_loopback_ep_open_opts_get_defaults,
 		.hfp_context_initstats			  = NULL, // ptl_ips only
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 		.hfp_gdr_open			  	= psm3_hfp_loopback_gdr_open,
 #endif
 
@@ -315,9 +317,6 @@ hfp_loopback_t psm3_loopback_hi = {
 #if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 		.hfp_gdr_close				  = NULL,
 		.hfp_gdr_convert_gpu_to_host_addr	  = NULL,
-#ifdef PSM_ONEAPI
-		.hfp_gdr_munmap_gpu_to_host_addr	  = NULL,
-#endif
 #endif /* PSM_CUDA || PSM_ONEAPI */
 		.hfp_get_port_index2pkey		  = NULL,
 		.hfp_poll_type				  = NULL,

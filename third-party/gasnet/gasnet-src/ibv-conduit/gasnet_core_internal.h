@@ -142,6 +142,13 @@ extern gasneti_atomic_t gasnetc_exit_running;
   #define GASNETC_USE_RCV_THREAD 0
 #endif
 
+// GASNETC_USE_SND_THREAD enables a progress thread for reaping send completions
+#if GASNETC_IBV_SND_THREAD
+  #define GASNETC_USE_SND_THREAD 1
+#else
+  #define GASNETC_USE_SND_THREAD 0
+#endif
+
 /* ------------------------------------------------------------------------------------ */
 /* Measures of concurency
  *
@@ -159,7 +166,7 @@ extern gasneti_atomic_t gasnetc_exit_running;
   #define GASNETC_CLI_PAR 0
 #endif
 
-#define GASNETC_ANY_PAR         (GASNETC_CLI_PAR || GASNETC_USE_RCV_THREAD)
+#define GASNETC_ANY_PAR         (GASNETC_CLI_PAR || GASNETC_USE_RCV_THREAD || GASNETC_USE_SND_THREAD)
 
 /* ------------------------------------------------------------------------------------ */
 
@@ -386,9 +393,11 @@ void gasnetc_counter_wait(gasnetc_counter_t *counter, int handler_context GASNET
 /* ------------------------------------------------------------------------------------ */
 
 #if (GASNETC_IB_MAX_HCAS > 1)
+  extern int gasnetc_num_hcas;
   #define GASNETC_FOR_ALL_HCA_INDEX(h)	for (h = 0; h < gasnetc_num_hcas; ++h)
   #define GASNETC_FOR_ALL_HCA(p)	for (p = &gasnetc_hca[0]; p < &gasnetc_hca[gasnetc_num_hcas]; ++p)
 #else
+  #define gasnetc_num_hcas (1)
   #define GASNETC_FOR_ALL_HCA_INDEX(h)	for (h = 0; h < 1; ++h)
   #define GASNETC_FOR_ALL_HCA(p)	for (p = &gasnetc_hca[0]; p < &gasnetc_hca[1]; ++p)
 #endif
@@ -435,6 +444,10 @@ void gasnetc_counter_wait(gasnetc_counter_t *counter, int handler_context GASNET
     extern int gasnetc_rcv_thread_poll_serialize;
     extern int gasnetc_rcv_thread_poll_exclusive;
   #endif
+  #if GASNETC_USE_SND_THREAD
+    extern int gasnetc_snd_thread_poll_serialize;
+    extern int gasnetc_snd_thread_poll_exclusive;
+  #endif
 #else
   #define GASNETC_POLL_CQ_UP(sema_p)        do {} while (0)
   #define GASNETC_POLL_CQ_TRYDOWN(sema_p)   (0)
@@ -457,10 +470,17 @@ typedef struct {
   typedef struct {
     /* Initialized by create_cq or spawn_progress_thread: */
     pthread_t               thread_id;
-    uint64_t                prev_time;
-    uint64_t                min_ns;
+    struct {
+      uint64_t                ns;
+      uint64_t                timestamp;
+    } thread_rate;
+    struct {
+      uint64_t                ns;
+      uint64_t                timestamp;
+    } keep_alive;
     struct ibv_cq *         cq;
     struct ibv_comp_channel *compl;
+    volatile int            started;
     volatile int            done;
     /* Initialized by client: */
     void                    (*fn)(struct ibv_wc *, void *);
@@ -537,6 +557,11 @@ typedef struct {
  #if GASNETI_THREADINFO_OPT
   gasnet_threadinfo_t       rcv_threadinfo;
  #endif
+#endif
+
+#if GASNETC_USE_SND_THREAD
+  /* Snd thread */
+  gasnetc_progress_thread_t snd_thread;
 #endif
 
 #if GASNETC_SERIALIZE_POLL_CQ
@@ -957,7 +982,7 @@ extern int gasnetc_sndrcv_shutdown(void);
 extern void gasnetc_sndrcv_init_peer(gex_Rank_t node, gasnetc_cep_t *cep);
 extern void gasnetc_sndrcv_init_inline(void);
 extern void gasnetc_sndrcv_attach_peer(gex_Rank_t node, gasnetc_cep_t *cep);
-extern void gasnetc_sndrcv_start_thread(void);
+extern void gasnetc_sndrcv_start_thread(gex_Flags_t);
 extern void gasnetc_sndrcv_stop_thread(int block);
 extern void gasnetc_sndrcv_poll(int handler_context);
 extern int gasnetc_rdma_put(
@@ -1006,13 +1031,25 @@ extern void gasnetc_snd_post_common(
 
 extern void gasnetc_poll_rcv_hca(gasnetc_EP_t ep, gasnetc_hca_t *hca, int limit GASNETI_THREAD_FARG);
 extern void gasnetc_poll_rcv_all(gasnetc_EP_t ep, int limit GASNETI_THREAD_FARG);
-extern void gasnetc_do_poll(int poll_rcv, int poll_snd GASNETI_THREAD_FARG);
+extern int gasnetc_snd_reap(int limit);
+
+GASNETI_INLINE(gasnetc_do_poll)
+void gasnetc_do_poll(int poll_rcv, int poll_snd GASNETI_THREAD_FARG) {
+  const gasnetc_EP_t ep = gasnetc_ep0; // TODO-EX: replace this via args
+  if (poll_rcv) {
+    gasnetc_poll_rcv_all(ep, GASNETC_RCV_REAP_LIMIT GASNETI_THREAD_PASS);
+  }
+  if (poll_snd) {
+    (void)gasnetc_snd_reap(GASNETC_SND_REAP_LIMIT);
+  }
+}
 #define gasnetc_poll_rcv()    gasnetc_do_poll(1,0 GASNETI_THREAD_PASS)
 #define gasnetc_poll_snd()    gasnetc_do_poll(0,1 GASNETI_THREAD_PASS)
 #define gasnetc_poll_both()   gasnetc_do_poll(1,1 GASNETI_THREAD_PASS)
 
 /* Routines in gasnet_core_thread.c */
 #if GASNETI_CONDUIT_THREADS
+extern void *gasnetc_progress_thread(void *arg);
 extern void gasnetc_spawn_progress_thread(gasnetc_progress_thread_t *pthr);
 extern void gasnetc_stop_progress_thread(gasnetc_progress_thread_t *pthr, int block);
 #endif
@@ -1056,6 +1093,7 @@ extern const char *     gasnetc_connectfile_out;
 extern int              gasnetc_connectfile_out_base;
 
 extern int		gasnetc_use_rcv_thread;
+extern int		gasnetc_use_snd_thread;
 extern int		gasnetc_am_credits_slack;
 extern int		gasnetc_alloc_qps;    /* Number of QPs per node in gasnetc_ceps[] */
 extern int		gasnetc_num_qps;      /* How many QPs to use per peer */
@@ -1100,7 +1138,6 @@ extern int              gasnetc_qp_retry_count;
 #endif
 
 /* Global variables */
-extern int		gasnetc_num_hcas;
 extern gasnetc_hca_t	gasnetc_hca[GASNETC_IB_MAX_HCAS];
 extern uintptr_t	gasnetc_max_msg_sz;
 extern size_t   	gasnetc_put_stripe_sz, gasnetc_put_stripe_split;
@@ -1112,6 +1149,10 @@ extern gasnetc_port_info_t      *gasnetc_port_tbl;
 extern int                      gasnetc_num_ports;
 #if GASNETC_DYNAMIC_CONNECT
   extern gasnetc_sema_t         gasnetc_zero_sema;
+#endif
+#if (GASNETC_IB_MAX_HCAS > 1)
+  extern int gasnetc_snd_poll_multi_hcas;
+  extern int gasnetc_rcv_poll_multi_hcas;
 #endif
 
 /* ------------------------------------------------------------------------------------ */

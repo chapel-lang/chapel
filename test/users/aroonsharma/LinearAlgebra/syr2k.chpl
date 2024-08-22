@@ -156,10 +156,10 @@ proc main() {
         var dist_2D = dom_2D dmapped CyclicZipOpt(startIdx=dom_2D.low);
         kernel_syr2k(dist_2D, M, N); */
     } else if dist == "C" {
-        var dist_2D = dom_2D dmapped cyclicDist(startIdx=dom_2D.low);
+        var dist_2D = dom_2D dmapped new cyclicDist(startIdx=dom_2D.low);
         kernel_syr2k(dist_2D, M, N); 
     } else if dist == "B" {
-        var dist_2D = dom_2D dmapped blockDist(boundingBox=dom_2D);
+        var dist_2D = dom_2D dmapped new blockDist(boundingBox=dom_2D);
         kernel_syr2k(dist_2D, M, N);  
     } 
 }

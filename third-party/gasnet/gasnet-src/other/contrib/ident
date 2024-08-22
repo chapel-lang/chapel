@@ -1,0 +1,46 @@
+#!/usr/bin/env perl
+
+require 5.004;
+use strict;
+
+if ($ARGV[0] =~ /^-+[vh]/) {
+  die "ident (GASNet) 0.1
+This script extracts configuration information embedded in the GASNet library
+  and any executables that link it statically.
+Copyright (C) 2024, UC Regents. See GASNet license.txt for terms of use.
+
+Usage: $0 [file ...]
+  If no file is specified, reads from stdin.
+";
+}
+
+sub read_file {
+  my $FILE;
+  if (not @_) {
+    $FILE = *STDIN;
+  } else {
+    $FILE = $_[0];
+  }
+  local $/ = '$'; # use $ as the line break symbol
+  while (<$FILE>) {
+    print "     \$$_\n" if (/^[\w]+: [\w\s[:punct:]]+ \$/o);
+  }
+}
+
+shift if ($ARGV[0] eq '--');
+
+if (not @ARGV) {
+  read_file();
+}
+
+while ( my $exe = shift) {
+  my $FILE;
+  open (FILE, $exe) || die "Could not open file '$exe'";
+
+  print "$exe:\n";
+  read_file(*FILE);
+  close(FILE);
+
+  print "\n" if (@ARGV);
+}
+

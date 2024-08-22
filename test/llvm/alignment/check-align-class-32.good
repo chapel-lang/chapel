@@ -1,0 +1,4 @@
+check-align-class-32.chpl:13: error: alignments > 16 are currently not implemented for classes
+check-align-class-32.chpl:13: note: alignment 32 is requested by field 'field2' of class 'C2'
+check-align-class-32.chpl:17: error: alignments > 16 are currently not implemented for classes
+check-align-class-32.chpl:17: note: alignment 32 is requested by field 'field3' of class 'C3'

@@ -37,6 +37,7 @@
 
 #include "ofi_tree.h"
 #include "ofi_iov.h"
+#include "ofi_hmem.h"
 
 #include <hsa/hsa_ext_amd.h>
 
@@ -401,6 +402,7 @@ static struct ofi_mem_monitor rocr_mm = {
 	.subscribe = rocr_mm_subscribe,
 	.unsubscribe = rocr_mm_unsubscribe,
 	.valid = rocr_mm_valid,
+	.name = "rocr",
 };
 
 struct ofi_mem_monitor *rocr_monitor = &rocr_mm;

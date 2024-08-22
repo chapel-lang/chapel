@@ -1,0 +1,20 @@
+name: CI Format Check
+
+on:
+  pull_request:
+    paths:
+      - 'tools/chapel-py/**/*.py'
+      - 'tools/chplcheck/**/*.py'
+      - 'tools/chpl-language-server/**/*.py'
+  workflow_dispatch:
+
+jobs:
+  check-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: psf/black@stable
+        with:
+          options: "--check --verbose --line-length 80"
+          src: "./tools/chapel-py ./tools/chplcheck ./tools/chpl-language-server"
+          version: "24.4.0"

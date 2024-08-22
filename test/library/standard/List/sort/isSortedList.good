@@ -1,0 +1,5 @@
+empty list: true
+length 1 list: true
+length 2 list: true
+sorted list: true
+unsorted list: false

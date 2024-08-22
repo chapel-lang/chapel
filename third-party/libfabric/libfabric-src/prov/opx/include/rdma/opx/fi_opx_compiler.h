@@ -59,14 +59,33 @@
 
 static inline void fi_opx_compiler_msync_writes()
 {
-	asm volatile ("sfence" :  :  : "memory");
+#if defined(__riscv)
+
+#if defined(__riscv_xlen) && (__riscv_xlen == 64)
+ 	asm volatile ("fence ow,ow" :  :  : "memory");
+#else
+#error "Unsupported CPU type"
+#endif
+
+#else
+ 	asm volatile ("sfence" :  :  : "memory");
+#endif
 }
 
 static inline void fi_opx_compiler_msync_reads()
 {
-	asm volatile ("lfence" :  :  : "memory");
-}
+#if defined(__riscv)
 
+#if defined(__riscv_xlen) && (__riscv_xlen == 64)
+	asm volatile ("fence ir,ir" :  :  : "memory");
+#else
+#error "Unsupported CPU type"
+#endif
+
+#else
+ 	asm volatile ("lfence" :  :  : "memory");
+#endif
+}
 
 #define fi_opx_compiler_barrier()		__asm__ __volatile__ ( "" ::: "memory" )
 
@@ -87,9 +106,19 @@ void fi_opx_compiler_store_u64(volatile uint64_t * const variable, const uint64_
 static inline
 void fi_opx_compiler_inc_u64(volatile uint64_t * const variable)
 {
+#if defined(__riscv)
+
+#if defined(__riscv_xlen) && (__riscv_xlen == 64)
+        (*variable) += 1;
+#else
+#error "Unsupported CPU type"
+#endif
+
+#else
 	__asm__ __volatile__ ("lock ; incq %0"
 				: "=m" (*variable)
 				: "m" (*variable));
+#endif
 	return;
 }
 
@@ -97,18 +126,41 @@ static inline
 uint64_t fi_opx_compiler_fetch_and_inc_u64(volatile uint64_t * const variable)
 {
 	uint64_t value = 1;
+#if defined(__riscv)
+
+#if defined(__riscv_xlen) && (__riscv_xlen == 64)
+	const uint64_t tmp = (*variable);
+	(*variable) = value;
+	value = tmp;
+	(*variable) = (*variable) + value;
+#else
+#error "Unsupported CPU type"
+#endif
+
+#else
 	__asm__ __volatile__ ("lock ; xadd %0,%1"
 				: "=r" (value), "=m" (*variable)
 				: "0" (value), "m" (*variable));
+#endif
 	return value;
 }
 
 static inline
 void fi_opx_compiler_dec_u64(volatile uint64_t * const variable)
 {
+#if defined(__riscv)
+
+#if defined(__riscv_xlen) && (__riscv_xlen == 64)
+	(*variable) -= 1;
+#else
+#error "Unsupported CPU type"
+#endif
+
+#else
 	__asm__ __volatile__ ("lock ; decq %0"
 				: "=m" (*variable)
 				: "m" (*variable));
+#endif
 	return;
 }
 

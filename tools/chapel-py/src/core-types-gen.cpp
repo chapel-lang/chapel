@@ -22,6 +22,7 @@
 #include "chpl/uast/all-uast.h"
 #include "python-types.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/framework/ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
@@ -54,6 +55,7 @@ static const char* blockStyleToString(BlockStyle blockStyle) {
     case BlockStyle::EXPLICIT: return "explicit";
     case BlockStyle::IMPLICIT: return "implicit";
     case BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK: return "unnecessary";
+    default: return "";
   }
 }
 

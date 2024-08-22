@@ -1,1 +1,2 @@
-noUnderscoreOnlyList.chpl:5: syntax error: near '_'
+noUnderscoreOnlyList.chpl:4: In module 'User':
+noUnderscoreOnlyList.chpl:5: error: Throwaway variable '_' is not allowed in this context

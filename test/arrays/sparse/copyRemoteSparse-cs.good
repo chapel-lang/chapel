@@ -1,0 +1,24 @@
+In initCopy(definedConst=true), domain definedConst: false; localizing
+| locale | get | execute_on |
+| -----: | --: | ---------: |
+|      0 |  39 |          0 |
+|      1 |   0 |          0 |
+|      2 |   0 |          0 |
+|      3 | 195 |          2 |
+1.1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+0.0 2.2 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+0.0 0.0 3.3 0.0 0.0 0.0 0.0 0.0 0.0 
+0.0 0.0 0.0 4.4 0.0 0.0 0.0 0.0 0.0 
+0.0 0.0 0.0 0.0 5.5 0.0 0.0 0.0 0.0 
+0.0 0.0 0.0 0.0 0.0 6.6 0.0 0.0 0.0 
+0.0 0.0 0.0 0.0 0.0 0.0 7.7 0.0 0.0 
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 8.8 0.0 
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 9.9 
+In initCopy(definedConst=false), domain definedConst: false; taking normal path
+| locale | get | put | execute_on |
+| -----: | --: | --: | ---------: |
+|      0 |  43 |   2 |          0 |
+|      1 |   0 |   0 |          0 |
+|      2 |   0 |   0 |          0 |
+|      3 |  32 |   0 |          3 |
+copyRemoteSparse-cs.chpl:49: error: cannot access remote data in local block

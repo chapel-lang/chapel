@@ -69,27 +69,6 @@ static unsigned int num_usable_by_depth(unsigned int depth)
     return ret;
 }
 
-static unsigned int num_usable_by_type(hwloc_obj_type_t tp)
-{
-    hwloc_const_cpuset_t allowed_cpuset = hwloc_topology_get_allowed_cpuset(topology);
-    int max = hwloc_get_nbobjs_inside_cpuset_by_type(topology, allowed_cpuset, tp);
-    unsigned int ret = 0;
-    qthread_debug(AFFINITY_DETAILS, "max = %i\n", max);
-    for (int i=0; i<max; ++i) {
-        hwloc_obj_t obj = hwloc_get_obj_inside_cpuset_by_type(topology, allowed_cpuset, tp, i);
-        if (obj == NULL) {
-            qthread_debug(AFFINITY_DETAILS, "obj %i of this type is NULL!!!\n", i);
-            continue;
-        }
-        if (hwloc_get_nbobjs_inside_cpuset_by_type(topology, obj->cpuset, HWLOC_OBJ_PU) == 0) {
-            qthread_debug(AFFINITY_DETAILS, "obj %i of this type has no PUs!!!\n", i);
-            continue;
-        }
-        ret ++;
-    }
-    return ret;
-}
-
 static void qt_affinity_internal_hwloc_teardown(void)
 {   /*{{{*/
     DEBUG_ONLY(hwloc_topology_check(topology));
@@ -176,7 +155,6 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
          * boundary, unless the user has specified a shepherd boundary */
         if (shep_type_idx == -1) {
             do {
-restart_loop:
                 shep_type_idx++;
                 shep_depth = hwloc_get_type_depth(topology, shep_type_options[shep_type_idx]);
                 qthread_debug(AFFINITY_DETAILS, "depth of type %i (%s) = %d\n", shep_type_idx,
@@ -387,7 +365,7 @@ qthread_shepherd_id_t INTERNAL guess_num_shepherds(void)
     qthread_shepherd_id_t ret = 1;
 
     DEBUG_ONLY(hwloc_topology_check(topology));
-    hwloc_const_cpuset_t allowed_cpuset = hwloc_topology_get_allowed_cpuset(topology);
+    DEBUG_ONLY(hwloc_const_cpuset_t allowed_cpuset = hwloc_topology_get_allowed_cpuset(topology);)
     ret = num_usable_by_depth(shep_depth);
     qthread_debug(AFFINITY_BEHAVIOR, "of %u %s's, only %u %s viable\n",
             hwloc_get_nbobjs_inside_cpuset_by_depth(topology, allowed_cpuset, shep_depth),

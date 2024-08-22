@@ -1,0 +1,14 @@
+type-func-return-generic.chpl:10: warning: int(64)
+type-func-return-generic.chpl:12: warning: R1
+type-func-return-generic.chpl:15: warning: R2
+type-func-return-generic.chpl:16: warning: R2(int(64))
+type-func-return-generic.chpl:17: warning: R3(int(64))
+type-func-return-generic.chpl:18: warning: R3
+type-func-return-generic.chpl:19: warning: R3(real(64))
+type-func-return-generic.chpl:22: warning: int(64)
+type-func-return-generic.chpl:24: warning: R1
+type-func-return-generic.chpl:27: warning: R2
+type-func-return-generic.chpl:28: warning: R2(int(64))
+type-func-return-generic.chpl:29: warning: R3(int(64))
+type-func-return-generic.chpl:30: warning: R3
+type-func-return-generic.chpl:31: warning: R3(real(64))

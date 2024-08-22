@@ -1,0 +1,1 @@
+-sGPUCUDA=false -s GPUAMD=false -I./ChOp/  -M ./ChOp/modules -s queens_checkPointer=true -s avoidMirrored=false -s timeDistributedIters=true -s infoDistributedIters=true -s CPUGPUVerbose=false

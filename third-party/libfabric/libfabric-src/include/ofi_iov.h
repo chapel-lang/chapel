@@ -83,6 +83,28 @@ static inline size_t ofi_total_rma_ioc_cnt(const struct fi_rma_ioc *rma_ioc,
 #define OFI_COPY_IOV_TO_BUF 0
 #define OFI_COPY_BUF_TO_IOV 1
 
+static inline size_t ofi_iov_bytes_to_copy(const struct iovec *iov,
+			size_t *size, size_t *offset, char **copy_buf)
+{
+	uint64_t len;
+
+	len = iov->iov_len;
+
+	if (*offset > len) {
+		*offset -= len;
+		return 0;
+	}
+
+	*copy_buf = (char *)iov->iov_base + *offset;
+	len -= *offset;
+	*offset = 0;
+
+	len = MIN(len, *size);
+	*size -= len;
+
+	return len;
+}
+
 uint64_t ofi_copy_iov_buf(const struct iovec *iov, size_t iov_count, uint64_t iov_offset,
 			  void *buf, uint64_t bufsize, int dir);
 
@@ -198,4 +220,74 @@ int ofi_copy_iov_desc(struct iovec *dst_iov, void **dst_desc, size_t *dst_count,
 int ofi_copy_rma_iov(struct fi_rma_iov *dst_iov, size_t *dst_count,
 		struct fi_rma_iov *src_iov, size_t src_count,
 		size_t *index, size_t *offset, size_t len);
+
+/* for a given offset, find the iov_index and iov_offset.
+ * return 0 on success, -FI_EINVAL if offset is out of range
+ */
+static inline
+int ofi_iov_locate(struct iovec *iov, int iov_count, size_t offset,
+		   int *iov_idx, size_t *iov_offset)
+{
+	int i;
+	size_t curoffset;
+
+	if (iov_count == 1) {
+		if (offset >= iov[0].iov_len)
+			return -FI_EINVAL;
+
+		*iov_idx = 0;
+		*iov_offset = offset;
+		return 0;
+	}
+
+	curoffset = 0;
+	for (i = 0; i < iov_count; ++i) {
+		if (offset >= curoffset &&
+		    offset < curoffset + iov[i].iov_len) {
+			*iov_idx = i;
+			*iov_offset = offset - curoffset;
+			return 0;
+		}
+
+		curoffset += iov[i].iov_len;
+	}
+
+	return -FI_EINVAL;
+}
+
+/* for a given offset, find the rma_iov_index and rma_iov_offset.
+ * return 0 on success, -FI_EINVAL if offset is out of range
+ */
+static inline
+int ofi_rma_iov_locate(struct fi_rma_iov *rma_iov,
+		       int rma_iov_count, size_t offset,
+		       int *rma_iov_idx, size_t *rma_iov_offset)
+{
+	int i;
+	size_t curoffset;
+
+	if (rma_iov_count == 1) {
+		if (offset >= rma_iov[0].len)
+			return -FI_EINVAL;
+
+		*rma_iov_idx = 0;
+		*rma_iov_offset = offset;
+		return 0;
+	}
+
+	curoffset = 0;
+	for (i = 0; i < rma_iov_count; ++i) {
+		if (offset >= curoffset &&
+		    offset < curoffset + rma_iov[i].len) {
+			*rma_iov_idx = i;
+			*rma_iov_offset = offset - curoffset;
+			return 0;
+		}
+
+		curoffset += rma_iov[i].len;
+	}
+
+	return -FI_EINVAL;
+}
+
 #endif /* _OFI_IOV_H_ */

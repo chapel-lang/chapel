@@ -1,2 +1,1 @@
-init-field-dflt-nonnil-shared-from-nonnil-owned.chpl:8: warning: assigning owned class to shared class is deprecated.
-init-field-dflt-nonnil-shared-from-nonnil-owned.chpl:13: error: done
+init-field-dflt-nonnil-shared-from-nonnil-owned.chpl:11: error: cannot initialize 'shared MyClass' from a 'owned MyClass'

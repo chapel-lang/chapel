@@ -20,6 +20,7 @@ examples:
      primers/     : introduce Chapel concepts narratively for new users
      spec/        : example codes from the Chapel Specification (see below)
      users-guide/ : example codes from the Chapel Users Guide
+     gpu/         : examples demonstrating Chapel's GPU support (see below)
 
 Each subdirectory (except users-guide and spec) includes its own README file
 with additional information on those examples.
@@ -29,12 +30,21 @@ with additional information on those examples.
 The spec directory tests
 ------------------------
 
-The tests in the spec directory are automatically extracted from
-selected examples in the Chapel Specification.  The examples for a
-particular chapter are in a directory specified by the chapter name
-(e.g., Arrays) and the name of the test is in parenthesis after the
-word "Example" in the spec.  Often times, additional code has been
-added to make the code a complete, testable program.
+The tests in the spec directory are automatically extracted from selected
+examples in the Chapel Specification.  The examples for a particular chapter
+are in a directory specified by the chapter name (e.g., Arrays) and the name of
+the test is in parenthesis after the word "Example" in the spec.  Often times,
+additional code has been added to make the code a complete, testable program.
+
+
+-----------------------
+The gpu directory tests
+-----------------------
+
+The tests in the gpu directory require that Chapel be built to use the GPU
+locale model. To do this, set CHPL_LOCALE_MODEL=gpu and rebuild Chapel.  For
+more information about installing and using Chapel with gpu support see the
+following technical note: https://chapel-lang.org/docs/technotes/gpu.html
 
 
 ------------------
@@ -73,6 +83,7 @@ This directory and subdirectories:
   COMPOPTS        : used by the Chapel testing system -- see README.testing
   NUMLOCALES      : "
   PREDIFF         : "
+  SKIPIF          : "
   *.compopts      : "
   *.execopts      : "
   *.good          : "

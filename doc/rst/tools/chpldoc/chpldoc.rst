@@ -100,6 +100,7 @@ looking output. For example:
    module Buffers {
      ...
 
+.. _chpldoc-arg-return-yield-types:
 
 Argument and return/yield types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

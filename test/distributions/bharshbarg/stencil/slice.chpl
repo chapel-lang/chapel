@@ -13,7 +13,7 @@ proc test(dom : domain(?)) {
 
   const max = dom.expand(fluff*dom.stride);
 
-  var Space = dom dmapped stencilDist(dom, fluff=fluff, periodic=true);
+  var Space = dom dmapped new stencilDist(dom, fluff=fluff, periodic=true);
   var abstr : rank*int;
   for i in 0..#rank do abstr(i) = abs(dom.dim(i).stride);
 

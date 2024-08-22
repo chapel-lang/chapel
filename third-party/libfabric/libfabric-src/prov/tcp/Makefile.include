@@ -1,28 +1,33 @@
 if HAVE_TCP
-_tcp_files = \
-	prov/tcp/src/tcpx_fabric.c	\
-	prov/tcp/src/tcpx_attr.c	\
-	prov/tcp/src/tcpx_conn_mgr.c	\
-	prov/tcp/src/tcpx_domain.c	\
-	prov/tcp/src/tcpx_rma.c		\
-	prov/tcp/src/tcpx_msg.c		\
-	prov/tcp/src/tcpx_ep.c		\
-	prov/tcp/src/tcpx_shared_ctx.c	\
-	prov/tcp/src/tcpx_cq.c		\
-	prov/tcp/src/tcpx_eq.c		\
-	prov/tcp/src/tcpx_init.c	\
-	prov/tcp/src/tcpx_progress.c	\
-	prov/tcp/src/tcpx.h
+_xnet_files = \
+	prov/tcp/src/xnet_fabric.c	\
+	prov/tcp/src/xnet_attr.c	\
+	prov/tcp/src/xnet_cm.c		\
+	prov/tcp/src/xnet_rdm_cm.c	\
+	prov/tcp/src/xnet_domain.c	\
+	prov/tcp/src/xnet_rma.c	\
+	prov/tcp/src/xnet_msg.c	\
+	prov/tcp/src/xnet_ep.c		\
+	prov/tcp/src/xnet_rdm.c	\
+	prov/tcp/src/xnet_pep.c	\
+	prov/tcp/src/xnet_srx.c	\
+	prov/tcp/src/xnet_cq.c		\
+	prov/tcp/src/xnet_eq.c		\
+	prov/tcp/src/xnet_init.c	\
+	prov/tcp/src/xnet_progress.c	\
+	prov/tcp/src/xnet_profile.c \
+	prov/tcp/src/xnet_proto.h	\
+	prov/tcp/src/xnet.h
 
 if HAVE_TCP_DL
 pkglib_LTLIBRARIES += libtcp-fi.la
-libtcp_fi_la_SOURCES = $(_tcp_files) $(common_srcs)
-libtcp_fi_la_LIBADD = $(linkback) $(tcp_shm_LIBS)
+libtcp_fi_la_SOURCES = $(_xnet_files) $(common_srcs)
+libtcp_fi_la_LIBADD = $(linkback) $(xnet_shm_LIBS)
 libtcp_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
 libtcp_fi_la_DEPENDENCIES = $(linkback)
 else !HAVE_TCP_DL
-src_libfabric_la_SOURCES += $(_tcp_files)
-src_libfabric_la_LIBADD += $(tcp_shm_LIBS)
+src_libfabric_la_SOURCES += $(_xnet_files)
+src_libfabric_la_LIBADD += $(xnet_shm_LIBS)
 endif !HAVE_TCP_DL
 
 prov_install_man_pages += man/man7/fi_tcp.7

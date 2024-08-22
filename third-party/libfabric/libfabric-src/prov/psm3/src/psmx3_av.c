@@ -85,7 +85,7 @@ int psmx3_am_sep_handler(psm2_am_token_t token, psm2_amarg_t *args,
 	cmd = PSMX3_AM_GET_OP(args[0].u32w0);
 	version = PSMX3_AM_GET_VER(args[0].u32w0);
 	if (version != PSMX3_AM_SEP_VERSION) {
-		FI_WARN(&psmx3_prov, FI_LOG_AV,
+		PSMX3_WARN(&psmx3_prov, FI_LOG_AV,
 			"AM SEP protocol version mismatch: request %d handler %d\n",
 			version, PSMX3_AM_SEP_VERSION);
 		return -FI_EINVAL;
@@ -175,7 +175,7 @@ static void psmx3_set_epaddr_context(struct psmx3_trx_ctxt *trx_ctxt,
 	context = (void *)psm3_epaddr_getctxt(epaddr);
 	if (context) {
 		if (context->trx_ctxt != trx_ctxt || psm3_epid_cmp(context->epid, epid)) {
-			FI_WARN(&psmx3_prov, FI_LOG_AV,
+			PSMX3_WARN(&psmx3_prov, FI_LOG_AV,
 				"trx_ctxt or epid doesn't match\n");
 			old_context = context;
 			context = NULL;
@@ -187,7 +187,7 @@ static void psmx3_set_epaddr_context(struct psmx3_trx_ctxt *trx_ctxt,
 
 	context = malloc(sizeof *context);
 	if (!context) {
-		FI_WARN(&psmx3_prov, FI_LOG_AV,
+		PSMX3_WARN(&psmx3_prov, FI_LOG_AV,
 			"cannot allocate context\n");
 		return;
 	}
@@ -229,15 +229,15 @@ void psmx3_epid_to_epaddr(struct psmx3_trx_ctxt *trx_ctxt,
 		return;
 	}
 
-	/* call fi_log() directly to always generate the output */
+	/* call psmx3_log() directly to always generate the output */
 	if (err == PSM2_TIMEOUT)
-		fi_log(&psmx3_prov, FI_LOG_WARN, FI_LOG_AV, __func__, __LINE__,
+		psmx3_log(&psmx3_prov, FI_LOG_WARN, FI_LOG_AV, __func__, __LINE__,
 			"psm3_ep_connect returned error %s, remote epid=%s."
 			"Try setting FI_PSM3_CONN_TIMEOUT "
 			"to a larger value (current: %d seconds).\n",
 			psm3_error_get_string(err), psm3_epid_fmt(epid, 0), psmx3_env.conn_timeout);
 	else
-		fi_log(&psmx3_prov, FI_LOG_WARN, FI_LOG_AV, __func__, __LINE__,
+		psmx3_log(&psmx3_prov, FI_LOG_WARN, FI_LOG_AV, __func__, __LINE__,
 			"psm3_ep_connect returned error %s, remote epid=%s.\n",
 			psm3_error_get_string(err), psm3_epid_fmt(epid, 0));
 
@@ -396,7 +396,7 @@ int psmx3_av_add_trx_ctxt(struct psmx3_fid_av *av,
 
 	id = trx_ctxt->id;
 	if (id >= av->max_trx_ctxt) {
-		FI_WARN(&psmx3_prov, FI_LOG_AV,
+		PSMX3_WARN(&psmx3_prov, FI_LOG_AV,
 			"trx_ctxt->id(%d) exceeds av->max_trx_ctxt(%d).\n",
 			id, av->max_trx_ctxt);
 		err = -FI_EINVAL;
@@ -405,12 +405,12 @@ int psmx3_av_add_trx_ctxt(struct psmx3_fid_av *av,
 
 	if (av->conn_info[id].trx_ctxt) {
 		if (av->conn_info[id].trx_ctxt == trx_ctxt) {
-			FI_INFO(&psmx3_prov, FI_LOG_AV,
+			PSMX3_INFO(&psmx3_prov, FI_LOG_AV,
 				"trx_ctxt(%p) with id(%d) already added.\n",
 				trx_ctxt, id);
 			goto out;
 		} else {
-			FI_INFO(&psmx3_prov, FI_LOG_AV,
+			PSMX3_INFO(&psmx3_prov, FI_LOG_AV,
 				"different trx_ctxt(%p) with same id(%d) already added.\n",
 				trx_ctxt, id);
 			err = -FI_EINVAL;
@@ -571,7 +571,7 @@ STATIC int psmx3_av_map_insert(struct fid_av *av, const void *addr,
 
 	trx_ctxt = av_priv->av_map_trx_ctxt;
 	if (!trx_ctxt) {
-		FI_WARN(&psmx3_prov, FI_LOG_AV,
+		PSMX3_WARN(&psmx3_prov, FI_LOG_AV,
 			"unable to map address without AV-EP binding\n");
 		err = -FI_ENODEV;
 		goto out;
@@ -631,7 +631,7 @@ static int psmx3_av_disconnect_addr(int trx_ctxt_id, psm2_epid_t epid,
 	if (!epaddr)
 		return 0;
 
-	FI_INFO(&psmx3_prov, FI_LOG_AV,
+	PSMX3_INFO(&psmx3_prov, FI_LOG_AV,
 		"trx_ctxt_id %d epid %s epaddr %p\n", trx_ctxt_id, psm3_epid_fmt(epid, 0), epaddr);
 
 	epaddr_context = psm3_epaddr_getctxt(epaddr);
@@ -674,7 +674,7 @@ STATIC int psmx3_av_remove(struct fid_av *av, fi_addr_t *fi_addr, size_t count,
 	for (i = 0; i < count; i++) {
 		idx = PSMX3_ADDR_IDX(fi_addr[i]);
 		if (idx >= av_priv->hdr->last) {
-			FI_WARN(&psmx3_prov, FI_LOG_AV,
+			PSMX3_WARN(&psmx3_prov, FI_LOG_AV,
 				"AV index out of range: fi_addr %lx idx %d last %ld\n",
 				fi_addr[i], idx, av_priv->hdr->last);
 			continue;
@@ -901,7 +901,7 @@ static int psmx3_av_close(fid_t fid)
 	if (av->shared) {
 		err = ofi_shm_unmap(&av->shm);
 		if (err)
-			FI_INFO(&psmx3_prov, FI_LOG_AV,
+			PSMX3_INFO(&psmx3_prov, FI_LOG_AV,
 				"Failed to unmap shared AV: %s.\n",
 				strerror(ofi_syserr()));
 	} else {
@@ -985,16 +985,16 @@ int psmx3_av_open(struct fid_domain *domain, struct fi_av_attr *attr,
 	if (attr) {
 		if (attr->type == FI_AV_MAP) {
 			if (psmx3_env.multi_ep) {
-				FI_INFO(&psmx3_prov, FI_LOG_AV,
+				PSMX3_INFO(&psmx3_prov, FI_LOG_AV,
 					"FI_AV_MAP asked, but force FI_AV_TABLE for multi-EP support\n");
 			} else if (psmx3_env.lazy_conn) {
-				FI_INFO(&psmx3_prov, FI_LOG_AV,
+				PSMX3_INFO(&psmx3_prov, FI_LOG_AV,
 					"FI_AV_MAP asked, but force FI_AV_TABLE for lazy connection\n");
 			} else if (attr->name) {
-				FI_INFO(&psmx3_prov, FI_LOG_AV,
+				PSMX3_INFO(&psmx3_prov, FI_LOG_AV,
 					"FI_AV_MAP asked, but force FI_AV_TABLE for shared AV\n");
 			} else {
-				FI_INFO(&psmx3_prov, FI_LOG_AV,
+				PSMX3_INFO(&psmx3_prov, FI_LOG_AV,
 					"FI_AV_MAP asked, and granted\n");
 				av_type = FI_AV_MAP;
 			}
@@ -1008,13 +1008,13 @@ int psmx3_av_open(struct fid_domain *domain, struct fi_av_attr *attr,
 
 		flags = attr->flags;
 		if (flags & FI_SYMMETRIC) {
-			FI_INFO(&psmx3_prov, FI_LOG_AV,
+			PSMX3_INFO(&psmx3_prov, FI_LOG_AV,
 				"FI_SYMMETRIC flags is no supported\n");
 			return -FI_ENOSYS;
 		}
 
 		if (attr->rx_ctx_bits > PSMX3_MAX_RX_CTX_BITS) {
-			FI_INFO(&psmx3_prov, FI_LOG_AV,
+			PSMX3_INFO(&psmx3_prov, FI_LOG_AV,
 				"attr->rx_ctx_bits=%d, maximum allowed is %d\n",
 				attr->rx_ctx_bits, PSMX3_MAX_RX_CTX_BITS);
 			return -FI_ENOSYS;
@@ -1046,7 +1046,7 @@ int psmx3_av_open(struct fid_domain *domain, struct fi_av_attr *attr,
 		err = ofi_shm_map(&av_priv->shm, attr->name, table_size,
 				  flags & FI_READ, (void**)&av_priv->hdr);
 		if (err || av_priv->hdr == MAP_FAILED) {
-			FI_WARN(&psmx3_prov, FI_LOG_AV,
+			PSMX3_WARN(&psmx3_prov, FI_LOG_AV,
 				"failed to map shared AV: %s\n", attr->name);
 			err = -FI_EINVAL;
 			goto errout_free;
@@ -1054,7 +1054,7 @@ int psmx3_av_open(struct fid_domain *domain, struct fi_av_attr *attr,
 
 		if (flags & FI_READ) {
 			if (av_priv->hdr->size != count) {
-				FI_WARN(&psmx3_prov, FI_LOG_AV,
+				PSMX3_WARN(&psmx3_prov, FI_LOG_AV,
 					"AV size doesn't match: shared %ld, asking %ld\n",
 					av_priv->hdr->size, count);
 				err = -FI_EINVAL;

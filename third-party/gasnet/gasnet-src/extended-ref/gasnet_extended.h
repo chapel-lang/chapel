@@ -59,6 +59,7 @@ gex_Event_t _gex_RMA_GetNB(
                         size_t _nbytes, gex_Flags_t _flags,
                         gex_Flags_t _constantp_never_nbrhd
                         GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_LEGACY_GET(_tm,_flags);
   GASNETI_CHECK_NEVER_FLAGS(_tm,_rank,_flags);
   GASNETI_CHECKZEROSZ_GET(NB,_tm,_dest,_rank,_src,_nbytes);
   gasneti_boundscheck(_tm, _rank, _src, _nbytes);
@@ -90,6 +91,7 @@ gex_Event_t _gex_RMA_PutNB(
                         size_t _nbytes, gex_Event_t *_lc_opt,
                         gex_Flags_t _flags, gex_Flags_t _constantp_never_nbrhd
                         GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_LEGACY_PUT(_tm,_flags);
   GASNETI_CHECK_NEVER_FLAGS(_tm,_rank,_flags);
   GASNETI_CHECK_PUT_LCOPT(_lc_opt, 0);
   GASNETI_CHECKZEROSZ_PUT(NB,_tm,_rank,_dest,_src,_nbytes);
@@ -249,6 +251,7 @@ int _gex_RMA_GetNBI  (gex_TM_t _tm, void *_dest,
                         size_t _nbytes, gex_Flags_t _flags,
                         gex_Flags_t _constantp_never_nbrhd
                         GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_LEGACY_GET(_tm,_flags);
   GASNETI_CHECK_NEVER_FLAGS(_tm,_rank,_flags);
   GASNETI_CHECKZEROSZ_GET(NBI,_tm,_dest,_rank,_src,_nbytes);
   gasneti_boundscheck(_tm, _rank, _src, _nbytes);
@@ -279,6 +282,7 @@ int _gex_RMA_PutNBI  (gex_TM_t _tm,
                         size_t _nbytes, gex_Event_t *_lc_opt,
                         gex_Flags_t _flags, gex_Flags_t _constantp_never_nbrhd
                         GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_LEGACY_PUT(_tm,_flags);
   GASNETI_CHECK_NEVER_FLAGS(_tm,_rank,_flags);
   GASNETI_CHECK_PUT_LCOPT(_lc_opt, 1);
   GASNETI_CHECKZEROSZ_PUT(NBI,_tm,_rank,_dest,_src,_nbytes);
@@ -444,6 +448,7 @@ int _gex_RMA_GetBlocking  (gex_TM_t _tm, void *_dest,
                     size_t _nbytes, gex_Flags_t _flags,
                     gex_Flags_t _constantp_never_nbrhd
                     GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_LEGACY_GET(_tm,_flags);
   GASNETI_CHECK_NEVER_FLAGS(_tm,_rank,_flags);
   GASNETI_CHECKZEROSZ_NAMED(GASNETI_TRACE_GET_NAMED(GET_LOCAL,LOCAL,_tm,_dest,_rank,_src,_nbytes),_nbytes);
   gasneti_boundscheck(_tm, _rank, _src, _nbytes);
@@ -474,6 +479,7 @@ int _gex_RMA_PutBlocking  (gex_TM_t _tm,
                     size_t _nbytes, gex_Flags_t _flags,
                     gex_Flags_t _constantp_never_nbrhd
                     GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_LEGACY_PUT(_tm,_flags);
   GASNETI_CHECK_NEVER_FLAGS(_tm,_rank,_flags);
   GASNETI_CHECKZEROSZ_NAMED(GASNETI_TRACE_PUT_NAMED(PUT_LOCAL,LOCAL,_tm,_rank,_dest,_src,_nbytes),_nbytes);
   gasneti_boundscheck(_tm, _rank, _dest, _nbytes);
@@ -533,6 +539,7 @@ int _gex_RMA_PutVal(  gex_TM_t _tm,
                         gex_Flags_t _constantp_never_nbrhd
                         GASNETI_THREAD_FARG)
 {
+  GASNETI_CHECK_LEGACY_PUT(_tm,_flags);
   GASNETI_CHECK_NEVER_FLAGS(_tm,_rank,_flags);
   gasneti_assume(_nbytes > 0);
   gasneti_assert_uint(_nbytes ,<=, sizeof(gex_RMA_Value_t));
@@ -575,6 +582,7 @@ gex_Event_t _gex_RMA_PutNBVal (
                         gex_Flags_t _constantp_never_nbrhd
                         GASNETI_THREAD_FARG)
 {
+  GASNETI_CHECK_LEGACY_PUT(_tm,_flags);
   GASNETI_CHECK_NEVER_FLAGS(_tm,_rank,_flags);
   gasneti_assume(_nbytes > 0);
   gasneti_assert_uint(_nbytes ,<=, sizeof(gex_RMA_Value_t));
@@ -638,6 +646,7 @@ int _gex_RMA_PutNBIVal(
                         gex_Flags_t _constantp_never_nbrhd
                         GASNETI_THREAD_FARG)
 {
+  GASNETI_CHECK_LEGACY_PUT(_tm,_flags);
   GASNETI_CHECK_NEVER_FLAGS(_tm,_rank,_flags);
   gasneti_assume(_nbytes > 0);
   gasneti_assert_uint(_nbytes ,<=, sizeof(gex_RMA_Value_t));
@@ -688,6 +697,7 @@ gex_RMA_Value_t _gex_RMA_GetBlockingVal (
                 gex_Flags_t _constantp_never_nbrhd
                 GASNETI_THREAD_FARG)
 {
+  GASNETI_CHECK_LEGACY_GET(_tm,_flags);
   GASNETI_CHECK_NEVER_FLAGS(_tm,_rank,_flags);
   gasneti_boundscheck(_tm, _rank, _src, _nbytes);
   void *_mapped_src = GASNETE_NEVER_MAPPED(_flags, _constantp_never_nbrhd)

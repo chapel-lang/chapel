@@ -2,7 +2,7 @@ use BlockDist;
 
 class C {
   var Dom = {1..numLocales};
-  var Space = Dom dmapped blockDist(Dom);
+  var Space = Dom dmapped new blockDist(Dom);
   var x : int;
 
   proc init(x = 5) {

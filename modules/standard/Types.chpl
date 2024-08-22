@@ -25,9 +25,11 @@ pragma "module included by default"
 module Types {
   import HaltWrappers;
 
+pragma "suppress generic actual warning"
 @chpldoc.nodoc // joint documentation with the next one
 proc isType(type t) param do return true;
 /* Returns ``true`` if the argument is a type. */
+pragma "suppress generic actual warning"
 proc isType(e) param do return false;
 
 @chpldoc.nodoc // joint documentation with the next one
@@ -709,9 +711,9 @@ proc toNilableIfClassType(type arg) type {
 // joint documentation, for user convenience
 /*
 Returns the number of bits used to store the values of type ``t``.
-This is available for all numeric types and fixed-width ``bool`` types.
-It is not available for default-width ``bool``.
+This is available for all numeric types.
 */
+pragma "no where doc"
 proc numBits(type t) param where t == bool {
   compilerError("default-width 'bool' does not have a well-defined size");
 }
@@ -753,8 +755,7 @@ param bitsPerByte = 8;
 
 /*
 Returns the number of bytes used to store the values of type ``t``.
-This is available for all numeric types and fixed-width ``bool`` types.
-It is not available for default-width ``bool``.
+This is available for all numeric types.
 */
 proc numBytes(type t) param do return numBits(t)/8;
 
@@ -767,6 +768,7 @@ When ``t`` is a ``bool`` type, it returns ``false``.
 When ``t`` is ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
+pragma "no where doc"
 proc min(type t) param  where isBool(t) do      return false: t;
 
 @chpldoc.nodoc
@@ -805,6 +807,7 @@ When ``t`` is a ``bool`` type, it returns ``true``.
 When ``t`` is a ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
+pragma "no where doc"
 proc max(type t) param  where isBool(t) do      return true: t;
 
 @chpldoc.nodoc

@@ -3,7 +3,7 @@ use BlockCycDist;
 config const n = 10, blkSize=8;
 
 proc main() {
-  const MatVecSpace = {1..n, 1..n+1} dmapped blockCycDist(startIdx=(1,1), (8,8));
+  const MatVecSpace = {1..n, 1..n+1} dmapped new blockCycDist(startIdx=(1,1), (8,8));
   var Ab: [MatVecSpace] real;
 
   foo(Ab[.., n+1..n+1]);

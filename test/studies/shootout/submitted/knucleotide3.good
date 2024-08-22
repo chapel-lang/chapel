@@ -1,42 +1,5 @@
-knucleotide3.chpl:14: In function 'main':
-knucleotide3.chpl:18: warning: 'ionative' is deprecated, please use Serializers or Deserializers that support endianness instead
-knucleotide3.chpl:16: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
-knucleotide3.chpl:18: warning: reader with a 'kind' argument is deprecated, please use Serializers instead
-knucleotide3.chpl:18: warning: 'iokind' is deprecated, please use Serializers or Deserializers that support endianness instead
-knucleotide3.chpl:80: In function 'calculate':
-knucleotide3.chpl:92: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide3.chpl:58: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 1) from function 'writeFreqs'
-  knucleotide3.chpl:47: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 1) from function 'main'
 knucleotide3.chpl:57: In function 'writeFreqs':
-knucleotide3.chpl:61: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide3.chpl:47: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 1) from function 'main'
-knucleotide3.chpl:80: In function 'calculate':
-knucleotide3.chpl:92: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide3.chpl:58: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 2) from function 'writeFreqs'
-  knucleotide3.chpl:48: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 2) from function 'main'
-knucleotide3.chpl:57: In function 'writeFreqs':
-knucleotide3.chpl:61: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide3.chpl:48: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 2) from function 'main'
-knucleotide3.chpl:80: In function 'calculate':
-knucleotide3.chpl:92: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide3.chpl:73: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 3) from function 'writeCount'
-  knucleotide3.chpl:49: called as writeCount(data: [domain(1,int(64),one)] uint(8), param str = "GGT") from function 'main'
-knucleotide3.chpl:80: In function 'calculate':
-knucleotide3.chpl:92: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide3.chpl:73: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 4) from function 'writeCount'
-  knucleotide3.chpl:50: called as writeCount(data: [domain(1,int(64),one)] uint(8), param str = "GGTA") from function 'main'
-knucleotide3.chpl:80: In function 'calculate':
-knucleotide3.chpl:92: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide3.chpl:73: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 6) from function 'writeCount'
-  knucleotide3.chpl:51: called as writeCount(data: [domain(1,int(64),one)] uint(8), param str = "GGTATT") from function 'main'
-knucleotide3.chpl:80: In function 'calculate':
-knucleotide3.chpl:92: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide3.chpl:73: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 12) from function 'writeCount'
-  knucleotide3.chpl:52: called as writeCount(data: [domain(1,int(64),one)] uint(8), param str = "GGTATTTTAATT") from function 'main'
-knucleotide3.chpl:80: In function 'calculate':
-knucleotide3.chpl:92: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-  knucleotide3.chpl:73: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 18) from function 'writeCount'
-  knucleotide3.chpl:53: called as writeCount(data: [domain(1,int(64),one)] uint(8), param str = "GGTATTTTAATTTATAGT") from function 'main'
+knucleotide3.chpl:64: warning: The variable 'reverseComparator' is now deprecated, please create a new instance of the ReverseComparator type reversing the DefaultComparator instead.
 A 30.279
 T 30.113
 G 19.835

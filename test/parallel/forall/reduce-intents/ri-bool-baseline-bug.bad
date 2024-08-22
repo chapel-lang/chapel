@@ -1,7 +1,0 @@
-ri-bool-baseline-bug.chpl:5: internal error: AST-PRI-IVE-0233 chpl version 1.30.0 pre-release (845da44120)
-
-Internal errors indicate a bug in the Chapel compiler,
-and we're sorry for the hassle.  We would appreciate your reporting this bug --
-please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
-

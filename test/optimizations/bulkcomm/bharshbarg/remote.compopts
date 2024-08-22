@@ -1,1 +1,1 @@
--sdebugBulkTransfer -sdebugDefaultDistBulkTransfer -suseBulkTransferStride -M ../common
+--no-array-view-elision -sdebugBulkTransfer -sdebugDefaultDistBulkTransfer -suseBulkTransferStride -M ../common

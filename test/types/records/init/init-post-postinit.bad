@@ -1,3 +1,1 @@
-R.postinit() x: 0
-R.postinit() x: 1
-R.postinit() x: 0
+init-post-postinit.chpl:13: error: explicit calls to init() on anything other than 'this' or 'super' are not allowed

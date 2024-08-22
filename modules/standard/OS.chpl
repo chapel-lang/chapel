@@ -18,9 +18,7 @@
  * limitations under the License.
  */
 
-/*
-   The ``OS`` module provides definitions matching operating system
-   interfaces.
+/* The ``OS`` module provides definitions matching operating system interfaces.
 
    This module provides Chapel declarations for the constants, types,
    and functions defined by various operating systems' programmatic
@@ -34,9 +32,9 @@
 
  */
 module OS {
-  /*
-     The ``OS.POSIX`` module provides definitions matching the POSIX
-     programming interface, specifically POSIX.1-2017.  That standard
+  /* This module provides definitions matching the POSIX programming interface.
+
+     The ``OS.POSIX`` modudle specifically provides POSIX.1-2017.  That standard
      can be found at <https://pubs.opengroup.org/onlinepubs/9699919799/>.
 
      There is one unavoidable difference between POSIX and ``OS.POSIX``.
@@ -808,7 +806,7 @@ module OS {
     extern const FD_SETSIZE:c_int;
 
     /* Contains a fixed amount of file descriptors. */
-    extern record fd_set {};
+    extern record fd_set {}
 
     /* Clears the bit for the file descriptor ``fd`` in ``fdset``. */
     proc FD_CLR(fd:c_int, fdset:c_ptr(fd_set)) {
@@ -998,7 +996,7 @@ module OS {
       var tz_minuteswest:c_int;
       /* Type of DST correction */
       var tz_dsttime:c_int;
-    };
+    }
 
     /*
       Get the date and time, based on the timezone in ``tzp``.
@@ -1030,7 +1028,7 @@ module OS {
       var tm_yday:c_int;
       /* Daylight Savings flag */
       var tm_isdst:c_int;
-    };
+    }
 
     /* Get the date and time as a string. */
     extern proc asctime(timeptr:c_ptr(struct_tm)):c_ptr(c_char);
@@ -1728,6 +1726,7 @@ module OS {
  */
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @chpldoc.nodoc
   proc ioerror(error:errorCode, msg:string, path:string, offset:int(64)) throws
   {
     if error {
@@ -1770,6 +1769,7 @@ module OS {
    */
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @chpldoc.nodoc
   proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
   {
     const quotedpath = quote_string(path, path.numBytes:c_ssize_t);

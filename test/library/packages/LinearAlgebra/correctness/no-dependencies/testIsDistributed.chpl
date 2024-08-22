@@ -12,13 +12,13 @@ var locSparseDom: sparse subdomain(locArr.domain);
 var locSparseArr: [locSparseDom] int;
 
 var space2D = {1..10, 1..10};
-var locSparseDomCSR: sparse subdomain(space2D) dmapped CS();
+var locSparseDomCSR: sparse subdomain(space2D) dmapped new dmap(new CS());
 var locSparseArrCSR: [locSparseDomCSR] int;
 
 var distSparseDom: sparse subdomain(distArr.domain);
 var distSparseArr: [distSparseDom] int;
 
-var distCSRBlock = {1..10, 1..10} dmapped blockDist({1..10, 1..10}, sparseLayoutType=CS);
+var distCSRBlock = {1..10, 1..10} dmapped new blockDist({1..10, 1..10}, sparseLayoutType=CS);
 var distSparseArrCSR: [distCSRBlock] int;
 
 assert(isDistributed(distArr) == true);

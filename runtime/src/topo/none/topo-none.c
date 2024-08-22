@@ -63,7 +63,11 @@ int chpl_topo_reserveCPUPhysical(void) {
 
 
 int chpl_topo_bindCPU(int id) {
-  return 1;
+  return 0;
+}
+
+int chpl_topo_bindLogAccCPUs(void) {
+  return 0;
 }
 
 
@@ -108,3 +112,11 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
   return outAddr;
 }
 
+int chpl_topo_selectMyDevices(chpl_topo_pci_addr_t *inAddrs,
+                              chpl_topo_pci_addr_t *outAddrs,
+                              int *count) {
+  for (int i = 0; i < *count; i++) {
+    outAddrs[i] = inAddrs[i];
+  }
+  return 0;
+}

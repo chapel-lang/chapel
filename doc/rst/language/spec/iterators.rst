@@ -72,6 +72,7 @@ declaration, with some key differences:
 
 .. index::
    single: yield
+   pair: keywords; yield
    single: iterators;yield
 .. _The_Yield_Statement:
 

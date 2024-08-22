@@ -505,11 +505,14 @@ Function Visibility in Generic Functions
 When resolving a function call, as defined in :ref:`Function_Resolution`,
 there is an additional source of visible functions when the call is
 nested within a generic function. The additional source is the functions
-visible from the call site that the enclosing generic function is invoked from.
-This call site is referred to as the *point of instantiation*.
-If there are multiple enclosing generic functions or the call is nested
-within a concrete function that is, in turn, nested in generic function(s),
-the point of instantiation is the call site of the innermost generic function.
+visible from the call site that the enclosing generic function is invoked
+from.  This call site is referred to as the *point of instantiation*.  If
+there are multiple enclosing generic functions or the call is nested
+within a concrete function that is, in turn, nested in generic
+function(s), the point of instantiation is the call site of the innermost
+generic function. This rule does not apply to non-method functions declared
+without parentheses (:ref:`Functions_without_Parentheses`): such
+functions cannot be discovered through the point of instantiation.
 
 If no candidate functions are found during the initial steps of
 identifying visible and candidate functions, function resolution

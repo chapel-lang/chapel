@@ -1,0 +1,12 @@
+#! /usr/bin/env bash
+
+$CHPL_HOME/util/printchplenv --all \
+    | grep -v '^\(machine info\|script location\): ' \
+    | grep -v CHPL_HOST_CC | grep -v CHPL_TARGET_CC | grep -v CHPL_HOST_CXX \
+    | grep -v CHPL_TARGET_CXX | grep -v CHPL_TARGET_LD \
+    | grep -v CHPL_HOST_MEM | grep -v CHPL_HOST_JEMALLOC \
+    | grep -v CHPL_TARGET_JEMALLOC | grep -v CHPL_LLVM_SUPPORT \
+    | grep -v CHPL_LLVM_CONFIG | grep -v CHPL_LLVM_VERSION \
+    | grep -v CHPL_GASNET_VERSION \
+    | grep -v CHPL_SANITIZE | grep -o '^ *\S\+: \S\+' \
+    | grep -v CHPL_AUX_FILESYS > printchplenvAll.good

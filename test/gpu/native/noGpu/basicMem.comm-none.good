@@ -1,12 +1,12 @@
 0 (gpu 0): basicMem.chpl:5: allocate 88B of domain(1,int(64),one) at 0xPREDIFFED
 0 (gpu 0): basicMem.chpl:5: allocate 1nnB of [domain(1,int(64),one)] int(64) at 0xPREDIFFED
 0 (gpu 0): basicMem.chpl:5: allocate 80B of array elements at 0xPREDIFFED
-0 (gpu 0): $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: allocate 96B of metadata about kernel parameters at 0xPREDIFFED
-0 (gpu 0): $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: allocate 40B of array of pointers to kernel args at 0xPREDIFFED
-0 (gpu 0): $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: allocate 5B of metadata about kernel parameters at 0xPREDIFFED
-0 (gpu 0): $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: free 5B of metadata about kernel parameters at 0xPREDIFFED
-0 (gpu 0): $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: free 40B of array of pointers to kernel args at 0xPREDIFFED
-0 (gpu 0): $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: free 96B of metadata about kernel parameters at 0xPREDIFFED
+0 (gpu 0): basicMem.chpl:5: allocate 184B of metadata about kernel parameters at 0xPREDIFFED
+0 (gpu 0): basicMem.chpl:5: allocate 40B of array of pointers to kernel args at 0xPREDIFFED
+0 (gpu 0): basicMem.chpl:5: allocate 5B of metadata about kernel parameters at 0xPREDIFFED
+0 (gpu 0): basicMem.chpl:5: free 5B of metadata about kernel parameters at 0xPREDIFFED
+0 (gpu 0): basicMem.chpl:5: free 40B of array of pointers to kernel args at 0xPREDIFFED
+0 (gpu 0): basicMem.chpl:5: free 184B of metadata about kernel parameters at 0xPREDIFFED
 0 (gpu 0): basicMem.chpl:5: free 80B of array elements at 0xPREDIFFED
 0 (gpu 0): basicMem.chpl:5: free 1nnB of [domain(1,int(64),one)] int(64) at 0xPREDIFFED
 0 (gpu 0): basicMem.chpl:5: free 88B of domain(1,int(64),one) at 0xPREDIFFED

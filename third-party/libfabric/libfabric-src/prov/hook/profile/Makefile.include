@@ -1,0 +1,32 @@
+if HAVE_PROFILE
+
+_profilehook_files = \
+        prov/hook/profile/src/hook_profile.c \
+        prov/hook/profile/src/prof_report.c
+
+_profilehook_headers = \
+        prov/hook/profile/include/hook_profile.h
+
+if HAVE_PROFILE_DL
+pkglib_LTLIBRARIES += libprofile-fi.la
+libprofile_fi_la_SOURCES = $(_profilehook_files) \
+        $(_profilehook_headers) \
+        $(common_hook_srcs) \
+        $(common_srcs)
+libprofile_fi_la_CPPFLAGS = $(AM_CPPFLAGS) \
+        -I$(top_srcdir)/prov/hook/include  \
+        -I$(top_srcdir)/prov/hook/profile/include 
+libprofile_fi_la_LIBADD = $(linkback) $(profilehook_shm_LIBS)
+libprofile_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
+libprofile_fi_la_DEPENDENCIES = $(linkback)
+
+else !HAVE_PROFILE_DL
+
+src_libfabric_la_SOURCES += $(_profilehook_files) $(_profilehook_headers)
+src_libfabric_la_LIBADD	+=	$(profilehook_shm_LIBS)
+
+endif !HAVE_PROFILE_DL
+
+src_libfabric_la_CPPFLAGS += -I$(top_srcdir)/prov/hook/profile/include
+
+endif HAVE_PROFILE

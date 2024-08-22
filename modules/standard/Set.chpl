@@ -111,6 +111,16 @@ module Set {
     return canResolveMethod(x, "chpl__serialize");
   }
 
+  /* Impacts whether the copy initializer that takes a set will generate a
+     warning when the other set has a different ``parSafe`` setting than the
+     destination.  Compile with ``-swarnForSetParsafeMismatch=false`` to turn
+     off this warning.
+
+     Defaults to ``true``
+  */
+  config param warnForSetParsafeMismatch = true;
+
+
   /*
     A set is a collection of unique elements. Attempting to add a duplicate
     element to a set has no effect.
@@ -139,6 +149,22 @@ module Set {
 
     /* The type of the elements contained in this set. */
     type eltType;
+
+    // NOTE: the compiler has some special handling for unstable warnings
+    // associated with set's parSafe field:
+    // * AggregateType::generateType -> ensures that specifying 'parSafe' in a type
+    //    expression for 'set' will generate a warning
+    // * functionResolution.createGenericRecordVarDefaultInitCall -> ensures that
+    //    the stable initializer is called when the compiler generates initializer
+    //     calls for variable declarations that don't specify 'parSafe' (or set it to false)
+    //
+    // This results in the following behavior:
+    //  - 'var m: set(int)' doesn't generate an unstable warning
+    //  - 'type t = set(int, false)' generates an unstable warning
+    //  - 'var m: set(int, parSafe=true)' generates two unstable warnings (one
+    //    for the type expression and one for the initializer call)
+    //  - 'var m: set(int, parSafe=false)' generates one unstable warning for
+    //    the type expression
 
     /* If `true`, this set will perform parallel safe operations. */
     @unstable("'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future")
@@ -284,6 +310,13 @@ module Set {
       this.resizeThreshold = other.resizeThreshold;
       this._htb = new chpl__hashtable(eltType, nothing,
                                       resizeThreshold);
+
+      if (this.parSafe != other.parSafe && warnForSetParsafeMismatch) {
+        compilerWarning("initializing between two sets with different " +
+                        "parSafe settings\n" + "Note: this warning can be " +
+                        "silenced with '-swarnForSetParsafeMismatch=false'");
+      }
+
       init this;
 
       // TODO: Relax this to allow if 'isCoercible(t, this.eltType)'?
@@ -571,7 +604,7 @@ module Set {
       :arg serializer: The serializer to use when writing.
     */
     proc const serialize(writer:fileWriter(?), ref serializer) throws {
-      if serializer.type == IO.defaultSerializer {
+      if isDefaultSerializerType(serializer.type) {
         _defaultWriteHelper(writer);
       } else {
         on this {

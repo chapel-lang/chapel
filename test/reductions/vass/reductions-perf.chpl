@@ -99,7 +99,7 @@ proc initData(ref testArray) {
 ////// single measurement //////
 
 proc runTest(testName, testReps, testDRdom) {
-  const DOM = if useBlockDist then testDRdom dmapped blockDist(testDRdom)
+  const DOM = if useBlockDist then testDRdom dmapped new blockDist(testDRdom)
                               else testDRdom;
   var ARR: [DOM] elemType;
   const expected = initData(ARR);

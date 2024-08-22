@@ -8,6 +8,7 @@ use LinearAlgebra;
 use LinearAlgebra.Sparse;
 private use List;
 use Time;
+private use Sort;
 
 config const n = 1000,
              nnz = 100,
@@ -117,7 +118,7 @@ proc memberCheck(A) {
 proc SPAdot(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
 
   const D = {Adom.dim(0), Bdom.dim(1)};
-  var Cdom: sparse subdomain(D) dmapped CS(sortedIndices=false);
+  var Cdom: sparse subdomain(D) dmapped new dmap(new CS(sortedIndices=false));
   var C: [Cdom] A.eltType;
 
   // pre-allocate nnz(A) + nnz(B) -- TODO: shrink later
@@ -187,7 +188,7 @@ record _SPA {
   proc ref gather(ref C: [?Cdom], i) {
     const nzcur = C.IR[i];
     var nzi = 0;
-    this.ls.sort();
+    sort(this.ls);
 
     for idx in this.ls {
       if nzcur + nzi  >= C.JC.size then break;

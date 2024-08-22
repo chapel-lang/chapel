@@ -76,6 +76,7 @@ class TupleDecl final : public Decl {
   int numElements_;
   int typeExpressionChildNum_;
   int initExpressionChildNum_;
+  bool isTupleDeclFormal_;
 
   TupleDecl(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
             Decl::Linkage linkage,
@@ -93,6 +94,14 @@ class TupleDecl final : public Decl {
       initExpressionChildNum_(initExpressionChildNum) {
 
     CHPL_ASSERT(assertAcceptableTupleDecl());
+
+    isTupleDeclFormal_ = false;
+    for (auto decl : decls()) {
+      if (decl->isFormal()) {
+        isTupleDeclFormal_ = true;
+        break;
+      }
+    }
   }
 
   void serializeInner(Serializer& ser) const override {
@@ -101,6 +110,7 @@ class TupleDecl final : public Decl {
     ser.writeVInt(numElements_);
     ser.writeVInt(typeExpressionChildNum_);
     ser.writeVInt(initExpressionChildNum_);
+    ser.write(isTupleDeclFormal_);
   }
 
   explicit TupleDecl(Deserializer& des)
@@ -109,6 +119,7 @@ class TupleDecl final : public Decl {
     numElements_ = des.readVInt();
     typeExpressionChildNum_ = des.readVInt();
     initExpressionChildNum_ = des.readVInt();
+    isTupleDeclFormal_ = des.read<bool>();
   }
 
   bool assertAcceptableTupleDecl();
@@ -120,7 +131,8 @@ class TupleDecl final : public Decl {
            lhs->intentOrKind_ == rhs->intentOrKind_ &&
            lhs->numElements_ == rhs->numElements_ &&
            lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_ &&
-           lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_;
+           lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_ &&
+           lhs->isTupleDeclFormal_ == rhs->isTupleDeclFormal_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -210,6 +222,13 @@ class TupleDecl final : public Decl {
     Returns a string describing the passed intentOrKind.
    */
   static const char* intentOrKindToString(IntentOrKind kind);
+
+  /**
+    Returns 'true' if this TupleDecl is a formal in a procedure.
+   */
+  const bool isTupleDeclFormal() const {
+    return isTupleDeclFormal_;
+  }
 };
 
 

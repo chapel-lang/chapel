@@ -45,24 +45,16 @@ uint64_t ofi_copy_iov_buf(const struct iovec *iov, size_t iov_count, uint64_t io
 	size_t i;
 
 	for (i = 0; i < iov_count && bufsize; i++) {
-		len = iov[i].iov_len;
-
-		if (iov_offset > len) {
-			iov_offset -= len;
+		len = ofi_iov_bytes_to_copy(&iov[i], &bufsize, &iov_offset,
+					    &iov_buf);
+		if (!len)
 			continue;
-		}
 
-		iov_buf = (char *)iov[i].iov_base + iov_offset;
-		len -= iov_offset;
-
-		len = MIN(len, bufsize);
 		if (dir == OFI_COPY_BUF_TO_IOV)
 			memcpy(iov_buf, (char *) buf + done, len);
 		else if (dir == OFI_COPY_IOV_TO_BUF)
 			memcpy((char *) buf + done, iov_buf, len);
 
-		iov_offset = 0;
-		bufsize -= len;
 		done += len;
 	}
 	return done;
@@ -71,21 +63,36 @@ uint64_t ofi_copy_iov_buf(const struct iovec *iov, size_t iov_count, uint64_t io
 void ofi_consume_iov_desc(struct iovec *iov, void **desc,
 			  size_t *iov_count, size_t to_consume)
 {
-	size_t i;
+	struct iovec *cur_iov;
+	void **cur_desc;
 
-	if (*iov_count == 1)
+	assert(*iov_count);
+	assert(to_consume <= ofi_total_iov_len(iov, *iov_count));
+
+	if (*iov_count == 1) {
+		if (iov[0].iov_len == to_consume) {
+			*iov_count = 0;
+			return;
+		}
 		goto out;
-
-	for (i = 0; i < *iov_count; i++) {
-		if (to_consume < iov[i].iov_len)
-			break;
-		to_consume -= iov[i].iov_len;
 	}
-	memmove(iov, &iov[i], sizeof(*iov) * (*iov_count - i));
-	if (desc)
-		memmove(desc, &desc[i],
-			sizeof(*desc) * (*iov_count - i));
-	*iov_count -= i;
+
+	cur_iov = iov;
+	cur_desc = desc;
+	while (*iov_count && to_consume >= cur_iov->iov_len) {
+		to_consume -= cur_iov->iov_len;
+		cur_iov++;
+		cur_desc++;
+		*iov_count -= 1;
+	}
+	if (*iov_count == 0)
+		return;
+
+	if (iov != cur_iov) {
+		memmove(iov, cur_iov, sizeof(*iov) * (*iov_count));
+		if (desc)
+			memmove(desc, cur_desc, sizeof(*desc) * (*iov_count));
+	}
 out:
 	iov[0].iov_base = (uint8_t *)iov[0].iov_base + to_consume;
 	iov[0].iov_len -= to_consume;
@@ -99,19 +106,31 @@ void ofi_consume_iov(struct iovec *iov, size_t *iov_count, size_t to_consume)
 void ofi_consume_rma_iov(struct fi_rma_iov *rma_iov, size_t *rma_iov_count,
 			 size_t to_consume)
 {
-	size_t i;
+	struct fi_rma_iov *cur_iov;
 
-	if (*rma_iov_count == 1)
-		goto out;
+	assert(*rma_iov_count);
+	assert(to_consume <= ofi_total_rma_iov_len(rma_iov, *rma_iov_count));
 
-	for (i = 0; i < *rma_iov_count; i++) {
-		if (to_consume < rma_iov[i].len)
-			break;
-		to_consume -= rma_iov[i].len;
+	if (*rma_iov_count == 1) {
+		 if (rma_iov[0].len == to_consume) {
+			*rma_iov_count = 0;
+			return;
+		 }
+		 goto out;
 	}
-	memmove(rma_iov, &rma_iov[i],
-		sizeof(*rma_iov) * (*rma_iov_count - i));
-	*rma_iov_count -= i;
+
+	cur_iov = rma_iov;
+	while (*rma_iov_count && to_consume >= cur_iov->len) {
+		to_consume -= cur_iov->len;
+		cur_iov++;
+		*rma_iov_count -= 1;
+	}
+	if (*rma_iov_count == 0)
+		return;
+
+	if (rma_iov != cur_iov) {
+		memmove(rma_iov, cur_iov, sizeof(*rma_iov) * (*rma_iov_count));
+	}
 out:
 	rma_iov[0].addr += to_consume;
 	rma_iov[0].len -= to_consume;

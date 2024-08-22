@@ -1,5 +1,0 @@
-dateTimeDateForwardingMethods.chpl:8: warning: enum 'isoDayOfWeek' is deprecated. Please use dayOfWeek instead
-dateTimeDateForwardingMethods.chpl:5: warning: `dateTime.isoCalendar` is deprecated; use `dateTime.getDate().isoWeekDate()` instead
-dateTimeDateForwardingMethods.chpl:6: warning: `dateTime.toOrdinal` is deprecated; use `dateTime.getDate().toOrdinal()` instead
-dateTimeDateForwardingMethods.chpl:7: warning: `dateTime.weekday` is deprecated; use `dateTime.getDate().weekday()` instead
-dateTimeDateForwardingMethods.chpl:8: warning: `dateTime.isoWeekday` is deprecated; use `dateTime.getDate().weekday()` instead

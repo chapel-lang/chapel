@@ -1,6 +1,8 @@
 #ifndef QT_QTHREAD_STRUCT_H
 #define QT_QTHREAD_STRUCT_H
 
+#include <stdatomic.h>
+
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -41,7 +43,7 @@
 struct qthread_runtime_data_s {
     void         *stack;           /* the thread's stack */
     qt_context_t  context;         /* the context switch info */
-    qt_context_t *return_context;  /* context of parent shepherd */
+    qt_context_t * _Atomic return_context;  /* context of parent shepherd */
 
     /* a pointer used for passing information back to the shepherd when
      * context swapping */
@@ -81,8 +83,8 @@ struct qthread_s {
 
     unsigned int               thread_id;
     qthread_shepherd_id_t      target_shepherd; /* the shepherd we'd rather run on; set to NO_SHEPHERD unless the thread either migrated or was spawned to a specific destination (aka the programmer expressed a desire for this thread to be somewhere) */
-    uint16_t                   flags;           /* may not need all bits */
-    uint8_t                    thread_state : 4;
+    _Atomic uint16_t flags__;           /* may not need all bits */
+    _Atomic uint8_t thread_state;
 
     Q_ALIGNED(8) uint8_t data[]; /* this is where we stick argcopy and tasklocal data */
 };

@@ -1,6 +1,6 @@
 use BlockDist;
 
-var A: [{1..4, 1..4} dmapped blockDist(boundingBox={1..4,1..4},
+var A: [{1..4, 1..4} dmapped new blockDist(boundingBox={1..4,1..4},
                                        dataParTasksPerLocale=2,
                                        dataParIgnoreRunningTasks=true)] real;
 

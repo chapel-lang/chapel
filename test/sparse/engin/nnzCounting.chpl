@@ -4,11 +4,11 @@ use BlockDist;
 config const N = 8;
 const Space = {0..#N, 0..#N};
 
-var distParent = Space dmapped blockDist(boundingBox=Space);
+var distParent = Space dmapped new blockDist(boundingBox=Space);
 var nonDistParent = Space;
 
 var defSps: sparse subdomain(nonDistParent);
-var csrSps: sparse subdomain(nonDistParent) dmapped CS();
+var csrSps: sparse subdomain(nonDistParent) dmapped new dmap(new CS());
 var blkSps: sparse subdomain(distParent);
 
 const inds = [(1,1),(2,2),(3,3),(4,4),(5,5)];
@@ -30,4 +30,3 @@ blkSps += col;
 writeln(defSps.size);
 writeln(csrSps.size);
 writeln(blkSps.size);
-

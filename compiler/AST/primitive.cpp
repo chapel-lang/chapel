@@ -216,6 +216,17 @@ returnInfoScalarPromotionType(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoThunkResultType(CallExpr* call) {
+  QualifiedType tmp = call->get(1)->qualType();
+  AggregateType* type = toAggregateType(tmp.type()->getValType());
+
+  INT_ASSERT(type);
+  INT_ASSERT(type->thunkInvoke);
+
+  return QualifiedType(type->thunkInvoke->retType, QUAL_VAL);
+}
+
+static QualifiedType
 returnInfoStaticFieldType(CallExpr* call) {
   // The code below is not very general. It can be extended as needed.
   // The first argument is the variable or the type whose field is queried.
@@ -730,6 +741,11 @@ initPrimitive() {
   prim_def(PRIM_OUTER_CONTEXT, "outer context", returnInfoFirst);
   prim_def(PRIM_HOIST_TO_CONTEXT, "hoist to context", returnInfoVoid);
 
+  prim_def(PRIM_CREATE_THUNK, "create thunk", returnInfoUnknown);
+  prim_def(PRIM_THUNK_RESULT, "thunk result", returnInfoFirst);
+  prim_def(PRIM_FORCE_THUNK, "force thunk", returnInfoUnknown);
+  prim_def(PRIM_THUNK_RESULT_TYPE, "thunk result type", returnInfoThunkResultType);
+
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);
   // dst, src. PRIM_MOVE can set a reference.
@@ -884,9 +900,6 @@ initPrimitive() {
   prim_def(PRIM_GET_DYNAMIC_END_COUNT, "get dynamic end count", returnInfoEndCount);
   prim_def(PRIM_SET_DYNAMIC_END_COUNT, "set dynamic end count", returnInfoVoid, true);
 
-  // this assumes the grid and the blocks are 1D
-  prim_def(PRIM_GPU_KERNEL_LAUNCH_FLAT, "gpu kernel launch flat", returnInfoVirtualMethodCall, true);
-
   // this requires sizes in all 3D to be specified. For 2D launches, 1 can be
   // passed as one or more of these arguments.
   prim_def(PRIM_GPU_KERNEL_LAUNCH, "gpu kernel launch", returnInfoVirtualMethodCall, true);
@@ -919,10 +932,12 @@ initPrimitive() {
   prim_def(PRIM_GPU_GRIDDIM_Y, "gpu gridDim y", returnInfoInt32, true);
   prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
 
-  prim_def(PRIM_GPU_INIT_KERNEL_CFG, "gpu init kernel cfg", returnInfoCVoidPtr, true);
+  prim_def(PRIM_GPU_INIT_KERNEL_CFG, "gpu init kernel cfg", returnInfoCVoidPtr, true, true);
+  prim_def(PRIM_GPU_INIT_KERNEL_CFG_3D, "gpu init kernel cfg 3d", returnInfoCVoidPtr, true, true);
   prim_def(PRIM_GPU_DEINIT_KERNEL_CFG, "gpu deinit kernel cfg", returnInfoVoid, true);
   prim_def(PRIM_GPU_ARG, "gpu arg", returnInfoVoid, true);
   prim_def(PRIM_GPU_PID_OFFLOAD, "gpu pid offload", returnInfoVoid, true);
+  prim_def(PRIM_GPU_BLOCK_REDUCE, "gpu block reduce", returnInfoVoid, true);
 
   // Marker for a scopeless block that denotes the "scope" of code to which
   // GPU attributes are being applied. The block contains the primitives as the
@@ -952,6 +967,7 @@ initPrimitive() {
   // Generates call that produces runtime error when not run by a GPU
   prim_def(PRIM_ASSERT_ON_GPU, "chpl_assert_on_gpu", returnInfoVoid, true, true);
   prim_def(PRIM_GPU_ELIGIBLE, "gpu eligible", returnInfoVoid, true, true);
+  prim_def(PRIM_GPU_REDUCE_WRAPPER, "gpu reduce wrapper", returnInfoVoid, true);
 
   // task primitives
   // get serial state
@@ -1053,6 +1069,8 @@ initPrimitive() {
   prim_def(PRIM_MAYBE_LOCAL_THIS, "may be local access", returnInfoUnknown);
   prim_def(PRIM_MAYBE_LOCAL_ARR_ELEM, "may be local array element", returnInfoUnknown);
   prim_def(PRIM_MAYBE_AGGREGATE_ASSIGN, "may be aggregated assignment", returnInfoUnknown);
+
+  prim_def(PRIM_PROTO_SLICE_ASSIGN, "assign proto slices", returnInfoVoid);
 
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);

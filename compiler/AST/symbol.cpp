@@ -71,6 +71,7 @@ Symbol *gTimer = NULL;
 Symbol *gTaskID = NULL;
 Symbol *gSyncVarAuxFields = NULL;
 Symbol *gSingleVarAuxFields = NULL;
+Symbol *gIgnoredPromotionToken = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
@@ -1273,7 +1274,7 @@ llvm::FunctionType* llvmGetUnderlyingFunctionType(FunctionType* t) {
 
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
-    llvmImplType(NULL),
+    llvmImplType(NULL), llvmAlignment(ALIGNMENT_UNINIT),
     llvmTbaaTypeDescriptor(NULL),
     llvmTbaaAccessTag(NULL), llvmConstTbaaAccessTag(NULL),
     llvmTbaaAggTypeDescriptor(NULL),

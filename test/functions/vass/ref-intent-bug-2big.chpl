@@ -34,7 +34,7 @@ proc setupGridLocales(ensureManyLocs = false) {
   return gridLocales;
 }
 
-const gridDist = gridDom dmapped blockDist(gridDom, gridLocales);
+const gridDist = gridDom dmapped new blockDist(gridDom, gridLocales);
 
 config var chk = true;
 config const v1 = true;
@@ -179,7 +179,7 @@ assert(refy == WI.infos[gx,gy].myhighy);
 
 const refAlloc = {0..refx+1, 0..refy+1},
     refCompute = {1..refx, 1..refy},
-  refAllocDist = refAlloc dmapped blockDist(refAlloc, gridLocales);
+  refAllocDist = refAlloc dmapped new blockDist(refAlloc, gridLocales);
 
 // Our reference data arrays, corresponding to WA, WB.
 var RA, RB: [refAllocDist] elType;

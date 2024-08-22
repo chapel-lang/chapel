@@ -114,17 +114,13 @@ class CanPassResult {
                                          types::ClassTypeDecorator actual,
                                          types::ClassTypeDecorator formal);
 
-  static CanPassResult canPassClassTypes(Context* context,
-                                         const types::ClassType* actualCt,
-                                         const types::ClassType* formalCt);
+  static CanPassResult canPassSubtypeNonBorrowing(Context* context,
+                                      const types::Type* actualT,
+                                      const types::Type* formalT);
 
   static CanPassResult canPassSubtypeOrBorrowing(Context* context,
                                                  const types::Type* actualT,
                                                  const types::Type* formalT);
-
-  static CanPassResult canPassSubtype(Context* context,
-                                      const types::Type* actualT,
-                                      const types::Type* formalT);
 
   static CanPassResult canConvertTuples(Context* context,
                                         const types::TupleType* aT,
@@ -225,6 +221,9 @@ class KindProperties {
  private:
   void invalidate();
 
+  /* Helper to check basic validity of combining two KindProperties. */
+  bool checkValidCombine(const KindProperties& other) const;
+
  public:
   /* Decompose a qualified type kind into its properties. */
   static KindProperties fromKind(types::QualifiedType::Kind kind);
@@ -235,10 +234,18 @@ class KindProperties {
   /* Set the paramness property to the given one. */
   void setParam(bool isParam);
 
+  /* Set the constness property to the given one. */
+  void setConst(bool isConst);
+
   /* Combine two sets of kind properties into this one. The resulting
      set of properties is compatible with both arguments (e.g. ref + val = val,
-     since values can't be made into references). */
-  void combineWith(const KindProperties& other);
+     since values can't be made into references).
+     Takes the mathematical join with respect to constness (const + non-const = const). */
+  void combineWithJoin(const KindProperties& other);
+
+  /* Like combineWithJoin, but takes the mathematical meet with respect to
+     constness (const + non-const = non-const). */
+  void combineWithMeet(const KindProperties& other);
 
   /* Combine two sets of kind properties, strictly enforcing properties of
      the receiver (e.g. (receiver) param + (other) value = invalid, because
@@ -248,10 +255,18 @@ class KindProperties {
      checking is a separate pass. */
   void strictCombineWith(const KindProperties& other);
 
+  /* Combine the properties of two kinds, returning the result as a kind. */
+  static types::QualifiedType::Kind combineKindsMeet(
+      types::QualifiedType::Kind kind1,
+      types::QualifiedType::Kind kind2);
+
   /* Convert the set of kind properties back into a kind. */
   types::QualifiedType::Kind toKind() const;
 
   bool valid() const { return isValid; }
+
+  /* Creates an corresponding kind that is const */
+  static types::QualifiedType::Kind makeConst(types::QualifiedType::Kind kind);
 };
 
 /**

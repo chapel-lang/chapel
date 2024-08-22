@@ -117,6 +117,10 @@ usd_get_device_list(
         goto out;
     }
 
+#pragma GCC diagnostic push
+#if defined(__GNUC__) && (__GNUC__ >= 8)
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#endif
     idp = usd_ib_dev_list;
     while (idp != NULL && n < *num_entries) {
         strncpy(entries[n].ude_devname, idp->id_usnic_name,
@@ -124,6 +128,7 @@ usd_get_device_list(
         ++n;
         idp = idp->id_next;
     }
+#pragma GCC diagnostic pop
 
 out:
     *num_entries = n;

@@ -41,7 +41,7 @@ details task parallelism as follows:
    way to suppress parallelism.
 
 -  :ref:`Yield_Task_Execution` describes yielding the current tasks
-    execution.
+   execution.
 
 
 .. index::
@@ -154,7 +154,9 @@ continue statements may not be used to exit a begin block.
 
 .. index::
    single: sync
+   single: sync variables
    single: single
+   single: single variables
    single: synchronization variables; sync
    single: synchronization types; formal arguments
    single: synchronization types; actual arguments
@@ -485,6 +487,8 @@ statements may not be used to exit a coforall block.
    line until all of the tasks have completed.
 
 .. index::
+   single: keywords; with (task intent)
+   single: with; task intent
    single: task intents
    single: task parallelism; task functions
    single: task parallelism; task intents

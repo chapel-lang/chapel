@@ -234,7 +234,7 @@ mrail_recv_common(struct mrail_ep *mrail_ep, struct mrail_recv_queue *recv_queue
 	       "\n", ofi_total_iov_len(iov, count), recv->addr,
 	       recv->tag, recv->ignore);
 
-	ofi_ep_lock_acquire(&mrail_ep->util_ep);
+	ofi_genlock_lock(&mrail_ep->util_ep.lock);
 	unexp_msg_entry = container_of(dlist_remove_first_match(
 						&recv_queue->unexp_msg_list,
 						recv_queue->match_unexp,
@@ -243,10 +243,10 @@ mrail_recv_common(struct mrail_ep *mrail_ep, struct mrail_recv_queue *recv_queue
 				       entry);
 	if (!unexp_msg_entry) {
 		dlist_insert_tail(&recv->entry, &recv_queue->recv_list);
-		ofi_ep_lock_release(&mrail_ep->util_ep);
+		ofi_genlock_unlock(&mrail_ep->util_ep.lock);
 		return 0;
 	}
-	ofi_ep_lock_release(&mrail_ep->util_ep);
+	ofi_genlock_unlock(&mrail_ep->util_ep.lock);
 
 	FI_DBG(recv_queue->prov, FI_LOG_EP_DATA, "Match for posted recv"
 	       " with addr: 0x%" PRIx64 ", tag: 0x%" PRIx64 " ignore: "
@@ -355,7 +355,7 @@ int mrail_send_rndv_ack_blocking(struct mrail_ep *mrail_ep,
 	ssize_t ret;
 	uint64_t flags = FI_COMPLETION;
 
-	ofi_ep_lock_acquire(&mrail_ep->util_ep);
+	ofi_genlock_lock(&mrail_ep->util_ep.lock);
 
 	tx_buf = mrail_get_tx_buf(mrail_ep, context, 0, ofi_op_tagged, 0);
 	if (OFI_UNLIKELY(!tx_buf))
@@ -396,7 +396,7 @@ int mrail_send_rndv_ack_blocking(struct mrail_ep *mrail_ep,
 		ofi_buf_free(tx_buf);
 	}
 
-	ofi_ep_lock_release(&mrail_ep->util_ep);
+	ofi_genlock_unlock(&mrail_ep->util_ep.lock);
 	return ret;
 }
 
@@ -495,7 +495,7 @@ mrail_send_common(struct fid_ep *ep_fid, const struct iovec *iov, void **desc,
 
 	peer_info = ofi_av_get_addr(mrail_ep->util_ep.av, (int) dest_addr);
 
-	ofi_ep_lock_acquire(&mrail_ep->util_ep);
+	ofi_genlock_lock(&mrail_ep->util_ep.lock);
 
 	tx_buf = mrail_get_tx_buf(mrail_ep, context, peer_info->seq_no++,
 				  ofi_op_tagged, flags | op);
@@ -544,9 +544,9 @@ mrail_send_common(struct fid_ep *ep_fid, const struct iovec *iov, void **desc,
 			"Unable to fi_sendmsg on rail: %" PRIu32 "\n", rail);
 		goto err2;
 	} else if (!(flags & FI_COMPLETION)) {
-		ofi_ep_tx_cntr_inc(&mrail_ep->util_ep);
+		ofi_ep_cntr_inc(&mrail_ep->util_ep, CNTR_TX);
 	}
-	ofi_ep_lock_release(&mrail_ep->util_ep);
+	ofi_genlock_unlock(&mrail_ep->util_ep.lock);
 	return ret;
 err2:
 	if (tx_buf->hdr.protocol == MRAIL_PROTO_RNDV) {
@@ -556,7 +556,7 @@ err2:
 	ofi_buf_free(tx_buf);
 err1:
 	peer_info->seq_no--;
-	ofi_ep_lock_release(&mrail_ep->util_ep);
+	ofi_genlock_unlock(&mrail_ep->util_ep.lock);
 	return ret;
 }
 

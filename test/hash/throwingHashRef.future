@@ -1,0 +1,2 @@
+[bug] ref hash function generating an extra unsilenceable warning
+#24881

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# filter out deprecation warnings
+grep -v 'deprecated' $2 > $2.prediff.tmp
+mv $2.prediff.tmp $2
+grep -v "In function 'test'" $2 > $2.prediff.tmp
+mv $2.prediff.tmp $2
+grep -v 'called as test' $2 > $2.prediff.tmp
+mv $2.prediff.tmp $2

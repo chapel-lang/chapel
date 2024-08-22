@@ -3,7 +3,7 @@ import sys
 import glob
 import os
 
-import chpl_comm, chpl_comm_debug, chpl_launcher, chpl_platform
+import chpl_comm, chpl_comm_debug, chpl_launcher, chpl_platform, chpl_comm_ofi_oob
 import overrides, third_party_utils
 
 from utils import error, memoize, try_run_command, warning
@@ -15,16 +15,13 @@ def get():
         libfabric_val = overrides.get('CHPL_LIBFABRIC')
         platform_val = chpl_platform.get('target')
         if not libfabric_val:
-            cmd_exists, returncode = try_run_command(['pkg-config',
-                                                      '--exists',
-                                                      'libfabric'])[0:2]
-            if cmd_exists and returncode == 0:
+            if third_party_utils.pkgconfig_system_has_package('libfabric'):
                 libfabric_val = 'system'
             else:
                 libfabric_val = 'bundled'
         if libfabric_val == 'none':
             error("CHPL_LIBFABRIC must not be 'none' when CHPL_COMM is ofi")
-        if platform_val == 'hpe-cray-ex' and libfabric_val != 'system':
+        elif platform_val == 'hpe-cray-ex' and libfabric_val != 'system':
             warning('CHPL_LIBFABRIC!=system is discouraged on HPE Cray EX')
     else:
         libfabric_val = 'none'
@@ -36,11 +33,9 @@ def get():
 def get_uniq_cfg_path():
     base_uniq_cfg = third_party_utils.default_uniq_cfg_path()
     if chpl_comm_debug.get() == 'debug':
-        suffix = '-debug'
-    else:
-        suffix = ''
-    return base_uniq_cfg + suffix
-
+        base_uniq_cfg += '-debug'
+    oob = chpl_comm_ofi_oob.get()
+    return base_uniq_cfg + '/oob-' + oob
 
 # returns 2-tuple of lists
 #  (compiler_bundled_args, compiler_system_args)
@@ -69,9 +64,8 @@ def get_compile_args():
 
     if libfabric_val == 'system' or libfabric_val == 'bundled':
         flags = [ ]
-        launcher_val = chpl_launcher.get()
-        ofi_oob_val = overrides.get_environ('CHPL_COMM_OFI_OOB')
-        if 'mpi' in launcher_val or ( ofi_oob_val and 'mpi' in ofi_oob_val ):
+        ofi_oob_val = chpl_comm_ofi_oob.get()
+        if ofi_oob_val == 'mpi':
             mpi_dir_val = overrides.get_environ('MPI_DIR')
             if mpi_dir_val:
                 flags.append('-I' + mpi_dir_val + '/include')
@@ -119,9 +113,8 @@ def get_link_args():
 
     if libfabric_val == 'system' or libfabric_val == 'bundled':
         libs = [ ]
-        launcher_val = chpl_launcher.get()
-        ofi_oob_val = overrides.get_environ('CHPL_COMM_OFI_OOB')
-        if 'mpi' in launcher_val or ( ofi_oob_val and 'mpi' in ofi_oob_val ):
+        ofi_oob_val = chpl_comm_ofi_oob.get()
+        if ofi_oob_val == 'mpi':
             mpi_dir_val = overrides.get_environ('MPI_DIR')
             if mpi_dir_val:
                 mpi_lib_dir = os.path.join(mpi_dir_val, 'lib64')
@@ -141,7 +134,7 @@ def get_link_args():
         # If we're using the PMI2 out-of-band support we have to reference
         # libpmi2 explicitly, except on Cray XC systems.
         platform_val = chpl_platform.get('target')
-        if platform_val == 'hpe-cray-ex' or ofi_oob_val == 'pmi2':
+        if ofi_oob_val == 'pmi2' and 'cray-xc' != platform_val:
             libs.append('-lpmi2')
 
         args[1].extend(libs)

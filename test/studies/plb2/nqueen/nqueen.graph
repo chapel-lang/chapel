@@ -1,0 +1,5 @@
+perfkeys: real, real, real, real
+files: nqueen.dat, nqueen-carray-32.dat, nqueen-array-32.dat, nqueen-array-64.dat
+graphkeys: 32-bit tuples, 32-bit c_array, 32-bit Chapel array, 64-bit Chapel array
+ylabel: Time (seconds)
+graphtitle: plb2 nqueen

@@ -196,14 +196,59 @@ struct fi_info_1_2 {
         struct fid_nic_1_2        *nic;
 };
 
-/*
+struct fi_domain_attr_1_3 {
+	struct fid_domain	*domain;
+	char			*name;
+	enum fi_threading	threading;
+	enum fi_progress	control_progress;
+	enum fi_progress	data_progress;
+	enum fi_resource_mgmt	resource_mgmt;
+	enum fi_av_type		av_type;
+	int			mr_mode;
+	size_t			mr_key_size;
+	size_t			cq_data_size;
+	size_t			cq_cnt;
+	size_t			ep_cnt;
+	size_t			tx_ctx_cnt;
+	size_t			rx_ctx_cnt;
+	size_t			max_ep_tx_ctx;
+	size_t			max_ep_rx_ctx;
+	size_t			max_ep_stx_ctx;
+	size_t			max_ep_srx_ctx;
+	size_t			cntr_cnt;
+	size_t			mr_iov_limit;
+	uint64_t		caps;
+	uint64_t		mode;
+	uint8_t			*auth_key;
+	size_t 			auth_key_size;
+	size_t			max_err_data;
+	size_t			mr_cnt;
+	uint32_t		tclass;
+};
+
 #define fi_tx_attr_1_3 fi_tx_attr
 #define fi_rx_attr_1_3 fi_rx_attr_1_2
 #define fi_ep_attr_1_3 fi_ep_attr_1_2
-#define fi_domain_attr_1_3 fi_domain_attr
 #define fi_fabric_attr_1_3 fi_fabric_attr_1_2
-fi_info_1_3 -> fi_info
-*/
+#define fid_nic_1_3 fid_nic_1_2
+
+struct fi_info_1_3 {
+        struct fi_info            *next;
+        uint64_t                  caps;
+        uint64_t                  mode;
+        uint32_t                  addr_format;
+        size_t                    src_addrlen;
+        size_t                    dest_addrlen;
+        void                      *src_addr;
+        void                      *dest_addr;
+        fid_t                     handle;
+        struct fi_tx_attr_1_3     *tx_attr;
+        struct fi_rx_attr_1_3     *rx_attr;
+        struct fi_ep_attr_1_3     *ep_attr;
+        struct fi_domain_attr_1_3 *domain_attr;
+        struct fi_fabric_attr_1_3 *fabric_attr;
+        struct fid_nic_1_3        *nic;
+};
 
 #define ofi_dup_attr(dst, src)				\
 	do {						\
@@ -212,6 +257,79 @@ fi_info_1_3 -> fi_info
 			memcpy(dst, src, sizeof(*src));	\
 	} while (0);
 
+#define ofi_free_attr(attr)						\
+	do {								\
+		if (attr) {						\
+			free(attr);					\
+			attr = NULL;					\
+		}							\
+	} while (0);
+
+/* Macro used to duplicate versions of old fi_infos and convert it to the latest
+ * definition. Any new fields in the latest definition will be zeroed.
+ */
+#define ofi_dup_info(base, info)					\
+	do {								\
+		ofi_dup_attr(base, info);				\
+		if (!base)						\
+			break;						\
+									\
+		if (info->tx_attr) {					\
+			ofi_dup_attr(base->tx_attr, info->tx_attr);	\
+			if (!base->tx_attr)				\
+				goto ofi_dup_info_err_free_base;	\
+		}							\
+									\
+		if (info->rx_attr) {					\
+			ofi_dup_attr(base->rx_attr, info->rx_attr);	\
+			if (!base->rx_attr)				\
+				goto ofi_dup_info_err_free_tx_attr;	\
+		}							\
+									\
+		if (info->ep_attr) {					\
+			ofi_dup_attr(base->ep_attr, info->ep_attr);	\
+			if (!base->ep_attr)				\
+				goto ofi_dup_info_err_free_rx_attr;	\
+		}							\
+									\
+		if (info->domain_attr) {				\
+			ofi_dup_attr(base->domain_attr,			\
+				     info->domain_attr);		\
+			if (!base->domain_attr)				\
+				goto ofi_dup_info_err_free_ep_attr;	\
+		}							\
+									\
+		if (info->fabric_attr) {				\
+			ofi_dup_attr(base->fabric_attr,			\
+				     info->fabric_attr);		\
+			if (!base->fabric_attr)				\
+				goto ofi_dup_info_err_free_domain_attr;	\
+		}							\
+									\
+		/* Success. */						\
+		break;							\
+									\
+ofi_dup_info_err_free_domain_attr:					\
+		ofi_free_attr(base->domain_attr);			\
+ofi_dup_info_err_free_ep_attr:						\
+		ofi_free_attr(base->ep_attr);				\
+ofi_dup_info_err_free_rx_attr:						\
+		ofi_free_attr(base->rx_attr);				\
+ofi_dup_info_err_free_tx_attr:						\
+		ofi_free_attr(base->tx_attr);				\
+ofi_dup_info_err_free_base:						\
+		ofi_free_attr(base);					\
+	} while (0);
+
+#define ofi_free_info(base)						\
+	do {								\
+		ofi_free_attr(base->fabric_attr);			\
+		ofi_free_attr(base->domain_attr);			\
+		ofi_free_attr(base->ep_attr);				\
+		ofi_free_attr(base->rx_attr);				\
+		ofi_free_attr(base->tx_attr);				\
+		ofi_free_attr(base);					\
+	} while (0);
 
 /*
  * ABI 1.0
@@ -366,13 +484,13 @@ struct fi_info_1_1 *fi_dupinfo_1_1(const struct fi_info_1_1 *info)
 	if (!info)
 		return (struct fi_info_1_1 *) ofi_allocinfo_internal();
 
-	ofi_dup_attr(base, info);
+	ofi_dup_info(base, info);
 	if (base == NULL)
 		return NULL;
 
 	dup = fi_dupinfo(base);
 
-	free(base);
+	ofi_free_info(base);
 	return (struct fi_info_1_1 *) dup;
 }
 COMPAT_SYMVER(fi_dupinfo_1_1, fi_dupinfo, FABRIC_1.1);
@@ -418,13 +536,13 @@ struct fi_info_1_2 *fi_dupinfo_1_2(const struct fi_info_1_2 *info)
 	if (!info)
 		return (struct fi_info_1_2 *) ofi_allocinfo_internal();
 
-	ofi_dup_attr(base, info);
+	ofi_dup_info(base, info);
 	if (base == NULL)
 		return NULL;
 
 	dup = fi_dupinfo(base);
 
-	free(base);
+	ofi_free_info(base);
 	return (struct fi_info_1_2 *) dup;
 }
 COMPAT_SYMVER(fi_dupinfo_1_2, fi_dupinfo, FABRIC_1.2);
@@ -451,3 +569,55 @@ int fi_getinfo_1_2(uint32_t version, const char *node, const char *service,
 	return ret;
 }
 COMPAT_SYMVER(fi_getinfo_1_2, fi_getinfo, FABRIC_1.2);
+
+/*
+ * ABI 1.3
+ */
+__attribute__((visibility ("default"),EXTERNALLY_VISIBLE))
+void fi_freeinfo_1_3(struct fi_info_1_3 *info)
+{
+	fi_freeinfo((struct fi_info *) info);
+}
+COMPAT_SYMVER(fi_freeinfo_1_3, fi_freeinfo, FABRIC_1.3);
+
+__attribute__((visibility ("default"),EXTERNALLY_VISIBLE))
+struct fi_info_1_3 *fi_dupinfo_1_3(const struct fi_info_1_3 *info)
+{
+	struct fi_info *dup, *base;
+
+	if (!info)
+		return (struct fi_info_1_3 *) ofi_allocinfo_internal();
+
+	ofi_dup_info(base, info);
+	if (base == NULL)
+		return NULL;
+
+	dup = fi_dupinfo(base);
+
+	ofi_free_info(base);
+	return (struct fi_info_1_3 *) dup;
+}
+COMPAT_SYMVER(fi_dupinfo_1_3, fi_dupinfo, FABRIC_1.3);
+
+__attribute__((visibility ("default"),EXTERNALLY_VISIBLE))
+int fi_getinfo_1_3(uint32_t version, const char *node, const char *service,
+		   uint64_t flags, const struct fi_info_1_3 *hints_1_3,
+		   struct fi_info_1_3 **info)
+{
+	struct fi_info *hints;
+	int ret;
+
+	if (hints_1_3) {
+		hints = (struct fi_info *) fi_dupinfo_1_3(hints_1_3);
+		if (!hints)
+			return -FI_ENOMEM;
+	} else {
+		hints = NULL;
+	}
+	ret = fi_getinfo(version, node, service, flags, hints,
+			 (struct fi_info **) info);
+	fi_freeinfo(hints);
+
+	return ret;
+}
+COMPAT_SYMVER(fi_getinfo_1_3, fi_getinfo, FABRIC_1.3);

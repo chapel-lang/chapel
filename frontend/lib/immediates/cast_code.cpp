@@ -692,6 +692,8 @@ switch (to->const_kind) {
      default:
        CHPL_ASSERT(false && "Illegal case in coerce_immediate switch statement"); break;
      } break;
+   case CONST_KIND_STRING:
+     to->v_string = from->v_string; break;
    } break;
  case NUM_KIND_COMPLEX:
    switch (to->num_index) {

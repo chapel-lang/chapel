@@ -28,6 +28,7 @@
 #include "chpl/types/BoolType.h"
 #include "chpl/types/CStringType.h"
 #include "chpl/types/ComplexType.h"
+#include "chpl/types/ErroneousType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
 #include "chpl/types/RealType.h"
@@ -123,7 +124,7 @@ static ImmString getImmediateValueOrEmpty(const StringParam* p) {
   return UniqueString().podUniqueString();
 }
 
-static paramtags::ParamTag guessParamTagFromType(const Type* t) {
+optional<ParamTag> Param::tryGuessParamTagFromType(const Type* t) {
   if (t->isBoolType()) {
     return paramtags::BoolParam;
   } else if (t->isComplexType()) {
@@ -146,9 +147,15 @@ static paramtags::ParamTag guessParamTagFromType(const Type* t) {
     return paramtags::StringParam;
   } else if (t->isNothingType()) {
     return paramtags::NoneParam;
-  } else {
-    CHPL_ASSERT(false && "case not handled");
   }
+  return empty;
+}
+
+static paramtags::ParamTag guessParamTagFromType(const Type* t) {
+  if (auto guess = Param::tryGuessParamTagFromType(t)) {
+    return *guess;
+  }
+  CHPL_ASSERT(false && "case not handled");
   return paramtags::NoneParam;
 }
 
@@ -485,10 +492,60 @@ static QualifiedType enumParamFromNumericValue(Context* context,
   return numericValue;
 }
 
+static bool paramCastAllowed(Context* context,
+                             const QualifiedType& a,
+                             const QualifiedType& b) {
+  auto at = a.type();
+  auto bt = b.type();
+
+  if (!at || !bt) return false;
+
+  auto cCharType = typeForSysCType(context, USTR("c_char")).type();
+
+  bool fromEnum = at->isEnumType();
+  bool fromString = at->isStringType() ||
+                    at->isCStringType() ||
+                    (at->isCPtrType() && at->toCPtrType()->eltType() == cCharType);
+  bool fromBytes = at->isBytesType();
+  bool fromIntUint = at->isIntType() ||
+                     at->isUintType();
+  bool fromRealEtc = at->isRealType() ||
+                     at->isImagType() ||
+                     at->isComplexType();
+  bool fromIntEtc = fromIntUint || fromRealEtc || at->isBoolType();
+
+  bool toEnum = bt->isEnumType();
+  bool toString = (bt->isStringType() ||
+                   bt->isCStringType() ||
+                   (bt->isCPtrType() && bt->toCPtrType()->eltType() == cCharType));
+  bool toBytes = bt->isBytesType();
+  bool toIntUint = bt->isIntType() ||
+                   bt->isUintType();
+  bool toRealEtc = bt->isRealType() ||
+                   bt->isImagType() ||
+                   bt->isComplexType();
+  bool toIntEtc = toIntUint || toRealEtc || bt->isBoolType();
+
+  // Allowed casts, copied from preFold.cpp in the production compiler:
+  return
+    ((fromEnum || fromIntEtc) && toIntEtc) ||
+    (toEnum && (fromString || fromIntUint)) ||
+    (fromEnum && toString) ||
+    (fromString && toString) ||
+    (fromString && toBytes) ||
+    (fromBytes && bt->isCStringType()) ||
+    (fromIntEtc && (toString || toBytes));
+}
+
 static QualifiedType handleParamCast(Context* context,
                                      const AstNode* astForErr,
                                      QualifiedType a,
                                      QualifiedType b) {
+  if (!paramCastAllowed(context, a, b)) {
+    CHPL_REPORT(context, InvalidParamCast, astForErr, a, b);
+    return QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
+  }
+
   QualifiedType typeToReturnOnError;
   // convert Param to Immediate
   auto aImmOpt = paramToImmediate(context, astForErr, a.param(), a.type(), typeToReturnOnError);

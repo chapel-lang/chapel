@@ -46,6 +46,81 @@
 #include <linux/ethtool.h>
 #include <linux/sockios.h>
 #include <sys/ioctl.h>
+#include <inttypes.h>
+
+static size_t ofi_base_page_size;
+
+static unsigned long ofi_smaps_page_size(FILE *file)
+{
+	int n;
+	unsigned long size = ofi_base_page_size;
+	char buf[1024];
+
+	while (fgets(buf, sizeof(buf), file) != NULL) {
+		if (!strstr(buf, "KernelPageSize:"))
+			continue;
+
+		n = sscanf(buf, "%*s %lu", &size);
+		if (n < 1)
+			continue;
+
+		/* page size is printed in Kb */
+		size = size * 1024;
+
+		break;
+	}
+
+	return size;
+}
+
+ssize_t ofi_get_addr_page_size(const void *addr)
+{
+	pid_t pid;
+	ssize_t ret;
+	FILE *file;
+	char buf[1024];
+
+	pid = getpid();
+	snprintf(buf, sizeof(buf), "/proc/%d/smaps", pid);
+
+	if (!ofi_base_page_size) {
+		ret = ofi_sysconf(_SC_PAGESIZE);
+		if (ret < 0) {
+			FI_WARN(&core_prov, FI_LOG_CORE,
+				"ofi_sysconf(_SC_PAGESIZE) failed: %d:%s\n", -errno,
+				strerror(errno));
+			return -FI_EINVAL;
+		}
+
+		ofi_base_page_size = ret;
+	}
+
+	file = fopen(buf, "re");
+	if (!file)
+		return ofi_base_page_size;
+
+	ret = ofi_base_page_size;
+
+	while (fgets(buf, sizeof(buf), file) != NULL) {
+		int n;
+		uintptr_t range_start, range_end;
+
+		n = sscanf(buf, "%" SCNxPTR "-%" SCNxPTR, &range_start,
+			   &range_end);
+
+		if (n < 2)
+			continue;
+
+		if ((uintptr_t) addr >= range_start && (uintptr_t) addr < range_end) {
+			ret = ofi_smaps_page_size(file);
+			break;
+		}
+	}
+
+	fclose(file);
+
+	return ret;
+}
 
 ssize_t ofi_get_hugepage_size(void)
 {
@@ -59,7 +134,7 @@ ssize_t ofi_get_hugepage_size(void)
 		return -errno;
 
 	while (getline(&line, &len, fd) != -1)
-		if (sscanf(line, "Hugepagesize: %zu kB", &val) == 1)
+		if (sscanf(line, "Hugepagesize: %zi kB", &val) == 1)
 			break;
 
 	free(line);

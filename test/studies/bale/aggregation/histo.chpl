@@ -13,7 +13,7 @@ config const M = 10000; // number of entries in the table per task
 const numUpdates = N * numTasks;
 const tableSize = M * numTasks;
 
-config param useBlockArr = false;
+config param useBlockArr = true;
 
 var t: stopwatch;
 proc startTimer() {

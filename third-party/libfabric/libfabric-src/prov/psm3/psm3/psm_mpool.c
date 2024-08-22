@@ -444,7 +444,6 @@ void psmi_mpool_chunk_dealloc(mpool_t mp, int idx)
 void psm3_mpool_destroy(mpool_t mp)
 {
 	int i = 0;
-	size_t nbytes = mp->mp_num_obj * mp->mp_elm_size;
 
 	for (i = 0; i < mp->mp_elm_vector_size; i++) {
 		if (mp->mp_elm_vector[i]) {
@@ -456,9 +455,7 @@ void psm3_mpool_destroy(mpool_t mp)
 		}
 	}
 	psmi_free(mp->mp_elm_vector);
-	nbytes += mp->mp_elm_vector_size * sizeof(struct mpool_element *);
 	psmi_free(mp);
-	nbytes += sizeof(struct mpool);
 }
 
 /**
@@ -473,8 +470,10 @@ void
 MOCKABLE(psm3_mpool_get_obj_info)(mpool_t mp, uint32_t *num_obj_per_chunk,
 			uint32_t *num_obj_max_total)
 {
-	*num_obj_per_chunk = mp->mp_num_obj_per_chunk;
-	*num_obj_max_total = mp->mp_num_obj_max_total;
+	if (num_obj_per_chunk)
+		*num_obj_per_chunk = mp->mp_num_obj_per_chunk;
+	if (num_obj_max_total)
+		*num_obj_max_total = mp->mp_num_obj_max_total;
 	return;
 }
 MOCK_DEF_EPILOGUE(psm3_mpool_get_obj_info);

@@ -30,7 +30,7 @@ config const numMessages = 100;
 // This causes its indices to be distributed across the locales in a
 // round-robin fashion where `startIdx` is mapped to locale #0.
 //
-const MessageSpace = {1..numMessages} dmapped cyclicDist(startIdx=1);
+const MessageSpace = {1..numMessages} dmapped new cyclicDist(startIdx=1);
 
 //
 // By using the distributed domain `MessageSpace` to drive the

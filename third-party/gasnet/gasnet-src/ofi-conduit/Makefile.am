@@ -106,7 +106,10 @@ endif
 if HAVE_FI_HMEM_ROCR
 ofi_kind_hip = hip
 endif
-CONDUIT_KINDS = $(ofi_kind_cuda_uva) $(ofi_kind_hip)
+if HAVE_FI_HMEM_ZE
+ofi_kind_ze = ze
+endif
+CONDUIT_KINDS = $(ofi_kind_cuda_uva) $(ofi_kind_hip) $(ofi_kind_ze)
 
 # the default job spawn command to be used for "make run-tests"
 # The following substitutions are performed:

@@ -57,6 +57,14 @@ MPI runtime (which GASNet will not even use outside of startup and shutdown).
      + If pmi-spawner was established as the default at configure time (see
        Build-time Configuration, below).
 
++ Usage summary (option 3):
+  Provided GASNET_[CONDUIT]_SPAWNER=pmi in the environment, applications linked
+  to a GASNet library with pmi-spawner support may be launched using the
+  process manager's native launcher, such as `srun`, `aprun` or `yod`, among
+  others.  In general, it is not sufficient in this native launch scenario to
+  establish pmi-spawner as the default at configure time; setting the environment
+  variable GASNET_[CONDUIT]_SPAWNER=pmi is required.
+
 @ Section: Compatibility @
 
 GASNet's pmi-spawner is believed to be compatible with the PMI1 and PMI2

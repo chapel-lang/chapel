@@ -704,7 +704,12 @@ GASNETI_INLINE(fhi_init_local_region)
 firehose_private_t *
 fhi_init_local_region(int local_ref, firehose_region_t *region)
 {
+#if GASNET_NDEBUG && PLATFORM_COMPILER_CLANG && PLATFORM_COMPILER_VERSION_GE(16,0,0)
+    // Work-around bug 4617 by inhibiting some optimization(s)
+    firehose_private_t * volatile priv;
+#else
     firehose_private_t *priv;
+#endif
 
     gasneti_assert(region != NULL);
     gasneti_assert((local_ref == 0) || (local_ref == 1));

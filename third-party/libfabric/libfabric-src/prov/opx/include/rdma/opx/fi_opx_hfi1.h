@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2016 by Argonne National Laboratory.
- * Copyright (C) 2021-2023 Cornelis Networks.
+ * Copyright (C) 2021-2024 Cornelis Networks.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -33,6 +33,7 @@
 #ifndef _FI_PROV_OPX_HFI1_H_
 #define _FI_PROV_OPX_HFI1_H_
 
+#include "rdma/opx/fi_opx.h"
 #include "rdma/opx/fi_opx_hfi1_packet.h"
 #include "rdma/opx/fi_opx_compiler.h"
 
@@ -46,6 +47,8 @@
 #include "rdma/fabric.h" // only for 'fi_addr_t' ... which is a typedef to uint64_t
 #include <rdma/hfi/hfi1_user.h>
 #include <uuid/uuid.h>
+
+#include "rdma/opx/opx_hfi1_sim.h"
 
 // #define FI_OPX_TRACE 1
 
@@ -65,6 +68,12 @@
 #define FI_OPX_HFI1_LRH_SC_MASK			(0xf)		/* a.k.a. "HFI_LRH_SC_MASK" */
 #define FI_OPX_HFI1_LRH_SC_SHIFT		(12)		/* a.k.a. "HFI_LRH_SC_SHIFT" */
 #define FI_OPX_HFI1_DEFAULT_P_KEY		(0x8001)	/* a.k.a. "HFI_DEFAULT_P_KEY" */
+
+#define FI_OPX_HFI1_SL_DEFAULT		(0)	/* PSMI_SL_DEFAULT */
+#define FI_OPX_HFI1_SC_DEFAULT		(0)	/* PSMI_SC_DEFAULT */
+#define FI_OPX_HFI1_VL_DEFAULT		(0)	/* PSMI_VL_DEFAULT */
+#define FI_OPX_HFI1_SC_ADMIN		(15)	/* PSMI_SC_ADMIN */
+#define FI_OPX_HFI1_VL_ADMIN		(15)	/* PSMI_VL_ADMIN */
 
 #define FI_OPX_HFI1_TX_SEND_RZV_CREDIT_MAX_WAIT		0x7fffffff
 #define FI_OPX_HFI1_TX_DO_REPLAY_CREDIT_MAX_WAIT	0x0000ffff
@@ -149,7 +158,7 @@ static_assert(FI_OPX_MP_EGR_MAX_PAYLOAD_BYTES > FI_OPX_MP_EGR_CHUNK_SIZE, "FI_OP
 
 /*
  * The number of iovecs for SDMA replay - 2 iovec per packet
- * (with no AHG support)
+ * (with no header auto-generation support)
  */
 #define FI_OPX_HFI1_SDMA_REPLAY_WE_IOVS			(FI_OPX_HFI1_SDMA_MAX_PACKETS*2)
 
@@ -194,6 +203,21 @@ static_assert(FI_OPX_HFI1_SDMA_MAX_WE >= FI_OPX_HFI1_SDMA_MAX_COMP_INDEX, "FI_OP
 //Version 1, SDMA replays - EAGER opcode (1)(byte 0), 2 iovectors (byte 1)
 #define FI_OPX_HFI1_SDMA_REQ_HEADER_REPLAY_EAGER_FIXEDBITS	(0x0211)
 
+#ifndef OPX_RTS_TID_SETUP_MAX_TRIES
+#define OPX_RTS_TID_SETUP_MAX_TRIES	(1)
+#endif
+
+/*
+ * Minimum page sizes to use for different memory types.
+ * The array is indexed by the values defined in
+ * enum fi_hmem_iface. Some values are not supported.
+ */
+static const uint64_t OPX_TID_PAGE_SIZE[4] = {
+	PAGE_SIZE,	/* FI_HMEM_SYSTEM */
+	64 * 1024,	/* FI_HMEM_CUDA   */
+	PAGE_SIZE,	/* FI_HMEM_ROCR   */
+	PAGE_SIZE	/* FI_HMEM_ZE     */
+};
 
 static inline
 uint32_t fi_opx_addr_calculate_base_rx (const uint32_t process_id, const uint32_t processes_per_node) {
@@ -201,6 +225,22 @@ uint32_t fi_opx_addr_calculate_base_rx (const uint32_t process_id, const uint32_
 abort();
 	return 0;
 }
+
+//Register CceRevision from the hardware spec defines ChipRevMajor as 15:8 (LE)
+#define OPX_HFI1_CCE_CSR_CHIP_MINOR_MASK (0x000000FF)
+#define OPX_HFI1_CCE_CSR_CHIP_MINOR_SHIFT (0)
+#define OPX_HFI1_CCE_CSR_CHIP_MAJOR_MASK (0x0000FF00)
+#define OPX_HFI1_CCE_CSR_CHIP_MAJOR_SHIFT (8)
+#define OPX_HFI1_CCE_CSR_CHIP_MAJOR_WFR (0x7)
+#define OPX_HFI1_CCE_CSR_CHIP_MAJOR_JKR (0x8)
+#define OPX_HFI1_CCE_CSR_ARCH_MASK (0x00FF0000)
+#define OPX_HFI1_CCE_CSR_ARCH_SHIFT (16)
+#define OPX_HFI1_CCE_CSR_ARCH_WFR (0x2)
+#define OPX_HFI1_CCE_CSR_ARCH_JKR (0x3)
+#define OPX_HFI1_CCE_CSR_SW_INTERFACE_MASK (0xFF000000)
+#define OPX_HFI1_CCE_CSR_SW_INTERFACE_SHIFT (24)
+#define OPX_HFI1_CCE_CSR_SW_INTERFACE_WFR (0x3)
+#define OPX_HFI1_CCE_CSR_SW_INTERFACE_JKR (0x4)
 
 struct fi_opx_hfi1_txe_scb {
 
@@ -332,6 +372,7 @@ struct fi_opx_hfi1_rxe_state {
 
 } __attribute__((__packed__));
 
+
 struct fi_opx_hfi1_rxe_static {
 
 	struct {
@@ -387,6 +428,7 @@ struct fi_opx_hfi1_context {
 	uint16_t			lid;
 	struct _hfi_ctrl *		ctrl;
 	//struct hfi1_user_info_dep	user_info;
+	enum opx_hfi1_type		hfi_hfi1_type;
 	uint32_t			hfi_unit;
 	uint32_t			hfi_port;
 	uint64_t			gid_hi;
@@ -401,14 +443,16 @@ struct fi_opx_hfi1_context {
 	uint64_t			sl;
 	uint64_t			sc;
 	uint64_t			vl;
+	uint64_t			pkey;
 
 	uint64_t			runtime_flags;
 
 	struct {
-		int				rank;
-		int				rank_inst;
+		int			rank;
+		int			rank_inst;
 	} daos_info;
 
+	int64_t				ref_cnt;
 };
 
 
@@ -480,10 +524,44 @@ void fi_opx_consume_credits(union fi_opx_hfi1_pio_state *pio_state, size_t count
 #define FI_OPX_HFI1_CONSUME_SINGLE_CREDIT(pio_state) FI_OPX_HFI1_CONSUME_CREDITS(pio_state, 1);
 
 
+__OPX_FORCE_INLINE__
+struct fi_opx_hfi_local_lookup * fi_opx_hfi1_get_lid_local(uint16_t hfi_lid)
+{
+	struct fi_opx_hfi_local_lookup_key key;
+	struct fi_opx_hfi_local_lookup *hfi_lookup = NULL;
+
+	key.lid = hfi_lid;
+
+	HASH_FIND(hh, fi_opx_global.hfi_local_info.hfi_local_lookup_hashmap, &key,
+		sizeof(key), hfi_lookup);
+
+	return hfi_lookup;
+}
+
+__OPX_FORCE_INLINE__
+int fi_opx_hfi1_get_lid_local_unit(uint16_t lid)
+{
+	struct fi_opx_hfi_local_lookup *hfi_lookup = fi_opx_hfi1_get_lid_local(lid);
+
+	return (hfi_lookup) ? hfi_lookup->hfi_unit : fi_opx_global.hfi_local_info.hfi_unit;
+}
+
+__OPX_FORCE_INLINE__
+bool fi_opx_hfi_is_intranode(uint16_t lid)
+{
+	if (fi_opx_global.hfi_local_info.lid == lid) {
+		return true;
+	}
+
+	return fi_opx_hfi1_get_lid_local(lid);
+}
+
 struct fi_opx_hfi1_context * fi_opx_hfi1_context_open (struct fid_ep *ep, uuid_t unique_job_key);
 
 int init_hfi1_rxe_state (struct fi_opx_hfi1_context * context,
 		struct fi_opx_hfi1_rxe_state * rxe_state);
+
+void fi_opx_init_hfi_lookup();
 
 /*
  * Shared memory transport
@@ -495,7 +573,7 @@ int init_hfi1_rxe_state (struct fi_opx_hfi1_context * context,
 #ifndef NDEBUG
 #define OPX_BUF_FREE(x)				\
 	do {					\
-		memset(x, 0xAA, sizeof(*x));	\
+		memset(x, 0x3C, sizeof(*x));	\
 		ofi_buf_free(x);		\
 	} while(0)
 #else

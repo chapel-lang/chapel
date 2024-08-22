@@ -34,7 +34,7 @@ if numLocales >= 4 {
   var myL = Locales(1..3 by 2);
 //  myL[1] = myL[2];  // this makes myL violate the "consistency" requirement
   writeln("\nadvanced case: ", myL);
-  var x: [rcDomainBase dmapped replicatedDist(myL)] real;
+  var x: [rcDomainBase dmapped new replicatedDist(myL)] real;
   writeln("\ninitially");
   writeReplicands(x, myL);
   rcReplicate(x, 5);

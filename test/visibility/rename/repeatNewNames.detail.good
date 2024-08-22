@@ -1,0 +1,13 @@
+─── error in repeatNewNames.chpl:8 [UseImportMultiplyDefined] ───
+  'bleep' is multiply defined.
+  'bleep' was first defined here:
+      |
+    8 |   use Foo only a as bleep, b as bleep;
+      |                ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  Redefined here:
+      |
+    8 |   use Foo only a as bleep, b as bleep;
+      |                            ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+

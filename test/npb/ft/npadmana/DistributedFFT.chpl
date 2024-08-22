@@ -150,7 +150,7 @@ prototype module DistributedFFT {
   proc newSlabDom(dom: domain(?)) where dom.isRectangular() {
     if dom.rank != 3 then compilerError("The domain must be 3D");
     const targetLocales = reshape(Locales, {0.. #numLocales, 0..0, 0..0});
-    return dom dmapped blockDist(boundingBox=dom, targetLocales=targetLocales);
+    return dom dmapped new blockDist(boundingBox=dom, targetLocales=targetLocales);
   }
 
   /*

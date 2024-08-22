@@ -1,0 +1,3 @@
+#! /usr/bin/env bash
+
+$CHPL_HOME/util/printchplenv --simple --only CHPL_GPU,CHPL_TARGET_ARCH > printchplenv-only.good

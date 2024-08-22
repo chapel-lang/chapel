@@ -19,30 +19,36 @@
 # limitations under the License.
 #
 
-import chapel
-import chapel
-import chapel.replace
-import sys
 import argparse
-from driver import LintDriver
-from rules import register_rules
-from lsp import run_lsp
-
+from collections import defaultdict
+import importlib.util
 import os
 import sys
-import importlib.util
+from typing import List, Tuple, Optional
 
-def print_violation(node, name):
+import chapel
+import chapel.replace
+from driver import LintDriver
+from lsp import run_lsp
+from rules import register_rules
+from fixits import Fixit, Edit
+from config import Config
+
+
+def print_violation(node: chapel.AstNode, name: str):
     location = node.location()
     first_line, _ = location.start()
-    print("{}:{}: node violates rule {}".format(location.path(), first_line, name))
+    print(
+        "{}:{}: node violates rule {}".format(location.path(), first_line, name)
+    )
+
 
 def load_module(driver: LintDriver, file_path: str):
     """
     Load a module from a file path.
     This is used to extend the linter with custom rules.
     """
-    module_name = os.path.basename(file_path).removesuffix('.py')
+    module_name = os.path.basename(file_path).removesuffix(".py")
 
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     if spec is None:
@@ -55,28 +61,201 @@ def load_module(driver: LintDriver, file_path: str):
     rule_func_name = "rules"
     rule_func = getattr(module, rule_func_name, None)
     if rule_func is None or not callable(rule_func):
-        raise ValueError(f"Could not find rule function '{rule_func_name}' in {file_path}")
+        raise ValueError(
+            f"Could not find rule function '{rule_func_name}' in {file_path}"
+        )
     rule_func(driver)
 
+
+def int_to_nth(n: int) -> str:
+    d = {
+        1: "first",
+        2: "second",
+        3: "third",
+        4: "fourth",
+        5: "fifth",
+        6: "sixth",
+        7: "seventh",
+        8: "eighth",
+        9: "ninth",
+        10: "tenth",
+    }
+    return d.get(n, f"{n}th")
+
+
+def apply_fixits(
+    violations: List[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]],
+    suffix: Optional[str],
+    interactive: bool,
+) -> List[Tuple[chapel.AstNode, str, Optional[List[Fixit]]]]:
+    """
+    Apply fixits to the Chapel source code based on user input
+    Any violations not applied are returned
+    """
+    not_applied = []
+    edits_to_apply = []
+    for node, rule, fixits in violations:
+        if fixits is None or len(fixits) == 0:
+            # no fixits to apply, skip
+            not_applied.append((node, rule, None))
+            continue
+        if not interactive:
+            # apply the first fixit
+            edits_to_apply.extend(fixits[0].edits)
+            continue
+
+        options = ["Skip"]
+        for idx, fixit in enumerate(fixits, start=1):
+            if fixit.description is not None:
+                options.append(f"{fixit.description}")
+            else:
+                s = int_to_nth(idx)
+                options.append(f"Apply {s} Fix")
+        print_violation(node, rule)
+        for i, opt in enumerate(options):
+            print(f"  {i}. {opt}")
+        done = False
+        while not done:
+            try:
+                choice = input("Choose an option: ")
+                if choice == "0":
+                    not_applied.append((node, rule, fixits))
+                    done = True
+                else:
+                    try:
+                        fixit = fixits[int(choice) - 1]
+                        edits_to_apply.extend(fixit.edits)
+                        done = True
+                    except (ValueError, IndexError):
+                        print(
+                            "Please enter a number corresponding to an option"
+                        )
+            except KeyboardInterrupt:
+                # apply no edits, return the original violations
+                return violations
+
+    apply_edits(edits_to_apply, suffix)
+    return not_applied
+
+
+def apply_edits(edits: List[Edit], suffix: Optional[str]):
+    """
+    Apply a list of fixits
+    """
+    edits_per_file = defaultdict(lambda: [])
+    for edit in edits:
+        edits_per_file[edit.path].append(edit)
+
+    # Apply edits in reverse order to avoid invalidating the locations of
+    # subsequent edits
+    for file, edits in edits_per_file.items():
+        edits.sort(key=lambda f: f.start, reverse=True)
+        with open(file, "r") as f:
+            lines = f.readlines()
+
+        prev_start = None
+        for edit in edits:
+            line_start, char_start = edit.start
+            line_end, char_end = edit.end
+
+            # Skip overlapping fixits
+            if prev_start is not None and edit.end > prev_start:
+                continue
+
+            lines[line_start - 1] = (
+                lines[line_start - 1][: char_start - 1]
+                + edit.text
+                + lines[line_end - 1][char_end - 1 :]
+            )
+            if line_start != line_end:
+                lines[line_start:line_end] = [""] * (line_end - line_start)
+
+            prev_start = edit.start
+
+        outfile = file if suffix is None else file + suffix
+        with open(outfile, "w") as f:
+            f.writelines(lines)
+
+
+def print_rules(driver: LintDriver, show_all=True):
+    padding = max(len(rule) for (rule, _) in driver.rules_and_descriptions())
+    for rule, description in driver.rules_and_descriptions():
+        if description is None:
+            description = ""
+        description = description.strip()
+
+        prefix = ""
+        if rule not in driver.SilencedRules:
+            if show_all:
+                prefix = "* "
+        else:
+            if show_all:
+                prefix = "  "
+            else:
+                continue
+
+        print(f"  {prefix}{rule.ljust(padding)}   {description}")
+
+
 def main():
-    parser = argparse.ArgumentParser( prog='chplcheck', description='A linter for the Chapel language')
-    parser.add_argument('filenames', nargs='*')
-    parser.add_argument('--disable-rule', action='append', dest='disabled_rules', default=[])
-    parser.add_argument('--enable-rule', action='append', dest='enabled_rules', default=[])
-    parser.add_argument('--lsp', action='store_true', default=False)
-    parser.add_argument('--skip-unstable', action='store_true', default=False)
-    parser.add_argument('--internal-prefix', action='append', dest='internal_prefixes', default=[])
-    parser.add_argument("--add-rules", action='append', default=[], help="Add a custom rule file")
+    parser = argparse.ArgumentParser(
+        prog="chplcheck", description="A linter for the Chapel language"
+    )
+    parser.add_argument("filenames", nargs="*")
+    Config.add_arguments(parser)
+    parser.add_argument("--lsp", action="store_true", default=False)
+    parser.add_argument(
+        "--list-rules",
+        action="store_true",
+        default=False,
+        help="List all available rules",
+    )
+    parser.add_argument(
+        "--list-active-rules",
+        action="store_true",
+        default=False,
+        help="List all currently enabled rules",
+    )
+    parser.add_argument(
+        "--fixit",
+        action="store_true",
+        default=False,
+        help="Apply fixits for the relevant rules",
+    )
+    parser.add_argument(
+        "--fixit-suffix",
+        default=None,
+        help="Suffix to append to the original file name when applying fixits. If not set (the default), the original file will be overwritten.",
+    )
+    parser.add_argument(
+        "--interactive",
+        "-i",
+        action="store_true",
+        default=False,
+        help="Apply fixits interactively, requires --fixit",
+    )
     args = parser.parse_args()
 
-    driver = LintDriver(skip_unstable = args.skip_unstable, internal_prefixes = args.internal_prefixes)
+    config = Config.from_args(args)
+    driver = LintDriver(config)
+
     # register rules before enabling/disabling
     register_rules(driver)
-    for p in args.add_rules:
+    for p in config.add_rules:
         load_module(driver, os.path.abspath(p))
 
-    driver.disable_rules(*args.disabled_rules)
-    driver.enable_rules(*args.enabled_rules)
+    if args.list_rules:
+        print("Available rules (default rules marked with *):")
+        print_rules(driver)
+        return
+
+    driver.disable_rules(*config.disabled_rules)
+    driver.enable_rules(*config.enabled_rules)
+
+    if args.list_active_rules:
+        print("Active rules:")
+        print_rules(driver, show_all=False)
+        return
 
     if args.lsp:
         run_lsp(driver)
@@ -84,21 +263,27 @@ def main():
 
     printed_warning = False
 
-    for (filename, context) in chapel.files_with_contexts(args.filenames):
-        context.set_module_paths([], [])
-
+    for filename, context in chapel.files_with_stdlib_contexts(args.filenames):
         # Silence errors, warnings etc. -- we're just linting.
-        with context.track_errors() as errors:
+        with context.track_errors() as _:
             asts = context.parse(filename)
             violations = list(driver.run_checks(context, asts))
-            #sort the failures in order of appearance
-            violations.sort(key=lambda f : f[0].location().start()[0])
-            for (node, rule) in violations:
+
+            # sort the failures in order of appearance
+            violations.sort(key=lambda f: f[0].location().start()[0])
+
+            if args.fixit:
+                violations = apply_fixits(
+                    violations, args.fixit_suffix, args.interactive
+                )
+
+            for node, rule, _ in violations:
                 print_violation(node, rule)
                 printed_warning = True
 
     if printed_warning:
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,4 @@
+depGlobal.chpl:3: warning: The variable 'defaultComparator' is now deprecated, please create a new instance of the DefaultComparator type instead.
+depGlobal.chpl:9: warning: The variable 'reverseComparator' is now deprecated, please create a new instance of the ReverseComparator type reversing the DefaultComparator instead.
+foo
+bar

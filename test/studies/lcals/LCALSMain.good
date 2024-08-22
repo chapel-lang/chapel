@@ -1,4 +1,3 @@
-RunVectorizeOnlyRawLoops.chpl:4: warning: The 'VectorizingIterator' module has been deprecated; please use 'foreach' loops instead
 
  allocateLoopSuiteRunInfo...
 
@@ -9,9 +8,10 @@ RunVectorizeOnlyRawLoops.chpl:4: warning: The 'VectorizingIterator' module has b
  run suite: pass = 0
 	 run loop variant ---> RAW
 	 run loop variant ---> RAW_OMP
+	 run loop variant ---> RAW_VECTOR_ONLY
 
  generate reports....
 
  freeLoopSuiteRunInfo...
 
- DONE!!! 
+ DONE!!!

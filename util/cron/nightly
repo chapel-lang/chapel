@@ -24,7 +24,6 @@ use nightlysubs;
 use nightly_email;
 # Mailing lists.
 $failuremail = "chapel+tests\@discoursemail.com";
-$allmail = "chapel-test-results-all\@lists.sourceforge.net";
 $replymail = "";
 
 $valgrind = 0;
@@ -33,9 +32,9 @@ $interpret = 0;
 $printusage = 1;
 $debug = 1;
 $asserts = 0;
+$warnings = 1;
 $runtests = 1;
 $buildruntime = 1;
-$hello = 0;
 $allhellos = 0;
 $examples = 0;
 $performance = 0;
@@ -72,6 +71,10 @@ $python2 = 0;
 $pythonDep = 0;
 $testblog = 0;
 $blogonly = 0;
+$blogdir = "";
+$chplcheck = 0;
+$chplcheckonly = 0;
+$chplLanguageServer = 0;
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -91,10 +94,7 @@ while (@ARGV) {
         $runtests = 0;
     } elsif ($flag eq "-noruntime") {
         $buildruntime = 0;
-    } elsif ($flag eq "-hello") {
-        $hello = 1;
     } elsif ($flag eq "-hellos") {
-        $hello = 1;
         $allhellos = 1;
     } elsif ($flag eq "-examples") {
         $examples = 1;
@@ -162,6 +162,8 @@ while (@ARGV) {
         $junit_xml = 1;
     } elsif ($flag eq "-asserts") {
         $asserts = 1;
+    } elsif ($flag eq "-no-warnings") {
+        $warnings = 0;
     } elsif ($flag eq "-mason") {
         $mason_build = 1;
     } elsif ($flag eq "-protobuf") {
@@ -171,12 +173,27 @@ while (@ARGV) {
     } elsif ($flag eq "-blogonly") {
         $blogonly = 1;
         $testblog = 1;
+    } elsif ($flag eq "-blogdir") {
+        $blogdir = shift @ARGV;
+    } elsif ($flag eq "-chplcheck") {
+        $chplcheck = 1;
+    } elsif ($flag eq "-chplcheckonly") {
+        $chplcheck = 1;
+        $chplcheckonly = 1;
+    } elsif ($flag eq "-chpl-language-server") {
+        $chplLanguageServer = 1;
     } else {
         $printusage = 1;
         last;
     }
 }
 
+# If we're being told to not do anything, just exit. This is useful for
+# "dry-running" test configurations that figure out some environment
+# variables then exit.
+if (exists($ENV{"CHPL_NIGHTLY_DO_NOTHING"})) {
+  exit 0;
+}
 
 print localtime() . "  host: " . hostname . "\n";
 
@@ -209,8 +226,12 @@ if ($printusage == 1) {
     print "\t-debug                         : check out sources and run for individual user (default)\n";
     print "\t-cron                          : use for nightly cron runs only\n";
     print "\t-baseline                      : run testins using --baseline\n";
-    print "\t-blog                          : test the chapel blog with nightly tests\n";
-    print "\t-blogonly                      : only run the chapel blog tests\n";
+    print "\t-blog                          : test the chapel blog with nightly tests. <blogdir> could be specified with CHPL_NIGHTLY_BLOGDIR or by passing -blogdir\n";
+    print "\t-blogonly <blogdir>            : only run the chapel blog tests. <blogdir> could be specified with CHPL_NIGHTLY_BLOGDIR or by passing -blogdir\n";
+    print "\t-blogdir <blogdir>             : specify the root of the chapel-blog repo to use with -blog or -blogonly";
+    print "\t-chplcheck                     : run the chplcheck tests\n";
+    print "\t-chplcheckonly                 : only run the chplcheck tests\n";
+    print "\t-chpl-language-server          : run the Chapel Language Server tests\n";
     print "\t-componly                      : only run the compiler, not the generated binary\n";
     print "\t-compopts <opt>                : run tests with -compopts <opt>\n";
     print "\t-compperformance <description> : run tests with compiler performance tracking\n";
@@ -220,7 +241,6 @@ if ($printusage == 1) {
     print "\t-execopts <opt>                : run tests with -execopts <opt>\n";
     print "\t-fast                          : run tests using --fast\n";
     print "\t-futures                       : run all futures, not just those with skipifs\n";
-    print "\t-hello                         : run the release/examples/hello.chpl test only\n";
     print "\t-hellos                        : run the release/examples/hello*.chpl tests only\n";
     print "\t-junit-xml                     : create jUnit XML style report (default is \"on\" in Jenkins environment)\n";
     print "\t-mason                         : build mason before running tests\n";
@@ -290,7 +310,6 @@ if ($basetmpdir eq "") {
     $basetmpdir = "/tmp";
 }
 
-
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
 $here = dirname(__FILE__);
@@ -311,9 +330,9 @@ if ($perfConfigName eq "") {
 
 if ($cronlogdir eq "") {
     if ($performance == 1) {
-        $cronlogdir = "/cray/css/users/chapelu/NightlyPerformance/$perfConfigName";
+        $cronlogdir = "/hpcdc/project/chapel/NightlyPerformance/$perfConfigName";
     } else {
-        $cronlogdir = "/cray/css/users/chapelu/Nightly";
+        $cronlogdir = "/hpcdc/project/chapel/Nightly";
     }
 }
 
@@ -350,7 +369,7 @@ if ($memleakslog ne "") {
     if ($debug == 1 && $memleaksdir eq "") {
         $memleaksdir = $logdir;
     } elsif ($memleaksdir eq "") {
-        $memleaksdir = "/cray/css/users/chapelu/NightlyMemLeaks";
+        $memleaksdir = "/hpcdc/project/chapel/NightlyMemLeaks";
     }
 
     unless(-d $memleaksdir) {
@@ -368,6 +387,32 @@ if ($memleakslog ne "") {
 $testbindirname = dirname($0);
 $utildir = "$testbindirname/../../util";
 
+#
+# check the blog repo dir if blog testing requested
+#
+if ($testblog == 1) {
+    print "checking blog repo\n";
+    unless(-d $blogdir) {
+        $blogdir = $ENV{'CHPL_NIGHTLY_BLOGDIR'};
+        if ($blogdir eq "") {
+            print "Error: specified blog testing but blogdir was not specified!\n";
+            print "\tPlease specify the location of chapel-blog with -blogdir or by setting CHPL_NIGHTLY_BLOGDIR\n";
+            exit 1;
+        }
+        unless(-d $blogdir) {
+            print "Error: specified blog testing but blogdir ($blogdir) was not found\n";
+            exit 1;
+        }
+    }
+    if ($blogonly == 0) {
+        # copy the relevant blog source files into the test directory so they'll be
+        # ran alongside all the other tests
+        mysystem("mkdir -p $testdir/copied-chapel-blog/content", "making chpl-src directory", $exitOnError, 1);
+        mysystem("cp -r $blogdir/chpl-src $testdir/copied-chapel-blog/", "copying chapel-blog/chpl-src", $exitOnError, 1);
+        mysystem("cp -r $blogdir/scripts $testdir/copied-chapel-blog/", "copying chapel-blog/scripts", $exitOnError, 1);
+        mysystem("cp -r $blogdir/content/posts $testdir/copied-chapel-blog/content/", "copying chapel-blog/content", $exitOnError, 1);
+    }
+}
 
 # Determine which make to use.
 $make = "";
@@ -394,6 +439,16 @@ if (exists($ENV{'CHPL_NIGHTLY_TEST_CONFIG_NAME'})) {
     $machine = hostname;
     $config_name = "debug.$machine";
 }
+
+# The 'mysystem' function either exits on errors, ignores them, or writes them
+# to a file. The $exitOnError variable tells it to exit immediately, while
+# $ignoreErrors tells it to continue without doing anything. $emailOnError,
+# which is the path of the error file, tells it to write the errors to a file.
+$mysystemlog = "$basetmpdir/mysystemerrs-$config_name.txt";
+$emailOnError = $mysystemlog;
+unlink($mysystemlog); # the file gets appended to, so clear it first.
+ensureMysystemlogExists($mysystemlog); # empty (vs nonexistent) file is easier to compare against
+$prevmysystemlog = "$cronlogdir/last-mysystemerrs-$config_name.txt";
 
 #
 # directory variables
@@ -460,13 +515,13 @@ if ($python2 == 0) {
   #
   $hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
   if ($hostplatform =~ "cygwin") {
-      mysystem("cd $chplhomedir && find . -name FILES -exec rm {} \\;");
+      mysystem("cd $chplhomedir && find . -name FILES -exec rm {} \\;", "removing FILES files", $ignoreErrors);
   }
 
   $hostcompiler = `$utildir/chplenv/chpl_compiler.py --host`; chomp($hostcompiler);
 
   # Setup variables to pass to all make calls.
-  $make_vars_no_opt = "DEBUG=0 WARNINGS=1 ASSERTS=$asserts";
+  $make_vars_no_opt = "DEBUG=0 WARNINGS=$warnings ASSERTS=$asserts";
 
   # Add OPTIMIZE=1 for most environments. If using the cray programming
   # environment, disable optimizations when building the compiler. This is an
@@ -481,12 +536,12 @@ if ($python2 == 0) {
 
 
 print "Making $make_vars_opt compiler\n";
-$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt compiler", "making chapel compiler", 1, 1);
+$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt compiler", "making chapel compiler", $exitOnError);
 
 # Speculatively build a couple third-party libraries. This command should not
 # fail, even if it fails to build the libraries.
 print "Making $make_vars_opt third-party-try-opt\n";
-mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt third-party-try-opt", "make chapel third-party-try-opt", 1, 1);
+mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt third-party-try-opt", "make chapel third-party-try-opt", $exitOnError);
 
 # if we are using python2 or a deprecated version of python3, we cannot build
 # the test-venv and/or chpldoc
@@ -494,12 +549,12 @@ if ($python2 == 0 && $pythonDep == 0) {
   # Build chpldoc. Do not fail the build if it does not succeed. Do not send
   # mail either.
   print "Making $make_vars_opt chpldoc\n";
-  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", 0, 0);
+  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", $ignoreErrors);
 
   # Build test virtualenv. Fail if the build does not succeed as virtualenv is
   # needed for start_test. Send mail on failure
   print "Making $make_var_opt test-venv\n";
-  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt test-venv", "make chapel test-venv", 1, 1);
+  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt test-venv", "make chapel test-venv", $exitOnError);
 }
 
 if ($buildruntime == 0) {
@@ -507,22 +562,31 @@ if ($buildruntime == 0) {
     exit 0;
 }
 
+if ($chplcheck == 1) {
+    # Build chplcheck if it's requested. If something is wrong with chapel-py,
+    # this can fail. It's not fatal, since it will only throw
+    # off the chplcheck-specific tests. However, we definitely want to send
+    # mail, since this indicates a problem with chplcheck.
+    print "Making chplcheck\n";
+    mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chplcheck", "make chplcheck", $emailOnError);
+}
+
 print "Making $make_vars_opt runtime\n";
-$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt runtime", "making chapel runtime", 1, 1);
+$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt runtime", "making chapel runtime", $exitOnError);
 
 print "Making modules\n";
-$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt modules", "making chapel modules", 1, 1);
+$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt modules", "making chapel modules", $exitOnError);
 
 # Build mason
 if ($mason_build == 1) {
   print "Making mason\n";
-  mysystem("cd $chplhomedir && $make -j$num_procs mason", "making mason", 1, 1);
+  mysystem("cd $chplhomedir && $make -j$num_procs mason", "making mason", $exitOnError);
 }
 
 # Build the protobuf Chapel plugin
 if ($protobuf_build == 1) {
     print "Making the protobuf Chapel plugin\n";
-    mysystem("cd $chplhomedir && $make protoc-gen-chpl", "making protoc-gen-chpl", 1, 1);
+    mysystem("cd $chplhomedir && $make protoc-gen-chpl", "making protoc-gen-chpl", $exitOnError);
 }
 
 #
@@ -555,73 +619,56 @@ if ($multilocale == 1) {
 }
 
 #
-# clone blog repo if blog testing requested
-#
-if ($testblog == 1) {
-    print "Cloning blog repo\n";
-    mysystem("cd $basetmpdir && git clone https://github.com/chapel-lang/chapel-blog", "cloning blog repo", 1, 1, 1);
-    mysystem("cd $basetmpdir/chapel-blog && git checkout main", "checking out branch", 1, 1, 1);
-    if ($blogonly == 0) {
-        # copy the relevant blog source files into the test directory so they'll be
-        # ran alongside all the other tests
-        mysystem("mkdir -p $testdir/copied-chapel-blog/content", "making chpl-src directory", 1, 1, 1);
-        mysystem("cp -r $basetmpdir/chapel-blog/chpl-src $testdir/copied-chapel-blog/", "copying chapel-blog/chpl-src", 1, 1, 1);
-        mysystem("cp -r $basetmpdir/chapel-blog/scripts $testdir/copied-chapel-blog/", "copying chapel-blog/scripts", 1, 1, 1);
-        mysystem("cp -r $basetmpdir/chapel-blog/content/posts $testdir/copied-chapel-blog/content/", "copying chapel-blog/content", 1, 1, 1);
-    }
-}
-
-#
 # don't bother making the spec tests if we're only testing hello, world programs;
 # and they'll get made automatically if we're testing everything; so we only need
 # to make them if we're testing the examples directory.
 #
 if ($examples == 1) {
     print "Making spectests\n";
-    mysystem("cd $chplhomedir && $make spectests", "making spec tests", 0, 1);
+    mysystem("cd $chplhomedir && $make spectests", "making spec tests", $emailOnError);
     $testdirs .= " release/examples";
-    if ($parnodefile ne "") {
-        mysystem("cd $testdir && find $testdirs -wholename \"*.svn\" -prune -o -type d > DIRFILE",
-                 "making directory file", 1, 1);
-        $testflags = "$testflags -dirfile DIRFILE";
-    }
 }
+
+if ($blogonly == 1) {
+    # test the sub-directories explicitly to avoid a bunch of skipped directories,
+    # and also avoid the problem of testing the archetypes directory
+    $testdirs .= " $blogdir/chpl-src/ $blogdir/content/posts";
+}
+
+if ($chplcheckonly == 1) {
+    $testdirs .= " chplcheck";
+}
+
+if (!($dist eq "")) {
+    $testdirs .= " distributions/robust/arithmetic";
+}
+
+# After this point, changes to $testdirs are only reflected in the automailer, and
+# not in $testflags
 if ($parnodefile eq "") {
     $testflags = "$testflags $testdirs";
 } else {
     if ($testdirs ne "") {
         mysystem("cd $testdir && find $testdirs -wholename \"*.svn\" -prune -o -type d > DIRFILE",
-                 "making directory file", 1, 1);
+                 "making directory file", $exitOnError);
         $testflags = "$testflags -dirfile DIRFILE";
     }
 }
 
-if (!($dist eq "")) {
-    $testdirs .= " distributions/robust/arithmetic";
-    $testflags = "$testflags distributions/robust/arithmetic";
-}
-
-
-if ($blogonly == 1) {
-    # test the sub-directories explicitly to avoid a bunch of skipped directories,
-    # and also avoid the problem of testing the archetypes directory
-    $testflags = "$testflags $basetmpdir/chapel-blog/chpl-src/ $basetmpdir/chapel-blog/content/posts";
-}
-
-if ($hello == 1) {
+# this is down here because the hellos are individual files in the release/examples
+# directory and the code above has a find statement that locates all the subdirectories
+# so -hellos would pick up all the non-hello examples (aka -examples)
+if ($allhellos == 1) {
+    # for the sake of the automailer only
+    $testdirs .= " release/examples";
     if ($parnodefile eq "") {
-        if ($allhellos == 1) {
-        $testdirs .= " release/examples/hello*.chpl";
-            $testflags = "$testflags --no-recurse release/examples";
-        } else {
-        $testdirs .= " release/examples/hello.chpl";
-            $testflags = "$testflags release/examples/hello.chpl";
-        }
+        $testflags = "$testflags --no-recurse release/examples";
     } else {
-        mysystem("cd $testdir && echo $testdir > DIRFILE", "making directory file", 1, 1);
+        mysystem("cd $testdir && echo $testdirs > DIRFILE", $exitOnError);
         $testflags = "$testflags -dirfile DIRFILE";
     }
 }
+
 if ($performance == 1) {
     if ($startdate eq "-1") {
         $testflags = "$testflags -performance";
@@ -693,6 +740,11 @@ if (exists($ENV{"CHPL_START_TEST_ARGS"})) {
     $testflags = "$testflags $starttestargs";
 }
 
+if ($chplLanguageServer == 1) {
+    $ENV{'CHPL_HOME'} = $chplhomedir;
+    $testclscommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && make -j$num_procs test-chpl-language-server";
+    mysystem($testclscommand, "running `make test-chpl-language-server`", $emailOnError, 1);
+}
 
 if ($runtests == 0) {
     print "Built compiler and runtime but did not run tests\n";
@@ -704,7 +756,7 @@ if ($runtests == 0) {
   $ENV{'CHPL_HOME'} = $chplhomedir;
 
   $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && CHPL_CHECK_DEBUG=1 make check";
-  mysystem($buildcheckcommand, "running `make check`", 1, 1, 1);
+  mysystem($buildcheckcommand, "running `make check`", $exitOnError, 1);
 
 } else {
 
@@ -718,21 +770,21 @@ if ($runtests == 0) {
     # Confirm Chapel built correctly before start_test / paratest
     if ($buildcheck == 1) {
         $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && CHPL_CHECK_DEBUG=1 make check";
-        mysystem($buildcheckcommand, "running `make check`", 1, 1, 1);
+        mysystem($buildcheckcommand, "running `make check`", $exitOnError, 1);
     }
 
     if ($parnodefile eq "") {
         $testcommand = "cd $testdir && ../util/start_test $testflags";
         print "Executing $testcommand\n";
-        $status = mysystem($testcommand, "running standard tests", 0, 0);
+        $status = mysystem($testcommand, "running standard tests", $ignoreErrors);
         print "Moving the log and summary files\n";
-        mysystem("cd $testdir && cp -v $rawlog $permlog && rm $rawlog && cp -v $rawsummary $permsum && rm $rawsummary", "moving the log files", 1, 1);
+        mysystem("cd $testdir && cp -v $rawlog $permlog && rm $rawlog && cp -v $rawsummary $permsum && rm $rawsummary", "moving the log files", $exitOnError);
         $rawlog = $permlog;
         $rawsummary = $permsum;
     } else {
         mysystem("cp $parnodefile $testdir/", "copying parallel node file", 1, 1);
         print "about to execute: cd $testdir && ../util/test/paratest.server -nodefile $parnodefile $testflags\n";
-        $status = mysystem("cd $testdir && ../util/test/paratest.server -nodefile $parnodefile $testflags", "running parallel tests", 0, 0);
+        $status = mysystem("cd $testdir && ../util/test/paratest.server -nodefile $parnodefile $testflags", "running parallel tests", $ignoreErrors);
     }
 
 
@@ -750,7 +802,7 @@ if ($runtests == 0) {
 # Restore graph sync once we find a solution to our network issues
         $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfDir/$performancedescription/html/ $perfConfigName/$syncsuffix --logFile $logdir/$str.errors";
         $rsyncMessage = "syncing performance graph to dreamhost -- log file at $logdir/$str.errors";
-        mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
+        mysystem($rsyncCommand, $rsyncMessage , $emailOnError, 1);
    }
 
 #
@@ -796,7 +848,7 @@ if ($runtests == 0) {
                 $splice = "$utildir/devel/test/spliceDat";
                 $spliceCommand = "$splice -from_a $today -to_a $today $svnPerfDir/$datName $historicalFile> $tmpDatDir/$datName";
                 $spliceDatMessage = "Attempting to splice historical data $historicalFile with nightly data $svnPerfDir/$datName";
-                mysystem($spliceCommand, $spliceMessage, 0, 0, 1);
+                mysystem($spliceCommand, $spliceMessage, $ignoreErrors, 1);
                 `cp $svnPerfDir/$datName $tmpNightlyDatDir/$datName`;
             }
 
@@ -806,7 +858,7 @@ if ($runtests == 0) {
             $genGraphs = "$utildir/test/genGraphs";
             $genGraphsCommand = "$genGraphs -p $tmpDatDir -o $svnReleasePerfDir/html/ -t $chplhomedir/test/ -a \"$altTitle\" -n $perfConfigName  -g $chplhomedir/test/GRAPHFILES -s $startdate -m default:v,nightly";
             $genGraphsMessage = "Generating release over release performance graphs";
-            mysystem($genGraphsCommand, $genGraphsMessage, 0, 1, 1);
+            mysystem($genGraphsCommand, $genGraphsMessage, $emailOnError, 1);
 
             # sync the perf graphs over to dreamhost
             my $str = "syncReleaseToDreamhost.$perfConfigName/releaseOverRelease/$syncsuffix";
@@ -815,19 +867,19 @@ if ($runtests == 0) {
 # Restore graph sync once we find a solution to our network issues
             $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnReleasePerfDir/html/ $perfConfigName/releaseOverRelease/$syncsuffix --logFile $logdir/$str.errors";
             $rsyncMessage = "syncing release performance graph to dreamhost -- log file at $logdir/$str.errors";
-            mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
+            mysystem($rsyncCommand, $rsyncMessage , $emailOnError, 1);
         }
     }
 
 # FIXME: Pass correct args here!
      # `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
      # Write the test results to the summary log.
-     writeFile($status, "$rawsummary", "$sortedsummary", "$prevsummary", "", "$nochangerecipient", "$recipient", "$subjectid", "$config_name", "$revision", "$rawlog", "$starttime", "$endtime", "$crontab", "$testdirs", $debug);
+     writeFile($status, "$rawsummary", "$sortedsummary", "$prevsummary", "$mysystemlog", "$prevmysystemlog", "", "$nochangerecipient", "$recipient", "$subjectid", "$config_name", "$revision", "$rawlog", "$starttime", "$endtime", "$crontab", "$testdirs", $debug);
 #
 # analyze memory leaks tests
 #
     if (!($memleakslog eq "")) {
-        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleakslog > $memleaksdir/$memleakslog", "analyzeMemLeaksLog", 1, 0, 0);
+        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleakslog > $memleaksdir/$memleakslog", "analyzeMemLeaksLog", $exitOnError, 0);
 
         # Update the memory leaks status for performance testing runs to
         #  generate graphs for the memory leaks data
@@ -844,7 +896,7 @@ if ($runtests == 0) {
             }
         }
 
-        mysystem("cd $testdir && cp $memleaksdir/$memleakslog ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "memLeak computePerfStats", 1, 0, 0);
+        mysystem("cd $testdir && cp $memleaksdir/$memleakslog ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "memLeak computePerfStats", $exitOnError, 0);
     }
 }
 exit 0;

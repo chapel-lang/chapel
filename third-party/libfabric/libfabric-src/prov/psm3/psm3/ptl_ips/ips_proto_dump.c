@@ -59,47 +59,62 @@
 #include "ips_expected_proto.h"
 #include "ips_proto_help.h"
 
-void psm3_ips_proto_dump_frame(void *frame, int lenght, char *message)
+// the buffer mode for stdout is _IOLBF (line buffered) if it connects to an interactive device,
+// otherwise the buffer mode is _IOFBF (fully buffered). When we pipe stdout to a file, we are
+// using fully buffered mode, we need to call fflush to ensure proper print.
+void psm3_ips_proto_dump_frame(void *frame, int length, char *message)
 {
 	uint8_t *raw_frame = frame;
-	int counter;
+	int counter, print_len = 0;
 	char default_message[] = "<UNKNOWN>";
+	char tmp[128] = {};
 
 	if (!message)
 		message = default_message;
 
-	printf("\nHex dump of %i bytes at %p from %s\n", lenght, frame,
+	printf("\nHex dump of %i bytes at %p from %s\n", length, frame,
 	       message);
 
-	for (counter = 0; counter < lenght; counter++) {
-		if ((counter % 16) == 0)
-			printf("\n");
+	for (counter = 0; counter < length; counter++) {
+		if ((counter % 16) == 0) {
+			printf("%s\n", tmp);
+			fflush(stdout);
+			print_len = 0;
+		}
 
-		if ((counter % 4) == 0)
-			printf("   ");
+		if ((counter % 4) == 0 && print_len < sizeof(tmp) - 1)
+			print_len += snprintf(tmp + print_len, sizeof(tmp) - print_len, "   ");
 
-		printf("%02X ", raw_frame[counter]);
+		if (print_len < sizeof(tmp) - 1)
+			print_len += snprintf(tmp + print_len, sizeof(tmp) - print_len, "%02X ", raw_frame[counter]);
 	}
-	printf("\n");
+	printf("%s\n", tmp);
+	fflush(stdout);
 }
 
 void psm3_ips_proto_dump_data(void *data, int data_length)
 {
-	int counter;
+	int counter, print_len = 0;
 	uint8_t *payload = (uint8_t *) data;
+	char tmp[128] = {};
 
 	printf("\nHex dump of data, length = %i\n", data_length);
 
 	for (counter = 0; counter < data_length; counter++) {
-		if ((counter % 16) == 0)
-			printf("\n %04d: ", counter);
+		if ((counter % 16) == 0) {
+			printf("%s\n", tmp);
+			fflush(stdout);
+			print_len = snprintf(tmp, sizeof(tmp), " %04d: ", counter);
+		}
 
-		if ((counter % 4) == 0)
-			printf("   ");
+		if ((counter % 4) == 0 && print_len < sizeof(tmp) - 1)
+			print_len += snprintf(tmp + print_len, sizeof(tmp) - print_len, "   ");
 
-		printf("%02X ", payload[counter]);
+		if (print_len < sizeof(tmp) - 1)
+			print_len += snprintf(tmp + print_len, sizeof(tmp) - print_len, "%02X ", payload[counter]);
 	}
-	printf("\n");
+	printf("%s\n", tmp);
+	fflush(stdout);
 }
 
 void psm3_ips_proto_show_header(struct ips_message_header *p_hdr, char *msg)

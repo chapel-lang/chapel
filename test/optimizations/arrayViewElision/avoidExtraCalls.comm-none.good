@@ -1,0 +1,58 @@
+ArrayViewElision supported avoidExtraCalls.chpl:10
+	lhsBaseType: [domain(1,int(64),one)] int(64)
+	lhsIndexingExprs: 
+		range(int(64),both,one)
+	rhsBaseType: [domain(1,int(64),one)] int(64)
+	rhsIndexingExprs: 
+		range(int(64),both,one)
+
+ArrayViewElision supported avoidExtraCalls.chpl:24
+	lhsBaseType: [domain(1,int(64),one)] int(64)
+	lhsIndexingExprs: 
+		range(int(64),both,one)
+	rhsBaseType: [domain(1,int(64),one)] int(64)
+	rhsIndexingExprs: 
+		range(int(64),both,one)
+
+ArrayViewElision supported avoidExtraCalls.chpl:39
+	lhsBaseType: [domain(2,int(64),one)] int(64)
+	lhsIndexingExprs: 
+		range(int(64),both,one)
+		range(int(64),both,one)
+	rhsBaseType: [domain(2,int(64),one)] int(64)
+	rhsIndexingExprs: 
+		range(int(64),both,one)
+		range(int(64),both,one)
+
+Test 1
+foo called
+foo called
+<ShortArrayTransfer> Size: 3 Threshold: 60
+<ShortArrayTransfer> size qualifies
+1 1 1 0 0 0 0 0 0 0
+
+Test 2
+foo called
+foo called
+<ShortArrayTransfer> Size: 3 Threshold: 60
+<ShortArrayTransfer> size qualifies
+1 1 1 0 0 0 0 0 0 0
+
+Test 3
+foo called
+foo called
+foo called
+foo called
+<ShortArrayTransfer> Size: 9 Threshold: 60
+<ShortArrayTransfer> size qualifies
+1 1 1 0 0 0 0 0 0 0
+1 1 1 0 0 0 0 0 0 0
+1 1 1 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+

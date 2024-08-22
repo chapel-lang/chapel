@@ -24,7 +24,7 @@ config const printConfig = false;
 config const printTimings = false;
 config const printCommDiags = false;
 
-const remoteVarSpace = LocaleSpace dmapped blockDist(LocaleSpace);
+const remoteVarSpace = LocaleSpace dmapped new blockDist(LocaleSpace);
 var remoteVar: [remoteVarSpace] int;
 var remoteVarAtomic: [remoteVarSpace] atomic int;
 

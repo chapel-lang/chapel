@@ -48,7 +48,7 @@
 
 // After addressing the checklist items (or creating a GH issue to do so)
 // modify the following const so that this test no longer fails.
-const EXPECTED_LLVM_VERSION = 17;
+const EXPECTED_LLVM_VERSION = 18;
 
 //-----------------------------------------------------------------------------
 

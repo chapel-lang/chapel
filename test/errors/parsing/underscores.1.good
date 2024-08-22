@@ -1,0 +1,23 @@
+underscores.chpl:3: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:4: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:4: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:5: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:6: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:7: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:7: In function '_':
+underscores.chpl:7: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:8: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:9: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:10: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:14: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:15: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:16: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:16: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:16: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:17: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:21: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:26: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:27: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:30: error: Throwaway variable '_' is not allowed in this context
+underscores.chpl:37: In function 'f':
+underscores.chpl:37: error: formals in a procedure definition must be named

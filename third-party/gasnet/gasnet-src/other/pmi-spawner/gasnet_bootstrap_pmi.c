@@ -393,7 +393,8 @@ extern gasneti_spawnerfn_t const * gasneti_bootstrapInit_pmi(
     (void)strncpy(proc.nspace, myproc.nspace, PMIX_MAX_NSLEN+1);
     proc.rank = PMIX_RANK_WILDCARD;
 
-    if (PMIX_SUCCESS != PMIx_Get(&proc, PMIX_JOB_SIZE,
+    pmix_key_t tmp = PMIX_JOB_SIZE; // this tmp silences a warning on gcc 12.2
+    if (PMIX_SUCCESS != PMIx_Get(&proc, tmp,
                                  NULL, 0, &val)) {
         gasneti_fatalerror("PMIx Get Job Size failed");
     }

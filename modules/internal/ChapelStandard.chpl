@@ -75,6 +75,8 @@ module ChapelStandard {
   public use ChapelGpuSupport;
   public use ChapelContext;
   public use ChapelStaticVars;
+  public use ChapelRemoteVars;
+  public use ChapelArrayViewElision;
 
   // Standard modules.
   public use Types as Types;

@@ -13,5 +13,8 @@ export CHPL_COMM=gasnet
 export CHPL_LAUNCHER_PARTITION=amdMI60
 module load rocm
 
+# Use LLVM 14 as we don't support the ROCM bundled LLVM yet.
+source /hpcdc/project/chapel/setup_system_llvm.bash 14
+
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-rocm.gasnet"
 $CWD/nightly -cron ${nightly_args}

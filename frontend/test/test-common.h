@@ -44,10 +44,15 @@
 const chpl::uast::BuilderResult&
 parseAndReportErrors(chpl::Context* context, chpl::UniqueString path);
 
+const chpl::uast::BuilderResult&
+parseAndReportErrors(chpl::Context* context, const char* path);
+
 chpl::uast::BuilderResult
 parseStringAndReportErrors(chpl::parsing::Parser* parser, const char* filename,
                            const char* content);
 
 const chpl::uast::AstNode* findOnlyNamed(const chpl::uast::Module* mod, std::string name);
+
+std::unique_ptr<chpl::Context> buildStdContext();
 
 #endif

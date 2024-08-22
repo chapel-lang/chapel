@@ -21,7 +21,7 @@ module Graph500_defs
 // The data structure used to store the edges is an array of records
 
   const edgelist_domain =
-    {1..N_RAWEDGES} dmapped blockDist ( {1..N_RAWEDGES} );
+    {1..N_RAWEDGES} dmapped new blockDist ( {1..N_RAWEDGES} );
 
   record directed_vertex_pair {
     var start = 1: int;
@@ -41,7 +41,7 @@ module Graph500_defs
 
     const vertex_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
-        {1..N_VERTICES} dmapped blockDist ( {1..N_VERTICES} )
+        {1..N_VERTICES} dmapped new blockDist ( {1..N_VERTICES} )
       else
         {1..N_VERTICES} ;
 

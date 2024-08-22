@@ -72,11 +72,10 @@ proc main() {
 }
 
 //
-// Redefine stdout to use lock-free binary I/O and capture a newline
+// Create lock-free version of 'stdout' for efficiency
 //
 use IO;
-const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newline = "\n".toByte();
+const stdout = (new file(1)).writer(locking=false);
 
 //
 // Repeat 'alu' to generate a sequence of length 'n'
@@ -90,7 +89,8 @@ proc repeatMake(desc, alu, n) {
   for i in 0..n by lineLength {
     const lo = i % r,
           len = min(lineLength, n-i);
-    stdout.write(s[lo..#len], newline);
+    stdout.writeBinary(s[lo..#len]);
+    stdout.writeln();
   }
 }
 
@@ -109,6 +109,7 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
     cp = 1 + (p*IM): randType;
   }
 
+  param newline = "\n".toByte();
   // guard when tasks can access the random numbers or output stream
   var randGo, outGo: [0..#numTasks] atomic int;
 
@@ -156,7 +157,7 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
 
       // Write the output in a coordinated manner
       outGo[tid].waitFor(i);
-      stdout.write(myBuff[0..#off]);
+      stdout.writeBinary(myBuff[0..#off]);
       outGo[nextTid].write(i+chunkSize);
     }
   }
@@ -167,10 +168,9 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
 //
 var lastRand = seed;
 
-proc getRands(n, arr) {
+proc getRands(n, ref arr) {
   for i in 0..#n {
     lastRand = (lastRand * IA + IC) % IM;
     arr[i] = lastRand;
   }
 }
-use Compat, CompatIOKind;

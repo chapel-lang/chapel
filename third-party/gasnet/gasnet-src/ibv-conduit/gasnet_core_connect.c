@@ -470,7 +470,7 @@ gasnetc_xrc_init(void **shared_mem_p) {
     // but at least we can share a single gasnetc_xrcd_map[] per supernode.
     size_t xrcd_map_bytes = gasneti_nodes * sizeof(*gasnetc_xrcd_map);
     if (gasnetc_xrcd_map) { // built once per supernode in preinit
-      memcpy(*shared_mem_p, gasnetc_xrcd_map, xrcd_map_bytes);
+      GASNETI_MEMCPY(*shared_mem_p, gasnetc_xrcd_map, xrcd_map_bytes);
       gasneti_free(gasnetc_xrcd_map);
     }
     gasnetc_xrcd_map = *shared_mem_p;
@@ -1313,6 +1313,8 @@ static int conn_snd_poll(void)
 
 static void gasnetc_conn_thread(struct ibv_wc *comp_p, void *arg /* unused */)
 {
+  gasneti_assert((comp_p->opcode == IBV_WC_RECV) ||
+                 (comp_p->status != IBV_WC_SUCCESS));
   if_pf (comp_p->status != IBV_WC_SUCCESS) {
     gasneti_fatalerror("aborting on reap of failed UD recv");
   }

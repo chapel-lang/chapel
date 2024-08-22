@@ -1,0 +1,32 @@
+replacing bb b->a
+aa
+(aa, 2)
+count=0 (bb, 0)
+count=1 (ab, 1)
+count=2 (aa, 2)
+count=3 (aa, 2)
+count=4 (aa, 2)
+replacing bb ''->a
+ababa
+(ababa, 3)
+count=0 (bb, 0)
+count=1 (abb, 1)
+count=2 (abab, 2)
+count=3 (ababa, 3)
+count=4 (ababa, 3)
+replacing bb b|->a
+aa
+(aa, 2)
+count=0 (bb, 0)
+count=1 (ab, 1)
+count=2 (aa, 2)
+count=3 (aa, 2)
+count=4 (aa, 2)
+replacing bb |b->a
+ababa
+(ababa, 3)
+count=0 (bb, 0)
+count=1 (abb, 1)
+count=2 (abab, 2)
+count=3 (ababa, 3)
+count=4 (ababa, 3)

@@ -8,4 +8,5 @@ module Lib2 {
 
 module T1 {
   public use Lib1, Lib2;
+  proc main() { }
 }

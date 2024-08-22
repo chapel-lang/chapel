@@ -84,8 +84,8 @@ extern "C" {
 #endif
 
 #define FI_MAJOR_VERSION 1
-#define FI_MINOR_VERSION 17
-#define FI_REVISION_VERSION 1
+#define FI_MINOR_VERSION 21
+#define FI_REVISION_VERSION 0
 
 enum {
 	FI_PATH_MAX		= 256,
@@ -119,11 +119,6 @@ struct fid_nic;
 typedef struct fid *fid_t;
 
 /*
- * Provider specific values are indicated by setting the high-order bit.
- */
-#define FI_PROV_SPECIFIC	(1U << 31)
-
-/*
  * Flags
  * The 64-bit flag field is used as follows:
  * 1-grow up    common (usable with multiple operations)
@@ -153,7 +148,7 @@ typedef struct fid *fid_t;
 #define FI_PEEK			(1ULL << 19)
 #define FI_TRIGGER		(1ULL << 20)
 #define FI_FENCE		(1ULL << 21)
-#define FI_PRIORITY		(1ULL << 22)
+/* #define FI_PRIORITY		(1ULL << 22) */
 
 #define FI_COMPLETION		(1ULL << 24)
 #define FI_EVENT		FI_COMPLETION
@@ -166,13 +161,14 @@ typedef struct fid *fid_t;
 #define FI_MATCH_COMPLETE	(1ULL << 31)
 
 #define FI_PEER_TRANSFER	(1ULL << 36)
+#define FI_MR_DMABUF		(1ULL << 40)
 #define FI_AV_USER_ID		(1ULL << 41)
 #define FI_PEER			(1ULL << 43)
-#define FI_XPU_TRIGGER		(1ULL << 44)
+/* #define FI_XPU_TRIGGER		(1ULL << 44) */
 #define FI_HMEM_HOST_ALLOC	(1ULL << 45)
 #define FI_HMEM_DEVICE_ONLY	(1ULL << 46)
 #define FI_HMEM			(1ULL << 47)
-#define FI_VARIABLE_MSG		(1ULL << 48)
+/* #define FI_VARIABLE_MSG		(1ULL << 48) */
 #define FI_RMA_PMEM		(1ULL << 49)
 #define FI_SOURCE_ERR		(1ULL << 50)
 #define FI_LOCAL_COMM		(1ULL << 51)
@@ -189,7 +185,7 @@ typedef struct fid *fid_t;
 /* Tagged messages, buffered receives, CQ flags */
 #define FI_CLAIM		(1ULL << 59)
 #define FI_DISCARD		(1ULL << 58)
-
+#define FI_AUTH_KEY		(1ULL << 57)
 
 struct fi_ioc {
 	void			*addr;
@@ -205,6 +201,9 @@ enum {
 	FI_SOCKADDR_IN,		/* struct sockaddr_in */
 	FI_SOCKADDR_IN6,	/* struct sockaddr_in6 */
 	FI_SOCKADDR_IB,		/* struct sockaddr_ib */
+	/*  PSMX provider is deprecated.
+	 *  We will keep this value in order to save binary compatibility.
+	 */
 	FI_ADDR_PSMX,		/* uint64_t */
 	FI_ADDR_GNI,
 	FI_ADDR_BGQ,
@@ -216,12 +215,14 @@ enum {
 	FI_ADDR_PSMX3,		/* uint64_t[4] */
 	FI_ADDR_OPX,
 	FI_ADDR_CXI,
+	FI_ADDR_UCX,
 };
 
 #define FI_ADDR_UNSPEC		((uint64_t) -1)
 #define FI_ADDR_NOTAVAIL	((uint64_t) -1)
 #define FI_KEY_NOTAVAIL		((uint64_t) -1)
 #define FI_SHARED_CONTEXT	SIZE_MAX
+#define FI_AV_AUTH_KEY		SIZE_MAX
 typedef uint64_t		fi_addr_t;
 
 enum fi_av_type {
@@ -250,7 +251,8 @@ enum fi_mr_mode {
 enum fi_progress {
 	FI_PROGRESS_UNSPEC,
 	FI_PROGRESS_AUTO,
-	FI_PROGRESS_MANUAL
+	FI_PROGRESS_MANUAL,
+	FI_PROGRESS_CONTROL_UNIFIED,
 };
 
 enum fi_threading {
@@ -296,8 +298,8 @@ enum fi_ep_type {
 	FI_EP_MSG,
 	FI_EP_DGRAM,
 	FI_EP_RDM,
-	FI_EP_SOCK_STREAM,
-	FI_EP_SOCK_DGRAM,
+	/* FI_EP_SOCK_STREAM, */
+	/* FI_EP_SOCK_DGRAM, */
 };
 
 /* Endpoint protocol
@@ -309,6 +311,9 @@ enum {
 	FI_PROTO_RDMA_CM_IB_RC,
 	FI_PROTO_IWARP,
 	FI_PROTO_IB_UD,
+	/*  PSMX provider is deprecated.
+	 *  We will keep this value in order to save binary compatibility.
+	 */
 	FI_PROTO_PSMX,
 	FI_PROTO_UDP,
 	FI_PROTO_SOCK_TCP,
@@ -334,6 +339,10 @@ enum {
 	FI_PROTO_OPX,
 	FI_PROTO_CXI,
 	FI_PROTO_XNET,
+	FI_PROTO_COLL,
+	FI_PROTO_UCX,
+	FI_PROTO_SM2,
+	FI_PROTO_CXI_RNR,
 };
 
 enum {
@@ -364,8 +373,8 @@ static inline uint8_t fi_tc_dscp_get(uint32_t tclass)
 #define FI_ASYNC_IOV		(1ULL << 57)
 #define FI_RX_CQ_DATA		(1ULL << 56)
 #define FI_LOCAL_MR		(1ULL << 55)
-#define FI_NOTIFY_FLAGS_ONLY	(1ULL << 54)
-#define FI_RESTRICTED_COMP	(1ULL << 53)
+/* #define FI_NOTIFY_FLAGS_ONLY	(1ULL << 54) */
+/* #define FI_RESTRICTED_COMP	(1ULL << 53) */
 #define FI_CONTEXT2		(1ULL << 52)
 #define FI_BUFFERED_RECV	(1ULL << 51)
 /* #define FI_PEER_TRANSFER	(1ULL << 36) */
@@ -438,6 +447,7 @@ struct fi_domain_attr {
 	size_t			max_err_data;
 	size_t			mr_cnt;
 	uint32_t		tclass;
+	size_t			max_ep_auth_key;
 };
 
 struct fi_fabric_attr {
@@ -539,6 +549,8 @@ enum {
 	FI_CLASS_LOG,
 	FI_CLASS_PEER_AV,
 	FI_CLASS_PEER_AV_SET,
+	FI_CLASS_PEER_CNTR,
+	FI_CLASS_PROFILE,
 };
 
 struct fi_eq_attr;
@@ -682,11 +694,7 @@ static inline int fi_alias(struct fid *fid, struct fid **alias_fid, uint64_t fla
 	return fi_control(fid, FI_ALIAS, &alias);
 }
 
-/* fid value names */
-/*
- * Currently no common name is defined. Provider specific names should
- * have the FI_PROV_SPECIFIC bit set.
- */
+/* Provider specific names should set the uppermost bit. */
 
 static inline int fi_get_val(struct fid *fid, int name, void *val)
 {
@@ -749,6 +757,11 @@ enum fi_type {
 	FI_TYPE_CQ_FORMAT,
 	FI_TYPE_LOG_LEVEL,
 	FI_TYPE_LOG_SUBSYS,
+	FI_TYPE_AV_ATTR,
+	FI_TYPE_CQ_ATTR,
+	FI_TYPE_MR_ATTR,
+	FI_TYPE_CNTR_ATTR,
+	FI_TYPE_CQ_ERR_ENTRY,
 };
 
 char *fi_tostr(const void *data, enum fi_type datatype);
@@ -771,6 +784,12 @@ struct fi_param {
 
 int fi_getparams(struct fi_param **params, int *count);
 void fi_freeparams(struct fi_param *params);
+
+/* Dummy definitions for removed flags/caps/types. For compiling old fabtests */
+#define FI_VARIABLE_MSG		0ULL
+#define FI_NOTIFY_FLAGS_ONLY	0ULL
+#define FI_RESTRICTED_COMP	0ULL
+#define FI_EP_SOCK_STREAM	FI_EP_UNSPEC
 
 #ifdef FABRIC_DIRECT
 #include <rdma/fi_direct.h>

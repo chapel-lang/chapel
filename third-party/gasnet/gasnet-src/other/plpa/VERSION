@@ -16,7 +16,7 @@ release=3
 # requirement is that it must be entirely printable ASCII characters
 # and have no white space.
 
-greek=
+greek=GASNet-EX
 
 # If want_svn=1, then the SVN r number will be included in the overall
 # PLPA version number in some form.

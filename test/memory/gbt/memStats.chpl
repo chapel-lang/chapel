@@ -1,6 +1,6 @@
 use BlockDist;
 config const n = numLocales * 2**20;
-const D: domain(1) dmapped blockDist(boundingBox={1..n}) = {1..n};
+const D: domain(1) dmapped new blockDist(boundingBox={1..n}) = {1..n};
 type T = int(8);
 var A: [D] T;
 config const i = n / 2;

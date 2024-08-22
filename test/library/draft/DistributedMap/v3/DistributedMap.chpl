@@ -47,7 +47,7 @@ module DistributedMap {
 
         @chpldoc.nodoc
         const locDom = {0..<targetLocales.size}
-            dmapped cyclicDist(startIdx=0, targetLocales=targetLocales);
+            dmapped new cyclicDist(startIdx=0, targetLocales=targetLocales);
 
         @chpldoc.nodoc
             var tables: [locDom] chainTable(keyType, valType);

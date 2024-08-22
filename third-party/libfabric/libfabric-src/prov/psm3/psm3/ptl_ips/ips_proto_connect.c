@@ -175,7 +175,7 @@ ips_flow_fini(struct ips_epaddr *ipsaddr, struct ips_proto *proto)
 	struct ips_flow *flow;
 	int i;
 
-	for (i = 0; i < EP_FLOW_LAST-1; i++) {
+	for (i = 0; i < EP_NUM_FLOW_ENTRIES; i++) {
 		flow = &ipsaddr->flows[i];
 
 		/* Cancel any stale flow->timers in flight */
@@ -317,6 +317,10 @@ ips_ipsaddr_set_req_params(struct ips_proto *proto,
 	ipsaddr->connidx_outgoing = req->hdr.connidx;
 	ipsaddr->runid_key = req->runid_key;
 	/* ipsaddr->initpsn = req->initpsn; */
+	_HFI_CONNDBG("%s -> %s: connidx_incoming=%u connidx_outgoing=%u\n",
+		     psm3_epid_fmt_internal(proto->ep->epid, 0),
+		     psm3_epid_fmt_internal(ipsaddr->epaddr.epid, 1),
+		     ipsaddr->connidx_incoming, ipsaddr->connidx_outgoing);
 
 	err =
 	    psm3_epid_set_hostname(psm3_epid_nid(((psm2_epaddr_t) ipsaddr)->epid),
@@ -894,7 +898,7 @@ psm3_ips_proto_process_connect(struct ips_proto *proto, uint8_t opcode,
 				 * the request on an invalid ipsaddr, just drop the reply */
 				ipsaddr_f.ctrl_msg_queued = ~0;
 
-				psmi_assert_always(proto->msgflowid < EP_FLOW_LAST);
+				psmi_assert_always(proto->msgflowid < EP_NUM_FLOW_ENTRIES);
 
 				psm3_ips_flow_init(&ipsaddr_f.
 					      flows[proto->msgflowid], proto,
@@ -912,7 +916,7 @@ psm3_ips_proto_process_connect(struct ips_proto *proto, uint8_t opcode,
 				}
 			}
 
-			psmi_assert_always(proto->msgflowid < EP_FLOW_LAST);
+			psmi_assert_always(proto->msgflowid < EP_NUM_FLOW_ENTRIES);
 			psmi_hal_ips_ipsaddr_disconnect(proto, ipsaddr);
 
 			ips_proto_send_ctrl_message_reply(proto, &ipsaddr->
@@ -1080,7 +1084,7 @@ do_reply:
 	_HFI_CONNDBG("Conn Pkt Sent: op=0x%02x from: 0x%s to: 0x%s\n",
 			OPCODE_CONNECT_REPLY, psm3_epid_fmt_internal(proto->ep->epid, 0),
 			psm3_epid_fmt_internal(ipsaddr->epaddr.epid, 1));
-	psmi_assert_always(proto->msgflowid < EP_FLOW_LAST);
+	psmi_assert_always(proto->msgflowid < EP_NUM_FLOW_ENTRIES);
 	ips_proto_send_ctrl_message_reply(proto,
 					  &ipsaddr->flows[proto->msgflowid],
 					  OPCODE_CONNECT_REPLY,
@@ -1354,7 +1358,7 @@ psm3_ips_proto_connect(struct ips_proto *proto, int numep,
 								OPCODE_CONNECT_REQUEST,
 								psm3_epid_fmt_internal(proto->ep->epid, 0),
 								psm3_epid_fmt_internal(ipsaddr->epaddr.epid, 1));
-					    psmi_assert_always(proto->msgflowid < EP_FLOW_LAST);
+					    psmi_assert_always(proto->msgflowid < EP_NUM_FLOW_ENTRIES);
 					    if (
 					    ips_proto_send_ctrl_message_request
 						    (proto, &ipsaddr->
@@ -1579,7 +1583,7 @@ psm3_ips_proto_disconnect(struct ips_proto *proto, int force, int numep,
 					    nanosecs_to_cycles(ipsaddr->
 							       delay_in_ms *
 							       MSEC_ULL);
-					psmi_assert_always(proto->msgflowid < EP_FLOW_LAST);
+					psmi_assert_always(proto->msgflowid < EP_NUM_FLOW_ENTRIES);
 					ips_proto_send_ctrl_message_request
 					    (proto,
 					     &ipsaddr->flows[proto->msgflowid],
@@ -1610,7 +1614,7 @@ psm3_ips_proto_disconnect(struct ips_proto *proto, int force, int numep,
 					ipsaddr->s_timeout =
 					    get_cycles() +
 					    nanosecs_to_cycles(MSEC_ULL);
-					psmi_assert_always(proto->msgflowid < EP_FLOW_LAST);
+					psmi_assert_always(proto->msgflowid < EP_NUM_FLOW_ENTRIES);
 					ips_proto_send_ctrl_message_request
 					    (proto,
 					     &ipsaddr->flows[proto->msgflowid],
@@ -1678,7 +1682,7 @@ psm3_ips_proto_disconnect(struct ips_proto *proto, int force, int numep,
 			     (int)(cycles_to_nanosecs(get_cycles() - t_start) /
 				   MSEC_ULL), (unsigned long long)reqs_sent);
 	} else {
-		psmi_assert_always(proto->msgflowid < EP_FLOW_LAST);
+		psmi_assert_always(proto->msgflowid < EP_NUM_FLOW_ENTRIES);
 		for (n = 0; n < numep; n++) {
 			i = (n_first + n) % numep;
 			if (!array_of_epaddr_mask[i])

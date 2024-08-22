@@ -411,11 +411,6 @@ ModuleSymbol* BaseAST::getModule() {
   return retval;
 }
 
-Type* BaseAST::typeInfo() {
-  QualifiedType qt = this->qualType();
-  return qt.type();
-}
-
 bool BaseAST::isRef() {
   return this->qualType().isRef();
 }
@@ -552,24 +547,41 @@ void registerModule(ModuleSymbol* mod) {
   }
 }
 
+static Symbol* lookupTransitively(SymbolMap* map, Symbol* sym) {
+  Symbol* x = map->get(sym);
+  if (!x) return x;
+
+  // If the symbol is re-maped again (e.g., x was y and y was z),
+  // we need to keep looking until we find the final symbol.
+  while (Symbol* y = map->get(x)) {
+    // Detect naive cycles. Note that this will not find multi-step cycles,
+    // but they shouldn't come up. If they do, might need to switch this
+    // to a tortoise-and-hare algorithm (Floyd's?)
+    if (y == x) break;
+    x = y;
+  }
+
+  return x;
+}
+
 #define SUB_SYMBOL(x)                                   \
   do {                                                  \
     if (x)                                              \
-      if (Symbol* y = map->get(x))                      \
+      if (Symbol* y = lookupTransitively(map, x))       \
         x = y;                                          \
   } while (0)
 
-#define SUB_TYPE(x)                                     \
-  do {                                                  \
-    if (x)                                              \
-      if (Symbol* y = map->get(x->symbol))              \
-        x = y->type;                                    \
+#define SUB_TYPE(x)                                       \
+  do {                                                    \
+    if (x)                                                \
+      if (Symbol* y = lookupTransitively(map, x->symbol)) \
+        x = y->type;                                      \
   } while (0)
 
 void update_symbols(BaseAST* ast, SymbolMap* map) {
   if (SymExpr* sym_expr = toSymExpr(ast)) {
     if (sym_expr->symbol()) {
-      if (Symbol* y = map->get(sym_expr->symbol())) {
+      if (Symbol* y = lookupTransitively(map, sym_expr->symbol())) {
         bool skip = false;
 
         // Do not replace symbols for type constructor calls
@@ -616,10 +628,10 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
 
   } else if (ForallStmt* forall = toForallStmt(ast)) {
     if (forall->fContinueLabel) {
-      if (LabelSymbol* y = toLabelSymbol(map->get(forall->fContinueLabel)))
+      if (LabelSymbol* y = toLabelSymbol(lookupTransitively(map, forall->fContinueLabel)))
           forall->fContinueLabel = y;
     } else if (forall->fErrorHandlerLabel) {
-      if (LabelSymbol* y = toLabelSymbol(map->get(forall->fErrorHandlerLabel)))
+      if (LabelSymbol* y = toLabelSymbol(lookupTransitively(map, forall->fErrorHandlerLabel)))
           forall->fErrorHandlerLabel = y;
     }
   } else if (VarSymbol* ps = toVarSymbol(ast)) {

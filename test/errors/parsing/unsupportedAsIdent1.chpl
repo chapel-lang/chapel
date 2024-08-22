@@ -6,4 +6,5 @@ module N {
   use M as b.a;
 
   writeln("here");
+  proc main() { }
 }

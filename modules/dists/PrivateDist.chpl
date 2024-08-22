@@ -41,7 +41,7 @@ so user programs do not need to declare their own:
 
   .. code-block:: chapel
 
-    const PrivateSpace: domain(1) dmapped privateDist();
+    const PrivateSpace: domain(1) dmapped new privateDist();
 
 
 **Example**

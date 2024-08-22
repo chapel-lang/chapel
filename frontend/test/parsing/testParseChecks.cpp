@@ -143,11 +143,11 @@ static void test3(void) {
   assert(guard.numErrors() == 3);
   displayErrors(ctx, guard);
   assertErrorMatches(ctx, guard, 0, "test3.chpl", 2,
-                     "direct calls to deinit() are not allowed");
+                     "explicit calls to deinit() are not allowed");
   assertErrorMatches(ctx, guard, 1, "test3.chpl", 3,
-                     "direct calls to deinit() are not allowed");
+                     "explicit calls to deinit() are not allowed");
   assertErrorMatches(ctx, guard, 2, "test3.chpl", 4,
-                     "direct calls to deinit() are not allowed");
+                     "explicit calls to deinit() are not allowed");
   guard.clearErrors();
 }
 

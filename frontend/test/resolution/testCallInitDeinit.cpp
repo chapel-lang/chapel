@@ -546,6 +546,38 @@ static void test5c() {
     });
 }
 
+static void test5d() {
+  testActions("test5d",
+    R""""(
+      module M {
+        operator =(ref lhs: numeric, const in rhs: numeric) {
+          __primitive("=", lhs, rhs);
+        }
+        record R { type T; var field : T; }
+        proc R.init(type T, field = 0) {
+          this.T = T;
+          this.field = field;
+        }
+        proc R.init=(other: ?) {
+          this.T = other.type;
+          this.field = other;
+        }
+        proc R.deinit() { }
+        proc test() {
+          var i = 4;
+          var x:R(?) = i;
+          var y:R(?) = 42.0;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER,   "x",        ""},
+      {AssociatedAction::INIT_OTHER,   "y",        ""},
+      {AssociatedAction::DEINIT,       "M.test@12", "y"},
+      {AssociatedAction::DEINIT,       "M.test@12", "x"},
+    });
+}
+
 
 // test cross-type variable init from another record
 static void test6a() {
@@ -1635,6 +1667,46 @@ static void test21() {
       )""", {} );
 }
 
+static void test22() {
+  // Make sure that call-init-deinit doesn't try to process an initialization
+  // by mistakenly passing 'R' to 'helper' instead of passing the forwarded
+  // value 'R.c'
+  testActions("test22",
+      R"""(
+      module M {
+        // call-init-deinit wants this to transmute R.c into the reciever of C.helper
+        operator =(ref lhs: borrowed C, rhs: unmanaged C) {
+        }
+
+        class C {
+          var x : int;
+
+          proc helper() {
+            return x;
+          }
+        }
+
+        record R {
+          var c = new unmanaged C(5);
+
+          forwarding c;
+
+          proc wrapper() {
+            return this.helper();
+          }
+        }
+
+        proc test() {
+          var r : R;
+          var x = r.wrapper();
+        }
+      }
+      )""", {
+        {AssociatedAction::DEFAULT_INIT, "r",          ""},
+        {AssociatedAction::DEINIT,       "M.test@6",   "r"}
+      });
+}
+
 // calling function with 'out' intent formal
 
 // calling functions with 'inout' intent formal
@@ -1662,6 +1734,7 @@ int main() {
   test5a();
   test5b();
   test5c();
+  test5d();
 
   test6a();
   test6b();
@@ -1722,6 +1795,8 @@ int main() {
   test20c();
 
   test21();
+
+  test22();
 
   return 0;
 }

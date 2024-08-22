@@ -1,0 +1,1 @@
+varIntent.chpl:1: error: var intents can not be used in foreach loops

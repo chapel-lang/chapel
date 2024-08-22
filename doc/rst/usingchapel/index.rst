@@ -9,10 +9,12 @@ Contents:
    :maxdepth: 1
    :glob:
 
+   portability
    prereqs
    chplenv
    building
    compiling
+   Editor Support <editor-support>
    Chapel Man Page <man>
    executing
    multilocale

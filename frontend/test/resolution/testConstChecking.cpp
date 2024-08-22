@@ -338,6 +338,37 @@ static void test6c() {
     {8});
 }
 
+static void test7a() {
+  // This test exists because of a past bug in which the call to 'dummy' was
+  // incorrectly evaluated due to an incorrectly-formed CallInfo, caused by a
+  // failure to account for the implicit receiver. The CallInfo lacked an
+  // argument for 'this', leading to const-checking being off by one for
+  // arguments 'x' and 'constThing'. This resulted in a "failure" as the
+  // frontend thought we were passing 'constThing' to 'ref A'.
+  testConstChecking("test7a",
+    R"""(
+      module M {
+        record R {
+          var x : int;
+
+          proc dummy(ref A, const B) {
+          }
+
+          proc ref wrapper() {
+            const constThing : int;
+            dummy(x, constThing);
+          }
+        }
+
+        proc main() {
+          var r : R;
+          r.wrapper();
+        }
+      }
+    )""",
+  {});
+}
+
 // TODO: test const checking for associated functions
 
 
@@ -364,6 +395,8 @@ int main() {
   test6a();
   test6b();
   test6c();
+
+  test7a();
 
   return 0;
 }

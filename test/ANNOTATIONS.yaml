@@ -567,6 +567,18 @@ all:
   01/11/24:
     - text: Remove the old slicing rule (#24154)
       config: chapcs
+  05/01/24:
+    - text: upgrade default LLVM to LLVM 17
+      config: chapcs
+  06/03/24:
+    - text: Stop setting CHPL_TARGET_CPU (#25161)
+      config: chapcs
+  06/12/24:
+    - text: Add support for GASNet PSHM and send progress thread (#25140)
+      config: 16-node-apollo-hdr
+  06/17/24:
+    - text: Revert to default GASNET_SND_THREAD=0 (#25307)
+      config: 16-node-apollo-hdr
 
 # End all
 
@@ -1198,6 +1210,9 @@ mandelbrot:
     - Implement a Swift-like version of mandelbrot (#5168)
   01/19/17:
     - Mandelbrot tweaks (#5188)
+  05/08/24:
+    - Remove complex math function wrappers for LLVM 16+ (#25019)
+
 
 mandelbrot-extras:
   01/03/14:
@@ -1625,6 +1640,12 @@ nbody:
     - Refactor PRIM_NEW resolution to enable promotion (#10919)
   05/03/19:
     - Govern slice expressions by slicing domain (#12931)
+  12/18/23:
+    - Always use -fno-math-errno to configure the LLVM optimizer (#24066)
+  02/21/24:
+    - Codegen sqrt and fabs directly to llvm intrinsics when possible (#24455)
+  04/03/24:
+    - Change param-based nbody to foreach-based (#24745)
 
 no-op:
   02/24/17:
@@ -1782,6 +1803,8 @@ regexdna: &regexdna-base
     - Add a field to the string record to store a cached size (#15758)
   02/24/21:
     - Upgrade to re2 2021-02-02 (#17230)
+  04/08/24:
+    - Avoid string copies by implementing replace with match (#24757)
 regexdna-redux:
   <<: *regexdna-base
 regexdna-submitted:
@@ -2129,10 +2152,6 @@ distAdaptativeWSv2:
   03/04/17:
     - Use Time.sleep so that these tests play nice with qthreads (#5483)
 
-getNextPerf:
-  05/16/19:
-    - Improve the speed of parallel safe random streams (#13013)
-
 guided:
   02/28/17:
     - Bring in upstream fixes for qthreads sleep interception bug (#5446)
@@ -2430,6 +2449,20 @@ arkouda: &arkouda-base
     - Closes 2873 Short strings optimization for multicol groupby (Bears-R-Us/arkouda#2877)
   01/07/24:
     - Array API infrastructure and partial implementation (Bears-R-Us/arkouda#2865)
+  02/07/24:
+    - Update Arkouda release testing from 1.32 to 1.33 (#24355)
+  03/28/24:
+    - Update Arkouda release testing from 1.33 to 2.0 (#24704)
+  05/07/24:
+    - Closes 3089 Avoid OOM Crashes caused due to in intents on makeDistArray (Bears-R-Us/arkouda#3163)
+  05/14/24:
+    - Dataframe Indexing (Bears-R-Us/arkouda#3109)
+  06/14/24:
+    - Reverts DataFrame Indexing Changes (Bears-R-Us/arkouda#3323)
+  6/25/24:
+    - Closes 3334, 3351 Simplify server side string code and added fixed length (Bears-R-Us/arkouda#3335)
+  6/27/24:
+    - Remove number of files multiplication for IO benchmark (Bears-R-Us/arkouda#3368)
 
 
 arkouda-string:
@@ -2470,6 +2503,11 @@ arkouda-comp:
   05/02/23:
     - Generate write method stubs for FCF superclass types (#22195)
 
+arkouda-array_create:
+  <<: *arkouda-base
+  04/05/24:
+    - Closes 3071 Add permutation to our generators (Bears-R-Us/arkouda#3078)
+
 shoc-triad-all-lg:
   11/10/22:
     - Ensure we time mem transfer in SHOC Triad (#20961)
@@ -2478,7 +2516,7 @@ shoc-sort:
   02/24/23:
     - Improve SHOC-Sort implementation (#21610)
 
-chplGPU:
+chop:
   03/25/23:
     - Upstream changes
   09/18/23:

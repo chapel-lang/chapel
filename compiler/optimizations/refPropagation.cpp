@@ -269,6 +269,10 @@ size_t singleAssignmentRefPropagation(FnSymbol* fn) {
   for_vector(BaseAST, ast, asts) {
     if (VarSymbol* var = toVarSymbol(ast)) {
       if (var->isRef()) {
+        if(var->hasFlag(FLAG_EXEMPT_REF_PROPAGATION)) {
+          continue;
+        }
+
         refVec.add(var);
         refSet.set_add(var);
       }

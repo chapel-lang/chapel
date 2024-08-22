@@ -14,9 +14,9 @@ var Dom3: domain(3,int) dmapped Dist3 = {1..n,1..n,1..n};
 const Space = {1..n};
 const Space2 = {1..n,1..n};
 const Space3 = {1..n,1..n,1..n};
-const Dom1: domain(1) dmapped cyclicDist(startIdx=Space.low)=Space;
-const Dom2: domain(2) dmapped cyclicDist(startIdx=Space2.low)=Space2;
-const Dom3: domain(3) dmapped cyclicDist(startIdx=Space3.low)=Space3;
+const Dom1: domain(1) dmapped new cyclicDist(startIdx=Space.low)=Space;
+const Dom2: domain(2) dmapped new cyclicDist(startIdx=Space2.low)=Space2;
+const Dom3: domain(3) dmapped new cyclicDist(startIdx=Space3.low)=Space3;
 
 /*Default Rectangular. Examples 1D*/
 var ADR:[1..n] int(64)=[i in 1..n] i;
@@ -226,7 +226,7 @@ for (a,b) in zip(A3[D3],B3[D3]) do if (a!=b) then writeln("ERROR!!!!");
 
 
 const Space4 = {1..6,1..6,1..6};
-const Dom4: domain(3) dmapped cyclicDist(startIdx=Space4.low)=Space4;
+const Dom4: domain(3) dmapped new cyclicDist(startIdx=Space4.low)=Space4;
 
 //var Dist4 = new blockDist({1..6,1..6,1..6});
 //var Dom4: domain(3,int) dmapped Dist4 ={1..6,1..6,1..6};

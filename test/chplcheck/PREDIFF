@@ -1,13 +1,31 @@
 #!/bin/bash
-$CHPL_HOME/tools/chplcheck/chplcheck --enable-rule ConsecutiveDecls \
-  --enable-rule BoolLitInCondStatement \
-  --enable-rule UseExplicitModules \
-  --enable-rule UnusedFormal \
-  --enable-rule CamelOrPascalCaseVariables \
-  --enable-rule NestedCoforalls \
-  --internal-prefix "myprefix_" --internal-prefix "_" \
-  --skip-unstable \
-  $1.chpl >> $2
+
+FLAGS="--enable-rule ConsecutiveDecls"\
+" --enable-rule BoolLitInCondStatement"\
+" --enable-rule UseExplicitModules"\
+" --enable-rule UnusedFormal"\
+" --enable-rule CamelOrPascalCaseVariables"\
+" --enable-rule NestedCoforalls"\
+" --internal-prefix myprefix_ --internal-prefix _"\
+" --skip-unstable"
+
+$CHPL_HOME/tools/chplcheck/chplcheck \
+  $FLAGS $1.chpl >> $2
+
 if sed "s#$(pwd)/##" $2 >$2.tmp; then
-    mv $2.tmp $2
+  mv $2.tmp $2
+fi
+
+# if there is a good-fixit file, try and run checkcheck with fixit
+if [ -e $1.good-fixit ]; then
+
+  $CHPL_HOME/tools/chplcheck/chplcheck \
+    $FLAGS --fixit --fixit-suffix .fixed $1.chpl >/dev/null
+
+  if diff $1.good-fixit $1.chpl.fixed; then
+    echo "[Success matching fixit for $1]" >> $2
+    rm $1.chpl.fixed
+  else
+    echo "[Error matching fixit for $1]" >> $2
+  fi
 fi

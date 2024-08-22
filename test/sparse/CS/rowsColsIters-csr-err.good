@@ -1,0 +1,1 @@
+rowsColsIters.chpl:40: error: Can't (efficiently) iterate over columns using a CSR layout

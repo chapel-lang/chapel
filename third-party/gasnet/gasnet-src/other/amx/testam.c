@@ -15,11 +15,15 @@ volatile int false = 0;
 ep_t check_ep;
 en_t check_en;
 tag_t check_tag;
+handler_t check_hidx;
 void checkAMshort(void *token) {
   ep_t ep;
   en_t en;
   tag_t tag;
   int id = -1;
+  handler_t hidx = ~check_hidx;
+  amx_category_t category = amx_Long;
+  int is_req = 0;
   AM_Safe(AMX_GetSourceId(token,&id));
   verify(id == 0);
   AM_Safe(AM_GetSourceEndpoint(token,&en));
@@ -28,6 +32,10 @@ void checkAMshort(void *token) {
   verify(ep == check_ep);
   AM_Safe(AM_GetMsgTag(token,&tag));
   verify(tag == check_tag);
+  AM_Safe(AMX_GetTokenInfo(token,&hidx,&category,&is_req));
+  verify(hidx == check_hidx);
+  verify(category == amx_Short);
+  verify(is_req);
 
   check_tag = 0;
 }
@@ -87,7 +95,6 @@ int main(int argc, char **argv) {
     ep_t ep1;
     en_t en1, en2;
     int i=0,n,m;
-    handler_t h;
     size_t sz;
     void *vp=0;
     tag_t t1 = (tag_t)0x1234ABCDU;
@@ -127,11 +134,11 @@ int main(int argc, char **argv) {
     AM_Safe(AM_GetTag(ep1,&check_tag)); verify(t1 == check_tag);
 
     AM_Safe(AM_SetExpectedResources(ep1,1,1));
-    h = (handler_t)-1;
-    AM_Safe(AM_SetHandlerAny(ep1,&h,checkAMshort));
-    i = (int)h; // bug3459: avoid a warning
+    check_hidx = (handler_t)-1;
+    AM_Safe(AM_SetHandlerAny(ep1,&check_hidx,checkAMshort));
+    i = (int)check_hidx; // bug3459: avoid a warning
     verify(i >= 0 && i < AM_MaxNumHandlers());
-    AM_Safe(AM_Request0(ep1,0,h));
+    AM_Safe(AM_Request0(ep1,0,check_hidx));
     do {
       AM_Safe(AM_Poll(eb2));
     } while (check_tag);

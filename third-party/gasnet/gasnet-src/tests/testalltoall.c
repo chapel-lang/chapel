@@ -98,6 +98,7 @@ int main(int argc, char **argv) {
   int min_size = 0;
   int step_size = 0;
   int help = 0;
+  uint8_t payload_byte = 0;
   
   GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testalltoall", &argc, &argv, 0));
 
@@ -135,6 +136,10 @@ int main(int argc, char **argv) {
     } else if (!strcmp(argv[argi], "-no-reply")) {
       do_reply = 0;
       ++argi;
+    } else if (!strcmp(argv[argi], "-payload-byte")) {
+      ++argi;
+      if (argc > argi) { payload_byte = atoi(argv[argi]); argi++; }
+      else help = 1;
     } else if (argv[argi][0] == '-') {
       help = 1;
       ++argi;
@@ -159,6 +164,9 @@ int main(int argc, char **argv) {
 
   // TODO: test sections
   test_init("testalltoall",0,"[options] (iters) (maxsz) (seed)\n"
+             "  -payload-byte N\n"
+             "      Medium payload buffer is initialized to this value mod 256.\n"
+             "      The default is zero.\n"
              "  The following options determine the communication pattern:\n"
              "      -random:  each process sends to others in a distinct random order\n"
              "      -polite:  each process sends round-robin starting with itself\n"
@@ -187,7 +195,8 @@ int main(int argc, char **argv) {
   iters = rounds * numranks;
   int tick = iters/10;
 
-  void *payload = test_calloc(med_sz,1);
+  void *payload = test_malloc(med_sz);
+  memset(payload, payload_byte, med_sz);
 
   gasnett_atomic_set(&counter,0,0);
 
@@ -207,6 +216,7 @@ int main(int argc, char **argv) {
       break;
   }
   MSG0("    replies: %s", do_reply?"YES":"NO");
+  MSG0("    payload byte: 0x%02x", payload_byte);
 
   MSG0("Starting Short0 test");
   for (int r = 0, sent = 1; r < rounds; ++r) {

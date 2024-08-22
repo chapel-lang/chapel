@@ -29,6 +29,10 @@ parseAndReportErrors(Context* context, UniqueString path) {
   auto& ret = parsing::parseFileToBuilderResultAndCheck(context, path, {});
   return ret;
 }
+const uast::BuilderResult&
+parseAndReportErrors(Context* context, const char* path) {
+  return parseAndReportErrors(context, UniqueString::get(context, path));
+}
 
 uast::BuilderResult
 parseStringAndReportErrors(parsing::Parser* parser, const char* filename,
@@ -72,4 +76,21 @@ const uast::AstNode* findOnlyNamed(const uast::Module* mod, std::string name) {
   NamedCollector col(name);
   mod->traverse(col);
   return col.only();
+}
+
+std::unique_ptr<chpl::Context> buildStdContext() {
+  std::string chpl_home;
+  if (const char* chpl_home_env = getenv("CHPL_HOME")) {
+    chpl_home = chpl_home_env;
+  } else {
+    printf("CHPL_HOME must be set");
+    exit(1);
+  }
+  Context::Configuration config;
+  config.chplHome = chpl_home;
+  Context* context = new Context(config);
+  chpl::parsing::setupModuleSearchPaths(context, false, false, {}, {});
+
+  std::unique_ptr<chpl::Context> ret(context);
+  return ret;
 }

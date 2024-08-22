@@ -1,0 +1,10 @@
+checking 0f+, default
+matched '0fff'
+checking 0f+, literal=false
+matched '0fff'
+checking 0f+, literal=true
+matched '<not found>'
+matched '0f+'
+checking 0f+, literal=true + other flags
+matched '0f+'
+matched '0f+'

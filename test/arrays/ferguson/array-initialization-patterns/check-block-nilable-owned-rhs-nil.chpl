@@ -6,8 +6,8 @@ class MyClass {
 
 proc main() {
   const Space = {1..2};
-  const Dom1: domain(1) dmapped blockDist(boundingBox=Space) = Space;
-  const Dom2: domain(1) dmapped blockDist(boundingBox=Space) = Space;
+  const Dom1: domain(1) dmapped new blockDist(boundingBox=Space) = Space;
+  const Dom2: domain(1) dmapped new blockDist(boundingBox=Space) = Space;
   var A: [Dom1] owned MyClass?;
 
   A[1] = new MyClass(1);

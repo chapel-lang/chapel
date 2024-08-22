@@ -2,7 +2,7 @@
 LLVM for Chapel release
 =======================
 
-This copy of LLVM 17.0.6 is being released with Chapel for
+This copy of LLVM 18.1.6 is being released with Chapel for
 convenience and was obtained from
 
 https://www.llvm.org/
@@ -52,6 +52,84 @@ option(LLVM_INCLUDE_TESTS "Generate build targets for the LLVM unit tests." OFF)
   llvm-src/CMakeLists.txt looks like the following:
 option(LLVM_INCLUDE_BENCHMARKS "Generate benchmark targets. If OFF, benchmarks can't be built." OFF)
 
+* Patched `lib/Support/APFloat.cpp` to workaround https://github.com/llvm/llvm-project/issues/81013
+```
+--- a/third-party/llvm/llvm-src/lib/Support/APFloat.cpp
++++ b/third-party/llvm/llvm-src/lib/Support/APFloat.cpp
+@@ -112,9 +112,9 @@ struct fltSemantics {
+   /* Number of bits actually used in the semantics. */
+   unsigned int sizeInBits;
+ 
+-  fltNonfiniteBehavior nonFiniteBehavior = fltNonfiniteBehavior::IEEE754;
++  fltNonfiniteBehavior nonFiniteBehavior = fltNonfiniteBehavior(int(fltNonfiniteBehavior::IEEE754));
+ 
+-  fltNanEncoding nanEncoding = fltNanEncoding::IEEE;
++  fltNanEncoding nanEncoding = fltNanEncoding(int(fltNanEncoding::IEEE));
+   // Returns true if any number described by this semantics can be precisely
+   // represented by the specified semantics. Does not take into account
+   // the value of fltNonfiniteBehavior.
+```
+* Patched `lib/Target/AMDGPU/AMDGPUAsmPrinter.cpp` and `lib/Target/AMDGPU/AMDGPUResourceUsageAnalysis.cpp` to workaround https://github.com/llvm/llvm-project/issues/65188
+```
+diff --git a/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUAsmPrinter.cpp b/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUAsmPrinter.cpp
+index 279ef8ca27..9788b9316b 100644
+--- a/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUAsmPrinter.cpp
++++ b/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUAsmPrinter.cpp
+@@ -454,6 +454,7 @@ amdhsa::kernel_descriptor_t AMDGPUAsmPrinter::getAmdhsaKernelDescriptor(
+ }
+ 
+ bool AMDGPUAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
++  if (MF.empty()) return false;
+   // Init target streamer lazily on the first function so that previous passes
+   // can set metadata.
+   if (!IsTargetStreamerInitialized)
+diff --git a/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUResourceUsageAnalysis.cpp b/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUResourceUsageAnalysis.cpp
+index 0c759e7f3b..0e3d72460e 100644
+--- a/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUResourceUsageAnalysis.cpp
++++ b/third-party/llvm/llvm-src/lib/Target/AMDGPU/AMDGPUResourceUsageAnalysis.cpp
+@@ -126,14 +126,16 @@ bool AMDGPUResourceUsageAnalysis::runOnModule(Module &M) {
+       continue;
+ 
+     MachineFunction *MF = MMI.getMachineFunction(*F);
+-    assert(MF && "function must have been generated already");
+-
+-    auto CI =
+-        CallGraphResourceInfo.insert(std::pair(F, SIFunctionResourceInfo()));
+-    SIFunctionResourceInfo &Info = CI.first->second;
+-    assert(CI.second && "should only be called once per function");
+-    Info = analyzeResourceUsage(*MF, TM);
+-    HasIndirectCall |= Info.HasIndirectCall;
++    if (MF) {
++      assert(MF && "function must have been generated already");
++
++      auto CI =
++          CallGraphResourceInfo.insert(std::pair(F, SIFunctionResourceInfo()));
++      SIFunctionResourceInfo &Info = CI.first->second;
++      assert(CI.second && "should only be called once per function");
++      Info = analyzeResourceUsage(*MF, TM);
++      HasIndirectCall |= Info.HasIndirectCall;
++    }
+   }
+ 
+   // It's possible we have unreachable functions in the module which weren't
+@@ -151,9 +153,11 @@ bool AMDGPUResourceUsageAnalysis::runOnModule(Module &M) {
+ 
+     SIFunctionResourceInfo &Info = CI.first->second;
+     MachineFunction *MF = MMI.getMachineFunction(*F);
+-    assert(MF && "function must have been generated already");
+-    Info = analyzeResourceUsage(*MF, TM);
+-    HasIndirectCall |= Info.HasIndirectCall;
++    if (MF) {
++      // assert(MF && "function must have been generated already");
++      Info = analyzeResourceUsage(*MF, TM);
++      HasIndirectCall |= Info.HasIndirectCall;
++    }
+   }
+ 
+   if (HasIndirectCall)
+
+```
+
 Upgrading LLVM versions
 =======================
 
@@ -60,24 +138,24 @@ un-tarballed LLVM package contents.  Version updates should be done as
 follows, assuming CWD is $CHPL_HOME/third-party/llvm/:
 
 1.  download the new release and signature and verify them with e.g.
-    gpg --verify llvm-17.0.6.src.tar.xz.sig
+    gpg --verify llvm-18.1.6.src.tar.xz.sig
 2.  git rm -r llvm-src cmake
 3.  un-tarball the new LLVM version into the directory it specifies,
-    for example llvm-17.0.6.src
+    for example llvm-18.1.6.src
 4.  un-tarball the new Clang version into the directory it specifies,
-    for example clang-17.0.6.src
+    for example clang-18.1.6.src
 5.  un-tarball the cmake support tarball into the directory it specifies,
-    for example cmake-17.0.6.src
-6.  mv clang-17.0.6.src llvm-17.0.6.src/tools/clang
-7.  mv llvm-17.0.6.src llvm-src
-8.  mv cmake-17.0.6.src cmake
+    for example cmake-18.1.6.src
+6.  mv clang-18.1.6.src llvm-18.1.6.src/tools/clang
+7.  mv llvm-18.1.6.src llvm-src
+8.  mv cmake-18.1.6.src cmake
 9.  rm -r llvm-src/test llvm-src/tools/clang/test
 10. git add --force llvm-src cmake
     ('--force' is needed to ensure git adds all files in the subdirectory)
 11. commit these changes
 12. edit llvm-src/CMakeLists.txt to set LLVM_INCLUDE_TESTS to OFF,
     set LLVM_INCLUDE_BENCHMARKS to OFF, and check above for any
-    additional patches to apply 
+    additional patches to apply
 13. commit the CMakeLists.txt changes
 14. update the util/chplenv/chpl_llvm.py llvm_versions function
     to record that the new version is available.

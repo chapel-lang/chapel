@@ -161,7 +161,8 @@ static bool isValue(QualifiedType::Kind kind) {
           kind == QualifiedType::IN ||
           kind == QualifiedType::CONST_IN ||
           kind == QualifiedType::OUT ||
-          kind == QualifiedType::INOUT);
+          kind == QualifiedType::INOUT ||
+          kind == QualifiedType::INIT_RECEIVER);
 }
 static bool isValueOrParam(QualifiedType::Kind kind) {
   return isValue(kind) || kind == QualifiedType::PARAM;
@@ -497,11 +498,11 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
                         /* isParenless */ false,
                         std::move(actuals));
     const Scope* scope = scopeForId(context, ast->id());
-    auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
+    auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+    auto c = resolveGeneratedCall(context, ast, ci, inScopes);
     ResolvedExpression& opR = rv.byAst(ast);
-    resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
-                                          AssociatedAction::DEFAULT_INIT,
-                                          ast->id());
+    resolver.handleResolvedCall(opR, ast, ci, c,
+                                { { AssociatedAction::DEFAULT_INIT, ast->id() } });
   }
 }
 
@@ -514,6 +515,14 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
     return;
   }
 
+  if (auto call = ast->toOpCall()) {
+    if (call->op() == "=" && call->child(0)->isTuple()) {
+      // Tuple unpacking assignment, handled directly by Resolver
+      // (a, b, c) = foo();
+      return;
+    }
+  }
+
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(lhsType, UniqueString()));
   actuals.push_back(CallInfoActual(rhsType, UniqueString()));
@@ -524,7 +533,8 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
+  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+  auto c = resolveGeneratedCall(context, ast, ci, inScopes);
   ResolvedExpression& opR = rv.byAst(ast);
 
   auto op = ast->toOpCall();
@@ -533,9 +543,8 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
     resolver.handleResolvedCall(opR, ast, ci, c);
   } else {
     // otherwise, add an associated action
-    resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
-                                          AssociatedAction::ASSIGN,
-                                          ast->id());
+    resolver.handleResolvedCall(opR, ast, ci, c,
+                                { { AssociatedAction::ASSIGN, ast->id() } });
   }
 }
 
@@ -560,7 +569,8 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
+  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+  auto c = resolveGeneratedCall(context, ast, ci, inScopes);
 
   std::vector<const AstNode*> actualAsts;
   actualAsts.push_back(ast);
@@ -598,7 +608,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
   if (lhsType.type() != rhsType.type()) {
     action = AssociatedAction::INIT_OTHER;
   }
-  resolver.handleResolvedAssociatedCall(opR, ast, ci, c, action, ast->id());
+  resolver.handleResolvedCall(opR, ast, ci, c, { { action, ast->id() } });
 
   // If we were trying to move, but had to run an init= to change types,
   // and that init= did not accept its argument by 'in' intent, we need
@@ -751,7 +761,8 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
+  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+  auto c = resolveGeneratedCall(context, ast, ci, inScopes);
 
   // Should we associate it with the current statement or the current block?
   const AstNode* assocAst = currentStatement();
@@ -760,9 +771,8 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
   }
 
   ResolvedExpression& opR = rv.byAst(assocAst);
-  resolver.handleResolvedAssociatedCall(opR, assocAst, ci, c,
-                                        AssociatedAction::DEINIT,
-                                        deinitedId);
+  resolver.handleResolvedCall(opR, assocAst, ci, c,
+                              { { AssociatedAction::DEINIT, deinitedId } });
 }
 
 void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
@@ -933,6 +943,12 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
 
   // check for use of deinited variables
   processMentions(actual, rv);
+
+  if (auto t = formalType.type()) {
+    if (auto ct = t->toClassType()) {
+      if (ct->decorator().isBorrowed()) return;
+    }
+  }
 
   // compute the actual type
   QualifiedType actualType = rv.byAst(actual).type();

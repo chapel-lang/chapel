@@ -124,6 +124,8 @@ enum psm3_ibv_rate {
 	PSM3_IBV_RATE_50_GBPS	= 20,
 	PSM3_IBV_RATE_400_GBPS	= 21,
 	PSM3_IBV_RATE_600_GBPS	= 22,
+	PSM3_IBV_RATE_800_GBPS	= 23,
+	PSM3_IBV_RATE_1200_GBPS	= 24,
 };
 
 static inline int opa_mtu_enum_to_int(enum opa_mtu mtu)

@@ -1,6 +1,6 @@
 printAdditionalErrors-2.chpl:18: In function 'asdf':
 printAdditionalErrors-2.chpl:19: warning: postponed error: fatal error in asdf
-  $CHPL_HOME/modules/standard/Reflection.chpl:302: called as asdf(x: int(64)) from function 'canResolve'
+  $CHPL_HOME/modules/standard/Reflection.chpl:nnnn: called as asdf(x: int(64)) from function 'canResolve'
   printAdditionalErrors-2.chpl:13: called as canResolve(param fname = "asdf", args(0): int(64)) from function 'chpl__coerceMove'
   printAdditionalErrors-2.chpl:3: called as chpl__coerceMove(hi: string, b: bool) from module 'printAdditionalErrors-2'
 printAdditionalErrors-2.chpl:3: error: invalid copy-initialization

@@ -1,0 +1,2 @@
+warning: 'cIsoDayOfWeek' is deprecated and no longer affects the behavior of 'dayOfWeek'
+note: 'cIsoDayOfWeek' was set via a compiler flag

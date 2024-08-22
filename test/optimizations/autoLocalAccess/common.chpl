@@ -19,22 +19,22 @@ proc createDom(space) {
   }
   else if distType == blockCycDist {
     if space.rank == 1 {
-      return space dmapped blockCycDist(startIdx=(space.low,), blocksize=(2,));
+      return space dmapped new blockCycDist(startIdx=(space.low,), blocksize=(2,));
     }
     else {
-      return space dmapped blockCycDist(startIdx=space.low, blocksize=(2,2));
+      return space dmapped new blockCycDist(startIdx=space.low, blocksize=(2,2));
     }
   }
   else if distType == stencilDist {
     if space.rank == 1 {
-      return space dmapped stencilDist(space, fluff=(1,));
+      return space dmapped new stencilDist(space, fluff=(1,));
     }
     else {
-      return space dmapped stencilDist(space, fluff=(1,1));
+      return space dmapped new stencilDist(space, fluff=(1,1));
     }
   }
   else if distType == hashedDist {
-    var D: domain(int) dmapped hashedDist(idxType=int);
+    var D: domain(int) dmapped new hashedDist(idxType=int);
     for i in space {
       D += i;
     }
@@ -50,4 +50,3 @@ proc createArr(space, type t) {
   var A: [D] t;
   return A;
 }
-

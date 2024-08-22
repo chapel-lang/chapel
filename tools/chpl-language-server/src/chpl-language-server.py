@@ -32,6 +32,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from types import ModuleType
 from collections import defaultdict
 from dataclasses import dataclass, field
 from bisect_compat import bisect_left, bisect_right
@@ -40,7 +41,8 @@ import itertools
 import os
 import json
 import re
-
+import sys
+import importlib.util
 
 import chapel
 from chapel.lsp import location_to_range, error_to_diagnostic
@@ -51,6 +53,7 @@ from lsprotocol.types import (
     Location,
     MessageType,
     Diagnostic,
+    DiagnosticRelatedInformation,
     Range,
     Position,
 )
@@ -142,6 +145,68 @@ import argparse
 import configargparse
 
 
+class ChplcheckProxy:
+
+    def __init__(
+        self,
+        main: ModuleType,
+        config: ModuleType,
+        lsp: ModuleType,
+        driver: ModuleType,
+        rules: ModuleType,
+    ):
+        self.main = main
+        self.config = config
+        self.lsp = lsp
+        self.driver = driver
+        self.rules = rules
+
+    @classmethod
+    def get(cls) -> Optional["ChplcheckProxy"]:
+
+        def error(msg: str):
+            if os.environ.get("CHPL_DEVELOPER", None):
+                print("Error loading chplcheck: ", str(e), file=sys.stderr)
+
+        chpl_home = os.environ.get("CHPL_HOME")
+        if chpl_home is None:
+            error("CHPL_HOME not set")
+            return None
+
+        chplcheck_path = os.path.join(chpl_home, "tools", "chplcheck", "src")
+        # Add chplcheck to the path, but load via importlib
+        sys.path.append(chplcheck_path)
+
+        def load_module(module_name: str) -> Optional[ModuleType]:
+            file_path = os.path.join(chplcheck_path, module_name + ".py")
+            spec = importlib.util.spec_from_file_location(
+                module_name, file_path
+            )
+            if spec is None:
+                error(f"Could not load module from {file_path}")
+                return None
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            if spec.loader is None:
+                error(f"Could not load module from {file_path}")
+                return None
+            spec.loader.exec_module(module)
+            return module
+
+        mods = []
+        for mod in ["chplcheck", "config", "lsp", "driver", "rules"]:
+            m = load_module(mod)
+            if m is None:
+                return None
+            mods.append(m)
+        proxy = ChplcheckProxy(*mods)
+
+        return proxy
+
+
+chplcheck = ChplcheckProxy.get()
+
+
 def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
     if isinstance(decl, chapel.Module) and decl.kind() != "implicit":
         return SymbolKind.Module
@@ -156,21 +221,23 @@ def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
     elif isinstance(decl, chapel.EnumElement):
         return SymbolKind.EnumMember
     elif isinstance(decl, chapel.Function):
-        if decl.is_method():
-            return SymbolKind.Method
-        elif decl.name() in ("init", "init="):
+        if decl.name() in ("init", "init="):
             return SymbolKind.Constructor
         elif decl.kind() == "operator":
             return SymbolKind.Operator
+        elif decl.is_method():
+            return SymbolKind.Method
         else:
             return SymbolKind.Function
     elif isinstance(decl, chapel.Variable):
-        if decl.is_field():
+        if decl.intent() == "type":
+            return SymbolKind.TypeParameter
+        elif decl.intent() == "param":
+            return SymbolKind.Constant
+        elif decl.is_field():
             return SymbolKind.Field
         elif decl.intent() == "<const-var>":
             return SymbolKind.Constant
-        elif decl.intent() == "type":
-            return SymbolKind.TypeParameter
         else:
             return SymbolKind.Variable
     return None
@@ -197,17 +264,28 @@ def decl_kind_to_completion_kind(kind: SymbolKind) -> CompletionItemKind:
 
 
 def completion_item_for_decl(
-    decl: chapel.NamedDecl,
+    decl: chapel.NamedDecl, override_name: Optional[str] = None
 ) -> Optional[CompletionItem]:
     kind = decl_kind(decl)
     if not kind:
         return None
 
+    # For now, we show completion for global symbols (not x.<complete>),
+    # so it seems like we ought to rule out methods.
+    if kind == SymbolKind.Method:
+        return None
+
+    # We don't want to show operators in completion lists, as they're
+    # not really useful to the user in this context.
+    if kind == SymbolKind.Operator:
+        return None
+
+    name_to_use = override_name if override_name else decl.name()
     return CompletionItem(
-        label=decl.name(),
+        label=name_to_use,
         kind=decl_kind_to_completion_kind(kind),
-        insert_text=decl.name(),
-        sort_text=decl.name(),
+        insert_text=name_to_use,
+        sort_text=name_to_use,
     )
 
 
@@ -236,48 +314,6 @@ def get_symbol_information(
     return None
 
 
-def range_to_tokens(
-    rng: chapel.Location, lines: List[str]
-) -> List[Tuple[int, int, int]]:
-    """
-    Convert a Chapel location to a list of token-compatible ranges. If a location
-    spans multiple lines, it gets split into multiple tokens. The lines
-    and columns are zero-indexed.
-
-    Returns a list of (line, column, length).
-    """
-
-    (line_start, char_start) = rng.start()
-    (line_end, char_end) = rng.end()
-
-    if line_start == line_end:
-        return [(line_start - 1, char_start - 1, char_end - char_start)]
-
-    tokens = [
-        (
-            line_start - 1,
-            char_start - 1,
-            len(lines[line_start - 1]) - char_start,
-        )
-    ]
-    for line in range(line_start + 1, line_end):
-        tokens.append((line - 1, 0, len(lines[line - 1])))
-    tokens.append((line_end - 1, 0, char_end - 1))
-
-    return tokens
-
-
-def range_to_text(rng: chapel.Location, lines: List[str]) -> str:
-    """
-    Convert a Chapel location to a string. If the location spans multiple
-    lines, it gets truncated into 1 line.
-    """
-    text = []
-    for line, column, length in range_to_tokens(rng, lines):
-        text.append(lines[line][column : column + length + 1])
-    return " ".join([t.strip() for t in text])
-
-
 def encode_deltas(
     tokens: List[Tuple[int, int, int]], token_type: int, token_modifiers: int
 ) -> List[int]:
@@ -285,6 +321,8 @@ def encode_deltas(
     Given a (non-encoded) list of token positions, applies the LSP delta-encoding
     to it: each line is encoded as a delta from the previous line, and each
     column is encoded as a delta from the previous column.
+
+    `tokens` must be sorted by line number, and then by column number within
 
     Returns tokens with type token_type, and modifiers token_modifiers.
     """
@@ -438,6 +476,8 @@ class EndMarkerPattern:
                         chapel.Sync,
                         chapel.Local,
                         chapel.Manage,
+                        chapel.Select,
+                        chapel.When,
                     ]
                 ),
                 header_location=lambda node: (
@@ -504,6 +544,10 @@ CallInTypeContext = Tuple[chapel.FnCall, Optional[chapel.TypedSignature]]
 CallsInTypeContext = List[CallInTypeContext]
 
 
+# We should show these variables in autocompletion even though they are 'nodoc'.
+_ALLOWED_NODOC_DECLS = ["boundKind", "here", "strideKind"]
+
+
 @dataclass
 @visitor
 class FileInfo:
@@ -521,8 +565,7 @@ class FileInfo:
         Dict[chapel.TypedSignature, CallsInTypeContext],
     ] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
-    used_modules: List[chapel.Module] = field(init=False)
-    possibly_visible_decls: List[chapel.NamedDecl] = field(init=False)
+    visible_decls: List[Tuple[str, chapel.AstNode]] = field(init=False)
 
     def __post_init__(self):
         self.use_segments = PositionList(lambda x: x.ident.rng)
@@ -580,27 +623,78 @@ class FileInfo:
         self._note_reference(node)
 
     @enter
+    def _enter_Module(self, node: chapel.Module):
+        # Trigger scope resolution to error duplicate variable warnings.
+        _ = node.scope_resolve()
+
+        self.def_segments.append(NodeAndRange(node))
+
+    @enter
+    def _enter_Function(self, node: chapel.Function):
+        # Trigger scope resolution to error duplicate variable warnings.
+        _ = node.scope_resolve()
+
+        self.def_segments.append(NodeAndRange(node))
+
+    @enter
     def _enter_NamedDecl(self, node: chapel.NamedDecl):
         self.def_segments.append(NodeAndRange(node))
 
-    def _collect_used_modules(self, asts: List[chapel.AstNode]):
-        self.used_modules = []
+    def _collect_possibly_visible_decls(self, asts: List[chapel.AstNode]):
+        self.visible_decls = []
         for ast in asts:
+            if isinstance(ast, chapel.Comment):
+                continue
+
             scope = ast.scope()
-            if scope:
-                self.used_modules.extend(scope.used_imported_modules())
+            if not scope:
+                continue
 
-    def _collect_possibly_visible_decls(self):
-        self.possibly_visible_decls = []
-        for mod in self.used_modules:
-            for child in mod:
-                if not isinstance(child, chapel.NamedDecl):
+            file = ast.location().path()
+            in_bundled_module = self.context.context.is_bundled_path(file)
+
+            for name, nodes in scope.visible_nodes():
+                # Don't show internal symbols to the user, even if they
+                # are technically in scope. The exception is if we're currently
+                # editing a standard file.
+                skip_prefixes = ["chpl_", "chpldev_", "_"]
+                if any(name.startswith(prefix) for prefix in skip_prefixes):
+                    if not in_bundled_module:
+                        continue
+
+                # Only show nodes without @chpldoc.nodoc. The exception
+                # about standard files applies here too.
+                documented_nodes = []
+                for node in nodes:
+                    # apply aforementioned exception
+                    if in_bundled_module:
+                        documented_nodes.append(node)
+                        continue
+
+                    # avoid nodes with nodoc attribute.
+                    ag = node.attribute_group()
+                    show = False
+                    if not ag or not ag.get_attribute_named("chpldoc.nodoc"):
+                        show = True
+                    elif name in _ALLOWED_NODOC_DECLS:
+                        # If users declare variables like 'here' themselves,
+                        # we will not show them if they're @chpldoc.nodoc,
+                        # since they're not special.
+                        decl_file = node.location().path()
+                        is_standard_decl = self.context.context.is_bundled_path(
+                            decl_file
+                        )
+                        show = is_standard_decl
+
+                    if show:
+                        documented_nodes.append(node)
+
+                if len(documented_nodes) == 0:
                     continue
 
-                if child.visibility() == "private":
-                    continue
-
-                self.possibly_visible_decls.append(child)
+                # Just take the first value to avoid showing N entries for
+                # overloaded functions.
+                self.visible_decls.append((name, documented_nodes[0]))
 
     def _search_instantiations(
         self,
@@ -621,7 +715,7 @@ class FileInfo:
 
             sig = candidate.function()
             fn = sig.ast()
-            if not fn:
+            if not fn or not isinstance(fn, chapel.Function):
                 continue
 
             # Even if we don't descend into it (and even if it's not an
@@ -657,10 +751,11 @@ class FileInfo:
         self.def_segments.sort()
 
         self.siblings = chapel.SiblingMap(asts)
-        self._collect_used_modules(asts)
-        self._collect_possibly_visible_decls()
+        self._collect_possibly_visible_decls(asts)
 
         if self.use_resolver:
+            # TODO: suppress resolution errors due to false-positives
+            # this should be removed once the resolver is finished
             with self.context.context.track_errors() as _:
                 self._search_instantiations(asts)
 
@@ -864,8 +959,13 @@ class CLSConfig:
         add_bool_flag("literal-arg-inlays", "literal_arg_inlays", True)
         add_bool_flag("dead-code", "dead_code", True)
         add_bool_flag("evaluate-expressions", "eval_expressions", True)
+        add_bool_flag("show-instantiations", "show_instantiations", True)
         self.parser.add_argument("--end-markers", default="none")
         self.parser.add_argument("--end-marker-threshold", type=int, default=10)
+
+        add_bool_flag("chplcheck", "do_linting", False)
+        if chplcheck:
+            chplcheck.config.Config.add_arguments(self.parser, "chplcheck-")
 
     def _parse_end_markers(self):
         self.args["end_markers"] = [
@@ -881,7 +981,6 @@ class CLSConfig:
                 )
         n_markers = len(self.args["end_markers"])
         if n_markers != len(set(self.args["end_markers"])):
-
             raise argparse.ArgumentError(
                 None, "Cannot specify the same end marker multiple times"
             )
@@ -917,9 +1016,14 @@ class ChapelLanguageServer(LanguageServer):
         self.param_inlays: bool = config.get("param_inlays")
         self.dead_code: bool = config.get("dead_code")
         self.eval_expressions: bool = config.get("eval_expressions")
+        self.show_instantiations: bool = config.get("show_instantiations")
         self.end_markers: List[str] = config.get("end_markers")
         self.end_marker_threshold: int = config.get("end_marker_threshold")
         self.end_marker_patterns = self._get_end_marker_patterns()
+        self.do_linting: bool = config.get("do_linting")
+
+        self.lint_driver = None
+        self._setup_linter(config)
 
         self._setup_regexes()
 
@@ -935,7 +1039,23 @@ class ChapelLanguageServer(LanguageServer):
         # use pat2 first since it is more specific
         self._find_rename_deprecation_regex = re.compile(f"({pat2})|({pat1})")
 
-        self._curly_bracket_with_comment = re.compile(r"\}.*//")
+    def _setup_linter(self, clsConfig: CLSConfig):
+        """
+        Setup the linter, if it is enabled
+        """
+        if not (self.do_linting and chplcheck):
+            return
+
+        config = chplcheck.config.Config.from_args(clsConfig.args)
+        self.lint_driver = chplcheck.driver.LintDriver(config)
+
+        chplcheck.rules.register_rules(self.lint_driver)
+
+        for p in config.add_rules:
+            chplcheck.main.load_module(self.lint_driver, os.path.abspath(p))
+
+        self.lint_driver.disable_rules(*config.disabled_rules)
+        self.lint_driver.enable_rules(*config.enabled_rules)
 
     def get_deprecation_replacement(
         self, text: str
@@ -1006,7 +1126,7 @@ class ChapelLanguageServer(LanguageServer):
 
         This method retrieves the FileInfo object for a particular URI,
         creating one if it doesn't exist. If do_update is set to True,
-        then the FileInfo's index is reuilt even if it has already been
+        then the FileInfo's index is rebuilt even if it has already been
         computed. This is useful if the underlying file has changed.
         """
 
@@ -1022,6 +1142,10 @@ class ChapelLanguageServer(LanguageServer):
             )
             self.file_infos[uri] = file_info
 
+        # filter out errors that are not related to the file
+        cur_path = uri[len("file://") :]
+        errors = [e for e in errors if e.location().path() == cur_path]
+
         return (file_info, errors)
 
     def build_diagnostics(self, uri: str) -> List[Diagnostic]:
@@ -1030,9 +1154,26 @@ class ChapelLanguageServer(LanguageServer):
         as a list of LSP Diagnostics.
         """
 
-        _, errors = self.get_file_info(uri, do_update=True)
+        fi, errors = self.get_file_info(uri, do_update=True)
 
-        diagnostics = [error_to_diagnostic(e) for e in errors]
+        diagnostics = []
+        for e in errors:
+            diag = error_to_diagnostic(e)
+            diag.related_information = [
+                DiagnosticRelatedInformation(
+                    location_to_location(note_loc), note_msg
+                )
+                for (note_loc, note_msg) in e.notes()
+            ]
+            diagnostics.append(diag)
+
+        # get lint diagnostics if applicable
+        if self.lint_driver and chplcheck:
+            lint_diagnostics = chplcheck.lsp.get_lint_diagnostics(
+                fi.context.context, self.lint_driver, fi.get_asts()
+            )
+            diagnostics.extend(lint_diagnostics)
+
         return diagnostics
 
     def get_text(self, text_doc: TextDocument, rng: Range) -> str:
@@ -1094,9 +1235,19 @@ class ChapelLanguageServer(LanguageServer):
             or isinstance(type_, chapel.ErroneousType)
         ):
             return []
+        # skip implicit this formals
+        if (
+            isinstance(decl.node, chapel.Formal)
+            and isinstance(decl.node.parent(), chapel.Function)
+            and decl.node.parent().this_formal() is not None
+            and decl.node.unique_id()
+            == decl.node.parent().this_formal().unique_id()
+        ):
+            return []
 
         name_rng = location_to_range(decl.node.name_location())
         type_str = ": " + str(type_)
+        text_edits = [TextEdit(Range(name_rng.end, name_rng.end), type_str)]
         colon_label = InlayHintLabelPart(": ")
         label = InlayHintLabelPart(str(type_))
         if isinstance(type_, chapel.CompositeType):
@@ -1105,13 +1256,20 @@ class ChapelLanguageServer(LanguageServer):
                 label.location = location_to_location(typedecl.name_location())
             elif typedecl:
                 label.location = location_to_location(typedecl.location())
+
+        # if the inlay hint is for a loop index type, we cannot insert the type
+        # as it would be a syntax error
+        parent_loop = decl.node.parent()
+        if parent_loop and isinstance(parent_loop, chapel.IndexableLoop):
+            index = parent_loop.index()
+            if index and index.unique_id() == decl.node.unique_id():
+                text_edits = None
+
         return [
             InlayHint(
                 position=name_rng.end,
                 label=[colon_label, label],
-                text_edits=[
-                    TextEdit(Range(name_rng.end, name_rng.end), type_str)
-                ],
+                text_edits=text_edits,
             )
         ]
 
@@ -1161,7 +1319,7 @@ class ChapelLanguageServer(LanguageServer):
                 # tuples. We don't need hints for those.
                 continue
 
-            if not isinstance(act, chapel.core.Literal):
+            if not chapel.is_literal_like(act):
                 # Only show named arguments for literals.
                 continue
 
@@ -1225,7 +1383,7 @@ class ChapelLanguageServer(LanguageServer):
             )
             if dead_branch:
                 loc = dead_branch.location()
-                return range_to_tokens(loc, lines)
+                return chapel.range_to_tokens(loc, lines)
 
         return []
 
@@ -1331,7 +1489,6 @@ class ChapelLanguageServer(LanguageServer):
 
         for pattern in self.end_marker_patterns.values():
             for node, _ in chapel.each_matching(ast, pattern.pattern):
-
                 end_loc = location_to_range(node.location()).end
                 header_loc = pattern.header_location(node)
                 goto_loc = pattern.goto_location(node)
@@ -1342,12 +1499,14 @@ class ChapelLanguageServer(LanguageServer):
                 block_size = end_loc.line - header_loc.end()[0]
                 if block_size < self.end_marker_threshold:
                     continue
-                # skip blocks where the comment is already added
-                curly_line = file_lines[end_loc.line]
-                if re.search(self._curly_bracket_with_comment, curly_line):
+                # skip blocks where other text already exists
+                curly_line = file_lines[end_loc.line].rstrip()
+                assert len(curly_line) > 0
+                if curly_line[-1] != "}":
                     continue
 
-                text = range_to_text(header_loc, file_lines)
+                text = chapel.range_to_lines(header_loc, file_lines)
+                text = " ".join([t.strip() for t in text])
                 loc = location_to_location(goto_loc) if goto_loc else None
                 to_insert = " // " + text
                 edit = TextEdit(
@@ -1467,7 +1626,12 @@ def run_lsp():
         if not decl:
             return None
 
-        return location_to_location(decl.location())
+        loc = (
+            decl.name_location()
+            if isinstance(decl, chapel.NamedDecl)
+            else decl.location()
+        )
+        return location_to_location(loc)
 
     @server.feature(TEXT_DOCUMENT_DOCUMENT_SYMBOL)
     async def get_sym(ls: ChapelLanguageServer, params: DocumentSymbolParams):
@@ -1517,10 +1681,9 @@ def run_lsp():
         fi, _ = ls.get_file_info(text_doc.uri)
 
         items = []
-        items.extend(
-            completion_item_for_decl(decl) for decl in fi.possibly_visible_decls
-        )
-        items.extend(completion_item_for_decl(mod) for mod in fi.used_modules)
+        for name, decl in fi.visible_decls:
+            if isinstance(decl, chapel.NamedDecl):
+                items.append(completion_item_for_decl(decl, override_name=name))
 
         items = [item for item in items if item]
 
@@ -1565,6 +1728,13 @@ def run_lsp():
                     is_preferred=True,
                 )
             )
+
+        # get lint fixits if applicable
+        if ls.lint_driver and chplcheck:
+            lint_actions = chplcheck.lsp.get_lint_actions(
+                params.context.diagnostics
+            )
+            actions.extend(lint_actions)
 
         return actions
 
@@ -1635,7 +1805,8 @@ def run_lsp():
     async def document_highlight(
         ls: ChapelLanguageServer, params: DocumentHighlightParams
     ):
-        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+        text_doc_uri = params.text_document.uri
+        text_doc = ls.workspace.get_text_document(text_doc_uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
 
@@ -1644,18 +1815,29 @@ def run_lsp():
             return None
 
         # todo: it would be nice if this differentiated between read and write
-        highlights = [
-            DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)
+        highlights = []
+        # only highlight the declaration if it is in the current document
+        if node_and_loc.get_uri() == text_doc_uri:
+            dh = DocumentHighlight(node_and_loc.rng, DocumentHighlightKind.Text)
+            highlights.append(dh)
+        uses = fi.uses_here.get(node_and_loc.node.unique_id(), [])
+        highlights += [
+            DocumentHighlight(use.rng, DocumentHighlightKind.Text)
+            for use in uses
         ]
-        for use in fi.uses_here.get(node_and_loc.node.unique_id(), []):
-            highlights.append(
-                DocumentHighlight(use.rng, DocumentHighlightKind.Text)
-            )
 
         return highlights
 
     @server.feature(TEXT_DOCUMENT_CODE_LENS)
     async def code_lens(ls: ChapelLanguageServer, params: CodeLensParams):
+
+        # return early if the resolver is not being used or the feature is disabled
+        if not ls.use_resolver:
+            return None
+
+        if not ls.show_instantiations:
+            return None
+
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
@@ -1779,6 +1961,8 @@ def run_lsp():
                     ls.get_dead_code_tokens(ast, fi.file_lines(), instantiation)
                 )
 
+        # sort tokens by line number, and then by column number
+        tokens.sort(key=lambda x: (x[0], x[1]))
         return SemanticTokens(data=encode_deltas(tokens, 0, 0))
 
     @server.feature(TEXT_DOCUMENT_PREPARE_CALL_HIERARCHY)

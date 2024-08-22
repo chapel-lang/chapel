@@ -56,7 +56,7 @@ module GpuDiagnostics
     var host_to_device: uint(64);
     var device_to_host: uint(64);
     var device_to_device: uint(64);
-  };
+  }
 
   /*
     The Chapel record type inherits the runtime definition of it.

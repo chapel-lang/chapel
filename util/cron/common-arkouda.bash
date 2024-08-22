@@ -4,7 +4,7 @@
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-COMMON_DIR=/cray/css/users/chapelu
+COMMON_DIR=/hpcdc/project/chapel
 if [ ! -d "$COMMON_DIR" ]; then
   COMMON_DIR=/cy/users/chapelu
 fi
@@ -25,11 +25,12 @@ fi
 export CHPL_NIGHTLY_TEST_DIRS=studies/arkouda/
 export CHPL_TEST_ARKOUDA=true
 
-# Removing regex.compile caused smoke test failures. As a stopgap measure we are
-# skipping dependency check.
-export ARKOUDA_SKIP_CHECK_DEPS=1
-
-ARKOUDA_DEP_DIR=$COMMON_DIR/arkouda-deps
+# HPCDC doesn't seem to be accessible to compute nodes at the moment
+# so we made a mirror on lustre where compute nodes can access
+ARKOUDA_DEP_DIR=/lus/scratch/chapelu/arkouda-deps
+if [ ! -d "$ARKOUDA_DEP_DIR" ]; then
+  ARKOUDA_DEP_DIR=$COMMON_DIR/arkouda-deps
+fi
 if [ -d "$ARKOUDA_DEP_DIR" ]; then
   export ARKOUDA_ARROW_PATH=${ARKOUDA_ARROW_PATH:-$ARKOUDA_DEP_DIR/arrow-install}
   export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install}
@@ -48,7 +49,7 @@ if [ -f "$SETUP_PYTHON" ]; then
   source $SETUP_PYTHON
 fi
 
-export CHPL_WHICH_RELEASE_FOR_ARKOUDA="1.33.0"
+export CHPL_WHICH_RELEASE_FOR_ARKOUDA="2.1.0"
 # test against Chapel release (checking out current test/cron directories)
 function test_release() {
   export CHPL_TEST_PERF_DESCRIPTION=release

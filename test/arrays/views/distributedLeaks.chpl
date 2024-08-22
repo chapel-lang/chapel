@@ -3,7 +3,7 @@ use BlockDist;
 
 config const n = 10;
 const space = {1..n, 1..n};
-const dom: domain(2) dmapped blockDist(space) = space;
+const dom: domain(2) dmapped new blockDist(space) = space;
 var arr: [dom] int;
 
 var viewRankChange = arr[1, 3..4];

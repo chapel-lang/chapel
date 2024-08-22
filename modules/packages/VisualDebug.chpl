@@ -77,7 +77,7 @@ module VisualDebug
 */
 
 @chpldoc.nodoc
-  enum vis_op {v_start, v_stop, v_tag, v_pause};
+  enum vis_op {v_start, v_stop, v_tag, v_pause}
 
 private iter hc_id2com ( id: int, off: int ) {
    var offset = off;

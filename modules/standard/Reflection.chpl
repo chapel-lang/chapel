@@ -112,7 +112,7 @@ proc getField(const ref obj:?t, param idx: int) type
 
    :arg obj: a class or record
    :arg idx: which field to get
-   :returns: an rvalue referring to that field.
+   :returns: a const reference to that field.
  */
 pragma "unsafe"
 inline proc getField(const ref obj:?t, param idx:int) const ref do
@@ -154,7 +154,7 @@ proc getField(const ref obj:?t, param name: string) type
 
    :arg obj: a class or record
    :arg name: the name of a field
-   :returns: an rvalue referring to that field.
+   :returns: a const reference to that field.
  */
 pragma "unsafe"
 inline proc getField(const ref obj:?t, param name:string) const ref {
@@ -210,12 +210,32 @@ proc getImplementationField(const ref x:?t, param i:int) const ref {
 
    :arg x: a class or record
    :arg i: which field to get
-   :returns: an rvalue referring to that field.
+   :returns: a mutable reference to that field.
  */
 pragma "unsafe"
 @unstable(reason="'getFieldRef' is unstable")
 inline proc getFieldRef(ref x:?t, param i:int) ref {
   checkValidQueryT(t);
+  if isType(__primitive("field by num", x, i+1)) then
+    compilerError("cannot return a reference to 'type' field '",
+                  getFieldName(t, i), "'");
+  if isParam(__primitive("field by num", x, i+1)) then
+    compilerError("cannot return a reference to 'param' field '",
+                  getFieldName(t, i), "'");
+  return __primitive("field by num", x, i+1);
+}
+
+pragma "unsafe"
+@chpldoc.nodoc
+@unstable(reason="'getFieldRef' is unstable")
+inline proc getFieldRef(x: borrowed, param i:int) ref {
+  checkValidQueryT(x.type);
+  if isType(__primitive("field by num", x, i+1)) then
+    compilerError("cannot return a reference to 'type' field '",
+                  getFieldName(x.type, i), "'");
+  if isParam(__primitive("field by num", x, i+1)) then
+    compilerError("cannot return a reference to 'param' field '",
+                  getFieldName(x.type, i), "'");
   return __primitive("field by num", x, i+1);
 }
 
@@ -225,7 +245,7 @@ inline proc getFieldRef(ref x:?t, param i:int) ref {
 
    :arg x: a class or record
    :arg s: the name of a field
-   :returns: an rvalue referring to that field.
+   :returns: a mutable reference to that field.
  */
 pragma "unsafe"
 @unstable(reason="'getFieldRef' is unstable")
@@ -234,6 +254,10 @@ proc getFieldRef(ref x:?t, param s:string) ref {
   param i = __primitive("field name to num", t, s);
   if i == 0 then
     compilerError("field ", s, " not found in ", t:string);
+  if isType(__primitive("field by num", x, i)) then
+    compilerError("cannot return a reference to 'type' field '", s, "'");
+  if isParam(__primitive("field by num", x, i)) then
+    compilerError("cannot return a reference to 'param' field '", s, "'");
   return __primitive("field by num", x, i);
 }
 

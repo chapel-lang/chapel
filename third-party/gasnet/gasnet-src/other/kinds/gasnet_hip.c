@@ -84,21 +84,6 @@ int gasneti_MK_Create_hip(
     gasneti_fatalerror("gex_MK_Create called with negative hipDevice_t=%i", dev);
   }
 
-#if PLATFORM_OS_LINUX && GASNET_CONDUIT_IBV
- #if GASNETI_HIP_PLATFORM_NVIDIA
-  // Look for NVIDIA GDR support
-  const char *filename = "/sys/kernel/mm/memory_peers/nv_mem/version";
- #else
-  // Look for AMD GDR support (AMD Kernel Fusion Driver == amdkfd).
-  const char *filename = "/sys/kernel/mm/memory_peers/amdkfd/version";
- #endif
-  if (access(filename, F_OK)) {
-    // TODO: gracefully fall back to "reference implementation",
-    // once one is available, rather than failing.
-    GASNETI_RETURN_ERRR(BAD_ARG,"GEX_MK_CLASS_HIP: kernel lacks GPUDirect RDMA support");
-  }
-#endif
-
   // Get handle for the user-specified device to validate
   hipDevice_t devHandle;
   hipError_t res = hipDeviceGet(&devHandle, dev);
@@ -173,7 +158,15 @@ static int gasneti_MK_Segment_Create_hip(
     hipPointerAttribute_t attr;
     gasneti_check_hipcall(hipPointerGetAttributes(&attr, addr));
 
-    if (attr.memoryType != hipMemoryTypeDevice) {
+    enum hipMemoryType memoryType;
+  #if HIP_VERSION_MAJOR < 6
+    // Deprecated since 5.5 and removed in 6.0
+    memoryType = attr.memoryType;
+  #else
+    // Present since 5.5
+    memoryType = attr.type;
+  #endif
+    if (memoryType != hipMemoryTypeDevice) {
       gasneti_fatalerror("Invalid call to gex_Segment_Create(HIP) with non-device memory");
     }
     if (attr.isManaged) {

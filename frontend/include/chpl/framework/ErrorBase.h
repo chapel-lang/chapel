@@ -52,7 +52,8 @@ namespace chpl {
 
 class ErrorWriterBase;
 
-using Note = std::tuple<IdOrLocation, std::string>;
+using ErrorNote = std::tuple<IdOrLocation, std::string>;
+using ErrorCodeSnippet = std::tuple<Location, std::vector<Location>>;
 
 /** Enum representing the different types of errors in Dyno. */
 enum ErrorType {
@@ -163,12 +164,12 @@ class BasicError : public ErrorBase {
   /** The error's message. */
   std::string message_;
   /** Additional notes / details attached to the error. */
-  std::vector<Note> notes_;
+  std::vector<ErrorNote> notes_;
 
  protected:
   BasicError(Kind kind, ErrorType type, IdOrLocation idOrLoc,
              std::string message,
-             std::vector<Note> notes) :
+             std::vector<ErrorNote> notes) :
     ErrorBase(kind, type), idOrLoc_(std::move(idOrLoc)),
     message_(std::move(message)), notes_(std::move(notes)) {}
 
@@ -191,7 +192,7 @@ class GeneralError : public BasicError {
  protected:
   GeneralError(const GeneralError& other) = default;
   GeneralError(ErrorBase::Kind kind, IdOrLocation idOrLoc,
-               std::string message, std::vector<Note> notes)
+               std::string message, std::vector<ErrorNote> notes)
     : BasicError(kind, General, std::move(idOrLoc),
                  std::move(message), std::move(notes)) {}
 
@@ -206,6 +207,9 @@ class GeneralError : public BasicError {
                                     const char* fmt,
                                     va_list vl);
   static owned<GeneralError> vbuild(ErrorBase::Kind kind, Location loc,
+                                    const char* fmt,
+                                    va_list vl);
+  static owned<GeneralError> vbuild(ErrorBase::Kind kind, IdOrLocation loc,
                                     const char* fmt,
                                     va_list vl);
 
@@ -253,7 +257,7 @@ class GeneralError : public BasicError {
       return owned<ErrorBase>(new Error##NAME__(*this));\
     }\
 \
-    ErrorInfo info() const { return info_; }\
+    const ErrorInfo& info() const { return info_; }\
   };
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS

@@ -8,7 +8,7 @@ complete language coverage may vary between tools.
 Highlighting for Editors
 ------------------------
 
-* emacs/ : support for highlighting in emacs (see `emacs/README.rst`
+* emacs/ : support for highlighting in emacs (see `emacs/README.rst`)
 * geany/ : support for highlighting in geany (see `geany/README.md`)
 * vim/ : support for highlighting in 'vim' (see `vim/README.rst`)
 
@@ -21,7 +21,7 @@ emacs/ and vim/ subdirectories for details.
 Other Highlighting Options
 --------------------------
 
-* highlight/ : used by the Computer Lanugage Benchmarks Game
+* highlight/ : used by the Computer Language Benchmarks Game
 * latex/ : support for Chapel in the lstlistings package in LaTeX
 * source-highlight/ : support for GNU source-highlight
 
