@@ -2426,6 +2426,8 @@ class ResolvedFields {
     }
   }
 
+  void validateFieldGenericity(Context* context, const types::CompositeType* fieldsOfType) const;
+
   void finalizeFields(Context* context, bool syntaxOnly);
 
   /** Returns true if this is a generic type */

@@ -737,6 +737,7 @@ const ResolvedFields& resolveFieldDecl(Context* context,
     }
   }
 
+  if (!syntaxOnly) result.validateFieldGenericity(context, ct);
 
   return QUERY_END(result);
 }
