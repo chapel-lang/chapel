@@ -63,3 +63,4 @@ IncorrectIndentation.chpl:339: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:349: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:353: node violates rule IncorrectIndentation
 IncorrectIndentation.chpl:358: node violates rule IncorrectIndentation
+[Success matching fixit for IncorrectIndentation]
