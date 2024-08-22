@@ -52,7 +52,7 @@
     * This module currently only supports allocating Chapel classes. In the
       future we hope to support other heap objects like arrays.
     * Allocating managed (:type:`~OwnedObject.owned`/:type:`~SharedObject.shared`)
-      Chapel classes is not supported, only ``unmanaged`` classes are supported.
+      Chapel classes are not supported, only ``unmanaged`` classes are supported.
 
 */
 @unstable(category="experimental", reason="The Allocators module is under development and does not have a stable interface yet")
@@ -121,10 +121,14 @@ module Allocators {
        // The following two lines are equivalent, but the second one uses the allocator
        var x = new unmanaged MyClass(1);
        var x = newWithAllocator(allocator, unmanaged MyClass, 1);
+
+    .. note::
+
+       Named argument passing will not work with this function currently.
   */
   pragma "docs only"
   inline proc newWithAllocator(alloc: allocator, type T, args...): T {
-    compilerError("");
+    compilerError("docs-only newWithAllocator should not be compiled");
   }
 
   @chpldoc.nodoc
@@ -162,7 +166,7 @@ module Allocators {
   */
   pragma "docs only"
   inline proc deleteWithAllocator(alloc: allocator, objects...) {
-    compilerError("");
+    compilerError("docs-only deleteWithAllocator should not be compiled");
   }
 
   @chpldoc.nodoc
@@ -336,6 +340,9 @@ module Allocators {
     /*
       Allocate memory for ``n`` bytes. If :param:`~bumpPtrMemPool.alignment` is
       greater than 0, the memory will be aligned to that alignment.
+
+      If not enough memory is available and checks are enabled, this method
+      will halt the program.
 
       :arg n: The number of bytes to allocate.
       :returns: A ``c_ptr(void)`` to the allocated memory.

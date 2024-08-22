@@ -116,6 +116,10 @@ resolveInitializer(CallExpr* call, bool emitCallResolutionErrors) {
   return retval;
 }
 
+// This is a map from the original initializer to the new wrapper
+// The map is keyed by the FnSymbol of the original initializer and the expr of
+//   the allocator (if any)
+// The value is the '_new' wrapped initializer
 static std::map<std::pair<FnSymbol*,Expr*>,FnSymbol*> newWrapperMap;
 
 // Note: The wrapper for classes always returns unmanaged
@@ -124,10 +128,9 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
   SET_LINENO(initFn);
 
   // TODO: allocator needs to be threaded through as a formal and an actual
-
   AggregateType* type = toAggregateType(initFn->_this->getValType());
   if (newWrapperMap.find({initFn, allocator}) != newWrapperMap.end()) {
-    // TODO this should use a ptr to a symbol, not a Expr
+    // TODO: this should use a ptr to a symbol, not a Expr
     // the Expr will either be NULL or always a new pointer
     return newWrapperMap[std::make_pair(initFn, allocator)];
   }
