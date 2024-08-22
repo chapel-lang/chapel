@@ -39,25 +39,27 @@ location="${CHPL_HOME}/tar/chapel-${short_version}.tar.gz"
 log_info $location
 
 # Replace the url and sha256 in chapel.rb with the location of the tarball and sha256 of the tarball generated.
-# create sed -i '' -e for macOS
-sed_command="sed -i '' -e"
-$sed_command "s#url.*#url \"file\:///$location\"#" chapel.rb
+
+# Get the sha256 of the tarball
 sha=($(shasum -a 256 $location))
 sha256=${sha[0]}
 log_info $sha256
+
+# create sed -i command
+sed_command="sed -i.bak -e "
+#
+
+# Replace the tarball location in the container where the tarball is copied over
+$sed_command "s#url.*#url \"file\:////home/linuxbrew/chapel-${short_version}.tar.gz\"#" chapel.rb
 $sed_command  "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$sha256\"/" chapel.rb
 
 #To mimic home-brew CI. Run home-brew chpl install inside a container.
 # check if docker desktop is installed, if not fail the test.
-# TODO: maybe change this for linux?
 source ${CHPL_HOME}/util/cron/docker.bash
 start_docker
 # This mimics homebrew-ci
 # This will test homebrew installation inside ubuntu VM using the lastest chapel.rb using the tarball built
 cd ${CHPL_HOME}/util/packaging/homebrew
-
-# Replace the tarball location in the container where the tarball is copied over
-$sed_command "s#url.*#url \"file\:////home/linuxbrew/chapel-${short_version}.tar.gz\"#" chapel.rb
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel.rb  ${CHPL_HOME}/util/packaging/docker/test
 cp $location ${CHPL_HOME}/util/packaging/docker/test
