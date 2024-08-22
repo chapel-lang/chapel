@@ -5,3 +5,5 @@ Test1D
 Test2D
 Test3D
 LocalIOStore_*
+TestLocal
+TestTargetLocale

@@ -347,7 +347,7 @@ module Zarr {
     :arg dimCount: Dimensionality of the zarr array
 
   */
-  proc readZarrArray(directoryPath: string, type dtype, param dimCount: int, bloscThreads: int(32) = 1) throws {
+  proc readZarrArray(directoryPath: string, type dtype, param dimCount: int, bloscThreads: int(32) = 1, targetLocales: [] locale = Locales) throws {
     var md = getMetadata(directoryPath);
     validateMetadata(md, dtype, dimCount);
     // Size and shape tuples
@@ -365,7 +365,7 @@ module Zarr {
 
     // Initialize the distributed domain and array
     const undistD : domain(dimCount) = totalRanges;
-    const Dist = new blockDist(boundingBox=undistD);
+    const Dist = new blockDist(boundingBox=undistD, targetLocales=targetLocales);
     const D = Dist.createDomain(undistD);
     var A: [D] dtype;
 
