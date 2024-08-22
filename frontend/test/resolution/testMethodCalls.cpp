@@ -629,6 +629,36 @@ static void test12() {
   assert(t1.type()->toClassType()->manager() == AnyOwnedType::get(context));
 }
 
+static void test13() {
+  // Test fields that are deemed concrete by the initial type constructor
+  // logic but are then discovered to be generic (this should produce errors).
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    record r {
+      var x: SecretlyGeneric;
+      var y: poop(x.type);
+      var z: SecretlyNotGeneric;
+    }
+
+    proc poop(type arg) type do return arg;
+    proc SecretlyGeneric type do return owned class;
+    proc SecretlyNotGeneric type do return int;
+
+    var myR: r;
+    var tmp = (myR.x, myR.y, myR.z);
+    )""";
+
+  auto vars = resolveTypesOfVariables(context, program, { "tmp" });
+
+  assert(guard.numErrors() == 2);
+  for (auto& err : guard.errors()) {
+    assert(err->type() == ErrorType::SyntacticGenericityMismatch);
+  }
+  guard.realizeErrors();
+}
 
 int main() {
   test1();
@@ -643,6 +673,7 @@ int main() {
   test10();
   test11();
   test12();
+  test13();
 
   return 0;
 }
