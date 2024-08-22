@@ -1,23 +1,24 @@
 #!/bin/bash
-# Common functions used for docker 
+# Common functions used for docker
 
 check_docker_install(){
-     # check if docker desktop is installed in mac if not install it before running the tests.
-    if [[ -n "$(docker info --format '{{.Architecture}}' | grep 'aarch64')" ]]; then
-        echo "aarch64 Architecture found. Skipping installation ..." 
+    local docker_version
+    $docker_version="$(docker info --format '{{.Architecture}}')"
+    # check which architecture docker is running on and print the architecture
+    if [[ -n "$docker_version | grep 'x86')" ]]; then
+        echo "x86 Architecture found"
+    elif [[ -n "$docker_version | grep 'aarch64')" ]]; then
+        echo "aarch64 Architecture found"
     else
         echo "ERROR! Docker Desktop not installed:"
         echo "  * Install docker desktop from <https://docs.docker.com/docker-for-mac/install/>"
-        
     fi
-
 }
 
 start_docker(){
     check_docker_install
     # Start docker desktop and wait for it to respond
-    printf "Starting Docker for Mac";
-    colima start;
+    echo "Starting Docker";
 
     while (! docker stats --no-stream ); do
   # Docker takes a few seconds to initialize
@@ -25,5 +26,3 @@ start_docker(){
         sleep 60
     done
 }
-
-
