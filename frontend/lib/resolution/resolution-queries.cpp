@@ -1204,14 +1204,30 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, QualifiedType qt,
    return g;
 }
 
-Type::Genericity getTypeGenericity(Context* context, const Type* t) {
+static const Type::Genericity& getTypeGenericityViaPtrQuery(Context* context, const Type* t) {
+  QUERY_BEGIN(getTypeGenericityViaPtrQuery, context, t);
+
   std::set<const Type*> ignore;
-  return getTypeGenericityIgnoring(context, t, ignore);
+  auto result = getTypeGenericityIgnoring(context, t, ignore);
+
+  return QUERY_END(result);
+}
+
+Type::Genericity getTypeGenericity(Context* context, const Type* t) {
+  return getTypeGenericityViaPtrQuery(context, t);
+}
+
+static const Type::Genericity& getTypeGenericityViaQualifiedTypeQuery(Context* context, QualifiedType qt) {
+  QUERY_BEGIN(getTypeGenericityViaQualifiedTypeQuery, context, qt);
+
+  std::set<const Type*> ignore;
+  auto result = getTypeGenericityIgnoring(context, qt, ignore);
+
+  return QUERY_END(result);
 }
 
 Type::Genericity getTypeGenericity(Context* context, QualifiedType qt) {
-  std::set<const Type*> ignore;
-  return getTypeGenericityIgnoring(context, qt, ignore);
+  return getTypeGenericityViaQualifiedTypeQuery(context, qt);
 }
 
 /**

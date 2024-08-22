@@ -270,6 +270,13 @@ struct stringify<types::QualifiedType::Kind> {
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
 
+template <>
+struct mark<types::QualifiedType::Kind> {
+  void operator()(Context* context, types::QualifiedType::Kind t) {
+    // No need to mark enums
+  }
+};
+
 
 /// \endcond
 
