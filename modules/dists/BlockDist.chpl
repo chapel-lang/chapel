@@ -1639,14 +1639,14 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
   }
 }
 
-proc BlockArr.dsiSerialRead(f) {
+proc BlockArr.dsiSerialRead(f) throws {
   chpl_serialReadWriteRectangular(f, this);
 }
 
 //
 // output array
 //
-proc BlockArr.dsiSerialWrite(f) {
+proc BlockArr.dsiSerialWrite(f) throws {
   chpl_serialReadWriteRectangular(f, this);
 }
 

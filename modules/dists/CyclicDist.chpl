@@ -784,7 +784,7 @@ proc CyclicDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
   chpl_assignDomainWithGetSetIndices(this, rhs);
 }
 
-proc CyclicDom.dsiSerialWrite(x) {
+proc CyclicDom.dsiSerialWrite(x) throws {
   if verboseCyclicDistWriters {
     x.writeln(this.type:string);
     x.writeln("------");
@@ -1216,11 +1216,11 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   }
 }
 
-proc CyclicArr.dsiSerialRead(f) {
+proc CyclicArr.dsiSerialRead(f) throws {
   chpl_serialReadWriteRectangular(f, this);
 }
 
-proc CyclicArr.dsiSerialWrite(f) {
+proc CyclicArr.dsiSerialWrite(f) throws {
   chpl_serialReadWriteRectangular(f, this);
 }
 
