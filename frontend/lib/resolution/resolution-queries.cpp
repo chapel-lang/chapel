@@ -593,28 +593,40 @@ typedSignatureInitial(Context* context,
 
 // initedInParent is true if the decl variable is inited due to a parent
 // uast node.  This comes up for TupleDecls.
-static void helpSetFieldTypes(const AstNode* ast,
+static void helpSetFieldTypes(const CompositeType* ct,
+                              const AstNode* ast,
                               ResolutionResultByPostorderID& r,
                               bool initedInParent,
-                              ResolvedFields& fields) {
+                              ResolvedFields& fields,
+                              bool syntaxOnly) {
 
   if (auto var = ast->toVarLikeDecl()) {
     bool hasDefaultValue = initedInParent || var->initExpression() != nullptr;
-    const ResolvedExpression& e = r.byAst(var);
-    fields.addField(var->name(), hasDefaultValue, var->id(), e.type());
+
+    auto fieldType = QualifiedType();
+    if (!syntaxOnly) {
+      const ResolvedExpression& e = r.byAst(var);
+      fieldType = e.type();
+    } else {
+      auto& subs = ct->substitutions();
+      if (auto it = subs.find(ast->id()); it != subs.end()) {
+        fieldType = it->second;
+      }
+    }
+    fields.addField(var->name(), hasDefaultValue, var->id(), fieldType);
   } else if (auto mult = ast->toMultiDecl()) {
     for (auto decl : mult->decls()) {
-      helpSetFieldTypes(decl, r, initedInParent, fields);
+      helpSetFieldTypes(ct, decl, r, initedInParent, fields, syntaxOnly);
     }
   } else if (auto tup = ast->toTupleDecl()) {
     bool hasInit = initedInParent || tup->initExpression() != nullptr;
     for (auto decl : tup->decls()) {
-      helpSetFieldTypes(decl, r, hasInit, fields);
+      helpSetFieldTypes(ct, decl, r, hasInit, fields, syntaxOnly);
     }
   } else if (auto fwd = ast->toForwardingDecl()) {
     if (auto fwdTo = fwd->expr()) {
       if (fwdTo->isDecl()) {
-        helpSetFieldTypes(fwd->expr(), r, initedInParent, fields);
+        helpSetFieldTypes(ct, fwd->expr(), r, initedInParent, fields, syntaxOnly);
       }
       fields.addForwarding(fwd->id(), r.byAst(fwdTo).type());
     }
@@ -703,7 +715,7 @@ const ResolvedFields& resolveFieldDecl(Context* context,
         fieldAst->traverse(visitor);
       }
 
-      helpSetFieldTypes(fieldAst, r, /* initedInParent */ false, result);
+      helpSetFieldTypes(ct, fieldAst, r, /* initedInParent */ false, result, syntaxOnly);
     } else {
       // handle resolving an instantiated type
       ResolutionResultByPostorderID r;
@@ -721,7 +733,7 @@ const ResolvedFields& resolveFieldDecl(Context* context,
         fieldAst->traverse(visitor);
       }
 
-      helpSetFieldTypes(fieldAst, r, /* initedInParent */ false, result);
+      helpSetFieldTypes(ct, fieldAst, r, /* initedInParent */ false, result, syntaxOnly);
     }
   }
 
@@ -1104,24 +1116,10 @@ static Type::Genericity getFieldsGenericity(Context* context,
       return Type::GENERIC;
   }
 
-  if (context->isQueryRunning(fieldsForTypeDeclQuery,
-                              std::make_tuple(ct, DefaultsPolicy::IGNORE_DEFAULTS, false)) ||
-      context->isQueryRunning(fieldsForTypeDeclQuery,
-                              std::make_tuple(ct, DefaultsPolicy::USE_DEFAULTS, false)) ||
-      context->isQueryRunning(fieldsForTypeDeclQuery,
-                              std::make_tuple(ct, DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS, false))) {
-    // TODO: is there a better way to avoid problems with recursion here?
-    return Type::CONCRETE;
-  }
-
-  // we only care about whether or not each field is generic on its own
-  // merit, as only these fields need defaults. Thus, we allow defaults
-  // for fields other than the one we are checking. In this way, we prevent
-  // some field (a) that depends on the value of field (b) from being
-  // marked generic just because (b) is generic.
   DefaultsPolicy defaultsPolicy = DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS;
   const ResolvedFields& f = fieldsForTypeDecl(context, ct,
-                                              defaultsPolicy);
+                                              defaultsPolicy,
+                                              /* syntaxOnly */ true);
 
   if (f.isGenericWithDefaults() &&
       (g == Type::CONCRETE || g == Type::GENERIC_WITH_DEFAULTS))

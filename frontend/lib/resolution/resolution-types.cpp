@@ -750,8 +750,18 @@ void ResolvedFields::finalizeFields(Context* context, bool syntaxOnly) {
     Type::Genericity g;
 
     if (syntaxOnly) {
-      g = isFieldSyntacticallyGeneric(context, field.declId, nullptr) ?
-          Type::GENERIC : Type::CONCRETE;
+      if (!isFieldSyntacticallyGeneric(context, field.declId, nullptr)) {
+        g = Type::CONCRETE;
+      } else {
+        // In syntaxOnly mode, the field type is only set from substitutions;
+        // if there are none, it's left unknown, which, if the field is
+        // syntactically generic, means it's generic.
+        if (field.type.isUnknownKindOrType()) {
+          g = Type::GENERIC;
+        } else {
+          g = getTypeGenericityIgnoring(context, field.type, ignore);
+        }
+      }
     } else {
       g = getTypeGenericityIgnoring(context, field.type, ignore);
     }
