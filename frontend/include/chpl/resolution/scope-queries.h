@@ -44,6 +44,9 @@ namespace resolution {
    */
   const Scope* scopeForModule(Context* context, ID moduleId);
 
+
+  const bool& isNameBuiltinGenericType(Context* context, UniqueString name);
+
   /**
     The configuration used to look up a plain identifier in a scope
     when resolving expressions.
