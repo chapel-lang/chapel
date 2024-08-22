@@ -85,6 +85,7 @@ ERROR_CLASS(ReductionInvalidName, const uast::AstNode*, UniqueString, types::Qua
 ERROR_CLASS(ReductionNotReduceScanOp, const uast::AstNode*, types::QualifiedType)
 ERROR_CLASS(SplitInitMismatchedConditionalTypes, const uast::Variable*, const uast::AstNode*, const types::QualifiedType, const types::QualifiedType, const int, const int)
 ERROR_CLASS(SuperFromTopLevelModule, const uast::AstNode*, const uast::Module*, resolution::VisibilityStmtKind)
+ERROR_CLASS(SyntacticGenericityMismatch, const uast::Decl*, const types::Type::Genericity, const types::Type::Genericity, types::QualifiedType)
 WARNING_CLASS(TertiaryUseImportUnstable, UniqueString, const uast::AstNode*, const uast::VisibilityClause*, const resolution::Scope*, resolution::VisibilityStmtKind)
 ERROR_CLASS(TupleDeclMismatchedElems, const uast::TupleDecl*, const types::TupleType*)
 ERROR_CLASS(TupleDeclNotTuple, const uast::TupleDecl*, const types::Type*)

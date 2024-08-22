@@ -1468,6 +1468,37 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
   wr.codeForLocation(mod);
 }
 
+static const char* genericityToString(types::Type::Genericity genericity) {
+  switch (genericity) {
+    case types::Type::GENERIC:
+      return "generic";
+    case types::Type::GENERIC_WITH_DEFAULTS:
+      return "generic with defaults";
+    case types::Type::MAYBE_GENERIC:
+      return "maybe generic";
+    case types::Type::CONCRETE:
+      return "concrete";
+    default:
+      CHPL_ASSERT(false && "shouldn't happen");
+      return "";
+  }
+}
+
+void ErrorSyntacticGenericityMismatch::write(ErrorWriterBase& wr) const {
+  auto decl = std::get<const uast::Decl*>(info_);
+  auto actualGenericity = std::get<1>(info_);
+  auto syntacticGenericity = std::get<2>(info_);
+  auto& type = std::get<types::QualifiedType>(info_);
+
+  CHPL_ASSERT(decl->isVarLikeDecl());
+  auto var = decl->toVarLikeDecl();
+
+  wr.heading(kind_, type_, decl, "field '", var->name(), "' appears to be ",
+             genericityToString(syntacticGenericity), " in the program's syntax, but it has been inferred to be ",
+             type, ", which is ", genericityToString(actualGenericity), ".");
+  wr.codeForLocation(decl);
+}
+
 void ErrorTertiaryUseImportUnstable::write(ErrorWriterBase& wr) const {
   auto name = std::get<UniqueString>(info_);
   auto node = std::get<const uast::AstNode*>(info_);
