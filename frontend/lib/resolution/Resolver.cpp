@@ -1431,7 +1431,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       bool isClassType = typeExprT.type() && typeExprT.type()->isClassType();
       if (isFormalThis && isClassType && identOrNoTypeExpr) {
         auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
-        bool useFullyGenericDecorator = true;
+        bool useFullyGenericDecorator = false;
 
         if (auto varLikeDecl = decl->toVarLikeDecl()) {
           useFullyGenericDecorator |=
