@@ -2351,6 +2351,7 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
     } else {
       // Get type by resolving the type of corresponding '_domain' init call
       // TODO: prohibit associative domain with idxType 'domain'
+      // TODO: put runAndTrackErrors back after resolving perf issues with it
       // auto runResult = context->runAndTrackErrors([&](Context* ctx) {
         const AstNode* questionArg = nullptr;
         std::vector<CallInfoActual> actuals;
