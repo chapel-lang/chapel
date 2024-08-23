@@ -32,4 +32,8 @@ on Locales[1] {
   assert(targetLocale1 == {0..<10, 5..<10}, "Locale 1 subdomain incorrect for targeted locale distribution: %?".format(targetLocale1));
 }
 
+for i in D {
+  assert(defaultArray[i] == A[i], "Default locale distribution read incorrect at index %?".format(i));
+  assert(targetedArray[i] == A[i], "Targeted locale distribution read incorrect at index %?".format(i));
+}
 writeln("Pass");
