@@ -3820,6 +3820,18 @@ considerCompilerGeneratedMethods(Context* context,
   return tfs;
 }
 
+static const TypedFnSignature*
+considerCompilerGeneratedFunctions(Context* context,
+                                   const CallInfo& ci,
+                                   const Scope* inScope,
+                                   const PoiScope* inPoiScope,
+                                   CandidatesAndForwardingInfo& candidates) {
+  // methods and op calls considered elsewhere
+  if (ci.isMethodCall() || ci.isOpCall()) return nullptr;
+
+  return getCompilerGeneratedFunction(context, ci);
+}
+
 // not all compiler-generated procs are method. For instance, the compiler
 // generates to-and-from integral casts for enums. In the to-casts, the
 // receiver (or lhs) is an integral, not an enum.
@@ -3880,6 +3892,9 @@ considerCompilerGeneratedCandidates(Context* context,
   const TypedFnSignature* tfs = nullptr;
 
   tfs = considerCompilerGeneratedMethods(context, ci, inScope, inPoiScope, candidates);
+  if (tfs == nullptr) {
+    tfs = considerCompilerGeneratedFunctions(context, ci, inScope, inPoiScope, candidates);
+  }
   if (tfs == nullptr) {
     tfs = considerCompilerGeneratedOperators(context, ci, inScope, inPoiScope, candidates);
   }

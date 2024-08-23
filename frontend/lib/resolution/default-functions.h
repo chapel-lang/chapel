@@ -58,6 +58,10 @@ getCompilerGeneratedMethod(Context* context,
                            const types::QualifiedType receiverType,
                            UniqueString name, bool parenless);
 
+const TypedFnSignature*
+getCompilerGeneratedFunction(Context* context,
+                             const CallInfo& ci);
+
 /**
   Given the name of a binary operation and the types of its operands,
   determine if the compiler needs to provide a generated implementation,

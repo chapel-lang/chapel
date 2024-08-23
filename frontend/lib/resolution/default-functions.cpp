@@ -1044,6 +1044,71 @@ getCompilerGeneratedMethod(Context* context, const QualifiedType receiverType,
 }
 
 static const TypedFnSignature* const&
+getOrderToEnumFunction(Context* context, bool paramVersion, const EnumType* et) {
+  QUERY_BEGIN(getOrderToEnumFunction, context, paramVersion, et);
+
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  ufsFormals.push_back(
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, "i"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
+  formalTypes.push_back(QualifiedType(paramVersion ?
+                                      QualifiedType::PARAM :
+                                      QualifiedType::DEFAULT_INTENT,
+                                      AnyIntegralType::get(context)));
+
+  ufsFormals.push_back(
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, "et"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
+  formalTypes.push_back(QualifiedType(QualifiedType::TYPE, et));
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ et->id(),
+                        /*name*/ UniqueString::get(context, "chpl__orderToEnum"),
+                        /*isMethod*/ false,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ parsing::idToTag(context, et->id()),
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
+
+  auto ret = TypedFnSignature::get(context,
+                                   ufs,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   /* needsInstantiation */ true,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap());
+
+  return QUERY_END(ret);
+}
+
+const TypedFnSignature*
+getCompilerGeneratedFunction(Context* context,
+                             const CallInfo& ci) {
+  if (ci.name() == "chpl__orderToEnum") {
+    if (ci.numActuals() == 2) {
+      auto& firstQt = ci.actual(0).type();
+      auto& secondQt = ci.actual(1).type();
+
+      auto secondType = secondQt.type();
+      if (secondType && secondType->isEnumType()) {
+        bool paramVersion = firstQt.isParam();
+        return getOrderToEnumFunction(context, paramVersion, secondType->toEnumType());
+      }
+    }
+  }
+  return nullptr;
+}
+
+
+static const TypedFnSignature* const&
 getCompilerGeneratedBinaryOpQuery(Context* context,
                                   types::QualifiedType lhs,
                                   types::QualifiedType rhs,
