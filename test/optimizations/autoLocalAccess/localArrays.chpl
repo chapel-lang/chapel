@@ -31,13 +31,13 @@ if case == "2D COO" {
 }
 
 if case == "CSR" {
-  var csrDom: sparse subdomain(baseDom2D) dmapped new dmap(new CS());
+  var csrDom: sparse subdomain(baseDom2D) dmapped new cs();
   csrDom += [(1,1),(2,2)];
   test(csrDom, "CSR");
 }
 
 if case == "CSC" {
-  var cscDom: sparse subdomain(baseDom2D) dmapped new dmap(new CS(compressRows=false));
+  var cscDom: sparse subdomain(baseDom2D) dmapped new cs(compressRows=false);
   cscDom += [(1,1),(2,2)];
   test(cscDom, "CSC");
 }

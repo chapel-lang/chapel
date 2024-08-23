@@ -36,7 +36,7 @@ config const numTrials = 1,
 
 proc main() {
   const DenseSpace = {1..n, 1..n};
-  const MatrixSpace: sparse subdomain(DenseSpace) dmapped(new dmap(new CS()))
+  const MatrixSpace: sparse subdomain(DenseSpace) dmapped(new cs())
                    = genAIndsSorted(elemType, n, nonzer, shift);
   var A: [MatrixSpace] elemType;
 

@@ -25,7 +25,7 @@ const lsize2 = 2*lsize,
 const vectorDom = {0..#size2};
 
 const parentDom = {0..#size2, 0..#size2};
-var matrixDom: sparse subdomain(parentDom) dmapped new dmap(new CS());
+var matrixDom: sparse subdomain(parentDom) dmapped new cs();
 
 // temporary index buffer for fast initialization
 const indBufDom = {0..#(size2*stencilSize)};

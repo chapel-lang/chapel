@@ -20,7 +20,7 @@ config const debug = false;
 proc main() {
   const R = 1..n;
   const parent = {R,R};
-  var D : sparse subdomain(parent) dmapped new dmap(new CS(sortedIndices=false));
+  var D : sparse subdomain(parent) dmapped new cs(sortedIndices=false);
 
   for i in R {
     const s = 1 + i % 10;

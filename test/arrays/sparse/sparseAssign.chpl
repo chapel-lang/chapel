@@ -5,8 +5,8 @@ const D = {1..9, 1..9};
 var DiagCOO: sparse subdomain(D) = [i in 1..9] (i,i);
 var DiagCOO2: sparse subdomain(D) = DiagCOO;
 
-var DiagCSR: sparse subdomain(D) dmapped new dmap(new CS()) = [i in 1..9] (i,i);
-var DiagCSR2: sparse subdomain(D) dmapped new dmap(new CS()) = DiagCSR;
+var DiagCSR: sparse subdomain(D) dmapped new cs() = [i in 1..9] (i,i);
+var DiagCSR2: sparse subdomain(D) dmapped new cs() = DiagCSR;
 
 exercise(DiagCSR, DiagCSR2);
 exercise(DiagCOO, DiagCOO2);

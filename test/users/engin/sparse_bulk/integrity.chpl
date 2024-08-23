@@ -3,7 +3,7 @@ use LayoutCS;
 config const N = 8;
 const ParentDom = {0..#N, 0..#N};
 
-var SparseDom: sparse subdomain(ParentDom) dmapped new dmap(new CS());
+var SparseDom: sparse subdomain(ParentDom) dmapped new cs();
 var SparseMat: [SparseDom] int;
 
 var inds: [{0..#2*N}] 2*int;

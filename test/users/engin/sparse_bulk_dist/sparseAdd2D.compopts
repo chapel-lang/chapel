@@ -1,2 +1,2 @@
--snoParSafeWarning -ssparseLayoutType=CS
+-snoParSafeWarning -ssparseLayoutType=cs
 -snoParSafeWarning -ssparseLayoutType=DefaultDist

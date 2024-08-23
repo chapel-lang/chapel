@@ -2,10 +2,10 @@ use LayoutCS;
 
 config const N=8;
 config type layoutType = DefaultDist;
-var layout = new unmanaged layoutType();
+var layout = if isRecordType(layoutType) then new layoutType() else new dmap(new unmanaged layoutType());
 
 const ParentDom = {0..#N, 0..#N};
-var SparseDom: sparse subdomain(ParentDom) dmapped new dmap(layout);
+var SparseDom: sparse subdomain(ParentDom) dmapped layout;
 
 var SparseArr: [SparseDom] int;
 

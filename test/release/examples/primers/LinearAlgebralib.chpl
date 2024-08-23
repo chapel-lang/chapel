@@ -414,7 +414,7 @@ use LinearAlgebra.Sparse;
 {
   use LayoutCS;
   const parentDom = {1..100, 1..100};
-  var csrDom: sparse subdomain(parentDom) dmapped new dmap(new CS());
+  var csrDom: sparse subdomain(parentDom) dmapped new cs();
   var csrMatrix: [csrDom] real; // Supported by LinearAlgebra.Sparse
 }
 
@@ -476,7 +476,7 @@ use LinearAlgebra.Sparse;
 // Creating CSR domains & arrays in Chapel without ``LinearAlgebra.Sparse``:
 use LayoutCS;
 var parentDom = {0..#3, 0..#3}; // Parent domain
-var csrDom: sparse subdomain(parentDom) dmapped new dmap(new CS()); // CSR domain
+var csrDom: sparse subdomain(parentDom) dmapped new cs(); // CSR domain
 var csrArr: [csrDom] real; // CSR array
 
 // Adding indices to a sparse domain:
