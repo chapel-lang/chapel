@@ -77,6 +77,8 @@ class Builder final {
   // These are removed in the astToLocation_ map.
   AstLocMap notedLocations_;
 
+  bool generatedCode_ = false;
+
   // These map AST to additional locations while the builder is building.
   // This is an equivalent to notedLocations for the additional locations.
   // The key type is just 'AstNode' so that we can use generic functions.
@@ -119,6 +121,10 @@ class Builder final {
   static owned<Builder> createForIncludedModule(Context* context,
                                                 const char* filepath,
                                                 UniqueString parentSymbolPath);
+
+  static owned<Builder> createForGeneratedCode(Context* context,
+                                               const char* filepath,
+                                               UniqueString parentSymbolPath);
 
   /** Construct a Builder for use when reading uAST from a library file. */
   static owned<Builder> createForLibraryFileModule(
