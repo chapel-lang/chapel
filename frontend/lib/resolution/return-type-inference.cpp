@@ -900,6 +900,40 @@ static bool helpComputeOrderToEnumReturnType(Context* context,
   return true;
 }
 
+static bool helpComputeEnumToOrderReturnType(Context* context,
+                                             const TypedFnSignature* sig,
+                                             QualifiedType& result) {
+  auto firstQt = sig->formalType(0);
+
+  CHPL_ASSERT(firstQt.type() && firstQt.type()->isEnumType());
+  auto kind = QualifiedType::CONST_VAR;
+  const EnumType* et = firstQt.type()->toEnumType();
+  const Type* type = IntType::get(context, 0);
+  const Param* param = nullptr;
+
+  if (firstQt.isParam()) {
+    auto inputParam = firstQt.param()->toEnumParam();
+    CHPL_ASSERT(inputParam);
+    kind = QualifiedType::PARAM;
+
+    auto ast =
+      parsing::idToAst(context, et->id())->toEnum();
+    int counter = 0;
+    for (auto elem : ast->enumElements()) {
+      if (elem->id() == inputParam->value()) {
+        param = IntParam::get(context, counter);
+        break;
+      }
+      counter++;
+    }
+
+    CHPL_ASSERT(param);
+  }
+
+  result = QualifiedType(kind, type, param);
+  return true;
+}
+
 static bool helpComputeCompilerGeneratedReturnType(Context* context,
                                                    const TypedFnSignature* sig,
                                                    const PoiScope* poiScope,
@@ -1006,6 +1040,8 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
   } else if (!untyped->isMethod()) {
     if (untyped->name() == "chpl__orderToEnum") {
       return helpComputeOrderToEnumReturnType(context, sig, result);
+    } else if (untyped->name() == "chpl__enumToOrder") {
+      return helpComputeEnumToOrderReturnType(context, sig, result);
     }
     CHPL_ASSERT(false && "unhandled compiler-generated function");
     return true;

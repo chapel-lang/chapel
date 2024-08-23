@@ -1089,6 +1089,47 @@ getOrderToEnumFunction(Context* context, bool paramVersion, const EnumType* et) 
   return QUERY_END(ret);
 }
 
+static const TypedFnSignature* const&
+getEnumToOrderFunction(Context* context, bool paramVersion, const EnumType* et) {
+  QUERY_BEGIN(getEnumToOrderFunction, context, paramVersion, et);
+
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  ufsFormals.push_back(
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, "e"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
+  formalTypes.push_back(QualifiedType(paramVersion ?
+                                      QualifiedType::PARAM :
+                                      QualifiedType::DEFAULT_INTENT,
+                                      et));
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ et->id(),
+                        /*name*/ UniqueString::get(context, "chpl__enumToOrder"),
+                        /*isMethod*/ false,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ parsing::idToTag(context, et->id()),
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
+
+  auto formalsInstantiated = Bitmap();
+  auto ret = TypedFnSignature::get(context,
+                                   ufs,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   /* needsInstantiation */ paramVersion,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap());
+
+  return QUERY_END(ret);
+}
+
 const TypedFnSignature*
 getCompilerGeneratedFunction(Context* context,
                              const CallInfo& ci) {
@@ -1101,6 +1142,17 @@ getCompilerGeneratedFunction(Context* context,
       if (secondType && secondType->isEnumType()) {
         bool paramVersion = firstQt.isParam();
         return getOrderToEnumFunction(context, paramVersion, secondType->toEnumType());
+      }
+    }
+  } else if (ci.name() == "chpl__enumToOrder") {
+    debuggerBreakHere();
+    if (ci.numActuals() == 1) {
+      auto& firstQt = ci.actual(0).type();
+
+      auto firstType = firstQt.type();
+      if (firstType && firstType->isEnumType()) {
+        bool paramVersion = firstQt.isParam();
+        return getEnumToOrderFunction(context, paramVersion, firstType->toEnumType());
       }
     }
   }
