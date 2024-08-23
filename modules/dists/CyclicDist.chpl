@@ -20,6 +20,7 @@
 
 /* Support for round-robin distribution of domains/arrays to target locales. */
 
+@chplcheck.ignore("IncorrectIndentation")
 module CyclicDist {
 
 private use DSIUtil;

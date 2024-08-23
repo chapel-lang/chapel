@@ -41,6 +41,7 @@
 
 /* Support for block-distributing arrays and domains to target locales. */
 
+@chplcheck.ignore("IncorrectIndentation")
 module BlockDist {
 
 private use DSIUtil;
