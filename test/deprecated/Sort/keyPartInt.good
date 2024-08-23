@@ -1,48 +1,48 @@
-test/deprecated/Sort/keyPartInt.chpl:15: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:16: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:18: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:20: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:22: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:23: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:25: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:27: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:15: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:16: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:18: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:20: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:22: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:23: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:25: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:27: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
-test/deprecated/Sort/keyPartInt.chpl:75: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp1: keyPartComparator').
-test/deprecated/Sort/keyPartInt.chpl:76: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp2: keyPartComparator').
-test/deprecated/Sort/keyPartInt.chpl:77: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp3: keyPartComparator').
-test/deprecated/Sort/keyPartInt.chpl:80: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp4: keyPartComparator').
-test/deprecated/Sort/keyPartInt.chpl:81: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp5: keyPartComparator').
-test/deprecated/Sort/keyPartInt.chpl:82: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp6: keyPartComparator').
-test/deprecated/Sort/keyPartInt.chpl:85: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp7: keyPartComparator').
-$CHPL_HOME/modules/standard/Sort.chpl:835: In iterator 'sorted':
-$CHPL_HOME/modules/standard/Sort.chpl:848: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp8: keyPartComparator').
-  test/deprecated/Sort/keyPartInt.chpl:86: called as sorted(x: [domain(1,int(64),one)] int(64), comparator: myCmp8)
-test/deprecated/Sort/keyPartInt.chpl:87: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp9: keyPartComparator').
+keyPartInt.chpl:15: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:16: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:18: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:20: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:22: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:23: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:25: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:27: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:15: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:16: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:18: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:20: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:22: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:23: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:25: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:27: warning: Using keyPart without 'keyPartStatus' is deprecated, compile with '-suseKeyPartStatus' and update your types if necessary
+keyPartInt.chpl:75: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp1: keyPartComparator').
+keyPartInt.chpl:76: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp2: keyPartComparator').
+keyPartInt.chpl:77: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp3: keyPartComparator').
+keyPartInt.chpl:80: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp4: keyPartComparator').
+keyPartInt.chpl:81: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp5: keyPartComparator').
+keyPartInt.chpl:82: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp6: keyPartComparator').
+keyPartInt.chpl:85: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp7: keyPartComparator').
+$CHPL_HOME/modules/standard/Sort.chpl:nnnn: In iterator 'sorted':
+$CHPL_HOME/modules/standard/Sort.chpl:nnnn: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp8: keyPartComparator').
+  keyPartInt.chpl:86: called as sorted(x: [domain(1,int(64),one)] int(64), comparator: myCmp8)
+keyPartInt.chpl:87: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record myCmp9: keyPartComparator').
 Comparing with DefaultComparator
-(returned, 1)
-(returned, 2)
-(returned, 13835058055282163712)
-(returned, 13835058055282163712)
-(returned, 4)
-(returned, 13835058055282163712)
-(returned, 102)
-(returned, 98)
+(0, 1)
+(0, 2)
+(0, 13835058055282163712)
+(0, 13835058055282163712)
+(0, 4)
+(0, 13835058055282163712)
+(0, 102)
+(0, 98)
 Comparing with ReverseComparator
-(returned, -2)
-(returned, 18446744073709551613)
-(returned, 4611686018427387903)
-(returned, 4611686018427387903)
-(returned, -5)
-(returned, 4611686018427387903)
-(returned, 153)
-(returned, 157)
+(0, -2)
+(0, 18446744073709551613)
+(0, 4611686018427387903)
+(0, 4611686018427387903)
+(0, -5)
+(0, 4611686018427387903)
+(0, 153)
+(0, 157)
 isSorted before false
 isSorted after true
 isSorted before false
