@@ -143,8 +143,8 @@ static void testBorrowIds() {
     // check two ids with filtering out the 1st
     OwnedIdsWithName ids(x, Decl::PRIVATE,
                          /* field */ false, /* method */ false, /* parenful */ false);
-    ids.appendIdAndFlags(y, Decl::PUBLIC,
-                         /* field */ false, /* method */ true, /* parenful */ false);
+    ids.appendId(y, Decl::PUBLIC,
+                 /* field */ false, /* method */ true, /* parenful */ false);
     assert(ids.numIds() == 2);
     IdAndFlags::Flags f = pub;
     auto e = FlagSet::empty();
@@ -165,8 +165,8 @@ static void testBorrowIds() {
     // check two ids with filtering out the 2nd
     OwnedIdsWithName ids(y, Decl::PUBLIC,
                          /* field */ false, /* method */ true, /* parenful */ false);
-    ids.appendIdAndFlags(x, Decl::PRIVATE,
-                         /* field */ false, /* method */ false, /* parenful */ false);
+    ids.appendId(x, Decl::PRIVATE,
+                 /* field */ false, /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = IdAndFlags::PUBLIC;
     auto e = FlagSet::empty();
     auto foundIds = ids.borrow(f, e);
@@ -186,8 +186,8 @@ static void testBorrowIds() {
     // check two ids with filtering out neither
     OwnedIdsWithName ids(y, Decl::PUBLIC,
                          /* field */ false, /* method */ true, /* parenful */ false);
-    ids.appendIdAndFlags(x, Decl::PRIVATE,
-                         /* field */ false, /* method */ false, /* parenful */ false);
+    ids.appendId(x, Decl::PRIVATE,
+                 /* field */ false, /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::empty();
     auto foundIds = ids.borrow(f, e);
@@ -207,8 +207,8 @@ static void testBorrowIds() {
     // check two excluding one of them
     OwnedIdsWithName ids(y, Decl::PUBLIC,
                          /* field */ false, /* method */ true, /* parenful */ false);
-    ids.appendIdAndFlags(x, Decl::PRIVATE,
-                         /* field */ false, /* method */ false, /* parenful */ false);
+    ids.appendId(x, Decl::PRIVATE,
+                 /* field */ false, /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(pub | method);
     auto foundIds = ids.borrow(f, e);
@@ -228,8 +228,8 @@ static void testBorrowIds() {
     // check two different ones excluding one of them
     OwnedIdsWithName ids(y, Decl::PUBLIC,
                          /* field */ false, /* method */ true, /* parenful */ false);
-    ids.appendIdAndFlags(x, Decl::PUBLIC,
-                         /* field */ false, /* method */ false, /* parenful */ false);
+    ids.appendId(x, Decl::PUBLIC,
+                 /* field */ false, /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(pub | method);
     auto foundIds = ids.borrow(f, e);
@@ -249,8 +249,8 @@ static void testBorrowIds() {
     // check two excluding both
     OwnedIdsWithName ids(y, Decl::PUBLIC,
                          /* field */ false, /* method */ true, /* parenful */ false);
-    ids.appendIdAndFlags(x, Decl::PUBLIC,
-                         /* field */ false, /* method */ false, /* parenful */ false);
+    ids.appendId(x, Decl::PUBLIC,
+                 /* field */ false, /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(pub);
     auto foundIds = ids.borrow(f, e);

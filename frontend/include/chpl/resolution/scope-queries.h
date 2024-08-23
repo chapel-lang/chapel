@@ -204,6 +204,13 @@ namespace resolution {
   void emitMultipleDefinedSymbolErrors(Context* context, const Scope* scope);
 
 
+  /**
+    Given a Scope* for a Module, return a DeclMap containing all symbols
+    publically available from that module, including those brought in
+    transitively by use/import. */
+  const ModulePublicSymbols* publicSymbolsForModule(Context* context, const Scope* modScope);
+
+
 } // end namespace resolution
 } // end namespace chpl
 #endif

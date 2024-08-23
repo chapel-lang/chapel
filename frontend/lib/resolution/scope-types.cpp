@@ -147,6 +147,7 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
   if (auto ptr = moreIdvs_.get()) {
     for (const auto& elt : *ptr) {
       elt.id_.stringify(ss, stringKind);
+      ss << " ";
     }
   } else {
     if (!idv_.id_.isEmpty()) {
@@ -234,6 +235,25 @@ void BorrowedIdsWithName::stringify(std::ostream& ss,
   }
 }
 
+bool lookupInDeclMap(const DeclMap& declared,
+                     UniqueString name,
+                     std::vector<BorrowedIdsWithName>& result,
+                     IdAndFlags::Flags filterFlags,
+                     const IdAndFlags::FlagSet& excludeFlags) {
+  auto search = declared.find(name);
+  if (search != declared.end()) {
+    // There might not be any IDs that are visible to us, so borrow returns
+    // an optional list.
+    auto borrowedIds = search->second.borrow(filterFlags, excludeFlags);
+    if (borrowedIds) {
+      result.push_back(std::move(*borrowedIds));
+      return true;
+    }
+  }
+  return false;
+}
+
+
 Scope::Scope(Context* context,
              const uast::AstNode* ast, const Scope* parentScope,
              bool autoUsesModules) {
@@ -297,23 +317,6 @@ const Scope* Scope::parentModuleScope() const {
   return nullptr;
 }
 
-bool Scope::lookupInScope(UniqueString name,
-                          std::vector<BorrowedIdsWithName>& result,
-                          IdAndFlags::Flags filterFlags,
-                          const IdAndFlags::FlagSet& excludeFlags) const {
-  auto search = declared_.find(name);
-  if (search != declared_.end()) {
-    // There might not be any IDs that are visible to us, so borrow returns
-    // an optional list.
-    auto borrowedIds = search->second.borrow(filterFlags, excludeFlags);
-    if (borrowedIds) {
-      result.push_back(std::move(*borrowedIds));
-      return true;
-    }
-  }
-  return false;
-}
-
 bool Scope::contains(UniqueString name) const {
   auto search = declared_.find(name);
   return (search != declared_.end());
@@ -349,6 +352,22 @@ void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   ss << " numDeclared=";
   ss << std::to_string(numDeclared());
 }
+
+bool VisibilitySymbols::mightHaveName(UniqueString name) const {
+  UniqueString unused;
+
+  switch (kind_) {
+    case SYMBOL_ONLY:
+    case ONLY_CONTENTS:
+      return lookupName(name, unused);
+    case ALL_CONTENTS:
+      return true;
+    case CONTENTS_EXCEPT:
+      return !lookupName(name, unused);
+  }
+  return false;
+}
+
 
 bool VisibilitySymbols::lookupName(UniqueString name,
                                    UniqueString &declared) const {
@@ -444,6 +463,17 @@ void ResolvedVisibilityScope::stringify(std::ostream& ss,
   }
 }
 
+void ModulePublicSymbols::stringify(std::ostream& ss,
+                                    chpl::StringifyKind stringKind) const {
+  ss << "ModulePublicSymbols {";
+  for (const auto& pair: syms_) {
+    ss << pair.first.str() << " ";
+    pair.second.stringify(ss, stringKind);
+    ss << "\n";
+  }
+  ss << "}\n";
+}
+
 IMPLEMENT_DUMP(OwnedIdsWithName);
 IMPLEMENT_DUMP(BorrowedIdsWithName);
 IMPLEMENT_DUMP(Scope);
@@ -451,6 +481,7 @@ IMPLEMENT_DUMP(VisibilitySymbols);
 IMPLEMENT_DUMP(ResolvedVisibilityScope);
 IMPLEMENT_DUMP(PoiScope);
 IMPLEMENT_DUMP(InnermostMatch);
+IMPLEMENT_DUMP(ModulePublicSymbols);
 
 } // end namespace resolution
 } // end namespace chpl

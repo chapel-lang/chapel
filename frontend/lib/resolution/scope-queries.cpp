@@ -50,6 +50,7 @@ using namespace uast;
 using namespace types;
 
 static bool isReservedIdentifier(UniqueString name);
+static const Scope* nextHigherScope(Context* context, const Scope* scope);
 
 // Mimics helper in Resolver but without corresponding target constraints.
 static void maybeEmitWarningsForId(Context* context, ID idMention,
@@ -115,10 +116,10 @@ static void gather(DeclMap& declared,
   } else {
     // found an entry, so add to it
     OwnedIdsWithName& val = search->second;
-    val.appendIdAndFlags(d->id(), visibility,
-                         isField(d, atFieldLevel),
-                         isMethod(d, atFieldLevel),
-                         isParenfulFunction(d));
+    val.appendId(d->id(), visibility,
+                 isField(d, atFieldLevel),
+                 isMethod(d, atFieldLevel),
+                 isParenfulFunction(d));
   }
 }
 

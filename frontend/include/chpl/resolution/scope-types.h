@@ -119,7 +119,7 @@ class IdAndFlags {
         matches nothing (the base case of OR is false). */
     static FlagSet empty();
 
-    /** Add a new disjunct to the set of flag combinations. Automatically
+    /** Add a new disjunct (OR) to the set of flag combinations. Automatically
         performs some deduplication and packing to avoid growing the set
         if possible. */
     void addDisjunction(Flags excludeFlags);
@@ -255,9 +255,16 @@ class OwnedIdsWithName {
       moreIdvs_(nullptr)
   { }
 
-  /** Append an ID to an OwnedIdsWithName. */
-  void appendIdAndFlags(ID id, uast::Decl::Visibility vis,
-                        bool isField, bool isMethod, bool isParenfulFunction) {
+  /** Construct an OwnedIdsWithName containing one IdAndFlags */
+  OwnedIdsWithName(IdAndFlags idv)
+    : idv_(std::move(idv)),
+      flagsAnd_(idv_.flags_),
+      flagsOr_(idv_.flags_),
+      moreIdvs_(nullptr)
+  { }
+
+  /** Append an IdAndFlags to an OwnedIdsWithName. */
+  void appendIdAndFlags(IdAndFlags idv) {
     if (moreIdvs_.get() == nullptr) {
       // create the vector and add the single existing id to it
       moreIdvs_ = toOwned(new std::vector<IdAndFlags>());
@@ -265,13 +272,18 @@ class OwnedIdsWithName {
       // flagsAnd_ and flagsOr_ will have already been set in constructor
       // from idv_.
     }
-    auto idv = IdAndFlags(std::move(id), vis,
-                          isField, isMethod, isParenfulFunction);
     // add the id passed
     moreIdvs_->push_back(std::move(idv));
     // update the flags
     flagsAnd_ &= idv.flags_;
     flagsOr_ |= idv.flags_;
+  }
+
+  /** Append an ID to an OwnedIdsWithName. */
+  void appendId(ID id, uast::Decl::Visibility vis,
+                bool isField, bool isMethod, bool isParenfulFunction) {
+    appendIdAndFlags(IdAndFlags(std::move(id), vis,
+                                isField, isMethod, isParenfulFunction));
   }
 
   int numIds() const {
@@ -497,6 +509,12 @@ class BorrowedIdsWithName { // TODO: rename to MatchingIdsWithName
  */
 using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
 
+bool lookupInDeclMap(const DeclMap& declared,
+                     UniqueString name,
+                     std::vector<BorrowedIdsWithName>& result,
+                     IdAndFlags::Flags filterFlags,
+                     const IdAndFlags::FlagSet& excludeFlags);
+
 /**
   A scope roughly corresponds to a `{ }` block. Anywhere a new symbol could be
   defined / is defined is a scope.
@@ -617,7 +635,10 @@ class Scope {
   bool lookupInScope(UniqueString name,
                      std::vector<BorrowedIdsWithName>& result,
                      IdAndFlags::Flags filterFlags,
-                     const IdAndFlags::FlagSet& excludeFlagSet) const;
+                     const IdAndFlags::FlagSet& excludeFlagSet) const {
+    return lookupInDeclMap(declared_, name, result,
+                           filterFlags, excludeFlagSet);
+  }
 
   /** Check to see if the scope contains IDs with the provided name. */
   bool contains(UniqueString name) const;
@@ -800,6 +821,11 @@ class VisibilitySymbols {
   const ID& visibilityClauseId() const {
     return visibilityClauseId_;
   }
+
+  /** Returns 'true' if the name 'name' could be brought in by use/import
+      represented here.
+   */
+  bool mightHaveName(UniqueString name) const;
 
   /** Lookup the declared name for a given name
       Returns true if `name` is found in the list of renamed names and
@@ -1242,6 +1268,44 @@ struct CheckedScope {
 };
 
 using CheckedScopes = std::unordered_map<CheckedScope, IdAndFlags::FlagSet>;
+
+/** This type collects all public symbols used in a module */
+class ModulePublicSymbols {
+  DeclMap syms_;
+
+ public:
+  ModulePublicSymbols(DeclMap syms) : syms_(std::move(syms)) { }
+
+  const DeclMap& syms() const { return syms_; }
+
+  bool lookupInModule(UniqueString name,
+                      std::vector<BorrowedIdsWithName>& result,
+                      IdAndFlags::Flags filterFlags,
+                      const IdAndFlags::FlagSet& excludeFlags) const {
+    return lookupInDeclMap(syms_, name, result, filterFlags, excludeFlags);
+  }
+
+  bool operator==(const ModulePublicSymbols& other) const {
+    return syms_ == other.syms_;
+  }
+  bool operator!=(const ModulePublicSymbols& other) const {
+    return !(*this == other);
+  }
+  static bool update(owned<ModulePublicSymbols>& keep,
+                     owned<ModulePublicSymbols>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    for (const auto& pair: syms_) {
+      pair.first.mark(context);
+      pair.second.mark(context);
+    }
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  DECLARE_DUMP;
+};
 
 
 } // end namespace resolution
