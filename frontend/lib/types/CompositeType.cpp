@@ -191,7 +191,6 @@ const RecordType* CompositeType::getLocaleIDType(Context* context) {
 const RecordType* CompositeType::getDistributionType(Context* context) {
   auto id = parsing::getSymbolFromTopLevelModule(context, "ChapelDistribution",
                                                  "_distribution");
-  // gdbShouldBreakHere();
   auto name = id.symbolName(context);
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr, SubstitutionsMap());

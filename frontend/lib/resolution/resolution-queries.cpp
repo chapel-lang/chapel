@@ -4819,7 +4819,6 @@ resolveFnCall(ResolutionContext* rc,
       ci.isMethodCall() == false) {
     // handle invocation of a type constructor from a type
     // (note that we might have the type through a type alias)
-    if (ci.name() == "domain" || ci.name() == "_domain") gdbShouldBreakHere();
     mostSpecific = resolveFnCallForTypeCtor(context, ci,
                                             inScopes.callScope(),
                                             inScopes.poiScope(),
