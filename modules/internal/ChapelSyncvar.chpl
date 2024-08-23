@@ -33,7 +33,7 @@ module ChapelSyncvar {
 
   /************************************ | *************************************
   *                                                                           *
-  * The implementation of the user-facing sync types are exposed to    *
+  * The implementation of the user-facing sync types are exposed to           *
   * the compiler as a pair of record-wrapped classes.                         *
   *                                                                           *
   * The record implements the compiler facing API and manages the memory      *
@@ -43,7 +43,7 @@ module ChapelSyncvar {
   ************************************* | ************************************/
 
   //
-  // The following types are OK for full empty types (sync)
+  // The following types are OK for sync variables to contain
   // because they represent a single logical value.  (Note that for
   // the class it's the reference to the object that has full/empty
   // semantics.  Note that this includes the internal type
