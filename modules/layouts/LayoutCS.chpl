@@ -51,7 +51,15 @@ type CS = cs;
 // Necessary since `t == CS` does not support classes with param fields
 //
 @chpldoc.nodoc
-proc isCSType(type t) param do return isSubtype(_to_borrowed(t), CSImpl);
+proc isCSType(type t:cs(?)) param do return true;
+
+/*
+@chpldoc.nodoc
+proc isCSType(type t:CSImpl(?)) param do return true;
+*/
+
+@chpldoc.nodoc
+proc isCSType(type t) param do return false;
 
 /*
 This CS layout provides a Compressed Sparse Row (CSR) and Compressed Sparse
@@ -137,7 +145,7 @@ record chpl_layoutHelper {
 record cs {
   param compressRows: bool = true;
   param sortedIndices: bool = LayoutCSDefaultToSorted;
-  forwarding const chpl_layoutHelp: chpl_layoutHelper(?);
+  forwarding const chpl_layoutHelp: chpl_layoutHelper(unmanaged CSImpl(compressRows, sortedIndices)); // = new chpl_layoutHelper(new unmanaged CSImpl(compressRows, sortedIndices));
 
   proc init(param compressRows: bool = true,
             param sortedIndices: bool = LayoutCSDefaultToSorted) {

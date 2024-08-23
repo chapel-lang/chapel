@@ -342,6 +342,8 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
 private proc getDefaultSparseDist(type sparseLayoutType) {
   if isSubtype(_to_nonnil(sparseLayoutType), DefaultDist) {
     return defaultDist;
+  } else if isRecord(sparseLayoutType) {
+    return new sparseLayoutType();
   } else {
     return new dmap(new sparseLayoutType());
   }
