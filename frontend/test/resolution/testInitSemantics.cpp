@@ -1313,17 +1313,23 @@ static void testInheritance() {
           super.init(A);
           this.B = B;
         }
+
+        proc helper() { return "test"; }
       }
 
       var x = new Child(int, string);
+      var y = x.helper();
     )""";
 
-    auto vars = resolveTypesOfVariables(context, program, {"x"});
+    auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
     auto x = vars["x"];
+    auto y = vars["y"];
 
     std::stringstream ss;
     x.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
     assert(ss.str() == "owned Child(int(64), string)");
+
+    assert(y.type()->isStringType());
   }
 
   // Generic parent, concrete child
