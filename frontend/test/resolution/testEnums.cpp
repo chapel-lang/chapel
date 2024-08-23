@@ -516,11 +516,18 @@ static void test16() {
       enum color {
         red, green, blue
       }
+      enum colorDifferent {
+        magenta, cyan, yellow
+      }
+      proc type colorDifferent.size param do return 2;
+
       var a = property.size;
       param b = property.size;
       var c = color.size;
       param d = color.size;
-      )""", {"a", "b", "c", "d"});
+      var e = colorDifferent.size;
+      param f = colorDifferent.size;
+      )""", {"a", "b", "c", "d", "e", "f"});
 
   assert(vars.at("a").type());
   assert(vars.at("a").type()->isEnumType());
@@ -535,6 +542,13 @@ static void test16() {
   assert(vars.at("d").param());
   assert(vars.at("d").param()->isIntParam());
   assert(vars.at("d").param()->toIntParam()->value() == 3);
+  assert(vars.at("e").type());
+  assert(vars.at("e").type()->isIntType());
+  assert(vars.at("f").type());
+  assert(vars.at("f").type()->isIntType());
+  assert(vars.at("f").param());
+  assert(vars.at("f").param()->isIntParam());
+  assert(vars.at("f").param()->toIntParam()->value() == 2);
 }
 
 static void test17() {
