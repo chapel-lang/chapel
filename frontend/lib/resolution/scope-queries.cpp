@@ -1974,6 +1974,18 @@ static const bool& isNameBuiltinType(Context* context, UniqueString name) {
   return QUERY_END(toReturn);
 }
 
+const bool& isNameBuiltinGenericType(Context* context, UniqueString name) {
+  QUERY_BEGIN(isNameBuiltinGenericType, context, name);
+  bool result = false;
+  std::unordered_map<UniqueString,const Type*> typeMap;
+  Type::gatherBuiltins(context, typeMap);
+  auto it = typeMap.find(name);
+  if (it != typeMap.end()) {
+    result = it->second->genericity() == Type::GENERIC;
+  }
+  return QUERY_END(result);
+}
+
 // if it's the first time encountering a particular module (and if it is
 // indeed a module, and not an enum or other type of declaration), add
 // it to the ResolvedVisibilityScope as a module named in a use/import
