@@ -30,12 +30,17 @@ cd $CHPL_HOME
 # replace the url and sha in the chapel formula with the url pointing to the tarball created and sha of the tarball.
 # run home-brew scripts to install chapel.
 
-# gen_release $short_version
+gen_release $short_version
 
 cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 cd ${CHPL_HOME}/util/packaging/homebrew
 # Get the tarball from the root tar/ directory and replace the url in chapel.rb with the tarball location
 location="${CHPL_HOME}/tar/chapel-${short_version}.tar.gz"
+# Bail early if the tarball doesn't exist
+if [[ ! -f $location ]]; then
+    log_error "FATAL: Did not find tarball at $location"
+    exit 1
+fi
 log_info $location
 
 # Replace the url and sha256 in chapel.rb with the location of the tarball and sha256 of the tarball generated.
