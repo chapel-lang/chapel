@@ -1,0 +1,24 @@
+Comparing with DefaultComparator
+(returned, 1)
+(returned, 2)
+(returned, 13835058055282163712)
+(returned, 13835058055282163712)
+(returned, 4)
+(returned, 13835058055282163712)
+(returned, 102)
+(returned, 98)
+Comparing with ReverseComparator
+(returned, -2)
+(returned, 18446744073709551613)
+(returned, 4611686018427387903)
+(returned, 4611686018427387903)
+(returned, -5)
+(returned, 4611686018427387903)
+(returned, 153)
+(returned, 157)
+isSorted before false
+isSorted after true
+isSorted before false
+isSorted after true
+isSorted before false
+isSorted after true
