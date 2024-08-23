@@ -633,6 +633,30 @@ static void test18() {
   assert(guard.realizeErrors() == 1);
 }
 
+static void test19() {
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      iter type enum.these(){
+        for param i in 0..<this.size do
+          yield chpl__orderToEnum(i, this);
+      }
+      enum color {
+        red, green, blue
+      }
+      for c in color {
+        var res = c;
+      }
+      )""", {"res"});
+
+  assert(guard.realizeErrors() == 0);
+  assert(vars.at("res").type());
+  assert(vars.at("res").type()->isEnumType());
+}
+
 int main() {
   test1();
   test2();
@@ -652,5 +676,6 @@ int main() {
   test16();
   test17();
   test18();
+  test19();
   return 0;
 }
