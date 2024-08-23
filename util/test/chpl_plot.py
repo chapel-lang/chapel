@@ -217,9 +217,11 @@ class Arrow:
 
   def gen_kwargs_dict(self):
     if self.direction == "up":
+      rotation = 90
       boxstyle = "rarrow,pad=0.5"
     else:
-      boxstyle = "larrow,pad=0.5"
+      rotation = -90
+      boxstyle = "rarrow,pad=0.5"
 
     if self.color == "green":
       facecolor, edgecolor = "limegreen", "darkgreen"
@@ -238,7 +240,7 @@ class Arrow:
                 fontweight="bold",
                 horizontalalignment="center",
                 verticalalignment="center",
-                rotation=90,
+                rotation=rotation,
                 size=basefontsize-4,
                 bbox=bbox_args)
 
@@ -294,7 +296,7 @@ class Plot:
         self._bars
   """
 
-  def __init__(self, table, title=None, xlabel=None, ylabel=None, kind=None, includeLegend=True, better=None, shiftLineStyles=0, mpl_legend_args=None):
+  def __init__(self, table, title=None, xlabel=None, ylabel=None, lineStyles=None, kind=None, includeLegend=True, better=None, mpl_legend_args=None):
     self._x_data = table.xData
     self._y_datas = []
     self._png_file_name = _computePngFilename(table)
@@ -362,7 +364,10 @@ class Plot:
     # add data
     i = 1
     for colname in table.yData:
-      self.add_y_data(table.yData[colname], colname, linestyle=i)
+      style=i
+      if lineStyles is not None:
+        style = lineStyles[colname]
+      self.add_y_data(table.yData[colname], colname, linestyle=style)
       i += 1
 
     # add arrow if specified
@@ -427,7 +432,8 @@ class Plot:
       assert("Unknown plot kind")
 
   def add_arrow(self, position, direction, color, text):
-    self.arrows.append(Arrow(position, direction, color, text))
+    self._arrows.append(Arrow(position, direction, color, text))
+    return self
 
   def set_title(self, title):
     self.ax.set_title(title, pad=titlepadding, size=basefontsize)

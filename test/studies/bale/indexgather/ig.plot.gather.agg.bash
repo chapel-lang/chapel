@@ -4,32 +4,33 @@
 source $CHPL_HOME/util/test/chplExperimentGatherUtils/prelude.bash $@
 
 locales=( 2 4 8 16 32 64 128 256 512 1024)
-nodesPerLocale=2
 capLocales "$CHPLEXP_MAX_LOCALES"
+nodesPerLocale=2
 
 # -----------------------------------------------------------------------------
 # Build Chapel code
 # -----------------------------------------------------------------------------
-chpl --fast -M ../aggregation ig.chpl
+pushd ../aggregation
+chpl --fast ig.chpl -sN=10000000 -suseBlockArr=true
 
 # -----------------------------------------------------------------------------
 # Run Chapel trials
 # -----------------------------------------------------------------------------
-PROBLEM_SIZE=1000000
 for x in "${locales[@]}"; do
   runAndLog ./ig -nl ${x}x${CHPLEXP_NUM_SUBLOCALES}
 done
+popd
 
 # -----------------------------------------------------------------------------
 # Collect data; store in results.dat
 # -----------------------------------------------------------------------------
-data=$(cat $runLog | sed -r -n 's/MB\/s per node: //p')
+data=$(cat $runLog | sed -r -n 's/\s+AGG:.*seconds\s+//p' | cut -d' ' -f 1)
 set +x
 
-# data is reported in MB/s per node convert to total GB/s
+# data is reported in GB/s per node convert to total GB/s
 i=0; for x in ${data[@]}; do
   nl=${locales[i]}
-  scaled_data[i++]=$(echo "$x*$CHPLEXP_NUM_SUBLOCALES*$nl/1000" | bc -l)
+  scaled_data[i++]=$(echo "$x*$CHPLEXP_NUM_SUBLOCALES*$nl" | bc -l)
 done
 echo -e "\t$experimentName" > $datFile
 paste \

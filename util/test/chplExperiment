@@ -50,7 +50,7 @@ usage () {
   >&2 echo "  --paint-with  cmd     "
   >&2 echo "             run cmd after finishing all experiments"
   >&2 echo ""
-  >&2 echo "Experiments take the form:  name feats [--skip-if-errs cmd] [--no-build-chpl] [--prebuild cmd] cmd"
+  >&2 echo "Experiments take the form:  name feats [--skip-if-errs cmd] [--no-build-chpl] [--prebuild cmd] [--var x=y]* cmd"
   >&2 echo ""
   >&2 echo "  name                name of experiment (used to name log and dat files)"
   >&2 echo "  feats               colon separated list of features to pass to chplSetupEnv"
@@ -58,6 +58,7 @@ usage () {
   >&2 echo "                      a non-zero return code skip the experiment"
   >&2 echo "  --no-build-chpl     no need to build Chapel before running this experiment"
   >&2 echo "  --prebuild cmd      run specified command before building Chapel"
+  >&2 echo "  --var x=y           set environment variable 'x' to value 'y' before running the script"
   >&2 echo "  cmd                 comman to run after configuration and build"
 }
 
@@ -88,6 +89,7 @@ experiment_feats=()
 experiment_skipIfErrsCmd=()
 experiment_shouldBuildChpl=()
 experiment_prebuildCmd=()
+experiment_vars=()
 experiment_cmd=()
 while (( "$#" > 0 )); do
   if [[ $# -lt 3 ]]; then
@@ -100,6 +102,7 @@ while (( "$#" > 0 )); do
   feats=$1
   shift
 
+  vars=""
   skipIfErrsCmd=""
   prebuildCmd=""
   shouldBuildChpl="y"
@@ -114,6 +117,10 @@ while (( "$#" > 0 )); do
     elif [[ "$1" == "--prebuild" ]]; then
       shift
       prebuildCmd="$1"
+      shift
+    elif [[ "$1" == "--var" ]]; then
+      shift
+      vars+="$1 "
       shift
     else
       >&2 echo "Unknown argument $1"
@@ -131,6 +138,7 @@ while (( "$#" > 0 )); do
   experiment_shouldBuildChpl[${#experiment_shouldBuildChpl[@]}]="$shouldBuildChpl"
   experiment_prebuildCmd[${#experiment_prebuildCmd[@]}]="$prebuildCmd"
   experiment_cmd[${#experiment_cmd[@]}]="$cmd"
+  experiment_vars[${#experiment_vars[@]}]="$vars"
 done
 
 # -----------------------------------------------------------------------------
@@ -216,6 +224,7 @@ for i in "${!experiment_name[@]}"; do
   skipIfErrsCmd="${experiment_skipIfErrsCmd[i]}"
   shouldBuildChpl="${experiment_shouldBuildChpl[i]}"
   prebuildCmd="${experiment_prebuildCmd[i]}"
+  vars="${experiment_vars[i]}"
   cmd="${experiment_cmd[i]}"
   if [[ "$name" =~ ^__([[:alpha:]]+)__(.*)$ ]]; then
     nameOpt="${BASH_REMATCH[1]}"
@@ -266,6 +275,7 @@ for i in "${!experiment_name[@]}"; do
   skipIfErrsCmd="${experiment_skipIfErrsCmd[i]}"
   shouldBuildChpl="${experiment_shouldBuildChpl[i]}"
   prebuildCmd="${experiment_prebuildCmd[i]}"
+  vars="${experiment_vars[i]}"
   cmd="${experiment_cmd[i]}"
   if [[ "$name" =~ ^__([[:alpha:]]+)__(.*)$ ]]; then
     nameOpt="${BASH_REMATCH[1]}"
@@ -293,6 +303,18 @@ for i in "${!experiment_name[@]}"; do
   if [[ ! -z "$prebuildCmd" ]]; then
     echo "> $prebuildCmd"
     eval "$prebuildCmd"
+  fi
+  set +e
+
+  echo "VARS: ${vars}"
+  set -e
+  if [[ ! -z "$vars" ]]; then
+    for assignment in ${vars}; do
+      varName=$(echo "$assignment" | cut -d "=" -f 1)
+      varVal=$(echo "$assignment" | cut -d "=" -f 2)
+      echo "> export $varName=$varVal"
+      export $varName=$varVal
+    done
   fi
   set +e
 
@@ -366,6 +388,17 @@ for i in "${!experiment_name[@]}"; do
   echo -e "--------------------------------------------------------------------------------"
   echo "> cat $datFile"
   cat "$datFile"
+
+  # Unset variables set for the experiment
+  set -e
+  if [[ ! -z "$vars" ]]; then
+    for assignment in ${vars}; do
+      varName=$(echo "$assignment" | cut -d "=" -f 1)
+      varVal=$(echo "$assignment" | cut -d "=" -f 2)
+      unset $varName
+    done
+  fi
+  set +e
 done
 
 # Run paint script if one was specified

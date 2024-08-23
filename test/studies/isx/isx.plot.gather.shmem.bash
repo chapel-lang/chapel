@@ -7,24 +7,42 @@ locales=( 2 4 8 16 32 64 128 256 512 1024)
 capLocales "$CHPLEXP_MAX_LOCALES"
 
 # -----------------------------------------------------------------------------
-# Build Chapel code
+# Download
 # -----------------------------------------------------------------------------
-chpl --fast isx.chpl
+if [ ! -d "ISx" ]; then
+  git clone https://github.com/ParRes/ISx.git
+  pushd ISx/SHMEM
+  git checkout 18a647a
+  sed -i.bak 's/-std=c99/-std=c11/g' ./Makefile
+  sed -i.bak 's/CC = oshcc/CC = cc/g' ./Makefile
+  popd
+fi
+
+# -----------------------------------------------------------------------------
+# Build
+# -----------------------------------------------------------------------------
+pushd ISx/SHMEM
+make clean; make optimized CFLAGS='-O3 -DNDEBUG -mavx'
+pushd bin
 
 # -----------------------------------------------------------------------------
 # Run Chapel trials
 # -----------------------------------------------------------------------------
+export SHMEM_SYMMETRIC_SIZE=1GB
+#PROBLEM_SIZE=$((2**34))
+PROBLEM_SIZE=67108864
 for x in "${locales[@]}"; do
-  runAndLog ./isx -nl $x --mode=weakISO --useSubTimers=true
+  rm -f ./out.txt
+  NUM_TASKS=$(($x*128))
+  runAndLog srun --nodes $x --exclusive --ntasks=$NUM_TASKS --ntasks-per-node=128 ./isx.weak_iso $PROBLEM_SIZE out.txt
+  cat out.txt
 done
 
 # -----------------------------------------------------------------------------
 # Collect data; store in results.dat
 # -----------------------------------------------------------------------------
-data=$(cat $runLog | sed -r -n 's/total = //p' | cut -f 1 -d' ')
+data=$(cat $runLog | sed -r -n 's/Average total time \(per PE\): //p' | cut -f 1 -d' ')
 set +x
-
-# data is reported in GB/s convert to MB/s
 echo -e "\t$experimentName" > $datFile
 paste \
   <(printf "%s\n" "${locales[@]}") \
