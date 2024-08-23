@@ -1,1 +1,1 @@
- --using-attribute-toolname chplcheck --stop-after-pass=parseAndConvertUast
+ --stop-after-pass=parseAndConvertUast
