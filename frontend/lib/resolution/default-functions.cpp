@@ -161,6 +161,10 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
     if (name == "eltType") {
       return true;
     }
+  } else if (type->isEnumType()) {
+    if (name == "size") {
+      return true;
+    }
   }
 
   return false;
@@ -835,6 +839,47 @@ generateCPtrMethod(Context* context, QualifiedType receiverType,
   return result;
 }
 
+static const TypedFnSignature*
+generateEnumMethod(Context* context,
+                   const EnumType* et,
+                   UniqueString name) {
+  const TypedFnSignature* result = nullptr;
+  if (name == USTR("size")) {
+    // Build a basic function signature for methods on an array
+    // TODO: we should really have a way to just set the return type here
+    std::vector<UntypedFnSignature::FormalDetail> formals;
+    std::vector<QualifiedType> formalTypes;
+
+    formals.push_back(
+        UntypedFnSignature::FormalDetail(USTR("this"),
+          UntypedFnSignature::DK_NO_DEFAULT,
+          nullptr));
+    formalTypes.push_back(QualifiedType(QualifiedType::TYPE, et));
+
+    auto ufs = UntypedFnSignature::get(context,
+        /*id*/ et->id(),
+        /*name*/ name,
+        /*isMethod*/ true,
+        /*isTypeConstructor*/ false,
+        /*isCompilerGenerated*/ true,
+        /*throws*/ false,
+        /*idTag*/ parsing::idToTag(context, et->id()),
+        /*kind*/ uast::Function::Kind::PROC,
+        /*formals*/ std::move(formals),
+        /*whereClause*/ nullptr);
+
+    // now build the other pieces of the typed signature
+    result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+        TypedFnSignature::WHERE_NONE,
+        /* needsInstantiation */ false,
+        /* instantiatedFrom */ nullptr,
+        /* parentFn */ nullptr,
+        /* formalsInstantiated */ Bitmap());
+  }
+
+  return result;
+}
+
 static const TypedFnSignature* const&
 getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
                                 UniqueString name, bool parenless) {
@@ -846,7 +891,7 @@ getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
 
   if (needCompilerGeneratedMethod(context, type, name, parenless)) {
     auto compType = type->getCompositeType();
-    CHPL_ASSERT(compType || type->isCPtrType());
+    CHPL_ASSERT(compType || type->isCPtrType() || type->isEnumType());
 
     if (name == USTR("init")) {
       result = generateInitSignature(context, compType);
@@ -874,6 +919,8 @@ getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
       }
     } else if (type->isCPtrType()) {
       result = generateCPtrMethod(context, receiverType, name);
+    } else if (auto enumType = type->toEnumType()) {
+      result = generateEnumMethod(context, enumType, name);
     } else {
       CHPL_UNIMPL("should not be reachable");
     }

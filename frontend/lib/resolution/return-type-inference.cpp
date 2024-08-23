@@ -928,9 +928,29 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
     }
       return true;
   } else if (untyped->isMethod() && sig->formalType(0).type()->isCPtrType() && untyped->name() == "eltType") {
-      auto cpt = sig->formalType(0).type()->toCPtrType();
-      result = QualifiedType(QualifiedType::TYPE, cpt->eltType());
+    auto cpt = sig->formalType(0).type()->toCPtrType();
+    result = QualifiedType(QualifiedType::TYPE, cpt->eltType());
+    return true;
+  } else if (untyped->isMethod() && sig->formalType(0).type()->isEnumType()) {
+    auto enumType = sig->formalType(0).type()->toEnumType();
+    if (untyped->name() == "size") {
+      auto ast = parsing::idToAst(context, enumType->id())->toEnum();
+      CHPL_ASSERT(ast);
+
+      // There doesn't seem to be a way to get the number of elements in an
+      // enum type directly, so we have to count them ourselves.
+      int numElts = 0;
+      for (auto elt : ast->enumElements()) {
+        (void) elt;
+        numElts++;
+      }
+
+      result = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
+                             IntParam::get(context, numElts));
       return true;
+    }
+    CHPL_ASSERT(false && "unhandled compiler-generated enum method");
+    return true;
   } else {
     CHPL_ASSERT(false && "unhandled compiler-generated record method");
     return true;
