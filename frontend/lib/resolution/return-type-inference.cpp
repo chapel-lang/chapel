@@ -848,6 +848,58 @@ static const bool& fnAstReturnsNonVoid(Context* context, ID fnId) {
   return QUERY_END(result);
 }
 
+static bool helpComputeOrderToEnumReturnType(Context* context,
+                                             const TypedFnSignature* sig,
+                                             QualifiedType& result) {
+  auto firstQt = sig->formalType(0);
+  auto secondQt = sig->formalType(1);
+
+  CHPL_ASSERT(secondQt.type() && secondQt.type()->isEnumType());
+  auto kind = QualifiedType::CONST_VAR;
+  const EnumType* et = secondQt.type()->toEnumType();
+  const Type* type = et;
+  const Param* param = nullptr;
+
+  if (firstQt.isParam()) {
+    auto inputParam = firstQt.param();
+    CHPL_ASSERT(inputParam);
+    kind = QualifiedType::PARAM;
+
+    // Use max value of int64 to represent the fact that the ordinal
+    // is invalid (we will run out of enum elements to investigate before
+    // we reach this value).
+    int64_t whichValue = std::numeric_limits<int64_t>::max();
+    if (auto intParam = inputParam->toIntParam()) {
+      if (intParam->value() >= 0) {
+        whichValue = intParam->value();
+      }
+    } else if (auto uintParam = inputParam->toUintParam()) {
+      whichValue = uintParam->value();
+    } else {
+      CHPL_ASSERT(false && "param value should've been integral");
+    }
+
+    auto ast =
+      parsing::idToAst(context, et->id())->toEnum();
+    int counter = 0;
+    for (auto elem : ast->enumElements()) {
+      if (counter == whichValue) {
+        param = EnumParam::get(context, elem->id());
+        break;
+      }
+      counter++;
+    }
+
+    if (!param) {
+      context->error(ast, "ordinal value out of range");
+      type = ErroneousType::get(context);
+    }
+  }
+
+  result = QualifiedType(kind, type, param);
+  return true;
+}
+
 static bool helpComputeCompilerGeneratedReturnType(Context* context,
                                                    const TypedFnSignature* sig,
                                                    const PoiScope* poiScope,
@@ -953,54 +1005,7 @@ static bool helpComputeCompilerGeneratedReturnType(Context* context,
     return true;
   } else if (!untyped->isMethod()) {
     if (untyped->name() == "chpl__orderToEnum") {
-      auto firstQt = sig->formalType(0);
-      auto secondQt = sig->formalType(1);
-      (void) firstQt;
-
-      CHPL_ASSERT(secondQt.type() && secondQt.type()->isEnumType());
-      auto kind = QualifiedType::CONST_VAR;
-      const EnumType* et = secondQt.type()->toEnumType();
-      const Type* type = et;
-      const Param* param = nullptr;
-
-      if (firstQt.isParam()) {
-        auto inputParam = firstQt.param();
-        CHPL_ASSERT(inputParam);
-        kind = QualifiedType::PARAM;
-
-        // Use max value of int64 to represent the fact that the ordinal
-        // is invalid (we will run out of enum elements to investigate before
-        // we reach this value).
-        int64_t whichValue = std::numeric_limits<int64_t>::max();
-        if (auto intParam = inputParam->toIntParam()) {
-          if (intParam->value() >= 0) {
-            whichValue = intParam->value();
-          }
-        } else if (auto uintParam = inputParam->toUintParam()) {
-          whichValue = uintParam->value();
-        } else {
-          CHPL_ASSERT(false && "param value should've been integral");
-        }
-
-        auto ast =
-          parsing::idToAst(context, et->id())->toEnum();
-        int counter = 0;
-        for (auto elem : ast->enumElements()) {
-          if (counter == whichValue) {
-            param = EnumParam::get(context, elem->id());
-            break;
-          }
-          counter++;
-        }
-
-        if (!param) {
-          context->error(ast, "ordinal value out of range");
-          type = ErroneousType::get(context);
-        }
-      }
-
-      result = QualifiedType(kind, type, param);
-      return true;
+      return helpComputeOrderToEnumReturnType(context, sig, result);
     }
     CHPL_ASSERT(false && "unhandled compiler-generated function");
     return true;
