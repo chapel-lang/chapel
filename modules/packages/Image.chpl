@@ -575,12 +575,14 @@ module Image {
       const (writeFunc, context, width, height, mode, data) = writeCommon(outfile, pixels);
       const stride = width * mode;
       stbi_write_png_to_func(writeFunc, context, width, height, mode, data, stride);
+      deallocate(data);
     }
 
     proc writeJpg(const ref outfile: fileWriter(?), pixels: [?dom]) throws {
       const (writeFunc, context, width, height, mode, data) = writeCommon(outfile, pixels);
       const quality: c_int = 100;
       stbi_write_jpg_to_func(writeFunc, context, width, height, mode, data, quality);
+      deallocate(data);
     }
 
 
