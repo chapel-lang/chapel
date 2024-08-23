@@ -57,12 +57,16 @@ static bool isNameOfCompilerGeneratedMethod(UniqueString name) {
 }
 
 static bool
-areOverloadsPresentInDefiningScope(Context* context, const Type* type,
+areOverloadsPresentInDefiningScope(Context* context,
+                                   const Type* type,
+                                   QualifiedType::Kind kind,
                                    UniqueString name) {
   const Scope* scopeForReceiverType = nullptr;
 
   if (auto compType = type->getCompositeType()) {
     scopeForReceiverType = scopeForId(context, compType->id());
+  } else if (auto enumType = type->toEnumType()) {
+    scopeForReceiverType = scopeForId(context, enumType->id());
   }
 
   // there is no defining scope
@@ -78,7 +82,7 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
   // nothing found
   if (vec.size() == 0) return false;
 
-  auto haveQt = QualifiedType(QualifiedType::INIT_RECEIVER, type);
+  auto haveQt = QualifiedType(kind, type);
 
   // loop through IDs and see if any are methods or operators (method or
   // standalone) on the same type
@@ -130,7 +134,7 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
 
   if (isNameOfCompilerGeneratedMethod(name) ||
       (type->isRecordType() && !isBuiltinTypeOperator(name))) {
-    if (!areOverloadsPresentInDefiningScope(context, type, name)) {
+    if (!areOverloadsPresentInDefiningScope(context, type, QualifiedType::INIT_RECEIVER, name)) {
       return true;
     }
   }
@@ -239,7 +243,7 @@ static void buildInitArgs(Context* context,
         // TODO: It would be nice to be able to generate a nice error message
         //   for the user if they try and pass arguments for the parent in
         //   this case.
-        if (!areOverloadsPresentInDefiningScope(context, parentReceiver, USTR("init"))) {
+        if (!areOverloadsPresentInDefiningScope(context, parentReceiver, QualifiedType::INIT_RECEIVER, USTR("init"))) {
           const DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
           auto& rf = fieldsForTypeDecl(context, parent, defaultsPolicy);
           buildInitArgs(context, parent, rf, ufsFormals, formalTypes);
@@ -844,7 +848,8 @@ generateEnumMethod(Context* context,
                    const EnumType* et,
                    UniqueString name) {
   const TypedFnSignature* result = nullptr;
-  if (name == USTR("size")) {
+  if (name == USTR("size") &&
+      !areOverloadsPresentInDefiningScope(context, et, QualifiedType::TYPE, name)) {
     // Build a basic function signature for methods on an array
     // TODO: we should really have a way to just set the return type here
     std::vector<UntypedFnSignature::FormalDetail> formals;
