@@ -382,7 +382,7 @@ proc chpl_check_comparator(comparator,
 
   if comparator.type == DefaultComparator {}
   else if isSubtype(comparator.type, ReverseComparator) {
-    return chpl_check_comparator(comparator.comparator, eltType, errorDepth+1, false);
+    return chpl_check_comparator(comparator.comparator, eltType, errorDepth+1);
   }
   // Check for valid comparator methods
   else if canResolveMethod(comparator, "key", data) {
@@ -437,8 +437,15 @@ proc chpl_check_comparator(comparator,
       if !(isInt(expectIntUint) || isUint(expectIntUint)) then
         compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with element 1 of type int(?) or uint(?) when used with ", eltType:string, " elements");
     } else {
-      if doDeprecationCheck then
-        compilerWarning(errorDepth=errorDepth, "Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record "+ comparator.type:string + ": keyPartComparator').");
+      if doDeprecationCheck {
+        param atType = if isRecord(comparator) then "record" else "class";
+        param fixString = "'" + atType + " " +
+                              comparator.type:string + ": keyPartComparator'";
+        compilerWarning(errorDepth=errorDepth,
+          "Defining a comparator with a 'keyPart' method without " +
+          "implementing the keyPartComparator interface is deprecated. " +
+          "Please implement the keyPartComparator interface (i.e. " + fixString + ").");
+      }
 
       var idx: int = 0;
       type partType = comparator.keyPart(data, idx).type;
@@ -3391,7 +3398,9 @@ private inline proc reverseKeyPartStatus(status) do
 interface keyPartComparator {
   /*
   proc Self.keyPart(elt, i: int): (keyPartStatus, integral);
-  proc Self.compare(x, y: x.type): int {
+
+  // return type must be signed integral
+  proc Self.compare(x, y: x.type) {
     if x < y      then return -1;
     else if y < x then return 1;
     else          return 0;
@@ -3741,8 +3750,6 @@ record ReverseComparator: keyPartComparator {
    */
   proc init(comparator) {
     this.comparator = comparator;
-    if !comparatorImplementsKeyPart(this.comparator) then
-      compilerWarning("Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record "+ this.comparator.type:string + ": keyPartComparator').");
   }
 
   /*
