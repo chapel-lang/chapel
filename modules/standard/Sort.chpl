@@ -356,6 +356,7 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
             canResolveMethod(comparator, "keyPart", a, 0) {
     return compareByPart(a, b, comparator);
   } else {
+    // TODO: this should talk about interfaces
     compilerError("The comparator " + comparator.type:string + " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method");
   }
 }
@@ -385,12 +386,14 @@ proc chpl_check_comparator(comparator,
   }
   // Check for valid comparator methods
   else if canResolveMethod(comparator, "key", data) {
+    // TODO: check for keyComparator
     // Check return type of key
     const keydata = comparator.key(data);
     type keytype = keydata.type;
     if !(canResolve("<", keydata, keydata)) then
       compilerError(errorDepth=errorDepth, "The key method in ", comparator.type:string, " must return an object that supports the '<' function when used with ", eltType:string, " elements");
 
+    // TODO: this should check that multiple interfaces are not implemented as well
     // Check that there isn't also a compare or keyPart
     if canResolveMethod(comparator, "compare", data, data) {
       compilerError(errorDepth=errorDepth, comparator.type:string, " contains both a key method and a compare method");
@@ -400,6 +403,7 @@ proc chpl_check_comparator(comparator,
     }
   }
   else if canResolveMethod(comparator, "compare", data, data) {
+    // TODO: check for keyPartComparator or relativeComparator
     // Check return type of compare
     type comparetype = comparator.compare(data, data).type;
     if !(isNumericType(comparetype)) then
@@ -450,6 +454,7 @@ proc chpl_check_comparator(comparator,
     }
   }
   else {
+    // TODO: this error should talk about interfaces
     // If we make it this far, the passed comparator was defined incorrectly
     compilerError(errorDepth=errorDepth, "The comparator " + comparator.type:string + " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method " + " for element type " + eltType:string );
   }
