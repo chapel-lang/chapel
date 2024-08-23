@@ -2381,6 +2381,8 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
         auto result = resolveGeneratedCall(context, call, ci, inScopes);
 
         handleResolvedCall(r, call, ci, result);
+        // Use the init call type as a TYPE value
+        r.setType(QualifiedType(QualifiedType::TYPE, r.type().type()));
         // return result;
       // });
 
