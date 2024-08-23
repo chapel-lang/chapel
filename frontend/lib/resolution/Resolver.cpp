@@ -3799,10 +3799,51 @@ bool Resolver::enter(const uast::Domain* decl) {
 }
 
 void Resolver::exit(const uast::Domain* decl) {
+  const DomainType* genericDomainType = DomainType::getGenericDomainType(context);
+  if (CompositeType::isMissingBundledRecordType(context, genericDomainType->id())) {
+    // If we don't have the standard library code backing the Domain type, leave
+    // it unresolved.
+    return;
+  }
+
   if (decl->numExprs() == 0) {
+    // Generic domain, as in a generic-domain array
     auto& re = byPostorder.byAst(decl);
-    auto dt = QualifiedType(QualifiedType::CONST_VAR, DomainType::getGenericDomainType(context));
+    auto dt = QualifiedType(QualifiedType::CONST_VAR, genericDomainType);
     re.setType(dt);
+  } else {
+    // Call appropriate domain builder proc. Use ensureDomainExpr when the
+    // domain is declared without curly braces (within an array type).
+    const char* domainBuilderProc = decl->usedCurlyBraces()
+                                        ? "chpl__buildDomainExpr"
+                                        : "chpl__ensureDomainExpr";
+
+    // Add key or range actuals
+    std::vector<CallInfoActual> actuals;
+    for (auto expr : decl->exprs()) {
+      actuals.emplace_back(byPostorder.byAst(expr).type(), UniqueString());
+    }
+
+    // Add definedConst actual if appropriate
+    if (decl->usedCurlyBraces()) {
+      actuals.emplace_back(
+          QualifiedType(QualifiedType::PARAM, BoolType::get(context),
+                        BoolParam::get(context, true)),
+          UniqueString());
+    }
+
+    auto ci = CallInfo(/* name */ UniqueString::get(context, domainBuilderProc),
+                       /* calledType */ QualifiedType(),
+                       /* isMethodCall */ false,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ false,
+                       actuals);
+    auto scope = scopeStack.back();
+    auto inScopes = CallScopeInfo::forNormalCall(scope, poiScope);
+    auto c = resolveGeneratedCall(context, decl, ci, inScopes);
+
+    ResolvedExpression& r = byPostorder.byAst(decl);
+    handleResolvedCall(r, decl, ci, c);
   }
 }
 

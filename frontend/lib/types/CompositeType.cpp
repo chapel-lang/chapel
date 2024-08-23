@@ -257,6 +257,7 @@ bool CompositeType::isMissingBundledRecordType(Context* context, ID id) {
            id == TupleType::getGenericTupleType(context)->id() ||
            id == CompositeType::getBytesType(context)->id() ||
            id == CompositeType::getDistributionType(context)->id() ||
+           id == DomainType::getGenericDomainType(context)->id() ||
            path == "OwnedObject._owned" ||
            path == "SharedObject._shared";
   }
