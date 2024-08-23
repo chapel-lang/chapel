@@ -850,7 +850,6 @@ generateEnumMethod(Context* context,
   const TypedFnSignature* result = nullptr;
   if (name == USTR("size") &&
       !areOverloadsPresentInDefiningScope(context, et, QualifiedType::TYPE, name)) {
-    // Build a basic function signature for methods on an array
     // TODO: we should really have a way to just set the return type here
     std::vector<UntypedFnSignature::FormalDetail> formals;
     std::vector<QualifiedType> formalTypes;
