@@ -7,3 +7,4 @@ Test3D
 LocalIOStore_*
 TestLocal
 TestTargetLocale
+TestNoCompressorSpecified
