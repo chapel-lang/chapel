@@ -172,6 +172,8 @@ LocaleModelHelpRuntime
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpRuntime
 LocaleModelHelpFlat
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat
+Allocators
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpMem.Allocators
 LocaleModelHelpMem
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpMem
 LocaleModel

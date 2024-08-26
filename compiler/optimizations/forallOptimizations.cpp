@@ -1077,7 +1077,7 @@ ALACandidate::ALACandidate(CallExpr *call, ForallStmt *forall, bool checkArgs):
 
     // Prevent making changes to `new C[i]`
     if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
-      if (parentCall->isPrimitive(PRIM_NEW)) { return; }
+      if (isNewLike(parentCall)) { return; }
     }
 
     // don't analyze further if the call base is a yielded symbol
