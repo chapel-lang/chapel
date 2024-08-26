@@ -165,7 +165,7 @@ OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
   }
 
   if (BorrowedIdsWithName::isIdVisible(idv_, filterFlags, excludeFlagSet)) {
-    return BorrowedIdsWithName(*this, idv_, filterFlags, excludeFlagSet);
+    return BorrowedIdsWithName(*this, filterFlags, excludeFlagSet);
   }
   // The first ID isn't visible; are others?
   if (moreIdvs_.get() == nullptr) {
@@ -179,7 +179,7 @@ OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
       excludeFlagSet.noneMatch(flagsOr_)) {
     // filter does not rule out anything in the OwnedIds,
     // so we can return a match.
-    return BorrowedIdsWithName(*this, idv_, filterFlags, excludeFlagSet);
+    return BorrowedIdsWithName(*this, filterFlags, excludeFlagSet);
   }
 
   // Otherwise, use a loop to decide if we can borrow
@@ -188,50 +188,39 @@ OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
       continue;
 
     // Found a visible ID! Return a BorrowedIds referring to the whole thing
-    return BorrowedIdsWithName(*this, idv, filterFlags, excludeFlagSet);
+    return BorrowedIdsWithName(*this, filterFlags, excludeFlagSet);
   }
 
   // No ID was visible, so we can't borrow.
   return chpl::empty;
 }
 
-int BorrowedIdsWithName::countVisibleIds(IdAndFlags::Flags flagsAnd,
-                                         IdAndFlags::Flags flagsOr) {
-  if (moreIdvs_ == nullptr) {
-    return 1;
+void BorrowedIdsWithName::appendIdsFromOwned(const OwnedIdsWithName& ownedIds,
+                                             IdAndFlags::Flags filterFlags,
+                                             const IdAndFlags::FlagSet& excludeFlagSet){
+  const IdAndFlags* beginIds = nullptr;
+  const IdAndFlags* endIds = nullptr;
+  if (ownedIds.moreIdvs_ == nullptr) {
+    beginIds = &ownedIds.idv_;
+    endIds = beginIds + 1;
+  } else {
+    const IdAndFlags* last = nullptr;
+    beginIds = &ownedIds.moreIdvs_->front();
+    last = &ownedIds.moreIdvs_->back();
+    endIds = last + 1;
   }
 
-  // if the current filter is a subset of flagsAnd, then all of the
-  // found symbols will included in this borrowedIds, so we don't have
-  // to consider them individually.
-  if ((flagsAnd & filterFlags_) == filterFlags_ &&
-      excludeFlagSet_.noneMatch(flagsOr)) {
-    // all of the found symbols will match
-    return moreIdvs_->size();
-  }
-
-  // Otherwise, consider the individual IDs to count those that are included.
-  int count = 0;
-  for (const auto& idv : *moreIdvs_) {
-    if (isIdVisible(idv)) {
-      count += 1;
+  for (auto cur = beginIds; cur != endIds; ++cur) {
+    if (isIdVisible(*cur, filterFlags, excludeFlagSet)) {
+      idvs_.push_back(*cur);
     }
   }
-  return count;
 }
 
 bool BorrowedIdsWithName::containsOnlyMethodsOrFields() const {
-  if (moreIdvs_ == nullptr) {
-    if (isIdVisible(idv_)) {
-      return idv_.isMethodOrField();
-    }
-  }
-
-  for (const auto& idv : *moreIdvs_) {
-    if (isIdVisible(idv)) {
-      if (!idv.isMethodOrField()) {
-        return false;
-      }
+  for (const auto& idv : idvs_) {
+    if (!idv.isMethodOrField()) {
+      return false;
     }
   }
 
