@@ -2155,7 +2155,8 @@ static void cleanupPrimitives() {
     } else if(callExpr->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK)) {
       auto parentBlock = toBlockStmt(callExpr->parentExpr);
       INT_ASSERT(parentBlock);
-      parentBlock->remove();
+      parentBlock->flattenAndRemove();
+      callExpr->remove();
     }
   }
 }
