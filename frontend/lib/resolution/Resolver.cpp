@@ -1016,8 +1016,10 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
 
         // get the substitution for that field from the CompositeType
         // and recurse with the result to set types for nested TypeQuery nodes
-        const uast::Decl* field = fa->formal();
+        auto formal = fa->formal()->toNamedDecl();
         const SubstitutionsMap& subs = actualCt->substitutions();
+        auto ad = parsing::idToAst(context, actualCt->id())->toAggregateDecl();
+        auto field = findFieldByName(context, ad, actualCt, formal->name());
         auto search = subs.find(field->id());
         if (search != subs.end()) {
           QualifiedType fieldType = search->second;
@@ -1423,11 +1425,34 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       // for 'this' formals of class type, adjust them to be borrowed, so
       // e.g. proc C.foo() { } has 'this' of type 'borrowed C'.
       // This should not apply to parenthesized expressions.
+      //
+      // An exception to this is when we are looking at a type method or
+      // a parenless, type- or param returning method. In that case, the
+      // decorator is 'anymanaged any-nilable', not borrowed nonnil.
       bool identOrNoTypeExpr = !typeExpr || typeExpr->isIdentifier();
       bool isClassType = typeExprT.type() && typeExprT.type()->isClassType();
       if (isFormalThis && isClassType && identOrNoTypeExpr) {
-        auto ct = typeExprT.type()->toClassType();
         auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+        bool useFullyGenericDecorator = false;
+
+        if (auto varLikeDecl = decl->toVarLikeDecl()) {
+          useFullyGenericDecorator |=
+            varLikeDecl->storageKind() == QualifiedType::TYPE;
+        }
+
+        if (symbol && symbol->isFunction()) {
+          auto fn = symbol->toFunction();
+          useFullyGenericDecorator |=
+            (fn->returnIntent() == Function::TYPE ||
+             fn->returnIntent() == Function::PARAM) &&
+            fn->isParenless();
+        }
+
+        if (useFullyGenericDecorator) {
+          dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC);
+        }
+
+        auto ct = typeExprT.type()->toClassType();
         typeExprT = QualifiedType(typeExprT.kind(),
                                   ct->withDecorator(context, dec),
                                   typeExprT.param());
@@ -2365,11 +2390,13 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
 
   if (id.isFabricatedId()) {
     switch (id.fabricatedIdKind()) {
-      case ID::ExternBlockElement:
-      // TODO: resolve types for extern block
-      // (will need the Identifier name for that)
-      auto unknownType = UnknownType::get(context);
-      return QualifiedType(QualifiedType::UNKNOWN, unknownType);
+      case ID::ExternBlockElement: {
+        // TODO: resolve types for extern block
+        // (will need the Identifier name for that)
+        auto unknownType = UnknownType::get(context);
+        return QualifiedType(QualifiedType::UNKNOWN, unknownType);
+      }
+      case ID::Generated: break;
     }
   }
 
@@ -3910,7 +3937,8 @@ void Resolver::exit(const Dot* dot) {
     // Try to resolve a it as a field/parenless proc so we can resolve 'this' on
     // it later if needed.
     if (!receiver.type().isUnknown() && receiver.type().type() &&
-        receiver.type().type()->isCompositeType()) {
+        receiver.type().type()->isCompositeType() &&
+        dot->field() != "init") {
       std::vector<CallInfoActual> actuals;
       actuals.push_back(CallInfoActual(receiver.type(), USTR("this")));
       auto ci = CallInfo(/* name */ dot->field(),

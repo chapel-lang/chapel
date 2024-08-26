@@ -192,19 +192,56 @@ introspectParsedFiles(Context* context) {
   return toReturn;
 }
 
+static const BuilderResult&
+compilerGeneratedBuilderQuery(Context* context, UniqueString symbolPath) {
+  QUERY_BEGIN(compilerGeneratedBuilderQuery, context, symbolPath);
+
+  BuilderResult ret;
+
+  return QUERY_END(ret);
+}
+
 // parses whatever file exists that contains the passed ID and returns it
 const BuilderResult*
 parseFileContainingIdToBuilderResult(Context* context, ID id) {
-  UniqueString path;
-  UniqueString parentSymbolPath;
-  bool found = context->filePathForId(id, path, parentSymbolPath);
-  if (found) {
-    const BuilderResult& p = parseFileToBuilderResult(context, path,
-                                                      parentSymbolPath);
-    return &p;
-  }
+  if (id.isFabricatedId() &&
+      id.fabricatedIdKind() == ID::FabricatedIdKind::Generated) {
+    // Find the generated module's symbol path
+    UniqueString symbolPath;
+    if (id.symbolName(context).startsWith("chpl__generated")) {
+      symbolPath = id.symbolPath();
+    } else {
+      symbolPath = ID::parentSymbolPath(context, id.symbolPath());
 
-  return nullptr;
+      // Assumption: The generated module goes only one symbol deep.
+      CHPL_ASSERT(ID::innermostSymbolName(context, symbolPath).startsWith("chpl__generated"));
+    }
+
+    const BuilderResult& br = getCompilerGeneratedBuilder(context, symbolPath);
+    assert(br.numTopLevelExpressions() != 0);
+    return &br;
+  } else  {
+    UniqueString path;
+    UniqueString parentSymbolPath;
+    bool found = context->filePathForId(id, path, parentSymbolPath);
+    if (found) {
+      const BuilderResult& p = parseFileToBuilderResult(context, path,
+                                                        parentSymbolPath);
+      return &p;
+    }
+
+    return nullptr;
+  }
+}
+
+const BuilderResult&
+getCompilerGeneratedBuilder(Context* context, UniqueString symbolPath) {
+  return compilerGeneratedBuilderQuery(context, symbolPath);
+}
+
+void setCompilerGeneratedBuilder(Context* context, UniqueString symbolPath,
+                                 BuilderResult result) {
+  QUERY_STORE_RESULT(compilerGeneratedBuilderQuery, context, result, symbolPath);
 }
 
 void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {

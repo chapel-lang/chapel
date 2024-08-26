@@ -20,7 +20,7 @@ writeln(i);
     ("second thing");
 
   // the only fixit here is ignore, don't know the indentation level
-  @chplcheck.ignore("MisleadingIndentation")
+  @chplcheck.ignore("IncorrectIndentation")
   for i in 1..10 do
   writeln(i);
   writeln("second thing");

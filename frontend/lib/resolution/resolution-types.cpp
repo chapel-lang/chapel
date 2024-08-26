@@ -81,16 +81,18 @@ UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           asttags::AstTag idTag,
                                           uast::Function::Kind kind,
                                           std::vector<FormalDetail> formals,
-                                          const AstNode* whereClause) {
+                                          const AstNode* whereClause,
+                                          ID compilerGeneratedOrigin) {
   QUERY_BEGIN(getUntypedFnSignature, context,
               id, name, isMethod, isTypeConstructor, isCompilerGenerated,
-               throws, idTag, kind, formals, whereClause);
+               throws, idTag, kind, formals, whereClause, compilerGeneratedOrigin);
 
   owned<UntypedFnSignature> result =
     toOwned(new UntypedFnSignature(id, name,
                                    isMethod, isTypeConstructor,
                                    isCompilerGenerated, throws, idTag, kind,
-                                   std::move(formals), whereClause));
+                                   std::move(formals), whereClause,
+                                   compilerGeneratedOrigin));
 
   return QUERY_END(result);
 }
@@ -105,11 +107,13 @@ UntypedFnSignature::get(Context* context, ID id,
                         asttags::AstTag idTag,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
-                        const uast::AstNode* whereClause) {
+                        const uast::AstNode* whereClause,
+                        ID compilerGeneratedOrigin) {
   return getUntypedFnSignature(context, id, name,
                                isMethod, isTypeConstructor,
                                isCompilerGenerated, throws, idTag, kind,
-                               std::move(formals), whereClause).get();
+                               std::move(formals), whereClause,
+                               compilerGeneratedOrigin).get();
 }
 
 static const UntypedFnSignature*
@@ -737,7 +741,76 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   return true;
 }
 
-void ResolvedFields::finalizeFields(Context* context) {
+static bool
+syncaticallyGenericFieldsPriorToIdHaveSubs(Context* context,
+                                           const CompositeType* ct,
+                                           ID fieldId) {
+  // Compute the fields without types so that we can iterate the fields.
+  auto& fieldsForOrder = fieldsForTypeDecl(context, ct, DefaultsPolicy::IGNORE_DEFAULTS,
+                                           /* syntaxOnly */ true);
+  for (int i = 0; i < fieldsForOrder.numFields(); i++) {
+    auto ithField = fieldsForOrder.fieldDeclId(i);
+    if (ithField == fieldId) {
+      // We haven't found a generic field without a sub, so we can stop.
+      return true;
+    }
+
+    // Skip over concrete types, since they don't need substitutions.
+    if (!isFieldSyntacticallyGeneric(context, ithField, nullptr))
+      continue;
+
+    // Found a generic type without a substitution.
+    if (ct->substitutions().find(ithField) == ct->substitutions().end()) {
+      return false;
+    }
+  }
+
+  CHPL_ASSERT(false && "fieldId was not in the composite type!");
+  return true;
+}
+
+
+void ResolvedFields::validateFieldGenericity(Context* context, const types::CompositeType* fieldsOfType) const {
+  // Check if all fields preceding the current field have substitutions.
+  // We do this in case this ResolvedFields is computed for a particular
+  // (multi)decl, and thus its first field is not actually the first in the
+  // fieldsOfType.
+  //
+  // We want to skip checking for genericity if some preceding generic fields
+  // haven't been instantiated, since this means the type may be a partial
+  // instantiation.
+
+  if (fields_.empty()) {
+    return;
+  }
+
+  if (!syncaticallyGenericFieldsPriorToIdHaveSubs(context, fieldsOfType, fields_[0].declId)) {
+    return;
+  }
+
+  for (auto& field : fields_) {
+    auto isGeneric = isFieldSyntacticallyGeneric(context, field.declId, nullptr);
+    if (!isGeneric) {
+      // Check if the type is actually concrete according to the type we have stored.
+      std::set<const Type*> ignore = {fieldsOfType};
+      auto g = getTypeGenericityIgnoring(context, field.type, ignore);
+      if (g != Type::CONCRETE) {
+        auto ast = parsing::idToAst(context, field.declId)->toDecl();
+        CHPL_REPORT(context, SyntacticGenericityMismatch, ast, g, Type::CONCRETE, field.type);
+      }
+    } else {
+      // Type is syntactically generic. If it doesn't have a substitution,
+      // the type may be partially instantiated, so the remaining fields,
+      // which may eventually be concrete, might not be at this time, and that's
+      // not an error.
+      if (fieldsOfType->substitutions().find(field.declId) == fieldsOfType->substitutions().end()) {
+        break;
+      }
+    }
+  }
+}
+
+void ResolvedFields::finalizeFields(Context* context, bool syntaxOnly) {
   bool anyGeneric = false ;
   bool allGenHaveDefault = true; // all generic fields have default init
                                  // -- vacuously true if there are no generic
@@ -747,7 +820,25 @@ void ResolvedFields::finalizeFields(Context* context) {
 
   // look at the fields and compute the summary information
   for (const auto& field : fields_) {
-    auto g = getTypeGenericityIgnoring(context, field.type, ignore);
+    Type::Genericity g;
+
+    if (syntaxOnly) {
+      if (!isFieldSyntacticallyGeneric(context, field.declId, nullptr)) {
+        g = Type::CONCRETE;
+      } else {
+        // In syntaxOnly mode, the field type is only set from substitutions;
+        // if there are none, it's left unknown, which, if the field is
+        // syntactically generic, means it's generic.
+        if (field.type.isUnknownKindOrType()) {
+          g = Type::GENERIC;
+        } else {
+          g = getTypeGenericityIgnoring(context, field.type, ignore);
+        }
+      }
+    } else {
+      g = getTypeGenericityIgnoring(context, field.type, ignore);
+    }
+
     if (g != Type::CONCRETE) {
       if (!field.hasDefaultValue) {
         allGenHaveDefault = false;

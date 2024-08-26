@@ -119,6 +119,16 @@ owned<Builder> Builder::createForIncludedModule(Context* context,
   return toOwned(b);
 }
 
+owned<Builder> Builder::createForGeneratedCode(Context* context,
+                                               const char* filepath,
+                                               UniqueString parentSymbolPath) {
+  auto uniqueFilename = UniqueString::get(context, filepath);
+  auto b = new Builder(context, uniqueFilename, parentSymbolPath,
+                       /* LibraryFile */ nullptr);
+  b->generatedCode_ = true;
+  return toOwned(b);
+}
+
 owned<Builder> Builder::createForLibraryFileModule(
                                         Context* context,
                                         UniqueString filePath,
@@ -478,7 +488,8 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     }
 
     int numContainedIds = freshId;
-    ast->setID(ID(newSymbolPath, -1, numContainedIds));
+    int postOrderId = this->generatedCode_ ? -3 : -1;
+    ast->setID(ID(newSymbolPath, postOrderId, numContainedIds));
 
     // Note: when creating a new symbol (e.g. fn), we're not incrementing i.
     // The new symbol ID has the updated path (e.g. function name)
@@ -499,7 +510,7 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     }
 
     int afterChildID = i;
-    int myID = afterChildID;
+    int myID = this->generatedCode_ ? -4 - afterChildID : afterChildID;
     i++; // count the ID for the node we are currently visiting
     int numContainedIDs = afterChildID - firstChildID;
     ast->setID(ID(symbolPath, myID, numContainedIDs));

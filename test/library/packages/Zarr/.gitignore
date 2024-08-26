@@ -5,3 +5,8 @@ Test3D
 c-blosc
 *.dylib
 *.so*
+*.dll*
+LocalIOStore_*
+TestLocal
+TestTargetLocale
+

@@ -39,6 +39,11 @@
 // 1. refactor pid fields from distribution, domain, and array classes
 //
 
+/* Support for block-distributing arrays and domains to target locales. */
+
+@chplcheck.ignore("IncorrectIndentation")
+module BlockDist {
+
 private use DSIUtil;
 private use ChapelUtil;
 private use CommDiagnostics;
@@ -1336,7 +1341,7 @@ proc BlockDom.dsiDims() do        return whole.dims();
 proc BlockDom.dsiGetIndices() do  return whole.getIndices();
 proc BlockDom.dsiMember(i) do     return whole.contains(i);
 proc BlockDom.doiToString() do    return whole:string;
-proc BlockDom.dsiSerialWrite(x) { x.write(whole); }
+proc BlockDom.dsiSerialWrite(x) throws { x.write(whole); }
 proc BlockDom.dsiLocalSlice(param strides, ranges) do return whole((...ranges));
 override proc BlockDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
 override proc BlockDom.dsiMyDist() do                   return dist;
@@ -1635,14 +1640,14 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
   }
 }
 
-proc BlockArr.dsiSerialRead(f) {
+proc BlockArr.dsiSerialRead(f) throws {
   chpl_serialReadWriteRectangular(f, this);
 }
 
 //
 // output array
 //
-proc BlockArr.dsiSerialWrite(f) {
+proc BlockArr.dsiSerialWrite(f) throws {
   chpl_serialReadWriteRectangular(f, this);
 }
 
@@ -2298,3 +2303,5 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   delete op;
   return res;
 }
+
+} // module BlockDist

@@ -18,6 +18,11 @@
  * limitations under the License.
  */
 
+/* Support for round-robin distribution of domains/arrays to target locales. */
+
+@chplcheck.ignore("IncorrectIndentation")
+module CyclicDist {
+
 private use DSIUtil;
 private use ChapelLocks;
 
@@ -759,7 +764,6 @@ proc CyclicDom.dsiDims() do        return whole.dims();
 proc CyclicDom.dsiGetIndices() do  return whole.getIndices();
 proc CyclicDom.dsiMember(i) do     return whole.contains(i);
 proc CyclicDom.doiToString() do    return whole:string;
-//proc CyclicDom.dsiSerialWrite(x) { x.write(whole); }
 proc CyclicDom.dsiLocalSlice(param strides, ranges) do return whole((...ranges));
 override proc CyclicDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
 override proc CyclicDom.dsiMyDist() do                   return dist;
@@ -780,7 +784,7 @@ proc CyclicDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
   chpl_assignDomainWithGetSetIndices(this, rhs);
 }
 
-proc CyclicDom.dsiSerialWrite(x) {
+proc CyclicDom.dsiSerialWrite(x) throws {
   if verboseCyclicDistWriters {
     x.writeln(this.type:string);
     x.writeln("------");
@@ -1212,11 +1216,11 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   }
 }
 
-proc CyclicArr.dsiSerialRead(f) {
+proc CyclicArr.dsiSerialRead(f) throws {
   chpl_serialReadWriteRectangular(f, this);
 }
 
-proc CyclicArr.dsiSerialWrite(f) {
+proc CyclicArr.dsiSerialWrite(f) throws {
   chpl_serialReadWriteRectangular(f, this);
 }
 
@@ -1674,3 +1678,5 @@ proc CyclicArr.doiOptimizedSwap(other) where debugOptimizedSwap {
   writeln("CyclicArr doing unoptimized swap. Type mismatch");
   return false;
 }
+
+}  // module CyclicDist

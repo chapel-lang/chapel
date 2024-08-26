@@ -33,6 +33,8 @@
 // mapped to by the distribution.
 //
 
+/* Draft support for stencil computations using a Block-style distribution. */
+
 @unstable("StencilDist is unstable and may change in the future")
 prototype module StencilDist {
 

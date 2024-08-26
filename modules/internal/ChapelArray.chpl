@@ -3057,11 +3057,9 @@ module ChapelArray {
   //
   // These control an optimization in which copying an array from one
   // locale to another will also copy the array's domain if we believe
-  // it's safe to do so.  This optimization is currently off by
-  // default because it was completed close to Chapel 2.1 and we
-  // wanted more time to live with it before having it on by default.
+  // it's safe to do so.  The optimization is currently on by default.
   //
-  config param localizeConstDomains = false,
+  config param localizeConstDomains = true,
                debugLocalizedConstDomains = false;
 
   pragma "init copy fn"

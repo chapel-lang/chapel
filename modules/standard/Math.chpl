@@ -20,7 +20,7 @@
 
 /*
 
-This module provides frequently used mathematical constants and functions.
+Support for frequently used mathematical constants and functions.
 
 It includes wrappers for many of the constants and functions in
 the C Math library, which is part of the C Language Standard (ISO/IEC 9899)

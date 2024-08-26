@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+/* Draft support for storing sparse 2D domains/arrays using CSR/CSC layouts. */
+
 @unstable("LayoutCS is unstable and may change in the future")
 prototype module LayoutCS {
 

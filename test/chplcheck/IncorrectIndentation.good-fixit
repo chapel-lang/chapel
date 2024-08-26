@@ -5,11 +5,13 @@ module IncorrectIndentation {
     writeln("??");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   proc f2()
   {
   writeln("hi");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   proc f3() {
   writeln("hi");
   }
@@ -24,6 +26,7 @@ module IncorrectIndentation {
   }
 
   proc f6() {
+    @chplcheck.ignore("IncorrectIndentation")
     for 1..10 do
     writeln("hi");
   }
@@ -34,11 +37,13 @@ module IncorrectIndentation {
     writeln("??");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   module M2
   {
   writeln("hi");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   module M3 {
   writeln("hi");
   }
@@ -53,6 +58,7 @@ module IncorrectIndentation {
   }
 
   module M6 {
+    @chplcheck.ignore("IncorrectIndentation")
     for 1..10 do
     writeln("hi");
   }
@@ -61,11 +67,13 @@ module IncorrectIndentation {
     writeln("hi");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   for 1..10
   {
   writeln("hi");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   for 1..10 {
   writeln("hi");
   }
@@ -99,11 +107,13 @@ module IncorrectIndentation {
     writeln("??");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   on here
   {
   writeln("hi");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   on here {
   writeln("hi");
   }
@@ -118,6 +128,7 @@ module IncorrectIndentation {
   }
 
   on here {
+    @chplcheck.ignore("IncorrectIndentation")
     for 1..10 do
     writeln("hi");
   }
@@ -128,11 +139,13 @@ module IncorrectIndentation {
     writeln("??");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   begin
   {
   writeln("hi");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   begin {
   writeln("hi");
   }
@@ -147,6 +160,7 @@ module IncorrectIndentation {
   }
 
   begin {
+    @chplcheck.ignore("IncorrectIndentation")
     for 1..10 do
     writeln("hi");
   }
@@ -159,11 +173,13 @@ module IncorrectIndentation {
     writeln("??");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   begin with (ref dummy)
   {
   writeln("hi");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   begin with (ref dummy) {
   writeln("hi");
   }
@@ -178,6 +194,7 @@ module IncorrectIndentation {
   }
 
   begin with (ref dummy) {
+    @chplcheck.ignore("IncorrectIndentation")
     for 1..10 do
     writeln("hi");
   }
@@ -191,12 +208,14 @@ module IncorrectIndentation {
     writeln("??");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   cobegin
   {
   writeln("hi");
   writeln("hi");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   cobegin {
   writeln("hi");
   writeln("hi");
@@ -213,6 +232,7 @@ module IncorrectIndentation {
 
   cobegin {
     writeln("hi");
+    @chplcheck.ignore("IncorrectIndentation")
     for 1..10 do
     writeln("hi");
   }
@@ -245,6 +265,7 @@ module IncorrectIndentation {
 
   cobegin with (ref dummy) {
     writeln("hi");
+    @chplcheck.ignore("IncorrectIndentation")
     for 1..10 do
     writeln("hi");
   }
@@ -255,11 +276,13 @@ module IncorrectIndentation {
     second
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   enum e2
   {
   first
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   enum e3 {
   first
   }
@@ -279,6 +302,7 @@ module IncorrectIndentation {
     proc firstProc() {}
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   union u2
   {
     var element: int;
@@ -286,6 +310,7 @@ module IncorrectIndentation {
   proc firstProc() {}
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   union u3 {
     var element: int;
 
@@ -305,7 +330,7 @@ module IncorrectIndentation {
     proc firstProc() {} proc secondProc() {}
   }
 
-  enum color { red, green, blue }; // semicolon warning does not issue bad indentation
+  enum color { red, green, blue } // semicolon warning does not issue bad indentation
 
   // Since locations are incorrectly reported with 'public' and 'private',
   // these shouldn't warn.
@@ -334,6 +359,7 @@ module IncorrectIndentation {
     writeln("??");
   }
 
+  @chplcheck.ignore("IncorrectIndentation")
   proc f2()
   {
   writeln("hi");
@@ -354,6 +380,7 @@ module IncorrectIndentation {
   }
 
   proc f6() {
+    @chplcheck.ignore("IncorrectIndentation")
     for 1..10 do
     writeln("hi");
   }
