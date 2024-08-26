@@ -53,6 +53,27 @@ proc testUnsupportedCompressor() {
   
 }
 
+proc testNoCompressorSpecified() {
+  const configJson = '''
+    {
+      "zarr_format": 2,
+      "chunks": [5,8,12],
+      "shape": [10, 20, 30],
+      "dtype": "<f4"
+    }
+    ''';
+  
+  var A: [0..<10,0..<20,0..<30] real(32);
+  writeZarrArrayLocal("TestNoCompressorSpecified", A, (5,8,12));
+  var configFile = openWriter("TestNoCompressorSpecified/.zarray");
+  configFile.write(configJson);
+  configFile.close();
+
+  var B = readZarrArrayLocal("TestNoCompressorSpecified", real(32), 3);
+  forall i in A.domain do 
+    assert(A[i] == B[i], "Mismatch for real data on indices: %?.\nWritten: %?\nRead: %?".format(i, A[i], B[i]));
+}
+
 
 proc main() {
   var compressors = ["blosclz", "lz4", "lz4hc", "zlib", "zstd"];
@@ -62,5 +83,6 @@ proc main() {
     distributedTest(compressor);
   }
   testUnsupportedCompressor();
+  testNoCompressorSpecified();
   writeln("Pass");
 }

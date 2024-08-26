@@ -9,4 +9,5 @@ c-blosc
 LocalIOStore_*
 TestLocal
 TestTargetLocale
+TestNoCompressorSpecified
 
