@@ -1,0 +1,20 @@
+# good case with no compiler errors
+-sassoc3 -sassoc6 -srect4 -srect5 -srect6 # sortDomainArray.good
+-sassoc7 # sortDomainArray.assoc7.good
+
+# the rest should be some form of compiler error
+-ssparse1   # sortDomainArray.sparse1.good
+-ssparse2   # sortDomainArray.sparse2.good
+-ssparse3   # sortDomainArray.sparse3.good
+-ssparse4   # sortDomainArray.sparse4.good
+-ssparse5   # sortDomainArray.sparse5.good
+-ssparse6   # sortDomainArray.sparse6.good
+-ssparse7   # sortDomainArray.sparse7.good
+-sassoc1    # sortDomainArray.assoc1.good
+-sassoc2    # sortDomainArray.assoc2.good
+-sassoc4    # sortDomainArray.assoc4.good
+-sassoc5    # sortDomainArray.assoc5.good
+-srect1     # sortDomainArray.rect1.good
+-srect2     # sortDomainArray.rect2.good
+-srect3     # sortDomainArray.rect3.good
+-srect7     # sortDomainArray.rect7.good
