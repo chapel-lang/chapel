@@ -784,6 +784,11 @@ proc sort(ref x: [?Dom] , comparator:? = new DefaultComparator(), param stable:b
   where Dom.rank != 1 || !x.isRectangular() {
     compilerError("sort() is currently only supported for 1D rectangular arrays");
 }
+@chpldoc.nodoc
+proc sort(ref x: domain,
+          comparator:? = new DefaultComparator(),
+          param stable:bool = false) do
+  compilerError("sort() is not supported on domains");
 
 /*
    Check if array `x` is in sorted order
@@ -841,9 +846,12 @@ proc isSorted(x: list(?), comparator:? = new DefaultComparator()): bool {
 @chpldoc.nodoc
 /* Error message for multi-dimension arrays */
 proc isSorted(x: [], comparator:? = new DefaultComparator())
-  where x.domain.rank != 1 {
-    compilerError("isSorted() requires 1-D array");
+  where x.rank != 1 || !x.isRectangular() {
+    compilerError("isSorted() is currently only supported for 1D rectangular arrays");
 }
+@chpldoc.nodoc
+proc isSorted(x: domain, comparator:? = new DefaultComparator()) do
+  compilerError("isSorted() is not supported on domains");
 
 /*
    Check if array `Data` is in sorted order
@@ -862,11 +870,16 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
 }
 
 @chpldoc.nodoc
-iter sorted(x : domain, comparator:? = new DefaultComparator()) {
+iter sorted(x : domain, comparator:? = new DefaultComparator())
+  where x.isAssociative() {
   for i in x._value.dsiSorted(comparator) {
     yield i;
   }
 }
+@chpldoc.nodoc
+iter sorted(x: domain, comparator:? = new DefaultComparator())
+  where !x.isAssociative() do
+  compilerError("sorted() is currently only supported on associative domains");
 
 //
 // This is a first draft "sorterator" which is designed to take some
