@@ -6988,9 +6988,8 @@ proc fileWriter.styleElement(element:int):int {
 
   .. warning::
 
-    This iterator executes on the current locale. This may impact multilocale
-    performance if the current locale is not the same locale on which the
-    fileReader was created.
+    This iterator executes on the current locale. This may impact performance if
+    the current locale is not the same locale on which the fileReader was created.
 
   .. warning::
 
@@ -7020,8 +7019,8 @@ iter fileReader.lines(
 }
 
 /*
-  Iterate over all of the lines ending in ``\n`` in a :record:`fileReader` - the
-  fileReader lock will be held while iterating over the lines.
+  Iterate over all of the lines ending in ``\n`` in a :record:`fileReader` using
+  multiple locales - the fileReader lock will be held while iterating over the lines.
 
   This iterator will halt on internal :ref:`system errors<io-general-sys-error>`.
 
@@ -7043,8 +7042,8 @@ iter fileReader.lines(
 
   .. warning::
 
-    This procedure does not reading from a memory-file (e.g. files opened with
-    :proc:`openMemFile`)
+    This procedure does not support reading from a memory-file (e.g.,
+    files opened with :proc:`openMemFile`)
 
   .. warning::
 
