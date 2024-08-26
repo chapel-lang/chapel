@@ -1950,9 +1950,16 @@ void Visitor::checkInheritExprValid(const AstNode* node) {
 
 void Visitor::checkIterNames(const Function* node) {
   if (node->kind() == Function::ITER) {
-    if (node->name() == USTR("init")) {
+    auto name = node->name();
+    if (name == USTR("init")) {
       error(node,
             "iterators can't be initializers, please rename this iterator");
+    } else if (name == USTR("deinit")) {
+      error(node,
+            "iterators can't be the deinit method, please rename this iterator");
+    } else if (name == USTR("postinit")) {
+      error(node,
+            "iterators can't be the postinit method, please rename this iterator");
     }
   }
   return;
