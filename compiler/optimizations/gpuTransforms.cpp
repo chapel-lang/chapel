@@ -630,7 +630,9 @@ CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
   // over values rather than indices)
   for_alist(expr, cfl->body) {
     CallExpr *call = toCallExpr(expr);
-    if (call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+    if (call &&
+        (call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
+         call->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE))) {
       return call;
     }
 
@@ -640,7 +642,9 @@ CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
     if (blk && blk->isGpuPrimitivesBlock()) {
       for_alist(expr, blk->body) {
         CallExpr *call = toCallExpr(expr);
-        if (call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+        if (call &&
+            (call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
+             call->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE))) {
           return call;
         }
       }
@@ -1576,6 +1580,7 @@ bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
   if (!call) return false;
 
   return call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
+         call->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE) ||
          call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE) ||
          call->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK);
 }
@@ -2144,9 +2149,13 @@ static void cleanupPrimitives() {
       // uses of the primitive, which we process by removing the primitive but keeping
       // the copy.
       cleanupTaskIndependentCapturePrimitive(callExpr);
-    }
-    else if(callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
+    } else if (callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE) ||
+               callExpr->isPrimitive(PRIM_ASSERT_GPU_ELIGIBLE)) {
       callExpr->remove();
+    } else if(callExpr->isPrimitive(PRIM_GPU_PRIMITIVE_BLOCK)) {
+      auto parentBlock = toBlockStmt(callExpr->parentExpr);
+      INT_ASSERT(parentBlock);
+      parentBlock->remove();
     }
   }
 }

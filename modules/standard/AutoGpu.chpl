@@ -25,6 +25,10 @@ module AutoGpu {
 
   inline proc chpl__gpuAssertEligibleAttr() {
     if CHPL_LOCALE_MODEL == "gpu" then
+      __primitive("assert gpu eligible");
+  }
+
+  inline proc chpl__assertOnGpuAttr() {
       __primitive("chpl_assert_on_gpu", true);
   }
 

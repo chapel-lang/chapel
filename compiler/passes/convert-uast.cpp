@@ -126,6 +126,8 @@ struct LoopAttributeInfo {
   LLVMMetadataList llvmMetadata;
   // The @assertOnGpu attribute, if one is provided by the user.
   const uast::Attribute* assertOnGpuAttr = nullptr;
+  // The @gpu.assertEligible attribute, if one is provided by the user.
+  const uast::Attribute* assertEligibleAttr = nullptr;
   // The @gpu.blockSize attribute, if one is provided by the user.
   const uast::Attribute* blockSizeAttr = nullptr;
 
@@ -207,6 +209,7 @@ struct LoopAttributeInfo {
 
   void readNativeGpuAttributes(const uast::AttributeGroup* attrs) {
     this->assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
+    this->assertEligibleAttr = attrs->getAttributeNamed(USTR("gpu.assertEligible"));
     this->blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
   }
 
@@ -238,6 +241,7 @@ struct LoopAttributeInfo {
   bool empty() const {
     return llvmMetadata.size() == 0 &&
            assertOnGpuAttr == nullptr &&
+           assertEligibleAttr == nullptr &&
            blockSizeAttr == nullptr;
   }
 
@@ -460,12 +464,6 @@ struct Converter {
 
   Expr* visit(const uast::Comment* node) {
     return nullptr;
-  }
-
-  void readNativeGpuAttributes(LoopAttributeInfo& into,
-                               const uast::AttributeGroup* attrs) {
-    into.assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
-    into.blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
   }
 
   Expr* visit(const uast::AttributeGroup* node) {
@@ -1760,6 +1758,9 @@ struct Converter {
     if (loopAttributes.assertOnGpuAttr != nullptr) {
       CHPL_REPORT(context, InvalidGpuAssertion, node,
                   loopAttributes.assertOnGpuAttr);
+    } else if (loopAttributes.assertEligibleAttr != nullptr) {
+      CHPL_REPORT(context, InvalidGpuAssertion, node,
+                  loopAttributes.assertEligibleAttr);
     }
     return std::move(loopAttributes.llvmMetadata);
   }
@@ -4366,11 +4367,16 @@ struct Converter {
 };
 
 bool LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
+  bool inserted = false;
   if (assertOnGpuAttr) {
-    body->insertAtTail(new CallExpr("chpl__gpuAssertEligibleAttr"));
-    return true;
+    body->insertAtTail(new CallExpr("chpl__assertOnGpuAttr"));
+    inserted = true;
   }
-  return false;
+  if (assertEligibleAttr) {
+    body->insertAtTail(new CallExpr("chpl__gpuAssertEligibleAttr"));
+    inserted = true;
+  }
+  return inserted;
 }
 
 bool LoopAttributeInfo::insertBlockSizeCall(Converter& converter, BlockStmt* body) {
