@@ -158,8 +158,8 @@ strings. It accepts two arguments:
 A ``keyPart`` method should return a tuple consisting of *section* and a *part*.
 
  * The *section* must be of type :type:`keyPartStatus`. It indicates when the
- end of ``elt`` has been reached and in that event how it should be sorted
- relative to other array elements.
+   end of ``elt`` has been reached and in that event how it should be sorted
+   relative to other array elements.
 
  * The *part* can be any signed or unsigned integral type and can contain any
    value. The *part* will be ignored unless the *section* returned is
