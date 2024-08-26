@@ -52,8 +52,6 @@ if [ -n "${CHPL_TEST_ARKOUDA_DISABLE_MODULES}" ] ; then
 fi
 
 # install frontend python bindings
-(cd $CHPL_HOME && make frontend-shared)
-(cd $CHPL_HOME/tools/chapel-py && python -m pip install .)
 (cd $CHPL_HOME && make chapel-py-venv)
 
 # Compile Arkouda
