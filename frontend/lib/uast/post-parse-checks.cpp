@@ -1967,6 +1967,12 @@ void Visitor::checkIterNames(const Function* node) {
     } else if (name == USTR("exitContext")) {
       error(node,
             "iterators can't be the exitContext method, please rename this iterator");
+    } else if (name == USTR("serialize")) {
+      error(node,
+            "iterators can't be the serialize method, please rename this iterator");
+    } else if (name == USTR("deserialize")) {
+      error(node,
+            "iterators can't be the deserialize method, please rename this iterator");
     }
   }
   return;
