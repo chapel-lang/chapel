@@ -121,7 +121,7 @@ module Zarr {
     var r = openReader(metadataPath, deserializer = new jsonDeserializer(), locking=false);
     var mdRequired: zarrMetadataV2Required;
     r.readf("%?", mdRequired);
-    
+
     r.seek(0..);
     var mdOptional: zarrMetadataV2Optional;
     try {
