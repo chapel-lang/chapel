@@ -556,6 +556,7 @@ struct LookupHelper {
   std::vector<ResultVisibilityTrace>* traceResult = nullptr;
   std::vector<BorrowedIdsWithName>* shadowedResults = nullptr;
   std::vector<ResultVisibilityTrace>* traceShadowedResults = nullptr;
+  bool allowCached = false;
 
   LookupHelper(Context* context,
                const ResolvedVisibilityScope* resolving,
@@ -565,13 +566,15 @@ struct LookupHelper {
                std::vector<VisibilityTraceElt>* traceCurPath,
                std::vector<ResultVisibilityTrace>* traceResult,
                std::vector<BorrowedIdsWithName>* shadowedResults,
-               std::vector<ResultVisibilityTrace>* traceShadowedResults)
+               std::vector<ResultVisibilityTrace>* traceShadowedResults,
+               bool allowCached)
     : context(context), resolving(resolving),
       checkedScopes(checkedScopes),
       result(result), foundExternBlock(foundExternBlock),
       traceCurPath(traceCurPath), traceResult(traceResult),
       shadowedResults(shadowedResults),
-      traceShadowedResults(traceShadowedResults) {
+      traceShadowedResults(traceShadowedResults),
+      allowCached(allowCached) {
   }
 
   bool doLookupInImportsAndUses(const Scope* scope,
@@ -1565,7 +1568,8 @@ helpLookupInScope(Context* context,
   auto helper = LookupHelper(context, resolving, checkedScopes, result,
                              foundExternBlock,
                              traceCurPath, traceResult,
-                             shadowed, traceShadowed);
+                             shadowed, traceShadowed,
+                             /* allowCached */ resolving == nullptr);
 
   if (checkExternBlocks) {
     // clear the extern blocks lookup (since it is a 2nd pass)
@@ -2010,18 +2014,19 @@ static void addNamedIdIfModule(Context* context,
   }
 }
 
-// Raises errors if the name isn't in the scope
+// Checks a name used in a use/import and
+// raises errors if the name isn't in the scope.
 // Additionally, if 'namedModulesSet' is not 'nullptr', if the name refers to a
 // module, gather that module as a module named in use/import within 'resolving'
-static void checkNameInScope(Context* context,
-                             const Scope* scope,
-                             ResolvedVisibilityScope* resolving,
-                             UniqueString name,
-                             const AstNode* exprForError,
-                             const VisibilityClause* clauseForError,
-                             VisibilityStmtKind useOrImport,
-                             bool isRename,
-                             std::set<ID>* namedModulesSet) {
+static void checkNameInScopeViz(Context* context,
+                                const Scope* scope,
+                                ResolvedVisibilityScope* resolving,
+                                UniqueString name,
+                                const AstNode* exprForError,
+                                const VisibilityClause* clauseForError,
+                                VisibilityStmtKind useOrImport,
+                                bool isRename,
+                                std::set<ID>* namedModulesSet) {
   CheckedScopes checkedScopes;
   std::vector<BorrowedIdsWithName> result;
   LookupConfig config = LOOKUP_INNERMOST |
@@ -2130,16 +2135,16 @@ static void checkLimitationsInScope(Context* context,
                                     std::set<ID>* namedModulesSet) {
   for (const AstNode* e : clause->limitations()) {
     if (auto ident = e->toIdentifier()) {
-      checkNameInScope(context, scope, resolving, ident->name(),
-                       ident, clause, useOrImport,
-                       /* isRename */ false,
-                       namedModulesSet);
+      checkNameInScopeViz(context, scope, resolving, ident->name(),
+                          ident, clause, useOrImport,
+                          /* isRename */ false,
+                          namedModulesSet);
     } else if (auto as = e->toAs()) {
       if (auto ident = as->symbol()->toIdentifier()) {
-        checkNameInScope(context, scope, resolving, ident->name(),
-                         ident, clause, useOrImport,
-                         /* isRename */ true,
-                         namedModulesSet);
+        checkNameInScopeViz(context, scope, resolving, ident->name(),
+                            ident, clause, useOrImport,
+                            /* isRename */ true,
+                            namedModulesSet);
       }
     }
   }
@@ -2632,10 +2637,10 @@ doResolveImportStmt(Context* context, const Import* imp,
             break;
           case VisibilityClause::NONE:
             kind = VisibilitySymbols::ONLY_CONTENTS;
-            checkNameInScope(context, foundScope, r,
-                             dotName, expr, clause, VIS_IMPORT,
-                             /* isRename */ !newName.isEmpty(),
-                             &namedModulesSet);
+            checkNameInScopeViz(context, foundScope, r,
+                                dotName, expr, clause, VIS_IMPORT,
+                                /* isRename */ !newName.isEmpty(),
+                                &namedModulesSet);
             if (newName.isEmpty()) {
               // e.g. 'import M.f'
               r->addVisibilityClause(foundScope, kind,
@@ -3523,6 +3528,80 @@ emitMultipleDefinedSymbolErrorsQuery(Context* context, const Scope* scope) {
 
 void emitMultipleDefinedSymbolErrors(Context* context, const Scope* scope) {
   emitMultipleDefinedSymbolErrorsQuery(context, scope);
+}
+
+/* Given a Scope for a Module, fills in DeclMap syms with all of the
+   public contents of that module, including through use/import */
+static void collectAllPublicContents(Context* context, const Scope* scope,
+                                     DeclMap& syms) {
+  CHPL_ASSERT(isModule(scope->tag()));
+
+  std::set<UniqueString> namesDefined;
+  std::set<UniqueString> namesDefinedMultiply;
+  ScopeSet collectCheckedScopes;
+
+  collectAllNames(context, scope, /* skip private */ true,
+                  namesDefined, namesDefinedMultiply, collectCheckedScopes);
+
+  const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, scope);
+
+  LookupConfig config = LOOKUP_DECLS |
+                        LOOKUP_IMPORT_AND_USE |
+                        LOOKUP_SKIP_PRIVATE_VIS |
+                        LOOKUP_METHODS;
+  for (auto name : namesDefined) {
+    CheckedScopes lookupCheckedScopes;
+    std::vector<BorrowedIdsWithName> lookupResult;
+
+    helpLookupInScope(context, scope,
+                      /* receiverScopes */ { },
+                      /* resolving */ r, // note: this disables caching
+                      name, config,
+                      lookupCheckedScopes, lookupResult);
+
+    // add the lookup results
+    for (const auto& b : lookupResult) {
+      auto end = b.end();
+      for (auto it = b.begin(); it != end; ++it) {
+        const IdAndFlags& idv = it.curIdAndFlags();
+        auto search = syms.find(name);
+        if (search == syms.end()) {
+          // add a new entry containing just the one ID
+          syms.emplace_hint(search, name, idv);
+        } else {
+          // found an entry, so add to it
+          OwnedIdsWithName& val = search->second;
+          val.appendIdAndFlags(idv);
+        }
+      }
+    }
+  }
+}
+
+/* Gather a list of all public module contents,
+   including public symbols brought in transitively by public use/import.
+   It will be cached because this is a query.
+   */
+static const owned<ModulePublicSymbols>&
+publicSymbolsForModuleQuery(Context* context, const Scope* modScope) {
+  QUERY_BEGIN(publicSymbolsForModuleQuery, context, modScope);
+
+  DeclMap syms;
+  collectAllPublicContents(context, modScope, syms);
+
+  auto ownedResult = toOwned(new ModulePublicSymbols(std::move(syms)));
+
+  printf("publicSymbolsForModuleQuery %s\n", modScope->id().str().c_str());
+  ownedResult->dump();
+
+  return QUERY_END(ownedResult);
+}
+
+const ModulePublicSymbols*
+publicSymbolsForModule(Context* context, const Scope* modScope) {
+  const owned<ModulePublicSymbols>& r =
+    publicSymbolsForModuleQuery(context, modScope);
+  return r.get();
 }
 
 
