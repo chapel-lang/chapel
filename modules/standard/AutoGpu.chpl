@@ -33,8 +33,8 @@ module AutoGpu {
       __primitive("gpu set blockSize", arg, counter);
   }
 
-
-  inline proc chpl__gpuBlockSizeAttr(param counter: int) {
+  pragma "last resort"
+  inline proc chpl__gpuBlockSizeAttr(param counter: int, rest ...) {
     compilerError("'@gpu.blockSize' attribute must have exactly one argument: the block size");
   }
 }
