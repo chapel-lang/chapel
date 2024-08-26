@@ -1,0 +1,3 @@
+errors-keyPart.chpl:9: In function 'main':
+errors-keyPart.chpl:17: warning: Defining a comparator with a 'keyPart' method without implementing the keyPartComparator interface is deprecated. Please implement the keyPartComparator interface (i.e. 'record tUintIntDep: keyPartComparator').
+errors-keyPart.chpl:17: error: The keyPart method in tUintIntDep must return a tuple with element 0 of type int(?) when used with int(64) elements
