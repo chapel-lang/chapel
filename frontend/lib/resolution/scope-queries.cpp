@@ -329,7 +329,7 @@ isElseBlockOfConditionalWithIfVarQuery(Context* context, ID id) {
 
   bool result = false;
 
-  if (!id.isEmpty() && asttags::isBlock(parsing::idToTag(context, id))) {
+  if (!id.isEmpty() && isBlock(parsing::idToTag(context, id))) {
     ID parentId = parsing::idToParentId(context, id);
     if (!parentId.isEmpty()) {
       if (asttags::isConditional(parsing::idToTag(context, parentId))) {
@@ -367,7 +367,7 @@ isConditionOfDoWhileLoopQuery(Context* context, ID id) {
   if (!id.isEmpty()) {
     ID parentId = parsing::idToParentId(context, id);
     if (!parentId.isEmpty()) {
-      if (asttags::isDoWhile(parsing::idToTag(context, parentId))) {
+      if (isDoWhile(parsing::idToTag(context, parentId))) {
         auto parentAst = parsing::idToAst(context, parentId);
         auto doWhile = parentAst->toDoWhile();
         CHPL_ASSERT(doWhile);
@@ -636,10 +636,10 @@ getKindForVisibilityClauseId(Context* context, ID visibilityClauseId) {
        !cur.isEmpty();
        cur = parsing::idToParentId(context, cur)) {
     auto tag = parsing::idToTag(context, cur);
-    if (asttags::isUse(tag)) {
+    if (isUse(tag)) {
       return VIS_USE;
       break;
-    } else if (asttags::isImport(tag)) {
+    } else if (isImport(tag)) {
       return VIS_IMPORT;
     }
   }
@@ -1387,14 +1387,14 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     const Scope* cur = nullptr;
     bool reachedModule = false;
 
-    if (!asttags::isModule(scope->tag()) || goPastModules) {
+    if (!isModule(scope->tag()) || goPastModules) {
       for (cur = nextHigherScope(context, scope);
            cur != nullptr;
            cur = nextHigherScope(context, cur)) {
 
         // Allow searching past compiler-generated modules, to pretend like
         // they are children of the module from which they originated.
-        if (asttags::isModule(cur->tag()) && !goPastModules &&
+        if (isModule(cur->tag()) && !goPastModules &&
             !cur->id().isFabricatedId()) {
           reachedModule = true;
           break;
@@ -1443,15 +1443,15 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
       if (onlyInnermost && got) return true;
     }
 
-    if (!goPastModules && (reachedModule || asttags::isModule(scope->tag()))) {
+    if (!goPastModules && (reachedModule || isModule(scope->tag()))) {
       // If we reached a module or we already were in a module,
       // check for a match with the containing module's name for e.g.
       //   module M { ...M.xyz... }
       //
       // Don't do this when goPastModules is used, because we will find
       // the enclosing module when visiting its parent.
-      const Scope* modScope = asttags::isModule(scope->tag()) ? scope : cur;
-      CHPL_ASSERT(modScope && asttags::isModule(modScope->tag()));
+      const Scope* modScope = isModule(scope->tag()) ? scope : cur;
+      CHPL_ASSERT(modScope && isModule(modScope->tag()));
       if (trace) {
         VisibilityTraceElt elt;
         elt.parentScope = cur;
@@ -2102,7 +2102,7 @@ static void checkNameInScopeViz(Context* context,
     } else if (foundViaPrivate) {
       for (auto& ids : result) {
         for (auto& id : ids) {
-          if (asttags::isTypeDecl(parsing::idToTag(context, id))) {
+          if (isTypeDecl(parsing::idToTag(context, id))) {
             shouldWarnForTertiaryImport = true;
           }
         }
@@ -3060,17 +3060,17 @@ GatherMentionedModules::lookupAndGather(const Scope* scope,
   for (const Scope* cur = scope; cur != nullptr; cur = cur->parentScope()) {
     auto tag = cur->tag();
     const auto& id = cur->id();
-    if (asttags::isModule(tag)) {
+    if (isModule(tag)) {
       const auto& tmp = scopeResolveModule(context, id);
       rr = &tmp;
       break;
-    } else if (asttags::isFunction(tag)) {
+    } else if (isFunction(tag)) {
       const ResolvedFunction* rf = scopeResolveFunction(context, id);
       if (rf != nullptr) {
         rr = & rf->resolutionById();
         break;
       }
-    } else if (asttags::isAggregateDecl(tag)) {
+    } else if (isAggregateDecl(tag)) {
       const auto& tmp = scopeResolveAggregate(context, id);
       rr = &tmp;
       break;
