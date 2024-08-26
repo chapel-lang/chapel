@@ -764,7 +764,6 @@ proc CyclicDom.dsiDims() do        return whole.dims();
 proc CyclicDom.dsiGetIndices() do  return whole.getIndices();
 proc CyclicDom.dsiMember(i) do     return whole.contains(i);
 proc CyclicDom.doiToString() do    return whole:string;
-//proc CyclicDom.dsiSerialWrite(x) throws { x.write(whole); }
 proc CyclicDom.dsiLocalSlice(param strides, ranges) do return whole((...ranges));
 override proc CyclicDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
 override proc CyclicDom.dsiMyDist() do                   return dist;
