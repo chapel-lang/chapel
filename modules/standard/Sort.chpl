@@ -157,28 +157,16 @@ strings. It accepts two arguments:
 
 A ``keyPart`` method should return a tuple consisting of *section* and a *part*.
 
- * The *section* must be of type ``keyPartStatus``. It indicates when the end of ``elt`` has been reached and in that event how it should be sorted relative to other array elements.
-
-   ============================= ===========================================
-   Returned section              Interpretation
-   ============================= ===========================================
-   ``keyPartStatus.pre``          no more key parts for ``elt``,
-                                  sort it before those with more parts
-
-   ``keyPartStatus.returned``     a key part for ``elt`` is returned in
-                                  the second tuple element
-
-   ``keyPartStatus.post``         no more key parts for ``elt``,
-                                  sort it after those with more parts
-   ============================= ===========================================
+ * The *section* must be of type :type:`keyPartStatus`. It indicates when the end of ``elt`` has been reached and in that event how it should be sorted relative to other array elements.
 
  * The *part* can be any signed or unsigned integral type and can contain any
-   value. The *part* will be ignored unless the *section* returned is ``0``.
+   value. The *part* will be ignored unless the *section* returned is
+   :enumconstant:`keyPartStatus.returned`.
 
 
 Let's consider several example ``keyPart`` methods. All of these are
 simplifications of ``keyPart`` methods already available in the
-``DefaultComparator``.
+:type:`DefaultComparator`.
 
 This ``keyPart`` method supports sorting tuples of 2 integers:
 
@@ -3374,12 +3362,10 @@ module MSBRadixSort {
 /* Comparators */
 
 
-// This is documented in the blurb at the top of the file
 /*
   Indicates when the end of an element has been reached and in that event how
   it should be sorted relative to other array elements.
 */
-@chpldoc.nodoc
 enum keyPartStatus {
   /* No more key parts for element, sort it before those with more parts */
   pre = -1,
@@ -3394,6 +3380,7 @@ private inline proc reverseKeyPartStatus(status: keyPartStatus): keyPartStatus d
 private inline proc reverseKeyPartStatus(status) do
   return -status;
 
+// TODO: chpldoc will not render this yet :(
 // TODO: this is a hack to workaround issues with interfaces
 interface keyPartComparator {
   /*
